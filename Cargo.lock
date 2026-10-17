@@ -4682,6 +4682,7 @@ dependencies = [
  "vectorcraft-plugins",
  "vectorcraft-render",
  "vectorcraft-scriptcheck",
+ "vectorcraft-stitch",
  "vectorcraft-svg",
  "vectorcraft-testkit",
  "vectorcraft-text",
@@ -4861,6 +4862,14 @@ name = "vectorcraft-scriptcheck"
 version = "0.12.0"
 dependencies = [
  "proptest",
+]
+
+[[package]]
+name = "vectorcraft-stitch"
+version = "0.12.0"
+dependencies = [
+ "thiserror 2.0.21",
+ "vectorcraft-geom",
 ]
 
 [[package]]

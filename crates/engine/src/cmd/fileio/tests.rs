@@ -394,7 +394,11 @@ fn export_extensions_name_every_writable_format() {
             "emf",
             "wmf",
             "tga",
-            "psd"
+            "psd",
+            "dst",
+            "exp",
+            "pes",
+            "jef"
         ]
     );
     for e in exts {
@@ -429,7 +433,11 @@ fn formats_query_lists_readers_writers_and_options() {
             "emf",
             "wmf",
             "tga",
-            "psd"
+            "psd",
+            "dst",
+            "exp",
+            "pes",
+            "jef"
         ]
     );
     assert!(ids("readable").contains(&"tiff".to_string()) && ids("readable").contains(&"ait".to_string()));

@@ -8,7 +8,7 @@ this file describes what is committed. Day-to-day rules (clean-room, never crash
 
 ## Shape
 
-A Cargo workspace of 23 library crates under `crates/`, three apps under `apps/` and `xtask`, ~354k lines of Rust,
+A Cargo workspace of 24 library crates under `crates/`, three apps under `apps/` and `xtask`, ~354k lines of Rust,
 pure Rust (no handwritten JS/TS). The same engine runs the desktop app, the browser build (WASM), the headless
 CLI and the MCP server.
 
@@ -22,7 +22,7 @@ nothing below L6 depends on a UI toolkit (egui, eframe, winit, rfd). Table: `xta
 | L0 | `geom`, `color`; `affinity` (standalone, no workspace deps) | curves and transforms (on `kurbo`), colour models, ICC and conversions; the Affinity reader |
 | L1 | `doc` | the document model: artboards, layers, objects, appearance, text, symbols; pure data + serde, structural sharing |
 | L2 | `pathops`, `brush`, `trace`, `text`, `effects`, `plugins`, `three-d` | booleans/Shape Builder/offset/outline; brushes; Image Trace; fonts, shaping (HarfRust, skrifa), bidi and layout; live effects and the pixel-filter pipeline; sandboxed WebAssembly plug-ins (wasmi); 3D surfaces of revolution, projection and shading (`three-d`, on `geom` only) |
-| L3 | `render`, `svg`, `pdf`, `format`, `eps`, `cad`, `metafile` | document to pixels (`vello_cpu`, multithreaded); SVG, PDF, native JSON, EPS/PostScript (with its own interpreter), DXF, EMF/WMF readers and writers |
+| L3 | `render`, `svg`, `pdf`, `format`, `eps`, `cad`, `metafile`, `stitch` | document to pixels (`vello_cpu`, multithreaded); SVG, PDF, native JSON, EPS/PostScript (with its own interpreter), DXF, EMF/WMF readers and writers; embroidery stitch planning and the DST/EXP/PES/JEF formats |
 | L4 | `tools` | tool state machines: pointer events in, commands and overlays out (Pen, Direct Selection, smart guides…) |
 | L5 | `engine` | sessions, history (unlimited undo by structural sharing), selection, the command registry (~710 commands), file I/O, the panic guard |
 | L6 | `ui-egui`, `mcp` | the egui front end (menus, panels, dialogs, canvas, i18n); the MCP server (JSON-RPC over stdio) |

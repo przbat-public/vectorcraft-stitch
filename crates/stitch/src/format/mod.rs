@@ -277,6 +277,74 @@ mod tests {
         }
     }
 
+    /// A small design with two threads, for the reader tests.
+    fn design() -> Pattern {
+        let mut p = Pattern { name: "Reader".into(), ..Pattern::default() };
+        let mut a = Block::new(crate::Thread::rgb([200, 30, 30]));
+        for i in 0..24 {
+            let t = f64::from(i);
+            a.stitches.push(Stitch::sew(vectorcraft_geom::Point::new(t * 2.0, (t % 5.0) * 1.5)));
+        }
+        let mut b = Block::new(crate::Thread::rgb([30, 60, 200]));
+        b.stitches.push(Stitch::new(10.0, 20.0, Command::Jump));
+        b.stitches.push(Stitch::sew(vectorcraft_geom::Point::new(12.0, 21.0)));
+        p.blocks.extend([a, b]);
+        p
+    }
+
+    /// A deterministic pseudo-random stream (no dependency on a random crate).
+    fn noise(seed: u64, len: usize) -> Vec<u8> {
+        let mut state = seed | 1;
+        (0..len)
+            .map(|_| {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                (state >> 24) as u8
+            })
+            .collect()
+    }
+
+    /// Files are untrusted input: every reader must answer a `Result` for random, truncated and
+    /// damaged bytes, and never panic.
+    #[test]
+    fn no_reader_panics_on_hostile_input() {
+        let designs: Vec<Vec<u8>> = Format::ALL.iter().map(|f| f.write(&design()).expect("writes")).collect();
+        let magics: [&[u8]; 4] = [b"#PES0001", b"#PEC0001", b"LA:", b"        "];
+        for len in [0usize, 1, 2, 3, 8, 12, 22, 100, 511, 512, 513, 528, 532, 1000, 4096] {
+            for seed in 0..24u64 {
+                let bytes = noise(seed.wrapping_mul(0x9E37_79B9) + len as u64, len);
+                for f in Format::ALL {
+                    let _ = f.read(&bytes);
+                }
+                // The same bytes behind each format's magic, which takes the deeper paths.
+                for magic in magics {
+                    let mut with_magic = magic.to_vec();
+                    with_magic.extend_from_slice(&bytes);
+                    for f in Format::ALL {
+                        let _ = f.read(&with_magic);
+                    }
+                }
+            }
+        }
+        // Every prefix of a valid file, and single bytes flipped: an error or a design, not a panic.
+        for (i, f) in Format::ALL.iter().enumerate() {
+            let bytes = designs.get(i).expect("a design per format");
+            for n in (0..bytes.len()).step_by(7) {
+                let _ = f.read(&bytes[..n]);
+            }
+            for seed in 0..32u64 {
+                let mut damaged = bytes.clone();
+                let noise = noise(seed + 7, 24);
+                for (k, b) in noise.iter().enumerate() {
+                    let at = (usize::from(*b) * 31 + k * 97) % damaged.len();
+                    damaged[at] = b.wrapping_mul(37);
+                }
+                let _ = f.read(&damaged);
+            }
+        }
+    }
+
     #[test]
     fn jumps_collapse_to_where_the_thread_is_taken_up() {
         let mut v = vec![

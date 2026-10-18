@@ -113,7 +113,8 @@ fn a_written_pes_opens_as_art() {
             leaves += 1;
         }
     });
-    assert!(leaves > 2, "{leaves} paths");
+    // At least a run of stitches per shape (each is sewn without a cut now, travelling inside).
+    assert!(leaves >= 2, "{leaves} paths");
     let board = st.doc.artboards[0].rect;
     assert!(board.width() > 0.0 && board.height() > 0.0, "{board:?}");
 }

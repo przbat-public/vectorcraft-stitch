@@ -81,10 +81,14 @@ start) and off before every cut (and at the end): a short stitch back and forth 
   is inside, as it does for paint. The rows are grouped into *regions* where the shape does not
   branch (above a hole, each side of it, below it; each arm of a letter), and each region is sewn
   whole before the next. The next region is the one that starts nearest where the last one ended,
-  from whichever end and side is closer. A move into a region that would leave the shape or cross
-  a hole is trimmed however short, and a row turn that would cut across a hole along a concave edge
-  is trimmed too, so no thread floats over the fabric. A 30 mm ring with a hole is sewn with a
-  handful of trims, not one per row.
+  from whichever end and side is closer. The needle gets there by a *travel run*: stitches
+  2 mm long inside the shape, straight when that stays inside, else along the edge of the outline
+  or hole the two ends lie on, 0.5 mm inside it, the shorter way round. Only when no such way exists
+  (two separate shapes) or it is longer than 25 mm (an estimate) is the thread trimmed, and a move
+  that would leave the shape or cross a hole is never sewn straight, so no thread floats over the
+  fabric. Each region also takes one row of its neighbour's where they meet, cut to the stretch
+  they share, so the fabric's pull opens no gap along the seam. A 30 mm ring with a hole is sewn
+  in one go, without a trim.
 
 Blocks are sewn in stacking order, back to front, because thread sewn later lies on top of thread
 sewn earlier, as paint does. An object joins an earlier block of its thread only when it overlaps

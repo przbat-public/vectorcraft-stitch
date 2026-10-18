@@ -1,0 +1,13 @@
+[package]
+name = "vectorcraft-stitch"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "VectorCraft embroidery: stitches from vector art, and the DST, EXP, PES and JEF machine formats"
+
+[lints]
+workspace = true
+
+[dependencies]
+vectorcraft-geom = { workspace = true }
+thiserror = { workspace = true }

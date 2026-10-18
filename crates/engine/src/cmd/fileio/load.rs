@@ -88,6 +88,10 @@ pub fn detect(name: &str, bytes: &[u8]) -> Option<&'static Format> {
     if vectorcraft_cad::is_dxf(bytes) {
         return format("dxf");
     }
+    // Brother's PES and PEC files say so; DST, EXP and JEF have no magic and go by extension.
+    if let Some(kind) = vectorcraft_stitch::format::Format::sniff(bytes) {
+        return format(kind.id());
+    }
     if let Some(kind) = vectorcraft_metafile::sniff(bytes) {
         return format(kind.id());
     }
@@ -248,6 +252,10 @@ pub fn load_with(name: &str, bytes: &[u8], opts: &LoadOptions) -> Result<Loaded>
         }
         "dxf" => {
             let (doc, warnings) = super::dxfimport::import(bytes, &opts.dxf)?;
+            (doc, warnings, false)
+        }
+        "dst" | "exp" | "pes" | "jef" => {
+            let (doc, warnings) = super::embroidery::import(bytes, format)?;
             (doc, warnings, false)
         }
         "emf" | "wmf" => {

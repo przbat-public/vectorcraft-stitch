@@ -45,7 +45,7 @@ const DENSITY: FormatOption = FormatOption {
     name: "density",
     ty: "number",
     default: "0.4",
-    description: "millimetres between neighbouring threads: rows of a fill, or the crossings of a satin column",
+    description: "millimetres between neighbouring threads: rows of a fill, or the crossings of a satin column (left out, a satin column picks it by its width: 0.5 under 2 mm, 0.45 under 4, 0.4 under 6, 0.37 wider)",
 };
 const STITCH_LENGTH: FormatOption = FormatOption {
     name: "stitchLength",
@@ -119,6 +119,8 @@ impl Options {
         Params {
             style,
             density: self.density.unwrap_or(d.density),
+            // A density given is used as it is; left out, a satin picks it by its width.
+            auto_spacing: d.auto_spacing && self.density.is_none(),
             stitch_length: self.stitch_length.unwrap_or(d.stitch_length),
             angle: self.stitch_angle.unwrap_or(d.angle),
             pull: self.pull_compensation.unwrap_or(d.pull),
@@ -663,6 +665,14 @@ mod tests {
         let (fill, satin, running) = (Params::for_style(Style::Fill), Params::for_style(Style::Satin), Params::for_style(Style::Running));
         assert_eq!(num(&DENSITY), fill.density);
         assert_eq!(num(&DENSITY), satin.density);
+        // The satin spacing by width the description gives is the planner's.
+        for (w, spacing) in [(1.0, "0.5 under 2"), (3.0, "0.45 under 4"), (5.0, "0.4 under 6"), (9.0, "0.37 wider")] {
+            assert!(DENSITY.description.contains(spacing) && spacing.starts_with(&plan::satin_spacing(w).to_string()), "{spacing}");
+        }
+        // A density given turns the satin's auto spacing off.
+        let given = Options { density: Some(0.3), ..Options::default() };
+        assert!(Options::default().params(Style::Satin, 3.0).auto_spacing);
+        assert!(!given.params(Style::Satin, 3.0).auto_spacing);
         assert_eq!(num(&ANGLE), fill.angle);
         assert_eq!(num(&PULL), satin.pull);
         assert_eq!(UNDERLAY.default == "true", fill.underlay && satin.underlay);

@@ -26,7 +26,7 @@ control channel use it). Every writable format's options are listed by `document
 | Option | Default | Meaning |
 |---|---|---|
 | `stitchStyle` | `auto` | `auto` fills fills, satins strokes 1 mm and wider, runs narrower ones; `fill`, `satin` and `running` force one style (`fill` on a stroke fills the area the stroke paints, at its width, caps and joins) |
-| `density` | 0.4 mm | distance between neighbouring threads: fill rows, satin crossings |
+| `density` | 0.4 mm in fills; satin by width | distance between neighbouring threads: fill rows, satin crossings. Left out, a satin column picks it by its width (*auto spacing*: 0.5 mm under 2 mm wide, 0.45 under 4, 0.4 under 6, 0.37 wider; estimates); given, it is used as it is |
 | `stitchLength` | 4 mm in fills, 2.5 mm in running lines | the longest stitch of a running line or a fill row |
 | `stitchAngle` | 45° | the direction a fill's rows run |
 | `pullCompensation` | 0.2 mm | how much wider a satin column is stitched so the fabric's pull leaves no gap |
@@ -66,8 +66,9 @@ start) and off before every cut (and at the end): a short stitch back and forth 
   out. Sharp corners (turns over about 30°) get a needle point of their own, so the stitches follow
   the outline instead of cutting across a corner; the same holds for underlay.
 - **Satin** sews a column: the path is its centre line, its stroke width the column's width, and
-  the needle crosses from rail to rail every `density` millimetres, so the threads lie side by
-  side. `pullCompensation` widens the column. The underlay holds the column up and follows its
+  the needle crosses from rail to rail at the column's spacing, so the threads lie side by side:
+  more open in a narrow column, where the thread bunches at the rails, denser in a wide one so it
+  covers (or `density`, when given). `pullCompensation` widens the column. The underlay holds the column up and follows its
   width: a centre run under columns narrower than 2 mm, an edge run (along one side and back along
   the other, kept inside the column) from 2 mm, and an edge run then a zigzag between its sides
   from 4.5 mm (estimates from the usual practice). The top stitching starts where the underlay

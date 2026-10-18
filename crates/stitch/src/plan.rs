@@ -133,6 +133,9 @@ pub struct Params {
     /// The longest satin stitch, millimetres: a crossing longer than this is split into shorter
     /// stitches (auto split), its penetrations spread so they don't line up into a seam.
     pub max_satin: f64,
+    /// Satin only: pick [`Params::density`] from the column's width ([`satin_spacing`]) instead of
+    /// using it as given. On by default; an explicit density turns it off.
+    pub auto_spacing: bool,
 }
 
 impl Default for Params {
@@ -157,6 +160,7 @@ impl Params {
                 min_stitch: 0.4,
                 width: 0.0,
                 max_satin: MAX_SATIN,
+                auto_spacing: false,
             },
             Style::Satin => Self {
                 style,
@@ -170,6 +174,7 @@ impl Params {
                 min_stitch: 0.4,
                 width: 3.0,
                 max_satin: MAX_SATIN,
+                auto_spacing: true,
             },
             Style::Fill => Self {
                 style,
@@ -183,6 +188,7 @@ impl Params {
                 min_stitch: 0.4,
                 width: 0.0,
                 max_satin: MAX_SATIN,
+                auto_spacing: false,
             },
         }
     }
@@ -206,6 +212,7 @@ impl Params {
             min_stitch: fin(self.min_stitch, d.min_stitch).clamp(0.05, 3.0),
             width: fin(self.width, d.width).clamp(0.0, 50.0),
             max_satin: fin(self.max_satin, d.max_satin).clamp(2.0, 12.0),
+            auto_spacing: self.auto_spacing,
         }
     }
 }
@@ -310,7 +317,8 @@ pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
                 back = ends_far;
             }
         }
-        let mut samples = resample(&pts, p.density, sub.closed);
+        let spacing = if p.auto_spacing { satin_spacing(p.width) } else { p.density };
+        let mut samples = resample(&pts, spacing, sub.closed);
         if samples.len() < 2 {
             continue;
         }
@@ -899,6 +907,14 @@ fn tie_off(out: &mut Vec<Stitch>) {
     out.push(b);
 }
 
+/// The spacing of a satin column's crossings for its `width` (auto spacing): more open in a narrow
+/// column, where the thread bunches at the rails and covers anyway, denser in a wide one so it
+/// covers. A stepped table, as professional software keeps one; the values are estimates.
+pub fn satin_spacing(width: f64) -> f64 {
+    const TABLE: [(f64, f64); 3] = [(2.0, 0.5), (4.0, 0.45), (6.0, 0.4)];
+    TABLE.iter().find(|(w, _)| width < *w).map_or(0.37, |(_, spacing)| *spacing)
+}
+
 /// The underlay of a satin column along `pts` (its centreline), `width` wide, by width: a centre
 /// run for a narrow column, an edge run (along one side and back along the other) for a medium one,
 /// and an edge run then a zigzag between its sides for a wide one. Each run comes with whether it
@@ -1463,6 +1479,28 @@ mod tests {
         assert_eq!(vertical(&stitches(&rect(0.0, 0.0, 8.0, 30.0), FillRule::NonZero, &p), 8.0), 0);
         p.underlay = false;
         assert_eq!(vertical(&stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p), 30.0), 0);
+    }
+
+    /// Satin spacing follows the column's width unless a density is given.
+    #[test]
+    fn satin_spacing_follows_the_width() {
+        // The distance between two crossings on the same rail is twice the spacing.
+        let rail_gap = |width: f64, auto: bool| {
+            let mut p = Params::for_style(Style::Satin);
+            p.width = width;
+            p.pull = 0.0;
+            p.underlay = false;
+            p.lock = false;
+            p.auto_spacing = auto;
+            p.density = 0.3;
+            let out = stitches(&line((0.0, 0.0), (20.0, 0.0)), FillRule::NonZero, &p);
+            let top: Vec<f64> = out.iter().filter(|s| (s.y - width / 2.0).abs() < 1e-6).map(|s| s.x).collect();
+            (top[2] - top[1]) / 2.0
+        };
+        assert!((rail_gap(1.5, true) - 0.5).abs() < 0.02);
+        assert!((rail_gap(5.0, true) - 0.4).abs() < 0.02);
+        assert!(rail_gap(1.5, true) > rail_gap(8.0, true));
+        assert!((rail_gap(5.0, false) - 0.3).abs() < 0.02, "a given density is kept");
     }
 
     #[test]

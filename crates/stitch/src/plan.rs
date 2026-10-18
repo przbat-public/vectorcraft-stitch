@@ -97,8 +97,9 @@ pub struct Params {
     /// A move longer than this trims and jumps instead of running the thread across,
     /// millimetres.
     pub jump: f64,
-    /// Start and end a running line with a lock stitch (a short back stitch) so the thread
-    /// does not pull out.
+    /// Lock the thread so it does not pull out: a running line gets a lock stitch (a short back
+    /// stitch) at each end of each run; satin and fill a tie-in after every cut and a tie-off
+    /// before it.
     pub lock: bool,
     /// Shorter stitches are left out (a row's remainder, a sliver of a shape), millimetres.
     pub min_stitch: f64,
@@ -148,7 +149,7 @@ impl Params {
                 pull: 0.0,
                 underlay: true,
                 jump: JUMP,
-                lock: false,
+                lock: true,
                 min_stitch: 0.4,
                 width: 0.0,
             },
@@ -339,18 +340,90 @@ pub fn fill(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
     // Rows sit half a spacing inside the shape's extent: no row lies on a tangent, and the
     // thread's own width covers to the edge.
     let rows = (((hi - lo) / spacing).floor().max(1.0) as usize).min(MAX_ROWS);
-    for row in 0..rows {
-        let t = lo + spacing * (row as f64 + 0.5);
-        if t >= hi {
+    let regions = regions(&closed, rule, along, across, lo, spacing, rows);
+    // Each region is sewn whole, row after row; the next is the one that starts nearest where the
+    // last one ended, sewn from whichever of its ends and sides is closer.
+    let mut travels: Vec<Travel> = vec![Travel::Auto; runs.len()];
+    let mut pending: Vec<&Region> = regions.iter().collect();
+    let mut here: Option<Point> = runs.last().and_then(|r| r.last().copied());
+    while !pending.is_empty() {
+        let mut best: Option<(f64, usize, bool, bool)> = None;
+        for (i, region) in pending.iter().enumerate() {
+            for descending in [false, true] {
+                for forward in [true, false] {
+                    let Some(start) = region.start(descending, forward, along, across) else { continue };
+                    let d = here.map_or(0.0, |h| h.distance(start));
+                    if best.is_none_or(|b| d < b.0) {
+                        best = Some((d, i, descending, forward));
+                    }
+                }
+            }
+        }
+        let Some((_, i, descending, forward)) = best else { break };
+        let region = pending.swap_remove(i);
+        let sewn = region.runs(descending, forward, along, across, &p);
+        let Some(first) = sewn.first().and_then(|r| r.first().copied()) else { continue };
+        // A travel into the region that would cross a hole or leave the shape is cut, however
+        // short: the thread must not float over the fabric.
+        let into = if here.is_some_and(|h| !segment_inside(&closed, rule, h, first)) { Travel::Cut } else { Travel::Auto };
+        for (k, run) in sewn.into_iter().enumerate() {
+            let travel = match (k, here, run.first()) {
+                (0, ..) => into,
+                // A turn into the region's next row is sewn, however long, while it stays inside
+                // the shape. Along a concave edge (the flat top of a round hole) it would cut
+                // across the hole: then it is cut, unless it only shaves a corner.
+                (_, Some(h), Some(&f)) if h.distance(f) > 1.0 && !segment_inside(&closed, rule, h, f) => Travel::Cut,
+                _ => Travel::Sew,
+            };
+            here = run.last().copied().or(here);
+            travels.push(travel);
+            runs.push(run);
+        }
+        if runs.len() >= MAX_RUNS {
             break;
         }
-        let spans = spans_at(&closed, rule, along, across, t);
-        let mut forward = row % 2 == 0;
-        // The stagger walks a quarter stitch at a time through a cycle of four rows: no two
-        // rows line their penetrations up into a groove.
-        let phase = 0.25 * p.stitch_length * (row % 4) as f64;
-        for (a, b) in spans {
-            let ss = row_points(a, b, phase, &p);
+    }
+    join_cut(runs.into_iter().zip(travels).collect(), &p)
+}
+
+/// How the needle gets to a run from the end of the one before.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Travel {
+    /// Sewn when it is no longer than [`Params::jump`], else trimmed and jumped.
+    Auto,
+    /// Always trimmed and jumped (it would cross a hole or leave the shape).
+    Cut,
+    /// Always sewn (a row turn inside the region being filled).
+    Sew,
+}
+
+/// A stretch of fill rows that follow one another without the shape branching: each row has one
+/// span, and it overlaps the previous row's.
+#[derive(Default)]
+struct Region {
+    /// (row number, the row's position across, the span's ends along).
+    rows: Vec<(usize, f64, f64, f64)>,
+}
+
+impl Region {
+    /// Where sewing the region starts: its first row (its last when `descending`), from its start
+    /// when `forward`, else from its end.
+    fn start(&self, descending: bool, forward: bool, along: Vec2, across: Vec2) -> Option<Point> {
+        let &(_, t, a, b) = if descending { self.rows.last()? } else { self.rows.first()? };
+        Some(at(if forward { a } else { b }, t, along, across))
+    }
+
+    /// The region's rows as runs: alternating direction, the first `forward`, last row first when
+    /// `descending`.
+    fn runs(&self, descending: bool, forward: bool, along: Vec2, across: Vec2, p: &Params) -> Vec<Vec<Point>> {
+        let mut out: Vec<Vec<Point>> = Vec::with_capacity(self.rows.len());
+        let mut forward = forward;
+        let order: Vec<&(usize, f64, f64, f64)> = if descending { self.rows.iter().rev().collect() } else { self.rows.iter().collect() };
+        for &&(row, t, a, b) in &order {
+            // The stagger walks a quarter stitch at a time through a cycle of four rows: no two
+            // rows line their penetrations up into a groove.
+            let phase = 0.25 * p.stitch_length * (row % 4) as f64;
+            let ss = row_points(a, b, phase, p);
             if ss.len() < 2 {
                 continue;
             }
@@ -359,18 +432,85 @@ pub fn fill(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
                 pts.reverse();
             }
             // Skip the last stitch of the row: the needle turns diagonally into the next row
-            // instead of crawling one row spacing along the edge.
-            if pts.len() > 2 {
+            // instead of crawling one row spacing along the edge — when the stitch it leaves out
+            // is short, so the turn stays a short stitch too.
+            if let [.., prev, last] = pts.as_slice()
+                && pts.len() > 2
+                && prev.distance(*last) <= 0.5 * p.stitch_length
+            {
                 pts.pop();
             }
-            runs.push(pts);
+            out.push(pts);
             forward = !forward;
-            if runs.len() >= MAX_RUNS {
-                return join(runs, &p);
+        }
+        out
+    }
+}
+
+/// The fill's rows grouped into regions: a span joins the region of the previous row's span it
+/// overlaps when that is the only one it overlaps and it is the only span overlapping it; where
+/// the shape branches or merges (round a hole, into the arms of a letter) new regions start.
+fn regions(polys: &[&SubPath], rule: FillRule, along: Vec2, across: Vec2, lo: f64, spacing: f64, rows: usize) -> Vec<Region> {
+    let overlap = |x: (f64, f64), y: (f64, f64)| x.0 < y.1 && y.0 < x.1;
+    let mut out: Vec<Region> = Vec::new();
+    // The regions the previous row's spans went to, with those spans.
+    let mut open: Vec<(usize, (f64, f64))> = Vec::new();
+    for row in 0..rows {
+        let t = lo + spacing * (row as f64 + 0.5);
+        let spans = spans_at(polys, rule, along, across, t);
+        let mut next: Vec<(usize, (f64, f64))> = Vec::with_capacity(spans.len());
+        for &span in &spans {
+            let mut touching = open.iter().filter(|(_, prev)| overlap(*prev, span));
+            let joined = match (touching.next(), touching.next()) {
+                (Some(&(r, prev)), None) if spans.iter().filter(|s| overlap(prev, **s)).count() == 1 => Some(r),
+                _ => None,
+            };
+            let r = joined.unwrap_or_else(|| {
+                out.push(Region::default());
+                out.len() - 1
+            });
+            if let Some(region) = out.get_mut(r) {
+                region.rows.push((row, t, span.0, span.1));
+            }
+            next.push((r, span));
+        }
+        open = next;
+    }
+    out
+}
+
+/// Whether the straight line from `a` to `b` stays inside the filled shape (sampled every half
+/// millimetre, the ends excluded: they lie on its edge).
+fn segment_inside(polys: &[&SubPath], rule: FillRule, a: Point, b: Point) -> bool {
+    let n = (a.distance(b) / 0.5).ceil();
+    if !n.is_finite() {
+        return false;
+    }
+    let n = (n as usize).clamp(2, 400);
+    (1..n).all(|k| inside(polys, rule, a.lerp(b, k as f64 / n as f64)))
+}
+
+/// Whether `q` is inside the closed polygons `polys` under `rule`.
+fn inside(polys: &[&SubPath], rule: FillRule, q: Point) -> bool {
+    let mut w = 0i32;
+    for sub in polys {
+        let n = sub.pts.len();
+        for i in 0..n {
+            let (Some(&a), Some(&b)) = (sub.pts.get(i), sub.pts.get(if i + 1 == n { 0 } else { i + 1 })) else { continue };
+            let side = (b.x - a.x) * (q.y - a.y) - (q.x - a.x) * (b.y - a.y);
+            if a.y <= q.y {
+                if b.y > q.y && side > 0.0 {
+                    w += 1;
+                }
+            } else if b.y <= q.y && side < 0.0 {
+                w -= 1;
             }
         }
     }
-    join(runs, &p)
+    match rule {
+        FillRule::NonZero => w != 0,
+        FillRule::EvenOdd => w % 2 != 0,
+    }
 }
 
 /// Where the row at `t` crosses the shape: the spans of `along` inside it, by `rule`.
@@ -450,43 +590,104 @@ fn row_points(a: f64, b: f64, phase: f64, p: &Params) -> Vec<f64> {
 
 /// Runs joined into one block: travelling far enough to trim does.
 fn join(runs: Vec<Vec<Point>>, p: &Params) -> Vec<Stitch> {
+    join_cut(runs.into_iter().map(|r| (r, Travel::Auto)).collect(), p)
+}
+
+/// [`join`], each run reached as its [`Travel`] says.
+fn join_cut(runs: Vec<(Vec<Point>, Travel)>, p: &Params) -> Vec<Stitch> {
+    // Satin and fill tie the thread in after every cut (and at the start) and off before every cut
+    // (and at the end); a running line locks each of its own runs ([`locked`]).
+    let tie = p.lock && p.style != Style::Running;
     let mut out: Vec<Stitch> = Vec::new();
-    for mut run in runs {
+    let mut fresh = true;
+    for (mut run, travel) in runs {
         dedupe(&mut run);
         let Some(&first) = run.first() else { continue };
         if let Some(last) = out.last().copied()
-            && last.distance(Stitch::sew(first)) > p.jump
+            && let d = last.distance(Stitch::sew(first))
+            && d > 1e-9
+            && match travel {
+                Travel::Auto => d > p.jump,
+                Travel::Cut => true,
+                Travel::Sew => false,
+            }
         {
+            if tie {
+                tie_off(&mut out);
+            }
+            let last = out.last().copied().unwrap_or(last);
             out.push(Stitch::new(last.x, last.y, Command::Trim));
             out.push(Stitch::jump(first));
+            fresh = true;
         }
+        if tie && fresh {
+            run = tie_in(&run);
+        }
+        fresh = false;
         for q in run {
             if out.len() >= MAX_STITCHES {
                 return out;
             }
-            if out.last().is_none_or(|last| last.point().distance(q) > 1e-9) {
+            // A repeated stitch is noise; the stitch where a jump lands is not (the needle goes
+            // down there, holding the thread).
+            if out.last().is_none_or(|last| last.command != Command::Stitch || last.point().distance(q) > 1e-9) {
                 out.push(Stitch::sew(q));
             }
         }
     }
+    if tie {
+        tie_off(&mut out);
+    }
     out
 }
 
-/// A run with a lock stitch at each end: a short back stitch so the thread stays put.
+/// `run` started with a tie-in: a short stitch forward along it and back, so the cut thread's
+/// tail is held.
+fn tie_in(run: &[Point]) -> Vec<Point> {
+    let (Some(&first), Some(&next)) = (run.first(), run.get(1)) else { return run.to_vec() };
+    let Some(d) = unit(next - first) else { return run.to_vec() };
+    let mut out = Vec::with_capacity(run.len() + 2);
+    out.push(first);
+    out.push(first + d * LOCK.min(first.distance(next)));
+    out.extend_from_slice(run);
+    out
+}
+
+/// A tie-off after the last stitch: a short stitch back along it and forward again, before the
+/// thread is cut.
+fn tie_off(out: &mut Vec<Stitch>) {
+    let [.., a, b] = out.as_slice() else { return };
+    let (a, b) = (*a, *b);
+    if a.command != Command::Stitch || b.command != Command::Stitch {
+        return;
+    }
+    let Some(d) = unit(a.point() - b.point()) else { return };
+    out.push(Stitch::sew(b.point() + d * LOCK.min(a.distance(b))));
+    out.push(b);
+}
+
+/// A run with a lock stitch at each end: a short stitch back along the run and forward again, so
+/// the thread stays put. Both stay on the run: forward from its start, back from its end (never
+/// past it).
 fn locked(pts: &[Point]) -> Vec<Point> {
     let (Some(&first), Some(&last)) = (pts.first(), pts.last()) else { return pts.to_vec() };
     if pts.len() < 2 {
         return pts.to_vec();
     }
     let mut out: Vec<Point> = Vec::with_capacity(pts.len() + 6);
-    if let Some(d) = unit(pts.get(1).copied().unwrap_or(first) - first) {
+    if let Some(&next) = pts.get(1)
+        && let Some(d) = unit(next - first)
+    {
+        let reach = LOCK.min(first.distance(next));
         out.push(first);
-        out.push(first + d * LOCK);
-        out.push(first);
+        out.push(first + d * reach);
     }
     out.extend_from_slice(pts);
-    if let Some(d) = unit(last - pts.get(pts.len().wrapping_sub(2)).copied().unwrap_or(first)) {
-        out.push(last + d * LOCK);
+    if let Some(&prev) = pts.len().checked_sub(2).and_then(|i| pts.get(i))
+        && let Some(d) = unit(prev - last)
+    {
+        let reach = LOCK.min(last.distance(prev));
+        out.push(last + d * reach);
         out.push(last);
     }
     out
@@ -544,8 +745,13 @@ fn subpaths(path: &BezPath) -> Vec<SubPath> {
     out
 }
 
+/// A turn sharper than this (radians, about 30°) is a corner the stitches keep.
+const CORNER: f64 = 0.52;
+
 /// Points along a polyline every `step` millimetres, both ends included. A closed polyline ends
-/// where it started.
+/// where it started. Sharp corners get a point of their own (the steps start again from them),
+/// so stitches follow the outline instead of cutting across a corner — into a notch or a gap
+/// beside it.
 fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
     let (Some(&first), Some(&last)) = (pts.first(), pts.last()) else { return Vec::new() };
     let step = step.max(0.01);
@@ -554,8 +760,9 @@ fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
     let mut next = step;
     let n = pts.len();
     let segs = if closed { n } else { n.saturating_sub(1) };
+    let at = |i: usize| pts.get(if i >= n { i - n } else { i }).copied();
     for i in 0..segs {
-        let (Some(&a), Some(&b)) = (pts.get(i), pts.get(if i + 1 == n { 0 } else { i + 1 })) else { continue };
+        let (Some(a), Some(b)) = (at(i), at(i + 1)) else { continue };
         let seg = a.distance(b);
         if seg <= 1e-12 {
             continue;
@@ -569,6 +776,22 @@ fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
             }
         }
         travelled += seg;
+        // A sharp corner at `b` (not the polyline's end): stitch into it, moving the last point
+        // there when it is close (no stub stitch), and count the next step from it.
+        let has_next = i + 1 < segs;
+        if has_next
+            && let Some(c) = at(i + 2)
+            && let (Some(u), Some(v)) = (unit(b - a), unit(c - b))
+            && u.dot(v).clamp(-1.0, 1.0).acos() > CORNER
+        {
+            let movable = out.len() > 1;
+            match out.last_mut() {
+                Some(q) if movable && q.distance(b) < 0.3 * step => *q = b,
+                Some(q) if q.distance(b) <= 1e-9 => {}
+                _ => out.push(b),
+            }
+            next = travelled + step;
+        }
     }
     if closed {
         if out.last().is_some_and(|q| q.distance(first) > 1e-9) {
@@ -703,8 +926,11 @@ mod tests {
             let d = w[0].distance(w[1]);
             assert!(d <= p.stitch_length + 1e-6, "{d}");
         }
-        // The lock stitch starts and ends on the line, back where it began.
+        // The lock stitches stay on the line, never past either end.
         assert!(q.iter().all(|q| q.y.abs() < 1e-9));
+        assert!(q.iter().all(|q| q.x >= -1e-9 && q.x <= 20.0 + 1e-9), "{q:?}");
+        // …and each is a back-and-forth at its end.
+        assert!((q[1].x - LOCK).abs() < 1e-9 && (q[q.len() - 2].x - (20.0 - LOCK)).abs() < 1e-9, "{q:?}");
     }
 
     #[test]
@@ -749,6 +975,104 @@ mod tests {
         for a in &q {
             let in_hole = a.x > 10.0 + 0.2 && a.x < 20.0 - 0.2 && a.y > 10.0 + 0.2 && a.y < 20.0 - 0.2;
             assert!(!in_hole, "{a:?}");
+        }
+    }
+
+    /// Sewn stitches (needle down at both ends) whose middle falls inside `hole`, deeper than
+    /// half a thread (a row turn may shave a hole's corner by less, as any tatami does).
+    fn over(out: &[Stitch], hole: (f64, f64, f64, f64)) -> usize {
+        const DEPTH: f64 = 0.25;
+        let (x0, y0, x1, y1) = hole;
+        out.windows(2)
+            .filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch)
+            .filter(|w| {
+                let (x, y) = ((w[0].x + w[1].x) / 2.0, (w[0].y + w[1].y) / 2.0);
+                x > x0 + DEPTH && x < x1 - DEPTH && y > y0 + DEPTH && y < y1 - DEPTH
+            })
+            .count()
+    }
+
+    /// A ring is sewn region by region (above the hole, its two sides, below it), not a row at
+    /// a time: a handful of trims, not one per row, and no thread across the hole.
+    #[test]
+    fn a_ring_is_sewn_in_regions() {
+        for hole in [2.0, 4.0, 10.0] {
+            let a = 15.0 - hole / 2.0;
+            let mut p = rect(0.0, 0.0, 30.0, 30.0);
+            let mut h = BezPath::new();
+            h.move_to((a, a));
+            h.line_to((a, a + hole));
+            h.line_to((a + hole, a + hole));
+            h.line_to((a + hole, a));
+            h.close_path();
+            p.extend(h);
+            for angle in [0.0, 45.0, 90.0] {
+                let mut params = Params::for_style(Style::Fill);
+                params.angle = angle;
+                let out = stitches(&p, FillRule::NonZero, &params);
+                let trims = out.iter().filter(|s| s.command == Command::Trim).count();
+                // Four regions, and the underlay's move from the outer edge to the hole's.
+                assert!(trims <= 6, "hole {hole}, angle {angle}: {trims} trims");
+                assert_eq!(over(&out, (a, a, a + hole, a + hole)), 0, "hole {hole}, angle {angle}");
+            }
+        }
+    }
+
+    /// A running line round a square keeps its corners: every corner is a needle point.
+    #[test]
+    fn running_stitches_keep_sharp_corners() {
+        let mut p = Params::for_style(Style::Running);
+        p.stitch_length = 3.0;
+        let out = stitches(&rect(0.0, 0.0, 10.0, 7.0), FillRule::NonZero, &p);
+        for corner in [(10.0, 0.0), (10.0, 7.0), (0.0, 7.0)] {
+            assert!(out.iter().any(|s| (s.x - corner.0).abs() < 1e-9 && (s.y - corner.1).abs() < 1e-9), "{corner:?}");
+        }
+        // No stub stitches at the corners.
+        for w in out.windows(2) {
+            assert!(w[0].distance(w[1]) > 0.3 * 3.0 - 1e-9 || w[0].distance(w[1]) < 1e-9, "{:?} {:?}", w[0], w[1]);
+        }
+    }
+
+    /// A U whose arms are closer than the jump length: the thread never runs across the gap.
+    #[test]
+    fn a_narrow_gap_is_not_bridged() {
+        let mut u = BezPath::new();
+        for (x, y) in [(0.0, 0.0), (8.0, 0.0), (8.0, 20.0), (11.0, 20.0), (11.0, 0.0), (19.0, 0.0), (19.0, 30.0), (0.0, 30.0)] {
+            if u.elements().is_empty() {
+                u.move_to((x, y));
+            } else {
+                u.line_to((x, y));
+            }
+        }
+        u.close_path();
+        let mut params = Params::for_style(Style::Fill);
+        params.angle = 0.0;
+        let out = stitches(&u, FillRule::NonZero, &params);
+        assert!(out.len() > 100);
+        assert_eq!(over(&out, (8.0, -1.0, 11.0, 20.0)), 0, "a stitch crosses the gap");
+    }
+
+    /// Fill and satin tie the thread in where it starts and off before every cut and at the end:
+    /// a stitch back and forth on the spot.
+    #[test]
+    fn fills_and_satins_tie_in_and_off() {
+        let mut two = rect(0.0, 0.0, 10.0, 10.0);
+        two.extend(rect(60.0, 0.0, 10.0, 10.0));
+        let mut satin = Params::for_style(Style::Satin);
+        satin.width = 3.0;
+        for (shape, p) in [(&two, Params::for_style(Style::Fill)), (&line((0.0, 0.0), (20.0, 0.0)), satin)] {
+            let out = stitches(shape, FillRule::NonZero, &p);
+            // Back and forth: the third stitch returns to the first.
+            let returns = |w: &[Stitch]| w[0].command == Command::Stitch && w[2].command == Command::Stitch && w[0].distance(w[2]) < 1e-9;
+            assert!(returns(&out[..3]), "tie-in: {:?}", &out[..3]);
+            assert!(returns(&out[out.len() - 3..]), "tie-off: {:?}", &out[out.len() - 3..]);
+            for (i, _) in out.iter().enumerate().filter(|(_, s)| s.command == Command::Trim) {
+                assert!(i >= 3 && returns(&out[i - 3..i]), "tie-off before the trim at {i}");
+                assert!(returns(&out[i + 2..i + 5]), "tie-in after the trim at {i}");
+            }
+            let mut loose = p;
+            loose.lock = false;
+            assert!(stitches(shape, FillRule::NonZero, &loose).len() < out.len());
         }
     }
 

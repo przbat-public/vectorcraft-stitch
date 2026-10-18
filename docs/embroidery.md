@@ -25,14 +25,17 @@ control channel use it). Every writable format's options are listed by `document
 
 | Option | Default | Meaning |
 |---|---|---|
-| `stitchStyle` | `auto` | `auto` fills fills, satins strokes 1 mm and wider, runs narrower ones; `fill`, `satin` and `running` force one style |
+| `stitchStyle` | `auto` | `auto` fills fills, satins strokes 1 mm and wider, runs narrower ones; `fill`, `satin` and `running` force one style (`fill` on a stroke fills the area the stroke paints, at its width, caps and joins) |
 | `density` | 0.4 mm | distance between neighbouring threads: fill rows, satin crossings |
-| `stitchLength` | 4 mm | the longest stitch of a running line or a fill row |
+| `stitchLength` | 4 mm in fills, 2.5 mm in running lines | the longest stitch of a running line or a fill row |
 | `stitchAngle` | 45° | the direction a fill's rows run |
 | `pullCompensation` | 0.2 mm | how much wider a satin column is stitched so the fabric's pull leaves no gap |
 | `underlay` | `true` | an edge run under fills, a centre run under satin columns |
 | `jumpLength` | 5 mm | a longer move cuts the thread and jumps |
 | `minStitch` | 0.4 mm | shorter stitches are left out |
+
+An option left out keeps the style's own value. The defaults are the stitch planner's
+(`plan::Params::for_style`); `document.formats` lists the same ones, and a test keeps them equal.
 
 **Reading a design.** Open the file as a document; `File → Open` lists the formats. Each colour
 block becomes a group named after its thread, and each run of stitches a thin round-capped line in
@@ -48,21 +51,30 @@ lines it is drawn with. The round trip preserves the design's size and colours' 
 
 A *run* is a stretch sewn without lifting the needle. Runs are joined into a block: a short move
 stays down (`jumpLength` or less) and is just the next stitch; a longer one becomes a trim and a
-jump. Each colour block is one thread.
+jump. Each colour block is one thread. Satin and fill tie the thread in after every cut (and at the
+start) and off before every cut (and at the end): a short stitch back and forth on the spot.
 
-- **Running** follows a path at `stitchLength` steps, with a lock stitch (a short back stitch) at
-  each end so the thread does not pull out.
+- **Running** follows a path at `stitchLength` steps, with a lock stitch (a short stitch back
+  along the line and forward again, never past its end) at each end so the thread does not pull
+  out. Sharp corners (turns over about 30°) get a needle point of their own, so the stitches follow
+  the outline instead of cutting across a corner; the same holds for underlay.
 - **Satin** sews a column: the path is its centre line, its stroke width the column's width, and
   the needle crosses from rail to rail every `density` millimetres, so the threads lie side by
   side. `pullCompensation` widens the column. A centre run underneath holds the column up.
 - **Tatami fill** fills a shape with rows `density` apart at `stitchAngle` degrees, alternating
   their direction and staggering their penetrations a quarter stitch at a time over a four-row
   cycle (so no two rows line up into a groove). Each row is split into stitches no longer than
-  `stitchLength`, and its last stitch is left out so the needle turns diagonally into the next row
-  instead of crawling along the edge. Rows sit half a spacing inside the shape's extent: no row
-  lies on a tangent, and the thread's width covers to the edge. An edge run underneath holds the
-  fabric. Holes are left unstitched: the shape's fill rule decides what is inside, as it does for
-  paint.
+  `stitchLength`, and its last stitch is left out when it is short, so the needle turns
+  diagonally into the next row instead of crawling along the edge. Rows sit half a spacing inside
+  the shape's extent: no row lies on a tangent, and the thread's width covers to the edge. An edge
+  run underneath holds the fabric. Holes are left unstitched: the shape's fill rule decides what
+  is inside, as it does for paint. The rows are grouped into *regions* where the shape does not
+  branch (above a hole, each side of it, below it; each arm of a letter), and each region is sewn
+  whole before the next. The next region is the one that starts nearest where the last one ended,
+  from whichever end and side is closer. A move into a region that would leave the shape or cross
+  a hole is trimmed however short, and a row turn that would cut across a hole along a concave edge
+  is trimmed too, so no thread floats over the fabric. A 30 mm ring with a hole is sewn with a
+  handful of trims, not one per row.
 
 Blocks are sewn in stacking order, back to front, because thread sewn later lies on top of thread
 sewn earlier, as paint does. An object joins an earlier block of its thread only when it overlaps
@@ -84,7 +96,7 @@ run to a few hundred thousand.
 
 | Format | Machine | What it holds | What we write |
 |---|---|---|---|
-| Tajima DST | commercial, the de-facto standard | 512-byte text header, 3-byte records of ±121 tenths of a millimetre (12.1 mm), no colours, trims implied by jump runs | header with counts and extents, records, a colour-change record per block, trims as three small jumps that go nowhere |
+| Tajima DST | commercial, the de-facto standard | 512-byte text header, 3-byte records of ±121 tenths of a millimetre (12.1 mm), no colours, trims implied by runs of three or more jumps | header with counts and extents, records, a colour-change record per block, trims as three small jumps that go nowhere |
 | Melco EXP | commercial | records only, no header, no colours: 2-byte deltas up to ±12.7 mm, `0x80`-prefixed commands | stitches, jumps, trims, colour changes; the file ends with the last record |
 | Brother PES | home machines (Brother, Bernina) | a PES section for PE-Design and a PEC section the machine reads | a minimal version 1 PES header pointing at a complete PEC block: 512-byte header, palette indices, a 20-byte block header with the two origin words real Brother files carry, the stitch stream, blank preview pictures |
 | Janome JEF | home machines (Janome) | 116-byte header plus the thread list, then 2-byte records | header with counts, hoop, size and margins, Janome palette indices, records, three zero-length jumps per trim |
@@ -115,18 +127,22 @@ index, whose RGB values differ between published charts — preview colour is no
 
 ## Validation
 
-- `crates/stitch`: 21 unit tests — the fill covers a rectangle and leaves its hole empty, no
-  stitch is longer than asked, the angle turns the rows, satin crossings stay within the column,
-  pull compensation widens it, an absurd plan is refused before it is made, the DST record
-  round-trips every delta from -121 to 121, each format writes a design it reads back with the
-  same blocks and size, a JEF's header extents are where its stitches go, an absurd JEF colour
+- `crates/stitch`: 27 unit tests — the fill covers a rectangle and leaves its hole empty, a ring
+  is sewn in regions with a handful of trims and no thread across its hole, a narrow gap is not
+  bridged, no stitch is longer than asked, the angle turns the rows, running lines keep their
+  corners and lock without passing their ends, fills and satins tie in and off, satin crossings
+  stay within the column, pull compensation widens it, an absurd plan is refused before it is
+  made, the DST record round-trips every delta from -121 to 121, only a run of three jumps reads as
+  a DST trim, a DST colour change can carry a move, each format writes a design it reads back with
+  the same blocks and size, a JEF's header extents are where its stitches go, an absurd JEF colour
   count is not believed, and no reader panics on random, truncated or damaged bytes.
-- `crates/engine`: 15 command-level tests — export writes a readable design in every format,
+- `crates/engine`: 17 tests (16 command-level) — export writes a readable design in every format,
   options change the plan, a written PES opens as art (also by its magic bytes), a design read back
   sews again with the same size and blocks, `document.formats` lists the four, empty documents,
   bad styles and absurd densities are refused, type is left out with a warning, the stacking order
-  survives grouping by thread, clipping masks cut fills and strokes, and template layers are not
-  sewn.
+  survives grouping by thread, clipping masks cut fills and strokes, template layers are not
+  sewn, a forced fill fills a stroke's area rather than its path's inside, and the defaults
+  `document.formats` lists are the planner's.
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
 

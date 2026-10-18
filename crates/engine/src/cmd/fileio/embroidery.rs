@@ -18,9 +18,9 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::Value;
 use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, Node, NodeKind};
+use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, LineJoin, Node, NodeKind};
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, Point, Rect, Shape, Size};
-use vectorcraft_pathops::{BoolOp, boolean};
+use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke};
 use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::plan::{self, Params, Style};
 use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread, mm_to_pt, pt_to_mm};
@@ -36,17 +36,21 @@ const STYLE: FormatOption = FormatOption {
     default: "\"auto\"",
     description: "how the art is stitched: auto (fills filled, wide strokes satin, narrow ones running), fill, satin or running",
 };
+// Defaults are the stitch planner's (`plan::Params::for_style`): an option left out keeps the
+// style's own value. Those that every style that uses them shares are given as JSON defaults
+// (checked against the planner by `defaults_are_the_planners`); the stitch length differs by
+// style, so its default is `null` and its description says which.
 const DENSITY: FormatOption = FormatOption {
     name: "density",
     ty: "number",
-    default: "0.3",
+    default: "0.4",
     description: "millimetres between neighbouring threads: rows of a fill, or the crossings of a satin column",
 };
 const STITCH_LENGTH: FormatOption = FormatOption {
     name: "stitchLength",
     ty: "number",
-    default: "3.5",
-    description: "the longest stitch of a running line or a fill row, millimetres",
+    default: "null",
+    description: "the longest stitch of a running line or a fill row, millimetres (default: 4 in fills, 2.5 in running lines)",
 };
 const ANGLE: FormatOption =
     FormatOption { name: "stitchAngle", ty: "number", default: "45", description: "the direction a fill's rows run, degrees (0: left to right)" };
@@ -65,7 +69,7 @@ const UNDERLAY: FormatOption = FormatOption {
 const JUMP: FormatOption =
     FormatOption { name: "jumpLength", ty: "number", default: "5", description: "a move longer than this cuts the thread and jumps, millimetres" };
 const MIN_STITCH: FormatOption =
-    FormatOption { name: "minStitch", ty: "number", default: "0.5", description: "shorter stitches are left out, millimetres" };
+    FormatOption { name: "minStitch", ty: "number", default: "0.4", description: "shorter stitches are left out, millimetres" };
 
 /// The options the embroidery writers read.
 pub const OPTIONS: &[FormatOption] = &[STYLE, DENSITY, STITCH_LENGTH, ANGLE, PULL, UNDERLAY, JUMP, MIN_STITCH];
@@ -79,48 +83,51 @@ const THREAD_WIDTH: f64 = 0.4;
 /// thousand), and a bound on the memory an export can take.
 const MAX_DESIGN_STITCHES: usize = 2_000_000;
 
-/// The export options, as they come.
+/// The export options, as they come: each one left out keeps the style's own value.
 #[derive(Clone, Debug, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 struct Options {
     stitch_style: String,
-    density: f64,
-    stitch_length: f64,
-    stitch_angle: f64,
-    pull_compensation: f64,
-    underlay: bool,
-    jump_length: f64,
-    min_stitch: f64,
+    density: Option<f64>,
+    stitch_length: Option<f64>,
+    stitch_angle: Option<f64>,
+    pull_compensation: Option<f64>,
+    underlay: Option<bool>,
+    jump_length: Option<f64>,
+    min_stitch: Option<f64>,
 }
 
 impl Default for Options {
     fn default() -> Self {
         Self {
             stitch_style: "auto".into(),
-            density: 0.3,
-            stitch_length: 3.5,
-            stitch_angle: 45.0,
-            pull_compensation: 0.2,
-            underlay: true,
-            jump_length: 5.0,
-            min_stitch: 0.5,
+            density: None,
+            stitch_length: None,
+            stitch_angle: None,
+            pull_compensation: None,
+            underlay: None,
+            jump_length: None,
+            min_stitch: None,
         }
     }
 }
 
 impl Options {
     fn params(&self, style: Style, width: f64) -> Params {
-        let mut p = Params::for_style(style);
-        p.style = style;
-        p.density = self.density;
-        p.stitch_length = self.stitch_length;
-        p.angle = self.stitch_angle;
-        p.pull = self.pull_compensation;
-        p.underlay = self.underlay;
-        p.jump = self.jump_length;
-        p.min_stitch = self.min_stitch;
-        p.width = width;
-        p.sane()
+        let d = Params::for_style(style);
+        Params {
+            style,
+            density: self.density.unwrap_or(d.density),
+            stitch_length: self.stitch_length.unwrap_or(d.stitch_length),
+            angle: self.stitch_angle.unwrap_or(d.angle),
+            pull: self.pull_compensation.unwrap_or(d.pull),
+            underlay: self.underlay.unwrap_or(d.underlay),
+            jump: self.jump_length.unwrap_or(d.jump),
+            min_stitch: self.min_stitch.unwrap_or(d.min_stitch),
+            width,
+            ..d
+        }
+        .sane()
     }
 }
 
@@ -346,25 +353,50 @@ impl Digitizer<'_> {
                 // A fill is filled unless `stitchStyle` asks for another way of stitching it.
                 AppearanceItem::Fill(fill) => {
                     let style = self.forced().unwrap_or(Style::Fill);
-                    // Inside a clip group the filled area is the shape's intersection with the
-                    // clipping path, cut exactly before it is planned.
-                    let (area, area_rule) = match &self.clip {
-                        Some((clip, clip_rule)) => {
-                            let cut = boolean(&PathData::from_bezpath(&mm), rule, &PathData::from_bezpath(clip), *clip_rule, BoolOp::Intersect);
-                            (cut.to_bezpath(), FillRule::NonZero)
-                        }
-                        None => (mm.clone(), rule),
-                    };
+                    let (area, area_rule) = self.clipped(&mm, rule);
                     self.colour(&area, area_rule, style, &fill.paint, 0.0, false);
                 }
                 AppearanceItem::Stroke(stroke) => {
                     let width = pt_to_mm(stroke.width).max(0.0);
-                    // A stroke is a satin column when it is wide enough to have two rails, a
-                    // running line when not, unless `stitchStyle` says otherwise.
-                    let style = self.forced().unwrap_or(if width >= 1.0 { Style::Satin } else { Style::Running });
-                    self.colour(&mm, rule, style, &stroke.paint, width, true);
+                    match self.forced() {
+                        // A stroke filled is the area it paints, filled: its outline at its width,
+                        // caps and joins (not the inside of the path it follows).
+                        Some(Style::Fill) => {
+                            let cap = match stroke.cap {
+                                LineCap::Butt => Cap::Butt,
+                                LineCap::Round => Cap::Round,
+                                LineCap::Square => Cap::Square,
+                            };
+                            let join = match stroke.join {
+                                LineJoin::Miter => Join::Miter,
+                                LineJoin::Round => Join::Round,
+                                LineJoin::Bevel => Join::Bevel,
+                            };
+                            let outline = outline_stroke(&PathData::from_bezpath(&mm), width, cap, join, stroke.miter_limit).to_bezpath();
+                            let (area, area_rule) = self.clipped(&outline, FillRule::NonZero);
+                            self.colour(&area, area_rule, Style::Fill, &stroke.paint, 0.0, false);
+                        }
+                        // A satin column when it is wide enough to have two rails, a running line
+                        // when not, unless `stitchStyle` says which.
+                        forced => {
+                            let style = forced.unwrap_or(if width >= 1.0 { Style::Satin } else { Style::Running });
+                            self.colour(&mm, rule, style, &stroke.paint, width, true);
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    /// A filled area (millimetres) as the clip groups around it leave it: its intersection with
+    /// the clipping path, cut exactly before it is planned; the area itself outside any.
+    fn clipped(&self, area: &BezPath, rule: FillRule) -> (BezPath, FillRule) {
+        match &self.clip {
+            Some((clip, clip_rule)) => {
+                let cut = boolean(&PathData::from_bezpath(area), rule, &PathData::from_bezpath(clip), *clip_rule, BoolOp::Intersect);
+                (cut.to_bezpath(), FillRule::NonZero)
+            }
+            None => (area.clone(), rule),
         }
     }
 
@@ -522,4 +554,31 @@ fn group(blocks: Vec<Block>) -> Vec<Block> {
 /// Whether two boxes share any area (touching edges do not count).
 fn overlaps(a: Rect, b: Rect) -> bool {
     a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The defaults `document.formats` lists are the planner's, for every style that uses them.
+    #[test]
+    fn defaults_are_the_planners() {
+        let num = |o: &FormatOption| o.default.parse::<f64>().unwrap();
+        let (fill, satin, running) = (Params::for_style(Style::Fill), Params::for_style(Style::Satin), Params::for_style(Style::Running));
+        assert_eq!(num(&DENSITY), fill.density);
+        assert_eq!(num(&DENSITY), satin.density);
+        assert_eq!(num(&ANGLE), fill.angle);
+        assert_eq!(num(&PULL), satin.pull);
+        assert_eq!(UNDERLAY.default == "true", fill.underlay && satin.underlay);
+        for p in [fill, satin, running] {
+            assert_eq!(num(&JUMP), p.jump);
+            assert_eq!(num(&MIN_STITCH), p.min_stitch);
+        }
+        assert!(STITCH_LENGTH.description.contains(&format!("{} in fills", fill.stitch_length)));
+        assert!(STITCH_LENGTH.description.contains(&format!("{} in running lines", running.stitch_length)));
+        // Nothing given: each style plans with its own values.
+        let o = Options::default();
+        assert_eq!(o.params(Style::Fill, 0.0), fill.sane());
+        assert_eq!(o.params(Style::Running, 0.0), running.sane());
+    }
 }

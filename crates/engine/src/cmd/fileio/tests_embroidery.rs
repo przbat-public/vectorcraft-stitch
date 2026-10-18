@@ -281,3 +281,22 @@ fn an_absurd_density_is_refused() {
     let e = s.execute("document.export", &params("dst", json!({"density": 0.05, "stitchLength": 0.2}))).unwrap_err().to_string();
     assert!(e.contains("stitches"), "{e}");
 }
+
+/// `stitchStyle: fill` on a stroke fills the area the stroke paints (a ring for a stroked
+/// circle), not the inside of the path it follows.
+#[test]
+fn a_forced_fill_fills_the_stroke_not_the_path() {
+    let mut s = blank();
+    s.execute("paint.setFill", &json!({"none": true})).unwrap();
+    s.execute("paint.setStroke", &json!({"color": "#cc2222", "width": 6})).unwrap();
+    s.execute("shape.ellipse", &json!({"x": 50, "y": 50, "width": 100, "height": 100})).unwrap();
+    let p = plan(&export(&mut s, "dst", json!({"stitchStyle": "fill"})));
+    // The ring is 6 pt (2.1 mm) wide round a 35.3 mm circle: no needle point near the centre.
+    let b = p.bounds().expect("bounds");
+    let (cx, cy) = ((b.x0 + b.x1) / 2.0, (b.y0 + b.y1) / 2.0);
+    let r = 35.3 / 2.0;
+    for st in p.points().filter(|s| s.command == vectorcraft_stitch::Command::Stitch) {
+        let d = ((st.x - cx).powi(2) + (st.y - cy).powi(2)).sqrt();
+        assert!((d - r).abs() < 1.4, "a stitch {d:.1} mm from the centre");
+    }
+}

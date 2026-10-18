@@ -13,7 +13,8 @@
 //! end of the design. Its two bottom bits are always set.
 //!
 //! DST has no colours and no trim: a thread is cut by three small jumps that go nowhere, which a
-//! machine reads as "cut", and a reader infers a trim from a jump run between stitches. Y counts
+//! machine reads as "cut", and a reader infers a trim from a run of three or more jumps between
+//! stitches (one or two are a move with the needle up). Y counts
 //! upwards.
 //!
 //! Reference: EduTechWiki, *Embroidery format DST* (edutechwiki.unige.ch/en/Embroidery_format_DST),
@@ -225,6 +226,13 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         }
         if b2 & 0b1100_0011 == 0b1100_0011 {
             points.push(Stitch::new(f64::from(x) / 10.0, f64::from(-y) / 10.0, Command::ColorChange));
+            // Some writers move the frame in the colour-change record itself: the move is a jump
+            // to where the next thread starts.
+            if dx != 0 || dy != 0 {
+                x += dx;
+                y += dy;
+                points.push(Stitch::new(f64::from(x) / 10.0, f64::from(-y) / 10.0, Command::Jump));
+            }
             continue;
         }
         x += dx;
@@ -235,7 +243,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     if points.is_empty() {
         return Err(Error::Format("the DST file has no stitch records".into()));
     }
-    // DST has no trim records: a jump run between stitches is a cut.
+    // DST has no trim records: a run of jumps between stitches is a cut.
     insert_trims(&mut points);
     Ok(finish(name, points, &[]))
 }
@@ -262,8 +270,12 @@ fn decode_y(b0: u8, b1: u8, b2: u8) -> i32 {
         - bit(b0, 6)
 }
 
-/// A trim before every jump run that sits between stitches, and the runs collapsed to the point
-/// the thread is taken up at.
+/// The fewest jumps in a row that a machine reads as a cut: the three that go nowhere writers
+/// put down for one (a travel of one or two records is just a move with the needle up).
+const TRIM_JUMPS: usize = 3;
+
+/// A trim before every run of at least [`TRIM_JUMPS`] jumps that sits between stitches, and every
+/// run collapsed to the point the thread is taken up at.
 fn insert_trims(points: &mut Vec<Stitch>) {
     let mut out: Vec<Stitch> = Vec::with_capacity(points.len() + 4);
     let mut i = 0;
@@ -278,6 +290,7 @@ fn insert_trims(points: &mut Vec<Stitch>) {
             let before_stitch = points.get(end).is_some_and(|s| s.command == Command::Stitch);
             if after_stitch
                 && before_stitch
+                && end - i >= TRIM_JUMPS
                 && let Some(last) = out.last().copied()
             {
                 out.push(Stitch::new(last.x, last.y, Command::Trim));
@@ -319,6 +332,42 @@ mod tests {
                 assert_eq!(decode_y(b0, b1, b2), dy, "{dx},{dy}");
             }
         }
+    }
+
+    /// A file of `records` behind a blank header.
+    fn file(records: &[[u8; 3]]) -> Vec<u8> {
+        let mut b = vec![0x20u8; HEADER];
+        for r in records {
+            b.extend_from_slice(r);
+        }
+        b.extend_from_slice(&[0, 0, 0xF3]);
+        b
+    }
+
+    /// One or two jumps are a move with the needle up; three or more between stitches are a cut.
+    #[test]
+    fn only_a_run_of_jumps_is_a_trim() {
+        let stitch = encode(10, 0, Kind::Stitch);
+        let jump = encode(20, 0, Kind::Jump);
+        let trims = |jumps: usize| {
+            let mut r = vec![stitch, stitch];
+            r.extend(std::iter::repeat_n(jump, jumps));
+            r.extend([stitch, stitch]);
+            read(&file(&r)).expect("reads").points().filter(|s| s.command == Command::Trim).count()
+        };
+        assert_eq!((trims(1), trims(2), trims(3), trims(5)), (0, 0, 1, 1));
+    }
+
+    /// A colour change that also moves the frame: the next thread starts where it moved to.
+    #[test]
+    fn a_colour_change_can_carry_a_move() {
+        let stitch = encode(10, 0, Kind::Stitch);
+        let [b0, b1, _] = encode(30, 0, Kind::Stitch);
+        let p = read(&file(&[stitch, stitch, [b0, b1, 0xC3], stitch, stitch])).expect("reads");
+        assert_eq!(p.blocks.len(), 2);
+        let first = p.blocks[1].stitches.iter().find(|s| s.command == Command::Stitch).expect("a stitch");
+        // From the first stitch: 1 mm, the colour change's 3 mm, then 1 mm.
+        assert!((first.x - p.blocks[0].stitches[0].x - 5.0).abs() < 1e-9, "{first:?}");
     }
 
     #[test]

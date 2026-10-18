@@ -23,44 +23,49 @@ work comes from the list below, unless the user gives you a task.
 - `main` mirrors upstream. Don't commit embroidery work to it.
 - `feat/embroidery` is the base of all embroidery work. It receives merges from `main` now and then.
 - Embroidery PRs target `feat/embroidery`.
-- **For now, every fix goes as a further commit on `feat/embroidery-core`** (the head of PR #2),
-  until the user says otherwise. Don't create side branches.
+- **One branch and one PR per piece of work**, cut from `feat/embroidery` and named after what it
+  does (for example `feat/embroidery-import-and-stitch-quality`). Every fix for that work is a
+  further commit on its branch, with no side branches, until the user says otherwise.
 - Commit locally after `cargo xtask ci` passes. **Don't push without the user's go-ahead.**
+- **No code names, anywhere.** Never label work with a stage letter, a step number or any other
+  internal tag in branch names, commit messages, PR titles and descriptions, docs or code. Say what
+  the change does ("an opened design is written back unchanged"). Every description must make sense
+  on its own to someone who hasn't seen this file or the conversation behind it.
 
 ## Work list (in this order)
 
-**Stage A — fix results in the current design**
+**Done: results closer to professional embroidery software.**
+- An opened design is written back unchanged (its lines are marked as literal stitches,
+  `doc::embroidery`).
+- Long satin stitches are split, with the cuts spread out.
+- Fills travel inside the shape between regions and overlap them by a row.
+- Underlay follows the shape: centre, edge or zigzag by satin width, and a second tatami layer under
+  large fills.
+- Satin spacing follows the column width.
 
-1. **Faithful import.** A design opened from a machine file keeps its exact stitches and exports
-   them unchanged. Today it becomes thin lines that are re-stitched on export, so
-   DST → VectorCraft → DST changes the design. Converting stitches to editable objects comes later,
-   on request.
-2. **Auto split for long satin stitches.** A stitch longer than a format allows is split today into
-   equal pieces in a straight line, which lines up into a visible seam in wide satins. Spread the
-   penetrations out instead.
-3. **Travel inside fills.** Moving between tatami regions should sew a hidden travel stitch inside
-   the shape (kept a margin away from its edge) instead of trimming. Overlap neighbouring regions
-   by a row so no gaps open at the seams.
-4. **Underlay by shape:** centre run for narrow columns, edge run plus zigzag for wide ones, a
-   second, perpendicular tatami layer for large fills.
-5. **Satin density by column width.**
+Details are in `docs/embroidery.md`.
 
-**Stage B — change of direction: embroidery properties on objects**
+**Next: embroidery properties on objects (a change of direction).**
 
 1. An optional "embroidery" attribute on document nodes: stitch type, angle, density, underlay,
-   pull compensation, entry and exit points. It is saved in `.vectorcraft`, set through commands
-   (reachable over MCP), and left unset means today's automatic rules. The current export-time
-   conversion stays as a quick convert.
+   pull compensation, entry and exit points.
+   - Saved in `.vectorcraft`, and set through commands (so reachable over MCP).
+   - Left unset, today's automatic rules apply.
+   - The current export-time conversion stays as a quick convert.
 2. A document-level fabric preset as the source of defaults (numbers cited by source).
 3. Stitches computed per object and cached, for a canvas preview, a stitch counter and an
    "Embroidery" panel with the sewing order.
 
-**Stage C — later.** Editing sewing order and entry/exit points on the canvas, branching of touching
-objects, turning (variable-angle) satin and fill, embroidery lettering, a full PES block (so
-Brother's PE-Design opens our files), validation on real Brother and Janome machines.
+**Later:**
+- editing sewing order and entry/exit points on the canvas;
+- branching of touching objects;
+- turning (variable-angle) satin and fill;
+- embroidery lettering;
+- a full PES block, so Brother's PE-Design opens our files;
+- validation on real Brother and Janome machines.
 
 Known limitations not on this list are in `docs/embroidery.md` › What is not stitched, and in the
-PR description.
+PR descriptions.
 
 ## Decisions not to undo without asking the user
 

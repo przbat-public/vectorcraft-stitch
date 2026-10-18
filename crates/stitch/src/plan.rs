@@ -37,6 +37,18 @@ const JUMP: f64 = 5.0;
 /// estimate (professional software makes it a setting, bounded by the machine format: 12.1 mm
 /// per record in DST).
 const MAX_SATIN: f64 = 10.0;
+/// Satin underlay by column width (millimetres): from this width an edge run instead of a centre
+/// run, from this one an edge run and a zigzag; and the zigzag's spacing. Estimates.
+const SATIN_EDGE_UNDERLAY: f64 = 2.0;
+const SATIN_ZIGZAG_UNDERLAY: f64 = 4.5;
+const ZIGZAG_UNDERLAY_SPACING: f64 = 2.0;
+/// A large fill's second underlay, sparse tatami rows across the top ones: the spacing of its rows
+/// and its stitch length (millimetres), how far inside the edge it stays, and the smallest fill
+/// (both ways, millimetres) that gets it. Estimates.
+const TATAMI_UNDERLAY_SPACING: f64 = 2.0;
+const TATAMI_UNDERLAY_STITCH: f64 = 3.0;
+const TATAMI_UNDERLAY_INSET: f64 = 0.6;
+const TATAMI_UNDERLAY_MIN: f64 = 10.0;
 /// A travel run's stitch length (millimetres): short, so it follows curves and hides under the
 /// fill.
 const TRAVEL_STITCH: f64 = 2.0;
@@ -277,20 +289,33 @@ pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
     }
     let half = (p.width + 2.0 * p.pull) / 2.0;
     let mut runs: Vec<Vec<Point>> = Vec::new();
+    // The first run of each column is reached as any move is; the column's later runs (underlay
+    // to top stitching) start inside the column, so the needle sews there, never trims.
+    let mut travels: Vec<Travel> = Vec::new();
     for sub in subpaths(path) {
+        let column = runs.len();
         let pts = sub.points();
         if length(&pts, sub.closed) < p.density * 2.0 {
             continue;
         }
+        // The underlay, by the column's width; it may end at the column's far end, and then the
+        // top stitching starts there and comes back.
+        let mut back = false;
         if p.underlay {
-            let under = resample(&pts, UNDERLAY_STITCH, sub.closed);
-            if under.len() >= 2 {
-                runs.push(under);
+            for (under, ends_far) in satin_underlay(&pts, sub.closed, p.width) {
+                if under.len() >= 2 {
+                    travels.push(if runs.len() == column { Travel::Auto } else { Travel::Sew });
+                    runs.push(under);
+                }
+                back = ends_far;
             }
         }
-        let samples = resample(&pts, p.density, sub.closed);
+        let mut samples = resample(&pts, p.density, sub.closed);
         if samples.len() < 2 {
             continue;
+        }
+        if back && !sub.closed {
+            samples.reverse();
         }
         let mut zigzag = Vec::with_capacity(samples.len() + 1);
         for i in 0..samples.len() {
@@ -307,12 +332,13 @@ pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
         {
             zigzag.push(first);
         }
+        travels.push(if runs.len() == column { Travel::Auto } else { Travel::Sew });
         runs.push(split_long(&zigzag, p.max_satin));
         if runs.len() >= MAX_RUNS {
             break;
         }
     }
-    join(runs, &p)
+    join_cut(runs.into_iter().zip(travels).collect(), &p)
 }
 
 /// A tatami fill of `path` ([`Style::Fill`]): rows of stitches at [`Params::angle`] degrees,
@@ -342,28 +368,61 @@ pub fn fill(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
     if closed.is_empty() {
         return join(runs, &p);
     }
-    let (along, across) = axes(p.angle);
-    // The rows run along `along`; each sits at one value of `across`.
-    let mut lo = f64::INFINITY;
-    let mut hi = f64::NEG_INFINITY;
-    for sub in &closed {
-        for q in &sub.pts {
-            let t = dot(*q, across);
-            lo = lo.min(t);
-            hi = hi.max(t);
+    let mut travels: Vec<Travel> = vec![Travel::Auto; runs.len()];
+    // A large fill gets a second underlay under its top stitching: sparse tatami rows across the
+    // top rows' direction, kept a little inside the edge so they never peek out.
+    if p.underlay {
+        let under = Params { angle: p.angle + 90.0, density: TATAMI_UNDERLAY_SPACING, stitch_length: TATAMI_UNDERLAY_STITCH, ..p }.sane();
+        let (along, across) = axes(under.angle);
+        if let (Some(w), Some(h)) = (extent(&closed, along), extent(&closed, across))
+            && w.1 - w.0 >= TATAMI_UNDERLAY_MIN
+            && h.1 - h.0 >= TATAMI_UNDERLAY_MIN
+        {
+            let rows = (((h.1 - h.0) / under.density).floor().max(1.0) as usize).min(MAX_ROWS);
+            let regions = regions(&closed, rule, along, across, h.0, under.density, rows, TATAMI_UNDERLAY_INSET);
+            sew_regions(&regions, &closed, rule, along, across, &under, &mut runs, &mut travels);
         }
     }
-    if !(lo.is_finite() && hi.is_finite()) || hi - lo < p.density * 0.5 {
-        return join(runs, &p);
+    let (along, across) = axes(p.angle);
+    // The rows run along `along`; each sits at one value of `across`.
+    let Some((lo, hi)) = extent(&closed, across) else { return join_cut(runs.into_iter().zip(travels).collect(), &p) };
+    if hi - lo < p.density * 0.5 {
+        return join_cut(runs.into_iter().zip(travels).collect(), &p);
     }
     let spacing = p.density;
     // Rows sit half a spacing inside the shape's extent: no row lies on a tangent, and the
     // thread's own width covers to the edge.
     let rows = (((hi - lo) / spacing).floor().max(1.0) as usize).min(MAX_ROWS);
-    let regions = regions(&closed, rule, along, across, lo, spacing, rows);
-    // Each region is sewn whole, row after row; the next is the one that starts nearest where the
-    // last one ended, sewn from whichever of its ends and sides is closer.
-    let mut travels: Vec<Travel> = vec![Travel::Auto; runs.len()];
+    let regions = regions(&closed, rule, along, across, lo, spacing, rows, 0.0);
+    sew_regions(&regions, &closed, rule, along, across, &p, &mut runs, &mut travels);
+    join_cut(runs.into_iter().zip(travels).collect(), &p)
+}
+
+/// Where the polygons' points fall along `v`: the lowest and highest, `None` when none is finite.
+fn extent(polys: &[&SubPath], v: Vec2) -> Option<(f64, f64)> {
+    let (lo, hi) = polys
+        .iter()
+        .flat_map(|s| s.pts.iter())
+        .map(|q| dot(*q, v))
+        .filter(|t| t.is_finite())
+        .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), t| (lo.min(t), hi.max(t)));
+    (lo <= hi).then_some((lo, hi))
+}
+
+/// The regions of one layer of fill sewn after `runs`: each region whole, row after row; the next
+/// is the one that starts nearest where the last one ended, sewn from whichever of its ends and
+/// sides is closer.
+#[allow(clippy::too_many_arguments)]
+fn sew_regions(
+    regions: &[Region],
+    closed: &[&SubPath],
+    rule: FillRule,
+    along: Vec2,
+    across: Vec2,
+    p: &Params,
+    runs: &mut Vec<Vec<Point>>,
+    travels: &mut Vec<Travel>,
+) {
     let mut pending: Vec<&Region> = regions.iter().collect();
     let mut here: Option<Point> = runs.last().and_then(|r| r.last().copied());
     while !pending.is_empty() {
@@ -381,14 +440,14 @@ pub fn fill(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
         }
         let Some((_, i, descending, forward)) = best else { break };
         let region = pending.swap_remove(i);
-        let sewn = region.runs(descending, forward, along, across, &p);
+        let sewn = region.runs(descending, forward, along, across, p);
         let Some(first) = sewn.first().and_then(|r| r.first().copied()) else { continue };
         // Into the region: a short move is just the next stitch. A longer one, or one that would
         // cross a hole or leave the shape, travels inside the shape when it can (a run of travel
         // stitches, straight or along an edge), and is cut when it can't: the thread must never
         // float over the fabric.
         let into = match here {
-            Some(h) if h.distance(first) > p.jump || !segment_inside(&closed, rule, h, first) => match travel(&closed, rule, h, first, &p) {
+            Some(h) if h.distance(first) > p.jump || !segment_inside(closed, rule, h, first) => match travel(closed, rule, h, first, p) {
                 Some(route) => {
                     travels.push(Travel::Sew);
                     runs.push(route);
@@ -405,7 +464,7 @@ pub fn fill(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
                 // the shape. Along a concave edge (the flat top of a round hole) it would cut
                 // across the hole: then it travels round the edge, or is cut, unless it only
                 // shaves a corner.
-                (_, Some(h), Some(&f)) if h.distance(f) > 1.0 && !segment_inside(&closed, rule, h, f) => match travel(&closed, rule, h, f, &p) {
+                (_, Some(h), Some(&f)) if h.distance(f) > 1.0 && !segment_inside(closed, rule, h, f) => match travel(closed, rule, h, f, p) {
                     Some(route) => {
                         travels.push(Travel::Sew);
                         runs.push(route);
@@ -423,7 +482,6 @@ pub fn fill(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
             break;
         }
     }
-    join_cut(runs.into_iter().zip(travels).collect(), &p)
 }
 
 /// How the needle gets to a run from the end of the one before.
@@ -490,7 +548,8 @@ impl Region {
 /// The fill's rows grouped into regions: a span joins the region of the previous row's span it
 /// overlaps when that is the only one it overlaps and it is the only span overlapping it; where
 /// the shape branches or merges (round a hole, into the arms of a letter) new regions start.
-fn regions(polys: &[&SubPath], rule: FillRule, along: Vec2, across: Vec2, lo: f64, spacing: f64, rows: usize) -> Vec<Region> {
+#[allow(clippy::too_many_arguments)]
+fn regions(polys: &[&SubPath], rule: FillRule, along: Vec2, across: Vec2, lo: f64, spacing: f64, rows: usize, inset: f64) -> Vec<Region> {
     let overlap = |x: (f64, f64), y: (f64, f64)| x.0 < y.1 && y.0 < x.1;
     let mut out: Vec<Region> = Vec::new();
     // The regions the previous row's spans went to, with those spans.
@@ -499,7 +558,9 @@ fn regions(polys: &[&SubPath], rule: FillRule, along: Vec2, across: Vec2, lo: f6
     let mut all: Vec<(f64, Vec<(f64, f64)>)> = Vec::with_capacity(rows);
     for row in 0..rows {
         let t = lo + spacing * (row as f64 + 0.5);
-        let spans = spans_at(polys, rule, along, across, t);
+        // `inset` keeps the rows that far from the edge where they meet it.
+        let spans: Vec<(f64, f64)> =
+            spans_at(polys, rule, along, across, t).into_iter().map(|(a, b)| (a + inset, b - inset)).filter(|(a, b)| b > a).collect();
         all.push((t, spans.clone()));
         let mut next: Vec<(usize, (f64, f64))> = Vec::with_capacity(spans.len());
         for &span in &spans {
@@ -836,6 +897,33 @@ fn tie_off(out: &mut Vec<Stitch>) {
     let Some(d) = unit(a.point() - b.point()) else { return };
     out.push(Stitch::sew(b.point() + d * LOCK.min(a.distance(b))));
     out.push(b);
+}
+
+/// The underlay of a satin column along `pts` (its centreline), `width` wide, by width: a centre
+/// run for a narrow column, an edge run (along one side and back along the other) for a medium one,
+/// and an edge run then a zigzag between its sides for a wide one. Each run comes with whether it
+/// ends at the column's far end. The thresholds are estimates from the usual practice.
+fn satin_underlay(pts: &[Point], closed: bool, width: f64) -> Vec<(Vec<Point>, bool)> {
+    let centre = resample(pts, UNDERLAY_STITCH, closed);
+    if width < SATIN_EDGE_UNDERLAY {
+        return vec![(centre, !closed)];
+    }
+    // The sides, kept inside the column so the underlay doesn't show at its edges.
+    let side = (width / 2.0 - (width / 4.0).min(0.5)).max(0.0);
+    let offset = |samples: &[Point], i: usize, d: f64| -> Option<Point> {
+        let q = *samples.get(i)?;
+        let t = tangent(samples, i, closed);
+        Some(q + Vec2::new(-t.y, t.x) * d)
+    };
+    let mut edge: Vec<Point> = (0..centre.len()).filter_map(|i| offset(&centre, i, side)).collect();
+    edge.extend((0..centre.len()).rev().filter_map(|i| offset(&centre, i, -side)));
+    let mut out = vec![(edge, false)];
+    if width >= SATIN_ZIGZAG_UNDERLAY {
+        let steps = resample(pts, ZIGZAG_UNDERLAY_SPACING, closed);
+        let zigzag: Vec<Point> = (0..steps.len()).filter_map(|i| offset(&steps, i, if i % 2 == 0 { side } else { -side })).collect();
+        out.push((zigzag, !closed));
+    }
+    out
 }
 
 /// `zigzag`'s crossings longer than `max` split into shorter stitches (auto split). Each long
@@ -1332,6 +1420,49 @@ mod tests {
         // The last row above the hole (rows sit at 0.2, 0.6, 1.0 … mm).
         let above = (0..100).map(|k| 0.2 + 0.4 * f64::from(k)).take_while(|y| *y < 10.0).last().unwrap_or(0.0);
         assert!(count(&out, above) > count(&plain, above), "the row above the hole is sewn by two regions");
+    }
+
+    /// A satin's underlay follows its width — centre run, edge run, edge run and zigzag — and the
+    /// top stitching starts where the underlay ended: no trim and no long move along the column.
+    #[test]
+    fn satin_underlay_follows_the_width() {
+        for (width, want_centre, want_zigzag) in [(1.5, true, false), (3.0, false, false), (6.0, false, true)] {
+            let mut p = Params::for_style(Style::Satin);
+            p.width = width;
+            p.pull = 0.0;
+            let out = stitches(&line((0.0, 0.0), (40.0, 0.0)), FillRule::NonZero, &p);
+            assert!(out.iter().all(|s| s.command == Command::Stitch), "{width} mm: no trim or jump");
+            for w in out.windows(2) {
+                assert!(w[0].distance(w[1]) <= p.max_satin.max(UNDERLAY_STITCH) + 1e-6, "{width} mm: {:?} {:?}", w[0], w[1]);
+            }
+            let side = width / 2.0 - (width / 4.0).min(0.5);
+            let on = |y: f64| out.iter().any(|s| (s.y - y).abs() < 1e-6 && s.x > 5.0 && s.x < 35.0);
+            assert_eq!(on(0.0), want_centre, "{width} mm: a centre run");
+            assert_eq!(on(side) && on(-side), !want_centre, "{width} mm: an edge run");
+            // A zigzag underlay: stitches from one side to the other, 2 mm along.
+            let crossings =
+                out.windows(2).filter(|w| (w[0].y - side).abs() < 1e-6 && (w[1].y + side).abs() < 1e-6 && (w[1].x - w[0].x).abs() > 1.0).count();
+            assert_eq!(crossings > 3, want_zigzag, "{width} mm: a zigzag");
+        }
+    }
+
+    /// A large fill gets a second, sparse underlay across its rows; a small one doesn't.
+    #[test]
+    fn large_fills_get_a_tatami_underlay() {
+        let mut p = Params::for_style(Style::Fill);
+        p.angle = 0.0;
+        // Rows of the underlay run at 90°: vertical stitches, 3 mm long, inside the edge.
+        // (Away from the shape's left and right edges, where the edge run is vertical too.)
+        let vertical = |out: &[Stitch], width: f64| {
+            out.windows(2)
+                .filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch)
+                .filter(|w| (w[0].x - w[1].x).abs() < 1e-6 && (w[0].y - w[1].y).abs() > 1.0 && w[0].x > 0.1 && w[0].x < width - 0.1)
+                .count()
+        };
+        assert!(vertical(&stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p), 30.0) > 20);
+        assert_eq!(vertical(&stitches(&rect(0.0, 0.0, 8.0, 30.0), FillRule::NonZero, &p), 8.0), 0);
+        p.underlay = false;
+        assert_eq!(vertical(&stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p), 30.0), 0);
     }
 
     #[test]

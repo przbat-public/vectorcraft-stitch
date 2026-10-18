@@ -37,6 +37,15 @@ const JUMP: f64 = 5.0;
 /// estimate (professional software makes it a setting, bounded by the machine format: 12.1 mm
 /// per record in DST).
 const MAX_SATIN: f64 = 10.0;
+/// A travel run's stitch length (millimetres): short, so it follows curves and hides under the
+/// fill.
+const TRAVEL_STITCH: f64 = 2.0;
+/// How far inside the shape a travel along its edge runs (millimetres), so it doesn't show at
+/// the edge.
+const TRAVEL_MARGIN: f64 = 0.5;
+/// The longest travel run inside a fill (millimetres): a longer way trims and jumps instead. An
+/// estimate.
+const MAX_TRAVEL: f64 = 25.0;
 /// The underlay's own stitch length (millimetres): short, to hold the fabric still.
 const UNDERLAY_STITCH: f64 = 2.0;
 /// The lock stitch's reach, millimetres.
@@ -374,16 +383,36 @@ pub fn fill(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
         let region = pending.swap_remove(i);
         let sewn = region.runs(descending, forward, along, across, &p);
         let Some(first) = sewn.first().and_then(|r| r.first().copied()) else { continue };
-        // A travel into the region that would cross a hole or leave the shape is cut, however
-        // short: the thread must not float over the fabric.
-        let into = if here.is_some_and(|h| !segment_inside(&closed, rule, h, first)) { Travel::Cut } else { Travel::Auto };
+        // Into the region: a short move is just the next stitch. A longer one, or one that would
+        // cross a hole or leave the shape, travels inside the shape when it can (a run of travel
+        // stitches, straight or along an edge), and is cut when it can't: the thread must never
+        // float over the fabric.
+        let into = match here {
+            Some(h) if h.distance(first) > p.jump || !segment_inside(&closed, rule, h, first) => match travel(&closed, rule, h, first, &p) {
+                Some(route) => {
+                    travels.push(Travel::Sew);
+                    runs.push(route);
+                    Travel::Sew
+                }
+                None => Travel::Cut,
+            },
+            _ => Travel::Auto,
+        };
         for (k, run) in sewn.into_iter().enumerate() {
             let travel = match (k, here, run.first()) {
                 (0, ..) => into,
                 // A turn into the region's next row is sewn, however long, while it stays inside
                 // the shape. Along a concave edge (the flat top of a round hole) it would cut
-                // across the hole: then it is cut, unless it only shaves a corner.
-                (_, Some(h), Some(&f)) if h.distance(f) > 1.0 && !segment_inside(&closed, rule, h, f) => Travel::Cut,
+                // across the hole: then it travels round the edge, or is cut, unless it only
+                // shaves a corner.
+                (_, Some(h), Some(&f)) if h.distance(f) > 1.0 && !segment_inside(&closed, rule, h, f) => match travel(&closed, rule, h, f, &p) {
+                    Some(route) => {
+                        travels.push(Travel::Sew);
+                        runs.push(route);
+                        Travel::Sew
+                    }
+                    None => Travel::Cut,
+                },
                 _ => Travel::Sew,
             };
             here = run.last().copied().or(here);
@@ -466,9 +495,12 @@ fn regions(polys: &[&SubPath], rule: FillRule, along: Vec2, across: Vec2, lo: f6
     let mut out: Vec<Region> = Vec::new();
     // The regions the previous row's spans went to, with those spans.
     let mut open: Vec<(usize, (f64, f64))> = Vec::new();
+    // Every row's position and spans, for the overlaps below.
+    let mut all: Vec<(f64, Vec<(f64, f64)>)> = Vec::with_capacity(rows);
     for row in 0..rows {
         let t = lo + spacing * (row as f64 + 0.5);
         let spans = spans_at(polys, rule, along, across, t);
+        all.push((t, spans.clone()));
         let mut next: Vec<(usize, (f64, f64))> = Vec::with_capacity(spans.len());
         for &span in &spans {
             let mut touching = open.iter().filter(|(_, prev)| overlap(*prev, span));
@@ -487,7 +519,136 @@ fn regions(polys: &[&SubPath], rule: FillRule, along: Vec2, across: Vec2, lo: f6
         }
         open = next;
     }
+    // Where a region meets another (round a hole, at a branch), it takes one more row of its
+    // neighbour's, cut to the stretch the two share: the fabric's pull would otherwise open a gap
+    // along the seam.
+    for region in &mut out {
+        let ends = [(region.rows.first().copied(), false), (region.rows.last().copied(), true)];
+        for (end, after) in ends {
+            let Some((row, _, a, b)) = end else { continue };
+            let Some(next) = (if after { row.checked_add(1) } else { row.checked_sub(1) }) else { continue };
+            let Some((t, spans)) = all.get(next) else { continue };
+            // The neighbouring span that shares the most with this end.
+            let shared =
+                spans.iter().map(|s| (s.0.max(a), s.1.min(b))).filter(|(x, y)| y - x > 1e-9).max_by(|x, y| (x.1 - x.0).total_cmp(&(y.1 - y.0)));
+            if let Some((x, y)) = shared {
+                if after {
+                    region.rows.push((next, *t, x, y));
+                } else {
+                    region.rows.insert(0, (next, *t, x, y));
+                }
+            }
+        }
+    }
     out
+}
+
+/// A travel run from `a` to `b` inside the filled shape, as stitches [`TRAVEL_STITCH`] long:
+/// straight when that stays inside, else along the edge of one of the shape's outlines (the outer
+/// edge or a hole's), [`TRAVEL_MARGIN`] inside it, the shorter way round. `None` when neither
+/// stays inside or the way is longer than [`MAX_TRAVEL`]: then the thread is cut instead.
+fn travel(polys: &[&SubPath], rule: FillRule, a: Point, b: Point, p: &Params) -> Option<Vec<Point>> {
+    let straight = a.distance(b);
+    if !straight.is_finite() {
+        return None;
+    }
+    if segment_inside(polys, rule, a, b) {
+        return (straight <= MAX_TRAVEL).then(|| resample(&[a, b], TRAVEL_STITCH, false));
+    }
+    // The ends of rows lie on the outline, or within a stitch of it.
+    let reach = p.stitch_length + 2.0 * p.density;
+    let mut best: Option<(f64, Vec<Point>)> = None;
+    for sub in polys {
+        let pts = &sub.pts;
+        let n = pts.len();
+        if n < 3 {
+            continue;
+        }
+        let (Some((ia, pa, da)), Some((ib, pb, db))) = (nearest_on(pts, a), nearest_on(pts, b)) else { continue };
+        if da > reach || db > reach {
+            continue;
+        }
+        // The outline's corners between the two feet, either way round: forward from the corner
+        // after `a`'s edge to the corner of `b`'s edge, or backward.
+        let forward: Vec<usize> = (1..=n).map(|k| (ia + k) % n).take_while(|&i| i != (ib + 1) % n).collect();
+        let backward: Vec<usize> = (0..n).map(|k| (ia + n - k) % n).take_while(|&i| i != ib).collect();
+        for corners in [forward, backward] {
+            if corners.len() >= n {
+                continue;
+            }
+            let mut route: Vec<Point> = vec![a, inset(polys, rule, pts, None, pa)];
+            for &i in &corners {
+                if let Some(&q) = pts.get(i) {
+                    route.push(inset(polys, rule, pts, Some(i), q));
+                }
+            }
+            route.push(inset(polys, rule, pts, None, pb));
+            route.push(b);
+            let len = route.windows(2).map(|w| w[0].distance(w[1])).sum::<f64>();
+            if len > MAX_TRAVEL || best.as_ref().is_some_and(|(l, _)| *l <= len) {
+                continue;
+            }
+            if route.windows(2).all(|w| w[0].distance(w[1]) < 1e-9 || segment_inside(polys, rule, w[0], w[1])) {
+                best = Some((len, route));
+            }
+        }
+    }
+    best.map(|(_, route)| resample(&route, TRAVEL_STITCH, false))
+}
+
+/// The point of the closed polyline `pts` nearest `q`: the index of the edge it lies on (from
+/// point `i` to the next), the point, and its distance.
+fn nearest_on(pts: &[Point], q: Point) -> Option<(usize, Point, f64)> {
+    let n = pts.len();
+    let mut best: Option<(usize, Point, f64)> = None;
+    for i in 0..n {
+        let (Some(&a), Some(&b)) = (pts.get(i), pts.get((i + 1) % n)) else { continue };
+        let ab = b - a;
+        let len2 = ab.hypot2();
+        let t = if len2 > 1e-18 { ((q - a).dot(ab) / len2).clamp(0.0, 1.0) } else { 0.0 };
+        let foot = a + ab * t;
+        let d = foot.distance(q);
+        if d.is_finite() && best.is_none_or(|(_, _, bd)| d < bd) {
+            best = Some((i, foot, d));
+        }
+    }
+    best
+}
+
+/// Point `q` of outline `pts` (its corner `corner`, or a point on an edge) moved [`TRAVEL_MARGIN`]
+/// into the shape, so that a travel along the outline runs inside it; left where it is when
+/// neither side is inside (a sliver).
+fn inset(polys: &[&SubPath], rule: FillRule, pts: &[Point], corner: Option<usize>, q: Point) -> Point {
+    let n = pts.len();
+    // The direction across the outline at `q`: at a corner the bisector of its two edges, on an
+    // edge the edge's normal.
+    let across = match corner {
+        Some(i) => {
+            let (prev, next) = (pts.get((i + n - 1) % n), pts.get((i + 1) % n));
+            match (prev, next) {
+                (Some(&a), Some(&b)) => {
+                    let (u, v) = (unit(q - a), unit(b - q));
+                    match (u, v) {
+                        (Some(u), Some(v)) => unit(Vec2::new(-(u.y + v.y), u.x + v.x)),
+                        _ => None,
+                    }
+                }
+                _ => None,
+            }
+        }
+        None => nearest_on(pts, q).and_then(|(i, ..)| match (pts.get(i), pts.get((i + 1) % n)) {
+            (Some(&a), Some(&b)) => unit(b - a).map(|d| Vec2::new(-d.y, d.x)),
+            _ => None,
+        }),
+    };
+    let Some(across) = across else { return q };
+    for side in [across, -across] {
+        let moved = q + side * TRAVEL_MARGIN;
+        if inside(polys, rule, moved) {
+            return moved;
+        }
+    }
+    q
 }
 
 /// Whether the straight line from `a` to `b` stays inside the filled shape (sampled every half
@@ -1138,6 +1299,39 @@ mod tests {
         narrow.width = 4.0;
         let out = stitches(&line((0.0, 0.0), (30.0, 0.0)), FillRule::NonZero, &narrow);
         assert!(out.iter().all(|s| s.y.abs() > 1.9), "every penetration on a rail");
+    }
+
+    /// A ring's regions are joined by travel stitches inside it, not by trims, and each region
+    /// overlaps its neighbours by a row so no gap opens along the seams.
+    #[test]
+    fn regions_travel_inside_and_overlap() {
+        let mut ring = rect(0.0, 0.0, 30.0, 30.0);
+        let mut h = BezPath::new();
+        h.move_to((10.0, 10.0));
+        h.line_to((10.0, 20.0));
+        h.line_to((20.0, 20.0));
+        h.line_to((20.0, 10.0));
+        h.close_path();
+        ring.extend(h);
+        for angle in [0.0, 30.0, 90.0] {
+            let mut p = Params::for_style(Style::Fill);
+            p.angle = angle;
+            p.underlay = false;
+            let out = stitches(&ring, FillRule::NonZero, &p);
+            let trims = out.iter().filter(|s| s.command == Command::Trim).count();
+            assert!(trims <= 1, "angle {angle}: {trims} trims");
+            assert_eq!(over(&out, (10.0, 10.0, 20.0, 20.0)), 0, "angle {angle}");
+        }
+        // Rows sewn twice where regions meet: at 0° the rows just above and below the hole.
+        let mut p = Params::for_style(Style::Fill);
+        p.angle = 0.0;
+        p.underlay = false;
+        let out = stitches(&ring, FillRule::NonZero, &p);
+        let plain = stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p);
+        let count = |v: &[Stitch], y: f64| v.iter().filter(|s| s.command == Command::Stitch && (s.y - y).abs() < 1e-6).count();
+        // The last row above the hole (rows sit at 0.2, 0.6, 1.0 … mm).
+        let above = (0..100).map(|k| 0.2 + 0.4 * f64::from(k)).take_while(|y| *y < 10.0).last().unwrap_or(0.0);
+        assert!(count(&out, above) > count(&plain, above), "the row above the hole is sewn by two regions");
     }
 
     #[test]

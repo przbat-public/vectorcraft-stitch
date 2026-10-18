@@ -14,6 +14,7 @@ pub mod cmyk;
 pub mod corners;
 pub mod depth;
 pub mod dimension;
+pub mod embroidery;
 pub mod graph;
 pub mod hit;
 mod id_index;

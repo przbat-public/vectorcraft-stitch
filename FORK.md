@@ -43,9 +43,41 @@ work comes from the list below, unless the user gives you a task.
   large fills.
 - Satin spacing follows the column width.
 
+Also done, from comparing VectorCraft's output with designs a person digitized (the real designs
+in `corpus/embroidery`, see `docs/embroidery.md` › Validation): unclosed shapes are filled, fill
+penetrations sit on one stagger grid (no stitch longer than asked), short stitches are removed,
+travels take the shortest way inside the shape (unlimited under the top stitching), and short
+moves between separate pieces jump without a trim.
+
 Details are in `docs/embroidery.md`.
 
-**Next: embroidery properties on objects (a change of direction).**
+**Next: fixes the review found (measured on the real designs).**
+
+1. **Region order that hides travels.** The next region is chosen by its start alone, so a
+   branched shape can need a travel over stitching already sewn, longer than a visible travel may
+   be, and is then cut (a letter E with vertical rows: see
+   `a_concave_shape_is_never_sewn_across_its_gaps`). Sew so travels pass under stitching still to
+   come (in an E, the spine last). Splitting regions at every concave step alone was tried: 15–25 %
+   more stitches (travel) and no fewer trims, so it needs the ordering.
+2. **Short stitches on tight satin curves.** On a curve's inner side the penetrations bunch: a
+   5 mm column round a 3 mm radius puts 16 of 18 inner penetrations within 0.15 mm of the last.
+   Shorten alternate stitches there, as Ink/Stitch's "short stitch" and Wilcom's stitch shortening
+   do.
+3. **Connectors between separate pieces.** Pieces of one colour farther apart than `jumpLength`
+   are trimmed: the SOS button gets 8 trims and the watermelon 13, where the person's designs have
+   3 and 2 (they leave jumps, which machines may trim themselves). Decide the default with the
+   fabric and machine settings, and let an object say "trim after".
+4. **Default density and stitch length.** VectorCraft sews 40–65 % of the stitches of the person's
+   Ink/Stitch designs (Ink/Stitch's defaults: rows 0.25 mm apart, 3 mm stitches; ours 0.4 and 4).
+   Calibrate with the fabric presets below, citing sources.
+5. **Pull compensation for fills, and gaps between shapes.** Only satin columns are widened. Ink/
+   Stitch widens fill rows and can expand shapes so neighbours meet without a gap.
+6. **Narrow filled areas as satin.** Every filled shape becomes tatami; narrow parts (stems, thin
+   arms) are better as satin columns, as auto-digitizers choose by width.
+7. **More real designs.** The corpus has eleven designs, all PES (one JEF), all from one project.
+   Add real DST and EXP files, lettering, larger designs, and test on a machine.
+
+**Then: embroidery properties on objects (a change of direction).**
 
 1. An optional "embroidery" attribute on document nodes: stitch type, angle, density, underlay,
    pull compensation, entry and exit points.
@@ -104,6 +136,11 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
   Ink/Stitch's *user documentation* may be read.
 - No test files made with commercial embroidery software in the repository. Write test inputs from
   scratch in code.
+- **Real designs for testing** come from public projects whose licence allows it, made with open
+  tools (today: the Emoji Embroidery Project, CC BY-SA 4.0, digitized with Ink/Stitch). They are
+  fetched by `cargo xtask corpus --embroidery` into the gitignored `corpus/embroidery/`, verified
+  against `xtask/embroidery-corpus.sha256`, used locally and never committed. Prefer them to random
+  shapes when checking stitch quality.
 
 ## Practicalities
 
@@ -112,6 +149,12 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
 - **The full gate is `cargo +1.95.0 xtask ci`.** It takes over 10 minutes, so run it in the
   background. It needs the `wasm32-unknown-unknown` target for 1.95
   (`rustup target add wasm32-unknown-unknown --toolchain 1.95.0`).
+- **`.gitignore` ignores every directory named `plan/`** (meant for the local notes at the root):
+  `crates/stitch/src/plan/` is let back in by name. A new directory called `plan` anywhere else
+  would silently stay out of commits.
+- **Fetch the real designs once** with `cargo +1.95.0 xtask corpus --embroidery`: the engine's
+  `embroidery_corpus` test skips without them (`EMBROIDERY_CORPUS_REQUIRED=1` makes it fail
+  instead).
 - **The fork has no CI on GitHub:** say so when you report results, and don't claim checks passed
   there.
 - **When a task lands:** update `docs/embroidery.md` (algorithms, limitations, test counts) and the

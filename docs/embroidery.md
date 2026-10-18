@@ -67,7 +67,10 @@ start) and off before every cut (and at the end): a short stitch back and forth 
   the outline instead of cutting across a corner; the same holds for underlay.
 - **Satin** sews a column: the path is its centre line, its stroke width the column's width, and
   the needle crosses from rail to rail every `density` millimetres, so the threads lie side by
-  side. `pullCompensation` widens the column. A centre run underneath holds the column up.
+  side. `pullCompensation` widens the column. A centre run underneath holds the column up. A
+  crossing longer than 10 mm (an estimate; professional software makes it a setting) is split
+  into shorter stitches (*auto split*), and the cuts move from one crossing to the next so they
+  never line up into a seam down the column.
 - **Tatami fill** fills a shape with rows `density` apart at `stitchAngle` degrees, alternating
   their direction and staggering their penetrations a quarter stitch at a time over a four-row
   cycle (so no two rows line up into a groove). Each row is split into stitches no longer than
@@ -123,8 +126,7 @@ index, whose RGB values differ between published charts — preview colour is no
 - Type, images and live art (blends, envelopes, meshes, repeats) are left out: they would need
   their outlines. An export says so in its `warnings`, one line per kind.
 - Gradients and patterns sew in one colour (a gradient in its first stop's; a pattern is left out).
-- Satin columns wider than 12 mm are sewn as one wide column rather than split into several (the
-  professional practice) — the thread still covers, but a machine may pull it.
+- Wide satin columns are split stitch by stitch (auto split), not into several narrower columns.
 - Underlay is one edge run or centre run; the documented taxonomy (centre run, edge walk, zigzag,
   double zigzag by width) is not all there.
 - The PES section of a `.pes` is the minimal version 1 header: machines sew the design correctly,

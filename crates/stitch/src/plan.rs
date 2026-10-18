@@ -33,6 +33,10 @@ const FLATTEN: f64 = 0.05;
 /// A trim and a jump are needed when the thread would otherwise run further than this, unless
 /// [`Params::jump`] says otherwise (millimetres).
 const JUMP: f64 = 5.0;
+/// The longest satin stitch before it is split (millimetres): longer stitches snag and sag. An
+/// estimate (professional software makes it a setting, bounded by the machine format: 12.1 mm
+/// per record in DST).
+const MAX_SATIN: f64 = 10.0;
 /// The underlay's own stitch length (millimetres): short, to hold the fabric still.
 const UNDERLAY_STITCH: f64 = 2.0;
 /// The lock stitch's reach, millimetres.
@@ -105,6 +109,9 @@ pub struct Params {
     pub min_stitch: f64,
     /// The satin column's width, millimetres (unused by the other styles).
     pub width: f64,
+    /// The longest satin stitch, millimetres: a crossing longer than this is split into shorter
+    /// stitches (auto split), its penetrations spread so they don't line up into a seam.
+    pub max_satin: f64,
 }
 
 impl Default for Params {
@@ -128,6 +135,7 @@ impl Params {
                 lock: true,
                 min_stitch: 0.4,
                 width: 0.0,
+                max_satin: MAX_SATIN,
             },
             Style::Satin => Self {
                 style,
@@ -140,6 +148,7 @@ impl Params {
                 lock: true,
                 min_stitch: 0.4,
                 width: 3.0,
+                max_satin: MAX_SATIN,
             },
             Style::Fill => Self {
                 style,
@@ -152,6 +161,7 @@ impl Params {
                 lock: true,
                 min_stitch: 0.4,
                 width: 0.0,
+                max_satin: MAX_SATIN,
             },
         }
     }
@@ -174,6 +184,7 @@ impl Params {
             lock: self.lock,
             min_stitch: fin(self.min_stitch, d.min_stitch).clamp(0.05, 3.0),
             width: fin(self.width, d.width).clamp(0.0, 50.0),
+            max_satin: fin(self.max_satin, d.max_satin).clamp(2.0, 12.0),
         }
     }
 }
@@ -287,7 +298,7 @@ pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
         {
             zigzag.push(first);
         }
-        runs.push(zigzag);
+        runs.push(split_long(&zigzag, p.max_satin));
         if runs.len() >= MAX_RUNS {
             break;
         }
@@ -664,6 +675,34 @@ fn tie_off(out: &mut Vec<Stitch>) {
     let Some(d) = unit(a.point() - b.point()) else { return };
     out.push(Stitch::sew(b.point() + d * LOCK.min(a.distance(b))));
     out.push(b);
+}
+
+/// `zigzag`'s crossings longer than `max` split into shorter stitches (auto split). Each long
+/// crossing is cut into equal parts shifted by a fraction that changes from one crossing to the
+/// next (the golden ratio's sequence), so the splits of neighbouring crossings never line up into
+/// a seam down the column; no part is longer than `max`.
+fn split_long(zigzag: &[Point], max: f64) -> Vec<Point> {
+    /// How far the cuts move along a crossing, as a share of one part (either way).
+    const JITTER: f64 = 0.25;
+    let mut out: Vec<Point> = Vec::with_capacity(zigzag.len());
+    let mut crossing = 0u32;
+    for (i, &q) in zigzag.iter().enumerate() {
+        if let Some(&p) = i.checked_sub(1).and_then(|j| zigzag.get(j)) {
+            let len = p.distance(q);
+            if len.is_finite() && len > max {
+                // The longest part is (1 + 2·JITTER)/n of the crossing: enough parts that it fits.
+                let n = ((len * (1.0 + 2.0 * JITTER)) / max).ceil().clamp(2.0, 64.0) as u32;
+                crossing += 1;
+                let shift = ((f64::from(crossing) * 0.618_033_988_75).fract() - 0.5) * 2.0 * JITTER;
+                for k in 1..n {
+                    let t = (f64::from(k) + shift) / f64::from(n);
+                    out.push(p.lerp(q, t));
+                }
+            }
+        }
+        out.push(q);
+    }
+    out
 }
 
 /// A run with a lock stitch at each end: a short stitch back along the run and forward again, so
@@ -1074,6 +1113,31 @@ mod tests {
             loose.lock = false;
             assert!(stitches(shape, FillRule::NonZero, &loose).len() < out.len());
         }
+    }
+
+    /// A satin column wider than the longest satin stitch is split: no stitch longer than that,
+    /// and the cuts of neighbouring crossings don't line up into a seam.
+    #[test]
+    fn wide_satins_are_split_without_a_seam() {
+        let mut p = Params::for_style(Style::Satin);
+        p.width = 20.0;
+        p.pull = 0.0;
+        p.underlay = false;
+        p.lock = false;
+        let out = stitches(&line((0.0, 0.0), (30.0, 0.0)), FillRule::NonZero, &p);
+        for w in out.windows(2) {
+            assert!(w[0].distance(w[1]) <= p.max_satin + 1e-9, "{:?} {:?}", w[0], w[1]);
+        }
+        // The cuts inside the column (not on its rails) sit at many different heights.
+        let mut inner: Vec<i64> = out.iter().filter(|s| s.y.abs() < 9.9).map(|s| (s.y * 10.0).round() as i64).collect();
+        inner.sort_unstable();
+        inner.dedup();
+        assert!(inner.len() > 10, "{inner:?}");
+        // A narrow column is not split at all.
+        let mut narrow = p;
+        narrow.width = 4.0;
+        let out = stitches(&line((0.0, 0.0), (30.0, 0.0)), FillRule::NonZero, &narrow);
+        assert!(out.iter().all(|s| s.y.abs() > 1.9), "every penetration on a rail");
     }
 
     #[test]

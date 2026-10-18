@@ -144,8 +144,10 @@ struct Kept {
 
 #[derive(Clone)]
 enum KeptImage {
-    /// The image on its own grid, as [`Renderer::rasterize_image`] makes it.
-    Grid(std::rc::Rc<(Vec<u8>, usize, usize)>),
+    /// The image on its own grid, as [`Renderer::rasterize_image`] makes it, and how many images
+    /// in the content failed to decode while it was made ([`crate::paint::decode_failures`]):
+    /// each draw of the image from here counts them again ([`crate::paint::add_decode_failures`]).
+    Grid(std::rc::Rc<(Vec<u8>, usize, usize)>, u64),
     /// An image over [`Renderer::rasterize_image`]'s limits: the content's raster with the
     /// Rasterize applied, as the first draw made it, and the transform from its pixels to
     /// document space.
@@ -1757,13 +1759,17 @@ impl Renderer {
             Some(RasterFx::Rasterize(r)) => {
                 let rect = r.image(content.bounds.unwrap_or(content.reach), line);
                 let kept = content.kept.and_then(|k| match &*k.image.borrow() {
-                    Some(KeptImage::Grid(image)) => Some(image.clone()),
+                    Some(KeptImage::Grid(image, failed)) => {
+                        crate::paint::add_decode_failures(*failed);
+                        Some(image.clone())
+                    }
                     _ => None,
                 });
                 let image = kept.or_else(|| {
+                    let failures = crate::paint::decode_failures();
                     let image = self.rasterize_image(f, r, rect, paint).map(std::rc::Rc::new);
                     if let (Some(k), Some(image)) = (content.kept, &image) {
-                        *k.image.borrow_mut() = Some(KeptImage::Grid(image.clone()));
+                        *k.image.borrow_mut() = Some(KeptImage::Grid(image.clone(), crate::paint::decode_failures() - failures));
                     }
                     image
                 });
@@ -2383,12 +2389,13 @@ mod tests {
         }
         let opts = RenderOptions { background: Some([255, 255, 255, 255]), ..Default::default() };
         let mut frames = vec![];
-        for threads in [Some(0), Some(1), Some(4), Some(8)] {
-            crate::set_default_threads(threads);
+        // The test sets each renderer's count. `set_default_threads` would also change the count of the
+        // renderers that other tests create while this one runs.
+        for threads in [0, 1, 4, 8] {
             let mut r = Renderer::new();
+            r.threads = threads;
             frames.push(r.render(&d, 1200, 900, Affine::scale(6.0), &opts).pixels);
         }
-        crate::set_default_threads(None);
         assert!(frames.windows(2).all(|w| w[0] == w[1]), "the thread count changed pixels");
     }
 
@@ -2757,6 +2764,38 @@ mod tests {
         assert_eq!(r.pixel_fx.len(), 1, "the later frames draw from the raster kept");
     }
 
+    /// An image that can't be decoded, with Rasterize, a drop shadow and a blur: the shadow draws
+    /// the Rasterize image first, and the blurred content draws the image kept from that draw
+    /// ([`super::Kept`]). Every frame counts the failure, also when the shadow and the blurred
+    /// content are drawn from the rasters kept.
+    #[test]
+    fn rasters_drawn_from_a_kept_rasterize_image_count_the_images_it_could_not_decode() {
+        use vectorcraft_doc::{ImageBlob, ImageObject, NodeKind};
+        let mut d = Document::new(100.0, 100.0);
+        // A PNG signature with nothing after it.
+        d.images.insert("cut".into(), ImageBlob::new("image/png", b"\x89PNG\r\n\x1a\n".to_vec()));
+        let im =
+            ImageObject { key: "cut".into(), width: 40, height: 40, xf: Affine::translate((30.0, 30.0)), link: None, placement: Default::default() };
+        let mut n = Node::new(d.alloc_id(), NodeKind::Image(Box::new(im)));
+        n.appearance.effects = [
+            ("rasterize", json!({"background": "white"})),
+            ("stylize.dropShadow", json!({"mode": "normal", "opacity": 100, "x": 2, "y": 2, "blur": 1, "color": "#0000ff"})),
+            ("blur.gaussian", json!({"radius": 4.0})),
+        ]
+        .into_iter()
+        .map(|(id, params)| Effect { id: id.into(), params, visible: true })
+        .collect();
+        d.insert(Some(d.layers[0].id), 0, n).unwrap();
+        let opts = RenderOptions { background: Some([255, 255, 255, 255]), ..Default::default() };
+        let mut r = Renderer::new();
+        for frame in 0..3 {
+            let before = crate::paint::decode_failures();
+            r.render(&d, 100, 100, Affine::IDENTITY, &opts);
+            assert!(crate::paint::decode_failures() > before, "frame {frame}");
+        }
+        assert_eq!((r.shadows.len(), r.pixel_fx.len()), (1, 1), "the later frames draw from the rasters kept");
+    }
+
     /// While interacting, an object that only moved draws its drop shadow and filtered content
     /// from the rasters of an earlier frame, at the nearest whole pixel, without running the
     /// effects again (#1257). The frame after the interaction runs them again: it is what a fresh
@@ -2814,8 +2853,15 @@ mod tests {
         let still = RenderOptions { background: Some([255, 255, 255, 255]), ..Default::default() };
         let live = RenderOptions { interacting: true, ..still.clone() };
         let drag = RenderOptions { dragging: true, ..live.clone() };
-        let fresh = Renderer::new().render(&d, 1600, 1000, view, &still).pixels;
-        let mut r = Renderer::new();
+        // Every renderer here has 3 threads on any machine. A drag renders drop shadows within its
+        // budget only with `threads` above 0.
+        let threaded = || {
+            let mut r = Renderer::new();
+            r.threads = 3;
+            r
+        };
+        let fresh = threaded().render(&d, 1600, 1000, view, &still).pixels;
+        let mut r = threaded();
         let _ = r.render(&base, 1600, 1000, view, &still);
         assert_eq!(r.stats.previewed, 0);
         let dragged = r.render(&d, 1600, 1000, view, &drag).pixels;
@@ -2835,14 +2881,14 @@ mod tests {
         let id = scaled.layers[0].children().unwrap()[0].id;
         scaled.node_mut(id).unwrap().transform(Affine::scale_about(1.05, vectorcraft_geom::Point::new(35.0, 33.0)), false);
         let view = Affine::translate((800.0, 500.0)) * Affine::scale(40.0) * Affine::translate((-35.0, -33.0));
-        let mut r = Renderer::new();
+        let mut r = threaded();
         let _ = r.render(&shadowed, 1600, 1000, view, &still);
         let kept = r.shadows.len();
         assert_eq!((kept, r.stats.previewed), (1, 0), "a still frame keeps the shadow's raster");
         let _ = r.render(&scaled, 1600, 1000, view, &drag);
         assert_eq!((r.shadows.len(), r.stats.previewed), (kept, 1), "the scaled shadow");
         let after = r.render(&scaled, 1600, 1000, view, &still).pixels;
-        assert!(after == Renderer::new().render(&scaled, 1600, 1000, view, &still).pixels, "the frame after the drag");
+        assert!(after == threaded().render(&scaled, 1600, 1000, view, &still).pixels, "the frame after the drag");
     }
 
     /// While interacting, a group holding a symbol instance whose art lies outside the 20 × 20

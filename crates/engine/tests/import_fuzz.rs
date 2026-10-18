@@ -824,8 +824,8 @@ fn the_file_info_sample_reaches_the_reader() {
 proptest! {
     #![proptest_config(config())]
 
-    /// File Info read on open: mutated XMP packets and junk information dictionaries, opened as a
-    /// PDF and as a `.ai`.
+    /// File Info read on open: mutated XMP packets, some with elements nested deeply, and junk
+    /// information dictionaries, opened as a PDF and as a `.ai`.
     #[test]
     fn pdf_file_info_never_panics(
         cut in 0usize..2_000,
@@ -837,8 +837,11 @@ proptest! {
             "/Subject <FEFF00> /Author <FEFFD800> /Keywords <EFBBBF> /Title (\\377\\376)",
             "/CreationDate (D:00000101000000Z) /ModDate (D:99991231235959+23'59')",
         ]),
+        nest in prop::sample::select(vec![0usize, 0, 0, 251, 100_000]),
     ) {
-        let pdf = file_info_pdf(info, &mutate_text(RICH_XMP, cut, &edits));
+        // `nest` elements nested in one another around the packet.
+        let xmp = format!("{}{}{}", "<a>".repeat(nest), mutate_text(RICH_XMP, cut, &edits), "</a>".repeat(nest));
+        let pdf = file_info_pdf(info, &xmp);
         let b64 = vectorcraft_format::base64_encode(&pdf);
         let r = catch_quiet(|| {
             let _ = vectorcraft_pdf::file_info(&pdf, None);
@@ -2427,6 +2430,19 @@ proptest! {
             }
         }
         survive("mutated .ai editing data", || Some(vectorcraft_eps::layered_ai(&private, Document::new(100.0, 100.0), vec![], false, false, 1.0).0))?;
+    }
+
+    /// A `.ai` whose variable library is damaged or hostile: the library is counted for the warning
+    /// whether the layers are read or not (an inserted `Z` can make an operator the reader doesn't
+    /// handle, and then the layers aren't read).
+    #[test]
+    fn ai_variable_library_never_panics(cut in 0usize..12_000, edits in prop::collection::vec((0usize..12_000, prop::sample::select(vec!['0', '9', ' ', '\n', '(', ')', '/', ':', ';', ',', '%', '_', 'Z'])), 0..12)) {
+        use vectorcraft_testkit::ai;
+        let library = ai::variable_library(&["Name", "Number"], &["One", "Two"]);
+        let data = ai::editing_data(100.0, 100.0, &format!("{library}{}", ai::layer("L", "0 g\n10 10 m\n20 20 L\nS\n")));
+        let text = mutate_text(&data, cut, &edits);
+        let private = [b"%AI24_ZStandard_Data".as_slice(), &zstd(&text)].concat();
+        survive("mutated .ai variable library", || Some(vectorcraft_eps::layered_ai(&private, Document::new(100.0, 100.0), vec![], false, false, 1.0).0))?;
     }
 }
 

@@ -1249,6 +1249,8 @@ lighting	Light	Lys
 	Opacity: {value}	Opacitet: {value}
 	Rectangle: Sunshine	Rektangel: Sunshine
 	Redefine Graphic Style “{name}”	Omdefinér grafisk typografi »{name}«
+	Apply {name}	Anvend stilen »{name}«
+	Redefine {name}	Omdefinér stilen »{name}«
 	Show Thumbnail	Vis miniatur
 	Artboard Options: edit with the Artboard tool	Tegnebrætindstillinger: redigér med tegnebrætværktøjet
 	Delete Artboards	Slet tegnebrætter
@@ -1437,6 +1439,7 @@ lighting	Light	Lys
 	History Options…	Indstillinger for historik…
 	Step Backward	Et trin tilbage
 	Step Forward	Et trin frem
+	Clear History	Ryd historik
 	Set History Limit…	Angiv historikgrænse…
 	Open a document to see its history.	Åbn et dokument for at se dets historik.
 	Abutting	Stødende
@@ -3755,7 +3758,8 @@ imageTrace	Outline	Kontur
 @msg	its editing data doesn't say where its artboard is	dens redigeringsdata siger ikke, hvor dens tegneflade er
 @msg	its editing data has no layers	dens redigeringsdata har ingen lag
 @msg	its editing data is damaged	dens redigeringsdata er beskadiget
-@msg	its editing data is for a different page	dens redigeringsdata er til en anden side
+@msg	its editing data is for a {w} × {h} pt page, not the file's {pw} × {ph} pt page	dens redigeringsdata er til en side på {w} × {h} pt, ikke til filens side på {pw} × {ph} pt
+@msg	its editing data is for a {w} × {h} pt page, the file's {pw} × {ph} pt page at {scale}	dens redigeringsdata er til en side på {w} × {h} pt, altså filens side på {pw} × {ph} pt i skala {scale}
 @msg	its layers use {_1}, which aren't read yet	dens lag bruger {_1}, som ikke kan læses endnu
 @msg	its page has text, and its layers have no text objects to put it in	dens side har tekst, og dens lag har ingen tekstobjekter at lægge den i
 @msg	its type is to come in as outlines, which only its page has	dens tekst kommer ind som konturer, hvilket kun dens side har
@@ -3888,6 +3892,7 @@ imageTrace	Outline	Kontur
 @msg	a page tree node has no kids	en node i sidetræet har ingen børn
 @msg	a page's placement is not finite	en sides placering er ikke endelig
 @msg	a preset named `{_1}` exists	der findes en forudindstilling med navnet `{_1}`
+@msg	a swatch or color group named `{n}` exists	der findes en farveprøve eller farvegruppe med navnet `{n}`
 @msg	a slice size must be a positive number of points	en udsnitsstørrelse skal være et positivt antal punkter
 @msg	a stream runs past the end	en strøm løber forbi slutningen
 @msg	a stream's length is wrong	længden på en strøm er forkert
@@ -4079,6 +4084,7 @@ imageTrace	Outline	Kontur
 @msg	nothing to redo	intet at gendanne
 @msg	nothing to save: the document has no visible art	intet at gemme: dokumentet har ingen synlig grafik
 @msg	nothing to undo	intet at fortryde
+@msg	no history to clear	ingen historik at rydde
 @msg	nothing to warp	intet at forvride
 @msg	nothing to wrap	intet at ombryde
 @msg	object {0} cannot have children	objektet {0} kan ikke have underobjekter
@@ -4243,6 +4249,7 @@ imageTrace	Outline	Kontur
 @msg	{C}: no effect at index {from}	{C}: ingen effekt ved indeks {from}
 @msg	{_1} failed: {e}	{_1} mislykkedes: {e}
 @msg	{_1} files can be opened but not written (see document.formats)	{_1}-filer kan åbnes, men ikke skrives (se document.formats)
+@msg	{_1} files are written by file.saveAsTemplate	{_1}-filer skrives af file.saveAsTemplate
 @msg	{_1} font families available	{_1} skrifttypefamilier tilgængelige
 @msg	{_1} is a live effect (Effect › Plug-ins)	{_1} er en live-effekt (Effekt › Plug-ins)
 @msg	{_1} is already used by {_2}	{_1} bruges allerede af {_2}
@@ -5165,3 +5172,19 @@ swatch	Bright Violet	Kraftig violet
 	Typing	Indtastning
 	Persistent	Vedvarende
 	Library Panel Options	Indstillinger for bibliotekspanel
+	Artboard {n} of {total}	Tegneflade {n} af {total}
+	Encoding and writing the file…	Koder og skriver filen…
+@plural	{n} more export waiting|{n} more exports waiting	{n} eksport mere venter|{n} eksporter mere venter
+	Continue in Background	Fortsæt i baggrunden
+	Cancel Export	Annullér eksport
+@msg	Export cancelled	Eksport annulleret
+# Paragraph panel menu › Justification…
+	Desired	Ønsket
+	Word Spacing:	Ordafstand:
+	Letter Spacing:	Bogstavafstand:
+	Glyph Scaling:	Skalering af glyffer:
+	Auto Leading:	Automatisk linjeafstand:
+	Single Word Justification:	Justering af enkeltord:
+	Full Justify	Lige margener
+	Minimum must not exceed Desired, nor Desired Maximum.	Minimum må ikke overstige Ønsket, og Ønsket ikke Maksimum.
+	Justification	Justering

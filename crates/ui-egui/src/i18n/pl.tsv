@@ -1242,6 +1242,8 @@ lighting	Light	Światło
 	Opacity: {value}	Krycie: {value}
 	Rectangle: Sunshine	Prostokąt: Słońce
 	Redefine Graphic Style “{name}”	Zdefiniuj ponownie styl graficzny „{name}”
+	Apply {name}	Zastosuj styl „{name}”
+	Redefine {name}	Zdefiniuj ponownie styl „{name}”
 	Show Thumbnail	Pokaż miniaturę
 	Delete Artboards	Usuń obszary kompozycji
 	Delete Empty Artboards	Usuń puste obszary kompozycji
@@ -1430,6 +1432,7 @@ lighting	Light	Światło
 	History Options…	Opcje historii…
 	Step Backward	Krok wstecz
 	Step Forward	Krok naprzód
+	Clear History	Wyczyść historię
 	Set History Limit…	Ustaw limit historii…
 	Open a document to see its history.	Otwórz dokument, aby zobaczyć jego historię.
 # History panel: the names of undo steps (`every_undo_label_is_translated`).
@@ -2683,10 +2686,10 @@ lighting	Light	Światło
 	All in One Folder	Wszystko w jednym folderze
 	By Size or Row	Według rozmiaru lub wiersza
 	By Format	Według formatu
-	By Artboard or Item	Według obszaru roboczego lub elementu
+	By Artboard or Item	Według obszaru kompozycji lub elementu
 	By Item, Then Format	Według elementu, potem formatu
 	Document Name	Nazwa dokumentu
-	Artboard or Item Name	Nazwa obszaru roboczego lub elementu
+	Artboard or Item Name	Nazwa obszaru kompozycji lub elementu
 	Number (####)	Numer (####)
 	Date (YYYYMMDD)	Data (RRRRMMDD)
 	Date (YYYY-MM-DD)	Data (RRRR-MM-DD)
@@ -3817,6 +3820,11 @@ imageTrace	Outline	Kontur
 @msg	its editing data doesn't say where its artboard is	jego dane edycyjne nie określają położenia obszaru kompozycji
 @msg	its editing data has no layers	jego dane edycyjne nie zawierają warstw
 @msg	its editing data is damaged	jego dane edycyjne są uszkodzone
+@msg	its editing data is for a {w} × {h} pt page, not the file's {pw} × {ph} pt page	jego dane edycyjne dotyczą strony {w} × {h} pt, a nie strony pliku {pw} × {ph} pt
+@msg	its editing data is for a {w} × {h} pt page, the file's {pw} × {ph} pt page at {scale}	jego dane edycyjne dotyczą strony {w} × {h} pt, czyli strony pliku {pw} × {ph} pt w skali {scale}
+@msg	its zlib compression is damaged	ich kompresja zlib jest uszkodzona
+@msg	its Zstandard compression is damaged	ich kompresja Zstandard jest uszkodzona
+@msg	it decompresses to more than {_1} MB	po rozpakowaniu przekraczają {_1} MB
 @msg	its editing data is for a different page	jego dane edycyjne dotyczą innej strony
 @msg	its layers use {_1}, which aren't read yet	jego warstwy używają {_1}, które nie są jeszcze odczytywane
 @msg	its page has text, and its layers have no text objects to put it in	jego strona zawiera tekst, a warstwy nie mają obiektów tekstowych, w których można go umieścić
@@ -3886,6 +3894,7 @@ imageTrace	Outline	Kontur
 @msg	Save for Web: the image is empty	Zapisz dla Internetu: obraz jest pusty
 @msg	Save writes {_1}, not {_2}: use document.export for other formats	Zapis tworzy {_1}, nie {_2}: dla innych formatów użyj document.export
 @msg	Save writes {_1}, not {_2}: use file.saveAsTemplate to write it	Zapis tworzy {_1}, nie {_2}: aby go zapisać, użyj file.saveAsTemplate
+@msg	aiVersion 7 writes legacy .ai files; a .ait template is always PDF-compatible	aiVersion 7 zapisuje starsze pliki .ai; szablon .ait jest zawsze zgodny z PDF
 @msg	Saved recovery data for {title}	Zapisano dane odzyskiwania dla {title}
 @msg	Saved to User Defined: {_1}	Zapisano w zdefiniowanych przez użytkownika: {_1}
 @msg	Saved {path}	Zapisano {path}
@@ -3956,6 +3965,7 @@ imageTrace	Outline	Kontur
 @msg	a page tree node has no kids	węzeł drzewa stron nie ma elementów potomnych
 @msg	a page's placement is not finite	położenie strony nie jest skończone
 @msg	a preset named `{_1}` exists	ustawienie o nazwie `{_1}` już istnieje
+@msg	a swatch or color group named `{n}` exists	próbka lub grupa kolorów o nazwie `{n}` już istnieje
 @msg	a slice size must be a positive number of points	rozmiar plasterka musi być dodatnią liczbą punktów
 @msg	a spine keeps at least two points	grzbiet musi mieć co najmniej dwa punkty
 @msg	a stream runs past the end	strumień wykracza poza koniec
@@ -4162,6 +4172,7 @@ imageTrace	Outline	Kontur
 @msg	nothing to redo	nie ma czego ponowić
 @msg	nothing to save: the document has no visible art	nie ma czego zapisać: dokument nie ma widocznej kompozycji
 @msg	nothing to undo	nie ma czego cofnąć
+@msg	no history to clear	brak historii do wyczyszczenia
 @msg	nothing to warp	nie ma czego wypaczyć
 @msg	nothing to wrap	nie ma czego oblewać
 @msg	object {0} cannot have children	obiekt {0} nie może mieć elementów podrzędnych
@@ -4334,6 +4345,7 @@ imageTrace	Outline	Kontur
 @msg	{C}: no effect at index {from}	{C}: brak efektu o indeksie {from}
 @msg	{_1} failed: {e}	{_1} — niepowodzenie: {e}
 @msg	{_1} files can be opened but not written (see document.formats)	pliki {_1} można otwierać, ale nie zapisywać (patrz document.formats)
+@msg	{_1} files are written by file.saveAsTemplate	pliki {_1} zapisuje file.saveAsTemplate
 @msg	{_1} font families available	dostępne rodziny czcionek: {_1}
 @msg	{_1} is a live effect (Effect › Plug-ins)	{_1} to efekt na żywo (Efekt › Wtyczki)
 @msg	{_1} is already used by {_2}	{_1} jest już używany przez {_2}
@@ -5013,7 +5025,7 @@ mark-style	Japanese	Japońskie
 @msg	only http, https and mailto URLs open in the browser, not “{url}”	w przeglądarce otwierają się tylko adresy URL http, https i mailto, a nie „{url}”
 @msg	{id} opens another app: only the person at the keyboard can run it	{id} otwiera inną aplikację: uruchomić to polecenie może tylko osoba przy klawiaturze
 @msg	“{name}” is not a file	„{name}” nie jest plikiem
-	Enable Guides for 9-Slice Scaling	Włącz prowadnice skalowania 9-slice
+	Enable Guides for 9-Slice Scaling	Włącz linie pomocnicze skalowania 9-slice
 @msg	a mask has more than one art block	maska ma więcej niż jeden blok grafiki
 @msg	mask art ends outside a mask dictionary	grafika maski kończy się poza słownikiem maski
 @msg	cancelled; nothing was changed	anulowano; nic nie zostało zmienione
@@ -5028,3 +5040,20 @@ mark-style	Japanese	Japońskie
 @msg	too many library panels were opened in this session	w tej sesji otwarto zbyt wiele paneli bibliotek
 @msg	The image is {_1} × {_2} pixels, more than {LARGE_TRACE_SIDE} on a side: it is traced, but more slowly. A lower-fidelity preset or a smaller copy of the image traces faster.	Obraz ma {_1} × {_2} pikseli, ponad {LARGE_TRACE_SIDE} na jednym boku: zostanie obrysowany, ale wolniej. Ustawienie wstępne o niższej wierności lub mniejsza kopia obrazu obrysuje się szybciej.
 @msg	The image was traced at {_1} × {_2} pixels, scaled down from {_3} × {_4} ({_5} megapixels at most).	Obraz obrysowano w rozdzielczości {_1} × {_2} pikseli, po zmniejszeniu z {_3} × {_4} (najwyżej {_5} megapikseli).
+	Artboard {n} of {total}	Obszar kompozycji {n} z {total}
+	Encoding and writing the file…	Kodowanie i zapisywanie pliku…
+@plural	{n} more export waiting|{n} more exports waiting	Czeka jeszcze {n} eksport|Czekają jeszcze {n} eksporty|Czeka jeszcze {n} eksportów
+	Continue in Background	Kontynuuj w tle
+	Cancel Export	Anuluj eksport
+@msg	Export cancelled	Eksport anulowany
+# Paragraph panel menu › Justification…
+	Desired	Optymalne
+	Word Spacing:	Odstępy między wyrazami:
+	Letter Spacing:	Odstępy między literami:
+	Glyph Scaling:	Skalowanie glifów:
+	Auto Leading:	Automatyczna interlinia:
+	Single Word Justification:	Justowanie pojedynczego wyrazu:
+	Full Justify	Pełne justowanie
+	Minimum must not exceed Desired, nor Desired Maximum.	Minimum nie może przekraczać wartości optymalnej, a wartość optymalna maksimum.
+	Justification	Justowanie
+@msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	zmienne i zestawy danych pliku nie zostały wczytane (zmienne: {variables}, zestawy danych: {data_sets}): panel Zmienne ich nie wyświetla

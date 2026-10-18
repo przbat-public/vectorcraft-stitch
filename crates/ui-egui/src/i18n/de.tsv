@@ -1341,6 +1341,7 @@ file-filter	Templates	Vorlagen
 	History Options…	Protokolloptionen…
 	Step Backward	Schritt zurück
 	Step Forward	Schritt vorwärts
+	Clear History	Protokoll löschen
 	Set History Limit…	Protokollgrenze festlegen…
 	History States	Protokollschritte
 # History panel: the names of undo steps (`every_undo_label_is_translated`).
@@ -2423,6 +2424,8 @@ mark-style	Japanese	Japanisch
 	Redefine Character Style	Zeichenformat neu definieren
 	Redefine Graphic Style	Grafikstil neu definieren
 	Redefine Graphic Style “{name}”	Grafikstil „{name}“ neu definieren
+	Apply {name}	Format „{name}“ anwenden
+	Redefine {name}	Format „{name}“ neu definieren
 	Redefine Paragraph Style	Absatzformat neu definieren
 	Redefine Symbol	Symbol neu definieren
 	Redefine {kind} Style	{kind}format neu definieren
@@ -3629,6 +3632,11 @@ theme	Appearance	Erscheinungsbild
 @msg	its editing data doesn't say where its artboard is	seine Bearbeitungsdaten geben nicht an, wo seine Zeichenfläche liegt
 @msg	its editing data has no layers	seine Bearbeitungsdaten enthalten keine Ebenen
 @msg	its editing data is damaged	seine Bearbeitungsdaten sind beschädigt
+@msg	its editing data is for a {w} × {h} pt page, not the file's {pw} × {ph} pt page	seine Bearbeitungsdaten gehören zu einer Seite von {w} × {h} pt, nicht zur Seite der Datei von {pw} × {ph} pt
+@msg	its editing data is for a {w} × {h} pt page, the file's {pw} × {ph} pt page at {scale}	seine Bearbeitungsdaten gehören zu einer Seite von {w} × {h} pt, der Seite der Datei von {pw} × {ph} pt im Maßstab {scale}
+@msg	its zlib compression is damaged	ihre zlib-Komprimierung ist beschädigt
+@msg	its Zstandard compression is damaged	ihre Zstandard-Komprimierung ist beschädigt
+@msg	it decompresses to more than {_1} MB	sie entpacken sich auf mehr als {_1} MB
 @msg	its editing data is for a different page	seine Bearbeitungsdaten gehören zu einer anderen Seite
 @msg	its layers use {_1}, which aren't read yet	seine Ebenen verwenden {_1}, was noch nicht gelesen wird
 @msg	its page has text, and its layers have no text objects to put it in	seine Seite enthält Text, und seine Ebenen haben keine Textobjekte, die ihn aufnehmen könnten
@@ -3698,6 +3706,7 @@ theme	Appearance	Erscheinungsbild
 @msg	Save for Web: the image is empty	Für Web speichern: Das Bild ist leer
 @msg	Save writes {_1}, not {_2}: use document.export for other formats	„Speichern“ schreibt {_1}, nicht {_2}: Verwenden Sie document.export für andere Formate
 @msg	Save writes {_1}, not {_2}: use file.saveAsTemplate to write it	„Speichern“ schreibt {_1}, nicht {_2}: Verwenden Sie dafür file.saveAsTemplate
+@msg	aiVersion 7 writes legacy .ai files; a .ait template is always PDF-compatible	aiVersion 7 schreibt ältere .ai-Dateien; eine .ait-Vorlage ist immer PDF-kompatibel
 @msg	Saved recovery data for {title}	Wiederherstellungsdaten für {title} gespeichert
 @msg	Saved to User Defined: {_1}	In „Benutzerdefiniert“ gespeichert: {_1}
 @msg	Saved {path}	{path} gespeichert
@@ -3769,6 +3778,7 @@ theme	Appearance	Erscheinungsbild
 @msg	a page tree node has no kids	ein Knoten des Seitenbaums hat keine untergeordneten Einträge
 @msg	a page's placement is not finite	die Platzierung einer Seite ist nicht endlich
 @msg	a preset named `{_1}` exists	eine Vorgabe namens `{_1}` ist bereits vorhanden
+@msg	a swatch or color group named `{n}` exists	ein Farbfeld oder eine Farbgruppe namens `{n}` ist bereits vorhanden
 @msg	a slice size must be a positive number of points	eine Slice-Größe muss eine positive Anzahl von Punkt sein
 @msg	a spine keeps at least two points	eine Achse behält mindestens zwei Punkte
 @msg	a stream runs past the end	ein Datenstrom reicht über das Ende hinaus
@@ -3975,6 +3985,7 @@ theme	Appearance	Erscheinungsbild
 @msg	nothing to redo	nichts zu wiederholen
 @msg	nothing to save: the document has no visible art	nichts zu speichern: Das Dokument enthält keine sichtbare Grafik
 @msg	nothing to undo	nichts rückgängig zu machen
+@msg	no history to clear	kein Protokoll zu löschen
 @msg	nothing to warp	nichts zu verkrümmen
 @msg	nothing to wrap	nichts zu umfließen
 @msg	object {0} cannot have children	Objekt {0} kann keine untergeordneten Objekte haben
@@ -4146,6 +4157,7 @@ theme	Appearance	Erscheinungsbild
 @msg	{C}: no effect at index {from}	{C}: kein Effekt bei Index {from}
 @msg	{_1} failed: {e}	{_1} ist fehlgeschlagen: {e}
 @msg	{_1} files can be opened but not written (see document.formats)	{_1}-Dateien können geöffnet, aber nicht geschrieben werden (siehe document.formats)
+@msg	{_1} files are written by file.saveAsTemplate	{_1}-Dateien werden von file.saveAsTemplate geschrieben
 @msg	{_1} font families available	{_1} Schriftfamilien verfügbar
 @msg	{_1} is a live effect (Effect › Plug-ins)	{_1} ist ein Live-Effekt (Effekt › Plug-ins)
 @msg	{_1} is already used by {_2}	{_1} wird bereits von {_2} verwendet
@@ -4751,3 +4763,21 @@ effect	Regular	Regelmäßig
 @msg	too many library panels were opened in this session	in dieser Sitzung wurden zu viele Bibliotheksbedienfelder geöffnet
 @msg	The image is {_1} × {_2} pixels, more than {LARGE_TRACE_SIDE} on a side: it is traced, but more slowly. A lower-fidelity preset or a smaller copy of the image traces faster.	Das Bild hat {_1} × {_2} Pixel, mehr als {LARGE_TRACE_SIDE} auf einer Seite: Es wird nachgezeichnet, aber langsamer. Eine Vorgabe mit geringerer Detailtreue oder eine kleinere Kopie des Bildes geht schneller.
 @msg	The image was traced at {_1} × {_2} pixels, scaled down from {_3} × {_4} ({_5} megapixels at most).	Das Bild wurde mit {_1} × {_2} Pixeln nachgezeichnet, verkleinert von {_3} × {_4} (höchstens {_5} Megapixel).
+	Artboard {n} of {total}	Zeichenfläche {n} von {total}
+	Encoding and writing the file…	Datei wird codiert und geschrieben…
+@plural	{n} more export waiting|{n} more exports waiting	{n} weiterer Export wartet|{n} weitere Exporte warten
+	Continue in Background	Im Hintergrund fortsetzen
+	Cancel Export	Export abbrechen
+@msg	Export cancelled	Export abgebrochen
+# Paragraph panel menu › Justification…
+	Desired	Optimal
+	Word Spacing:	Wortabstand:
+	Letter Spacing:	Zeichenabstand:
+	Glyph Scaling:	Glyphenskalierung:
+	Auto Leading:	Automatischer Zeilenabstand:
+	Single Word Justification:	Ausrichtung einzelner Wörter:
+	Full Justify	Blocksatz
+	Minimum must not exceed Desired, nor Desired Maximum.	Das Minimum darf den optimalen Wert nicht übersteigen, der optimale Wert nicht das Maximum.
+	Minimum	Minimum
+	Justification	Abstände
+@msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	die Variablen und Datensätze der Datei wurden nicht gelesen (Variablen: {variables}, Datensätze: {data_sets}): Das Bedienfeld „Variablen“ listet sie nicht auf

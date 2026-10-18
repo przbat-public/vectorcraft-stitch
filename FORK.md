@@ -23,8 +23,9 @@ work comes from the list below, unless the user gives you a task.
 - `main` mirrors upstream. Don't commit embroidery work to it.
 - `feat/embroidery` is the base of all embroidery work. It receives merges from `main` now and then.
 - Embroidery PRs target `feat/embroidery`.
-- **For now, every fix goes as a further commit on `feat/embroidery-core`** (the head of PR #2),
-  until the user says otherwise. Don't create side branches.
+- **One branch per stage of the work list, cut from `feat/embroidery`, one PR per stage.** Stage A
+  goes on `feat/embroidery-stage-a`: every fix for it is a further commit on that branch, with no
+  side branches, until the user says otherwise. (`feat/embroidery-core`, PR #2, is merged.)
 - Commit locally after `cargo xtask ci` passes. **Don't push without the user's go-ahead.**
 
 ## Work list (in this order)

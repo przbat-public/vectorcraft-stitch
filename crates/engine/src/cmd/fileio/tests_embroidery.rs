@@ -113,7 +113,8 @@ fn a_written_pes_opens_as_art() {
             leaves += 1;
         }
     });
-    assert!(leaves > 2, "{leaves} paths");
+    // At least a run of stitches per shape (each is sewn without a cut now, travelling inside).
+    assert!(leaves >= 2, "{leaves} paths");
     let board = st.doc.artboards[0].rect;
     assert!(board.width() > 0.0 && board.height() > 0.0, "{board:?}");
 }
@@ -126,20 +127,59 @@ fn a_pes_opens_by_its_magic_bytes() {
     assert_eq!(r["format"].as_str(), Some("pes"));
 }
 
+/// Each block's needle points (where the needle goes down) and the trims, as a reader decodes
+/// them: what a machine sews.
+fn sewn(p: &vectorcraft_stitch::Pattern) -> Vec<(Vec<(i32, i32)>, usize)> {
+    use vectorcraft_stitch::{Command, quantize};
+    p.blocks
+        .iter()
+        .map(|b| {
+            let points = b.stitches.iter().filter(|s| s.command == Command::Stitch).map(|s| (quantize(s.x), quantize(s.y))).collect();
+            (points, b.stitches.iter().filter(|s| s.command == Command::Trim).count())
+        })
+        .collect()
+}
+
+/// A design opened from a machine file and exported again is the same design: every needle
+/// point, trim and colour block where the file had it, in every format.
 #[test]
-fn a_stitched_design_reads_back_and_sews_again() {
+fn an_opened_design_is_written_back_unchanged() {
+    for format in Format::ALL {
+        let mut s = art();
+        // Two shapes of each thread, far apart, so the blocks hold trims and jumps.
+        rect(&mut s, "#cc2222", 20.0, 120.0, 30.0, 20.0);
+        let first = export(&mut s, format.id(), json!({}));
+        open(&mut s, &format!("design.{}", format.id()), &first).expect("opens");
+        let again = export(&mut s, format.id(), json!({}));
+        let (a, b) = (format.read(&first).expect("reads"), format.read(&again).expect("reads"));
+        assert_eq!(sewn(&a), sewn(&b), "{}", format.id());
+        // Opened again and written again: still the same.
+        open(&mut s, &format!("again.{}", format.id()), &again).expect("opens");
+        assert_eq!(sewn(&format.read(&export(&mut s, format.id(), json!({}))).expect("reads")), sewn(&a), "{}", format.id());
+    }
+}
+
+/// An opened design written to another format keeps its needle points too (as far as the target
+/// format can say the same thing).
+#[test]
+fn an_opened_design_converts_between_formats() {
     let mut s = art();
-    let first = plan(&export(&mut s, "dst", json!({})));
-    let bytes = export(&mut s, "dst", json!({}));
-    open(&mut s, "design.dst", &bytes).expect("opens");
-    // The design is art now: thin strokes, sewn along their centre lines.
-    let again = plan(&export(&mut s, "dst", json!({})));
-    assert!(again.sewn() > 100, "{} stitches again", again.sewn());
-    assert_eq!(again.blocks.len(), first.blocks.len());
-    let a = first.bounds().expect("bounds");
-    let b = again.bounds().expect("bounds");
-    assert!((a.width() - b.width()).abs() < 3.0, "{a:?} {b:?}");
-    assert!((a.height() - b.height()).abs() < 3.0, "{a:?} {b:?}");
+    let pes = export(&mut s, "pes", json!({}));
+    open(&mut s, "design.pes", &pes).expect("opens");
+    let jef = export(&mut s, "jef", json!({}));
+    let points = |p: &vectorcraft_stitch::Pattern| sewn(p).into_iter().map(|(pts, _)| pts).collect::<Vec<_>>();
+    assert_eq!(points(&Format::Pes.read(&pes).expect("reads")), points(&Format::Jef.read(&jef).expect("reads")));
+}
+
+/// Moving an opened design moves its stitches; its style options don't re-stitch it.
+#[test]
+fn an_opened_design_is_not_restitched_by_the_options() {
+    let mut s = art();
+    let dst = export(&mut s, "dst", json!({}));
+    open(&mut s, "design.dst", &dst).expect("opens");
+    let plain = plan(&export(&mut s, "dst", json!({})));
+    let forced = plan(&export(&mut s, "dst", json!({"stitchStyle": "satin", "density": 1.0, "stitchLength": 8.0})));
+    assert_eq!(sewn(&plain), sewn(&forced));
 }
 
 #[test]
@@ -255,8 +295,10 @@ fn a_clipping_mask_cuts_strokes() {
     for weight in [1.0, 6.0] {
         let mut s = blank();
         s.execute("paint.setFill", &json!({"none": true})).unwrap();
-        s.execute("paint.setStroke", &json!({"color": "#cc2222", "width": weight})).unwrap();
+        s.execute("paint.setStroke", &json!({"color": "#cc2222"})).unwrap();
         s.execute("shape.line", &json!({"x1": 0, "y1": 75, "x2": 250, "y2": 75})).unwrap();
+        // 1 pt is a running line, 6 pt (2.1 mm) a satin column.
+        s.execute("stroke.set", &json!({"weight": weight})).unwrap();
         s.execute("select.none", &json!({})).unwrap();
         s.execute("paint.setStroke", &json!({"none": true})).unwrap();
         s.execute("shape.rectangle", &json!({"x": 50, "y": 50, "width": 50, "height": 50})).unwrap();
@@ -288,8 +330,9 @@ fn an_absurd_density_is_refused() {
 fn a_forced_fill_fills_the_stroke_not_the_path() {
     let mut s = blank();
     s.execute("paint.setFill", &json!({"none": true})).unwrap();
-    s.execute("paint.setStroke", &json!({"color": "#cc2222", "width": 6})).unwrap();
+    s.execute("paint.setStroke", &json!({"color": "#cc2222"})).unwrap();
     s.execute("shape.ellipse", &json!({"x": 50, "y": 50, "width": 100, "height": 100})).unwrap();
+    s.execute("stroke.set", &json!({"weight": 6})).unwrap();
     let p = plan(&export(&mut s, "dst", json!({"stitchStyle": "fill"})));
     // The ring is 6 pt (2.1 mm) wide round a 35.3 mm circle: no needle point near the centre.
     let b = p.bounds().expect("bounds");
@@ -299,4 +342,67 @@ fn a_forced_fill_fills_the_stroke_not_the_path() {
         let d = ((st.x - cx).powi(2) + (st.y - cy).powi(2)).sqrt();
         assert!((d - r).abs() < 1.4, "a stitch {d:.1} mm from the centre");
     }
+}
+
+/// An opened design saved as a VectorCraft document and opened again still writes back the file's
+/// stitches: the native format keeps which lines are literal stitches.
+#[test]
+fn literal_stitches_survive_the_native_format() {
+    let mut s = art();
+    let dst = export(&mut s, "dst", json!({}));
+    open(&mut s, "design.dst", &dst).expect("opens");
+    let saved = s.execute("document.serialize", &json!({})).expect("serializes");
+    let native = match saved["dataBase64"].as_str() {
+        Some(b) => vectorcraft_format::base64_decode(b).expect("base64"),
+        None => saved["text"].as_str().expect("text").as_bytes().to_vec(),
+    };
+    open(&mut s, "design.vectorcraft", &native).expect("opens the native file");
+    assert_eq!(sewn(&plan(&export(&mut s, "dst", json!({})))), sewn(&plan(&dst)));
+}
+
+/// A file that cuts the thread at the end of a colour block (before the change) and at the start
+/// of the next, as Ink/Stitch writes them, is written back with those cuts.
+#[test]
+fn cuts_at_a_blocks_ends_are_written_back() {
+    use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
+    let mut p = Pattern::default();
+    let mut a = Block::new(Thread::rgb([200, 0, 0]));
+    for i in 0..10 {
+        a.stitches.push(Stitch::new(f64::from(i) * 2.0, 0.0, Command::Stitch));
+    }
+    a.stitches.push(Stitch::new(18.0, 0.0, Command::Trim));
+    let mut b = Block::new(Thread::rgb([0, 0, 200]));
+    b.stitches.push(Stitch::new(0.0, 10.0, Command::Trim));
+    for i in 0..10 {
+        b.stitches.push(Stitch::new(f64::from(i) * 2.0, 10.0, Command::Stitch));
+    }
+    p.blocks.extend([a, b]);
+    for format in [Format::Pes, Format::Jef, Format::Exp] {
+        let file = format.write(&p).unwrap();
+        let mut s = Session::new();
+        open(&mut s, &format!("cuts.{}", format.id()), &file).expect("opens");
+        let again = export(&mut s, format.id(), json!({}));
+        assert_eq!(sewn(&format.read(&again).unwrap()), sewn(&format.read(&file).unwrap()), "{}", format.id());
+    }
+}
+
+/// A stroke wider than the widest satin column is sewn that wide, and the export says so.
+#[test]
+fn a_satin_wider_than_the_widest_is_warned_about() {
+    let mut s = blank();
+    s.execute("paint.setFill", &json!({"none": true})).unwrap();
+    s.execute("paint.setStroke", &json!({"color": "#cc2222"})).unwrap();
+    s.execute("shape.line", &json!({"x1": 20, "y1": 150, "x2": 280, "y2": 150})).unwrap();
+    // 160 pt is 56 mm.
+    s.execute("stroke.set", &json!({"weight": 160})).unwrap();
+    let r = s.execute("document.export", &params("dst", json!({}))).expect("exports");
+    let w = warnings(&r);
+    assert!(w.iter().any(|w| w.contains("50 mm")), "{w:?}");
+    // The column is sewn 50 mm wide.
+    let b = plan(&vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap()).bounds().unwrap();
+    assert!((b.height() - 50.0).abs() < 1.5, "{b:?}");
+    // A narrower one isn't warned about.
+    s.execute("stroke.set", &json!({"weight": 20})).unwrap();
+    let r = s.execute("document.export", &params("dst", json!({}))).expect("exports");
+    assert!(warnings(&r).is_empty(), "{:?}", warnings(&r));
 }

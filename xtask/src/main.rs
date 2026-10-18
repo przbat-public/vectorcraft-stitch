@@ -8,6 +8,7 @@ mod assets;
 mod brands;
 mod bundle;
 mod cursors;
+mod embroidery_corpus;
 mod ico;
 mod layers;
 mod pdf_deps;
@@ -31,9 +32,10 @@ commands:
   layers          enforce the crate dependency layering (plan/architecture.md §3)
   wasm            cargo check --target wasm32-unknown-unknown for the wasm-safe crates and the web app
   ci              fmt --check, clippy -D warnings, test, no-bundled-fonts, pdf-deps, assets, brands, cursors (warnings only), layers, wasm (stops at first failure)
-  corpus [--download] [--affinity]
+  corpus [--download] [--affinity] [--embroidery]
                   show where test corpora live; --download fetches PngSuite into corpus/pngsuite,
-                  --affinity the pinned public Affinity documents into corpus/affinity
+                  --affinity the pinned public Affinity documents into corpus/affinity,
+                  --embroidery real embroidery designs (artwork and machine files) into corpus/embroidery
   bundle          build dist/VectorCraft.app (macOS) with assets/app-icon/vectorcraft.icns
   ico <out.ico> <png>...
                   pack PNGs into a Windows .ico (used by packaging/icons.sh)
@@ -54,6 +56,7 @@ fn main() -> ExitCode {
         Some("wasm") => cmd_wasm(),
         Some("ci") => cmd_ci(),
         Some("corpus") if rest.contains(&"--affinity") => affinity_corpus::fetch(),
+        Some("corpus") if rest.contains(&"--embroidery") => embroidery_corpus::fetch(),
         Some("corpus") => cmd_corpus(rest.contains(&"--download")),
         Some("bundle") => bundle::run(&root()),
         Some("ico") => ico::run(&rest),
@@ -257,6 +260,9 @@ Tests that use a corpus skip cleanly when it is absent.
   corpus/raw/        raw.pixls.us samples, CC0 (optional)
   corpus/affinity/   public Affinity documents (CC0/MIT/Apache-2.0) at pinned commits, sha256
                      verified: oracles for the Affinity reader. Fetch: cargo xtask corpus --affinity
+  corpus/embroidery/ real embroidery designs (CC BY-SA 4.0 machine files made with Ink/Stitch, and
+                     the CC BY 4.0 / MIT artwork they were digitized from), sha256 verified: oracles
+                     for the embroidery readers and the digitizer. Fetch: cargo xtask corpus --embroidery
 ",
         corpus.display()
     );

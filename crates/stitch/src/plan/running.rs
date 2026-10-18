@@ -1,0 +1,53 @@
+//! Running stitch ([`Style::Running`](super::Style::Running)): a single line of stitches along a
+//! path, locked at both ends.
+
+use vectorcraft_geom::{BezPath, Point};
+
+use super::Params;
+use super::geometry::{length, resample, subpaths, unit};
+use super::runs::{LOCK, Runs, Travel};
+use crate::Stitch;
+
+/// A running line of stitches along `path`, [`Params::stitch_length`] apart, each open run locked
+/// at both ends when [`Params::lock`] is on.
+pub fn running(path: &BezPath, p: &Params) -> Vec<Stitch> {
+    let p = p.sane();
+    let mut runs = Runs::default();
+    for sub in subpaths(path) {
+        let pts = sub.points();
+        if length(&pts, sub.closed) < p.min_stitch {
+            continue;
+        }
+        let mut run = resample(&pts, p.stitch_length, sub.closed);
+        if p.lock && !sub.closed {
+            run = locked(&run);
+        }
+        runs.push(run, Travel::Auto);
+    }
+    runs.join(&p)
+}
+
+/// A run with a lock stitch at each end: a short stitch back along the run and forward again, so
+/// the thread stays put. Both stay on the run: forward from its start, back from its end (never
+/// past it).
+fn locked(pts: &[Point]) -> Vec<Point> {
+    let (Some(&first), Some(&last)) = (pts.first(), pts.last()) else { return pts.to_vec() };
+    if pts.len() < 2 {
+        return pts.to_vec();
+    }
+    let mut out: Vec<Point> = Vec::with_capacity(pts.len() + 4);
+    if let Some(&next) = pts.get(1)
+        && let Some(d) = unit(next - first)
+    {
+        out.push(first);
+        out.push(first + d * LOCK.min(first.distance(next)));
+    }
+    out.extend_from_slice(pts);
+    if let Some(&prev) = pts.len().checked_sub(2).and_then(|i| pts.get(i))
+        && let Some(d) = unit(prev - last)
+    {
+        out.push(last + d * LOCK.min(last.distance(prev)));
+        out.push(last);
+    }
+    out
+}

@@ -23,44 +23,99 @@ work comes from the list below, unless the user gives you a task.
 - `main` mirrors upstream. Don't commit embroidery work to it.
 - `feat/embroidery` is the base of all embroidery work. It receives merges from `main` now and then.
 - Embroidery PRs target `feat/embroidery`.
-- **For now, every fix goes as a further commit on `feat/embroidery-core`** (the head of PR #2),
-  until the user says otherwise. Don't create side branches.
+- **One branch and one PR per piece of work**, cut from `feat/embroidery` and named after what it
+  does (for example `feat/embroidery-import-and-stitch-quality`). Every fix for that work is a
+  further commit on its branch, with no side branches, until the user says otherwise.
 - Commit locally after `cargo xtask ci` passes. **Don't push without the user's go-ahead.**
+- **No code names, anywhere.** Never label work with a stage letter, a step number or any other
+  internal tag in branch names, commit messages, PR titles and descriptions, docs or code. Say what
+  the change does ("an opened design is written back unchanged"). Every description must make sense
+  on its own to someone who hasn't seen this file or the conversation behind it.
 
 ## Work list (in this order)
 
-**Stage A — fix results in the current design**
+**Done: results closer to professional embroidery software.**
+- An opened design is written back unchanged (its lines are marked as literal stitches,
+  `doc::embroidery`).
+- Long satin stitches are split, with the cuts spread out.
+- Fills travel inside the shape between regions and overlap them by a row.
+- Underlay follows the shape: centre, edge or zigzag by satin width, and a second tatami layer under
+  large fills.
+- Satin spacing follows the column width.
 
-1. **Faithful import.** A design opened from a machine file keeps its exact stitches and exports
-   them unchanged. Today it becomes thin lines that are re-stitched on export, so
-   DST → VectorCraft → DST changes the design. Converting stitches to editable objects comes later,
-   on request.
-2. **Auto split for long satin stitches.** A stitch longer than a format allows is split today into
-   equal pieces in a straight line, which lines up into a visible seam in wide satins. Spread the
-   penetrations out instead.
-3. **Travel inside fills.** Moving between tatami regions should sew a hidden travel stitch inside
-   the shape (kept a margin away from its edge) instead of trimming. Overlap neighbouring regions
-   by a row so no gaps open at the seams.
-4. **Underlay by shape:** centre run for narrow columns, edge run plus zigzag for wide ones, a
-   second, perpendicular tatami layer for large fills.
-5. **Satin density by column width.**
+Also done, from comparing VectorCraft's output with designs a person digitized (the real designs
+in `corpus/embroidery`, see `docs/embroidery.md` › Validation): unclosed shapes are filled, fill
+penetrations sit on one stagger grid (no stitch longer than asked), short stitches are removed,
+travels take the shortest way inside the shape (unlimited under the top stitching), and short
+moves between separate pieces jump without a trim.
 
-**Stage B — change of direction: embroidery properties on objects**
+Details are in `docs/embroidery.md`.
+
+**Next: fixes the review found (measured on the real designs).**
+
+1. **Region order that hides travels.** The next region is chosen by its start alone, so a
+   branched shape can need a travel over stitching already sewn, longer than a visible travel may
+   be, and is then cut (a letter E with vertical rows: see
+   `a_concave_shape_is_never_sewn_across_its_gaps`). Sew so travels pass under stitching still to
+   come (in an E, the spine last). Splitting regions at every concave step alone was tried: 15–25 %
+   more stitches (travel) and no fewer trims, so it needs the ordering. Finding the best order is a
+   routing problem close to the travelling salesman's; published embroidery work uses
+   approximations and local search over the regions (check and cite a source before choosing).
+2. **Short stitches on tight satin curves.** On a curve's inner side the penetrations bunch: a
+   5 mm column round a 3 mm radius puts 16 of 18 inner penetrations within 0.15 mm of the last.
+   Shorten alternate stitches there, as Ink/Stitch's "short stitch" and Wilcom's stitch shortening
+   do.
+3. **Connectors between separate pieces.** Pieces of one colour farther apart than `jumpLength`
+   are trimmed: the SOS button gets 8 trims and the watermelon 13, where the person's designs have
+   3 and 2 (they leave jumps, which machines may trim themselves). Decide the default with the
+   fabric and machine settings, and let an object say "trim after".
+4. **Default density and stitch length.** VectorCraft sews 40–65 % of the stitches of the person's
+   Ink/Stitch designs (Ink/Stitch's defaults: rows 0.25 mm apart, 3 mm stitches; ours 0.4 and 4).
+   Calibrate with the fabric presets below, citing sources.
+5. **Pull compensation for fills, and gaps between shapes.** Only satin columns are widened. Ink/
+   Stitch widens fill rows and can expand shapes so neighbours meet without a gap.
+6. **Narrow filled areas as satin.** Every filled shape becomes tatami; narrow parts (stems, thin
+   arms) are better as satin columns, as auto-digitizers choose by width.
+7. **Ties around cuts made by clipping masks.** Where a clip group cuts a stroke's stitches, the
+   trims it adds have no tie-off before or tie-in after (`digitize.rs`, `cut_to`), unlike the
+   planner's own cuts.
+8. **Satin compensation and start points.** Pull compensation is a fixed width on both sides;
+   professional tools also take a share of the column's width and a value per side, and *push*
+   compensation shortens a column's ends, since sewing lengthens it. Satins also start at their
+   path's start: Ink/Stitch starts them (and fills) at the point nearest the previous object,
+   which saves travel and trims.
+9. **Auto spacing by thread thickness.** Wilcom adjusts satin spacing by thread weight (its
+   auto-spacing settings list an offset per thread thickness); a small addition to
+   `satin_spacing` once threads carry a weight.
+10. **Travel search cost.** `Area::travel` tests every graph edge against every outline edge
+    (bounded by 400 corners). Profile it on jagged shapes with many regions; cache visibility
+    tests or thin the graph if it shows.
+11. **More real designs.** The corpus has eleven designs, all PES (one JEF), all from one project.
+   Add real DST and EXP files, lettering, larger designs, and test on a machine.
+
+**Then: embroidery properties on objects (a change of direction).**
 
 1. An optional "embroidery" attribute on document nodes: stitch type, angle, density, underlay,
-   pull compensation, entry and exit points. It is saved in `.vectorcraft`, set through commands
-   (reachable over MCP), and left unset means today's automatic rules. The current export-time
-   conversion stays as a quick convert.
+   pull compensation, entry and exit points.
+   - Saved in `.vectorcraft`, and set through commands (so reachable over MCP).
+   - Left unset, today's automatic rules apply.
+   - The current export-time conversion stays as a quick convert.
 2. A document-level fabric preset as the source of defaults (numbers cited by source).
 3. Stitches computed per object and cached, for a canvas preview, a stitch counter and an
    "Embroidery" panel with the sewing order.
 
-**Stage C — later.** Editing sewing order and entry/exit points on the canvas, branching of touching
-objects, turning (variable-angle) satin and fill, embroidery lettering, a full PES block (so
-Brother's PE-Design opens our files), validation on real Brother and Janome machines.
+**Later:**
+- random variation of satin width and spacing, which hides seams (Ink/Stitch and Wilcom offer it);
+- turning a machine file's stitches back into shapes stitched by the rules ("recognise objects");
+- editing sewing order and entry/exit points on the canvas;
+- branching of touching objects;
+- turning (variable-angle) satin and fill;
+- embroidery lettering;
+- a full PES block, so Brother's PE-Design opens our files;
+- validation on real Brother and Janome machines.
 
 Known limitations not on this list are in `docs/embroidery.md` › What is not stitched, and in the
-PR description.
+PR descriptions.
 
 ## Decisions not to undo without asking the user
 
@@ -99,6 +154,11 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
   Ink/Stitch's *user documentation* may be read.
 - No test files made with commercial embroidery software in the repository. Write test inputs from
   scratch in code.
+- **Real designs for testing** come from public projects whose licence allows it, made with open
+  tools (today: the Emoji Embroidery Project, CC BY-SA 4.0, digitized with Ink/Stitch). They are
+  fetched by `cargo xtask corpus --embroidery` into the gitignored `corpus/embroidery/`, verified
+  against `xtask/embroidery-corpus.sha256`, used locally and never committed. Prefer them to random
+  shapes when checking stitch quality.
 
 ## Practicalities
 
@@ -107,10 +167,18 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
 - **The full gate is `cargo +1.95.0 xtask ci`.** It takes over 10 minutes, so run it in the
   background. It needs the `wasm32-unknown-unknown` target for 1.95
   (`rustup target add wasm32-unknown-unknown --toolchain 1.95.0`).
+- **`.gitignore` ignores every directory named `plan/`** (meant for the local notes at the root):
+  `crates/stitch/src/plan/` is let back in by name. A new directory called `plan` anywhere else
+  would silently stay out of commits.
+- **Fetch the real designs once** with `cargo +1.95.0 xtask corpus --embroidery`: the engine's
+  `embroidery_corpus` test skips without them (`EMBROIDERY_CORPUS_REQUIRED=1` makes it fail
+  instead).
 - **The fork has no CI on GitHub:** say so when you report results, and don't claim checks passed
   there.
 - **When a task lands:** update `docs/embroidery.md` (algorithms, limitations, test counts) and the
   PR description.
+- **Commit a refactor apart from behaviour changes:** first the pure move (code moved or renamed,
+  tests unchanged and passing), then the fixes, so each diff shows what really changed.
 - **PR descriptions are in English** and self-contained, with embroidery terms explained for
   newcomers.
 - **Embroidery isn't an Illustrator feature,** so it doesn't move the Illustrator-parity scores in

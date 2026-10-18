@@ -201,3 +201,59 @@ impl Axes {
         (self.along * s + self.across * t).to_point()
     }
 }
+
+/// The subpaths of a line (a running line, a satin's centreline) in the order a needle starting at
+/// `here` sews them: each time the nearest one, from its end nearest the needle (a closed one from
+/// its point nearest the needle), as its points ([`SubPath::points`]) and whether it is closed.
+/// Unknown `here` keeps the drawing's order and directions; so does a path of more than
+/// [`MAX_REORDERED`] subpaths, beyond its first, a bound on the work.
+pub(super) fn nearest_order(subs: Vec<SubPath>, here: Option<Point>) -> Vec<(Vec<Point>, bool)> {
+    /// The most subpaths ordered by distance.
+    const MAX_REORDERED: usize = 64;
+    let reorder = subs.len() <= MAX_REORDERED;
+    let mut pending: Vec<SubPath> = subs;
+    let mut out: Vec<(Vec<Point>, bool)> = Vec::with_capacity(pending.len());
+    let mut here = here;
+    while !pending.is_empty() {
+        let at = |s: &SubPath| here.map_or(0.0, |h| s.nearest(h).1);
+        let i = if reorder { pending.iter().enumerate().min_by(|a, b| at(a.1).total_cmp(&at(b.1))).map_or(0, |(i, _)| i) } else { 0 };
+        let sub = pending.remove(i);
+        let pts = match here {
+            Some(h) if out.is_empty() || reorder => sub.starting_near(h),
+            _ => sub.points(),
+        };
+        here = pts.last().copied();
+        out.push((pts, sub.closed));
+    }
+    out
+}
+
+impl SubPath {
+    /// The point to start from nearest `q` (an end of an open polyline, any point of a closed
+    /// one): its index and distance.
+    fn nearest(&self, q: Point) -> (usize, f64) {
+        let d = |i: usize| self.pts.get(i).map_or(f64::INFINITY, |p| p.distance(q));
+        if self.closed {
+            (0..self.pts.len()).map(|i| (i, d(i))).min_by(|a, b| a.1.total_cmp(&b.1)).unwrap_or((0, f64::INFINITY))
+        } else {
+            let last = self.pts.len().saturating_sub(1);
+            if d(last) < d(0) { (last, d(last)) } else { (0, d(0)) }
+        }
+    }
+
+    /// The points ([`SubPath::points`]) starting at the one nearest `q`: an open polyline reversed
+    /// when its end is nearer, a closed one turned to start there.
+    fn starting_near(&self, q: Point) -> Vec<Point> {
+        let (i, _) = self.nearest(q);
+        if i == 0 {
+            return self.points();
+        }
+        if !self.closed {
+            let mut v = self.pts.clone();
+            v.reverse();
+            return v;
+        }
+        let n = self.pts.len();
+        SubPath { pts: (0..n).filter_map(|k| self.pts.get((i + k) % n).copied()).collect(), closed: true }.points()
+    }
+}

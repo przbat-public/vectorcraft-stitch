@@ -6,9 +6,9 @@
 //!   block.
 //! - Each artwork, digitized by VectorCraft at the size of the person's design, comes out sound:
 //!   the same size, every needle point on the artwork, no stitch too long or too short, no more
-//!   trims than its ceiling (just above what was measured when the test landed, next to the
-//!   person's count), and a stitch count in a sane share of the person's (VectorCraft's default
-//!   spacing is more open than Ink/Stitch's, so it sews fewer stitches).
+//!   trims than its ceiling (just above what was last measured, next to the person's count),
+//!   and a stitch count in a sane share of the person's (VectorCraft's default spacing is more
+//!   open than Ink/Stitch's, so it sews fewer stitches).
 //!
 //! Local runs skip an absent corpus; `EMBROIDERY_CORPUS_REQUIRED=1` requires it. The files are
 //! rechecked against the manifest before use.
@@ -25,22 +25,22 @@ use vectorcraft_stitch::{Command, Pattern, quantize};
 #[path = "../../../xtask/src/sha256.rs"]
 mod sha256;
 
-/// (artwork, the person's machine file, most trims). Measured when the test landed, with the
-/// person's count: see the comments.
+/// (artwork, the person's machine file, most trims). Measured when the ordering of fill regions
+/// and the trim length landed, with the person's count: see the comments. (Before, when every jump
+/// longer than `jumpLength` was cut and regions went nearest first: 55 trims in all, now 25.)
 const DESIGNS: &[(&str, &str, usize)] = &[
-    ("bullseye-twemoji.svg", "bullseye-twemoji-inkstitch.pes", 2), // 1 (the person's design: 6)
-    ("fox-twemoji.clipart.svg", "fox-twemoji-inkstitch.pes", 6),   // 5 (6)
+    ("bullseye-twemoji.svg", "bullseye-twemoji-inkstitch.pes", 1), // 0 (the person's design: 6)
+    ("fox-twemoji.clipart.svg", "fox-twemoji-inkstitch.pes", 4),   // 3 (6)
     ("heart-suit-twemoji.clipart.svg", "heart-suit-twemoji-inkstitch.pes", 1), // 0 (0)
-    ("joystick-twemoji.svg", "joystick-twemoji-institch.pes", 6),  // 5 (4)
+    ("joystick-twemoji.svg", "joystick-twemoji-institch.pes", 5),  // 4 (4)
     ("pool-8-ball-twemoji.svg", "pool-8-ball-twemoji-inkstitch.pes", 1), // 0 (2)
-    ("puzzle-piece-twemoji.svg", "puzzle-piece-twemoji-inkstitch.pes", 2), // 1 (0)
+    ("puzzle-piece-twemoji.svg", "puzzle-piece-twemoji-inkstitch.pes", 1), // 0 (0)
     ("smiling-face-with-smiling-eyes-twemoji.clipart.svg", "smiling-face-with-smiling-eyes-twemoji-inkstitch.pes", 4), // 3 (3)
-    // Separate pieces (letters, seeds) more than `jumpLength` apart are trimmed; the person left
-    // them as jumps.
-    ("sos-button-fluent.clipart.svg", "sos-button-fluent-inkstitch.pes", 9), // 8 (3)
-    ("video-game-twemoji.svg", "video-game-twemoji-inkstitch.pes", 9),       // 8 (11)
-    ("watermelon-twemoji.clipart.svg", "watermelon-twemoji-inkstitch.pes", 14), // 13 (2)
-    ("zebra-twemoji.clipart.svg", "zebra-twemoji-inkstitch.pes", 12),        // 11 (21)
+    // Separate pieces (letters, seeds) are joined by tied jumps, cut only past `trimLength`.
+    ("sos-button-fluent.clipart.svg", "sos-button-fluent-inkstitch.pes", 5), // 4 (3)
+    ("video-game-twemoji.svg", "video-game-twemoji-inkstitch.pes", 4),       // 3 (11)
+    ("watermelon-twemoji.clipart.svg", "watermelon-twemoji-inkstitch.pes", 3), // 2 (2)
+    ("zebra-twemoji.clipart.svg", "zebra-twemoji-inkstitch.pes", 7),         // 6 (21)
 ];
 
 /// The corpus, checked against its manifest; `None` (the tests skip) when it is absent and not
@@ -74,6 +74,12 @@ fn machine_files(dir: &Path) -> Vec<PathBuf> {
         .collect();
     v.sort();
     v
+}
+
+/// How many times the needle moves to another place with the thread on or cut (a run of jump
+/// records is one move).
+fn jumps(p: &Pattern) -> usize {
+    p.blocks.iter().map(|b| b.stitches.windows(2).filter(|w| w[0].command == Command::Stitch && w[1].command != Command::Stitch).count()).sum()
 }
 
 /// Each block's needle points and trims, on the formats' 0.1 mm grid: what a machine sews.
@@ -172,7 +178,9 @@ fn artwork_digitizes_soundly_next_to_a_persons_design() {
         let k = (target.width() / first.bounds().unwrap().width()).max(target.height() / first.bounds().unwrap().height());
         s.execute("select.all", &json!({})).unwrap();
         s.execute("object.scale", &json!({"sx": k * 100.0, "sy": k * 100.0, "strokes": true})).unwrap();
+        let started = std::time::Instant::now();
         let r = s.execute("document.export", &json!({"format": "pes"})).unwrap();
+        let took = started.elapsed().as_millis();
         let ours = Format::Pes.read(&decode(&r)).unwrap();
         let b = ours.bounds().unwrap();
         let lengths = stitch_lengths(&ours);
@@ -180,9 +188,10 @@ fn artwork_digitizes_soundly_next_to_a_persons_design() {
         let short = lengths.iter().filter(|l| **l > 1e-9 && **l < 0.3).count();
         let trims = ours.points().filter(|p| p.command == Command::Trim).count();
         let person_trims = person.points().filter(|p| p.command == Command::Trim).count();
+        let (jumps, person_jumps) = (jumps(&ours), jumps(&person));
         let share = ours.sewn() as f64 / person.sewn() as f64;
         eprintln!(
-            "{art:52} {:.1}×{:.1} mm  stitches {:5} ({:.0}% of the person's {})  trims {trims} (person {person_trims})  longest {longest:.1} mm  short {short}",
+            "{art:52} {:.1}×{:.1} mm  stitches {:5} ({:.0}% of the person's {})  trims {trims} (person {person_trims})  jumps {jumps} ({person_jumps})  longest {longest:.1} mm  short {short}  {took} ms",
             b.width(),
             b.height(),
             ours.sewn(),

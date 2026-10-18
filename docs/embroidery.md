@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** new (stitch planning and the DST, EXP, PES and JEF machine formats)
+> **Last reviewed:** 2026-10-18 · **Last updated:** 2026-10-18 · **Change:** fill regions ordered so travels hide under stitching still to come; jumps tied and trimmed only past `trimLength`; objects start near the one before; trim after an object; ties at clip cuts
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -31,7 +31,8 @@ control channel use it). Every writable format's options are listed by `document
 | `stitchAngle` | 45° | the direction a fill's rows run |
 | `pullCompensation` | 0.2 mm | how much wider a satin column is stitched so the fabric's pull leaves no gap |
 | `underlay` | `true` | an edge run under fills, a centre run under satin columns |
-| `jumpLength` | 5 mm | a longer move cuts the thread and jumps; a shorter move that can't be sewn (between separate pieces) jumps with the thread on |
+| `jumpLength` | 5 mm | a longer move lifts the needle (a jump), tied off before and in after so that it can be cut; a shorter move that can't be sewn (between separate pieces) jumps with the thread on |
+| `trimLength` | 10 mm | a jump longer than this cuts the thread first (a trim); shorter jumps are left for the machine or a person to cut |
 | `minStitch` | 0.4 mm | shorter stitches are left out |
 
 An option left out keeps the style's own value. The defaults are the stitch planner's
@@ -54,16 +55,36 @@ Moving or scaling the lines moves or scales the stitches; editing a line's point
 stitches. Turning a design back into shapes that are stitched by the rules (what professional
 software calls recognising objects) is not done yet.
 
+**Cutting the thread after an object.** `embroidery.setTrimAfter` (`{on: true, ids?}`, the
+selection by default) marks objects or groups whose thread is cut after their last stitch, however
+near the next object starts, as Ink/Stitch's and Wilcom's "Trim After" do. Unmarked, only a jump
+longer than `trimLength` is cut. The mark is saved in `.vectorcraft` files
+(`NodeExtras::embroidery`).
+
 ## How a shape becomes stitches
 
 A *run* is a stretch sewn without lifting the needle. Runs are joined into a block: a short move
 inside the shape (`jumpLength` or less) is just the next stitch; a move that can't be sewn (it
-would leave the shape or cross a hole) jumps, with the thread on when it is short and cut first
-when it is longer than `jumpLength`, as professional software leaves short connectors as jumps.
-Each colour block is one thread. Satin and fill tie the thread in after every cut (and at the
-start) and off before every cut (and at the end): a short stitch back and forth on the spot. A
-stitch shorter than `minStitch` is left out, as professional software removes them: it can break
-the thread or cut the fabric.
+would leave the shape or cross a hole) jumps. A short jump keeps the thread on (it leaves no tail
+worth cutting). One longer than `jumpLength` is tied off before and in after, so that the machine
+or a person can cut it without the stitching coming undone, and the thread is cut first (a
+*trim*) only when the jump is longer than `trimLength`, 10 mm by default. That follows what the
+tools and machines do: Ink/Stitch adds a trim only where an object asks for one ("Trim After") and
+otherwise ties jumps longer than its minimum jump length
+([fill stitch](https://inkstitch.org/docs/stitches/fill-stitch/),
+[preferences](https://inkstitch.org/docs/preferences/)); Wilcom trims when the next connector is
+longer than a length the user sets
+([automatic trim settings](https://docs.wilcom.com/embroiderystudio/27/en/OnlineHelp/Quality/connectors/connectors-8.htm));
+and machines with jump trimming cut the jumps longer than a length set on the machine, Brother's
+from 5 to 50 mm
+([Brother](https://support.brother.com/g/s/hf/htmldoc/hsm/om/888p5x/en/07_03_07.html)). A trim
+costs machine time and risks the thread pulling out, while a jump nobody cuts lies loose (and
+entry-level machines don't cut jumps themselves). The default, 10 mm, is a choice between those, not
+a published value: hops between letters or seeds stay jumps, and longer loops are cut in the file. Each colour block is one
+thread. Satin and fill tie the thread in at the start and after every long jump, and off before
+every long jump and at the end: a short stitch back and forth on the spot. A stitch shorter than
+`minStitch` is left out, as professional software removes them: it can break the thread or cut
+the fabric.
 
 - **Running** follows a path at `stitchLength` steps, with a lock stitch (a short stitch back
   along the line and forward again, never past its end) at each end so the thread does not pull
@@ -101,27 +122,51 @@ the thread or cut the fabric.
   the top rows, kept 0.6 mm inside the edge so they never peek out (estimates).
 
   The rows are grouped into *regions* where the shape does not branch (above a hole, each side of
-  it, below it; each arm of a letter), and each region is sewn whole before the next: the one that
-  starts nearest where the last one ended, from whichever end and side is closer. Each region also
+  it, below it; each arm of a letter), linked where they meet, and each region is sewn whole
+  before the next, from whichever of its ends and sides is nearer the needle. Each region also
   takes one row of its neighbour's where they meet, cut to the stretch they share, so the fabric's
   pull opens no gap along the seam. The needle gets from one region (or outline) to the next by a
   *travel run*: 2 mm stitches along the shortest way that stays inside the shape, found on a
-  visibility graph of the outlines' corners, each passed 0.5 mm inside (as Ink/Stitch's
-  "underpath" does). Travels under the top stitching (in the underlay) may be any length, since the
-  top stitching hides them; in the top stitching they may be at most 25 mm (an estimate), and a
-  longer or impossible way (two separate shapes) lifts the needle instead. A 30 mm ring with a hole
-  and a puzzle piece are sewn without a trim.
+  visibility graph of the outlines' reflex corners (a shortest way turns at no other), each passed
+  0.5 mm inside (as Ink/Stitch's "underpath" does). A travel under stitching still to come is
+  hidden, so it may be any length (all of the underlay's are); one over the top stitching already
+  sewn shows, and may show for at most 25 mm (an estimate); a way that would show more, or none
+  (two separate shapes), lifts the needle instead.
+
+  The order of the regions decides how much travel shows. The pieces of a shape (regions linked
+  to one another) are sewn one after another, the nearest next; in each, several orders are
+  planned and the cheapest kept, counting travel that shows, hidden travel (it adds stitches),
+  jumps and trims (weights chosen by judgement: a trim costs most, a visible travel much more than
+  a hidden one). One order sews the nearest region next. The others each pick a region to sew last
+  and sew every other region before the one it leads to, ending next to it, so that the way on
+  always runs under regions still to come: the approach of US patent 6,397,120 (Soft Sight, 2002),
+  which orders a fill's fragments by a walk from the one where sewing ends. In a letter E with
+  vertical rows the arms are sewn first, each towards the spine, and the spine last: no jump and no
+  trim at any angle, where the nearest-first order had to cut. A 30 mm ring with a hole and a
+  puzzle piece are sewn without a trim. Up to 8 regions are tried as the last one (fewer in a
+  piece of many regions), and a piece of more than 200 regions is sewn nearest-first.
+
+  The corners' visibility is worked out once per shape, and the outlines' edges are sorted into a
+  grid of cells, so that a test along a segment looks only at the edges in the cells it passes: a
+  gear of 90 teeth with 24 holes plans in 60–90 ms (measured, release build) with 2–4 trims and as
+  many jumps, where testing every edge against every corner took about 100 ms and gave up
+  travelling (the graph was too large), ending with 25–34 trims and over 200 jumps.
 
 Blocks are sewn in stacking order, back to front, because thread sewn later lies on top of thread
 sewn earlier, as paint does. An object joins an earlier block of its thread only when it overlaps
 none of the blocks sewn between the two, so the machine changes colour as few times as the stacking
-allows rather than once per object. Each block starts with the needle up and a jump to its first
-stitch.
+allows rather than once per object; it is reached by a jump, with a trim when the jump is longer
+than `trimLength` or the object before asked for one. Each object starts as near as it can to
+where the needle is when its turn comes, as Ink/Stitch starts fills and satins: a satin column or
+a running line at its nearer end (a closed one at its nearest point, several lines nearest
+first), a fill's edge run at its nearest corner and its first region the nearest. Each block
+starts with the needle up and a jump to its first stitch.
 
 What is sewn is what would print: hidden objects, guides, template layers and non-printing layers
 are left out. A clip group sews its clipped art only inside the clipping path: a filled area is cut
 to it exactly before it is planned, and a stroke keeps the stitches whose needle points fall inside
-(so a running line can stop up to a stitch short of the edge). The clipping path's own fill is sewn
+(so a running line can stop up to a stitch short of the edge), the needle lifted across each cut
+as between a shape's runs, with the thread tied off and in around a long jump. The clipping path's own fill is sewn
 under the clipped art and its stroke over it, unclipped, as they paint.
 
 A shape that would need more than 4 million stitches, or a design of more than 2 million, is refused
@@ -159,21 +204,23 @@ index, whose RGB values differ between published charts — preview colour is no
   but PE-Design shows it as a blank document because the editable shapes (CEmbOne/CSewSeg) are not
   written yet. Reading a PES reads its PEC block, which is what machines and every other app use.
 - No stitch preview layer and no stitch simulator yet; the imported design is the preview.
-- Separate pieces of one colour (letters, seeds) farther apart than `jumpLength` are trimmed
-  between; a person digitizing the same artwork often leaves them as jumps (see Real designs).
-- The order of a fill's regions only looks at the next start, so a branched shape can need a
-  travel over stitching already sewn, longer than a visible travel may be, and is then cut (a
-  letter E with vertical rows).
+- The trim length is one number for every machine and fabric: there are no machine or fabric
+  settings yet. Jumps shorter than it are left to a machine with jump trimming, or to a person.
+- Only the order of a fill's regions is searched; the order of objects follows the stacking, and
+  each object's start is the nearest one, not chosen with the next object in view.
 - On a satin's inner side, a tight curve bunches the penetrations (no short stitches yet).
 - The default spacing and stitch length are more open than Ink/Stitch's: VectorCraft sews about
   40–65 % as many stitches for the same artwork.
 
 ## Validation
 
-- `crates/stitch`: 37 unit tests — the fill covers a rectangle and leaves its hole empty, an
+- `crates/stitch`: 40 unit tests — the fill covers a rectangle and leaves its hole empty, an
   unclosed shape is filled, a ring is sewn in regions with no thread across its hole and,
-  travelling inside, without a trim, regions overlap by a row, a narrow gap and a letter E's gaps
-  are never sewn across, separate pieces jump when close and trim when far, large fills get a
+  travelling inside, without a trim, regions overlap by a row, a narrow gap is never sewn across,
+  a letter E is sewn in one go at any angle without crossing its gaps, a gear of 90 teeth and 24
+  holes travels inside, the edge grid answers what testing every edge does, separate pieces jump
+  with the thread on when close, tied when farther and cut only past the trim length, a shape
+  starts nearest the needle, large fills get a
   tatami underlay and small ones don't, no stitch is longer than asked or shorter than the
   shortest, the angle turns the rows, running lines keep their corners and lock without passing
   their ends, fills and satins tie in and off, satin underlay follows the width with no trim
@@ -184,7 +231,7 @@ index, whose RGB values differ between published charts — preview colour is no
   writes a design it reads back with the same blocks and size, a JEF's header extents are where
   its stitches go, an absurd JEF colour count is not believed, and no reader panics on random,
   truncated or damaged bytes.
-- `crates/engine`: 22 tests (21 command-level) — export writes a readable design in every format,
+- `crates/engine`: 25 tests (24 command-level) — export writes a readable design in every format,
   options change the plan, a written PES opens as art (also by its magic bytes), an opened design
   is written back unchanged in every format (and again after a second round), with the cuts at
   its blocks' ends, converts between formats with the same needle points, ignores the style
@@ -192,8 +239,10 @@ index, whose RGB values differ between published charts — preview colour is no
   bad styles and absurd densities are refused, type is left out with a warning, the stacking
   order survives grouping by thread, clipping masks cut fills and strokes, template layers are not
   sewn, a forced fill fills a stroke's area rather than its path's inside, a satin wider than
-  50 mm is warned about, and the defaults `document.formats` lists (the satin spacing table
-  included) are the planner's.
+  50 mm is warned about, cuts made by a clipping mask are tied and trimmed only past the trim
+  length, an object can ask for a trim after it (and the document keeps it), an object starts near
+  the one before, and the defaults `document.formats` lists (the satin spacing table included) are
+  the planner's.
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
 
@@ -212,21 +261,29 @@ are used locally, never committed. The test checks that:
   stitch longer than 10 mm, at most two shorter than 0.3 mm, no more trims than its ceiling and
   30–80 % of the person's stitch count.
 
-When the test landed (VectorCraft's defaults; the person's design in brackets):
+Measured with VectorCraft's defaults, before and after the ordering of fill regions and the trim
+length landed (the person's design in brackets; its count includes the cuts before colour
+changes, which ours doesn't). Jumps count every move with the needle up, cut or not, and include
+short hops with the thread on (the bullseye's 8 new ones are about 1 mm, between its rings).
 
-| Design | Stitches | Trims |
-|---|---|---|
-| bullseye | 3574 (8133) | 1 (6) |
-| fox | 2176 (5268) | 5 (6) |
-| heart suit | 1338 (3429) | 0 (0) |
-| joystick | 1657 (3148) | 5 (4) |
-| pool 8 ball | 2322 (5214) | 0 (2) |
-| puzzle piece | 1352 (2988) | 1 (0) |
-| smiling face | 2580 (5733) | 3 (3) |
-| SOS button | 2596 (5849) | 8 (3) |
-| video game | 2162 (4496) | 8 (11) |
-| watermelon | 1522 (2598) | 13 (2) |
-| zebra | 3455 (8861) | 11 (21) |
+| Design | Stitches | Trims, before → now | Jumps, before → now |
+|---|---|---|---|
+| bullseye | 3590 (8133) | 1 → 0 (6) | 1 → 9 (8) |
+| fox | 2204 (5268) | 5 → 3 (6) | 5 → 4 (3) |
+| heart suit | 1338 (3429) | 0 → 0 (0) | 0 → 0 (0) |
+| joystick | 1662 (3148) | 5 → 4 (4) | 5 → 5 (4) |
+| pool 8 ball | 2328 (5214) | 0 → 0 (2) | 0 → 1 (2) |
+| puzzle piece | 1344 (2988) | 1 → 0 (0) | 1 → 0 (0) |
+| smiling face | 2626 (5733) | 3 → 3 (3) | 3 → 3 (6) |
+| SOS button | 2630 (5849) | 8 → 4 (3) | 11 → 6 (2) |
+| video game | 2155 (4496) | 8 → 3 (11) | 9 → 12 (12) |
+| watermelon | 1537 (2598) | 13 → 2 (2) | 14 → 14 (2) |
+| zebra | 3524 (8861) | 11 → 6 (21) | 12 → 15 (39) |
+
+55 trims in all before, 25 now; stitch counts within 2 % of before (hidden travels add a few). With
+a 25 mm trim length it would be 7; with 5 mm (every jump cut, as before) about 46. The
+watermelon's seeds, which the person did not sew, are joined by tied jumps of 4–10 mm and two
+trims.
 
 The comparison also found and fixed: a shape drawn without a final close sewn as an outline (the
 heart: 42 stitches instead of a fill), fill stitches up to 1.5 times `stitchLength` (the old
@@ -266,6 +323,15 @@ Public documentation, cited per claim in the crate and in the local research not
   the DST bit decoding and the PEC stitch encoding.
 - [pyembroidery](https://github.com/EmbroidePy/pyembroidery) (MIT), consulted for terminology and
   the read/write conventions (y direction, trim encoding); no code copied.
+- Connectors and trims: Ink/Stitch's [fill stitch](https://inkstitch.org/docs/stitches/fill-stitch/)
+  and [preferences](https://inkstitch.org/docs/preferences/) pages ("Trim After", minimum jump
+  stitch length, starting near the previous object), Wilcom's
+  [automatic trim settings](https://docs.wilcom.com/embroiderystudio/27/en/OnlineHelp/Quality/connectors/connectors-8.htm),
+  and Brother's [jump stitch trimming](https://support.brother.com/g/s/hf/htmldoc/hsm/om/888p5x/en/07_03_07.html)
+  (the machine cuts jumps longer than a set 5–50 mm).
+- Ordering a fill's regions: US patent 6,397,120 (Soft Sight, filed 1999, published 2002;
+  [Google Patents](https://patents.google.com/patent/US6397120B1/en)), which orders fill
+  fragments by a recursive walk from the one where sewing ends; read for the idea only.
 - Ink/Stitch documentation (GPL-3.0 project, documentation read only) and vendor manuals
   (Wilcom/Hatch, ZSK, Madeira, Brother, Janome) for densities, stitch lengths, pull compensation
   and underlay — summarised in the local research notes with a source per number.
@@ -276,14 +342,15 @@ Public documentation, cited per claim in the crate and in the local research not
 
 - `crates/stitch/src/lib.rs` — the model: units, commands, stitches, threads, blocks, patterns.
 - `crates/stitch/src/plan/` — stitch planning: `mod.rs` (styles, parameters, entry points),
-  `geometry.rs` (polylines, spacing points, the rows' axes), `area.rs` (inside a filled shape, row
-  spans, travel runs), `runs.rs` (joining runs: jumps, trims, ties, short stitches), `running.rs`,
-  `satin.rs`, `fill.rs`, `tests.rs`.
+  `geometry.rs` (polylines, spacing points, the rows' axes, lines ordered nearest first),
+  `area.rs` (inside a filled shape, row spans, the edge grid, the travel graph), `runs.rs` (joining runs: jumps, trims, ties, short stitches), `running.rs`,
+  `satin.rs`, `fill.rs` (rows, regions and their order), `tests.rs`.
 - `crates/stitch/src/format/` — `mod.rs` (shared frames, readers, block building), `dst.rs`,
   `exp.rs`, `pes.rs`, `jef.rs`.
 - `crates/stitch/src/thread.rs` — the colour palettes and nearest-colour matching.
 - `crates/engine/src/cmd/fileio/embroidery/` — the commands' side: `mod.rs` (export options and
   entry point), `import.rs` (a design opened as art), `digitize.rs` (the document's art planned as
-  stitches), `sequence.rs` (the order blocks are sewn in).
+  stitches), `sequence.rs` (the order blocks are sewn in, where the needle is before each object,
+  trims between objects), and the `embroidery.setTrimAfter` command.
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real
   designs and the test that uses them.

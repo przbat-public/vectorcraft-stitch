@@ -14,6 +14,11 @@ pub struct Embroidery {
     /// design is written back unchanged. `None`: the object is art, stitched by the export's rules.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stitches: Option<StitchRun>,
+    /// The thread is cut after the object's stitches, however near the next object starts
+    /// (otherwise only a jump longer than the export's trim length is cut). A run of literal
+    /// stitches says the same with [`StitchRun::trim_after`].
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub trim_after: bool,
 }
 
 /// A run of literal stitches ([`Embroidery::stitches`]): the object's points in order, the needle

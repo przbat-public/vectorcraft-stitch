@@ -285,6 +285,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(print::specs());
         v.extend(recovery::specs());
         v.extend(fileio::dxfimport::specs());
+        v.extend(fileio::embroidery::specs());
         v.extend(webexport::specs());
         v.extend(assets::specs());
         v.extend(css::specs());

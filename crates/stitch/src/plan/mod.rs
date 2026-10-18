@@ -2,7 +2,8 @@
 //!
 //! A *run* is a stretch the needle sews without lifting: a set of needle points in order. Runs
 //! are joined into a block: a short move between two runs stays down (it is just the next stitch),
-//! a long one becomes a [`Command::Trim`] and a [`Command::Jump`].
+//! a long one becomes a [`Command::Jump`], tied off and in, with a [`Command::Trim`] first when it
+//! is longer than [`Params::trim`].
 //!
 //! Parameters are millimetres and degrees. Everything is clamped to a sane range before use, so
 //! out-of-range or non-finite input gives a usable stitch plan rather than a loop that never
@@ -35,18 +36,26 @@ mod satin;
 #[cfg(test)]
 mod tests;
 
-use vectorcraft_geom::{BezPath, FillRule};
+use vectorcraft_geom::{BezPath, FillRule, Point};
 
 pub use fill::fill;
 pub use running::running;
+pub use runs::join_cut;
 pub use satin::{satin, satin_spacing};
 
 use crate::{Error, Stitch};
 use geometry::{Axes, SubPath, length, subpaths};
 
-/// A trim and a jump are needed when the thread would otherwise run further than this, unless
+/// A move longer than this lifts the needle (a jump) instead of being sewn, unless
 /// [`Params::jump`] says otherwise (millimetres).
 const JUMP: f64 = 5.0;
+/// A jump longer than this cuts the thread first, unless [`Params::trim`] says otherwise
+/// (millimetres). Shorter jumps (hops between letters or seeds) are left for the machine or a
+/// person to cut: machines with jump trimming cut those longer than a length set on the machine
+/// (Brother's settings run from 5 to 50 mm), and Ink/Stitch adds no trims unless an object asks
+/// for one. Longer ones are cut in the file, so they don't lie loose on a machine that can't cut
+/// jumps itself. A choice within those bounds, not a published value.
+pub const TRIM: f64 = 10.0;
 /// The longest satin stitch before it is split (millimetres): longer stitches snag and sag. An
 /// estimate (professional software makes it a setting, bounded by the machine format: 12.1 mm
 /// per record in DST).
@@ -112,9 +121,13 @@ pub struct Params {
     pub pull: f64,
     /// Sew an underlay first: an edge run under a fill, a centre run under a satin column.
     pub underlay: bool,
-    /// A move longer than this trims and jumps instead of running the thread across,
-    /// millimetres.
+    /// A move longer than this lifts the needle (a jump) instead of running the thread across,
+    /// millimetres. A jump this long or longer is tied off before and in after (when [`Params::lock`]
+    /// is on), so that the machine or a person can cut it without the stitching coming undone.
     pub jump: f64,
+    /// A jump longer than this cuts the thread first (a trim), millimetres. Never less than
+    /// [`Params::jump`].
+    pub trim: f64,
     /// Lock the thread so it does not pull out: a running line gets a lock stitch (a short back
     /// stitch) at each end of each run; satin and fill a tie-in after every cut and a tie-off
     /// before it.
@@ -149,6 +162,7 @@ impl Params {
                 pull: 0.0,
                 underlay: false,
                 jump: JUMP,
+                trim: TRIM,
                 lock: true,
                 min_stitch: 0.4,
                 width: 0.0,
@@ -163,6 +177,7 @@ impl Params {
                 pull: 0.2,
                 underlay: true,
                 jump: JUMP,
+                trim: TRIM,
                 lock: true,
                 min_stitch: 0.4,
                 width: 3.0,
@@ -177,6 +192,7 @@ impl Params {
                 pull: 0.0,
                 underlay: true,
                 jump: JUMP,
+                trim: TRIM,
                 lock: true,
                 min_stitch: 0.4,
                 width: 0.0,
@@ -193,6 +209,7 @@ impl Params {
         let d = Self::for_style(self.style);
         let fin = |v: f64, fallback: f64| if v.is_finite() { v } else { fallback };
         let angle = fin(self.angle, d.angle) % 360.0;
+        let jump = fin(self.jump, d.jump).clamp(0.5, 20.0);
         Self {
             style: self.style,
             stitch_length: fin(self.stitch_length, d.stitch_length).clamp(0.2, 12.0),
@@ -200,7 +217,8 @@ impl Params {
             angle: if angle < 0.0 { angle + 360.0 } else { angle },
             pull: fin(self.pull, d.pull).clamp(0.0, 2.0),
             underlay: self.underlay,
-            jump: fin(self.jump, d.jump).clamp(0.5, 20.0),
+            jump,
+            trim: fin(self.trim, d.trim).clamp(jump, 1000.0),
             lock: self.lock,
             min_stitch: fin(self.min_stitch, d.min_stitch).clamp(0.05, 3.0),
             width: fin(self.width, d.width).clamp(0.0, MAX_SATIN_WIDTH),
@@ -215,12 +233,19 @@ impl Params {
 /// `rule` decides what a fill covers when its subpaths overlap (a hole wound against its shape
 /// is a hole under the non-zero rule; under the even-odd rule any two crossings change side).
 pub fn stitches(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
+    stitches_from(path, rule, p, None)
+}
+
+/// [`stitches`], the needle at `from` before the shape starts (where the object sewn before it
+/// ended): the shape starts as near it as it can, which saves jumps and trims. `None`: the shape
+/// starts where it is drawn to.
+pub fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Vec<Stitch> {
     let p = p.sane();
     match p.style {
-        Style::Running => running(path, &p),
-        Style::Satin if p.width > 0.0 => satin(path, &p),
+        Style::Running => running::running_from(path, &p, from),
+        Style::Satin if p.width > 0.0 => satin::satin_from(path, &p, from),
         // A satin column needs a width: without one the shape is filled instead.
-        Style::Satin | Style::Fill => fill(path, rule, &p),
+        Style::Satin | Style::Fill => fill::fill_from(path, rule, &p, from),
     }
 }
 
@@ -228,6 +253,11 @@ pub fn stitches(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
 /// [`MAX_STITCHES`] (a huge shape, or a tiny stitch length or spacing): estimated from the
 /// geometry before any stitch is planned, so an absurd request costs no memory.
 pub fn try_stitches(path: &BezPath, rule: FillRule, p: &Params) -> crate::Result<Vec<Stitch>> {
+    try_stitches_from(path, rule, p, None)
+}
+
+/// [`try_stitches`], the needle at `from` before the shape starts ([`stitches_from`]).
+pub fn try_stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> crate::Result<Vec<Stitch>> {
     let p = p.sane();
     let n = estimate(&subpaths(path), &p);
     if !n.is_finite() || n > MAX_STITCHES as f64 {
@@ -235,7 +265,7 @@ pub fn try_stitches(path: &BezPath, rule: FillRule, p: &Params) -> crate::Result
             "a shape would need about {n:.0} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design"
         )));
     }
-    Ok(stitches(path, rule, &p))
+    Ok(stitches_from(path, rule, &p, from))
 }
 
 /// About how many points `subs` plan into in style `p` (an upper estimate; not finite when the

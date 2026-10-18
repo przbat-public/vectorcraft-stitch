@@ -28,6 +28,61 @@ fn create_and_undo_redo() {
     assert!(s.execute("edit.redo", &json!({})).is_err());
 }
 
+/// Clear History removes the steps to undo and the steps to redo. The document and the selection
+/// stay as they are, Undo and Redo are then disabled, and clearing is not a step itself.
+#[test]
+fn clear_history_removes_every_step_and_keeps_the_document() {
+    let mut s = session();
+    let a = rect(&mut s, 10.0, 10.0, 100.0, 50.0);
+    let b = rect(&mut s, 200.0, 10.0, 100.0, 50.0);
+    rect(&mut s, 400.0, 10.0, 100.0, 50.0);
+    s.execute("edit.undo", &json!({})).unwrap();
+    let st = s.doc().unwrap();
+    assert_eq!((st.history.undo.len(), st.history.redo.len()), (2, 1));
+    let (doc, selection, dirty) = (st.doc.clone(), st.selection.clone(), st.is_dirty());
+    assert_eq!(s.execute("edit.clearHistory", &json!({})).unwrap(), json!({"cleared": 3}));
+    let st = s.doc().unwrap();
+    assert_eq!((st.history.undo.len(), st.history.redo.len()), (0, 0));
+    assert!(Arc::ptr_eq(&st.doc, &doc), "the document is the one from before clearing");
+    assert_eq!((&st.selection, st.is_dirty()), (&selection, dirty));
+    assert!(st.doc.node(a).is_some() && st.doc.node(b).is_some());
+    for cmd in ["edit.undo", "edit.redo", "edit.clearHistory"] {
+        assert!(matches!(s.execute(cmd, &json!({})), Err(EngineError::Disabled(..))), "{cmd}");
+    }
+    // A new edit is a step again: undoing it goes back to the document the history was cleared at.
+    rect(&mut s, 600.0, 10.0, 100.0, 50.0);
+    s.execute("edit.undo", &json!({})).unwrap();
+    assert!(Arc::ptr_eq(&s.doc().unwrap().doc, &doc));
+    assert!(s.execute("edit.undo", &json!({})).is_err());
+}
+
+/// Clear History is disabled without a document and in a document with no step to undo or redo.
+#[test]
+fn clear_history_needs_a_step_to_clear() {
+    let mut s = Session::new();
+    assert!(matches!(s.execute("edit.clearHistory", &json!({})), Err(EngineError::Disabled(..))), "no document");
+    s.execute("file.new", &json!({})).unwrap();
+    match s.execute("edit.clearHistory", &json!({})) {
+        Err(EngineError::Disabled(_, why)) => assert_eq!(why, "no history to clear"),
+        other => panic!("a new document: {other:?}"),
+    }
+}
+
+/// A drag still in progress when the history is cleared ends, and its change stays in the document
+/// without a step to undo it.
+#[test]
+fn clear_history_keeps_a_drag_in_progress_in_the_document() {
+    let mut s = session();
+    let a = rect(&mut s, 10.0, 10.0, 100.0, 50.0);
+    s.begin_interaction("Move").unwrap();
+    s.preview("object.move", &json!({"dx": 30, "dy": 0})).unwrap();
+    assert_eq!(s.execute("edit.clearHistory", &json!({})).unwrap(), json!({"cleared": 2}));
+    assert!(!s.in_interaction());
+    let st = s.doc().unwrap();
+    assert_eq!(st.doc.node(a).unwrap().geometric_bounds().unwrap().x0, 40.0);
+    assert!(st.history.undo.is_empty() && st.history.redo.is_empty());
+}
+
 #[test]
 fn unknown_and_disabled() {
     let mut s = Session::new();
@@ -1729,6 +1784,24 @@ fn bounding_box_handles_snap_to_the_grid() {
     }
 }
 
+/// A Shift-constrained move with Snap to Grid on stays level: the square's center lands on a
+/// gridline across, and its top stays where it was, off the grid.
+#[test]
+fn a_shift_move_snapped_to_the_grid_stays_on_its_line() {
+    let mut s = session();
+    let a = rect(&mut s, 101.0, 101.0, 100.0, 100.0);
+    let step = s.doc().unwrap().doc.grid.spacing / f64::from(s.doc().unwrap().doc.grid.subdivisions.max(1));
+    let on_grid = |v: f64| (v / step - (v / step).round()).abs() < 1e-9;
+    let v = ViewInfo { snap_to_grid: true, ..ViewInfo::default() };
+    let shift = vectorcraft_tools::Mods { shift: true, ..Default::default() };
+    s.select_tool("selection", v).unwrap();
+    for (kind, x, y) in [(PointerKind::Down, 151.0, 151.0), (PointerKind::Drag, 180.0, 153.0), (PointerKind::Up, 180.0, 153.0)] {
+        s.pointer(&PointerEvent::new(kind, x, y).with_mods(shift), v).unwrap();
+    }
+    let b = s.doc().unwrap().doc.node(a).unwrap().geometric_bounds().unwrap();
+    assert!(on_grid(b.center().x) && (b.y0 - 101.0).abs() < 1e-9, "{b:?}, grid step {step}");
+}
+
 /// Follow-up to #1254: toggling or adding anchors of a path selected as a whole starts from all
 /// its anchors, so toggling one deselects it alone and adding one keeps them all.
 #[test]
@@ -2268,6 +2341,29 @@ fn reshape_moves_the_grabbed_point_and_its_neighbourhood() {
     let tl = pts.iter().find(|p| p.x < 1.0 && p.y < 0.0).expect("top-left moved up");
     assert!(tl.y > -40.0);
     assert!(pts.iter().filter(|p| (p.y - 100.0).abs() < 1e-9).count() == 2);
+}
+
+#[test]
+fn reshape_falloff_follows_arc_length_on_open_paths() {
+    let mut s = session();
+    let id = NodeId(
+        s.execute(
+            "path.create",
+            &json!({
+                "anchors": [{"x": 0, "y": 0}, {"x": 100, "y": 0}, {"x": 200, "y": 0}, {"x": 300, "y": 0}],
+                "closed": false
+            }),
+        )
+        .unwrap()["id"]
+            .as_u64()
+            .unwrap(),
+    );
+    s.execute("path.reshape", &json!({"id": id.0, "x": 300.0, "y": 0.0, "dx": 0.0, "dy": 100.0})).unwrap();
+    let pts: Vec<_> = s.doc().unwrap().doc.node(id).unwrap().path_data().unwrap().subpaths[0].anchors.iter().map(|a| a.p).collect();
+    assert!((pts[3].y - 100.0).abs() < 1e-6, "grabbed end moves full delta: {pts:?}");
+    assert!(pts[0].y.abs() < 1e-6, "far end stays put: {pts:?}");
+    assert!(pts[2].y > 1.0 && pts[2].y < 100.0, "mid-anchor moves partially: {pts:?}");
+    assert!(pts[1].y < pts[2].y, "nearer anchors move more: {pts:?}");
 }
 
 #[test]

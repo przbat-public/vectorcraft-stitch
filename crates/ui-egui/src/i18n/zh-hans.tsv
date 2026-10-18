@@ -1300,6 +1300,7 @@ file-filter	Templates	模板
 	History Options…	历史记录选项…
 	Step Backward	后退一步
 	Step Forward	前进一步
+	Clear History	清除历史记录
 	Set History Limit…	设置历史记录上限…
 	History States	历史记录步数
 # History panel: the names of undo steps (`every_undo_label_is_translated`).
@@ -2362,6 +2363,8 @@ mark-style	Japanese	日式
 	Redefine Character Style	重新定义字符样式
 	Redefine Graphic Style	重新定义图形样式
 	Redefine Graphic Style “{name}”	重新定义图形样式“{name}”
+	Apply {name}	应用样式“{name}”
+	Redefine {name}	重新定义样式“{name}”
 	Redefine Paragraph Style	重新定义段落样式
 	Redefine Symbol	重新定义符号
 	Redefine {kind} Style	重新定义{kind}样式
@@ -3548,6 +3551,9 @@ imageTrace	Outline	轮廓
 @msg	it has more than one artboard	它有多个画板
 @msg	its editing data has no layers	其编辑数据中没有图层
 @msg	its editing data is damaged	其编辑数据已损坏
+@msg	its zlib compression is damaged	其 zlib 压缩已损坏
+@msg	its Zstandard compression is damaged	其 Zstandard 压缩已损坏
+@msg	it decompresses to more than {_1} MB	解压后超过 {_1} MB
 @msg	its type is to come in as outlines, which only its page has	其文字需要以轮廓导入，而只有其页面中包含这些轮廓
 @msg	{_1} files	{_1} 文件
 @msg	A browser with WebGPU or WebGL2 is required.	需要支持 WebGPU 或 WebGL2 的浏览器。
@@ -3633,6 +3639,7 @@ imageTrace	Outline	轮廓
 @msg	object {id} is not a selected top-level object	对象 {id} 不是选中的顶层对象
 @msg	nothing to redo	没有可重做的操作
 @msg	nothing to undo	没有可撤销的操作
+@msg	no history to clear	没有可清除的历史记录
 @msg	Expand Appearance: the selection has a basic appearance	扩展外观：所选对象只有基本外观
 @msg	select (or target) objects whose appearance isn't basic	请选择 (或定位) 外观不是基本外观的对象
 @msg	{C}: no effect at index {from}	{C}：索引 {from} 处没有效果
@@ -3650,6 +3657,7 @@ imageTrace	Outline	轮廓
 @msg	this file was saved without PDF compatibility, and its editing data can't be read ({why})	此文件保存时未启用 PDF 兼容性，且无法读取其编辑数据 ({why})
 @msg	the export wrote no file	导出未写入任何文件
 @msg	{_1} files can be opened but not written (see document.formats)	{_1} 文件可以打开，但不能写入 (请参阅 document.formats)
+@msg	{_1} files are written by file.saveAsTemplate	{_1} 文件由 file.saveAsTemplate 写入
 @msg	{path}: no file system here (pass dataBase64 to open; omit the path to get dataBase64)	{path}：此处没有文件系统 (要打开文件，请传入 dataBase64；省略路径可获取 dataBase64)
 @msg	Save writes {_1}, not {_2}: use document.export for other formats	保存会写入 {_1}，而不是 {_2}：其他格式请使用 document.export
 @msg	no changes since the last save	自上次保存以来没有更改
@@ -3858,7 +3866,8 @@ imageTrace	Outline	轮廓
 @msg	it has too much text	它的文字过多
 @msg	its editing data doesn't say where its art is	其编辑数据未说明其图稿的位置
 @msg	its editing data doesn't say where its artboard is	其编辑数据未说明其画板的位置
-@msg	its editing data is for a different page	其编辑数据属于另一个页面
+@msg	its editing data is for a {w} × {h} pt page, not the file's {pw} × {ph} pt page	其编辑数据属于 {w} × {h} pt 的页面，而非文件的 {pw} × {ph} pt 页面
+@msg	its editing data is for a {w} × {h} pt page, the file's {pw} × {ph} pt page at {scale}	其编辑数据属于 {w} × {h} pt 的页面，即文件的 {pw} × {ph} pt 页面按 {scale} 比例缩放后的页面
 @msg	its page has text, and its layers have no text objects to put it in	其页面中有文字，但其图层中没有可放置这些文字的文本对象
 @msg	the art on them differs from the page's in {_1}% of it	其上的图稿与页面的图稿有 {_1}% 不同
 @msg	the art on them differs from the page's in {_1}% of it: they come from its editing data all the same	其上的图稿与页面的图稿有 {_1}% 不同：它们仍从其编辑数据导入
@@ -3985,6 +3994,7 @@ imageTrace	Outline	轮廓
 @msg	no plug-in {id} is installed	未安装增效工具 {id}
 @msg	{_1} is a live effect (Effect › Plug-ins)	{_1} 是实时效果 (效果 › 增效工具)
 @msg	a preset named `{_1}` exists	名为 `{_1}` 的预设已存在
+@msg	a swatch or color group named `{n}` exists	名为 `{n}` 的色板或颜色组已存在
 @msg	no print preset named `{base}`	没有名为 `{base}` 的打印预设
 @msg	no print preset named `{name}`	没有名为 `{name}` 的打印预设
 @msg	no saved print preset named `{name}` ({DEFAULT_PRESET} is protected: start a new one from it)	没有名为 `{name}` 的已保存打印预设 ({DEFAULT_PRESET} 受保护：请以它为基础新建一个)
@@ -4993,6 +5003,7 @@ lighting	Light	光源
 	Enable Guides for 9-Slice Scaling	启用 9-slice 缩放参考线
 @msg	cancelled; nothing was changed	已取消；未做任何更改
 @msg	Save writes {_1}, not {_2}: use file.saveAsTemplate to write it	保存会写入 {_1}，而不是 {_2}：要写入该格式请使用 file.saveAsTemplate
+@msg	aiVersion 7 writes legacy .ai files; a .ait template is always PDF-compatible	aiVersion 7 写入旧版 .ai 文件；.ait 模板始终与 PDF 兼容
 @msg	a mask has more than one art block	蒙版包含多个图稿块
 @msg	mask art ends outside a mask dictionary	蒙版图稿在蒙版字典之外结束
 @msg	`{key}` must be a #rrggbb color	`{key}` 必须是 #rrggbb 格式的颜色
@@ -5012,3 +5023,21 @@ lighting	Light	光源
 @msg	only http, https and mailto URLs open in the browser, not “{url}”	浏览器中只会打开 http、https 和 mailto 的 URL，不会打开 “{url}”
 @msg	{id} opens another app: only the person at the keyboard can run it	{id} 会打开其他应用程序：只有使用键盘的人才能运行它
 @msg	“{name}” is not a file	“{name}” 不是文件
+	Artboard {n} of {total}	画板 {n} / {total}
+	Encoding and writing the file…	正在编码并写入文件…
+@plural	{n} more export waiting|{n} more exports waiting	另有 {n} 个导出等待中
+	Continue in Background	在后台继续
+	Cancel Export	取消导出
+@msg	Export cancelled	已取消导出
+# Paragraph panel menu › Justification…
+	Desired	所需
+	Word Spacing:	字间距：
+	Letter Spacing:	字母间距：
+	Glyph Scaling:	字形缩放：
+	Auto Leading:	自动行距：
+	Single Word Justification:	单字对齐：
+	Full Justify	全部强制双齐
+	Minimum must not exceed Desired, nor Desired Maximum.	最小值不能超过所需值，所需值不能超过最大值。
+	Minimum	最小值
+	Justification	对齐设置
+@msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	文件的变量和数据集未被读取（变量：{variables}，数据集：{data_sets}）：“变量”面板不会列出它们

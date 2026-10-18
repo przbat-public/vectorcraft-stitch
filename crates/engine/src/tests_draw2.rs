@@ -130,6 +130,62 @@ fn pencil_continues_selected_open_path() {
     assert_eq!(p.subpaths[0].anchors[0].p, Point::new(100.0, 100.0));
 }
 
+/// Edit Selected Paths in the middle of a path (#2850): a Pencil stroke that starts and ends on a
+/// selected path replaces the section between, drawn either way; the path stays one path with
+/// its ends, and is one undo step.
+#[test]
+fn pencil_redraws_the_section_of_a_selected_path_between_its_ends() {
+    let bump = [(100.0, 101.0), (125.0, 70.0), (150.0, 60.0), (175.0, 70.0), (200.0, 101.0)];
+    for reversed in [false, true] {
+        let mut s = session();
+        let id = line(&mut s, 0.0, 100.0, 300.0, 100.0);
+        let mut pts = bump.to_vec();
+        if reversed {
+            pts.reverse();
+        }
+        let undo = undo_steps(&s);
+        drag(&mut s, "pencil", &pts, Mods::default());
+        assert_eq!(paths(&s).len(), 1, "no new object");
+        assert_eq!(undo_steps(&s), undo + 1);
+        let sp = &path(&s, id).subpaths[0];
+        assert!(!sp.closed);
+        let ps: Vec<Point> = sp.anchors.iter().map(|a| a.p).collect();
+        assert!(near(ps[0], Point::new(0.0, 100.0)) && near(*ps.last().unwrap(), Point::new(300.0, 100.0)), "{ps:?}");
+        // The section starts and ends on the line, where the stroke met it, and rises between.
+        let on = |x: f64| ps.iter().any(|p| (p.x - x).abs() < 1.5 && (p.y - 100.0).abs() < 1e-6);
+        assert!(on(100.0) && on(200.0), "{reversed}: {ps:?}");
+        let top = kurbo::Shape::bounding_box(&path(&s, id).to_bezpath()).y0;
+        assert!(top < 75.0, "the bump: top {top}");
+        assert!(ps.windows(2).all(|w| w[0].x <= w[1].x + 1.0), "in order along the line: {ps:?}");
+    }
+}
+
+/// On a closed path the stroke replaces the shorter way between where it starts and ends, and the
+/// path stays closed; a stroke that doesn't end on the path draws a new one.
+#[test]
+fn pencil_redraws_the_shorter_way_round_a_closed_path() {
+    let mut s = session();
+    let id = rect(&mut s, 0.0, 0.0, 200.0, 100.0);
+    s.execute("select.set", &json!({"ids": [id.0]})).unwrap();
+    s.execute("path.freehand", &json!({"points": [[50, 1], [80, -25], [100, -30], [120, -25], [150, 1]], "redraw": {"id": id.0, "within": 4}}))
+        .unwrap();
+    assert_eq!(paths(&s).len(), 1);
+    let sp = &path(&s, id).subpaths[0];
+    assert!(sp.closed);
+    let ps: Vec<Point> = sp.anchors.iter().map(|a| a.p).collect();
+    for corner in [(0.0, 0.0), (200.0, 0.0), (200.0, 100.0), (0.0, 100.0)] {
+        assert!(ps.iter().any(|p| near(*p, Point::new(corner.0, corner.1))), "{corner:?} kept: {ps:?}");
+    }
+    let top = kurbo::Shape::bounding_box(&path(&s, id).to_bezpath()).y0;
+    assert!(top < -20.0, "the dip: top {top}");
+    // Not ending on the path: a new path, the rectangle as it was.
+    let before = path(&s, id);
+    s.execute("path.freehand", &json!({"points": [[50, 100], [80, 150], [120, 160]], "redraw": {"id": id.0, "within": 4}})).unwrap();
+    assert_eq!(paths(&s).len(), 2);
+    assert_eq!(path(&s, id), before);
+    assert!(s.execute("path.freehand", &json!({"points": [[0, 0], [1, 1]], "redraw": {"id": id.0, "within": -1}})).is_err());
+}
+
 /// With Keep selected off, the path a stroke draws or continues is not selected afterwards, the
 /// rest of the selection stays, and the stroke is one undo step.
 #[test]
@@ -847,6 +903,33 @@ fn path_commands_refuse_a_delta_or_point_of_1e9_pt_or_more() {
         s.execute("path.reshapeSegment", &p).unwrap();
         assert!(finite(&s), "{p}: {:?}", path(&s, id));
     }
+}
+
+#[test]
+fn a_selected_curve_whose_handles_are_near_1e308_is_refused() {
+    // The canvas check measures a selected curve whose handles are near ±1e308 by its control
+    // points, so `path.create` refuses such a curve, given as anchors or as path data: the document
+    // stays as it was, with no undo step.
+    let mut s = session();
+    curve(&mut s);
+    let h = 1e308;
+    for p in [
+        json!({"anchors": [{"x": 100, "y": 100, "out": [150, h]}, {"x": 300, "y": 100, "in": [250, h]}]}),
+        json!({"anchors": [{"x": 100, "y": 100, "out": [150, -h]}, {"x": 300, "y": 100, "in": [250, h]}]}),
+        json!({"anchors": [{"x": 100, "y": 100, "out": [1.7e308, 100]}, {"x": 300, "y": 100}]}),
+        json!({"d": "M100 100 C150 1e308 250 1e308 300 100"}),
+    ] {
+        let before = s.doc().unwrap().doc.clone();
+        let undo = s.doc().unwrap().history.undo.len();
+        let e = s.execute("path.create", &p).unwrap_err().to_string();
+        assert!(e.contains("exceed the canvas"), "{p}: {e}");
+        assert!(s.doc().unwrap().doc == before, "{p} changed the document");
+        assert_eq!(s.doc().unwrap().history.undo.len(), undo, "{p} left an undo step");
+    }
+    // A curve whose handles stay on the canvas is kept.
+    let p = json!({"anchors": [{"x": 100, "y": 100, "out": [150, 3e6]}, {"x": 300, "y": 100, "in": [250, 3e6]}]});
+    let id = NodeId(s.execute("path.create", &p).unwrap()["id"].as_u64().unwrap());
+    assert!(path(&s, id).bounds().is_some_and(|b| b.y1 > 2e6));
 }
 
 /// A curve from (100, 100) to (300, 100) whose first anchor has an out handle at (150, 100).

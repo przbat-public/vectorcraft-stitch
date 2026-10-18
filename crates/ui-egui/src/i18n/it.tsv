@@ -1358,6 +1358,7 @@ file-filter	Templates	Modelli
 	History Options…	Opzioni cronologia…
 	Step Backward	Passo indietro
 	Step Forward	Passo avanti
+	Clear History	Cancella cronologia
 	Set History Limit…	Imposta limite cronologia…
 	History States	Stati cronologia
 # History panel: the names of undo steps (`every_undo_label_is_translated`).
@@ -2474,6 +2475,8 @@ mark-style	Japanese	Giapponese
 	Redefine Character Style	Ridefinisci stile carattere
 	Redefine Graphic Style	Ridefinisci stile grafico
 	Redefine Graphic Style “{name}”	Ridefinisci stile grafico “{name}”
+	Apply {name}	Applica stile “{name}”
+	Redefine {name}	Ridefinisci stile “{name}”
 	Redefine Paragraph Style	Ridefinisci stile paragrafo
 	Redefine Symbol	Ridefinisci simbolo
 	Redefine {kind} Style	Ridefinisci stile {kind}
@@ -3731,6 +3734,11 @@ axis	Both	Entrambi
 @msg	its editing data doesn't say where its artboard is	i suoi dati di modifica non indicano dove si trova la tavola da disegno
 @msg	its editing data has no layers	i suoi dati di modifica non hanno livelli
 @msg	its editing data is damaged	i suoi dati di modifica sono danneggiati
+@msg	its editing data is for a {w} × {h} pt page, not the file's {pw} × {ph} pt page	i suoi dati di modifica sono di una pagina di {w} × {h} pt, non della pagina del file di {pw} × {ph} pt
+@msg	its editing data is for a {w} × {h} pt page, the file's {pw} × {ph} pt page at {scale}	i suoi dati di modifica sono di una pagina di {w} × {h} pt, la pagina del file di {pw} × {ph} pt in scala {scale}
+@msg	its zlib compression is damaged	la loro compressione zlib è danneggiata
+@msg	its Zstandard compression is damaged	la loro compressione Zstandard è danneggiata
+@msg	it decompresses to more than {_1} MB	una volta decompressi superano {_1} MB
 @msg	its editing data is for a different page	i suoi dati di modifica sono di un'altra pagina
 @msg	its layers use {_1}, which aren't read yet	i suoi livelli usano {_1}, che non vengono ancora letti
 @msg	its page has text, and its layers have no text objects to put it in	la sua pagina ha del testo e i suoi livelli non hanno oggetti di testo in cui metterlo
@@ -3800,6 +3808,7 @@ axis	Both	Entrambi
 @msg	Save for Web: the image is empty	Salva per il web: l'immagine è vuota
 @msg	Save writes {_1}, not {_2}: use document.export for other formats	Salva scrive {_1}, non {_2}: usa document.export per gli altri formati
 @msg	Save writes {_1}, not {_2}: use file.saveAsTemplate to write it	Salva scrive {_1}, non {_2}: usa file.saveAsTemplate per scriverlo
+@msg	aiVersion 7 writes legacy .ai files; a .ait template is always PDF-compatible	aiVersion 7 scrive file .ai tradizionali; un modello .ait è sempre compatibile PDF
 @msg	Saved recovery data for {title}	Dati di recupero salvati per {title}
 @msg	Saved to User Defined: {_1}	Salvato in Definito dall'utente: {_1}
 @msg	Saved {path}	Salvato {path}
@@ -3871,6 +3880,7 @@ axis	Both	Entrambi
 @msg	a page tree node has no kids	un nodo dell'albero delle pagine non ha elementi figli
 @msg	a page's placement is not finite	la posizione di una pagina non è finita
 @msg	a preset named `{_1}` exists	esiste già un preset denominato `{_1}`
+@msg	a swatch or color group named `{n}` exists	esiste già un campione o un gruppo colori denominato `{n}`
 @msg	a slice size must be a positive number of points	la dimensione di una sezione deve essere un numero positivo di punti
 @msg	a spine keeps at least two points	una dorsale mantiene almeno due punti
 @msg	a stream runs past the end	uno stream prosegue oltre la fine
@@ -4076,6 +4086,7 @@ axis	Both	Entrambi
 @msg	nothing to redo	niente da ripetere
 @msg	nothing to save: the document has no visible art	niente da salvare: il documento non ha grafica visibile
 @msg	nothing to undo	niente da annullare
+@msg	no history to clear	nessuna cronologia da cancellare
 @msg	nothing to warp	niente da alterare
 @msg	nothing to wrap	niente da avvolgere
 @msg	object {0} cannot have children	l'oggetto {0} non può avere elementi figli
@@ -4247,6 +4258,7 @@ axis	Both	Entrambi
 @msg	{C}: no effect at index {from}	{C}: nessun effetto all'indice {from}
 @msg	{_1} failed: {e}	errore in {_1}: {e}
 @msg	{_1} files can be opened but not written (see document.formats)	i file {_1} possono essere aperti ma non scritti (vedi document.formats)
+@msg	{_1} files are written by file.saveAsTemplate	i file {_1} vengono scritti da file.saveAsTemplate
 @msg	{_1} font families available	{_1} famiglie di font disponibili
 @msg	{_1} is a live effect (Effect › Plug-ins)	{_1} è un effetto dinamico (Effetto › Plug-in)
 @msg	{_1} is already used by {_2}	{_1} è già usato da {_2}
@@ -4789,3 +4801,21 @@ lighting	Light	Luce
 @msg	too many library panels were opened in this session	in questa sessione sono stati aperti troppi pannelli libreria
 @msg	The image is {_1} × {_2} pixels, more than {LARGE_TRACE_SIDE} on a side: it is traced, but more slowly. A lower-fidelity preset or a smaller copy of the image traces faster.	L’immagine è di {_1} × {_2} pixel, più di {LARGE_TRACE_SIDE} su un lato: viene vettorializzata, ma più lentamente. Un predefinito a fedeltà più bassa o una copia più piccola dell’immagine è più veloce.
 @msg	The image was traced at {_1} × {_2} pixels, scaled down from {_3} × {_4} ({_5} megapixels at most).	L’immagine è stata vettorializzata a {_1} × {_2} pixel, ridotta da {_3} × {_4} (al massimo {_5} megapixel).
+	Artboard {n} of {total}	Tavola da disegno {n} di {total}
+	Encoding and writing the file…	Codifica e scrittura del file…
+@plural	{n} more export waiting|{n} more exports waiting	{n} altra esportazione in attesa|{n} altre esportazioni in attesa
+	Continue in Background	Continua in background
+	Cancel Export	Annulla esportazione
+@msg	Export cancelled	Esportazione annullata
+# Paragraph panel menu › Justification…
+	Desired	Desiderato
+	Word Spacing:	Spaziatura parole:
+	Letter Spacing:	Spaziatura lettere:
+	Glyph Scaling:	Ridimensionamento glifi:
+	Auto Leading:	Interlinea automatica:
+	Single Word Justification:	Giustificazione parola singola:
+	Full Justify	Giustificazione completa
+	Minimum must not exceed Desired, nor Desired Maximum.	Il minimo non può superare il valore desiderato, né il desiderato il massimo.
+	Minimum	Minimo
+	Justification	Giustificazione
+@msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	le variabili e i set di dati del file non sono stati letti (variabili: {variables}, set di dati: {data_sets}): il pannello Variabili non li elenca

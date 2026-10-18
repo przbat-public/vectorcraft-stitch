@@ -37,7 +37,7 @@ pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
         if p.underlay {
             for (under, ends_far) in satin_underlay(&pts, sub.closed, p.width) {
                 if under.len() >= 2 {
-                    runs.push(under, travel);
+                    push_split(&mut runs, under, travel, p.max_satin);
                     travel = Travel::Sew;
                 }
                 back = ends_far;
@@ -66,12 +66,27 @@ pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
         {
             zigzag.push(first);
         }
-        runs.push(split_long(&zigzag, p.max_satin), travel);
+        push_split(&mut runs, zigzag, travel, p.max_satin);
         if runs.full() {
             break;
         }
     }
     runs.join(&p)
+}
+
+/// `run` added to a column's `runs`, its stitches split to at most `max` ([`split_long`]). A run
+/// sewn on from the last (`Travel::Sew`: from the underlay to the next layer) is split together
+/// with the stitch that leads into it, which can cross the whole column.
+fn push_split(runs: &mut Runs, run: Vec<Point>, travel: Travel, max: f64) {
+    match (travel, runs.here()) {
+        (Travel::Sew, Some(here)) => {
+            let mut joined = Vec::with_capacity(run.len() + 1);
+            joined.push(here);
+            joined.extend(run);
+            runs.push(split_long(&joined, max).into_iter().skip(1).collect(), travel);
+        }
+        _ => runs.push(split_long(&run, max), travel),
+    }
 }
 
 /// The spacing of a satin column's crossings for its `width` (auto spacing): more open in a narrow
@@ -85,7 +100,10 @@ pub fn satin_spacing(width: f64) -> f64 {
 /// The underlay of a satin column along `pts` (its centreline), `width` wide, by width: a centre
 /// run for a narrow column, an edge run (along one side and back along the other) for a medium one,
 /// and an edge run then a zigzag between its sides for a wide one. Each run comes with whether it
-/// ends at the column's far end. The thresholds are estimates from the usual practice.
+/// ends at the column's far end. The thresholds are estimates from the usual practice. (The
+/// zigzag's stitches run at an angle across the column, longer than its width, and the edge run
+/// crosses the column at its far end: the caller splits them like the top stitching, as
+/// Ink/Stitch's underlay guide recommends; an unbounded zigzag destabilises the column.)
 fn satin_underlay(pts: &[Point], closed: bool, width: f64) -> Vec<(Vec<Point>, bool)> {
     let centre = resample(pts, UNDERLAY_STITCH, closed);
     if width < SATIN_EDGE_UNDERLAY {
@@ -109,10 +127,12 @@ fn satin_underlay(pts: &[Point], closed: bool, width: f64) -> Vec<(Vec<Point>, b
     out
 }
 
-/// `zigzag`'s crossings longer than `max` split into shorter stitches (auto split). Each long
-/// crossing is cut into equal parts shifted by a fraction that changes from one crossing to the
-/// next (the golden ratio's sequence), so the splits of neighbouring crossings never line up into
-/// a seam down the column; no part is longer than `max`.
+/// `zigzag`'s crossings longer than `max` split into shorter stitches (auto split). A long crossing
+/// is cut into `n` parts: the cuts sit `1/n` of it apart, all shifted by a fraction (at most
+/// `JITTER` of a part either way) that changes from one crossing to the next (the golden ratio's
+/// sequence), so the splits of neighbouring crossings never line up into a seam down the column.
+/// The inner parts are `1/n` long and the two end parts at most `(1 + JITTER)/n`, so `n` is chosen
+/// to keep that under `max`.
 fn split_long(zigzag: &[Point], max: f64) -> Vec<Point> {
     /// How far the cuts move along a crossing, as a share of one part (either way).
     const JITTER: f64 = 0.25;
@@ -122,8 +142,9 @@ fn split_long(zigzag: &[Point], max: f64) -> Vec<Point> {
         if let Some(&p) = i.checked_sub(1).and_then(|j| zigzag.get(j)) {
             let len = p.distance(q);
             if len.is_finite() && len > max {
-                // The longest part is (1 + 2·JITTER)/n of the crossing: enough parts that it fits.
-                let n = ((len * (1.0 + 2.0 * JITTER)) / max).ceil().clamp(2.0, 64.0) as u32;
+                // The longest part, an end one, is (1 + JITTER)/n of the crossing: enough parts that
+                // it fits.
+                let n = ((len * (1.0 + JITTER)) / max).ceil().clamp(2.0, 64.0) as u32;
                 crossing += 1;
                 let shift = ((f64::from(crossing) * 0.618_033_988_75).fract() - 0.5) * 2.0 * JITTER;
                 out.extend((1..n).map(|k| p.lerp(q, (f64::from(k) + shift) / f64::from(n))));

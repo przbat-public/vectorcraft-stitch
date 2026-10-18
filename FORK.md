@@ -58,7 +58,9 @@ Details are in `docs/embroidery.md`.
    be, and is then cut (a letter E with vertical rows: see
    `a_concave_shape_is_never_sewn_across_its_gaps`). Sew so travels pass under stitching still to
    come (in an E, the spine last). Splitting regions at every concave step alone was tried: 15–25 %
-   more stitches (travel) and no fewer trims, so it needs the ordering.
+   more stitches (travel) and no fewer trims, so it needs the ordering. Finding the best order is a
+   routing problem close to the travelling salesman's; published embroidery work uses
+   approximations and local search over the regions (check and cite a source before choosing).
 2. **Short stitches on tight satin curves.** On a curve's inner side the penetrations bunch: a
    5 mm column round a 3 mm radius puts 16 of 18 inner penetrations within 0.15 mm of the last.
    Shorten alternate stitches there, as Ink/Stitch's "short stitch" and Wilcom's stitch shortening
@@ -74,7 +76,21 @@ Details are in `docs/embroidery.md`.
    Stitch widens fill rows and can expand shapes so neighbours meet without a gap.
 6. **Narrow filled areas as satin.** Every filled shape becomes tatami; narrow parts (stems, thin
    arms) are better as satin columns, as auto-digitizers choose by width.
-7. **More real designs.** The corpus has eleven designs, all PES (one JEF), all from one project.
+7. **Ties around cuts made by clipping masks.** Where a clip group cuts a stroke's stitches, the
+   trims it adds have no tie-off before or tie-in after (`digitize.rs`, `cut_to`), unlike the
+   planner's own cuts.
+8. **Satin compensation and start points.** Pull compensation is a fixed width on both sides;
+   professional tools also take a share of the column's width and a value per side, and *push*
+   compensation shortens a column's ends, since sewing lengthens it. Satins also start at their
+   path's start: Ink/Stitch starts them (and fills) at the point nearest the previous object,
+   which saves travel and trims.
+9. **Auto spacing by thread thickness.** Wilcom adjusts satin spacing by thread weight (its
+   auto-spacing settings list an offset per thread thickness); a small addition to
+   `satin_spacing` once threads carry a weight.
+10. **Travel search cost.** `Area::travel` tests every graph edge against every outline edge
+    (bounded by 400 corners). Profile it on jagged shapes with many regions; cache visibility
+    tests or thin the graph if it shows.
+11. **More real designs.** The corpus has eleven designs, all PES (one JEF), all from one project.
    Add real DST and EXP files, lettering, larger designs, and test on a machine.
 
 **Then: embroidery properties on objects (a change of direction).**
@@ -89,6 +105,8 @@ Details are in `docs/embroidery.md`.
    "Embroidery" panel with the sewing order.
 
 **Later:**
+- random variation of satin width and spacing, which hides seams (Ink/Stitch and Wilcom offer it);
+- turning a machine file's stitches back into shapes stitched by the rules ("recognise objects");
 - editing sewing order and entry/exit points on the canvas;
 - branching of touching objects;
 - turning (variable-angle) satin and fill;
@@ -159,6 +177,8 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
   there.
 - **When a task lands:** update `docs/embroidery.md` (algorithms, limitations, test counts) and the
   PR description.
+- **Commit a refactor apart from behaviour changes:** first the pure move (code moved or renamed,
+  tests unchanged and passing), then the fixes, so each diff shows what really changed.
 - **PR descriptions are in English** and self-contained, with embroidery terms explained for
   newcomers.
 - **Embroidery isn't an Illustrator feature,** so it doesn't move the Illustrator-parity scores in

@@ -51,6 +51,9 @@ const JUMP: f64 = 5.0;
 /// estimate (professional software makes it a setting, bounded by the machine format: 12.1 mm
 /// per record in DST).
 const MAX_SATIN: f64 = 10.0;
+/// The widest satin column (millimetres): a wider one is sewn this wide. Far beyond what a satin
+/// can cover (professional practice tops out near 10–12 mm), a bound on the stitching.
+pub const MAX_SATIN_WIDTH: f64 = 50.0;
 /// The underlay's own stitch length (millimetres): short, to hold the fabric still.
 const UNDERLAY_STITCH: f64 = 2.0;
 /// The most runs one shape may produce (a guard against absurd parameters).
@@ -200,7 +203,7 @@ impl Params {
             jump: fin(self.jump, d.jump).clamp(0.5, 20.0),
             lock: self.lock,
             min_stitch: fin(self.min_stitch, d.min_stitch).clamp(0.05, 3.0),
-            width: fin(self.width, d.width).clamp(0.0, 50.0),
+            width: fin(self.width, d.width).clamp(0.0, MAX_SATIN_WIDTH),
             max_satin: fin(self.max_satin, d.max_satin).clamp(2.0, 12.0),
             auto_spacing: self.auto_spacing,
         }

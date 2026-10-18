@@ -78,7 +78,11 @@ the thread or cut the fabric.
   from 4.5 mm (estimates from the usual practice). The top stitching starts where the underlay
   ended, so the needle never travels back along the column. A crossing longer than 10 mm (an estimate; professional software makes it a setting) is split
   into shorter stitches (*auto split*), and the cuts move from one crossing to the next so they
-  never line up into a seam down the column.
+  never line up into a seam down the column. The underlay is split the same way: a zigzag's
+  stitches run at an angle and are longer than the column is wide, and Ink/Stitch's underlay guide
+  warns that unbounded ones destabilise the column; so are the edge run's turn across the column
+  and the stitch from one layer to the next. A column is at most 50 mm wide: a wider stroke is
+  sewn 50 mm wide, and the export warns.
 - **Tatami fill** fills a shape with rows `density` apart at `stitchAngle` degrees, alternating
   their direction. A shape drawn without a final close is still filled, as paint fills it; only a
   subpath with no area is sewn as a line. The penetrations sit on a grid every `stitchLength`
@@ -148,7 +152,8 @@ index, whose RGB values differ between published charts — preview colour is no
 - Type, images and live art (blends, envelopes, meshes, repeats) are left out: they would need
   their outlines. An export says so in its `warnings`, one line per kind.
 - Gradients and patterns sew in one colour (a gradient in its first stop's; a pattern is left out).
-- Wide satin columns are split stitch by stitch (auto split), not into several narrower columns.
+- Wide satin columns are split stitch by stitch (auto split), not into several narrower columns,
+  and are at most 50 mm wide (wider strokes are warned about).
 - Underlay is chosen by width and size only, not by fabric (no fabric presets yet).
 - The PES section of a `.pes` is the minimal version 1 header: machines sew the design correctly,
   but PE-Design shows it as a blank document because the editable shapes (CEmbOne/CSewSeg) are not
@@ -165,29 +170,30 @@ index, whose RGB values differ between published charts — preview colour is no
 
 ## Validation
 
-- `crates/stitch`: 36 unit tests — the fill covers a rectangle and leaves its hole empty, an
+- `crates/stitch`: 37 unit tests — the fill covers a rectangle and leaves its hole empty, an
   unclosed shape is filled, a ring is sewn in regions with no thread across its hole and,
   travelling inside, without a trim, regions overlap by a row, a narrow gap and a letter E's gaps
   are never sewn across, separate pieces jump when close and trim when far, large fills get a
   tatami underlay and small ones don't, no stitch is longer than asked or shorter than the
   shortest, the angle turns the rows, running lines keep their corners and lock without passing
   their ends, fills and satins tie in and off, satin underlay follows the width with no trim
-  between it and the top, satin spacing follows the width unless given, wide satins are split
-  without a seam, satin crossings stay within the column, pull compensation widens it, an absurd
+  between it and the top, satin spacing follows the width unless given, wide satins and their
+  zigzag underlay are split without a seam, satin crossings stay within the column, pull compensation widens it, an absurd
   plan is refused before it is made, the DST record round-trips every delta from -121 to 121,
   only a run of three jumps reads as a DST trim, a DST colour change can carry a move, each format
   writes a design it reads back with the same blocks and size, a JEF's header extents are where
   its stitches go, an absurd JEF colour count is not believed, and no reader panics on random,
   truncated or damaged bytes.
-- `crates/engine`: 21 tests (20 command-level) — export writes a readable design in every format,
+- `crates/engine`: 22 tests (21 command-level) — export writes a readable design in every format,
   options change the plan, a written PES opens as art (also by its magic bytes), an opened design
   is written back unchanged in every format (and again after a second round), with the cuts at
   its blocks' ends, converts between formats with the same needle points, ignores the style
   options and survives the native format, `document.formats` lists the four, empty documents,
   bad styles and absurd densities are refused, type is left out with a warning, the stacking
   order survives grouping by thread, clipping masks cut fills and strokes, template layers are not
-  sewn, a forced fill fills a stroke's area rather than its path's inside, and the defaults
-  `document.formats` lists (the satin spacing table included) are the planner's.
+  sewn, a forced fill fills a stroke's area rather than its path's inside, a satin wider than
+  50 mm is warned about, and the defaults `document.formats` lists (the satin spacing table
+  included) are the planner's.
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
 

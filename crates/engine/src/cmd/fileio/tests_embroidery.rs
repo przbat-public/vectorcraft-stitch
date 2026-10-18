@@ -295,8 +295,10 @@ fn a_clipping_mask_cuts_strokes() {
     for weight in [1.0, 6.0] {
         let mut s = blank();
         s.execute("paint.setFill", &json!({"none": true})).unwrap();
-        s.execute("paint.setStroke", &json!({"color": "#cc2222", "width": weight})).unwrap();
+        s.execute("paint.setStroke", &json!({"color": "#cc2222"})).unwrap();
         s.execute("shape.line", &json!({"x1": 0, "y1": 75, "x2": 250, "y2": 75})).unwrap();
+        // 1 pt is a running line, 6 pt (2.1 mm) a satin column.
+        s.execute("stroke.set", &json!({"weight": weight})).unwrap();
         s.execute("select.none", &json!({})).unwrap();
         s.execute("paint.setStroke", &json!({"none": true})).unwrap();
         s.execute("shape.rectangle", &json!({"x": 50, "y": 50, "width": 50, "height": 50})).unwrap();
@@ -328,8 +330,9 @@ fn an_absurd_density_is_refused() {
 fn a_forced_fill_fills_the_stroke_not_the_path() {
     let mut s = blank();
     s.execute("paint.setFill", &json!({"none": true})).unwrap();
-    s.execute("paint.setStroke", &json!({"color": "#cc2222", "width": 6})).unwrap();
+    s.execute("paint.setStroke", &json!({"color": "#cc2222"})).unwrap();
     s.execute("shape.ellipse", &json!({"x": 50, "y": 50, "width": 100, "height": 100})).unwrap();
+    s.execute("stroke.set", &json!({"weight": 6})).unwrap();
     let p = plan(&export(&mut s, "dst", json!({"stitchStyle": "fill"})));
     // The ring is 6 pt (2.1 mm) wide round a 35.3 mm circle: no needle point near the centre.
     let b = p.bounds().expect("bounds");
@@ -381,4 +384,25 @@ fn cuts_at_a_blocks_ends_are_written_back() {
         let again = export(&mut s, format.id(), json!({}));
         assert_eq!(sewn(&format.read(&again).unwrap()), sewn(&format.read(&file).unwrap()), "{}", format.id());
     }
+}
+
+/// A stroke wider than the widest satin column is sewn that wide, and the export says so.
+#[test]
+fn a_satin_wider_than_the_widest_is_warned_about() {
+    let mut s = blank();
+    s.execute("paint.setFill", &json!({"none": true})).unwrap();
+    s.execute("paint.setStroke", &json!({"color": "#cc2222"})).unwrap();
+    s.execute("shape.line", &json!({"x1": 20, "y1": 150, "x2": 280, "y2": 150})).unwrap();
+    // 160 pt is 56 mm.
+    s.execute("stroke.set", &json!({"weight": 160})).unwrap();
+    let r = s.execute("document.export", &params("dst", json!({}))).expect("exports");
+    let w = warnings(&r);
+    assert!(w.iter().any(|w| w.contains("50 mm")), "{w:?}");
+    // The column is sewn 50 mm wide.
+    let b = plan(&vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap()).bounds().unwrap();
+    assert!((b.height() - 50.0).abs() < 1.5, "{b:?}");
+    // A narrower one isn't warned about.
+    s.execute("stroke.set", &json!({"weight": 20})).unwrap();
+    let r = s.execute("document.export", &params("dst", json!({}))).expect("exports");
+    assert!(warnings(&r).is_empty(), "{:?}", warnings(&r));
 }

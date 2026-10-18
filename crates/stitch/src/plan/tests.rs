@@ -272,6 +272,22 @@ fn satin_underlay_follows_the_width() {
     }
 }
 
+/// A wide column's zigzag underlay runs at an angle, longer than the column is wide: it is split
+/// like the top stitching, so no underlay stitch is longer than the longest satin stitch.
+#[test]
+fn a_wide_zigzag_underlay_is_split() {
+    let mut p = Params::for_style(Style::Satin);
+    p.width = 14.0;
+    p.pull = 0.0;
+    p.lock = false;
+    let out = stitches(&line((0.0, 0.0), (40.0, 0.0)), FillRule::NonZero, &p);
+    let longest = out.windows(2).map(|w| w[0].distance(w[1])).fold(0.0, f64::max);
+    assert!(longest <= p.max_satin + 1e-9, "a {longest:.1} mm stitch");
+    // The zigzag is still there: penetrations inside the column, between its sides.
+    let side = 14.0 / 2.0 - 0.5;
+    assert!(out.iter().any(|s| s.y.abs() < side - 0.5 && s.x > 5.0 && s.x < 35.0));
+}
+
 /// A large fill gets a second, sparse underlay across its rows; a small one doesn't.
 #[test]
 fn large_fills_get_a_tatami_underlay() {

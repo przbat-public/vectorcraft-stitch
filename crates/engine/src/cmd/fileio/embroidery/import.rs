@@ -21,6 +21,8 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
     let format = StitchFormat::from_id(f.id).ok_or_else(|| bad("document.open", format!("{} is not an embroidery format", f.label)))?;
     let pattern = format.read(bytes).map_err(err)?;
     let b = pattern.bounds().ok_or_else(|| err("the file has no stitches"))?;
+    // A margin round the design on the new artboard. It doesn't move the stitches as written:
+    // every writer measures a design from its own bounds, so it is gone again on export.
     const MARGIN: f64 = 5.0;
     let scale = mm_to_pt(1.0);
     let width = (b.width() + 2.0 * MARGIN) * scale;

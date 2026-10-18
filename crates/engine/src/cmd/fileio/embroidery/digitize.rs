@@ -18,6 +18,7 @@ use super::sequence::Planned;
 const TEXT_LEFT_OUT: &str = "type is not stitched: outline it (Type › Create Outlines) and export again";
 const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › Image Trace) first";
 const LIVE_LEFT_OUT: &str = "live blends, envelopes, meshes and repeats are not stitched: expand them first";
+const SATIN_TOO_WIDE: &str = "strokes wider than 50 mm are sewn as satin columns 50 mm wide: fill them instead (stitchStyle fill)";
 const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colour of their first stop; a design sews one thread per block";
 /// The most stitches a design may have: far beyond any hoop (large designs run to a few hundred
 /// thousand), and a bound on the memory an export can take.
@@ -236,6 +237,9 @@ impl Digitizer<'_> {
                         // when not, unless `stitchStyle` says which.
                         forced => {
                             let style = forced.unwrap_or(if width >= 1.0 { Style::Satin } else { Style::Running });
+                            if style == Style::Satin && width > plan::MAX_SATIN_WIDTH {
+                                self.warn(SATIN_TOO_WIDE);
+                            }
                             self.colour(&mm, rule, style, &stroke.paint, width, true);
                         }
                     }

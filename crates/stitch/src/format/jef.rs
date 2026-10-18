@@ -29,14 +29,18 @@ const COLOR_CHANGE: u8 = 0x01;
 const TRIM_JUMPS: usize = 3;
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
-    let frame = Frame::of(p, true)?;
+    // Janome places a design around the hoop's centre: the stitches start there, and the header's
+    // extents are distances from it.
+    let frame = Frame::centered(p, true)?;
     let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
     let colors = p.blocks.iter().filter(|b| !b.stitches.is_empty()).count();
     if colors == 0 {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
-    let width = frame.x(b.x1).max(0);
-    let height = frame.y(b.y0).max(0);
+    // Left, top, right and bottom of the design, in tenths from the centre (y counts upwards).
+    let extents = [(-frame.x(b.x0)).max(0), frame.y(b.y0).max(0), frame.x(b.x1).max(0), (-frame.y(b.y1)).max(0)];
+    let [left, top, right, bottom] = extents;
+    let (width, height) = (left + right, top + bottom);
     let records = record_count(p);
     let offset = HEADER + 8 * colors;
     let mut out: Vec<u8> = Vec::with_capacity(offset + records * 2);
@@ -47,14 +51,16 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     out.extend_from_slice(&(colors as u32).to_le_bytes());
     out.extend_from_slice(&(records as u32).to_le_bytes());
     out.extend_from_slice(&hoop(width, height).to_le_bytes());
-    let (hw, hh) = (width / 2, height / 2);
-    for v in [hw, hh, hw, hh] {
-        out.extend_from_slice(&(v.max(0) as u32).to_le_bytes());
+    for v in extents {
+        out.extend_from_slice(&(v as u32).to_le_bytes());
     }
-    // The distance from each of the four hoop edges (a negative margin: -1, it does not fit).
-    for (x, y) in [(550, 550), (250, 250), (700, 1000), (700, 1000)].map(|(x, y): (i32, i32)| (x - hw, y - hh)) {
-        let fit = x >= 0 && y >= 0;
-        for v in if fit { [x, y, x, y] } else { [-1, -1, -1, -1] } {
+    // The design's distance from the edges of each of the header's four hoops, given as half
+    // sizes: 110×110, 50×50, 140×200 and the custom hoop, which writers set to 140×200 too
+    // (-1 four times: the design does not fit that hoop).
+    for (hx, hy) in [(550, 550), (250, 250), (700, 1000), (700, 1000)] {
+        let margins = [hx - left, hy - top, hx - right, hy - bottom];
+        let fit = margins.iter().all(|m| *m >= 0);
+        for v in if fit { margins } else { [-1; 4] } {
             out.extend_from_slice(&(v as u32).to_le_bytes());
         }
     }
@@ -175,6 +181,9 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         return Err(Error::Format(format!("the JEF header points at byte {offset}, past the file's {} bytes", bytes.len())));
     }
     r.seek(HEADER);
+    // The count is the file's claim: each colour takes 4 bytes of the header, so no more fit than
+    // the file holds (an absurd count must not size an allocation).
+    let colors = colors.min(bytes.len().saturating_sub(HEADER) / 4);
     let mut threads = Vec::with_capacity(colors);
     for _ in 0..colors {
         let index = r.u32().ok_or_else(|| short(bytes.len()))? as usize % 79;
@@ -242,6 +251,61 @@ mod tests {
         b.stitches.push(Stitch::sew(Point::new(18.0, 23.0)));
         p.blocks.extend([a, b]);
         p
+    }
+
+    /// The header's extents are distances from the hoop's centre, where the needle starts: they
+    /// must be where the records actually take the needle, or the machine sews off centre.
+    #[test]
+    fn the_header_extents_are_where_the_stitches_go() {
+        let mut p = Pattern::default();
+        let mut b = Block::new(Thread::rgb([200, 0, 0]));
+        for i in 0..=50 {
+            let t = f64::from(i);
+            b.stitches.push(Stitch::sew(Point::new(10.0 + t, 5.0 + (t * 0.7) % 35.0)));
+        }
+        p.blocks.push(b);
+        let bytes = write(&p).expect("writes");
+        let int = |at: usize| i32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]);
+        let header = [int(36), int(40), int(44), int(48)];
+        // Walk the records from the origin, y upwards as the file counts it.
+        let (mut x, mut y) = (0i32, 0i32);
+        let (mut x0, mut x1, mut y0, mut y1) = (0, 0, 0, 0);
+        let mut at = int(0) as usize;
+        while at + 1 < bytes.len() {
+            let (b0, b1) = (bytes[at], bytes[at + 1]);
+            if b0 == CONTROL && b1 == END {
+                break;
+            }
+            let (dx, dy, len) = if b0 == CONTROL { (bytes[at + 2], bytes[at + 3], 4) } else { (b0, b1, 2) };
+            x += i32::from(dx as i8);
+            y += i32::from(dy as i8);
+            at += len;
+            (x0, x1, y0, y1) = (x0.min(x), x1.max(x), y0.min(y), y1.max(y));
+        }
+        let walked = [-x0, y1, x1, -y0];
+        for (h, w) in header.iter().zip(walked) {
+            assert!((h - w).abs() <= 1, "header {header:?}, records {walked:?}");
+        }
+        // Centred: the extents are even on both sides.
+        assert!((header[0] - header[2]).abs() <= 1 && (header[1] - header[3]).abs() <= 1, "{header:?}");
+        // A 50 × 35 mm design fits the 110 × 110 hoop with 30 mm to spare left and right.
+        assert_eq!(int(52), 300);
+        // …is exactly as wide as the 50 × 50 one, and the margins above count from its top.
+        assert_eq!((int(68), int(72)), (0, 250 - header[1]));
+        assert_eq!((int(84), int(88)), (700 - header[0], 1000 - header[1]));
+    }
+
+    /// The colour count is the file's claim: a huge one is not believed (on wasm32 sizing a vector
+    /// by it would abort).
+    #[test]
+    fn an_absurd_colour_count_is_not_believed() {
+        let mut bytes = vec![0u8; 200];
+        bytes[0..4].copy_from_slice(&(HEADER as u32 + 8).to_le_bytes());
+        bytes[24..28].copy_from_slice(&u32::MAX.to_le_bytes());
+        // Records: one stitch, then the end.
+        bytes[HEADER + 8..HEADER + 12].copy_from_slice(&[10, 10, CONTROL, END]);
+        let p = read(&bytes).expect("reads");
+        assert_eq!(p.sewn(), 1);
     }
 
     #[test]

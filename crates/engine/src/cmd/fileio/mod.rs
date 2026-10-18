@@ -734,10 +734,10 @@ pub const OPEN_EXTS: &[&str] = &[
 ];
 
 /// Extensions in [`OPEN_EXTS`] the desktop packaging doesn't associate with VectorCraft: Photoshop
-/// documents belong to raster editors, so Finder and file managers don't offer a vector app for
-/// them, and the packaging declares no `.epsf` or `.ps` type (File › Open and Place still read
-/// them all).
-pub const UNASSOCIATED_EXTS: &[&str] = &["psd", "psb", "epsf", "ps"];
+/// documents belong to raster editors and embroidery designs to embroidery software (and `.exp`
+/// names other tools' files too), so Finder and file managers don't offer a vector app for them,
+/// and the packaging declares no `.epsf` or `.ps` type (File › Open and Place still read them all).
+pub const UNASSOCIATED_EXTS: &[&str] = &["psd", "psb", "epsf", "ps", "dst", "exp", "pes", "jef"];
 
 /// The extension that picks each writable format when exporting (the format's first; PNG-8 shares
 /// `.png` with PNG, so `.png` comes once), in [`FORMATS`] order.
@@ -790,6 +790,10 @@ pub const PLACE_EXTS: &[&str] = &[
     "af",
     "afdesign",
     "afpub",
+    "dst",
+    "exp",
+    "pes",
+    "jef",
     "txt",
     "rtf",
     "docx",

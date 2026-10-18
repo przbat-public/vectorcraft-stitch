@@ -9,7 +9,8 @@
 //! (mutated object streams, archives and indexed PNG previews, hostile image dimensions), nor the
 //! font files a folder search reads (damaged fonts, collections whose headers give any count of
 //! faces), nor scripts written for the reference app checked without running them (garbage,
-//! generated script text and mutated scripts).
+//! generated script text and mutated scripts), nor embroidery designs (DST, EXP, PES and JEF:
+//! damaged files and random bytes behind each format's header) opened or placed.
 //!
 //! `PROPTEST_CASES=20000 cargo test -p vectorcraft-engine --test import_fuzz` runs a deeper search.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
@@ -3884,5 +3885,56 @@ fn ai_cut_inside_an_array_or_dictionary_opens_without_panicking() {
         }
         b.truncate(44902.min(b.len()));
         survive("ai cut inside an array or dictionary", || vectorcraft_engine::cmd::fileio::load("saved.ai", &b).ok().map(|l| l.doc)).unwrap();
+    }
+}
+
+// ---------- Embroidery designs: opened and placed ----------
+
+const EMBROIDERY: [&str; 4] = ["dst", "exp", "pes", "jef"];
+
+/// The rich document stitched into each embroidery format.
+fn embroidery_samples() -> &'static [Vec<u8>] {
+    static SAMPLES: std::sync::OnceLock<Vec<Vec<u8>>> = std::sync::OnceLock::new();
+    SAMPLES.get_or_init(|| {
+        let mut s = rich_session();
+        EMBROIDERY
+            .iter()
+            .map(|f| {
+                let r = s.execute("document.export", &json!({ "format": f })).unwrap();
+                vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap()
+            })
+            .collect()
+    })
+}
+
+proptest! {
+    #![proptest_config(config())]
+
+    /// Damaged designs: bytes changed anywhere (header counts and offsets included) and the file
+    /// cut short.
+    #[test]
+    fn mutated_embroidery_never_panics(which in 0usize..4, cut in 0usize..200_000, edits in prop::collection::vec((0usize..200_000, any::<u8>()), 0..24)) {
+        let mut bytes = embroidery_samples()[which].clone();
+        let n = bytes.len();
+        for &(at, b) in &edits {
+            bytes[at % n] = b;
+        }
+        bytes.truncate(cut.max(1));
+        survive_metafile("mutated embroidery", &format!("x.{}", EMBROIDERY[which]), &bytes)?;
+    }
+
+    /// Random records behind each format's own header (the sample's), so the readers get past it.
+    #[test]
+    fn random_embroidery_records_never_panic(which in 0usize..4, body in prop::collection::vec(any::<u8>(), 0..2048)) {
+        let sample = &embroidery_samples()[which];
+        let header = match EMBROIDERY[which] {
+            "dst" => 512,
+            "pes" => 22 + 512 + 20,
+            "jef" => 116 + 8 * 4,
+            _ => 0,
+        };
+        let mut bytes = sample[..header.min(sample.len())].to_vec();
+        bytes.extend(body);
+        survive_metafile("embroidery records", &format!("x.{}", EMBROIDERY[which]), &bytes)?;
     }
 }

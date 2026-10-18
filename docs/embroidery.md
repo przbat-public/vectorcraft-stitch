@@ -64,9 +64,21 @@ jump. Each colour block is one thread.
   fabric. Holes are left unstitched: the shape's fill rule decides what is inside, as it does for
   paint.
 
-Blocks are sewn thread by thread in the order the threads first appear, so the machine changes
-colour once per thread rather than once per object; each block starts with the needle up and a
-jump to its first stitch.
+Blocks are sewn in stacking order, back to front, because thread sewn later lies on top of thread
+sewn earlier, as paint does. An object joins an earlier block of its thread only when it overlaps
+none of the blocks sewn between the two, so the machine changes colour as few times as the stacking
+allows rather than once per object. Each block starts with the needle up and a jump to its first
+stitch.
+
+What is sewn is what would print: hidden objects, guides, template layers and non-printing layers
+are left out. A clip group sews its clipped art only inside the clipping path: a filled area is cut
+to it exactly before it is planned, and a stroke keeps the stitches whose needle points fall inside
+(so a running line can stop up to a stitch short of the edge). The clipping path's own fill is sewn
+under the clipped art and its stroke over it, unclipped, as they paint.
+
+A shape that would need more than 4 million stitches, or a design of more than 2 million, is refused
+with a message rather than planned (a tiny stitch length or spacing over large art); real designs
+run to a few hundred thousand.
 
 ## The formats
 
@@ -79,7 +91,9 @@ jump to its first stitch.
 
 Coordinate conventions: files count tenths of a millimetre. DST, EXP and JEF count y upwards and
 PEC downwards; the readers and writers flip accordingly, so a design written and read back keeps
-its shape. The design's top-left corner is the origin in every file we write.
+its shape. Our DST, EXP and PEC files start the needle at a corner of the design; JEF files
+start it at the design's centre, which Janome machines put at the hoop's centre, and the JEF
+header's extents and hoop margins are measured from there.
 
 Known limits of the formats themselves, and so of us: DST holds no colour, PEC holds no vector
 shapes, JEF's stitches jump at most 12.7 mm per record, and every format names threads by palette
@@ -101,14 +115,21 @@ index, whose RGB values differ between published charts — preview colour is no
 
 ## Validation
 
-- `crates/stitch`: 16 unit tests — the fill covers a rectangle and leaves its hole empty, no
+- `crates/stitch`: 21 unit tests — the fill covers a rectangle and leaves its hole empty, no
   stitch is longer than asked, the angle turns the rows, satin crossings stay within the column,
-  pull compensation widens it, the DST record round-trips every delta from -121 to 121, and each
-  format writes a design it reads back with the same blocks and size.
-- `crates/engine`: 10 command-level tests — export writes a readable design in every format,
+  pull compensation widens it, an absurd plan is refused before it is made, the DST record
+  round-trips every delta from -121 to 121, each format writes a design it reads back with the
+  same blocks and size, a JEF's header extents are where its stitches go, an absurd JEF colour
+  count is not believed, and no reader panics on random, truncated or damaged bytes.
+- `crates/engine`: 15 command-level tests — export writes a readable design in every format,
   options change the plan, a written PES opens as art (also by its magic bytes), a design read back
-  sews again with the same size and blocks, `document.formats` lists the four, empty documents and
-  bad styles are refused, and type is left out with a warning.
+  sews again with the same size and blocks, `document.formats` lists the four, empty documents,
+  bad styles and absurd densities are refused, type is left out with a warning, the stacking order
+  survives grouping by thread, clipping masks cut fills and strokes, and template layers are not
+  sewn.
+- `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
+  header, opened and placed, never panic.
+
 **Cross-checked with pyembroidery** (MIT), used as an independent implementation in a throwaway
 environment, never in the repo:
 

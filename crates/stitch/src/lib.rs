@@ -161,6 +161,24 @@ impl Block {
     pub fn sewn(&self) -> usize {
         self.stitches.iter().filter(|s| s.command.needle_down()).count()
     }
+
+    /// The box the block's points fall in (millimetres), `None` when it has none.
+    pub fn bounds(&self) -> Option<Rect> {
+        bounds_of(self.stitches.iter().copied())
+    }
+}
+
+/// The box finite points fall in.
+fn bounds_of(points: impl Iterator<Item = Stitch>) -> Option<Rect> {
+    let mut b: Option<Rect> = None;
+    for p in points {
+        if !(p.x.is_finite() && p.y.is_finite()) {
+            continue;
+        }
+        let r = Rect::new(p.x, p.y, p.x, p.y);
+        b = Some(b.map_or(r, |b| b.union(r)));
+    }
+    b
 }
 
 /// A whole design: its colour blocks in sewing order.
@@ -188,15 +206,7 @@ impl Pattern {
 
     /// The box the design's needle points fall in (millimetres), `None` when it has none.
     pub fn bounds(&self) -> Option<Rect> {
-        let mut b: Option<Rect> = None;
-        for p in self.points() {
-            if !(p.x.is_finite() && p.y.is_finite()) {
-                continue;
-            }
-            let r = Rect::new(p.x, p.y, p.x, p.y);
-            b = Some(b.map_or(r, |b| b.union(r)));
-        }
-        b
+        bounds_of(self.points())
     }
 
     /// Move every point by (`dx`, `dy`) millimetres.

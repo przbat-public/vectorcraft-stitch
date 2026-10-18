@@ -25,7 +25,7 @@ use std::f64::consts::TAU;
 
 use vectorcraft_geom::{BezPath, FillRule, PathEl, Point, Vec2, kurbo};
 
-use crate::{Command, Stitch};
+use crate::{Command, Error, Stitch};
 
 /// How far curves are flattened before stitching, millimetres: far below the 0.1 mm a machine
 /// counts in.
@@ -40,7 +40,8 @@ const LOCK: f64 = 1.0;
 /// The most runs, rows and stitches one shape may produce (a guard against absurd parameters).
 const MAX_ROWS: usize = 100_000;
 const MAX_RUNS: usize = 1_000_000;
-const MAX_STITCHES: usize = 4_000_000;
+/// The most stitches one shape may plan: [`try_stitches`] refuses a shape that would need more.
+pub const MAX_STITCHES: usize = 4_000_000;
 
 /// How a shape is stitched.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
@@ -187,6 +188,43 @@ pub fn stitches(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
         Style::Satin if p.width > 0.0 => satin(path, &p),
         // A satin column needs a width: without one the shape is filled instead.
         Style::Satin | Style::Fill => fill(path, rule, &p),
+    }
+}
+
+/// [`stitches`], refused with [`Error::TooLarge`] when the shape would need more than
+/// [`MAX_STITCHES`] (a huge shape, or a tiny stitch length or spacing): estimated from the
+/// geometry before any stitch is planned, so an absurd request costs no memory.
+pub fn try_stitches(path: &BezPath, rule: FillRule, p: &Params) -> crate::Result<Vec<Stitch>> {
+    let p = p.sane();
+    let n = estimate(&subpaths(path), &p);
+    if !n.is_finite() || n > MAX_STITCHES as f64 {
+        return Err(Error::TooLarge(format!(
+            "a shape would need about {n:.0} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design"
+        )));
+    }
+    Ok(stitches(path, rule, &p))
+}
+
+/// About how many points `subs` plan into in style `p` (an upper estimate; not finite when the
+/// geometry is not).
+fn estimate(subs: &[SubPath], p: &Params) -> f64 {
+    let total: f64 = subs.iter().map(|s| length(&s.points(), s.closed)).sum();
+    let ends = 6.0 * subs.len() as f64;
+    match p.style {
+        Style::Running => total / p.stitch_length + ends,
+        Style::Satin if p.width > 0.0 => total / UNDERLAY_STITCH + total / p.density + ends,
+        Style::Satin | Style::Fill => {
+            let (along, across) = axes(p.angle);
+            let extent = |v: Vec2| {
+                let (lo, hi) = subs.iter().flat_map(|s| s.pts.iter()).fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), q| {
+                    let t = dot(*q, v);
+                    (lo.min(t), hi.max(t))
+                });
+                if hi >= lo { hi - lo } else { 0.0 }
+            };
+            let rows = extent(across) / p.density + 1.0;
+            total / UNDERLAY_STITCH + rows * (extent(along) / p.stitch_length + 2.0) + ends
+        }
     }
 }
 
@@ -757,6 +795,21 @@ mod tests {
         let params = Params::for_style(Style::Fill);
         let out = stitches(&p, FillRule::NonZero, &params);
         assert!(out.iter().any(|s| s.command == Command::Trim), "a long travel cuts the thread");
+    }
+
+    /// A shape that would need millions of stitches is refused before any is planned.
+    #[test]
+    fn an_absurd_plan_is_refused_up_front() {
+        let mut p = Params::for_style(Style::Fill);
+        p.density = 0.05;
+        p.stitch_length = 0.2;
+        // Five metres square.
+        let huge = rect(0.0, 0.0, 5000.0, 5000.0);
+        assert!(matches!(try_stitches(&huge, FillRule::NonZero, &p), Err(Error::TooLarge(_))));
+        assert!(try_stitches(&rect(0.0, 0.0, 50.0, 50.0), FillRule::NonZero, &p).is_ok_and(|s| !s.is_empty()));
+        let mut run = Params::for_style(Style::Running);
+        run.stitch_length = 0.2;
+        assert!(matches!(try_stitches(&line((0.0, 0.0), (1e7, 0.0)), FillRule::NonZero, &run), Err(Error::TooLarge(_))));
     }
 
     #[test]

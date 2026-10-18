@@ -19,7 +19,8 @@ use serde::Deserialize;
 use serde_json::Value;
 use vectorcraft_color::{Color, Paint};
 use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, Node, NodeKind};
-use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, Point, Rect, Size};
+use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, Point, Rect, Shape, Size};
+use vectorcraft_pathops::{BoolOp, boolean};
 use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::plan::{self, Params, Style};
 use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread, mm_to_pt, pt_to_mm};
@@ -74,6 +75,9 @@ const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › I
 const LIVE_LEFT_OUT: &str = "live blends, envelopes, meshes and repeats are not stitched: expand them first";
 const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colour of their first stop; a design sews one thread per block";
 const THREAD_WIDTH: f64 = 0.4;
+/// The most stitches a design may have: far beyond any hoop (large designs run to a few hundred
+/// thousand), and a bound on the memory an export can take.
+const MAX_DESIGN_STITCHES: usize = 2_000_000;
 
 /// The export options, as they come.
 #[derive(Clone, Debug, Deserialize)]
@@ -213,8 +217,11 @@ fn runs(block: &Block) -> Vec<Vec<Stitch>> {
 pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
     let opts = options(p)?;
     let format = StitchFormat::from_id(f.id).ok_or_else(|| bad(C, format!("{} is not an embroidery format", f.label)))?;
-    let mut d = Digitizer { doc, opts: &opts, blocks: Vec::new(), warnings: Vec::new(), nest: 0 };
+    let mut d = Digitizer { doc, opts: &opts, blocks: Vec::new(), warnings: Vec::new(), nest: 0, clip: None, stitches: 0, failed: None };
     d.run();
+    if let Some(e) = d.failed {
+        return Err(bad(C, e));
+    }
     if d.blocks.is_empty() {
         return Err(bad(C, "nothing to stitch: the document has no visible filled or stroked paths"));
     }
@@ -232,6 +239,13 @@ struct Digitizer<'a> {
     warnings: Vec<String>,
     /// Symbol art being stitched inside symbol instances.
     nest: u32,
+    /// The region the clip groups around the current object leave visible (millimetres), `None`
+    /// outside any clip group.
+    clip: Option<(BezPath, FillRule)>,
+    /// The stitches planned so far, against [`MAX_DESIGN_STITCHES`].
+    stitches: usize,
+    /// Why the design can't be stitched (too many stitches); the walk stops planning once set.
+    failed: Option<String>,
 }
 
 impl Digitizer<'_> {
@@ -252,6 +266,10 @@ impl Digitizer<'_> {
             return;
         }
         match &n.kind {
+            // Template and non-printing layers are references, not art: a machine sews only what
+            // would print.
+            NodeKind::Layer { template: true, .. } | NodeKind::Layer { printable: false, .. } => {}
+            NodeKind::Layer { children, clip: true, .. } | NodeKind::Group { children, clip: true } => self.clip_group(children),
             NodeKind::Layer { children, .. } | NodeKind::Group { children, .. } => {
                 for c in children {
                     self.node(c);
@@ -288,6 +306,34 @@ impl Digitizer<'_> {
         }
     }
 
+    /// A clip group, as it paints: the clipping path (its first child) paints its fills behind the
+    /// clipped art and its strokes over it, unclipped; the rest is sewn only inside the clipping
+    /// path. Nothing to clip by (an empty clipping path) hides the clipped art.
+    fn clip_group(&mut self, children: &[Arc<Node>]) {
+        let Some((clip, rest)) = children.split_first() else { return };
+        let Some((mut region, rule)) = vectorcraft_render::effects::clip_outline(clip) else { return };
+        region.apply_affine(Affine::scale(vectorcraft_stitch::MM_PER_PT));
+        let paint = clip.clip_paint();
+        if let Some(fill) = &paint.fill {
+            self.node(fill);
+        }
+        let inner = match &self.clip {
+            None => (region, rule),
+            Some((outer, outer_rule)) => {
+                let both = boolean(&PathData::from_bezpath(outer), *outer_rule, &PathData::from_bezpath(&region), rule, BoolOp::Intersect);
+                (both.to_bezpath(), FillRule::NonZero)
+            }
+        };
+        let outer = self.clip.replace(inner);
+        for c in rest {
+            self.node(c);
+        }
+        self.clip = outer;
+        if let Some(stroke) = &paint.stroke {
+            self.node(stroke);
+        }
+    }
+
     /// Stitch `bp` (document points) once per visible appearance item.
     fn shape(&mut self, n: &Node, bp: &BezPath, rule: FillRule) {
         let mut mm = bp.clone();
@@ -300,14 +346,23 @@ impl Digitizer<'_> {
                 // A fill is filled unless `stitchStyle` asks for another way of stitching it.
                 AppearanceItem::Fill(fill) => {
                     let style = self.forced().unwrap_or(Style::Fill);
-                    self.colour(&mm, rule, style, &fill.paint, 0.0);
+                    // Inside a clip group the filled area is the shape's intersection with the
+                    // clipping path, cut exactly before it is planned.
+                    let (area, area_rule) = match &self.clip {
+                        Some((clip, clip_rule)) => {
+                            let cut = boolean(&PathData::from_bezpath(&mm), rule, &PathData::from_bezpath(clip), *clip_rule, BoolOp::Intersect);
+                            (cut.to_bezpath(), FillRule::NonZero)
+                        }
+                        None => (mm.clone(), rule),
+                    };
+                    self.colour(&area, area_rule, style, &fill.paint, 0.0, false);
                 }
                 AppearanceItem::Stroke(stroke) => {
                     let width = pt_to_mm(stroke.width).max(0.0);
                     // A stroke is a satin column when it is wide enough to have two rails, a
                     // running line when not, unless `stitchStyle` says otherwise.
                     let style = self.forced().unwrap_or(if width >= 1.0 { Style::Satin } else { Style::Running });
-                    self.colour(&mm, rule, style, &stroke.paint, width);
+                    self.colour(&mm, rule, style, &stroke.paint, width, true);
                 }
             }
         }
@@ -319,28 +374,84 @@ impl Digitizer<'_> {
     }
 
     /// Plan one appearance item, or say what could not be stitched.
-    fn colour(&mut self, bp: &BezPath, rule: FillRule, style: Style, paint: &Paint, width: f64) {
+    /// `clip_stitches`: a stroke, whose stitches the clip groups around it cut (a fill's area was
+    /// cut before planning).
+    fn colour(&mut self, bp: &BezPath, rule: FillRule, style: Style, paint: &Paint, width: f64, clip_stitches: bool) {
         match solid(paint) {
             Colour::None => {}
-            Colour::Solid(color) => self.plan(bp, rule, style, color, width),
+            Colour::Solid(color) => self.plan(bp, rule, style, color, width, clip_stitches),
             Colour::Approx(color) => {
                 self.warn(GRADIENT_LEFT_OUT);
-                self.plan(bp, rule, style, color, width);
+                self.plan(bp, rule, style, color, width, clip_stitches);
             }
             Colour::Pattern => self.warn(GRADIENT_LEFT_OUT),
         }
     }
 
-    fn plan(&mut self, bp: &BezPath, rule: FillRule, style: Style, color: [u8; 3], width: f64) {
+    fn plan(&mut self, bp: &BezPath, rule: FillRule, style: Style, color: [u8; 3], width: f64, clip_stitches: bool) {
+        if self.failed.is_some() {
+            return;
+        }
         let params = self.opts.params(style, width);
-        let stitches = plan::stitches(bp, rule, &params);
+        let mut stitches = match plan::try_stitches(bp, rule, &params) {
+            Ok(s) => s,
+            Err(e) => {
+                self.failed = Some(e.to_string());
+                return;
+            }
+        };
+        // A stroke inside a clip group: only the stitches inside the clipping path are sewn. (A
+        // filled area was cut to it exactly; its edge run lies on the cut, which a point test
+        // would chop.)
+        if clip_stitches && let Some(clip) = &self.clip {
+            stitches = cut_to(stitches, clip);
+        }
         if stitches.is_empty() {
+            return;
+        }
+        self.stitches = self.stitches.saturating_add(stitches.len());
+        if self.stitches > MAX_DESIGN_STITCHES {
+            self.failed =
+                Some(format!("the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art"));
             return;
         }
         let mut block = Block::new(Thread::rgb(color));
         block.stitches = stitches;
         self.blocks.push(block);
     }
+}
+
+/// The stitches inside `region`: a run that leaves it is cut there (a trim) and taken up again (a
+/// jump) where it comes back in.
+fn cut_to(stitches: Vec<Stitch>, region: &(BezPath, FillRule)) -> Vec<Stitch> {
+    let (path, rule) = region;
+    let inside = |s: &Stitch| {
+        let w = path.winding(s.point());
+        match rule {
+            FillRule::NonZero => w != 0,
+            FillRule::EvenOdd => w % 2 != 0,
+        }
+    };
+    let mut out: Vec<Stitch> = Vec::with_capacity(stitches.len());
+    let mut lifted = false;
+    for s in stitches {
+        if s.command != Command::Stitch {
+            // The plan's own trims and jumps: the needle is up until the next stitch kept.
+            lifted = true;
+            continue;
+        }
+        if !inside(&s) {
+            lifted = true;
+            continue;
+        }
+        if lifted && let Some(last) = out.last().copied() {
+            out.push(Stitch::new(last.x, last.y, Command::Trim));
+            out.push(Stitch::jump(s.point()));
+        }
+        lifted = false;
+        out.push(s);
+    }
+    out
 }
 
 /// A paint's stitched colour.
@@ -373,28 +484,42 @@ fn solid(paint: &Paint) -> Colour {
     }
 }
 
-/// Blocks sewn in one pass per thread, in the order the threads first appear: the machine changes
-/// colour once per thread, not once per object.
+/// Blocks of one thread sewn in one pass where the stacking allows it: a block joins an earlier
+/// block of its thread only when it overlaps none of the blocks sewn between the two, so art that
+/// lies on top is still sewn last (thread sewn later covers thread sewn earlier, as paint does).
+/// The machine changes colour as few times as that allows, not once per object.
 fn group(blocks: Vec<Block>) -> Vec<Block> {
-    let mut order: Vec<[u8; 3]> = Vec::new();
-    for b in &blocks {
-        if !order.contains(&b.thread.color) {
-            order.push(b.thread.color);
-        }
-    }
-    let mut out: Vec<Block> = Vec::new();
-    for color in order {
-        let mut merged = Block::new(Thread::rgb(color));
-        for b in blocks.iter().filter(|b| b.thread.color == color) {
-            if let (Some(last), Some(first)) = (merged.stitches.last().copied(), b.stitches.first().copied()) {
-                merged.stitches.push(Stitch::new(last.x, last.y, Command::Trim));
-                merged.stitches.push(Stitch::jump(first.point()));
+    /// How far apart two blocks' stitches must be not to touch: a thread's width and a satin's pull.
+    const CLEARANCE: f64 = 1.0;
+    let mut out: Vec<(Block, Option<Rect>)> = Vec::new();
+    for b in blocks {
+        let Some(&first) = b.stitches.first() else { continue };
+        let bounds = b.bounds().map(|r| r.inflate(CLEARANCE, CLEARANCE));
+        let target = out.iter().rposition(|(m, _)| m.thread.color == b.thread.color).filter(|&j| {
+            out.iter().skip(j + 1).all(|(_, other)| match (bounds, other) {
+                (Some(a), Some(o)) => !overlaps(a, *o),
+                _ => false,
+            })
+        });
+        match target.and_then(|j| out.get_mut(j)) {
+            Some((merged, mb)) => {
+                if let Some(last) = merged.stitches.last().copied() {
+                    merged.stitches.push(Stitch::new(last.x, last.y, Command::Trim));
+                    merged.stitches.push(Stitch::jump(first.point()));
+                }
+                merged.stitches.extend(b.stitches.iter().copied());
+                *mb = match (*mb, bounds) {
+                    (Some(x), Some(y)) => Some(x.union(y)),
+                    (x, y) => x.or(y),
+                };
             }
-            merged.stitches.extend(b.stitches.iter().copied());
-        }
-        if !merged.stitches.is_empty() {
-            out.push(merged);
+            None => out.push((b, bounds)),
         }
     }
-    out
+    out.into_iter().map(|(b, _)| b).collect()
+}
+
+/// Whether two boxes share any area (touching edges do not count).
+fn overlaps(a: Rect, b: Rect) -> bool {
+    a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1
 }

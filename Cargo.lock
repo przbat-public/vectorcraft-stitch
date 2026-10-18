@@ -4866,7 +4866,7 @@ dependencies = [
 
 [[package]]
 name = "vectorcraft-stitch"
-version = "0.12.0"
+version = "0.13.1"
 dependencies = [
  "thiserror 2.0.21",
  "vectorcraft-geom",

@@ -178,3 +178,106 @@ fn type_is_left_out_with_a_warning() {
     let w = warnings(&r);
     assert!(w.iter().any(|w| w.contains("type")), "{w:?}");
 }
+
+/// A filled rectangle in `color`, left unselected.
+fn rect(s: &mut Session, color: &str, x: f64, y: f64, w: f64, h: f64) {
+    s.execute("paint.setStroke", &json!({"none": true})).unwrap();
+    s.execute("paint.setFill", &json!({"color": color})).unwrap();
+    s.execute("shape.rectangle", &json!({"x": x, "y": y, "width": w, "height": h})).unwrap();
+    s.execute("select.none", &json!({})).unwrap();
+}
+
+fn blank() -> Session {
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    s
+}
+
+/// Thread sewn later lies on top: a red object above a blue one is sewn after it, even though
+/// another red object under the blue one could take it along in the same pass.
+#[test]
+fn stacking_order_survives_grouping_by_thread() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 60.0);
+    rect(&mut s, "#2233cc", 50.0, 50.0, 60.0, 60.0);
+    rect(&mut s, "#cc2222", 90.0, 90.0, 30.0, 30.0);
+    let p = plan(&export(&mut s, "dst", json!({})));
+    assert_eq!(p.blocks.len(), 3, "red, blue, then the red on top");
+    // The last block is the top red square (30 pt ≈ 10.6 mm), not the big one.
+    let top = p.blocks[2].bounds().expect("bounds");
+    assert!(top.width() < 12.0 && top.height() < 12.0, "{top:?}");
+
+    // Apart, the two reds share a pass: one colour change instead of two.
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 40.0);
+    rect(&mut s, "#2233cc", 100.0, 20.0, 40.0, 40.0);
+    rect(&mut s, "#cc2222", 20.0, 120.0, 40.0, 40.0);
+    assert_eq!(plan(&export(&mut s, "dst", json!({}))).blocks.len(), 2);
+}
+
+/// A clip group sews what it shows: the clipped art only inside the clipping path, which itself
+/// paints nothing here.
+#[test]
+fn a_clipping_mask_cuts_the_stitches() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 0.0, 0.0, 200.0, 200.0);
+    // The clipping path, on top: an unpainted 50 pt square.
+    s.execute("paint.setFill", &json!({"none": true})).unwrap();
+    s.execute("paint.setStroke", &json!({"none": true})).unwrap();
+    s.execute("shape.rectangle", &json!({"x": 50, "y": 50, "width": 50, "height": 50})).unwrap();
+    s.execute("select.all", &json!({})).unwrap();
+    s.execute("object.clippingMask.make", &json!({})).unwrap();
+    let p = plan(&export(&mut s, "dst", json!({})));
+    assert_eq!(p.blocks.len(), 1);
+    let b = p.bounds().expect("bounds");
+    // 50 pt is 17.6 mm: the 70 mm square is cut to it.
+    assert!(b.width() < 18.5 && b.height() < 18.5, "{b:?}");
+    assert!(b.width() > 16.0 && b.height() > 16.0, "{b:?}");
+}
+
+/// Template layers are references to trace over, not art: they are not sewn.
+#[test]
+fn template_layers_are_not_stitched() {
+    let mut s = blank();
+    let template = s.doc().unwrap().doc.layers[0].id.0;
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 40.0);
+    s.execute("layer.new", &json!({})).unwrap();
+    rect(&mut s, "#2233cc", 100.0, 20.0, 40.0, 40.0);
+    s.execute("layer.setProps", &json!({"id": template, "template": true})).unwrap();
+    let p = plan(&export(&mut s, "dst", json!({})));
+    assert_eq!(p.blocks.len(), 1, "only the blue square");
+}
+
+/// A stroke that runs out of the clipping path is sewn only where it shows, as a running line or
+/// a satin column alike.
+#[test]
+fn a_clipping_mask_cuts_strokes() {
+    for weight in [1.0, 6.0] {
+        let mut s = blank();
+        s.execute("paint.setFill", &json!({"none": true})).unwrap();
+        s.execute("paint.setStroke", &json!({"color": "#cc2222", "width": weight})).unwrap();
+        s.execute("shape.line", &json!({"x1": 0, "y1": 75, "x2": 250, "y2": 75})).unwrap();
+        s.execute("select.none", &json!({})).unwrap();
+        s.execute("paint.setStroke", &json!({"none": true})).unwrap();
+        s.execute("shape.rectangle", &json!({"x": 50, "y": 50, "width": 50, "height": 50})).unwrap();
+        s.execute("select.all", &json!({})).unwrap();
+        s.execute("object.clippingMask.make", &json!({})).unwrap();
+        let p = plan(&export(&mut s, "dst", json!({})));
+        let b = p.bounds().expect("bounds");
+        // The 88 mm line is cut to the 17.6 mm square, to the stitch: a running line keeps the
+        // needle points inside, so it can stop up to a stitch (3.5 mm) short at each edge.
+        assert!(b.width() < 18.0, "{weight} pt: {b:?}");
+        assert!(b.width() > 17.6 - 2.0 * 3.5, "{weight} pt: {b:?}");
+    }
+}
+
+/// Options that would make millions of stitches are refused with a message, not a huge file or an
+/// exhausted memory.
+#[test]
+fn an_absurd_density_is_refused() {
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 14000, "height": 14000, "artboards": 1})).unwrap();
+    rect(&mut s, "#cc2222", 0.0, 0.0, 14000.0, 14000.0);
+    let e = s.execute("document.export", &params("dst", json!({"density": 0.05, "stitchLength": 0.2}))).unwrap_err().to_string();
+    assert!(e.contains("stitches"), "{e}");
+}

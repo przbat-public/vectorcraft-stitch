@@ -3,8 +3,9 @@
 //! Files count coordinates in tenths of a millimetre; this crate counts millimetres. The y axis
 //! points up in DST, EXP and JEF (a design's top is its largest y there) and down in PEC, as
 //! Brother writes it: the readers and writers flip y accordingly. Every reader finishes with the
-//! design's top-left corner at the origin, and every writer places it there, so a design read and
-//! written again keeps its shape and its place.
+//! design's top-left corner at the origin. Writers put the origin where the format expects the
+//! needle to start: a corner of the design in DST, EXP and PEC, its centre in JEF (Janome sews
+//! around the hoop's centre). A design read and written again keeps its shape.
 //!
 //! The formats' own documentation (there is no specification; these were reverse-engineered
 //! publicly) is summarised in each module. What they share, and what this module holds:
@@ -119,6 +120,14 @@ impl Frame {
     pub(crate) fn of(p: &Pattern, flip: bool) -> Result<Self> {
         let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
         Ok(Self { left: b.x0, top: if flip { b.y1 } else { b.y0 }, flip })
+    }
+
+    /// A frame whose origin is the design's centre, for formats that place the design around the
+    /// hoop's centre (JEF), y flipped when `flip`.
+    pub(crate) fn centered(p: &Pattern, flip: bool) -> Result<Self> {
+        let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
+        let c = b.center();
+        Ok(Self { left: c.x, top: c.y, flip })
     }
 
     /// The file's x for a design x, in tenths.

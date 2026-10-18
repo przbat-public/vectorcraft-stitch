@@ -356,3 +356,29 @@ fn literal_stitches_survive_the_native_format() {
     open(&mut s, "design.vectorcraft", &native).expect("opens the native file");
     assert_eq!(sewn(&plan(&export(&mut s, "dst", json!({})))), sewn(&plan(&dst)));
 }
+
+/// A file that cuts the thread at the end of a colour block (before the change) and at the start
+/// of the next, as Ink/Stitch writes them, is written back with those cuts.
+#[test]
+fn cuts_at_a_blocks_ends_are_written_back() {
+    use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
+    let mut p = Pattern::default();
+    let mut a = Block::new(Thread::rgb([200, 0, 0]));
+    for i in 0..10 {
+        a.stitches.push(Stitch::new(f64::from(i) * 2.0, 0.0, Command::Stitch));
+    }
+    a.stitches.push(Stitch::new(18.0, 0.0, Command::Trim));
+    let mut b = Block::new(Thread::rgb([0, 0, 200]));
+    b.stitches.push(Stitch::new(0.0, 10.0, Command::Trim));
+    for i in 0..10 {
+        b.stitches.push(Stitch::new(f64::from(i) * 2.0, 10.0, Command::Stitch));
+    }
+    p.blocks.extend([a, b]);
+    for format in [Format::Pes, Format::Jef, Format::Exp] {
+        let file = format.write(&p).unwrap();
+        let mut s = Session::new();
+        open(&mut s, &format!("cuts.{}", format.id()), &file).expect("opens");
+        let again = export(&mut s, format.id(), json!({}));
+        assert_eq!(sewn(&format.read(&again).unwrap()), sewn(&format.read(&file).unwrap()), "{}", format.id());
+    }
+}

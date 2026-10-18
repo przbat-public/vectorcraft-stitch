@@ -24,4 +24,8 @@ pub struct StitchRun {
     /// run's first point with the thread still on.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub trim_before: bool,
+    /// The thread was cut after the run, at the end of its colour block, as the file had it
+    /// (machines and digitizers often cut before the thread is changed).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub trim_after: bool,
 }

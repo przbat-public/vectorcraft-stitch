@@ -2073,7 +2073,9 @@ mod tests {
             e.slice = Some(Box::default());
             e.perspective = Some(Box::new(crate::PerspectiveAttachment::new("left", 1.0)));
             e.live_paint_gaps = Some(Box::default());
-            e.embroidery = Some(Box::new(crate::embroidery::Embroidery { stitches: Some(crate::embroidery::StitchRun { trim_before: true }) }));
+            e.embroidery = Some(Box::new(crate::embroidery::Embroidery {
+                stitches: Some(crate::embroidery::StitchRun { trim_before: true, trim_after: false }),
+            }));
         }
         /// The top-level keys of a JSON object, in the order written.
         struct Keys(Vec<String>);

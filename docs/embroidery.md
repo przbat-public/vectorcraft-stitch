@@ -67,7 +67,11 @@ start) and off before every cut (and at the end): a short stitch back and forth 
   the outline instead of cutting across a corner; the same holds for underlay.
 - **Satin** sews a column: the path is its centre line, its stroke width the column's width, and
   the needle crosses from rail to rail every `density` millimetres, so the threads lie side by
-  side. `pullCompensation` widens the column. A centre run underneath holds the column up. A
+  side. `pullCompensation` widens the column. The underlay holds the column up and follows its
+  width: a centre run under columns narrower than 2 mm, an edge run (along one side and back along
+  the other, kept inside the column) from 2 mm, and an edge run then a zigzag between its sides
+  from 4.5 mm (estimates from the usual practice). The top stitching starts where the underlay
+  ended, so the needle never travels back along the column. A
   crossing longer than 10 mm (an estimate; professional software makes it a setting) is split
   into shorter stitches (*auto split*), and the cuts move from one crossing to the next so they
   never line up into a seam down the column.
@@ -77,7 +81,9 @@ start) and off before every cut (and at the end): a short stitch back and forth 
   `stitchLength`, and its last stitch is left out when it is short, so the needle turns
   diagonally into the next row instead of crawling along the edge. Rows sit half a spacing inside
   the shape's extent: no row lies on a tangent, and the thread's width covers to the edge. An edge
-  run underneath holds the fabric. Holes are left unstitched: the shape's fill rule decides what
+  run underneath holds the fabric, and a fill at least 10 mm across both ways also gets a second
+  underlay: sparse tatami rows (2 mm apart, 3 mm stitches) across the top rows, kept 0.6 mm inside
+  the edge so they never peek out (estimates). Holes are left unstitched: the shape's fill rule decides what
   is inside, as it does for paint. The rows are grouped into *regions* where the shape does not
   branch (above a hole, each side of it, below it; each arm of a letter), and each region is sewn
   whole before the next. The next region is the one that starts nearest where the last one ended,
@@ -131,8 +137,7 @@ index, whose RGB values differ between published charts — preview colour is no
   their outlines. An export says so in its `warnings`, one line per kind.
 - Gradients and patterns sew in one colour (a gradient in its first stop's; a pattern is left out).
 - Wide satin columns are split stitch by stitch (auto split), not into several narrower columns.
-- Underlay is one edge run or centre run; the documented taxonomy (centre run, edge walk, zigzag,
-  double zigzag by width) is not all there.
+- Underlay is chosen by width and size only, not by fabric (no fabric presets yet).
 - The PES section of a `.pes` is the minimal version 1 header: machines sew the design correctly,
   but PE-Design shows it as a blank document because the editable shapes (CEmbOne/CSewSeg) are not
   written yet. Reading a PES reads its PEC block, which is what machines and every other app use.

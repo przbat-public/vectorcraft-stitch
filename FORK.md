@@ -30,21 +30,11 @@ work comes from the list below, unless the user gives you a task.
 
 ## Work list (in this order)
 
-**Stage A — fix results in the current design**
-
-1. **Faithful import.** A design opened from a machine file keeps its exact stitches and exports
-   them unchanged. Today it becomes thin lines that are re-stitched on export, so
-   DST → VectorCraft → DST changes the design. Converting stitches to editable objects comes later,
-   on request.
-2. **Auto split for long satin stitches.** A stitch longer than a format allows is split today into
-   equal pieces in a straight line, which lines up into a visible seam in wide satins. Spread the
-   penetrations out instead.
-3. **Travel inside fills.** Moving between tatami regions should sew a hidden travel stitch inside
-   the shape (kept a margin away from its edge) instead of trimming. Overlap neighbouring regions
-   by a row so no gaps open at the seams.
-4. **Underlay by shape:** centre run for narrow columns, edge run plus zigzag for wide ones, a
-   second, perpendicular tatami layer for large fills.
-5. **Satin density by column width.**
+**Stage A — fix results in the current design: done** on `feat/embroidery-stage-a`. An opened
+design is written back unchanged (lines marked as literal stitches, `doc::embroidery`), long satin
+stitches are auto-split with spread cuts, fills travel inside the shape between regions and overlap
+them by a row, underlay follows the shape (centre/edge/zigzag by satin width, a second tatami layer
+under large fills), and satin spacing follows the column width. Details: `docs/embroidery.md`.
 
 **Stage B — change of direction: embroidery properties on objects**
 

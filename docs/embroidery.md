@@ -146,22 +146,27 @@ index, whose RGB values differ between published charts — preview colour is no
 
 ## Validation
 
-- `crates/stitch`: 27 unit tests — the fill covers a rectangle and leaves its hole empty, a ring
-  is sewn in regions with a handful of trims and no thread across its hole, a narrow gap is not
-  bridged, no stitch is longer than asked, the angle turns the rows, running lines keep their
-  corners and lock without passing their ends, fills and satins tie in and off, satin crossings
-  stay within the column, pull compensation widens it, an absurd plan is refused before it is
-  made, the DST record round-trips every delta from -121 to 121, only a run of three jumps reads as
-  a DST trim, a DST colour change can carry a move, each format writes a design it reads back with
-  the same blocks and size, a JEF's header extents are where its stitches go, an absurd JEF colour
-  count is not believed, and no reader panics on random, truncated or damaged bytes.
-- `crates/engine`: 17 tests (16 command-level) — export writes a readable design in every format,
-  options change the plan, a written PES opens as art (also by its magic bytes), a design read back
-  sews again with the same size and blocks, `document.formats` lists the four, empty documents,
-  bad styles and absurd densities are refused, type is left out with a warning, the stacking order
-  survives grouping by thread, clipping masks cut fills and strokes, template layers are not
-  sewn, a forced fill fills a stroke's area rather than its path's inside, and the defaults
-  `document.formats` lists are the planner's.
+- `crates/stitch`: 32 unit tests — the fill covers a rectangle and leaves its hole empty, a ring
+  is sewn in regions with no thread across its hole and, travelling inside, without a trim, regions
+  overlap by a row, a narrow gap is not bridged, large fills get a tatami underlay and small ones
+  don't, no stitch is longer than asked, the angle turns the rows, running lines keep their corners
+  and lock without passing their ends, fills and satins tie in and off, satin underlay follows the
+  width with no trim between it and the top, satin spacing follows the width unless given, wide
+  satins are split without a seam, satin crossings stay within the column, pull compensation
+  widens it, an absurd plan is refused before it is made, the DST record round-trips every delta
+  from -121 to 121, only a run of three jumps reads as a DST trim, a DST colour change can carry a
+  move, each format writes a design it reads back with the same blocks and size, a JEF's header
+  extents are where its stitches go, an absurd JEF colour count is not believed, and no reader
+  panics on random, truncated or damaged bytes.
+- `crates/engine`: 20 tests (19 command-level) — export writes a readable design in every format,
+  options change the plan, a written PES opens as art (also by its magic bytes), an opened design
+  is written back unchanged in every format (and again after a second round), converts between
+  formats with the same needle points, ignores the style options and survives the native format,
+  `document.formats` lists the four, empty documents, bad styles and absurd densities are refused,
+  type is left out with a warning, the stacking order survives grouping by thread, clipping masks
+  cut fills and strokes, template layers are not sewn, a forced fill fills a stroke's area rather
+  than its path's inside, and the defaults `document.formats` lists (the satin spacing table
+  included) are the planner's.
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
 

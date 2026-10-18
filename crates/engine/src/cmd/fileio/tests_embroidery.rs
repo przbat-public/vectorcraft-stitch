@@ -126,20 +126,59 @@ fn a_pes_opens_by_its_magic_bytes() {
     assert_eq!(r["format"].as_str(), Some("pes"));
 }
 
+/// Each block's needle points (where the needle goes down) and the trims, as a reader decodes
+/// them: what a machine sews.
+fn sewn(p: &vectorcraft_stitch::Pattern) -> Vec<(Vec<(i32, i32)>, usize)> {
+    use vectorcraft_stitch::{Command, quantize};
+    p.blocks
+        .iter()
+        .map(|b| {
+            let points = b.stitches.iter().filter(|s| s.command == Command::Stitch).map(|s| (quantize(s.x), quantize(s.y))).collect();
+            (points, b.stitches.iter().filter(|s| s.command == Command::Trim).count())
+        })
+        .collect()
+}
+
+/// A design opened from a machine file and exported again is the same design: every needle
+/// point, trim and colour block where the file had it, in every format.
 #[test]
-fn a_stitched_design_reads_back_and_sews_again() {
+fn an_opened_design_is_written_back_unchanged() {
+    for format in Format::ALL {
+        let mut s = art();
+        // Two shapes of each thread, far apart, so the blocks hold trims and jumps.
+        rect(&mut s, "#cc2222", 20.0, 120.0, 30.0, 20.0);
+        let first = export(&mut s, format.id(), json!({}));
+        open(&mut s, &format!("design.{}", format.id()), &first).expect("opens");
+        let again = export(&mut s, format.id(), json!({}));
+        let (a, b) = (format.read(&first).expect("reads"), format.read(&again).expect("reads"));
+        assert_eq!(sewn(&a), sewn(&b), "{}", format.id());
+        // Opened again and written again: still the same.
+        open(&mut s, &format!("again.{}", format.id()), &again).expect("opens");
+        assert_eq!(sewn(&format.read(&export(&mut s, format.id(), json!({}))).expect("reads")), sewn(&a), "{}", format.id());
+    }
+}
+
+/// An opened design written to another format keeps its needle points too (as far as the target
+/// format can say the same thing).
+#[test]
+fn an_opened_design_converts_between_formats() {
     let mut s = art();
-    let first = plan(&export(&mut s, "dst", json!({})));
-    let bytes = export(&mut s, "dst", json!({}));
-    open(&mut s, "design.dst", &bytes).expect("opens");
-    // The design is art now: thin strokes, sewn along their centre lines.
-    let again = plan(&export(&mut s, "dst", json!({})));
-    assert!(again.sewn() > 100, "{} stitches again", again.sewn());
-    assert_eq!(again.blocks.len(), first.blocks.len());
-    let a = first.bounds().expect("bounds");
-    let b = again.bounds().expect("bounds");
-    assert!((a.width() - b.width()).abs() < 3.0, "{a:?} {b:?}");
-    assert!((a.height() - b.height()).abs() < 3.0, "{a:?} {b:?}");
+    let pes = export(&mut s, "pes", json!({}));
+    open(&mut s, "design.pes", &pes).expect("opens");
+    let jef = export(&mut s, "jef", json!({}));
+    let points = |p: &vectorcraft_stitch::Pattern| sewn(p).into_iter().map(|(pts, _)| pts).collect::<Vec<_>>();
+    assert_eq!(points(&Format::Pes.read(&pes).expect("reads")), points(&Format::Jef.read(&jef).expect("reads")));
+}
+
+/// Moving an opened design moves its stitches; its style options don't re-stitch it.
+#[test]
+fn an_opened_design_is_not_restitched_by_the_options() {
+    let mut s = art();
+    let dst = export(&mut s, "dst", json!({}));
+    open(&mut s, "design.dst", &dst).expect("opens");
+    let plain = plan(&export(&mut s, "dst", json!({})));
+    let forced = plan(&export(&mut s, "dst", json!({"stitchStyle": "satin", "density": 1.0, "stitchLength": 8.0})));
+    assert_eq!(sewn(&plain), sewn(&forced));
 }
 
 #[test]
@@ -299,4 +338,20 @@ fn a_forced_fill_fills_the_stroke_not_the_path() {
         let d = ((st.x - cx).powi(2) + (st.y - cy).powi(2)).sqrt();
         assert!((d - r).abs() < 1.4, "a stitch {d:.1} mm from the centre");
     }
+}
+
+/// An opened design saved as a VectorCraft document and opened again still writes back the file's
+/// stitches: the native format keeps which lines are literal stitches.
+#[test]
+fn literal_stitches_survive_the_native_format() {
+    let mut s = art();
+    let dst = export(&mut s, "dst", json!({}));
+    open(&mut s, "design.dst", &dst).expect("opens");
+    let saved = s.execute("document.serialize", &json!({})).expect("serializes");
+    let native = match saved["dataBase64"].as_str() {
+        Some(b) => vectorcraft_format::base64_decode(b).expect("base64"),
+        None => saved["text"].as_str().expect("text").as_bytes().to_vec(),
+    };
+    open(&mut s, "design.vectorcraft", &native).expect("opens the native file");
+    assert_eq!(sewn(&plan(&export(&mut s, "dst", json!({})))), sewn(&plan(&dst)));
 }

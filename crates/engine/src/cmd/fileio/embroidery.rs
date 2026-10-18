@@ -18,8 +18,9 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::Value;
 use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, LineJoin, Node, NodeKind};
-use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, Point, Rect, Shape, Size};
+use vectorcraft_doc::embroidery::{Embroidery, StitchRun};
+use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, LineJoin, Node, NodeId, NodeKind};
+use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Point, Rect, Shape, Size, kurbo};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke};
 use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::plan::{self, Params, Style};
@@ -162,7 +163,7 @@ pub(super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Vec<String>)
             s.cap = LineCap::Round;
         }
         let mut children: Vec<Arc<Node>> = Vec::new();
-        for run in runs(block) {
+        for (run, trim_before) in runs(block) {
             let mut bp = BezPath::new();
             for (i, s) in run.iter().enumerate() {
                 let p = Point::new((s.x + MARGIN) * scale, (s.y + MARGIN) * scale);
@@ -172,11 +173,16 @@ pub(super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Vec<String>)
                     bp.line_to(p);
                 }
             }
-            if bp.elements().len() < 2 {
-                continue;
+            // A single stitch is a line that goes nowhere: still one needle point.
+            if let [only] = run.as_slice() {
+                bp.line_to(Point::new((only.x + MARGIN) * scale, (only.y + MARGIN) * scale));
             }
             let path = PathData::from_bezpath(&bp);
-            children.push(Arc::new(Node::path(doc.alloc_id(), path, stroke.clone())));
+            let mut node = Node::path(doc.alloc_id(), path, stroke.clone());
+            // The line's points are the file's needle points: exported, they are sewn as they are,
+            // so the design is written back unchanged.
+            node.extras_mut().embroidery = Some(Box::new(Embroidery { stitches: Some(StitchRun { trim_before }) }));
+            children.push(Arc::new(node));
         }
         if children.is_empty() {
             continue;
@@ -199,23 +205,26 @@ pub(super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Vec<String>)
     Ok((doc, Vec::new()))
 }
 
-/// The stitches of one block cut into runs at every lift of the needle.
-fn runs(block: &Block) -> Vec<Vec<Stitch>> {
-    let mut out: Vec<Vec<Stitch>> = Vec::new();
+/// The stitches of one block cut into runs at every lift of the needle (a jump, a trim, a stop),
+/// each with whether the thread was cut before it.
+fn runs(block: &Block) -> Vec<(Vec<Stitch>, bool)> {
+    let mut out: Vec<(Vec<Stitch>, bool)> = Vec::new();
     let mut cur: Vec<Stitch> = Vec::new();
+    let mut trim = false;
     for s in &block.stitches {
         if s.command == Command::Stitch {
             cur.push(*s);
             continue;
         }
-        if cur.len() >= 2 {
-            out.push(std::mem::take(&mut cur));
-        } else {
-            cur.clear();
+        if !cur.is_empty() {
+            out.push((std::mem::take(&mut cur), std::mem::take(&mut trim)));
+        }
+        if s.command == Command::Trim {
+            trim = true;
         }
     }
-    if cur.len() >= 2 {
-        out.push(cur);
+    if !cur.is_empty() {
+        out.push((cur, trim));
     }
     out
 }
@@ -224,7 +233,7 @@ fn runs(block: &Block) -> Vec<Vec<Stitch>> {
 pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
     let opts = options(p)?;
     let format = StitchFormat::from_id(f.id).ok_or_else(|| bad(C, format!("{} is not an embroidery format", f.label)))?;
-    let mut d = Digitizer { doc, opts: &opts, blocks: Vec::new(), warnings: Vec::new(), nest: 0, clip: None, stitches: 0, failed: None };
+    let mut d = Digitizer { doc, opts: &opts, blocks: Vec::new(), warnings: Vec::new(), nest: 0, clip: None, owner: None, stitches: 0, failed: None };
     d.run();
     if let Some(e) = d.failed {
         return Err(bad(C, e));
@@ -242,13 +251,16 @@ pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
 struct Digitizer<'a> {
     doc: &'a Document,
     opts: &'a Options,
-    blocks: Vec<Block>,
+    blocks: Vec<Planned>,
     warnings: Vec<String>,
     /// Symbol art being stitched inside symbol instances.
     nest: u32,
     /// The region the clip groups around the current object leave visible (millimetres), `None`
     /// outside any clip group.
     clip: Option<(BezPath, FillRule)>,
+    /// The group the walk is in: literal stitch runs ([`StitchRun`]) of one group are one colour
+    /// block of the file they came from, and stay one.
+    owner: Option<NodeId>,
     /// The stitches planned so far, against [`MAX_DESIGN_STITCHES`].
     stitches: usize,
     /// Why the design can't be stitched (too many stitches); the walk stops planning once set.
@@ -278,13 +290,19 @@ impl Digitizer<'_> {
             NodeKind::Layer { template: true, .. } | NodeKind::Layer { printable: false, .. } => {}
             NodeKind::Layer { children, clip: true, .. } | NodeKind::Group { children, clip: true } => self.clip_group(children),
             NodeKind::Layer { children, .. } | NodeKind::Group { children, .. } => {
+                let outer = self.owner.replace(n.id);
                 for c in children {
                     self.node(c);
                 }
+                self.owner = outer;
             }
             NodeKind::Path { path, rule, guide, .. } => {
-                if !*guide {
-                    self.shape(n, &path.to_bezpath(), *rule);
+                if *guide {
+                    return;
+                }
+                match n.extras().embroidery.as_deref().and_then(|e| e.stitches) {
+                    Some(run) => self.literal(n, &path.to_bezpath(), run),
+                    None => self.shape(n, &path.to_bezpath(), *rule),
                 }
             }
             NodeKind::Compound { children, rule } => {
@@ -311,6 +329,51 @@ impl Digitizer<'_> {
             NodeKind::Image(_) => self.warn(IMAGES_LEFT_OUT),
             _ => self.warn(LIVE_LEFT_OUT),
         }
+    }
+
+    /// A run of literal stitches (read from a machine file): the path's points sewn as they are,
+    /// in the colour of its stroke, one block with the other runs of its group.
+    fn literal(&mut self, n: &Node, bp: &BezPath, run: StitchRun) {
+        if self.failed.is_some() {
+            return;
+        }
+        let paint = n.appearance.items.iter().filter(|i| i.visible()).find_map(|i| match i {
+            AppearanceItem::Stroke(s) => Some(&s.paint),
+            AppearanceItem::Fill(_) => None,
+        });
+        let color = match paint.map(solid) {
+            Some(Colour::Solid(c) | Colour::Approx(c)) => c,
+            // Unpainted (or a pattern): it shows nothing, so it sews nothing.
+            _ => return,
+        };
+        let mut mm = bp.clone();
+        mm.apply_affine(Affine::scale(vectorcraft_stitch::MM_PER_PT));
+        let mut points: Vec<Stitch> = Vec::new();
+        kurbo::flatten(mm.iter(), 0.05, |el| {
+            if let PathEl::MoveTo(p) | PathEl::LineTo(p) = el {
+                points.push(Stitch::sew(p));
+            }
+        });
+        // A single stitch is stored as a line that goes nowhere: one needle point.
+        if let [a, b] = points.as_slice()
+            && a.distance(*b) < 1e-9
+        {
+            points.pop();
+        }
+        if let Some(clip) = &self.clip {
+            points = cut_to(points, clip);
+        }
+        if points.is_empty() {
+            return;
+        }
+        self.stitches = self.stitches.saturating_add(points.len());
+        if self.stitches > MAX_DESIGN_STITCHES {
+            self.failed = Some(format!("the design would need more than {MAX_DESIGN_STITCHES} stitches"));
+            return;
+        }
+        let mut block = Block::new(Thread::rgb(color));
+        block.stitches = points;
+        self.blocks.push(Planned { block, literal: self.owner.map(|g| (g, run.trim_before)) });
     }
 
     /// A clip group, as it paints: the clipping path (its first child) paints its fills behind the
@@ -449,7 +512,7 @@ impl Digitizer<'_> {
         }
         let mut block = Block::new(Thread::rgb(color));
         block.stitches = stitches;
-        self.blocks.push(block);
+        self.blocks.push(Planned { block, literal: None });
     }
 }
 
@@ -516,39 +579,72 @@ fn solid(paint: &Paint) -> Colour {
     }
 }
 
+/// One object's stitches, in document order.
+struct Planned {
+    block: Block,
+    /// A literal run read from a machine file: the group it belongs to (that file's colour block)
+    /// and whether the thread was cut before it. `None`: stitches planned from art.
+    literal: Option<(NodeId, bool)>,
+}
+
 /// Blocks of one thread sewn in one pass where the stacking allows it: a block joins an earlier
 /// block of its thread only when it overlaps none of the blocks sewn between the two, so art that
 /// lies on top is still sewn last (thread sewn later covers thread sewn earlier, as paint does).
 /// The machine changes colour as few times as that allows, not once per object.
-fn group(blocks: Vec<Block>) -> Vec<Block> {
+///
+/// Literal runs (a design read from a file) are left as the file had them: the runs of one group
+/// make one block, joined by the jumps (and trims) between them, and never merge with anything
+/// else.
+fn group(planned: Vec<Planned>) -> Vec<Block> {
     /// How far apart two blocks' stitches must be not to touch: a thread's width and a satin's pull.
     const CLEARANCE: f64 = 1.0;
-    let mut out: Vec<(Block, Option<Rect>)> = Vec::new();
-    for b in blocks {
+    // Each block so far, its bounds, and the group of the literal runs it holds.
+    let mut out: Vec<(Block, Option<Rect>, Option<NodeId>)> = Vec::new();
+    for Planned { block: b, literal } in planned {
         let Some(&first) = b.stitches.first() else { continue };
         let bounds = b.bounds().map(|r| r.inflate(CLEARANCE, CLEARANCE));
-        let target = out.iter().rposition(|(m, _)| m.thread.color == b.thread.color).filter(|&j| {
-            out.iter().skip(j + 1).all(|(_, other)| match (bounds, other) {
+        if let Some((owner, trim_before)) = literal {
+            match out.last_mut() {
+                Some((merged, mb, Some(o))) if *o == owner && merged.thread.color == b.thread.color => {
+                    if let Some(last) = merged.stitches.last().copied()
+                        && trim_before
+                    {
+                        merged.stitches.push(Stitch::new(last.x, last.y, Command::Trim));
+                    }
+                    merged.stitches.push(Stitch::jump(first.point()));
+                    merged.stitches.extend(b.stitches.iter().copied());
+                    *mb = union(*mb, bounds);
+                }
+                _ => out.push((b, bounds, Some(owner))),
+            }
+            continue;
+        }
+        let target = out.iter().rposition(|(m, _, lit)| lit.is_none() && m.thread.color == b.thread.color).filter(|&j| {
+            out.iter().skip(j + 1).all(|(_, other, _)| match (bounds, other) {
                 (Some(a), Some(o)) => !overlaps(a, *o),
                 _ => false,
             })
         });
         match target.and_then(|j| out.get_mut(j)) {
-            Some((merged, mb)) => {
+            Some((merged, mb, _)) => {
                 if let Some(last) = merged.stitches.last().copied() {
                     merged.stitches.push(Stitch::new(last.x, last.y, Command::Trim));
                     merged.stitches.push(Stitch::jump(first.point()));
                 }
                 merged.stitches.extend(b.stitches.iter().copied());
-                *mb = match (*mb, bounds) {
-                    (Some(x), Some(y)) => Some(x.union(y)),
-                    (x, y) => x.or(y),
-                };
+                *mb = union(*mb, bounds);
             }
-            None => out.push((b, bounds)),
+            None => out.push((b, bounds, None)),
         }
     }
-    out.into_iter().map(|(b, _)| b).collect()
+    out.into_iter().map(|(b, ..)| b).collect()
+}
+
+fn union(a: Option<Rect>, b: Option<Rect>) -> Option<Rect> {
+    match (a, b) {
+        (Some(x), Some(y)) => Some(x.union(y)),
+        (x, y) => x.or(y),
+    }
 }
 
 /// Whether two boxes share any area (touching edges do not count).

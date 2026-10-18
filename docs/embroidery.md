@@ -43,9 +43,16 @@ the thread's colour, so the design looks like it will sew and can be measured, t
 recoloured. A DST or EXP file carries no colours: those blocks get the default palette's colours,
 one per block. `design.pes` opens by its `#PES` bytes whatever it is called.
 
-**Exporting what you read.** A design opened as art is art: it exports as the stitches of the
-lines it is drawn with. The round trip preserves the design's size and colours' blocks (see
-`a_stitched_design_reads_back_and_sews_again` in `crates/engine/src/cmd/fileio/tests_embroidery.rs`).
+**Exporting what you read.** The lines of an opened design are its stitches: each one is marked
+as a run of literal stitches (`NodeExtras::embroidery`, kept in `.vectorcraft` files), and the
+export sews its points exactly as they are, one needle point per point, with the jumps and trims
+the file had between runs. The runs of one thread group stay one colour block, and the export
+options (`stitchStyle`, `density`…) don't touch them. So a design opened and written again, in the
+same format or another, has every needle point, trim and colour block where the file had it (see
+`an_opened_design_is_written_back_unchanged` in `crates/engine/src/cmd/fileio/tests_embroidery.rs`).
+Moving or scaling the lines moves or scales the stitches; editing a line's points edits the
+stitches. Turning a design back into shapes that are stitched by the rules (what professional
+software calls recognising objects) is not done yet.
 
 ## How a shape becomes stitches
 

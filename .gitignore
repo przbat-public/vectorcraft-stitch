@@ -1,5 +1,7 @@
 *~
 plan/
+# …but not the stitch planner's module, which shares the name.
+!crates/stitch/src/plan/
 /target
 /dist
 /corpus

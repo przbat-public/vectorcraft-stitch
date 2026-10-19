@@ -940,3 +940,33 @@ fn cut_pieces_are_joined_by_their_gap() {
     assert_eq!(commands(&join(p.jump + 0.5, false)), [S, S, S, J, S, S, S], "no ties without lock");
     assert_eq!(commands(&join(p.trim + 0.5, false)), [S, S, S, T, J, S, S, S]);
 }
+
+/// Along a fine zigzag (sharp corners closer together than 0.3 of a stitch), a running line keeps
+/// its stitch length: it passes the corners it can't stitch into without a stub, rather than one
+/// needle point moving from corner to corner into a single stitch the length of the line. An edge
+/// run under a fill with a zigzag edge keeps its length the same way.
+#[test]
+fn a_fine_zigzag_keeps_its_stitch_length() {
+    let zigzag = |amp: f64, period: f64| (0..=(100.0 / period) as usize).map(move |k| (k as f64 * period / 2.0, if k % 2 == 1 { amp } else { 0.0 }));
+    let longest = |out: &[Stitch]| {
+        out.windows(2).filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch).map(|w| w[0].distance(w[1])).fold(0.0, f64::max)
+    };
+    for (amp, period) in [(0.3, 0.6), (0.2, 1.0), (0.5, 0.8)] {
+        let mut path = BezPath::new();
+        for (k, q) in zigzag(amp, period).enumerate() {
+            if k == 0 { path.move_to(q) } else { path.line_to(q) }
+        }
+        let p = Params::for_style(Style::Running);
+        let out = stitches(&path, FillRule::NonZero, &p);
+        assert!(longest(&out) <= 1.3 * p.stitch_length + 1e-9, "{amp} × {period}: a {:.2} mm stitch", longest(&out));
+        assert!(points(&out).len() >= 20, "{amp} × {period}: {} needle points along 50 mm", points(&out).len());
+        assert!(points(&out).iter().all(|q| q.y >= -1e-9 && q.y <= amp + 1e-9), "{amp} × {period}: off the line");
+
+        let mut edge: Vec<(f64, f64)> = zigzag(amp, period).map(|(x, y)| (x, 20.0 - y)).collect();
+        edge.extend([(50.0, 0.0), (0.0, 0.0)]);
+        let mut p = Params::for_style(Style::Fill);
+        p.angle = 90.0;
+        let out = stitches(&polygon(edge), FillRule::NonZero, &p);
+        assert!(longest(&out) <= p.stitch_length + 2.0 * p.min_stitch + 1e-9, "{amp} × {period}: a {:.2} mm fill stitch", longest(&out));
+    }
+}

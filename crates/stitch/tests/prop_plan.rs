@@ -1,6 +1,6 @@
 //! Stitch planner property tests: for any closed shape (rectangles, ellipses, star-shaped polygons)
-//! and any sane parameters, a fill or running line stays on the art and cuts the thread exactly on
-//! the jumps longer than the trim length, and a fill sews no stitch longer than it allows.
+//! and any sane parameters, a fill or running line stays on the art, sews no stitch longer than it
+//! allows, and cuts the thread exactly on the jumps longer than the trim length.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -54,18 +54,15 @@ proptest! {
         }
     }
 
-    /// A fill sews no stitch longer than its parameters allow: a row's stitch length (an end
-    /// stitch up to the shortest stitch more), the tatami underlay's 3 mm, an edge run's or a
-    /// travel's 2 mm (up to 0.3 of that more next to a corner, where a stub moves onto it), or a
+    /// No stitch is longer than the parameters allow: a row's stitch length (an end stitch up to
+    /// the shortest stitch more), a line's, an edge run's or a travel's (up to 0.3 of a step more
+    /// next to a corner or an end, where a stub moves onto it), the tatami underlay's 3 mm, or a
     /// move short enough to sew; and a stitch shorter than the shortest is left out, which
-    /// lengthens the next by at most that much. (Running lines are left out: along an outline whose sharp corners
-    /// lie closer together than 0.3 of a stitch, each corner moves the same needle point on to the
-    /// next, so one stitch can span them all.)
+    /// lengthens the next by at most that much.
     #[test]
-    fn a_fill_sews_no_stitch_too_long(shape in arb_closed_shape(), p in arb_params()) {
-        let p = Params { style: Style::Fill, ..p };
+    fn no_stitch_is_too_long(shape in arb_closed_shape(), p in arb_params()) {
         let out = stitches(&shape.to_bezpath(), FillRule::NonZero, &p);
-        let longest = (p.stitch_length + p.min_stitch).max(3.0 + p.min_stitch).max(2.6).max(p.jump) + p.min_stitch + 1e-6;
+        let longest = (p.stitch_length + p.min_stitch).max(1.3 * p.stitch_length).max(3.0 + p.min_stitch).max(2.6).max(p.jump) + p.min_stitch + 1e-6;
         for (d, up, _) in moves(&out) {
             prop_assert!(up || d <= longest, "a {d} mm stitch, longer than {longest} ({p:?})");
         }

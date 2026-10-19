@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** tests for the planner's limits and weights: moves of exactly `jumpLength` and `trimLength`, the row stagger, the cheaper sewing order, the travel that shows too much, the travel margin, nearest-first lines, cut pieces, trim after a group, compound path or clip group, jump ceilings on the real designs, and property tests
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** a running line, edge run or travel along a fine zigzag keeps its stitch length (a needle point moves onto a corner once at most)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -92,7 +92,10 @@ the fabric.
 - **Running** follows a path at `stitchLength` steps, with a lock stitch (a short stitch back
   along the line and forward again, never past its end) at each end so the thread does not pull
   out. Sharp corners (turns over about 30°) get a needle point of their own, so the stitches follow
-  the outline instead of cutting across a corner; the same holds for underlay.
+  the outline instead of cutting across a corner; the same holds for underlay. A point that would
+  fall within 0.3 of a stitch of a corner moves onto it, once at most: a corner that close to one
+  already stitched into is passed, so along a fine zigzag the stitches keep their length (at most
+  1.3 stitch lengths) instead of one point moving from corner to corner.
 - **Satin** sews a column: the path is its centre line, its stroke width the column's width, and
   the needle crosses from rail to rail at the column's spacing, so the threads lie side by side:
   more open in a narrow column, where the thread bunches at the rails, denser in a wide one so it
@@ -212,9 +215,6 @@ index, whose RGB values differ between published charts — preview colour is no
 - No stitch preview layer and no stitch simulator yet; the imported design is the preview.
 - The trim length is one number for every machine and fabric: there are no machine or fabric
   settings yet. Jumps shorter than it are left to a machine with jump trimming, or to a person.
-- A running line along an outline whose sharp corners lie closer together than 0.3 of a stitch
-  (a fine zigzag) can come out as one long stitch: each corner moves the same needle point on to
-  the next. A 50 mm zigzag with corners 0.5 mm apart is sewn as a single 50 mm stitch.
 - A fill whose regions form one piece of more than 200 (a comb of 200 teeth) is sewn nearest
   region next, without comparing orders: with 30 mm teeth that is 100 jumps (a comb of five
   teeth is sewn without one).
@@ -226,7 +226,7 @@ index, whose RGB values differ between published charts — preview colour is no
 
 ## Validation
 
-- `crates/stitch`: 51 unit tests and 3 property tests — the fill covers a rectangle and leaves its hole empty, an
+- `crates/stitch`: 52 unit tests and 3 property tests — the fill covers a rectangle and leaves its hole empty, an
   unclosed shape is filled, a ring is sewn in regions with no thread across its hole and,
   travelling inside, without a trim, regions overlap by a row, a narrow gap is never sewn across,
   a letter E is sewn in one go at any angle (every 5°) without crossing its gaps, and so are a U,
@@ -242,7 +242,7 @@ index, whose RGB values differ between published charts — preview colour is no
   the lines of a running path are sewn nearest first, a shape
   starts nearest the needle (with no needle, a line's first subpath as drawn and the next from near it), large fills get a
   tatami underlay and small ones don't, no stitch is longer than asked or shorter than the
-  shortest, the angle turns the rows, running lines keep their corners and lock without passing
+  shortest, the angle turns the rows, running lines keep their corners (and their stitch length along a fine zigzag, an edge run too) and lock without passing
   their ends, fills and satins tie in and off, satin underlay follows the width with no trim
   between it and the top, satin spacing follows the width unless given, wide satins and their
   zigzag underlay are split without a seam, satin crossings stay within the column, pull compensation widens it, an absurd
@@ -252,8 +252,9 @@ index, whose RGB values differ between published charts — preview colour is no
   its stitches go, an absurd JEF colour count is not believed, and no reader panics on random,
   truncated or damaged bytes. The property tests (`tests/prop_plan.rs`, random rectangles,
   ellipses and star-shaped polygons with random parameters): every needle point stays on the art,
-  the thread is cut exactly on the jumps longer than `trimLength`, and a fill sews no stitch longer
-  than its parameters allow.
+  the thread is cut exactly on the jumps longer than `trimLength`, and no stitch is longer than the
+  parameters allow (this found the zigzag fault fixed above: a 50 mm zigzag with corners 0.5 mm
+  apart was one 50 mm stitch).
 - `crates/engine`: 30 tests (28 command-level) — export writes a readable design in every format,
   options change the plan, a written PES opens as art (also by its magic bytes), an opened design
   is written back unchanged in every format (and again after a second round), with the cuts at
@@ -295,16 +296,16 @@ short hops with the thread on (the bullseye's 8 new ones are about 1 mm, between
 | Design | Stitches | Trims, before → now | Jumps, before → now |
 |---|---|---|---|
 | bullseye | 3590 (8133) | 1 → 0 (6) | 1 → 9 (8) |
-| fox | 2204 (5268) | 5 → 3 (6) | 5 → 4 (3) |
+| fox | 2205 (5268) | 5 → 3 (6) | 5 → 4 (3) |
 | heart suit | 1338 (3429) | 0 → 0 (0) | 0 → 0 (0) |
 | joystick | 1662 (3148) | 5 → 4 (4) | 5 → 5 (4) |
 | pool 8 ball | 2328 (5214) | 0 → 0 (2) | 0 → 1 (2) |
 | puzzle piece | 1344 (2988) | 1 → 0 (0) | 1 → 0 (0) |
-| smiling face | 2626 (5733) | 3 → 3 (3) | 3 → 3 (6) |
-| SOS button | 2630 (5849) | 8 → 4 (3) | 11 → 6 (2) |
-| video game | 2155 (4496) | 8 → 3 (11) | 9 → 12 (12) |
-| watermelon | 1537 (2598) | 13 → 2 (2) | 14 → 14 (2) |
-| zebra | 3524 (8861) | 11 → 6 (21) | 12 → 15 (39) |
+| smiling face | 2628 (5733) | 3 → 3 (3) | 3 → 3 (6) |
+| SOS button | 2631 (5849) | 8 → 4 (3) | 11 → 6 (2) |
+| video game | 2157 (4496) | 8 → 3 (11) | 9 → 12 (12) |
+| watermelon | 1549 (2598) | 13 → 2 (2) | 14 → 14 (2) |
+| zebra | 3530 (8861) | 11 → 6 (21) | 12 → 15 (39) |
 
 55 trims in all before, 25 now; stitch counts within 2 % of before (hidden travels add a few). With
 a 25 mm trim length it would be 7; with 5 mm (every jump cut, as before) about 46. The

@@ -68,12 +68,17 @@ pub(super) fn subpaths(path: &BezPath) -> Vec<SubPath> {
 /// Points along a polyline every `step` millimetres, both ends included. A closed polyline ends
 /// where it started. Sharp corners get a point of their own (the steps start again from them),
 /// so stitches follow the outline instead of cutting across a corner — into a notch or a gap
-/// beside it. No stitch at a corner or at the end is a stub: a point that would fall within 0.3 of
-/// a step of one moves onto it.
+/// beside it. No stitch at a corner is a stub: a point that would fall within 0.3 of a step of one
+/// moves onto it, and so does one by the end. A point moves once at most: a corner that close to
+/// the start or to a corner already stitched into is passed, the stitch at most 0.3 of a step off
+/// it (along a fine zigzag the stitches keep their length rather than one point moving from corner
+/// to corner), and no stitch is longer than 1.3 steps.
 pub(super) fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
     let (Some(&first), Some(&last)) = (pts.first(), pts.last()) else { return Vec::new() };
     let step = step.max(0.01);
     let mut out: Vec<Point> = vec![first];
+    // The last point stays where it is: the start, or a corner stitched into.
+    let mut fixed = true;
     let mut travelled = 0.0;
     let mut next = step;
     let n = pts.len();
@@ -88,6 +93,7 @@ pub(super) fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
         while next <= travelled + seg {
             let f = (next - travelled) / seg;
             out.push(a + (b - a) * f);
+            fixed = false;
             next += step;
             if out.len() >= MAX_STITCHES {
                 return out;
@@ -101,24 +107,40 @@ pub(super) fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
             && let Some(c) = at(i + 2)
             && let (Some(u), Some(v)) = (unit(b - a), unit(c - b))
             && u.dot(v).clamp(-1.0, 1.0).acos() > CORNER
+            && land_on(&mut out, b, step, fixed, false)
         {
-            land_on(&mut out, b, step);
+            fixed = true;
             next = travelled + step;
         }
     }
-    land_on(&mut out, if closed { first } else { last }, step);
+    land_on(&mut out, if closed { first } else { last }, step, fixed, true);
     out
 }
 
-/// `q` as the next point of `out`, unless the last point is so close to it (within 0.3 of `step`)
-/// that the stitch would be a stub: then that point moves onto `q`.
-fn land_on(out: &mut Vec<Point>, q: Point, step: f64) {
-    let movable = out.len() > 1;
-    match out.last_mut() {
-        Some(last) if last.distance(q) <= 1e-9 => {}
-        Some(last) if movable && last.distance(q) < 0.3 * step => *last = q,
-        _ => out.push(q),
+/// Stitch into `q`, a corner or (`end`) the line's end: a point of its own, unless the last point
+/// is so close to it (within 0.3 of `step`) that the stitch would be a stub: then that point moves
+/// onto `q`. When the last point must stay (`fixed`), a corner that close is passed and the end
+/// gets its short stitch. Whether `q` got a point.
+fn land_on(out: &mut Vec<Point>, q: Point, step: f64, fixed: bool, end: bool) -> bool {
+    let Some(last) = out.last_mut() else {
+        out.push(q);
+        return true;
+    };
+    let d = last.distance(q);
+    if d <= 1e-9 {
+        return true;
     }
+    if d < 0.3 * step {
+        if !fixed {
+            *last = q;
+            return true;
+        }
+        if !end {
+            return false;
+        }
+    }
+    out.push(q);
+    true
 }
 
 /// The total length of a polyline, millimetres.

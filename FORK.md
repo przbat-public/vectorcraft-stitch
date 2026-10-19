@@ -67,16 +67,21 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
    Morrish's gap-free spacing), stitches up to 4 mm (Wilcom). Ink/Stitch's denser defaults (0.25 and
    3) are not followed, so VectorCraft still sews 40–60 % of the person's stitches. Per-fabric
    values wait for the fabric presets below.
-3. **Pull compensation for fills, and gaps between shapes.** Only satin columns are widened. Ink/
-   Stitch widens fill rows and can expand shapes so neighbours meet without a gap.
+3. **Pull compensation for fills, and gaps between shapes.** Done: a fill's rows reach past the
+   edge at each end by `pullCompensation` (0.2 mm, as satins), at most half way across a gap, and
+   without changing the sewing order; `expand` grows a fill all round (path operations in the
+   engine) so shapes drawn apart meet. Two fills drawn 0.6 mm apart now meet. A move along two
+   edges in line no longer crosses the gap between them.
 4. **Narrow filled areas as satin.** Every filled shape becomes tatami; narrow parts (stems, thin
    arms) are better as satin columns, as auto-digitizers choose by width.
-5. **Satin compensation.** Pull compensation is a fixed width on both sides; professional tools
-   also take a share of the column's width and a value per side, and *push* compensation shortens
-   a column's ends, since sewing lengthens it.
-6. **Auto spacing by thread thickness.** Wilcom adjusts satin spacing by thread weight (its
-   auto-spacing settings list an offset per thread thickness); a small addition to
-   `satin_spacing` once threads carry a weight.
+5. **Satin compensation.** Done: `pullCompensationPercent` adds a share of the column's width,
+   each compensation takes a value per side, and `pushCompensation` shortens an open column's
+   ends (off by default: no published starting value). A column's last crossing now goes across
+   it whichever way it runs.
+6. **Auto spacing by thread thickness.** Done: `threadWeight` (40 wt by default) sets the default
+   spacing of fills and satins, which follows the square root of the thread's thickness (an
+   estimate the size of Wilcom's offsets). Per-thread weights wait for embroidery properties on
+   objects.
 7. **The trim length by machine.** `trimLength` is one number; machines differ in whether and
    from what length they cut jumps themselves. Take it from the machine settings once there are
    some.

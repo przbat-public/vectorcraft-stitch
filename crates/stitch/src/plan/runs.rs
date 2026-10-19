@@ -54,6 +54,10 @@ pub(super) struct Runs {
     /// The needle starts inside the shape (its runs so far end there), so the first run is
     /// reached by travelling too.
     inside: bool,
+    /// Where the last run ends before pull compensation stretched it past the shape's edge (a fill
+    /// row's end on the outline), `None` when it ends where it is: the travels inside the shape
+    /// start there.
+    inner: Option<Point>,
     /// What the moves between runs cost so far ([`COST_HIDDEN`] and the rest).
     pub(super) cost: f64,
 }
@@ -68,7 +72,7 @@ impl Runs {
     /// No runs yet, to follow `before`'s runs: from where they end, inside the shape when they
     /// have any.
     pub(super) fn continuing(before: &Runs) -> Self {
-        Self { start: before.here(), inside: !before.runs.is_empty() || before.inside, ..Self::default() }
+        Self { start: before.here(), inside: !before.runs.is_empty() || before.inside, inner: before.inner, ..Self::default() }
     }
 
     /// Where the needle is after the last run (before the first: where it starts from).
@@ -79,11 +83,24 @@ impl Runs {
         }
     }
 
+    /// Where the needle is, taken back inside the shape: where the last run ends before pull
+    /// compensation stretched it ([`Runs::push_stretched`]).
+    pub(super) fn here_inside(&self) -> Option<Point> {
+        self.inner.or_else(|| self.here())
+    }
+
     /// Add `run`, reached as `travel` says. Runs past [`MAX_RUNS`] are dropped (a guard against
     /// absurd parameters; [`super::try_stitches`] refuses such shapes up front).
     pub(super) fn push(&mut self, run: Vec<Point>, travel: Travel) {
+        self.push_stretched(run, travel, None);
+    }
+
+    /// [`Runs::push`] a run whose end pull compensation stretched past the shape's edge: `inner` is
+    /// where it ends without it, inside the shape.
+    pub(super) fn push_stretched(&mut self, run: Vec<Point>, travel: Travel, inner: Option<Point>) {
         if self.runs.len() < MAX_RUNS {
             self.runs.push((run, travel));
+            self.inner = inner;
         }
     }
 
@@ -100,35 +117,63 @@ impl Runs {
     /// is hidden, so of any length. The first run of a shape reached from outside it (from the
     /// object sewn before) is reached as the sequence joins objects.
     ///
+    /// `to_inside` is `to` without pull compensation (a fill row's start on the outline; `to`
+    /// itself when it has none): whether the way stays inside is judged from where the needle is
+    /// inside the shape ([`Runs::here_inside`]) to there, and the stitches then reach the
+    /// stretched ends, a fraction of a millimetre past the edge.
+    ///
     /// What the move costs is added to [`Runs::cost`].
-    pub(super) fn approach(&mut self, travels: &mut Travels<'_>, to: Point, max_seen: f64, seen: &dyn Fn(&[Point]) -> f64, p: &Params) -> Travel {
-        let Some(here) = self.here() else { return Travel::Auto };
+    pub(super) fn approach(
+        &mut self,
+        travels: &mut Travels<'_>,
+        to: Point,
+        to_inside: Point,
+        max_seen: f64,
+        seen: &dyn Fn(&[Point]) -> f64,
+        p: &Params,
+    ) -> Travel {
+        let (Some(here), Some(from)) = (self.here(), self.here_inside()) else { return Travel::Auto };
         let d = here.distance(to);
+        // What the move costs is judged inside the shape, between the places pull compensation
+        // stretched the ends from: the compensation changes no sewing order.
+        let inside = from.distance(to_inside);
         if self.runs.is_empty() && !self.inside {
-            self.cost += COST_ENTRY * d;
+            self.cost += COST_ENTRY * inside;
             return Travel::Auto;
         }
-        if d <= p.jump && travels.area.contains_segment(here, to) {
-            let shows = seen(&[here, to]);
-            self.cost += COST_HIDDEN * (d - shows) + COST_SEEN * shows;
+        if d <= p.jump && travels.area.contains_segment(from, to_inside) {
+            let shows = seen(&[from, to_inside]);
+            self.cost += COST_HIDDEN * (inside - shows) + COST_SEEN * shows;
             return Travel::Auto;
         }
-        if let Some(route) = travels.way(here, to) {
+        if let Some(mut route) = travels.way(from, to_inside) {
             let shows = seen(&route);
             if shows <= max_seen {
                 self.cost += COST_HIDDEN * (length(&route, false) - shows) + COST_SEEN * shows;
+                // The way runs between the two places inside; the needle is at, and goes to, the
+                // ends pull compensation stretched.
+                if let Some(first) = route.first_mut() {
+                    *first = here;
+                }
+                if let Some(last) = route.last_mut() {
+                    *last = to;
+                }
                 self.push(resample(&route, TRAVEL_STITCH, false), Travel::Sew);
                 return Travel::Sew;
             }
         }
-        self.cost += COST_LIFT + d + if d > p.trim { COST_TRIM } else { 0.0 };
+        self.cost += COST_LIFT + inside + if d > p.trim { COST_TRIM } else { 0.0 };
         Travel::Lift
     }
 
     /// `other`'s runs (planned from where these end, [`Runs::continuing`]) after these.
     pub(super) fn append(&mut self, other: Runs) {
+        let stretched = !other.runs.is_empty();
         for (run, travel) in other.runs {
             self.push(run, travel);
+        }
+        if stretched {
+            self.inner = other.inner;
         }
         self.cost += other.cost;
     }

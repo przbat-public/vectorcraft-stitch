@@ -3,6 +3,7 @@
 
 use vectorcraft_geom::{Point, Vec2};
 
+use super::geometry::Axes;
 use super::runs::LOCK;
 use super::*;
 use crate::Command;
@@ -53,8 +54,10 @@ fn a_fill_covers_the_rectangle_and_no_stitch_is_longer_than_asked() {
     let out = stitches(&rect(0.0, 0.0, 20.0, 10.0), FillRule::NonZero, &p);
     let q = points(&out);
     assert!(q.len() > 100, "{}", q.len());
+    // Inside the rectangle, rows reaching past its edges by the pull compensation at most.
+    let reach = p.pull[0].max(p.pull[1]) + 1e-6;
     for a in &q {
-        assert!(a.x >= -1e-6 && a.x <= 20.0 + 1e-6 && a.y >= -1e-6 && a.y <= 10.0 + 1e-6, "{a:?}");
+        assert!(a.x >= -reach && a.x <= 20.0 + reach && a.y >= -reach && a.y <= 10.0 + reach, "{a:?}");
     }
     for w in out.windows(2) {
         // Neighbouring penetrations of one row (same y, needle down twice in a row) are at
@@ -196,7 +199,7 @@ fn fills_and_satins_tie_in_and_off() {
 fn wide_satins_are_split_without_a_seam() {
     let mut p = Params::for_style(Style::Satin);
     p.width = 20.0;
-    p.pull = 0.0;
+    p.pull = [0.0; 2];
     p.underlay = false;
     p.lock = false;
     let out = stitches(&line((0.0, 0.0), (30.0, 0.0)), FillRule::NonZero, &p);
@@ -255,7 +258,7 @@ fn satin_underlay_follows_the_width() {
     for (width, want_centre, want_zigzag) in [(1.5, true, false), (3.0, false, false), (6.0, false, true)] {
         let mut p = Params::for_style(Style::Satin);
         p.width = width;
-        p.pull = 0.0;
+        p.pull = [0.0; 2];
         let out = stitches(&line((0.0, 0.0), (40.0, 0.0)), FillRule::NonZero, &p);
         assert!(out.iter().all(|s| s.command == Command::Stitch), "{width} mm: no trim or jump");
         for w in out.windows(2) {
@@ -278,7 +281,7 @@ fn satin_underlay_follows_the_width() {
 fn a_wide_zigzag_underlay_is_split() {
     let mut p = Params::for_style(Style::Satin);
     p.width = 14.0;
-    p.pull = 0.0;
+    p.pull = [0.0; 2];
     p.lock = false;
     let out = stitches(&line((0.0, 0.0), (40.0, 0.0)), FillRule::NonZero, &p);
     let longest = out.windows(2).map(|w| w[0].distance(w[1])).fold(0.0, f64::max);
@@ -317,7 +320,7 @@ fn tight_satin_curves_get_short_stitches() {
     p.width = width;
     p.underlay = false;
     p.lock = false;
-    let half = (width + 2.0 * p.pull) / 2.0;
+    let half = width / 2.0 + p.pull[0];
     let arc = vectorcraft_geom::kurbo::Arc::new((0.0, 0.0), (r, r), 0.0, 1.5 * std::f64::consts::PI, 0.0);
     let path: BezPath = vectorcraft_geom::Shape::path_elements(&arc, 0.01).collect();
     let q = points(&stitches(&path, FillRule::NonZero, &p));
@@ -344,7 +347,7 @@ fn satin_spacing_follows_the_width() {
     let rail_gap = |width: f64, auto: bool| {
         let mut p = Params::for_style(Style::Satin);
         p.width = width;
-        p.pull = 0.0;
+        p.pull = [0.0; 2];
         p.underlay = false;
         p.lock = false;
         p.auto_spacing = auto;
@@ -487,7 +490,7 @@ fn a_satin_column_crosses_its_width() {
     let p = Params::for_style(Style::Satin);
     let mut params = p;
     params.width = 4.0;
-    params.pull = 0.0;
+    params.pull = [0.0; 2];
     let out = stitches(&line((0.0, 0.0), (10.0, 0.0)), FillRule::NonZero, &params);
     let q = points(&out);
     assert!(q.len() > 20, "{}", q.len());
@@ -496,7 +499,7 @@ fn a_satin_column_crosses_its_width() {
     let rails: Vec<f64> = q.iter().skip(1).map(|a| a.y).collect();
     assert!(rails.iter().any(|y| *y > 1.5) && rails.iter().any(|y| *y < -1.5));
     let mut wider = params;
-    wider.pull = 0.5;
+    wider.pull = [0.5; 2];
     let out = stitches(&line((0.0, 0.0), (10.0, 0.0)), FillRule::NonZero, &wider);
     let w = points(&out);
     assert!(w.iter().any(|a| a.y.abs() > 2.2), "pull compensation widens the column");
@@ -534,7 +537,7 @@ fn nothing_panics_on_odd_input() {
     p.density = f64::NAN;
     p.stitch_length = 0.0;
     p.angle = f64::INFINITY;
-    p.pull = -5.0;
+    p.pull = [-5.0; 2];
     p.jump = f64::NAN;
     let out = stitches(&rect(0.0, 0.0, 10.0, 10.0), FillRule::NonZero, &p);
     assert!(!out.is_empty());
@@ -737,10 +740,10 @@ fn a_move_inside_of_exactly_the_jump_length_is_one_stitch() {
     runs.push(vec![Point::new(1.0, 5.0)], Travel::Sew);
     let here = Point::new(1.0, 5.0);
     let to = here + Vec2::new(p.jump, 0.0);
-    assert_eq!(runs.approach(&mut travels, to, f64::INFINITY, &|_| 0.0, &p), Travel::Auto);
+    assert_eq!(runs.approach(&mut travels, to, to, f64::INFINITY, &|_| 0.0, &p), Travel::Auto);
     assert_eq!(runs.here(), Some(here), "no travel run added");
     let to = here + Vec2::new(p.jump + 0.01, 0.0);
-    assert_eq!(runs.approach(&mut travels, to, f64::INFINITY, &|_| 0.0, &p), Travel::Sew);
+    assert_eq!(runs.approach(&mut travels, to, to, f64::INFINITY, &|_| 0.0, &p), Travel::Sew);
     assert_eq!(runs.here(), Some(to), "a travel run to it");
 }
 
@@ -1024,5 +1027,205 @@ fn a_fine_zigzag_keeps_its_stitch_length() {
         p.angle = 90.0;
         let out = stitches(&polygon(edge), FillRule::NonZero, &p);
         assert!(longest(&out) <= p.stitch_length + 2.0 * p.min_stitch + 1e-9, "{amp} × {period}: a {:.2} mm fill stitch", longest(&out));
+    }
+}
+
+/// The needle points of a satin column along `path` with only the given compensation: no underlay
+/// or locks, so every point is a crossing's.
+fn bare_satin(path: &BezPath, width: f64, pull: [f64; 2], pull_percent: [f64; 2], push: [f64; 2], from: Option<Point>) -> Vec<Point> {
+    let mut p = Params::for_style(Style::Satin);
+    p.width = width;
+    (p.pull, p.pull_percent, p.push) = (pull, pull_percent, push);
+    p.underlay = false;
+    p.lock = false;
+    points(&stitches_from(path, FillRule::NonZero, &p, from))
+}
+
+/// Pull compensation can differ between a satin's rails: the first value widens the rail on the
+/// left as the path is drawn (y runs down the page), the second the one on the right, whichever
+/// end the column is sewn from.
+#[test]
+fn satin_pull_compensation_is_per_side() {
+    let span = |q: &[Point]| (q.iter().map(|a| a.y).fold(f64::INFINITY, f64::min), q.iter().map(|a| a.y).fold(f64::NEG_INFINITY, f64::max));
+    let rightwards = line((0.0, 0.0), (20.0, 0.0));
+    for from in [None, Some(Point::new(21.0, 0.0))] {
+        let (lo, hi) = span(&bare_satin(&rightwards, 4.0, [0.5, 0.0], [0.0; 2], [0.0; 2], from));
+        assert!((lo + 2.5).abs() < 1e-6 && (hi - 2.0).abs() < 1e-6, "from {from:?}: rails at {lo} and {hi}");
+    }
+    // Drawn the other way, its left is the other side.
+    let (lo, hi) = span(&bare_satin(&line((20.0, 0.0), (0.0, 0.0)), 4.0, [0.5, 0.0], [0.0; 2], [0.0; 2], None));
+    assert!((lo + 2.0).abs() < 1e-6 && (hi - 2.5).abs() < 1e-6, "rails at {lo} and {hi}");
+}
+
+/// Pull compensation can grow with the column: a share of its width added at each rail, on top of
+/// the fixed value, at most 2 mm a side.
+#[test]
+fn satin_pull_compensation_grows_with_the_width() {
+    let widest = |width: f64, pull: f64, percent: f64| {
+        bare_satin(&line((0.0, 0.0), (20.0, 0.0)), width, [pull; 2], [percent; 2], [0.0; 2], None).iter().map(|a| a.y.abs()).fold(0.0, f64::max)
+    };
+    assert!((widest(4.0, 0.0, 10.0) - 2.4).abs() < 1e-6, "{}", widest(4.0, 0.0, 10.0));
+    assert!((widest(8.0, 0.0, 10.0) - 4.8).abs() < 1e-6, "{}", widest(8.0, 0.0, 10.0));
+    assert!((widest(4.0, 0.2, 10.0) - 2.6).abs() < 1e-6, "{}", widest(4.0, 0.2, 10.0));
+    assert!((widest(20.0, 0.5, 50.0) - 12.0).abs() < 1e-6, "at most 2 mm a side: {}", widest(20.0, 0.5, 50.0));
+}
+
+/// Push compensation sews an open satin column shorter at its start and its end as drawn, whichever
+/// end it is sewn from, the underlay with it; a column keeps at least half its length; a closed one
+/// has no ends to shorten.
+#[test]
+fn satin_push_compensation_shortens_the_ends() {
+    let extent = |q: &[Point]| (q.iter().map(|a| a.x).fold(f64::INFINITY, f64::min), q.iter().map(|a| a.x).fold(f64::NEG_INFINITY, f64::max));
+    let column = line((0.0, 0.0), (20.0, 0.0));
+    for from in [None, Some(Point::new(21.0, 0.0))] {
+        let (lo, hi) = extent(&bare_satin(&column, 4.0, [0.0; 2], [0.0; 2], [1.0, 2.0], from));
+        assert!((lo - 1.0).abs() < 1e-6 && (hi - 18.0).abs() < 1e-6, "from {from:?}: {lo} to {hi}");
+    }
+    let mut p = Params::for_style(Style::Satin);
+    p.width = 4.0;
+    p.push = [1.0, 2.0];
+    let (lo, hi) = extent(&points(&stitches(&column, FillRule::NonZero, &p)));
+    assert!(lo >= 1.0 - 1e-6 && hi <= 18.0 + 1e-6, "with underlay and ties: {lo} to {hi}");
+    // Asked for more than half a 4 mm column: both ends give in proportion, half of it is left.
+    let (lo, hi) = extent(&bare_satin(&line((0.0, 0.0), (4.0, 0.0)), 1.0, [0.0; 2], [0.0; 2], [3.0, 3.0], None));
+    assert!((lo - 1.0).abs() < 1e-6 && (hi - 3.0).abs() < 1e-6, "{lo} to {hi}");
+    let ring: BezPath = vectorcraft_geom::Shape::path_elements(&vectorcraft_geom::kurbo::Circle::new((0.0, 0.0), 10.0), 0.01).collect();
+    assert_eq!(
+        bare_satin(&ring, 3.0, [0.0; 2], [0.0; 2], [2.0, 2.0], None),
+        bare_satin(&ring, 3.0, [0.0; 2], [0.0; 2], [0.0; 2], None),
+        "a closed column is not shortened"
+    );
+}
+
+/// A fill's rows reach past the shape's edge at each end by its pull compensation (the first value
+/// at the rows' start, the second at their end), fixed or by the row's length; across the rows the
+/// shape keeps its size.
+#[test]
+fn fill_rows_reach_past_the_edge_by_the_pull_compensation() {
+    let reach = |pull: [f64; 2], pull_percent: [f64; 2]| {
+        let mut p = Params::for_style(Style::Fill);
+        p.angle = 0.0;
+        p.underlay = false;
+        (p.pull, p.pull_percent) = (pull, pull_percent);
+        let q = points(&stitches(&rect(0.0, 0.0, 20.0, 10.0), FillRule::NonZero, &p));
+        assert!(q.iter().all(|a| a.y >= -1e-6 && a.y <= 10.0 + 1e-6), "{pull:?} {pull_percent:?}: a row off the shape across");
+        (-q.iter().map(|a| a.x).fold(f64::INFINITY, f64::min), q.iter().map(|a| a.x).fold(f64::NEG_INFINITY, f64::max) - 20.0)
+    };
+    let (start, end) = reach([0.3, 0.1], [0.0; 2]);
+    assert!((start - 0.3).abs() < 1e-6 && (end - 0.1).abs() < 1e-6, "{start} and {end}");
+    let (start, end) = reach([0.0; 2], [1.0, 1.0]);
+    assert!((start - 0.2).abs() < 1e-6 && (end - 0.2).abs() < 1e-6, "1 % of 20 mm rows: {start} and {end}");
+    let (start, end) = reach([0.0; 2], [0.0; 2]);
+    assert!(start.abs() < 1e-6 && end.abs() < 1e-6, "none: {start} and {end}");
+}
+
+/// Rows either side of a narrow gap reach at most half way into it, so they never meet across it:
+/// two squares 0.4 mm apart with 0.5 mm of pull compensation.
+#[test]
+fn compensated_rows_never_cross_a_gap() {
+    let mut shape = rect(0.0, 0.0, 10.0, 10.0);
+    shape.extend(rect(10.4, 0.0, 10.0, 10.0));
+    let mut p = Params::for_style(Style::Fill);
+    p.angle = 0.0;
+    p.pull = [0.5; 2];
+    let out = stitches(&shape, FillRule::NonZero, &p);
+    let middle = 10.2;
+    for w in out.windows(2).filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch) {
+        let (a, b) = (w[0].x.min(w[1].x), w[0].x.max(w[1].x));
+        assert!(!(a < middle - 1e-6 && b > middle + 1e-6), "a stitch across the gap: {:?} to {:?}", w[0].point(), w[1].point());
+    }
+    let q = points(&out);
+    assert!(q.iter().any(|a| (a.x - middle).abs() < 1e-6), "the rows reach the middle of the gap");
+}
+
+/// The rows `out` sews in the order it first reaches them, by number: a fill of `shape` at `angle`
+/// degrees has its rows `spacing` apart from half a spacing inside its extent, and every needle
+/// point on one of them counts for it (travels between rows fall between them). Coming back to a
+/// row (a tie-off along the last stitch, a region's overlap with its neighbour) counts nothing.
+fn row_order(out: &[Stitch], shape: &BezPath, angle: f64, spacing: f64) -> Vec<i64> {
+    let axes = Axes::new(angle);
+    let corners = shape.elements().iter().filter_map(|el| match el {
+        vectorcraft_geom::PathEl::MoveTo(q) | vectorcraft_geom::PathEl::LineTo(q) => Some(*q),
+        _ => None,
+    });
+    let lo = corners.map(|q| axes.across(q)).fold(f64::INFINITY, f64::min);
+    let mut order: Vec<i64> = Vec::new();
+    for q in points(out) {
+        let k = (axes.across(q) - lo) / spacing - 0.5;
+        if (k - k.round()).abs() < 1e-6 && !order.contains(&(k.round() as i64)) {
+            order.push(k.round() as i64);
+        }
+    }
+    order
+}
+
+/// Pull compensation changes no sewing order: a fill's regions are ordered by moves judged inside
+/// the shape, so with and without it the same shapes are sewn row after row in the same order, with
+/// the same jumps and trims.
+#[test]
+fn pull_compensation_changes_no_sewing_order() {
+    let wide_u = polygon([(0.0, 0.0), (42.0, 0.0), (42.0, 40.0), (36.0, 40.0), (36.0, 8.0), (6.0, 8.0), (6.0, 40.0), (0.0, 40.0)]);
+    let mut ring = rect(0.0, 0.0, 30.0, 30.0);
+    ring.extend(polygon([(10.0, 10.0), (10.0, 20.0), (20.0, 20.0), (20.0, 10.0)]));
+    for (name, shape) in [("wide U", &wide_u), ("ring", &ring), ("comb", &comb(5, 35.0, 4.0, 4.0, 6.0))] {
+        for angle in [0.0, 45.0, 90.0, 135.0] {
+            for density in [0.34, 0.38] {
+                let sew = |pull: [f64; 2]| {
+                    let mut p = Params::for_style(Style::Fill);
+                    (p.angle, p.density, p.pull) = (angle, density, pull);
+                    let out = stitches(shape, FillRule::NonZero, &p);
+                    (out.iter().filter(|s| s.command != Command::Stitch).count(), row_order(&out, shape, angle, density))
+                };
+                let ((lifts, rows), (lifts_0, rows_0)) = (sew([0.3; 2]), sew([0.0; 2]));
+                assert_eq!(lifts, lifts_0, "{name}, {angle}°, {density} mm: jumps and trims");
+                assert!(rows.len() > 50, "{name}, {angle}°, {density} mm: {} rows", rows.len());
+                assert_eq!(rows, rows_0, "{name}, {angle}°, {density} mm: the rows' order");
+            }
+        }
+    }
+}
+
+/// The spacing follows the thread's weight: the defaults are for 40 wt, a finer thread (a larger
+/// weight) sews rows and satin crossings closer together, a thicker one farther apart; a weight out
+/// of range is clamped.
+#[test]
+fn spacing_follows_the_thread_weight() {
+    assert!((thread_scale(THREAD_WEIGHT) - 1.0).abs() < 1e-12);
+    assert_eq!(Params::for_thread(Style::Fill, THREAD_WEIGHT), Params::for_style(Style::Fill));
+    let fill = |w: f64| Params::for_thread(Style::Fill, w).density;
+    assert!((fill(60.0) - 0.343).abs() < 1e-3 && (fill(30.0) - 0.408).abs() < 1e-3, "{} {}", fill(60.0), fill(30.0));
+    assert!(fill(f64::NAN) == fill(40.0) && fill(1.0) == fill(10.0) && fill(1e9) == fill(150.0));
+    // A satin's auto spacing: the distance between two crossings on one rail is twice it.
+    let rail_gap = |weight: f64| {
+        let mut p = Params::for_thread(Style::Satin, weight);
+        p.width = 5.0;
+        p.pull = [0.0; 2];
+        p.underlay = false;
+        p.lock = false;
+        let top: Vec<f64> = points(&stitches(&line((0.0, 0.0), (20.0, 0.0)), FillRule::NonZero, &p))
+            .iter()
+            .filter(|a| (a.y - 2.5).abs() < 1e-6)
+            .map(|a| a.x)
+            .collect();
+        (top[2] - top[1]) / 2.0
+    };
+    assert!((rail_gap(40.0) - 0.4).abs() < 0.01 && (rail_gap(60.0) - 0.4 * thread_scale(60.0)).abs() < 0.01, "{} {}", rail_gap(40.0), rail_gap(60.0));
+    let mut odd = Params::for_style(Style::Satin);
+    odd.thread_weight = f64::INFINITY;
+    assert_eq!(odd.sane().thread_weight, THREAD_WEIGHT);
+}
+
+/// Every crossing of an open satin column goes across it, the last one too, whichever way the
+/// column runs (the last point's direction was taken as left to right, so a column running any
+/// other way ended with a crossing along it, or on the rail the one before used).
+#[test]
+fn the_last_crossing_goes_across() {
+    for (a, b) in [((0.0, 0.0), (0.0, 20.0)), ((20.0, 0.0), (0.0, 0.0)), ((0.0, 0.0), (14.0, 14.0))] {
+        let q = bare_satin(&line(a, b), 4.0, [0.0; 2], [0.0; 2], [0.0; 2], None);
+        let (a, b) = (Point::new(a.0, a.1), Point::new(b.0, b.1));
+        let normal = Vec2::new(-(b - a).y, (b - a).x) / a.distance(b);
+        let sides: Vec<f64> = q.iter().map(|p| (*p - a).dot(normal)).collect();
+        assert!(sides.iter().all(|d| (d.abs() - 2.0).abs() < 1e-6), "{a:?} to {b:?}: {sides:?}");
+        assert!(sides.windows(2).all(|w| w[0] * w[1] < 0.0), "{a:?} to {b:?}: rails alternate: {sides:?}");
     }
 }

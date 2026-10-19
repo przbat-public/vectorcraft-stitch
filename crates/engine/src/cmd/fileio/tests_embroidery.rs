@@ -621,3 +621,85 @@ fn trim_after_refuses_a_missing_object() {
     assert!(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(first)).unwrap().extras().embroidery.is_none());
     assert_eq!(moves(&export(&mut s, "pes", json!({}))).0, 0);
 }
+
+/// Points per millimetre: the document counts points, the designs millimetres.
+const PT_PER_MM: f64 = 72.0 / 25.4;
+
+/// A fill's rows reach past its edges by the pull compensation (by default too), and `expand` grows
+/// the shape all round before it is filled (or shrinks it).
+#[test]
+fn fills_are_stretched_by_pull_compensation_and_grown_by_expand() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 50.0, 50.0, 20.0 * PT_PER_MM, 10.0 * PT_PER_MM);
+    let size = |s: &mut Session, extra: Value| {
+        let mut p = json!({"stitchAngle": 0, "underlay": false});
+        if let (Some(p), Value::Object(e)) = (p.as_object_mut(), extra) {
+            p.extend(e);
+        }
+        let b = plan(&export(s, "dst", p)).bounds().expect("bounds");
+        (b.width(), b.height())
+    };
+    let (w0, h0) = size(&mut s, json!({"pullCompensation": 0}));
+    assert!((w0 - 20.0).abs() < 0.15, "rows edge to edge: {w0}");
+    let (w, h) = size(&mut s, json!({}));
+    assert!((w - 20.4).abs() < 0.15 && (h - h0).abs() < 0.15, "0.2 mm past each end by default: {w} × {h}");
+    let (w, _) = size(&mut s, json!({"pullCompensation": [0.5, 0.0]}));
+    assert!((w - 20.5).abs() < 0.15, "one side only: {w}");
+    let (w, h) = size(&mut s, json!({"pullCompensation": 0, "expand": 1}));
+    assert!((w - 22.0).abs() < 0.15 && (h - (h0 + 2.0)).abs() < 0.15, "grown 1 mm all round: {w} × {h} (from {w0} × {h0})");
+    let (w, h) = size(&mut s, json!({"pullCompensation": 0, "expand": -1}));
+    assert!((w - 18.0).abs() < 0.15 && (h - (h0 - 2.0)).abs() < 0.15, "shrunk 1 mm all round: {w} × {h}");
+}
+
+/// Two fills drawn 0.6 mm apart leave a gap of background between them; pull compensation or
+/// `expand` closes it, each fill reaching half way across.
+#[test]
+fn neighbouring_fills_meet_without_a_gap() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 50.0, 50.0, 10.0 * PT_PER_MM, 10.0 * PT_PER_MM);
+    rect(&mut s, "#2233cc", 50.0 + 10.6 * PT_PER_MM, 50.0, 10.0 * PT_PER_MM, 10.0 * PT_PER_MM);
+    let gap = |s: &mut Session, extra: Value| {
+        let mut p = json!({"stitchAngle": 0, "underlay": false});
+        if let (Some(p), Value::Object(e)) = (p.as_object_mut(), extra) {
+            p.extend(e);
+        }
+        let design = plan(&export(s, "dst", p));
+        let edge = |b: &vectorcraft_stitch::Block, right: bool| {
+            let xs = b.stitches.iter().filter(|s| s.command == vectorcraft_stitch::Command::Stitch).map(|s| s.x);
+            if right { xs.fold(f64::NEG_INFINITY, f64::max) } else { xs.fold(f64::INFINITY, f64::min) }
+        };
+        assert_eq!(design.blocks.len(), 2);
+        edge(&design.blocks[1], false) - edge(&design.blocks[0], true)
+    };
+    let drawn = gap(&mut s, json!({"pullCompensation": 0}));
+    assert!((drawn - 0.6).abs() < 0.15, "as drawn: {drawn}");
+    for extra in [json!({"pullCompensation": 0.3}), json!({"pullCompensation": 0, "expand": 0.3})] {
+        let g = gap(&mut s, extra.clone());
+        assert!(g.abs() < 0.15, "{extra}: a {g} mm gap");
+    }
+}
+
+/// The spacing follows the thread's weight: a finer thread sews more stitches over the same art, a
+/// thicker one fewer.
+#[test]
+fn the_thread_weight_sets_the_spacing() {
+    let mut s = art();
+    let count = |s: &mut Session, weight: f64| plan(&export(s, "dst", json!({"threadWeight": weight}))).sewn();
+    let (thick, standard, fine) = (count(&mut s, 30.0), count(&mut s, 40.0), count(&mut s, 60.0));
+    assert!(thick < standard && standard < fine, "30 wt {thick}, 40 wt {standard}, 60 wt {fine} stitches");
+    assert_eq!(standard, plan(&export(&mut s, "dst", json!({}))).sewn(), "40 wt is the default");
+}
+
+/// Push compensation sews a satin column shorter at its ends: a 30 mm line 3 mm wide, 2 mm off its
+/// start and 1 mm off its end.
+#[test]
+fn push_compensation_shortens_a_satin_column() {
+    let mut s = blank();
+    s.execute("paint.setFill", &json!({"none": true})).unwrap();
+    s.execute("paint.setStroke", &json!({"color": "#cc2222"})).unwrap();
+    s.execute("shape.line", &json!({"x1": 50.0, "y1": 100.0, "x2": 50.0 + 30.0 * PT_PER_MM, "y2": 100.0})).unwrap();
+    s.execute("stroke.set", &json!({"weight": 3.0 * PT_PER_MM})).unwrap();
+    let length = |s: &mut Session, extra: Value| plan(&export(s, "dst", extra)).bounds().expect("bounds").width();
+    let (drawn, pushed) = (length(&mut s, json!({})), length(&mut s, json!({"pushCompensation": [2, 1]})));
+    assert!((drawn - 30.0).abs() < 0.15 && (pushed - 27.0).abs() < 0.15, "{drawn} mm, pushed {pushed} mm");
+}

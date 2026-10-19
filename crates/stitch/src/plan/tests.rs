@@ -307,6 +307,36 @@ fn large_fills_get_a_tatami_underlay() {
     assert_eq!(vertical(&stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p), 30.0), 0);
 }
 
+/// On a tight curve the penetrations on a satin's inner side don't pile up: stitches there are
+/// shortened (a 5 mm column round a 3 mm radius put 16 of its 18 inner penetrations within
+/// 0.15 mm of the one before), while the outer side and a straight column keep their full width.
+#[test]
+fn tight_satin_curves_get_short_stitches() {
+    let (r, width) = (3.0, 5.0);
+    let mut p = Params::for_style(Style::Satin);
+    p.width = width;
+    p.underlay = false;
+    p.lock = false;
+    let half = (width + 2.0 * p.pull) / 2.0;
+    let arc = vectorcraft_geom::kurbo::Arc::new((0.0, 0.0), (r, r), 0.0, 1.5 * std::f64::consts::PI, 0.0);
+    let path: BezPath = vectorcraft_geom::Shape::path_elements(&arc, 0.01).collect();
+    let q = points(&stitches(&path, FillRule::NonZero, &p));
+    let radius = |a: &Point| a.to_vec2().hypot();
+    let inner: Vec<Point> = q.iter().copied().filter(|a| radius(a) < r).collect();
+    let outer: Vec<Point> = q.iter().copied().filter(|a| radius(a) >= r).collect();
+    let bunched = (1..inner.len()).filter(|&i| inner[i.saturating_sub(2)..i].iter().any(|b| b.distance(inner[i]) < 0.15)).count();
+    eprintln!("{bunched} of {} inner penetrations within 0.15 mm of one of the two before", inner.len());
+    assert!(inner.len() >= 15, "{}", inner.len());
+    assert!(bunched * 4 <= inner.len(), "{bunched} of {} inner penetrations bunched", inner.len());
+    // Shortened stitches stay on the inner half; the outer rail keeps its width (within the arc's
+    // flattening).
+    assert!(inner.iter().all(|a| radius(a) >= r - half - 0.05), "{inner:?}");
+    assert!(outer.iter().all(|a| (radius(a) - (r + half)).abs() < 0.05), "{outer:?}");
+    // Along a straight column nothing is shortened.
+    let straight = points(&stitches(&line((0.0, 0.0), (20.0, 0.0)), FillRule::NonZero, &p));
+    assert!(straight.iter().all(|a| (a.y.abs() - half).abs() < 1e-6), "{straight:?}");
+}
+
 /// Satin spacing follows the column's width unless a density is given.
 #[test]
 fn satin_spacing_follows_the_width() {

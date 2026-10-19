@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** fill rows 0.38 mm apart by default (Wilcom's tatami default, Morrish's gap-free spacing)
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** fill rows 0.38 mm apart by default (Wilcom's tatami default, Morrish's gap-free spacing); short stitches on a satin's inner side where a tight curve bunches the penetrations
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -109,7 +109,14 @@ the fabric.
   stitches run at an angle and are longer than the column is wide, and Ink/Stitch's underlay guide
   warns that unbounded ones destabilise the column; so are the edge run's turn across the column
   and the stitch from one layer to the next. A column is at most 50 mm wide: a wider stroke is
-  sewn 50 mm wide, and the export warns.
+  sewn 50 mm wide, and the export warns. Where a curve bunches the penetrations on the column's
+  inner side, stitches there are shortened (*short stitches*, as Ink/Stitch's short stitch inset
+  and Hatch's stitch shortening do): a penetration closer than the spacing to one of the last four
+  on its rail moves in by 20 % of the column's width, or 40 % when that is still too close (when
+  neither clears, the one farther from them). On a gentle curve every other inner stitch is
+  shortened, on a tight one they spread over the two depths, and a straight column keeps its full
+  width. A 5 mm column round a 3 mm radius had 16 of its 18 inner penetrations within 0.15 mm of
+  the one before; now none is. The depths are estimates (15–25 % is the usual shortening).
 - **Tatami fill** fills a shape with rows `density` apart at `stitchAngle` degrees, alternating
   their direction. The defaults, rows 0.38 mm apart and stitches up to 4 mm, are Wilcom's tatami
   defaults ([Wilcom: satin and tatami stitch](https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch)),
@@ -231,14 +238,13 @@ index, whose RGB values differ between published charts — preview colour is no
   teeth is sewn without one).
 - Only the order of a fill's regions is searched; the order of objects follows the stacking, and
   each object's start is the nearest one, not chosen with the next object in view.
-- On a satin's inner side, a tight curve bunches the penetrations (no short stitches yet).
 - The default spacing and stitch length follow professional software (Wilcom), which is more
   open than Ink/Stitch's (rows 0.25 mm apart, 3 mm stitches): VectorCraft sews about 40–60 % as
   many stitches for the same artwork. No fabric presets yet.
 
 ## Validation
 
-- `crates/stitch`: 55 unit tests and 3 property tests — the fill covers a rectangle and leaves its hole empty, an
+- `crates/stitch`: 56 unit tests and 3 property tests — the fill covers a rectangle and leaves its hole empty, an
   unclosed shape is filled, a ring is sewn in regions with no thread across its hole and,
   travelling inside, without a trim, regions overlap by a row, a narrow gap is never sewn across,
   a letter E is sewn in one go at any angle (every 5°) without crossing its gaps, and so are a U,
@@ -258,7 +264,7 @@ index, whose RGB values differ between published charts — preview colour is no
   shortest, the angle turns the rows, running lines keep their corners (and their stitch length along a fine zigzag, an edge run too) and lock without passing
   their ends, fills and satins tie in and off, satin underlay follows the width with no trim
   between it and the top, satin spacing follows the width unless given, wide satins and their
-  zigzag underlay are split without a seam, satin crossings stay within the column, pull compensation widens it, an absurd
+  zigzag underlay are split without a seam, satin crossings stay within the column, pull compensation widens it, a tight satin curve gets short stitches on its inner side (and a straight column none), an absurd
   plan is refused before it is made, the DST record round-trips every delta from -121 to 121,
   only a run of three jumps reads as a DST trim, a DST colour change can carry a move, each format
   writes a design it reads back with the same blocks and size, a JEF's header extents are where

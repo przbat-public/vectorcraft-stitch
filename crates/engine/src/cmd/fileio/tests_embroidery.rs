@@ -756,3 +756,71 @@ fn a_letter_t_is_sewn_in_one_go() {
     let b = p.bounds().unwrap();
     assert!((b.width() - 30.0).abs() < 0.15 && (b.height() - 23.2).abs() < 0.15, "{b:?}");
 }
+
+/// A filled path from SVG path data in millimetres (offset 50 pt into the page), in `color`.
+fn filled_d(s: &mut Session, color: &str, subpaths: &[&[(f64, f64)]], close: &[bool]) {
+    s.execute("paint.setStroke", &json!({"none": true})).unwrap();
+    s.execute("paint.setFill", &json!({"color": color})).unwrap();
+    let mut d = String::new();
+    for (k, sub) in subpaths.iter().enumerate() {
+        for (i, (x, y)) in sub.iter().enumerate() {
+            d.push_str(&format!("{} {} {} ", if i == 0 { "M" } else { "L" }, 50.0 + x * PT_PER_MM, 50.0 + y * PT_PER_MM));
+        }
+        if close.get(k).copied().unwrap_or(true) {
+            d.push_str("Z ");
+        }
+    }
+    s.execute("path.create", &json!({"d": d})).unwrap();
+    s.execute("select.none", &json!({})).unwrap();
+}
+
+/// A negative `expand` shrinks the region a path covers, not each of its outlines: two squares
+/// that overlap in one path shrink as one shape, with no groove along the outlines inside it.
+#[test]
+fn a_negative_expand_shrinks_the_region_not_its_outlines() {
+    let mut s = blank();
+    let square = |x0: f64| [(x0, 0.0), (x0 + 10.0, 0.0), (x0 + 10.0, 10.0), (x0, 10.0)];
+    let (a, b) = (square(0.0), square(5.0));
+    filled_d(&mut s, "#cc2222", &[&a, &b], &[true, true]);
+    for e in [0.0, -1.0] {
+        let p = plan(&export(&mut s, "dst", json!({"stitchAngle": 90, "underlay": false, "expand": e})));
+        let b = p.bounds().unwrap();
+        // Rows run up and down: no two neighbouring rows more than a spacing or two apart.
+        let mut xs: Vec<f64> =
+            p.points().filter(|s| s.command == vectorcraft_stitch::Command::Stitch).map(|s| ((s.x - b.x0) * 10.0).round() / 10.0).collect();
+        xs.sort_by(f64::total_cmp);
+        xs.dedup();
+        let widest = xs.windows(2).map(|w| w[1] - w[0]).fold(0.0, f64::max);
+        assert!(widest < 0.8, "expand {e}: a {widest} mm gap between rows");
+        assert!((b.width() - (15.0 + 2.0 * e)).abs() < 0.8, "expand {e}: {} mm wide", b.width());
+    }
+}
+
+/// A negative `expand` that leaves nothing of a shape says so: alongside other art as a warning,
+/// alone in the error.
+#[test]
+fn a_shape_expanded_away_is_warned_about() {
+    let mut s = blank();
+    filled_d(&mut s, "#cc2222", &[&[(0.0, 0.0), (20.0, 0.0), (20.0, 1.0), (0.0, 1.0)]], &[true]);
+    let e = s.execute("document.export", &params("dst", json!({"expand": -1}))).unwrap_err().to_string();
+    assert!(e.contains("nothing to stitch") && e.contains("negative expand"), "{e}");
+    rect(&mut s, "#2233cc", 50.0, 100.0, 20.0 * PT_PER_MM, 10.0 * PT_PER_MM);
+    let r = s.execute("document.export", &params("dst", json!({"expand": -1}))).unwrap();
+    assert!(warnings(&r).iter().any(|w| w.contains("negative expand")), "{:?}", warnings(&r));
+}
+
+/// `expand` grows a fill's areas only: an open line in the same path (no area: it is sewn as a
+/// line) stays a line, wherever it lies on the page.
+#[test]
+fn expand_leaves_a_line_in_a_fill_a_line() {
+    let mut s = blank();
+    let square = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)];
+    let line = [(0.0, 30.0), (40.0, 30.0)];
+    filled_d(&mut s, "#cc2222", &[&square, &line], &[true, false]);
+    let p = plan(&export(&mut s, "dst", json!({"expand": 1, "underlay": false})));
+    let b = p.bounds().unwrap();
+    // The line's stitches well past the square (15 mm and more from the left) lie on it: none beside it.
+    let near_line: Vec<f64> = p.points().filter(|s| s.command == vectorcraft_stitch::Command::Stitch && s.x - b.x0 > 15.0).map(|s| s.y).collect();
+    let spread = near_line.iter().fold(f64::NEG_INFINITY, |m, y| m.max(*y)) - near_line.iter().fold(f64::INFINITY, |m, y| m.min(*y));
+    assert!(!near_line.is_empty() && spread < 0.15, "the line's stitches spread {spread} mm across it");
+}

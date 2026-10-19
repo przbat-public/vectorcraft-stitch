@@ -177,8 +177,8 @@ pub struct Params {
     pub style: Style,
     /// The longest stitch along a running line or a fill row, millimetres.
     pub stitch_length: f64,
-    /// The distance between neighbouring threads: rail to rail for satin, row to row for fill,
-    /// millimetres.
+    /// The distance between threads, millimetres: row to row for fill; for satin between two
+    /// penetrations on the same rail (peak to peak), its crossings lying half that apart.
     pub density: f64,
     /// The direction the fill's rows run, degrees (0: left to right).
     pub angle: f64,
@@ -392,18 +392,20 @@ impl Params {
     }
 }
 
-/// How a spacing for 40 wt thread ([`THREAD_WEIGHT`]) changes for thread of `weight`. Thread weight
-/// counts kilometres per kilogram, so a thread's cross-section is inversely proportional to it and
-/// its thickness to its square root; the spacing follows the square root of the thickness,
-/// `(40 / weight)^¼`, half as fast, because a sewn thread flattens and spreads. That moves a
-/// spacing by a few hundredths of a millimetre from one class of thread to the next (30 wt sews
-/// rows 0.41 mm apart, 60 wt 0.34 mm), the size of the offsets Wilcom's satin auto spacing applies
-/// by thread thickness
-/// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/stitches/stitches-10.htm>).
-/// An estimate: the exponent is not a published value.
+/// How a spacing for 40 wt thread ([`THREAD_WEIGHT`]) changes for thread of `weight`: in
+/// proportion to the thread's thickness. Thread weight counts kilometres per kilogram, so a
+/// thread's cross-section is inversely proportional to it and its thickness to its square root:
+/// `(40 / weight)^½`. Madeira's stitch density chart, by thread, follows the same curve: 0.80,
+/// 0.50, 0.40 and 0.35 mm for its Classic 12, 30, 40 and 60 wt, where this gives 0.73, 0.46, 0.40
+/// and 0.33 from 0.40 (its 75 wt Polyneon, 0.20 mm, is finer than the curve)
+/// (<https://www.madeirausa.com/_resources/common/userfiles/file/Resources/TH.Reads/Density.pdf>).
+/// The chart is for satin; fills follow it too here, an estimate: no source scales fill spacing
+/// by thread. (Wilcom's satin auto spacing shifts its spacing by thread class too, by fixed
+/// offsets of a few hundredths of a millimetre,
+/// <https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/stitches/stitches-10.htm>.)
 pub fn thread_scale(weight: f64) -> f64 {
-    /// The fourth root: half the square root that the thread's thickness follows.
-    const SPACING_EXPONENT: f64 = 0.25;
+    /// The square root: the thread's thickness follows it.
+    const SPACING_EXPONENT: f64 = 0.5;
     let weight = if weight.is_finite() { weight.clamp(THREAD_WEIGHT_RANGE.0, THREAD_WEIGHT_RANGE.1) } else { THREAD_WEIGHT };
     (THREAD_WEIGHT / weight).powf(SPACING_EXPONENT)
 }
@@ -465,7 +467,8 @@ pub fn try_fill_with_columns(
     const UNDERLAYS: f64 = 3.0;
     let (f, s) = (Params { style: Style::Fill, ..*fill }.sane(), Params { style: Style::Satin, ..*satin }.sane());
     let closest = s.density.min(satin_spacing(f64::INFINITY) * thread_scale(s.thread_weight));
-    let n = estimate(&subpaths(shape), &f) + columns.iter().map(|c| c.length() * (1.0 / closest + UNDERLAYS / UNDERLAY_STITCH)).sum::<f64>();
+    let n = estimate(&subpaths(shape), &f)
+        + columns.iter().map(|c| c.length() * (satin::CROSSINGS_PER_SPACING / closest + UNDERLAYS / UNDERLAY_STITCH)).sum::<f64>();
     if !n.is_finite() || n > MAX_STITCHES as f64 {
         return Err(Error::TooLarge(format!(
             "a shape would need about {n:.0} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design"
@@ -486,7 +489,10 @@ fn estimate(subs: &[SubPath], p: &Params) -> f64 {
     let ends = POINTS_PER_SUBPATH * subs.len() as f64;
     match p.style {
         Style::Running => total / p.stitch_length + ends,
-        Style::Satin if p.width > 0.0 => total / UNDERLAY_STITCH + total / p.density + ends,
+        Style::Satin if p.width > 0.0 => {
+            let spacing = if p.auto_spacing { satin_spacing(p.width) * thread_scale(p.thread_weight) } else { p.density };
+            total / UNDERLAY_STITCH + 2.0 * total / spacing.min(p.density) + ends
+        }
         Style::Satin | Style::Fill => {
             let axes = Axes::new(p.angle);
             let extent = |f: &dyn Fn(vectorcraft_geom::Point) -> f64| {

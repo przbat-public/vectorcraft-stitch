@@ -88,7 +88,7 @@ const DENSITY: FormatOption = FormatOption {
     name: "density",
     ty: "number",
     default: "0.38",
-    description: "millimetres between neighbouring threads: rows of a fill, or the crossings of a satin column (left out, a satin column picks it by its width: 0.5 under 2 mm, 0.45 under 4, 0.4 under 6, 0.37 wider)",
+    description: "millimetres between threads: between the rows of a fill; between two penetrations on one rail of a satin column (peak to peak: its crossings lie half that apart). Left out, a satin column picks it by its width: 0.5 under 2 mm, 0.45 under 4, 0.4 under 6, 0.37 wider",
 };
 const STITCH_LENGTH: FormatOption = FormatOption {
     name: "stitchLength",
@@ -102,19 +102,19 @@ const PULL: FormatOption = FormatOption {
     name: "pullCompensation",
     ty: "number",
     default: "0.2",
-    description: "how much farther the stitches reach at each side so the fabric's pull leaves no gap, millimetres: each rail of a satin column, each end of a fill's rows. One value for both sides, or two ([left, right] of a satin as its path runs, [start, end] of a fill's rows)",
+    description: "how much farther the stitches reach at each side so the fabric's pull leaves no gap, millimetres: each rail of a satin column, each end of a fill's rows. One value for both sides, or two ([left, right] of a satin as its path runs, [start, end] of a fill's rows); 0 to 2 (a negative value counts as 0)",
 };
 const PULL_PERCENT: FormatOption = FormatOption {
     name: "pullCompensationPercent",
     ty: "number",
     default: "0",
-    description: "pull compensation that grows with the stitch, on top of pullCompensation: percent of a satin column's width, or of a fill row's length, added at each side (at most 2 mm a side with pullCompensation); one value or two, as pullCompensation",
+    description: "pull compensation that grows with the stitch, on top of pullCompensation: percent of a satin column's width, or of a fill row's length, added at each side (at most 2 mm a side with pullCompensation); one value or two, as pullCompensation; 0 to 50",
 };
 const PUSH: FormatOption = FormatOption {
     name: "pushCompensation",
     ty: "number",
     default: "0",
-    description: "how much shorter an open satin column is sewn at each end, millimetres, since sewing pushes the fabric out there (a column keeps at least half its length); one value or two ([start, end] as its path is drawn)",
+    description: "how much shorter an open satin column is sewn at each end, millimetres, since sewing pushes the fabric out there (a column keeps at least half its length, and a column long enough to sew stays so); one value or two ([start, end] as its path is drawn); 0 to 5 (a negative value counts as 0)",
 };
 const EXPAND: FormatOption = FormatOption {
     name: "expand",
@@ -132,7 +132,7 @@ const THREAD_WEIGHT_OPTION: FormatOption = FormatOption {
     name: "threadWeight",
     ty: "number",
     default: "40",
-    description: "the thread's weight (wt, kilometres per kilogram: 40 is standard embroidery thread, a larger number a finer thread): the default spacing of fills and satin columns follows its thickness (0.41 mm rows for 30 wt, 0.34 for 60); 10 to 150",
+    description: "the thread's weight (wt, kilometres per kilogram: 40 is standard embroidery thread, a larger number a finer thread): the default spacing of fills and satin columns follows its thickness (0.44 mm rows for 30 wt, 0.31 for 60); 10 to 150",
 };
 const UNDERLAY: FormatOption = FormatOption {
     name: "underlay",
@@ -277,7 +277,15 @@ pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
     let format = StitchFormat::from_id(f.id).ok_or_else(|| bad(C, format!("{} is not an embroidery format", f.label)))?;
     let (blocks, warnings) = digitize::digitize(doc, &opts).map_err(|e| bad(C, e))?;
     if blocks.is_empty() {
-        return Err(bad(C, "nothing to stitch: the document has no visible filled or stroked paths"));
+        // What was left out says why, when something was.
+        return Err(bad(
+            C,
+            if warnings.is_empty() {
+                "nothing to stitch: the document has no visible filled or stroked paths".to_string()
+            } else {
+                format!("nothing to stitch: {}", warnings.join("; "))
+            },
+        ));
     }
     let pattern = Pattern { name: doc.title.clone(), blocks };
     let bytes = format.write(&pattern).map_err(|e| bad(C, e.to_string()))?;
@@ -322,7 +330,7 @@ mod tests {
         assert!(NARROW.description.contains("0 to 12"));
         assert_eq!(Options { narrow_as_satin: Some(99.0), ..Options::default() }.params(Style::Fill, 0.0).narrow, 12.0);
         // The spacings the thread weight's description gives are the planner's.
-        for (weight, rows) in [(30.0, "0.41 mm rows for 30 wt"), (60.0, "0.34 for 60")] {
+        for (weight, rows) in [(30.0, "0.44 mm rows for 30 wt"), (60.0, "0.31 for 60")] {
             let spacing = Params::for_thread(Style::Fill, weight).density;
             assert!(THREAD_WEIGHT_OPTION.description.contains(rows) && rows.starts_with(&format!("{spacing:.2}")), "{rows}: {spacing}");
         }

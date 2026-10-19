@@ -73,13 +73,25 @@ proptest! {
     }
 
     /// No stitch is longer than the parameters allow: a row's stitch length (an end stitch up to
-    /// the shortest stitch more, and its pull compensation: both of a row with no stitch between
-    /// its ends), a line's, an edge run's or a travel's
-    /// (up to 0.3 of a step more next to a corner or an end, where a stub moves onto it), the
-    /// tatami underlay's 3 mm, or a move short enough to sew; and a stitch shorter than the
-    /// shortest is left out, which lengthens the next by at most that much.
+    /// the shortest stitch more), a line's, an edge run's or a travel's (up to 0.3 of a step more
+    /// next to a corner or an end, where a stub moves onto it), the tatami underlay's 3 mm, or a
+    /// move short enough to sew; and a stitch shorter than the shortest is left out, which
+    /// lengthens the next by at most that much. Without pull compensation, so that the bound is
+    /// as tight as the stitching's.
     #[test]
     fn no_stitch_is_too_long(shape in arb_closed_shape(), p in arb_params()) {
+        let p = Params { pull: [0.0; 2], pull_percent: [0.0; 2], ..p };
+        let out = stitches(&shape.to_bezpath(), FillRule::NonZero, &p);
+        let longest = (p.stitch_length + p.min_stitch).max(1.3 * p.stitch_length).max(3.0 + p.min_stitch).max(2.6).max(p.jump) + p.min_stitch + 1e-6;
+        for (d, up, _) in moves(&out) {
+            prop_assert!(up || d <= longest, "a {d} mm stitch, longer than {longest} ({p:?})");
+        }
+    }
+
+    /// With pull compensation, a stitch is longer by its reach at most: a row's end stitch, or a
+    /// row with no stitch between its ends, by both ends' (the row as long as the art's diagonal).
+    #[test]
+    fn compensation_lengthens_stitches_by_its_reach_at_most(shape in arb_closed_shape(), p in arb_params()) {
         let path = shape.to_bezpath();
         let out = stitches(&path, FillRule::NonZero, &p);
         let bounds = path.bounding_box();

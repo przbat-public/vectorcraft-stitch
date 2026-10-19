@@ -199,10 +199,10 @@ fn the_spacing_follows_the_width() {
     p.underlay = false;
     p.lock = false;
     let q = points(&sew(&wedge, p));
-    // Two crossings apart is the distance between two on one side.
+    // Two crossings apart is the spacing: the distance between two penetrations on one side.
     let gap = |near: f64| {
         let k = q.iter().position(|a| a.x >= near).unwrap();
-        (q[k + 2].x - q[k].x).abs() / 2.0
+        (q[k + 2].x - q[k].x).abs()
     };
     assert!(gap(2.0) > gap(36.0) + 0.05, "{} at the narrow end, {} at the wide end", gap(2.0), gap(36.0));
 }

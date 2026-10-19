@@ -185,7 +185,11 @@ pub(super) fn trimmed(pts: &[Point], start: f64, end: f64) -> Vec<Point> {
         if out.is_empty() {
             out.push(at(from.max(lo)));
         }
-        out.push(at(to.min(hi)));
+        // A cut on a point of the line lies in two segments: it is one point.
+        let q = at(to.min(hi));
+        if out.last().is_none_or(|last| last.distance(q) > SAME_POINT) {
+            out.push(q);
+        }
     }
     out
 }

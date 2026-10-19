@@ -70,22 +70,24 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
 3. **Pull compensation for fills, and gaps between shapes.** Done: a fill's rows reach past the
    edge at each end by `pullCompensation` (0.2 mm, as satins), at most half way across a gap, and
    without changing the sewing order; `expand` grows a fill all round (path operations in the
-   engine) so shapes drawn apart meet. Two fills drawn 0.6 mm apart now meet. A move along two
+   engine) so shapes drawn apart meet. With the default 0.2 mm, rows square to a gap close 0.4 mm of it (less where they cross it at an angle); two fills drawn 0.6 mm apart meet with 0.3 mm of pull compensation or `expand`. A move along two
    edges in line no longer crosses the gap between them.
 4. **Narrow filled areas as satin.** Done: a fill's parts narrower than `narrowAsSatin` (7 mm)
    are found by pairing opposite stretches of the outline and sewn as satin columns of varying
    width that follow the shape (rings close, round and pointed ends are followed round); the
    export cuts them out with path operations and fills the rest, the parts sewn in the order that
-   moves least. On the real designs trims fell from 27 to 19 and jumps from 57 to 43. Branching
+   moves least. On the real designs trims fell from 26 to 20 and jumps from 57 to 45. Branching
    columns into one another (instead of a square of tatami where strokes meet) is left for
    "branching of touching objects" below.
 5. **Satin compensation.** Done: `pullCompensationPercent` adds a share of the column's width,
    each compensation takes a value per side, and `pushCompensation` shortens an open column's
-   ends (off by default: no published starting value). A column's last crossing now goes across
-   it whichever way it runs.
+   ends (off by default: no published starting value was found). A column's last crossing now goes across
+   it whichever way it runs. A satin's spacing is measured between two penetrations on one rail
+   (peak to peak, as Madeira's chart, Ink/Stitch and Hatch do): its crossings lie half that apart,
+   twice as dense as before, as dense as the person's satins in the real designs.
 6. **Auto spacing by thread thickness.** Done: `threadWeight` (40 wt by default) sets the default
-   spacing of fills and satins, which follows the square root of the thread's thickness (an
-   estimate the size of Wilcom's offsets). Per-thread weights wait for embroidery properties on
+   spacing of fills and satins, which follows the thread's thickness (`(40 / weight)^½`, as
+   Madeira's stitch density chart does). Per-thread weights wait for embroidery properties on
    objects.
 7. **The trim length by machine.** `trimLength` is one number; machines differ in whether and
    from what length they cut jumps themselves. Take it from the machine settings once there are

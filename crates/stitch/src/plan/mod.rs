@@ -63,6 +63,17 @@ const MAX_SATIN: f64 = 10.0;
 /// The widest satin column (millimetres): a wider one is sewn this wide. Far beyond what a satin
 /// can cover (professional practice tops out near 10–12 mm), a bound on the stitching.
 pub const MAX_SATIN_WIDTH: f64 = 50.0;
+/// The distance between a fill's rows (millimetres), also the density a satin column falls back to
+/// when its spacing isn't picked by width: tight enough that 40 wt thread covers without gaps.
+/// Wilcom lists 0.38 mm as its tatami default
+/// (<https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch>),
+/// and David Morrish's *Digital Embroidery* (2025, ch. 2) gives 0.40 mm as the spacing where 40 wt
+/// threads lie flush and 0.38 mm as the one that leaves no gaps. How much a fabric needs is for
+/// fabric presets.
+const FILL_SPACING: f64 = 0.38;
+/// The longest stitch of a fill row (millimetres). Wilcom's tatami default (same page as
+/// [`FILL_SPACING`]).
+const FILL_STITCH: f64 = 4.0;
 /// The underlay's own stitch length (millimetres): short, to hold the fabric still.
 const UNDERLAY_STITCH: f64 = 2.0;
 /// The most runs one shape may produce (a guard against absurd parameters).
@@ -172,7 +183,7 @@ impl Params {
             Style::Satin => Self {
                 style,
                 stitch_length: 2.5,
-                density: 0.4,
+                density: FILL_SPACING,
                 angle: 0.0,
                 pull: 0.2,
                 underlay: true,
@@ -186,8 +197,8 @@ impl Params {
             },
             Style::Fill => Self {
                 style,
-                stitch_length: 4.0,
-                density: 0.4,
+                stitch_length: FILL_STITCH,
+                density: FILL_SPACING,
                 angle: 45.0,
                 pull: 0.0,
                 underlay: true,

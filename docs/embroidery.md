@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** short stitches on a satin's inner side where a tight curve bunches the penetrations
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** fill rows 0.38 mm apart by default (Wilcom's tatami default, Morrish's gap-free spacing); short stitches on a satin's inner side where a tight curve bunches the penetrations
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -26,7 +26,7 @@ control channel use it). Every writable format's options are listed by `document
 | Option | Default | Meaning |
 |---|---|---|
 | `stitchStyle` | `auto` | `auto` fills fills, satins strokes 1 mm and wider, runs narrower ones; `fill`, `satin` and `running` force one style (`fill` on a stroke fills the area the stroke paints, at its width, caps and joins) |
-| `density` | 0.4 mm in fills; satin by width | distance between neighbouring threads: fill rows, satin crossings. Left out, a satin column picks it by its width (*auto spacing*: 0.5 mm under 2 mm wide, 0.45 under 4, 0.4 under 6, 0.37 wider; estimates); given, it is used as it is |
+| `density` | 0.38 mm in fills; satin by width | distance between neighbouring threads: fill rows, satin crossings. Left out, a satin column picks it by its width (*auto spacing*: 0.5 mm under 2 mm wide, 0.45 under 4, 0.4 under 6, 0.37 wider; estimates); given, it is used as it is |
 | `stitchLength` | 4 mm in fills, 2.5 mm in running lines | the longest stitch of a running line or a fill row |
 | `stitchAngle` | 45° | the direction a fill's rows run |
 | `pullCompensation` | 0.2 mm | how much wider a satin column is stitched so the fabric's pull leaves no gap |
@@ -118,7 +118,11 @@ the fabric.
   width. A 5 mm column round a 3 mm radius had 16 of its 18 inner penetrations within 0.15 mm of
   the one before; now none is. The depths are estimates (15–25 % is the usual shortening).
 - **Tatami fill** fills a shape with rows `density` apart at `stitchAngle` degrees, alternating
-  their direction. A shape drawn without a final close is still filled, as paint fills it; only a
+  their direction. The defaults, rows 0.38 mm apart and stitches up to 4 mm, are Wilcom's tatami
+  defaults ([Wilcom: satin and tatami stitch](https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch)),
+  and 0.38 mm is the spacing David Morrish's *Digital Embroidery* (2025, ch. 2) gives for 40 wt
+  thread without gaps (0.40 mm lies the threads flush). Fabrics that need more or less wait for
+  fabric presets. A shape drawn without a final close is still filled, as paint fills it; only a
   subpath with no area is sewn as a line. The penetrations sit on a grid every `stitchLength`
   along the rows' direction, shifted a quarter stitch from one row to the next over a four-row
   cycle, so neighbouring rows — in any region — form one stagger pattern and never line up into a
@@ -126,7 +130,7 @@ the fabric.
   only a row's first and last stitches are shorter. A row's last stitch is left out when it is
   short, so the needle turns diagonally into the next row instead of crawling along the edge; a
   long turn (where the edge runs nearly along the rows) is sewn as short travel stitches rather
-  than one loose stitch. Rows sit half a spacing inside the shape's extent: no row lies on a
+  than one loose stitch; a turn between two rows that end on one straight edge runs along it. Rows sit half a spacing inside the shape's extent: no row lies on a
   tangent, and the thread's width covers to the edge. Holes are left unstitched: the shape's fill
   rule decides what is inside, as it does for paint.
 
@@ -234,18 +238,20 @@ index, whose RGB values differ between published charts — preview colour is no
   teeth is sewn without one).
 - Only the order of a fill's regions is searched; the order of objects follows the stacking, and
   each object's start is the nearest one, not chosen with the next object in view.
-- The default spacing and stitch length are more open than Ink/Stitch's: VectorCraft sews about
-  40–65 % as many stitches for the same artwork.
+- The default spacing and stitch length follow professional software (Wilcom), which is more
+  open than Ink/Stitch's (rows 0.25 mm apart, 3 mm stitches): VectorCraft sews about 40–60 % as
+  many stitches for the same artwork. No fabric presets yet.
 
 ## Validation
 
-- `crates/stitch`: 55 unit tests and 3 property tests — the fill covers a rectangle and leaves its hole empty, an
+- `crates/stitch`: 56 unit tests and 3 property tests — the fill covers a rectangle and leaves its hole empty, an
   unclosed shape is filled, a ring is sewn in regions with no thread across its hole and,
   travelling inside, without a trim, regions overlap by a row, a narrow gap is never sewn across,
   a letter E is sewn in one go at any angle (every 5°) without crossing its gaps, and so are a U,
   combs, a ring and an H (every 15°, underlay or not: a travel that shows a little beats a jump,
   and a cut costs more still), of those orders the one that travels least wins (a U's arms are
-  joined to the bar near where they meet it), a travel that would show more than 25 mm lifts the
+  joined to the bar near where they meet it), a turn between rows that end on one straight edge
+  is sewn along it (two U shapes at every spacing from 0.3 to 0.45 mm), a travel that would show more than 25 mm lifts the
   needle (a comb of 200 teeth, beyond the order search), a travel passes a corner half a
   millimetre inside, fill rows stagger a quarter stitch at a time through a cycle of four, a gear of 90 teeth and 24
   holes travels inside, the edge grid answers what testing every edge does (long crossing edges included) and stays small however long the edges are (or is not built), separate pieces jump
@@ -324,6 +330,19 @@ short hops with the thread on (the bullseye's 8 new ones are about 1 mm, between
 a 25 mm trim length it would be 7; with 5 mm (every jump cut, as before) about 46. The
 watermelon's seeds, which the person did not sew, are joined by tied jumps of 4–10 mm and two
 trims.
+
+A later fix: a turn between two rows that end on one straight edge (rows nearly parallel to the
+edge) lay exactly on the outline, which the inside test can't tell from outside, so it was taken
+for a way out of the shape and the needle lifted or travelled round. Now a segment along an edge
+is inside. Jumps fall from 69 to 56 (the bullseye 9 → 3, the video game 12 → 9, the zebra
+15 → 12, the pool ball 1 → 0); trims stay at 25, stitch counts within 2 %.
+
+With fill rows 0.38 mm apart instead of 0.4, the designs sew up to 2 % more stitches (the
+watermelon and the zebra 1–2 % fewer: rows fall differently against their shapes), 39–59 % of the
+person's. Trims go from 25 to 26 in all and jumps from 56 to 58, moved a little by where rows now
+fall (the smiling face and the video game gain a trim, the SOS button loses one). No stitch is
+shorter than 0.3 mm (three were); the longest is 5.0 mm, the step from an underlay to the next
+layer, inside the shape.
 
 The comparison also found and fixed: a shape drawn without a final close sewn as an outline (the
 heart: 42 stitches instead of a fill), fill stitches up to 1.5 times `stitchLength` (the old

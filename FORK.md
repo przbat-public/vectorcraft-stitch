@@ -63,9 +63,10 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
 1. **Short stitches on tight satin curves.** Done: a bunched penetration on a curve's inner side
    moves in by 20 % or 40 % of the column's width; a 5 mm column round a 3 mm radius went from 16
    of 18 inner penetrations within 0.15 mm of the last to none.
-2. **Default density and stitch length.** VectorCraft sews 40–65 % of the stitches of the person's
-   Ink/Stitch designs (Ink/Stitch's defaults: rows 0.25 mm apart, 3 mm stitches; ours 0.4 and 4).
-   Calibrate with the fabric presets below, citing sources.
+2. **Default density and stitch length.** Done: fill rows 0.38 mm apart (Wilcom's tatami default,
+   Morrish's gap-free spacing), stitches up to 4 mm (Wilcom). Ink/Stitch's denser defaults (0.25 and
+   3) are not followed, so VectorCraft still sews 40–60 % of the person's stitches. Per-fabric
+   values wait for the fabric presets below.
 3. **Pull compensation for fills, and gaps between shapes.** Only satin columns are widened. Ink/
    Stitch widens fill rows and can expand shapes so neighbours meet without a gap.
 4. **Narrow filled areas as satin.** Every filled shape becomes tatami; narrow parts (stems, thin

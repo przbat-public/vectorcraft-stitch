@@ -243,8 +243,8 @@ fn regions_travel_inside_and_overlap() {
     let out = stitches(&ring, FillRule::NonZero, &p);
     let plain = stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p);
     let count = |v: &[Stitch], y: f64| v.iter().filter(|s| s.command == Command::Stitch && (s.y - y).abs() < 1e-6).count();
-    // The last row above the hole (rows sit at 0.2, 0.6, 1.0 … mm).
-    let above = (0..100).map(|k| 0.2 + 0.4 * f64::from(k)).take_while(|y| *y < 10.0).last().unwrap_or(0.0);
+    // The last row above the hole (rows sit half a spacing in, then a spacing apart).
+    let above = (0..1000).map(|k| p.density * (0.5 + f64::from(k))).take_while(|y| *y < 10.0).last().unwrap_or(0.0);
     assert!(count(&out, above) > count(&plain, above), "the row above the hole is sewn by two regions");
 }
 
@@ -794,7 +794,7 @@ fn fill_rows_stagger_through_a_cycle_of_four() {
             phase
         })
         .collect();
-    assert_eq!(phases.len(), 25);
+    assert_eq!(phases.len(), (10.0 / p.density).floor() as usize);
     for w in phases.windows(2) {
         let step = (w[1] - w[0]).rem_euclid(1.0);
         assert!((step - 0.25).abs() < 1e-6, "rows {:?}: a step of {step} stitch", w);
@@ -897,6 +897,32 @@ fn branching_shapes_are_sewn_in_one_go() {
                 let lifts = out.iter().filter(|s| s.command != Command::Stitch).count();
                 assert_eq!(lifts, 0, "{name}, angle {angle}, underlay {underlay}: {lifts} jumps and trims");
             }
+        }
+    }
+}
+
+/// A turn between two rows that end on one straight edge runs along it: the outline belongs to
+/// the shape. (Rows nearly parallel to a U's arms end on the arms' outer edges a few spacings
+/// apart; the turn along the edge was taken for a way outside, and the needle lifted or travelled
+/// round the U, at 0.37–0.39 mm spacing.)
+#[test]
+fn a_turn_along_a_straight_edge_is_sewn() {
+    let u = polygon([(0.0, 0.0), (14.0, 0.0), (14.0, 30.0), (9.0, 30.0), (9.0, 8.0), (5.0, 8.0), (5.0, 30.0), (0.0, 30.0)]);
+    let wide = polygon([(0.0, 0.0), (42.0, 0.0), (42.0, 40.0), (36.0, 40.0), (36.0, 8.0), (6.0, 8.0), (6.0, 40.0), (0.0, 40.0)]);
+    for density in [0.3, 0.34, 0.36, 0.37, 0.38, 0.39, 0.4, 0.42, 0.45] {
+        for angle in [45.0, 60.0, 75.0, 105.0, 135.0] {
+            let mut p = Params::for_style(Style::Fill);
+            p.density = density;
+            p.angle = angle;
+            p.underlay = false;
+            for (name, shape) in [("U", &u), ("wide U", &wide)] {
+                let out = stitches(shape, FillRule::NonZero, &p);
+                let lifts = out.iter().filter(|s| s.command != Command::Stitch).count();
+                assert_eq!(lifts, 0, "{name}, {density} mm, {angle}°: {lifts} jumps and trims");
+            }
+            // The wide U is sewn arm, bar, arm, with no travel across the bar.
+            let (longest, total) = travels(&stitches(&wide, FillRule::NonZero, &p));
+            assert!(longest < 15.0, "wide U, {density} mm, {angle}°: a {longest:.1} mm travel ({total:.1} mm in all)");
         }
     }
 }

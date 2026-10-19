@@ -165,8 +165,8 @@ pub struct Params {
     pub style: Style,
     /// The longest stitch along a running line or a fill row, millimetres.
     pub stitch_length: f64,
-    /// The distance between neighbouring threads: rail to rail for satin, row to row for fill,
-    /// millimetres.
+    /// The distance between threads, millimetres: row to row for fill; for satin between two
+    /// penetrations on the same rail (peak to peak), its crossings lying half that apart.
     pub density: f64,
     /// The direction the fill's rows run, degrees (0: left to right).
     pub angle: f64,
@@ -438,7 +438,10 @@ fn estimate(subs: &[SubPath], p: &Params) -> f64 {
     let ends = POINTS_PER_SUBPATH * subs.len() as f64;
     match p.style {
         Style::Running => total / p.stitch_length + ends,
-        Style::Satin if p.width > 0.0 => total / UNDERLAY_STITCH + total / p.density + ends,
+        Style::Satin if p.width > 0.0 => {
+            let spacing = if p.auto_spacing { satin_spacing(p.width) * thread_scale(p.thread_weight) } else { p.density };
+            total / UNDERLAY_STITCH + 2.0 * total / spacing.min(p.density) + ends
+        }
         Style::Satin | Style::Fill => {
             let axes = Axes::new(p.angle);
             let extent = |f: &dyn Fn(vectorcraft_geom::Point) -> f64| {

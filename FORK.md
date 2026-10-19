@@ -77,7 +77,9 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
 5. **Satin compensation.** Done: `pullCompensationPercent` adds a share of the column's width,
    each compensation takes a value per side, and `pushCompensation` shortens an open column's
    ends (off by default: no published starting value was found). A column's last crossing now goes across
-   it whichever way it runs.
+   it whichever way it runs. A satin's spacing is measured between two penetrations on one rail
+   (peak to peak, as Madeira's chart, Ink/Stitch and Hatch do): its crossings lie half that apart,
+   twice as dense as before, as dense as the person's satins in the real designs.
 6. **Auto spacing by thread thickness.** Done: `threadWeight` (40 wt by default) sets the default
    spacing of fills and satins, which follows the thread's thickness (`(40 / weight)^½`, as
    Madeira's stitch density chart does). Per-thread weights wait for embroidery properties on

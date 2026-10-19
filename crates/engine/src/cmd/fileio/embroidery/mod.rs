@@ -87,7 +87,7 @@ const DENSITY: FormatOption = FormatOption {
     name: "density",
     ty: "number",
     default: "0.38",
-    description: "millimetres between neighbouring threads: rows of a fill, or the crossings of a satin column (left out, a satin column picks it by its width: 0.5 under 2 mm, 0.45 under 4, 0.4 under 6, 0.37 wider)",
+    description: "millimetres between threads: between the rows of a fill; between two penetrations on one rail of a satin column (peak to peak: its crossings lie half that apart). Left out, a satin column picks it by its width: 0.5 under 2 mm, 0.45 under 4, 0.4 under 6, 0.37 wider",
 };
 const STITCH_LENGTH: FormatOption = FormatOption {
     name: "stitchLength",

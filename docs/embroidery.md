@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** pull compensation for fills (rows reach past the edge) and per side or by width for satins, push compensation at satin ends, `expand` to grow fills so neighbours meet, spacing by thread weight (as thick as the thread: Madeira's chart); a region's last row keeps its last stitch; a satin's last crossing goes across, and a move along two edges in line no longer crosses the gap between them
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** pull compensation for fills (rows reach past the edge) and per side or by width for satins, push compensation at satin ends, `expand` to grow fills so neighbours meet, spacing by thread weight (as thick as the thread: Madeira's chart); a satin's spacing is measured peak to peak (its crossings half that apart, twice as dense as before); a region's last row keeps its last stitch; a satin's last crossing goes across, and a move along two edges in line no longer crosses the gap between them
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -26,7 +26,7 @@ control channel use it). Every writable format's options are listed by `document
 | Option | Default | Meaning |
 |---|---|---|
 | `stitchStyle` | `auto` | `auto` fills fills, satins strokes 1 mm and wider, runs narrower ones; `fill`, `satin` and `running` force one style (`fill` on a stroke fills the area the stroke paints, at its width, caps and joins) |
-| `density` | 0.38 mm in fills; satin by width | distance between neighbouring threads: fill rows, satin crossings. Left out, a satin column picks it by its width (*auto spacing*: 0.5 mm under 2 mm wide, 0.45 under 4, 0.4 under 6, 0.37 wider; estimates), and both follow `threadWeight`; given, it is used as it is |
+| `density` | 0.38 mm in fills; satin by width | distance between threads: between a fill's rows; between two penetrations on one rail of a satin column (peak to peak), its crossings lying half that apart. Left out, a satin column picks it by its width (*auto spacing*: 0.5 mm under 2 mm wide, 0.45 under 4, 0.4 under 6, 0.37 wider; estimates), and both follow `threadWeight`; given, it is used as it is |
 | `stitchLength` | 4 mm in fills, 2.5 mm in running lines | the longest stitch of a running line or a fill row |
 | `stitchAngle` | 45° | the direction a fill's rows run |
 | `pullCompensation` | 0.2 mm | how much farther the stitches reach at each side so the fabric's pull leaves no gap: each rail of a satin column, each end of a fill's rows. One number for both sides, or two: `[left, right]` of a satin as its path runs, `[start, end]` of a fill's rows along their direction; 0 to 2 mm a side (a negative value counts as 0) |
@@ -116,9 +116,15 @@ the fabric.
   already stitched into is passed, so along a fine zigzag the stitches keep their length (at most
   1.3 stitch lengths) instead of one point moving from corner to corner.
 - **Satin** sews a column: the path is its centre line, its stroke width the column's width, and
-  the needle crosses from rail to rail at the column's spacing, so the threads lie side by side:
-  more open in a narrow column, where the thread bunches at the rails, denser in a wide one so it
-  covers (or `density`, when given). Pull compensation widens the column at each rail: a fixed
+  the needle crosses from rail to rail, so the threads lie side by side. The column's spacing is
+  measured between two penetrations on one rail (peak to peak), as Madeira's thread chart,
+  Ink/Stitch and Hatch measure a satin's density, so its crossings lie half that apart: more open
+  in a narrow column, where the thread bunches at the rails, denser in a wide one so it covers (or
+  `density`, when given). A 5 mm column at 40 wt (0.40 mm) puts 50 crossings in a centimetre;
+  Madeira's chart gives 51 for 40 wt. (Until this was settled the crossings lay a whole spacing
+  apart, half as dense as meant: the satins the person sewed in the real designs below lie
+  0.41–0.42 mm apart on a rail, as Ink/Stitch's default 0.4 mm does, and VectorCraft's lay about
+  1.08 mm apart.) Pull compensation widens the column at each rail: a fixed
   `pullCompensation` (0.2 mm, Wilcom's starting value for drill and cotton) plus, if asked,
   `pullCompensationPercent` of the column's width, which gives wide columns more than narrow ones
   (as Ink/Stitch's percentage does); each can differ between the rails (the left one as the path
@@ -307,7 +313,8 @@ index, whose RGB values differ between published charts — preview colour is no
 
 ## Validation
 
-- `crates/stitch`: 68 unit tests and 4 property tests — a region's last row reaches its edge (a
+- `crates/stitch`: 69 unit tests and 4 property tests — a 5 mm satin column at 40 wt puts 50
+  crossings in a centimetre (Madeira's chart: 51), a region's last row reaches its edge (a
   one-row fill both), push compensation keeps a short column sewn, a line cut on one of its points
   keeps it once, the fill covers a rectangle (its rows
   reaching past the edges by the pull compensation, fixed or by the row's length, one value per

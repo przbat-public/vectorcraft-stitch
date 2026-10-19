@@ -343,7 +343,7 @@ fn tight_satin_curves_get_short_stitches() {
 /// Satin spacing follows the column's width unless a density is given.
 #[test]
 fn satin_spacing_follows_the_width() {
-    // The distance between two crossings on the same rail is twice the spacing.
+    // The spacing is the distance between two penetrations on the same rail (peak to peak).
     let rail_gap = |width: f64, auto: bool| {
         let mut p = Params::for_style(Style::Satin);
         p.width = width;
@@ -354,7 +354,7 @@ fn satin_spacing_follows_the_width() {
         p.density = 0.3;
         let out = stitches(&line((0.0, 0.0), (20.0, 0.0)), FillRule::NonZero, &p);
         let top: Vec<f64> = out.iter().filter(|s| (s.y - width / 2.0).abs() < 1e-6).map(|s| s.x).collect();
-        (top[2] - top[1]) / 2.0
+        top[2] - top[1]
     };
     assert!((rail_gap(1.5, true) - 0.5).abs() < 0.02);
     assert!((rail_gap(5.0, true) - 0.4).abs() < 0.02);
@@ -1197,7 +1197,7 @@ fn spacing_follows_the_thread_weight() {
     let fill = |w: f64| Params::for_thread(Style::Fill, w).density;
     assert!((fill(60.0) - 0.310).abs() < 1e-3 && (fill(30.0) - 0.439).abs() < 1e-3, "{} {}", fill(60.0), fill(30.0));
     assert!(fill(f64::NAN) == fill(40.0) && fill(1.0) == fill(10.0) && fill(1e9) == fill(150.0));
-    // A satin's auto spacing: the distance between two crossings on one rail is twice it.
+    // A satin's auto spacing: the distance between two penetrations on one rail (peak to peak).
     let rail_gap = |weight: f64| {
         let mut p = Params::for_thread(Style::Satin, weight);
         p.width = 5.0;
@@ -1209,7 +1209,7 @@ fn spacing_follows_the_thread_weight() {
             .filter(|a| (a.y - 2.5).abs() < 1e-6)
             .map(|a| a.x)
             .collect();
-        (top[2] - top[1]) / 2.0
+        top[2] - top[1]
     };
     assert!((rail_gap(40.0) - 0.4).abs() < 0.01 && (rail_gap(60.0) - 0.4 * thread_scale(60.0)).abs() < 0.01, "{} {}", rail_gap(40.0), rail_gap(60.0));
     let mut odd = Params::for_style(Style::Satin);
@@ -1275,4 +1275,18 @@ fn a_cut_on_a_point_of_the_line_is_one_point() {
     assert_eq!(cut, vec![Point::new(0.0, 0.0), Point::new(1.0, 0.0)]);
     let cut = super::geometry::trimmed(&pts, 0.5, 0.0);
     assert_eq!(cut, vec![Point::new(0.5, 0.0), Point::new(1.0, 0.0), Point::new(3.0, 0.0)]);
+}
+
+/// A satin column sews as densely as Madeira's stitch density chart for 40 wt: 51 satin stitches a
+/// centimetre at its 0.40 mm (measured peak to peak): a 5 mm column (auto spacing 0.40 mm) puts 50
+/// crossings in each centimetre.
+#[test]
+fn a_satin_sews_as_densely_as_the_thread_chart() {
+    let mut p = Params::for_style(Style::Satin);
+    p.width = 5.0;
+    p.underlay = false;
+    p.lock = false;
+    let q = points(&stitches(&line((0.0, 0.0), (30.0, 0.0)), FillRule::NonZero, &p));
+    let in_a_cm = q.iter().filter(|a| a.x >= 10.0 && a.x < 20.0).count();
+    assert!((49..=51).contains(&in_a_cm), "{in_a_cm} crossings in a centimetre");
 }

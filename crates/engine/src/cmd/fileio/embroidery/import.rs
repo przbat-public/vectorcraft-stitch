@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use vectorcraft_color::{Color, Paint};
 use vectorcraft_doc::embroidery::{Embroidery, StitchRun};
-use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, Node};
+use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, LineJoin, Node};
 use vectorcraft_geom::{BezPath, PathData, Point, Rect, Size};
 use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::{Block, Command, Stitch, mm_to_pt};
@@ -37,8 +37,11 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
     for block in &pattern.blocks {
         let color = Color::rgb8(block.thread.color[0], block.thread.color[1], block.thread.color[2]);
         let mut stroke = Appearance::basic(Paint::None, Paint::solid(color), THREAD_WIDTH * scale);
+        // Round at the ends and the turns, as thread lies: a sharp turn mitred would draw a spike
+        // far past the needle point (a satin's zigzag turns at every penetration).
         if let Some(AppearanceItem::Stroke(s)) = stroke.items.last_mut() {
             s.cap = LineCap::Round;
+            s.join = LineJoin::Round;
         }
         let mut children: Vec<Arc<Node>> = Vec::new();
         for (run, trim_before, trim_after) in runs(block) {

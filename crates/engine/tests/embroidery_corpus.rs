@@ -26,25 +26,25 @@ use vectorcraft_stitch::{Command, Pattern, quantize};
 mod sha256;
 
 /// (artwork, the person's machine file, most trims, most jumps). Ceilings one above what was
-/// measured when fills got pull compensation (their rows reach 0.2 mm past the edge), with the
-/// person's counts: see the comments (trims, then jumps: a move with the needle up, cut or not).
-/// (Before the ordering of fill regions and the trim length, when every jump longer than
-/// `jumpLength` was cut and regions went nearest first: 55 trims in all; then 25 trims and 69
-/// jumps; 56 jumps once a turn along a straight edge was sewn; 26 and 58 with rows 0.38 mm apart;
-/// now 27 and 57.)
+/// measured when a fill's narrow parts became satin columns, with the person's counts: see the
+/// comments (trims, then jumps: a move with the needle up, cut or not). (Before the ordering of
+/// fill regions and the trim length, when every jump longer than `jumpLength` was cut and regions
+/// went nearest first: 55 trims in all; then 25 trims and 69 jumps; 56 jumps once a turn along a
+/// straight edge was sewn; 26 and 58 with rows 0.38 mm apart; 27 and 57 with pull compensation on
+/// fills; now 19 and 43.)
 const DESIGNS: &[(&str, &str, usize, usize)] = &[
-    ("bullseye-twemoji.svg", "bullseye-twemoji-inkstitch.pes", 1, 4), // 0 (the person's design: 6), 3 (8)
+    ("bullseye-twemoji.svg", "bullseye-twemoji-inkstitch.pes", 2, 3), // 1 (the person's design: 6), 2 (8)
     ("fox-twemoji.clipart.svg", "fox-twemoji-inkstitch.pes", 4, 5),   // 3 (6), 4 (3)
     ("heart-suit-twemoji.clipart.svg", "heart-suit-twemoji-inkstitch.pes", 1, 1), // 0 (0), 0 (0)
-    ("joystick-twemoji.svg", "joystick-twemoji-institch.pes", 5, 6),  // 4 (4), 5 (4)
+    ("joystick-twemoji.svg", "joystick-twemoji-institch.pes", 4, 5),  // 3 (4), 4 (4)
     ("pool-8-ball-twemoji.svg", "pool-8-ball-twemoji-inkstitch.pes", 1, 1), // 0 (2), 0 (2)
     ("puzzle-piece-twemoji.svg", "puzzle-piece-twemoji-inkstitch.pes", 1, 1), // 0 (0), 0 (0)
-    ("smiling-face-with-smiling-eyes-twemoji.clipart.svg", "smiling-face-with-smiling-eyes-twemoji-inkstitch.pes", 5, 6), // 4 (3), 5 (6)
+    ("smiling-face-with-smiling-eyes-twemoji.clipart.svg", "smiling-face-with-smiling-eyes-twemoji-inkstitch.pes", 2, 4), // 1 (3), 3 (6)
     // Separate pieces (letters, seeds) are joined by tied jumps, cut only past `trimLength`.
-    ("sos-button-fluent.clipart.svg", "sos-button-fluent-inkstitch.pes", 5, 7), // 4 (3), 6 (2)
+    ("sos-button-fluent.clipart.svg", "sos-button-fluent-inkstitch.pes", 2, 3), // 1 (3), 2 (2)
     ("video-game-twemoji.svg", "video-game-twemoji-inkstitch.pes", 5, 10),      // 4 (11), 9 (12)
-    ("watermelon-twemoji.clipart.svg", "watermelon-twemoji-inkstitch.pes", 3, 15), // 2 (2), 14 (2)
-    ("zebra-twemoji.clipart.svg", "zebra-twemoji-inkstitch.pes", 7, 12),        // 6 (21), 11 (39)
+    ("watermelon-twemoji.clipart.svg", "watermelon-twemoji-inkstitch.pes", 1, 8), // 0 (2), 7 (2)
+    ("zebra-twemoji.clipart.svg", "zebra-twemoji-inkstitch.pes", 7, 13),        // 6 (21), 12 (39)
 ];
 
 /// The corpus, checked against its manifest; `None` (the tests skip) when it is absent and not

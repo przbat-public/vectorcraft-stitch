@@ -13,7 +13,8 @@
 //! crossings), `stitchLength` (mm), `stitchAngle` (degrees), `pullCompensation` (mm at each side of
 //! satin columns and fill rows, one value or one per side), `pullCompensationPercent` (the same, a
 //! share of each stitch), `pushCompensation` (mm off each end of satin columns), `expand` (mm all
-//! round a fill), `threadWeight` (wt, the spacing follows it), `underlay`, `jumpLength` (mm before
+//! round a fill), `narrowAsSatin` (mm: a fill's narrower parts are satin columns), `threadWeight`
+//! (wt, the spacing follows it), `underlay`, `jumpLength` (mm before
 //! the needle lifts), `trimLength` (mm before a jump cuts the thread) and `minStitch` (mm).
 //!
 //! The parts: [`import`] (a design read as art), [`digitize`] (the document's art planned as
@@ -121,6 +122,12 @@ const EXPAND: FormatOption = FormatOption {
     default: "0",
     description: "how far a filled shape grows all round before it is stitched, millimetres, so that neighbouring shapes meet without a gap (negative: it shrinks); -2 to 2",
 };
+const NARROW: FormatOption = FormatOption {
+    name: "narrowAsSatin",
+    ty: "number",
+    default: "7",
+    description: "a filled shape's parts narrower than this are sewn as satin columns that follow the shape (the rest stays tatami), millimetres; 0 sews every fill as tatami, as stitchStyle fill does; 0 to 12",
+};
 const THREAD_WEIGHT_OPTION: FormatOption = FormatOption {
     name: "threadWeight",
     ty: "number",
@@ -150,7 +157,7 @@ const MIN_STITCH: FormatOption =
 
 /// The options the embroidery writers read.
 pub const OPTIONS: &[FormatOption] =
-    &[STYLE, DENSITY, STITCH_LENGTH, ANGLE, PULL, PULL_PERCENT, PUSH, EXPAND, THREAD_WEIGHT_OPTION, UNDERLAY, JUMP, TRIM, MIN_STITCH];
+    &[STYLE, DENSITY, STITCH_LENGTH, ANGLE, PULL, PULL_PERCENT, PUSH, EXPAND, NARROW, THREAD_WEIGHT_OPTION, UNDERLAY, JUMP, TRIM, MIN_STITCH];
 
 /// How far a filled shape grows all round when `expand` is left out (millimetres): not at all, as
 /// in Ink/Stitch, whose fills offer the same setting ("Expand", to close gaps between shapes,
@@ -190,6 +197,7 @@ struct Options {
     pull_compensation_percent: Option<Sides>,
     push_compensation: Option<Sides>,
     expand: Option<f64>,
+    narrow_as_satin: Option<f64>,
     thread_weight: Option<f64>,
     underlay: Option<bool>,
     jump_length: Option<f64>,
@@ -208,6 +216,7 @@ impl Default for Options {
             pull_compensation_percent: None,
             push_compensation: None,
             expand: None,
+            narrow_as_satin: None,
             thread_weight: None,
             underlay: None,
             jump_length: None,
@@ -233,6 +242,8 @@ impl Options {
             pull_percent: if style == Style::Running { d.pull_percent } else { self.pull_compensation_percent.map_or(d.pull_percent, Sides::pair) },
             // Push compensation shortens satin columns only: a fill's rows have no column ends.
             push: if style == Style::Satin { self.push_compensation.map_or(d.push, Sides::pair) } else { d.push },
+            // Only a fill has narrow parts to sew as satin.
+            narrow: if style == Style::Fill { self.narrow_as_satin.unwrap_or(d.narrow) } else { d.narrow },
             underlay: self.underlay.unwrap_or(d.underlay),
             jump: self.jump_length.unwrap_or(d.jump),
             trim: self.trim_length.unwrap_or(d.trim),
@@ -306,6 +317,10 @@ mod tests {
         assert_eq!(num(&EXPAND), EXPAND_DEFAULT);
         assert!(EXPAND.description.contains(&format!("-{MAX_EXPAND} to {MAX_EXPAND}")));
         assert_eq!(num(&THREAD_WEIGHT_OPTION), THREAD_WEIGHT);
+        assert_eq!(num(&NARROW), fill.narrow);
+        assert_eq!((satin.narrow, running.narrow), (0.0, 0.0));
+        assert!(NARROW.description.contains("0 to 12"));
+        assert_eq!(Options { narrow_as_satin: Some(99.0), ..Options::default() }.params(Style::Fill, 0.0).narrow, 12.0);
         // The spacings the thread weight's description gives are the planner's.
         for (weight, rows) in [(30.0, "0.41 mm rows for 30 wt"), (60.0, "0.34 for 60")] {
             let spacing = Params::for_thread(Style::Fill, weight).density;

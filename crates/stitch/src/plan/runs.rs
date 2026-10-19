@@ -89,6 +89,14 @@ impl Runs {
         self.inner.or_else(|| self.here())
     }
 
+    /// The last run ends past the shape's edge by pull compensation: `inner` is where it would end
+    /// without it ([`Runs::here_inside`]).
+    pub(super) fn stretched_to(&mut self, inner: Point) {
+        if !self.runs.is_empty() {
+            self.inner = Some(inner);
+        }
+    }
+
     /// Add `run`, reached as `travel` says. Runs past [`MAX_RUNS`] are dropped (a guard against
     /// absurd parameters; [`super::try_stitches`] refuses such shapes up front).
     pub(super) fn push(&mut self, run: Vec<Point>, travel: Travel) {

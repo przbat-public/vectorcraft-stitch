@@ -72,8 +72,13 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
    without changing the sewing order; `expand` grows a fill all round (path operations in the
    engine) so shapes drawn apart meet. Two fills drawn 0.6 mm apart now meet. A move along two
    edges in line no longer crosses the gap between them.
-4. **Narrow filled areas as satin.** Every filled shape becomes tatami; narrow parts (stems, thin
-   arms) are better as satin columns, as auto-digitizers choose by width.
+4. **Narrow filled areas as satin.** Done: a fill's parts narrower than `narrowAsSatin` (7 mm)
+   are found by pairing opposite stretches of the outline and sewn as satin columns of varying
+   width that follow the shape (rings close, round and pointed ends are followed round); the
+   export cuts them out with path operations and fills the rest, the parts sewn in the order that
+   moves least. On the real designs trims fell from 27 to 19 and jumps from 57 to 43. Branching
+   columns into one another (instead of a square of tatami where strokes meet) is left for
+   "branching of touching objects" below.
 5. **Satin compensation.** Done: `pullCompensationPercent` adds a share of the column's width,
    each compensation takes a value per side, and `pushCompensation` shortens an open column's
    ends (off by default: no published starting value). A column's last crossing now goes across

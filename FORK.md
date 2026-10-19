@@ -60,10 +60,9 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
 
 **Next: the rest of the review's fixes (measured on the real designs).**
 
-1. **Short stitches on tight satin curves.** On a curve's inner side the penetrations bunch: a
-   5 mm column round a 3 mm radius puts 16 of 18 inner penetrations within 0.15 mm of the last.
-   Shorten alternate stitches there, as Ink/Stitch's "short stitch" and Wilcom's stitch shortening
-   do.
+1. **Short stitches on tight satin curves.** Done: a bunched penetration on a curve's inner side
+   moves in by 20 % or 40 % of the column's width; a 5 mm column round a 3 mm radius went from 16
+   of 18 inner penetrations within 0.15 mm of the last to none.
 2. **Default density and stitch length.** VectorCraft sews 40–65 % of the stitches of the person's
    Ink/Stitch designs (Ink/Stitch's defaults: rows 0.25 mm apart, 3 mm stitches; ours 0.4 and 4).
    Calibrate with the fabric presets below, citing sources.

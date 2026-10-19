@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** every value the planner, the digitizer and the format readers and writers use is a named constant that says what it is, its unit, and where it comes from or that it is an estimate
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** every value the planner, the digitizer and the formats use is a named constant with a description; a PEC block's length (not the label) decides where its stitches start
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -244,7 +244,7 @@ index, whose RGB values differ between published charts — preview colour is no
 
 ## Validation
 
-- `crates/stitch`: 56 unit tests and 3 property tests — the fill covers a rectangle and leaves its hole empty, an
+- `crates/stitch`: 57 unit tests and 3 property tests — the fill covers a rectangle and leaves its hole empty, an
   unclosed shape is filled, a ring is sewn in regions with no thread across its hole and,
   travelling inside, without a trim, regions overlap by a row, a narrow gap is never sewn across,
   a letter E is sewn in one go at any angle (every 5°) without crossing its gaps, and so are a U,
@@ -266,7 +266,7 @@ index, whose RGB values differ between published charts — preview colour is no
   between it and the top, satin spacing follows the width unless given, wide satins and their
   zigzag underlay are split without a seam, satin crossings stay within the column, pull compensation widens it, a tight satin curve gets short stitches on its inner side (and a straight column none), an absurd
   plan is refused before it is made, the DST record round-trips every delta from -121 to 121,
-  only a run of three jumps reads as a DST trim, a DST colour change can carry a move, each format
+  only a run of three jumps reads as a DST trim, a PEC block whose first jump looks like the origin words is read from where its length says the stitches start, a DST colour change can carry a move, each format
   writes a design it reads back with the same blocks and size, a JEF's header extents are where
   its stitches go, an absurd JEF colour count is not believed, and no reader panics on random,
   truncated or damaged bytes. The property tests (`tests/prop_plan.rs`, random rectangles,

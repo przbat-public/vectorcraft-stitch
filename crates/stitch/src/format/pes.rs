@@ -66,6 +66,9 @@ const COLOR_COUNT_AT: usize = 48;
 // marker, the design's width and height, two fixed values, and in Brother's files the design's
 // origin twice; then the stitches.
 
+/// Where the block's length is, from the PEC header's start (3 bytes, little-endian): it counts
+/// from the block's start to the end of the stitches, where the preview pictures begin.
+const BLOCK_LENGTH_AT: usize = PEC_HEADER + 2;
 /// The fixed marker after the block's length, as the format's decodings give it.
 const BLOCK_MARKER: [u8; 3] = [0x31, 0xFF, 0xF0];
 /// The two fixed values after the design's size, as the format's decodings give them.
@@ -264,21 +267,22 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         threads.push(thread::pec_thread(usize::from(index)));
     }
     // The stitches start after the block header. Brother writes a 20-byte one (two origin words
-    // after 0x01E0/0x01B0); pyembroidery writes 16 bytes and omits them. The graphics offset at
-    // PEC+0x202 tells which: the stream ends exactly where the preview pictures begin.
+    // after BLOCK_VALUES); pyembroidery writes 16 bytes and omits them. The block's length tells
+    // which: the stream ends exactly where the block does, and the preview pictures begin.
     let (g, have_g) = {
         let mut g = Reader::new(bytes);
-        g.seek(start + 2);
+        g.seek(start + BLOCK_LENGTH_AT);
         match g.u24() {
             Some(v) => (usize::try_from(v).unwrap_or(usize::MAX), true),
             None => (0, false),
         }
     };
     let expected_end = start.saturating_add(PEC_HEADER).saturating_add(g);
-    // Which block header: the two origin words Brother writes have a high byte of 0x90 (they are
-    // 0x9000 with the design's offset), and then the stitches start at 532; without them (as
-    // pyembroidery writes) they start at 528. The graphics offset confirms it: the stream ends
-    // exactly where the preview pictures begin.
+    // Which block header, first guessed: the two origin words Brother writes have a high byte of
+    // 0x90 (they are ORIGIN with the design's offset), and then the stitches start at
+    // LONG_BLOCK_STITCHES; without them (as pyembroidery writes) at SHORT_BLOCK_STITCHES. A first
+    // jump written long looks like them too; read from the wrong start the stream loses step and
+    // ends elsewhere, so the block's length decides.
     let [origin_high, _] = ORIGIN.to_be_bytes();
     // The top four bits are the origin base's; the bottom ones carry the design's offset.
     let long_header = bytes.get(start + SHORT_BLOCK_STITCHES).is_some_and(|b| b & 0xF0 == origin_high);
@@ -451,6 +455,33 @@ mod tests {
             let (wx, wy) = (want.0 - w0.0, want.1 - w0.1);
             assert!((gx - wx).abs() < 0.06 && (gy - wy).abs() < 0.06, "{got:?} vs {want:?}");
         }
+    }
+
+    /// Which block header a file has (16 bytes, or 20 with the origin words) is first guessed from
+    /// the byte where the stitches would start, and then checked: the stream must end where the
+    /// block's length says. A 16-byte header whose first jump starts with a long value looks like
+    /// the origin words; read from past them the stream loses step, and the check sends the reader
+    /// back to the right start.
+    #[test]
+    fn the_block_length_decides_where_the_stitches_start() {
+        let p = design();
+        let mut bytes = write(&p).expect("writes");
+        let pec = PES_HEADER.len();
+        let stitches = pec + LONG_BLOCK_STITCHES;
+        // Our first values: a jump to the first stitch, both coordinates long (0x90 0x00 twice).
+        assert_eq!(&bytes[stitches..stitches + 4], &[0x90, 0x00, 0x90, 0x00]);
+        // Drop the origin words (a 16-byte header), and write the jump's y as a short value.
+        bytes.drain(stitches - 4..stitches);
+        bytes.remove(pec + SHORT_BLOCK_STITCHES + 2);
+        let block = pec + PEC_HEADER;
+        let length = u32::from(bytes[block + 2]) | u32::from(bytes[block + 3]) << 8 | u32::from(bytes[block + 4]) << 16;
+        let length = (length - 5).to_le_bytes();
+        bytes[block + 2..block + 5].copy_from_slice(&length[..3]);
+        assert_eq!(bytes[pec + SHORT_BLOCK_STITCHES], 0x90, "looks like the origin words");
+        let back = read(&bytes).expect("reads");
+        assert_eq!(back.sewn(), p.sewn());
+        let (a, b) = (back.bounds().expect("bounds"), p.bounds().expect("bounds"));
+        assert!((a.width() - b.width()).abs() < 0.2 && (a.height() - b.height()).abs() < 0.2, "{a:?} {b:?}");
     }
 
     #[test]

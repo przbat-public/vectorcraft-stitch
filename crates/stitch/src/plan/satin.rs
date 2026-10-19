@@ -56,14 +56,15 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
         if back && !closed {
             samples.reverse();
         }
-        let mut zigzag: Vec<Point> = (0..samples.len())
+        let crossings: Vec<(Point, Vec2)> = (0..samples.len())
             .filter_map(|i| {
                 let q = *samples.get(i)?;
                 let t = tangent(&samples, i, closed);
                 let side = if i % 2 == 0 { 1.0 } else { -1.0 };
-                Some(q + Vec2::new(-t.y, t.x) * half * side)
+                Some((q, Vec2::new(-t.y, t.x) * half * side))
             })
             .collect();
+        let mut zigzag = short_stitches(&crossings, spacing);
         // A closed column ends where it started: the last crossing takes the remaining side.
         if closed
             && let (Some(first), Some(last)) = (zigzag.first().copied(), zigzag.last().copied())
@@ -77,6 +78,46 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
         }
     }
     runs.join(&p)
+}
+
+/// Short stitches: how far a bunched penetration may move in from its rail, as shares of the
+/// column's width, tried in order. Ink/Stitch's satin columns take a list of insets like this
+/// ("short stitch inset", <https://inkstitch.org/docs/stitches/satin-column/>), and Hatch shortens
+/// stitches on a satin's inner edge to reduce bunching (stitch shortening,
+/// <https://hatch.embroideryhelp.net/v3/en/downloads/UserGuide.pdf>); 15–25 % is the usual
+/// shortening. Estimates.
+const SHORT_INSETS: [f64; 3] = [0.0, 0.2, 0.4];
+/// How many earlier penetrations on the same rail a penetration keeps its distance from.
+const SHORT_LOOKBACK: usize = 4;
+
+/// A satin column's needle points from its `crossings` (each a point on the centreline and the
+/// offset to the rail it goes to, the rails alternating), with short stitches where a curve bunches
+/// the penetrations on its inner side. A penetration closer than `spacing` (the distance between
+/// threads) to one of the last [`SHORT_LOOKBACK`] on its rail moves in by the first of
+/// [`SHORT_INSETS`] that keeps it that far from them all, or, when none does, by the one that
+/// keeps it farthest. On a gentle curve that shortens every other stitch on the inner side; on a
+/// tight one the penetrations spread over the insets; along a straight column nothing moves.
+fn short_stitches(crossings: &[(Point, Vec2)], spacing: f64) -> Vec<Point> {
+    let mut out: Vec<Point> = Vec::with_capacity(crossings.len());
+    for (i, &(q, offset)) in crossings.iter().enumerate() {
+        // The earlier penetrations on this rail: every other one back.
+        let before: Vec<Point> = (1..=SHORT_LOOKBACK).filter_map(|k| i.checked_sub(2 * k).and_then(|j| out.get(j)).copied()).collect();
+        let clearance = |r: Point| before.iter().map(|b| b.distance(r)).fold(f64::INFINITY, f64::min);
+        let candidates = SHORT_INSETS.iter().map(|inset| q + offset * (1.0 - 2.0 * inset));
+        let mut best: Option<(Point, f64)> = None;
+        for r in candidates {
+            let c = clearance(r);
+            if c >= spacing {
+                best = Some((r, c));
+                break;
+            }
+            if best.is_none_or(|(_, b)| c > b) {
+                best = Some((r, c));
+            }
+        }
+        out.push(best.map_or(q + offset, |(r, _)| r));
+    }
+    out
 }
 
 /// `run` added to a column's `runs`, its stitches split to at most `max` ([`split_long`]). A run

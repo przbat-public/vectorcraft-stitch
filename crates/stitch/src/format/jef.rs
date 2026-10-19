@@ -6,12 +6,21 @@
 //! edges, then one palette index per colour and a `0x0D` word per colour.
 //!
 //! A record is two signed bytes, the x and y deltas in tenths of a millimetre (at most 127). The
-//! byte `0x80` starts a command: `0x80 0x02 dx dy` jumps, and a jump of zero length is a trim
-//! (Janome's own way of cutting); `0x80 0x01 dx dy` changes colour; `0x80 0x10` ends the
-//! design. Y counts upwards. Colours are indices into Janome's 78-thread chart
-//! ([`crate::thread::JEF`]).
+//! byte `0x80` starts a command: `0x80 0x02 dx dy` jumps; `0x80 0x01 dx dy` changes colour;
+//! `0x80 0x10` ends the design. Y counts upwards. Colours are indices into Janome's 78-thread
+//! chart ([`crate::thread::JEF`]).
 //!
-//! Reference: EduTechWiki, *Embroidery format JEF* (edutechwiki.unige.ch/en/Embroidery_format_JEF).
+//! JEF has no trim record of its own. The wiki calls a jump of zero length the trim command, which
+//! Janome machines set to cut at a "cutting command" obey; set to cut automatically, they also cut
+//! before any jump longer than 3 mm. pyembroidery, asked to write trims, writes each as three
+//! zero-length jumps (its `trim_at` setting, 3 by default), and its reader, asked for trims, takes
+//! a run of three jumps as one and drops jumps that go nowhere. So we write three, which both read
+//! as a trim, and read each zero-length jump as a trim (consecutive trims are one cut,
+//! [`super::finish`]).
+//!
+//! References: EduTechWiki, *Embroidery format JEF* (edutechwiki.unige.ch/en/Embroidery_format_JEF);
+//! pyembroidery 1.5.1 (MIT), `JefWriter.py` and `JefReader.py`
+//! (github.com/EmbroidePy/pyembroidery/tree/1.5.1/pyembroidery).
 
 use super::{Frame, Reader, finish, steps};
 use crate::thread;
@@ -25,7 +34,8 @@ const CONTROL: u8 = 0x80;
 const END: u8 = 0x10;
 const JUMP: u8 = 0x02;
 const COLOR_CHANGE: u8 = 0x01;
-/// A trim is three jumps that go nowhere: Janome's machines cut after a run of them.
+/// A trim is written as three jumps that go nowhere: one is the wiki's trim command, three is what
+/// pyembroidery writes and reads back as a trim (see the module doc).
 const TRIM_JUMPS: usize = 3;
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
@@ -306,6 +316,37 @@ mod tests {
         bytes[HEADER + 8..HEADER + 12].copy_from_slice(&[10, 10, CONTROL, END]);
         let p = read(&bytes).expect("reads");
         assert_eq!(p.sewn(), 1);
+    }
+
+    /// A trim is three zero-length jumps in the file, and they read back as one trim.
+    #[test]
+    fn a_trim_is_three_jumps_that_go_nowhere_and_reads_back_as_one() {
+        let mut p = design();
+        let at = p.blocks[0].stitches.len() - 2;
+        let here = p.blocks[0].stitches[at];
+        p.blocks[0].stitches.insert(at + 1, Stitch::new(here.x, here.y, Command::Trim));
+        let bytes = write(&p).expect("writes");
+        let trim = [CONTROL, JUMP, 0, 0];
+        let zero_jumps = bytes.windows(4).filter(|w| *w == trim).count();
+        assert_eq!(zero_jumps, 3);
+        let run = trim.repeat(3);
+        assert!(bytes.windows(run.len()).any(|w| w == run.as_slice()), "the jumps are one run");
+        let back = read(&bytes).expect("reads");
+        assert_eq!(back.points().filter(|s| s.command == Command::Trim).count(), 1);
+        assert_eq!(back.sewn(), p.sewn());
+    }
+
+    /// One zero-length jump, the wiki's trim command as other writers may use it, is a trim too.
+    #[test]
+    fn a_single_jump_that_goes_nowhere_is_a_trim() {
+        let mut bytes = vec![0u8; HEADER + 8];
+        bytes[0..4].copy_from_slice(&(HEADER as u32 + 8).to_le_bytes());
+        bytes[24..28].copy_from_slice(&1u32.to_le_bytes());
+        bytes.extend_from_slice(&[10, 0, 10, 0, CONTROL, JUMP, 0, 0, CONTROL, JUMP, 100, 0, 10, 0, 10, 0, CONTROL, END]);
+        let p = read(&bytes).expect("reads");
+        let commands: Vec<Command> = p.points().map(|s| s.command).collect();
+        assert_eq!(commands.iter().filter(|c| **c == Command::Trim).count(), 1, "{commands:?}");
+        assert_eq!(p.sewn(), 4);
     }
 
     #[test]

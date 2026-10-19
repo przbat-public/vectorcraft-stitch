@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** a running line, edge run or travel along a fine zigzag keeps its stitch length (a needle point moves onto a corner once at most)
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** a running line, edge run or travel along a fine zigzag keeps its stitch length (a needle point moves onto a corner once at most); JEF trims: three zero-length jumps each, now with their source (pyembroidery), and a single one read as a trim
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -189,7 +189,14 @@ run to a few hundred thousand.
 | Tajima DST | commercial, the de-facto standard | 512-byte text header, 3-byte records of ±121 tenths of a millimetre (12.1 mm), no colours, trims implied by runs of three or more jumps | header with counts and extents, records, a colour-change record per block, trims as three small jumps that go nowhere |
 | Melco EXP | commercial | records only, no header, no colours: 2-byte deltas up to ±12.7 mm, `0x80`-prefixed commands | stitches, jumps, trims, colour changes; the file ends with the last record |
 | Brother PES | home machines (Brother, Bernina) | a PES section for PE-Design and a PEC section the machine reads | a minimal version 1 PES header pointing at a complete PEC block: 512-byte header, palette indices, a 20-byte block header with the two origin words real Brother files carry, the stitch stream, blank preview pictures |
-| Janome JEF | home machines (Janome) | 116-byte header plus the thread list, then 2-byte records | header with counts, hoop, size and margins, Janome palette indices, records, three zero-length jumps per trim |
+| Janome JEF | home machines (Janome) | 116-byte header plus the thread list, then 2-byte records | header with counts, hoop, size and margins, Janome palette indices, records, three zero-length jumps per trim (see below) |
+
+Trims in JEF: the format has no trim record. EduTechWiki calls a jump of zero length the trim
+command (Janome machines set to cut at cutting commands obey it, and set to cut automatically they
+also cut before any jump longer than 3 mm); pyembroidery, asked to write trims, writes each as
+three of them (its `trim_at` setting) and reads a run of three jumps as a trim when asked for trims, while it drops a
+lone jump that goes nowhere. We write three, which both read as a trim, and read each zero-length
+jump as a trim, so the three come back as one.
 
 Coordinate conventions: files count tenths of a millimetre. DST, EXP and JEF count y upwards and
 PEC downwards; the readers and writers flip accordingly, so a design written and read back keeps
@@ -332,6 +339,12 @@ environment, never in the repo:
 - pyembroidery writes PEC stitches from byte 528 (no origin words) and real Brother files from
   532; the reader decides by the `0x90` origin high byte and checks that the stream ends exactly
   where the graphics offset says the preview pictures begin.
+- pyembroidery 1.5.1 reads our JEF trims (three zero-length jumps) as trims when its `trims`
+  setting is on, and would not with a single zero-length jump. With its default settings it reads
+  no explicit JEF trim at all, ours or anyone's: it drops jumps that go nowhere and adds a trim
+  only before a jump longer than 3 mm, so a trim followed by a short move or a colour change is
+  not reported. Ink/Stitch's fox JEF (written by pyembroidery) has no trim records: its cuts are
+  long jumps, and its one zero-length jump comes right after a colour change.
 - pyembroidery does not parse the PES block at all, so it validates our PEC block and not the PES
   header; the PES section is the minimal version 1 header (see above).
 
@@ -349,7 +362,10 @@ Public documentation, cited per claim in the crate and in the local research not
   [PEC](https://edutechwiki.unige.ch/en/Embroidery_format_PEC) — the header and record layouts,
   the DST bit decoding and the PEC stitch encoding.
 - [pyembroidery](https://github.com/EmbroidePy/pyembroidery) (MIT), consulted for terminology and
-  the read/write conventions (y direction, trim encoding); no code copied.
+  the read/write conventions (y direction, trim encoding: JEF's three zero-length jumps per trim
+  from `JefWriter.py`'s `trim_at`); no code copied.
+- EduTechWiki, [Embroidery format JEF](https://edutechwiki.unige.ch/en/Embroidery_format_JEF) —
+  the JEF header, records and the zero-length jump as trim command.
 - Connectors and trims: Ink/Stitch's [fill stitch](https://inkstitch.org/docs/stitches/fill-stitch/)
   and [preferences](https://inkstitch.org/docs/preferences/) pages ("Trim After", minimum jump
   stitch length, starting near the previous object), Wilcom's

@@ -162,3 +162,43 @@ fn union(a: Option<Rect>, b: Option<Rect>) -> Option<Rect> {
 fn overlaps(a: Rect, b: Rect) -> bool {
     a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1
 }
+
+#[cfg(test)]
+mod tests {
+    use vectorcraft_stitch::Thread;
+    use vectorcraft_stitch::plan::Style;
+
+    use super::*;
+
+    /// A block of one thread sewn along `x0`..`x1` on the x axis, a needle point every 2 mm.
+    fn block(x0: f64, x1: f64) -> Planned {
+        let mut b = Block::new(Thread::rgb([200, 30, 30]));
+        let n = ((x1 - x0) / 2.0).round() as usize;
+        b.stitches = (0..=n).map(|k| Stitch::sew(Point::new(x0 + 2.0 * k as f64, 0.0))).collect();
+        Planned { block: b, literal: None }
+    }
+
+    /// The trims and jumps between two objects of one thread, the second starting `gap` mm from
+    /// where the first ends.
+    fn between(gap: f64) -> (usize, usize) {
+        let mut seq = Sequence::new(Params::for_style(Style::Fill));
+        seq.add(block(0.0, 10.0));
+        seq.add(block(10.0 + gap, 20.0 + gap));
+        let blocks = seq.blocks();
+        assert_eq!(blocks.len(), 1, "one thread, one block");
+        let count = |c: Command| blocks[0].stitches.iter().filter(|s| s.command == c).count();
+        (count(Command::Trim), count(Command::Jump))
+    }
+
+    /// The move to the next object is cut only when it is longer than `trimLength`: one of exactly
+    /// that length keeps the thread on.
+    #[test]
+    fn a_move_of_exactly_the_trim_length_is_not_cut() {
+        let trim = Params::for_style(Style::Fill).sane().trim;
+        assert_eq!(between(trim - 1.0), (0, 1));
+        assert_eq!(between(trim), (0, 1));
+        assert_eq!(between(trim + 0.01), (1, 1));
+        // Starting where the last one ended: no move at all.
+        assert_eq!(between(0.0), (0, 0));
+    }
+}

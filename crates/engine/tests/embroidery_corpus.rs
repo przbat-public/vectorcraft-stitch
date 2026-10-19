@@ -6,9 +6,9 @@
 //!   block.
 //! - Each artwork, digitized by VectorCraft at the size of the person's design, comes out sound:
 //!   the same size, every needle point on the artwork, no stitch too long or too short, no more
-//!   trims than its ceiling (just above what was last measured, next to the person's count),
-//!   and a stitch count in a sane share of the person's (VectorCraft's default spacing is more
-//!   open than Ink/Stitch's, so it sews fewer stitches).
+//!   trims and jumps than its ceilings (just above what was last measured, next to the person's
+//!   counts), and a stitch count in a sane share of the person's (VectorCraft's default spacing is
+//!   more open than Ink/Stitch's, so it sews fewer stitches).
 //!
 //! Local runs skip an absent corpus; `EMBROIDERY_CORPUS_REQUIRED=1` requires it. The files are
 //! rechecked against the manifest before use.
@@ -25,22 +25,23 @@ use vectorcraft_stitch::{Command, Pattern, quantize};
 #[path = "../../../xtask/src/sha256.rs"]
 mod sha256;
 
-/// (artwork, the person's machine file, most trims). Measured when the ordering of fill regions
-/// and the trim length landed, with the person's count: see the comments. (Before, when every jump
-/// longer than `jumpLength` was cut and regions went nearest first: 55 trims in all, now 25.)
-const DESIGNS: &[(&str, &str, usize)] = &[
-    ("bullseye-twemoji.svg", "bullseye-twemoji-inkstitch.pes", 1), // 0 (the person's design: 6)
-    ("fox-twemoji.clipart.svg", "fox-twemoji-inkstitch.pes", 4),   // 3 (6)
-    ("heart-suit-twemoji.clipart.svg", "heart-suit-twemoji-inkstitch.pes", 1), // 0 (0)
-    ("joystick-twemoji.svg", "joystick-twemoji-institch.pes", 5),  // 4 (4)
-    ("pool-8-ball-twemoji.svg", "pool-8-ball-twemoji-inkstitch.pes", 1), // 0 (2)
-    ("puzzle-piece-twemoji.svg", "puzzle-piece-twemoji-inkstitch.pes", 1), // 0 (0)
-    ("smiling-face-with-smiling-eyes-twemoji.clipart.svg", "smiling-face-with-smiling-eyes-twemoji-inkstitch.pes", 4), // 3 (3)
+/// (artwork, the person's machine file, most trims, most jumps). Ceilings one above what was
+/// measured when the ordering of fill regions and the trim length landed, with the person's counts:
+/// see the comments (trims, then jumps: a move with the needle up, cut or not). (Before, when every
+/// jump longer than `jumpLength` was cut and regions went nearest first: 55 trims in all, now 25.)
+const DESIGNS: &[(&str, &str, usize, usize)] = &[
+    ("bullseye-twemoji.svg", "bullseye-twemoji-inkstitch.pes", 1, 10), // 0 (the person's design: 6), 9 (8)
+    ("fox-twemoji.clipart.svg", "fox-twemoji-inkstitch.pes", 4, 5),    // 3 (6), 4 (3)
+    ("heart-suit-twemoji.clipart.svg", "heart-suit-twemoji-inkstitch.pes", 1, 1), // 0 (0), 0 (0)
+    ("joystick-twemoji.svg", "joystick-twemoji-institch.pes", 5, 6),   // 4 (4), 5 (4)
+    ("pool-8-ball-twemoji.svg", "pool-8-ball-twemoji-inkstitch.pes", 1, 2), // 0 (2), 1 (2)
+    ("puzzle-piece-twemoji.svg", "puzzle-piece-twemoji-inkstitch.pes", 1, 1), // 0 (0), 0 (0)
+    ("smiling-face-with-smiling-eyes-twemoji.clipart.svg", "smiling-face-with-smiling-eyes-twemoji-inkstitch.pes", 4, 4), // 3 (3), 3 (6)
     // Separate pieces (letters, seeds) are joined by tied jumps, cut only past `trimLength`.
-    ("sos-button-fluent.clipart.svg", "sos-button-fluent-inkstitch.pes", 5), // 4 (3)
-    ("video-game-twemoji.svg", "video-game-twemoji-inkstitch.pes", 4),       // 3 (11)
-    ("watermelon-twemoji.clipart.svg", "watermelon-twemoji-inkstitch.pes", 3), // 2 (2)
-    ("zebra-twemoji.clipart.svg", "zebra-twemoji-inkstitch.pes", 7),         // 6 (21)
+    ("sos-button-fluent.clipart.svg", "sos-button-fluent-inkstitch.pes", 5, 7), // 4 (3), 6 (2)
+    ("video-game-twemoji.svg", "video-game-twemoji-inkstitch.pes", 4, 13),      // 3 (11), 12 (12)
+    ("watermelon-twemoji.clipart.svg", "watermelon-twemoji-inkstitch.pes", 3, 15), // 2 (2), 14 (2)
+    ("zebra-twemoji.clipart.svg", "zebra-twemoji-inkstitch.pes", 7, 16),        // 6 (21), 15 (39)
 ];
 
 /// The corpus, checked against its manifest; `None` (the tests skip) when it is absent and not
@@ -168,7 +169,7 @@ fn real_machine_files_are_written_back_unchanged() {
 #[test]
 fn artwork_digitizes_soundly_next_to_a_persons_design() {
     let Some(dir) = corpus() else { return };
-    for &(art, theirs, max_trims) in DESIGNS {
+    for &(art, theirs, max_trims, max_jumps) in DESIGNS {
         let person = Format::Pes.read(&std::fs::read(dir.join(theirs)).unwrap()).unwrap();
         let target = person.bounds().unwrap();
         let mut s = Session::new();
@@ -202,6 +203,7 @@ fn artwork_digitizes_soundly_next_to_a_persons_design() {
         assert!(longest <= 10.0, "{art}: a {longest:.1} mm stitch");
         assert!(short <= 2, "{art}: {short} stitches shorter than 0.3 mm");
         assert!(trims <= max_trims, "{art}: {trims} trims, more than {max_trims} (the person's design has {person_trims})");
+        assert!(jumps <= max_jumps, "{art}: {jumps} jumps, more than {max_jumps} (the person's design has {person_jumps})");
         assert!((0.3..0.8).contains(&share), "{art}: {} stitches, {:.0}% of the person's {}", ours.sewn(), share * 100.0, person.sewn());
     }
 }

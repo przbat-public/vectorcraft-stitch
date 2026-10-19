@@ -4870,8 +4870,10 @@ dependencies = [
 name = "vectorcraft-stitch"
 version = "0.13.1"
 dependencies = [
+ "proptest",
  "thiserror 2.0.21",
  "vectorcraft-geom",
+ "vectorcraft-testkit",
 ]
 
 [[package]]

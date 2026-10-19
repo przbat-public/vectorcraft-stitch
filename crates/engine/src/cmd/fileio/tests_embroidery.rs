@@ -551,3 +551,73 @@ fn an_object_starting_where_the_last_ended_adds_no_second_needle_point() {
         }
     }
 }
+
+/// Where the needle lands after each of a PES's trims, as a share of the design's width from its
+/// left edge.
+fn trims_landing(bytes: &[u8]) -> Vec<f64> {
+    use vectorcraft_stitch::Command;
+    let p = Format::Pes.read(bytes).expect("a PES we wrote reads");
+    let b = p.bounds().expect("bounds");
+    let all: Vec<vectorcraft_stitch::Stitch> = p.points().collect();
+    all.iter()
+        .enumerate()
+        .filter(|(_, s)| s.command == Command::Trim)
+        .filter_map(|(i, _)| all[i..].iter().find(|s| s.command == Command::Stitch))
+        .map(|s| (s.x - b.x0) / b.width())
+        .collect()
+}
+
+/// `embroidery.setTrimAfter` on a group, a compound path or a clip group cuts the thread after the
+/// last stitch it holds, before the next object, and never between its own members.
+#[test]
+fn a_group_compound_or_clip_group_can_ask_for_a_trim_after_it() {
+    let last = |s: &Session| s.doc().unwrap().doc.layers[0].children().unwrap().last().unwrap().id.0;
+    for kind in ["group", "compound", "clip"] {
+        let mut s = blank();
+        // Three red 15 pt (5.3 mm) squares 5 pt apart, the first two made into one object: every
+        // move between them is shorter than `trimLength`, a jump without a cut.
+        rect(&mut s, "#cc2222", 20.0, 20.0, 15.0, 15.0);
+        let a = last(&s);
+        rect(&mut s, "#cc2222", 40.0, 20.0, 15.0, 15.0);
+        let b = last(&s);
+        let made = match kind {
+            "group" => "object.group",
+            "compound" => "object.compoundPath.make",
+            _ => {
+                // The clipping path, on top: an unpainted rectangle round both squares.
+                s.execute("paint.setFill", &json!({"none": true})).unwrap();
+                s.execute("shape.rectangle", &json!({"x": 15, "y": 15, "width": 43, "height": 25})).unwrap();
+                "object.clippingMask.make"
+            }
+        };
+        let mut ids = vec![a, b];
+        if kind == "clip" {
+            ids.push(last(&s));
+        }
+        s.execute("select.set", &json!({"ids": ids})).unwrap();
+        s.execute(made, &json!({})).unwrap();
+        let made = last(&s);
+        s.execute("select.none", &json!({})).unwrap();
+        rect(&mut s, "#cc2222", 60.0, 20.0, 15.0, 15.0);
+        assert_eq!(trims_landing(&export(&mut s, "pes", json!({}))), Vec::<f64>::new(), "{kind}");
+        let r = s.execute("embroidery.setTrimAfter", &json!({"on": true, "ids": [made]})).unwrap();
+        assert_eq!(r["changed"], 1, "{kind}");
+        let landing = trims_landing(&export(&mut s, "pes", json!({})));
+        // The third square spans the design's last 27 % (60 to 75 pt of 20 to 75).
+        assert!(landing.len() == 1 && landing[0] > 0.65, "{kind}: a trim, the needle landing at {landing:?} of the width");
+    }
+}
+
+/// `embroidery.setTrimAfter` with an id that names no object fails, and changes none of the others
+/// it was given.
+#[test]
+fn trim_after_refuses_a_missing_object() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 30.0, 30.0);
+    let first = s.doc().unwrap().doc.layers[0].children().unwrap().last().unwrap().id.0;
+    rect(&mut s, "#cc2222", 60.0, 20.0, 30.0, 30.0);
+    let e = s.execute("embroidery.setTrimAfter", &json!({"on": true, "ids": [first, 999_999]})).unwrap_err().to_string();
+    assert!(e.contains("999999"), "{e}");
+    assert!(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(first)).unwrap().extras().embroidery.is_none());
+    assert_eq!(moves(&export(&mut s, "pes", json!({}))).0, 0);
+}

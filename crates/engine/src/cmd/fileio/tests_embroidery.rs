@@ -406,3 +406,218 @@ fn a_satin_wider_than_the_widest_is_warned_about() {
     let r = s.execute("document.export", &params("dst", json!({}))).expect("exports");
     assert!(warnings(&r).is_empty(), "{:?}", warnings(&r));
 }
+
+/// The cuts and jumps of a PES the export wrote: every trim, and how far each move with the
+/// needle up goes.
+fn moves(bytes: &[u8]) -> (usize, Vec<f64>) {
+    use vectorcraft_stitch::Command;
+    let p = Format::Pes.read(bytes).expect("a PES we wrote reads");
+    let trims = p.points().filter(|s| s.command == Command::Trim).count();
+    let mut jumps = Vec::new();
+    for b in &p.blocks {
+        let mut from: Option<vectorcraft_stitch::Stitch> = None;
+        let mut up = false;
+        for s in &b.stitches {
+            match s.command {
+                Command::Stitch => {
+                    if up && let Some(f) = from {
+                        jumps.push(f.distance(*s));
+                    }
+                    from = Some(*s);
+                    up = false;
+                }
+                _ => up = from.is_some(),
+            }
+        }
+    }
+    (trims, jumps)
+}
+
+/// Where a clipping path cuts a stroke's stitches, the needle lifts as the planner lifts it: a
+/// short way across with the thread on, a longer one tied off before and in after so it can be
+/// cut, and the thread cut only before a jump longer than `trimLength`.
+#[test]
+fn cuts_made_by_a_clipping_mask_are_tied() {
+    use vectorcraft_stitch::Command;
+    // 20 pt is 7 mm, 100 pt 35 mm.
+    for (gap, trims) in [(20.0, 0), (100.0, 1)] {
+        let mut s = blank();
+        s.execute("paint.setFill", &json!({"none": true})).unwrap();
+        s.execute("paint.setStroke", &json!({"color": "#cc2222"})).unwrap();
+        s.execute("shape.line", &json!({"x1": 0, "y1": 75, "x2": 290, "y2": 75})).unwrap();
+        s.execute("stroke.set", &json!({"weight": 1.0})).unwrap();
+        s.execute("select.none", &json!({})).unwrap();
+        s.execute("paint.setStroke", &json!({"none": true})).unwrap();
+        let a = s.execute("shape.rectangle", &json!({"x": 20, "y": 50, "width": 50, "height": 50})).unwrap()["id"].clone();
+        let b = s.execute("shape.rectangle", &json!({"x": 70.0 + gap, "y": 50, "width": 50, "height": 50})).unwrap()["id"].clone();
+        s.execute("select.set", &json!({"ids": [a, b]})).unwrap();
+        s.execute("object.compoundPath.make", &json!({})).unwrap();
+        s.execute("select.all", &json!({})).unwrap();
+        s.execute("object.clippingMask.make", &json!({})).unwrap();
+        let bytes = export(&mut s, "pes", json!({}));
+        let (cut, jumps) = moves(&bytes);
+        assert_eq!(cut, trims, "a {gap} pt gap: {jumps:?}");
+        assert_eq!(jumps.len(), 1, "a {gap} pt gap: {jumps:?}");
+        // Back and forth on the spot on both sides of the jump.
+        let p = Format::Pes.read(&bytes).unwrap();
+        let st = &p.blocks[0].stitches;
+        let start = st.iter().position(|s| s.command == Command::Stitch).unwrap();
+        let up = start + st[start..].iter().position(|s| s.command != Command::Stitch).unwrap();
+        let down = up + st[up..].iter().position(|s| s.command == Command::Stitch).unwrap();
+        let tied = |w: &[vectorcraft_stitch::Stitch]| w.iter().all(|s| s.command == Command::Stitch) && w[0].distance(w[2]) < 0.15;
+        assert!(tied(&st[up - 3..up]), "a {gap} pt gap: tie-off {:?}", &st[up - 3..up]);
+        assert!(tied(&st[down..down + 3]), "a {gap} pt gap: tie-in {:?}", &st[down..down + 3]);
+    }
+}
+
+/// Objects of one thread near each other are joined by a jump, not a trim, unless an object asks
+/// for the thread to be cut after it (`embroidery.setTrimAfter`), which the document keeps.
+#[test]
+fn an_object_can_ask_for_a_trim_after_it() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 30.0, 30.0);
+    let first = s.doc().unwrap().doc.layers[0].children().unwrap().last().unwrap().id.0;
+    rect(&mut s, "#cc2222", 60.0, 20.0, 30.0, 30.0);
+    assert_eq!(moves(&export(&mut s, "pes", json!({}))).0, 0);
+    let r = s.execute("embroidery.setTrimAfter", &json!({"on": true, "ids": [first]})).unwrap();
+    assert_eq!(r["changed"], 1);
+    assert_eq!(moves(&export(&mut s, "pes", json!({}))).0, 1);
+    // Saved and opened again, it still asks.
+    let saved = export(&mut s, "vectorcraft", json!({}));
+    let mut again = Session::new();
+    open(&mut again, "trim.vectorcraft", &saved).unwrap();
+    assert_eq!(moves(&export(&mut again, "pes", json!({}))).0, 1);
+    let r = s.execute("embroidery.setTrimAfter", &json!({"on": false, "ids": [first]})).unwrap();
+    assert_eq!(r["changed"], 1);
+    assert_eq!(moves(&export(&mut s, "pes", json!({}))).0, 0);
+    assert!(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(first)).unwrap().extras().embroidery.is_none());
+    assert!(s.execute("embroidery.setTrimAfter", &json!({"ids": [first]})).is_err(), "`on` is required");
+}
+
+/// `trimLength` decides which jumps cut the thread: a jump between two objects is cut only when it
+/// is longer, and a value below `jumpLength` acts as `jumpLength`.
+#[test]
+fn trim_length_decides_which_jumps_are_cut() {
+    let mut s = blank();
+    // 30 pt squares 57 pt (20 mm) apart.
+    rect(&mut s, "#cc2222", 20.0, 20.0, 30.0, 30.0);
+    rect(&mut s, "#cc2222", 107.0, 20.0, 30.0, 30.0);
+    let (trims, jumps) = moves(&export(&mut s, "pes", json!({})));
+    assert_eq!(trims, 1, "{jumps:?}");
+    let longest = jumps.iter().copied().fold(0.0, f64::max);
+    assert!(longest > 15.0, "{jumps:?}");
+    let (trims, jumps) = moves(&export(&mut s, "pes", json!({"trimLength": longest + 1.0})));
+    assert_eq!(trims, 0, "{jumps:?}");
+    assert_eq!(
+        export(&mut s, "pes", json!({"trimLength": 1.0, "jumpLength": 5.0})),
+        export(&mut s, "pes", json!({"trimLength": 5.0, "jumpLength": 5.0}))
+    );
+}
+
+/// Each object starts near where the one sewn before it ended: a satin column drawn from its far
+/// end is sewn from its near one, a short jump instead of a long move cut by a trim.
+#[test]
+fn an_object_starts_near_the_one_before() {
+    let mut s = blank();
+    s.execute("paint.setFill", &json!({"none": true})).unwrap();
+    s.execute("paint.setStroke", &json!({"color": "#cc2222"})).unwrap();
+    s.execute("stroke.set", &json!({"weight": 6.0})).unwrap();
+    s.execute("shape.line", &json!({"x1": 20, "y1": 50, "x2": 120, "y2": 50})).unwrap();
+    s.execute("select.none", &json!({})).unwrap();
+    s.execute("shape.line", &json!({"x1": 230, "y1": 70, "x2": 130, "y2": 70})).unwrap();
+    let (trims, jumps) = moves(&export(&mut s, "pes", json!({})));
+    assert_eq!(trims, 0, "{jumps:?}");
+    assert!(jumps.iter().all(|d| *d < 10.0), "{jumps:?}");
+}
+
+/// An object that starts exactly where the one before ended (a line drawn twice) goes on from
+/// there: no jump, and no second needle point in the same hole.
+#[test]
+fn an_object_starting_where_the_last_ended_adds_no_second_needle_point() {
+    use vectorcraft_stitch::Command;
+    let mut s = blank();
+    s.execute("paint.setFill", &json!({"none": true})).unwrap();
+    s.execute("paint.setStroke", &json!({"color": "#cc2222"})).unwrap();
+    s.execute("stroke.set", &json!({"weight": 0.5})).unwrap();
+    s.execute("shape.line", &json!({"x1": 20, "y1": 50, "x2": 120, "y2": 50})).unwrap();
+    s.execute("select.none", &json!({})).unwrap();
+    s.execute("shape.line", &json!({"x1": 20, "y1": 50, "x2": 120, "y2": 50})).unwrap();
+    let p = Format::Pes.read(&export(&mut s, "pes", json!({}))).unwrap();
+    for b in &p.blocks {
+        for w in b.stitches.windows(2) {
+            if w[0].command == Command::Stitch && w[1].command == Command::Stitch {
+                assert!(w[0].distance(w[1]) > 1e-6, "two needle points at {:?}", w[1].point());
+            }
+        }
+    }
+}
+
+/// Where the needle lands after each of a PES's trims, as a share of the design's width from its
+/// left edge.
+fn trims_landing(bytes: &[u8]) -> Vec<f64> {
+    use vectorcraft_stitch::Command;
+    let p = Format::Pes.read(bytes).expect("a PES we wrote reads");
+    let b = p.bounds().expect("bounds");
+    let all: Vec<vectorcraft_stitch::Stitch> = p.points().collect();
+    all.iter()
+        .enumerate()
+        .filter(|(_, s)| s.command == Command::Trim)
+        .filter_map(|(i, _)| all[i..].iter().find(|s| s.command == Command::Stitch))
+        .map(|s| (s.x - b.x0) / b.width())
+        .collect()
+}
+
+/// `embroidery.setTrimAfter` on a group, a compound path or a clip group cuts the thread after the
+/// last stitch it holds, before the next object, and never between its own members.
+#[test]
+fn a_group_compound_or_clip_group_can_ask_for_a_trim_after_it() {
+    let last = |s: &Session| s.doc().unwrap().doc.layers[0].children().unwrap().last().unwrap().id.0;
+    for kind in ["group", "compound", "clip"] {
+        let mut s = blank();
+        // Three red 15 pt (5.3 mm) squares 5 pt apart, the first two made into one object: every
+        // move between them is shorter than `trimLength`, a jump without a cut.
+        rect(&mut s, "#cc2222", 20.0, 20.0, 15.0, 15.0);
+        let a = last(&s);
+        rect(&mut s, "#cc2222", 40.0, 20.0, 15.0, 15.0);
+        let b = last(&s);
+        let made = match kind {
+            "group" => "object.group",
+            "compound" => "object.compoundPath.make",
+            _ => {
+                // The clipping path, on top: an unpainted rectangle round both squares.
+                s.execute("paint.setFill", &json!({"none": true})).unwrap();
+                s.execute("shape.rectangle", &json!({"x": 15, "y": 15, "width": 43, "height": 25})).unwrap();
+                "object.clippingMask.make"
+            }
+        };
+        let mut ids = vec![a, b];
+        if kind == "clip" {
+            ids.push(last(&s));
+        }
+        s.execute("select.set", &json!({"ids": ids})).unwrap();
+        s.execute(made, &json!({})).unwrap();
+        let made = last(&s);
+        s.execute("select.none", &json!({})).unwrap();
+        rect(&mut s, "#cc2222", 60.0, 20.0, 15.0, 15.0);
+        assert_eq!(trims_landing(&export(&mut s, "pes", json!({}))), Vec::<f64>::new(), "{kind}");
+        let r = s.execute("embroidery.setTrimAfter", &json!({"on": true, "ids": [made]})).unwrap();
+        assert_eq!(r["changed"], 1, "{kind}");
+        let landing = trims_landing(&export(&mut s, "pes", json!({})));
+        // The third square spans the design's last 27 % (60 to 75 pt of 20 to 75).
+        assert!(landing.len() == 1 && landing[0] > 0.65, "{kind}: a trim, the needle landing at {landing:?} of the width");
+    }
+}
+
+/// `embroidery.setTrimAfter` with an id that names no object fails, and changes none of the others
+/// it was given.
+#[test]
+fn trim_after_refuses_a_missing_object() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 30.0, 30.0);
+    let first = s.doc().unwrap().doc.layers[0].children().unwrap().last().unwrap().id.0;
+    rect(&mut s, "#cc2222", 60.0, 20.0, 30.0, 30.0);
+    let e = s.execute("embroidery.setTrimAfter", &json!({"on": true, "ids": [first, 999_999]})).unwrap_err().to_string();
+    assert!(e.contains("999999"), "{e}");
+    assert!(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(first)).unwrap().extras().embroidery.is_none());
+    assert_eq!(moves(&export(&mut s, "pes", json!({}))).0, 0);
+}

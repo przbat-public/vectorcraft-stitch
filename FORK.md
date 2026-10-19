@@ -51,46 +51,36 @@ moves between separate pieces jump without a trim.
 
 Details are in `docs/embroidery.md`.
 
-**Next: fixes the review found (measured on the real designs).**
+**Done: fewer trims and hidden travels** (from the same review). A fill's regions are ordered so
+travels pass under stitching still to come (several orders planned, the cheapest kept: a letter E
+is sewn in one go). Jumps are tied off and in, and the thread is cut only past `trimLength`
+(10 mm) or where an object asks for it (`embroidery.setTrimAfter`). Each object starts near where
+the one before ended. Cuts made by clipping masks are tied. The travel graph keeps only reflex
+corners and the outlines' edges are indexed in a grid, so jagged shapes travel instead of jumping.
 
-1. **Region order that hides travels.** The next region is chosen by its start alone, so a
-   branched shape can need a travel over stitching already sewn, longer than a visible travel may
-   be, and is then cut (a letter E with vertical rows: see
-   `a_concave_shape_is_never_sewn_across_its_gaps`). Sew so travels pass under stitching still to
-   come (in an E, the spine last). Splitting regions at every concave step alone was tried: 15–25 %
-   more stitches (travel) and no fewer trims, so it needs the ordering. Finding the best order is a
-   routing problem close to the travelling salesman's; published embroidery work uses
-   approximations and local search over the regions (check and cite a source before choosing).
-2. **Short stitches on tight satin curves.** On a curve's inner side the penetrations bunch: a
+**Next: the rest of the review's fixes (measured on the real designs).**
+
+1. **Short stitches on tight satin curves.** On a curve's inner side the penetrations bunch: a
    5 mm column round a 3 mm radius puts 16 of 18 inner penetrations within 0.15 mm of the last.
    Shorten alternate stitches there, as Ink/Stitch's "short stitch" and Wilcom's stitch shortening
    do.
-3. **Connectors between separate pieces.** Pieces of one colour farther apart than `jumpLength`
-   are trimmed: the SOS button gets 8 trims and the watermelon 13, where the person's designs have
-   3 and 2 (they leave jumps, which machines may trim themselves). Decide the default with the
-   fabric and machine settings, and let an object say "trim after".
-4. **Default density and stitch length.** VectorCraft sews 40–65 % of the stitches of the person's
+2. **Default density and stitch length.** VectorCraft sews 40–65 % of the stitches of the person's
    Ink/Stitch designs (Ink/Stitch's defaults: rows 0.25 mm apart, 3 mm stitches; ours 0.4 and 4).
    Calibrate with the fabric presets below, citing sources.
-5. **Pull compensation for fills, and gaps between shapes.** Only satin columns are widened. Ink/
+3. **Pull compensation for fills, and gaps between shapes.** Only satin columns are widened. Ink/
    Stitch widens fill rows and can expand shapes so neighbours meet without a gap.
-6. **Narrow filled areas as satin.** Every filled shape becomes tatami; narrow parts (stems, thin
+4. **Narrow filled areas as satin.** Every filled shape becomes tatami; narrow parts (stems, thin
    arms) are better as satin columns, as auto-digitizers choose by width.
-7. **Ties around cuts made by clipping masks.** Where a clip group cuts a stroke's stitches, the
-   trims it adds have no tie-off before or tie-in after (`digitize.rs`, `cut_to`), unlike the
-   planner's own cuts.
-8. **Satin compensation and start points.** Pull compensation is a fixed width on both sides;
-   professional tools also take a share of the column's width and a value per side, and *push*
-   compensation shortens a column's ends, since sewing lengthens it. Satins also start at their
-   path's start: Ink/Stitch starts them (and fills) at the point nearest the previous object,
-   which saves travel and trims.
-9. **Auto spacing by thread thickness.** Wilcom adjusts satin spacing by thread weight (its
+5. **Satin compensation.** Pull compensation is a fixed width on both sides; professional tools
+   also take a share of the column's width and a value per side, and *push* compensation shortens
+   a column's ends, since sewing lengthens it.
+6. **Auto spacing by thread thickness.** Wilcom adjusts satin spacing by thread weight (its
    auto-spacing settings list an offset per thread thickness); a small addition to
    `satin_spacing` once threads carry a weight.
-10. **Travel search cost.** `Area::travel` tests every graph edge against every outline edge
-    (bounded by 400 corners). Profile it on jagged shapes with many regions; cache visibility
-    tests or thin the graph if it shows.
-11. **More real designs.** The corpus has eleven designs, all PES (one JEF), all from one project.
+7. **The trim length by machine.** `trimLength` is one number; machines differ in whether and
+   from what length they cut jumps themselves. Take it from the machine settings once there are
+   some.
+8. **More real designs.** The corpus has eleven designs, all PES (one JEF), all from one project.
    Add real DST and EXP files, lettering, larger designs, and test on a machine.
 
 **Then: embroidery properties on objects (a change of direction).**

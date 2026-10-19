@@ -3,7 +3,7 @@
 
 use vectorcraft_geom::{BezPath, Point, Vec2};
 
-use super::geometry::{length, resample, subpaths, tangent};
+use super::geometry::{length, nearest_order, resample, subpaths, tangent};
 use super::runs::{Runs, Travel};
 use super::{Params, Style, UNDERLAY_STITCH};
 use crate::Stitch;
@@ -16,16 +16,21 @@ const ZIGZAG_UNDERLAY_SPACING: f64 = 2.0;
 
 /// A satin column sewn along `path`'s centreline, [`Params::width`] wide.
 pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
+    satin_from(path, p, None)
+}
+
+/// [`satin`], the needle at `from` before it starts: each column starts at its end nearest the
+/// needle (a closed one at its point nearest), the nearest first, as Ink/Stitch starts satins.
+pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec<Stitch> {
     let mut p = p.sane();
     p.style = Style::Satin;
     if p.width <= 0.0 {
         return Vec::new();
     }
     let half = (p.width + 2.0 * p.pull) / 2.0;
-    let mut runs = Runs::default();
-    for sub in subpaths(path) {
-        let pts = sub.points();
-        if length(&pts, sub.closed) < p.density * 2.0 {
+    let mut runs = Runs::from(from);
+    for (pts, closed) in nearest_order(subpaths(path), from) {
+        if length(&pts, closed) < p.density * 2.0 {
             continue;
         }
         // The first run of each column is reached as any move is; the column's later runs
@@ -35,7 +40,7 @@ pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
         // top stitching starts there and comes back.
         let mut back = false;
         if p.underlay {
-            for (under, ends_far) in satin_underlay(&pts, sub.closed, p.width) {
+            for (under, ends_far) in satin_underlay(&pts, closed, p.width) {
                 if under.len() >= 2 {
                     push_split(&mut runs, under, travel, p.max_satin);
                     travel = Travel::Sew;
@@ -44,23 +49,23 @@ pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
             }
         }
         let spacing = if p.auto_spacing { satin_spacing(p.width) } else { p.density };
-        let mut samples = resample(&pts, spacing, sub.closed);
+        let mut samples = resample(&pts, spacing, closed);
         if samples.len() < 2 {
             continue;
         }
-        if back && !sub.closed {
+        if back && !closed {
             samples.reverse();
         }
         let mut zigzag: Vec<Point> = (0..samples.len())
             .filter_map(|i| {
                 let q = *samples.get(i)?;
-                let t = tangent(&samples, i, sub.closed);
+                let t = tangent(&samples, i, closed);
                 let side = if i % 2 == 0 { 1.0 } else { -1.0 };
                 Some(q + Vec2::new(-t.y, t.x) * half * side)
             })
             .collect();
         // A closed column ends where it started: the last crossing takes the remaining side.
-        if sub.closed
+        if closed
             && let (Some(first), Some(last)) = (zigzag.first().copied(), zigzag.last().copied())
             && first.distance(last) > p.min_stitch
         {

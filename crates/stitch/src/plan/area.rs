@@ -1,9 +1,9 @@
-//! A filled area: what is inside it, where a row crosses it, and how the needle travels inside it
-//! from one place to another.
+//! A filled area: what is inside it, where a row crosses it, and the ways the needle can travel
+//! inside it from one place to another ([`Travels`]).
 
 use vectorcraft_geom::{FillRule, Point, Vec2};
 
-use super::geometry::{Axes, SubPath, resample, unit};
+use super::geometry::{Axes, SubPath, unit};
 
 /// A travel run's stitch length (millimetres): short, so it follows curves and hides under the
 /// fill.
@@ -17,35 +17,27 @@ const TRAVEL_SIMPLIFY: f64 = 0.3;
 const MAX_TRAVEL_NODES: usize = 400;
 
 /// A filled shape: its closed outlines (holes included) and the rule that decides what they
-/// enclose.
+/// enclose; with the outlines' [`Grid`], whether a point is inside and whether a segment stays
+/// inside look only at the edges near them ([`Area::spans`], once a row, looks at every edge).
 #[derive(Clone, Copy)]
 pub(super) struct Area<'a> {
     pub(super) outlines: &'a [&'a SubPath],
     pub(super) rule: FillRule,
+    pub(super) grid: Option<&'a Grid>,
 }
 
 impl Area<'_> {
     /// The edges of every outline, each from a point to the next (the last back to the first).
     fn edges(&self) -> impl Iterator<Item = (Point, Point)> + '_ {
-        self.outlines.iter().flat_map(|sub| {
-            let n = sub.pts.len();
-            (0..n).filter_map(move |i| Some((*sub.pts.get(i)?, *sub.pts.get((i + 1) % n)?)))
-        })
+        edges(self.outlines)
     }
 
     /// Whether `q` is inside.
     pub(super) fn contains(&self, q: Point) -> bool {
-        let mut winding = 0i32;
-        for (a, b) in self.edges() {
-            let side = (b - a).cross(q - a);
-            if a.y <= q.y {
-                if b.y > q.y && side > 0.0 {
-                    winding += 1;
-                }
-            } else if b.y <= q.y && side < 0.0 {
-                winding -= 1;
-            }
-        }
+        let winding = match self.grid {
+            Some(grid) => winding(grid.right_of(q).into_iter(), q),
+            None => winding(self.edges(), q),
+        };
         match self.rule {
             FillRule::NonZero => winding != 0,
             FillRule::EvenOdd => winding % 2 != 0,
@@ -61,18 +53,10 @@ impl Area<'_> {
         if a.distance(b) < 1e-9 {
             return self.contains(a);
         }
-        let ab = b - a;
-        let crosses = self.edges().any(|(c, d)| {
-            let cd = d - c;
-            let denom = ab.cross(cd);
-            if denom.abs() < 1e-12 {
-                return false;
-            }
-            // Where the two lines meet, as a share of each segment.
-            let t = (c - a).cross(cd) / denom;
-            let u = (c - a).cross(ab) / denom;
-            t > 1e-6 && t < 1.0 - 1e-6 && u > 1e-9 && u < 1.0 - 1e-9
-        });
+        let crosses = match self.grid {
+            Some(grid) => grid.any_along(a, b, |c, d| crossing(a, b, c, d)),
+            None => self.edges().any(|(c, d)| crossing(a, b, c, d)),
+        };
         !crosses && self.contains(a.midpoint(b))
     }
 
@@ -135,81 +119,6 @@ impl Area<'_> {
         spans
     }
 
-    /// A travel run from `a` to `b` inside the area, as stitches [`TRAVEL_STITCH`] long: the
-    /// shortest way that stays inside (straight when that does), passing the outlines' corners
-    /// [`TRAVEL_MARGIN`] inside them. `None` when there is no such way (two separate shapes) or it
-    /// is longer than `max`: then the needle is lifted instead.
-    ///
-    /// The way is found on a visibility graph: the two ends and the outlines' corners (simplified
-    /// to [`TRAVEL_SIMPLIFY`]), linked where the straight line between two of them stays inside,
-    /// searched with Dijkstra's algorithm.
-    pub(super) fn travel(&self, a: Point, b: Point, max: f64) -> Option<Vec<Point>> {
-        let straight = a.distance(b);
-        if !straight.is_finite() || straight > max {
-            return None;
-        }
-        if self.contains_segment(a, b) {
-            return Some(resample(&[a, b], TRAVEL_STITCH, false));
-        }
-        // The graph's nodes: the ends, then every corner moved inside.
-        let mut nodes: Vec<Point> = vec![a, b];
-        for sub in self.outlines {
-            let corners = simplify(&sub.pts, TRAVEL_SIMPLIFY);
-            nodes.extend((0..corners.len()).filter_map(|i| self.corner_inside(&corners, i)));
-            if nodes.len() > MAX_TRAVEL_NODES {
-                return None;
-            }
-        }
-        let route = self.shortest_way(&nodes, max)?;
-        Some(resample(&route, TRAVEL_STITCH, false))
-    }
-
-    /// The shortest way inside from `nodes[0]` to `nodes[1]` through the other nodes (Dijkstra's
-    /// algorithm, each edge tested as it is reached), `None` when there is none no longer than
-    /// `max`.
-    fn shortest_way(&self, nodes: &[Point], max: f64) -> Option<Vec<Point>> {
-        let n = nodes.len();
-        let end = *nodes.get(1)?;
-        let mut dist = vec![f64::INFINITY; n];
-        let mut prev: Vec<Option<usize>> = vec![None; n];
-        let mut done = vec![false; n];
-        *dist.first_mut()? = 0.0;
-        loop {
-            // The nearest node not done yet.
-            let u = (0..n)
-                .filter(|&i| !done.get(i).copied().unwrap_or(true))
-                .min_by(|&i, &j| dist.get(i).unwrap_or(&f64::INFINITY).total_cmp(dist.get(j).unwrap_or(&f64::INFINITY)))?;
-            let (&du, &pu) = (dist.get(u)?, nodes.get(u)?);
-            if !du.is_finite() || du > max {
-                return None;
-            }
-            *done.get_mut(u)? = true;
-            if u == 1 {
-                break;
-            }
-            for v in 0..n {
-                let (Some(&pv), Some(false)) = (nodes.get(v), done.get(v).copied()) else { continue };
-                let dv = du + pu.distance(pv);
-                // Nodes from which the end is out of reach can't be on a way short enough.
-                if dv < dist.get(v).copied().unwrap_or(f64::INFINITY) && dv + pv.distance(end) <= max && self.contains_segment(pu, pv) {
-                    *dist.get_mut(v)? = dv;
-                    *prev.get_mut(v)? = Some(u);
-                }
-            }
-        }
-        let mut route: Vec<Point> = vec![end];
-        let mut at = 1;
-        while let Some(Some(u)) = prev.get(at) {
-            route.push(*nodes.get(*u)?);
-            at = *u;
-            if route.len() > n {
-                return None;
-            }
-        }
-        route.reverse();
-        Some(route)
-    }
-
     /// Corner `i` of outline `corners` moved [`TRAVEL_MARGIN`] inside along the bisector of its two
     /// edges, so that a travel past it runs inside; `None` when neither side of it is inside (a
     /// sliver).
@@ -219,6 +128,338 @@ impl Area<'_> {
         let (u, v) = (unit(q - a)?, unit(b - q)?);
         let across = unit(Vec2::new(-(u.y + v.y), u.x + v.x))?;
         [across, -across].into_iter().map(|side| q + side * TRAVEL_MARGIN).find(|&moved| self.contains(moved))
+    }
+
+    /// Whether corner `i` of outline `corners` is reflex: the inside wraps round it by more than a
+    /// half turn (a notch in the outline, any corner of a hole). Only there can a shortest way
+    /// inside the shape turn; at a convex corner it would cut across.
+    fn reflex(&self, corners: &[Point], i: usize) -> bool {
+        let n = corners.len();
+        let (Some(&a), Some(&q), Some(&b)) = (corners.get((i + n - 1) % n), corners.get(i), corners.get((i + 1) % n)) else { return false };
+        let (Some(u), Some(v)) = (unit(a - q), unit(b - q)) else { return false };
+        // Between the two edges, just by the corner: inside at a convex corner, outside at a reflex
+        // one. (Two edges folded back on each other: a spike, kept.)
+        let between = q + (u + v) * (TRAVEL_MARGIN / 2.0);
+        between.distance(q) < 1e-9 || !self.contains(between)
+    }
+}
+
+/// The ways a travel can take inside one area, found on a visibility graph: the outlines' reflex
+/// corners (simplified to [`TRAVEL_SIMPLIFY`]; a shortest way turns at no other) moved
+/// [`TRAVEL_MARGIN`] inside, linked where the straight
+/// line between two of them stays inside, searched with Dijkstra's algorithm (as Ink/Stitch's
+/// "underpath" travels inside a shape). The corners, and whether two of them see each other, are
+/// worked out once per area as travels first need them: a fill makes many travels in one shape.
+pub(super) struct Travels<'a> {
+    pub(super) area: Area<'a>,
+    /// The graph's corners, once built; empty when the outlines have more than
+    /// [`MAX_TRAVEL_NODES`] (then only straight travels are made).
+    corners: Option<Vec<Point>>,
+    /// Whether two corners see each other: 0 not known yet, 1 yes, 2 no (row-major, the lower
+    /// index first).
+    sees: Vec<u8>,
+}
+
+impl<'a> Travels<'a> {
+    pub(super) fn new(area: Area<'a>) -> Self {
+        Self { area, corners: None, sees: Vec::new() }
+    }
+
+    /// The graph's corners, built the first time: how many there are.
+    fn corners(&mut self) -> usize {
+        if self.corners.is_none() {
+            let mut nodes: Vec<Point> = Vec::new();
+            for sub in self.area.outlines {
+                let corners = simplify(&sub.pts, TRAVEL_SIMPLIFY);
+                nodes.extend((0..corners.len()).filter(|&i| self.area.reflex(&corners, i)).filter_map(|i| self.area.corner_inside(&corners, i)));
+                if nodes.len() > MAX_TRAVEL_NODES {
+                    nodes.clear();
+                    break;
+                }
+            }
+            self.sees = vec![0; nodes.len() * nodes.len()];
+            self.corners = Some(nodes);
+        }
+        self.corners.as_ref().map_or(0, Vec::len)
+    }
+
+    fn corner(&self, i: usize) -> Option<Point> {
+        self.corners.as_ref().and_then(|c| c.get(i)).copied()
+    }
+
+    /// Whether corners `i` and `j` see each other (worked out once).
+    fn corners_see(&mut self, i: usize, j: usize) -> bool {
+        let n = self.corners.as_ref().map_or(0, Vec::len);
+        let (lo, hi) = (i.min(j), i.max(j));
+        let k = lo * n + hi;
+        match self.sees.get(k) {
+            Some(1) => true,
+            Some(2) => false,
+            Some(_) => {
+                let (Some(a), Some(b)) = (self.corner(lo), self.corner(hi)) else { return false };
+                let yes = self.area.contains_segment(a, b);
+                if let Some(v) = self.sees.get_mut(k) {
+                    *v = if yes { 1 } else { 2 };
+                }
+                yes
+            }
+            None => false,
+        }
+    }
+
+    /// The shortest way from `a` to `b` that stays inside the area (straight when that does), as
+    /// the points it turns at, both ends included; `None` when there is none (two separate
+    /// shapes).
+    pub(super) fn way(&mut self, a: Point, b: Point) -> Option<Vec<Point>> {
+        if !a.distance(b).is_finite() {
+            return None;
+        }
+        if self.area.contains_segment(a, b) {
+            return Some(vec![a, b]);
+        }
+        let n = self.corners();
+        // Node 0 is `a`, node 1 is `b`, node 2 + i is corner i; what the ends see is tested once.
+        let sees_a: Vec<bool> = (0..n).map(|i| self.corner(i).is_some_and(|c| self.area.contains_segment(a, c))).collect();
+        let sees_b: Vec<bool> = (0..n).map(|i| self.corner(i).is_some_and(|c| self.area.contains_segment(c, b))).collect();
+        let total = n + 2;
+        let at = |t: &Self, u: usize| match u {
+            0 => Some(a),
+            1 => Some(b),
+            _ => t.corner(u - 2),
+        };
+        let mut dist = vec![f64::INFINITY; total];
+        let mut prev: Vec<Option<usize>> = vec![None; total];
+        let mut done = vec![false; total];
+        *dist.first_mut()? = 0.0;
+        loop {
+            // The nearest node not done yet.
+            let u = (0..total)
+                .filter(|&i| !done.get(i).copied().unwrap_or(true))
+                .min_by(|&i, &j| dist.get(i).unwrap_or(&f64::INFINITY).total_cmp(dist.get(j).unwrap_or(&f64::INFINITY)))?;
+            let (du, pu) = (*dist.get(u)?, at(self, u)?);
+            if !du.is_finite() {
+                return None;
+            }
+            *done.get_mut(u)? = true;
+            if u == 1 {
+                break;
+            }
+            for v in 1..total {
+                if done.get(v).copied().unwrap_or(true) {
+                    continue;
+                }
+                let Some(pv) = at(self, v) else { continue };
+                let dv = du + pu.distance(pv);
+                if dv >= dist.get(v).copied().unwrap_or(f64::INFINITY) {
+                    continue;
+                }
+                let sees = match (u, v) {
+                    // Straight from end to end was tested first.
+                    (0, 1) => false,
+                    (0, c) => sees_a.get(c - 2).copied().unwrap_or(false),
+                    (c, 1) => sees_b.get(c - 2).copied().unwrap_or(false),
+                    (c, d) => self.corners_see(c - 2, d - 2),
+                };
+                if sees {
+                    *dist.get_mut(v)? = dv;
+                    *prev.get_mut(v)? = Some(u);
+                }
+            }
+        }
+        let mut route: Vec<Point> = vec![b];
+        let mut node = 1;
+        while let Some(Some(u)) = prev.get(node) {
+            route.push(at(self, *u)?);
+            node = *u;
+            if route.len() > total {
+                return None;
+            }
+        }
+        route.reverse();
+        Some(route)
+    }
+}
+
+/// The edges of `outlines`, each from a point to the next (the last back to the first).
+fn edges<'a>(outlines: &'a [&'a SubPath]) -> impl Iterator<Item = (Point, Point)> + 'a {
+    outlines.iter().flat_map(|sub| {
+        let n = sub.pts.len();
+        (0..n).filter_map(move |i| Some((*sub.pts.get(i)?, *sub.pts.get((i + 1) % n)?)))
+    })
+}
+
+/// The winding number of `edges` round `q`: each edge crossing the horizontal line through `q` to
+/// its right counts one, plus or minus by its direction. Edges that don't cross it count nothing,
+/// so any set that includes every crossing one will do; none may come twice.
+fn winding(edges: impl Iterator<Item = (Point, Point)>, q: Point) -> i32 {
+    let mut winding = 0i32;
+    for (a, b) in edges {
+        let side = (b - a).cross(q - a);
+        if a.y <= q.y {
+            if b.y > q.y && side > 0.0 {
+                winding += 1;
+            }
+        } else if b.y <= q.y && side < 0.0 {
+            winding -= 1;
+        }
+    }
+    winding
+}
+
+/// Whether segment `a`–`b` crosses edge `c`–`d` (touching it at `a` or `b` does not count).
+fn crossing(a: Point, b: Point, c: Point, d: Point) -> bool {
+    let (ab, cd) = (b - a, d - c);
+    let denom = ab.cross(cd);
+    if denom.abs() < 1e-12 {
+        return false;
+    }
+    // Where the two lines meet, as a share of each segment.
+    let t = (c - a).cross(cd) / denom;
+    let u = (c - a).cross(ab) / denom;
+    t > 1e-6 && t < 1.0 - 1e-6 && u > 1e-9 && u < 1.0 - 1e-9
+}
+
+/// The outlines' edges sorted into square cells, so that a test along a segment or a ray looks
+/// only at the edges in the cells it passes: a fill tests thousands of segments (row turns,
+/// travels, the travel graph) against outlines of thousands of edges.
+pub(super) struct Grid {
+    x0: f64,
+    y0: f64,
+    cell: f64,
+    nx: usize,
+    ny: usize,
+    /// The edges in each cell (row-major), as indices into `edges`.
+    cells: Vec<Vec<u32>>,
+    edges: Vec<(Point, Point)>,
+}
+
+impl Grid {
+    /// The most cells along a side.
+    const MAX_SIDE: usize = 256;
+    /// The most cells an edge takes on average (on top of one entry per cell): past that, the
+    /// grid is not built and tests look at every edge.
+    const ENTRIES_PER_EDGE: usize = 32;
+
+    /// The grid of `outlines`' edges; `None` when they have no finite extent, or when their edges
+    /// are so long for their number that the grid would cost more than it saves.
+    pub(super) fn new(outlines: &[&SubPath]) -> Option<Self> {
+        let edges: Vec<(Point, Point)> = edges(outlines)
+            .filter(|(a, b)| a.x.is_finite() && a.y.is_finite() && b.x.is_finite() && b.y.is_finite())
+            .take(u32::MAX as usize)
+            .collect();
+        let (mut x0, mut y0, mut x1, mut y1) = (f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY);
+        for (a, _) in &edges {
+            (x0, y0, x1, y1) = (x0.min(a.x), y0.min(a.y), x1.max(a.x), y1.max(a.y));
+        }
+        let (w, h) = (x1 - x0, y1 - y0);
+        if !(w.is_finite() && h.is_finite()) || edges.is_empty() {
+            return None;
+        }
+        // About two edges per cell, never more than MAX_SIDE cells a side.
+        let side = w.max(h).max(1e-6);
+        let cell = ((w.max(1e-6) * h.max(1e-6) * 2.0 / edges.len() as f64).sqrt()).max(side / Self::MAX_SIDE as f64);
+        let nx = ((w / cell).floor() as usize + 1).min(Self::MAX_SIDE);
+        let ny = ((h / cell).floor() as usize + 1).min(Self::MAX_SIDE);
+        let mut grid = Self { x0, y0, cell, nx, ny, cells: vec![Vec::new(); nx * ny], edges: Vec::new() };
+        // Each edge goes in the cells it passes through, row by row: in each row, the cells under
+        // the part of the edge within the row's band. Everything is grown a hair so that a point
+        // on a cell's border finds the edge from either side. An edge's own box would be simpler,
+        // but a long diagonal edge fills its whole box: thousands of edges across a shape would
+        // take gigabytes.
+        let hair = cell * 1e-6;
+        let budget = edges.len().saturating_mul(Self::ENTRIES_PER_EDGE).saturating_add(nx * ny);
+        let mut entries = 0usize;
+        for (i, &(a, b)) in edges.iter().enumerate() {
+            let (r0, r1) = (grid.row(a.y.min(b.y) - hair), grid.row(a.y.max(b.y) + hair));
+            for r in r0..=r1 {
+                // The row's band; the first and last rows reach out, as `row` clamps to them.
+                let lo = if r == 0 { f64::NEG_INFINITY } else { y0 + cell * r as f64 - hair };
+                let hi = if r + 1 >= ny { f64::INFINITY } else { y0 + cell * (r + 1) as f64 + hair };
+                let (xa, xb) = if (b.y - a.y).abs() < 1e-12 {
+                    (a.x, b.x)
+                } else {
+                    let at = |y: f64| a.x + (b.x - a.x) * ((y - a.y) / (b.y - a.y)).clamp(0.0, 1.0);
+                    (at(lo.max(a.y.min(b.y))), at(hi.min(a.y.max(b.y))))
+                };
+                let (c0, c1) = (grid.col(xa.min(xb) - hair), grid.col(xa.max(xb) + hair));
+                entries = entries.saturating_add(c1.saturating_sub(c0) + 1);
+                if entries > budget {
+                    // Edges this long for their number: testing every edge costs less.
+                    return None;
+                }
+                for c in c0..=c1 {
+                    if let Some(cell) = grid.cells.get_mut(r * nx + c) {
+                        cell.push(i as u32);
+                    }
+                }
+            }
+        }
+        grid.edges = edges;
+        Some(grid)
+    }
+
+    /// How many edge entries the cells hold.
+    #[cfg(test)]
+    pub(super) fn entries(&self) -> usize {
+        self.cells.iter().map(Vec::len).sum()
+    }
+
+    fn col(&self, x: f64) -> usize {
+        (((x - self.x0) / self.cell).floor().max(0.0) as usize).min(self.nx - 1)
+    }
+
+    fn row(&self, y: f64) -> usize {
+        (((y - self.y0) / self.cell).floor().max(0.0) as usize).min(self.ny - 1)
+    }
+
+    /// Every edge that may cross the horizontal line through `q` to its right (each once).
+    fn right_of(&self, q: Point) -> Vec<(Point, Point)> {
+        if !(q.x.is_finite() && q.y.is_finite()) || q.y < self.y0 || q.y > self.y0 + self.cell * self.ny as f64 {
+            return Vec::new();
+        }
+        let r = self.row(q.y);
+        let mut ids: Vec<u32> = (self.col(q.x)..self.nx).filter_map(|c| self.cells.get(r * self.nx + c)).flatten().copied().collect();
+        ids.sort_unstable();
+        ids.dedup();
+        ids.into_iter().filter_map(|i| self.edges.get(i as usize).copied()).collect()
+    }
+
+    /// Whether `hit` holds for any edge in the cells segment `a`–`b` passes through (walked cell by
+    /// cell, Amanatides and Woo's traversal).
+    fn any_along(&self, a: Point, b: Point, hit: impl Fn(Point, Point) -> bool) -> bool {
+        let (mut c, mut r) = (self.col(a.x), self.row(a.y));
+        let (ec, er) = (self.col(b.x), self.row(b.y));
+        let d = b - a;
+        let next = |at: f64, origin: f64, dir: f64, k: usize| -> (f64, f64) {
+            if dir.abs() < 1e-15 {
+                return (f64::INFINITY, f64::INFINITY);
+            }
+            let edge = origin + self.cell * (k as f64 + if dir > 0.0 { 1.0 } else { 0.0 });
+            (((edge - at) / dir).max(0.0), self.cell / dir.abs())
+        };
+        let (mut tx, dx) = next(a.x, self.x0, d.x, c);
+        let (mut ty, dy) = next(a.y, self.y0, d.y, r);
+        for _ in 0..(self.nx + self.ny + 2) {
+            let found = self.cells.get(r * self.nx + c).into_iter().flatten().any(|&i| self.edges.get(i as usize).is_some_and(|&(p, q)| hit(p, q)));
+            if found {
+                return true;
+            }
+            if c == ec && r == er {
+                return false;
+            }
+            if tx < ty {
+                tx += dx;
+                c = if d.x > 0.0 { c + 1 } else { c.wrapping_sub(1) };
+            } else {
+                ty += dy;
+                r = if d.y > 0.0 { r + 1 } else { r.wrapping_sub(1) };
+            }
+            if c >= self.nx || r >= self.ny {
+                return false;
+            }
+        }
+        // The walk should have reached the end's cell: look at every edge to be sure.
+        self.edges.iter().any(|&(p, q)| hit(p, q))
     }
 }
 

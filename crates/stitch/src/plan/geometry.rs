@@ -68,12 +68,17 @@ pub(super) fn subpaths(path: &BezPath) -> Vec<SubPath> {
 /// Points along a polyline every `step` millimetres, both ends included. A closed polyline ends
 /// where it started. Sharp corners get a point of their own (the steps start again from them),
 /// so stitches follow the outline instead of cutting across a corner — into a notch or a gap
-/// beside it. No stitch at a corner or at the end is a stub: a point that would fall within 0.3 of
-/// a step of one moves onto it.
+/// beside it. No stitch at a corner is a stub: a point that would fall within 0.3 of a step of one
+/// moves onto it, and so does one by the end. A point moves once at most: a corner that close to
+/// the start or to a corner already stitched into is passed, the stitch at most 0.3 of a step off
+/// it (along a fine zigzag the stitches keep their length rather than one point moving from corner
+/// to corner), and no stitch is longer than 1.3 steps.
 pub(super) fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
     let (Some(&first), Some(&last)) = (pts.first(), pts.last()) else { return Vec::new() };
     let step = step.max(0.01);
     let mut out: Vec<Point> = vec![first];
+    // The last point stays where it is: the start, or a corner stitched into.
+    let mut fixed = true;
     let mut travelled = 0.0;
     let mut next = step;
     let n = pts.len();
@@ -88,6 +93,7 @@ pub(super) fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
         while next <= travelled + seg {
             let f = (next - travelled) / seg;
             out.push(a + (b - a) * f);
+            fixed = false;
             next += step;
             if out.len() >= MAX_STITCHES {
                 return out;
@@ -101,24 +107,40 @@ pub(super) fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
             && let Some(c) = at(i + 2)
             && let (Some(u), Some(v)) = (unit(b - a), unit(c - b))
             && u.dot(v).clamp(-1.0, 1.0).acos() > CORNER
+            && land_on(&mut out, b, step, fixed, false)
         {
-            land_on(&mut out, b, step);
+            fixed = true;
             next = travelled + step;
         }
     }
-    land_on(&mut out, if closed { first } else { last }, step);
+    land_on(&mut out, if closed { first } else { last }, step, fixed, true);
     out
 }
 
-/// `q` as the next point of `out`, unless the last point is so close to it (within 0.3 of `step`)
-/// that the stitch would be a stub: then that point moves onto `q`.
-fn land_on(out: &mut Vec<Point>, q: Point, step: f64) {
-    let movable = out.len() > 1;
-    match out.last_mut() {
-        Some(last) if last.distance(q) <= 1e-9 => {}
-        Some(last) if movable && last.distance(q) < 0.3 * step => *last = q,
-        _ => out.push(q),
+/// Stitch into `q`, a corner or (`end`) the line's end: a point of its own, unless the last point
+/// is so close to it (within 0.3 of `step`) that the stitch would be a stub: then that point moves
+/// onto `q`. When the last point must stay (`fixed`), a corner that close is passed and the end
+/// gets its short stitch. Whether `q` got a point.
+fn land_on(out: &mut Vec<Point>, q: Point, step: f64, fixed: bool, end: bool) -> bool {
+    let Some(last) = out.last_mut() else {
+        out.push(q);
+        return true;
+    };
+    let d = last.distance(q);
+    if d <= 1e-9 {
+        return true;
     }
+    if d < 0.3 * step {
+        if !fixed {
+            *last = q;
+            return true;
+        }
+        if !end {
+            return false;
+        }
+    }
+    out.push(q);
+    true
 }
 
 /// The total length of a polyline, millimetres.
@@ -199,5 +221,62 @@ impl Axes {
     /// The point `s` along and `t` across.
     pub(super) fn point(&self, s: f64, t: f64) -> Point {
         (self.along * s + self.across * t).to_point()
+    }
+}
+
+/// The subpaths of a line (a running line, a satin's centreline) in the order a needle starting at
+/// `here` sews them: each time the nearest one, from its end nearest the needle (a closed one from
+/// its point nearest the needle), as its points ([`SubPath::points`]) and whether it is closed.
+/// Unknown `here` (nothing sewn before), the first subpath is sewn as drawn and the others follow
+/// from where it ends. A path of more than [`MAX_REORDERED`] subpaths keeps the drawing's order and
+/// directions beyond its first, a bound on the work.
+pub(super) fn nearest_order(subs: Vec<SubPath>, here: Option<Point>) -> Vec<(Vec<Point>, bool)> {
+    /// The most subpaths ordered by distance.
+    const MAX_REORDERED: usize = 64;
+    let reorder = subs.len() <= MAX_REORDERED;
+    let mut pending: Vec<SubPath> = subs;
+    let mut out: Vec<(Vec<Point>, bool)> = Vec::with_capacity(pending.len());
+    let mut here = here;
+    while !pending.is_empty() {
+        let at = |s: &SubPath| here.map_or(0.0, |h| s.nearest(h).1);
+        let i = if reorder { pending.iter().enumerate().min_by(|a, b| at(a.1).total_cmp(&at(b.1))).map_or(0, |(i, _)| i) } else { 0 };
+        let sub = pending.remove(i);
+        let pts = match here {
+            Some(h) if out.is_empty() || reorder => sub.starting_near(h),
+            _ => sub.points(),
+        };
+        here = pts.last().copied();
+        out.push((pts, sub.closed));
+    }
+    out
+}
+
+impl SubPath {
+    /// The point to start from nearest `q` (an end of an open polyline, any point of a closed
+    /// one): its index and distance.
+    fn nearest(&self, q: Point) -> (usize, f64) {
+        let d = |i: usize| self.pts.get(i).map_or(f64::INFINITY, |p| p.distance(q));
+        if self.closed {
+            (0..self.pts.len()).map(|i| (i, d(i))).min_by(|a, b| a.1.total_cmp(&b.1)).unwrap_or((0, f64::INFINITY))
+        } else {
+            let last = self.pts.len().saturating_sub(1);
+            if d(last) < d(0) { (last, d(last)) } else { (0, d(0)) }
+        }
+    }
+
+    /// The points ([`SubPath::points`]) starting at the one nearest `q`: an open polyline reversed
+    /// when its end is nearer, a closed one turned to start there.
+    fn starting_near(&self, q: Point) -> Vec<Point> {
+        let (i, _) = self.nearest(q);
+        if i == 0 {
+            return self.points();
+        }
+        if !self.closed {
+            let mut v = self.pts.clone();
+            v.reverse();
+            return v;
+        }
+        let n = self.pts.len();
+        SubPath { pts: (0..n).filter_map(|k| self.pts.get((i + k) % n).copied()).collect(), closed: true }.points()
     }
 }

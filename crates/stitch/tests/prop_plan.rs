@@ -1,0 +1,80 @@
+//! Stitch planner property tests: for any closed shape (rectangles, ellipses, star-shaped polygons)
+//! and any sane parameters, a fill or running line stays on the art, sews no stitch longer than it
+//! allows, and cuts the thread exactly on the jumps longer than the trim length.
+// Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+use proptest::prelude::*;
+use vectorcraft_geom::{BezPath, FillRule, Shape};
+use vectorcraft_stitch::plan::{Params, Style, stitches};
+use vectorcraft_stitch::{Command, Stitch};
+use vectorcraft_testkit::strategies::arb_closed_shape;
+
+/// Fill or running parameters across their useful range: stitch length, row spacing, angle,
+/// underlay, jump length and how much longer the trim length is.
+fn arb_params() -> impl Strategy<Value = Params> {
+    (prop_oneof![Just(Style::Fill), Just(Style::Running)], 1.0..6.0f64, 0.25..1.5f64, 0.0..360.0f64, any::<bool>(), 1.0..10.0f64, 0.0..20.0f64)
+        .prop_map(|(style, stitch_length, density, angle, underlay, jump, longer)| {
+            Params { stitch_length, density, angle, underlay, jump, trim: jump + longer, ..Params::for_style(style) }.sane()
+        })
+}
+
+/// Each move between two needle points in a row: how far, whether the needle lifts on the way and
+/// whether the thread is cut.
+fn moves(out: &[Stitch]) -> Vec<(f64, bool, bool)> {
+    let mut v = Vec::new();
+    let mut last: Option<Stitch> = None;
+    let (mut up, mut cut) = (false, false);
+    for s in out {
+        match s.command {
+            Command::Stitch => {
+                if let Some(l) = last {
+                    v.push((l.distance(*s), up, cut));
+                }
+                (last, up, cut) = (Some(*s), false, false);
+            }
+            Command::Trim => cut = true,
+            _ => up = true,
+        }
+    }
+    v
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig { cases: 128, failure_persistence: None, ..ProptestConfig::default() })]
+
+    /// Every needle point lies within the art's bounds, and is a point.
+    #[test]
+    fn stitches_stay_on_the_art(shape in arb_closed_shape(), p in arb_params()) {
+        let path: BezPath = shape.to_bezpath();
+        let b = path.bounding_box().inflate(1e-6, 1e-6);
+        for s in stitches(&path, FillRule::NonZero, &p) {
+            prop_assert!(s.x.is_finite() && s.y.is_finite(), "{s:?}");
+            prop_assert!(b.contains(s.point()), "{:?} outside {b:?} ({:?})", s.point(), p.style);
+        }
+    }
+
+    /// No stitch is longer than the parameters allow: a row's stitch length (an end stitch up to
+    /// the shortest stitch more), a line's, an edge run's or a travel's (up to 0.3 of a step more
+    /// next to a corner or an end, where a stub moves onto it), the tatami underlay's 3 mm, or a
+    /// move short enough to sew; and a stitch shorter than the shortest is left out, which
+    /// lengthens the next by at most that much.
+    #[test]
+    fn no_stitch_is_too_long(shape in arb_closed_shape(), p in arb_params()) {
+        let out = stitches(&shape.to_bezpath(), FillRule::NonZero, &p);
+        let longest = (p.stitch_length + p.min_stitch).max(1.3 * p.stitch_length).max(3.0 + p.min_stitch).max(2.6).max(p.jump) + p.min_stitch + 1e-6;
+        for (d, up, _) in moves(&out) {
+            prop_assert!(up || d <= longest, "a {d} mm stitch, longer than {longest} ({p:?})");
+        }
+    }
+
+    /// The needle lifts for a move only when it is not sewn, and the thread is cut exactly on the
+    /// moves longer than the trim length.
+    #[test]
+    fn only_jumps_longer_than_the_trim_length_are_cut(shape in arb_closed_shape(), p in arb_params()) {
+        for (d, up, cut) in moves(&stitches(&shape.to_bezpath(), FillRule::NonZero, &p)) {
+            prop_assert_eq!(cut, up && d > p.trim, "a {} mm move, needle up {}, cut {} (trim {}, {:?})", d, up, cut, p.trim, p.style);
+            prop_assert!(!up || d > p.min_stitch - 1e-9, "the needle lifts for a {} mm move", d);
+        }
+    }
+}

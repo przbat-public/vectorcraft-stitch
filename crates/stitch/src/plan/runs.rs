@@ -1,11 +1,11 @@
 //! Runs joined into one block of stitches: how the needle gets from one run to the next (sewn,
-//! jumped, or trimmed and jumped), the tie-ins and tie-offs around every cut, and the stitches too
-//! short to sew.
+//! jumped, or trimmed and jumped), the tie-ins and tie-offs around every long jump, and the
+//! stitches too short to sew.
 
 use vectorcraft_geom::Point;
 
-use super::area::Area;
-use super::geometry::unit;
+use super::area::{TRAVEL_STITCH, Travels};
+use super::geometry::{length, resample, unit};
 use super::{MAX_RUNS, MAX_STITCHES, Params, Style};
 use crate::{Command, Stitch};
 
@@ -15,26 +15,60 @@ pub(super) const LOCK: f64 = 1.0;
 /// How the needle gets to a run from the end of the one before.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Travel {
-    /// Sewn when it is no longer than [`Params::jump`], else trimmed and jumped.
+    /// Sewn when it is no longer than [`Params::jump`], else lifted.
     Auto,
-    /// Never sewn (it would cross a hole or leave the shape): the needle jumps, and the thread is
-    /// cut first when the move is longer than [`Params::jump`] (a short jump leaves no tail worth
-    /// cutting, as embroidery software leaves short connectors as jumps).
+    /// Never sewn (it would cross a hole or leave the shape): the needle jumps. A jump longer than
+    /// [`Params::jump`] is tied off and in, and the thread is cut first when it is longer than
+    /// [`Params::trim`]; a short jump leaves no tail worth cutting.
     Lift,
     /// Always sewn (inside the shape: a row turn, a travel run).
     Sew,
 }
 
+/// What the moves between runs cost, to compare ways of ordering them: per millimetre of travel
+/// under stitching still to come (it adds stitches but is hidden) and over stitching already sewn
+/// (it shows), a jump (the ties around it) and a trim on top, and per millimetre from where the
+/// needle came from outside the shape. Weights chosen by judgement: a visible travel is to be
+/// avoided much more than a hidden one, and a trim more than both.
+pub(super) const COST_HIDDEN: f64 = 0.25;
+pub(super) const COST_SEEN: f64 = 3.0;
+pub(super) const COST_LIFT: f64 = 20.0;
+pub(super) const COST_TRIM: f64 = 50.0;
+pub(super) const COST_ENTRY: f64 = 0.1;
+
 /// A shape's runs in sewing order, each with how the needle gets to it.
 #[derive(Default)]
 pub(super) struct Runs {
     runs: Vec<(Vec<Point>, Travel)>,
+    /// Where the needle is before the first run (the end of the object sewn before, or of the
+    /// shape's runs so far), if known.
+    start: Option<Point>,
+    /// The needle starts inside the shape (its runs so far end there), so the first run is
+    /// reached by travelling too.
+    inside: bool,
+    /// What the moves between runs cost so far ([`COST_HIDDEN`] and the rest).
+    pub(super) cost: f64,
 }
 
 impl Runs {
-    /// Where the needle is after the last run.
+    /// No runs yet, the needle at `start` (the end of the object sewn before), if known: the shape
+    /// starts as near it as it can.
+    pub(super) fn from(start: Option<Point>) -> Self {
+        Self { start: start.filter(|q| q.x.is_finite() && q.y.is_finite()), ..Self::default() }
+    }
+
+    /// No runs yet, to follow `before`'s runs: from where they end, inside the shape when they
+    /// have any.
+    pub(super) fn continuing(before: &Runs) -> Self {
+        Self { start: before.here(), inside: !before.runs.is_empty() || before.inside, ..Self::default() }
+    }
+
+    /// Where the needle is after the last run (before the first: where it starts from).
     pub(super) fn here(&self) -> Option<Point> {
-        self.runs.last().and_then(|(run, _)| run.last().copied())
+        match self.runs.last() {
+            Some((run, _)) => run.last().copied(),
+            None => self.start,
+        }
     }
 
     /// Add `run`, reached as `travel` says. Runs past [`MAX_RUNS`] are dropped (a guard against
@@ -50,31 +84,56 @@ impl Runs {
         self.runs.len() >= MAX_RUNS
     }
 
-    /// How the needle gets to `to`, the start of the next run inside `area`: a short move that
-    /// stays inside is just the next stitch; a longer one, or one that would leave the shape or
-    /// cross a hole, travels inside the shape when it can (a travel run at most `max` long is
-    /// added here), and is lifted when it can't.
-    pub(super) fn approach(&mut self, area: Area<'_>, to: Point, max: f64, p: &Params) -> Travel {
+    /// How the needle gets to `to`, the start of the next run inside the area `travels` crosses:
+    /// a short move that stays inside is just the next stitch; a longer one, or one that would
+    /// leave the shape or cross a hole, travels inside the shape when it can (a travel run is added
+    /// here), and is lifted when it can't. A travel may show at most `max_seen` millimetres over
+    /// stitching already sewn (`seen` measures that along a way); under stitching still to come it
+    /// is hidden, so of any length. The first run of a shape reached from outside it (from the
+    /// object sewn before) is reached as the sequence joins objects.
+    ///
+    /// What the move costs is added to [`Runs::cost`].
+    pub(super) fn approach(&mut self, travels: &mut Travels<'_>, to: Point, max_seen: f64, seen: &dyn Fn(&[Point]) -> f64, p: &Params) -> Travel {
         let Some(here) = self.here() else { return Travel::Auto };
-        if here.distance(to) <= p.jump && area.contains_segment(here, to) {
+        let d = here.distance(to);
+        if self.runs.is_empty() && !self.inside {
+            self.cost += COST_ENTRY * d;
             return Travel::Auto;
         }
-        match area.travel(here, to, max) {
-            Some(route) => {
-                self.push(route, Travel::Sew);
-                Travel::Sew
-            }
-            None => Travel::Lift,
+        if d <= p.jump && travels.area.contains_segment(here, to) {
+            let shows = seen(&[here, to]);
+            self.cost += COST_HIDDEN * (d - shows) + COST_SEEN * shows;
+            return Travel::Auto;
         }
+        if let Some(route) = travels.way(here, to) {
+            let shows = seen(&route);
+            if shows <= max_seen {
+                self.cost += COST_HIDDEN * (length(&route, false) - shows) + COST_SEEN * shows;
+                self.push(resample(&route, TRAVEL_STITCH, false), Travel::Sew);
+                return Travel::Sew;
+            }
+        }
+        self.cost += COST_LIFT + d + if d > p.trim { COST_TRIM } else { 0.0 };
+        Travel::Lift
     }
 
-    /// The runs as one block of stitches. Satin and fill tie the thread in after every cut (and at
-    /// the start) and off before every cut (and at the end); a running line locks each of its own
-    /// runs ([`super::running`]). A stitch shorter than [`Params::min_stitch`] is left out: a
-    /// repeated point is noise, and a tiny stitch can break the thread or cut the fabric.
+    /// `other`'s runs (planned from where these end, [`Runs::continuing`]) after these.
+    pub(super) fn append(&mut self, other: Runs) {
+        for (run, travel) in other.runs {
+            self.push(run, travel);
+        }
+        self.cost += other.cost;
+    }
+
+    /// The runs as one block of stitches. Satin and fill tie the thread in after every jump longer
+    /// than [`Params::jump`] (and at the start) and off before it (and at the end); a running line
+    /// locks each of its own runs ([`super::running`]). A stitch shorter than [`Params::min_stitch`]
+    /// is left out: a repeated point is noise, and a tiny stitch can break the thread or cut the
+    /// fabric.
     pub(super) fn join(self, p: &Params) -> Vec<Stitch> {
         let tie = p.lock && p.style != Style::Running;
         let mut out: Vec<Stitch> = Vec::new();
+        // Whether the next run is tied in: the first one, and each one after a long jump.
         let mut fresh = true;
         for (mut run, travel) in self.runs {
             run.dedup_by(|b, a| a.distance(*b) <= 1e-9);
@@ -83,19 +142,17 @@ impl Runs {
                 && let d = last.distance(Stitch::sew(first))
                 && d > 1e-9
             {
-                let trim = d > p.jump;
+                let long = d > p.jump;
                 match travel {
+                    // Shorter than the shortest stitch: nothing to lift the needle over.
+                    Travel::Sew | Travel::Lift if d < p.min_stitch => {}
                     Travel::Sew => {}
-                    Travel::Auto if !trim => {}
-                    // A short lift: the needle jumps with the thread on.
-                    Travel::Lift if !trim => out.push(Stitch::jump(first)),
+                    Travel::Auto if !long => {}
+                    // A short lift: the needle jumps with the thread on, too short a connector to
+                    // cut.
+                    Travel::Lift if !long => out.push(Stitch::jump(first)),
                     Travel::Auto | Travel::Lift => {
-                        if tie {
-                            tie_off(&mut out);
-                        }
-                        let last = out.last().copied().unwrap_or(last);
-                        out.push(Stitch::new(last.x, last.y, Command::Trim));
-                        out.push(Stitch::jump(first));
+                        connect(&mut out, first, d, p, tie);
                         fresh = true;
                     }
                 }
@@ -120,6 +177,58 @@ impl Runs {
         }
         out
     }
+}
+
+/// A jump `d` long from the end of `out` to `to`, longer than [`Params::jump`]: tied off first when
+/// `tie`, and the thread cut when it is longer than [`Params::trim`].
+fn connect(out: &mut Vec<Stitch>, to: Point, d: f64, p: &Params, tie: bool) {
+    if tie {
+        tie_off(out);
+    }
+    if d > p.trim
+        && let Some(last) = out.last().copied()
+    {
+        out.push(Stitch::new(last.x, last.y, Command::Trim));
+    }
+    out.push(Stitch::jump(to));
+}
+
+/// The pieces of one block that a cut separated (a stroke's stitches cut by a clipping path), each
+/// kept as it is, joined again: the needle lifts from one piece to the next as [`Runs::join`]
+/// lifts it, in any style (a cut running line comes undone as easily as a satin): a jump, tied off
+/// before and in after when it is longer than [`Params::jump`] and [`Params::lock`] is on, and the
+/// thread cut first when it is longer than [`Params::trim`].
+pub fn join_cut(pieces: Vec<Vec<Stitch>>, p: &Params) -> Vec<Stitch> {
+    let p = p.sane();
+    let mut out: Vec<Stitch> = Vec::new();
+    for piece in pieces {
+        // A piece starts where the needle goes down.
+        let start = piece.iter().position(|s| s.command == Command::Stitch).unwrap_or(piece.len());
+        let piece = piece.get(start..).unwrap_or_default();
+        let Some(&first) = piece.first() else { continue };
+        let mut tie = false;
+        if let Some(last) = out.iter().rev().find(|s| s.command == Command::Stitch).copied()
+            && let d = last.distance(first)
+            && d > 1e-9
+        {
+            if d <= p.jump {
+                out.push(Stitch::jump(first.point()));
+            } else {
+                connect(&mut out, first.point(), d, &p, p.lock);
+                tie = p.lock;
+            }
+        }
+        if tie && let Some(next) = piece.get(1).filter(|s| s.command == Command::Stitch) {
+            out.extend(tie_in(&[first.point(), next.point()]).into_iter().take(3).map(Stitch::sew));
+            out.extend(piece.get(1..).unwrap_or_default());
+        } else {
+            out.extend_from_slice(piece);
+        }
+        if out.len() >= MAX_STITCHES {
+            break;
+        }
+    }
+    out
 }
 
 /// `run` started with a tie-in: a short stitch forward along it and back, so the cut thread's

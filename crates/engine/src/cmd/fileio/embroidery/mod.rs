@@ -11,7 +11,8 @@
 //!
 //! Options: `stitchStyle` (`auto`, `fill`, `satin`, `running`), `density` (mm between rows or rail
 //! crossings), `stitchLength` (mm), `stitchAngle` (degrees), `pullCompensation` (mm, satin),
-//! `underlay`, `jumpLength` (mm before the thread is cut) and `minStitch` (mm).
+//! `underlay`, `jumpLength` (mm before the needle lifts), `trimLength` (mm before a jump cuts the
+//! thread) and `minStitch` (mm).
 //!
 //! The parts: [`import`] (a design read as art), [`digitize`] (the document's art planned as
 //! stitches) and [`sequence`] (the order the blocks are sewn in).
@@ -23,6 +24,7 @@ mod sequence;
 use serde::Deserialize;
 use serde_json::Value;
 use vectorcraft_doc::Document;
+use vectorcraft_doc::embroidery::Embroidery;
 use vectorcraft_stitch::Pattern;
 use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::plan::{Params, Style};
@@ -31,6 +33,40 @@ use super::super::*;
 use super::{Encoded, Format, FormatOption};
 
 pub(super) use import::import;
+
+/// The embroidery settings an object carries.
+pub fn specs() -> Vec<CommandSpec> {
+    vec![cmd!(
+        "embroidery.setTrimAfter",
+        "Trim After",
+        [],
+        None,
+        "{on: bool, ids?|id?} whether the thread is cut after each object (or group) in ids or the selection when the document is stitched (document.export to dst, exp, pes or jef), however near the next object starts; off, only a jump longer than the export's trimLength is cut. One undo step; saved with the document → {changed}",
+        has_doc,
+        set_trim_after
+    )]
+}
+
+fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
+    const C: &str = "embroidery.setTrimAfter";
+    let on = p.get("on").and_then(Value::as_bool).ok_or_else(|| bad(C, "`on` must be true or false"))?;
+    let ids = targets(s, p)?;
+    let changed = super::super::overprint::edit_counted(s, "Trim After", |d| {
+        let mut changed = 0;
+        for id in &ids {
+            let Some(n) = d.node_mut(*id) else { return Err(bad(C, format!("no object {}", id.0))) };
+            let mut e = n.extras().embroidery.as_deref().cloned().unwrap_or_default();
+            if e.trim_after == on {
+                continue;
+            }
+            e.trim_after = on;
+            n.extras_mut().embroidery = (e != Embroidery::default()).then(|| Box::new(e));
+            changed += 1;
+        }
+        Ok(changed)
+    })?;
+    Ok(serde_json::json!({ "changed": changed }))
+}
 
 const C: &str = "document.export";
 
@@ -70,13 +106,23 @@ const UNDERLAY: FormatOption = FormatOption {
     default: "true",
     description: "sew an underlay first: an edge run under fills, a centre run under satin columns",
 };
-const JUMP: FormatOption =
-    FormatOption { name: "jumpLength", ty: "number", default: "5", description: "a move longer than this cuts the thread and jumps, millimetres" };
+const JUMP: FormatOption = FormatOption {
+    name: "jumpLength",
+    ty: "number",
+    default: "5",
+    description: "a move longer than this lifts the needle (a jump) instead of being sewn, tied off before and in after so it can be cut, millimetres",
+};
+const TRIM: FormatOption = FormatOption {
+    name: "trimLength",
+    ty: "number",
+    default: "10",
+    description: "a jump longer than this cuts the thread (a trim); shorter ones are left for the machine or a person to cut, millimetres; never less than jumpLength (a smaller value acts as jumpLength)",
+};
 const MIN_STITCH: FormatOption =
     FormatOption { name: "minStitch", ty: "number", default: "0.4", description: "shorter stitches are left out, millimetres" };
 
 /// The options the embroidery writers read.
-pub const OPTIONS: &[FormatOption] = &[STYLE, DENSITY, STITCH_LENGTH, ANGLE, PULL, UNDERLAY, JUMP, MIN_STITCH];
+pub const OPTIONS: &[FormatOption] = &[STYLE, DENSITY, STITCH_LENGTH, ANGLE, PULL, UNDERLAY, JUMP, TRIM, MIN_STITCH];
 
 /// The export options, as they come: each one left out keeps the style's own value.
 #[derive(Clone, Debug, Deserialize)]
@@ -89,6 +135,7 @@ struct Options {
     pull_compensation: Option<f64>,
     underlay: Option<bool>,
     jump_length: Option<f64>,
+    trim_length: Option<f64>,
     min_stitch: Option<f64>,
 }
 
@@ -102,6 +149,7 @@ impl Default for Options {
             pull_compensation: None,
             underlay: None,
             jump_length: None,
+            trim_length: None,
             min_stitch: None,
         }
     }
@@ -120,6 +168,7 @@ impl Options {
             pull: self.pull_compensation.unwrap_or(d.pull),
             underlay: self.underlay.unwrap_or(d.underlay),
             jump: self.jump_length.unwrap_or(d.jump),
+            trim: self.trim_length.unwrap_or(d.trim),
             min_stitch: self.min_stitch.unwrap_or(d.min_stitch),
             width,
             ..d
@@ -141,12 +190,10 @@ fn options(p: &Value) -> Result<Options> {
 pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
     let opts = options(p)?;
     let format = StitchFormat::from_id(f.id).ok_or_else(|| bad(C, format!("{} is not an embroidery format", f.label)))?;
-    let (planned, warnings) = digitize::digitize(doc, &opts).map_err(|e| bad(C, e))?;
-    if planned.is_empty() {
+    let (blocks, warnings) = digitize::digitize(doc, &opts).map_err(|e| bad(C, e))?;
+    if blocks.is_empty() {
         return Err(bad(C, "nothing to stitch: the document has no visible filled or stroked paths"));
     }
-    let jump = opts.params(Style::Running, 0.0).jump;
-    let blocks = sequence::group(planned, jump);
     let pattern = Pattern { name: doc.title.clone(), blocks };
     let bytes = format.write(&pattern).map_err(|e| bad(C, e.to_string()))?;
     Ok(Encoded { warnings, ..Encoded::one(bytes) })
@@ -179,6 +226,7 @@ mod tests {
         assert_eq!(UNDERLAY.default == "true", fill.underlay && satin.underlay);
         for p in [fill, satin, running] {
             assert_eq!(num(&JUMP), p.jump);
+            assert_eq!(num(&TRIM), p.trim);
             assert_eq!(num(&MIN_STITCH), p.min_stitch);
         }
         assert!(STITCH_LENGTH.description.contains(&format!("{} in fills", fill.stitch_length)));

@@ -1,7 +1,7 @@
 //! The stitch planner's tests: each style's shape, lengths, ties and underlay, fills with holes
 //! and gaps, and odd input.
 
-use vectorcraft_geom::Point;
+use vectorcraft_geom::{Point, Vec2};
 
 use super::runs::LOCK;
 use super::*;
@@ -364,9 +364,11 @@ fn no_stitch_is_shorter_than_the_shortest() {
 }
 
 /// Separate pieces of one shape (seeds, letters): the needle jumps between pieces closer than the
-/// jump length, with the thread on, and trims before a longer move. It never sews across.
+/// jump length with the thread on; a longer jump is tied off before and in after, so that the
+/// machine or a person can cut it, and the thread is cut only before a jump longer than the trim
+/// length. It never sews across.
 #[test]
-fn separate_pieces_jump_when_close_and_trim_when_far() {
+fn separate_pieces_jump_and_trim_only_when_far() {
     let mut p = Params::for_style(Style::Fill);
     p.underlay = false;
     // Vertical rows: the first square ends at its right edge, right by the second.
@@ -375,24 +377,25 @@ fn separate_pieces_jump_when_close_and_trim_when_far() {
         let mut two = rect(0.0, 0.0, 10.0, 10.0);
         two.extend(rect(10.0 + gap, 0.0, 10.0, 10.0));
         let out = stitches(&two, FillRule::NonZero, &p);
-        let trims = out.iter().filter(|s| s.command == Command::Trim).count();
-        let jumps = out.iter().filter(|s| s.command == Command::Jump).count();
         assert_eq!(over(&out, (10.0, -1.0, 10.0 + gap, 11.0)), 0, "{gap} mm: a stitch across the gap");
-        (trims, jumps)
+        let trims = out.iter().filter(|s| s.command == Command::Trim).count();
+        let jump = out.iter().position(|s| s.command == Command::Jump).expect("a jump");
+        // Back and forth on the spot before the jump (and its trim) and after it.
+        let before = out[..jump].iter().rposition(|s| s.command == Command::Stitch).unwrap();
+        let tied = |w: &[Stitch]| w.iter().all(|s| s.command == Command::Stitch) && w[0].distance(w[2]) < 1e-9;
+        (trims, tied(&out[before - 2..=before]) && tied(&out[jump + 1..jump + 4]))
     };
-    let (trims, jumps) = count(2.0);
-    assert!(trims == 0 && jumps >= 1, "a 2 mm gap: {trims} trims, {jumps} jumps");
-    let (trims, _) = count(20.0);
-    assert!(trims >= 1, "a 20 mm gap is trimmed");
+    assert_eq!(count(2.0), (0, false), "a 2 mm gap: a jump with the thread on");
+    assert_eq!(count(p.trim - 3.0), (0, true), "a gap shorter than the trim length: a tied jump, not cut");
+    assert_eq!(count(p.trim + 5.0), (1, true), "a gap longer than the trim length is cut");
 }
 
-/// A concave shape (a letter E): between its arms and spine the needle travels inside the shape
-/// or lifts, never sewing across the gaps, at any angle, underlay or not; and it is cut at most
-/// twice. (Moving between arms over the already sewn spine can need a travel longer than a
-/// visible one may be: sewing the spine last, so travels pass under unsewn stitching, is on the
-/// work list.)
+/// A concave shape (a letter E): between its arms and spine the needle travels inside the shape,
+/// never sewing across the gaps, at any angle (every 5° tried), underlay or not; and it is sewn in
+/// one go, without a jump or a cut: the regions are ordered so that travels pass under stitching
+/// still to come (with vertical rows, the arms first, each towards the spine, and the spine last).
 #[test]
-fn a_concave_shape_is_never_sewn_across_its_gaps() {
+fn a_concave_shape_is_sewn_in_one_go_never_across_its_gaps() {
     let mut e = BezPath::new();
     let pts = [
         (0.0, 0.0),
@@ -417,7 +420,7 @@ fn a_concave_shape_is_never_sewn_across_its_gaps() {
     }
     e.close_path();
     for underlay in [false, true] {
-        for angle in [0.0, 30.0, 90.0] {
+        for angle in (0..360).step_by(5).map(f64::from) {
             let mut p = Params::for_style(Style::Fill);
             p.angle = angle;
             p.underlay = underlay;
@@ -427,8 +430,8 @@ fn a_concave_shape_is_never_sewn_across_its_gaps() {
                 0,
                 "angle {angle}, underlay {underlay}: across a gap"
             );
-            let trims = out.iter().filter(|s| s.command == Command::Trim).count();
-            assert!(trims <= 2, "angle {angle}, underlay {underlay}: {trims} trims");
+            let lifts = out.iter().filter(|s| s.command != Command::Stitch).count();
+            assert_eq!(lifts, 0, "angle {angle}, underlay {underlay}: {lifts} jumps and trims");
         }
     }
 }
@@ -508,4 +511,462 @@ fn nothing_panics_on_odd_input() {
     assert!(out.iter().all(|s| s.x.is_finite() && s.y.is_finite()));
     // A zero-length path has no stitches, and a single-point path neither.
     assert!(stitches(&line((1.0, 1.0), (1.0, 1.0)), FillRule::NonZero, &Params::default()).is_empty());
+}
+
+/// A closed polygon through `pts`.
+fn polygon(pts: impl IntoIterator<Item = (f64, f64)>) -> BezPath {
+    let mut g = BezPath::new();
+    for (k, q) in pts.into_iter().enumerate() {
+        if k == 0 { g.move_to(q) } else { g.line_to(q) }
+    }
+    g.close_path();
+    g
+}
+
+/// The outlines' grid answers what testing every edge answers: whether a point is inside and
+/// whether a segment stays inside, for a jagged shape with holes, a star of long spikes and a
+/// zigzag whose edges cross the whole shape.
+#[test]
+fn the_edge_grid_agrees_with_every_edge() {
+    use super::area::{Area, Grid};
+    use super::geometry::subpaths;
+    let tau = std::f64::consts::TAU;
+    let mut jagged = polygon((0..120).map(|k| {
+        let a = k as f64 / 120.0 * tau;
+        let r = if (k / 2) % 2 == 0 { 30.0 } else { 26.0 };
+        (40.0 + r * a.cos(), 40.0 + r * a.sin())
+    }));
+    jagged.extend(rect(30.0, 30.0, 8.0, 20.0));
+    let star = polygon((0..48).map(|k| {
+        let a = k as f64 / 48.0 * tau;
+        let r = if k % 2 == 0 { 40.0 } else { 3.0 };
+        (40.0 + r * a.cos(), 40.0 + r * a.sin())
+    }));
+    let zigzag = polygon((0..40).map(|k| if k % 2 == 0 { (k as f64, 0.0) } else { (80.0 - k as f64, 80.0) }));
+    for shape in [jagged, star, zigzag] {
+        let subs = subpaths(&shape);
+        let outlines: Vec<&super::geometry::SubPath> = subs.iter().collect();
+        let grid = Grid::new(&outlines).expect("a grid");
+        for rule in [FillRule::NonZero, FillRule::EvenOdd] {
+            let plain = Area { outlines: &outlines, rule, grid: None };
+            let fast = Area { grid: Some(&grid), ..plain };
+            // A fixed scatter of points (a linear congruential sequence), some exactly on corners.
+            let mut seed = 12345u64;
+            let mut next = || {
+                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+                (seed >> 11) as f64 / (1u64 << 53) as f64 * 90.0 - 5.0
+            };
+            let mut pts: Vec<Point> = (0..400).map(|_| Point::new(next(), next())).collect();
+            pts.extend(subs.iter().flat_map(|s| s.pts.iter().copied()));
+            for (i, &a) in pts.iter().enumerate() {
+                assert_eq!(plain.contains(a), fast.contains(a), "{a:?}");
+                let b = pts[(i * 7 + 3) % pts.len()];
+                assert_eq!(plain.contains_segment(a, b), fast.contains_segment(a, b), "{a:?} to {b:?}");
+            }
+        }
+    }
+}
+
+/// The grid's memory stays near the number of edges, however long they are: edges from corner to
+/// corner of a shape (as traced art can have) would fill every cell of their boxes. A few such
+/// edges are listed only in the cells they pass; thousands would still take too many, so the shape
+/// keeps no grid and tests every edge.
+#[test]
+fn the_edge_grid_stays_small_for_long_edges() {
+    use super::area::Grid;
+    use super::geometry::subpaths;
+    let zigzag = |n: usize| {
+        polygon((0..n).map(|k| {
+            let t = k as f64 / n as f64;
+            if k % 2 == 0 { (t, 0.0) } else { (100.0 - t, 100.0) }
+        }))
+    };
+    let few = zigzag(200);
+    let subs = subpaths(&few);
+    let outlines: Vec<&super::geometry::SubPath> = subs.iter().collect();
+    let grid = Grid::new(&outlines).expect("a grid");
+    // An 11 × 11 grid: each edge's box is every cell, the cells it passes about two a row.
+    assert!(grid.entries() <= 200 * 32, "{} entries", grid.entries());
+    for n in [2_000usize, 20_000] {
+        let many = zigzag(n);
+        let subs = subpaths(&many);
+        let outlines: Vec<&super::geometry::SubPath> = subs.iter().collect();
+        assert!(Grid::new(&outlines).is_none(), "{n} edges from corner to corner keep a grid");
+    }
+    // A shape of short edges keeps its grid, each edge in a cell or two.
+    let circle = polygon((0..2_000).map(|k| {
+        let a = k as f64 / 2_000.0 * std::f64::consts::TAU;
+        (50.0 + 40.0 * a.cos(), 50.0 + 40.0 * a.sin())
+    }));
+    let subs = subpaths(&circle);
+    let outlines: Vec<&super::geometry::SubPath> = subs.iter().collect();
+    let grid = Grid::new(&outlines).expect("a grid");
+    assert!(grid.entries() <= 2_000 * 4, "{} entries", grid.entries());
+}
+
+/// With nothing sewn before, a line's first subpath is sewn as drawn and the next one from its end
+/// nearer the needle: a second line drawn away from the first is sewn towards it, not jumped to
+/// its far end.
+#[test]
+fn with_no_needle_the_first_line_is_sewn_as_drawn_and_the_next_from_near_it() {
+    let mut path = line((0.0, 0.0), (10.0, 0.0));
+    path.extend(line((100.0, 0.0), (90.0, 0.0)));
+    let q = points(&stitches_from(&path, FillRule::NonZero, &Params::for_style(Style::Running), None));
+    assert!(q[0].x.abs() < 1e-6, "{:?}", q[0]);
+    let second = q.iter().find(|p| p.x > 50.0).expect("the second line");
+    assert!((second.x - 90.0).abs() < 1e-6, "{second:?}");
+}
+
+/// Where the needle comes from decides where a shape starts: a satin column or a running line
+/// from its nearer end, a fill from its corner nearest the needle.
+#[test]
+fn a_shape_starts_nearest_the_needle() {
+    let from = Point::new(30.0, 1.0);
+    let mut satin = Params::for_style(Style::Satin);
+    satin.width = 3.0;
+    for p in [satin, Params::for_style(Style::Running)] {
+        let out = stitches_from(&line((0.0, 0.0), (30.0, 0.0)), FillRule::NonZero, &p, Some(from));
+        let first = points(&out)[0];
+        assert!(first.distance(from) < 3.0, "{:?}: starts at {first:?}", p.style);
+        let drawn = points(&stitches(&line((0.0, 0.0), (30.0, 0.0)), FillRule::NonZero, &p))[0];
+        assert!(drawn.x < 3.0, "{:?}: without a needle, from where it is drawn: {drawn:?}", p.style);
+    }
+    let out = stitches_from(&rect(0.0, 0.0, 20.0, 10.0), FillRule::NonZero, &Params::for_style(Style::Fill), Some(Point::new(25.0, 12.0)));
+    let first = points(&out)[0];
+    assert!(first.distance(Point::new(20.0, 10.0)) < 1.5, "a fill starts at {first:?}");
+    // A needle point that is not a point is ignored.
+    assert_eq!(
+        stitches_from(&rect(0.0, 0.0, 20.0, 10.0), FillRule::NonZero, &Params::for_style(Style::Fill), Some(Point::new(f64::NAN, 0.0))),
+        stitches(&rect(0.0, 0.0, 20.0, 10.0), FillRule::NonZero, &Params::for_style(Style::Fill))
+    );
+}
+
+/// A jagged shape of many regions (a gear of 90 teeth with 24 holes) still travels inside: its
+/// travel graph keeps only the reflex corners, small enough to search, so the teeth and the
+/// stretches between the holes are joined by travels, not jumps.
+#[test]
+fn a_jagged_shape_travels_inside() {
+    let mut g = BezPath::new();
+    for k in 0..360 {
+        let a = k as f64 / 360.0 * std::f64::consts::TAU;
+        let r = if (k / 2) % 2 == 0 { 30.0 } else { 26.0 };
+        let q = (40.0 + r * a.cos(), 40.0 + r * a.sin());
+        if k == 0 { g.move_to(q) } else { g.line_to(q) }
+    }
+    g.close_path();
+    for h in 0..24 {
+        let a = h as f64 / 24.0 * std::f64::consts::TAU;
+        let (cx, cy) = (40.0 + 18.0 * a.cos(), 40.0 + 18.0 * a.sin());
+        for k in 0..16 {
+            let b = -(k as f64) / 16.0 * std::f64::consts::TAU;
+            let q = (cx + 1.8 * b.cos(), cy + 1.8 * b.sin());
+            if k == 0 { g.move_to(q) } else { g.line_to(q) }
+        }
+        g.close_path();
+    }
+    for angle in [0.0, 45.0, 90.0] {
+        let mut p = Params::for_style(Style::Fill);
+        p.angle = angle;
+        let out = stitches(&g, FillRule::NonZero, &p);
+        let lifts = out.iter().filter(|s| s.command == Command::Jump).count();
+        assert!(lifts <= 6, "angle {angle}: {lifts} jumps");
+    }
+}
+
+/// Moves between the runs of a running line, at the exact limits: a gap of exactly
+/// [`Params::jump`] is still sewn as one stitch and a hair more lifts the needle; a jump of exactly
+/// [`Params::trim`] keeps the thread on and a hair more cuts it.
+#[test]
+fn moves_at_exactly_the_jump_and_trim_lengths() {
+    let p = Params::for_style(Style::Running);
+    let moves = |gap: f64| {
+        let mut path = line((0.0, 0.0), (10.0, 0.0));
+        path.extend(line((10.0 + gap, 0.0), (20.0 + gap, 0.0)));
+        let out = stitches(&path, FillRule::NonZero, &p);
+        let count = |c: Command| out.iter().filter(|s| s.command == c).count();
+        (count(Command::Jump), count(Command::Trim))
+    };
+    assert_eq!(moves(p.jump), (0, 0), "a gap of exactly the jump length is sewn");
+    assert_eq!(moves(p.jump + 0.01), (1, 0), "a longer one jumps");
+    assert_eq!(moves(p.trim), (1, 0), "a jump of exactly the trim length is not cut");
+    assert_eq!(moves(p.trim + 0.01), (1, 1), "a longer one is");
+}
+
+/// Inside a fill, a straight move of exactly [`Params::jump`] is the next stitch; a longer one
+/// travels in short stitches.
+#[test]
+fn a_move_inside_of_exactly_the_jump_length_is_one_stitch() {
+    use super::area::{Area, Travels};
+    use super::geometry::{SubPath, subpaths};
+    use super::runs::{Runs, Travel};
+    let subs = subpaths(&rect(0.0, 0.0, 30.0, 10.0));
+    let outlines: Vec<&SubPath> = subs.iter().collect();
+    let mut travels = Travels::new(Area { outlines: &outlines, rule: FillRule::NonZero, grid: None });
+    let p = Params::for_style(Style::Fill).sane();
+    let mut runs = Runs::from(None);
+    runs.push(vec![Point::new(1.0, 5.0)], Travel::Sew);
+    let here = Point::new(1.0, 5.0);
+    let to = here + Vec2::new(p.jump, 0.0);
+    assert_eq!(runs.approach(&mut travels, to, f64::INFINITY, &|_| 0.0, &p), Travel::Auto);
+    assert_eq!(runs.here(), Some(here), "no travel run added");
+    let to = here + Vec2::new(p.jump + 0.01, 0.0);
+    assert_eq!(runs.approach(&mut travels, to, f64::INFINITY, &|_| 0.0, &p), Travel::Sew);
+    assert_eq!(runs.here(), Some(to), "a travel run to it");
+}
+
+/// A travel round a corner passes it half a millimetre inside the shape ([`area`]'s margin): off
+/// the edge, where the fill covers it, and no farther from the shortest way than that.
+#[test]
+fn a_travel_passes_a_corner_just_inside() {
+    use super::area::{Area, Travels};
+    use super::geometry::{SubPath, subpaths};
+    // An L: its reflex corner at (8, 8).
+    let subs = subpaths(&polygon([(0.0, 0.0), (20.0, 0.0), (20.0, 8.0), (8.0, 8.0), (8.0, 20.0), (0.0, 20.0)]));
+    let outlines: Vec<&SubPath> = subs.iter().collect();
+    let mut travels = Travels::new(Area { outlines: &outlines, rule: FillRule::NonZero, grid: None });
+    let (a, b) = (Point::new(18.0, 4.0), Point::new(4.0, 18.0));
+    let way = travels.way(a, b).expect("a way inside");
+    assert_eq!(way.len(), 3, "round the one corner: {way:?}");
+    let (corner, turn) = (Point::new(8.0, 8.0), way[1]);
+    assert!(turn.x < 8.0 && turn.y < 8.0, "inside the shape: {turn:?}");
+    let d = turn.distance(corner);
+    assert!((0.4..=0.6).contains(&d), "{d} mm from the corner");
+}
+
+/// Fill rows are staggered: each row's penetrations sit a quarter stitch along from the row
+/// before's, through a cycle of four rows, so that no two neighbouring rows line their
+/// penetrations up into a groove.
+#[test]
+fn fill_rows_stagger_through_a_cycle_of_four() {
+    let mut p = Params::for_style(Style::Fill);
+    p.angle = 0.0;
+    p.underlay = false;
+    let out = stitches(&rect(0.3, 0.0, 40.0, 10.0), FillRule::NonZero, &p);
+    // Each row's penetrations away from its ends (where the row starts and stops, ties
+    // included), by row.
+    let mut rows: std::collections::BTreeMap<i64, Vec<f64>> = Default::default();
+    for q in points(&out) {
+        let k = (q.y / p.density - 0.5).round();
+        assert!((q.y - p.density * (k + 0.5)).abs() < 1e-6, "{q:?} is on no row");
+        rows.entry(k as i64).or_default().push(q.x);
+    }
+    let phases: Vec<f64> = rows
+        .values()
+        .map(|xs| {
+            let (lo, hi) = xs.iter().fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), x| (lo.min(*x), hi.max(*x)));
+            let inner: Vec<f64> = xs.iter().copied().filter(|x| *x > lo + 1.5 && *x < hi - 1.5).collect();
+            assert!(inner.len() >= 5, "{xs:?}");
+            let phase = (inner[0] / p.stitch_length).rem_euclid(1.0);
+            for x in &inner {
+                let off = ((x / p.stitch_length).rem_euclid(1.0) - phase).abs();
+                assert!(off < 1e-6 || (1.0 - off) < 1e-6, "a row's penetrations off its grid: {inner:?}");
+            }
+            phase
+        })
+        .collect();
+    assert_eq!(phases.len(), 25);
+    for w in phases.windows(2) {
+        let step = (w[1] - w[0]).rem_euclid(1.0);
+        assert!((step - 0.25).abs() < 1e-6, "rows {:?}: a step of {step} stitch", w);
+    }
+}
+
+/// The longest travel run in `out` and the length of all of them, millimetres: runs of three or
+/// more stitches in a row of a travel's length (rows' stitches are longer, row turns shorter).
+fn travels(out: &[Stitch]) -> (f64, f64) {
+    let (mut longest, mut total) = (0.0f64, 0.0);
+    let (mut run, mut n) = (0.0, 0);
+    for w in out.windows(2) {
+        let d = w[0].distance(w[1]);
+        if w[0].command == Command::Stitch && w[1].command == Command::Stitch && (0.9..=2.0 + 1e-9).contains(&d) {
+            run += d;
+            n += 1;
+            continue;
+        }
+        if n >= 3 {
+            longest = longest.max(run);
+            total += run;
+        }
+        (run, n) = (0.0, 0);
+    }
+    if n >= 3 {
+        longest = longest.max(run);
+        total += run;
+    }
+    (longest, total)
+}
+
+/// Of the orders that sew a shape in one go, the one that travels least is kept: a U whose arms
+/// are 30 mm apart is sewn arm, bar, arm, each joined to the bar near where they meet it, not
+/// both arms first with a travel from one to the other across the whole bar.
+#[test]
+fn the_order_that_travels_least_wins() {
+    let u = polygon([(0.0, 0.0), (42.0, 0.0), (42.0, 40.0), (36.0, 40.0), (36.0, 8.0), (6.0, 8.0), (6.0, 40.0), (0.0, 40.0)]);
+    for angle in [45.0, 60.0, 135.0] {
+        let mut p = Params::for_style(Style::Fill);
+        p.angle = angle;
+        p.underlay = false;
+        let out = stitches(&u, FillRule::NonZero, &p);
+        assert_eq!(out.iter().filter(|s| s.command != Command::Stitch).count(), 0, "angle {angle}: sewn in one go");
+        let (longest, total) = travels(&out);
+        assert!(longest < 15.0, "angle {angle}: a {longest:.1} mm travel ({total:.1} mm in all)");
+    }
+}
+
+/// A comb of `n` teeth `long` mm long, `wide` mm wide and `gap` mm apart, on a bar `bar` mm high:
+/// with horizontal rows, the bar and each tooth are regions of their own.
+fn comb(n: usize, long: f64, wide: f64, gap: f64, bar: f64) -> BezPath {
+    let w = n as f64 * wide + (n as f64 - 1.0) * gap;
+    let mut pts = vec![(0.0, 0.0), (w, 0.0)];
+    for k in (0..n).rev() {
+        let x0 = k as f64 * (wide + gap);
+        pts.push((x0 + wide, bar + long));
+        pts.push((x0, bar + long));
+        if k > 0 {
+            pts.push((x0, bar));
+            pts.push((x0 - gap, bar));
+        }
+    }
+    polygon(pts)
+}
+
+/// Shapes whose regions branch (a U, combs, rings, an H) are sewn in one go at any angle, underlay
+/// or not: of the ways to order their regions, one that travels under stitching still to come (or
+/// shows a little) is kept over one that jumps, and a jump that would need a cut costs more still.
+#[test]
+fn branching_shapes_are_sewn_in_one_go() {
+    let u = polygon([(0.0, 0.0), (14.0, 0.0), (14.0, 30.0), (9.0, 30.0), (9.0, 8.0), (5.0, 8.0), (5.0, 30.0), (0.0, 30.0)]);
+    let ring = |hole: f64| {
+        let a = 15.0 - hole / 2.0;
+        let mut p = rect(0.0, 0.0, 40.0, 30.0);
+        p.extend(polygon([(a, a), (a, a + hole), (a + hole, a + hole), (a + hole, a)]));
+        p
+    };
+    let h = polygon([
+        (0.0, 0.0),
+        (8.0, 0.0),
+        (8.0, 16.0),
+        (22.0, 16.0),
+        (22.0, 0.0),
+        (30.0, 0.0),
+        (30.0, 40.0),
+        (22.0, 40.0),
+        (22.0, 24.0),
+        (8.0, 24.0),
+        (8.0, 40.0),
+        (0.0, 40.0),
+    ]);
+    let shapes = [("U", u), ("3 teeth", comb(3, 30.0, 4.0, 4.0, 6.0)), ("5 teeth", comb(5, 35.0, 4.0, 4.0, 6.0)), ("ring", ring(4.0)), ("H", h)];
+    for (name, shape) in &shapes {
+        for underlay in [false, true] {
+            for angle in (0..180).step_by(15).map(f64::from) {
+                let mut p = Params::for_style(Style::Fill);
+                p.angle = angle;
+                p.underlay = underlay;
+                let out = stitches(shape, FillRule::NonZero, &p);
+                let lifts = out.iter().filter(|s| s.command != Command::Stitch).count();
+                assert_eq!(lifts, 0, "{name}, angle {angle}, underlay {underlay}: {lifts} jumps and trims");
+            }
+        }
+    }
+}
+
+/// A travel may show at most 25 mm over stitching already sewn; one that would show more lifts the
+/// needle. A comb of 200 teeth has more regions than orders are compared for, so it is sewn
+/// nearest region next: tooth after tooth, each reached back along the one just sewn. Teeth 20 mm
+/// long travel; 30 mm long, the needle jumps instead.
+#[test]
+fn a_travel_that_would_show_too_much_lifts_the_needle() {
+    let mut p = Params::for_style(Style::Fill);
+    p.angle = 0.0;
+    p.underlay = false;
+    let jumps = |long: f64| stitches(&comb(200, long, 2.0, 1.5, 4.0), FillRule::NonZero, &p).iter().filter(|s| s.command == Command::Jump).count();
+    assert_eq!(jumps(20.0), 0);
+    assert!(jumps(30.0) >= 50, "{}", jumps(30.0));
+}
+
+/// The lines of a running path are sewn nearest first, not as drawn: three lines drawn left,
+/// right, middle are sewn left to right, and from a needle at the right, right to left.
+#[test]
+fn lines_are_sewn_nearest_first() {
+    let mut path = line((0.0, 0.0), (10.0, 0.0));
+    path.extend(line((40.0, 0.0), (50.0, 0.0)));
+    path.extend(line((20.0, 0.0), (30.0, 0.0)));
+    // The x of each line's first needle point, in sewing order.
+    let starts = |from: Option<Point>| {
+        let mut v: Vec<f64> = Vec::new();
+        for q in points(&stitches_from(&path, FillRule::NonZero, &Params::for_style(Style::Running), from)) {
+            if v.last().is_none_or(|x| (q.x - x).abs() > 12.0) {
+                v.push(q.x);
+            }
+        }
+        v
+    };
+    assert_eq!(starts(None), [0.0, 20.0, 40.0]);
+    assert_eq!(starts(Some(Point::new(60.0, 0.0))), [50.0, 30.0, 10.0]);
+}
+
+/// Pieces of a cut block ([`join_cut`]) are joined as runs are: a gap up to [`Params::jump`] by a
+/// jump with the thread on and no ties, a longer one tied off and in around the jump, and the
+/// thread cut only past [`Params::trim`]. The needle points of each piece stay as they were.
+#[test]
+fn cut_pieces_are_joined_by_their_gap() {
+    let piece = |x: f64| (0..3).map(|k| Stitch::sew(Point::new(x + 2.0 * f64::from(k), 0.0))).collect::<Vec<_>>();
+    let join = |gap: f64, lock: bool| {
+        let p = Params { lock, ..Params::for_style(Style::Running) };
+        // The second piece starts with a jump to it, as a piece cut out of a block may: it is
+        // dropped.
+        let mut second = vec![Stitch::jump(Point::new(4.0 + gap, 0.0))];
+        second.extend(piece(4.0 + gap));
+        join_cut(vec![piece(0.0), second], &p)
+    };
+    let commands = |v: &[Stitch]| v.iter().map(|s| s.command).collect::<Vec<_>>();
+    use Command::{Jump as J, Stitch as S, Trim as T};
+    let p = Params::for_style(Style::Running);
+    for gap in [2.0, p.jump] {
+        let out = join(gap, true);
+        assert_eq!(commands(&out), [S, S, S, J, S, S, S], "a {gap} mm gap");
+        assert_eq!(out[3].point(), Point::new(4.0 + gap, 0.0));
+    }
+    for gap in [p.jump + 0.5, p.trim] {
+        let out = join(gap, true);
+        assert_eq!(commands(&out), [S, S, S, S, S, J, S, S, S, S, S], "a {gap} mm gap: tied off, jumped, tied in");
+        // Back and forth on the spot on each side.
+        assert_eq!(out[2].point(), out[4].point());
+        assert_eq!(out[6].point(), out[8].point());
+        assert_eq!(out[6].point(), Point::new(4.0 + gap, 0.0));
+    }
+    assert_eq!(commands(&join(p.trim + 0.5, true)), [S, S, S, S, S, T, J, S, S, S, S, S], "cut past the trim length");
+    assert_eq!(commands(&join(p.jump + 0.5, false)), [S, S, S, J, S, S, S], "no ties without lock");
+    assert_eq!(commands(&join(p.trim + 0.5, false)), [S, S, S, T, J, S, S, S]);
+}
+
+/// Along a fine zigzag (sharp corners closer together than 0.3 of a stitch), a running line keeps
+/// its stitch length: it passes the corners it can't stitch into without a stub, rather than one
+/// needle point moving from corner to corner into a single stitch the length of the line. An edge
+/// run under a fill with a zigzag edge keeps its length the same way.
+#[test]
+fn a_fine_zigzag_keeps_its_stitch_length() {
+    let zigzag = |amp: f64, period: f64| (0..=(100.0 / period) as usize).map(move |k| (k as f64 * period / 2.0, if k % 2 == 1 { amp } else { 0.0 }));
+    let longest = |out: &[Stitch]| {
+        out.windows(2).filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch).map(|w| w[0].distance(w[1])).fold(0.0, f64::max)
+    };
+    for (amp, period) in [(0.3, 0.6), (0.2, 1.0), (0.5, 0.8)] {
+        let mut path = BezPath::new();
+        for (k, q) in zigzag(amp, period).enumerate() {
+            if k == 0 { path.move_to(q) } else { path.line_to(q) }
+        }
+        let p = Params::for_style(Style::Running);
+        let out = stitches(&path, FillRule::NonZero, &p);
+        assert!(longest(&out) <= 1.3 * p.stitch_length + 1e-9, "{amp} × {period}: a {:.2} mm stitch", longest(&out));
+        assert!(points(&out).len() >= 20, "{amp} × {period}: {} needle points along 50 mm", points(&out).len());
+        assert!(points(&out).iter().all(|q| q.y >= -1e-9 && q.y <= amp + 1e-9), "{amp} × {period}: off the line");
+
+        let mut edge: Vec<(f64, f64)> = zigzag(amp, period).map(|(x, y)| (x, 20.0 - y)).collect();
+        edge.extend([(50.0, 0.0), (0.0, 0.0)]);
+        let mut p = Params::for_style(Style::Fill);
+        p.angle = 90.0;
+        let out = stitches(&polygon(edge), FillRule::NonZero, &p);
+        assert!(longest(&out) <= p.stitch_length + 2.0 * p.min_stitch + 1e-9, "{amp} × {period}: a {:.2} mm fill stitch", longest(&out));
+    }
 }

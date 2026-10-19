@@ -4,22 +4,27 @@
 use vectorcraft_geom::{BezPath, Point};
 
 use super::Params;
-use super::geometry::{length, resample, subpaths, unit};
+use super::geometry::{length, nearest_order, resample, subpaths, unit};
 use super::runs::{LOCK, Runs, Travel};
 use crate::Stitch;
 
 /// A running line of stitches along `path`, [`Params::stitch_length`] apart, each open run locked
 /// at both ends when [`Params::lock`] is on.
 pub fn running(path: &BezPath, p: &Params) -> Vec<Stitch> {
+    running_from(path, p, None)
+}
+
+/// [`running`], the needle at `from` before it starts: each line is sewn from its end nearest the
+/// needle, the nearest first.
+pub(super) fn running_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec<Stitch> {
     let p = p.sane();
-    let mut runs = Runs::default();
-    for sub in subpaths(path) {
-        let pts = sub.points();
-        if length(&pts, sub.closed) < p.min_stitch {
+    let mut runs = Runs::from(from);
+    for (pts, closed) in nearest_order(subpaths(path), from) {
+        if length(&pts, closed) < p.min_stitch {
             continue;
         }
-        let mut run = resample(&pts, p.stitch_length, sub.closed);
-        if p.lock && !sub.closed {
+        let mut run = resample(&pts, p.stitch_length, closed);
+        if p.lock && !closed {
             run = locked(&run);
         }
         runs.push(run, Travel::Auto);

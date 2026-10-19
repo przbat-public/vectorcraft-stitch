@@ -9,11 +9,11 @@ use vectorcraft_doc::embroidery::StitchRun;
 use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind};
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Shape, kurbo};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke};
-use vectorcraft_stitch::plan::{self, Style};
+use vectorcraft_stitch::plan::{self, Params, Style};
 use vectorcraft_stitch::{Block, Command, Stitch, Thread, pt_to_mm};
 
 use super::Options;
-use super::sequence::Planned;
+use super::sequence::{CLEARANCE, Planned, Sequence};
 
 const TEXT_LEFT_OUT: &str = "type is not stitched: outline it (Type › Create Outlines) and export again";
 const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › Image Trace) first";
@@ -24,15 +24,16 @@ const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colou
 /// thousand), and a bound on the memory an export can take.
 const MAX_DESIGN_STITCHES: usize = 2_000_000;
 
-/// The stitches of `doc`'s visible art with `opts`: one block per object, in stacking order, and
+/// The stitches of `doc`'s visible art with `opts`: its blocks in sewing order ([`Sequence`]), and
 /// the warnings for what was left out or approximated; an error when the design would need too
 /// many stitches.
-pub(super) fn digitize(doc: &Document, opts: &Options) -> Result<(Vec<Planned>, Vec<String>), String> {
-    let mut d = Digitizer { doc, opts, blocks: Vec::new(), warnings: Vec::new(), nest: 0, clip: None, owner: None, stitches: 0, failed: None };
+pub(super) fn digitize(doc: &Document, opts: &Options) -> Result<(Vec<Block>, Vec<String>), String> {
+    let seq = Sequence::new(opts.params(Style::Running, 0.0));
+    let mut d = Digitizer { doc, opts, seq, warnings: Vec::new(), nest: 0, clip: None, owner: None, stitches: 0, failed: None };
     d.run();
     match d.failed {
         Some(e) => Err(e),
-        None => Ok((d.blocks, d.warnings)),
+        None => Ok((d.seq.blocks(), d.warnings)),
     }
 }
 
@@ -40,7 +41,8 @@ pub(super) fn digitize(doc: &Document, opts: &Options) -> Result<(Vec<Planned>, 
 struct Digitizer<'a> {
     doc: &'a Document,
     opts: &'a Options,
-    blocks: Vec<Planned>,
+    /// The blocks planned so far, in sewing order.
+    seq: Sequence,
     warnings: Vec<String>,
     /// Symbol art being stitched inside symbol instances.
     nest: u32,
@@ -73,6 +75,15 @@ impl Digitizer<'_> {
         if !n.visible {
             return;
         }
+        let added = self.seq.added();
+        self.kind(n);
+        // An object (or group) that asks for it: the thread is cut after its last stitch.
+        if n.extras().embroidery.as_deref().is_some_and(|e| e.trim_after) && self.seq.added() > added {
+            self.seq.trim_last();
+        }
+    }
+
+    fn kind(&mut self, n: &Node) {
         match &n.kind {
             // Template and non-printing layers are references, not art: a machine sews only what
             // would print.
@@ -150,7 +161,7 @@ impl Digitizer<'_> {
             points.pop();
         }
         if let Some(clip) = &self.clip {
-            points = cut_to(points, clip);
+            points = cut_to(points, clip, &self.opts.params(Style::Running, 0.0));
         }
         if points.is_empty() {
             return;
@@ -167,7 +178,7 @@ impl Digitizer<'_> {
             points.push(Stitch::new(last.x, last.y, Command::Trim));
         }
         block.stitches = points;
-        self.blocks.push(Planned { block, literal: self.owner.map(|g| (g, run.trim_before)) });
+        self.seq.add(Planned { block, literal: self.owner.map(|g| (g, run.trim_before)) });
     }
 
     /// A clip group, as it paints: the clipping path (its first child) paints its fills behind the
@@ -285,7 +296,18 @@ impl Digitizer<'_> {
             return;
         }
         let params = self.opts.params(style, width);
-        let mut stitches = match plan::try_stitches(bp, rule, &params) {
+        // Where the needle will be: at the end of the block this object is likely to join (its
+        // bounds estimated from the path's), so it starts as near there as it can.
+        let reach = match style {
+            Style::Satin => params.width.min(plan::MAX_SATIN_WIDTH) / 2.0 + params.pull,
+            Style::Running | Style::Fill => 0.0,
+        } + CLEARANCE;
+        let mut estimate = Some(bp.bounding_box()).filter(|r| r.is_finite()).map(|r| r.inflate(reach, reach));
+        if let (Some(r), Some((clip, _))) = (estimate, &self.clip) {
+            estimate = Some(r.intersect(clip.bounding_box()));
+        }
+        let from = self.seq.needle(self.seq.target(color, estimate));
+        let mut stitches = match plan::try_stitches_from(bp, rule, &params, from) {
             Ok(s) => s,
             Err(e) => {
                 self.failed = Some(e.to_string());
@@ -296,7 +318,7 @@ impl Digitizer<'_> {
         // filled area was cut to it exactly; its edge run lies on the cut, which a point test
         // would chop.)
         if clip_stitches && let Some(clip) = &self.clip {
-            stitches = cut_to(stitches, clip);
+            stitches = cut_to(stitches, clip, &params);
         }
         if stitches.is_empty() {
             return;
@@ -309,13 +331,14 @@ impl Digitizer<'_> {
         }
         let mut block = Block::new(Thread::rgb(color));
         block.stitches = stitches;
-        self.blocks.push(Planned { block, literal: None });
+        self.seq.add(Planned { block, literal: None });
     }
 }
 
-/// The stitches inside `region`: a run that leaves it is cut there (a trim) and taken up again (a
-/// jump) where it comes back in.
-fn cut_to(stitches: Vec<Stitch>, region: &(BezPath, FillRule)) -> Vec<Stitch> {
+/// The stitches inside `region`: a run that leaves it is cut there and taken up again where it
+/// comes back in, the needle lifted between as the planner lifts it (`p`'s jump and trim lengths,
+/// the thread tied off and in around a long jump).
+fn cut_to(stitches: Vec<Stitch>, region: &(BezPath, FillRule), p: &Params) -> Vec<Stitch> {
     let (path, rule) = region;
     let inside = |s: &Stitch| {
         let w = path.winding(s.point());
@@ -324,26 +347,26 @@ fn cut_to(stitches: Vec<Stitch>, region: &(BezPath, FillRule)) -> Vec<Stitch> {
             FillRule::EvenOdd => w % 2 != 0,
         }
     };
-    let mut out: Vec<Stitch> = Vec::with_capacity(stitches.len());
-    let mut lifted = false;
+    // The stretches inside, each with the plan's own jumps and trims within it.
+    let mut pieces: Vec<Vec<Stitch>> = vec![Vec::new()];
     for s in stitches {
-        if s.command != Command::Stitch {
-            // The plan's own trims and jumps: the needle is up until the next stitch kept.
-            lifted = true;
+        if s.command == Command::Stitch && !inside(&s) {
+            if pieces.last().is_some_and(|p| !p.is_empty()) {
+                pieces.push(Vec::new());
+            }
             continue;
         }
-        if !inside(&s) {
-            lifted = true;
-            continue;
+        if let Some(piece) = pieces.last_mut() {
+            piece.push(s);
         }
-        if lifted && let Some(last) = out.last().copied() {
-            out.push(Stitch::new(last.x, last.y, Command::Trim));
-            out.push(Stitch::jump(s.point()));
-        }
-        lifted = false;
-        out.push(s);
     }
-    out
+    // A piece that ends on the plan's own jump or trim drops it: the joining lifts the needle.
+    for piece in &mut pieces {
+        while piece.last().is_some_and(|s| s.command != Command::Stitch) {
+            piece.pop();
+        }
+    }
+    plan::join_cut(pieces, p)
 }
 
 /// A paint's stitched colour.

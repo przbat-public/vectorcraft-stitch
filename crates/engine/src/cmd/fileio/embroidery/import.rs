@@ -58,7 +58,8 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
             let mut node = Node::path(doc.alloc_id(), path, stroke.clone());
             // The line's points are the file's needle points: exported, they are sewn as they are,
             // so the design is written back unchanged.
-            node.extras_mut().embroidery = Some(Box::new(Embroidery { stitches: Some(StitchRun { trim_before, trim_after }) }));
+            node.extras_mut().embroidery =
+                Some(Box::new(Embroidery { stitches: Some(StitchRun { trim_before, trim_after }), ..Embroidery::default() }));
             children.push(Arc::new(node));
         }
         if children.is_empty() {

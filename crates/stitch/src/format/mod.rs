@@ -12,8 +12,8 @@
 //!
 //! - no colour names in DST and EXP: a design read from them gets [`crate::thread::DEFAULT`]'s
 //!   colours, one per block;
-//! - no explicit trim in DST (three small jumps that go nowhere, which a machine reads as "cut")
-//!   and in JEF a trim is a jump that goes nowhere;
+//! - no explicit trim in DST or JEF: three small jumps that go nowhere in DST, which a machine
+//!   reads as "cut", and three jumps of zero length in JEF (one is already a trim when read);
 //! - jumps between stitches carry no thread: consecutive jumps collapse to the point the thread
 //!   is taken up from.
 

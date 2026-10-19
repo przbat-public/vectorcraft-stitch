@@ -2075,6 +2075,7 @@ mod tests {
             e.live_paint_gaps = Some(Box::default());
             e.embroidery = Some(Box::new(crate::embroidery::Embroidery {
                 stitches: Some(crate::embroidery::StitchRun { trim_before: true, trim_after: false }),
+                trim_after: true,
             }));
         }
         /// The top-level keys of a JSON object, in the order written.

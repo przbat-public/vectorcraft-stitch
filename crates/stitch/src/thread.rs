@@ -183,24 +183,25 @@ pub fn default_thread(index: usize) -> Thread {
 
 /// PEC's thread at `index` (1 to 64; 0, the format's "no colour", is black).
 pub fn pec_thread(index: usize) -> Thread {
-    match index {
-        1..=64 => {
-            let (color, name) = PEC[index - 1];
-            Thread::named(color, name)
-        }
-        _ => Thread::named([0, 0, 0], "Black"),
+    // The chart counts from 1.
+    match index.checked_sub(1).and_then(|i| PEC.get(i)) {
+        Some(&(color, name)) => Thread::named(color, name),
+        None => no_colour(),
     }
 }
 
 /// JEF's thread at `index` (1 to 78; 0, the format's "no colour", is black).
 pub fn jef_thread(index: usize) -> Thread {
-    match index {
-        1..=78 => {
-            let (color, name) = JEF[index - 1];
-            Thread::named(color, name)
-        }
-        _ => Thread::named([0, 0, 0], "Black"),
+    // The chart counts from 1.
+    match index.checked_sub(1).and_then(|i| JEF.get(i)) {
+        Some(&(color, name)) => Thread::named(color, name),
+        None => no_colour(),
     }
+}
+
+/// The thread for a palette index that names none: black.
+fn no_colour() -> Thread {
+    Thread::named([0, 0, 0], "Black")
 }
 
 /// The index of the entry in `palette` nearest `color` (1-based, as the formats count their

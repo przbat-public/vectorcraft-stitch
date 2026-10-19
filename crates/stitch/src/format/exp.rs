@@ -10,20 +10,25 @@
 //!
 //! Reference: EduTechWiki, *Embroidery format EXP* (edutechwiki.unige.ch/en/Embroidery_format_EXP).
 
-use super::{Frame, Reader, finish, steps};
+use super::{Frame, Reader, finish, mm, steps};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The largest delta one record holds, in tenths of a millimetre.
 const MAX_DELTA: i32 = 127;
 /// The command prefix: `0x80` is not a valid delta.
 const CONTROL: u8 = 0x80;
+/// The commands' second bytes: a jump (the needle up, then the deltas), the needle put down where
+/// it is, a colour change (the machine stops), and a trim.
 const JUMP: u8 = 0x04;
 const STITCH_DOWN: u8 = 0x02;
 const COLOR_CHANGE: u8 = 0x01;
 const TRIM: u8 = 0x80;
+/// The two bytes that follow a trim command, as the format's decodings give them: not a move.
+const TRIM_PAYLOAD: [u8; 2] = [0x07, 0x00];
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     let frame = Frame::of(p, true)?;
+    // Two bytes a point, and a little more for commands (a guess; the buffer grows as needed).
     let mut out: Vec<u8> = Vec::with_capacity(p.points().count() * 2 + 16);
     let mut x = 0i32;
     let mut y = 0i32;
@@ -55,7 +60,7 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
                     started = true;
                     wrote_any = true;
                 }
-                Command::Trim => out.extend_from_slice(&[CONTROL, TRIM, 0x07, 0x00]),
+                Command::Trim => out.extend_from_slice(&[CONTROL, TRIM, TRIM_PAYLOAD[0], TRIM_PAYLOAD[1]]),
                 Command::ColorChange | Command::Stop => out.extend_from_slice(&[CONTROL, COLOR_CHANGE, 0, 0]),
                 Command::End => break,
             }
@@ -96,7 +101,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         if b0 != CONTROL {
             x += i32::from(b0 as i8);
             y -= i32::from(b1 as i8);
-            points.push(Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, Command::Stitch));
+            points.push(Stitch::new(mm(x), mm(y), Command::Stitch));
             continue;
         }
         let (Some(dx), Some(dy)) = (r.u8(), r.u8()) else { break };
@@ -105,22 +110,22 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
             JUMP => {
                 x += dx;
                 y -= dy;
-                points.push(Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, Command::Jump));
+                points.push(Stitch::new(mm(x), mm(y), Command::Jump));
             }
             STITCH_DOWN => {
                 x += dx;
                 y -= dy;
-                points.push(Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, Command::Stitch));
+                points.push(Stitch::new(mm(x), mm(y), Command::Stitch));
             }
             COLOR_CHANGE => {
-                points.push(Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, Command::ColorChange));
+                points.push(Stitch::new(mm(x), mm(y), Command::ColorChange));
                 if dx != 0 || dy != 0 {
                     x += dx;
                     y -= dy;
-                    points.push(Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, Command::Jump));
+                    points.push(Stitch::new(mm(x), mm(y), Command::Jump));
                 }
             }
-            TRIM => points.push(Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, Command::Trim)),
+            TRIM => points.push(Stitch::new(mm(x), mm(y), Command::Trim)),
             // An unknown command: stop rather than guess where the needle goes next.
             _ => break,
         }

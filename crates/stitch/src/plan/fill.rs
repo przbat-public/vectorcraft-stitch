@@ -7,7 +7,7 @@ use super::area::{Area, Grid, TRAVEL_STITCH, Travels};
 use super::geometry::{Axes, SubPath, area, length, resample, subpaths};
 use super::runs::{Runs, Travel};
 use super::{MAX_STITCHES, Params, UNDERLAY_STITCH};
-use crate::Stitch;
+use crate::{SAME_POINT, Stitch};
 
 /// The smallest area (square millimetres) a subpath must enclose for a fill to treat it as a
 /// shape rather than a line.
@@ -26,6 +26,31 @@ const TATAMI_UNDERLAY_MIN: f64 = 10.0;
 const MAX_SEEN: f64 = 25.0;
 /// The most rows one layer may have (a guard against absurd parameters).
 const MAX_ROWS: usize = 100_000;
+/// Where the first row sits from the edge of the shape's extent, as a share of the row spacing:
+/// half a spacing in, so that no row lies on a tangent and the thread's own width covers to the
+/// edge. A shape thinner than this across the rows gets no rows.
+const FIRST_ROW: f64 = 0.5;
+/// The stagger: each row's penetrations sit [`STAGGER`] of a stitch along from the row before's,
+/// through a cycle of this many rows, after which they are a whole stitch along, back where they
+/// started; so neighbouring rows never line their penetrations up into a groove. Four rows make a
+/// quarter stitch, Wilcom's default tatami offset fraction
+/// (<https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch>).
+const STAGGER_ROWS: usize = 4;
+/// The share of a stitch each row is shifted by: one cycle of [`STAGGER_ROWS`] is a whole stitch.
+const STAGGER: f64 = 1.0 / STAGGER_ROWS as f64;
+/// A row's last stitch is left out when it is no longer than this share of the stitch length:
+/// the needle turns diagonally into the next row instead of crawling a spacing along the edge.
+const SHORT_LAST: f64 = 0.5;
+/// A turn into the next row that leaves the shape is taken round inside it when it is longer
+/// than this (millimetres); a shorter one only shaves a corner and is sewn straight.
+const SHAVED_CORNER: f64 = 1.0;
+/// A row shorter than this many spacings, or than [`MIN_ROW`] millimetres, has no room for a fill
+/// and is left out.
+const MIN_ROW_SPACINGS: f64 = 2.0;
+const MIN_ROW: f64 = 0.8;
+/// The tatami underlay's rows run this many degrees from the top rows: across them, so the
+/// underlay holds the fabric the other way.
+const UNDERLAY_TURN: f64 = 90.0;
 
 /// A tatami fill of `path`: rows of stitches at [`Params::angle`] degrees, [`Params::density`]
 /// apart, each split into stitches at most [`Params::stitch_length`] long, over an edge run and,
@@ -68,7 +93,7 @@ pub(super) fn fill_from(path: &BezPath, rule: FillRule, p: &Params, from: Option
     }
     let axes = Axes::new(p.angle);
     if let Some((lo, hi)) = shape.extent(axes.across)
-        && hi - lo >= p.density * 0.5
+        && hi - lo >= p.density * FIRST_ROW
     {
         let layer = Layer { axes, spacing: p.density, inset: 0.0 };
         let regions = layer.regions(shape, lo, hi);
@@ -102,7 +127,7 @@ fn edge_runs(travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
 /// little inside the edge so they never peek out.
 fn tatami_underlay(travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
     let shape = travels.area;
-    let under = Params { angle: p.angle + 90.0, density: TATAMI_UNDERLAY_SPACING, stitch_length: TATAMI_UNDERLAY_STITCH, ..*p }.sane();
+    let under = Params { angle: p.angle + UNDERLAY_TURN, density: TATAMI_UNDERLAY_SPACING, stitch_length: TATAMI_UNDERLAY_STITCH, ..*p }.sane();
     let axes = Axes::new(under.angle);
     let (Some(w), Some(h)) = (shape.extent(axes.along), shape.extent(axes.across)) else { return };
     if w.1 - w.0 < TATAMI_UNDERLAY_MIN || h.1 - h.0 < TATAMI_UNDERLAY_MIN {
@@ -139,7 +164,7 @@ impl Layer {
         // Every row's position and spans, for the overlaps below.
         let mut all: Vec<(f64, Vec<(f64, f64)>)> = Vec::with_capacity(rows);
         for row in 0..rows {
-            let t = lo + self.spacing * (row as f64 + 0.5);
+            let t = lo + self.spacing * (row as f64 + FIRST_ROW);
             let spans: Vec<(f64, f64)> =
                 shape.spans(self.axes, t).into_iter().map(|(a, b)| (a + self.inset, b - self.inset)).filter(|(a, b)| b > a).collect();
             all.push((t, spans.clone()));
@@ -186,8 +211,11 @@ impl Layer {
                 let Some(next) = (if after { index.checked_add(1) } else { index.checked_sub(1) }) else { continue };
                 let Some((t, spans)) = all.get(next) else { continue };
                 // The neighbouring span that shares the most with this end.
-                let shared =
-                    spans.iter().map(|s| (s.0.max(a), s.1.min(b))).filter(|(x, y)| y - x > 1e-9).max_by(|x, y| (x.1 - x.0).total_cmp(&(y.1 - y.0)));
+                let shared = spans
+                    .iter()
+                    .map(|s| (s.0.max(a), s.1.min(b)))
+                    .filter(|(x, y)| y - x > SAME_POINT)
+                    .max_by(|x, y| (x.1 - x.0).total_cmp(&(y.1 - y.0)));
                 if let Some((x, y)) = shared {
                     let row = Row { index: next, t: *t, a: x, b: y };
                     if after {
@@ -236,7 +264,7 @@ impl Region {
         for row in order {
             // The stagger walks a quarter stitch at a time through a cycle of four rows: no two
             // rows line their penetrations up into a groove.
-            let phase = 0.25 * (row.index % 4) as f64;
+            let phase = STAGGER * (row.index % STAGGER_ROWS) as f64;
             let along = row_points(row.a, row.b, phase, p);
             if along.len() < 2 {
                 continue;
@@ -250,7 +278,7 @@ impl Region {
             // is short, so the turn stays a short stitch too.
             if let [.., prev, last] = pts.as_slice()
                 && pts.len() > 2
-                && prev.distance(*last) <= 0.5 * p.stitch_length
+                && prev.distance(*last) <= SHORT_LAST * p.stitch_length
             {
                 pts.pop();
             }
@@ -284,6 +312,8 @@ impl Cover {
     fn seen(&self, route: &[Point], sewn: &[bool]) -> f64 {
         /// How finely a way is measured (millimetres).
         const STEP: f64 = 0.5;
+        /// The most steps one stretch is measured in (a bound on the work).
+        const MAX_STEPS: f64 = 10_000.0;
         let mut shows = 0.0;
         for w in route.windows(2) {
             let [a, b] = w else { continue };
@@ -291,8 +321,9 @@ impl Cover {
             if !len.is_finite() {
                 continue;
             }
-            let steps = (len / STEP).ceil().clamp(1.0, 10_000.0) as usize;
+            let steps = (len / STEP).ceil().clamp(1.0, MAX_STEPS) as usize;
             for k in 0..steps {
+                // The middle of each step.
                 let q = a.lerp(*b, (k as f64 + 0.5) / steps as f64);
                 if self.sewn_at(q, sewn) {
                     shows += len / steps as f64;
@@ -536,7 +567,7 @@ impl Sewing<'_, '_, '_> {
                     // A turn into the region's next row is sewn while it stays inside the shape.
                     // Along a concave edge (the flat top of a round hole) it would cut across the
                     // hole: then it travels round, or lifts, unless it only shaves a corner.
-                    (_, Some(h), Some(&f)) if h.distance(f) > 1.0 && !self.travels.area.contains_segment(h, f) => {
+                    (_, Some(h), Some(&f)) if h.distance(f) > SHAVED_CORNER && !self.travels.area.contains_segment(h, f) => {
                         runs.approach(self.travels, f, max_seen, &seen, p)
                     }
                     // A long turn (where the edge runs nearly along the rows) would be one long
@@ -565,8 +596,7 @@ impl Sewing<'_, '_, '_> {
 /// at most that much longer).
 fn row_points(a: f64, b: f64, phase: f64, p: &Params) -> Vec<f64> {
     let len = b - a;
-    // A row shorter than two row spacings (or 0.8 mm) has no room for a fill: leave it out.
-    let shortest = (2.0 * p.density).max(0.8);
+    let shortest = (MIN_ROW_SPACINGS * p.density).max(MIN_ROW);
     if !len.is_finite() || len < shortest || len < p.min_stitch {
         return Vec::new();
     }

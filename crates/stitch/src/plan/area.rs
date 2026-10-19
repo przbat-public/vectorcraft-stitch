@@ -3,7 +3,8 @@
 
 use vectorcraft_geom::{FillRule, Point, Vec2};
 
-use super::geometry::{Axes, SubPath, unit};
+use super::geometry::{Axes, NO_LENGTH, SubPath, unit};
+use crate::SAME_POINT;
 
 /// A travel run's stitch length (millimetres): short, so it follows curves and hides under the
 /// fill.
@@ -52,7 +53,7 @@ impl Area<'_> {
         if !(a.x.is_finite() && a.y.is_finite() && b.x.is_finite() && b.y.is_finite()) {
             return false;
         }
-        if a.distance(b) < 1e-9 {
+        if a.distance(b) < SAME_POINT {
             return self.contains(a);
         }
         let crosses = match self.grid {
@@ -108,7 +109,7 @@ impl Area<'_> {
             FillRule::EvenOdd => {
                 for pair in crossings.chunks(2) {
                     if let [a, b] = pair
-                        && b.0 - a.0 > 1e-9
+                        && b.0 - a.0 > SAME_POINT
                     {
                         spans.push((a.0, b.0));
                     }
@@ -122,7 +123,7 @@ impl Area<'_> {
                     winding += dir;
                     if before == 0 && winding != 0 {
                         start = s;
-                    } else if before != 0 && winding == 0 && s - start > 1e-9 {
+                    } else if before != 0 && winding == 0 && s - start > SAME_POINT {
                         spans.push((start, s));
                     }
                 }
@@ -152,7 +153,7 @@ impl Area<'_> {
         // Between the two edges, just by the corner: inside at a convex corner, outside at a reflex
         // one. (Two edges folded back on each other: a spike, kept.)
         let between = q + (u + v) * (TRAVEL_MARGIN / 2.0);
-        between.distance(q) < 1e-9 || !self.contains(between)
+        between.distance(q) < SAME_POINT || !self.contains(between)
     }
 }
 
@@ -167,10 +168,16 @@ pub(super) struct Travels<'a> {
     /// The graph's corners, once built; empty when the outlines have more than
     /// [`MAX_TRAVEL_NODES`] (then only straight travels are made).
     corners: Option<Vec<Point>>,
-    /// Whether two corners see each other: 0 not known yet, 1 yes, 2 no (row-major, the lower
-    /// index first).
+    /// Whether two corners see each other ([`UNKNOWN`], [`SEES`] or [`BLOCKED`]; row-major, the
+    /// lower index first).
     sees: Vec<u8>,
 }
+
+/// Whether two of a travel graph's corners see each other: not worked out yet, yes (the straight
+/// line between them stays inside), or no.
+const UNKNOWN: u8 = 0;
+const SEES: u8 = 1;
+const BLOCKED: u8 = 2;
 
 impl<'a> Travels<'a> {
     pub(super) fn new(area: Area<'a>) -> Self {
@@ -189,7 +196,7 @@ impl<'a> Travels<'a> {
                     break;
                 }
             }
-            self.sees = vec![0; nodes.len() * nodes.len()];
+            self.sees = vec![UNKNOWN; nodes.len() * nodes.len()];
             self.corners = Some(nodes);
         }
         self.corners.as_ref().map_or(0, Vec::len)
@@ -204,14 +211,14 @@ impl<'a> Travels<'a> {
         let n = self.corners.as_ref().map_or(0, Vec::len);
         let (lo, hi) = (i.min(j), i.max(j));
         let k = lo * n + hi;
-        match self.sees.get(k) {
-            Some(1) => true,
-            Some(2) => false,
+        match self.sees.get(k).copied() {
+            Some(SEES) => true,
+            Some(BLOCKED) => false,
             Some(_) => {
                 let (Some(a), Some(b)) = (self.corner(lo), self.corner(hi)) else { return false };
                 let yes = self.area.contains_segment(a, b);
                 if let Some(v) = self.sees.get_mut(k) {
-                    *v = if yes { 1 } else { 2 };
+                    *v = if yes { SEES } else { BLOCKED };
                 }
                 yes
             }
@@ -326,7 +333,7 @@ const ON_EDGE: f64 = 1e-6;
 fn near_segment(q: Point, c: Point, d: Point) -> bool {
     let cd = d - c;
     let len2 = cd.hypot2();
-    if !len2.is_finite() || len2 < 1e-18 {
+    if !len2.is_finite() || len2 < SAME_POINT * SAME_POINT {
         return q.distance(c) < ON_EDGE;
     }
     let t = ((q - c).dot(cd) / len2).clamp(0.0, 1.0);
@@ -335,15 +342,24 @@ fn near_segment(q: Point, c: Point, d: Point) -> bool {
 
 /// Whether segment `a`–`b` crosses edge `c`–`d` (touching it at `a` or `b` does not count).
 fn crossing(a: Point, b: Point, c: Point, d: Point) -> bool {
+    /// Below this the two are parallel (square millimetres: the cross product of the two
+    /// segments), and parallel segments never cross.
+    const PARALLEL: f64 = 1e-12;
+    /// How near its ends (a share of its length) the tested segment may meet the edge without
+    /// crossing it: its ends lie on edges (row ends, corners) within rounding.
+    const SEGMENT_END: f64 = 1e-6;
+    /// How near the edge's ends (a share of its length) a meeting doesn't count: the segment
+    /// passes through the corner there rather than across the edge.
+    const EDGE_END: f64 = 1e-9;
     let (ab, cd) = (b - a, d - c);
     let denom = ab.cross(cd);
-    if denom.abs() < 1e-12 {
+    if denom.abs() < PARALLEL {
         return false;
     }
     // Where the two lines meet, as a share of each segment.
     let t = (c - a).cross(cd) / denom;
     let u = (c - a).cross(ab) / denom;
-    t > 1e-6 && t < 1.0 - 1e-6 && u > 1e-9 && u < 1.0 - 1e-9
+    t > SEGMENT_END && t < 1.0 - SEGMENT_END && u > EDGE_END && u < 1.0 - EDGE_END
 }
 
 /// The outlines' edges sorted into square cells, so that a test along a segment or a ray looks
@@ -366,6 +382,13 @@ impl Grid {
     /// The most cells an edge takes on average (on top of one entry per cell): past that, the
     /// grid is not built and tests look at every edge.
     const ENTRIES_PER_EDGE: usize = 32;
+    /// How many edges a cell holds on average: the cell size is chosen for it.
+    const EDGES_PER_CELL: f64 = 2.0;
+    /// The thinnest an outline's extent counts as (millimetres): a flat one still gets cells.
+    const MIN_EXTENT: f64 = 1e-6;
+    /// How far each edge reaches past the cells it passes, as a share of a cell, so that a point on
+    /// a cell's border finds the edge from either side.
+    const HAIR: f64 = 1e-6;
 
     /// The grid of `outlines`' edges; `None` when they have no finite extent, or when their edges
     /// are so long for their number that the grid would cost more than it saves.
@@ -382,9 +405,11 @@ impl Grid {
         if !(w.is_finite() && h.is_finite()) || edges.is_empty() {
             return None;
         }
-        // About two edges per cell, never more than MAX_SIDE cells a side.
-        let side = w.max(h).max(1e-6);
-        let cell = ((w.max(1e-6) * h.max(1e-6) * 2.0 / edges.len() as f64).sqrt()).max(side / Self::MAX_SIDE as f64);
+        // About EDGES_PER_CELL edges per cell, never more than MAX_SIDE cells a side; a flat
+        // outline (no height or no width) counts as MIN_EXTENT thick.
+        let side = w.max(h).max(Self::MIN_EXTENT);
+        let cell = ((w.max(Self::MIN_EXTENT) * h.max(Self::MIN_EXTENT) * Self::EDGES_PER_CELL / edges.len() as f64).sqrt())
+            .max(side / Self::MAX_SIDE as f64);
         let nx = ((w / cell).floor() as usize + 1).min(Self::MAX_SIDE);
         let ny = ((h / cell).floor() as usize + 1).min(Self::MAX_SIDE);
         let mut grid = Self { x0, y0, cell, nx, ny, cells: vec![Vec::new(); nx * ny], edges: Vec::new() };
@@ -393,7 +418,7 @@ impl Grid {
         // on a cell's border finds the edge from either side. An edge's own box would be simpler,
         // but a long diagonal edge fills its whole box: thousands of edges across a shape would
         // take gigabytes.
-        let hair = cell * 1e-6;
+        let hair = cell * Self::HAIR;
         let budget = edges.len().saturating_mul(Self::ENTRIES_PER_EDGE).saturating_add(nx * ny);
         let mut entries = 0usize;
         for (i, &(a, b)) in edges.iter().enumerate() {
@@ -402,7 +427,7 @@ impl Grid {
                 // The row's band; the first and last rows reach out, as `row` clamps to them.
                 let lo = if r == 0 { f64::NEG_INFINITY } else { y0 + cell * r as f64 - hair };
                 let hi = if r + 1 >= ny { f64::INFINITY } else { y0 + cell * (r + 1) as f64 + hair };
-                let (xa, xb) = if (b.y - a.y).abs() < 1e-12 {
+                let (xa, xb) = if (b.y - a.y).abs() < NO_LENGTH {
                     (a.x, b.x)
                 } else {
                     let at = |y: f64| a.x + (b.x - a.x) * ((y - a.y) / (b.y - a.y)).clamp(0.0, 1.0);
@@ -458,7 +483,9 @@ impl Grid {
         let (ec, er) = (self.col(b.x), self.row(b.y));
         let d = b - a;
         let next = |at: f64, origin: f64, dir: f64, k: usize| -> (f64, f64) {
-            if dir.abs() < 1e-15 {
+            // The segment doesn't move this way (millimetres): it never crosses a cell border.
+            const STILL: f64 = 1e-15;
+            if dir.abs() < STILL {
                 return (f64::INFINITY, f64::INFINITY);
             }
             let edge = origin + self.cell * (k as f64 + if dir > 0.0 { 1.0 } else { 0.0 });
@@ -516,7 +543,7 @@ fn simplify(pts: &[Point], tolerance: f64) -> Vec<Point> {
         // The point between the two farthest from the line through them.
         let far = (i + 1..j)
             .filter_map(|k| Some((k, *pts.get(k)?)))
-            .map(|(k, r)| (k, if len > 1e-9 { (r - p).cross(pq).abs() / len } else { r.distance(p) }))
+            .map(|(k, r)| (k, if len > SAME_POINT { (r - p).cross(pq).abs() / len } else { r.distance(p) }))
             .max_by(|x, y| x.1.total_cmp(&y.1));
         if let Some((k, d)) = far
             && d > tolerance

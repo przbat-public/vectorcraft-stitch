@@ -59,7 +59,7 @@ pub const TRIM: f64 = 10.0;
 /// The longest satin stitch before it is split (millimetres): longer stitches snag and sag. An
 /// estimate (professional software makes it a setting, bounded by the machine format: 12.1 mm
 /// per record in DST).
-const MAX_SATIN: f64 = 10.0;
+const MAX_SATIN_STITCH: f64 = 10.0;
 /// The widest satin column (millimetres): a wider one is sewn this wide. Far beyond what a satin
 /// can cover (professional practice tops out near 10–12 mm), a bound on the stitching.
 pub const MAX_SATIN_WIDTH: f64 = 50.0;
@@ -74,6 +74,23 @@ const FILL_SPACING: f64 = 0.38;
 /// The longest stitch of a fill row (millimetres). Wilcom's tatami default (same page as
 /// [`FILL_SPACING`]).
 const FILL_STITCH: f64 = 4.0;
+/// The longest stitch of a running line (millimetres): short enough to follow curves and corners
+/// closely, long enough that the thread doesn't pile up. An estimate within the 2–3 mm usual for
+/// outlines.
+const RUNNING_STITCH: f64 = 2.5;
+/// Shorter stitches are left out (millimetres): a tiny stitch can break the thread or cut the
+/// fabric, and a repeated point is noise. An estimate.
+const MIN_STITCH: f64 = 0.4;
+/// The direction of a fill's rows, degrees (0: left to right). Diagonal, so that rows don't run
+/// along a shape's horizontal and vertical edges, where they would show each step of the edge.
+const FILL_ANGLE: f64 = 45.0;
+/// Pull compensation on a satin column (millimetres added on each side): the fabric draws the
+/// thread in, so a column sewn exactly as wide as drawn comes out narrower. 0.2 mm is a usual
+/// starting value for stable woven fabric; stretchy fabrics need more (fabric presets).
+const SATIN_PULL: f64 = 0.2;
+/// A satin column's width when none is given (millimetres). The export always gives one, the
+/// stroke's width; this is for callers of the planner that don't.
+const SATIN_WIDTH: f64 = 3.0;
 /// The underlay's own stitch length (millimetres): short, to hold the fabric still.
 const UNDERLAY_STITCH: f64 = 2.0;
 /// The most runs one shape may produce (a guard against absurd parameters).
@@ -155,6 +172,28 @@ pub struct Params {
     pub auto_spacing: bool,
 }
 
+// The ranges [`Params::sane`] clamps each value to (millimetres, lowest and highest). They are
+// not settings: they keep the planning finite and the stitches within what a machine sews, and
+// anything outside them is a mistake or hostile input.
+
+/// A stitch length: from 0.2 mm (two of the 0.1 mm steps the machine formats count in) to 12 mm,
+/// about the longest move one record of the machine formats holds (12.1 mm in DST).
+const STITCH_LENGTH_RANGE: (f64, f64) = (0.2, 12.0);
+/// The distance between threads: from 0.05 mm (twenty threads a millimetre, far denser than any
+/// fabric takes) to 5 mm (rows that no longer cover).
+const DENSITY_RANGE: (f64, f64) = (0.05, 5.0);
+/// Pull compensation: none to 2 mm, far more than the most stretchy fabric needs.
+const PULL_RANGE: (f64, f64) = (0.0, 2.0);
+/// The longest move sewn rather than jumped: from 0.5 mm to 20 mm, past which a sewn move would be
+/// a loose thread across the design.
+const JUMP_RANGE: (f64, f64) = (0.5, 20.0);
+/// The longest jump left uncut: from the jump length itself (every jump cut) to a metre (none).
+const MAX_TRIM: f64 = 1000.0;
+/// The shortest stitch kept: from 0.05 mm to 3 mm.
+const MIN_STITCH_RANGE: (f64, f64) = (0.05, 3.0);
+/// The longest satin stitch before it is split: from 2 mm to the 12 mm of [`STITCH_LENGTH_RANGE`].
+const MAX_SATIN_STITCH_RANGE: (f64, f64) = (2.0, 12.0);
+
 impl Default for Params {
     fn default() -> Self {
         Self::for_style(Style::Running)
@@ -165,49 +204,52 @@ impl Params {
     /// The defaults of one style.
     pub fn for_style(style: Style) -> Self {
         match style {
+            // A running line uses no density, angle, pull, underlay or width.
             Style::Running => Self {
                 style,
-                stitch_length: 2.5,
-                density: 0.5,
+                stitch_length: RUNNING_STITCH,
+                density: FILL_SPACING,
                 angle: 0.0,
                 pull: 0.0,
                 underlay: false,
                 jump: JUMP,
                 trim: TRIM,
                 lock: true,
-                min_stitch: 0.4,
+                min_stitch: MIN_STITCH,
                 width: 0.0,
-                max_satin: MAX_SATIN,
+                max_satin: MAX_SATIN_STITCH,
                 auto_spacing: false,
             },
+            // A satin column's stitches cross from rail to rail: it uses no stitch length or angle
+            // (a satin without a width is filled instead, and then they apply).
             Style::Satin => Self {
                 style,
-                stitch_length: 2.5,
+                stitch_length: RUNNING_STITCH,
                 density: FILL_SPACING,
                 angle: 0.0,
-                pull: 0.2,
+                pull: SATIN_PULL,
                 underlay: true,
                 jump: JUMP,
                 trim: TRIM,
                 lock: true,
-                min_stitch: 0.4,
-                width: 3.0,
-                max_satin: MAX_SATIN,
+                min_stitch: MIN_STITCH,
+                width: SATIN_WIDTH,
+                max_satin: MAX_SATIN_STITCH,
                 auto_spacing: true,
             },
             Style::Fill => Self {
                 style,
                 stitch_length: FILL_STITCH,
                 density: FILL_SPACING,
-                angle: 45.0,
+                angle: FILL_ANGLE,
                 pull: 0.0,
                 underlay: true,
                 jump: JUMP,
                 trim: TRIM,
                 lock: true,
-                min_stitch: 0.4,
+                min_stitch: MIN_STITCH,
                 width: 0.0,
-                max_satin: MAX_SATIN,
+                max_satin: MAX_SATIN_STITCH,
                 auto_spacing: false,
             },
         }
@@ -215,25 +257,26 @@ impl Params {
 
     /// The same parameters with every value clamped to a range that produces a stitch plan:
     /// not finite falls back to the style's default, and each distance is bounded so that no
-    /// loop can run away.
+    /// loop can run away (the `*_RANGE` constants below).
     pub fn sane(self) -> Self {
         let d = Self::for_style(self.style);
         let fin = |v: f64, fallback: f64| if v.is_finite() { v } else { fallback };
+        let clamp = |v: f64, fallback: f64, (lo, hi): (f64, f64)| fin(v, fallback).clamp(lo, hi);
         let angle = fin(self.angle, d.angle) % 360.0;
-        let jump = fin(self.jump, d.jump).clamp(0.5, 20.0);
+        let jump = clamp(self.jump, d.jump, JUMP_RANGE);
         Self {
             style: self.style,
-            stitch_length: fin(self.stitch_length, d.stitch_length).clamp(0.2, 12.0),
-            density: fin(self.density, d.density).clamp(0.05, 5.0),
+            stitch_length: clamp(self.stitch_length, d.stitch_length, STITCH_LENGTH_RANGE),
+            density: clamp(self.density, d.density, DENSITY_RANGE),
             angle: if angle < 0.0 { angle + 360.0 } else { angle },
-            pull: fin(self.pull, d.pull).clamp(0.0, 2.0),
+            pull: clamp(self.pull, d.pull, PULL_RANGE),
             underlay: self.underlay,
             jump,
-            trim: fin(self.trim, d.trim).clamp(jump, 1000.0),
+            trim: clamp(self.trim, d.trim, (jump, MAX_TRIM)),
             lock: self.lock,
-            min_stitch: fin(self.min_stitch, d.min_stitch).clamp(0.05, 3.0),
-            width: fin(self.width, d.width).clamp(0.0, MAX_SATIN_WIDTH),
-            max_satin: fin(self.max_satin, d.max_satin).clamp(2.0, 12.0),
+            min_stitch: clamp(self.min_stitch, d.min_stitch, MIN_STITCH_RANGE),
+            width: clamp(self.width, d.width, (0.0, MAX_SATIN_WIDTH)),
+            max_satin: clamp(self.max_satin, d.max_satin, MAX_SATIN_STITCH_RANGE),
             auto_spacing: self.auto_spacing,
         }
     }
@@ -282,8 +325,13 @@ pub fn try_stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Optio
 /// About how many points `subs` plan into in style `p` (an upper estimate; not finite when the
 /// geometry is not).
 fn estimate(subs: &[SubPath], p: &Params) -> f64 {
+    /// More than the points a subpath adds beyond its stitches: the lock stitch, tie-in or tie-off
+    /// at each of its two ends.
+    const POINTS_PER_SUBPATH: f64 = 6.0;
+    /// More than the points each fill row adds beyond its stitches: its two ends.
+    const POINTS_PER_ROW: f64 = 2.0;
     let total: f64 = subs.iter().map(|s| length(&s.points(), s.closed)).sum();
-    let ends = 6.0 * subs.len() as f64;
+    let ends = POINTS_PER_SUBPATH * subs.len() as f64;
     match p.style {
         Style::Running => total / p.stitch_length + ends,
         Style::Satin if p.width > 0.0 => total / UNDERLAY_STITCH + total / p.density + ends,
@@ -297,8 +345,9 @@ fn estimate(subs: &[SubPath], p: &Params) -> f64 {
                     .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), t| (lo.min(t), hi.max(t)));
                 if hi >= lo { hi - lo } else { 0.0 }
             };
+            // One row more than fit in the extent: a part row at the edge.
             let rows = extent(&|q| axes.across(q)) / p.density + 1.0;
-            total / UNDERLAY_STITCH + rows * (extent(&|q| axes.along(q)) / p.stitch_length + 2.0) + ends
+            total / UNDERLAY_STITCH + rows * (extent(&|q| axes.along(q)) / p.stitch_length + POINTS_PER_ROW) + ends
         }
     }
 }

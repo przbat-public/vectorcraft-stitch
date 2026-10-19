@@ -8,7 +8,7 @@
 use vectorcraft_doc::NodeId;
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_stitch::plan::Params;
-use vectorcraft_stitch::{Block, Command, Stitch};
+use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch};
 
 /// How far apart two blocks' stitches must be not to touch: a thread's width and a satin's pull.
 pub(super) const CLEARANCE: f64 = 1.0;
@@ -116,7 +116,7 @@ impl Sequence {
                     if last.command != Command::Trim && at.distance(first) > self.connect.trim {
                         merged.stitches.push(Stitch::new(last.x, last.y, Command::Trim));
                     }
-                    if at.distance(first) > 1e-9 || last.command == Command::Trim {
+                    if at.distance(first) > SAME_POINT || last.command == Command::Trim {
                         merged.stitches.push(Stitch::jump(first.point()));
                     } else if first.command == Command::Stitch {
                         skip = 1;

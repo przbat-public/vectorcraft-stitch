@@ -45,7 +45,9 @@ impl Area<'_> {
     }
 
     /// Whether the straight line from `a` to `b` stays inside: it crosses no edge (touching one
-    /// at its ends is fine: row ends lie on the edge) and its middle is inside.
+    /// at its ends is fine: row ends lie on the edge) and its middle is inside, or it runs along an
+    /// edge (the outline belongs to the area: a turn between two rows that end on one straight
+    /// edge follows it, and the inside test can't tell a point on the edge).
     pub(super) fn contains_segment(&self, a: Point, b: Point) -> bool {
         if !(a.x.is_finite() && a.y.is_finite() && b.x.is_finite() && b.y.is_finite()) {
             return false;
@@ -57,7 +59,17 @@ impl Area<'_> {
             Some(grid) => grid.any_along(a, b, |c, d| crossing(a, b, c, d)),
             None => self.edges().any(|(c, d)| crossing(a, b, c, d)),
         };
-        !crosses && self.contains(a.midpoint(b))
+        !crosses && (self.contains(a.midpoint(b)) || self.along_edge(a, b))
+    }
+
+    /// Whether the segment from `a` to `b` lies on one of the outlines' edges, both its ends within
+    /// [`ON_EDGE`] of it.
+    fn along_edge(&self, a: Point, b: Point) -> bool {
+        let on = |c: Point, d: Point| near_segment(a, c, d) && near_segment(b, c, d);
+        match self.grid {
+            Some(grid) => grid.any_along(a, b, on),
+            None => self.edges().any(|(c, d)| on(c, d)),
+        }
     }
 
     /// Where the outlines' points fall along `v`: the lowest and highest, `None` when none is
@@ -304,6 +316,21 @@ fn winding(edges: impl Iterator<Item = (Point, Point)>, q: Point) -> i32 {
         }
     }
     winding
+}
+
+/// How near a point must be to an edge to lie on it (millimetres): row ends are computed on the
+/// edges, so they lie within rounding of them.
+const ON_EDGE: f64 = 1e-6;
+
+/// Whether `q` lies within [`ON_EDGE`] of the segment from `c` to `d`.
+fn near_segment(q: Point, c: Point, d: Point) -> bool {
+    let cd = d - c;
+    let len2 = cd.hypot2();
+    if !len2.is_finite() || len2 < 1e-18 {
+        return q.distance(c) < ON_EDGE;
+    }
+    let t = ((q - c).dot(cd) / len2).clamp(0.0, 1.0);
+    q.distance(c + cd * t) < ON_EDGE
 }
 
 /// Whether segment `a`–`b` crosses edge `c`–`d` (touching it at `a` or `b` does not count).

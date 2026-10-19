@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** a running line, edge run or travel along a fine zigzag keeps its stitch length (a needle point moves onto a corner once at most); JEF trims: three zero-length jumps each, now with their source (pyembroidery), and a single one read as a trim
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** a turn between two fill rows that end on one straight edge runs along it instead of lifting the needle (jumps on the real designs 69 → 56)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -119,7 +119,7 @@ the fabric.
   only a row's first and last stitches are shorter. A row's last stitch is left out when it is
   short, so the needle turns diagonally into the next row instead of crawling along the edge; a
   long turn (where the edge runs nearly along the rows) is sewn as short travel stitches rather
-  than one loose stitch. Rows sit half a spacing inside the shape's extent: no row lies on a
+  than one loose stitch; a turn between two rows that end on one straight edge runs along it. Rows sit half a spacing inside the shape's extent: no row lies on a
   tangent, and the thread's width covers to the edge. Holes are left unstitched: the shape's fill
   rule decides what is inside, as it does for paint.
 
@@ -233,13 +233,14 @@ index, whose RGB values differ between published charts — preview colour is no
 
 ## Validation
 
-- `crates/stitch`: 52 unit tests and 3 property tests — the fill covers a rectangle and leaves its hole empty, an
+- `crates/stitch`: 55 unit tests and 3 property tests — the fill covers a rectangle and leaves its hole empty, an
   unclosed shape is filled, a ring is sewn in regions with no thread across its hole and,
   travelling inside, without a trim, regions overlap by a row, a narrow gap is never sewn across,
   a letter E is sewn in one go at any angle (every 5°) without crossing its gaps, and so are a U,
   combs, a ring and an H (every 15°, underlay or not: a travel that shows a little beats a jump,
   and a cut costs more still), of those orders the one that travels least wins (a U's arms are
-  joined to the bar near where they meet it), a travel that would show more than 25 mm lifts the
+  joined to the bar near where they meet it), a turn between rows that end on one straight edge
+  is sewn along it (two U shapes at every spacing from 0.3 to 0.45 mm), a travel that would show more than 25 mm lifts the
   needle (a comb of 200 teeth, beyond the order search), a travel passes a corner half a
   millimetre inside, fill rows stagger a quarter stitch at a time through a cycle of four, a gear of 90 teeth and 24
   holes travels inside, the edge grid answers what testing every edge does (long crossing edges included) and stays small however long the edges are (or is not built), separate pieces jump
@@ -318,6 +319,12 @@ short hops with the thread on (the bullseye's 8 new ones are about 1 mm, between
 a 25 mm trim length it would be 7; with 5 mm (every jump cut, as before) about 46. The
 watermelon's seeds, which the person did not sew, are joined by tied jumps of 4–10 mm and two
 trims.
+
+A later fix: a turn between two rows that end on one straight edge (rows nearly parallel to the
+edge) lay exactly on the outline, which the inside test can't tell from outside, so it was taken
+for a way out of the shape and the needle lifted or travelled round. Now a segment along an edge
+is inside. Jumps fall from 69 to 56 (the bullseye 9 → 3, the video game 12 → 9, the zebra
+15 → 12, the pool ball 1 → 0); trims stay at 25, stitch counts within 2 %.
 
 The comparison also found and fixed: a shape drawn without a final close sewn as an outline (the
 heart: 42 stitches instead of a fill), fill stitches up to 1.5 times `stitchLength` (the old

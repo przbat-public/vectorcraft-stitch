@@ -176,8 +176,15 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
   PR description.
 - **Commit a refactor apart from behaviour changes:** first the pure move (code moved or renamed,
   tests unchanged and passing), then the fixes, so each diff shows what really changed.
-- **PR descriptions are in English** and self-contained, with embroidery terms explained for
-  newcomers.
+- **PR descriptions are in English and self-contained.** Someone who knows neither this
+  repository's history nor the conversation behind the work must understand them: explain the
+  embroidery terms, and don't lean on another PR's text (link it and say in a sentence what it
+  brings). Start with a **TL;DR**: a few bullets on what changes, what it gives, and what to
+  watch. Then the details, the results (measured, with numbers), the tests, what is not done, and
+  the checks run.
+- **Don't hard-wrap text that goes to GitHub.** Write each paragraph and each list item of a PR
+  description, issue or comment on one line: GitHub shows every line break there, so text wrapped
+  at a fixed width reads as ragged short lines. (Files in the repository keep their wrapping.)
 - **Embroidery isn't an Illustrator feature,** so it doesn't move the Illustrator-parity scores in
   `docs/target-app-parity.md`. Record it in `docs/file-format-parity.md` (format rows) and the
   ROADMAP's progress log.

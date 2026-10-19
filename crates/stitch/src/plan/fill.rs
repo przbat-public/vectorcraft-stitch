@@ -11,7 +11,7 @@ use crate::{SAME_POINT, Stitch};
 
 /// The smallest area (square millimetres) a subpath must enclose for a fill to treat it as a
 /// shape rather than a line.
-const MIN_AREA: f64 = 0.01;
+pub const MIN_AREA: f64 = 0.01;
 /// A large fill's second underlay, sparse tatami rows across the top ones: the spacing of its rows
 /// and its stitch length (millimetres), how far inside the edge it stays, and the smallest fill
 /// (both ways, millimetres) that gets it. Estimates.
@@ -53,9 +53,10 @@ const MIN_ROW: f64 = 0.8;
 const UNDERLAY_TURN: f64 = 90.0;
 
 /// A tatami fill of `path`: rows of stitches at [`Params::angle`] degrees, [`Params::density`]
-/// apart, each split into stitches at most [`Params::stitch_length`] long, over an edge run and,
-/// for a large shape, a tatami underlay when [`Params::underlay`] is on. A subpath that encloses
-/// no area is a line: it is sewn as a running line.
+/// apart, each split into stitches at most [`Params::stitch_length`] long and reaching past the
+/// edge at its ends by its pull compensation ([`Params::compensation`] of its length), over an
+/// edge run and, for a large shape, a tatami underlay when [`Params::underlay`] is on. A subpath
+/// that encloses no area is a line: it is sewn as a running line.
 pub fn fill(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
     fill_from(path, rule, p, None)
 }
@@ -96,7 +97,7 @@ pub(super) fn fill_from(path: &BezPath, rule: FillRule, p: &Params, from: Option
         && hi - lo >= p.density * FIRST_ROW
     {
         let layer = Layer { axes, spacing: p.density, inset: 0.0 };
-        let regions = layer.regions(shape, lo, hi);
+        let regions = layer.regions(shape, lo, hi, &p);
         sew(&regions, &mut travels, MAX_SEEN, true, &p, &mut runs);
     }
     runs.join(&p)
@@ -107,7 +108,7 @@ pub(super) fn fill_from(path: &BezPath, rule: FillRule, p: &Params, from: Option
 /// any length).
 fn edge_runs(travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
     for sub in travels.area.outlines {
-        let start = runs.here().and_then(|h| {
+        let start = runs.here_inside().and_then(|h| {
             (0..sub.pts.len()).min_by(|&i, &j| {
                 sub.pts.get(i).map_or(f64::INFINITY, |q| q.distance(h)).total_cmp(&sub.pts.get(j).map_or(f64::INFINITY, |q| q.distance(h)))
             })
@@ -118,7 +119,7 @@ fn edge_runs(travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
         }
         let under = resample(&pts, UNDERLAY_STITCH, true);
         let Some(&first) = under.first() else { continue };
-        let travel = runs.approach(travels, first, f64::INFINITY, &|_| 0.0, p);
+        let travel = runs.approach(travels, first, first, f64::INFINITY, &|_| 0.0, p);
         runs.push(under, travel);
     }
 }
@@ -127,14 +128,23 @@ fn edge_runs(travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
 /// little inside the edge so they never peek out.
 fn tatami_underlay(travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
     let shape = travels.area;
-    let under = Params { angle: p.angle + UNDERLAY_TURN, density: TATAMI_UNDERLAY_SPACING, stitch_length: TATAMI_UNDERLAY_STITCH, ..*p }.sane();
+    // Under the top stitching, the underlay needs no pull compensation: it stays inside the edge.
+    let under = Params {
+        angle: p.angle + UNDERLAY_TURN,
+        density: TATAMI_UNDERLAY_SPACING,
+        stitch_length: TATAMI_UNDERLAY_STITCH,
+        pull: [0.0; 2],
+        pull_percent: [0.0; 2],
+        ..*p
+    }
+    .sane();
     let axes = Axes::new(under.angle);
     let (Some(w), Some(h)) = (shape.extent(axes.along), shape.extent(axes.across)) else { return };
     if w.1 - w.0 < TATAMI_UNDERLAY_MIN || h.1 - h.0 < TATAMI_UNDERLAY_MIN {
         return;
     }
     let layer = Layer { axes, spacing: under.density, inset: TATAMI_UNDERLAY_INSET };
-    let regions = layer.regions(shape, h.0, h.1);
+    let regions = layer.regions(shape, h.0, h.1, &under);
     // Under the top stitching, a travel of any length is hidden: the nearest region next will do.
     sew(&regions, travels, f64::INFINITY, false, &under, runs);
 }
@@ -154,22 +164,29 @@ impl Layer {
     /// merges (round a hole, into the arms of a letter) new regions start, linked to the regions
     /// they meet. Rows sit half a spacing inside the extent: no row lies on a tangent, and the
     /// thread's own width covers to the edge.
-    fn regions(&self, shape: Area<'_>, lo: f64, hi: f64) -> Regions {
+    ///
+    /// Each row reaches past the edge at its ends by `p`'s pull compensation
+    /// ([`Params::compensation`] of its length: the fabric draws a row in along its length), at
+    /// most half way to the next stretch of the same row, so that rows either side of a narrow gap
+    /// or hole never meet across it.
+    fn regions(&self, shape: Area<'_>, lo: f64, hi: f64, p: &Params) -> Regions {
         let rows = (((hi - lo) / self.spacing).floor().max(1.0) as usize).min(MAX_ROWS);
         let overlap = |x: (f64, f64), y: (f64, f64)| x.0 < y.1 && y.0 < x.1;
         let mut out: Vec<Region> = Vec::new();
         let mut links: Vec<(usize, usize)> = Vec::new();
         // The regions the previous row's spans went to, with those spans.
         let mut open: Vec<(usize, (f64, f64))> = Vec::new();
-        // Every row's position and spans, for the overlaps below.
-        let mut all: Vec<(f64, Vec<(f64, f64)>)> = Vec::with_capacity(rows);
+        // Every row's position, spans and how far each reaches past its ends, for the overlaps
+        // below.
+        let mut all: Vec<Scan> = Vec::with_capacity(rows);
         for row in 0..rows {
             let t = lo + self.spacing * (row as f64 + FIRST_ROW);
             let spans: Vec<(f64, f64)> =
                 shape.spans(self.axes, t).into_iter().map(|(a, b)| (a + self.inset, b - self.inset)).filter(|(a, b)| b > a).collect();
-            all.push((t, spans.clone()));
+            let reaches: Vec<(f64, f64)> = (0..spans.len()).map(|j| reach(&spans, j, p)).collect();
+            all.push(Scan { t, spans: spans.clone(), reaches: reaches.clone() });
             let mut next: Vec<(usize, (f64, f64))> = Vec::with_capacity(spans.len());
-            for &span in &spans {
+            for (j, &span) in spans.iter().enumerate() {
                 let touching: Vec<usize> = open.iter().filter(|(_, prev)| overlap(*prev, span)).map(|(r, _)| *r).collect();
                 let joined = match touching.as_slice() {
                     [r] if open.iter().find(|(o, _)| o == r).is_some_and(|(_, prev)| spans.iter().filter(|s| overlap(*prev, **s)).count() == 1) => {
@@ -185,7 +202,8 @@ impl Layer {
                     r
                 });
                 if let Some(region) = out.get_mut(r) {
-                    region.rows.push(Row { index: row, t, a: span.0, b: span.1 });
+                    let reach = reaches.get(j).copied().unwrap_or((0.0, 0.0));
+                    region.rows.push(Row { index: row, t, a: span.0, b: span.1, reach });
                 }
                 next.push((r, span));
             }
@@ -209,15 +227,18 @@ impl Layer {
                 let end = if after { region.rows.last() } else { region.rows.first() };
                 let Some(&Row { index, a, b, .. }) = end else { continue };
                 let Some(next) = (if after { index.checked_add(1) } else { index.checked_sub(1) }) else { continue };
-                let Some((t, spans)) = all.get(next) else { continue };
-                // The neighbouring span that shares the most with this end.
+                let Some(Scan { t, spans, reaches }) = all.get(next) else { continue };
+                // The neighbouring span that shares the most with this end. Where the stretch ends
+                // at that span's own end (the edge) it reaches past it as the span does; where it
+                // is cut inside the span, not.
                 let shared = spans
                     .iter()
-                    .map(|s| (s.0.max(a), s.1.min(b)))
-                    .filter(|(x, y)| y - x > SAME_POINT)
+                    .zip(reaches)
+                    .map(|(s, r)| (s.0.max(a), s.1.min(b), (if s.0 >= a { r.0 } else { 0.0 }, if s.1 <= b { r.1 } else { 0.0 })))
+                    .filter(|(x, y, _)| y - x > SAME_POINT)
                     .max_by(|x, y| (x.1 - x.0).total_cmp(&(y.1 - y.0)));
-                if let Some((x, y)) = shared {
-                    let row = Row { index: next, t: *t, a: x, b: y };
+                if let Some((x, y, reach)) = shared {
+                    let row = Row { index: next, t: *t, a: x, b: y, reach };
                     if after {
                         region.rows.push(row);
                     } else {
@@ -230,14 +251,44 @@ impl Layer {
     }
 }
 
+/// One row across a layer's shape: where it lies across the rows, its stretches inside the shape
+/// (in order along it), and how far each reaches past its start and its end ([`reach`]).
+struct Scan {
+    t: f64,
+    spans: Vec<(f64, f64)>,
+    reaches: Vec<(f64, f64)>,
+}
+
 /// One row's stretch inside the shape: the row's number (for the stagger), where it sits across
-/// the rows, and where the stretch starts and ends along them.
+/// the rows, where the stretch starts and ends along them, and how far its stitches reach past its
+/// start and its end (pull compensation).
 #[derive(Clone, Copy, Debug)]
 struct Row {
     index: usize,
     t: f64,
     a: f64,
     b: f64,
+    reach: (f64, f64),
+}
+
+/// How far span `j` of a row's `spans` (in order along it) reaches past its start and its end:
+/// `p`'s pull compensation for its length, the first side at its start and the second at its end,
+/// each at most half the gap to the span before or after.
+fn reach(spans: &[(f64, f64)], j: usize, p: &Params) -> (f64, f64) {
+    let Some(&(a, b)) = spans.get(j) else { return (0.0, 0.0) };
+    let [start, end] = p.compensation(b - a);
+    let before = j.checked_sub(1).and_then(|i| spans.get(i)).map_or(f64::INFINITY, |s| (a - s.1) / 2.0);
+    let after = spans.get(j + 1).map_or(f64::INFINITY, |s| (s.0 - b) / 2.0);
+    (start.min(before).max(0.0), end.min(after).max(0.0))
+}
+
+/// One row as it is sewn: its needle points, and where it starts and ends inside the shape (on the
+/// edge, before pull compensation stretched it; `None` at the end when the row's last stitch was
+/// left out and it ends where it is).
+struct RowRun {
+    pts: Vec<Point>,
+    first_inside: Point,
+    last_inside: Option<Point>,
 }
 
 /// A stretch of rows that follow one another without the shape branching: each row has one span,
@@ -257,8 +308,11 @@ impl Region {
 
     /// The region's rows as runs: alternating direction, the first `forward`, last row first when
     /// `descending`.
-    fn runs(&self, descending: bool, forward: bool, axes: Axes, p: &Params) -> Vec<Vec<Point>> {
-        let mut out: Vec<Vec<Point>> = Vec::with_capacity(self.rows.len());
+    fn runs(&self, descending: bool, forward: bool, axes: Axes, p: &Params) -> Vec<RowRun> {
+        let mut out: Vec<RowRun> = Vec::with_capacity(self.rows.len());
+        // The stitch left out of the last row sewn so far, with where it reaches without pull
+        // compensation.
+        let mut left_out: Option<(Point, Point)> = None;
         let mut forward = forward;
         let order: Vec<&Row> = if descending { self.rows.iter().rev().collect() } else { self.rows.iter().collect() };
         for row in order {
@@ -266,24 +320,54 @@ impl Region {
             // rows line their penetrations up into a groove.
             let phase = STAGGER * (row.index % STAGGER_ROWS) as f64;
             let along = row_points(row.a, row.b, phase, p);
-            if along.len() < 2 {
+            let n = along.len();
+            if n < 2 {
                 continue;
             }
-            let mut pts: Vec<Point> = along.iter().map(|s| axes.point(*s, row.t)).collect();
+            // The stitch at the row's far end as it is sewn, before pull compensation.
+            let (Some(&tail), Some(&before_tail)) = (if forward { (along.get(n - 1), along.get(n - 2)) } else { (along.first(), along.get(1)) })
+            else {
+                continue;
+            };
+            let end_stitch = (tail - before_tail).abs();
+            // Pull compensation moves the row's two end points out past the edge. Nothing else
+            // changes (the grid, which stitch is left out below, where the needle goes next), so
+            // the compensation changes no sewing order.
+            let mut stretched = along;
+            if let Some(s) = stretched.first_mut() {
+                *s -= row.reach.0;
+            }
+            if let Some(s) = stretched.last_mut() {
+                *s += row.reach.1;
+            }
+            let mut pts: Vec<Point> = stretched.iter().map(|s| axes.point(*s, row.t)).collect();
+            let (mut first_inside, mut last_inside) = (axes.point(row.a, row.t), axes.point(row.b, row.t));
             if !forward {
                 pts.reverse();
+                (first_inside, last_inside) = (last_inside, first_inside);
             }
+            let mut kept_inside = Some(last_inside);
+            left_out = None;
             // Skip the last stitch of the row: the needle turns diagonally into the next row
             // instead of crawling one row spacing along the edge — when the stitch it leaves out
             // is short, so the turn stays a short stitch too.
-            if let [.., prev, last] = pts.as_slice()
-                && pts.len() > 2
-                && prev.distance(*last) <= SHORT_LAST * p.stitch_length
+            if n > 2
+                && end_stitch <= SHORT_LAST * p.stitch_length
+                && let Some(q) = pts.pop()
             {
-                pts.pop();
+                kept_inside = None;
+                left_out = Some((q, last_inside));
             }
-            out.push(pts);
+            out.push(RowRun { pts, first_inside, last_inside: kept_inside });
             forward = !forward;
+        }
+        // The region's last row keeps its last stitch: there is no next row to turn into, and
+        // without it the row would stop up to half a stitch short of the edge (in a region of one
+        // row, a thin fill, nothing else covers that end). The needle's way on is planned from
+        // where the row would end without it, as before: the stitch only covers the end.
+        if let (Some(last), Some((q, _))) = (out.last_mut(), left_out) {
+            last.last_inside = last.pts.last().copied();
+            last.pts.push(q);
         }
         out
     }
@@ -381,8 +465,10 @@ fn sew(regions: &Regions, travels: &mut Travels<'_>, max_seen: f64, search: bool
     }
     let mut pieces = connected(&neighbours);
     while !pieces.is_empty() && !runs.full() {
-        // The piece with a region that starts nearest the needle.
-        let here = runs.here();
+        // The piece with a region that starts nearest the needle. (Where the needle is, here and
+        // below, is taken inside the shape, where pull compensation stretched the last row from:
+        // the compensation changes no sewing order.)
+        let here = runs.here_inside();
         let Some(i) = pieces
             .iter()
             .enumerate()
@@ -406,7 +492,7 @@ fn sew(regions: &Regions, travels: &mut Travels<'_>, max_seen: f64, search: bool
                 None => {
                     let mut left: Vec<usize> = piece.clone();
                     while !left.is_empty() && !local.full() {
-                        let here = local.here();
+                        let here = local.here_inside();
                         let Some(k) = left
                             .iter()
                             .enumerate()
@@ -522,7 +608,7 @@ impl Sewing<'_, '_, '_> {
             if local.full() {
                 return;
             }
-            let here = local.here();
+            let here = local.here_inside();
             let next = neighbours
                 .get(r)
                 .into_iter()
@@ -556,29 +642,33 @@ impl Sewing<'_, '_, '_> {
         let (regions, p, max_seen) = (self.regions, self.p, self.max_seen);
         let Some(region) = regions.list.get(r) else { return };
         let axes = regions.cover.axes;
-        let (descending, forward, _) = nearest_start(region, descending, runs.here(), axes);
+        let (descending, forward, _) = nearest_start(region, descending, runs.here_inside(), axes);
         let rows = region.runs(descending, forward, axes, p);
-        if let Some(first) = rows.first().and_then(|run| run.first().copied()) {
+        if let Some((first, first_inside)) = rows.first().and_then(|run| Some((*run.pts.first()?, run.first_inside))) {
             let seen = |route: &[Point]| regions.cover.seen(route, sewn);
-            let into = runs.approach(self.travels, first, max_seen, &seen, p);
+            let into = runs.approach(self.travels, first, first_inside, max_seen, &seen, p);
             for (k, run) in rows.into_iter().enumerate() {
-                let travel = match (k, runs.here(), run.first()) {
+                let travel = match (k, runs.here(), runs.here_inside(), run.pts.first()) {
                     (0, ..) => into,
-                    // A turn into the region's next row is sewn while it stays inside the shape.
-                    // Along a concave edge (the flat top of a round hole) it would cut across the
-                    // hole: then it travels round, or lifts, unless it only shaves a corner.
-                    (_, Some(h), Some(&f)) if h.distance(f) > SHAVED_CORNER && !self.travels.area.contains_segment(h, f) => {
-                        runs.approach(self.travels, f, max_seen, &seen, p)
+                    // A turn into the region's next row is sewn while it stays inside the shape
+                    // (judged between the rows' ends on the edge, before pull compensation
+                    // stretched them). Along a concave edge (the flat top of a round hole) it
+                    // would cut across the hole: then it travels round, or lifts, unless it only
+                    // shaves a corner.
+                    (_, Some(_), Some(inside), Some(&f))
+                        if inside.distance(run.first_inside) > SHAVED_CORNER && !self.travels.area.contains_segment(inside, run.first_inside) =>
+                    {
+                        runs.approach(self.travels, f, run.first_inside, max_seen, &seen, p)
                     }
                     // A long turn (where the edge runs nearly along the rows) would be one long
                     // stitch lying loose on top: it travels in short stitches instead.
-                    (_, Some(h), Some(&f)) if h.distance(f) > p.stitch_length => {
+                    (_, Some(h), _, Some(&f)) if h.distance(f) > p.stitch_length => {
                         runs.push(resample(&[h, f], TRAVEL_STITCH, false), Travel::Sew);
                         Travel::Sew
                     }
                     _ => Travel::Sew,
                 };
-                runs.push(run, travel);
+                runs.push_stretched(run.pts, travel, run.last_inside);
             }
         }
         if let Some(s) = sewn.get_mut(r) {
@@ -593,7 +683,7 @@ impl Sewing<'_, '_, '_> {
 /// of neighbouring rows — in any region — fall into one pattern (the stagger), and no stitch is
 /// longer than a stitch length; only a row's first and last stitches are shorter. A grid point
 /// within [`Params::min_stitch`] of an end is left out, so the end stitch isn't a stub (and is then
-/// at most that much longer).
+/// at most that much longer, and pull compensation's reach more).
 fn row_points(a: f64, b: f64, phase: f64, p: &Params) -> Vec<f64> {
     let len = b - a;
     let shortest = (MIN_ROW_SPACINGS * p.density).max(MIN_ROW);

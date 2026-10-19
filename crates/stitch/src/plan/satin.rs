@@ -1,11 +1,12 @@
 //! Satin columns ([`Style::Satin`](super::Style::Satin)): the thread zig-zags across a band along
-//! a path, over an underlay chosen by the band's width, with long crossings split.
+//! a path, over an underlay chosen by the band's width, with long crossings split, the rails
+//! widened by pull compensation and the ends shortened by push compensation.
 
 use vectorcraft_geom::{BezPath, Point, Vec2};
 
-use super::geometry::{length, nearest_order, resample, subpaths, tangent};
+use super::geometry::{Line, length, nearest_order, resample, subpaths, tangent, trimmed, unit};
 use super::runs::{Runs, Travel};
-use super::{Params, Style, UNDERLAY_STITCH};
+use super::{MIN_PUSHED, Params, Style, UNDERLAY_STITCH, thread_scale};
 use crate::Stitch;
 
 /// Satin underlay by column width (millimetres): from this width an edge run instead of a centre
@@ -17,10 +18,18 @@ const ZIGZAG_UNDERLAY_SPACING: f64 = 2.0;
 /// most [`UNDERLAY_INSET_MAX`] millimetres, so the underlay doesn't show at the edges.
 const UNDERLAY_INSET: f64 = 0.25;
 const UNDERLAY_INSET_MAX: f64 = 0.5;
-/// A column shorter than this many crossings is left out: it would be a knot, not a column.
+/// A column shorter than this many spacings is left out: it would be a knot, not a column.
 const MIN_CROSSINGS: f64 = 2.0;
+/// A satin's spacing is measured between two penetrations on the same rail (peak to peak), as
+/// Madeira's stitch density chart (51 satin stitches a centimetre for its 0.40 mm, 40 wt:
+/// <https://www.madeirausa.com/_resources/common/userfiles/file/Resources/TH.Reads/Density.pdf>),
+/// Ink/Stitch ("zig-zag spacing (peak-to-peak)",
+/// <https://inkstitch.org/docs/stitches/satin-column/>) and Hatch measure it: the crossings, which
+/// go to one rail and the other in turn, lie this share of it apart.
+const CROSSINGS_PER_SPACING: f64 = 2.0;
 /// Auto spacing ([`satin_spacing`]): for a column narrower than each width (millimetres), the
-/// spacing of its crossings (millimetres), and [`WIDE_SPACING`] for wider ones. Estimates.
+/// spacing of its penetrations on each rail (millimetres, peak to peak), and [`WIDE_SPACING`] for
+/// wider ones. Estimates.
 const SPACING_BY_WIDTH: [(f64, f64); 3] = [(2.0, 0.5), (4.0, 0.45), (6.0, 0.4)];
 const WIDE_SPACING: f64 = 0.37;
 /// The most stitches a long crossing is split into ([`split_long`]): enough for the widest column.
@@ -30,7 +39,12 @@ const MAX_SPLIT: f64 = 64.0;
 /// without a pattern ([`split_long`]).
 const GOLDEN: f64 = 0.618_033_988_75;
 
-/// A satin column sewn along `path`'s centreline, [`Params::width`] wide.
+/// A satin column sewn along `path`'s centreline, [`Params::width`] wide and wider at each rail by
+/// its pull compensation ([`Params::compensation`] of the width: the left rail as the path is
+/// drawn, then the right one), each open column shorter at its ends by [`Params::push`]. The
+/// penetrations on each rail are [`satin_spacing`] apart for 40 wt thread, closer for finer thread
+/// ([`thread_scale`]), or [`Params::density`] when auto spacing is off; the crossings, rail to rail
+/// in turn, lie half that apart ([`CROSSINGS_PER_SPACING`]).
 pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
     satin_from(path, p, None)
 }
@@ -43,11 +57,19 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
     if p.width <= 0.0 {
         return Vec::new();
     }
-    // Pull compensation widens the column on both sides.
-    let half = (p.width + 2.0 * p.pull) / 2.0;
+    // Pull compensation widens the column at each rail ([`Params::compensation`]): the left one as
+    // the path is drawn, then the right one.
+    let [left, right] = p.compensation(p.width);
+    let half = p.width / 2.0;
+    let spacing = if p.auto_spacing { satin_spacing(p.width) * thread_scale(p.thread_weight) } else { p.density };
+    // The crossings go to one rail and the other in turn: half the spacing apart.
+    let pitch = spacing / CROSSINGS_PER_SPACING;
     let mut runs = Runs::from(from);
-    for (pts, closed) in nearest_order(subpaths(path), from) {
-        if length(&pts, closed) < p.density * MIN_CROSSINGS {
+    for Line { pts, closed, reversed } in nearest_order(subpaths(path), from) {
+        // Push compensation: an open column is sewn shorter at its ends, the underlay with it.
+        let shortest = p.density * MIN_CROSSINGS;
+        let pts = if closed { pts } else { pushed(&pts, if reversed { [p.push[1], p.push[0]] } else { p.push }, shortest) };
+        if length(&pts, closed) < shortest {
             continue;
         }
         // The first run of each column is reached as any move is; the column's later runs
@@ -65,24 +87,28 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
                 back = ends_far;
             }
         }
-        let spacing = if p.auto_spacing { satin_spacing(p.width) } else { p.density };
-        let mut samples = resample(&pts, spacing, closed);
+        let mut samples = resample(&pts, pitch, closed);
         if samples.len() < 2 {
             continue;
         }
-        if back && !closed {
+        let back = back && !closed;
+        if back {
             samples.reverse();
         }
+        // Whether the column is sewn against the way it is drawn, so its rails swap sides.
+        let against = reversed != back;
         let crossings: Vec<(Point, Vec2)> = (0..samples.len())
             .filter_map(|i| {
                 let q = *samples.get(i)?;
                 let t = tangent(&samples, i, closed);
-                // Even crossings go to one rail, odd ones to the other.
+                // Even crossings go to one rail, odd ones to the other. The normal points to the
+                // right of the way the needle goes along the column (y runs down the page).
                 let side = if i % 2 == 0 { 1.0 } else { -1.0 };
-                Some((q, Vec2::new(-t.y, t.x) * half * side))
+                let reach = half + if (side > 0.0) != against { right } else { left };
+                Some((q, Vec2::new(-t.y, t.x) * reach * side))
             })
             .collect();
-        let mut zigzag = short_stitches(&crossings, spacing);
+        let mut zigzag = short_stitches(&crossings, pitch, p.width + left + right);
         // A closed column ends where it started: the last crossing takes the remaining side.
         if closed
             && let (Some(first), Some(last)) = (zigzag.first().copied(), zigzag.last().copied())
@@ -98,6 +124,22 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
     runs.join(&p)
 }
 
+/// An open column's centreline `pts` with push compensation: `push` millimetres cut off its start
+/// and its end, both in proportion when together they would leave less than [`MIN_PUSHED`] of it,
+/// or less than `shortest` (the shortest column that is sewn): push compensation never takes away
+/// a column that would be sewn without it.
+fn pushed(pts: &[Point], push: [f64; 2], shortest: f64) -> Vec<Point> {
+    let [start, end] = push;
+    if start + end <= 0.0 {
+        return pts.to_vec();
+    }
+    let len = length(pts, false);
+    let keep = (len * MIN_PUSHED).max(shortest).min(len);
+    let most = len - keep;
+    let k = if start + end > most { most / (start + end) } else { 1.0 };
+    trimmed(pts, start * k, end * k)
+}
+
 /// Short stitches: how far a bunched penetration may move in from its rail, as shares of the
 /// column's width, tried in order. Ink/Stitch's satin columns take a list of insets like this
 /// ("short stitch inset", <https://inkstitch.org/docs/stitches/satin-column/>), and Hatch shortens
@@ -110,24 +152,27 @@ const SHORT_LOOKBACK: usize = 4;
 
 /// A satin column's needle points from its `crossings` (each a point on the centreline and the
 /// offset to the rail it goes to, the rails alternating), with short stitches where a curve bunches
-/// the penetrations on its inner side. A penetration closer than `spacing` (the distance between
-/// threads) to one of the last [`SHORT_LOOKBACK`] on its rail moves in by the first of
-/// [`SHORT_INSETS`] that keeps it that far from them all, or, when none does, by the one that
-/// keeps it farthest. On a gentle curve that shortens every other stitch on the inner side; on a
-/// tight one the penetrations spread over the insets; along a straight column nothing moves.
-fn short_stitches(crossings: &[(Point, Vec2)], spacing: f64) -> Vec<Point> {
+/// the penetrations on its inner side. A penetration closer than `pitch` (the distance between
+/// crossings, half the distance between two on one rail) to one of the last [`SHORT_LOOKBACK`] on
+/// its rail moves in by the first of
+/// [`SHORT_INSETS`] (shares of the column's `width`, never past its centre) that keeps it that far
+/// from them all, or, when none does, by the one that keeps it farthest. On a gentle curve that
+/// shortens every other stitch on the inner side; on a tight one the penetrations spread over the
+/// insets; along a straight column nothing moves.
+fn short_stitches(crossings: &[(Point, Vec2)], pitch: f64, width: f64) -> Vec<Point> {
     let mut out: Vec<Point> = Vec::with_capacity(crossings.len());
     for (i, &(q, offset)) in crossings.iter().enumerate() {
         // The earlier penetrations on this rail: every other one back.
         let before: Vec<Point> = (1..=SHORT_LOOKBACK).filter_map(|k| i.checked_sub(2 * k).and_then(|j| out.get(j)).copied()).collect();
         let clearance = |r: Point| before.iter().map(|b| b.distance(r)).fold(f64::INFINITY, f64::min);
-        // `offset` is half the column's width and an inset a share of all of it: twice as much of
-        // the offset.
-        let candidates = SHORT_INSETS.iter().map(|inset| q + offset * (1.0 - 2.0 * inset));
+        // An inset is a share of the whole width, taken off this side's offset.
+        let reach = offset.hypot();
+        let inward = unit(offset).unwrap_or(Vec2::ZERO);
+        let candidates = SHORT_INSETS.iter().map(|inset| q + offset - inward * (inset * width).min(reach));
         let mut best: Option<(Point, f64)> = None;
         for r in candidates {
             let c = clearance(r);
-            if c >= spacing {
+            if c >= pitch {
                 best = Some((r, c));
                 break;
             }
@@ -155,9 +200,10 @@ fn push_split(runs: &mut Runs, run: Vec<Point>, travel: Travel, max: f64) {
     }
 }
 
-/// The spacing of a satin column's crossings for its `width` (auto spacing): more open in a narrow
-/// column, where the thread bunches at the rails and covers anyway, denser in a wide one so it
-/// covers. A stepped table, as professional software keeps one; the values are estimates.
+/// The spacing of a satin column's penetrations on each rail (peak to peak) for its `width` (auto
+/// spacing): more open in a narrow column, where the thread bunches at the rails and covers anyway,
+/// denser in a wide one so it covers. A stepped table, as professional software keeps one; the
+/// values are estimates (0.40 mm, Madeira's for 40 wt, at 4–6 mm).
 pub fn satin_spacing(width: f64) -> f64 {
     SPACING_BY_WIDTH.iter().find(|(w, _)| width < *w).map_or(WIDE_SPACING, |(_, spacing)| *spacing)
 }

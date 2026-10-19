@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** every value the planner, the digitizer and the formats decide with is a named constant with a description; a PEC stitch block's length (not the label) decides where its stitches start when a guess loses step
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** pull compensation for fills (rows reach past the edge) and per side or by width for satins, push compensation at satin ends, `expand` to grow fills so neighbours meet, spacing by thread weight (as thick as the thread: Madeira's chart); a satin's spacing is measured peak to peak (its crossings half that apart, twice as dense as before); a region's last row keeps its last stitch; a satin's last crossing goes across, and a move along two edges in line no longer crosses the gap between them
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -26,17 +26,36 @@ control channel use it). Every writable format's options are listed by `document
 | Option | Default | Meaning |
 |---|---|---|
 | `stitchStyle` | `auto` | `auto` fills fills, satins strokes 1 mm and wider, runs narrower ones; `fill`, `satin` and `running` force one style (`fill` on a stroke fills the area the stroke paints, at its width, caps and joins) |
-| `density` | 0.38 mm in fills; satin by width | distance between neighbouring threads: fill rows, satin crossings. Left out, a satin column picks it by its width (*auto spacing*: 0.5 mm under 2 mm wide, 0.45 under 4, 0.4 under 6, 0.37 wider; estimates); given, it is used as it is |
+| `density` | 0.38 mm in fills; satin by width | distance between threads: between a fill's rows; between two penetrations on one rail of a satin column (peak to peak), its crossings lying half that apart. Left out, a satin column picks it by its width (*auto spacing*: 0.5 mm under 2 mm wide, 0.45 under 4, 0.4 under 6, 0.37 wider; estimates), and both follow `threadWeight`; given, it is used as it is |
 | `stitchLength` | 4 mm in fills, 2.5 mm in running lines | the longest stitch of a running line or a fill row |
 | `stitchAngle` | 45° | the direction a fill's rows run |
-| `pullCompensation` | 0.2 mm | how much wider a satin column is stitched so the fabric's pull leaves no gap |
+| `pullCompensation` | 0.2 mm | how much farther the stitches reach at each side so the fabric's pull leaves no gap: each rail of a satin column, each end of a fill's rows. One number for both sides, or two: `[left, right]` of a satin as its path runs, `[start, end]` of a fill's rows along their direction; 0 to 2 mm a side (a negative value counts as 0) |
+| `pullCompensationPercent` | 0 | pull compensation that grows with the stitch, on top of `pullCompensation`: percent of a satin column's width, or of a fill row's length, added at each side (at most 2 mm a side with the fixed value). One number or two, as `pullCompensation`; 0 to 50 % |
+| `pushCompensation` | 0 mm | how much shorter an open satin column is sewn at each end, since sewing pushes the fabric out there; one number or two (`[start, end]` as the path is drawn). A column keeps at least half its length; 0 to 5 mm an end (a negative value counts as 0) |
+| `expand` | 0 mm | how far a filled shape grows all round before it is stitched, so that neighbouring shapes drawn apart meet; negative shrinks it; −2 to 2 |
+| `threadWeight` | 40 | the thread's weight (wt: kilometres per kilogram, so a larger number is a finer thread): the default spacing of fills and satin columns follows its thickness (fill rows 0.44 mm apart for 30 wt, 0.31 for 60); 10 to 150 |
 | `underlay` | `true` | an edge run under fills, a centre run under satin columns |
 | `jumpLength` | 5 mm | a longer move lifts the needle (a jump), tied off before and in after so that it can be cut; a shorter move that can't be sewn (between separate pieces) jumps with the thread on |
 | `trimLength` | 10 mm | a jump longer than this cuts the thread first (a trim); shorter jumps are left for the machine or a person to cut. Never less than `jumpLength`: a smaller value acts as `jumpLength` |
 | `minStitch` | 0.4 mm | shorter stitches are left out |
 
 An option left out keeps the style's own value. The defaults are the stitch planner's
-(`plan::Params::for_style`); `document.formats` lists the same ones, and a test keeps them equal.
+(`plan::Params::for_style`, or `plan::Params::for_thread` for another thread weight);
+`document.formats` lists the same ones, and a test keeps them equal. Compensation and the thread
+weight are one value for the whole design for now: settings per object come with embroidery
+properties on objects.
+
+**Spacing by thread weight.** The default spacings are for 40 wt thread, standard embroidery
+thread, and follow the thread's thickness for others. Thread weight counts kilometres of thread
+per kilogram, so a thread's cross-section is inversely proportional to it and its thickness to its
+square root: spacings scale by `(40 / weight)^½`, so fill rows lie 0.44 mm apart for 30 wt, 0.38
+for 40 and 0.31 for 60. Madeira's stitch density chart, by thread, follows the same curve (0.80,
+0.50, 0.40 and 0.35 mm for its Classic 12, 30, 40 and 60 wt; this gives 0.73, 0.46, 0.40 and 0.33
+from 0.40; its 75 wt, 0.20 mm, is finer than the curve). The chart is for satin; fills follow it
+too here, an estimate: no source found scales fill spacing by thread. (A first version followed
+the fourth root, sized to Wilcom's satin auto spacing offsets, a few hundredths of a millimetre
+per thread class; against Madeira's chart that changed spacing about half as much as threads
+do.)
 
 **Reading a design.** Open the file as a document; `File → Open` lists the formats. Each colour
 block becomes a group named after its thread, and each run of stitches a thin round-capped line in
@@ -97,9 +116,26 @@ the fabric.
   already stitched into is passed, so along a fine zigzag the stitches keep their length (at most
   1.3 stitch lengths) instead of one point moving from corner to corner.
 - **Satin** sews a column: the path is its centre line, its stroke width the column's width, and
-  the needle crosses from rail to rail at the column's spacing, so the threads lie side by side:
-  more open in a narrow column, where the thread bunches at the rails, denser in a wide one so it
-  covers (or `density`, when given). `pullCompensation` widens the column. The underlay holds the
+  the needle crosses from rail to rail, so the threads lie side by side. The column's spacing is
+  measured between two penetrations on one rail (peak to peak), as Madeira's thread chart,
+  Ink/Stitch and Hatch measure a satin's density, so its crossings lie half that apart: more open
+  in a narrow column, where the thread bunches at the rails, denser in a wide one so it covers (or
+  `density`, when given). A 5 mm column at 40 wt (0.40 mm) puts 50 crossings in a centimetre;
+  Madeira's chart gives 51 for 40 wt. (Until this was settled the crossings lay a whole spacing
+  apart, half as dense as meant: the satins the person sewed in the real designs below lie
+  0.41–0.42 mm apart on a rail, as Ink/Stitch's default 0.4 mm does, and VectorCraft's lay about
+  1.08 mm apart.) Pull compensation widens the column at each rail: a fixed
+  `pullCompensation` (0.2 mm, Wilcom's starting value for drill and cotton) plus, if asked,
+  `pullCompensationPercent` of the column's width, which gives wide columns more than narrow ones
+  (as Ink/Stitch's percentage does); each can differ between the rails (the left one as the path
+  is drawn, then the right one), as Wilcom's double-sided compensation does for a column that lies
+  on fabric on one side and on other stitching on the other. Push compensation
+  (`pushCompensation`) shortens an open column at its start and its end, underlay and all: the
+  stitches pile up at a column's ends and push the fabric out, so a column comes out longer than
+  drawn (Wilcom's push and pull article, Ink/Stitch's push compensation). No starting value is
+  published, so it is off by default. Every crossing goes across the column, the last one too (the
+  last point's direction used to be taken as left to right, so a column running any other way
+  ended with a stitch along it or on the rail the one before used). The underlay holds the
   column up and follows its width: a centre run under columns narrower than 2 mm, an edge run (along one side and back along
   the other, kept inside the column) from 2 mm, and an edge run then a zigzag between its sides
   from 4.5 mm (estimates from the usual practice). The top stitching starts where the underlay
@@ -126,13 +162,36 @@ the fabric.
   subpath with no area is sewn as a line. The penetrations sit on a grid every `stitchLength`
   along the rows' direction, shifted a quarter stitch from one row to the next over a four-row
   cycle, so neighbouring rows — in any region — form one stagger pattern and never line up into a
-  groove; no stitch is longer than `stitchLength` (an end stitch at most `minStitch` more), and
-  only a row's first and last stitches are shorter. A row's last stitch is left out when it is
-  short, so the needle turns diagonally into the next row instead of crawling along the edge; a
+  groove; no stitch is longer than `stitchLength` (an end stitch at most `minStitch` more, and
+  its pull compensation), and only a row's first and last stitches are shorter. A row's last
+  stitch is left out when it is short, so the needle turns diagonally into the next row instead
+  of crawling along the edge (a region's last row keeps it: it has no next row to turn into, and
+  a fill of one row would otherwise stop short of its edge); a
   long turn (where the edge runs nearly along the rows) is sewn as short travel stitches rather
   than one loose stitch; a turn between two rows that end on one straight edge runs along it. Rows sit half a spacing inside the shape's extent: no row lies on a
   tangent, and the thread's width covers to the edge. Holes are left unstitched: the shape's fill
   rule decides what is inside, as it does for paint.
+
+  Pull compensation stretches each row past the edge at its ends: the fabric draws a row in along
+  its length, so a fill sewn exactly to its outline comes out narrower and leaves a line of
+  background where it meets its neighbour (Wilcom: tatami fills are pulled less than satins, but
+  noticeably over large areas). Each row's first and last needle points move out by
+  `pullCompensation` (the first value at the rows' start, the second at their end) plus
+  `pullCompensationPercent` of the row's length, as Ink/Stitch's fill pull compensation extends
+  each row outward from its centre; at most half way to the next stretch of the same row, so rows
+  either side of a narrow gap or hole meet in its middle at most, never across it (a hole
+  narrower than twice the compensation is closed in the stitches; the fabric's pull opens it
+  again). The rows reach along their own direction, so an edge they cross at an angle moves out by
+  less: at 45°, 0.2 mm along a row is 0.14 mm square to the edge. The stagger grid, which row
+  stitch is left out at a turn, and the order the regions and rows are sewn in are chosen as
+  without compensation (moves are judged between the rows' ends on the outline): the compensation
+  changes no sewing order. The stitches themselves are measured where they are, so a move within
+  the compensation of `jumpLength` or `trimLength` can become a jump or a cut, as on any shape
+  that grows (the real designs gained one trim). Only the rows' end stitches grow. The underlays
+  get none: they stay inside the edge. `expand` grows the shape itself all round before it is filled (its union
+  with a band twice as wide along its outlines, round at the corners; a negative value shrinks it),
+  as Ink/Stitch's "Expand" does, for shapes drawn apart that should meet; a clip group cuts the
+  grown shape, so it grows only where it shows.
 
   Underneath, an edge run along each outline holds the fabric, and a fill at least 10 mm across
   both ways also gets a second underlay: sparse tatami rows (2 mm apart, 3 mm stitches) across
@@ -148,7 +207,10 @@ the fabric.
   0.5 mm inside (as Ink/Stitch's "underpath" does). A travel under stitching still to come is
   hidden, so it may be any length (all of the underlay's are); one over the top stitching already
   sewn shows, and may show for at most 25 mm (an estimate); a way that would show more, or none
-  (two separate shapes), lifts the needle instead.
+  (two separate shapes), lifts the needle instead. A move whose middle lies on the outline is
+  checked stretch by stretch between the corners it passes: along two edges in line (the bottoms
+  of two squares side by side) it used to be taken for a way inside, and the thread ran across the
+  gap between them.
 
   The order of the regions decides how much travel shows. The pieces of a shape (regions linked
   to one another) are sewn one after another, the nearest next; in each, several orders are
@@ -184,7 +246,8 @@ starts with the needle up and a jump to its first stitch.
 
 What is sewn is what would print: hidden objects, guides, template layers and non-printing layers
 are left out. A clip group sews its clipped art only inside the clipping path: a filled area is cut
-to it exactly before it is planned, and a stroke keeps the stitches whose needle points fall inside
+to it exactly before it is planned (its rows then reach past the cut by their pull compensation,
+as past any edge: the fabric draws them in there too), and a stroke keeps the stitches whose needle points fall inside
 (so a running line can stop up to a stitch short of the edge), the needle lifted across each cut
 as between a shape's runs, with the thread tied off and in around a long jump. The clipping path's own fill is sewn
 under the clipped art and its stroke over it, unclipped, as they paint.
@@ -227,6 +290,12 @@ index, whose RGB values differ between published charts — preview colour is no
 - Wide satin columns are split stitch by stitch (auto split), not into several narrower columns,
   and are at most 50 mm wide (wider strokes are warned about).
 - Underlay is chosen by width and size only, not by fabric (no fabric presets yet).
+- Pull and push compensation, `expand` and the thread weight are one value for the whole design,
+  not per object, and not by fabric: 0.2 mm of pull compensation suits stable woven fabric
+  (Wilcom's guide gives 0.35 for T-shirts and 0.4 for fleece). Push compensation is off by
+  default: no starting value is published.
+- Fill pull compensation stretches rows along their direction only: across the rows, a fill keeps
+  half a row spacing inside its edge, as before. `expand` grows it both ways.
 - The PES section of a `.pes` is the minimal version 1 header: machines sew the design correctly,
   but PE-Design shows it as a blank document because the editable shapes (CEmbOne/CSewSeg) are not
   written yet. Reading a PES reads its PEC block, which is what machines and every other app use.
@@ -240,11 +309,21 @@ index, whose RGB values differ between published charts — preview colour is no
   each object's start is the nearest one, not chosen with the next object in view.
 - The default spacing and stitch length follow professional software (Wilcom), which is more
   open than Ink/Stitch's (rows 0.25 mm apart, 3 mm stitches): VectorCraft sews about 40–60 % as
-  many stitches for the same artwork. No fabric presets yet.
+  many stitches for the same artwork (measured below). No fabric presets yet.
 
 ## Validation
 
-- `crates/stitch`: 57 unit tests and 3 property tests — the fill covers a rectangle and leaves its hole empty, an
+- `crates/stitch`: 69 unit tests and 4 property tests — a 5 mm satin column at 40 wt puts 50
+  crossings in a centimetre (Madeira's chart: 51), a region's last row reaches its edge (a
+  one-row fill both), push compensation keeps a short column sewn, a line cut on one of its points
+  keeps it once, the fill covers a rectangle (its rows
+  reaching past the edges by the pull compensation, fixed or by the row's length, one value per
+  end) and leaves its hole empty, compensated rows reach at most half way across a gap, the
+  compensation changes no sewing order (the same rows in the same order, the same jumps, in a U,
+  a ring and a comb at four angles), a satin's pull compensation can differ between its rails
+  (drawn either way, sewn from either end) and grow with its width, push compensation shortens an
+  open column's ends as drawn (never below half its length, a closed column not at all), every
+  crossing goes across the column to the last, the spacing follows the thread's weight, an
   unclosed shape is filled, a ring is sewn in regions with no thread across its hole and,
   travelling inside, without a trim, regions overlap by a row, a narrow gap is never sewn across,
   a letter E is sewn in one go at any angle (every 5°) without crossing its gaps, and so are a U,
@@ -270,11 +349,20 @@ index, whose RGB values differ between published charts — preview colour is no
   writes a design it reads back with the same blocks and size, a JEF's header extents are where
   its stitches go, an absurd JEF colour count is not believed, and no reader panics on random,
   truncated or damaged bytes. The property tests (`tests/prop_plan.rs`, random rectangles,
-  ellipses and star-shaped polygons with random parameters): every needle point stays on the art,
+  ellipses and star-shaped polygons with random parameters, random pull compensation included):
+  every needle point stays on the art (or past it by the compensation at most),
   the thread is cut exactly on the jumps longer than `trimLength`, and no stitch is longer than the
   parameters allow (this found the zigzag fault fixed above: a 50 mm zigzag with corners 0.5 mm
-  apart was one 50 mm stitch).
-- `crates/engine`: 30 tests (28 command-level) — export writes a readable design in every format,
+  apart was one 50 mm stitch): without pull compensation to the bound it always had, and with it
+  longer by its reach at most.
+- `crates/engine`: 38 tests (35 command-level) — export writes a readable design in every format,
+  a negative `expand` shrinks the region two overlapping squares cover (no groove along the
+  outlines inside it), a shape expanded away is warned about (and named in the error when it was
+  all there was), `expand` leaves an open line in a fill a line,
+  a fill's rows reach past its edges by the pull compensation (by default too, one side only when
+  asked) and `expand` grows or shrinks it all round, two fills drawn 0.6 mm apart meet with
+  0.3 mm of pull compensation or `expand`, a finer thread sews more stitches, push compensation shortens a satin
+  stroke, compensation takes one value or two (and is refused otherwise),
   options change the plan, a written PES opens as art (also by its magic bytes), an opened design
   is written back unchanged in every format (and again after a second round), with the cuts at
   its blocks' ends, converts between formats with the same needle points, ignores the style
@@ -344,6 +432,16 @@ fall (the smiling face and the video game gain a trim, the SOS button loses one)
 shorter than 0.3 mm (three were); the longest is 5.0 mm, the step from an underlay to the next
 layer, inside the shape.
 
+With pull compensation on fills (rows reaching 0.2 mm past the edge at each end), the designs
+are wider by the compensation, and scaled to the person's size they sew within 2 % of the
+stitches they did (39–59 % of the person's). Trims go from 26 to 27 in all (the SOS button gains
+one) and jumps from 58 to 57 (the smiling face gains one, the zebra loses two): the needle ends
+each object a fraction of a millimetre elsewhere, which moves a few jumps across the trim length.
+Without the compensation every count is as before: the satin and travel fixes change none of
+these designs. The longest stitch is 5.0 mm, as before. Keeping a region's last row's last stitch
+(so that a one-row fill reaches its edge) then adds 0.1–0.6 % stitches, and the SOS button's
+extra trim goes again: 26 trims and 57 jumps in all.
+
 The comparison also found and fixed: a shape drawn without a final close sewn as an outline (the
 heart: 42 stitches instead of a fill), fill stitches up to 1.5 times `stitchLength` (the old
 stagger), tiny stitches at the ends of resampled lines, long loose row turns, and trims where a
@@ -403,6 +501,18 @@ Public documentation, cited per claim in the crate and in the local research not
 - Ink/Stitch documentation (GPL-3.0 project, documentation read only) and vendor manuals
   (Wilcom/Hatch, ZSK, Madeira, Brother, Janome) for densities, stitch lengths, pull compensation
   and underlay — summarised in the local research notes with a source per number.
+- Compensation: Wilcom's [automatic pull compensation](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/stabilizing/stabilizing-17.htm)
+  (one overstitch allowance per fabric, 0.20 mm for drill and cotton, double-sided values) and
+  [push and pull compensation](https://wilcom.com/resources/blog/push-and-pull-compensation)
+  (satins pulled most, tatami less, column ends pushed out); Ink/Stitch's
+  [satin column](https://inkstitch.org/docs/stitches/satin-column/) (pull compensation in
+  millimetres and percent, per rail, push compensation at the ends) and
+  [fill stitch](https://inkstitch.org/docs/stitches/fill-stitch/) (rows extended outward, Expand)
+  parameters.
+- Thread weight: [Thread (textiles)](https://en.wikipedia.org/wiki/Thread_(textiles)) (weight as
+  kilometres per kilogram) and Wilcom's
+  [satin auto spacing](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/stitches/stitches-10.htm)
+  (spacing offsets by thread thickness).
 - Thread charts: Brother's 64-thread PEC palette and Janome's 78-thread JEF palette, as published
   by those sources; the tables are in `crates/stitch/src/thread.rs`.
 

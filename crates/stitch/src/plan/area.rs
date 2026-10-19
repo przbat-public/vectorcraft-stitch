@@ -48,7 +48,10 @@ impl Area<'_> {
     /// Whether the straight line from `a` to `b` stays inside: it crosses no edge (touching one
     /// at its ends is fine: row ends lie on the edge) and its middle is inside, or it runs along an
     /// edge (the outline belongs to the area: a turn between two rows that end on one straight
-    /// edge follows it, and the inside test can't tell a point on the edge).
+    /// edge follows it, and the inside test can't tell a point on the edge). A line whose middle
+    /// lies on the outline is tested stretch by stretch between the corners it passes: along two
+    /// edges in line (the bottoms of two squares side by side) it would otherwise cross the gap
+    /// between them unseen, since no edge crosses it.
     pub(super) fn contains_segment(&self, a: Point, b: Point) -> bool {
         if !(a.x.is_finite() && a.y.is_finite() && b.x.is_finite() && b.y.is_finite()) {
             return false;
@@ -60,7 +63,51 @@ impl Area<'_> {
             Some(grid) => grid.any_along(a, b, |c, d| crossing(a, b, c, d)),
             None => self.edges().any(|(c, d)| crossing(a, b, c, d)),
         };
-        !crosses && (self.contains(a.midpoint(b)) || self.along_edge(a, b))
+        if crosses {
+            return false;
+        }
+        if self.along_edge(a, b) {
+            return true;
+        }
+        let middle = a.midpoint(b);
+        if !self.on_outline(middle) {
+            return self.contains(middle);
+        }
+        // Where the line passes a corner of the outline, it may leave it: every stretch between
+        // two such corners must lie on the outline or inside.
+        let ab = b - a;
+        let len2 = ab.hypot2();
+        let mut cuts: Vec<f64> = vec![0.0, 1.0];
+        let mut note = |c: Point| {
+            if near_segment(c, a, b) {
+                cuts.push(((c - a).dot(ab) / len2).clamp(0.0, 1.0));
+            }
+        };
+        match self.grid {
+            Some(grid) => grid.for_each_along(a, b, |c, d| {
+                note(c);
+                note(d);
+            }),
+            None => self.edges().for_each(|(c, d)| {
+                note(c);
+                note(d);
+            }),
+        }
+        cuts.sort_by(f64::total_cmp);
+        cuts.dedup_by(|x, y| (*x - *y).abs() < f64::EPSILON);
+        cuts.windows(2).all(|w| {
+            let [t0, t1] = w else { return true };
+            let q = a + ab * ((t0 + t1) / 2.0);
+            self.on_outline(q) || self.contains(q)
+        })
+    }
+
+    /// Whether `q` lies on one of the outlines' edges (within [`ON_EDGE`]).
+    fn on_outline(&self, q: Point) -> bool {
+        match self.grid {
+            Some(grid) => grid.any_along(q, q, |c, d| near_segment(q, c, d)),
+            None => self.edges().any(|(c, d)| near_segment(q, c, d)),
+        }
     }
 
     /// Whether the segment from `a` to `b` lies on one of the outlines' edges, both its ends within
@@ -474,6 +521,16 @@ impl Grid {
         ids.sort_unstable();
         ids.dedup();
         ids.into_iter().filter_map(|i| self.edges.get(i as usize).copied()).collect()
+    }
+
+    /// `visit` called with every edge in the cells segment `a`–`b` passes through (an edge in
+    /// several of them more than once).
+    fn for_each_along(&self, a: Point, b: Point, mut visit: impl FnMut(Point, Point)) {
+        let seen = std::cell::RefCell::new(&mut visit);
+        self.any_along(a, b, |c, d| {
+            (seen.borrow_mut())(c, d);
+            false
+        });
     }
 
     /// Whether `hit` holds for any edge in the cells segment `a`–`b` passes through (walked cell by

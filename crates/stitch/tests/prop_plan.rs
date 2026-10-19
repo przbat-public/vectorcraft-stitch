@@ -11,11 +11,25 @@ use vectorcraft_stitch::{Command, Stitch};
 use vectorcraft_testkit::strategies::arb_closed_shape;
 
 /// Fill or running parameters across their useful range: stitch length, row spacing, angle,
-/// underlay, jump length and how much longer the trim length is.
+/// underlay, jump length, how much longer the trim length is, and pull compensation at each end of
+/// a row (fixed and by the row's length).
 fn arb_params() -> impl Strategy<Value = Params> {
-    (prop_oneof![Just(Style::Fill), Just(Style::Running)], 1.0..6.0f64, 0.25..1.5f64, 0.0..360.0f64, any::<bool>(), 1.0..10.0f64, 0.0..20.0f64)
-        .prop_map(|(style, stitch_length, density, angle, underlay, jump, longer)| {
-            Params { stitch_length, density, angle, underlay, jump, trim: jump + longer, ..Params::for_style(style) }.sane()
+    (
+        prop_oneof![Just(Style::Fill), Just(Style::Running)],
+        1.0..6.0f64,
+        0.25..1.5f64,
+        0.0..360.0f64,
+        any::<bool>(),
+        1.0..10.0f64,
+        0.0..20.0f64,
+        [0.0..1.0f64, 0.0..1.0f64],
+        [0.0..10.0f64, 0.0..10.0f64],
+    )
+        .prop_map(|(style, stitch_length, density, angle, underlay, jump, longer, pull, pull_percent)| {
+            let d = Params::for_style(style);
+            // A running line has no compensation.
+            let (pull, pull_percent) = if style == Style::Fill { (pull, pull_percent) } else { (d.pull, d.pull_percent) };
+            Params { stitch_length, density, angle, underlay, jump, trim: jump + longer, pull, pull_percent, ..d }.sane()
         })
 }
 
@@ -43,11 +57,15 @@ fn moves(out: &[Stitch]) -> Vec<(f64, bool, bool)> {
 proptest! {
     #![proptest_config(ProptestConfig { cases: 128, failure_persistence: None, ..ProptestConfig::default() })]
 
-    /// Every needle point lies within the art's bounds, and is a point.
+    /// Every needle point lies within the art's bounds (a fill's rows reaching past them by their
+    /// pull compensation at most: for a row as long as the art's diagonal), and is a point.
     #[test]
     fn stitches_stay_on_the_art(shape in arb_closed_shape(), p in arb_params()) {
         let path: BezPath = shape.to_bezpath();
-        let b = path.bounding_box().inflate(1e-6, 1e-6);
+        let bounds = path.bounding_box();
+        let [start, end] = p.compensation(bounds.width().hypot(bounds.height()));
+        let reach = start.max(end) + 1e-6;
+        let b = bounds.inflate(reach, reach);
         for s in stitches(&path, FillRule::NonZero, &p) {
             prop_assert!(s.x.is_finite() && s.y.is_finite(), "{s:?}");
             prop_assert!(b.contains(s.point()), "{:?} outside {b:?} ({:?})", s.point(), p.style);
@@ -58,11 +76,29 @@ proptest! {
     /// the shortest stitch more), a line's, an edge run's or a travel's (up to 0.3 of a step more
     /// next to a corner or an end, where a stub moves onto it), the tatami underlay's 3 mm, or a
     /// move short enough to sew; and a stitch shorter than the shortest is left out, which
-    /// lengthens the next by at most that much.
+    /// lengthens the next by at most that much. Without pull compensation, so that the bound is
+    /// as tight as the stitching's.
     #[test]
     fn no_stitch_is_too_long(shape in arb_closed_shape(), p in arb_params()) {
+        let p = Params { pull: [0.0; 2], pull_percent: [0.0; 2], ..p };
         let out = stitches(&shape.to_bezpath(), FillRule::NonZero, &p);
         let longest = (p.stitch_length + p.min_stitch).max(1.3 * p.stitch_length).max(3.0 + p.min_stitch).max(2.6).max(p.jump) + p.min_stitch + 1e-6;
+        for (d, up, _) in moves(&out) {
+            prop_assert!(up || d <= longest, "a {d} mm stitch, longer than {longest} ({p:?})");
+        }
+    }
+
+    /// With pull compensation, a stitch is longer by its reach at most: a row's end stitch, or a
+    /// row with no stitch between its ends, by both ends' (the row as long as the art's diagonal).
+    #[test]
+    fn compensation_lengthens_stitches_by_its_reach_at_most(shape in arb_closed_shape(), p in arb_params()) {
+        let path = shape.to_bezpath();
+        let out = stitches(&path, FillRule::NonZero, &p);
+        let bounds = path.bounding_box();
+        let [start, end] = p.compensation(bounds.width().hypot(bounds.height()));
+        let longest = (p.stitch_length + p.min_stitch + start + end).max(1.3 * p.stitch_length).max(3.0 + p.min_stitch).max(2.6).max(p.jump)
+            + p.min_stitch
+            + 1e-6;
         for (d, up, _) in moves(&out) {
             prop_assert!(up || d <= longest, "a {d} mm stitch, longer than {longest} ({p:?})");
         }

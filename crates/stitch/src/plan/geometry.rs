@@ -160,6 +160,40 @@ pub(super) fn length(pts: &[Point], closed: bool) -> f64 {
     (0..segs).filter_map(|i| Some(pts.get(i)?.distance(*pts.get((i + 1) % n)?))).filter(|d| d.is_finite()).sum()
 }
 
+/// An open polyline with `start` millimetres cut off its start and `end` off its end; nothing left
+/// (one point at most) when the two meet.
+pub(super) fn trimmed(pts: &[Point], start: f64, end: f64) -> Vec<Point> {
+    let total = length(pts, false);
+    let (from, to) = (start.max(0.0), total - end.max(0.0));
+    if !(from.is_finite() && to.is_finite()) || to - from <= NO_LENGTH {
+        return Vec::new();
+    }
+    let mut out: Vec<Point> = Vec::new();
+    let mut travelled = 0.0;
+    for w in pts.windows(2) {
+        let [a, b] = w else { continue };
+        let seg = a.distance(*b);
+        if !seg.is_finite() {
+            continue;
+        }
+        let (lo, hi) = (travelled, travelled + seg);
+        travelled = hi;
+        if hi < from || lo > to || seg <= NO_LENGTH {
+            continue;
+        }
+        let at = |d: f64| a.lerp(*b, ((d - lo) / seg).clamp(0.0, 1.0));
+        if out.is_empty() {
+            out.push(at(from.max(lo)));
+        }
+        // A cut on a point of the line lies in two segments: it is one point.
+        let q = at(to.min(hi));
+        if out.last().is_none_or(|last| last.distance(q) > SAME_POINT) {
+            out.push(q);
+        }
+    }
+    out
+}
+
 /// The signed area a closed polyline encloses (the shoelace formula), square millimetres.
 pub(super) fn area(pts: &[Point]) -> f64 {
     let n = pts.len();
@@ -187,9 +221,17 @@ pub(super) fn tangent(pts: &[Point], i: usize, closed: bool) -> Vec2 {
     if let (Some(p), Some(q)) = (prev.and_then(|j| pts.get(j)), next.and_then(|j| pts.get(j))) {
         t = *q - *p;
     }
+    // At an end (or where the points either side are one): along the segment from the point, or
+    // at the last point the one into it.
     if t.hypot() < SAME_POINT
         && let Some(q) = next.and_then(|j| pts.get(j))
         && let Some(p) = pts.get(i)
+    {
+        t = *q - *p;
+    }
+    if t.hypot() < SAME_POINT
+        && let Some(q) = pts.get(i)
+        && let Some(p) = prev.and_then(|j| pts.get(j))
     {
         t = *q - *p;
     }
@@ -238,29 +280,37 @@ impl Axes {
 
 /// The subpaths of a line (a running line, a satin's centreline) in the order a needle starting at
 /// `here` sews them: each time the nearest one, from its end nearest the needle (a closed one from
-/// its point nearest the needle), as its points ([`SubPath::points`]) and whether it is closed.
-/// Unknown `here` (nothing sewn before), the first subpath is sewn as drawn and the others follow
-/// from where it ends. A path of more than [`MAX_REORDERED`] subpaths keeps the drawing's order and
-/// directions beyond its first, a bound on the work.
-pub(super) fn nearest_order(subs: Vec<SubPath>, here: Option<Point>) -> Vec<(Vec<Point>, bool)> {
+/// its point nearest the needle), as [`Line`]s. Unknown `here` (nothing sewn before), the first
+/// subpath is sewn as drawn and the others follow from where it ends. A path of more than
+/// [`MAX_REORDERED`] subpaths keeps the drawing's order and directions beyond its first, a bound on
+/// the work.
+pub(super) fn nearest_order(subs: Vec<SubPath>, here: Option<Point>) -> Vec<Line> {
     /// The most subpaths ordered by distance.
     const MAX_REORDERED: usize = 64;
     let reorder = subs.len() <= MAX_REORDERED;
     let mut pending: Vec<SubPath> = subs;
-    let mut out: Vec<(Vec<Point>, bool)> = Vec::with_capacity(pending.len());
+    let mut out: Vec<Line> = Vec::with_capacity(pending.len());
     let mut here = here;
     while !pending.is_empty() {
         let at = |s: &SubPath| here.map_or(0.0, |h| s.nearest(h).1);
         let i = if reorder { pending.iter().enumerate().min_by(|a, b| at(a.1).total_cmp(&at(b.1))).map_or(0, |(i, _)| i) } else { 0 };
         let sub = pending.remove(i);
-        let pts = match here {
+        let (pts, reversed) = match here {
             Some(h) if out.is_empty() || reorder => sub.starting_near(h),
-            _ => sub.points(),
+            _ => (sub.points(), false),
         };
         here = pts.last().copied();
-        out.push((pts, sub.closed));
+        out.push(Line { pts, closed: sub.closed, reversed });
     }
     out
+}
+
+/// One subpath of a line as it is sewn ([`nearest_order`]): its points, whether it closes, and
+/// whether it runs against the way it is drawn (an open one sewn from its end).
+pub(super) struct Line {
+    pub(super) pts: Vec<Point>,
+    pub(super) closed: bool,
+    pub(super) reversed: bool,
 }
 
 impl SubPath {
@@ -277,18 +327,18 @@ impl SubPath {
     }
 
     /// The points ([`SubPath::points`]) starting at the one nearest `q`: an open polyline reversed
-    /// when its end is nearer, a closed one turned to start there.
-    fn starting_near(&self, q: Point) -> Vec<Point> {
+    /// when its end is nearer, a closed one turned to start there; and whether they were reversed.
+    fn starting_near(&self, q: Point) -> (Vec<Point>, bool) {
         let (i, _) = self.nearest(q);
         if i == 0 {
-            return self.points();
+            return (self.points(), false);
         }
         if !self.closed {
             let mut v = self.pts.clone();
             v.reverse();
-            return v;
+            return (v, true);
         }
         let n = self.pts.len();
-        SubPath { pts: (0..n).filter_map(|k| self.pts.get((i + k) % n).copied()).collect(), closed: true }.points()
+        (SubPath { pts: (0..n).filter_map(|k| self.pts.get((i + k) % n).copied()).collect(), closed: true }.points(), false)
     }
 }

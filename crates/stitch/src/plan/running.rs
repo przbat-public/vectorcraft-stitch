@@ -4,7 +4,7 @@
 use vectorcraft_geom::{BezPath, Point};
 
 use super::Params;
-use super::geometry::{length, nearest_order, resample, subpaths, unit};
+use super::geometry::{Line, length, nearest_order, resample, subpaths, unit};
 use super::runs::{LOCK, Runs, Travel};
 use crate::Stitch;
 
@@ -19,7 +19,7 @@ pub fn running(path: &BezPath, p: &Params) -> Vec<Stitch> {
 pub(super) fn running_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec<Stitch> {
     let p = p.sane();
     let mut runs = Runs::from(from);
-    for (pts, closed) in nearest_order(subpaths(path), from) {
+    for Line { pts, closed, .. } in nearest_order(subpaths(path), from) {
         if length(&pts, closed) < p.min_stitch {
             continue;
         }

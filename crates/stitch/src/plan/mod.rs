@@ -14,13 +14,17 @@
 //! - [`Style::Running`] follows a path: a single line of stitches, [`Params::stitch_length`]
 //!   apart, with a lock stitch at each end ([`Params::lock`]).
 //! - [`Style::Satin`] sews a column: the path is its centreline, [`Params::width`] its width, and
-//!   the needle crosses from rail to rail, so the threads lie side by side. [`Params::pull`]
-//!   widens the column (pull compensation: the fabric draws the stitches together). The underlay
-//!   ([`Params::underlay`]) follows the column's width.
+//!   the needle crosses from rail to rail, so the threads lie side by side. [`Params::pull`] and
+//!   [`Params::pull_percent`] widen the column at each rail (pull compensation: the fabric draws
+//!   the stitches together), and [`Params::push`] shortens its ends (push compensation: sewing
+//!   pushes them out). The underlay ([`Params::underlay`]) follows the column's width.
 //! - [`Style::Fill`] fills a shape with rows of stitches [`Params::density`] apart at
 //!   [`Params::angle`] degrees, region by region, over an edge run and, for a large shape, a
 //!   tatami underlay ([`Params::underlay`]). [`Params::stitch_length`] is the longest stitch a row
-//!   is split into.
+//!   is split into; pull compensation stretches each row past the edge at its ends.
+//!
+//! The spacing defaults are for 40 wt thread; [`Params::for_thread`] gives them for another
+//! weight ([`thread_scale`]).
 //!
 //! The parts: [`geometry`] (polylines, spacing points along them, the rows' axes), [`area`] (what
 //! is inside a filled shape, where rows cross it, travelling inside it), [`runs`] (runs joined into
@@ -38,7 +42,7 @@ mod tests;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
-pub use fill::fill;
+pub use fill::{MIN_AREA, fill};
 pub use running::running;
 pub use runs::join_cut;
 pub use satin::{satin, satin_spacing};
@@ -84,10 +88,32 @@ const MIN_STITCH: f64 = 0.4;
 /// The direction of a fill's rows, degrees (0: left to right). Diagonal, so that rows don't run
 /// along a shape's horizontal and vertical edges, where they would show each step of the edge.
 const FILL_ANGLE: f64 = 45.0;
-/// Pull compensation on a satin column (millimetres added on each side): the fabric draws the
-/// thread in, so a column sewn exactly as wide as drawn comes out narrower. 0.2 mm is a usual
-/// starting value for stable woven fabric; stretchy fabrics need more (fabric presets).
-const SATIN_PULL: f64 = 0.2;
+/// Pull compensation (millimetres added at each side of a stitch: each rail of a satin column, each
+/// end of a fill row): the fabric draws the thread in, so stitching sewn exactly as drawn comes out
+/// narrower and leaves a gap of background where two shapes meet. Wilcom's automatic pull
+/// compensation is one overstitch allowance per fabric, 0.20 mm for drill and cotton (0.35 for
+/// T-shirts and 0.40 for fleece: fabric presets)
+/// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/stabilizing/stabilizing-17.htm>).
+/// Satin columns shrink most, and tatami fills less but noticeably over large areas
+/// (<https://wilcom.com/resources/blog/push-and-pull-compensation>): both get the same value (an
+/// estimate; fabric presets may part them).
+const PULL: f64 = 0.2;
+/// Pull compensation that grows with the stitch (percent of a satin column's width, or of a fill
+/// row's length, added at each side): none by default. Ink/Stitch offers it on top of the fixed
+/// value, so that wide columns get more than narrow ones
+/// (<https://inkstitch.org/docs/stitches/satin-column/>).
+const PULL_PERCENT: f64 = 0.0;
+/// Push compensation (millimetres a satin column is sewn shorter at each end): the stitches pile
+/// up at a column's open ends and push the fabric out, so a column comes out longer than drawn
+/// (<https://wilcom.com/resources/blog/push-and-pull-compensation>; Ink/Stitch shortens the
+/// column's start and end by a setting of its own). No starting value is published: none by
+/// default, so a column is sewn as long as it is drawn.
+const PUSH: f64 = 0.0;
+/// The thread the default spacings are for (its weight: kilometres of thread per kilogram, so a
+/// larger number is a thinner thread, <https://en.wikipedia.org/wiki/Thread_(textiles)>): 40 wt,
+/// standard embroidery thread, the one the default fill spacing (rows 0.38 mm apart) covers
+/// without gaps.
+pub const THREAD_WEIGHT: f64 = 40.0;
 /// A satin column's width when none is given (millimetres). The export always gives one, the
 /// stroke's width; this is for callers of the planner that don't.
 const SATIN_WIDTH: f64 = 3.0;
@@ -139,14 +165,26 @@ pub struct Params {
     pub style: Style,
     /// The longest stitch along a running line or a fill row, millimetres.
     pub stitch_length: f64,
-    /// The distance between neighbouring threads: rail to rail for satin, row to row for fill,
-    /// millimetres.
+    /// The distance between threads, millimetres: row to row for fill; for satin between two
+    /// penetrations on the same rail (peak to peak), its crossings lying half that apart.
     pub density: f64,
     /// The direction the fill's rows run, degrees (0: left to right).
     pub angle: f64,
-    /// Pull compensation: how much wider the stitching is made so the fabric's pull does not
-    /// leave a gap of background at an edge, millimetres (satin only for now).
-    pub pull: f64,
+    /// Pull compensation: how much farther the stitches reach at each side so the fabric's pull
+    /// does not leave a gap of background at an edge, millimetres, at two sides: a satin
+    /// column's rails (the left one as its path runs, then the right one), a fill row's ends (its
+    /// start along the rows' direction, then its end). Running lines have none.
+    pub pull: [f64; 2],
+    /// Pull compensation that grows with the stitch, percent added at each side (as
+    /// [`Params::pull`], on top of it): of a satin column's width, of a fill row's length.
+    pub pull_percent: [f64; 2],
+    /// Push compensation: how much shorter an open satin column is sewn at its start and its end
+    /// (as its path is drawn), millimetres. Sewing pushes the fabric out at a column's ends.
+    pub push: [f64; 2],
+    /// The thread's weight (wt, kilometres per kilogram: 40 is standard embroidery thread). Auto
+    /// spacing ([`Params::auto_spacing`]) and [`Params::for_thread`]'s spacing follow it
+    /// ([`thread_scale`]).
+    pub thread_weight: f64,
     /// Sew an underlay first: an edge run under a fill, a centre run under a satin column.
     pub underlay: bool,
     /// A move longer than this lifts the needle (a jump) instead of running the thread across,
@@ -182,8 +220,21 @@ const STITCH_LENGTH_RANGE: (f64, f64) = (0.2, 12.0);
 /// The distance between threads: from 0.05 mm (twenty threads a millimetre, far denser than any
 /// fabric takes) to 5 mm (rows that no longer cover).
 const DENSITY_RANGE: (f64, f64) = (0.05, 5.0);
-/// Pull compensation: none to 2 mm, far more than the most stretchy fabric needs.
+/// Pull compensation: none to 2 mm at a side, far more than the most stretchy fabric needs. Also
+/// the most a side gets with [`Params::pull_percent`] added.
 const PULL_RANGE: (f64, f64) = (0.0, 2.0);
+/// Pull compensation by size: none to half the stitch again at each side (a column twice as wide).
+const PULL_PERCENT_RANGE: (f64, f64) = (0.0, 50.0);
+/// Push compensation: none to 5 mm at an end. A column keeps at least [`MIN_PUSHED`] of its length
+/// whatever is asked.
+const PUSH_RANGE: (f64, f64) = (0.0, 5.0);
+/// The share of an open satin column's length that push compensation leaves, at least: both ends
+/// are shortened in proportion when they would take more. Push compensation corrects a fraction of
+/// a millimetre; more than half a column is a mistake.
+const MIN_PUSHED: f64 = 0.5;
+/// The thread's weight: from 10 wt (a heavy decorative thread, thicker than any embroidery
+/// thread) to 150 wt (finer than the finest bobbin and lettering threads).
+const THREAD_WEIGHT_RANGE: (f64, f64) = (10.0, 150.0);
 /// The longest move sewn rather than jumped: from 0.5 mm to 20 mm, past which a sewn move would be
 /// a loose thread across the design.
 const JUMP_RANGE: (f64, f64) = (0.5, 20.0);
@@ -201,16 +252,27 @@ impl Default for Params {
 }
 
 impl Params {
-    /// The defaults of one style.
+    /// The defaults of one style, for 40 wt thread ([`THREAD_WEIGHT`]).
     pub fn for_style(style: Style) -> Self {
+        Self::for_thread(style, THREAD_WEIGHT)
+    }
+
+    /// The defaults of one style for thread of `weight` (wt): the spacing between threads follows
+    /// the thread's thickness ([`thread_scale`]), a fill's rows and a satin column's crossings alike.
+    pub fn for_thread(style: Style, weight: f64) -> Self {
+        let weight = if weight.is_finite() { weight.clamp(THREAD_WEIGHT_RANGE.0, THREAD_WEIGHT_RANGE.1) } else { THREAD_WEIGHT };
+        let density = FILL_SPACING * thread_scale(weight);
         match style {
-            // A running line uses no density, angle, pull, underlay or width.
+            // A running line uses no density, angle, compensation, underlay or width.
             Style::Running => Self {
                 style,
                 stitch_length: RUNNING_STITCH,
-                density: FILL_SPACING,
+                density,
                 angle: 0.0,
-                pull: 0.0,
+                pull: [0.0; 2],
+                pull_percent: [0.0; 2],
+                push: [0.0; 2],
+                thread_weight: weight,
                 underlay: false,
                 jump: JUMP,
                 trim: TRIM,
@@ -225,9 +287,12 @@ impl Params {
             Style::Satin => Self {
                 style,
                 stitch_length: RUNNING_STITCH,
-                density: FILL_SPACING,
+                density,
                 angle: 0.0,
-                pull: SATIN_PULL,
+                pull: [PULL; 2],
+                pull_percent: [PULL_PERCENT; 2],
+                push: [PUSH; 2],
+                thread_weight: weight,
                 underlay: true,
                 jump: JUMP,
                 trim: TRIM,
@@ -237,12 +302,16 @@ impl Params {
                 max_satin: MAX_SATIN_STITCH,
                 auto_spacing: true,
             },
+            // A fill has no ends to push in: its rows run edge to edge.
             Style::Fill => Self {
                 style,
                 stitch_length: FILL_STITCH,
-                density: FILL_SPACING,
+                density,
                 angle: FILL_ANGLE,
-                pull: 0.0,
+                pull: [PULL; 2],
+                pull_percent: [PULL_PERCENT; 2],
+                push: [0.0; 2],
+                thread_weight: weight,
                 underlay: true,
                 jump: JUMP,
                 trim: TRIM,
@@ -262,6 +331,7 @@ impl Params {
         let d = Self::for_style(self.style);
         let fin = |v: f64, fallback: f64| if v.is_finite() { v } else { fallback };
         let clamp = |v: f64, fallback: f64, (lo, hi): (f64, f64)| fin(v, fallback).clamp(lo, hi);
+        let sides = |v: [f64; 2], fallback: [f64; 2], range: (f64, f64)| [clamp(v[0], fallback[0], range), clamp(v[1], fallback[1], range)];
         let angle = fin(self.angle, d.angle) % 360.0;
         let jump = clamp(self.jump, d.jump, JUMP_RANGE);
         Self {
@@ -269,7 +339,10 @@ impl Params {
             stitch_length: clamp(self.stitch_length, d.stitch_length, STITCH_LENGTH_RANGE),
             density: clamp(self.density, d.density, DENSITY_RANGE),
             angle: if angle < 0.0 { angle + 360.0 } else { angle },
-            pull: clamp(self.pull, d.pull, PULL_RANGE),
+            pull: sides(self.pull, d.pull, PULL_RANGE),
+            pull_percent: sides(self.pull_percent, d.pull_percent, PULL_PERCENT_RANGE),
+            push: sides(self.push, d.push, PUSH_RANGE),
+            thread_weight: clamp(self.thread_weight, d.thread_weight, THREAD_WEIGHT_RANGE),
             underlay: self.underlay,
             jump,
             trim: clamp(self.trim, d.trim, (jump, MAX_TRIM)),
@@ -280,6 +353,37 @@ impl Params {
             auto_spacing: self.auto_spacing,
         }
     }
+
+    /// How much farther a stitch `length` long reaches at each side for pull compensation
+    /// ([`Params::pull`] plus [`Params::pull_percent`] of `length`), millimetres, at most 2 mm at
+    /// a side (the most [`Params::sane`] lets [`Params::pull`] be).
+    pub fn compensation(&self, length: f64) -> [f64; 2] {
+        let length = if length.is_finite() { length.max(0.0) } else { 0.0 };
+        let side = |k: usize| {
+            let (pull, percent) = (self.pull.get(k).copied().unwrap_or(0.0), self.pull_percent.get(k).copied().unwrap_or(0.0));
+            let v = pull + percent / 100.0 * length;
+            if v.is_finite() { v.clamp(0.0, PULL_RANGE.1) } else { 0.0 }
+        };
+        [side(0), side(1)]
+    }
+}
+
+/// How a spacing for 40 wt thread ([`THREAD_WEIGHT`]) changes for thread of `weight`: in
+/// proportion to the thread's thickness. Thread weight counts kilometres per kilogram, so a
+/// thread's cross-section is inversely proportional to it and its thickness to its square root:
+/// `(40 / weight)^½`. Madeira's stitch density chart, by thread, follows the same curve: 0.80,
+/// 0.50, 0.40 and 0.35 mm for its Classic 12, 30, 40 and 60 wt, where this gives 0.73, 0.46, 0.40
+/// and 0.33 from 0.40 (its 75 wt Polyneon, 0.20 mm, is finer than the curve)
+/// (<https://www.madeirausa.com/_resources/common/userfiles/file/Resources/TH.Reads/Density.pdf>).
+/// The chart is for satin; fills follow it too here, an estimate: no source scales fill spacing
+/// by thread. (Wilcom's satin auto spacing shifts its spacing by thread class too, by fixed
+/// offsets of a few hundredths of a millimetre,
+/// <https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/stitches/stitches-10.htm>.)
+pub fn thread_scale(weight: f64) -> f64 {
+    /// The square root: the thread's thickness follows it.
+    const SPACING_EXPONENT: f64 = 0.5;
+    let weight = if weight.is_finite() { weight.clamp(THREAD_WEIGHT_RANGE.0, THREAD_WEIGHT_RANGE.1) } else { THREAD_WEIGHT };
+    (THREAD_WEIGHT / weight).powf(SPACING_EXPONENT)
 }
 
 /// The stitches of `path` in style `p`: one block, in needle order.
@@ -334,7 +438,10 @@ fn estimate(subs: &[SubPath], p: &Params) -> f64 {
     let ends = POINTS_PER_SUBPATH * subs.len() as f64;
     match p.style {
         Style::Running => total / p.stitch_length + ends,
-        Style::Satin if p.width > 0.0 => total / UNDERLAY_STITCH + total / p.density + ends,
+        Style::Satin if p.width > 0.0 => {
+            let spacing = if p.auto_spacing { satin_spacing(p.width) * thread_scale(p.thread_weight) } else { p.density };
+            total / UNDERLAY_STITCH + 2.0 * total / spacing.min(p.density) + ends
+        }
         Style::Satin | Style::Fill => {
             let axes = Axes::new(p.angle);
             let extent = |f: &dyn Fn(vectorcraft_geom::Point) -> f64| {

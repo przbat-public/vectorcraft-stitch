@@ -8,7 +8,7 @@ use vectorcraft_color::Paint;
 use vectorcraft_doc::embroidery::StitchRun;
 use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind};
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Shape, kurbo};
-use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke};
+use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
 use vectorcraft_stitch::plan::{self, Params, Style};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
@@ -18,6 +18,7 @@ use super::sequence::{CLEARANCE, Planned, Sequence};
 const TEXT_LEFT_OUT: &str = "type is not stitched: outline it (Type › Create Outlines) and export again";
 const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › Image Trace) first";
 const LIVE_LEFT_OUT: &str = "live blends, envelopes, meshes and repeats are not stitched: expand them first";
+const EXPANDED_AWAY: &str = "a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less";
 const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colour of their first stop; a design sews one thread per block";
 /// A stroke at least this wide (millimetres) is sewn as a satin column, a narrower one as a running
 /// line (unless `stitchStyle` says otherwise): below about a millimetre the two rails are too
@@ -33,6 +34,24 @@ const NO_WIDTH: f64 = 0.0;
 /// The most stitches a design may have: far beyond any hoop (large designs run to a few hundred
 /// thousand), and a bound on the memory an export can take.
 const MAX_DESIGN_STITCHES: usize = 2_000_000;
+/// The miter limit given for the band that grows a fill ([`Digitizer::expanded`]): its joins are
+/// round, which have none; this is a stroke's usual default.
+const ROUND_JOINS: f64 = 4.0;
+
+/// `path`'s subpaths, each a path of its own (as drawn: closed or not).
+fn subpaths(path: &BezPath) -> Vec<BezPath> {
+    let mut out: Vec<BezPath> = Vec::new();
+    for el in path.elements() {
+        match el {
+            PathEl::MoveTo(_) => out.push(BezPath::from_vec(vec![*el])),
+            _ => match out.last_mut() {
+                Some(sub) => sub.push(*el),
+                None => out.push(BezPath::from_vec(vec![*el])),
+            },
+        }
+    }
+    out
+}
 
 /// The stitches of `doc`'s visible art with `opts`: its blocks in sewing order ([`Sequence`]), and
 /// the warnings for what was left out or approximated; an error when the design would need too
@@ -231,7 +250,8 @@ impl Digitizer<'_> {
                 // A fill is filled unless `stitchStyle` asks for another way of stitching it.
                 AppearanceItem::Fill(fill) => {
                     let style = self.forced().unwrap_or(Style::Fill);
-                    let (area, area_rule) = self.clipped(&mm, rule);
+                    let (area, area_rule) = if style == Style::Fill { self.expanded(&mm, rule) } else { (mm.clone(), rule) };
+                    let (area, area_rule) = self.clipped(&area, area_rule);
                     self.colour(&area, area_rule, style, &fill.paint, NO_WIDTH, false);
                 }
                 AppearanceItem::Stroke(stroke) => {
@@ -251,7 +271,8 @@ impl Digitizer<'_> {
                                 LineJoin::Bevel => Join::Bevel,
                             };
                             let outline = outline_stroke(&PathData::from_bezpath(&mm), width, cap, join, stroke.miter_limit).to_bezpath();
-                            let (area, area_rule) = self.clipped(&outline, FillRule::NonZero);
+                            let (area, area_rule) = self.expanded(&outline, FillRule::NonZero);
+                            let (area, area_rule) = self.clipped(&area, area_rule);
                             self.colour(&area, area_rule, Style::Fill, &stroke.paint, NO_WIDTH, false);
                         }
                         // A satin column when it is wide enough to have two rails, a running line
@@ -270,6 +291,47 @@ impl Digitizer<'_> {
                 }
             }
         }
+    }
+
+    /// A filled area (millimetres) grown all round by the `expand` option (shrunk when it is
+    /// negative), so that neighbouring fills meet without a gap: its union with a band twice as wide
+    /// along its outlines, round at the corners, or what is left of it without that band. A subpath
+    /// that encloses no area (sewn as a line) is left as it is. Unchanged when the option is 0. The
+    /// clip groups around it cut the result ([`Digitizer::clipped`]): it grows only where it shows.
+    fn expanded(&mut self, area: &BezPath, rule: FillRule) -> (BezPath, FillRule) {
+        let e = self.opts.expand();
+        if e.abs() < SAME_POINT {
+            return (area.clone(), rule);
+        }
+        let (mut shapes, mut lines) = (BezPath::new(), BezPath::new());
+        for sub in subpaths(area) {
+            // Closed, as paint closes it; whether it encloses an area is judged closed too (an
+            // open subpath's area would depend on where it lies on the page).
+            let mut closed = sub.clone();
+            if closed.elements().last() != Some(&PathEl::ClosePath) {
+                closed.close_path();
+            }
+            if closed.area().abs() >= plan::MIN_AREA {
+                shapes.extend(closed);
+            } else {
+                lines.extend(sub);
+            }
+        }
+        if shapes.elements().is_empty() {
+            return (area.clone(), rule);
+        }
+        // The region the shape covers, by its rule: overlapping or crossing outlines resolved into
+        // its edge, so the band runs along that edge only (a band along an outline inside the
+        // region would cut a groove through it).
+        let region = normalize(&PathData::from_bezpath(&shapes), rule);
+        let band = outline_stroke(&region, 2.0 * e.abs(), Cap::Round, Join::Round, ROUND_JOINS);
+        let op = if e > 0.0 { BoolOp::Union } else { BoolOp::Difference };
+        let mut out = boolean(&region, FillRule::NonZero, &band, FillRule::NonZero, op).to_bezpath();
+        if out.elements().is_empty() && lines.elements().is_empty() {
+            self.warn(EXPANDED_AWAY);
+        }
+        out.extend(lines);
+        (out, FillRule::NonZero)
     }
 
     /// A filled area (millimetres) as the clip groups around it leave it: its intersection with
@@ -311,11 +373,18 @@ impl Digitizer<'_> {
         let params = self.opts.params(style, width);
         // Where the needle will be: at the end of the block this object is likely to join (its
         // bounds estimated from the path's), so it starts as near there as it can.
+        let bounds = bp.bounding_box();
+        let [left, right] = params.compensation(match style {
+            Style::Satin => params.width,
+            // A fill row is at most as long as the shape is across.
+            Style::Running | Style::Fill => bounds.width().hypot(bounds.height()),
+        });
         let reach = match style {
-            Style::Satin => params.width.min(plan::MAX_SATIN_WIDTH) / 2.0 + params.pull,
+            Style::Satin => params.width.min(plan::MAX_SATIN_WIDTH) / 2.0,
             Style::Running | Style::Fill => 0.0,
-        } + CLEARANCE;
-        let mut estimate = Some(bp.bounding_box()).filter(|r| r.is_finite()).map(|r| r.inflate(reach, reach));
+        } + left.max(right)
+            + CLEARANCE;
+        let mut estimate = Some(bounds).filter(|r| r.is_finite() && reach.is_finite()).map(|r| r.inflate(reach, reach));
         if let (Some(r), Some((clip, _))) = (estimate, &self.clip) {
             estimate = Some(r.intersect(clip.bounding_box()));
         }

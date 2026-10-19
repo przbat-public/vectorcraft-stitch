@@ -17,7 +17,8 @@ const TRAVEL_SIMPLIFY: f64 = 0.3;
 const MAX_TRAVEL_NODES: usize = 400;
 
 /// A filled shape: its closed outlines (holes included) and the rule that decides what they
-/// enclose; with the outlines' [`Grid`], tests along a line look only at the edges near it.
+/// enclose; with the outlines' [`Grid`], whether a point is inside and whether a segment stays
+/// inside look only at the edges near them ([`Area::spans`], once a row, looks at every edge).
 #[derive(Clone, Copy)]
 pub(super) struct Area<'a> {
     pub(super) outlines: &'a [&'a SubPath],
@@ -335,8 +336,12 @@ pub(super) struct Grid {
 impl Grid {
     /// The most cells along a side.
     const MAX_SIDE: usize = 256;
+    /// The most cells an edge takes on average (on top of one entry per cell): past that, the
+    /// grid is not built and tests look at every edge.
+    const ENTRIES_PER_EDGE: usize = 32;
 
-    /// The grid of `outlines`' edges; `None` when they have no finite extent.
+    /// The grid of `outlines`' edges; `None` when they have no finite extent, or when their edges
+    /// are so long for their number that the grid would cost more than it saves.
     pub(super) fn new(outlines: &[&SubPath]) -> Option<Self> {
         let edges: Vec<(Point, Point)> = edges(outlines)
             .filter(|(a, b)| a.x.is_finite() && a.y.is_finite() && b.x.is_finite() && b.y.is_finite())
@@ -356,13 +361,32 @@ impl Grid {
         let nx = ((w / cell).floor() as usize + 1).min(Self::MAX_SIDE);
         let ny = ((h / cell).floor() as usize + 1).min(Self::MAX_SIDE);
         let mut grid = Self { x0, y0, cell, nx, ny, cells: vec![Vec::new(); nx * ny], edges: Vec::new() };
-        // Each edge goes in every cell its box touches, grown a hair so that a point on a cell's
-        // border finds it from either side.
+        // Each edge goes in the cells it passes through, row by row: in each row, the cells under
+        // the part of the edge within the row's band. Everything is grown a hair so that a point
+        // on a cell's border finds the edge from either side. An edge's own box would be simpler,
+        // but a long diagonal edge fills its whole box: thousands of edges across a shape would
+        // take gigabytes.
         let hair = cell * 1e-6;
+        let budget = edges.len().saturating_mul(Self::ENTRIES_PER_EDGE).saturating_add(nx * ny);
+        let mut entries = 0usize;
         for (i, &(a, b)) in edges.iter().enumerate() {
-            let (c0, c1) = (grid.col(a.x.min(b.x) - hair), grid.col(a.x.max(b.x) + hair));
             let (r0, r1) = (grid.row(a.y.min(b.y) - hair), grid.row(a.y.max(b.y) + hair));
             for r in r0..=r1 {
+                // The row's band; the first and last rows reach out, as `row` clamps to them.
+                let lo = if r == 0 { f64::NEG_INFINITY } else { y0 + cell * r as f64 - hair };
+                let hi = if r + 1 >= ny { f64::INFINITY } else { y0 + cell * (r + 1) as f64 + hair };
+                let (xa, xb) = if (b.y - a.y).abs() < 1e-12 {
+                    (a.x, b.x)
+                } else {
+                    let at = |y: f64| a.x + (b.x - a.x) * ((y - a.y) / (b.y - a.y)).clamp(0.0, 1.0);
+                    (at(lo.max(a.y.min(b.y))), at(hi.min(a.y.max(b.y))))
+                };
+                let (c0, c1) = (grid.col(xa.min(xb) - hair), grid.col(xa.max(xb) + hair));
+                entries = entries.saturating_add(c1.saturating_sub(c0) + 1);
+                if entries > budget {
+                    // Edges this long for their number: testing every edge costs less.
+                    return None;
+                }
                 for c in c0..=c1 {
                     if let Some(cell) = grid.cells.get_mut(r * nx + c) {
                         cell.push(i as u32);
@@ -372,6 +396,12 @@ impl Grid {
         }
         grid.edges = edges;
         Some(grid)
+    }
+
+    /// How many edge entries the cells hold.
+    #[cfg(test)]
+    pub(super) fn entries(&self) -> usize {
+        self.cells.iter().map(Vec::len).sum()
     }
 
     fn col(&self, x: f64) -> usize {

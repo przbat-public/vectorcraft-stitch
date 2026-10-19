@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-18 · **Last updated:** 2026-10-18 · **Change:** fill regions ordered so travels hide under stitching still to come; jumps tied and trimmed only past `trimLength`; objects start near the one before; trim after an object; ties at clip cuts
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** fill regions ordered so travels hide under stitching still to come; jumps tied and trimmed only past `trimLength`; objects start near the one before; trim after an object; ties at clip cuts; the edge grid's memory bounded
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -32,7 +32,7 @@ control channel use it). Every writable format's options are listed by `document
 | `pullCompensation` | 0.2 mm | how much wider a satin column is stitched so the fabric's pull leaves no gap |
 | `underlay` | `true` | an edge run under fills, a centre run under satin columns |
 | `jumpLength` | 5 mm | a longer move lifts the needle (a jump), tied off before and in after so that it can be cut; a shorter move that can't be sewn (between separate pieces) jumps with the thread on |
-| `trimLength` | 10 mm | a jump longer than this cuts the thread first (a trim); shorter jumps are left for the machine or a person to cut |
+| `trimLength` | 10 mm | a jump longer than this cuts the thread first (a trim); shorter jumps are left for the machine or a person to cut. Never less than `jumpLength`: a smaller value acts as `jumpLength` |
 | `minStitch` | 0.4 mm | shorter stitches are left out |
 
 An option left out keeps the style's own value. The defaults are the stitch planner's
@@ -51,6 +51,8 @@ the file had between runs. The runs of one thread group stay one colour block, a
 options (`stitchStyle`, `density`…) don't touch them. So a design opened and written again, in the
 same format or another, has every needle point, trim and colour block where the file had it (see
 `an_opened_design_is_written_back_unchanged` in `crates/engine/src/cmd/fileio/tests_embroidery.rs`).
+Put inside a clip group, the lines are cut to the clipping path as any stroke is, and the needle
+lifts across each cut the same way (tied off and in around a long jump).
 Moving or scaling the lines moves or scales the stitches; editing a line's points edits the
 stitches. Turning a design back into shapes that are stitched by the rules (what professional
 software calls recognising objects) is not done yet.
@@ -59,7 +61,8 @@ software calls recognising objects) is not done yet.
 selection by default) marks objects or groups whose thread is cut after their last stitch, however
 near the next object starts, as Ink/Stitch's and Wilcom's "Trim After" do. Unmarked, only a jump
 longer than `trimLength` is cut. The mark is saved in `.vectorcraft` files
-(`NodeExtras::embroidery`).
+(`NodeExtras::embroidery`). No menu or panel sets it yet: for now it is run through MCP or the
+control channel (the command palette lists it, but runs it without `on`, which it refuses).
 
 ## How a shape becomes stitches
 
@@ -147,7 +150,10 @@ the fabric.
   piece of many regions), and a piece of more than 200 regions is sewn nearest-first.
 
   The corners' visibility is worked out once per shape, and the outlines' edges are sorted into a
-  grid of cells, so that a test along a segment looks only at the edges in the cells it passes: a
+  grid of cells, so that a test along a segment looks only at the edges in the cells it passes (an
+  edge is listed only in the cells it passes through, and a shape whose edges would fill more than
+  32 cells each on average, such as thousands of edges from corner to corner, keeps no grid and tests
+  every edge: a grid of each edge's whole box took 0.8 GB for 20 000 such edges): a
   gear of 90 teeth with 24 holes plans in 60–90 ms (measured, release build) with 2–4 trims and as
   many jumps, where testing every edge against every corner took about 100 ms and gave up
   travelling (the graph was too large), ending with 25–34 trims and over 200 jumps.
@@ -214,11 +220,11 @@ index, whose RGB values differ between published charts — preview colour is no
 
 ## Validation
 
-- `crates/stitch`: 40 unit tests — the fill covers a rectangle and leaves its hole empty, an
+- `crates/stitch`: 41 unit tests — the fill covers a rectangle and leaves its hole empty, an
   unclosed shape is filled, a ring is sewn in regions with no thread across its hole and,
   travelling inside, without a trim, regions overlap by a row, a narrow gap is never sewn across,
-  a letter E is sewn in one go at any angle without crossing its gaps, a gear of 90 teeth and 24
-  holes travels inside, the edge grid answers what testing every edge does, separate pieces jump
+  a letter E is sewn in one go at any angle (every 5°) without crossing its gaps, a gear of 90 teeth and 24
+  holes travels inside, the edge grid answers what testing every edge does (long crossing edges included) and stays small however long the edges are, separate pieces jump
   with the thread on when close, tied when farther and cut only past the trim length, a shape
   starts nearest the needle, large fills get a
   tatami underlay and small ones don't, no stitch is longer than asked or shorter than the
@@ -231,7 +237,7 @@ index, whose RGB values differ between published charts — preview colour is no
   writes a design it reads back with the same blocks and size, a JEF's header extents are where
   its stitches go, an absurd JEF colour count is not believed, and no reader panics on random,
   truncated or damaged bytes.
-- `crates/engine`: 25 tests (24 command-level) — export writes a readable design in every format,
+- `crates/engine`: 26 tests (25 command-level) — export writes a readable design in every format,
   options change the plan, a written PES opens as art (also by its magic bytes), an opened design
   is written back unchanged in every format (and again after a second round), with the cuts at
   its blocks' ends, converts between formats with the same needle points, ignores the style
@@ -240,7 +246,7 @@ index, whose RGB values differ between published charts — preview colour is no
   order survives grouping by thread, clipping masks cut fills and strokes, template layers are not
   sewn, a forced fill fills a stroke's area rather than its path's inside, a satin wider than
   50 mm is warned about, cuts made by a clipping mask are tied and trimmed only past the trim
-  length, an object can ask for a trim after it (and the document keeps it), an object starts near
+  length, `trimLength` decides which jumps are cut (never below `jumpLength`), an object can ask for a trim after it (and the document keeps it), an object starts near
   the one before, and the defaults `document.formats` lists (the satin spacing table included) are
   the planner's.
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's

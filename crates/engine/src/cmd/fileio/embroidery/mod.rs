@@ -116,7 +116,7 @@ const TRIM: FormatOption = FormatOption {
     name: "trimLength",
     ty: "number",
     default: "10",
-    description: "a jump longer than this cuts the thread (a trim); shorter ones are left for the machine or a person to cut, millimetres",
+    description: "a jump longer than this cuts the thread (a trim); shorter ones are left for the machine or a person to cut, millimetres; never less than jumpLength (a smaller value acts as jumpLength)",
 };
 const MIN_STITCH: FormatOption =
     FormatOption { name: "minStitch", ty: "number", default: "0.4", description: "shorter stitches are left out, millimetres" };

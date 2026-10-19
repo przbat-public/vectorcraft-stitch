@@ -391,9 +391,9 @@ fn separate_pieces_jump_and_trim_only_when_far() {
 }
 
 /// A concave shape (a letter E): between its arms and spine the needle travels inside the shape,
-/// never sewing across the gaps, at any angle, underlay or not; and it is sewn in one go, without
-/// a jump or a cut: the regions are ordered so that travels pass under stitching still to come
-/// (with vertical rows, the arms first, each towards the spine, and the spine last).
+/// never sewing across the gaps, at any angle (every 5° tried), underlay or not; and it is sewn in
+/// one go, without a jump or a cut: the regions are ordered so that travels pass under stitching
+/// still to come (with vertical rows, the arms first, each towards the spine, and the spine last).
 #[test]
 fn a_concave_shape_is_sewn_in_one_go_never_across_its_gaps() {
     let mut e = BezPath::new();
@@ -420,7 +420,7 @@ fn a_concave_shape_is_sewn_in_one_go_never_across_its_gaps() {
     }
     e.close_path();
     for underlay in [false, true] {
-        for angle in [0.0, 30.0, 90.0] {
+        for angle in (0..360).step_by(5).map(f64::from) {
             let mut p = Params::for_style(Style::Fill);
             p.angle = angle;
             p.underlay = underlay;
@@ -513,41 +513,87 @@ fn nothing_panics_on_odd_input() {
     assert!(stitches(&line((1.0, 1.0), (1.0, 1.0)), FillRule::NonZero, &Params::default()).is_empty());
 }
 
+/// A closed polygon through `pts`.
+fn polygon(pts: impl IntoIterator<Item = (f64, f64)>) -> BezPath {
+    let mut g = BezPath::new();
+    for (k, q) in pts.into_iter().enumerate() {
+        if k == 0 { g.move_to(q) } else { g.line_to(q) }
+    }
+    g.close_path();
+    g
+}
+
 /// The outlines' grid answers what testing every edge answers: whether a point is inside and
-/// whether a segment stays inside, for a jagged shape with holes.
+/// whether a segment stays inside, for a jagged shape with holes, a star of long spikes and a
+/// zigzag whose edges cross the whole shape.
 #[test]
 fn the_edge_grid_agrees_with_every_edge() {
     use super::area::{Area, Grid};
     use super::geometry::subpaths;
-    let mut g = BezPath::new();
-    for k in 0..120 {
-        let a = k as f64 / 120.0 * std::f64::consts::TAU;
+    let tau = std::f64::consts::TAU;
+    let mut jagged = polygon((0..120).map(|k| {
+        let a = k as f64 / 120.0 * tau;
         let r = if (k / 2) % 2 == 0 { 30.0 } else { 26.0 };
-        let q = (40.0 + r * a.cos(), 40.0 + r * a.sin());
-        if k == 0 { g.move_to(q) } else { g.line_to(q) }
-    }
-    g.close_path();
-    g.extend(rect(30.0, 30.0, 8.0, 20.0));
-    let subs = subpaths(&g);
-    let outlines: Vec<&super::geometry::SubPath> = subs.iter().collect();
-    let grid = Grid::new(&outlines).expect("a grid");
-    for rule in [FillRule::NonZero, FillRule::EvenOdd] {
-        let plain = Area { outlines: &outlines, rule, grid: None };
-        let fast = Area { grid: Some(&grid), ..plain };
-        // A fixed scatter of points (a linear congruential sequence), some exactly on corners.
-        let mut seed = 12345u64;
-        let mut next = || {
-            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-            (seed >> 11) as f64 / (1u64 << 53) as f64 * 90.0 - 5.0
-        };
-        let mut pts: Vec<Point> = (0..400).map(|_| Point::new(next(), next())).collect();
-        pts.extend(subs.iter().flat_map(|s| s.pts.iter().copied()));
-        for (i, &a) in pts.iter().enumerate() {
-            assert_eq!(plain.contains(a), fast.contains(a), "{a:?}");
-            let b = pts[(i * 7 + 3) % pts.len()];
-            assert_eq!(plain.contains_segment(a, b), fast.contains_segment(a, b), "{a:?} to {b:?}");
+        (40.0 + r * a.cos(), 40.0 + r * a.sin())
+    }));
+    jagged.extend(rect(30.0, 30.0, 8.0, 20.0));
+    let star = polygon((0..48).map(|k| {
+        let a = k as f64 / 48.0 * tau;
+        let r = if k % 2 == 0 { 40.0 } else { 3.0 };
+        (40.0 + r * a.cos(), 40.0 + r * a.sin())
+    }));
+    let zigzag = polygon((0..40).map(|k| if k % 2 == 0 { (k as f64, 0.0) } else { (80.0 - k as f64, 80.0) }));
+    for shape in [jagged, star, zigzag] {
+        let subs = subpaths(&shape);
+        let outlines: Vec<&super::geometry::SubPath> = subs.iter().collect();
+        let grid = Grid::new(&outlines).expect("a grid");
+        for rule in [FillRule::NonZero, FillRule::EvenOdd] {
+            let plain = Area { outlines: &outlines, rule, grid: None };
+            let fast = Area { grid: Some(&grid), ..plain };
+            // A fixed scatter of points (a linear congruential sequence), some exactly on corners.
+            let mut seed = 12345u64;
+            let mut next = || {
+                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+                (seed >> 11) as f64 / (1u64 << 53) as f64 * 90.0 - 5.0
+            };
+            let mut pts: Vec<Point> = (0..400).map(|_| Point::new(next(), next())).collect();
+            pts.extend(subs.iter().flat_map(|s| s.pts.iter().copied()));
+            for (i, &a) in pts.iter().enumerate() {
+                assert_eq!(plain.contains(a), fast.contains(a), "{a:?}");
+                let b = pts[(i * 7 + 3) % pts.len()];
+                assert_eq!(plain.contains_segment(a, b), fast.contains_segment(a, b), "{a:?} to {b:?}");
+            }
         }
     }
+}
+
+/// The grid's memory stays near the number of edges, however long they are: thousands of edges
+/// from corner to corner of a shape (as traced art can have) would fill every cell of their
+/// boxes.
+#[test]
+fn the_edge_grid_stays_small_for_long_edges() {
+    use super::area::Grid;
+    use super::geometry::subpaths;
+    for n in [2_000usize, 20_000] {
+        let shape = polygon((0..n).map(|k| {
+            let t = k as f64 / n as f64;
+            if k % 2 == 0 { (t, 0.0) } else { (100.0 - t, 100.0) }
+        }));
+        let subs = subpaths(&shape);
+        let outlines: Vec<&super::geometry::SubPath> = subs.iter().collect();
+        if let Some(grid) = Grid::new(&outlines) {
+            assert!(grid.entries() <= n * 32 + 256 * 256, "{n} edges: {} entries", grid.entries());
+        }
+    }
+    // A shape of short edges keeps its grid, each edge in a cell or two.
+    let circle = polygon((0..2_000).map(|k| {
+        let a = k as f64 / 2_000.0 * std::f64::consts::TAU;
+        (50.0 + 40.0 * a.cos(), 50.0 + 40.0 * a.sin())
+    }));
+    let subs = subpaths(&circle);
+    let outlines: Vec<&super::geometry::SubPath> = subs.iter().collect();
+    let grid = Grid::new(&outlines).expect("a grid");
+    assert!(grid.entries() <= 2_000 * 4, "{} entries", grid.entries());
 }
 
 /// Where the needle comes from decides where a shape starts: a satin column or a running line

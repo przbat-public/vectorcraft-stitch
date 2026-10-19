@@ -494,6 +494,26 @@ fn an_object_can_ask_for_a_trim_after_it() {
     assert!(s.execute("embroidery.setTrimAfter", &json!({"ids": [first]})).is_err(), "`on` is required");
 }
 
+/// `trimLength` decides which jumps cut the thread: a jump between two objects is cut only when it
+/// is longer, and a value below `jumpLength` acts as `jumpLength`.
+#[test]
+fn trim_length_decides_which_jumps_are_cut() {
+    let mut s = blank();
+    // 30 pt squares 57 pt (20 mm) apart.
+    rect(&mut s, "#cc2222", 20.0, 20.0, 30.0, 30.0);
+    rect(&mut s, "#cc2222", 107.0, 20.0, 30.0, 30.0);
+    let (trims, jumps) = moves(&export(&mut s, "pes", json!({})));
+    assert_eq!(trims, 1, "{jumps:?}");
+    let longest = jumps.iter().copied().fold(0.0, f64::max);
+    assert!(longest > 15.0, "{jumps:?}");
+    let (trims, jumps) = moves(&export(&mut s, "pes", json!({"trimLength": longest + 1.0})));
+    assert_eq!(trims, 0, "{jumps:?}");
+    assert_eq!(
+        export(&mut s, "pes", json!({"trimLength": 1.0, "jumpLength": 5.0})),
+        export(&mut s, "pes", json!({"trimLength": 5.0, "jumpLength": 5.0}))
+    );
+}
+
 /// Each object starts near where the one sewn before it ended: a satin column drawn from its far
 /// end is sewn from its near one, a short jump instead of a long move cut by a trim.
 #[test]

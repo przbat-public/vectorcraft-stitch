@@ -19,10 +19,11 @@ const TATAMI_UNDERLAY_SPACING: f64 = 2.0;
 const TATAMI_UNDERLAY_STITCH: f64 = 3.0;
 const TATAMI_UNDERLAY_INSET: f64 = 0.6;
 const TATAMI_UNDERLAY_MIN: f64 = 10.0;
-/// The longest travel run in a fill's top stitching (millimetres), where it may show: a longer
-/// way lifts the needle instead. Travels under the top stitching (in the underlay) have no limit:
-/// the top stitching hides them. An estimate.
-const MAX_TRAVEL: f64 = 25.0;
+/// How much of a travel run in a fill's top stitching may show (millimetres over stitching already
+/// sewn; any length of it may run under stitching still to come): a travel that would show more
+/// lifts the needle instead. Travels under the top stitching (in the underlay) have no limit: the
+/// top stitching hides them. An estimate.
+const MAX_SEEN: f64 = 25.0;
 /// The most rows one layer may have (a guard against absurd parameters).
 const MAX_ROWS: usize = 100_000;
 
@@ -71,7 +72,7 @@ pub(super) fn fill_from(path: &BezPath, rule: FillRule, p: &Params, from: Option
     {
         let layer = Layer { axes, spacing: p.density, inset: 0.0 };
         let regions = layer.regions(shape, lo, hi);
-        sew(&regions, &mut travels, MAX_TRAVEL, true, &p, &mut runs);
+        sew(&regions, &mut travels, MAX_SEEN, true, &p, &mut runs);
     }
     runs.join(&p)
 }

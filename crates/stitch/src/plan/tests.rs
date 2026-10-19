@@ -567,23 +567,31 @@ fn the_edge_grid_agrees_with_every_edge() {
     }
 }
 
-/// The grid's memory stays near the number of edges, however long they are: thousands of edges
-/// from corner to corner of a shape (as traced art can have) would fill every cell of their
-/// boxes.
+/// The grid's memory stays near the number of edges, however long they are: edges from corner to
+/// corner of a shape (as traced art can have) would fill every cell of their boxes. A few such
+/// edges are listed only in the cells they pass; thousands would still take too many, so the shape
+/// keeps no grid and tests every edge.
 #[test]
 fn the_edge_grid_stays_small_for_long_edges() {
     use super::area::Grid;
     use super::geometry::subpaths;
-    for n in [2_000usize, 20_000] {
-        let shape = polygon((0..n).map(|k| {
+    let zigzag = |n: usize| {
+        polygon((0..n).map(|k| {
             let t = k as f64 / n as f64;
             if k % 2 == 0 { (t, 0.0) } else { (100.0 - t, 100.0) }
-        }));
-        let subs = subpaths(&shape);
+        }))
+    };
+    let few = zigzag(200);
+    let subs = subpaths(&few);
+    let outlines: Vec<&super::geometry::SubPath> = subs.iter().collect();
+    let grid = Grid::new(&outlines).expect("a grid");
+    // An 11 × 11 grid: each edge's box is every cell, the cells it passes about two a row.
+    assert!(grid.entries() <= 200 * 32, "{} entries", grid.entries());
+    for n in [2_000usize, 20_000] {
+        let many = zigzag(n);
+        let subs = subpaths(&many);
         let outlines: Vec<&super::geometry::SubPath> = subs.iter().collect();
-        if let Some(grid) = Grid::new(&outlines) {
-            assert!(grid.entries() <= n * 32 + 256 * 256, "{n} edges: {} entries", grid.entries());
-        }
+        assert!(Grid::new(&outlines).is_none(), "{n} edges from corner to corner keep a grid");
     }
     // A shape of short edges keeps its grid, each edge in a cell or two.
     let circle = polygon((0..2_000).map(|k| {
@@ -594,6 +602,19 @@ fn the_edge_grid_stays_small_for_long_edges() {
     let outlines: Vec<&super::geometry::SubPath> = subs.iter().collect();
     let grid = Grid::new(&outlines).expect("a grid");
     assert!(grid.entries() <= 2_000 * 4, "{} entries", grid.entries());
+}
+
+/// With nothing sewn before, a line's first subpath is sewn as drawn and the next one from its end
+/// nearer the needle: a second line drawn away from the first is sewn towards it, not jumped to
+/// its far end.
+#[test]
+fn with_no_needle_the_first_line_is_sewn_as_drawn_and_the_next_from_near_it() {
+    let mut path = line((0.0, 0.0), (10.0, 0.0));
+    path.extend(line((100.0, 0.0), (90.0, 0.0)));
+    let q = points(&stitches_from(&path, FillRule::NonZero, &Params::for_style(Style::Running), None));
+    assert!(q[0].x.abs() < 1e-6, "{:?}", q[0]);
+    let second = q.iter().find(|p| p.x > 50.0).expect("the second line");
+    assert!((second.x - 90.0).abs() < 1e-6, "{second:?}");
 }
 
 /// Where the needle comes from decides where a shape starts: a satin column or a running line

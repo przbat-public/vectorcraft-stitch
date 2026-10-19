@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** fill regions ordered so travels hide under stitching still to come; jumps tied and trimmed only past `trimLength`; objects start near the one before; trim after an object; ties at clip cuts; the edge grid's memory bounded
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** fill regions ordered so travels hide under stitching still to come; jumps tied and trimmed only past `trimLength`; objects start near the one before; trim after an object; ties at clip cuts; the edge grid's memory bounded; no second needle point where an object starts at the last one's end
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -220,13 +220,13 @@ index, whose RGB values differ between published charts — preview colour is no
 
 ## Validation
 
-- `crates/stitch`: 41 unit tests — the fill covers a rectangle and leaves its hole empty, an
+- `crates/stitch`: 42 unit tests — the fill covers a rectangle and leaves its hole empty, an
   unclosed shape is filled, a ring is sewn in regions with no thread across its hole and,
   travelling inside, without a trim, regions overlap by a row, a narrow gap is never sewn across,
   a letter E is sewn in one go at any angle (every 5°) without crossing its gaps, a gear of 90 teeth and 24
-  holes travels inside, the edge grid answers what testing every edge does (long crossing edges included) and stays small however long the edges are, separate pieces jump
+  holes travels inside, the edge grid answers what testing every edge does (long crossing edges included) and stays small however long the edges are (or is not built), separate pieces jump
   with the thread on when close, tied when farther and cut only past the trim length, a shape
-  starts nearest the needle, large fills get a
+  starts nearest the needle (with no needle, a line's first subpath as drawn and the next from near it), large fills get a
   tatami underlay and small ones don't, no stitch is longer than asked or shorter than the
   shortest, the angle turns the rows, running lines keep their corners and lock without passing
   their ends, fills and satins tie in and off, satin underlay follows the width with no trim
@@ -237,7 +237,7 @@ index, whose RGB values differ between published charts — preview colour is no
   writes a design it reads back with the same blocks and size, a JEF's header extents are where
   its stitches go, an absurd JEF colour count is not believed, and no reader panics on random,
   truncated or damaged bytes.
-- `crates/engine`: 26 tests (25 command-level) — export writes a readable design in every format,
+- `crates/engine`: 27 tests (26 command-level) — export writes a readable design in every format,
   options change the plan, a written PES opens as art (also by its magic bytes), an opened design
   is written back unchanged in every format (and again after a second round), with the cuts at
   its blocks' ends, converts between formats with the same needle points, ignores the style
@@ -247,7 +247,7 @@ index, whose RGB values differ between published charts — preview colour is no
   sewn, a forced fill fills a stroke's area rather than its path's inside, a satin wider than
   50 mm is warned about, cuts made by a clipping mask are tied and trimmed only past the trim
   length, `trimLength` decides which jumps are cut (never below `jumpLength`), an object can ask for a trim after it (and the document keeps it), an object starts near
-  the one before, and the defaults `document.formats` lists (the satin spacing table included) are
+  the one before (one that starts where the last ended adds no second needle point there), and the defaults `document.formats` lists (the satin spacing table included) are
   the planner's.
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.

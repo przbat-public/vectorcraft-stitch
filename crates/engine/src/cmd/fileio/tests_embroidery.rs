@@ -529,3 +529,25 @@ fn an_object_starts_near_the_one_before() {
     assert_eq!(trims, 0, "{jumps:?}");
     assert!(jumps.iter().all(|d| *d < 10.0), "{jumps:?}");
 }
+
+/// An object that starts exactly where the one before ended (a line drawn twice) goes on from
+/// there: no jump, and no second needle point in the same hole.
+#[test]
+fn an_object_starting_where_the_last_ended_adds_no_second_needle_point() {
+    use vectorcraft_stitch::Command;
+    let mut s = blank();
+    s.execute("paint.setFill", &json!({"none": true})).unwrap();
+    s.execute("paint.setStroke", &json!({"color": "#cc2222"})).unwrap();
+    s.execute("stroke.set", &json!({"weight": 0.5})).unwrap();
+    s.execute("shape.line", &json!({"x1": 20, "y1": 50, "x2": 120, "y2": 50})).unwrap();
+    s.execute("select.none", &json!({})).unwrap();
+    s.execute("shape.line", &json!({"x1": 20, "y1": 50, "x2": 120, "y2": 50})).unwrap();
+    let p = Format::Pes.read(&export(&mut s, "pes", json!({}))).unwrap();
+    for b in &p.blocks {
+        for w in b.stitches.windows(2) {
+            if w[0].command == Command::Stitch && w[1].command == Command::Stitch {
+                assert!(w[0].distance(w[1]) > 1e-6, "two needle points at {:?}", w[1].point());
+            }
+        }
+    }
+}

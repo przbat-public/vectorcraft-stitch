@@ -205,8 +205,9 @@ impl Axes {
 /// The subpaths of a line (a running line, a satin's centreline) in the order a needle starting at
 /// `here` sews them: each time the nearest one, from its end nearest the needle (a closed one from
 /// its point nearest the needle), as its points ([`SubPath::points`]) and whether it is closed.
-/// Unknown `here` keeps the drawing's order and directions; so does a path of more than
-/// [`MAX_REORDERED`] subpaths, beyond its first, a bound on the work.
+/// Unknown `here` (nothing sewn before), the first subpath is sewn as drawn and the others follow
+/// from where it ends. A path of more than [`MAX_REORDERED`] subpaths keeps the drawing's order and
+/// directions beyond its first, a bound on the work.
 pub(super) fn nearest_order(subs: Vec<SubPath>, here: Option<Point>) -> Vec<(Vec<Point>, bool)> {
     /// The most subpaths ordered by distance.
     const MAX_REORDERED: usize = 64;

@@ -108,7 +108,9 @@ impl Sequence {
             Some((merged, mb, _)) => {
                 // To the next object: a jump, with the thread cut first when the move is longer
                 // than `trimLength` (each object ties itself off and in), or when the object
-                // before asked for it.
+                // before asked for it. An object that starts where the needle is goes on from
+                // there, its first needle point left out: the needle is already in that hole.
+                let mut skip = 0;
                 if let Some(last) = merged.stitches.last().copied() {
                     let at = merged.stitches.iter().rev().find(|s| s.command != Command::Trim).copied().unwrap_or(last);
                     if last.command != Command::Trim && at.distance(first) > self.connect.trim {
@@ -116,9 +118,11 @@ impl Sequence {
                     }
                     if at.distance(first) > 1e-9 || last.command == Command::Trim {
                         merged.stitches.push(Stitch::jump(first.point()));
+                    } else if first.command == Command::Stitch {
+                        skip = 1;
                     }
                 }
-                merged.stitches.extend(b.stitches.iter().copied());
+                merged.stitches.extend(b.stitches.iter().skip(skip).copied());
                 *mb = union(*mb, bounds);
             }
             None => self.blocks.push((b, bounds, None)),

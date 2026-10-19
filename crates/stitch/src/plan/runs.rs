@@ -131,14 +131,10 @@ impl Runs {
     /// is left out: a repeated point is noise, and a tiny stitch can break the thread or cut the
     /// fabric.
     pub(super) fn join(self, p: &Params) -> Vec<Stitch> {
-        self.join_tied(p, p.lock && p.style != Style::Running, true)
-    }
-
-    /// [`Runs::join`], tying the thread around its jumps when `tie`, and at the block's start and
-    /// end too when `ends`.
-    fn join_tied(self, p: &Params, tie: bool, ends: bool) -> Vec<Stitch> {
+        let tie = p.lock && p.style != Style::Running;
         let mut out: Vec<Stitch> = Vec::new();
-        let mut fresh = ends;
+        // Whether the next run is tied in: the first one, and each one after a long jump.
+        let mut fresh = true;
         for (mut run, travel) in self.runs {
             run.dedup_by(|b, a| a.distance(*b) <= 1e-9);
             let Some(&first) = run.first() else { continue };
@@ -155,7 +151,10 @@ impl Runs {
                     // A short lift: the needle jumps with the thread on, too short a connector to
                     // cut.
                     Travel::Lift if !long => out.push(Stitch::jump(first)),
-                    Travel::Auto | Travel::Lift => fresh = connect(&mut out, first, d, p, tie),
+                    Travel::Auto | Travel::Lift => {
+                        connect(&mut out, first, d, p, tie);
+                        fresh = true;
+                    }
                 }
             }
             if tie && fresh {
@@ -173,7 +172,7 @@ impl Runs {
                 }
             }
         }
-        if tie && ends {
+        if tie {
             tie_off(&mut out);
         }
         out
@@ -181,9 +180,8 @@ impl Runs {
 }
 
 /// A jump `d` long from the end of `out` to `to`, longer than [`Params::jump`]: tied off first when
-/// `tie`, and the thread cut when it is longer than [`Params::trim`]. Returns whether the run it
-/// lands on is to be tied in (always: it starts after a long jump).
-fn connect(out: &mut Vec<Stitch>, to: Point, d: f64, p: &Params, tie: bool) -> bool {
+/// `tie`, and the thread cut when it is longer than [`Params::trim`].
+fn connect(out: &mut Vec<Stitch>, to: Point, d: f64, p: &Params, tie: bool) {
     if tie {
         tie_off(out);
     }
@@ -193,7 +191,6 @@ fn connect(out: &mut Vec<Stitch>, to: Point, d: f64, p: &Params, tie: bool) -> b
         out.push(Stitch::new(last.x, last.y, Command::Trim));
     }
     out.push(Stitch::jump(to));
-    true
 }
 
 /// The pieces of one block that a cut separated (a stroke's stitches cut by a clipping path), each

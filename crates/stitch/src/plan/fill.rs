@@ -88,26 +88,32 @@ pub(super) fn fill_from(path: &BezPath, rule: FillRule, p: &Params, from: Option
     let grid = Grid::new(&outlines);
     let shape = Area { outlines: &outlines, rule, grid: grid.as_ref() };
     let mut travels = Travels::new(shape);
-    if p.underlay {
-        edge_runs(&mut travels, &p, &mut runs);
-        tatami_underlay(&mut travels, &p, &mut runs);
-    }
-    let axes = Axes::new(p.angle);
-    if let Some((lo, hi)) = shape.extent(axes.across)
-        && hi - lo >= p.density * FIRST_ROW
-    {
-        let layer = Layer { axes, spacing: p.density, inset: 0.0 };
-        let regions = layer.regions(shape, lo, hi, &p);
-        sew(&regions, &mut travels, MAX_SEEN, true, &p, &mut runs);
-    }
+    sew_area(shape, &mut travels, &p, &mut runs);
     runs.join(&p)
 }
 
-/// An edge run along each outline, to hold the fabric under the fill: each starts at the corner
-/// nearest the needle, and is reached by travelling inside the shape (hidden under the fill, so of
-/// any length).
-fn edge_runs(travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
-    for sub in travels.area.outlines {
+/// The fill of `rows` (its underlay and its top rows) sewn after `runs`, the needle travelling
+/// inside the area `travels` crosses (`rows` itself, or a larger shape that holds it).
+fn sew_area(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
+    if p.underlay {
+        edge_runs(rows, travels, p, runs);
+        tatami_underlay(rows, travels, p, runs);
+    }
+    let axes = Axes::new(p.angle);
+    if let Some((lo, hi)) = rows.extent(axes.across)
+        && hi - lo >= p.density * FIRST_ROW
+    {
+        let layer = Layer { axes, spacing: p.density, inset: 0.0 };
+        let regions = layer.regions(rows, lo, hi, p);
+        sew(&regions, travels, MAX_SEEN, true, p, runs);
+    }
+}
+
+/// An edge run along each outline of `rows`, to hold the fabric under the fill: each starts at the
+/// corner nearest the needle, and is reached by travelling inside the shape (hidden under the fill,
+/// so of any length).
+fn edge_runs(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
+    for sub in rows.outlines {
         let start = runs.here_inside().and_then(|h| {
             (0..sub.pts.len()).min_by(|&i, &j| {
                 sub.pts.get(i).map_or(f64::INFINITY, |q| q.distance(h)).total_cmp(&sub.pts.get(j).map_or(f64::INFINITY, |q| q.distance(h)))
@@ -125,9 +131,9 @@ fn edge_runs(travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
 }
 
 /// A large fill's second underlay: sparse tatami rows across the top rows' direction, kept a
-/// little inside the edge so they never peek out.
-fn tatami_underlay(travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
-    let shape = travels.area;
+/// little inside the edge of `rows` so they never peek out.
+fn tatami_underlay(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
+    let shape = rows;
     // Under the top stitching, the underlay needs no pull compensation: it stays inside the edge.
     let under = Params {
         angle: p.angle + UNDERLAY_TURN,

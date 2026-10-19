@@ -923,9 +923,11 @@ fn a_turn_along_a_straight_edge_is_sewn() {
                 let lifts = out.iter().filter(|s| s.command != Command::Stitch).count();
                 assert_eq!(lifts, 0, "{name}, {density} mm, {angle}°: {lifts} jumps and trims");
             }
-            // The wide U is sewn arm, bar, arm, with no travel across the bar.
+            // The wide U is sewn arm, bar, arm, with no travel across the bar (30 mm): a travel
+            // down an arm's side to the bar is at most its 14 mm, and the arm's last row's end
+            // stitch before it counts with it.
             let (longest, total) = travels(&stitches(&wide, FillRule::NonZero, &p));
-            assert!(longest < 15.0, "wide U, {density} mm, {angle}°: a {longest:.1} mm travel ({total:.1} mm in all)");
+            assert!(longest < 20.0, "wide U, {density} mm, {angle}°: a {longest:.1} mm travel ({total:.1} mm in all)");
         }
     }
 }
@@ -1193,7 +1195,7 @@ fn spacing_follows_the_thread_weight() {
     assert!((thread_scale(THREAD_WEIGHT) - 1.0).abs() < 1e-12);
     assert_eq!(Params::for_thread(Style::Fill, THREAD_WEIGHT), Params::for_style(Style::Fill));
     let fill = |w: f64| Params::for_thread(Style::Fill, w).density;
-    assert!((fill(60.0) - 0.343).abs() < 1e-3 && (fill(30.0) - 0.408).abs() < 1e-3, "{} {}", fill(60.0), fill(30.0));
+    assert!((fill(60.0) - 0.310).abs() < 1e-3 && (fill(30.0) - 0.439).abs() < 1e-3, "{} {}", fill(60.0), fill(30.0));
     assert!(fill(f64::NAN) == fill(40.0) && fill(1.0) == fill(10.0) && fill(1e9) == fill(150.0));
     // A satin's auto spacing: the distance between two crossings on one rail is twice it.
     let rail_gap = |weight: f64| {
@@ -1228,4 +1230,49 @@ fn the_last_crossing_goes_across() {
         assert!(sides.iter().all(|d| (d.abs() - 2.0).abs() < 1e-6), "{a:?} to {b:?}: {sides:?}");
         assert!(sides.windows(2).all(|w| w[0] * w[1] < 0.0), "{a:?} to {b:?}: rails alternate: {sides:?}");
     }
+}
+
+/// A region's last row keeps its last stitch, so it reaches past the edge by the pull
+/// compensation: a fill of one row (thinner than two spacings) is sewn edge to edge, not stopped
+/// up to half a stitch short of its end.
+#[test]
+fn a_regions_last_row_reaches_its_edge() {
+    for (w, h) in [(5.0, 0.5), (10.0, 0.5), (10.0, 3.0), (17.0, 2.0)] {
+        let mut p = Params::for_style(Style::Fill);
+        p.angle = 0.0;
+        p.underlay = false;
+        let out = stitches(&rect(0.0, 0.0, w, h), FillRule::NonZero, &p);
+        let q = points(&out);
+        // The last row ends past one edge (its last needle point, before the tie-off's step back).
+        let Some(end) = q.iter().rev().nth(2) else { panic!("{w} × {h}: no stitches") };
+        assert!((end.x + p.pull[0]).abs() < 1e-6 || (end.x - w - p.pull[1]).abs() < 1e-6, "{w} × {h}: the last row ends at {end:?}");
+        // A fill of one row reaches past both.
+        if h < 2.0 * p.density {
+            let (lo, hi) = q.iter().fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), a| (lo.min(a.x), hi.max(a.x)));
+            assert!((lo + p.pull[0]).abs() < 1e-6 && (hi - w - p.pull[1]).abs() < 1e-6, "{w} × {h}: the row runs {lo} to {hi}");
+        }
+    }
+}
+
+/// Push compensation never takes away a column that would be sewn without it: a 1.3 mm column
+/// pushed 0.3 mm at each end is sewn, shortened to no less than the shortest column sewn.
+#[test]
+fn push_compensation_keeps_a_short_column() {
+    let mut p = Params::for_style(Style::Satin);
+    p.width = 2.0;
+    p.push = [0.3; 2];
+    let q = points(&stitches(&line((0.0, 0.0), (1.3, 0.0)), FillRule::NonZero, &p));
+    assert!(!q.is_empty(), "the column is sewn");
+    let (lo, hi) = q.iter().fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), a| (lo.min(a.x), hi.max(a.x)));
+    assert!(hi - lo >= p.density * 2.0 - 1e-6 && hi - lo < 1.3, "{lo} to {hi}");
+}
+
+/// A line cut on one of its points keeps that point once.
+#[test]
+fn a_cut_on_a_point_of_the_line_is_one_point() {
+    let pts = [Point::new(0.0, 0.0), Point::new(1.0, 0.0), Point::new(3.0, 0.0)];
+    let cut = super::geometry::trimmed(&pts, 0.0, 2.0);
+    assert_eq!(cut, vec![Point::new(0.0, 0.0), Point::new(1.0, 0.0)]);
+    let cut = super::geometry::trimmed(&pts, 0.5, 0.0);
+    assert_eq!(cut, vec![Point::new(0.5, 0.0), Point::new(1.0, 0.0), Point::new(3.0, 0.0)]);
 }

@@ -56,8 +56,9 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
     let mut runs = Runs::from(from);
     for Line { pts, closed, reversed } in nearest_order(subpaths(path), from) {
         // Push compensation: an open column is sewn shorter at its ends, the underlay with it.
-        let pts = if closed { pts } else { pushed(&pts, if reversed { [p.push[1], p.push[0]] } else { p.push }) };
-        if length(&pts, closed) < p.density * MIN_CROSSINGS {
+        let shortest = p.density * MIN_CROSSINGS;
+        let pts = if closed { pts } else { pushed(&pts, if reversed { [p.push[1], p.push[0]] } else { p.push }, shortest) };
+        if length(&pts, closed) < shortest {
             continue;
         }
         // The first run of each column is reached as any move is; the column's later runs
@@ -113,13 +114,17 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
 }
 
 /// An open column's centreline `pts` with push compensation: `push` millimetres cut off its start
-/// and its end, both in proportion when together they would leave less than [`MIN_PUSHED`] of it.
-fn pushed(pts: &[Point], push: [f64; 2]) -> Vec<Point> {
+/// and its end, both in proportion when together they would leave less than [`MIN_PUSHED`] of it,
+/// or less than `shortest` (the shortest column that is sewn): push compensation never takes away
+/// a column that would be sewn without it.
+fn pushed(pts: &[Point], push: [f64; 2], shortest: f64) -> Vec<Point> {
     let [start, end] = push;
     if start + end <= 0.0 {
         return pts.to_vec();
     }
-    let most = length(pts, false) * (1.0 - MIN_PUSHED);
+    let len = length(pts, false);
+    let keep = (len * MIN_PUSHED).max(shortest).min(len);
+    let most = len - keep;
     let k = if start + end > most { most / (start + end) } else { 1.0 };
     trimmed(pts, start * k, end * k)
 }

@@ -8,7 +8,7 @@ use vectorcraft_color::Paint;
 use vectorcraft_doc::embroidery::StitchRun;
 use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind};
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Shape, kurbo};
-use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke};
+use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
 use vectorcraft_stitch::plan::{self, Params, Style};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
@@ -18,6 +18,7 @@ use super::sequence::{CLEARANCE, Planned, Sequence};
 const TEXT_LEFT_OUT: &str = "type is not stitched: outline it (Type › Create Outlines) and export again";
 const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › Image Trace) first";
 const LIVE_LEFT_OUT: &str = "live blends, envelopes, meshes and repeats are not stitched: expand them first";
+const EXPANDED_AWAY: &str = "a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less";
 const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colour of their first stop; a design sews one thread per block";
 /// A stroke at least this wide (millimetres) is sewn as a satin column, a narrower one as a running
 /// line (unless `stitchStyle` says otherwise): below about a millimetre the two rails are too
@@ -297,20 +298,21 @@ impl Digitizer<'_> {
     /// along its outlines, round at the corners, or what is left of it without that band. A subpath
     /// that encloses no area (sewn as a line) is left as it is. Unchanged when the option is 0. The
     /// clip groups around it cut the result ([`Digitizer::clipped`]): it grows only where it shows.
-    fn expanded(&self, area: &BezPath, rule: FillRule) -> (BezPath, FillRule) {
+    fn expanded(&mut self, area: &BezPath, rule: FillRule) -> (BezPath, FillRule) {
         let e = self.opts.expand();
         if e.abs() < SAME_POINT {
             return (area.clone(), rule);
         }
         let (mut shapes, mut lines) = (BezPath::new(), BezPath::new());
         for sub in subpaths(area) {
-            if sub.area().abs() >= plan::MIN_AREA {
-                // Closed, as paint closes it.
-                let open = sub.elements().last() != Some(&PathEl::ClosePath);
-                shapes.extend(sub);
-                if open {
-                    shapes.close_path();
-                }
+            // Closed, as paint closes it; whether it encloses an area is judged closed too (an
+            // open subpath's area would depend on where it lies on the page).
+            let mut closed = sub.clone();
+            if closed.elements().last() != Some(&PathEl::ClosePath) {
+                closed.close_path();
+            }
+            if closed.area().abs() >= plan::MIN_AREA {
+                shapes.extend(closed);
             } else {
                 lines.extend(sub);
             }
@@ -318,10 +320,16 @@ impl Digitizer<'_> {
         if shapes.elements().is_empty() {
             return (area.clone(), rule);
         }
-        let shape = PathData::from_bezpath(&shapes);
-        let band = outline_stroke(&shape, 2.0 * e.abs(), Cap::Round, Join::Round, ROUND_JOINS);
+        // The region the shape covers, by its rule: overlapping or crossing outlines resolved into
+        // its edge, so the band runs along that edge only (a band along an outline inside the
+        // region would cut a groove through it).
+        let region = normalize(&PathData::from_bezpath(&shapes), rule);
+        let band = outline_stroke(&region, 2.0 * e.abs(), Cap::Round, Join::Round, ROUND_JOINS);
         let op = if e > 0.0 { BoolOp::Union } else { BoolOp::Difference };
-        let mut out = boolean(&shape, rule, &band, FillRule::NonZero, op).to_bezpath();
+        let mut out = boolean(&region, FillRule::NonZero, &band, FillRule::NonZero, op).to_bezpath();
+        if out.elements().is_empty() && lines.elements().is_empty() {
+            self.warn(EXPANDED_AWAY);
+        }
         out.extend(lines);
         (out, FillRule::NonZero)
     }

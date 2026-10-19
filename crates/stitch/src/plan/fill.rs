@@ -310,6 +310,9 @@ impl Region {
     /// `descending`.
     fn runs(&self, descending: bool, forward: bool, axes: Axes, p: &Params) -> Vec<RowRun> {
         let mut out: Vec<RowRun> = Vec::with_capacity(self.rows.len());
+        // The stitch left out of the last row sewn so far, with where it reaches without pull
+        // compensation.
+        let mut left_out: Option<(Point, Point)> = None;
         let mut forward = forward;
         let order: Vec<&Row> = if descending { self.rows.iter().rev().collect() } else { self.rows.iter().collect() };
         for row in order {
@@ -343,16 +346,28 @@ impl Region {
                 pts.reverse();
                 (first_inside, last_inside) = (last_inside, first_inside);
             }
-            let mut last_inside = Some(last_inside);
+            let mut kept_inside = Some(last_inside);
+            left_out = None;
             // Skip the last stitch of the row: the needle turns diagonally into the next row
             // instead of crawling one row spacing along the edge — when the stitch it leaves out
             // is short, so the turn stays a short stitch too.
-            if n > 2 && end_stitch <= SHORT_LAST * p.stitch_length {
-                pts.pop();
-                last_inside = None;
+            if n > 2
+                && end_stitch <= SHORT_LAST * p.stitch_length
+                && let Some(q) = pts.pop()
+            {
+                kept_inside = None;
+                left_out = Some((q, last_inside));
             }
-            out.push(RowRun { pts, first_inside, last_inside });
+            out.push(RowRun { pts, first_inside, last_inside: kept_inside });
             forward = !forward;
+        }
+        // The region's last row keeps its last stitch: there is no next row to turn into, and
+        // without it the row would stop up to half a stitch short of the edge (in a region of one
+        // row, a thin fill, nothing else covers that end). The needle's way on is planned from
+        // where the row would end without it, as before: the stitch only covers the end.
+        if let (Some(last), Some((q, _))) = (out.last_mut(), left_out) {
+            last.last_inside = last.pts.last().copied();
+            last.pts.push(q);
         }
         out
     }

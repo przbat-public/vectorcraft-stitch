@@ -70,17 +70,17 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
 3. **Pull compensation for fills, and gaps between shapes.** Done: a fill's rows reach past the
    edge at each end by `pullCompensation` (0.2 mm, as satins), at most half way across a gap, and
    without changing the sewing order; `expand` grows a fill all round (path operations in the
-   engine) so shapes drawn apart meet. Two fills drawn 0.6 mm apart now meet. A move along two
+   engine) so shapes drawn apart meet. With the default 0.2 mm, rows square to a gap close 0.4 mm of it (less where they cross it at an angle); two fills drawn 0.6 mm apart meet with 0.3 mm of pull compensation or `expand`. A move along two
    edges in line no longer crosses the gap between them.
 4. **Narrow filled areas as satin.** Every filled shape becomes tatami; narrow parts (stems, thin
    arms) are better as satin columns, as auto-digitizers choose by width.
 5. **Satin compensation.** Done: `pullCompensationPercent` adds a share of the column's width,
    each compensation takes a value per side, and `pushCompensation` shortens an open column's
-   ends (off by default: no published starting value). A column's last crossing now goes across
+   ends (off by default: no published starting value was found). A column's last crossing now goes across
    it whichever way it runs.
 6. **Auto spacing by thread thickness.** Done: `threadWeight` (40 wt by default) sets the default
-   spacing of fills and satins, which follows the square root of the thread's thickness (an
-   estimate the size of Wilcom's offsets). Per-thread weights wait for embroidery properties on
+   spacing of fills and satins, which follows the thread's thickness (`(40 / weight)^½`, as
+   Madeira's stitch density chart does). Per-thread weights wait for embroidery properties on
    objects.
 7. **The trim length by machine.** `trimLength` is one number; machines differ in whether and
    from what length they cut jumps themselves. Take it from the machine settings once there are

@@ -31,7 +31,8 @@ mod sha256;
 /// (Before the ordering of fill regions and the trim length, when every jump longer than
 /// `jumpLength` was cut and regions went nearest first: 55 trims in all; then 25 trims and 69
 /// jumps; 56 jumps once a turn along a straight edge was sewn; 26 and 58 with rows 0.38 mm apart;
-/// now 27 and 57.)
+/// 27 and 57 with pull compensation on fills; now 26 and 57, a region's last row keeping its
+/// last stitch.)
 const DESIGNS: &[(&str, &str, usize, usize)] = &[
     ("bullseye-twemoji.svg", "bullseye-twemoji-inkstitch.pes", 1, 4), // 0 (the person's design: 6), 3 (8)
     ("fox-twemoji.clipart.svg", "fox-twemoji-inkstitch.pes", 4, 5),   // 3 (6), 4 (3)
@@ -41,7 +42,7 @@ const DESIGNS: &[(&str, &str, usize, usize)] = &[
     ("puzzle-piece-twemoji.svg", "puzzle-piece-twemoji-inkstitch.pes", 1, 1), // 0 (0), 0 (0)
     ("smiling-face-with-smiling-eyes-twemoji.clipart.svg", "smiling-face-with-smiling-eyes-twemoji-inkstitch.pes", 5, 6), // 4 (3), 5 (6)
     // Separate pieces (letters, seeds) are joined by tied jumps, cut only past `trimLength`.
-    ("sos-button-fluent.clipart.svg", "sos-button-fluent-inkstitch.pes", 5, 7), // 4 (3), 6 (2)
+    ("sos-button-fluent.clipart.svg", "sos-button-fluent-inkstitch.pes", 4, 7), // 3 (3), 6 (2)
     ("video-game-twemoji.svg", "video-game-twemoji-inkstitch.pes", 5, 10),      // 4 (11), 9 (12)
     ("watermelon-twemoji.clipart.svg", "watermelon-twemoji-inkstitch.pes", 3, 15), // 2 (2), 14 (2)
     ("zebra-twemoji.clipart.svg", "zebra-twemoji-inkstitch.pes", 7, 12),        // 6 (21), 11 (39)

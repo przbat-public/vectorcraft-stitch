@@ -30,7 +30,10 @@ use crate::{Command, Error, Pattern, Result, Stitch};
 const HEADER: usize = 0x74;
 /// The largest delta one record holds, in tenths of a millimetre.
 const MAX_DELTA: i32 = 127;
+/// The command prefix: `0x80` is not a delta a record uses.
 const CONTROL: u8 = 0x80;
+/// The commands' second bytes: the end of the design, a jump (then the deltas), a colour change
+/// (then two bytes that don't move the frame).
 const END: u8 = 0x10;
 const JUMP: u8 = 0x02;
 const COLOR_CHANGE: u8 = 0x01;
@@ -80,7 +83,8 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     out.extend_from_slice(&(offset as u32).to_le_bytes());
     out.extend_from_slice(&SECOND_WORD.to_le_bytes());
     out.extend_from_slice(NO_DATE);
-    // The two bytes after the date (the version letter among them), left zero.
+    // The version letter and a byte the wiki lists as unknown (0x20), both left zero, as Janome's
+    // software sometimes leaves them.
     out.extend_from_slice(&[0, 0]);
     out.extend_from_slice(&(colors as u32).to_le_bytes());
     out.extend_from_slice(&(records as u32).to_le_bytes());

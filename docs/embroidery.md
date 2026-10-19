@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** every value the planner, the digitizer and the formats use is a named constant with a description; a PEC block's length (not the label) decides where its stitches start
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** every value the planner, the digitizer and the formats decide with is a named constant with a description; a PEC stitch block's length (not the label) decides where its stitches start when a guess loses step
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -266,7 +266,7 @@ index, whose RGB values differ between published charts — preview colour is no
   between it and the top, satin spacing follows the width unless given, wide satins and their
   zigzag underlay are split without a seam, satin crossings stay within the column, pull compensation widens it, a tight satin curve gets short stitches on its inner side (and a straight column none), an absurd
   plan is refused before it is made, the DST record round-trips every delta from -121 to 121,
-  only a run of three jumps reads as a DST trim, a PEC block whose first jump looks like the origin words is read from where its length says the stitches start, a DST colour change can carry a move, each format
+  only a run of three jumps reads as a DST trim, a PEC stitch block with a 16-byte header whose first jump looks like the origin words reads the same as with 20 bytes (in step, only the leading jump is lost; out of step, its length sends the reader back to the right start), a DST colour change can carry a move, each format
   writes a design it reads back with the same blocks and size, a JEF's header extents are where
   its stitches go, an absurd JEF colour count is not believed, and no reader panics on random,
   truncated or damaged bytes. The property tests (`tests/prop_plan.rs`, random rectangles,
@@ -423,9 +423,11 @@ Public documentation, cited per claim in the crate and in the local research not
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real
   designs and the test that uses them.
 
-Every number these files use is a named constant with a description: what it is, its unit, and
-its source (a format's documentation, a cited default) or that it is an estimate. Tolerances are
-shared: `SAME_POINT` (two points closer than it are one, `lib.rs`) and `NO_LENGTH` (a segment
-without a direction, `plan/geometry.rs`). The default stitch parameters are at the top of
+Every value these files decide with is a named constant with a description: what it is, its unit,
+and its source (a format's documentation, a cited default) or that it is an estimate. What stays
+bare is plain arithmetic (halves, the middle of a step, degrees to radians) and a format's field
+widths where its layout is written out. Tolerances are shared: `SAME_POINT` (two points closer
+than it are one, `lib.rs`) and `NO_LENGTH` (a segment without a direction, far below it, a guard
+on dividing by a length, `plan/geometry.rs`). The default stitch parameters are at the top of
 `plan/mod.rs`, with the ranges `Params::sane` clamps them to; each format's record codes and
 header fields are at the top of its module.

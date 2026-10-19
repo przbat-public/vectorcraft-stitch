@@ -17,6 +17,8 @@ use crate::{Command, Error, Pattern, Result, Stitch};
 const MAX_DELTA: i32 = 127;
 /// The command prefix: `0x80` is not a valid delta.
 const CONTROL: u8 = 0x80;
+/// The commands' second bytes: a jump (the needle up, then the deltas), the needle put down where
+/// it is, a colour change (the machine stops), and a trim.
 const JUMP: u8 = 0x04;
 const STITCH_DOWN: u8 = 0x02;
 const COLOR_CHANGE: u8 = 0x01;

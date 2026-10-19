@@ -29,9 +29,11 @@ const HEADER: usize = 512;
 const HEADER_END: u8 = 0x1A;
 /// The length of a record.
 const RECORD: usize = 3;
-/// The largest delta one record holds, in tenths of a millimetre: 1 + 3 + 9 + 27 + 81, all five
-/// balanced-ternary digits at +1.
-const MAX_DELTA: i32 = 121;
+/// How many balanced-ternary digits a record holds per axis: worth 1, 3, 9, 27 and 81.
+const DIGITS: usize = 5;
+/// The largest delta one record holds, in tenths of a millimetre: 1 + 3 + 9 + 27 + 81 = 121, all
+/// [`DIGITS`] digits at +1.
+const MAX_DELTA: i32 = (3i32.pow(DIGITS as u32) - 1) / 2;
 
 // A record's third byte: its two bottom bits are always set, and its top bits say what the record
 // is. A stitch sets only the bottom two.
@@ -48,11 +50,11 @@ const END_BITS: u8 = 0b1111_0011;
 /// Where a delta's balanced-ternary digits go, for the digits worth 1, 3, 9, 27 and 81 in turn:
 /// the byte of the record (0, 1 or 2), the bit set for a digit of +1 and the bit set for −1. The
 /// writer and the reader both work from these tables.
-const X_DIGITS: [(usize, u8, u8); 5] = [(0, 0x01, 0x02), (1, 0x01, 0x02), (0, 0x04, 0x08), (1, 0x04, 0x08), (2, 0x04, 0x08)];
-const Y_DIGITS: [(usize, u8, u8); 5] = [(0, 0x80, 0x40), (1, 0x80, 0x40), (0, 0x20, 0x10), (1, 0x20, 0x10), (2, 0x20, 0x10)];
+const X_DIGITS: [(usize, u8, u8); DIGITS] = [(0, 0x01, 0x02), (1, 0x01, 0x02), (0, 0x04, 0x08), (1, 0x04, 0x08), (2, 0x04, 0x08)];
+const Y_DIGITS: [(usize, u8, u8); DIGITS] = [(0, 0x80, 0x40), (1, 0x80, 0x40), (0, 0x20, 0x10), (1, 0x20, 0x10), (2, 0x20, 0x10)];
 
 /// A trim: three small jumps that go nowhere (0.2 mm up and right, 0.4 mm back, 0.2 mm on), which
-/// a machine reads as "cut the thread".
+/// a machine reads as "cut the thread" ([`TRIM_JUMPS`] is the same convention, read back).
 const TRIM_RECORDS: [(i32, i32); 3] = [(2, 2), (-4, -4), (2, 2)];
 
 /// The record's command.
@@ -216,8 +218,8 @@ fn set(byte: &mut u8, digit: i32, plus: u8, minus: u8) {
 }
 
 /// `v` in balanced ternary, digits for ±1, ±3, ±9, ±27 and ±81 (the largest is 121).
-fn balanced(mut v: i32) -> [i32; 5] {
-    let mut d = [0i32; 5];
+fn balanced(mut v: i32) -> [i32; DIGITS] {
+    let mut d = [0i32; DIGITS];
     for slot in &mut d {
         let r = v.rem_euclid(3);
         let r = if r == 2 { -1 } else { r };
@@ -278,7 +280,7 @@ fn header_name(header: &[u8]) -> String {
 
 /// The delta a record's bytes carry along one axis, by that axis's digit layout ([`X_DIGITS`] or
 /// [`Y_DIGITS`]).
-fn decode(record: &[u8], layout: &[(usize, u8, u8); 5]) -> i32 {
+fn decode(record: &[u8], layout: &[(usize, u8, u8); DIGITS]) -> i32 {
     let mut v = 0;
     let mut weight = 1;
     for &(byte, plus, minus) in layout {
@@ -295,8 +297,9 @@ fn decode(record: &[u8], layout: &[(usize, u8, u8); 5]) -> i32 {
 }
 
 /// The fewest jumps in a row that a machine reads as a cut: the three that go nowhere writers
-/// put down for one (a travel of one or two records is just a move with the needle up).
-const TRIM_JUMPS: usize = 3;
+/// put down for one, as [`TRIM_RECORDS`] writes it (a travel of one or two records is just a move
+/// with the needle up).
+const TRIM_JUMPS: usize = TRIM_RECORDS.len();
 
 /// A trim before every run of at least [`TRIM_JUMPS`] jumps that sits between stitches, and every
 /// run collapsed to the point the thread is taken up at.

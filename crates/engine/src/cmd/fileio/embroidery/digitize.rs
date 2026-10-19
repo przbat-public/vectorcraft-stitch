@@ -25,7 +25,8 @@ const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colou
 const SATIN_MIN_WIDTH: f64 = 1.0;
 /// How far a literal stitch line's curves are flattened into needle points (millimetres): the
 /// lines a design opens as are straight, so this only matters for one edited into curves; far
-/// below the 0.1 mm a machine counts in.
+/// below the 0.1 mm a machine counts in. The planner flattens the art it stitches as finely (its
+/// own `FLATTEN`, in `vectorcraft_stitch::plan`), for the same reason.
 const LITERAL_FLATTEN: f64 = 0.05;
 /// The column width given for what is not a satin column: fills and running lines have none.
 const NO_WIDTH: f64 = 0.0;

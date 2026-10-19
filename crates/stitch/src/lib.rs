@@ -26,7 +26,9 @@ pub const MM_PER_PT: f64 = 25.4 / 72.0;
 /// The units machine formats count in: tenths of a millimetre.
 pub const UNITS_PER_MM: f64 = 10.0;
 /// Two points closer than this (millimetres) are the same point: far below the 0.1 mm the machine
-/// formats count in, so only rounding separates them.
+/// formats count in, so only rounding separates them. It also decides when something has no
+/// length, measured as the distance between its two ends: a span along a row, the step between
+/// two neighbours.
 pub const SAME_POINT: f64 = 1e-9;
 
 /// `v` points as millimetres.

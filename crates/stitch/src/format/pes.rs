@@ -1,17 +1,20 @@
-//! Brother PES: a PES header (the design app's data) followed by the PEC block, which is what
-//! the machines read. This module writes the smallest valid PES — a version 1 header that only
-//! points at the PEC block — and the whole PEC block: its 512-byte header (the label, the icon
-//! size and the palette indices), a 16-byte block header, the stitches and blank preview
-//! pictures. Every reader except PE-Design itself reads only the PEC block, so a PES written
-//! here sews as it should; PE-Design shows it as a blank document (it is the PES part, the
-//! editable shapes, that we do not write yet).
+//! Brother PES: a PES header (the design app's data) followed by the PEC section, which is what
+//! the machines read. The PEC section is the 512-byte PEC header (the label, the icon size and the
+//! palette indices), then the stitch block (its own header, then the stitches), then the preview
+//! pictures. This module writes the smallest valid PES — a version 1 header that only points at the
+//! PEC section — and the whole PEC section, with a 20-byte stitch-block header (the two origin words
+//! real Brother files carry; the 16-byte form without them is read too) and blank previews. Every
+//! reader except PE-Design itself reads only the PEC section, so a PES written here sews as it
+//! should; PE-Design shows it as a blank document (it is the PES part, the editable shapes, that we
+//! do not write yet).
 //!
 //! The PEC header: `LA:` and the label, spaces, `0xFF 0x00`, the icon's size (6 × 38 pixels),
 //! spaces, then one byte of colour changes (`0xFF` for none) and one Brother palette index per
 //! colour ([`crate::thread::PEC`]), padded with spaces to 512 bytes.
 //!
-//! The block: two zero bytes, the block's length as 24 bits, `0x31 0xFF 0xF0`, the design's width
-//! and height in tenths of a millimetre, `0x01E0`, `0x01B0`, then the stitches and the previews.
+//! The stitch block: two zero bytes, its length as 24 bits (to the end of the stitches, where the
+//! previews begin), `0x31 0xFF 0xF0`, the design's width and height in tenths of a millimetre,
+//! `0x01E0`, `0x01B0`, in Brother's files the two origin words, then the stitches.
 //!
 //! A stitch is one or two bytes for x and then for y: a byte below `0x80` is a 7-bit signed delta;
 //! otherwise the byte is `1`, three command bits and the top 4 bits of a 12-bit signed delta,
@@ -26,7 +29,7 @@ use super::{Frame, LABEL_LEN, PAD, Reader, finish, label, mm, steps};
 use crate::thread;
 use crate::{Command, Error, Pattern, Result, Stitch};
 
-/// The PEC block's header length.
+/// The PEC header's length: the start of the PEC section, before the stitch block.
 const PEC_HEADER: usize = 512;
 /// The preview pictures' size: 6 bytes of pixels a line (48 pixels, one bit each), 38 lines.
 const ICON_LINE: usize = 6;
@@ -35,19 +38,19 @@ const ICON_LINES: usize = 38;
 const PREVIEW: usize = ICON_LINE * ICON_LINES;
 /// The largest delta one value holds, as a 12-bit signed number.
 const MAX_DELTA: i32 = 2047;
-/// The most stitches one block may hold (a desynchronised stream stops rather than growing).
+/// The most stitches one stitch block may hold (a stream that lost step stops rather than growing).
 const MAX_STITCHES: usize = 1_048_576;
 /// The most colours a PEC header holds: it stores one fewer than their count in a byte, and
 /// `0xFF` there means none ([`NO_COLORS`]).
 const MAX_COLORS: usize = 255;
 /// The colour count byte of a design with no colours.
 const NO_COLORS: u8 = 0xFF;
-/// The PES version 1 header: the magic `#PES0001`, where the PEC block starts (right after this
+/// The PES version 1 header: the magic `#PES0001`, where the PEC section starts (right after this
 /// header: byte 22), and the rest zeroed.
 const PES_HEADER: [u8; 22] = [b'#', b'P', b'E', b'S', b'0', b'0', b'0', b'1', 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-/// Where a PES header gives the PEC block's position (a little-endian word).
+/// Where a PES header gives the PEC section's position (a little-endian word).
 const PEC_POSITION: std::ops::Range<usize> = 8..12;
-/// A bare PEC file's magic (`#PEC0001`): its block starts right after it.
+/// A bare PEC file's magic (`#PEC0001`): its PEC header starts right after it.
 const PEC_MAGIC_LEN: usize = 8;
 
 // The PEC header: `LA:` and the label at its start, the colour count at COLOR_COUNT_AT, then the
@@ -62,29 +65,31 @@ const BEFORE_ICON: [u8; 2] = [0xFF, 0x00];
 /// Where the colour count byte is.
 const COLOR_COUNT_AT: usize = 48;
 
-// The PEC block that follows the header: two zero bytes, the block's length (3 bytes), a fixed
-// marker, the design's width and height, two fixed values, and in Brother's files the design's
-// origin twice; then the stitches.
+// The stitch block that follows the PEC header: two zero bytes, the stitch block's length (3
+// bytes), a fixed marker, the design's width and height, two fixed values, and in Brother's files
+// the design's origin twice; then the stitches. Offsets below count from the stitch block's start.
 
-/// Where the block's length is, from the PEC header's start (3 bytes, little-endian): it counts
-/// from the block's start to the end of the stitches, where the preview pictures begin.
-const BLOCK_LENGTH_AT: usize = PEC_HEADER + 2;
-/// The fixed marker after the block's length, as the format's decodings give it.
+/// Where the stitch block's length is (3 bytes, little-endian): it counts from the stitch block's
+/// start to the end of the stitches, where the preview pictures begin.
+const BLOCK_LENGTH_AT: usize = 2;
+/// The fixed marker after the stitch block's length, as the format's decodings give it.
 const BLOCK_MARKER: [u8; 3] = [0x31, 0xFF, 0xF0];
 /// The two fixed values after the design's size, as the format's decodings give them.
 const BLOCK_VALUES: [u16; 2] = [0x01E0, 0x01B0];
 /// The base the origin words count from (big-endian; ours are always at the origin).
 const ORIGIN: u16 = 0x9000;
-/// Where the stitches start, from the PEC header's start: after a 16-byte block header (without
-/// the origin words, as pyembroidery writes it) or a 20-byte one (with them, as Brother does).
-const SHORT_BLOCK_STITCHES: usize = PEC_HEADER + 16;
-const LONG_BLOCK_STITCHES: usize = PEC_HEADER + 20;
+/// The stitch-block header's length, so where the stitches start: 16 bytes without the origin
+/// words (as pyembroidery writes it), 20 with them (as Brother does, and we do).
+const SHORT_BLOCK_HEADER: usize = 16;
+const LONG_BLOCK_HEADER: usize = 20;
 
 // The stitches: each coordinate a short value (one byte below LONG, a 7-bit signed delta) or a
 // long one (two bytes: LONG, three command bits and a 12-bit signed delta).
 
+/// A long value's command bits for a jump (the needle up) and for a trim (the thread cut).
 const JUMP: u8 = 0x10;
 const TRIM: u8 = 0x20;
+/// The top bit of a value's first byte: set, the value is long (two bytes).
 const LONG: u8 = 0x80;
 /// A long value's command bits (in its first byte).
 const FLAGS: u8 = 0x70;
@@ -94,7 +99,8 @@ const SHORT_NEGATIVE: u8 = 0x40;
 /// A long value's 12 bits, and the first that makes it negative.
 const LONG_BITS: u32 = 0x0FFF;
 const LONG_NEGATIVE: i32 = 0x0800;
-/// The deltas written as short values (63 itself is written long; either form reads the same).
+/// The deltas written as short values. A short value holds -64 to 63 (7-bit two's complement);
+/// 63 is written long all the same, as this writer always has (either form reads the same).
 const SHORT_DELTAS: std::ops::Range<i32> = -64..63;
 /// A colour change: these two bytes, then [`COLOR_ONE`] and [`COLOR_TWO`] alternately.
 const COLOR_CHANGE: [u8; 2] = [0xFE, 0xB0];
@@ -114,15 +120,15 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
         return Err(Error::TooLarge(format!("PEC carries at most {MAX_COLORS} colours, not {colors}")));
     }
     let (width, height) = frame.size(b);
-    // The headers, room for the start of the block, and the previews (a guess for the stitches:
-    // the buffer grows as needed).
+    // The headers, room for the start of the stitch block, and the previews (a guess for the
+    // stitches: the buffer grows as needed).
     let mut out: Vec<u8> = Vec::with_capacity(PES_HEADER.len() + PEC_HEADER + 64 + colors * PREVIEW);
     out.extend_from_slice(&PES_HEADER);
     out.extend_from_slice(&header(p, colors));
     let block_start = out.len();
     let mut block: Vec<u8> = Vec::with_capacity(1024);
     block.extend_from_slice(&[0, 0]);
-    // The block's length, filled in below.
+    // The stitch block's length, filled in below.
     block.extend_from_slice(&[0, 0, 0]);
     block.extend_from_slice(&BLOCK_MARKER);
     block.extend_from_slice(&u16::try_from(width).unwrap_or(u16::MAX).to_le_bytes());
@@ -266,36 +272,39 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         let index = r.u8().unwrap_or(0);
         threads.push(thread::pec_thread(usize::from(index)));
     }
-    // The stitches start after the block header. Brother writes a 20-byte one (two origin words
-    // after BLOCK_VALUES); pyembroidery writes 16 bytes and omits them. The block's length tells
-    // which: the stream ends exactly where the block does, and the preview pictures begin.
-    let (g, have_g) = {
-        let mut g = Reader::new(bytes);
-        g.seek(start + BLOCK_LENGTH_AT);
-        match g.u24() {
+    // The stitches start after the stitch-block header: 20 bytes in Brother's files (two origin
+    // words after BLOCK_VALUES), 16 in pyembroidery's, which omit them. The stitch block's length
+    // says where the stream must end: where the preview pictures begin.
+    let block = start.saturating_add(PEC_HEADER);
+    let (length, have_length) = {
+        let mut r = Reader::new(bytes);
+        r.seek(block.saturating_add(BLOCK_LENGTH_AT));
+        match r.u24() {
             Some(v) => (usize::try_from(v).unwrap_or(usize::MAX), true),
             None => (0, false),
         }
     };
-    let expected_end = start.saturating_add(PEC_HEADER).saturating_add(g);
-    // Which block header, first guessed: the two origin words Brother writes have a high byte of
-    // 0x90 (they are ORIGIN with the design's offset), and then the stitches start at
-    // LONG_BLOCK_STITCHES; without them (as pyembroidery writes) at SHORT_BLOCK_STITCHES. A first
-    // jump written long looks like them too; read from the wrong start the stream loses step and
-    // ends elsewhere, so the block's length decides.
-    let [origin_high, _] = ORIGIN.to_be_bytes();
-    // The top four bits are the origin base's; the bottom ones carry the design's offset.
-    let long_header = bytes.get(start + SHORT_BLOCK_STITCHES).is_some_and(|b| b & 0xF0 == origin_high);
-    let candidates = if long_header { [LONG_BLOCK_STITCHES, SHORT_BLOCK_STITCHES] } else { [SHORT_BLOCK_STITCHES, LONG_BLOCK_STITCHES] };
+    let expected_end = block.saturating_add(length);
+    // Which header, guessed from the first byte after the short one: the origin words Brother
+    // writes have a high byte of 0x9_ (ORIGIN plus the design's offset). A first jump written as a
+    // long value starts with 0x9_ too (LONG and JUMP), so a 16-byte header can be taken for a
+    // 20-byte one. When that jump is two long values (4 bytes, as this writer puts it) the stream read
+    // from past them stays in step and only the leading jump is lost, which moves nothing: the
+    // reader puts the design's corner at the origin anyway. When it is not, the stream loses step
+    // and ends elsewhere, and the length sends the reader back to the other start.
+    const HIGH_NIBBLE: u8 = 0xF0;
+    let origin_high = ORIGIN.to_be_bytes()[0] & HIGH_NIBBLE;
+    let long_header = bytes.get(block.saturating_add(SHORT_BLOCK_HEADER)).is_some_and(|b| b & HIGH_NIBBLE == origin_high);
+    let candidates = if long_header { [LONG_BLOCK_HEADER, SHORT_BLOCK_HEADER] } else { [SHORT_BLOCK_HEADER, LONG_BLOCK_HEADER] };
     let mut first: Option<Vec<Stitch>> = None;
     let mut points: Option<Vec<Stitch>> = None;
     for begin in candidates {
-        let from = start.saturating_add(begin);
+        let from = block.saturating_add(begin);
         if from >= bytes.len() {
             continue;
         }
         let (parsed, end) = stream(bytes, from);
-        if !parsed.is_empty() && have_g && end == expected_end {
+        if !parsed.is_empty() && have_length && end == expected_end {
             points = Some(parsed);
             break;
         }
@@ -371,7 +380,7 @@ fn pec_value(r: &mut Reader<'_>, first: u8) -> Option<(i32, u8)> {
     Some((v, first & FLAGS))
 }
 
-/// Where the PEC block starts: a PES header states it; a bare PEC starts after its magic.
+/// Where the PEC section starts: a PES header states it; a bare PEC starts after its magic.
 fn pec_start(bytes: &[u8]) -> Result<usize> {
     if bytes.starts_with(b"#PEC") {
         return Ok(PEC_MAGIC_LEN);
@@ -422,13 +431,13 @@ mod tests {
         let b = p.bounds().expect("bounds");
         assert!((a.width() - b.width()).abs() < 0.2, "{a:?} {b:?}");
         assert!((a.height() - b.height()).abs() < 0.2, "{a:?} {b:?}");
-        // The block header is 20 bytes (the two origin words included), the graphics offset
-        // counts from PEC+0x200, and the previews follow the stitches.
-        let pec = 22;
-        let at = pec + 0x202;
-        let g = u32::from(bytes[at]) | u32::from(bytes[at + 1]) << 8 | u32::from(bytes[at + 2]) << 16;
-        assert_eq!(&bytes[pec + 0x210..pec + 0x214], &[0x90, 0x00, 0x90, 0x00]);
-        assert_eq!(bytes.len(), pec + 0x200 + g as usize + 3 * PREVIEW);
+        // The stitch-block header is 20 bytes (the two origin words last), the stitch block's
+        // length counts from its start, and the previews follow the stitches.
+        let block = PES_HEADER.len() + PEC_HEADER;
+        let at = block + BLOCK_LENGTH_AT;
+        let length = u32::from(bytes[at]) | u32::from(bytes[at + 1]) << 8 | u32::from(bytes[at + 2]) << 16;
+        assert_eq!(&bytes[block + SHORT_BLOCK_HEADER..block + LONG_BLOCK_HEADER], &[0x90, 0x00, 0x90, 0x00]);
+        assert_eq!(bytes.len(), block + length as usize + 3 * PREVIEW);
     }
 
     /// Small negative deltas are one-byte short-form values (7-bit two's complement): a design
@@ -457,31 +466,44 @@ mod tests {
         }
     }
 
-    /// Which block header a file has (16 bytes, or 20 with the origin words) is first guessed from
-    /// the byte where the stitches would start, and then checked: the stream must end where the
-    /// block's length says. A 16-byte header whose first jump starts with a long value looks like
-    /// the origin words; read from past them the stream loses step, and the check sends the reader
-    /// back to the right start.
+    /// A 16-byte stitch-block header whose first jump is a long value looks like the 20-byte one
+    /// (its first byte is 0x9_ like the origin words'), so the reader starts 4 bytes too late:
+    /// - when the jump is two long values (4 bytes, as we write it), the stream stays in step and
+    ///   only the leading jump is lost: the design reads the same;
+    /// - when it is not (a long x and a short y: 3 bytes), the stream loses step, ends where the
+    ///   stitch block's length says it can't, and the reader goes back to the other start.
     #[test]
-    fn the_block_length_decides_where_the_stitches_start() {
+    fn a_short_stitch_block_header_that_looks_long_still_reads() {
         let p = design();
-        let mut bytes = write(&p).expect("writes");
-        let pec = PES_HEADER.len();
-        let stitches = pec + LONG_BLOCK_STITCHES;
+        let ours = write(&p).expect("writes");
+        let block = PES_HEADER.len() + PEC_HEADER;
+        let stitches = block + LONG_BLOCK_HEADER;
         // Our first values: a jump to the first stitch, both coordinates long (0x90 0x00 twice).
-        assert_eq!(&bytes[stitches..stitches + 4], &[0x90, 0x00, 0x90, 0x00]);
-        // Drop the origin words (a 16-byte header), and write the jump's y as a short value.
-        bytes.drain(stitches - 4..stitches);
-        bytes.remove(pec + SHORT_BLOCK_STITCHES + 2);
-        let block = pec + PEC_HEADER;
-        let length = u32::from(bytes[block + 2]) | u32::from(bytes[block + 3]) << 8 | u32::from(bytes[block + 4]) << 16;
-        let length = (length - 5).to_le_bytes();
-        bytes[block + 2..block + 5].copy_from_slice(&length[..3]);
-        assert_eq!(bytes[pec + SHORT_BLOCK_STITCHES], 0x90, "looks like the origin words");
-        let back = read(&bytes).expect("reads");
+        assert_eq!(&ours[stitches..stitches + 4], &[0x90, 0x00, 0x90, 0x00]);
+        // `bytes` with the stitch block's length shortened by `cut` bytes.
+        let shorten = |bytes: &mut Vec<u8>, cut: u32| {
+            let at = block + BLOCK_LENGTH_AT;
+            let length = u32::from(bytes[at]) | u32::from(bytes[at + 1]) << 8 | u32::from(bytes[at + 2]) << 16;
+            bytes[at..at + 3].copy_from_slice(&(length - cut).to_le_bytes()[..3]);
+        };
+        let sewn = |pattern: &Pattern| -> Vec<Vec<(i32, i32)>> {
+            let q = |v: f64| (v * crate::UNITS_PER_MM).round() as i32;
+            pattern.blocks.iter().map(|b| b.stitches.iter().filter(|s| s.command == Command::Stitch).map(|s| (q(s.x), q(s.y))).collect()).collect()
+        };
+        let want = sewn(&read(&ours).expect("reads"));
+        // Without the origin words: a 16-byte header, the jump still 4 bytes.
+        let mut aligned = ours.clone();
+        aligned.drain(stitches - 4..stitches);
+        shorten(&mut aligned, 4);
+        assert_eq!(aligned[block + SHORT_BLOCK_HEADER], 0x90, "looks like the origin words");
+        assert_eq!(sewn(&read(&aligned).expect("reads")), want);
+        // And the jump's y written as a short value: a 3-byte first record.
+        let mut stepped = aligned.clone();
+        stepped.remove(block + SHORT_BLOCK_HEADER + 2);
+        shorten(&mut stepped, 1);
+        let back = read(&stepped).expect("reads");
         assert_eq!(back.sewn(), p.sewn());
-        let (a, b) = (back.bounds().expect("bounds"), p.bounds().expect("bounds"));
-        assert!((a.width() - b.width()).abs() < 0.2 && (a.height() - b.height()).abs() < 0.2, "{a:?} {b:?}");
+        assert_eq!(sewn(&back), want);
     }
 
     #[test]

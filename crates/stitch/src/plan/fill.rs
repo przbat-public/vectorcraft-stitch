@@ -30,13 +30,14 @@ const MAX_ROWS: usize = 100_000;
 /// half a spacing in, so that no row lies on a tangent and the thread's own width covers to the
 /// edge. A shape thinner than this across the rows gets no rows.
 const FIRST_ROW: f64 = 0.5;
-/// The stagger: each row's penetrations sit this share of a stitch along from the row before's,
-/// through a cycle of [`STAGGER_ROWS`] rows (after which it is a whole stitch along, back where it
-/// started), so that neighbouring rows never line their penetrations up into a groove. A quarter
-/// stitch is Wilcom's default tatami offset fraction
+/// The stagger: each row's penetrations sit [`STAGGER`] of a stitch along from the row before's,
+/// through a cycle of this many rows, after which they are a whole stitch along, back where they
+/// started; so neighbouring rows never line their penetrations up into a groove. Four rows make a
+/// quarter stitch, Wilcom's default tatami offset fraction
 /// (<https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch>).
-const STAGGER: f64 = 0.25;
 const STAGGER_ROWS: usize = 4;
+/// The share of a stitch each row is shifted by: one cycle of [`STAGGER_ROWS`] is a whole stitch.
+const STAGGER: f64 = 1.0 / STAGGER_ROWS as f64;
 /// A row's last stitch is left out when it is no longer than this share of the stitch length:
 /// the needle turns diagonally into the next row instead of crawling a spacing along the edge.
 const SHORT_LAST: f64 = 0.5;

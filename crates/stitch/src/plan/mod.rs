@@ -59,7 +59,7 @@ pub const TRIM: f64 = 10.0;
 /// The longest satin stitch before it is split (millimetres): longer stitches snag and sag. An
 /// estimate (professional software makes it a setting, bounded by the machine format: 12.1 mm
 /// per record in DST).
-const MAX_SATIN: f64 = 10.0;
+const MAX_SATIN_STITCH: f64 = 10.0;
 /// The widest satin column (millimetres): a wider one is sewn this wide. Far beyond what a satin
 /// can cover (professional practice tops out near 10–12 mm), a bound on the stitching.
 pub const MAX_SATIN_WIDTH: f64 = 50.0;
@@ -192,7 +192,7 @@ const MAX_TRIM: f64 = 1000.0;
 /// The shortest stitch kept: from 0.05 mm to 3 mm.
 const MIN_STITCH_RANGE: (f64, f64) = (0.05, 3.0);
 /// The longest satin stitch before it is split: from 2 mm to the 12 mm of [`STITCH_LENGTH_RANGE`].
-const MAX_SATIN_RANGE: (f64, f64) = (2.0, 12.0);
+const MAX_SATIN_STITCH_RANGE: (f64, f64) = (2.0, 12.0);
 
 impl Default for Params {
     fn default() -> Self {
@@ -217,7 +217,7 @@ impl Params {
                 lock: true,
                 min_stitch: MIN_STITCH,
                 width: 0.0,
-                max_satin: MAX_SATIN,
+                max_satin: MAX_SATIN_STITCH,
                 auto_spacing: false,
             },
             // A satin column's stitches cross from rail to rail: it uses no stitch length or angle
@@ -234,7 +234,7 @@ impl Params {
                 lock: true,
                 min_stitch: MIN_STITCH,
                 width: SATIN_WIDTH,
-                max_satin: MAX_SATIN,
+                max_satin: MAX_SATIN_STITCH,
                 auto_spacing: true,
             },
             Style::Fill => Self {
@@ -249,7 +249,7 @@ impl Params {
                 lock: true,
                 min_stitch: MIN_STITCH,
                 width: 0.0,
-                max_satin: MAX_SATIN,
+                max_satin: MAX_SATIN_STITCH,
                 auto_spacing: false,
             },
         }
@@ -276,7 +276,7 @@ impl Params {
             lock: self.lock,
             min_stitch: clamp(self.min_stitch, d.min_stitch, MIN_STITCH_RANGE),
             width: clamp(self.width, d.width, (0.0, MAX_SATIN_WIDTH)),
-            max_satin: clamp(self.max_satin, d.max_satin, MAX_SATIN_RANGE),
+            max_satin: clamp(self.max_satin, d.max_satin, MAX_SATIN_STITCH_RANGE),
             auto_spacing: self.auto_spacing,
         }
     }

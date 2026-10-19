@@ -13,7 +13,9 @@ use crate::SAME_POINT;
 const FLATTEN: f64 = 0.05;
 /// A turn sharper than this (radians, about 30°) is a corner the stitches keep.
 const CORNER: f64 = 0.52;
-/// A vector or segment shorter than this (millimetres) has no direction.
+/// A vector or segment shorter than this (millimetres) has no direction: dividing by its length
+/// would give noise. A guard on that arithmetic rather than a geometric choice, so it sits well
+/// below [`SAME_POINT`]: anything it rejects is the same point anyway.
 pub(super) const NO_LENGTH: f64 = 1e-12;
 /// The shortest step [`resample`] takes (millimetres): a bound on the points it makes.
 const MIN_STEP: f64 = 0.01;

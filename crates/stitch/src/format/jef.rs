@@ -22,7 +22,7 @@
 //! pyembroidery 1.5.1 (MIT), `JefWriter.py` and `JefReader.py`
 //! (github.com/EmbroidePy/pyembroidery/tree/1.5.1/pyembroidery).
 
-use super::{Frame, Reader, finish, steps};
+use super::{Frame, Reader, finish, mm, steps};
 use crate::thread;
 use crate::{Command, Error, Pattern, Result, Stitch};
 
@@ -37,6 +37,29 @@ const COLOR_CHANGE: u8 = 0x01;
 /// A trim is written as three jumps that go nowhere: one is the wiki's trim command, three is what
 /// pyembroidery writes and reads back as a trim (see the module doc).
 const TRIM_JUMPS: usize = 3;
+/// The length of a header word (little-endian).
+const WORD: usize = 4;
+/// The header bytes each colour takes after [`HEADER`]: its palette index and its `0x0D` word.
+const BYTES_PER_COLOR: usize = 2 * WORD;
+/// The header's second word, which writers set to this.
+const SECOND_WORD: u32 = 0x14;
+/// The date field: fourteen ASCII digits (year to second), left as zeros.
+const NO_DATE: &[u8; 14] = b"00000000000000";
+/// Where the header gives the colour count.
+const COLOR_COUNT_AT: usize = 24;
+/// The word written per colour after the palette indices.
+const COLOR_WORD: u32 = 0x0D;
+/// The four hoops the header gives the design's margins in, as half sizes in tenths of a
+/// millimetre: 110×110, 50×50, 140×200 and the custom hoop, which writers set to 140×200 too.
+const HOOP_HALVES: [(i32, i32); 4] = [(550, 550), (250, 250), (700, 1000), (700, 1000)];
+/// The margins written for a hoop the design doesn't fit.
+const NO_FIT: i32 = -1;
+/// The hoops Janome numbers, smallest first: a design narrower and shorter than the first two
+/// values (tenths of a millimetre) gets the third as the header's hoop. 50×50, 126×110, 140×200
+/// and 200×200; anything larger gets [`DEFAULT_HOOP`].
+const HOOPS: [(u32, u32, u32); 4] = [(500, 500, 1), (1260, 1100, 3), (1400, 2000, 2), (2000, 2000, 4)];
+/// The hoop number for a design that fits none of [`HOOPS`]: the 110×110 default.
+const DEFAULT_HOOP: u32 = 0;
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     // Janome places a design around the hoop's centre: the stitches start there, and the header's
@@ -52,11 +75,12 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     let [left, top, right, bottom] = extents;
     let (width, height) = (left + right, top + bottom);
     let records = record_count(p);
-    let offset = HEADER + 8 * colors;
+    let offset = HEADER + BYTES_PER_COLOR * colors;
     let mut out: Vec<u8> = Vec::with_capacity(offset + records * 2);
     out.extend_from_slice(&(offset as u32).to_le_bytes());
-    out.extend_from_slice(&0x14u32.to_le_bytes());
-    out.extend_from_slice(b"00000000000000");
+    out.extend_from_slice(&SECOND_WORD.to_le_bytes());
+    out.extend_from_slice(NO_DATE);
+    // The two bytes after the date (the version letter among them), left zero.
     out.extend_from_slice(&[0, 0]);
     out.extend_from_slice(&(colors as u32).to_le_bytes());
     out.extend_from_slice(&(records as u32).to_le_bytes());
@@ -64,13 +88,11 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     for v in extents {
         out.extend_from_slice(&(v as u32).to_le_bytes());
     }
-    // The design's distance from the edges of each of the header's four hoops, given as half
-    // sizes: 110×110, 50×50, 140×200 and the custom hoop, which writers set to 140×200 too
-    // (-1 four times: the design does not fit that hoop).
-    for (hx, hy) in [(550, 550), (250, 250), (700, 1000), (700, 1000)] {
+    // The design's distance from the edges of each of the header's four hoops.
+    for (hx, hy) in HOOP_HALVES {
         let margins = [hx - left, hy - top, hx - right, hy - bottom];
         let fit = margins.iter().all(|m| *m >= 0);
-        for v in if fit { margins } else { [-1; 4] } {
+        for v in if fit { margins } else { [NO_FIT; 4] } {
             out.extend_from_slice(&(v as u32).to_le_bytes());
         }
     }
@@ -82,7 +104,7 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
         out.extend_from_slice(&(index as u32).to_le_bytes());
     }
     for _ in 0..colors {
-        out.extend_from_slice(&0x0Du32.to_le_bytes());
+        out.extend_from_slice(&COLOR_WORD.to_le_bytes());
     }
     write_body(&mut out, p, &frame);
     Ok(out)
@@ -169,34 +191,25 @@ fn write_move(out: &mut Vec<u8>, x: &mut i32, y: &mut i32, tx: i32, ty: i32, con
 /// else the 110×110 default, as Janome numbers them.
 fn hoop(width: i32, height: i32) -> u32 {
     let (w, h) = (u32::try_from(width).unwrap_or(u32::MAX), u32::try_from(height).unwrap_or(u32::MAX));
-    if w < 500 && h < 500 {
-        1
-    } else if w < 1260 && h < 1100 {
-        3
-    } else if w < 1400 && h < 2000 {
-        2
-    } else if w < 2000 && h < 2000 {
-        4
-    } else {
-        0
-    }
+    HOOPS.iter().find(|(hw, hh, _)| w < *hw && h < *hh).map_or(DEFAULT_HOOP, |(_, _, n)| *n)
 }
 
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
     let mut r = Reader::new(bytes);
     let offset = r.u32().ok_or_else(|| short(bytes.len()))? as usize;
-    r.seek(24);
+    r.seek(COLOR_COUNT_AT);
     let colors = r.u32().ok_or_else(|| short(bytes.len()))? as usize;
     if offset < HEADER || offset >= bytes.len() {
         return Err(Error::Format(format!("the JEF header points at byte {offset}, past the file's {} bytes", bytes.len())));
     }
     r.seek(HEADER);
-    // The count is the file's claim: each colour takes 4 bytes of the header, so no more fit than
-    // the file holds (an absurd count must not size an allocation).
-    let colors = colors.min(bytes.len().saturating_sub(HEADER) / 4);
+    // The count is the file's claim: each colour's index takes a word of the header, so no more
+    // fit than the file holds (an absurd count must not size an allocation).
+    let colors = colors.min(bytes.len().saturating_sub(HEADER) / WORD);
     let mut threads = Vec::with_capacity(colors);
     for _ in 0..colors {
-        let index = r.u32().ok_or_else(|| short(bytes.len()))? as usize % 79;
+        // Janome's chart numbers its threads from 1; anything past it wraps round.
+        let index = r.u32().ok_or_else(|| short(bytes.len()))? as usize % (thread::JEF.len() + 1);
         threads.push(thread::jef_thread(index));
     }
     r.seek(offset);
@@ -207,25 +220,26 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         if b0 != CONTROL {
             x += i32::from(b0 as i8);
             y -= i32::from(b1 as i8);
-            points.push(Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, Command::Stitch));
+            points.push(Stitch::new(mm(x), mm(y), Command::Stitch));
             continue;
         }
         match b1 {
             END => break,
             COLOR_CHANGE => {
+                // The colour change's two delta bytes, which don't move the frame.
                 let _ = r.take(2);
-                points.push(Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, Command::ColorChange));
+                points.push(Stitch::new(mm(x), mm(y), Command::ColorChange));
             }
             JUMP => {
                 let (Some(dx), Some(dy)) = (r.u8(), r.u8()) else { break };
                 let (dx, dy) = (i32::from(dx as i8), i32::from(dy as i8));
-                let here = Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, Command::Trim);
+                let here = Stitch::new(mm(x), mm(y), Command::Trim);
                 if dx == 0 && dy == 0 {
                     points.push(here);
                 } else {
                     x += dx;
                     y -= dy;
-                    points.push(Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, Command::Jump));
+                    points.push(Stitch::new(mm(x), mm(y), Command::Jump));
                 }
             }
             // An unknown command: stop rather than guess where the needle goes next.

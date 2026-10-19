@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** fill rows 0.38 mm apart by default (Wilcom's tatami default, Morrish's gap-free spacing); short stitches on a satin's inner side where a tight curve bunches the penetrations
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** every value the planner, the digitizer and the format readers and writers use is a named constant that says what it is, its unit, and where it comes from or that it is an estimate
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -422,3 +422,10 @@ Public documentation, cited per claim in the crate and in the local research not
   trims between objects), and the `embroidery.setTrimAfter` command.
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real
   designs and the test that uses them.
+
+Every number these files use is a named constant with a description: what it is, its unit, and
+its source (a format's documentation, a cited default) or that it is an estimate. Tolerances are
+shared: `SAME_POINT` (two points closer than it are one, `lib.rs`) and `NO_LENGTH` (a segment
+without a direction, `plan/geometry.rs`). The default stitch parameters are at the top of
+`plan/mod.rs`, with the ranges `Params::sane` clamps them to; each format's record codes and
+header fields are at the top of its module.

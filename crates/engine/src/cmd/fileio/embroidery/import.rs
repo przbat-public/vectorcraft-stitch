@@ -24,6 +24,7 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
     // A margin round the design on the new artboard. It doesn't move the stitches as written:
     // every writer measures a design from its own bounds, so it is gone again on export.
     const MARGIN: f64 = 5.0;
+    // Points per millimetre.
     let scale = mm_to_pt(1.0);
     let width = (b.width() + 2.0 * MARGIN) * scale;
     let height = (b.height() + 2.0 * MARGIN) * scale;

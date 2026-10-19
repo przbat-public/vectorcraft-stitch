@@ -20,13 +20,40 @@
 //! Reference: EduTechWiki, *Embroidery format DST* (edutechwiki.unige.ch/en/Embroidery_format_DST),
 //! which transcribes the public decodings by Achatina and Embroidermodder.
 
-use super::{Frame, collapse_jumps, finish, steps};
+use super::{Frame, LABEL_LEN, PAD, collapse_jumps, finish, label, mm, steps};
 use crate::{Block, Command, Error, Pattern, Result, Stitch};
 
 /// The header's length; records follow it.
 const HEADER: usize = 512;
-/// The largest delta one record holds, in tenths of a millimetre.
+/// The byte that ends the header's text, before the padding (ASCII SUB, the old end-of-file mark).
+const HEADER_END: u8 = 0x1A;
+/// The length of a record.
+const RECORD: usize = 3;
+/// The largest delta one record holds, in tenths of a millimetre: 1 + 3 + 9 + 27 + 81, all five
+/// balanced-ternary digits at +1.
 const MAX_DELTA: i32 = 121;
+
+// A record's third byte: its two bottom bits are always set, and its top bits say what the record
+// is. A stitch sets only the bottom two.
+
+/// The bits every record's third byte has set.
+const SET_BITS: u8 = 0b0000_0011;
+/// A jump's third byte (the top bit and the two bottom ones).
+const JUMP_BITS: u8 = 0b1000_0011;
+/// A colour change's third byte (the two top bits and the two bottom ones).
+const COLOR_CHANGE_BITS: u8 = 0b1100_0011;
+/// The end of the design's third byte (the four top bits and the two bottom ones).
+const END_BITS: u8 = 0b1111_0011;
+
+/// Where a delta's balanced-ternary digits go, for the digits worth 1, 3, 9, 27 and 81 in turn:
+/// the byte of the record (0, 1 or 2), the bit set for a digit of +1 and the bit set for −1. The
+/// writer and the reader both work from these tables.
+const X_DIGITS: [(usize, u8, u8); 5] = [(0, 0x01, 0x02), (1, 0x01, 0x02), (0, 0x04, 0x08), (1, 0x04, 0x08), (2, 0x04, 0x08)];
+const Y_DIGITS: [(usize, u8, u8); 5] = [(0, 0x80, 0x40), (1, 0x80, 0x40), (0, 0x20, 0x10), (1, 0x20, 0x10), (2, 0x20, 0x10)];
+
+/// A trim: three small jumps that go nowhere (0.2 mm up and right, 0.4 mm back, 0.2 mm on), which
+/// a machine reads as "cut the thread".
+const TRIM_RECORDS: [(i32, i32); 3] = [(2, 2), (-4, -4), (2, 2)];
 
 /// The record's command.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -84,7 +111,7 @@ fn write_block(body: &mut Body, block: &Block, frame: &Frame) -> Result<()> {
             }
             Command::Trim => {
                 // Three small jumps that go nowhere: a machine trims after a run of jumps.
-                for (dx, dy) in [(2, 2), (-4, -4), (2, 2)] {
+                for (dx, dy) in TRIM_RECORDS {
                     body.push(dx, dy, Kind::Jump);
                 }
             }
@@ -97,9 +124,11 @@ fn write_block(body: &mut Body, block: &Block, frame: &Frame) -> Result<()> {
 
 /// The header's text lines, its end marker and the padding to [`HEADER`].
 fn header(p: &Pattern, records: usize, colors: usize, width: i32, height: i32) -> Vec<u8> {
-    let name: String = p.name.chars().map(|c| if c.is_ascii_graphic() || c == ' ' { c } else { '_' }).take(16).collect();
-    let mut s = String::with_capacity(128);
-    s.push_str(&format!("LA:{name:<16}\r"));
+    let name = label(&p.name);
+    let mut s = String::with_capacity(HEADER);
+    // Fixed-width fields: the label, the record count, the colour changes, the four extents and
+    // the position data, as the format's decodings give them.
+    s.push_str(&format!("LA:{name:<LABEL_LEN$}\r"));
     s.push_str(&format!("ST:{records:7}\r"));
     s.push_str(&format!("CO:{colors:3}\r"));
     s.push_str(&format!("+X:{width:5}\r"));
@@ -112,8 +141,8 @@ fn header(p: &Pattern, records: usize, colors: usize, width: i32, height: i32) -
     s.push_str(&format!("MY:+{:5}\r", 0));
     s.push_str(&format!("PD:{:6}\r", "******"));
     let mut out = s.into_bytes();
-    out.push(0x1A);
-    out.resize(HEADER, 0x20);
+    out.push(HEADER_END);
+    out.resize(HEADER, PAD);
     out
 }
 
@@ -160,31 +189,22 @@ impl Body {
 }
 
 /// The three bytes of one record.
-fn encode(dx: i32, dy: i32, kind: Kind) -> [u8; 3] {
+fn encode(dx: i32, dy: i32, kind: Kind) -> [u8; RECORD] {
+    let mut record = [0, 0, SET_BITS];
     match kind {
-        Kind::ColorChange => return [0x00, 0x00, 0xC3],
-        Kind::End => return [0x00, 0x00, 0xF3],
-        Kind::Stitch | Kind::Jump => {}
+        Kind::ColorChange => return [0, 0, COLOR_CHANGE_BITS],
+        Kind::End => return [0, 0, END_BITS],
+        Kind::Jump => record[2] = JUMP_BITS,
+        Kind::Stitch => {}
     }
-    let x = balanced(dx);
-    let y = balanced(dy);
-    let mut b0 = 0u8;
-    let mut b1 = 0u8;
-    let mut b2 = 0b0000_0011u8;
-    set(&mut b0, x[0], 0x01, 0x02);
-    set(&mut b1, x[1], 0x01, 0x02);
-    set(&mut b0, x[2], 0x04, 0x08);
-    set(&mut b1, x[3], 0x04, 0x08);
-    set(&mut b2, x[4], 0x04, 0x08);
-    set(&mut b0, y[0], 0x80, 0x40);
-    set(&mut b1, y[1], 0x80, 0x40);
-    set(&mut b0, y[2], 0x20, 0x10);
-    set(&mut b1, y[3], 0x20, 0x10);
-    set(&mut b2, y[4], 0x20, 0x10);
-    if kind == Kind::Jump {
-        b2 |= 0x80;
+    for (digits, layout) in [(balanced(dx), &X_DIGITS), (balanced(dy), &Y_DIGITS)] {
+        for (&digit, &(byte, plus, minus)) in digits.iter().zip(layout) {
+            if let Some(b) = record.get_mut(byte) {
+                set(b, digit, plus, minus);
+            }
+        }
     }
-    [b0, b1, b2]
+    record
 }
 
 fn set(byte: &mut u8, digit: i32, plus: u8, minus: u8) {
@@ -218,27 +238,27 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     let mut x = 0i32;
     let mut y = 0i32;
     let mut points: Vec<Stitch> = Vec::new();
-    for record in bytes[HEADER..].chunks_exact(3) {
-        let (b0, b1, b2) = (record[0], record[1], record[2]);
-        let (dx, dy) = (decode_x(b0, b1, b2), decode_y(b0, b1, b2));
-        if b2 & 0b1111_0011 == 0b1111_0011 {
+    for record in bytes[HEADER..].chunks_exact(RECORD) {
+        let b2 = record[2];
+        let (dx, dy) = (decode(record, &X_DIGITS), decode(record, &Y_DIGITS));
+        if b2 & END_BITS == END_BITS {
             break;
         }
-        if b2 & 0b1100_0011 == 0b1100_0011 {
-            points.push(Stitch::new(f64::from(x) / 10.0, f64::from(-y) / 10.0, Command::ColorChange));
+        if b2 & COLOR_CHANGE_BITS == COLOR_CHANGE_BITS {
+            points.push(Stitch::new(mm(x), mm(-y), Command::ColorChange));
             // Some writers move the frame in the colour-change record itself: the move is a jump
             // to where the next thread starts.
             if dx != 0 || dy != 0 {
                 x += dx;
                 y += dy;
-                points.push(Stitch::new(f64::from(x) / 10.0, f64::from(-y) / 10.0, Command::Jump));
+                points.push(Stitch::new(mm(x), mm(-y), Command::Jump));
             }
             continue;
         }
         x += dx;
         y += dy;
-        let command = if b2 & 0b1000_0011 == 0b1000_0011 { Command::Jump } else { Command::Stitch };
-        points.push(Stitch::new(f64::from(x) / 10.0, f64::from(-y) / 10.0, command));
+        let command = if b2 & JUMP_BITS == JUMP_BITS { Command::Jump } else { Command::Stitch };
+        points.push(Stitch::new(mm(x), mm(-y), command));
     }
     if points.is_empty() {
         return Err(Error::Format("the DST file has no stitch records".into()));
@@ -252,22 +272,26 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
 fn header_name(header: &[u8]) -> String {
     let Some(at) = header.windows(3).position(|w| w == b"LA:") else { return String::new() };
     let rest = &header[at + 3..];
-    let end = rest.iter().position(|b| *b == b'\r' || *b == 0x1A).unwrap_or(rest.len());
+    let end = rest.iter().position(|b| *b == b'\r' || *b == HEADER_END).unwrap_or(rest.len());
     String::from_utf8_lossy(&rest[..end]).trim().to_string()
 }
 
-fn decode_x(b0: u8, b1: u8, b2: u8) -> i32 {
-    let bit = |b: u8, n: u8| i32::from((b >> n) & 1);
-    bit(b2, 2) * 81 - bit(b2, 3) * 81 + bit(b1, 2) * 27 - bit(b1, 3) * 27 + bit(b0, 2) * 9 - bit(b0, 3) * 9 + bit(b1, 0) * 3 - bit(b1, 1) * 3
-        + bit(b0, 0)
-        - bit(b0, 1)
-}
-
-fn decode_y(b0: u8, b1: u8, b2: u8) -> i32 {
-    let bit = |b: u8, n: u8| i32::from((b >> n) & 1);
-    bit(b2, 5) * 81 - bit(b2, 4) * 81 + bit(b1, 5) * 27 - bit(b1, 4) * 27 + bit(b0, 5) * 9 - bit(b0, 4) * 9 + bit(b1, 7) * 3 - bit(b1, 6) * 3
-        + bit(b0, 7)
-        - bit(b0, 6)
+/// The delta a record's bytes carry along one axis, by that axis's digit layout ([`X_DIGITS`] or
+/// [`Y_DIGITS`]).
+fn decode(record: &[u8], layout: &[(usize, u8, u8); 5]) -> i32 {
+    let mut v = 0;
+    let mut weight = 1;
+    for &(byte, plus, minus) in layout {
+        let b = record.get(byte).copied().unwrap_or(0);
+        if b & plus != 0 {
+            v += weight;
+        }
+        if b & minus != 0 {
+            v -= weight;
+        }
+        weight *= 3;
+    }
+    v
 }
 
 /// The fewest jumps in a row that a machine reads as a cut: the three that go nowhere writers
@@ -328,8 +352,8 @@ mod tests {
         for dx in [-121, -100, -27, -9, -3, -1, 0, 1, 3, 9, 27, 100, 121] {
             for dy in [-121, -83, -12, -1, 0, 1, 12, 83, 121] {
                 let [b0, b1, b2] = encode(dx, dy, Kind::Stitch);
-                assert_eq!(decode_x(b0, b1, b2), dx, "{dx},{dy}");
-                assert_eq!(decode_y(b0, b1, b2), dy, "{dx},{dy}");
+                assert_eq!(decode(&[b0, b1, b2], &X_DIGITS), dx, "{dx},{dy}");
+                assert_eq!(decode(&[b0, b1, b2], &Y_DIGITS), dy, "{dx},{dy}");
             }
         }
     }

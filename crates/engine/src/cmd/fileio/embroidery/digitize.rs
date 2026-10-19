@@ -10,7 +10,7 @@ use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId,
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Shape, kurbo};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke};
 use vectorcraft_stitch::plan::{self, Params, Style};
-use vectorcraft_stitch::{Block, Command, Stitch, Thread, pt_to_mm};
+use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
 use super::Options;
 use super::sequence::{CLEARANCE, Planned, Sequence};
@@ -18,8 +18,17 @@ use super::sequence::{CLEARANCE, Planned, Sequence};
 const TEXT_LEFT_OUT: &str = "type is not stitched: outline it (Type › Create Outlines) and export again";
 const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › Image Trace) first";
 const LIVE_LEFT_OUT: &str = "live blends, envelopes, meshes and repeats are not stitched: expand them first";
-const SATIN_TOO_WIDE: &str = "strokes wider than 50 mm are sewn as satin columns 50 mm wide: fill them instead (stitchStyle fill)";
 const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colour of their first stop; a design sews one thread per block";
+/// A stroke at least this wide (millimetres) is sewn as a satin column, a narrower one as a running
+/// line (unless `stitchStyle` says otherwise): below about a millimetre the two rails are too
+/// close for the crossings to lie side by side. An estimate.
+const SATIN_MIN_WIDTH: f64 = 1.0;
+/// How far a literal stitch line's curves are flattened into needle points (millimetres): the
+/// lines a design opens as are straight, so this only matters for one edited into curves; far
+/// below the 0.1 mm a machine counts in.
+const LITERAL_FLATTEN: f64 = 0.05;
+/// The column width given for what is not a satin column: fills and running lines have none.
+const NO_WIDTH: f64 = 0.0;
 /// The most stitches a design may have: far beyond any hoop (large designs run to a few hundred
 /// thousand), and a bound on the memory an export can take.
 const MAX_DESIGN_STITCHES: usize = 2_000_000;
@@ -28,7 +37,7 @@ const MAX_DESIGN_STITCHES: usize = 2_000_000;
 /// the warnings for what was left out or approximated; an error when the design would need too
 /// many stitches.
 pub(super) fn digitize(doc: &Document, opts: &Options) -> Result<(Vec<Block>, Vec<String>), String> {
-    let seq = Sequence::new(opts.params(Style::Running, 0.0));
+    let seq = Sequence::new(opts.params(Style::Running, NO_WIDTH));
     let mut d = Digitizer { doc, opts, seq, warnings: Vec::new(), nest: 0, clip: None, owner: None, stitches: 0, failed: None };
     d.run();
     match d.failed {
@@ -149,19 +158,19 @@ impl Digitizer<'_> {
         let mut mm = bp.clone();
         mm.apply_affine(Affine::scale(vectorcraft_stitch::MM_PER_PT));
         let mut points: Vec<Stitch> = Vec::new();
-        kurbo::flatten(mm.iter(), 0.05, |el| {
+        kurbo::flatten(mm.iter(), LITERAL_FLATTEN, |el| {
             if let PathEl::MoveTo(p) | PathEl::LineTo(p) = el {
                 points.push(Stitch::sew(p));
             }
         });
         // A single stitch is stored as a line that goes nowhere: one needle point.
         if let [a, b] = points.as_slice()
-            && a.distance(*b) < 1e-9
+            && a.distance(*b) < SAME_POINT
         {
             points.pop();
         }
         if let Some(clip) = &self.clip {
-            points = cut_to(points, clip, &self.opts.params(Style::Running, 0.0));
+            points = cut_to(points, clip, &self.opts.params(Style::Running, NO_WIDTH));
         }
         if points.is_empty() {
             return;
@@ -222,7 +231,7 @@ impl Digitizer<'_> {
                 AppearanceItem::Fill(fill) => {
                     let style = self.forced().unwrap_or(Style::Fill);
                     let (area, area_rule) = self.clipped(&mm, rule);
-                    self.colour(&area, area_rule, style, &fill.paint, 0.0, false);
+                    self.colour(&area, area_rule, style, &fill.paint, NO_WIDTH, false);
                 }
                 AppearanceItem::Stroke(stroke) => {
                     let width = pt_to_mm(stroke.width).max(0.0);
@@ -242,14 +251,17 @@ impl Digitizer<'_> {
                             };
                             let outline = outline_stroke(&PathData::from_bezpath(&mm), width, cap, join, stroke.miter_limit).to_bezpath();
                             let (area, area_rule) = self.clipped(&outline, FillRule::NonZero);
-                            self.colour(&area, area_rule, Style::Fill, &stroke.paint, 0.0, false);
+                            self.colour(&area, area_rule, Style::Fill, &stroke.paint, NO_WIDTH, false);
                         }
                         // A satin column when it is wide enough to have two rails, a running line
                         // when not, unless `stitchStyle` says which.
                         forced => {
-                            let style = forced.unwrap_or(if width >= 1.0 { Style::Satin } else { Style::Running });
+                            let style = forced.unwrap_or(if width >= SATIN_MIN_WIDTH { Style::Satin } else { Style::Running });
                             if style == Style::Satin && width > plan::MAX_SATIN_WIDTH {
-                                self.warn(SATIN_TOO_WIDE);
+                                let widest = plan::MAX_SATIN_WIDTH;
+                                self.warn(&format!(
+                                    "strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)"
+                                ));
                             }
                             self.colour(&mm, rule, style, &stroke.paint, width, true);
                         }

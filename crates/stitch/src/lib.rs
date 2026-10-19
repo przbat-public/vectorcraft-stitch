@@ -25,6 +25,9 @@ use vectorcraft_geom::{Point, Rect};
 pub const MM_PER_PT: f64 = 25.4 / 72.0;
 /// The units machine formats count in: tenths of a millimetre.
 pub const UNITS_PER_MM: f64 = 10.0;
+/// Two points closer than this (millimetres) are the same point: far below the 0.1 mm the machine
+/// formats count in, so only rounding separates them.
+pub const SAME_POINT: f64 = 1e-9;
 
 /// `v` points as millimetres.
 pub fn pt_to_mm(v: f64) -> f64 {
@@ -224,7 +227,7 @@ impl Pattern {
     /// their designs; answers whether it moved.
     pub fn normalize(&mut self) -> bool {
         let Some(b) = self.bounds() else { return false };
-        if b.x0.abs() < 1e-9 && b.y0.abs() < 1e-9 {
+        if b.x0.abs() < SAME_POINT && b.y0.abs() < SAME_POINT {
             return false;
         }
         self.translate(-b.x0, -b.y0);

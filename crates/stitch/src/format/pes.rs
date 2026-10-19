@@ -22,24 +22,83 @@
 //! References: EduTechWiki, *Embroidery format PES* and *Embroidery format PEC*
 //! (edutechwiki.unige.ch/en/Embroidery_format_PES, …/Embroidery_format_PEC).
 
-use super::{Frame, Reader, finish, steps};
+use super::{Frame, LABEL_LEN, PAD, Reader, finish, label, mm, steps};
 use crate::thread;
 use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The PEC block's header length.
 const PEC_HEADER: usize = 512;
-/// One preview picture: 6 bytes of pixels per line, 38 lines.
-const PREVIEW: usize = 6 * 38;
+/// The preview pictures' size: 6 bytes of pixels a line (48 pixels, one bit each), 38 lines.
+const ICON_LINE: usize = 6;
+const ICON_LINES: usize = 38;
+/// One preview picture's bytes.
+const PREVIEW: usize = ICON_LINE * ICON_LINES;
 /// The largest delta one value holds, as a 12-bit signed number.
 const MAX_DELTA: i32 = 2047;
 /// The most stitches one block may hold (a desynchronised stream stops rather than growing).
 const MAX_STITCHES: usize = 1_048_576;
-/// The PES version 1 header: the magic, where the PEC block starts, and the rest zeroed.
-const PES_HEADER: [u8; 22] = [0x23, 0x50, 0x45, 0x53, 0x30, 0x30, 0x30, 0x31, 0x16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+/// The most colours a PEC header holds: it stores one fewer than their count in a byte, and
+/// `0xFF` there means none ([`NO_COLORS`]).
+const MAX_COLORS: usize = 255;
+/// The colour count byte of a design with no colours.
+const NO_COLORS: u8 = 0xFF;
+/// The PES version 1 header: the magic `#PES0001`, where the PEC block starts (right after this
+/// header: byte 22), and the rest zeroed.
+const PES_HEADER: [u8; 22] = [b'#', b'P', b'E', b'S', b'0', b'0', b'0', b'1', 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+/// Where a PES header gives the PEC block's position (a little-endian word).
+const PEC_POSITION: std::ops::Range<usize> = 8..12;
+/// A bare PEC file's magic (`#PEC0001`): its block starts right after it.
+const PEC_MAGIC_LEN: usize = 8;
+
+// The PEC header: `LA:` and the label at its start, the colour count at COLOR_COUNT_AT, then the
+// palette indices.
+
+/// Where the label starts, after `LA:`.
+const LABEL_AT: usize = 3;
+/// Spaces after the label line, and again after the icon size.
+const HEADER_GAP: usize = 12;
+/// Two bytes the header carries before the icon size, as the format's decodings give them.
+const BEFORE_ICON: [u8; 2] = [0xFF, 0x00];
+/// Where the colour count byte is.
+const COLOR_COUNT_AT: usize = 48;
+
+// The PEC block that follows the header: two zero bytes, the block's length (3 bytes), a fixed
+// marker, the design's width and height, two fixed values, and in Brother's files the design's
+// origin twice; then the stitches.
+
+/// The fixed marker after the block's length, as the format's decodings give it.
+const BLOCK_MARKER: [u8; 3] = [0x31, 0xFF, 0xF0];
+/// The two fixed values after the design's size, as the format's decodings give them.
+const BLOCK_VALUES: [u16; 2] = [0x01E0, 0x01B0];
+/// The base the origin words count from (big-endian; ours are always at the origin).
+const ORIGIN: u16 = 0x9000;
+/// Where the stitches start, from the PEC header's start: after a 16-byte block header (without
+/// the origin words, as pyembroidery writes it) or a 20-byte one (with them, as Brother does).
+const SHORT_BLOCK_STITCHES: usize = PEC_HEADER + 16;
+const LONG_BLOCK_STITCHES: usize = PEC_HEADER + 20;
+
+// The stitches: each coordinate a short value (one byte below LONG, a 7-bit signed delta) or a
+// long one (two bytes: LONG, three command bits and a 12-bit signed delta).
 
 const JUMP: u8 = 0x10;
 const TRIM: u8 = 0x20;
 const LONG: u8 = 0x80;
+/// A long value's command bits (in its first byte).
+const FLAGS: u8 = 0x70;
+/// A short value's bits, and the first that makes it negative.
+const SHORT_BITS: u8 = 0x7F;
+const SHORT_NEGATIVE: u8 = 0x40;
+/// A long value's 12 bits, and the first that makes it negative.
+const LONG_BITS: u32 = 0x0FFF;
+const LONG_NEGATIVE: i32 = 0x0800;
+/// The deltas written as short values (63 itself is written long; either form reads the same).
+const SHORT_DELTAS: std::ops::Range<i32> = -64..63;
+/// A colour change: these two bytes, then [`COLOR_ONE`] and [`COLOR_TWO`] alternately.
+const COLOR_CHANGE: [u8; 2] = [0xFE, 0xB0];
+const COLOR_ONE: u8 = 0x01;
+const COLOR_TWO: u8 = 0x02;
+/// The byte that ends the stitches.
+const END: u8 = 0xFF;
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     let frame = Frame::of(p, false)?;
@@ -48,27 +107,31 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     if colors == 0 {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
-    if colors > 255 {
-        return Err(Error::TooLarge(format!("PEC carries at most 255 colours, not {colors}")));
+    if colors > MAX_COLORS {
+        return Err(Error::TooLarge(format!("PEC carries at most {MAX_COLORS} colours, not {colors}")));
     }
     let (width, height) = frame.size(b);
+    // The headers, room for the start of the block, and the previews (a guess for the stitches:
+    // the buffer grows as needed).
     let mut out: Vec<u8> = Vec::with_capacity(PES_HEADER.len() + PEC_HEADER + 64 + colors * PREVIEW);
     out.extend_from_slice(&PES_HEADER);
     out.extend_from_slice(&header(p, colors));
     let block_start = out.len();
     let mut block: Vec<u8> = Vec::with_capacity(1024);
     block.extend_from_slice(&[0, 0]);
+    // The block's length, filled in below.
     block.extend_from_slice(&[0, 0, 0]);
-    block.extend_from_slice(&[0x31, 0xFF, 0xF0]);
+    block.extend_from_slice(&BLOCK_MARKER);
     block.extend_from_slice(&u16::try_from(width).unwrap_or(u16::MAX).to_le_bytes());
     block.extend_from_slice(&u16::try_from(height).unwrap_or(u16::MAX).to_le_bytes());
-    block.extend_from_slice(&0x01E0u16.to_le_bytes());
-    block.extend_from_slice(&0x01B0u16.to_le_bytes());
-    // The design's origin, as a big-endian 0x9000-based value (0: our designs are normalised to
+    for v in BLOCK_VALUES {
+        block.extend_from_slice(&v.to_le_bytes());
+    }
+    // The design's origin, as a big-endian ORIGIN-based value (0: our designs are normalised to
     // the origin). Real Brother files carry these; pyembroidery's writer omits them, and readers
     // accept both (see `read`).
-    block.extend_from_slice(&0x9000u16.to_be_bytes());
-    block.extend_from_slice(&0x9000u16.to_be_bytes());
+    block.extend_from_slice(&ORIGIN.to_be_bytes());
+    block.extend_from_slice(&ORIGIN.to_be_bytes());
     write_stitches(&mut block, p, &frame)?;
     let length = u32::try_from(block.len()).unwrap_or(u32::MAX);
     if let [_, _, l0, l1, l2, ..] = block.as_mut_slice() {
@@ -85,22 +148,22 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
 
 /// The 512-byte PEC header.
 fn header(p: &Pattern, colors: usize) -> Vec<u8> {
-    let name: String = p.name.chars().map(|c| if c.is_ascii_graphic() || c == ' ' { c } else { '_' }).take(16).collect();
+    let name = label(&p.name);
     let mut h: Vec<u8> = Vec::with_capacity(PEC_HEADER);
-    h.extend_from_slice(format!("LA:{name:<16}\r").as_bytes());
-    h.extend_from_slice(&[0x20; 12]);
-    h.extend_from_slice(&[0xFF, 0x00]);
-    h.push(6);
-    h.push(38);
-    h.extend_from_slice(&[0x20; 12]);
-    h.push(u8::try_from(colors.saturating_sub(1)).unwrap_or(0xFF));
+    h.extend_from_slice(format!("LA:{name:<LABEL_LEN$}\r").as_bytes());
+    h.extend_from_slice(&[PAD; HEADER_GAP]);
+    h.extend_from_slice(&BEFORE_ICON);
+    h.push(ICON_LINE as u8);
+    h.push(ICON_LINES as u8);
+    h.extend_from_slice(&[PAD; HEADER_GAP]);
+    h.push(u8::try_from(colors.saturating_sub(1)).unwrap_or(NO_COLORS));
     let mut last: Option<usize> = None;
     for block in p.blocks.iter().filter(|b| !b.stitches.is_empty()) {
         let index = thread::nearest(&thread::PEC, block.thread.color, last);
         last = Some(index);
         h.push(u8::try_from(index).unwrap_or(1));
     }
-    h.resize(PEC_HEADER, 0x20);
+    h.resize(PEC_HEADER, PAD);
     h
 }
 
@@ -115,7 +178,8 @@ fn write_stitches(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) -> Result<()> {
             continue;
         }
         if i > 0 && wrote_any {
-            out.extend_from_slice(&[0xFE, 0xB0, if color_two { 0x02 } else { 0x01 }]);
+            out.extend_from_slice(&COLOR_CHANGE);
+            out.push(if color_two { COLOR_TWO } else { COLOR_ONE });
             color_two = !color_two;
         }
         // Each block starts with the needle up: travel to its first stitch.
@@ -141,7 +205,8 @@ fn write_stitches(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) -> Result<()> {
                     value(out, 0, TRIM | LONG);
                 }
                 Command::ColorChange | Command::Stop => {
-                    out.extend_from_slice(&[0xFE, 0xB0, if color_two { 0x02 } else { 0x01 }]);
+                    out.extend_from_slice(&COLOR_CHANGE);
+                    out.push(if color_two { COLOR_TWO } else { COLOR_ONE });
                     color_two = !color_two;
                 }
                 Command::End => break,
@@ -151,7 +216,7 @@ fn write_stitches(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) -> Result<()> {
     if !wrote_any {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
-    out.push(0xFF);
+    out.push(END);
     Ok(())
 }
 
@@ -176,11 +241,11 @@ fn move_values(out: &mut Vec<u8>, x: &mut i32, y: &mut i32, tx: i32, ty: i32, fl
 
 /// One PEC coordinate: a 7-bit byte in short form, two bytes in long form.
 fn value(out: &mut Vec<u8>, v: i32, flags: u8) {
-    if flags == 0 && (-64..63).contains(&v) {
-        out.push((v & 0x7F) as u8);
+    if flags == 0 && SHORT_DELTAS.contains(&v) {
+        out.push((v & i32::from(SHORT_BITS)) as u8);
         return;
     }
-    let bits = (u32::from(flags & 0x70) << 8) | (v as u32 & 0x0FFF) | 0x8000;
+    let bits = (u32::from(flags & FLAGS) << 8) | (v as u32 & LONG_BITS) | (u32::from(LONG) << 8);
     out.push((bits >> 8) as u8);
     out.push(bits as u8);
 }
@@ -188,11 +253,11 @@ fn value(out: &mut Vec<u8>, v: i32, flags: u8) {
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
     let start = pec_start(bytes)?;
     let mut r = Reader::new(bytes);
-    r.seek(start + 3);
-    let name = r.take(16).map(|b| String::from_utf8_lossy(b).trim().to_string()).unwrap_or_default();
-    r.seek(start + 48);
+    r.seek(start + LABEL_AT);
+    let name = r.take(LABEL_LEN).map(|b| String::from_utf8_lossy(b).trim().to_string()).unwrap_or_default();
+    r.seek(start + COLOR_COUNT_AT);
     let count = r.u8().ok_or_else(|| Error::Format("the PEC header is cut short".into()))?;
-    let colors = if count == 0xFF { 0 } else { usize::from(count) + 1 };
+    let colors = if count == NO_COLORS { 0 } else { usize::from(count) + 1 };
     let mut threads = Vec::with_capacity(colors);
     for _ in 0..colors {
         let index = r.u8().unwrap_or(0);
@@ -209,13 +274,15 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
             None => (0, false),
         }
     };
-    let expected_end = start.saturating_add(0x200).saturating_add(g);
+    let expected_end = start.saturating_add(PEC_HEADER).saturating_add(g);
     // Which block header: the two origin words Brother writes have a high byte of 0x90 (they are
     // 0x9000 with the design's offset), and then the stitches start at 532; without them (as
     // pyembroidery writes) they start at 528. The graphics offset confirms it: the stream ends
     // exactly where the preview pictures begin.
-    let long_header = bytes.get(start + 0x210).is_some_and(|b| b & 0xF0 == 0x90);
-    let candidates = if long_header { [0x214usize, 0x210] } else { [0x210, 0x214] };
+    let [origin_high, _] = ORIGIN.to_be_bytes();
+    // The top four bits are the origin base's; the bottom ones carry the design's offset.
+    let long_header = bytes.get(start + SHORT_BLOCK_STITCHES).is_some_and(|b| b & 0xF0 == origin_high);
+    let candidates = if long_header { [LONG_BLOCK_STITCHES, SHORT_BLOCK_STITCHES] } else { [SHORT_BLOCK_STITCHES, LONG_BLOCK_STITCHES] };
     let mut first: Option<Vec<Stitch>> = None;
     let mut points: Option<Vec<Stitch>> = None;
     for begin in candidates {
@@ -241,7 +308,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     Ok(finish(name, points, &threads))
 }
 
-/// The stitches from `from`, and where the `0xFF` that ends them lies (just past it).
+/// The stitches from `from`, and where the [`END`] that ends them lies (just past it).
 fn stream(bytes: &[u8], from: usize) -> (Vec<Stitch>, usize) {
     let mut r = Reader::new(bytes);
     r.seek(from);
@@ -250,17 +317,17 @@ fn stream(bytes: &[u8], from: usize) -> (Vec<Stitch>, usize) {
     loop {
         let at = r.pos();
         let Some(b0) = r.u8() else { return (points, at) };
-        if b0 == 0xFF {
+        if b0 == END {
             return (points, r.pos());
         }
-        if b0 == 0xFE {
-            // A colour change: 0xFE 0xB0 and one byte (0x02 or 0x01).
+        if b0 == COLOR_CHANGE[0] {
+            // A colour change: COLOR_CHANGE and one byte (COLOR_TWO or COLOR_ONE).
             let Some(next) = r.u8() else { return (points, at) };
-            if next != 0xB0 {
+            if next != COLOR_CHANGE[1] {
                 return (points, at);
             }
             let _ = r.u8();
-            points.push(Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, Command::ColorChange));
+            points.push(Stitch::new(mm(x), mm(y), Command::ColorChange));
             continue;
         }
         let Some((dx, fx)) = pec_value(&mut r, b0) else { return (points, at) };
@@ -268,18 +335,18 @@ fn stream(bytes: &[u8], from: usize) -> (Vec<Stitch>, usize) {
         let Some((dy, fy)) = pec_value(&mut r, b1) else { return (points, at) };
         let flags = fx | fy;
         if flags & TRIM != 0 {
-            points.push(Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, Command::Trim));
+            points.push(Stitch::new(mm(x), mm(y), Command::Trim));
             if dx != 0 || dy != 0 {
                 x += dx;
                 y += dy;
-                points.push(Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, Command::Jump));
+                points.push(Stitch::new(mm(x), mm(y), Command::Jump));
             }
             continue;
         }
         x += dx;
         y += dy;
         let command = if flags & JUMP != 0 { Command::Jump } else { Command::Stitch };
-        points.push(Stitch::new(f64::from(x) / 10.0, f64::from(y) / 10.0, command));
+        points.push(Stitch::new(mm(x), mm(y), command));
         if points.len() > MAX_STITCHES {
             return (points, r.pos());
         }
@@ -290,27 +357,27 @@ fn stream(bytes: &[u8], from: usize) -> (Vec<Stitch>, usize) {
 fn pec_value(r: &mut Reader<'_>, first: u8) -> Option<(i32, u8)> {
     if first & LONG == 0 {
         // Short form: a 7-bit two's complement number, so 64 to 127 are -64 to -1.
-        let v = if first > 0x3F { i32::from(first) - 0x80 } else { i32::from(first) };
+        let v = if first >= SHORT_NEGATIVE { i32::from(first) - (i32::from(SHORT_BITS) + 1) } else { i32::from(first) };
         return Some((v, 0));
     }
     let second = r.u8()?;
     let bits = (u32::from(first) << 8) | u32::from(second);
-    let raw = (bits & 0x0FFF) as i32;
-    let v = if raw > 0x07FF { raw - 0x1000 } else { raw };
-    Some((v, first & 0x70))
+    let raw = (bits & LONG_BITS) as i32;
+    let v = if raw >= LONG_NEGATIVE { raw - (LONG_BITS as i32 + 1) } else { raw };
+    Some((v, first & FLAGS))
 }
 
 /// Where the PEC block starts: a PES header states it; a bare PEC starts after its magic.
 fn pec_start(bytes: &[u8]) -> Result<usize> {
     if bytes.starts_with(b"#PEC") {
-        return Ok(8);
+        return Ok(PEC_MAGIC_LEN);
     }
     if bytes.starts_with(b"#PES") {
-        let Some(b) = bytes.get(8..12) else {
+        let Some(b) = bytes.get(PEC_POSITION) else {
             return Err(Error::Format("the PES header is cut short".into()));
         };
         let at = usize::try_from(u32::from_le_bytes([b[0], b[1], b[2], b[3]])).unwrap_or(usize::MAX);
-        if at < 12 || at + PEC_HEADER > bytes.len() {
+        if at < PEC_POSITION.end || at + PEC_HEADER > bytes.len() {
             return Err(Error::Format(format!("the PES header points at byte {at}, past the file's {} bytes", bytes.len())));
         }
         return Ok(at);

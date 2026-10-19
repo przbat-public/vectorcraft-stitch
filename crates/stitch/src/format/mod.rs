@@ -25,6 +25,22 @@ pub mod pes;
 use crate::thread;
 use crate::{Block, Command, Error, Pattern, Result, Stitch, Thread, quantize};
 
+/// How many characters of the design's name the DST and PEC headers hold, after `LA:`.
+pub(crate) const LABEL_LEN: usize = 16;
+/// The byte the DST and PEC headers are padded with: an ASCII space.
+pub(crate) const PAD: u8 = b' ';
+
+/// The design's name as a DST or PEC label: printable ASCII and spaces (anything else becomes
+/// `_`), at most [`LABEL_LEN`] characters.
+pub(crate) fn label(name: &str) -> String {
+    name.chars().map(|c| if c.is_ascii_graphic() || c == ' ' { c } else { '_' }).take(LABEL_LEN).collect()
+}
+
+/// A coordinate in the file's tenths of a millimetre, as millimetres.
+pub(crate) fn mm(units: i32) -> f64 {
+    f64::from(units) / crate::UNITS_PER_MM
+}
+
 /// A machine format.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Format {

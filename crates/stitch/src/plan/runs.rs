@@ -7,9 +7,11 @@ use vectorcraft_geom::Point;
 use super::area::{TRAVEL_STITCH, Travels};
 use super::geometry::{length, resample, unit};
 use super::{MAX_RUNS, MAX_STITCHES, Params, Style};
-use crate::{Command, Stitch};
+use crate::{Command, SAME_POINT, Stitch};
 
-/// The reach of a lock stitch, tie-in or tie-off, millimetres.
+/// The reach of a lock stitch, tie-in or tie-off (millimetres): how far the needle steps along the
+/// line and back so the thread holds. Shorter where the line's first stitch is shorter. An
+/// estimate.
 pub(super) const LOCK: f64 = 1.0;
 
 /// How the needle gets to a run from the end of the one before.
@@ -25,15 +27,21 @@ pub(super) enum Travel {
     Sew,
 }
 
-/// What the moves between runs cost, to compare ways of ordering them: per millimetre of travel
-/// under stitching still to come (it adds stitches but is hidden) and over stitching already sewn
-/// (it shows), a jump (the ties around it) and a trim on top, and per millimetre from where the
-/// needle came from outside the shape. Weights chosen by judgement: a visible travel is to be
-/// avoided much more than a hidden one, and a trim more than both.
+// What the moves between runs cost, to compare ways of ordering a fill's regions ([`Runs::cost`]).
+// The weights are chosen by judgement, not measured: a visible travel is to be avoided much more
+// than a hidden one, a jump more than a few millimetres of visible travel, and a trim more than
+// both. A jump also costs its length, a millimetre a millimetre.
+
+/// Per millimetre of travel under stitching still to come: it adds stitches but is hidden.
 pub(super) const COST_HIDDEN: f64 = 0.25;
+/// Per millimetre of travel over stitching already sewn: it shows on top.
 pub(super) const COST_SEEN: f64 = 3.0;
+/// A jump: the tie-off and tie-in around it, and a thread across the design until it is cut.
 pub(super) const COST_LIFT: f64 = 20.0;
+/// A trim, on top of its jump: the machine stops to cut the thread.
 pub(super) const COST_TRIM: f64 = 50.0;
+/// Per millimetre from where the needle came from outside the shape (the object sewn before): a
+/// little, so that of two orders the one starting nearer wins.
 pub(super) const COST_ENTRY: f64 = 0.1;
 
 /// A shape's runs in sewing order, each with how the needle gets to it.
@@ -136,11 +144,11 @@ impl Runs {
         // Whether the next run is tied in: the first one, and each one after a long jump.
         let mut fresh = true;
         for (mut run, travel) in self.runs {
-            run.dedup_by(|b, a| a.distance(*b) <= 1e-9);
+            run.dedup_by(|b, a| a.distance(*b) <= SAME_POINT);
             let Some(&first) = run.first() else { continue };
             if let Some(last) = out.last().copied()
                 && let d = last.distance(Stitch::sew(first))
-                && d > 1e-9
+                && d > SAME_POINT
             {
                 let long = d > p.jump;
                 match travel {
@@ -209,7 +217,7 @@ pub fn join_cut(pieces: Vec<Vec<Stitch>>, p: &Params) -> Vec<Stitch> {
         let mut tie = false;
         if let Some(last) = out.iter().rev().find(|s| s.command == Command::Stitch).copied()
             && let d = last.distance(first)
-            && d > 1e-9
+            && d > SAME_POINT
         {
             if d <= p.jump {
                 out.push(Stitch::jump(first.point()));
@@ -219,6 +227,7 @@ pub fn join_cut(pieces: Vec<Vec<Stitch>>, p: &Params) -> Vec<Stitch> {
             }
         }
         if tie && let Some(next) = piece.get(1).filter(|s| s.command == Command::Stitch) {
+            // The tie-in's three points: down at the start, a step forward, back at the start.
             out.extend(tie_in(&[first.point(), next.point()]).into_iter().take(3).map(Stitch::sew));
             out.extend(piece.get(1..).unwrap_or_default());
         } else {

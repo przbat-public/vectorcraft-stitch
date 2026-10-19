@@ -13,6 +13,22 @@ use crate::Stitch;
 const SATIN_EDGE_UNDERLAY: f64 = 2.0;
 const SATIN_ZIGZAG_UNDERLAY: f64 = 4.5;
 const ZIGZAG_UNDERLAY_SPACING: f64 = 2.0;
+/// How far inside the column's sides the edge underlay runs: this share of the column's width, at
+/// most [`UNDERLAY_INSET_MAX`] millimetres, so the underlay doesn't show at the edges.
+const UNDERLAY_INSET: f64 = 0.25;
+const UNDERLAY_INSET_MAX: f64 = 0.5;
+/// A column shorter than this many crossings is left out: it would be a knot, not a column.
+const MIN_CROSSINGS: f64 = 2.0;
+/// Auto spacing ([`satin_spacing`]): for a column narrower than each width (millimetres), the
+/// spacing of its crossings (millimetres), and [`WIDE_SPACING`] for wider ones. Estimates.
+const SPACING_BY_WIDTH: [(f64, f64); 3] = [(2.0, 0.5), (4.0, 0.45), (6.0, 0.4)];
+const WIDE_SPACING: f64 = 0.37;
+/// The most stitches a long crossing is split into ([`split_long`]): enough for the widest column.
+const MAX_SPLIT: f64 = 64.0;
+/// The golden ratio's fractional part: its multiples' fractions spread evenly over the unit
+/// interval and never repeat, so the shift of a split moves on from one crossing to the next
+/// without a pattern ([`split_long`]).
+const GOLDEN: f64 = 0.618_033_988_75;
 
 /// A satin column sewn along `path`'s centreline, [`Params::width`] wide.
 pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
@@ -27,10 +43,11 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
     if p.width <= 0.0 {
         return Vec::new();
     }
+    // Pull compensation widens the column on both sides.
     let half = (p.width + 2.0 * p.pull) / 2.0;
     let mut runs = Runs::from(from);
     for (pts, closed) in nearest_order(subpaths(path), from) {
-        if length(&pts, closed) < p.density * 2.0 {
+        if length(&pts, closed) < p.density * MIN_CROSSINGS {
             continue;
         }
         // The first run of each column is reached as any move is; the column's later runs
@@ -60,6 +77,7 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
             .filter_map(|i| {
                 let q = *samples.get(i)?;
                 let t = tangent(&samples, i, closed);
+                // Even crossings go to one rail, odd ones to the other.
                 let side = if i % 2 == 0 { 1.0 } else { -1.0 };
                 Some((q, Vec2::new(-t.y, t.x) * half * side))
             })
@@ -103,6 +121,8 @@ fn short_stitches(crossings: &[(Point, Vec2)], spacing: f64) -> Vec<Point> {
         // The earlier penetrations on this rail: every other one back.
         let before: Vec<Point> = (1..=SHORT_LOOKBACK).filter_map(|k| i.checked_sub(2 * k).and_then(|j| out.get(j)).copied()).collect();
         let clearance = |r: Point| before.iter().map(|b| b.distance(r)).fold(f64::INFINITY, f64::min);
+        // `offset` is half the column's width and an inset a share of all of it: twice as much of
+        // the offset.
         let candidates = SHORT_INSETS.iter().map(|inset| q + offset * (1.0 - 2.0 * inset));
         let mut best: Option<(Point, f64)> = None;
         for r in candidates {
@@ -139,8 +159,7 @@ fn push_split(runs: &mut Runs, run: Vec<Point>, travel: Travel, max: f64) {
 /// column, where the thread bunches at the rails and covers anyway, denser in a wide one so it
 /// covers. A stepped table, as professional software keeps one; the values are estimates.
 pub fn satin_spacing(width: f64) -> f64 {
-    const TABLE: [(f64, f64); 3] = [(2.0, 0.5), (4.0, 0.45), (6.0, 0.4)];
-    TABLE.iter().find(|(w, _)| width < *w).map_or(0.37, |(_, spacing)| *spacing)
+    SPACING_BY_WIDTH.iter().find(|(w, _)| width < *w).map_or(WIDE_SPACING, |(_, spacing)| *spacing)
 }
 
 /// The underlay of a satin column along `pts` (its centreline), `width` wide, by width: a centre
@@ -156,7 +175,7 @@ fn satin_underlay(pts: &[Point], closed: bool, width: f64) -> Vec<(Vec<Point>, b
         return vec![(centre, !closed)];
     }
     // The sides, kept inside the column so the underlay doesn't show at its edges.
-    let side = (width / 2.0 - (width / 4.0).min(0.5)).max(0.0);
+    let side = (width / 2.0 - (width * UNDERLAY_INSET).min(UNDERLAY_INSET_MAX)).max(0.0);
     let offset = |samples: &[Point], i: usize, d: f64| -> Option<Point> {
         let q = *samples.get(i)?;
         let t = tangent(samples, i, closed);
@@ -190,9 +209,10 @@ fn split_long(zigzag: &[Point], max: f64) -> Vec<Point> {
             if len.is_finite() && len > max {
                 // The longest part, an end one, is (1 + JITTER)/n of the crossing: enough parts that
                 // it fits.
-                let n = ((len * (1.0 + JITTER)) / max).ceil().clamp(2.0, 64.0) as u32;
+                let n = ((len * (1.0 + JITTER)) / max).ceil().clamp(2.0, MAX_SPLIT) as u32;
                 crossing += 1;
-                let shift = ((f64::from(crossing) * 0.618_033_988_75).fract() - 0.5) * 2.0 * JITTER;
+                // A fraction from 0 to 1, centred on 0 (-1 to 1), times the jitter.
+                let shift = ((f64::from(crossing) * GOLDEN).fract() - 0.5) * 2.0 * JITTER;
                 out.extend((1..n).map(|k| p.lerp(q, (f64::from(k) + shift) / f64::from(n))));
             }
         }

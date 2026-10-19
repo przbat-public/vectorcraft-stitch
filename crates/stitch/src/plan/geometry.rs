@@ -6,12 +6,20 @@ use std::f64::consts::TAU;
 use vectorcraft_geom::{BezPath, PathEl, Point, Vec2, kurbo};
 
 use super::MAX_STITCHES;
+use crate::SAME_POINT;
 
 /// How far curves are flattened before stitching, millimetres: far below the 0.1 mm a machine
 /// counts in.
 const FLATTEN: f64 = 0.05;
 /// A turn sharper than this (radians, about 30°) is a corner the stitches keep.
 const CORNER: f64 = 0.52;
+/// A vector or segment shorter than this (millimetres) has no direction.
+pub(super) const NO_LENGTH: f64 = 1e-12;
+/// The shortest step [`resample`] takes (millimetres): a bound on the points it makes.
+const MIN_STEP: f64 = 0.01;
+/// How close to a corner or the end a point may fall, as a share of a step, before it moves onto
+/// it rather than leave a stub of a stitch ([`resample`]).
+const STUB: f64 = 0.3;
 
 /// A polyline: its points and whether it closes.
 pub(super) struct SubPath {
@@ -25,7 +33,7 @@ impl SubPath {
         let mut v = self.pts.clone();
         if self.closed
             && let (Some(&a), Some(&b)) = (v.first(), v.last())
-            && a.distance(b) > 1e-9
+            && a.distance(b) > SAME_POINT
         {
             v.push(a);
         }
@@ -68,14 +76,14 @@ pub(super) fn subpaths(path: &BezPath) -> Vec<SubPath> {
 /// Points along a polyline every `step` millimetres, both ends included. A closed polyline ends
 /// where it started. Sharp corners get a point of their own (the steps start again from them),
 /// so stitches follow the outline instead of cutting across a corner — into a notch or a gap
-/// beside it. No stitch at a corner is a stub: a point that would fall within 0.3 of a step of one
-/// moves onto it, and so does one by the end. A point moves once at most: a corner that close to
-/// the start or to a corner already stitched into is passed, the stitch at most 0.3 of a step off
-/// it (along a fine zigzag the stitches keep their length rather than one point moving from corner
-/// to corner), and no stitch is longer than 1.3 steps.
+/// beside it. No stitch at a corner is a stub: a point that would fall within [`STUB`] of a step of
+/// one moves onto it, and so does one by the end. A point moves once at most: a corner that close to
+/// the start or to a corner already stitched into is passed, the stitch at most [`STUB`] of a step
+/// off it (along a fine zigzag the stitches keep their length rather than one point moving from corner
+/// to corner), and no stitch is longer than `1 + STUB` steps.
 pub(super) fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
     let (Some(&first), Some(&last)) = (pts.first(), pts.last()) else { return Vec::new() };
-    let step = step.max(0.01);
+    let step = step.max(MIN_STEP);
     let mut out: Vec<Point> = vec![first];
     // The last point stays where it is: the start, or a corner stitched into.
     let mut fixed = true;
@@ -87,7 +95,7 @@ pub(super) fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
     for i in 0..segs {
         let (Some(a), Some(b)) = (at(i), at(i + 1)) else { continue };
         let seg = a.distance(b);
-        if seg <= 1e-12 {
+        if seg <= NO_LENGTH {
             continue;
         }
         while next <= travelled + seg {
@@ -118,7 +126,7 @@ pub(super) fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
 }
 
 /// Stitch into `q`, a corner or (`end`) the line's end: a point of its own, unless the last point
-/// is so close to it (within 0.3 of `step`) that the stitch would be a stub: then that point moves
+/// is so close to it (within [`STUB`] of `step`) that the stitch would be a stub: then that point moves
 /// onto `q`. When the last point must stay (`fixed`), a corner that close is passed and the end
 /// gets its short stitch. Whether `q` got a point.
 fn land_on(out: &mut Vec<Point>, q: Point, step: f64, fixed: bool, end: bool) -> bool {
@@ -127,10 +135,10 @@ fn land_on(out: &mut Vec<Point>, q: Point, step: f64, fixed: bool, end: bool) ->
         return true;
     };
     let d = last.distance(q);
-    if d <= 1e-9 {
+    if d <= SAME_POINT {
         return true;
     }
-    if d < 0.3 * step {
+    if d < STUB * step {
         if !fixed {
             *last = q;
             return true;
@@ -177,19 +185,20 @@ pub(super) fn tangent(pts: &[Point], i: usize, closed: bool) -> Vec2 {
     if let (Some(p), Some(q)) = (prev.and_then(|j| pts.get(j)), next.and_then(|j| pts.get(j))) {
         t = *q - *p;
     }
-    if t.hypot() < 1e-9
+    if t.hypot() < SAME_POINT
         && let Some(q) = next.and_then(|j| pts.get(j))
         && let Some(p) = pts.get(i)
     {
         t = *q - *p;
     }
+    // A line that goes nowhere: any direction will do.
     unit(t).unwrap_or(Vec2::new(1.0, 0.0))
 }
 
 /// `v` scaled to length one, `None` when it has no length.
 pub(super) fn unit(v: Vec2) -> Option<Vec2> {
     let len = v.hypot();
-    if len.is_finite() && len > 1e-12 { Some(v / len) } else { None }
+    if len.is_finite() && len > NO_LENGTH { Some(v / len) } else { None }
 }
 
 /// The two directions a fill's rows are laid along: `along` (the row direction) and `across`
@@ -203,6 +212,7 @@ pub(super) struct Axes {
 impl Axes {
     /// The axes of rows at `angle_deg` degrees (0: left to right).
     pub(super) fn new(angle_deg: f64) -> Self {
+        // Degrees to radians.
         let (s, c) = (angle_deg * TAU / 360.0).sin_cos();
         let (along, across) = (Vec2::new(c, s), Vec2::new(-s, c));
         if along.hypot().is_finite() && across.hypot().is_finite() { Self { along, across } } else { Self::new(0.0) }

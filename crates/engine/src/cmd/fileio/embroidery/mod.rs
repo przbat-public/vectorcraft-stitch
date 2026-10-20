@@ -25,7 +25,6 @@ mod import;
 use serde::Deserialize;
 use serde_json::Value;
 use vectorcraft_doc::Document;
-use vectorcraft_stitch::Pattern;
 use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::plan::Style;
 
@@ -131,25 +130,24 @@ fn options(p: &Value) -> Result<Options> {
     Ok(o)
 }
 
-/// Write a machine file from the document's visible art.
+/// Write a machine file from the document's visible art: its stitch plan, as the format writes it.
 pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
     let opts = options(p)?;
     let format = StitchFormat::from_id(f.id).ok_or_else(|| bad(C, format!("{} is not an embroidery format", f.label)))?;
-    let (blocks, warnings) = digitize::digitize(doc, &opts).map_err(|e| bad(C, e))?;
-    if blocks.is_empty() {
+    let plan = digitize::digitize(doc, &opts).map_err(|e| bad(C, e))?;
+    if plan.is_empty() {
         // What was left out says why, when something was.
         return Err(bad(
             C,
-            if warnings.is_empty() {
+            if plan.warnings.is_empty() {
                 "nothing to stitch: the document has no visible filled or stroked paths".to_string()
             } else {
-                format!("nothing to stitch: {}", warnings.join("; "))
+                format!("nothing to stitch: {}", plan.warnings.join("; "))
             },
         ));
     }
-    let pattern = Pattern { name: doc.title.clone(), blocks };
-    let bytes = format.write(&pattern).map_err(|e| bad(C, e.to_string()))?;
-    Ok(Encoded { warnings, ..Encoded::one(bytes) })
+    let bytes = format.write(&plan.to_pattern()).map_err(|e| bad(C, e.to_string()))?;
+    Ok(Encoded { warnings: plan.warnings, ..Encoded::one(bytes) })
 }
 
 #[cfg(test)]

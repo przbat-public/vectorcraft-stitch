@@ -100,6 +100,11 @@ impl Options {
         .sane()
     }
 
+    /// The style `stitchStyle` forces, `None` for `auto`.
+    pub(crate) fn forced(&self) -> Option<Style> {
+        Style::from_id(&self.stitch_style)
+    }
+
     /// How far a filled shape grows all round before it is stitched (millimetres, negative to
     /// shrink), within ±[`MAX_EXPAND`]; nothing when not finite.
     pub(crate) fn expand(&self) -> f64 {

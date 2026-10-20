@@ -1,0 +1,279 @@
+//! The design's stitch plan: every stitch of every block belongs to one sewing unit, a unit says
+//! what it sews and what it was planned with, stitches are numbered from 1 in sewing order, and
+//! the export writes the plan.
+
+use serde_json::json;
+use vectorcraft_doc::NodeId;
+use vectorcraft_geom::Point;
+use vectorcraft_stitch::format::Format;
+use vectorcraft_stitch::plan::Style;
+use vectorcraft_stitch::{Command, pt_to_mm};
+
+use super::digitize::digitize;
+use super::plan::{DesignPlan, FIRST_NUMBER, Part};
+use super::*;
+
+/// Points per millimetre: the documents count points, the designs millimetres.
+const PT_PER_MM: f64 = 72.0 / 25.4;
+/// How far outside its bounds a unit's needle point may lie: none but rounding.
+const ROUNDING: f64 = 1e-9;
+
+fn blank() -> Session {
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    s
+}
+
+/// A filled, unstroked rectangle in `color` (points), left unselected → its id.
+fn rect(s: &mut Session, color: &str, x: f64, y: f64, w: f64, h: f64) -> u64 {
+    s.execute("paint.setStroke", &json!({"none": true})).unwrap();
+    s.execute("paint.setFill", &json!({"color": color})).unwrap();
+    let id = s.execute("shape.rectangle", &json!({"x": x, "y": y, "width": w, "height": h})).unwrap()["id"].as_u64().unwrap();
+    s.execute("select.none", &json!({})).unwrap();
+    id
+}
+
+/// Stroke `id` in `color`, `weight` points wide.
+fn stroke(s: &mut Session, id: u64, color: &str, weight: f64) {
+    s.execute("paint.setStroke", &json!({"color": color, "ids": [id]})).unwrap();
+    s.execute("stroke.set", &json!({"weight": weight, "ids": [id]})).unwrap();
+}
+
+/// A filled letter T in `color`, its strokes 3 mm wide (narrow enough to be sewn as satin
+/// columns), placed at (`x`, `y`) points → its id.
+fn letter_t(s: &mut Session, color: &str, x: f64, y: f64) -> u64 {
+    let corners = [(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 3.0), (16.5, 23.0), (13.5, 23.0), (13.5, 3.0), (0.0, 3.0)];
+    let d: Vec<String> = corners
+        .iter()
+        .enumerate()
+        .map(|(k, (cx, cy))| format!("{} {} {}", if k == 0 { "M" } else { "L" }, x + cx * PT_PER_MM, y + cy * PT_PER_MM))
+        .collect();
+    s.execute("paint.setStroke", &json!({"none": true})).unwrap();
+    s.execute("paint.setFill", &json!({"color": color})).unwrap();
+    let id = s.execute("path.create", &json!({"d": format!("{} Z", d.join(" "))})).unwrap()["id"].as_u64().unwrap();
+    s.execute("select.none", &json!({})).unwrap();
+    id
+}
+
+fn plan_of(s: &Session) -> DesignPlan {
+    digitize(&s.doc().unwrap().doc, &Options::default()).unwrap()
+}
+
+fn export(s: &mut Session, format: Format) -> Vec<u8> {
+    let r = s.execute("document.export", &json!({"format": format.id()})).unwrap();
+    vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap()
+}
+
+/// Every stitch of every block belongs to exactly one unit, the block's units in order without a
+/// gap; each unit's runs are its stretches of needle-down stitches; a unit has its block's thread
+/// and its needle points lie within its bounds; blocks are numbered on from the one before.
+fn check(plan: &DesignPlan) {
+    let (mut number, mut next_unit) = (FIRST_NUMBER, 0);
+    for (k, b) in plan.blocks.iter().enumerate() {
+        assert_eq!(b.first_number, number, "block {k} is numbered on from the one before");
+        assert_eq!(b.units.start, next_unit, "block {k}'s units follow the block before's");
+        assert!(!b.units.is_empty(), "block {k} holds a unit");
+        let mut at = 0;
+        for i in b.units.clone() {
+            let u = &plan.units[i];
+            assert_eq!((u.block, &u.thread), (k, &b.thread), "unit {i}");
+            assert_eq!(u.stitches.start, at, "unit {i} starts where the one before ends");
+            at = u.stitches.end;
+            let down: Vec<usize> = u.stitches.clone().filter(|&j| b.stitches[j].command == Command::Stitch).collect();
+            let in_runs: Vec<usize> = u.runs.iter().flat_map(|r| r.clone()).collect();
+            assert_eq!(in_runs, down, "unit {i}'s runs hold its needle-down stitches, each once, in order");
+            for r in &u.runs {
+                assert!(!r.is_empty() && u.stitches.start <= r.start && r.end <= u.stitches.end, "unit {i}: run {r:?}");
+                assert!(r.start == u.stitches.start || b.stitches[r.start - 1].command != Command::Stitch, "unit {i}: run {r:?} starts after a lift");
+                assert!(r.end == u.stitches.end || b.stitches[r.end].command != Command::Stitch, "unit {i}: run {r:?} ends at a lift");
+            }
+            let bounds = u.bounds.unwrap();
+            for j in &down {
+                let p: Point = b.stitches[*j].point();
+                let inside = |v: f64, lo: f64, hi: f64| lo - ROUNDING <= v && v <= hi + ROUNDING;
+                assert!(inside(p.x, bounds.x0, bounds.x1) && inside(p.y, bounds.y0, bounds.y1), "unit {i}: {p:?} outside {bounds:?}");
+            }
+        }
+        assert_eq!(at, b.stitches.len(), "block {k}'s units hold all its stitches");
+        next_unit = b.units.end;
+        number += b.stitches.len();
+    }
+    assert_eq!(next_unit, plan.units.len(), "every unit is in a block");
+    assert_eq!(plan.len(), number - FIRST_NUMBER);
+}
+
+/// Every stitch belongs to one unit in fills and strokes, an object both filled and stroked, a clip
+/// group, symbols, objects that ask for a trim after them, and an opened design's literal runs.
+#[test]
+fn every_stitch_belongs_to_one_unit() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    let both = rect(&mut s, "#2233cc", 100.0, 20.0, 40.0, 40.0);
+    stroke(&mut s, both, "#22aa44", 6.0);
+    letter_t(&mut s, "#cc2222", 20.0, 120.0);
+    let far = rect(&mut s, "#cc2222", 200.0, 200.0, 30.0, 30.0);
+    s.execute("embroidery.setTrimAfter", &json!({"on": true, "ids": [far]})).unwrap();
+    rect(&mut s, "#cc2222", 250.0, 200.0, 30.0, 30.0);
+    let plan = plan_of(&s);
+    check(&plan);
+    assert_eq!(plan, plan_of(&s), "planned twice, the same plan");
+
+    // A clip group, and a symbol placed three times.
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 0.0, 0.0, 120.0, 120.0);
+    s.execute("paint.setFill", &json!({"none": true})).unwrap();
+    s.execute("shape.rectangle", &json!({"x": 30, "y": 30, "width": 50, "height": 50})).unwrap();
+    s.execute("select.all", &json!({})).unwrap();
+    s.execute("object.clippingMask.make", &json!({})).unwrap();
+    s.execute("select.none", &json!({})).unwrap();
+    let square = rect(&mut s, "#2233cc", 150.0, 150.0, 20.0, 20.0);
+    s.execute("select.set", &json!({"ids": [square]})).unwrap();
+    s.execute("symbol.new", &json!({"name": "Square"})).unwrap();
+    s.execute("symbol.place", &json!({"name": "Square", "x": 200, "y": 40})).unwrap();
+    s.execute("symbol.place", &json!({"name": "Square", "x": 250, "y": 250})).unwrap();
+    check(&plan_of(&s));
+
+    // An opened design: literal runs, joined by the file's jumps and trims.
+    let pes = export(&mut s, Format::Pes);
+    s.execute("document.open", &json!({"name": "design.pes", "dataBase64": vectorcraft_format::base64_encode(&pes)})).unwrap();
+    check(&plan_of(&s));
+}
+
+/// A unit says what it sews and what it was planned with: an object filled and stroked is two
+/// units, a fill and a stroke, each with its own parameters; a fill with narrow parts records the
+/// satin columns' parameters too.
+#[test]
+fn units_say_what_they_sew_and_with_what() {
+    let mut s = blank();
+    let square = rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 60.0);
+    stroke(&mut s, square, "#2233cc", 6.0);
+    let t = letter_t(&mut s, "#22aa44", 20.0, 120.0);
+    let plan = plan_of(&s);
+    let of = |id: u64| plan.units.iter().filter(|u| u.origin.node == NodeId(id)).collect::<Vec<_>>();
+    let parts: Vec<Part> = of(square).iter().map(|u| u.origin.part).collect();
+    assert_eq!(parts, [Part::Fill(0), Part::Stroke(0)]);
+    let (fill, line) = (of(square)[0], of(square)[1]);
+    assert_eq!(fill.params.map(|p| p.style), Some(Style::Fill));
+    assert_eq!(fill.columns, None, "a square has no narrow parts");
+    let satin = line.params.unwrap();
+    assert_eq!(satin.style, Style::Satin);
+    assert!((satin.width - pt_to_mm(6.0)).abs() < 1e-9, "the stroke's width: {}", satin.width);
+    assert_eq!((fill.thread.color, line.thread.color), ([0xcc, 0x22, 0x22], [0x22, 0x33, 0xcc]));
+    let [letter] = of(t)[..] else { panic!("one unit for the T: {:?}", of(t)) };
+    assert_eq!(letter.origin.part, Part::Fill(0));
+    assert_eq!(letter.columns.map(|p| p.style), Some(Style::Satin), "its strokes are sewn as satin columns");
+    assert!(plan.units.iter().all(|u| u.origin.instance.is_none()), "no symbols here");
+}
+
+/// A symbol's art is sewn once per instance: each instance's units name the object in the symbol's
+/// art and the instance that places it.
+#[test]
+fn a_symbols_units_are_placed_by_their_instances() {
+    let mut s = blank();
+    let square = rect(&mut s, "#cc2222", 20.0, 20.0, 20.0, 20.0);
+    s.execute("select.set", &json!({"ids": [square]})).unwrap();
+    let first = s.execute("symbol.new", &json!({"name": "Square"})).unwrap()["id"].as_u64().unwrap();
+    s.execute("select.none", &json!({})).unwrap();
+    let second = s.execute("symbol.place", &json!({"name": "Square", "x": 150, "y": 40})).unwrap()["id"].as_u64().unwrap();
+    let third = s.execute("symbol.place", &json!({"name": "Square", "x": 250, "y": 250})).unwrap()["id"].as_u64().unwrap();
+    let art = s.doc().unwrap().doc.symbols[0].art.id;
+    let plan = plan_of(&s);
+    let mut instances: Vec<u64> = plan.units.iter().filter_map(|u| u.origin.instance).map(|i| i.0).collect();
+    instances.sort_unstable();
+    assert_eq!(instances, [first, second, third]);
+    assert!(plan.units.iter().all(|u| u.origin.node == art && u.origin.part == Part::Fill(0)), "{:?}", plan.units);
+}
+
+/// An opened design's runs are literal units, sewn as their points are: no parameters.
+#[test]
+fn an_opened_designs_runs_are_literal_units() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    rect(&mut s, "#2233cc", 100.0, 20.0, 40.0, 30.0);
+    rect(&mut s, "#cc2222", 20.0, 200.0, 40.0, 30.0);
+    let pes = export(&mut s, Format::Pes);
+    s.execute("document.open", &json!({"name": "design.pes", "dataBase64": vectorcraft_format::base64_encode(&pes)})).unwrap();
+    let mut runs = 0;
+    s.doc().unwrap().doc.walk(|n| runs += usize::from(n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some())));
+    let plan = plan_of(&s);
+    assert_eq!(plan.units.len(), runs, "a unit per run of stitches");
+    assert!(plan.units.iter().all(|u| u.origin.part == Part::Literal && u.params.is_none() && u.columns.is_none()));
+    assert_eq!(plan.blocks.len(), 2, "the file's two colour blocks");
+}
+
+/// Objects of one thread that nothing lies between share its block, in document order: the second
+/// one's stitches start with the cut and the jump that take the needle to it.
+#[test]
+fn units_of_one_thread_share_its_block_in_document_order() {
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 40.0);
+    rect(&mut s, "#2233cc", 100.0, 20.0, 40.0, 40.0);
+    let c = rect(&mut s, "#cc2222", 20.0, 200.0, 40.0, 40.0);
+    let plan = plan_of(&s);
+    check(&plan);
+    assert_eq!(plan.blocks.len(), 2);
+    let red: Vec<NodeId> = plan.units[plan.blocks[0].units.clone()].iter().map(|u| u.origin.node).collect();
+    assert_eq!(red, [NodeId(a), NodeId(c)]);
+    let second = &plan.units[plan.blocks[0].units.start + 1];
+    let lead: Vec<Command> = plan.blocks[0].stitches[second.stitches.clone()].iter().take(2).map(|s| s.command).collect();
+    assert_eq!(lead, [Command::Trim, Command::Jump], "a move longer than the trim length");
+}
+
+/// An object that asks for a trim after it ends its unit with the cut.
+#[test]
+fn a_unit_that_asks_for_a_trim_ends_with_it() {
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 15.0, 15.0);
+    rect(&mut s, "#cc2222", 40.0, 20.0, 15.0, 15.0);
+    let plan = plan_of(&s);
+    let last = |plan: &DesignPlan| plan.blocks[0].stitches[plan.units[0].stitches.end - 1].command;
+    assert_ne!(last(&plan), Command::Trim, "near each other, no cut");
+    s.execute("embroidery.setTrimAfter", &json!({"on": true, "ids": [a]})).unwrap();
+    let plan = plan_of(&s);
+    check(&plan);
+    assert_eq!(last(&plan), Command::Trim);
+}
+
+/// Stitches are numbered from 1 in sewing order, block after block, every needle point, jump and
+/// cut taking a number: each number finds its block, its index and its unit, and nothing else
+/// has one.
+#[test]
+fn stitches_are_numbered_from_one_in_sewing_order() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    rect(&mut s, "#2233cc", 100.0, 20.0, 40.0, 30.0);
+    rect(&mut s, "#cc2222", 20.0, 200.0, 40.0, 30.0);
+    let plan = plan_of(&s);
+    let total = plan.len();
+    assert!(plan.blocks.len() == 2 && total > 100, "{} blocks, {total} stitches", plan.blocks.len());
+    let mut n = 0;
+    for (k, b) in plan.blocks.iter().enumerate() {
+        for i in 0..b.stitches.len() {
+            n += 1;
+            assert_eq!(plan.number(k, i), Some(n));
+            assert_eq!(plan.locate(n), Some((k, i)));
+            let u = plan.unit_at(n).unwrap();
+            assert!(plan.units[u].block == k && plan.units[u].stitches.contains(&i) && plan.numbers(u).unwrap().contains(&n));
+        }
+        assert_eq!(plan.number(k, b.stitches.len()), None);
+    }
+    assert_eq!(n, total);
+    assert_eq!((plan.number(0, 0), plan.locate(FIRST_NUMBER)), (Some(FIRST_NUMBER), Some((0, 0))));
+    for none in [0, total + 1] {
+        assert_eq!((plan.locate(none), plan.unit_at(none)), (None, None), "{none}");
+    }
+    assert_eq!((plan.number(2, 0), plan.numbers(plan.units.len())), (None, None));
+}
+
+/// The export writes the plan: each format's file is the plan's pattern, written.
+#[test]
+fn the_export_writes_the_plan() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    letter_t(&mut s, "#22aa44", 20.0, 120.0);
+    let plan = plan_of(&s);
+    assert_eq!(plan.name, s.doc().unwrap().doc.title);
+    for format in Format::ALL {
+        assert_eq!(export(&mut s, format), format.write(&plan.to_pattern()).unwrap(), "{}", format.id());
+    }
+}

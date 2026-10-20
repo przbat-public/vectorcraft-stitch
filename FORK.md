@@ -65,7 +65,7 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
    of 18 inner penetrations within 0.15 mm of the last to none.
 2. **Default density and stitch length.** Done: fill rows 0.38 mm apart (Wilcom's tatami default,
    Morrish's gap-free spacing), stitches up to 4 mm (Wilcom). Ink/Stitch's denser defaults (0.25 and
-   3) are not followed, so VectorCraft still sews 40–60 % of the person's stitches. Per-fabric
+   3) are not followed, so VectorCraft still sews 40–55 % of the person's stitches. Per-fabric
    values wait for the fabric presets below.
 3. **Pull compensation for fills, and gaps between shapes.** Done: a fill's rows reach past the
    edge at each end by `pullCompensation` (0.2 mm, as satins), at most half way across a gap, and
@@ -76,7 +76,7 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
    are found by pairing opposite stretches of the outline and sewn as satin columns of varying
    width that follow the shape (rings close, round and pointed ends are followed round); the
    export cuts them out with path operations and fills the rest, the parts sewn in the order that
-   moves least. On the real designs trims fell from 26 to 20 and jumps from 57 to 45. Branching
+   moves least. On the real designs trims fell from 26 to 19 and jumps from 57 to 44. Branching
    columns into one another (instead of a square of tatami where strokes meet) is left for
    "branching of touching objects" below.
 5. **Satin compensation.** Done: `pullCompensationPercent` adds a share of the column's width,

@@ -25,15 +25,16 @@ use vectorcraft_stitch::{Command, Pattern, quantize};
 #[path = "../../../xtask/src/sha256.rs"]
 mod sha256;
 
-/// (artwork, the person's machine file, most trims, most jumps). Ceilings one above what was
-/// measured when a fill's narrow parts became satin columns sewn peak to peak, with the person's
-/// counts: see the comments (trims, then jumps: a move with the needle up, cut or not). (Before
+/// (artwork, the person's machine file, most trims, most jumps). Ceilings one above what was last
+/// measured, with the person's counts: see the comments (trims, then jumps: a move with the needle up, cut or not). (Before
 /// the ordering of fill regions and the trim length, when every jump longer than `jumpLength` was
 /// cut and regions went nearest first: 55 trims in all; then 25 trims and 69 jumps; 56 jumps once
 /// a turn along a straight edge was sewn; 26 and 58 with rows 0.38 mm apart; 27 and 57 with pull
-/// compensation on fills; 26 and 57 once a region's last row kept its last stitch; now 20 and 45.)
+/// compensation on fills; 26 and 57 once a region's last row kept its last stitch; 20 and 45 when
+/// a fill's narrow parts became satin; now 19 and 44, its rings closing and a narrow part beside a
+/// wider block keeping its column.)
 const DESIGNS: &[(&str, &str, usize, usize)] = &[
-    ("bullseye-twemoji.svg", "bullseye-twemoji-inkstitch.pes", 2, 3), // 1 (the person's design: 6), 2 (8)
+    ("bullseye-twemoji.svg", "bullseye-twemoji-inkstitch.pes", 1, 2), // 0 (the person's design: 6), 1 (8)
     ("fox-twemoji.clipart.svg", "fox-twemoji-inkstitch.pes", 4, 5),   // 3 (6), 4 (3)
     ("heart-suit-twemoji.clipart.svg", "heart-suit-twemoji-inkstitch.pes", 1, 1), // 0 (0), 0 (0)
     ("joystick-twemoji.svg", "joystick-twemoji-institch.pes", 4, 5),  // 3 (4), 4 (4)
@@ -46,6 +47,21 @@ const DESIGNS: &[(&str, &str, usize, usize)] = &[
     ("watermelon-twemoji.clipart.svg", "watermelon-twemoji-inkstitch.pes", 1, 8), // 0 (2), 7 (2)
     ("zebra-twemoji.clipart.svg", "zebra-twemoji-inkstitch.pes", 8, 15),        // 7 (21), 14 (39)
 ];
+
+/// The longest stitch the export sews (millimetres): a satin crossing longer is split (the satin
+/// default `maxSatin`).
+const LONGEST_STITCH: f64 = 10.0;
+/// The grid a machine file stores needle points on (millimetres): each end of a stitch moves up to
+/// half of it each way when written, so a stitch planned at [`LONGEST_STITCH`] may come out up to
+/// a grid's diagonal longer.
+const GRID: f64 = 0.1;
+
+/// The trims and the jumps of all the designs together, as last measured: the counts the
+/// documentation reports. Each design's ceiling leaves it one more, so a regression of a trim or a
+/// jump on a few designs at once passes them all and fails these; an improvement fails them too,
+/// until they and the documentation are brought up to date.
+const ALL_TRIMS: usize = 19;
+const ALL_JUMPS: usize = 44;
 
 /// The corpus, checked against its manifest; `None` (the tests skip) when it is absent and not
 /// required.
@@ -172,6 +188,7 @@ fn real_machine_files_are_written_back_unchanged() {
 #[test]
 fn artwork_digitizes_soundly_next_to_a_persons_design() {
     let Some(dir) = corpus() else { return };
+    let (mut all_trims, mut all_jumps) = (0, 0);
     for &(art, theirs, max_trims, max_jumps) in DESIGNS {
         let person = Format::Pes.read(&std::fs::read(dir.join(theirs)).unwrap()).unwrap();
         let target = person.bounds().unwrap();
@@ -203,10 +220,13 @@ fn artwork_digitizes_soundly_next_to_a_persons_design() {
             person.sewn()
         );
         assert!((b.width() - target.width()).abs() < 1.5 && (b.height() - target.height()).abs() < 1.5, "{art}: {b:?} vs {target:?}");
-        assert!(longest <= 10.0, "{art}: a {longest:.1} mm stitch");
+        assert!(longest <= LONGEST_STITCH + GRID * std::f64::consts::SQRT_2, "{art}: a {longest:.2} mm stitch");
         assert!(short <= 2, "{art}: {short} stitches shorter than 0.3 mm");
         assert!(trims <= max_trims, "{art}: {trims} trims, more than {max_trims} (the person's design has {person_trims})");
         assert!(jumps <= max_jumps, "{art}: {jumps} jumps, more than {max_jumps} (the person's design has {person_jumps})");
         assert!((0.3..0.8).contains(&share), "{art}: {} stitches, {:.0}% of the person's {}", ours.sewn(), share * 100.0, person.sewn());
+        (all_trims, all_jumps) = (all_trims + trims, all_jumps + jumps);
     }
+    eprintln!("all designs: trims {all_trims}, jumps {all_jumps}");
+    assert_eq!((all_trims, all_jumps), (ALL_TRIMS, ALL_JUMPS), "trims and jumps of all the designs (update docs/embroidery.md with them)");
 }

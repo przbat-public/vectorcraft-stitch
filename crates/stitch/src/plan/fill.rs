@@ -127,8 +127,9 @@ const MIN_PIECE: f64 = 1.0;
 /// width follows the shape ([`sew_column`]). The pieces of the rest (each outline with the holes
 /// inside it) and the columns are sewn one after another, whichever starts nearest the needle
 /// next, so that the needle moves on to what lies next to where it is. It travels inside the whole
-/// `shape` (`rule` decides what it covers) from part to part, under the parts still to come; over
-/// a piece of the rest already sewn a travel may show for at most [`MAX_SEEN`]. `fill` and `satin`
+/// `shape` (`rule` decides what it covers) from part to part, under the parts still to come where
+/// it can; over a piece of the rest already sewn a travel may show for at most [`MAX_SEEN`], and
+/// over a column already sewn it is not counted as showing. `fill` and `satin`
 /// are the two kinds of parts' parameters. A piece of the rest smaller than [`MIN_PIECE`] is left
 /// out.
 pub fn fill_with_columns(

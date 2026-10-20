@@ -434,7 +434,9 @@ const MAX_RAIL_STRETCH: f64 = 2.0;
 ///   bend the spacing is kept on the outer rail, and the inner one, shorter, takes its
 ///   penetrations closer (shortened where they bunch);
 /// - pull compensation at both rails, the mean of `p`'s two sides (a fill has no drawn direction
-///   to tell its sides apart), and push compensation at both ends, the mean of its two values.
+///   to tell its sides apart), and push compensation, the mean of its two values, at each end
+///   where the shape ends ([`Column::tips`]): where the column meets the rest of the shape, which
+///   is cut out round its whole length, a shorter column would leave a band sewn by neither.
 ///
 /// `reach` says how the needle gets from where it is to the column's first stitch (given that
 /// stitch and where it would be without pull compensation, on the shape's outline). A column
@@ -442,6 +444,7 @@ const MAX_RAIL_STRETCH: f64 = 2.0;
 pub(super) fn sew_column(column: &Column, p: &Params, runs: &mut Runs, reach: &mut dyn FnMut(&mut Runs, Point, Point) -> Travel) {
     let closed = column.closed;
     let mut stations = column.stations.clone();
+    let mut tips = column.tips;
     if stations.len() < 2 {
         return;
     }
@@ -453,9 +456,10 @@ pub(super) fn sew_column(column: &Column, p: &Params, runs: &mut Runs, reach: &m
             stations.rotate_left(nearest.unwrap_or(0));
         } else if from(stations.last()) < from(stations.first()) {
             stations.reverse();
+            tips.reverse();
         }
     }
-    let width = Column { stations: stations.clone(), closed }.width();
+    let width = Column { stations: stations.clone(), closed, ..Column::default() }.width();
     let along = Along::new(&stations, closed);
     if width < MIN_COLUMN_WIDTH {
         let line = resample(&along.middles, p.stitch_length, closed);
@@ -467,15 +471,18 @@ pub(super) fn sew_column(column: &Column, p: &Params, runs: &mut Runs, reach: &m
         }
         return;
     }
-    // Push compensation: an open column is sewn shorter at both ends, at most to MIN_PUSHED of it.
+    // Push compensation: an open column is sewn shorter at each end where the shape ends, at most
+    // to MIN_PUSHED of it.
     let along = if closed {
         along
     } else {
-        let push = (p.push[0] + p.push[1]) / 2.0;
+        let push = ((p.push[0] + p.push[1]) / 2.0).max(0.0);
+        let [start, end] = tips.map(|tip| if tip { push } else { 0.0 });
         // At most down to MIN_PUSHED of it, and never shorter than a column that is sewn.
         let keep = (along.len * MIN_PUSHED).max(p.min_stitch * MIN_CROSSINGS).min(along.len);
-        let cut = push.min((along.len - keep) / 2.0).max(0.0);
-        Along::new(&along.between(cut, along.len - cut), false)
+        let most = along.len - keep;
+        let k = if start + end > most { most / (start + end) } else { 1.0 };
+        Along::new(&along.between(start * k, along.len - end * k), false)
     };
     if along.len < p.min_stitch * MIN_CROSSINGS {
         return;

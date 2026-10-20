@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-20 · **Last updated:** 2026-10-20 · **Change:** a fill's narrow parts (stripes, stems, rings, the strokes of a letter) are sewn as satin columns that follow the shape, the rest as tatami (`narrowAsSatin`, 7 mm), rings closing at every width, a narrow part beside a wider block keeping its column, no column fanning across a wide part, push compensation sparing a column's end that meets the rest; a satin's spacing is measured peak to peak (its crossings half that apart, twice as dense as before); a region's last row keeps its last stitch; `threadWeight` follows the thread's thickness; a negative `expand` shrinks the region; an opened design's lines turn round, not mitred
+> **Last reviewed:** 2026-10-20 · **Last updated:** 2026-10-20 · **Change:** round a bend satin columns (strokes and a fill's narrow parts) keep their spacing on the outer side, the inner side's penetrations closer (shortened where they bunch), and a stroke's crossings turn with its curve, not in steps where it was flattened; a fill's narrow parts (stripes, stems, rings, the strokes of a letter) are sewn as satin columns that follow the shape, the rest as tatami (`narrowAsSatin`, 7 mm), rings closing at every width, a narrow part beside a wider block keeping its column, no column fanning across a wide part, push compensation sparing a column's end that meets the rest; a satin's spacing is measured peak to peak (its crossings half that apart, twice as dense as before); a region's last row keeps its last stitch; `threadWeight` follows the thread's thickness; a negative `expand` shrinks the region; an opened design's lines turn round, not mitred
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -147,14 +147,24 @@ the fabric.
   stitches run at an angle and are longer than the column is wide, and Ink/Stitch's underlay guide
   warns that unbounded ones destabilise the column; so are the edge run's turn across the column
   and the stitch from one layer to the next. A column is at most 50 mm wide: a wider stroke is
-  sewn 50 mm wide, and the export warns. Where a curve bunches the penetrations on the column's
-  inner side, stitches there are shortened (*short stitches*, as Ink/Stitch's short stitch inset
-  and Hatch's stitch shortening do): a penetration closer than the spacing to one of the last four
-  on its rail moves in by 20 % of the column's width, or 40 % when that is still too close (when
-  neither clears, the one farther from them). On a gentle curve every other inner stitch is
-  shortened, on a tight one they spread over the two depths, and a straight column keeps its full
-  width. A 5 mm column round a 3 mm radius had 16 of its 18 inner penetrations within 0.15 mm of
-  the one before; now none is. The depths are estimates (15–25 % is the usual shortening).
+  sewn 50 mm wide, and the export warns. Round a bend the crossings turn with the path and keep the
+  spacing on the outer rail, as a fill's narrow columns do (below): each step along the centre line
+  is shortened so that the farther rail moves on by half the spacing, and the inner rail, a shorter
+  way round, takes its penetrations closer. A curve is flattened into short segments before it is
+  sewn; along each the crossings' direction turns evenly from one gentle vertex (turning 30° or
+  less) to the next, while at a sharp corner each side keeps its own. They used to stay square to
+  each flattened segment and step at its ends: a 5 mm satin round a 6 mm bend had its outer rail's
+  penetrations 0.40 mm apart along a segment and up to 0.97 mm where two met; now they are 0.40 mm
+  apart all round, and its inner rail's 0.15 mm. So a path drawn as a polygon with gentle turns is
+  sewn as the curve it approximates. Where a curve bunches the penetrations on the column's inner
+  side, stitches there are shortened (*short stitches*, as Ink/Stitch's short stitch inset and
+  Hatch's stitch shortening do): a penetration closer than half the spacing (the distance between
+  crossings) to one of the last four on its rail moves in by 20 % of the column's width, or 40 %
+  when that is still too close (when neither clears, the one farther from them). On a gentle curve
+  every other inner stitch is shortened, on a tight one they spread over the two depths, and a
+  straight column keeps its full width. A 5 mm column round a 3 mm radius had 16 of its 18 inner
+  penetrations within 0.15 mm of the one before; now none is. The depths are estimates (15–25 % is
+  the usual shortening).
 - **Tatami fill** fills a shape with rows `density` apart at `stitchAngle` degrees, alternating
   their direction. The defaults, rows 0.38 mm apart and stitches up to 4 mm, are Wilcom's tatami
   defaults ([Wilcom: satin and tatami stitch](https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch)),
@@ -271,7 +281,21 @@ the fabric.
 
   *Sewing them.* A column is a satin whose width follows the shape: its crossings go from side to
   side at each station's own width, its spacing picked by that width (auto spacing, and the
-  thread's weight), so it opens and closes as the column narrows and widens. Pull compensation
+  thread's weight), so it opens and closes as the column narrows and widens. Round a bend the
+  spacing is kept on the outer side, as digitizers hold a satin's density on the outside of a
+  turn and let the inside, a shorter way round, take its penetrations closer
+  ([Embrilliance's satin column help](https://embrilliance.com/Help/Platform%20Mac%201170/satincolumninputlevel2.htm)):
+  the step from one crossing to the next along the middle is shortened so that the farther rail
+  (where the needle goes in, pull compensation included) moves on by half the spacing, and short
+  stitches relieve the inner rail where it bunches. Along a straight column the rails run as far as the middle, so nothing
+  changes there. A rail is taken to run at most twice as far as the middle: round a bend the inner
+  side's radius can't fall below nothing, so the outer rail runs at most twice as far; past that,
+  at a round end's tip where the rails turn across the column, the crossings come no closer along
+  the middle than half their pitch. Spaced along the middle, the outer rail lay
+  `spacing × r_outer / r_middle` apart: on a letter S of two 5 mm bowls round 6 mm, 0.58 mm
+  outside and 0.22 inside where the table asks 0.40, leaving more fabric bare along the letter's
+  edge than the tatami it replaced; now 0.40 outside and 0.15 inside (a 5 mm ring round a 3 mm
+  hole: 0.60 → 0.40 outside, 0.21 → 0.14 inside). Pull compensation
   widens both sides by the mean of `pullCompensation`'s two values (a fill has no drawn direction
   to tell its sides apart), push compensation shortens an end where the shape ends by the mean of
   its two (not an end that meets the rest of the shape: the rest is cut out up to the column's
@@ -382,7 +406,7 @@ index, whose RGB values differ between published charts — preview colour is no
 
 ## Validation
 
-- `crates/stitch`: 90 unit tests and 5 property tests — a stripe is one column square across it,
+- `crates/stitch`: 92 unit tests and 5 property tests — a stripe is one column square across it,
   a stroke whose width wavers about the limit is one column (one wider all along stays a fill),
   a ring a closed one at every width (radius 2.5 to 20 mm, 1.5 to 6 mm wide), an outline with a
   point repeated one column all the same, a bar beside a thicker block and a flag's pole a 3 mm
@@ -392,7 +416,10 @@ index, whose RGB values differ between published charts — preview colour is no
   leave the square where they meet, a square, a wide rectangle and a dot stay fills, odd input
   finds nothing; a column is sewn across it with no jump, its spacing follows its width, a
   hairline is a running line, push compensation shortens a column (a bar's free end, not its end
-  at the block it meets), a ring and a T with its rest
+  at the block it meets), round a bend (a 5 mm ring, a letter S) its outer rail keeps the spacing
+  and its inner one takes it closer by the rails' radii (within 10 %, a straight stripe both rails
+  exactly), and so does a satin stroke round a half turn and a letter S (its outer rail's spacing
+  within 10 % all along), a ring and a T with its rest
   are sewn in one go on the shape, a square with an arm on each side is sewn arm, square, arm
   with no jump (from either end, underlay or not); a 5 mm satin column at 40 wt puts 50
   crossings in a centimetre (Madeira's chart: 51), a region's last row reaches its edge (a
@@ -541,6 +568,12 @@ longest stitch is 10.0 mm, a crossing of the fox's ear where its column runs on 
 (9.99 mm as planned, rounded to the file's 0.1 mm grid); the bullseye's dart reaches 8.4 mm.
 None is under 0.3 mm. Planning a design took 25–27 ms on an idle machine (the zebra, test
 build), several times that while other builds ran.
+Keeping a satin's spacing on the outer side of its bends adds 3.3 % stitches in all
+(24 572 → 25 379): the SOS button 6.8 %, the zebra 6.2 %, the watermelon 6.0 %, the fox 4.6 %,
+the pool ball 3.3 %, the smiling face 2.7 %, the joystick 2.5 %, the bullseye 1.5 %; the heart,
+the puzzle piece and the video game are unchanged (39–58 % of the person's count). Trims, jumps
+and the longest stitch are unchanged, and none is under 0.3 mm. Spacing a stroke's satin the same
+way changes none of these designs: none has a curved satin stroke.
 
 The comparison also found and fixed: a shape drawn without a final close sewn as an outline (the
 heart: 42 stitches instead of a fill), fill stitches up to 1.5 times `stitchLength` (the old

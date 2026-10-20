@@ -87,7 +87,7 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
 /// The stitches of `doc`'s visible art with `opts`: its blocks in sewing order ([`Sequence`]), and
 /// the warnings for what was left out or approximated; an error when the design would need too
 /// many stitches.
-pub(super) fn digitize(doc: &Document, opts: &Options) -> Result<(Vec<Block>, Vec<String>), String> {
+pub(crate) fn digitize(doc: &Document, opts: &Options) -> Result<(Vec<Block>, Vec<String>), String> {
     let seq = Sequence::new(opts.params(Style::Running, NO_WIDTH));
     let mut d = Digitizer { doc, opts, seq, warnings: Vec::new(), nest: 0, clip: None, owner: None, stitches: 0, failed: None };
     d.run();

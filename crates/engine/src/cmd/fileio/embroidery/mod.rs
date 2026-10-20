@@ -17,60 +17,23 @@
 //! (wt, the spacing follows it), `underlay`, `jumpLength` (mm before
 //! the needle lifts), `trimLength` (mm before a jump cuts the thread) and `minStitch` (mm).
 //!
-//! The parts: [`import`] (a design read as art), [`digitize`] (the document's art planned as
-//! stitches) and [`sequence`] (the order the blocks are sewn in).
+//! The parts: [`import`] (a design read as art) and [`encode`] (the export: its options, and the
+//! stitches `cmd::embroidery` plans from the document's art, written in the format).
 
-mod digitize;
 mod import;
-mod sequence;
 
 use serde::Deserialize;
 use serde_json::Value;
 use vectorcraft_doc::Document;
-use vectorcraft_doc::embroidery::Embroidery;
 use vectorcraft_stitch::Pattern;
 use vectorcraft_stitch::format::Format as StitchFormat;
-use vectorcraft_stitch::plan::THREAD_WEIGHT;
-use vectorcraft_stitch::plan::{Params, Style};
+use vectorcraft_stitch::plan::Style;
 
+use super::super::embroidery::{Options, digitize};
 use super::super::*;
 use super::{Encoded, Format, FormatOption};
 
 pub(super) use import::import;
-
-/// The embroidery settings an object carries.
-pub fn specs() -> Vec<CommandSpec> {
-    vec![cmd!(
-        "embroidery.setTrimAfter",
-        "Trim After",
-        [],
-        None,
-        "{on: bool, ids?|id?} whether the thread is cut after each object (or group) in ids or the selection when the document is stitched (document.export to dst, exp, pes or jef), however near the next object starts; off, only a jump longer than the export's trimLength is cut. One undo step; saved with the document → {changed}",
-        has_doc,
-        set_trim_after
-    )]
-}
-
-fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.setTrimAfter";
-    let on = p.get("on").and_then(Value::as_bool).ok_or_else(|| bad(C, "`on` must be true or false"))?;
-    let ids = targets(s, p)?;
-    let changed = super::super::overprint::edit_counted(s, "Trim After", |d| {
-        let mut changed = 0;
-        for id in &ids {
-            let Some(n) = d.node_mut(*id) else { return Err(bad(C, format!("no object {}", id.0))) };
-            let mut e = n.extras().embroidery.as_deref().cloned().unwrap_or_default();
-            if e.trim_after == on {
-                continue;
-            }
-            e.trim_after = on;
-            n.extras_mut().embroidery = (e != Embroidery::default()).then(|| Box::new(e));
-            changed += 1;
-        }
-        Ok(changed)
-    })?;
-    Ok(serde_json::json!({ "changed": changed }))
-}
 
 const C: &str = "document.export";
 
@@ -159,109 +122,6 @@ const MIN_STITCH: FormatOption =
 pub const OPTIONS: &[FormatOption] =
     &[STYLE, DENSITY, STITCH_LENGTH, ANGLE, PULL, PULL_PERCENT, PUSH, EXPAND, NARROW, THREAD_WEIGHT_OPTION, UNDERLAY, JUMP, TRIM, MIN_STITCH];
 
-/// How far a filled shape grows all round when `expand` is left out (millimetres): not at all, as
-/// in Ink/Stitch, whose fills offer the same setting ("Expand", to close gaps between shapes,
-/// <https://inkstitch.org/docs/stitches/fill-stitch/>). Pull compensation already stretches a
-/// fill's rows; expanding is for art whose shapes are drawn apart.
-const EXPAND_DEFAULT: f64 = 0.0;
-/// The most a filled shape grows or shrinks (millimetres): more than closing gaps between shapes
-/// needs, short of redrawing them.
-const MAX_EXPAND: f64 = 2.0;
-
-/// A value for both sides of a stitch, or one for each.
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
-#[serde(untagged, expecting = "a number, or two numbers (one per side)")]
-enum Sides {
-    Both(f64),
-    Each([f64; 2]),
-}
-
-impl Sides {
-    fn pair(self) -> [f64; 2] {
-        match self {
-            Self::Both(v) => [v; 2],
-            Self::Each(v) => v,
-        }
-    }
-}
-
-/// The export options, as they come: each one left out keeps the style's own value.
-#[derive(Clone, Debug, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
-struct Options {
-    stitch_style: String,
-    density: Option<f64>,
-    stitch_length: Option<f64>,
-    stitch_angle: Option<f64>,
-    pull_compensation: Option<Sides>,
-    pull_compensation_percent: Option<Sides>,
-    push_compensation: Option<Sides>,
-    expand: Option<f64>,
-    narrow_as_satin: Option<f64>,
-    thread_weight: Option<f64>,
-    underlay: Option<bool>,
-    jump_length: Option<f64>,
-    trim_length: Option<f64>,
-    min_stitch: Option<f64>,
-}
-
-impl Default for Options {
-    fn default() -> Self {
-        Self {
-            stitch_style: "auto".into(),
-            density: None,
-            stitch_length: None,
-            stitch_angle: None,
-            pull_compensation: None,
-            pull_compensation_percent: None,
-            push_compensation: None,
-            expand: None,
-            narrow_as_satin: None,
-            thread_weight: None,
-            underlay: None,
-            jump_length: None,
-            trim_length: None,
-            min_stitch: None,
-        }
-    }
-}
-
-impl Options {
-    fn params(&self, style: Style, width: f64) -> Params {
-        // The style's defaults for the thread: its spacing follows the thread's thickness.
-        let d = Params::for_thread(style, self.thread_weight.unwrap_or(THREAD_WEIGHT));
-        Params {
-            style,
-            density: self.density.unwrap_or(d.density),
-            // A density given is used as it is; left out, a satin picks it by its width.
-            auto_spacing: d.auto_spacing && self.density.is_none(),
-            stitch_length: self.stitch_length.unwrap_or(d.stitch_length),
-            angle: self.stitch_angle.unwrap_or(d.angle),
-            // A running line has no compensation, whatever is given.
-            pull: if style == Style::Running { d.pull } else { self.pull_compensation.map_or(d.pull, Sides::pair) },
-            pull_percent: if style == Style::Running { d.pull_percent } else { self.pull_compensation_percent.map_or(d.pull_percent, Sides::pair) },
-            // Push compensation shortens satin columns only: a fill's rows have no column ends.
-            push: if style == Style::Satin { self.push_compensation.map_or(d.push, Sides::pair) } else { d.push },
-            // Only a fill has narrow parts to sew as satin.
-            narrow: if style == Style::Fill { self.narrow_as_satin.unwrap_or(d.narrow) } else { d.narrow },
-            underlay: self.underlay.unwrap_or(d.underlay),
-            jump: self.jump_length.unwrap_or(d.jump),
-            trim: self.trim_length.unwrap_or(d.trim),
-            min_stitch: self.min_stitch.unwrap_or(d.min_stitch),
-            width,
-            ..d
-        }
-        .sane()
-    }
-
-    /// How far a filled shape grows all round before it is stitched (millimetres, negative to
-    /// shrink), within ±[`MAX_EXPAND`]; nothing when not finite.
-    fn expand(&self) -> f64 {
-        let e = self.expand.unwrap_or(EXPAND_DEFAULT);
-        if e.is_finite() { e.clamp(-MAX_EXPAND, MAX_EXPAND) } else { EXPAND_DEFAULT }
-    }
-}
-
 /// The options in `p`, checked.
 fn options(p: &Value) -> Result<Options> {
     let o = Options::deserialize(p).map_err(|e| bad(C, format!("embroidery options: {e}")))?;
@@ -294,6 +154,9 @@ pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
 
 #[cfg(test)]
 mod tests {
+    use vectorcraft_stitch::plan::{Params, THREAD_WEIGHT};
+
+    use super::super::super::embroidery::options::{EXPAND_DEFAULT, MAX_EXPAND};
     use super::*;
 
     /// The defaults `document.formats` lists are the planner's, for every style that uses them.

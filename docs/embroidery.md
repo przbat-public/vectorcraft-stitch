@@ -665,10 +665,13 @@ Public documentation, cited per claim in the crate and in the local research not
 - `crates/stitch/src/format/` — `mod.rs` (shared frames, readers, block building), `dst.rs`,
   `exp.rs`, `pes.rs`, `jef.rs`.
 - `crates/stitch/src/thread.rs` — the colour palettes and nearest-colour matching.
-- `crates/engine/src/cmd/fileio/embroidery/` — the commands' side: `mod.rs` (export options and
-  entry point), `import.rs` (a design opened as art), `digitize.rs` (the document's art planned as
-  stitches; a fill's narrow columns cut out of it with path operations), `sequence.rs` (the order blocks are sewn in, where the needle is before each object,
-  trims between objects), and the `embroidery.setTrimAfter` command.
+- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (the `embroidery.setTrimAfter`
+  command), `options.rs` (the export options, and the planner's parameters they give an object),
+  `digitize.rs` (the document's art planned as stitches; a fill's narrow columns cut out of it with
+  path operations), `sequence.rs` (the order blocks are sewn in, where the needle is before each
+  object, trims between objects).
+- `crates/engine/src/cmd/fileio/embroidery/` — the files' side: `mod.rs` (the export's options as
+  `document.formats` lists them, and its entry point), `import.rs` (a design opened as art).
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real
   designs and the test that uses them.
 

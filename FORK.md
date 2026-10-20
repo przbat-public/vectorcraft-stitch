@@ -15,8 +15,9 @@ work comes from the list below, unless the user gives you a task.
    sources.
 2. Read the open embroidery PR's description on GitHub: it explains the terms (stitch, density,
    underlay, pull compensation, trim, tie-in…) for newcomers and lists what is verified.
-3. Code: `crates/stitch` (L3: `plan.rs` stitch planning, `format/` DST/EXP/PES/JEF, `thread.rs`
-   palettes) and `crates/engine/src/cmd/fileio/embroidery.rs` (open/export, the digitizer).
+3. Code: `crates/stitch` (L3: `plan/` stitch planning, `format/` DST/EXP/PES/JEF, `thread.rs`
+   palettes), `crates/engine/src/cmd/embroidery/` (the embroidery commands and the digitizer) and
+   `crates/engine/src/cmd/fileio/embroidery/` (opening and exporting machine files).
 
 ## Branches
 

@@ -323,3 +323,92 @@ fn a_stroke_that_wavers_about_the_limit_is_sewn_whole() {
     assert!(lo < 1.0 && hi > 39.0, "the column runs {lo} to {hi}");
     assert!(narrow_columns(&band(8.0, 10.0), FillRule::NonZero, WIDEST).is_empty());
 }
+
+/// The same-rail spacing round a bend centred on `centre`: of `q`'s penetrations within `window`
+/// radians either side of the direction `toward` (from the centre), those farther out than
+/// `middle` (the outer rail) and those nearer in (the inner one), each the median step between
+/// consecutive ones: the angle between them times its rail's radius (`rails`: outer, inner). A
+/// shortened stitch moves in along its crossing, square to the rail, so it keeps the rail's angle.
+fn rail_spacing(q: &[Point], centre: Point, toward: Vec2, window: f64, middle: f64, rails: [f64; 2]) -> [f64; 2] {
+    use std::f64::consts::{PI, TAU};
+    let mut angles: [Vec<f64>; 2] = [Vec::new(), Vec::new()];
+    for a in q {
+        let v = *a - centre;
+        let angle = toward.cross(v).atan2(toward.dot(v));
+        if angle.abs() <= window {
+            angles[usize::from(v.hypot() < middle)].push(angle);
+        }
+    }
+    let mut out = [0.0; 2];
+    for (k, rail) in angles.iter().enumerate() {
+        let mut steps: Vec<f64> = rail.windows(2).map(|w| ((w[1] - w[0] + PI).rem_euclid(TAU) - PI).abs() * rails[k]).collect();
+        steps.sort_by(f64::total_cmp);
+        out[k] = steps[steps.len() / 2];
+    }
+    out
+}
+
+/// On a bend a column keeps its spacing on the outer rail, and the inner rail, which runs a
+/// shorter way, takes its penetrations closer (shortened where they bunch), as digitizers hold a
+/// satin's density on the outside of a turn: a ring 5 mm wide round a 3 mm hole and a letter S of
+/// two bowls 5 mm wide round 6 mm have their outer rails the auto spacing for 5 mm (0.40 mm) apart
+/// and their inner rails that times the inner rail's radius over the outer's. (With the crossings
+/// spaced along the middle, the outer rails lay 0.60 mm apart.) A straight stripe keeps the
+/// spacing on both rails.
+#[test]
+fn a_bend_keeps_its_spacing_on_the_outer_rail() {
+    let mut p = Params::for_style(Style::Satin);
+    p.underlay = false;
+    p.lock = false;
+    let width = 5.0;
+    let spacing = satin_spacing(width);
+    // Pull compensation widens both rails by the mean of its two values.
+    let [left, right] = p.compensation(width);
+    let reach = width / 2.0 + (left + right) / 2.0;
+    let check = |name: &str, q: &[Point], centre: (f64, f64), toward: (f64, f64), window: f64, middle: f64| {
+        let rails = [middle + reach, middle - reach];
+        let [outer, inner] = rail_spacing(q, Point::new(centre.0, centre.1), Vec2::new(toward.0, toward.1), window, middle, rails);
+        let closer = spacing * rails[1] / rails[0];
+        eprintln!("{name}: outer rail {outer:.3} mm (spacing {spacing}), inner {inner:.3} mm ({closer:.3})");
+        assert!((outer / spacing - 1.0).abs() < 0.1, "{name}: the outer rail's penetrations {outer:.3} mm apart, not {spacing}");
+        assert!((inner / closer - 1.0).abs() < 0.1, "{name}: the inner rail's penetrations {inner:.3} mm apart, not {closer:.3}");
+    };
+
+    let mut ring = circle((0.0, 0.0), 8.0);
+    ring.extend(hole((0.0, 0.0), 3.0));
+    check("ring", &points(&sew(&ring, p)), (0.0, 0.0), (1.0, 0.0), std::f64::consts::PI, 5.5);
+
+    // The S's middle: a half turn round (0, 0) through (-6, 0), then one the other way round
+    // (0, -12) through (6, -12); its sides 2.5 mm either side.
+    let (r, steps) = (6.0, 180);
+    let middle: Vec<(Point, Vec2)> = (0..=steps)
+        .map(|k| {
+            let t = std::f64::consts::PI * f64::from(k) / f64::from(steps);
+            let a = std::f64::consts::FRAC_PI_2 + t;
+            (Point::new(r * a.cos(), r * a.sin()), Vec2::new(a.cos(), a.sin()))
+        })
+        .chain((1..=steps).map(|k| {
+            let t = std::f64::consts::PI * f64::from(k) / f64::from(steps);
+            let a = std::f64::consts::FRAC_PI_2 - t;
+            (Point::new(r * a.cos(), -12.0 + r * a.sin()), Vec2::new(-a.cos(), -a.sin()))
+        }))
+        .collect();
+    let side = |sign: f64| middle.iter().map(move |(m, n)| (m.x + n.x * sign * width / 2.0, m.y + n.y * sign * width / 2.0));
+    let s = polygon(side(1.0).chain(side(-1.0).rev()));
+    let q = points(&sew(&s, p));
+    // Each bowl away from its ends and from where the two meet.
+    let bowl = 1.0;
+    check("the S's upper bowl", &q, (0.0, 0.0), (-1.0, 0.0), bowl, r);
+    check("the S's lower bowl", &q, (0.0, -12.0), (1.0, 0.0), bowl, r);
+
+    // A straight stripe: both rails the spacing apart.
+    let stripe = polygon([(0.0, 0.0), (30.0, 0.0), (30.0, width), (0.0, width)]);
+    let q = points(&sew(&stripe, p));
+    for (name, top) in [("top", true), ("bottom", false)] {
+        let rail: Vec<f64> = q.iter().filter(|a| if top { a.y < 0.0 } else { a.y > width }).map(|a| a.x).collect();
+        let mut steps: Vec<f64> = rail.windows(2).map(|w| (w[1] - w[0]).abs()).collect();
+        steps.sort_by(f64::total_cmp);
+        let median = steps[steps.len() / 2];
+        assert!((median - spacing).abs() < 1e-6, "the stripe's {name} rail {median} mm apart");
+    }
+}

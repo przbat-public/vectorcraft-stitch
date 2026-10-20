@@ -272,12 +272,21 @@ fn split_long(zigzag: &[Point], max: f64) -> Vec<Point> {
 /// its middle: below about a millimetre a satin's two rails are too close for its crossings to lie
 /// side by side, as the export sews strokes that narrow as running lines.
 const MIN_COLUMN_WIDTH: f64 = 1.0;
+/// The most a column's farther rail is taken to run for each millimetre of its middle when its
+/// crossings are spaced along that rail ([`Along::crossings`]). Round a bend whose middle has
+/// radius r, a rail R out runs (r + R) / r as far; the inner side's radius can't fall below
+/// nothing, so R is at most r and the outer rail runs at most twice as far (a little more with
+/// pull compensation). Where the rails run farther still they are turning across the column, round
+/// a round end's tip: the crossings there come no closer along the middle than half their pitch.
+const MAX_RAIL_STRETCH: f64 = 2.0;
 
 /// `column` (a narrow part of a fill, [`Column`]) sewn after `runs` as a satin column whose width
 /// follows the shape, from its end nearest the needle (a ring from its station nearest):
 /// - an underlay by its typical width, as a stroke's;
 /// - crossings `p`'s spacing apart, picked by each crossing's own width with auto spacing (and
-///   the thread's weight), so the spacing follows the column as it narrows or widens;
+///   the thread's weight), so the spacing follows the column as it narrows or widens; round a
+///   bend the spacing is kept on the outer rail, and the inner one, shorter, takes its
+///   penetrations closer (shortened where they bunch);
 /// - pull compensation at both rails, the mean of `p`'s two sides (a fill has no drawn direction
 ///   to tell its sides apart), and push compensation at both ends, the mean of its two values.
 ///
@@ -444,14 +453,39 @@ impl Along {
 
     /// The column's crossings, in order: each a point on its middle and the offset to the side it
     /// goes to, the sides alternating, widened by pull compensation; where each would reach
-    /// without the compensation (on the outline); and the typical spacing between them and the
-    /// typical width they reach across (for short stitches). Each crossing's
-    /// spacing to the next is picked by its own width (auto spacing), or is `p`'s density; an open
-    /// column's last crossing lies on its end.
+    /// without the compensation (on the outline); and the typical distance from one to the next
+    /// (on the farther rail) and the typical width they reach across (for short stitches). Each
+    /// crossing's spacing to the next is picked by its own width (auto spacing), or is `p`'s
+    /// density, and is kept on the farther rail: round a bend the outer one, as Embrilliance holds
+    /// a satin's density on the outside of a turn and shortens stitches on the inside
+    /// (<https://embrilliance.com/Help/Platform%20Mac%201170/satincolumninputlevel2.htm>). Along a
+    /// straight column the rails run as far as the middle and the crossings lie that far apart
+    /// along it. An open column's last crossing lies on its end.
     fn crossings(&self, p: &Params) -> (Vec<(Point, Vec2)>, Vec<Point>, f64, f64) {
         // The distance between crossings at a width: half the spacing on a rail (peak to peak).
         let pitch_at =
             |width: f64| (if p.auto_spacing { satin_spacing(width) * thread_scale(p.thread_weight) } else { p.density }) / CROSSINGS_PER_SPACING;
+        // How far a crossing reaches either side of the middle, half its width `half` widened by
+        // pull compensation.
+        let reach_at = |half: f64| {
+            let [left, right] = p.compensation(2.0 * half);
+            half + (left + right) / 2.0
+        };
+        // Where a crossing `s` along goes into the fabric on each side: the column's two rails.
+        let rails = |s: f64| -> Option<(Point, Point)> {
+            let (m, h) = self.station(s)?;
+            let out = unit(h).unwrap_or(Vec2::ZERO) * reach_at(h.hypot());
+            Some((m + out, m - out))
+        };
+        // How far the farther rail runs for each millimetre of the middle from `s` over the next
+        // `ds`: one along a straight column, (r + R) / r round a bend whose middle has radius r
+        // with the outer rail R out.
+        let stretch = |s: f64, ds: f64| -> f64 {
+            let end = if self.closed { s + ds } else { (s + ds).min(self.len) };
+            let (Some((a0, b0)), Some((a1, b1))) = (rails(s), rails(end)) else { return 1.0 };
+            let farther = a0.distance(a1).max(b0.distance(b1)) / (end - s);
+            if farther.is_finite() { farther.clamp(1.0, MAX_RAIL_STRETCH) } else { 1.0 }
+        };
         // Where the crossings go along the middle.
         let mut at: Vec<f64> = Vec::new();
         let mut pitches: Vec<f64> = Vec::new();
@@ -461,16 +495,18 @@ impl Along {
             let Some((_, h)) = self.station(s) else { break };
             let pitch = pitch_at(2.0 * h.hypot());
             pitches.push(pitch);
-            let next = s + pitch;
+            // The step along the middle that moves the farther rail on by the pitch.
+            let step = pitch / stretch(s, pitch);
+            let next = s + step;
             if self.closed {
                 // Round a ring, the last crossing leaves at least half a step to the first.
-                if next > self.len - pitch / 2.0 {
+                if next > self.len - step / 2.0 {
                     break;
                 }
             } else if next >= self.len {
                 // An open column ends on a crossing: the last one moves there when the step to the
                 // end would be short, else one is added.
-                if self.len - s < pitch / 2.0 && at.len() > 1 {
+                if self.len - s < step / 2.0 && at.len() > 1 {
                     at.pop();
                 }
                 at.push(self.len);
@@ -485,9 +521,7 @@ impl Along {
             .enumerate()
             .filter_map(|(k, &s)| {
                 let (m, h) = self.station(s)?;
-                let half = h.hypot();
-                let [left, right] = p.compensation(2.0 * half);
-                let reach = half + (left + right) / 2.0;
+                let reach = reach_at(h.hypot());
                 widths.push(2.0 * reach);
                 let side = if k % 2 == 0 { 1.0 } else { -1.0 };
                 inner.push(m + h * side);

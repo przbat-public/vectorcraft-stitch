@@ -323,3 +323,93 @@ fn a_stroke_that_wavers_about_the_limit_is_sewn_whole() {
     assert!(lo < 1.0 && hi > 39.0, "the column runs {lo} to {hi}");
     assert!(narrow_columns(&band(8.0, 10.0), FillRule::NonZero, WIDEST).is_empty());
 }
+
+/// A ring closes at any width a column may be, not only up to the width where flattening its
+/// curves left a repeated point at each join that broke the side there (a ring of radius 10 used
+/// to open from 3 mm wide, a quarter of it left to the tatami).
+#[test]
+fn rings_close_at_every_width() {
+    for (r, w) in
+        [(10.0, 2.0), (10.0, 3.0), (10.0, 4.0), (10.0, 5.0), (10.0, 6.0), (5.0, 2.0), (5.0, 3.0), (8.0, 5.0), (20.0, 6.0), (3.0, 2.0), (2.5, 1.5)]
+    {
+        let mut ring = circle((0.0, 0.0), r);
+        ring.extend(hole((0.0, 0.0), r - w));
+        let found = narrow_columns(&ring, FillRule::NonZero, WIDEST);
+        assert_eq!(found.len(), 1, "r {r}, w {w}: {}", found.len());
+        let round = std::f64::consts::TAU * (r - w / 2.0);
+        assert!(found[0].closed && found[0].length() > 0.98 * round, "r {r}, w {w}: closed {}, {} of {round}", found[0].closed, found[0].length());
+    }
+}
+
+/// An outline drawn with a point repeated (an anchor twice over) is one column all the same.
+#[test]
+fn a_repeated_point_does_not_break_a_column() {
+    let mut pts: Vec<(f64, f64)> =
+        (0..=60).map(|k| (std::f64::consts::TAU * k as f64 / 120.0).sin_cos()).map(|(s, c)| (20.0 * c, 20.0 * s)).collect();
+    pts.extend((0..=60).rev().map(|k| (std::f64::consts::TAU * k as f64 / 120.0).sin_cos()).map(|(s, c)| (16.0 * c, 16.0 * s)));
+    pts.insert(30, pts[30]);
+    let found = narrow_columns(&polygon(pts), FillRule::NonZero, WIDEST);
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].length() > 55.0, "{}", found[0].length());
+}
+
+/// A narrow part whose side runs on along a wider block still finds its column: a 3 mm bar with
+/// a block 7.5 to 10 mm tall at its end (wider than the limit, narrower than a column may run on
+/// through), and a 3 mm pole holding a flag, are a 3 mm column each.
+#[test]
+fn a_narrow_part_beside_a_wider_block_is_a_column() {
+    for b in [7.5, 8.0, 9.0, 10.0, 10.4] {
+        let bar = polygon([(0.0, 0.0), (30.0, 0.0), (30.0, b), (15.0, b), (15.0, 3.0), (0.0, 3.0)]);
+        let found = narrow_columns(&bar, FillRule::NonZero, WIDEST);
+        assert_eq!(found.len(), 1, "block {b}: {found:?}");
+        let c = &found[0];
+        assert!((c.width() - 3.0).abs() < 0.05 && c.length() > 13.0 && c.length() < 16.5, "block {b}: {} x {}", c.width(), c.length());
+    }
+    for flag in [
+        polygon([(0.0, 0.0), (3.0, 0.0), (3.0, 12.0), (15.0, 12.0), (15.0, 20.0), (3.0, 20.0), (0.0, 20.0)]),
+        polygon([(15.0, 0.0), (15.0, 20.0), (12.0, 20.0), (0.0, 20.0), (0.0, 12.0), (12.0, 12.0), (12.0, 0.0)]),
+    ] {
+        let found = narrow_columns(&flag, FillRule::NonZero, WIDEST);
+        assert_eq!(found.len(), 1, "{found:?}");
+        assert!((found[0].width() - 3.0).abs() < 0.05, "{}", found[0].width());
+    }
+}
+
+/// A column runs on through a waver about the limit, not across a wide part: two discs 10 mm
+/// across joined by a 1 mm neck are a column along the neck, its stations within the limit,
+/// the discs left to the tatami.
+#[test]
+fn a_column_does_not_fan_across_a_wide_part() {
+    let a0 = (0.5f64 / 5.0).asin();
+    let arc = |cx: f64, from: f64| {
+        (0..=200).map(move |k| from - (std::f64::consts::TAU - 2.0 * a0) * k as f64 / 200.0).map(move |t| (cx + 5.0 * t.cos(), 5.0 * t.sin()))
+    };
+    let dumbbell = polygon(arc(9.0, std::f64::consts::PI - a0).chain(arc(-9.0, -a0)));
+    let found = narrow_columns(&dumbbell, FillRule::NonZero, WIDEST);
+    assert_eq!(found.len(), 1, "{found:?}");
+    let c = &found[0];
+    let widest = c.stations.iter().map(|(a, b)| a.distance(*b)).fold(0.0, f64::max);
+    assert!(widest <= WIDEST && (c.width() - 1.0).abs() < 0.05, "{} typically, {widest} at most", c.width());
+    assert!(c.middles().iter().all(|m| m.x.abs() < 6.0), "{:?}", c.middles());
+}
+
+/// Push compensation shortens a column only at an end where the shape ends: a bar's free end is
+/// sewn shorter, its end at the block it meets is not (the block's tatami is cut out up to it, so
+/// a shorter column would leave a band sewn by neither).
+#[test]
+fn push_compensation_spares_the_end_that_meets_the_rest() {
+    let bar = polygon([(0.0, 0.0), (30.0, 0.0), (30.0, 12.0), (15.0, 12.0), (15.0, 3.0), (0.0, 3.0)]);
+    let found = narrow_columns(&bar, FillRule::NonZero, WIDEST);
+    assert_eq!(found.len(), 1, "{found:?}");
+    let c = &found[0];
+    let at_free = c.middles().first().is_some_and(|m| m.x < 1.0);
+    assert_eq!(c.tips, if at_free { [true, false] } else { [false, true] }, "{:?}", c.middles());
+    let mut p = Params::for_style(Style::Satin);
+    p.push = [1.0, 1.0];
+    p.underlay = false;
+    // The column alone (the block's rest left out).
+    let q = points(&fill_with_columns(&bar, FillRule::NonZero, &BezPath::new(), &found, &Params::for_style(Style::Fill), &p, None));
+    let (lo, hi) = q.iter().fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), a| (lo.min(a.x), hi.max(a.x)));
+    let end = c.middles().iter().fold(f64::NEG_INFINITY, |x, m| x.max(m.x));
+    assert!(lo > 0.9 && hi > end - 0.05, "{lo} to {hi}, the column ending at {end}");
+}

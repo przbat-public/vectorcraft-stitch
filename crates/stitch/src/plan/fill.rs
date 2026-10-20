@@ -5,8 +5,10 @@ use vectorcraft_geom::{BezPath, FillRule, Point};
 
 use super::area::{Area, Grid, TRAVEL_STITCH, Travels};
 use super::geometry::{Axes, SubPath, area, length, resample, subpaths};
-use super::runs::{Runs, Travel};
-use super::{MAX_STITCHES, Params, UNDERLAY_STITCH};
+use super::narrow::Column;
+use super::runs::{COST_SEEN, Runs, Travel};
+use super::satin::{column_returns, sew_column};
+use super::{MAX_STITCHES, Params, Style, UNDERLAY_STITCH};
 use crate::{SAME_POINT, Stitch};
 
 /// The smallest area (square millimetres) a subpath must enclose for a fill to treat it as a
@@ -65,15 +67,7 @@ pub fn fill(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
 /// run at the corner nearest, its first region the one nearest), as Ink/Stitch starts fills.
 pub(super) fn fill_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Vec<Stitch> {
     let p = p.sane();
-    // A fill closes its subpaths, as paint does (SVG, PDF): a shape drawn without a final close
-    // is still an area.
-    let subs: Vec<SubPath> = subpaths(path)
-        .into_iter()
-        .map(|mut s| {
-            s.closed = s.closed || (s.pts.len() >= 3 && area(&s.pts).abs() > MIN_AREA);
-            s
-        })
-        .collect();
+    let subs = closed_subpaths(path);
     let mut runs = Runs::from(from);
     for sub in subs.iter().filter(|s| !s.closed) {
         let line = sub.points();
@@ -88,26 +82,288 @@ pub(super) fn fill_from(path: &BezPath, rule: FillRule, p: &Params, from: Option
     let grid = Grid::new(&outlines);
     let shape = Area { outlines: &outlines, rule, grid: grid.as_ref() };
     let mut travels = Travels::new(shape);
-    if p.underlay {
-        edge_runs(&mut travels, &p, &mut runs);
-        tatami_underlay(&mut travels, &p, &mut runs);
-    }
-    let axes = Axes::new(p.angle);
-    if let Some((lo, hi)) = shape.extent(axes.across)
-        && hi - lo >= p.density * FIRST_ROW
-    {
-        let layer = Layer { axes, spacing: p.density, inset: 0.0 };
-        let regions = layer.regions(shape, lo, hi, &p);
-        sew(&regions, &mut travels, MAX_SEEN, true, &p, &mut runs);
-    }
+    sew_area(shape, &mut travels, &p, &[], &mut runs);
     runs.join(&p)
 }
 
-/// An edge run along each outline, to hold the fabric under the fill: each starts at the corner
-/// nearest the needle, and is reached by travelling inside the shape (hidden under the fill, so of
-/// any length).
-fn edge_runs(travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
-    for sub in travels.area.outlines {
+/// `path`'s subpaths as a fill takes them: closed as paint closes them (SVG, PDF), so a shape drawn
+/// without a final close is still an area; a subpath that encloses no area stays a line.
+pub(super) fn closed_subpaths(path: &BezPath) -> Vec<SubPath> {
+    subpaths(path)
+        .into_iter()
+        .map(|mut s| {
+            s.closed = s.closed || (s.pts.len() >= 3 && area(&s.pts).abs() > MIN_AREA);
+            s
+        })
+        .collect()
+}
+
+/// The fill of `rows` (its underlay and its top rows) sewn after `runs`, the needle travelling
+/// inside the area `travels` crosses (`rows` itself, or a larger shape that holds it). When
+/// `toward` names places sewn next, the top rows end as near one of them as their order allows
+/// ([`sew`]).
+fn sew_area(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, toward: &[Point], runs: &mut Runs) {
+    if p.underlay {
+        edge_runs(rows, travels, p, runs);
+        tatami_underlay(rows, travels, p, runs);
+    }
+    let axes = Axes::new(p.angle);
+    if let Some((lo, hi)) = rows.extent(axes.across)
+        && hi - lo >= p.density * FIRST_ROW
+    {
+        let layer = Layer { axes, spacing: p.density, inset: 0.0 };
+        let regions = layer.regions(rows, lo, hi, p);
+        sew(&regions, travels, MAX_SEEN, true, p, toward, runs);
+    }
+}
+
+/// The smallest piece of a shape's rest that is filled once its narrow columns are cut out (square
+/// millimetres): a smaller one is a sliver where a column's end meets the outline, too small for a
+/// row of its own (the shortest is 0.8 mm long), and the column's own pull compensation covers it.
+const MIN_PIECE: f64 = 1.0;
+
+/// A filled shape sewn in parts: `rest`, the shape without its narrow columns (cut out by the
+/// caller with path operations), as a tatami fill, and each of `columns` as a satin column whose
+/// width follows the shape ([`sew_column`]). The pieces of the rest (each outline with the holes
+/// inside it) and the columns are sewn one after another, whichever starts nearest the needle
+/// next, so that the needle moves on to what lies next to where it is. It travels inside the whole
+/// `shape` (`rule` decides what it covers) from part to part, under the parts still to come where
+/// it can; over a piece of the rest already sewn a travel may show for at most [`MAX_SEEN`], and
+/// over a column already sewn it is not counted as showing. `fill` and `satin`
+/// are the two kinds of parts' parameters. A piece of the rest smaller than [`MIN_PIECE`] is left
+/// out.
+pub fn fill_with_columns(
+    shape: &BezPath,
+    rule: FillRule,
+    rest: &BezPath,
+    columns: &[Column],
+    fill: &Params,
+    satin: &Params,
+    from: Option<Point>,
+) -> Vec<Stitch> {
+    let fill = Params { style: Style::Fill, ..*fill }.sane();
+    let satin = Params { style: Style::Satin, ..*satin }.sane();
+    let mut runs = Runs::from(from);
+    let subs = closed_subpaths(shape);
+    let outlines: Vec<&SubPath> = subs.iter().filter(|s| s.closed && s.pts.len() >= 3).collect();
+    if outlines.is_empty() {
+        return runs.join(&fill);
+    }
+    let grid = Grid::new(&outlines);
+    let whole = Area { outlines: &outlines, rule, grid: grid.as_ref() };
+    let mut travels = Travels::new(whole);
+    let rest_subs = closed_subpaths(rest);
+    let pieces = pieces(&rest_subs);
+    let grids: Vec<Option<Grid>> = pieces.iter().map(|p| Grid::new(p)).collect();
+    let areas: Vec<Area<'_>> = pieces.iter().zip(&grids).map(|(p, g)| Area { outlines: p, rule: FillRule::NonZero, grid: g.as_ref() }).collect();
+    let parts: Vec<Part> = (0..areas.len()).map(Part::Piece).chain((0..columns.len()).map(Part::Column)).collect();
+    let contacts: Vec<Vec<Point>> = parts
+        .iter()
+        .map(|part| match *part {
+            Part::Piece(i) => areas.get(i).map(|a| spread(a.outlines.iter().flat_map(|s| s.pts.iter().copied()).collect())).unwrap_or_default(),
+            Part::Column(i) => columns.get(i).map(|c| if c.closed { spread(c.middles()) } else { ends(c) }).unwrap_or_default(),
+        })
+        .collect();
+    // An open column that does not come back is left at its other end.
+    let through =
+        |k: usize| matches!(parts.get(k), Some(Part::Column(i)) if columns.get(*i).is_some_and(|c| !c.closed && !column_returns(c, &satin)));
+    let order = Order { contacts: &contacts, through: &through }.best(runs.here_inside());
+    let mut sewn: Vec<bool> = vec![false; areas.len()];
+    for (step, &k) in order.iter().enumerate() {
+        if runs.full() {
+            break;
+        }
+        match parts.get(k) {
+            Some(&Part::Piece(i)) => {
+                // It ends as near the part sewn next as it can.
+                let toward = order.get(step + 1).and_then(|&next| contacts.get(next)).cloned().unwrap_or_default();
+                if let Some(&area) = areas.get(i) {
+                    sew_area(area, &mut travels, &fill, &toward, &mut runs);
+                }
+                if let Some(s) = sewn.get_mut(i) {
+                    *s = true;
+                }
+            }
+            Some(&Part::Column(i)) => {
+                // A travel shows where it crosses a piece of the rest already sewn.
+                let seen = |route: &[Point]| areas.iter().zip(&sewn).filter(|(_, s)| **s).map(|(a, _)| inside(*a, route)).sum::<f64>();
+                let mut reach = |runs: &mut Runs, to: Point, to_inside: Point| runs.approach(&mut travels, to, to_inside, MAX_SEEN, &seen, &fill);
+                if let Some(column) = columns.get(i) {
+                    sew_column(column, &satin, &mut runs, &mut reach);
+                }
+            }
+            None => {}
+        }
+    }
+    runs.join(&fill)
+}
+
+/// The pieces of a shape's rest (`subs`, from path operations): each outline wound as the largest
+/// one with the outlines wound the other way inside it (its holes), the smallest that holds them.
+/// A piece smaller than [`MIN_PIECE`] is left out: a sliver where a column's end meets the outline.
+fn pieces(subs: &[SubPath]) -> Vec<Vec<&SubPath>> {
+    let closed: Vec<&SubPath> = subs.iter().filter(|s| s.closed && s.pts.len() >= 3).collect();
+    let outer = closed.iter().map(|s| area(&s.pts)).fold(0.0f64, |a, b| if b.abs() > a.abs() { b } else { a }).signum();
+    let (outers, holes): (Vec<&SubPath>, Vec<&SubPath>) = closed.into_iter().partition(|s| area(&s.pts).signum() == outer);
+    let mut out: Vec<Vec<&SubPath>> = outers.iter().filter(|s| area(&s.pts).abs() >= MIN_PIECE).map(|s| vec![*s]).collect();
+    for hole in holes {
+        let Some(&q) = hole.pts.first() else { continue };
+        let owner = out
+            .iter_mut()
+            .filter(|p| p.first().is_some_and(|o| Area { outlines: std::slice::from_ref(o), rule: FillRule::NonZero, grid: None }.contains(q)))
+            .min_by(|a, b| {
+                let size = |p: &Vec<&SubPath>| p.first().map_or(f64::INFINITY, |o| area(&o.pts).abs());
+                size(a).total_cmp(&size(b))
+            });
+        if let Some(p) = owner {
+            p.push(hole);
+        }
+    }
+    out
+}
+
+/// One part of a shape sewn with its columns: a piece of its rest, or a column.
+#[derive(Clone, Copy)]
+enum Part {
+    Piece(usize),
+    Column(usize),
+}
+
+/// The most points of a part's outline weighed when ordering the parts ([`Order`]): enough to
+/// tell which parts touch, a bound on the work.
+const CONTACTS: usize = 64;
+/// The most parts whose every order is weighed; beyond, the nearest part is sewn next.
+const MAX_ORDERED: usize = 6;
+
+/// At most [`CONTACTS`] of `pts`, spread evenly along them.
+fn spread(pts: Vec<Point>) -> Vec<Point> {
+    let step = pts.len().div_ceil(CONTACTS).max(1);
+    pts.into_iter().step_by(step).collect()
+}
+
+/// An open column's two ends (the middles of its first and last stations).
+fn ends(column: &Column) -> Vec<Point> {
+    let m = column.middles();
+    [m.first().copied(), m.last().copied()].into_iter().flatten().collect()
+}
+
+/// The order a shape's parts are sewn in: each part by the points where the needle can come in or
+/// leave (`contacts`: a piece's outline, a ring's middle, an open column's two ends), the order
+/// whose moves from part to part are shortest in all. A column sewn `through` is left at the end
+/// it did not come in by, one that comes back ([`column_returns`]) at the end it came in by, and a
+/// piece anywhere (its fill ends as near the next part as it can). Every order is weighed for up
+/// to [`MAX_ORDERED`] parts; beyond, the nearest next.
+struct Order<'a> {
+    contacts: &'a [Vec<Point>],
+    through: &'a dyn Fn(usize) -> bool,
+}
+
+/// Where the needle is between parts: at a point, anywhere on a part, or nowhere yet.
+#[derive(Clone, Copy)]
+enum At {
+    Point(Point),
+    Part(usize),
+    Nowhere,
+}
+
+impl Order<'_> {
+    /// The parts' order, from `here`.
+    fn best(&self, here: Option<Point>) -> Vec<usize> {
+        let n = self.contacts.len();
+        let start = here.map_or(At::Nowhere, At::Point);
+        if n > MAX_ORDERED {
+            // The nearest part next.
+            let mut left: Vec<usize> = (0..n).collect();
+            let mut at = start;
+            let mut out = Vec::with_capacity(n);
+            while let Some(k) =
+                (0..left.len()).min_by(|&i, &j| self.step(at, left.get(i).copied()).0.total_cmp(&self.step(at, left.get(j).copied()).0))
+            {
+                let part = left.swap_remove(k);
+                at = self.step(at, Some(part)).1;
+                out.push(part);
+            }
+            return out;
+        }
+        let mut best: (f64, Vec<usize>) = (f64::INFINITY, (0..n).collect());
+        let mut path: Vec<usize> = Vec::with_capacity(n);
+        self.search(start, 0.0, &mut path, &mut best);
+        best.1
+    }
+
+    /// Every order that goes on from `path` (reached at `at`, `cost` so far), the cheapest kept in
+    /// `best`.
+    fn search(&self, at: At, cost: f64, path: &mut Vec<usize>, best: &mut (f64, Vec<usize>)) {
+        if cost >= best.0 {
+            return;
+        }
+        if path.len() == self.contacts.len() {
+            *best = (cost, path.clone());
+            return;
+        }
+        for k in 0..self.contacts.len() {
+            if path.contains(&k) {
+                continue;
+            }
+            let (d, next) = self.step(at, Some(k));
+            path.push(k);
+            self.search(next, cost + d, path, best);
+            path.pop();
+        }
+    }
+
+    /// How far the needle moves from `at` into part `k`, and where it is after it.
+    fn step(&self, at: At, k: Option<usize>) -> (f64, At) {
+        let Some(k) = k else { return (f64::INFINITY, at) };
+        let Some(points) = self.contacts.get(k) else { return (f64::INFINITY, at) };
+        let from: Vec<Point> = match at {
+            At::Point(p) => vec![p],
+            At::Part(j) => self.contacts.get(j).cloned().unwrap_or_default(),
+            At::Nowhere => Vec::new(),
+        };
+        // The nearest pair of a point the needle may be at and a point of the part.
+        let nearest = points
+            .iter()
+            .enumerate()
+            .map(|(e, q)| (e, from.iter().map(|p| p.distance(*q)).fold(if from.is_empty() { 0.0 } else { f64::INFINITY }, f64::min)))
+            .min_by(|a, b| a.1.total_cmp(&b.1));
+        let Some((entry, d)) = nearest else { return (f64::INFINITY, at) };
+        if (self.through)(k) {
+            // In at one end, out at the other.
+            let exit = points.get(1 - entry.min(1)).copied();
+            (d, exit.map_or(At::Part(k), At::Point))
+        } else if points.len() == 2 {
+            // An open column that comes back: out where it came in.
+            (d, points.get(entry).copied().map_or(At::Part(k), At::Point))
+        } else {
+            (d, At::Part(k))
+        }
+    }
+}
+
+/// How much of `route` lies inside `shape` (millimetres), measured every half millimetre.
+fn inside(shape: Area<'_>, route: &[Point]) -> f64 {
+    /// How finely a way is measured (millimetres), and the most steps one stretch takes.
+    const STEP: f64 = 0.5;
+    const MAX_STEPS: f64 = 10_000.0;
+    let mut total = 0.0;
+    for w in route.windows(2) {
+        let [a, b] = w else { continue };
+        let len = a.distance(*b);
+        if !len.is_finite() {
+            continue;
+        }
+        let steps = (len / STEP).ceil().clamp(1.0, MAX_STEPS) as usize;
+        total += (0..steps).filter(|&k| shape.contains(a.lerp(*b, (k as f64 + 0.5) / steps as f64))).count() as f64 * len / steps as f64;
+    }
+    total
+}
+
+/// An edge run along each outline of `rows`, to hold the fabric under the fill: each starts at the
+/// corner nearest the needle, and is reached by travelling inside the shape (hidden under the fill,
+/// so of any length).
+fn edge_runs(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
+    for sub in rows.outlines {
         let start = runs.here_inside().and_then(|h| {
             (0..sub.pts.len()).min_by(|&i, &j| {
                 sub.pts.get(i).map_or(f64::INFINITY, |q| q.distance(h)).total_cmp(&sub.pts.get(j).map_or(f64::INFINITY, |q| q.distance(h)))
@@ -125,9 +381,9 @@ fn edge_runs(travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
 }
 
 /// A large fill's second underlay: sparse tatami rows across the top rows' direction, kept a
-/// little inside the edge so they never peek out.
-fn tatami_underlay(travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
-    let shape = travels.area;
+/// little inside the edge of `rows` so they never peek out.
+fn tatami_underlay(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
+    let shape = rows;
     // Under the top stitching, the underlay needs no pull compensation: it stays inside the edge.
     let under = Params {
         angle: p.angle + UNDERLAY_TURN,
@@ -146,7 +402,7 @@ fn tatami_underlay(travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
     let layer = Layer { axes, spacing: under.density, inset: TATAMI_UNDERLAY_INSET };
     let regions = layer.regions(shape, h.0, h.1, &under);
     // Under the top stitching, a travel of any length is hidden: the nearest region next will do.
-    sew(&regions, travels, f64::INFINITY, false, &under, runs);
+    sew(&regions, travels, f64::INFINITY, false, &under, &[], runs);
 }
 
 /// One layer of rows: their direction, the distance between them, and how far they stay inside
@@ -450,7 +706,7 @@ const MAX_SEARCHED: usize = 200;
 /// which orders a fill's fragments by a recursive walk from the one where sewing ends, so that
 /// travels between fragments run where the stitching still to come covers them: in a letter E
 /// with vertical rows, the arms are sewn first, each towards the spine, and the spine last.
-fn sew(regions: &Regions, travels: &mut Travels<'_>, max_seen: f64, search: bool, p: &Params, runs: &mut Runs) {
+fn sew(regions: &Regions, travels: &mut Travels<'_>, max_seen: f64, search: bool, p: &Params, toward: &[Point], runs: &mut Runs) {
     let n = regions.list.len();
     let mut sewn = vec![false; n];
     let mut neighbours: Vec<Vec<(usize, bool)>> = vec![Vec::new(); n];
@@ -483,7 +739,7 @@ fn sew(regions: &Regions, travels: &mut Travels<'_>, max_seen: f64, search: bool
         if search && piece.len() > 1 && piece.len() <= MAX_SEARCHED {
             orders.extend(roots(&piece, regions).into_iter().map(Some));
         }
-        let mut best: Option<(Runs, Vec<bool>)> = None;
+        let mut best: Option<(Runs, Vec<bool>, f64)> = None;
         for root in orders {
             let mut local = Runs::continuing(runs);
             let mut done = sewn.clone();
@@ -508,11 +764,18 @@ fn sew(regions: &Regions, travels: &mut Travels<'_>, max_seen: f64, search: bool
                 }
                 Some(root) => ctx.tree(&neighbours, root, &mut local, &mut done),
             }
-            if best.as_ref().is_none_or(|(b, _)| local.cost < b.cost) {
-                best = Some((local, done));
+            // The last piece of the layer ends where the needle goes on from: the move from there
+            // to the nearest place sewn next counts as a travel that shows.
+            let exit = match (pieces.is_empty(), local.here()) {
+                (true, Some(h)) if !toward.is_empty() => COST_SEEN * toward.iter().map(|t| t.distance(h)).fold(f64::INFINITY, f64::min),
+                _ => 0.0,
+            };
+            let total = local.cost + exit;
+            if best.as_ref().is_none_or(|(_, _, b)| total < *b) {
+                best = Some((local, done, total));
             }
         }
-        if let Some((local, done)) = best {
+        if let Some((local, done, _)) = best {
             runs.append(local);
             sewn = done;
         }

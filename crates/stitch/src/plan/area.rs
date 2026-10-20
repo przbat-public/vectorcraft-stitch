@@ -102,8 +102,27 @@ impl Area<'_> {
         })
     }
 
+    /// `visit` called with every edge that segment `a`–`b` may meet (and maybe others), with its
+    /// place in the outlines' list of edges (outline by outline, each from a point to the next):
+    /// with the grid, the edges in the cells the segment passes; without, all of them. An edge may
+    /// come more than once.
+    pub(super) fn edges_along(&self, a: Point, b: Point, mut visit: impl FnMut(usize, Point, Point)) {
+        match self.grid {
+            Some(grid) => {
+                let visit = std::cell::RefCell::new(&mut visit);
+                grid.any_along_index(a, b, |i| {
+                    if let (Some(&id), Some(&(c, d))) = (grid.ids.get(i), grid.edges.get(i)) {
+                        (visit.borrow_mut())(id, c, d);
+                    }
+                    false
+                });
+            }
+            None => self.edges().enumerate().for_each(|(id, (c, d))| visit(id, c, d)),
+        }
+    }
+
     /// Whether `q` lies on one of the outlines' edges (within [`ON_EDGE`]).
-    fn on_outline(&self, q: Point) -> bool {
+    pub(super) fn on_outline(&self, q: Point) -> bool {
         match self.grid {
             Some(grid) => grid.any_along(q, q, |c, d| near_segment(q, c, d)),
             None => self.edges().any(|(c, d)| near_segment(q, c, d)),
@@ -421,6 +440,8 @@ pub(super) struct Grid {
     /// The edges in each cell (row-major), as indices into `edges`.
     cells: Vec<Vec<u32>>,
     edges: Vec<(Point, Point)>,
+    /// Each edge's place in the outlines' own list of edges ([`Area::edges_along`]).
+    ids: Vec<usize>,
 }
 
 impl Grid {
@@ -440,10 +461,11 @@ impl Grid {
     /// The grid of `outlines`' edges; `None` when they have no finite extent, or when their edges
     /// are so long for their number that the grid would cost more than it saves.
     pub(super) fn new(outlines: &[&SubPath]) -> Option<Self> {
-        let edges: Vec<(Point, Point)> = edges(outlines)
-            .filter(|(a, b)| a.x.is_finite() && a.y.is_finite() && b.x.is_finite() && b.y.is_finite())
+        let (ids, edges): (Vec<usize>, Vec<(Point, Point)>) = edges(outlines)
+            .enumerate()
+            .filter(|(_, (a, b))| a.x.is_finite() && a.y.is_finite() && b.x.is_finite() && b.y.is_finite())
             .take(u32::MAX as usize)
-            .collect();
+            .unzip();
         let (mut x0, mut y0, mut x1, mut y1) = (f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY);
         for (a, _) in &edges {
             (x0, y0, x1, y1) = (x0.min(a.x), y0.min(a.y), x1.max(a.x), y1.max(a.y));
@@ -459,7 +481,7 @@ impl Grid {
             .max(side / Self::MAX_SIDE as f64);
         let nx = ((w / cell).floor() as usize + 1).min(Self::MAX_SIDE);
         let ny = ((h / cell).floor() as usize + 1).min(Self::MAX_SIDE);
-        let mut grid = Self { x0, y0, cell, nx, ny, cells: vec![Vec::new(); nx * ny], edges: Vec::new() };
+        let mut grid = Self { x0, y0, cell, nx, ny, cells: vec![Vec::new(); nx * ny], edges: Vec::new(), ids };
         // Each edge goes in the cells it passes through, row by row: in each row, the cells under
         // the part of the edge within the row's band. Everything is grown a hair so that a point
         // on a cell's border finds the edge from either side. An edge's own box would be simpler,
@@ -536,6 +558,11 @@ impl Grid {
     /// Whether `hit` holds for any edge in the cells segment `a`–`b` passes through (walked cell by
     /// cell, Amanatides and Woo's traversal).
     fn any_along(&self, a: Point, b: Point, hit: impl Fn(Point, Point) -> bool) -> bool {
+        self.any_along_index(a, b, |i| self.edges.get(i).is_some_and(|&(p, q)| hit(p, q)))
+    }
+
+    /// [`Grid::any_along`], `hit` given each edge's index in the grid's list.
+    fn any_along_index(&self, a: Point, b: Point, hit: impl Fn(usize) -> bool) -> bool {
         let (mut c, mut r) = (self.col(a.x), self.row(a.y));
         let (ec, er) = (self.col(b.x), self.row(b.y));
         let d = b - a;
@@ -551,7 +578,7 @@ impl Grid {
         let (mut tx, dx) = next(a.x, self.x0, d.x, c);
         let (mut ty, dy) = next(a.y, self.y0, d.y, r);
         for _ in 0..(self.nx + self.ny + 2) {
-            let found = self.cells.get(r * self.nx + c).into_iter().flatten().any(|&i| self.edges.get(i as usize).is_some_and(|&(p, q)| hit(p, q)));
+            let found = self.cells.get(r * self.nx + c).into_iter().flatten().any(|&i| hit(i as usize));
             if found {
                 return true;
             }
@@ -570,7 +597,7 @@ impl Grid {
             }
         }
         // The walk should have reached the end's cell: look at every edge to be sure.
-        self.edges.iter().any(|&(p, q)| hit(p, q))
+        (0..self.edges.len()).any(hit)
     }
 }
 

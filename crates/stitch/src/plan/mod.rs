@@ -34,15 +34,19 @@
 mod area;
 mod fill;
 mod geometry;
+mod narrow;
 mod running;
 mod runs;
 mod satin;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_narrow;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
-pub use fill::{MIN_AREA, fill};
+pub use fill::{MIN_AREA, fill, fill_with_columns};
+pub use narrow::{Column, columns as narrow_columns};
 pub use running::running;
 pub use runs::join_cut;
 pub use satin::{satin, satin_spacing};
@@ -114,6 +118,14 @@ const PUSH: f64 = 0.0;
 /// standard embroidery thread, the one the default fill spacing (rows 0.38 mm apart) covers
 /// without gaps.
 pub const THREAD_WEIGHT: f64 = 40.0;
+/// Filled parts narrower than this (millimetres) are sewn as satin columns rather than tatami
+/// ([`Params::narrow`]), as auto-digitizers choose satin for narrow parts. One digitizing guide
+/// keeps satin to parts narrower than 8–10 mm, past which its stitches lie loose
+/// (<https://www.drawstitch.com/blog/knowledge-base/how-to-digitize-satin-stitches/>), and Wilcom
+/// warns that a satin too wide sews loose and covers badly
+/// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/stitches/stitches-8.htm>);
+/// 7 mm stays below that, with room for pull compensation. An estimate.
+pub const NARROW_SATIN: f64 = 7.0;
 /// A satin column's width when none is given (millimetres). The export always gives one, the
 /// stroke's width; this is for callers of the planner that don't.
 const SATIN_WIDTH: f64 = 3.0;
@@ -208,6 +220,11 @@ pub struct Params {
     /// Satin only: pick [`Params::density`] from the column's width ([`satin_spacing`]) instead of
     /// using it as given. On by default; an explicit density turns it off.
     pub auto_spacing: bool,
+    /// Fill only: the widest part of a filled shape sewn as a satin column instead of tatami,
+    /// millimetres; 0 sews every part as tatami. The planner's [`narrow_columns`] finds such parts,
+    /// and [`fill_with_columns`] sews them with the rest of the shape, which the caller cuts out
+    /// (the planner has no path operations); [`stitches`] itself fills the whole shape.
+    pub narrow: f64,
 }
 
 // The ranges [`Params::sane`] clamps each value to (millimetres, lowest and highest). They are
@@ -232,6 +249,9 @@ const PUSH_RANGE: (f64, f64) = (0.0, 5.0);
 /// are shortened in proportion when they would take more. Push compensation corrects a fraction of
 /// a millimetre; more than half a column is a mistake.
 const MIN_PUSHED: f64 = 0.5;
+/// The widest part sewn as a satin column: none to 12 mm, the longest stitch a column's crossing
+/// may be before it is split ([`MAX_SATIN_STITCH_RANGE`]).
+const NARROW_RANGE: (f64, f64) = (0.0, 12.0);
 /// The thread's weight: from 10 wt (a heavy decorative thread, thicker than any embroidery
 /// thread) to 150 wt (finer than the finest bobbin and lettering threads).
 const THREAD_WEIGHT_RANGE: (f64, f64) = (10.0, 150.0);
@@ -281,6 +301,7 @@ impl Params {
                 width: 0.0,
                 max_satin: MAX_SATIN_STITCH,
                 auto_spacing: false,
+                narrow: 0.0,
             },
             // A satin column's stitches cross from rail to rail: it uses no stitch length or angle
             // (a satin without a width is filled instead, and then they apply).
@@ -301,6 +322,7 @@ impl Params {
                 width: SATIN_WIDTH,
                 max_satin: MAX_SATIN_STITCH,
                 auto_spacing: true,
+                narrow: 0.0,
             },
             // A fill has no ends to push in: its rows run edge to edge.
             Style::Fill => Self {
@@ -320,6 +342,7 @@ impl Params {
                 width: 0.0,
                 max_satin: MAX_SATIN_STITCH,
                 auto_spacing: false,
+                narrow: NARROW_SATIN,
             },
         }
     }
@@ -351,6 +374,7 @@ impl Params {
             width: clamp(self.width, d.width, (0.0, MAX_SATIN_WIDTH)),
             max_satin: clamp(self.max_satin, d.max_satin, MAX_SATIN_STITCH_RANGE),
             auto_spacing: self.auto_spacing,
+            narrow: clamp(self.narrow, d.narrow, NARROW_RANGE),
         }
     }
 
@@ -424,6 +448,33 @@ pub fn try_stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Optio
         )));
     }
     Ok(stitches_from(path, rule, &p, from))
+}
+
+/// [`fill_with_columns`], refused with [`Error::TooLarge`] when it would need more than
+/// [`MAX_STITCHES`] stitches: the whole `shape` filled, plus each column's crossings and underlay,
+/// estimated before any stitch is planned.
+pub fn try_fill_with_columns(
+    shape: &BezPath,
+    rule: FillRule,
+    rest: &BezPath,
+    columns: &[Column],
+    fill: &Params,
+    satin: &Params,
+    from: Option<Point>,
+) -> crate::Result<Vec<Stitch>> {
+    /// More than a column's points per millimetre of its middle beyond its crossings: its
+    /// underlay's (up to three runs at [`UNDERLAY_STITCH`]) and its splits.
+    const UNDERLAYS: f64 = 3.0;
+    let (f, s) = (Params { style: Style::Fill, ..*fill }.sane(), Params { style: Style::Satin, ..*satin }.sane());
+    let closest = s.density.min(satin_spacing(f64::INFINITY) * thread_scale(s.thread_weight));
+    let n = estimate(&subpaths(shape), &f)
+        + columns.iter().map(|c| c.length() * (satin::CROSSINGS_PER_SPACING / closest + UNDERLAYS / UNDERLAY_STITCH)).sum::<f64>();
+    if !n.is_finite() || n > MAX_STITCHES as f64 {
+        return Err(Error::TooLarge(format!(
+            "a shape would need about {n:.0} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design"
+        )));
+    }
+    Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, from))
 }
 
 /// About how many points `subs` plan into in style `p` (an upper estimate; not finite when the

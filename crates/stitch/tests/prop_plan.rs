@@ -6,7 +6,7 @@
 
 use proptest::prelude::*;
 use vectorcraft_geom::{BezPath, FillRule, Shape};
-use vectorcraft_stitch::plan::{Params, Style, stitches};
+use vectorcraft_stitch::plan::{Params, Style, fill_with_columns, narrow_columns, stitches};
 use vectorcraft_stitch::{Command, Stitch};
 use vectorcraft_testkit::strategies::arb_closed_shape;
 
@@ -111,6 +111,30 @@ proptest! {
         for (d, up, cut) in moves(&stitches(&shape.to_bezpath(), FillRule::NonZero, &p)) {
             prop_assert_eq!(cut, up && d > p.trim, "a {} mm move, needle up {}, cut {} (trim {}, {:?})", d, up, cut, p.trim, p.style);
             prop_assert!(!up || d > p.min_stitch - 1e-9, "the needle lifts for a {} mm move", d);
+        }
+    }
+
+    /// The narrow parts found in any shape lie inside it and are typically no wider than asked
+    /// (half as wide again where one runs on); sewn with
+    /// the shape (here its rest is the whole shape: the path operations that cut them out run in
+    /// the engine), every needle point stays on the art, or past it by the compensation at most.
+    #[test]
+    fn narrow_columns_stay_on_the_art(shape in arb_closed_shape(), widest in 1.0..10.0f64) {
+        let path: BezPath = shape.to_bezpath();
+        let columns = narrow_columns(&path, FillRule::NonZero, widest);
+        let bounds = path.bounding_box();
+        let (fill, satin) = (Params::for_style(Style::Fill), Params::for_style(Style::Satin));
+        for c in &columns {
+            prop_assert!(c.width() <= widest + 1e-6, "a column {} wide", c.width());
+            for (a, b) in &c.stations {
+                prop_assert!(a.distance(*b) <= 1.5 * widest + 1e-6, "a station {} wide", a.distance(*b));
+                prop_assert!(bounds.inflate(1e-6, 1e-6).contains(a.midpoint(*b)), "{:?} outside {bounds:?}", a.midpoint(*b));
+            }
+        }
+        let reach = fill.compensation(bounds.width().hypot(bounds.height()))[0].max(satin.compensation(1.5 * widest)[0]) + 1e-6;
+        let b = bounds.inflate(reach, reach);
+        for s in fill_with_columns(&path, FillRule::NonZero, &path, &columns, &fill, &satin, None) {
+            prop_assert!(s.x.is_finite() && s.y.is_finite() && b.contains(s.point()), "{:?} outside {b:?}", s.point());
         }
     }
 }

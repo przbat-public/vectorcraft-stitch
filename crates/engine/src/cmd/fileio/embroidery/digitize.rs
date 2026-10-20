@@ -38,6 +38,37 @@ const MAX_DESIGN_STITCHES: usize = 2_000_000;
 /// round, which have none; this is a stroke's usual default.
 const ROUND_JOINS: f64 = 4.0;
 
+/// How much each narrow column's outline grows before it is cut out of its shape (millimetres): a
+/// hair, so that it covers its own sides, which lie on the shape's outline, and leaves no sliver of
+/// the shape there. Far below a thread's width.
+const COLUMN_GROWTH: f64 = 0.05;
+
+/// `area` without its narrow `columns` ([`plan::narrow_columns`]): what is left to fill, each
+/// column's outline grown by [`COLUMN_GROWTH`] and cut out; and the rest and the grown columns
+/// together, the area the needle travels in. (The rest's edges along the outline come from the
+/// path operations, a hair off the outline as the planner flattens it: travelling in the rest
+/// and the columns as the same operations give them, every row's end lies on or inside it.)
+fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column]) -> (BezPath, BezPath) {
+    let mut cut: Option<PathData> = None;
+    for c in columns {
+        let outline = PathData::from_bezpath(&c.outline());
+        let band = outline_stroke(&outline, 2.0 * COLUMN_GROWTH, Cap::Round, Join::Round, ROUND_JOINS);
+        let grown = boolean(&outline, FillRule::NonZero, &band, FillRule::NonZero, BoolOp::Union);
+        cut = Some(match cut {
+            Some(all) => boolean(&all, FillRule::NonZero, &grown, FillRule::NonZero, BoolOp::Union),
+            None => grown,
+        });
+    }
+    match cut {
+        Some(cut) => {
+            let rest = boolean(&PathData::from_bezpath(area), rule, &cut, FillRule::NonZero, BoolOp::Difference);
+            let whole = boolean(&rest, FillRule::NonZero, &cut, FillRule::NonZero, BoolOp::Union);
+            (rest.to_bezpath(), whole.to_bezpath())
+        }
+        None => (area.clone(), area.clone()),
+    }
+}
+
 /// `path`'s subpaths, each a path of its own (as drawn: closed or not).
 fn subpaths(path: &BezPath) -> Vec<BezPath> {
     let mut out: Vec<BezPath> = Vec::new();
@@ -389,7 +420,19 @@ impl Digitizer<'_> {
             estimate = Some(r.intersect(clip.bounding_box()));
         }
         let from = self.seq.needle(self.seq.target(color, estimate));
-        let mut stitches = match plan::try_stitches_from(bp, rule, &params, from) {
+        // A fill's narrow parts are satin columns, unless `stitchStyle` forces tatami.
+        let columns = match (style, self.forced()) {
+            (Style::Fill, None) => plan::narrow_columns(bp, rule, params.narrow),
+            _ => Vec::new(),
+        };
+        let planned = if columns.is_empty() {
+            plan::try_stitches_from(bp, rule, &params, from)
+        } else {
+            let satin = self.opts.params(Style::Satin, NO_WIDTH);
+            let (rest, whole) = rest_of(bp, rule, &columns);
+            plan::try_fill_with_columns(&whole, FillRule::NonZero, &rest, &columns, &params, &satin, from)
+        };
+        let mut stitches = match planned {
             Ok(s) => s,
             Err(e) => {
                 self.failed = Some(e.to_string());

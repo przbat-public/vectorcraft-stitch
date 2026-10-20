@@ -65,15 +65,20 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
    of 18 inner penetrations within 0.15 mm of the last to none.
 2. **Default density and stitch length.** Done: fill rows 0.38 mm apart (Wilcom's tatami default,
    Morrish's gap-free spacing), stitches up to 4 mm (Wilcom). Ink/Stitch's denser defaults (0.25 and
-   3) are not followed, so VectorCraft still sews 40–60 % of the person's stitches. Per-fabric
+   3) are not followed, so VectorCraft still sews 40–55 % of the person's stitches. Per-fabric
    values wait for the fabric presets below.
 3. **Pull compensation for fills, and gaps between shapes.** Done: a fill's rows reach past the
    edge at each end by `pullCompensation` (0.2 mm, as satins), at most half way across a gap, and
    without changing the sewing order; `expand` grows a fill all round (path operations in the
    engine) so shapes drawn apart meet. With the default 0.2 mm, rows square to a gap close 0.4 mm of it (less where they cross it at an angle); two fills drawn 0.6 mm apart meet with 0.3 mm of pull compensation or `expand`. A move along two
    edges in line no longer crosses the gap between them.
-4. **Narrow filled areas as satin.** Every filled shape becomes tatami; narrow parts (stems, thin
-   arms) are better as satin columns, as auto-digitizers choose by width.
+4. **Narrow filled areas as satin.** Done: a fill's parts narrower than `narrowAsSatin` (7 mm)
+   are found by pairing opposite stretches of the outline and sewn as satin columns of varying
+   width that follow the shape (rings close, round and pointed ends are followed round); the
+   export cuts them out with path operations and fills the rest, the parts sewn in the order that
+   moves least. On the real designs trims fell from 26 to 19 and jumps from 57 to 44. Branching
+   columns into one another (instead of a square of tatami where strokes meet) is left for
+   "branching of touching objects" below.
 5. **Satin compensation.** Done: `pullCompensationPercent` adds a share of the column's width,
    each compensation takes a value per side, and `pushCompensation` shortens an open column's
    ends (off by default: no published starting value was found). A column's last crossing now goes across
@@ -176,8 +181,15 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
   PR description.
 - **Commit a refactor apart from behaviour changes:** first the pure move (code moved or renamed,
   tests unchanged and passing), then the fixes, so each diff shows what really changed.
-- **PR descriptions are in English** and self-contained, with embroidery terms explained for
-  newcomers.
+- **PR descriptions are in English and self-contained.** Someone who knows neither this
+  repository's history nor the conversation behind the work must understand them: explain the
+  embroidery terms, and don't lean on another PR's text (link it and say in a sentence what it
+  brings). Start with a **TL;DR**: a few bullets on what changes, what it gives, and what to
+  watch. Then the details, the results (measured, with numbers), the tests, what is not done, and
+  the checks run.
+- **Don't hard-wrap text that goes to GitHub.** Write each paragraph and each list item of a PR
+  description, issue or comment on one line: GitHub shows every line break there, so text wrapped
+  at a fixed width reads as ragged short lines. (Files in the repository keep their wrapping.)
 - **Embroidery isn't an Illustrator feature,** so it doesn't move the Illustrator-parity scores in
   `docs/target-app-parity.md`. Record it in `docs/file-format-parity.md` (format rows) and the
   ROADMAP's progress log.

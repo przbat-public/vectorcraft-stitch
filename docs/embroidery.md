@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** pull compensation for fills (rows reach past the edge) and per side or by width for satins, push compensation at satin ends, `expand` to grow fills so neighbours meet, spacing by thread weight (as thick as the thread: Madeira's chart); a satin's spacing is measured peak to peak (its crossings half that apart, twice as dense as before); a region's last row keeps its last stitch; a satin's last crossing goes across, and a move along two edges in line no longer crosses the gap between them
+> **Last reviewed:** 2026-10-20 · **Last updated:** 2026-10-20 · **Change:** a fill's narrow parts (stripes, stems, rings, the strokes of a letter) are sewn as satin columns that follow the shape, the rest as tatami (`narrowAsSatin`, 7 mm), rings closing at every width, a narrow part beside a wider block keeping its column, no column fanning across a wide part, push compensation sparing a column's end that meets the rest; a satin's spacing is measured peak to peak (its crossings half that apart, twice as dense as before); a region's last row keeps its last stitch; `threadWeight` follows the thread's thickness; a negative `expand` shrinks the region; an opened design's lines turn round, not mitred
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -25,13 +25,14 @@ control channel use it). Every writable format's options are listed by `document
 
 | Option | Default | Meaning |
 |---|---|---|
-| `stitchStyle` | `auto` | `auto` fills fills, satins strokes 1 mm and wider, runs narrower ones; `fill`, `satin` and `running` force one style (`fill` on a stroke fills the area the stroke paints, at its width, caps and joins) |
+| `stitchStyle` | `auto` | `auto` fills fills (their narrow parts as satin columns, see `narrowAsSatin`), satins strokes 1 mm and wider, runs narrower ones; `fill`, `satin` and `running` force one style (`fill` on a stroke fills the area the stroke paints, at its width, caps and joins; `fill` on a fill sews all of it as tatami) |
 | `density` | 0.38 mm in fills; satin by width | distance between threads: between a fill's rows; between two penetrations on one rail of a satin column (peak to peak), its crossings lying half that apart. Left out, a satin column picks it by its width (*auto spacing*: 0.5 mm under 2 mm wide, 0.45 under 4, 0.4 under 6, 0.37 wider; estimates), and both follow `threadWeight`; given, it is used as it is |
 | `stitchLength` | 4 mm in fills, 2.5 mm in running lines | the longest stitch of a running line or a fill row |
 | `stitchAngle` | 45° | the direction a fill's rows run |
 | `pullCompensation` | 0.2 mm | how much farther the stitches reach at each side so the fabric's pull leaves no gap: each rail of a satin column, each end of a fill's rows. One number for both sides, or two: `[left, right]` of a satin as its path runs, `[start, end]` of a fill's rows along their direction; 0 to 2 mm a side (a negative value counts as 0) |
 | `pullCompensationPercent` | 0 | pull compensation that grows with the stitch, on top of `pullCompensation`: percent of a satin column's width, or of a fill row's length, added at each side (at most 2 mm a side with the fixed value). One number or two, as `pullCompensation`; 0 to 50 % |
-| `pushCompensation` | 0 mm | how much shorter an open satin column is sewn at each end, since sewing pushes the fabric out there; one number or two (`[start, end]` as the path is drawn). A column keeps at least half its length; 0 to 5 mm an end (a negative value counts as 0) |
+| `pushCompensation` | 0 mm | how much shorter an open satin column is sewn at each end, since sewing pushes the fabric out there; one number or two (`[start, end]` as the path is drawn). A fill's narrow part sewn as satin is shortened only at an end where the shape ends, not where it meets the rest of the fill. A column keeps at least half its length; 0 to 5 mm an end (a negative value counts as 0) |
+| `narrowAsSatin` | 7 mm | a filled shape's parts narrower than this are sewn as satin columns that follow the shape, the rest as tatami; 0 sews every fill as tatami; 0 to 12 |
 | `expand` | 0 mm | how far a filled shape grows all round before it is stitched, so that neighbouring shapes drawn apart meet; negative shrinks it; −2 to 2 |
 | `threadWeight` | 40 | the thread's weight (wt: kilometres per kilogram, so a larger number is a finer thread): the default spacing of fills and satin columns follows its thickness (fill rows 0.44 mm apart for 30 wt, 0.31 for 60); 10 to 150 |
 | `underlay` | `true` | an edge run under fills, a centre run under satin columns |
@@ -58,7 +59,8 @@ per thread class; against Madeira's chart that changed spacing about half as muc
 do.)
 
 **Reading a design.** Open the file as a document; `File → Open` lists the formats. Each colour
-block becomes a group named after its thread, and each run of stitches a thin round-capped line in
+block becomes a group named after its thread, and each run of stitches a thin line, round at its
+ends and turns (a mitred turn would draw a spike past a satin's sharp zigzag), in
 the thread's colour, so the design looks like it will sew and can be measured, traced over or
 recoloured. A DST or EXP file carries no colours: those blocks get the default palette's colours,
 one per block. `design.pes` opens by its `#PES` bytes whatever it is called.
@@ -234,6 +236,63 @@ the fabric.
   many jumps, where testing every edge against every corner took about 100 ms and gave up
   travelling (the graph was too large), ending with 25–34 trims and over 200 jumps.
 
+- **Narrow parts as satin.** Satin covers a narrow part better than tatami: one long glossy stitch
+  across it, where tatami's rows are a few short stitches long. Auto-digitizers choose by width
+  too, object by object (here each part of a shape is chosen on its own), and one digitizing guide
+  keeps satin to parts narrower than 8–10 mm, past which its stitches lie loose. So a filled shape's parts narrower than `narrowAsSatin` (7 mm, below that
+  with room for pull compensation; an estimate) are sewn as satin columns, and the rest of the
+  shape as tatami. Stripes, stems, rings, the strokes of a letter and the rind of a melon become
+  columns; a square, a dot or a wide area stays a fill.
+
+  *Finding them.* The outline is sampled every 0.25 mm. From each sample a ray goes into the
+  shape, square to the outline, to where it leaves it. The two points are opposite each other
+  when the ray is short enough, the outline there faces back within 60°, and the ray back from the
+  far point lands near the first (within half the width): so a corner, or a round end looking down
+  a stem's length, pairs with nothing. Samples whose opposite points move steadily the other way
+  form a *side*, and two sides opposite each other are a column, matched point to point (its
+  *stations*): a side is paired with the side most of its samples look across at or, when that
+  makes no column, the next, so a bar's side that runs on along a thicker block at its end still
+  pairs with the bar's other side. The rays leave square to the outline as the curve runs, its
+  direction turning smoothly from one flattened segment to the next (with each segment's own
+  direction, the far points moved in a sawtooth and a letter's curve broke into pieces); a point
+  repeated where two flattened curves join is dropped first (there the turn stopped, the far
+  points jumped, and a ring 3 mm wide or more broke open, a quarter of it left to the tatami). A
+  ring (both sides all the way round) is a column that closes. At a pointed or round end the column follows the outline
+  round the tip, its stations narrowing to it; at a square end it stops at the corners. A column
+  may run on through parts up to half as wide again as `narrowAsSatin`, so that a stroke whose
+  width wavers about the limit is sewn whole rather than cut into satin and tatami, but its
+  typical (median) width must be within it, and a stretch wider than the limit may be no longer
+  than twice the column's typical width within it: a longer one (the bowl at each end of a
+  dumbbell, a knot on a stem) is cut out and left to the tatami, the column stopping either side
+  of it, so a column does not fan across a wide part. A column must be twice as long as it is wide, so
+  compact shapes stay fills, and one that lies mostly inside a longer one (the same part seen
+  across) is left out. A letter T is three columns (the bar's two arms and the stem) and a square
+  of tatami where they meet; an O is one column that closes and an S one column end to end.
+
+  *Sewing them.* A column is a satin whose width follows the shape: its crossings go from side to
+  side at each station's own width, its spacing picked by that width (auto spacing, and the
+  thread's weight), so it opens and closes as the column narrows and widens. Pull compensation
+  widens both sides by the mean of `pullCompensation`'s two values (a fill has no drawn direction
+  to tell its sides apart), push compensation shortens an end where the shape ends by the mean of
+  its two (not an end that meets the rest of the shape: the rest is cut out up to the column's
+  whole length, so a shorter column there would leave a band sewn by neither), and the underlay,
+  short stitches on curves and auto split are a stroke's. A column narrower than 1 mm is a
+  running line along its middle, as a stroke that narrow is. It covers a band about a thread
+  wide: on a part 0.6–1 mm wide that is less than tatami did where its rows ran slantwise across
+  the part, though tatami left out a part narrower than 0.8 mm where its rows ran square across
+  it (too short to sew).
+
+  *The rest and the order.* The export cuts the columns out of the shape with path operations
+  (the stitch planner depends on geometry only) and fills what is left. The pieces of the rest
+  and the columns are sewn one after another, in the order whose moves from part to part are
+  shortest (every order is weighed for up to six parts; past that, the nearest next). A column
+  sewn through is left at its far end, one whose underlay goes to the far end and comes back at
+  the end it began, and a piece's rows end as near the part sewn next as their order allows. The
+  needle travels inside the whole shape from part to part, under the parts still to come where it
+  can: over a piece of tatami already sewn a travel may show for up to 25 mm, and a travel over a
+  column already sewn is not counted as showing, so it can run back along a finished column. Across
+  the eleven real designs below this removed a quarter of the trims and a fifth of the jumps.
+
 Blocks are sewn in stacking order, back to front, because thread sewn later lies on top of thread
 sewn earlier, as paint does. An object joins an earlier block of its thread only when it overlaps
 none of the blocks sewn between the two, so the machine changes colour as few times as the stacking
@@ -296,6 +355,16 @@ index, whose RGB values differ between published charts — preview colour is no
   default: no starting value is published.
 - Fill pull compensation stretches rows along their direction only: across the rows, a fill keeps
   half a row spacing inside its edge, as before. `expand` grows it both ways.
+- A fill's narrow parts become satin by their width alone, not by what a person would choose (a
+  wide stem, a stripe the art wants flat). `narrowAsSatin: 0` or `stitchStyle: fill` keeps all of
+  it tatami; there is no per-object choice until embroidery properties on objects.
+- A part of a fill narrower than 1 mm is a single running line along its middle, not a bean or
+  triple run: on a part 0.6–1 mm wide its edges stay bare.
+- Travel between a fill's parts is weighed by the straight distance between them, and it is not
+  kept off satin columns already sewn: it can run back along a finished column.
+- Where satin columns meet (the strokes of a letter), the square between them is tatami; the
+  columns are not branched into one another, and their crossings keep one direction each, square
+  to the column.
 - The PES section of a `.pes` is the minimal version 1 header: machines sew the design correctly,
   but PE-Design shows it as a blank document because the editable shapes (CEmbOne/CSewSeg) are not
   written yet. Reading a PES reads its PEC block, which is what machines and every other app use.
@@ -308,12 +377,24 @@ index, whose RGB values differ between published charts — preview colour is no
 - Only the order of a fill's regions is searched; the order of objects follows the stacking, and
   each object's start is the nearest one, not chosen with the next object in view.
 - The default spacing and stitch length follow professional software (Wilcom), which is more
-  open than Ink/Stitch's (rows 0.25 mm apart, 3 mm stitches): VectorCraft sews about 40–60 % as
+  open than Ink/Stitch's (rows 0.25 mm apart, 3 mm stitches): VectorCraft sews about 40–55 % as
   many stitches for the same artwork (measured below). No fabric presets yet.
 
 ## Validation
 
-- `crates/stitch`: 69 unit tests and 4 property tests — a 5 mm satin column at 40 wt puts 50
+- `crates/stitch`: 90 unit tests and 5 property tests — a stripe is one column square across it,
+  a stroke whose width wavers about the limit is one column (one wider all along stays a fill),
+  a ring a closed one at every width (radius 2.5 to 20 mm, 1.5 to 6 mm wide), an outline with a
+  point repeated one column all the same, a bar beside a thicker block and a flag's pole a 3 mm
+  column each, a dumbbell's neck a column within the limit that leaves its bowls to the tatami,
+  a curved band's stations point at its centre, a pointed leaf's column
+  narrows to its tips and a stadium's reaches round its round ends, a T is three columns that
+  leave the square where they meet, a square, a wide rectangle and a dot stay fills, odd input
+  finds nothing; a column is sewn across it with no jump, its spacing follows its width, a
+  hairline is a running line, push compensation shortens a column (a bar's free end, not its end
+  at the block it meets), a ring and a T with its rest
+  are sewn in one go on the shape, a square with an arm on each side is sewn arm, square, arm
+  with no jump (from either end, underlay or not); a 5 mm satin column at 40 wt puts 50
   crossings in a centimetre (Madeira's chart: 51), a region's last row reaches its edge (a
   one-row fill both), push compensation keeps a short column sewn, a line cut on one of its points
   keeps it once, the fill covers a rectangle (its rows
@@ -350,15 +431,18 @@ index, whose RGB values differ between published charts — preview colour is no
   its stitches go, an absurd JEF colour count is not believed, and no reader panics on random,
   truncated or damaged bytes. The property tests (`tests/prop_plan.rs`, random rectangles,
   ellipses and star-shaped polygons with random parameters, random pull compensation included):
-  every needle point stays on the art (or past it by the compensation at most),
+  every needle point stays on the art (or past it by the compensation at most), the narrow parts
+  found in any shape lie on it and are no wider than asked, and sewn with it stay on it,
   the thread is cut exactly on the jumps longer than `trimLength`, and no stitch is longer than the
   parameters allow (this found the zigzag fault fixed above: a 50 mm zigzag with corners 0.5 mm
   apart was one 50 mm stitch): without pull compensation to the bound it always had, and with it
   longer by its reach at most.
-- `crates/engine`: 38 tests (35 command-level) — export writes a readable design in every format,
-  a negative `expand` shrinks the region two overlapping squares cover (no groove along the
-  outlines inside it), a shape expanded away is warned about (and named in the error when it was
-  all there was), `expand` leaves an open line in a fill a line,
+- `crates/engine`: 40 tests (37 command-level) — export writes a readable design in every format,
+  a narrow fill is sewn as satin across it (tatami with `stitchStyle: fill` or `narrowAsSatin: 0`),
+  a filled letter T is sewn in one go with no jump or trim, a negative `expand` shrinks the region
+  two overlapping squares cover (no groove along the outlines inside it), a shape expanded away is
+  warned about (and named in the error when it was all there was), `expand` leaves an open line in
+  a fill a line,
   a fill's rows reach past its edges by the pull compensation (by default too, one side only when
   asked) and `expand` grows or shrinks it all round, two fills drawn 0.6 mm apart meet with
   0.3 mm of pull compensation or `expand`, a finer thread sews more stitches, push compensation shortens a satin
@@ -442,6 +526,22 @@ these designs. The longest stitch is 5.0 mm, as before. Keeping a region's last 
 (so that a one-row fill reaches its edge) then adds 0.1–0.6 % stitches, and the SOS button's
 extra trim goes again: 26 trims and 57 jumps in all.
 
+With a fill's narrow parts sewn as satin columns, the stripes of the zebra, the rind and the
+white band of the watermelon, its seeds, the dart of the bullseye (its flights and shaft: its
+rings are four filled discs, one painted on the next, and stay tatami), the fox's ears and the
+letters of the SOS button (an O that closes, each S end to end) become columns; the flat parts
+stay tatami. Trims go from 26 to 19 in all and jumps from 57 to 44: the SOS button 3 trims → 1
+and 6 jumps → 2, the smiling face 4 → 1 and 5 → 3, the watermelon 2 → 0 and 14 → 7, the joystick
+4 → 3 and 5 → 4, the bullseye 3 jumps → 1; the zebra gains a trim and three jumps (6 → 7,
+11 → 14). With satin spacing measured peak to peak (as the person's is), the narrow parts take
+about as many stitches as their tatami did, from 8 % fewer (the watermelon) to 2 % more (the
+bullseye), 38–55 % of the person's count. (Sewn at half that density, before the spacing was
+measured peak to peak, they took up to 27 % fewer, and trims and jumps came to 19 and 43.) The
+longest stitch is 10.0 mm, a crossing of the fox's ear where its column runs on past the limit
+(9.99 mm as planned, rounded to the file's 0.1 mm grid); the bullseye's dart reaches 8.4 mm.
+None is under 0.3 mm. Planning a design took 25–27 ms on an idle machine (the zebra, test
+build), several times that while other builds ran.
+
 The comparison also found and fixed: a shape drawn without a final close sewn as an outline (the
 heart: 42 stitches instead of a fill), fill stitches up to 1.5 times `stitchLength` (the old
 stagger), tiny stitches at the ends of resampled lines, long loose row turns, and trims where a
@@ -509,6 +609,10 @@ Public documentation, cited per claim in the crate and in the local research not
   millimetres and percent, per rail, push compensation at the ends) and
   [fill stitch](https://inkstitch.org/docs/stitches/fill-stitch/) (rows extended outward, Expand)
   parameters.
+- Narrow parts as satin: DrawStitch's [satin digitizing guide](https://www.drawstitch.com/blog/knowledge-base/how-to-digitize-satin-stitches/)
+  (satin for parts narrower than 8–10 mm) and Wilcom's
+  [satin with auto spacing](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/stitches/stitches-8.htm)
+  (a satin too wide sews loose; spacing follows the width).
 - Thread weight: [Thread (textiles)](https://en.wikipedia.org/wiki/Thread_(textiles)) (weight as
   kilometres per kilogram) and Wilcom's
   [satin auto spacing](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/stitches/stitches-10.htm)
@@ -522,13 +626,15 @@ Public documentation, cited per claim in the crate and in the local research not
 - `crates/stitch/src/plan/` — stitch planning: `mod.rs` (styles, parameters, entry points),
   `geometry.rs` (polylines, spacing points, the rows' axes, lines ordered nearest first),
   `area.rs` (inside a filled shape, row spans, the edge grid, the travel graph), `runs.rs` (joining runs: jumps, trims, ties, short stitches), `running.rs`,
-  `satin.rs`, `fill.rs` (rows, regions and their order), `tests.rs`.
+  `satin.rs` (strokes' columns, and a fill's narrow columns of varying width), `fill.rs` (rows,
+  regions and their order; a fill sewn with its columns, the order of its parts), `narrow.rs`
+  (a fill's narrow parts found as columns), `tests.rs`, `tests_narrow.rs`.
 - `crates/stitch/src/format/` — `mod.rs` (shared frames, readers, block building), `dst.rs`,
   `exp.rs`, `pes.rs`, `jef.rs`.
 - `crates/stitch/src/thread.rs` — the colour palettes and nearest-colour matching.
 - `crates/engine/src/cmd/fileio/embroidery/` — the commands' side: `mod.rs` (export options and
   entry point), `import.rs` (a design opened as art), `digitize.rs` (the document's art planned as
-  stitches), `sequence.rs` (the order blocks are sewn in, where the needle is before each object,
+  stitches; a fill's narrow columns cut out of it with path operations), `sequence.rs` (the order blocks are sewn in, where the needle is before each object,
   trims between objects), and the `embroidery.setTrimAfter` command.
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real
   designs and the test that uses them.

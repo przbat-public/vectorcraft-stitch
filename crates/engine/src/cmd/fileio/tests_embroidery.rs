@@ -704,6 +704,59 @@ fn push_compensation_shortens_a_satin_column() {
     assert!((drawn - 30.0).abs() < 0.15 && (pushed - 27.0).abs() < 0.15, "{drawn} mm, pushed {pushed} mm");
 }
 
+/// A filled polygon in `color` from corners in millimetres, unselected.
+fn filled_polygon(s: &mut Session, color: &str, corners: &[(f64, f64)]) {
+    s.execute("paint.setStroke", &json!({"none": true})).unwrap();
+    s.execute("paint.setFill", &json!({"color": color})).unwrap();
+    let d: Vec<String> = corners
+        .iter()
+        .enumerate()
+        .map(|(k, (x, y))| format!("{} {} {}", if k == 0 { "M" } else { "L" }, 50.0 + x * PT_PER_MM, 50.0 + y * PT_PER_MM))
+        .collect();
+    s.execute("path.create", &json!({"d": format!("{} Z", d.join(" "))})).unwrap();
+    s.execute("select.none", &json!({})).unwrap();
+}
+
+/// How many of a design's stitches cross a horizontal stripe `width` mm wide from side to side.
+fn crossings(p: &vectorcraft_stitch::Pattern, width: f64) -> (usize, usize) {
+    use vectorcraft_stitch::Command;
+    let pts: Vec<vectorcraft_stitch::Stitch> = p.points().filter(|s| s.command == Command::Stitch).collect();
+    let across = pts.windows(2).filter(|w| (w[0].y - w[1].y).abs() > width - 0.3 && (w[0].x - w[1].x).abs() < 0.6).count();
+    (across, pts.len())
+}
+
+/// A narrow filled shape is sewn as a satin column across it; `stitchStyle: fill` or
+/// `narrowAsSatin: 0` keeps it tatami.
+#[test]
+fn a_narrow_fill_is_sewn_as_satin() {
+    let mut s = blank();
+    filled_polygon(&mut s, "#cc2222", &[(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (0.0, 3.0)]);
+    let (across, all) = crossings(&plan(&export(&mut s, "dst", json!({"underlay": false}))), 3.0);
+    assert!(across * 10 > all * 8, "{across} of {all} stitches cross the stripe");
+    let tatami = plan(&export(&mut s, "dst", json!({"underlay": false, "stitchStyle": "fill"})));
+    let (across, all) = crossings(&tatami, 3.0);
+    assert!(across * 10 < all, "forced tatami: {across} of {all} cross");
+    let off = plan(&export(&mut s, "dst", json!({"underlay": false, "narrowAsSatin": 0})));
+    assert_eq!(sewn(&off), sewn(&tatami), "narrowAsSatin 0 sews tatami");
+}
+
+/// A letter T is sewn in one go: its three strokes as satin columns and the square where they
+/// meet as tatami, with no jump and no trim.
+#[test]
+fn a_letter_t_is_sewn_in_one_go() {
+    let mut s = blank();
+    let t = [(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 3.0), (16.5, 23.0), (13.5, 23.0), (13.5, 3.0), (0.0, 3.0)];
+    filled_polygon(&mut s, "#cc2222", &t);
+    let bytes = export(&mut s, "pes", json!({}));
+    let (trims, jumps) = moves(&bytes);
+    assert_eq!((trims, jumps.len()), (0, 0), "{trims} trims, jumps {jumps:?}");
+    // Each stroke's satin is widened across it by the pull compensation (0.2 mm a side): the bar
+    // reaches 0.2 mm above the T, and the column ends keep the T's length and the stem's.
+    let p = Format::Pes.read(&bytes).unwrap();
+    let b = p.bounds().unwrap();
+    assert!((b.width() - 30.0).abs() < 0.15 && (b.height() - 23.2).abs() < 0.15, "{b:?}");
+}
+
 /// A filled path from SVG path data in millimetres (offset 50 pt into the page), in `color`.
 fn filled_d(s: &mut Session, color: &str, subpaths: &[&[(f64, f64)]], close: &[bool]) {
     s.execute("paint.setStroke", &json!({"none": true})).unwrap();

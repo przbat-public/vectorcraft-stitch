@@ -12,7 +12,8 @@ work comes from the list below, unless the user gives you a task.
 ## Orient
 
 1. Read [`docs/embroidery.md`](docs/embroidery.md): what exists, how it works, its limits and
-   sources.
+   sources, and its Architecture section: the stitch plan every view of the stitches reads, and the
+   decisions the next steps rest on.
 2. Read the open embroidery PR's description on GitHub: it explains the terms (stitch, density,
    underlay, pull compensation, trim, tie-in…) for newcomers and lists what is verified.
 3. Code: `crates/stitch` (L3: `plan/` stitch planning, `format/` DST/EXP/PES/JEF, `thread.rs`
@@ -59,7 +60,7 @@ is sewn in one go). Jumps are tied off and in, and the thread is cut only past `
 the one before ended. Cuts made by clipping masks are tied. The travel graph keeps only reflex
 corners and the outlines' edges are indexed in a grid, so jagged shapes travel instead of jumping.
 
-**Next: the rest of the review's fixes (measured on the real designs).**
+**Done: the rest of the review's fixes (measured on the real designs).**
 
 1. **Short stitches on tight satin curves.** Done: a bunched penetration on a curve's inner side
    moves in by 20 % or 40 % of the column's width; a 5 mm column round a 3 mm radius went from 16
@@ -88,34 +89,77 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
    twice as dense as before, as dense as the person's satins in the real designs.
 6. **Auto spacing by thread thickness.** Done: `threadWeight` (40 wt by default) sets the default
    spacing of fills and satins, which follows the thread's thickness (`(40 / weight)^½`, as
-   Madeira's stitch density chart does). Per-thread weights wait for embroidery properties on
+   Madeira's stitch density chart does). Per-thread weights wait for embroidery settings on
    objects.
-7. **The trim length by machine.** `trimLength` is one number; machines differ in whether and
-   from what length they cut jumps themselves. Take it from the machine settings once there are
-   some.
-8. **More real designs.** The corpus has eleven designs, all PES (one JEF), all from one project.
-   Add real DST and EXP files, lettering, larger designs, and test on a machine.
 
-**Then: embroidery properties on objects (a change of direction).**
+The review's two other items moved: the trim length by machine to the document settings below,
+more real designs to the work alongside.
 
-1. An optional "embroidery" attribute on document nodes: stitch type, angle, density, underlay,
-   pull compensation, entry and exit points.
-   - Saved in `.vectorcraft`, and set through commands (so reachable over MCP).
-   - Left unset, today's automatic rules apply.
-   - The current export-time conversion stays as a quick convert.
-2. A document-level fabric preset as the source of defaults (numbers cited by source).
-3. Stitches computed per object and cached, for a canvas preview, a stitch counter and an
-   "Embroidery" panel with the sewing order.
+**Next: from a converter to an embroidery editor.** Embroidery settings on objects, a stitch
+preview, stitch counts and the sewing order, design checks, manual stitches and digitizing from an
+image. `docs/embroidery.md` › Architecture records the decisions this order rests on. Each step is
+its own branch and PR, in this order, so that what is shown comes before what is set: the preview,
+counts and sewing order need only the plan and the threads, and the riskiest part, drawing
+stitches fast, is tried before anything is built on it.
 
-**Later:**
-- random variation of satin width and spacing, which hides seams (Ink/Stitch and Wilcom offer it);
-- turning a machine file's stitches back into shapes stitched by the rules ("recognise objects");
-- editing sewing order and entry/exit points on the canvas;
-- branching of touching objects;
-- turning (variable-angle) satin and fill;
-- embroidery lettering;
-- a full PES block, so Brother's PE-Design opens our files;
-- validation on real Brother and Janome machines.
+1. **A stitch plan for each object; the export unchanged.** Done: the export goes through
+   `cmd::embroidery::plan` (sewing units, thread blocks, stitch numbers), and
+   `crates/engine/tests/embroidery_output.rs` pins the bytes of every export.
+2. **Threads from the format's palette.** Built-in swatch libraries of Brother's 64 PEC threads and
+   Janome's 78 JEF threads, from the tables in `crates/stitch/src/thread.rs` (no new assets); the
+   document's target palette, the first of the document's embroidery settings; colours matched in
+   CIE Lab instead of by RGB distance (a change of output: its own commit, with the differences
+   measured on the real designs); the plan carries each thread's palette index, name and ΔE, and
+   the PEC and JEF writers use them; `embroidery.threads` lists them.
+3. **A planning service.** Each sewing unit's stitches kept between plans, a snapshot of the
+   document, cancelling; commands (so reachable over MCP): `embroidery.stats` (stitches, threads,
+   thread changes, trims, jumps, size, thread used, and sewing time at a speed that is a named
+   constant marked as an estimate), `embroidery.sequence`, and `embroidery.check` (thresholds from
+   Melco's design checker, and the format's longest stitch).
+4. **The stitch preview on the canvas, and the Embroidery panel's Sequence and Check tabs.** The
+   stitch scene and its renderer (settling the layering, see Architecture), an Art/Stitches switch
+   with planning in the background, the selected object highlighted and the checks marked, counts
+   in the status bar. Dragging in the Sequence tab moves objects in the stacking order with the
+   existing commands (sewing order is stacking order), in one undo step; objects of one thread
+   still join when nothing lies between them, and the list says so rather than pretend another
+   order. The first change a user sees.
+5. **Embroidery settings on objects and in the document.** Stored as Architecture describes (per
+   fill and stroke, allowed on type and groups, points moved with the object, files from newer
+   versions still opening); values resolved with their source (the object's, then the export's
+   option, then the document's, then the default); document settings: fabric (a preset copied into
+   the document), thread weight, machine, joining one thread's objects. The trim length comes from
+   the machine here: machines differ in whether, and past what length, they cut jumps themselves.
+   Commands to set, reset and inspect them, and to store entry and exit points.
+6. **The Object tab, and an Embroidery tab in Document Setup.** The interface on the commands
+   above: unset values grey with their source, set ones marked, "restore from the fabric".
+7. **The embroidery tool: entry and exit points.** One tool with kinds of handles (later angle
+   lines, satin rails, needle points, the hoop), its cursor in `crates/tools/src/cursors.toml`;
+   dragging the entry and exit, "nearest connection"; the planner ends a fill at its exit point
+   and sews running lines and satins the way asked.
+8. **Manual stitches.** "Convert to manual stitches" and "Restore object" (the original kept in
+   the node's extras), editing needle points with the tool above, drawn thin with their needle
+   points by the stitch scene; a Stitches tab listing the plan's numbered stitches; stops, trims,
+   and stitches turned into jumps.
+9. **Digitizing from an image.** First the engine, through commands: the smallest area in mm²,
+   colour overlap in mm, centre lines as running stitch or satin, optionally an angle along the
+   shape, colours matched to the format's palette through Image Trace with the thread library.
+   Then a large working window in four steps with a live preview. Then an inspector for each area,
+   whose overrides survive retracing (kept by the point clicked and its colour, not the area's
+   number) and become the areas' embroidery settings.
+
+**Alongside, at any time:** new machine formats (such as VP3, HUS, SEW, Singer's XXX, and PEC on
+its own; they need only `Pattern`, `Block` and `Thread`); real thread colours in PES, once the plan
+carries threads; more real designs (the corpus has eleven, all PES and one JEF, all from one
+project: add real DST and EXP files, lettering and larger designs, and test on a machine).
+
+**Later**, on the steps above: embroidery lettering; satins from rails, angle lines, and turning
+(variable-angle) satin and fill; quality options (triple running stitch, corners, more underlay
+choices, removing stitches hidden under others); production (a PDF worksheet, hoops, colourways);
+a stitch player; turning a machine file's stitches back into shapes stitched by the rules
+("recognise objects"); appliqué; decorative stitches and designs larger than a hoop; random
+variation of satin width and spacing, which hides seams (Ink/Stitch and Wilcom offer it);
+branching of touching objects; a full PES block, so Brother's PE-Design opens our files;
+validation on real Brother and Janome machines.
 
 Known limitations not on this list are in `docs/embroidery.md` › What is not stitched, and in the
 PR descriptions.
@@ -124,6 +168,9 @@ PR descriptions.
 
 - `vectorcraft-stitch` is a separate L3 crate that depends only on `vectorcraft-geom`. Nothing that
   knows about the document goes in it.
+- The stitch plan (`cmd::embroidery::plan::DesignPlan`) is the one way from a document to stitches:
+  the export writes it, and every other view of the stitches reads it rather than planning stitches
+  of its own. A unit's settings are decided in one place (`Digitizer::settings`).
 - Sewing order follows stacking order. Same-thread objects merge into one pass only when that
   doesn't put anything on top of what it should be under.
 - Only what would print is sewn: hidden objects, guides, template and non-printing layers are
@@ -180,6 +227,9 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
   there.
 - **When a task lands:** update `docs/embroidery.md` (algorithms, limitations, test counts) and the
   PR description.
+- **A change to what is sewn fails `crates/engine/tests/embroidery_output.rs`:** it lists the
+  exports that changed and prints the listing as it now stands. Paste the listing in the commit
+  that makes the change, and say in the PR what changed and why. A refactor keeps every hash.
 - **Commit a refactor apart from behaviour changes:** first the pure move (code moved or renamed,
   tests unchanged and passing), then the fixes, so each diff shows what really changed.
 - **PR descriptions are in English and self-contained.** Someone who knows neither this

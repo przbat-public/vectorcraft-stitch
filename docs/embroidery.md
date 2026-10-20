@@ -634,6 +634,29 @@ design checks, manual stitches and digitizing from an image. The decisions below
 those steps rest on, made first so that each step builds on the last instead of reworking it.
 `FORK.md` lists the steps in their order.
 
+### Decided
+
+These product decisions are made (2026-10-20), and the sections below build on them:
+
+- **Where a value comes from.** A value set on an object beats an export option given to
+  `document.export`, which beats the document's embroidery settings, which beat the built-in
+  defaults (`Params::for_thread`). *Auto* (the stitch chosen by the shape and its width) stays a
+  rule, not a value.
+- **A fill and a stroke are separate parts.** An object's fill and its stroke carry separate
+  embroidery settings, so a sewing unit is a node and one of its parts.
+- **A fabric is copied, not linked.** Choosing a fabric copies its values into the document, with
+  no live link to the preset; values changed from the preset's are marked.
+- **Sewing order is stacking order.** The Sewing order tab lets a person drag objects from its
+  first version, and a drag moves layers (`node.move`); joining objects of one thread stays
+  automatic.
+- **An Embroidery panel of its own**, with the tabs Object, Sewing order, Check and Stitches; the
+  document-wide embroidery settings go in a new tab of Document Setup.
+- **Threads** match the target format's palette (PEC or JEF) in CIE Lab, with the colour difference
+  (ΔE) recorded. Writing real thread colours into PES is a separate task.
+- **Manual stitches** come from an explicit "convert to manual stitches" step that can be undone,
+  which restores the object.
+- **Digitizing from an image** happens in a large working window.
+
 ### The stitch plan: the one way from a document to stitches
 
 `cmd::embroidery::digitize` plans the document's visible art into a `DesignPlan`
@@ -676,11 +699,10 @@ style, parameters and `expand` in one place, `Digitizer::settings(origin)`, and 
 embroidery settings on objects and in the document will be looked up. (The jump and trim lengths
 between objects belong to the design, or the machine, rather than to a unit.)
 
-- **The order of sources:** the object's own value, then the export's option, then the
-  document's, then the built-in default. A value set on an object wins; an export option applies
-  to objects that have no value of their own. *Auto* (the stitch chosen by the shape and its
-  width) is a rule, not a value. Every value resolved comes back with where it came from, so that
-  a panel and `embroidery.info` can show it.
+- **Resolved in the decided order** (the object's value, the export's option, the document's, the
+  built-in default): an export option applies to the objects that have no value of their own, and
+  every value resolved comes back with where it came from, so that a panel and `embroidery.info`
+  can show it.
 - **Stored in the `.vectorcraft` file, so that a file saved by a newer version still opens in an
   older one:**
   - per part of an object, its fill and its stroke, each value set or unset;
@@ -690,9 +712,9 @@ between objects belong to the design, or the machine, rather than to a unit.)
     the object, and angles turned with it;
   - fields a version doesn't know are kept, and a stitch type it doesn't know reads as Auto with a
     warning instead of failing the file (so stitch types are not a plain closed list in the file).
-- **Document settings:** the fabric, the thread's weight, the machine (and with it the trim
-  length), and whether objects of one thread are joined. A fabric preset is copied into the
-  document as a set of values, not linked; values changed from the preset are marked.
+- **Document settings:** the fabric (its values copied in, as decided), the thread's weight, the
+  machine (and with it the trim length), and the joining of one thread's objects (automatic, where
+  nothing lies between them).
 
 ### Threads
 

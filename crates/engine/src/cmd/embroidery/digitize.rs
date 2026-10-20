@@ -147,10 +147,10 @@ impl<'a> Digitizer<'a> {
     }
 
     /// The settings sewing unit `unit` is planned with: the one place a unit's stitch style,
-    /// stitch parameters and `expand` are decided. Today every unit takes the export's options;
-    /// embroidery settings on objects and on the document will be looked up here, by the unit's
-    /// origin, before the export's options and the planner's defaults (`docs/embroidery.md` ›
-    /// Architecture).
+    /// stitch parameters and `expand` are decided. Today every unit takes the export's options.
+    /// Embroidery settings will be resolved here, by the unit's origin, in the order decided
+    /// (`docs/embroidery.md` › Architecture): the object's own value, then the export's option,
+    /// then the document's embroidery settings, then the planner's defaults.
     fn settings(&self, _unit: &Origin) -> &'a Options {
         self.opts
     }

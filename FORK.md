@@ -116,13 +116,13 @@ stitches fast, is tried before anything is built on it.
    thread changes, trims, jumps, size, thread used, and sewing time at a speed that is a named
    constant marked as an estimate), `embroidery.sequence`, and `embroidery.check` (thresholds from
    Melco's design checker, and the format's longest stitch).
-4. **The stitch preview on the canvas, and the Embroidery panel's Sequence and Check tabs.** The
+4. **The stitch preview on the canvas, and the Embroidery panel's Sewing order and Check tabs.** The
    stitch scene and its renderer (settling the layering, see Architecture), an Art/Stitches switch
-   with planning in the background, the selected object highlighted and the checks marked, counts
-   in the status bar. Dragging in the Sequence tab moves objects in the stacking order with the
-   existing commands (sewing order is stacking order), in one undo step; objects of one thread
-   still join when nothing lies between them, and the list says so rather than pretend another
-   order. The first change a user sees.
+   with planning in the background, the selected object highlighted and the checks marked, counts in
+   the status bar. Dragging in the Sewing order tab moves objects in the stacking order with the
+   existing commands (`node.move`; sewing order is stacking order), in one undo step; objects of one
+   thread still join when nothing lies between them, and the list says so rather than pretend
+   another order. The first change a user sees.
 5. **Embroidery settings on objects and in the document.** Stored as Architecture describes (per
    fill and stroke, allowed on type and groups, points moved with the object, files from newer
    versions still opening); values resolved with their source (the object's, then the export's

@@ -4,11 +4,11 @@
 
 use vectorcraft_geom::{BezPath, Point, Vec2};
 
-use super::geometry::{Line, NO_LENGTH, length, nearest_order, resample, subpaths, tangent, trimmed, unit};
+use super::geometry::{CORNER, Line, NO_LENGTH, length, nearest_order, resample, resample_by, subpaths, tangent, trimmed, unit};
 use super::narrow::Column;
 use super::runs::{Runs, Travel};
 use super::{MAX_STITCHES, MIN_PUSHED, Params, Style, UNDERLAY_STITCH, thread_scale};
-use crate::Stitch;
+use crate::{SAME_POINT, Stitch};
 
 /// Satin underlay by column width (millimetres): from this width an edge run instead of a centre
 /// run, from this one an edge run and a zigzag; and the zigzag's spacing. Estimates.
@@ -45,7 +45,8 @@ const GOLDEN: f64 = 0.618_033_988_75;
 /// drawn, then the right one), each open column shorter at its ends by [`Params::push`]. The
 /// penetrations on each rail are [`satin_spacing`] apart for 40 wt thread, closer for finer thread
 /// ([`thread_scale`]), or [`Params::density`] when auto spacing is off; the crossings, rail to rail
-/// in turn, lie half that apart ([`CROSSINGS_PER_SPACING`]).
+/// in turn, lie half that apart ([`CROSSINGS_PER_SPACING`]). Round a bend the spacing is kept on
+/// the outer rail, and the crossings turn with the path ([`Centre`]).
 pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
     satin_from(path, p, None)
 }
@@ -88,7 +89,13 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
                 back = ends_far;
             }
         }
-        let mut samples = resample(&pts, pitch, closed);
+        // The crossings lie `pitch` apart on the farther rail: round a bend the outer one, as for a
+        // fill's columns ([`Along::crossings`]). Along `pts` the rail on the right (y runs down the
+        // page) reaches `plus`, the one on the left `minus`: the drawing's right and left, or its
+        // left and right when `pts` runs against it.
+        let centre = Centre::new(&pts, closed);
+        let (plus, minus) = if reversed { (half + left, half + right) } else { (half + right, half + left) };
+        let mut samples = resample_by(&pts, closed, &|s| pitch / centre.stretch(s, plus, minus));
         if samples.len() < 2 {
             continue;
         }
@@ -98,15 +105,28 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
         }
         // Whether the column is sewn against the way it is drawn, so its rails swap sides.
         let against = reversed != back;
-        let crossings: Vec<(Point, Vec2)> = (0..samples.len())
-            .filter_map(|i| {
-                let q = *samples.get(i)?;
-                let t = tangent(&samples, i, closed);
+        let points: Vec<Point> = samples.iter().map(|&(q, _)| q).collect();
+        let crossings: Vec<(Point, Vec2)> = samples
+            .iter()
+            .enumerate()
+            .map(|(i, &(q, s))| {
+                // The way the needle goes along the column: the centre line's, turning smoothly;
+                // at a sharp corner from the crossing before it to the next, across the corner.
+                let t = match centre.direction(s) {
+                    Some(d) if !centre.sharp_at(s) => {
+                        if back {
+                            -d
+                        } else {
+                            d
+                        }
+                    }
+                    _ => tangent(&points, i, closed),
+                };
                 // Even crossings go to one rail, odd ones to the other. The normal points to the
                 // right of the way the needle goes along the column (y runs down the page).
                 let side = if i % 2 == 0 { 1.0 } else { -1.0 };
                 let reach = half + if (side > 0.0) != against { right } else { left };
-                Some((q, Vec2::new(-t.y, t.x) * reach * side))
+                (q, Vec2::new(-t.y, t.x) * reach * side)
             })
             .collect();
         let mut zigzag = short_stitches(&crossings, pitch, p.width + left + right);
@@ -139,6 +159,130 @@ fn pushed(pts: &[Point], push: [f64; 2], shortest: f64) -> Vec<Point> {
     let most = len - keep;
     let k = if start + end > most { most / (start + end) } else { 1.0 };
     trimmed(pts, start * k, end * k)
+}
+
+/// A stroke's centre line measured along, its direction turning smoothly round its curves. Where
+/// the line turns gently (at most [`CORNER`]) its direction is the mean of the segments either
+/// side, and along a segment it turns evenly from the direction at one end to the one at the other;
+/// at a sharp corner and at an open end a segment keeps its own. So a satin's crossings turn with a
+/// curve rather than in steps where it was flattened (round a 6 mm bend, a 5 mm satin's outer rail
+/// had its penetrations 0.4 mm apart along each flattened segment and up to 0.97 mm where two met),
+/// and the rail on the outside of a bend can be measured as it runs ([`Centre::stretch`]).
+struct Centre {
+    /// The points, none on the one before, and the distance along to each (as [`resample_by`]
+    /// counts it).
+    pts: Vec<Point>,
+    at: Vec<f64>,
+    /// Each segment's direction at its start and at its end.
+    ends: Vec<(Vec2, Vec2)>,
+    /// Whether the line turns sharply (more than [`CORNER`]) at each point.
+    sharp: Vec<bool>,
+    len: f64,
+    closed: bool,
+}
+
+impl Centre {
+    fn new(line: &[Point], closed: bool) -> Self {
+        let mut pts: Vec<Point> = Vec::with_capacity(line.len());
+        for &q in line {
+            if pts.last().is_none_or(|p| p.distance(q) > NO_LENGTH) {
+                pts.push(q);
+            }
+        }
+        // A closed line's first point, repeated at its end, is one point.
+        if closed && pts.len() > 1 && pts.first().zip(pts.last()).is_some_and(|(a, b)| a.distance(*b) <= NO_LENGTH) {
+            pts.pop();
+        }
+        let n = pts.len();
+        let segs = if closed { n } else { n.saturating_sub(1) };
+        let dirs: Vec<Vec2> =
+            (0..segs).map(|i| pts.get(i).zip(pts.get((i + 1) % n.max(1))).and_then(|(a, b)| unit(*b - *a)).unwrap_or(Vec2::ZERO)).collect();
+        let incoming = |k: usize| {
+            if k > 0 {
+                dirs.get(k - 1)
+            } else if closed {
+                dirs.last()
+            } else {
+                None
+            }
+        };
+        let sharp: Vec<bool> = (0..n)
+            .map(|k| match (incoming(k), dirs.get(k)) {
+                (Some(u), Some(v)) => u.dot(*v).clamp(-1.0, 1.0).acos() > CORNER,
+                _ => false,
+            })
+            .collect();
+        // The direction where the line turns gently: the mean of the segments either side.
+        let gentle = |k: usize| match (incoming(k), dirs.get(k), sharp.get(k)) {
+            (Some(u), Some(v), Some(false)) => unit(*u + *v),
+            _ => None,
+        };
+        let ends = (0..segs)
+            .map(|i| {
+                let d = dirs.get(i).copied().unwrap_or(Vec2::ZERO);
+                (gentle(i).unwrap_or(d), gentle((i + 1) % n.max(1)).unwrap_or(d))
+            })
+            .collect();
+        let mut at = Vec::with_capacity(n);
+        let mut len = 0.0;
+        for k in 0..n {
+            if let (Some(a), Some(b)) = (k.checked_sub(1).and_then(|j| pts.get(j)), pts.get(k)) {
+                len += a.distance(*b);
+            }
+            at.push(len);
+        }
+        if closed && let (Some(a), Some(b)) = (pts.last(), pts.first()) {
+            len += a.distance(*b);
+        }
+        Self { pts, at, ends, sharp, len, closed }
+    }
+
+    /// The segment `s` along (round to the start of a closed line) and the share of the way along
+    /// it.
+    fn segment(&self, s: f64) -> Option<(usize, f64)> {
+        let segs = self.ends.len();
+        let last = segs.checked_sub(1)?;
+        let s = if self.closed { s.rem_euclid(self.len.max(NO_LENGTH)) } else { s.clamp(0.0, self.len) };
+        let i = self.at.partition_point(|&a| a <= s).saturating_sub(1).min(last);
+        let start = *self.at.get(i)?;
+        let end = if i + 1 < self.at.len() { *self.at.get(i + 1)? } else { self.len };
+        let f = if end - start > NO_LENGTH { ((s - start) / (end - start)).clamp(0.0, 1.0) } else { 0.0 };
+        Some((i, f))
+    }
+
+    /// The line's direction `s` along.
+    fn direction(&self, s: f64) -> Option<Vec2> {
+        let (i, f) = self.segment(s)?;
+        let &(t0, t1) = self.ends.get(i)?;
+        unit(t0 + (t1 - t0) * f).or(unit(t0))
+    }
+
+    /// Whether `s` along is a point where the line turns sharply.
+    fn sharp_at(&self, s: f64) -> bool {
+        let Some((i, _)) = self.segment(s) else { return false };
+        let s = if self.closed { s.rem_euclid(self.len.max(NO_LENGTH)) } else { s };
+        // The segment's two ends: its start and its end (a closed line's last one ends at its first
+        // point, its length along).
+        let n = self.pts.len().max(1);
+        let ends = [(i, self.at.get(i).copied().unwrap_or(0.0)), ((i + 1) % n, self.at.get(i + 1).copied().unwrap_or(self.len))];
+        ends.iter().any(|&(k, at)| (at - s).abs() <= SAME_POINT && self.sharp.get(k).copied().unwrap_or(false))
+    }
+
+    /// How far the farther of the two rails runs for each millimetre of the line `s` along, the one
+    /// on the right (y runs down the page) `plus` from it and the one on the left `minus`: one
+    /// along a straight stretch, `1 + R / r` round a bend of radius r with the outer rail R out; at
+    /// most [`MAX_RAIL_STRETCH`].
+    fn stretch(&self, s: f64, plus: f64, minus: f64) -> f64 {
+        let Some((i, _)) = self.segment(s) else { return 1.0 };
+        let (Some(&(t0, t1)), Some(&start)) = (self.ends.get(i), self.at.get(i)) else { return 1.0 };
+        let end = self.at.get(i + 1).copied().unwrap_or(self.len);
+        // How fast the direction turns (radians a millimetre, towards the right rail when
+        // positive): the right rail, then on the inside, runs `1 - plus × turn` as far as the line
+        // and the left one `1 + minus × turn`.
+        let turn = t0.cross(t1).atan2(t0.dot(t1)) / (end - start);
+        let farther = (1.0 - plus * turn).abs().max((1.0 + minus * turn).abs());
+        if farther.is_finite() { farther.clamp(1.0, MAX_RAIL_STRETCH) } else { 1.0 }
+    }
 }
 
 /// Short stitches: how far a bunched penetration may move in from its rail, as shares of the
@@ -273,11 +417,13 @@ fn split_long(zigzag: &[Point], max: f64) -> Vec<Point> {
 /// side by side, as the export sews strokes that narrow as running lines.
 const MIN_COLUMN_WIDTH: f64 = 1.0;
 /// The most a column's farther rail is taken to run for each millimetre of its middle when its
-/// crossings are spaced along that rail ([`Along::crossings`]). Round a bend whose middle has
-/// radius r, a rail R out runs (r + R) / r as far; the inner side's radius can't fall below
-/// nothing, so R is at most r and the outer rail runs at most twice as far (a little more with
-/// pull compensation). Where the rails run farther still they are turning across the column, round
-/// a round end's tip: the crossings there come no closer along the middle than half their pitch.
+/// crossings are spaced along that rail ([`Along::crossings`], [`Centre::stretch`]). Round a bend
+/// whose middle has radius r, a rail R out runs (r + R) / r as far; the inner side's radius can't
+/// fall below nothing, so R is at most r and the outer rail runs at most twice as far (a little
+/// more with pull compensation). Where the rails run farther still they are turning across the
+/// column, round a round end's tip, or a stroke is drawn round a tighter radius than half its width
+/// and its inner rail folds over: the crossings there come no closer along the middle than half
+/// their pitch.
 const MAX_RAIL_STRETCH: f64 = 2.0;
 
 /// `column` (a narrow part of a fill, [`Column`]) sewn after `runs` as a satin column whose width

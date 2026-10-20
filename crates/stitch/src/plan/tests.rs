@@ -1290,3 +1290,48 @@ fn a_satin_sews_as_densely_as_the_thread_chart() {
     let in_a_cm = q.iter().filter(|a| a.x >= 10.0 && a.x < 20.0).count();
     assert!((49..=51).contains(&in_a_cm), "{in_a_cm} crossings in a centimetre");
 }
+
+/// Round a bend a stroke's satin keeps its spacing on the outer rail, evenly, and its inner rail
+/// takes the penetrations closer by the rails' radii, as a fill's columns do: a 5 mm stroke along
+/// a half turn of radius 6 mm, and a letter S of two such half turns, have their outer rails the
+/// auto spacing for 5 mm (0.40 mm) apart and their inner rails that times the inner rail's radius
+/// over the outer's. (Spaced along the centre line, with each crossing square to its flattened
+/// segment, the outer rail's penetrations lay 0.40 mm apart along a segment and up to 0.97 mm where
+/// two met.)
+#[test]
+fn a_satin_stroke_keeps_its_spacing_on_the_outer_rail() {
+    use super::tests_narrow::{quantile, rail_steps};
+    use std::f64::consts::{FRAC_PI_2, PI};
+    let (r, width) = (6.0, 5.0);
+    let mut p = Params::for_style(Style::Satin);
+    p.width = width;
+    p.underlay = false;
+    p.lock = false;
+    let spacing = satin_spacing(width);
+    let rails = [r + width / 2.0 + p.pull[0], r - width / 2.0 - p.pull[1]];
+    let closer = spacing * rails[1] / rails[0];
+    let check = |name: &str, q: &[Point], centre: (f64, f64), toward: (f64, f64)| {
+        // Away from the ends and from where the S's two turns meet.
+        let window = 1.2;
+        let [outer, inner] = rail_steps(q, Point::new(centre.0, centre.1), Vec2::new(toward.0, toward.1), window, r, rails);
+        let (lo, mid, hi) = (quantile(&outer, 0.1), quantile(&outer, 0.5), quantile(&outer, 0.9));
+        let inner = quantile(&inner, 0.5);
+        eprintln!("{name}: outer rail {lo:.3} / {mid:.3} / {hi:.3} mm (spacing {spacing}), inner {inner:.3} mm ({closer:.3})");
+        assert!((mid / spacing - 1.0).abs() < 0.1, "{name}: the outer rail's penetrations {mid:.3} mm apart, not {spacing}");
+        assert!(lo > spacing * 0.9 && hi < spacing * 1.1, "{name}: the outer rail's penetrations {lo:.3} to {hi:.3} mm apart");
+        assert!((inner / closer - 1.0).abs() < 0.1, "{name}: the inner rail's penetrations {inner:.3} mm apart, not {closer:.3}");
+    };
+    // A half turn round (0, 0) through (-6, 0), then one the other way round (0, -12) through
+    // (6, -12).
+    let first = vectorcraft_geom::kurbo::Arc::new((0.0, 0.0), (r, r), FRAC_PI_2, PI, 0.0);
+    let second = vectorcraft_geom::kurbo::Arc::new((0.0, -12.0), (r, r), FRAC_PI_2, -PI, 0.0);
+    let mut arc = BezPath::new();
+    arc.move_to((0.0, r));
+    arc.extend(first.append_iter(0.01));
+    check("the half turn", &points(&stitches(&arc, FillRule::NonZero, &p)), (0.0, 0.0), (-1.0, 0.0));
+    let mut s = arc.clone();
+    s.extend(second.append_iter(0.01));
+    let q = points(&stitches(&s, FillRule::NonZero, &p));
+    check("the S's upper turn", &q, (0.0, 0.0), (-1.0, 0.0));
+    check("the S's lower turn", &q, (0.0, -12.0), (1.0, 0.0));
+}

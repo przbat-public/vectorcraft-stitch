@@ -326,10 +326,11 @@ fn a_stroke_that_wavers_about_the_limit_is_sewn_whole() {
 
 /// The same-rail spacing round a bend centred on `centre`: of `q`'s penetrations within `window`
 /// radians either side of the direction `toward` (from the centre), those farther out than
-/// `middle` (the outer rail) and those nearer in (the inner one), each the median step between
-/// consecutive ones: the angle between them times its rail's radius (`rails`: outer, inner). A
-/// shortened stitch moves in along its crossing, square to the rail, so it keeps the rail's angle.
-fn rail_spacing(q: &[Point], centre: Point, toward: Vec2, window: f64, middle: f64, rails: [f64; 2]) -> [f64; 2] {
+/// `middle` (the outer rail) and those nearer in (the inner one), each the steps between
+/// consecutive ones, smallest first: the angle between them times its rail's radius (`rails`:
+/// outer, inner). A shortened stitch moves in along its crossing, square to the rail, so it keeps
+/// the rail's angle.
+pub(super) fn rail_steps(q: &[Point], centre: Point, toward: Vec2, window: f64, middle: f64, rails: [f64; 2]) -> [Vec<f64>; 2] {
     use std::f64::consts::{PI, TAU};
     let mut angles: [Vec<f64>; 2] = [Vec::new(), Vec::new()];
     for a in q {
@@ -339,13 +340,17 @@ fn rail_spacing(q: &[Point], centre: Point, toward: Vec2, window: f64, middle: f
             angles[usize::from(v.hypot() < middle)].push(angle);
         }
     }
-    let mut out = [0.0; 2];
-    for (k, rail) in angles.iter().enumerate() {
-        let mut steps: Vec<f64> = rail.windows(2).map(|w| ((w[1] - w[0] + PI).rem_euclid(TAU) - PI).abs() * rails[k]).collect();
+    let steps = |rail: &[f64], radius: f64| {
+        let mut steps: Vec<f64> = rail.windows(2).map(|w| ((w[1] - w[0] + PI).rem_euclid(TAU) - PI).abs() * radius).collect();
         steps.sort_by(f64::total_cmp);
-        out[k] = steps[steps.len() / 2];
-    }
-    out
+        steps
+    };
+    [steps(&angles[0], rails[0]), steps(&angles[1], rails[1])]
+}
+
+/// The share `at` of the way through `sorted` (0 the smallest, 0.5 the median).
+pub(super) fn quantile(sorted: &[f64], at: f64) -> f64 {
+    sorted[((sorted.len() - 1) as f64 * at).round() as usize]
 }
 
 /// On a bend a column keeps its spacing on the outer rail, and the inner rail, which runs a
@@ -367,7 +372,8 @@ fn a_bend_keeps_its_spacing_on_the_outer_rail() {
     let reach = width / 2.0 + (left + right) / 2.0;
     let check = |name: &str, q: &[Point], centre: (f64, f64), toward: (f64, f64), window: f64, middle: f64| {
         let rails = [middle + reach, middle - reach];
-        let [outer, inner] = rail_spacing(q, Point::new(centre.0, centre.1), Vec2::new(toward.0, toward.1), window, middle, rails);
+        let [outer, inner] =
+            rail_steps(q, Point::new(centre.0, centre.1), Vec2::new(toward.0, toward.1), window, middle, rails).map(|v| quantile(&v, 0.5));
         let closer = spacing * rails[1] / rails[0];
         eprintln!("{name}: outer rail {outer:.3} mm (spacing {spacing}), inner {inner:.3} mm ({closer:.3})");
         assert!((outer / spacing - 1.0).abs() < 0.1, "{name}: the outer rail's penetrations {outer:.3} mm apart, not {spacing}");

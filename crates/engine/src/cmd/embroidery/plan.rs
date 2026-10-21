@@ -20,21 +20,12 @@ use std::ops::Range;
 use vectorcraft_doc::NodeId;
 use vectorcraft_geom::Rect;
 use vectorcraft_stitch::plan::Params;
-use vectorcraft_stitch::thread::{Match, Palette, PaletteThread};
+use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Match, Palette, PaletteThread};
 use vectorcraft_stitch::{Block, Pattern, Stitch, Thread};
 
 /// The number of a design's first stitch: stitches are numbered from 1, as a stitch list shows
 /// them.
 pub const FIRST_NUMBER: usize = 1;
-
-/// A thread farther than this from its art's colour (CIEDE2000) is flagged as a mismatch
-/// ([`BlockThread::mismatch`]): one that looks clearly unlike the art. An estimate, the project
-/// owner's choice (2026-10-21); no embroidery source gives a threshold. Past about 5, two colours
-/// side by side are already seen as two different colours (the bands of W. S. Mokrzycki and
-/// M. Tatol, "Color difference Delta E — a survey", *Machine Graphics and Vision* 20, 2011, drawn
-/// up for the older CIE 1976 difference), but a palette of 64 or 78 threads lies that far from
-/// about half the colours of real art, so the flag is kept for threads twice as far.
-pub const MISMATCH_DELTA_E: f64 = 10.0;
 
 /// The part of an object a sewing unit sews.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -91,7 +82,8 @@ impl BlockThread {
     }
 
     /// Whether the thread looks like another colour than the art: its difference is past
-    /// [`MISMATCH_DELTA_E`].
+    /// [`MISMATCH_DELTA_E`] (`vectorcraft_stitch::thread`), the line that also decides when a block
+    /// takes another thread than a neighbour's.
     pub fn mismatch(&self) -> bool {
         self.delta_e > MISMATCH_DELTA_E
     }

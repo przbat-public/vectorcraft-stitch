@@ -10,11 +10,11 @@ use vectorcraft_doc::embroidery::ThreadPalette;
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::format::Format;
 use vectorcraft_stitch::plan::Style;
-use vectorcraft_stitch::thread::Palette;
+use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 use vectorcraft_stitch::{Command, pt_to_mm};
 
 use super::digitize::digitize;
-use super::plan::{DesignPlan, FIRST_NUMBER, MISMATCH_DELTA_E, Part};
+use super::plan::{DesignPlan, FIRST_NUMBER, Part};
 use super::*;
 
 /// Points per millimetre: the documents count points, the designs millimetres.

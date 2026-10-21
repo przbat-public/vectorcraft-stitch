@@ -20,7 +20,7 @@ use serde_json::{Map, Value, json};
 use vectorcraft_color::Color;
 use vectorcraft_doc::Document;
 use vectorcraft_doc::embroidery::{Embroidery, ThreadPalette};
-use vectorcraft_stitch::thread::Palette;
+use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 
 use super::*;
 
@@ -53,7 +53,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Threads",
             [],
             None,
-            "{…the embroidery options of document.export (document.formats lists them; they decide which objects share a colour block)} the thread each colour block of the design is sewn in, as the PES or JEF export of the document's palette writes it (embroidery.setup): the palette's thread nearest the colour the block's art is painted with, in sewing order → {palette: \"pec\"|\"jef\", threshold: the colour difference past which a thread is flagged, blocks: [{block: from 1 in sewing order, art: \"#rrggbb\", thread: {palette, index: from 1 as the format numbers it, name, color: \"#rrggbb\"}, deltaE: the CIEDE2000 difference between the art's colour and the thread's, to two decimals (0: painted with the thread's own colour, a swatch of its thread library), mismatch: deltaE past threshold, units: the fills, strokes and stitch runs sewn in it}], warnings}",
+            "{…the embroidery options of document.export (document.formats lists them; they decide which objects share a colour block)} the thread each colour block of the design is sewn in, as the PES or JEF export of the document's palette writes it (embroidery.setup): the palette's thread nearest the colour the block's art is painted with, in sewing order, or, when a neighbouring block has that one, the nearest other thread within threshold → {palette: \"pec\"|\"jef\", threshold: the colour difference past which a thread is flagged, blocks: [{block: from 1 in sewing order, art: \"#rrggbb\", thread: {palette, index: from 1 as the format numbers it, name, color: \"#rrggbb\"}, deltaE: the CIEDE2000 difference between the art's colour and the thread's, to two decimals (0: painted with the thread's own colour, a swatch of its thread library), mismatch: deltaE past threshold, units: the fills, strokes and stitch runs sewn in it}], warnings}",
             has_doc,
             threads
         ),
@@ -167,5 +167,5 @@ fn threads(s: &mut Session, p: &Value) -> Result<Value> {
             })
         })
         .collect();
-    Ok(json!({"palette": thread_palette(d).id(), "threshold": plan::MISMATCH_DELTA_E, "blocks": blocks, "warnings": plan.warnings}))
+    Ok(json!({"palette": thread_palette(d).id(), "threshold": MISMATCH_DELTA_E, "blocks": blocks, "warnings": plan.warnings}))
 }

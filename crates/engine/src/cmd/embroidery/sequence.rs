@@ -235,6 +235,7 @@ fn overlaps(a: Rect, b: Rect) -> bool {
 mod tests {
     use vectorcraft_stitch::Thread;
     use vectorcraft_stitch::plan::Style;
+    use vectorcraft_stitch::thread::MISMATCH_DELTA_E;
 
     use super::super::plan::Part;
     use super::*;
@@ -278,40 +279,48 @@ mod tests {
         assert_ne!(t.name, "first");
     }
 
-    /// Blocks are matched in sewing order, and a block whose nearest thread is the block before's
-    /// gets another, so that the colour change changes thread.
-    #[test]
-    fn a_block_is_not_sewn_in_the_thread_of_the_block_before() {
+    /// The plan of two blocks of `first` and `second` on top of each other, in `palette`: each
+    /// block's thread and whether it is the art's own colour.
+    fn two_blocks(palette: Palette, first: [u8; 3], second: [u8; 3]) -> Vec<(usize, bool)> {
         let mut seq = Sequence::new(Params::for_style(Style::Fill));
         let (mut a, mut b) = (block(0.0, 10.0), block(0.0, 10.0));
-        a.block.thread = Thread::rgb([200, 30, 30]);
-        b.block.thread = Thread::rgb([201, 30, 30]);
+        a.block.thread = Thread::rgb(first);
+        b.block.thread = Thread::rgb(second);
         seq.add(a);
         seq.add(b);
-        let plan = seq.plan(String::new(), Vec::new(), Palette::Pec);
+        let plan = seq.plan(String::new(), Vec::new(), palette);
         assert_eq!(plan.blocks.len(), 2, "two colours on top of each other");
-        let nearest = Palette::Pec.nearest([201, 30, 30], &[]).index;
-        assert_eq!(plan.blocks[0].thread.index, nearest, "both colours' nearest");
-        assert_ne!(plan.blocks[1].thread.index, nearest);
-        assert_eq!(plan.blocks[1].thread.index, Palette::Pec.nearest([201, 30, 30], &[nearest]).index);
+        plan.blocks.iter().map(|b| (b.thread.index, b.thread.delta_e == 0.0)).collect()
+    }
+
+    /// Blocks are matched in sewing order. A block whose nearest thread is the block before's takes
+    /// another when one is still similar, so that the colour change changes thread (two oranges,
+    /// with three Brother oranges near); when none is, it keeps its nearest (two reds, whose next
+    /// thread is far).
+    #[test]
+    fn a_block_takes_another_thread_than_the_block_before_only_for_a_similar_one() {
+        let (orange, other_orange) = ([254, 180, 58], [253, 181, 58]);
+        let nearest = Palette::Pec.nearest(other_orange, &[]).index;
+        assert_eq!(Palette::Pec.nearest(orange, &[]).index, nearest, "both oranges' nearest");
+        let next = Palette::Pec.nearest(other_orange, &[nearest]);
+        assert!(next.delta_e <= MISMATCH_DELTA_E, "{next:?}");
+        assert_eq!(two_blocks(Palette::Pec, orange, other_orange), [(nearest, false), (next.index, false)]);
+        let (red, other_red) = ([200, 30, 30], [201, 30, 30]);
+        let nearest = Palette::Pec.nearest(other_red, &[]).index;
+        assert!(Palette::Pec.nearest(other_red, &[nearest]).delta_e > MISMATCH_DELTA_E);
+        assert_eq!(two_blocks(Palette::Pec, red, other_red), [(nearest, false), (nearest, false)]);
     }
 
     /// A block painted with a thread's own colour (a swatch of its thread library) keeps that
-    /// thread exactly, and the block before it, whose nearest thread that is, takes another.
+    /// thread exactly; the block before it, whose nearest thread that is, takes another when one is
+    /// still similar.
     #[test]
     fn a_threads_own_colour_keeps_its_thread() {
-        let mut seq = Sequence::new(Params::for_style(Style::Fill));
-        let (mut near, mut own) = (block(0.0, 10.0), block(0.0, 10.0));
-        let red = Palette::Pec.get(5).map(|(rgb, _)| rgb).unwrap();
-        near.block.thread = Thread::rgb([red[0] - 3, red[1] + 2, red[2]]);
-        own.block.thread = Thread::rgb(red);
-        seq.add(near);
-        seq.add(own);
-        let plan = seq.plan(String::new(), Vec::new(), Palette::Pec);
-        let threads: Vec<(usize, bool)> = plan.blocks.iter().map(|b| (b.thread.index, b.thread.delta_e == 0.0)).collect();
-        let near_red = [red[0] - 3, red[1] + 2, red[2]];
-        assert_eq!(Palette::Pec.nearest(near_red, &[]).index, 5, "Red is its nearest");
-        assert_eq!(threads, [(Palette::Pec.nearest(near_red, &[5]).index, false), (5, true)]);
+        let orange = [254, 180, 58];
+        let first = Palette::Pec.nearest(orange, &[]).index;
+        let own = Palette::Pec.get(first).map(|(rgb, _)| rgb).unwrap();
+        let next = Palette::Pec.nearest(orange, &[first]).index;
+        assert_eq!(two_blocks(Palette::Pec, orange, own), [(next, false), (first, true)]);
     }
 
     /// The move to the next object is cut only when it is longer than `trimLength`: one of exactly

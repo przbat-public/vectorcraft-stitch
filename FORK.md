@@ -109,8 +109,9 @@ stitches fast, is tried before anything is built on it.
    threads and Janome's 78 JEF threads, from the tables in `crates/stitch/src/thread.rs` (no new
    assets); the document's thread palette (`embroidery.setup`, Janome's when unset), the first of
    the document's embroidery settings; colours matched by CIEDE2000 in CIE Lab instead of by RGB
-   distance, two blocks in a row never in one thread (38 of the 100 pinned exports changed, only
-   in their thread numbers); the plan carries each block's thread (palette, number, name, ΔE), the
+   distance, a neighbouring block's thread avoided when a similar one is left (38 of the 100
+   pinned exports changed, only in their thread numbers); the plan carries each block's thread
+   (palette, number, name, ΔE), the
    PES and JEF writers use it, and `embroidery.threads` lists it, flagging threads past ΔE 10.
 3. **A planning service.** Each sewing unit's stitches kept between plans, a snapshot of the
    document, cancelling; commands (so reachable over MCP): `embroidery.stats` (stitches, threads,

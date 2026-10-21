@@ -110,7 +110,8 @@ USAGE:
 
   vectorcraft-cli bench FILE [--size WxH] [--iters N]
       Render FILE (any readable format) fitted to WxH (default 2880x1800) and print ms per frame
-      (warm), multithreaded and single-threaded.
+      (warm), multithreaded and single-threaded; then, when FILE has art to stitch, the ms to plan
+      its embroidery: cold, warm (every object's stitches kept) and after moving one object.
 
   vectorcraft-cli perf [--paths N] [--deep]
       Check the performance budgets (render, pan, hit test, save/load, SVG, Pathfinder, handle
@@ -445,6 +446,13 @@ fn bench(args: &[String]) -> Result<(), String> {
             r.stats.drawn,
             r.stats.culled
         );
+    }
+    // A design to stitch: how long its embroidery takes to plan (an error, such as a design too
+    // large to stitch, is reported as such).
+    match perf::embroidery_times(&doc, iters as usize) {
+        Ok(Some((cold, warm, edited))) => outln!("  embroidery plan: cold {cold:.1} ms, warm {warm:.1} ms, after moving one object {edited:.1} ms"),
+        Ok(None) => {}
+        Err(e) => outln!("  embroidery plan: {e}"),
     }
     Ok(())
 }

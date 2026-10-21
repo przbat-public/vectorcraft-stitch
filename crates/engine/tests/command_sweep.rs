@@ -434,6 +434,10 @@ fn structured_junk() {
         ("symbol.options", json!({"name": "Dot", "nineSlice": true, "nineSliceGuides": [1e308, -1e308, 0, 0]})),
         ("symbol.options", json!({"nineSlice": 7, "nineSliceGuides": []})),
         ("symbol.options", json!({"nineSlice": false, "nineSliceGuides": null})),
+        ("embroidery.setup", json!({"palette": {"chart": ["madeira", null]}, "threadPalette": 1e308})),
+        ("embroidery.setup", json!({"palette": "PEC", "fabric": "knit"})),
+        ("embroidery.setup", json!({"palette": [null], "threadPalette": "jef"})),
+        ("embroidery.setup", json!({"palette": "jef", "threadPalette": {"palette": "pec"}})),
     ];
     let mut failures = vec![];
     for fx in Fixture::ALL {

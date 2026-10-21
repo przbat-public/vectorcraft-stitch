@@ -5116,3 +5116,4 @@ imageTrace	Outline	კონტური
 @msg	its Zstandard compression is damaged	მისი Zstandard შეკუმშვა დაზიანებულია
 @msg	it decompresses to more than {_1} MB	გაშლისას {_1} MB-ს აღემატება
 	Trim After	ძაფის მოჭრა შემდეგ
+	Embroidery Setup	ქარგვის პარამეტრები

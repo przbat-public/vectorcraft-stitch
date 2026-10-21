@@ -1,12 +1,15 @@
 //! The design's stitch plan: every stitch of every block belongs to one sewing unit, a unit says
 //! what it sews and what it was planned with, stitches are numbered from 1 in sewing order, and
-//! the export writes the plan.
+//! the export writes the plan. The document's embroidery settings: its thread palette, kept in its
+//! file.
 
 use serde_json::json;
 use vectorcraft_doc::NodeId;
+use vectorcraft_doc::embroidery::ThreadPalette;
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::format::Format;
 use vectorcraft_stitch::plan::Style;
+use vectorcraft_stitch::thread::Palette;
 use vectorcraft_stitch::{Command, pt_to_mm};
 
 use super::digitize::digitize;
@@ -277,4 +280,70 @@ fn the_export_writes_the_plan() {
     for format in Format::ALL {
         assert_eq!(export(&mut s, format), format.write(&plan.to_pattern()).unwrap(), "{}", format.id());
     }
+}
+
+/// The document's native file as bytes (`document.serialize`).
+fn native(s: &mut Session) -> Vec<u8> {
+    let saved = s.execute("document.serialize", &json!({})).unwrap();
+    match saved["dataBase64"].as_str() {
+        Some(b) => vectorcraft_format::base64_decode(b).unwrap(),
+        None => saved["text"].as_str().unwrap().as_bytes().to_vec(),
+    }
+}
+
+/// `embroidery.setup` sets the document's thread palette in one undo step and unsets it with null;
+/// setting what is set already, or passing its reply back, changes nothing and takes no step; a
+/// palette it doesn't know, or a setting, is refused.
+#[test]
+fn the_document_sets_its_thread_palette() {
+    let mut s = blank();
+    let steps = |s: &Session| s.doc().unwrap().history.undo.len();
+    let before = steps(&s);
+    assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap(), json!({"palette": null, "threadPalette": "pec"}));
+    let r = s.execute("embroidery.setup", &json!({"palette": "jef"})).unwrap();
+    assert_eq!(r, json!({"palette": "jef", "threadPalette": "jef"}));
+    assert_eq!(steps(&s), before + 1);
+    assert_eq!(s.execute("embroidery.setup", &r).unwrap(), r);
+    assert_eq!(s.execute("embroidery.setup", &json!({"palette": "jef"})).unwrap(), r);
+    assert_eq!(steps(&s), before + 1, "no change, no step");
+    for bad in [json!({"palette": "madeira"}), json!({"palette": 5}), json!({"palette": ["pec"]}), json!({"palete": "pec"}), json!([1])] {
+        assert!(s.execute("embroidery.setup", &bad).is_err(), "{bad}");
+    }
+    assert_eq!(steps(&s), before + 1);
+    assert_eq!(s.execute("embroidery.setup", &json!({"palette": null})).unwrap(), json!({"palette": null, "threadPalette": "pec"}));
+    assert!(s.doc().unwrap().doc.embroidery.is_none(), "nothing set, nothing kept");
+    s.execute("edit.undo", &json!({})).unwrap();
+    assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap()["palette"], "jef");
+    // The document's palettes are the stitch planner's, by name.
+    let known: Vec<Option<Palette>> = ThreadPalette::KNOWN.iter().map(|p| p.id().and_then(Palette::from_id)).collect();
+    assert_eq!(known, Palette::ALL.map(Some));
+}
+
+/// The palette is saved with the document. A file a newer version saved keeps what this one
+/// doesn't know when saved again: a setting it doesn't read, and a palette it doesn't know, which
+/// it reports as it is and matches as unset.
+#[test]
+fn the_thread_palette_is_saved_and_a_newer_versions_settings_are_kept() {
+    let mut s = blank();
+    s.execute("embroidery.setup", &json!({"palette": "jef"})).unwrap();
+    let saved = native(&mut s);
+    let mut again = Session::new();
+    again.execute("document.open", &json!({"name": "threads.vectorcraft", "dataBase64": vectorcraft_format::base64_encode(&saved)})).unwrap();
+    assert_eq!(again.execute("embroidery.setup", &json!({})).unwrap()["palette"], "jef");
+    // As a newer version might write it.
+    let mut file: serde_json::Value = serde_json::from_slice(&saved).unwrap();
+    let newer = json!({"palette": {"chart": "madeira", "line": "polyneon"}, "fabric": {"preset": "knit", "pull": 0.35}});
+    file["document"]["embroidery"] = newer.clone();
+    let bytes = serde_json::to_vec(&file).unwrap();
+    let mut s = Session::new();
+    s.execute("document.open", &json!({"name": "newer.vectorcraft", "dataBase64": vectorcraft_format::base64_encode(&bytes)})).unwrap();
+    let r = s.execute("embroidery.setup", &json!({})).unwrap();
+    assert_eq!(r, json!({"palette": newer["palette"], "threadPalette": "pec"}));
+    // Its own reply passed back changes nothing; another palette replaces it, keeping the fabric.
+    s.execute("embroidery.setup", &r).unwrap();
+    let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
+    assert_eq!(kept["document"]["embroidery"], newer);
+    s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
+    let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
+    assert_eq!(kept["document"]["embroidery"], json!({"palette": "pec", "fabric": newer["fabric"]}));
 }

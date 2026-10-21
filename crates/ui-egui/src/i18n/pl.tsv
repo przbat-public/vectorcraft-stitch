@@ -5061,3 +5061,4 @@ mark-style	Japanese	Japońskie
 	Justification	Justowanie
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	zmienne i zestawy danych pliku nie zostały wczytane (zmienne: {variables}, zestawy danych: {data_sets}): panel Zmienne ich nie wyświetla
 	Trim After	Obetnij nić po
+	Embroidery Setup	Ustawienia haftu

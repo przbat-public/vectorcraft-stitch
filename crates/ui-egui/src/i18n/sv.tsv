@@ -5165,3 +5165,4 @@ theme	Appearance	Utseende
 	Justification	Justering
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	filens variabler och datauppsättningar lästes inte (variabler: {variables}, datauppsättningar: {data_sets}): panelen Variabler visar dem inte
 	Trim After	Klipp tråden efter
+	Embroidery Setup	Broderiinställningar

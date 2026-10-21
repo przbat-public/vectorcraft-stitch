@@ -4803,3 +4803,4 @@ lighting	Light	Світло
 	Justification	Вирівнювання за шириною
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	змінні та набори даних файлу не прочитано (змінних: {variables}, наборів даних: {data_sets}): панель «Змінні» їх не показує
 	Trim After	Обрізати нитку після
+	Embroidery Setup	Параметри вишивки

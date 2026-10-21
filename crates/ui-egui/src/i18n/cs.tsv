@@ -5209,3 +5209,4 @@ mark-style	Japanese	Japonské
 	Justification	Zarovnání do bloku
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	proměnné a sady dat souboru nebyly načteny (proměnné: {variables}, sady dat: {data_sets}): panel Proměnné je nezobrazuje
 	Trim After	Odstřihnout nit po
+	Embroidery Setup	Nastavení vyšívání

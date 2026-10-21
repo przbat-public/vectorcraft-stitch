@@ -28,12 +28,13 @@ use vectorcraft_stitch::{Block, Pattern, Stitch, Thread};
 pub const FIRST_NUMBER: usize = 1;
 
 /// A thread farther than this from its art's colour (CIEDE2000) is flagged as a mismatch
-/// ([`BlockThread::mismatch`]): past about 5, two colours side by side are seen as two different
-/// colours rather than one colour slightly off (the bands of W. S. Mokrzycki and M. Tatol,
-/// "Color difference Delta E — a survey", *Machine Graphics and Vision* 20, 2011). An estimate:
-/// those bands are for the older CIE 1976 difference, which CIEDE2000 makes smaller for saturated
-/// colours, and no embroidery source gives a threshold.
-pub const MISMATCH_DELTA_E: f64 = 5.0;
+/// ([`BlockThread::mismatch`]): one that looks clearly unlike the art. An estimate, the project
+/// owner's choice (2026-10-21); no embroidery source gives a threshold. Past about 5, two colours
+/// side by side are already seen as two different colours (the bands of W. S. Mokrzycki and
+/// M. Tatol, "Color difference Delta E — a survey", *Machine Graphics and Vision* 20, 2011, drawn
+/// up for the older CIE 1976 difference), but a palette of 64 or 78 threads lies that far from
+/// about half the colours of real art, so the flag is kept for threads twice as far.
+pub const MISMATCH_DELTA_E: f64 = 10.0;
 
 /// The part of an object a sewing unit sews.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

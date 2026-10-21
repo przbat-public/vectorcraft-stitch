@@ -417,6 +417,8 @@ fn the_threads_command_lists_each_blocks_thread() {
     let peacock = &blocks[1];
     assert_eq!((&peacock["thread"]["index"], &peacock["thread"]["color"], &peacock["deltaE"]), (&json!(38), &json!(PEACOCK_BLUE), &json!(0.0)));
     assert_eq!((&peacock["mismatch"], &blocks[2]["mismatch"]), (&json!(false), &json!(true)), "no Brother thread is near #4080ff");
+    let red = blocks[0]["deltaE"].as_f64().unwrap();
+    assert!(red > 5.0 && blocks[0]["mismatch"] == json!(false), "Brother's Red is {red} from #cc2222: off, not unlike");
     // The export's options; bad ones refused.
     for bad in [json!({"stitchStyle": "cross"}), json!({"density": "dense"}), json!({"pullCompensation": [1, 2, 3]})] {
         assert!(s.execute("embroidery.threads", &bad).is_err(), "{bad}");

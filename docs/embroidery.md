@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-21 · **Last updated:** 2026-10-21 · **Change:** the thread tables: PEC 42 is Linen, and PEC's appliqué entries 62 to 64 are never matched (Brother's palette is its 61 threads); a thread number that names no thread reads as a stand-in named after it; where the tables come from, and pyembroidery credited in `NOTICE` for them; a newer file's embroidery settings open whatever their shape; the export's warnings are translated; each PES and JEF export is pinned apart from its thread numbers
+> **Last reviewed:** 2026-10-22 · **Last updated:** 2026-10-22 · **Change:** the planning service: each sewing unit's stitches kept between plans, one plan per document snapshot, cancelling and progress, the export planning afresh through it; `embroidery.stats` (counts, size, stitch lengths, thread and sewing time, with the models' sources), `embroidery.sequence` (the sewing order, each unit with how and why it is sewn) and `embroidery.check` (design checks, each rule with its sources, and what they find on the real designs)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -128,6 +128,106 @@ alike. About 1 is the smallest difference seen side by side (a rule of thumb fro
 1976 difference). A teal, `#339999`, is nearest
 Brother's Sky Blue by RGB (ΔE₀₀ 20.2) and Teal Green by eye (9.8); a dark grey, `#31373d`, was
 Janome's Olive Green by RGB (24.3) and is now its Dark Gray (12.6).
+
+**A design's figures.** `embroidery.stats` (with the export's embroidery options, `speed` and
+`fabricThickness`) gives the figures of the design the export would sew, for the whole design and
+for each block:
+
+- counts: needle points, records (needle points, jumps and cuts), jumps, trims, colour changes,
+  distinct threads, blocks;
+- size: the needle points' box, the start and end points (the first and last needle points), and
+  the extents from the start (left, right, up and down, as Wilcom's Design Information lists them);
+- lengths: the shortest and longest needle-down stitch, and the longest jump. A *needle-down
+  stitch* is the thread laid from one needle point to the next without lifting the needle: a jump,
+  a cut, the needle point a jump lands on and the move between two blocks are none;
+- thread, an estimate: metres of top and bobbin thread;
+- sewing time, an estimate, and the thread changes counted apart.
+
+The thread and the time follow the shape of what Wilcom documents for its own estimates, which it
+publishes without formulas or values, and every number is a named constant with its source or
+marked as an estimate (`cmd/embroidery/stats.rs`):
+
+| Value | Default | Source |
+|---|---|---|
+| top thread per needle-down stitch | its length on the face, and its share of the back | the balance thread makers teach: the back of a satin is ⅓ bobbin, ⅔ top thread pulled under ([Madeira](https://www.madeira.com/fileadmin/user_upload/Downloads/HowTo/EN_Avoid_Puckering.pdf), [American & Efird](http://www.amefird.com/wp-content/uploads/2010/02/EmbroideryUnqualityMatrix-2-11-10.pdf)) |
+| bobbin's share of the back | ⅓ under a satin, ⅓ × 125 / 65 under running and tatami, ⅓ × 100 / 65 for stitches read from a file | Wilcom's bobbin factors: 100 % for a mixed design, about 125 % for one all of run or tatami, about 65 % for one all of satin ([thread usage](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Basics/threads/threads-5.htm)); anchoring satin at ⅓ is ours, an estimate |
+| top thread through the fabric | twice `fabricThickness` per needle point (down and back up) | an estimate; Wilcom takes the fabric's thickness as an input |
+| `fabricThickness` | 0.5 mm (0 to 5) | an estimate (a medium cotton, a T-shirt jersey) |
+| `speed` | 650 stitches a minute (60 to 1500) | Janome's Memory Craft 200E to 350E default to 650 ([MC230E manual](https://www.janome.ca/wp-content/uploads/2025/02/inst-manual-mc230e.pdf)); an estimate for home machines |
+| slow speed | 400 stitches a minute, for stitches and jumps longer than 4 mm | the lowest Janome's home machines can be set to (same manual); Tajima's TMEZ-SC keeps its top speed up to 4 mm ([product page](https://www.tajima.com/product/tmez-sc/)): both estimates for home machines, after Wilcom's "slow above" ([runtime settings](https://docs.wilcom.com/embroiderystudio/e4/en/MainHelp/Setup/hardware/Configure_machine_runtime_settings.htm)) |
+| trim | 3.5 s | 3 to 4 s by machine, Wilcom's blog ([high-impact, low stitch-count designs](https://wilcom.com/resources/blog/high-impact-low-stitch-count-designs)); another Wilcom post was reported to give about 8 s, but no longer opens |
+| thread change | not timed: counted apart | a person rethreads a single-needle machine; Brother's machines leave thread changes out of their own estimate ([Brother](https://support.brother.com/g/s/hf/htmldoc/hsm/om/888p5x/en/06_08_01.html)) |
+
+So each needle point and jump is one turn of the machine at the normal or the slow speed, each trim
+takes 3.5 s, and the start and end of the design are not timed; the answer says what the time
+includes. On the real designs VectorCraft's plans use about 5.6 m of top thread per 1,000 needle
+points, and the real designs' watermelon (46 × 32 mm, 1,509 needle points) sews in about 2.5
+minutes at 650 stitches a minute. Values out of range are refused, not clamped.
+
+**The sewing order.** `embroidery.sequence` (with the export's embroidery options) lists the design
+as it is sewn, read only: the blocks in order, each with its thread (palette, number, name and
+colour, the art's colour, ΔE, mismatch), needle points, first and last stitch numbers, jumps and
+trims, and what follows it (a colour change, after a cut when the block ends with one); in each
+block, its units in order, each with the object a person selects (`id`: the symbol instance for
+art inside a symbol, with the object sewn as `node`), the part ("fill 1", "stroke 1", or
+"stitches" for a run opened from a file), how it is sewn (running, satin, tatami, tatami with
+satin columns, literal) and why: the rule that chose it ("a stroke at least 1 mm wide is a satin
+column, here 2.12 mm", "a stroke narrower than 1 mm is a running line", "a fill is tatami; its
+parts narrower than 7 mm are satin columns that follow the shape", "stitchStyle satin"); and its
+needle points, stitch numbers, jumps, trims, entry and exit points and box. `split` names the
+objects whose units are sewn in more than one block (an object filled in one thread and stroked in
+another always is). Sewing order follows stacking order: moving objects (`node.move`) changes it,
+and objects of one thread still join where nothing lies between them.
+
+**Checks.** `embroidery.check` (with the export's embroidery options, `format`, `rules` and
+`limit`) runs design checks on the plan. Each rule gives its threshold and unit, its sources (where
+two sources disagree, both are listed and the first is the one checked), its severity (*error*:
+the format can't hold it; *warning*: the quality may suffer; *info*), the number of hits, the
+objects hit (at most 1,000) and the first `limit` hits (20 by default, at most 1,000) as stitch
+numbers and points with the length or count measured. `format` (the document's thread palette's
+format when left out: PES for Brother's, JEF for Janome's) decides the format limits checked. A
+stitch's length is that of a needle-down stitch, and a unit's underlay, travel and tie stitches are
+its own: a fill's rules see its underlay too.
+
+| Rule (`id`) | Flags | Severity | Sources |
+|---|---|---|---|
+| `satinTooWide` | a satin column wider than 10 mm (a satin stroke's width; a fill's widest narrow part) | warning | Melco DesignShop v11's design checker, 10 mm ([user manual](http://www.melco-service.com/docs/DSv11_Manual.pdf), Design Checker Tab, p. 38); Ricoma: shapes 12 mm and wider are usually not satin ([digitizing tips](https://www.ricoma.cn/cn/ndetail13_604)) |
+| `stitchTooLong` | a stitch longer than 12.7 mm | warning | Melco's design checker |
+| `formatStep` | a stitch longer along x or y than one record of the format holds: DST 12.1 mm, EXP and JEF 12.7, PES 204.7. Our writers write it as several stitches of equal steps (the hit says how many), so the machine sews more needle points than planned | info | the formats' pages on EduTechWiki; `Format::max_step`, read from each writer |
+| `fillStitchShort` | a stitch of a fill shorter than 2.5 mm | warning | Melco's design checker, 2.5 mm; Melco's machine manual: fill stitches ideally 2 mm or longer ([Melco OS manual](https://www.melco-service.com/docs/X/melco-os-ai-en.pdf), pp. 301–302) |
+| `satinStitchShort` | a stitch of a satin shorter than 1 mm | warning | Melco's design checker; Melco's machine manual agrees |
+| `runStitchShort` | a stitch of a running line shorter than 1.5 mm | warning | Melco's design checker; Melco's machine manual agrees |
+| `stitchBelowNeedle` | a stitch shorter than the needle's blade, 0.75 mm for a 75/11 | warning | Melco's machine manual: keep stitches longer than the needle's blade |
+| `stitchTiny` | a stitch of 0.3 mm or less, which machines delete | warning | Ricoma deletes stitches under 0.3 mm ([digitizing tips](https://www.ricoma.cn/cn/ndetail13_539)); Brother's machines delete stitches of the set pitch or less, 0.3 mm as they come ([PRT23 manual](https://download.brother.com/welcome/doch102354/prt23_om01ja.pdf), p. 107) |
+| `shortStitchesInARow` | more than 5 stitches in a row, each shorter than 1 mm | warning | Wilcom's stitch shortening allows up to five ([help](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm)); 1 mm is Melco's machine manual's general minimum |
+| `layers` | three or more sewing units over one 1 mm square (the square an estimate) | warning | Brother's PRT51 manual: stitching sewn over three times or more can break the thread or the needle ([manual](https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf)) |
+| `threadMismatch` | a thread past ΔE 10 as shown, as `embroidery.threads` flags it | warning | the project owner's choice (Threads, above) |
+| `notSewn` | what the plan leaves out or approximates: its warnings (type, images, live art, patterns, gradients) | warning | What is not stitched, below |
+| `formatColors` | more colour blocks than the format holds: PES 255 (its PEC header counts them in a byte); DST, EXP and JEF have no such limit | error | EduTechWiki's [PEC page](https://edutechwiki.unige.ch/en/Embroidery_format_PEC); `Format::max_colors` |
+| `machineStitches` | more than 500,000 needle points | info | Brother PR680W's manual: the `.pes` files it shows ([specifications](https://download.brother.com/welcome/doch102285/884t23_om01en.pdf)); one machine's limit, not the format's |
+| `machineColorChanges` | more than 127 colour changes | info | the same manual |
+
+Not checked: "density too tight" and "too many needle penetrations in an area", which Melco's
+design checker names without a number; the answer lists them under `notChecked`.
+
+What the rules find on the real designs (11 artworks digitized at the person's size, and the
+person's Ink/Stitch files opened as stitches; `crates/engine/tests/embroidery_planning.rs` prints
+it), counted in blocks hit:
+
+| Rule | VectorCraft's plans (44 blocks) | The person's files (42 blocks) |
+|---|---|---|
+| `fillStitchShort` | all 44 (7,504 hits, about 29 % of the needle points: the 2 mm underlay, 2,210, and the rows' short ends) | none (opened stitches have no style) |
+| `stitchBelowNeedle` | 41 (1,109: rows' remainders from 0.4 to 0.75 mm) | 32 or more (11,577) |
+| `stitchTiny` | none: the planner leaves out stitches under 0.4 mm | 30 or more (5,375) |
+| `layers` | 18 (1,247 squares) | 8 or more (741) |
+| `threadMismatch` | 12 | none: a file's own threads |
+| `shortStitchesInARow` | 1 | 14 or more (66) |
+| the rest | none | none |
+
+("Or more": blocks counted from the first 1,000 hits of each design.) The two short-stitch rules
+flag most blocks of normal designs, VectorCraft's and the person's alike: their thresholds are kept
+as the sources give them, and whether to change them, or to leave a fill's underlay out of
+`fillStitchShort`, is for the project owner to decide.
 
 ## How a shape becomes stitches
 
@@ -908,11 +1008,65 @@ whose threads a palette entry can stand for later.
 
 ### Planning service
 
-A planning service takes a snapshot of the document and gives back its plan. It keeps each sewing
-unit's stitches between plans, so that an edit replans only the units it changes, and it can be
-cancelled. A unit's stitches depend on where the needle comes from (each object starts near where
-the one before ended), so that is part of what they are kept by. Commands and the web build run it
-synchronously; the app runs it in the background.
+A planning service (`cmd/embroidery/service.rs`) takes a snapshot of the document and gives back
+its plan. Each open document has one (`Session::embroidery_plans`, by `DocState::uid`), dropped
+when the document closes; the commands that read a design (`embroidery.threads`, `stats`,
+`sequence`, `check`) plan through it.
+
+```mermaid
+flowchart LR
+    snap["Document snapshot<br/>(Arc&lt;Document&gt;)"] --> memo{"Same snapshot,<br/>same options<br/>as last time?"}
+    memo -->|yes| plan["The same plan<br/>(Arc&lt;DesignPlan&gt;)"]
+    memo -->|no| walk["Walk the art<br/>(digitize)"]
+    walk --> unit["Each unit's request:<br/>shape, rule, parameters,<br/>start point, clip"]
+    unit --> cache{"Kept for exactly<br/>this request?"}
+    cache -->|yes| kept["Its stitches"]
+    cache -->|no| fresh["plan_unit"] --> keep["Kept, least recently<br/>used out past 2 M stitches"] --> kept
+    kept --> seq["Blocks, threads, numbers<br/>(Sequence)"] --> plan
+    plan --> cmds["embroidery.threads, stats,<br/>sequence, check"]
+    doc2["The document as written"] --> afresh["plan_afresh<br/>(nothing kept)"] --> export["document.export"]
+```
+
+- **A pure step per unit.** The walk builds each unit's request (`unit::UnitRequest`: the shape in
+  millimetres after transforms, `expand` and clipping; the fill rule; the parameters; those of a
+  fill's narrow parts sewn as satin; where the needle comes from; the clip region a stroke is cut
+  to) and `unit::plan_unit` plans it, reading nothing else. The same request always plans the same
+  stitches.
+- **The units kept** (`cache.rs`). A unit's stitches are kept by its whole request, every value as
+  its exact bit pattern (`UnitKey`; `Params` is taken apart field by field, so a parameter added
+  later can't be left out). Where the needle comes from is part of the key, to the bit: each
+  object starts near where the one before ended, so an edit plans again the object it changes and
+  the next one in its block whose start moved, and the change runs on only as far as the ends move.
+  On the real designs, nudging one object plans again 1.85 of 10.9 units on average. Rounding the
+  start point to the formats' 0.1 mm was measured: it changes none of the pinned exports but saves
+  nothing either (still 1.85 after a 0.5 mm nudge), so it is not done. The cache holds at most
+  2 million stitches (`MAX_CACHED_STITCHES`, as many as the largest design; a key counts as stitches
+  of its size, about 50 MB), the units used least recently dropped first. A plan made with kept
+  units equals a fresh plan: a property test plans random documents through random edits, and
+  `embroidery_planning.rs` nudges every object of the real designs.
+- **The last plan** is kept with the snapshot (held weakly) and options it was made for. A snapshot
+  never changes (it is shared with the undo history), so the same snapshot with the same options
+  returns the same plan without walking again: commands that read a design one after another plan
+  it once. Another snapshot of the same art (an undo) walks again, every unit from the cache.
+- **Cancelling.** A plan checks `vectorcraft_doc::cancel` before each unit, between the columns a
+  fill's narrow parts are cut out by, and within the search for those parts
+  (`plan::narrow_columns_until`). A cancelled plan returns `PlanError::Cancelled` (the commands'
+  `EngineError::Cancelled`) and leaves no plan; the units it finished stay kept. Each painted fill,
+  stroke and literal run is a step of the plan's progress (`cancel::progress`).
+- **Threads.** The service is `Send` and `Sync` (checked when it compiles): the app's worker can plan
+  off the interface thread while commands plan on theirs; commands and the web build plan
+  synchronously. No thread is started yet.
+- **The export plans afresh** (`service::plan_afresh`): the document it writes is the one edited for
+  the file, and a file never depends on what was kept. It is cancellable and reports its progress
+  like the other plans.
+
+Measured in a release build (2026-10-22, 12 cores, load about 4), the real designs at the person's
+size: a cold plan takes 0.45 to 19 ms (0.41 to 19 ms before the service: keeping the units costs
+about 1 %), a warm plan (another snapshot, every unit kept) 0.01 to 0.08 ms, and the re-plan after a
+0.5 mm nudge 0.45 to 12 ms (the two-unit SOS button re-plans both). On the synthetic document of
+1,000 paths (1,334 units), 117 ms cold, 11 warm and 11 after a nudge. `vectorcraft-cli perf` has
+those three rows with budgets (400, 100 and 100 ms, estimates), and `vectorcraft-cli bench FILE`
+times the three for any file with art to stitch; perf's other budgets did not move.
 
 ### Drawing stitches
 
@@ -1020,14 +1174,20 @@ Public documentation, cited per claim in the crate and in the local research not
   columns cut out of it with path operations), `plan.rs` (the stitch plan: sewing units, thread
   blocks and their threads, stitch numbers), `sequence.rs` (the order blocks are sewn in, where the
   needle is before each object, trims between objects, the units each block holds, and each
-  block's thread), `tests.rs` (the plan's, the threads' and the document's settings').
+  block's thread), `unit.rs` (one unit planned from its request), `cache.rs` (the units kept
+  between plans), `service.rs` (each document's planning service), `measure.rs` (a plan's records
+  in sewing order), `stats.rs` (`embroidery.stats`: counts, size, thread and time), `order.rs`
+  (`embroidery.sequence`), `check.rs` (`embroidery.check`: its rules and their sources),
+  `tests.rs` (the plan's, the threads' and the document's settings'), `tests_service.rs`,
+  `tests_stats.rs`, `tests_order.rs`, `tests_check.rs`.
 - `crates/engine/src/cmd/swatchlib.rs` — the swatch libraries, the embroidery thread libraries
   among them; `crates/doc/src/embroidery.rs` — what an object and the document keep for embroidery.
 - `crates/engine/src/cmd/fileio/embroidery/` — the files' side: `mod.rs` (the export's options as
   `document.formats` lists them, and its entry point), `import.rs` (a design opened as art).
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real
   designs and the test that uses them; `crates/engine/tests/embroidery_output.rs` — the sha256 of
-  every export.
+  every export; `crates/engine/tests/embroidery_planning.rs` — the statistics, sewing order and
+  checks on the real designs, and a plan after an edit against a fresh one.
 
 Every value these files decide with is a named constant with a description: what it is, its unit,
 and its source (a format's documentation, a cited default) or that it is an estimate. What stays

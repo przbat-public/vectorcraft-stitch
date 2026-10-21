@@ -119,11 +119,16 @@ stitches fast, is tried before anything is built on it.
    that name no thread read as named stand-ins, a newer file's embroidery settings open whatever
    their shape, the chosen thread is typed by palette, the export's warnings are translated, and
    each PES and JEF export is pinned apart from its thread numbers too.
-3. **A planning service.** Each sewing unit's stitches kept between plans, a snapshot of the
-   document, cancelling; commands (so reachable over MCP): `embroidery.stats` (stitches, threads,
-   thread changes, trims, jumps, size, thread used, and sewing time at a speed that is a named
-   constant marked as an estimate), `embroidery.sequence`, and `embroidery.check` (thresholds from
-   Melco's design checker, and the format's longest stitch).
+3. **A planning service.** Done: one per open document (`cmd::embroidery::service`), each sewing
+   unit's stitches kept by exactly what they are planned from (bounded, least recently used out;
+   a plan with them equals a fresh plan, tested as a property and on the real designs), the last
+   plan kept per document snapshot and options, cancelling and progress, `Send` and `Sync`; the
+   export plans afresh through it. Commands (so reachable over MCP): `embroidery.stats` (counts,
+   size, stitch lengths, thread and sewing time, estimates on models whose numbers are named and
+   sourced), `embroidery.sequence` (each unit with how it is sewn and why), and `embroidery.check`
+   (Melco's design checker's thresholds and others, each rule with its sources, the format's
+   limits). On the real designs the short-stitch rules flag most blocks: their thresholds wait for
+   the owner's decision (`docs/embroidery.md` › Using it › Checks).
 4. **The stitch preview on the canvas, and the Embroidery panel's Sewing order and Check tabs.** The
    stitch scene and its renderer (settling the layering, see Architecture), an Art/Stitches switch
    with planning in the background, the selected object highlighted and the checks marked, counts in

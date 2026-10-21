@@ -6,8 +6,9 @@
 //! point to the next without lifting the needle ([`super::measure::Record::sewn`]). A unit's
 //! underlay, travel and tie stitches belong to it, so a fill's rules see its underlay too.
 //!
-//! Not checked: "density too high" and "too many penetrations in an area", which Melco's design
-//! checker names without a number (see `docs/embroidery.md` › Checks).
+//! Not checked: "density too tight" and "too many needle penetrations in an area", which Melco's
+//! design checker names without a number ([`NOT_CHECKED`]; `docs/embroidery.md` › Using it ›
+//! Checks).
 
 use std::collections::{BTreeSet, HashMap};
 

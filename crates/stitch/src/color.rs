@@ -113,7 +113,9 @@ const HALF_TURN: f64 = 180.0;
 const TURN: f64 = 360.0;
 
 /// The CIEDE2000 colour difference ΔE₀₀ between `x` and `y`: 0 for the same colour, about 1 for
-/// the smallest difference seen side by side. The same either way round.
+/// the smallest difference seen side by side. The same either way round. Not a number when either
+/// colour has a coordinate that isn't a finite number (never one made by [`lab`]), so that it is
+/// never taken for no difference.
 pub fn delta_e(x: Lab, y: Lab) -> f64 {
     // How far a chroma `c` has come towards CHROMA_HALF and past it, 0 to 1 (equations 4 and 17).
     let saturation = |c: f64| {
@@ -168,9 +170,11 @@ pub fn delta_e(x: Lab, y: Lab) -> f64 {
     let sc = 1.0 + CHROMA_WEIGHT * c;
     let sh = 1.0 + HUE_WEIGHT * c * t;
     let rt = -(2.0 * rotation).to_radians().sin() * rc;
-    // (22)
+    // (22). The sum is never below 0 but by rounding, which is taken as 0; a sum that is not a
+    // number stays one (`max(0.0)` would make it 0, no difference at all).
     let (dl, dc, dh) = (dl / sl, dc / sc, dh / sh);
-    (dl * dl + dc * dc + dh * dh + rt * dc * dh).max(0.0).sqrt()
+    let squared = dl * dl + dc * dc + dh * dh + rt * dc * dh;
+    if squared < 0.0 { 0.0 } else { squared.sqrt() }
 }
 
 /// The CIEDE2000 difference between two 8-bit sRGB colours ([`delta_e`] of their [`lab`]).
@@ -237,6 +241,17 @@ mod tests {
             assert!((delta_e(y, x) - got).abs() < 1e-12, "pair {} is symmetric", i + 1);
             assert_eq!(delta_e(x, x), 0.0, "pair {}: a colour against itself", i + 1);
         }
+    }
+
+    /// A colour that isn't one (a coordinate not a finite number) is never "no difference" from
+    /// another: its difference is not a number.
+    #[test]
+    fn a_colour_that_is_not_one_has_no_difference_of_zero() {
+        let grey = lab([128, 128, 128]);
+        for odd in [Lab { l: f64::NAN, ..grey }, Lab { a: f64::INFINITY, ..grey }, Lab { b: f64::NEG_INFINITY, ..grey }] {
+            assert!(delta_e(odd, grey).is_nan() && delta_e(grey, odd).is_nan(), "{odd:?}");
+        }
+        assert_eq!(delta_e(grey, grey), 0.0);
     }
 
     /// Solving for the matrix whose columns are the primaries' XYZ, scaled so that they add up to

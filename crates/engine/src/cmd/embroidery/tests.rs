@@ -245,7 +245,8 @@ fn stitches_are_numbered_from_one_in_sewing_order() {
     rect(&mut s, "#cc2222", 20.0, 200.0, 40.0, 30.0);
     let plan = plan_of(&s);
     let total = plan.len();
-    assert!(plan.blocks.len() == 2 && total > 100, "{} blocks, {total} stitches", plan.blocks.len());
+    assert_eq!(plan.blocks.len(), 2, "red, then blue");
+    assert!(total > 100, "{total} stitches");
     let mut n = 0;
     for (k, b) in plan.blocks.iter().enumerate() {
         for i in 0..b.stitches.len() {

@@ -160,6 +160,14 @@ const DESIGNS: &[(&str, &str)] = &[
 /// Points per millimetre: the documents count points, the designs millimetres.
 const PT_PER_MM: f64 = 72.0 / 25.4;
 
+/// Where the listings were recorded (`std::env::consts::OS` and `ARCH`): a difference on another
+/// platform may come from its maths library rather than the code, and the failure says so.
+const RECORDED_ON: &str = "macos aarch64";
+
+/// A letter T, its corners in millimetres: its strokes are 3 mm wide, narrow enough to be sewn as
+/// satin columns, and the square where they meet is tatami.
+const LETTER_T: [(f64, f64); 8] = [(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 3.0), (16.5, 23.0), (13.5, 23.0), (13.5, 3.0), (0.0, 3.0)];
+
 /// The documents built here, exported in every format, write what they wrote when the listing was
 /// recorded.
 #[test]
@@ -224,7 +232,15 @@ fn check(listing: &str, now: &[(String, String)]) {
         }
     }
     let listing: String = now.iter().map(|(name, hash)| format!("{hash}  {name}\n")).collect();
-    assert!(changed.is_empty(), "{} exports changed:\n{}\n\nThe listing as it now stands:\n{listing}", changed.len(), changed.join("\n"));
+    let here = format!("{} {}", std::env::consts::OS, std::env::consts::ARCH);
+    let platform = if here == RECORDED_ON {
+        String::new()
+    } else {
+        format!(
+            "\n\nThe listing was recorded on {RECORDED_ON} and this is {here}: its sine, cosine and power functions may round a needle point to the next 0.1 mm, so compare the stitches before recording a new listing."
+        )
+    };
+    assert!(changed.is_empty(), "{} exports changed:\n{}{platform}\n\nThe listing as it now stands:\n{listing}", changed.len(), changed.join("\n"));
 }
 
 /// The documents built here: each one's name, a session holding it, and the options it is exported
@@ -261,8 +277,7 @@ fn fills() -> Session {
     let mut s = blank(300.0, 300.0);
     rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
     ellipse(&mut s, "#2233cc", 90.0, 30.0, 30.0, 30.0);
-    let t = [(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 3.0), (16.5, 23.0), (13.5, 23.0), (13.5, 3.0), (0.0, 3.0)];
-    filled_mm(&mut s, "#22aa44", (150.0, 120.0), &[&t]);
+    filled_mm(&mut s, "#22aa44", (150.0, 120.0), &[&LETTER_T]);
     rect(&mut s, "#cc2222", 20.0, 200.0, 30.0, 20.0);
     rect(&mut s, "#cc2222", 100.0, 40.0, 20.0, 20.0);
     let hidden = rect(&mut s, "#000000", 200.0, 20.0, 40.0, 40.0);
@@ -411,8 +426,7 @@ fn opened_with_cuts() -> Session {
 fn mixed() -> Session {
     let mut s = blank(300.0, 300.0);
     rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
-    let t = [(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 3.0), (16.5, 23.0), (13.5, 23.0), (13.5, 3.0), (0.0, 3.0)];
-    filled_mm(&mut s, "#22aa44", (110.0, 20.0), &[&t]);
+    filled_mm(&mut s, "#22aa44", (110.0, 20.0), &[&LETTER_T]);
     stroked(&mut s, "#2233cc", 6.0, "M 20 120 C 80 90 140 150 200 120");
     stroked(&mut s, "#8822aa", 1.0, "M 20 200 L 60 160 L 100 200 L 140 160 L 180 200");
     let both = rect(&mut s, "#ff8800", 200.0, 180.0, 60.0, 60.0);

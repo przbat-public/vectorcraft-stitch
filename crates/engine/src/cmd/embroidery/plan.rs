@@ -29,7 +29,9 @@ pub const FIRST_NUMBER: usize = 1;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Part {
     /// One of its fills: which one, counting the object's fills in appearance order from 0 (hidden
-    /// ones too, so that showing or hiding one renumbers none).
+    /// ones too, so that showing or hiding one renumbers none). Adding or removing a fill renumbers
+    /// the ones after it, so the number tells one plan's units apart and is no key for anything
+    /// stored with the object.
     Fill(usize),
     /// One of its strokes, counted as [`Part::Fill`] counts fills.
     Stroke(usize),
@@ -63,13 +65,15 @@ pub struct Unit {
     pub columns: Option<Params>,
     /// The box its stitches fall in as planned, millimetres (`None`: no finite point).
     pub bounds: Option<Rect>,
-    /// The block it is sewn in: an index into [`DesignPlan::blocks`].
+    /// The block it is sewn in: an index into [`DesignPlan::blocks`] (whose [`ThreadBlock::units`]
+    /// lists it).
     pub block: usize,
     /// Its stitches, a range of its block's in needle order: the move that reaches it (a jump,
-    /// after a cut when the move is long or the object before asked for one), its own stitches,
-    /// and the cut after them when it, or a group it ends, asks for one. A block's units' ranges
-    /// follow one another without a gap from its first stitch to its last; a unit that starts
-    /// where the needle already is leaves that needle point to the one before.
+    /// after a cut when the move is longer than the trim length, or where the file a literal run
+    /// comes from had one), its own stitches, and the cut after them when it, or a group it ends,
+    /// asks for one. A block's units' ranges follow one another without a gap from its first
+    /// stitch to its last. A unit that starts where the needle already is leaves that needle point
+    /// to the one before, so a unit of that one needle point alone has an empty range.
     pub stitches: Range<usize>,
     /// Its runs: each stretch of needle-down stitches one after another, sewn without lifting the
     /// needle, as a range of its block's stitches (within [`Unit::stitches`]).

@@ -464,17 +464,18 @@ index, whose RGB values differ between published charts — preview colour is no
   parameters allow (this found the zigzag fault fixed above: a 50 mm zigzag with corners 0.5 mm
   apart was one 50 mm stitch): without pull compensation to the bound it always had, and with it
   longer by its reach at most.
-- `crates/engine`: 48 tests (37 through the commands, 8 on the stitch plan) — every stitch of every
-  block belongs to exactly one sewing unit, the block's units in order without a gap, and a unit's
-  runs are its stretches of needle-down stitches (in fills, strokes, an object both filled and
-  stroked, a clip group, symbols, objects asking for a trim, an opened design), planned twice the
-  plan is the same, a unit says what it sews (an object's fill and its stroke are two units, each
-  with its parameters; a fill with narrow parts records its columns' satin parameters), a symbol's
-  units name the instance that places them, an opened design's runs are literal units, units of
-  one thread share its block in document order (the second reached by a cut and a jump), an
-  object asking for a trim ends its unit with it, stitches are numbered from 1 in sewing order
-  (each number finds its block, index and unit; none past the end), and the export writes the
-  plan in every format; export writes a readable design in every format,
+- `crates/engine`: 49 tests (37 through the commands, 8 on the stitch plan, 2 on the export options,
+  2 on the sewing order) — every stitch of every block belongs to exactly one sewing unit, the
+  block's units in order without a gap, and a unit's runs are its stretches of needle-down stitches
+  (in fills, strokes, an object both filled and stroked, a clip group, symbols, objects asking for a
+  trim, an opened design), planned twice the plan is the same, a unit says what it sews (an object's
+  fill and its stroke are two units, each with its parameters; a fill with narrow parts records its
+  columns' satin parameters), a symbol's units name the instance that places them, an opened
+  design's runs are literal units, units of one thread share its block in document order (the second
+  reached by a cut and a jump) and are sewn in the block's thread, an object asking for a trim ends
+  its unit with it, stitches are numbered from 1 in sewing order (each number finds its block, index
+  and unit; none past the end), and the export writes the plan in every format; export writes a
+  readable design in every format,
   a narrow fill is sewn as satin across it (tatami with `stitchStyle: fill` or `narrowAsSatin: 0`),
   a filled letter T is sewn in one go with no jump or trim, a negative `expand` shrinks the region
   two overlapping squares cover (no groove along the outlines inside it), a shape expanded away is

@@ -28,9 +28,9 @@ use vectorcraft_doc::Document;
 use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::plan::Style;
 
-use super::super::embroidery::{Options, digitize};
 use super::super::*;
 use super::{Encoded, Format, FormatOption};
+use crate::cmd::embroidery::{Options, digitize};
 
 pub(super) use import::import;
 
@@ -154,8 +154,8 @@ pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
 mod tests {
     use vectorcraft_stitch::plan::{Params, THREAD_WEIGHT};
 
-    use super::super::super::embroidery::options::{EXPAND_DEFAULT, MAX_EXPAND};
     use super::*;
+    use crate::cmd::embroidery::options::{EXPAND_DEFAULT, MAX_EXPAND};
 
     /// The defaults `document.formats` lists are the planner's, for every style that uses them.
     #[test]

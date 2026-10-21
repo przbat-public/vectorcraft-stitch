@@ -122,7 +122,8 @@ impl Sequence {
                     merged.stitches.push(Stitch::jump(first.point()));
                     merged.stitches.extend(b.stitches.iter().copied());
                     sewn.bounds = union(sewn.bounds, bounds);
-                    sewn.members.push(member(start, &b.thread));
+                    // Sewn in the block's thread (matched by its colour).
+                    sewn.members.push(member(start, &sewn.block.thread));
                     self.last = self.blocks.len().checked_sub(1);
                 }
                 _ => {
@@ -161,7 +162,8 @@ impl Sequence {
                 }
                 merged.stitches.extend(b.stitches.iter().skip(skip).copied());
                 sewn.bounds = union(sewn.bounds, bounds);
-                sewn.members.push(member(start, &b.thread));
+                // Sewn in the block's thread (matched by its colour).
+                sewn.members.push(member(start, &sewn.block.thread));
             }
             None => {
                 let members = vec![member(0, &b.thread)];
@@ -250,6 +252,20 @@ mod tests {
         assert_eq!(plan.blocks.len(), 1, "one thread, one block");
         let count = |c: Command| plan.blocks[0].stitches.iter().filter(|s| s.command == c).count();
         (count(Command::Trim), count(Command::Jump))
+    }
+
+    /// A unit that joins a block is sewn in the block's thread, whatever its own thread is called.
+    #[test]
+    fn a_unit_joining_a_block_has_the_blocks_thread() {
+        let mut seq = Sequence::new(Params::for_style(Style::Fill));
+        let (mut first, mut second) = (block(0.0, 10.0), block(12.0, 20.0));
+        first.block.thread.name = "first".into();
+        second.block.thread.name = "second".into();
+        seq.add(first);
+        seq.add(second);
+        let plan = seq.plan(String::new(), Vec::new());
+        assert_eq!(plan.blocks.len(), 1, "one colour, one block");
+        assert!(plan.units.iter().all(|u| u.thread == plan.blocks[0].thread), "{:?}", plan.units);
     }
 
     /// The move to the next object is cut only when it is longer than `trimLength`: one of exactly

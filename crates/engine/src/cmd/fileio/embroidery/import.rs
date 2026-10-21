@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::embroidery::{Embroidery, StitchRun};
+use vectorcraft_doc::embroidery::{Embroidery, EmbroiderySetup, StitchRun, ThreadPalette};
 use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, LineJoin, Node};
 use vectorcraft_geom::{BezPath, PathData, Point, Rect, Size};
 use vectorcraft_stitch::format::Format as StitchFormat;
@@ -31,6 +31,12 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
     let mut doc = Document::new(width, height);
     if !pattern.name.is_empty() {
         doc.title = pattern.name.clone();
+    }
+    // A design from a format that numbers its threads is in that format's palette: its colours
+    // are matched to the threads the file names (`embroidery.threads`), not to another maker's.
+    if let Some(palette) = format.palette() {
+        let palette = Some(ThreadPalette::from(serde_json::Value::from(palette.id())));
+        doc.embroidery = Some(Box::new(EmbroiderySetup { palette, ..EmbroiderySetup::default() }));
     }
     let mut layer = Node::layer(doc.alloc_id(), "Embroidery", LayerColor::Preset(0));
     let mut groups: Vec<Arc<Node>> = Vec::new();

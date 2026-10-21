@@ -394,6 +394,31 @@ fn a_document_without_a_palette_is_sewn_in_janomes_threads() {
     assert_eq!(export(&mut s, Format::Pes), unset, "the PES export matches to Brother's palette either way");
 }
 
+/// A design opened from a PES or a JEF file is in that format's palette, so its threads are the
+/// ones the file names: each block's art is its thread's own colour, none off and none flagged.
+/// One opened from DST or EXP, which name no threads, sets none. Opening is no edit.
+#[test]
+fn an_opened_design_is_in_its_formats_palette() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    rect(&mut s, "#4080ff", 100.0, 20.0, 40.0, 30.0);
+    for format in Format::ALL {
+        let data = vectorcraft_format::base64_encode(&export(&mut s, format));
+        let mut opened = Session::new();
+        opened.execute("document.open", &json!({"name": format!("design.{}", format.id()), "dataBase64": data})).unwrap();
+        assert!(!opened.doc().unwrap().is_dirty(), "{format:?}");
+        let palette = format.palette().map(Palette::id);
+        assert_eq!(opened.execute("embroidery.setup", &json!({})).unwrap()["palette"], json!(palette), "{format:?}");
+        let threads = opened.execute("embroidery.threads", &json!({})).unwrap();
+        let blocks = threads["blocks"].as_array().unwrap();
+        assert_eq!(blocks.len(), 2, "{format:?}: {blocks:?}");
+        if palette.is_some() {
+            assert_eq!(threads["palette"], json!(palette));
+            assert!(blocks.iter().all(|b| b["deltaE"] == json!(0.0) && b["mismatch"] == json!(false)), "{format:?}: {blocks:?}");
+        }
+    }
+}
+
 /// Brother's thread 38, Peacock Blue, as a colour.
 const PEACOCK_BLUE: &str = "#134a46";
 

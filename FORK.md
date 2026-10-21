@@ -105,12 +105,14 @@ stitches fast, is tried before anything is built on it.
 1. **A stitch plan for each object; the export unchanged.** Done: the export goes through
    `cmd::embroidery::plan` (sewing units, thread blocks, stitch numbers), and
    `crates/engine/tests/embroidery_output.rs` pins the bytes of every export.
-2. **Threads from the format's palette.** Built-in swatch libraries of Brother's 64 PEC threads and
-   Janome's 78 JEF threads, from the tables in `crates/stitch/src/thread.rs` (no new assets); the
-   document's target palette, the first of the document's embroidery settings; colours matched in
-   CIE Lab instead of by RGB distance (a change of output: its own commit, with the differences
-   measured on the real designs); the plan carries each thread's palette index, name and ΔE, and
-   the PEC and JEF writers use them; `embroidery.threads` lists them.
+2. **Threads from the format's palette.** Done: built-in swatch libraries of Brother's 64 PEC
+   threads and Janome's 78 JEF threads, from the tables in `crates/stitch/src/thread.rs` (no new
+   assets); the document's thread palette (`embroidery.setup`, Brother's when unset), the first of
+   the document's embroidery settings; colours matched by CIEDE2000 in CIE Lab instead of by RGB
+   distance (38 of the 100 pinned exports changed, only in their thread numbers; on the real
+   designs the mean ΔE₀₀ to Brother's threads fell from 6.3 to 5.6, to Janome's from 9.1 to 6.5);
+   the plan carries each block's thread (palette, number, name, ΔE), the PES and JEF writers use
+   it, and `embroidery.threads` lists it.
 3. **A planning service.** Each sewing unit's stitches kept between plans, a snapshot of the
    document, cancelling; commands (so reachable over MCP): `embroidery.stats` (stitches, threads,
    thread changes, trims, jumps, size, thread used, and sewing time at a speed that is a named
@@ -148,9 +150,10 @@ stitches fast, is tried before anything is built on it.
    number) and become the areas' embroidery settings.
 
 **Alongside, at any time:** new machine formats (such as VP3, HUS, SEW, Singer's XXX, and PEC on
-its own; they need only `Pattern`, `Block` and `Thread`); real thread colours in PES, once the plan
-carries threads; more real designs (the corpus has eleven, all PES and one JEF, all from one
-project: add real DST and EXP files, lettering and larger designs, and test on a machine).
+its own; they need only `Pattern`, `Block` and `Thread`); real thread colours in PES (the plan
+now carries each block's thread); more real designs (the corpus has eleven, all PES and one JEF,
+all from one project: add real DST and EXP files, lettering and larger designs, and test on a
+machine).
 
 **Later**, on the steps above: embroidery lettering; satins from rails, angle lines, and turning
 (variable-angle) satin and fill; quality options (triple running stitch, corners, more underlay

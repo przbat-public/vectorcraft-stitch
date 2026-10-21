@@ -6,8 +6,8 @@
 //!
 //! The parts: [`options`] (the export's options, and the stitch planner's parameters they give an
 //! object), [`digitize`] (the document's art planned as a design: its [`plan::DesignPlan`]),
-//! [`plan`] (the plan: sewing units, thread blocks, stitch numbers) and [`sequence`] (the order
-//! the blocks are sewn in).
+//! [`unit`] (one sewing unit's stitches from what it is planned from), [`plan`] (the plan: sewing
+//! units, thread blocks, stitch numbers) and [`sequence`] (the order the blocks are sewn in).
 
 pub(crate) mod digitize;
 pub(crate) mod options;
@@ -15,6 +15,7 @@ pub mod plan;
 mod sequence;
 #[cfg(test)]
 mod tests;
+mod unit;
 
 use serde_json::{Map, Value, json};
 use vectorcraft_color::Color;

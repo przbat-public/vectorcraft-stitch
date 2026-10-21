@@ -10,12 +10,13 @@ use vectorcraft_doc::embroidery::{StitchRun, ThreadPalette};
 use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind};
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Shape, kurbo};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
-use vectorcraft_stitch::plan::{self, Params, Style};
+use vectorcraft_stitch::plan::{self, Style};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
 use super::Options;
 use super::plan::{DesignPlan, Origin, Part};
 use super::sequence::{CLEARANCE, Planned, Sequence};
+use super::unit::{ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
 
 const TEXT_LEFT_OUT: &str = "type is not stitched: outline it (Type › Create Outlines) and export again";
 const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › Image Trace) first";
@@ -36,41 +37,6 @@ const NO_WIDTH: f64 = 0.0;
 /// The most stitches a design may have: far beyond any hoop (large designs run to a few hundred
 /// thousand), and a bound on the memory an export can take.
 const MAX_DESIGN_STITCHES: usize = 2_000_000;
-/// The miter limit given for the band that grows a fill ([`Digitizer::expanded`]): its joins are
-/// round, which have none; this is a stroke's usual default.
-const ROUND_JOINS: f64 = 4.0;
-
-/// How much each narrow column's outline grows before it is cut out of its shape (millimetres): a
-/// hair, so that it covers its own sides, which lie on the shape's outline, and leaves no sliver of
-/// the shape there. Far below a thread's width.
-const COLUMN_GROWTH: f64 = 0.05;
-
-/// `area` without its narrow `columns` ([`plan::narrow_columns`]): what is left to fill, each
-/// column's outline grown by [`COLUMN_GROWTH`] and cut out; and the rest and the grown columns
-/// together, the area the needle travels in. (The rest's edges along the outline come from the
-/// path operations, a hair off the outline as the planner flattens it: travelling in the rest
-/// and the columns as the same operations give them, every row's end lies on or inside it.)
-fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column]) -> (BezPath, BezPath) {
-    let mut cut: Option<PathData> = None;
-    for c in columns {
-        let outline = PathData::from_bezpath(&c.outline());
-        let band = outline_stroke(&outline, 2.0 * COLUMN_GROWTH, Cap::Round, Join::Round, ROUND_JOINS);
-        let grown = boolean(&outline, FillRule::NonZero, &band, FillRule::NonZero, BoolOp::Union);
-        cut = Some(match cut {
-            Some(all) => boolean(&all, FillRule::NonZero, &grown, FillRule::NonZero, BoolOp::Union),
-            None => grown,
-        });
-    }
-    match cut {
-        Some(cut) => {
-            let rest = boolean(&PathData::from_bezpath(area), rule, &cut, FillRule::NonZero, BoolOp::Difference);
-            let whole = boolean(&rest, FillRule::NonZero, &cut, FillRule::NonZero, BoolOp::Union);
-            (rest.to_bezpath(), whole.to_bezpath())
-        }
-        None => (area.clone(), area.clone()),
-    }
-}
-
 /// `path`'s subpaths, each a path of its own (as drawn: closed or not).
 fn subpaths(path: &BezPath) -> Vec<BezPath> {
     let mut out: Vec<BezPath> = Vec::new();
@@ -478,31 +444,22 @@ impl<'a> Digitizer<'a> {
             estimate = Some(r.intersect(clip.bounding_box()));
         }
         let from = self.seq.needle(self.seq.target(color, estimate));
-        // A fill's narrow parts are satin columns, unless `stitchStyle` forces tatami.
-        let columns = match (style, opts.forced()) {
-            (Style::Fill, None) => plan::narrow_columns(bp, rule, params.narrow),
-            _ => Vec::new(),
+        let request = UnitRequest {
+            shape: bp,
+            rule,
+            params,
+            // A fill's narrow parts are satin columns, unless `stitchStyle` forces tatami.
+            columns: (style == Style::Fill && opts.forced().is_none()).then(|| opts.params(Style::Satin, NO_WIDTH)),
+            from,
+            clip: if clip_stitches { self.clip.as_ref() } else { None },
         };
-        let (planned, satin) = if columns.is_empty() {
-            (plan::try_stitches_from(bp, rule, &params, from), None)
-        } else {
-            let satin = opts.params(Style::Satin, NO_WIDTH);
-            let (rest, whole) = rest_of(bp, rule, &columns);
-            (plan::try_fill_with_columns(&whole, FillRule::NonZero, &rest, &columns, &params, &satin, from), Some(satin))
-        };
-        let mut stitches = match planned {
-            Ok(s) => s,
+        let UnitStitches { stitches, columns } = match plan_unit(&request) {
+            Ok(planned) => planned,
             Err(e) => {
                 self.failed = Some(e.to_string());
                 return;
             }
         };
-        // A stroke inside a clip group: only the stitches inside the clipping path are sewn. (A
-        // filled area was cut to it exactly; its edge run lies on the cut, which a point test
-        // would chop.)
-        if clip_stitches && let Some(clip) = &self.clip {
-            stitches = cut_to(stitches, clip, &params);
-        }
         if stitches.is_empty() {
             return;
         }
@@ -514,42 +471,8 @@ impl<'a> Digitizer<'a> {
         }
         let mut block = Block::new(Thread::rgb(color));
         block.stitches = stitches;
-        self.seq.add(Planned { origin: unit, params: Some(params), columns: satin, block, literal: None });
+        self.seq.add(Planned { origin: unit, params: Some(params), columns, block, literal: None });
     }
-}
-
-/// The stitches inside `region`: a run that leaves it is cut there and taken up again where it
-/// comes back in, the needle lifted between as the planner lifts it (`p`'s jump and trim lengths,
-/// the thread tied off and in around a long jump).
-fn cut_to(stitches: Vec<Stitch>, region: &(BezPath, FillRule), p: &Params) -> Vec<Stitch> {
-    let (path, rule) = region;
-    let inside = |s: &Stitch| {
-        let w = path.winding(s.point());
-        match rule {
-            FillRule::NonZero => w != 0,
-            FillRule::EvenOdd => w % 2 != 0,
-        }
-    };
-    // The stretches inside, each with the plan's own jumps and trims within it.
-    let mut pieces: Vec<Vec<Stitch>> = vec![Vec::new()];
-    for s in stitches {
-        if s.command == Command::Stitch && !inside(&s) {
-            if pieces.last().is_some_and(|p| !p.is_empty()) {
-                pieces.push(Vec::new());
-            }
-            continue;
-        }
-        if let Some(piece) = pieces.last_mut() {
-            piece.push(s);
-        }
-    }
-    // A piece that ends on the plan's own jump or trim drops it: the joining lifts the needle.
-    for piece in &mut pieces {
-        while piece.last().is_some_and(|s| s.command != Command::Stitch) {
-            piece.pop();
-        }
-    }
-    plan::join_cut(pieces, p)
 }
 
 /// A paint's stitched colour.

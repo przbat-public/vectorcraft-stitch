@@ -4285,14 +4285,14 @@ the entry names and decodes the codes that VectorCraft's default shortcuts agree
 
 ## Embroidery
 
-The document's art is stitched by `document.export` to `dst`, `exp`, `pes`, `jef` or `vp3`, with the embroidery options
+The document's art is stitched by `document.export` to `dst`, `exp`, `pes`, `pec`, `jef` or `vp3`, with the embroidery options
 `document.formats` lists for those formats (`stitchStyle`, `density`, `trimLength`…), and `document.open` reads such a
 file back as art, one group per thread. The whole feature is described in [embroidery.md](embroidery.md).
 
 - `embroidery.setup {palette?}` sets the document's thread palette, `"pec"` (Brother's 61 threads, which PES files
   number) or `"jef"` (Janome's 78, which JEF files number), in one undo step; `null` unsets it, and Janome's is used.
   No params report `{palette, threadPalette}` (the palette set, and the one the stitch plan uses); the reply can be
-  passed back unchanged. A PES or JEF file opens in its own format's palette.
+  passed back unchanged. A PES, PEC or JEF file opens in its own format's palette.
 - `embroidery.threads {…embroidery options}` lists the thread each colour block is sewn in, in sewing order:
   `{palette, threshold, blocks: [{block, art, thread: {palette, index, name, color}, deltaE, mismatch, units}],
   warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour and the thread's, to two decimals, and

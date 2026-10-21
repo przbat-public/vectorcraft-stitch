@@ -1,5 +1,5 @@
-//! Embroidery through the commands: `document.export` stitches the art into DST, EXP, PES, JEF
-//! and VP3, `document.open` reads a design back as art, the options change the plan, and the
+//! Embroidery through the commands: `document.export` stitches the art into DST, EXP, PES, PEC,
+//! JEF and VP3, `document.open` reads a design back as art, the options change the plan, and the
 //! format table lists them all.
 
 use serde_json::{Value, json};
@@ -125,6 +125,18 @@ fn a_pes_opens_by_its_magic_bytes() {
     let bytes = export(&mut s, "pes", json!({}));
     let r = open(&mut s, "design.bin", &bytes).expect("opens by content");
     assert_eq!(r["format"].as_str(), Some("pes"));
+}
+
+/// A PEC file is a PES's PEC section after its own magic: it opens by that, in Brother's palette.
+#[test]
+fn a_pec_is_the_pes_machine_part_and_opens_by_its_magic_bytes() {
+    let mut s = art();
+    let (pes, pec) = (export(&mut s, "pes", json!({})), export(&mut s, "pec", json!({})));
+    assert_eq!(&pec[8..], &pes[22..], "the PEC section, after #PEC0001 instead of the PES header");
+    let r = open(&mut s, "design.bin", &pec).expect("opens by content");
+    assert_eq!(r["format"].as_str(), Some("pec"));
+    let palette = s.doc().unwrap().doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(|p| p.id());
+    assert_eq!(palette, Some("pec"));
 }
 
 /// A VP3 says what it is in its first bytes too, and carries each block's own colour: the art's,

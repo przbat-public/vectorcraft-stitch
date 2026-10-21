@@ -3906,7 +3906,7 @@ fn ai_cut_inside_an_array_or_dictionary_opens_without_panicking() {
 
 // ---------- Embroidery designs: opened and placed ----------
 
-const EMBROIDERY: [&str; 5] = ["dst", "exp", "pes", "jef", "vp3"];
+const EMBROIDERY: [&str; 6] = ["dst", "exp", "pes", "pec", "jef", "vp3"];
 
 /// Where a VP3 written here has its first stitch record: past the scale bytes `0A F6 00` that
 /// open its first stitch run.
@@ -3952,6 +3952,7 @@ proptest! {
         let header = match EMBROIDERY[which] {
             "dst" => 512,
             "pes" => 22 + 512 + 20,
+            "pec" => 8 + 512 + 20,
             "jef" => 116 + 8 * 4,
             "vp3" => vp3_records(sample),
             _ => 0,

@@ -5,6 +5,7 @@
 //! - Every machine file reads, at the size its own header states.
 //! - A design written as VP3 and as PES reads the same from both: as many needle points in each
 //!   colour block, each where the PES puts it (to the rounding of the two files).
+//! - Every PES file's PEC section, on its own after `#PEC0001` (a PEC file), reads as the PES does.
 //! - Opened and exported again, every machine file keeps every needle point, trim and colour
 //!   block.
 //! - Each artwork, digitized by VectorCraft at the size of the person's design, comes out sound:
@@ -233,6 +234,21 @@ fn a_design_reads_the_same_in_vp3_and_pes() {
         assert_eq!(counts(&vp3), counts(&pes), "{stem}: needle points in each block");
         let worst = vp3.iter().flatten().zip(pes.iter().flatten()).map(|(a, b)| (a.0 - b.0).abs().max((a.1 - b.1).abs())).fold(0.0, f64::max);
         assert!(worst <= TWIN_ROUNDING + 1e-9, "{stem}: a needle point {worst:.2} mm from the PES's");
+    }
+}
+
+/// A PEC file is a PES's PEC section after `#PEC0001`: each real PES's, cut out so, reads as a
+/// PEC file exactly as the PES reads.
+#[test]
+fn real_pes_files_pec_sections_read_as_pec_files() {
+    let Some(dir) = corpus() else { return };
+    for path in machine_files(&dir).into_iter().filter(|p| format_of(p) == Format::Pes) {
+        let bytes = std::fs::read(&path).unwrap();
+        let pec = u32::from_le_bytes(bytes[8..12].try_into().unwrap()) as usize;
+        let mut file = b"#PEC0001".to_vec();
+        file.extend_from_slice(&bytes[pec..]);
+        let name = path.file_name().unwrap().to_string_lossy();
+        assert_eq!(Format::Pec.read(&file).unwrap(), Format::Pes.read(&bytes).unwrap(), "{name}");
     }
 }
 

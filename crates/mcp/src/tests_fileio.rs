@@ -82,6 +82,7 @@ fn export_tool_lists_engine_formats_and_options() {
             "dst",
             "exp",
             "pes",
+            "pec",
             "jef",
             "vp3"
         ])

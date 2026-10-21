@@ -1,4 +1,5 @@
-//! The machine formats: DST, EXP, PES (its PEC part), JEF and VP3 — read and written here.
+//! The machine formats: DST, EXP, PES (its PEC part), PEC on its own, JEF and VP3 — read and
+//! written here.
 //!
 //! Files count coordinates in tenths of a millimetre; this crate counts millimetres. The y axis
 //! points up in DST, EXP and JEF (a design's top is its largest y there) and down in PEC and in
@@ -54,6 +55,8 @@ pub enum Format {
     Exp,
     /// Brother PES: a PES part (for the design app) and the PEC part machines read.
     Pes,
+    /// Brother PEC: the PEC part of a PES on its own, after the magic `#PEC0001`.
+    Pec,
     /// Janome JEF: a fixed header and 2-byte records.
     Jef,
     /// Husqvarna Viking and Pfaff VP3: nested packets, a thread record (colour, name, brand) in
@@ -63,7 +66,7 @@ pub enum Format {
 
 impl Format {
     /// Every format, as menus list them.
-    pub const ALL: [Self; 5] = [Self::Dst, Self::Exp, Self::Pes, Self::Jef, Self::Vp3];
+    pub const ALL: [Self; 6] = [Self::Dst, Self::Exp, Self::Pes, Self::Pec, Self::Jef, Self::Vp3];
 
     /// The `format` parameter value.
     pub fn id(self) -> &'static str {
@@ -71,6 +74,7 @@ impl Format {
             Self::Dst => "dst",
             Self::Exp => "exp",
             Self::Pes => "pes",
+            Self::Pec => "pec",
             Self::Jef => "jef",
             Self::Vp3 => "vp3",
         }
@@ -82,6 +86,7 @@ impl Format {
             Self::Dst => "Tajima DST",
             Self::Exp => "Melco EXP",
             Self::Pes => "Brother PES",
+            Self::Pec => "Brother PEC",
             Self::Jef => "Janome JEF",
             Self::Vp3 => "Husqvarna Viking / Pfaff VP3",
         }
@@ -92,18 +97,18 @@ impl Format {
         self.id()
     }
 
-    /// The thread palette the format numbers its threads in: Brother's for PES (its PEC part),
-    /// Janome's for JEF; `None` for DST and EXP, which name no colours, and for VP3, which
+    /// The thread palette the format numbers its threads in: Brother's for PES (its PEC part) and
+    /// PEC, Janome's for JEF; `None` for DST and EXP, which name no colours, and for VP3, which
     /// writes each thread's own colour.
     pub fn palette(self) -> Option<thread::Palette> {
         match self {
             Self::Dst | Self::Exp | Self::Vp3 => None,
-            Self::Pes => Some(thread::Palette::Pec),
+            Self::Pes | Self::Pec => Some(thread::Palette::Pec),
             Self::Jef => Some(thread::Palette::Jef),
         }
     }
 
-    /// The format `id` names (`dst`, `exp`, `pes`, `jef`, `vp3`).
+    /// The format `id` names (`dst`, `exp`, `pes`, `pec`, `jef`, `vp3`).
     pub fn from_id(id: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|f| f.id() == id)
     }
@@ -117,8 +122,10 @@ impl Format {
     /// The format a file's first bytes announce, when they announce one: Brother's and VP3 files
     /// carry a magic string; DST, EXP and JEF are recognised by their extension.
     pub fn sniff(bytes: &[u8]) -> Option<Self> {
-        if bytes.starts_with(b"#PES") || bytes.starts_with(b"#PEC") {
+        if bytes.starts_with(b"#PES") {
             Some(Self::Pes)
+        } else if bytes.starts_with(b"#PEC") {
+            Some(Self::Pec)
         } else if bytes.starts_with(vp3::MAGIC) {
             Some(Self::Vp3)
         } else {
@@ -131,7 +138,7 @@ impl Format {
         match self {
             Self::Dst => dst::read(bytes),
             Self::Exp => exp::read(bytes),
-            Self::Pes => pes::read(bytes),
+            Self::Pes | Self::Pec => pes::read(bytes),
             Self::Jef => jef::read(bytes),
             Self::Vp3 => vp3::read(bytes),
         }
@@ -146,6 +153,7 @@ impl Format {
             Self::Dst => dst::write(pattern),
             Self::Exp => exp::write(pattern),
             Self::Pes => pes::write(pattern),
+            Self::Pec => pes::write_pec(pattern),
             Self::Jef => jef::write(pattern),
             Self::Vp3 => vp3::write(pattern),
         }
@@ -331,15 +339,16 @@ fn collapse_jumps(points: &mut Vec<Stitch>) {
 mod tests {
     use super::*;
 
-    /// PES numbers Brother's threads and JEF Janome's, as their readers name them; DST and EXP
-    /// name none.
+    /// PES and PEC number Brother's threads and JEF Janome's, as their readers name them; DST, EXP
+    /// and VP3 number none.
     #[test]
     fn each_format_numbers_its_palettes_threads() {
-        assert_eq!(Format::ALL.map(Format::palette), [None, None, Some(thread::Palette::Pec), Some(thread::Palette::Jef), None]);
+        let (pec, jef) = (Some(thread::Palette::Pec), Some(thread::Palette::Jef));
+        assert_eq!(Format::ALL.map(Format::palette), [None, None, pec, pec, jef, None]);
         let mut pattern = Pattern::default();
         let stitches = [(0.0, 0.0), (5.0, 0.0), (5.0, 5.0)].map(|(x, y)| Stitch::new(x, y, Command::Stitch)).to_vec();
         pattern.blocks.push(Block { thread: Thread::rgb([0x12, 0x34, 0x56]), stitches });
-        for format in [Format::Pes, Format::Jef] {
+        for format in [Format::Pes, Format::Pec, Format::Jef] {
             let read = format.read(&format.write(&pattern).unwrap()).unwrap();
             let (Some(palette), [block]) = (format.palette(), read.blocks.as_slice()) else { panic!("{format:?}: one block") };
             let index = palette.nearest([0x12, 0x34, 0x56], &[]).index;

@@ -16,7 +16,7 @@ work comes from the list below, unless the user gives you a task.
    decisions the next steps rest on.
 2. Read the open embroidery PR's description on GitHub: it explains the terms (stitch, density,
    underlay, pull compensation, trim, tie-in…) for newcomers and lists what is verified.
-3. Code: `crates/stitch` (L3: `plan/` stitch planning, `format/` DST/EXP/PES/JEF/VP3, `thread.rs`
+3. Code: `crates/stitch` (L3: `plan/` stitch planning, `format/` DST/EXP/PES/PEC/JEF/VP3, `thread.rs`
    palettes), `crates/engine/src/cmd/embroidery/` (the embroidery commands and the digitizer) and
    `crates/engine/src/cmd/fileio/embroidery/` (opening and exporting machine files).
 
@@ -156,8 +156,8 @@ stitches fast, is tried before anything is built on it.
    number) and become the areas' embroidery settings.
 
 **Alongside, at any time:** new machine formats (done: Husqvarna Viking and Pfaff VP3, read and
-written with each block's own colour; next: HUS, SEW, Singer's XXX, and PEC on its own; they need
-only `Pattern`, `Block` and `Thread`); real thread colours in PES (the plan now carries each
+written with each block's own colour, and Brother PEC on its own; next: HUS, Singer's XXX, Barudan's
+U01 and SEW; they need only `Pattern`, `Block` and `Thread`); real thread colours in PES (the plan now carries each
 block's thread); more real designs (the corpus has nineteen, all from one project: eleven PES,
 one also JEF, with their artwork, and eight VP3, seven also PES; add real DST and EXP files,
 lettering and larger designs, and test on a machine).
@@ -187,7 +187,7 @@ PR descriptions.
   skipped. Clip groups cut fills exactly and strokes to the stitch.
 - JEF and VP3 files start at the design's centre (Janome sews from the hoop's centre; VP3 files
   start there). DST, EXP and PEC start at a corner.
-- `.dst/.exp/.pes/.jef/.vp3` are in `UNASSOCIATED_EXTS`: VectorCraft doesn't register as their
+- `.dst/.exp/.pes/.pec/.jef/.vp3` are in `UNASSOCIATED_EXTS`: VectorCraft doesn't register as their
   default app.
 - Defaults have one source, `plan::Params::for_style`. Export options and `document.formats` mirror
   it, and a test keeps them equal.

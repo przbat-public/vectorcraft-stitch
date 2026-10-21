@@ -398,6 +398,7 @@ fn export_extensions_name_every_writable_format() {
             "dst",
             "exp",
             "pes",
+            "pec",
             "jef",
             "vp3"
         ]
@@ -438,6 +439,7 @@ fn formats_query_lists_readers_writers_and_options() {
             "dst",
             "exp",
             "pes",
+            "pec",
             "jef",
             "vp3"
         ]

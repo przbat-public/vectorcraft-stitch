@@ -138,7 +138,7 @@ ef556001ff353833349bca4886bdb7d8106fc6779abd5367add6427560a4020a  watermelon-twe
 ff2cfff1e53754f2e8ddc895ba78eb82a29aa5508d89d721c6a95379748b36c4  zebra-twemoji.clipart.dst
 e4521143ee2d35458c2854d910bf3f098763ad89b27fe7aba31c786f6360476c  zebra-twemoji.clipart.exp
 add034d064379cbf73c7ff51969ffff890c888bcd07e7a61c98294ccf93e5a69  zebra-twemoji.clipart.pes
-86a5cea2fcf39d066579480e7c0c359e261919b6ae1ca62b5e1422fbeae40c4e  zebra-twemoji.clipart.jef
+1c712f6e34932910ea712d26776c0182683ca516bb792d41e0ffdba8bbf4a3df  zebra-twemoji.clipart.jef
 ";
 
 /// The real designs: each artwork, and the machine file a person digitized from it, whose size the

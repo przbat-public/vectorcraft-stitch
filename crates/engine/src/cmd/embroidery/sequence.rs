@@ -191,17 +191,17 @@ impl Sequence {
     }
 
     /// The design's plan, named `name`, with the `warnings` of what was left out: the blocks in
-    /// sewing order, each in the thread of `palette` nearest its art's colour (not the block
-    /// before's: a colour change changes thread), each unit with its block's thread, its stitches
-    /// (from its first in its block up to the next unit's first, the last unit's to the block's
-    /// end) and its runs, the stitches numbered from [`FIRST_NUMBER`].
+    /// sewing order, each in the thread of `palette` matched to its art's colour (the nearest, not
+    /// a neighbouring block's: a colour change changes thread; [`Palette::assign`]), each unit with
+    /// its block's thread, its stitches (from its first in its block up to the next unit's first,
+    /// the last unit's to the block's end) and its runs, the stitches numbered from
+    /// [`FIRST_NUMBER`].
     pub(super) fn plan(self, name: String, warnings: Vec<String>, palette: Palette) -> DesignPlan {
         let mut plan = DesignPlan { name, warnings, ..DesignPlan::default() };
         let mut number = FIRST_NUMBER;
-        let mut last: Option<usize> = None;
-        for (k, Sewn { block: Block { thread, stitches }, members, .. }) in self.blocks.into_iter().enumerate() {
-            let matched = palette.nearest(thread.color, last);
-            last = Some(matched.index);
+        let colors: Vec<([u8; 3], Option<usize>)> = self.blocks.iter().map(|s| (s.block.thread.color, None)).collect();
+        let matched = palette.assign(&colors);
+        for (k, (Sewn { block: Block { thread, stitches }, members, .. }, matched)) in self.blocks.into_iter().zip(matched).enumerate() {
             let thread = BlockThread::new(thread.color, palette, matched);
             let first_unit = plan.units.len();
             let ends: Vec<usize> = members.iter().skip(1).map(|m| m.start).chain([stitches.len()]).collect();
@@ -274,7 +274,7 @@ mod tests {
         assert_eq!(plan.blocks.len(), 1, "one colour, one block");
         assert!(plan.units.iter().all(|u| u.thread == plan.blocks[0].thread), "{:?}", plan.units);
         let t = &plan.blocks[0].thread;
-        assert_eq!((t.art, t.palette, t.index), ([200, 30, 30], Palette::Jef, Palette::Jef.nearest([200, 30, 30], None).index));
+        assert_eq!((t.art, t.palette, t.index), ([200, 30, 30], Palette::Jef, Palette::Jef.nearest([200, 30, 30], &[]).index));
         assert_ne!(t.name, "first");
     }
 
@@ -290,14 +290,14 @@ mod tests {
         seq.add(b);
         let plan = seq.plan(String::new(), Vec::new(), Palette::Pec);
         assert_eq!(plan.blocks.len(), 2, "two colours on top of each other");
-        let nearest = Palette::Pec.nearest([201, 30, 30], None).index;
+        let nearest = Palette::Pec.nearest([201, 30, 30], &[]).index;
         assert_eq!(plan.blocks[0].thread.index, nearest, "both colours' nearest");
         assert_ne!(plan.blocks[1].thread.index, nearest);
-        assert_eq!(plan.blocks[1].thread.index, Palette::Pec.nearest([201, 30, 30], Some(nearest)).index);
+        assert_eq!(plan.blocks[1].thread.index, Palette::Pec.nearest([201, 30, 30], &[nearest]).index);
     }
 
     /// A block painted with a thread's own colour (a swatch of its thread library) keeps that
-    /// thread exactly, even right after a block sewn in it.
+    /// thread exactly, and the block before it, whose nearest thread that is, takes another.
     #[test]
     fn a_threads_own_colour_keeps_its_thread() {
         let mut seq = Sequence::new(Params::for_style(Style::Fill));
@@ -309,7 +309,9 @@ mod tests {
         seq.add(own);
         let plan = seq.plan(String::new(), Vec::new(), Palette::Pec);
         let threads: Vec<(usize, bool)> = plan.blocks.iter().map(|b| (b.thread.index, b.thread.delta_e == 0.0)).collect();
-        assert_eq!(threads, [(5, false), (5, true)]);
+        let near_red = [red[0] - 3, red[1] + 2, red[2]];
+        assert_eq!(Palette::Pec.nearest(near_red, &[]).index, 5, "Red is its nearest");
+        assert_eq!(threads, [(Palette::Pec.nearest(near_red, &[5]).index, false), (5, true)]);
     }
 
     /// The move to the next object is cut only when it is longer than `trimLength`: one of exactly

@@ -389,7 +389,7 @@ fn blocks_are_sewn_in_threads_of_the_documents_palette() {
     let plan = plan_of(&s);
     let [red, blue] = &plan.blocks[..] else { panic!("two blocks: {:?}", plan.blocks.len()) };
     assert_eq!((red.thread.palette, red.thread.art), (Palette::Pec, [0xcc, 0x22, 0x22]));
-    assert_eq!(red.thread.index, Palette::Pec.nearest([0xcc, 0x22, 0x22], None).index);
+    assert_eq!(red.thread.index, Palette::Pec.nearest([0xcc, 0x22, 0x22], &[]).index);
     assert!(red.thread.delta_e > 0.0);
     assert_eq!((blue.thread.index, blue.thread.name.as_str(), blue.thread.delta_e), (38, "Peacock Blue", 0.0));
     assert_eq!(blue.thread.art, blue.thread.color);

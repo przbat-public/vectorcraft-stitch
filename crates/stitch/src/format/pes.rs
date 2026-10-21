@@ -516,7 +516,7 @@ mod tests {
         p.blocks[1].thread.chosen = Some(PaletteThread { palette: Palette::Jef, index: 37 });
         let bytes = write(&p).expect("writes");
         let at = PES_HEADER.len() + COLOR_COUNT_AT;
-        let nearest = Palette::Pec.nearest([20, 30, 220], Some(37)).index;
+        let nearest = Palette::Pec.nearest([20, 30, 220], &[37]).index;
         assert_eq!(&bytes[at..at + 3], &[1, 37, u8::try_from(nearest).unwrap()]);
         let back = read(&bytes).expect("reads");
         assert_eq!((&back.blocks[0].thread, &back.blocks[1].thread), (&Palette::Pec.thread(37), &Palette::Pec.thread(nearest)));

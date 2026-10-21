@@ -378,7 +378,7 @@ mod tests {
         let bytes = write(&p).expect("writes");
         let word = |at: usize| u32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]) as usize;
         assert_eq!(word(HEADER), 61);
-        assert_eq!(word(HEADER + WORD), Palette::Jef.nearest([20, 40, 210], Some(61)).index);
+        assert_eq!(word(HEADER + WORD), Palette::Jef.nearest([20, 40, 210], &[61]).index);
         let back = read(&bytes).expect("reads");
         assert_eq!(back.blocks[0].thread, Palette::Jef.thread(61));
     }

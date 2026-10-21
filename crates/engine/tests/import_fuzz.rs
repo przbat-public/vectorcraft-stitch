@@ -3906,7 +3906,13 @@ fn ai_cut_inside_an_array_or_dictionary_opens_without_panicking() {
 
 // ---------- Embroidery designs: opened and placed ----------
 
-const EMBROIDERY: [&str; 4] = ["dst", "exp", "pes", "jef"];
+const EMBROIDERY: [&str; 5] = ["dst", "exp", "pes", "jef", "vp3"];
+
+/// Where a VP3 written here has its first stitch record: past the scale bytes `0A F6 00` that
+/// open its first stitch run.
+fn vp3_records(sample: &[u8]) -> usize {
+    sample.windows(3).position(|w| w == [0x0A, 0xF6, 0x00]).map_or(sample.len(), |at| at + 3)
+}
 
 /// The rich document stitched into each embroidery format.
 fn embroidery_samples() -> &'static [Vec<u8>] {
@@ -3929,7 +3935,7 @@ proptest! {
     /// Damaged designs: bytes changed anywhere (header counts and offsets included) and the file
     /// cut short.
     #[test]
-    fn mutated_embroidery_never_panics(which in 0usize..4, cut in 0usize..200_000, edits in prop::collection::vec((0usize..200_000, any::<u8>()), 0..24)) {
+    fn mutated_embroidery_never_panics(which in 0usize..EMBROIDERY.len(), cut in 0usize..200_000, edits in prop::collection::vec((0usize..200_000, any::<u8>()), 0..24)) {
         let mut bytes = embroidery_samples()[which].clone();
         let n = bytes.len();
         for &(at, b) in &edits {
@@ -3941,12 +3947,13 @@ proptest! {
 
     /// Random records behind each format's own header (the sample's), so the readers get past it.
     #[test]
-    fn random_embroidery_records_never_panic(which in 0usize..4, body in prop::collection::vec(any::<u8>(), 0..2048)) {
+    fn random_embroidery_records_never_panic(which in 0usize..EMBROIDERY.len(), body in prop::collection::vec(any::<u8>(), 0..2048)) {
         let sample = &embroidery_samples()[which];
         let header = match EMBROIDERY[which] {
             "dst" => 512,
             "pes" => 22 + 512 + 20,
             "jef" => 116 + 8 * 4,
+            "vp3" => vp3_records(sample),
             _ => 0,
         };
         let mut bytes = sample[..header.min(sample.len())].to_vec();

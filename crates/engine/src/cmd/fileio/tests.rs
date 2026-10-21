@@ -398,7 +398,8 @@ fn export_extensions_name_every_writable_format() {
             "dst",
             "exp",
             "pes",
-            "jef"
+            "jef",
+            "vp3"
         ]
     );
     for e in exts {
@@ -437,7 +438,8 @@ fn formats_query_lists_readers_writers_and_options() {
             "dst",
             "exp",
             "pes",
-            "jef"
+            "jef",
+            "vp3"
         ]
     );
     assert!(ids("readable").contains(&"tiff".to_string()) && ids("readable").contains(&"ait".to_string()));

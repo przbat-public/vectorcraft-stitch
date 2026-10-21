@@ -1,5 +1,5 @@
 //! Embroidery files: `document.open` reads a design's stitches as paths, `document.export`
-//! stitches the document's art and writes a machine file (DST, EXP, PES or JEF).
+//! stitches the document's art and writes a machine file (DST, EXP, PES, JEF or VP3).
 //!
 //! Reading draws each colour block as a group of thin lines in the thread's colour, so the design
 //! looks like it will sew, and can be measured, traced over or recoloured. Writing takes every
@@ -118,6 +118,11 @@ const MIN_STITCH: FormatOption =
 /// The options the embroidery writers read.
 pub const OPTIONS: &[FormatOption] =
     &[STYLE, DENSITY, STITCH_LENGTH, ANGLE, PULL, PULL_PERCENT, PUSH, EXPAND, NARROW, THREAD_WEIGHT_OPTION, UNDERLAY, JUMP, TRIM, MIN_STITCH];
+
+/// Whether `id` names an embroidery format: one the stitch crate reads and writes.
+pub(super) fn is_format(id: &str) -> bool {
+    StitchFormat::from_id(id).is_some()
+}
 
 /// The options in `p`, checked.
 fn options(p: &Value) -> Result<Options> {

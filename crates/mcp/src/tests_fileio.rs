@@ -82,7 +82,8 @@ fn export_tool_lists_engine_formats_and_options() {
             "dst",
             "exp",
             "pes",
-            "jef"
+            "jef",
+            "vp3"
         ])
     );
     for k in ["artboard", "range", "options"] {

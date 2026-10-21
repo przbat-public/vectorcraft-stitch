@@ -1,7 +1,10 @@
 //! Real embroidery designs (`cargo xtask corpus --embroidery`, sha256-verified): machine files a
-//! person digitized with Ink/Stitch, and the flat artwork each was digitized from.
+//! person digitized with Ink/Stitch, the flat artwork each was digitized from, and some designs
+//! as both VP3 and PES.
 //!
 //! - Every machine file reads, at the size its own header states.
+//! - A design written as VP3 and as PES reads the same from both: as many needle points in each
+//!   colour block, each where the PES puts it (to the rounding of the two files).
 //! - Opened and exported again, every machine file keeps every needle point, trim and colour
 //!   block.
 //! - Each artwork, digitized by VectorCraft at the size of the person's design, comes out sound:
@@ -90,7 +93,7 @@ fn machine_files(dir: &Path) -> Vec<PathBuf> {
     let mut v: Vec<PathBuf> = std::fs::read_dir(dir)
         .unwrap()
         .map(|e| e.unwrap().path())
-        .filter(|p| matches!(p.extension().and_then(|e| e.to_str()), Some("pes" | "jef")))
+        .filter(|p| matches!(p.extension().and_then(|e| e.to_str()), Some("pes" | "jef" | "vp3")))
         .collect();
     v.sort();
     v
@@ -140,6 +143,36 @@ fn pec_header_size(bytes: &[u8]) -> (f64, f64) {
     (f64::from(w) / 10.0, f64::from(h) / 10.0)
 }
 
+/// The design size a VP3 file's summary states (its right and left, top and bottom edges, in
+/// micrometres), millimetres.
+fn vp3_summary_size(bytes: &[u8]) -> (f64, f64) {
+    let producer = usize::from(u16::from_be_bytes(bytes[6..8].try_into().unwrap()));
+    // The file packet's tag and length, then its notes string, then the edges.
+    let file = 8 + producer;
+    let notes = usize::from(u16::from_be_bytes(bytes[file + 7..file + 9].try_into().unwrap()));
+    let edges = file + 9 + notes;
+    let int = |k: usize| f64::from(i32::from_be_bytes(bytes[edges + 4 * k..edges + 4 * k + 4].try_into().unwrap()));
+    const MICRONS_PER_MM: f64 = 1000.0;
+    ((int(0) - int(2)) / MICRONS_PER_MM, (int(1) - int(3)) / MICRONS_PER_MM)
+}
+
+/// The VP3 files that have a PES twin: the same digitizing, both written by Ink/Stitch.
+const VP3_AND_PES: &[&str] = &[
+    "boy-twemoji-inkstitch",
+    "cat-face-twemoji-inkstitch",
+    "girl-twemoji-inkstitch",
+    "old-man-twemoji-inkstitch",
+    "old-woman-twemoji-inkstitch",
+    "radish-MOREmoji-inkstitch",
+    "radish-svgrepo-com-inkstitch",
+];
+
+/// How far a needle point of a VP3 twin may lie from the PES's, millimetres each way: each file
+/// rounds its own moves to its 0.1 mm grid (Ink/Stitch writes them from the same points). The
+/// largest measured on the twins is 0.3 mm, and the most a VP3 file's size differs from what its
+/// summary says, 0.28 mm.
+const TWIN_ROUNDING: f64 = 0.3;
+
 #[test]
 fn real_machine_files_read_at_their_stated_size() {
     let Some(dir) = corpus() else { return };
@@ -159,6 +192,18 @@ fn real_machine_files_read_at_their_stated_size() {
                 b.height()
             );
         }
+        if format == Format::Vp3 {
+            // The summary gives the design's edges as they were before each move was rounded to
+            // the grid on its own, which the moves then drift from as the PES's points do.
+            let b = p.bounds().unwrap();
+            let (w, h) = vp3_summary_size(&bytes);
+            assert!(
+                (b.width() - w).abs() <= TWIN_ROUNDING && (b.height() - h).abs() <= TWIN_ROUNDING,
+                "{name}: stitches span {:.2} × {:.2} mm, the summary says {w} × {h}",
+                b.width(),
+                b.height()
+            );
+        }
     }
 }
 
@@ -169,6 +214,26 @@ fn a_design_reads_the_same_in_pes_and_jef() {
     let read = |name: &str| format_of(Path::new(name)).read(&std::fs::read(dir.join(name)).unwrap()).unwrap();
     let points = |p: &Pattern| sewn(p).into_iter().map(|(pts, _)| pts).collect::<Vec<_>>();
     assert_eq!(points(&read("fox-twemoji-inkstitch.pes")), points(&read("fox-twemoji-inkstitch.jef")));
+}
+
+/// The same digitizing written as VP3 and as PES (by Ink/Stitch) reads the same from both: as
+/// many needle points in each colour block, where the PES puts them. This is what says a VP3 long
+/// form is a jump after which the needle goes down where it lands (`format::vp3`): read as a jump
+/// alone, each block would lack a needle point for every long form.
+#[test]
+fn a_design_reads_the_same_in_vp3_and_pes() {
+    let Some(dir) = corpus() else { return };
+    let read = |name: String| format_of(Path::new(&name)).read(&std::fs::read(dir.join(&name)).unwrap()).unwrap();
+    let needle = |p: &Pattern| -> Vec<Vec<(f64, f64)>> {
+        p.blocks.iter().map(|b| b.stitches.iter().filter(|s| s.command == Command::Stitch).map(|s| (s.x, s.y)).collect()).collect()
+    };
+    for stem in VP3_AND_PES {
+        let (vp3, pes) = (needle(&read(format!("{stem}.vp3"))), needle(&read(format!("{stem}.pes"))));
+        let counts = |b: &Vec<Vec<(f64, f64)>>| b.iter().map(Vec::len).collect::<Vec<_>>();
+        assert_eq!(counts(&vp3), counts(&pes), "{stem}: needle points in each block");
+        let worst = vp3.iter().flatten().zip(pes.iter().flatten()).map(|(a, b)| (a.0 - b.0).abs().max((a.1 - b.1).abs())).fold(0.0, f64::max);
+        assert!(worst <= TWIN_ROUNDING + 1e-9, "{stem}: a needle point {worst:.2} mm from the PES's");
+    }
 }
 
 #[test]

@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-21 · **Last updated:** 2026-10-21 · **Change:** the thread tables: PEC 42 is Linen, and PEC's appliqué entries 62 to 64 are never matched (Brother's palette is its 61 threads); a thread number that names no thread reads as a stand-in named after it; where the tables come from, and pyembroidery credited in `NOTICE` for them; a newer file's embroidery settings open whatever their shape; the export's warnings are translated; each PES and JEF export is pinned apart from its thread numbers
+> **Last reviewed:** 2026-10-22 · **Last updated:** 2026-10-22 · **Change:** a new format, Husqvarna Viking and Pfaff VP3, read and written: each block's own colour and thread name, a jump as the long form and a zero-length stitch, no trim record (the machine cuts jump stitches); eight real VP3 files in the corpus, seven of them beside the same digitizing in PES
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -68,7 +68,9 @@ own format's (Brother's or Janome's, below), so each block is matched to the thr
 (ΔE 0). A number that names no thread of the palette (0, which the formats leave for "no colour",
 or one past the palette's end, which only a damaged file or a newer chart holds) reads in that
 block's colour from the same fixed list, its group named after the number ("Unknown thread 79"):
-no number wraps round to another thread. `design.pes` opens by its `#PES` bytes whatever it is
+no number wraps round to another thread. A VP3 file gives each block's own colour and its
+thread's description (else its catalogue number), which names the group; it sets no palette.
+`design.pes` opens by its `#PES` bytes and `design.vp3` by its `%vsm%` bytes, whatever they are
 called.
 
 **Exporting what you read.** The lines of an opened design are its stitches: each one is marked
@@ -391,6 +393,7 @@ run to a few hundred thousand.
 | Melco EXP | commercial | records only, no header, no colours: 2-byte deltas up to ±12.7 mm, `0x80`-prefixed commands | stitches, jumps, trims, colour changes; the file ends with the last record |
 | Brother PES | home machines (Brother, Bernina) | a PES section for PE-Design and a PEC section the machine reads | a minimal version 1 PES header pointing at a complete PEC block: 512-byte header, Brother palette indices (see below), a 20-byte block header with the two origin words real Brother files carry, the stitch stream, blank preview pictures |
 | Janome JEF | home machines (Janome) | 116-byte header plus the thread list, then 2-byte records | header with counts, hoop, size and margins, Janome palette indices (see below), records, three zero-length jumps per trim (see below) |
+| Husqvarna Viking / Pfaff VP3 | home machines (Husqvarna Viking, Pfaff; some read only VP3) | nested packets (file, design, colour block, stitch run), each a tag and a length; a thread record per colour block (colour, material, weight, catalogue number, description, brand); 2-byte stitches up to ±12.7 mm and a long form for longer moves; no jump, trim or colour-change command | one design around its centre, a colour block per thread block (and per stop), each block's colour, a jump as the long form and a zero-length stitch, no trim record (see below) |
 
 Thread numbers: PES and JEF name each block's thread by its number in the maker's palette
 (`crates/stitch/src/thread.rs`). The writers take the thread the stitch plan chose for the block
@@ -405,15 +408,47 @@ three of them (its `trim_at` setting) and reads a run of three jumps as a trim w
 lone jump that goes nowhere. We write three, which both read as a trim, and read each zero-length
 jump as a trim, so the three come back as one.
 
-Coordinate conventions: files count tenths of a millimetre. DST, EXP and JEF count y upwards and
-PEC downwards; the readers and writers flip accordingly, so a design written and read back keeps
-its shape. Our DST, EXP and PEC files start the needle at a corner of the design; JEF files
-start it at the design's centre, which Janome machines put at the hoop's centre, and the JEF
-header's extents and hoop margins are measured from there.
+VP3 (`crates/stitch/src/format/vp3.rs` has the layout). A file holds a design of colour blocks;
+each block has a thread record and one run of stitches, and picks up where the last left off. The
+packets count positions in micrometres with y upwards, the stitches tenths of a millimetre with y
+downwards. The public descriptions (EduTechWiki, the KDE Community Wiki, Jason Weiler's page)
+agree on the layout but leave three things open, decided here so that every reading sews the
+same:
+
+- *Jumps.* VP3 has no jump command: its long form (`80 01`, two 16-bit moves, `80 02`), the only
+  move longer than 12.7 mm, is called a move, a jump stitch or a jump, and nobody says whether the
+  needle goes down where it lands; pyembroidery reads one as a stitch there. We read it as a jump
+  after which the needle goes down where it lands: so read, the seven real designs written by
+  Ink/Stitch both as VP3 and as PES have exactly as many needle points in every colour block in
+  both (read as a jump alone, each long form would lose one). We write each jump, and each
+  block's way to its first stitch, as a long form to the next needle point followed by a
+  zero-length stitch, so the needle goes down there under either reading, and read that
+  zero-length stitch as the same needle point.
+- *Trims.* VP3 has no trim record. EduTechWiki's overview says Pfaff's own software writes a trim
+  and a jump as the long form, and Pfaff's machines cut jump stitches themselves ("Cut Jump
+  Stitches"), so a trim writes nothing and the jump after it is a long form. A trim with no jump
+  after it (before a colour change) is lost; a design read from VP3 has no trims, and the export
+  cuts its moves longer than `trimLength` as it does any other's. `80 03` is found only at the
+  end of the last block (EduTechWiki: the end; the KDE wiki and Weiler: an empty command): we
+  write it there and read it as nothing.
+- *Thread colours.* VP3 names no palette: each block carries its thread's own colour and name. We
+  write the block's art colour (rayon, 40 wt), so a design opened from VP3 and exported again keeps
+  its colours exactly; the thread's description is written only for a design read from a file,
+  since the name a stitch plan gives a block is its palette thread's, matched to the colour, not
+  the colour's own. Writing the plan's palette thread instead (its colour, name and maker, as the
+  PES and JEF exports do by number) is the alternative, left to the project owner.
+
+Coordinate conventions: files count tenths of a millimetre. DST, EXP and JEF count y upwards, PEC
+and VP3's stitches downwards; the readers and writers flip accordingly, so a design written and
+read back keeps its shape. Our DST, EXP and PEC files start the needle at a corner of the design;
+JEF files start it at the design's centre, which Janome machines put at the hoop's centre, and the
+JEF header's extents and hoop margins are measured from there. VP3 files start it at the design's
+centre too, as the real files do.
 
 Known limits of the formats themselves, and so of us: DST holds no colour, PEC holds no vector
-shapes, JEF's stitches jump at most 12.7 mm per record, and every format names threads by palette
-index, whose RGB values differ between published charts — preview colour is not truth. The
+shapes, JEF's and VP3's stitches go at most 12.7 mm per record, VP3 holds no trim, and PES and
+JEF name threads by palette index, whose RGB values differ between published charts — preview
+colour is not truth. The
 palettes are coarse, too: the eleven real designs' 44 blocks lie a median ΔE₀₀ of 5.4 from their
 Brother thread and 6.0 from their Janome thread; 23 and 28 of them are past 5, and 8 and 12 past
 10.
@@ -483,7 +518,7 @@ Brother thread and 6.0 from their Janome thread; 23 and 28 of them are past 5, a
 
 ## Validation
 
-- `crates/stitch`: 110 unit tests and 6 property tests — CIEDE2000 matches the 34 published test
+- `crates/stitch`: 120 unit tests and 6 property tests — CIEDE2000 matches the 34 published test
   pairs of Sharma, Wu and Dalal to their four decimals either way round (and a colour that isn't
   one has a difference that is not a number, never 0), the sRGB matrix derives
   from the primaries and D65, sRGB's primaries land where published conversions put them, the
@@ -552,7 +587,12 @@ Brother thread and 6.0 from their Janome thread; 23 and 28 of them are past 5, a
   only a run of three jumps reads as a DST trim, a PEC stitch block with a 16-byte header whose first jump looks like the origin words reads the same as with 20 bytes (in step, only the leading jump is lost; out of step, its length sends the reader back to the right start), a DST colour change can carry a move, each format
   writes a design it reads back with the same blocks and size, a JEF's header extents are where
   its stitches go, an absurd JEF colour count is not believed, a PES whose PEC section is said to
-  start near 4 GB is refused, and no reader panics on random,
+  start near 4 GB is refused, a VP3 round-trips with its threads and is written again byte for
+  byte, its packet lengths end where the format says, its positions are micrometres and each
+  block starts where the last ended, a jump is a long form and a zero-length stitch and a trim
+  writes nothing, a long form followed by a stitch that moves on puts the needle down at both, a
+  stop starts a block in the same thread, a planned thread's palette name is not written, long
+  stitches and jumps are split and long names cut at a character, and no reader panics on random,
   truncated or damaged bytes. The thread property test (`tests/prop_threads.rs`): for any run of
   blocks in either palette, each any colour or an entry's own and with a thread chosen from
   either palette or none, every number written is a thread, a known thread (chosen from the
@@ -621,7 +661,7 @@ Brother thread and 6.0 from their Janome thread; 23 and 28 of them are past 5, a
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
 - `crates/engine/tests/embroidery_output.rs`: the bytes every export writes, pinned by their sha256
-  in DST, EXP, PES and JEF: 14 documents built in code (fills, strokes, a compound path with a hole,
+  in DST, EXP, PES, JEF and VP3: 14 documents built in code (fills, strokes, a compound path with a hole,
   clip groups, symbols, trims asked for, opened designs as they are, clipped and cut at their
   blocks' ends, and the options away from their defaults; always run) and the eleven real
   designs' artwork at the person's size (when the corpus is present). A change to what is sewn
@@ -633,7 +673,8 @@ Brother thread and 6.0 from their Janome thread; 23 and 28 of them are past 5, a
   matching changed seven PES exports that way, only in their numbers: the orange `#ff8800` of six
   built drawings, 62 → 52 Tangerine (ΔE₀₀ 5.77 → 5.83), and the fox's orange `#f49010` and light
   yellow `#ffd983`, 62 → 52 Tangerine (3.03 → 3.66) and 63 → 12 Orange (8.11 → 10.22, now flagged).
-  Linen at 42 changed none. The stitch plan below
+  Linen at 42 changed none. Adding VP3 added 25 lines (the 14 documents and the 11 designs) and
+  changed none of the 100 before it. The stitch plan below
   left all 100 hashes as they were. Matching threads by CIEDE2000 instead of RGB distance changed
   38 of them (24 of the documents built here, 14 of the real designs; PES and JEF only): 76 of the
   198 blocks the PES and JEF exports write got another thread, and in every changed file the only
@@ -655,11 +696,15 @@ Brother thread and 6.0 from their Janome thread; 23 and 28 of them are past 5, a
 fetches eleven designs of the [Emoji Embroidery Project](https://edutechwiki.unige.ch/en/Emoji_Embroidery_Project)
 (University of Geneva and Arbores Tech; machine files CC BY-SA 4.0, artwork from Twemoji, CC BY
 4.0, and Fluent Emoji, MIT) into the gitignored `corpus/embroidery/`, sha256-verified: for each, the
-flat artwork and the PES file a person digitized from it with Ink/Stitch (the fox also as JEF). They
-are used locally, never committed. The test checks that:
+flat artwork and the PES file a person digitized from it with Ink/Stitch (the fox also as JEF);
+and eight more designs as Ink/Stitch wrote them in VP3, seven of them also in PES. They are used
+locally, never committed. The test checks that:
 
-- every machine file reads at the size its own header states, and the fox reads the same from PES
-  and JEF;
+- every machine file reads at the size its own header states (a VP3's summary, within the
+  0.3 mm its rounded moves drift from it), and the fox reads the same from PES and JEF;
+- each design written as VP3 and as PES reads the same from both: as many needle points in every
+  colour block, each within 0.3 mm of the PES's (each file rounds its own moves; 0.3 mm is the
+  most measured);
 - every machine file, opened and exported again, keeps every needle point, trim and colour block
   (this found that the cuts Ink/Stitch writes at a block's start and end were lost);
 - each artwork, digitized at the size of the person's design, comes out the same size, with no
@@ -773,10 +818,20 @@ environment, never in the repo:
   long jumps, and its one zero-length jump comes right after a colour change.
 - pyembroidery does not parse the PES block at all, so it validates our PEC block and not the PES
   header; the PES section is the minimal version 1 header (see above).
+- VP3 (pyembroidery 1.5.1, public API only): it reads every VP3 we wrote of the eleven real
+  designs' artwork with the same colour blocks, the art's colours, and the same needle points as
+  our JEF of the same art (both written around the design's centre), within 0.1 mm of our PES
+  (written from a corner, so an off-grid point may round the other way); the eight real VP3
+  files, opened and exported again as VP3, read in it exactly as our PES of them. It reads a
+  long form as a stitch where it lands, and the zero-length stitch we write after one as a second
+  stitch there.
 
 Still unverified, and listed in the local research notes (`plan/research/formats-pes-jef.md`
 §Appendix B): behaviour on real hardware, blank preview pictures, JEF's version letter, and how
-machines treat our trim encodings.
+machines treat our trim encodings. For VP3: no file written by Husqvarna's or Pfaff's own
+software was read (the corpus takes only files made with open tools), so whether the needle goes
+down where a long form lands, what `80 03` means, and how the machine shows a thread without a
+description are settled by the decisions above, not by a machine.
 
 ## Architecture
 
@@ -944,6 +999,18 @@ Public documentation, cited per claim in the crate and in the local research not
   tables, below).
 - EduTechWiki, [Embroidery format JEF](https://edutechwiki.unige.ch/en/Embroidery_format_JEF) —
   the JEF header, records and the zero-length jump as trim command.
+- VP3: EduTechWiki, [Embroidery format VP3](https://edutechwiki.unige.ch/en/Embroidery_format_VP3)
+  (the packets, the micrometre positions, the thread record, the long form, `80 03` at the end of
+  the last block) and [Embroidery format](https://edutechwiki.unige.ch/en/Embroidery_format)
+  (Pfaff's software writes a trim and a jump as the long form); the KDE Community Wiki,
+  [Viking/Husqvarna Pfaff/Singer 3 VP3](https://community.kde.org/Projects/Liberty/File_Formats/Viking_Pfaff)
+  (CC BY-SA 4.0; the packet grammar, the hoop fields, the colour entry, the move command); Jason
+  Weiler, [VP3 File Format](http://www.jasonweiler.com/VP3FileFormatInfo.html) (a block picks up
+  where the last left off, the long form as a jump stitch); The National Archives,
+  [PRONOM fmt/2002](https://www.nationalarchives.gov.uk/PRONOM/fmt/2002) (the magic bytes); Pfaff's
+  creative 3.0 brochure ([a dealer's copy](https://www.thesewingstudio.co.uk/cdn/shop/files/pfaff-creative-3-0-brochure.pdf):
+  the machine's "Cut Jump Stitches" cuts jump stitches itself, pulling the threads to the back).
+  Facts only, nothing copied.
 - Connectors and trims: Ink/Stitch's [fill stitch](https://inkstitch.org/docs/stitches/fill-stitch/)
   and [preferences](https://inkstitch.org/docs/preferences/) pages ("Trim After", minimum jump
   stitch length, starting near the previous object), Wilcom's
@@ -1008,7 +1075,7 @@ Public documentation, cited per claim in the crate and in the local research not
   regions and their order; a fill sewn with its columns, the order of its parts), `narrow.rs`
   (a fill's narrow parts found as columns), `tests.rs`, `tests_narrow.rs`.
 - `crates/stitch/src/format/` — `mod.rs` (shared frames, readers, block building), `dst.rs`,
-  `exp.rs`, `pes.rs`, `jef.rs`.
+  `exp.rs`, `pes.rs`, `jef.rs`, `vp3.rs`.
 - `crates/stitch/src/thread.rs` — the thread palettes (`Palette`), matching a colour to the nearest
   thread by CIEDE2000, a design's blocks to threads (`Palette::assign`), and the thread numbers a
   format writes (`Palette::numbers`).

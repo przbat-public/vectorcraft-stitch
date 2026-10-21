@@ -439,5 +439,23 @@ fn the_threads_command_lists_each_blocks_thread() {
     for bad in [json!({"stitchStyle": "cross"}), json!({"density": "dense"}), json!({"pullCompensation": [1, 2, 3]})] {
         assert!(s.execute("embroidery.threads", &bad).is_err(), "{bad}");
     }
-    assert!(s.execute("embroidery.threads", &json!({"stitchStyle": "running", "format": "pes"})).is_ok());
+    assert!(s.execute("embroidery.threads", &json!({"stitchStyle": "running"})).is_ok());
+}
+
+/// `embroidery.threads` takes the export's embroidery options and no other key: another format's
+/// option, or one misspelt, is refused by the params check every frontend runs, not ignored.
+#[test]
+fn the_threads_command_takes_only_the_embroidery_options() {
+    let spec = crate::cmd::find_command("embroidery.threads").unwrap();
+    let named = crate::cmd::params::doc_keys(spec.params).unwrap();
+    let options: Vec<&str> = crate::cmd::fileio::embroidery::OPTIONS.iter().map(|o| o.name).collect();
+    assert_eq!((named.keys, named.more.len()), (options, 0));
+    for (given, why) in [
+        (json!({"densitty": 0.4}), "did you mean `density`?"),
+        (json!({"format": "pes"}), "unknown parameter `format`"),
+        (json!({"selectedOnly": true}), "unknown parameter `selectedOnly`"),
+    ] {
+        let e = crate::check_params("embroidery.threads", &given).unwrap_err().to_string();
+        assert!(e.contains(why), "{given}: {e}");
+    }
 }

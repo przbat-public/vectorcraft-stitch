@@ -31,5 +31,11 @@ fn the_embroidery_commands_are_reachable() {
     text(&call_tool(&mut h, "run_command", &rect));
     let r = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.threads", "params": {"stitchStyle": "fill"}})));
     assert_eq!(r["palette"], "jef");
-    assert!(r["blocks"].as_array().unwrap().iter().all(|b| b["thread"]["palette"] == "jef" && b["thread"]["index"].as_u64().is_some()), "{r}");
+    let blocks = r["blocks"].as_array().unwrap();
+    assert!(!blocks.is_empty() && blocks.iter().all(|b| b["thread"]["palette"] == "jef" && b["thread"]["index"].as_u64().is_some()), "{r}");
+    // So is a key that isn't one of the embroidery options.
+    for given in [json!({"densitty": 0.4}), json!({"format": "pes"})] {
+        let refused = call_tool(&mut h, "run_command", &json!({"command": "embroidery.threads", "params": given}));
+        assert!(refused.is_error, "{refused:?}");
+    }
 }

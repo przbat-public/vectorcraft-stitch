@@ -2,10 +2,11 @@
 //!
 //! DST and EXP name no colours at all, so a design read from them gets [`default_thread`]'s
 //! colours, one per block, which read well on screen and tell the blocks apart. JEF names one of
-//! Janome's 78 threads by index, and PEC one of Brother's 64 ([`Palette`]). Writing a design names
-//! each block's chosen thread when it is of the format's palette (the stitch plan chooses them),
-//! else the thread matched to the block's colour by the same rule the plan follows
-//! ([`Palette::assign`], [`Palette::numbers`]), and reading names that thread back.
+//! Janome's 78 threads by index, and PEC one of 64 entries: Brother's 61 threads, then three that
+//! are not threads ([`Palette`], [`Palette::is_thread`]). Writing a design names each block's
+//! chosen thread when it is of the format's palette (the stitch plan chooses them), else the
+//! thread matched to the block's colour by the same rule the plan follows ([`Palette::assign`],
+//! [`Palette::numbers`]), and reading names that entry back.
 //!
 //! The tables are the manufacturers' published charts as public reverse-engineering documents
 //! list them; the names are theirs (thread names are data, not creative text).
@@ -29,7 +30,8 @@ pub const MISMATCH_DELTA_E: f64 = 10.0;
 /// A thread palette a machine format names its threads from, by number.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Palette {
-    /// Brother's 64 threads, as PEC (and so PES) numbers them ([`PEC`]).
+    /// Brother's 61 threads, as PEC (and so PES) numbers them, before three entries that are not
+    /// threads ([`PEC`]).
     Pec,
     /// Janome's 78 threads, as JEF numbers them ([`JEF`]).
     Jef,
@@ -52,12 +54,29 @@ impl Palette {
         Self::ALL.into_iter().find(|p| p.id() == id)
     }
 
-    /// Its threads, each a colour and a name, in the order the format numbers them from 1.
+    /// Its entries, each a colour and a name, in the order the format numbers them from 1: its
+    /// threads, then, in PEC, three entries that are not ([`Palette::is_thread`]).
     pub fn threads(self) -> &'static [Entry] {
         match self {
             Self::Pec => &PEC,
             Self::Jef => &JEF,
         }
+    }
+
+    /// How many of its entries are threads, from the first: Brother's 61 in PEC, all of Janome's
+    /// 78.
+    fn thread_count(self) -> usize {
+        match self {
+            Self::Pec => BROTHER_THREADS,
+            Self::Jef => JEF.len(),
+        }
+    }
+
+    /// Whether number `index` (from 1) is one of its threads, which matching may pick: not 0, not
+    /// past the palette's end, and not one of PEC's appliqué entries, 62 to 64 ([`PEC`]). A file
+    /// that names an entry that isn't a thread still reads in its colour ([`Palette::thread`]).
+    pub fn is_thread(self, index: usize) -> bool {
+        (1..=self.thread_count()).contains(&index)
     }
 
     /// Thread `index` (from 1): its colour and name; `None` for 0 (the formats' "no colour") and
@@ -78,14 +97,14 @@ impl Palette {
     /// The thread nearest `color` as the eye sees it, the smallest CIEDE2000 difference
     /// ([`crate::color`]), and how near, leaving out the threads `skip` names. A colour that is a
     /// thread's own is that thread, whatever `skip` says; when `skip` leaves no thread, the
-    /// nearest of all.
+    /// nearest of all. Never an entry that isn't a thread ([`Palette::is_thread`]).
     pub fn nearest(self, color: [u8; 3], skip: &[usize]) -> Match {
         if let Some(own) = self.own(color) {
             return own;
         }
         let lab = color::lab(color);
         let (mut best, mut any): (Option<Match>, Option<Match>) = (None, None);
-        for (i, &(rgb, _)) in self.threads().iter().enumerate() {
+        for (i, &(rgb, _)) in self.threads().iter().enumerate().take(self.thread_count()) {
             let m = Match { index: i + 1, delta_e: color::delta_e(lab, color::lab(rgb)) };
             let nearer = |b: Option<Match>| b.is_none_or(|b| m.delta_e < b.delta_e);
             if nearer(any) {
@@ -98,9 +117,10 @@ impl Palette {
         best.or(any).unwrap_or(Match { index: 1, delta_e: f64::INFINITY })
     }
 
-    /// The thread whose own colour `color` is, if any (no two threads of a palette share one).
+    /// The thread whose own colour `color` is, if any (no two threads of a palette share one). An
+    /// entry that isn't a thread is no one's: art in its colour is matched like any other.
     fn own(self, color: [u8; 3]) -> Option<Match> {
-        self.threads().iter().position(|&(rgb, _)| rgb == color).map(|i| Match { index: i + 1, delta_e: 0.0 })
+        self.threads().iter().take(self.thread_count()).position(|&(rgb, _)| rgb == color).map(|i| Match { index: i + 1, delta_e: 0.0 })
     }
 
     /// The thread each block of a design is sewn in, in sewing order, from each block's colour and
@@ -161,9 +181,10 @@ pub struct PaletteThread {
 }
 
 impl PaletteThread {
-    /// Thread `index` (from 1) of `palette`; `None` when the number names none of its threads.
+    /// Thread `index` (from 1) of `palette`; `None` when the number names none of its threads
+    /// ([`Palette::is_thread`]).
     pub fn new(palette: Palette, index: usize) -> Option<Self> {
-        palette.get(index).map(|_| Self { palette, index })
+        palette.is_thread(index).then_some(Self { palette, index })
     }
 
     /// The palette it is from.
@@ -199,7 +220,12 @@ pub const DEFAULT: [Entry; 8] = [
     ([70, 70, 74], "Slate"),
 ];
 
-/// Brother's 64-thread palette, as PEC counts it (index 1 to 64; 0 is no colour).
+/// How many threads Brother's thread list has (support.brother.com, Artspira thread names): PEC's
+/// entries 1 to 61.
+const BROTHER_THREADS: usize = 61;
+
+/// PEC's 64 entries, numbered from 1 (0 is no colour): Brother's 61 threads, then three that are
+/// not threads but the format's appliqué entries ([`Palette::is_thread`]).
 pub const PEC: [Entry; 64] = [
     ([14, 31, 124], "Prussian Blue"),
     ([10, 85, 163], "Blue"),
@@ -263,6 +289,10 @@ pub const PEC: [Entry; 64] = [
     ([9, 91, 166], "Electric Blue"),
     ([240, 249, 112], "Lemon Yellow"),
     ([227, 243, 91], "Fresh Green"),
+    // Not threads: EduTechWiki's PEC page names entries 62 to 64 Applique Material, Applique
+    // Position and Applique. Files from other open-source tools use 62 and 63 for an orange and a
+    // cream yellow (the real designs' fox does), so they read in these colours and names, as they
+    // always have; matching never picks them.
     ([255, 153, 0], "Orange"),
     ([255, 240, 141], "Cream Yellow"),
     ([255, 200, 200], "Applique"),
@@ -404,15 +434,34 @@ mod tests {
             assert_eq!(palette.thread(0), Thread::named([0, 0, 0], "Black"));
             assert_eq!(Palette::from_id(palette.id()), Some(palette));
             // Each thread is its own colour's nearest, exactly, even when it is left out.
-            for (i, &(rgb, _)) in threads.iter().enumerate() {
+            for (i, &(rgb, _)) in threads.iter().enumerate().filter(|(i, _)| palette.is_thread(i + 1)) {
                 assert_eq!(palette.nearest(rgb, &[]), Match { index: i + 1, delta_e: 0.0 });
                 assert_eq!(palette.nearest(rgb, &[i + 1]), Match { index: i + 1, delta_e: 0.0 });
             }
         }
     }
 
-    /// How many threads Brother's thread list has: PEC's entries 1 to 61.
-    const BROTHER_THREADS: usize = 61;
+    /// PEC's entries 62 to 64 are not threads: a file that names them reads in their colours, but
+    /// no colour is ever matched to them, not even their own, and no thread is chosen from them,
+    /// so neither a plan nor a PES file ever names them.
+    #[test]
+    fn pecs_applique_entries_are_never_matched() {
+        let pec = Palette::Pec;
+        assert!(pec.is_thread(1) && pec.is_thread(BROTHER_THREADS) && !pec.is_thread(0) && !pec.is_thread(65));
+        for index in [62, 63, 64] {
+            assert!(!pec.is_thread(index) && PaletteThread::new(pec, index).is_none(), "{index}");
+            let (rgb, name) = pec.get(index).unwrap();
+            assert_eq!(pec.thread(index), Thread::named(rgb, name), "read as before");
+            let m = pec.nearest(rgb, &[]);
+            assert!(pec.is_thread(m.index) && m.delta_e > 0.0, "{index}: {m:?}");
+        }
+        // Every entry's colour, in every order of neighbours, gets a thread.
+        let colours: Vec<([u8; 3], Option<PaletteThread>)> = PEC.iter().map(|&(rgb, _)| (rgb, None)).collect();
+        for m in pec.assign(&colours).iter().chain(&pec.assign(&colours.iter().rev().copied().collect::<Vec<_>>())) {
+            assert!(pec.is_thread(m.index), "{m:?}");
+        }
+        assert!(Palette::Jef.threads().iter().enumerate().all(|(i, _)| Palette::Jef.is_thread(i + 1)), "all Janome's entries are threads");
+    }
 
     /// Brother's threads, PEC's first 61 entries, each have a name of their own, as Brother's
     /// thread list gives them (support.brother.com, Artspira thread names: 61 threads, each name

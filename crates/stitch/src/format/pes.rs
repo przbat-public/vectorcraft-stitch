@@ -522,6 +522,21 @@ mod tests {
         assert_eq!((&back.blocks[0].thread, &back.blocks[1].thread), (&Palette::Pec.thread(37), &Palette::Pec.thread(nearest)));
     }
 
+    /// A file that names PEC's appliqué entries, as other open-source tools write an orange and a
+    /// cream yellow, reads in their colours; written again, its blocks get threads instead.
+    #[test]
+    fn appliqué_entries_read_in_their_colours_and_are_written_as_threads() {
+        let mut bytes = write(&design()).expect("writes");
+        let at = PES_HEADER.len() + COLOR_COUNT_AT;
+        bytes[at + 1..at + 3].copy_from_slice(&[62, 63]);
+        let opened = read(&bytes).expect("reads");
+        assert_eq!((&opened.blocks[0].thread, &opened.blocks[1].thread), (&Palette::Pec.thread(62), &Palette::Pec.thread(63)));
+        let again = write(&opened).expect("writes");
+        let threads = [again[at + 1], again[at + 2]].map(usize::from);
+        assert!(threads.iter().all(|&t| Palette::Pec.is_thread(t)), "{threads:?}");
+        assert_eq!(read(&again).expect("reads").sewn(), opened.sewn());
+    }
+
     #[test]
     fn junk_is_a_clear_error_not_a_panic() {
         assert!(read(b"").is_err());

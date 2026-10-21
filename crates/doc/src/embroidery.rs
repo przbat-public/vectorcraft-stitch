@@ -66,7 +66,7 @@ impl EmbroiderySetup {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(from = "serde_json::Value", into = "serde_json::Value")]
 pub enum ThreadPalette {
-    /// Brother's 64 threads, as PEC (and so PES) files number them: `"pec"`.
+    /// Brother's 61 threads, as PEC (and so PES) files number them: `"pec"`.
     Pec,
     /// Janome's 78 threads, as JEF files number them: `"jef"`.
     Jef,

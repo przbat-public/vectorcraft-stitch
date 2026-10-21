@@ -3906,7 +3906,7 @@ fn ai_cut_inside_an_array_or_dictionary_opens_without_panicking() {
 
 // ---------- Embroidery designs: opened and placed ----------
 
-const EMBROIDERY: [&str; 6] = ["dst", "exp", "pes", "pec", "jef", "vp3"];
+const EMBROIDERY: [&str; 7] = ["dst", "tap", "exp", "pes", "pec", "jef", "vp3"];
 
 /// Where a VP3 written here has its first stitch record: past the scale bytes `0A F6 00` that
 /// open its first stitch run.

@@ -1,5 +1,5 @@
 //! Embroidery files: `document.open` reads a design's stitches as paths, `document.export`
-//! stitches the document's art and writes a machine file (DST, EXP, PES, PEC, JEF or VP3).
+//! stitches the document's art and writes a machine file (DST, TAP, EXP, PES, PEC, JEF or VP3).
 //!
 //! Reading draws each colour block as a group of thin lines in the thread's colour, so the design
 //! looks like it will sew, and can be measured, traced over or recoloured. Writing takes every

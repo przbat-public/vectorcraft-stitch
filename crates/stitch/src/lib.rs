@@ -7,7 +7,7 @@
 //! its shape when it is read and written again.
 //!
 //! - [`plan`]: how a path becomes stitches — running, satin and tatami fill, underlay and trims.
-//! - [`format`]: the machine formats (DST, EXP, PES, PEC, JEF, VP3), read and written.
+//! - [`format`]: the machine formats (DST, TAP, EXP, PES, PEC, JEF, VP3), read and written.
 //! - [`thread`]: the thread palettes the formats name their colours from.
 //! - [`color`]: colours in CIE L*a*b* and the CIEDE2000 difference, which matching a colour to a
 //!   palette's thread uses.

@@ -1,5 +1,5 @@
-//! Embroidery through the commands: `document.export` stitches the art into DST, EXP, PES, PEC,
-//! JEF and VP3, `document.open` reads a design back as art, the options change the plan, and the
+//! Embroidery through the commands: `document.export` stitches the art into DST, TAP, EXP, PES,
+//! PEC, JEF and VP3, `document.open` reads a design back as art, the options change the plan, and the
 //! format table lists them all.
 
 use serde_json::{Value, json};

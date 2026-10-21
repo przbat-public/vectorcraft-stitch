@@ -17,6 +17,9 @@
 //! stitches (one or two are a move with the needle up). Y counts
 //! upwards.
 //!
+//! Happy's TAP is these records alone, without the header ([`super::tap`]): [`records`] and
+//! [`read_records`] serve both.
+//!
 //! Reference: EduTechWiki, *Embroidery format DST* (edutechwiki.unige.ch/en/Embroidery_format_DST),
 //! which transcribes the public decodings by Achatina and Embroidermodder.
 
@@ -67,6 +70,28 @@ enum Kind {
 }
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
+    let r = records(p)?;
+    let mut out = header(p, r.count, r.colors, r.width, r.height);
+    out.extend_from_slice(&r.bytes);
+    Ok(out)
+}
+
+/// A design's records, as the header counts and sizes them.
+pub(crate) struct Records {
+    /// Every record, the end record last.
+    pub(crate) bytes: Vec<u8>,
+    /// How many records there are before the end record (the header's `ST`).
+    count: usize,
+    /// The colour changes (the header's `CO`).
+    colors: usize,
+    /// The design's size in tenths of a millimetre (the header's `+X` and `+Y`).
+    width: i32,
+    height: i32,
+}
+
+/// The records `p` is written as: stitches, jumps, trims as three small jumps, a colour change
+/// between blocks, and the end record.
+pub(crate) fn records(p: &Pattern) -> Result<Records> {
     let frame = Frame::of(p, true)?;
     let mut body: Body = Body::default();
     let mut colors = 0usize;
@@ -85,12 +110,10 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     if body.out.is_empty() {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
-    let records = body.records;
+    let count = body.records;
     let (width, height) = extent(p, &frame);
-    let mut out = header(p, records, colors, width, height);
     body.push(0, 0, Kind::End);
-    out.extend_from_slice(&body.out);
-    Ok(out)
+    Ok(Records { bytes: body.out, count, colors, width, height })
 }
 
 fn write_block(body: &mut Body, block: &Block, frame: &Frame) -> Result<()> {
@@ -236,11 +259,16 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
             bytes.len()
         )));
     }
-    let name = header_name(&bytes[..HEADER]);
+    read_records(bytes.get(HEADER..).unwrap_or_default(), header_name(bytes.get(..HEADER).unwrap_or_default()), "DST")
+}
+
+/// The design `records` hold (a DST's after its header, or a whole TAP file), named `name`; `what`
+/// names the format in an error.
+pub(crate) fn read_records(records: &[u8], name: String, what: &str) -> Result<Pattern> {
     let mut x = 0i32;
     let mut y = 0i32;
     let mut points: Vec<Stitch> = Vec::new();
-    for record in bytes[HEADER..].chunks_exact(RECORD) {
+    for record in records.chunks_exact(RECORD) {
         let b2 = record[2];
         let (dx, dy) = (decode(record, &X_DIGITS), decode(record, &Y_DIGITS));
         if b2 & END_BITS == END_BITS {
@@ -263,7 +291,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         points.push(Stitch::new(mm(x), mm(-y), command));
     }
     if points.is_empty() {
-        return Err(Error::Format("the DST file has no stitch records".into()));
+        return Err(Error::Format(format!("the {what} file has no stitch records")));
     }
     // DST has no trim records: a run of jumps between stitches is a cut.
     insert_trims(&mut points);

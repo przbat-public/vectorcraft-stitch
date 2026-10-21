@@ -85,13 +85,12 @@ impl Palette {
         index.checked_sub(1).and_then(|i| self.threads().get(i)).copied()
     }
 
-    /// Thread `index` (from 1) as a block's thread; 0, the format's "no colour", and a number past
-    /// the palette are black.
-    pub fn thread(self, index: usize) -> Thread {
-        match self.get(index) {
-            Some((color, name)) => Thread::named(color, name),
-            None => no_colour(),
-        }
+    /// Entry `index` (from 1) as the thread a block read from a file is in: its colour and name.
+    /// `None` when the number names no entry: 0, which the formats leave for "no colour", or a
+    /// number past the palette's end, which only a damaged file or a newer chart holds
+    /// ([`unknown_thread`]).
+    pub fn thread(self, index: usize) -> Option<Thread> {
+        self.get(index).map(|(color, name)| Thread::named(color, name))
     }
 
     /// The thread nearest `color` as the eye sees it, the smallest CIEDE2000 difference
@@ -386,9 +385,13 @@ pub fn default_thread(index: usize) -> Thread {
     Thread::named(color, name)
 }
 
-/// The thread for a palette index that names none: black.
-fn no_colour() -> Thread {
-    Thread::named([0, 0, 0], "Black")
+/// The thread a block read from a file is in when the file names thread `number`, which names no
+/// entry of its palette ([`Palette::thread`]): block `block`'s default thread's colour
+/// ([`default_thread`]), so that the blocks stay told apart, as in a design from a format without
+/// colours; named after the number ("Unknown thread 85"), so that it is never taken for one of the
+/// palette's threads (a 0 read as Black would be).
+pub fn unknown_thread(block: usize, number: u64) -> Thread {
+    Thread { name: format!("Unknown thread {number}"), ..Thread::rgb(default_thread(block).color) }
 }
 
 #[cfg(test)]
@@ -423,7 +426,7 @@ mod tests {
     }
 
     /// A palette's threads are numbered from 1, as the formats count; 0 and numbers past the end
-    /// name none and read as black.
+    /// name none, and a block a file gives one of them is in a stand-in thread named after it.
     #[test]
     fn threads_are_numbered_from_one() {
         for palette in Palette::ALL {
@@ -431,13 +434,24 @@ mod tests {
             assert_eq!(palette.get(1), threads.first().copied());
             assert_eq!(palette.get(threads.len()), threads.last().copied());
             assert_eq!((palette.get(0), palette.get(threads.len() + 1)), (None, None));
-            assert_eq!(palette.thread(0), Thread::named([0, 0, 0], "Black"));
+            assert_eq!((palette.thread(0), palette.thread(threads.len() + 1)), (None, None));
+            assert_eq!(palette.thread(1), threads.first().map(|&(rgb, name)| Thread::named(rgb, name)));
             assert_eq!(Palette::from_id(palette.id()), Some(palette));
             // Each thread is its own colour's nearest, exactly, even when it is left out.
             for (i, &(rgb, _)) in threads.iter().enumerate().filter(|(i, _)| palette.is_thread(i + 1)) {
                 assert_eq!(palette.nearest(rgb, &[]), Match { index: i + 1, delta_e: 0.0 });
                 assert_eq!(palette.nearest(rgb, &[i + 1]), Match { index: i + 1, delta_e: 0.0 });
             }
+        }
+    }
+
+    /// A block whose file names no thread of the palette is in its block's default colour, never
+    /// in one of the palette's threads, and named after the number it was given.
+    #[test]
+    fn a_number_that_names_no_thread_reads_as_a_stand_in() {
+        for (block, number) in [(0, 0), (2, 79), (9, u64::from(u32::MAX))] {
+            let t = unknown_thread(block, number);
+            assert_eq!((t.color, t.name.as_str(), t.chosen), (default_thread(block).color, format!("Unknown thread {number}").as_str(), None));
         }
     }
 
@@ -451,7 +465,7 @@ mod tests {
         for index in [62, 63, 64] {
             assert!(!pec.is_thread(index) && PaletteThread::new(pec, index).is_none(), "{index}");
             let (rgb, name) = pec.get(index).unwrap();
-            assert_eq!(pec.thread(index), Thread::named(rgb, name), "read as before");
+            assert_eq!(pec.thread(index), Some(Thread::named(rgb, name)), "read as before");
             let m = pec.nearest(rgb, &[]);
             assert!(pec.is_thread(m.index) && m.delta_e > 0.0, "{index}: {m:?}");
         }

@@ -81,8 +81,9 @@ pub struct BlockThread {
 impl BlockThread {
     /// `palette`'s thread `matched` to art colour `art`.
     pub(super) fn new(art: [u8; 3], palette: Palette, matched: Match) -> Self {
-        let Thread { color, name, .. } = palette.thread(matched.index);
-        Self { art, palette, index: matched.index, name, color, delta_e: matched.delta_e }
+        // A match is always one of the palette's threads; were it not, the art's own colour.
+        let (color, name) = palette.get(matched.index).unwrap_or((art, ""));
+        Self { art, palette, index: matched.index, name: name.to_string(), color, delta_e: matched.delta_e }
     }
 
     /// The colour difference as a list of threads shows it (`embroidery.threads`): to

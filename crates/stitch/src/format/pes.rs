@@ -27,7 +27,7 @@
 //! (edutechwiki.unige.ch/en/Embroidery_format_PES, …/Embroidery_format_PEC).
 
 use super::{Frame, LABEL_LEN, PAD, Reader, finish, label, mm, steps};
-use crate::thread::Palette;
+use crate::thread::{self, Palette};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The PEC header's length: the start of the PEC section, before the stitch block.
@@ -125,7 +125,7 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     // stitches: the buffer grows as needed).
     let mut out: Vec<u8> = Vec::with_capacity(PES_HEADER.len() + PEC_HEADER + 64 + colors * PREVIEW);
     out.extend_from_slice(&PES_HEADER);
-    out.extend_from_slice(&header(p, colors));
+    out.extend_from_slice(&header(p, colors)?);
     let block_start = out.len();
     let mut block: Vec<u8> = Vec::with_capacity(1024);
     block.extend_from_slice(&[0, 0]);
@@ -157,7 +157,7 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
 }
 
 /// The 512-byte PEC header.
-fn header(p: &Pattern, colors: usize) -> Vec<u8> {
+fn header(p: &Pattern, colors: usize) -> Result<Vec<u8>> {
     let name = label(&p.name);
     let mut h: Vec<u8> = Vec::with_capacity(PEC_HEADER);
     h.extend_from_slice(format!("LA:{name:<LABEL_LEN$}\r").as_bytes());
@@ -169,10 +169,11 @@ fn header(p: &Pattern, colors: usize) -> Vec<u8> {
     h.push(u8::try_from(colors.saturating_sub(1)).unwrap_or(NO_COLORS));
     let threads = p.blocks.iter().filter(|b| !b.stitches.is_empty()).map(|b| &b.thread);
     for index in Palette::Pec.numbers(threads) {
-        h.push(u8::try_from(index).unwrap_or(1));
+        // A thread's number is at most the palette's length, which a byte holds.
+        h.push(u8::try_from(index).map_err(|_| Error::Format(format!("thread number {index} doesn't fit a PEC header")))?);
     }
     h.resize(PEC_HEADER, PAD);
-    h
+    Ok(h)
 }
 
 fn write_stitches(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) -> Result<()> {
@@ -267,9 +268,10 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     let count = r.u8().ok_or_else(|| Error::Format("the PEC header is cut short".into()))?;
     let colors = if count == NO_COLORS { 0 } else { usize::from(count) + 1 };
     let mut threads = Vec::with_capacity(colors);
-    for _ in 0..colors {
+    for block in 0..colors {
+        // 0 and a number past the palette name no thread: a stand-in, never one of its threads.
         let index = r.u8().unwrap_or(0);
-        threads.push(Palette::Pec.thread(usize::from(index)));
+        threads.push(Palette::Pec.thread(usize::from(index)).unwrap_or_else(|| thread::unknown_thread(block, u64::from(index))));
     }
     // The stitches start after the stitch-block header: 20 bytes in Brother's files (two origin
     // words after BLOCK_VALUES), 16 in pyembroidery's, which omit them. The stitch block's length
@@ -519,7 +521,7 @@ mod tests {
         let nearest = Palette::Pec.nearest([20, 30, 220], &[37]).index;
         assert_eq!(&bytes[at..at + 3], &[1, 37, u8::try_from(nearest).unwrap()]);
         let back = read(&bytes).expect("reads");
-        assert_eq!((&back.blocks[0].thread, &back.blocks[1].thread), (&Palette::Pec.thread(37), &Palette::Pec.thread(nearest)));
+        assert_eq!((&back.blocks[0].thread, &back.blocks[1].thread), (&Palette::Pec.thread(37).unwrap(), &Palette::Pec.thread(nearest).unwrap()));
     }
 
     /// A file that names PEC's appliqué entries, as other open-source tools write an orange and a
@@ -530,11 +532,27 @@ mod tests {
         let at = PES_HEADER.len() + COLOR_COUNT_AT;
         bytes[at + 1..at + 3].copy_from_slice(&[62, 63]);
         let opened = read(&bytes).expect("reads");
-        assert_eq!((&opened.blocks[0].thread, &opened.blocks[1].thread), (&Palette::Pec.thread(62), &Palette::Pec.thread(63)));
+        assert_eq!((&opened.blocks[0].thread, &opened.blocks[1].thread), (&Palette::Pec.thread(62).unwrap(), &Palette::Pec.thread(63).unwrap()));
         let again = write(&opened).expect("writes");
         let threads = [again[at + 1], again[at + 2]].map(usize::from);
         assert!(threads.iter().all(|&t| Palette::Pec.is_thread(t)), "{threads:?}");
         assert_eq!(read(&again).expect("reads").sewn(), opened.sewn());
+    }
+
+    /// A header number that names no entry, 0 or past 64, reads as a stand-in thread named after it,
+    /// in its block's default colour; 64, an entry, reads as itself.
+    #[test]
+    fn numbers_that_name_no_thread_read_as_stand_ins() {
+        let mut p = design();
+        let extra = p.blocks[1].clone();
+        p.blocks.extend([extra.clone(), extra]);
+        let mut bytes = write(&p).expect("writes");
+        let at = PES_HEADER.len() + COLOR_COUNT_AT;
+        bytes[at + 1..at + 5].copy_from_slice(&[0, 64, 65, 255]);
+        let read = read(&bytes).expect("reads");
+        let threads: Vec<&Thread> = read.blocks.iter().map(|b| &b.thread).collect();
+        let want = [thread::unknown_thread(0, 0), Palette::Pec.thread(64).unwrap(), thread::unknown_thread(2, 65), thread::unknown_thread(3, 255)];
+        assert_eq!(threads, want.iter().collect::<Vec<_>>());
     }
 
     #[test]

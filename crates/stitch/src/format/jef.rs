@@ -24,7 +24,7 @@
 //! (github.com/EmbroidePy/pyembroidery/tree/1.5.1/pyembroidery).
 
 use super::{Frame, Reader, finish, mm, steps};
-use crate::thread::Palette;
+use crate::thread::{self, Palette};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The header's fixed length: everything before the per-colour arrays.
@@ -105,7 +105,9 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     // the nearest to its colour, never the block before's (a thread change needs another thread).
     let threads = p.blocks.iter().filter(|b| !b.stitches.is_empty()).map(|b| &b.thread);
     for index in Palette::Jef.numbers(threads) {
-        out.extend_from_slice(&(index as u32).to_le_bytes());
+        // A thread's number is at most the palette's length, which a word holds.
+        let word = u32::try_from(index).map_err(|_| Error::Format(format!("thread number {index} doesn't fit a JEF header")))?;
+        out.extend_from_slice(&word.to_le_bytes());
     }
     for _ in 0..colors {
         out.extend_from_slice(&COLOR_WORD.to_le_bytes());
@@ -211,10 +213,13 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     // fit than the file holds (an absurd count must not size an allocation).
     let colors = colors.min(bytes.len().saturating_sub(HEADER) / WORD);
     let mut threads = Vec::with_capacity(colors);
-    for _ in 0..colors {
-        // Janome's chart numbers its threads from 1; anything past it wraps round.
-        let index = r.u32().ok_or_else(|| short(bytes.len()))? as usize % (Palette::Jef.threads().len() + 1);
-        threads.push(Palette::Jef.thread(index));
+    for block in 0..colors {
+        // Janome's chart numbers its threads from 1 to 78: 0 and a number past it name none, and
+        // read as a stand-in thread named after the number, never one of the chart's (no number
+        // wraps round).
+        let number = r.u32().ok_or_else(|| short(bytes.len()))?;
+        let named = usize::try_from(number).ok().and_then(|index| Palette::Jef.thread(index));
+        threads.push(named.unwrap_or_else(|| thread::unknown_thread(block, u64::from(number))));
     }
     r.seek(offset);
     let mut points: Vec<Stitch> = Vec::new();
@@ -380,7 +385,31 @@ mod tests {
         assert_eq!(word(HEADER), 61);
         assert_eq!(word(HEADER + WORD), Palette::Jef.nearest([20, 40, 210], &[61]).index);
         let back = read(&bytes).expect("reads");
-        assert_eq!(back.blocks[0].thread, Palette::Jef.thread(61));
+        assert_eq!(back.blocks[0].thread, Palette::Jef.thread(61).unwrap());
+    }
+
+    /// Header numbers that name no thread, 0 and past 78, read as stand-in threads named after
+    /// them, in their blocks' default colours: none wraps round to one of Janome's threads.
+    #[test]
+    fn numbers_that_name_no_thread_read_as_stand_ins() {
+        let mut p = design();
+        let extra = p.blocks[1].clone();
+        p.blocks.extend([extra.clone(), extra.clone(), extra]);
+        let mut bytes = write(&p).expect("writes");
+        let numbers = [0, 1, 78, 79, u32::MAX];
+        for (k, n) in numbers.iter().enumerate() {
+            bytes[HEADER + k * WORD..HEADER + (k + 1) * WORD].copy_from_slice(&n.to_le_bytes());
+        }
+        let read = read(&bytes).expect("reads");
+        let threads: Vec<&Thread> = read.blocks.iter().map(|b| &b.thread).collect();
+        let want = [
+            thread::unknown_thread(0, 0),
+            Palette::Jef.thread(1).unwrap(),
+            Palette::Jef.thread(78).unwrap(),
+            thread::unknown_thread(3, 79),
+            thread::unknown_thread(4, u64::from(u32::MAX)),
+        ];
+        assert_eq!(threads, want.iter().collect::<Vec<_>>());
     }
 
     #[test]

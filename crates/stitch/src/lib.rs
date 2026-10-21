@@ -124,8 +124,9 @@ impl Stitch {
     }
 }
 
-/// A thread: the colour a block is sewn in, the name a palette gives it, and the palette thread
-/// chosen for it.
+/// A block's thread: a colour (the thread's own in a design read from a file, the art's in a
+/// design planned from art), the name a palette gives the thread, and the palette thread chosen
+/// for it.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Thread {
     /// sRGB: as a palette lists the thread (a design read from a file), or as the art sewn in it
@@ -147,12 +148,6 @@ impl Thread {
 
     pub fn named(color: [u8; 3], name: &str) -> Self {
         Self { color, name: name.to_string(), chosen: None }
-    }
-
-    /// How far this thread's colour is from `other`'s as the eye sees it: their CIEDE2000
-    /// difference ([`color::delta_e`]), 0 for the same colour.
-    pub fn delta_e(&self, other: &Self) -> f64 {
-        color::delta_e_rgb(self.color, other.color)
     }
 }
 

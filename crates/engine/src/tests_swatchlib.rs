@@ -90,6 +90,8 @@ fn thread_libraries_are_the_machine_formats_palettes() {
     assert!(["PEC 12 Orange", "PEC 42 Linen", "PEC 57 Flesh Pink", "PEC 61 Fresh Green"].iter().all(|n| doc(&s).swatch(n).is_some()));
     assert!(["PEC 62 Orange", "PEC 63 Cream Yellow", "PEC 64 Applique"].iter().all(|n| doc(&s).swatch(n).is_none()), "not threads");
     assert_eq!(Palette::from_id("jef"), Some(Palette::Jef));
+    // One library for each palette, in the palettes' order.
+    assert_eq!(cmd::swatchlib::THREAD_LIBRARIES.map(|t| t.palette), Palette::ALL);
     assert!(s.execute("swatch.library.copyToUser", &json!({"library": "brother-threads-pec"})).is_err());
 }
 

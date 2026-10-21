@@ -4299,8 +4299,28 @@ file back as art, one group per thread. The whole feature is described in [embro
   `mismatch` flags one past `threshold` (10). It takes the export's embroidery options only: any other key, such as
   `format` or `selectedOnly`, is refused.
 - `embroidery.setTrimAfter {on, ids?}` asks for the thread to be cut after each object.
+- `embroidery.stats {…embroidery options, speed?, fabricThickness?}` gives the design's figures as the export sews
+  it, for the design and per block: needle points, jumps, trims, colour changes, threads, blocks; size, bounds, start
+  and end points, extents from the start; the shortest and longest stitch and the longest jump; top and bobbin thread
+  in metres and the sewing time, both estimates whose constants and sources `embroidery.md` lists (`speed`, stitches
+  a minute, 60 to 1500, default 650; `fabricThickness`, mm, 0 to 5, default 0.5). The time leaves out thread changes,
+  which are counted apart.
+- `embroidery.sequence {…embroidery options}` lists the sewing order, read only: the blocks in order with their
+  thread, stitch numbers, jumps and trims, and each block's units with the object a person selects (`id`), the part,
+  how it is sewn and why (the rule that chose it), its stitches, entry and exit points and bounds; `split` names the
+  objects sewn in more than one block. Sewing order follows stacking order: `node.move` changes it.
+- `embroidery.check {…embroidery options, format?, rules?, limit?}` runs the design checks: each rule with its
+  severity, threshold, unit, sources (the first is the one checked; where sources disagree each is listed), hits, the
+  objects hit and the first `limit` hits (20 by default, at most 1000) as stitch numbers and points. `format` (default:
+  the format of the document's thread palette) sets the format limits checked; `rules` picks rules by id.
+
+The three plan once for one state of the document and the same options: asking for the figures, the order and the
+checks in a row plans the design once, and an edit plans again only the objects it changed (and usually the one sewn after each, in
+its block). A plan can be cancelled with `notifications/cancelled`.
 
 ```json
 {"name":"run_command","arguments":{"command":"embroidery.setup","params":{"palette":"pec"}}}
 {"name":"run_command","arguments":{"command":"embroidery.threads","params":{"stitchStyle":"fill"}}}
+{"name":"run_command","arguments":{"command":"embroidery.stats","params":{"speed":800}}}
+{"name":"run_command","arguments":{"command":"embroidery.check","params":{"format":"dst","rules":["stitchTooLong","formatStep"]}}}
 ```

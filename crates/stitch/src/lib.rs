@@ -9,12 +9,15 @@
 //! - [`plan`]: how a path becomes stitches — running, satin and tatami fill, underlay and trims.
 //! - [`format`]: the machine formats (DST, EXP, PES, JEF), read and written.
 //! - [`thread`]: the thread palettes the formats name their colours from.
+//! - [`color`]: colours in CIE L*a*b* and the CIEDE2000 difference, which matching a colour to a
+//!   palette's thread uses.
 //!
 //! Nothing here panics on bad input: a malformed file gives an [`Error`], and stitch parameters
 //! that are missing or out of range fall back to the style's defaults.
 
 #![forbid(unsafe_code)]
 
+pub mod color;
 pub mod format;
 pub mod plan;
 pub mod thread;

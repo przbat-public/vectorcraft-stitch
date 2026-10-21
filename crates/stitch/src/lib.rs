@@ -149,13 +149,10 @@ impl Thread {
         Self { color, name: name.to_string(), chosen: None }
     }
 
-    /// How far this thread's colour is from `other`'s, for matching a palette (0: the same).
-    pub fn distance(&self, other: &Self) -> u32 {
-        let d = |a: u8, b: u8| {
-            let v = i32::from(a) - i32::from(b);
-            (v * v) as u32
-        };
-        d(self.color[0], other.color[0]) + d(self.color[1], other.color[1]) + d(self.color[2], other.color[2])
+    /// How far this thread's colour is from `other`'s as the eye sees it: their CIEDE2000
+    /// difference ([`color::delta_e`]), 0 for the same colour.
+    pub fn delta_e(&self, other: &Self) -> f64 {
+        color::delta_e_rgb(self.color, other.color)
     }
 }
 

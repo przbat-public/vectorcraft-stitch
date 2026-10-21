@@ -296,6 +296,22 @@ mod tests {
         assert_eq!(plan.blocks[1].thread.index, Palette::Pec.nearest([201, 30, 30], Some(nearest)).index);
     }
 
+    /// A block painted with a thread's own colour (a swatch of its thread library) keeps that
+    /// thread exactly, even right after a block sewn in it.
+    #[test]
+    fn a_threads_own_colour_keeps_its_thread() {
+        let mut seq = Sequence::new(Params::for_style(Style::Fill));
+        let (mut near, mut own) = (block(0.0, 10.0), block(0.0, 10.0));
+        let red = Palette::Pec.get(5).map(|(rgb, _)| rgb).unwrap();
+        near.block.thread = Thread::rgb([red[0] - 3, red[1] + 2, red[2]]);
+        own.block.thread = Thread::rgb(red);
+        seq.add(near);
+        seq.add(own);
+        let plan = seq.plan(String::new(), Vec::new(), Palette::Pec);
+        let threads: Vec<(usize, bool)> = plan.blocks.iter().map(|b| (b.thread.index, b.thread.delta_e == 0.0)).collect();
+        assert_eq!(threads, [(5, false), (5, true)]);
+    }
+
     /// The move to the next object is cut only when it is longer than `trimLength`: one of exactly
     /// that length keeps the thread on.
     #[test]

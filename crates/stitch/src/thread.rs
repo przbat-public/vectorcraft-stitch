@@ -64,23 +64,29 @@ impl Palette {
         }
     }
 
-    /// The thread nearest `color`, and how near. `skip` names the thread the block before is sewn
-    /// in: a block whose nearest thread is that one gets the next nearest instead, so that two
-    /// colours the palette would sew alike still change thread.
+    /// The thread nearest `color` as the eye sees it, the smallest CIEDE2000 difference
+    /// ([`crate::color`]), and how near. A colour that is a thread's own is that thread. `skip`
+    /// names the thread the block before is sewn in: a block whose nearest thread is that one gets
+    /// the next nearest instead, so that two colours the palette would sew alike still change
+    /// thread; a thread's own colour keeps it all the same.
     pub fn nearest(self, color: [u8; 3], skip: Option<usize>) -> Match {
         let threads = self.threads();
-        let mut best = (u32::MAX, Match { index: 1, delta_e: f64::INFINITY });
+        let lab = color::lab(color);
+        let mut best = Match { index: 1, delta_e: f64::INFINITY };
         for (i, &(rgb, _)) in threads.iter().enumerate() {
             let index = i + 1;
+            if rgb == color {
+                return Match { index, delta_e: 0.0 };
+            }
             if Some(index) == skip && threads.len() > 1 {
                 continue;
             }
-            let d = distance(rgb, color);
-            if d < best.0 {
-                best = (d, Match { index, delta_e: color::delta_e_rgb(color, rgb) });
+            let delta_e = color::delta_e(lab, color::lab(rgb));
+            if delta_e < best.delta_e {
+                best = Match { index, delta_e };
             }
         }
-        best.1
+        best
     }
 
     /// The numbers a format of this palette writes for `threads`, one per block in sewing order:
@@ -293,15 +299,6 @@ fn no_colour() -> Thread {
     Thread::named([0, 0, 0], "Black")
 }
 
-/// The squared RGB distance between two colours.
-fn distance(a: [u8; 3], b: [u8; 3]) -> u32 {
-    let d = |x: u8, y: u8| {
-        let v = i32::from(x) - i32::from(y);
-        (v * v) as u32
-    };
-    d(a[0], b[0]) + d(a[1], b[1]) + d(a[2], b[2])
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -335,10 +332,32 @@ mod tests {
             assert_eq!((palette.get(0), palette.get(threads.len() + 1)), (None, None));
             assert_eq!(palette.thread(0), Thread::named([0, 0, 0], "Black"));
             assert_eq!(Palette::from_id(palette.id()), Some(palette));
-            // Each thread is its own colour's nearest, exactly.
+            // Each thread is its own colour's nearest, exactly, even right after itself.
             for (i, &(rgb, _)) in threads.iter().enumerate() {
                 assert_eq!(palette.nearest(rgb, None), Match { index: i + 1, delta_e: 0.0 });
+                assert_eq!(palette.nearest(rgb, Some(i + 1)), Match { index: i + 1, delta_e: 0.0 });
             }
+        }
+    }
+
+    /// The nearest thread is the one that looks nearest, not the one nearest in RGB: a teal is
+    /// sewn in Brother's Teal Green, which RGB distance passes over for Sky Blue, about twice as
+    /// far by eye.
+    #[test]
+    fn the_nearest_thread_is_the_one_that_looks_nearest() {
+        let teal = [0x33, 0x99, 0x99];
+        let rgb = |x: [u8; 3]| (0..3).map(|i| (i32::from(x[i]) - i32::from(teal[i])).pow(2)).sum::<i32>();
+        let by_rgb = Palette::Pec.threads().iter().enumerate().min_by_key(|(_, (c, _))| rgb(*c)).map(|(i, _)| i + 1);
+        assert_eq!(Palette::Pec.get(by_rgb.unwrap()).map(|(_, name)| name), Some("Sky Blue"));
+        let m = Palette::Pec.nearest(teal, None);
+        assert_eq!(Palette::Pec.get(m.index).map(|(_, name)| name), Some("Teal Green"));
+        let sky = color::delta_e_rgb(teal, Palette::Pec.get(by_rgb.unwrap()).unwrap().0);
+        assert!(sky > 1.5 * m.delta_e, "Teal Green {} against Sky Blue {sky}", m.delta_e);
+        // Every colour's thread is the smallest difference in the palette.
+        for c in [[0u8, 0, 0], [255, 255, 255], [200, 30, 30], [64, 128, 255], [250, 230, 10], [90, 60, 30]] {
+            let m = Palette::Jef.nearest(c, None);
+            let smallest = Palette::Jef.threads().iter().map(|(t, _)| color::delta_e_rgb(c, *t)).fold(f64::INFINITY, f64::min);
+            assert_eq!(m.delta_e, smallest, "{c:?}");
         }
     }
 }

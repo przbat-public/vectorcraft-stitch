@@ -156,7 +156,7 @@ fn palette_param(v: &Value, current: Option<&ThreadPalette>) -> Result<Option<Th
 
 /// The active document's plan with `opts`, made by the document's planning service (`cmd` names
 /// the command in the errors), and the document it is the plan of.
-fn planned(s: &mut Session, opts: &Options, cmd: &str) -> Result<(plan::DesignPlan, Arc<Document>)> {
+fn planned(s: &mut Session, opts: &Options, cmd: &str) -> Result<(Arc<plan::DesignPlan>, Arc<Document>)> {
     let st = s.doc()?;
     let (uid, doc) = (st.uid, st.doc.clone());
     let plan = s.embroidery_plans.of(uid).plan(&doc, opts).map_err(|e| bad(cmd, e))?;

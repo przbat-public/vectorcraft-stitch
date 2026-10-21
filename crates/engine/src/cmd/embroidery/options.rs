@@ -35,8 +35,9 @@ impl Sides {
     }
 }
 
-/// The export options, as they come: each one left out keeps the style's own value.
-#[derive(Clone, Debug, Deserialize)]
+/// The export options, as they come: each one left out keeps the style's own value. Two are equal
+/// when every value is (a plan made with one is the plan made with the other).
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(default, rename_all = "camelCase")]
 pub(crate) struct Options {
     pub(crate) stitch_style: String,

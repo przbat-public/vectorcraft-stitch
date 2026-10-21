@@ -1,6 +1,6 @@
 //! The planning service: a plan made with the units' stitches kept from the plans before it is
 //! the plan made afresh, for random documents edited at random; what is kept stays within its
-//! bound.
+//! bound; one snapshot of a document with the same options is planned once.
 
 use std::sync::Arc;
 
@@ -151,7 +151,7 @@ proptest! {
                 apply(&mut s, &mut ids, e);
             }
             let doc = s.doc().unwrap().doc.clone();
-            let kept = service.plan(&doc, &opts);
+            let kept = service.plan(&doc, &opts).map(|p| (*p).clone());
             let fresh = digitize(&doc, &opts);
             prop_assert_eq!(kept, fresh, "after {:?}", e);
         }
@@ -285,4 +285,45 @@ fn each_open_document_keeps_its_own_units() {
     let index = s.documents().iter().position(|d| d.uid == first).unwrap();
     s.close_document(index);
     assert_eq!(s.embroidery_plans.of(first).kept(), 0, "dropped with its document");
+}
+
+/// One snapshot of a document with the same options is planned once: the commands that read a
+/// design one after another share its plan. Another snapshot, or other options, plan again, each
+/// unit from what was kept.
+#[test]
+fn a_snapshot_with_the_same_options_is_planned_once() {
+    let (mut s, ids) = build(&[
+        Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: Some((1, 4.0)) },
+        Art { kind: 1, x: 80.0, y: 20.0, w: 30.0, h: 30.0, fill: Some(0), stroke: None },
+    ]);
+    let doc = s.doc().unwrap().doc.clone();
+    let service = PlanService::default();
+    let opts = Options::default();
+    let first = service.plan(&doc, &opts).unwrap();
+    assert!(Arc::ptr_eq(&first, &service.plan(&doc, &opts).unwrap()), "the same snapshot, the same plan");
+    assert_eq!(service.walks(), 1);
+    // The same art in another snapshot: walked again, every unit from what was kept.
+    let kept = service.kept();
+    let copy = Arc::new((*doc).clone());
+    let again = service.plan(&copy, &opts).unwrap();
+    assert!(!Arc::ptr_eq(&first, &again));
+    assert_eq!((*first).clone(), (*again).clone());
+    assert_eq!((service.walks(), service.kept()), (2, kept), "no unit planned anew");
+    // Other options: another plan.
+    let satin = Options::from_params(&json!({"stitchStyle": "satin"}), "test").unwrap();
+    assert_ne!(*service.plan(&doc, &satin).unwrap(), *first);
+    // Through the commands: three in a row walk the document once; an edit, and its undo (an
+    // earlier snapshot), walk it again.
+    let uid = s.doc().unwrap().uid;
+    for _ in 0..3 {
+        run(&mut s, "embroidery.threads", json!({}));
+    }
+    let service = s.embroidery_plans.of(uid);
+    assert_eq!(service.walks(), 1);
+    run(&mut s, "object.move", json!({"ids": [ids[1]], "dx": 5, "dy": 0}));
+    run(&mut s, "embroidery.threads", json!({}));
+    run(&mut s, "edit.undo", json!({}));
+    run(&mut s, "embroidery.threads", json!({}));
+    run(&mut s, "embroidery.threads", json!({}));
+    assert_eq!(service.walks(), 3);
 }

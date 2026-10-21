@@ -1401,7 +1401,9 @@ of its own.
 ## Swatch libraries
 
 Swatch libraries are read-only sets of swatches computed in code (Web Safe 216, Grays and Neutrals, Earth Tones,
-Skin Tone Ramps, Pastels, Brights, Metallic Gradients, Perceptual Scales, Harmony Sets). `swatch.library.list` lists
+Skin Tone Ramps, Pastels, Brights, Metallic Gradients, Perceptual Scales, Harmony Sets, and the embroidery thread
+palettes Brother Threads (PEC), `brother-threads-pec`, and Janome Threads (JEF), `janome-threads-jef`, under the
+category `threads`; see [Embroidery](#embroidery)). `swatch.library.list` lists
 them (`id`, `name`, `category`, `count`) and `swatch.library.get {library}` returns one's swatches and colour groups
 in the `swatch.list` shape (`library` is an id or a name). `swatch.library.add {library, names?}` copies swatches
 into the document as one undo step: a colour group's name brings the whole group, a swatch's name the swatch alone,
@@ -4279,4 +4281,26 @@ the entry names and decodes the codes that VectorCraft's default shortcuts agree
 ```json
 {"name":"run_command","arguments":{"command":"shortcutSet.read","params":{"path":"/Users/me/Studio.kys"}}}
 {"name":"run_command","arguments":{"command":"importMatches.set","params":{"matches":[{"kind":"name","name":"Group","target":"object.group"},{"kind":"key","name":"901","target":"G"}]}}}
+```
+
+## Embroidery
+
+The document's art is stitched by `document.export` to `dst`, `exp`, `pes` or `jef`, with the embroidery options
+`document.formats` lists for those formats (`stitchStyle`, `density`, `trimLength`…), and `document.open` reads such a
+file back as art, one group per thread. The whole feature is described in [embroidery.md](embroidery.md).
+
+- `embroidery.setup {palette?}` sets the document's thread palette, `"pec"` (Brother's 64 threads, which PES files
+  number) or `"jef"` (Janome's 78, which JEF files number), in one undo step; `null` unsets it, and Janome's is used.
+  No params report `{palette, threadPalette}` (the palette set, and the one the stitch plan uses); the reply can be
+  passed back unchanged. A PES or JEF file opens in its own format's palette.
+- `embroidery.threads {…embroidery options}` lists the thread each colour block is sewn in, in sewing order:
+  `{palette, threshold, blocks: [{block, art, thread: {palette, index, name, color}, deltaE, mismatch, units}],
+  warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour and the thread's, to two decimals, and
+  `mismatch` flags one past `threshold` (10). It takes the export's embroidery options only: any other key, such as
+  `format` or `selectedOnly`, is refused.
+- `embroidery.setTrimAfter {on, ids?}` asks for the thread to be cut after each object.
+
+```json
+{"name":"run_command","arguments":{"command":"embroidery.setup","params":{"palette":"pec"}}}
+{"name":"run_command","arguments":{"command":"embroidery.threads","params":{"stitchStyle":"fill"}}}
 ```

@@ -353,8 +353,9 @@ pub struct LibraryInfo {
 pub const THREADS: &str = "threads";
 
 /// An embroidery thread library: the threads a machine format numbers its colours from, as
-/// swatches. Art painted with one of them is sewn in that thread exactly; any other colour is
-/// matched to the nearest.
+/// swatches. In a document of that palette, art painted with one of them is sewn in that thread
+/// exactly and any other colour is matched to the nearest; the format of that palette writes
+/// that thread whatever the document's palette.
 pub struct ThreadLibrary {
     pub id: &'static str,
     pub name: &'static str,
@@ -370,7 +371,8 @@ pub const THREAD_LIBRARIES: &[ThreadLibrary] = &[
 ];
 
 /// `palette`'s threads as swatches, in its order: each named by the palette, its number and its
-/// name ("PEC 5 Red"), since a palette may give two threads one name.
+/// name ("PEC 5 Red"): swatch names are unique, and the PEC table gives three names (Orange,
+/// Cream Yellow, Flesh Pink) to two entries each.
 pub fn thread_swatches(palette: thread::Palette) -> Vec<Swatch> {
     let code = palette.id().to_ascii_uppercase();
     let swatch = |(i, &([r, g, b], name)): (usize, &([u8; 3], &str))| Swatch {

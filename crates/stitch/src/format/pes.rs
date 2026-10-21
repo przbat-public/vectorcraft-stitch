@@ -391,7 +391,8 @@ fn pec_start(bytes: &[u8]) -> Result<usize> {
             return Err(Error::Format("the PES header is cut short".into()));
         };
         let at = usize::try_from(u32::from_le_bytes([b[0], b[1], b[2], b[3]])).unwrap_or(usize::MAX);
-        if at < PEC_POSITION.end || at + PEC_HEADER > bytes.len() {
+        // Checked: on a 32-bit target (wasm32) a position near 4 GB plus the header overflows.
+        if at < PEC_POSITION.end || at.checked_add(PEC_HEADER).is_none_or(|end| end > bytes.len()) {
             return Err(Error::Format(format!("the PES header points at byte {at}, past the file's {} bytes", bytes.len())));
         }
         return Ok(at);
@@ -563,5 +564,13 @@ mod tests {
         let mut bytes = write(&design()).expect("writes");
         bytes.truncate(300);
         assert!(read(&bytes).is_err());
+        // A PEC section said to start at the largest position a header can give, or just before a
+        // header's length from it: past the file, never an overflow.
+        for at in [u32::MAX, u32::MAX - 100] {
+            let mut bytes = write(&design()).expect("writes");
+            bytes[PEC_POSITION].copy_from_slice(&at.to_le_bytes());
+            let e = read(&bytes).expect_err("past the file").to_string();
+            assert!(e.contains("past the file"), "{e}");
+        }
     }
 }

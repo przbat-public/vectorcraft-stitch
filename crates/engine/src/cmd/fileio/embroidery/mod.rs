@@ -28,7 +28,7 @@ use vectorcraft_stitch::format::Format as StitchFormat;
 
 use super::super::*;
 use super::{Encoded, Format, FormatOption};
-use crate::cmd::embroidery::{Options, digitize};
+use crate::cmd::embroidery::{Options, service};
 
 pub(super) use import::import;
 
@@ -128,7 +128,7 @@ fn options(p: &Value) -> Result<Options> {
 pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
     let opts = options(p)?;
     let format = StitchFormat::from_id(f.id).ok_or_else(|| bad(C, format!("{} is not an embroidery format", f.label)))?;
-    let plan = digitize::digitize(doc, &opts).map_err(|e| bad(C, e))?;
+    let plan = service::plan_afresh(doc, &opts).map_err(|e| e.error(C))?;
     if plan.is_empty() {
         // What was left out says why, when something was.
         return Err(bad(

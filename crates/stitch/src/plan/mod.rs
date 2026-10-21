@@ -46,7 +46,7 @@ mod tests_narrow;
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
 pub use fill::{MIN_AREA, fill, fill_with_columns};
-pub use narrow::{Column, columns as narrow_columns};
+pub use narrow::{Column, columns as narrow_columns, columns_until as narrow_columns_until};
 pub use running::running;
 pub use runs::join_cut;
 pub use satin::{satin, satin_spacing};

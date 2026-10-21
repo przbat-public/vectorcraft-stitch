@@ -6,6 +6,7 @@
 use std::sync::{Arc, Mutex};
 
 use vectorcraft_color::Paint;
+use vectorcraft_doc::cancel;
 use vectorcraft_doc::embroidery::{StitchRun, ThreadPalette};
 use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind};
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Shape, kurbo};
@@ -17,7 +18,7 @@ use super::Options;
 use super::cache::{UnitCache, UnitKey};
 use super::plan::{DesignPlan, Origin, Part};
 use super::sequence::{CLEARANCE, Planned, Sequence};
-use super::unit::{ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
+use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
 
 const TEXT_LEFT_OUT: &str = "type is not stitched: outline it (Type › Create Outlines) and export again";
 const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › Image Trace) first";
@@ -38,6 +39,9 @@ const NO_WIDTH: f64 = 0.0;
 /// The most stitches a design may have: far beyond any hoop (large designs run to a few hundred
 /// thousand), and a bound on the memory an export can take.
 const MAX_DESIGN_STITCHES: usize = 2_000_000;
+/// How deep symbols placed in symbols are sewn: deeper art is left out, a bound on a walk through
+/// symbols that place one another.
+const MAX_SYMBOL_NESTING: u32 = 8;
 /// `path`'s subpaths, each a path of its own (as drawn: closed or not).
 fn subpaths(path: &BezPath) -> Vec<BezPath> {
     let mut out: Vec<BezPath> = Vec::new();
@@ -56,14 +60,16 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
 /// The plan of `doc`'s visible art with `opts`: its sewing units in the blocks they are sewn in,
 /// in sewing order ([`Sequence`]), each block in a thread of the document's palette
 /// ([`super::thread_palette`]), and the warnings for what was left out or approximated; an error
-/// when the design would need too many stitches.
-pub(crate) fn digitize(doc: &Document, opts: &Options) -> Result<DesignPlan, String> {
+/// when the design would need too many stitches, or when the plan is cancelled
+/// ([`vectorcraft_doc::cancel`]: checked before each unit, and while a fill's narrow parts are
+/// looked for and cut out). Each unit planned is reported as a step of the plan's progress.
+pub(crate) fn digitize(doc: &Document, opts: &Options) -> Result<DesignPlan, PlanError> {
     digitize_with(doc, opts, None)
 }
 
 /// [`digitize`], each unit's stitches taken from `cache` when it keeps them for exactly what the
 /// unit is planned from, and kept there when it doesn't ([`UnitCache`]).
-pub(crate) fn digitize_with(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>) -> Result<DesignPlan, String> {
+pub(crate) fn digitize_with(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>) -> Result<DesignPlan, PlanError> {
     let seq = Sequence::new(opts.params(Style::Running, NO_WIDTH));
     let mut warnings = Vec::new();
     if let Some(ThreadPalette::Unknown(palette)) = doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()) {
@@ -72,7 +78,9 @@ pub(crate) fn digitize_with(doc: &Document, opts: &Options, cache: Option<&Mutex
             "the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette"
         ));
     }
-    let mut d = Digitizer { doc, opts, seq, warnings, nest: 0, clip: None, owner: None, instance: None, stitches: 0, failed: None, cache };
+    let total = doc.layers.iter().map(|l| units_under(doc, l, 0)).fold(0u64, u64::saturating_add);
+    let progress = Progress { done: 0, total };
+    let mut d = Digitizer { doc, opts, seq, warnings, nest: 0, clip: None, owner: None, instance: None, stitches: 0, failed: None, cache, progress };
     d.run();
     match d.failed {
         Some(e) => Err(e),
@@ -116,10 +124,46 @@ struct Digitizer<'a> {
     instance: Option<NodeId>,
     /// The stitches planned so far, against [`MAX_DESIGN_STITCHES`].
     stitches: usize,
-    /// Why the design can't be stitched (too many stitches); the walk stops planning once set.
-    failed: Option<String>,
+    /// Why the design can't be stitched (too many stitches, or the plan was cancelled); the walk
+    /// stops planning once set.
+    failed: Option<PlanError>,
     /// The units kept from earlier plans of the document, `None` to plan every unit afresh.
     cache: Option<&'a Mutex<UnitCache>>,
+    /// The units the walk has come to so far, of about how many.
+    progress: Progress,
+}
+
+/// How far a plan has got: the units come to, of about how many ([`units_under`]).
+struct Progress {
+    done: u64,
+    total: u64,
+}
+
+/// What a plan's progress is reported as doing.
+const PLANNING: &str = "Planning the stitches";
+
+/// About how many units the walk plans under `n` (`nest` symbols deep), the progress it reports:
+/// each visible, painted fill and stroke of a visible path, each literal run, a symbol's art once
+/// for each of its instances. What the walk then leaves out (a pattern, a negative expand that
+/// leaves nothing, a stroke cut away by a clip group) is counted all the same.
+fn units_under(doc: &Document, n: &Node, nest: u32) -> u64 {
+    if !n.visible {
+        return 0;
+    }
+    let items = || n.appearance.items.iter().filter(|i| i.visible() && painted(i)).count() as u64;
+    match &n.kind {
+        NodeKind::Layer { template: true, .. } | NodeKind::Layer { printable: false, .. } => 0,
+        NodeKind::Layer { children, .. } | NodeKind::Group { children, .. } => {
+            children.iter().map(|c| units_under(doc, c, nest)).fold(0, u64::saturating_add)
+        }
+        NodeKind::Path { guide: true, .. } => 0,
+        NodeKind::Path { .. } if n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some()) => 1,
+        NodeKind::Path { .. } | NodeKind::Compound { .. } => items(),
+        NodeKind::SymbolInstance { symbol, .. } if nest < MAX_SYMBOL_NESTING => {
+            doc.symbols.iter().find(|s| &s.name == symbol).map_or(0, |s| units_under(doc, &s.art, nest + 1))
+        }
+        _ => 0,
+    }
 }
 
 impl<'a> Digitizer<'a> {
@@ -141,6 +185,22 @@ impl<'a> Digitizer<'a> {
     /// What the unit that sews `part` of `n` sews.
     fn origin(&self, n: &Node, part: Part) -> Origin {
         Origin { node: n.id, part, instance: self.instance }
+    }
+
+    /// One more unit to plan, reported as a step of the plan's progress; `false` when the walk
+    /// stops planning (too many stitches already, or the plan was cancelled).
+    fn step(&mut self) -> bool {
+        if self.failed.is_some() {
+            return false;
+        }
+        if cancel::is_cancelled() {
+            self.failed = Some(PlanError::Cancelled);
+            return false;
+        }
+        let p = &mut self.progress;
+        p.done = p.done.saturating_add(1);
+        cancel::progress(p.done, p.total.max(p.done), PLANNING);
+        true
     }
 
     fn warn(&mut self, w: &str) {
@@ -194,7 +254,7 @@ impl<'a> Digitizer<'a> {
             }
             NodeKind::SymbolInstance { symbol, xf } => {
                 let Some(sym) = self.doc.symbols.iter().find(|s| &s.name == symbol) else { return };
-                if self.nest >= 8 {
+                if self.nest >= MAX_SYMBOL_NESTING {
                     return;
                 }
                 let mut art = (*sym.art).clone();
@@ -216,7 +276,7 @@ impl<'a> Digitizer<'a> {
     /// A run of literal stitches (read from a machine file): the path's points sewn as they are,
     /// in the colour of its stroke, one block with the other runs of its group.
     fn literal(&mut self, n: &Node, bp: &BezPath, run: StitchRun) {
-        if self.failed.is_some() {
+        if !self.step() {
             return;
         }
         let paint = n.appearance.items.iter().filter(|i| i.visible()).find_map(|i| match i {
@@ -250,7 +310,7 @@ impl<'a> Digitizer<'a> {
         }
         self.stitches = self.stitches.saturating_add(points.len());
         if self.stitches > MAX_DESIGN_STITCHES {
-            self.failed = Some(format!("the design would need more than {MAX_DESIGN_STITCHES} stitches"));
+            self.failed = Some(PlanError::TooLarge(format!("the design would need more than {MAX_DESIGN_STITCHES} stitches")));
             return;
         }
         let mut block = Block::new(Thread::rgb(color));
@@ -312,6 +372,9 @@ impl<'a> Digitizer<'a> {
             };
             if !item.visible() {
                 continue;
+            }
+            if painted(item) && !self.step() {
+                return;
             }
             let unit = self.origin(n, part);
             let opts = self.settings(&unit);
@@ -465,7 +528,7 @@ impl<'a> Digitizer<'a> {
         let planned = match self.planned(&request) {
             Ok(planned) => planned,
             Err(e) => {
-                self.failed = Some(e.to_string());
+                self.failed = Some(e);
                 return;
             }
         };
@@ -479,8 +542,9 @@ impl<'a> Digitizer<'a> {
         }
         self.stitches = self.stitches.saturating_add(stitches.len());
         if self.stitches > MAX_DESIGN_STITCHES {
-            self.failed =
-                Some(format!("the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art"));
+            self.failed = Some(PlanError::TooLarge(format!(
+                "the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art"
+            )));
             return;
         }
         let mut block = Block::new(Thread::rgb(color));
@@ -489,7 +553,7 @@ impl<'a> Digitizer<'a> {
     }
 
     /// `request`'s stitches: those the cache keeps for it, else planned, and kept.
-    fn planned(&self, request: &UnitRequest<'_>) -> vectorcraft_stitch::Result<Arc<UnitStitches>> {
+    fn planned(&self, request: &UnitRequest<'_>) -> Result<Arc<UnitStitches>, PlanError> {
         let Some(cache) = self.cache else { return plan_unit(request).map(Arc::new) };
         let key = UnitKey::of(request);
         // A cache that a panic elsewhere left locked is passed by: planning afresh is always right.
@@ -502,6 +566,16 @@ impl<'a> Digitizer<'a> {
         }
         Ok(planned)
     }
+}
+
+/// Whether an appearance item is painted at all (not `none`): only painted items are sewn, and
+/// counted as the plan's progress.
+fn painted(item: &AppearanceItem) -> bool {
+    let paint = match item {
+        AppearanceItem::Fill(f) => &f.paint,
+        AppearanceItem::Stroke(s) => &s.paint,
+    };
+    !matches!(paint, Paint::None)
 }
 
 /// A paint's stitched colour.

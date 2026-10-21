@@ -16,7 +16,7 @@ pub(crate) mod digitize;
 pub(crate) mod options;
 pub mod plan;
 mod sequence;
-mod service;
+pub(crate) mod service;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
@@ -159,7 +159,7 @@ fn palette_param(v: &Value, current: Option<&ThreadPalette>) -> Result<Option<Th
 fn planned(s: &mut Session, opts: &Options, cmd: &str) -> Result<(Arc<plan::DesignPlan>, Arc<Document>)> {
     let st = s.doc()?;
     let (uid, doc) = (st.uid, st.doc.clone());
-    let plan = s.embroidery_plans.of(uid).plan(&doc, opts).map_err(|e| bad(cmd, e))?;
+    let plan = s.embroidery_plans.of(uid).plan(&doc, opts).map_err(|e| e.error(cmd))?;
     Ok((plan, doc))
 }
 

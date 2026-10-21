@@ -5,6 +5,7 @@
 //! The step is pure: the same request always plans the same stitches. That is what lets a unit's
 //! stitches be kept between plans and used again when nothing it is planned from has changed.
 
+use vectorcraft_doc::cancel;
 use vectorcraft_geom::{BezPath, FillRule, PathData, Point, Shape};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke};
 use vectorcraft_stitch::plan::{self, Params};
@@ -18,6 +19,41 @@ pub(super) const ROUND_JOINS: f64 = 4.0;
 /// hair, so that it covers its own sides, which lie on the shape's outline, and leaves no sliver of
 /// the shape there. Far below a thread's width.
 const COLUMN_GROWTH: f64 = 0.05;
+
+/// Why a design, or a unit of it, could not be planned.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum PlanError {
+    /// It would need too many stitches: why, and what to change.
+    TooLarge(String),
+    /// The plan was cancelled ([`vectorcraft_doc::cancel`]) before it was done.
+    Cancelled,
+}
+
+impl PlanError {
+    /// The error command `cmd` reports: its parameters' error for a design too large, a cancel as
+    /// a cancel.
+    pub(crate) fn error(self, cmd: &str) -> crate::EngineError {
+        match self {
+            Self::TooLarge(why) => crate::cmd::bad(cmd, why),
+            Self::Cancelled => crate::EngineError::Cancelled,
+        }
+    }
+}
+
+impl std::fmt::Display for PlanError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::TooLarge(why) => f.write_str(why),
+            Self::Cancelled => f.write_str("cancelled"),
+        }
+    }
+}
+
+impl From<vectorcraft_stitch::Error> for PlanError {
+    fn from(e: vectorcraft_stitch::Error) -> Self {
+        Self::TooLarge(e.to_string())
+    }
+}
 
 /// Everything one sewing unit's stitches depend on.
 #[derive(Clone, Copy, Debug)]
@@ -49,17 +85,18 @@ pub(crate) struct UnitStitches {
 
 /// The stitches `req` asks for: the shape planned in its style from where the needle is, a fill's
 /// narrow parts sewn as satin columns that follow the shape, a stroke inside clip groups cut to
-/// them; an error when the shape would need too many stitches.
-pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> vectorcraft_stitch::Result<UnitStitches> {
+/// them; an error when the shape would need too many stitches, or when the plan is cancelled
+/// while its narrow parts are looked for or cut out.
+pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError> {
     let UnitRequest { shape, rule, params, columns, from, clip } = *req;
     let found = match columns {
-        Some(_) => plan::narrow_columns(shape, rule, params.narrow),
+        Some(_) => plan::narrow_columns_until(shape, rule, params.narrow, &cancel::is_cancelled).ok_or(PlanError::Cancelled)?,
         None => Vec::new(),
     };
     let (planned, columns) = match columns.filter(|_| !found.is_empty()) {
         None => (plan::try_stitches_from(shape, rule, &params, from), None),
         Some(satin) => {
-            let (rest, whole) = rest_of(shape, rule, &found);
+            let (rest, whole) = rest_of(shape, rule, &found)?;
             (plan::try_fill_with_columns(&whole, FillRule::NonZero, &rest, &found, &params, &satin, from), Some(satin))
         }
     };
@@ -77,10 +114,12 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> vectorcraft_stitch::Result<Uni
 /// column's outline grown by [`COLUMN_GROWTH`] and cut out; and the rest and the grown columns
 /// together, the area the needle travels in. (The rest's edges along the outline come from the
 /// path operations, a hair off the outline as the planner flattens it: travelling in the rest
-/// and the columns as the same operations give them, every row's end lies on or inside it.)
-fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column]) -> (BezPath, BezPath) {
+/// and the columns as the same operations give them, every row's end lies on or inside it.) An
+/// error when the plan is cancelled between two columns.
+fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column]) -> Result<(BezPath, BezPath), PlanError> {
     let mut cut: Option<PathData> = None;
     for c in columns {
+        cancel::check().map_err(|_| PlanError::Cancelled)?;
         let outline = PathData::from_bezpath(&c.outline());
         let band = outline_stroke(&outline, 2.0 * COLUMN_GROWTH, Cap::Round, Join::Round, ROUND_JOINS);
         let grown = boolean(&outline, FillRule::NonZero, &band, FillRule::NonZero, BoolOp::Union);
@@ -93,9 +132,9 @@ fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column]) -> (BezPath
         Some(cut) => {
             let rest = boolean(&PathData::from_bezpath(area), rule, &cut, FillRule::NonZero, BoolOp::Difference);
             let whole = boolean(&rest, FillRule::NonZero, &cut, FillRule::NonZero, BoolOp::Union);
-            (rest.to_bezpath(), whole.to_bezpath())
+            Ok((rest.to_bezpath(), whole.to_bezpath()))
         }
-        None => (area.clone(), area.clone()),
+        None => Ok((area.clone(), area.clone())),
     }
 }
 

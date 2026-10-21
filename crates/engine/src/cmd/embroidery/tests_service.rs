@@ -10,7 +10,7 @@ use serde_json::{Value, json};
 use super::cache::{UnitCache, UnitKey};
 use super::digitize::digitize;
 use super::service::PlanService;
-use super::unit::{UnitRequest, UnitStitches};
+use super::unit::{PlanError, UnitRequest, UnitStitches};
 use super::*;
 
 /// The colours the random art is painted in: few, so that objects of one thread share blocks and
@@ -326,4 +326,97 @@ fn a_snapshot_with_the_same_options_is_planned_once() {
     run(&mut s, "embroidery.threads", json!({}));
     run(&mut s, "embroidery.threads", json!({}));
     assert_eq!(service.walks(), 3);
+}
+
+/// Five objects of two colours, side by side: seven units (each fill, and two strokes).
+fn five() -> (Session, Vec<u64>) {
+    build(&[
+        Art { kind: 0, x: 10.0, y: 10.0, w: 30.0, h: 20.0, fill: Some(0), stroke: Some((1, 4.0)) },
+        Art { kind: 1, x: 60.0, y: 10.0, w: 30.0, h: 30.0, fill: Some(1), stroke: None },
+        Art { kind: 0, x: 110.0, y: 10.0, w: 30.0, h: 20.0, fill: Some(0), stroke: None },
+        Art { kind: 2, x: 160.0, y: 10.0, w: 30.0, h: 30.0, fill: Some(1), stroke: Some((0, 1.0)) },
+        Art { kind: 0, x: 210.0, y: 10.0, w: 30.0, h: 20.0, fill: Some(0), stroke: None },
+    ])
+}
+
+/// A plan cancelled part way returns the cancel and no plan, its finished units stay kept, and the
+/// next plan is the fresh plan, planning only the units not yet kept. Each unit is a step of the
+/// plan's progress, of how many the document has.
+#[test]
+fn a_cancelled_plan_leaves_no_plan_and_keeps_its_finished_units() {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    use vectorcraft_doc::cancel::{self, CancelToken, ProgressSink};
+
+    let (s, _) = five();
+    let doc = s.doc().unwrap().doc.clone();
+    let opts = Options::default();
+    let fresh = digitize(&doc, &opts).unwrap();
+    assert_eq!(fresh.units.len(), 7);
+    let service = PlanService::default();
+    // Cancelled before it starts: nothing planned, nothing kept.
+    let token = CancelToken::new();
+    token.cancel();
+    assert_eq!(cancel::scope(&token, None, || service.plan(&doc, &opts)), Err(PlanError::Cancelled));
+    assert_eq!(service.kept(), 0);
+    // Cancelled as the third unit is reported: two units finished and kept, the third (a fill)
+    // stopped while its narrow parts were looked for.
+    let token = CancelToken::new();
+    let steps = Rc::new(RefCell::new(Vec::new()));
+    let sink: ProgressSink = {
+        let (token, steps) = (token.clone(), steps.clone());
+        Rc::new(move |done, total, _| {
+            steps.borrow_mut().push((done, total));
+            if done == 3 {
+                token.cancel();
+            }
+        })
+    };
+    assert_eq!(cancel::scope(&token, Some(sink), || service.plan(&doc, &opts)), Err(PlanError::Cancelled));
+    assert_eq!(*steps.borrow(), [(1, 7), (2, 7), (3, 7)]);
+    assert_eq!(service.kept(), 2, "the units finished before the cancel");
+    // Not cancelled: the fresh plan, with only the other five planned.
+    let walks = service.walks();
+    assert_eq!(*service.plan(&doc, &opts).unwrap(), fresh);
+    assert_eq!((service.walks(), service.kept()), (walks + 1, 7));
+}
+
+/// Commands and the export stop on a cancel with the engine's cancel, change nothing and write
+/// nothing; outside the cancelled scope they work.
+#[test]
+fn a_cancelled_command_or_export_reports_the_cancel() {
+    use vectorcraft_doc::cancel::{self, CancelToken};
+
+    let (mut s, _) = five();
+    let token = CancelToken::new();
+    token.cancel();
+    let revision = s.doc().unwrap().revision;
+    let r = cancel::scope(&token, None, || s.execute("embroidery.threads", &json!({})));
+    assert!(matches!(r, Err(crate::EngineError::Cancelled)), "{r:?}");
+    let r = cancel::scope(&token, None, || s.execute("document.export", &json!({"format": "dst"})));
+    assert!(matches!(r, Err(crate::EngineError::Cancelled)), "{r:?}");
+    assert_eq!(s.doc().unwrap().revision, revision);
+    run(&mut s, "embroidery.threads", json!({}));
+    run(&mut s, "document.export", json!({"format": "dst"}));
+}
+
+/// The service plans on another thread: the plan made there is the fresh plan, and what it kept
+/// there is used here.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn the_service_plans_on_another_thread() {
+    let (s, _) = five();
+    let doc = s.doc().unwrap().doc.clone();
+    let opts = Options::default();
+    let service = Arc::new(PlanService::default());
+    let there = {
+        let (service, doc, opts) = (service.clone(), doc.clone(), opts.clone());
+        std::thread::spawn(move || service.plan(&doc, &opts).map(|p| (*p).clone())).join().unwrap()
+    };
+    assert_eq!(there, digitize(&doc, &opts));
+    let kept = service.kept();
+    let here = service.plan(&Arc::new((*doc).clone()), &opts).unwrap();
+    assert_eq!(Ok((*here).clone()), there);
+    assert_eq!((service.walks(), service.kept()), (2, kept), "every unit taken from what was kept there");
 }

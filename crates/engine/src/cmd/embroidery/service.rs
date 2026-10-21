@@ -6,6 +6,12 @@
 //! document snapshot (`Arc<Document>`, shared with the undo history) never changes, so the same
 //! snapshot with the same options has the same plan, and the commands that read a design one
 //! after another (`embroidery.threads`, and the statistics, sewing order and checks) plan it once.
+//!
+//! A plan can be cancelled ([`vectorcraft_doc::cancel`]): it stops before the next unit (or within
+//! a fill's search for its narrow parts) with [`PlanError::Cancelled`] and leaves no plan, while
+//! the units it finished stay kept for the next. Each unit is reported as a step of its progress.
+//! The service is `Send` and `Sync`, so the app can plan on a worker thread while commands plan
+//! on theirs; commands and the web build plan synchronously.
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, Weak};
@@ -16,6 +22,7 @@ use super::Options;
 use super::cache::UnitCache;
 use super::digitize::digitize_with;
 use super::plan::DesignPlan;
+use super::unit::PlanError;
 
 /// The last plan a service made: of which snapshot (held weakly: the plan doesn't keep a closed
 /// or undone document alive), with which options.
@@ -40,7 +47,7 @@ impl PlanService {
     /// else planned, each unit's stitches taken from those kept where nothing it is planned from
     /// has changed, and kept for the next plan. The same as a fresh plan
     /// ([`super::digitize::digitize`]).
-    pub(crate) fn plan(&self, doc: &Arc<Document>, opts: &Options) -> Result<Arc<DesignPlan>, String> {
+    pub(crate) fn plan(&self, doc: &Arc<Document>, opts: &Options) -> Result<Arc<DesignPlan>, PlanError> {
         if let Some(plan) = self.remembered(doc, opts) {
             return Ok(plan);
         }
@@ -73,6 +80,19 @@ impl PlanService {
     pub(crate) fn kept(&self) -> usize {
         self.units.lock().map_or(0, |c| c.units())
     }
+}
+
+/// The service is shared between threads: the app plans on a worker while commands plan on theirs.
+const _: () = {
+    const fn shared<T: Send + Sync>() {}
+    shared::<PlanService>();
+};
+
+/// `doc`'s plan with `opts`, made afresh: for a caller with no open document's service at hand.
+/// The export plans the document it writes this way, as edited for the file, so that what a file
+/// holds never depends on what was kept.
+pub(crate) fn plan_afresh(doc: &Document, opts: &Options) -> Result<DesignPlan, PlanError> {
+    super::digitize::digitize(doc, opts)
 }
 
 /// The planning service of each open document, by [`crate::DocState::uid`].

@@ -42,7 +42,7 @@ pub struct StitchRun {
 /// unset takes the built-in default.
 ///
 /// A file saved by a newer version opens and saves here without losing what this version doesn't
-/// know: keys it doesn't read are kept as they are ([`EmbroiderySetup::unknown`]), and so is a
+/// know: keys it doesn't read are kept as they are ([`EmbroiderySetup::extra`]), and so is a
 /// palette it doesn't know ([`ThreadPalette::Unknown`]).
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct EmbroiderySetup {
@@ -50,15 +50,17 @@ pub struct EmbroiderySetup {
     /// `None`: unset (the stitch plan takes Janome's JEF palette).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub palette: Option<ThreadPalette>,
-    /// Keys a newer version wrote that this one doesn't read, kept so that saving loses nothing.
+    /// Keys this version doesn't know (written by a newer one), kept so that saving doesn't lose
+    /// them, as [`crate::Document::extra`] keeps the document's.
     #[serde(flatten)]
-    pub unknown: serde_json::Map<String, serde_json::Value>,
+    pub extra: serde_json::Map<String, serde_json::Value>,
 }
 
 impl EmbroiderySetup {
-    /// Whether nothing is set and nothing unknown kept: the document then carries none.
+    /// Whether nothing is set and nothing a newer version wrote is kept: the document then carries
+    /// none.
     pub fn is_empty(&self) -> bool {
-        self.palette.is_none() && self.unknown.is_empty()
+        self.palette.is_none() && self.extra.is_empty()
     }
 }
 
@@ -128,7 +130,7 @@ mod tests {
             assert_eq!(serde_json::to_value(&read).unwrap(), written);
         }
         let read: EmbroiderySetup = serde_json::from_value(json!({"palette": "jef", "fabric": "knit"})).unwrap();
-        assert_eq!((read.palette, read.unknown.get("fabric")), (Some(ThreadPalette::Jef), Some(&json!("knit"))));
+        assert_eq!((read.palette, read.extra.get("fabric")), (Some(ThreadPalette::Jef), Some(&json!("knit"))));
         let unknown: EmbroiderySetup = serde_json::from_value(json!({"palette": 7})).unwrap();
         assert_eq!(unknown.palette, Some(ThreadPalette::Unknown(json!(7))));
         assert_eq!(unknown.palette.and_then(|p| p.id()), None);

@@ -4822,6 +4822,7 @@ lighting	Light	Свет
 	Embroidery Setup	Параметры вышивки
 	Embroidery Statistics	Статистика вышивки
 	Embroidery Sewing Order	Порядок вышивания
+	Embroidery Check	Проверка вышивки
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	текст не вышивается: преобразуйте его в контуры (Текст › Создать контуры) и экспортируйте снова

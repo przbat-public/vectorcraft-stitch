@@ -5177,6 +5177,7 @@ theme	Appearance	Външен вид
 	Embroidery Setup	Настройка на бродирането
 	Embroidery Statistics	Статистика на бродирането
 	Embroidery Sewing Order	Ред на бродиране
+	Embroidery Check	Проверка на бродирането
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	текстът не се бродира: превърнете го в контур (Тип › Създаване на контур) и експортирайте отново

@@ -10,6 +10,8 @@ use super::plan::DesignPlan;
 /// One record of a plan, in sewing order.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Record {
+    /// Its number in the design ([`DesignPlan::number`]).
+    pub(crate) number: usize,
     /// The unit it belongs to: an index into [`DesignPlan::units`].
     pub(crate) unit: usize,
     pub(crate) stitch: Stitch,
@@ -50,7 +52,8 @@ pub(crate) fn each(plan: &DesignPlan, mut f: impl FnMut(&Record)) {
             let Some(u) = plan.units.get(unit) else { continue };
             for index in u.stitches.clone() {
                 let Some(&stitch) = block.stitches.get(index) else { continue };
-                f(&Record { unit, stitch, before, same_block: index > 0 });
+                let number = block.first_number.saturating_add(index);
+                f(&Record { number, unit, stitch, before, same_block: index > 0 });
                 before = Some(stitch);
             }
         }

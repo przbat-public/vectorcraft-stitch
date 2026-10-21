@@ -5176,6 +5176,7 @@ mark-style	Japanese	Japanilainen
 	Embroidery Setup	Kirjonnan asetukset
 	Embroidery Statistics	Kirjonnan tilastot
 	Embroidery Sewing Order	Kirjontajärjestys
+	Embroidery Check	Kirjonnan tarkistus
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	tekstiä ei kirjota: muunna se ääriviivoiksi (Teksti › Muunna ääriviivoiksi) ja vie uudelleen

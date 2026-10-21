@@ -20,7 +20,7 @@ fn unit(node: u64, style: Style, color: [u8; 3], points: &[(f64, f64)]) -> Plann
     let mut block = Block::new(Thread::rgb(color));
     block.stitches = points.iter().map(|&(x, y)| Stitch::sew(Point::new(x, y))).collect();
     let origin = Origin { node: NodeId(node), part: Part::Fill(0), instance: None };
-    Planned { origin, params: Some(Params::for_style(style)), columns: None, why: Choice::Forced, block, literal: None }
+    Planned { origin, params: Some(Params::for_style(style)), columns: None, satin_width: None, why: Choice::Forced, block, literal: None }
 }
 
 /// A plan of `units`, in order.

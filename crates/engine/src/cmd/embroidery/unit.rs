@@ -75,12 +75,13 @@ pub(crate) struct UnitRequest<'a> {
     pub(crate) clip: Option<&'a (BezPath, FillRule)>,
 }
 
-/// A unit's stitches as planned, and the parameters its narrow parts were sewn with as satin
-/// columns (`None`: it had none).
+/// A unit's stitches as planned, the parameters its narrow parts were sewn with as satin columns
+/// (`None`: it had none), and the typical width of the widest of those columns (millimetres).
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct UnitStitches {
     pub(crate) stitches: Vec<Stitch>,
     pub(crate) columns: Option<Params>,
+    pub(crate) widest: Option<f64>,
 }
 
 /// The stitches `req` asks for: the shape planned in its style from where the needle is, a fill's
@@ -93,6 +94,7 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError
         Some(_) => plan::narrow_columns_until(shape, rule, params.narrow, &cancel::is_cancelled).ok_or(PlanError::Cancelled)?,
         None => Vec::new(),
     };
+    let widest = found.iter().map(plan::Column::width).reduce(f64::max);
     let (planned, columns) = match columns.filter(|_| !found.is_empty()) {
         None => (plan::try_stitches_from(shape, rule, &params, from), None),
         Some(satin) => {
@@ -107,7 +109,7 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError
     if let Some(clip) = clip {
         stitches = cut_to(stitches, clip, &params);
     }
-    Ok(UnitStitches { stitches, columns })
+    Ok(UnitStitches { stitches, columns, widest })
 }
 
 /// `area` without its narrow `columns` ([`plan::narrow_columns`]): what is left to fill, each

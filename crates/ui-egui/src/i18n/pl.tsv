@@ -5064,6 +5064,7 @@ mark-style	Japanese	Japońskie
 	Embroidery Setup	Ustawienia haftu
 	Embroidery Statistics	Statystyki haftu
 	Embroidery Sewing Order	Kolejność szycia haftu
+	Embroidery Check	Kontrola haftu
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	tekst nie jest haftowany: zamień go na kontury (Tekst › Utwórz kontury) i wyeksportuj ponownie

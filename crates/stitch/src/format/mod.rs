@@ -93,6 +93,29 @@ impl Format {
         }
     }
 
+    /// The longest move one stitch record holds along x or along y, millimetres: 12.1 in DST,
+    /// 12.7 in EXP and JEF, 204.7 in PES (its long form). A writer writes a longer stitch as
+    /// several stitches of equal steps, so more needle points than planned, and a longer jump as
+    /// several jumps.
+    pub fn max_step(self) -> f64 {
+        mm(match self {
+            Self::Dst => dst::MAX_DELTA,
+            Self::Exp => exp::MAX_DELTA,
+            Self::Pes => pes::MAX_DELTA,
+            Self::Jef => jef::MAX_DELTA,
+        })
+    }
+
+    /// The most colour blocks the format holds, `None` where its layout sets no limit: PES's PEC
+    /// header counts them in a byte (255); DST, EXP and JEF have no such field (DST's header
+    /// counts colour changes in text a reader recomputes, JEF's in a 32-bit word).
+    pub fn max_colors(self) -> Option<usize> {
+        match self {
+            Self::Pes => Some(pes::MAX_COLORS),
+            Self::Dst | Self::Exp | Self::Jef => None,
+        }
+    }
+
     /// The format `id` names (`dst`, `exp`, `pes`, `jef`).
     pub fn from_id(id: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|f| f.id() == id)
@@ -317,6 +340,32 @@ mod tests {
             let index = palette.nearest([0x12, 0x34, 0x56], &[]).index;
             assert_eq!(Some(&block.thread), palette.thread(index).as_ref(), "{format:?}");
         }
+    }
+
+    /// A stitch of exactly the format's longest step is one record; a tenth longer, along x or y,
+    /// is written as two stitches; more colours than the format holds are refused.
+    #[test]
+    fn the_longest_step_is_one_record() {
+        for format in Format::ALL {
+            let step = format.max_step();
+            for (dx, dy, needle) in [(step, 0.0, 2), (step + 0.1, 0.0, 3), (0.0, -(step + 0.1), 3), (step, step, 2)] {
+                let mut block = Block::new(Thread::rgb([200, 30, 30]));
+                block.stitches = vec![Stitch::new(0.0, 0.0, Command::Stitch), Stitch::new(dx, dy, Command::Stitch)];
+                let pattern = Pattern { name: String::new(), blocks: vec![block] };
+                let read = format.read(&format.write(&pattern).unwrap()).unwrap();
+                assert_eq!(read.sewn(), needle, "{format:?}: a stitch of {dx}, {dy}");
+            }
+        }
+        let many = |n: usize| Pattern {
+            name: String::new(),
+            blocks: (0..n)
+                .map(|k| Block { thread: Thread::rgb([(k % 256) as u8, 0, 0]), stitches: vec![Stitch::new(k as f64, 0.0, Command::Stitch)] })
+                .collect(),
+        };
+        let most = Format::Pes.max_colors().unwrap();
+        assert!(Format::Pes.write(&many(most)).is_ok());
+        assert!(Format::Pes.write(&many(most + 1)).is_err());
+        assert_eq!(Format::ALL.map(Format::max_colors), [None, None, Some(255), None]);
     }
 
     #[test]

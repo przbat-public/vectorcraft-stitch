@@ -322,7 +322,8 @@ impl<'a> Digitizer<'a> {
         }
         block.stitches = points;
         let origin = self.origin(n, Part::Literal);
-        self.seq.add(Planned { origin, params: None, columns: None, why: Choice::Literal, block, literal: self.owner.map(|g| (g, run.trim_before)) });
+        let literal = self.owner.map(|g| (g, run.trim_before));
+        self.seq.add(Planned { origin, params: None, columns: None, satin_width: None, why: Choice::Literal, block, literal });
     }
 
     /// A clip group, as it paints: the clipping path (its first child) paints its fills behind the
@@ -541,9 +542,14 @@ impl<'a> Digitizer<'a> {
             }
         };
         // Kept in the cache too, the stitches are copied into the block.
-        let (stitches, columns) = match Arc::try_unwrap(planned) {
-            Ok(UnitStitches { stitches, columns }) => (stitches, columns),
-            Err(kept) => (kept.stitches.clone(), kept.columns),
+        let (stitches, columns, widest) = match Arc::try_unwrap(planned) {
+            Ok(UnitStitches { stitches, columns, widest }) => (stitches, columns, widest),
+            Err(kept) => (kept.stitches.clone(), kept.columns, kept.widest),
+        };
+        let satin_width = match style {
+            Style::Satin => Some(params.width),
+            Style::Fill => widest,
+            Style::Running => None,
         };
         if stitches.is_empty() {
             return;
@@ -557,7 +563,7 @@ impl<'a> Digitizer<'a> {
         }
         let mut block = Block::new(Thread::rgb(color));
         block.stitches = stitches;
-        self.seq.add(Planned { origin: unit, params: Some(params), columns, why, block, literal: None });
+        self.seq.add(Planned { origin: unit, params: Some(params), columns, satin_width, why, block, literal: None });
     }
 
     /// `request`'s stitches: those the cache keeps for it, else planned, and kept.

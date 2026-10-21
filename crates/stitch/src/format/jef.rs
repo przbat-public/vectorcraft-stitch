@@ -30,7 +30,7 @@ use crate::{Command, Error, Pattern, Result, Stitch};
 /// The header's fixed length: everything before the per-colour arrays.
 const HEADER: usize = 0x74;
 /// The largest delta one record holds, in tenths of a millimetre.
-const MAX_DELTA: i32 = 127;
+pub(crate) const MAX_DELTA: i32 = 127;
 /// The command prefix: `0x80` is not a delta a record uses.
 const CONTROL: u8 = 0x80;
 /// The commands' second bytes: the end of the design, a jump (then the deltas), a colour change

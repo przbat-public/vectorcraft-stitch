@@ -4789,6 +4789,7 @@ lighting	Light	광원
 	Embroidery Setup	자수 설정
 	Embroidery Statistics	자수 통계
 	Embroidery Sewing Order	자수 순서
+	Embroidery Check	자수 검사
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	문자는 자수로 놓이지 않습니다: 윤곽선을 만든 뒤(문자 › 윤곽선 만들기) 다시 내보내세요

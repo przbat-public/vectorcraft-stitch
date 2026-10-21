@@ -38,12 +38,12 @@ const ICON_LINES: usize = 38;
 /// One preview picture's bytes.
 const PREVIEW: usize = ICON_LINE * ICON_LINES;
 /// The largest delta one value holds, as a 12-bit signed number.
-const MAX_DELTA: i32 = 2047;
+pub(crate) const MAX_DELTA: i32 = 2047;
 /// The most stitches one stitch block may hold (a stream that lost step stops rather than growing).
 const MAX_STITCHES: usize = 1_048_576;
 /// The most colours a PEC header holds: it stores one fewer than their count in a byte, and
 /// `0xFF` there means none ([`NO_COLORS`]).
-const MAX_COLORS: usize = 255;
+pub(crate) const MAX_COLORS: usize = 255;
 /// The colour count byte of a design with no colours.
 const NO_COLORS: u8 = 0xFF;
 /// The PES version 1 header: the magic `#PES0001`, where the PEC section starts (right after this

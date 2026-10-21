@@ -138,6 +138,9 @@ pub struct Unit {
     /// The parameters a fill's narrow parts were sewn with as satin columns; `None` when it had
     /// none.
     pub columns: Option<Params>,
+    /// The widest satin column it sews, millimetres: a satin's width, the typical width of a fill's
+    /// widest narrow part; `None` when it sews none.
+    pub satin_width: Option<f64>,
     /// Why it is sewn the way it is.
     pub why: Choice,
     /// The box its stitches fall in as planned, millimetres (`None`: no finite point).

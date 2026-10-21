@@ -4866,6 +4866,7 @@ lighting	Light	ライト
 	Embroidery Setup	刺繍設定
 	Embroidery Statistics	刺繍の統計
 	Embroidery Sewing Order	刺繍の縫い順
+	Embroidery Check	刺繍のチェック
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	文字は刺繍されません: アウトラインを作成して (書式 › アウトラインを作成) から書き出し直してください

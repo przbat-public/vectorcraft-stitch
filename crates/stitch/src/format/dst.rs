@@ -33,7 +33,7 @@ const RECORD: usize = 3;
 const DIGITS: usize = 5;
 /// The largest delta one record holds, in tenths of a millimetre: 1 + 3 + 9 + 27 + 81 = 121, all
 /// [`DIGITS`] digits at +1.
-const MAX_DELTA: i32 = (3i32.pow(DIGITS as u32) - 1) / 2;
+pub(crate) const MAX_DELTA: i32 = (3i32.pow(DIGITS as u32) - 1) / 2;
 
 // A record's third byte: its two bottom bits are always set, and its top bits say what the record
 // is. A stitch sets only the bottom two.

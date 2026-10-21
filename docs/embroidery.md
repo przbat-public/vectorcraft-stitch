@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-21 · **Last updated:** 2026-10-21 · **Change:** threads: each colour block is sewn in a thread of the document's palette (Janome's 78 JEF threads unless it sets Brother's 64 PEC threads, `embroidery.setup`), matched by the CIEDE2000 colour difference instead of RGB distance, a neighbouring block's thread only when no similar other is left; the palettes are built-in swatch libraries; the plan records each block's thread and its colour difference, the PES and JEF writers write it, and `embroidery.threads` lists it, flagging threads farther than ΔE 10; a PES or JEF file opens in its own format's palette
+> **Last reviewed:** 2026-10-21 · **Last updated:** 2026-10-21 · **Change:** the thread tables: PEC 42 is Linen, and PEC's appliqué entries 62 to 64 are never matched (Brother's palette is its 61 threads); a thread number that names no thread reads as a stand-in named after it; where the tables come from; a newer file's embroidery settings open whatever their shape; the export's warnings are translated; each PES and JEF export is pinned apart from its thread numbers
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -65,7 +65,11 @@ the thread's colour, so the design looks like it will sew and can be measured, t
 recoloured. A DST or EXP file carries no colours: those blocks get the colours of a fixed list
 (`thread::DEFAULT`), one per block. A PES or JEF file sets the document's thread palette to its
 own format's (Brother's or Janome's, below), so each block is matched to the thread the file names
-(ΔE 0). `design.pes` opens by its `#PES` bytes whatever it is called.
+(ΔE 0). A number that names no thread of the palette (0, which the formats leave for "no colour",
+or one past the palette's end, which only a damaged file or a newer chart holds) reads in that
+block's colour from the same fixed list, its group named after the number ("Unknown thread 79"):
+no number wraps round to another thread. `design.pes` opens by its `#PES` bytes whatever it is
+called.
 
 **Exporting what you read.** The lines of an opened design are its stitches: each one is marked
 as a run of literal stitches (`NodeExtras::embroidery`, kept in `.vectorcraft` files), and the
@@ -88,7 +92,12 @@ longer than `trimLength` is cut. The mark is saved in `.vectorcraft` files
 control channel (the command palette lists it, but runs it without `on`, which it refuses).
 
 **Threads.** Each colour block is sewn in a thread of the document's thread palette: Janome's 78
-threads, which JEF files number (`jef`), or Brother's 64, which PES files number (`pec`).
+threads, which JEF files number (`jef`), or Brother's 61, which PES files number (`pec`) among 64
+entries: the last three, 62 to 64, are the format's appliqué entries (EduTechWiki names them
+Applique Material, Applique Position and Applique), not threads, so no colour is ever matched to
+them, the export never writes them and the swatch library leaves them out. A file that names them
+(the real designs' fox, digitized with Ink/Stitch, names 62 and 63 for its orange and its light
+yellow) opens in their colours; written again, those blocks get Brother's nearest threads.
 `embroidery.setup {palette}` sets it in one undo step, saved with the document; unset, Janome's is
 used (the project owner's choice, not a sourced default). The blocks are matched in sewing order:
 a block whose art colour (its objects' fill or stroke) is a thread's own colour is sewn in that
@@ -108,7 +117,7 @@ number, name, colour) and the ΔE₀₀ between them, to two decimals, and flags
 farther than 10 as shown, one that looks clearly unlike the art; the same line decides when a block
 takes another thread than its neighbour's. It is an estimate, the project owner's choice: past
 about 5 two colours side by side are already seen as different
-(Mokrzycki and Tatol's bands, drawn up for the older CIE 1976 difference), but 64 or 78 threads lie
+(Mokrzycki and Tatol's bands, drawn up for the older CIE 1976 difference), but 61 or 78 threads lie
 farther than 5 from about half the colours of real art (23 and 28 of the real designs' 44 blocks). The JEF export writes the plan's threads when the
 document's palette is Janome's, the PES export when it is Brother's; the other format matches the
 art colours to its own palette by the same rule. DST and EXP name no threads.
@@ -437,7 +446,7 @@ Brother thread and 6.0 from their Janome thread; 23 and 28 of them are past 5, a
   but PE-Design shows it as a blank document because the editable shapes (CEmbOne/CSewSeg) are not
   written yet. Reading a PES reads its PEC block, which is what machines and every other app use.
 - No stitch preview layer and no stitch simulator yet; the imported design is the preview.
-- Threads come from the format's own palette (Brother's 64, Janome's 78): no thread maker's chart
+- Threads come from the format's own palette (Brother's 61, Janome's 78): no thread maker's chart
   (Madeira, Isacord…) yet, and a PES file names palette numbers, not the thread's exact colour (a
   newer PES header can, a later task). Saturated pure blues match Brother's Purple: CIE L*a*b*,
   which CIEDE2000 is built on, bends the hue of saturated blues towards purple, so `#0000c8` is
@@ -451,6 +460,9 @@ Brother thread and 6.0 from their Janome thread; 23 and 28 of them are past 5, a
   Janome's, and where they
   differ on a grey, a dark or a brown, CIEDE2000 keeps the neutral or brown thread; so the
   matching stays CIEDE2000.
+- The threads' colours on screen are stand-ins, not measurements: Brother and Janome publish their
+  threads' names and catalogue codes but no screen colours, and the tables' colours are those of
+  pyembroidery's tables (see References). Matching to them is only as good as they are.
 - A block whose nearest thread a neighbouring block is sewn in takes another only when one is still
   similar (within ΔE₀₀ 10); otherwise the two are sewn in one thread, with a machine stop between
   them. Janome's palette has few dark neutrals, so the zebra's dark grey stripes (`#292f33`), sewn
@@ -471,17 +483,24 @@ Brother thread and 6.0 from their Janome thread; 23 and 28 of them are past 5, a
 
 ## Validation
 
-- `crates/stitch`: 102 unit tests and 5 property tests — CIEDE2000 matches the 34 published test
-  pairs of Sharma, Wu and Dalal to their four decimals either way round, the sRGB matrix derives
-  from the primaries and D65, sRGB's primaries land where published conversions put them; a
-  palette numbers its threads from 1 (0 and past the end are no thread), each thread is its own
+- `crates/stitch`: 110 unit tests and 6 property tests — CIEDE2000 matches the 34 published test
+  pairs of Sharma, Wu and Dalal to their four decimals either way round (and a colour that isn't
+  one has a difference that is not a number, never 0), the sRGB matrix derives
+  from the primaries and D65, sRGB's primaries land where published conversions put them, the
+  darkest values follow sRGB's and L*'s straight segments (a dark grey's L* is κ v / (255 × 12.92));
+  a palette numbers its threads from 1 (0 and past the end are no thread, and a file's number that
+  names none reads as a stand-in named after it: JEF 0, 79 and 4294967295, PEC 0, 65 and 255, none
+  wrapping round), Brother's 61 threads each have a name of their own and 42 is Linen, PEC's
+  appliqué entries 62 to 64 read in their colours but no colour is matched to them, whatever the
+  neighbours (a PES naming them is written back with threads), each thread is its own
   colour's nearest (even when left out), the nearest thread is the smallest ΔE₀₀ (a teal is Teal
   Green, not RGB's Sky Blue), a block takes another thread than a neighbour's only for a similar
   one (an orange beside its nearest thread's own colour, before or after it, takes its next
   nearest, and between that and its next nearest's own colour its third; the zebra's grey keeps
   Black beside Black; two blocks of one thread's own colour keep it both), a block's chosen thread
   is written when it is the
-  format's palette's and matched by colour otherwise, in the PES and JEF headers, and PES numbers
+  format's palette's and matched by colour otherwise (another palette's thread of the same number
+  is not taken for it), in the PES and JEF headers, and PES numbers
   Brother's threads, JEF Janome's, DST and EXP none; a stripe is one
   column square across it, a stroke whose width wavers about the limit is one column (one wider all
   along stays a fill),
@@ -532,8 +551,14 @@ Brother thread and 6.0 from their Janome thread; 23 and 28 of them are past 5, a
   plan is refused before it is made, the DST record round-trips every delta from -121 to 121,
   only a run of three jumps reads as a DST trim, a PEC stitch block with a 16-byte header whose first jump looks like the origin words reads the same as with 20 bytes (in step, only the leading jump is lost; out of step, its length sends the reader back to the right start), a DST colour change can carry a move, each format
   writes a design it reads back with the same blocks and size, a JEF's header extents are where
-  its stitches go, an absurd JEF colour count is not believed, and no reader panics on random,
-  truncated or damaged bytes. The property tests (`tests/prop_plan.rs`, random rectangles,
+  its stitches go, an absurd JEF colour count is not believed, a PES whose PEC section is said to
+  start near 4 GB is refused, and no reader panics on random,
+  truncated or damaged bytes. The thread property test (`tests/prop_threads.rs`): for any run of
+  blocks in either palette, each any colour or an entry's own and with a thread chosen from
+  either palette or none, every number written is a thread, a known thread (chosen from the
+  palette, or the art's own colour) is kept, and every other block has its nearest thread or,
+  beside a neighbour of that thread, the nearest neither neighbour has when it is similar. The
+  property tests of the planner (`tests/prop_plan.rs`, random rectangles,
   ellipses and star-shaped polygons with random parameters, random pull compensation included):
   every needle point stays on the art (or past it by the compensation at most), the narrow parts
   found in any shape lie on it and are no wider than asked, and sewn with it stay on it,
@@ -541,15 +566,17 @@ Brother thread and 6.0 from their Janome thread; 23 and 28 of them are past 5, a
   parameters allow (this found the zigzag fault fixed above: a 50 mm zigzag with corners 0.5 mm
   apart was one 50 mm stitch): without pull compensation to the bound it always had, and with it
   longer by its reach at most.
-- `crates/engine`: 60 tests (37 through the commands, 17 on the stitch plan, its threads and the
-  document's palette, 2 on the export options, 4 on the sewing order and the blocks' threads) —
+- `crates/engine`: 62 tests (37 through the commands, 19 on the stitch plan, its threads and the
+  document's settings, 2 on the export options, 4 on the sewing order and the blocks' threads) —
   `embroidery.setup` sets and unsets the palette in one undo step (none for no change, its reply
   passed back changes nothing, other palettes and settings refused; settings with nothing in them,
   as a file may hold them, are none, so asking for them is no edit), the palette is saved in
   `.vectorcraft` files and a newer version's settings and palette are kept as they were (the
-  palette matched as Janome's, with a warning), a document without a palette is sewn in Janome's
+  palette matched as Janome's, with a warning), and so are settings of another shape than an
+  object (`5`, `"pec"`, an array: the file opens, nothing is set, and a palette set replaces them), a document without a palette is sewn in Janome's
   threads and its PES export is the one with Brother's set, each block is sewn in the document's
-  palette's thread nearest its art (a library swatch's thread exactly), the PES and JEF exports
+  palette's thread nearest its art (a library swatch's thread exactly; a swatch of the other
+  palette's library matched like any colour, and named exactly by its own format's export), the PES and JEF exports
   name the plan's threads, `embroidery.threads` lists them with their ΔE and mismatch flag (Red,
   6.6 from `#cc2222`, unflagged; a difference shown as 10 is not flagged, one shown as 10.01 is) and takes
   the export's embroidery options and refuses any other key (a misspelt one, `format`,
@@ -599,7 +626,14 @@ Brother thread and 6.0 from their Janome thread; 23 and 28 of them are past 5, a
   blocks' ends, and the options away from their defaults; always run) and the eleven real
   designs' artwork at the person's size (when the corpus is present). A change to what is sewn
   fails it, listing the exports that changed and printing the listing as it now stands: such a
-  change is made on purpose, with the listing updated in the same commit. The stitch plan below
+  change is made on purpose, with the listing updated in the same commit. Each PES and JEF export
+  is also pinned apart from its thread numbers (the hash of its bytes with them blanked, and the
+  numbers), so a change in threads alone shows as one, export by export, and a test checks the
+  blanking on one design written in two sets of threads. Keeping PEC's appliqué entries out of
+  matching changed seven PES exports that way, only in their numbers: the orange `#ff8800` of six
+  built drawings, 62 → 52 Tangerine (ΔE₀₀ 5.77 → 5.83), and the fox's orange `#f49010` and light
+  yellow `#ffd983`, 62 → 52 Tangerine (3.03 → 3.66) and 63 → 12 Orange (8.11 → 10.22, now flagged).
+  Linen at 42 changed none. The stitch plan below
   left all 100 hashes as they were. Matching threads by CIEDE2000 instead of RGB distance changed
   38 of them (24 of the documents built here, 14 of the real designs; PES and JEF only): 76 of the
   198 blocks the PES and JEF exports write got another thread, and in every changed file the only
@@ -612,8 +646,10 @@ Brother thread and 6.0 from their Janome thread; 23 and 28 of them are past 5, a
   thread, and no block is farther from its art than it was.
 - Elsewhere: the thread libraries are listed, read, added and traced with
   (`tests_swatchlib.rs`, `tests_build.rs`), the window menu lists them, the document's settings
-  round-trip with what a newer version wrote (`crates/doc`), MCP reaches `embroidery.setup` and
-  `embroidery.threads`, and the command sweep feeds both junk.
+  round-trip with what a newer version wrote, whatever its shape, and the undo history's memory
+  estimate counts them (`crates/doc`), the export's seven warnings and its errors when nothing is
+  left to stitch are translated in every interface language (`ui-egui`), MCP reaches
+  `embroidery.setup` and `embroidery.threads`, and the command sweep feeds both junk.
 
 **Real designs** (`crates/engine/tests/embroidery_corpus.rs`): `cargo xtask corpus --embroidery`
 fetches eleven designs of the [Emoji Embroidery Project](https://edutechwiki.unige.ch/en/Emoji_Embroidery_Project)
@@ -836,14 +872,19 @@ between objects belong to the design, or the machine, rather than to a unit.)
   values copied in, as decided), the thread's weight, the machine (and with it the trim length),
   and the joining of one thread's objects (automatic, where nothing lies between them). They are
   `Document::embroidery` (`EmbroiderySetup` in `crates/doc/src/embroidery.rs`): left out of the file
-  while nothing is set; keys this version doesn't read are kept as they are (a flattened map), and
-  so is a palette it doesn't know, which reads as unset with a warning in the plan.
+  while nothing is set; keys this version doesn't read are kept as they are
+  (`EmbroiderySetup::extra`), and so is a palette it doesn't know, which reads as unset with a
+  warning in the plan. Settings of another shape than an object (`"embroidery": 5`) don't stop the
+  file from opening: they are kept whole (`EmbroiderySetup::unread`) and written back while nothing
+  is set, and a palette set replaces them.
 
 ### Threads
 
 A thread is an entry of the document's thread palette (`thread::Palette`: Janome's 78 JEF
-threads or Brother's 64 PEC threads; `embroidery.setup`, Janome's when unset), offered as a
-built-in swatch library (`swatchlib::THREAD_LIBRARIES`). When the plan is made
+threads or Brother's 61 PEC threads; `embroidery.setup`, Janome's when unset), offered as a
+built-in swatch library (`swatchlib::THREAD_LIBRARIES`). PEC numbers three more entries, 62 to 64,
+that are not threads (`Palette::is_thread`): they read in their colours and are never matched or
+written. When the plan is made
 (`Sequence::plan`), the blocks' art colours are matched to the palette in sewing order
 (`Palette::assign`): a block painted with a thread's own colour has that thread, and every other
 block the thread with the smallest CIEDE2000 difference (`vectorcraft_stitch::color`), or, when the
@@ -855,7 +896,9 @@ painted from the other palette's library is matched like any colour, and its own
 still writes that thread, by the same rule. A design opened from a PES or JEF file
 (`cmd::fileio::embroidery::import`) is in that format's palette (`Format::palette`). Every unit of a
 block has its block's thread. The formats take each block's thread with its art colour
-(`BlockThread::to_thread`, `Thread::chosen`): a format of that palette writes the plan's thread,
+(`BlockThread::to_thread`, `Thread::chosen`, a `PaletteThread`: a palette and a thread of it,
+which can't name another palette's thread or a number that is none): a format of that palette
+writes the plan's thread,
 any other matches the art colours to its own palette by the same rule (`Palette::numbers`), so the
 PES and JEF exports of one document follow one rule. `embroidery.threads` lists the threads with
 their ΔE to two decimals (`BlockThread::shown_delta_e`) and flags those past the same
@@ -928,8 +971,17 @@ Public documentation, cited per claim in the crate and in the local research not
   kilometres per kilogram) and Wilcom's
   [satin auto spacing](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/stitches/stitches-10.htm)
   (spacing offsets by thread thickness).
-- Thread charts: Brother's 64-thread PEC palette and Janome's 78-thread JEF palette, as published
-  by those sources; the tables are in `crates/stitch/src/thread.rs`.
+- Thread tables (`crates/stitch/src/thread.rs`). The numbering is the formats': EduTechWiki's
+  [PEC](https://edutechwiki.unige.ch/en/Embroidery_format_PEC) and
+  [JEF](https://edutechwiki.unige.ch/en/Embroidery_format_JEF) pages. The colours, names and their
+  order are those of [pyembroidery](https://github.com/EmbroidePy/pyembroidery)'s thread tables
+  (MIT; `EmbThreadPec.py` and `EmbThreadJef.py`), taken when the formats were first written, all
+  of them but PEC 42's. The makers publish names and catalogue codes, not screen colours:
+  Brother's [thread list](https://support.brother.com/g/s/hf/mobileapp_info/artspira/thread/name_html/en.html)
+  has 61 threads, each name once, among them 307 Linen; EduTechWiki's tables give most entries
+  other colours than pyembroidery's (61 of PEC's 64, 41 of JEF's 78). From those two sources, PEC 42 is Linen in
+  EduTechWiki's colour (pyembroidery repeats Flesh Pink there), and PEC 62 to 64 are the format's
+  appliqué entries, not threads.
 - Colour difference: IEC 61966-2-1:1999 (sRGB's transfer function and primaries); CIE 15:2004
   *Colorimetry* (CIE L*a*b*, the D65 white point); G. Sharma, W. Wu and E. N. Dalal, "The CIEDE2000
   color-difference formula: implementation notes, supplementary test data, and mathematical

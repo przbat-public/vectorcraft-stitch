@@ -8,8 +8,18 @@
 //! thread matched to the block's colour by the same rule the plan follows ([`Palette::assign`],
 //! [`Palette::numbers`]), and reading names that entry back.
 //!
-//! The tables are the manufacturers' published charts as public reverse-engineering documents
-//! list them; the names are theirs (thread names are data, not creative text).
+//! Where the tables come from. The numbering is the formats' (EduTechWiki's pages on PEC and JEF,
+//! edutechwiki.unige.ch/en/Embroidery_format_PEC and …/Embroidery_format_JEF). The colours, the
+//! names and their order are those of pyembroidery's thread tables (MIT,
+//! github.com/EmbroidePy/pyembroidery, `EmbThreadPec.py` and `EmbThreadJef.py`), taken when the
+//! formats were first written, all but PEC 42's. The makers publish their threads' names and
+//! catalogue codes, not screen colours: Brother's thread list (support.brother.com, Artspira thread
+//! names) has 61 threads, each name once, and EduTechWiki's tables give most entries other colours
+//! than pyembroidery's (61 of PEC's 64, 41 of JEF's 78). So the colours stand in for how the
+//! threads look; they are not measurements. From Brother's list and EduTechWiki: PEC 42 is Linen
+//! (Brother's 307) in EduTechWiki's colour, where pyembroidery repeats Flesh Pink, and PEC 62 to 64
+//! are the format's appliqué entries, not threads ([`Palette::is_thread`]). Thread names are data,
+//! not creative text.
 
 use std::sync::OnceLock;
 

@@ -56,6 +56,41 @@ fn list_and_get_every_builtin_library() {
     assert!(s.execute("swatch.library.get", &json!({"library": "nope"})).is_err());
 }
 
+/// The embroidery thread libraries are the palettes PES and JEF files number their threads from:
+/// every thread in order, named by its palette, number and name; listed under their own category,
+/// found by id or name, added to the document whole even where Brother gives two threads one
+/// name, and built in (never copied to the user folder).
+#[test]
+fn thread_libraries_are_the_machine_formats_palettes() {
+    use vectorcraft_stitch::thread::Palette;
+    let mut s = session();
+    let libs = run(&mut s, "swatch.library.list", json!({}));
+    let threads: Vec<(&str, &str, u64)> = libs["libraries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|l| l["category"] == "threads")
+        .map(|l| (l["id"].as_str().unwrap(), l["name"].as_str().unwrap(), l["count"].as_u64().unwrap()))
+        .collect();
+    assert_eq!(threads, [("brother-threads-pec", "Brother Threads (PEC)", 64), ("janome-threads-jef", "Janome Threads (JEF)", 78)]);
+    for (id, palette, code) in [("brother-threads-pec", Palette::Pec, "PEC"), ("janome-threads-jef", Palette::Jef, "JEF")] {
+        let g = run(&mut s, "swatch.library.get", json!({"library": id}));
+        let swatches = g["swatches"].as_array().unwrap();
+        assert_eq!(swatches.len(), palette.threads().len(), "{id}");
+        for (i, (w, ([r, gr, b], name))) in swatches.iter().zip(palette.threads()).enumerate() {
+            assert_eq!(w["name"], format!("{code} {} {name}", i + 1));
+            assert_eq!(w["hex"], format!("#{r:02x}{gr:02x}{b:02x}"));
+            assert_eq!((&w["kind"], &w["global"], &w["group"]), (&json!("color"), &json!(false), &Value::Null));
+        }
+    }
+    assert_eq!(run(&mut s, "swatch.library.get", json!({"library": "janome threads (jef)"}))["id"], "janome-threads-jef");
+    let r = run(&mut s, "swatch.library.add", json!({"library": "brother-threads-pec"}));
+    assert_eq!(r["added"].as_array().unwrap().len(), 64);
+    assert!(["PEC 12 Orange", "PEC 62 Orange", "PEC 42 Flesh Pink", "PEC 57 Flesh Pink"].iter().all(|n| doc(&s).swatch(n).is_some()));
+    assert_eq!(Palette::from_id("jef"), Some(Palette::Jef));
+    assert!(s.execute("swatch.library.copyToUser", &json!({"library": "brother-threads-pec"})).is_err());
+}
+
 #[test]
 fn add_dedupes_as_one_undo_step() {
     let mut s = session();

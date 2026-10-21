@@ -29,8 +29,8 @@ use vectorcraft_engine::cmd::color_value;
 use vectorcraft_engine::cmd::swatchlib;
 
 use super::{DialogSpec, form};
-use crate::panels::c32;
 use crate::panels::swatches::{DOCUMENT_SWATCHES, colour_libraries, limit_key};
+use crate::panels::{c32, library_panel};
 use crate::state::Dialog;
 use crate::theme::{self, Tokens};
 use crate::{VectorcraftApp, widgets};
@@ -435,13 +435,9 @@ fn assign_tab(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, rows: &mut 
         }
         ui.end_row();
         ui.label(egui::RichText::new(tl!("Limit to Library:")).color(t.text_dim));
-        // None, the document's swatches, then the colour libraries: the built-in ones (at the top
-        // level of the library menu) translated, those the user saved or loaded by their names.
         let libs = colour_libraries(app);
         let keys: Vec<&str> = ["", swatchlib::DOCUMENT_SWATCHES].into_iter().chain(libs.iter().map(|l| l.id.as_str())).collect();
-        let names: Vec<&str> = ["None", DOCUMENT_SWATCHES].into_iter().chain(libs.iter().map(|l| l.name.as_str())).collect();
-        let builtin = |k: usize| k.checked_sub(2).is_none_or(|i| libs.get(i).is_some_and(|l| l.submenu.is_none()));
-        let shown = super::shown_names(crate::i18n::current(), &names, builtin);
+        let shown = limit_names(crate::i18n::current(), &libs);
         let cur = d.str("limitTo");
         let at = keys.iter().position(|k| *k == cur).unwrap_or(0);
         let current = shown.get(at).copied().unwrap_or_default();
@@ -620,9 +616,35 @@ fn apply_rule(rows: &mut [Value], rule: Harmony, base: usize, b: Color, active: 
     }
 }
 
+/// The Limit to Library choices as shown in `lang`: None, the document's swatches, then the colour
+/// libraries `libs`, the built-in ones translated (the embroidery threads in their submenu too),
+/// those the user saved or loaded by their names.
+fn limit_names(lang: crate::i18n::Lang, libs: &[library_panel::LibraryRef]) -> Vec<&str> {
+    let names: Vec<&str> = ["None", DOCUMENT_SWATCHES].into_iter().chain(libs.iter().map(|l| l.name.as_str())).collect();
+    super::shown_names(lang, &names, |k| k.checked_sub(2).is_none_or(|i| libs.get(i).is_some_and(|l| library_panel::builtin_library(&l.id))))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Limit to Library names every built-in library in the UI language, the thread libraries of
+    /// the Embroidery Threads submenu too, and a library the user saved by its own name.
+    #[test]
+    fn limit_to_library_translates_the_built_in_libraries() {
+        use crate::i18n::{Lang, tr};
+        let de = Lang::from_code("de").unwrap();
+        let library = |id: &str, category| library_panel::LibraryRef {
+            id: id.into(),
+            name: "Brother Threads (PEC)".into(),
+            submenu: library_panel::submenu(category),
+        };
+        let libs = [library("brother-threads-pec", "threads"), library("user/Brother Threads (PEC)", "user")];
+        assert!(libs[0].submenu.is_some(), "the thread libraries have a submenu");
+        let shown = limit_names(de, &libs);
+        assert_eq!(shown, [tr(de, "None"), tr(de, DOCUMENT_SWATCHES), tr(de, "Brother Threads (PEC)"), "Brother Threads (PEC)"]);
+        assert_ne!(tr(de, "Brother Threads (PEC)"), "Brother Threads (PEC)", "a catalog key");
+    }
 
     fn rows() -> Vec<Value> {
         vec![

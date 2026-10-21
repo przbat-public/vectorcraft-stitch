@@ -771,6 +771,10 @@ pub struct Document {
     /// given) SVG export links with `<script>` elements, in order.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub svg_scripts: Vec<String>,
+    /// The document's embroidery settings (`embroidery.setup`): for now the thread palette its
+    /// colours are matched to. `None` while nothing is set.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub embroidery: Option<Box<embroidery::EmbroiderySetup>>,
     /// Puppet Warp pins on the selected artwork while the tool edits it ([`PuppetPins`]): editing
     /// state, never saved.
     #[serde(skip)]
@@ -898,6 +902,7 @@ impl Document {
             print_setup: None,
             assets: vec![],
             svg_scripts: vec![],
+            embroidery: None,
             puppet: None,
             dimensions: false,
             index: Default::default(),

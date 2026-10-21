@@ -2282,6 +2282,9 @@ mark-style	Japanese	日式
 	Radar Graph Tool	雷达图工具
 	Radial	径向
 	Radial Glows	径向光晕
+	Embroidery Threads	刺绣线
+	Brother Threads (PEC)	Brother 刺绣线 (PEC)
+	Janome Threads (JEF)	Janome 刺绣线 (JEF)
 	Radial Gradient	径向渐变
 	Radius 1	半径 1
 	Radius 2	半径 2
@@ -5042,3 +5045,4 @@ lighting	Light	光源
 	Justification	对齐设置
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	文件的变量和数据集未被读取（变量：{variables}，数据集：{data_sets}）：“变量”面板不会列出它们
 	Trim After	之后剪线
+	Embroidery Setup	刺绣设置

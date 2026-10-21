@@ -584,6 +584,9 @@
 	Neutral Gradients	ნეიტრალური გრადიენტები
 	Duotone Gradients	ორტონიანი გრადიენტები
 	Radial Glows	რადიალური ნათებები
+	Embroidery Threads	საქარგავი ძაფები
+	Brother Threads (PEC)	Brother ძაფები (PEC)
+	Janome Threads (JEF)	Janome ძაფები (JEF)
 	Save Swatch Library…	ფერის ნიმუშების ბიბლიოთეკის შენახვა…
 	Symbol Libraries	სიმბოლოების ბიბლიოთეკები
 	Help	დახმარება
@@ -5113,3 +5116,4 @@ imageTrace	Outline	კონტური
 @msg	its Zstandard compression is damaged	მისი Zstandard შეკუმშვა დაზიანებულია
 @msg	it decompresses to more than {_1} MB	გაშლისას {_1} MB-ს აღემატება
 	Trim After	ძაფის მოჭრა შემდეგ
+	Embroidery Setup	ქარგვის პარამეტრები

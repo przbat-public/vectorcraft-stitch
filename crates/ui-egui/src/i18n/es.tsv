@@ -2364,6 +2364,9 @@
 	Radar Graph Tool	Herramienta Gráfico de radar
 	Radial	Radial
 	Radial Glows	Resplandores radiales
+	Embroidery Threads	Hilos de bordar
+	Brother Threads (PEC)	Hilos Brother (PEC)
+	Janome Threads (JEF)	Hilos Janome (JEF)
 	Radial Gradient	Degradado radial
 	Radius 1	Radio 1
 	Radius 2	Radio 2
@@ -5148,3 +5151,4 @@ mark-style	Japanese	Japonesas
 	Justification	Justificación
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	no se leyeron las variables ni los conjuntos de datos del archivo (variables: {variables}, conjuntos de datos: {data_sets}): el panel Variables no los muestra
 	Trim After	Cortar el hilo después
+	Embroidery Setup	Ajustar bordado

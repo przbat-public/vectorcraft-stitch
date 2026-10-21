@@ -2,8 +2,12 @@
 //! object ([`Options::params`]).
 
 use serde::Deserialize;
+use serde_json::Value;
 use vectorcraft_stitch::plan::THREAD_WEIGHT;
 use vectorcraft_stitch::plan::{Params, Style};
+
+use crate::Result;
+use crate::cmd::bad;
 
 /// How far a filled shape grows all round when `expand` is left out (millimetres): not at all, as
 /// in Ink/Stitch, whose fills offer the same setting ("Expand", to close gaps between shapes,
@@ -73,6 +77,16 @@ impl Default for Options {
 }
 
 impl Options {
+    /// The options in command params `p` (as `document.export` takes them), checked; `cmd` names
+    /// the command in the errors.
+    pub(crate) fn from_params(p: &Value, cmd: &str) -> Result<Self> {
+        let o = Self::deserialize(p).map_err(|e| bad(cmd, format!("embroidery options: {e}")))?;
+        if o.forced().is_none() && o.stitch_style != "auto" {
+            return Err(bad(cmd, format!("stitchStyle `{}`: auto, fill, satin or running", o.stitch_style)));
+        }
+        Ok(o)
+    }
+
     pub(crate) fn params(&self, style: Style, width: f64) -> Params {
         // The style's defaults for the thread: its spacing follows the thread's thickness.
         let d = Params::for_thread(style, self.thread_weight.unwrap_or(THREAD_WEIGHT));

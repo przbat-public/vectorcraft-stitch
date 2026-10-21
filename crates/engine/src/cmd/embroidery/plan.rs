@@ -6,7 +6,8 @@
 //! parameters it was planned with, its thread, the box its stitches cover, and where its stitches
 //! are: a range of its block's, cut into runs where the needle lifts. Units of one thread are
 //! joined into one block wherever the stacking allows (`sequence`), so a block lists the units it
-//! holds.
+//! holds. Each block is sewn in a thread of the document's palette, matched to the colour its art
+//! is painted with ([`BlockThread`]), and the PES and JEF writers write that thread.
 //!
 //! The plan is the one way from a document to stitches. The export writes it
 //! ([`DesignPlan::to_pattern`]), and the other views of a design's stitches are to read the same
@@ -19,6 +20,7 @@ use std::ops::Range;
 use vectorcraft_doc::NodeId;
 use vectorcraft_geom::Rect;
 use vectorcraft_stitch::plan::Params;
+use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Match, Palette, PaletteThread};
 use vectorcraft_stitch::{Block, Pattern, Stitch, Thread};
 
 /// The number of a design's first stitch: stitches are numbered from 1, as a stitch list shows
@@ -51,12 +53,66 @@ pub struct Origin {
     pub instance: Option<NodeId>,
 }
 
+/// A colour difference is shown to two decimals, in hundredths: finer than any difference the eye
+/// sees (about 1 is the smallest seen side by side).
+pub const DELTA_E_HUNDREDTHS: f64 = 100.0;
+
+/// The thread a block is sewn in: a thread of the document's palette, matched to the colour the
+/// block's art is painted with ([`Palette::nearest`], in sewing order).
+#[derive(Clone, Debug, PartialEq)]
+pub struct BlockThread {
+    /// The colour the block's art is painted with (sRGB): its units' fill or stroke, a literal
+    /// run's stroke.
+    pub art: [u8; 3],
+    /// The palette the thread is from: the document's (`embroidery.setup`, Janome's JEF when it
+    /// sets none).
+    pub palette: Palette,
+    /// The thread's number in the palette, from 1 as the formats count.
+    pub index: usize,
+    /// Its name and colour as the palette lists them.
+    pub name: String,
+    pub color: [u8; 3],
+    /// The CIEDE2000 colour difference between the art's colour and the thread's
+    /// (`vectorcraft_stitch::color`): 0 when the art is painted with the thread's own colour, a
+    /// swatch of the palette's thread library.
+    pub delta_e: f64,
+}
+
+impl BlockThread {
+    /// `palette`'s thread `matched` to art colour `art`.
+    pub(super) fn new(art: [u8; 3], palette: Palette, matched: Match) -> Self {
+        let Thread { color, name, .. } = palette.thread(matched.index);
+        Self { art, palette, index: matched.index, name, color, delta_e: matched.delta_e }
+    }
+
+    /// The colour difference as a list of threads shows it (`embroidery.threads`): to
+    /// [`DELTA_E_HUNDREDTHS`].
+    pub fn shown_delta_e(&self) -> f64 {
+        (self.delta_e * DELTA_E_HUNDREDTHS).round() / DELTA_E_HUNDREDTHS
+    }
+
+    /// Whether the thread looks like another colour than the art: its difference as shown is past
+    /// [`MISMATCH_DELTA_E`] (`vectorcraft_stitch::thread`), the line that also decides when a block
+    /// takes another thread than a neighbour's. As shown, so that a list never flags a thread whose
+    /// difference it gives as the threshold itself.
+    pub fn mismatch(&self) -> bool {
+        self.shown_delta_e() > MISMATCH_DELTA_E
+    }
+
+    /// The thread as the machine formats take it ([`DesignPlan::to_pattern`]): a format that
+    /// numbers its threads from this palette writes this one, and any other matches the art's
+    /// colour to its own palette.
+    pub fn to_thread(&self) -> Thread {
+        Thread { color: self.art, name: self.name.clone(), chosen: Some(PaletteThread { palette: self.palette, index: self.index }) }
+    }
+}
+
 /// One sewing unit, and where its stitches are in the plan.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Unit {
     pub origin: Origin,
     /// The thread it is sewn in: its block's.
-    pub thread: Thread,
+    pub thread: BlockThread,
     /// The parameters its shape was planned with (their style says how it is sewn); `None` for a
     /// literal run, whose points are sewn as they are.
     pub params: Option<Params>,
@@ -83,7 +139,7 @@ pub struct Unit {
 /// One thread's stitches as the machine sews them, and the units they come from.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThreadBlock {
-    pub thread: Thread,
+    pub thread: BlockThread,
     /// Its stitches in needle order.
     pub stitches: Vec<Stitch>,
     /// The units sewn in it, in sewing order: a range of [`DesignPlan::units`].
@@ -154,9 +210,10 @@ impl DesignPlan {
         Some(first + u.stitches.start..first + u.stitches.end)
     }
 
-    /// The design as the machine formats write it: its blocks in sewing order, under its name.
+    /// The design as the machine formats write it: its blocks in sewing order, each with its
+    /// thread ([`BlockThread::to_thread`]), under its name.
     pub fn to_pattern(&self) -> Pattern {
-        let blocks = self.blocks.iter().map(|b| Block { thread: b.thread.clone(), stitches: b.stitches.clone() }).collect();
+        let blocks = self.blocks.iter().map(|b| Block { thread: b.thread.to_thread(), stitches: b.stitches.clone() }).collect();
         Pattern { name: self.name.clone(), blocks }
     }
 }

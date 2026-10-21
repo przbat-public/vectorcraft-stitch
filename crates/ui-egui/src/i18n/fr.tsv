@@ -2361,6 +2361,9 @@
 	Radar Graph Tool	Outil Graphe radar
 	Radial	Radial
 	Radial Glows	Halos radiaux
+	Embroidery Threads	Fils à broder
+	Brother Threads (PEC)	Fils Brother (PEC)
+	Janome Threads (JEF)	Fils Janome (JEF)
 	Radial Gradient	Dégradé radial
 	Radius 1	Rayon 1
 	Radius 2	Rayon 2
@@ -5205,3 +5208,4 @@ theme	Appearance	Apparence
 	Justification	Justification
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	les variables et jeux de données du fichier n’ont pas été lus (variables : {variables}, jeux de données : {data_sets}) : le panneau Variables ne les affiche pas
 	Trim After	Couper le fil après
+	Embroidery Setup	Paramètres de broderie

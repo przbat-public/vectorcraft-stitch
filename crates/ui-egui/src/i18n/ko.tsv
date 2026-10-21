@@ -678,6 +678,9 @@
 	Neutral Gradients	중간색 그레이디언트
 	Duotone Gradients	듀오톤 그레이디언트
 	Radial Glows	방사형 광선
+	Embroidery Threads	자수실
+	Brother Threads (PEC)	Brother 자수실 (PEC)
+	Janome Threads (JEF)	Janome 자수실 (JEF)
 	Save Swatch Library…	견본 라이브러리 저장…
 	Symbol Libraries	심볼 라이브러리
 	Help	도움말
@@ -4783,3 +4786,4 @@ lighting	Light	광원
 	Justification	양끝 맞춤
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	파일의 변수와 데이터 세트를 읽지 않았습니다(변수: {variables}, 데이터 세트: {data_sets}). 변수 패널에 표시되지 않습니다
 	Trim After	이후 실 자르기
+	Embroidery Setup	자수 설정

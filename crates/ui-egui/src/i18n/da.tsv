@@ -641,6 +641,9 @@
 	Neutral Gradients	Neutrale gradienter
 	Duotone Gradients	Duotonegradienter
 	Radial Glows	Radiale gløder
+	Embroidery Threads	Broderigarn
+	Brother Threads (PEC)	Brother-garn (PEC)
+	Janome Threads (JEF)	Janome-garn (JEF)
 	Save Swatch Library…	Gem bibliotek med farveprøver…
 	Symbol Libraries	Symbolbiblioteker
 	Help	Hjælp
@@ -5189,3 +5192,4 @@ swatch	Bright Violet	Kraftig violet
 	Minimum must not exceed Desired, nor Desired Maximum.	Minimum må ikke overstige Ønsket, og Ønsket ikke Maksimum.
 	Justification	Justering
 	Trim After	Klip tråden efter
+	Embroidery Setup	Broderiopsætning

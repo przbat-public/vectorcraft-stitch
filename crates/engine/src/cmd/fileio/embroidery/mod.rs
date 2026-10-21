@@ -22,11 +22,9 @@
 
 mod import;
 
-use serde::Deserialize;
 use serde_json::Value;
 use vectorcraft_doc::Document;
 use vectorcraft_stitch::format::Format as StitchFormat;
-use vectorcraft_stitch::plan::Style;
 
 use super::super::*;
 use super::{Encoded, Format, FormatOption};
@@ -123,11 +121,7 @@ pub const OPTIONS: &[FormatOption] =
 
 /// The options in `p`, checked.
 fn options(p: &Value) -> Result<Options> {
-    let o = Options::deserialize(p).map_err(|e| bad(C, format!("embroidery options: {e}")))?;
-    if Style::from_id(&o.stitch_style).is_none() && o.stitch_style != "auto" {
-        return Err(bad(C, format!("stitchStyle `{}`: auto, fill, satin or running", o.stitch_style)));
-    }
-    Ok(o)
+    Options::from_params(p, C)
 }
 
 /// Write a machine file from the document's visible art: its stitch plan, as the format writes it.
@@ -152,7 +146,7 @@ pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
 
 #[cfg(test)]
 mod tests {
-    use vectorcraft_stitch::plan::{Params, THREAD_WEIGHT};
+    use vectorcraft_stitch::plan::{Params, Style, THREAD_WEIGHT};
 
     use super::*;
     use crate::cmd::embroidery::options::{EXPAND_DEFAULT, MAX_EXPAND};

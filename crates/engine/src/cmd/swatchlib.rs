@@ -1,18 +1,21 @@
 //! Swatch libraries (Window → Swatch Libraries, the Swatches panel's library button): read-only
 //! sets of swatches the library panel shows. The built-in libraries are computed in
-//! [`vectorcraft_color::libraries`]; User Defined ones are the library files in the user library
-//! folder ([`Libraries`]), and Other Library… loads more from files. `swatch.library.add` copies
-//! swatches into the document; `swatch.library.save` writes the document's ([`palette_io`]).
-//! `swatch.library.copyToUser` copies a loaded library into the user library folder.
+//! [`vectorcraft_color::libraries`], and the embroidery thread libraries ([`THREAD_LIBRARIES`])
+//! here from the palettes the machine formats number their threads from; User Defined ones are
+//! the library files in the user library folder ([`Libraries`]), and Other Library… loads more
+//! from files. `swatch.library.add` copies swatches into the document; `swatch.library.save`
+//! writes the document's ([`palette_io`]). `swatch.library.copyToUser` copies a loaded library
+//! into the user library folder.
 
 use std::collections::HashSet;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use serde_json::{Value, json};
 use vectorcraft_color::libraries::{BuiltinLibrary, GRADIENT_LIBRARIES, SWATCH_LIBRARIES, builtin_library};
 use vectorcraft_color::palette_io::{self, PaletteFormat};
 use vectorcraft_color::recolor::Palette;
 use vectorcraft_color::{Paint, Swatch, SwatchGroup, SwatchLibrary, default_swatches};
+use vectorcraft_stitch::thread;
 
 use super::fileio::{create_dir, extension, read_file, write_file, write_new_file};
 use super::menucmds::squash;
@@ -27,7 +30,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Swatch Libraries",
             [],
             None,
-            "{} → {libraries: [{id, name, category: \"builtIn\"|\"gradients\"|\"user\" (User Defined: the library files in the user library folder, rescanned now)|\"loaded\" (swatch.library.load), count, path?}], userFolder} every library the library panel opens, in menu order",
+            "{} → {libraries: [{id, name, category: \"builtIn\"|\"gradients\"|\"threads\" (embroidery: the threads PES and JEF files number their colours from, Brother's 64 and Janome's 78)|\"user\" (User Defined: the library files in the user library folder, rescanned now)|\"loaded\" (swatch.library.load), count, path?}], userFolder} every library the library panel opens, in menu order",
             always,
             list
         ),
@@ -342,22 +345,71 @@ pub(crate) fn stem(name: &str) -> &str {
 pub struct LibraryInfo {
     pub id: String,
     pub name: String,
-    /// "builtIn", "gradients", "user" or "loaded".
+    /// "builtIn", "gradients", "threads" ([`THREADS`]), "user" or "loaded".
     pub category: &'static str,
 }
 
-/// The built-in libraries with their categories.
-fn builtins() -> impl Iterator<Item = (&'static str, &'static BuiltinLibrary)> {
-    SWATCH_LIBRARIES.iter().map(|b| ("builtIn", b)).chain(GRADIENT_LIBRARIES.iter().map(|b| ("gradients", b)))
+/// The category `swatch.library.list` gives the embroidery thread libraries ([`THREAD_LIBRARIES`]).
+pub const THREADS: &str = "threads";
+
+/// An embroidery thread library: the threads a machine format numbers its colours from, as
+/// swatches. In a document of that palette, art painted with one of them is sewn in that thread
+/// exactly and any other colour is matched to the nearest; the format of that palette writes
+/// that thread whatever the document's palette.
+pub struct ThreadLibrary {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub palette: thread::Palette,
 }
 
-fn builtin_info((category, b): (&'static str, &BuiltinLibrary)) -> LibraryInfo {
-    LibraryInfo { id: b.id.into(), name: b.name.into(), category }
+/// The embroidery thread libraries (Window → Swatch Libraries → Embroidery Threads), in menu
+/// order: built from the palettes the PES and JEF writers number their threads from
+/// ([`vectorcraft_stitch::thread`]), so no file of their own.
+pub const THREAD_LIBRARIES: &[ThreadLibrary] = &[
+    ThreadLibrary { id: "brother-threads-pec", name: "Brother Threads (PEC)", palette: thread::Palette::Pec },
+    ThreadLibrary { id: "janome-threads-jef", name: "Janome Threads (JEF)", palette: thread::Palette::Jef },
+];
+
+/// `palette`'s threads as swatches, in its order: each named by the palette, its number and its
+/// name ("PEC 5 Red"): swatch names are unique, and the PEC table gives three names (Orange,
+/// Cream Yellow, Flesh Pink) to two entries each.
+pub fn thread_swatches(palette: thread::Palette) -> Vec<Swatch> {
+    let code = palette.id().to_ascii_uppercase();
+    let swatch = |(i, &([r, g, b], name)): (usize, &([u8; 3], &str))| Swatch {
+        name: format!("{code} {} {name}", i + 1),
+        paint: Paint::solid(Color::rgb8(r, g, b)),
+        global: false,
+        spot: false,
+    };
+    palette.threads().iter().enumerate().map(swatch).collect()
 }
 
-/// Every library, in menu order: built-in, gradients, User Defined, loaded.
+/// Thread library `id` ([`THREAD_LIBRARIES`]), built once.
+fn thread_library(id: &str) -> Option<Arc<SwatchLibrary>> {
+    static LIBS: OnceLock<Vec<Arc<SwatchLibrary>>> = OnceLock::new();
+    let libs = LIBS.get_or_init(|| {
+        let make = |t: &ThreadLibrary| Arc::new(SwatchLibrary { name: t.name.into(), swatches: thread_swatches(t.palette), groups: vec![] });
+        THREAD_LIBRARIES.iter().map(make).collect()
+    });
+    THREAD_LIBRARIES.iter().position(|t| t.id == id).and_then(|i| libs.get(i).cloned())
+}
+
+/// The built-in libraries in menu order: the colour libraries, the gradient libraries, then the
+/// embroidery thread libraries.
+fn builtins() -> impl Iterator<Item = LibraryInfo> {
+    let info = |category: &'static str| move |b: &BuiltinLibrary| LibraryInfo { id: b.id.into(), name: b.name.into(), category };
+    let threads = THREAD_LIBRARIES.iter().map(|t| LibraryInfo { id: t.id.into(), name: t.name.into(), category: THREADS });
+    SWATCH_LIBRARIES.iter().map(info("builtIn")).chain(GRADIENT_LIBRARIES.iter().map(info("gradients"))).chain(threads)
+}
+
+/// Built-in library `id`'s swatches.
+fn builtin(id: &str) -> Option<Arc<SwatchLibrary>> {
+    builtin_library(id).or_else(|| thread_library(id))
+}
+
+/// Every library, in menu order: built-in, gradients, embroidery threads, User Defined, loaded.
 pub fn libraries(s: &Session) -> Vec<LibraryInfo> {
-    builtins().map(builtin_info).chain(s.swatch_libraries.infos().cloned()).collect()
+    builtins().chain(s.swatch_libraries.infos().cloned()).collect()
 }
 
 /// Library `key` (an id, or a name in any case) with its info.
@@ -365,8 +417,8 @@ pub fn library(s: &Session, key: &str) -> Option<(LibraryInfo, Arc<SwatchLibrary
     if let Some(found) = s.swatch_libraries.get(key) {
         return Some(found);
     }
-    if let Some(b) = builtins().find(|(_, b)| b.id == key) {
-        return Some((builtin_info(b), builtin_library(key)?));
+    if let Some(info) = builtins().find(|b| b.id == key) {
+        return Some((info, builtin(key)?));
     }
     let id = libraries(s).into_iter().find(|l| l.name.eq_ignore_ascii_case(key))?.id;
     library(s, &id)

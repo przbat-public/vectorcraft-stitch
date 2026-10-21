@@ -645,6 +645,9 @@
 	Neutral Gradients	Gradienty neutralne
 	Duotone Gradients	Gradienty dwutonowe
 	Radial Glows	Blaski promieniste
+	Embroidery Threads	Nici do haftu
+	Brother Threads (PEC)	Nici Brother (PEC)
+	Janome Threads (JEF)	Nici Janome (JEF)
 	Save Swatch Library…	Zapisz bibliotekę próbek…
 	Symbol Libraries	Biblioteki symboli
 	Help	Pomoc
@@ -5058,3 +5061,4 @@ mark-style	Japanese	Japońskie
 	Justification	Justowanie
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	zmienne i zestawy danych pliku nie zostały wczytane (zmienne: {variables}, zestawy danych: {data_sets}): panel Zmienne ich nie wyświetla
 	Trim After	Obetnij nić po
+	Embroidery Setup	Ustawienia haftu

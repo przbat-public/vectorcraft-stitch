@@ -46,6 +46,8 @@ mod tests_distortkeys;
 #[cfg(test)]
 mod tests_drawopts;
 #[cfg(test)]
+mod tests_embroidery;
+#[cfg(test)]
 mod tests_exportas;
 #[cfg(test)]
 mod tests_fileio;

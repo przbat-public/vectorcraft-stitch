@@ -2683,6 +2683,9 @@ mark-style	Japanese	Kiểu Nhật
 	Radial Blur…	Mờ hướng tâm…
 	Radial Dividers:	Đường chia hướng tâm:
 	Radial Glows	Ánh sáng hướng tâm
+	Embroidery Threads	Chỉ thêu
+	Brother Threads (PEC)	Chỉ thêu Brother (PEC)
+	Janome Threads (JEF)	Chỉ thêu Janome (JEF)
 	Radial Gradient	Chuyển sắc hướng tâm
 	Radius	Bán kính
 	Radius 1	Bán kính 1
@@ -4800,3 +4803,4 @@ theme	Appearance	Giao diện
 	Justification	Căn đều
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	các biến và tập dữ liệu của tệp chưa được đọc (biến: {variables}, tập dữ liệu: {data_sets}): bảng Biến không liệt kê chúng
 	Trim After	Cắt chỉ sau
+	Embroidery Setup	Thiết lập thêu

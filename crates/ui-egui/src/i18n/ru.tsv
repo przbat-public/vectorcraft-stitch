@@ -2390,6 +2390,9 @@ mark-style	Japanese	Японский
 	Radar Graph Tool	Инструмент «Лепестковая диаграмма»
 	Radial	Радиальный
 	Radial Glows	Радиальные свечения
+	Embroidery Threads	Нити для вышивки
+	Brother Threads (PEC)	Нити Brother (PEC)
+	Janome Threads (JEF)	Нити Janome (JEF)
 	Radial Gradient	Радиальный градиент
 	Radius 1	Радиус 1
 	Radius 2	Радиус 2
@@ -4816,3 +4819,4 @@ lighting	Light	Свет
 	Justification	Выключка
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	переменные и наборы данных файла не прочитаны (переменных: {variables}, наборов данных: {data_sets}): панель «Переменные» их не показывает
 	Trim After	Обрезать нить после
+	Embroidery Setup	Параметры вышивки

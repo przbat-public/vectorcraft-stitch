@@ -1,16 +1,20 @@
 //! The design's stitch plan: every stitch of every block belongs to one sewing unit, a unit says
 //! what it sews and what it was planned with, stitches are numbered from 1 in sewing order, and
-//! the export writes the plan.
+//! the export writes the plan. The document's embroidery settings: its thread palette, kept in its
+//! file. The threads: each block's from the document's palette, which the exports name and
+//! `embroidery.threads` lists.
 
 use serde_json::json;
 use vectorcraft_doc::NodeId;
+use vectorcraft_doc::embroidery::ThreadPalette;
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::format::Format;
 use vectorcraft_stitch::plan::Style;
+use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 use vectorcraft_stitch::{Command, pt_to_mm};
 
 use super::digitize::digitize;
-use super::plan::{DesignPlan, FIRST_NUMBER, Part};
+use super::plan::{BlockThread, DELTA_E_HUNDREDTHS, DesignPlan, FIRST_NUMBER, Part};
 use super::*;
 
 /// Points per millimetre: the documents count points, the designs millimetres.
@@ -158,7 +162,7 @@ fn units_say_what_they_sew_and_with_what() {
     let satin = line.params.unwrap();
     assert_eq!(satin.style, Style::Satin);
     assert!((satin.width - pt_to_mm(6.0)).abs() < 1e-9, "the stroke's width: {}", satin.width);
-    assert_eq!((fill.thread.color, line.thread.color), ([0xcc, 0x22, 0x22], [0x22, 0x33, 0xcc]));
+    assert_eq!((fill.thread.art, line.thread.art), ([0xcc, 0x22, 0x22], [0x22, 0x33, 0xcc]));
     let [letter] = of(t)[..] else { panic!("one unit for the T: {:?}", of(t)) };
     assert_eq!(letter.origin.part, Part::Fill(0));
     assert_eq!(letter.columns.map(|p| p.style), Some(Style::Satin), "its strokes are sewn as satin columns");
@@ -276,5 +280,241 @@ fn the_export_writes_the_plan() {
     assert_eq!(plan.name, s.doc().unwrap().doc.title);
     for format in Format::ALL {
         assert_eq!(export(&mut s, format), format.write(&plan.to_pattern()).unwrap(), "{}", format.id());
+    }
+}
+
+/// The document's native file as bytes (`document.serialize`).
+fn native(s: &mut Session) -> Vec<u8> {
+    let saved = s.execute("document.serialize", &json!({})).unwrap();
+    match saved["dataBase64"].as_str() {
+        Some(b) => vectorcraft_format::base64_decode(b).unwrap(),
+        None => saved["text"].as_str().unwrap().as_bytes().to_vec(),
+    }
+}
+
+/// `embroidery.setup` sets the document's thread palette in one undo step and unsets it with null;
+/// setting what is set already, or passing its reply back, changes nothing and takes no step; a
+/// palette it doesn't know, or a setting, is refused.
+#[test]
+fn the_document_sets_its_thread_palette() {
+    let mut s = blank();
+    let steps = |s: &Session| s.doc().unwrap().history.undo.len();
+    let before = steps(&s);
+    assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap(), json!({"palette": null, "threadPalette": "jef"}));
+    let r = s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
+    assert_eq!(r, json!({"palette": "pec", "threadPalette": "pec"}));
+    assert_eq!(steps(&s), before + 1);
+    assert_eq!(s.execute("embroidery.setup", &r).unwrap(), r);
+    assert_eq!(s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap(), r);
+    assert_eq!(steps(&s), before + 1, "no change, no step");
+    for bad in [json!({"palette": "madeira"}), json!({"palette": 5}), json!({"palette": ["pec"]}), json!({"palete": "pec"}), json!([1])] {
+        assert!(s.execute("embroidery.setup", &bad).is_err(), "{bad}");
+    }
+    assert_eq!(steps(&s), before + 1);
+    assert_eq!(s.execute("embroidery.setup", &json!({"palette": null})).unwrap(), json!({"palette": null, "threadPalette": "jef"}));
+    assert!(s.doc().unwrap().doc.embroidery.is_none(), "nothing set, nothing kept");
+    s.execute("edit.undo", &json!({})).unwrap();
+    assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap()["palette"], "pec");
+    // The document's palettes are the stitch planner's, by name.
+    let known: Vec<Option<Palette>> = ThreadPalette::KNOWN.iter().map(|p| p.id().and_then(Palette::from_id)).collect();
+    assert_eq!(known, Palette::ALL.map(Some));
+}
+
+/// Settings with nothing in them, as a file may hold them, are as good as none: asking for the
+/// settings, or unsetting the palette, takes no undo step and leaves the document unchanged.
+#[test]
+fn empty_settings_in_a_file_are_none() {
+    let mut file: serde_json::Value = serde_json::from_slice(&native(&mut blank())).unwrap();
+    for empty in [json!({}), json!({"palette": null})] {
+        file["document"]["embroidery"] = empty.clone();
+        let data = vectorcraft_format::base64_encode(&serde_json::to_vec(&file).unwrap());
+        let mut s = Session::new();
+        s.execute("document.open", &json!({"name": "empty.vectorcraft", "dataBase64": data})).unwrap();
+        let steps = s.doc().unwrap().history.undo.len();
+        for p in [json!({}), json!({"palette": null})] {
+            assert_eq!(s.execute("embroidery.setup", &p).unwrap(), json!({"palette": null, "threadPalette": "jef"}), "{empty}: {p}");
+        }
+        let st = s.doc().unwrap();
+        assert_eq!(st.history.undo.len(), steps, "{empty}: no step");
+        assert!(!st.is_dirty(), "{empty}: unchanged");
+    }
+    // A frontend's params check refuses another key first; the command says it too.
+    let refused = super::setup(&mut blank(), &json!({"fabric": "knit"})).unwrap_err().to_string();
+    assert!(refused.contains("unknown setting `fabric`: the only setting is palette"), "{refused}");
+}
+
+/// The palette is saved with the document. A file a newer version saved keeps what this one
+/// doesn't know when saved again: a setting it doesn't read, and a palette it doesn't know, which
+/// it reports as it is and matches as unset.
+#[test]
+fn the_thread_palette_is_saved_and_a_newer_versions_settings_are_kept() {
+    let mut s = blank();
+    s.execute("embroidery.setup", &json!({"palette": "jef"})).unwrap();
+    let saved = native(&mut s);
+    let mut again = Session::new();
+    again.execute("document.open", &json!({"name": "threads.vectorcraft", "dataBase64": vectorcraft_format::base64_encode(&saved)})).unwrap();
+    assert_eq!(again.execute("embroidery.setup", &json!({})).unwrap()["palette"], "jef");
+    // As a newer version might write it.
+    let mut file: serde_json::Value = serde_json::from_slice(&saved).unwrap();
+    let newer = json!({"palette": {"chart": "madeira", "line": "polyneon"}, "fabric": {"preset": "knit", "pull": 0.35}});
+    file["document"]["embroidery"] = newer.clone();
+    let bytes = serde_json::to_vec(&file).unwrap();
+    let mut s = Session::new();
+    s.execute("document.open", &json!({"name": "newer.vectorcraft", "dataBase64": vectorcraft_format::base64_encode(&bytes)})).unwrap();
+    let r = s.execute("embroidery.setup", &json!({})).unwrap();
+    assert_eq!(r, json!({"palette": newer["palette"], "threadPalette": "jef"}));
+    // Its own reply passed back changes nothing; another palette replaces it, keeping the fabric.
+    s.execute("embroidery.setup", &r).unwrap();
+    let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
+    assert_eq!(kept["document"]["embroidery"], newer);
+    // Its threads are Janome's, and the plan says why.
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    let threads = s.execute("embroidery.threads", &json!({})).unwrap();
+    assert_eq!(threads["palette"], "jef");
+    assert!(threads["blocks"].as_array().unwrap().iter().all(|b| b["thread"]["palette"] == "jef"));
+    let warnings = threads["warnings"].as_array().unwrap();
+    assert!(warnings.iter().any(|w| w.as_str().is_some_and(|w| w.contains("not one this version knows"))), "{warnings:?}");
+    s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
+    let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
+    assert_eq!(kept["document"]["embroidery"], json!({"palette": "pec", "fabric": newer["fabric"]}));
+    assert!(s.execute("embroidery.threads", &json!({})).unwrap()["warnings"].as_array().unwrap().is_empty());
+}
+
+/// A document that sets no palette is sewn in Janome's threads, the default, and its PES export
+/// still names Brother's: the threads nearest the same art.
+#[test]
+fn a_document_without_a_palette_is_sewn_in_janomes_threads() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    rect(&mut s, "#2233cc", 100.0, 20.0, 40.0, 30.0);
+    let plan = plan_of(&s);
+    assert!(plan.blocks.iter().all(|b| b.thread.palette == Palette::Jef), "{:?}", plan.blocks.iter().map(|b| &b.thread).collect::<Vec<_>>());
+    let unset = export(&mut s, Format::Pes);
+    s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
+    assert_eq!(export(&mut s, Format::Pes), unset, "the PES export matches to Brother's palette either way");
+}
+
+/// A design opened from a PES or a JEF file is in that format's palette, so its threads are the
+/// ones the file names: each block's art is its thread's own colour, none off and none flagged.
+/// One opened from DST or EXP, which name no threads, sets none. Opening is no edit.
+#[test]
+fn an_opened_design_is_in_its_formats_palette() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    rect(&mut s, "#4080ff", 100.0, 20.0, 40.0, 30.0);
+    for format in Format::ALL {
+        let data = vectorcraft_format::base64_encode(&export(&mut s, format));
+        let mut opened = Session::new();
+        opened.execute("document.open", &json!({"name": format!("design.{}", format.id()), "dataBase64": data})).unwrap();
+        assert!(!opened.doc().unwrap().is_dirty(), "{format:?}");
+        let palette = format.palette().map(Palette::id);
+        assert_eq!(opened.execute("embroidery.setup", &json!({})).unwrap()["palette"], json!(palette), "{format:?}");
+        let threads = opened.execute("embroidery.threads", &json!({})).unwrap();
+        let blocks = threads["blocks"].as_array().unwrap();
+        assert_eq!(blocks.len(), 2, "{format:?}: {blocks:?}");
+        if palette.is_some() {
+            assert_eq!(threads["palette"], json!(palette));
+            assert!(blocks.iter().all(|b| b["deltaE"] == json!(0.0) && b["mismatch"] == json!(false)), "{format:?}: {blocks:?}");
+        }
+    }
+}
+
+/// Brother's thread 38, Peacock Blue, as a colour.
+const PEACOCK_BLUE: &str = "#134a46";
+
+/// Each block is sewn in a thread of the document's palette, the one nearest the colour of its
+/// art, with their difference recorded; art painted with a swatch of the palette's thread library
+/// has that thread exactly. The PES and JEF exports name the plan's threads.
+#[test]
+fn blocks_are_sewn_in_threads_of_the_documents_palette() {
+    let mut s = blank();
+    s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    let swatched = rect(&mut s, "#000000", 100.0, 20.0, 40.0, 30.0);
+    s.execute("select.set", &json!({"ids": [swatched]})).unwrap();
+    s.execute("swatch.library.add", &json!({"library": "brother-threads-pec", "names": ["PEC 38 Peacock Blue"], "apply": "fill"})).unwrap();
+    s.execute("select.none", &json!({})).unwrap();
+    let plan = plan_of(&s);
+    let [red, blue] = &plan.blocks[..] else { panic!("two blocks: {:?}", plan.blocks.len()) };
+    assert_eq!((red.thread.palette, red.thread.art), (Palette::Pec, [0xcc, 0x22, 0x22]));
+    assert_eq!(red.thread.index, Palette::Pec.nearest([0xcc, 0x22, 0x22], &[]).index);
+    assert!(red.thread.delta_e > 0.0);
+    assert_eq!((blue.thread.index, blue.thread.name.as_str(), blue.thread.delta_e), (38, "Peacock Blue", 0.0));
+    assert_eq!(blue.thread.art, blue.thread.color);
+    assert!(!blue.thread.mismatch());
+    let names = |plan: &DesignPlan| plan.blocks.iter().map(|b| b.thread.name.clone()).collect::<Vec<_>>();
+    let named = |bytes: &[u8], format: Format| format.read(bytes).unwrap().blocks.iter().map(|b| b.thread.name.clone()).collect::<Vec<_>>();
+    assert_eq!(named(&export(&mut s, Format::Pes), Format::Pes), names(&plan));
+    // In Janome's palette, the plan's threads are Janome's, and the JEF export names them.
+    s.execute("embroidery.setup", &json!({"palette": "jef"})).unwrap();
+    let plan = plan_of(&s);
+    assert!(plan.blocks.iter().all(|b| b.thread.palette == Palette::Jef), "{:?}", plan.blocks.iter().map(|b| &b.thread).collect::<Vec<_>>());
+    assert_eq!(named(&export(&mut s, Format::Jef), Format::Jef), names(&plan));
+}
+
+/// `embroidery.threads` lists each block's art colour, its thread and their difference, flagging
+/// a thread past the threshold, as the plan has them; it takes the export's options and refuses
+/// bad ones.
+#[test]
+fn the_threads_command_lists_each_blocks_thread() {
+    let mut s = blank();
+    s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    rect(&mut s, PEACOCK_BLUE, 100.0, 20.0, 40.0, 30.0);
+    rect(&mut s, "#4080ff", 200.0, 20.0, 40.0, 30.0);
+    rect(&mut s, "#cc2222", 20.0, 200.0, 40.0, 30.0);
+    let r = s.execute("embroidery.threads", &json!({})).unwrap();
+    let plan = plan_of(&s);
+    assert_eq!((&r["palette"], &r["threshold"]), (&json!("pec"), &json!(MISMATCH_DELTA_E)));
+    let blocks = r["blocks"].as_array().unwrap();
+    assert_eq!(blocks.len(), 3, "red, blue, light blue: {blocks:?}");
+    for (k, (b, p)) in blocks.iter().zip(&plan.blocks).enumerate() {
+        assert_eq!((&b["block"], &b["units"]), (&json!(k + 1), &json!(p.units.len())));
+        assert_eq!(
+            (&b["thread"]["palette"], &b["thread"]["index"], &b["thread"]["name"]),
+            (&json!("pec"), &json!(p.thread.index), &json!(p.thread.name))
+        );
+        assert!((b["deltaE"].as_f64().unwrap() - p.thread.delta_e).abs() <= 0.005, "{b}");
+        assert_eq!((&b["deltaE"], &b["mismatch"]), (&json!(p.thread.shown_delta_e()), &json!(p.thread.mismatch())));
+    }
+    assert_eq!((&blocks[0]["art"], &blocks[0]["units"]), (&json!("#cc2222"), &json!(2)), "both red squares");
+    let peacock = &blocks[1];
+    assert_eq!((&peacock["thread"]["index"], &peacock["thread"]["color"], &peacock["deltaE"]), (&json!(38), &json!(PEACOCK_BLUE), &json!(0.0)));
+    assert_eq!((&peacock["mismatch"], &blocks[2]["mismatch"]), (&json!(false), &json!(true)), "no Brother thread is near #4080ff");
+    let red = blocks[0]["deltaE"].as_f64().unwrap();
+    assert!(red > 5.0 && blocks[0]["mismatch"] == json!(false), "Brother's Red is {red} from #cc2222: off, not unlike");
+    // The export's options; bad ones refused.
+    for bad in [json!({"stitchStyle": "cross"}), json!({"density": "dense"}), json!({"pullCompensation": [1, 2, 3]})] {
+        assert!(s.execute("embroidery.threads", &bad).is_err(), "{bad}");
+    }
+    assert!(s.execute("embroidery.threads", &json!({"stitchStyle": "running"})).is_ok());
+}
+
+/// A thread is flagged by its difference as a list shows it: one shown as the threshold itself is
+/// not flagged, one shown past it is.
+#[test]
+fn a_mismatch_is_flagged_by_the_difference_shown() {
+    let thread = |delta_e| BlockThread { art: [0; 3], palette: Palette::Pec, index: 1, name: String::new(), color: [0; 3], delta_e };
+    let step = 1.0 / DELTA_E_HUNDREDTHS;
+    let (at, past) = (thread(MISMATCH_DELTA_E + 0.4 * step), thread(MISMATCH_DELTA_E + 0.6 * step));
+    assert_eq!((at.shown_delta_e(), at.mismatch()), (MISMATCH_DELTA_E, false));
+    assert_eq!((past.shown_delta_e(), past.mismatch()), (MISMATCH_DELTA_E + step, true));
+}
+
+/// `embroidery.threads` takes the export's embroidery options and no other key: another format's
+/// option, or one misspelt, is refused by the params check every frontend runs, not ignored.
+#[test]
+fn the_threads_command_takes_only_the_embroidery_options() {
+    let spec = crate::cmd::find_command("embroidery.threads").unwrap();
+    let named = crate::cmd::params::doc_keys(spec.params).unwrap();
+    let options: Vec<&str> = crate::cmd::fileio::embroidery::OPTIONS.iter().map(|o| o.name).collect();
+    assert_eq!((named.keys, named.more.len()), (options, 0));
+    for (given, why) in [
+        (json!({"densitty": 0.4}), "did you mean `density`?"),
+        (json!({"format": "pes"}), "unknown parameter `format`"),
+        (json!({"selectedOnly": true}), "unknown parameter `selectedOnly`"),
+    ] {
+        let e = crate::check_params("embroidery.threads", &given).unwrap_err().to_string();
+        assert!(e.contains(why), "{given}: {e}");
     }
 }

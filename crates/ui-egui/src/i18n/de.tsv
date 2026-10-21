@@ -2343,6 +2343,9 @@ mark-style	Japanese	Japanisch
 	Radar Graph Tool	Netzdiagramm-Werkzeug
 	Radial	Radial
 	Radial Glows	Radiale Leuchteffekte
+	Embroidery Threads	Stickgarne
+	Brother Threads (PEC)	Brother-Stickgarne (PEC)
+	Janome Threads (JEF)	Janome-Stickgarne (JEF)
 	Radial Gradient	Radialer Verlauf
 	Radius 1	Radius 1
 	Radius 2	Radius 2
@@ -4782,3 +4785,4 @@ effect	Regular	Regelmäßig
 	Justification	Abstände
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	die Variablen und Datensätze der Datei wurden nicht gelesen (Variablen: {variables}, Datensätze: {data_sets}): Das Bedienfeld „Variablen“ listet sie nicht auf
 	Trim After	Faden danach schneiden
+	Embroidery Setup	Stickerei einrichten

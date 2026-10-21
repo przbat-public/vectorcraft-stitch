@@ -83,6 +83,16 @@ impl Format {
         self.id()
     }
 
+    /// The thread palette the format numbers its threads in: Brother's for PES (its PEC part),
+    /// Janome's for JEF; `None` for DST and EXP, which name no colours.
+    pub fn palette(self) -> Option<thread::Palette> {
+        match self {
+            Self::Dst | Self::Exp => None,
+            Self::Pes => Some(thread::Palette::Pec),
+            Self::Jef => Some(thread::Palette::Jef),
+        }
+    }
+
     /// The format `id` names (`dst`, `exp`, `pes`, `jef`).
     pub fn from_id(id: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|f| f.id() == id)
@@ -292,6 +302,22 @@ fn collapse_jumps(points: &mut Vec<Stitch>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// PES numbers Brother's threads and JEF Janome's, as their readers name them; DST and EXP
+    /// name none.
+    #[test]
+    fn each_format_numbers_its_palettes_threads() {
+        assert_eq!(Format::ALL.map(Format::palette), [None, None, Some(thread::Palette::Pec), Some(thread::Palette::Jef)]);
+        let mut pattern = Pattern::default();
+        let stitches = [(0.0, 0.0), (5.0, 0.0), (5.0, 5.0)].map(|(x, y)| Stitch::new(x, y, Command::Stitch)).to_vec();
+        pattern.blocks.push(Block { thread: Thread::rgb([0x12, 0x34, 0x56]), stitches });
+        for format in [Format::Pes, Format::Jef] {
+            let read = format.read(&format.write(&pattern).unwrap()).unwrap();
+            let (Some(palette), [block]) = (format.palette(), read.blocks.as_slice()) else { panic!("{format:?}: one block") };
+            let index = palette.nearest([0x12, 0x34, 0x56], &[]).index;
+            assert_eq!(block.thread, palette.thread(index), "{format:?}");
+        }
+    }
 
     #[test]
     fn steps_sum_to_the_move() {

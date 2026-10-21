@@ -2904,6 +2904,9 @@ mark-style	Japanese	Japán
 	Radial Blur	Körkörös elmosás
 	Radial Blur…	Körkörös elmosás…
 	Radial Glows	Körkörös ragyogások
+	Embroidery Threads	Hímzőcérnák
+	Brother Threads (PEC)	Brother cérnák (PEC)
+	Janome Threads (JEF)	Janome cérnák (JEF)
 	Radial Gradient	Körkörös színátmenet
 	Radial Repeat	Körkörös ismétlés
 	Radius	Sugár
@@ -5192,3 +5195,4 @@ imageTrace	Outline	Körvonal
 	Justification	Sorkizárás
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	a fájl változói és adatkészletei nem lettek beolvasva (változók: {variables}, adatkészletek: {data_sets}): a Változók panel nem listázza őket
 	Trim After	Szálvágás utána
+	Embroidery Setup	Hímzésbeállítás

@@ -114,11 +114,13 @@ fn setup(s: &mut Session, p: &Value) -> Result<Value> {
             "palette" => new.palette = palette_param(v, new.palette.as_ref())?,
             // Reported only.
             "threadPalette" => {}
-            _ => return Err(bad(C, format!("unknown setting `{k}`: the settings are palette"))),
+            _ => return Err(bad(C, format!("unknown setting `{k}`: the only setting is palette"))),
         }
     }
     let new = (!new.is_empty()).then(|| Box::new(new));
-    if new == d.embroidery {
+    // A file may hold settings with nothing in them (`"embroidery": {}`): as good as none, so
+    // asking for the settings doesn't edit the document.
+    if new.as_deref() == d.embroidery.as_deref().filter(|e| !e.is_empty()) {
         return Ok(setup_json(d));
     }
     s.edit("Embroidery Setup", |d, _| {

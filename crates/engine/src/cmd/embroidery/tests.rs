@@ -320,6 +320,29 @@ fn the_document_sets_its_thread_palette() {
     assert_eq!(known, Palette::ALL.map(Some));
 }
 
+/// Settings with nothing in them, as a file may hold them, are as good as none: asking for the
+/// settings, or unsetting the palette, takes no undo step and leaves the document unchanged.
+#[test]
+fn empty_settings_in_a_file_are_none() {
+    let mut file: serde_json::Value = serde_json::from_slice(&native(&mut blank())).unwrap();
+    for empty in [json!({}), json!({"palette": null})] {
+        file["document"]["embroidery"] = empty.clone();
+        let data = vectorcraft_format::base64_encode(&serde_json::to_vec(&file).unwrap());
+        let mut s = Session::new();
+        s.execute("document.open", &json!({"name": "empty.vectorcraft", "dataBase64": data})).unwrap();
+        let steps = s.doc().unwrap().history.undo.len();
+        for p in [json!({}), json!({"palette": null})] {
+            assert_eq!(s.execute("embroidery.setup", &p).unwrap(), json!({"palette": null, "threadPalette": "jef"}), "{empty}: {p}");
+        }
+        let st = s.doc().unwrap();
+        assert_eq!(st.history.undo.len(), steps, "{empty}: no step");
+        assert!(!st.is_dirty(), "{empty}: unchanged");
+    }
+    // A frontend's params check refuses another key first; the command says it too.
+    let refused = super::setup(&mut blank(), &json!({"fabric": "knit"})).unwrap_err().to_string();
+    assert!(refused.contains("unknown setting `fabric`: the only setting is palette"), "{refused}");
+}
+
 /// The palette is saved with the document. A file a newer version saved keeps what this one
 /// doesn't know when saved again: a setting it doesn't read, and a palette it doesn't know, which
 /// it reports as it is and matches as unset.

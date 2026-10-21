@@ -1335,6 +1335,9 @@ pub struct Session {
     pub link_stamps: std::collections::HashMap<(u64, String), link_watch::Stamp>,
     /// The stamps being taken on a worker thread ([`Session::start_link_scan`]).
     pub link_scan: Option<link_watch::LinkScan>,
+    /// Each open document's embroidery planning, with the sewing units' stitches it keeps between
+    /// plans; a document's is dropped when it closes.
+    pub(crate) embroidery_plans: cmd::embroidery::Services,
 }
 
 impl Default for Session {
@@ -1398,6 +1401,7 @@ impl Session {
             search_threads: None,
             link_stamps: Default::default(),
             link_scan: None,
+            embroidery_plans: Default::default(),
         }
     }
 
@@ -1531,6 +1535,7 @@ impl Session {
         // Closed (saved or discarded): nothing left to recover.
         let uid = self.docs[index].uid;
         cmd::recovery::forget(self, uid);
+        self.embroidery_plans.forget(uid);
         let old = self.docs.remove(index);
         if let Some(stash) = &mut self.batch_stash {
             stash.push(old);

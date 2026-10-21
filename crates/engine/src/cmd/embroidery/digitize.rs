@@ -3,7 +3,7 @@
 //! literal stitches read from a file) and the settings each is planned with, clip groups, the
 //! colour of each block, and the limit on a design's size.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use vectorcraft_color::Paint;
 use vectorcraft_doc::embroidery::{StitchRun, ThreadPalette};
@@ -14,6 +14,7 @@ use vectorcraft_stitch::plan::{self, Style};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
 use super::Options;
+use super::cache::{UnitCache, UnitKey};
 use super::plan::{DesignPlan, Origin, Part};
 use super::sequence::{CLEARANCE, Planned, Sequence};
 use super::unit::{ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
@@ -57,6 +58,12 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
 /// ([`super::thread_palette`]), and the warnings for what was left out or approximated; an error
 /// when the design would need too many stitches.
 pub(crate) fn digitize(doc: &Document, opts: &Options) -> Result<DesignPlan, String> {
+    digitize_with(doc, opts, None)
+}
+
+/// [`digitize`], each unit's stitches taken from `cache` when it keeps them for exactly what the
+/// unit is planned from, and kept there when it doesn't ([`UnitCache`]).
+pub(crate) fn digitize_with(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>) -> Result<DesignPlan, String> {
     let seq = Sequence::new(opts.params(Style::Running, NO_WIDTH));
     let mut warnings = Vec::new();
     if let Some(ThreadPalette::Unknown(palette)) = doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()) {
@@ -65,7 +72,7 @@ pub(crate) fn digitize(doc: &Document, opts: &Options) -> Result<DesignPlan, Str
             "the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette"
         ));
     }
-    let mut d = Digitizer { doc, opts, seq, warnings, nest: 0, clip: None, owner: None, instance: None, stitches: 0, failed: None };
+    let mut d = Digitizer { doc, opts, seq, warnings, nest: 0, clip: None, owner: None, instance: None, stitches: 0, failed: None, cache };
     d.run();
     match d.failed {
         Some(e) => Err(e),
@@ -111,6 +118,8 @@ struct Digitizer<'a> {
     stitches: usize,
     /// Why the design can't be stitched (too many stitches); the walk stops planning once set.
     failed: Option<String>,
+    /// The units kept from earlier plans of the document, `None` to plan every unit afresh.
+    cache: Option<&'a Mutex<UnitCache>>,
 }
 
 impl<'a> Digitizer<'a> {
@@ -453,12 +462,17 @@ impl<'a> Digitizer<'a> {
             from,
             clip: if clip_stitches { self.clip.as_ref() } else { None },
         };
-        let UnitStitches { stitches, columns } = match plan_unit(&request) {
+        let planned = match self.planned(&request) {
             Ok(planned) => planned,
             Err(e) => {
                 self.failed = Some(e.to_string());
                 return;
             }
+        };
+        // Kept in the cache too, the stitches are copied into the block.
+        let (stitches, columns) = match Arc::try_unwrap(planned) {
+            Ok(UnitStitches { stitches, columns }) => (stitches, columns),
+            Err(kept) => (kept.stitches.clone(), kept.columns),
         };
         if stitches.is_empty() {
             return;
@@ -472,6 +486,21 @@ impl<'a> Digitizer<'a> {
         let mut block = Block::new(Thread::rgb(color));
         block.stitches = stitches;
         self.seq.add(Planned { origin: unit, params: Some(params), columns, block, literal: None });
+    }
+
+    /// `request`'s stitches: those the cache keeps for it, else planned, and kept.
+    fn planned(&self, request: &UnitRequest<'_>) -> vectorcraft_stitch::Result<Arc<UnitStitches>> {
+        let Some(cache) = self.cache else { return plan_unit(request).map(Arc::new) };
+        let key = UnitKey::of(request);
+        // A cache that a panic elsewhere left locked is passed by: planning afresh is always right.
+        if let Some(kept) = cache.lock().ok().and_then(|mut c| c.get(&key)) {
+            return Ok(kept);
+        }
+        let planned = Arc::new(plan_unit(request)?);
+        if let Ok(mut c) = cache.lock() {
+            c.insert(key, planned.clone());
+        }
+        Ok(planned)
     }
 }
 

@@ -6,16 +6,24 @@
 //!
 //! The parts: [`options`] (the export's options, and the stitch planner's parameters they give an
 //! object), [`digitize`] (the document's art planned as a design: its [`plan::DesignPlan`]),
-//! [`unit`] (one sewing unit's stitches from what it is planned from), [`plan`] (the plan: sewing
-//! units, thread blocks, stitch numbers) and [`sequence`] (the order the blocks are sewn in).
+//! [`unit`] (one sewing unit's stitches from what it is planned from), [`cache`] (each unit's
+//! stitches kept between plans), [`service`] (each open document's planning, with what it keeps),
+//! [`plan`] (the plan: sewing units, thread blocks, stitch numbers) and [`sequence`] (the order the
+//! blocks are sewn in).
 
+mod cache;
 pub(crate) mod digitize;
 pub(crate) mod options;
 pub mod plan;
 mod sequence;
+mod service;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_service;
 mod unit;
+
+use std::sync::Arc;
 
 use serde_json::{Map, Value, json};
 use vectorcraft_color::Color;
@@ -26,6 +34,7 @@ use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 use super::*;
 
 pub(crate) use options::Options;
+pub(crate) use service::Services;
 
 /// The embroidery settings an object carries, the document's, and the threads its design is sewn
 /// in.
@@ -145,11 +154,20 @@ fn palette_param(v: &Value, current: Option<&ThreadPalette>) -> Result<Option<Th
     Ok(Some(p))
 }
 
+/// The active document's plan with `opts`, made by the document's planning service (`cmd` names
+/// the command in the errors), and the document it is the plan of.
+fn planned(s: &mut Session, opts: &Options, cmd: &str) -> Result<(plan::DesignPlan, Arc<Document>)> {
+    let st = s.doc()?;
+    let (uid, doc) = (st.uid, st.doc.clone());
+    let plan = s.embroidery_plans.of(uid).plan(&doc, opts).map_err(|e| bad(cmd, e))?;
+    Ok((plan, doc))
+}
+
 fn threads(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.threads";
     let opts = Options::from_params(p, C)?;
-    let d = &s.doc()?.doc;
-    let plan = digitize::digitize(d, &opts).map_err(|e| bad(C, e))?;
+    let (plan, d) = planned(s, &opts, C)?;
+    let d = &*d;
     let hex = |[r, g, b]: [u8; 3]| Color::rgb8(r, g, b).to_hex();
     let blocks: Vec<Value> = plan
         .blocks

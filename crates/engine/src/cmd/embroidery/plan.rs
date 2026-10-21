@@ -69,7 +69,7 @@ pub struct BlockThread {
     /// The colour the block's art is painted with (sRGB): its units' fill or stroke, a literal
     /// run's stroke.
     pub art: [u8; 3],
-    /// The palette the thread is from: the document's (`embroidery.setup`, Brother's PEC when it
+    /// The palette the thread is from: the document's (`embroidery.setup`, Janome's JEF when it
     /// sets none).
     pub palette: Palette,
     /// The thread's number in the palette, from 1 as the formats count.

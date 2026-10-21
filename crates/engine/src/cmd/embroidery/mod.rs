@@ -44,7 +44,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Setup",
             [],
             None,
-            "{palette?: \"pec\"|\"jef\"|null (the thread palette the design's colours are matched to, the target machine format's: Brother's 64 threads, which PES files number, or Janome's 78, which JEF files number; null unsets it, and PEC is used), threadPalette?: (reported only: ignored when passed back)} change the document's embroidery settings in one undo step, saved with the document; no params → the current settings → {palette: as set (null when unset; one a newer version wrote, as it is), threadPalette: \"pec\"|\"jef\" (the palette the stitch plan matches to: palette, else PEC)}",
+            "{palette?: \"pec\"|\"jef\"|null (the thread palette the design's colours are matched to, the target machine format's: Brother's 64 threads, which PES files number, or Janome's 78, which JEF files number; null unsets it, and JEF is used), threadPalette?: (reported only: ignored when passed back)} change the document's embroidery settings in one undo step, saved with the document; no params → the current settings → {palette: as set (null when unset; one a newer version wrote, as it is), threadPalette: \"pec\"|\"jef\" (the palette the stitch plan matches to: palette, else JEF)}",
             has_doc,
             setup
         ),
@@ -82,11 +82,10 @@ fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// The palette the stitch plan matches a document's colours to when the document sets none, or
-/// sets one this version doesn't know: Brother's PEC palette. A choice, not a sourced default: it
-/// keeps what the PES export did before documents had a palette (a JEF export still matches the
-/// art's colours to Janome's palette itself), and every real design VectorCraft is tested with is
-/// a PES file.
-pub(crate) const DEFAULT_PALETTE: Palette = Palette::Pec;
+/// sets one this version doesn't know: Janome's JEF palette. The project owner's product choice
+/// (2026-10-21), not a sourced default. Each format still writes its own palette's threads: a PES
+/// export matches the art's colours to Brother's palette itself.
+pub(crate) const DEFAULT_PALETTE: Palette = Palette::Jef;
 
 /// The thread palette the document's colours are matched to: the one it sets
 /// (`embroidery.setup`), else [`DEFAULT_PALETTE`].

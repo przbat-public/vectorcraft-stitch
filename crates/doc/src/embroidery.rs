@@ -47,7 +47,7 @@ pub struct StitchRun {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct EmbroiderySetup {
     /// The thread palette the design's colours are matched to: the target machine format's.
-    /// `None`: unset (the stitch plan takes Brother's PEC palette).
+    /// `None`: unset (the stitch plan takes Janome's JEF palette).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub palette: Option<ThreadPalette>,
     /// Keys a newer version wrote that this one doesn't read, kept so that saving loses nothing.

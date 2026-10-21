@@ -300,21 +300,21 @@ fn the_document_sets_its_thread_palette() {
     let mut s = blank();
     let steps = |s: &Session| s.doc().unwrap().history.undo.len();
     let before = steps(&s);
-    assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap(), json!({"palette": null, "threadPalette": "pec"}));
-    let r = s.execute("embroidery.setup", &json!({"palette": "jef"})).unwrap();
-    assert_eq!(r, json!({"palette": "jef", "threadPalette": "jef"}));
+    assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap(), json!({"palette": null, "threadPalette": "jef"}));
+    let r = s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
+    assert_eq!(r, json!({"palette": "pec", "threadPalette": "pec"}));
     assert_eq!(steps(&s), before + 1);
     assert_eq!(s.execute("embroidery.setup", &r).unwrap(), r);
-    assert_eq!(s.execute("embroidery.setup", &json!({"palette": "jef"})).unwrap(), r);
+    assert_eq!(s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap(), r);
     assert_eq!(steps(&s), before + 1, "no change, no step");
     for bad in [json!({"palette": "madeira"}), json!({"palette": 5}), json!({"palette": ["pec"]}), json!({"palete": "pec"}), json!([1])] {
         assert!(s.execute("embroidery.setup", &bad).is_err(), "{bad}");
     }
     assert_eq!(steps(&s), before + 1);
-    assert_eq!(s.execute("embroidery.setup", &json!({"palette": null})).unwrap(), json!({"palette": null, "threadPalette": "pec"}));
+    assert_eq!(s.execute("embroidery.setup", &json!({"palette": null})).unwrap(), json!({"palette": null, "threadPalette": "jef"}));
     assert!(s.doc().unwrap().doc.embroidery.is_none(), "nothing set, nothing kept");
     s.execute("edit.undo", &json!({})).unwrap();
-    assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap()["palette"], "jef");
+    assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap()["palette"], "pec");
     // The document's palettes are the stitch planner's, by name.
     let known: Vec<Option<Palette>> = ThreadPalette::KNOWN.iter().map(|p| p.id().and_then(Palette::from_id)).collect();
     assert_eq!(known, Palette::ALL.map(Some));
@@ -339,22 +339,36 @@ fn the_thread_palette_is_saved_and_a_newer_versions_settings_are_kept() {
     let mut s = Session::new();
     s.execute("document.open", &json!({"name": "newer.vectorcraft", "dataBase64": vectorcraft_format::base64_encode(&bytes)})).unwrap();
     let r = s.execute("embroidery.setup", &json!({})).unwrap();
-    assert_eq!(r, json!({"palette": newer["palette"], "threadPalette": "pec"}));
+    assert_eq!(r, json!({"palette": newer["palette"], "threadPalette": "jef"}));
     // Its own reply passed back changes nothing; another palette replaces it, keeping the fabric.
     s.execute("embroidery.setup", &r).unwrap();
     let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
     assert_eq!(kept["document"]["embroidery"], newer);
-    // Its threads are Brother's, and the plan says why.
+    // Its threads are Janome's, and the plan says why.
     rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
     let threads = s.execute("embroidery.threads", &json!({})).unwrap();
-    assert_eq!(threads["palette"], "pec");
-    assert!(threads["blocks"].as_array().unwrap().iter().all(|b| b["thread"]["palette"] == "pec"));
+    assert_eq!(threads["palette"], "jef");
+    assert!(threads["blocks"].as_array().unwrap().iter().all(|b| b["thread"]["palette"] == "jef"));
     let warnings = threads["warnings"].as_array().unwrap();
     assert!(warnings.iter().any(|w| w.as_str().is_some_and(|w| w.contains("not one this version knows"))), "{warnings:?}");
     s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
     let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
     assert_eq!(kept["document"]["embroidery"], json!({"palette": "pec", "fabric": newer["fabric"]}));
     assert!(s.execute("embroidery.threads", &json!({})).unwrap()["warnings"].as_array().unwrap().is_empty());
+}
+
+/// A document that sets no palette is sewn in Janome's threads, the default, and its PES export
+/// still names Brother's: the threads nearest the same art.
+#[test]
+fn a_document_without_a_palette_is_sewn_in_janomes_threads() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    rect(&mut s, "#2233cc", 100.0, 20.0, 40.0, 30.0);
+    let plan = plan_of(&s);
+    assert!(plan.blocks.iter().all(|b| b.thread.palette == Palette::Jef), "{:?}", plan.blocks.iter().map(|b| &b.thread).collect::<Vec<_>>());
+    let unset = export(&mut s, Format::Pes);
+    s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
+    assert_eq!(export(&mut s, Format::Pes), unset, "the PES export matches to Brother's palette either way");
 }
 
 /// Brother's thread 38, Peacock Blue, as a colour.
@@ -366,6 +380,7 @@ const PEACOCK_BLUE: &str = "#134a46";
 #[test]
 fn blocks_are_sewn_in_threads_of_the_documents_palette() {
     let mut s = blank();
+    s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
     rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
     let swatched = rect(&mut s, "#000000", 100.0, 20.0, 40.0, 30.0);
     s.execute("select.set", &json!({"ids": [swatched]})).unwrap();
@@ -395,6 +410,7 @@ fn blocks_are_sewn_in_threads_of_the_documents_palette() {
 #[test]
 fn the_threads_command_lists_each_blocks_thread() {
     let mut s = blank();
+    s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
     rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
     rect(&mut s, PEACOCK_BLUE, 100.0, 20.0, 40.0, 30.0);
     rect(&mut s, "#4080ff", 200.0, 20.0, 40.0, 30.0);

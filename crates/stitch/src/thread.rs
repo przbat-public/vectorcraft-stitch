@@ -11,10 +11,16 @@
 //! The tables are the manufacturers' published charts as public reverse-engineering documents
 //! list them; the names are theirs (thread names are data, not creative text).
 
+use std::sync::OnceLock;
+
 use crate::{Thread, color};
 
 /// A palette entry: sRGB and the thread's name.
 pub type Entry = ([u8; 3], &'static str);
+
+/// The number the formats leave for "no colour": no thread has it, so a block without a
+/// neighbour on one side leaves it out instead ([`Palette::assign`]).
+const NO_THREAD: usize = 0;
 
 /// A thread within this colour difference (CIEDE2000, [`crate::color`]) of the art still looks like
 /// it; a thread farther looks clearly unlike it. So a block takes another thread than a
@@ -103,8 +109,8 @@ impl Palette {
         }
         let lab = color::lab(color);
         let (mut best, mut any): (Option<Match>, Option<Match>) = (None, None);
-        for (i, &(rgb, _)) in self.threads().iter().enumerate().take(self.thread_count()) {
-            let m = Match { index: i + 1, delta_e: color::delta_e(lab, color::lab(rgb)) };
+        for (i, &thread) in self.labs().iter().enumerate().take(self.thread_count()) {
+            let m = Match { index: i + 1, delta_e: color::delta_e(lab, thread) };
             let nearer = |b: Option<Match>| b.is_none_or(|b| m.delta_e < b.delta_e);
             if nearer(any) {
                 any = Some(m);
@@ -113,7 +119,20 @@ impl Palette {
                 best = Some(m);
             }
         }
+        // A palette has threads, so `any` is always one: this stand-in is never taken.
         best.or(any).unwrap_or(Match { index: 1, delta_e: f64::INFINITY })
+    }
+
+    /// Its entries' colours in CIE L*a*b* ([`color::lab`]), in its order, worked out once: matching
+    /// compares a colour with every thread's.
+    fn labs(self) -> &'static [color::Lab] {
+        static PEC_LABS: OnceLock<Vec<color::Lab>> = OnceLock::new();
+        static JEF_LABS: OnceLock<Vec<color::Lab>> = OnceLock::new();
+        let labs = match self {
+            Self::Pec => &PEC_LABS,
+            Self::Jef => &JEF_LABS,
+        };
+        labs.get_or_init(|| self.threads().iter().map(|&(rgb, _)| color::lab(rgb)).collect())
     }
 
     /// The thread whose own colour `color` is, if any (no two threads of a palette share one). An
@@ -145,9 +164,9 @@ impl Palette {
                 Some(m) => m,
                 None => {
                     let nearest = self.nearest(color, &[]);
-                    let before = out.last().map(|m| m.index);
-                    let after = known.get(k + 1).copied().flatten().map(|m| m.index);
-                    let neighbours: Vec<usize> = before.into_iter().chain(after).collect();
+                    let before = out.last().map_or(NO_THREAD, |m| m.index);
+                    let after = known.get(k + 1).copied().flatten().map_or(NO_THREAD, |m| m.index);
+                    let neighbours = [before, after];
                     match neighbours.contains(&nearest.index) {
                         false => nearest,
                         true => Some(self.nearest(color, &neighbours)).filter(|other| other.delta_e <= MISMATCH_DELTA_E).unwrap_or(nearest),

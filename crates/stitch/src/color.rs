@@ -145,7 +145,9 @@ pub fn delta_e(x: Lab, y: Lab) -> f64 {
         }
     };
     let dh = 2.0 * chromas.sqrt() * (dh / 2.0).to_radians().sin();
-    // (12)–(14): the means; the hue's the shorter way round.
+    // (12)–(14): the means; the hue's the shorter way round. Where two hues lie half a turn apart,
+    // the shorter way is either, so the mean hue, and ΔE₀₀ with it, jumps there: a discontinuity of
+    // the formula itself, which Sharma, Wu and Dalal point out.
     let l = (x.l + y.l) / 2.0;
     let c = (c1 + c2) / 2.0;
     let h = if chromas == 0.0 {
@@ -221,7 +223,9 @@ mod tests {
         [2.0776, 0.0795, -1.1350, 0.9033, -0.0636, -0.5514, 0.9082],
     ];
 
-    /// The table's ΔE₀₀ are rounded to four decimals.
+    /// The table's ΔE₀₀ are rounded to four decimals. The farthest pair, 23, is 4.9499e-5 from its
+    /// value: within the rounding by a hair, so the bound allows nothing more than floating point
+    /// (the 1e-9 the test adds).
     const TABLE_ROUNDING: f64 = 0.000_05;
 
     #[test]

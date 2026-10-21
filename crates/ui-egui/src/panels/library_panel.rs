@@ -361,7 +361,7 @@ pub(crate) fn submenu(category: &str) -> Option<&'static str> {
 
 /// Is library `id` built in? A library the user saved to the User Defined folder or loaded from a
 /// file (`user/…`, `loaded/…` ids) is named by its file.
-fn builtin_library(id: &str) -> bool {
+pub(crate) fn builtin_library(id: &str) -> bool {
     !(id.starts_with("user/") || id.starts_with("loaded/"))
 }
 

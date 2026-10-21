@@ -1242,10 +1242,12 @@ pub(crate) fn window_menu() -> Vec<Item> {
         "window.userSwatchLibrary10",
     ];
     let open = |b: &'static BuiltinLibrary| Item::Cmd(b.name, "window.swatchLibrary", json!({ "library": b.id }));
+    let threads = swatchlib::THREAD_LIBRARIES.iter().map(|t| Item::Cmd(t.name, "window.swatchLibrary", json!({ "library": t.id })));
     let mut items = vec![Item::Cmd("Default Swatches", "swatch.resetDefaults", Value::Null), Item::Sep];
     items.extend(SWATCH_LIBRARIES.iter().map(open));
     items.extend([
         Item::Sub("Gradients", GRADIENT_LIBRARIES.iter().map(open).collect()),
+        Item::Sub("Embroidery Threads", threads.collect()),
         Item::Sep,
         Item::Sub("User Defined", SLOTS.iter().map(|id| Item::Cmd("User Library", id, Value::Null)).collect()),
         Item::Sep,

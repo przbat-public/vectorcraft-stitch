@@ -352,6 +352,7 @@ fn key(panel: &str, key: &str) -> String {
 pub(crate) fn submenu(category: &str) -> Option<&'static str> {
     match category {
         "gradients" => Some("Gradients"),
+        "threads" => Some("Embroidery Threads"),
         "user" => Some("User Defined"),
         "loaded" => Some("Other Libraries"),
         _ => None,
@@ -813,8 +814,11 @@ mod tests {
         assert!(ctx.read_response(tile_id(panel, "#FF0033")).is_some());
         assert!(ctx.read_response(tile_id(panel, "#00FF00")).is_none());
         let first = SWATCH_IDS[0];
-        let last = SwatchLibraries::list(&app).pop().unwrap().id;
-        assert_eq!(last, "radial-glows", "gradient libraries come after the swatch libraries");
+        let all: Vec<String> = SwatchLibraries::list(&app).into_iter().map(|l| l.id).collect();
+        let at = |id: &str| all.iter().position(|l| l == id).unwrap();
+        assert!(at("harmony-sets") < at("radial-glows"), "gradient libraries come after the swatch libraries");
+        let last = all.last().cloned().unwrap();
+        assert_eq!(last, "janome-threads-jef", "and the embroidery thread libraries after those");
         assert_eq!(neighbour::<SwatchLibraries>(&app, first, -1), Some(last), "wraps around");
         assert_eq!(neighbour::<SwatchLibraries>(&app, "web-safe-216", 1).as_deref(), Some(SWATCH_IDS[1]));
     }
@@ -850,6 +854,13 @@ mod tests {
             .collect();
         assert!(gradients.len() >= 5);
         assert_eq!(gradients, listed("gradients"));
+        let threads: Vec<Value> = crate::menus::menu_entries(&app)
+            .into_iter()
+            .filter(|e| e.path == ["Window", "Swatch Libraries", "Embroidery Threads"])
+            .map(|e| e.params["library"].clone())
+            .collect();
+        assert_eq!(threads, [json!("brother-threads-pec"), json!("janome-threads-jef")]);
+        assert_eq!(threads, listed("threads"));
         let defaults = crate::menus::menu_entries(&app).into_iter().any(|e| e.command.as_deref() == Some("swatch.resetDefaults"));
         assert!(defaults, "Default Swatches is listed");
     }

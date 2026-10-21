@@ -2,8 +2,8 @@
 //!
 //! DST and EXP name no colours at all, so a design read from them gets [`default_thread`]'s
 //! colours, one per block, which read well on screen and tell the blocks apart. JEF names one of
-//! Janome's 78 threads by index, and PEC one of Brother's 64; writing a design picks the nearest
-//! colour in the palette and reads that index back.
+//! Janome's 78 threads by index, and PEC one of Brother's 64 ([`Palette`]); writing a design picks
+//! the nearest colour in the palette and reads that index back.
 //!
 //! The tables are the manufacturers' published charts as public reverse-engineering documents
 //! list them; the names are theirs (thread names are data, not creative text).
@@ -11,7 +11,42 @@
 use crate::Thread;
 
 /// A palette entry: sRGB and the thread's name.
-type Entry = ([u8; 3], &'static str);
+pub type Entry = ([u8; 3], &'static str);
+
+/// A thread palette a machine format names its threads from, by number.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Palette {
+    /// Brother's 64 threads, as PEC (and so PES) numbers them ([`PEC`]).
+    Pec,
+    /// Janome's 78 threads, as JEF numbers them ([`JEF`]).
+    Jef,
+}
+
+impl Palette {
+    /// Every palette.
+    pub const ALL: [Self; 2] = [Self::Pec, Self::Jef];
+
+    /// Its name in parameters and files: `pec`, `jef`.
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Pec => "pec",
+            Self::Jef => "jef",
+        }
+    }
+
+    /// The palette `id` names ([`Palette::id`]).
+    pub fn from_id(id: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|p| p.id() == id)
+    }
+
+    /// Its threads, each a colour and a name, in the order the format numbers them from 1.
+    pub fn threads(self) -> &'static [Entry] {
+        match self {
+            Self::Pec => &PEC,
+            Self::Jef => &JEF,
+        }
+    }
+}
 
 /// The colours a design read from a format without colours gets, one per block (cycled).
 pub const DEFAULT: [Entry; 8] = [

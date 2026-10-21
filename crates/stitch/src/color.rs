@@ -113,7 +113,9 @@ const HALF_TURN: f64 = 180.0;
 const TURN: f64 = 360.0;
 
 /// The CIEDE2000 colour difference ΔE₀₀ between `x` and `y`: 0 for the same colour, about 1 for
-/// the smallest difference seen side by side. The same either way round.
+/// the smallest difference seen side by side. The same either way round. Not a number when either
+/// colour has a coordinate that isn't a finite number (never one made by [`lab`]), so that it is
+/// never taken for no difference.
 pub fn delta_e(x: Lab, y: Lab) -> f64 {
     // How far a chroma `c` has come towards CHROMA_HALF and past it, 0 to 1 (equations 4 and 17).
     let saturation = |c: f64| {
@@ -145,7 +147,9 @@ pub fn delta_e(x: Lab, y: Lab) -> f64 {
         }
     };
     let dh = 2.0 * chromas.sqrt() * (dh / 2.0).to_radians().sin();
-    // (12)–(14): the means; the hue's the shorter way round.
+    // (12)–(14): the means; the hue's the shorter way round. Where two hues lie half a turn apart,
+    // the shorter way is either, so the mean hue, and ΔE₀₀ with it, jumps there: a discontinuity of
+    // the formula itself, which Sharma, Wu and Dalal point out.
     let l = (x.l + y.l) / 2.0;
     let c = (c1 + c2) / 2.0;
     let h = if chromas == 0.0 {
@@ -166,9 +170,11 @@ pub fn delta_e(x: Lab, y: Lab) -> f64 {
     let sc = 1.0 + CHROMA_WEIGHT * c;
     let sh = 1.0 + HUE_WEIGHT * c * t;
     let rt = -(2.0 * rotation).to_radians().sin() * rc;
-    // (22)
+    // (22). The sum is never below 0 but by rounding, which is taken as 0; a sum that is not a
+    // number stays one (`max(0.0)` would make it 0, no difference at all).
     let (dl, dc, dh) = (dl / sl, dc / sc, dh / sh);
-    (dl * dl + dc * dc + dh * dh + rt * dc * dh).max(0.0).sqrt()
+    let squared = dl * dl + dc * dc + dh * dh + rt * dc * dh;
+    if squared < 0.0 { 0.0 } else { squared.sqrt() }
 }
 
 /// The CIEDE2000 difference between two 8-bit sRGB colours ([`delta_e`] of their [`lab`]).
@@ -221,7 +227,9 @@ mod tests {
         [2.0776, 0.0795, -1.1350, 0.9033, -0.0636, -0.5514, 0.9082],
     ];
 
-    /// The table's ΔE₀₀ are rounded to four decimals.
+    /// The table's ΔE₀₀ are rounded to four decimals. The farthest pair, 23, is 4.9499e-5 from its
+    /// value: within the rounding by a hair, so the bound allows nothing more than floating point
+    /// (the 1e-9 the test adds).
     const TABLE_ROUNDING: f64 = 0.000_05;
 
     #[test]
@@ -233,6 +241,17 @@ mod tests {
             assert!((delta_e(y, x) - got).abs() < 1e-12, "pair {} is symmetric", i + 1);
             assert_eq!(delta_e(x, x), 0.0, "pair {}: a colour against itself", i + 1);
         }
+    }
+
+    /// A colour that isn't one (a coordinate not a finite number) is never "no difference" from
+    /// another: its difference is not a number.
+    #[test]
+    fn a_colour_that_is_not_one_has_no_difference_of_zero() {
+        let grey = lab([128, 128, 128]);
+        for odd in [Lab { l: f64::NAN, ..grey }, Lab { a: f64::INFINITY, ..grey }, Lab { b: f64::NEG_INFINITY, ..grey }] {
+            assert!(delta_e(odd, grey).is_nan() && delta_e(grey, odd).is_nan(), "{odd:?}");
+        }
+        assert_eq!(delta_e(grey, grey), 0.0);
     }
 
     /// Solving for the matrix whose columns are the primaries' XYZ, scaled so that they add up to
@@ -286,5 +305,38 @@ mod tests {
         // Lightness rises with every grey step.
         let greys: Vec<f64> = (0..=255u8).map(|v| lab([v, v, v]).l).collect();
         assert!(greys.windows(2).all(|w| w[1] > w[0]));
+    }
+
+    /// The darkest 8-bit values, 1 to 10 of 255, lie on sRGB's straight segment (IEC 61966-2-1:
+    /// encoded values up to 0.04045 are the light divided by 12.92), and the light they give lies
+    /// on L*a*b*'s straight segment too (below (6/29)³ of the white, where CIE 15:2004 has
+    /// f(t) = κ t / 116 + 16/116 with κ = 24389/27). So a dark grey's L* is κ v / (255 × 12.92),
+    /// and a dark blue's a* and b* follow from the blue primary's column of the matrix alone.
+    #[test]
+    fn dark_colours_follow_both_straight_segments() {
+        /// CIE's κ, the slope of L* over the light below (6/29)³ of the white.
+        const KAPPA: f64 = 24389.0 / 27.0;
+        /// sRGB's straight segment: the darkest encoded value past it, and its slope.
+        const LAST_ON_SEGMENT: u8 = 10;
+        const SLOPE: f64 = 12.92;
+        for v in 1..=LAST_ON_SEGMENT {
+            let light = f64::from(v) / 255.0 / SLOPE;
+            let grey = lab([v, v, v]);
+            assert!((grey.l - KAPPA * light).abs() < 1e-9 && grey.a.abs() < 1e-9 && grey.b.abs() < 1e-9, "grey {v}: {grey:?}");
+            let blue = lab([0, 0, v]);
+            let [x, y, z] = [0, 1, 2].map(|i| SRGB_TO_XYZ[i][2] * light / WHITE[i]);
+            let f = |t: f64| KAPPA * t / LIGHTNESS_SCALE;
+            let want = [KAPPA * y, A_SCALE * (f(x) - f(y)), B_SCALE * (f(y) - f(z))];
+            assert!(
+                (blue.l - want[0]).abs() < 1e-9 && (blue.a - want[1]).abs() < 1e-9 && (blue.b - want[2]).abs() < 1e-9,
+                "blue {v}: {blue:?} against {want:?}"
+            );
+        }
+        // The next value is on the power curve, which gives a little more light than the straight
+        // segment's line would there (its L* is still on L*'s straight segment).
+        let past = f64::from(LAST_ON_SEGMENT + 1) / 255.0;
+        let curve = ((past + SRGB_OFFSET) / (1.0 + SRGB_OFFSET)).powf(SRGB_GAMMA);
+        let grey = lab([LAST_ON_SEGMENT + 1; 3]);
+        assert!(past > SRGB_LINEAR_LIMIT && (grey.l - KAPPA * curve).abs() < 1e-9 && grey.l - KAPPA * past / SLOPE > 1e-3, "{grey:?}");
     }
 }

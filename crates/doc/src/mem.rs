@@ -19,6 +19,7 @@ use serde_json::Value;
 use vectorcraft_color::{Paint, Swatch, SwatchGroup};
 use vectorcraft_geom::{Affine, Anchor, PathData, SubPath};
 
+use crate::embroidery::{EmbroiderySetup, ThreadPalette};
 use crate::live::{BlendSpec, EnvelopeKind};
 use crate::text::{ParaStyle, TextObject, TextRun, TextStyleDef};
 use crate::{Appearance, AppearanceItem, Document, Effect, GraphicStyle, ImageObject, Node, NodeExtras, NodeKind, SavedSelection, Shared};
@@ -116,8 +117,19 @@ impl Document {
                 + v.bindings.values().map(|b| entry + 8 + b.iter().map(|s| entry + s.capacity()).sum::<usize>()).sum::<usize>()
         });
         n += shared(&self.unknown, &newer.unknown, map_bytes);
+        n += self.embroidery.as_deref().map_or(0, embroidery_setup_bytes);
         n
     }
+}
+
+/// The document's embroidery settings: their box, and what they keep that a newer version wrote (a
+/// palette, keys and settings this version can't read).
+fn embroidery_setup_bytes(e: &EmbroiderySetup) -> usize {
+    let palette = match &e.palette {
+        Some(ThreadPalette::Unknown(v)) => json_bytes(v),
+        _ => 0,
+    };
+    ALLOC + size_of::<EmbroiderySetup>() + palette + map_bytes(&e.extra) + e.unread.as_ref().map_or(0, json_bytes)
 }
 
 /// One estimate in progress: two documents walked side by side.
@@ -412,6 +424,18 @@ mod tests {
         // The old layer and its list are the old version's own; the new one holds three new nodes.
         assert!(kept < 4096, "{kept}");
         assert!(added > kept + 3 * 300, "{added} for three new rectangles");
+    }
+
+    /// The document's embroidery settings count, with what a newer version wrote in them.
+    #[test]
+    fn embroidery_settings_count() {
+        let before = doc_with_rects(1);
+        let mut after = before.clone();
+        let same = after.retained_bytes(&before);
+        let mut setup = EmbroiderySetup::default();
+        setup.extra.insert("notes".into(), Value::String("x".repeat(10_000)));
+        after.embroidery = Some(Box::new(setup));
+        assert!(after.retained_bytes(&before) > same + 10_000);
     }
 
     #[test]

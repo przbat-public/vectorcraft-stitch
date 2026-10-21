@@ -30,7 +30,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Swatch Libraries",
             [],
             None,
-            "{} → {libraries: [{id, name, category: \"builtIn\"|\"gradients\"|\"threads\" (embroidery: the threads PES and JEF files number their colours from, Brother's 64 and Janome's 78)|\"user\" (User Defined: the library files in the user library folder, rescanned now)|\"loaded\" (swatch.library.load), count, path?}], userFolder} every library the library panel opens, in menu order",
+            "{} → {libraries: [{id, name, category: \"builtIn\"|\"gradients\"|\"threads\" (embroidery: the threads PES and JEF files number their colours from, Brother's 61 and Janome's 78)|\"user\" (User Defined: the library files in the user library folder, rescanned now)|\"loaded\" (swatch.library.load), count, path?}], userFolder} every library the library panel opens, in menu order",
             always,
             list
         ),
@@ -356,23 +356,41 @@ pub const THREADS: &str = "threads";
 /// swatches. In a document of that palette, art painted with one of them is sewn in that thread
 /// exactly and any other colour is matched to the nearest; the format of that palette writes
 /// that thread whatever the document's palette.
+#[derive(Clone, Copy, Debug)]
 pub struct ThreadLibrary {
     pub id: &'static str,
     pub name: &'static str,
     pub palette: thread::Palette,
 }
 
-/// The embroidery thread libraries (Window → Swatch Libraries → Embroidery Threads), in menu
-/// order: built from the palettes the PES and JEF writers number their threads from
-/// ([`vectorcraft_stitch::thread`]), so no file of their own.
-pub const THREAD_LIBRARIES: &[ThreadLibrary] = &[
-    ThreadLibrary { id: "brother-threads-pec", name: "Brother Threads (PEC)", palette: thread::Palette::Pec },
-    ThreadLibrary { id: "janome-threads-jef", name: "Janome Threads (JEF)", palette: thread::Palette::Jef },
-];
+impl ThreadLibrary {
+    /// `palette`'s library. Every palette has one: a palette added to the stitch crate doesn't
+    /// compile here until it is given its library's id and name.
+    pub const fn of(palette: thread::Palette) -> Self {
+        match palette {
+            thread::Palette::Pec => Self { id: "brother-threads-pec", name: "Brother Threads (PEC)", palette },
+            thread::Palette::Jef => Self { id: "janome-threads-jef", name: "Janome Threads (JEF)", palette },
+        }
+    }
+}
 
-/// `palette`'s threads as swatches, in its order: each named by the palette, its number and its
-/// name ("PEC 5 Red"): swatch names are unique, and the PEC table gives three names (Orange,
-/// Cream Yellow, Flesh Pink) to two entries each.
+/// The embroidery thread libraries (Window → Swatch Libraries → Embroidery Threads), in menu
+/// order: one for each palette the PES and JEF writers number their threads from
+/// ([`vectorcraft_stitch::thread::Palette::ALL`], in its order), built from it, so no file of their
+/// own.
+pub const THREAD_LIBRARIES: [ThreadLibrary; thread::Palette::ALL.len()] = {
+    let mut libraries = [ThreadLibrary::of(thread::Palette::Pec); thread::Palette::ALL.len()];
+    let mut i = 0;
+    while i < libraries.len() {
+        libraries[i] = ThreadLibrary::of(thread::Palette::ALL[i]);
+        i += 1;
+    }
+    libraries
+};
+
+/// `palette`'s threads as swatches, in its order (PEC's appliqué entries, which are not threads,
+/// left out: [`thread::Palette::is_thread`]): each named by the palette, its number and its name
+/// ("PEC 5 Red"), as a list of the plan's threads shows them.
 pub fn thread_swatches(palette: thread::Palette) -> Vec<Swatch> {
     let code = palette.id().to_ascii_uppercase();
     let swatch = |(i, &([r, g, b], name)): (usize, &([u8; 3], &str))| Swatch {
@@ -381,7 +399,7 @@ pub fn thread_swatches(palette: thread::Palette) -> Vec<Swatch> {
         global: false,
         spot: false,
     };
-    palette.threads().iter().enumerate().map(swatch).collect()
+    palette.threads().iter().enumerate().filter(|(i, _)| palette.is_thread(i + 1)).map(swatch).collect()
 }
 
 /// Thread library `id` ([`THREAD_LIBRARIES`]), built once.

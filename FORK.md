@@ -105,14 +105,20 @@ stitches fast, is tried before anything is built on it.
 1. **A stitch plan for each object; the export unchanged.** Done: the export goes through
    `cmd::embroidery::plan` (sewing units, thread blocks, stitch numbers), and
    `crates/engine/tests/embroidery_output.rs` pins the bytes of every export.
-2. **Threads from the format's palette.** Done: built-in swatch libraries of Brother's 64 PEC
+2. **Threads from the format's palette.** Done: built-in swatch libraries of Brother's 61 PEC
    threads and Janome's 78 JEF threads, from the tables in `crates/stitch/src/thread.rs` (no new
-   assets); the document's thread palette (`embroidery.setup`, Janome's when unset), the first of
-   the document's embroidery settings; colours matched by CIEDE2000 in CIE Lab instead of by RGB
-   distance, a neighbouring block's thread avoided when a similar one is left (38 of the 100
+   assets; their colours are pyembroidery's, credited in `NOTICE`, see `docs/embroidery.md` ›
+   References); the document's thread palette (`embroidery.setup`, Janome's when unset), the
+   first of the document's embroidery settings; colours matched by CIEDE2000 in CIE Lab instead
+   of by RGB distance, a neighbouring block's thread avoided when a similar one is left (38 of the 100
    pinned exports changed, only in their thread numbers); the plan carries each block's thread
    (palette, number, name, ΔE), the
    PES and JEF writers use it, and `embroidery.threads` lists it, flagging threads past ΔE 10.
+   Then the review's remaining fixes: PEC 42 is Linen and PEC's appliqué entries 62 to 64 are
+   never matched (7 pinned PES exports changed, only in their thread numbers), thread numbers
+   that name no thread read as named stand-ins, a newer file's embroidery settings open whatever
+   their shape, the chosen thread is typed by palette, the export's warnings are translated, and
+   each PES and JEF export is pinned apart from its thread numbers too.
 3. **A planning service.** Each sewing unit's stitches kept between plans, a snapshot of the
    document, cancelling; commands (so reachable over MCP): `embroidery.stats` (stitches, threads,
    thread changes, trims, jumps, size, thread used, and sewing time at a speed that is a named
@@ -202,7 +208,15 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
   may be read and cited by URL for concepts and indicative values. Don't copy their text or tables,
   and never run or inspect those programs.
 - **`pyembroidery` (MIT)** may be used only as an outside oracle, in a throwaway environment, to
-  check that our files read there and theirs read here. Never copy its code into this repository.
+  check that our files read there and theirs read here. Never read its code or copy it into this
+  repository. One exception, decided by the project owner (2026-10-21): the thread palette tables
+  in `crates/stitch/src/thread.rs` (each thread's screen colour and name, in Brother's and
+  Janome's order) are pyembroidery's, credited in `NOTICE` with its MIT notice, because the thread
+  makers publish names and catalogue codes but no screen colours. Nothing else of it is taken.
+- **EduTechWiki** is cited for facts (the formats' layouts and numbering, a single thread's name
+  and colour), never copied as content: its default licence is CC BY-NC-SA 3.0
+  ([EduTech Wiki:Copyrights](https://edutechwiki.unige.ch/en/EduTech_Wiki:Copyrights)), which
+  doesn't fit this repository's MIT/Apache licences, so it is no source for whole tables.
 - **Never read GPL implementations:** Ink/Stitch, Embroidermodder/libembroidery and similar.
   Ink/Stitch's *user documentation* may be read.
 - No test files made with commercial embroidery software in the repository. Write test inputs from

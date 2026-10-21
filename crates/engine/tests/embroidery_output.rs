@@ -15,6 +15,11 @@
 //!   digitized at the size of the person's design as `embroidery_corpus.rs` does. Local runs skip an
 //!   absent corpus; `EMBROIDERY_CORPUS_REQUIRED=1` requires it.
 //!
+//! A PES or JEF export is also pinned apart from its thread numbers: the hash of its bytes with the
+//! thread numbers blanked, and the numbers themselves. A change that only gives some blocks other
+//! threads (a palette's table or the matching rule) moves the hashes of the whole files and those
+//! numbers, never the blanked hash, and the failure says so export by export.
+//!
 //! Only the hashes are kept here, never the files. They were recorded on macOS (aarch64). The
 //! planner calls the platform's sine, cosine and power functions, whose last bit may differ in
 //! another maths library: there a needle point can round to the next 0.1 mm, and a hash differ with
@@ -27,6 +32,7 @@ use std::path::PathBuf;
 use serde_json::{Value, json};
 use vectorcraft_engine::Session;
 use vectorcraft_stitch::format::Format;
+use vectorcraft_stitch::thread::Palette;
 use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
 
 #[path = "../../../xtask/src/sha256.rs"]
@@ -41,7 +47,7 @@ const SYNTHETIC: &str = "
 0ad3c32be994471ec3fd17c0379f9c10d2f0f916cfe81e6ebf2487e3005b84af  fills.jef
 781dcd0206a94a7d8b8ef21868d9fe2f40b6be06d7accdf791b5657776125460  strokes.dst
 4dc8987b8419f8a675631f659bef658a852429ab2608d4c0652a9ab3202dd3a7  strokes.exp
-1814ffeab7ff15ff15825295af72bc2d71479cf361d43dee5b52f93a5f93f6bf  strokes.pes
+709766872b65e5570896866fb59ad8234944359e15f08e57d6c8aeb7e8453108  strokes.pes
 782c9e20ccf857cf4814c7b20e68adccf82057964f037adbd45c9f1a4e3cbf40  strokes.jef
 c9e180dd033b677e9159c8409185d04906f59880c4de63b8edd2454af3f001cb  compound-path-with-a-hole.dst
 6eeb8fc77450233e9b598274189424b8bcb6cd8565a6a1669ab50f90a87cf7d1  compound-path-with-a-hole.exp
@@ -73,23 +79,23 @@ c0ed172b8a9eaf762ef246168e5266365b8757dfd87f660149e9f160b7360c45  opened-design-
 d1f49d8273152b6064340076ddab9b45d4b3a2077864814a477ef799534ec262  opened-design-cut-at-block-ends.jef
 f8554bb0c22deb3d77faa14b94c417d85dacb16530ad7f48d13040afeda920c1  mixed-stitch-style-fill.dst
 63c94dcf51ff773159a34f3ffa270da693018f78febd954c22afd0554514e4e3  mixed-stitch-style-fill.exp
-3cbe416171ad4380ece237cb4d08ec1dfaf36bb910836d7f2e263b2c33e88512  mixed-stitch-style-fill.pes
+06e14353b1d6e726b675488dcfada8e070f6f43b5f97e6b3a5879adeee04d86f  mixed-stitch-style-fill.pes
 7a7518dd5948604c300bf1532d236d627a01e38e44e3772b7ce4c14658b9fbf2  mixed-stitch-style-fill.jef
 5994e1310478ba976f3db9a33cf68d390ff35c9e5b3e5cd26b131b023d59e62c  mixed-stitch-style-satin.dst
 c25a33e508b130173a56bf8a14ccb59c6fd8ef648bf69327c83588b85abcaad5  mixed-stitch-style-satin.exp
-f158515555c14829f989a8ddec733c6ef0688dca593735f74d384f75e2bb5c05  mixed-stitch-style-satin.pes
+bb6588469c6d556f522a74556e58a5f1dcad75a91fd2ddcab7aee9d94d9504e1  mixed-stitch-style-satin.pes
 50ba5e920f6a6ca3f240013005c306d80ab5caa160749977e093273a2391e8f5  mixed-stitch-style-satin.jef
 ac3236ff8f71c0801c2bf5d22185633c4e453cea1b6383bae2e64eecb99933dd  mixed-stitch-style-running.dst
 73e51eb6717a71e52022825238269f9b8f8dcde58cb59b0bb0b7c6df42558193  mixed-stitch-style-running.exp
-562cf37c82a402041f81d74e09a10b118babbe5b71f2df7dfe7d7beb6e24d88d  mixed-stitch-style-running.pes
+664b7de8e53303ce3624538ff1977de54a21847146323c04fcd92b2f3ab67a68  mixed-stitch-style-running.pes
 7c614001107a9398f52245e67bf497597178eabb562d3cc9d240b294d79a748a  mixed-stitch-style-running.jef
 628a42577dcafcc93cd6b1e4f9a433beba292374ab4f1b2f13eb3596b81ec5c6  mixed-every-option.dst
 b825e470d14bce6a48b8222a5184f5a25671c30438629c84cf8273e773d44c9f  mixed-every-option.exp
-ebb18247d66b00db93e066510b05339c69c718d9924f0028fa72e25343073dd7  mixed-every-option.pes
+96f462243eabc04877c73efc0a94b925eccec7d3f755bc736fa8ca150723ed76  mixed-every-option.pes
 dccdb00e425381135d60c3ce3f80ae78917d74fa4fc9964b01e646c203bee6d3  mixed-every-option.jef
 f1360e29ffdbffbf6c40d265ff6fee22a136b3ce8bbeb7a56fc3f01541d194a6  mixed-shrunk.dst
 0a104f6e7e7ba412e57d73129f3e033c912ac4f3d6a5afaa646328274703030f  mixed-shrunk.exp
-7ce40ff5221527f838b12fa7f26795888fc49fcd6992eebaed8f4f0198015bcc  mixed-shrunk.pes
+1417f8a6c82766a66792f4ac0d144feb63648893c7f71a9c3a0e245aa6963c41  mixed-shrunk.pes
 70f1819ad4d9de4c11576771831e2ddc3dbd30183177e697ce5225cdef891988  mixed-shrunk.jef
 ";
 
@@ -101,7 +107,7 @@ ddff29b70870648dbffa01c8ee98c49c68274114b1605f1c794131320dfa6895  bullseye-twemo
 889f9f1c894523c3fc1e0e641bdf551cb4804346bf02239692a72676e16fb973  bullseye-twemoji.jef
 4cf9c0f8c8dd217d5d3882fc7b8faeb3764254c07de1c698d935e609d33214f0  fox-twemoji.clipart.dst
 2511a55c908af2653bf0acf386f8ae68ea943e35aab0e8fbb033212b549e42d3  fox-twemoji.clipart.exp
-232cb4a4c7ce72413ee996c4bb2f36c01c61d7c646060b9421e3434d305dd612  fox-twemoji.clipart.pes
+04113dc5498c89923e2ca4a0e7c38a8e51acc58f363cb3c5475abbc4d3ed09b7  fox-twemoji.clipart.pes
 ead2e31faee31d7a8de63bec91f0cb422be563e0d50a627f7061367825674136  fox-twemoji.clipart.jef
 7cb8031943f4228344ed0415ca2d061269f171a8dff30eb2afc18a9979658971  heart-suit-twemoji.clipart.dst
 d505ae5ca0e445823b4ef58a1af1e06dc59304ddccd826e99923e52ec4a9329c  heart-suit-twemoji.clipart.exp
@@ -141,6 +147,66 @@ add034d064379cbf73c7ff51969ffff890c888bcd07e7a61c98294ccf93e5a69  zebra-twemoji.
 86a5cea2fcf39d066579480e7c0c359e261919b6ae1ca62b5e1422fbeae40c4e  zebra-twemoji.clipart.jef
 ";
 
+/// The PES and JEF exports of [`SYNTHETIC`] apart from their thread numbers ([`threads_apart`]):
+/// each one's hash with its thread numbers blanked, its name, and the numbers, in sewing order.
+const SYNTHETIC_THREADS: &str = "
+6d85580eeae030376519ce2c91cd836c7a3e261cc45d7e0d789c5cb8db99ca6e  fills.pes  5 21 37 5
+3bba2e628dee41e9333883647b51909e577534748fd3bb4cccf5ad49533e7bbe  fills.jef  33 59 45 33
+11d0a4feb1f4cd562b0187479d4bde33a7b956ca33ab7266b09fa9aec39f3ce6  strokes.pes  5 21 7 37 52 24
+0f23f8f6c391096553cca21a3f6c0fd6872c0d51b55dbf3d69cddbd5c59b03d7  strokes.jef  33 59 59 45 71 14
+0f55156f0c7ef89f46abc7204d4ac77c359e3aba2441d707bea8f48fd620b20b  compound-path-with-a-hole.pes  5 21
+4dc237a56c66b14d036cc0f8e718f531b36b3b477c01e01331ef3a8cbc32ee8d  compound-path-with-a-hole.jef  33 59
+f7989a704d3f568b5d0510c2a95af4f66acaeac50c9e874aea18bd566595ceca  clip-groups.pes  58 5 21 37 23
+2253ed4207281892bd546b0eb0417aa09bf6c19616f8136ccf52d9a3d24e2774  clip-groups.jef  37 33 59 45 1
+4bd1d95ff46329d5b41465c323c615ed0ea21830df60756a0fc9c6927fed4cf1  symbols.pes  5 21
+a8193f55ac29094f84cbc67af92d02a9ab204db6c9b2d6c3a7d072d475d0ee99  symbols.jef  33 59
+fa06f35c38957b16c0eb05b441c30ed98a42fe503c4f986efba06ed86a5ec63e  trim-after.pes  5
+192823d8623f7f3fbce9089fb9318d004feeeb8ac79ec4cd5cf4b3c192d9f9c7  trim-after.jef  33
+5463b0595b08a8a16753031131619342e73ea55ad89134e65a54f53150fbbfd6  opened-design.pes  5 21
+f8d65a62ebb85a12f403cd2d222e44896e2e196929108e3138203e854d98d6f1  opened-design.jef  33 12
+43772e24f79d5e16a4688bb3bd78b15b835cbdd8b8e3ba06fcefde3b0fd96c03  opened-design-clipped.pes  5
+be992ebec030b544d10545200539fafa55a4015393c5a38553cedf7238ca503d  opened-design-clipped.jef  33
+9c0456079bba220714bc4c9cc30928a48ad7bf6d42cb109966f5b24b6aa31c63  opened-design-cut-at-block-ends.pes  5 55
+e6effa654bfa5ad9d95db6df0c25e8de2686eed3f5ce3e9d6fa10dc8c1715f10  opened-design-cut-at-block-ends.jef  33 59
+6f6efd9f4ee8e9a34d01f1521dcc57f1ccf4a07f12cbd6a1431c54fcaf883126  mixed-stitch-style-fill.pes  5 37 21 7 52 24
+4fb4120120ccfe3ca857008d9539379d15eee3ff589b3998397317f201e9a374  mixed-stitch-style-fill.jef  33 45 59 59 71 14
+851f9636ff0682d36e287c85e2e6e45e39094cd9ac1e0604df60093eadbe0518  mixed-stitch-style-satin.pes  5 37 21 7 52 24
+9701ed54fa71c7abfa23fca5e9b6531ffce7afaeb9c5a935449aad64428f74bd  mixed-stitch-style-satin.jef  33 45 59 59 71 14
+f055106c44518010de1226db210a08f3293dc055b1b64ac915d0d99ffe5a0fce  mixed-stitch-style-running.pes  5 37 21 7 52 24
+022898c2d8df04d76dcc1a81b2fb306e030cb6a14dfdb9b228f2ffe4d69013ae  mixed-stitch-style-running.jef  33 45 59 59 71 14
+c048456b0420f849ea094c7a7722329ad55c7179d79383f61f40ebea6a192d69  mixed-every-option.pes  5 37 21 7 52 24
+77e8b0cd5af5df68c0e2c934d2f1ca1553572c4fd2ab2fb602dd6cbfb1f47810  mixed-every-option.jef  33 45 59 59 71 14
+eae62169ecdc54a9123c8d61ac986e4964cf56345b05b17849754a6d13be5516  mixed-shrunk.pes  5 37 21 7 52 24
+68bb5e902b8fe6968a38da6b1ebc3d132c83d438bd234b0b5c7a2763da6752f7  mixed-shrunk.jef  33 45 59 59 71 14
+";
+
+/// The PES and JEF exports of [`ARTWORK`] apart from their thread numbers, listed as
+/// [`SYNTHETIC_THREADS`] is.
+const ARTWORK_THREADS: &str = "
+0527952da68e1a56eca25b22f95c71026a3f3fa1f2fa411914f75849359d31d7  bullseye-twemoji.pes  29 32 5 33 20 36
+45c126406bec505658e0434cac29838aa66a8121c437da355c2b14d8a5dcc542  bullseye-twemoji.jef  23 28 33 72 1 11
+ad00a31720a9a0f36ee338f08248895ad5cf496355711048596cf729b7b03c51  fox-twemoji.clipart.pes  52 12 20 51
+436a5dd5417b7aa497eb5e43e06fa012ed3ab7eddfad2d10ababe15a3a76f2fb  fox-twemoji.clipart.jef  71 13 1 42
+c42660ea6f3f62c28e16e77b32c262173236f89141d2a0439b2f00c6ec393291  heart-suit-twemoji.clipart.pes  51
+3a582db45cd3c3908ee333d943b2c2a509f997b21fc7e26752a8b06313f76e05  heart-suit-twemoji.clipart.jef  42
+c0afa92e4c6966ab680077fbc22d17945d80437c0992d5ac34afb828a508215c  joystick-twemoji.pes  16 48 23 39
+f476081b2158eac9b1dbe2657420ab152052639a42ad03cec521bf37bdb295e6  joystick-twemoji.jef  21 33 50 50
+27e2658254542a92fbc6fc620ca46775d8dc2449454f2e6bf31a8996d09cd5a0  pool-8-ball-twemoji.pes  23 29 23
+3a10d758edeab9ce9be44b30e5b251118a450410953521136421bc320b407dd7  pool-8-ball-twemoji.jef  50 23 50
+0666920eb3f75fe49602c67f6d93b08acbd49ec07f9c7553375fdd7f51dfb8bb  puzzle-piece-twemoji.pes  37
+9a222e0ddc1914f91f07e5b08f32b8e1851a4eeb99182b5cf092638e48ca8637  puzzle-piece-twemoji.jef  22
+1a688cd77eb918579f06522b619aa9e6ee2b00d80438394fb33fedd0669bfe86  smiling-face-with-smiling-eyes-twemoji.clipart.pes  58 43 23
+d9352300ecee75a7018d15506102c727c8a2fd4e900727cca1fbac1f4b4c133b  smiling-face-with-smiling-eyes-twemoji.clipart.jef  73 9 1
+f7e159c9fc72d844c582edee56118026975f4a3259715cc33f4edc1a9fd2a733  sos-button-fluent.clipart.pes  48 29
+e9ca7ca008223660401fced648d91a3651d77badf02a520054a8938e247103ca  sos-button-fluent.clipart.jef  32 2
+2e17b2fbd6af7c627264a1457ab89c08608f64cbec5782bd3b02d0910e28a651  video-game-twemoji.pes  23 20 39 12 37 32 5 39
+91c8ba74cae597feccbfdd0c4d5b225ce808fb6008d1b5df34b783ee5167ac0d  video-game-twemoji.jef  50 1 50 37 22 28 33 24
+6f59ff87ff9764a5db53aac26f86fe086a243fc9d6c64778cac2f3b16793ae78  watermelon-twemoji.clipart.pes  54 29 5 20
+fc1c386b8c347c703e9a6947af98a0770a85b6eb23c85977dfd78bab01cee641  watermelon-twemoji.clipart.jef  6 51 42 1
+223f7e65b78c7fb1f42cf4bee2a6f6cea04cab88ed74bf74bd36662416c66e60  zebra-twemoji.clipart.pes  29 20 29 39 23 20 39 20
+2853d6536561088d04462d9cdaed53bdd8d48d8f9895f06a9155eb9a8dd55ea5  zebra-twemoji.clipart.jef  51 1 51 50 1 1 50 1
+";
+
 /// The real designs: each artwork, and the machine file a person digitized from it, whose size the
 /// artwork is scaled to (as `embroidery_corpus.rs` scales it).
 const DESIGNS: &[(&str, &str)] = &[
@@ -168,6 +234,22 @@ const RECORDED_ON: &str = "macos aarch64";
 /// satin columns, and the square where they meet is tatami.
 const LETTER_T: [(f64, f64); 8] = [(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 3.0), (16.5, 23.0), (13.5, 23.0), (13.5, 3.0), (0.0, 3.0)];
 
+// Where the thread numbers are in the files our writers write (the module docs of
+// `vectorcraft_stitch::format::pes` and `::jef`).
+
+/// Where a PES header gives the PEC section's position (a little-endian word).
+const PEC_POSITION: usize = 8;
+/// Where the PEC header holds its colour count, one fewer than the colours ([`NO_COLORS`]: none);
+/// one palette index a byte follows for each colour.
+const PEC_COLOR_COUNT: usize = 48;
+const NO_COLORS: u8 = 0xFF;
+/// Where a JEF header gives its colour count (a little-endian word), and where its palette indices
+/// start, a word each.
+const JEF_COLOR_COUNT: usize = 24;
+const JEF_THREADS: usize = 0x74;
+/// A JEF palette index's length, bytes.
+const WORD: usize = 4;
+
 /// The documents built here, exported in every format, write what they wrote when the listing was
 /// recorded.
 #[test]
@@ -176,10 +258,56 @@ fn the_documents_built_here_export_unchanged() {
     for (name, mut s, options) in documents() {
         for format in Format::ALL {
             let bytes = export(&mut s, format, &options).unwrap_or_else(|e| panic!("{name} as {}: {e}", format.id()));
-            now.push((format!("{name}.{}", format.extension()), sha256::hex(&bytes)));
+            now.push(Pinned::new(format!("{name}.{}", format.extension()), format, &bytes));
         }
     }
-    check(SYNTHETIC, &now);
+    check(SYNTHETIC, SYNTHETIC_THREADS, &now);
+}
+
+/// One export as the listings pin it.
+struct Pinned {
+    /// The document's name and the format's extension.
+    name: String,
+    /// The hash of its bytes.
+    hash: String,
+    /// For a format that numbers its threads (PES, JEF): the hash of its bytes with the thread
+    /// numbers blanked, and the numbers ([`threads_apart`]).
+    threads: Option<(String, String)>,
+}
+
+impl Pinned {
+    fn new(name: String, format: Format, bytes: &[u8]) -> Self {
+        let threads = threads_apart(format, bytes)
+            .map(|(blanked, numbers)| (sha256::hex(&blanked), numbers.iter().map(u32::to_string).collect::<Vec<_>>().join(" ")));
+        Self { name, hash: sha256::hex(bytes), threads }
+    }
+}
+
+/// `bytes`, as our writer of `format` wrote them, with their thread numbers set to 0, and the
+/// numbers, in sewing order: the PEC header's palette indices in a PES file, the header's palette
+/// indices in a JEF file. `None` for a format that numbers no threads.
+fn threads_apart(format: Format, bytes: &[u8]) -> Option<(Vec<u8>, Vec<u32>)> {
+    let word = |at: usize| u32::from_le_bytes(bytes[at..at + WORD].try_into().unwrap()) as usize;
+    let (first, count, width) = match format {
+        Format::Pes => {
+            let header = word(PEC_POSITION);
+            let count = match bytes[header + PEC_COLOR_COUNT] {
+                NO_COLORS => 0,
+                c => usize::from(c) + 1,
+            };
+            (header + PEC_COLOR_COUNT + 1, count, 1)
+        }
+        Format::Jef => (JEF_THREADS, word(JEF_COLOR_COUNT), WORD),
+        Format::Dst | Format::Exp => return None,
+    };
+    let mut blanked = bytes.to_vec();
+    let mut numbers = Vec::with_capacity(count);
+    for at in (0..count).map(|i| first + i * width) {
+        let field = &mut blanked[at..at + width];
+        numbers.push(field.iter().rev().fold(0u32, |n, b| n << 8 | u32::from(*b)));
+        field.fill(0);
+    }
+    Some((blanked, numbers))
 }
 
 /// The real designs' artwork, digitized at the person's size in every format, writes what it wrote
@@ -201,37 +329,88 @@ fn the_real_designs_artwork_exports_unchanged() {
         let stem = art.trim_end_matches(".svg");
         for format in Format::ALL {
             let bytes = export(&mut s, format, &json!({})).unwrap_or_else(|e| panic!("{art} as {}: {e}", format.id()));
-            now.push((format!("{stem}.{}", format.extension()), sha256::hex(&bytes)));
+            now.push(Pinned::new(format!("{stem}.{}", format.extension()), format, &bytes));
         }
     }
-    check(ARTWORK, &now);
+    check(ARTWORK, ARTWORK_THREADS, &now);
 }
 
-/// Every export's hash is the one `listing` records, and the listing has no other: otherwise the
-/// failure names each change and prints the listing as it now stands.
-fn check(listing: &str, now: &[(String, String)]) {
-    let recorded: Vec<(&str, &str)> = listing
-        .lines()
-        .filter(|l| !l.trim().is_empty())
-        .map(|l| {
-            let (hash, name) = l.trim().split_once("  ").unwrap_or_else(|| panic!("a malformed line in the listing: {l}"));
-            (name, hash)
-        })
-        .collect();
+/// One design written with two sets of threads gives two files that are the same apart from their
+/// thread numbers ([`threads_apart`]), which read back as the threads the blocks are painted with.
+#[test]
+fn a_design_in_other_threads_differs_only_in_its_thread_numbers() {
+    for (format, palette, firsts, seconds) in
+        [(Format::Pes, Palette::Pec, [5, 20, 5], [13, 29, 40]), (Format::Jef, Palette::Jef, [10, 1, 10], [3, 2, 61])]
+    {
+        let written = |numbers: [usize; 3]| {
+            let blocks = numbers.iter().enumerate().map(|(k, &n)| {
+                // A thread's own colour is that thread ([`Palette::nearest`]).
+                let mut block = Block::new(Thread::rgb(palette.get(n).unwrap().0));
+                let y = 5.0 * k as f64;
+                block.stitches.extend((0..10).map(|i| Stitch::new(f64::from(i) * 2.0, y, Command::Stitch)));
+                block
+            });
+            format.write(&Pattern { name: "threads".into(), blocks: blocks.collect() }).unwrap()
+        };
+        let (a, b) = (written(firsts), written(seconds));
+        assert_ne!(a, b, "{}", format.id());
+        let ((a_blanked, a_numbers), (b_blanked, b_numbers)) = (threads_apart(format, &a).unwrap(), threads_apart(format, &b).unwrap());
+        assert_eq!(a_blanked, b_blanked, "{}", format.id());
+        assert_eq!((a_numbers, b_numbers), (firsts.map(|n| n as u32).to_vec(), seconds.map(|n| n as u32).to_vec()));
+    }
+    assert_eq!(threads_apart(Format::Dst, &[]), None);
+}
+
+/// The lines of a listing, each cut at its double spaces: hash, name and, in a listing of thread
+/// numbers, the numbers.
+fn lines(listing: &str) -> Vec<Vec<&str>> {
+    listing.lines().map(str::trim).filter(|l| !l.is_empty()).map(|l| l.split("  ").collect()).collect()
+}
+
+/// Every export's hash is the one `listing` records, and every PES and JEF export's bytes apart
+/// from its thread numbers, and the numbers, the ones `threads` records; the listings have no
+/// other. Otherwise the failure names each change, says whether an export changed only in its
+/// thread numbers, and prints both listings as they now stand.
+fn check(listing: &str, threads: &str, now: &[Pinned]) {
+    let recorded = lines(listing);
+    let recorded_threads = lines(threads);
+    fn find<'a>(lines: &[Vec<&'a str>], name: &str) -> Option<Vec<&'a str>> {
+        lines.iter().find(|l| l.get(1) == Some(&name)).cloned()
+    }
     let mut changed: Vec<String> = Vec::new();
-    for (name, hash) in now {
-        match recorded.iter().find(|(n, _)| n == name) {
-            Some((_, was)) if was == hash => {}
-            Some((_, was)) => changed.push(format!("{name}: {was} → {hash}")),
-            None => changed.push(format!("{name}: not recorded → {hash}")),
+    for p in now {
+        let mut notes: Vec<String> = Vec::new();
+        match find(&recorded, &p.name) {
+            Some(l) if l[0] == p.hash => {}
+            Some(l) => notes.push(format!("{} → {}", l[0], p.hash)),
+            None => notes.push(format!("not recorded → {}", p.hash)),
+        }
+        if let Some((blanked, numbers)) = &p.threads {
+            match find(&recorded_threads, &p.name) {
+                Some(l) if l[0] != blanked => notes.push(format!("more than its thread numbers: without them, {} → {blanked}", l[0])),
+                Some(l) => {
+                    let was = l.get(2).copied().unwrap_or("");
+                    if was != numbers {
+                        notes.push(format!("only its thread numbers: {was} → {numbers}"));
+                    }
+                }
+                None => notes.push(format!("its thread numbers not recorded → {blanked}  {numbers}")),
+            }
+        }
+        if !notes.is_empty() {
+            changed.push(format!("{}: {}", p.name, notes.join("; ")));
         }
     }
-    for (name, was) in &recorded {
-        if !now.iter().any(|(n, _)| n == name) {
-            changed.push(format!("{name}: {was} → no longer exported"));
+    for l in recorded.iter().chain(&recorded_threads) {
+        if let Some(name) = l.get(1)
+            && !now.iter().any(|p| p.name == *name)
+        {
+            changed.push(format!("{name}: {} → no longer exported", l[0]));
         }
     }
-    let listing: String = now.iter().map(|(name, hash)| format!("{hash}  {name}\n")).collect();
+    let listing: String = now.iter().map(|p| format!("{}  {}\n", p.hash, p.name)).collect();
+    let threads: String =
+        now.iter().filter_map(|p| p.threads.as_ref().map(|(blanked, numbers)| format!("{blanked}  {}  {numbers}\n", p.name))).collect();
     let here = format!("{} {}", std::env::consts::OS, std::env::consts::ARCH);
     let platform = if here == RECORDED_ON {
         String::new()
@@ -240,7 +419,12 @@ fn check(listing: &str, now: &[(String, String)]) {
             "\n\nThe listing was recorded on {RECORDED_ON} and this is {here}: its sine, cosine and power functions may round a needle point to the next 0.1 mm, so compare the stitches before recording a new listing."
         )
     };
-    assert!(changed.is_empty(), "{} exports changed:\n{}{platform}\n\nThe listing as it now stands:\n{listing}", changed.len(), changed.join("\n"));
+    assert!(
+        changed.is_empty(),
+        "{} exports changed:\n{}{platform}\n\nThe listing as it now stands:\n{listing}\nApart from the thread numbers:\n{threads}",
+        changed.len(),
+        changed.join("\n")
+    );
 }
 
 /// The documents built here: each one's name, a session holding it, and the options it is exported

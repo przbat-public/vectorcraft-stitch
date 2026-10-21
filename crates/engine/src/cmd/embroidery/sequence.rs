@@ -10,7 +10,7 @@
 use vectorcraft_doc::NodeId;
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_stitch::plan::Params;
-use vectorcraft_stitch::thread::Palette;
+use vectorcraft_stitch::thread::{Palette, PaletteThread};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch};
 
 use super::plan::{BlockThread, DesignPlan, FIRST_NUMBER, Origin, ThreadBlock, Unit, runs};
@@ -199,7 +199,7 @@ impl Sequence {
     pub(super) fn plan(self, name: String, warnings: Vec<String>, palette: Palette) -> DesignPlan {
         let mut plan = DesignPlan { name, warnings, ..DesignPlan::default() };
         let mut number = FIRST_NUMBER;
-        let colors: Vec<([u8; 3], Option<usize>)> = self.blocks.iter().map(|s| (s.block.thread.color, None)).collect();
+        let colors: Vec<([u8; 3], Option<PaletteThread>)> = self.blocks.iter().map(|s| (s.block.thread.color, None)).collect();
         let matched = palette.assign(&colors);
         for (k, (Sewn { block: Block { thread, stitches }, members, .. }, matched)) in self.blocks.into_iter().zip(matched).enumerate() {
             let thread = BlockThread::new(thread.color, palette, matched);

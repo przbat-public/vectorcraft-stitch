@@ -2,18 +2,40 @@
 //!
 //! DST and EXP name no colours at all, so a design read from them gets [`default_thread`]'s
 //! colours, one per block, which read well on screen and tell the blocks apart. JEF names one of
-//! Janome's 78 threads by index, and PEC one of Brother's 64 ([`Palette`]). Writing a design names
-//! each block's chosen thread when it is of the format's palette (the stitch plan chooses them),
-//! else the thread matched to the block's colour by the same rule the plan follows
-//! ([`Palette::assign`], [`Palette::numbers`]), and reading names that thread back.
+//! Janome's 78 threads by index, and PEC one of 64 entries: Brother's 61 threads, then three that
+//! are not threads ([`Palette`], [`Palette::is_thread`]). Writing a design names each block's
+//! chosen thread when it is of the format's palette (the stitch plan chooses them), else the
+//! thread matched to the block's colour by the same rule the plan follows ([`Palette::assign`],
+//! [`Palette::numbers`]), and reading names that entry back.
 //!
-//! The tables are the manufacturers' published charts as public reverse-engineering documents
-//! list them; the names are theirs (thread names are data, not creative text).
+//! Where the tables come from. The numbering is the formats' (EduTechWiki's pages on PEC and JEF,
+//! edutechwiki.unige.ch/en/Embroidery_format_PEC and …/Embroidery_format_JEF). The colours, the
+//! names and their order are those of pyembroidery's thread tables (MIT,
+//! github.com/EmbroidePy/pyembroidery, `EmbThreadPec.py` and `EmbThreadJef.py`), taken when the
+//! formats were first written, all but PEC 42's. The makers publish their threads' names and
+//! catalogue codes, not screen colours: Brother's thread list (support.brother.com, Artspira thread
+//! names) has 61 threads, each name once, and EduTechWiki's tables give most entries other colours
+//! than pyembroidery's (61 of PEC's 64, 41 of JEF's 78). So the colours stand in for how the
+//! threads look; they are not measurements. From Brother's list and EduTechWiki: PEC 42 is Linen
+//! (Brother's 307) in EduTechWiki's colour, where pyembroidery repeats Flesh Pink, and PEC 62 to 64
+//! are the format's appliqué entries, not threads ([`Palette::is_thread`]). Thread names are data,
+//! not creative text.
+//!
+//! The tables are credited in `NOTICE` with pyembroidery's MIT notice: the project owner's decision
+//! (2026-10-21, `FORK.md` › Clean-room for embroidery), since the makers publish no screen colours.
+//! EduTechWiki is cited for facts only (the numbering, PEC 42's name and colour): its default
+//! licence, CC BY-NC-SA 3.0, doesn't fit this code's, so its tables are no source to take.
+
+use std::sync::OnceLock;
 
 use crate::{Thread, color};
 
 /// A palette entry: sRGB and the thread's name.
 pub type Entry = ([u8; 3], &'static str);
+
+/// The number the formats leave for "no colour": no thread has it, so a block without a
+/// neighbour on one side leaves it out instead ([`Palette::assign`]).
+const NO_THREAD: usize = 0;
 
 /// A thread within this colour difference (CIEDE2000, [`crate::color`]) of the art still looks like
 /// it; a thread farther looks clearly unlike it. So a block takes another thread than a
@@ -29,7 +51,8 @@ pub const MISMATCH_DELTA_E: f64 = 10.0;
 /// A thread palette a machine format names its threads from, by number.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Palette {
-    /// Brother's 64 threads, as PEC (and so PES) numbers them ([`PEC`]).
+    /// Brother's 61 threads, as PEC (and so PES) numbers them, before three entries that are not
+    /// threads ([`PEC`]).
     Pec,
     /// Janome's 78 threads, as JEF numbers them ([`JEF`]).
     Jef,
@@ -52,12 +75,29 @@ impl Palette {
         Self::ALL.into_iter().find(|p| p.id() == id)
     }
 
-    /// Its threads, each a colour and a name, in the order the format numbers them from 1.
+    /// Its entries, each a colour and a name, in the order the format numbers them from 1: its
+    /// threads, then, in PEC, three entries that are not ([`Palette::is_thread`]).
     pub fn threads(self) -> &'static [Entry] {
         match self {
             Self::Pec => &PEC,
             Self::Jef => &JEF,
         }
+    }
+
+    /// How many of its entries are threads, from the first: Brother's 61 in PEC, all of Janome's
+    /// 78.
+    fn thread_count(self) -> usize {
+        match self {
+            Self::Pec => BROTHER_THREADS,
+            Self::Jef => JEF.len(),
+        }
+    }
+
+    /// Whether number `index` (from 1) is one of its threads, which matching may pick: not 0, not
+    /// past the palette's end, and not one of PEC's appliqué entries, 62 to 64 ([`PEC`]). A file
+    /// that names an entry that isn't a thread still reads in its colour ([`Palette::thread`]).
+    pub fn is_thread(self, index: usize) -> bool {
+        (1..=self.thread_count()).contains(&index)
     }
 
     /// Thread `index` (from 1): its colour and name; `None` for 0 (the formats' "no colour") and
@@ -66,27 +106,26 @@ impl Palette {
         index.checked_sub(1).and_then(|i| self.threads().get(i)).copied()
     }
 
-    /// Thread `index` (from 1) as a block's thread; 0, the format's "no colour", and a number past
-    /// the palette are black.
-    pub fn thread(self, index: usize) -> Thread {
-        match self.get(index) {
-            Some((color, name)) => Thread::named(color, name),
-            None => no_colour(),
-        }
+    /// Entry `index` (from 1) as the thread a block read from a file is in: its colour and name.
+    /// `None` when the number names no entry: 0, which the formats leave for "no colour", or a
+    /// number past the palette's end, which only a damaged file or a newer chart holds
+    /// ([`unknown_thread`]).
+    pub fn thread(self, index: usize) -> Option<Thread> {
+        self.get(index).map(|(color, name)| Thread::named(color, name))
     }
 
     /// The thread nearest `color` as the eye sees it, the smallest CIEDE2000 difference
     /// ([`crate::color`]), and how near, leaving out the threads `skip` names. A colour that is a
     /// thread's own is that thread, whatever `skip` says; when `skip` leaves no thread, the
-    /// nearest of all.
+    /// nearest of all. Never an entry that isn't a thread ([`Palette::is_thread`]).
     pub fn nearest(self, color: [u8; 3], skip: &[usize]) -> Match {
         if let Some(own) = self.own(color) {
             return own;
         }
         let lab = color::lab(color);
         let (mut best, mut any): (Option<Match>, Option<Match>) = (None, None);
-        for (i, &(rgb, _)) in self.threads().iter().enumerate() {
-            let m = Match { index: i + 1, delta_e: color::delta_e(lab, color::lab(rgb)) };
+        for (i, &thread) in self.labs().iter().enumerate().take(self.thread_count()) {
+            let m = Match { index: i + 1, delta_e: color::delta_e(lab, thread) };
             let nearer = |b: Option<Match>| b.is_none_or(|b| m.delta_e < b.delta_e);
             if nearer(any) {
                 any = Some(m);
@@ -95,26 +134,41 @@ impl Palette {
                 best = Some(m);
             }
         }
+        // A palette has threads, so `any` is always one: this stand-in is never taken.
         best.or(any).unwrap_or(Match { index: 1, delta_e: f64::INFINITY })
     }
 
-    /// The thread whose own colour `color` is, if any (no two threads of a palette share one).
+    /// Its entries' colours in CIE L*a*b* ([`color::lab`]), in its order, worked out once: matching
+    /// compares a colour with every thread's.
+    fn labs(self) -> &'static [color::Lab] {
+        static PEC_LABS: OnceLock<Vec<color::Lab>> = OnceLock::new();
+        static JEF_LABS: OnceLock<Vec<color::Lab>> = OnceLock::new();
+        let labs = match self {
+            Self::Pec => &PEC_LABS,
+            Self::Jef => &JEF_LABS,
+        };
+        labs.get_or_init(|| self.threads().iter().map(|&(rgb, _)| color::lab(rgb)).collect())
+    }
+
+    /// The thread whose own colour `color` is, if any (no two threads of a palette share one). An
+    /// entry that isn't a thread is no one's: art in its colour is matched like any other.
     fn own(self, color: [u8; 3]) -> Option<Match> {
-        self.threads().iter().position(|&(rgb, _)| rgb == color).map(|i| Match { index: i + 1, delta_e: 0.0 })
+        self.threads().iter().take(self.thread_count()).position(|&(rgb, _)| rgb == color).map(|i| Match { index: i + 1, delta_e: 0.0 })
     }
 
     /// The thread each block of a design is sewn in, in sewing order, from each block's colour and
-    /// the thread already chosen for it (`None`: to be matched). A block whose thread is chosen,
-    /// or whose colour is a thread's own, has that thread. Every other block gets the thread
+    /// the thread already chosen for it (`None`: to be matched). A block whose thread is chosen
+    /// from this palette, or whose colour is a thread's own, has that thread; one chosen from
+    /// another palette is matched by its colour. Every other block gets the thread
     /// nearest its colour ([`Palette::nearest`]), unless a neighbouring block has it: the block
     /// before, or the block after when its thread is already known (chosen, or its own colour).
     /// Then it takes the nearest thread neither neighbour has, so that the colour change changes
     /// thread, as long as that one is within [`MISMATCH_DELTA_E`] of its colour; past that, it
     /// keeps its nearest thread, and the machine stops between two blocks of one thread.
-    pub fn assign(self, blocks: &[([u8; 3], Option<usize>)]) -> Vec<Match> {
+    pub fn assign(self, blocks: &[([u8; 3], Option<PaletteThread>)]) -> Vec<Match> {
         let known: Vec<Option<Match>> = blocks
             .iter()
-            .map(|&(color, chosen)| match chosen.and_then(|index| self.get(index).map(|entry| (index, entry))) {
+            .map(|&(color, chosen)| match chosen.filter(|c| c.palette == self).and_then(|c| self.get(c.index).map(|entry| (c.index, entry))) {
                 Some((index, (rgb, _))) => Some(Match { index, delta_e: color::delta_e_rgb(color, rgb) }),
                 None => self.own(color),
             })
@@ -125,9 +179,9 @@ impl Palette {
                 Some(m) => m,
                 None => {
                     let nearest = self.nearest(color, &[]);
-                    let before = out.last().map(|m| m.index);
-                    let after = known.get(k + 1).copied().flatten().map(|m| m.index);
-                    let neighbours: Vec<usize> = before.into_iter().chain(after).collect();
+                    let before = out.last().map_or(NO_THREAD, |m| m.index);
+                    let after = known.get(k + 1).copied().flatten().map_or(NO_THREAD, |m| m.index);
+                    let neighbours = [before, after];
                     match neighbours.contains(&nearest.index) {
                         false => nearest,
                         true => Some(self.nearest(color, &neighbours)).filter(|other| other.delta_e <= MISMATCH_DELTA_E).unwrap_or(nearest),
@@ -143,18 +197,38 @@ impl Palette {
     /// ([`Palette::assign`]): a block's chosen thread when it is one of this palette's
     /// ([`Thread::chosen`]), else the thread matched to its colour.
     pub fn numbers<'a>(self, threads: impl IntoIterator<Item = &'a Thread>) -> Vec<usize> {
-        let blocks: Vec<([u8; 3], Option<usize>)> =
-            threads.into_iter().map(|t| (t.color, t.chosen.filter(|c| c.palette == self).map(|c| c.index))).collect();
+        let blocks: Vec<([u8; 3], Option<PaletteThread>)> = threads.into_iter().map(|t| (t.color, t.chosen)).collect();
         self.assign(&blocks).into_iter().map(|m| m.index).collect()
     }
 }
 
-/// A thread of a palette: the palette, and the thread's number in it.
+/// A thread of a palette: the palette, and the thread's number in it. Made only for a number that
+/// names one of the palette's threads ([`PaletteThread::new`]), so a thread chosen for a block is
+/// always one; which palette it is from is part of it, so a format of another palette never takes
+/// its number for one of its own.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct PaletteThread {
-    pub palette: Palette,
+    palette: Palette,
     /// From 1, as the formats count (their 0 is "no colour").
-    pub index: usize,
+    index: usize,
+}
+
+impl PaletteThread {
+    /// Thread `index` (from 1) of `palette`; `None` when the number names none of its threads
+    /// ([`Palette::is_thread`]).
+    pub fn new(palette: Palette, index: usize) -> Option<Self> {
+        palette.is_thread(index).then_some(Self { palette, index })
+    }
+
+    /// The palette it is from.
+    pub fn palette(self) -> Palette {
+        self.palette
+    }
+
+    /// Its number in the palette, from 1.
+    pub fn index(self) -> usize {
+        self.index
+    }
 }
 
 /// A colour matched to a palette's thread ([`Palette::nearest`], [`Palette::assign`]).
@@ -179,7 +253,12 @@ pub const DEFAULT: [Entry; 8] = [
     ([70, 70, 74], "Slate"),
 ];
 
-/// Brother's 64-thread palette, as PEC counts it (index 1 to 64; 0 is no colour).
+/// How many threads Brother's thread list has (support.brother.com, Artspira thread names): PEC's
+/// entries 1 to 61.
+const BROTHER_THREADS: usize = 61;
+
+/// PEC's 64 entries, numbered from 1 (0 is no colour): Brother's 61 threads, then three that are
+/// not threads but the format's appliqué entries ([`Palette::is_thread`]).
 pub const PEC: [Entry; 64] = [
     ([14, 31, 124], "Prussian Blue"),
     ([10, 85, 163], "Blue"),
@@ -222,7 +301,8 @@ pub const PEC: [Entry; 64] = [
     ([135, 135, 135], "Gray"),
     ([216, 204, 198], "Warm Gray"),
     ([67, 86, 7], "Dark Olive"),
-    ([253, 217, 222], "Flesh Pink"),
+    // Brother's Linen (307 in Brother's thread list), in the colour EduTechWiki's PEC page gives it.
+    ([255, 227, 198], "Linen"),
     ([249, 147, 188], "Pink"),
     ([0, 56, 34], "Deep Green"),
     ([178, 175, 212], "Lavender"),
@@ -242,6 +322,10 @@ pub const PEC: [Entry; 64] = [
     ([9, 91, 166], "Electric Blue"),
     ([240, 249, 112], "Lemon Yellow"),
     ([227, 243, 91], "Fresh Green"),
+    // Not threads: EduTechWiki's PEC page names entries 62 to 64 Applique Material, Applique
+    // Position and Applique. Files from other open-source tools use 62 and 63 for an orange and a
+    // cream yellow (the real designs' fox does), so they read in these colours and names, as they
+    // always have; matching never picks them.
     ([255, 153, 0], "Orange"),
     ([255, 240, 141], "Cream Yellow"),
     ([255, 200, 200], "Applique"),
@@ -335,27 +419,32 @@ pub fn default_thread(index: usize) -> Thread {
     Thread::named(color, name)
 }
 
-/// The thread for a palette index that names none: black.
-fn no_colour() -> Thread {
-    Thread::named([0, 0, 0], "Black")
+/// The thread a block read from a file is in when the file names thread `number`, which names no
+/// entry of its palette ([`Palette::thread`]): block `block`'s default thread's colour
+/// ([`default_thread`]), so that the blocks stay told apart, as in a design from a format without
+/// colours; named after the number ("Unknown thread 85"), so that it is never taken for one of the
+/// palette's threads (a 0 read as Black would be).
+pub fn unknown_thread(block: usize, number: u64) -> Thread {
+    Thread { name: format!("Unknown thread {number}"), ..Thread::rgb(default_thread(block).color) }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// A thread chosen for a block is its number when it is the palette's own; another palette's,
-    /// or a number the palette doesn't have, is matched by colour; and a block isn't matched to
-    /// the thread of the block before, chosen or not.
+    /// A thread chosen for a block is its number when it is the palette's own; another palette's
+    /// is matched by colour; a number the palette doesn't have is no thread; and a block isn't
+    /// matched to the thread of the block before, chosen or not.
     #[test]
     fn numbers_take_the_chosen_thread_of_their_palette() {
         let red = [200, 30, 30];
-        let chosen = |palette, index, color| Thread { chosen: Some(PaletteThread { palette, index }), ..Thread::rgb(color) };
+        let chosen = |palette, index, color| Thread { chosen: PaletteThread::new(palette, index), ..Thread::rgb(color) };
         let nearest = Palette::Pec.nearest(red, &[]).index;
         assert_eq!(Palette::Pec.numbers(&[chosen(Palette::Pec, 40, red)]), [40]);
         assert_eq!(Palette::Pec.numbers(&[chosen(Palette::Jef, 40, red)]), [nearest], "Janome's 40");
-        assert_eq!(Palette::Pec.numbers(&[chosen(Palette::Pec, 65, red)]), [nearest], "past the palette");
-        assert_eq!(Palette::Pec.numbers(&[chosen(Palette::Pec, 0, red)]), [nearest], "no colour");
+        assert_eq!((PaletteThread::new(Palette::Pec, 65), PaletteThread::new(Palette::Pec, 0)), (None, None), "past the palette, no colour");
+        let jef = PaletteThread::new(Palette::Jef, 78).unwrap();
+        assert_eq!((jef.palette(), jef.index(), PaletteThread::new(Palette::Jef, 79)), (Palette::Jef, 78, None));
         // An orange whose next nearest thread is similar takes it next to its nearest.
         let orange = [254, 180, 58];
         let first = Palette::Pec.nearest(orange, &[]).index;
@@ -371,7 +460,7 @@ mod tests {
     }
 
     /// A palette's threads are numbered from 1, as the formats count; 0 and numbers past the end
-    /// name none and read as black.
+    /// name none, and a block a file gives one of them is in a stand-in thread named after it.
     #[test]
     fn threads_are_numbered_from_one() {
         for palette in Palette::ALL {
@@ -379,14 +468,60 @@ mod tests {
             assert_eq!(palette.get(1), threads.first().copied());
             assert_eq!(palette.get(threads.len()), threads.last().copied());
             assert_eq!((palette.get(0), palette.get(threads.len() + 1)), (None, None));
-            assert_eq!(palette.thread(0), Thread::named([0, 0, 0], "Black"));
+            assert_eq!((palette.thread(0), palette.thread(threads.len() + 1)), (None, None));
+            assert_eq!(palette.thread(1), threads.first().map(|&(rgb, name)| Thread::named(rgb, name)));
             assert_eq!(Palette::from_id(palette.id()), Some(palette));
             // Each thread is its own colour's nearest, exactly, even when it is left out.
-            for (i, &(rgb, _)) in threads.iter().enumerate() {
+            for (i, &(rgb, _)) in threads.iter().enumerate().filter(|(i, _)| palette.is_thread(i + 1)) {
                 assert_eq!(palette.nearest(rgb, &[]), Match { index: i + 1, delta_e: 0.0 });
                 assert_eq!(palette.nearest(rgb, &[i + 1]), Match { index: i + 1, delta_e: 0.0 });
             }
         }
+    }
+
+    /// A block whose file names no thread of the palette is in its block's default colour, never
+    /// in one of the palette's threads, and named after the number it was given.
+    #[test]
+    fn a_number_that_names_no_thread_reads_as_a_stand_in() {
+        for (block, number) in [(0, 0), (2, 79), (9, u64::from(u32::MAX))] {
+            let t = unknown_thread(block, number);
+            assert_eq!((t.color, t.name.as_str(), t.chosen), (default_thread(block).color, format!("Unknown thread {number}").as_str(), None));
+        }
+    }
+
+    /// PEC's entries 62 to 64 are not threads: a file that names them reads in their colours, but
+    /// no colour is ever matched to them, not even their own, and no thread is chosen from them,
+    /// so neither a plan nor a PES file ever names them.
+    #[test]
+    fn pecs_applique_entries_are_never_matched() {
+        let pec = Palette::Pec;
+        assert!(pec.is_thread(1) && pec.is_thread(BROTHER_THREADS) && !pec.is_thread(0) && !pec.is_thread(65));
+        for index in [62, 63, 64] {
+            assert!(!pec.is_thread(index) && PaletteThread::new(pec, index).is_none(), "{index}");
+            let (rgb, name) = pec.get(index).unwrap();
+            assert_eq!(pec.thread(index), Some(Thread::named(rgb, name)), "read as before");
+            let m = pec.nearest(rgb, &[]);
+            assert!(pec.is_thread(m.index) && m.delta_e > 0.0, "{index}: {m:?}");
+        }
+        // Every entry's colour, in every order of neighbours, gets a thread.
+        let colours: Vec<([u8; 3], Option<PaletteThread>)> = PEC.iter().map(|&(rgb, _)| (rgb, None)).collect();
+        for m in pec.assign(&colours).iter().chain(&pec.assign(&colours.iter().rev().copied().collect::<Vec<_>>())) {
+            assert!(pec.is_thread(m.index), "{m:?}");
+        }
+        assert!(Palette::Jef.threads().iter().enumerate().all(|(i, _)| Palette::Jef.is_thread(i + 1)), "all Janome's entries are threads");
+    }
+
+    /// Brother's threads, PEC's first 61 entries, each have a name of their own, as Brother's
+    /// thread list gives them (support.brother.com, Artspira thread names: 61 threads, each name
+    /// once), and 42 is Linen.
+    #[test]
+    fn brothers_threads_each_have_their_own_name() {
+        let names: Vec<&str> = PEC.iter().take(BROTHER_THREADS).map(|(_, name)| *name).collect();
+        let mut distinct = names.clone();
+        distinct.sort_unstable();
+        distinct.dedup();
+        assert_eq!(distinct.len(), BROTHER_THREADS, "{names:?}");
+        assert_eq!(Palette::Pec.get(42), Some(([255, 227, 198], "Linen")));
     }
 
     /// The nearest thread is the one that looks nearest, not the one nearest in RGB: a teal is
@@ -424,7 +559,8 @@ mod tests {
     /// of one thread's own colour keep it both.
     #[test]
     fn a_block_avoids_a_neighbours_thread_only_for_a_similar_one() {
-        let indices = |palette: Palette, blocks: &[([u8; 3], Option<usize>)]| palette.assign(blocks).iter().map(|m| m.index).collect::<Vec<_>>();
+        let indices =
+            |palette: Palette, blocks: &[([u8; 3], Option<PaletteThread>)]| palette.assign(blocks).iter().map(|m| m.index).collect::<Vec<_>>();
         let own = |palette: Palette, index: usize| palette.get(index).map(|(rgb, _)| rgb).unwrap();
         // An orange with three similar Brother threads.
         let (pec, orange) = (Palette::Pec, [254, 180, 58]);
@@ -434,7 +570,9 @@ mod tests {
         assert_eq!(indices(pec, &[(orange, None), (own(pec, first), None)]), [second, first]);
         assert_eq!(indices(pec, &[(own(pec, first), None), (orange, None)]), [first, second]);
         assert_eq!(indices(pec, &[(own(pec, first), None), (orange, None), (own(pec, second), None)]), [first, third, second]);
-        assert_eq!(indices(pec, &[(orange, None), (orange, Some(first))]), [second, first], "a chosen thread is known too");
+        assert_eq!(indices(pec, &[(orange, None), (orange, PaletteThread::new(pec, first))]), [second, first], "a chosen thread is known too");
+        let janome = PaletteThread::new(Palette::Jef, first);
+        assert_eq!(indices(pec, &[(orange, None), (orange, janome)]), [first, second], "Janome's thread of that number is not");
         let m = pec.assign(&[(orange, None), (own(pec, first), None)]);
         assert_eq!((m[0].delta_e, m[1].delta_e), (color::delta_e_rgb(orange, own(pec, second)), 0.0));
         // The zebra's dark grey: nothing in Janome's palette is similar but Black, which it keeps

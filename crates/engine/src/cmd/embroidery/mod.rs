@@ -44,7 +44,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Setup",
             [],
             None,
-            "{palette?: \"pec\"|\"jef\"|null (the thread palette the design's colours are matched to, the target machine format's: Brother's 64 threads, which PES files number, or Janome's 78, which JEF files number; null unsets it, and JEF is used), threadPalette?: (reported only: ignored when passed back)} change the document's embroidery settings in one undo step, saved with the document; no params → the current settings → {palette: as set (null when unset; one a newer version wrote, as it is), threadPalette: \"pec\"|\"jef\" (the palette the stitch plan matches to: palette, else JEF)}",
+            "{palette?: \"pec\"|\"jef\"|null (the thread palette the design's colours are matched to, the target machine format's: Brother's 61 threads, which PES files number, or Janome's 78, which JEF files number; null unsets it, and JEF is used), threadPalette?: (reported only: ignored when passed back)} change the document's embroidery settings in one undo step, saved with the document; no params → the current settings → {palette: as set (null when unset; one a newer version wrote, as it is), threadPalette: \"pec\"|\"jef\" (the palette the stitch plan matches to: palette, else JEF)}",
             has_doc,
             setup
         ),
@@ -111,7 +111,7 @@ fn setup(s: &mut Session, p: &Value) -> Result<Value> {
     let mut new = d.embroidery.as_deref().cloned().unwrap_or_default();
     for (k, v) in o {
         match k.as_str() {
-            "palette" => new.palette = palette_param(v, new.palette.as_ref())?,
+            "palette" => new.set_palette(palette_param(v, new.palette.as_ref())?),
             // Reported only.
             "threadPalette" => {}
             _ => return Err(bad(C, format!("unknown setting `{k}`: the only setting is palette"))),

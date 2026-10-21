@@ -343,6 +343,28 @@ fn empty_settings_in_a_file_are_none() {
     assert!(refused.contains("unknown setting `fabric`: the only setting is palette"), "{refused}");
 }
 
+/// A file whose embroidery settings a newer version wrote in another shape than an object opens:
+/// its palette is unset, saving keeps the settings as they were, and setting a palette replaces
+/// them.
+#[test]
+fn a_newer_versions_settings_of_another_shape_open() {
+    let saved = native(&mut blank());
+    for newer in [json!(5), json!("pec"), json!([{"palette": "pec"}])] {
+        let mut file: serde_json::Value = serde_json::from_slice(&saved).unwrap();
+        file["document"]["embroidery"] = newer.clone();
+        let data = vectorcraft_format::base64_encode(&serde_json::to_vec(&file).unwrap());
+        let mut s = Session::new();
+        s.execute("document.open", &json!({"name": "newer.vectorcraft", "dataBase64": data})).unwrap_or_else(|e| panic!("{newer}: {e}"));
+        assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap(), json!({"palette": null, "threadPalette": "jef"}), "{newer}");
+        assert!(!s.doc().unwrap().is_dirty(), "{newer}: unchanged");
+        let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
+        assert_eq!(kept["document"]["embroidery"], newer);
+        s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
+        let replaced: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
+        assert_eq!(replaced["document"]["embroidery"], json!({"palette": "pec"}), "{newer}");
+    }
+}
+
 /// The palette is saved with the document. A file a newer version saved keeps what this one
 /// doesn't know when saved again: a setting it doesn't read, and a palette it doesn't know, which
 /// it reports as it is and matches as unset.
@@ -450,6 +472,32 @@ fn blocks_are_sewn_in_threads_of_the_documents_palette() {
     let plan = plan_of(&s);
     assert!(plan.blocks.iter().all(|b| b.thread.palette == Palette::Jef), "{:?}", plan.blocks.iter().map(|b| &b.thread).collect::<Vec<_>>());
     assert_eq!(named(&export(&mut s, Format::Jef), Format::Jef), names(&plan));
+}
+
+/// A swatch of the other palette's thread library is matched like any colour in the document's
+/// palette, while the export in that library's own format still names that thread exactly: Brother's
+/// Peacock Blue in Janome's palette (the default), Janome's Sola Blue in Brother's.
+#[test]
+fn a_swatch_of_the_other_palette_is_matched_and_its_own_format_names_it() {
+    for (palette, library, swatch, theirs, number) in [
+        (Palette::Jef, "brother-threads-pec", "PEC 38 Peacock Blue", Format::Pes, 38),
+        (Palette::Pec, "janome-threads-jef", "JEF 61 Sola Blue", Format::Jef, 61),
+    ] {
+        let mut s = blank();
+        s.execute("embroidery.setup", &json!({"palette": palette.id()})).unwrap();
+        let swatched = rect(&mut s, "#000000", 100.0, 20.0, 40.0, 30.0);
+        s.execute("select.set", &json!({"ids": [swatched]})).unwrap();
+        s.execute("swatch.library.add", &json!({"library": library, "names": [swatch], "apply": "fill"})).unwrap();
+        s.execute("select.none", &json!({})).unwrap();
+        let own = theirs.palette().and_then(|p| p.get(number)).map(|(rgb, _)| rgb).unwrap();
+        let plan = plan_of(&s);
+        let [block] = &plan.blocks[..] else { panic!("{swatch}: one block, not {}", plan.blocks.len()) };
+        assert_eq!((block.thread.palette, block.thread.art), (palette, own), "{swatch}");
+        assert_eq!(block.thread.index, palette.nearest(own, &[]).index, "{swatch}");
+        assert!(block.thread.delta_e > 0.0, "{swatch}: no thread of the document's palette has its colour");
+        let written = theirs.read(&export(&mut s, theirs)).unwrap();
+        assert_eq!(written.blocks[0].thread, theirs.palette().and_then(|p| p.thread(number)).unwrap(), "{swatch}");
+    }
 }
 
 /// `embroidery.threads` lists each block's art colour, its thread and their difference, flagging

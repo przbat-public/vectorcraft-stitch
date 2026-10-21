@@ -315,7 +315,7 @@ mod tests {
             let read = format.read(&format.write(&pattern).unwrap()).unwrap();
             let (Some(palette), [block]) = (format.palette(), read.blocks.as_slice()) else { panic!("{format:?}: one block") };
             let index = palette.nearest([0x12, 0x34, 0x56], &[]).index;
-            assert_eq!(block.thread, palette.thread(index), "{format:?}");
+            assert_eq!(Some(&block.thread), palette.thread(index).as_ref(), "{format:?}");
         }
     }
 

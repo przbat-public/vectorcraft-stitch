@@ -474,6 +474,32 @@ fn blocks_are_sewn_in_threads_of_the_documents_palette() {
     assert_eq!(named(&export(&mut s, Format::Jef), Format::Jef), names(&plan));
 }
 
+/// A swatch of the other palette's thread library is matched like any colour in the document's
+/// palette, while the export in that library's own format still names that thread exactly: Brother's
+/// Peacock Blue in Janome's palette (the default), Janome's Sola Blue in Brother's.
+#[test]
+fn a_swatch_of_the_other_palette_is_matched_and_its_own_format_names_it() {
+    for (palette, library, swatch, theirs, number) in [
+        (Palette::Jef, "brother-threads-pec", "PEC 38 Peacock Blue", Format::Pes, 38),
+        (Palette::Pec, "janome-threads-jef", "JEF 61 Sola Blue", Format::Jef, 61),
+    ] {
+        let mut s = blank();
+        s.execute("embroidery.setup", &json!({"palette": palette.id()})).unwrap();
+        let swatched = rect(&mut s, "#000000", 100.0, 20.0, 40.0, 30.0);
+        s.execute("select.set", &json!({"ids": [swatched]})).unwrap();
+        s.execute("swatch.library.add", &json!({"library": library, "names": [swatch], "apply": "fill"})).unwrap();
+        s.execute("select.none", &json!({})).unwrap();
+        let own = theirs.palette().and_then(|p| p.get(number)).map(|(rgb, _)| rgb).unwrap();
+        let plan = plan_of(&s);
+        let [block] = &plan.blocks[..] else { panic!("{swatch}: one block, not {}", plan.blocks.len()) };
+        assert_eq!((block.thread.palette, block.thread.art), (palette, own), "{swatch}");
+        assert_eq!(block.thread.index, palette.nearest(own, &[]).index, "{swatch}");
+        assert!(block.thread.delta_e > 0.0, "{swatch}: no thread of the document's palette has its colour");
+        let written = theirs.read(&export(&mut s, theirs)).unwrap();
+        assert_eq!(written.blocks[0].thread, theirs.palette().and_then(|p| p.thread(number)).unwrap(), "{swatch}");
+    }
+}
+
 /// `embroidery.threads` lists each block's art colour, its thread and their difference, flagging
 /// a thread past the threshold, as the plan has them; it takes the export's options and refuses
 /// bad ones.

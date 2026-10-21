@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-20 · **Last updated:** 2026-10-20 · **Change:** round a bend satin columns (strokes and a fill's narrow parts) keep their spacing on the outer side, the inner side's penetrations closer (shortened where they bunch), and a stroke's crossings turn with its curve, not in steps where it was flattened; a fill's narrow parts (stripes, stems, rings, the strokes of a letter) are sewn as satin columns that follow the shape, the rest as tatami (`narrowAsSatin`, 7 mm), rings closing at every width, a narrow part beside a wider block keeping its column, no column fanning across a wide part, push compensation sparing a column's end that meets the rest; a satin's spacing is measured peak to peak (its crossings half that apart, twice as dense as before); a region's last row keeps its last stitch; `threadWeight` follows the thread's thickness; a negative `expand` shrinks the region; an opened design's lines turn round, not mitred
+> **Last reviewed:** 2026-10-21 · **Last updated:** 2026-10-21 · **Change:** the export goes through a stitch plan of sewing units (one fill or stroke of an object, or a run of literal stitches) in thread blocks, every stitch numbered; what it writes is unchanged, pinned by the sha256 of every export; the digitizer moved to `cmd/embroidery`; a new Architecture section records the plan and the decisions the next steps rest on
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -464,7 +464,18 @@ index, whose RGB values differ between published charts — preview colour is no
   parameters allow (this found the zigzag fault fixed above: a 50 mm zigzag with corners 0.5 mm
   apart was one 50 mm stitch): without pull compensation to the bound it always had, and with it
   longer by its reach at most.
-- `crates/engine`: 40 tests (37 command-level) — export writes a readable design in every format,
+- `crates/engine`: 49 tests (37 through the commands, 8 on the stitch plan, 2 on the export options,
+  2 on the sewing order) — every stitch of every block belongs to exactly one sewing unit, the
+  block's units in order without a gap, and a unit's runs are its stretches of needle-down stitches
+  (in fills, strokes, an object both filled and stroked, a clip group, symbols, objects asking for a
+  trim, an opened design), planned twice the plan is the same, a unit says what it sews (an object's
+  fill and its stroke are two units, each with its parameters; a fill with narrow parts records its
+  columns' satin parameters), a symbol's units name the instance that places them, an opened
+  design's runs are literal units, units of one thread share its block in document order (the second
+  reached by a cut and a jump) and are sewn in the block's thread, an object asking for a trim ends
+  its unit with it, stitches are numbered from 1 in sewing order (each number finds its block, index
+  and unit; none past the end), and the export writes the plan in every format; export writes a
+  readable design in every format,
   a narrow fill is sewn as satin across it (tatami with `stitchStyle: fill` or `narrowAsSatin: 0`),
   a filled letter T is sewn in one go with no jump or trim, a negative `expand` shrinks the region
   two overlapping squares cover (no groove along the outlines inside it), a shape expanded away is
@@ -490,6 +501,14 @@ index, whose RGB values differ between published charts — preview colour is no
   the planner's.
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
+- `crates/engine/tests/embroidery_output.rs`: the bytes every export writes, pinned by their sha256
+  in DST, EXP, PES and JEF: 14 documents built in code (fills, strokes, a compound path with a hole,
+  clip groups, symbols, trims asked for, opened designs as they are, clipped and cut at their
+  blocks' ends, and the options away from their defaults; always run) and the eleven real
+  designs' artwork at the person's size (when the corpus is present). A change to what is sewn
+  fails it, listing the exports that changed and printing the listing as it now stands: such a
+  change is made on purpose, with the listing updated in the same commit. The stitch plan below
+  left all 100 hashes as they were.
 
 **Real designs** (`crates/engine/tests/embroidery_corpus.rs`): `cargo xtask corpus --embroidery`
 fetches eleven designs of the [Emoji Embroidery Project](https://edutechwiki.unige.ch/en/Emoji_Embroidery_Project)
@@ -608,6 +627,128 @@ Still unverified, and listed in the local research notes (`plan/research/formats
 §Appendix B): behaviour on real hardware, blank preview pictures, JEF's version letter, and how
 machines treat our trim encodings.
 
+## Architecture
+
+VectorCraft Stitch is growing from a converter (art in, machine file out) into an embroidery
+editor: embroidery settings on objects, a stitch preview, stitch counts and the sewing order,
+design checks, manual stitches and digitizing from an image. The decisions below are the ones
+those steps rest on, made first so that each step builds on the last instead of reworking it.
+`FORK.md` lists the steps in their order.
+
+### Decided
+
+These product decisions are made (2026-10-20), and the sections below build on them:
+
+- **Where a value comes from.** A value set on an object beats an export option given to
+  `document.export`, which beats the document's embroidery settings, which beat the built-in
+  defaults (`Params::for_thread`). *Auto* (the stitch chosen by the shape and its width) stays a
+  rule, not a value.
+- **A fill and a stroke are separate parts.** An object's fill and its stroke carry separate
+  embroidery settings, so a sewing unit is a node and one of its parts.
+- **A fabric is copied, not linked.** Choosing a fabric copies its values into the document, with
+  no live link to the preset; values changed from the preset's are marked.
+- **Sewing order is stacking order.** The Sewing order tab lets a person drag objects from its
+  first version, and a drag moves layers (`node.move`); joining objects of one thread stays
+  automatic.
+- **An Embroidery panel of its own**, with the tabs Object, Sewing order, Check and Stitches; the
+  document-wide embroidery settings go in a new tab of Document Setup.
+- **Threads** match the target format's palette (PEC or JEF) in CIE Lab, with the colour difference
+  (ΔE) recorded. Writing real thread colours into PES is a separate task.
+- **Manual stitches** come from an explicit "convert to manual stitches" step that can be undone,
+  which restores the object.
+- **Digitizing from an image** happens in a large working window.
+
+### The stitch plan: the one way from a document to stitches
+
+`cmd::embroidery::digitize` plans the document's visible art into a `DesignPlan`
+(`crates/engine/src/cmd/embroidery/plan.rs`), and the export writes that plan
+(`DesignPlan::to_pattern`, then the format's writer). Every other view of a design's stitches is
+to read the same plan rather than plan stitches of its own: the preview on the canvas, stitch
+counts, the sewing order, design checks, converting an object to manual stitches, a production
+worksheet, a stitch player. So each one shows what will be sewn.
+
+- **Sewing units** (`Unit`). A unit is what is planned in one go: one fill or one stroke of an
+  object, or a run of literal stitches read from a machine file. Later a group of objects branched
+  into one another, or a letter of lettering, can be a unit: the plan speaks of units, not of
+  document nodes. A unit keeps:
+  - its origin (`Origin`): the node, its part (`Part::Fill(k)` or `Part::Stroke(k)`, counting the
+    object's fills or strokes in appearance order, or `Part::Literal`) and, for art inside a
+    symbol, the symbol instance in the document that places it (the node is then the object in
+    the symbol's art, and the instance is what a person selects);
+  - the stitch parameters it was planned with (`None` for a literal run, sewn as its points are),
+    and those of a fill's narrow parts sewn as satin columns;
+  - its thread, and the box its stitches cover;
+  - its block, its stitches as a range of the block's (the move that reaches it, its own stitches,
+    and the cut after it when one is asked for) and its runs, the stretches sewn without lifting
+    the needle.
+- **Thread blocks** (`ThreadBlock`). Units of one thread are joined into one block wherever the
+  stacking allows, as before: an object joins an earlier block of its thread only when it overlaps
+  none of the blocks sewn in between. A block lists its units, whose ranges cover its stitches
+  without a gap.
+- **Stitch numbers.** Stitches are numbered from 1 in sewing order, block after block, every needle
+  point, jump and cut taking one (a thread change between blocks takes none): the numbers a stitch
+  list shows. `DesignPlan::number`, `locate`, `unit_at` and `numbers` convert between a number, a
+  block's stitch and a unit.
+- **Deterministic.** A plan depends on the document and the options alone, so the same document
+  always plans the same stitches. `crates/engine/tests/embroidery_output.rs` pins the bytes of
+  every export, so a change to what is sewn is always deliberate.
+
+### Settings and where their values come from
+
+Today every unit is planned with the export's options. The digitizer decides a unit's stitch
+style, parameters and `expand` in one place, `Digitizer::settings(origin)`, and that is where
+embroidery settings on objects and in the document will be looked up. (The jump and trim lengths
+between objects belong to the design, or the machine, rather than to a unit.)
+
+- **Resolved in the decided order** (the object's value, the export's option, the document's, the
+  built-in default): an export option applies to the objects that have no value of their own, and
+  every value resolved comes back with where it came from, so that a panel and `embroidery.info`
+  can show it.
+- **Stored in the `.vectorcraft` file, so that a file saved by a newer version still opens in an
+  older one:**
+  - per part of an object, its fill and its stroke, each value set or unset;
+  - allowed on type (for lettering), on groups (a trim after them, later branching) and on a live
+    trace (digitizing from an image), not only on paths;
+  - points (entry and exit, later satin rails and angle lines) in document coordinates, moved with
+    the object, and angles turned with it;
+  - fields a version doesn't know are kept, and a stitch type it doesn't know reads as Auto with a
+    warning instead of failing the file (so stitch types are not a plain closed list in the file).
+- **Document settings:** the fabric (its values copied in, as decided), the thread's weight, the
+  machine (and with it the trim length), and the joining of one thread's objects (automatic, where
+  nothing lies between them).
+
+### Threads
+
+A thread is an entry of the document's target palette (Brother's 64 PEC threads or Janome's 78
+JEF threads), offered as a built-in swatch library. Colours are matched to the palette in CIE Lab
+and the plan records each match and its colour difference (ΔE); an object painted with a swatch
+from that library has that thread exactly. The format writers take the plan's threads instead of
+matching colours again. Writing real thread colours into PES, beyond the PEC palette's indices, is
+a separate task.
+
+### Planning service
+
+A planning service takes a snapshot of the document and gives back its plan. It keeps each sewing
+unit's stitches between plans, so that an edit replans only the units it changes, and it can be
+cancelled. A unit's stitches depend on where the needle comes from (each object starts near where
+the one before ended), so that is part of what they are kept by. Commands and the web build run it
+synchronously; the app runs it in the background.
+
+### Drawing stitches
+
+One stitch scene is built from the plan and drawn by the same renderer in the app and headless (to
+PNG or PDF), in modes: threads, thin lines with their needle points, a range of stitches, one unit
+highlighted, the rest dimmed. Built from the plan, every stitch drawn maps back to its unit and its
+object. The layering is still to settle: `vectorcraft-render` and `vectorcraft-stitch` are both
+layer 3, so either `cargo xtask layers` lets `render` depend on `stitch` (which keeps depending on
+`geom` alone) or the engine builds the scene from the document's own drawing primitives.
+
+### One embroidery tool
+
+The canvas gets one embroidery tool with kinds of handles: the entry and exit points first, then
+angle lines, satin rails and rungs, needle points and the hoop's position. Not one tool per kind,
+which would have to be merged later.
+
 ## References
 
 Public documentation, cited per claim in the crate and in the local research notes:
@@ -665,12 +806,17 @@ Public documentation, cited per claim in the crate and in the local research not
 - `crates/stitch/src/format/` — `mod.rs` (shared frames, readers, block building), `dst.rs`,
   `exp.rs`, `pes.rs`, `jef.rs`.
 - `crates/stitch/src/thread.rs` — the colour palettes and nearest-colour matching.
-- `crates/engine/src/cmd/fileio/embroidery/` — the commands' side: `mod.rs` (export options and
-  entry point), `import.rs` (a design opened as art), `digitize.rs` (the document's art planned as
-  stitches; a fill's narrow columns cut out of it with path operations), `sequence.rs` (the order blocks are sewn in, where the needle is before each object,
-  trims between objects), and the `embroidery.setTrimAfter` command.
+- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (the `embroidery.setTrimAfter`
+  command), `options.rs` (the export options, and the planner's parameters they give an object),
+  `digitize.rs` (the document's art planned into the stitch plan, unit by unit; a fill's narrow
+  columns cut out of it with path operations), `plan.rs` (the stitch plan: sewing units, thread
+  blocks, stitch numbers), `sequence.rs` (the order blocks are sewn in, where the needle is before
+  each object, trims between objects, and the units each block holds), `tests.rs` (the plan's).
+- `crates/engine/src/cmd/fileio/embroidery/` — the files' side: `mod.rs` (the export's options as
+  `document.formats` lists them, and its entry point), `import.rs` (a design opened as art).
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real
-  designs and the test that uses them.
+  designs and the test that uses them; `crates/engine/tests/embroidery_output.rs` — the sha256 of
+  every export.
 
 Every value these files decide with is a named constant with a description: what it is, its unit,
 and its source (a format's documentation, a cited default) or that it is an estimate. What stays

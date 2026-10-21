@@ -20,6 +20,7 @@ pub(crate) mod docsetup;
 mod draw2;
 mod edit;
 mod effectcmd;
+pub mod embroidery;
 pub mod expand;
 pub(crate) mod fileinfo;
 pub mod fileio;
@@ -285,7 +286,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(print::specs());
         v.extend(recovery::specs());
         v.extend(fileio::dxfimport::specs());
-        v.extend(fileio::embroidery::specs());
+        v.extend(embroidery::specs());
         v.extend(webexport::specs());
         v.extend(assets::specs());
         v.extend(css::specs());

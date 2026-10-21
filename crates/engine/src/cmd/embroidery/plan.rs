@@ -53,6 +53,10 @@ pub struct Origin {
     pub instance: Option<NodeId>,
 }
 
+/// A colour difference is shown to two decimals, in hundredths: finer than any difference the eye
+/// sees (about 1 is the smallest seen side by side).
+pub const DELTA_E_HUNDREDTHS: f64 = 100.0;
+
 /// The thread a block is sewn in: a thread of the document's palette, matched to the colour the
 /// block's art is painted with ([`Palette::nearest`], in sewing order).
 #[derive(Clone, Debug, PartialEq)]
@@ -81,11 +85,18 @@ impl BlockThread {
         Self { art, palette, index: matched.index, name, color, delta_e: matched.delta_e }
     }
 
-    /// Whether the thread looks like another colour than the art: its difference is past
+    /// The colour difference as a list of threads shows it (`embroidery.threads`): to
+    /// [`DELTA_E_HUNDREDTHS`].
+    pub fn shown_delta_e(&self) -> f64 {
+        (self.delta_e * DELTA_E_HUNDREDTHS).round() / DELTA_E_HUNDREDTHS
+    }
+
+    /// Whether the thread looks like another colour than the art: its difference as shown is past
     /// [`MISMATCH_DELTA_E`] (`vectorcraft_stitch::thread`), the line that also decides when a block
-    /// takes another thread than a neighbour's.
+    /// takes another thread than a neighbour's. As shown, so that a list never flags a thread whose
+    /// difference it gives as the threshold itself.
     pub fn mismatch(&self) -> bool {
-        self.delta_e > MISMATCH_DELTA_E
+        self.shown_delta_e() > MISMATCH_DELTA_E
     }
 
     /// The thread as the machine formats take it ([`DesignPlan::to_pattern`]): a format that

@@ -14,7 +14,7 @@ use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 use vectorcraft_stitch::{Command, pt_to_mm};
 
 use super::digitize::digitize;
-use super::plan::{DesignPlan, FIRST_NUMBER, Part};
+use super::plan::{BlockThread, DELTA_E_HUNDREDTHS, DesignPlan, FIRST_NUMBER, Part};
 use super::*;
 
 /// Points per millimetre: the documents count points, the designs millimetres.
@@ -450,7 +450,7 @@ fn the_threads_command_lists_each_blocks_thread() {
             (&json!("pec"), &json!(p.thread.index), &json!(p.thread.name))
         );
         assert!((b["deltaE"].as_f64().unwrap() - p.thread.delta_e).abs() <= 0.005, "{b}");
-        assert_eq!(b["mismatch"], p.thread.delta_e > MISMATCH_DELTA_E);
+        assert_eq!((&b["deltaE"], &b["mismatch"]), (&json!(p.thread.shown_delta_e()), &json!(p.thread.mismatch())));
     }
     assert_eq!((&blocks[0]["art"], &blocks[0]["units"]), (&json!("#cc2222"), &json!(2)), "both red squares");
     let peacock = &blocks[1];
@@ -463,6 +463,17 @@ fn the_threads_command_lists_each_blocks_thread() {
         assert!(s.execute("embroidery.threads", &bad).is_err(), "{bad}");
     }
     assert!(s.execute("embroidery.threads", &json!({"stitchStyle": "running"})).is_ok());
+}
+
+/// A thread is flagged by its difference as a list shows it: one shown as the threshold itself is
+/// not flagged, one shown past it is.
+#[test]
+fn a_mismatch_is_flagged_by_the_difference_shown() {
+    let thread = |delta_e| BlockThread { art: [0; 3], palette: Palette::Pec, index: 1, name: String::new(), color: [0; 3], delta_e };
+    let step = 1.0 / DELTA_E_HUNDREDTHS;
+    let (at, past) = (thread(MISMATCH_DELTA_E + 0.4 * step), thread(MISMATCH_DELTA_E + 0.6 * step));
+    assert_eq!((at.shown_delta_e(), at.mismatch()), (MISMATCH_DELTA_E, false));
+    assert_eq!((past.shown_delta_e(), past.mismatch()), (MISMATCH_DELTA_E + step, true));
 }
 
 /// `embroidery.threads` takes the export's embroidery options and no other key: another format's

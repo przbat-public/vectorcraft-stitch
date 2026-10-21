@@ -150,8 +150,6 @@ fn threads(s: &mut Session, p: &Value) -> Result<Value> {
     let d = &s.doc()?.doc;
     let plan = digitize::digitize(d, &opts).map_err(|e| bad(C, e))?;
     let hex = |[r, g, b]: [u8; 3]| Color::rgb8(r, g, b).to_hex();
-    // Two decimals: finer than any difference the eye sees.
-    let rounded = |v: f64| (v * 100.0).round() / 100.0;
     let blocks: Vec<Value> = plan
         .blocks
         .iter()
@@ -163,7 +161,7 @@ fn threads(s: &mut Session, p: &Value) -> Result<Value> {
                 "block": k + 1,
                 "art": hex(t.art),
                 "thread": {"palette": t.palette.id(), "index": t.index, "name": t.name, "color": hex(t.color)},
-                "deltaE": rounded(t.delta_e),
+                "deltaE": t.shown_delta_e(),
                 "mismatch": t.mismatch(),
                 "units": b.units.len(),
             })

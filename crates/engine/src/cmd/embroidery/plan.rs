@@ -103,7 +103,7 @@ impl BlockThread {
     /// numbers its threads from this palette writes this one, and any other matches the art's
     /// colour to its own palette.
     pub fn to_thread(&self) -> Thread {
-        Thread { color: self.art, name: self.name.clone(), chosen: Some(PaletteThread { palette: self.palette, index: self.index }) }
+        Thread { color: self.art, name: self.name.clone(), chosen: PaletteThread::new(self.palette, self.index) }
     }
 }
 

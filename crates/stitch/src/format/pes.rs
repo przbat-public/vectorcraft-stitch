@@ -512,8 +512,8 @@ mod tests {
     fn the_header_names_the_chosen_threads() {
         use crate::thread::PaletteThread;
         let mut p = design();
-        p.blocks[0].thread.chosen = Some(PaletteThread { palette: Palette::Pec, index: 37 });
-        p.blocks[1].thread.chosen = Some(PaletteThread { palette: Palette::Jef, index: 37 });
+        p.blocks[0].thread.chosen = PaletteThread::new(Palette::Pec, 37);
+        p.blocks[1].thread.chosen = PaletteThread::new(Palette::Jef, 37);
         let bytes = write(&p).expect("writes");
         let at = PES_HEADER.len() + COLOR_COUNT_AT;
         let nearest = Palette::Pec.nearest([20, 30, 220], &[37]).index;

@@ -5127,3 +5127,14 @@ mark-style	Japanese	Japonesas
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	as variáveis e os conjuntos de dados do arquivo não foram lidos (variáveis: {variables}, conjuntos de dados: {data_sets}): o painel Variáveis não os lista
 	Trim After	Cortar a linha depois
 	Embroidery Setup	Configuração do Bordado
+
+# Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
+@msg	type is not stitched: outline it (Type › Create Outlines) and export again	o texto não é bordado: converta-o em contornos (Texto › Criar Contornos) e exporte novamente
+@msg	images are not stitched: trace them (Object › Image Trace) first	as imagens não são bordadas: rastreie-as primeiro (Objeto › Rastreamento de Imagem)
+@msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	mesclagens, envelopes, malhas e repetições dinâmicas não são bordados: expanda-os primeiro
+@msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	um valor negativo de expand não deixou nada de algumas formas preenchidas, por isso elas não são bordadas: reduza-as menos
+@msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	gradientes e padrões são pintados com a cor da sua primeira parada; um bordado costura uma linha por bloco
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	traçados com mais de {widest} mm de largura são costurados como colunas de cetim de {widest} mm: preencha-os em vez disso (stitchStyle fill)
+@msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	esta versão não conhece a paleta de linhas {palette} do documento, por isso suas linhas são escolhidas da paleta {default}
+@msg	nothing to stitch: the document has no visible filled or stroked paths	nada para bordar: o documento não tem caminhos visíveis com preenchimento ou traçado
+@msg	nothing to stitch: {_1}	nada para bordar: {_1}

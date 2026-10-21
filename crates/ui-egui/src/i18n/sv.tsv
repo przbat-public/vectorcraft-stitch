@@ -5166,3 +5166,14 @@ theme	Appearance	Utseende
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	filens variabler och datauppsättningar lästes inte (variabler: {variables}, datauppsättningar: {data_sets}): panelen Variabler visar dem inte
 	Trim After	Klipp tråden efter
 	Embroidery Setup	Broderiinställningar
+
+# Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
+@msg	type is not stitched: outline it (Type › Create Outlines) and export again	text broderas inte: gör om den till konturbanor (Typ › Skapa konturbanor) och exportera igen
+@msg	images are not stitched: trace them (Object › Image Trace) first	bilder broderas inte: kalkera dem först (Objekt › Bildkalkering)
+@msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	levande blandningar, kuvert, nät och upprepningar broderas inte: expandera dem först
+@msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	ett negativt expand-värde lämnade inget kvar av vissa fyllda former, så de broderas inte: krymp dem mindre
+@msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	gradienter och mönster målas i färgen på sitt första stopp; ett broderi syr en tråd per block
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	konturer bredare än {widest} mm sys som satinkolumner {widest} mm breda: fyll dem i stället (stitchStyle fill)
+@msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	den här versionen känner inte till dokumentets trådpalett {palette}, så dess trådar väljs ur paletten {default}
+@msg	nothing to stitch: the document has no visible filled or stroked paths	inget att brodera: dokumentet har inga synliga banor med fyllning eller kontur
+@msg	nothing to stitch: {_1}	inget att brodera: {_1}

@@ -5210,6 +5210,7 @@ mark-style	Japanese	Japonské
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	proměnné a sady dat souboru nebyly načteny (proměnné: {variables}, sady dat: {data_sets}): panel Proměnné je nezobrazuje
 	Trim After	Odstřihnout nit po
 	Embroidery Setup	Nastavení vyšívání
+	Embroidery Statistics	Statistika vyšívání
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	text se nevyšívá: převeďte ho na křivky (Text › Převést na křivky) a exportujte znovu

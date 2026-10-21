@@ -5209,6 +5209,7 @@ theme	Appearance	Apparence
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	les variables et jeux de données du fichier n’ont pas été lus (variables : {variables}, jeux de données : {data_sets}) : le panneau Variables ne les affiche pas
 	Trim After	Couper le fil après
 	Embroidery Setup	Paramètres de broderie
+	Embroidery Statistics	Statistiques de broderie
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	le texte n’est pas brodé : vectorisez-le (Texte › Vectoriser) puis exportez à nouveau

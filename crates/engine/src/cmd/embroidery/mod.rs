@@ -8,19 +8,24 @@
 //! object), [`digitize`] (the document's art planned as a design: its [`plan::DesignPlan`]),
 //! [`unit`] (one sewing unit's stitches from what it is planned from), [`cache`] (each unit's
 //! stitches kept between plans), [`service`] (each open document's planning, with what it keeps),
-//! [`plan`] (the plan: sewing units, thread blocks, stitch numbers) and [`sequence`] (the order the
-//! blocks are sewn in).
+//! [`plan`] (the plan: sewing units, thread blocks, stitch numbers), [`sequence`] (the order the
+//! blocks are sewn in), [`measure`] (a plan's records walked in sewing order) and [`stats`] (a
+//! design's figures: counts, size, thread, time).
 
 mod cache;
 pub(crate) mod digitize;
+mod measure;
 pub(crate) mod options;
 pub mod plan;
 mod sequence;
 pub(crate) mod service;
+mod stats;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod tests_service;
+#[cfg(test)]
+mod tests_stats;
 mod unit;
 
 use std::sync::Arc;
@@ -66,6 +71,15 @@ pub fn specs() -> Vec<CommandSpec> {
             "{stitchStyle?, density?, stitchLength?, stitchAngle?, pullCompensation?, pullCompensationPercent?, pushCompensation?, expand?, narrowAsSatin?, threadWeight?, underlay?, jumpLength?, trimLength?, minStitch? (the embroidery options of document.export, as document.formats describes them, and no other: they decide which objects share a colour block)} the thread each colour block of the design is sewn in, as the PES or JEF export of the document's palette writes it (embroidery.setup): the palette's thread nearest the colour the block's art is painted with, in sewing order, or, when a neighbouring block has that one, the nearest other thread within threshold → {palette: \"pec\"|\"jef\", threshold: the colour difference past which a thread is flagged, blocks: [{block: from 1 in sewing order, art: \"#rrggbb\", thread: {palette, index: from 1 as the format numbers it, name, color: \"#rrggbb\"}, deltaE: the CIEDE2000 difference between the art's colour and the thread's, to two decimals (0: painted with the thread's own colour, a swatch of its thread library), mismatch: deltaE past threshold, units: the fills, strokes and stitch runs sewn in it}], warnings}",
             has_doc,
             threads
+        ),
+        cmd!(
+            query "embroidery.stats",
+            "Embroidery Statistics",
+            [],
+            None,
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, speed?: stitches a minute the machine sews at (60 to 1500; default 650, a home machine's default, an estimate), fabricThickness?: millimetres (0 to 5; default 0.5, an estimate: the top thread goes down through it and back up at each needle point)} the design's figures as the export sews it, totals and per block → {stitches: needle points, records: needle points, jumps and cuts, jumps, trims, colorChanges, threads: distinct threads, blocks, size: {width, height} mm, bounds: [left, top, right, bottom] mm, start, end: [x, y] mm (the first and last needle points), extents: {left, right, up, down} mm from the start, shortestStitch, longestStitch, longestJump: mm, thread: {top, bobbin: metres (estimates), fabricThickness}, time: {seconds, minutes, speed, slowSpeed, slowAbove, trimSeconds, threadChanges, includes: what the time counts} (an estimate; thread changes are counted, not timed), perBlock: [{block: from 1, thread: {palette, index, name, color, art, deltaE, mismatch}, stitches, jumps, trims, first, last: stitch numbers, topThread, bobbinThread: metres, seconds}], warnings}",
+            has_doc,
+            stats_cmd
         ),
     ]
 }
@@ -161,6 +175,34 @@ fn planned(s: &mut Session, opts: &Options, cmd: &str) -> Result<(Arc<plan::Desi
     let (uid, doc) = (st.uid, st.doc.clone());
     let plan = s.embroidery_plans.of(uid).plan(&doc, opts).map_err(|e| e.error(cmd))?;
     Ok((plan, doc))
+}
+
+/// The keys of `p`, an object or null (none), as a map; another value is refused, naming `cmd`.
+fn object<'a>(p: &'a Value, cmd: &str) -> Result<std::borrow::Cow<'a, Map<String, Value>>> {
+    match p {
+        Value::Null => Ok(std::borrow::Cow::Owned(Map::new())),
+        Value::Object(o) => Ok(std::borrow::Cow::Borrowed(o)),
+        _ => Err(bad(cmd, "params must be an object")),
+    }
+}
+
+/// The embroidery options in `p`, an object of them and of the command's own keys (`own`), which
+/// the options leave aside.
+fn options_in(o: &Map<String, Value>, own: &[&str], cmd: &str) -> Result<Options> {
+    let options: Map<String, Value> = o.iter().filter(|(k, _)| !own.contains(&k.as_str())).map(|(k, v)| (k.clone(), v.clone())).collect();
+    Options::from_params(&Value::Object(options), cmd)
+}
+
+/// The keys `embroidery.stats` takes besides the embroidery options.
+const STATS_KEYS: [&str; 2] = ["speed", "fabricThickness"];
+
+fn stats_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    const C: &str = "embroidery.stats";
+    let o = object(p, C)?;
+    let (machine, thread) = stats::model(&o, C)?;
+    let opts = options_in(&o, &STATS_KEYS, C)?;
+    let (plan, _) = planned(s, &opts, C)?;
+    Ok(stats::stats(&plan, machine, thread))
 }
 
 fn threads(s: &mut Session, p: &Value) -> Result<Value> {

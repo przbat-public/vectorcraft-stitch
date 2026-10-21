@@ -4786,6 +4786,7 @@ effect	Regular	Regelmäßig
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	die Variablen und Datensätze der Datei wurden nicht gelesen (Variablen: {variables}, Datensätze: {data_sets}): Das Bedienfeld „Variablen“ listet sie nicht auf
 	Trim After	Faden danach schneiden
 	Embroidery Setup	Stickerei einrichten
+	Embroidery Statistics	Stickerei-Statistik
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	Text wird nicht gestickt: wandeln Sie ihn in Pfade um (Text › In Pfade umwandeln) und exportieren Sie erneut

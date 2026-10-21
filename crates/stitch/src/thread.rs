@@ -20,6 +20,11 @@
 //! (Brother's 307) in EduTechWiki's colour, where pyembroidery repeats Flesh Pink, and PEC 62 to 64
 //! are the format's appliqué entries, not threads ([`Palette::is_thread`]). Thread names are data,
 //! not creative text.
+//!
+//! The tables are credited in `NOTICE` with pyembroidery's MIT notice: the project owner's decision
+//! (2026-10-21, `FORK.md` › Clean-room for embroidery), since the makers publish no screen colours.
+//! EduTechWiki is cited for facts only (the numbering, PEC 42's name and colour): its default
+//! licence, CC BY-NC-SA 3.0, doesn't fit this code's, so its tables are no source to take.
 
 use std::sync::OnceLock;
 

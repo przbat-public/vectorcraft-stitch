@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-21 · **Last updated:** 2026-10-21 · **Change:** the thread tables: PEC 42 is Linen, and PEC's appliqué entries 62 to 64 are never matched (Brother's palette is its 61 threads); a thread number that names no thread reads as a stand-in named after it; where the tables come from; a newer file's embroidery settings open whatever their shape; the export's warnings are translated; each PES and JEF export is pinned apart from its thread numbers
+> **Last reviewed:** 2026-10-21 · **Last updated:** 2026-10-21 · **Change:** the thread tables: PEC 42 is Linen, and PEC's appliqué entries 62 to 64 are never matched (Brother's palette is its 61 threads); a thread number that names no thread reads as a stand-in named after it; where the tables come from, and pyembroidery credited in `NOTICE` for them; a newer file's embroidery settings open whatever their shape; the export's warnings are translated; each PES and JEF export is pinned apart from its thread numbers
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -940,7 +940,8 @@ Public documentation, cited per claim in the crate and in the local research not
   the DST bit decoding and the PEC stitch encoding.
 - [pyembroidery](https://github.com/EmbroidePy/pyembroidery) (MIT), consulted for terminology and
   the read/write conventions (y direction, trim encoding: JEF's three zero-length jumps per trim
-  from `JefWriter.py`'s `trim_at`); no code copied.
+  from `JefWriter.py`'s `trim_at`); no code copied. Its thread tables are taken as data (Thread
+  tables, below).
 - EduTechWiki, [Embroidery format JEF](https://edutechwiki.unige.ch/en/Embroidery_format_JEF) —
   the JEF header, records and the zero-length jump as trim command.
 - Connectors and trims: Ink/Stitch's [fill stitch](https://inkstitch.org/docs/stitches/fill-stitch/)
@@ -979,7 +980,11 @@ Public documentation, cited per claim in the crate and in the local research not
   of them but PEC 42's. The makers publish names and catalogue codes, not screen colours:
   Brother's [thread list](https://support.brother.com/g/s/hf/mobileapp_info/artspira/thread/name_html/en.html)
   has 61 threads, each name once, among them 307 Linen; EduTechWiki's tables give most entries
-  other colours than pyembroidery's (61 of PEC's 64, 41 of JEF's 78). From those two sources, PEC 42 is Linen in
+  other colours than pyembroidery's (61 of PEC's 64, 41 of JEF's 78). The tables are credited in
+  `NOTICE` with pyembroidery's MIT notice (the project owner's decision; `FORK.md` › Clean-room for
+  embroidery). EduTechWiki is cited for facts only: its content's default licence,
+  [CC BY-NC-SA 3.0](https://edutechwiki.unige.ch/en/EduTech_Wiki:Copyrights), doesn't fit this
+  repository's, so its tables are no alternative source. From those two sources, PEC 42 is Linen in
   EduTechWiki's colour (pyembroidery repeats Flesh Pink there), and PEC 62 to 64 are the format's
   appliqué entries, not threads.
 - Colour difference: IEC 61966-2-1:1999 (sRGB's transfer function and primaries); CIE 15:2004

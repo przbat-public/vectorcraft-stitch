@@ -343,6 +343,28 @@ fn empty_settings_in_a_file_are_none() {
     assert!(refused.contains("unknown setting `fabric`: the only setting is palette"), "{refused}");
 }
 
+/// A file whose embroidery settings a newer version wrote in another shape than an object opens:
+/// its palette is unset, saving keeps the settings as they were, and setting a palette replaces
+/// them.
+#[test]
+fn a_newer_versions_settings_of_another_shape_open() {
+    let saved = native(&mut blank());
+    for newer in [json!(5), json!("pec"), json!([{"palette": "pec"}])] {
+        let mut file: serde_json::Value = serde_json::from_slice(&saved).unwrap();
+        file["document"]["embroidery"] = newer.clone();
+        let data = vectorcraft_format::base64_encode(&serde_json::to_vec(&file).unwrap());
+        let mut s = Session::new();
+        s.execute("document.open", &json!({"name": "newer.vectorcraft", "dataBase64": data})).unwrap_or_else(|e| panic!("{newer}: {e}"));
+        assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap(), json!({"palette": null, "threadPalette": "jef"}), "{newer}");
+        assert!(!s.doc().unwrap().is_dirty(), "{newer}: unchanged");
+        let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
+        assert_eq!(kept["document"]["embroidery"], newer);
+        s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
+        let replaced: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
+        assert_eq!(replaced["document"]["embroidery"], json!({"palette": "pec"}), "{newer}");
+    }
+}
+
 /// The palette is saved with the document. A file a newer version saved keeps what this one
 /// doesn't know when saved again: a setting it doesn't read, and a palette it doesn't know, which
 /// it reports as it is and matches as unset.

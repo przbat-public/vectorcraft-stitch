@@ -111,7 +111,7 @@ fn setup(s: &mut Session, p: &Value) -> Result<Value> {
     let mut new = d.embroidery.as_deref().cloned().unwrap_or_default();
     for (k, v) in o {
         match k.as_str() {
-            "palette" => new.palette = palette_param(v, new.palette.as_ref())?,
+            "palette" => new.set_palette(palette_param(v, new.palette.as_ref())?),
             // Reported only.
             "threadPalette" => {}
             _ => return Err(bad(C, format!("unknown setting `{k}`: the only setting is palette"))),

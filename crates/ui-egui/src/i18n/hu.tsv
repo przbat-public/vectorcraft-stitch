@@ -5197,6 +5197,7 @@ imageTrace	Outline	Körvonal
 	Trim After	Szálvágás utána
 	Embroidery Setup	Hímzésbeállítás
 	Embroidery Statistics	Hímzésstatisztika
+	Embroidery Sewing Order	Hímzési sorrend
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	a szöveg nem kerül kihímzésre: alakítsd útvonallá (Szöveg › Átalakítás útvonallá), és exportáld újra

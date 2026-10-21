@@ -16,7 +16,7 @@ use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
 use super::Options;
 use super::cache::{UnitCache, UnitKey};
-use super::plan::{DesignPlan, Origin, Part};
+use super::plan::{Choice, DesignPlan, Origin, Part};
 use super::sequence::{CLEARANCE, Planned, Sequence};
 use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
 
@@ -28,7 +28,7 @@ const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colou
 /// A stroke at least this wide (millimetres) is sewn as a satin column, a narrower one as a running
 /// line (unless `stitchStyle` says otherwise): below about a millimetre the two rails are too
 /// close for the crossings to lie side by side. An estimate.
-const SATIN_MIN_WIDTH: f64 = 1.0;
+pub(super) const SATIN_MIN_WIDTH: f64 = 1.0;
 /// How far a literal stitch line's curves are flattened into needle points (millimetres): the
 /// lines a design opens as are straight, so this only matters for one edited into curves; far
 /// below the 0.1 mm a machine counts in. The planner flattens the art it stitches as finely (its
@@ -89,7 +89,7 @@ pub(crate) fn digitize_with(doc: &Document, opts: &Options, cache: Option<&Mutex
 }
 
 /// How one sewing unit is sewn: what it is, the settings it is planned with
-/// ([`Digitizer::settings`]), its stitch style, its satin column's width ([`NO_WIDTH`] for fills
+/// ([`Digitizer::settings`]), its stitch style and the rule that chose it, its satin column's width ([`NO_WIDTH`] for fills
 /// and running lines), and whether the clip groups around it cut its stitches (a stroke's; a fill's
 /// area is cut before it is planned).
 #[derive(Clone, Copy)]
@@ -97,6 +97,7 @@ struct Sewing<'a> {
     unit: Origin,
     opts: &'a Options,
     style: Style,
+    why: Choice,
     width: f64,
     clip_stitches: bool,
 }
@@ -321,7 +322,7 @@ impl<'a> Digitizer<'a> {
         }
         block.stitches = points;
         let origin = self.origin(n, Part::Literal);
-        self.seq.add(Planned { origin, params: None, columns: None, block, literal: self.owner.map(|g| (g, run.trim_before)) });
+        self.seq.add(Planned { origin, params: None, columns: None, why: Choice::Literal, block, literal: self.owner.map(|g| (g, run.trim_before)) });
     }
 
     /// A clip group, as it paints: the clipping path (its first child) paints its fills behind the
@@ -381,10 +382,13 @@ impl<'a> Digitizer<'a> {
             match item {
                 // A fill is filled unless `stitchStyle` asks for another way of stitching it.
                 AppearanceItem::Fill(fill) => {
-                    let style = opts.forced().unwrap_or(Style::Fill);
+                    let (style, why) = match opts.forced() {
+                        Some(style) => (style, Choice::Forced),
+                        None => (Style::Fill, Choice::Fill),
+                    };
                     let (area, area_rule) = if style == Style::Fill { self.expanded(&mm, rule, opts.expand()) } else { (mm.clone(), rule) };
                     let (area, area_rule) = self.clipped(&area, area_rule);
-                    self.colour(Sewing { unit, opts, style, width: NO_WIDTH, clip_stitches: false }, &area, area_rule, &fill.paint);
+                    self.colour(Sewing { unit, opts, style, why, width: NO_WIDTH, clip_stitches: false }, &area, area_rule, &fill.paint);
                 }
                 AppearanceItem::Stroke(stroke) => {
                     let width = pt_to_mm(stroke.width).max(0.0);
@@ -405,20 +409,24 @@ impl<'a> Digitizer<'a> {
                             let outline = outline_stroke(&PathData::from_bezpath(&mm), width, cap, join, stroke.miter_limit).to_bezpath();
                             let (area, area_rule) = self.expanded(&outline, FillRule::NonZero, opts.expand());
                             let (area, area_rule) = self.clipped(&area, area_rule);
-                            let sewing = Sewing { unit, opts, style: Style::Fill, width: NO_WIDTH, clip_stitches: false };
+                            let sewing = Sewing { unit, opts, style: Style::Fill, why: Choice::StrokeFilled, width: NO_WIDTH, clip_stitches: false };
                             self.colour(sewing, &area, area_rule, &stroke.paint);
                         }
                         // A satin column when it is wide enough to have two rails, a running line
                         // when not, unless `stitchStyle` says which.
                         forced => {
-                            let style = forced.unwrap_or(if width >= SATIN_MIN_WIDTH { Style::Satin } else { Style::Running });
+                            let (style, why) = match forced {
+                                Some(style) => (style, Choice::Forced),
+                                None if width >= SATIN_MIN_WIDTH => (Style::Satin, Choice::WideStroke),
+                                None => (Style::Running, Choice::NarrowStroke),
+                            };
                             if style == Style::Satin && width > plan::MAX_SATIN_WIDTH {
                                 let widest = plan::MAX_SATIN_WIDTH;
                                 self.warn(&format!(
                                     "strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)"
                                 ));
                             }
-                            self.colour(Sewing { unit, opts, style, width, clip_stitches: true }, &mm, rule, &stroke.paint);
+                            self.colour(Sewing { unit, opts, style, why, width, clip_stitches: true }, &mm, rule, &stroke.paint);
                         }
                     }
                 }
@@ -496,7 +504,7 @@ impl<'a> Digitizer<'a> {
         if self.failed.is_some() {
             return;
         }
-        let Sewing { unit, opts, style, width, clip_stitches } = sewing;
+        let Sewing { unit, opts, style, why, width, clip_stitches } = sewing;
         let params = opts.params(style, width);
         // Where the needle will be: at the end of the block this object is likely to join (its
         // bounds estimated from the path's), so it starts as near there as it can.
@@ -549,7 +557,7 @@ impl<'a> Digitizer<'a> {
         }
         let mut block = Block::new(Thread::rgb(color));
         block.stitches = stitches;
-        self.seq.add(Planned { origin: unit, params: Some(params), columns, block, literal: None });
+        self.seq.add(Planned { origin: unit, params: Some(params), columns, why, block, literal: None });
     }
 
     /// `request`'s stitches: those the cache keeps for it, else planned, and kept.

@@ -7,7 +7,7 @@ use vectorcraft_stitch::plan::{Params, Style};
 use vectorcraft_stitch::thread::Palette;
 use vectorcraft_stitch::{Block, Command, Stitch, Thread};
 
-use super::plan::{DesignPlan, Origin, Part};
+use super::plan::{Choice, DesignPlan, Origin, Part};
 use super::sequence::{Planned, Sequence};
 use super::stats::{self, Machine, Thread as Fabric};
 use super::*;
@@ -20,7 +20,7 @@ fn unit(node: u64, style: Style, color: [u8; 3], points: &[(f64, f64)]) -> Plann
     let mut block = Block::new(Thread::rgb(color));
     block.stitches = points.iter().map(|&(x, y)| Stitch::sew(Point::new(x, y))).collect();
     let origin = Origin { node: NodeId(node), part: Part::Fill(0), instance: None };
-    Planned { origin, params: Some(Params::for_style(style)), columns: None, block, literal: None }
+    Planned { origin, params: Some(Params::for_style(style)), columns: None, why: Choice::Forced, block, literal: None }
 }
 
 /// A plan of `units`, in order.

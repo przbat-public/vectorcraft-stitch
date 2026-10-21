@@ -9,19 +9,23 @@
 //! [`unit`] (one sewing unit's stitches from what it is planned from), [`cache`] (each unit's
 //! stitches kept between plans), [`service`] (each open document's planning, with what it keeps),
 //! [`plan`] (the plan: sewing units, thread blocks, stitch numbers), [`sequence`] (the order the
-//! blocks are sewn in), [`measure`] (a plan's records walked in sewing order) and [`stats`] (a
-//! design's figures: counts, size, thread, time).
+//! blocks are sewn in), [`measure`] (a plan's records walked in sewing order), [`stats`] (a
+//! design's figures: counts, size, thread, time) and [`order`] (the sewing order as
+//! `embroidery.sequence` lists it).
 
 mod cache;
 pub(crate) mod digitize;
 mod measure;
 pub(crate) mod options;
+mod order;
 pub mod plan;
 mod sequence;
 pub(crate) mod service;
 mod stats;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_order;
 #[cfg(test)]
 mod tests_service;
 #[cfg(test)]
@@ -80,6 +84,15 @@ pub fn specs() -> Vec<CommandSpec> {
             "{…the embroidery options that decide what is sewn as embroidery.threads takes them, speed?: stitches a minute the machine sews at (60 to 1500; default 650, a home machine's default, an estimate), fabricThickness?: millimetres (0 to 5; default 0.5, an estimate: the top thread goes down through it and back up at each needle point)} the design's figures as the export sews it, totals and per block → {stitches: needle points, records: needle points, jumps and cuts, jumps, trims, colorChanges, threads: distinct threads, blocks, size: {width, height} mm, bounds: [left, top, right, bottom] mm, start, end: [x, y] mm (the first and last needle points), extents: {left, right, up, down} mm from the start, shortestStitch, longestStitch, longestJump: mm, thread: {top, bobbin: metres (estimates), fabricThickness}, time: {seconds, minutes, speed, slowSpeed, slowAbove, trimSeconds, threadChanges, includes: what the time counts} (an estimate; thread changes are counted, not timed), perBlock: [{block: from 1, thread: {palette, index, name, color, art, deltaE, mismatch}, stitches, jumps, trims, first, last: stitch numbers, topThread, bobbinThread: metres, seconds}], warnings}",
             has_doc,
             stats_cmd
+        ),
+        cmd!(
+            query "embroidery.sequence",
+            "Embroidery Sewing Order",
+            [],
+            None,
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them} the design's sewing order, read only (sewing order follows stacking order: move objects with node.move to change it) → {blocks: [{block: from 1 in sewing order, thread: {palette, index, name, color, art, deltaE, mismatch}, stitches: needle points, first, last: stitch numbers, jumps, trims, units: [{unit: from 1, id: the object a person selects (the symbol instance for art inside a symbol), node: the object sewn, instance: the symbol instance or null, part: \"fill 1\"|\"stroke 1\"|\"stitches\" (counted in appearance order), sewn: running|satin|tatami|tatami with satin columns|literal, why: the rule that chose it, stitches, first, last: stitch numbers, jumps, trims, entry, exit: [x, y] mm (its first and last needle points), bounds: [left, top, right, bottom] mm}], then: {colorChange: true, trim: whether the block ends with a cut} (null after the last block)}], split: [{id, blocks}] (objects whose units are sewn in more than one block), warnings}",
+            has_doc,
+            sequence_cmd
         ),
     ]
 }
@@ -203,6 +216,14 @@ fn stats_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     let opts = options_in(&o, &STATS_KEYS, C)?;
     let (plan, _) = planned(s, &opts, C)?;
     Ok(stats::stats(&plan, machine, thread))
+}
+
+fn sequence_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    const C: &str = "embroidery.sequence";
+    let o = object(p, C)?;
+    let opts = options_in(&o, &[], C)?;
+    let (plan, _) = planned(s, &opts, C)?;
+    Ok(order::sequence(&plan))
 }
 
 fn threads(s: &mut Session, p: &Value) -> Result<Value> {

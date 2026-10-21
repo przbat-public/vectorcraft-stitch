@@ -5210,6 +5210,7 @@ theme	Appearance	Apparence
 	Trim After	Couper le fil après
 	Embroidery Setup	Paramètres de broderie
 	Embroidery Statistics	Statistiques de broderie
+	Embroidery Sewing Order	Ordre de broderie
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	le texte n’est pas brodé : vectorisez-le (Texte › Vectoriser) puis exportez à nouveau

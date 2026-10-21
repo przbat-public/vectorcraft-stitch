@@ -5194,6 +5194,7 @@ swatch	Bright Violet	Kraftig violet
 	Trim After	Klip tråden efter
 	Embroidery Setup	Broderiopsætning
 	Embroidery Statistics	Broderistatistik
+	Embroidery Sewing Order	Broderiets syrækkefølge
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	tekst broderes ikke: lav den om til konturer (Tekst › Opret konturer), og eksportér igen

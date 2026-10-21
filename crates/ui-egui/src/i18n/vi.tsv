@@ -4805,6 +4805,7 @@ theme	Appearance	Giao diện
 	Trim After	Cắt chỉ sau
 	Embroidery Setup	Thiết lập thêu
 	Embroidery Statistics	Thống kê thêu
+	Embroidery Sewing Order	Thứ tự thêu
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	chữ không được thêu: hãy tạo đường bao cho chữ (Chữ › Tạo đường bao) rồi xuất lại

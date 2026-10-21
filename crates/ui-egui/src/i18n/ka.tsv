@@ -5118,6 +5118,7 @@ imageTrace	Outline	კონტური
 	Trim After	ძაფის მოჭრა შემდეგ
 	Embroidery Setup	ქარგვის პარამეტრები
 	Embroidery Statistics	ქარგვის სტატისტიკა
+	Embroidery Sewing Order	ქარგვის თანმიმდევრობა
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	ტექსტი არ იქარგება: გარდაქმენით კონტურებად (ტექსტი › კონტურებად გარდაქმნა) და ხელახლა გაიტანეთ ექსპორტით

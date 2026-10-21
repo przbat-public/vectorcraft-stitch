@@ -5047,6 +5047,7 @@ lighting	Light	光源
 	Trim After	之后剪线
 	Embroidery Setup	刺绣设置
 	Embroidery Statistics	刺绣统计
+	Embroidery Sewing Order	刺绣顺序
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	文字不会被刺绣：请先创建轮廓 (文字 › 创建轮廓)，然后重新导出

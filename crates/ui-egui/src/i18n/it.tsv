@@ -4825,6 +4825,7 @@ lighting	Light	Luce
 	Trim After	Taglia il filo dopo
 	Embroidery Setup	Imposta ricamo
 	Embroidery Statistics	Statistiche del ricamo
+	Embroidery Sewing Order	Ordine del ricamo
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	il testo non viene ricamato: convertilo in contorni (Testo › Crea contorni) ed esporta di nuovo

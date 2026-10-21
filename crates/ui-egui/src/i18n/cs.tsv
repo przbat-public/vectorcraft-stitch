@@ -5211,6 +5211,7 @@ mark-style	Japanese	Japonské
 	Trim After	Odstřihnout nit po
 	Embroidery Setup	Nastavení vyšívání
 	Embroidery Statistics	Statistika vyšívání
+	Embroidery Sewing Order	Pořadí vyšívání
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	text se nevyšívá: převeďte ho na křivky (Text › Převést na křivky) a exportujte znovu

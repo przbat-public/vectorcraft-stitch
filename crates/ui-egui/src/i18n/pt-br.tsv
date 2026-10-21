@@ -5128,6 +5128,7 @@ mark-style	Japanese	Japonesas
 	Trim After	Cortar a linha depois
 	Embroidery Setup	Configuração do Bordado
 	Embroidery Statistics	Estatísticas do Bordado
+	Embroidery Sewing Order	Ordem do Bordado
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	o texto não é bordado: converta-o em contornos (Texto › Criar Contornos) e exporte novamente

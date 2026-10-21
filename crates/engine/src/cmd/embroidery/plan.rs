@@ -53,6 +53,24 @@ pub struct Origin {
     pub instance: Option<NodeId>,
 }
 
+/// Why a sewing unit is sewn the way it is: the rule that chose its stitch.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Choice {
+    /// A fill: tatami, its parts narrower than `narrowAsSatin` sewn as satin columns.
+    Fill,
+    /// A stroke at least as wide as a satin column needs (`digitize::SATIN_MIN_WIDTH`): a satin
+    /// column across its width.
+    WideStroke,
+    /// A narrower stroke: a running line along it.
+    NarrowStroke,
+    /// `stitchStyle fill` on a stroke: the area the stroke paints, filled.
+    StrokeFilled,
+    /// `stitchStyle` forced the style.
+    Forced,
+    /// Stitches read from a machine file, sewn as they are.
+    Literal,
+}
+
 /// A colour difference is shown to two decimals, in hundredths: finer than any difference the eye
 /// sees (about 1 is the smallest seen side by side).
 pub const DELTA_E_HUNDREDTHS: f64 = 100.0;
@@ -120,6 +138,8 @@ pub struct Unit {
     /// The parameters a fill's narrow parts were sewn with as satin columns; `None` when it had
     /// none.
     pub columns: Option<Params>,
+    /// Why it is sewn the way it is.
+    pub why: Choice,
     /// The box its stitches fall in as planned, millimetres (`None`: no finite point).
     pub bounds: Option<Rect>,
     /// The block it is sewn in: an index into [`DesignPlan::blocks`] (whose [`ThreadBlock::units`]

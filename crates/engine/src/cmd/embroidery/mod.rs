@@ -1,7 +1,8 @@
 //! Machine embroidery in the document: the settings an object carries for it and the document's
-//! own (`embroidery.setup`: the thread palette), and the walk that plans the document's art as
-//! stitches. The machine files themselves are read and written in `cmd::fileio::embroidery`
-//! (`document.open`, `document.export`).
+//! own (`embroidery.setup`: the thread palette), the walk that plans the document's art as
+//! stitches, and the threads the plan sews it in (`embroidery.threads`). The machine files
+//! themselves are read and written in `cmd::fileio::embroidery` (`document.open`,
+//! `document.export`).
 //!
 //! The parts: [`options`] (the export's options, and the stitch planner's parameters they give an
 //! object), [`digitize`] (the document's art planned as a design: its [`plan::DesignPlan`]),
@@ -16,6 +17,7 @@ mod sequence;
 mod tests;
 
 use serde_json::{Map, Value, json};
+use vectorcraft_color::Color;
 use vectorcraft_doc::Document;
 use vectorcraft_doc::embroidery::{Embroidery, ThreadPalette};
 use vectorcraft_stitch::thread::Palette;
@@ -24,7 +26,8 @@ use super::*;
 
 pub(crate) use options::Options;
 
-/// The embroidery settings an object carries, and the document's.
+/// The embroidery settings an object carries, the document's, and the threads its design is sewn
+/// in.
 pub fn specs() -> Vec<CommandSpec> {
     vec![
         cmd!(
@@ -44,6 +47,15 @@ pub fn specs() -> Vec<CommandSpec> {
             "{palette?: \"pec\"|\"jef\"|null (the thread palette the design's colours are matched to, the target machine format's: Brother's 64 threads, which PES files number, or Janome's 78, which JEF files number; null unsets it, and PEC is used), threadPalette?: (reported only: ignored when passed back)} change the document's embroidery settings in one undo step, saved with the document; no params → the current settings → {palette: as set (null when unset; one a newer version wrote, as it is), threadPalette: \"pec\"|\"jef\" (the palette the stitch plan matches to: palette, else PEC)}",
             has_doc,
             setup
+        ),
+        cmd!(
+            query "embroidery.threads",
+            "Embroidery Threads",
+            [],
+            None,
+            "{…the embroidery options of document.export (document.formats lists them; they decide which objects share a colour block)} the thread each colour block of the design is sewn in, as the PES or JEF export of the document's palette writes it (embroidery.setup): the palette's thread nearest the colour the block's art is painted with, in sewing order → {palette: \"pec\"|\"jef\", threshold: the colour difference past which a thread is flagged, blocks: [{block: from 1 in sewing order, art: \"#rrggbb\", thread: {palette, index: from 1 as the format numbers it, name, color: \"#rrggbb\"}, deltaE: the CIEDE2000 difference between the art's colour and the thread's, to two decimals (0: painted with the thread's own colour, a swatch of its thread library), mismatch: deltaE past threshold, units: the fills, strokes and stitch runs sewn in it}], warnings}",
+            has_doc,
+            threads
         ),
     ]
 }
@@ -129,4 +141,32 @@ fn palette_param(v: &Value, current: Option<&ThreadPalette>) -> Result<Option<Th
         return Err(bad("embroidery.setup", format!("palette {v}: one of {} (or null to unset it)", known.join(", "))));
     }
     Ok(Some(p))
+}
+
+fn threads(s: &mut Session, p: &Value) -> Result<Value> {
+    const C: &str = "embroidery.threads";
+    let opts = Options::from_params(p, C)?;
+    let d = &s.doc()?.doc;
+    let plan = digitize::digitize(d, &opts).map_err(|e| bad(C, e))?;
+    let hex = |[r, g, b]: [u8; 3]| Color::rgb8(r, g, b).to_hex();
+    // Two decimals: finer than any difference the eye sees.
+    let rounded = |v: f64| (v * 100.0).round() / 100.0;
+    let blocks: Vec<Value> = plan
+        .blocks
+        .iter()
+        .enumerate()
+        .map(|(k, b)| {
+            let t = &b.thread;
+            json!({
+                // Numbered from 1, as a list of threads shows them.
+                "block": k + 1,
+                "art": hex(t.art),
+                "thread": {"palette": t.palette.id(), "index": t.index, "name": t.name, "color": hex(t.color)},
+                "deltaE": rounded(t.delta_e),
+                "mismatch": t.mismatch(),
+                "units": b.units.len(),
+            })
+        })
+        .collect();
+    Ok(json!({"palette": thread_palette(d).id(), "threshold": plan::MISMATCH_DELTA_E, "blocks": blocks, "warnings": plan.warnings}))
 }

@@ -1,7 +1,8 @@
 //! The design's stitch plan: every stitch of every block belongs to one sewing unit, a unit says
 //! what it sews and what it was planned with, stitches are numbered from 1 in sewing order, and
 //! the export writes the plan. The document's embroidery settings: its thread palette, kept in its
-//! file.
+//! file. The threads: each block's from the document's palette, which the exports name and
+//! `embroidery.threads` lists.
 
 use serde_json::json;
 use vectorcraft_doc::NodeId;
@@ -13,7 +14,7 @@ use vectorcraft_stitch::thread::Palette;
 use vectorcraft_stitch::{Command, pt_to_mm};
 
 use super::digitize::digitize;
-use super::plan::{DesignPlan, FIRST_NUMBER, Part};
+use super::plan::{DesignPlan, FIRST_NUMBER, MISMATCH_DELTA_E, Part};
 use super::*;
 
 /// Points per millimetre: the documents count points, the designs millimetres.
@@ -161,7 +162,7 @@ fn units_say_what_they_sew_and_with_what() {
     let satin = line.params.unwrap();
     assert_eq!(satin.style, Style::Satin);
     assert!((satin.width - pt_to_mm(6.0)).abs() < 1e-9, "the stroke's width: {}", satin.width);
-    assert_eq!((fill.thread.color, line.thread.color), ([0xcc, 0x22, 0x22], [0x22, 0x33, 0xcc]));
+    assert_eq!((fill.thread.art, line.thread.art), ([0xcc, 0x22, 0x22], [0x22, 0x33, 0xcc]));
     let [letter] = of(t)[..] else { panic!("one unit for the T: {:?}", of(t)) };
     assert_eq!(letter.origin.part, Part::Fill(0));
     assert_eq!(letter.columns.map(|p| p.style), Some(Style::Satin), "its strokes are sewn as satin columns");
@@ -343,7 +344,82 @@ fn the_thread_palette_is_saved_and_a_newer_versions_settings_are_kept() {
     s.execute("embroidery.setup", &r).unwrap();
     let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
     assert_eq!(kept["document"]["embroidery"], newer);
+    // Its threads are Brother's, and the plan says why.
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    let threads = s.execute("embroidery.threads", &json!({})).unwrap();
+    assert_eq!(threads["palette"], "pec");
+    assert!(threads["blocks"].as_array().unwrap().iter().all(|b| b["thread"]["palette"] == "pec"));
+    let warnings = threads["warnings"].as_array().unwrap();
+    assert!(warnings.iter().any(|w| w.as_str().is_some_and(|w| w.contains("not one this version knows"))), "{warnings:?}");
     s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
     let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
     assert_eq!(kept["document"]["embroidery"], json!({"palette": "pec", "fabric": newer["fabric"]}));
+    assert!(s.execute("embroidery.threads", &json!({})).unwrap()["warnings"].as_array().unwrap().is_empty());
+}
+
+/// Brother's thread 38, Peacock Blue, as a colour.
+const PEACOCK_BLUE: &str = "#134a46";
+
+/// Each block is sewn in a thread of the document's palette, the one nearest the colour of its
+/// art, with their difference recorded; art painted with a swatch of the palette's thread library
+/// has that thread exactly. The PES and JEF exports name the plan's threads.
+#[test]
+fn blocks_are_sewn_in_threads_of_the_documents_palette() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    let swatched = rect(&mut s, "#000000", 100.0, 20.0, 40.0, 30.0);
+    s.execute("select.set", &json!({"ids": [swatched]})).unwrap();
+    s.execute("swatch.library.add", &json!({"library": "brother-threads-pec", "names": ["PEC 38 Peacock Blue"], "apply": "fill"})).unwrap();
+    s.execute("select.none", &json!({})).unwrap();
+    let plan = plan_of(&s);
+    let [red, blue] = &plan.blocks[..] else { panic!("two blocks: {:?}", plan.blocks.len()) };
+    assert_eq!((red.thread.palette, red.thread.art), (Palette::Pec, [0xcc, 0x22, 0x22]));
+    assert_eq!(red.thread.index, Palette::Pec.nearest([0xcc, 0x22, 0x22], None).index);
+    assert!(red.thread.delta_e > 0.0);
+    assert_eq!((blue.thread.index, blue.thread.name.as_str(), blue.thread.delta_e), (38, "Peacock Blue", 0.0));
+    assert_eq!(blue.thread.art, blue.thread.color);
+    assert!(!blue.thread.mismatch());
+    let names = |plan: &DesignPlan| plan.blocks.iter().map(|b| b.thread.name.clone()).collect::<Vec<_>>();
+    let named = |bytes: &[u8], format: Format| format.read(bytes).unwrap().blocks.iter().map(|b| b.thread.name.clone()).collect::<Vec<_>>();
+    assert_eq!(named(&export(&mut s, Format::Pes), Format::Pes), names(&plan));
+    // In Janome's palette, the plan's threads are Janome's, and the JEF export names them.
+    s.execute("embroidery.setup", &json!({"palette": "jef"})).unwrap();
+    let plan = plan_of(&s);
+    assert!(plan.blocks.iter().all(|b| b.thread.palette == Palette::Jef), "{:?}", plan.blocks.iter().map(|b| &b.thread).collect::<Vec<_>>());
+    assert_eq!(named(&export(&mut s, Format::Jef), Format::Jef), names(&plan));
+}
+
+/// `embroidery.threads` lists each block's art colour, its thread and their difference, flagging
+/// a thread past the threshold, as the plan has them; it takes the export's options and refuses
+/// bad ones.
+#[test]
+fn the_threads_command_lists_each_blocks_thread() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    rect(&mut s, PEACOCK_BLUE, 100.0, 20.0, 40.0, 30.0);
+    rect(&mut s, "#4080ff", 200.0, 20.0, 40.0, 30.0);
+    rect(&mut s, "#cc2222", 20.0, 200.0, 40.0, 30.0);
+    let r = s.execute("embroidery.threads", &json!({})).unwrap();
+    let plan = plan_of(&s);
+    assert_eq!((&r["palette"], &r["threshold"]), (&json!("pec"), &json!(MISMATCH_DELTA_E)));
+    let blocks = r["blocks"].as_array().unwrap();
+    assert_eq!(blocks.len(), 3, "red, blue, light blue: {blocks:?}");
+    for (k, (b, p)) in blocks.iter().zip(&plan.blocks).enumerate() {
+        assert_eq!((&b["block"], &b["units"]), (&json!(k + 1), &json!(p.units.len())));
+        assert_eq!(
+            (&b["thread"]["palette"], &b["thread"]["index"], &b["thread"]["name"]),
+            (&json!("pec"), &json!(p.thread.index), &json!(p.thread.name))
+        );
+        assert!((b["deltaE"].as_f64().unwrap() - p.thread.delta_e).abs() <= 0.005, "{b}");
+        assert_eq!(b["mismatch"], p.thread.delta_e > MISMATCH_DELTA_E);
+    }
+    assert_eq!((&blocks[0]["art"], &blocks[0]["units"]), (&json!("#cc2222"), &json!(2)), "both red squares");
+    let peacock = &blocks[1];
+    assert_eq!((&peacock["thread"]["index"], &peacock["thread"]["color"], &peacock["deltaE"]), (&json!(38), &json!(PEACOCK_BLUE), &json!(0.0)));
+    assert_eq!((&peacock["mismatch"], &blocks[2]["mismatch"]), (&json!(false), &json!(true)), "no Brother thread is near #4080ff");
+    // The export's options; bad ones refused.
+    for bad in [json!({"stitchStyle": "cross"}), json!({"density": "dense"}), json!({"pullCompensation": [1, 2, 3]})] {
+        assert!(s.execute("embroidery.threads", &bad).is_err(), "{bad}");
+    }
+    assert!(s.execute("embroidery.threads", &json!({"stitchStyle": "running", "format": "pes"})).is_ok());
 }

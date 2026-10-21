@@ -8,7 +8,8 @@
 //! A record is two signed bytes, the x and y deltas in tenths of a millimetre (at most 127). The
 //! byte `0x80` starts a command: `0x80 0x02 dx dy` jumps; `0x80 0x01 dx dy` changes colour;
 //! `0x80 0x10` ends the design. Y counts upwards. Colours are indices into Janome's 78-thread
-//! chart ([`crate::thread::JEF`]).
+//! chart: a block's is the thread chosen for it when it is Janome's, else the thread nearest its
+//! colour ([`Palette::numbers`]).
 //!
 //! JEF has no trim record of its own. The wiki calls a jump of zero length the trim command, which
 //! Janome machines set to cut at a "cutting command" obey; set to cut automatically, they also cut
@@ -23,7 +24,7 @@
 //! (github.com/EmbroidePy/pyembroidery/tree/1.5.1/pyembroidery).
 
 use super::{Frame, Reader, finish, mm, steps};
-use crate::thread;
+use crate::thread::Palette;
 use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The header's fixed length: everything before the per-colour arrays.
@@ -100,11 +101,10 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
             out.extend_from_slice(&(v as u32).to_le_bytes());
         }
     }
-    // Janome's palette indices, one per block (a thread change needs a different index).
-    let mut last: Option<usize> = None;
-    for block in p.blocks.iter().filter(|b| !b.stitches.is_empty()) {
-        let index = thread::nearest(&thread::JEF, block.thread.color, last);
-        last = Some(index);
+    // Janome's palette indices, one per block: the thread chosen for it when it is Janome's, else
+    // the nearest to its colour, never the block before's (a thread change needs another thread).
+    let threads = p.blocks.iter().filter(|b| !b.stitches.is_empty()).map(|b| &b.thread);
+    for index in Palette::Jef.numbers(threads) {
         out.extend_from_slice(&(index as u32).to_le_bytes());
     }
     for _ in 0..colors {
@@ -213,8 +213,8 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     let mut threads = Vec::with_capacity(colors);
     for _ in 0..colors {
         // Janome's chart numbers its threads from 1; anything past it wraps round.
-        let index = r.u32().ok_or_else(|| short(bytes.len()))? as usize % (thread::JEF.len() + 1);
-        threads.push(thread::jef_thread(index));
+        let index = r.u32().ok_or_else(|| short(bytes.len()))? as usize % (Palette::Jef.threads().len() + 1);
+        threads.push(Palette::Jef.thread(index));
     }
     r.seek(offset);
     let mut points: Vec<Stitch> = Vec::new();
@@ -365,6 +365,22 @@ mod tests {
         let commands: Vec<Command> = p.points().map(|s| s.command).collect();
         assert_eq!(commands.iter().filter(|c| **c == Command::Trim).count(), 1, "{commands:?}");
         assert_eq!(p.sewn(), 4);
+    }
+
+    /// The header names each block's chosen thread when it is Janome's, and the thread nearest the
+    /// block's colour otherwise.
+    #[test]
+    fn the_header_names_the_chosen_threads() {
+        use crate::thread::PaletteThread;
+        let mut p = design();
+        p.blocks[0].thread.chosen = Some(PaletteThread { palette: Palette::Jef, index: 61 });
+        p.blocks[1].thread.chosen = Some(PaletteThread { palette: Palette::Pec, index: 61 });
+        let bytes = write(&p).expect("writes");
+        let word = |at: usize| u32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]) as usize;
+        assert_eq!(word(HEADER), 61);
+        assert_eq!(word(HEADER + WORD), Palette::Jef.nearest([20, 40, 210], Some(61)).index);
+        let back = read(&bytes).expect("reads");
+        assert_eq!(back.blocks[0].thread, Palette::Jef.thread(61));
     }
 
     #[test]

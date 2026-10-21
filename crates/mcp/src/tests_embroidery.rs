@@ -16,7 +16,7 @@ fn the_embroidery_commands_are_reachable() {
     let mut h = Headless::with_document();
     let listed = text(&call_tool(&mut h, "list_commands", &json!({"filter": "embroidery."})));
     let ids: Vec<&str> = listed["commands"].as_array().unwrap().iter().filter_map(|c| c["id"].as_str()).collect();
-    for id in ["embroidery.setTrimAfter", "embroidery.setup"] {
+    for id in ["embroidery.setTrimAfter", "embroidery.setup", "embroidery.threads"] {
         assert!(ids.contains(&id), "{id} in {ids:?}");
     }
     let r = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.setup", "params": {"palette": "jef"}})));
@@ -27,4 +27,9 @@ fn the_embroidery_commands_are_reachable() {
     assert!(typo.is_error, "{typo:?}");
     let r = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.setup"})));
     assert_eq!(r["palette"], "jef");
+    let rect = json!({"command": "shape.rectangle", "params": {"x": 10, "y": 10, "width": 50, "height": 40}});
+    text(&call_tool(&mut h, "run_command", &rect));
+    let r = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.threads", "params": {"stitchStyle": "fill"}})));
+    assert_eq!(r["palette"], "jef");
+    assert!(r["blocks"].as_array().unwrap().iter().all(|b| b["thread"]["palette"] == "jef" && b["thread"]["index"].as_u64().is_some()), "{r}");
 }

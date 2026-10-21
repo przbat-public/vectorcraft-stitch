@@ -10,7 +10,8 @@
 //!
 //! The PEC header: `LA:` and the label, spaces, `0xFF 0x00`, the icon's size (6 × 38 pixels),
 //! spaces, then one byte of colour changes (`0xFF` for none) and one Brother palette index per
-//! colour ([`crate::thread::PEC`]), padded with spaces to 512 bytes.
+//! colour, padded with spaces to 512 bytes. A block's index is the thread chosen for it when it is
+//! Brother's, else the thread nearest its colour ([`Palette::numbers`]).
 //!
 //! The stitch block: two zero bytes, its length as 24 bits (to the end of the stitches, where the
 //! previews begin), `0x31 0xFF 0xF0`, the design's width and height in tenths of a millimetre,
@@ -26,7 +27,7 @@
 //! (edutechwiki.unige.ch/en/Embroidery_format_PES, …/Embroidery_format_PEC).
 
 use super::{Frame, LABEL_LEN, PAD, Reader, finish, label, mm, steps};
-use crate::thread;
+use crate::thread::Palette;
 use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The PEC header's length: the start of the PEC section, before the stitch block.
@@ -166,10 +167,8 @@ fn header(p: &Pattern, colors: usize) -> Vec<u8> {
     h.push(ICON_LINES as u8);
     h.extend_from_slice(&[PAD; HEADER_GAP]);
     h.push(u8::try_from(colors.saturating_sub(1)).unwrap_or(NO_COLORS));
-    let mut last: Option<usize> = None;
-    for block in p.blocks.iter().filter(|b| !b.stitches.is_empty()) {
-        let index = thread::nearest(&thread::PEC, block.thread.color, last);
-        last = Some(index);
+    let threads = p.blocks.iter().filter(|b| !b.stitches.is_empty()).map(|b| &b.thread);
+    for index in Palette::Pec.numbers(threads) {
         h.push(u8::try_from(index).unwrap_or(1));
     }
     h.resize(PEC_HEADER, PAD);
@@ -270,7 +269,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     let mut threads = Vec::with_capacity(colors);
     for _ in 0..colors {
         let index = r.u8().unwrap_or(0);
-        threads.push(thread::pec_thread(usize::from(index)));
+        threads.push(Palette::Pec.thread(usize::from(index)));
     }
     // The stitches start after the stitch-block header: 20 bytes in Brother's files (two origin
     // words after BLOCK_VALUES), 16 in pyembroidery's, which omit them. The stitch block's length
@@ -504,6 +503,23 @@ mod tests {
         let back = read(&stepped).expect("reads");
         assert_eq!(back.sewn(), p.sewn());
         assert_eq!(sewn(&back), want);
+    }
+
+    /// The PEC header names each block's chosen thread when it is Brother's, whatever the block's
+    /// colour, and the thread nearest the colour otherwise; read back, the blocks have those
+    /// threads.
+    #[test]
+    fn the_header_names_the_chosen_threads() {
+        use crate::thread::PaletteThread;
+        let mut p = design();
+        p.blocks[0].thread.chosen = Some(PaletteThread { palette: Palette::Pec, index: 37 });
+        p.blocks[1].thread.chosen = Some(PaletteThread { palette: Palette::Jef, index: 37 });
+        let bytes = write(&p).expect("writes");
+        let at = PES_HEADER.len() + COLOR_COUNT_AT;
+        let nearest = Palette::Pec.nearest([20, 30, 220], Some(37)).index;
+        assert_eq!(&bytes[at..at + 3], &[1, 37, u8::try_from(nearest).unwrap()]);
+        let back = read(&bytes).expect("reads");
+        assert_eq!((&back.blocks[0].thread, &back.blocks[1].thread), (&Palette::Pec.thread(37), &Palette::Pec.thread(nearest)));
     }
 
     #[test]

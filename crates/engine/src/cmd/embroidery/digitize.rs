@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use vectorcraft_color::Paint;
-use vectorcraft_doc::embroidery::StitchRun;
+use vectorcraft_doc::embroidery::{StitchRun, ThreadPalette};
 use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind};
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Shape, kurbo};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
@@ -87,15 +87,23 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
 }
 
 /// The plan of `doc`'s visible art with `opts`: its sewing units in the blocks they are sewn in,
-/// in sewing order ([`Sequence`]), and the warnings for what was left out or approximated; an
-/// error when the design would need too many stitches.
+/// in sewing order ([`Sequence`]), each block in a thread of the document's palette
+/// ([`super::thread_palette`]), and the warnings for what was left out or approximated; an error
+/// when the design would need too many stitches.
 pub(crate) fn digitize(doc: &Document, opts: &Options) -> Result<DesignPlan, String> {
     let seq = Sequence::new(opts.params(Style::Running, NO_WIDTH));
-    let mut d = Digitizer { doc, opts, seq, warnings: Vec::new(), nest: 0, clip: None, owner: None, instance: None, stitches: 0, failed: None };
+    let mut warnings = Vec::new();
+    if let Some(ThreadPalette::Unknown(palette)) = doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()) {
+        let default = super::DEFAULT_PALETTE.id();
+        warnings.push(format!(
+            "the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette"
+        ));
+    }
+    let mut d = Digitizer { doc, opts, seq, warnings, nest: 0, clip: None, owner: None, instance: None, stitches: 0, failed: None };
     d.run();
     match d.failed {
         Some(e) => Err(e),
-        None => Ok(d.seq.plan(doc.title.clone(), d.warnings)),
+        None => Ok(d.seq.plan(doc.title.clone(), d.warnings, super::thread_palette(doc))),
     }
 }
 

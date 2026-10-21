@@ -2,13 +2,15 @@
 //!
 //! DST and EXP name no colours at all, so a design read from them gets [`default_thread`]'s
 //! colours, one per block, which read well on screen and tell the blocks apart. JEF names one of
-//! Janome's 78 threads by index, and PEC one of Brother's 64 ([`Palette`]); writing a design picks
-//! the nearest colour in the palette and reads that index back.
+//! Janome's 78 threads by index, and PEC one of Brother's 64 ([`Palette`]). Writing a design names
+//! each block's chosen thread when it is of the format's palette (the stitch plan chooses them),
+//! else the thread nearest the block's colour ([`Palette::numbers`]), and reading names that
+//! thread back.
 //!
 //! The tables are the manufacturers' published charts as public reverse-engineering documents
 //! list them; the names are theirs (thread names are data, not creative text).
 
-use crate::Thread;
+use crate::{Thread, color};
 
 /// A palette entry: sRGB and the thread's name.
 pub type Entry = ([u8; 3], &'static str);
@@ -46,6 +48,76 @@ impl Palette {
             Self::Jef => &JEF,
         }
     }
+
+    /// Thread `index` (from 1): its colour and name; `None` for 0 (the formats' "no colour") and
+    /// past the palette's end.
+    pub fn get(self, index: usize) -> Option<Entry> {
+        index.checked_sub(1).and_then(|i| self.threads().get(i)).copied()
+    }
+
+    /// Thread `index` (from 1) as a block's thread; 0, the format's "no colour", and a number past
+    /// the palette are black.
+    pub fn thread(self, index: usize) -> Thread {
+        match self.get(index) {
+            Some((color, name)) => Thread::named(color, name),
+            None => no_colour(),
+        }
+    }
+
+    /// The thread nearest `color`, and how near. `skip` names the thread the block before is sewn
+    /// in: a block whose nearest thread is that one gets the next nearest instead, so that two
+    /// colours the palette would sew alike still change thread.
+    pub fn nearest(self, color: [u8; 3], skip: Option<usize>) -> Match {
+        let threads = self.threads();
+        let mut best = (u32::MAX, Match { index: 1, delta_e: f64::INFINITY });
+        for (i, &(rgb, _)) in threads.iter().enumerate() {
+            let index = i + 1;
+            if Some(index) == skip && threads.len() > 1 {
+                continue;
+            }
+            let d = distance(rgb, color);
+            if d < best.0 {
+                best = (d, Match { index, delta_e: color::delta_e_rgb(color, rgb) });
+            }
+        }
+        best.1
+    }
+
+    /// The numbers a format of this palette writes for `threads`, one per block in sewing order:
+    /// a block's chosen thread when it is one of this palette's ([`Thread::chosen`]), else the
+    /// thread nearest its colour, not the block before's ([`Palette::nearest`]).
+    pub fn numbers<'a>(self, threads: impl IntoIterator<Item = &'a Thread>) -> Vec<usize> {
+        let mut last = None;
+        threads
+            .into_iter()
+            .map(|t| {
+                let index = match t.chosen {
+                    Some(c) if c.palette == self && self.get(c.index).is_some() => c.index,
+                    _ => self.nearest(t.color, last).index,
+                };
+                last = Some(index);
+                index
+            })
+            .collect()
+    }
+}
+
+/// A thread of a palette: the palette, and the thread's number in it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct PaletteThread {
+    pub palette: Palette,
+    /// From 1, as the formats count (their 0 is "no colour").
+    pub index: usize,
+}
+
+/// A colour matched to a palette's thread ([`Palette::nearest`]).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Match {
+    /// The thread's number in the palette, from 1.
+    pub index: usize,
+    /// The CIEDE2000 difference between the colour and the thread's ([`crate::color`]): 0 when
+    /// the colour is the thread's own.
+    pub delta_e: f64,
 }
 
 /// The colours a design read from a format without colours gets, one per block (cycled).
@@ -216,51 +288,57 @@ pub fn default_thread(index: usize) -> Thread {
     Thread::named(color, name)
 }
 
-/// PEC's thread at `index` (1 to 64; 0, the format's "no colour", is black).
-pub fn pec_thread(index: usize) -> Thread {
-    // The chart counts from 1.
-    match index.checked_sub(1).and_then(|i| PEC.get(i)) {
-        Some(&(color, name)) => Thread::named(color, name),
-        None => no_colour(),
-    }
-}
-
-/// JEF's thread at `index` (1 to 78; 0, the format's "no colour", is black).
-pub fn jef_thread(index: usize) -> Thread {
-    // The chart counts from 1.
-    match index.checked_sub(1).and_then(|i| JEF.get(i)) {
-        Some(&(color, name)) => Thread::named(color, name),
-        None => no_colour(),
-    }
-}
-
 /// The thread for a palette index that names none: black.
 fn no_colour() -> Thread {
     Thread::named([0, 0, 0], "Black")
 }
 
-/// The index of the entry in `palette` nearest `color` (1-based, as the formats count their
-/// palettes). `skip` names an index the last block already uses, so that two blocks that would
-/// match the same thread still get different ones (a colour change the machine can make).
-pub fn nearest(palette: &[Entry], color: [u8; 3], skip: Option<usize>) -> usize {
-    let mut best = (u32::MAX, 1usize);
-    for (i, (rgb, _)) in palette.iter().enumerate() {
-        let index = i + 1;
-        if Some(index) == skip && palette.len() > 1 {
-            continue;
-        }
-        let d = distance(*rgb, color);
-        if d < best.0 {
-            best = (d, index);
-        }
-    }
-    best.1
-}
-
+/// The squared RGB distance between two colours.
 fn distance(a: [u8; 3], b: [u8; 3]) -> u32 {
     let d = |x: u8, y: u8| {
         let v = i32::from(x) - i32::from(y);
         (v * v) as u32
     };
     d(a[0], b[0]) + d(a[1], b[1]) + d(a[2], b[2])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A thread chosen for a block is its number when it is the palette's own; another palette's,
+    /// or a number the palette doesn't have, is matched by colour; and a block isn't matched to
+    /// the thread of the block before, chosen or not.
+    #[test]
+    fn numbers_take_the_chosen_thread_of_their_palette() {
+        let red = [200, 30, 30];
+        let chosen = |palette, index| Thread { chosen: Some(PaletteThread { palette, index }), ..Thread::rgb(red) };
+        let nearest = Palette::Pec.nearest(red, None).index;
+        assert_eq!(Palette::Pec.numbers(&[chosen(Palette::Pec, 40)]), [40]);
+        assert_eq!(Palette::Pec.numbers(&[chosen(Palette::Jef, 40)]), [nearest], "Janome's 40");
+        assert_eq!(Palette::Pec.numbers(&[chosen(Palette::Pec, 65)]), [nearest], "past the palette");
+        assert_eq!(Palette::Pec.numbers(&[chosen(Palette::Pec, 0)]), [nearest], "no colour");
+        let next = Palette::Pec.nearest(red, Some(nearest)).index;
+        assert_ne!(next, nearest);
+        assert_eq!(Palette::Pec.numbers(&[chosen(Palette::Pec, nearest), Thread::rgb(red)]), [nearest, next]);
+        assert_eq!(Palette::Pec.numbers(&[Thread::rgb(red), Thread::rgb(red)]), [nearest, next]);
+    }
+
+    /// A palette's threads are numbered from 1, as the formats count; 0 and numbers past the end
+    /// name none and read as black.
+    #[test]
+    fn threads_are_numbered_from_one() {
+        for palette in Palette::ALL {
+            let threads = palette.threads();
+            assert_eq!(palette.get(1), threads.first().copied());
+            assert_eq!(palette.get(threads.len()), threads.last().copied());
+            assert_eq!((palette.get(0), palette.get(threads.len() + 1)), (None, None));
+            assert_eq!(palette.thread(0), Thread::named([0, 0, 0], "Black"));
+            assert_eq!(Palette::from_id(palette.id()), Some(palette));
+            // Each thread is its own colour's nearest, exactly.
+            for (i, &(rgb, _)) in threads.iter().enumerate() {
+                assert_eq!(palette.nearest(rgb, None), Match { index: i + 1, delta_e: 0.0 });
+            }
+        }
+    }
 }

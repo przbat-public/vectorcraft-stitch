@@ -438,6 +438,8 @@ fn structured_junk() {
         ("embroidery.setup", json!({"palette": "PEC", "fabric": "knit"})),
         ("embroidery.setup", json!({"palette": [null], "threadPalette": "jef"})),
         ("embroidery.setup", json!({"palette": "jef", "threadPalette": {"palette": "pec"}})),
+        ("embroidery.threads", json!({"stitchStyle": 5, "density": [1e308], "threadWeight": -1e308})),
+        ("embroidery.threads", json!({"pullCompensation": [1e308, f64::NAN], "expand": 1e308, "trimLength": -1})),
     ];
     let mut failures = vec![];
     for fx in Fixture::ALL {

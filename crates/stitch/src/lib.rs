@@ -124,22 +124,29 @@ impl Stitch {
     }
 }
 
-/// A thread: the colour a block is sewn in, and the name a palette gives it.
+/// A thread: the colour a block is sewn in, the name a palette gives it, and the palette thread
+/// chosen for it.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Thread {
-    /// sRGB, as palettes list threads.
+    /// sRGB: as a palette lists the thread (a design read from a file), or as the art sewn in it
+    /// is painted (a design planned from art).
     pub color: [u8; 3],
     /// The palette's name for the thread (`""` when the format names none).
     pub name: String,
+    /// The palette thread it is sewn in, when one was chosen for it (the stitch plan's): a format
+    /// that numbers its threads from that palette writes that one, and any other matches
+    /// [`Thread::color`] to its own ([`thread::Palette::numbers`]). `None`: every format matches
+    /// the colour.
+    pub chosen: Option<thread::PaletteThread>,
 }
 
 impl Thread {
     pub fn rgb(color: [u8; 3]) -> Self {
-        Self { color, name: String::new() }
+        Self { color, name: String::new(), chosen: None }
     }
 
     pub fn named(color: [u8; 3], name: &str) -> Self {
-        Self { color, name: name.to_string() }
+        Self { color, name: name.to_string(), chosen: None }
     }
 
     /// How far this thread's colour is from `other`'s, for matching a palette (0: the same).

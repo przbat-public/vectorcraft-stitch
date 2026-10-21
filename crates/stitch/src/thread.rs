@@ -242,7 +242,8 @@ pub const PEC: [Entry; 64] = [
     ([135, 135, 135], "Gray"),
     ([216, 204, 198], "Warm Gray"),
     ([67, 86, 7], "Dark Olive"),
-    ([253, 217, 222], "Flesh Pink"),
+    // Brother's Linen (307 in Brother's thread list), in the colour EduTechWiki's PEC page gives it.
+    ([255, 227, 198], "Linen"),
     ([249, 147, 188], "Pink"),
     ([0, 56, 34], "Deep Green"),
     ([178, 175, 212], "Lavender"),
@@ -408,6 +409,22 @@ mod tests {
                 assert_eq!(palette.nearest(rgb, &[i + 1]), Match { index: i + 1, delta_e: 0.0 });
             }
         }
+    }
+
+    /// How many threads Brother's thread list has: PEC's entries 1 to 61.
+    const BROTHER_THREADS: usize = 61;
+
+    /// Brother's threads, PEC's first 61 entries, each have a name of their own, as Brother's
+    /// thread list gives them (support.brother.com, Artspira thread names: 61 threads, each name
+    /// once), and 42 is Linen.
+    #[test]
+    fn brothers_threads_each_have_their_own_name() {
+        let names: Vec<&str> = PEC.iter().take(BROTHER_THREADS).map(|(_, name)| *name).collect();
+        let mut distinct = names.clone();
+        distinct.sort_unstable();
+        distinct.dedup();
+        assert_eq!(distinct.len(), BROTHER_THREADS, "{names:?}");
+        assert_eq!(Palette::Pec.get(42), Some(([255, 227, 198], "Linen")));
     }
 
     /// The nearest thread is the one that looks nearest, not the one nearest in RGB: a teal is

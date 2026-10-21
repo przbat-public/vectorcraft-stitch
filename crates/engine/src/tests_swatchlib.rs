@@ -86,7 +86,7 @@ fn thread_libraries_are_the_machine_formats_palettes() {
     assert_eq!(run(&mut s, "swatch.library.get", json!({"library": "janome threads (jef)"}))["id"], "janome-threads-jef");
     let r = run(&mut s, "swatch.library.add", json!({"library": "brother-threads-pec"}));
     assert_eq!(r["added"].as_array().unwrap().len(), 64);
-    assert!(["PEC 12 Orange", "PEC 62 Orange", "PEC 42 Flesh Pink", "PEC 57 Flesh Pink"].iter().all(|n| doc(&s).swatch(n).is_some()));
+    assert!(["PEC 12 Orange", "PEC 62 Orange", "PEC 42 Linen", "PEC 57 Flesh Pink"].iter().all(|n| doc(&s).swatch(n).is_some()));
     assert_eq!(Palette::from_id("jef"), Some(Palette::Jef));
     assert!(s.execute("swatch.library.copyToUser", &json!({"library": "brother-threads-pec"})).is_err());
 }

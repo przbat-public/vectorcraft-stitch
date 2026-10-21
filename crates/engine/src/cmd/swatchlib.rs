@@ -371,8 +371,8 @@ pub const THREAD_LIBRARIES: &[ThreadLibrary] = &[
 ];
 
 /// `palette`'s threads as swatches, in its order: each named by the palette, its number and its
-/// name ("PEC 5 Red"): swatch names are unique, and the PEC table gives three names (Orange,
-/// Cream Yellow, Flesh Pink) to two entries each.
+/// name ("PEC 5 Red"): swatch names are unique, and the PEC table gives two names (Orange, Cream
+/// Yellow) to two entries each.
 pub fn thread_swatches(palette: thread::Palette) -> Vec<Swatch> {
     let code = palette.id().to_ascii_uppercase();
     let swatch = |(i, &([r, g, b], name)): (usize, &([u8; 3], &str))| Swatch {

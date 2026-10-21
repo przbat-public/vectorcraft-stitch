@@ -287,4 +287,37 @@ mod tests {
         let greys: Vec<f64> = (0..=255u8).map(|v| lab([v, v, v]).l).collect();
         assert!(greys.windows(2).all(|w| w[1] > w[0]));
     }
+
+    /// The darkest 8-bit values, 1 to 10 of 255, lie on sRGB's straight segment (IEC 61966-2-1:
+    /// encoded values up to 0.04045 are the light divided by 12.92), and the light they give lies
+    /// on L*a*b*'s straight segment too (below (6/29)³ of the white, where CIE 15:2004 has
+    /// f(t) = κ t / 116 + 16/116 with κ = 24389/27). So a dark grey's L* is κ v / (255 × 12.92),
+    /// and a dark blue's a* and b* follow from the blue primary's column of the matrix alone.
+    #[test]
+    fn dark_colours_follow_both_straight_segments() {
+        /// CIE's κ, the slope of L* over the light below (6/29)³ of the white.
+        const KAPPA: f64 = 24389.0 / 27.0;
+        /// sRGB's straight segment: the darkest encoded value past it, and its slope.
+        const LAST_ON_SEGMENT: u8 = 10;
+        const SLOPE: f64 = 12.92;
+        for v in 1..=LAST_ON_SEGMENT {
+            let light = f64::from(v) / 255.0 / SLOPE;
+            let grey = lab([v, v, v]);
+            assert!((grey.l - KAPPA * light).abs() < 1e-9 && grey.a.abs() < 1e-9 && grey.b.abs() < 1e-9, "grey {v}: {grey:?}");
+            let blue = lab([0, 0, v]);
+            let [x, y, z] = [0, 1, 2].map(|i| SRGB_TO_XYZ[i][2] * light / WHITE[i]);
+            let f = |t: f64| KAPPA * t / LIGHTNESS_SCALE;
+            let want = [KAPPA * y, A_SCALE * (f(x) - f(y)), B_SCALE * (f(y) - f(z))];
+            assert!(
+                (blue.l - want[0]).abs() < 1e-9 && (blue.a - want[1]).abs() < 1e-9 && (blue.b - want[2]).abs() < 1e-9,
+                "blue {v}: {blue:?} against {want:?}"
+            );
+        }
+        // The next value is on the power curve, which gives a little more light than the straight
+        // segment's line would there (its L* is still on L*'s straight segment).
+        let past = f64::from(LAST_ON_SEGMENT + 1) / 255.0;
+        let curve = ((past + SRGB_OFFSET) / (1.0 + SRGB_OFFSET)).powf(SRGB_GAMMA);
+        let grey = lab([LAST_ON_SEGMENT + 1; 3]);
+        assert!(past > SRGB_LINEAR_LIMIT && (grey.l - KAPPA * curve).abs() < 1e-9 && grey.l - KAPPA * past / SLOPE > 1e-3, "{grey:?}");
+    }
 }

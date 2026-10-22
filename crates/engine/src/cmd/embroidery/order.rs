@@ -81,7 +81,8 @@ pub(crate) fn sequence(plan: &DesignPlan) -> Value {
                 .map(|(i, u)| {
                     let t = units.get(i).copied().unwrap_or_default();
                     let needle = || b.stitches.get(u.stitches.clone()).into_iter().flatten().filter(|s| s.command == Command::Stitch);
-                    let numbers = plan.numbers(i);
+                    // A unit of one needle point where the needle already is adds no record: no numbers.
+                    let numbers = plan.numbers(i).filter(|n| !n.is_empty());
                     json!({
                         "unit": i + 1,
                         "id": u.origin.instance.unwrap_or(u.origin.node).0,
@@ -92,7 +93,7 @@ pub(crate) fn sequence(plan: &DesignPlan) -> Value {
                         "why": why(u),
                         "stitches": t.needle,
                         "first": numbers.as_ref().map(|n| n.start),
-                        "last": numbers.as_ref().and_then(|n| n.end.checked_sub(1)),
+                        "last": numbers.as_ref().map(|n| n.end.saturating_sub(1)),
                         "jumps": t.jumps,
                         "trims": t.trims,
                         "entry": needle().next().map(|s| point(s.point())),

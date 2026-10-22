@@ -76,6 +76,43 @@ fn each_unit_maps_to_its_object_and_its_stitches() {
     assert_eq!(v["split"], json!([{"id": framed, "blocks": [1, 2]}]));
 }
 
+/// A unit of one needle point where the needle already is adds no record to its block: it is
+/// listed without stitch numbers, rather than with a last number before its first.
+#[test]
+fn a_unit_that_adds_no_record_has_no_numbers() {
+    use vectorcraft_doc::NodeId;
+    use vectorcraft_geom::Point;
+    use vectorcraft_stitch::plan::{Params, Style};
+    use vectorcraft_stitch::thread::Palette;
+    use vectorcraft_stitch::{Block, Stitch, Thread};
+
+    use super::plan::{Choice, Origin, Part};
+    use super::sequence::{Planned, Sequence};
+
+    let unit = |node: u64, points: &[(f64, f64)]| {
+        let mut block = Block::new(Thread::rgb([200, 30, 30]));
+        block.stitches = points.iter().map(|&(x, y)| Stitch::sew(Point::new(x, y))).collect();
+        let origin = Origin { node: NodeId(node), part: Part::Fill(0), instance: None };
+        Planned {
+            origin,
+            params: Some(Params::for_style(Style::Running)),
+            columns: None,
+            satin_widths: None,
+            why: Choice::Forced,
+            block,
+            literal: None,
+        }
+    };
+    let mut seq = Sequence::new(Params::for_style(Style::Running));
+    seq.add(unit(1, &[(0.0, 0.0), (2.0, 0.0), (4.0, 0.0)]));
+    seq.add(unit(2, &[(4.0, 0.0)]));
+    let plan = seq.plan(String::new(), Vec::new(), Palette::Jef);
+    let units = units(&super::order::sequence(&plan));
+    assert_eq!(units.len(), 2);
+    assert_eq!((&units[0]["first"], &units[0]["last"]), (&json!(1), &json!(3)));
+    assert_eq!((&units[1]["first"], &units[1]["last"], &units[1]["stitches"]), (&json!(null), &json!(null), &json!(0)));
+}
+
 /// How each unit is sewn and the rule that chose it.
 #[test]
 fn each_unit_says_how_it_is_sewn_and_why() {

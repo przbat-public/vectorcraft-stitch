@@ -1144,7 +1144,11 @@ whose threads a palette entry can stand for later.
 A planning service (`cmd/embroidery/service.rs`) takes a snapshot of the document and gives back
 its plan. Each open document has one (`Session::embroidery_plans`, by `DocState::uid`), dropped
 when the document closes; the commands that read a design (`embroidery.threads`, `stats`,
-`sequence`, `check`) plan through it.
+`sequence`, `check`) plan through it. The app reaches it too, for the stitch preview to come:
+`Session::embroidery_plan(&EmbroideryOptions)` gives the active document's plan, and
+`Session::embroidery_planner()` a `Send` handle (`EmbroideryPlanner`: the document's service and
+its snapshot) that plans on a worker thread into the same memo the commands read;
+`EmbroideryOptions::from_json` takes the commands' options, checked as they check them.
 
 ```mermaid
 flowchart LR

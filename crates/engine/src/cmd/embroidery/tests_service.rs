@@ -422,3 +422,26 @@ fn the_service_plans_on_another_thread() {
     assert_eq!(Ok((*here).clone()), there);
     assert_eq!((service.walks(), service.kept()), (2, kept), "every unit taken from what was kept there");
 }
+
+/// The planner a session hands out plans on another thread what the commands plan, through the
+/// same service: a plan made on the worker is the one the next command reads, without planning
+/// again. Its options come from the commands' params, checked as they are.
+#[test]
+fn a_planner_plans_on_another_thread_what_the_commands_plan() {
+    let (mut s, _) = build(&[
+        Art { kind: 0, x: 20.0, y: 20.0, w: 60.0, h: 40.0, fill: Some(0), stroke: Some((1, 6.0)) },
+        Art { kind: 1, x: 120.0, y: 40.0, w: 50.0, h: 50.0, fill: Some(2), stroke: None },
+    ]);
+    let opts = crate::EmbroideryOptions::from_json(&json!({"spacing": 0.5, "stitch": "tatami"})).unwrap();
+    assert!(crate::EmbroideryOptions::from_json(&json!({"spacing": 0.01})).is_err());
+    assert!(crate::EmbroideryOptions::from_json(&json!({"format": "pes"})).is_err());
+    let planner = s.embroidery_planner().unwrap();
+    let on_worker = std::thread::spawn(move || planner.plan(&opts).map(|p| (p.len(), p))).join().unwrap().unwrap();
+    let opts = crate::EmbroideryOptions::from_json(&json!({"spacing": 0.5, "stitch": "tatami"})).unwrap();
+    let here = s.embroidery_plan(&opts).unwrap();
+    assert!(Arc::ptr_eq(&on_worker.1, &here), "the worker's plan is the one remembered");
+    let uid = s.doc().unwrap().uid;
+    assert_eq!(s.embroidery_plans.of(uid).walks(), 1);
+    assert_eq!(run(&mut s, "embroidery.stats", json!({"spacing": 0.5, "stitch": "tatami"}))["records"], json!(on_worker.0));
+    assert_eq!(s.embroidery_plans.of(uid).walks(), 1, "the command reads the same plan");
+}

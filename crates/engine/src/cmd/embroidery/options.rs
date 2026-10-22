@@ -65,9 +65,11 @@ pub(crate) fn stitch_id(style: Style) -> &'static str {
 }
 
 /// The embroidery options, as they come: each one left out keeps the style's own value. Two are
-/// equal when every value is (a plan made with one is the plan made with the other).
+/// equal when every value is (a plan made with one is the plan made with the other). Made from
+/// the commands' params ([`Options::from_json`]), so that they are checked as the commands check
+/// them.
 #[derive(Clone, Debug, Default, PartialEq)]
-pub(crate) struct Options {
+pub struct Options {
     /// The style `stitch` forces; `None` for `auto`.
     pub(crate) stitch: Option<Style>,
     pub(crate) spacing: Option<f64>,
@@ -96,9 +98,14 @@ pub(crate) enum Others<'a> {
 }
 
 impl Options {
+    /// The options in `p`, an object of them under the names the commands take (null: none), and
+    /// no other key, each checked against its range as the commands check it.
+    pub fn from_json(p: &Value) -> Result<Self> {
+        Self::from_params(p, "embroidery options")
+    }
+
     /// The options in command params `p` (an object of them, or null for none), and no other key;
     /// `cmd` names the command in the errors.
-    #[cfg(test)]
     pub(crate) fn from_params(p: &Value, cmd: &str) -> Result<Self> {
         match p {
             Value::Null => Ok(Self::default()),
@@ -207,7 +214,7 @@ impl Options {
 
     /// The options given, under their names, as a reply echoes what it was planned with (left-out
     /// options are the planner's defaults, which `document.formats` lists).
-    pub(crate) fn to_json(&self) -> Value {
+    pub fn to_json(&self) -> Value {
         let mut o = Map::new();
         let mut put = |k: &str, v: Option<Value>| {
             if let Some(v) = v {

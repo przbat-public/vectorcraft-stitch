@@ -51,9 +51,53 @@ use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 use self::stats::Page;
 use super::*;
 
-pub(crate) use options::Options;
+pub use options::Options;
 pub(crate) use service::Services;
 pub(crate) use unit::PlanError;
+
+/// A document's stitch planning, to hand to another thread: the planning service of the document
+/// it was taken from (its kept units and last plan, shared with the commands) and the snapshot to
+/// plan. Planning is `Send`: the app's stitch preview can plan on a worker while commands plan on
+/// theirs, and a plan is cancelled as a command is ([`crate::cancel`]).
+#[derive(Clone)]
+pub struct Planner {
+    service: Arc<service::PlanService>,
+    doc: Arc<Document>,
+}
+
+impl Planner {
+    /// The snapshot's plan with `opts`: the last plan when it was of this snapshot with these
+    /// options, else planned, each unit's stitches reused where nothing it is planned from changed.
+    pub fn plan(&self, opts: &Options) -> Result<Arc<plan::DesignPlan>> {
+        self.service.plan(&self.doc, opts).map_err(PlanError::error)
+    }
+
+    /// The document snapshot it plans.
+    pub fn document(&self) -> &Arc<Document> {
+        &self.doc
+    }
+}
+
+/// The planner is handed to other threads.
+const _: () = {
+    const fn sent<T: Send + Sync>() {}
+    sent::<Planner>();
+};
+
+impl Session {
+    /// The active document's planner: its planning service and its current snapshot.
+    pub fn embroidery_planner(&mut self) -> Result<Planner> {
+        let st = self.doc()?;
+        let (uid, doc) = (st.uid, st.doc.clone());
+        Ok(Planner { service: self.embroidery_plans.of(uid), doc })
+    }
+
+    /// The active document's stitch plan with `opts`, as the read commands plan it (the whole
+    /// document): what a stitch preview draws.
+    pub fn embroidery_plan(&mut self, opts: &Options) -> Result<Arc<plan::DesignPlan>> {
+        self.embroidery_planner()?.plan(opts)
+    }
+}
 
 /// The embroidery settings an object carries, the document's, and the threads its design is sewn
 /// in.

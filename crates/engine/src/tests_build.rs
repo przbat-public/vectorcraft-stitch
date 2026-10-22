@@ -1181,40 +1181,6 @@ fn image_trace_palettes_and_swatch_libraries() {
     assert!(bad(json!({"palette": "rainbow"})));
 }
 
-/// An embroidery thread library is a Document Library palette like any other: every traced area
-/// comes out in one of Brother's (or Janome's) threads, as it is, so the design sews in exactly
-/// those threads.
-#[test]
-fn image_trace_with_a_thread_library_paints_in_its_threads() {
-    let mut s = session();
-    let quads = vectorcraft_trace::Raster::from_fn(60, 60, |x, y| match (x < 30, y < 30) {
-        (true, true) => [230, 20, 20, 255],
-        (false, true) => [20, 200, 30, 255],
-        (true, false) => [20, 30, 220, 255],
-        (false, false) => [250, 230, 10, 255],
-    });
-    add_image(&mut s, &quads, Affine::IDENTITY);
-    let mut id: Option<Value> = None;
-    for (library, palette) in
-        [("brother-threads-pec", vectorcraft_stitch::thread::Palette::Pec), ("Janome Threads (JEF)", vectorcraft_stitch::thread::Palette::Jef)]
-    {
-        let mut p = json!({"preset": "6 Colors", "params": {"palette": "documentLibrary", "library": library, "colors": 4}});
-        if let Some(id) = &id {
-            p["id"] = id.clone();
-        }
-        let r = s.execute("imageTrace.make", &p).unwrap();
-        let fills: Vec<Color> =
-            traced_paths(&node(&s, NodeId(r["id"].as_u64().unwrap()))).iter().filter_map(|n| n.appearance.fill_paint().color()).collect();
-        let threads: Vec<[u8; 3]> = palette.threads().iter().map(|(rgb, _)| *rgb).collect();
-        assert_eq!(fills.len(), 4, "{library}: {fills:?}");
-        for c in &fills {
-            let [r, g, b, _] = c.to_rgba8(1.0);
-            assert!(threads.contains(&[r, g, b]), "{library}: {c:?} is none of its threads");
-        }
-        id = Some(r["id"].clone());
-    }
-}
-
 #[test]
 fn image_trace_create_strokes_makes_stroked_centre_lines() {
     let mut s = session();

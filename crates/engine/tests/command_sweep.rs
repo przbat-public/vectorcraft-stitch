@@ -11,6 +11,8 @@ use vectorcraft_testkit::fixtures::Fixture;
 use vectorcraft_testkit::invariants::{check_all, check_session, doc_json};
 use vectorcraft_testkit::strategies::{junk_params, junk_values, param_keys};
 
+mod embroidery_common;
+
 /// Commands that replace/close the active document or touch the filesystem are fine to call, but a
 /// few need their paths redirected into a temp dir (handled by `junk_params`).
 fn safe_path() -> String {
@@ -187,7 +189,7 @@ fn every_command_with_junk_params() {
 /// Junk inside the obvious structured params: ids arrays, anchors, matrices, colours, stops.
 #[test]
 fn structured_junk() {
-    let cases: Vec<(&str, Value)> = vec![
+    let mut cases: Vec<(&str, Value)> = vec![
         ("select.set", json!({"ids": [0, u64::MAX, -1, "x", null, 1.5]})),
         ("document.export", json!({"format": "png", "rect": [1e308, -1e308, 1e308, 1e308]})),
         ("document.export", json!({"format": "png", "rect": [0, 0, 1e300, 1e300], "scale": 64})),
@@ -434,24 +436,8 @@ fn structured_junk() {
         ("symbol.options", json!({"name": "Dot", "nineSlice": true, "nineSliceGuides": [1e308, -1e308, 0, 0]})),
         ("symbol.options", json!({"nineSlice": 7, "nineSliceGuides": []})),
         ("symbol.options", json!({"nineSlice": false, "nineSliceGuides": null})),
-        ("embroidery.setup", json!({"palette": {"chart": ["madeira", null]}, "threadPalette": 1e308})),
-        ("embroidery.setup", json!({"palette": "PEC", "fabric": "knit"})),
-        ("embroidery.setup", json!({"palette": [null], "threadPalette": "jef"})),
-        ("embroidery.setup", json!({"palette": "jef", "threadPalette": {"palette": "pec"}})),
-        ("embroidery.setup", json!({"settings": {"palette": {"chart": [1e308]}}, "resolved": {"palette": 5}})),
-        ("embroidery.setup", json!({"settings": [null], "palette": "pec"})),
-        ("embroidery.setup", json!({"settings": {"palette": "jef", "fabric": null}, "palette": "jef"})),
-        ("embroidery.settings", json!({"palette": "pec"})),
-        ("embroidery.threads", json!({"stitchStyle": 5, "density": [1e308], "threadWeight": -1e308})),
-        ("embroidery.threads", json!({"pullCompensation": [1e308, f64::NAN], "expand": 1e308, "trimLength": -1})),
-        ("embroidery.stats", json!({"speed": 1e308, "fabricThickness": -1e308, "density": [1e308]})),
-        ("embroidery.stats", json!({"speed": "fast", "fabricThickness": {"mm": 1}, "stitchLength": -1e308})),
-        ("embroidery.stats", json!({"speed": 60, "fabricThickness": 0, "stitchStyle": "satin", "jumpLength": 1e308})),
-        ("embroidery.sequence", json!({"stitchStyle": [5], "narrowAsSatin": 1e308, "minStitch": -1})),
-        ("embroidery.check", json!({"format": ["pes"], "rules": [1, null, {"id": "layers"}], "limit": 1e308})),
-        ("embroidery.check", json!({"format": "vp9", "rules": "all", "limit": -5})),
-        ("embroidery.check", json!({"format": "dst", "rules": ["layers", "layers", "stitchTiny"], "limit": 1000, "density": 0.05})),
     ];
+    cases.extend(embroidery_common::junk::structured());
     let mut failures = vec![];
     for fx in Fixture::ALL {
         for (id, p) in &cases {

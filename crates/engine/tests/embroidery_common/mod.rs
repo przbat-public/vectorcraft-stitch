@@ -12,6 +12,7 @@ use serde_json::{Value, json};
 use vectorcraft_engine::Session;
 use vectorcraft_stitch::format::Format;
 
+pub mod junk;
 #[path = "../../../../xtask/src/sha256.rs"]
 pub mod sha256;
 

@@ -39,7 +39,10 @@ mod tests_service;
 #[cfg(test)]
 mod tests_stats;
 #[cfg(test)]
+mod tests_threadlib;
+#[cfg(test)]
 mod tests_walk;
+pub mod threadlib;
 mod unit;
 
 use std::sync::Arc;

@@ -1242,7 +1242,9 @@ pub(crate) fn window_menu() -> Vec<Item> {
         "window.userSwatchLibrary10",
     ];
     let open = |b: &'static BuiltinLibrary| Item::Cmd(b.name, "window.swatchLibrary", json!({ "library": b.id }));
-    let threads = swatchlib::THREAD_LIBRARIES.iter().map(|t| Item::Cmd(t.name, "window.swatchLibrary", json!({ "library": t.id })));
+    let threads = vectorcraft_engine::cmd::embroidery::threadlib::THREAD_LIBRARIES
+        .iter()
+        .map(|t| Item::Cmd(t.name, "window.swatchLibrary", json!({ "library": t.id })));
     let mut items = vec![Item::Cmd("Default Swatches", "swatch.resetDefaults", Value::Null), Item::Sep];
     items.extend(SWATCH_LIBRARIES.iter().map(open));
     items.extend([

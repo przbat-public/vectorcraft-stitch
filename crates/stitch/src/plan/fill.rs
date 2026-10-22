@@ -71,7 +71,7 @@ pub(super) fn fill_from(path: &BezPath, rule: FillRule, p: &Params, from: Option
             runs.push(resample(&line, p.stitch_length, false), Travel::Auto);
         }
     }
-    let outlines: Vec<&SubPath> = subs.iter().filter(|s| s.closed && s.pts.len() >= 3).collect();
+    let outlines = outlines(&subs);
     if outlines.is_empty() {
         return runs.join(&p);
     }
@@ -80,6 +80,11 @@ pub(super) fn fill_from(path: &BezPath, rule: FillRule, p: &Params, from: Option
     let mut travels = Travels::new(shape);
     sew_area(shape, &mut travels, &p, &[], &mut runs);
     runs.join(&p)
+}
+
+/// The closed outlines of `subs` (at least three points each): what a fill fills.
+pub(super) fn outlines(subs: &[SubPath]) -> Vec<&SubPath> {
+    subs.iter().filter(|s| s.closed && s.pts.len() >= 3).collect()
 }
 
 /// `path`'s subpaths as a fill takes them: closed as paint closes them (SVG, PDF), so a shape drawn
@@ -141,7 +146,7 @@ pub fn fill_with_columns(
     let satin = Params { style: Style::Satin, ..*satin }.sane();
     let mut runs = Runs::from(from);
     let subs = closed_subpaths(shape);
-    let outlines: Vec<&SubPath> = subs.iter().filter(|s| s.closed && s.pts.len() >= 3).collect();
+    let outlines = outlines(&subs);
     if outlines.is_empty() {
         return runs.join(&fill);
     }
@@ -198,7 +203,7 @@ pub fn fill_with_columns(
 /// one with the outlines wound the other way inside it (its holes), the smallest that holds them.
 /// A piece smaller than [`MIN_PIECE`] is left out: a sliver where a column's end meets the outline.
 fn pieces(subs: &[SubPath]) -> Vec<Vec<&SubPath>> {
-    let closed: Vec<&SubPath> = subs.iter().filter(|s| s.closed && s.pts.len() >= 3).collect();
+    let closed = outlines(subs);
     let outer = closed.iter().map(|s| area(&s.pts)).fold(0.0f64, |a, b| if b.abs() > a.abs() { b } else { a }).signum();
     let (outers, holes): (Vec<&SubPath>, Vec<&SubPath>) = closed.into_iter().partition(|s| area(&s.pts).signum() == outer);
     let mut out: Vec<Vec<&SubPath>> = outers.iter().filter(|s| area(&s.pts).abs() >= MIN_PIECE).map(|s| vec![*s]).collect();
@@ -337,21 +342,30 @@ impl Order<'_> {
     }
 }
 
-/// How much of `route` lies inside `shape` (millimetres), measured every half millimetre.
-fn inside(shape: Area<'_>, route: &[Point]) -> f64 {
-    /// How finely a way is measured (millimetres), and the most steps one stretch takes.
-    const STEP: f64 = 0.5;
-    const MAX_STEPS: f64 = 10_000.0;
-    let mut total = 0.0;
+/// How finely a route is measured (millimetres), and the most steps one stretch of it takes (a
+/// bound on the work).
+const ROUTE_STEP: f64 = 0.5;
+const ROUTE_MAX_STEPS: f64 = 10_000.0;
+
+/// `f` called with each stretch of `route` (each pair of points one after another): its length,
+/// the steps it is measured in (every [`ROUTE_STEP`], at most [`ROUTE_MAX_STEPS`]), and the middle
+/// of each step. A stretch whose length isn't finite is passed by.
+fn each_stretch(route: &[Point], mut f: impl FnMut(f64, usize, &mut dyn Iterator<Item = Point>)) {
     for w in route.windows(2) {
         let [a, b] = w else { continue };
         let len = a.distance(*b);
         if !len.is_finite() {
             continue;
         }
-        let steps = (len / STEP).ceil().clamp(1.0, MAX_STEPS) as usize;
-        total += (0..steps).filter(|&k| shape.contains(a.lerp(*b, (k as f64 + 0.5) / steps as f64))).count() as f64 * len / steps as f64;
+        let steps = (len / ROUTE_STEP).ceil().clamp(1.0, ROUTE_MAX_STEPS) as usize;
+        f(len, steps, &mut (0..steps).map(|k| a.lerp(*b, (k as f64 + 0.5) / steps as f64)));
     }
+}
+
+/// How much of `route` lies inside `shape` (millimetres), measured every half millimetre.
+fn inside(shape: Area<'_>, route: &[Point]) -> f64 {
+    let mut total = 0.0;
+    each_stretch(route, |len, steps, middles| total += middles.filter(|q| shape.contains(*q)).count() as f64 * len / steps as f64);
     total
 }
 
@@ -360,11 +374,8 @@ fn inside(shape: Area<'_>, route: &[Point]) -> f64 {
 /// so of any length).
 fn edge_runs(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
     for sub in rows.outlines {
-        let start = runs.here_inside().and_then(|h| {
-            (0..sub.pts.len()).min_by(|&i, &j| {
-                sub.pts.get(i).map_or(f64::INFINITY, |q| q.distance(h)).total_cmp(&sub.pts.get(j).map_or(f64::INFINITY, |q| q.distance(h)))
-            })
-        });
+        // The corner nearest the needle (an outline is closed).
+        let start = runs.here_inside().map(|h| sub.nearest(h).0);
         let mut pts: Vec<Point> = sub.pts.iter().cycle().skip(start.unwrap_or(0)).take(sub.pts.len()).copied().collect();
         if let Some(&first) = pts.first() {
             pts.push(first);
@@ -378,8 +389,7 @@ fn edge_runs(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut R
 
 /// A large fill's second underlay: sparse tatami rows across the top rows' direction, kept a
 /// little inside the edge of `rows` so they never peek out.
-fn tatami_underlay(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
-    let shape = rows;
+fn tatami_underlay(shape: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
     // Under the top stitching, the underlay needs no pull compensation: it stays inside the edge.
     let under = Params {
         angle: p.angle + UNDERLAY_TURN,
@@ -646,26 +656,14 @@ impl Cover {
     /// `sewn`), millimetres: where every region whose rows lie there is sewn. A way under a region
     /// still to come is hidden by it.
     fn seen(&self, route: &[Point], sewn: &[bool]) -> f64 {
-        /// How finely a way is measured (millimetres).
-        const STEP: f64 = 0.5;
-        /// The most steps one stretch is measured in (a bound on the work).
-        const MAX_STEPS: f64 = 10_000.0;
         let mut shows = 0.0;
-        for w in route.windows(2) {
-            let [a, b] = w else { continue };
-            let len = a.distance(*b);
-            if !len.is_finite() {
-                continue;
-            }
-            let steps = (len / STEP).ceil().clamp(1.0, MAX_STEPS) as usize;
-            for k in 0..steps {
-                // The middle of each step.
-                let q = a.lerp(*b, (k as f64 + 0.5) / steps as f64);
+        each_stretch(route, |len, steps, middles| {
+            for q in middles {
                 if self.sewn_at(q, sewn) {
                     shows += len / steps as f64;
                 }
             }
-        }
+        });
         shows
     }
 

@@ -4,8 +4,8 @@
 use vectorcraft_geom::{BezPath, Point};
 
 use super::Params;
-use super::geometry::{Line, length, nearest_order, resample, subpaths, unit};
-use super::runs::{LOCK, Runs, Travel};
+use super::geometry::{Line, length, nearest_order, resample, subpaths};
+use super::runs::{Runs, Travel, lock_step};
 use crate::Stitch;
 
 /// A running line of stitches along `path`, [`Params::stitch_length`] apart, each open run locked
@@ -36,17 +36,13 @@ fn locked(pts: &[Point]) -> Vec<Point> {
         return pts.to_vec();
     }
     let mut out: Vec<Point> = Vec::with_capacity(pts.len() + 4);
-    if let Some(&next) = pts.get(1)
-        && let Some(d) = unit(next - first)
-    {
+    if let Some(step) = pts.get(1).and_then(|&next| lock_step(first, next)) {
         out.push(first);
-        out.push(first + d * LOCK.min(first.distance(next)));
+        out.push(step);
     }
     out.extend_from_slice(pts);
-    if let Some(&prev) = pts.len().checked_sub(2).and_then(|i| pts.get(i))
-        && let Some(d) = unit(prev - last)
-    {
-        out.push(last + d * LOCK.min(last.distance(prev)));
+    if let Some(step) = pts.len().checked_sub(2).and_then(|i| pts.get(i)).and_then(|&prev| lock_step(last, prev)) {
+        out.push(step);
         out.push(last);
     }
     out

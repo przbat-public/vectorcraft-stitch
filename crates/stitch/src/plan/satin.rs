@@ -4,10 +4,10 @@
 
 use vectorcraft_geom::{BezPath, Point, Vec2};
 
-use super::geometry::{CORNER, Line, NO_LENGTH, length, nearest_order, resample, resample_by, subpaths, tangent, trimmed, unit};
+use super::geometry::{CORNER, Line, NO_LENGTH, length, nearest_order, resample, resample_by, subpaths, tangent, trimmed, turn, unit};
 use super::narrow::Column;
 use super::runs::{Runs, Travel};
-use super::{MAX_STITCHES, MIN_PUSHED, Params, UNDERLAY_STITCH, thread_scale};
+use super::{MAX_STITCHES, MIN_PUSHED, Params, UNDERLAY_STITCH};
 use crate::{SAME_POINT, Stitch};
 
 /// Satin underlay by column width (millimetres): from this width an edge run instead of a centre
@@ -59,7 +59,7 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
     // the path is drawn, then the right one.
     let [left, right] = p.compensation(p.width);
     let half = p.width / 2.0;
-    let spacing = if p.auto_spacing { satin_spacing(p.width) * thread_scale(p.thread_weight) } else { p.density };
+    let spacing = p.column_spacing(p.width);
     // The crossings go to one rail and the other in turn: half the spacing apart.
     let pitch = spacing / CROSSINGS_PER_SPACING;
     let mut runs = Runs::from(from);
@@ -150,11 +150,17 @@ fn pushed(pts: &[Point], push: [f64; 2], shortest: f64) -> Vec<Point> {
     if start + end <= 0.0 {
         return pts.to_vec();
     }
-    let len = length(pts, false);
+    let k = push_share(length(pts, false), start, end, shortest);
+    trimmed(pts, start * k, end * k)
+}
+
+/// The share of push compensation `start` and `end` (millimetres off a column's two ends) that a
+/// column `len` long takes: all of it, or both in proportion when together they would leave less
+/// than [`MIN_PUSHED`] of it, or less than `shortest` (the shortest column that is sewn).
+fn push_share(len: f64, start: f64, end: f64, shortest: f64) -> f64 {
     let keep = (len * MIN_PUSHED).max(shortest).min(len);
     let most = len - keep;
-    let k = if start + end > most { most / (start + end) } else { 1.0 };
-    trimmed(pts, start * k, end * k)
+    if start + end > most { most / (start + end) } else { 1.0 }
 }
 
 /// A stroke's centre line measured along, its direction turning smoothly round its curves. Where
@@ -204,7 +210,7 @@ impl Centre {
         };
         let sharp: Vec<bool> = (0..n)
             .map(|k| match (incoming(k), dirs.get(k)) {
-                (Some(u), Some(v)) => u.dot(*v).clamp(-1.0, 1.0).acos() > CORNER,
+                (Some(u), Some(v)) => turn(*u, *v) > CORNER,
                 _ => false,
             })
             .collect();
@@ -475,9 +481,7 @@ pub(super) fn sew_column(column: &Column, p: &Params, runs: &mut Runs, reach: &m
         let push = ((p.push[0] + p.push[1]) / 2.0).max(0.0);
         let [start, end] = tips.map(|tip| if tip { push } else { 0.0 });
         // At most down to MIN_PUSHED of it, and never shorter than a column that is sewn.
-        let keep = (along.len * MIN_PUSHED).max(p.min_stitch * MIN_CROSSINGS).min(along.len);
-        let most = along.len - keep;
-        let k = if start + end > most { most / (start + end) } else { 1.0 };
+        let k = push_share(along.len, start, end, p.min_stitch * MIN_CROSSINGS);
         Along::new(&along.between(start * k, along.len - end * k), false)
     };
     if along.len < p.min_stitch * MIN_CROSSINGS {
@@ -537,16 +541,16 @@ pub(super) fn column_returns(column: &Column, p: &Params) -> bool {
 
 /// A column measured along its middle: each station's middle, the half crossing from it to the
 /// first side, the distance along to each, and the length (round to the start for a ring).
-struct Along {
+pub(super) struct Along {
     middles: Vec<Point>,
     halves: Vec<Vec2>,
-    at: Vec<f64>,
+    pub(super) at: Vec<f64>,
     len: f64,
     closed: bool,
 }
 
 impl Along {
-    fn new(stations: &[(Point, Point)], closed: bool) -> Self {
+    pub(super) fn new(stations: &[(Point, Point)], closed: bool) -> Self {
         let middles: Vec<Point> = stations.iter().map(|(a, b)| a.midpoint(*b)).collect();
         let halves: Vec<Vec2> = stations.iter().map(|(a, b)| (*a - *b) / 2.0).collect();
         let mut at = Vec::with_capacity(middles.len());
@@ -612,8 +616,7 @@ impl Along {
     /// along it. An open column's last crossing lies on its end.
     fn crossings(&self, p: &Params) -> (Vec<(Point, Vec2)>, Vec<Point>, f64, f64) {
         // The distance between crossings at a width: half the spacing on a rail (peak to peak).
-        let pitch_at =
-            |width: f64| (if p.auto_spacing { satin_spacing(width) * thread_scale(p.thread_weight) } else { p.density }) / CROSSINGS_PER_SPACING;
+        let pitch_at = |width: f64| p.column_spacing(width) / CROSSINGS_PER_SPACING;
         // How far a crossing reaches either side of the middle, half its width `half` widened by
         // pull compensation.
         let reach_at = |half: f64| {

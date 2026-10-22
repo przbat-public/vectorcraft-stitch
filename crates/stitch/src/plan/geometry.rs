@@ -126,7 +126,7 @@ pub(super) fn resample_by(pts: &[Point], closed: bool, step: &dyn Fn(f64) -> f64
         if has_next
             && let Some(c) = at(i + 2)
             && let (Some(u), Some(v)) = (unit(b - a), unit(c - b))
-            && u.dot(v).clamp(-1.0, 1.0).acos() > CORNER
+            && turn(u, v) > CORNER
             && land_on(&mut out, (b, travelled), last_step, fixed, false)
         {
             fixed = true;
@@ -251,6 +251,12 @@ pub(super) fn tangent(pts: &[Point], i: usize, closed: bool) -> Vec2 {
     unit(t).unwrap_or(Vec2::new(1.0, 0.0))
 }
 
+/// The angle between two unit directions `u` and `v` (radians, 0 to π): how sharply a line turns
+/// from one to the other.
+pub(super) fn turn(u: Vec2, v: Vec2) -> f64 {
+    u.dot(v).clamp(-1.0, 1.0).acos()
+}
+
 /// `v` scaled to length one, `None` when it has no length.
 pub(super) fn unit(v: Vec2) -> Option<Vec2> {
     let len = v.hypot();
@@ -328,7 +334,7 @@ pub(super) struct Line {
 impl SubPath {
     /// The point to start from nearest `q` (an end of an open polyline, any point of a closed
     /// one): its index and distance.
-    fn nearest(&self, q: Point) -> (usize, f64) {
+    pub(super) fn nearest(&self, q: Point) -> (usize, f64) {
         let d = |i: usize| self.pts.get(i).map_or(f64::INFINITY, |p| p.distance(q));
         if self.closed {
             (0..self.pts.len()).map(|i| (i, d(i))).min_by(|a, b| a.1.total_cmp(&b.1)).unwrap_or((0, f64::INFINITY))

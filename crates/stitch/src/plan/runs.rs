@@ -14,6 +14,12 @@ use crate::{Command, SAME_POINT, Stitch};
 /// estimate.
 pub(super) const LOCK: f64 = 1.0;
 
+/// Where a lock stitch, tie-in or tie-off at `at` steps to: [`LOCK`] along the stitch towards
+/// `toward`, or all of it when it is shorter; `None` when the two are one point.
+pub(super) fn lock_step(at: Point, toward: Point) -> Option<Point> {
+    unit(toward - at).map(|d| at + d * LOCK.min(at.distance(toward)))
+}
+
 /// How the needle gets to a run from the end of the one before.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Travel {
@@ -297,10 +303,10 @@ pub fn join_cut(pieces: Vec<Vec<Stitch>>, p: &Params) -> Vec<Stitch> {
 /// tail is held.
 fn tie_in(run: &[Point]) -> Vec<Point> {
     let (Some(&first), Some(&next)) = (run.first(), run.get(1)) else { return run.to_vec() };
-    let Some(d) = unit(next - first) else { return run.to_vec() };
+    let Some(step) = lock_step(first, next) else { return run.to_vec() };
     let mut out = Vec::with_capacity(run.len() + 2);
     out.push(first);
-    out.push(first + d * LOCK.min(first.distance(next)));
+    out.push(step);
     out.extend_from_slice(run);
     out
 }
@@ -313,7 +319,7 @@ fn tie_off(out: &mut Vec<Stitch>) {
     if a.command != Command::Stitch || b.command != Command::Stitch {
         return;
     }
-    let Some(d) = unit(a.point() - b.point()) else { return };
-    out.push(Stitch::sew(b.point() + d * LOCK.min(a.distance(b))));
+    let Some(step) = lock_step(b.point(), a.point()) else { return };
+    out.push(Stitch::sew(step));
     out.push(b);
 }

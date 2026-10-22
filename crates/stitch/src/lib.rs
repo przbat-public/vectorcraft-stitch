@@ -105,8 +105,7 @@ impl Stitch {
 
     /// The distance from `self` to `other`, millimetres.
     pub fn distance(self, other: Self) -> f64 {
-        let (dx, dy) = (other.x - self.x, other.y - self.y);
-        (dx * dx + dy * dy).sqrt()
+        self.point().distance(other.point())
     }
 }
 

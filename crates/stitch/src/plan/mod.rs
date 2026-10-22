@@ -276,7 +276,7 @@ impl Params {
     /// The defaults of one style for thread of `weight` (wt): the spacing between threads follows
     /// the thread's thickness ([`thread_scale`]), a fill's rows and a satin column's crossings alike.
     pub fn for_thread(style: Style, weight: f64) -> Self {
-        let weight = if weight.is_finite() { weight.clamp(THREAD_WEIGHT_RANGE.0, THREAD_WEIGHT_RANGE.1) } else { THREAD_WEIGHT };
+        let weight = sane_weight(weight);
         let density = FILL_SPACING * thread_scale(weight);
         match style {
             // A running line uses no density, angle, compensation, underlay or width.
@@ -374,6 +374,13 @@ impl Params {
         }
     }
 
+    /// The spacing of a satin column `width` wide (millimetres, peak to peak on a rail): picked by
+    /// its width and the thread with [`Params::auto_spacing`] ([`satin_spacing`], [`thread_scale`]),
+    /// else [`Params::density`].
+    pub fn column_spacing(&self, width: f64) -> f64 {
+        if self.auto_spacing { satin_spacing(width) * thread_scale(self.thread_weight) } else { self.density }
+    }
+
     /// How much farther a stitch `length` long reaches at each side for pull compensation
     /// ([`Params::pull`] plus [`Params::pull_percent`] of `length`), millimetres, at most 2 mm at
     /// a side (the most [`Params::sane`] lets [`Params::pull`] be).
@@ -402,8 +409,12 @@ impl Params {
 pub fn thread_scale(weight: f64) -> f64 {
     /// The square root: the thread's thickness follows it.
     const SPACING_EXPONENT: f64 = 0.5;
-    let weight = if weight.is_finite() { weight.clamp(THREAD_WEIGHT_RANGE.0, THREAD_WEIGHT_RANGE.1) } else { THREAD_WEIGHT };
-    (THREAD_WEIGHT / weight).powf(SPACING_EXPONENT)
+    (THREAD_WEIGHT / sane_weight(weight)).powf(SPACING_EXPONENT)
+}
+
+/// A thread weight within [`THREAD_WEIGHT_RANGE`]; one that isn't finite is [`THREAD_WEIGHT`].
+fn sane_weight(weight: f64) -> f64 {
+    if weight.is_finite() { weight.clamp(THREAD_WEIGHT_RANGE.0, THREAD_WEIGHT_RANGE.1) } else { THREAD_WEIGHT }
 }
 
 /// The stitches of `path` in style `p`: one block, in needle order.
@@ -447,12 +458,7 @@ pub fn try_stitches(path: &BezPath, rule: FillRule, p: &Params) -> crate::Result
 /// [`try_stitches`], the needle at `from` before the shape starts ([`stitches_from`]).
 pub fn try_stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> crate::Result<Vec<Stitch>> {
     let p = p.sane();
-    let n = estimate(&subpaths(path), &p);
-    if !n.is_finite() || n > MAX_STITCHES as f64 {
-        return Err(Error::TooLarge(format!(
-            "a shape would need about {n:.0} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design"
-        )));
-    }
+    within_limit(estimate(&subpaths(path), &p))?;
     Ok(stitches_from(path, rule, &p, from))
 }
 
@@ -473,14 +479,22 @@ pub fn try_fill_with_columns(
     const UNDERLAYS: f64 = 3.0;
     let (f, s) = (Params { style: Style::Fill, ..*fill }.sane(), Params { style: Style::Satin, ..*satin }.sane());
     let closest = s.density.min(satin_spacing(f64::INFINITY) * thread_scale(s.thread_weight));
-    let n = estimate(&subpaths(shape), &f)
-        + columns.iter().map(|c| c.length() * (satin::CROSSINGS_PER_SPACING / closest + UNDERLAYS / UNDERLAY_STITCH)).sum::<f64>();
+    within_limit(
+        estimate(&subpaths(shape), &f)
+            + columns.iter().map(|c| c.length() * (satin::CROSSINGS_PER_SPACING / closest + UNDERLAYS / UNDERLAY_STITCH)).sum::<f64>(),
+    )?;
+    Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, from))
+}
+
+/// Refused with [`Error::TooLarge`] when a shape would need `n` stitches, more than
+/// [`MAX_STITCHES`] (or a number that isn't finite).
+fn within_limit(n: f64) -> crate::Result<()> {
     if !n.is_finite() || n > MAX_STITCHES as f64 {
         return Err(Error::TooLarge(format!(
             "a shape would need about {n:.0} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design"
         )));
     }
-    Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, from))
+    Ok(())
 }
 
 /// About how many points `subs` plan into in style `p` (an upper estimate; not finite when the
@@ -493,13 +507,10 @@ fn estimate(subs: &[SubPath], p: &Params) -> f64 {
     const POINTS_PER_ROW: f64 = 2.0;
     let total: f64 = subs.iter().map(|s| length(&s.points(), s.closed)).sum();
     let ends = POINTS_PER_SUBPATH * subs.len() as f64;
-    match p.style {
+    match sewn_style(p) {
         Style::Running => total / p.stitch_length + ends,
-        Style::Satin if p.width > 0.0 => {
-            let spacing = if p.auto_spacing { satin_spacing(p.width) * thread_scale(p.thread_weight) } else { p.density };
-            total / UNDERLAY_STITCH + 2.0 * total / spacing.min(p.density) + ends
-        }
-        Style::Satin | Style::Fill => {
+        Style::Satin => total / UNDERLAY_STITCH + 2.0 * total / p.column_spacing(p.width).min(p.density) + ends,
+        Style::Fill => {
             let axes = Axes::new(p.angle);
             let extent = |f: &dyn Fn(vectorcraft_geom::Point) -> f64| {
                 let (lo, hi) = subs

@@ -69,31 +69,35 @@ impl Area<'_> {
         if a.distance(b) < SAME_POINT {
             return self.contains(a);
         }
-        if self.any_edge_along(a, b, |c, d| crossing(a, b, c, d)) {
+        // The corners of the outline the line passes, as shares of it, noted while looking for a
+        // crossing.
+        let ab = b - a;
+        let len2 = ab.hypot2();
+        let mut cuts: Vec<f64> = vec![0.0, 1.0];
+        let crosses = self.any_edge_along(a, b, |c, d| {
+            for corner in [c, d] {
+                if near_segment(corner, a, b) {
+                    cuts.push(((corner - a).dot(ab) / len2).clamp(0.0, 1.0));
+                }
+            }
+            crossing(a, b, c, d)
+        });
+        if crosses {
             return false;
         }
         if self.along_edge(a, b) {
             return true;
         }
         let middle = a.midpoint(b);
-        if !self.on_outline(middle) {
+        // A corner passed inside the line (not at its ends): the line may leave there without
+        // crossing an edge (a corner's contacts count for neither edge), so it is tested stretch by
+        // stretch, as one along the outline is.
+        let through_corner = cuts.iter().any(|t| *t > CORNER_INSIDE && *t < 1.0 - CORNER_INSIDE);
+        if !through_corner && !self.on_outline(middle) {
             return self.contains(middle);
         }
         // Where the line passes a corner of the outline, it may leave it: every stretch between
         // two such corners must lie on the outline or inside.
-        let ab = b - a;
-        let len2 = ab.hypot2();
-        let mut cuts: Vec<f64> = vec![0.0, 1.0];
-        let mut note = |c: Point| {
-            if near_segment(c, a, b) {
-                cuts.push(((c - a).dot(ab) / len2).clamp(0.0, 1.0));
-            }
-        };
-        self.any_edge_along(a, b, |c, d| {
-            note(c);
-            note(d);
-            false
-        });
         cuts.sort_by(f64::total_cmp);
         cuts.dedup_by(|x, y| (*x - *y).abs() < f64::EPSILON);
         cuts.windows(2).all(|w| {
@@ -387,6 +391,9 @@ fn winding(edges: impl Iterator<Item = (Point, Point)>, q: Point) -> i32 {
 /// How near a point must be to an edge to lie on it (millimetres): row ends are computed on the
 /// edges, so they lie within rounding of them.
 const ON_EDGE: f64 = 1e-6;
+/// How far inside a line (a share of its length) a corner it passes counts as passed inside it,
+/// not at its ends, where row ends and corners lie within rounding.
+const CORNER_INSIDE: f64 = 1e-6;
 
 /// Whether `q` lies within [`ON_EDGE`] of the segment from `c` to `d`.
 fn near_segment(q: Point, c: Point, d: Point) -> bool {
@@ -623,4 +630,31 @@ fn simplify(pts: &[Point], tolerance: f64) -> Vec<Point> {
         }
     }
     pts.iter().zip(keep).filter_map(|(p, k)| k.then_some(*p)).collect()
+}
+
+#[cfg(test)]
+mod tests_corner {
+    use vectorcraft_geom::{FillRule, Point};
+
+    use super::super::geometry::SubPath;
+    use super::*;
+
+    /// A line that leaves the shape through a convex corner, its middle inside, doesn't stay inside:
+    /// two squares 2.5 mm apart, A = [0, 10]², B = [12.5, 20] × [−10, 0], and the line from (5, 5)
+    /// to (12.5, −2.5), through A's corner (10, 0), whose middle lies in A.
+    #[test]
+    fn a_line_out_through_a_corner_leaves() {
+        let square = |x0: f64, y0: f64, x1: f64, y1: f64| SubPath {
+            pts: vec![Point::new(x0, y0), Point::new(x1, y0), Point::new(x1, y1), Point::new(x0, y1)],
+            closed: true,
+        };
+        let subs = [square(0.0, 0.0, 10.0, 10.0), square(12.5, -10.0, 20.0, 0.0)];
+        let outlines: Vec<&SubPath> = subs.iter().collect();
+        let area = Area { outlines: &outlines, rule: FillRule::NonZero, grid: None };
+        assert!(!area.contains_segment(Point::new(5.0, 5.0), Point::new(12.5, -2.5)));
+        // Inside one square, through nothing: inside.
+        assert!(area.contains_segment(Point::new(1.0, 1.0), Point::new(9.0, 9.0)));
+        // Into a corner and back along its edge: on the outline, inside.
+        assert!(area.contains_segment(Point::new(5.0, 5.0), Point::new(10.0, 0.0)));
+    }
 }

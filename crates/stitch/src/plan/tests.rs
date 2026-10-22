@@ -1520,3 +1520,112 @@ fn a_column_shorter_than_two_of_its_spacings_is_left_out() {
     assert!(stitches(&line((0.0, 0.0), (0.9, 0.0)), FillRule::NonZero, &p).is_empty(), "0.9 mm: a knot");
     assert!(!stitches(&line((0.0, 0.0), (1.1, 0.0)), FillRule::NonZero, &p).is_empty(), "1.1 mm: a column");
 }
+
+/// The places inside `shape` (at least `inset` mm from its outline, on a 0.25 mm grid) farther than
+/// `reach` mm from every needle-down stitch of `out`: where a fill leaves fabric bare.
+fn uncovered(shape: &BezPath, out: &[Stitch], inset: f64, reach: f64) -> Vec<Point> {
+    use std::collections::HashMap;
+    use vectorcraft_geom::Shape;
+    /// The sampling grid, and the cells the stitches are binned in (millimetres).
+    const STEP: f64 = 0.25;
+    const CELL: f64 = 1.0;
+    let inside = |q: Point| shape.winding(q) != 0;
+    let mut cells: HashMap<(i64, i64), Vec<(Point, Point)>> = HashMap::new();
+    for w in out.windows(2).filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch) {
+        let (a, b) = (w[0].point(), w[1].point());
+        let (x0, x1) = ((a.x.min(b.x) / CELL).floor() as i64, (a.x.max(b.x) / CELL).floor() as i64);
+        let (y0, y1) = ((a.y.min(b.y) / CELL).floor() as i64, (a.y.max(b.y) / CELL).floor() as i64);
+        for i in x0..=x1 {
+            for j in y0..=y1 {
+                cells.entry((i, j)).or_default().push((a, b));
+            }
+        }
+    }
+    let near = |q: Point| {
+        let (ci, cj) = ((q.x / CELL).floor() as i64, (q.y / CELL).floor() as i64);
+        (ci - 1..=ci + 1).flat_map(|i| (cj - 1..=cj + 1).map(move |j| (i, j))).filter_map(|c| cells.get(&c)).flatten().any(|&(a, b)| {
+            let ab = b - a;
+            let t = if ab.hypot2() > 0.0 { ((q - a).dot(ab) / ab.hypot2()).clamp(0.0, 1.0) } else { 0.0 };
+            q.distance(a + ab * t) <= reach
+        })
+    };
+    let b = shape.bounding_box();
+    let mut bare = Vec::new();
+    let (nx, ny) = (((b.x1 - b.x0) / STEP) as i64, ((b.y1 - b.y0) / STEP) as i64);
+    for i in 0..=nx {
+        for j in 0..=ny {
+            let q = Point::new(b.x0 + i as f64 * STEP, b.y0 + j as f64 * STEP);
+            let deep = inside(q)
+                && [(-1.0, -1.0), (0.0, -1.0), (1.0, -1.0), (-1.0, 0.0), (1.0, 0.0), (-1.0, 1.0), (0.0, 1.0), (1.0, 1.0)]
+                    .iter()
+                    .all(|&(dx, dy)| inside(Point::new(q.x + dx * inset, q.y + dy * inset)));
+            if deep && !near(q) {
+                bare.push(q);
+            }
+        }
+    }
+    bare
+}
+
+/// A fill covers its shape: every place more than 0.6 mm inside the outline lies within half a row
+/// spacing (and 0.1 mm) of a needle-down stitch, for shapes whose regions branch and turn (an E, a
+/// U, combs, a ring, an H), at several angles, with and without underlay. A region dropped, or a
+/// band left between regions, would leave bare fabric here.
+#[test]
+fn a_fill_covers_its_shape() {
+    let e = polygon([
+        (0.0, 0.0),
+        (40.0, 0.0),
+        (40.0, 8.0),
+        (10.0, 8.0),
+        (10.0, 16.0),
+        (30.0, 16.0),
+        (30.0, 24.0),
+        (10.0, 24.0),
+        (10.0, 32.0),
+        (40.0, 32.0),
+        (40.0, 40.0),
+        (0.0, 40.0),
+    ]);
+    let u = polygon([(0.0, 0.0), (14.0, 0.0), (14.0, 30.0), (9.0, 30.0), (9.0, 8.0), (5.0, 8.0), (5.0, 30.0), (0.0, 30.0)]);
+    let mut ring = rect(0.0, 0.0, 40.0, 30.0);
+    ring.extend(polygon([(13.0, 13.0), (13.0, 17.0), (17.0, 17.0), (17.0, 13.0)]));
+    let h = polygon([
+        (0.0, 0.0),
+        (8.0, 0.0),
+        (8.0, 16.0),
+        (22.0, 16.0),
+        (22.0, 0.0),
+        (30.0, 0.0),
+        (30.0, 40.0),
+        (22.0, 40.0),
+        (22.0, 24.0),
+        (8.0, 24.0),
+        (8.0, 40.0),
+        (0.0, 40.0),
+    ]);
+    let shapes = [("E", e), ("U", u), ("comb", comb(5, 35.0, 4.0, 4.0, 6.0)), ("ring", ring), ("H", h)];
+    /// How far inside the outline a place must be to count, and how far past half a spacing from a
+    /// stitch it may lie (millimetres): the thread's own width covers the rest. Within 2 mm of an
+    /// edge square to the rows, a row may start a stitch in (its turn along the edge, one spacing,
+    /// 0.38 mm, is shorter than the shortest stitch, 0.4 mm, and left out), leaving wedges up to
+    /// about 0.35 mm bare: measured, and left for the project owner to decide (it moves every fill).
+    /// Past that, nothing may be.
+    const INSET: f64 = 2.0;
+    const SLACK: f64 = 0.1;
+    for (name, shape) in &shapes {
+        for underlay in [Underlay::None, Underlay::Auto] {
+            for angle in [0.0, 30.0, 45.0, 90.0, 135.0] {
+                let p = Params { angle, underlay, ..Params::for_style(Style::Fill) };
+                let out = stitches(shape, FillRule::NonZero, &p);
+                let bare = uncovered(shape, &out, INSET, p.density / 2.0 + SLACK);
+                assert!(bare.is_empty(), "{name}, {angle}°, underlay {underlay:?}: {} places bare, first {:?}", bare.len(), bare.first());
+            }
+        }
+    }
+    // The check itself: with the E's top arm's stitches taken out, its arm is found bare.
+    let (_, e) = &shapes[0];
+    let p = Params { angle: 0.0, ..Params::for_style(Style::Fill) };
+    let out: Vec<Stitch> = stitches(e, FillRule::NonZero, &p).into_iter().filter(|s| !(s.y > 33.0 && s.x > 12.0)).collect();
+    assert!(!uncovered(e, &out, INSET, p.density / 2.0 + SLACK).is_empty());
+}

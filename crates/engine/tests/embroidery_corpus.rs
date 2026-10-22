@@ -9,7 +9,8 @@
 //! - Opened and exported again, every machine file keeps every needle point, trim and colour
 //!   block.
 //! - Each artwork, digitized by VectorCraft at the size of the person's design, comes out sound:
-//!   the same size, every needle point on the artwork, no stitch too long or too short, no more
+//!   the same size, every needle point on the painted artwork and its painted interior sewn
+//!   (checked against the art drawn as a PNG), no stitch too long or too short, no more
 //!   trims and jumps than its ceilings (just above what was last measured, next to the person's
 //!   counts), and a stitch count in a sane share of the person's (VectorCraft's default spacing is
 //!   more open than Ink/Stitch's, so it sews fewer stitches).
@@ -27,7 +28,7 @@ use vectorcraft_stitch::format::Format;
 use vectorcraft_stitch::{Command, Pattern, quantize};
 
 mod embroidery_common;
-use embroidery_common::{artwork, corpus, open};
+use embroidery_common::{artwork, corpus, open, run};
 
 /// (artwork, the person's machine file, most trims, most jumps). Ceilings one above what was last
 /// measured, with the person's counts: see the comments (trims, then jumps: a move with the needle up, cut or not). (Before
@@ -283,4 +284,104 @@ fn artwork_digitizes_soundly_next_to_a_persons_design() {
     }
     eprintln!("all designs: trims {all_trims}, jumps {all_jumps}");
     assert_eq!((all_trims, all_jumps), (ALL_TRIMS, ALL_JUMPS), "trims and jumps of all the designs (update docs/embroidery.md with them)");
+}
+
+/// Pixels per inch the artwork is drawn at to be checked against its stitches: 10 pixels a
+/// millimetre.
+const CHECK_PPI: f64 = 254.0;
+const PX_PER_MM: f64 = CHECK_PPI / 25.4;
+/// Points in a millimetre: the document counts points, the plan millimetres.
+const PT_PER_MM: f64 = 72.0 / 25.4;
+/// How far past the painted art a needle point may lie (millimetres): pull compensation and a
+/// satin's reach take stitches a fraction of a millimetre past the edge.
+const OFF_ART: f64 = 1.0;
+/// How far inside the painted art a place must lie to be checked for stitches, and how near a
+/// needle-down stitch it must then be (millimetres): 2 mm from the art's edges, and half a row
+/// spacing and 0.16 mm. The planner's coverage test allows 0.1 mm past half a spacing; on the real
+/// designs three places lie 0.30 to 0.34 mm from a stitch, where a row starts a stitch in (its turn
+/// along an edge is shorter than the shortest stitch and left out), the bare wedges reported to the
+/// project owner.
+const DEEP: f64 = 2.0;
+const REACH: f64 = 0.38 / 2.0 + 0.16;
+/// The margin round the plan's box the artwork is drawn with (millimetres).
+const MARGIN: f64 = 5.0;
+
+/// Each artwork is sewn where it is painted: every needle point VectorCraft plans lies on the
+/// painted art (within a millimetre), and every place more than 2 mm inside the painted art lies
+/// within half a row spacing of a needle-down stitch. The art is drawn as a PNG over the plan's
+/// box to tell.
+#[test]
+fn artwork_is_sewn_where_it_is_painted() {
+    let Some(dir) = corpus() else { return };
+    for &(art, theirs, ..) in DESIGNS {
+        let mut s = artwork(&dir, art, theirs);
+        let plan = s.embroidery_plan(&vectorcraft_engine::EmbroideryOptions::default()).unwrap();
+        let b = plan.to_pattern().bounds().unwrap().inflate(MARGIN, MARGIN);
+        let rect = [b.x0 * PT_PER_MM, b.y0 * PT_PER_MM, b.width() * PT_PER_MM, b.height() * PT_PER_MM];
+        let png = decode(&run(&mut s, "document.export", json!({"format": "png", "ppi": CHECK_PPI, "rect": rect})));
+        let img = image::load_from_memory(&png).unwrap().to_rgba8();
+        let (w, h) = (img.width() as i64, img.height() as i64);
+        let painted = |x: i64, y: i64| x >= 0 && y >= 0 && x < w && y < h && img.get_pixel(x as u32, y as u32)[3] > 127;
+        let px = |x_mm: f64, y_mm: f64| (((x_mm - b.x0) * PX_PER_MM).floor() as i64, ((y_mm - b.y0) * PX_PER_MM).floor() as i64);
+        // Every needle point within OFF_ART of a painted pixel.
+        let off = (OFF_ART * PX_PER_MM).ceil() as i64;
+        let stray: Vec<(f64, f64)> = plan
+            .to_pattern()
+            .points()
+            .filter(|p| p.command == Command::Stitch)
+            .filter(|p| {
+                let (x, y) = px(p.x, p.y);
+                !(-off..=off).any(|dx| (-off..=off).any(|dy| dx * dx + dy * dy <= off * off && painted(x + dx, y + dy)))
+            })
+            .map(|p| (p.x, p.y))
+            .collect();
+        assert!(stray.is_empty(), "{art}: {} needle points off the art, first {:?}", stray.len(), stray.first());
+        // The sewn places: within REACH of a needle-down stitch, marked pixel by pixel.
+        let mut sewn = vec![false; (w * h).max(0) as usize];
+        let reach = (REACH * PX_PER_MM).ceil() as i64;
+        let pattern = plan.to_pattern();
+        for block in &pattern.blocks {
+            for pair in block.stitches.windows(2).filter(|p| p.iter().all(|s| s.command == Command::Stitch)) {
+                let (a, c) = (pair[0], pair[1]);
+                let steps = ((a.distance(c) * PX_PER_MM).ceil() as usize).max(1);
+                for k in 0..=steps {
+                    let t = k as f64 / steps as f64;
+                    let (x, y) = px(a.x + (c.x - a.x) * t, a.y + (c.y - a.y) * t);
+                    for dx in -reach..=reach {
+                        for dy in -reach..=reach {
+                            let (i, j) = (x + dx, y + dy);
+                            if dx * dx + dy * dy <= reach * reach && i >= 0 && j >= 0 && i < w && j < h {
+                                sewn[(j * w + i) as usize] = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Places DEEP inside the painted art: every pixel of the square round them painted
+        // (summed over the image once).
+        let mut sum = vec![0i64; ((w + 1) * (h + 1)) as usize];
+        for y in 0..h {
+            for x in 0..w {
+                let v = i64::from(painted(x, y));
+                sum[((y + 1) * (w + 1) + x + 1) as usize] =
+                    v + sum[(y * (w + 1) + x + 1) as usize] + sum[((y + 1) * (w + 1) + x) as usize] - sum[(y * (w + 1) + x) as usize];
+            }
+        }
+        let deep = (DEEP * PX_PER_MM) as i64;
+        let all_painted = |x: i64, y: i64| {
+            let (x0, y0, x1, y1) = (x - deep, y - deep, x + deep + 1, y + deep + 1);
+            if x0 < 0 || y0 < 0 || x1 > w || y1 > h {
+                return false;
+            }
+            let at = |x: i64, y: i64| sum[(y * (w + 1) + x) as usize];
+            at(x1, y1) - at(x0, y1) - at(x1, y0) + at(x0, y0) == (x1 - x0) * (y1 - y0)
+        };
+        let bare: Vec<(f64, f64)> = (0..h)
+            .flat_map(|y| (0..w).map(move |x| (x, y)))
+            .filter(|&(x, y)| all_painted(x, y) && !sewn[(y * w + x) as usize])
+            .map(|(x, y)| (b.x0 + x as f64 / PX_PER_MM, b.y0 + y as f64 / PX_PER_MM))
+            .collect();
+        assert!(bare.is_empty(), "{art}: {} places of painted art left bare, first {:?}", bare.len(), bare.first());
+    }
 }

@@ -23,7 +23,7 @@
 //! Reference: EduTechWiki, *Embroidery format DST* (edutechwiki.unige.ch/en/Embroidery_format_DST),
 //! which transcribes the public decodings by Achatina and Embroidermodder.
 
-use super::{Emitter, Frame, LABEL_LEN, PAD, finish, label, mm, steps, walk};
+use super::{Emitter, Frame, LABEL_LEN, PAD, add, finish, label, mm, steps, walk};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The header's length; records follow it.
@@ -274,30 +274,30 @@ pub(crate) fn check_records(records: &[u8], what: &str) -> Result<()> {
 /// The design `records` hold (a DST's after its header, or a whole TAP file), named `name`; `what`
 /// names the format in an error.
 pub(crate) fn read_records(records: &[u8], name: String, what: &str) -> Result<Pattern> {
-    let mut x = 0i32;
-    let mut y = 0i32;
+    // Wide enough that no file overflows it: each record moves the needle at most 121 tenths.
+    let (mut x, mut y) = (0i64, 0i64);
     let mut points: Vec<Stitch> = Vec::new();
     for record in records.chunks_exact(RECORD) {
         let b2 = record[2];
-        let (dx, dy) = (decode(record, &X_DIGITS), decode(record, &Y_DIGITS));
+        let (dx, dy) = (i64::from(decode(record, &X_DIGITS)), i64::from(decode(record, &Y_DIGITS)));
         if b2 & END_BITS == END_BITS {
             break;
         }
         if b2 & COLOR_CHANGE_BITS == COLOR_CHANGE_BITS {
-            points.push(Stitch::new(mm(x), mm(-y), Command::ColorChange));
+            add(&mut points, Stitch::new(mm(x), mm(-y), Command::ColorChange), what)?;
             // Some writers move the frame in the colour-change record itself: the move is a jump
             // to where the next thread starts.
             if dx != 0 || dy != 0 {
                 x += dx;
                 y += dy;
-                points.push(Stitch::new(mm(x), mm(-y), Command::Jump));
+                add(&mut points, Stitch::new(mm(x), mm(-y), Command::Jump), what)?;
             }
             continue;
         }
         x += dx;
         y += dy;
         let command = if b2 & JUMP_BITS == JUMP_BITS { Command::Jump } else { Command::Stitch };
-        points.push(Stitch::new(mm(x), mm(-y), command));
+        add(&mut points, Stitch::new(mm(x), mm(-y), command), what)?;
     }
     if points.is_empty() {
         return Err(Error::Format(format!("the {what} file has no stitch records")));

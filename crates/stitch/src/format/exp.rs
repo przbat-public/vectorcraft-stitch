@@ -10,7 +10,7 @@
 //!
 //! Reference: EduTechWiki, *Embroidery format EXP* (edutechwiki.unige.ch/en/Embroidery_format_EXP).
 
-use super::{Emitter, Frame, Reader, TWO_BYTE_COMMAND, finish, mm, two_byte_move, walk};
+use super::{Emitter, Frame, Reader, TWO_BYTE_COMMAND, add, finish, mm, two_byte_move, walk};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The largest delta one record holds, in tenths of a millimetre.
@@ -76,37 +76,38 @@ impl Emitter for Exp {
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
     let mut r = Reader::new(bytes);
     let mut points: Vec<Stitch> = Vec::new();
-    let (mut x, mut y) = (0i32, 0i32);
+    // Wide enough that no file overflows it: each record moves the needle at most 127 tenths.
+    let (mut x, mut y) = (0i64, 0i64);
     while let Some(b0) = r.u8() {
         let Some(b1) = r.u8() else { break };
         if b0 != CONTROL {
-            x += i32::from(b0 as i8);
-            y -= i32::from(b1 as i8);
-            points.push(Stitch::new(mm(x), mm(y), Command::Stitch));
+            x += i64::from(b0 as i8);
+            y -= i64::from(b1 as i8);
+            add(&mut points, Stitch::new(mm(x), mm(y), Command::Stitch), "EXP")?;
             continue;
         }
         let (Some(dx), Some(dy)) = (r.u8(), r.u8()) else { break };
-        let (dx, dy) = (i32::from(dx as i8), i32::from(dy as i8));
+        let (dx, dy) = (i64::from(dx as i8), i64::from(dy as i8));
         match b1 {
             JUMP => {
                 x += dx;
                 y -= dy;
-                points.push(Stitch::new(mm(x), mm(y), Command::Jump));
+                add(&mut points, Stitch::new(mm(x), mm(y), Command::Jump), "EXP")?;
             }
             STITCH_DOWN => {
                 x += dx;
                 y -= dy;
-                points.push(Stitch::new(mm(x), mm(y), Command::Stitch));
+                add(&mut points, Stitch::new(mm(x), mm(y), Command::Stitch), "EXP")?;
             }
             COLOR_CHANGE => {
-                points.push(Stitch::new(mm(x), mm(y), Command::ColorChange));
+                add(&mut points, Stitch::new(mm(x), mm(y), Command::ColorChange), "EXP")?;
                 if dx != 0 || dy != 0 {
                     x += dx;
                     y -= dy;
-                    points.push(Stitch::new(mm(x), mm(y), Command::Jump));
+                    add(&mut points, Stitch::new(mm(x), mm(y), Command::Jump), "EXP")?;
                 }
             }
-            TRIM => points.push(Stitch::new(mm(x), mm(y), Command::Trim)),
+            TRIM => add(&mut points, Stitch::new(mm(x), mm(y), Command::Trim), "EXP")?,
             // An unknown command: stop rather than guess where the needle goes next.
             _ => break,
         }

@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use vectorcraft_color::{Color, Paint};
 use vectorcraft_doc::embroidery::{Embroidery, EmbroiderySetup, StitchRun, ThreadPalette};
-use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, LineJoin, Node};
+use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, LineJoin, Node, Shared};
 use vectorcraft_geom::{BezPath, PathData, Point, Rect, Size};
 use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::{Block, Command, Stitch, mm_to_pt};
@@ -15,19 +15,32 @@ use super::super::{Format, err};
 
 /// The width of the lines a design's stitches are drawn with, millimetres: about a thread's.
 const THREAD_WIDTH: f64 = 0.4;
+/// The margin round an opened design on its new artboard, millimetres: a little room to see its
+/// edges. It doesn't move the stitches as written: every writer measures a design from its own
+/// bounds, so it is gone again on export.
+const MARGIN: f64 = 5.0;
+/// The most runs of stitches (each stitched without lifting the needle) a design opens as, one
+/// object each: far more than real designs have (a few thousand), a bound on the objects a hostile
+/// file can make (one for every few bytes of a stream of stitches and jumps).
+const MAX_RUNS: usize = 100_000;
 
 /// Read a design into a document: one group per thread, each run of stitches a thin line.
 pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Vec<String>)> {
     let format = StitchFormat::from_id(f.id).ok_or_else(|| bad("document.open", format!("{} is not an embroidery format", f.label)))?;
     let pattern = format.read(bytes).map_err(err)?;
     let b = pattern.bounds().ok_or_else(|| err("the file has no stitches"))?;
-    // A margin round the design on the new artboard. It doesn't move the stitches as written:
-    // every writer measures a design from its own bounds, so it is gone again on export.
-    const MARGIN: f64 = 5.0;
     // Points per millimetre.
     let scale = mm_to_pt(1.0);
     let width = (b.width() + 2.0 * MARGIN) * scale;
     let height = (b.height() + 2.0 * MARGIN) * scale;
+    // A design larger than a document holds would open, and then every edit would be refused.
+    if !(width.is_finite() && height.is_finite()) || width > vectorcraft_doc::MAX_COORD || height > vectorcraft_doc::MAX_COORD {
+        return Err(err(format!("the design is {:.0} × {:.0} mm, larger than a document holds", b.width(), b.height())));
+    }
+    let runs_in = |block: &Block| runs(block).len();
+    if pattern.blocks.iter().map(runs_in).sum::<usize>() > MAX_RUNS {
+        return Err(err(format!("the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens")));
+    }
     let mut doc = Document::new(width, height);
     if !pattern.name.is_empty() {
         doc.title = pattern.name.clone();
@@ -48,6 +61,8 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
             s.cap = LineCap::Round;
             s.join = LineJoin::Round;
         }
+        // One appearance shared by the block's lines, not a copy each.
+        let stroke = Shared::new(stroke);
         let mut children: Vec<Arc<Node>> = Vec::new();
         for (run, trim_before, trim_after) in runs(block) {
             let mut bp = BezPath::new();
@@ -64,7 +79,8 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
                 bp.line_to(Point::new((only.x + MARGIN) * scale, (only.y + MARGIN) * scale));
             }
             let path = PathData::from_bezpath(&bp);
-            let mut node = Node::path(doc.alloc_id(), path, stroke.clone());
+            let mut node = Node::path(doc.alloc_id(), path, Appearance::default());
+            node.appearance = stroke.clone();
             // The line's points are the file's needle points: exported, they are sewn as they are,
             // so the design is written back unchanged.
             node.extras_mut().embroidery =

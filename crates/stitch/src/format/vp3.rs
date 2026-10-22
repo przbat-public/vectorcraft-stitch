@@ -425,6 +425,8 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
             // Past the design's blocks, or as far as its length says when that is farther (a
             // packet this reader doesn't know between designs).
             Ok(end) => r.seek(end.max(r.pos())),
+            // More stitches than a design may have: refused, not cut short.
+            Err(e @ Error::TooLarge(_)) => return Err(e),
             Err(e) => {
                 stopped = Some(e);
                 break;
@@ -449,9 +451,10 @@ struct Decoded {
 }
 
 impl Decoded {
-    fn push(&mut self, command: Command) {
+    /// A point where the needle is; refused past [`super::MAX_POINTS`].
+    fn push(&mut self, command: Command) -> Result<()> {
         let mm = |v: i64| v as f64 / UNITS_PER_MM;
-        self.points.push(Stitch::new(mm(self.x), mm(self.y), command));
+        super::add(&mut self.points, Stitch::new(mm(self.x), mm(self.y), command), "VP3")
     }
 }
 
@@ -470,12 +473,16 @@ fn read_design(r: &mut Reader<'_>, d: &mut Decoded) -> Result<()> {
     let mut first = true;
     while at_tag(r.data(), r.pos(), BLOCK_TAG) {
         let block_end = open(r, BLOCK_TAG, len, "colour block")?;
-        let (sx, sy) = (i64::from(r.i32_be().ok_or_else(|| short(len))?), i64::from(r.i32_be().ok_or_else(|| short(len))?));
-        let thread = read_thread(r, d.threads.len())?;
+        // The block's fields are read within its declared length, so that a block claiming less
+        // than it holds can't send the reader back over what it read (each block would be read
+        // again from inside the last).
+        let mut b = r.up_to(block_end);
+        let (sx, sy) = (i64::from(b.i32_be().ok_or_else(|| short(len))?), i64::from(b.i32_be().ok_or_else(|| short(len))?));
+        let thread = read_thread(&mut b, d.threads.len())?;
         // How far the block's stitches move the needle: the stitches say so themselves.
-        r.take(POSITION).ok_or_else(|| short(len))?;
-        let run_end = open(r, STITCHES_TAG, block_end, "stitch run")?;
-        r.take(SCALE.len()).ok_or_else(|| short(len))?;
+        b.take(POSITION).ok_or_else(|| short(len))?;
+        let run_end = open(&mut b, STITCHES_TAG, block_end, "stitch run")?;
+        b.take(SCALE.len()).ok_or_else(|| short(len))?;
         if first {
             // A design's first block starts where it says (from the design's centre); every other
             // picks up where the last left off.
@@ -485,16 +492,17 @@ fn read_design(r: &mut Reader<'_>, d: &mut Decoded) -> Result<()> {
         }
         let mark = d.points.len();
         if !d.threads.is_empty() {
-            d.push(Command::ColorChange);
+            d.push(Command::ColorChange)?;
         }
         d.threads.push(thread);
-        read_stitches(r, d, run_end);
+        read_stitches(&mut b, d, run_end)?;
         // A block that sews nothing is no block: the next one keeps its own thread.
         if !d.points.get(mark..).unwrap_or_default().iter().any(|s| s.command == Command::Stitch) {
             d.points.truncate(mark);
             d.threads.pop();
         }
-        r.seek(block_end);
+        // Forward only: past the block's header at least.
+        r.seek(block_end.max(b.pos()).max(r.pos()));
     }
     Ok(())
 }
@@ -524,31 +532,31 @@ fn read_thread(r: &mut Reader<'_>, block: usize) -> Result<Thread> {
     })
 }
 
-/// The stitch records up to `end`.
-fn read_stitches(r: &mut Reader<'_>, d: &mut Decoded, end: usize) {
+/// The stitch records up to `end`; refused past [`super::MAX_POINTS`] points.
+fn read_stitches(r: &mut Reader<'_>, d: &mut Decoded, end: usize) -> Result<()> {
     // Whether the last record was a long form, whose needle point a zero-length stitch repeats.
     let mut after_long = false;
     while r.pos() + 2 <= end {
-        let (Some(b0), Some(b1)) = (r.u8(), r.u8()) else { return };
+        let (Some(b0), Some(b1)) = (r.u8(), r.u8()) else { return Ok(()) };
         if b0 != CONTROL {
             let (dx, dy) = (i64::from(b0 as i8), i64::from(b1 as i8));
             if !(std::mem::take(&mut after_long) && dx == 0 && dy == 0) {
                 d.x += dx;
                 d.y += dy;
-                d.push(Command::Stitch);
+                d.push(Command::Stitch)?;
             }
             continue;
         }
         match b1 {
             LONG_START => {
                 if r.pos() + 4 > end {
-                    return;
+                    return Ok(());
                 }
-                let (Some(dx), Some(dy)) = (r.i16_be(), r.i16_be()) else { return };
+                let (Some(dx), Some(dy)) = (r.i16_be(), r.i16_be()) else { return Ok(()) };
                 d.x += i64::from(dx);
                 d.y += i64::from(dy);
-                d.push(Command::Jump);
-                d.push(Command::Stitch);
+                d.push(Command::Jump)?;
+                d.push(Command::Stitch)?;
                 if r.pos() + 2 <= end && r.data().get(r.pos()..r.pos() + 2) == Some(&[CONTROL, LONG_END][..]) {
                     r.seek(r.pos() + 2);
                 }
@@ -557,9 +565,10 @@ fn read_stitches(r: &mut Reader<'_>, d: &mut Decoded, end: usize) {
             // Empty: a long form's end on its own, an empty command, and the end of the last block.
             NOTHING | LONG_END | LAST => {}
             // An unknown command: stop rather than guess where the needle goes next.
-            _ => return,
+            _ => return Ok(()),
         }
     }
+    Ok(())
 }
 
 /// Whether `tag` is at `at`.

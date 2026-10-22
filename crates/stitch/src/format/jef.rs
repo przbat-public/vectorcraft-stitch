@@ -23,7 +23,7 @@
 //! pyembroidery 1.5.1 (MIT) served only as an outside reader of the files written here
 //! (`docs/embroidery.md` › Validation); none of its code was read.
 
-use super::{Emitter, Frame, Reader, TWO_BYTE_COMMAND, finish, mm, two_byte_move, walk};
+use super::{Emitter, Frame, Reader, TWO_BYTE_COMMAND, add, finish, mm, two_byte_move, walk};
 use crate::thread::{self, Palette};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
@@ -189,9 +189,9 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         return Err(Error::Format(format!("the JEF header points at byte {offset}, past the file's {} bytes", bytes.len())));
     }
     r.seek(HEADER);
-    // The count is the file's claim: each colour's index takes a word of the header, so no more
-    // fit than the file holds (an absurd count must not size an allocation).
-    let colors = colors.min(bytes.len().saturating_sub(HEADER) / WORD);
+    // The count is the file's claim: each colour takes two words of the header before the records
+    // start (`offset`), so no more fit than that (an absurd count must not size an allocation).
+    let colors = colors.min(offset.saturating_sub(HEADER) / BYTES_PER_COLOR);
     let mut threads = Vec::with_capacity(colors);
     for block in 0..colors {
         // Janome's chart numbers its threads from 1 to 78: 0 and a number past it name none, and
@@ -203,13 +203,14 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     }
     r.seek(offset);
     let mut points: Vec<Stitch> = Vec::new();
-    let (mut x, mut y) = (0i32, 0i32);
+    // Wide enough that no file overflows it: each record moves the needle at most 127 tenths.
+    let (mut x, mut y) = (0i64, 0i64);
     while let Some(b0) = r.u8() {
         let Some(b1) = r.u8() else { break };
         if b0 != CONTROL {
-            x += i32::from(b0 as i8);
-            y -= i32::from(b1 as i8);
-            points.push(Stitch::new(mm(x), mm(y), Command::Stitch));
+            x += i64::from(b0 as i8);
+            y -= i64::from(b1 as i8);
+            add(&mut points, Stitch::new(mm(x), mm(y), Command::Stitch), "JEF")?;
             continue;
         }
         match b1 {
@@ -217,18 +218,18 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
             COLOR_CHANGE => {
                 // The colour change's two delta bytes, which don't move the frame.
                 let _ = r.take(2);
-                points.push(Stitch::new(mm(x), mm(y), Command::ColorChange));
+                add(&mut points, Stitch::new(mm(x), mm(y), Command::ColorChange), "JEF")?;
             }
             JUMP => {
                 let (Some(dx), Some(dy)) = (r.u8(), r.u8()) else { break };
-                let (dx, dy) = (i32::from(dx as i8), i32::from(dy as i8));
+                let (dx, dy) = (i64::from(dx as i8), i64::from(dy as i8));
                 let here = Stitch::new(mm(x), mm(y), Command::Trim);
                 if dx == 0 && dy == 0 {
-                    points.push(here);
+                    add(&mut points, here, "JEF")?;
                 } else {
                     x += dx;
                     y -= dy;
-                    points.push(Stitch::new(mm(x), mm(y), Command::Jump));
+                    add(&mut points, Stitch::new(mm(x), mm(y), Command::Jump), "JEF")?;
                 }
             }
             // An unknown command: stop rather than guess where the needle goes next.

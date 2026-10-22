@@ -31,7 +31,7 @@
 //! References: EduTechWiki, *Embroidery format PES* and *Embroidery format PEC*
 //! (edutechwiki.unige.ch/en/Embroidery_format_PES, …/Embroidery_format_PEC).
 
-use super::{Emitter, Frame, LABEL_LEN, PAD, Reader, finish, label, mm, steps, walk};
+use super::{Emitter, Frame, LABEL_LEN, PAD, Reader, add, finish, label, mm, steps, walk};
 use crate::thread::{self, Palette};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
@@ -49,8 +49,6 @@ pub(crate) const MAX_DELTA: i32 = 2047;
 pub(crate) const MAX_SIZE: i32 = u16::MAX as i32;
 /// The longest stitch block its 24-bit length counts, bytes.
 const MAX_BLOCK: usize = 0xFF_FFFF;
-/// The most stitches one stitch block may hold (a stream that lost step stops rather than growing).
-const MAX_STITCHES: usize = 1_048_576;
 /// The most colours a PEC header holds: it stores one fewer than their count in a byte, and
 /// `0xFF` there means none ([`NO_COLORS`]).
 pub(crate) const MAX_COLORS: usize = 255;
@@ -332,7 +330,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         if from >= bytes.len() {
             continue;
         }
-        let (parsed, end) = stream(bytes, from);
+        let (parsed, end) = stream(bytes, from)?;
         if !parsed.is_empty() && expected_end == Some(end) {
             points = Some(parsed);
             break;
@@ -345,48 +343,48 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     Ok(finish(name, points, &threads))
 }
 
-/// The stitches from `from`, and where the [`END`] that ends them lies (just past it).
-fn stream(bytes: &[u8], from: usize) -> (Vec<Stitch>, usize) {
+/// The stitches from `from`, and where the [`END`] that ends them lies (just past it); refused past
+/// [`super::MAX_POINTS`] (a stream that lost step would otherwise grow without bound).
+fn stream(bytes: &[u8], from: usize) -> Result<(Vec<Stitch>, usize)> {
     let mut r = Reader::new(bytes);
     r.seek(from);
     let mut points: Vec<Stitch> = Vec::new();
-    let (mut x, mut y) = (0i32, 0i32);
+    // Wide enough that no file overflows it: each value moves the needle at most 2,047 tenths.
+    let (mut x, mut y) = (0i64, 0i64);
     loop {
         let at = r.pos();
-        let Some(b0) = r.u8() else { return (points, at) };
+        let Some(b0) = r.u8() else { return Ok((points, at)) };
         if b0 == END {
-            return (points, r.pos());
+            return Ok((points, r.pos()));
         }
         if b0 == COLOR_CHANGE[0] {
             // A colour change: COLOR_CHANGE and one byte (COLOR_TWO or COLOR_ONE).
-            let Some(next) = r.u8() else { return (points, at) };
+            let Some(next) = r.u8() else { return Ok((points, at)) };
             if next != COLOR_CHANGE[1] {
-                return (points, at);
+                return Ok((points, at));
             }
             let _ = r.u8();
-            points.push(Stitch::new(mm(x), mm(y), Command::ColorChange));
+            add(&mut points, Stitch::new(mm(x), mm(y), Command::ColorChange), "PEC")?;
             continue;
         }
-        let Some((dx, fx)) = pec_value(&mut r, b0) else { return (points, at) };
-        let Some(b1) = r.u8() else { return (points, at) };
-        let Some((dy, fy)) = pec_value(&mut r, b1) else { return (points, at) };
+        let Some((dx, fx)) = pec_value(&mut r, b0) else { return Ok((points, at)) };
+        let Some(b1) = r.u8() else { return Ok((points, at)) };
+        let Some((dy, fy)) = pec_value(&mut r, b1) else { return Ok((points, at)) };
+        let (dx, dy) = (i64::from(dx), i64::from(dy));
         let flags = fx | fy;
         if flags & TRIM != 0 {
-            points.push(Stitch::new(mm(x), mm(y), Command::Trim));
+            add(&mut points, Stitch::new(mm(x), mm(y), Command::Trim), "PEC")?;
             if dx != 0 || dy != 0 {
                 x += dx;
                 y += dy;
-                points.push(Stitch::new(mm(x), mm(y), Command::Jump));
+                add(&mut points, Stitch::new(mm(x), mm(y), Command::Jump), "PEC")?;
             }
             continue;
         }
         x += dx;
         y += dy;
         let command = if flags & JUMP != 0 { Command::Jump } else { Command::Stitch };
-        points.push(Stitch::new(mm(x), mm(y), command));
-        if points.len() > MAX_STITCHES {
-            return (points, r.pos());
-        }
+        add(&mut points, Stitch::new(mm(x), mm(y), command), "PEC")?;
     }
 }
 

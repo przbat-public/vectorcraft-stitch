@@ -43,8 +43,24 @@ pub(crate) fn label(name: &str) -> String {
 }
 
 /// A coordinate in the file's tenths of a millimetre, as millimetres.
-pub(crate) fn mm(units: i32) -> f64 {
-    f64::from(units) / crate::UNITS_PER_MM
+pub(crate) fn mm(units: impl Into<i64>) -> f64 {
+    units.into() as f64 / crate::UNITS_PER_MM
+}
+
+/// The most points a reader takes from a file (needle points, jumps, cuts and colour changes): as
+/// many as the largest design the export writes (2 million stitches). A file that holds more is
+/// refused: a damaged stream or a hostile file would otherwise grow without bound (a DST of
+/// alternating stitches and jumps takes 24 bytes of memory for every 3 of the file's, and opens
+/// as one object per run).
+pub const MAX_POINTS: usize = 2_000_000;
+
+/// `s` added to the points a reader of `what` decoded so far; refused past [`MAX_POINTS`].
+pub(crate) fn add(points: &mut Vec<Stitch>, s: Stitch, what: &str) -> Result<()> {
+    if points.len() >= MAX_POINTS {
+        return Err(Error::TooLarge(format!("the {what} file holds more than {MAX_POINTS} stitches, more than a design may have")));
+    }
+    points.push(s);
+    Ok(())
 }
 
 /// A machine format.
@@ -485,6 +501,13 @@ impl<'a> Reader<'a> {
         Self { data, pos: 0 }
     }
 
+    /// A reader of the bytes up to `end` only, at this one's position: what it reads can't run
+    /// past `end` (a packet's declared end).
+    pub(crate) fn up_to(&self, end: usize) -> Reader<'a> {
+        let data = self.data.get(..end.min(self.data.len())).unwrap_or_default();
+        Reader { data, pos: self.pos.min(data.len()) }
+    }
+
     pub(crate) fn pos(&self) -> usize {
         self.pos
     }
@@ -702,6 +725,93 @@ mod tests {
         for format in Format::ALL {
             assert!(matches!(format.write(&far), Err(Error::TooLarge(_))), "{format:?}");
         }
+    }
+
+    /// A file of more records than a design may have (a stream of stitch records, or PEC's trims,
+    /// each a few bytes of the file) is refused by every reader, quickly, instead of growing without
+    /// bound.
+    #[test]
+    fn readers_refuse_more_points_than_a_design_may_have() {
+        let n = MAX_POINTS + 10;
+        let refused = |format: Format, bytes: &[u8]| {
+            let started = std::time::Instant::now();
+            assert!(matches!(format.read(bytes), Err(Error::TooLarge(_))), "{format:?}");
+            assert!(started.elapsed().as_secs() < 20, "{format:?}: refused quickly");
+        };
+        // DST and TAP: a stitch record of +1 x.
+        let records = [0x01u8, 0x00, 0x03].repeat(n);
+        let mut dst = vec![b' '; 512];
+        dst.extend_from_slice(&records);
+        refused(Format::Dst, &dst);
+        refused(Format::Tap, &records);
+        // EXP: a stitch of +1 x.
+        refused(Format::Exp, &[0x01u8, 0x00].repeat(n));
+        // JEF: a header of no colours, then stitches.
+        let mut jef = vec![0u8; 0x74];
+        jef[0..4].copy_from_slice(&0x74u32.to_le_bytes());
+        jef.extend_from_slice(&[0x01u8, 0x00].repeat(n));
+        refused(Format::Jef, &jef);
+        // PEC: a header of one colour, then trims (a long value with the trim bit, twice).
+        let mut pec = PEC_HEADER_OF_ONE.to_vec();
+        pec.extend_from_slice(&[0xA0u8, 0x00, 0xA0, 0x00].repeat(n));
+        refused(Format::Pec, &pec);
+        // VP3: a design written here, its one block's stitches made millions long.
+        let mut design = Pattern::default();
+        let mut b = Block::new(Thread::rgb([1, 2, 3]));
+        b.stitches = vec![Stitch::new(0.0, 0.0, Command::Stitch), Stitch::new(1.0, 0.0, Command::Stitch)];
+        design.blocks.push(b);
+        let written = Format::Vp3.write(&design).unwrap();
+        let run = written.windows(3).rposition(|w| w == [0x00, 0x01, 0x00]).unwrap();
+        let mut vp3 = written[..run + 3 + 4 + 3].to_vec();
+        let stitches = [0x01u8, 0x00].repeat(n);
+        vp3.extend_from_slice(&stitches);
+        vp3[run + 3..run + 7].copy_from_slice(&((stitches.len() + 3) as u32).to_be_bytes());
+        // The colour block's length covers its run.
+        let block = written.windows(3).rposition(|w| w == [0x00, 0x05, 0x00]).unwrap();
+        let block_len = (vp3.len() - (block + 7)) as u32;
+        vp3[block + 3..block + 7].copy_from_slice(&block_len.to_be_bytes());
+        refused(Format::Vp3, &vp3);
+    }
+
+    /// A PEC file's first 520 bytes: the magic, a PEC header naming one colour, and a stitch
+    /// block's 16-byte header, so that what follows is read as its stitches.
+    const PEC_HEADER_OF_ONE: [u8; 8 + 512 + 16] = {
+        let mut b = [b' '; 8 + 512 + 16];
+        let magic = *pes::PEC_MAGIC;
+        let mut i = 0;
+        while i < magic.len() {
+            b[i] = magic[i];
+            i += 1;
+        }
+        // One colour (the count less one), thread 1.
+        b[8 + 48] = 0;
+        b[8 + 49] = 1;
+        // The stitch block's header: zeros where the origin words would make it look longer.
+        let mut k = 8 + 512;
+        while k < 8 + 512 + 16 {
+            b[k] = 0;
+            k += 1;
+        }
+        b
+    };
+
+    /// A VP3 whose colour blocks claim fewer bytes than their thread records hold: each block is
+    /// read within its own length, so the reader never goes back over what it read, and ends at
+    /// once, with a design or an error.
+    #[test]
+    fn a_vp3_block_claiming_less_than_it_holds_ends_quickly() {
+        let mut design = Pattern::default();
+        let mut b = Block::new(Thread::named([1, 2, 3], &"x".repeat(60_000)));
+        b.stitches = vec![Stitch::new(0.0, 0.0, Command::Stitch), Stitch::new(1.0, 0.0, Command::Stitch)];
+        design.blocks.extend([b.clone(), b.clone(), b]);
+        let mut bytes = Format::Vp3.write(&design).unwrap();
+        let blocks: Vec<usize> = bytes.windows(3).enumerate().filter(|(_, w)| *w == [0x00, 0x05, 0x00]).map(|(i, _)| i).collect();
+        for at in blocks {
+            bytes[at + 3..at + 7].copy_from_slice(&7u32.to_be_bytes());
+        }
+        let started = std::time::Instant::now();
+        let _ = Format::Vp3.read(&bytes);
+        assert!(started.elapsed().as_millis() < 1000);
     }
 
     #[test]

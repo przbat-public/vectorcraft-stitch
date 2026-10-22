@@ -887,3 +887,34 @@ fn expand_leaves_a_line_in_a_fill_a_line() {
     let spread = near_line.iter().fold(f64::NEG_INFINITY, |m, y| m.max(*y)) - near_line.iter().fold(f64::INFINITY, |m, y| m.min(*y));
     assert!(!near_line.is_empty() && spread < 0.15, "the line's stitches spread {spread} mm across it");
 }
+
+/// A DST of `records` behind a blank header (each record three bytes, the end record added).
+fn dst_of(records: &[[u8; 3]]) -> Vec<u8> {
+    let mut b = vec![b' '; 512];
+    for r in records {
+        b.extend_from_slice(r);
+    }
+    b.extend_from_slice(&[0, 0, 0xF3]);
+    b
+}
+
+/// A design wider than a document holds (1.45 km) is refused when it opens, rather than opening
+/// into a document whose every edit is then refused; so is one of more separate runs of stitches
+/// than a document opens as objects.
+#[test]
+fn an_opened_design_too_large_for_a_document_is_refused() {
+    // 120,000 stitches of +12.1 mm along x.
+    let wide = dst_of(&vec![[0x05, 0x05, 0x07]; 120_000]);
+    let mut s = Session::new();
+    let e = open(&mut s, "wide.dst", &wide).expect_err("too wide").to_string();
+    assert!(e.contains("larger than a document holds"), "{e}");
+    // A stitch, then a jump, 100,001 times: as many runs.
+    let stitch = [0x01, 0x00, 0x03];
+    let jump = [0x02, 0x00, 0x83];
+    let mut many = Vec::new();
+    for _ in 0..100_001 {
+        many.extend([stitch, jump]);
+    }
+    let e = open(&mut s, "many.dst", &dst_of(&many)).expect_err("too many runs").to_string();
+    assert!(e.contains("separate runs"), "{e}");
+}

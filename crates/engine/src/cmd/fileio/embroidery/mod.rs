@@ -237,6 +237,31 @@ mod tests {
         assert_eq!(o.params(Style::Running, 0.0), running.sane());
     }
 
+    /// The export dialog edits every option, and whatever it can write is taken: each choice, and
+    /// each number at both ends of its range (a negative `expand` among them).
+    #[test]
+    fn the_dialog_writes_only_what_the_options_take() {
+        use crate::cmd::embroidery::{DialogField, dialog_field};
+        for o in OPTIONS {
+            let field = dialog_field(o.name).unwrap_or_else(|| panic!("{}", o.name));
+            let values: Vec<Value> = match field {
+                DialogField::Choice(ids) => ids.iter().map(|id| serde_json::json!(id)).collect(),
+                DialogField::Number { min, max, .. } => vec![serde_json::json!(min), serde_json::json!(max)],
+            };
+            for v in values {
+                let mut p = serde_json::Map::new();
+                p.insert(o.name.into(), v.clone());
+                // A trim length is at least the jump length: with the shortest trim, the shortest jump.
+                if o.name == "trimLength" {
+                    p.insert("jumpLength".into(), serde_json::json!(JUMP_RANGE.0));
+                }
+                assert!(options(&Value::Object(p)).is_ok(), "{} {v}", o.name);
+            }
+        }
+        assert!(matches!(dialog_field("expand"), Some(DialogField::Number { min, .. }) if min < 0.0));
+        assert_eq!(dialog_field("format"), None);
+    }
+
     /// Compensation takes one value for both sides or one per side, applies to the styles that
     /// have it, and anything else is refused with a message.
     #[test]

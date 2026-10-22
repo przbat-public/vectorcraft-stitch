@@ -64,6 +64,42 @@ pub(crate) fn stitch_id(style: Style) -> &'static str {
     STITCHES.iter().find(|(_, s)| *s == Some(style)).map_or("auto", |(id, _)| id)
 }
 
+/// How the export options dialog edits an embroidery option, so that what it writes is never
+/// refused: a choice from the values the option takes, or a number within the range the planner
+/// takes, in `unit`, to `decimals` places.
+#[derive(Clone, Debug, PartialEq)]
+pub enum DialogField {
+    Choice(Vec<&'static str>),
+    Number { min: f64, max: f64, unit: &'static str, decimals: usize },
+}
+
+/// The number of degrees `angle` turns at most each way in the dialog: a full turn (the planner
+/// takes any angle; a full turn either way is every direction).
+const FULL_TURN: f64 = 360.0;
+
+/// [`DialogField`] of option `name` (as `document.formats` lists it); `None` for a name that is no
+/// embroidery option.
+pub fn dialog_field(name: &str) -> Option<DialogField> {
+    let mm = |(min, max): (f64, f64)| DialogField::Number { min, max, unit: "mm", decimals: 2 };
+    Some(match name {
+        "stitch" => DialogField::Choice(["auto", "tatami", "satin", "running"].to_vec()),
+        "underlay" => DialogField::Choice(Underlay::ALL.iter().map(|u| u.id()).collect()),
+        "spacing" => mm(DENSITY_RANGE),
+        "length" => mm(STITCH_LENGTH_RANGE),
+        "angle" => DialogField::Number { min: -FULL_TURN, max: FULL_TURN, unit: "°", decimals: 1 },
+        "pull" => mm(PULL_RANGE),
+        "pullPercent" => DialogField::Number { min: PULL_PERCENT_RANGE.0, max: PULL_PERCENT_RANGE.1, unit: "%", decimals: 1 },
+        "push" => mm(PUSH_RANGE),
+        "expand" => mm((-MAX_EXPAND, MAX_EXPAND)),
+        "narrowAsSatin" => mm(NARROW_RANGE),
+        "threadWeight" => DialogField::Number { min: THREAD_WEIGHT_RANGE.0, max: THREAD_WEIGHT_RANGE.1, unit: "wt", decimals: 0 },
+        "jumpLength" => mm(JUMP_RANGE),
+        "trimLength" => mm((JUMP_RANGE.0, MAX_TRIM)),
+        "minStitch" => mm(MIN_STITCH_RANGE),
+        _ => return None,
+    })
+}
+
 /// The embroidery options, as they come: each one left out keeps the style's own value. Two are
 /// equal when every value is (a plan made with one is the plan made with the other). Made from
 /// the commands' params ([`Options::from_json`]), so that they are checked as the commands check

@@ -5196,3 +5196,80 @@ effect	Points	Σημεία
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Βασίζεται στο VectorCraft της ομάδας ArtCraft. MIT ή Apache-2.0. Γραμματοσειρές: Source Sans 3, Inter, JetBrains Mono (OFL). Εικονίδια: Lucide (ISC) + VectorCraft.
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Βασίζεται στο VectorCraft της ομάδας ArtCraft. MIT ή Apache-2.0. Γραμματοσειρές: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Εικονίδια: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	Το PEC χωράει το πολύ {MAX_COLORS} χρώματα, όχι {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	Το VP3 χωράει το πολύ {MAX_COLORS} μπλοκ χρώματος
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	ένα αρχείο DST έχει κεφαλίδα {HEADER} byte και τουλάχιστον μία εγγραφή 3 byte, αλλά αυτό το αρχείο έχει {_1} byte
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	μια κεφαλίδα DST μετρά το πολύ {MAX_RECORDS} εγγραφές και το σχέδιο χρειάζεται {_1}
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	ένα μπλοκ βελονιών PEC χωράει το πολύ {MAX_BLOCK} byte (το μήκος του είναι 24 bit) και το σχέδιο χρειάζεται {len}
+@msg	a VP3 string is too long	μια συμβολοσειρά VP3 είναι πολύ μεγάλη
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	ένα σχήμα βρίσκεται πάνω από {MAX_COORD_MM} mm από την αρχή ή έχει συντεταγμένη που δεν είναι αριθμός: δεν μπορεί να κεντηθεί
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	ένα σχήμα θα χρειαζόταν περίπου {n} βελονιές, περισσότερες από τις {MAX_STITCHES} που επιτρέπονται σε ένα σχήμα: χρησιμοποιήστε μακρύτερη βελονιά, μεγαλύτερη απόσταση ή μικρότερο σχέδιο
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	δεν είναι αρχείο PES ή PEC: δεν ξεκινά με #PES ή #PEC
+@msg	not a VP3 file: it does not start with %vsm%	δεν είναι αρχείο VP3: δεν ξεκινά με %vsm%
+@msg	not a {what} file: its record {_1} is not a DST record	δεν είναι αρχείο {what}: η εγγραφή του {_1} δεν είναι εγγραφή DST
+@msg	params must be an object	οι παράμετροι πρέπει να είναι αντικείμενο
+@msg	the EXP file has no stitch records	το αρχείο EXP δεν έχει εγγραφές βελονιών
+@msg	the JEF file has no stitch records	το αρχείο JEF δεν έχει εγγραφές βελονιών
+@msg	the JEF file is cut short: {len} bytes	το αρχείο JEF είναι κομμένο: {len} byte
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	η κεφαλίδα JEF δείχνει στο byte {offset}, πέρα από τα {_1} byte του αρχείου
+@msg	the PEC block has no stitches	το μπλοκ PEC δεν έχει βελονιές
+@msg	the PEC header is cut short	η κεφαλίδα PEC είναι κομμένη
+@msg	the PES header is cut short	η κεφαλίδα PES είναι κομμένη
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	η κεφαλίδα PES δείχνει στο byte {at}, πέρα από τα {_1} byte του αρχείου
+@msg	the VP3 file has no stitches	το αρχείο VP3 δεν έχει βελονιές
+@msg	the VP3 file has no {what} packet at byte {at}	το αρχείο VP3 δεν έχει πακέτο {what} στο byte {at}
+@msg	the VP3 file is cut short: {len} bytes	το αρχείο VP3 είναι κομμένο: {len} byte
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	το σχέδιο έχει περισσότερες από {MAX_RUNS} ξεχωριστές σειρές βελονιών, περισσότερες από όσες ανοίγει ένα έγγραφο
+@msg	the design has no points to write	το σχέδιο δεν έχει σημεία για εγγραφή
+@msg	the design has no stitches to draw	το σχέδιο δεν έχει βελονιές για σχεδίαση
+@msg	the design has no stitches to write	το σχέδιο δεν έχει βελονιές για εγγραφή
+@msg	the design is too large for a VP3 file	το σχέδιο είναι πολύ μεγάλο για αρχείο VP3
+@msg	the design is {_1} × {_2} mm, larger than a document holds	το σχέδιο είναι {_1} × {_2} mm, μεγαλύτερο από όσο χωράει ένα έγγραφο
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	το σχέδιο είναι {_1} × {_2} mm, μεγαλύτερο από όσο χωράει το {_3} ({_4} mm ανά πλευρά)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	το σχέδιο θα χρειαζόταν περισσότερες από {MAX_DESIGN_STITCHES} βελονιές: χρησιμοποιήστε μακρύτερη βελονιά, μεγαλύτερη απόσταση ή λιγότερα γραφικά
+@msg	the file has no stitches	το αρχείο δεν έχει βελονιές
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	το αρχείο {format} θα ήταν μεγαλύτερο από {_1} MiB: οι μετακινήσεις του σχεδίου είναι πολύ μεγάλες (αντικείμενα μακριά μεταξύ τους)
+@msg	the {what} file has no stitch records	το αρχείο {what} δεν έχει εγγραφές βελονιών
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	το αρχείο {what} περιέχει περισσότερες από {MAX_POINTS} βελονιές, περισσότερες από όσες μπορεί να έχει ένα σχέδιο
+@msg	thread number {index} doesn't fit a JEF header	ο αριθμός κλωστής {index} δεν χωράει σε κεφαλίδα JEF
+@msg	thread number {index} doesn't fit a PEC header	ο αριθμός κλωστής {index} δεν χωράει σε κεφαλίδα PEC
+@msg	too many stitches for a VP3 file	πάρα πολλές βελονιές για αρχείο VP3
+@msg	{_1} is not an embroidery format	το {_1} δεν είναι μορφή κεντήματος
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Βελονιά:
+	Stitch Length:	Μήκος βελονιάς:
+	Fill Angle:	Γωνία γεμίσματος:
+	Pull Compensation:	Αντιστάθμιση έλξης:
+	Pull Compensation (%):	Αντιστάθμιση έλξης (%):
+	Push Compensation:	Αντιστάθμιση ώθησης:
+	Expand Fills:	Επέκταση γεμισμάτων:
+	Narrow Parts as Satin:	Στενά τμήματα ως σατέν:
+	Thread Weight:	Πάχος κλωστής:
+	Underlay:	Υπόστρωμα:
+	Jump Length:	Μήκος άλματος:
+	Trim Length:	Μήκος κοπής:
+	Shortest Stitch:	Μικρότερη βελονιά:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Πώς ράβονται τα σχήματα: το Αυτόματο γεμίζει τα σχήματα με τατάμι και ράβει τις πινελιές ως στήλες σατέν ή ευθείες βελονιές ανάλογα με το πλάτος τους· άλλη επιλογή ράβει έτσι κάθε σχήμα
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Η απόσταση ανάμεσα στις σειρές γεμίσματος και στις βελονιές σατέν· αν μείνει ως έχει, μια στήλη σατέν την επιλέγει ανάλογα με το πλάτος της
+	The length of the stitches along fill rows and running lines	Το μήκος των βελονιών κατά μήκος των σειρών γεμίσματος και των ευθειών βελονιών
+	The direction of the fill rows	Η κατεύθυνση των σειρών γεμίσματος
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Φαρδαίνει τις στήλες σατέν και τις σειρές γεμίσματος σε κάθε πλευρά, για να αντισταθμίσει το μάζεμα του υφάσματος
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Φαρδαίνει τις στήλες σατέν και τις σειρές γεμίσματος κατά ένα μέρος του πλάτους τους, για να αντισταθμίσει το μάζεμα του υφάσματος
+	Shortens satin columns at their ends, where the thread pushes outward	Κονταίνει τις στήλες σατέν στις άκρες τους, όπου η κλωστή σπρώχνει προς τα έξω
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Μεγαλώνει κάθε γεμάτο σχήμα γύρω γύρω για να κλείσει κενά ανάμεσα στα σχήματα· αρνητική τιμή το μικραίνει
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Τα τμήματα ενός γεμίσματος που είναι στενότερα ράβονται ως στήλες σατέν· το 0 δεν ράβει κανένα
+	The thread's weight: thinner thread (a higher number) packs the rows closer	Το πάχος της κλωστής: λεπτότερη κλωστή (μεγαλύτερος αριθμός) πυκνώνει τις σειρές
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Οι βελονιές που ράβονται πρώτες για να κρατούν το ύφασμα: επιλεγμένες από κάθε σχήμα, καμία ή ένα είδος για κάθε σχήμα
+	A move longer than this lifts the needle instead of being sewn	Μια μεγαλύτερη μετακίνηση σηκώνει τη βελόνα αντί να ραφτεί
+	A jump longer than this cuts the thread first	Ένα μεγαλύτερο άλμα κόβει πρώτα την κλωστή
+	Shorter stitches are left out	Οι μικρότερες βελονιές παραλείπονται
+	Tatami Fill	Γέμισμα τατάμι
+	Satin	Σατέν
+	Running Stitch	Ευθεία βελονιά
+	Centre Run	Κεντρικό πέρασμα
+	Edge Run	Πέρασμα στην άκρη
+	Edge Run and Zigzag	Πέρασμα στην άκρη και ζιγκ ζαγκ
+	Edge Run and Tatami	Πέρασμα στην άκρη και τατάμι

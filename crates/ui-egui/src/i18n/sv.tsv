@@ -5200,3 +5200,80 @@ theme	Appearance	Utseende
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Baserat på VectorCraft från ArtCraft-teamet. MIT OR Apache-2.0. Typsnitt: Source Sans 3, Inter, JetBrains Mono (OFL). Ikoner: Lucide (ISC) + VectorCraft.
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Baserat på VectorCraft från ArtCraft-teamet. MIT OR Apache-2.0. Typsnitt: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikoner: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC rymmer högst {MAX_COLORS} färger, inte {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 rymmer högst {MAX_COLORS} färgblock
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	en DST-fil har ett huvud på {HEADER} byte och minst en post på 3 byte, men den här filen är {_1} byte
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	ett DST-huvud räknar högst {MAX_RECORDS} poster, och mönstret behöver {_1}
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	ett PEC-stygnblock rymmer högst {MAX_BLOCK} byte (dess längd är 24 bitar), och mönstret behöver {len}
+@msg	a VP3 string is too long	en VP3-sträng är för lång
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	en form ligger mer än {MAX_COORD_MM} mm från origo eller har en koordinat som inte är ett tal: den kan inte broderas
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	en form skulle behöva omkring {n} stygn, fler än de {MAX_STITCHES} en form får ha: använd ett längre stygn, större avstånd eller ett mindre mönster
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	inte en PES- eller PEC-fil: den börjar inte med #PES eller #PEC
+@msg	not a VP3 file: it does not start with %vsm%	inte en VP3-fil: den börjar inte med %vsm%
+@msg	not a {what} file: its record {_1} is not a DST record	inte en {what}-fil: dess post {_1} är inte en DST-post
+@msg	params must be an object	parametrarna måste vara ett objekt
+@msg	the EXP file has no stitch records	EXP-filen har inga stygnposter
+@msg	the JEF file has no stitch records	JEF-filen har inga stygnposter
+@msg	the JEF file is cut short: {len} bytes	JEF-filen är avkortad: {len} byte
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF-huvudet pekar på byte {offset}, bortom filens {_1} byte
+@msg	the PEC block has no stitches	PEC-blocket har inga stygn
+@msg	the PEC header is cut short	PEC-huvudet är avkortat
+@msg	the PES header is cut short	PES-huvudet är avkortat
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	PES-huvudet pekar på byte {at}, bortom filens {_1} byte
+@msg	the VP3 file has no stitches	VP3-filen har inga stygn
+@msg	the VP3 file has no {what} packet at byte {at}	VP3-filen har inget {what}-paket vid byte {at}
+@msg	the VP3 file is cut short: {len} bytes	VP3-filen är avkortad: {len} byte
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	mönstret har fler än {MAX_RUNS} separata stygnföljder, fler än ett dokument öppnar
+@msg	the design has no points to write	mönstret har inga punkter att skriva
+@msg	the design has no stitches to draw	mönstret har inga stygn att rita
+@msg	the design has no stitches to write	mönstret har inga stygn att skriva
+@msg	the design is too large for a VP3 file	mönstret är för stort för en VP3-fil
+@msg	the design is {_1} × {_2} mm, larger than a document holds	mönstret är {_1} × {_2} mm, större än ett dokument rymmer
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	mönstret är {_1} × {_2} mm, större än {_3} rymmer ({_4} mm per sida)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	mönstret skulle behöva fler än {MAX_DESIGN_STITCHES} stygn: använd ett längre stygn, större avstånd eller mindre grafik
+@msg	the file has no stitches	filen har inga stygn
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	{format}-filen skulle bli större än {_1} MiB: mönstrets förflyttningar är för långa (objekt långt ifrån varandra)
+@msg	the {what} file has no stitch records	{what}-filen har inga stygnposter
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	{what}-filen innehåller fler än {MAX_POINTS} stygn, fler än ett mönster får ha
+@msg	thread number {index} doesn't fit a JEF header	trådnummer {index} får inte plats i ett JEF-huvud
+@msg	thread number {index} doesn't fit a PEC header	trådnummer {index} får inte plats i ett PEC-huvud
+@msg	too many stitches for a VP3 file	för många stygn för en VP3-fil
+@msg	{_1} is not an embroidery format	{_1} är inte ett broderiformat
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Stygn:
+	Stitch Length:	Stygnlängd:
+	Fill Angle:	Fyllnadsvinkel:
+	Pull Compensation:	Dragkompensation:
+	Pull Compensation (%):	Dragkompensation (%):
+	Push Compensation:	Tryckkompensation:
+	Expand Fills:	Utvidga fyllningar:
+	Narrow Parts as Satin:	Smala delar som satin:
+	Thread Weight:	Trådtjocklek:
+	Underlay:	Underlag:
+	Jump Length:	Hopplängd:
+	Trim Length:	Klipplängd:
+	Shortest Stitch:	Kortaste stygn:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Hur former sys: Automatiskt fyller former med tatami och syr linjer som satinkolumner eller raksöm efter deras bredd; ett annat val syr varje form så
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Avståndet mellan fyllnadsrader och mellan satinstygn; oförändrat väljer en satinkolumn det efter sin bredd
+	The length of the stitches along fill rows and running lines	Längden på stygnen längs fyllnadsrader och raksöm
+	The direction of the fill rows	Fyllnadsradernas riktning
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Breddar satinkolumner och fyllnadsrader på varje sida för att jämna ut att tyget drar ihop sig
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Breddar satinkolumner och fyllnadsrader med en andel av deras bredd för att jämna ut att tyget drar ihop sig
+	Shortens satin columns at their ends, where the thread pushes outward	Kortar satinkolumner i ändarna, där tråden trycker utåt
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Förstorar varje fylld form runt om för att stänga glipor mellan former; ett negativt värde krymper den
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Delar av en fyllning som är smalare sys som satinkolumner; 0 syr inga
+	The thread's weight: thinner thread (a higher number) packs the rows closer	Trådens tjocklek: tunnare tråd (ett högre nummer) lägger raderna tätare
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Stygnen som sys först för att hålla tyget: valda av varje form, inga eller en sort för varje form
+	A move longer than this lifts the needle instead of being sewn	En längre förflyttning lyfter nålen i stället för att sys
+	A jump longer than this cuts the thread first	Ett längre hopp klipper tråden först
+	Shorter stitches are left out	Kortare stygn utelämnas
+	Tatami Fill	Tatamifyllning
+	Satin	Satin
+	Running Stitch	Raksöm
+	Centre Run	Mittlöpning
+	Edge Run	Kantlöpning
+	Edge Run and Zigzag	Kantlöpning och sicksack
+	Edge Run and Tatami	Kantlöpning och tatami

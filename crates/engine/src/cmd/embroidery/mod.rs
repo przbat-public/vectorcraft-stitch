@@ -54,6 +54,7 @@ use vectorcraft_doc::embroidery::{Embroidery, ThreadPalette};
 use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 
+pub use self::options::{DialogField, dialog_field};
 use self::stats::Page;
 use super::*;
 

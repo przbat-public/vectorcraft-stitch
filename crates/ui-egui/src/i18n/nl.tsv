@@ -5270,3 +5270,80 @@ swatch	Bright Violet	Felviolet
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Gebaseerd op VectorCraft van het ArtCraft-team. MIT OR Apache-2.0. Lettertypen: Source Sans 3, Inter, JetBrains Mono (OFL). Pictogrammen: Lucide (ISC) + VectorCraft.
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Gebaseerd op VectorCraft van het ArtCraft-team. MIT OR Apache-2.0. Lettertypen: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Pictogrammen: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC bevat hoogstens {MAX_COLORS} kleuren, niet {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 bevat hoogstens {MAX_COLORS} kleurblokken
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	een DST-bestand heeft een header van {HEADER} bytes en ten minste één record van 3 bytes, maar dit bestand is {_1} bytes
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	een DST-header telt hoogstens {MAX_RECORDS} records, en het ontwerp heeft er {_1} nodig
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	een PEC-steekblok bevat hoogstens {MAX_BLOCK} bytes (de lengte is 24 bits), en het ontwerp heeft er {len} nodig
+@msg	a VP3 string is too long	een VP3-tekenreeks is te lang
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	een vorm ligt meer dan {MAX_COORD_MM} mm van de oorsprong of heeft een coördinaat die geen getal is: hij kan niet worden geborduurd
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	een vorm zou ongeveer {n} steken nodig hebben, meer dan de {MAX_STITCHES} die één vorm mag hebben: gebruik een langere steek, meer tussenruimte of een kleiner ontwerp
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	geen PES- of PEC-bestand: het begint niet met #PES of #PEC
+@msg	not a VP3 file: it does not start with %vsm%	geen VP3-bestand: het begint niet met %vsm%
+@msg	not a {what} file: its record {_1} is not a DST record	geen {what}-bestand: record {_1} is geen DST-record
+@msg	params must be an object	de parameters moeten een object zijn
+@msg	the EXP file has no stitch records	het EXP-bestand heeft geen steekrecords
+@msg	the JEF file has no stitch records	het JEF-bestand heeft geen steekrecords
+@msg	the JEF file is cut short: {len} bytes	het JEF-bestand is afgekapt: {len} bytes
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	de JEF-header wijst naar byte {offset}, voorbij de {_1} bytes van het bestand
+@msg	the PEC block has no stitches	het PEC-blok heeft geen steken
+@msg	the PEC header is cut short	de PEC-header is afgekapt
+@msg	the PES header is cut short	de PES-header is afgekapt
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	de PES-header wijst naar byte {at}, voorbij de {_1} bytes van het bestand
+@msg	the VP3 file has no stitches	het VP3-bestand heeft geen steken
+@msg	the VP3 file has no {what} packet at byte {at}	het VP3-bestand heeft geen {what}-pakket bij byte {at}
+@msg	the VP3 file is cut short: {len} bytes	het VP3-bestand is afgekapt: {len} bytes
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	het ontwerp heeft meer dan {MAX_RUNS} losse reeksen steken, meer dan een document opent
+@msg	the design has no points to write	het ontwerp heeft geen punten om te schrijven
+@msg	the design has no stitches to draw	het ontwerp heeft geen steken om te tekenen
+@msg	the design has no stitches to write	het ontwerp heeft geen steken om te schrijven
+@msg	the design is too large for a VP3 file	het ontwerp is te groot voor een VP3-bestand
+@msg	the design is {_1} × {_2} mm, larger than a document holds	het ontwerp is {_1} × {_2} mm, groter dan een document kan bevatten
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	het ontwerp is {_1} × {_2} mm, groter dan {_3} kan bevatten ({_4} mm per zijde)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	het ontwerp zou meer dan {MAX_DESIGN_STITCHES} steken nodig hebben: gebruik een langere steek, meer tussenruimte of minder illustratie
+@msg	the file has no stitches	het bestand heeft geen steken
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	het {format}-bestand zou groter worden dan {_1} MiB: de verplaatsingen van het ontwerp zijn te lang (objecten ver uit elkaar)
+@msg	the {what} file has no stitch records	het {what}-bestand heeft geen steekrecords
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	het {what}-bestand bevat meer dan {MAX_POINTS} steken, meer dan een ontwerp mag hebben
+@msg	thread number {index} doesn't fit a JEF header	garennummer {index} past niet in een JEF-header
+@msg	thread number {index} doesn't fit a PEC header	garennummer {index} past niet in een PEC-header
+@msg	too many stitches for a VP3 file	te veel steken voor een VP3-bestand
+@msg	{_1} is not an embroidery format	{_1} is geen borduurformaat
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Steek:
+	Stitch Length:	Steeklengte:
+	Fill Angle:	Vulhoek:
+	Pull Compensation:	Trekcompensatie:
+	Pull Compensation (%):	Trekcompensatie (%):
+	Push Compensation:	Duwcompensatie:
+	Expand Fills:	Vullingen vergroten:
+	Narrow Parts as Satin:	Smalle delen als satijn:
+	Thread Weight:	Garendikte:
+	Underlay:	Onderlaag:
+	Jump Length:	Spronglengte:
+	Trim Length:	Kniplengte:
+	Shortest Stitch:	Kortste steek:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Hoe vormen worden genaaid: Automatisch vult vormen met tatami en naait lijnen naar hun breedte als satijnkolommen of rechte steken; een andere keuze naait zo elke vorm
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	De afstand tussen vulrijen en tussen satijnsteken; ongewijzigd kiest een satijnkolom die naar zijn breedte
+	The length of the stitches along fill rows and running lines	De lengte van de steken langs vulrijen en rechte steken
+	The direction of the fill rows	De richting van de vulrijen
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Verbreedt satijnkolommen en vulrijen aan elke kant, om het samentrekken van de stof te compenseren
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Verbreedt satijnkolommen en vulrijen met een deel van hun breedte, om het samentrekken van de stof te compenseren
+	Shortens satin columns at their ends, where the thread pushes outward	Verkort satijnkolommen aan hun uiteinden, waar het garen naar buiten duwt
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Vergroot elke gevulde vorm rondom om openingen tussen vormen te dichten; een negatieve waarde verkleint hem
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Delen van een vulling die smaller zijn, worden als satijnkolommen genaaid; 0 naait er geen
+	The thread's weight: thinner thread (a higher number) packs the rows closer	De garendikte: dunner garen (een hoger nummer) legt de rijen dichter
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	De steken die eerst worden genaaid om de stof vast te houden: per vorm gekozen, geen, of één soort voor elke vorm
+	A move longer than this lifts the needle instead of being sewn	Een langere verplaatsing tilt de naald op in plaats van genaaid te worden
+	A jump longer than this cuts the thread first	Een langere sprong knipt eerst de draad
+	Shorter stitches are left out	Kortere steken worden weggelaten
+	Tatami Fill	Tatamivulling
+	Satin	Satijn
+	Running Stitch	Rechte steek
+	Centre Run	Middenloop
+	Edge Run	Randloop
+	Edge Run and Zigzag	Randloop en zigzag
+	Edge Run and Tatami	Randloop en tatami

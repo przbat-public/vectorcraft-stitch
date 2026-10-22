@@ -5227,3 +5227,80 @@ swatch	Bright Violet	Kraftig violet
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Baseret på VectorCraft fra ArtCraft-teamet. MIT OR Apache-2.0. Skrifttyper: Source Sans 3, Inter, JetBrains Mono (OFL). Ikoner: Lucide (ISC) + VectorCraft.
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Baseret på VectorCraft fra ArtCraft-teamet. MIT OR Apache-2.0. Skrifttyper: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikoner: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC rummer højst {MAX_COLORS} farver, ikke {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 rummer højst {MAX_COLORS} farveblokke
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	en DST-fil har en header på {HEADER} byte og mindst én post på 3 byte, men denne fil er på {_1} byte
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	en DST-header tæller højst {MAX_RECORDS} poster, og designet kræver {_1}
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	en PEC-stingblok rummer højst {MAX_BLOCK} byte (dens længde er 24 bit), og designet kræver {len}
+@msg	a VP3 string is too long	en VP3-streng er for lang
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	en figur ligger mere end {MAX_COORD_MM} mm fra origo eller har en koordinat, der ikke er et tal: den kan ikke broderes
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	en figur ville kræve omkring {n} sting, flere end de {MAX_STITCHES}, en figur må have: brug et længere sting, større afstand eller et mindre design
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	ikke en PES- eller PEC-fil: den begynder ikke med #PES eller #PEC
+@msg	not a VP3 file: it does not start with %vsm%	ikke en VP3-fil: den begynder ikke med %vsm%
+@msg	not a {what} file: its record {_1} is not a DST record	ikke en {what}-fil: dens post {_1} er ikke en DST-post
+@msg	params must be an object	parametrene skal være et objekt
+@msg	the EXP file has no stitch records	EXP-filen har ingen stingposter
+@msg	the JEF file has no stitch records	JEF-filen har ingen stingposter
+@msg	the JEF file is cut short: {len} bytes	JEF-filen er afkortet: {len} byte
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF-headeren peger på byte {offset}, efter filens {_1} byte
+@msg	the PEC block has no stitches	PEC-blokken har ingen sting
+@msg	the PEC header is cut short	PEC-headeren er afkortet
+@msg	the PES header is cut short	PES-headeren er afkortet
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	PES-headeren peger på byte {at}, efter filens {_1} byte
+@msg	the VP3 file has no stitches	VP3-filen har ingen sting
+@msg	the VP3 file has no {what} packet at byte {at}	VP3-filen har ingen {what}-pakke ved byte {at}
+@msg	the VP3 file is cut short: {len} bytes	VP3-filen er afkortet: {len} byte
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	designet har mere end {MAX_RUNS} separate stingforløb, flere end et dokument åbner
+@msg	the design has no points to write	designet har ingen punkter at skrive
+@msg	the design has no stitches to draw	designet har ingen sting at tegne
+@msg	the design has no stitches to write	designet har ingen sting at skrive
+@msg	the design is too large for a VP3 file	designet er for stort til en VP3-fil
+@msg	the design is {_1} × {_2} mm, larger than a document holds	designet er {_1} × {_2} mm, større end et dokument rummer
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	designet er {_1} × {_2} mm, større end {_3} kan rumme ({_4} mm pr. side)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	designet ville kræve mere end {MAX_DESIGN_STITCHES} sting: brug et længere sting, større afstand eller mindre grafik
+@msg	the file has no stitches	filen har ingen sting
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	{format}-filen ville blive større end {_1} MiB: designets flytninger er for lange (objekter langt fra hinanden)
+@msg	the {what} file has no stitch records	{what}-filen har ingen stingposter
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	{what}-filen indeholder mere end {MAX_POINTS} sting, flere end et design må have
+@msg	thread number {index} doesn't fit a JEF header	trådnummer {index} passer ikke i en JEF-header
+@msg	thread number {index} doesn't fit a PEC header	trådnummer {index} passer ikke i en PEC-header
+@msg	too many stitches for a VP3 file	for mange sting til en VP3-fil
+@msg	{_1} is not an embroidery format	{_1} er ikke et broderiformat
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Sting:
+	Stitch Length:	Stinglængde:
+	Fill Angle:	Fyldvinkel:
+	Pull Compensation:	Trækkompensation:
+	Pull Compensation (%):	Trækkompensation (%):
+	Push Compensation:	Trykkompensation:
+	Expand Fills:	Udvid fyld:
+	Narrow Parts as Satin:	Smalle dele som satin:
+	Thread Weight:	Trådtykkelse:
+	Underlay:	Underlag:
+	Jump Length:	Springlængde:
+	Trim Length:	Klippelængde:
+	Shortest Stitch:	Korteste sting:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Hvordan figurer sys: Automatisk fylder figurer med tatami og syr streger som satinsøjler eller ligesting efter deres bredde; et andet valg syr alle figurer sådan
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Afstanden mellem fyldrækker og mellem satinsting; uændret vælger en satinsøjle den efter sin bredde
+	The length of the stitches along fill rows and running lines	Længden af stingene langs fyldrækker og ligesting
+	The direction of the fill rows	Fyldrækkernes retning
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Gør satinsøjler og fyldrækker bredere på hver side for at udligne, at stoffet trækker sig sammen
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Gør satinsøjler og fyldrækker bredere med en andel af deres bredde for at udligne, at stoffet trækker sig sammen
+	Shortens satin columns at their ends, where the thread pushes outward	Gør satinsøjler kortere i enderne, hvor tråden presser udad
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Gør hver fyldt figur større hele vejen rundt for at lukke huller mellem figurer; en negativ værdi gør den mindre
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Dele af et fyld, der er smallere, sys som satinsøjler; 0 syr ingen
+	The thread's weight: thinner thread (a higher number) packs the rows closer	Trådens tykkelse: tyndere tråd (et højere nummer) lægger rækkerne tættere
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Stingene, der sys først for at holde stoffet: valgt af hver figur, ingen eller én slags for alle figurer
+	A move longer than this lifts the needle instead of being sewn	En længere flytning løfter nålen i stedet for at blive syet
+	A jump longer than this cuts the thread first	Et længere spring klipper først tråden
+	Shorter stitches are left out	Kortere sting udelades
+	Tatami Fill	Tatamifyld
+	Satin	Satin
+	Running Stitch	Ligesting
+	Centre Run	Midterløb
+	Edge Run	Kantløb
+	Edge Run and Zigzag	Kantløb og zigzag
+	Edge Run and Tatami	Kantløb og tatami

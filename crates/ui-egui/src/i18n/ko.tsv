@@ -4820,3 +4820,80 @@ lighting	Light	광원
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft 팀의 VectorCraft를 기반으로 합니다. MIT OR Apache-2.0. 글꼴: Source Sans 3, Inter, JetBrains Mono (OFL). 아이콘: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC에는 최대 {MAX_COLORS}가지 색이 들어가며, {colors}가지는 들어가지 않습니다
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3에는 최대 {MAX_COLORS}개의 색 블록이 들어갑니다
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST 파일에는 {HEADER}바이트 헤더와 3바이트 레코드가 하나 이상 있어야 하지만, 이 파일은 {_1}바이트입니다
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST 헤더는 최대 {MAX_RECORDS}개의 레코드를 세는데, 디자인에는 {_1}개가 필요합니다
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	PEC 땀 블록에는 최대 {MAX_BLOCK}바이트가 들어가는데(길이가 24비트), 디자인에는 {len}바이트가 필요합니다
+@msg	a VP3 string is too long	VP3 문자열이 너무 깁니다
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	도형이 원점에서 {MAX_COORD_MM}mm보다 멀리 있거나 숫자가 아닌 좌표가 있습니다: 자수할 수 없습니다
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	도형에 약 {n}땀이 필요하며, 한 도형에 허용되는 {MAX_STITCHES}땀을 넘습니다: 땀을 길게, 간격을 넓게, 또는 디자인을 작게 하세요
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	PES 또는 PEC 파일이 아닙니다: #PES 또는 #PEC로 시작하지 않습니다
+@msg	not a VP3 file: it does not start with %vsm%	VP3 파일이 아닙니다: %vsm%로 시작하지 않습니다
+@msg	not a {what} file: its record {_1} is not a DST record	{what} 파일이 아닙니다: 레코드 {_1}이(가) DST 레코드가 아닙니다
+@msg	params must be an object	매개변수는 객체여야 합니다
+@msg	the EXP file has no stitch records	EXP 파일에 땀 레코드가 없습니다
+@msg	the JEF file has no stitch records	JEF 파일에 땀 레코드가 없습니다
+@msg	the JEF file is cut short: {len} bytes	JEF 파일이 잘렸습니다: {len}바이트
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF 헤더가 바이트 {offset}을(를) 가리키지만, 파일은 {_1}바이트입니다
+@msg	the PEC block has no stitches	PEC 블록에 땀이 없습니다
+@msg	the PEC header is cut short	PEC 헤더가 잘렸습니다
+@msg	the PES header is cut short	PES 헤더가 잘렸습니다
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	PES 헤더가 바이트 {at}을(를) 가리키지만, 파일은 {_1}바이트입니다
+@msg	the VP3 file has no stitches	VP3 파일에 땀이 없습니다
+@msg	the VP3 file has no {what} packet at byte {at}	VP3 파일의 바이트 {at}에 {what} 패킷이 없습니다
+@msg	the VP3 file is cut short: {len} bytes	VP3 파일이 잘렸습니다: {len}바이트
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	디자인에 따로 떨어진 땀 줄이 {MAX_RUNS}개를 넘어, 문서가 열 수 있는 수를 넘습니다
+@msg	the design has no points to write	디자인에 쓸 점이 없습니다
+@msg	the design has no stitches to draw	디자인에 그릴 땀이 없습니다
+@msg	the design has no stitches to write	디자인에 쓸 땀이 없습니다
+@msg	the design is too large for a VP3 file	디자인이 VP3 파일에 비해 너무 큽니다
+@msg	the design is {_1} × {_2} mm, larger than a document holds	디자인이 {_1} × {_2}mm로, 문서에 들어가는 크기보다 큽니다
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	디자인이 {_1} × {_2}mm로, {_3}에 들어가는 크기(한 변 {_4}mm)보다 큽니다
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	디자인에 {MAX_DESIGN_STITCHES}땀이 넘게 필요합니다: 땀을 길게, 간격을 넓게, 또는 아트를 줄이세요
+@msg	the file has no stitches	파일에 땀이 없습니다
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	{format} 파일이 {_1}MiB를 넘게 됩니다: 디자인의 이동이 너무 깁니다(객체가 멀리 떨어져 있음)
+@msg	the {what} file has no stitch records	{what} 파일에 땀 레코드가 없습니다
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	{what} 파일에 {MAX_POINTS}땀이 넘게 있어, 디자인 하나에 허용되는 수를 넘습니다
+@msg	thread number {index} doesn't fit a JEF header	실 번호 {index}은(는) JEF 헤더에 들어가지 않습니다
+@msg	thread number {index} doesn't fit a PEC header	실 번호 {index}은(는) PEC 헤더에 들어가지 않습니다
+@msg	too many stitches for a VP3 file	VP3 파일에 비해 땀이 너무 많습니다
+@msg	{_1} is not an embroidery format	{_1}은(는) 자수 형식이 아닙니다
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	땀:
+	Stitch Length:	땀 길이:
+	Fill Angle:	채우기 각도:
+	Pull Compensation:	당김 보정:
+	Pull Compensation (%):	당김 보정(%):
+	Push Compensation:	밀림 보정:
+	Expand Fills:	채우기 확장:
+	Narrow Parts as Satin:	좁은 부분은 새틴으로:
+	Thread Weight:	실 굵기:
+	Underlay:	밑땀:
+	Jump Length:	점프 길이:
+	Trim Length:	실 자르기 길이:
+	Shortest Stitch:	가장 짧은 땀:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	도형을 수놓는 방식: 자동은 도형을 타타미로 채우고, 선은 폭에 따라 새틴 기둥이나 러닝 스티치로 수놓습니다. 다른 선택은 모든 도형을 그 방식으로 수놓습니다
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	채우기 줄 사이와 새틴 땀 사이의 간격. 그대로 두면 새틴 기둥이 폭에 맞게 고릅니다
+	The length of the stitches along fill rows and running lines	채우기 줄과 러닝 스티치를 따라가는 땀의 길이
+	The direction of the fill rows	채우기 줄의 방향
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	천이 당겨지는 만큼을 보정하도록 새틴 기둥과 채우기 줄을 양쪽으로 넓힙니다
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	천이 당겨지는 만큼을 보정하도록 새틴 기둥과 채우기 줄을 폭의 일정 비율만큼 넓힙니다
+	Shortens satin columns at their ends, where the thread pushes outward	실이 바깥으로 밀어내는 끝에서 새틴 기둥을 짧게 합니다
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	도형 사이의 틈을 메우도록 채워진 도형을 둘레로 넓힙니다. 음수 값은 줄입니다
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	이보다 좁은 채우기 부분은 새틴 기둥으로 수놓습니다. 0이면 하나도 수놓지 않습니다
+	The thread's weight: thinner thread (a higher number) packs the rows closer	실 굵기: 가는 실(높은 번호)일수록 줄을 촘촘하게 놓습니다
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	천을 잡아 주려고 먼저 수놓는 땀: 도형마다 고름, 없음, 또는 모든 도형에 한 종류
+	A move longer than this lifts the needle instead of being sewn	이보다 긴 이동은 수놓지 않고 바늘을 듭니다
+	A jump longer than this cuts the thread first	이보다 긴 점프는 먼저 실을 자릅니다
+	Shorter stitches are left out	이보다 짧은 땀은 뺍니다
+	Tatami Fill	타타미 채우기
+	Satin	새틴
+	Running Stitch	러닝 스티치
+	Centre Run	가운데 러닝
+	Edge Run	가장자리 러닝
+	Edge Run and Zigzag	가장자리 러닝과 지그재그
+	Edge Run and Tatami	가장자리 러닝과 타타미

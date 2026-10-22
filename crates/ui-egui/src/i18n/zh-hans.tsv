@@ -5080,3 +5080,80 @@ lighting	Light	光源
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	基于 ArtCraft 团队的 VectorCraft。MIT OR Apache-2.0。字体：Source Sans 3、Inter、JetBrains Mono (OFL)。图标：Lucide (ISC) + VectorCraft。
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	基于 ArtCraft 团队的 VectorCraft。MIT 或 Apache-2.0 许可。字体：Source Sans 3、Inter、JetBrains Mono、Noto Sans SC (OFL)。图标：Lucide (ISC)+ VectorCraft。
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC 最多容纳 {MAX_COLORS} 种颜色，而不是 {colors} 种
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 最多容纳 {MAX_COLORS} 个颜色块
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST 文件有 {HEADER} 字节的文件头和至少一条 3 字节的记录，但此文件只有 {_1} 字节
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST 文件头最多计 {MAX_RECORDS} 条记录，而图案需要 {_1} 条
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	PEC 针迹块最多容纳 {MAX_BLOCK} 字节（其长度为 24 位），而图案需要 {len} 字节
+@msg	a VP3 string is too long	VP3 字符串过长
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	某个形状距原点超过 {MAX_COORD_MM} mm，或有不是数字的坐标：无法刺绣
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	某个形状约需 {n} 针，超过单个形状允许的 {MAX_STITCHES} 针：请使用更长的针迹、更宽的间距或更小的图案
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	不是 PES 或 PEC 文件：不以 #PES 或 #PEC 开头
+@msg	not a VP3 file: it does not start with %vsm%	不是 VP3 文件：不以 %vsm% 开头
+@msg	not a {what} file: its record {_1} is not a DST record	不是 {what} 文件：其第 {_1} 条记录不是 DST 记录
+@msg	params must be an object	参数必须是对象
+@msg	the EXP file has no stitch records	EXP 文件没有针迹记录
+@msg	the JEF file has no stitch records	JEF 文件没有针迹记录
+@msg	the JEF file is cut short: {len} bytes	JEF 文件被截断：{len} 字节
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF 文件头指向第 {offset} 字节，超出文件的 {_1} 字节
+@msg	the PEC block has no stitches	PEC 块没有针迹
+@msg	the PEC header is cut short	PEC 文件头被截断
+@msg	the PES header is cut short	PES 文件头被截断
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	PES 文件头指向第 {at} 字节，超出文件的 {_1} 字节
+@msg	the VP3 file has no stitches	VP3 文件没有针迹
+@msg	the VP3 file has no {what} packet at byte {at}	VP3 文件在第 {at} 字节处没有 {what} 数据包
+@msg	the VP3 file is cut short: {len} bytes	VP3 文件被截断：{len} 字节
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	图案有超过 {MAX_RUNS} 段独立的针迹，超过文档能打开的数量
+@msg	the design has no points to write	图案没有可写出的点
+@msg	the design has no stitches to draw	图案没有可绘制的针迹
+@msg	the design has no stitches to write	图案没有可写出的针迹
+@msg	the design is too large for a VP3 file	图案对 VP3 文件来说太大
+@msg	the design is {_1} × {_2} mm, larger than a document holds	图案为 {_1} × {_2} mm，超出文档能容纳的大小
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	图案为 {_1} × {_2} mm，超出 {_3} 能容纳的大小（每边 {_4} mm）
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	图案将需要超过 {MAX_DESIGN_STITCHES} 针：请使用更长的针迹、更宽的间距或更少的图稿
+@msg	the file has no stitches	文件没有针迹
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	{format} 文件将超过 {_1} MiB：图案的移动过长（对象相距太远）
+@msg	the {what} file has no stitch records	{what} 文件没有针迹记录
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	{what} 文件包含超过 {MAX_POINTS} 针，超过一个图案允许的数量
+@msg	thread number {index} doesn't fit a JEF header	绣线编号 {index} 无法写入 JEF 文件头
+@msg	thread number {index} doesn't fit a PEC header	绣线编号 {index} 无法写入 PEC 文件头
+@msg	too many stitches for a VP3 file	VP3 文件的针数过多
+@msg	{_1} is not an embroidery format	{_1} 不是刺绣格式
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	针法：
+	Stitch Length:	针迹长度：
+	Fill Angle:	填充角度：
+	Pull Compensation:	拉缩补偿：
+	Pull Compensation (%):	拉缩补偿（%）：
+	Push Compensation:	推挤补偿：
+	Expand Fills:	扩展填充：
+	Narrow Parts as Satin:	窄处用缎纹：
+	Thread Weight:	线的粗细：
+	Underlay:	底衬：
+	Jump Length:	跳针长度：
+	Trim Length:	剪线长度：
+	Shortest Stitch:	最短针迹：
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	形状的绣法：“自动”用榻榻米填充形状，并按宽度将描边绣成缎纹柱或平针；其他选择会以该方式绣所有形状
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	填充行之间及缎纹针迹之间的距离；保持不变时，缎纹柱会按其宽度选择
+	The length of the stitches along fill rows and running lines	沿填充行和平针的针迹长度
+	The direction of the fill rows	填充行的方向
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	在两侧加宽缎纹柱和填充行，以补偿面料的收缩
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	按宽度的一定比例加宽缎纹柱和填充行，以补偿面料的收缩
+	Shortens satin columns at their ends, where the thread pushes outward	在缎纹柱两端缩短，那里绣线会向外推挤
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	将每个填充形状向四周扩大，以填合形状之间的缝隙；负值会将其缩小
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	填充中比此值更窄的部分绣成缎纹柱；0 表示一处也不绣
+	The thread's weight: thinner thread (a higher number) packs the rows closer	线的粗细：更细的线（编号更大）会让行排得更密
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	先绣以固定面料的针迹：由每个形状选择、不绣，或所有形状用同一种
+	A move longer than this lifts the needle instead of being sewn	比此值更长的移动会抬起针，而不是绣出来
+	A jump longer than this cuts the thread first	比此值更长的跳针会先剪线
+	Shorter stitches are left out	更短的针迹会被省略
+	Tatami Fill	榻榻米填充
+	Satin	缎纹
+	Running Stitch	平针
+	Centre Run	中线行针
+	Edge Run	边缘行针
+	Edge Run and Zigzag	边缘行针加锯齿
+	Edge Run and Tatami	边缘行针加榻榻米

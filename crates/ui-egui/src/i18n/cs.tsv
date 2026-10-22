@@ -5244,3 +5244,80 @@ mark-style	Japanese	Japonské
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Založeno na VectorCraft od týmu ArtCraft. MIT OR Apache-2.0. Písma: Source Sans 3, Inter, JetBrains Mono (OFL). Ikony: Lucide (ISC) + VectorCraft.
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Založeno na VectorCraft od týmu ArtCraft. MIT OR Apache-2.0. Písma: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikony: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC pojme nejvýše {MAX_COLORS} barev, ne {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 pojme nejvýše {MAX_COLORS} barevných bloků
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	soubor DST má hlavičku o {HEADER} bajtech a aspoň jeden 3bajtový záznam, ale tento soubor má {_1} bajtů
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	hlavička DST počítá nejvýše {MAX_RECORDS} záznamů a návrh jich potřebuje {_1}
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	blok stehů PEC pojme nejvýše {MAX_BLOCK} bajtů (jeho délka má 24 bitů) a návrh potřebuje {len}
+@msg	a VP3 string is too long	řetězec VP3 je příliš dlouhý
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	tvar leží dál než {MAX_COORD_MM} mm od počátku nebo má souřadnici, která není číslo: nelze jej vyšít
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	tvar by potřeboval asi {n} stehů, víc než {MAX_STITCHES}, které smí mít jeden tvar: použijte delší steh, větší rozestup nebo menší návrh
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	není to soubor PES ani PEC: nezačíná #PES ani #PEC
+@msg	not a VP3 file: it does not start with %vsm%	není to soubor VP3: nezačíná %vsm%
+@msg	not a {what} file: its record {_1} is not a DST record	není to soubor {what}: jeho záznam {_1} není záznam DST
+@msg	params must be an object	parametry musí být objekt
+@msg	the EXP file has no stitch records	soubor EXP nemá žádné záznamy stehů
+@msg	the JEF file has no stitch records	soubor JEF nemá žádné záznamy stehů
+@msg	the JEF file is cut short: {len} bytes	soubor JEF je zkrácený: {len} bajtů
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	hlavička JEF ukazuje na bajt {offset}, za {_1} bajtů souboru
+@msg	the PEC block has no stitches	blok PEC nemá žádné stehy
+@msg	the PEC header is cut short	hlavička PEC je zkrácená
+@msg	the PES header is cut short	hlavička PES je zkrácená
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	hlavička PES ukazuje na bajt {at}, za {_1} bajtů souboru
+@msg	the VP3 file has no stitches	soubor VP3 nemá žádné stehy
+@msg	the VP3 file has no {what} packet at byte {at}	soubor VP3 nemá paket {what} na bajtu {at}
+@msg	the VP3 file is cut short: {len} bytes	soubor VP3 je zkrácený: {len} bajtů
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	návrh má víc než {MAX_RUNS} samostatných řad stehů, víc, než dokument otevře
+@msg	the design has no points to write	návrh nemá žádné body k zapsání
+@msg	the design has no stitches to draw	návrh nemá žádné stehy k vykreslení
+@msg	the design has no stitches to write	návrh nemá žádné stehy k zapsání
+@msg	the design is too large for a VP3 file	návrh je pro soubor VP3 příliš velký
+@msg	the design is {_1} × {_2} mm, larger than a document holds	návrh má {_1} × {_2} mm, víc, než dokument pojme
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	návrh má {_1} × {_2} mm, víc, než pojme {_3} ({_4} mm na stranu)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	návrh by potřeboval víc než {MAX_DESIGN_STITCHES} stehů: použijte delší steh, větší rozestup nebo méně kresby
+@msg	the file has no stitches	soubor nemá žádné stehy
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	soubor {format} by měl víc než {_1} MiB: přesuny návrhu jsou příliš dlouhé (objekty daleko od sebe)
+@msg	the {what} file has no stitch records	soubor {what} nemá žádné záznamy stehů
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	soubor {what} obsahuje víc než {MAX_POINTS} stehů, víc, než smí mít návrh
+@msg	thread number {index} doesn't fit a JEF header	číslo nitě {index} se nevejde do hlavičky JEF
+@msg	thread number {index} doesn't fit a PEC header	číslo nitě {index} se nevejde do hlavičky PEC
+@msg	too many stitches for a VP3 file	příliš mnoho stehů pro soubor VP3
+@msg	{_1} is not an embroidery format	{_1} není formát pro vyšívání
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Steh:
+	Stitch Length:	Délka stehu:
+	Fill Angle:	Úhel výplně:
+	Pull Compensation:	Kompenzace stažení:
+	Pull Compensation (%):	Kompenzace stažení (%):
+	Push Compensation:	Kompenzace vytlačení:
+	Expand Fills:	Rozšířit výplně:
+	Narrow Parts as Satin:	Úzké části jako satén:
+	Thread Weight:	Síla nitě:
+	Underlay:	Podklad:
+	Jump Length:	Délka skoku:
+	Trim Length:	Délka střihu:
+	Shortest Stitch:	Nejkratší steh:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Jak se tvary šijí: Automaticky vyplní tvary tatami a obrysy šije podle šířky jako saténové sloupce nebo rovné stehy; jiná volba takto šije každý tvar
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Vzdálenost mezi řadami výplně a mezi saténovými stehy; ponechaná beze změny ji saténový sloupec volí podle své šířky
+	The length of the stitches along fill rows and running lines	Délka stehů podél řad výplně a rovných stehů
+	The direction of the fill rows	Směr řad výplně
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Rozšíří saténové sloupce a řady výplně na každé straně, aby vyrovnaly stahování látky
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Rozšíří saténové sloupce a řady výplně o část jejich šířky, aby vyrovnaly stahování látky
+	Shortens satin columns at their ends, where the thread pushes outward	Zkrátí saténové sloupce na koncích, kde nit tlačí ven
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Zvětší každý vyplněný tvar dokola, aby se uzavřely mezery mezi tvary; záporná hodnota jej zmenší
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Části výplně užší než tato hodnota se šijí jako saténové sloupce; 0 nešije žádné
+	The thread's weight: thinner thread (a higher number) packs the rows closer	Síla nitě: tenčí nit (vyšší číslo) klade řady hustěji
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Stehy šité nejdřív, aby držely látku: zvolené každým tvarem, žádné, nebo jeden druh pro každý tvar
+	A move longer than this lifts the needle instead of being sewn	Delší přesun zvedne jehlu, místo aby se šil
+	A jump longer than this cuts the thread first	Delší skok nejdřív ustřihne nit
+	Shorter stitches are left out	Kratší stehy se vynechají
+	Tatami Fill	Výplň tatami
+	Satin	Satén
+	Running Stitch	Rovný steh
+	Centre Run	Středový průchod
+	Edge Run	Okrajový průchod
+	Edge Run and Zigzag	Okrajový průchod a cikcak
+	Edge Run and Tatami	Okrajový průchod a tatami

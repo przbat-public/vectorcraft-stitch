@@ -5150,3 +5150,80 @@ imageTrace	Outline	კონტური
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	დაფუძნებულია ArtCraft-ის გუნდის VectorCraft-ზე. MIT OR Apache-2.0. შრიფტები: Source Sans 3, Inter, JetBrains Mono (OFL). ხატულები: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC-ში ეტევა არაუმეტეს {MAX_COLORS} ფერი და არა {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3-ში ეტევა არაუმეტეს {MAX_COLORS} ფერის ბლოკი
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST ფაილს აქვს {HEADER}-ბაიტიანი სათაური და მინიმუმ ერთი 3-ბაიტიანი ჩანაწერი, მაგრამ ეს ფაილი {_1} ბაიტია
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST სათაური ითვლის არაუმეტეს {MAX_RECORDS} ჩანაწერს, დიზაინს კი {_1} სჭირდება
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	PEC ნაკერების ბლოკში ეტევა არაუმეტეს {MAX_BLOCK} ბაიტი (მისი სიგრძე 24-ბიტიანია), დიზაინს კი {len} სჭირდება
+@msg	a VP3 string is too long	VP3 სტრიქონი ზედმეტად გრძელია
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	ფიგურა სათავიდან {MAX_COORD_MM} მმ-ზე მეტით არის დაშორებული ან აქვს კოორდინატი, რომელიც რიცხვი არ არის: მისი ამოქარგვა შეუძლებელია
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	ფიგურას დასჭირდება დაახლოებით {n} ნაკერი, მეტი, ვიდრე ერთ ფიგურას დაშვებული {MAX_STITCHES}: გამოიყენეთ უფრო გრძელი ნაკერი, უფრო დიდი დაშორება ან უფრო პატარა დიზაინი
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	ეს არ არის PES ან PEC ფაილი: არ იწყება #PES-ით ან #PEC-ით
+@msg	not a VP3 file: it does not start with %vsm%	ეს არ არის VP3 ფაილი: არ იწყება %vsm%-ით
+@msg	not a {what} file: its record {_1} is not a DST record	ეს არ არის {what} ფაილი: მისი ჩანაწერი {_1} არ არის DST ჩანაწერი
+@msg	params must be an object	პარამეტრები ობიექტი უნდა იყოს
+@msg	the EXP file has no stitch records	EXP ფაილს არ აქვს ნაკერების ჩანაწერები
+@msg	the JEF file has no stitch records	JEF ფაილს არ აქვს ნაკერების ჩანაწერები
+@msg	the JEF file is cut short: {len} bytes	JEF ფაილი შეკვეცილია: {len} ბაიტი
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF სათაური მიუთითებს ბაიტზე {offset}, ფაილის {_1} ბაიტის მიღმა
+@msg	the PEC block has no stitches	PEC ბლოკს არ აქვს ნაკერები
+@msg	the PEC header is cut short	PEC სათაური შეკვეცილია
+@msg	the PES header is cut short	PES სათაური შეკვეცილია
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	PES სათაური მიუთითებს ბაიტზე {at}, ფაილის {_1} ბაიტის მიღმა
+@msg	the VP3 file has no stitches	VP3 ფაილს არ აქვს ნაკერები
+@msg	the VP3 file has no {what} packet at byte {at}	VP3 ფაილს არ აქვს {what} პაკეტი ბაიტზე {at}
+@msg	the VP3 file is cut short: {len} bytes	VP3 ფაილი შეკვეცილია: {len} ბაიტი
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	დიზაინს აქვს {MAX_RUNS}-ზე მეტი ცალკეული ნაკერების მწკრივი, მეტი, ვიდრე დოკუმენტი ხსნის
+@msg	the design has no points to write	დიზაინს არ აქვს ჩასაწერი წერტილები
+@msg	the design has no stitches to draw	დიზაინს არ აქვს დასახატი ნაკერები
+@msg	the design has no stitches to write	დიზაინს არ აქვს ჩასაწერი ნაკერები
+@msg	the design is too large for a VP3 file	დიზაინი ზედმეტად დიდია VP3 ფაილისთვის
+@msg	the design is {_1} × {_2} mm, larger than a document holds	დიზაინი {_1} × {_2} მმ-ია, უფრო დიდი, ვიდრე დოკუმენტში ეტევა
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	დიზაინი {_1} × {_2} მმ-ია, უფრო დიდი, ვიდრე {_3}-ში ეტევა ({_4} მმ თითო მხარეზე)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	დიზაინს დასჭირდება {MAX_DESIGN_STITCHES}-ზე მეტი ნაკერი: გამოიყენეთ უფრო გრძელი ნაკერი, უფრო დიდი დაშორება ან ნაკლები გრაფიკა
+@msg	the file has no stitches	ფაილს არ აქვს ნაკერები
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	{format} ფაილი {_1} MiB-ზე დიდი იქნებოდა: დიზაინის გადაადგილებები ზედმეტად გრძელია (ობიექტები ერთმანეთისგან შორსაა)
+@msg	the {what} file has no stitch records	{what} ფაილს არ აქვს ნაკერების ჩანაწერები
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	{what} ფაილი შეიცავს {MAX_POINTS}-ზე მეტ ნაკერს, მეტს, ვიდრე დიზაინს შეიძლება ჰქონდეს
+@msg	thread number {index} doesn't fit a JEF header	ძაფის ნომერი {index} არ ეტევა JEF სათაურში
+@msg	thread number {index} doesn't fit a PEC header	ძაფის ნომერი {index} არ ეტევა PEC სათაურში
+@msg	too many stitches for a VP3 file	ზედმეტად ბევრი ნაკერი VP3 ფაილისთვის
+@msg	{_1} is not an embroidery format	{_1} არ არის ქარგვის ფორმატი
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	ნაკერი:
+	Stitch Length:	ნაკერის სიგრძე:
+	Fill Angle:	შევსების კუთხე:
+	Pull Compensation:	შეკუმშვის კომპენსაცია:
+	Pull Compensation (%):	შეკუმშვის კომპენსაცია (%):
+	Push Compensation:	გამოწევის კომპენსაცია:
+	Expand Fills:	შევსებების გაფართოება:
+	Narrow Parts as Satin:	ვიწრო ნაწილები ატლასად:
+	Thread Weight:	ძაფის სისქე:
+	Underlay:	საფენი:
+	Jump Length:	გადასვლის სიგრძე:
+	Trim Length:	ჭრის სიგრძე:
+	Shortest Stitch:	უმოკლესი ნაკერი:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	როგორ იკერება ფიგურები: „ავტომატური“ ფიგურებს ტატამით ავსებს, ხაზებს კი სიგანის მიხედვით ატლასის სვეტებით ან სწორი ნაკერით კერავს; სხვა არჩევანი ყველა ფიგურას ასე კერავს
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	მანძილი შევსების რიგებსა და ატლასის ნაკერებს შორის; თუ უცვლელად დარჩება, ატლასის სვეტი მას თავისი სიგანით ირჩევს
+	The length of the stitches along fill rows and running lines	ნაკერების სიგრძე შევსების რიგებისა და სწორი ნაკერის გასწვრივ
+	The direction of the fill rows	შევსების რიგების მიმართულება
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	აფართოებს ატლასის სვეტებსა და შევსების რიგებს თითოეულ მხარეს, ქსოვილის შეკუმშვის საკომპენსაციოდ
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	აფართოებს ატლასის სვეტებსა და შევსების რიგებს მათი სიგანის ნაწილით, ქსოვილის შეკუმშვის საკომპენსაციოდ
+	Shortens satin columns at their ends, where the thread pushes outward	ამოკლებს ატლასის სვეტებს ბოლოებში, სადაც ძაფი გარეთ აწვება
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	ადიდებს თითოეულ შევსებულ ფიგურას ირგვლივ, ფიგურებს შორის ღრეჩოების დასახურად; უარყოფითი მნიშვნელობა მას ამცირებს
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	შევსების ამაზე ვიწრო ნაწილები ატლასის სვეტებით იკერება; 0 არცერთს არ კერავს
+	The thread's weight: thinner thread (a higher number) packs the rows closer	ძაფის სისქე: უფრო წვრილი ძაფი (უფრო მაღალი ნომერი) რიგებს უფრო მჭიდროდ აწყობს
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	პირველად ნაკერი ნაკერები, რომლებიც ქსოვილს იჭერს: თითოეული ფიგურის მიერ არჩეული, არცერთი ან ერთი სახე ყველა ფიგურისთვის
+	A move longer than this lifts the needle instead of being sewn	ამაზე გრძელი გადაადგილება ნემსს აწევს, ნაცვლად იმისა, რომ დაიკეროს
+	A jump longer than this cuts the thread first	ამაზე გრძელი გადასვლა ჯერ ძაფს ჭრის
+	Shorter stitches are left out	უფრო მოკლე ნაკერები გამოტოვებულია
+	Tatami Fill	ტატამის შევსება
+	Satin	ატლასი
+	Running Stitch	სწორი ნაკერი
+	Centre Run	ცენტრალური გავლა
+	Edge Run	კიდის გავლა
+	Edge Run and Zigzag	კიდის გავლა და ზიგზაგი
+	Edge Run and Tatami	კიდის გავლა და ტატამი

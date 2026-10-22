@@ -4853,3 +4853,80 @@ lighting	Light	Свет
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Основано на VectorCraft от команды ArtCraft. MIT OR Apache-2.0. Шрифты: Source Sans 3, Inter, JetBrains Mono (OFL). Значки: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC вмещает не более {MAX_COLORS} цветов, а не {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 вмещает не более {MAX_COLORS} цветовых блоков
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	у файла DST заголовок из {HEADER} байт и хотя бы одна 3-байтовая запись, но этот файл — {_1} байт
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	заголовок DST считает не более {MAX_RECORDS} записей, а дизайну нужно {_1}
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	блок стежков PEC вмещает не более {MAX_BLOCK} байт (его длина — 24 бита), а дизайну нужно {len}
+@msg	a VP3 string is too long	строка VP3 слишком длинная
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	фигура лежит дальше {MAX_COORD_MM} мм от начала координат или имеет координату, которая не является числом: её нельзя вышить
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	фигуре понадобилось бы около {n} стежков, больше {MAX_STITCHES}, допустимых для одной фигуры: используйте более длинный стежок, больший шаг или меньший дизайн
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	это не файл PES или PEC: он не начинается с #PES или #PEC
+@msg	not a VP3 file: it does not start with %vsm%	это не файл VP3: он не начинается с %vsm%
+@msg	not a {what} file: its record {_1} is not a DST record	это не файл {what}: его запись {_1} не является записью DST
+@msg	params must be an object	параметры должны быть объектом
+@msg	the EXP file has no stitch records	в файле EXP нет записей стежков
+@msg	the JEF file has no stitch records	в файле JEF нет записей стежков
+@msg	the JEF file is cut short: {len} bytes	файл JEF обрезан: {len} байт
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	заголовок JEF указывает на байт {offset}, за пределами {_1} байт файла
+@msg	the PEC block has no stitches	в блоке PEC нет стежков
+@msg	the PEC header is cut short	заголовок PEC обрезан
+@msg	the PES header is cut short	заголовок PES обрезан
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	заголовок PES указывает на байт {at}, за пределами {_1} байт файла
+@msg	the VP3 file has no stitches	в файле VP3 нет стежков
+@msg	the VP3 file has no {what} packet at byte {at}	в файле VP3 нет пакета {what} на байте {at}
+@msg	the VP3 file is cut short: {len} bytes	файл VP3 обрезан: {len} байт
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	в дизайне больше {MAX_RUNS} отдельных цепочек стежков — больше, чем открывает документ
+@msg	the design has no points to write	в дизайне нет точек для записи
+@msg	the design has no stitches to draw	в дизайне нет стежков для отрисовки
+@msg	the design has no stitches to write	в дизайне нет стежков для записи
+@msg	the design is too large for a VP3 file	дизайн слишком велик для файла VP3
+@msg	the design is {_1} × {_2} mm, larger than a document holds	дизайн размером {_1} × {_2} мм больше, чем вмещает документ
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	дизайн размером {_1} × {_2} мм больше, чем вмещает {_3} ({_4} мм на сторону)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	дизайну понадобилось бы больше {MAX_DESIGN_STITCHES} стежков: используйте более длинный стежок, больший шаг или меньше графики
+@msg	the file has no stitches	в файле нет стежков
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	файл {format} был бы больше {_1} МиБ: переходы дизайна слишком длинные (объекты далеко друг от друга)
+@msg	the {what} file has no stitch records	в файле {what} нет записей стежков
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	файл {what} содержит больше {MAX_POINTS} стежков — больше, чем может быть в дизайне
+@msg	thread number {index} doesn't fit a JEF header	номер нити {index} не помещается в заголовок JEF
+@msg	thread number {index} doesn't fit a PEC header	номер нити {index} не помещается в заголовок PEC
+@msg	too many stitches for a VP3 file	слишком много стежков для файла VP3
+@msg	{_1} is not an embroidery format	{_1} — не формат вышивки
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Стежок:
+	Stitch Length:	Длина стежка:
+	Fill Angle:	Угол заливки:
+	Pull Compensation:	Компенсация стягивания:
+	Pull Compensation (%):	Компенсация стягивания (%):
+	Push Compensation:	Компенсация выталкивания:
+	Expand Fills:	Расширить заливки:
+	Narrow Parts as Satin:	Узкие части гладью:
+	Thread Weight:	Толщина нити:
+	Underlay:	Подложка:
+	Jump Length:	Длина перехода:
+	Trim Length:	Длина обрезки:
+	Shortest Stitch:	Самый короткий стежок:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Как вышиваются фигуры: «Автоматически» заливает фигуры татами, а контуры шьёт столбиками глади или прямым стежком в зависимости от ширины; другой вариант шьёт так каждую фигуру
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Расстояние между рядами заливки и между стежками глади; если оставить как есть, столбик глади выбирает его по своей ширине
+	The length of the stitches along fill rows and running lines	Длина стежков вдоль рядов заливки и прямого стежка
+	The direction of the fill rows	Направление рядов заливки
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Расширяет столбики глади и ряды заливки с каждой стороны, чтобы возместить стягивание ткани
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Расширяет столбики глади и ряды заливки на долю их ширины, чтобы возместить стягивание ткани
+	Shortens satin columns at their ends, where the thread pushes outward	Укорачивает столбики глади на концах, где нить выталкивает наружу
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Увеличивает каждую залитую фигуру по контуру, чтобы закрыть зазоры между фигурами; отрицательное значение её уменьшает
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Части заливки уже этого значения вышиваются столбиками глади; 0 — ни одной
+	The thread's weight: thinner thread (a higher number) packs the rows closer	Толщина нити: более тонкая нить (больший номер) кладёт ряды плотнее
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Стежки, которые шьются первыми, чтобы держать ткань: выбираются каждой фигурой, никаких или один вид для всех фигур
+	A move longer than this lifts the needle instead of being sewn	Более длинное перемещение поднимает иглу вместо того, чтобы быть прошитым
+	A jump longer than this cuts the thread first	Более длинный переход сначала обрезает нить
+	Shorter stitches are left out	Более короткие стежки пропускаются
+	Tatami Fill	Заливка татами
+	Satin	Гладь
+	Running Stitch	Прямой стежок
+	Centre Run	Проход по центру
+	Edge Run	Проход по краю
+	Edge Run and Zigzag	Проход по краю и зигзаг
+	Edge Run and Tatami	Проход по краю и татами

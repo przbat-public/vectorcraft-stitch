@@ -4897,3 +4897,80 @@ lighting	Light	ライト
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft チームの VectorCraft をもとにしています。MIT OR Apache-2.0。フォント：Source Sans 3、Inter、JetBrains Mono (OFL)。アイコン：Lucide (ISC) + VectorCraft。
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC に入る色は最大 {MAX_COLORS} 色で、{colors} 色は入りません
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 に入る色ブロックは最大 {MAX_COLORS} 個です
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST ファイルには {HEADER} バイトのヘッダーと 3 バイトのレコードが 1 つ以上必要ですが、このファイルは {_1} バイトです
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST ヘッダーが数えられるレコードは最大 {MAX_RECORDS} 個ですが、デザインには {_1} 個必要です
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	PEC の針目ブロックに入るのは最大 {MAX_BLOCK} バイト (長さは 24 ビット) ですが、デザインには {len} バイト必要です
+@msg	a VP3 string is too long	VP3 の文字列が長すぎます
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	図形が原点から {MAX_COORD_MM} mm より離れているか、数値でない座標を持っています: 刺繍できません
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	図形に約 {n} 針が必要で、1 つの図形に許される {MAX_STITCHES} 針を超えます: 針目を長く、間隔を広く、またはデザインを小さくしてください
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	PES または PEC ファイルではありません: #PES または #PEC で始まっていません
+@msg	not a VP3 file: it does not start with %vsm%	VP3 ファイルではありません: %vsm% で始まっていません
+@msg	not a {what} file: its record {_1} is not a DST record	{what} ファイルではありません: レコード {_1} が DST のレコードではありません
+@msg	params must be an object	パラメーターはオブジェクトである必要があります
+@msg	the EXP file has no stitch records	EXP ファイルに針目のレコードがありません
+@msg	the JEF file has no stitch records	JEF ファイルに針目のレコードがありません
+@msg	the JEF file is cut short: {len} bytes	JEF ファイルが途中で切れています: {len} バイト
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF ヘッダーがバイト {offset} を指していますが、ファイルは {_1} バイトしかありません
+@msg	the PEC block has no stitches	PEC ブロックに針目がありません
+@msg	the PEC header is cut short	PEC ヘッダーが途中で切れています
+@msg	the PES header is cut short	PES ヘッダーが途中で切れています
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	PES ヘッダーがバイト {at} を指していますが、ファイルは {_1} バイトしかありません
+@msg	the VP3 file has no stitches	VP3 ファイルに針目がありません
+@msg	the VP3 file has no {what} packet at byte {at}	VP3 ファイルのバイト {at} に {what} パケットがありません
+@msg	the VP3 file is cut short: {len} bytes	VP3 ファイルが途中で切れています: {len} バイト
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	デザインに {MAX_RUNS} を超える別々の針目の連なりがあり、書類で開ける数を超えています
+@msg	the design has no points to write	デザインに書き出す点がありません
+@msg	the design has no stitches to draw	デザインに描く針目がありません
+@msg	the design has no stitches to write	デザインに書き出す針目がありません
+@msg	the design is too large for a VP3 file	デザインが VP3 ファイルには大きすぎます
+@msg	the design is {_1} × {_2} mm, larger than a document holds	デザインは {_1} × {_2} mm で、書類に収まる大きさを超えています
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	デザインは {_1} × {_2} mm で、{_3} に収まる大きさ (1 辺 {_4} mm) を超えています
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	デザインに {MAX_DESIGN_STITCHES} を超える針数が必要です: 針目を長く、間隔を広く、またはアートを少なくしてください
+@msg	the file has no stitches	ファイルに針目がありません
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	{format} ファイルが {_1} MiB を超えます: デザインの移動が長すぎます (オブジェクトが離れすぎています)
+@msg	the {what} file has no stitch records	{what} ファイルに針目のレコードがありません
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	{what} ファイルに {MAX_POINTS} を超える針目があり、1 つのデザインに許される数を超えています
+@msg	thread number {index} doesn't fit a JEF header	糸番号 {index} は JEF ヘッダーに収まりません
+@msg	thread number {index} doesn't fit a PEC header	糸番号 {index} は PEC ヘッダーに収まりません
+@msg	too many stitches for a VP3 file	VP3 ファイルには針目が多すぎます
+@msg	{_1} is not an embroidery format	{_1} は刺繍フォーマットではありません
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	ステッチ:
+	Stitch Length:	針目の長さ:
+	Fill Angle:	フィルの角度:
+	Pull Compensation:	引き込みの補正:
+	Pull Compensation (%):	引き込みの補正 (%):
+	Push Compensation:	押し出しの補正:
+	Expand Fills:	フィルを広げる:
+	Narrow Parts as Satin:	細い部分をサテンに:
+	Thread Weight:	糸の太さ:
+	Underlay:	下縫い:
+	Jump Length:	ジャンプの長さ:
+	Trim Length:	糸切りの長さ:
+	Shortest Stitch:	最短の針目:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	図形の縫い方: 自動では図形をタタミで埋め、線は幅に応じてサテンの柱かランニングステッチで縫います。ほかを選ぶと、すべての図形をその方法で縫います
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	フィルの列の間隔とサテンの針目の間隔。そのままにすると、サテンの柱が幅に応じて選びます
+	The length of the stitches along fill rows and running lines	フィルの列とランニングステッチに沿った針目の長さ
+	The direction of the fill rows	フィルの列の向き
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	布が引き込まれる分を補うため、サテンの柱とフィルの列を両側で広げます
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	布が引き込まれる分を補うため、サテンの柱とフィルの列を幅の割合で広げます
+	Shortens satin columns at their ends, where the thread pushes outward	糸が外へ押し出す端で、サテンの柱を短くします
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	図形の間のすき間を埋めるため、塗りのある図形を周囲に広げます。負の値では縮めます
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	この幅より細いフィルの部分はサテンの柱で縫います。0 ではどれも縫いません
+	The thread's weight: thinner thread (a higher number) packs the rows closer	糸の太さ: 細い糸 (大きい番手) ほど列を密にします
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	布を押さえるために最初に縫う針目: 図形ごとに選ぶ、なし、またはすべての図形に 1 種類
+	A move longer than this lifts the needle instead of being sewn	これより長い移動は、縫わずに針を上げます
+	A jump longer than this cuts the thread first	これより長いジャンプでは、先に糸を切ります
+	Shorter stitches are left out	これより短い針目は省きます
+	Tatami Fill	タタミフィル
+	Satin	サテン
+	Running Stitch	ランニングステッチ
+	Centre Run	中央ラン
+	Edge Run	エッジラン
+	Edge Run and Zigzag	エッジランとジグザグ
+	Edge Run and Tatami	エッジランとタタミ

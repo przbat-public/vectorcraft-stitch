@@ -5160,3 +5160,80 @@ mark-style	Japanese	Japonesas
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Baseado no VectorCraft da equipe ArtCraft. MIT OR Apache-2.0. Fontes: Source Sans 3, Inter, JetBrains Mono (OFL). Ícones: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	o PEC comporta no máximo {MAX_COLORS} cores, não {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	o VP3 comporta no máximo {MAX_COLORS} blocos de cor
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	um arquivo DST tem um cabeçalho de {HEADER} bytes e pelo menos um registro de 3 bytes, mas este arquivo tem {_1} bytes
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	um cabeçalho DST conta no máximo {MAX_RECORDS} registros, e o desenho precisa de {_1}
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	um bloco de pontos PEC comporta no máximo {MAX_BLOCK} bytes (seu comprimento tem 24 bits), e o desenho precisa de {len}
+@msg	a VP3 string is too long	uma cadeia VP3 é longa demais
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	uma forma está a mais de {MAX_COORD_MM} mm da origem ou tem uma coordenada que não é um número: não pode ser bordada
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	uma forma precisaria de cerca de {n} pontos, mais do que os {MAX_STITCHES} que uma forma pode ter: use um ponto mais longo, espaçamento maior ou um desenho menor
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	não é um arquivo PES ou PEC: não começa com #PES ou #PEC
+@msg	not a VP3 file: it does not start with %vsm%	não é um arquivo VP3: não começa com %vsm%
+@msg	not a {what} file: its record {_1} is not a DST record	não é um arquivo {what}: seu registro {_1} não é um registro DST
+@msg	params must be an object	os parâmetros devem ser um objeto
+@msg	the EXP file has no stitch records	o arquivo EXP não tem registros de pontos
+@msg	the JEF file has no stitch records	o arquivo JEF não tem registros de pontos
+@msg	the JEF file is cut short: {len} bytes	o arquivo JEF está truncado: {len} bytes
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	o cabeçalho JEF aponta para o byte {offset}, além dos {_1} bytes do arquivo
+@msg	the PEC block has no stitches	o bloco PEC não tem pontos
+@msg	the PEC header is cut short	o cabeçalho PEC está truncado
+@msg	the PES header is cut short	o cabeçalho PES está truncado
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	o cabeçalho PES aponta para o byte {at}, além dos {_1} bytes do arquivo
+@msg	the VP3 file has no stitches	o arquivo VP3 não tem pontos
+@msg	the VP3 file has no {what} packet at byte {at}	o arquivo VP3 não tem um pacote {what} no byte {at}
+@msg	the VP3 file is cut short: {len} bytes	o arquivo VP3 está truncado: {len} bytes
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	o desenho tem mais de {MAX_RUNS} sequências de pontos separadas, mais do que um documento abre
+@msg	the design has no points to write	o desenho não tem coordenadas para gravar
+@msg	the design has no stitches to draw	o desenho não tem pontos para desenhar
+@msg	the design has no stitches to write	o desenho não tem pontos para gravar
+@msg	the design is too large for a VP3 file	o desenho é grande demais para um arquivo VP3
+@msg	the design is {_1} × {_2} mm, larger than a document holds	o desenho tem {_1} × {_2} mm, mais do que um documento comporta
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	o desenho tem {_1} × {_2} mm, mais do que {_3} comporta ({_4} mm por lado)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	o desenho precisaria de mais de {MAX_DESIGN_STITCHES} pontos: use um ponto mais longo, espaçamento maior ou menos arte
+@msg	the file has no stitches	o arquivo não tem pontos
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	o arquivo {format} passaria de {_1} MiB: os deslocamentos do desenho são longos demais (objetos distantes)
+@msg	the {what} file has no stitch records	o arquivo {what} não tem registros de pontos
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	o arquivo {what} contém mais de {MAX_POINTS} pontos, mais do que um desenho pode ter
+@msg	thread number {index} doesn't fit a JEF header	o número de linha {index} não cabe em um cabeçalho JEF
+@msg	thread number {index} doesn't fit a PEC header	o número de linha {index} não cabe em um cabeçalho PEC
+@msg	too many stitches for a VP3 file	pontos demais para um arquivo VP3
+@msg	{_1} is not an embroidery format	{_1} não é um formato de bordado
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Ponto:
+	Stitch Length:	Comprimento do ponto:
+	Fill Angle:	Ângulo do preenchimento:
+	Pull Compensation:	Compensação de tração:
+	Pull Compensation (%):	Compensação de tração (%):
+	Push Compensation:	Compensação de empurrão:
+	Expand Fills:	Expandir preenchimentos:
+	Narrow Parts as Satin:	Partes estreitas em cetim:
+	Thread Weight:	Espessura da linha:
+	Underlay:	Base:
+	Jump Length:	Comprimento do salto:
+	Trim Length:	Comprimento do corte:
+	Shortest Stitch:	Ponto mais curto:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Como as formas são bordadas: Automático preenche as formas com tatami e borda os traços como colunas de cetim ou pontos retos conforme a largura; outra escolha borda assim todas as formas
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	A distância entre as fileiras de preenchimento e entre os pontos de cetim; deixada como está, uma coluna de cetim a escolhe pela largura
+	The length of the stitches along fill rows and running lines	O comprimento dos pontos ao longo das fileiras de preenchimento e dos pontos retos
+	The direction of the fill rows	A direção das fileiras de preenchimento
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Alarga as colunas de cetim e as fileiras de preenchimento em cada lado, para compensar o tecido que se contrai
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Alarga as colunas de cetim e as fileiras de preenchimento em uma parte da largura, para compensar o tecido que se contrai
+	Shortens satin columns at their ends, where the thread pushes outward	Encurta as colunas de cetim nas pontas, onde a linha empurra para fora
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Aumenta cada forma preenchida em toda a volta para fechar vãos entre formas; um valor negativo a reduz
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Partes de um preenchimento mais estreitas são bordadas como colunas de cetim; 0 não borda nenhuma
+	The thread's weight: thinner thread (a higher number) packs the rows closer	A espessura da linha: uma linha mais fina (um número maior) aproxima as fileiras
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Os pontos bordados primeiro para segurar o tecido: escolhidos por cada forma, nenhum ou um tipo para todas as formas
+	A move longer than this lifts the needle instead of being sewn	Um deslocamento mais longo levanta a agulha em vez de ser bordado
+	A jump longer than this cuts the thread first	Um salto mais longo corta a linha primeiro
+	Shorter stitches are left out	Pontos mais curtos são omitidos
+	Tatami Fill	Preenchimento tatami
+	Satin	Cetim
+	Running Stitch	Ponto reto
+	Centre Run	Passada central
+	Edge Run	Passada na borda
+	Edge Run and Zigzag	Passada na borda e zigue-zague
+	Edge Run and Tatami	Passada na borda e tatami

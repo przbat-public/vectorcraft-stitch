@@ -5095,3 +5095,80 @@ mark-style	Japanese	Japońskie
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Na podstawie VectorCraft zespołu ArtCraft. MIT LUB Apache-2.0. Czcionki: Source Sans 3, Inter, JetBrains Mono (OFL). Ikony: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC mieści najwyżej {MAX_COLORS} kolorów, a nie {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 mieści najwyżej {MAX_COLORS} bloków kolorów
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	plik DST ma {HEADER}-bajtowy nagłówek i co najmniej jeden 3-bajtowy rekord, a ten plik ma {_1} bajtów
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	nagłówek DST liczy najwyżej {MAX_RECORDS} rekordów, a wzór wymaga {_1}
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	blok ściegów PEC mieści najwyżej {MAX_BLOCK} bajtów (jego długość ma 24 bity), a wzór wymaga {len}
+@msg	a VP3 string is too long	ciąg znaków VP3 jest za długi
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	kształt leży dalej niż {MAX_COORD_MM} mm od początku układu lub ma współrzędną, która nie jest liczbą: nie można go wyhaftować
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	kształt wymagałby około {n} ściegów, więcej niż {MAX_STITCHES}, ile może mieć jeden kształt: użyj dłuższego ściegu, większego odstępu lub mniejszego wzoru
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	to nie jest plik PES ani PEC: nie zaczyna się od #PES ani #PEC
+@msg	not a VP3 file: it does not start with %vsm%	to nie jest plik VP3: nie zaczyna się od %vsm%
+@msg	not a {what} file: its record {_1} is not a DST record	to nie jest plik {what}: jego rekord {_1} nie jest rekordem DST
+@msg	params must be an object	parametry muszą być obiektem
+@msg	the EXP file has no stitch records	plik EXP nie ma rekordów ściegów
+@msg	the JEF file has no stitch records	plik JEF nie ma rekordów ściegów
+@msg	the JEF file is cut short: {len} bytes	plik JEF jest ucięty: {len} bajtów
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	nagłówek JEF wskazuje bajt {offset}, poza {_1} bajtami pliku
+@msg	the PEC block has no stitches	blok PEC nie ma ściegów
+@msg	the PEC header is cut short	nagłówek PEC jest ucięty
+@msg	the PES header is cut short	nagłówek PES jest ucięty
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	nagłówek PES wskazuje bajt {at}, poza {_1} bajtami pliku
+@msg	the VP3 file has no stitches	plik VP3 nie ma ściegów
+@msg	the VP3 file has no {what} packet at byte {at}	plik VP3 nie ma pakietu {what} w bajcie {at}
+@msg	the VP3 file is cut short: {len} bytes	plik VP3 jest ucięty: {len} bajtów
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	wzór ma ponad {MAX_RUNS} osobnych ciągów ściegów, więcej, niż otworzy dokument
+@msg	the design has no points to write	wzór nie ma punktów do zapisania
+@msg	the design has no stitches to draw	wzór nie ma ściegów do narysowania
+@msg	the design has no stitches to write	wzór nie ma ściegów do zapisania
+@msg	the design is too large for a VP3 file	wzór jest za duży na plik VP3
+@msg	the design is {_1} × {_2} mm, larger than a document holds	wzór ma {_1} × {_2} mm, więcej, niż mieści dokument
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	wzór ma {_1} × {_2} mm, więcej, niż mieści {_3} ({_4} mm na bok)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	wzór wymagałby ponad {MAX_DESIGN_STITCHES} ściegów: użyj dłuższego ściegu, większego odstępu lub mniej grafiki
+@msg	the file has no stitches	plik nie ma ściegów
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	plik {format} miałby ponad {_1} MiB: przejścia wzoru są za długie (obiekty daleko od siebie)
+@msg	the {what} file has no stitch records	plik {what} nie ma rekordów ściegów
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	plik {what} zawiera ponad {MAX_POINTS} ściegów, więcej, niż może mieć wzór
+@msg	thread number {index} doesn't fit a JEF header	numer nici {index} nie mieści się w nagłówku JEF
+@msg	thread number {index} doesn't fit a PEC header	numer nici {index} nie mieści się w nagłówku PEC
+@msg	too many stitches for a VP3 file	za dużo ściegów na plik VP3
+@msg	{_1} is not an embroidery format	{_1} nie jest formatem haftu
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Ścieg:
+	Stitch Length:	Długość ściegu:
+	Fill Angle:	Kąt wypełnienia:
+	Pull Compensation:	Kompensacja ściągania:
+	Pull Compensation (%):	Kompensacja ściągania (%):
+	Push Compensation:	Kompensacja wypychania:
+	Expand Fills:	Poszerzenie wypełnień:
+	Narrow Parts as Satin:	Wąskie części jako satyna:
+	Thread Weight:	Grubość nici:
+	Underlay:	Podkład:
+	Jump Length:	Długość skoku:
+	Trim Length:	Długość cięcia:
+	Shortest Stitch:	Najkrótszy ścieg:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Jak są szyte kształty: Automatycznie wypełnia kształty tatami, a kontury szyje jako kolumny satynowe albo ścieg prosty, zależnie od ich szerokości; inny wybór szyje tak każdy kształt
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Odstęp między rzędami wypełnienia i między ściegami satyny; bez zmiany kolumna satynowa dobiera go do swojej szerokości
+	The length of the stitches along fill rows and running lines	Długość ściegów wzdłuż rzędów wypełnienia i ściegu prostego
+	The direction of the fill rows	Kierunek rzędów wypełnienia
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Poszerza kolumny satynowe i rzędy wypełnienia z każdej strony, by wyrównać ściąganie tkaniny
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Poszerza kolumny satynowe i rzędy wypełnienia o część ich szerokości, by wyrównać ściąganie tkaniny
+	Shortens satin columns at their ends, where the thread pushes outward	Skraca kolumny satynowe na końcach, gdzie nić wypycha na zewnątrz
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Powiększa każdy wypełniony kształt dookoła, by zamknąć szczeliny między kształtami; wartość ujemna go zmniejsza
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Części wypełnienia węższe niż ta wartość są szyte jako kolumny satynowe; 0 nie szyje żadnych
+	The thread's weight: thinner thread (a higher number) packs the rows closer	Grubość nici: cieńsza nić (wyższy numer) układa rzędy gęściej
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Ściegi szyte najpierw, by utrzymać tkaninę: dobrane przez każdy kształt, żadne albo jeden rodzaj dla każdego kształtu
+	A move longer than this lifts the needle instead of being sewn	Dłuższe przejście podnosi igłę zamiast być szyte
+	A jump longer than this cuts the thread first	Dłuższy skok najpierw przecina nić
+	Shorter stitches are left out	Krótsze ściegi są pomijane
+	Tatami Fill	Wypełnienie tatami
+	Satin	Satyna
+	Running Stitch	Ścieg prosty
+	Centre Run	Przebieg środkiem
+	Edge Run	Przebieg krawędzią
+	Edge Run and Zigzag	Przebieg krawędzią i zygzak
+	Edge Run and Tatami	Przebieg krawędzią i tatami

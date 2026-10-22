@@ -5208,3 +5208,80 @@ mark-style	Japanese	Japanilainen
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Perustuu ArtCraft-tiimin VectorCraftiin. MIT OR Apache-2.0. Fontit: Source Sans 3, Inter, JetBrains Mono (OFL). Kuvakkeet: Lucide (ISC) + VectorCraft.
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Perustuu ArtCraft-tiimin VectorCraftiin. MIT OR Apache-2.0. Fontit: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Kuvakkeet: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC mahduttaa enintään {MAX_COLORS} väriä, ei {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 mahduttaa enintään {MAX_COLORS} värilohkoa
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST-tiedostossa on {HEADER} tavun otsake ja vähintään yksi 3 tavun tietue, mutta tämä tiedosto on {_1} tavua
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST-otsake laskee enintään {MAX_RECORDS} tietuetta, ja malli tarvitsee {_1}
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	PEC-pistolohkoon mahtuu enintään {MAX_BLOCK} tavua (sen pituus on 24 bittiä), ja malli tarvitsee {len}
+@msg	a VP3 string is too long	VP3-merkkijono on liian pitkä
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	muoto on yli {MAX_COORD_MM} mm:n päässä origosta tai sillä on koordinaatti, joka ei ole luku: sitä ei voi kirjoa
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	muoto tarvitsisi noin {n} pistoa, enemmän kuin muodolle sallitut {MAX_STITCHES}: käytä pidempää pistoa, suurempaa väliä tai pienempää mallia
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	ei PES- eikä PEC-tiedosto: se ei ala #PES tai #PEC
+@msg	not a VP3 file: it does not start with %vsm%	ei VP3-tiedosto: se ei ala %vsm%
+@msg	not a {what} file: its record {_1} is not a DST record	ei {what}-tiedosto: sen tietue {_1} ei ole DST-tietue
+@msg	params must be an object	parametrien on oltava objekti
+@msg	the EXP file has no stitch records	EXP-tiedostossa ei ole pistotietueita
+@msg	the JEF file has no stitch records	JEF-tiedostossa ei ole pistotietueita
+@msg	the JEF file is cut short: {len} bytes	JEF-tiedosto on katkennut: {len} tavua
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF-otsake osoittaa tavuun {offset}, tiedoston {_1} tavun ohi
+@msg	the PEC block has no stitches	PEC-lohkossa ei ole pistoja
+@msg	the PEC header is cut short	PEC-otsake on katkennut
+@msg	the PES header is cut short	PES-otsake on katkennut
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	PES-otsake osoittaa tavuun {at}, tiedoston {_1} tavun ohi
+@msg	the VP3 file has no stitches	VP3-tiedostossa ei ole pistoja
+@msg	the VP3 file has no {what} packet at byte {at}	VP3-tiedostossa ei ole {what}-pakettia tavussa {at}
+@msg	the VP3 file is cut short: {len} bytes	VP3-tiedosto on katkennut: {len} tavua
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	mallissa on yli {MAX_RUNS} erillistä pistojonoa, enemmän kuin asiakirja avaa
+@msg	the design has no points to write	mallissa ei ole kirjoitettavia pisteitä
+@msg	the design has no stitches to draw	mallissa ei ole piirrettäviä pistoja
+@msg	the design has no stitches to write	mallissa ei ole kirjoitettavia pistoja
+@msg	the design is too large for a VP3 file	malli on liian suuri VP3-tiedostoon
+@msg	the design is {_1} × {_2} mm, larger than a document holds	malli on {_1} × {_2} mm, suurempi kuin asiakirjaan mahtuu
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	malli on {_1} × {_2} mm, suurempi kuin {_3} mahduttaa ({_4} mm sivua kohden)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	malli tarvitsisi yli {MAX_DESIGN_STITCHES} pistoa: käytä pidempää pistoa, suurempaa väliä tai vähemmän grafiikkaa
+@msg	the file has no stitches	tiedostossa ei ole pistoja
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	{format}-tiedosto olisi yli {_1} MiB: mallin siirtymät ovat liian pitkiä (objektit kaukana toisistaan)
+@msg	the {what} file has no stitch records	{what}-tiedostossa ei ole pistotietueita
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	{what}-tiedostossa on yli {MAX_POINTS} pistoa, enemmän kuin mallissa saa olla
+@msg	thread number {index} doesn't fit a JEF header	lankanumero {index} ei mahdu JEF-otsakkeeseen
+@msg	thread number {index} doesn't fit a PEC header	lankanumero {index} ei mahdu PEC-otsakkeeseen
+@msg	too many stitches for a VP3 file	liian monta pistoa VP3-tiedostoon
+@msg	{_1} is not an embroidery format	{_1} ei ole kirjontamuoto
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Pisto:
+	Stitch Length:	Piston pituus:
+	Fill Angle:	Täytön kulma:
+	Pull Compensation:	Kiristymän korjaus:
+	Pull Compensation (%):	Kiristymän korjaus (%):
+	Push Compensation:	Työntymän korjaus:
+	Expand Fills:	Laajenna täyttöjä:
+	Narrow Parts as Satin:	Kapeat osat satiinina:
+	Thread Weight:	Langan vahvuus:
+	Underlay:	Alusompelu:
+	Jump Length:	Hypyn pituus:
+	Trim Length:	Leikkauksen pituus:
+	Shortest Stitch:	Lyhin pisto:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Miten muodot ommellaan: Automaattinen täyttää muodot tatamilla ja ompelee viivat leveyden mukaan satiinipylväinä tai suorina pistoina; muu valinta ompelee kaikki muodot niin
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Täyttörivien ja satiinipistojen väli; muuttamattomana satiinipylväs valitsee sen leveytensä mukaan
+	The length of the stitches along fill rows and running lines	Pistojen pituus täyttörivien ja suorien pistojen varrella
+	The direction of the fill rows	Täyttörivien suunta
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Leventää satiinipylväitä ja täyttörivejä kummaltakin puolelta korjaamaan kankaan kiristymistä
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Leventää satiinipylväitä ja täyttörivejä osalla niiden leveydestä korjaamaan kankaan kiristymistä
+	Shortens satin columns at their ends, where the thread pushes outward	Lyhentää satiinipylväitä päistä, joissa lanka työntää ulospäin
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Laajentaa jokaista täytettyä muotoa joka puolelta sulkemaan muotojen välisiä rakoja; negatiivinen arvo pienentää sitä
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Tätä kapeammat täytön osat ommellaan satiinipylväinä; 0 ei ompele yhtään
+	The thread's weight: thinner thread (a higher number) packs the rows closer	Langan vahvuus: ohuempi lanka (suurempi numero) asettaa rivit tiheämmin
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Ensin ommeltavat pistot, jotka pitävät kankaan paikallaan: kunkin muodon valitsemat, ei mitään tai yksi laji kaikille muodoille
+	A move longer than this lifts the needle instead of being sewn	Tätä pidempi siirto nostaa neulan sen sijaan, että se ommeltaisiin
+	A jump longer than this cuts the thread first	Tätä pidempi hyppy leikkaa ensin langan
+	Shorter stitches are left out	Lyhyemmät pistot jätetään pois
+	Tatami Fill	Tatamitäyttö
+	Satin	Satiini
+	Running Stitch	Suora pisto
+	Centre Run	Keskiajo
+	Edge Run	Reuna-ajo
+	Edge Run and Zigzag	Reuna-ajo ja siksak
+	Edge Run and Tatami	Reuna-ajo ja tatami

@@ -5230,3 +5230,80 @@ imageTrace	Outline	Körvonal
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Az ArtCraft csapat VectorCraft programján alapul. MIT OR Apache-2.0. Betűtípusok: Source Sans 3, Inter, JetBrains Mono (OFL). Ikonok: Lucide (ISC) + VectorCraft.
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Az ArtCraft csapat VectorCraft programján alapul. MIT OR Apache-2.0. Betűtípusok: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikonok: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	a PEC legfeljebb {MAX_COLORS} színt tartalmazhat, ez a minta pedig {colors} színt használna
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	a VP3 legfeljebb {MAX_COLORS} színblokkot tartalmazhat
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	a DST-fájlnak {HEADER} bájtos fejléce és legalább egy 3 bájtos rekordja van, de ez a fájl {_1} bájtos
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	a DST-fejléc legfeljebb {MAX_RECORDS} rekordot számol, a mintához pedig {_1} kell
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	egy PEC-öltésblokk legfeljebb {MAX_BLOCK} bájtos lehet (hossza 24 bites), a mintához pedig {len} kell
+@msg	a VP3 string is too long	egy VP3-karakterlánc túl hosszú
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	egy alakzat több mint {MAX_COORD_MM} mm-re van az origótól, vagy olyan koordinátája van, amely nem szám: nem hímezhető
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	egy alakzathoz körülbelül {n} öltés kellene, több, mint az egy alakzatnak megengedett {MAX_STITCHES}: használjon hosszabb öltést, nagyobb sortávolságot vagy kisebb mintát
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	nem PES- vagy PEC-fájl: nem #PES vagy #PEC kezdetű
+@msg	not a VP3 file: it does not start with %vsm%	nem VP3-fájl: nem %vsm% kezdetű
+@msg	not a {what} file: its record {_1} is not a DST record	nem {what}-fájl: a(z) {_1}. rekordja nem DST-rekord
+@msg	params must be an object	a paramétereknek objektumnak kell lenniük
+@msg	the EXP file has no stitch records	az EXP-fájlnak nincsenek öltésrekordjai
+@msg	the JEF file has no stitch records	a JEF-fájlnak nincsenek öltésrekordjai
+@msg	the JEF file is cut short: {len} bytes	a JEF-fájl csonka: {len} bájt
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	a JEF-fejléc a(z) {offset}. bájtra mutat, a fájl {_1} bájtján túlra
+@msg	the PEC block has no stitches	a PEC-blokkban nincsenek öltések
+@msg	the PEC header is cut short	a PEC-fejléc csonka
+@msg	the PES header is cut short	a PES-fejléc csonka
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	a PES-fejléc a(z) {at}. bájtra mutat, a fájl {_1} bájtján túlra
+@msg	the VP3 file has no stitches	a VP3-fájlban nincsenek öltések
+@msg	the VP3 file has no {what} packet at byte {at}	a VP3-fájlban nincs {what}-csomag a(z) {at}. bájtnál
+@msg	the VP3 file is cut short: {len} bytes	a VP3-fájl csonka: {len} bájt
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	a mintában több mint {MAX_RUNS} külön öltéssor van, több, mint amennyit egy dokumentum megnyit
+@msg	the design has no points to write	a mintában nincsenek kiírandó pontok
+@msg	the design has no stitches to draw	a mintában nincsenek kirajzolandó öltések
+@msg	the design has no stitches to write	a mintában nincsenek kiírandó öltések
+@msg	the design is too large for a VP3 file	a minta túl nagy egy VP3-fájlhoz
+@msg	the design is {_1} × {_2} mm, larger than a document holds	a minta {_1} × {_2} mm, nagyobb, mint amennyit egy dokumentum befogad
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	a minta {_1} × {_2} mm, nagyobb, mint amennyit a(z) {_3} befogad (oldalanként {_4} mm)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	a mintához több mint {MAX_DESIGN_STITCHES} öltés kellene: használjon hosszabb öltést, nagyobb sortávolságot vagy kevesebb grafikát
+@msg	the file has no stitches	a fájlban nincsenek öltések
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	a(z) {format}-fájl nagyobb lenne {_1} MiB-nál: a minta mozgásai túl hosszúak (egymástól távoli objektumok)
+@msg	the {what} file has no stitch records	a(z) {what}-fájlnak nincsenek öltésrekordjai
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	a(z) {what}-fájlban több mint {MAX_POINTS} öltés van, több, mint amennyi egy mintában lehet
+@msg	thread number {index} doesn't fit a JEF header	a(z) {index} szálszám nem fér el egy JEF-fejlécben
+@msg	thread number {index} doesn't fit a PEC header	a(z) {index} szálszám nem fér el egy PEC-fejlécben
+@msg	too many stitches for a VP3 file	túl sok öltés egy VP3-fájlhoz
+@msg	{_1} is not an embroidery format	a(z) {_1} nem hímzésformátum
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Öltés:
+	Stitch Length:	Öltéshossz:
+	Fill Angle:	Kitöltés szöge:
+	Pull Compensation:	Húzáskompenzáció:
+	Pull Compensation (%):	Húzáskompenzáció (%):
+	Push Compensation:	Nyomáskompenzáció:
+	Expand Fills:	Kitöltések bővítése:
+	Narrow Parts as Satin:	Keskeny részek szaténként:
+	Thread Weight:	Szálvastagság:
+	Underlay:	Alátét:
+	Jump Length:	Ugrás hossza:
+	Trim Length:	Vágás hossza:
+	Shortest Stitch:	Legrövidebb öltés:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Hogyan készülnek az alakzatok: az Automatikus tatamival tölti ki az alakzatokat, a vonalakat pedig szélességük szerint szaténoszlopként vagy egyenes öltéssel varrja; más választás minden alakzatot így varr
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	A kitöltési sorok és a szaténöltések közti távolság; változatlanul hagyva a szaténoszlop a szélessége szerint választja
+	The length of the stitches along fill rows and running lines	Az öltések hossza a kitöltési sorok és az egyenes öltések mentén
+	The direction of the fill rows	A kitöltési sorok iránya
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Mindkét oldalon szélesíti a szaténoszlopokat és a kitöltési sorokat, hogy ellensúlyozza az anyag összehúzódását
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Szélességük egy részével szélesíti a szaténoszlopokat és a kitöltési sorokat, hogy ellensúlyozza az anyag összehúzódását
+	Shortens satin columns at their ends, where the thread pushes outward	Rövidíti a szaténoszlopokat a végeiken, ahol a szál kifelé nyom
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Körben megnöveli minden kitöltött alakzatot, hogy bezárja az alakzatok közti réseket; negatív érték kisebbíti
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	A kitöltésnek az ennél keskenyebb részei szaténoszlopként készülnek; a 0 egyiket sem
+	The thread's weight: thinner thread (a higher number) packs the rows closer	A szál vastagsága: a vékonyabb szál (nagyobb szám) sűrűbben rakja a sorokat
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Az elsőként varrt öltések, amelyek tartják az anyagot: alakzatonként választva, semmi, vagy egyfajta minden alakzathoz
+	A move longer than this lifts the needle instead of being sewn	Az ennél hosszabb mozgás felemeli a tűt, ahelyett hogy varrná
+	A jump longer than this cuts the thread first	Az ennél hosszabb ugrás előbb elvágja a szálat
+	Shorter stitches are left out	A rövidebb öltések kimaradnak
+	Tatami Fill	Tatami kitöltés
+	Satin	Szatén
+	Running Stitch	Egyenes öltés
+	Centre Run	Középső menet
+	Edge Run	Szegélymenet
+	Edge Run and Zigzag	Szegélymenet és cikcakk
+	Edge Run and Tatami	Szegélymenet és tatami

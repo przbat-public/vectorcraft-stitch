@@ -135,12 +135,23 @@ pub(crate) struct Tally {
 }
 
 impl Tally {
-    /// Count record `r`, of a unit sewn in `style`.
+    /// Count record `r`: a needle point, a jump or a cut.
+    fn count(&mut self, r: &Record) {
+        match r.stitch.command {
+            Command::Stitch => self.needle += 1,
+            Command::Jump => self.jumps += 1,
+            Command::Trim => self.trims += 1,
+            Command::ColorChange | Command::Stop | Command::End => {}
+        }
+    }
+
+    /// Count record `r`, of a unit sewn in `style`, and measure it: the stitch it lays, the
+    /// thread it takes and the time it takes.
     fn add(&mut self, r: &Record, style: Option<Style>, machine: Machine, thread: Thread) {
+        self.count(r);
         let turn = |length: f64| SECONDS_PER_MINUTE / if length > SLOW_ABOVE { SLOW_SPEED.min(machine.speed) } else { machine.speed };
         match r.stitch.command {
             Command::Stitch => {
-                self.needle += 1;
                 self.seconds += turn(r.moved());
                 self.top += PASSES * thread.fabric;
                 if let Some(length) = r.sewn() {
@@ -152,15 +163,11 @@ impl Tally {
                 }
             }
             Command::Jump => {
-                self.jumps += 1;
                 let length = r.moved();
                 self.longest_jump = Some(self.longest_jump.map_or(length, |s| s.max(length)));
                 self.seconds += turn(length);
             }
-            Command::Trim => {
-                self.trims += 1;
-                self.seconds += TRIM_SECONDS;
-            }
+            Command::Trim => self.seconds += TRIM_SECONDS,
             Command::ColorChange | Command::Stop | Command::End => {}
         }
     }
@@ -184,12 +191,22 @@ impl Tally {
 
 /// The figures of each block of `plan`, in sewing order, and of each unit.
 pub(crate) fn tally(plan: &DesignPlan, machine: Machine, thread: Thread) -> (Vec<Tally>, Vec<Tally>) {
+    tally_with(plan, |t, r| t.add(r, measure::style(plan, r.unit), machine, thread))
+}
+
+/// The needle points, jumps and cuts of each block of `plan` and of each unit, without measuring
+/// them.
+pub(crate) fn counts(plan: &DesignPlan) -> (Vec<Tally>, Vec<Tally>) {
+    tally_with(plan, Tally::count)
+}
+
+/// Each block's and each unit's tally, each record taken in by `take`.
+fn tally_with(plan: &DesignPlan, mut take: impl FnMut(&mut Tally, &Record)) -> (Vec<Tally>, Vec<Tally>) {
     let mut blocks = vec![Tally::default(); plan.blocks.len()];
     let mut units = vec![Tally::default(); plan.units.len()];
     measure::each(plan, |r| {
-        let style = measure::style(plan, r.unit);
         if let Some(t) = units.get_mut(r.unit) {
-            t.add(r, style, machine, thread);
+            take(t, r);
         }
     });
     for (k, b) in plan.blocks.iter().enumerate() {
@@ -224,7 +241,7 @@ pub(crate) fn rect(r: Rect) -> Value {
 
 /// A block's thread as the commands list it.
 pub(crate) fn thread_json(t: &BlockThread) -> Value {
-    let hex = |[r, g, b]: [u8; 3]| vectorcraft_color::Color::rgb8(r, g, b).to_hex();
+    let hex = super::hex;
     json!({"palette": t.palette.id(), "index": t.index, "name": t.name, "color": hex(t.color), "art": hex(t.art), "deltaE": t.shown_delta_e(), "mismatch": t.mismatch()})
 }
 

@@ -285,12 +285,16 @@ fn check_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(check::check(&plan, &check::Ask { rules, format, limit }))
 }
 
+/// An sRGB colour as the commands give it: `#rrggbb`.
+pub(crate) fn hex([r, g, b]: [u8; 3]) -> String {
+    Color::rgb8(r, g, b).to_hex()
+}
+
 fn threads(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.threads";
     let opts = Options::from_params(p, C)?;
     let (plan, d) = planned(s, &opts, C)?;
     let d = &*d;
-    let hex = |[r, g, b]: [u8; 3]| Color::rgb8(r, g, b).to_hex();
     let blocks: Vec<Value> = plan
         .blocks
         .iter()

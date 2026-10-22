@@ -59,8 +59,7 @@ fn why(u: &Unit) -> String {
 
 /// The plan's sewing order → `embroidery.sequence`'s answer.
 pub(crate) fn sequence(plan: &DesignPlan) -> Value {
-    // Counts only: the machine and the fabric don't change them.
-    let (blocks_counted, units) = stats::tally(plan, stats::Machine { speed: stats::SPEED }, stats::Thread { fabric: stats::FABRIC_THICKNESS });
+    let (blocks_counted, units) = stats::counts(plan);
     // Each object (as a person selects it) and the blocks its units are in.
     let mut blocks_of: BTreeMap<u64, Vec<usize>> = BTreeMap::new();
     for u in &plan.units {

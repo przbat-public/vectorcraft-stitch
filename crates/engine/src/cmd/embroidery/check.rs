@@ -22,6 +22,7 @@ use vectorcraft_stitch::format::Format;
 use vectorcraft_stitch::plan::Style;
 use vectorcraft_stitch::thread::MISMATCH_DELTA_E;
 
+use super::hex;
 use super::measure::{self, Record};
 use super::plan::DesignPlan;
 use super::stats::{mm, point};
@@ -614,10 +615,6 @@ const NOT_CHECKED: [(&str, &str); 2] = [
     ("density too tight", "Melco's design checker names it without a threshold"),
     ("too many needle penetrations in an area", "Melco's design checker names it without a threshold"),
 ];
-
-fn hex([r, g, b]: [u8; 3]) -> String {
-    vectorcraft_color::Color::rgb8(r, g, b).to_hex()
-}
 
 /// Run `ask`'s rules on `plan` → each rule with its findings, how many rules of each severity
 /// found something, and what is not checked.

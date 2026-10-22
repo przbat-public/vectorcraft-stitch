@@ -31,7 +31,7 @@
 //! References: EduTechWiki, *Embroidery format PES* and *Embroidery format PEC*
 //! (edutechwiki.unige.ch/en/Embroidery_format_PES, …/Embroidery_format_PEC).
 
-use super::{Frame, LABEL_LEN, PAD, Reader, finish, label, mm, steps};
+use super::{Emitter, Frame, LABEL_LEN, PAD, Reader, finish, label, mm, steps, walk};
 use crate::thread::{self, Palette};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
@@ -197,55 +197,49 @@ fn header(p: &Pattern, colors: usize) -> Result<Vec<u8>> {
 }
 
 fn write_stitches(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) -> Result<()> {
-    let mut x = 0i32;
-    let mut y = 0i32;
-    let mut started: bool;
-    let mut wrote_any = false;
-    let mut color_two = true;
-    for (i, block) in p.blocks.iter().enumerate() {
-        if block.stitches.is_empty() {
-            continue;
-        }
-        if i > 0 && wrote_any {
-            out.extend_from_slice(&COLOR_CHANGE);
-            out.push(if color_two { COLOR_TWO } else { COLOR_ONE });
-            color_two = !color_two;
-        }
-        // Each block starts with the needle up: travel to its first stitch.
-        started = false;
-        for s in &block.stitches {
-            match s.command {
-                Command::Stitch => {
-                    let (nx, ny) = frame.point(*s);
-                    if !started {
-                        move_values(out, &mut x, &mut y, nx, ny, JUMP | LONG);
-                        started = true;
-                    }
-                    move_values(out, &mut x, &mut y, nx, ny, 0);
-                    wrote_any = true;
-                }
-                Command::Jump => {
-                    let (nx, ny) = frame.point(*s);
-                    move_values(out, &mut x, &mut y, nx, ny, JUMP | LONG);
-                    started = true;
-                }
-                Command::Trim => {
-                    value(out, 0, TRIM | LONG);
-                    value(out, 0, TRIM | LONG);
-                }
-                Command::ColorChange | Command::Stop => {
-                    out.extend_from_slice(&COLOR_CHANGE);
-                    out.push(if color_two { COLOR_TWO } else { COLOR_ONE });
-                    color_two = !color_two;
-                }
-            }
-        }
-    }
-    if !wrote_any {
+    let mut w = Pec { out, x: 0, y: 0, wrote: false, color_two: true };
+    walk(p, frame, &mut w);
+    if !w.wrote {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
-    out.push(END);
+    w.out.push(END);
     Ok(())
+}
+
+/// A PEC stitch stream being written: its bytes, where the needle is, whether a stitch was written
+/// yet, and which of the two colour-change bytes comes next.
+struct Pec<'a> {
+    out: &'a mut Vec<u8>,
+    x: i32,
+    y: i32,
+    wrote: bool,
+    color_two: bool,
+}
+
+impl Emitter for Pec<'_> {
+    fn stitch(&mut self, x: i32, y: i32) {
+        move_values(self.out, &mut self.x, &mut self.y, x, y, 0);
+        self.wrote = true;
+    }
+
+    fn jump(&mut self, x: i32, y: i32) {
+        move_values(self.out, &mut self.x, &mut self.y, x, y, JUMP | LONG);
+    }
+
+    fn trim(&mut self) {
+        value(self.out, 0, TRIM | LONG);
+        value(self.out, 0, TRIM | LONG);
+    }
+
+    fn color_change(&mut self) {
+        self.out.extend_from_slice(&COLOR_CHANGE);
+        self.out.push(if self.color_two { COLOR_TWO } else { COLOR_ONE });
+        self.color_two = !self.color_two;
+    }
+
+    fn wrote(&self) -> bool {
+        self.wrote
+    }
 }
 
 fn move_values(out: &mut Vec<u8>, x: &mut i32, y: &mut i32, tx: i32, ty: i32, flags: u8) {

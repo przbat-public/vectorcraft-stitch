@@ -23,7 +23,7 @@
 //! pyembroidery 1.5.1 (MIT) served only as an outside reader of the files written here
 //! (`docs/embroidery.md` › Validation); none of its code was read.
 
-use super::{Frame, Reader, finish, mm, steps};
+use super::{Emitter, Frame, Reader, TWO_BYTE_COMMAND, finish, mm, two_byte_move, walk};
 use crate::thread::{self, Palette};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
@@ -32,7 +32,7 @@ const HEADER: usize = 0x74;
 /// The largest delta one record holds, in tenths of a millimetre.
 pub(crate) const MAX_DELTA: i32 = 127;
 /// The command prefix: `0x80` is not a delta a record uses.
-const CONTROL: u8 = 0x80;
+const CONTROL: u8 = TWO_BYTE_COMMAND;
 /// The commands' second bytes: the end of the design, a jump (then the deltas), a colour change
 /// (then two bytes that don't move the frame).
 const END: u8 = 0x10;
@@ -131,63 +131,40 @@ fn record_count(p: &Pattern) -> usize {
 }
 
 fn write_body(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) {
-    let mut x = 0i32;
-    let mut y = 0i32;
-    let mut started: bool;
-    let mut wrote_any = false;
-    for (i, block) in p.blocks.iter().enumerate() {
-        if block.stitches.is_empty() {
-            continue;
-        }
-        if i > 0 && wrote_any {
-            out.extend_from_slice(&[CONTROL, COLOR_CHANGE, 0, 0]);
-        }
-        // Each block starts with the needle up: travel to its first stitch.
-        started = false;
-        for s in &block.stitches {
-            match s.command {
-                Command::Stitch => {
-                    let (nx, ny) = frame.point(*s);
-                    if !started {
-                        write_move(out, &mut x, &mut y, nx, ny, Some(JUMP));
-                        started = true;
-                    }
-                    write_move(out, &mut x, &mut y, nx, ny, None);
-                    wrote_any = true;
-                }
-                Command::Jump => {
-                    let (nx, ny) = frame.point(*s);
-                    write_move(out, &mut x, &mut y, nx, ny, Some(JUMP));
-                    started = true;
-                }
-                Command::Trim => {
-                    for _ in 0..TRIM_JUMPS {
-                        out.extend_from_slice(&[CONTROL, JUMP, 0, 0]);
-                    }
-                }
-                Command::ColorChange | Command::Stop => out.extend_from_slice(&[CONTROL, COLOR_CHANGE, 0, 0]),
-            }
-        }
-    }
+    walk(p, frame, &mut Jef { out, at: (0, 0), wrote: false });
     out.extend_from_slice(&[CONTROL, END]);
 }
 
-fn write_move(out: &mut Vec<u8>, x: &mut i32, y: &mut i32, tx: i32, ty: i32, control: Option<u8>) {
-    let (dx, dy) = (tx - *x, ty - *y);
-    *x = tx;
-    *y = ty;
-    if dx == 0 && dy == 0 {
-        if control.is_none() {
-            out.extend_from_slice(&[0, 0]);
-        }
-        return;
+/// A JEF body being written: its records, where the needle is, and whether a stitch was written
+/// yet.
+struct Jef<'a> {
+    out: &'a mut Vec<u8>,
+    at: (i32, i32),
+    wrote: bool,
+}
+
+impl Emitter for Jef<'_> {
+    fn stitch(&mut self, x: i32, y: i32) {
+        two_byte_move(self.out, &mut self.at, (x, y), None, MAX_DELTA);
+        self.wrote = true;
     }
-    for (sx, sy) in steps(dx, dy, MAX_DELTA) {
-        let (bx, by) = ((sx as i8) as u8, (sy as i8) as u8);
-        match control {
-            Some(c) => out.extend_from_slice(&[CONTROL, c, bx, by]),
-            None => out.extend_from_slice(&[bx, by]),
+
+    fn jump(&mut self, x: i32, y: i32) {
+        two_byte_move(self.out, &mut self.at, (x, y), Some(JUMP), MAX_DELTA);
+    }
+
+    fn trim(&mut self) {
+        for _ in 0..TRIM_JUMPS {
+            self.out.extend_from_slice(&[CONTROL, JUMP, 0, 0]);
         }
+    }
+
+    fn color_change(&mut self) {
+        self.out.extend_from_slice(&[CONTROL, COLOR_CHANGE, 0, 0]);
+    }
+
+    fn wrote(&self) -> bool {
+        self.wrote
     }
 }
 

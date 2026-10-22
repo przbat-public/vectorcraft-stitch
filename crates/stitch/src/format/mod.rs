@@ -261,6 +261,87 @@ impl Frame {
     }
 }
 
+/// What a record-based writer (DST, TAP and T01, EXP, JEF, PEC) writes for a design's points, in
+/// the file's tenths of a millimetre; [`walk`] calls it in needle order.
+pub(crate) trait Emitter {
+    /// A stitch to (`x`, `y`): the needle goes down there.
+    fn stitch(&mut self, x: i32, y: i32);
+    /// A move to (`x`, `y`) with the needle up.
+    fn jump(&mut self, x: i32, y: i32);
+    /// The thread cut where the needle is.
+    fn trim(&mut self);
+    /// A thread change or a stop inside a block.
+    fn color_change(&mut self);
+    /// The thread change before the next block (a colour change unless the format counts them).
+    fn next_block(&mut self) {
+        self.color_change();
+    }
+    /// Whether what is written so far calls for a thread change before the next block.
+    fn wrote(&self) -> bool;
+}
+
+/// Walk `p`'s blocks in sewing order, telling `w` what to write: a thread change before each block
+/// that follows one that wrote something ([`Emitter::wrote`]), each block's first stitch reached
+/// with the needle up (a jump to it, then the stitch), then its stitches, jumps, trims and stops as
+/// they come. Empty blocks are passed by.
+pub(crate) fn walk(p: &Pattern, frame: &Frame, w: &mut impl Emitter) {
+    for (i, block) in p.blocks.iter().enumerate() {
+        if block.stitches.is_empty() {
+            continue;
+        }
+        if i > 0 && w.wrote() {
+            w.next_block();
+        }
+        // Each block starts with the needle up: travel to its first stitch, so that no thread runs
+        // from where the needle was.
+        let mut up = true;
+        for s in &block.stitches {
+            match s.command {
+                Command::Stitch => {
+                    let (x, y) = frame.point(*s);
+                    if std::mem::take(&mut up) {
+                        w.jump(x, y);
+                    }
+                    w.stitch(x, y);
+                }
+                Command::Jump => {
+                    let (x, y) = frame.point(*s);
+                    w.jump(x, y);
+                    up = false;
+                }
+                Command::Trim => w.trim(),
+                Command::ColorChange | Command::Stop => w.color_change(),
+            }
+        }
+    }
+}
+
+/// The prefix of a command record in the two-byte formats (EXP and JEF): `0x80`, which no delta
+/// they write uses.
+pub(crate) const TWO_BYTE_COMMAND: u8 = 0x80;
+
+/// A move from `at` to `to` (tenths of a millimetre) in a two-byte format (EXP and JEF), and `at`
+/// moved there: stitches of at most `max` each way, or, when `command` names one, that command's
+/// four-byte records (the prefix, the command, the deltas). A stitch that goes nowhere is written
+/// (the needle goes down where it is); a jump that goes nowhere is not.
+pub(crate) fn two_byte_move(out: &mut Vec<u8>, at: &mut (i32, i32), to: (i32, i32), command: Option<u8>, max: i32) {
+    let (dx, dy) = (to.0 - at.0, to.1 - at.1);
+    *at = to;
+    if dx == 0 && dy == 0 {
+        if command.is_none() {
+            out.extend_from_slice(&[0, 0]);
+        }
+        return;
+    }
+    for (sx, sy) in steps(dx, dy, max) {
+        let (bx, by) = ((sx as i8) as u8, (sy as i8) as u8);
+        match command {
+            Some(c) => out.extend_from_slice(&[TWO_BYTE_COMMAND, c, bx, by]),
+            None => out.extend_from_slice(&[bx, by]),
+        }
+    }
+}
+
 /// A file's bytes, read in order.
 pub(crate) struct Reader<'a> {
     data: &'a [u8],

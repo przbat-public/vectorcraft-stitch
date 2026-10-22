@@ -23,8 +23,8 @@
 //! Reference: EduTechWiki, *Embroidery format DST* (edutechwiki.unige.ch/en/Embroidery_format_DST),
 //! which transcribes the public decodings by Achatina and Embroidermodder.
 
-use super::{Frame, LABEL_LEN, PAD, finish, label, mm, steps};
-use crate::{Block, Command, Error, Pattern, Result, Stitch};
+use super::{Emitter, Frame, LABEL_LEN, PAD, finish, label, mm, steps, walk};
+use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The header's length; records follow it.
 const HEADER: usize = 512;
@@ -94,55 +94,14 @@ pub(crate) struct Records {
 pub(crate) fn records(p: &Pattern) -> Result<Records> {
     let frame = Frame::of(p, true)?;
     let mut body: Body = Body::default();
-    let mut colors = 0usize;
-    for (i, block) in p.blocks.iter().enumerate() {
-        if block.stitches.is_empty() {
-            continue;
-        }
-        if i > 0 && !body.out.is_empty() {
-            body.push(0, 0, Kind::ColorChange);
-            colors += 1;
-        }
-        // Each block starts with the needle up: travel to its first stitch.
-        body.started = false;
-        write_block(&mut body, block, &frame);
-    }
+    walk(p, &frame, &mut body);
     if body.out.is_empty() {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
     let count = body.records;
     let (width, height) = frame.size();
     body.push(0, 0, Kind::End);
-    Ok(Records { bytes: body.out, count, colors, width, height })
-}
-
-fn write_block(body: &mut Body, block: &Block, frame: &Frame) {
-    for s in &block.stitches {
-        match s.command {
-            Command::Stitch => {
-                let (x, y) = frame.point(*s);
-                if !body.started {
-                    // The design starts at the origin: travel to its first stitch with the
-                    // needle up so no thread runs from there.
-                    body.move_to(x, y, Kind::Jump);
-                    body.started = true;
-                }
-                body.move_to(x, y, Kind::Stitch);
-            }
-            Command::Jump => {
-                let (x, y) = frame.point(*s);
-                body.move_to(x, y, Kind::Jump);
-                body.started = true;
-            }
-            Command::Trim => {
-                // Three small jumps that go nowhere: a machine trims after a run of jumps.
-                for (dx, dy) in TRIM_RECORDS {
-                    body.push(dx, dy, Kind::Jump);
-                }
-            }
-            Command::ColorChange | Command::Stop => body.push(0, 0, Kind::ColorChange),
-        }
-    }
+    Ok(Records { bytes: body.out, count, colors: body.colors, width, height })
 }
 
 /// The header's text lines, its end marker and the padding to [`HEADER`].
@@ -177,7 +136,39 @@ struct Body {
     x: i32,
     y: i32,
     records: usize,
-    started: bool,
+    /// The colour changes between blocks (the header's `CO`).
+    colors: usize,
+}
+
+impl Emitter for Body {
+    fn stitch(&mut self, x: i32, y: i32) {
+        self.move_to(x, y, Kind::Stitch);
+    }
+
+    fn jump(&mut self, x: i32, y: i32) {
+        self.move_to(x, y, Kind::Jump);
+    }
+
+    fn trim(&mut self) {
+        // Three small jumps that go nowhere: a machine trims after a run of jumps.
+        for (dx, dy) in TRIM_RECORDS {
+            self.push(dx, dy, Kind::Jump);
+        }
+    }
+
+    fn color_change(&mut self) {
+        self.push(0, 0, Kind::ColorChange);
+    }
+
+    fn next_block(&mut self) {
+        self.color_change();
+        self.colors += 1;
+    }
+
+    /// Any record: a trim or a stop too.
+    fn wrote(&self) -> bool {
+        !self.out.is_empty()
+    }
 }
 
 impl Body {

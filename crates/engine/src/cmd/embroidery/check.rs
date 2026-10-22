@@ -24,7 +24,7 @@ use vectorcraft_stitch::thread::MISMATCH_DELTA_E;
 
 use super::hex;
 use super::measure::{self, Record};
-use super::plan::DesignPlan;
+use super::plan::{BlockThread, DesignPlan};
 use super::stats::{mm, number, point};
 
 /// How much a finding matters.
@@ -411,6 +411,8 @@ pub(crate) struct Ask {
 struct Checker<'a> {
     plan: &'a DesignPlan,
     ask: &'a Ask,
+    /// The blocks' threads as the format asked for writes them ([`threads_judged`]).
+    threads: Vec<BlockThread>,
     found: HashMap<&'static str, Found>,
     /// The short stitches in a row so far, and the first of them.
     short_run: Option<(usize, Record)>,
@@ -421,7 +423,7 @@ struct Checker<'a> {
 impl<'a> Checker<'a> {
     fn new(plan: &'a DesignPlan, ask: &'a Ask) -> Self {
         let found = ask.rules.iter().map(|r| (r.id, Found::default())).collect();
-        Self { plan, ask, found, short_run: None, cells: HashMap::new() }
+        Self { plan, ask, threads: threads_judged(plan, ask.format), found, short_run: None, cells: HashMap::new() }
     }
 
     fn wants(&self, id: &str) -> bool {
@@ -562,13 +564,14 @@ impl<'a> Checker<'a> {
                 _ => {}
             }
         }
-        for (k, b) in plan.blocks.iter().enumerate() {
-            if b.thread.mismatch() {
-                let note = format!("block {}: {} {} for the art's {}", k + 1, b.thread.palette.id(), b.thread.index, hex(b.thread.art));
+        let threads = std::mem::take(&mut self.threads);
+        for (k, (b, thread)) in plan.blocks.iter().zip(&threads).enumerate() {
+            if thread.mismatch() {
+                let note = format!("block {}: {} {} for the art's {}", k + 1, thread.palette.id(), thread.index, hex(thread.art));
                 let hit = Hit {
                     record: Some(b.first_number),
                     unit: Some(b.units.start),
-                    value: Some(b.thread.shown_delta_e()),
+                    value: Some(thread.shown_delta_e()),
                     note: Some(note),
                     ..Hit::default()
                 };
@@ -645,6 +648,7 @@ impl<'a> Checker<'a> {
         let [errors, warnings, info] = totals.map(|(rules, hits)| json!({"rules": rules, "hits": hits}));
         json!({
             "format": self.ask.format.id(),
+            "palette": self.ask.format.palette().map_or_else(|| self.plan.blocks.first().map(|b| b.thread.palette.id()), |p| Some(p.id())),
             "rules": rules,
             "summary": {"errors": errors, "warnings": warnings, "info": info},
             "notChecked": NOT_CHECKED.iter().map(|(what, why)| json!({"what": what, "why": why})).collect::<Vec<_>>(),
@@ -670,6 +674,16 @@ const NOT_CHECKED: [(&str, &str); 2] = [
     ("density too tight", "Melco's design checker names it without a threshold"),
     ("too many needle penetrations in an area", "Melco's design checker names it without a threshold"),
 ];
+
+/// The threads a check judges: those the format writes, matched to its own palette when it numbers
+/// its threads from one other than the plan's (a PES of a document in Janome's palette writes
+/// Brother's threads); the plan's for a format that names no threads.
+fn threads_judged(plan: &DesignPlan, format: Format) -> Vec<BlockThread> {
+    match format.palette() {
+        Some(palette) => plan.threads_in(palette),
+        None => plan.blocks.iter().map(|b| b.thread.clone()).collect(),
+    }
+}
 
 /// Run `ask`'s rules on `plan` → each rule with its findings, how many rules of each severity
 /// found something, and what is not checked.

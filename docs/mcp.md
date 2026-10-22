@@ -4328,7 +4328,12 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   (`objectCount`, at most 1000 in `objects`, `truncated`) and the first `limit` hits (`examples`, 20 by default, at
   most 1000) as record numbers and points with the measure compared. `summary` gives, per severity, the rules that
   found something and their hits. `format` (one of the eight embroidery formats; default: the format of the document's
-  thread palette) sets the format limits checked; `rules` picks rules by id.
+  thread palette) sets the format limits checked and the threads judged: those the format writes (a PES of a
+  document in Janome's palette writes Brother's threads, matched to the art's colours), named in `palette`; `rules`
+  picks rules by id.
+
+The four read commands take `selectedOnly` (the selected objects alone, as `document.export {selectedOnly}` writes them)
+and plan the document as the export does: an opacity mask's editing layer, which no export writes, is left out.
 
 A *record* is every needle point, jump and cut; record numbers count them from 1 in sewing order, and `stitches`
 counts needle points only. Lengths, positions and boxes are millimetres from the document's origin, y down, boxes

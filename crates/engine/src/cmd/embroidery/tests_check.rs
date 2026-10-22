@@ -265,15 +265,38 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
         let e = s.execute("embroidery.check", &bad).unwrap_err().to_string();
         assert!(e.contains(why), "{bad}: {e}");
     }
-    // The keys it takes: the export's embroidery options and its own three; the rules its
+    // The keys it takes: the export's embroidery options and its own four; the rules its
     // description lists are the rules there are.
     let spec = crate::cmd::find_command("embroidery.check").unwrap();
-    for key in crate::cmd::fileio::embroidery::OPTIONS.iter().map(|o| o.name).chain(["format", "rules", "limit"]) {
+    for key in crate::cmd::fileio::embroidery::OPTIONS.iter().map(|o| o.name).chain(["format", "rules", "limit", "selectedOnly"]) {
         assert!(crate::cmd::params::takes_key(spec.params, key), "{key}");
     }
     for rule in RULES {
         assert!(spec.params.contains(&format!(" {} ", rule.id)) || spec.params.contains(&format!(" {})", rule.id)), "{}", rule.id);
     }
-    let e = crate::check_params("embroidery.check", &json!({"selectedOnly": true})).unwrap_err().to_string();
-    assert!(e.contains("unknown parameter `selectedOnly`"), "{e}");
+    let e = crate::check_params("embroidery.check", &json!({"speed": 800})).unwrap_err().to_string();
+    assert!(e.contains("unknown parameter `speed`"), "{e}");
+}
+
+/// `embroidery.check {format}` judges the threads that format writes: a PES of a document in
+/// Janome's palette writes Brother's threads, matched to the art's colours, and those are judged;
+/// the reply says which palette.
+#[test]
+fn the_check_judges_the_threads_its_format_writes() {
+    let mut s = Session::new();
+    run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
+    run(&mut s, "paint.setStroke", json!({"none": true}));
+    // Brother's Peacock Blue (PEC 38), in a document of Janome's palette.
+    run(&mut s, "paint.setFill", json!({"color": "#134a46"}));
+    run(&mut s, "shape.rectangle", json!({"x": 20, "y": 20, "width": 60, "height": 40}));
+    let check = |s: &mut Session, format: &str| run(s, "embroidery.check", json!({"format": format, "rules": ["threadMismatch"]}));
+    let (jef, pes) = (check(&mut s, "jef"), check(&mut s, "pes"));
+    assert_eq!((&jef["palette"], &pes["palette"]), (&json!("jef"), &json!("pec")));
+    // Brother's own colour: no mismatch in a PES. In a JEF, what the document's palette gives.
+    assert_eq!(pes["rules"][0]["hits"], json!(0));
+    let threads = run(&mut s, "embroidery.threads", json!({}));
+    let janome = threads["blocks"][0]["thread"]["mismatch"].as_bool().unwrap();
+    assert_eq!(jef["rules"][0]["hits"], json!(u64::from(janome)));
+    // A format that names no threads judges the document's.
+    assert_eq!(check(&mut s, "dst")["palette"], json!("jef"));
 }

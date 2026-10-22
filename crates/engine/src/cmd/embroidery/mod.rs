@@ -91,7 +91,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Threads",
             [],
             None,
-            "{stitch?|stitchStyle?, spacing?|density?, length?|stitchLength?, angle?|stitchAngle?, pull?|pullCompensation?, pullPercent?|pullCompensationPercent?, push?|pushCompensation?, expand?, narrowAsSatin?, threadWeight?, underlay?, jumpLength?, trimLength?, minStitch? (the embroidery options of document.export, as document.formats describes them, each also under its earlier name: they decide which objects share a colour block; a value out of its range is refused; null leaves one to its default), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000)} the thread each colour block of the design is sewn in, as the PES or JEF export of the document's palette writes it (embroidery.setup): the palette's thread nearest the colour the block's art is painted with, in sewing order, or, when a neighbouring block has that one, the nearest other thread within threshold → {palette: \"pec\"|\"jef\" (the palette in use), threshold: the colour difference past which a thread is flagged, blockCount, offset, truncated: whether blocks after the listed ones are left out, blocks: [{block: from 1 in sewing order, thread: {palette, index: from 1 as the format numbers it, name, color: \"#rrggbb\", art: \"#rrggbb\" (the colour the art is painted with), deltaE: the CIEDE2000 difference between the two, to two decimals (0: painted with the thread's own colour, a swatch of its thread library), mismatch: deltaE past threshold}, unitCount: the fills, strokes and stitch runs sewn in it}], options: the embroidery options planned with, warnings}",
+            "{stitch?|stitchStyle?, spacing?|density?, length?|stitchLength?, angle?|stitchAngle?, pull?|pullCompensation?, pullPercent?|pullCompensationPercent?, push?|pushCompensation?, expand?, narrowAsSatin?, threadWeight?, underlay?, jumpLength?, trimLength?, minStitch? (the embroidery options of document.export, as document.formats describes them, each also under its earlier name: they decide which objects share a colour block; a value out of its range is refused; null leaves one to its default), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the thread each colour block of the design is sewn in, as the PES or JEF export of the document's palette writes it (embroidery.setup): the palette's thread nearest the colour the block's art is painted with, in sewing order, or, when a neighbouring block has that one, the nearest other thread within threshold → {palette: \"pec\"|\"jef\" (the palette in use), threshold: the colour difference past which a thread is flagged, blockCount, offset, truncated: whether blocks after the listed ones are left out, blocks: [{block: from 1 in sewing order, thread: {palette, index: from 1 as the format numbers it, name, color: \"#rrggbb\", art: \"#rrggbb\" (the colour the art is painted with), deltaE: the CIEDE2000 difference between the two, to two decimals (0: painted with the thread's own colour, a swatch of its thread library), mismatch: deltaE past threshold}, unitCount: the fills, strokes and stitch runs sewn in it}], options: the embroidery options planned with, warnings}",
             has_doc,
             threads
         ),
@@ -100,7 +100,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Statistics",
             [],
             None,
-            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, speed?: stitches a minute the machine sews at (60 to 1500; default 650, a home machine's default, an estimate), fabricThickness?: millimetres (0 to 5; default 0.5, an estimate: the top thread goes down through it and back up at each needle point), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000)} the design's figures as the export sews it, totals and per block; lengths, positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {stitches: needle points, records: needle points, jumps and cuts (what record numbers count), jumps, trims, colorChanges, threadCount: distinct threads, blockCount, size: {width, height}, bounds, start, end: [x, y] (the first and last needle points), extents: {left, right, up, down} from the start, shortestStitch, longestStitch, longestJump, threadUsage: {topMetres, bobbinMetres, fabricThickness, estimate: what the estimate rests on}, time: {seconds, minutes, speed, slowSpeed, slowAbove, trimSeconds, includes: what the time counts, estimate: what the estimate rests on} (colour changes are counted, not timed), blocks: [{block: from 1, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches, records, jumps, trims, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), topThreadMetres, bobbinThreadMetres, seconds}], offset, truncated: whether blocks after the listed ones are left out, options: the embroidery options planned with, warnings}",
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, speed?: stitches a minute the machine sews at (60 to 1500; default 650, a home machine's default, an estimate), fabricThickness?: millimetres (0 to 5; default 0.5, an estimate: the top thread goes down through it and back up at each needle point), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's figures as the export sews it, totals and per block; lengths, positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {stitches: needle points, records: needle points, jumps and cuts (what record numbers count), jumps, trims, colorChanges, threadCount: distinct threads, blockCount, size: {width, height}, bounds, start, end: [x, y] (the first and last needle points), extents: {left, right, up, down} from the start, shortestStitch, longestStitch, longestJump, threadUsage: {topMetres, bobbinMetres, fabricThickness, estimate: what the estimate rests on}, time: {seconds, minutes, speed, slowSpeed, slowAbove, trimSeconds, includes: what the time counts, estimate: what the estimate rests on} (colour changes are counted, not timed), blocks: [{block: from 1, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches, records, jumps, trims, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), topThreadMetres, bobbinThreadMetres, seconds}], offset, truncated: whether blocks after the listed ones are left out, options: the embroidery options planned with, warnings}",
             has_doc,
             stats_cmd
         ),
@@ -109,7 +109,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Sewing Order",
             [],
             None,
-            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, offset?: the first unit listed (default 0), limit?: the most units listed (0 to 10000; default 1000)} the design's sewing order, read only (sewing order follows stacking order: move objects with node.move to change it), its units from offset in sewing order within their blocks; positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {blockCount, unitCount, offset, truncated: whether units after the listed ones are left out, blocks: [{block: from 1 in sewing order, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches: needle points, records: needle points, jumps and cuts, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), jumps, trims, unitCount, units: [{unit: from 1, its position in this plan, id: the object a person selects (the symbol instance for art inside a symbol), node: the object sewn, instance: the symbol instance or null, part: \"fill\"|\"stroke\"|\"literal\", partIndex: which fill or stroke, from 1 in appearance order (null for literal; id, part and partIndex tell a unit apart from one plan to the next), sewn: \"running\"|\"satin\"|\"tatami\"|\"literal\" (as the stitch option names them), columns: whether a fill's narrow parts are satin columns, rule: \"fill\"|\"wideStroke\"|\"narrowStroke\"|\"strokeFilled\"|\"forced\"|\"literal\" (the rule that chose how it is sewn), ruleValues: the values the rule turned on, why: the same as a sentence, stitches, records, firstRecord, lastRecord (null when it adds none: one needle point where the needle already is), jumps, trims, entry, exit: [x, y] (its first and last needle points), bounds}] (only the listed units), then: {colorChange: true, trim: whether the block ends with a cut} (null after the last block)}] (the blocks of the listed units), splitCount, split: [{id, blocks}] (objects whose units are sewn in more than one block; at most limit), options: the embroidery options planned with, warnings}",
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, offset?: the first unit listed (default 0), limit?: the most units listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's sewing order, read only (sewing order follows stacking order: move objects with node.move to change it), its units from offset in sewing order within their blocks; positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {blockCount, unitCount, offset, truncated: whether units after the listed ones are left out, blocks: [{block: from 1 in sewing order, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches: needle points, records: needle points, jumps and cuts, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), jumps, trims, unitCount, units: [{unit: from 1, its position in this plan, id: the object a person selects (the symbol instance for art inside a symbol), node: the object sewn, instance: the symbol instance or null, part: \"fill\"|\"stroke\"|\"literal\", partIndex: which fill or stroke, from 1 in appearance order (null for literal; id, part and partIndex tell a unit apart from one plan to the next), sewn: \"running\"|\"satin\"|\"tatami\"|\"literal\" (as the stitch option names them), columns: whether a fill's narrow parts are satin columns, rule: \"fill\"|\"wideStroke\"|\"narrowStroke\"|\"strokeFilled\"|\"forced\"|\"literal\" (the rule that chose how it is sewn), ruleValues: the values the rule turned on, why: the same as a sentence, stitches, records, firstRecord, lastRecord (null when it adds none: one needle point where the needle already is), jumps, trims, entry, exit: [x, y] (its first and last needle points), bounds}] (only the listed units), then: {colorChange: true, trim: whether the block ends with a cut} (null after the last block)}] (the blocks of the listed units), splitCount, split: [{id, blocks}] (objects whose units are sewn in more than one block; at most limit), options: the embroidery options planned with, warnings}",
             has_doc,
             sequence_cmd
         ),
@@ -118,7 +118,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Check",
             [],
             None,
-            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, format?: \"dst\"|\"tap\"|\"t01\"|\"exp\"|\"pes\"|\"pec\"|\"jef\"|\"vp3\" (the format whose limits apply; default the format of the document's thread palette: pes for pec and jef for jef), rules?: [id…] (the rules to run; default all of satinTooWide stitchTooLong formatStep fillStitchShort satinStitchShort runStitchShort stitchBelowNeedle stitchTiny shortStitchesInARow layers threadMismatch notSewn formatColors machineStitches machineColorChanges), limit?: the hits each rule lists (0 to 1000; default 20)} checks the design as the export sews it, each rule with its threshold and where the threshold comes from; positions are millimetres from the document's origin, y down → {format, rules: [{id, title, severity: error (the format can't hold it)|warning (quality may suffer)|info, threshold, unit: mm|stitches|units|deltaE|blocks|colorChanges (null: the rule measures nothing), measures: what each value measures, sources: [{name, url, value}] (the first is the one checked; where sources disagree each is listed; a format's limits name each format's own), hits: how many, objectCount: how many objects were hit, objects: [id…] (at most 1000), truncated: whether objects were left out, examples: [{record: record number (from 1, every needle point, jump and cut taking one), at: [x, y], value: the measure compared with the threshold, length: the stitch's own length when the value measures something else (formatStep), pieces: [fewest, most] records it is written as (formatStep), id: the object, note}] (the first limit hits)}], summary: {errors, warnings, info: each {rules: how many rules found something, hits: how many hits they found}}, notChecked: [{what, why}]}",
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, format?: \"dst\"|\"tap\"|\"t01\"|\"exp\"|\"pes\"|\"pec\"|\"jef\"|\"vp3\" (the format whose limits apply; default the format of the document's thread palette: pes for pec and jef for jef), rules?: [id…] (the rules to run; default all of satinTooWide stitchTooLong formatStep fillStitchShort satinStitchShort runStitchShort stitchBelowNeedle stitchTiny shortStitchesInARow layers threadMismatch notSewn formatColors machineStitches machineColorChanges), limit?: the hits each rule lists (0 to 1000; default 20), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} checks the design as the export sews it, each rule with its threshold and where the threshold comes from; positions are millimetres from the document's origin, y down → {format, palette: the palette whose threads threadMismatch judges (the format's own when it numbers its threads, a PES's Brother threads matched to the art as its writer matches them; else the document's), rules: [{id, title, severity: error (the format can't hold it)|warning (quality may suffer)|info, threshold, unit: mm|stitches|units|deltaE|blocks|colorChanges (null: the rule measures nothing), measures: what each value measures, sources: [{name, url, value}] (the first is the one checked; where sources disagree each is listed; a format's limits name each format's own), hits: how many, objectCount: how many objects were hit, objects: [id…] (at most 1000), truncated: whether objects were left out, examples: [{record: record number (from 1, every needle point, jump and cut taking one), at: [x, y], value: the measure compared with the threshold, length: the stitch's own length when the value measures something else (formatStep), pieces: [fewest, most] records it is written as (formatStep), id: the object, note}] (the first limit hits)}], summary: {errors, warnings, info: each {rules: how many rules found something, hits: how many hits they found}}, notChecked: [{what, why}]}",
             has_doc,
             check_cmd
         ),
@@ -247,11 +247,36 @@ fn palette_param(v: &Value, current: Option<&ThreadPalette>) -> Result<Option<Th
     Ok(Some(p))
 }
 
+/// The key the read commands take to plan the selection alone.
+const SELECTED_ONLY: &str = "selectedOnly";
+
+/// Whether params `o` ask for the selected objects alone (`selectedOnly`, default false); an
+/// error naming `cmd` for a value that isn't true or false.
+fn selected_only(o: &Map<String, Value>, cmd: &str) -> Result<bool> {
+    match o.get(SELECTED_ONLY) {
+        None | Some(Value::Null) => Ok(false),
+        Some(v) => v.as_bool().ok_or_else(|| bad(cmd, format!("`{SELECTED_ONLY}` {v}: true or false"))),
+    }
+}
+
 /// The active document's plan with `opts`, made by the document's planning service, and the
-/// document it is the plan of.
-fn planned(s: &mut Session, opts: &Options) -> Result<(Arc<plan::DesignPlan>, Arc<Document>)> {
+/// document it is the plan of: the document as the export prepares it, the selected objects alone
+/// when `selected_only` (in their layers and groups, as `document.export {selectedOnly}` writes
+/// them), and without the editing layer of an opacity mask, which no export writes. `cmd` names
+/// the command in the errors.
+fn planned(s: &mut Session, opts: &Options, selected_only: bool, cmd: &str) -> Result<(Arc<plan::DesignPlan>, Arc<Document>)> {
     let st = s.doc()?;
-    let (uid, doc) = (st.uid, st.doc.clone());
+    if selected_only && st.selection.objects.is_empty() {
+        return Err(bad(cmd, format!("select something to plan (or leave out `{SELECTED_ONLY}`)")));
+    }
+    let uid = st.uid;
+    let doc = if !selected_only && matches!(st.doc.without_edit_modes(), std::borrow::Cow::Borrowed(_)) {
+        // The snapshot itself, so that the commands reading it one after another plan it once.
+        st.doc.clone()
+    } else {
+        let picked = crate::cmd::fileio::export_source(st, &json!({ SELECTED_ONLY: selected_only }))?;
+        Arc::new(picked.without_edit_modes().into_owned())
+    };
     let plan = s.embroidery_plans.of(uid).plan(&doc, opts).map_err(PlanError::error)?;
     Ok((plan, doc))
 }
@@ -272,7 +297,10 @@ fn options_in(o: &Map<String, Value>, own: &[&str], cmd: &str) -> Result<Options
 }
 
 /// The keys `embroidery.stats` takes besides the embroidery options.
-const STATS_KEYS: [&str; 4] = ["speed", "fabricThickness", Page::KEYS[0], Page::KEYS[1]];
+const STATS_KEYS: [&str; 5] = ["speed", "fabricThickness", Page::KEYS[0], Page::KEYS[1], SELECTED_ONLY];
+
+/// The keys a read command that lists a stretch takes besides the embroidery options.
+const LIST_KEYS: [&str; 3] = [Page::KEYS[0], Page::KEYS[1], SELECTED_ONLY];
 
 fn stats_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.stats";
@@ -280,7 +308,7 @@ fn stats_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     let (machine, thread) = stats::model(&o, C)?;
     let page = Page::from_params(&o, C)?;
     let opts = options_in(&o, &STATS_KEYS, C)?;
-    let (plan, _) = planned(s, &opts)?;
+    let (plan, _) = planned(s, &opts, selected_only(&o, C)?, C)?;
     Ok(with_options(stats::stats(&plan, machine, thread, page), &opts))
 }
 
@@ -288,13 +316,13 @@ fn sequence_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.sequence";
     let o = object(p, C)?;
     let page = Page::from_params(&o, C)?;
-    let opts = options_in(&o, &Page::KEYS, C)?;
-    let (plan, _) = planned(s, &opts)?;
+    let opts = options_in(&o, &LIST_KEYS, C)?;
+    let (plan, _) = planned(s, &opts, selected_only(&o, C)?, C)?;
     Ok(with_options(order::sequence(&plan, page), &opts))
 }
 
 /// The keys `embroidery.check` takes besides the embroidery options.
-const CHECK_KEYS: [&str; 3] = ["format", "rules", "limit"];
+const CHECK_KEYS: [&str; 4] = ["format", "rules", "limit", SELECTED_ONLY];
 
 fn check_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.check";
@@ -332,7 +360,7 @@ fn check_cmd(s: &mut Session, p: &Value) -> Result<Value> {
             .filter(|n| *n <= check::MAX_LIMIT)
             .ok_or_else(|| bad(C, format!("limit {v}: a whole number from 0 to {}", check::MAX_LIMIT)))?,
     };
-    let (plan, doc) = planned(s, &opts)?;
+    let (plan, doc) = planned(s, &opts, selected_only(&o, C)?, C)?;
     // The format of the document's thread palette, when none is asked for.
     let format = format.unwrap_or_else(|| thread_palette(&doc).format());
     Ok(with_options(check::check(&plan, &check::Ask { rules, format, limit }), &opts))
@@ -356,8 +384,8 @@ fn threads(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.threads";
     let o = object(p, C)?;
     let page = Page::from_params(&o, C)?;
-    let opts = options_in(&o, &Page::KEYS, C)?;
-    let (plan, d) = planned(s, &opts)?;
+    let opts = options_in(&o, &LIST_KEYS, C)?;
+    let (plan, d) = planned(s, &opts, selected_only(&o, C)?, C)?;
     let listed = page.range(plan.blocks.len());
     let blocks: Vec<Value> = listed
         .clone()

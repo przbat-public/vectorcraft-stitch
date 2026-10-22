@@ -135,6 +135,20 @@ impl BlockThread {
     }
 }
 
+impl DesignPlan {
+    /// Its blocks' threads as a format of `palette` writes them: the plan's own when they are
+    /// that palette's; else each block's art matched to `palette` in sewing order
+    /// ([`Palette::assign`]), as the writer of such a format matches them ([`Palette::numbers`]).
+    pub fn threads_in(&self, palette: Palette) -> Vec<BlockThread> {
+        if self.blocks.iter().all(|b| b.thread.palette == palette) {
+            return self.blocks.iter().map(|b| b.thread.clone()).collect();
+        }
+        let blocks: Vec<([u8; 3], Option<PaletteThread>)> =
+            self.blocks.iter().map(|b| (b.thread.art, PaletteThread::new(b.thread.palette, b.thread.index))).collect();
+        self.blocks.iter().zip(palette.assign(&blocks)).map(|(b, m)| BlockThread::new(b.thread.art, palette, m)).collect()
+    }
+}
+
 /// One sewing unit, and where its stitches are in the plan.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Unit {

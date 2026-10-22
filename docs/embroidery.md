@@ -155,6 +155,10 @@ many items there are and whether some after the listed ones were left out (`trun
 client acts on are ids, with the prose beside them for display. Replies change only by addition:
 a test pins each one's keys and types (`cmd/embroidery/tests_contract.rs`).
 
+**What they plan.** Each read command plans what the export writes: the document as it is, or
+with `selectedOnly` the selected objects alone (as `document.export {selectedOnly}` writes them),
+and without an opacity mask's editing layer, which no export writes.
+
 **A design's figures.** `embroidery.stats` (with the export's embroidery options, `speed`,
 `fabricThickness`, and `offset` and `limit` for its blocks) gives the figures of the design the
 export would sew, for the whole design and for each block:
@@ -220,7 +224,8 @@ hits, the objects hit (`objectCount`, at most 1,000 listed, `truncated` when mor
 measure compared with the threshold (for `formatStep` the stitch's longer extent along x or y,
 with its own length and the records it is written as beside it). The summary gives, for each
 severity, how many rules found something and how many hits they found. `format` (the document's thread palette's
-format when left out: PES for Brother's, JEF for Janome's) decides the format limits checked.
+format when left out: PES for Brother's, JEF for Janome's) decides the format limits checked, and the threads judged: those the format writes, matched to
+its own palette when it numbers its threads from another than the document's (`palette` names it).
 Melco's design checker works on a design's objects and their settings ("can be addressed with
 simple object property changes"), so its fill, satin and walk-stitch limits are checked on each
 object's settings and report the objects: its fill or running stitch length, its satin columns'

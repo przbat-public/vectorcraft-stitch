@@ -579,15 +579,15 @@ fn the_threads_command_takes_only_the_embroidery_options() {
     let named = crate::cmd::params::doc_keys(spec.params).unwrap();
     let options: Vec<&str> = crate::cmd::fileio::embroidery::OPTIONS.iter().map(|o| o.name).collect();
     let mut names: Vec<&str> = super::options::OPTIONS.iter().flat_map(|n| std::iter::once(n.name).chain(n.earlier)).collect();
-    // And the stretch of blocks it lists.
-    names.extend(["offset", "limit"]);
+    // And the stretch of blocks it lists, and whether the selection alone.
+    names.extend(["offset", "limit", "selectedOnly"]);
     // The export's options, under the names the options take (each earlier name after its own).
     assert_eq!(super::options::OPTIONS.iter().map(|n| n.name).collect::<Vec<_>>(), options);
     assert_eq!((named.keys, named.more.len()), (names, 0));
     for (given, why) in [
         (json!({"densitty": 0.4}), "did you mean `density`?"),
         (json!({"format": "pes"}), "unknown parameter `format`"),
-        (json!({"selectedOnly": true}), "unknown parameter `selectedOnly`"),
+        (json!({"speed": 800}), "unknown parameter `speed`"),
     ] {
         let e = crate::check_params("embroidery.threads", &given).unwrap_err().to_string();
         assert!(e.contains(why), "{given}: {e}");
@@ -637,4 +637,45 @@ fn art_out_of_range_is_left_out_with_a_warning() {
     assert!(started.elapsed().as_secs() < 5);
     assert_eq!(plan.units.len(), 1, "only the square in range");
     assert!(plan.warnings.iter().any(|w| w.contains("far outside the document's range")), "{:?}", plan.warnings);
+}
+
+/// The read commands plan what the export writes: with `selectedOnly`, the selected objects alone,
+/// as `document.export {selectedOnly}` writes them; while an opacity mask is edited, without its
+/// editing layer, which no export writes.
+#[test]
+fn the_read_commands_plan_what_the_export_writes() {
+    let mut s = blank();
+    let red = rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+    rect(&mut s, "#2233cc", 150.0, 20.0, 60.0, 40.0);
+    let stitches = |s: &mut Session, p: serde_json::Value| s.execute("embroidery.stats", &p).unwrap()["stitches"].clone();
+    let exported = |s: &mut Session, p: serde_json::Value| {
+        let mut p = p;
+        p["format"] = json!("pes");
+        let r = s.execute("document.export", &p).unwrap();
+        Format::Pes.read(&vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap()).unwrap().sewn()
+    };
+    let whole = stitches(&mut s, json!({}));
+    assert_eq!(whole, json!(exported(&mut s, json!({}))));
+    // Nothing selected: refused, naming the key.
+    let e = s.execute("embroidery.stats", &json!({"selectedOnly": true})).unwrap_err().to_string();
+    assert!(e.contains("selectedOnly"), "{e}");
+    s.execute("select.set", &json!({"ids": [red]})).unwrap();
+    let alone = stitches(&mut s, json!({"selectedOnly": true}));
+    assert_eq!(alone, json!(exported(&mut s, json!({"selectedOnly": true}))));
+    assert!(alone.as_u64().unwrap() < whole.as_u64().unwrap());
+    for command in ["embroidery.threads", "embroidery.sequence", "embroidery.check"] {
+        let r = s.execute(command, &json!({"selectedOnly": true})).unwrap();
+        let listed = if command == "embroidery.check" { r["rules"].as_array().unwrap().len() } else { r["blocks"].as_array().unwrap().len() };
+        assert!(listed > 0, "{command}: {r}");
+    }
+    assert_eq!(s.execute("embroidery.threads", &json!({"selectedOnly": true})).unwrap()["blockCount"], json!(1));
+    // The blue rectangle made the red one's opacity mask, then edited: the editing layer holds a
+    // copy of the mask art, which neither the export nor the read commands sew.
+    s.execute("select.all", &json!({})).unwrap();
+    s.execute("transparency.makeOpacityMask", &json!({})).unwrap();
+    let masked = stitches(&mut s, json!({}));
+    s.execute("transparency.editOpacityMask", &json!({"id": red})).unwrap();
+    assert!(s.doc().unwrap().doc.mask_edit.is_some());
+    assert_eq!(stitches(&mut s, json!({})), masked);
+    assert_eq!(masked, json!(exported(&mut s, json!({}))));
 }

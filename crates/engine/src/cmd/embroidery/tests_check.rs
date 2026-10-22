@@ -51,13 +51,18 @@ fn each_stitch_length_rule_fires_past_its_threshold() {
         assert_eq!(hits(&one(style, &[3.0, at, 3.0]), id, Format::Dst), 0, "{id}: {at}");
     }
     // How many stitches a split one is written as, and when the rounding to 0.1 mm decides.
-    let note = |steps: &[f64]| {
+    let hit = |steps: &[f64]| {
         let v = check::check(
             &one(Style::Running, steps),
             &Ask { rules: vec![check::rule("formatStep").unwrap()], format: Format::Dst, limit: check::LIMIT },
         );
-        v["rules"][0]["first"][0]["note"].as_str().unwrap().to_string()
+        v["rules"][0]["examples"][0].clone()
     };
+    let note = |steps: &[f64]| hit(steps)["note"].as_str().unwrap().to_string();
+    assert_eq!((&hit(&[12.15])["pieces"], &hit(&[12.3])["pieces"]), (&json!([1, 2]), &json!([2, 2])));
+    // The value is the measure compared with the step (the longer of x and y), the length apart:
+    // the same for a stitch along x.
+    assert_eq!((&hit(&[12.3])["value"], &hit(&[12.3])["length"]), (&json!(12.3), &json!(12.3)));
     assert!(note(&[12.15]).starts_with("written as 1 or 2 stitches"), "{}", note(&[12.15]));
     assert_eq!(note(&[12.3]), "written as 2 stitches");
     assert!(note(&[24.15]).starts_with("written as 2 or 3 stitches"), "{}", note(&[24.15]));
@@ -93,7 +98,7 @@ fn melcos_length_rules_look_at_each_objects_settings() {
     ]);
     let v = check::check(&two, &Ask { rules: vec![check::rule("fillStitchShort").unwrap()], format: Format::Dst, limit: check::LIMIT });
     assert_eq!((&v["rules"][0]["hits"], &v["rules"][0]["objects"]), (&json!(2), &json!([1, 2])));
-    assert_eq!((&v["rules"][0]["first"][0]["value"], &v["rules"][0]["first"][1]["value"]), (&json!(2.0), &json!(1.0)));
+    assert_eq!((&v["rules"][0]["examples"][0]["value"], &v["rules"][0]["examples"][1]["value"]), (&json!(2.0), &json!(1.0)));
     // A literal run: none of the three, however short its stitches.
     let literal = plan(vec![planned(1, None, RED, &line(&[0.5, 0.5, 0.5]), None)]);
     for id in ["fillStitchShort", "satinStitchShort", "runStitchShort"] {
@@ -210,7 +215,15 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
     assert_eq!(v["format"], json!("jef"), "the default palette's format");
     for r in v["rules"].as_array().unwrap() {
         assert!(!r["sources"].as_array().unwrap().is_empty(), "{}", r["id"]);
-        assert!(r["first"].as_array().unwrap().len() <= check::LIMIT);
+        assert!(r["examples"].as_array().unwrap().len() <= check::LIMIT);
+        assert_eq!(r["objectCount"], json!(r["objects"].as_array().unwrap().len()), "{}", r["id"]);
+        assert_eq!(r["truncated"], json!(false), "{}", r["id"]);
+        assert!(r["measures"].as_str().is_some_and(|m| !m.is_empty()), "{}", r["id"]);
+    }
+    // For each severity, the rules that found something and their hits.
+    for severity in ["errors", "warnings", "info"] {
+        let (rules, hits) = (v["summary"][severity]["rules"].as_u64().unwrap(), v["summary"][severity]["hits"].as_u64().unwrap());
+        assert!(rules <= hits, "{severity}: {}", v["summary"]);
     }
     // The rectangle's fill stitch length, 4 mm by default, passes; set to 2 mm it fires, on the
     // rectangle.
@@ -218,7 +231,7 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
     assert_eq!(fill(&v)["hits"], json!(0));
     let short = fill(&run(&mut s, "embroidery.check", json!({"stitchLength": 2})));
     assert_eq!(
-        (&short["hits"], &short["objects"], &short["first"][0]["id"], &short["first"][0]["value"]),
+        (&short["hits"], &short["objects"], &short["examples"][0]["id"], &short["examples"][0]["value"]),
         (&json!(1), &json!([id]), &json!(id), &json!(2.0))
     );
     // Satin forced on the rectangle's fill: it is filled (a fill has no width to sew a satin
@@ -238,7 +251,7 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
         json!({"rules": ["fillStitchShort", "layers", "fillStitchShort"], "format": "dst", "limit": 0, "stitchLength": 2}),
     );
     assert_eq!((v["format"].clone(), v["rules"].as_array().unwrap().len()), (json!("dst"), 2));
-    assert_eq!((&v["rules"][0]["hits"], v["rules"][0]["first"].as_array().unwrap().len()), (&json!(1), 0), "counted, none listed");
+    assert_eq!((&v["rules"][0]["hits"], v["rules"][0]["examples"].as_array().unwrap().len()), (&json!(1), 0), "counted, none listed");
     run(&mut s, "embroidery.setup", json!({"palette": "pec"}));
     assert_eq!(run(&mut s, "embroidery.check", json!({"rules": []}))["format"], json!("pes"));
     for (bad, why) in [

@@ -58,6 +58,12 @@ pub(crate) const OPTIONS: [Name; 14] = [
 const STITCHES: [(&str, Option<Style>); 5] =
     [("auto", None), ("tatami", Some(Style::Fill)), ("fill", Some(Style::Fill)), ("satin", Some(Style::Satin)), ("running", Some(Style::Running))];
 
+/// The word the `stitch` option takes for `style` (the first of [`STITCHES`] that forces it):
+/// `tatami`, `satin`, `running`.
+pub(crate) fn stitch_id(style: Style) -> &'static str {
+    STITCHES.iter().find(|(_, s)| *s == Some(style)).map_or("auto", |(id, _)| id)
+}
+
 /// The embroidery options, as they come: each one left out keeps the style's own value. Two are
 /// equal when every value is (a plan made with one is the plan made with the other).
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -92,6 +98,7 @@ pub(crate) enum Others<'a> {
 impl Options {
     /// The options in command params `p` (an object of them, or null for none), and no other key;
     /// `cmd` names the command in the errors.
+    #[cfg(test)]
     pub(crate) fn from_params(p: &Value, cmd: &str) -> Result<Self> {
         match p {
             Value::Null => Ok(Self::default()),
@@ -207,12 +214,7 @@ impl Options {
                 o.insert(k.to_string(), v);
             }
         };
-        let stitch = self.stitch.map(|s| match s {
-            Style::Fill => "tatami",
-            Style::Satin => "satin",
-            Style::Running => "running",
-        });
-        put("stitch", Some(json!(stitch.unwrap_or("auto"))));
+        put("stitch", Some(json!(self.stitch.map_or("auto", stitch_id))));
         put("spacing", self.spacing.map(Value::from));
         put("length", self.length.map(Value::from));
         put("angle", self.angle.map(Value::from));

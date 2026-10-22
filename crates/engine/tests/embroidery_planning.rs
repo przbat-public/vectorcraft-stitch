@@ -35,16 +35,18 @@ fn stats_sequence_and_check_run_on_the_real_designs() {
     let Some(dir) = corpus() else { return };
     for &(art, theirs) in DESIGNS {
         for (who, mut s) in [("VectorCraft", artwork(&dir, art, theirs)), ("person", persons(&dir, theirs))] {
-            let stats = run(&mut s, "embroidery.stats", json!({}));
-            let order = run(&mut s, "embroidery.sequence", json!({}));
+            // Every block and unit listed: the most a reply may hold.
+            let stats = run(&mut s, "embroidery.stats", json!({"limit": 10_000}));
+            let order = run(&mut s, "embroidery.sequence", json!({"limit": 10_000}));
+            assert_eq!((&stats["truncated"], &order["truncated"]), (&json!(false), &json!(false)), "{art} {who}");
             let check = run(&mut s, "embroidery.check", json!({"format": "pes"}));
             let blocks = order["blocks"].as_array().unwrap();
-            assert_eq!(stats["blocks"].as_u64().unwrap() as usize, blocks.len(), "{art} {who}");
-            let per_block: u64 = stats["perBlock"].as_array().unwrap().iter().map(|b| b["stitches"].as_u64().unwrap()).sum();
+            assert_eq!(stats["blockCount"].as_u64().unwrap() as usize, blocks.len(), "{art} {who}");
+            let per_block: u64 = stats["blocks"].as_array().unwrap().iter().map(|b| b["stitches"].as_u64().unwrap()).sum();
             let listed: u64 = blocks.iter().map(|b| b["stitches"].as_u64().unwrap()).sum();
             let units: u64 = blocks.iter().flat_map(|b| b["units"].as_array().unwrap()).map(|u| u["stitches"].as_u64().unwrap()).sum();
             assert_eq!((per_block, listed, units), (stats["stitches"].as_u64().unwrap(), per_block, per_block), "{art} {who}");
-            assert_eq!(check["summary"]["errors"], json!(0), "{art} {who}: {}", check["rules"]);
+            assert_eq!(check["summary"]["errors"]["rules"], json!(0), "{art} {who}: {}", check["rules"]);
             for id in ["fillStitchShort", "satinStitchShort", "runStitchShort"] {
                 assert_eq!(hits(&check, id), 0, "{art} {who}: {id}");
             }
@@ -58,7 +60,7 @@ fn stats_sequence_and_check_run_on_the_real_designs() {
                 .unwrap()
                 .iter()
                 .filter(|r| r["hits"].as_u64().unwrap() > 0)
-                .map(|r| format!("{} {} ({} objects)", r["id"].as_str().unwrap(), r["hits"], r["objects"].as_array().unwrap().len()))
+                .map(|r| format!("{} {} ({} objects)", r["id"].as_str().unwrap(), r["hits"], r["objectCount"]))
                 .collect();
             println!("{art} ({who}): {} needle points, {} blocks; {}", stats["stitches"], blocks.len(), fired.join(", "));
         }
@@ -73,7 +75,7 @@ fn a_plan_after_an_edit_is_a_fresh_plan_on_the_real_designs() {
     let Some(dir) = corpus() else { return };
     for &(art, theirs) in DESIGNS {
         let mut kept = artwork(&dir, art, theirs);
-        let ids: Vec<u64> = run(&mut kept, "embroidery.sequence", json!({}))["blocks"]
+        let ids: Vec<u64> = run(&mut kept, "embroidery.sequence", json!({"limit": 10_000}))["blocks"]
             .as_array()
             .unwrap()
             .iter()
@@ -85,11 +87,11 @@ fn a_plan_after_an_edit_is_a_fresh_plan_on_the_real_designs() {
         for id in ids {
             let nudge = json!({"ids": [id], "dx": NUDGE * PT_PER_MM, "dy": 0});
             run(&mut kept, "object.move", nudge.clone());
-            let after = run(&mut kept, "embroidery.sequence", json!({}));
+            let after = run(&mut kept, "embroidery.sequence", json!({"limit": 10_000}));
             // The same document, made the same way, in a session that has planned nothing.
             let mut fresh = artwork(&dir, art, theirs);
             run(&mut fresh, "object.move", nudge);
-            assert_eq!(after, run(&mut fresh, "embroidery.sequence", json!({})), "{art}: after nudging {id}");
+            assert_eq!(after, run(&mut fresh, "embroidery.sequence", json!({"limit": 10_000})), "{art}: after nudging {id}");
             run(&mut kept, "edit.undo", json!({}));
         }
     }

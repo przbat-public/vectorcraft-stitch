@@ -23,8 +23,9 @@ use vectorcraft_stitch::plan::{self, Params, Style};
 use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Match, Palette, PaletteThread};
 use vectorcraft_stitch::{Block, Pattern, Stitch, Thread};
 
-/// The number of a design's first stitch: stitches are numbered from 1, as a stitch list shows
-/// them.
+/// The number of a design's first record (needle point, jump or cut): records are numbered from 1,
+/// as a stitch list shows them. The commands call these record numbers (`firstRecord`, `record`),
+/// apart from `stitches`, which counts needle points only.
 pub const FIRST_NUMBER: usize = 1;
 
 /// The part of an object a sewing unit sews.

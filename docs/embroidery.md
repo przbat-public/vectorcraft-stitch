@@ -140,9 +140,22 @@ alike. About 1 is the smallest difference seen side by side (a rule of thumb fro
 Brother's Sky Blue by RGB (ΔE₀₀ 20.2) and Teal Green by eye (9.8); a dark grey, `#31373d`, was
 Janome's Olive Green by RGB (24.3) and is now its Dark Gray (12.6).
 
-**A design's figures.** `embroidery.stats` (with the export's embroidery options, `speed` and
-`fabricThickness`) gives the figures of the design the export would sew, for the whole design and
-for each block:
+**Replies.** The read commands below share one vocabulary. A *record* is every needle point, jump
+and cut the plan holds; *record numbers* count them from 1 in sewing order (`firstRecord`,
+`lastRecord`, a check hit's `record`), while `stitches` counts needle points only, so a block's
+`records` is its `lastRecord − firstRecord + 1`. Every block's thread is one object, `{palette,
+index, name, color, art, deltaE, mismatch}`, in every reply. Counts are named `…Count`
+(`blockCount`, `unitCount`, `threadCount`), lists by plural nouns; counts and whole seconds are
+integers. Lengths, positions and boxes are millimetres from the document's origin with y down,
+boxes `[left, top, right, bottom]`; thread is in metres, named so (`topMetres`). A list that can
+grow with the design takes `offset` and `limit` (at most 10,000; 1,000 by default) and says how
+many items there are and whether some after the listed ones were left out (`truncated`). Fields a
+client acts on are ids, with the prose beside them for display. Replies change only by addition:
+a test pins each one's keys and types (`cmd/embroidery/tests_contract.rs`).
+
+**A design's figures.** `embroidery.stats` (with the export's embroidery options, `speed`,
+`fabricThickness`, and `offset` and `limit` for its blocks) gives the figures of the design the
+export would sew, for the whole design and for each block:
 
 - counts: needle points, records (needle points, jumps and cuts), jumps, trims, colour changes,
   distinct threads, blocks;
@@ -152,7 +165,7 @@ for each block:
   stitch* is the thread laid from one needle point to the next without lifting the needle: a jump,
   a cut, the needle point a jump lands on and the move between two blocks are none;
 - thread, an estimate: metres of top and bobbin thread;
-- sewing time, an estimate, and the thread changes counted apart.
+- sewing time, an estimate, and the colour changes counted apart (`colorChanges`).
 
 The thread and the time follow the shape of what Wilcom documents for its own estimates, which it
 publishes without formulas or values, and every number is a named constant with its source or
@@ -177,29 +190,34 @@ these numbers stay estimates until they are measured on machines (the project ow
 points, and the real designs' watermelon (46 × 32 mm, 1,509 needle points) sews in about 2.5
 minutes at 650 stitches a minute. Values out of range are refused, not clamped.
 
-**The sewing order.** `embroidery.sequence` (with the export's embroidery options) lists the design
-as it is sewn, read only: the blocks in order, each with its thread (palette, number, name and
-colour, the art's colour, ΔE, mismatch), needle points, first and last stitch numbers, jumps and
-trims, and what follows it (a colour change, after a cut when the block ends with one); in each
-block, its units in order, each with the object a person selects (`id`: the symbol instance for
-art inside a symbol, with the object sewn as `node`), the part ("fill 1", "stroke 1", or
-"stitches" for a run opened from a file), how it is sewn (running, satin, tatami, tatami with
-satin columns, literal; as the planner sews it: a fill under `stitch: satin` has no width to
-sew a satin across and is filled, so it is listed as tatami) and why: the rule that chose it ("a
-stroke at least 1 mm wide is a satin
-column, here 2.12 mm", "a stroke narrower than 1 mm is a running line", "a fill is tatami; its
-parts narrower than 7 mm are satin columns that follow the shape", "stitch satin"); and its
-needle points, stitch numbers, jumps, trims, entry and exit points and box. `split` names the
-objects whose units are sewn in more than one block (an object filled in one thread and stroked in
-another always is). Sewing order follows stacking order: moving objects (`node.move`) changes it,
+**The sewing order.** `embroidery.sequence` (with the export's embroidery options, and `offset`
+and `limit` for its units) lists the design as it is sewn, read only: the blocks in order, each
+with its thread, needle points, records and record numbers, jumps and trims, and what follows it
+(a colour change, after a cut when the block ends with one); in each block, its units in order,
+each with the object a person selects (`id`: the symbol instance for art inside a symbol, with the
+object sewn as `node`), the part (`part`: `fill`, `stroke`, or `literal` for a run opened from a
+file, and `partIndex`, which fill or stroke from 1), how it is sewn (`sewn`: `running`, `satin`,
+`tatami` or `literal`, the words the `stitch` option takes, and `columns` when a fill's narrow
+parts are satin columns; as the planner sews it: a fill under `stitch: satin` has no width to sew
+a satin across and is filled, so it is listed as tatami) and why: the rule that chose it as an id
+with the values it turned on (`rule: "wideStroke"`, `ruleValues: {width: 2.12, satinFrom: 1,
+widest: 10}`) and as a sentence (`why`: "a stroke at least 1 mm wide is a satin column, here 2.12
+mm"); and its needle points, records and record numbers, jumps, trims, entry and exit points and
+box. `unit` is a position in one plan: the object's `id` with `part` and `partIndex` tells a unit
+apart from one plan to the next. `split` names the objects whose units are sewn in more than one
+block (an object filled in one thread and stroked in another always is). Sewing order follows stacking order: moving objects (`node.move`) changes it,
 and objects of one thread still join where nothing lies between them.
 
 **Checks.** `embroidery.check` (with the export's embroidery options, `format`, `rules` and
-`limit`) runs design checks on the plan. Each rule gives its threshold and unit, its sources (where
-two sources disagree, both are listed and the first is the one checked), its severity (*error*:
-the format can't hold it; *warning*: the quality may suffer; *info*), the number of hits, the
-objects hit (at most 1,000) and the first `limit` hits (20 by default, at most 1,000) as stitch
-numbers and points with the length or count measured. `format` (the document's thread palette's
+`limit`) runs design checks on the plan. Each rule gives its threshold, its unit as a token (`mm`,
+`stitches`, `units`, `deltaE`, `blocks`, `colorChanges`) and what its values measure, its sources
+(where two sources disagree, both are listed and the first is the one checked), its severity
+(*error*: the format can't hold it; *warning*: the quality may suffer; *info*), the number of
+hits, the objects hit (`objectCount`, at most 1,000 listed, `truncated` when more) and the first
+`limit` hits (`examples`, 20 by default, at most 1,000) as record numbers and points with the
+measure compared with the threshold (for `formatStep` the stitch's longer extent along x or y,
+with its own length and the records it is written as beside it). The summary gives, for each
+severity, how many rules found something and how many hits they found. `format` (the document's thread palette's
 format when left out: PES for Brother's, JEF for Janome's) decides the format limits checked.
 Melco's design checker works on a design's objects and their settings ("can be addressed with
 simple object property changes"), so its fill, satin and walk-stitch limits are checked on each
@@ -1288,7 +1306,7 @@ Public documentation, cited per claim in the crate and in the local research not
   `options.rs` (the export options, and the planner's parameters they give an object),
   `digitize.rs` (the document's art planned into the stitch plan, unit by unit; a fill's narrow
   columns cut out of it with path operations), `plan.rs` (the stitch plan: sewing units, thread
-  blocks and their threads, stitch numbers), `sequence.rs` (the order blocks are sewn in, where the
+  blocks and their threads, record numbers), `sequence.rs` (the order blocks are sewn in, where the
   needle is before each object, trims between objects, the units each block holds, and each
   block's thread), `unit.rs` (one unit planned from its request), `cache.rs` (the units kept
   between plans), `service.rs` (each document's planning service), `measure.rs` (a plan's records

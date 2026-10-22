@@ -117,7 +117,7 @@ counts and sewing order need only the plan and the threads, and the riskiest par
 stitches fast, is tried before anything is built on it.
 
 1. **A stitch plan for each object; the export unchanged.** Done: the export goes through
-   `cmd::embroidery::plan` (sewing units, thread blocks, stitch numbers), and
+   `cmd::embroidery::plan` (sewing units, thread blocks, record numbers), and
    `crates/engine/tests/embroidery_output.rs` pins the bytes of every export.
 2. **Threads from the format's palette.** Done: built-in swatch libraries of Brother's 61 PEC
    threads and Janome's 78 JEF threads, from the tables in `crates/stitch/src/thread.rs` (no new

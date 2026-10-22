@@ -61,7 +61,7 @@ fn the_stats_sequence_and_check_are_reachable() {
     let check = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.check", "params": {"format": "dst", "limit": 3}})));
     assert_eq!(check["format"], "dst");
     for (id, given) in
-        [("embroidery.stats", json!({"format": "pes"})), ("embroidery.check", json!({"speed": 800})), ("embroidery.sequence", json!({"limit": 3}))]
+        [("embroidery.stats", json!({"format": "pes"})), ("embroidery.check", json!({"speed": 800})), ("embroidery.sequence", json!({"speed": 800}))]
     {
         let refused = call_tool(&mut h, "run_command", &json!({"command": id, "params": given}));
         assert!(refused.is_error, "{id} {refused:?}");

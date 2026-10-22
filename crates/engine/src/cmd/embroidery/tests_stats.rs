@@ -7,8 +7,8 @@ use vectorcraft_stitch::{Command, Stitch};
 
 use super::plan::DesignPlan;
 use super::sequence::Planned;
-use super::stats::{self, Machine, Thread as Fabric};
-use super::test_support::{self, plan};
+use super::stats::{self, Machine, Page, Thread as Fabric};
+use super::test_support::{self, ALL, plan};
 use super::*;
 
 /// How close two figures worked out two ways must be: rounding only.
@@ -38,9 +38,9 @@ fn close(a: f64, b: f64) -> bool {
 /// Counts, lengths, size, start, end and extents, as laid out stitch by stitch.
 #[test]
 fn the_counts_and_lengths_are_the_designs() {
-    let v = stats::stats(&two_blocks(), Machine { speed: 650.0 }, Fabric { fabric: 0.5 });
+    let v = stats::stats(&two_blocks(), Machine { speed: 650.0 }, Fabric { fabric: 0.5 }, ALL);
     assert_eq!(
-        (&v["stitches"], &v["records"], &v["jumps"], &v["trims"], &v["colorChanges"], &v["threads"], &v["blocks"]),
+        (&v["stitches"], &v["records"], &v["jumps"], &v["trims"], &v["colorChanges"], &v["threadCount"], &v["blockCount"]),
         (&json!(8), &json!(8), &json!(0), &json!(0), &json!(1), &json!(2), &json!(2))
     );
     assert_eq!((&v["shortestStitch"], &v["longestStitch"], &v["longestJump"]), (&json!(1.0), &json!(3.0), &json!(null)));
@@ -48,10 +48,23 @@ fn the_counts_and_lengths_are_the_designs() {
     assert_eq!(v["bounds"], json!([0.0, 0.0, 31.0, 3.0]));
     assert_eq!((&v["start"], &v["end"]), (&json!([0.0, 0.0]), &json!([31.0, 1.0])));
     assert_eq!(v["extents"], json!({"left": 0.0, "right": 31.0, "up": 0.0, "down": 3.0}));
-    let blocks = v["perBlock"].as_array().unwrap();
-    assert_eq!(blocks.len(), 2);
-    assert_eq!((&blocks[0]["first"], &blocks[0]["last"], &blocks[1]["first"], &blocks[1]["last"]), (&json!(1), &json!(4), &json!(5), &json!(8)));
-    assert_eq!(v["time"]["threadChanges"], json!(1));
+    let blocks = v["blocks"].as_array().unwrap();
+    assert_eq!((blocks.len(), &v["offset"], &v["truncated"]), (2, &json!(0), &json!(false)));
+    assert_eq!(
+        (&blocks[0]["firstRecord"], &blocks[0]["lastRecord"], &blocks[1]["firstRecord"], &blocks[1]["lastRecord"]),
+        (&json!(1), &json!(4), &json!(5), &json!(8))
+    );
+    assert_eq!((&blocks[0]["records"], &blocks[0]["stitches"]), (&json!(4), &json!(4)));
+    // Integral figures are integers.
+    assert!(v["time"]["seconds"].is_u64() && v["time"]["speed"].is_u64() && blocks[0]["seconds"].is_u64(), "{v}");
+    // One block from the second: the rest are counted, and said to be left out or not.
+    let second = stats::stats(&two_blocks(), Machine { speed: 650.0 }, Fabric { fabric: 0.5 }, Page { offset: 1, limit: 1 });
+    assert_eq!(
+        (&second["blocks"][0]["block"], &second["offset"], &second["truncated"], &second["blockCount"]),
+        (&json!(2), &json!(1), &json!(false), &json!(2))
+    );
+    let first = stats::stats(&two_blocks(), Machine { speed: 650.0 }, Fabric { fabric: 0.5 }, Page { offset: 0, limit: 1 });
+    assert_eq!((first["blocks"].as_array().unwrap().len(), &first["truncated"]), (1, &json!(true)));
 }
 
 /// The thread: on the face each stitch's length; on the back its length shared between the bobbin
@@ -107,19 +120,21 @@ fn the_stats_command_checks_its_params() {
     s.execute("paint.setFill", &json!({"color": "#cc2222"})).unwrap();
     s.execute("shape.rectangle", &json!({"x": 20, "y": 20, "width": 40, "height": 30})).unwrap();
     let v = s.execute("embroidery.stats", &json!({"speed": 800, "fabricThickness": 1, "density": 0.5})).unwrap();
-    assert_eq!((&v["time"]["speed"], &v["thread"]["fabricThickness"]), (&json!(800.0), &json!(1.0)));
+    assert_eq!((&v["time"]["speed"], &v["threadUsage"]["fabricThickness"]), (&json!(800), &json!(1)));
     assert!(v["stitches"].as_u64().unwrap() > 100);
     // Both figures say they are estimates, and what they rest on.
-    for field in [&v["thread"]["estimate"], &v["time"]["estimate"]] {
+    for field in [&v["threadUsage"]["estimate"], &v["time"]["estimate"]] {
         assert!(field.as_str().unwrap().starts_with("an estimate: "), "{field}");
     }
     let defaults = s.execute("embroidery.stats", &json!({})).unwrap();
-    assert_eq!((&defaults["time"]["speed"], &defaults["thread"]["fabricThickness"]), (&json!(650.0), &json!(0.5)));
+    assert_eq!((&defaults["time"]["speed"], &defaults["threadUsage"]["fabricThickness"]), (&json!(650), &json!(0.5)));
     for (bad, why) in [
         (json!({"speed": 5000}), "`speed`"),
         (json!({"speed": "fast"}), "`speed`"),
         (json!({"fabricThickness": -1}), "`fabricThickness`"),
         (json!({"density": "x"}), "`density` \"x\": a number of millimetres"),
+        (json!({"limit": 10_001}), "`limit`"),
+        (json!({"offset": -1}), "`offset`"),
     ] {
         let e = s.execute("embroidery.stats", &bad).unwrap_err().to_string();
         assert!(e.contains(why), "{bad}: {e}");
@@ -127,7 +142,7 @@ fn the_stats_command_checks_its_params() {
     // The keys it takes: the export's embroidery options and its own two.
     let spec = crate::cmd::find_command("embroidery.stats").unwrap();
     let mut keys: Vec<&str> = crate::cmd::fileio::embroidery::OPTIONS.iter().map(|o| o.name).collect();
-    keys.extend(["speed", "fabricThickness"]);
+    keys.extend(["speed", "fabricThickness", "offset", "limit"]);
     for key in &keys {
         assert!(crate::cmd::params::takes_key(spec.params, key), "{key}");
     }

@@ -4298,26 +4298,39 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   number) or `"jef"` (Janome's 78, which JEF files number), in one undo step; `null` unsets it, and Janome's is used.
   No params report `{palette, threadPalette}` (the palette set, and the one the stitch plan uses); the reply can be
   passed back unchanged. A PES, PEC or JEF file opens in its own format's palette.
-- `embroidery.threads {…embroidery options}` lists the thread each colour block is sewn in, in sewing order:
-  `{palette, threshold, blocks: [{block, art, thread: {palette, index, name, color}, deltaE, mismatch, units}],
-  options, warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour and the thread's, to two decimals, and
-  `mismatch` flags one past `threshold` (10). It takes the export's embroidery options only: any other key, such as
-  `format` or `selectedOnly`, is refused.
+- `embroidery.threads {…embroidery options, offset?, limit?}` lists the thread each colour block is sewn in, in sewing
+  order: `{palette, threshold, blockCount, offset, truncated, blocks: [{block, thread: {palette, index, name, color, art,
+  deltaE, mismatch}, unitCount}], options, warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour
+  and the thread's, to two decimals, and `mismatch` flags one past `threshold` (10). Besides the export's embroidery
+  options it takes only the stretch of blocks to list: any other key, such as `format`, is refused.
 - `embroidery.setTrimAfter {on, ids?}` asks for the thread to be cut after each object.
-- `embroidery.stats {…embroidery options, speed?, fabricThickness?}` gives the design's figures as the export sews
-  it, for the design and per block: needle points, jumps, trims, colour changes, threads, blocks; size, bounds, start
-  and end points, extents from the start; the shortest and longest stitch and the longest jump; top and bobbin thread
-  in metres and the sewing time, both estimates (each says so in `estimate`) whose constants and sources `embroidery.md` lists (`speed`, stitches
-  a minute, 60 to 1500, default 650; `fabricThickness`, mm, 0 to 5, default 0.5). The time leaves out thread changes,
-  which are counted apart.
-- `embroidery.sequence {…embroidery options}` lists the sewing order, read only: the blocks in order with their
-  thread, stitch numbers, jumps and trims, and each block's units with the object a person selects (`id`), the part,
-  how it is sewn and why (the rule that chose it), its stitches, entry and exit points and bounds; `split` names the
-  objects sewn in more than one block. Sewing order follows stacking order: `node.move` changes it.
+- `embroidery.stats {…embroidery options, speed?, fabricThickness?, offset?, limit?}` gives the design's figures as the
+  export sews it, for the design and per block: `stitches` (needle points), `records` (needle points, jumps and cuts),
+  `jumps`, `trims`, `colorChanges`, `threadCount`, `blockCount`; `size`, `bounds`, `start` and `end` points, `extents`
+  from the start; the shortest and longest stitch and the longest jump; `threadUsage: {topMetres, bobbinMetres,
+  fabricThickness, estimate}` and the sewing `time`, both estimates (each says so in `estimate`) whose constants and
+  sources `embroidery.md` lists (`speed`, stitches a minute, 60 to 1500, default 650; `fabricThickness`, mm, 0 to 5,
+  default 0.5). The time leaves out colour changes, which are counted apart. `blocks` lists each block's thread,
+  counts, `firstRecord`/`lastRecord`, `topThreadMetres`, `bobbinThreadMetres` and `seconds`.
+- `embroidery.sequence {…embroidery options, offset?, limit?}` lists the sewing order, read only: the units from
+  `offset` in sewing order within their blocks, each block with its thread, counts, record numbers and what follows it,
+  each unit with the object a person selects (`id`), `part` (`fill`, `stroke`, `literal`) and `partIndex`, how it is
+  sewn (`sewn`: `running`, `satin`, `tatami`, `literal`; `columns`) and why (`rule` id, `ruleValues`, and `why` as a
+  sentence), its counts, record numbers, entry and exit points and bounds; `blockCount`, `unitCount` and `truncated`
+  say what was left out, and `split` names the objects sewn in more than one block. Sewing order follows stacking
+  order: `node.move` changes it.
 - `embroidery.check {…embroidery options, format?, rules?, limit?}` runs the design checks: each rule with its
-  severity, threshold, unit, sources (the first is the one checked; where sources disagree each is listed), hits, the
-  objects hit and the first `limit` hits (20 by default, at most 1000) as stitch numbers and points. `format` (any format
-  `document.export` writes; default: the format of the document's thread palette) sets the format limits checked; `rules` picks rules by id.
+  severity, threshold, `unit` (a token: `mm`, `stitches`, `units`, `deltaE`, `blocks`, `colorChanges`), `measures`,
+  sources (the first is the one checked; where sources disagree each is listed), `hits`, the objects hit
+  (`objectCount`, at most 1000 in `objects`, `truncated`) and the first `limit` hits (`examples`, 20 by default, at
+  most 1000) as record numbers and points with the measure compared. `summary` gives, per severity, the rules that
+  found something and their hits. `format` (one of the eight embroidery formats; default: the format of the document's
+  thread palette) sets the format limits checked; `rules` picks rules by id.
+
+A *record* is every needle point, jump and cut; record numbers count them from 1 in sewing order, and `stitches`
+counts needle points only. Lengths, positions and boxes are millimetres from the document's origin, y down, boxes
+`[left, top, right, bottom]`; counts are integers. The replies change only by addition: a test pins each one's keys
+and value types.
 
 The three plan once for one state of the document and the same options: asking for the figures, the order and the
 checks in a row plans the design once, and an edit plans again only the objects it changed (and usually the one sewn after each, in

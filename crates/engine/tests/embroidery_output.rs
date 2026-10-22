@@ -608,8 +608,12 @@ struct Planned {
 
 /// The plan of the session's design exported with `options`.
 fn planned(s: &mut Session, options: &Value) -> Planned {
-    let stats = run(s, "embroidery.stats", options.clone());
-    let needle = stats["perBlock"].as_array().unwrap().iter().map(|b| b["stitches"].as_u64().unwrap() as usize).collect();
+    let mut options = options.clone();
+    // Every block listed.
+    options["limit"] = json!(10_000);
+    let stats = run(s, "embroidery.stats", options);
+    assert_eq!(stats["truncated"], json!(false));
+    let needle = stats["blocks"].as_array().unwrap().iter().map(|b| b["stitches"].as_u64().unwrap() as usize).collect();
     Planned { needle, longest: stats["longestStitch"].as_f64().unwrap_or(0.0) }
 }
 

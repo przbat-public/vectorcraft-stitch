@@ -239,10 +239,66 @@ pub(crate) fn rect(r: Rect) -> Value {
     json!([mm(r.x0), mm(r.y0), mm(r.x1), mm(r.y1)])
 }
 
-/// A block's thread as the commands list it.
+/// A block's thread as every command lists it: the palette thread (`palette`, `index` from 1 as
+/// the format numbers it, `name`, `color`), the colour the art is painted with, their CIEDE2000
+/// difference as shown, and whether it is past the mismatch threshold.
 pub(crate) fn thread_json(t: &BlockThread) -> Value {
     let hex = super::hex;
     json!({"palette": t.palette.id(), "index": t.index, "name": t.name, "color": hex(t.color), "art": hex(t.art), "deltaE": t.shown_delta_e(), "mismatch": t.mismatch()})
+}
+
+/// The largest whole number a JSON number holds exactly (2^53).
+const EXACT_INTEGER: f64 = 9_007_199_254_740_992.0;
+
+/// `x` as a JSON number: a whole number as an integer (`800`, not `800.0`), any other as it is.
+pub(crate) fn number(x: f64) -> Value {
+    if x.is_finite() && x.fract() == 0.0 && x.abs() < EXACT_INTEGER { json!(x as i64) } else { json!(x) }
+}
+
+/// A stretch of a list a command answers with: `offset` items skipped, at most `limit` listed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Page {
+    pub(crate) offset: usize,
+    pub(crate) limit: usize,
+}
+
+/// The items a list holds when `limit` is left out: a whole design of ordinary size, in a reply
+/// of a few hundred kilobytes at most.
+pub(crate) const LIST_LIMIT: usize = 1000;
+/// The most items `limit` may ask for: the reply stays bounded (a few megabytes) whatever the
+/// design.
+pub(crate) const MAX_LIST_LIMIT: usize = 10_000;
+
+impl Page {
+    /// The keys a command that answers with a list takes for it.
+    pub(crate) const KEYS: [&'static str; 2] = ["offset", "limit"];
+
+    /// The stretch `p` asks for (`offset`, default 0; `limit`, default [`LIST_LIMIT`], at most
+    /// [`MAX_LIST_LIMIT`]); an error naming `cmd` for another value.
+    pub(crate) fn from_params(p: &Map<String, Value>, cmd: &str) -> crate::Result<Self> {
+        let whole = |key: &str, default: usize, most: usize| -> crate::Result<usize> {
+            match p.get(key) {
+                None | Some(Value::Null) => Ok(default),
+                Some(v) => v
+                    .as_u64()
+                    .and_then(|n| usize::try_from(n).ok())
+                    .filter(|n| *n <= most)
+                    .ok_or_else(|| crate::cmd::bad(cmd, format!("`{key}` {v}: a whole number from 0 to {most}"))),
+            }
+        };
+        Ok(Self { offset: whole("offset", 0, usize::MAX)?, limit: whole("limit", LIST_LIMIT, MAX_LIST_LIMIT)? })
+    }
+
+    /// The indices of a list of `len` items it lists.
+    pub(crate) fn range(self, len: usize) -> std::ops::Range<usize> {
+        let start = self.offset.min(len);
+        start..start.saturating_add(self.limit).min(len)
+    }
+
+    /// Whether it leaves out items of a list of `len` after the ones it lists.
+    pub(crate) fn truncated(self, len: usize) -> bool {
+        self.range(len).end < len
+    }
 }
 
 /// The machine and the fabric `p` asks for (`speed`, `fabricThickness`), or the defaults; an
@@ -262,8 +318,9 @@ pub(crate) fn model(p: &Map<String, Value>, cmd: &str) -> crate::Result<(Machine
     Ok((Machine { speed }, Thread { fabric }))
 }
 
-/// The design's figures ([`tally`]) as `embroidery.stats` gives them.
-pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread) -> Value {
+/// The design's figures ([`tally`]) as `embroidery.stats` gives them, its blocks those `page`
+/// lists.
+pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread, page: Page) -> Value {
     let (blocks, _) = tally(plan, machine, thread);
     let mut total = Tally::default();
     for b in &blocks {
@@ -289,34 +346,35 @@ pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread) -> Valu
     let mut threads: Vec<(&str, usize)> = plan.blocks.iter().map(|b| (b.thread.palette.id(), b.thread.index)).collect();
     threads.sort_unstable();
     threads.dedup();
-    let per_block: Vec<Value> = plan
-        .blocks
-        .iter()
-        .zip(&blocks)
-        .enumerate()
-        .map(|(k, (b, t))| {
+    let listed = page.range(plan.blocks.len());
+    let per_block: Vec<Value> = listed
+        .clone()
+        .filter_map(|k| Some((k, plan.blocks.get(k)?, blocks.get(k)?)))
+        .map(|(k, b, t)| {
             json!({
                 "block": k + 1,
                 "thread": thread_json(&b.thread),
                 "stitches": t.needle,
+                "records": b.stitches.len(),
                 "jumps": t.jumps,
                 "trims": t.trims,
-                "first": b.first_number,
-                "last": b.last_number(),
-                "topThread": metres(t.top),
-                "bobbinThread": metres(t.bobbin),
-                "seconds": t.seconds.round(),
+                "firstRecord": b.first_number,
+                "lastRecord": b.last_number(),
+                "topThreadMetres": metres(t.top),
+                "bobbinThreadMetres": metres(t.bobbin),
+                "seconds": t.seconds.round() as u64,
             })
         })
         .collect();
+    let color_changes = plan.blocks.len().saturating_sub(1);
     json!({
         "stitches": total.needle,
         "records": plan.len(),
         "jumps": total.jumps,
         "trims": total.trims,
-        "colorChanges": plan.blocks.len().saturating_sub(1),
-        "threads": threads.len(),
-        "blocks": plan.blocks.len(),
+        "colorChanges": color_changes,
+        "threadCount": threads.len(),
+        "blockCount": plan.blocks.len(),
         "size": bounds.map_or(Value::Null, |b| json!({"width": mm(b.width()), "height": mm(b.height())})),
         "bounds": bounds.map_or(Value::Null, rect),
         "start": start.map_or(Value::Null, point),
@@ -325,19 +383,25 @@ pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread) -> Valu
         "shortestStitch": total.shortest.map(mm),
         "longestStitch": total.longest.map(mm),
         "longestJump": total.longest_jump.map(mm),
-        "thread": {"top": metres(total.top), "bobbin": metres(total.bobbin), "fabricThickness": thread.fabric, "estimate": THREAD_ESTIMATE},
+        "threadUsage": {
+            "topMetres": metres(total.top),
+            "bobbinMetres": metres(total.bobbin),
+            "fabricThickness": number(thread.fabric),
+            "estimate": THREAD_ESTIMATE,
+        },
         "time": {
-            "seconds": total.seconds.round(),
+            "seconds": total.seconds.round() as u64,
             "minutes": (total.seconds / SECONDS_PER_MINUTE * TENTHS).round() / TENTHS,
-            "speed": machine.speed,
-            "slowSpeed": SLOW_SPEED.min(machine.speed),
-            "slowAbove": SLOW_ABOVE,
-            "trimSeconds": TRIM_SECONDS,
-            "threadChanges": plan.blocks.len().saturating_sub(1),
-            "includes": "needle points and jumps at speed (slowSpeed past slowAbove mm) and trims; not the thread changes (threadChanges, each a stop to rethread), nor the start and end of the design",
+            "speed": number(machine.speed),
+            "slowSpeed": number(SLOW_SPEED.min(machine.speed)),
+            "slowAbove": number(SLOW_ABOVE),
+            "trimSeconds": number(TRIM_SECONDS),
+            "includes": "needle points and jumps at speed (slowSpeed past slowAbove mm) and trims; not the colour changes (colorChanges, each a stop to rethread), nor the start and end of the design",
             "estimate": TIME_ESTIMATE,
         },
-        "perBlock": per_block,
+        "blocks": per_block,
+        "offset": listed.start,
+        "truncated": page.truncated(plan.blocks.len()),
         "warnings": plan.warnings,
     })
 }

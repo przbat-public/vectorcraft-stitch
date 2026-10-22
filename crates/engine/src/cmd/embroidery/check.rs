@@ -25,7 +25,7 @@ use vectorcraft_stitch::thread::MISMATCH_DELTA_E;
 use super::hex;
 use super::measure::{self, Record};
 use super::plan::DesignPlan;
-use super::stats::{mm, point};
+use super::stats::{mm, number, point};
 
 /// How much a finding matters.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -36,6 +36,19 @@ pub(crate) enum Severity {
     Warning,
     /// Worth knowing.
     Info,
+}
+
+impl Rule {
+    /// Whether its values are counts (stitches, units, blocks, colour changes): given as integers.
+    fn counts(&self) -> bool {
+        matches!(self.unit, Some("stitches" | "units" | "blocks" | "colorChanges"))
+    }
+
+    /// A value of its unit as the answer gives it: a count as an integer, a measure to the
+    /// hundredth.
+    fn value(&self, v: f64) -> Value {
+        if self.counts() { number(v) } else { json!(mm(v)) }
+    }
 }
 
 impl Severity {
@@ -65,7 +78,11 @@ pub(crate) struct Rule {
     /// What it is checked against, and its unit (`None`: no number; for the format's own limits,
     /// the format's value).
     pub(crate) threshold: Option<f64>,
-    pub(crate) unit: &'static str,
+    /// The unit of the threshold and of each hit's value, as a token (`mm`, `stitches`, `units`,
+    /// `deltaE`, `blocks`, `colorChanges`); `None` for a rule that measures nothing.
+    pub(crate) unit: Option<&'static str>,
+    /// What each hit's value measures, for display.
+    pub(crate) measures: &'static str,
     /// Its sources, the one checked first.
     pub(crate) sources: &'static [Source],
 }
@@ -134,7 +151,8 @@ const GRID: f64 = 1.0 / vectorcraft_stitch::UNITS_PER_MM;
 pub(crate) const LIMIT: usize = 20;
 /// The most hits per rule `limit` may ask for: the output is bounded whatever the design.
 pub(crate) const MAX_LIMIT: usize = 1000;
-/// The most objects a rule lists as hit (the count of hits is never cut).
+/// The most objects a rule lists as hit; `objectCount` counts them all, and the count of hits is
+/// never cut.
 const MAX_OBJECTS: usize = 1000;
 
 /// How the two Melco manuals are named in the sources the checks list.
@@ -148,7 +166,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Satin column wider than the widest a satin sews well",
         severity: Severity::Warning,
         threshold: Some(SATIN_WIDEST),
-        unit: "mm",
+        unit: Some("mm"),
+        measures: "the object's widest satin column",
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "satin stitches wider than 10 mm" },
             Source {
@@ -163,7 +182,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Stitch longer than the longest a machine sews well",
         severity: Severity::Warning,
         threshold: Some(LONGEST_STITCH),
-        unit: "mm",
+        unit: Some("mm"),
+        measures: "a needle-down stitch's length",
         sources: &[Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "any stitch over 12.7 mm" }],
     },
     Rule {
@@ -171,7 +191,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Stitch longer than one record of the format holds: written as several shorter stitches",
         severity: Severity::Info,
         threshold: None,
-        unit: "mm along x or y",
+        unit: Some("mm"),
+        measures: "a stitch's longer extent along x or y (its length is given apart)",
         sources: &[Source {
             name: "EduTechWiki's pages on the formats (DST, TAP and T01: 12.1 mm a record; EXP, JEF and VP3: 12.7 mm; PES and PEC: 204.7 mm)",
             url: "https://edutechwiki.unige.ch/en/Embroidery_format_DST",
@@ -183,7 +204,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Fill stitch length set shorter than a fill sews well",
         severity: Severity::Warning,
         threshold: Some(FILL_SHORTEST),
-        unit: "mm, the object's fill stitch length",
+        unit: Some("mm"),
+        measures: "the object's fill stitch length",
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "fill stitches smaller than 2.5 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "fill stitches ideally 2 mm or longer" },
@@ -194,7 +216,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Satin column narrower than a satin stitch sews well",
         severity: Severity::Warning,
         threshold: Some(SATIN_SHORTEST),
-        unit: "mm, the object's narrowest satin column",
+        unit: Some("mm"),
+        measures: "the object's narrowest satin column",
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "satin stitches shorter than 1 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "satin stitches ideally 1 mm or longer" },
@@ -205,7 +228,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Running stitch length set shorter than a running line sews well",
         severity: Severity::Warning,
         threshold: Some(RUN_SHORTEST),
-        unit: "mm, the object's running stitch length",
+        unit: Some("mm"),
+        measures: "the object's running stitch length",
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "walk stitches shorter than 1.5 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "walk stitches ideally 1.5 mm or longer" },
@@ -219,7 +243,8 @@ pub(crate) const RULES: &[Rule] = &[
         // its last stitches (FORK.md's work list), it becomes a warning again.
         severity: Severity::Info,
         threshold: Some(NEEDLE_BLADE),
-        unit: "mm",
+        unit: Some("mm"),
+        measures: "a needle-down stitch's length",
         sources: &[Source {
             name: MELCO_MACHINE_NAME,
             url: MELCO_MACHINE,
@@ -231,7 +256,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Stitch so short that machines delete it",
         severity: Severity::Warning,
         threshold: Some(TINY),
-        unit: "mm",
+        unit: Some("mm"),
+        measures: "a needle-down stitch's length",
         sources: &[
             Source { name: "Ricoma digitizing tips", url: "https://www.ricoma.cn/cn/ndetail13_539", value: "delete stitches under 0.3 mm" },
             Source {
@@ -246,7 +272,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "More short stitches in a row than stitch shortening allows (each shorter than 1 mm)",
         severity: Severity::Warning,
         threshold: Some(MOST_SHORT_IN_A_ROW as f64),
-        unit: "stitches",
+        unit: Some("stitches"),
+        measures: "short stitches in a row",
         sources: &[
             Source {
                 name: "Wilcom EmbroideryStudio help, Apply stitch shortening",
@@ -261,7 +288,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Three or more layers of stitching on one spot",
         severity: Severity::Warning,
         threshold: Some(LAYERS as f64),
-        unit: "sewing units over a 1 mm square",
+        unit: Some("units"),
+        measures: "sewing units over one 1 mm square",
         sources: &[Source {
             name: "Brother PRT51 manual (Japanese), data precautions and troubleshooting",
             url: "https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf",
@@ -273,7 +301,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Thread that looks unlike the art's colour",
         severity: Severity::Warning,
         threshold: Some(MISMATCH_DELTA_E),
-        unit: "ΔE (CIEDE2000)",
+        unit: Some("deltaE"),
+        measures: "the CIEDE2000 difference between the art's colour and its block's thread",
         sources: &[Source {
             name: "the project owner's choice (docs/embroidery.md › Threads)",
             url: "",
@@ -285,7 +314,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Art that is not sewn, or sewn approximately",
         severity: Severity::Warning,
         threshold: None,
-        unit: "",
+        unit: None,
+        measures: "nothing: each hit is a warning of the stitch plan",
         sources: &[Source {
             name: "the stitch plan's warnings (docs/embroidery.md › What is not stitched)",
             url: "",
@@ -297,7 +327,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "More colour blocks than the format holds",
         severity: Severity::Error,
         threshold: None,
-        unit: "blocks",
+        unit: Some("blocks"),
+        measures: "the design's colour blocks",
         sources: &[
             Source {
                 name: "EduTechWiki, Embroidery format PEC (its header counts the colours in a byte)",
@@ -316,7 +347,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "More stitches than one home machine shows",
         severity: Severity::Info,
         threshold: Some(MACHINE_STITCHES),
-        unit: "stitches",
+        unit: Some("stitches"),
+        measures: "the design's needle points",
         sources: &[Source {
             name: "Brother PR680W manual, specifications",
             url: "https://download.brother.com/welcome/doch102285/884t23_om01en.pdf",
@@ -328,7 +360,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "More colour changes than one home machine shows",
         severity: Severity::Info,
         threshold: Some(MACHINE_COLOR_CHANGES),
-        unit: "colour changes",
+        unit: Some("colorChanges"),
+        measures: "the design's colour changes",
         sources: &[Source {
             name: "Brother PR680W manual, specifications",
             url: "https://download.brother.com/welcome/doch102285/884t23_om01en.pdf",
@@ -337,24 +370,28 @@ pub(crate) const RULES: &[Rule] = &[
     },
 ];
 
-/// One finding: where (a stitch number and a point, millimetres), the unit, and a measure.
+/// One finding: where (a record number and a point, millimetres), the unit, and a measure.
 #[derive(Clone, Debug, Default)]
 struct Hit {
-    number: Option<usize>,
+    record: Option<usize>,
     at: Option<Point>,
     unit: Option<usize>,
     value: Option<f64>,
+    /// A stitch's own length, when the value measures something else (`formatStep`).
+    length: Option<f64>,
+    /// The fewest and the most records a stitch is written as (`formatStep`).
+    pieces: Option<[u64; 2]>,
     note: Option<String>,
 }
 
 impl Hit {
     /// A hit at record `r`, measuring `value`.
     fn at(r: &Record, value: f64) -> Self {
-        Self { number: Some(r.number), at: Some(r.stitch.point()), unit: Some(r.unit), value: Some(value), note: None }
+        Self { record: Some(r.number), at: Some(r.stitch.point()), unit: Some(r.unit), value: Some(value), ..Self::default() }
     }
 }
 
-/// A rule's findings: how many, the objects hit, and the first few.
+/// A rule's findings: how many, every object hit, and the first few hits.
 #[derive(Default)]
 struct Found {
     count: usize,
@@ -395,9 +432,7 @@ impl<'a> Checker<'a> {
     fn add(&mut self, id: &'static str, hit: Hit) {
         let Some(f) = self.found.get_mut(id) else { return };
         f.count += 1;
-        if let Some(u) = hit.unit.and_then(|u| self.plan.units.get(u))
-            && f.objects.len() < MAX_OBJECTS
-        {
+        if let Some(u) = hit.unit.and_then(|u| self.plan.units.get(u)) {
             f.objects.insert(u.origin.selected().0);
         }
         if f.listed.len() < self.ask.limit {
@@ -405,16 +440,11 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// Name the objects units `units` sew among those rule `id` hit (while its list has room).
+    /// Name the objects units `units` sew among those rule `id` hit.
     fn add_objects(&mut self, id: &'static str, units: std::ops::Range<usize>) {
         let plan = self.plan;
         let Some(f) = self.found.get_mut(id) else { return };
-        for u in units.filter_map(|u| plan.units.get(u)) {
-            if f.objects.len() >= MAX_OBJECTS {
-                break;
-            }
-            f.objects.insert(u.origin.selected().0);
-        }
+        f.objects.extend(units.filter_map(|u| plan.units.get(u)).map(|u| u.origin.selected().0));
     }
 
     /// The rules on one record: its stitch's length, and the short stitches in a row and the
@@ -440,7 +470,9 @@ impl<'a> Checker<'a> {
                 } else {
                     format!("written as {fewest} or {most} stitches: this close to a multiple of the step, rounding to the format's 0.1 mm decides")
                 };
-                self.add("formatStep", Hit { note: Some(note), ..Hit::at(r, length) });
+                // The measure compared with the step, and the stitch's length beside it.
+                let pieces = [fewest, most].map(|n| n as u64);
+                self.add("formatStep", Hit { length: Some(length), pieces: Some(pieces), note: Some(note), ..Hit::at(r, longest) });
             }
         }
         if length < NEEDLE_BLADE {
@@ -498,7 +530,10 @@ impl<'a> Checker<'a> {
             *last = r.unit;
             if *count == LAYERS {
                 let centre = Point::new((cell.0 as f64 + 0.5) * LAYER_CELL, (cell.1 as f64 + 0.5) * LAYER_CELL);
-                self.add("layers", Hit { number: Some(r.number), at: Some(centre), unit: Some(r.unit), value: Some(LAYERS as f64), note: None });
+                self.add(
+                    "layers",
+                    Hit { record: Some(r.number), at: Some(centre), unit: Some(r.unit), value: Some(LAYERS as f64), ..Hit::default() },
+                );
             }
         }
     }
@@ -510,7 +545,7 @@ impl<'a> Checker<'a> {
             // At the unit: its first stitch and needle point.
             let first = plan.numbers(k).map(|n| n.start);
             let at = plan.unit_stitches(k).iter().find(|s| s.command == Command::Stitch).map(|s| s.point());
-            let hit = |value: f64| Hit { number: first, at, unit: Some(k), value: Some(value), note: None };
+            let hit = |value: f64| Hit { record: first, at, unit: Some(k), value: Some(value), ..Hit::default() };
             if let Some([narrowest, widest]) = u.satin_widths {
                 if widest > SATIN_WIDEST {
                     self.add("satinTooWide", hit(widest));
@@ -531,7 +566,7 @@ impl<'a> Checker<'a> {
             if b.thread.mismatch() {
                 let note = format!("block {}: {} {} for the art's {}", k + 1, b.thread.palette.id(), b.thread.index, hex(b.thread.art));
                 let hit = Hit {
-                    number: Some(b.first_number),
+                    record: Some(b.first_number),
                     unit: Some(b.units.start),
                     value: Some(b.thread.shown_delta_e()),
                     note: Some(note),
@@ -562,10 +597,11 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// The findings, rule by rule in the order asked, and how many rules of each severity found
-    /// something.
+    /// The findings, rule by rule in the order asked, and for each severity how many rules found
+    /// something and how many hits they found.
     fn into_json(mut self) -> Value {
-        let (mut errors, mut warnings, mut notes) = (0, 0, 0);
+        // Rules and hits by severity: error, warning, info.
+        let mut totals = [(0usize, 0usize); 3];
         let rules: Vec<Value> = self
             .ask
             .rules
@@ -573,10 +609,14 @@ impl<'a> Checker<'a> {
             .map(|rule| {
                 let f = self.found.remove(rule.id).unwrap_or_default();
                 if f.count > 0 {
-                    match rule.severity {
-                        Severity::Error => errors += 1,
-                        Severity::Warning => warnings += 1,
-                        Severity::Info => notes += 1,
+                    let at = match rule.severity {
+                        Severity::Error => 0,
+                        Severity::Warning => 1,
+                        Severity::Info => 2,
+                    };
+                    if let Some((rules, hits)) = totals.get_mut(at) {
+                        *rules += 1;
+                        *hits += f.count;
                     }
                 }
                 let threshold = match rule.id {
@@ -584,31 +624,44 @@ impl<'a> Checker<'a> {
                     "formatColors" => self.ask.format.max_colors().map(|c| c as f64),
                     _ => rule.threshold,
                 };
-                let objects: Vec<u64> = f.objects.into_iter().collect();
+                let object_count = f.objects.len();
+                let objects: Vec<u64> = f.objects.into_iter().take(MAX_OBJECTS).collect();
                 json!({
                     "id": rule.id,
                     "title": rule.title,
                     "severity": rule.severity.id(),
-                    "threshold": threshold,
+                    "threshold": threshold.map(|t| rule.value(t)),
                     "unit": rule.unit,
+                    "measures": rule.measures,
                     "sources": rule.sources.iter().map(|s| json!({"name": s.name, "url": s.url, "value": s.value})).collect::<Vec<_>>(),
                     "hits": f.count,
+                    "objectCount": object_count,
                     "objects": objects,
-                    "first": f.listed.iter().map(|h| self.hit_json(h)).collect::<Vec<_>>(),
+                    "truncated": object_count > MAX_OBJECTS,
+                    "examples": f.listed.iter().map(|h| self.hit_json(rule, h)).collect::<Vec<_>>(),
                 })
             })
             .collect();
+        let [errors, warnings, info] = totals.map(|(rules, hits)| json!({"rules": rules, "hits": hits}));
         json!({
             "format": self.ask.format.id(),
             "rules": rules,
-            "summary": {"errors": errors, "warnings": warnings, "info": notes},
+            "summary": {"errors": errors, "warnings": warnings, "info": info},
             "notChecked": NOT_CHECKED.iter().map(|(what, why)| json!({"what": what, "why": why})).collect::<Vec<_>>(),
         })
     }
 
-    fn hit_json(&self, h: &Hit) -> Value {
+    fn hit_json(&self, rule: &Rule, h: &Hit) -> Value {
         let id = h.unit.and_then(|u| self.plan.units.get(u)).map(|u| u.origin.selected().0);
-        json!({"number": h.number, "at": h.at.map(point), "value": h.value.map(mm), "id": id, "note": h.note})
+        json!({
+            "record": h.record,
+            "at": h.at.map(point),
+            "value": h.value.map(|v| rule.value(v)),
+            "length": h.length.map(mm),
+            "pieces": h.pieces,
+            "id": id,
+            "note": h.note,
+        })
     }
 }
 

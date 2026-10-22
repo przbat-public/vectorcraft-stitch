@@ -431,7 +431,7 @@ fn an_opened_design_is_in_its_formats_palette() {
         assert_eq!(blocks.len(), 2, "{format:?}: {blocks:?}");
         if palette.is_some() {
             assert_eq!(threads["palette"], json!(palette));
-            assert!(blocks.iter().all(|b| b["deltaE"] == json!(0.0) && b["mismatch"] == json!(false)), "{format:?}: {blocks:?}");
+            assert!(blocks.iter().all(|b| b["thread"]["deltaE"] == json!(0.0) && b["thread"]["mismatch"] == json!(false)), "{format:?}: {blocks:?}");
         }
     }
 }
@@ -512,20 +512,23 @@ fn the_threads_command_lists_each_blocks_thread() {
     let blocks = r["blocks"].as_array().unwrap();
     assert_eq!(blocks.len(), 3, "red, blue, light blue: {blocks:?}");
     for (k, (b, p)) in blocks.iter().zip(&plan.blocks).enumerate() {
-        assert_eq!((&b["block"], &b["units"]), (&json!(k + 1), &json!(p.units.len())));
+        assert_eq!((&b["block"], &b["unitCount"]), (&json!(k + 1), &json!(p.units.len())));
+        // The one thread object every command gives.
+        assert_eq!(b["thread"], super::stats::thread_json(&p.thread));
         assert_eq!(
             (&b["thread"]["palette"], &b["thread"]["index"], &b["thread"]["name"]),
             (&json!("pec"), &json!(p.thread.index), &json!(p.thread.name))
         );
-        assert!((b["deltaE"].as_f64().unwrap() - p.thread.delta_e).abs() <= 0.005, "{b}");
-        assert_eq!((&b["deltaE"], &b["mismatch"]), (&json!(p.thread.shown_delta_e()), &json!(p.thread.mismatch())));
+        let t = &b["thread"];
+        assert!((t["deltaE"].as_f64().unwrap() - p.thread.delta_e).abs() <= 0.005, "{b}");
+        assert_eq!((&t["deltaE"], &t["mismatch"]), (&json!(p.thread.shown_delta_e()), &json!(p.thread.mismatch())));
     }
-    assert_eq!((&blocks[0]["art"], &blocks[0]["units"]), (&json!("#cc2222"), &json!(2)), "both red squares");
-    let peacock = &blocks[1];
-    assert_eq!((&peacock["thread"]["index"], &peacock["thread"]["color"], &peacock["deltaE"]), (&json!(38), &json!(PEACOCK_BLUE), &json!(0.0)));
-    assert_eq!((&peacock["mismatch"], &blocks[2]["mismatch"]), (&json!(false), &json!(true)), "no Brother thread is near #4080ff");
-    let red = blocks[0]["deltaE"].as_f64().unwrap();
-    assert!(red > 5.0 && blocks[0]["mismatch"] == json!(false), "Brother's Red is {red} from #cc2222: off, not unlike");
+    assert_eq!((&blocks[0]["thread"]["art"], &blocks[0]["unitCount"]), (&json!("#cc2222"), &json!(2)), "both red squares");
+    let peacock = &blocks[1]["thread"];
+    assert_eq!((&peacock["index"], &peacock["color"], &peacock["deltaE"]), (&json!(38), &json!(PEACOCK_BLUE), &json!(0.0)));
+    assert_eq!((&peacock["mismatch"], &blocks[2]["thread"]["mismatch"]), (&json!(false), &json!(true)), "no Brother thread is near #4080ff");
+    let red = blocks[0]["thread"]["deltaE"].as_f64().unwrap();
+    assert!(red > 5.0 && blocks[0]["thread"]["mismatch"] == json!(false), "Brother's Red is {red} from #cc2222: off, not unlike");
     // The export's options; bad ones refused.
     for bad in [json!({"stitchStyle": "cross"}), json!({"density": "dense"}), json!({"pullCompensation": [1, 2, 3]})] {
         assert!(s.execute("embroidery.threads", &bad).is_err(), "{bad}");
@@ -544,14 +547,17 @@ fn a_mismatch_is_flagged_by_the_difference_shown() {
     assert_eq!((past.shown_delta_e(), past.mismatch()), (MISMATCH_DELTA_E + step, true));
 }
 
-/// `embroidery.threads` takes the export's embroidery options and no other key: another format's
-/// option, or one misspelt, is refused by the params check every frontend runs, not ignored.
+/// `embroidery.threads` takes the export's embroidery options, the stretch of blocks it lists, and
+/// no other key: another format's option, or one misspelt, is refused by the params check every
+/// frontend runs, not ignored.
 #[test]
 fn the_threads_command_takes_only_the_embroidery_options() {
     let spec = crate::cmd::find_command("embroidery.threads").unwrap();
     let named = crate::cmd::params::doc_keys(spec.params).unwrap();
     let options: Vec<&str> = crate::cmd::fileio::embroidery::OPTIONS.iter().map(|o| o.name).collect();
-    let names: Vec<&str> = super::options::OPTIONS.iter().flat_map(|n| std::iter::once(n.name).chain(n.earlier)).collect();
+    let mut names: Vec<&str> = super::options::OPTIONS.iter().flat_map(|n| std::iter::once(n.name).chain(n.earlier)).collect();
+    // And the stretch of blocks it lists.
+    names.extend(["offset", "limit"]);
     // The export's options, under the names the options take (each earlier name after its own).
     assert_eq!(super::options::OPTIONS.iter().map(|n| n.name).collect::<Vec<_>>(), options);
     assert_eq!((named.keys, named.more.len()), (names, 0));

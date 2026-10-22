@@ -10,10 +10,14 @@ use vectorcraft_stitch::{Block, Stitch, Thread};
 
 use super::plan::{Choice, DesignPlan, Origin, Part};
 use super::sequence::{Facts, Planned, Sequence};
+use super::stats::{MAX_LIST_LIMIT, Page};
 use crate::Session;
 
 /// Points per millimetre: the documents count points, the designs millimetres.
 pub(super) const PT_PER_MM: f64 = 72.0 / 25.4;
+
+/// A list's first items, as many as a reply may hold.
+pub(super) const ALL: Page = Page { offset: 0, limit: MAX_LIST_LIMIT };
 
 /// Run `command`, panicking with its params on an error.
 pub(super) fn run(s: &mut Session, command: &str, params: Value) -> Value {

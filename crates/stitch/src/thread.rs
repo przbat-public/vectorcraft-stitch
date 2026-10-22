@@ -43,9 +43,12 @@ const NO_THREAD: usize = 0;
 /// stitch plan flags a farther thread as a mismatch. An estimate, the project owner's choice
 /// (2026-10-21); no embroidery source gives a threshold. Past about 5, two colours side by side are
 /// already seen as two different colours (the bands of W. S. Mokrzycki and M. Tatol, "Color
-/// difference Delta E — a survey", *Machine Graphics and Vision* 20, 2011, drawn up for the older
-/// CIE 1976 difference), but a palette of 64 or 78 threads lies that far from about half the
-/// colours of real art, so the line is drawn at twice that.
+/// difference Delta E — a survey", *Machine Graphics and Vision* 20, 2011), but those bands were
+/// drawn up for the older CIE 1976 difference, which is not on CIEDE2000's scale (CIEDE2000 shrinks
+/// differences of saturated colours: its 10 can be a CIE 1976 distance of 20 to 30). A palette of
+/// 61 or 78 threads lies farther than 5 from about half the colours of real art, so the line is
+/// drawn farther out, at 10, by judgement; and at such distances CIEDE2000 itself is outside the
+/// range it was made for ([`crate::color`]).
 pub const MISMATCH_DELTA_E: f64 = 10.0;
 
 /// A colour difference is shown to two decimals, in hundredths: finer than any difference the eye

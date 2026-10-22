@@ -97,7 +97,8 @@ and `embroidery.setup {label}` changes or unsets it (unset, the export writes th
 title). Put inside a clip group, the lines are cut to the clipping path as any stroke is, and the
 needle lifts across each cut the same way (tied off and in around a long jump).
 Moving or scaling the lines moves or scales the stitches; editing a line's points edits the
-stitches.
+stitches. Turning a design back into shapes that are stitched by the rules (what professional
+software calls recognising objects) is not done yet.
 
 **Saved by upstream VectorCraft.** Upstream keeps the document's embroidery settings it doesn't
 know but drops every object's (its node format keeps no unknown keys): a design opened from a
@@ -116,8 +117,7 @@ file that was opened is then refused until `acknowledgeLoss: true` is passed, an
 first (project owner's choice, 2026-10-22). What a design keeps instead is kept: its needle points,
 trims and colour blocks, each block's thread (a VP3's thread record too), its name and where it
 starts. Every real PES in the corpus says it loses its own section and previews (the cat face and
-the fox an entry 62 too), the fox's JEF its date; the VP3 files lose nothing. Turning a design back into shapes that are stitched by the rules (what professional
-software calls recognising objects) is not done yet.
+the fox an entry 62 too), the fox's JEF its date; the VP3 files lose nothing.
 
 **Cutting the thread after an object.** `embroidery.setTrimAfter` (`{on?, ids?}`, the selection
 by default) marks objects or groups whose thread is cut after their last stitch, however near the
@@ -154,17 +154,23 @@ Document Library palette, so a traced image comes out in threads. `embroidery.th
 export's embroidery options, and no other key) lists each block's art colour, its thread (palette,
 number, name, colour) and the ΔE₀₀ between them, to two decimals, and flags as a mismatch a thread
 farther than 10 as shown, one that looks clearly unlike the art; the same line decides when a block
-takes another thread than its neighbour's. It is an estimate, the project owner's choice: past
-about 5 two colours side by side are already seen as different
-(Mokrzycki and Tatol's bands, drawn up for the older CIE 1976 difference), but 61 or 78 threads lie
-farther than 5 from about half the colours of real art (23 and 28 of the real designs' 44 blocks). The JEF export writes the plan's threads when the
+takes another thread than its neighbour's. It is an estimate, the project owner's choice, by
+judgement: past about 5 two colours side by side are already seen as different (Mokrzycki and
+Tatol's bands, drawn up for the older CIE 1976 difference, which is not on CIEDE2000's scale), but
+61 or 78 threads lie farther than 5 from about half the colours of real art (23 and 28 of the real
+designs' 44 blocks). The JEF export writes the plan's threads when the
 document's palette is Janome's, the PES export when it is Brother's; the other format matches the
 art colours to its own palette by the same rule. DST and EXP name no threads.
 
 A colour difference: the art's sRGB colour and the thread's are put in CIE L*a*b* (D65), and
 CIEDE2000 measures between them as the eye sees it, where RGB distance weighs the three channels
 alike. About 1 is the smallest difference seen side by side (a rule of thumb from the older CIE
-1976 difference). A teal, `#339999`, is nearest
+1976 difference). CIEDE2000 was fitted to small differences: its standard, and Sharma, Wu, Dalal
+and Celik (CIC 12, 2004, [art00058](https://library.imaging.org/cic/articles/12/1/art00058)),
+advise keeping it within about 5 CIELAB units, where its discontinuities stay under 0.3. Thread
+matching works past that (a median of 5 to 6 on the real designs), so which of two far threads is
+nearer is less sure than which near one is; the project owner chose CIEDE2000 over OKLab all the
+same. A teal, `#339999`, is nearest
 Brother's Sky Blue by RGB (ΔE₀₀ 20.2) and Teal Green by eye (9.8); a dark grey, `#31373d`, was
 Janome's Olive Green by RGB (24.3) and is now its Dark Gray (12.6).
 

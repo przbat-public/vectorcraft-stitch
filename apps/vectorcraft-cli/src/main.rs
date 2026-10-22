@@ -110,7 +110,8 @@ USAGE:
 
   vectorcraft-cli bench FILE [--size WxH] [--iters N]
       Render FILE (any readable format) fitted to WxH (default 2880x1800) and print ms per frame
-      (warm), multithreaded and single-threaded.
+      (warm), multithreaded and single-threaded; then, when FILE has art to stitch, the ms to plan
+      its embroidery: cold, warm (every object's stitches kept) and after moving one object.
 
   vectorcraft-cli perf [--paths N] [--deep]
       Check the performance budgets (render, pan, hit test, save/load, SVG, Pathfinder, handle
@@ -415,7 +416,7 @@ fn bench(args: &[String]) -> Result<(), String> {
                 w = a.parse().map_err(|_| "bad width")?;
                 h = b.parse().map_err(|_| "bad height")?;
             }
-            "--iters" => iters = it.next().and_then(|v| v.parse().ok()).ok_or("--iters needs a number")?,
+            "--iters" => iters = it.next().and_then(|v| v.parse().ok()).filter(|n| *n >= 1).ok_or("--iters needs a whole number of at least 1")?,
             f if file.is_none() => file = Some(f.to_string()),
             other => return Err(format!("unknown bench option `{other}`")),
         }
@@ -445,6 +446,13 @@ fn bench(args: &[String]) -> Result<(), String> {
             r.stats.drawn,
             r.stats.culled
         );
+    }
+    // A design to stitch: how long its embroidery takes to plan (an error, such as a design too
+    // large to stitch, is reported as such).
+    match perf::embroidery_times(&doc, iters as usize) {
+        Ok(Some((cold, warm, edited))) => outln!("  embroidery plan: cold {cold:.1} ms, warm {warm:.1} ms, after moving one object {edited:.1} ms"),
+        Ok(None) => {}
+        Err(e) => outln!("  embroidery plan: {e}"),
     }
     Ok(())
 }

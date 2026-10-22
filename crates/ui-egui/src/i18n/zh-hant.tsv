@@ -4099,6 +4099,9 @@ lighting	Light	光源
 	Justification	對齊設定
 	Trim After	之後剪線
 	Embroidery Setup	刺繡設定
+	Embroidery Statistics	刺繡統計
+	Embroidery Sewing Order	刺繡順序
+	Embroidery Check	刺繡檢查
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	文字不會被刺繡：請先建立外框 (文字 › 建立外框)，再重新匯出

@@ -5236,6 +5236,9 @@ swatch	Bright Violet	Felviolet
 	Justification	Uitvullen
 	Trim After	Draad knippen na
 	Embroidery Setup	Borduurinstellingen
+	Embroidery Statistics	Borduurstatistieken
+	Embroidery Sewing Order	Borduurvolgorde
+	Embroidery Check	Borduurwerk controleren
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	tekst wordt niet geborduurd: zet hem om in curven (Type › Omzetten in curven) en exporteer opnieuw

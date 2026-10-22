@@ -13,7 +13,7 @@ use vectorcraft_stitch::plan::Params;
 use vectorcraft_stitch::thread::{Palette, PaletteThread};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch};
 
-use super::plan::{BlockThread, DesignPlan, FIRST_NUMBER, Origin, ThreadBlock, Unit, runs};
+use super::plan::{BlockThread, Choice, DesignPlan, FIRST_NUMBER, Origin, ThreadBlock, Unit, runs};
 
 /// How far apart two blocks' stitches must be not to touch: a thread's width and a satin's pull.
 pub(super) const CLEARANCE: f64 = 1.0;
@@ -26,6 +26,10 @@ pub(super) struct Planned {
     /// those of a fill's narrow parts sewn as satin columns (`None`: it had none).
     pub(super) params: Option<Params>,
     pub(super) columns: Option<Params>,
+    /// The narrowest and widest satin columns it sews (`Unit::satin_widths`).
+    pub(super) satin_widths: Option<[f64; 2]>,
+    /// Why it is sewn the way it is.
+    pub(super) why: Choice,
     pub(super) block: Block,
     /// A literal run read from a machine file: the group it belongs to (that file's colour block)
     /// and whether the thread was cut before it. `None`: stitches planned from art.
@@ -39,6 +43,8 @@ struct Member {
     origin: Origin,
     params: Option<Params>,
     columns: Option<Params>,
+    satin_widths: Option<[f64; 2]>,
+    why: Choice,
     bounds: Option<Rect>,
     start: usize,
 }
@@ -104,12 +110,12 @@ impl Sequence {
 
     /// Add one unit's stitches after the others.
     pub(super) fn add(&mut self, planned: Planned) {
-        let Planned { origin, params, columns, block: mut b, literal } = planned;
+        let Planned { origin, params, columns, satin_widths, why, block: mut b, literal } = planned;
         let Some(&first) = b.stitches.first() else { return };
         self.added += 1;
         let planned_bounds = b.bounds();
         let bounds = planned_bounds.map(|r| r.inflate(CLEARANCE, CLEARANCE));
-        let member = |start: usize| Member { origin, params, columns, bounds: planned_bounds, start };
+        let member = |start: usize| Member { origin, params, columns, satin_widths, why, bounds: planned_bounds, start };
         if let Some((owner, trim_before)) = literal {
             match self.blocks.last_mut() {
                 Some(sewn) if sewn.literal == Some(owner) && sewn.block.thread.color == b.thread.color => {
@@ -208,8 +214,8 @@ impl Sequence {
             for (m, end) in members.into_iter().zip(ends) {
                 let range = m.start..end;
                 let runs = runs(&stitches, range.clone());
-                let Member { origin, params, columns, bounds, .. } = m;
-                plan.units.push(Unit { origin, thread: thread.clone(), params, columns, bounds, block: k, stitches: range, runs });
+                let Member { origin, params, columns, satin_widths, why, bounds, .. } = m;
+                plan.units.push(Unit { origin, thread: thread.clone(), params, columns, satin_widths, why, bounds, block: k, stitches: range, runs });
             }
             let first_number = number;
             number = number.saturating_add(stitches.len());
@@ -246,7 +252,15 @@ mod tests {
         let n = ((x1 - x0) / 2.0).round() as usize;
         b.stitches = (0..=n).map(|k| Stitch::sew(Point::new(x0 + 2.0 * k as f64, 0.0))).collect();
         let origin = Origin { node: NodeId(0), part: Part::Fill(0), instance: None };
-        Planned { origin, params: Some(Params::for_style(Style::Fill)), columns: None, block: b, literal: None }
+        Planned {
+            origin,
+            params: Some(Params::for_style(Style::Fill)),
+            columns: None,
+            satin_widths: None,
+            why: Choice::Fill,
+            block: b,
+            literal: None,
+        }
     }
 
     /// The trims and jumps between two objects of one thread, the second starting `gap` mm from

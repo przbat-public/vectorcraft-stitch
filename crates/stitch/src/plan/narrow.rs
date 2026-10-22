@@ -72,6 +72,9 @@ const RUNS_ON: f64 = 1.5;
 const RUN_ON_LENGTH: f64 = MIN_ASPECT;
 /// A side has at least this many samples.
 const MIN_SIDE: usize = 3;
+/// How many samples, or sides, are worked through between two asks whether to stop
+/// ([`columns_until`]): often enough to stop within milliseconds, rarely enough to cost nothing.
+const STOP_CHECK: usize = 1024;
 /// A column is at least this many times as long as it is wide; a compact shape stays a fill.
 /// An estimate.
 const MIN_ASPECT: f64 = 2.0;
@@ -160,28 +163,34 @@ impl Column {
 /// most `max_width` wide (millimetres, at most [`MAX_SATIN_WIDTH`]; [`RUNS_ON`] times that where
 /// one runs on), longest first. None when nothing is that narrow, or `max_width` is not above 0.
 pub fn columns(path: &BezPath, rule: FillRule, max_width: f64) -> Vec<Column> {
+    columns_until(path, rule, max_width, &|| false).unwrap_or_default()
+}
+
+/// [`columns`], asking `stopped` every [`STOP_CHECK`] samples, between rings and between sides
+/// whether to stop (a plan that is cancelled): `None` once it says so.
+pub fn columns_until(path: &BezPath, rule: FillRule, max_width: f64, stopped: &dyn Fn() -> bool) -> Option<Vec<Column>> {
     if !(max_width.is_finite() && max_width > 0.0) {
-        return Vec::new();
+        return Some(Vec::new());
     }
     let max_width = max_width.min(MAX_SATIN_WIDTH);
     let subs: Vec<SubPath> = closed_subpaths(path).into_iter().map(without_repeats).collect();
     let outlines: Vec<&SubPath> = subs.iter().filter(|s| s.closed && s.pts.len() >= 3).collect();
     if outlines.is_empty() {
-        return Vec::new();
+        return Some(Vec::new());
     }
     let grid = Grid::new(&outlines);
     let shape = Area { outlines: &outlines, rule, grid: grid.as_ref() };
     let rings: Vec<Option<Ring>> = outlines.iter().map(|s| Ring::new(&s.pts)).collect();
     let total: f64 = rings.iter().flatten().map(|r| r.len).sum();
     if !total.is_finite() {
-        return Vec::new();
+        return Some(Vec::new());
     }
     let step = SAMPLE_STEP.max(total / MAX_SAMPLES as f64);
     let edges: usize = outlines.iter().map(|s| s.pts.len()).sum();
     if grid.is_none() && (total / step) * edges as f64 > MAX_UNGRIDDED_TESTS {
-        return Vec::new();
+        return Some(Vec::new());
     }
-    let mut finder = Finder { shape, rings, offsets: Vec::new(), step, max_width, samples: Vec::new(), by_ring: Vec::new() };
+    let mut finder = Finder { shape, rings, offsets: Vec::new(), step, max_width, samples: Vec::new(), by_ring: Vec::new(), stopped };
     finder.offsets = outlines
         .iter()
         .scan(0usize, |acc, s| {
@@ -190,7 +199,7 @@ pub fn columns(path: &BezPath, rule: FillRule, max_width: f64) -> Vec<Column> {
             Some(at)
         })
         .collect();
-    finder.sample();
+    finder.sample()?;
     let sides = finder.sides();
     finder.pair(&sides)
 }
@@ -326,7 +335,8 @@ struct Side {
 }
 
 /// The search: the shape, its rings, where each ring's edges start in the shape's list of edges,
-/// the sample step, the widest column, and the samples (all of them, and each ring's in order).
+/// the sample step, the widest column, the samples (all of them, and each ring's in order), and
+/// whether to stop ([`columns_until`]).
 struct Finder<'a> {
     shape: Area<'a>,
     rings: Vec<Option<Ring<'a>>>,
@@ -335,14 +345,25 @@ struct Finder<'a> {
     max_width: f64,
     samples: Vec<Sample>,
     by_ring: Vec<Vec<usize>>,
+    stopped: &'a dyn Fn() -> bool,
 }
 
 impl Finder<'_> {
-    /// Sample every ring, decide which way each is walked, and find each sample's opposite point.
-    fn sample(&mut self) {
+    /// Whether to stop, asked every [`STOP_CHECK`]th time `i` comes round.
+    fn stop_at(&self, i: usize) -> bool {
+        i.is_multiple_of(STOP_CHECK) && (self.stopped)()
+    }
+
+    /// Sample every ring, decide which way each is walked, and find each sample's opposite point;
+    /// `None` when stopped.
+    fn sample(&mut self) -> Option<()> {
         let mut inward: Vec<Vec2> = Vec::new();
         self.by_ring = vec![Vec::new(); self.rings.len()];
+        let stopped = self.stopped;
         for (k, ring) in self.rings.iter_mut().enumerate() {
+            if stopped() {
+                return None;
+            }
             let Some(ring) = ring else { continue };
             let n = (ring.len / self.step).floor().max(1.0) as usize;
             let (mut one, mut other) = (0usize, 0usize);
@@ -386,6 +407,9 @@ impl Finder<'_> {
             }
         }
         for i in 0..self.samples.len() {
+            if self.stop_at(i) {
+                return None;
+            }
             let (Some(sample), Some(&n)) = (self.samples.get(i), inward.get(i)) else { continue };
             if n == Vec2::ZERO {
                 continue;
@@ -395,6 +419,7 @@ impl Finder<'_> {
                 sample.opposite = opposite;
             }
         }
+        Some(())
     }
 
     /// The point opposite `p` (at `s` along ring `ring`, `n` pointing into the shape), when the
@@ -511,7 +536,8 @@ impl Finder<'_> {
     /// matched point to point, longest first; one that lies mostly inside a longer one is left out.
     /// A side is used up only by a column that is kept, so a narrow part whose side runs on along
     /// a wider block (a bar with a thicker end, a flag on its pole) still finds its column.
-    fn pair(&self, sides: &[Side]) -> Vec<Column> {
+    /// `None` when stopped.
+    fn pair(&self, sides: &[Side]) -> Option<Vec<Column>> {
         // Which side each sample belongs to.
         let mut side_of: Vec<Option<usize>> = vec![None; self.samples.len()];
         for (si, side) in sides.iter().enumerate() {
@@ -525,7 +551,10 @@ impl Finder<'_> {
         order.sort_by_key(|&i| std::cmp::Reverse(sides.get(i).map_or(0, |s| s.samples.len())));
         let mut used = vec![false; sides.len()];
         let mut found: Vec<Column> = Vec::new();
-        for si in order {
+        for (k, si) in order.into_iter().enumerate() {
+            if self.stop_at(k) {
+                return None;
+            }
             let Some(side) = sides.get(si) else { continue };
             if used.get(si).copied().unwrap_or(true) {
                 continue;
@@ -585,7 +614,7 @@ impl Finder<'_> {
                 kept.push((column, outline, bounds));
             }
         }
-        kept.into_iter().map(|(c, ..)| c).collect()
+        Some(kept.into_iter().map(|(c, ..)| c).collect())
     }
 
     /// Whether `column` is one: at least [`MIN_SIDE`] stations, [`MIN_ASPECT`] times as long as

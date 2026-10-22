@@ -143,9 +143,12 @@ const LONG_END: u8 = 0x02;
 const LAST: u8 = 0x03;
 /// The largest delta one stitch byte holds, in tenths of a millimetre (−128 is the command
 /// prefix).
-const MAX_SHORT: i32 = 127;
+pub(crate) const MAX_SHORT: i32 = 127;
 /// The largest delta a long form holds, in tenths of a millimetre (a big-endian i16).
 const MAX_LONG: i32 = i16::MAX as i32;
+/// The most colour blocks a file holds: the summary and the design count them in a big-endian
+/// u16.
+pub(crate) const MAX_COLORS: usize = u16::MAX as usize;
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     let segments = segments(p);
@@ -160,7 +163,7 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     // count it (the packets' positions negate it).
     let frame = super::Frame::centered_on(b, false);
     let (x0, y0, x1, y1) = (frame.x(b.x0), frame.y(b.y0), frame.x(b.x1), frame.y(b.y1));
-    let colors = u16::try_from(segments.len()).map_err(|_| Error::TooLarge(format!("VP3 holds at most {} colour blocks", u16::MAX)))?;
+    let colors = u16::try_from(segments.len()).map_err(|_| Error::TooLarge(format!("VP3 holds at most {MAX_COLORS} colour blocks")))?;
     // Written in one buffer, in file order: each packet's length is filled in when it ends.
     let mut out: Vec<u8> = Vec::with_capacity(p.points().count() * 2 + 1024);
     out.extend_from_slice(MAGIC);

@@ -19,7 +19,7 @@ use std::ops::Range;
 
 use vectorcraft_doc::NodeId;
 use vectorcraft_geom::Rect;
-use vectorcraft_stitch::plan::Params;
+use vectorcraft_stitch::plan::{self, Params, Style};
 use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Match, Palette, PaletteThread};
 use vectorcraft_stitch::{Block, Pattern, Stitch, Thread};
 
@@ -51,6 +51,24 @@ pub struct Origin {
     /// art places another symbol): the object a person selects. `None` outside symbols. Two units
     /// share an origin only where a symbol places another symbol more than once.
     pub instance: Option<NodeId>,
+}
+
+/// Why a sewing unit is sewn the way it is: the rule that chose its stitch.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Choice {
+    /// A fill: tatami, its parts narrower than `narrowAsSatin` sewn as satin columns.
+    Fill,
+    /// A stroke at least as wide as a satin column needs (`digitize::SATIN_MIN_WIDTH`): a satin
+    /// column across its width.
+    WideStroke,
+    /// A narrower stroke: a running line along it.
+    NarrowStroke,
+    /// `stitchStyle fill` on a stroke: the area the stroke paints, filled.
+    StrokeFilled,
+    /// `stitchStyle` forced the style.
+    Forced,
+    /// Stitches read from a machine file, sewn as they are.
+    Literal,
 }
 
 /// A colour difference is shown to two decimals, in hundredths: finer than any difference the eye
@@ -120,6 +138,11 @@ pub struct Unit {
     /// The parameters a fill's narrow parts were sewn with as satin columns; `None` when it had
     /// none.
     pub columns: Option<Params>,
+    /// The narrowest and the widest satin column it sews, millimetres: a satin's width (both), the
+    /// typical widths of a fill's narrowest and widest narrow parts; `None` when it sews none.
+    pub satin_widths: Option<[f64; 2]>,
+    /// Why it is sewn the way it is.
+    pub why: Choice,
     /// The box its stitches fall in as planned, millimetres (`None`: no finite point).
     pub bounds: Option<Rect>,
     /// The block it is sewn in: an index into [`DesignPlan::blocks`] (whose [`ThreadBlock::units`]
@@ -135,6 +158,15 @@ pub struct Unit {
     /// Its runs: each stretch of needle-down stitches one after another, sewn without lifting the
     /// needle, as a range of its block's stitches (within [`Unit::stitches`]).
     pub runs: Vec<Range<usize>>,
+}
+
+impl Unit {
+    /// The style it is sewn in, as the planner sews its parameters ([`plan::sewn_style`]: a satin
+    /// without a width, a fill whose `stitchStyle` is satin, is filled); `None` for a literal run,
+    /// sewn as its points are.
+    pub fn sewn(&self) -> Option<Style> {
+        self.params.map(|p| plan::sewn_style(&p))
+    }
 }
 
 /// One thread's stitches as the machine sews them, and the units they come from.

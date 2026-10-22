@@ -29,6 +29,20 @@ fn points(v: &[Stitch]) -> Vec<Point> {
     v.iter().filter(|s| s.command == Command::Stitch).map(|s| s.point()).collect()
 }
 
+/// A satin without a width is sewn as a fill, and `sewn_style` says so: the stitches are the
+/// fill's, and every other style is sewn as it is.
+#[test]
+fn a_satin_without_a_width_is_sewn_as_a_fill() {
+    let shape = rect(0.0, 0.0, 20.0, 10.0);
+    let unwidened = Params { width: 0.0, ..Params::for_style(Style::Satin) };
+    assert_eq!(sewn_style(&unwidened), Style::Fill);
+    assert_eq!(stitches(&shape, FillRule::NonZero, &unwidened), stitches(&shape, FillRule::NonZero, &Params { style: Style::Fill, ..unwidened }));
+    assert_eq!(sewn_style(&Params { width: 3.0, ..unwidened }), Style::Satin);
+    for style in [Style::Running, Style::Fill] {
+        assert_eq!(sewn_style(&Params::for_style(style)), style);
+    }
+}
+
 #[test]
 fn a_running_line_steps_at_the_stitch_length() {
     let p = Params::for_style(Style::Running);

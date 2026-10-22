@@ -5193,6 +5193,9 @@ swatch	Bright Violet	Violet cerah
 	Justification	Justifikasi
 	Trim After	Potong benang sesudahnya
 	Embroidery Setup	Pengaturan bordir
+	Embroidery Statistics	Statistik bordir
+	Embroidery Sewing Order	Urutan bordir
+	Embroidery Check	Periksa bordir
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	teks tidak dibordir: ubah menjadi garis luar (Teks › Buat garis luar) lalu ekspor lagi

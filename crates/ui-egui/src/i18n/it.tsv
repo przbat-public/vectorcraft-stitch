@@ -4824,6 +4824,9 @@ lighting	Light	Luce
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	le variabili e i set di dati del file non sono stati letti (variabili: {variables}, set di dati: {data_sets}): il pannello Variabili non li elenca
 	Trim After	Taglia il filo dopo
 	Embroidery Setup	Imposta ricamo
+	Embroidery Statistics	Statistiche del ricamo
+	Embroidery Sewing Order	Ordine del ricamo
+	Embroidery Check	Controlla il ricamo
 
 # Machine embroidery: the export's warnings, and its error when nothing is left to stitch.
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	il testo non viene ricamato: convertilo in contorni (Testo › Crea contorni) ed esporta di nuovo

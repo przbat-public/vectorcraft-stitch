@@ -119,11 +119,16 @@ stitches fast, is tried before anything is built on it.
    that name no thread read as named stand-ins, a newer file's embroidery settings open whatever
    their shape, the chosen thread is typed by palette, the export's warnings are translated, and
    each PES and JEF export is pinned apart from its thread numbers too.
-3. **A planning service.** Each sewing unit's stitches kept between plans, a snapshot of the
-   document, cancelling; commands (so reachable over MCP): `embroidery.stats` (stitches, threads,
-   thread changes, trims, jumps, size, thread used, and sewing time at a speed that is a named
-   constant marked as an estimate), `embroidery.sequence`, and `embroidery.check` (thresholds from
-   Melco's design checker, and the format's longest stitch).
+3. **A planning service.** Done: one per open document (`cmd::embroidery::service`), each sewing
+   unit's stitches kept by exactly what they are planned from (bounded, least recently used out;
+   a plan with them equals a fresh plan, tested as a property and on the real designs), the last
+   plan kept per document snapshot and options, cancelling and progress, `Send` and `Sync`; the
+   export plans afresh through it. Commands (so reachable over MCP): `embroidery.stats` (counts,
+   size, stitch lengths, thread and sewing time, estimates on models whose numbers are named and
+   sourced), `embroidery.sequence` (each unit with how it is sewn and why), and `embroidery.check`
+   (Melco's design checker's thresholds and others, each rule with its sources, the format's
+   limits; Melco's fill, satin and walk-stitch limits checked on each object's settings, as its
+   checker reads them, the owner's choice).
 4. **The stitch preview on the canvas, and the Embroidery panel's Sewing order and Check tabs.** The
    stitch scene and its renderer (settling the layering, see Architecture), an Art/Stitches switch
    with planning in the background, the selected object highlighted and the checks marked, counts in
@@ -160,7 +165,11 @@ written with each block's own colour, Brother PEC on its own, Happy TAP and Wilc
 Singer's XXX, Barudan's U01 and SEW; they need only `Pattern`, `Block` and `Thread`); real thread
 colours in PES (the plan now carries each block's thread); more real designs (the corpus has
 nineteen, all from one project: eleven PES, one also JEF, with their artwork, and eight VP3, seven
-also PES; add real DST and EXP files, lettering and larger designs, and test on a machine).
+also PES; add real DST and EXP files, lettering and larger designs, and test on a machine); a
+planner fix: a fill row's remainder spread over its last stitches so that no fill stitch is
+shorter than the needle's blade (0.75 mm for a 75/11; the rows end in stitches of 0.4 to 0.75 mm
+today, which `embroidery.check`'s `stitchBelowNeedle` flags in 41 of the 44 blocks of the real
+designs' artwork), after which that check becomes a warning again.
 
 **Later**, on the steps above: embroidery lettering; satins from rails, angle lines, and turning
 (variable-angle) satin and fill; quality options (triple running stitch, corners, more underlay

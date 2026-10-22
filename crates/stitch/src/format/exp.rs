@@ -14,7 +14,7 @@ use super::{Frame, Reader, finish, mm, steps};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The largest delta one record holds, in tenths of a millimetre.
-const MAX_DELTA: i32 = 127;
+pub(crate) const MAX_DELTA: i32 = 127;
 /// The command prefix: `0x80` is not a valid delta.
 const CONTROL: u8 = 0x80;
 /// The commands' second bytes: a jump (the needle up, then the deltas), the needle put down where

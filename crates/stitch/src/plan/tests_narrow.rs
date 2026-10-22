@@ -151,6 +151,28 @@ fn a_t_is_three_columns() {
     }
 }
 
+/// The search can be stopped: never asked to, it finds what [`narrow_columns`] finds; asked at its
+/// first check or a later one, it gives nothing.
+#[test]
+fn the_search_for_narrow_parts_stops_when_asked() {
+    let t = polygon([(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 3.0), (16.5, 23.0), (13.5, 23.0), (13.5, 3.0), (0.0, 3.0)]);
+    let all = narrow_columns(&t, FillRule::NonZero, WIDEST);
+    let never = narrow_columns_until(&t, FillRule::NonZero, WIDEST, &|| false).unwrap();
+    assert_eq!(never.len(), all.len());
+    for (a, b) in never.iter().zip(&all) {
+        assert_eq!(a.middles(), b.middles());
+    }
+    assert!(narrow_columns_until(&t, FillRule::NonZero, WIDEST, &|| true).is_none());
+    // Asked once per ring and every so many samples and sides: stopped at the third ask.
+    let asks = std::cell::Cell::new(0);
+    let third = || {
+        asks.set(asks.get() + 1);
+        asks.get() >= 3
+    };
+    assert!(narrow_columns_until(&t, FillRule::NonZero, WIDEST, &third).is_none());
+    assert_eq!(asks.get(), 3);
+}
+
 /// Nothing narrow is found in odd input, and nothing panics.
 #[test]
 fn odd_input_finds_nothing() {

@@ -3,19 +3,22 @@
 //! literal stitches read from a file) and the settings each is planned with, clip groups, the
 //! colour of each block, and the limit on a design's size.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use vectorcraft_color::Paint;
+use vectorcraft_doc::cancel;
 use vectorcraft_doc::embroidery::{StitchRun, ThreadPalette};
 use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind};
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Shape, kurbo};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
-use vectorcraft_stitch::plan::{self, Params, Style};
+use vectorcraft_stitch::plan::{self, Style};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
 use super::Options;
-use super::plan::{DesignPlan, Origin, Part};
+use super::cache::{UnitCache, UnitKey};
+use super::plan::{Choice, DesignPlan, Origin, Part};
 use super::sequence::{CLEARANCE, Planned, Sequence};
+use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
 
 const TEXT_LEFT_OUT: &str = "type is not stitched: outline it (Type › Create Outlines) and export again";
 const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › Image Trace) first";
@@ -25,7 +28,7 @@ const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colou
 /// A stroke at least this wide (millimetres) is sewn as a satin column, a narrower one as a running
 /// line (unless `stitchStyle` says otherwise): below about a millimetre the two rails are too
 /// close for the crossings to lie side by side. An estimate.
-const SATIN_MIN_WIDTH: f64 = 1.0;
+pub(super) const SATIN_MIN_WIDTH: f64 = 1.0;
 /// How far a literal stitch line's curves are flattened into needle points (millimetres): the
 /// lines a design opens as are straight, so this only matters for one edited into curves; far
 /// below the 0.1 mm a machine counts in. The planner flattens the art it stitches as finely (its
@@ -36,41 +39,9 @@ const NO_WIDTH: f64 = 0.0;
 /// The most stitches a design may have: far beyond any hoop (large designs run to a few hundred
 /// thousand), and a bound on the memory an export can take.
 const MAX_DESIGN_STITCHES: usize = 2_000_000;
-/// The miter limit given for the band that grows a fill ([`Digitizer::expanded`]): its joins are
-/// round, which have none; this is a stroke's usual default.
-const ROUND_JOINS: f64 = 4.0;
-
-/// How much each narrow column's outline grows before it is cut out of its shape (millimetres): a
-/// hair, so that it covers its own sides, which lie on the shape's outline, and leaves no sliver of
-/// the shape there. Far below a thread's width.
-const COLUMN_GROWTH: f64 = 0.05;
-
-/// `area` without its narrow `columns` ([`plan::narrow_columns`]): what is left to fill, each
-/// column's outline grown by [`COLUMN_GROWTH`] and cut out; and the rest and the grown columns
-/// together, the area the needle travels in. (The rest's edges along the outline come from the
-/// path operations, a hair off the outline as the planner flattens it: travelling in the rest
-/// and the columns as the same operations give them, every row's end lies on or inside it.)
-fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column]) -> (BezPath, BezPath) {
-    let mut cut: Option<PathData> = None;
-    for c in columns {
-        let outline = PathData::from_bezpath(&c.outline());
-        let band = outline_stroke(&outline, 2.0 * COLUMN_GROWTH, Cap::Round, Join::Round, ROUND_JOINS);
-        let grown = boolean(&outline, FillRule::NonZero, &band, FillRule::NonZero, BoolOp::Union);
-        cut = Some(match cut {
-            Some(all) => boolean(&all, FillRule::NonZero, &grown, FillRule::NonZero, BoolOp::Union),
-            None => grown,
-        });
-    }
-    match cut {
-        Some(cut) => {
-            let rest = boolean(&PathData::from_bezpath(area), rule, &cut, FillRule::NonZero, BoolOp::Difference);
-            let whole = boolean(&rest, FillRule::NonZero, &cut, FillRule::NonZero, BoolOp::Union);
-            (rest.to_bezpath(), whole.to_bezpath())
-        }
-        None => (area.clone(), area.clone()),
-    }
-}
-
+/// How deep symbols placed in symbols are sewn: deeper art is left out, a bound on a walk through
+/// symbols that place one another.
+const MAX_SYMBOL_NESTING: u32 = 8;
 /// `path`'s subpaths, each a path of its own (as drawn: closed or not).
 fn subpaths(path: &BezPath) -> Vec<BezPath> {
     let mut out: Vec<BezPath> = Vec::new();
@@ -89,8 +60,16 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
 /// The plan of `doc`'s visible art with `opts`: its sewing units in the blocks they are sewn in,
 /// in sewing order ([`Sequence`]), each block in a thread of the document's palette
 /// ([`super::thread_palette`]), and the warnings for what was left out or approximated; an error
-/// when the design would need too many stitches.
-pub(crate) fn digitize(doc: &Document, opts: &Options) -> Result<DesignPlan, String> {
+/// when the design would need too many stitches, or when the plan is cancelled
+/// ([`vectorcraft_doc::cancel`]: checked before each unit, and while a fill's narrow parts are
+/// looked for and cut out). Each unit planned is reported as a step of the plan's progress.
+pub(crate) fn digitize(doc: &Document, opts: &Options) -> Result<DesignPlan, PlanError> {
+    digitize_with(doc, opts, None)
+}
+
+/// [`digitize`], each unit's stitches taken from `cache` when it keeps them for exactly what the
+/// unit is planned from, and kept there when it doesn't ([`UnitCache`]).
+pub(crate) fn digitize_with(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>) -> Result<DesignPlan, PlanError> {
     let seq = Sequence::new(opts.params(Style::Running, NO_WIDTH));
     let mut warnings = Vec::new();
     if let Some(ThreadPalette::Unknown(palette)) = doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()) {
@@ -99,7 +78,9 @@ pub(crate) fn digitize(doc: &Document, opts: &Options) -> Result<DesignPlan, Str
             "the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette"
         ));
     }
-    let mut d = Digitizer { doc, opts, seq, warnings, nest: 0, clip: None, owner: None, instance: None, stitches: 0, failed: None };
+    let total = doc.layers.iter().map(|l| units_under(doc, l, 0)).fold(0u64, u64::saturating_add);
+    let progress = Progress { done: 0, total };
+    let mut d = Digitizer { doc, opts, seq, warnings, nest: 0, clip: None, owner: None, instance: None, stitches: 0, failed: None, cache, progress };
     d.run();
     match d.failed {
         Some(e) => Err(e),
@@ -108,7 +89,7 @@ pub(crate) fn digitize(doc: &Document, opts: &Options) -> Result<DesignPlan, Str
 }
 
 /// How one sewing unit is sewn: what it is, the settings it is planned with
-/// ([`Digitizer::settings`]), its stitch style, its satin column's width ([`NO_WIDTH`] for fills
+/// ([`Digitizer::settings`]), its stitch style and the rule that chose it, its satin column's width ([`NO_WIDTH`] for fills
 /// and running lines), and whether the clip groups around it cut its stitches (a stroke's; a fill's
 /// area is cut before it is planned).
 #[derive(Clone, Copy)]
@@ -116,6 +97,7 @@ struct Sewing<'a> {
     unit: Origin,
     opts: &'a Options,
     style: Style,
+    why: Choice,
     width: f64,
     clip_stitches: bool,
 }
@@ -143,8 +125,46 @@ struct Digitizer<'a> {
     instance: Option<NodeId>,
     /// The stitches planned so far, against [`MAX_DESIGN_STITCHES`].
     stitches: usize,
-    /// Why the design can't be stitched (too many stitches); the walk stops planning once set.
-    failed: Option<String>,
+    /// Why the design can't be stitched (too many stitches, or the plan was cancelled); the walk
+    /// stops planning once set.
+    failed: Option<PlanError>,
+    /// The units kept from earlier plans of the document, `None` to plan every unit afresh.
+    cache: Option<&'a Mutex<UnitCache>>,
+    /// The units the walk has come to so far, of about how many.
+    progress: Progress,
+}
+
+/// How far a plan has got: the units come to, of about how many ([`units_under`]).
+struct Progress {
+    done: u64,
+    total: u64,
+}
+
+/// What a plan's progress is reported as doing.
+const PLANNING: &str = "Planning the stitches";
+
+/// About how many units the walk plans under `n` (`nest` symbols deep), the progress it reports:
+/// each visible, painted fill and stroke of a visible path, each literal run, a symbol's art once
+/// for each of its instances. What the walk then leaves out (a pattern, a negative expand that
+/// leaves nothing, a stroke cut away by a clip group) is counted all the same.
+fn units_under(doc: &Document, n: &Node, nest: u32) -> u64 {
+    if !n.visible {
+        return 0;
+    }
+    let items = || n.appearance.items.iter().filter(|i| i.visible() && painted(i)).count() as u64;
+    match &n.kind {
+        NodeKind::Layer { template: true, .. } | NodeKind::Layer { printable: false, .. } => 0,
+        NodeKind::Layer { children, .. } | NodeKind::Group { children, .. } => {
+            children.iter().map(|c| units_under(doc, c, nest)).fold(0, u64::saturating_add)
+        }
+        NodeKind::Path { guide: true, .. } => 0,
+        NodeKind::Path { .. } if n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some()) => 1,
+        NodeKind::Path { .. } | NodeKind::Compound { .. } => items(),
+        NodeKind::SymbolInstance { symbol, .. } if nest < MAX_SYMBOL_NESTING => {
+            doc.symbols.iter().find(|s| &s.name == symbol).map_or(0, |s| units_under(doc, &s.art, nest + 1))
+        }
+        _ => 0,
+    }
 }
 
 impl<'a> Digitizer<'a> {
@@ -166,6 +186,22 @@ impl<'a> Digitizer<'a> {
     /// What the unit that sews `part` of `n` sews.
     fn origin(&self, n: &Node, part: Part) -> Origin {
         Origin { node: n.id, part, instance: self.instance }
+    }
+
+    /// One more unit to plan, reported as a step of the plan's progress; `false` when the walk
+    /// stops planning (too many stitches already, or the plan was cancelled).
+    fn step(&mut self) -> bool {
+        if self.failed.is_some() {
+            return false;
+        }
+        if cancel::is_cancelled() {
+            self.failed = Some(PlanError::Cancelled);
+            return false;
+        }
+        let p = &mut self.progress;
+        p.done = p.done.saturating_add(1);
+        cancel::progress(p.done, p.total.max(p.done), PLANNING);
+        true
     }
 
     fn warn(&mut self, w: &str) {
@@ -219,7 +255,7 @@ impl<'a> Digitizer<'a> {
             }
             NodeKind::SymbolInstance { symbol, xf } => {
                 let Some(sym) = self.doc.symbols.iter().find(|s| &s.name == symbol) else { return };
-                if self.nest >= 8 {
+                if self.nest >= MAX_SYMBOL_NESTING {
                     return;
                 }
                 let mut art = (*sym.art).clone();
@@ -241,7 +277,7 @@ impl<'a> Digitizer<'a> {
     /// A run of literal stitches (read from a machine file): the path's points sewn as they are,
     /// in the colour of its stroke, one block with the other runs of its group.
     fn literal(&mut self, n: &Node, bp: &BezPath, run: StitchRun) {
-        if self.failed.is_some() {
+        if !self.step() {
             return;
         }
         let paint = n.appearance.items.iter().filter(|i| i.visible()).find_map(|i| match i {
@@ -275,7 +311,7 @@ impl<'a> Digitizer<'a> {
         }
         self.stitches = self.stitches.saturating_add(points.len());
         if self.stitches > MAX_DESIGN_STITCHES {
-            self.failed = Some(format!("the design would need more than {MAX_DESIGN_STITCHES} stitches"));
+            self.failed = Some(PlanError::TooLarge(format!("the design would need more than {MAX_DESIGN_STITCHES} stitches")));
             return;
         }
         let mut block = Block::new(Thread::rgb(color));
@@ -286,7 +322,8 @@ impl<'a> Digitizer<'a> {
         }
         block.stitches = points;
         let origin = self.origin(n, Part::Literal);
-        self.seq.add(Planned { origin, params: None, columns: None, block, literal: self.owner.map(|g| (g, run.trim_before)) });
+        let literal = self.owner.map(|g| (g, run.trim_before));
+        self.seq.add(Planned { origin, params: None, columns: None, satin_widths: None, why: Choice::Literal, block, literal });
     }
 
     /// A clip group, as it paints: the clipping path (its first child) paints its fills behind the
@@ -338,15 +375,21 @@ impl<'a> Digitizer<'a> {
             if !item.visible() {
                 continue;
             }
+            if painted(item) && !self.step() {
+                return;
+            }
             let unit = self.origin(n, part);
             let opts = self.settings(&unit);
             match item {
                 // A fill is filled unless `stitchStyle` asks for another way of stitching it.
                 AppearanceItem::Fill(fill) => {
-                    let style = opts.forced().unwrap_or(Style::Fill);
+                    let (style, why) = match opts.forced() {
+                        Some(style) => (style, Choice::Forced),
+                        None => (Style::Fill, Choice::Fill),
+                    };
                     let (area, area_rule) = if style == Style::Fill { self.expanded(&mm, rule, opts.expand()) } else { (mm.clone(), rule) };
                     let (area, area_rule) = self.clipped(&area, area_rule);
-                    self.colour(Sewing { unit, opts, style, width: NO_WIDTH, clip_stitches: false }, &area, area_rule, &fill.paint);
+                    self.colour(Sewing { unit, opts, style, why, width: NO_WIDTH, clip_stitches: false }, &area, area_rule, &fill.paint);
                 }
                 AppearanceItem::Stroke(stroke) => {
                     let width = pt_to_mm(stroke.width).max(0.0);
@@ -367,20 +410,24 @@ impl<'a> Digitizer<'a> {
                             let outline = outline_stroke(&PathData::from_bezpath(&mm), width, cap, join, stroke.miter_limit).to_bezpath();
                             let (area, area_rule) = self.expanded(&outline, FillRule::NonZero, opts.expand());
                             let (area, area_rule) = self.clipped(&area, area_rule);
-                            let sewing = Sewing { unit, opts, style: Style::Fill, width: NO_WIDTH, clip_stitches: false };
+                            let sewing = Sewing { unit, opts, style: Style::Fill, why: Choice::StrokeFilled, width: NO_WIDTH, clip_stitches: false };
                             self.colour(sewing, &area, area_rule, &stroke.paint);
                         }
                         // A satin column when it is wide enough to have two rails, a running line
                         // when not, unless `stitchStyle` says which.
                         forced => {
-                            let style = forced.unwrap_or(if width >= SATIN_MIN_WIDTH { Style::Satin } else { Style::Running });
+                            let (style, why) = match forced {
+                                Some(style) => (style, Choice::Forced),
+                                None if width >= SATIN_MIN_WIDTH => (Style::Satin, Choice::WideStroke),
+                                None => (Style::Running, Choice::NarrowStroke),
+                            };
                             if style == Style::Satin && width > plan::MAX_SATIN_WIDTH {
                                 let widest = plan::MAX_SATIN_WIDTH;
                                 self.warn(&format!(
                                     "strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)"
                                 ));
                             }
-                            self.colour(Sewing { unit, opts, style, width, clip_stitches: true }, &mm, rule, &stroke.paint);
+                            self.colour(Sewing { unit, opts, style, why, width, clip_stitches: true }, &mm, rule, &stroke.paint);
                         }
                     }
                 }
@@ -458,7 +505,7 @@ impl<'a> Digitizer<'a> {
         if self.failed.is_some() {
             return;
         }
-        let Sewing { unit, opts, style, width, clip_stitches } = sewing;
+        let Sewing { unit, opts, style, why, width, clip_stitches } = sewing;
         let params = opts.params(style, width);
         // Where the needle will be: at the end of the block this object is likely to join (its
         // bounds estimated from the path's), so it starts as near there as it can.
@@ -478,78 +525,71 @@ impl<'a> Digitizer<'a> {
             estimate = Some(r.intersect(clip.bounding_box()));
         }
         let from = self.seq.needle(self.seq.target(color, estimate));
-        // A fill's narrow parts are satin columns, unless `stitchStyle` forces tatami.
-        let columns = match (style, opts.forced()) {
-            (Style::Fill, None) => plan::narrow_columns(bp, rule, params.narrow),
-            _ => Vec::new(),
+        let request = UnitRequest {
+            shape: bp,
+            rule,
+            params,
+            // A fill's narrow parts are satin columns, unless `stitchStyle` forces tatami.
+            columns: (style == Style::Fill && opts.forced().is_none()).then(|| opts.params(Style::Satin, NO_WIDTH)),
+            from,
+            clip: if clip_stitches { self.clip.as_ref() } else { None },
         };
-        let (planned, satin) = if columns.is_empty() {
-            (plan::try_stitches_from(bp, rule, &params, from), None)
-        } else {
-            let satin = opts.params(Style::Satin, NO_WIDTH);
-            let (rest, whole) = rest_of(bp, rule, &columns);
-            (plan::try_fill_with_columns(&whole, FillRule::NonZero, &rest, &columns, &params, &satin, from), Some(satin))
-        };
-        let mut stitches = match planned {
-            Ok(s) => s,
+        let planned = match self.planned(&request) {
+            Ok(planned) => planned,
             Err(e) => {
-                self.failed = Some(e.to_string());
+                self.failed = Some(e);
                 return;
             }
         };
-        // A stroke inside a clip group: only the stitches inside the clipping path are sewn. (A
-        // filled area was cut to it exactly; its edge run lies on the cut, which a point test
-        // would chop.)
-        if clip_stitches && let Some(clip) = &self.clip {
-            stitches = cut_to(stitches, clip, &params);
-        }
+        // Kept in the cache too, the stitches are copied into the block.
+        let (stitches, columns, widths) = match Arc::try_unwrap(planned) {
+            Ok(UnitStitches { stitches, columns, widths }) => (stitches, columns, widths),
+            Err(kept) => (kept.stitches.clone(), kept.columns, kept.widths),
+        };
+        let satin_widths = match plan::sewn_style(&params) {
+            Style::Satin => Some([params.width; 2]),
+            Style::Fill => widths,
+            Style::Running => None,
+        };
         if stitches.is_empty() {
             return;
         }
         self.stitches = self.stitches.saturating_add(stitches.len());
         if self.stitches > MAX_DESIGN_STITCHES {
-            self.failed =
-                Some(format!("the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art"));
+            self.failed = Some(PlanError::TooLarge(format!(
+                "the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art"
+            )));
             return;
         }
         let mut block = Block::new(Thread::rgb(color));
         block.stitches = stitches;
-        self.seq.add(Planned { origin: unit, params: Some(params), columns: satin, block, literal: None });
+        self.seq.add(Planned { origin: unit, params: Some(params), columns, satin_widths, why, block, literal: None });
+    }
+
+    /// `request`'s stitches: those the cache keeps for it, else planned, and kept.
+    fn planned(&self, request: &UnitRequest<'_>) -> Result<Arc<UnitStitches>, PlanError> {
+        let Some(cache) = self.cache else { return plan_unit(request).map(Arc::new) };
+        let key = UnitKey::of(request);
+        // A cache that a panic elsewhere left locked is passed by: planning afresh is always right.
+        if let Some(kept) = cache.lock().ok().and_then(|mut c| c.get(&key)) {
+            return Ok(kept);
+        }
+        let planned = Arc::new(plan_unit(request)?);
+        if let Ok(mut c) = cache.lock() {
+            c.insert(key, planned.clone());
+        }
+        Ok(planned)
     }
 }
 
-/// The stitches inside `region`: a run that leaves it is cut there and taken up again where it
-/// comes back in, the needle lifted between as the planner lifts it (`p`'s jump and trim lengths,
-/// the thread tied off and in around a long jump).
-fn cut_to(stitches: Vec<Stitch>, region: &(BezPath, FillRule), p: &Params) -> Vec<Stitch> {
-    let (path, rule) = region;
-    let inside = |s: &Stitch| {
-        let w = path.winding(s.point());
-        match rule {
-            FillRule::NonZero => w != 0,
-            FillRule::EvenOdd => w % 2 != 0,
-        }
+/// Whether an appearance item is painted at all (not `none`): only painted items are sewn, and
+/// counted as the plan's progress.
+fn painted(item: &AppearanceItem) -> bool {
+    let paint = match item {
+        AppearanceItem::Fill(f) => &f.paint,
+        AppearanceItem::Stroke(s) => &s.paint,
     };
-    // The stretches inside, each with the plan's own jumps and trims within it.
-    let mut pieces: Vec<Vec<Stitch>> = vec![Vec::new()];
-    for s in stitches {
-        if s.command == Command::Stitch && !inside(&s) {
-            if pieces.last().is_some_and(|p| !p.is_empty()) {
-                pieces.push(Vec::new());
-            }
-            continue;
-        }
-        if let Some(piece) = pieces.last_mut() {
-            piece.push(s);
-        }
-    }
-    // A piece that ends on the plan's own jump or trim drops it: the joining lifts the needle.
-    for piece in &mut pieces {
-        while piece.last().is_some_and(|s| s.command != Command::Stitch) {
-            piece.pop();
-        }
-    }
-    plan::join_cut(pieces, p)
+    !matches!(paint, Paint::None)
 }
 
 /// A paint's stitched colour.

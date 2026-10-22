@@ -411,6 +411,9 @@ impl<'a> Digitizer<'a> {
                 // A fill is filled unless the `stitch` option asks for another way of stitching it.
                 AppearanceItem::Fill(fill) => {
                     let (style, why) = match opts.forced() {
+                        // A satin needs a width, which a fill doesn't have: it is filled, with a
+                        // fill's settings, `expand` and narrow parts, as without the option.
+                        Some(Style::Satin) => (Style::Fill, Choice::SatinFilled),
                         Some(style) => (style, Choice::Forced),
                         None => (Style::Fill, Choice::Fill),
                     };
@@ -569,8 +572,9 @@ impl<'a> Digitizer<'a> {
             shape: bp,
             rule,
             params,
-            // A fill's narrow parts are satin columns, unless the `stitch` option forces tatami.
-            columns: (style == Style::Fill && opts.forced().is_none()).then(|| opts.params(Style::Satin, NO_WIDTH)),
+            // A fill's narrow parts are satin columns, unless the `stitch` option forces tatami
+            // (on a fill, or on a stroke filled).
+            columns: (style == Style::Fill && opts.forced() != Some(Style::Fill)).then(|| opts.params(Style::Satin, NO_WIDTH)),
             from,
             clip: if clip_stitches { self.clip.as_ref() } else { None },
         };

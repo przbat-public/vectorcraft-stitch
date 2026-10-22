@@ -25,7 +25,7 @@ control channel use it). Every writable format's options are listed by `document
 
 | Option | Earlier name | Default | Meaning |
 |---|---|---|---|
-| `stitch` | `stitchStyle` | `auto` | `auto` fills fills (their narrow parts as satin columns, see `narrowAsSatin`), satins strokes 1 mm and wider, runs narrower ones; `tatami` (or `fill`), `satin` and `running` force one style (`tatami` on a stroke fills the area the stroke paints, at its width, caps and joins; on a fill it sews all of it as tatami) |
+| `stitch` | `stitchStyle` | `auto` | `auto` fills fills (their narrow parts as satin columns, see `narrowAsSatin`), satins strokes 1 mm and wider, runs narrower ones; `tatami` (or `fill`), `satin` and `running` force one style (`tatami` on a stroke fills the area the stroke paints, at its width, caps and joins; on a fill it sews all of it as tatami; `satin` on a fill, which has no width to sew across, fills it as `auto` does, its narrow parts as satin columns; `running` on a fill follows its outline) |
 | `spacing` | `density` | 0.38 mm in fills; satin by width | distance between threads: between a fill's rows; between two penetrations on one rail of a satin column (peak to peak), its crossings lying half that apart. Left out, a satin column picks it by its width (*auto spacing*: 0.5 mm under 2 mm wide, 0.45 under 4, 0.4 under 6, 0.37 wider; estimates), and both follow `threadWeight`; given, it is used as it is. 0.05 to 5 mm |
 | `length` | `stitchLength` | 4 mm in fills, 2.5 mm in running lines | the longest stitch of a running line or a fill row; 0.2 to 12 mm |
 | `angle` | `stitchAngle` | 45° | the direction a fill's rows run; any angle |

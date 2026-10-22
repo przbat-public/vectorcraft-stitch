@@ -61,13 +61,16 @@ fn rule(u: &Unit) -> (&'static str, Value, String) {
         }
         Choice::StrokeFilled => ("strokeFilled", json!({}), "stitch fill: the area the stroke paints is filled".into()),
         Choice::Forced => {
-            let asked = u.params.map(|p| p.style);
-            let stitch = asked.map_or("auto", stitch_id);
-            let why = match (asked, u.sewn()) {
-                (Some(Style::Satin), Some(Style::Fill)) => "stitch satin: a fill has no width to sew a satin across, so it is filled".into(),
-                _ => format!("stitch {stitch}"),
+            let stitch = u.params.map(|p| p.style).map_or("auto", stitch_id);
+            ("forced", json!({"stitch": stitch}), format!("stitch {stitch}"))
+        }
+        Choice::SatinFilled => {
+            let why = if u.columns.is_some() {
+                "stitch satin: a fill has no width to sew a satin across, so it is filled, its narrow parts as satin columns"
+            } else {
+                "stitch satin: a fill has no width to sew a satin across, so it is filled"
             };
-            ("forced", json!({"stitch": stitch}), why)
+            ("forced", json!({"stitch": stitch_id(Style::Satin)}), why.into())
         }
         Choice::Literal => ("literal", json!({}), "stitches read from a machine file, sewn as they are".into()),
     }

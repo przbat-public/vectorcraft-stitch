@@ -76,6 +76,9 @@ pub enum Choice {
     StrokeFilled,
     /// The `stitch` option forced the style.
     Forced,
+    /// `stitch: satin` on a fill: a satin needs a width a fill doesn't have, so the fill is
+    /// filled as a fill is without the option (its narrow parts as satin columns).
+    SatinFilled,
     /// Stitches read from a machine file, sewn as they are.
     Literal,
 }

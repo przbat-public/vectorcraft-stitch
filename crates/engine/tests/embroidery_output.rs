@@ -131,14 +131,14 @@ d0c5af020602f9e85c6b002d4d122c14fd4e4e84a18897d2f3e620ea08f9af4b  opened-design-
 defac7efbb3cb5a2bfd9ee26f35b557629259de48feac96a306febea76718870  mixed-stitch-style-fill.pec
 7a7518dd5948604c300bf1532d236d627a01e38e44e3772b7ce4c14658b9fbf2  mixed-stitch-style-fill.jef
 d46468a9da2fe49ef8d177140eab1e5418eba9797af520bf3836eff86f215297  mixed-stitch-style-fill.vp3
-94c67ca4565acd37d9be943b2fb32961671756f3b692d1b1e4352ba56fd8b5a9  mixed-stitch-style-satin.dst
-5f3a65f9bf9a5f34d183845874eca10ecc09b1e0de6f654c394e42ed8658ef89  mixed-stitch-style-satin.tap
-5f3a65f9bf9a5f34d183845874eca10ecc09b1e0de6f654c394e42ed8658ef89  mixed-stitch-style-satin.t01
-c25a33e508b130173a56bf8a14ccb59c6fd8ef648bf69327c83588b85abcaad5  mixed-stitch-style-satin.exp
-51e72bca78719c9ceb3bd9e6289acff30920ba7679982eb28c7f1fbd1244868f  mixed-stitch-style-satin.pes
-a796274bfbd3b493454626a6b18c2baa7c4238dec5bcb2764375e2a950a3bb48  mixed-stitch-style-satin.pec
-50ba5e920f6a6ca3f240013005c306d80ab5caa160749977e093273a2391e8f5  mixed-stitch-style-satin.jef
-053446f9082e16c893259670bd2bf3b614518eb6ccfb3c427eb1928b327bb342  mixed-stitch-style-satin.vp3
+3bff36dcd30ce983bdc6f7deb9403f2664e264eb19e80f22a9f768b6e6ac7219  mixed-stitch-style-satin.dst
+e20124788b2305cdec91c543d34ab97659418f48ae9b9a74bcc30bcdd355d1ff  mixed-stitch-style-satin.tap
+e20124788b2305cdec91c543d34ab97659418f48ae9b9a74bcc30bcdd355d1ff  mixed-stitch-style-satin.t01
+fdd7aaae8578bc54f78ea70a2b3059c46c8b154d075d0e64644380dba93ac64e  mixed-stitch-style-satin.exp
+116f0729e0feaf18c7b2e660369aab1592d2d19edb251c0f36c4bee2878deac8  mixed-stitch-style-satin.pes
+f648f879078cfcb49036800ed03da00a89a784ad334e24c4fe952b54efbf1008  mixed-stitch-style-satin.pec
+c39d99641b0f2221359fb407825499df99ced332af8bb755d9ddd0ca832e1f76  mixed-stitch-style-satin.jef
+d6165575a37985551500775a43136030d757b3ea9abc72451d425d9d22d99b15  mixed-stitch-style-satin.vp3
 1cca1eb83b7fe0c7bf27c150c7864902199ad04d53b6f9453f874d6f5b3e7da8  mixed-stitch-style-running.dst
 3090211233875177c2cd028d6f0f725937a653ac443e2dc06fbb6584f8eb3cf7  mixed-stitch-style-running.tap
 3090211233875177c2cd028d6f0f725937a653ac443e2dc06fbb6584f8eb3cf7  mixed-stitch-style-running.t01
@@ -290,9 +290,9 @@ e6effa654bfa5ad9d95db6df0c25e8de2686eed3f5ce3e9d6fa10dc8c1715f10  opened-design-
 7126a4751a5b3d7ff87a04f6a944ea87dbf326697190857633d209e16a5a1768  mixed-stitch-style-fill.pes  5 37 21 7 52 24
 ba03bc451b059e597e93b173ecd95514ef99efcce998c660b9e60c57282b658e  mixed-stitch-style-fill.pec  5 37 21 7 52 24
 4fb4120120ccfe3ca857008d9539379d15eee3ff589b3998397317f201e9a374  mixed-stitch-style-fill.jef  33 45 59 59 71 14
-1df1c81aab43fbfc3f3bc18c8a9349ef7a8f7737f32ed07a31e4c26279018d6d  mixed-stitch-style-satin.pes  5 37 21 7 52 24
-8df7d9ae8cf61682790456fbdd7bade62adff2b2750294bfd736d777d83f900d  mixed-stitch-style-satin.pec  5 37 21 7 52 24
-9701ed54fa71c7abfa23fca5e9b6531ffce7afaeb9c5a935449aad64428f74bd  mixed-stitch-style-satin.jef  33 45 59 59 71 14
+862f1ce13a7cc804d40dbcf709db226d0e7199eb75daacef3a51e52953a2d9a7  mixed-stitch-style-satin.pes  5 37 21 7 52 24
+380565d8d7ba42a95b95b347634a34e67673b22ad2ebe207b888d2c5c866a7ed  mixed-stitch-style-satin.pec  5 37 21 7 52 24
+495b65ba7c07413e9213a86b15a72554a88a502bec3e894e7799ac0cfc280281  mixed-stitch-style-satin.jef  33 45 59 59 71 14
 5ca89e30e3b72852ab493fb3d6fa552a2fbd93b5ce7f0b8083547eec0342859a  mixed-stitch-style-running.pes  5 37 21 7 52 24
 2422c9c489751441c6ca3b2f758c15897b822e47b8634b6276e159f0a936885d  mixed-stitch-style-running.pec  5 37 21 7 52 24
 022898c2d8df04d76dcc1a81b2fb306e030cb6a14dfdb9b228f2ffe4d69013ae  mixed-stitch-style-running.jef  33 45 59 59 71 14
@@ -424,14 +424,14 @@ mixed-stitch-style-fill.pes  blocks 6  needle 397/325/336/96/546/413  jumps 1/1/
 mixed-stitch-style-fill.pec  blocks 6  needle 397/325/336/96/546/413  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 85.9x78.6  longest 4.67  shortest 0.36  cells 1449
 mixed-stitch-style-fill.jef  blocks 6  needle 397/325/336/96/546/413  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 86.0x78.6  longest 4.67  shortest 0.36  cells 1468
 mixed-stitch-style-fill.vp3  blocks 6  needle 397/325/336/96/546/413  jumps 1/1/1/2/1/1  trims 0/0/0/0/0/0  size 86.0x78.6  longest 4.67  shortest 0.36  cells 1468
-mixed-stitch-style-satin.dst  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.5  longest 3.42  shortest 0.41  cells 1488
-mixed-stitch-style-satin.tap  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.5  longest 3.42  shortest 0.41  cells 1488
-mixed-stitch-style-satin.t01  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.5  longest 3.42  shortest 0.41  cells 1488
-mixed-stitch-style-satin.exp  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.5  longest 3.42  shortest 0.41  cells 1488
-mixed-stitch-style-satin.pes  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.5  longest 3.42  shortest 0.41  cells 1492
-mixed-stitch-style-satin.pec  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.5  longest 3.42  shortest 0.41  cells 1492
-mixed-stitch-style-satin.jef  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.5  longest 3.42  shortest 0.41  cells 1495
-mixed-stitch-style-satin.vp3  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.5  longest 3.42  shortest 0.41  cells 1495
+mixed-stitch-style-satin.dst  blocks 6  needle 397/301/369/365/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.60  shortest 0.41  cells 1486
+mixed-stitch-style-satin.tap  blocks 6  needle 397/301/369/365/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.60  shortest 0.41  cells 1486
+mixed-stitch-style-satin.t01  blocks 6  needle 397/301/369/365/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.60  shortest 0.41  cells 1486
+mixed-stitch-style-satin.exp  blocks 6  needle 397/301/369/365/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.60  shortest 0.41  cells 1486
+mixed-stitch-style-satin.pes  blocks 6  needle 397/301/369/365/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.41  cells 1485
+mixed-stitch-style-satin.pec  blocks 6  needle 397/301/369/365/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.41  cells 1485
+mixed-stitch-style-satin.jef  blocks 6  needle 397/301/369/365/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.60  shortest 0.36  cells 1489
+mixed-stitch-style-satin.vp3  blocks 6  needle 397/301/369/365/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.60  shortest 0.36  cells 1489
 mixed-stitch-style-running.dst  blocks 6  needle 31/44/31/37/37/37  jumps 1/1/1/1/1/0  trims 0/0/0/0/0/0  size 84.7x77.6  longest 3.00  shortest 0.98  cells 437
 mixed-stitch-style-running.tap  blocks 6  needle 31/44/31/37/37/37  jumps 1/1/1/1/1/0  trims 0/0/0/0/0/0  size 84.7x77.6  longest 3.00  shortest 0.98  cells 437
 mixed-stitch-style-running.t01  blocks 6  needle 31/44/31/37/37/37  jumps 1/1/1/1/1/0  trims 0/0/0/0/0/0  size 84.7x77.6  longest 3.00  shortest 0.98  cells 437

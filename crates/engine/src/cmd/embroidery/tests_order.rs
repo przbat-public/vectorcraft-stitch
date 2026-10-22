@@ -135,7 +135,9 @@ fn each_unit_says_how_it_is_sewn_and_why() {
     let satin = sewn(&mut s, json!({"stitchStyle": "satin"}));
     let fill_as_satin = ("tatami".to_string(), "stitch satin: a fill has no width to sew a satin across, so it is filled".to_string());
     let stroke_as_satin = ("satin".to_string(), "stitch satin".to_string());
-    assert_eq!(satin, [fill_as_satin.clone(), stroke_as_satin.clone(), stroke_as_satin, fill_as_satin]);
+    // Filled as without the option: the T's narrow strokes are satin columns.
+    let t_as_satin = ("tatami".to_string(), format!("{}, its narrow parts as satin columns", fill_as_satin.1));
+    assert_eq!(satin, [fill_as_satin, stroke_as_satin.clone(), stroke_as_satin, t_as_satin]);
     let fill = sewn(&mut s, json!({"stitchStyle": "fill"}));
     assert_eq!(fill[1].1, "stitch fill: the area the stroke paints is filled");
     let forced = units(&run(&mut s, "embroidery.sequence", json!({"stitch": "satin"})));

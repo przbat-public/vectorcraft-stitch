@@ -6,14 +6,8 @@ use serde_json::{Value, json};
 use vectorcraft_stitch::Command;
 
 use super::digitize::digitize;
+use super::test_support::{PT_PER_MM, blank, run};
 use super::*;
-
-/// Points per millimetre: the documents count points, the designs millimetres.
-const PT_PER_MM: f64 = 72.0 / 25.4;
-
-fn run(s: &mut Session, command: &str, params: Value) -> Value {
-    s.execute(command, &params).unwrap_or_else(|e| panic!("{command} {params}: {e}"))
-}
 
 /// A rectangle filled with `fill` (or none) and stroked with `stroke` at `weight` points (or not)
 /// → its id.
@@ -27,12 +21,6 @@ fn rect(s: &mut Session, fill: Option<&str>, stroke: Option<(&str, f64)>, x: f64
     }
     run(s, "select.none", json!({}));
     id
-}
-
-fn blank() -> Session {
-    let mut s = Session::new();
-    run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
-    s
 }
 
 /// Every unit listed: its object, part, stitch numbers, entry and exit; how and why it is sewn.
@@ -80,29 +68,13 @@ fn each_unit_maps_to_its_object_and_its_stitches() {
 /// listed without stitch numbers, rather than with a last number before its first.
 #[test]
 fn a_unit_that_adds_no_record_has_no_numbers() {
-    use vectorcraft_doc::NodeId;
-    use vectorcraft_geom::Point;
     use vectorcraft_stitch::plan::{Params, Style};
     use vectorcraft_stitch::thread::Palette;
-    use vectorcraft_stitch::{Block, Stitch, Thread};
 
-    use super::plan::{Choice, Origin, Part};
-    use super::sequence::{Planned, Sequence};
+    use super::sequence::Sequence;
+    use super::test_support::unit;
 
-    let unit = |node: u64, points: &[(f64, f64)]| {
-        let mut block = Block::new(Thread::rgb([200, 30, 30]));
-        block.stitches = points.iter().map(|&(x, y)| Stitch::sew(Point::new(x, y))).collect();
-        let origin = Origin { node: NodeId(node), part: Part::Fill(0), instance: None };
-        Planned {
-            origin,
-            params: Some(Params::for_style(Style::Running)),
-            columns: None,
-            satin_widths: None,
-            why: Choice::Forced,
-            block,
-            literal: None,
-        }
-    };
+    let unit = |node: u64, points: &[(f64, f64)]| unit(node, Style::Running, [200, 30, 30], points, None);
     let mut seq = Sequence::new(Params::for_style(Style::Running));
     seq.add(unit(1, &[(0.0, 0.0), (2.0, 0.0), (4.0, 0.0)]));
     seq.add(unit(2, &[(4.0, 0.0)]));

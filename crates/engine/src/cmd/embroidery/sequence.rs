@@ -18,8 +18,10 @@ use super::plan::{BlockThread, Choice, DesignPlan, FIRST_NUMBER, Origin, ThreadB
 /// How far apart two blocks' stitches must be not to touch: a thread's width and a satin's pull.
 pub(super) const CLEARANCE: f64 = 1.0;
 
-/// One sewing unit's stitches as planned, in document order.
-pub(super) struct Planned {
+/// What a sewing unit is and how it was planned: the facts the plan's [`Unit`] carries, from the
+/// walk that planned it to the plan.
+#[derive(Clone, Copy, Debug)]
+pub(super) struct Facts {
     /// What it sews.
     pub(super) origin: Origin,
     /// The parameters it was planned with (`None`: a literal run, sewn as its points are), and
@@ -30,6 +32,11 @@ pub(super) struct Planned {
     pub(super) satin_widths: Option<[f64; 2]>,
     /// Why it is sewn the way it is.
     pub(super) why: Choice,
+}
+
+/// One sewing unit's stitches as planned, in document order.
+pub(super) struct Planned {
+    pub(super) facts: Facts,
     pub(super) block: Block,
     /// A literal run read from a machine file: the group it belongs to (that file's colour block)
     /// and whether the thread was cut before it. `None`: stitches planned from art.
@@ -40,13 +47,18 @@ pub(super) struct Planned {
 /// where its stitches start in the block (they run up to the next unit's first stitch). It is sewn
 /// in its block's thread.
 struct Member {
-    origin: Origin,
-    params: Option<Params>,
-    columns: Option<Params>,
-    satin_widths: Option<[f64; 2]>,
-    why: Choice,
+    facts: Facts,
     bounds: Option<Rect>,
     start: usize,
+}
+
+/// The thread cut at the end of `stitches`, unless it already ends in a cut.
+fn cut_after(stitches: &mut Vec<Stitch>) {
+    if let Some(&last) = stitches.last()
+        && last.command != Command::Trim
+    {
+        stitches.push(Stitch::new(last.x, last.y, Command::Trim));
+    }
 }
 
 /// A block sewn so far: its stitches, the box they cover grown by [`CLEARANCE`], the group of the
@@ -110,41 +122,49 @@ impl Sequence {
 
     /// Add one unit's stitches after the others.
     pub(super) fn add(&mut self, planned: Planned) {
-        let Planned { origin, params, columns, satin_widths, why, block: mut b, literal } = planned;
-        let Some(&first) = b.stitches.first() else { return };
+        let Planned { facts, block, literal } = planned;
+        let Some(&first) = block.stitches.first() else { return };
         self.added += 1;
-        let planned_bounds = b.bounds();
-        let bounds = planned_bounds.map(|r| r.inflate(CLEARANCE, CLEARANCE));
-        let member = |start: usize| Member { origin, params, columns, satin_widths, why, bounds: planned_bounds, start };
-        if let Some((owner, trim_before)) = literal {
-            match self.blocks.last_mut() {
-                Some(sewn) if sewn.literal == Some(owner) && sewn.block.thread.color == b.thread.color => {
-                    let start = sewn.block.stitches.len();
-                    let merged = &mut sewn.block;
-                    if let Some(last) = merged.stitches.last().copied()
-                        && trim_before
-                        && last.command != Command::Trim
-                    {
-                        merged.stitches.push(Stitch::new(last.x, last.y, Command::Trim));
-                    }
-                    merged.stitches.push(Stitch::jump(first.point()));
-                    merged.stitches.extend(b.stitches.iter().copied());
-                    sewn.bounds = union(sewn.bounds, bounds);
-                    sewn.members.push(member(start));
-                    self.last = self.blocks.len().checked_sub(1);
-                }
-                _ => {
-                    // A cut at the very start of the block, as the file had it.
-                    if trim_before {
-                        b.stitches.insert(0, Stitch::new(first.x, first.y, Command::Trim));
-                    }
-                    let members = vec![member(0)];
-                    self.blocks.push(Sewn { block: b, bounds, literal: Some(owner), members });
-                    self.last = self.blocks.len().checked_sub(1);
-                }
-            }
-            return;
+        let planned_bounds = block.bounds();
+        let member = |start: usize| Member { facts, bounds: planned_bounds, start };
+        match literal {
+            Some((owner, trim_before)) => self.add_literal(block, first, member, owner, trim_before),
+            None => self.add_art(block, first, member),
         }
+    }
+
+    /// A literal run's stitches (`b`, starting at `first`): into the block of its group's runs
+    /// before it (its thread's), or a block of its own, with the cut before it the file had.
+    fn add_literal(&mut self, mut b: Block, first: Stitch, member: impl Fn(usize) -> Member, owner: NodeId, trim_before: bool) {
+        let bounds = b.bounds().map(|r| r.inflate(CLEARANCE, CLEARANCE));
+        match self.blocks.last_mut() {
+            Some(sewn) if sewn.literal == Some(owner) && sewn.block.thread.color == b.thread.color => {
+                let start = sewn.block.stitches.len();
+                let merged = &mut sewn.block;
+                if trim_before {
+                    cut_after(&mut merged.stitches);
+                }
+                merged.stitches.push(Stitch::jump(first.point()));
+                merged.stitches.extend(b.stitches.iter().copied());
+                sewn.bounds = union(sewn.bounds, bounds);
+                sewn.members.push(member(start));
+            }
+            _ => {
+                // A cut at the very start of the block, as the file had it.
+                if trim_before {
+                    b.stitches.insert(0, Stitch::new(first.x, first.y, Command::Trim));
+                }
+                let members = vec![member(0)];
+                self.blocks.push(Sewn { block: b, bounds, literal: Some(owner), members });
+            }
+        }
+        self.last = self.blocks.len().checked_sub(1);
+    }
+
+    /// Art's stitches (`b`, starting at `first`): into the last block of its colour when nothing
+    /// sewn since overlaps it ([`Sequence::target`]), else a block of its own.
+    fn add_art(&mut self, b: Block, first: Stitch, member: impl Fn(usize) -> Member) {
+        let bounds = b.bounds().map(|r| r.inflate(CLEARANCE, CLEARANCE));
         let target = self.target(b.thread.color, bounds);
         self.last = Some(target.unwrap_or(self.blocks.len()));
         match target.and_then(|j| self.blocks.get_mut(j)) {
@@ -187,12 +207,8 @@ impl Sequence {
     /// group that does), however near the next one starts: the cut is the last of that unit's
     /// stitches.
     pub(super) fn trim_last(&mut self) {
-        let Some(sewn) = self.last.and_then(|j| self.blocks.get_mut(j)) else { return };
-        let block = &mut sewn.block;
-        if let Some(&last) = block.stitches.last()
-            && last.command != Command::Trim
-        {
-            block.stitches.push(Stitch::new(last.x, last.y, Command::Trim));
+        if let Some(sewn) = self.last.and_then(|j| self.blocks.get_mut(j)) {
+            cut_after(&mut sewn.block.stitches);
         }
     }
 
@@ -214,7 +230,7 @@ impl Sequence {
             for (m, end) in members.into_iter().zip(ends) {
                 let range = m.start..end;
                 let runs = runs(&stitches, range.clone());
-                let Member { origin, params, columns, satin_widths, why, bounds, .. } = m;
+                let Member { facts: Facts { origin, params, columns, satin_widths, why }, bounds, .. } = m;
                 plan.units.push(Unit { origin, thread: thread.clone(), params, columns, satin_widths, why, bounds, block: k, stitches: range, runs });
             }
             let first_number = number;
@@ -252,15 +268,8 @@ mod tests {
         let n = ((x1 - x0) / 2.0).round() as usize;
         b.stitches = (0..=n).map(|k| Stitch::sew(Point::new(x0 + 2.0 * k as f64, 0.0))).collect();
         let origin = Origin { node: NodeId(0), part: Part::Fill(0), instance: None };
-        Planned {
-            origin,
-            params: Some(Params::for_style(Style::Fill)),
-            columns: None,
-            satin_widths: None,
-            why: Choice::Fill,
-            block: b,
-            literal: None,
-        }
+        let facts = Facts { origin, params: Some(Params::for_style(Style::Fill)), columns: None, satin_widths: None, why: Choice::Fill };
+        Planned { facts, block: b, literal: None }
     }
 
     /// The trims and jumps between two objects of one thread, the second starting `gap` mm from

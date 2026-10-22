@@ -2,40 +2,13 @@
 //! quiet on one just short of it; the command checks its params and bounds what it lists.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::NodeId;
-use vectorcraft_geom::Point;
 use vectorcraft_stitch::format::Format;
 use vectorcraft_stitch::plan::{Params, Style};
-use vectorcraft_stitch::thread::Palette;
-use vectorcraft_stitch::{Block, Stitch, Thread};
 
 use super::check::{self, Ask, RULES};
-use super::plan::{Choice, DesignPlan, Origin, Part};
-use super::sequence::{Planned, Sequence};
+use super::plan::DesignPlan;
+use super::test_support::{plan, planned, run, unit};
 use super::*;
-
-/// A unit of `style` in `color` sewing needle points at `points` (millimetres), whose narrowest
-/// and widest satin columns are `satin_widths`.
-fn unit(node: u64, style: Style, color: [u8; 3], points: &[(f64, f64)], satin_widths: Option<[f64; 2]>) -> Planned {
-    planned(node, Some(Params::for_style(style)), color, points, satin_widths)
-}
-
-/// A unit planned with `params` (`None`: a literal run read from a file).
-fn planned(node: u64, params: Option<Params>, color: [u8; 3], points: &[(f64, f64)], satin_widths: Option<[f64; 2]>) -> Planned {
-    let mut block = Block::new(Thread::rgb(color));
-    block.stitches = points.iter().map(|&(x, y)| Stitch::sew(Point::new(x, y))).collect();
-    let origin = Origin { node: NodeId(node), part: Part::Fill(0), instance: None };
-    let why = if params.is_some() { Choice::Forced } else { Choice::Literal };
-    Planned { origin, params, columns: None, satin_widths, why, block, literal: None }
-}
-
-fn plan(units: Vec<Planned>) -> DesignPlan {
-    let mut seq = Sequence::new(Params::for_style(Style::Fill));
-    for u in units {
-        seq.add(u);
-    }
-    seq.plan("test".into(), Vec::new(), Palette::Jef)
-}
 
 const RED: [u8; 3] = [200, 30, 30];
 
@@ -220,10 +193,6 @@ fn the_format_and_machine_limits_fire_past_them() {
         |n: usize| plan(vec![unit(1, Style::Running, RED, &(0..n).map(|k| ((k % 1000) as f64 * 0.5, (k / 1000) as f64)).collect::<Vec<_>>(), None)]);
     assert_eq!(hits(&long(500_000), "machineStitches", Format::Pes), 0);
     assert_eq!(hits(&long(500_001), "machineStitches", Format::Pes), 1);
-}
-
-fn run(s: &mut Session, command: &str, params: Value) -> Value {
-    s.execute(command, &params).unwrap_or_else(|e| panic!("{command} {params}: {e}"))
 }
 
 /// The command: every rule listed with its threshold and sources, the objects hit, at most `limit`

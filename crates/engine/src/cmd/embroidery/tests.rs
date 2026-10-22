@@ -15,18 +15,13 @@ use vectorcraft_stitch::{Command, pt_to_mm};
 
 use super::digitize::digitize;
 use super::plan::{BlockThread, DELTA_E_HUNDREDTHS, DesignPlan, FIRST_NUMBER, Part};
+use super::test_support::blank;
 use super::*;
 
 /// Points per millimetre: the documents count points, the designs millimetres.
 const PT_PER_MM: f64 = 72.0 / 25.4;
 /// How far outside its bounds a unit's needle point may lie: none but rounding.
 const ROUNDING: f64 = 1e-9;
-
-fn blank() -> Session {
-    let mut s = Session::new();
-    s.execute("file.new", &json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
-    s
-}
 
 /// A filled, unstroked rectangle in `color` (points), left unselected → its id.
 fn rect(s: &mut Session, color: &str, x: f64, y: f64, w: f64, h: f64) -> u64 {

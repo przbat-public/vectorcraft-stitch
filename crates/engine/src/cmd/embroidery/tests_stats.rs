@@ -1,15 +1,14 @@
 //! A design's figures (`embroidery.stats`), exactly, on designs built stitch by stitch.
 
 use serde_json::json;
-use vectorcraft_doc::NodeId;
 use vectorcraft_geom::Point;
-use vectorcraft_stitch::plan::{Params, Style};
-use vectorcraft_stitch::thread::Palette;
-use vectorcraft_stitch::{Block, Command, Stitch, Thread};
+use vectorcraft_stitch::plan::Style;
+use vectorcraft_stitch::{Command, Stitch};
 
-use super::plan::{Choice, DesignPlan, Origin, Part};
-use super::sequence::{Planned, Sequence};
+use super::plan::DesignPlan;
+use super::sequence::Planned;
 use super::stats::{self, Machine, Thread as Fabric};
+use super::test_support::{self, plan};
 use super::*;
 
 /// How close two figures worked out two ways must be: rounding only.
@@ -17,19 +16,7 @@ const ROUNDING: f64 = 1e-9;
 
 /// A unit of `style` in `color`, sewing `points` (millimetres) as needle points.
 fn unit(node: u64, style: Style, color: [u8; 3], points: &[(f64, f64)]) -> Planned {
-    let mut block = Block::new(Thread::rgb(color));
-    block.stitches = points.iter().map(|&(x, y)| Stitch::sew(Point::new(x, y))).collect();
-    let origin = Origin { node: NodeId(node), part: Part::Fill(0), instance: None };
-    Planned { origin, params: Some(Params::for_style(style)), columns: None, satin_widths: None, why: Choice::Forced, block, literal: None }
-}
-
-/// A plan of `units`, in order.
-fn plan(units: Vec<Planned>) -> DesignPlan {
-    let mut seq = Sequence::new(Params::for_style(Style::Fill));
-    for u in units {
-        seq.add(u);
-    }
-    seq.plan("test".into(), Vec::new(), Palette::Jef)
+    test_support::unit(node, style, color, points, None)
 }
 
 const RED: [u8; 3] = [200, 30, 30];

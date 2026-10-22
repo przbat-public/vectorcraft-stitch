@@ -24,6 +24,8 @@ mod sequence;
 pub(crate) mod service;
 mod stats;
 #[cfg(test)]
+mod test_support;
+#[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod tests_check;

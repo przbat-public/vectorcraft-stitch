@@ -10,6 +10,7 @@ use serde_json::{Value, json};
 use super::cache::{UnitCache, UnitKey};
 use super::digitize::digitize;
 use super::service::PlanService;
+use super::test_support::run;
 use super::unit::{PlanError, UnitRequest, UnitStitches};
 use super::*;
 
@@ -65,10 +66,6 @@ fn edit() -> impl Strategy<Value = Edit> {
 /// every unit is sewn.
 fn options() -> impl Strategy<Value = Value> {
     prop_oneof![Just(json!({})), Just(json!({"stitchStyle": "satin"})), Just(json!({"density": 0.5, "jumpLength": 3, "trimLength": 4}))]
-}
-
-fn run(s: &mut Session, command: &str, params: Value) -> Value {
-    s.execute(command, &params).unwrap_or_else(|e| panic!("{command} {params}: {e}"))
 }
 
 /// A session holding `arts` → it and their ids, in stacking order.

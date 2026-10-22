@@ -17,7 +17,7 @@ use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 use super::Options;
 use super::cache::{UnitCache, UnitKey};
 use super::plan::{Choice, DesignPlan, Origin, Part};
-use super::sequence::{CLEARANCE, Planned, Sequence};
+use super::sequence::{CLEARANCE, Facts, Planned, Sequence};
 use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
 
 const TEXT_LEFT_OUT: &str = "type is not stitched: outline it (Type › Create Outlines) and export again";
@@ -323,7 +323,8 @@ impl<'a> Digitizer<'a> {
         block.stitches = points;
         let origin = self.origin(n, Part::Literal);
         let literal = self.owner.map(|g| (g, run.trim_before));
-        self.seq.add(Planned { origin, params: None, columns: None, satin_widths: None, why: Choice::Literal, block, literal });
+        let facts = Facts { origin, params: None, columns: None, satin_widths: None, why: Choice::Literal };
+        self.seq.add(Planned { facts, block, literal });
     }
 
     /// A clip group, as it paints: the clipping path (its first child) paints its fills behind the
@@ -563,7 +564,8 @@ impl<'a> Digitizer<'a> {
         }
         let mut block = Block::new(Thread::rgb(color));
         block.stitches = stitches;
-        self.seq.add(Planned { origin: unit, params: Some(params), columns, satin_widths, why, block, literal: None });
+        let facts = Facts { origin: unit, params: Some(params), columns, satin_widths, why };
+        self.seq.add(Planned { facts, block, literal: None });
     }
 
     /// `request`'s stitches: those the cache keeps for it, else planned, and kept.

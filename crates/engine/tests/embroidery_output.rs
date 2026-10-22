@@ -21,18 +21,29 @@
 //! threads (a palette's table or the matching rule) moves the hashes of the whole files and those
 //! numbers, never the blanked hash, and the failure says so export by export.
 //!
-//! Only the hashes are kept here, never the files. They were recorded on macOS (aarch64). The
-//! planner calls the platform's sine, cosine and power functions, whose last bit may differ in
-//! another maths library: there a needle point can round to the next 0.1 mm, and a hash differ with
-//! no change to the code.
+//! Beside each hash, a summary of what the export holds, read back by our own reader of its format
+//! (so an export that doesn't read fails here): each block's needle points, jumps and trims, the
+//! design's size, its longest and shortest stitch, and the 1 mm squares its stitches cross. A
+//! failure lists the fields that changed, export by export, so that a change can be told from
+//! another before a new listing is recorded. Each export's needle points read back are also checked
+//! against the plan's (`embroidery.stats`), block by block, wherever no planned stitch is longer
+//! than one of the format's records.
+//!
+//! Only the hashes and summaries are kept here, never the files. They were recorded on macOS
+//! (aarch64). The planner calls the platform's sine, cosine and power functions, whose last bit may
+//! differ in another maths library: there a needle point can round to the next 0.1 mm, and a hash
+//! differ with no change to the code. On another platform an export passes when its summary is
+//! within that much of the recorded one.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+use std::collections::BTreeSet;
 
 use serde_json::{Value, json};
 use vectorcraft_engine::Session;
 use vectorcraft_stitch::format::Format;
 use vectorcraft_stitch::thread::Palette;
-use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
+use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread, quantize};
 
 mod embroidery_common;
 use embroidery_common::{DESIGNS, artwork, corpus, export, open, run, sha256};
@@ -331,6 +342,214 @@ fc1c386b8c347c703e9a6947af98a0770a85b6eb23c85977dfd78bab01cee641  watermelon-twe
 2853d6536561088d04462d9cdaed53bdd8d48d8f9895f06a9155eb9a8dd55ea5  zebra-twemoji.clipart.jef  51 1 51 50 1 1 50 1
 ";
 
+/// What each export of [`SYNTHETIC`] holds, read back ([`Summary`]): its name, then its fields.
+const SYNTHETIC_SUMMARIES: &str = "
+fills.dst  blocks 4  needle 356/133/302/90  jumps 2/1/1/1  trims 1/0/0/0  size 76.0x70.8  longest 4.60  shortest 0.41  cells 577
+fills.tap  blocks 4  needle 356/133/302/90  jumps 2/1/1/1  trims 1/0/0/0  size 76.0x70.8  longest 4.60  shortest 0.41  cells 577
+fills.t01  blocks 4  needle 356/133/302/90  jumps 2/1/1/1  trims 1/0/0/0  size 76.0x70.8  longest 4.60  shortest 0.41  cells 577
+fills.exp  blocks 4  needle 356/133/302/90  jumps 2/1/1/1  trims 1/0/0/0  size 76.0x70.8  longest 4.60  shortest 0.41  cells 577
+fills.pes  blocks 4  needle 356/133/302/90  jumps 2/1/1/1  trims 1/0/0/0  size 76.0x70.8  longest 4.60  shortest 0.40  cells 576
+fills.pec  blocks 4  needle 356/133/302/90  jumps 2/1/1/1  trims 1/0/0/0  size 76.0x70.8  longest 4.60  shortest 0.40  cells 576
+fills.jef  blocks 4  needle 356/133/302/90  jumps 2/1/1/1  trims 1/0/0/0  size 76.0x70.9  longest 4.60  shortest 0.41  cells 576
+fills.vp3  blocks 4  needle 356/133/302/90  jumps 2/1/1/1  trims 0/0/0/0  size 76.0x70.9  longest 4.60  shortest 0.41  cells 576
+strokes.dst  blocks 6  needle 353/611/265/66/557/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.3x89.5  longest 4.60  shortest 0.41  cells 1592
+strokes.tap  blocks 6  needle 353/611/265/66/557/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.3x89.5  longest 4.60  shortest 0.41  cells 1592
+strokes.t01  blocks 6  needle 353/611/265/66/557/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.3x89.5  longest 4.60  shortest 0.41  cells 1592
+strokes.exp  blocks 6  needle 353/611/265/66/557/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.3x89.5  longest 4.60  shortest 0.41  cells 1592
+strokes.pes  blocks 6  needle 353/611/265/66/557/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.3x89.5  longest 4.67  shortest 0.41  cells 1593
+strokes.pec  blocks 6  needle 353/611/265/66/557/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.3x89.5  longest 4.67  shortest 0.41  cells 1593
+strokes.jef  blocks 6  needle 353/611/265/66/557/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.2x89.5  longest 4.60  shortest 0.50  cells 1598
+strokes.vp3  blocks 6  needle 353/611/265/66/557/390  jumps 1/1/1/2/1/1  trims 0/0/0/0/0/0  size 88.2x89.5  longest 4.60  shortest 0.50  cells 1598
+compound-path-with-a-hole.dst  blocks 2  needle 1019/361  jumps 1/4  trims 0/3  size 74.4x28.5  longest 4.60  shortest 0.41  cells 1069
+compound-path-with-a-hole.tap  blocks 2  needle 1019/361  jumps 1/4  trims 0/3  size 74.4x28.5  longest 4.60  shortest 0.41  cells 1069
+compound-path-with-a-hole.t01  blocks 2  needle 1019/361  jumps 1/4  trims 0/3  size 74.4x28.5  longest 4.60  shortest 0.41  cells 1069
+compound-path-with-a-hole.exp  blocks 2  needle 1019/361  jumps 1/4  trims 0/3  size 74.4x28.5  longest 4.60  shortest 0.41  cells 1069
+compound-path-with-a-hole.pes  blocks 2  needle 1019/361  jumps 1/4  trims 0/3  size 74.4x28.5  longest 4.60  shortest 0.41  cells 1069
+compound-path-with-a-hole.pec  blocks 2  needle 1019/361  jumps 1/4  trims 0/3  size 74.4x28.5  longest 4.60  shortest 0.41  cells 1069
+compound-path-with-a-hole.jef  blocks 2  needle 1019/361  jumps 1/4  trims 0/3  size 74.3x28.5  longest 4.67  shortest 0.40  cells 1069
+compound-path-with-a-hole.vp3  blocks 2  needle 1019/361  jumps 1/4  trims 0/0  size 74.3x28.5  longest 4.67  shortest 0.40  cells 1069
+clip-groups.dst  blocks 5  needle 1164/1163/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.32  cells 1192
+clip-groups.tap  blocks 5  needle 1164/1163/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.32  cells 1192
+clip-groups.t01  blocks 5  needle 1164/1163/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.32  cells 1192
+clip-groups.exp  blocks 5  needle 1164/1163/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.32  cells 1192
+clip-groups.pes  blocks 5  needle 1164/1163/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.53  shortest 0.41  cells 1193
+clip-groups.pec  blocks 5  needle 1164/1163/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.53  shortest 0.41  cells 1193
+clip-groups.jef  blocks 5  needle 1164/1163/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.40  cells 1193
+clip-groups.vp3  blocks 5  needle 1164/1163/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/0  size 36.1x36.1  longest 4.60  shortest 0.40  cells 1193
+symbols.dst  blocks 2  needle 657/437  jumps 3/3  trims 2/2  size 51.4x74.5  longest 4.67  shortest 0.42  cells 559
+symbols.tap  blocks 2  needle 657/437  jumps 3/3  trims 2/2  size 51.4x74.5  longest 4.67  shortest 0.42  cells 559
+symbols.t01  blocks 2  needle 657/437  jumps 3/3  trims 2/2  size 51.4x74.5  longest 4.67  shortest 0.42  cells 559
+symbols.exp  blocks 2  needle 657/437  jumps 3/3  trims 2/2  size 51.4x74.5  longest 4.67  shortest 0.42  cells 559
+symbols.pes  blocks 2  needle 657/437  jumps 3/3  trims 2/2  size 51.4x74.5  longest 4.60  shortest 0.42  cells 559
+symbols.pec  blocks 2  needle 657/437  jumps 3/3  trims 2/2  size 51.4x74.5  longest 4.60  shortest 0.42  cells 559
+symbols.jef  blocks 2  needle 657/437  jumps 3/3  trims 2/2  size 51.4x74.5  longest 4.67  shortest 0.50  cells 561
+symbols.vp3  blocks 2  needle 657/437  jumps 3/3  trims 0/0  size 51.4x74.5  longest 4.67  shortest 0.50  cells 561
+trim-after.dst  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.60  shortest 0.41  cells 144
+trim-after.tap  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.60  shortest 0.41  cells 144
+trim-after.t01  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.60  shortest 0.41  cells 144
+trim-after.exp  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.60  shortest 0.41  cells 144
+trim-after.pes  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.60  shortest 0.41  cells 144
+trim-after.pec  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.60  shortest 0.41  cells 144
+trim-after.jef  blocks 1  needle 242  jumps 4  trims 2  size 26.8x5.6  longest 4.67  shortest 0.41  cells 144
+trim-after.vp3  blocks 1  needle 242  jumps 4  trims 0  size 26.8x5.6  longest 4.67  shortest 0.41  cells 144
+opened-design.dst  blocks 2  needle 356/133  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.60  shortest 0.40  cells 367
+opened-design.tap  blocks 2  needle 356/133  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.60  shortest 0.40  cells 367
+opened-design.t01  blocks 2  needle 356/133  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.60  shortest 0.40  cells 367
+opened-design.exp  blocks 2  needle 356/133  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.60  shortest 0.40  cells 367
+opened-design.pes  blocks 2  needle 356/133  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.60  shortest 0.40  cells 367
+opened-design.pec  blocks 2  needle 356/133  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.60  shortest 0.40  cells 367
+opened-design.jef  blocks 2  needle 356/133  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.60  shortest 0.40  cells 367
+opened-design.vp3  blocks 2  needle 356/133  jumps 2/1  trims 0/0  size 35.5x42.6  longest 4.60  shortest 0.40  cells 367
+opened-design-clipped.dst  blocks 1  needle 122  jumps 14  trims 1  size 7.3x10.9  longest 4.53  shortest 0.41  cells 80
+opened-design-clipped.tap  blocks 1  needle 122  jumps 14  trims 1  size 7.3x10.9  longest 4.53  shortest 0.41  cells 80
+opened-design-clipped.t01  blocks 1  needle 122  jumps 14  trims 1  size 7.3x10.9  longest 4.53  shortest 0.41  cells 80
+opened-design-clipped.exp  blocks 1  needle 122  jumps 14  trims 1  size 7.3x10.9  longest 4.53  shortest 0.41  cells 80
+opened-design-clipped.pes  blocks 1  needle 122  jumps 14  trims 1  size 7.3x10.9  longest 4.53  shortest 0.41  cells 80
+opened-design-clipped.pec  blocks 1  needle 122  jumps 14  trims 1  size 7.3x10.9  longest 4.53  shortest 0.41  cells 80
+opened-design-clipped.jef  blocks 1  needle 122  jumps 14  trims 1  size 7.3x10.9  longest 4.53  shortest 0.41  cells 80
+opened-design-clipped.vp3  blocks 1  needle 122  jumps 14  trims 0  size 7.3x10.9  longest 4.53  shortest 0.41  cells 80
+opened-design-cut-at-block-ends.dst  blocks 2  needle 20/20  jumps 3/2  trims 0/1  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
+opened-design-cut-at-block-ends.tap  blocks 2  needle 20/20  jumps 3/2  trims 0/1  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
+opened-design-cut-at-block-ends.t01  blocks 2  needle 20/20  jumps 3/2  trims 0/1  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
+opened-design-cut-at-block-ends.exp  blocks 2  needle 20/20  jumps 2/2  trims 1/2  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
+opened-design-cut-at-block-ends.pes  blocks 2  needle 20/20  jumps 2/2  trims 1/2  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
+opened-design-cut-at-block-ends.pec  blocks 2  needle 20/20  jumps 2/2  trims 1/2  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
+opened-design-cut-at-block-ends.jef  blocks 2  needle 20/20  jumps 2/2  trims 1/2  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
+opened-design-cut-at-block-ends.vp3  blocks 2  needle 20/20  jumps 2/2  trims 0/0  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
+mixed-stitch-style-fill.dst  blocks 6  needle 397/325/336/96/546/413  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 85.9x78.6  longest 4.67  shortest 0.36  cells 1451
+mixed-stitch-style-fill.tap  blocks 6  needle 397/325/336/96/546/413  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 85.9x78.6  longest 4.67  shortest 0.36  cells 1451
+mixed-stitch-style-fill.t01  blocks 6  needle 397/325/336/96/546/413  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 85.9x78.6  longest 4.67  shortest 0.36  cells 1451
+mixed-stitch-style-fill.exp  blocks 6  needle 397/325/336/96/546/413  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 85.9x78.6  longest 4.67  shortest 0.36  cells 1451
+mixed-stitch-style-fill.pes  blocks 6  needle 397/325/336/96/546/413  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 85.9x78.6  longest 4.67  shortest 0.36  cells 1449
+mixed-stitch-style-fill.pec  blocks 6  needle 397/325/336/96/546/413  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 85.9x78.6  longest 4.67  shortest 0.36  cells 1449
+mixed-stitch-style-fill.jef  blocks 6  needle 397/325/336/96/546/413  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 86.0x78.6  longest 4.67  shortest 0.36  cells 1468
+mixed-stitch-style-fill.vp3  blocks 6  needle 397/325/336/96/546/413  jumps 1/1/1/2/1/1  trims 0/0/0/0/0/0  size 86.0x78.6  longest 4.67  shortest 0.36  cells 1468
+mixed-stitch-style-satin.dst  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.5  longest 3.42  shortest 0.41  cells 1488
+mixed-stitch-style-satin.tap  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.5  longest 3.42  shortest 0.41  cells 1488
+mixed-stitch-style-satin.t01  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.5  longest 3.42  shortest 0.41  cells 1488
+mixed-stitch-style-satin.exp  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.5  longest 3.42  shortest 0.41  cells 1488
+mixed-stitch-style-satin.pes  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.5  longest 3.42  shortest 0.41  cells 1492
+mixed-stitch-style-satin.pec  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.5  longest 3.42  shortest 0.41  cells 1492
+mixed-stitch-style-satin.jef  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.5  longest 3.42  shortest 0.41  cells 1495
+mixed-stitch-style-satin.vp3  blocks 6  needle 443/293/369/365/639/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.5  longest 3.42  shortest 0.41  cells 1495
+mixed-stitch-style-running.dst  blocks 6  needle 31/44/31/37/37/37  jumps 1/1/1/1/1/0  trims 0/0/0/0/0/0  size 84.7x77.6  longest 3.00  shortest 0.98  cells 437
+mixed-stitch-style-running.tap  blocks 6  needle 31/44/31/37/37/37  jumps 1/1/1/1/1/0  trims 0/0/0/0/0/0  size 84.7x77.6  longest 3.00  shortest 0.98  cells 437
+mixed-stitch-style-running.t01  blocks 6  needle 31/44/31/37/37/37  jumps 1/1/1/1/1/0  trims 0/0/0/0/0/0  size 84.7x77.6  longest 3.00  shortest 0.98  cells 437
+mixed-stitch-style-running.exp  blocks 6  needle 31/44/31/37/37/37  jumps 1/1/1/1/1/0  trims 0/0/0/0/0/0  size 84.7x77.6  longest 3.00  shortest 0.98  cells 437
+mixed-stitch-style-running.pes  blocks 6  needle 31/44/31/37/37/37  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 84.7x77.6  longest 3.00  shortest 0.98  cells 440
+mixed-stitch-style-running.pec  blocks 6  needle 31/44/31/37/37/37  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 84.7x77.6  longest 3.00  shortest 0.98  cells 440
+mixed-stitch-style-running.jef  blocks 6  needle 31/44/31/37/37/37  jumps 1/1/1/1/1/0  trims 0/0/0/0/0/0  size 84.6x77.6  longest 3.00  shortest 0.98  cells 436
+mixed-stitch-style-running.vp3  blocks 6  needle 31/44/31/37/37/37  jumps 1/1/1/1/1/0  trims 0/0/0/0/0/0  size 84.6x77.6  longest 3.00  shortest 0.98  cells 436
+mixed-every-option.dst  blocks 6  needle 287/233/270/33/415/346  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 88.9x80.4  longest 5.28  shortest 0.50  cells 1722
+mixed-every-option.tap  blocks 6  needle 287/233/270/33/415/346  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 88.9x80.4  longest 5.28  shortest 0.50  cells 1722
+mixed-every-option.t01  blocks 6  needle 287/233/270/33/415/346  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 88.9x80.4  longest 5.28  shortest 0.50  cells 1722
+mixed-every-option.exp  blocks 6  needle 287/233/270/33/415/346  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 88.9x80.4  longest 5.28  shortest 0.50  cells 1722
+mixed-every-option.pes  blocks 6  needle 287/233/270/33/415/346  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 88.9x80.4  longest 5.28  shortest 0.50  cells 1723
+mixed-every-option.pec  blocks 6  needle 287/233/270/33/415/346  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 88.9x80.4  longest 5.28  shortest 0.50  cells 1723
+mixed-every-option.jef  blocks 6  needle 287/233/270/33/415/346  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 89.0x80.4  longest 5.28  shortest 0.50  cells 1735
+mixed-every-option.vp3  blocks 6  needle 287/233/270/33/415/346  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 89.0x80.4  longest 5.28  shortest 0.50  cells 1735
+mixed-shrunk.dst  blocks 6  needle 377/299/368/37/522/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.41  cells 1358
+mixed-shrunk.tap  blocks 6  needle 377/299/368/37/522/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.41  cells 1358
+mixed-shrunk.t01  blocks 6  needle 377/299/368/37/522/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.41  cells 1358
+mixed-shrunk.exp  blocks 6  needle 377/299/368/37/522/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.41  cells 1358
+mixed-shrunk.pes  blocks 6  needle 377/299/368/37/522/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.41  cells 1357
+mixed-shrunk.pec  blocks 6  needle 377/299/368/37/522/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.41  cells 1357
+mixed-shrunk.jef  blocks 6  needle 377/299/368/37/522/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.36  cells 1358
+mixed-shrunk.vp3  blocks 6  needle 377/299/368/37/522/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.36  cells 1358
+";
+
+/// What each export of [`ARTWORK`] holds, read back, listed as [`SYNTHETIC_SUMMARIES`] is.
+const ARTWORK_SUMMARIES: &str = "
+bullseye-twemoji.dst  blocks 6  needle 1553/988/546/232/292/159  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.0x45.0  longest 8.47  shortest 0.32  cells 1694
+bullseye-twemoji.tap  blocks 6  needle 1553/988/546/232/292/159  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.0x45.0  longest 8.47  shortest 0.32  cells 1694
+bullseye-twemoji.t01  blocks 6  needle 1553/988/546/232/292/159  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.0x45.0  longest 8.47  shortest 0.32  cells 1694
+bullseye-twemoji.exp  blocks 6  needle 1553/988/546/232/292/159  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.0x45.0  longest 8.47  shortest 0.32  cells 1694
+bullseye-twemoji.pes  blocks 6  needle 1553/988/546/232/292/159  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.0x45.0  longest 8.42  shortest 0.32  cells 1696
+bullseye-twemoji.pec  blocks 6  needle 1553/988/546/232/292/159  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.0x45.0  longest 8.42  shortest 0.32  cells 1696
+bullseye-twemoji.jef  blocks 6  needle 1553/988/546/232/292/159  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.0x45.0  longest 8.45  shortest 0.32  cells 1693
+bullseye-twemoji.vp3  blocks 6  needle 1553/988/546/232/292/159  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.0x45.0  longest 8.45  shortest 0.32  cells 1693
+fox-twemoji.clipart.dst  blocks 4  needle 1391/461/144/247  jumps 1/2/3/2  trims 0/0/2/1  size 45.1x40.6  longest 10.03  shortest 0.32  cells 1321
+fox-twemoji.clipart.tap  blocks 4  needle 1391/461/144/247  jumps 1/2/3/2  trims 0/0/2/1  size 45.1x40.6  longest 10.03  shortest 0.32  cells 1321
+fox-twemoji.clipart.t01  blocks 4  needle 1391/461/144/247  jumps 1/2/3/2  trims 0/0/2/1  size 45.1x40.6  longest 10.03  shortest 0.32  cells 1321
+fox-twemoji.clipart.exp  blocks 4  needle 1391/461/144/247  jumps 1/2/3/2  trims 0/0/2/1  size 45.1x40.6  longest 10.03  shortest 0.32  cells 1321
+fox-twemoji.clipart.pes  blocks 4  needle 1391/461/144/247  jumps 1/2/3/2  trims 0/0/2/1  size 45.1x40.6  longest 10.03  shortest 0.32  cells 1323
+fox-twemoji.clipart.pec  blocks 4  needle 1391/461/144/247  jumps 1/2/3/2  trims 0/0/2/1  size 45.1x40.6  longest 10.03  shortest 0.32  cells 1323
+fox-twemoji.clipart.jef  blocks 4  needle 1391/461/144/247  jumps 1/2/3/2  trims 0/0/2/1  size 45.1x40.6  longest 9.99  shortest 0.32  cells 1322
+fox-twemoji.clipart.vp3  blocks 4  needle 1391/461/144/247  jumps 1/2/3/2  trims 0/0/0/0  size 45.1x40.6  longest 9.99  shortest 0.32  cells 1322
+heart-suit-twemoji.clipart.dst  blocks 1  needle 1349  jumps 1  trims 0  size 45.0x42.0  longest 4.60  shortest 0.41  cells 1351
+heart-suit-twemoji.clipart.tap  blocks 1  needle 1349  jumps 1  trims 0  size 45.0x42.0  longest 4.60  shortest 0.41  cells 1351
+heart-suit-twemoji.clipart.t01  blocks 1  needle 1349  jumps 1  trims 0  size 45.0x42.0  longest 4.60  shortest 0.41  cells 1351
+heart-suit-twemoji.clipart.exp  blocks 1  needle 1349  jumps 1  trims 0  size 45.0x42.0  longest 4.60  shortest 0.41  cells 1351
+heart-suit-twemoji.clipart.pes  blocks 1  needle 1349  jumps 1  trims 0  size 45.0x42.0  longest 4.60  shortest 0.32  cells 1351
+heart-suit-twemoji.clipart.pec  blocks 1  needle 1349  jumps 1  trims 0  size 45.0x42.0  longest 4.60  shortest 0.32  cells 1351
+heart-suit-twemoji.clipart.jef  blocks 1  needle 1349  jumps 1  trims 0  size 45.0x42.0  longest 4.67  shortest 0.32  cells 1356
+heart-suit-twemoji.clipart.vp3  blocks 1  needle 1349  jumps 1  trims 0  size 45.0x42.0  longest 4.67  shortest 0.32  cells 1356
+joystick-twemoji.dst  blocks 4  needle 154/245/1020/227  jumps 1/2/4/1  trims 0/1/2/0  size 42.4x45.1  longest 5.70  shortest 0.41  cells 980
+joystick-twemoji.tap  blocks 4  needle 154/245/1020/227  jumps 1/2/4/1  trims 0/1/2/0  size 42.4x45.1  longest 5.70  shortest 0.41  cells 980
+joystick-twemoji.t01  blocks 4  needle 154/245/1020/227  jumps 1/2/4/1  trims 0/1/2/0  size 42.4x45.1  longest 5.70  shortest 0.41  cells 980
+joystick-twemoji.exp  blocks 4  needle 154/245/1020/227  jumps 1/2/4/1  trims 0/1/2/0  size 42.4x45.1  longest 5.70  shortest 0.41  cells 980
+joystick-twemoji.pes  blocks 4  needle 154/245/1020/227  jumps 1/2/4/1  trims 0/1/2/0  size 42.4x45.1  longest 5.70  shortest 0.32  cells 981
+joystick-twemoji.pec  blocks 4  needle 154/245/1020/227  jumps 1/2/4/1  trims 0/1/2/0  size 42.4x45.1  longest 5.70  shortest 0.32  cells 981
+joystick-twemoji.jef  blocks 4  needle 154/245/1020/227  jumps 1/2/4/1  trims 0/1/2/0  size 42.5x45.1  longest 5.70  shortest 0.41  cells 981
+joystick-twemoji.vp3  blocks 4  needle 154/245/1020/227  jumps 1/2/4/1  trims 0/0/0/0  size 42.5x45.1  longest 5.70  shortest 0.41  cells 981
+pool-8-ball-twemoji.dst  blocks 3  needle 1613/475/295  jumps 1/1/1  trims 0/0/0  size 46.0x46.0  longest 4.75  shortest 0.32  cells 1734
+pool-8-ball-twemoji.tap  blocks 3  needle 1613/475/295  jumps 1/1/1  trims 0/0/0  size 46.0x46.0  longest 4.75  shortest 0.32  cells 1734
+pool-8-ball-twemoji.t01  blocks 3  needle 1613/475/295  jumps 1/1/1  trims 0/0/0  size 46.0x46.0  longest 4.75  shortest 0.32  cells 1734
+pool-8-ball-twemoji.exp  blocks 3  needle 1613/475/295  jumps 1/1/1  trims 0/0/0  size 46.0x46.0  longest 4.75  shortest 0.32  cells 1734
+pool-8-ball-twemoji.pes  blocks 3  needle 1613/475/295  jumps 1/1/1  trims 0/0/0  size 46.0x46.0  longest 4.75  shortest 0.32  cells 1733
+pool-8-ball-twemoji.pec  blocks 3  needle 1613/475/295  jumps 1/1/1  trims 0/0/0  size 46.0x46.0  longest 4.75  shortest 0.32  cells 1733
+pool-8-ball-twemoji.jef  blocks 3  needle 1613/475/295  jumps 1/1/1  trims 0/0/0  size 46.0x46.0  longest 4.69  shortest 0.32  cells 1737
+pool-8-ball-twemoji.vp3  blocks 3  needle 1613/475/295  jumps 1/1/1  trims 0/0/0  size 46.0x46.0  longest 4.69  shortest 0.32  cells 1737
+puzzle-piece-twemoji.dst  blocks 1  needle 1368  jumps 1  trims 0  size 45.1x45.1  longest 4.60  shortest 0.32  cells 1204
+puzzle-piece-twemoji.tap  blocks 1  needle 1368  jumps 1  trims 0  size 45.1x45.1  longest 4.60  shortest 0.32  cells 1204
+puzzle-piece-twemoji.t01  blocks 1  needle 1368  jumps 1  trims 0  size 45.1x45.1  longest 4.60  shortest 0.32  cells 1204
+puzzle-piece-twemoji.exp  blocks 1  needle 1368  jumps 1  trims 0  size 45.1x45.1  longest 4.60  shortest 0.32  cells 1204
+puzzle-piece-twemoji.pes  blocks 1  needle 1368  jumps 1  trims 0  size 45.1x45.1  longest 4.60  shortest 0.36  cells 1204
+puzzle-piece-twemoji.pec  blocks 1  needle 1368  jumps 1  trims 0  size 45.1x45.1  longest 4.60  shortest 0.36  cells 1204
+puzzle-piece-twemoji.jef  blocks 1  needle 1368  jumps 1  trims 0  size 45.1x45.0  longest 4.61  shortest 0.32  cells 1207
+puzzle-piece-twemoji.vp3  blocks 1  needle 1368  jumps 1  trims 0  size 45.1x45.0  longest 4.61  shortest 0.32  cells 1207
+smiling-face-with-smiling-eyes-twemoji.clipart.dst  blocks 3  needle 1890/365/384  jumps 1/2/3  trims 0/1/0  size 47.5x47.3  longest 5.92  shortest 0.32  cells 1834
+smiling-face-with-smiling-eyes-twemoji.clipart.tap  blocks 3  needle 1890/365/384  jumps 1/2/3  trims 0/1/0  size 47.5x47.3  longest 5.92  shortest 0.32  cells 1834
+smiling-face-with-smiling-eyes-twemoji.clipart.t01  blocks 3  needle 1890/365/384  jumps 1/2/3  trims 0/1/0  size 47.5x47.3  longest 5.92  shortest 0.32  cells 1834
+smiling-face-with-smiling-eyes-twemoji.clipart.exp  blocks 3  needle 1890/365/384  jumps 1/2/3  trims 0/1/0  size 47.5x47.3  longest 5.92  shortest 0.32  cells 1834
+smiling-face-with-smiling-eyes-twemoji.clipart.pes  blocks 3  needle 1890/365/384  jumps 1/2/3  trims 0/1/0  size 47.5x47.3  longest 5.92  shortest 0.36  cells 1833
+smiling-face-with-smiling-eyes-twemoji.clipart.pec  blocks 3  needle 1890/365/384  jumps 1/2/3  trims 0/1/0  size 47.5x47.3  longest 5.92  shortest 0.36  cells 1833
+smiling-face-with-smiling-eyes-twemoji.clipart.jef  blocks 3  needle 1890/365/384  jumps 1/2/3  trims 0/1/0  size 47.5x47.3  longest 6.02  shortest 0.40  cells 1833
+smiling-face-with-smiling-eyes-twemoji.clipart.vp3  blocks 3  needle 1890/365/384  jumps 1/2/3  trims 0/0/0  size 47.5x47.3  longest 6.02  shortest 0.40  cells 1833
+sos-button-fluent.clipart.dst  blocks 2  needle 1961/764  jumps 1/3  trims 0/1  size 45.0x45.0  longest 4.60  shortest 0.41  cells 2069
+sos-button-fluent.clipart.tap  blocks 2  needle 1961/764  jumps 1/3  trims 0/1  size 45.0x45.0  longest 4.60  shortest 0.41  cells 2069
+sos-button-fluent.clipart.t01  blocks 2  needle 1961/764  jumps 1/3  trims 0/1  size 45.0x45.0  longest 4.60  shortest 0.41  cells 2069
+sos-button-fluent.clipart.exp  blocks 2  needle 1961/764  jumps 1/3  trims 0/1  size 45.0x45.0  longest 4.60  shortest 0.41  cells 2069
+sos-button-fluent.clipart.pes  blocks 2  needle 1961/764  jumps 1/3  trims 0/1  size 45.0x45.0  longest 4.60  shortest 0.41  cells 2069
+sos-button-fluent.clipart.pec  blocks 2  needle 1961/764  jumps 1/3  trims 0/1  size 45.0x45.0  longest 4.60  shortest 0.41  cells 2069
+sos-button-fluent.clipart.jef  blocks 2  needle 1961/764  jumps 1/3  trims 0/1  size 45.0x45.0  longest 4.60  shortest 0.41  cells 2069
+sos-button-fluent.clipart.vp3  blocks 2  needle 1961/764  jumps 1/3  trims 0/0  size 45.0x45.0  longest 4.60  shortest 0.41  cells 2069
+video-game-twemoji.dst  blocks 8  needle 582/1181/140/31/30/31/29/143  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.0x31.9  longest 4.67  shortest 0.32  cells 1203
+video-game-twemoji.tap  blocks 8  needle 582/1181/140/31/30/31/29/143  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.0x31.9  longest 4.67  shortest 0.32  cells 1203
+video-game-twemoji.t01  blocks 8  needle 582/1181/140/31/30/31/29/143  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.0x31.9  longest 4.67  shortest 0.32  cells 1203
+video-game-twemoji.exp  blocks 8  needle 582/1181/140/31/30/31/29/143  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.0x31.9  longest 4.67  shortest 0.32  cells 1203
+video-game-twemoji.pes  blocks 8  needle 582/1181/140/31/30/31/29/143  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.0x31.9  longest 4.67  shortest 0.36  cells 1203
+video-game-twemoji.pec  blocks 8  needle 582/1181/140/31/30/31/29/143  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.0x31.9  longest 4.67  shortest 0.36  cells 1203
+video-game-twemoji.jef  blocks 8  needle 582/1181/140/31/30/31/29/143  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.0x32.0  longest 4.60  shortest 0.32  cells 1205
+video-game-twemoji.vp3  blocks 8  needle 582/1181/140/31/30/31/29/143  jumps 4/3/2/1/1/1/1/4  trims 0/0/0/0/0/0/0/0  size 45.0x32.0  longest 4.60  shortest 0.32  cells 1205
+watermelon-twemoji.clipart.dst  blocks 4  needle 408/363/590/148  jumps 1/1/1/8  trims 0/0/0/0  size 45.8x31.9  longest 4.46  shortest 0.32  cells 949
+watermelon-twemoji.clipart.tap  blocks 4  needle 408/363/590/148  jumps 1/1/1/8  trims 0/0/0/0  size 45.8x31.9  longest 4.46  shortest 0.32  cells 949
+watermelon-twemoji.clipart.t01  blocks 4  needle 408/363/590/148  jumps 1/1/1/8  trims 0/0/0/0  size 45.8x31.9  longest 4.46  shortest 0.32  cells 949
+watermelon-twemoji.clipart.exp  blocks 4  needle 408/363/590/148  jumps 1/1/1/8  trims 0/0/0/0  size 45.8x31.9  longest 4.46  shortest 0.32  cells 949
+watermelon-twemoji.clipart.pes  blocks 4  needle 408/363/590/148  jumps 1/1/1/8  trims 0/0/0/0  size 45.8x31.9  longest 4.53  shortest 0.32  cells 948
+watermelon-twemoji.clipart.pec  blocks 4  needle 408/363/590/148  jumps 1/1/1/8  trims 0/0/0/0  size 45.8x31.9  longest 4.53  shortest 0.32  cells 948
+watermelon-twemoji.clipart.jef  blocks 4  needle 408/363/590/148  jumps 1/1/1/8  trims 0/0/0/0  size 45.8x31.9  longest 4.46  shortest 0.32  cells 950
+watermelon-twemoji.clipart.vp3  blocks 4  needle 408/363/590/148  jumps 1/1/1/8  trims 0/0/0/0  size 45.8x31.9  longest 4.46  shortest 0.32  cells 950
+zebra-twemoji.clipart.dst  blocks 8  needle 1561/323/269/43/24/566/30/764  jumps 3/2/2/1/1/3/1/9  trims 2/0/1/0/0/1/0/3  size 45.1x45.6  longest 6.94  shortest 0.32  cells 1566
+zebra-twemoji.clipart.tap  blocks 8  needle 1561/323/269/43/24/566/30/764  jumps 3/2/2/1/1/3/1/9  trims 2/0/1/0/0/1/0/3  size 45.1x45.6  longest 6.94  shortest 0.32  cells 1566
+zebra-twemoji.clipart.t01  blocks 8  needle 1561/323/269/43/24/566/30/764  jumps 3/2/2/1/1/3/1/9  trims 2/0/1/0/0/1/0/3  size 45.1x45.6  longest 6.94  shortest 0.32  cells 1566
+zebra-twemoji.clipart.exp  blocks 8  needle 1561/323/269/43/24/566/30/764  jumps 3/2/2/1/1/3/1/9  trims 2/0/1/0/0/1/0/3  size 45.1x45.6  longest 6.94  shortest 0.32  cells 1566
+zebra-twemoji.clipart.pes  blocks 8  needle 1561/323/269/43/24/566/30/764  jumps 3/2/2/1/1/3/1/9  trims 2/0/1/0/0/1/0/3  size 45.1x45.6  longest 6.98  shortest 0.36  cells 1569
+zebra-twemoji.clipart.pec  blocks 8  needle 1561/323/269/43/24/566/30/764  jumps 3/2/2/1/1/3/1/9  trims 2/0/1/0/0/1/0/3  size 45.1x45.6  longest 6.98  shortest 0.36  cells 1569
+zebra-twemoji.clipart.jef  blocks 8  needle 1561/323/269/43/24/566/30/764  jumps 3/2/2/1/1/3/1/9  trims 2/0/1/0/0/1/0/3  size 45.1x45.6  longest 6.94  shortest 0.32  cells 1567
+zebra-twemoji.clipart.vp3  blocks 8  needle 1561/323/269/43/24/566/30/764  jumps 3/2/2/1/1/3/1/9  trims 0/0/0/0/0/0/0/0  size 45.1x45.6  longest 6.94  shortest 0.32  cells 1567
+";
+
 /// Points per millimetre: the documents count points, the designs millimetres.
 const PT_PER_MM: f64 = 72.0 / 25.4;
 
@@ -366,12 +585,39 @@ const WORD: usize = 4;
 fn the_documents_built_here_export_unchanged() {
     let mut now = Vec::new();
     for (name, mut s, options) in documents() {
+        let plan = planned(&mut s, &options);
         for format in Format::ALL {
             let bytes = export(&mut s, format, &options).unwrap_or_else(|e| panic!("{name} as {}: {e}", format.id()));
-            now.push(Pinned::new(format!("{name}.{}", format.extension()), format, &bytes));
+            let pinned = Pinned::new(format!("{name}.{}", format.extension()), format, &bytes);
+            plan.holds(&pinned, format);
+            now.push(pinned);
         }
     }
-    check(SYNTHETIC, SYNTHETIC_THREADS, &now);
+    check(SYNTHETIC, SYNTHETIC_THREADS, SYNTHETIC_SUMMARIES, &now);
+}
+
+/// What a session's design plans (`embroidery.stats`): each block's needle points, and its longest
+/// needle-down stitch (millimetres).
+struct Planned {
+    needle: Vec<usize>,
+    longest: f64,
+}
+
+/// The plan of the session's design exported with `options`.
+fn planned(s: &mut Session, options: &Value) -> Planned {
+    let stats = run(s, "embroidery.stats", options.clone());
+    let needle = stats["perBlock"].as_array().unwrap().iter().map(|b| b["stitches"].as_u64().unwrap() as usize).collect();
+    Planned { needle, longest: stats["longestStitch"].as_f64().unwrap_or(0.0) }
+}
+
+impl Planned {
+    /// An export read back has the plan's needle points, block by block, when no planned stitch is
+    /// longer than one of its format's records holds (a longer one is written as several).
+    fn holds(&self, pinned: &Pinned, format: Format) {
+        if self.longest <= format.max_step() {
+            assert_eq!(pinned.summary.needle, self.needle, "{}: the needle points read back are not the plan's", pinned.name);
+        }
+    }
 }
 
 /// One export as the listings pin it.
@@ -383,13 +629,140 @@ struct Pinned {
     /// For a format that numbers its threads (PES, PEC, JEF): the hash of its bytes with the thread
     /// numbers blanked, and the numbers ([`threads_apart`]).
     threads: Option<(String, String)>,
+    /// What it holds, read back by our reader of its format ([`Summary`]).
+    summary: Summary,
 }
 
 impl Pinned {
+    /// `bytes`, our writer's export of `name` as `format`, pinned: they must read back with our
+    /// reader of the format, or the export is no file at all.
     fn new(name: String, format: Format, bytes: &[u8]) -> Self {
         let threads = threads_apart(format, bytes)
             .map(|(blanked, numbers)| (sha256::hex(&blanked), numbers.iter().map(u32::to_string).collect::<Vec<_>>().join(" ")));
-        Self { name, hash: sha256::hex(bytes), threads }
+        let read = format.read(bytes).unwrap_or_else(|e| panic!("{name}: our own reader can't read it: {e}"));
+        Self { name, hash: sha256::hex(bytes), threads, summary: Summary::of(&read) }
+    }
+}
+
+/// The side of the squares [`Summary::cells`] counts (millimetres): about a thread's width and a
+/// fill row's spacing apart, so that a region of stitching sewn elsewhere, or left out, moves the
+/// count.
+const CELL: f64 = 1.0;
+/// How finely a stitch is walked to find the squares it crosses (millimetres): a quarter of one.
+const CELL_STEP: f64 = CELL / 4.0;
+/// Hundredths of a millimetre, the unit the summary gives stitch lengths in.
+const HUNDREDTHS_PER_MM: f64 = 100.0;
+/// How far a summary's measures may move on another platform, whose maths library may round a
+/// needle point to the next 0.1 mm (millimetres): one grid step at each end of a stitch.
+const PLATFORM_LENGTH: f64 = 0.2;
+/// A hair beyond a decimal the listing rounds to, so that a value it shows rounded compares equal.
+const LISTED_ROUNDING: f64 = 1e-9;
+/// How many of the squares stitched may differ on another platform, as a share of them: a needle
+/// point moved by 0.1 mm moves a stitch into the next square at most.
+const PLATFORM_CELLS: f64 = 0.02;
+
+/// What an export holds, read back by our reader of its format: each block's needle points, jumps
+/// and trims, the design's size, its longest and shortest needle-down stitch, and how many 1 mm
+/// squares its stitches cross. Pinned beside each hash, so that a change reads field by field
+/// (which block gained a trim, how far the design grew), and on another platform, where the hashes
+/// may differ in the last 0.1 mm, the summaries are compared within that.
+#[derive(Clone, Debug, PartialEq)]
+struct Summary {
+    needle: Vec<usize>,
+    jumps: Vec<usize>,
+    trims: Vec<usize>,
+    /// Width and height, tenths of a millimetre (the readers put the design's corner at the origin).
+    size: (i64, i64),
+    /// Hundredths of a millimetre.
+    longest: i64,
+    shortest: i64,
+    cells: usize,
+}
+
+impl Summary {
+    fn of(p: &Pattern) -> Self {
+        let count = |b: &vectorcraft_stitch::Block, c: Command| b.stitches.iter().filter(|s| s.command == c).count();
+        let size = p.bounds().map_or((0, 0), |b| (quantize(b.width()).into(), quantize(b.height()).into()));
+        let mut lengths: Vec<f64> = Vec::new();
+        let mut cells: BTreeSet<(i64, i64)> = BTreeSet::new();
+        for b in &p.blocks {
+            for w in b.stitches.windows(2) {
+                let [a, z] = w else { continue };
+                if a.command != Command::Stitch || z.command != Command::Stitch {
+                    continue;
+                }
+                let length = a.distance(*z);
+                lengths.push(length);
+                let steps = (length / CELL_STEP).ceil().max(1.0) as usize;
+                for k in 0..=steps {
+                    let q = a.point().lerp(z.point(), k as f64 / steps as f64);
+                    cells.insert(((q.x / CELL).floor() as i64, (q.y / CELL).floor() as i64));
+                }
+            }
+        }
+        let hundredths = |v: f64| (v * HUNDREDTHS_PER_MM).round() as i64;
+        let longest = lengths.iter().copied().fold(0.0, f64::max);
+        let shortest = lengths.iter().copied().filter(|l| *l > 0.0).fold(f64::INFINITY, f64::min);
+        Self {
+            needle: p.blocks.iter().map(|b| count(b, Command::Stitch)).collect(),
+            jumps: p.blocks.iter().map(|b| count(b, Command::Jump)).collect(),
+            trims: p.blocks.iter().map(|b| count(b, Command::Trim)).collect(),
+            size,
+            longest: hundredths(longest),
+            shortest: if shortest.is_finite() { hundredths(shortest) } else { 0 },
+            cells: cells.len(),
+        }
+    }
+
+    /// Its fields as the listing writes them, each a name and a value.
+    fn fields(&self) -> Vec<(&'static str, String)> {
+        let list = |v: &[usize]| v.iter().map(usize::to_string).collect::<Vec<_>>().join("/");
+        let mm = |v: i64, per: f64| format!("{:.prec$}", v as f64 / per, prec = if per > 10.0 { 2 } else { 1 });
+        vec![
+            ("blocks", self.needle.len().to_string()),
+            ("needle", list(&self.needle)),
+            ("jumps", list(&self.jumps)),
+            ("trims", list(&self.trims)),
+            ("size", format!("{}x{}", mm(self.size.0, 10.0), mm(self.size.1, 10.0))),
+            ("longest", mm(self.longest, HUNDREDTHS_PER_MM)),
+            ("shortest", mm(self.shortest, HUNDREDTHS_PER_MM)),
+            ("cells", self.cells.to_string()),
+        ]
+    }
+
+    /// Its line in the listing, after the export's name.
+    fn line(&self) -> String {
+        self.fields().into_iter().map(|(k, v)| format!("{k} {v}")).collect::<Vec<_>>().join("  ")
+    }
+
+    /// The fields that differ from the `recorded` line, as `name was → now`.
+    fn diff(&self, recorded: &str) -> Vec<String> {
+        let was: Vec<(&str, &str)> = recorded.split("  ").filter_map(|f| f.split_once(' ')).collect();
+        self.fields()
+            .into_iter()
+            .filter_map(|(k, v)| {
+                let old = was.iter().find(|(name, _)| *name == k).map_or("(none)", |(_, old)| *old);
+                (old != v).then(|| format!("{k} {old} → {v}"))
+            })
+            .collect()
+    }
+
+    /// Whether it matches the `recorded` line within what another platform's maths library may move
+    /// (counts exactly; lengths and the size within [`PLATFORM_LENGTH`]; the squares within
+    /// [`PLATFORM_CELLS`]).
+    fn close_to(&self, recorded: &str) -> bool {
+        let was: Vec<(&str, &str)> = recorded.split("  ").filter_map(|f| f.split_once(' ')).collect();
+        let get = |k: &str| was.iter().find(|(name, _)| *name == k).map(|(_, v)| *v).unwrap_or("");
+        let near = |a: f64, b: &str| b.parse::<f64>().is_ok_and(|b| (a - b).abs() <= PLATFORM_LENGTH + LISTED_ROUNDING);
+        let fields = self.fields();
+        let now = |k: &str| fields.iter().find(|(name, _)| *name == k).map(|(_, v)| v.clone()).unwrap_or_default();
+        let size_ok = get("size").split_once('x').is_some_and(|(w, h)| near(self.size.0 as f64 / 10.0, w) && near(self.size.1 as f64 / 10.0, h));
+        let cells_ok = get("cells").parse::<f64>().is_ok_and(|c| (self.cells as f64 - c).abs() <= PLATFORM_CELLS * c.max(1.0));
+        ["blocks", "needle", "jumps", "trims"].iter().all(|k| get(k) == now(k))
+            && size_ok
+            && near(self.longest as f64 / HUNDREDTHS_PER_MM, get("longest"))
+            && near(self.shortest as f64 / HUNDREDTHS_PER_MM, get("shortest"))
+            && cells_ok
     }
 }
 
@@ -430,13 +803,16 @@ fn the_real_designs_artwork_exports_unchanged() {
     for &(art, theirs) in DESIGNS {
         // At the person's size.
         let mut s = artwork(&dir, art, theirs);
+        let plan = planned(&mut s, &json!({}));
         let stem = art.trim_end_matches(".svg");
         for format in Format::ALL {
             let bytes = export(&mut s, format, &json!({})).unwrap_or_else(|e| panic!("{art} as {}: {e}", format.id()));
-            now.push(Pinned::new(format!("{stem}.{}", format.extension()), format, &bytes));
+            let pinned = Pinned::new(format!("{stem}.{}", format.extension()), format, &bytes);
+            plan.holds(&pinned, format);
+            now.push(pinned);
         }
     }
-    check(ARTWORK, ARTWORK_THREADS, &now);
+    check(ARTWORK, ARTWORK_THREADS, ARTWORK_SUMMARIES, &now);
 }
 
 /// One design written with two sets of threads gives two files that are the same apart from their
@@ -471,27 +847,46 @@ fn lines(listing: &str) -> Vec<Vec<&str>> {
     listing.lines().map(str::trim).filter(|l| !l.is_empty()).map(|l| l.split("  ").collect()).collect()
 }
 
-/// Every export's hash is the one `listing` records, and every PES and JEF export's bytes apart
-/// from its thread numbers, and the numbers, the ones `threads` records; the listings have no
-/// other. Otherwise the failure names each change, says whether an export changed only in its
-/// thread numbers, and prints both listings as they now stand.
-fn check(listing: &str, threads: &str, now: &[Pinned]) {
+/// Every export's hash is the one `listing` records, its summary the one `summaries` records, and
+/// every PES and JEF export's bytes apart from its thread numbers, and the numbers, the ones
+/// `threads` records; the listings have no other. Otherwise the failure names each change, field by
+/// field for the summaries, says whether an export changed only in its thread numbers, and prints
+/// the listings as they now stand.
+///
+/// On another platform than the listings were recorded on ([`RECORDED_ON`]), a hash may differ with
+/// no change to the code (its maths library may round a needle point to the next 0.1 mm): there an
+/// export passes when its summary is within that of the recorded one ([`Summary::close_to`]).
+fn check(listing: &str, threads: &str, summaries: &str, now: &[Pinned]) {
     let recorded = lines(listing);
     let recorded_threads = lines(threads);
+    let recorded_summaries: Vec<(&str, &str)> = summaries.lines().map(str::trim).filter_map(|l| l.split_once("  ")).collect();
     fn find<'a>(lines: &[Vec<&'a str>], name: &str) -> Option<Vec<&'a str>> {
         lines.iter().find(|l| l.get(1) == Some(&name)).cloned()
     }
+    let here = format!("{} {}", std::env::consts::OS, std::env::consts::ARCH);
+    let recorded_here = here == RECORDED_ON;
     let mut changed: Vec<String> = Vec::new();
     for p in now {
         let mut notes: Vec<String> = Vec::new();
+        let summary = recorded_summaries.iter().find(|(name, _)| *name == p.name).map(|(_, line)| *line);
+        let within = summary.is_some_and(|line| p.summary.close_to(line));
+        match summary {
+            Some(line) if line == p.summary.line() => {}
+            Some(_) if within && !recorded_here => {}
+            Some(line) => notes.push(format!("summary: {}", p.summary.diff(line).join(", "))),
+            None => notes.push(format!("summary not recorded → {}", p.summary.line())),
+        }
+        // Elsewhere, an export whose summary is within the recorded one's may differ in its bytes.
+        let bytes_matter = recorded_here || !within;
         match find(&recorded, &p.name) {
             Some(l) if l[0] == p.hash => {}
+            Some(_) if !bytes_matter => {}
             Some(l) => notes.push(format!("{} → {}", l[0], p.hash)),
             None => notes.push(format!("not recorded → {}", p.hash)),
         }
         if let Some((blanked, numbers)) = &p.threads {
             match find(&recorded_threads, &p.name) {
-                Some(l) if l[0] != blanked => notes.push(format!("more than its thread numbers: without them, {} → {blanked}", l[0])),
+                Some(l) if l[0] != blanked && bytes_matter => notes.push(format!("more than its thread numbers: without them, {} → {blanked}", l[0])),
                 Some(l) => {
                     let was = l.get(2).copied().unwrap_or("");
                     if was != numbers {
@@ -515,17 +910,17 @@ fn check(listing: &str, threads: &str, now: &[Pinned]) {
     let listing: String = now.iter().map(|p| format!("{}  {}\n", p.hash, p.name)).collect();
     let threads: String =
         now.iter().filter_map(|p| p.threads.as_ref().map(|(blanked, numbers)| format!("{blanked}  {}  {numbers}\n", p.name))).collect();
-    let here = format!("{} {}", std::env::consts::OS, std::env::consts::ARCH);
-    let platform = if here == RECORDED_ON {
+    let summaries: String = now.iter().map(|p| format!("{}  {}\n", p.name, p.summary.line())).collect();
+    let platform = if recorded_here {
         String::new()
     } else {
         format!(
-            "\n\nThe listing was recorded on {RECORDED_ON} and this is {here}: its sine, cosine and power functions may round a needle point to the next 0.1 mm, so compare the stitches before recording a new listing."
+            "\n\nThe listing was recorded on {RECORDED_ON} and this is {here}: exports whose summaries are within the recorded ones passed; the ones listed above moved more than this platform's maths library can explain."
         )
     };
     assert!(
         changed.is_empty(),
-        "{} exports changed:\n{}{platform}\n\nThe listing as it now stands:\n{listing}\nApart from the thread numbers:\n{threads}",
+        "{} exports changed:\n{}{platform}\n\nThe listing as it now stands:\n{listing}\nApart from the thread numbers:\n{threads}\nSummaries:\n{summaries}",
         changed.len(),
         changed.join("\n")
     );

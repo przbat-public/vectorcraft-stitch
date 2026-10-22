@@ -302,7 +302,9 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
   its revision history, as `CLAUDE.md` asks. A decision the owner makes gets a row in the
   Decisions register above.
 - **A change to what is sewn fails `crates/engine/tests/embroidery_output.rs`:** it lists the
-  exports that changed and prints the listing as it now stands. Paste the listing in the commit
+  exports that changed, with the fields of each one's summary that moved (needle points, jumps and
+  trims per block, size, longest and shortest stitch, squares covered), and prints the listings as
+  they now stand. Paste the listing in the commit
   that makes the change, and say in the PR what changed and why. A refactor keeps every hash.
 - **Commit a refactor apart from behaviour changes:** first the pure move (code moved or renamed,
   tests unchanged and passing), then the fixes, so each diff shows what really changed.

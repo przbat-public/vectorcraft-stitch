@@ -57,7 +57,8 @@ pub use geometry::in_range;
 use geometry::{Axes, SubPath, length, subpaths};
 
 /// A move longer than this lifts the needle (a jump) instead of being sewn, unless
-/// [`Params::jump`] says otherwise (millimetres).
+/// [`Params::jump`] says otherwise (millimetres). An estimate: past 5 mm a sewn move lies loose on
+/// the fabric; machines' jump trimming starts about there (Brother's settings run from 5 mm).
 const JUMP: f64 = 5.0;
 /// A jump longer than this cuts the thread first, unless [`Params::trim`] says otherwise
 /// (millimetres). Shorter jumps (hops between letters or seeds) are left for the machine or a
@@ -73,6 +74,14 @@ pub(crate) const TRIM: f64 = 10.0;
 /// by judgement: splitting at 7 would change every satin wider than that, and the narrow parts of
 /// fills sewn as satin reach 10 mm.
 const MAX_SATIN_STITCH: f64 = 10.0;
+/// The narrowest satin column (millimetres): a stroke, or a fill's narrow part, narrower than this
+/// is sewn as a running line along its middle, since below about a millimetre a satin's two rails
+/// are too close for its crossings to lie side by side. Melco's design checker flags satin stitches
+/// shorter than 1 mm (DesignShop v11 user manual, Design Checker Tab, p. 38,
+/// <http://www.melco-service.com/docs/DSv11_Manual.pdf>), and its machine manual keeps satin
+/// stitches 1 mm or longer (OS manual, pp. 301–302,
+/// <https://www.melco-service.com/docs/X/melco-os-ai-en.pdf>).
+pub const SATIN_MIN_WIDTH: f64 = 1.0;
 /// The widest satin column (millimetres): a wider one is sewn this wide. Far beyond what a satin
 /// can cover (professional practice tops out near 10–12 mm), a bound on the stitching.
 pub const MAX_SATIN_WIDTH: f64 = 50.0;
@@ -95,7 +104,8 @@ const RUNNING_STITCH: f64 = 2.5;
 /// fabric, and a repeated point is noise. An estimate.
 const MIN_STITCH: f64 = 0.4;
 /// The direction of a fill's rows, degrees (0: left to right). Diagonal, so that rows don't run
-/// along a shape's horizontal and vertical edges, where they would show each step of the edge.
+/// along a shape's horizontal and vertical edges, where they would show each step of the edge. By
+/// judgement.
 const FILL_ANGLE: f64 = 45.0;
 /// Pull compensation (millimetres added at each side of a stitch: each rail of a satin column, each
 /// end of a fill row): the fabric draws the thread in, so stitching sewn exactly as drawn comes out
@@ -134,7 +144,7 @@ pub(crate) const NARROW_SATIN: f64 = 7.0;
 /// A satin column's width when none is given (millimetres). The export always gives one, the
 /// stroke's width; this is for callers of the planner that don't.
 const SATIN_WIDTH: f64 = 3.0;
-/// The underlay's own stitch length (millimetres): short, to hold the fabric still.
+/// The underlay's own stitch length (millimetres): short, to hold the fabric still. An estimate.
 const UNDERLAY_STITCH: f64 = 2.0;
 /// The most runs one shape may produce (a guard against absurd parameters).
 const MAX_RUNS: usize = 1_000_000;

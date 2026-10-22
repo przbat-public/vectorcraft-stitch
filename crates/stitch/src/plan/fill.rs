@@ -50,17 +50,18 @@ const STAGGER_ROWS: usize = 4;
 /// The share of a stitch each row is shifted by: one cycle of [`STAGGER_ROWS`] is a whole stitch.
 const STAGGER: f64 = 1.0 / STAGGER_ROWS as f64;
 /// A row's last stitch is left out when it is no longer than this share of the stitch length:
-/// the needle turns diagonally into the next row instead of crawling a spacing along the edge.
+/// the needle turns diagonally into the next row instead of crawling a spacing along the edge. By
+/// judgement.
 const SHORT_LAST: f64 = 0.5;
 /// A turn into the next row that leaves the shape is taken round inside it when it is longer
-/// than this (millimetres); a shorter one only shaves a corner and is sewn straight.
+/// than this (millimetres); a shorter one only shaves a corner and is sewn straight. An estimate.
 const SHAVED_CORNER: f64 = 1.0;
 /// A row shorter than this many spacings, or than [`MIN_ROW`] millimetres, has no room for a fill
-/// and is left out.
+/// and is left out. Estimates.
 const MIN_ROW_SPACINGS: f64 = 2.0;
 const MIN_ROW: f64 = 0.8;
 /// The tatami underlay's rows run this many degrees from the top rows: across them, so the
-/// underlay holds the fabric the other way.
+/// underlay holds the fabric the other way. By judgement (square to the top rows).
 pub(super) const UNDERLAY_TURN: f64 = 90.0;
 
 /// A tatami fill of `path`: rows of stitches at [`Params::angle`] degrees, [`Params::density`]

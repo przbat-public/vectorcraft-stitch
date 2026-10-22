@@ -31,9 +31,8 @@ const EXPANDED_AWAY: &str = "a negative expand left nothing of some filled shape
 const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colour of their first stop; a design sews one thread per block";
 const OUT_OF_RANGE: &str = "art far outside the document's range (or with coordinates that aren't numbers) is not stitched";
 /// A stroke at least this wide (millimetres) is sewn as a satin column, a narrower one as a running
-/// line (unless the `stitch` option says otherwise): below about a millimetre the two rails are too
-/// close for the crossings to lie side by side. An estimate.
-pub(super) const SATIN_MIN_WIDTH: f64 = 1.0;
+/// line (unless the `stitch` option says otherwise): the planner's narrowest satin column.
+pub(super) use vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 /// How far a literal stitch line's curves are flattened into needle points (millimetres): the
 /// lines a design opens as are straight, so this only matters for one edited into curves; far
 /// below the 0.1 mm a machine counts in. The planner flattens the art it stitches as finely (its

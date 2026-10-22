@@ -7,10 +7,10 @@ use super::geometry::{Axes, NO_LENGTH, SubPath, unit};
 use crate::SAME_POINT;
 
 /// A travel run's stitch length (millimetres): short, so it follows curves and hides under the
-/// fill.
+/// fill. An estimate.
 pub(super) const TRAVEL_STITCH: f64 = 2.0;
 /// How far inside the shape a travel passes its corners (millimetres), so it doesn't show at the
-/// edge.
+/// edge. An estimate.
 const TRAVEL_MARGIN: f64 = 0.5;
 /// How closely a travel's graph follows the outlines (millimetres), and the most corners it may
 /// have: enough for any real outline, a bound on the work a travel costs.

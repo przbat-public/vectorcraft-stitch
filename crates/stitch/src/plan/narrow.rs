@@ -45,7 +45,8 @@ const PROBE: f64 = 0.02;
 const FACING: f64 = 0.5;
 /// How near the first point the ray back from the far one must land: this share of the width,
 /// plus two samples. On sides that converge at the angle [`FACING`] allows, it lands within about
-/// half the width.
+/// half the width. Estimates, as are the other bounds below that tell a column's sides apart: each
+/// tuned on test shapes and the real designs' artwork, none from a source.
 const MUTUAL_SHARE: f64 = 0.5;
 const MUTUAL_SAMPLES: f64 = 2.0;
 /// Two points of one outline less than this far apart along it are the two sides of a pointed tip

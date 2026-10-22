@@ -13,7 +13,8 @@ use vectorcraft_stitch::{Block, Command, Stitch, mm_to_pt};
 use super::super::super::*;
 use super::super::{Format, err};
 
-/// The width of the lines a design's stitches are drawn with, millimetres: about a thread's.
+/// The width of the lines a design's stitches are drawn with, millimetres: about a thread's (40 wt
+/// thread is about 0.4 mm across; an estimate).
 const THREAD_WIDTH: f64 = 0.4;
 /// The margin round an opened design on its new artboard, millimetres: a little room to see its
 /// edges. It doesn't move the stitches as written: the file's start point moves with them, and

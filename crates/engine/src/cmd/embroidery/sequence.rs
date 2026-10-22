@@ -16,6 +16,7 @@ use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch};
 use super::plan::{BlockThread, Choice, DesignPlan, FIRST_NUMBER, Origin, ThreadBlock, Unit, runs};
 
 /// How far apart two blocks' stitches must be not to touch: a thread's width and a satin's pull.
+/// An estimate.
 pub(super) const CLEARANCE: f64 = 1.0;
 
 /// What a sewing unit is and how it was planned: the facts the plan's [`Unit`] carries, from the

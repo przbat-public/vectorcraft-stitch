@@ -11,7 +11,7 @@ use crate::SAME_POINT;
 /// How far curves are flattened before stitching, millimetres: far below the 0.1 mm a machine
 /// counts in.
 const FLATTEN: f64 = 0.05;
-/// A turn sharper than this (radians, about 30°) is a corner the stitches keep.
+/// A turn sharper than this (radians, about 30°) is a corner the stitches keep. An estimate.
 pub(super) const CORNER: f64 = 0.52;
 /// A vector or segment shorter than this (millimetres) has no direction: dividing by its length
 /// would give noise. A guard on that arithmetic rather than a geometric choice, so it sits well
@@ -20,7 +20,7 @@ pub(super) const NO_LENGTH: f64 = 1e-12;
 /// The shortest step [`resample`] takes (millimetres): a bound on the points it makes.
 const MIN_STEP: f64 = 0.01;
 /// How close to a corner or the end a point may fall, as a share of a step, before it moves onto
-/// it rather than leave a stub of a stitch ([`resample`]).
+/// it rather than leave a stub of a stitch ([`resample`]). An estimate.
 const STUB: f64 = 0.3;
 
 /// The farthest a shape's control points may lie from the origin, millimetres: 1,500 m, just

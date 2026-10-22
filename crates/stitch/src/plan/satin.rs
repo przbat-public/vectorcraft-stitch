@@ -16,11 +16,11 @@ const SATIN_EDGE_UNDERLAY: f64 = 2.0;
 const SATIN_ZIGZAG_UNDERLAY: f64 = 4.5;
 pub(super) const ZIGZAG_UNDERLAY_SPACING: f64 = 2.0;
 /// How far inside the column's sides the edge underlay runs: this share of the column's width, at
-/// most [`UNDERLAY_INSET_MAX`] millimetres, so the underlay doesn't show at the edges.
+/// most [`UNDERLAY_INSET_MAX`] millimetres, so the underlay doesn't show at the edges. Estimates.
 const UNDERLAY_INSET: f64 = 0.25;
 const UNDERLAY_INSET_MAX: f64 = 0.5;
 /// A column shorter than this many of its own spacings ([`Params::column_spacing`]) is left out:
-/// it would be a knot, not a column. A stroke's and a fill's narrow part alike.
+/// it would be a knot, not a column. A stroke's and a fill's narrow part alike. By judgement.
 const MIN_CROSSINGS: f64 = 2.0;
 /// A satin's spacing is measured between two penetrations on the same rail (peak to peak), as
 /// Madeira's stitch density chart (51 satin stitches a centimetre for its 0.40 mm, 40 wt:
@@ -37,7 +37,7 @@ const WIDE_SPACING: f64 = 0.37;
 /// The most stitches a long crossing is split into ([`split_long`]): enough for the widest column.
 const MAX_SPLIT: f64 = 64.0;
 /// How far the cuts of a split crossing move along it, as a share of one part (either way): see
-/// [`split_long`].
+/// [`split_long`]. By judgement: enough that no two neighbours' cuts line up.
 const SPLIT_JITTER: f64 = 0.25;
 
 /// The most stitches [`split_long`] cuts a crossing `len` long into with `max` its longest: one
@@ -304,7 +304,8 @@ impl Centre {
 /// <https://hatch.embroideryhelp.net/v3/en/downloads/UserGuide.pdf>); 15–25 % is the usual
 /// shortening. Estimates.
 const SHORT_INSETS: [f64; 3] = [0.0, 0.2, 0.4];
-/// How many earlier penetrations on the same rail a penetration keeps its distance from.
+/// How many earlier penetrations on the same rail a penetration keeps its distance from. An
+/// estimate.
 const SHORT_LOOKBACK: usize = 4;
 
 /// A satin column's needle points from its `crossings` (each a point on the centreline and the
@@ -445,10 +446,9 @@ fn split_long(zigzag: &[Point], max: f64) -> Vec<Point> {
     out
 }
 
-/// A column narrower than this (its typical width, millimetres) is sewn as a running line along
-/// its middle: below about a millimetre a satin's two rails are too close for its crossings to lie
-/// side by side, as the export sews strokes that narrow as running lines.
-pub(super) const MIN_COLUMN_WIDTH: f64 = 1.0;
+/// A column narrower than this (its typical width) is sewn as a running line along its middle, as
+/// the export sews strokes that narrow as running lines ([`super::SATIN_MIN_WIDTH`]).
+pub(super) const MIN_COLUMN_WIDTH: f64 = super::SATIN_MIN_WIDTH;
 /// The most a column's farther rail is taken to run for each millimetre of its middle when its
 /// crossings are spaced along that rail ([`Along::crossings`], [`Centre::stretch`]). Round a bend
 /// whose middle has radius r, a rail R out runs (r + R) / r as far; the inner side's radius can't

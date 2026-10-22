@@ -21,9 +21,12 @@
 //!   and gives no values. Here each needle point and jump is one turn of the machine at the
 //!   normal or slow speed, and each trim takes [`TRIM_SECONDS`]. Thread changes are counted apart
 //!   and not timed: on a home single-needle machine a person rethreads, which takes as long as it
-//!   takes. Brother's machines leave thread changes out of their own estimate too
-//!   (<https://support.brother.com/g/s/hf/htmldoc/hsm/om/888p5x/en/06_08_01.html>). The start and
-//!   the end of the design are not timed.
+//!   takes. Brother's machines leave thread changes out of their own estimate too, and trims as
+//!   well (<https://support.brother.com/g/s/hf/htmldoc/hsm/om/888p5x/en/06_08_01.html>), so their
+//!   display differs from this one by the trims. The start and the end of the design are not timed.
+//!   Both count the plan's records: a file may hold more (a DST trim is three jump records, a move
+//!   longer than one record holds is several, the VP3 writer adds a zero-length stitch after each
+//!   long move), which `embroidery.check`'s `formatStep` counts for a stitch.
 
 use serde_json::{Map, Value, json};
 use vectorcraft_geom::{Point, Rect};
@@ -34,11 +37,12 @@ use super::measure::{self, Record};
 use super::plan::{BlockThread, DesignPlan};
 
 /// The speed a design is timed at when none is given, stitches a minute: a home single-needle
-/// machine sewing at its default setting. Janome's Memory Craft 230E sews from 400 to 650 spm and
-/// defaults to 650
-/// (<https://www.janome.ca/wp-content/uploads/2025/02/inst-manual-mc230e.pdf>, as do its 200E,
-/// 300E and 350E); Brother's EV1 manual suggests 600 spm for one task
-/// (<https://download.brother.com/welcome/doch103134/evugk1_om01en.pdf>). An estimate for home
+/// machine sewing at its default setting. The default of Janome's Memory Craft 230E's
+/// maximum-speed setting, which runs from 400 to 650 spm
+/// (<https://www.janome.ca/wp-content/uploads/2025/02/inst-manual-mc230e.pdf>; the manual also
+/// advises slowing down for small designs); Brother's EV1 manual suggests 600 spm for one task
+/// (<https://download.brother.com/welcome/doch103134/evugk1_om01en.pdf>), and commercial machines
+/// usually run at 700 to 800 spm (Wilcom's blog cited for [`TRIM_SECONDS`]). An estimate for home
 /// machines in general.
 pub(crate) const SPEED: f64 = 650.0;
 /// The speed stitches and jumps longer than [`SLOW_ABOVE`] are timed at, stitches a minute: the
@@ -52,9 +56,11 @@ const SLOW_ABOVE: f64 = 4.0;
 /// How long a trim takes, seconds: 3 to 4 seconds depending on the machine, as Wilcom's blog
 /// puts it (<https://wilcom.com/resources/blog/high-impact-low-stitch-count-designs>). The middle.
 const TRIM_SECONDS: f64 = 3.5;
-/// The speeds `speed` may be given, stitches a minute: from 60 (the slowest setting of Janome's
-/// Memory Craft 9850) to 1,500 (Happy's fastest single-head industrial machine). Bounds on what is
-/// asked, not settings.
+/// The speeds `speed` may be given, stitches a minute: from 60 (the slowest embroidery speed of
+/// Janome's Memory Craft 9850, <https://www.janome.com/product/memory-craft-9850/>) to 1,500 (Happy's
+/// HCU2-1501 single-head industrial machine, a dealer's listing:
+/// <https://shop.coldesi.com/products/happyjapan-hcu2-1501-embroidery-machine-hcu2-1501>). Bounds on
+/// what is asked, not settings.
 const SPEED_RANGE: (f64, f64) = (60.0, 1500.0);
 
 /// The fabric's thickness when none is given (millimetres): about that of a medium cotton or a
@@ -89,7 +95,7 @@ const BOBBIN_PER_TOP: f64 = 3.0 / 5.0;
 /// What the thread figures rest on, as the answer says it: an estimate.
 const THREAD_ESTIMATE: &str = "an estimate: top thread, each needle-down stitch's length on the face, the share of its length on the back that is top thread pulled under (two thirds under a satin, the balance thread makers teach, scaled by Wilcom's bobbin factors for the other stitches), and twice fabricThickness at every needle point; bobbin thread, 3/5 of the top thread (Madeira's 3 m to 5 m a 1,000 standard stitches)";
 /// What the time rests on, as the answer says it: an estimate.
-const TIME_ESTIMATE: &str = "an estimate: each needle point and jump one turn of a home machine at speed (a default setting, 650 by default), slowSpeed past slowAbove mm, and trimSeconds a trim; not timed: thread changes, the design's start and end";
+const TIME_ESTIMATE: &str = "an estimate: each needle point and jump of the plan one turn of a home machine at speed (650 by default, a home machine's default maximum), slowSpeed past slowAbove mm, and trimSeconds a trim; not timed: thread changes, the design's start and end; a file may hold more records than the plan (a DST trim is three, a long move several)";
 
 /// Millimetres in a metre.
 const MM_PER_M: f64 = 1000.0;

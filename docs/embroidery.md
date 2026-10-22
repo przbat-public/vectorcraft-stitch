@@ -216,13 +216,16 @@ marked as an estimate (`cmd/embroidery/stats.rs`):
 | bobbin thread | 3/5 of the top thread | Madeira's rule of thumb for standard-length stitches, about 3 m of bobbin to 5 m of top thread a 1,000 stitches ([density sheet](https://www.madeirausa.com/_resources/common/userfiles/file/Resources/TH.Reads/Density.pdf)); the project owner's choice of calibration (2026-10-22), an estimate. Scaled by Wilcom's factors instead, the real designs' plans came to 4 m a 1,000 needle points |
 | top thread through the fabric | twice `fabricThickness` per needle point (down and back up) | an estimate; Wilcom takes the fabric's thickness as an input |
 | `fabricThickness` | 0.5 mm (0 to 5) | an estimate (a medium cotton, a T-shirt jersey) |
-| `speed` | 650 stitches a minute (60 to 1500) | Janome's Memory Craft 200E to 350E default to 650 ([MC230E manual](https://www.janome.ca/wp-content/uploads/2025/02/inst-manual-mc230e.pdf)); an estimate for home machines |
+| `speed` | 650 stitches a minute (60 to 1500) | the default of Janome's Memory Craft 230E's maximum-speed setting, which runs from 400 to 650 ([MC230E manual](https://www.janome.ca/wp-content/uploads/2025/02/inst-manual-mc230e.pdf), which also advises slowing down for small designs); commercial machines usually run at 700 to 800 (Wilcom's blog, below); an estimate for home machines. The bounds: Janome's [Memory Craft 9850](https://www.janome.com/product/memory-craft-9850/) embroiders from 60, Happy's HCU2-1501 at 1,500 ([a dealer's listing](https://shop.coldesi.com/products/happyjapan-hcu2-1501-embroidery-machine-hcu2-1501)) |
 | slow speed | 400 stitches a minute, for stitches and jumps longer than 4 mm | the lowest Janome's home machines can be set to (same manual); Tajima's TMEZ-SC keeps its top speed up to 4 mm ([product page](https://www.tajima.com/product/tmez-sc/)): both estimates for home machines, after Wilcom's "slow above" ([runtime settings](https://docs.wilcom.com/embroiderystudio/e4/en/MainHelp/Setup/hardware/Configure_machine_runtime_settings.htm)) |
 | trim | 3.5 s | 3 to 4 s by machine, Wilcom's blog ([high-impact, low stitch-count designs](https://wilcom.com/resources/blog/high-impact-low-stitch-count-designs)); another Wilcom post was reported to give about 8 s, but no longer opens |
-| thread change | not timed: counted apart | a person rethreads a single-needle machine; Brother's machines leave thread changes out of their own estimate ([Brother](https://support.brother.com/g/s/hf/htmldoc/hsm/om/888p5x/en/06_08_01.html)) |
+| thread change | not timed: counted apart | a person rethreads a single-needle machine; Brother's machines leave thread changes out of their own estimate, and trims too ([Brother](https://support.brother.com/g/s/hf/htmldoc/hsm/om/888p5x/en/06_08_01.html)), so a Brother machine's display differs from this one by the trims |
 
 So each needle point and jump is one turn of the machine at the normal or the slow speed, each trim
-takes 3.5 s, and the start and end of the design are not timed; the answer says what the time
+takes 3.5 s, and the start and end of the design are not timed. The counts and the time are the
+plan's records: a file may hold more (a DST trim is three jump records, a move longer than one
+record holds is several, the VP3 writer adds a zero-length stitch after each long move;
+`formatStep` counts a stitch's); the answer says what the time
 includes, and marks the thread and the time as estimates (`estimate`: what each rests on). All
 these numbers stay estimates until they are measured on machines (the project owner's choice,
 2026-10-22). On the real designs VectorCraft's plans use 4.7 to 5.6 m of top thread and 2.8 to

@@ -340,3 +340,16 @@ fn a_narrow_part_sewn_as_a_running_line_is_no_short_satin() {
     let check = run(&mut s, "embroidery.check", json!({"rules": ["satinStitchShort"]}));
     assert_eq!(check["rules"][0]["hits"], json!(0), "{check}");
 }
+
+/// The `formatStep` note says how many records the writer writes a long stitch as: a 30 mm stitch
+/// along x in a DST (12.1 mm a record) is written as three.
+#[test]
+fn the_format_step_note_is_what_the_writer_writes() {
+    let p = one(Style::Running, &[3.0, 30.0, 3.0]);
+    let v = check::check(&p, &Ask { rules: vec![check::rule("formatStep").unwrap()], format: Format::Dst, limit: check::LIMIT });
+    assert_eq!(v["rules"][0]["examples"][0]["note"], json!("written as 3 stitches"));
+    let written = Format::Dst.read(&Format::Dst.write(&p.to_pattern()).unwrap()).unwrap();
+    // Four needle points become six: the 30 mm stitch's two more on the way.
+    let sewn = written.points().filter(|s| s.command == vectorcraft_stitch::Command::Stitch).count();
+    assert_eq!(sewn, p.blocks[0].needle_points() + 2);
+}

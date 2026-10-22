@@ -777,3 +777,48 @@ fn trim_after_a_group_cuts_after_its_unit_sewn_last() {
     // Cut after the blue square, sewn last; not after the red one, sewn before it.
     assert_eq!(ends_cut(&plan_of(&s)), [false, true]);
 }
+
+/// Only what would print is sewn: of a document holding a guide, a hidden object, an object whose
+/// only fill is hidden, a non-printing layer and a template layer, besides one rectangle, the
+/// export sews the rectangle alone, the sewing order lists one unit, and the plan's progress counts
+/// that one unit as all there is.
+#[test]
+fn only_what_would_print_is_sewn() {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    use vectorcraft_doc::cancel::{self, CancelToken, ProgressSink};
+
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    let guide = rect(&mut s, "#2233cc", 100.0, 20.0, 40.0, 30.0);
+    s.execute("select.set", &json!({"ids": [guide]})).unwrap();
+    s.execute("view.guides.make", &json!({})).unwrap();
+    let hidden = rect(&mut s, "#22aa44", 160.0, 20.0, 40.0, 30.0);
+    s.execute("object.hide", &json!({"ids": [hidden]})).unwrap();
+    let unfilled = rect(&mut s, "#aa22aa", 20.0, 100.0, 40.0, 30.0);
+    s.execute("appearance.setItem", &json!({"ids": [unfilled], "index": 0, "visible": false})).unwrap();
+    for props in [json!({"printable": false}), json!({"template": true})] {
+        let layer = s.execute("layer.new", &json!({})).unwrap()["id"].as_u64().unwrap();
+        rect(&mut s, "#22aaaa", 100.0, 100.0, 40.0, 30.0);
+        let mut props = props;
+        props["ids"] = json!([layer]);
+        s.execute("layer.setProps", &props).unwrap();
+    }
+    let r = s.execute("document.export", &json!({"format": "dst"})).unwrap();
+    let file = vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap();
+    let p = Format::Dst.read(&file).unwrap();
+    assert_eq!(p.blocks.len(), 1, "the rectangle alone");
+    let b = p.bounds().unwrap();
+    // 40 × 30 pt is 14.1 × 10.6 mm; pull compensation reaches a little past each side.
+    assert!((b.width() - pt_to_mm(40.0)).abs() < 1.0 && (b.height() - pt_to_mm(30.0)).abs() < 1.0, "{b:?}");
+    assert_eq!(s.execute("embroidery.sequence", &json!({})).unwrap()["unitCount"], json!(1));
+    let steps = Rc::new(RefCell::new(Vec::new()));
+    let sink: ProgressSink = {
+        let steps = steps.clone();
+        Rc::new(move |done, total, _| steps.borrow_mut().push((done, total)))
+    };
+    let doc = s.doc().unwrap().doc.clone();
+    let plan = cancel::scope(&CancelToken::new(), Some(sink), || digitize(&doc, &Options::default(), None)).unwrap();
+    assert_eq!((plan.units.len(), steps.borrow().clone()), (1, vec![(1, 1)]));
+}

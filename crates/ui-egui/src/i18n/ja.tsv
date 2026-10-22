@@ -4875,6 +4875,7 @@ lighting	Light	ライト
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	ライブのブレンド、エンベロープ、メッシュ、リピートは刺繍されません: 先に拡張してください
 @msg	placed documents are not stitched: embed them first (Links › Embed)	配置したドキュメントは刺繍されません: 先に埋め込んでください (リンク › 埋め込み)
 @msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	織り交ぜたオブジェクトは刺繍されません: 先に解除してください (オブジェクト › 織り交ぜ › 解除)
+@msg	symbols placed more than 100,000 times (placing one another) are left out past that	10 万回を超えて (互いの中に) 配置されたシンボルは、それ以降省略されます
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	expand の負の値で一部の塗りのシェイプが何も残らなかったため、刺繍されません: 縮小量を減らしてください
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	グラデーションとパターンは最初の分岐点の色で塗られます。刺繍はブロックごとに 1 本の糸で縫います
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	{widest} mm より太い線は幅 {widest} mm のサテン縫いの柱として縫われます: 代わりに塗りにしてください (stitch fill)

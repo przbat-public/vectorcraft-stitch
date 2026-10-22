@@ -5207,6 +5207,7 @@ imageTrace	Outline	Körvonal
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	az élő összemosások, burkolók, hálók és ismétlések nem kerülnek kihímzésre: előbb bontsd ki őket
 @msg	placed documents are not stitched: embed them first (Links › Embed)	a beillesztett dokumentumok nem kerülnek kihímzésre: előbb ágyazd be őket (Csatolások › Beágyazás)
 @msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	az összefont objektumok nem kerülnek kihímzésre: előbb szüntesd meg az összefonást (Objektum › Összefonás › Megszüntetés)
+@msg	symbols placed more than 100,000 times (placing one another) are left out past that	a 100 000-nél többször (egymásba) elhelyezett szimbólumok ezen túl kimaradnak
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	a negatív expand érték egyes kitöltött alakzatokból semmit sem hagyott, ezért azok nem kerülnek kihímzésre: kicsinyítsd őket kevésbé
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	a színátmenetek és a mintázatok az első színátmenet-pontjuk színét kapják; a hímzés blokkonként egy cérnával varr
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	a(z) {widest} mm-nél szélesebb körvonalak {widest} mm széles szaténoszlopként varródnak: inkább töltsd ki őket (stitch fill)

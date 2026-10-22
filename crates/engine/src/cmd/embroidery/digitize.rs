@@ -3,6 +3,7 @@
 //! literal stitches read from a file) and the settings each is planned with, clip groups, the
 //! colour of each block, and the limit on a design's size.
 
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use vectorcraft_color::Paint;
@@ -45,6 +46,12 @@ const MAX_DESIGN_STITCHES: usize = 2_000_000;
 /// How deep symbols placed in symbols are sewn: deeper art is left out, a bound on a walk through
 /// symbols that place one another.
 const MAX_SYMBOL_NESTING: u32 = 8;
+/// The most symbol instances a walk places, nested ones included: far more than a real design
+/// places (a symbol scattered a few thousand times, each holding a few others), and a bound on a
+/// file whose symbol places itself several times at every level, whose placements multiply by the
+/// nesting (10 a level for 8 levels: 10^8 placements, each a copy of the symbol's art). An estimate.
+const MAX_SYMBOL_PLACEMENTS: u64 = 100_000;
+const PLACEMENTS_LEFT_OUT: &str = "symbols placed more than 100,000 times (placing one another) are left out past that";
 /// `bp` (document points) in millimetres, as the stitch planner counts.
 fn in_mm(bp: &BezPath) -> BezPath {
     let mut mm = bp.clone();
@@ -87,9 +94,24 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
         ));
     }
     let warnings = Vec::new();
-    let total = doc.layers.iter().map(|l| units_under(doc, l, 0)).fold(0u64, u64::saturating_add);
+    let mut symbols = HashMap::new();
+    let total = doc.layers.iter().map(|l| units_under(doc, l, 0, &mut symbols)).fold(0u64, u64::saturating_add);
     let progress = Progress { done: 0, total };
-    let mut d = Digitizer { doc, opts, seq, warnings, nest: 0, clip: None, owner: None, instance: None, stitches: 0, failed: None, cache, progress };
+    let mut d = Digitizer {
+        doc,
+        opts,
+        seq,
+        warnings,
+        nest: 0,
+        placements: 0,
+        clip: None,
+        owner: None,
+        instance: None,
+        stitches: 0,
+        failed: None,
+        cache,
+        progress,
+    };
     d.run();
     match d.failed {
         Some(e) => Err(e),
@@ -127,6 +149,8 @@ struct Digitizer<'a> {
     warnings: Vec<String>,
     /// Symbol art being stitched inside symbol instances.
     nest: u32,
+    /// The symbol instances placed so far, against [`MAX_SYMBOL_PLACEMENTS`].
+    placements: u64,
     /// The region the clip groups around the current object leave visible (millimetres), `None`
     /// outside any clip group.
     clip: Option<(BezPath, FillRule)>,
@@ -158,9 +182,10 @@ const PLANNING: &str = "Planning the stitches";
 
 /// About how many units the walk plans under `n` (`nest` symbols deep), the progress it reports:
 /// each visible, painted fill and stroke of a visible path, each literal run, a symbol's art once
-/// for each of its instances. What the walk then leaves out (a pattern, a negative expand that
-/// leaves nothing, a stroke cut away by a clip group) is counted all the same.
-fn units_under(doc: &Document, n: &Node, nest: u32) -> u64 {
+/// for each of its instances (counted once per symbol and depth, `symbols`). What the walk then
+/// leaves out (a pattern, a negative expand that leaves nothing, a stroke cut away by a clip
+/// group, placements past [`MAX_SYMBOL_PLACEMENTS`]) is counted all the same.
+fn units_under(doc: &Document, n: &Node, nest: u32, symbols: &mut HashMap<(String, u32), u64>) -> u64 {
     if !n.visible {
         return 0;
     }
@@ -168,13 +193,21 @@ fn units_under(doc: &Document, n: &Node, nest: u32) -> u64 {
     match &n.kind {
         NodeKind::Layer { template: true, .. } | NodeKind::Layer { printable: false, .. } => 0,
         NodeKind::Layer { children, .. } | NodeKind::Group { children, .. } => {
-            children.iter().map(|c| units_under(doc, c, nest)).fold(0, u64::saturating_add)
+            children.iter().map(|c| units_under(doc, c, nest, symbols)).fold(0, u64::saturating_add)
         }
         NodeKind::Path { guide: true, .. } => 0,
         NodeKind::Path { .. } if n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some()) => 1,
         NodeKind::Path { .. } | NodeKind::Compound { .. } => items(),
+        // A symbol's units at a depth are counted once: a symbol that places itself many times at
+        // every level would otherwise be walked as often as it is placed.
         NodeKind::SymbolInstance { symbol, .. } if nest < MAX_SYMBOL_NESTING => {
-            doc.symbols.iter().find(|s| &s.name == symbol).map_or(0, |s| units_under(doc, &s.art, nest + 1))
+            let key = (symbol.clone(), nest);
+            if let Some(&known) = symbols.get(&key) {
+                return known;
+            }
+            let units = doc.symbols.iter().find(|s| &s.name == symbol).map_or(0, |s| units_under(doc, &s.art, nest + 1, symbols));
+            symbols.insert(key, units);
+            units
         }
         _ => 0,
     }
@@ -237,7 +270,9 @@ impl<'a> Digitizer<'a> {
     }
 
     fn node(&mut self, n: &Node) {
-        if !n.visible {
+        // Nothing more is planned once the design can't be (too many stitches, cancelled): the
+        // rest of the walk would only copy symbol art.
+        if !n.visible || self.failed.is_some() {
             return;
         }
         let added = self.seq.added();
@@ -282,6 +317,11 @@ impl<'a> Digitizer<'a> {
             NodeKind::SymbolInstance { symbol, xf } => {
                 let Some(sym) = self.doc.symbols.iter().find(|s| &s.name == symbol) else { return };
                 if self.nest >= MAX_SYMBOL_NESTING {
+                    return;
+                }
+                self.placements += 1;
+                if self.placements > MAX_SYMBOL_PLACEMENTS {
+                    self.warn(PLACEMENTS_LEFT_OUT);
                     return;
                 }
                 let mut art = (*sym.art).clone();

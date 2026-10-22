@@ -37,6 +37,8 @@ mod tests_order;
 mod tests_service;
 #[cfg(test)]
 mod tests_stats;
+#[cfg(test)]
+mod tests_walk;
 mod unit;
 
 use std::sync::Arc;

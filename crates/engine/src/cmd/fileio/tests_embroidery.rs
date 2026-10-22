@@ -1062,3 +1062,45 @@ fn an_opened_design_too_large_for_a_document_is_refused() {
     let e = open(&mut s, "many.dst", &dst_of(&many)).expect_err("too many runs").to_string();
     assert!(e.contains("separate runs"), "{e}");
 }
+
+/// Export Selection writes the selected objects alone: one of two rectangles, one block.
+#[test]
+fn export_selection_writes_the_selected_objects_alone() {
+    let mut s = blank();
+    let red = {
+        rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+        s.doc().unwrap().doc.layers[0].children().unwrap().last().unwrap().id.0
+    };
+    rect(&mut s, "#2233cc", 120.0, 20.0, 40.0, 30.0);
+    s.execute("select.set", &json!({"ids": [red]})).unwrap();
+    let r = s.execute("document.exportSelection", &json!({"format": "pes"})).unwrap();
+    let bytes = vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap();
+    assert_eq!(Format::Pes.read(&bytes).unwrap().blocks.len(), 1);
+}
+
+/// A machine file placed beside art keeps its needle points (moved to where it is placed), and the
+/// art beside it is planned: the export sews both.
+#[test]
+fn a_placed_design_keeps_its_needle_points_beside_planned_art() {
+    use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
+    let mut a = Block::new(Thread::rgb([0, 0, 200]));
+    for i in 0..10 {
+        a.stitches.push(Stitch::new(f64::from(i) * 2.0, f64::from(i % 2), Command::Stitch));
+    }
+    let design = Pattern { blocks: vec![a], ..Pattern::default() };
+    let file = Format::Dst.write(&design).unwrap();
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    s.execute("file.place", &json!({"name": "run.dst", "dataBase64": vectorcraft_format::base64_encode(&file), "at": [200, 200]})).unwrap();
+    let written = plan(&export(&mut s, "dst", json!({})));
+    assert_eq!(written.blocks.len(), 2, "the rectangle and the placed run");
+    // The placed run's needle points, as they were relative to one another.
+    let placed = written.blocks.iter().find(|b| b.sewn() == 10).expect("a block of the run's ten needle points");
+    let steps: Vec<(f64, f64)> = placed
+        .stitches
+        .windows(2)
+        .filter(|w| w.iter().all(|s| s.command == Command::Stitch))
+        .map(|w| ((w[1].x - w[0].x).round(), (w[1].y - w[0].y).abs().round()))
+        .collect();
+    assert!(steps.iter().all(|&(dx, dy)| dx == 2.0 && dy == 1.0), "{steps:?}");
+}

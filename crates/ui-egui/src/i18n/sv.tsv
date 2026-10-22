@@ -5177,6 +5177,7 @@ theme	Appearance	Utseende
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	levande blandningar, kuvert, nät och upprepningar broderas inte: expandera dem först
 @msg	placed documents are not stitched: embed them first (Links › Embed)	placerade dokument broderas inte: bädda in dem först (Länkar › Bädda in)
 @msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	sammanflätade objekt broderas inte: släpp dem först (Objekt › Sammanfläta › Släpp)
+@msg	symbols placed more than 100,000 times (placing one another) are left out past that	symboler som placerats mer än 100 000 gånger (i varandra) utelämnas utöver det
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	ett negativt expand-värde lämnade inget kvar av vissa fyllda former, så de broderas inte: krymp dem mindre
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	gradienter och mönster målas i färgen på sitt första stopp; ett broderi syr en tråd per block
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	konturer bredare än {widest} mm sys som satinkolumner {widest} mm breda: fyll dem i stället (stitch fill)

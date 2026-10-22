@@ -161,9 +161,29 @@ fn only_needle_down_stitches_have_lengths() {
     red.push(Stitch::sew(Point::new(14.0, 3.0)));
     red.push(Stitch::sew(Point::new(14.5, 3.0)));
     p.units[0].stitches.end = red.len();
+    // The blue block is numbered after the red block's three new records, as a plan numbers it.
+    p.blocks[1].first_number += 3;
+    assert_eq!(p.locate(p.blocks[1].first_number), Some((1, 0)));
     let (blocks, _) = stats::tally(&p, Machine { speed: 650.0 }, Fabric { fabric: 0.5 });
     assert_eq!(
         (blocks[0].needle, blocks[0].jumps, blocks[0].shortest, blocks[0].longest, blocks[0].longest_jump),
         (6, 1, Some(0.5), Some(3.0), Some(10.0))
     );
+}
+
+/// Distinct threads are not blocks: two blocks of one thread (a red, a blue on top, a red again)
+/// are one thread. The extents are measured from where the design starts, not from its corner.
+#[test]
+fn threads_are_counted_apart_from_blocks_and_extents_from_the_start() {
+    // A red line, a blue line across it, a red line on top of the blue: three blocks, two threads.
+    let p = plan(vec![
+        unit(1, Style::Running, RED, &[(10.0, 5.0), (12.0, 5.0), (14.0, 5.0)]),
+        unit(2, Style::Running, BLUE, &[(12.0, 0.0), (12.0, 10.0)]),
+        unit(3, Style::Running, RED, &[(11.0, 4.0), (13.0, 6.0)]),
+    ]);
+    let v = stats::stats(&p, Machine { speed: 650.0 }, Fabric { fabric: 0.5 }, ALL);
+    assert_eq!((&v["blockCount"], &v["threadCount"]), (&json!(3), &json!(2)));
+    // It starts at (10, 5), inside its box (10..14 × 0..10): 0 left, 4 right, 5 up, 5 down.
+    assert_eq!(v["start"], json!([10.0, 5.0]));
+    assert_eq!(v["extents"], json!({"left": 0.0, "right": 4.0, "up": 5.0, "down": 5.0}));
 }

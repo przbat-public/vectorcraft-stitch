@@ -4798,6 +4798,7 @@ lighting	Light	광원
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	라이브 블렌드, 엔벨로프, 메시, 반복은 자수로 놓이지 않습니다: 먼저 확장하세요
 @msg	placed documents are not stitched: embed them first (Links › Embed)	가져온 문서는 자수로 놓이지 않습니다: 먼저 포함하세요(링크 › 포함)
 @msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	교차된 개체는 자수로 놓이지 않습니다: 먼저 해제하세요(개체 › 교차 › 해제)
+@msg	symbols placed more than 100,000 times (placing one another) are left out past that	서로 안에 100,000번 넘게 배치된 심볼은 그 이후 생략됩니다
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	음수 expand 값 때문에 일부 칠한 모양이 하나도 남지 않아 자수로 놓이지 않습니다: 덜 축소하세요
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	그레이디언트와 패턴은 첫 번째 정지점의 색으로 칠해집니다. 자수는 블록마다 실 하나로 박습니다
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	{widest} mm보다 넓은 선은 너비 {widest} mm의 새틴 기둥으로 박힙니다: 대신 칠로 채우세요(stitch fill)

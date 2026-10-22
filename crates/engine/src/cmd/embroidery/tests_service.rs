@@ -304,6 +304,10 @@ fn a_snapshot_with_the_same_options_is_planned_once() {
     let first = service.plan(&doc, &opts).unwrap();
     assert!(Arc::ptr_eq(&first, &service.plan(&doc, &opts).unwrap()), "the same snapshot, the same plan");
     assert_eq!(service.walks(), 1);
+    // Fonts added since (a text clipping path is outlined with them): not the plan remembered.
+    let fonts = vectorcraft_text::FontDb::global().generation();
+    assert!(service.remembered(&doc, &opts, fonts).is_some());
+    assert!(service.remembered(&doc, &opts, fonts.wrapping_add(1)).is_none());
     // The same art in another snapshot: walked again, every unit from what was kept.
     let kept = service.kept();
     let copy = Arc::new((*doc).clone());
@@ -444,4 +448,28 @@ fn a_planner_plans_on_another_thread_what_the_commands_plan() {
     assert_eq!(s.embroidery_plans.of(uid).walks(), 1);
     assert_eq!(run(&mut s, "embroidery.stats", json!({"spacing": 0.5, "stitch": "tatami"}))["records"], json!(on_worker.0));
     assert_eq!(s.embroidery_plans.of(uid).walks(), 1, "the command reads the same plan");
+}
+
+/// A document a batch opened and planned is gone when the batch fails, and so is its planning
+/// service, with what it kept.
+#[test]
+fn a_document_a_failed_batch_opened_leaves_no_planning_behind() {
+    let mut s = Session::new();
+    run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
+    run(&mut s, "embroidery.stats", json!({}));
+    let before: Vec<u64> = s.docs.iter().map(|d| d.uid).collect();
+    assert_eq!(s.embroidery_plans.uids(), before);
+    let r = s.execute(
+        "command.batch",
+        &json!({"commands": [
+            {"command": "file.new", "params": {"width": 200, "height": 200, "artboards": 1}},
+            {"command": "shape.rectangle", "params": {"x": 10, "y": 10, "width": 50, "height": 40}},
+            {"command": "embroidery.stats", "params": {}},
+            {"command": "no.such.command", "params": {}},
+        ]}),
+    );
+    assert!(r.is_err());
+    let after: Vec<u64> = s.docs.iter().map(|d| d.uid).collect();
+    assert_eq!(after, before);
+    assert_eq!(s.embroidery_plans.uids(), before, "the opened document's service is gone");
 }

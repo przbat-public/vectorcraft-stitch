@@ -25,10 +25,13 @@ use super::plan::DesignPlan;
 use super::unit::PlanError;
 
 /// The last plan a service made: of which snapshot (held weakly: the plan doesn't keep a closed
-/// or undone document alive), with which options.
+/// or undone document alive), with which options, and with which fonts: a text clipping path is
+/// outlined with the fonts installed, so a font added since can change the plan of the same
+/// snapshot ([`vectorcraft_text::FontDb::generation`], as the renderer's caches key on it).
 struct Memo {
     doc: Weak<Document>,
     opts: Options,
+    fonts: u64,
     plan: Arc<DesignPlan>,
 }
 
@@ -48,7 +51,8 @@ impl PlanService {
     /// has changed, and kept for the next plan. The same as a fresh plan
     /// ([`super::digitize::digitize`]).
     pub(crate) fn plan(&self, doc: &Arc<Document>, opts: &Options) -> Result<Arc<DesignPlan>, PlanError> {
-        if let Some(plan) = self.remembered(doc, opts) {
+        let fonts = vectorcraft_text::FontDb::global().generation();
+        if let Some(plan) = self.remembered(doc, opts, fonts) {
             return Ok(plan);
         }
         #[cfg(test)]
@@ -56,17 +60,18 @@ impl PlanService {
         let plan = Arc::new(digitize(doc, opts, Some(&self.units))?);
         // A memo that a panic elsewhere left locked is passed by: the next plan walks again.
         if let Ok(mut last) = self.last.lock() {
-            *last = Some(Memo { doc: Arc::downgrade(doc), opts: opts.clone(), plan: plan.clone() });
+            *last = Some(Memo { doc: Arc::downgrade(doc), opts: opts.clone(), fonts, plan: plan.clone() });
         }
         Ok(plan)
     }
 
-    /// The last plan, when it was of snapshot `doc` with `opts`. A snapshot held only weakly can't
-    /// be mistaken for another made since: its memory isn't reused while a weak reference is held.
-    fn remembered(&self, doc: &Arc<Document>, opts: &Options) -> Option<Arc<DesignPlan>> {
+    /// The last plan, when it was of snapshot `doc` with `opts` and the fonts of generation
+    /// `fonts`. A snapshot held only weakly can't be mistaken for another made since: its memory
+    /// isn't reused while a weak reference is held.
+    pub(super) fn remembered(&self, doc: &Arc<Document>, opts: &Options, fonts: u64) -> Option<Arc<DesignPlan>> {
         let last = self.last.lock().ok()?;
         let memo = last.as_ref()?;
-        (std::ptr::eq(memo.doc.as_ptr(), Arc::as_ptr(doc)) && memo.opts == *opts).then(|| memo.plan.clone())
+        (std::ptr::eq(memo.doc.as_ptr(), Arc::as_ptr(doc)) && memo.opts == *opts && memo.fonts == fonts).then(|| memo.plan.clone())
     }
 
     /// How many times it walked a document.
@@ -108,5 +113,13 @@ impl Services {
     /// Drop document `uid`'s service (the document closed), and what it kept.
     pub(crate) fn forget(&mut self, uid: u64) {
         self.0.remove(&uid);
+    }
+
+    /// The documents that have a service.
+    #[cfg(test)]
+    pub(crate) fn uids(&self) -> Vec<u64> {
+        let mut uids: Vec<u64> = self.0.keys().copied().collect();
+        uids.sort_unstable();
+        uids
     }
 }

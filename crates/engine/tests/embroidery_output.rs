@@ -99,26 +99,26 @@ efea759a00d4625d06bd982d1d13e6a41252838a7aa86392deb7d68627d88b7d  trim-after.pes
 fc82fa6b1f72ef26b1c1b0c6f01723ffa18dafe2ca5d42cdc312ef454b9ecdad  trim-after.pec
 bc1ad67e7e327908887b9625e781abeb3565b3fb99385d4126b1705d8ec0d304  trim-after.jef
 12d963aa3794c56549c49b0f3f6c2ce1d54add0d472e5bbcce3d614ef5fbbe12  trim-after.vp3
-2a6dbf72191279cfd55331f585e09ab0484a1f8a5a0c794f2c282fc84a2ac3e8  opened-design.dst
-e8a7abd2549356ecaa06fbc86d0dce03afa7d677fe6f48e090c6158a1c00661b  opened-design.tap
-e8a7abd2549356ecaa06fbc86d0dce03afa7d677fe6f48e090c6158a1c00661b  opened-design.t01
-de630f94beada292b3aef0aac568e058d54082225f7e0aec0458f03163542930  opened-design.exp
+3ad7edeb4c819013a1ef656c3bef63361e22c557eb74b0a32b39b498c0d035b6  opened-design.dst
+7a98e9d31a3bb5646e99e0463e02352cbb42234f292e2529e00e9d8a599dc440  opened-design.tap
+7a98e9d31a3bb5646e99e0463e02352cbb42234f292e2529e00e9d8a599dc440  opened-design.t01
+2398a03de7591f9d4dcf59624b172ec2160eb86b40b0186ef347855e814c5028  opened-design.exp
 3c65b8cd20df97272c4da80c09bc04e366bb9872e0f323dffbc41bcc060ca491  opened-design.pes
 fcbd414254df19b3bf8157d6877bd3f9ffaccb2a144e1eb79d1a2e84f74cc1ec  opened-design.pec
 fff7d43d2e75987e2ac5308fdf631af70551b0d0e73b52addf5ca10081ae2865  opened-design.jef
 c1c7cf69785b7865188b78ef6ce2194c73c02839520f068732d69be52e29ab21  opened-design.vp3
-cef25d97d2473cfcc03d84ecc03e1f2b0ee792af912ed0ebd87d85c1939a05a8  opened-design-clipped.dst
-b00588928472f96b0e5c93082eadf1944a3a68bf5f03bc5d930284c4d3911b08  opened-design-clipped.tap
-b00588928472f96b0e5c93082eadf1944a3a68bf5f03bc5d930284c4d3911b08  opened-design-clipped.t01
-823fb1f3876c7c8140199712f6230726ff072e714a35c5569c6f4b5e5faa51ef  opened-design-clipped.exp
+f4db57f5af20cfcf72317d2199df8f9b02d8345f6d5a584c39cf486a7185508c  opened-design-clipped.dst
+e798ed4def99f5270d84dc276f5dd5f2bc0f486f8257e338462bd238635fe310  opened-design-clipped.tap
+e798ed4def99f5270d84dc276f5dd5f2bc0f486f8257e338462bd238635fe310  opened-design-clipped.t01
+08e630497ef727f246a030895c0586ee4f21f107d0dc9dc006263c6658236ced  opened-design-clipped.exp
 99279a3a87b87359ad24231ae08502420c4a3cf9f13a1c2e492f4826c26f61d4  opened-design-clipped.pes
 61216e3421e7bd5eabc5113e08232d6ba11948877635a08dbda8cf781844268d  opened-design-clipped.pec
 329bcf71915fcfcd043e965e16cd05f835a0ed860925f76b1c8410a63fd2c819  opened-design-clipped.jef
 d5eeb44fa89713ab78017866574aa9a3a13358f95c7f79fee33a8779647d05d3  opened-design-clipped.vp3
-0ac667d8c405ccf71442f9d2ef8fe450d60cba77786ab14feaff61f8737653b3  opened-design-cut-at-block-ends.dst
-fce192774f923868bdd5f800fd2afb9e03ed6f0d62c4cd2577b3029f1174830c  opened-design-cut-at-block-ends.tap
-fce192774f923868bdd5f800fd2afb9e03ed6f0d62c4cd2577b3029f1174830c  opened-design-cut-at-block-ends.t01
-0d21bdeaf446854ad17e517fd98c3fb1cde79dcf16e1182b8438c63c80673bb6  opened-design-cut-at-block-ends.exp
+16e6668cf000ef4b1965df68222cc47cfeedb9d4989ad2ac662c516c37e65c23  opened-design-cut-at-block-ends.dst
+161d7a8936350ac80062705f8cea3063edaeab6ceb7f8c58ba559a19a54c0ab0  opened-design-cut-at-block-ends.tap
+161d7a8936350ac80062705f8cea3063edaeab6ceb7f8c58ba559a19a54c0ab0  opened-design-cut-at-block-ends.t01
+7d4ca828ba79b421253b2c1135e43b71244765dab2e5e07eced148956ddf2671  opened-design-cut-at-block-ends.exp
 326f4d74c9c76f053fdc11c17ad0a4d0d3617a8e72f0ab6be3fb6d634b63ed98  opened-design-cut-at-block-ends.pes
 3c069140aa070e4e345ebf6b8ccd9d976807b81683ed7c19d95f270c2eeb0a68  opened-design-cut-at-block-ends.pec
 2c95dbb97edb623dfa6d1d6b7163ed2f04e8d5132b9c509efaa0dfe287c3941b  opened-design-cut-at-block-ends.jef
@@ -408,10 +408,10 @@ opened-design-clipped.pes  blocks 1  needle 119  jumps 15  trims 1  size 7.3x10.
 opened-design-clipped.pec  blocks 1  needle 119  jumps 15  trims 1  size 7.3x10.9  longest 4.46  shortest 0.41  cells 80
 opened-design-clipped.jef  blocks 1  needle 119  jumps 15  trims 1  size 7.3x10.9  longest 4.46  shortest 0.41  cells 80
 opened-design-clipped.vp3  blocks 1  needle 119  jumps 15  trims 1  size 7.3x10.9  longest 4.46  shortest 0.41  cells 80
-opened-design-cut-at-block-ends.dst  blocks 2  needle 20/20  jumps 3/2  trims 0/1  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
-opened-design-cut-at-block-ends.tap  blocks 2  needle 20/20  jumps 3/2  trims 0/1  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
-opened-design-cut-at-block-ends.t01  blocks 2  needle 20/20  jumps 3/2  trims 0/1  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
-opened-design-cut-at-block-ends.exp  blocks 2  needle 20/20  jumps 2/2  trims 1/2  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
+opened-design-cut-at-block-ends.dst  blocks 2  needle 20/20  jumps 2/2  trims 0/1  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
+opened-design-cut-at-block-ends.tap  blocks 2  needle 20/20  jumps 2/2  trims 0/1  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
+opened-design-cut-at-block-ends.t01  blocks 2  needle 20/20  jumps 2/2  trims 0/1  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
+opened-design-cut-at-block-ends.exp  blocks 2  needle 20/20  jumps 1/2  trims 1/2  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
 opened-design-cut-at-block-ends.pes  blocks 2  needle 20/20  jumps 2/2  trims 1/2  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
 opened-design-cut-at-block-ends.pec  blocks 2  needle 20/20  jumps 2/2  trims 1/2  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
 opened-design-cut-at-block-ends.jef  blocks 2  needle 20/20  jumps 2/2  trims 1/2  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
@@ -837,7 +837,7 @@ fn a_design_in_other_threads_differs_only_in_its_thread_numbers() {
                 block.stitches.extend((0..10).map(|i| Stitch::new(f64::from(i) * 2.0, y, Command::Stitch)));
                 block
             });
-            format.write(&Pattern { name: "threads".into(), blocks: blocks.collect() }).unwrap()
+            format.write(&Pattern { name: "threads".into(), blocks: blocks.collect(), ..Pattern::default() }).unwrap()
         };
         let (a, b) = (written(firsts), written(seconds));
         assert_ne!(a, b, "{}", format.id());
@@ -1106,7 +1106,7 @@ fn opened_with_cuts() -> Session {
     b.stitches.push(Stitch::new(18.0, 10.0, Command::Trim));
     b.stitches.push(Stitch::new(40.0, 10.0, Command::Jump));
     b.stitches.extend(line(10.0, 20, 30));
-    let pattern = Pattern { name: "cuts".into(), blocks: vec![a, b] };
+    let pattern = Pattern { name: "cuts".into(), blocks: vec![a, b], ..Pattern::default() };
     let mut s = Session::new();
     open(&mut s, "cuts.pes", &Format::Pes.write(&pattern).unwrap());
     s

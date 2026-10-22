@@ -7,7 +7,7 @@
 //!   colour block, each where the PES puts it (to the rounding of the two files).
 //! - Every PES file's PEC section, on its own after `#PEC0001` (a PEC file), reads as the PES does.
 //! - Opened and exported again, every machine file keeps every needle point, trim and colour
-//!   block.
+//!   block, and starts where it started.
 //! - Each artwork, digitized by VectorCraft at the size of the person's design, comes out sound:
 //!   the same size, every needle point on the painted artwork and its painted interior sewn
 //!   (checked against the art drawn as a PNG), no stitch too long or too short, no more
@@ -397,8 +397,19 @@ fn real_machine_files_are_written_back_unchanged() {
         let mut s = Session::new();
         open(&mut s, &name, &bytes);
         let again = decode(&s.execute("document.export", &json!({"format": format.id()})).unwrap());
-        assert_eq!(sewn(&format.read(&again).unwrap()), sewn(&format.read(&bytes).unwrap()), "{name}");
+        let (before, after) = (format.read(&bytes).unwrap(), format.read(&again).unwrap());
+        assert_eq!(sewn(&after), sewn(&before), "{name}");
+        // Where the needle starts: the real files start at the design's centre, to a tenth (VP3
+        // files a tenth off it, which the VP3 export, starting at the centre, rounds away).
+        let (a, b) = (start(&before), start(&after));
+        assert!((a.0 - b.0).abs() <= 1 && (a.1 - b.1).abs() <= 1, "{name}: starts at {b:?}, not {a:?}");
     }
+}
+
+/// Where the needle starts, on the 0.1 mm grid from the design's top-left corner.
+fn start(p: &Pattern) -> (i32, i32) {
+    let (s, b) = (p.start.unwrap(), p.bounds().unwrap());
+    (quantize(s.x - b.x0), quantize(s.y - b.y0))
 }
 
 #[test]

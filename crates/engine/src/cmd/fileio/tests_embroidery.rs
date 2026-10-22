@@ -198,10 +198,42 @@ fn an_opened_design_is_written_back_unchanged() {
         let again = export(&mut s, format.id(), json!({}));
         let (a, b) = (format.read(&first).expect("reads"), format.read(&again).expect("reads"));
         assert_eq!(sewn(&a), sewn(&b), "{}", format.id());
+        assert_eq!(start(&a), start(&b), "{}: the needle starts where it did", format.id());
         // Opened again and written again: still the same.
         open(&mut s, &format!("again.{}", format.id()), &again).expect("opens");
         assert_eq!(sewn(&format.read(&export(&mut s, format.id(), json!({}))).expect("reads")), sewn(&a), "{}", format.id());
     }
+}
+
+/// Where the needle starts, on the 0.1 mm grid from the design's top-left corner.
+fn start(p: &vectorcraft_stitch::Pattern) -> (i32, i32) {
+    use vectorcraft_stitch::quantize;
+    let (s, b) = (p.start.expect("read from a file"), p.bounds().expect("has stitches"));
+    (quantize(s.x - b.x0), quantize(s.y - b.y0))
+}
+
+/// A design opened from a file that starts at its centre, as commercial DST files often do, is
+/// written again from there: the DST, TAP, T01, EXP, PES and PEC exports start where the file
+/// started (JEF and VP3 start every design at its centre). With the start unset
+/// (`embroidery.setup {start: null}`), they start at the design's corner again.
+#[test]
+fn an_opened_design_starts_where_its_file_started() {
+    use vectorcraft_stitch::quantize;
+    let mut s = art();
+    let mut p = Format::Dst.read(&export(&mut s, "dst", json!({}))).expect("reads");
+    p.start = p.bounds().map(|b| b.center());
+    let centred = Format::Dst.write(&p).expect("writes");
+    open(&mut s, "centred.dst", &centred).expect("opens");
+    assert!(s.execute("embroidery.settings", &json!({})).unwrap()["settings"]["start"].is_array());
+    for format in Format::ALL {
+        let back = format.read(&export(&mut s, format.id(), json!({}))).expect("reads");
+        let (at, b) = (start(&back), back.bounds().expect("has stitches"));
+        let centre = (quantize(b.width() / 2.0), quantize(b.height() / 2.0));
+        assert!((at.0 - centre.0).abs() <= 1 && (at.1 - centre.1).abs() <= 1, "{}: starts at {at:?}, not {centre:?}", format.id());
+    }
+    s.execute("embroidery.setup", &json!({"start": null})).unwrap();
+    let corner = Format::Dst.read(&export(&mut s, "dst", json!({}))).expect("reads");
+    assert_eq!(start(&corner), (0, quantize(corner.bounds().expect("has stitches").height())), "the bottom-left corner");
 }
 
 /// An opened design written to another format keeps its needle points too (as far as the target

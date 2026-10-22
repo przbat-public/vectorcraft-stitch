@@ -186,6 +186,11 @@ pub struct Pattern {
     /// The design's name as the file's header or title gives it (`""` when it has none).
     pub name: String,
     pub blocks: Vec<Block>,
+    /// Where the machine starts the needle (millimetres, in the design's frame): for a design read
+    /// from a file, the file's own start point (its origin); `None` for one planned from art. The
+    /// formats that start at a corner ([`format::Start::Corner`]) start here when it is set; JEF and
+    /// VP3, whose machines put the start at the hoop's centre, always start at the design's centre.
+    pub start: Option<Point>,
 }
 
 impl Pattern {
@@ -208,7 +213,7 @@ impl Pattern {
         bounds_of(self.points())
     }
 
-    /// Move every point by (`dx`, `dy`) millimetres.
+    /// Move every point, and the start, by (`dx`, `dy`) millimetres.
     pub fn translate(&mut self, dx: f64, dy: f64) {
         if !(dx.is_finite() && dy.is_finite()) {
             return;
@@ -216,6 +221,9 @@ impl Pattern {
         for s in self.blocks.iter_mut().flat_map(|b| b.stitches.iter_mut()) {
             s.x += dx;
             s.y += dy;
+        }
+        if let Some(start) = &mut self.start {
+            *start = Point::new(start.x + dx, start.y + dy);
         }
     }
 

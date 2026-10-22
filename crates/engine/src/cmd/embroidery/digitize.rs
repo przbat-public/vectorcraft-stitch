@@ -10,7 +10,7 @@ use vectorcraft_color::Paint;
 use vectorcraft_doc::cancel;
 use vectorcraft_doc::embroidery::{StitchRun, ThreadPalette};
 use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind, StrokeAlign, StrokeLayer};
-use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Shape, kurbo};
+use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Point, Shape, kurbo};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
 use vectorcraft_render::effects::stroke::outline_region;
 use vectorcraft_stitch::plan::{self, Style};
@@ -123,6 +123,7 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
         None => {
             let mut plan = d.seq.plan(doc.title.clone(), d.warnings, super::thread_palette(doc));
             plan.notes = notes;
+            plan.start = doc.embroidery.as_ref().and_then(|e| e.start).map(|p| Point::new(pt_to_mm(p.x), pt_to_mm(p.y)));
             Ok(plan)
         }
     }

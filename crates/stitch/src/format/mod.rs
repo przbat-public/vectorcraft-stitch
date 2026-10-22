@@ -85,8 +85,9 @@ pub enum Format {
     Vp3,
 }
 
-/// Where a format's files put the machine's origin, the needle's start: a corner of the design, or
-/// its centre.
+/// Where a format's files put the machine's origin, the needle's start: a corner of the design
+/// (or, for a design read from a file, where the file started: [`crate::Pattern::start`]), or its
+/// centre.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Start {
     /// A corner of the design (DST, TAP, T01, EXP, PES and PEC, as the decodings start them).
@@ -339,18 +340,31 @@ pub(crate) struct Frame {
 }
 
 impl Frame {
-    /// A frame whose origin is the design's corner: its top-left corner, or its bottom-left one
-    /// when `flip` (y counting upwards from it).
+    /// A frame whose origin is where the design starts ([`Pattern::start`]) or, when it sets none,
+    /// its corner: its top-left corner, or its bottom-left one when `flip` (y counting upwards from
+    /// it).
     pub(crate) fn of(p: &Pattern, flip: bool) -> Result<Self> {
         let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
-        Ok(Self { left: b.x0, top: if flip { b.y1 } else { b.y0 }, flip, bounds: b })
+        Ok(match p.start.filter(|s| s.x.is_finite() && s.y.is_finite()) {
+            Some(s) => Self::at(s, b, flip),
+            None => Self { left: b.x0, top: if flip { b.y1 } else { b.y0 }, flip, bounds: b },
+        })
     }
 
     /// A frame whose origin is the design's centre, for formats that place the design around the
-    /// hoop's centre (JEF), y flipped when `flip`.
+    /// hoop's centre (JEF), y flipped when `flip`. Where a design read from a file started is not
+    /// used: these machines put the start at the hoop's centre, and a start at a corner (as DST,
+    /// EXP, PES and PEC files written here have it) would put the design beside it.
     pub(crate) fn centered(p: &Pattern, flip: bool) -> Result<Self> {
         let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
         Ok(Self::centered_on(b, flip))
+    }
+
+    /// A frame whose origin is `start`, on the 0.1 mm grid the file counts in, for a design whose
+    /// points fall in `b`.
+    fn at(start: vectorcraft_geom::Point, b: vectorcraft_geom::Rect, flip: bool) -> Self {
+        let snap = |v: f64| f64::from(quantize(v)) / crate::UNITS_PER_MM;
+        Self { left: snap(start.x), top: snap(start.y), flip, bounds: b }
     }
 
     /// A frame whose origin is the centre of `b` (the box the design's points fall in), y flipped
@@ -377,14 +391,19 @@ impl Frame {
         (self.x(s.x), self.y(s.y))
     }
 
-    /// The design's size in tenths of a millimetre, from a frame whose origin is its corner
-    /// ([`Frame::of`]): its width, then its height (the top and the bottom swap when the format
-    /// counts y upwards).
+    /// The design's size in tenths of a millimetre, as its points are written: its width, then its
+    /// height.
     pub(crate) fn size(&self) -> (i32, i32) {
         let b = self.bounds;
-        let width = self.x(b.x1).max(0);
-        let height = if self.flip { self.y(b.y0) } else { self.y(b.y1) };
-        (width, height.max(0))
+        (self.x(b.x1) - self.x(b.x0), (self.y(b.y1) - self.y(b.y0)).abs())
+    }
+
+    /// How far the design reaches from the frame's origin in tenths of a millimetre, each at least
+    /// 0: right, left, then up and down when the format counts y upwards (else down and up).
+    pub(crate) fn extents(&self) -> (i32, i32, i32, i32) {
+        let b = self.bounds;
+        let (y0, y1) = (self.y(b.y0), self.y(b.y1));
+        (self.x(b.x1).max(0), (-self.x(b.x0)).max(0), y0.max(y1).max(0), (-y0.min(y1)).max(0))
     }
 }
 
@@ -598,9 +617,15 @@ pub(crate) fn steps(dx: i32, dy: i32, max: i32) -> Vec<(i32, i32)> {
 /// `threads` are the block threads the format names (PEC's and JEF's palette indices); a format
 /// that names none passes none, and the blocks get [`thread::default_thread`].
 pub(crate) fn finish(name: String, points: Vec<Stitch>, threads: &[Thread]) -> Pattern {
+    finish_from(name, points, threads, vectorcraft_geom::Point::ZERO)
+}
+
+/// [`finish`] for a design whose needle starts at `start` (millimetres, where its points are) rather
+/// than at the file's origin.
+pub(crate) fn finish_from(name: String, points: Vec<Stitch>, threads: &[Thread], start: vectorcraft_geom::Point) -> Pattern {
     let mut points = points;
     collapse_jumps(&mut points);
-    let mut pattern = Pattern { name, blocks: Vec::new() };
+    let mut pattern = Pattern { name, blocks: Vec::new(), start: Some(start) };
     let mut block = Block::new(threads.first().cloned().unwrap_or_else(|| thread::default_thread(0)));
     let mut index = 0;
     for s in points {
@@ -681,16 +706,16 @@ mod tests {
             for (dx, dy, needle) in [(step, 0.0, 2), (step + 0.1, 0.0, 3), (0.0, -(step + 0.1), 3), (step, step, 2)] {
                 let mut block = Block::new(Thread::rgb([200, 30, 30]));
                 block.stitches = vec![Stitch::new(0.0, 0.0, Command::Stitch), Stitch::new(dx, dy, Command::Stitch)];
-                let pattern = Pattern { name: String::new(), blocks: vec![block] };
+                let pattern = Pattern { blocks: vec![block], ..Pattern::default() };
                 let read = format.read(&format.write(&pattern).unwrap()).unwrap();
                 assert_eq!(read.sewn(), needle, "{format:?}: a stitch of {dx}, {dy}");
             }
         }
         let many = |n: usize| Pattern {
-            name: String::new(),
             blocks: (0..n)
                 .map(|k| Block { thread: Thread::rgb([(k % 256) as u8, 0, 0]), stitches: vec![Stitch::new((k % 256) as f64, 0.0, Command::Stitch)] })
                 .collect(),
+            ..Pattern::default()
         };
         for format in Format::ALL {
             let Some(most) = format.max_colors() else { continue };
@@ -842,6 +867,51 @@ mod tests {
         b.stitches.push(Stitch::sew(vectorcraft_geom::Point::new(12.0, 21.0)));
         p.blocks.extend([a, b]);
         p
+    }
+
+    /// A design read from a file starts where the file started: the formats that start at a corner
+    /// start a design that says where it starts there (a DST's header measures it from there), and
+    /// read it back from there, written again unchanged; JEF and VP3 start every design at its
+    /// centre. A design that says nothing starts at its corner or centre, as before.
+    #[test]
+    fn a_design_starts_where_it_says_in_the_formats_that_start_at_a_corner() {
+        let (plain, mut started) = (design(), design());
+        let b = plain.bounds().unwrap();
+        // A tenth of a millimetre off the grid, as a planned design may be.
+        let start = vectorcraft_geom::Point::new(b.x0 + 9.03, b.y0 + 4.0);
+        started.start = Some(start);
+        let near = |a: vectorcraft_geom::Point, b: vectorcraft_geom::Point| (a.x - b.x).abs() < 0.051 && (a.y - b.y).abs() < 0.051;
+        for format in Format::ALL {
+            let (from_plain, from_start) = (format.write(&plain).unwrap(), format.write(&started).unwrap());
+            let (read_plain, read) = (format.read(&from_plain).unwrap(), format.read(&from_start).unwrap());
+            assert_eq!(read.bounds(), read_plain.bounds(), "{format:?}: the same design");
+            let (r, at) = (read.bounds().unwrap(), read.start.unwrap());
+            let at = vectorcraft_geom::Point::new(at.x - r.x0 + b.x0, at.y - r.y0 + b.y0);
+            match format.start() {
+                Start::Corner => {
+                    assert!(near(at, start), "{format:?}: starts at {at:?}, not {start:?}");
+                    assert_eq!(
+                        format.write(&read).unwrap(),
+                        format.write(&format.read(&format.write(&read).unwrap()).unwrap()).unwrap(),
+                        "{format:?}"
+                    );
+                    let corner = read_plain.start.unwrap();
+                    assert!(corner.x.abs() < 1e-9 && (corner.y.abs() < 1e-9 || (corner.y - r.height()).abs() < 1e-9), "{format:?}: {corner:?}");
+                }
+                Start::Centre => {
+                    assert_eq!(from_start, from_plain, "{format:?}");
+                    assert!(near(at, b.center()), "{format:?}: starts at {at:?}");
+                }
+            }
+        }
+        // DST's header: the design's reach right, left, up and down from where it starts.
+        let header = String::from_utf8_lossy(&Format::Dst.write(&started).unwrap()[..dst::HEADER]).to_string();
+        let field = |name: &str| -> i32 {
+            let at = header.find(name).unwrap() + name.len();
+            header[at..at + 5].trim().parse().unwrap()
+        };
+        assert_eq!((field("+X:"), field("-X:")), (quantize(b.x1 - 9.03 - b.x0), 90));
+        assert_eq!((field("+Y:"), field("-Y:")), (40, quantize(b.height() - 4.0)));
     }
 
     /// A deterministic pseudo-random stream (no dependency on a random crate).

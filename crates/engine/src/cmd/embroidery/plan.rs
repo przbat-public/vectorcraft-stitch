@@ -18,7 +18,7 @@
 use std::ops::Range;
 
 use vectorcraft_doc::NodeId;
-use vectorcraft_geom::Rect;
+use vectorcraft_geom::{Point, Rect};
 use vectorcraft_stitch::plan::{self, Params, Style};
 use vectorcraft_stitch::thread::{Match, Palette, PaletteThread};
 use vectorcraft_stitch::{Block, Pattern, Stitch, Thread};
@@ -252,6 +252,10 @@ pub struct DesignPlan {
     /// What else the export says that isn't about the art (a thread palette this version doesn't
     /// know): said with the warnings ([`DesignPlan::messages`]), not counted as art left out.
     pub notes: Vec<String>,
+    /// Where the machine starts the needle (millimetres from the document's origin, y down): the
+    /// document's start point ([`vectorcraft_doc::embroidery::EmbroiderySetup::start`]), `None`
+    /// when it sets none.
+    pub start: Option<Point>,
 }
 
 impl DesignPlan {
@@ -316,7 +320,7 @@ impl DesignPlan {
     /// thread ([`BlockThread::to_thread`]), under its name.
     pub fn to_pattern(&self) -> Pattern {
         let blocks = self.blocks.iter().map(|b| Block { thread: b.thread.to_thread(), stitches: b.stitches.clone() }).collect();
-        Pattern { name: self.name.clone(), blocks }
+        Pattern { name: self.name.clone(), blocks, start: self.start }
     }
 }
 

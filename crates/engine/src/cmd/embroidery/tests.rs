@@ -289,7 +289,7 @@ fn native(s: &mut Session) -> Vec<u8> {
 
 /// The settings of a document that sets none: the palette unset, Janome's by default.
 fn unset() -> Value {
-    json!({"settings": {"palette": null}, "resolved": {"palette": {"value": "jef", "source": "default"}}})
+    json!({"settings": {"palette": null, "start": null}, "resolved": {"palette": {"value": "jef", "source": "default"}}})
 }
 
 /// `embroidery.setup` sets the document's thread palette in one undo step and unsets it with null;
@@ -304,7 +304,7 @@ fn the_document_sets_its_thread_palette() {
     assert_eq!(s.execute("embroidery.settings", &json!({})).unwrap(), unset());
     assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap(), unset());
     let r = s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
-    assert_eq!(r, json!({"settings": {"palette": "pec"}, "resolved": {"palette": {"value": "pec", "source": "document"}}}));
+    assert_eq!(r, json!({"settings": {"palette": "pec", "start": null}, "resolved": {"palette": {"value": "pec", "source": "document"}}}));
     assert_eq!(steps(&s), before + 1);
     assert_eq!(s.execute("embroidery.setup", &json!({"settings": r["settings"]})).unwrap(), r);
     assert_eq!(s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap(), r);
@@ -338,6 +338,45 @@ fn the_document_sets_its_thread_palette() {
     assert_eq!(known, Palette::ALL.map(Some));
 }
 
+/// `embroidery.setup` sets where the machine starts the needle (document points) in one undo step
+/// and unsets it with null; the DST export starts there, its header measuring the design from it;
+/// a start that isn't two numbers within a document's coordinates is refused.
+#[test]
+fn the_document_sets_its_start_point() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+    let dst = |s: &mut Session| {
+        let r = s.execute("document.export", &json!({"format": "dst"})).unwrap();
+        vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap()
+    };
+    let field = |bytes: &[u8], name: &str| -> i32 {
+        let text = String::from_utf8_lossy(&bytes[..512]).to_string();
+        let at = text.find(name).unwrap() + name.len();
+        text[at..at + 5].trim().parse().unwrap()
+    };
+    let corner = dst(&mut s);
+    assert_eq!((field(&corner, "-X:"), field(&corner, "-Y:")), (0, 0), "from the corner");
+    // The rectangle's centre (its stroke reaches a little past it).
+    let r = s.execute("embroidery.setup", &json!({"start": [50.0, 40.0]})).unwrap();
+    assert_eq!(r["settings"]["start"], json!([50.0, 40.0]));
+    let centred = dst(&mut s);
+    let (right, left, up, down) = (field(&centred, "+X:"), field(&centred, "-X:"), field(&centred, "+Y:"), field(&centred, "-Y:"));
+    assert!((right - left).abs() <= 1 && (up - down).abs() <= 1 && left > 100, "{right} {left} {up} {down}");
+    // The same size, to a tenth: each end rounds to the grid from the start, not the width.
+    assert!((right + left - field(&corner, "+X:")).abs() <= 1 && (up + down - field(&corner, "+Y:")).abs() <= 1, "the same size");
+    let read = Format::Dst.read(&centred).unwrap();
+    let start = read.start.unwrap();
+    let b = read.bounds().unwrap();
+    assert!((start.x - b.center().x).abs() < 0.2 && (start.y - b.center().y).abs() < 0.2, "{start:?} {b:?}");
+    for bad in [json!({"start": [1.0]}), json!({"start": "centre"}), json!({"start": [1.0, 1e9]}), json!({"start": [1.0, null]})] {
+        assert!(s.execute("embroidery.setup", &bad).is_err(), "{bad}");
+    }
+    assert_eq!(s.execute("embroidery.setup", &json!({"start": null})).unwrap(), unset());
+    assert_eq!(dst(&mut s), corner);
+    s.execute("edit.undo", &json!({})).unwrap();
+    assert_eq!(dst(&mut s), centred);
+}
+
 /// Settings with nothing in them, as a file may hold them, are as good as none: asking for the
 /// settings, or unsetting the palette, takes no undo step and leaves the document unchanged.
 #[test]
@@ -358,7 +397,7 @@ fn empty_settings_in_a_file_are_none() {
     }
     // A frontend's params check refuses another key first; the command says it too.
     let refused = super::setup(&mut blank(), &json!({"fabric": "knit"})).unwrap_err().to_string();
-    assert!(refused.contains("unknown setting `fabric`: the only setting is palette"), "{refused}");
+    assert!(refused.contains("unknown setting `fabric`: the settings are palette and start"), "{refused}");
 }
 
 /// A file whose embroidery settings a newer version wrote in another shape than an object opens:
@@ -402,7 +441,7 @@ fn the_thread_palette_is_saved_and_a_newer_versions_settings_are_kept() {
     let mut s = Session::new();
     s.execute("document.open", &json!({"name": "newer.vectorcraft", "dataBase64": vectorcraft_format::base64_encode(&bytes)})).unwrap();
     let r = s.execute("embroidery.settings", &json!({})).unwrap();
-    assert_eq!(r, json!({"settings": {"palette": newer["palette"]}, "resolved": {"palette": {"value": "jef", "source": "default"}}}));
+    assert_eq!(r, json!({"settings": {"palette": newer["palette"], "start": null}, "resolved": {"palette": {"value": "jef", "source": "default"}}}));
     // Its own settings passed back change nothing; another palette replaces it, keeping the fabric.
     s.execute("embroidery.setup", &json!({"settings": r["settings"]})).unwrap();
     let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();

@@ -20,7 +20,7 @@ fn the_embroidery_commands_are_reachable() {
         assert!(ids.contains(&id), "{id} in {ids:?}");
     }
     let r = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.setup", "params": {"palette": "jef"}})));
-    assert_eq!(r, json!({"settings": {"palette": "jef"}, "resolved": {"palette": {"value": "jef", "source": "document"}}}));
+    assert_eq!(r, json!({"settings": {"palette": "jef", "start": null}, "resolved": {"palette": {"value": "jef", "source": "document"}}}));
     assert_eq!(h.session.doc().unwrap().doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(|p| p.id()), Some("jef"));
     // A misspelt key is refused before the command runs.
     let typo = call_tool(&mut h, "run_command", &json!({"command": "embroidery.setup", "params": {"palete": "pec"}}));

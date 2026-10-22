@@ -71,7 +71,8 @@
 //! - A block picks up where the last left off (Weiler); its stated start (the KDE wiki's "move
 //!   needle") is written and not read. On the real files the two agree to the rounding of their
 //!   moves.
-//! - The needle starts at the design's centre, as in the real files. The design's extent (and so
+//! - The needle starts at the design's centre, as in the real files, also for a design read from a
+//!   file that started elsewhere (see [`super::Frame::centered`]). The design's extent (and so
 //!   its centre, and the hoop values) is where the needle goes down: the points of jumps, which
 //!   the needle never reaches here, are left out.
 //! - The thread record: the block's colour ([`Thread::color`], the art's), material rayon, 40 wt.
@@ -509,7 +510,10 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     if d.points.is_empty() {
         return Err(stopped.unwrap_or_else(|| Error::Format("the VP3 file has no stitches".into())));
     }
-    Ok(super::finish(String::new(), d.points, &d.threads))
+    // The needle starts where the first block says (the real files' design centre).
+    let mm = |v: i64| v as f64 / UNITS_PER_MM;
+    let start = d.start.map_or(vectorcraft_geom::Point::ZERO, |(x, y)| vectorcraft_geom::Point::new(mm(x), mm(y)));
+    Ok(super::finish_from(String::new(), d.points, &d.threads, start))
 }
 
 /// What a reader decoded so far: the needle points in order and each colour block's thread.
@@ -521,6 +525,8 @@ struct Decoded {
     /// it: each record moves it by at most a long form's reach).
     x: i64,
     y: i64,
+    /// Where the needle starts: where the file's first block says.
+    start: Option<(i64, i64)>,
 }
 
 impl Decoded {
@@ -561,6 +567,7 @@ fn read_design(r: &mut Reader<'_>, d: &mut Decoded) -> Result<()> {
             // picks up where the last left off.
             d.x = tenths(cx + sx);
             d.y = tenths(-(cy + sy));
+            d.start.get_or_insert((d.x, d.y));
             first = false;
         }
         let mark = d.points.len();

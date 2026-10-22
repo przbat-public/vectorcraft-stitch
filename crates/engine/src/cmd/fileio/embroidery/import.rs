@@ -16,8 +16,8 @@ use super::super::{Format, err};
 /// The width of the lines a design's stitches are drawn with, millimetres: about a thread's.
 const THREAD_WIDTH: f64 = 0.4;
 /// The margin round an opened design on its new artboard, millimetres: a little room to see its
-/// edges. It doesn't move the stitches as written: every writer measures a design from its own
-/// bounds, so it is gone again on export.
+/// edges. It doesn't move the stitches as written: the file's start point moves with them, and
+/// every writer measures a design from that or from its own bounds, so it is gone again on export.
 const MARGIN: f64 = 5.0;
 /// The most runs of stitches (each stitched without lifting the needle) a design opens as, one
 /// object each: far more than real designs have (a few thousand), a bound on the objects a hostile
@@ -47,8 +47,12 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
     }
     // A design from a format that numbers its threads is in that format's palette: its colours
     // are matched to the threads the file names (`embroidery.threads`), not to another maker's.
-    if let Some(palette) = format.palette().and_then(|p| ThreadPalette::from_id(p.id())) {
-        doc.embroidery = Some(Box::new(EmbroiderySetup { palette: Some(palette), ..EmbroiderySetup::default() }));
+    // The file's start point is kept, for the export to start from again.
+    let palette = format.palette().and_then(|p| ThreadPalette::from_id(p.id()));
+    let start = pattern.start.map(|s| Point::new((s.x + MARGIN) * scale, (s.y + MARGIN) * scale)).filter(|s| s.x.is_finite() && s.y.is_finite());
+    let setup = EmbroiderySetup { palette, start, ..EmbroiderySetup::default() };
+    if !setup.is_empty() {
+        doc.embroidery = Some(Box::new(setup));
     }
     let mut layer = Node::layer(doc.alloc_id(), "Embroidery", LayerColor::Preset(0));
     let mut groups: Vec<Arc<Node>> = Vec::new();

@@ -27,7 +27,7 @@ use super::{Emitter, Frame, LABEL_LEN, PAD, add, finish, label, mm, steps, walk}
 use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The header's length; records follow it.
-const HEADER: usize = 512;
+pub(crate) const HEADER: usize = 512;
 /// The byte that ends the header's text, before the padding (ASCII SUB, the old end-of-file mark).
 const HEADER_END: u8 = 0x1A;
 /// The length of a record.
@@ -76,7 +76,7 @@ enum Kind {
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     let r = records(p)?;
-    let mut out = header(p, r.count, r.colors, r.width, r.height);
+    let mut out = header(p, r.count, r.colors, r.extents);
     out.extend_from_slice(&r.bytes);
     Ok(out)
 }
@@ -89,9 +89,9 @@ pub(crate) struct Records {
     count: usize,
     /// The colour change records (the header's `CO`).
     colors: usize,
-    /// The design's size in tenths of a millimetre (the header's `+X` and `+Y`).
-    width: i32,
-    height: i32,
+    /// How far the design reaches from where it starts, tenths of a millimetre: right, left, up
+    /// and down (the header's `+X`, `-X`, `+Y` and `-Y`).
+    extents: (i32, i32, i32, i32),
 }
 
 /// The records `p` is written as: stitches, jumps, trims as three small jumps, a colour change
@@ -107,13 +107,13 @@ pub(crate) fn records(p: &Pattern) -> Result<Records> {
         return Err(Error::TooLarge(format!("a DST header counts at most {MAX_RECORDS} records, and the design takes {}", body.records)));
     }
     let count = body.records;
-    let (width, height) = frame.size();
+    let extents = frame.extents();
     body.push(0, 0, Kind::End);
-    Ok(Records { bytes: body.out, count, colors: body.colors, width, height })
+    Ok(Records { bytes: body.out, count, colors: body.colors, extents })
 }
 
 /// The header's text lines, its end marker and the padding to [`HEADER`].
-fn header(p: &Pattern, records: usize, colors: usize, width: i32, height: i32) -> Vec<u8> {
+fn header(p: &Pattern, records: usize, colors: usize, (right, left, up, down): (i32, i32, i32, i32)) -> Vec<u8> {
     let name = label(&p.name);
     let mut s = String::with_capacity(HEADER);
     // Fixed-width fields: the label, the record count, the colour changes, the four extents and
@@ -121,10 +121,10 @@ fn header(p: &Pattern, records: usize, colors: usize, width: i32, height: i32) -
     s.push_str(&format!("LA:{name:<LABEL_LEN$}\r"));
     s.push_str(&format!("ST:{records:7}\r"));
     s.push_str(&format!("CO:{colors:3}\r"));
-    s.push_str(&format!("+X:{width:5}\r"));
-    s.push_str(&format!("-X:{:5}\r", 0));
-    s.push_str(&format!("+Y:{height:5}\r"));
-    s.push_str(&format!("-Y:{:5}\r", 0));
+    s.push_str(&format!("+X:{right:5}\r"));
+    s.push_str(&format!("-X:{left:5}\r"));
+    s.push_str(&format!("+Y:{up:5}\r"));
+    s.push_str(&format!("-Y:{down:5}\r"));
     s.push_str(&format!("AX:+{:5}\r", 0));
     s.push_str(&format!("AY:+{:5}\r", 0));
     s.push_str(&format!("MX:+{:5}\r", 0));

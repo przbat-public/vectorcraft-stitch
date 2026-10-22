@@ -125,7 +125,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Setup",
             [],
             None,
-            "{palette?: \"pec\"|\"jef\"|null (the thread palette the design's colours are matched to, the target machine format's: Brother's 61 threads, which PES files number, or Janome's 78, which JEF files number; null unsets it, and JEF is used), settings?: {palette?} (the settings of its own reply, passed back)} change the document's embroidery settings in one undo step, saved with the document (resolved, which the reply only reports, is refused); no params → no change → {settings: {palette: as set (null when unset; one a newer version wrote, as it is)}, resolved: {palette: {value: \"pec\"|\"jef\" (the palette the stitch plan matches to), source: \"document\"|\"default\" (set by the document, or the default because it sets none this version knows)}}}",
+            "{palette?: \"pec\"|\"jef\"|null (the thread palette the design's colours are matched to, the target machine format's: Brother's 61 threads, which PES files number, or Janome's 78, which JEF files number; null unsets it, and JEF is used), start?: [x, y] (where the machine starts the needle, in document points: a design opened from a machine file keeps its file's start point, and the DST, TAP, T01, EXP, PES and PEC exports start there; JEF and VP3, whose machines put the start at the hoop's centre, start at the design's centre whatever it is; null unsets it, and those exports start at the design's corner), settings?: {palette?, start?} (the settings of its own reply, passed back)} change the document's embroidery settings in one undo step, saved with the document (resolved, which the reply only reports, is refused); no params → no change → {settings: {palette: as set (null when unset; one a newer version wrote, as it is), start: [x, y] or null}, resolved: {palette: {value: \"pec\"|\"jef\" (the palette the stitch plan matches to), source: \"document\"|\"default\" (set by the document, or the default because it sets none this version knows)}}}",
             has_doc,
             setup
         ),
@@ -255,8 +255,9 @@ fn source(set: bool) -> &'static str {
 fn settings_json(d: &Document) -> Value {
     let stored = d.embroidery.as_deref().and_then(|e| e.palette.as_ref());
     let known = stored.and_then(ThreadPalette::id).and_then(Palette::from_id).is_some();
+    let start = d.embroidery.as_deref().and_then(|e| e.start).map(|p| json!([p.x, p.y]));
     json!({
-        "settings": {"palette": stored.cloned().map(Value::from)},
+        "settings": {"palette": stored.cloned().map(Value::from), "start": start},
         "resolved": {"palette": {"value": thread_palette(d).id(), "source": source(known)}},
     })
 }
@@ -289,7 +290,8 @@ fn setup(s: &mut Session, p: &Value) -> Result<Value> {
     for (k, v) in &given {
         match k.as_str() {
             "palette" => new.set_palette(palette_param(v, new.palette.as_ref())?),
-            _ => return Err(bad(C, format!("unknown setting `{k}`: the only setting is palette"))),
+            "start" => new.set_start(start_param(v)?),
+            _ => return Err(bad(C, format!("unknown setting `{k}`: the settings are palette and start"))),
         }
     }
     let new = (!new.is_empty()).then(|| Box::new(new));
@@ -317,6 +319,23 @@ fn palette_param(v: &Value, current: Option<&ThreadPalette>) -> Result<Option<Th
         return Err(bad("embroidery.setup", format!("palette {v}: one of {} (or null to unset it)", known.join(", "))));
     }
     Ok(Some(p))
+}
+
+/// The start point `v` gives: `[x, y]` in document points, within the coordinates a document
+/// holds, or null to unset it.
+fn start_param(v: &Value) -> Result<Option<vectorcraft_geom::Point>> {
+    if v.is_null() {
+        return Ok(None);
+    }
+    let refused =
+        || bad("embroidery.setup", format!("start {v}: [x, y] in points, each within ±{}, or null to unset it", vectorcraft_doc::MAX_COORD));
+    let [x, y] = v.as_array().map(Vec::as_slice).ok_or_else(refused)? else { return Err(refused()) };
+    let (x, y) = (x.as_f64().ok_or_else(refused)?, y.as_f64().ok_or_else(refused)?);
+    let within = |c: f64| c.is_finite() && c.abs() <= vectorcraft_doc::MAX_COORD;
+    if !(within(x) && within(y)) {
+        return Err(refused());
+    }
+    Ok(Some(vectorcraft_geom::Point::new(x, y)))
 }
 
 /// The key the read commands take to plan the selection alone.

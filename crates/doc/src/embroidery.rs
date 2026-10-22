@@ -7,6 +7,7 @@
 //! document keeps is what applies to the whole design.
 
 use serde::{Deserialize, Serialize};
+use vectorcraft_geom::Point;
 
 /// What machine embroidery makes of an object.
 ///
@@ -171,6 +172,11 @@ pub struct EmbroiderySetup {
     /// The thread palette the design's colours are matched to: the target machine format's.
     /// `None`: unset (the stitch plan takes Janome's JEF palette).
     pub palette: Option<ThreadPalette>,
+    /// Where the machine starts the needle, in document points: the start point (origin) of the
+    /// machine file the design was opened from, which the DST, TAP, T01, EXP, PES and PEC exports
+    /// start from again (JEF and VP3 start at the design's centre). `None`: they start at the
+    /// design's corner.
+    pub start: Option<Point>,
     /// Keys this version doesn't know (written by a newer one), kept so that saving doesn't lose
     /// them, as [`crate::Document::extra`] keeps the document's.
     pub extra: serde_json::Map<String, serde_json::Value>,
@@ -180,14 +186,15 @@ pub struct EmbroiderySetup {
     pub unread: Option<serde_json::Value>,
 }
 
-/// The key the palette is saved under.
+/// The keys the palette and the start point are saved under.
 const PALETTE: &str = "palette";
+const START: &str = "start";
 
 impl EmbroiderySetup {
     /// Whether nothing is set and nothing a newer version wrote is kept: the document then carries
     /// none.
     pub fn is_empty(&self) -> bool {
-        self.palette.is_none() && self.extra.is_empty() && self.unread.is_none()
+        self.palette.is_none() && self.start.is_none() && self.extra.is_empty() && self.unread.is_none()
     }
 
     /// Set the palette, or unset it (`None`). A palette set replaces settings a newer version wrote
@@ -199,6 +206,15 @@ impl EmbroiderySetup {
         }
         self.palette = palette;
     }
+
+    /// Set where the machine starts the needle (document points), or unset it (`None`); like the
+    /// palette, a start set replaces settings this version can't read.
+    pub fn set_start(&mut self, start: Option<Point>) {
+        if start.is_some() {
+            self.unread = None;
+        }
+        self.start = start;
+    }
 }
 
 impl From<serde_json::Value> for EmbroiderySetup {
@@ -209,7 +225,12 @@ impl From<serde_json::Value> for EmbroiderySetup {
         match v {
             serde_json::Value::Object(mut map) => {
                 let palette = map.remove(PALETTE).filter(|p| !p.is_null()).map(ThreadPalette::from);
-                Self { palette, extra: map, unread: None }
+                // A start point that isn't two finite numbers is kept as it is, unread.
+                let start = map.get(START).and_then(point);
+                if start.is_some() {
+                    map.remove(START);
+                }
+                Self { palette, start, extra: map, unread: None }
             }
             serde_json::Value::Null => Self::default(),
             other => Self { unread: Some(other), ..Self::default() },
@@ -223,11 +244,14 @@ impl From<EmbroiderySetup> for serde_json::Value {
     /// can't read, as it was, while nothing is set.
     fn from(s: EmbroiderySetup) -> Self {
         match s.unread {
-            Some(unread) if s.palette.is_none() && s.extra.is_empty() => unread,
+            Some(unread) if s.palette.is_none() && s.start.is_none() && s.extra.is_empty() => unread,
             _ => {
                 let mut map = serde_json::Map::new();
                 if let Some(palette) = s.palette {
                     map.insert(PALETTE.to_string(), palette.into());
+                }
+                if let Some(start) = s.start {
+                    map.insert(START.to_string(), serde_json::json!([start.x, start.y]));
                 }
                 for (k, v) in s.extra {
                     map.entry(k).or_insert(v);
@@ -236,6 +260,13 @@ impl From<EmbroiderySetup> for serde_json::Value {
             }
         }
     }
+}
+
+/// A point saved as `[x, y]`; `None` for anything else, or numbers that aren't finite.
+fn point(v: &serde_json::Value) -> Option<Point> {
+    let [x, y] = v.as_array()?.as_slice() else { return None };
+    let (x, y) = (x.as_f64()?, y.as_f64()?);
+    (x.is_finite() && y.is_finite()).then(|| Point::new(x, y))
 }
 
 /// A thread palette the document's colours are matched to, as the file names it.
@@ -301,6 +332,8 @@ mod tests {
         for written in [
             json!({"palette": "jef"}),
             json!({"palette": "pec", "fabric": {"preset": "knit", "pull": 0.35}, "threadWeight": 60}),
+            json!({"palette": "pec", "start": [14.5, -3.0]}),
+            json!({"start": "centre", "hoop": [100, 100]}),
             json!({"palette": "madeira-polyneon"}),
             json!({"palette": {"chart": "madeira", "line": "polyneon"}, "machine": "pr1050x"}),
         ] {
@@ -309,6 +342,13 @@ mod tests {
         }
         let read: EmbroiderySetup = serde_json::from_value(json!({"palette": "jef", "fabric": "knit"})).unwrap();
         assert_eq!((read.palette, read.extra.get("fabric")), (Some(ThreadPalette::Jef), Some(&json!("knit"))));
+        let start: EmbroiderySetup = serde_json::from_value(json!({"start": [14.5, -3.0]})).unwrap();
+        assert_eq!((start.start, start.extra.len()), (Some(Point::new(14.5, -3.0)), 0));
+        // Not two finite numbers: kept as it was, unread.
+        for unread in [json!("centre"), json!([1, 2, 3]), json!([1, "2"]), json!({"x": 1})] {
+            let read: EmbroiderySetup = serde_json::from_value(json!({ "start": unread.clone() })).unwrap();
+            assert_eq!((read.start, read.extra.get("start")), (None, Some(&unread)));
+        }
         let unknown: EmbroiderySetup = serde_json::from_value(json!({"palette": 7})).unwrap();
         assert_eq!(unknown.palette, Some(ThreadPalette::Unknown(json!(7))));
         assert_eq!(unknown.palette.and_then(|p| p.id()), None);

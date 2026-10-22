@@ -617,6 +617,17 @@ corner of the design; JEF files start it at the design's centre, which Janome ma
 hoop's centre, and the JEF header's extents and hoop margins are measured from there. VP3 files
 start it at the design's centre too, as the real files do.
 
+A design opened from a machine file keeps where the file started the needle (its origin), as the
+document's start point (`embroidery.settings` shows it, `embroidery.setup {start}` sets or unsets
+it, in document points), and the DST, TAP, T01, EXP, PES and PEC exports start there again: a DST
+from commercial software that starts at the design's centre is written back starting at its
+centre, its header's `+X`, `-X`, `+Y` and `-Y` measured from there, so the operator lines the
+needle up on the garment as before (project owner's choice, 2026-10-22). JEF and VP3 start every
+design at its centre all the same: their machines put the start at the hoop's centre, and a start
+at a corner, as our own DST, EXP, PES and PEC files have it, would put the design beside it. The
+real files in the corpus (Ink/Stitch's PES, JEF and VP3) all start at the design's centre, to a
+tenth of a millimetre. New art has no start point and starts at a corner, as before.
+
 Known limits of the formats themselves, and so of us: DST, TAP and T01 hold no colour (TAP and T01
 no name either), PEC holds no vector shapes, JEF's and VP3's stitches go at most 12.7 mm per record,
 VP3 holds no trim record (a trim is a long form reaching 25.5 mm), and PES, PEC and JEF name threads by palette index, whose RGB values differ
@@ -907,7 +918,8 @@ locally, never committed. The test checks that:
 - each real VP3 file's colour blocks start, as stated, where the stitches before them took the
   needle, to 0.3 mm;
 - every machine file, opened and exported again, keeps every needle point, trim and colour block
-  (this found that the cuts Ink/Stitch writes at a block's start and end were lost);
+  (this found that the cuts Ink/Stitch writes at a block's start and end were lost), and starts
+  where it started, to a tenth of a millimetre;
 - each artwork, digitized at the size of the person's design, comes out the same size, with no
   stitch longer than 10 mm, at most two shorter than 0.3 mm, no more trims and jumps than its ceilings (one above
   the counts below) and 30–80 % of the person's stitch count.

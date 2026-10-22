@@ -121,7 +121,9 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
     match d.failed {
         Some(e) => Err(e),
         None => {
-            let mut plan = d.seq.plan(doc.title.clone(), d.warnings, super::thread_palette(doc));
+            // Named as the file it was opened from named it, else after the document.
+            let name = doc.embroidery.as_ref().and_then(|e| e.label.clone()).unwrap_or_else(|| doc.title.clone());
+            let mut plan = d.seq.plan(name, d.warnings, super::thread_palette(doc));
             plan.notes = notes;
             plan.start = doc.embroidery.as_ref().and_then(|e| e.start).map(|p| Point::new(pt_to_mm(p.x), pt_to_mm(p.y)));
             Ok(plan)

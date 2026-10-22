@@ -91,8 +91,11 @@ the file had between runs. The runs of one thread group stay one colour block, a
 options (`stitch`, `spacing`…) don't touch them. So a design opened and written again, in the
 same format or another, has every needle point, trim and colour block where the file had it (see
 `an_opened_design_is_written_back_unchanged` in `crates/engine/src/cmd/fileio/tests_embroidery.rs`).
-Put inside a clip group, the lines are cut to the clipping path as any stroke is, and the needle
-lifts across each cut the same way (tied off and in around a long jump).
+The design keeps the name its file gave it (DST's and PEC's `LA:` label), which the export writes
+again, not the file's name the document is called by; `embroidery.settings` shows it as `label`,
+and `embroidery.setup {label}` changes or unsets it (unset, the export writes the document's
+title). Put inside a clip group, the lines are cut to the clipping path as any stroke is, and the
+needle lifts across each cut the same way (tied off and in around a long jump).
 Moving or scaling the lines moves or scales the stitches; editing a line's points edits the
 stitches. Turning a design back into shapes that are stitched by the rules (what professional
 software calls recognising objects) is not done yet.

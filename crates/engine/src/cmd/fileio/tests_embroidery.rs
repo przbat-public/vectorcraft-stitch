@@ -212,9 +212,10 @@ fn an_opened_design_is_written_back_unchanged() {
 }
 
 /// A VP3 opened and exported again writes each block's thread record back as the file had it
-/// (catalogue number, description, brand, material and weight).
+/// (catalogue number, description, brand, material and weight); a DST's label is written again,
+/// not the file's name, and `embroidery.setup {label}` changes it.
 #[test]
-fn an_opened_designs_thread_records_are_written_back() {
+fn an_opened_designs_thread_records_and_label_are_written_back() {
     let mut s = art();
     let mut p = Format::Vp3.read(&export(&mut s, "vp3", json!({}))).expect("reads");
     let records = [("2296", "Pink", "Robison-Anton", 5, 40), ("1801", "Royal", "Madeira", 7, 60)];
@@ -233,6 +234,18 @@ fn an_opened_designs_thread_records_are_written_back() {
     open(&mut s, "flower.vp3", &vp3).expect("opens");
     let back = Format::Vp3.read(&export(&mut s, "vp3", json!({}))).expect("reads");
     assert_eq!(threads(&back), threads(&p));
+    p.name = "ACME_01".into();
+    let dst = Format::Dst.write(&p).expect("writes");
+    open(&mut s, "my-logo.dst", &dst).expect("opens");
+    assert_eq!(s.execute("embroidery.settings", &json!({})).unwrap()["settings"]["label"], "ACME_01");
+    for format in [Format::Dst, Format::Pes, Format::Pec] {
+        assert_eq!(format.read(&export(&mut s, format.id(), json!({}))).expect("reads").name, "ACME_01", "{}", format.id());
+    }
+    s.execute("embroidery.setup", &json!({"label": "Logo 2"})).unwrap();
+    assert_eq!(Format::Dst.read(&export(&mut s, "dst", json!({}))).expect("reads").name, "Logo 2");
+    s.execute("embroidery.setup", &json!({"label": null})).unwrap();
+    assert_eq!(Format::Dst.read(&export(&mut s, "dst", json!({}))).expect("reads").name, "my-logo.dst", "the document's title");
+    assert!(s.execute("embroidery.setup", &json!({"label": 5})).is_err());
 }
 
 /// Where the needle starts, on the 0.1 mm grid from the design's top-left corner.

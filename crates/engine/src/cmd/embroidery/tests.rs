@@ -289,7 +289,7 @@ fn native(s: &mut Session) -> Vec<u8> {
 
 /// The settings of a document that sets none: the palette unset, Janome's by default.
 fn unset() -> Value {
-    json!({"settings": {"palette": null, "start": null}, "resolved": {"palette": {"value": "jef", "source": "default"}}})
+    json!({"settings": {"palette": null, "start": null, "label": null}, "resolved": {"palette": {"value": "jef", "source": "default"}}})
 }
 
 /// `embroidery.setup` sets the document's thread palette in one undo step and unsets it with null;
@@ -304,7 +304,10 @@ fn the_document_sets_its_thread_palette() {
     assert_eq!(s.execute("embroidery.settings", &json!({})).unwrap(), unset());
     assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap(), unset());
     let r = s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
-    assert_eq!(r, json!({"settings": {"palette": "pec", "start": null}, "resolved": {"palette": {"value": "pec", "source": "document"}}}));
+    assert_eq!(
+        r,
+        json!({"settings": {"palette": "pec", "start": null, "label": null}, "resolved": {"palette": {"value": "pec", "source": "document"}}})
+    );
     assert_eq!(steps(&s), before + 1);
     assert_eq!(s.execute("embroidery.setup", &json!({"settings": r["settings"]})).unwrap(), r);
     assert_eq!(s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap(), r);
@@ -371,7 +374,7 @@ fn the_document_sets_its_start_point() {
     for bad in [json!({"start": [1.0]}), json!({"start": "centre"}), json!({"start": [1.0, 1e9]}), json!({"start": [1.0, null]})] {
         assert!(s.execute("embroidery.setup", &bad).is_err(), "{bad}");
     }
-    assert_eq!(s.execute("embroidery.setup", &json!({"start": null})).unwrap(), unset());
+    assert_eq!(s.execute("embroidery.setup", &json!({"start": null, "label": null})).unwrap(), unset());
     assert_eq!(dst(&mut s), corner);
     s.execute("edit.undo", &json!({})).unwrap();
     assert_eq!(dst(&mut s), centred);
@@ -397,7 +400,7 @@ fn empty_settings_in_a_file_are_none() {
     }
     // A frontend's params check refuses another key first; the command says it too.
     let refused = super::setup(&mut blank(), &json!({"fabric": "knit"})).unwrap_err().to_string();
-    assert!(refused.contains("unknown setting `fabric`: the settings are palette and start"), "{refused}");
+    assert!(refused.contains("unknown setting `fabric`: the settings are palette, start and label"), "{refused}");
 }
 
 /// A file whose embroidery settings a newer version wrote in another shape than an object opens:
@@ -441,7 +444,10 @@ fn the_thread_palette_is_saved_and_a_newer_versions_settings_are_kept() {
     let mut s = Session::new();
     s.execute("document.open", &json!({"name": "newer.vectorcraft", "dataBase64": vectorcraft_format::base64_encode(&bytes)})).unwrap();
     let r = s.execute("embroidery.settings", &json!({})).unwrap();
-    assert_eq!(r, json!({"settings": {"palette": newer["palette"], "start": null}, "resolved": {"palette": {"value": "jef", "source": "default"}}}));
+    assert_eq!(
+        r,
+        json!({"settings": {"palette": newer["palette"], "start": null, "label": null}, "resolved": {"palette": {"value": "jef", "source": "default"}}})
+    );
     // Its own settings passed back change nothing; another palette replaces it, keeping the fabric.
     s.execute("embroidery.setup", &json!({"settings": r["settings"]})).unwrap();
     let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();

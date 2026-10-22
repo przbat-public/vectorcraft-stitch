@@ -245,6 +245,9 @@ pub struct EmbroiderySetup {
     /// start from again (JEF and VP3 start at the design's centre). `None`: they start at the
     /// design's corner.
     pub start: Option<Point>,
+    /// The design's name a machine file gave (DST's and PEC's `LA:` label), which the export
+    /// writes again. `None`: the export writes the document's title.
+    pub label: Option<String>,
     /// Keys this version doesn't know (written by a newer one), kept so that saving doesn't lose
     /// them, as [`crate::Document::extra`] keeps the document's.
     pub extra: serde_json::Map<String, serde_json::Value>,
@@ -257,12 +260,13 @@ pub struct EmbroiderySetup {
 /// The keys the palette and the start point are saved under.
 const PALETTE: &str = "palette";
 const START: &str = "start";
+const LABEL: &str = "label";
 
 impl EmbroiderySetup {
     /// Whether nothing is set and nothing a newer version wrote is kept: the document then carries
     /// none.
     pub fn is_empty(&self) -> bool {
-        self.palette.is_none() && self.start.is_none() && self.extra.is_empty() && self.unread.is_none()
+        self.palette.is_none() && self.start.is_none() && self.label.is_none() && self.extra.is_empty() && self.unread.is_none()
     }
 
     /// Set the palette, or unset it (`None`). A palette set replaces settings a newer version wrote
@@ -283,6 +287,15 @@ impl EmbroiderySetup {
         }
         self.start = start;
     }
+
+    /// Set the design's name the export writes, or unset it (`None`: the document's title); like
+    /// the palette, a label set replaces settings this version can't read.
+    pub fn set_label(&mut self, label: Option<String>) {
+        if label.is_some() {
+            self.unread = None;
+        }
+        self.label = label;
+    }
 }
 
 impl From<serde_json::Value> for EmbroiderySetup {
@@ -298,7 +311,12 @@ impl From<serde_json::Value> for EmbroiderySetup {
                 if start.is_some() {
                     map.remove(START);
                 }
-                Self { palette, start, extra: map, unread: None }
+                // So is a label that isn't a string.
+                let label = map.get(LABEL).and_then(|l| l.as_str()).map(str::to_string);
+                if label.is_some() {
+                    map.remove(LABEL);
+                }
+                Self { palette, start, label, extra: map, unread: None }
             }
             serde_json::Value::Null => Self::default(),
             other => Self { unread: Some(other), ..Self::default() },
@@ -312,7 +330,7 @@ impl From<EmbroiderySetup> for serde_json::Value {
     /// can't read, as it was, while nothing is set.
     fn from(s: EmbroiderySetup) -> Self {
         match s.unread {
-            Some(unread) if s.palette.is_none() && s.start.is_none() && s.extra.is_empty() => unread,
+            Some(unread) if s.palette.is_none() && s.start.is_none() && s.label.is_none() && s.extra.is_empty() => unread,
             _ => {
                 let mut map = serde_json::Map::new();
                 if let Some(palette) = s.palette {
@@ -320,6 +338,9 @@ impl From<EmbroiderySetup> for serde_json::Value {
                 }
                 if let Some(start) = s.start {
                     map.insert(START.to_string(), serde_json::json!([start.x, start.y]));
+                }
+                if let Some(label) = s.label {
+                    map.insert(LABEL.to_string(), serde_json::Value::String(label));
                 }
                 for (k, v) in s.extra {
                     map.entry(k).or_insert(v);
@@ -400,7 +421,8 @@ mod tests {
         for written in [
             json!({"palette": "jef"}),
             json!({"palette": "pec", "fabric": {"preset": "knit", "pull": 0.35}, "threadWeight": 60}),
-            json!({"palette": "pec", "start": [14.5, -3.0]}),
+            json!({"palette": "pec", "start": [14.5, -3.0], "label": "ACME_01"}),
+            json!({"label": 7}),
             json!({"start": "centre", "hoop": [100, 100]}),
             json!({"palette": "madeira-polyneon"}),
             json!({"palette": {"chart": "madeira", "line": "polyneon"}, "machine": "pr1050x"}),

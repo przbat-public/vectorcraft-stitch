@@ -42,15 +42,14 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
         return Err(err(format!("the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens")));
     }
     let mut doc = Document::new(width, height);
-    if !pattern.name.is_empty() {
-        doc.title = pattern.name.clone();
-    }
     // A design from a format that numbers its threads is in that format's palette: its colours
     // are matched to the threads the file names (`embroidery.threads`), not to another maker's.
-    // The file's start point is kept, for the export to start from again.
+    // The file's start point and its design's name (the document is named after the file) are
+    // kept, for the export to write again.
     let palette = format.palette().and_then(|p| ThreadPalette::from_id(p.id()));
     let start = pattern.start.map(|s| Point::new((s.x + MARGIN) * scale, (s.y + MARGIN) * scale)).filter(|s| s.x.is_finite() && s.y.is_finite());
-    let setup = EmbroiderySetup { palette, start, ..EmbroiderySetup::default() };
+    let label = Some(pattern.name.clone()).filter(|n| !n.is_empty());
+    let setup = EmbroiderySetup { palette, start, label, ..EmbroiderySetup::default() };
     if !setup.is_empty() {
         doc.embroidery = Some(Box::new(setup));
     }

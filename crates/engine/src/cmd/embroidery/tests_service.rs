@@ -96,6 +96,11 @@ fn build(arts: &[Art]) -> (Session, Vec<u64>) {
     (s, ids)
 }
 
+/// The objects on the document's layers, in stacking order.
+fn objects(s: &Session) -> Vec<u64> {
+    s.doc().unwrap().doc.layers.iter().filter_map(|l| l.children()).flatten().map(|c| c.id.0).collect()
+}
+
 /// Apply `e` to the objects `ids` (those still there, in no particular order).
 fn apply(s: &mut Session, ids: &mut Vec<u64>, e: &Edit) {
     let pick = |i: usize| ids.get(i % ids.len().max(1)).copied();
@@ -126,11 +131,11 @@ fn apply(s: &mut Session, ids: &mut Vec<u64>, e: &Edit) {
                 run(s, "object.arrange.bringToFront", json!({"ids": [id]}));
             }
         }
-        // An undo may bring back an object deleted: its id is back among the document's.
+        // An undo may bring back an object deleted: the objects to edit are the document's again,
+        // restored ones included.
         Edit::Undo => {
             let _ = s.execute("edit.undo", &json!({}));
-            let doc = &s.doc().unwrap().doc;
-            ids.retain(|id| doc.node(vectorcraft_doc::NodeId(*id)).is_some());
+            *ids = objects(s);
         }
     }
     run(s, "select.none", json!({}));

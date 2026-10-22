@@ -370,8 +370,10 @@ the fabric.
   of crawling along the edge (a region's last row keeps it: it has no next row to turn into, and
   a fill of one row would otherwise stop short of its edge); a
   long turn (where the edge runs nearly along the rows) is sewn as short travel stitches rather
-  than one loose stitch; a turn between two rows that end on one straight edge runs along it. Rows sit half a spacing inside the shape's extent: no row lies on a
-  tangent, and the thread's width covers to the edge. Holes are left unstitched: the shape's fill
+  than one loose stitch; a turn between two rows that end on one straight edge runs along it. The rows are centred
+  across the shape's extent, as many as the spacing fits (rounded): the margin is the same at both
+  sides, a quarter to three quarters of a spacing, so no row lies on a tangent and the thread's
+  width covers to the edge on both sides alike. Holes are left unstitched: the shape's fill
   rule decides what is inside, as it does for paint.
 
   Pull compensation stretches each row past the edge at its ends: the fabric draws a row in along
@@ -395,7 +397,9 @@ the fabric.
   as Ink/Stitch's "Expand" does, for shapes drawn apart that should meet; a clip group cuts the
   grown shape, so it grows only where it shows.
 
-  Underneath, an edge run along each outline holds the fabric, and a fill at least 10 mm across
+  Underneath, an edge run half a spacing inside each outline (about where the outermost rows lie,
+  so they cover it; a corner moves along its bisector, and stays put where that would leave the
+  shape) holds the fabric, and a fill at least 10 mm across
   both ways also gets a second underlay: sparse tatami rows (2 mm apart, 3 mm stitches) across
   the top rows, kept 0.6 mm inside the edge so they never peek out (estimates).
 
@@ -955,6 +959,10 @@ the pool ball 3.3 %, the smiling face 2.7 %, the joystick 2.5 %, the bullseye 1.
 the puzzle piece and the video game are unchanged (39–58 % of the person's count). Trims, jumps
 and the longest stitch are unchanged, and none is under 0.3 mm. Spacing a stroke's satin the same
 way changes none of these designs: none has a curved satin stroke.
+Centring the fill rows across each shape (the same margin at both sides, a quarter to three
+quarters of a spacing, where the last row used to sit up to one and a half spacings in) and
+running the edge-run underlay half a spacing inside the outline leaves the trims at 18 in all and
+takes the jumps from 44 to 43.
 
 Threads, matched by CIEDE2000 instead of RGB distance (`embroidery.threads` in each palette, the
 44 blocks of the eleven designs): in Brother's palette 10 blocks got another thread, in Janome's

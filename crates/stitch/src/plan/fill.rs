@@ -1,10 +1,10 @@
 //! Tatami fill ([`Style::Fill`](super::Style::Fill)): rows of stitches across a shape, sewn region
 //! by region over an edge run and, for a large shape, a sparse tatami underlay.
 
-use vectorcraft_geom::{BezPath, FillRule, Point};
+use vectorcraft_geom::{BezPath, FillRule, Point, Vec2};
 
 use super::area::{Area, Grid, TRAVEL_STITCH, Travels};
-use super::geometry::{Axes, SubPath, area, length, resample, subpaths};
+use super::geometry::{Axes, SubPath, area, length, resample, subpaths, unit};
 use super::narrow::Column;
 use super::runs::{COST_SEEN, Runs, Travel};
 use super::satin::{column_returns, sew_column};
@@ -28,10 +28,19 @@ const TATAMI_UNDERLAY_MIN: f64 = 10.0;
 const MAX_SEEN: f64 = 25.0;
 /// The most rows one layer may have: a shape that needs more is refused ([`super::try_stitches`]).
 pub(super) const MAX_ROWS: usize = 100_000;
-/// Where the first row sits from the edge of the shape's extent, as a share of the row spacing:
-/// half a spacing in, so that no row lies on a tangent and the thread's own width covers to the
-/// edge. A shape thinner than this across the rows gets no rows.
+/// The thinnest a shape may be across the rows to get any, as a share of the row spacing: half a
+/// spacing. The rows are centred across the shape's extent (as many as the spacing fits, rounded),
+/// so the margin left at each side is the same, a quarter to three quarters of a spacing: no row
+/// lies on a tangent, and the thread's own width covers to the edge on both sides alike.
 const FIRST_ROW: f64 = 0.5;
+/// How far inside its outline a fill's edge-run underlay runs, as a share of the row spacing: half
+/// a spacing, about where the outermost rows lie, so that the top stitching covers it (on the
+/// outline, it lay outside the rows wherever their margin was wide).
+const EDGE_RUN_INSET: f64 = 0.5;
+/// The farthest a corner of the inset edge run moves from the outline's corner, as a multiple of
+/// the inset: a sharp corner's bisector would reach far into the shape (a miter limit, as strokes
+/// have).
+const EDGE_RUN_MITER: f64 = 2.0;
 /// The stagger: each row's penetrations sit [`STAGGER`] of a stitch along from the row before's,
 /// through a cycle of this many rows, after which they are a whole stitch along, back where they
 /// started; so neighbouring rows never line their penetrations up into a groove. Four rows make a
@@ -385,7 +394,8 @@ fn edge_runs(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut R
     for sub in rows.outlines {
         // The corner nearest the needle (an outline is closed).
         let start = runs.here_inside().map(|h| sub.nearest(h).0);
-        let mut pts: Vec<Point> = sub.pts.iter().cycle().skip(start.unwrap_or(0)).take(sub.pts.len()).copied().collect();
+        let inset = inset_outline(sub, rows, p.density * EDGE_RUN_INSET);
+        let mut pts: Vec<Point> = inset.iter().cycle().skip(start.unwrap_or(0)).take(inset.len()).copied().collect();
         if let Some(&first) = pts.first() {
             pts.push(first);
         }
@@ -394,6 +404,45 @@ fn edge_runs(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut R
         let travel = runs.approach(travels, first, first, f64::INFINITY, &|_| 0.0, p);
         runs.push(under, travel);
     }
+}
+
+/// The corners of closed outline `sub` of `shape`, each moved `d` millimetres into the shape along
+/// its corner's bisector (by up to [`EDGE_RUN_MITER`] times `d` at a sharp corner), as far as the
+/// shape allows: a corner that would leave the shape, or whose way from the corner before would,
+/// stays where it is.
+fn inset_outline(sub: &SubPath, shape: Area<'_>, d: f64) -> Vec<Point> {
+    let pts = &sub.pts;
+    let n = pts.len();
+    if n < 3 || !(d > 0.0 && d.is_finite()) {
+        return pts.clone();
+    }
+    let mut out: Vec<Point> = Vec::with_capacity(n);
+    for (i, &v) in pts.iter().enumerate() {
+        let (Some(&prev), Some(&next)) = (pts.get((i + n - 1) % n), pts.get((i + 1) % n)) else {
+            out.push(v);
+            continue;
+        };
+        let moved = (|| {
+            let (a, b) = (unit(v - prev)?, unit(next - v)?);
+            // The left normals of the two edges, and their bisector.
+            let (na, nb) = (Vec2::new(-a.y, a.x), Vec2::new(-b.y, b.x));
+            let m = unit(na + nb)?;
+            let reach = (d / m.dot(na).max(1.0 / EDGE_RUN_MITER)).min(d * EDGE_RUN_MITER);
+            [v + m * reach, v - m * reach].into_iter().find(|&q| shape.contains(q))
+        })();
+        out.push(moved.unwrap_or(v));
+    }
+    // A corner whose way from the corner before leaves the shape stays on the outline.
+    for i in 0..n {
+        let prev = out.get((i + n - 1) % n).copied();
+        if let (Some(a), Some(b)) = (prev, out.get(i).copied())
+            && !shape.contains_segment(a, b)
+            && let (Some(slot), Some(&orig)) = (out.get_mut(i), pts.get(i))
+        {
+            *slot = orig;
+        }
+    }
+    out
 }
 
 /// When a fill gets its tatami underlay: never, when it is large, or always.
@@ -449,7 +498,9 @@ impl Layer {
     /// most half way to the next stretch of the same row, so that rows either side of a narrow gap
     /// or hole never meet across it.
     fn regions(&self, shape: Area<'_>, lo: f64, hi: f64, p: &Params) -> Regions {
-        let rows = (((hi - lo) / self.spacing).floor().max(1.0) as usize).min(MAX_ROWS);
+        // As many rows as the spacing fits, rounded, centred: the same margin at both sides.
+        let rows = (((hi - lo) / self.spacing).round().max(1.0) as usize).min(MAX_ROWS);
+        let first = lo + ((hi - lo) - self.spacing * (rows as f64 - 1.0)) / 2.0;
         let overlap = |x: (f64, f64), y: (f64, f64)| x.0 < y.1 && y.0 < x.1;
         let mut out: Vec<Region> = Vec::new();
         let mut links: Vec<(usize, usize)> = Vec::new();
@@ -459,7 +510,7 @@ impl Layer {
         // below.
         let mut all: Vec<Scan> = Vec::with_capacity(rows);
         for row in 0..rows {
-            let t = lo + self.spacing * (row as f64 + FIRST_ROW);
+            let t = first + self.spacing * row as f64;
             let spans: Vec<(f64, f64)> =
                 shape.spans(self.axes, t).into_iter().map(|(a, b)| (a + self.inset, b - self.inset)).filter(|(a, b)| b > a).collect();
             let reaches: Vec<(f64, f64)> = (0..spans.len()).map(|j| reach(&spans, j, p)).collect();

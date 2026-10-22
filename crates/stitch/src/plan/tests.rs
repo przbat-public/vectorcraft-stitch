@@ -282,8 +282,9 @@ fn regions_travel_inside_and_overlap() {
     let out = stitches(&ring, FillRule::NonZero, &p);
     let plain = stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p);
     let count = |v: &[Stitch], y: f64| v.iter().filter(|s| s.command == Command::Stitch && (s.y - y).abs() < 1e-6).count();
-    // The last row above the hole (rows sit half a spacing in, then a spacing apart).
-    let above = (0..1000).map(|k| p.density * (0.5 + f64::from(k))).take_while(|y| *y < 10.0).last().unwrap_or(0.0);
+    // The last row above the hole (rows centred across the ring, a spacing apart).
+    let first = first_row(0.0, 30.0, p.density);
+    let above = (0..1000).map(|k| first + p.density * f64::from(k)).take_while(|y| *y < 10.0).last().unwrap_or(0.0);
     assert!(count(&out, above) > count(&plain, above), "the row above the hole is sewn by two regions");
 }
 
@@ -333,11 +334,12 @@ fn large_fills_get_a_tatami_underlay() {
     let mut p = Params::for_style(Style::Fill);
     p.angle = 0.0;
     // Rows of the underlay run at 90°: vertical stitches, 3 mm long, inside the edge.
-    // (Away from the shape's left and right edges, where the edge run is vertical too.)
+    // (Away from the shape's left and right edges, where the edge run, half a spacing in, is
+    // vertical too.)
     let vertical = |out: &[Stitch], width: f64| {
         out.windows(2)
             .filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch)
-            .filter(|w| (w[0].x - w[1].x).abs() < 1e-6 && (w[0].y - w[1].y).abs() > 1.0 && w[0].x > 0.1 && w[0].x < width - 0.1)
+            .filter(|w| (w[0].x - w[1].x).abs() < 1e-6 && (w[0].y - w[1].y).abs() > 1.0 && w[0].x > 0.5 && w[0].x < width - 0.5)
             .count()
     };
     assert!(vertical(&stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p), 30.0) > 20);
@@ -873,9 +875,10 @@ fn fill_rows_stagger_through_a_cycle_of_four() {
     // Each row's penetrations away from its ends (where the row starts and stops, ties
     // included), by row.
     let mut rows: std::collections::BTreeMap<i64, Vec<f64>> = Default::default();
+    let first = first_row(0.0, 10.0, p.density);
     for q in points(&out) {
-        let k = (q.y / p.density - 0.5).round();
-        assert!((q.y - p.density * (k + 0.5)).abs() < 1e-6, "{q:?} is on no row");
+        let k = ((q.y - first) / p.density).round();
+        assert!((q.y - first - p.density * k).abs() < 1e-6, "{q:?} is on no row");
         rows.entry(k as i64).or_default().push(q.x);
     }
     let phases: Vec<f64> = rows
@@ -1235,20 +1238,33 @@ fn compensated_rows_never_cross_a_gap() {
     assert!(q.iter().any(|a| (a.x - middle).abs() < 1e-6), "the rows reach the middle of the gap");
 }
 
+/// Where a fill puts its first row across an extent from `lo` to `hi`: the rows the spacing fits,
+/// rounded, centred, `spacing` apart.
+fn first_row(lo: f64, hi: f64, spacing: f64) -> f64 {
+    let rows = ((hi - lo) / spacing).round().max(1.0);
+    lo + ((hi - lo) - spacing * (rows - 1.0)) / 2.0
+}
+
 /// The rows `out` sews in the order it first reaches them, by number: a fill of `shape` at `angle`
-/// degrees has its rows `spacing` apart from half a spacing inside its extent, and every needle
-/// point on one of them counts for it (travels between rows fall between them). Coming back to a
-/// row (a tie-off along the last stitch, a region's overlap with its neighbour) counts nothing.
+/// degrees has its rows `spacing` apart, centred across its extent ([`first_row`]), and every
+/// needle point on one of them counts for it (travels between rows fall between them). Coming back
+/// to a row (a tie-off along the last stitch, a region's overlap with its neighbour) counts nothing.
 fn row_order(out: &[Stitch], shape: &BezPath, angle: f64, spacing: f64) -> Vec<i64> {
     let axes = Axes::new(angle);
-    let corners = shape.elements().iter().filter_map(|el| match el {
-        vectorcraft_geom::PathEl::MoveTo(q) | vectorcraft_geom::PathEl::LineTo(q) => Some(*q),
-        _ => None,
-    });
-    let lo = corners.map(|q| axes.across(q)).fold(f64::INFINITY, f64::min);
+    let corners: Vec<f64> = shape
+        .elements()
+        .iter()
+        .filter_map(|el| match el {
+            vectorcraft_geom::PathEl::MoveTo(q) | vectorcraft_geom::PathEl::LineTo(q) => Some(axes.across(*q)),
+            _ => None,
+        })
+        .collect();
+    let lo = corners.iter().copied().fold(f64::INFINITY, f64::min);
+    let hi = corners.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    let first = first_row(lo, hi, spacing);
     let mut order: Vec<i64> = Vec::new();
     for q in points(out) {
-        let k = (axes.across(q) - lo) / spacing - 0.5;
+        let k = (axes.across(q) - first) / spacing;
         if (k - k.round()).abs() < 1e-6 && !order.contains(&(k.round() as i64)) {
             order.push(k.round() as i64);
         }
@@ -1429,4 +1445,38 @@ fn a_satin_stroke_keeps_its_spacing_on_the_outer_rail() {
     let q = points(&stitches(&s, FillRule::NonZero, &p));
     check("the S's upper turn", &q, (0.0, 0.0), (-1.0, 0.0));
     check("the S's lower turn", &q, (0.0, -12.0), (1.0, 0.0));
+}
+
+/// Fill rows are centred across the shape: the margin at both sides is the same, a quarter to three
+/// quarters of a spacing (a band 10.9 spacings tall had 0.19 mm at one side and 0.57 at the
+/// other).
+#[test]
+fn fill_rows_are_centred_across_the_shape() {
+    let mut p = Params::for_style(Style::Fill);
+    (p.angle, p.underlay) = (0.0, Underlay::None);
+    for tall in [10.9, 10.5, 11.0, 3.2] {
+        let h = tall * p.density;
+        let out = stitches(&rect(0.0, 0.0, 30.0, h), FillRule::NonZero, &p);
+        let ys: Vec<f64> = points(&out).iter().map(|q| q.y).collect();
+        let (top, bottom) = ys.iter().fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), y| (lo.min(*y), hi.max(*y)));
+        assert!((top - (h - bottom)).abs() < 1e-6, "{tall} spacings: margins {top} and {}", h - bottom);
+        assert!(top >= 0.25 * p.density - 1e-9 && top <= 0.75 * p.density + 1e-9, "{tall} spacings: margin {top}");
+    }
+}
+
+/// A fill's edge-run underlay runs half a spacing inside its outline, about where the outermost
+/// rows lie, so the top stitching covers it.
+#[test]
+fn a_fills_edge_run_is_inset() {
+    let p = Params::for_style(Style::Fill);
+    let (w, h) = (20.0, 12.0);
+    let out = stitches(&rect(0.0, 0.0, w, h), FillRule::NonZero, &p);
+    // The edge run comes first: needle points up to the first top row's long stitches. Its
+    // corners, the points nearest the rectangle's.
+    let inset = p.density * 0.5;
+    for corner in [Point::new(0.0, 0.0), Point::new(w, 0.0), Point::new(w, h), Point::new(0.0, h)] {
+        let nearest = points(&out).iter().map(|q| q.distance(corner)).fold(f64::INFINITY, f64::min);
+        // A corner moves along its bisector: √2 times the inset from the outline's corner.
+        assert!((nearest - inset * std::f64::consts::SQRT_2).abs() < 0.05, "{corner:?}: {nearest}");
+    }
 }

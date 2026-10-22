@@ -66,7 +66,7 @@ const GRID: f64 = 0.1;
 /// jump on a few designs at once passes them all and fails these; an improvement fails them too,
 /// until they and the documentation are brought up to date.
 const ALL_TRIMS: usize = 18;
-const ALL_JUMPS: usize = 44;
+const ALL_JUMPS: usize = 43;
 
 fn format_of(path: &Path) -> Format {
     Format::from_extension(path.extension().and_then(|e| e.to_str()).unwrap()).unwrap()

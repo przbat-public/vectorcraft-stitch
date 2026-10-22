@@ -852,10 +852,12 @@ fn fills_are_stretched_by_pull_compensation_and_grown_by_expand() {
     assert!((w - 20.4).abs() < 0.15 && (h - h0).abs() < 0.15, "0.2 mm past each end by default: {w} × {h}");
     let (w, _) = size(&mut s, json!({"pullCompensation": [0.5, 0.0]}));
     assert!((w - 20.5).abs() < 0.15, "one side only: {w}");
+    // Across the rows, as many fit as the spacing allows, centred: within a spacing (0.38 mm).
+    let across = 0.4;
     let (w, h) = size(&mut s, json!({"pullCompensation": 0, "expand": 1}));
-    assert!((w - 22.0).abs() < 0.15 && (h - (h0 + 2.0)).abs() < 0.15, "grown 1 mm all round: {w} × {h} (from {w0} × {h0})");
+    assert!((w - 22.0).abs() < 0.15 && (h - (h0 + 2.0)).abs() < across, "grown 1 mm all round: {w} × {h} (from {w0} × {h0})");
     let (w, h) = size(&mut s, json!({"pullCompensation": 0, "expand": -1}));
-    assert!((w - 18.0).abs() < 0.15 && (h - (h0 - 2.0)).abs() < 0.15, "shrunk 1 mm all round: {w} × {h}");
+    assert!((w - 18.0).abs() < 0.15 && (h - (h0 - 2.0)).abs() < across, "shrunk 1 mm all round: {w} × {h}");
 }
 
 /// Two fills drawn 0.6 mm apart leave a gap of background between them; pull compensation or

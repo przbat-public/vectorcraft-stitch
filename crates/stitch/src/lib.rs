@@ -66,23 +66,9 @@ pub enum Command {
     ColorChange,
     /// The machine stops and waits (for an appliqué piece, say), the needle up.
     Stop,
-    /// The design ends here.
-    End,
 }
 
 impl Command {
-    /// The command's name in the file-format and command parameters (`stitch`, `jump`, …).
-    pub fn id(self) -> &'static str {
-        match self {
-            Self::Stitch => "stitch",
-            Self::Jump => "jump",
-            Self::Trim => "trim",
-            Self::ColorChange => "colorChange",
-            Self::Stop => "stop",
-            Self::End => "end",
-        }
-    }
-
     /// Does the needle go down at this point?
     pub fn needle_down(self) -> bool {
         matches!(self, Self::Stitch)
@@ -236,11 +222,6 @@ impl Pattern {
         }
         self.translate(-b.x0, -b.y0);
         true
-    }
-
-    /// The number of thread changes the design needs: one fewer than its blocks.
-    pub fn color_changes(&self) -> usize {
-        self.blocks.len().saturating_sub(1)
     }
 }
 

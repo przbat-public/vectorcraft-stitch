@@ -125,7 +125,6 @@ fn record_count(p: &Pattern) -> usize {
             Command::Jump => 2,
             Command::ColorChange | Command::Stop => 2,
             Command::Trim => 2 * TRIM_JUMPS,
-            Command::End => break,
         };
     }
     n
@@ -167,7 +166,6 @@ fn write_body(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) {
                     }
                 }
                 Command::ColorChange | Command::Stop => out.extend_from_slice(&[CONTROL, COLOR_CHANGE, 0, 0]),
-                Command::End => break,
             }
         }
     }

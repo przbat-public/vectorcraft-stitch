@@ -62,7 +62,6 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
                 }
                 Command::Trim => out.extend_from_slice(&[CONTROL, TRIM, TRIM_PAYLOAD[0], TRIM_PAYLOAD[1]]),
                 Command::ColorChange | Command::Stop => out.extend_from_slice(&[CONTROL, COLOR_CHANGE, 0, 0]),
-                Command::End => break,
             }
         }
     }

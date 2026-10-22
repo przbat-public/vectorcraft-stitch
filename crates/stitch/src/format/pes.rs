@@ -240,7 +240,6 @@ fn write_stitches(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) -> Result<()> {
                     out.push(if color_two { COLOR_TWO } else { COLOR_ONE });
                     color_two = !color_two;
                 }
-                Command::End => break,
             }
         }
     }

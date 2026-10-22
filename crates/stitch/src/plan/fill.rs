@@ -58,13 +58,9 @@ const UNDERLAY_TURN: f64 = 90.0;
 /// apart, each split into stitches at most [`Params::stitch_length`] long and reaching past the
 /// edge at its ends by its pull compensation ([`Params::compensation`] of its length), over an
 /// edge run and, for a large shape, a tatami underlay when [`Params::underlay`] is on. A subpath
-/// that encloses no area is a line: it is sewn as a running line.
-pub fn fill(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
-    fill_from(path, rule, p, None)
-}
-
-/// [`fill`], the needle at `from` before it starts: the fill starts as near it as it can (its edge
-/// run at the corner nearest, its first region the one nearest), as Ink/Stitch starts fills.
+/// that encloses no area is a line: it is sewn as a running line. The needle is at `from` before it
+/// starts: the fill starts as near it as it can (its edge run at the corner nearest, its first
+/// region the one nearest), as Ink/Stitch starts fills.
 pub(super) fn fill_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Vec<Stitch> {
     let p = p.sane();
     let subs = closed_subpaths(path);

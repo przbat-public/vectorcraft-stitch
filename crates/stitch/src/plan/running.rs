@@ -9,13 +9,8 @@ use super::runs::{LOCK, Runs, Travel};
 use crate::Stitch;
 
 /// A running line of stitches along `path`, [`Params::stitch_length`] apart, each open run locked
-/// at both ends when [`Params::lock`] is on.
-pub fn running(path: &BezPath, p: &Params) -> Vec<Stitch> {
-    running_from(path, p, None)
-}
-
-/// [`running`], the needle at `from` before it starts: each line is sewn from its end nearest the
-/// needle, the nearest first.
+/// at both ends when [`Params::lock`] is on; the needle at `from` before it starts: each line is
+/// sewn from its end nearest the needle, the nearest first.
 pub(super) fn running_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec<Stitch> {
     let p = p.sane();
     let mut runs = Runs::from(from);

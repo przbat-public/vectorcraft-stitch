@@ -7,7 +7,7 @@ use vectorcraft_geom::{BezPath, Point, Vec2};
 use super::geometry::{CORNER, Line, NO_LENGTH, length, nearest_order, resample, resample_by, subpaths, tangent, trimmed, unit};
 use super::narrow::Column;
 use super::runs::{Runs, Travel};
-use super::{MAX_STITCHES, MIN_PUSHED, Params, Style, UNDERLAY_STITCH, thread_scale};
+use super::{MAX_STITCHES, MIN_PUSHED, Params, UNDERLAY_STITCH, thread_scale};
 use crate::{SAME_POINT, Stitch};
 
 /// Satin underlay by column width (millimetres): from this width an edge run instead of a centre
@@ -46,16 +46,12 @@ const GOLDEN: f64 = 0.618_033_988_75;
 /// penetrations on each rail are [`satin_spacing`] apart for 40 wt thread, closer for finer thread
 /// ([`thread_scale`]), or [`Params::density`] when auto spacing is off; the crossings, rail to rail
 /// in turn, lie half that apart ([`CROSSINGS_PER_SPACING`]). Round a bend the spacing is kept on
-/// the outer rail, and the crossings turn with the path ([`Centre`]).
-pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
-    satin_from(path, p, None)
-}
-
-/// [`satin`], the needle at `from` before it starts: each column starts at its end nearest the
-/// needle (a closed one at its point nearest), the nearest first, as Ink/Stitch starts satins.
+/// the outer rail, and the crossings turn with the path ([`Centre`]). The needle is at `from`
+/// before it starts: each column starts at its end nearest the needle (a closed one at its point
+/// nearest), the nearest first, as Ink/Stitch starts satins. `p`'s style is satin (the caller,
+/// [`super::stitches_from`], sews a satin only then).
 pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec<Stitch> {
-    let mut p = p.sane();
-    p.style = Style::Satin;
+    let p = p.sane();
     if p.width <= 0.0 {
         return Vec::new();
     }

@@ -26,10 +26,10 @@
 //! The spacing defaults are for 40 wt thread; [`Params::for_thread`] gives them for another
 //! weight ([`thread_scale`]).
 //!
-//! The parts: [`geometry`] (polylines, spacing points along them, the rows' axes), [`area`] (what
-//! is inside a filled shape, where rows cross it, travelling inside it), [`runs`] (runs joined into
-//! stitches: jumps, trims, tie-ins and tie-offs), and one module per style ([`running`],
-//! [`satin`], [`fill`]).
+//! The parts: `geometry` (polylines, spacing points along them, the rows' axes), `area` (what is
+//! inside a filled shape, where rows cross it, travelling inside it), `runs` (runs joined into
+//! stitches: jumps, trims, tie-ins and tie-offs), one module per style (`running`, `satin`, `fill`),
+//! and `narrow` (a fill's narrow parts, sewn as satin columns).
 
 mod area;
 mod fill;
@@ -45,11 +45,10 @@ mod tests_narrow;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
-pub use fill::{MIN_AREA, fill, fill_with_columns};
+pub use fill::{MIN_AREA, fill_with_columns};
 pub use narrow::{Column, columns as narrow_columns, columns_until as narrow_columns_until};
-pub use running::running;
 pub use runs::join_cut;
-pub use satin::{satin, satin_spacing};
+pub use satin::satin_spacing;
 
 use crate::{Error, Stitch};
 use geometry::{Axes, SubPath, length, subpaths};
@@ -63,7 +62,7 @@ const JUMP: f64 = 5.0;
 /// (Brother's settings run from 5 to 50 mm), and Ink/Stitch adds no trims unless an object asks
 /// for one. Longer ones are cut in the file, so they don't lie loose on a machine that can't cut
 /// jumps itself. A choice within those bounds, not a published value.
-pub const TRIM: f64 = 10.0;
+pub(crate) const TRIM: f64 = 10.0;
 /// The longest satin stitch before it is split (millimetres): longer stitches snag and sag. An
 /// estimate (professional software makes it a setting, bounded by the machine format: 12.1 mm
 /// per record in DST).
@@ -125,7 +124,7 @@ pub const THREAD_WEIGHT: f64 = 40.0;
 /// warns that a satin too wide sews loose and covers badly
 /// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/stitches/stitches-8.htm>);
 /// 7 mm stays below that, with room for pull compensation. An estimate.
-pub const NARROW_SATIN: f64 = 7.0;
+pub(crate) const NARROW_SATIN: f64 = 7.0;
 /// A satin column's width when none is given (millimetres). The export always gives one, the
 /// stroke's width; this is for callers of the planner that don't.
 const SATIN_WIDTH: f64 = 3.0;
@@ -134,7 +133,7 @@ const UNDERLAY_STITCH: f64 = 2.0;
 /// The most runs one shape may produce (a guard against absurd parameters).
 const MAX_RUNS: usize = 1_000_000;
 /// The most stitches one shape may plan: [`try_stitches`] refuses a shape that would need more.
-pub const MAX_STITCHES: usize = 4_000_000;
+pub(crate) const MAX_STITCHES: usize = 4_000_000;
 
 /// How a shape is stitched.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
@@ -166,9 +165,6 @@ impl Style {
             _ => return None,
         })
     }
-
-    /// All styles, as menus list them.
-    pub const ALL: [Self; 3] = [Self::Running, Self::Satin, Self::Fill];
 }
 
 /// What one shape is stitched as.

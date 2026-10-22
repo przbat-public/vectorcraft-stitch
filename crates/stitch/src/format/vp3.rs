@@ -229,19 +229,15 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
 }
 
 /// The design's colour blocks as VP3 writes them: a block's stitches, cut where it stops or changes
-/// colour (each piece a colour block in its thread), up to the design's end; empty pieces left out.
+/// colour (each piece a colour block in its thread); empty pieces left out.
 fn segments(p: &Pattern) -> Vec<(&Thread, Vec<Stitch>)> {
     let mut out: Vec<(&Thread, Vec<Stitch>)> = Vec::new();
-    'blocks: for block in &p.blocks {
+    for block in &p.blocks {
         let mut piece: Vec<Stitch> = Vec::new();
         for s in &block.stitches {
             match s.command {
                 Command::ColorChange | Command::Stop => {
                     push_piece(&mut out, &block.thread, std::mem::take(&mut piece));
-                }
-                Command::End => {
-                    push_piece(&mut out, &block.thread, piece);
-                    break 'blocks;
                 }
                 _ => piece.push(*s),
             }
@@ -289,7 +285,7 @@ impl Run {
             // The needle lifts: the next stitch is reached with a long form, which the machine
             // cuts after a trim (VP3 has no trim of its own).
             Command::Jump | Command::Trim => self.up = true,
-            Command::ColorChange | Command::Stop | Command::End => {}
+            Command::ColorChange | Command::Stop => {}
         }
     }
 

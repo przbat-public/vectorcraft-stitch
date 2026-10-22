@@ -141,7 +141,7 @@ impl Tally {
             Command::Stitch => self.needle += 1,
             Command::Jump => self.jumps += 1,
             Command::Trim => self.trims += 1,
-            Command::ColorChange | Command::Stop | Command::End => {}
+            Command::ColorChange | Command::Stop => {}
         }
     }
 
@@ -168,7 +168,7 @@ impl Tally {
                 self.seconds += turn(length);
             }
             Command::Trim => self.seconds += TRIM_SECONDS,
-            Command::ColorChange | Command::Stop | Command::End => {}
+            Command::ColorChange | Command::Stop => {}
         }
     }
 

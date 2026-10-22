@@ -141,7 +141,6 @@ fn write_block(body: &mut Body, block: &Block, frame: &Frame) -> Result<()> {
                 }
             }
             Command::ColorChange | Command::Stop => body.push(0, 0, Kind::ColorChange),
-            Command::End => break,
         }
     }
     Ok(())

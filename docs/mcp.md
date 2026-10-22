@@ -4285,14 +4285,14 @@ the entry names and decodes the codes that VectorCraft's default shortcuts agree
 
 ## Embroidery
 
-The document's art is stitched by `document.export` to `dst`, `exp`, `pes` or `jef`, with the embroidery options
+The document's art is stitched by `document.export` to `dst`, `tap`, `t01`, `exp`, `pes`, `pec`, `jef` or `vp3`, with the embroidery options
 `document.formats` lists for those formats (`stitchStyle`, `density`, `trimLength`…), and `document.open` reads such a
 file back as art, one group per thread. The whole feature is described in [embroidery.md](embroidery.md).
 
 - `embroidery.setup {palette?}` sets the document's thread palette, `"pec"` (Brother's 61 threads, which PES files
   number) or `"jef"` (Janome's 78, which JEF files number), in one undo step; `null` unsets it, and Janome's is used.
   No params report `{palette, threadPalette}` (the palette set, and the one the stitch plan uses); the reply can be
-  passed back unchanged. A PES or JEF file opens in its own format's palette.
+  passed back unchanged. A PES, PEC or JEF file opens in its own format's palette.
 - `embroidery.threads {…embroidery options}` lists the thread each colour block is sewn in, in sewing order:
   `{palette, threshold, blocks: [{block, art, thread: {palette, index, name, color}, deltaE, mismatch, units}],
   warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour and the thread's, to two decimals, and
@@ -4311,8 +4311,8 @@ file back as art, one group per thread. The whole feature is described in [embro
   objects sewn in more than one block. Sewing order follows stacking order: `node.move` changes it.
 - `embroidery.check {…embroidery options, format?, rules?, limit?}` runs the design checks: each rule with its
   severity, threshold, unit, sources (the first is the one checked; where sources disagree each is listed), hits, the
-  objects hit and the first `limit` hits (20 by default, at most 1000) as stitch numbers and points. `format` (default:
-  the format of the document's thread palette) sets the format limits checked; `rules` picks rules by id.
+  objects hit and the first `limit` hits (20 by default, at most 1000) as stitch numbers and points. `format` (any format
+  `document.export` writes; default: the format of the document's thread palette) sets the format limits checked; `rules` picks rules by id.
 
 The three plan once for one state of the document and the same options: asking for the figures, the order and the
 checks in a row plans the design once, and an edit plans again only the objects it changed (and usually the one sewn after each, in

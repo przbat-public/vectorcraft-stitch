@@ -88,7 +88,8 @@ pub fn detect(name: &str, bytes: &[u8]) -> Option<&'static Format> {
     if vectorcraft_cad::is_dxf(bytes) {
         return format("dxf");
     }
-    // Brother's PES and PEC files say so; DST, EXP and JEF have no magic and go by extension.
+    // Brother's PES and PEC files and VP3 files say so; DST, TAP, T01, EXP and JEF have no magic and
+    // go by extension.
     if let Some(kind) = vectorcraft_stitch::format::Format::sniff(bytes) {
         return format(kind.id());
     }
@@ -254,7 +255,7 @@ pub fn load_with(name: &str, bytes: &[u8], opts: &LoadOptions) -> Result<Loaded>
             let (doc, warnings) = super::dxfimport::import(bytes, &opts.dxf)?;
             (doc, warnings, false)
         }
-        "dst" | "exp" | "pes" | "jef" => {
+        id if super::embroidery::is_format(id) => {
             let (doc, warnings) = super::embroidery::import(bytes, format)?;
             (doc, warnings, false)
         }

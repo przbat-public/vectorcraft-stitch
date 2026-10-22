@@ -1,6 +1,6 @@
-//! Embroidery through the commands: `document.export` stitches the art into DST, EXP, PES and
-//! JEF, `document.open` reads a design back as art, the options change the plan, and the format
-//! table lists all four.
+//! Embroidery through the commands: `document.export` stitches the art into DST, TAP, T01, EXP,
+//! PES, PEC, JEF and VP3, `document.open` reads a design back as art, the options change the plan, and the
+//! format table lists them all.
 
 use serde_json::{Value, json};
 use vectorcraft_stitch::format::Format;
@@ -127,6 +127,51 @@ fn a_pes_opens_by_its_magic_bytes() {
     assert_eq!(r["format"].as_str(), Some("pes"));
 }
 
+/// A PEC file is a PES's PEC section after its own magic: it opens by that, in Brother's palette.
+#[test]
+fn a_pec_is_the_pes_machine_part_and_opens_by_its_magic_bytes() {
+    let mut s = art();
+    let (pes, pec) = (export(&mut s, "pes", json!({})), export(&mut s, "pec", json!({})));
+    assert_eq!(&pec[8..], &pes[22..], "the PEC section, after #PEC0001 instead of the PES header");
+    let r = open(&mut s, "design.bin", &pec).expect("opens by content");
+    assert_eq!(r["format"].as_str(), Some("pec"));
+    let palette = s.doc().unwrap().doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(|p| p.id());
+    assert_eq!(palette, Some("pec"));
+}
+
+/// A T01 is a TAP under Wilcom's name: the same bytes, a DST's records without its header.
+#[test]
+fn a_t01_is_a_tap_and_a_dst_without_its_header() {
+    let mut s = art();
+    let (dst, tap, t01) = (export(&mut s, "dst", json!({})), export(&mut s, "tap", json!({})), export(&mut s, "t01", json!({})));
+    assert_eq!(t01, tap);
+    assert_eq!(&t01[..], &dst[512..]);
+    let r = open(&mut s, "design.t01", &t01).expect("opens");
+    assert_eq!(r["format"].as_str(), Some("t01"));
+}
+
+/// A VP3 says what it is in its first bytes too, and carries each block's own colour: the art's,
+/// which it opens in again.
+#[test]
+fn a_vp3_keeps_the_arts_colours_and_opens_by_its_magic_bytes() {
+    let mut s = art();
+    let bytes = export(&mut s, "vp3", json!({}));
+    let colors: Vec<[u8; 3]> = Format::Vp3.read(&bytes).expect("reads").blocks.iter().map(|b| b.thread.color).collect();
+    assert_eq!(colors, [[0xcc, 0x22, 0x22], [0x22, 0x33, 0xcc]]);
+    let r = open(&mut s, "design.bin", &bytes).expect("opens by content");
+    assert_eq!(r["format"].as_str(), Some("vp3"));
+    let mut strokes: Vec<String> = Vec::new();
+    s.doc().unwrap().doc.walk(|n| {
+        if n.children().is_none()
+            && let Some(st) = n.appearance.stroke()
+        {
+            strokes.push(format!("{:?}", st.paint));
+        }
+    });
+    let red = format!("{:?}", vectorcraft_color::Paint::solid(vectorcraft_color::Color::rgb8(0xcc, 0x22, 0x22)));
+    assert!(strokes.contains(&red), "{strokes:?}");
+}
+
 /// Each block's needle points (where the needle goes down) and the trims, as a reader decodes
 /// them: what a machine sews.
 fn sewn(p: &vectorcraft_stitch::Pattern) -> Vec<(Vec<(i32, i32)>, usize)> {
@@ -169,6 +214,8 @@ fn an_opened_design_converts_between_formats() {
     let jef = export(&mut s, "jef", json!({}));
     let points = |p: &vectorcraft_stitch::Pattern| sewn(p).into_iter().map(|(pts, _)| pts).collect::<Vec<_>>();
     assert_eq!(points(&Format::Pes.read(&pes).expect("reads")), points(&Format::Jef.read(&jef).expect("reads")));
+    let vp3 = export(&mut s, "vp3", json!({}));
+    assert_eq!(points(&Format::Pes.read(&pes).expect("reads")), points(&Format::Vp3.read(&vp3).expect("reads")));
 }
 
 /// Moving an opened design moves its stitches; its style options don't re-stitch it.
@@ -187,7 +234,7 @@ fn the_format_table_lists_embroidery() {
     let mut s = Session::new();
     let r = s.execute("document.formats", &json!({})).unwrap();
     let formats = r["formats"].as_array().expect("formats");
-    for id in ["dst", "exp", "pes", "jef"] {
+    for id in Format::ALL.map(Format::id) {
         let f = formats.iter().find(|f| f["id"] == id).unwrap_or_else(|| panic!("{id} is listed"));
         assert_eq!(f["read"].as_bool(), Some(true), "{id}");
         assert_eq!(f["write"].as_bool(), Some(true), "{id}");

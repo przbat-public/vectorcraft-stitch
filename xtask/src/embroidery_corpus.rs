@@ -3,11 +3,13 @@
 //! `xtask/embroidery-corpus.sha256`. They land in `corpus/embroidery/` (gitignored, never
 //! committed). The engine's `embroidery_corpus` test uses them when present.
 //!
-//! Each design comes as a pair: the original flat artwork (an SVG close to the emoji it is drawn
+//! Most designs come as a pair: the original flat artwork (an SVG close to the emoji it is drawn
 //! from) and the machine file a person digitized from it with the open-source Ink/Stitch. The
 //! machine files test reading real files and writing them back unchanged; the artwork is
-//! digitized by VectorCraft and compared with the person's design. Only files made with Ink/Stitch
-//! are listed (the project's other machine files come from commercial software).
+//! digitized by VectorCraft and compared with the person's design. Some designs come as VP3 and
+//! PES files of one digitizing, which test that the VP3 reader reads what the PES says. Only files
+//! made with Ink/Stitch are listed (the project's other machine files come from commercial
+//! software).
 //!
 //! Licences: the designs and machine files are CC BY-SA 4.0; the artwork derives from Twemoji
 //! (CC BY 4.0) or Fluent Emoji (MIT). They are used locally as test inputs, never redistributed.
@@ -46,6 +48,22 @@ const FILES: &[(&str, &str, &str)] = &[
     ("animals_nature/animal-mammal", "fox-twemoji-inkstitch.jef", "CC BY-SA 4.0"),
     ("animals_nature/animal-mammal", "zebra-twemoji.clipart.svg", "Twemoji artwork, CC BY 4.0"),
     ("animals_nature/animal-mammal", "zebra-twemoji-inkstitch.pes", "CC BY-SA 4.0"),
+    // The same designs as VP3 and PES (the mouse only as VP3: its PES is another digitizing).
+    ("animals_nature/animal-mammal", "cat-face-twemoji-inkstitch.vp3", "CC BY-SA 4.0"),
+    ("animals_nature/animal-mammal", "cat-face-twemoji-inkstitch.pes", "CC BY-SA 4.0"),
+    ("animals_nature/animal-mammal", "mouse-face-twemoji-inkstitch.vp3", "CC BY-SA 4.0"),
+    ("people_body/person", "boy-twemoji-inkstitch.vp3", "CC BY-SA 4.0"),
+    ("people_body/person", "boy-twemoji-inkstitch.pes", "CC BY-SA 4.0"),
+    ("people_body/person", "girl-twemoji-inkstitch.vp3", "CC BY-SA 4.0"),
+    ("people_body/person", "girl-twemoji-inkstitch.pes", "CC BY-SA 4.0"),
+    ("people_body/person", "old-man-twemoji-inkstitch.vp3", "CC BY-SA 4.0"),
+    ("people_body/person", "old-man-twemoji-inkstitch.pes", "CC BY-SA 4.0"),
+    ("people_body/person", "old-woman-twemoji-inkstitch.vp3", "CC BY-SA 4.0"),
+    ("people_body/person", "old-woman-twemoji-inkstitch.pes", "CC BY-SA 4.0"),
+    ("z_candidates", "radish-MOREmoji-inkstitch.vp3", "CC BY-SA 4.0"),
+    ("z_candidates", "radish-MOREmoji-inkstitch.pes", "CC BY-SA 4.0"),
+    ("z_candidates", "radish-svgrepo-com-inkstitch.vp3", "CC BY-SA 4.0"),
+    ("z_candidates", "radish-svgrepo-com-inkstitch.pes", "CC BY-SA 4.0"),
     ("smileys_emotion/face-smiling", "smiling-face-with-smiling-eyes-twemoji.clipart.svg", "Twemoji artwork, CC BY 4.0"),
     ("smileys_emotion/face-smiling", "smiling-face-with-smiling-eyes-twemoji-inkstitch.pes", "CC BY-SA 4.0"),
     ("symbols/alphanum", "sos-button-fluent.clipart.svg", "Fluent Emoji artwork, MIT"),

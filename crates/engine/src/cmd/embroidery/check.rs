@@ -173,7 +173,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: None,
         unit: "mm along x or y",
         sources: &[Source {
-            name: "EduTechWiki's pages on the formats (DST: 12.1 mm a record; EXP and JEF: 12.7 mm; PEC: 204.7 mm)",
+            name: "EduTechWiki's pages on the formats (DST, TAP and T01: 12.1 mm a record; EXP, JEF and VP3: 12.7 mm; PES and PEC: 204.7 mm)",
             url: "https://edutechwiki.unige.ch/en/Embroidery_format_DST",
             value: "the largest move one stitch record holds",
         }],
@@ -298,11 +298,18 @@ pub(crate) const RULES: &[Rule] = &[
         severity: Severity::Error,
         threshold: None,
         unit: "blocks",
-        sources: &[Source {
-            name: "EduTechWiki, Embroidery format PEC (its header counts the colours in a byte)",
-            url: "https://edutechwiki.unige.ch/en/Embroidery_format_PEC",
-            value: "PES: 255 colours",
-        }],
+        sources: &[
+            Source {
+                name: "EduTechWiki, Embroidery format PEC (its header counts the colours in a byte)",
+                url: "https://edutechwiki.unige.ch/en/Embroidery_format_PEC",
+                value: "PES and PEC: 255 colours",
+            },
+            Source {
+                name: "EduTechWiki, Embroidery format VP3 (its summary counts the colour blocks in a 16-bit word)",
+                url: "https://edutechwiki.unige.ch/en/Embroidery_format_VP3",
+                value: "VP3: 65,535 colour blocks",
+            },
+        ],
     },
     Rule {
         id: "machineStitches",

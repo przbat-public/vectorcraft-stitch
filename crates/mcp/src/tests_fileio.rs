@@ -80,9 +80,13 @@ fn export_tool_lists_engine_formats_and_options() {
             "tga",
             "psd",
             "dst",
+            "tap",
+            "t01",
             "exp",
             "pes",
-            "jef"
+            "pec",
+            "jef",
+            "vp3"
         ])
     );
     for k in ["artboard", "range", "options"] {

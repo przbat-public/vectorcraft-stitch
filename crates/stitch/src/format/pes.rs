@@ -1,8 +1,9 @@
 //! Brother PES: a PES header (the design app's data) followed by the PEC section, which is what
-//! the machines read. The PEC section is the 512-byte PEC header (the label, the icon size and the
-//! palette indices), then the stitch block (its own header, then the stitches), then the preview
-//! pictures. This module writes the smallest valid PES — a version 1 header that only points at the
-//! PEC section — and the whole PEC section, with a 20-byte stitch-block header (the two origin words
+//! the machines read; and Brother PEC, the PEC section on its own after the magic `#PEC0001`. The
+//! PEC section is the 512-byte PEC header (the label, the icon size and the palette indices), then
+//! the stitch block (its own header, then the stitches), then the preview pictures. This module
+//! writes the smallest valid PES — a version 1 header that only points at the PEC section — and
+//! the whole PEC section, the same in a PEC file, with a 20-byte stitch-block header (the two origin words
 //! real Brother files carry; the 16-byte form without them is read too) and blank previews. Every
 //! reader except PE-Design itself reads only the PEC section, so a PES written here sews as it
 //! should; PE-Design shows it as a blank document (it is the PES part, the editable shapes, that we
@@ -22,6 +23,10 @@
 //! whose low 8 bits follow. A jump's command bits are `001`, a trim's `010`. `0xFE 0xB0` followed
 //! by `0x02` and `0x01` alternately changes colour, and `0xFF` ends the design. Unlike DST, EXP
 //! and JEF, PEC counts y downwards.
+//!
+//! A PEC file "often begins" with `#PEC0001` (EduTechWiki); one without it is refused rather than
+//! guessed at: a PEC header starts with `LA:`, as a Tajima DST header does too, so a file that
+//! starts that way may be anything.
 //!
 //! References: EduTechWiki, *Embroidery format PES* and *Embroidery format PEC*
 //! (edutechwiki.unige.ch/en/Embroidery_format_PES, …/Embroidery_format_PEC).
@@ -51,8 +56,8 @@ const NO_COLORS: u8 = 0xFF;
 const PES_HEADER: [u8; 22] = [b'#', b'P', b'E', b'S', b'0', b'0', b'0', b'1', 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 /// Where a PES header gives the PEC section's position (a little-endian word).
 const PEC_POSITION: std::ops::Range<usize> = 8..12;
-/// A bare PEC file's magic (`#PEC0001`): its PEC header starts right after it.
-const PEC_MAGIC_LEN: usize = 8;
+/// A bare PEC file's magic: its PEC header starts right after it.
+pub(crate) const PEC_MAGIC: &[u8; 8] = b"#PEC0001";
 
 // The PEC header: `LA:` and the label at its start, the colour count at COLOR_COUNT_AT, then the
 // palette indices.
@@ -111,6 +116,24 @@ const COLOR_TWO: u8 = 0x02;
 const END: u8 = 0xFF;
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
+    let pec = pec_section(p)?;
+    let mut out: Vec<u8> = Vec::with_capacity(PES_HEADER.len() + pec.len());
+    out.extend_from_slice(&PES_HEADER);
+    out.extend_from_slice(&pec);
+    Ok(out)
+}
+
+/// A PEC file: [`PEC_MAGIC`] and the PEC section, as a PES carries it.
+pub fn write_pec(p: &Pattern) -> Result<Vec<u8>> {
+    let pec = pec_section(p)?;
+    let mut out: Vec<u8> = Vec::with_capacity(PEC_MAGIC.len() + pec.len());
+    out.extend_from_slice(PEC_MAGIC);
+    out.extend_from_slice(&pec);
+    Ok(out)
+}
+
+/// The PEC section: the PEC header, the stitch block and the previews.
+fn pec_section(p: &Pattern) -> Result<Vec<u8>> {
     let frame = Frame::of(p, false)?;
     let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
     let colors = p.blocks.iter().filter(|b| !b.stitches.is_empty()).count();
@@ -121,10 +144,9 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
         return Err(Error::TooLarge(format!("PEC carries at most {MAX_COLORS} colours, not {colors}")));
     }
     let (width, height) = frame.size(b);
-    // The headers, room for the start of the stitch block, and the previews (a guess for the
+    // The header, room for the start of the stitch block, and the previews (a guess for the
     // stitches: the buffer grows as needed).
-    let mut out: Vec<u8> = Vec::with_capacity(PES_HEADER.len() + PEC_HEADER + 64 + colors * PREVIEW);
-    out.extend_from_slice(&PES_HEADER);
+    let mut out: Vec<u8> = Vec::with_capacity(PEC_HEADER + 64 + colors * PREVIEW);
     out.extend_from_slice(&header(p, colors)?);
     let block_start = out.len();
     let mut block: Vec<u8> = Vec::with_capacity(1024);
@@ -384,7 +406,7 @@ fn pec_value(r: &mut Reader<'_>, first: u8) -> Option<(i32, u8)> {
 /// Where the PEC section starts: a PES header states it; a bare PEC starts after its magic.
 fn pec_start(bytes: &[u8]) -> Result<usize> {
     if bytes.starts_with(b"#PEC") {
-        return Ok(PEC_MAGIC_LEN);
+        return Ok(PEC_MAGIC.len());
     }
     if bytes.starts_with(b"#PES") {
         let Some(b) = bytes.get(PEC_POSITION) else {
@@ -440,6 +462,20 @@ mod tests {
         let length = u32::from(bytes[at]) | u32::from(bytes[at + 1]) << 8 | u32::from(bytes[at + 2]) << 16;
         assert_eq!(&bytes[block + SHORT_BLOCK_HEADER..block + LONG_BLOCK_HEADER], &[0x90, 0x00, 0x90, 0x00]);
         assert_eq!(bytes.len(), block + length as usize + 3 * PREVIEW);
+    }
+
+    /// A PEC file is the PEC section a PES carries, after its own magic, and reads back the same.
+    /// Without the magic it is refused: a DST header starts with `LA:` as a PEC header does.
+    #[test]
+    fn a_pec_file_is_the_pec_section_of_a_pes() {
+        let p = design();
+        let (pes, pec) = (write(&p).expect("writes"), write_pec(&p).expect("writes"));
+        assert!(pec.starts_with(PEC_MAGIC));
+        assert_eq!(&pec[PEC_MAGIC.len()..], &pes[PES_HEADER.len()..]);
+        let back = read(&pec).expect("reads");
+        assert_eq!(back, read(&pes).expect("reads"));
+        assert!(read(&pec[PEC_MAGIC.len()..]).is_err(), "no magic");
+        assert!(read(&crate::format::dst::write(&p).expect("writes")).is_err(), "a DST");
     }
 
     /// Small negative deltas are one-byte short-form values (7-bit two's complement): a design

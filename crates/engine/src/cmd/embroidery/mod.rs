@@ -50,6 +50,7 @@ use super::*;
 
 pub(crate) use options::Options;
 pub(crate) use service::Services;
+pub(crate) use unit::PlanError;
 
 /// The embroidery settings an object carries, the document's, and the threads its design is sewn
 /// in.
@@ -205,12 +206,12 @@ fn palette_param(v: &Value, current: Option<&ThreadPalette>) -> Result<Option<Th
     Ok(Some(p))
 }
 
-/// The active document's plan with `opts`, made by the document's planning service (`cmd` names
-/// the command in the errors), and the document it is the plan of.
-fn planned(s: &mut Session, opts: &Options, cmd: &str) -> Result<(Arc<plan::DesignPlan>, Arc<Document>)> {
+/// The active document's plan with `opts`, made by the document's planning service, and the
+/// document it is the plan of.
+fn planned(s: &mut Session, opts: &Options) -> Result<(Arc<plan::DesignPlan>, Arc<Document>)> {
     let st = s.doc()?;
     let (uid, doc) = (st.uid, st.doc.clone());
-    let plan = s.embroidery_plans.of(uid).plan(&doc, opts).map_err(|e| e.error(cmd))?;
+    let plan = s.embroidery_plans.of(uid).plan(&doc, opts).map_err(PlanError::error)?;
     Ok((plan, doc))
 }
 
@@ -237,7 +238,7 @@ fn stats_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     let o = object(p, C)?;
     let (machine, thread) = stats::model(&o, C)?;
     let opts = options_in(&o, &STATS_KEYS, C)?;
-    let (plan, _) = planned(s, &opts, C)?;
+    let (plan, _) = planned(s, &opts)?;
     Ok(with_options(stats::stats(&plan, machine, thread), &opts))
 }
 
@@ -245,7 +246,7 @@ fn sequence_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.sequence";
     let o = object(p, C)?;
     let opts = options_in(&o, &[], C)?;
-    let (plan, _) = planned(s, &opts, C)?;
+    let (plan, _) = planned(s, &opts)?;
     Ok(with_options(order::sequence(&plan), &opts))
 }
 
@@ -288,7 +289,7 @@ fn check_cmd(s: &mut Session, p: &Value) -> Result<Value> {
             .filter(|n| *n <= check::MAX_LIMIT)
             .ok_or_else(|| bad(C, format!("limit {v}: a whole number from 0 to {}", check::MAX_LIMIT)))?,
     };
-    let (plan, doc) = planned(s, &opts, C)?;
+    let (plan, doc) = planned(s, &opts)?;
     // The format of the document's thread palette, when none is asked for.
     let format = format.unwrap_or_else(|| thread_palette(&doc).format());
     Ok(with_options(check::check(&plan, &check::Ask { rules, format, limit }), &opts))
@@ -311,7 +312,7 @@ pub(crate) fn hex([r, g, b]: [u8; 3]) -> String {
 fn threads(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.threads";
     let opts = Options::from_params(p, C)?;
-    let (plan, d) = planned(s, &opts, C)?;
+    let (plan, d) = planned(s, &opts)?;
     let d = &*d;
     let blocks: Vec<Value> = plan
         .blocks

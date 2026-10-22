@@ -1832,8 +1832,9 @@ fn embroidery_export_messages_are_translated() {
     use vectorcraft_doc::embroidery::{EmbroiderySetup, ThreadPalette};
     use vectorcraft_engine::{EngineError, Session};
     let export = |s: &mut Session, expand: f64| s.execute("document.export", &json!({"format": "dst", "expand": expand}));
+    // Nothing to stitch is the document's error, not the parameters'.
     let error = |e: EngineError| match e {
-        EngineError::BadParams { msg, .. } => msg,
+        EngineError::Other(msg) => msg,
         e => panic!("{e}"),
     };
     let rectangle = |s: &mut Session, x: u64, y: u64, width: u64, height: u64| {

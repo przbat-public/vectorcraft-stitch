@@ -31,7 +31,7 @@ use vectorcraft_stitch::format::Format as StitchFormat;
 use super::super::*;
 use super::{Encoded, Format, FormatOption};
 use crate::cmd::embroidery::options::Others;
-use crate::cmd::embroidery::{Options, service};
+use crate::cmd::embroidery::{Options, PlanError, service};
 
 pub(super) use import::import;
 
@@ -153,19 +153,17 @@ fn options(p: &Value) -> Result<Options> {
 pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
     let opts = options(p)?;
     let format = StitchFormat::from_id(f.id).ok_or_else(|| bad(C, format!("{} is not an embroidery format", f.label)))?;
-    let plan = service::plan_afresh(doc, &opts).map_err(|e| e.error(C))?;
+    let plan = service::plan_afresh(doc, &opts).map_err(PlanError::error)?;
     if plan.is_empty() {
-        // What was left out says why, when something was.
-        return Err(bad(
-            C,
-            if plan.warnings.is_empty() {
-                "nothing to stitch: the document has no visible filled or stroked paths".to_string()
-            } else {
-                format!("nothing to stitch: {}", plan.warnings.join("; "))
-            },
-        ));
+        // What was left out says why, when something was. The document's, not the parameters'.
+        return Err(EngineError::Other(if plan.warnings.is_empty() {
+            "nothing to stitch: the document has no visible filled or stroked paths".to_string()
+        } else {
+            format!("nothing to stitch: {}", plan.warnings.join("; "))
+        }));
     }
-    let bytes = format.write(&plan.to_pattern()).map_err(|e| bad(C, e.to_string()))?;
+    // What the format can't hold is the design's limit, not a wrong parameter.
+    let bytes = format.write(&plan.to_pattern()).map_err(|e| EngineError::Other(e.to_string()))?;
     Ok(Encoded { warnings: plan.warnings, ..Encoded::one(bytes) })
 }
 

@@ -30,11 +30,12 @@ pub(crate) enum PlanError {
 }
 
 impl PlanError {
-    /// The error command `cmd` reports: its parameters' error for a design too large, a cancel as
+    /// The error a command reports: a design too large is the design's limit, not a wrong
+    /// parameter (a caller that fixes its parameters on `BadParams` would only loop); a cancel is
     /// a cancel.
-    pub(crate) fn error(self, cmd: &str) -> crate::EngineError {
+    pub(crate) fn error(self) -> crate::EngineError {
         match self {
-            Self::TooLarge(why) => crate::cmd::bad(cmd, why),
+            Self::TooLarge(why) => crate::EngineError::Other(why),
             Self::Cancelled => crate::EngineError::Cancelled,
         }
     }

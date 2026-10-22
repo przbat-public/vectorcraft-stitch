@@ -383,8 +383,32 @@ fn an_absurd_density_is_refused() {
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 14000, "height": 14000, "artboards": 1})).unwrap();
     rect(&mut s, "#cc2222", 0.0, 0.0, 14000.0, 14000.0);
-    let e = s.execute("document.export", &params("dst", json!({"density": 0.05, "stitchLength": 0.2}))).unwrap_err().to_string();
-    assert!(e.contains("stitches"), "{e}");
+    let e = s.execute("document.export", &params("dst", json!({"density": 0.05, "stitchLength": 0.2}))).unwrap_err();
+    assert!(e.to_string().contains("stitches"), "{e}");
+    // The design's limit, not a wrong parameter: a caller that fixes its parameters on
+    // `BadParams` would only loop. The read commands report it the same way.
+    assert!(matches!(e, EngineError::Other(_)), "{e:?}");
+    let e = s.execute("embroidery.stats", &json!({"spacing": 0.05, "length": 0.2})).unwrap_err();
+    assert!(matches!(e, EngineError::Other(_)), "{e:?}");
+    // So is a document with nothing to stitch.
+    s.execute("select.all", &json!({})).unwrap();
+    s.execute("edit.clear", &json!({})).unwrap();
+    let e = s.execute("document.export", &params("dst", json!({}))).unwrap_err();
+    assert!(matches!(&e, EngineError::Other(m) if m.starts_with("nothing to stitch")), "{e:?}");
+}
+
+/// A design a format can't hold (more colours than PES numbers) is the design's limit too.
+#[test]
+fn more_colours_than_a_format_holds_is_not_a_bad_parameter() {
+    let mut s = blank();
+    let most = Format::Pes.max_colors().unwrap();
+    for k in 0..=most {
+        // Colours far enough apart to keep their own blocks: one grey step each.
+        let grey = u8::try_from(k % 256).unwrap();
+        rect(&mut s, &format!("#{grey:02x}{:02x}{:02x}", 255 - grey, (k / 256) * 128), 2.0 * k as f64, 0.0, 1.5, 1.5);
+    }
+    let e = s.execute("document.export", &params("pes", json!({}))).unwrap_err();
+    assert!(matches!(&e, EngineError::Other(m) if m.contains("colour")), "{e:?}");
 }
 
 /// `stitchStyle: fill` on a stroke fills the area the stroke paints (a ring for a stroked

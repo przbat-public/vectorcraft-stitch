@@ -4290,7 +4290,9 @@ The document's art is stitched by `document.export` to `dst`, `tap`, `t01`, `exp
 `stitchLength`, `stitchAngle`, `pullCompensation`, `pullCompensationPercent` and `pushCompensation` are taken as aliases),
 and `document.open` reads such a file back as art, one group per thread. A value outside an option's range (each
 description gives it) is refused, not clamped, and the read commands below echo the options they planned with under
-`options`. The whole feature is described in [embroidery.md](embroidery.md).
+`options`. A design that would need too many stitches, one a format can't hold (more colours than it numbers, a size
+past its header) and a document with nothing to stitch are errors of the design, not "invalid parameters": changing the
+request's keys won't fix them. The whole feature is described in [embroidery.md](embroidery.md).
 
 - `embroidery.setup {palette?}` sets the document's thread palette, `"pec"` (Brother's 61 threads, which PES files
   number) or `"jef"` (Janome's 78, which JEF files number), in one undo step; `null` unsets it, and Janome's is used.

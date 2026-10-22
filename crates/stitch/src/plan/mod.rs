@@ -466,7 +466,8 @@ impl Params {
 /// (<https://www.madeirausa.com/_resources/common/userfiles/file/Resources/TH.Reads/Density.pdf>).
 /// The chart is for satin; fills follow it too here, an estimate: no source scales fill spacing
 /// by thread. (Wilcom's satin auto spacing shifts its spacing by thread class too, by fixed
-/// offsets of a few hundredths of a millimetre,
+/// offsets of 0.01, 0.03, −0.03 and −0.06 with no unit stated, read here as millimetres, an
+/// assumption,
 /// <https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/stitches/stitches-10.htm>.)
 pub fn thread_scale(weight: f64) -> f64 {
     /// The square root: the thread's thickness follows it.

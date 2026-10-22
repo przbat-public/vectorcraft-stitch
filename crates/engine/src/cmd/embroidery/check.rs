@@ -103,18 +103,20 @@ const LONGEST_STITCH: f64 = 12.7;
 const FILL_SHORTEST: f64 = 2.5;
 const SATIN_SHORTEST: f64 = 1.0;
 const RUN_SHORTEST: f64 = 1.5;
-/// Melco's machine manual: keep stitches longer than the needle's blade, 0.75 mm for a 75/11
-/// needle; most needles are 0.7 to 0.8 mm, so 1 mm or longer; ideally walk stitches 1.5 mm, satin
-/// 1 mm and fill 2 mm or longer (Melco OS manual, "Stitch Size vs. Needle Size", pp. 301–302).
+/// Melco's machine manual: needles are 7 to 8 points (0.7 to 0.8 mm) thick, so keep stitches at
+/// 1 mm or longer; ideally walk stitches 1.5 mm, satin 1 mm and fill 2 mm or longer (Melco OS
+/// manual, "Stitch Size vs. Needle Size", pp. 301–302); a 75/11 needle's blade is 0.75 mm ("Needle
+/// Sizes", p. 202).
 const MELCO_MACHINE: &str = "https://www.melco-service.com/docs/X/melco-os-ai-en.pdf";
-/// A 75/11 needle's blade, millimetres (the same manual).
+/// A 75/11 needle's blade, millimetres (the same manual, p. 202).
 const NEEDLE_BLADE: f64 = 0.75;
 /// A stitch shorter than this is short in a row of short stitches ([`MOST_SHORT_IN_A_ROW`]): the
 /// 1 mm Melco's machine manual keeps stitches above for most needles.
 const SHORT: f64 = 1.0;
 /// Brother's embroidery machines delete stitches of the set pitch or less, 0.3 mm as they come
-/// (PRT23 manual, p. 107): the source checked, so a stitch of 0.3 mm is flagged. Ricoma's
-/// digitizing tips delete stitches under 0.3 mm (<https://www.ricoma.cn/cn/ndetail13_539>).
+/// (PRT23 manual, printed p. 108, p. 110 of the PDF): the source checked, so a stitch of 0.3 mm is
+/// flagged. Ricoma's digitizing tips advise deleting stitches under 0.3 mm while making a design
+/// (<https://www.ricoma.cn/cn/ndetail13_539>): advice to digitizers, not what a machine does.
 const TINY: f64 = 0.3;
 /// The most stitches shorter than [`SHORT`] in a row before they are flagged. An estimate: no
 /// source gives a limit for runs of tiny stitches. Five is the most consecutive shortened satin
@@ -256,7 +258,7 @@ pub(crate) const RULES: &[Rule] = &[
         sources: &[Source {
             name: MELCO_MACHINE_NAME,
             url: MELCO_MACHINE,
-            value: "keep stitches longer than the needle's blade: 0.75 mm for a 75/11 needle",
+            value: "keep stitches longer than the needle's blade (pp. 301–302): 0.75 mm for a 75/11 needle (p. 202)",
         }],
     },
     Rule {
@@ -268,11 +270,15 @@ pub(crate) const RULES: &[Rule] = &[
         measures: "a needle-down stitch's length",
         sources: &[
             Source {
-                name: "Brother PRT23 manual, p. 107",
+                name: "Brother PRT23 manual, printed p. 108 (p. 110 of the PDF)",
                 url: "https://download.brother.com/welcome/doch102354/prt23_om01ja.pdf",
                 value: "the machine deletes stitches of 0.3 mm or less, as it comes",
             },
-            Source { name: "Ricoma digitizing tips", url: "https://www.ricoma.cn/cn/ndetail13_539", value: "delete stitches under 0.3 mm" },
+            Source {
+                name: "Ricoma digitizing tips (advice to digitizers)",
+                url: "https://www.ricoma.cn/cn/ndetail13_539",
+                value: "delete stitches under 0.3 mm while making the design",
+            },
         ],
     },
     Rule {
@@ -298,11 +304,14 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(LAYERS as f64),
         unit: Some("units"),
         measures: "sewing units over one 1 mm square",
-        sources: &[Source {
-            name: "Brother PRT51 manual (Japanese), data precautions and troubleshooting",
-            url: "https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf",
-            value: "stitching sewn over three times or more may break the thread or the needle",
-        }],
+        sources: &[
+            Source {
+                name: "Brother PRT51 manual (Japanese), data precautions and troubleshooting",
+                url: "https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf",
+                value: "stitching sewn over three times or more may break the thread or the needle",
+            },
+            Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "too many layers, without a number" },
+        ],
     },
     Rule {
         id: "threadMismatch",
@@ -691,9 +700,10 @@ impl<'a> Checker<'a> {
 }
 
 /// What Melco's design checker flags that is not checked here, and why.
-const NOT_CHECKED: [(&str, &str); 2] = [
+const NOT_CHECKED: [(&str, &str); 3] = [
     ("density too tight", "Melco's design checker names it without a threshold"),
     ("too many needle penetrations in an area", "Melco's design checker names it without a threshold"),
+    ("too many or too few tie stitches (missed trims or starts)", "Melco's design checker names it without a threshold"),
 ];
 
 /// The threads a check judges: those the format writes, matched to its own palette when it numbers

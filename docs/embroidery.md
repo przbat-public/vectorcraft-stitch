@@ -63,8 +63,8 @@ for 40 and 0.31 for 60. Madeira's stitch density chart, by thread, follows the s
 0.50, 0.40 and 0.35 mm for its Classic 12, 30, 40 and 60 wt; this gives 0.73, 0.46, 0.40 and 0.33
 from 0.40; its 75 wt, 0.20 mm, is finer than the curve). The chart is for satin; fills follow it
 too here, an estimate: no source found scales fill spacing by thread. (A first version followed
-the fourth root, sized to Wilcom's satin auto spacing offsets, a few hundredths of a millimetre
-per thread class; against Madeira's chart that changed spacing about half as much as threads
+the fourth root, sized to Wilcom's satin auto spacing offsets per thread class, 0.01 to 0.06
+with no unit stated, read as millimetres, an assumption; against Madeira's chart that changed spacing about half as much as threads
 do.)
 
 **Reading a design.** Open the file as a document; `File → Open` lists the formats. Each colour
@@ -263,8 +263,8 @@ with its own length and the records it is written as beside it). The summary giv
 severity, how many rules found something and how many hits they found. `format` (the document's thread palette's
 format when left out: PES for Brother's, JEF for Janome's) decides the format limits checked, and the threads judged: those the format writes, matched to
 its own palette when it numbers its threads from another than the document's (`palette` names it).
-Melco's design checker works on a design's objects and their settings ("can be addressed with
-simple object property changes"), so its fill, satin and walk-stitch limits are checked on each
+Melco's design checker works on a design's objects and their settings (many of the issues it
+flags "can be addressed with simple object property changes"), so its fill, satin and walk-stitch limits are checked on each
 object's settings and report the objects: its fill or running stitch length, its satin columns'
 width. Stitches read from a machine file have no such settings and those three rules pass them by.
 The other length rules measure needle-down stitches, a unit's underlay, travel and tie stitches
@@ -278,18 +278,20 @@ included.
 | `fillStitchShort` | a fill's stitch length set shorter than 2.5 mm (the object's setting) | warning | Melco's design checker, 2.5 mm; Melco's machine manual: fill stitches ideally 2 mm or longer ([Melco OS manual](https://www.melco-service.com/docs/X/melco-os-ai-en.pdf), pp. 301–302) |
 | `satinStitchShort` | a satin column narrower than 1 mm (a satin stitch spans its column): a stroke forced to satin that narrow. A fill's narrow parts that narrow are running lines, not satin, so they never fire it | warning | Melco's design checker; Melco's machine manual agrees |
 | `runStitchShort` | a running line's stitch length set shorter than 1.5 mm | warning | Melco's design checker; Melco's machine manual agrees |
-| `stitchBelowNeedle` | a stitch shorter than the needle's blade, 0.75 mm for a 75/11 | info, until the planner spreads a fill row's remainder (its rows end in stitches of 0.4 to 0.75 mm today); then a warning | Melco's machine manual: keep stitches longer than the needle's blade |
-| `stitchTiny` | a stitch of 0.3 mm or less, which machines delete | warning | Ricoma deletes stitches under 0.3 mm ([digitizing tips](https://www.ricoma.cn/cn/ndetail13_539)); Brother's machines delete stitches of the set pitch or less, 0.3 mm as they come ([PRT23 manual](https://download.brother.com/welcome/doch102354/prt23_om01ja.pdf), p. 107) |
+| `stitchBelowNeedle` | a stitch shorter than the needle's blade, 0.75 mm for a 75/11 | info, until the planner spreads a fill row's remainder (its rows end in stitches of 0.4 to 0.75 mm today); then a warning | Melco's machine manual: keep stitches longer than the needle's blade (pp. 301–302), 0.75 mm for a 75/11 (p. 202) |
+| `stitchTiny` | a stitch of 0.3 mm or less, which machines delete | warning | Brother's machines delete stitches of the set pitch or less, 0.3 mm as they come ([PRT23 manual](https://download.brother.com/welcome/doch102354/prt23_om01ja.pdf), printed p. 108, p. 110 of the PDF); Ricoma advises digitizers to delete stitches under 0.3 mm ([digitizing tips](https://www.ricoma.cn/cn/ndetail13_539)) |
 | `shortStitchesInARow` | more than 5 stitches in a row, each shorter than 1 mm (a jump, a cut or a thread change ends a row) | warning | five is an estimate: no source gives a limit for runs of tiny stitches; Wilcom's Shortening effect shortens up to five satin stitches in a row on a tight curve, a setting of that effect, not a quality limit ([help](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm)); 1 mm is Melco's machine manual's general minimum |
-| `layers` | three or more sewing units over one 1 mm square (the square an estimate; a stitch is counted at most at 64 points, every half millimetre along one up to 32 mm long, and at most 4 million squares are counted, bounds on the work a file can ask for) | warning | Brother's PRT51 manual: stitching sewn over three times or more can break the thread or the needle ([manual](https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf)) |
+| `layers` | three or more sewing units over one 1 mm square (the square an estimate; a stitch is counted at most at 64 points, every half millimetre along one up to 32 mm long, and at most 4 million squares are counted, bounds on the work a file can ask for) | warning | Brother's PRT51 manual: stitching sewn over three times or more can break the thread or the needle ([manual](https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf)); Melco's design checker names "too many layers" without a number ([user manual](http://www.melco-service.com/docs/DSv11_Manual.pdf), p. 38) |
 | `threadMismatch` | a thread past ΔE 10 as shown, as `embroidery.threads` flags it | warning | the project owner's choice (Threads, above) |
 | `notSewn` | what the plan leaves out or approximates: its warnings (type, images, live art, patterns, gradients) | warning | What is not stitched, below |
 | `formatColors` | more colour blocks than the format holds: PES and PEC 255 (the PEC header counts them in a byte), VP3 65,535 (a 16-bit word); DST, TAP, T01, EXP and JEF have no such limit | error | EduTechWiki's [PEC page](https://edutechwiki.unige.ch/en/Embroidery_format_PEC); for VP3 the KDE Community Wiki ([VP3](https://community.kde.org/Projects/Liberty/File_Formats/Viking_Pfaff)) and Jason Weiler ([VP3 File Format](http://www.jasonweiler.com/VP3FileFormatInfo.html)), while EduTechWiki's [VP3 page](https://edutechwiki.unige.ch/en/Embroidery_format_VP3) gives the summary's count as a byte (a reader that takes it so would miscount a design of 256 blocks or more); `Format::max_colors` |
 | `machineStitches` | more than 500,000 needle points | info | Brother PR680W's manual: the `.pes` files it shows ([specifications](https://download.brother.com/welcome/doch102285/884t23_om01en.pdf)); one machine's limit, not the format's |
 | `machineColorChanges` | more than 127 colour changes | info | the same manual |
 
-Not checked: "density too tight" and "too many needle penetrations in an area", which Melco's
-design checker names without a number; the answer lists them under `notChecked`.
+Not checked: "density too tight", "too many needle penetrations in an area" and "too many or too
+few tie stitches" (missed trims or starts), which Melco's design checker names without a number;
+the answer lists them under `notChecked`. Melco's checker also names "too many layers" without a
+number: the second source of `layers`.
 
 What the rules find on the real designs (11 artworks digitized at the person's size, and the
 person's Ink/Stitch files opened as stitches; `crates/engine/tests/embroidery_planning.rs` prints

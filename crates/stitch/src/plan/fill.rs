@@ -87,7 +87,7 @@ pub(super) fn fill_from(path: &BezPath, rule: FillRule, p: &Params, from: Option
     let grid = Grid::new(&outlines);
     let shape = Area { outlines: &outlines, rule, grid: grid.as_ref() };
     let mut travels = Travels::new(shape);
-    sew_area(shape, &mut travels, &p, &[], &mut runs);
+    sew_area(shape, &mut travels, &p, &[], &mut runs, &|_| 0.0);
     runs.join(&p)
 }
 
@@ -112,7 +112,11 @@ pub(super) fn closed_subpaths(path: &BezPath) -> Vec<SubPath> {
 /// inside the area `travels` crosses (`rows` itself, or a larger shape that holds it). When
 /// `toward` names places sewn next, the top rows end as near one of them as their order allows
 /// ([`sew`]).
-fn sew_area(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, toward: &[Point], runs: &mut Runs) {
+///
+/// `finished` measures how much of a way lies over other parts of the shape already sewn (a fill with
+/// narrow columns sews its pieces one after another): what a travel shows there counts against
+/// [`MAX_SEEN`], in the underlay's approach and the top rows' alike.
+fn sew_area(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, toward: &[Point], runs: &mut Runs, finished: &dyn Fn(&[Point]) -> f64) {
     // A fill's underlay: an edge run, and the tatami layer (by its size, or whatever its size).
     let tatami = match p.underlay {
         Underlay::None => None,
@@ -121,9 +125,9 @@ fn sew_area(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, toward: &[Poi
         Underlay::EdgeZigzag | Underlay::EdgeTatami => Some(Tatami::Always),
     };
     if let Some(tatami) = tatami {
-        edge_runs(rows, travels, p, runs);
+        edge_runs(rows, travels, p, runs, finished);
         if tatami != Tatami::Never {
-            tatami_underlay(rows, travels, p, tatami == Tatami::Always, runs);
+            tatami_underlay(rows, travels, p, tatami == Tatami::Always, runs, finished);
         }
     }
     let axes = Axes::new(p.angle);
@@ -132,7 +136,7 @@ fn sew_area(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, toward: &[Poi
     {
         let layer = Layer { axes, spacing: p.density, inset: 0.0 };
         let regions = layer.regions(rows, lo, hi, p);
-        sew(&regions, travels, MAX_SEEN, true, p, toward, runs);
+        sew(&regions, travels, MAX_SEEN, true, p, toward, runs, finished);
     }
 }
 
@@ -196,8 +200,10 @@ pub(crate) fn fill_with_columns(
             Some(&Part::Piece(i)) => {
                 // It ends as near the part sewn next as it can.
                 let toward = order.get(step + 1).and_then(|&next| contacts.get(next)).cloned().unwrap_or_default();
+                // Its travels show where they cross a piece already sewn, as a column's do.
+                let finished = |route: &[Point]| areas.iter().zip(&sewn).filter(|(_, s)| **s).map(|(a, _)| inside(*a, route)).sum::<f64>();
                 if let Some(&area) = areas.get(i) {
-                    sew_area(area, &mut travels, &fill, &toward, &mut runs);
+                    sew_area(area, &mut travels, &fill, &toward, &mut runs, &finished);
                 }
                 if let Some(s) = sewn.get_mut(i) {
                     *s = true;
@@ -388,9 +394,9 @@ fn inside(shape: Area<'_>, route: &[Point]) -> f64 {
 }
 
 /// An edge run along each outline of `rows`, to hold the fabric under the fill: each starts at the
-/// corner nearest the needle, and is reached by travelling inside the shape (hidden under the fill,
-/// so of any length).
-fn edge_runs(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
+/// corner nearest the needle, and is reached by travelling inside the shape (hidden under the fill
+/// to come, so of any length, except over other parts already sewn, `finished`).
+fn edge_runs(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut Runs, finished: &dyn Fn(&[Point]) -> f64) {
     for sub in rows.outlines {
         // The corner nearest the needle (an outline is closed).
         let start = runs.here_inside().map(|h| sub.nearest(h).0);
@@ -401,7 +407,7 @@ fn edge_runs(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut R
         }
         let under = resample(&pts, UNDERLAY_STITCH, true);
         let Some(&first) = under.first() else { continue };
-        let travel = runs.approach(travels, first, first, f64::INFINITY, &|_| 0.0, p);
+        let travel = runs.approach(travels, first, first, MAX_SEEN, finished, p);
         runs.push(under, travel);
     }
 }
@@ -455,7 +461,7 @@ enum Tatami {
 
 /// A large fill's second underlay (any fill's when `always`): sparse tatami rows across the top
 /// rows' direction, kept a little inside the edge of `shape` so they never peek out.
-fn tatami_underlay(shape: Area<'_>, travels: &mut Travels<'_>, p: &Params, always: bool, runs: &mut Runs) {
+fn tatami_underlay(shape: Area<'_>, travels: &mut Travels<'_>, p: &Params, always: bool, runs: &mut Runs, finished: &dyn Fn(&[Point]) -> f64) {
     // Under the top stitching, the underlay needs no pull compensation: it stays inside the edge.
     let under = Params {
         angle: p.angle + UNDERLAY_TURN,
@@ -474,7 +480,8 @@ fn tatami_underlay(shape: Area<'_>, travels: &mut Travels<'_>, p: &Params, alway
     let layer = Layer { axes, spacing: under.density, inset: TATAMI_UNDERLAY_INSET };
     let regions = layer.regions(shape, h.0, h.1, &under);
     // Under the top stitching, a travel of any length is hidden: the nearest region next will do.
-    sew(&regions, travels, f64::INFINITY, false, &under, &[], runs);
+    // (What it crosses of other parts already sewn, `finished`, weighs against a way, unlimited.)
+    sew(&regions, travels, f64::INFINITY, false, &under, &[], runs, finished);
 }
 
 /// One layer of rows: their direction, the distance between them, and how far they stay inside
@@ -768,7 +775,17 @@ const MAX_SEARCHED: usize = 200;
 /// which orders a fill's fragments by a recursive walk from the one where sewing ends, so that
 /// travels between fragments run where the stitching still to come covers them: in a letter E
 /// with vertical rows, the arms are sewn first, each towards the spine, and the spine last.
-fn sew(regions: &Regions, travels: &mut Travels<'_>, max_seen: f64, search: bool, p: &Params, toward: &[Point], runs: &mut Runs) {
+#[allow(clippy::too_many_arguments)]
+fn sew(
+    regions: &Regions,
+    travels: &mut Travels<'_>,
+    max_seen: f64,
+    search: bool,
+    p: &Params,
+    toward: &[Point],
+    runs: &mut Runs,
+    finished: &dyn Fn(&[Point]) -> f64,
+) {
     let n = regions.list.len();
     let mut sewn = vec![false; n];
     let mut neighbours: Vec<Vec<(usize, bool)>> = vec![Vec::new(); n];
@@ -805,7 +822,7 @@ fn sew(regions: &Regions, travels: &mut Travels<'_>, max_seen: f64, search: bool
         for root in orders {
             let mut local = Runs::continuing(runs);
             let mut done = sewn.clone();
-            let mut ctx = Sewing { regions, travels: &mut *travels, max_seen, p };
+            let mut ctx = Sewing { regions, travels: &mut *travels, max_seen, p, finished };
             match root {
                 None => {
                     let mut left: Vec<usize> = piece.clone();
@@ -913,6 +930,8 @@ struct Sewing<'r, 't, 'a> {
     travels: &'t mut Travels<'a>,
     max_seen: f64,
     p: &'r Params,
+    /// How much of a way lies over other parts of the shape already sewn ([`sew_area`]).
+    finished: &'r dyn Fn(&[Point]) -> f64,
 }
 
 impl Sewing<'_, '_, '_> {
@@ -970,7 +989,8 @@ impl Sewing<'_, '_, '_> {
         let (descending, forward, _) = nearest_start(region, descending, runs.here_inside(), axes);
         let rows = region.runs(descending, forward, axes, p);
         if let Some((first, first_inside)) = rows.first().and_then(|run| Some((*run.pts.first()?, run.first_inside))) {
-            let seen = |route: &[Point]| regions.cover.seen(route, sewn);
+            let finished = self.finished;
+            let seen = |route: &[Point]| regions.cover.seen(route, sewn) + finished(route);
             let into = runs.approach(self.travels, first, first_inside, max_seen, &seen, p);
             for (k, run) in rows.into_iter().enumerate() {
                 let travel = match (k, runs.here(), runs.here_inside(), run.pts.first()) {
@@ -1033,4 +1053,45 @@ pub(super) fn row_points(a: f64, b: f64, phase: f64, p: &Params) -> Vec<f64> {
     }
     out.push(b);
     out
+}
+
+#[cfg(test)]
+mod tests_finished {
+    use vectorcraft_geom::{BezPath, FillRule, Point};
+
+    use super::super::{Params, Style};
+    use super::*;
+    use crate::Command;
+
+    /// A closed rectangle from `(x0, y0)` to `(x1, y1)`.
+    fn rect(x0: f64, y0: f64, x1: f64, y1: f64) -> BezPath {
+        let mut p = BezPath::new();
+        p.move_to((x0, y0));
+        p.line_to((x1, y0));
+        p.line_to((x1, y1));
+        p.line_to((x0, y1));
+        p.close_path();
+        p
+    }
+
+    /// A piece of a fill reached across other parts already sewn: its travel shows there, and past
+    /// [`MAX_SEEN`] the needle lifts instead; across nothing sewn, it travels hidden.
+    #[test]
+    fn a_travel_over_parts_already_sewn_shows() {
+        let p = Params::for_style(Style::Fill);
+        // A bar 60 mm long; the piece to sew is its right end, the needle 48 mm away at its left.
+        let (whole_subs, piece_subs) = (closed_subpaths(&rect(0.0, 0.0, 60.0, 10.0)), closed_subpaths(&rect(50.0, 0.0, 60.0, 10.0)));
+        let (whole_outlines, piece_outlines) = (outlines(&whole_subs), outlines(&piece_subs));
+        let whole = Area { outlines: &whole_outlines, rule: FillRule::NonZero, grid: None };
+        let piece = Area { outlines: &piece_outlines, rule: FillRule::NonZero, grid: None };
+        let lifts = |finished: &dyn Fn(&[Point]) -> f64| {
+            let mut runs = Runs::from(Some(Point::new(2.0, 5.0)));
+            runs.push(vec![Point::new(1.0, 5.0), Point::new(2.0, 5.0)], Travel::Auto);
+            let mut travels = Travels::new(whole);
+            sew_area(piece, &mut travels, &p, &[], &mut runs, finished);
+            runs.join(&p).iter().filter(|s| s.command == Command::Jump).count()
+        };
+        assert_eq!(lifts(&|_| 0.0), 0, "across nothing sewn, a hidden travel");
+        assert!(lifts(&|route| length(route, false)) > 0, "across 48 mm already sewn, a lift");
+    }
 }

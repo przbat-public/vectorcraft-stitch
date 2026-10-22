@@ -3,15 +3,16 @@
 //! literal stitches read from a file) and the settings each is planned with, clip groups, the
 //! colour of each block, and the limit on a design's size.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
 use vectorcraft_color::Paint;
 use vectorcraft_doc::cancel;
 use vectorcraft_doc::embroidery::{StitchRun, ThreadPalette};
-use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind};
+use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind, StrokeAlign, StrokeLayer};
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Shape, kurbo};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
+use vectorcraft_render::effects::stroke::outline_region;
 use vectorcraft_stitch::plan::{self, Style};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
@@ -85,6 +86,8 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
 /// afresh.
 pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>) -> Result<DesignPlan, PlanError> {
     let seq = Sequence::new(opts.params(Style::Running, NO_WIDTH));
+    // The document as it prints: appearances expanded, what can't be sewn said.
+    let sewable = super::printed::sewable(doc);
     // Not about the art: said, but not counted as art left out.
     let mut notes = Vec::new();
     if let Some(ThreadPalette::Unknown(palette)) = doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()) {
@@ -93,12 +96,14 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
             "the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette"
         ));
     }
-    let warnings = Vec::new();
+    let warnings: Vec<String> = sewable.warnings.iter().map(|w| w.to_string()).collect();
+    let printed = &*sewable.doc;
     let mut symbols = HashMap::new();
-    let total = doc.layers.iter().map(|l| units_under(doc, l, 0, &mut symbols)).fold(0u64, u64::saturating_add);
+    let total = printed.layers.iter().map(|l| units_under(printed, l, 0, &mut symbols)).fold(0u64, u64::saturating_add);
     let progress = Progress { done: 0, total };
     let mut d = Digitizer {
-        doc,
+        doc: printed,
+        expanded: &sewable.expanded,
         opts,
         seq,
         warnings,
@@ -139,7 +144,10 @@ struct Sewing<'a> {
 
 /// The document walk that plans each object's stitches.
 struct Digitizer<'a> {
+    /// The document as it prints ([`super::printed::sewable`]).
     doc: &'a Document,
+    /// The objects expanded in it: a person selects each of them, whatever pieces it became.
+    expanded: &'a HashSet<NodeId>,
     /// The export's options. What a unit is sewn with comes from [`Digitizer::settings`]; these
     /// are read directly only for what belongs to the design rather than to a unit: the jump and
     /// trim lengths between objects, and across the cuts in a literal run.
@@ -272,11 +280,19 @@ impl<'a> Digitizer<'a> {
     fn node(&mut self, n: &Node) {
         // Nothing more is planned once the design can't be (too many stitches, cancelled): the
         // rest of the walk would only copy symbol art.
-        if !n.visible || self.failed.is_some() {
+        // Nothing at no opacity prints.
+        if !n.visible || n.opacity <= 0.0 || self.failed.is_some() {
             return;
         }
         let added = self.seq.added();
+        // The pieces an expanded object became are placed by it, as a symbol's art is by its
+        // instance.
+        let outer = self.instance;
+        if outer.is_none() && self.expanded.contains(&n.id) {
+            self.instance = Some(n.id);
+        }
         self.kind(n);
+        self.instance = outer;
         // An object (or group) that asks for it: the thread is cut after its last stitch.
         if n.extras().embroidery.as_deref().is_some_and(|e| e.trim_after) && self.seq.added() > added {
             self.seq.trim_after_since(added);
@@ -324,7 +340,8 @@ impl<'a> Digitizer<'a> {
                     self.warn(PLACEMENTS_LEFT_OUT);
                     return;
                 }
-                let mut art = (*sym.art).clone();
+                // Its art as the instance shows it: stained when the instance is.
+                let mut art = vectorcraft_brush::instance_art(&sym.art, n);
                 art.transform(*xf, false);
                 self.nest += 1;
                 // Its art is placed by the outermost instance: the one in the document.
@@ -488,6 +505,18 @@ impl<'a> Digitizer<'a> {
                 }
                 AppearanceItem::Stroke(stroke) => {
                     let width = pt_to_mm(stroke.width).max(0.0);
+                    // A stroke that paints an area its path doesn't run down the middle of
+                    // (dashed, aligned inside or outside, of varying width, with arrowheads): that
+                    // area, as on the canvas, is filled, its narrow parts satin columns that
+                    // follow it; unless the `stitch` option sews it along its path.
+                    if paints_off_its_path(stroke, bp) && matches!(opts.forced(), None | Some(Style::Fill)) {
+                        let outline = outline_region(&PathData::from_bezpath(bp), rule, stroke).to_bezpath();
+                        let (area, area_rule) = self.expanded(&in_mm(&outline), FillRule::NonZero, opts.expand());
+                        let (area, area_rule) = self.clipped(&area, area_rule);
+                        let sewing = Sewing { unit, opts, style: Style::Fill, why: Choice::StrokeOutlined, width: NO_WIDTH, clip_stitches: false };
+                        self.colour(sewing, &area, area_rule, &stroke.paint);
+                        continue;
+                    }
                     match opts.forced() {
                         // A stroke filled is the area it paints, filled: its outline at its width,
                         // caps and joins (not the inside of the path it follows).
@@ -674,6 +703,18 @@ impl<'a> Digitizer<'a> {
 
 /// Whether an appearance item is painted at all (not `none`): only painted items are sewn, and
 /// counted as the plan's progress.
+/// Whether stroke `st` of path `bp` paints an area its path doesn't run down the middle of: dashed,
+/// aligned inside or outside a closed path, of varying width, or with arrowheads.
+fn paints_off_its_path(st: &StrokeLayer, bp: &BezPath) -> bool {
+    let closed = bp.elements().iter().any(|e| matches!(e, PathEl::ClosePath));
+    st.dash.is_some()
+        || st.profile.is_some()
+        || st.pressure.is_some()
+        || st.start_arrow.is_some()
+        || st.end_arrow.is_some()
+        || (closed && st.align != StrokeAlign::Center)
+}
+
 fn painted(item: &AppearanceItem) -> bool {
     let paint = match item {
         AppearanceItem::Fill(f) => &f.paint,

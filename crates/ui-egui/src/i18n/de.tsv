@@ -4798,6 +4798,8 @@ effect	Regular	Regelmäßig
 @msg	placed documents are not stitched: embed them first (Links › Embed)	platzierte Dokumente werden nicht gestickt: betten Sie sie zuerst ein (Verknüpfungen › Einbetten)
 @msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	verflochtene Objekte werden nicht gestickt: wandeln Sie sie zuerst zurück (Objekt › Verflechten › Zurückwandeln)
 @msg	symbols placed more than 100,000 times (placing one another) are left out past that	Symbole, die mehr als 100.000-mal (ineinander) platziert sind, werden darüber hinaus ausgelassen
+@msg	shadows, glows, blurs and other raster effects are not stitched: the art under them is	Schatten, Schein, Weichzeichner und andere Rastereffekte werden nicht gestickt: die Grafik darunter schon
+@msg	opacity masks are not stitched: the masked art is sewn whole	Deckkraftmasken werden nicht gestickt: die maskierte Grafik wird ganz gestickt
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	ein negativer expand-Wert hat von einigen gefüllten Formen nichts übrig gelassen, daher werden sie nicht gestickt: verkleinern Sie sie weniger
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	Verläufe und Muster werden in der Farbe ihres ersten Farbstopps gemalt; eine Stickerei näht ein Garn je Block
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	Konturen breiter als {widest} mm werden als Satinsäulen von {widest} mm Breite genäht: füllen Sie sie stattdessen (stitch fill)

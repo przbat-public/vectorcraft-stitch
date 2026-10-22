@@ -5248,6 +5248,8 @@ swatch	Bright Violet	Felviolet
 @msg	placed documents are not stitched: embed them first (Links › Embed)	geplaatste documenten worden niet geborduurd: sluit ze eerst in (Koppelingen › Insluiten)
 @msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	verstrengelde objecten worden niet geborduurd: geef ze eerst vrij (Object › Verstrengelen › Vrijgeven)
 @msg	symbols placed more than 100,000 times (placing one another) are left out past that	symbolen die meer dan 100.000 keer (in elkaar) geplaatst zijn, worden daarboven weggelaten
+@msg	shadows, glows, blurs and other raster effects are not stitched: the art under them is	schaduwen, gloed, vervaging en andere rastereffecten worden niet geborduurd: de illustratie eronder wel
+@msg	opacity masks are not stitched: the masked art is sewn whole	dekkingsmaskers worden niet geborduurd: de gemaskeerde illustratie wordt in zijn geheel geborduurd
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	een negatieve expand-waarde liet van sommige gevulde vormen niets over, dus worden ze niet geborduurd: verklein ze minder
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	verlopen en patronen worden geschilderd in de kleur van hun eerste stoppunt; een borduurwerk naait één garen per blok
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	contouren breder dan {widest} mm worden genaaid als satijnkolommen van {widest} mm breed: vul ze in plaats daarvan (stitch fill)

@@ -605,8 +605,23 @@ thread; 23 and 28 of them are past 5, and 8 and 12 past 10.
 
 ## What is not stitched
 
-- Type, images and live art (blends, envelopes, meshes, repeats) are left out: they would need
-  their outlines. An export says so in its `warnings`, one line per kind.
+What prints is what is sewn (the project owner's choice, 2026-10-22). Before the walk, a copy of
+the document is made as it prints (`cmd/embroidery/printed.rs`): an object whose appearance is more
+than one fill and one stroke (several, or any of their own opacity, blend mode or effects, live
+effects, a brush, a group's own fills and strokes) is expanded as `effect.expandAppearance` expands
+it (each fill and stroke an object, strokes outlined, brushed strokes their brush art, geometry
+effects baked), symbols' art too. A stroke dashed, aligned inside or outside a closed path, of
+varying width or with arrowheads is sewn as the area it paints, as on the canvas, its narrow parts
+satin columns that follow it (`rule: strokeOutlined`). A symbol instance's art is stained as the
+instance shows it. Art at no opacity isn't sewn. The pieces an expanded object becomes are still
+the object a person selects (`id`).
+
+- Type, images and live art (blends, envelopes, meshes, repeats), placed documents and
+  intertwines are left out: they would need their outlines. An export says so in its `warnings`,
+  one line per kind.
+- Raster effects (drop shadows, glows, blurs, feathers, pixel effects) are left off, the art under
+  them sewn, and an opacity mask isn't sewn, the masked art is, whole: both said in the warnings.
+- Symbols that place one another more than 100,000 times in all are left out past that, said.
 - Gradients and patterns sew in one colour (a gradient in its first stop's; a pattern is left out).
 - Wide satin columns are split stitch by stitch (auto split), not into several narrower columns,
   and are at most 50 mm wide (wider strokes are warned about).

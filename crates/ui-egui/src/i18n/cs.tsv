@@ -5222,6 +5222,8 @@ mark-style	Japanese	Japonské
 @msg	placed documents are not stitched: embed them first (Links › Embed)	umístěné dokumenty se nevyšívají: nejprve je vložte (Propojení › Vložit)
 @msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	propletené objekty se nevyšívají: nejprve je uvolněte (Objekt › Proplést › Uvolnit)
 @msg	symbols placed more than 100,000 times (placing one another) are left out past that	symboly umístěné více než 100 000krát (jeden v druhém) se nad tento počet vynechávají
+@msg	shadows, glows, blurs and other raster effects are not stitched: the art under them is	stíny, záře, rozostření a jiné rastrové efekty se nevyšívají: kresba pod nimi ano
+@msg	opacity masks are not stitched: the masked art is sewn whole	masky krytí se nevyšívají: maskovaná kresba se vyšije celá
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	záporná hodnota expand z některých vyplněných tvarů nic nenechala, proto se nevyšívají: zmenšete je méně
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	přechody a vzorky se malují barvou své první zarážky; výšivka šije jednou nití na blok
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	tahy širší než {widest} mm se šijí jako saténové sloupce široké {widest} mm: místo toho je vyplňte (stitch fill)

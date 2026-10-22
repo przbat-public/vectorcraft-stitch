@@ -183,3 +183,117 @@ fn the_check_summary_counts_rules_and_hits() {
     let short = rules.iter().find(|r| r["id"] == json!("fillStitchShort")).unwrap();
     assert_eq!((&short["hits"], &short["objectCount"]), (&json!(2), &json!(2)));
 }
+
+/// The bounds of a design's needle points, from a DST of the document.
+fn sewn_bounds(s: &mut Session) -> vectorcraft_geom::Rect {
+    let r = run(s, "document.export", json!({"format": "dst"}));
+    Format::Dst.read(&vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap()).unwrap().bounds().unwrap()
+}
+
+/// A stroked square with no fill, `weight` points wide, at (50, 50) and 100 pt a side → its id.
+fn stroked_square(s: &mut Session, weight: f64) -> u64 {
+    run(s, "paint.setFill", json!({"none": true}));
+    run(s, "paint.setStroke", json!({"color": "#2233cc"}));
+    let id = run(s, "shape.rectangle", json!({"x": 50, "y": 50, "width": 100, "height": 100}))["id"].as_u64().unwrap();
+    run(s, "stroke.set", json!({"weight": weight, "ids": [id]}));
+    id
+}
+
+/// A stroke aligned inside a closed path is sewn inside it, where it prints, not centred on the
+/// path; aligned outside, outside it.
+#[test]
+fn an_aligned_stroke_is_sewn_where_it_prints() {
+    let side = vectorcraft_stitch::pt_to_mm(100.0);
+    let band = vectorcraft_stitch::pt_to_mm(10.0);
+    for (align, size) in [("center", side + band), ("inside", side), ("outside", side + 2.0 * band)] {
+        let mut s = blank();
+        let id = stroked_square(&mut s, 10.0);
+        run(&mut s, "stroke.set", json!({"align": align, "ids": [id]}));
+        let b = sewn_bounds(&mut s);
+        assert!((b.width() - size).abs() < 1.0 && (b.height() - size).abs() < 1.0, "{align}: {b:?}, not {size}");
+    }
+}
+
+/// A dashed stroke is sewn dash by dash: each dash a piece of its own, reached by a jump.
+#[test]
+fn a_dashed_stroke_is_sewn_dash_by_dash() {
+    let mut s = blank();
+    let id = stroked_square(&mut s, 6.0);
+    let plain = run(&mut s, "embroidery.stats", json!({}));
+    run(&mut s, "stroke.set", json!({"dash": [20, 20], "ids": [id]}));
+    let dashed = run(&mut s, "embroidery.stats", json!({}));
+    assert!(dashed["jumps"].as_u64().unwrap() >= 5, "{dashed}");
+    assert!(dashed["stitches"].as_u64().unwrap() < plain["stitches"].as_u64().unwrap(), "half the length sewn");
+    let order = run(&mut s, "embroidery.sequence", json!({}));
+    assert_eq!(order["blocks"][0]["units"][0]["rule"], json!("strokeOutlined"));
+}
+
+/// An object with a live effect is sewn as the effect shapes it: an Offset Path of 10 pt sews the
+/// grown shape.
+#[test]
+fn a_live_effect_is_sewn_as_it_shapes_the_art() {
+    let mut s = blank();
+    let id = rect(&mut s, "#cc2222", 50.0, 50.0, 100.0, 100.0);
+    let before = sewn_bounds(&mut s);
+    run(&mut s, "effect.apply", json!({"effect": "path.offsetPath", "params": {"offset": 10}, "ids": [id]}));
+    let after = sewn_bounds(&mut s);
+    let grown = vectorcraft_stitch::pt_to_mm(20.0);
+    assert!((after.width() - before.width() - grown).abs() < 1.0, "{before:?} → {after:?}");
+    // The units are the object's, as a person selects it.
+    let order = run(&mut s, "embroidery.sequence", json!({}));
+    assert_eq!(order["blocks"][0]["units"][0]["id"], json!(id));
+}
+
+/// A group's own stroke is sewn, round the group's art.
+#[test]
+fn a_groups_own_stroke_is_sewn() {
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 50.0, 50.0, 40.0, 40.0);
+    let b = rect(&mut s, "#cc2222", 120.0, 50.0, 40.0, 40.0);
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    let group = run(&mut s, "object.group", json!({}))["id"].as_u64().unwrap();
+    let alone = run(&mut s, "embroidery.threads", json!({}))["blockCount"].clone();
+    run(&mut s, "select.set", json!({"ids": [group]}));
+    run(&mut s, "appearance.addStroke", json!({"ids": [group]}));
+    run(&mut s, "appearance.setItem", json!({"ids": [group], "index": 0, "color": "#2233cc", "weight": 4}));
+    let threads = run(&mut s, "embroidery.threads", json!({}));
+    assert_eq!(alone, json!(1));
+    assert_eq!(threads["blockCount"], json!(2), "the group's blue stroke too: {threads}");
+}
+
+/// A stained symbol instance is sewn in its stain, as it shows.
+#[test]
+fn a_stained_symbol_instance_is_sewn_in_its_stain() {
+    let mut s = blank();
+    let id = rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    run(&mut s, "select.set", json!({"ids": [id]}));
+    let instance = run(&mut s, "symbol.new", json!({"name": "Square"}))["id"].as_u64().unwrap();
+    let plain = run(&mut s, "embroidery.threads", json!({}))["blocks"][0]["thread"]["art"].clone();
+    assert_eq!(plain, json!("#cc2222"));
+    run(&mut s, "select.set", json!({"ids": [instance]}));
+    run(&mut s, "paint.setFill", json!({"color": "#2233cc"}));
+    let stained = run(&mut s, "embroidery.threads", json!({}))["blocks"][0]["thread"]["art"].clone();
+    assert_ne!(stained, plain);
+}
+
+/// What can't be sewn is said: a drop shadow is left off (the art under it sewn), an opacity mask
+/// isn't sewn (the masked art is, whole); art at no opacity isn't sewn at all.
+#[test]
+fn raster_effects_masks_and_no_opacity_are_said_or_left_out() {
+    let mut s = blank();
+    let id = rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+    run(&mut s, "effect.apply", json!({"effect": "stylize.dropShadow", "ids": [id]}));
+    let v = run(&mut s, "embroidery.threads", json!({}));
+    assert_eq!(v["blockCount"], json!(1), "the art under the shadow");
+    assert!(warnings(&v).iter().any(|w| w.starts_with("shadows, glows, blurs")), "{v}");
+    let mut s = blank();
+    let art = rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+    rect(&mut s, "#ffffff", 30.0, 30.0, 20.0, 20.0);
+    run(&mut s, "select.all", json!({}));
+    run(&mut s, "transparency.makeOpacityMask", json!({}));
+    let v = run(&mut s, "embroidery.threads", json!({}));
+    assert!(warnings(&v).iter().any(|w| w.starts_with("opacity masks are not stitched")), "{v}");
+    assert_eq!(v["blockCount"], json!(1), "the masked art, whole");
+    run(&mut s, "transparency.set", json!({"ids": [art], "opacity": 0}));
+    assert_eq!(run(&mut s, "embroidery.threads", json!({}))["blockCount"], json!(0), "nothing prints at no opacity");
+}

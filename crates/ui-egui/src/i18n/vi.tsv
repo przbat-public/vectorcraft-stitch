@@ -4816,6 +4816,8 @@ theme	Appearance	Giao diện
 @msg	placed documents are not stitched: embed them first (Links › Embed)	tài liệu được đặt vào không được thêu: hãy nhúng chúng trước (Liên kết › Nhúng)
 @msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	đối tượng đan xen không được thêu: hãy giải phóng chúng trước (Đối tượng › Đan xen › Giải phóng)
 @msg	symbols placed more than 100,000 times (placing one another) are left out past that	các biểu tượng được đặt hơn 100.000 lần (lồng nhau) sẽ bị bỏ qua sau mức đó
+@msg	shadows, glows, blurs and other raster effects are not stitched: the art under them is	bóng đổ, phát sáng, làm mờ và các hiệu ứng raster khác không được thêu: phần hình bên dưới vẫn được thêu
+@msg	opacity masks are not stitched: the masked art is sewn whole	mặt nạ độ mờ không được thêu: phần hình bị che được thêu toàn bộ
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	giá trị expand âm không để lại gì của một số hình được tô, nên chúng không được thêu: hãy thu nhỏ ít hơn
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	chuyển sắc và họa tiết được tô bằng màu của điểm dừng đầu tiên; một mẫu thêu may một sợi chỉ cho mỗi khối
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	nét rộng hơn {widest} mm được may thành cột satin rộng {widest} mm: hãy tô chúng thay vào đó (stitch fill)

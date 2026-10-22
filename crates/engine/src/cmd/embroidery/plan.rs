@@ -76,6 +76,9 @@ pub enum Choice {
     StrokeFilled,
     /// The `stitch` option forced the style.
     Forced,
+    /// A stroke that paints an area its path doesn't run down the middle of (dashed, aligned,
+    /// of varying width, with arrowheads): that area, as on the canvas, filled.
+    StrokeOutlined,
     /// `stitch: satin` on a fill: a satin needs a width a fill doesn't have, so the fill is
     /// filled as a fill is without the option (its narrow parts as satin columns).
     SatinFilled,

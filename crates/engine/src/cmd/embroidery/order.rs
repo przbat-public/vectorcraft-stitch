@@ -60,6 +60,14 @@ fn rule(u: &Unit) -> (&'static str, Value, String) {
             ("narrowStroke", json!({"satinFrom": SATIN_MIN_WIDTH}), format!("a stroke narrower than {SATIN_MIN_WIDTH} mm is a running line"))
         }
         Choice::StrokeFilled => ("strokeFilled", json!({}), "stitch fill: the area the stroke paints is filled".into()),
+        Choice::StrokeOutlined => {
+            let why = if u.columns.is_some() {
+                "a dashed, aligned, varying or arrowed stroke: the area it paints is filled, its narrow parts as satin columns"
+            } else {
+                "a dashed, aligned, varying or arrowed stroke: the area it paints is filled"
+            };
+            ("strokeOutlined", json!({}), why.into())
+        }
         Choice::Forced => {
             let stitch = u.params.map(|p| p.style).map_or("auto", stitch_id);
             ("forced", json!({"stitch": stitch}), format!("stitch {stitch}"))

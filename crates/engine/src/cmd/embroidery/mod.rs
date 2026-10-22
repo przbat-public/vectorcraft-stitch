@@ -20,6 +20,7 @@ mod measure;
 pub(crate) mod options;
 mod order;
 pub mod plan;
+mod printed;
 mod sequence;
 pub(crate) mod service;
 mod stats;

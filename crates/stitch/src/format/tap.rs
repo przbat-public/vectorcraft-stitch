@@ -1,11 +1,12 @@
-//! Happy TAP: Tajima DST's 3-byte records without DST's 512-byte header (EduTechWiki: TAP
-//! "contains DST stitches with no header", and a DST with its first 512 bytes deleted is one).
+//! Happy TAP and Wilcom T01: Tajima DST's 3-byte records without DST's 512-byte header
+//! (EduTechWiki: each "contains DST stitches with no header", and a DST with its first 512 bytes
+//! deleted is one). The two are the same bytes under two names.
 //!
 //! The records are DST's ([`super::dst`]): x and y deltas of up to 121 tenths of a millimetre as
 //! balanced-ternary bits, a jump, a colour change and the end in the third byte, y counting
 //! upwards, a trim written as three small jumps that go nowhere. With no header there is no name,
-//! no count and no size: a reader takes the records as they come, and a TAP is recognised by its
-//! extension.
+//! no count and no size: a reader takes the records as they come, and a TAP or a T01 is recognised
+//! by its extension.
 //!
 //! References: EduTechWiki, *Embroidery format* (edutechwiki.unige.ch/en/Embroidery_format) and
 //! *Embroidery format DST* (…/Embroidery_format_DST). pyembroidery 1.5.1 (MIT) served only as an
@@ -20,6 +21,16 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
 
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
     dst::read_records(bytes, String::new(), "TAP")
+}
+
+/// A T01 file: the same records as a TAP ([`write`]).
+pub fn write_t01(p: &Pattern) -> Result<Vec<u8>> {
+    write(p)
+}
+
+/// A T01 file, read as a TAP is ([`read`]); its errors name T01.
+pub fn read_t01(bytes: &[u8]) -> Result<Pattern> {
+    dst::read_records(bytes, String::new(), "T01")
 }
 
 #[cfg(test)]
@@ -61,6 +72,16 @@ mod tests {
         assert_eq!((back.name.as_str(), from_dst.name.as_str()), ("", "Tap"));
         assert_eq!(back.points().filter(|s| s.command == Command::Trim).count(), 1);
         assert_eq!(back.sewn(), p.sewn());
+    }
+
+    /// A T01 is a TAP under another name: the same bytes, read back the same.
+    #[test]
+    fn a_t01_is_a_tap() {
+        let p = design();
+        let (t01, tap) = (write_t01(&p).expect("writes"), write(&p).expect("writes"));
+        assert_eq!(t01, tap);
+        assert_eq!(read_t01(&t01).expect("reads"), read(&tap).expect("reads"));
+        assert!(read_t01(&[]).expect_err("nothing").to_string().contains("T01"));
     }
 
     /// Bytes that are no whole record are left over, not read; no records at all is an error.

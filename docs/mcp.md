@@ -4285,7 +4285,7 @@ the entry names and decodes the codes that VectorCraft's default shortcuts agree
 
 ## Embroidery
 
-The document's art is stitched by `document.export` to `dst`, `tap`, `exp`, `pes`, `pec`, `jef` or `vp3`, with the embroidery options
+The document's art is stitched by `document.export` to `dst`, `tap`, `t01`, `exp`, `pes`, `pec`, `jef` or `vp3`, with the embroidery options
 `document.formats` lists for those formats (`stitchStyle`, `density`, `trimLength`…), and `document.open` reads such a
 file back as art, one group per thread. The whole feature is described in [embroidery.md](embroidery.md).
 

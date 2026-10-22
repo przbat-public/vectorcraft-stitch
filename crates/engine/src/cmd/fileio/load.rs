@@ -88,8 +88,8 @@ pub fn detect(name: &str, bytes: &[u8]) -> Option<&'static Format> {
     if vectorcraft_cad::is_dxf(bytes) {
         return format("dxf");
     }
-    // Brother's PES and PEC files and VP3 files say so; DST, TAP, EXP and JEF have no magic and go
-    // by extension.
+    // Brother's PES and PEC files and VP3 files say so; DST, TAP, T01, EXP and JEF have no magic and
+    // go by extension.
     if let Some(kind) = vectorcraft_stitch::format::Format::sniff(bytes) {
         return format(kind.id());
     }

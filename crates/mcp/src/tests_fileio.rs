@@ -81,6 +81,7 @@ fn export_tool_lists_engine_formats_and_options() {
             "psd",
             "dst",
             "tap",
+            "t01",
             "exp",
             "pes",
             "pec",

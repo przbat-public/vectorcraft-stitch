@@ -1,5 +1,5 @@
-//! Embroidery through the commands: `document.export` stitches the art into DST, TAP, EXP, PES,
-//! PEC, JEF and VP3, `document.open` reads a design back as art, the options change the plan, and the
+//! Embroidery through the commands: `document.export` stitches the art into DST, TAP, T01, EXP,
+//! PES, PEC, JEF and VP3, `document.open` reads a design back as art, the options change the plan, and the
 //! format table lists them all.
 
 use serde_json::{Value, json};
@@ -137,6 +137,17 @@ fn a_pec_is_the_pes_machine_part_and_opens_by_its_magic_bytes() {
     assert_eq!(r["format"].as_str(), Some("pec"));
     let palette = s.doc().unwrap().doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(|p| p.id());
     assert_eq!(palette, Some("pec"));
+}
+
+/// A T01 is a TAP under Wilcom's name: the same bytes, a DST's records without its header.
+#[test]
+fn a_t01_is_a_tap_and_a_dst_without_its_header() {
+    let mut s = art();
+    let (dst, tap, t01) = (export(&mut s, "dst", json!({})), export(&mut s, "tap", json!({})), export(&mut s, "t01", json!({})));
+    assert_eq!(t01, tap);
+    assert_eq!(&t01[..], &dst[512..]);
+    let r = open(&mut s, "design.t01", &t01).expect("opens");
+    assert_eq!(r["format"].as_str(), Some("t01"));
 }
 
 /// A VP3 says what it is in its first bytes too, and carries each block's own colour: the art's,

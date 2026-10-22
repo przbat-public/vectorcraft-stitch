@@ -1,4 +1,4 @@
-//! The machine formats: DST, TAP (DST's records alone), EXP, PES (its PEC part), PEC on its own,
+//! The machine formats: DST, TAP and T01 (DST's records alone), EXP, PES (its PEC part), PEC on its own,
 //! JEF and VP3 — read and written here.
 //!
 //! Files count coordinates in tenths of a millimetre; this crate counts millimetres. The y axis
@@ -54,6 +54,8 @@ pub enum Format {
     Dst,
     /// Happy TAP: DST's records without its header.
     Tap,
+    /// Wilcom T01: the same bytes as a TAP, under Wilcom's name.
+    T01,
     /// Melco EXP: stitch records only, no header at all.
     Exp,
     /// Brother PES: a PES part (for the design app) and the PEC part machines read.
@@ -69,13 +71,14 @@ pub enum Format {
 
 impl Format {
     /// Every format, as menus list them.
-    pub const ALL: [Self; 7] = [Self::Dst, Self::Tap, Self::Exp, Self::Pes, Self::Pec, Self::Jef, Self::Vp3];
+    pub const ALL: [Self; 8] = [Self::Dst, Self::Tap, Self::T01, Self::Exp, Self::Pes, Self::Pec, Self::Jef, Self::Vp3];
 
     /// The `format` parameter value.
     pub fn id(self) -> &'static str {
         match self {
             Self::Dst => "dst",
             Self::Tap => "tap",
+            Self::T01 => "t01",
             Self::Exp => "exp",
             Self::Pes => "pes",
             Self::Pec => "pec",
@@ -90,6 +93,7 @@ impl Format {
             Self::Dst => "Tajima DST",
             Self::Exp => "Melco EXP",
             Self::Tap => "Happy TAP",
+            Self::T01 => "Wilcom T01",
             Self::Pes => "Brother PES",
             Self::Pec => "Brother PEC",
             Self::Jef => "Janome JEF",
@@ -103,17 +107,17 @@ impl Format {
     }
 
     /// The thread palette the format numbers its threads in: Brother's for PES (its PEC part) and
-    /// PEC, Janome's for JEF; `None` for DST, TAP and EXP, which name no colours, and for VP3,
+    /// PEC, Janome's for JEF; `None` for DST, TAP, T01 and EXP, which name no colours, and for VP3,
     /// which writes each thread's own colour.
     pub fn palette(self) -> Option<thread::Palette> {
         match self {
-            Self::Dst | Self::Exp | Self::Tap | Self::Vp3 => None,
+            Self::Dst | Self::Exp | Self::Tap | Self::T01 | Self::Vp3 => None,
             Self::Pes | Self::Pec => Some(thread::Palette::Pec),
             Self::Jef => Some(thread::Palette::Jef),
         }
     }
 
-    /// The format `id` names (`dst`, `exp`, `tap`, `pes`, `pec`, `jef`, `vp3`).
+    /// The format `id` names (`dst`, `tap`, `t01`, `exp`, `pes`, `pec`, `jef`, `vp3`).
     pub fn from_id(id: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|f| f.id() == id)
     }
@@ -125,7 +129,7 @@ impl Format {
     }
 
     /// The format a file's first bytes announce, when they announce one: Brother's and VP3 files
-    /// carry a magic string; DST, TAP, EXP and JEF are recognised by their extension.
+    /// carry a magic string; DST, TAP, T01, EXP and JEF are recognised by their extension.
     pub fn sniff(bytes: &[u8]) -> Option<Self> {
         if bytes.starts_with(b"#PES") {
             Some(Self::Pes)
@@ -144,6 +148,7 @@ impl Format {
             Self::Dst => dst::read(bytes),
             Self::Exp => exp::read(bytes),
             Self::Tap => tap::read(bytes),
+            Self::T01 => tap::read_t01(bytes),
             Self::Pes | Self::Pec => pes::read(bytes),
             Self::Jef => jef::read(bytes),
             Self::Vp3 => vp3::read(bytes),
@@ -159,6 +164,7 @@ impl Format {
             Self::Dst => dst::write(pattern),
             Self::Exp => exp::write(pattern),
             Self::Tap => tap::write(pattern),
+            Self::T01 => tap::write_t01(pattern),
             Self::Pes => pes::write(pattern),
             Self::Pec => pes::write_pec(pattern),
             Self::Jef => jef::write(pattern),
@@ -347,11 +353,11 @@ mod tests {
     use super::*;
 
     /// PES and PEC number Brother's threads and JEF Janome's, as their readers name them; DST, TAP,
-    /// EXP and VP3 number none.
+    /// T01, EXP and VP3 number none.
     #[test]
     fn each_format_numbers_its_palettes_threads() {
         let (pec, jef) = (Some(thread::Palette::Pec), Some(thread::Palette::Jef));
-        assert_eq!(Format::ALL.map(Format::palette), [None, None, None, pec, pec, jef, None]);
+        assert_eq!(Format::ALL.map(Format::palette), [None, None, None, None, pec, pec, jef, None]);
         let mut pattern = Pattern::default();
         let stitches = [(0.0, 0.0), (5.0, 0.0), (5.0, 5.0)].map(|(x, y)| Stitch::new(x, y, Command::Stitch)).to_vec();
         pattern.blocks.push(Block { thread: Thread::rgb([0x12, 0x34, 0x56]), stitches });

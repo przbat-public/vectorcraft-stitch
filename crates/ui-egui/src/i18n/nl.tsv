@@ -5266,3 +5266,7 @@ swatch	Bright Violet	Felviolet
 @msg	threads that twist several colours are read in their first colour	garens die meerdere kleuren ineendraaien worden in hun eerste kleur gelezen
 @msg	the file's several designs are read as one	de verschillende ontwerpen in het bestand worden als één gelezen
 @msg	the file holds things this version doesn't read	het bestand bevat dingen die deze versie niet leest
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Gebaseerd op VectorCraft van het ArtCraft-team. MIT OR Apache-2.0. Lettertypen: Source Sans 3, Inter, JetBrains Mono (OFL). Pictogrammen: Lucide (ISC) + VectorCraft.
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Gebaseerd op VectorCraft van het ArtCraft-team. MIT OR Apache-2.0. Lettertypen: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Pictogrammen: Lucide (ISC) + VectorCraft.

@@ -5147,3 +5147,6 @@ imageTrace	Outline	კონტური
 @msg	threads that twist several colours are read in their first colour	რამდენიმე ფერისგან დაგრეხილი ძაფები პირველი ფერით იკითხება
 @msg	the file's several designs are read as one	ფაილის რამდენიმე დიზაინი ერთად იკითხება
 @msg	the file holds things this version doesn't read	ფაილი შეიცავს ისეთ რამეს, რასაც ეს ვერსია არ კითხულობს
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	დაფუძნებულია ArtCraft-ის გუნდის VectorCraft-ზე. MIT OR Apache-2.0. შრიფტები: Source Sans 3, Inter, JetBrains Mono (OFL). ხატულები: Lucide (ISC) + VectorCraft.

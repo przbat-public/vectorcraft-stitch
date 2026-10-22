@@ -5226,3 +5226,7 @@ imageTrace	Outline	Körvonal
 @msg	threads that twist several colours are read in their first colour	a több színt összesodró szálak az első színükben olvasódnak be
 @msg	the file's several designs are read as one	a fájl több mintája egyként olvasódik be
 @msg	the file holds things this version doesn't read	a fájl olyan dolgokat tartalmaz, amelyeket ez a verzió nem olvas
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Az ArtCraft csapat VectorCraft programján alapul. MIT OR Apache-2.0. Betűtípusok: Source Sans 3, Inter, JetBrains Mono (OFL). Ikonok: Lucide (ISC) + VectorCraft.
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Az ArtCraft csapat VectorCraft programján alapul. MIT OR Apache-2.0. Betűtípusok: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikonok: Lucide (ISC) + VectorCraft.

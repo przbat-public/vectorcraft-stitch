@@ -4834,3 +4834,6 @@ theme	Appearance	Giao diện
 @msg	threads that twist several colours are read in their first colour	các sợi chỉ xoắn nhiều màu được đọc theo màu đầu tiên
 @msg	the file's several designs are read as one	nhiều thiết kế trong tệp được đọc thành một
 @msg	the file holds things this version doesn't read	tệp chứa những thứ mà phiên bản này không đọc
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Dựa trên VectorCraft của nhóm ArtCraft. MIT OR Apache-2.0. Phông chữ: Source Sans 3, Inter, JetBrains Mono (OFL). Biểu tượng: Lucide (ISC) + VectorCraft.

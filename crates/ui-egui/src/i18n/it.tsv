@@ -4854,3 +4854,6 @@ lighting	Light	Luce
 @msg	threads that twist several colours are read in their first colour	i fili che ritorcono più colori vengono letti nel loro primo colore
 @msg	the file's several designs are read as one	i diversi disegni del file vengono letti come uno solo
 @msg	the file holds things this version doesn't read	il file contiene elementi che questa versione non legge
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Basato su VectorCraft del team ArtCraft. MIT OR Apache-2.0. Font: Source Sans 3, Inter, JetBrains Mono (OFL). Icone: Lucide (ISC) + VectorCraft.

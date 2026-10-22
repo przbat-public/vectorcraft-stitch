@@ -4816,3 +4816,6 @@ effect	Regular	Regelmäßig
 @msg	threads that twist several colours are read in their first colour	Garne, die mehrere Farben verdrillen, werden in ihrer ersten Farbe gelesen
 @msg	the file's several designs are read as one	die mehreren Designs der Datei werden als eines gelesen
 @msg	the file holds things this version doesn't read	die Datei enthält Dinge, die diese Version nicht liest
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Basiert auf VectorCraft vom ArtCraft-Team. MIT OR Apache-2.0. Schriften: Source Sans 3, Inter, JetBrains Mono (OFL). Symbole: Lucide (ISC) + VectorCraft.

@@ -4894,3 +4894,6 @@ lighting	Light	ライト
 @msg	threads that twist several colours are read in their first colour	複数の色を撚り合わせた糸は最初の色で読み込まれます
 @msg	the file's several designs are read as one	ファイル内の複数のデザインは 1 つとして読み込まれます
 @msg	the file holds things this version doesn't read	このファイルには、このバージョンが読み込まない内容が含まれています
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft チームの VectorCraft をもとにしています。MIT OR Apache-2.0。フォント：Source Sans 3、Inter、JetBrains Mono (OFL)。アイコン：Lucide (ISC) + VectorCraft。

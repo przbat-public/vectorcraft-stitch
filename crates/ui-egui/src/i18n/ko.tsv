@@ -4817,3 +4817,6 @@ lighting	Light	광원
 @msg	threads that twist several colours are read in their first colour	여러 색을 꼰 실은 첫 번째 색으로 읽힙니다
 @msg	the file's several designs are read as one	파일의 여러 디자인은 하나로 읽힙니다
 @msg	the file holds things this version doesn't read	이 파일에는 이 버전이 읽지 않는 내용이 있습니다
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft 팀의 VectorCraft를 기반으로 합니다. MIT OR Apache-2.0. 글꼴: Source Sans 3, Inter, JetBrains Mono (OFL). 아이콘: Lucide (ISC) + VectorCraft.

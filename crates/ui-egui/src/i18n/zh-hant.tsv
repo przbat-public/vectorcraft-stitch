@@ -4129,3 +4129,6 @@ lighting	Light	光源
 @msg	threads that twist several colours are read in their first colour	由多種顏色撚成的繡線以其第一種顏色讀取
 @msg	the file's several designs are read as one	檔案中的多個圖案會當作一個讀取
 @msg	the file holds things this version doesn't read	此檔案包含此版本不讀取的內容
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	基於 ArtCraft 團隊的 VectorCraft。MIT OR Apache-2.0。字體：Source Sans 3、Inter、JetBrains Mono (OFL)。圖示：Lucide (ISC) + VectorCraft。

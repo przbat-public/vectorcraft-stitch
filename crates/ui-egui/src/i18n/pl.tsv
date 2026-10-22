@@ -5092,3 +5092,6 @@ mark-style	Japanese	Japońskie
 @msg	threads that twist several colours are read in their first colour	nici skręcone z kilku kolorów są wczytywane w pierwszym kolorze
 @msg	the file's several designs are read as one	kilka wzorów z pliku jest wczytywanych jako jeden
 @msg	the file holds things this version doesn't read	plik zawiera elementy, których ta wersja nie odczytuje
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Na podstawie VectorCraft zespołu ArtCraft. MIT LUB Apache-2.0. Czcionki: Source Sans 3, Inter, JetBrains Mono (OFL). Ikony: Lucide (ISC) + VectorCraft.

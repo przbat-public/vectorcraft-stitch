@@ -29,6 +29,20 @@ work comes from the list below, unless the user gives you a task.
   does (for example `feat/embroidery-import-and-stitch-quality`). Every fix for that work is a
   further commit on its branch, with no side branches, until the user says otherwise.
 - Commit locally after `cargo xtask ci` passes. **Don't push without the user's go-ahead.**
+- **One embroidery PR at a time.** Start the next piece of work only after the PR before it has
+  merged into `feat/embroidery`, and don't run parallel sessions or branches on separate pieces:
+  they conflict, and the conflicts cost more than the time saved. The owner may allow an exception
+  for one PR that touches few of the same files (they did for the new formats, beside the planning
+  service, on 2026-10-21); then agree which files each side keeps out of.
+- **Always pass `--repo przbat-public/vectorcraft-stitch` to `gh`** (or a full URL). The fork's and
+  upstream's PR and issue numbers overlap, and a checkout without a `gh` default resolves a bare
+  number to upstream: one review once covered upstream's PR of the same number by mistake. Before
+  trusting a PR number in a brief, check its title and URL.
+- **Never rename a PR's head branch** on GitHub: GitHub closes the PR instead of following the
+  rename.
+- **The owner squash-merges.** After a base PR merges, merge `feat/embroidery` into any branch
+  stacked on it (taking the branch's side: the squash equals the base's last commit), so its diff
+  shows only its own changes. Never push to a merged PR's deleted branch: that recreates it.
 - **No code names, anywhere.** Never label work with a stage letter, a step number or any other
   internal tag in branch names, commit messages, PR titles and descriptions, docs or code. Say what
   the change does ("an opened design is written back unchanged"). Every description must make sense
@@ -183,28 +197,50 @@ validation on real Brother and Janome machines.
 Known limitations not on this list are in `docs/embroidery.md` › What is not stitched, and in the
 PR descriptions.
 
-## Decisions not to undo without asking the user
+## Decisions register
 
-- `vectorcraft-stitch` is a separate L3 crate that depends only on `vectorcraft-geom`. Nothing that
-  knows about the document goes in it.
-- The stitch plan (`cmd::embroidery::plan::DesignPlan`) is the one way from a document to stitches:
-  the export writes it, and every other view of the stitches reads it rather than planning stitches
-  of its own. A unit's settings are decided in one place (`Digitizer::settings`).
-- Sewing order follows stacking order. Same-thread objects merge into one pass only when that
-  doesn't put anything on top of what it should be under.
-- Only what would print is sewn: hidden objects, guides, template and non-printing layers are
-  skipped. Clip groups cut fills exactly and strokes to the stitch.
-- JEF and VP3 files start at the design's centre (Janome sews from the hoop's centre; VP3 files
-  start there). DST, TAP, T01, EXP and PEC start at a corner.
-- `.dst/.tap/.t01/.exp/.pes/.pec/.jef/.vp3` are in `UNASSOCIATED_EXTS`: VectorCraft doesn't register
-  as their default app.
-- VP3 writes each block's art colour, exactly as the object is painted, not the stitch plan's
-  palette thread: the project owner's choice (2026-10-22), so an opened VP3 keeps its colours.
-- Defaults have one source, `plan::Params::for_style`. Export options and `document.formats` mirror
-  it, and a test keeps them equal.
-- Untrusted input is capped: `plan::try_stitches` (4 million stitches per shape), 2 million per
-  design, counts read from files are bounded by file size, and `engine/tests/import_fuzz.rs` covers
-  every format.
+Every decision the project owner made for the fork, and the rules that follow from them, in one
+place: when, what, why, what was not chosen, and where the code or a test holds it. Don't undo one
+without asking the owner. A new decision gets a row here in the PR that makes it; `docs/embroidery.md`
+› Architecture explains the design ones at length and links back here.
+
+| Date | Decision | Why | Not chosen | Where it holds |
+|---|---|---|---|---|
+| 2026-10-18 | `vectorcraft-stitch` is a separate layer-3 crate whose only workspace dependency is `vectorcraft-geom`: nothing that knows about the document goes in it | the planner and the formats stay testable on their own and usable by the sibling apps | stitch code inside the engine | `cargo xtask layers` |
+| 2026-10-18 | Only what would print is sewn: hidden objects, hidden fills and strokes, guides, template and non-printing layers are skipped; clip groups cut fills exactly and strokes to the stitch | a machine file is a print of the art | sewing everything drawn | `Digitizer::kind` (`cmd/embroidery/digitize.rs`); `fileio/tests_embroidery.rs`, `embroidery/tests.rs` |
+| 2026-10-18 | An opened design is written back unchanged: its lines are literal stitch runs (`doc::embroidery::StitchRun`), sewn as they are | a machine file opened and saved again must not be re-digitized | planning stitches from the opened lines | `Digitizer::literal`; `embroidery_corpus.rs` (`real_machine_files_are_written_back_unchanged`) |
+| 2026-10-18 | `.dst .tap .t01 .exp .pes .pec .jef .vp3` are in `UNASSOCIATED_EXTS`: VectorCraft doesn't register as their default app | embroidery software owns these files on a user's machine | registering as their app | `cmd/fileio/mod.rs`; `fileio/tests.rs` |
+| 2026-10-18 | JEF files start the needle at the design's centre, DST, TAP, T01, EXP, PES and PEC files at a corner (VP3, added 2026-10-22, at the centre) | Janome sews around the hoop's centre and real VP3 files start there; the others' decodings start at a corner | one convention for every format | each writer's frame (`format::Frame`); `jef.rs` and `vp3.rs` tests |
+| 2026-10-18 | Untrusted input is capped: 4 million stitches a shape, 2 million a design, counts read from files bounded, every reader fuzzed | a crash or an exhausted memory loses unsaved work | trusting files and parameters | `plan::try_stitches`, `digitize.rs`; `import_fuzz.rs`, `no_reader_panics_on_hostile_input` |
+| 2026-10-18 | The thread is cut only where a jump is longer than `trimLength` (10 mm) or an object asks for it (`embroidery.setTrimAfter`); longer jumps are tied off and in | machines and people cut short jumps themselves; fewer cuts sew faster | cutting every jump past `jumpLength` | `plan::TRIM`, `Sequence::add`; `a_move_of_exactly_the_trim_length_is_not_cut` |
+| 2026-10-19 | Fill rows 0.38 mm apart and fill stitches up to 4 mm by default (Wilcom's tatami defaults) | professional software's defaults; covers 40 wt thread without gaps | Ink/Stitch's denser 0.25 mm rows and 3 mm stitches | `plan::FILL_SPACING`, `FILL_STITCH` |
+| 2026-10-19 | Every value the embroidery code decides with is a named constant that says what it is, its unit, and its source or that it is an estimate | nobody could tell what bare numbers meant | bare literals | review; `docs/embroidery.md` › Files |
+| 2026-10-19 | Sewing order follows stacking order; objects of one colour join one block only where that puts nothing on top of what it should be under | thread sewn later covers thread sewn earlier, as paint does | reordering freely to save colour changes | `Sequence::target` (`cmd/embroidery/sequence.rs`) |
+| 2026-10-20 | Where a value comes from: the object's own, then the export's option, then the document's embroidery settings, then the built-in default; *Auto* is a rule, not a value | one order every view can show | per-command precedence | `Digitizer::settings`; `docs/embroidery.md` › Architecture |
+| 2026-10-20 | A fill and a stroke are separate parts with settings of their own; a fabric preset is copied into the document, not linked; the Sewing order tab moves objects in the stacking order; an Embroidery panel of its own; manual stitches by an explicit convert that can be undone; digitizing from an image in a large window | the product plan (`docs/embroidery.md` › Architecture) | one setting per object; live fabric links; a free sewing order; editing planned stitches in place | `docs/embroidery.md` › Architecture › Decided |
+| 2026-10-21 | The stitch plan (`cmd::embroidery::plan::DesignPlan`) is the one way from a document to stitches: the export writes it and every other view reads it | every view shows what will be sewn | views that plan stitches of their own | `embroidery_output.rs` pins every export |
+| 2026-10-21 | Defaults have one source, `plan::Params::for_style`; the export options and `document.formats` mirror it | one place to change a default | defaults restated in the engine | `defaults_are_the_planners` |
+| 2026-10-21 | Colours are matched to threads by CIEDE2000 | it keeps greys, darks and browns in neutral and brown threads | OKLab (straighter saturated blues, but tinted threads for neutrals) | `vectorcraft_stitch::color`; `prop_threads.rs` |
+| 2026-10-21 | A document that sets no thread palette is matched to Janome's JEF palette | the owner's product choice | Brother's PEC palette (a little nearer on the real designs: a median ΔE of 5.4 against 6.0) | `cmd::embroidery::DEFAULT_PALETTE` |
+| 2026-10-21 | A thread farther than ΔE 10 from the art's colour is flagged as a mismatch | a line between "looks like it" and "looks unlike it" (an estimate) | no flag; a tighter line most real art would fail | `thread::MISMATCH_DELTA_E` |
+| 2026-10-21 | A block takes another thread than a neighbouring block's only when one within ΔE 10 is left; otherwise it keeps its nearest, with a machine stop between two blocks of one thread | otherwise the zebra's dark grey was sewn in Royal Purple | always changing thread at a colour change | `Palette::assign`; `sequence.rs` tests |
+| 2026-10-21 | PEC's entries 62 to 64 are appliqué entries, never matched or written | they are not threads | treating them as threads | `Palette::is_thread` |
+| 2026-10-21 | pyembroidery's thread tables (colours, names, order) are used and credited in `NOTICE` with its MIT notice; nothing else of pyembroidery is taken, and its code is never read | the thread makers publish names and catalogue codes but no screen colours | EduTechWiki's tables (CC BY-NC-SA 3.0, which doesn't fit this repository) | `crates/stitch/src/thread.rs`, `NOTICE`; Clean-room below |
+| 2026-10-21 | One embroidery PR at a time (see Branches) | parallel work conflicts | parallel sessions, except one the owner allows | this file |
+| 2026-10-22 | VP3 writes each block's art colour, exactly as the object is painted | an opened VP3 keeps its colours | the palette thread's colour | `vp3::thread_record` |
+| 2026-10-22 | Melco's fill, satin and walk-stitch length limits are checked on each object's settings | Melco's design checker reads objects and their settings | measuring every stitch | `cmd/embroidery/check.rs` |
+| 2026-10-22 | The needle-blade rule (`stitchBelowNeedle`) is information until the planner spreads a fill row's remainder | VectorCraft's own fill rows end in 0.4 to 0.75 mm remainders | a warning on nearly every fill | `check.rs` (`RULES`) |
+| 2026-10-22 | The thread and time figures stay estimates, said so in every answer, until they are measured | no published formula | presenting them as measurements | `cmd/embroidery/stats.rs` (`estimate`) |
+| 2026-10-22 | Where the needle comes from stays exact in the planning cache's key (not rounded to 0.1 mm) | measured: rounding saved no re-planning | rounding the start point | `cmd/embroidery/cache.rs` |
+| 2026-10-22 | The export plans afresh, not from the units kept between plans | what a file holds never depends on what was kept | reusing kept units | `service::plan_afresh` |
+| 2026-10-22 | All the fixes of the ten-reviewer review of the fork go in one PR, the large performance rebuilds included | the owner's choice of scope ("everything") | only the major findings | the review-fixes PR |
+| 2026-10-22 | Output may change for four fixes: closed running lines get lock stitches; the JEF header's record count equals the body's records; fill rows are centred, half a spacing from each edge; a VP3 trim is written as a move a machine recognises as a trim (EduTechWiki: a long form of 255 or more), and VP3 long moves read back as cuts | each one sews better or reads right elsewhere | keeping today's bytes | the planner (`plan/running.rs`, `plan/fill.rs`), `format/jef.rs`, `format/vp3.rs`; listed in `embroidery_output.rs` |
+| 2026-10-22 | Bobbin thread is calibrated to Madeira's per-1,000-stitch figures (bobbin about 0.6 of the top thread), still an estimate | the earlier model was about half of Madeira's figure | the satin balance scaled by Wilcom's factors | `cmd/embroidery/stats.rs` |
+| 2026-10-22 | The ArtCraft marks and the ArtCraft community links are removed from what the fork shows; "based on VectorCraft by the ArtCraft team" stays in plain text; the brand files stay in the repository, unshown | `docs/brand/LICENSE-brand.txt`: a published modified version must remove or replace the marks | keeping them, which the licence allows only a fork that proposes its changes back | `README.md`, the app's about and welcome texts |
+| 2026-10-22 | A design opened from a machine file keeps its start point and is exported from it; new art starts where the format expects (a corner, or the centre in JEF and VP3); overwriting a file whose opening lost something asks first | an operator lines the needle up on a garment mark from the file's start | always starting at a corner | the document's embroidery settings (`origin`); the export's loss check |
+| 2026-10-22 | Blocks join only on the exact art colour, not on the thread matched to it | the owner's choice: the art's colours are what the person drew | joining on the matched thread | `Sequence::target`; `docs/embroidery.md` › How a shape becomes stitches |
+| 2026-10-22 | One vocabulary for the export's options and the planned settings on objects, before those exist; the options' earlier names stay as aliases; `underlay` takes a kind besides true and false | one name per setting in every place it is set or reported | two vocabularies mapped by hand | `cmd/embroidery/options.rs`; `docs/embroidery.md` › Architecture |
+| 2026-10-22 | The planner sews an object's appearance as it prints (stroke alignment, dashes, width profiles, brushes, arrowheads, live effects, a group's own fills and strokes, a symbol instance's staining); what still can't be sewn gets a warning | sew what prints | sewing the base path and warning | `Digitizer::shape` |
 
 ## Clean-room for embroidery
 
@@ -258,7 +294,10 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
 - **The fork has no CI on GitHub:** say so when you report results, and don't claim checks passed
   there.
 - **When a task lands:** update `docs/embroidery.md` (algorithms, limitations, test counts) and the
-  PR description.
+  PR description, and, in every progress doc the change touches (`ROADMAP.md`,
+  `docs/file-format-parity.md`, `docs/architecture.md`, `docs/embroidery.md`…), its status line and
+  its revision history, as `CLAUDE.md` asks. A decision the owner makes gets a row in the
+  Decisions register above.
 - **A change to what is sewn fails `crates/engine/tests/embroidery_output.rs`:** it lists the
   exports that changed and prints the listing as it now stands. Paste the listing in the commit
   that makes the change, and say in the PR what changed and why. A refactor keeps every hash.

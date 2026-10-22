@@ -11,17 +11,17 @@
 //! chart: a block's is the thread chosen for it when it is Janome's, else the thread nearest its
 //! colour ([`Palette::numbers`]).
 //!
-//! JEF has no trim record of its own. The wiki calls a jump of zero length the trim command, which
-//! Janome machines set to cut at a "cutting command" obey; set to cut automatically, they also cut
-//! before any jump longer than 3 mm. pyembroidery, asked to write trims, writes each as three
-//! zero-length jumps (its `trim_at` setting, 3 by default), and its reader, asked for trims, takes
-//! a run of three jumps as one and drops jumps that go nowhere. So we write three, which both read
-//! as a trim, and read each zero-length jump as a trim (consecutive trims are one cut,
-//! [`super::finish`]).
+//! JEF has no trim record of its own. EduTechWiki calls a jump of zero length the trim command,
+//! which Janome machines set to cut at a "cutting command" obey; set to cut automatically, they
+//! also cut before any jump longer than 3 mm. We write a trim as three zero-length jumps and read
+//! each zero-length jump as a trim (consecutive trims are one cut, [`super::finish`]): one is the
+//! wiki's trim command, and three is what pyembroidery 1.5.1, run as an outside reader of our
+//! files, takes as a trim with its trims setting on (a single one it drops as a jump that goes
+//! nowhere).
 //!
-//! References: EduTechWiki, *Embroidery format JEF* (edutechwiki.unige.ch/en/Embroidery_format_JEF);
-//! pyembroidery 1.5.1 (MIT), `JefWriter.py` and `JefReader.py`
-//! (github.com/EmbroidePy/pyembroidery/tree/1.5.1/pyembroidery).
+//! References: EduTechWiki, *Embroidery format JEF* (edutechwiki.unige.ch/en/Embroidery_format_JEF).
+//! pyembroidery 1.5.1 (MIT) served only as an outside reader of the files written here
+//! (`docs/embroidery.md` › Validation); none of its code was read.
 
 use super::{Frame, Reader, finish, mm, steps};
 use crate::thread::{self, Palette};
@@ -39,7 +39,7 @@ const END: u8 = 0x10;
 const JUMP: u8 = 0x02;
 const COLOR_CHANGE: u8 = 0x01;
 /// A trim is written as three jumps that go nowhere: one is the wiki's trim command, three is what
-/// pyembroidery writes and reads back as a trim (see the module doc).
+/// pyembroidery, run as an outside reader, reads as a trim (see the module doc).
 const TRIM_JUMPS: usize = 3;
 /// The length of a header word (little-endian).
 const WORD: usize = 4;

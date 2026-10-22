@@ -514,10 +514,10 @@ exports of one document follow one rule.
 
 Trims in JEF: the format has no trim record. EduTechWiki calls a jump of zero length the trim
 command (Janome machines set to cut at cutting commands obey it, and set to cut automatically they
-also cut before any jump longer than 3 mm); pyembroidery, asked to write trims, writes each as
-three of them (its `trim_at` setting) and reads a run of three jumps as a trim when asked for trims, while it drops a
-lone jump that goes nowhere. We write three, which both read as a trim, and read each zero-length
-jump as a trim, so the three come back as one.
+also cut before any jump longer than 3 mm). We write three zero-length jumps per trim and read each
+zero-length jump as a trim, so the three come back as one: one is the wiki's trim command, and
+three is what pyembroidery 1.5.1, run as an outside reader of our files (Validation, below), takes
+as a trim with its trims setting on, while it drops a lone jump that goes nowhere.
 
 VP3 (`crates/stitch/src/format/vp3.rs` has the layout). A file holds a design of colour blocks;
 each block has a thread record and one run of stitches, and picks up where the last left off. The
@@ -977,7 +977,9 @@ those steps rest on, made first so that each step builds on the last instead of 
 
 ### Decided
 
-These product decisions are made (2026-10-20), and the sections below build on them:
+These product decisions are made (2026-10-20), and the sections below build on them. Every
+decision the project owner made, these and later ones, is in one register with its date, its
+reason, what was not chosen and where the code holds it: `FORK.md` › Decisions register.
 
 - **Where a value comes from.** A value set on an object beats an export option given to
   `document.export`, which beats the document's embroidery settings, which beat the built-in
@@ -1181,10 +1183,13 @@ Public documentation, cited per claim in the crate and in the local research not
   [PES](https://edutechwiki.unige.ch/en/Embroidery_format_PES) and
   [PEC](https://edutechwiki.unige.ch/en/Embroidery_format_PEC) — the header and record layouts,
   the DST bit decoding and the PEC stitch encoding.
-- [pyembroidery](https://github.com/EmbroidePy/pyembroidery) (MIT), consulted for terminology and
-  the read/write conventions (y direction, trim encoding: JEF's three zero-length jumps per trim
-  from `JefWriter.py`'s `trim_at`); no code copied. Its thread tables are taken as data (Thread
-  tables, below).
+- [pyembroidery](https://github.com/EmbroidePy/pyembroidery) (MIT), used only as an outside
+  reader and writer of files in a throwaway environment (Validation): our files read there, and
+  its files read here; none of its code is read or copied. Its thread tables are taken as data, the
+  project owner's one exception (Thread tables, below). (Until 2026-10-22 this list and
+  `format/jef.rs` cited two of its source files for JEF's three zero-length jumps per trim, written
+  on 2026-10-19 when the rule forbade only copying its code; the convention now rests on
+  EduTechWiki's trim command and on how pyembroidery reads our files.)
 - EduTechWiki, [Embroidery format JEF](https://edutechwiki.unige.ch/en/Embroidery_format_JEF) —
   the JEF header, records and the zero-length jump as trim command.
 - VP3: EduTechWiki, [Embroidery format VP3](https://edutechwiki.unige.ch/en/Embroidery_format_VP3)

@@ -262,6 +262,22 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     read_records(bytes.get(HEADER..).unwrap_or_default(), header_name(bytes.get(..HEADER).unwrap_or_default()), "DST")
 }
 
+/// Whether `records` are DST records: every one up to the end record has [`SET_BITS`] in its
+/// third byte, as every record does. A TAP or T01, with no header, is told from another file by
+/// this alone; `what` names the format in the error.
+pub(crate) fn check_records(records: &[u8], what: &str) -> Result<()> {
+    for (k, record) in records.chunks_exact(RECORD).enumerate() {
+        let b2 = record.get(2).copied().unwrap_or(0);
+        if b2 & SET_BITS != SET_BITS {
+            return Err(Error::Format(format!("not a {what} file: its record {} is not a DST record", k + 1)));
+        }
+        if b2 & END_BITS == END_BITS {
+            break;
+        }
+    }
+    Ok(())
+}
+
 /// The design `records` hold (a DST's after its header, or a whole TAP file), named `name`; `what`
 /// names the format in an error.
 pub(crate) fn read_records(records: &[u8], name: String, what: &str) -> Result<Pattern> {

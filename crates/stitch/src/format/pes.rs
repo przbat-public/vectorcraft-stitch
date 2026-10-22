@@ -24,8 +24,9 @@
 //! by `0x02` and `0x01` alternately changes colour, and `0xFF` ends the design. Unlike DST, EXP
 //! and JEF, PEC counts y downwards.
 //!
-//! A PEC file "often begins" with `#PEC0001` (EduTechWiki): one that starts straight with the
-//! PEC header's `LA:` reads too.
+//! A PEC file "often begins" with `#PEC0001` (EduTechWiki); one without it is refused rather than
+//! guessed at: a PEC header starts with `LA:`, as a Tajima DST header does too, so a file that
+//! starts that way may be anything.
 //!
 //! References: EduTechWiki, *Embroidery format PES* and *Embroidery format PEC*
 //! (edutechwiki.unige.ch/en/Embroidery_format_PES, …/Embroidery_format_PEC).
@@ -57,8 +58,6 @@ const PES_HEADER: [u8; 22] = [b'#', b'P', b'E', b'S', b'0', b'0', b'0', b'1', 22
 const PEC_POSITION: std::ops::Range<usize> = 8..12;
 /// A bare PEC file's magic: its PEC header starts right after it.
 pub(crate) const PEC_MAGIC: &[u8; 8] = b"#PEC0001";
-/// How a PEC header starts: `LA:` and the label.
-const LABEL_MARK: &[u8; 3] = b"LA:";
 
 // The PEC header: `LA:` and the label at its start, the colour count at COLOR_COUNT_AT, then the
 // palette indices.
@@ -404,14 +403,10 @@ fn pec_value(r: &mut Reader<'_>, first: u8) -> Option<(i32, u8)> {
     Some((v, first & FLAGS))
 }
 
-/// Where the PEC section starts: a PES header states it; a bare PEC starts after its magic, or
-/// at once when it starts with the PEC header.
+/// Where the PEC section starts: a PES header states it; a bare PEC starts after its magic.
 fn pec_start(bytes: &[u8]) -> Result<usize> {
     if bytes.starts_with(b"#PEC") {
         return Ok(PEC_MAGIC.len());
-    }
-    if bytes.starts_with(LABEL_MARK) {
-        return Ok(0);
     }
     if bytes.starts_with(b"#PES") {
         let Some(b) = bytes.get(PEC_POSITION) else {
@@ -424,7 +419,7 @@ fn pec_start(bytes: &[u8]) -> Result<usize> {
         }
         return Ok(at);
     }
-    Err(Error::Format("not a PES or PEC file: it does not start with #PES, #PEC or a PEC header".into()))
+    Err(Error::Format("not a PES or PEC file: it does not start with #PES or #PEC".into()))
 }
 
 #[cfg(test)]
@@ -469,8 +464,8 @@ mod tests {
         assert_eq!(bytes.len(), block + length as usize + 3 * PREVIEW);
     }
 
-    /// A PEC file is the PEC section a PES carries, after its own magic; it reads back the same,
-    /// with or without the magic.
+    /// A PEC file is the PEC section a PES carries, after its own magic, and reads back the same.
+    /// Without the magic it is refused: a DST header starts with `LA:` as a PEC header does.
     #[test]
     fn a_pec_file_is_the_pec_section_of_a_pes() {
         let p = design();
@@ -479,7 +474,8 @@ mod tests {
         assert_eq!(&pec[PEC_MAGIC.len()..], &pes[PES_HEADER.len()..]);
         let back = read(&pec).expect("reads");
         assert_eq!(back, read(&pes).expect("reads"));
-        assert_eq!(read(&pec[PEC_MAGIC.len()..]).expect("reads"), back, "starting with LA:");
+        assert!(read(&pec[PEC_MAGIC.len()..]).is_err(), "no magic");
+        assert!(read(&crate::format::dst::write(&p).expect("writes")).is_err(), "a DST");
     }
 
     /// Small negative deltas are one-byte short-form values (7-bit two's complement): a design

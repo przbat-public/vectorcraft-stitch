@@ -6,7 +6,9 @@
 //! balanced-ternary bits, a jump, a colour change and the end in the third byte, y counting
 //! upwards, a trim written as three small jumps that go nowhere. With no header there is no name,
 //! no count and no size: a reader takes the records as they come, and a TAP or a T01 is recognised
-//! by its extension.
+//! by its extension. A file whose records aren't DST's (the third byte of every DST record has its
+//! two lowest bits set) is refused, so that another file with the extension, a tape image say,
+//! isn't read as stitches.
 //!
 //! References: EduTechWiki, *Embroidery format* (edutechwiki.unige.ch/en/Embroidery_format) and
 //! *Embroidery format DST* (…/Embroidery_format_DST). pyembroidery 1.5.1 (MIT) served only as an
@@ -20,11 +22,13 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
 }
 
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
+    dst::check_records(bytes, "TAP")?;
     dst::read_records(bytes, String::new(), "TAP")
 }
 
 /// A T01 file, read as a TAP is ([`read`]); its errors name T01.
 pub fn read_t01(bytes: &[u8]) -> Result<Pattern> {
+    dst::check_records(bytes, "T01")?;
     dst::read_records(bytes, String::new(), "T01")
 }
 
@@ -77,6 +81,20 @@ mod tests {
         assert_eq!(t01, tap);
         assert_eq!(read_t01(&t01).expect("reads"), read(&tap).expect("reads"));
         assert!(read_t01(&[]).expect_err("nothing").to_string().contains("T01"));
+    }
+
+    /// Bytes that aren't DST records are refused, whatever follows: a tape image's first block
+    /// (its length, then a flag byte of 0) has no record's set bits.
+    #[test]
+    fn bytes_that_are_not_dst_records_are_refused() {
+        let tape = [0x13, 0x00, 0x00, 0x03, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46];
+        let e = read(&tape).expect_err("not records").to_string();
+        assert!(e.contains("not a TAP file"), "{e}");
+        assert!(read_t01(&tape).expect_err("not records").to_string().contains("not a T01 file"));
+        // Records after the end are not checked.
+        let mut tap = write(&design()).expect("writes");
+        tap.extend_from_slice(&[0x13, 0x00, 0x00]);
+        assert!(read(&tap).is_ok());
     }
 
     /// Bytes that are no whole record are left over, not read; no records at all is an error.

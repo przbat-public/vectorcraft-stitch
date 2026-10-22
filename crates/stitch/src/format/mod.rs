@@ -192,11 +192,16 @@ impl Frame {
     /// hoop's centre (JEF), y flipped when `flip`.
     pub(crate) fn centered(p: &Pattern, flip: bool) -> Result<Self> {
         let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
+        Ok(Self::centered_on(b, flip))
+    }
+
+    /// A frame whose origin is the centre of `b`, y flipped when `flip`.
+    pub(crate) fn centered_on(b: vectorcraft_geom::Rect, flip: bool) -> Self {
         // On the 0.1 mm grid the file counts in: a centre between two grid points would round
         // the points on either side of it in opposite directions, moving some by a tenth.
         let c = b.center();
         let snap = |v: f64| f64::from(quantize(v)) / crate::UNITS_PER_MM;
-        Ok(Self { left: snap(c.x), top: snap(c.y), flip })
+        Self { left: snap(c.x), top: snap(c.y), flip }
     }
 
     /// The file's x for a design x, in tenths.

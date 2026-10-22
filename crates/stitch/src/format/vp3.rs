@@ -39,6 +39,10 @@
 //!
 //! What this module does, so that both readings sew the same:
 //!
+//! - It reads designs and colour blocks by their tags, one after another: the file's and a
+//!   design's lengths are written but not relied on (EduTechWiki gives the file packet's length
+//!   field two widths), and a colour block's and a stitch run's bound what is read in them. A file
+//!   cut short, or damaged after some colour blocks, reads as the blocks before the damage.
 //! - It reads a long form as a jump after which the needle goes down where it lands: a
 //!   [`Command::Jump`] and a stitch at the same point. Read this way, the Emoji Embroidery
 //!   Project's designs made with Ink/Stitch have as many needle points in each colour block in VP3
@@ -50,7 +54,9 @@
 //! - A trim has no record: the jump after it is a long form, which the machine cuts. A stop or a
 //!   colour change inside a block starts another colour block in the same thread (the machine
 //!   stops at each block for its thread). The last block ends with `80 03`.
-//! - The needle starts at the design's centre, as in the real files.
+//! - The needle starts at the design's centre, as in the real files. The design's extent (and so
+//!   its centre, and the hoop values) is where the needle goes down: the points of jumps, which
+//!   the needle never reaches here, are left out.
 //! - The thread record: the block's colour ([`Thread::color`], the art's), material rayon, 40 wt.
 //!   The art's colour rather than the stitch plan's palette thread is the project owner's choice
 //!   (2026-10-22): an opened VP3 written again keeps its colours. Its description is the thread's name only for a design read from a file ([`Thread::chosen`]
@@ -142,15 +148,18 @@ const MAX_SHORT: i32 = 127;
 const MAX_LONG: i32 = i16::MAX as i32;
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
+    let segments = segments(p);
+    // The design is where the needle goes down: every jump is written as a move to the next
+    // stitch (see the module doc), so a jump's own point is never reached and doesn't count in the
+    // extents, the hoop or the centre.
+    let needle = segments.iter().flat_map(|(_, s)| s.iter().copied()).filter(|s| s.command == Command::Stitch);
+    let Some(b) = crate::bounds_of(needle) else {
+        return Err(Error::Format("the design has no stitches to write".into()));
+    };
     // Positions from the design's centre, snapped to the 0.1 mm grid; y downwards, as the stitches
     // count it (the packets' positions negate it).
-    let frame = super::Frame::centered(p, false)?;
-    let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
+    let frame = super::Frame::centered_on(b, false);
     let (x0, y0, x1, y1) = (frame.x(b.x0), frame.y(b.y0), frame.x(b.x1), frame.y(b.y1));
-    let segments = segments(p);
-    if segments.is_empty() {
-        return Err(Error::Format("the design has no stitches to write".into()));
-    }
     let colors = u16::try_from(segments.len()).map_err(|_| Error::TooLarge(format!("VP3 holds at most {} colour blocks", u16::MAX)))?;
     // Written in one buffer, in file order: each packet's length is filled in when it ends.
     let mut out: Vec<u8> = Vec::with_capacity(p.points().count() * 2 + 1024);
@@ -398,19 +407,30 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     let mut r = Reader::new(bytes);
     r.seek(MAGIC.len());
     skip_string(&mut r)?;
-    let file_end = open(&mut r, FILE_TAG, bytes.len(), "file")?;
+    // The file packet's length isn't relied on (the descriptions disagree on its field): its
+    // designs are found by their tags.
+    open(&mut r, FILE_TAG, bytes.len(), "file")?;
     skip_string(&mut r)?;
     // The edges, the sewing time and the counts: the colour blocks are counted as they are read
     // instead.
     r.take(SUMMARY).ok_or_else(|| short(bytes.len()))?;
     let mut d = Decoded::default();
-    while r.pos() < file_end && at_tag(bytes, r.pos(), DESIGN_TAG) {
-        let design_end = open(&mut r, DESIGN_TAG, file_end, "design")?;
-        read_design(&mut r, &mut d, design_end)?;
-        r.seek(design_end);
+    // A file cut short, or damaged after some colour blocks, keeps the blocks read before the cut.
+    let mut stopped: Option<Error> = None;
+    while at_tag(bytes, r.pos(), DESIGN_TAG) {
+        let read = open(&mut r, DESIGN_TAG, bytes.len(), "design").and_then(|end| read_design(&mut r, &mut d).map(|()| end));
+        match read {
+            // Past the design's blocks, or as far as its length says when that is farther (a
+            // packet this reader doesn't know between designs).
+            Ok(end) => r.seek(end.max(r.pos())),
+            Err(e) => {
+                stopped = Some(e);
+                break;
+            }
+        }
     }
     if d.points.is_empty() {
-        return Err(Error::Format("the VP3 file has no stitches".into()));
+        return Err(stopped.unwrap_or_else(|| Error::Format("the VP3 file has no stitches".into())));
     }
     Ok(super::finish(String::new(), d.points, &d.threads))
 }
@@ -433,7 +453,9 @@ impl Decoded {
     }
 }
 
-fn read_design(r: &mut Reader<'_>, d: &mut Decoded, end: usize) -> Result<()> {
+/// A design's colour blocks, found by their tags (a design's own length, like the file's, may
+/// claim less than its blocks take).
+fn read_design(r: &mut Reader<'_>, d: &mut Decoded) -> Result<()> {
     let len = r.data_len();
     let (cx, cy) = (i64::from(r.i32_be().ok_or_else(|| short(len))?), i64::from(r.i32_be().ok_or_else(|| short(len))?));
     // Three zero bytes; the edges from the centre and the size.
@@ -444,8 +466,8 @@ fn read_design(r: &mut Reader<'_>, d: &mut Decoded, end: usize) -> Result<()> {
     // The colour block count: they are counted as they are read instead.
     r.take(BLOCK_COUNT).ok_or_else(|| short(len))?;
     let mut first = true;
-    while r.pos() < end && at_tag(r.data(), r.pos(), BLOCK_TAG) {
-        let block_end = open(r, BLOCK_TAG, end, "colour block")?;
+    while at_tag(r.data(), r.pos(), BLOCK_TAG) {
+        let block_end = open(r, BLOCK_TAG, len, "colour block")?;
         let (sx, sy) = (i64::from(r.i32_be().ok_or_else(|| short(len))?), i64::from(r.i32_be().ok_or_else(|| short(len))?));
         let thread = read_thread(r, d.threads.len())?;
         // How far the block's stitches move the needle: the stitches say so themselves.
@@ -490,9 +512,12 @@ fn read_thread(r: &mut Reader<'_>, block: usize) -> Result<Thread> {
     let catalogue = read_utf8(r)?;
     let description = read_utf8(r)?;
     let _brand = read_utf8(r)?;
-    let name = if description.trim().is_empty() { catalogue } else { description };
+    // Whitespace and NULs (a writer that ends its strings with one) are no part of a name.
+    let clean = |s: &str| s.trim_matches(|c: char| c == '\0' || c.is_whitespace()).to_string();
+    let (catalogue, description) = (clean(&catalogue), clean(&description));
+    let name = if description.is_empty() { catalogue } else { description };
     Ok(match rgb {
-        Some(color) => Thread::named(color, name.trim()),
+        Some(color) => Thread::named(color, &name),
         None => crate::thread::default_thread(block),
     })
 }
@@ -775,6 +800,132 @@ mod tests {
         let back = read(&write(&p).expect("writes")).expect("reads");
         let name = &back.blocks[0].thread.name;
         assert!(name.len() <= usize::from(u16::MAX) && name.chars().all(|c| c == 'é'), "{}", name.len());
+    }
+
+    /// A colour block put together by hand: its thread record's bytes and its stitch bytes.
+    type RawBlock = (Vec<u8>, Vec<u8>);
+    /// A design put together by hand: its centre (micrometres, y up) and its colour blocks.
+    type RawDesign = ((i32, i32), Vec<RawBlock>);
+
+    /// A VP3 put together by hand, its blocks each starting at their design's centre.
+    fn assemble(designs: &[RawDesign]) -> Vec<u8> {
+        let mut out = MAGIC.to_vec();
+        utf16(&mut out, PRODUCER).unwrap();
+        let file = begin(&mut out, FILE_TAG);
+        utf16(&mut out, "").unwrap();
+        // The edges, the sewing time and the counts: the reader counts for itself.
+        out.extend_from_slice(&[0; SUMMARY]);
+        for (centre, blocks) in designs {
+            let design = begin(&mut out, DESIGN_TAG);
+            out.extend_from_slice(&centre.0.to_be_bytes());
+            out.extend_from_slice(&centre.1.to_be_bytes());
+            out.extend_from_slice(&[0; DESIGN_GAP.len() + DESIGN_EDGES * WORD]);
+            utf16(&mut out, "").unwrap();
+            out.extend_from_slice(&DESIGN_MARK);
+            for w in DESIGN_WORDS {
+                out.extend_from_slice(&w.to_be_bytes());
+            }
+            out.extend_from_slice(&DESIGN_MAGIC);
+            utf16(&mut out, PRODUCER).unwrap();
+            out.extend_from_slice(&(blocks.len() as u16).to_be_bytes());
+            for (thread, stitches) in blocks {
+                let block = begin(&mut out, BLOCK_TAG);
+                position(&mut out, (0, 0)).unwrap();
+                out.extend_from_slice(thread);
+                out.extend_from_slice(&[0; POSITION]);
+                let run = begin(&mut out, STITCHES_TAG);
+                out.extend_from_slice(&SCALE);
+                out.extend_from_slice(stitches);
+                end(&mut out, run).unwrap();
+                out.push(BLOCK_END);
+                end(&mut out, block).unwrap();
+            }
+            end(&mut out, design).unwrap();
+        }
+        end(&mut out, file).unwrap();
+        out
+    }
+
+    /// A one-colour thread record, as the writer writes it.
+    fn thread(color: [u8; 3], name: &str) -> Vec<u8> {
+        let mut t = Vec::new();
+        thread_record(&mut t, &Thread::named(color, name)).unwrap();
+        t
+    }
+
+    /// A thread that twists two colours (the KDE wiki's example: each colour's six bytes, then the
+    /// byte after them) reads in its first colour, and the block after it stays in step.
+    #[test]
+    fn a_thread_of_two_colours_reads_in_its_first() {
+        let mut twisted = vec![2, 0x00, 200, 10, 10, 0x10, 0x00, 0x20, 10, 10, 200, 0x10, 0x00, 0x10, RAYON, WEIGHT];
+        for s in ["", "Twist", ""] {
+            utf8(&mut twisted, s).unwrap();
+        }
+        let bytes = assemble(&[((0, 0), vec![(twisted, vec![10, 0, 10, 0]), (thread([1, 2, 3], "After"), vec![0, 10, 0, 10])])]);
+        let p = read(&bytes).expect("reads");
+        let threads: Vec<&Thread> = p.blocks.iter().map(|b| &b.thread).collect();
+        assert_eq!(threads, [&Thread::named([200, 10, 10], "Twist"), &Thread::named([1, 2, 3], "After")]);
+        assert_eq!(needle_points(&p), [vec![(0, 0), (10, 0)], vec![(10, 10), (10, 20)]]);
+    }
+
+    /// A second design is read after the first, its first block starting at its own centre.
+    #[test]
+    fn a_second_design_starts_at_its_own_centre() {
+        let first = ((0, 0), vec![(thread([1, 1, 1], "A"), vec![10, 0, 10, 0])]);
+        // 50 mm right of the first design's centre (micrometres).
+        let second = ((50_000, 0), vec![(thread([2, 2, 2], "B"), vec![0, 10])]);
+        let p = read(&assemble(&[first, second])).expect("reads");
+        assert_eq!(p.blocks.len(), 2);
+        assert_eq!(needle_points(&p), [vec![(0, 0), (10, 0)], vec![(490, 10)]]);
+    }
+
+    /// The file's and a design's lengths aren't relied on: claiming too little hides no block.
+    #[test]
+    fn packet_lengths_that_claim_too_little_hide_nothing() {
+        let p = design();
+        let mut bytes = write(&p).expect("writes");
+        for tag in [FILE_TAG, DESIGN_TAG] {
+            let at = bytes.windows(3).position(|w| w == tag).unwrap();
+            bytes[at + 3..at + 7].copy_from_slice(&0u32.to_be_bytes());
+        }
+        assert_eq!(needle_points(&read(&bytes).expect("reads")), needle_points(&p));
+    }
+
+    /// A file cut inside a colour block's header reads as the blocks before it; cut before any,
+    /// it is an error.
+    #[test]
+    fn a_file_cut_inside_a_block_keeps_the_blocks_before() {
+        let p = design();
+        let bytes = write(&p).expect("writes");
+        let second = bytes.windows(3).enumerate().filter(|(_, w)| *w == BLOCK_TAG).nth(1).map(|(i, _)| i).unwrap();
+        // Inside the second block's thread record.
+        let cut = read(&bytes[..second + 7 + POSITION + 4]).expect("reads the first block");
+        assert_eq!(needle_points(&cut), needle_points(&p)[..1]);
+        let first = bytes.windows(3).position(|w| w == BLOCK_TAG).unwrap();
+        assert!(read(&bytes[..first + 7 + POSITION + 4]).is_err());
+    }
+
+    /// The extents, the hoop and the centre are where the needle goes down: a jump's own point,
+    /// never reached (the jump is written as a move to the next stitch), is left out.
+    #[test]
+    fn the_extents_leave_out_jump_points_the_needle_never_reaches() {
+        let mut p = design();
+        let last = *p.blocks[1].stitches.last().unwrap();
+        // A jump 100 mm to the right that goes nowhere after it.
+        p.blocks[1].stitches.push(Stitch::new(last.x + 100.0, last.y, Command::Jump));
+        let (with, without) = (write(&p).expect("writes"), write(&design()).expect("writes"));
+        assert_eq!(with, without);
+    }
+
+    /// NUL bytes and spaces round a thread's name are no part of it.
+    #[test]
+    fn nuls_round_a_name_are_trimmed() {
+        let mut t = vec![1, 0x00, 9, 8, 7, 0x00, 0x00, 0x00, RAYON, WEIGHT];
+        for s in ["", " Meadow Red\0", ""] {
+            utf8(&mut t, s).unwrap();
+        }
+        let p = read(&assemble(&[((0, 0), vec![(t, vec![10, 0])])])).expect("reads");
+        assert_eq!(p.blocks[0].thread, Thread::named([9, 8, 7], "Meadow Red"));
     }
 
     /// A file that names no colours in a thread reads in a default colour; one cut short or with a

@@ -390,7 +390,7 @@ run to a few hundred thousand.
 | Format | Machine | What it holds | What we write |
 |---|---|---|---|
 | Tajima DST | commercial, the de-facto standard | 512-byte text header, 3-byte records of ±121 tenths of a millimetre (12.1 mm), no colours, trims implied by runs of three or more jumps | header with counts and extents, records, a colour-change record per block, trims as three small jumps that go nowhere |
-| Happy TAP | commercial (Happy) | DST's 3-byte records without DST's 512-byte header (EduTechWiki: TAP "contains DST stitches with no header") | the records our DST writes, without its header |
+| Happy TAP | commercial (Happy) | DST's 3-byte records without DST's 512-byte header (EduTechWiki: TAP "contains DST stitches with no header") | the records our DST writes, without its header; reading refuses a file whose records aren't DST's (with no header, that tells a TAP from another file with the extension, such as a tape image) |
 | Wilcom T01 | commercial (Wilcom's name for the same file) | the same bytes as a TAP (EduTechWiki: ".t01 is just .dst encoded stitches without a header. So is .tap") | the same bytes as our TAP |
 | Melco EXP | commercial | records only, no header, no colours: 2-byte deltas up to ±12.7 mm, `0x80`-prefixed commands | stitches, jumps, trims, colour changes; the file ends with the last record |
 | Brother PES | home machines (Brother, Bernina) | a PES section for PE-Design and a PEC section the machine reads | a minimal version 1 PES header pointing at a complete PEC block: 512-byte header, Brother palette indices (see below), a 20-byte block header with the two origin words real Brother files carry, the stitch stream, blank preview pictures |
@@ -414,7 +414,10 @@ jump as a trim, so the three come back as one.
 VP3 (`crates/stitch/src/format/vp3.rs` has the layout). A file holds a design of colour blocks;
 each block has a thread record and one run of stitches, and picks up where the last left off. The
 packets count positions in micrometres with y upwards, the stitches tenths of a millimetre with y
-downwards. The public descriptions (EduTechWiki, the KDE Community Wiki, Jason Weiler's page)
+downwards. The reader finds designs and colour blocks by their tags, so a file or design length
+that claims too little hides nothing, and a file cut short reads as the blocks before the cut. The
+writer's extents, hoop values and centre are where the needle goes down: a jump's own point,
+never reached in VP3 (below), is left out. The public descriptions (EduTechWiki, the KDE Community Wiki, Jason Weiler's page)
 agree on the layout but leave three things open, decided here so that every reading sews the
 same:
 
@@ -521,7 +524,7 @@ thread; 23 and 28 of them are past 5, and 8 and 12 past 10.
 
 ## Validation
 
-- `crates/stitch`: 124 unit tests and 6 property tests — CIEDE2000 matches the 34 published test
+- `crates/stitch`: 131 unit tests and 6 property tests — CIEDE2000 matches the 34 published test
   pairs of Sharma, Wu and Dalal to their four decimals either way round (and a colour that isn't
   one has a difference that is not a number, never 0), the sRGB matrix derives
   from the primaries and D65, sRGB's primaries land where published conversions put them, the
@@ -591,13 +594,18 @@ thread; 23 and 28 of them are past 5, and 8 and 12 past 10.
   writes a design it reads back with the same blocks and size, a JEF's header extents are where
   its stitches go, an absurd JEF colour count is not believed, a PES whose PEC section is said to
   start near 4 GB is refused, a PEC file is a PES's PEC section after `#PEC0001` and reads back the
-  same with or without that magic, a TAP is a DST's records without its header (a byte left over
-  past the last whole record is not read) and a T01 the same bytes, a VP3 round-trips with its
+  same (without that magic it is refused, as a DST is: a DST header starts with `LA:` as a PEC
+  header does), a TAP is a DST's records without its header (a byte left over past the last whole
+  record is not read, and bytes that aren't DST records are refused) and a T01 the same bytes, a
+  VP3 round-trips with its
   threads and is written again byte for byte, its packet lengths end where the format says, its
   positions are micrometres and each block starts where the last ended, a jump is a long form and a
   zero-length stitch and a trim writes nothing, a long form followed by a stitch that moves on puts
   the needle down at both, a stop starts a block in the same thread, a planned thread's palette name
-  is not written, long stitches and jumps are split and long names cut at a character,
+  is not written, long stitches and jumps are split and long names cut at a character, a thread of
+  two colours reads in its first, a second design starts at its own centre, file and design lengths
+  that claim too little hide nothing, a file cut inside a block keeps the blocks before, the
+  extents leave out jump points the needle never reaches, NULs round a thread's name are trimmed,
   and no reader panics on random,
   truncated or damaged bytes. The thread property test (`tests/prop_threads.rs`): for any run of
   blocks in either palette, each any colour or an entry's own and with a thread chosen from

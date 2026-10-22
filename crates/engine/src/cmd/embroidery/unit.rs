@@ -96,7 +96,8 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError
         Some(_) => plan::narrow_columns_until(shape, rule, params.narrow, &cancel::is_cancelled).ok_or(PlanError::Cancelled)?,
         None => Vec::new(),
     };
-    let widths = found.iter().map(plan::Column::width).fold(None, |range: Option<[f64; 2]>, w| match range {
+    // The widths of the columns sewn as satin (a narrower one is a running line).
+    let widths = found.iter().filter(|c| c.is_satin()).map(plan::Column::width).fold(None, |range: Option<[f64; 2]>, w| match range {
         Some([narrowest, widest]) => Some([narrowest.min(w), widest.max(w)]),
         None => Some([w, w]),
     });

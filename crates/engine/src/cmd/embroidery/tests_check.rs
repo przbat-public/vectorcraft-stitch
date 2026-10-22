@@ -88,7 +88,7 @@ fn melcos_length_rules_look_at_each_objects_settings() {
     let satin = Some(Params::for_style(Style::Satin));
     assert_eq!(hits(&one_unit(satin, Some([0.99, 0.99])), "satinStitchShort", Format::Dst), 1);
     assert_eq!(hits(&one_unit(satin, Some([1.0, 1.0])), "satinStitchShort", Format::Dst), 0);
-    assert_eq!(hits(&one_unit(Some(Params::for_style(Style::Fill)), Some([0.8, 3.0])), "satinStitchShort", Format::Dst), 1);
+    assert_eq!(hits(&one_unit(Some(Params::for_style(Style::Fill)), Some([1.2, 3.0])), "satinStitchShort", Format::Dst), 0);
     // Short stitches with sound settings: none; the setting is what is measured.
     let short_stitches = plan(vec![unit(1, Style::Fill, RED, &line(&[0.5, 0.5, 0.5]), None)]);
     assert_eq!(hits(&short_stitches, "fillStitchShort", Format::Dst), 0);
@@ -314,4 +314,29 @@ fn the_check_judges_the_threads_its_format_writes() {
     assert_eq!(jef["rules"][0]["hits"], json!(u64::from(janome)));
     // A format that names no threads judges the document's.
     assert_eq!(check(&mut s, "dst")["palette"], json!("jef"));
+}
+
+/// A fill's narrow part narrower than 1 mm is sewn as a running line, not a satin column: the
+/// satin rule has no satin stitch to flag in it.
+#[test]
+fn a_narrow_part_sewn_as_a_running_line_is_no_short_satin() {
+    let mut s = Session::new();
+    run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
+    run(&mut s, "paint.setStroke", json!({"none": true}));
+    run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+    // A 20 mm square with a 0.8 mm wide, 12 mm long strip off its right side, in points.
+    let pt = |mm: f64| mm * 72.0 / 25.4;
+    let d = format!(
+        "M 20 20 L {r} 20 L {r} {t} L {e} {t} L {e} {b} L {r} {b} L {r} {bottom} L 20 {bottom} Z",
+        r = 20.0 + pt(20.0),
+        e = 20.0 + pt(32.0),
+        t = 20.0 + pt(9.6),
+        b = 20.0 + pt(10.4),
+        bottom = 20.0 + pt(20.0)
+    );
+    run(&mut s, "path.create", json!({"d": d}));
+    let order = run(&mut s, "embroidery.sequence", json!({}));
+    assert_eq!(order["blocks"][0]["units"][0]["columns"], json!(true), "the strip is found as a narrow part: {order}");
+    let check = run(&mut s, "embroidery.check", json!({"rules": ["satinStitchShort"]}));
+    assert_eq!(check["rules"][0]["hits"], json!(0), "{check}");
 }

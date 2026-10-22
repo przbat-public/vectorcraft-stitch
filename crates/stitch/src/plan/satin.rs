@@ -447,7 +447,7 @@ fn split_long(zigzag: &[Point], max: f64) -> Vec<Point> {
 /// A column narrower than this (its typical width, millimetres) is sewn as a running line along
 /// its middle: below about a millimetre a satin's two rails are too close for its crossings to lie
 /// side by side, as the export sews strokes that narrow as running lines.
-const MIN_COLUMN_WIDTH: f64 = 1.0;
+pub(super) const MIN_COLUMN_WIDTH: f64 = 1.0;
 /// The most a column's farther rail is taken to run for each millimetre of its middle when its
 /// crossings are spaced along that rail ([`Along::crossings`], [`Centre::stretch`]). Round a bend
 /// whose middle has radius r, a rail R out runs (r + R) / r as far; the inner side's radius can't

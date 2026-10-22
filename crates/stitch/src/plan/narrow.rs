@@ -155,6 +155,12 @@ impl Column {
         w.sort_by(f64::total_cmp);
         w.get(w.len() / 2).copied().unwrap_or(0.0)
     }
+
+    /// Whether it is sewn as a satin column: one narrower than a satin's crossings need is a
+    /// running line along its middle.
+    pub fn is_satin(&self) -> bool {
+        self.width() >= super::satin::MIN_COLUMN_WIDTH
+    }
 }
 
 /// The narrow parts of the filled `path` (`rule` decides what it covers): the columns typically at

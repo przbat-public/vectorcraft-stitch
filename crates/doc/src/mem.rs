@@ -135,7 +135,9 @@ fn embroidery_setup_bytes(e: &EmbroiderySetup) -> usize {
 /// What an object's embroidery keeps that a newer version wrote (keys and values this version
 /// can't read), beyond its box.
 fn embroidery_kept_bytes(e: &Embroidery) -> usize {
-    map_bytes(&e.extra) + e.stitches.as_ref().map_or(0, |r| map_bytes(&r.extra)) + e.unread.as_ref().map_or(0, json_bytes)
+    let thread = |t: &crate::embroidery::ThreadRecord| ALLOC + t.catalogue.len() + t.description.len() + t.brand.len() + map_bytes(&t.extra);
+    let run = |r: &crate::embroidery::StitchRun| map_bytes(&r.extra) + r.thread.as_ref().map_or(0, thread);
+    map_bytes(&e.extra) + e.stitches.as_ref().map_or(0, run) + e.unread.as_ref().map_or(0, json_bytes)
 }
 
 /// One estimate in progress: two documents walked side by side.

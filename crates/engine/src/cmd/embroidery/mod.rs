@@ -338,6 +338,30 @@ fn start_param(v: &Value) -> Result<Option<vectorcraft_geom::Point>> {
     Ok(Some(vectorcraft_geom::Point::new(x, y)))
 }
 
+/// A thread record the document keeps on an opened run ([`vectorcraft_doc::embroidery::StitchRun::thread`])
+/// as the machine formats take it.
+pub(crate) fn file_thread(r: &vectorcraft_doc::embroidery::ThreadRecord) -> vectorcraft_stitch::ThreadRecord {
+    vectorcraft_stitch::ThreadRecord {
+        catalogue: r.catalogue.clone(),
+        description: r.description.clone(),
+        brand: r.brand.clone(),
+        material: r.material,
+        weight: r.weight,
+    }
+}
+
+/// A thread record a machine file gave, as the document keeps it on the runs opened from it.
+pub(crate) fn kept_thread(r: &vectorcraft_stitch::ThreadRecord) -> vectorcraft_doc::embroidery::ThreadRecord {
+    vectorcraft_doc::embroidery::ThreadRecord {
+        catalogue: r.catalogue.clone(),
+        description: r.description.clone(),
+        brand: r.brand.clone(),
+        material: r.material,
+        weight: r.weight,
+        extra: Map::new(),
+    }
+}
+
 /// The key the read commands take to plan the selection alone.
 const SELECTED_ONLY: &str = "selectedOnly";
 

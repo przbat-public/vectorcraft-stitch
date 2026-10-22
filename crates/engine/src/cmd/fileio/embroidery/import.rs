@@ -67,6 +67,8 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
         }
         // One appearance shared by the block's lines, not a copy each.
         let stroke = Shared::new(stroke);
+        // The file's thread record, kept on each run for the export to write back.
+        let record = block.thread.record.as_ref().map(crate::cmd::embroidery::kept_thread);
         let mut children: Vec<Arc<Node>> = Vec::new();
         for (run, trim_before, trim_after) in runs(block) {
             let mut bp = BezPath::new();
@@ -90,7 +92,7 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
             // The line's points are the file's needle points: exported, they are sewn as they are,
             // so the design is written back unchanged.
             node.extras_mut().embroidery = Some(Box::new(Embroidery {
-                stitches: Some(StitchRun { trim_before, trim_after, double_point, ..StitchRun::default() }),
+                stitches: Some(StitchRun { trim_before, trim_after, double_point, thread: record.clone(), ..StitchRun::default() }),
                 ..Embroidery::default()
             }));
             children.push(Arc::new(node));

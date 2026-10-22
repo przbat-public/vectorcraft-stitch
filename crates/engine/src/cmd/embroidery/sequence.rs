@@ -225,7 +225,7 @@ impl Sequence {
         let colors: Vec<([u8; 3], Option<PaletteThread>)> = self.blocks.iter().map(|s| (s.block.thread.color, None)).collect();
         let matched = palette.assign(&colors);
         for (k, (Sewn { block: Block { thread, stitches }, members, .. }, matched)) in self.blocks.into_iter().zip(matched).enumerate() {
-            let thread = BlockThread::new(thread.color, palette, matched);
+            let thread = BlockThread { record: thread.record, ..BlockThread::new(thread.color, palette, matched) };
             let first_unit = plan.units.len();
             let ends: Vec<usize> = members.iter().skip(1).map(|m| m.start).chain([stitches.len()]).collect();
             for (m, end) in members.into_iter().zip(ends) {

@@ -21,7 +21,7 @@ use vectorcraft_doc::NodeId;
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_stitch::plan::{self, Params, Style};
 use vectorcraft_stitch::thread::{Match, Palette, PaletteThread};
-use vectorcraft_stitch::{Block, Pattern, Stitch, Thread};
+use vectorcraft_stitch::{Block, Pattern, Stitch, Thread, ThreadRecord};
 
 /// The number of a design's first record (needle point, jump or cut): records are numbered from 1,
 /// as a stitch list shows them. The commands call these record numbers (`firstRecord`, `record`),
@@ -103,12 +103,16 @@ pub struct BlockThread {
     /// (`vectorcraft_stitch::color`): 0 when the art is painted with the thread's own colour, a
     /// swatch of the palette's thread library.
     pub delta_e: f64,
+    /// The thread record the machine file the block was read from gave (a VP3's: catalogue
+    /// number, description, brand, material and weight), which a format that has one writes back.
+    /// `None` for art, and for a file that records none.
+    pub record: Option<ThreadRecord>,
 }
 
 impl BlockThread {
     /// `palette`'s thread `matched` to art colour `art`.
     pub(super) fn new(art: [u8; 3], palette: Palette, matched: Match) -> Self {
-        Self { art, thread: PaletteThread::matched(palette, matched), delta_e: matched.delta_e }
+        Self { art, thread: PaletteThread::matched(palette, matched), delta_e: matched.delta_e, record: None }
     }
 
     /// The palette the thread is from.
@@ -149,7 +153,7 @@ impl BlockThread {
     /// numbers its threads from this palette writes this one, and any other matches the art's
     /// colour to its own palette.
     pub fn to_thread(&self) -> Thread {
-        Thread { color: self.art, name: self.name().to_string(), chosen: Some(self.thread) }
+        Thread { color: self.art, name: self.name().to_string(), chosen: Some(self.thread), record: self.record.clone() }
     }
 }
 
@@ -162,7 +166,11 @@ impl DesignPlan {
             return self.blocks.iter().map(|b| b.thread.clone()).collect();
         }
         let blocks: Vec<([u8; 3], Option<PaletteThread>)> = self.blocks.iter().map(|b| (b.thread.art, Some(b.thread.thread))).collect();
-        self.blocks.iter().zip(palette.assign(&blocks)).map(|(b, m)| BlockThread::new(b.thread.art, palette, m)).collect()
+        self.blocks
+            .iter()
+            .zip(palette.assign(&blocks))
+            .map(|(b, m)| BlockThread { record: b.thread.record.clone(), ..BlockThread::new(b.thread.art, palette, m) })
+            .collect()
     }
 }
 

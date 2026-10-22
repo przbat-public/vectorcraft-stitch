@@ -51,8 +51,63 @@ pub struct StitchRun {
     /// same point, says no differently from a single stitch: without this, a line that goes
     /// nowhere is one needle point.
     pub double_point: bool,
+    /// The thread the file recorded for the run's colour block beside its colour (a VP3 thread
+    /// record), written back by a format that has one. `None`: the file recorded none.
+    pub thread: Option<ThreadRecord>,
     /// Keys this version doesn't read, kept as they are.
     pub extra: serde_json::Map<String, serde_json::Value>,
+}
+
+/// A thread as a machine file recorded it beside its colour ([`StitchRun::thread`]), saved as
+/// `{"catalogue", "description", "brand", "material", "weight"}` (its strings, and the material's
+/// code and the weight as bytes), with the keys this version doesn't read kept.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ThreadRecord {
+    /// The maker's catalogue number.
+    pub catalogue: String,
+    /// The thread's description.
+    pub description: String,
+    /// The maker.
+    pub brand: String,
+    /// The material's code (5 is rayon).
+    pub material: u8,
+    /// The thread's weight (40 wt is standard embroidery thread).
+    pub weight: u8,
+    /// Keys this version doesn't read, kept as they are.
+    pub extra: serde_json::Map<String, serde_json::Value>,
+}
+
+impl ThreadRecord {
+    /// The record a file holds under a run's `thread` key, when it is one this version reads: an
+    /// object with each known key, three strings and two bytes (0 to 255). `None` otherwise (kept
+    /// as it is, so that it saves back as it was).
+    fn read(v: &serde_json::Value) -> Option<Self> {
+        let mut map = v.as_object()?.clone();
+        let text = |map: &mut serde_json::Map<String, serde_json::Value>, key: &str| match map.remove(key) {
+            Some(serde_json::Value::String(s)) => Some(s),
+            _ => None,
+        };
+        let byte = |map: &mut serde_json::Map<String, serde_json::Value>, key: &str| map.remove(key)?.as_u64().and_then(|n| u8::try_from(n).ok());
+        let catalogue = text(&mut map, CATALOGUE)?;
+        let description = text(&mut map, DESCRIPTION)?;
+        let brand = text(&mut map, BRAND)?;
+        let material = byte(&mut map, MATERIAL)?;
+        let weight = byte(&mut map, WEIGHT)?;
+        Some(Self { catalogue, description, brand, material, weight, extra: map })
+    }
+}
+
+impl From<ThreadRecord> for serde_json::Value {
+    fn from(t: ThreadRecord) -> Self {
+        let set = [
+            (CATALOGUE, serde_json::Value::from(t.catalogue)),
+            (DESCRIPTION, serde_json::Value::from(t.description)),
+            (BRAND, serde_json::Value::from(t.brand)),
+            (MATERIAL, serde_json::Value::from(t.material)),
+            (WEIGHT, serde_json::Value::from(t.weight)),
+        ];
+        with_kept(set, t.extra)
+    }
 }
 
 impl Embroidery {
@@ -69,6 +124,13 @@ const STITCHES: &str = "stitches";
 const TRIM_AFTER: &str = "trim_after";
 const TRIM_BEFORE: &str = "trim_before";
 const DOUBLE_POINT: &str = "double_point";
+const THREAD: &str = "thread";
+/// The keys of a thread record ([`ThreadRecord`]).
+const CATALOGUE: &str = "catalogue";
+const DESCRIPTION: &str = "description";
+const BRAND: &str = "brand";
+const MATERIAL: &str = "material";
+const WEIGHT: &str = "weight";
 
 /// Take boolean `key` out of `map`: its value when it is one (a missing key is false); a value of
 /// another type stays in `map`, to be written back as it was.
@@ -104,7 +166,12 @@ impl From<serde_json::Map<String, serde_json::Value>> for StitchRun {
         let trim_before = take_flag(&mut map, TRIM_BEFORE);
         let trim_after = take_flag(&mut map, TRIM_AFTER);
         let double_point = take_flag(&mut map, DOUBLE_POINT);
-        Self { trim_before, trim_after, double_point, extra: map }
+        // A record of another shape is kept as it is, unread.
+        let thread = map.get(THREAD).and_then(ThreadRecord::read);
+        if thread.is_some() {
+            map.remove(THREAD);
+        }
+        Self { trim_before, trim_after, double_point, thread, extra: map }
     }
 }
 
@@ -113,7 +180,8 @@ impl From<StitchRun> for serde_json::Value {
     fn from(r: StitchRun) -> Self {
         let flag = |key: &'static str, on: bool| on.then_some((key, serde_json::Value::Bool(true)));
         let flags = flag(TRIM_BEFORE, r.trim_before).into_iter().chain(flag(TRIM_AFTER, r.trim_after)).chain(flag(DOUBLE_POINT, r.double_point));
-        with_kept(flags, r.extra)
+        let thread = r.thread.map(|t| (THREAD, serde_json::Value::from(t)));
+        with_kept(flags.chain(thread), r.extra)
     }
 }
 
@@ -362,6 +430,13 @@ mod tests {
             json!({"trim_after": true}),
             json!({"stitches": {"trim_before": true, "trim_after": true}}),
             json!({"stitches": {"trim_before": true, "density": 4}, "fill": {"angle": 30}}),
+            json!({"stitches": {"thread": {"catalogue": "2296", "description": "Pink", "brand": "Robison-Anton", "material": 5, "weight": 40}}}),
+            json!({"stitches": {"thread": {"catalogue": "1", "description": "", "brand": "", "material": 0, "weight": 30, "twist": [1, 2]}}}),
+            json!({"stitches": {"thread": {"catalogue": 2296}}}),
+            json!({"stitches": {"thread": {"catalogue": "2296", "description": "Pink", "brand": "", "material": 5}}}),
+            json!({"stitches": {"thread": {"catalogue": "2296", "description": "Pink", "brand": "", "material": 5.0, "weight": 40}}}),
+            json!({"stitches": {"thread": {"weight": 400}}}),
+            json!({"stitches": {"thread": "Pink"}}),
             json!({"trim_after": "auto", "stitches": [1, 2]}),
             json!(5),
             json!("satin"),
@@ -373,6 +448,13 @@ mod tests {
         assert_eq!((odd.trim_after, odd.stitches.is_none(), odd.extra.len()), (false, true, 2));
         let run: Embroidery = serde_json::from_value(json!({"stitches": {"trim_after": true, "density": 4}})).unwrap();
         assert_eq!(run.stitches.map(|r| (r.trim_after, r.trim_before, r.extra.len())), Some((true, false, 1)));
+        // A thread record is read when it is whole; else kept as it was.
+        let whole = json!({"catalogue": "2296", "description": "Pink", "brand": "Robison-Anton", "material": 5, "weight": 40});
+        let read: Embroidery = serde_json::from_value(json!({ "stitches": { "thread": whole } })).unwrap();
+        let thread = read.stitches.and_then(|r| r.thread).unwrap();
+        assert_eq!((thread.catalogue.as_str(), thread.brand.as_str(), thread.material, thread.weight), ("2296", "Robison-Anton", 5, 40));
+        let partial: Embroidery = serde_json::from_value(json!({"stitches": {"thread": {"catalogue": "2296"}}})).unwrap();
+        assert!(partial.stitches.is_some_and(|r| r.thread.is_none() && r.extra.contains_key("thread")));
         // Unread, then set: the object replaces it.
         let mut unread: Embroidery = serde_json::from_value(json!(5)).unwrap();
         unread.trim_after = true;

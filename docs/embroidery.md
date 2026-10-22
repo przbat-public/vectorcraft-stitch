@@ -79,6 +79,8 @@ or one past the palette's end, which only a damaged file or a newer chart holds)
 block's colour from the same fixed list, its group named after the number ("Unknown thread 79"):
 no number wraps round to another thread. A VP3 file gives each block's own colour and its
 thread's description (else its catalogue number), which names the group; it sets no palette.
+Each of the block's runs keeps its thread record (catalogue number, description, brand, material
+and weight), which the VP3 export writes back as it was.
 `design.pes` opens by its `#PES` bytes, `design.pec` by its `#PEC` bytes and `design.vp3` by its
 `%vsm%` bytes, whatever they are called.
 
@@ -606,9 +608,10 @@ same:
   write the block's art colour (rayon, 40 wt), exactly the colour the object is painted with, so a
   design opened from VP3 and exported again keeps its colours exactly: the project owner's choice
   (2026-10-22), over writing the plan's palette thread (its colour, name and maker, as the PES and
-  JEF exports do by number). The thread's description is written only for a design read from a
-  file, since the name a stitch plan gives a block is its palette thread's, matched to the colour,
-  not the colour's own.
+  JEF exports do by number). A block opened from a VP3 is written with its file's thread record
+  as it was (catalogue number, description, brand, material and weight); any other is written as
+  rayon, 40 wt, with no description, since the name a stitch plan gives a block is its palette
+  thread's, matched to the colour, not the colour's own.
 
 Coordinate conventions: files count tenths of a millimetre. DST, TAP, T01, EXP and JEF count y
 upwards, PEC and VP3's stitches downwards; the readers and writers flip accordingly, so a design

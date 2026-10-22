@@ -185,6 +185,12 @@ fn sewn(p: &vectorcraft_stitch::Pattern) -> Vec<(Vec<(i32, i32)>, usize)> {
         .collect()
 }
 
+/// Each block's thread as the file gives it: its colour, its name (a palette thread's for the
+/// formats that number them) and its record (VP3's).
+fn threads(p: &vectorcraft_stitch::Pattern) -> Vec<([u8; 3], String, Option<vectorcraft_stitch::ThreadRecord>)> {
+    p.blocks.iter().map(|b| (b.thread.color, b.thread.name.clone(), b.thread.record.clone())).collect()
+}
+
 /// A design opened from a machine file and exported again is the same design: every needle
 /// point, trim and colour block where the file had it, in every format.
 #[test]
@@ -203,6 +209,30 @@ fn an_opened_design_is_written_back_unchanged() {
         open(&mut s, &format!("again.{}", format.id()), &again).expect("opens");
         assert_eq!(sewn(&format.read(&export(&mut s, format.id(), json!({}))).expect("reads")), sewn(&a), "{}", format.id());
     }
+}
+
+/// A VP3 opened and exported again writes each block's thread record back as the file had it
+/// (catalogue number, description, brand, material and weight).
+#[test]
+fn an_opened_designs_thread_records_are_written_back() {
+    let mut s = art();
+    let mut p = Format::Vp3.read(&export(&mut s, "vp3", json!({}))).expect("reads");
+    let records = [("2296", "Pink", "Robison-Anton", 5, 40), ("1801", "Royal", "Madeira", 7, 60)];
+    for (b, (catalogue, description, brand, material, weight)) in p.blocks.iter_mut().zip(records) {
+        b.thread.record = Some(vectorcraft_stitch::ThreadRecord {
+            catalogue: catalogue.into(),
+            description: description.into(),
+            brand: brand.into(),
+            material,
+            weight,
+        });
+        // Read back, a thread is named by its description.
+        b.thread.name = description.into();
+    }
+    let vp3 = Format::Vp3.write(&p).expect("writes");
+    open(&mut s, "flower.vp3", &vp3).expect("opens");
+    let back = Format::Vp3.read(&export(&mut s, "vp3", json!({}))).expect("reads");
+    assert_eq!(threads(&back), threads(&p));
 }
 
 /// Where the needle starts, on the 0.1 mm grid from the design's top-left corner.

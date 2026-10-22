@@ -75,12 +75,14 @@
 //!   file that started elsewhere (see [`super::Frame::centered`]). The design's extent (and so
 //!   its centre, and the hoop values) is where the needle goes down: the points of jumps, which
 //!   the needle never reaches here, are left out.
-//! - The thread record: the block's colour ([`Thread::color`], the art's), material rayon, 40 wt.
-//!   The art's colour rather than the stitch plan's palette thread is the project owner's choice
-//!   (2026-10-22): an opened VP3 written again keeps its colours. Its description is the thread's name only for a design read from a file ([`Thread::chosen`]
-//!   unset): a name a stitch plan gives is a palette thread's, matched to the colour, not the
-//!   colour written. Reading takes each block's first colour and its description (else its
-//!   catalogue number) as the thread's name.
+//! - The thread record: the block's colour ([`Thread::color`], the art's). The art's colour rather
+//!   than the stitch plan's palette thread is the project owner's choice (2026-10-22): an opened
+//!   VP3 written again keeps its colours. A thread read from a file keeps its record
+//!   ([`Thread::record`]: catalogue number, description, brand, material and weight), written
+//!   back as it was. Otherwise: rayon, 40 wt, and as its description the thread's name only when
+//!   no palette thread was chosen for it ([`Thread::chosen`] unset): a name a stitch plan gives is
+//!   a palette thread's, matched to the colour, not the colour written. Reading takes each block's
+//!   first colour and its description (else its catalogue number) as the thread's name.
 //!
 //! References: EduTechWiki, *Embroidery format VP3* and *Embroidery format*
 //! (edutechwiki.unige.ch/en/Embroidery_format_VP3, …/Embroidery_format); KDE Community Wiki,
@@ -467,11 +469,21 @@ fn thread_record(out: &mut Vec<u8>, t: &Thread) -> Result<()> {
     out.extend_from_slice(&t.color);
     out.extend_from_slice(&AFTER_RGB);
     out.push(AFTER_COLORS);
-    out.push(RAYON);
-    out.push(WEIGHT);
-    let description = if t.chosen.is_none() { t.name.as_str() } else { "" };
-    for s in ["", description, ""] {
-        utf8(out, s)?;
+    match &t.record {
+        // The file's record, as it was.
+        Some(r) => {
+            out.extend_from_slice(&[r.material, r.weight]);
+            for s in [&r.catalogue, &r.description, &r.brand] {
+                utf8(out, s)?;
+            }
+        }
+        None => {
+            out.extend_from_slice(&[RAYON, WEIGHT]);
+            let description = if t.chosen.is_none() { t.name.as_str() } else { "" };
+            for s in ["", description, ""] {
+                utf8(out, s)?;
+            }
+        }
     }
     Ok(())
 }
@@ -599,15 +611,17 @@ fn read_thread(r: &mut Reader<'_>, block: usize) -> Result<Thread> {
         Some(&[red, green, blue]) if colors > 0 => Some([red, green, blue]),
         _ => None,
     };
-    let catalogue = read_utf8(r)?;
-    let description = read_utf8(r)?;
-    let _brand = read_utf8(r)?;
+    let (material, weight) = match table {
+        [.., material, weight] => (*material, *weight),
+        _ => (RAYON, WEIGHT),
+    };
+    let record = crate::ThreadRecord { catalogue: read_utf8(r)?, description: read_utf8(r)?, brand: read_utf8(r)?, material, weight };
     // Whitespace and NULs (a writer that ends its strings with one) are no part of a name.
     let clean = |s: &str| s.trim_matches(|c: char| c == '\0' || c.is_whitespace()).to_string();
-    let (catalogue, description) = (clean(&catalogue), clean(&description));
+    let (catalogue, description) = (clean(&record.catalogue), clean(&record.description));
     let name = if description.is_empty() { catalogue } else { description };
     Ok(match rgb {
-        Some(color) => Thread::named(color, &name),
+        Some(color) => Thread { record: Some(record), ..Thread::named(color, &name) },
         None => crate::thread::default_thread(block),
     })
 }
@@ -743,7 +757,7 @@ fn short(len: usize) -> Error {
 mod tests {
     use super::*;
     use crate::thread::{Palette, PaletteThread};
-    use crate::{Block, quantize};
+    use crate::{Block, ThreadRecord, quantize};
     use vectorcraft_geom::Point;
 
     /// The summary counts what the file holds: as many colour blocks as the design writes, one
@@ -791,6 +805,11 @@ mod tests {
         p
     }
 
+    /// A block's thread as a machine shows it: its colour and name.
+    fn shown(b: &Block) -> ([u8; 3], &str) {
+        (b.thread.color, b.thread.name.as_str())
+    }
+
     /// Each block's needle points on the 0.1 mm grid, the design's top-left corner at the origin.
     fn needle_points(p: &Pattern) -> Vec<Vec<(i32, i32)>> {
         p.blocks
@@ -806,8 +825,8 @@ mod tests {
         assert!(bytes.starts_with(MAGIC));
         let back = read(&bytes).expect("reads");
         assert_eq!(needle_points(&back), needle_points(&p));
-        let threads: Vec<&Thread> = back.blocks.iter().map(|b| &b.thread).collect();
-        assert_eq!(threads, [&Thread::named([230, 20, 20], "Poppy"), &Thread::named([20, 40, 210], "Royal")]);
+        let threads: Vec<([u8; 3], &str)> = back.blocks.iter().map(shown).collect();
+        assert_eq!(threads, [([230, 20, 20], "Poppy"), ([20, 40, 210], "Royal")]);
         // Written again, the same bytes.
         assert_eq!(write(&back).expect("writes"), bytes);
     }
@@ -1053,6 +1072,38 @@ mod tests {
         assert_eq!(back.sewn(), p.sewn());
     }
 
+    /// A thread read from a file keeps its record (catalogue number, description, brand, material
+    /// and weight), written back as it was; its name is the description, else the catalogue number.
+    #[test]
+    fn a_files_thread_record_is_written_back_as_it_was() {
+        let record = |catalogue: &str, description: &str, brand: &str, material: u8, weight: u8| {
+            let mut t = vec![1, 0x00, 200, 30, 90, 0x00, 0x00, 0x00, material, weight];
+            for s in [catalogue, description, brand] {
+                utf8(&mut t, s).unwrap();
+            }
+            t
+        };
+        let first = record("2296", "Pink", "Robison-Anton", 5, 40);
+        let second = record("1801", "", "Madeira Polyneon", 7, 60);
+        let bytes = assemble(&[((0, 0), vec![(first.clone(), vec![10, 0, 10, 0]), (second.clone(), vec![0, 10, 0, 10])])]);
+        let p = read(&bytes).expect("reads");
+        let records: Vec<Option<ThreadRecord>> = p.blocks.iter().map(|b| b.thread.record.clone()).collect();
+        let want = |catalogue: &str, description: &str, brand: &str, material, weight| {
+            Some(ThreadRecord { catalogue: catalogue.into(), description: description.into(), brand: brand.into(), material, weight })
+        };
+        assert_eq!(records, [want("2296", "Pink", "Robison-Anton", 5, 40), want("1801", "", "Madeira Polyneon", 7, 60)]);
+        let names: Vec<&str> = p.blocks.iter().map(|b| b.thread.name.as_str()).collect();
+        assert_eq!(names, ["Pink", "1801"]);
+        let again = write(&p).expect("writes");
+        assert!(again.windows(first.len()).any(|w| w == first) && again.windows(second.len()).any(|w| w == second));
+        let threads = |p: &Pattern| p.blocks.iter().map(|b| b.thread.clone()).collect::<Vec<_>>();
+        assert_eq!(threads(&read(&again).expect("reads")), threads(&p));
+        // Even with a palette thread chosen for it (an opened design, planned again).
+        let mut planned = p.clone();
+        planned.blocks[0].thread.chosen = PaletteThread::new(Palette::Jef, 12);
+        assert!(write(&planned).expect("writes").windows(first.len()).any(|w| w == first));
+    }
+
     /// A design planned from art carries its palette thread's name, which is not the colour's: the
     /// description is left empty. A design read from a file keeps its own.
     #[test]
@@ -1060,8 +1111,7 @@ mod tests {
         let mut p = design();
         p.blocks[0].thread.chosen = PaletteThread::new(Palette::Jef, 12);
         let back = read(&write(&p).expect("writes")).expect("reads");
-        assert_eq!(back.blocks[0].thread, Thread::named([230, 20, 20], ""));
-        assert_eq!(back.blocks[1].thread, Thread::named([20, 40, 210], "Royal"));
+        assert_eq!((shown(&back.blocks[0]), shown(&back.blocks[1])), (([230, 20, 20], ""), ([20, 40, 210], "Royal")));
     }
 
     /// Stitches longer than a byte holds are sewn as several; a long jump that keeps the thread on
@@ -1156,8 +1206,8 @@ mod tests {
         }
         let bytes = assemble(&[((0, 0), vec![(twisted, vec![10, 0, 10, 0]), (thread([1, 2, 3], "After"), vec![0, 10, 0, 10])])]);
         let p = read(&bytes).expect("reads");
-        let threads: Vec<&Thread> = p.blocks.iter().map(|b| &b.thread).collect();
-        assert_eq!(threads, [&Thread::named([200, 10, 10], "Twist"), &Thread::named([1, 2, 3], "After")]);
+        let threads: Vec<([u8; 3], &str)> = p.blocks.iter().map(shown).collect();
+        assert_eq!(threads, [([200, 10, 10], "Twist"), ([1, 2, 3], "After")]);
         assert_eq!(needle_points(&p), [vec![(0, 0), (10, 0)], vec![(10, 10), (10, 20)]]);
     }
 
@@ -1218,7 +1268,9 @@ mod tests {
             utf8(&mut t, s).unwrap();
         }
         let p = read(&assemble(&[((0, 0), vec![(t, vec![10, 0])])])).expect("reads");
-        assert_eq!(p.blocks[0].thread, Thread::named([9, 8, 7], "Meadow Red"));
+        assert_eq!(shown(&p.blocks[0]), ([9, 8, 7], "Meadow Red"));
+        // The record keeps the file's string as it was.
+        assert_eq!(p.blocks[0].thread.record.as_ref().map(|r| r.description.as_str()), Some(" Meadow Red\0"));
     }
 
     /// A file that names no colours in a thread reads in a default colour; one cut short or with a

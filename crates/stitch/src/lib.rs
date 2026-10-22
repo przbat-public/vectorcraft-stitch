@@ -131,16 +131,35 @@ pub struct Thread {
     /// [`Thread::color`] to its own ([`thread::Palette::numbers`]). `None`: every format matches
     /// the colour.
     pub chosen: Option<thread::PaletteThread>,
+    /// The thread record the file gave beside the colour (VP3's), written back as it was by a
+    /// format that has one. `None`: a planned design's thread, or a format that records none.
+    pub record: Option<ThreadRecord>,
 }
 
 impl Thread {
     pub fn rgb(color: [u8; 3]) -> Self {
-        Self { color, name: String::new(), chosen: None }
+        Self { color, name: String::new(), chosen: None, record: None }
     }
 
     pub fn named(color: [u8; 3], name: &str) -> Self {
-        Self { color, name: name.to_string(), chosen: None }
+        Self { color, name: name.to_string(), chosen: None, record: None }
     }
+}
+
+/// A thread as a machine file records it beside its colour (a VP3 colour block's thread record):
+/// kept so that a design read from a file is written back with it.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ThreadRecord {
+    /// The maker's catalogue number, as the file has it.
+    pub catalogue: String,
+    /// The thread's description.
+    pub description: String,
+    /// The maker.
+    pub brand: String,
+    /// The material's code (5 is rayon).
+    pub material: u8,
+    /// The thread's weight (40 wt is standard embroidery thread).
+    pub weight: u8,
 }
 
 /// One thread's stitches: a colour block.

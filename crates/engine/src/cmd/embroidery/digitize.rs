@@ -400,7 +400,8 @@ impl<'a> Digitizer<'a> {
         if points.is_empty() || !self.count(points.len()) {
             return;
         }
-        let mut block = Block::new(Thread::rgb(color));
+        // The file's thread record for the run's block, written back by a format that has one.
+        let mut block = Block::new(Thread { record: run.thread.as_ref().map(super::file_thread), ..Thread::rgb(color) });
         if run.trim_after
             && let Some(&last) = points.last()
         {

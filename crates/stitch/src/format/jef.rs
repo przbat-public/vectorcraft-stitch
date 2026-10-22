@@ -29,6 +29,8 @@ use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The header's fixed length: everything before the per-colour arrays.
 const HEADER: usize = 0x74;
+/// The bytes of one record: a command takes two records.
+const RECORD_BYTES: usize = 2;
 /// The largest delta one record holds, in tenths of a millimetre.
 pub(crate) const MAX_DELTA: i32 = 127;
 /// The command prefix: `0x80` is not a delta a record uses.
@@ -78,9 +80,13 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     let extents = [(-frame.x(b.x0)).max(0), frame.y(b.y0).max(0), frame.x(b.x1).max(0), (-frame.y(b.y1)).max(0)];
     let [left, top, right, bottom] = extents;
     let (width, height) = (left + right, top + bottom);
-    let records = record_count(p);
+    // The body first: the header counts its records (two bytes each, the end record included), as
+    // Janome's and Ink/Stitch's files do: (file length − offset) / 2.
+    let mut body: Vec<u8> = Vec::new();
+    write_body(&mut body, p, &frame)?;
+    let records = body.len() / RECORD_BYTES;
     let offset = HEADER + BYTES_PER_COLOR * colors;
-    let mut out: Vec<u8> = Vec::with_capacity(offset + records * 2);
+    let mut out: Vec<u8> = Vec::with_capacity(offset + body.len());
     out.extend_from_slice(&(offset as u32).to_le_bytes());
     out.extend_from_slice(&SECOND_WORD.to_le_bytes());
     out.extend_from_slice(NO_DATE);
@@ -112,22 +118,8 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     for _ in 0..colors {
         out.extend_from_slice(&COLOR_WORD.to_le_bytes());
     }
-    write_body(&mut out, p, &frame)?;
+    out.extend_from_slice(&body);
     Ok(out)
-}
-
-/// The number of 2-byte records the body holds (the header's `points length / 2`).
-fn record_count(p: &Pattern) -> usize {
-    let mut n = 1; // the end record
-    for s in p.points() {
-        n += match s.command {
-            Command::Stitch => 1,
-            Command::Jump => 2,
-            Command::ColorChange | Command::Stop => 2,
-            Command::Trim => 2 * TRIM_JUMPS,
-        };
-    }
-    n
 }
 
 fn write_body(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) -> Result<()> {
@@ -265,6 +257,46 @@ mod tests {
         b.stitches.push(Stitch::sew(Point::new(18.0, 23.0)));
         p.blocks.extend([a, b]);
         p
+    }
+
+    /// The header's record count is the records the body holds, the end record included, as
+    /// Janome's and Ink/Stitch's files have it ((file length − offset) / 2): for designs of one to
+    /// three blocks with a jump, a trim and a 30 mm stitch (written as three records).
+    #[test]
+    fn the_header_counts_the_records_the_body_holds() {
+        let int = |bytes: &[u8], at: usize| u32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]) as usize;
+        for blocks in 1..=3 {
+            let mut p = Pattern::default();
+            for k in 0..blocks {
+                let y = f64::from(k) * 10.0;
+                let mut b = Block::new(Thread::rgb([200, 30 * k as u8, 30]));
+                b.stitches.push(Stitch::sew(Point::new(0.0, y)));
+                b.stitches.push(Stitch::sew(Point::new(3.0, y)));
+                b.stitches.push(Stitch::new(20.0, y, Command::Jump));
+                b.stitches.push(Stitch::sew(Point::new(20.0, y)));
+                b.stitches.push(Stitch::new(20.0, y, Command::Trim));
+                b.stitches.push(Stitch::new(40.0, y, Command::Jump));
+                b.stitches.push(Stitch::sew(Point::new(40.0, y)));
+                // 30 mm: three records of at most 12.7 mm.
+                b.stitches.push(Stitch::sew(Point::new(70.0, y)));
+                p.blocks.push(b);
+            }
+            let bytes = write(&p).unwrap();
+            let offset = int(&bytes, 0);
+            assert_eq!(int(&bytes, 28), (bytes.len() - offset) / RECORD_BYTES, "{blocks} blocks");
+            // Walking them from the offset to the end record counts the same.
+            let (mut at, mut walked) = (offset, 0);
+            loop {
+                let (b0, b1) = (bytes[at], bytes[at + 1]);
+                let records = if b0 == CONTROL { if b1 == END { 1 } else { 2 } } else { 1 };
+                walked += records;
+                at += records * RECORD_BYTES;
+                if b0 == CONTROL && b1 == END {
+                    break;
+                }
+            }
+            assert_eq!(int(&bytes, 28), walked, "{blocks} blocks");
+        }
     }
 
     /// The header's extents are distances from the hoop's centre, where the needle starts: they

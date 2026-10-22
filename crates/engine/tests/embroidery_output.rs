@@ -57,7 +57,7 @@ d83d6fb4a1b0e263f6052c51118b8f980c90ab482f766d0bab5f77957f779854  fills.t01
 1b21849d5d0bd289963b854b283c661112a539449ccf088de7f0f0bfd85aecbb  fills.exp
 03539b9e7fbf1ea340f29c0eb9d61c944bdc7df5ca5d13b43c7450a961b17aa3  fills.pes
 dd984043c9f8e90f5785ee5e15e8864268a8690e32ad6b122986307e7b1dc1ff  fills.pec
-2a497b5837596591abe29dd9897f17d16ac1bac900ebff4f8ee084fd521690c9  fills.jef
+55f71114cad5eb31a2b4013aeef70790b359a68e8d3a04aef15d6364a6ad1ccd  fills.jef
 219d0ca8c9b2b5e5611468fceb15eb4c93d95355c04b394a464d2216f42e7bae  fills.vp3
 39797e76b30fbc5590344f74d78f56d2df5650b568fa19e4524b51e9bf735a81  strokes.dst
 f836d6d6fd8511fad23882411900ce7fd44c47dd9f9f89afb7735bc21c51aaa4  strokes.tap
@@ -65,7 +65,7 @@ f836d6d6fd8511fad23882411900ce7fd44c47dd9f9f89afb7735bc21c51aaa4  strokes.t01
 eb533088cadf0e803acb15d5346d50cb1689df0c0a95b151ca3072c5c713cdd0  strokes.exp
 36a596ccfaf7b525a17aa7c501657b86dd6a54a6e073e02c50bf3c97a3290703  strokes.pes
 85d22fedc8cb41e60c101a3950bfbd9961ade8f731b08b227988123ab7a6a197  strokes.pec
-6b63b73f857f40881ae216d83bdf9cada2652b50f3bd28695459b6df3233bfdd  strokes.jef
+89335107460998a8cc4a8d1ce76ea5b47dad41a5602e00b323e2e8a2bb68181a  strokes.jef
 7c571736fc1b1b2db830c1717200a8d4bd4b08c46537f5cff4d083f11639d402  strokes.vp3
 eff5ce99a798abd87bdfe0de5afeaf2bef01524734adb05677df70d77735785b  compound-path-with-a-hole.dst
 0abed765c7047a8983dcaf3db08525f38dfec3d60efacfb8d88fb6ce8a102763  compound-path-with-a-hole.tap
@@ -73,7 +73,7 @@ eff5ce99a798abd87bdfe0de5afeaf2bef01524734adb05677df70d77735785b  compound-path-
 183875dd627a5389393fb37d161a83b72cac9707ec4a1c3367bef1fa774289a6  compound-path-with-a-hole.exp
 3f1c4dcb8b4253521a930b2eb4c356198ee441bb66634f8ac28578e7661c5bf0  compound-path-with-a-hole.pes
 c9be8a855c8ea00349158ba21026a4476473c06f9b9882ec65f389237a35c7c6  compound-path-with-a-hole.pec
-8a7fe46d90b941380a72ceaf9892b7f67b0a799986d8b634916deb94504f0733  compound-path-with-a-hole.jef
+de2e37a82b2f7f53f991261962e202e182e8af819ca154a80c63a4732c7af32c  compound-path-with-a-hole.jef
 a48b832cc1740ecb3d291f0fb8144b935c491117d2b3ca686b65555266ea8190  compound-path-with-a-hole.vp3
 9f81cb7eda102267fbaeb06f45013f5c0c493dec3e53adbb297a1d59037143ac  clip-groups.dst
 a5ff05ef476f74540b5d4696b7dc99189a2aa7fecf745dc6b49f8aaf0e28e0b0  clip-groups.tap
@@ -81,7 +81,7 @@ a5ff05ef476f74540b5d4696b7dc99189a2aa7fecf745dc6b49f8aaf0e28e0b0  clip-groups.t0
 0d521a9d17424dc7930e42eeed86f6c9028c7fd2f31fccdc904d0411c4e14862  clip-groups.exp
 8896f294fd6dbbdf6b0782c73d50002af699916b10dd9957c9750303db087737  clip-groups.pes
 52f4da01db5bc485a51eccf305638f428c847ba0ed34911a04d0c1a35b4d3083  clip-groups.pec
-70cc8fb9bfdce3095a337ff1e6a2604fbe700666622a5be5a9fef54f1c0fac1a  clip-groups.jef
+36978e02311698098b63d2760f90a7f414d56349a4a54d3cb412a45078e095f1  clip-groups.jef
 b0b219a8d8ba268eec4235f122d5fb16337a693e555f85ae98c461e931ce3d1b  clip-groups.vp3
 f8b68f2f053586b5ba1157d727992e7da6d292fba40a8dc1f16a7c31bd272d53  symbols.dst
 46ac4ca5c04e5ed49f57462bfd4708c747788fc7488988f38554ad93fe4240db  symbols.tap
@@ -89,7 +89,7 @@ f8b68f2f053586b5ba1157d727992e7da6d292fba40a8dc1f16a7c31bd272d53  symbols.dst
 bbb4059dc3f24cd91aad3a7c836b9da1c5c39c88f761c362cc2f85e0e3eaf723  symbols.exp
 3c44b14027f8903cd455cc0f0ae41a05b0ace683181d5fc3d49b260d3442c3a3  symbols.pes
 0b56837c1cfa6afd0c196bfa2f55371916c2c7c4eb69e98d06b45612137f439d  symbols.pec
-f0e9e5f3daf483fd2612d2d2c7623f07c70d3cc4e11e36a6c502cb771ce1c29d  symbols.jef
+f0613950519a1d81612a27ad31cb9e075d37e38806032c768db650dbeff17b79  symbols.jef
 1d45081b32e36aa19835a7f12844a6f3f0e2af1b29fb5b87676779a887278e4d  symbols.vp3
 acc376edb11b4c6fda9bc7a66d9f5364395b3091ba9675c511123d801eb76ace  trim-after.dst
 379c27976c8dd221c00526da6fcb7cefbfb04c74d07bf14be68cab0ee933427e  trim-after.tap
@@ -97,7 +97,7 @@ acc376edb11b4c6fda9bc7a66d9f5364395b3091ba9675c511123d801eb76ace  trim-after.dst
 0a5451798049d733bc66859d09742f35fac1f02115c90ca09d8f7ae6fb15937d  trim-after.exp
 efea759a00d4625d06bd982d1d13e6a41252838a7aa86392deb7d68627d88b7d  trim-after.pes
 fc82fa6b1f72ef26b1c1b0c6f01723ffa18dafe2ca5d42cdc312ef454b9ecdad  trim-after.pec
-39b7ba864998c1dc00e3c45ba2bd1b6e2777443afa870db6185da48ec4608872  trim-after.jef
+bc1ad67e7e327908887b9625e781abeb3565b3fb99385d4126b1705d8ec0d304  trim-after.jef
 76260a4fd0b3baf245f2ef4ba1e8ab9d8be3865ce1a8cffbd36f6391907026be  trim-after.vp3
 2a6dbf72191279cfd55331f585e09ab0484a1f8a5a0c794f2c282fc84a2ac3e8  opened-design.dst
 e8a7abd2549356ecaa06fbc86d0dce03afa7d677fe6f48e090c6158a1c00661b  opened-design.tap
@@ -105,7 +105,7 @@ e8a7abd2549356ecaa06fbc86d0dce03afa7d677fe6f48e090c6158a1c00661b  opened-design.
 de630f94beada292b3aef0aac568e058d54082225f7e0aec0458f03163542930  opened-design.exp
 3c65b8cd20df97272c4da80c09bc04e366bb9872e0f323dffbc41bcc060ca491  opened-design.pes
 fcbd414254df19b3bf8157d6877bd3f9ffaccb2a144e1eb79d1a2e84f74cc1ec  opened-design.pec
-15aaa8d246131f754c16c328c9608688d3e48d6e96bd377c26053405d901d2f1  opened-design.jef
+fff7d43d2e75987e2ac5308fdf631af70551b0d0e73b52addf5ca10081ae2865  opened-design.jef
 870065d25529d8d4a64e58ba8016dc12b5cae993441ac84e3b644b6801cf077b  opened-design.vp3
 cef25d97d2473cfcc03d84ecc03e1f2b0ee792af912ed0ebd87d85c1939a05a8  opened-design-clipped.dst
 b00588928472f96b0e5c93082eadf1944a3a68bf5f03bc5d930284c4d3911b08  opened-design-clipped.tap
@@ -113,7 +113,7 @@ b00588928472f96b0e5c93082eadf1944a3a68bf5f03bc5d930284c4d3911b08  opened-design-
 823fb1f3876c7c8140199712f6230726ff072e714a35c5569c6f4b5e5faa51ef  opened-design-clipped.exp
 99279a3a87b87359ad24231ae08502420c4a3cf9f13a1c2e492f4826c26f61d4  opened-design-clipped.pes
 61216e3421e7bd5eabc5113e08232d6ba11948877635a08dbda8cf781844268d  opened-design-clipped.pec
-d9b1e367cff79af97819d19bfc9297ce59457d8dd64581c0ae87610709d5ad62  opened-design-clipped.jef
+329bcf71915fcfcd043e965e16cd05f835a0ed860925f76b1c8410a63fd2c819  opened-design-clipped.jef
 619a782411ecb81f4129a0660c88f5c5b7e76f2095b299224d1942a59a579e54  opened-design-clipped.vp3
 0ac667d8c405ccf71442f9d2ef8fe450d60cba77786ab14feaff61f8737653b3  opened-design-cut-at-block-ends.dst
 fce192774f923868bdd5f800fd2afb9e03ed6f0d62c4cd2577b3029f1174830c  opened-design-cut-at-block-ends.tap
@@ -121,7 +121,7 @@ fce192774f923868bdd5f800fd2afb9e03ed6f0d62c4cd2577b3029f1174830c  opened-design-
 0d21bdeaf446854ad17e517fd98c3fb1cde79dcf16e1182b8438c63c80673bb6  opened-design-cut-at-block-ends.exp
 326f4d74c9c76f053fdc11c17ad0a4d0d3617a8e72f0ab6be3fb6d634b63ed98  opened-design-cut-at-block-ends.pes
 3c069140aa070e4e345ebf6b8ccd9d976807b81683ed7c19d95f270c2eeb0a68  opened-design-cut-at-block-ends.pec
-d1f49d8273152b6064340076ddab9b45d4b3a2077864814a477ef799534ec262  opened-design-cut-at-block-ends.jef
+2c95dbb97edb623dfa6d1d6b7163ed2f04e8d5132b9c509efaa0dfe287c3941b  opened-design-cut-at-block-ends.jef
 d0c5af020602f9e85c6b002d4d122c14fd4e4e84a18897d2f3e620ea08f9af4b  opened-design-cut-at-block-ends.vp3
 16d22beabdd60cad0d9eeb7b30c30cf71eb8f198edad1117bae7727286f776b4  mixed-stitch-style-fill.dst
 e751bbb64713b8fbbc72a5f69b248ed7ce53a7325fec738a3c7247980f4ae2cc  mixed-stitch-style-fill.tap
@@ -129,7 +129,7 @@ e751bbb64713b8fbbc72a5f69b248ed7ce53a7325fec738a3c7247980f4ae2cc  mixed-stitch-s
 576f3c8ff3e6b9b9bc099cd6ac2ccdde421c290614875c43c4cd1e8368b2eae1  mixed-stitch-style-fill.exp
 d2061f444d93cfd18e30c7cb028f8b599232c190b6f01ef9314bb7c627ba10bf  mixed-stitch-style-fill.pes
 9350de5dbaad6e73e9403fa910b9fbda5929fe44704e238fe408d5ccb3ad172b  mixed-stitch-style-fill.pec
-7b6c8f497fa1d8522b630df5477c3ce727592e648c415842d68b3a64a96173ef  mixed-stitch-style-fill.jef
+1334231fa48788fc53b9b59f2904b2e5eeae3468f89c80a94e2cfd188bb9d6c2  mixed-stitch-style-fill.jef
 a404cc769750f730f427bcb447827820a42778711877f9cc3ecfa817939147d1  mixed-stitch-style-fill.vp3
 6c8c082a8b6d8e6809a02d53fa7d7d4d627f76b443301d33e9fb0d96bd935532  mixed-stitch-style-satin.dst
 d33cdd3dd6f0cfe4236546a15259889a16b0fa797b4e6ec268445ff63795a6a6  mixed-stitch-style-satin.tap
@@ -137,7 +137,7 @@ d33cdd3dd6f0cfe4236546a15259889a16b0fa797b4e6ec268445ff63795a6a6  mixed-stitch-s
 1605e7dd6f57e5a6bc2383e99283d021316121adcb4658dab314598b0f9b939f  mixed-stitch-style-satin.exp
 538e794f1da73f5a430e724d0fbd11a4636cd9fdcdbfcbff2819bed15ad82b1e  mixed-stitch-style-satin.pes
 c42d730d7af599da0023f4793fe0274a5bd49ae65b0adc90af77cac7fea61d0f  mixed-stitch-style-satin.pec
-ce1adfa08f6e14029d59095cb99ba10d2df622c0d93e97b00b1ad5001231b3fb  mixed-stitch-style-satin.jef
+eaee935976be194416276120e87a492a3ac283f45c6279f27c70b29e92f763c1  mixed-stitch-style-satin.jef
 26afbb0f789ef25a580cae51c67119e24d9f238f616badd80e95c5bdb7b7ad88  mixed-stitch-style-satin.vp3
 1eafce568d27a982c416ef59cb1d89f085ae0f2cfc2ba94c71399d8cd5a5c0a4  mixed-stitch-style-running.dst
 0d1a7534cdc23ab1e0ee259273fc11da46a790ed03cc7ad31a9797f5d67bf904  mixed-stitch-style-running.tap
@@ -145,7 +145,7 @@ ce1adfa08f6e14029d59095cb99ba10d2df622c0d93e97b00b1ad5001231b3fb  mixed-stitch-s
 643757e8783d69a2b2fc0d3d5e340b431dbf40a9691e201555ca721421b73dcf  mixed-stitch-style-running.exp
 1db76897959188959fce0e009cd8124c2af9c6f7442df576dd027407bdc886ce  mixed-stitch-style-running.pes
 bcb015f33e25490c91b0f0478be6d78f5d4abe0d1f5888f9c653b5f2058e9e64  mixed-stitch-style-running.pec
-1ee45b54efb3973027ee89253d284d7231d3cde9aea2eb607cd51a588e194ee5  mixed-stitch-style-running.jef
+ca1adee7a0404173151e9e990db31da999e2457bb3c3a81df567f56a63df456c  mixed-stitch-style-running.jef
 d4a87b4081ccf614a206937bfef1fc51dca30c3823460f21ae5ebbeb82d41831  mixed-stitch-style-running.vp3
 233070a6889b2e93eec90934714681982139bcdcd7af47d00b1702739067185b  mixed-every-option.dst
 1170588cf3682b413e1495e337fccc65185ca9162324cda808b9e2db4fb7f0d1  mixed-every-option.tap
@@ -153,7 +153,7 @@ d4a87b4081ccf614a206937bfef1fc51dca30c3823460f21ae5ebbeb82d41831  mixed-stitch-s
 438fce34ff922af054de30f385cae4e3f927ca9f0e8af6b9e6bef073a20e28f0  mixed-every-option.exp
 abcda3b55ed25b1ce80033496737f2cd1cf948758769ec6596d145bc9c75cf41  mixed-every-option.pes
 e50f40c1be8d0c74f9ac88dcdf8799ddf6500524efa36904049d9f43589f70e4  mixed-every-option.pec
-d96b7bd3139daeef9ccc2c148e03cd09563cd57c23d98148974f4a6e51a3b584  mixed-every-option.jef
+40734acd42f09b45f298c736b5ef458b22c965f716409f6cdacc76bedfc67327  mixed-every-option.jef
 7152032691ed15592e09c36cf8b9c4ae65009eff709d7f20be10653ac34482ff  mixed-every-option.vp3
 a8cb4189cee41465a25d1a4d8191cc122b302ae5289a2150e3b4aca03d7aa049  mixed-shrunk.dst
 3e4baff4739859b1ade5923c927bae77fc823c45082d9f1645fbb882716297ca  mixed-shrunk.tap
@@ -161,7 +161,7 @@ a8cb4189cee41465a25d1a4d8191cc122b302ae5289a2150e3b4aca03d7aa049  mixed-shrunk.d
 a785608b345ea6ed9039e9d2db3ea25883d022539fbaeb69c6d6943d988e5248  mixed-shrunk.exp
 cf022f2b570ef05b9940d64c49219c013c7ee80b5ac0dc33e8b3d84453edd5ad  mixed-shrunk.pes
 027cea918ef3dc5b2c52850e8091be257377c075041287de86bed6ebc3b0c629  mixed-shrunk.pec
-f87c58163bc7950ee82fabe7ba6a6ca31f7baf1da2ce1556637af0d827e10129  mixed-shrunk.jef
+e488e732b9fb9f7d1a68872d0bc3d79de3165f50df07bae429220b2761ff57a5  mixed-shrunk.jef
 ce449d7103e445cd3f8b323a2595c2a2f2aa178a7864c41a6ad2e6b9733dd4a5  mixed-shrunk.vp3
 ";
 
@@ -173,7 +173,7 @@ e280bb5748b1b92274b813cbbf961269a79cb37c4ac59ed4d7af16b393416b32  bullseye-twemo
 ad3aaf8945c67d9e706a3b47d230611f186f4d69190662fa18f9c5df818c5f0d  bullseye-twemoji.exp
 467bff688288710650df332d4dcb92e8a4ff8ce6b33521d8b85dcf8946dbf545  bullseye-twemoji.pes
 e28af61cc1acdd408c4562dc6a964cee1c085103f55133c3a4249b400affc77c  bullseye-twemoji.pec
-34cebfe90513cf990061ae78519969433fb2a3b21b9033658519754c1cc7ad7a  bullseye-twemoji.jef
+523dbf9a258e8b259b1698e53c337a86d55306d05e410c1b80cd392e08495d12  bullseye-twemoji.jef
 c3d466ffde3e505cd57cba78ee41ca57ee6f7a5413c56d98bcb6a731db77df99  bullseye-twemoji.vp3
 beae2e150caf987f5a39397dbef9238bf14f09acd707e9d18d139928b579cbad  fox-twemoji.clipart.dst
 2b0c4f2447243770c7215c90de2dd376dd0553501399e1ab059184272107837d  fox-twemoji.clipart.tap
@@ -181,7 +181,7 @@ beae2e150caf987f5a39397dbef9238bf14f09acd707e9d18d139928b579cbad  fox-twemoji.cl
 1e3b5433c82b1dddd0b574f34012c4d9d329989002f9aedc016ef92ae3c2c4be  fox-twemoji.clipart.exp
 2ee47aa9f7dd1002a1b4d5c36b07274cefd738bd6991e383ffa931ee64b8bb6a  fox-twemoji.clipart.pes
 85dbeb2226be44505aecbed7568227b742e0f70dc5f7443ca7864e2b4af645b8  fox-twemoji.clipart.pec
-c5dc56f47d7a6ceef98e3712c334da686c90a4d8114622e0674af00aa74909ee  fox-twemoji.clipart.jef
+f069741c54bbc08d740a4d28f9cc8888b260f32f0dcf3d576748b979e13be899  fox-twemoji.clipart.jef
 500dd4352493268c0a46edfd6095f8daa37e46e051371bfdf1c2ab46ee757881  fox-twemoji.clipart.vp3
 a0465592a39b91b6be9070b7f5205361db9ff5a3e33d4593a6ad86d931c44f33  heart-suit-twemoji.clipart.dst
 9e25d01d186774e3eec73b4427abb21edec84541e15f0cb15f82593616bea9a5  heart-suit-twemoji.clipart.tap
@@ -189,7 +189,7 @@ a0465592a39b91b6be9070b7f5205361db9ff5a3e33d4593a6ad86d931c44f33  heart-suit-twe
 0d0e7e1d7d20e976a08fafd3ed6df5e8806a7e4e572a3513ee14e9d4e849fa64  heart-suit-twemoji.clipart.exp
 0986deff7fa231d01098344499c2f0a531b2cdf94c3c88392182a962dc3fbefa  heart-suit-twemoji.clipart.pes
 d2c0daeed2ac136d8c68d85c09212948c28563b0b245100defb688ab30a35852  heart-suit-twemoji.clipart.pec
-bca9a491d2b060b82c6c3a4d2f85aacfc3a22452ca35334a5843660cef9f853d  heart-suit-twemoji.clipart.jef
+dfbaebe23679c276c14ebf06d8d056b5bb5a9ccea53d08967bdbe449f2504797  heart-suit-twemoji.clipart.jef
 f81f49ae03fb46c475ee6192eeaa2394c96ce77d93e5aa25a4f98209aebd33f3  heart-suit-twemoji.clipart.vp3
 41cdd3a94031c2ced989b08d7a5bc2e35567ed7b3d331a58c19229832b9bd0ff  joystick-twemoji.dst
 8f763b55e74106ddd2a68657ede308f5eb61e59775e2e8c7575053d0038880a5  joystick-twemoji.tap
@@ -197,7 +197,7 @@ f81f49ae03fb46c475ee6192eeaa2394c96ce77d93e5aa25a4f98209aebd33f3  heart-suit-twe
 5336690149a2f03441610ba3e0f5376b92d62914f4deec1afc33a2a23c1a724b  joystick-twemoji.exp
 5892e82bc9c6be6060aa86fbd36304aca37fbeae70b1bfda5158d18beb649d41  joystick-twemoji.pes
 9fe0186a0c04c91e1a68f413ad53149b8257a94312ccf518591e1b49d4d025e1  joystick-twemoji.pec
-332f68aa54341692299cd6ceb576e7d11ec81d39cbab57251e003c7ee10c8bc9  joystick-twemoji.jef
+8012d1a66a7c2b4702e585c2939ddb82f5529c58362468e7731a87590a60ee90  joystick-twemoji.jef
 36a1e047165e47b09dbedfefcca208b26a74b6801fd438de530c5502a6fe07e5  joystick-twemoji.vp3
 937ce6005ca277fd1b8e33f71f31d257f682b7844f3f2d41d4919e13534d1b2c  pool-8-ball-twemoji.dst
 7561f3be7423f8039b1757566dd15bc2274f9c172875eb4c52354842d35e67f3  pool-8-ball-twemoji.tap
@@ -205,7 +205,7 @@ f81f49ae03fb46c475ee6192eeaa2394c96ce77d93e5aa25a4f98209aebd33f3  heart-suit-twe
 ffc977db44a67fb4fcc5a8c9a42b7d83d77aaa641dd807db2661f03e8f9973e7  pool-8-ball-twemoji.exp
 ae9a0054b5760b6d8c939fe62cdbdaf1755fd76aa74fbb955424ba868d5d5d85  pool-8-ball-twemoji.pes
 0044ecacfd8f040c325775356219c6e9957bf93502150cd90c550f970c48af36  pool-8-ball-twemoji.pec
-c2d93b3ae7b00628e0b4a812f48975b44ff07026620d1411c331b9818b79e9a7  pool-8-ball-twemoji.jef
+3274ddae121d2641f473ff13e10295c0234904b874fd196c6e655c127878162b  pool-8-ball-twemoji.jef
 63ba1d3b248ba86da6655fdf923eedce3c478eb2a139318fb9345fadaa5c49a7  pool-8-ball-twemoji.vp3
 2745472aa7ecb5cf1b462edcc2726c589f298b36621bd65c0f3f40f6a2c161c5  puzzle-piece-twemoji.dst
 ea063b2fd303dd23756ec75d633a0c1d6bd1e04d0040515bab5374b4829583fe  puzzle-piece-twemoji.tap
@@ -213,7 +213,7 @@ ea063b2fd303dd23756ec75d633a0c1d6bd1e04d0040515bab5374b4829583fe  puzzle-piece-t
 1d333d7bcc145493c77ccbafe909d23ab03f4f4e7ce766bab9078373d733fe98  puzzle-piece-twemoji.exp
 fdcf0af314400b90877fc07cd4bf2be34587c65719767b338aceb2703972f99a  puzzle-piece-twemoji.pes
 99239d1d9fd27161ab6050dd4df592c69545fa0c008bcefbfc30798a7151fd7f  puzzle-piece-twemoji.pec
-e5553e1333c74aa5ccd6db32b7616f5d85c7d2d92400e981cdfc5881e0ff194e  puzzle-piece-twemoji.jef
+f4aa4bac74bcac57a19f1c5368a7358ae049fcd417e82ecdb12fee6ebe104a2c  puzzle-piece-twemoji.jef
 f49847a3158d7ac84aeb4541ad2721f72e801e4868b95af6057b2078d9bbb9bc  puzzle-piece-twemoji.vp3
 1db23447b17b5df2ff6c898df0b0a70f46fa37b277f8ad948ac4398d2457f9de  smiling-face-with-smiling-eyes-twemoji.clipart.dst
 14abcb883c9bb68fd32733468f4f71e577b1c4d3c95a4b55ece840cd6cdcacfe  smiling-face-with-smiling-eyes-twemoji.clipart.tap
@@ -221,7 +221,7 @@ f49847a3158d7ac84aeb4541ad2721f72e801e4868b95af6057b2078d9bbb9bc  puzzle-piece-t
 19f60296fe21f16e10bc737bef1d821af9150f777841ead64c11af210c0d799a  smiling-face-with-smiling-eyes-twemoji.clipart.exp
 4a3f0f02b18c68b51a6012b8414c72b002f51cc9a55756658aa1320445e06b83  smiling-face-with-smiling-eyes-twemoji.clipart.pes
 b7dc5d51320bd367150ebd1395ee821f439ad7946022b79aee9df74ee6f9c80d  smiling-face-with-smiling-eyes-twemoji.clipart.pec
-1b164b8b4aa2dda1d9be1ef27d7e18f3cbfa3c9b3aaaa4654d25394b86b4f445  smiling-face-with-smiling-eyes-twemoji.clipart.jef
+9052b32dae1382a6f2156e509bdf994dbaf63ae1852bc8538fc31c689ce63d52  smiling-face-with-smiling-eyes-twemoji.clipart.jef
 b26591e940bc8a9f1c4530d0d1a403f703ab0b3b5986dbff364edbfbf81df2cb  smiling-face-with-smiling-eyes-twemoji.clipart.vp3
 e556ec1fbb766bc1cfef7790f7307ebc94d8e5ff5662ddc05075e31254a36841  sos-button-fluent.clipart.dst
 7b85ad77234d9b9ce29bfabc8cd0d3b8b549fb52f60baf10fad907e1a7b895b5  sos-button-fluent.clipart.tap
@@ -229,7 +229,7 @@ e556ec1fbb766bc1cfef7790f7307ebc94d8e5ff5662ddc05075e31254a36841  sos-button-flu
 52951b7932fbe7af736f63ed229ef21dda5a5867bc3e32c90ab6fe20ce93fe6e  sos-button-fluent.clipart.exp
 0c6d0f065557dffaac67fd6db943b7735dfff7c4517fca6be67dce1344ee5529  sos-button-fluent.clipart.pes
 b3ea1d943f382921bb4ed29c7f712656544c525ad8701d4972dacbac6cd59294  sos-button-fluent.clipart.pec
-3a7368682bd0744780f966036e3ce3cf27c4fef2506bf5ef3ee82f9759562ed1  sos-button-fluent.clipart.jef
+05147fb7c1f075fb2c46c49e227aacc233aa56acd2501f7b33c7ffd89555b260  sos-button-fluent.clipart.jef
 c9a6c63e14d65a190f32e942e44b6208370997a825d868d14798e8cae1106019  sos-button-fluent.clipart.vp3
 61cd25c0894c0784312870219a56001d37a58d1629ad9fe12a40590067d0f5a1  video-game-twemoji.dst
 24dec2e0a353ca02b61d8691dbd5388f3bab86e8a5d6b964c90355dfa560a268  video-game-twemoji.tap
@@ -237,7 +237,7 @@ c9a6c63e14d65a190f32e942e44b6208370997a825d868d14798e8cae1106019  sos-button-flu
 4576f05b0aca40b2fb97375a0fb12bb47b6661774047b85926da715c32e55e9f  video-game-twemoji.exp
 5b60086836be865519df4b0ceee9775db2359cee15e2b4077de600c497fa8282  video-game-twemoji.pes
 ed9705aa27c8c699b4635f495568adecf071702afdd44ab64314e8551df52337  video-game-twemoji.pec
-c6ec7403a769d37a120c1845682f45001ea4a620dfb1240a7b7bceb6d3e1f523  video-game-twemoji.jef
+3c1a16ea40fdb5089ebd6da6b2ff3a74008879ad59ff4fb140f5968f8eacebc1  video-game-twemoji.jef
 0c3f33ac2a7e6afab0adeb255dccfad17a20fb1dee95921298bcfd2294546831  video-game-twemoji.vp3
 f4c151c3583b0fee92777903df59e82a837b981835dbb8d9219cde0096bdc9b3  watermelon-twemoji.clipart.dst
 83dbc939ff28097a39c8976f166757ee58ffb6f28a657d2373567a82d63008ae  watermelon-twemoji.clipart.tap
@@ -245,7 +245,7 @@ f4c151c3583b0fee92777903df59e82a837b981835dbb8d9219cde0096bdc9b3  watermelon-twe
 8b245eb245b1bf1821e04514a7914b4a4b3f9a60c8488f403cffd78894e9e758  watermelon-twemoji.clipart.exp
 8ce685df0a530ecb72bd68d87c6bb52e5430e63a21dcdba69068f4cdeb643dac  watermelon-twemoji.clipart.pes
 88dc2ec1c3f51a14eb38e598c53dbc8f9151b1735c60d917a36d90d77221fdb3  watermelon-twemoji.clipart.pec
-e9f5e67325de8b59e79ce2b1b5577f563f748d5c0925a5e4a33b9afc1cf2fbe2  watermelon-twemoji.clipart.jef
+8e3e9895af14cb9352257e6e726712074b4634ed58ea41e3430a0e8b69872973  watermelon-twemoji.clipart.jef
 3d509031f248ea83d4d25b97d71c1095902bdf6bbf61872c7764dfff892b78d3  watermelon-twemoji.clipart.vp3
 5c1e9736a5de173cea8305f4eea9000fb91d9dcc8fffb8c9166eed28e8c734ee  zebra-twemoji.clipart.dst
 b31a34432500ec09051ad49d5bccce781fc274026aa5bc25371f3e6bcb13eb71  zebra-twemoji.clipart.tap
@@ -253,7 +253,7 @@ b31a34432500ec09051ad49d5bccce781fc274026aa5bc25371f3e6bcb13eb71  zebra-twemoji.
 56bcbfba52d9102e92415906b28337c78a3f0fd476fb286ca9f13d91c901d5cf  zebra-twemoji.clipart.exp
 3ae9dc6fbb10712cb4182eed3d2c90653f648c7d70bd9bc3a34eddc60c169d9c  zebra-twemoji.clipart.pes
 f98b0cb567866d72216177a7956d5dd15c3df5eb0c9828b6ebc349a86dc96b6b  zebra-twemoji.clipart.pec
-9086271daeda24695919fd022aedf8afbc3c3b89aebd2462af5db9decbdc74ba  zebra-twemoji.clipart.jef
+eada359ba5693692f487d9861a1b91084b3b77025d19475e38faedf5cfed8a58  zebra-twemoji.clipart.jef
 f39d519570c4543fa7c7edf089fe76e07b39f6331d225ade5640bdc285f8c7cb  zebra-twemoji.clipart.vp3
 ";
 
@@ -262,46 +262,46 @@ f39d519570c4543fa7c7edf089fe76e07b39f6331d225ade5640bdc285f8c7cb  zebra-twemoji.
 const SYNTHETIC_THREADS: &str = "
 3fcd799b6d3cb2ea07f6024394a08b32059d60fcd2764ef3f17b7fdff35bbbf1  fills.pes  5 21 37 5
 0d8637177ce9163edb14fe2a72d7e69f347cc6e03dd6962a2836db4b387f5eab  fills.pec  5 21 37 5
-05c040f8fd65b7080c90f822916f3e50af7b54d55819c3b1c5e5e06596281971  fills.jef  33 59 45 33
+2e82b7672be2c74e2468336deb2c2205031f424ea0ba58e1297860bf36510d48  fills.jef  33 59 45 33
 c3a06ac48968baf33f01b1cef11bf68f9a1ee1d24f5ceb5bb3259e5522aa1bb8  strokes.pes  5 21 7 37 52 24
 117af9ccdd3e6d987902d27c05235b4c30b29e1832d3951d491e31273103b074  strokes.pec  5 21 7 37 52 24
-bc946f4efaad9e482603217d909c65bb54500a8a141ecba84b61a0943c7a0595  strokes.jef  33 59 59 45 71 14
+5d7230325fc878bdc57c4baa2be365a2062165cfe894e579b7a3edf4234b2aa0  strokes.jef  33 59 59 45 71 14
 7f3afc7ad0410d2a5b493bee6f4ae5ce7d2df0041b68a243fd5147ead2859f1d  compound-path-with-a-hole.pes  5 21
 0e58eb05263636b0de5a1e00399ae071fedc07c43aaf8f5ab2768fae12ac07e9  compound-path-with-a-hole.pec  5 21
-b90bb83fff6d9372844fe0cee767b4037e01e4fd6cebeff090ce3dad7730ac61  compound-path-with-a-hole.jef  33 59
+a5d1469fdd76d6e7bf8fef8639ea3951796726bc0cc0b287a903b98cff897202  compound-path-with-a-hole.jef  33 59
 0a272050ed47222857ff8740cc57ec24c6a4fc289ba3ce30d66c25bd109d086d  clip-groups.pes  58 5 21 37 23
 f9a66e5486b9f056151931e79c3c8a86da828c6f00d7fc4064872f8fd2b5d2fb  clip-groups.pec  58 5 21 37 23
-5e6b204fbb18728b199034882195de6f643a8390e4fc791ca856544cef87bcf9  clip-groups.jef  37 33 59 45 1
+3b5d9ab166760d963e13d8555da6a36b4a2b8c69cc73e7f320bdc65a21b28682  clip-groups.jef  37 33 59 45 1
 a8b7e0c436518aa8abf5e2b4332787ab3400a7d3ace5eaaaac9346c2a441f673  symbols.pes  5 21
 1ca563ba453f1302579577ff09e43898c89b6914fe7ff28d9dd4e39ce5a027dd  symbols.pec  5 21
-dc4c89265c66ba54ef3275864f628e0162ec3617919bbab9a8defe1099f3b241  symbols.jef  33 59
+05a79caf4eaac28650ba3e3e8db9e64ebf18d3df1e3df1a4777d9c4ae745b1e0  symbols.jef  33 59
 d4c08aa21a81f129109f3c3fbf56edcd72083dc369a054a70d1430be174b6ea7  trim-after.pes  5
 4fb93b5e7931dedd01907de38feb0e6f4403aa75fd2aa9204360251ce2d6cf40  trim-after.pec  5
-34b873b2df16b03ebbe2aadab8ee0ac7c123a91d441909da312f1ec9439d9baf  trim-after.jef  33
+e9facc319b3b2ac109fe165ef49ccea0de647ef84aeda3068d23b921d8b09ecc  trim-after.jef  33
 29fb3893c60374bcbf84513160fe5280a094c254032ac877efd5334d4fb02aff  opened-design.pes  5 21
 f071bdfe59048fa46477242bfe11eadb7a9b8452f4e28b03308b8526696e9449  opened-design.pec  5 21
-c1527e279b20b1eb4428faf50f2f2500444dcc5bbf3f784db92d5a1eee2372cc  opened-design.jef  33 12
+fc8c6f8ff1631323cd555418f77d00cfe115736e5c8c3a0175c1d7ebfb413ff6  opened-design.jef  33 12
 2c8005f55010e47441d5f34e323dd720828a25bc8d445e139c25cef39a3ad46a  opened-design-clipped.pes  5
 7ae9a94e06ed76a1500b29a9827f02094e65c5235284713445c4f9ff38c92294  opened-design-clipped.pec  5
-568676213587cc07b402e6e5d55b80500455d2eefe51ba60581ba18ce96fb6a3  opened-design-clipped.jef  33
+49860d6b1c22952db3d338e262fc7994b3a069c8cdcdd31ba7e7aa30eb9fa6fe  opened-design-clipped.jef  33
 d0a2834517c3873230966c078a804f4c22cc1c56dd2b599c126f005c523fcf0d  opened-design-cut-at-block-ends.pes  5 55
 25bb97db737b1e2367a42ac7dbde6958d2b9112f04485d3da76b4844c1acdd63  opened-design-cut-at-block-ends.pec  5 55
-e6effa654bfa5ad9d95db6df0c25e8de2686eed3f5ce3e9d6fa10dc8c1715f10  opened-design-cut-at-block-ends.jef  33 59
+d94eb984a5171bdb88240ddc94120244f53cef38d50df07ebc523becb9c17127  opened-design-cut-at-block-ends.jef  33 59
 30571a7382f6c0f6cea61412004329ef772412f024672a9ef893619677fd72b0  mixed-stitch-style-fill.pes  5 37 21 7 52 24
 2b1a1dbcf2b7a1959abd51268cd1cee8f5b84bf2fc30749bc9b982ee4f682e38  mixed-stitch-style-fill.pec  5 37 21 7 52 24
-6f628eceafcca7b0ba43d3b89a8abd06e4e914c6f5685ba4bced90f590d01213  mixed-stitch-style-fill.jef  33 45 59 59 71 14
+d5e0b5b76165e9597146c7facf20e9b6676af191ce2a26bb7c86d8d4aaa1ccb6  mixed-stitch-style-fill.jef  33 45 59 59 71 14
 68404f49e216663779cda4a49cc079fee4a22421755173c3d73428a874324419  mixed-stitch-style-satin.pes  5 37 21 7 52 24
 f0575ed808b419cb6322e8d683c76a00d58805f10db411581e07bdb15c7c5c96  mixed-stitch-style-satin.pec  5 37 21 7 52 24
-21b7e94e68ea4aae21578b021bc6d8284eabda55615efc8a906ee4cdf2a1aaeb  mixed-stitch-style-satin.jef  33 45 59 59 71 14
+a3a929d81ec9d123764ce19c7068089c96fa17e3da7071048966cb6c7288ce42  mixed-stitch-style-satin.jef  33 45 59 59 71 14
 de0d2f4e0cd32f5392dfe444a2a7c3c8b3db8e9d12b2e3cdc2335638fed426a5  mixed-stitch-style-running.pes  5 37 21 7 52 24
 3274e196b0a24188b69ebce599cce244e08172bc663e96ae82356dce542b1879  mixed-stitch-style-running.pec  5 37 21 7 52 24
-bc0acf9a39595b0ba0a4e94cc5a6ba47911c9ee94d446b1bef9bd368c6ad04cc  mixed-stitch-style-running.jef  33 45 59 59 71 14
+e74b5ee8658196e1174f45bd5b04c4595adcc81e09992a4a1450d6b508de6a16  mixed-stitch-style-running.jef  33 45 59 59 71 14
 c38e65e5eb530c8fb470e5baef4fd9e762e84ffe39bb3399dc0e6cf6b013f02f  mixed-every-option.pes  5 37 21 7 52 24
 ec17c33f176b4a9da456a6a9f21f63990209cc09e933689433359f0420ee968c  mixed-every-option.pec  5 37 21 7 52 24
-319c78ea6fa204c33a2b595817afd6e9a27c9d9e1a580e956a308567e0a54ace  mixed-every-option.jef  33 45 59 59 71 14
+e382d7a5b85d40faba1c384b99e425a36268ae2a3d817afa17e5a8bdfb161ac3  mixed-every-option.jef  33 45 59 59 71 14
 647016fa5f050c66e1e2adc4792c1f19c14746f651a2f8f9bf63d997d3cac4d5  mixed-shrunk.pes  5 37 21 7 52 24
 0116275ca20098bbbd7e80e1bbee1bf294f561da86726d9165049395a593c910  mixed-shrunk.pec  5 37 21 7 52 24
-77adc8efa26488d21e91f11377ebcc37ee978449728637660d1b175c03d4377b  mixed-shrunk.jef  33 45 59 59 71 14
+8f233e1387f36b54c8ea167469c09a366cd6696b1db24e49d2594257f074f215  mixed-shrunk.jef  33 45 59 59 71 14
 ";
 
 /// The PES, PEC and JEF exports of [`ARTWORK`] apart from their thread numbers, listed as
@@ -309,37 +309,37 @@ ec17c33f176b4a9da456a6a9f21f63990209cc09e933689433359f0420ee968c  mixed-every-op
 const ARTWORK_THREADS: &str = "
 2e75c5d4920528b816c8bfe3c6d2965032695332d0e87f79d3016f48374c2c15  bullseye-twemoji.pes  29 32 5 33 20 36
 8337ee76e87dd3d31bfac3e432aa93804696592921cb0333c075057d575d8b87  bullseye-twemoji.pec  29 32 5 33 20 36
-cd504bc7ccedae9937874a88dff5e78206d2bd0f8f0a016b819664753abcb7ef  bullseye-twemoji.jef  23 28 33 72 1 11
+f1d38145b030ab084d0360845649b99fdb6428059e139d7c07d024bbda436f3e  bullseye-twemoji.jef  23 28 33 72 1 11
 13b66fbf44372777c53904bb86183f924b459a5fb319149b1d94315a966f4233  fox-twemoji.clipart.pes  52 12 20 51
 4769f08394494c5c9c9476e66892725d0c71134daac5748008bd30f88de97e20  fox-twemoji.clipart.pec  52 12 20 51
-3dafe3a4b581efb23c4c0ddff218e43371502a70f3dda3c05828a8a3955539a5  fox-twemoji.clipart.jef  71 13 1 42
+50fb0d66129a6998f9546b0f2cb96f42a17c57a5c786737526059f1178fa84aa  fox-twemoji.clipart.jef  71 13 1 42
 9fe69aa19dfeb91e95248248b955000a73622523ca889c59ac5c3e84130fb380  heart-suit-twemoji.clipart.pes  51
 6427722b71f6dc1264ac93d1a41727e8440d7924c5d452958202b29e7fc20117  heart-suit-twemoji.clipart.pec  51
-f979bbd3112bfbc59a061319805642719c904a7adf6f88785714b1fe165e57ff  heart-suit-twemoji.clipart.jef  42
+5551a0d48ca3497800a8cdb669094699d1d27b4f08c3a67f5a3d4cb729d7500b  heart-suit-twemoji.clipart.jef  42
 759b74dfeebe531ef1d531ac0025547a1711930912cf925c113b0f50fab912a6  joystick-twemoji.pes  16 48 23 39
 f5812a8d5555df69ad6a06776680eefc35010bf8246b9670781750df064479aa  joystick-twemoji.pec  16 48 23 39
-1ed7a021850fcc7c50af51a9989222e2f29ac8302bf31b09676d0c11e5059498  joystick-twemoji.jef  21 33 50 50
+efdb43ed6fa33d17ca0925ec1c1aecf1b9d5fd5c7ece602067f388b04e30327e  joystick-twemoji.jef  21 33 50 50
 53fe0a747776a4d064aeb6409da11da0bfce60288928e16fb34de8a2b63713a7  pool-8-ball-twemoji.pes  23 29 23
 c146aa62eb1bcbd125609c65167fe8b958b8dd61f1bd9ed2ca6e967c4d83b5a5  pool-8-ball-twemoji.pec  23 29 23
-14d0cb0fe77632876ffe8e5166a721f1423a97ef50e6184783e4c64420d01cf8  pool-8-ball-twemoji.jef  50 23 50
+ba8889d49ad53f7440811f6fc979728befaba19559ba67f9ce270183fc5a0ee2  pool-8-ball-twemoji.jef  50 23 50
 5f3d9d63a7f6ba7851bebc971ae131c0b70679b0325bbc3b04ccfb70880bfe91  puzzle-piece-twemoji.pes  37
 01cb0ae4a54d67f012dd057c0adec922d0440ca90668a849f59a4f7851a08cca  puzzle-piece-twemoji.pec  37
-334a6cfb6e5e392bd3128ec1754c85583c8a6c26bee243e5ec9346531326ab30  puzzle-piece-twemoji.jef  22
+7405078c0713095cf336caec247c38fa4156836a998d54fb7179218d90ff4737  puzzle-piece-twemoji.jef  22
 d5e02703baa739655a04a069848fe447f89995d1b9f45e19692d59667ce4d3ba  smiling-face-with-smiling-eyes-twemoji.clipart.pes  58 43 23
 22b8533cb2e8e75511e5bedac1719866d3f0088c8db5ff92bfd33941fdfb091b  smiling-face-with-smiling-eyes-twemoji.clipart.pec  58 43 23
-36a3daa3ee32f135e7557e055153376e94598a4ad68e1b08051e3f2552f0a363  smiling-face-with-smiling-eyes-twemoji.clipart.jef  73 9 1
+32538916e92bdcb8382ff923169af1eb64c3007dd39a1a579c8d5b81e1cb97a5  smiling-face-with-smiling-eyes-twemoji.clipart.jef  73 9 1
 f30a80819968b3a23868b9c50458e9c0b1db39ae81f61689a61d363376002ae3  sos-button-fluent.clipart.pes  48 29
 8fb1ce669f24544b8dcc45634fd23e430fb8e1afc2f684196d678a611706905d  sos-button-fluent.clipart.pec  48 29
-f2c6ad6d5fc7ef761a6deb37d5b8c21da189c0982888c2cf828f3259efed0068  sos-button-fluent.clipart.jef  32 2
+e13801f627417dc76930c06d43e842b754ecac75e8725816ba76db7b89774f77  sos-button-fluent.clipart.jef  32 2
 b0761a252aabae4db874192df3a33d8f471957310a74b2400818e5563bdc91e0  video-game-twemoji.pes  23 20 39 12 37 32 5 39
 83d7f545fd9097dd6c523ca63b7650f1332b83e5f8604b117313d9c6f07e7663  video-game-twemoji.pec  23 20 39 12 37 32 5 39
-af0462bed371b1f6815f3eb76ac836945fb62cd3793a5c5ed52e6e035bdf9447  video-game-twemoji.jef  50 1 50 37 22 28 33 24
+788f292bb39e4b26fc1bdcee2cffda70461892392e79a3948b12f6d86dd30577  video-game-twemoji.jef  50 1 50 37 22 28 33 24
 9540190ec9bb71ea3259ab1c99ce9849b02e6b572a92b1c9bca22728e0734d10  watermelon-twemoji.clipart.pes  54 29 5 20
 02c14a192c1762880a15651a3128b06c3b3244b94e9a205c66ae25af06ec1f6a  watermelon-twemoji.clipart.pec  54 29 5 20
-fffbb395672ba5116065f0e8d5798620a4db5aff09f412b4ed19f3c3beb83161  watermelon-twemoji.clipart.jef  6 51 42 1
+8991b02f2eb2b9ad1fbc2a3b00423452c5bdeee092c6930a059a9d683994c8c2  watermelon-twemoji.clipart.jef  6 51 42 1
 18eb3b2037d0fc286bb4f65cba84fa7d7e70afa15ddf37ed676f61b500363e17  zebra-twemoji.clipart.pes  29 20 29 39 23 20 39 20
 b217f801b1fb6b3790896dcc27a013922a02e0e7065bf3d6625bb9b9da4e7d7c  zebra-twemoji.clipart.pec  29 20 29 39 23 20 39 20
-1bfcbbcf08118cd83c8fe7816c26c6678e2cefcc1eef87630c218e654f101147  zebra-twemoji.clipart.jef  51 1 51 50 1 1 50 1
+7ab082c5d6a83e7d10c974fbee0b3cf6d2c96c53ee012043f9753444014cfe34  zebra-twemoji.clipart.jef  51 1 51 50 1 1 50 1
 ";
 
 /// What each export of [`SYNTHETIC`] holds, read back ([`Summary`]): its name, then its fields.

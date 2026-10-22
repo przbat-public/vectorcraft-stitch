@@ -385,3 +385,23 @@ fn artwork_is_sewn_where_it_is_painted() {
         assert!(bare.is_empty(), "{art}: {} places of painted art left bare, first {:?}", bare.len(), bare.first());
     }
 }
+
+/// A JEF header's record count is the records its body holds ((file length − offset) / 2): in the
+/// real files, and in the JEF VectorCraft writes of every artwork.
+#[test]
+fn jef_headers_count_the_records_they_hold() {
+    let Some(dir) = corpus() else { return };
+    let word = |bytes: &[u8], at: usize| u32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]) as usize;
+    let holds = |bytes: &[u8]| (bytes.len() - word(bytes, 0)) / 2;
+    let real: Vec<PathBuf> = machine_files(&dir).into_iter().filter(|p| format_of(p) == Format::Jef).collect();
+    assert!(!real.is_empty(), "the corpus has JEF files");
+    for path in real {
+        let bytes = std::fs::read(&path).unwrap();
+        assert_eq!(word(&bytes, 28), holds(&bytes), "{}", path.display());
+    }
+    for &(art, theirs, ..) in DESIGNS {
+        let mut s = artwork(&dir, art, theirs);
+        let bytes = decode(&run(&mut s, "document.export", json!({"format": "jef"})));
+        assert_eq!(word(&bytes, 28), holds(&bytes), "{art}");
+    }
+}

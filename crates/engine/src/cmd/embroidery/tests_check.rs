@@ -180,6 +180,12 @@ fn a_mismatched_thread_and_art_left_out_fire() {
     assert_eq!(hits(&p, "threadMismatch", Format::Dst), 0);
     p.blocks[0].thread.delta_e = 10.006;
     assert_eq!(hits(&p, "threadMismatch", Format::Dst), 1);
+    // Every object sewn in the mismatched thread is named: two of one block.
+    let mut two = plan(vec![unit(1, Style::Running, RED, &line(&[3.0]), None), unit(2, Style::Running, RED, &[(5.0, 0.0), (8.0, 0.0)], None)]);
+    assert_eq!(two.blocks.len(), 1);
+    two.blocks[0].thread.delta_e = 12.0;
+    let v = check::check(&two, &Ask { rules: vec![check::rule("threadMismatch").unwrap()], format: Format::Dst, limit: check::LIMIT });
+    assert_eq!((&v["rules"][0]["hits"], &v["rules"][0]["objects"]), (&json!(1), &json!([1, 2])));
     assert_eq!(hits(&p, "notSewn", Format::Dst), 0);
     p.warnings = vec!["type is not stitched".into(), "images are not stitched".into()];
     assert_eq!(hits(&p, "notSewn", Format::Dst), 2);

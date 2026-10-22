@@ -391,6 +391,18 @@ impl<'a> Checker<'a> {
         }
     }
 
+    /// Name the objects units `units` sew among those rule `id` hit (while its list has room).
+    fn add_objects(&mut self, id: &'static str, units: std::ops::Range<usize>) {
+        let plan = self.plan;
+        let Some(f) = self.found.get_mut(id) else { return };
+        for u in units.filter_map(|u| plan.units.get(u)) {
+            if f.objects.len() >= MAX_OBJECTS {
+                break;
+            }
+            f.objects.insert(u.origin.instance.unwrap_or(u.origin.node).0);
+        }
+    }
+
     /// The rules on one record: its stitch's length, and the short stitches in a row and the
     /// layers it adds to.
     fn record(&mut self, r: &Record) {
@@ -511,6 +523,8 @@ impl<'a> Checker<'a> {
                     ..Hit::default()
                 };
                 self.add("threadMismatch", hit);
+                // Every object sewn in the thread is hit, not only the block's first.
+                self.add_objects("threadMismatch", b.units.clone());
             }
         }
         for w in &plan.warnings {

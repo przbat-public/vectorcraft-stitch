@@ -41,7 +41,7 @@ fn one(style: Style, steps: &[f64]) -> DesignPlan {
 fn each_stitch_length_rule_fires_past_its_threshold() {
     let cases: [(&str, Style, f64, f64); 4] = [
         ("stitchTooLong", Style::Running, 12.8, 12.7),
-        ("stitchBelowNeedle", Style::Running, 0.74, 0.75),
+        ("stitchBelowNeedle", Style::Running, 0.75, 0.76),
         ("stitchTiny", Style::Running, 0.3, 0.31),
         ("formatStep", Style::Running, 12.2, 12.1),
     ];
@@ -178,6 +178,21 @@ fn a_mismatched_thread_and_art_left_out_fire() {
     assert_eq!(hits(&p, "notSewn", Format::Dst), 0);
     p.warnings = vec!["type is not stitched".into(), "images are not stitched".into()];
     assert_eq!(hits(&p, "notSewn", Format::Dst), 2);
+    // A note that isn't about the art (a palette this version doesn't know) is said, not counted.
+    p.notes = vec!["the document's thread palette is not one this version knows".into()];
+    assert_eq!(hits(&p, "notSewn", Format::Dst), 2);
+    assert_eq!(p.messages().len(), 3);
+}
+
+/// A hit on a unit that adds no record (one needle point where the needle already is) has no
+/// record number, rather than the next unit's.
+#[test]
+fn a_unit_that_adds_no_record_is_hit_without_a_number() {
+    let satin = Some(Params::for_style(Style::Satin));
+    let p = plan(vec![planned(1, None, RED, &line(&[3.0]), None), planned(2, satin, RED, &[(3.0, 0.0)], Some([0.5, 0.5]))]);
+    assert!(p.numbers(1).unwrap().is_empty(), "the second unit adds no record");
+    let v = check::check(&p, &Ask { rules: vec![check::rule("satinStitchShort").unwrap()], format: Format::Dst, limit: check::LIMIT });
+    assert_eq!((&v["rules"][0]["hits"], &v["rules"][0]["examples"][0]["record"]), (&json!(1), &json!(null)), "{v}");
 }
 
 /// More colour blocks than PES holds is an error there and nothing in the other formats; more

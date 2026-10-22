@@ -742,3 +742,17 @@ fn an_unpainted_fill_is_passed_by_before_it_is_expanded() {
     .unwrap();
     assert!(!expanded_away(&mut s), "unpainted, it was never to be sewn");
 }
+
+/// Objects the planner leaves out are named for what they are: an intertwine, not "live blends,
+/// envelopes, meshes and repeats".
+#[test]
+fn an_intertwine_is_named_when_it_is_left_out() {
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+    let b = rect(&mut s, "#2233cc", 50.0, 30.0, 60.0, 40.0);
+    s.execute("object.intertwine.make", &json!({"ids": [a, b]})).unwrap();
+    let r = s.execute("embroidery.threads", &json!({})).unwrap();
+    let warnings: Vec<&str> = r["warnings"].as_array().unwrap().iter().filter_map(|w| w.as_str()).collect();
+    assert!(warnings.iter().any(|w| w.starts_with("intertwined objects are not stitched")), "{warnings:?}");
+    assert!(!warnings.iter().any(|w| w.contains("live blends")), "{warnings:?}");
+}

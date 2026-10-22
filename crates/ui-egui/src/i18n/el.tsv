@@ -5171,6 +5171,8 @@ effect	Points	Σημεία
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	το κείμενο δεν κεντιέται: μετατρέψτε το σε περιγράμματα (Κείμενο › Δημιουργία περιγραμμάτων) και εξαγάγετε ξανά
 @msg	images are not stitched: trace them (Object › Image Trace) first	οι εικόνες δεν κεντιούνται: ανιχνεύστε πρώτα τα περιγράμματά τους (Αντικείμενο › Ανίχνευση περιγραμμάτων εικόνας)
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	οι δυναμικές αναμείξεις, τα περιβλήματα, τα πλέγματα και οι επαναλήψεις δεν κεντιούνται: επεκτείνετέ τα πρώτα
+@msg	placed documents are not stitched: embed them first (Links › Embed)	τα τοποθετημένα έγγραφα δεν κεντιούνται: ενσωματώστε τα πρώτα (Σύνδεσμοι › Ενσωμάτωση)
+@msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	τα διαπλεγμένα αντικείμενα δεν κεντιούνται: αποδεσμεύστε τα πρώτα (Αντικείμενο › Διαπλοκή › Αποδέσμευση)
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	μια αρνητική τιμή expand δεν άφησε τίποτα από ορισμένα γεμισμένα σχήματα, οπότε δεν κεντιούνται: σμικρύνετέ τα λιγότερο
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	τα ντεγκραντέ και τα μοτίβα βάφονται με το χρώμα της πρώτης τους στάσης· ένα κέντημα ράβει μία κλωστή ανά μπλοκ
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	τα περιγράμματα φαρδύτερα από {widest} mm ράβονται ως στήλες σατέν πλάτους {widest} mm: γεμίστε τα καλύτερα (stitch fill)

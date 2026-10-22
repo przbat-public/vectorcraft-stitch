@@ -5202,6 +5202,8 @@ swatch	Bright Violet	Kraftig violet
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	tekst broderes ikke: lav den om til konturer (Tekst › Opret konturer), og eksportér igen
 @msg	images are not stitched: trace them (Object › Image Trace) first	billeder broderes ikke: spor dem først (Objekt › Billedsporing)
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	levende blandinger, konvolutter, net og gentagelser broderes ikke: udvid dem først
+@msg	placed documents are not stitched: embed them first (Links › Embed)	placerede dokumenter broderes ikke: integrér dem først (Links › Integrér)
+@msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	sammenflettede objekter broderes ikke: frigør dem først (Objekt › Sammenflet › Frigør)
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	en negativ expand-værdi efterlod intet af nogle udfyldte former, så de broderes ikke: formindsk dem mindre
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	gradienter og mønstre males i farven fra deres første stop; et broderi syr ét garn pr. blok
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	streger bredere end {widest} mm sys som satinsøjler på {widest} mm: udfyld dem i stedet (stitch fill)

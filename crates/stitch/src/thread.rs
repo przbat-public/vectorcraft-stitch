@@ -48,6 +48,22 @@ const NO_THREAD: usize = 0;
 /// colours of real art, so the line is drawn at twice that.
 pub const MISMATCH_DELTA_E: f64 = 10.0;
 
+/// A colour difference is shown to two decimals, in hundredths: finer than any difference the eye
+/// sees (about 1 is the smallest seen side by side).
+pub const DELTA_E_HUNDREDTHS: f64 = 100.0;
+
+/// Colour difference `delta_e` as it is shown: to [`DELTA_E_HUNDREDTHS`].
+pub fn shown_delta_e(delta_e: f64) -> f64 {
+    (delta_e * DELTA_E_HUNDREDTHS).round() / DELTA_E_HUNDREDTHS
+}
+
+/// Whether a thread `delta_e` from the art looks unlike it: its difference as shown is past
+/// [`MISMATCH_DELTA_E`]. As shown, so that a thread is never flagged at a difference shown as the
+/// threshold itself, and the same line decides which thread a block takes ([`Palette::assign`]).
+pub fn mismatched(delta_e: f64) -> bool {
+    shown_delta_e(delta_e) > MISMATCH_DELTA_E
+}
+
 /// A thread palette a machine format names its threads from, by number.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Palette {
@@ -193,7 +209,7 @@ impl Palette {
                     let neighbours = [before, after];
                     match neighbours.contains(&nearest.index) {
                         false => nearest,
-                        true => Some(self.nearest(color, &neighbours)).filter(|other| other.delta_e <= MISMATCH_DELTA_E).unwrap_or(nearest),
+                        true => Some(self.nearest(color, &neighbours)).filter(|other| !mismatched(other.delta_e)).unwrap_or(nearest),
                     }
                 }
             };

@@ -5055,6 +5055,8 @@ lighting	Light	光源
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	文字不会被刺绣：请先创建轮廓 (文字 › 创建轮廓)，然后重新导出
 @msg	images are not stitched: trace them (Object › Image Trace) first	图像不会被刺绣：请先描摹 (对象 › 图像描摹)
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	实时混合、封套、网格和重复不会被刺绣：请先扩展
+@msg	placed documents are not stitched: embed them first (Links › Embed)	置入的文档不会被刺绣：请先嵌入 (链接 › 嵌入)
+@msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	交织的对象不会被刺绣：请先释放 (对象 › 交织 › 释放)
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	负的 expand 值使部分填色形状一无所剩，因此它们不会被刺绣：请减少收缩
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	渐变和图案以其第一个色标的颜色上色；刺绣每个色块只用一根线缝制
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	宽于 {widest} mm 的描边会缝成 {widest} mm 宽的缎纹柱：请改为填色 (stitch fill)

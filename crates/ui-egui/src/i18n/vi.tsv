@@ -4813,6 +4813,8 @@ theme	Appearance	Giao diện
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	chữ không được thêu: hãy tạo đường bao cho chữ (Chữ › Tạo đường bao) rồi xuất lại
 @msg	images are not stitched: trace them (Object › Image Trace) first	ảnh không được thêu: hãy vector hóa ảnh trước (Đối tượng › Vector hóa ảnh)
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	hòa trộn, envelope, lưới và lặp lại động không được thêu: hãy mở rộng chúng trước
+@msg	placed documents are not stitched: embed them first (Links › Embed)	tài liệu được đặt vào không được thêu: hãy nhúng chúng trước (Liên kết › Nhúng)
+@msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	đối tượng đan xen không được thêu: hãy giải phóng chúng trước (Đối tượng › Đan xen › Giải phóng)
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	giá trị expand âm không để lại gì của một số hình được tô, nên chúng không được thêu: hãy thu nhỏ ít hơn
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	chuyển sắc và họa tiết được tô bằng màu của điểm dừng đầu tiên; một mẫu thêu may một sợi chỉ cho mỗi khối
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	nét rộng hơn {widest} mm được may thành cột satin rộng {widest} mm: hãy tô chúng thay vào đó (stitch fill)

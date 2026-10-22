@@ -465,7 +465,7 @@ fn threads(s: &mut Session, p: &Value) -> Result<Value> {
             "offset": listed.start,
             "truncated": page.truncated(plan.blocks.len()),
             "blocks": blocks,
-            "warnings": plan.warnings,
+            "warnings": plan.messages(),
         }),
         &opts,
     ))

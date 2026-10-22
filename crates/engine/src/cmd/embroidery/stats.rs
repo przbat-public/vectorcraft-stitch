@@ -402,6 +402,6 @@ pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread, page: P
         "blocks": per_block,
         "offset": listed.start,
         "truncated": page.truncated(plan.blocks.len()),
-        "warnings": plan.warnings,
+        "warnings": plan.messages(),
     })
 }

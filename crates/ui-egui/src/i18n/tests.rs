@@ -1859,6 +1859,10 @@ fn embroidery_export_messages_are_translated() {
     s.execute("select.set", &json!({"ids": [gradient]})).unwrap();
     s.execute("paint.setFill", &json!({"gradient": {}})).unwrap();
     s.execute("select.none", &json!({})).unwrap();
+    // An intertwine.
+    let pair = [rectangle(&mut s, 200, 150, 20, 20), rectangle(&mut s, 210, 155, 20, 20)];
+    s.execute("object.intertwine.make", &json!({"ids": pair})).unwrap();
+    s.execute("select.none", &json!({})).unwrap();
     // A stroke too wide for a satin column (160 pt is 56 mm).
     s.execute("paint.setFill", &json!({"none": true})).unwrap();
     s.execute("paint.setStroke", &json!({"color": "#2233cc"})).unwrap();
@@ -1873,7 +1877,7 @@ fn embroidery_export_messages_are_translated() {
     .unwrap();
     let r = export(&mut s, -1.0).unwrap();
     let warnings: Vec<String> = r["warnings"].as_array().unwrap().iter().filter_map(|w| w.as_str().map(str::to_string)).collect();
-    assert_eq!(warnings.len(), 7, "{warnings:#?}");
+    assert_eq!(warnings.len(), 8, "{warnings:#?}");
     messages.extend(warnings);
     let english = ["stitch", "sewn", "painted", "this version", "expand them", "trace them", "outline it"];
     let mut untranslated = Vec::new();

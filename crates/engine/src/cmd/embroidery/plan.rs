@@ -20,7 +20,7 @@ use std::ops::Range;
 use vectorcraft_doc::NodeId;
 use vectorcraft_geom::Rect;
 use vectorcraft_stitch::plan::{self, Params, Style};
-use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Match, Palette, PaletteThread};
+use vectorcraft_stitch::thread::{Match, Palette, PaletteThread};
 use vectorcraft_stitch::{Block, Pattern, Stitch, Thread};
 
 /// The number of a design's first record (needle point, jump or cut): records are numbered from 1,
@@ -83,9 +83,7 @@ pub enum Choice {
     Literal,
 }
 
-/// A colour difference is shown to two decimals, in hundredths: finer than any difference the eye
-/// sees (about 1 is the smallest seen side by side).
-pub const DELTA_E_HUNDREDTHS: f64 = 100.0;
+pub use vectorcraft_stitch::thread::DELTA_E_HUNDREDTHS;
 
 /// The thread a block is sewn in: a thread of the document's palette, matched to the colour the
 /// block's art is painted with ([`Palette::nearest`], in sewing order).
@@ -133,15 +131,15 @@ impl BlockThread {
     /// The colour difference as a list of threads shows it (`embroidery.threads`): to
     /// [`DELTA_E_HUNDREDTHS`].
     pub fn shown_delta_e(&self) -> f64 {
-        (self.delta_e * DELTA_E_HUNDREDTHS).round() / DELTA_E_HUNDREDTHS
+        vectorcraft_stitch::thread::shown_delta_e(self.delta_e)
     }
 
     /// Whether the thread looks like another colour than the art: its difference as shown is past
-    /// [`MISMATCH_DELTA_E`] (`vectorcraft_stitch::thread`), the line that also decides when a block
-    /// takes another thread than a neighbour's. As shown, so that a list never flags a thread whose
+    /// `vectorcraft_stitch::thread::MISMATCH_DELTA_E`, the line that also decides, the same way,
+    /// when a block takes another thread than a neighbour's. As shown, so that a list never flags a thread whose
     /// difference it gives as the threshold itself.
     pub fn mismatch(&self) -> bool {
-        self.shown_delta_e() > MISMATCH_DELTA_E
+        vectorcraft_stitch::thread::mismatched(self.delta_e)
     }
 
     /// The thread as the machine formats take it ([`DesignPlan::to_pattern`]): a format that
@@ -245,9 +243,12 @@ pub struct DesignPlan {
     pub units: Vec<Unit>,
     /// The thread blocks in sewing order.
     pub blocks: Vec<ThreadBlock>,
-    /// What was left out or approximated, once each (type, images, gradients…): the export's
-    /// warnings.
+    /// What was left out or approximated, once each (type, images, gradients…): the art the
+    /// `notSewn` check counts.
     pub warnings: Vec<String>,
+    /// What else the export says that isn't about the art (a thread palette this version doesn't
+    /// know): said with the warnings ([`DesignPlan::messages`]), not counted as art left out.
+    pub notes: Vec<String>,
 }
 
 impl DesignPlan {
@@ -255,6 +256,12 @@ impl DesignPlan {
     /// change between two blocks is not a stitch of its own).
     pub fn len(&self) -> usize {
         self.blocks.iter().map(|b| b.stitches.len()).sum()
+    }
+
+    /// Everything the export and the read commands say about the plan: its notes, then its
+    /// warnings.
+    pub fn messages(&self) -> Vec<String> {
+        self.notes.iter().chain(&self.warnings).cloned().collect()
     }
 
     /// Whether the design has no stitch at all.

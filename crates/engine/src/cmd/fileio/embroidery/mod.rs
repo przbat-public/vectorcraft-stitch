@@ -156,15 +156,15 @@ pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
     let plan = service::plan_afresh(doc, &opts).map_err(PlanError::error)?;
     if plan.is_empty() {
         // What was left out says why, when something was. The document's, not the parameters'.
-        return Err(EngineError::Other(if plan.warnings.is_empty() {
+        return Err(EngineError::Other(if plan.messages().is_empty() {
             "nothing to stitch: the document has no visible filled or stroked paths".to_string()
         } else {
-            format!("nothing to stitch: {}", plan.warnings.join("; "))
+            format!("nothing to stitch: {}", plan.messages().join("; "))
         }));
     }
     // What the format can't hold is the design's limit, not a wrong parameter.
     let bytes = format.write(&plan.to_pattern()).map_err(|e| EngineError::Other(e.to_string()))?;
-    Ok(Encoded { warnings: plan.warnings, ..Encoded::one(bytes) })
+    Ok(Encoded { warnings: plan.messages(), ..Encoded::one(bytes) })
 }
 
 #[cfg(test)]

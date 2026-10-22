@@ -160,6 +160,6 @@ pub(crate) fn sequence(plan: &DesignPlan, page: Page) -> Value {
         "blocks": blocks,
         "splitCount": split_count,
         "split": split,
-        "warnings": plan.warnings,
+        "warnings": plan.messages(),
     })
 }

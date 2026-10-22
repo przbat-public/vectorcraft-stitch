@@ -112,9 +112,9 @@ const NEEDLE_BLADE: f64 = 0.75;
 /// A stitch shorter than this is short in a row of short stitches ([`MOST_SHORT_IN_A_ROW`]): the
 /// 1 mm Melco's machine manual keeps stitches above for most needles.
 const SHORT: f64 = 1.0;
-/// Ricoma's digitizing tips delete stitches under 0.3 mm
-/// (<https://www.ricoma.cn/cn/ndetail13_539>), and Brother's embroidery machines delete stitches
-/// of the set pitch or less, 0.3 mm as they come (PRT23 manual, p. 107).
+/// Brother's embroidery machines delete stitches of the set pitch or less, 0.3 mm as they come
+/// (PRT23 manual, p. 107): the source checked, so a stitch of 0.3 mm is flagged. Ricoma's
+/// digitizing tips delete stitches under 0.3 mm (<https://www.ricoma.cn/cn/ndetail13_539>).
 const TINY: f64 = 0.3;
 /// Wilcom's stitch shortening allows up to five short stitches in a row
 /// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm>).
@@ -259,12 +259,12 @@ pub(crate) const RULES: &[Rule] = &[
         unit: Some("mm"),
         measures: "a needle-down stitch's length",
         sources: &[
-            Source { name: "Ricoma digitizing tips", url: "https://www.ricoma.cn/cn/ndetail13_539", value: "delete stitches under 0.3 mm" },
             Source {
                 name: "Brother PRT23 manual, p. 107",
                 url: "https://download.brother.com/welcome/doch102354/prt23_om01ja.pdf",
                 value: "the machine deletes stitches of 0.3 mm or less, as it comes",
             },
+            Source { name: "Ricoma digitizing tips", url: "https://www.ricoma.cn/cn/ndetail13_539", value: "delete stitches under 0.3 mm" },
         ],
     },
     Rule {
@@ -477,7 +477,8 @@ impl<'a> Checker<'a> {
                 self.add("formatStep", Hit { length: Some(length), pieces: Some(pieces), note: Some(note), ..Hit::at(r, longest) });
             }
         }
-        if length < NEEDLE_BLADE {
+        // "Longer than the blade": a stitch as long as the blade is flagged.
+        if length <= NEEDLE_BLADE {
             self.add("stitchBelowNeedle", Hit::at(r, length));
         }
         if length <= TINY {
@@ -545,7 +546,9 @@ impl<'a> Checker<'a> {
         let plan = self.plan;
         for (k, u) in plan.units.iter().enumerate() {
             // At the unit: its first stitch and needle point.
-            let first = plan.numbers(k).map(|n| n.start);
+            // None for a unit that adds no record (one needle point where the needle already is):
+            // the number after it is the next unit's.
+            let first = plan.numbers(k).filter(|n| !n.is_empty()).map(|n| n.start);
             let at = plan.unit_stitches(k).iter().find(|s| s.command == Command::Stitch).map(|s| s.point());
             let hit = |value: f64| Hit { record: first, at, unit: Some(k), value: Some(value), ..Hit::default() };
             if let Some([narrowest, widest]) = u.satin_widths {

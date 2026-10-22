@@ -23,6 +23,8 @@ use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, pla
 const TEXT_LEFT_OUT: &str = "type is not stitched: outline it (Type › Create Outlines) and export again";
 const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › Image Trace) first";
 const LIVE_LEFT_OUT: &str = "live blends, envelopes, meshes and repeats are not stitched: expand them first";
+const PLACED_LEFT_OUT: &str = "placed documents are not stitched: embed them first (Links › Embed)";
+const INTERTWINE_LEFT_OUT: &str = "intertwined objects are not stitched: release them first (Object › Intertwine › Release)";
 const EXPANDED_AWAY: &str = "a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less";
 const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colour of their first stop; a design sews one thread per block";
 const OUT_OF_RANGE: &str = "art far outside the document's range (or with coordinates that aren't numbers) is not stitched";
@@ -76,20 +78,26 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
 /// afresh.
 pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>) -> Result<DesignPlan, PlanError> {
     let seq = Sequence::new(opts.params(Style::Running, NO_WIDTH));
-    let mut warnings = Vec::new();
+    // Not about the art: said, but not counted as art left out.
+    let mut notes = Vec::new();
     if let Some(ThreadPalette::Unknown(palette)) = doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()) {
         let default = super::DEFAULT_PALETTE.id();
-        warnings.push(format!(
+        notes.push(format!(
             "the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette"
         ));
     }
+    let warnings = Vec::new();
     let total = doc.layers.iter().map(|l| units_under(doc, l, 0)).fold(0u64, u64::saturating_add);
     let progress = Progress { done: 0, total };
     let mut d = Digitizer { doc, opts, seq, warnings, nest: 0, clip: None, owner: None, instance: None, stitches: 0, failed: None, cache, progress };
     d.run();
     match d.failed {
         Some(e) => Err(e),
-        None => Ok(d.seq.plan(doc.title.clone(), d.warnings, super::thread_palette(doc))),
+        None => {
+            let mut plan = d.seq.plan(doc.title.clone(), d.warnings, super::thread_palette(doc));
+            plan.notes = notes;
+            Ok(plan)
+        }
     }
 }
 
@@ -288,6 +296,8 @@ impl<'a> Digitizer<'a> {
             }
             NodeKind::Text(_) => self.warn(TEXT_LEFT_OUT),
             NodeKind::Image(_) => self.warn(IMAGES_LEFT_OUT),
+            NodeKind::PlacedDocument(_) => self.warn(PLACED_LEFT_OUT),
+            NodeKind::Intertwine { .. } => self.warn(INTERTWINE_LEFT_OUT),
             _ => self.warn(LIVE_LEFT_OUT),
         }
     }

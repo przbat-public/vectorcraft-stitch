@@ -4833,6 +4833,8 @@ lighting	Light	Luce
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	il testo non viene ricamato: convertilo in contorni (Testo › Crea contorni) ed esporta di nuovo
 @msg	images are not stitched: trace them (Object › Image Trace) first	le immagini non vengono ricamate: ricalcale prima (Oggetto › Ricalco immagine)
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	fusioni, involucri, trame e ripetizioni dinamiche non vengono ricamati: espandili prima
+@msg	placed documents are not stitched: embed them first (Links › Embed)	i documenti inseriti non vengono ricamati: incorporali prima (Collegamenti › Incorpora)
+@msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	gli oggetti intrecciati non vengono ricamati: rilasciali prima (Oggetto › Intreccia › Rilascia)
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	un valore negativo di expand non ha lasciato nulla di alcune forme riempite, quindi non vengono ricamate: riducile di meno
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	sfumature e motivi vengono dipinti con il colore del loro primo cursore colore; un ricamo cuce un filo per blocco
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	le tracce più larghe di {widest} mm vengono cucite come colonne di raso larghe {widest} mm: riempile invece (stitch fill)

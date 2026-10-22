@@ -5218,6 +5218,8 @@ theme	Appearance	Apparence
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	le texte n’est pas brodé : vectorisez-le (Texte › Vectoriser) puis exportez à nouveau
 @msg	images are not stitched: trace them (Object › Image Trace) first	les images ne sont pas brodées : vectorisez-les d’abord (Objet › Vectorisation de l’image)
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	les dégradés de formes, enveloppes, filets et répétitions dynamiques ne sont pas brodés : décomposez-les d’abord
+@msg	placed documents are not stitched: embed them first (Links › Embed)	les documents importés ne sont pas brodés : incorporez-les d’abord (Liens › Incorporer)
+@msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	les objets entrelacés ne sont pas brodés : annulez d’abord l’entrelacement (Objet › Entrelacer › Annuler)
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	une valeur expand négative n’a rien laissé de certaines formes remplies, elles ne sont donc pas brodées : réduisez-les moins
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	les dégradés et les motifs sont peints de la couleur de leur première étape ; une broderie coud un seul fil par bloc
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	les contours plus larges que {widest} mm sont cousus en colonnes de satin de {widest} mm de large : remplissez-les plutôt (stitch fill)

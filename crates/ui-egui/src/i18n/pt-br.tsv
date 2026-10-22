@@ -5136,6 +5136,8 @@ mark-style	Japanese	Japonesas
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	o texto não é bordado: converta-o em contornos (Texto › Criar Contornos) e exporte novamente
 @msg	images are not stitched: trace them (Object › Image Trace) first	as imagens não são bordadas: rastreie-as primeiro (Objeto › Rastreamento de Imagem)
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	mesclagens, envelopes, malhas e repetições dinâmicas não são bordados: expanda-os primeiro
+@msg	placed documents are not stitched: embed them first (Links › Embed)	os documentos inseridos não são bordados: incorpore-os primeiro (Links › Incorporar)
+@msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	os objetos entrelaçados não são bordados: libere-os primeiro (Objeto › Entrelaçar › Liberar)
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	um valor negativo de expand não deixou nada de algumas formas preenchidas, por isso elas não são bordadas: reduza-as menos
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	gradientes e padrões são pintados com a cor da sua primeira parada; um bordado costura uma linha por bloco
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	traçados com mais de {widest} mm de largura são costurados como colunas de cetim de {widest} mm: preencha-os em vez disso (stitch fill)

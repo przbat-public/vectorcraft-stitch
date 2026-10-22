@@ -4813,6 +4813,8 @@ lighting	Light	Світло
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	текст не вишивається: перетворіть його на контури (Текст › Створити контури) і експортуйте знову
 @msg	images are not stitched: trace them (Object › Image Trace) first	зображення не вишиваються: спершу трасуйте їх (Об’єкт › Трасування зображення)
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	динамічні переходи, оболонки, сітки й повтори не вишиваються: спершу розберіть їх
+@msg	placed documents are not stitched: embed them first (Links › Embed)	розміщені документи не вишиваються: спершу вбудуйте їх (Зв’язки › Вбудувати)
+@msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	переплетені об’єкти не вишиваються: спершу звільніть їх (Об’єкт › Переплетення › Звільнити)
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	від’ємне значення expand не залишило нічого від деяких залитих фігур, тому вони не вишиваються: зменшуйте їх менше
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	градієнти й візерунки фарбуються кольором їхньої першої точки переходу; вишивка шиє однією ниткою на блок
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	обведення ширші за {widest} мм шиються стовпчиками гладдю шириною {widest} мм: натомість залийте їх (stitch fill)

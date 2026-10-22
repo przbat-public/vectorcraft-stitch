@@ -618,7 +618,7 @@ fn trim_after_off_clears_a_runs_cut_from_its_file() {
         let d = &opened.doc().unwrap().doc;
         let mut ids = Vec::new();
         d.walk(|n| {
-            if n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some_and(|r| r.trim_after)) {
+            if n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.as_ref().is_some_and(|r| r.trim_after)) {
                 ids.push(n.id.0);
             }
         });

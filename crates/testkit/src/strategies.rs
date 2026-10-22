@@ -418,6 +418,30 @@ pub fn _top_level(s: &Session) -> Vec<vectorcraft_doc::NodeId> {
     s.active().map(|d| top_level_ids(&d.doc)).unwrap_or_default()
 }
 
+// ---------------------------------------------------------------- JSON a newer version wrote
+
+/// Any JSON value a few levels deep, as a newer version might write under a key this one reads:
+/// every type, numbers finite (JSON has no other), keys that include the embroidery keys this
+/// version reads (`stitches`, `trim_after`, `trim_before`), so that they come with any value.
+pub fn arb_json() -> impl Strategy<Value = Value> {
+    /// Quarter steps: floats JSON writes and reads back exactly.
+    const QUARTERS: i32 = 4;
+    let leaf = prop_oneof![
+        Just(Value::Null),
+        any::<bool>().prop_map(Value::Bool),
+        any::<i64>().prop_map(Value::from),
+        (-4000i32..4000).prop_map(|n| Value::from(f64::from(n) / f64::from(QUARTERS))),
+        "[a-z_]{0,8}".prop_map(Value::from),
+    ];
+    let key = prop_oneof!["[a-z_]{1,8}", Just("stitches".to_string()), Just("trim_after".to_string()), Just("trim_before".to_string())];
+    leaf.prop_recursive(3, 24, 4, move |inner| {
+        prop_oneof![
+            prop::collection::vec(inner.clone(), 0..4).prop_map(Value::Array),
+            prop::collection::btree_map(key.clone(), inner, 0..4).prop_map(|m| Value::Object(m.into_iter().collect())),
+        ]
+    })
+}
+
 // ---------------------------------------------------------------- junk params
 
 /// Hostile JSON values: wrong types, negative/huge/non-finite-as-null numbers, deep/empty containers.

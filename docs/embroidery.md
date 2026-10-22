@@ -1095,6 +1095,12 @@ between objects belong to the design, or the machine, rather than to a unit.)
     the object, and angles turned with it;
   - fields a version doesn't know are kept, and a stitch type it doesn't know reads as Auto with a
     warning instead of failing the file (so stitch types are not a plain closed list in the file).
+    Done for what objects carry today: `Embroidery` (the node's `embroidery` key) keeps keys it
+    doesn't read and known keys of another type (`Embroidery::extra`, `StitchRun::extra`, read as
+    unset) and a value that isn't an object (`Embroidery::unread`), as `EmbroiderySetup` does; a
+    property test opens and saves any JSON under that key;
+  - keys are snake_case in the file, as every key the file format writes (`trim_after`), and
+    camelCase in commands and replies (`trimAfter` would be the parameter's name).
 - **Document settings:** the thread palette (done: `embroidery.setup`, below), the fabric (its
   values copied in, as decided), the thread's weight, the machine (and with it the trim length),
   and the joining of one thread's objects (automatic, where nothing lies between them). They are

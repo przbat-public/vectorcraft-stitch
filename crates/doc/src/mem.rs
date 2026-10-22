@@ -19,7 +19,7 @@ use serde_json::Value;
 use vectorcraft_color::{Paint, Swatch, SwatchGroup};
 use vectorcraft_geom::{Affine, Anchor, PathData, SubPath};
 
-use crate::embroidery::{EmbroiderySetup, ThreadPalette};
+use crate::embroidery::{Embroidery, EmbroiderySetup, ThreadPalette};
 use crate::live::{BlendSpec, EnvelopeKind};
 use crate::text::{ParaStyle, TextObject, TextRun, TextStyleDef};
 use crate::{Appearance, AppearanceItem, Document, Effect, GraphicStyle, ImageObject, Node, NodeExtras, NodeKind, SavedSelection, Shared};
@@ -130,6 +130,12 @@ fn embroidery_setup_bytes(e: &EmbroiderySetup) -> usize {
         _ => 0,
     };
     ALLOC + size_of::<EmbroiderySetup>() + palette + map_bytes(&e.extra) + e.unread.as_ref().map_or(0, json_bytes)
+}
+
+/// What an object's embroidery keeps that a newer version wrote (keys and values this version
+/// can't read), beyond its box.
+fn embroidery_kept_bytes(e: &Embroidery) -> usize {
+    map_bytes(&e.extra) + e.stitches.as_ref().map_or(0, |r| map_bytes(&r.extra)) + e.unread.as_ref().map_or(0, json_bytes)
 }
 
 /// One estimate in progress: two documents walked side by side.
@@ -263,6 +269,7 @@ fn node_bytes(n: &Node, other: Option<&Node>) -> usize {
         b += ALLOC + size_of::<NodeExtras>();
         b += boxed(&e.mask) + boxed(&e.graph) + boxed(&e.shaper) + boxed(&e.attrs) + boxed(&e.slice) + boxed(&e.perspective);
         b += boxed(&e.dimension) + boxed(&e.live_paint_gaps) + boxed(&e.embroidery);
+        b += e.embroidery.as_deref().map_or(0, embroidery_kept_bytes);
         b += e.trace.as_ref().map_or(0, |t| ALLOC + size_of::<Value>() + json_bytes(t));
         b += e.intertwine.as_deref().map_or(0, |a| ALLOC + size_of::<PathData>() + path_bytes(a));
     }

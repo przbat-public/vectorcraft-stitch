@@ -257,7 +257,7 @@ impl<'a> Digitizer<'a> {
                 if *guide {
                     return;
                 }
-                match n.extras().embroidery.as_deref().and_then(|e| e.stitches) {
+                match n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()) {
                     Some(run) => self.literal(n, &path.to_bezpath(), run),
                     None => self.shape(n, &path.to_bezpath(), *rule),
                 }
@@ -294,7 +294,7 @@ impl<'a> Digitizer<'a> {
 
     /// A run of literal stitches (read from a machine file): the path's points sewn as they are,
     /// in the colour of its stroke, one block with the other runs of its group.
-    fn literal(&mut self, n: &Node, bp: &BezPath, run: StitchRun) {
+    fn literal(&mut self, n: &Node, bp: &BezPath, run: &StitchRun) {
         if !self.step() {
             return;
         }

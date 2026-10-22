@@ -9,32 +9,145 @@
 use serde::{Deserialize, Serialize};
 
 /// What machine embroidery makes of an object.
+///
+/// Saved under the node's `embroidery` key, with snake_case keys as every node key is (the commands
+/// take camelCase). A file saved by a newer version opens and saves here without losing what this
+/// version doesn't know, as the document's settings do ([`EmbroiderySetup`]): keys it doesn't read
+/// are kept ([`Embroidery::extra`]), so is a known key whose value has another type than this
+/// version reads (kept under its name, read as unset), and so is a value that isn't an object
+/// ([`Embroidery::unread`]). No form of it stops a file from opening.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(from = "serde_json::Value", into = "serde_json::Value")]
 pub struct Embroidery {
     /// The object's points are needle points, sewn exactly as they are, in order, instead of
     /// planning stitches from its shape: a run of stitches read from a machine file, so that the
     /// design is written back unchanged. `None`: the object is art, stitched by the export's rules.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stitches: Option<StitchRun>,
     /// The thread is cut after the object's stitches, however near the next object starts
     /// (otherwise only a jump longer than the export's trim length is cut). A run of literal
     /// stitches says the same with [`StitchRun::trim_after`].
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub trim_after: bool,
+    /// Keys this version doesn't know (written by a newer one), and known keys whose value this
+    /// version can't read, kept as they are so that saving doesn't lose them.
+    pub extra: serde_json::Map<String, serde_json::Value>,
+    /// What a newer version wrote when it is not an object, which this version can't read:
+    /// nothing is taken from it, and it is written back as it was while nothing is set here.
+    pub unread: Option<serde_json::Value>,
 }
 
 /// A run of literal stitches ([`Embroidery::stitches`]): the object's points in order, the needle
-/// down at each.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+/// down at each. Read and kept as [`Embroidery`] is: what this version doesn't read stays in
+/// [`StitchRun::extra`].
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct StitchRun {
     /// The thread was cut before the run, as the file had it; otherwise the needle jumped to the
     /// run's first point with the thread still on.
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub trim_before: bool,
     /// The thread was cut after the run, at the end of its colour block, as the file had it
     /// (machines and digitizers often cut before the thread is changed).
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub trim_after: bool,
+    /// Keys this version doesn't read, kept as they are.
+    pub extra: serde_json::Map<String, serde_json::Value>,
+}
+
+impl Embroidery {
+    /// Set whether the thread is cut after the object. What a newer version wrote for it in a form
+    /// this version can't read goes: the cut is now this version's.
+    pub fn set_trim_after(&mut self, on: bool) {
+        self.trim_after = on;
+        self.extra.remove(TRIM_AFTER);
+    }
+}
+
+/// The keys an object's embroidery and a run of stitches are saved under.
+const STITCHES: &str = "stitches";
+const TRIM_AFTER: &str = "trim_after";
+const TRIM_BEFORE: &str = "trim_before";
+
+/// Take boolean `key` out of `map`: its value when it is one (a missing key is false); a value of
+/// another type stays in `map`, to be written back as it was.
+fn take_flag(map: &mut serde_json::Map<String, serde_json::Value>, key: &str) -> bool {
+    match map.get(key) {
+        Some(serde_json::Value::Bool(b)) => {
+            let b = *b;
+            map.remove(key);
+            b
+        }
+        Some(serde_json::Value::Null) => {
+            map.remove(key);
+            false
+        }
+        _ => false,
+    }
+}
+
+/// One object of the pairs `set`, then the kept keys (which don't override them).
+fn with_kept(
+    set: impl IntoIterator<Item = (&'static str, serde_json::Value)>,
+    kept: serde_json::Map<String, serde_json::Value>,
+) -> serde_json::Value {
+    let mut map: serde_json::Map<String, serde_json::Value> = set.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
+    for (k, v) in kept {
+        map.entry(k).or_insert(v);
+    }
+    serde_json::Value::Object(map)
+}
+
+impl From<serde_json::Map<String, serde_json::Value>> for StitchRun {
+    fn from(mut map: serde_json::Map<String, serde_json::Value>) -> Self {
+        let trim_before = take_flag(&mut map, TRIM_BEFORE);
+        let trim_after = take_flag(&mut map, TRIM_AFTER);
+        Self { trim_before, trim_after, extra: map }
+    }
+}
+
+impl From<StitchRun> for serde_json::Value {
+    /// The run as it is saved: its cuts when there are, then the keys kept.
+    fn from(r: StitchRun) -> Self {
+        let flag = |key: &'static str, on: bool| on.then_some((key, serde_json::Value::Bool(true)));
+        with_kept(flag(TRIM_BEFORE, r.trim_before).into_iter().chain(flag(TRIM_AFTER, r.trim_after)), r.extra)
+    }
+}
+
+impl From<serde_json::Value> for Embroidery {
+    /// An object's embroidery as a file holds it: its known keys, those of another type and the
+    /// unknown ones kept ([`Embroidery::extra`]); anything but an object kept as it is
+    /// ([`Embroidery::unread`]).
+    fn from(v: serde_json::Value) -> Self {
+        match v {
+            serde_json::Value::Object(mut map) => {
+                let stitches = match map.remove(STITCHES) {
+                    Some(serde_json::Value::Object(run)) => Some(StitchRun::from(run)),
+                    Some(serde_json::Value::Null) | None => None,
+                    Some(other) => {
+                        // Another shape: kept under its name, and the object is art.
+                        map.insert(STITCHES.to_string(), other);
+                        None
+                    }
+                };
+                let trim_after = take_flag(&mut map, TRIM_AFTER);
+                Self { stitches, trim_after, extra: map, unread: None }
+            }
+            serde_json::Value::Null => Self::default(),
+            other => Self { unread: Some(other), ..Self::default() },
+        }
+    }
+}
+
+impl From<Embroidery> for serde_json::Value {
+    /// The object's embroidery as it is saved: its run and its cut when it has them, then the kept
+    /// keys; or what a newer version wrote that this one can't read, as it was, while nothing is
+    /// set.
+    fn from(e: Embroidery) -> Self {
+        match e.unread {
+            Some(unread) if e.stitches.is_none() && !e.trim_after && e.extra.is_empty() => unread,
+            _ => {
+                let run = e.stitches.map(|r| (STITCHES, serde_json::Value::from(r)));
+                let cut = e.trim_after.then_some((TRIM_AFTER, serde_json::Value::Bool(true)));
+                with_kept(run.into_iter().chain(cut), e.extra)
+            }
+        }
+    }
 }
 
 /// The document's embroidery settings ([`crate::Document::embroidery`]): what the stitch plan and
@@ -192,6 +305,31 @@ mod tests {
         let unknown: EmbroiderySetup = serde_json::from_value(json!({"palette": 7})).unwrap();
         assert_eq!(unknown.palette, Some(ThreadPalette::Unknown(json!(7))));
         assert_eq!(unknown.palette.and_then(|p| p.id()), None);
+    }
+
+    /// An object's embroidery round-trips as it was written: its run and cut, keys this version
+    /// doesn't know, known keys of another type (read as unset), and a value that isn't an object.
+    #[test]
+    fn an_objects_embroidery_round_trips_with_what_a_newer_version_wrote() {
+        for written in [
+            json!({"trim_after": true}),
+            json!({"stitches": {"trim_before": true, "trim_after": true}}),
+            json!({"stitches": {"trim_before": true, "density": 4}, "fill": {"angle": 30}}),
+            json!({"trim_after": "auto", "stitches": [1, 2]}),
+            json!(5),
+            json!("satin"),
+        ] {
+            let read: Embroidery = serde_json::from_value(written.clone()).unwrap();
+            assert_eq!(serde_json::to_value(&read).unwrap(), written, "{written}");
+        }
+        let odd: Embroidery = serde_json::from_value(json!({"trim_after": "auto", "stitches": [1, 2]})).unwrap();
+        assert_eq!((odd.trim_after, odd.stitches.is_none(), odd.extra.len()), (false, true, 2));
+        let run: Embroidery = serde_json::from_value(json!({"stitches": {"trim_after": true, "density": 4}})).unwrap();
+        assert_eq!(run.stitches.map(|r| (r.trim_after, r.trim_before, r.extra.len())), Some((true, false, 1)));
+        // Unread, then set: the object replaces it.
+        let mut unread: Embroidery = serde_json::from_value(json!(5)).unwrap();
+        unread.trim_after = true;
+        assert_eq!(serde_json::to_value(&unread).unwrap(), json!({"trim_after": true}));
     }
 
     /// Settings of another shape than an object, as a newer version might write them, read as

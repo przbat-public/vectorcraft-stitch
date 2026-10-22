@@ -679,3 +679,42 @@ fn the_read_commands_plan_what_the_export_writes() {
     assert_eq!(stitches(&mut s, json!({})), masked);
     assert_eq!(masked, json!(exported(&mut s, json!({}))));
 }
+
+/// An object's embroidery as a newer version might write it (settings this version doesn't know,
+/// a cut of another type, a run of another shape) opens; the object is sewn as art, and what this
+/// version doesn't read is saved back, also after Embroidery Trim After sets and clears its cut.
+#[test]
+fn a_newer_versions_object_settings_open_and_are_kept() {
+    let mut s = blank();
+    let id = rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    let plain = s.execute("embroidery.stats", &json!({})).unwrap()["stitches"].clone();
+    let newer = json!({"fill": {"angle": 30, "spacing": 0.4}, "trim_after": "auto", "stitches": "later"});
+    let mut file: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
+    fn node(v: &mut serde_json::Value, id: u64) -> Option<&mut serde_json::Value> {
+        if v.get("id").and_then(serde_json::Value::as_u64) == Some(id) && v.get("kind").is_some() {
+            return Some(v);
+        }
+        match v {
+            serde_json::Value::Object(m) => m.values_mut().find_map(|c| node(c, id)),
+            serde_json::Value::Array(a) => a.iter_mut().find_map(|c| node(c, id)),
+            _ => None,
+        }
+    }
+    node(&mut file, id).unwrap()["embroidery"] = newer.clone();
+    let mut s = Session::new();
+    let data = vectorcraft_format::base64_encode(&serde_json::to_vec(&file).unwrap());
+    s.execute("document.open", &json!({"name": "newer.vectorcraft", "dataBase64": data})).unwrap();
+    // Sewn as art, as before: its run of another shape is no run, its cut no cut.
+    assert_eq!(s.execute("embroidery.stats", &json!({})).unwrap()["stitches"], plain);
+    let saved = |s: &mut Session| node(&mut serde_json::from_slice(&native(s)).unwrap(), id).unwrap()["embroidery"].clone();
+    assert_eq!(saved(&mut s), newer);
+    s.execute("embroidery.setTrimAfter", &json!({"on": true, "ids": [id]})).unwrap();
+    let mut on = newer.clone();
+    on["trim_after"] = json!(true);
+    assert_eq!(saved(&mut s), on);
+    s.execute("embroidery.setTrimAfter", &json!({"on": false, "ids": [id]})).unwrap();
+    // Set, the cut is this version's: the value of another type is gone, the rest stays.
+    let mut off = newer.clone();
+    off.as_object_mut().unwrap().remove("trim_after");
+    assert_eq!(saved(&mut s), off, "the box stays: it holds what a newer version wrote");
+}

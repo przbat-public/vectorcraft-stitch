@@ -142,7 +142,7 @@ fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
         return Err(EngineError::NoNode(*missing));
     }
     // Marked: asked for a cut after it, or a run of stitches whose file had one.
-    let marked = |e: Option<&Embroidery>| e.is_some_and(|e| e.trim_after || e.stitches.is_some_and(|r| r.trim_after));
+    let marked = |e: Option<&Embroidery>| e.is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after));
     let on = on.unwrap_or_else(|| !ids.iter().all(|id| marked(d.node(*id).and_then(|n| n.extras().embroidery.as_deref()))));
     let changed = edit_counted(s, "Embroidery Trim After", |d| {
         let mut changed = 0;
@@ -150,7 +150,7 @@ fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
             let n = d.node_mut(*id).ok_or(EngineError::NoNode(*id))?;
             let mut e = n.extras().embroidery.as_deref().cloned().unwrap_or_default();
             let before = e.clone();
-            e.trim_after = on;
+            e.set_trim_after(on);
             // Off: no cut after it, the one its file had included.
             if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
                 run.trim_after = false;

@@ -9,7 +9,7 @@ use vectorcraft_format::{SaveOptions, base64_decode, base64_encode, load, load_f
 use vectorcraft_geom::Affine;
 use vectorcraft_testkit::fixtures;
 use vectorcraft_testkit::invariants::{check_document, check_native_roundtrip, check_native_roundtrip_exact, doc_json, json_approx_eq};
-use vectorcraft_testkit::strategies::arb_ops;
+use vectorcraft_testkit::strategies::{arb_json, arb_ops};
 
 fn rich_doc() -> Document {
     (*fixtures::rich_session().doc().unwrap().doc).clone()
@@ -108,6 +108,26 @@ proptest! {
         prop_assert_eq!(read(&load(&save(&back, false)).unwrap()), read(&back));
     }
 
+    /// Whatever a newer version writes under an object's `embroidery` key, the file opens, and saved
+    /// again it holds the same, but for what reads as unset (a cut that is false or null, a run
+    /// that is null).
+    #[test]
+    fn any_embroidery_an_object_carries_opens_and_saves_back(written in arb_json()) {
+        let mut d = Document::new(100.0, 100.0);
+        let layer = d.layers[0].id;
+        let id = d.alloc_id();
+        let square = vectorcraft_geom::shapes::rectangle(vectorcraft_geom::Rect::new(0.0, 0.0, 10.0, 10.0));
+        d.insert(Some(layer), 0, Node::path(id, square, vectorcraft_doc::Appearance::default_art())).unwrap();
+        let mut file: Value = serde_json::from_slice(&save(&d, false)).unwrap();
+        let node = node_json(&mut file, id.0).expect("the object is in the file");
+        node["embroidery"] = written.clone();
+        let back = load(&serde_json::to_vec(&file).unwrap());
+        prop_assert!(back.is_ok(), "{written}: {back:?}");
+        let mut again: Value = serde_json::from_slice(&save(&back.unwrap(), false)).unwrap();
+        let kept = node_json(&mut again, id.0).expect("the object is in the file").get("embroidery").cloned().unwrap_or(Value::Null);
+        prop_assert_eq!(kept, unset_dropped(&written));
+    }
+
     /// Compressed and older-version saves of random documents load to the same document.
     #[test]
     fn compressed_and_older_saves_roundtrip(ops in arb_ops(5..30)) {
@@ -191,6 +211,42 @@ fn rejects_newer_versions_and_other_formats() {
     v["format"] = json!("vectorcraft");
     v["images"] = json!({"x": {"mime": "image/png", "data": "not base64!"}});
     assert!(matches!(load(&serde_json::to_vec(&v).unwrap()), Err(vectorcraft_format::FormatError::BadImage(_))));
+}
+
+/// The node of id `id` in a saved file's JSON.
+fn node_json(v: &mut Value, id: u64) -> Option<&mut Value> {
+    if v.get("id").and_then(Value::as_u64) == Some(id) && v.get("kind").is_some() {
+        return Some(v);
+    }
+    match v {
+        Value::Object(m) => m.values_mut().find_map(|c| node_json(c, id)),
+        Value::Array(a) => a.iter_mut().find_map(|c| node_json(c, id)),
+        _ => None,
+    }
+}
+
+/// An object's embroidery as it is saved again: what reads as unset dropped (`null`; a cut that is
+/// false or null; a run that is null), the rest as written.
+fn unset_dropped(v: &Value) -> Value {
+    let Value::Object(m) = v else { return v.clone() };
+    let mut out = serde_json::Map::new();
+    for (k, x) in m {
+        match (k.as_str(), x) {
+            ("trim_after", Value::Bool(false) | Value::Null) | ("stitches", Value::Null) => {}
+            ("stitches", Value::Object(run)) => {
+                let run: serde_json::Map<String, Value> = run
+                    .iter()
+                    .filter(|(k, x)| !(matches!(k.as_str(), "trim_after" | "trim_before") && matches!(x, Value::Bool(false) | Value::Null)))
+                    .map(|(k, x)| (k.clone(), x.clone()))
+                    .collect();
+                out.insert(k.clone(), Value::Object(run));
+            }
+            _ => {
+                out.insert(k.clone(), x.clone());
+            }
+        }
+    }
+    Value::Object(out)
 }
 
 #[test]

@@ -435,11 +435,12 @@ same:
   end of the last block (EduTechWiki: the end; the KDE wiki and Weiler: an empty command): we
   write it there and read it as nothing.
 - *Thread colours.* VP3 names no palette: each block carries its thread's own colour and name. We
-  write the block's art colour (rayon, 40 wt), so a design opened from VP3 and exported again keeps
-  its colours exactly; the thread's description is written only for a design read from a file,
-  since the name a stitch plan gives a block is its palette thread's, matched to the colour, not
-  the colour's own. Writing the plan's palette thread instead (its colour, name and maker, as the
-  PES and JEF exports do by number) is the alternative, left to the project owner.
+  write the block's art colour (rayon, 40 wt), exactly the colour the object is painted with, so a
+  design opened from VP3 and exported again keeps its colours exactly: the project owner's choice
+  (2026-10-22), over writing the plan's palette thread (its colour, name and maker, as the PES and
+  JEF exports do by number). The thread's description is written only for a design read from a
+  file, since the name a stitch plan gives a block is its palette thread's, matched to the colour,
+  not the colour's own.
 
 Coordinate conventions: files count tenths of a millimetre. DST, TAP, T01, EXP and JEF count y
 upwards, PEC and VP3's stitches downwards; the readers and writers flip accordingly, so a design

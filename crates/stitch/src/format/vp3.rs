@@ -52,7 +52,8 @@
 //!   stops at each block for its thread). The last block ends with `80 03`.
 //! - The needle starts at the design's centre, as in the real files.
 //! - The thread record: the block's colour ([`Thread::color`], the art's), material rayon, 40 wt.
-//!   Its description is the thread's name only for a design read from a file ([`Thread::chosen`]
+//!   The art's colour rather than the stitch plan's palette thread is the project owner's choice
+//!   (2026-10-22): an opened VP3 written again keeps its colours. Its description is the thread's name only for a design read from a file ([`Thread::chosen`]
 //!   unset): a name a stitch plan gives is a palette thread's, matched to the colour, not the
 //!   colour written. Reading takes each block's first colour and its description (else its
 //!   catalogue number) as the thread's name.

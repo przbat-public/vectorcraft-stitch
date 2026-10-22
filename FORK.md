@@ -189,6 +189,8 @@ PR descriptions.
   start there). DST, TAP, T01, EXP and PEC start at a corner.
 - `.dst/.tap/.t01/.exp/.pes/.pec/.jef/.vp3` are in `UNASSOCIATED_EXTS`: VectorCraft doesn't register
   as their default app.
+- VP3 writes each block's art colour, exactly as the object is painted, not the stitch plan's
+  palette thread: the project owner's choice (2026-10-22), so an opened VP3 keeps its colours.
 - Defaults have one source, `plan::Params::for_style`. Export options and `document.formats` mirror
   it, and a test keeps them equal.
 - Untrusted input is capped: `plan::try_stitches` (4 million stitches per shape), 2 million per

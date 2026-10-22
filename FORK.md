@@ -279,6 +279,16 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
   against `xtask/embroidery-corpus.sha256`, used locally and never committed. Prefer them to random
   shapes when checking stitch quality.
 
+## Keeping up with upstream
+
+Where merging `main` (upstream) into the fork conflicts, and how to resolve each so nothing is lost:
+
+- **`crates/doc/src/node.rs`, the node's extras:** the fork's `embroidery` sits after `perspective`
+  in all six lists (`NodeExtras`, `NO_EXTRAS`, `Serialize for Node`'s `skips` and its `field!`
+  calls, `NodeWire`, `From<NodeWire>`), not at their ends, where upstream appends its own extras.
+  `skips` and the `field!` calls pair up by position: keep them in the same order, or a field is
+  written as skipped and the next as `null`. The key-order test in `node.rs` checks it.
+
 ## Practicalities
 
 - **Rust 1.95 is required:** `cargo +1.95.0 …`. The default toolchain on this machine may be older.

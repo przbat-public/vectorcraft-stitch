@@ -3906,7 +3906,15 @@ fn ai_cut_inside_an_array_or_dictionary_opens_without_panicking() {
 
 // ---------- Embroidery designs: opened and placed ----------
 
-const EMBROIDERY: [&str; 4] = ["dst", "exp", "pes", "jef"];
+const EMBROIDERY: [&str; 8] = ["dst", "tap", "t01", "exp", "pes", "pec", "jef", "vp3"];
+
+/// Where a VP3 written here has its first stitch record: past its first stitch run's tag
+/// `00 01 00`, its length and the scale bytes `0A F6 00` that open the run (the ten bytes together,
+/// which no position or string before them holds).
+fn vp3_records(sample: &[u8]) -> usize {
+    const RUN_START: usize = 10;
+    sample.windows(RUN_START).position(|w| w[..3] == [0x00, 0x01, 0x00] && w[7..] == [0x0A, 0xF6, 0x00]).map_or(sample.len(), |at| at + RUN_START)
+}
 
 /// The rich document stitched into each embroidery format.
 fn embroidery_samples() -> &'static [Vec<u8>] {
@@ -3929,7 +3937,7 @@ proptest! {
     /// Damaged designs: bytes changed anywhere (header counts and offsets included) and the file
     /// cut short.
     #[test]
-    fn mutated_embroidery_never_panics(which in 0usize..4, cut in 0usize..200_000, edits in prop::collection::vec((0usize..200_000, any::<u8>()), 0..24)) {
+    fn mutated_embroidery_never_panics(which in 0usize..EMBROIDERY.len(), cut in 0usize..200_000, edits in prop::collection::vec((0usize..200_000, any::<u8>()), 0..24)) {
         let mut bytes = embroidery_samples()[which].clone();
         let n = bytes.len();
         for &(at, b) in &edits {
@@ -3941,12 +3949,14 @@ proptest! {
 
     /// Random records behind each format's own header (the sample's), so the readers get past it.
     #[test]
-    fn random_embroidery_records_never_panic(which in 0usize..4, body in prop::collection::vec(any::<u8>(), 0..2048)) {
+    fn random_embroidery_records_never_panic(which in 0usize..EMBROIDERY.len(), body in prop::collection::vec(any::<u8>(), 0..2048)) {
         let sample = &embroidery_samples()[which];
         let header = match EMBROIDERY[which] {
             "dst" => 512,
             "pes" => 22 + 512 + 20,
+            "pec" => 8 + 512 + 20,
             "jef" => 116 + 8 * 4,
+            "vp3" => vp3_records(sample),
             _ => 0,
         };
         let mut bytes = sample[..header.min(sample.len())].to_vec();

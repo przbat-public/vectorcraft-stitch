@@ -16,9 +16,9 @@ work comes from the list below, unless the user gives you a task.
    decisions the next steps rest on.
 2. Read the open embroidery PR's description on GitHub: it explains the terms (stitch, density,
    underlay, pull compensation, trim, tie-in…) for newcomers and lists what is verified.
-3. Code: `crates/stitch` (L3: `plan/` stitch planning, `format/` DST/EXP/PES/JEF, `thread.rs`
-   palettes), `crates/engine/src/cmd/embroidery/` (the embroidery commands and the digitizer) and
-   `crates/engine/src/cmd/fileio/embroidery/` (opening and exporting machine files).
+3. Code: `crates/stitch` (L3: `plan/` stitch planning, `format/` DST/TAP/T01/EXP/PES/PEC/JEF/VP3,
+   `thread.rs` palettes), `crates/engine/src/cmd/embroidery/` (the embroidery commands and the
+   digitizer) and `crates/engine/src/cmd/fileio/embroidery/` (opening and exporting machine files).
 
 ## Branches
 
@@ -155,11 +155,12 @@ stitches fast, is tried before anything is built on it.
    whose overrides survive retracing (kept by the point clicked and its colour, not the area's
    number) and become the areas' embroidery settings.
 
-**Alongside, at any time:** new machine formats (such as VP3, HUS, SEW, Singer's XXX, and PEC on
-its own; they need only `Pattern`, `Block` and `Thread`); real thread colours in PES (the plan
-now carries each block's thread); more real designs (the corpus has eleven, all PES and one JEF,
-all from one project: add real DST and EXP files, lettering and larger designs, and test on a
-machine).
+**Alongside, at any time:** new machine formats (done: Husqvarna Viking and Pfaff VP3, read and
+written with each block's own colour, Brother PEC on its own, Happy TAP and Wilcom T01; next: HUS,
+Singer's XXX, Barudan's U01 and SEW; they need only `Pattern`, `Block` and `Thread`); real thread
+colours in PES (the plan now carries each block's thread); more real designs (the corpus has
+nineteen, all from one project: eleven PES, one also JEF, with their artwork, and eight VP3, seven
+also PES; add real DST and EXP files, lettering and larger designs, and test on a machine).
 
 **Later**, on the steps above: embroidery lettering; satins from rails, angle lines, and turning
 (variable-angle) satin and fill; quality options (triple running stitch, corners, more underlay
@@ -184,9 +185,12 @@ PR descriptions.
   doesn't put anything on top of what it should be under.
 - Only what would print is sewn: hidden objects, guides, template and non-printing layers are
   skipped. Clip groups cut fills exactly and strokes to the stitch.
-- JEF files start at the design's centre (Janome sews from the hoop's centre). DST, EXP and PEC start
-  at a corner.
-- `.dst/.exp/.pes/.jef` are in `UNASSOCIATED_EXTS`: VectorCraft doesn't register as their default app.
+- JEF and VP3 files start at the design's centre (Janome sews from the hoop's centre; VP3 files
+  start there). DST, TAP, T01, EXP and PEC start at a corner.
+- `.dst/.tap/.t01/.exp/.pes/.pec/.jef/.vp3` are in `UNASSOCIATED_EXTS`: VectorCraft doesn't register
+  as their default app.
+- VP3 writes each block's art colour, exactly as the object is painted, not the stitch plan's
+  palette thread: the project owner's choice (2026-10-22), so an opened VP3 keeps its colours.
 - Defaults have one source, `plan::Params::for_style`. Export options and `document.formats` mirror
   it, and a test keeps them equal.
 - Untrusted input is capped: `plan::try_stitches` (4 million stitches per shape), 2 million per
@@ -201,8 +205,10 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
   [DST](https://edutechwiki.unige.ch/en/Embroidery_format_DST),
   [EXP](https://edutechwiki.unige.ch/en/Embroidery_format_EXP),
   [PES](https://edutechwiki.unige.ch/en/Embroidery_format_PES),
-  [PEC](https://edutechwiki.unige.ch/en/Embroidery_format_PEC) and
-  [JEF](https://edutechwiki.unige.ch/en/Embroidery_format_JEF).
+  [PEC](https://edutechwiki.unige.ch/en/Embroidery_format_PEC),
+  [JEF](https://edutechwiki.unige.ch/en/Embroidery_format_JEF) and
+  [VP3](https://edutechwiki.unige.ch/en/Embroidery_format_VP3) (with the KDE Community Wiki's
+  [VP3 page](https://community.kde.org/Projects/Liberty/File_Formats/Viking_Pfaff), CC BY-SA 4.0).
 - **Behaviour of professional software:** public help pages, such as
   [Wilcom EmbroideryStudio's online help](https://docs.wilcom.com/embroiderystudio/28/en/index.htm),
   may be read and cited by URL for concepts and indicative values. Don't copy their text or tables,

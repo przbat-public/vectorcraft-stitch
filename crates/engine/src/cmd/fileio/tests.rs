@@ -396,9 +396,13 @@ fn export_extensions_name_every_writable_format() {
             "tga",
             "psd",
             "dst",
+            "tap",
+            "t01",
             "exp",
             "pes",
-            "jef"
+            "pec",
+            "jef",
+            "vp3"
         ]
     );
     for e in exts {
@@ -435,9 +439,13 @@ fn formats_query_lists_readers_writers_and_options() {
             "tga",
             "psd",
             "dst",
+            "tap",
+            "t01",
             "exp",
             "pes",
-            "jef"
+            "pec",
+            "jef",
+            "vp3"
         ]
     );
     assert!(ids("readable").contains(&"tiff".to_string()) && ids("readable").contains(&"ait".to_string()));

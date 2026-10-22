@@ -5062,6 +5062,7 @@ mark-style	Japanese	Japońskie
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	zmienne i zestawy danych pliku nie zostały wczytane (zmienne: {variables}, zestawy danych: {data_sets}): panel Zmienne ich nie wyświetla
 	Trim After	Obetnij nić po
 	Embroidery Setup	Ustawienia haftu
+	Show Embroidery Settings	Pokaż ustawienia haftu
 	Embroidery Statistics	Statystyki haftu
 	Embroidery Sewing Order	Kolejność szycia haftu
 	Embroidery Check	Kontrola haftu

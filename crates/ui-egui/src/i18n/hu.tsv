@@ -5196,6 +5196,7 @@ imageTrace	Outline	Körvonal
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	a fájl változói és adatkészletei nem lettek beolvasva (változók: {variables}, adatkészletek: {data_sets}): a Változók panel nem listázza őket
 	Trim After	Szálvágás utána
 	Embroidery Setup	Hímzésbeállítás
+	Show Embroidery Settings	Hímzésbeállítások megjelenítése
 	Embroidery Statistics	Hímzésstatisztika
 	Embroidery Sewing Order	Hímzési sorrend
 	Embroidery Check	Hímzés ellenőrzése

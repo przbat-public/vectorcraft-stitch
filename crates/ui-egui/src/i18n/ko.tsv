@@ -4787,6 +4787,7 @@ lighting	Light	광원
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	파일의 변수와 데이터 세트를 읽지 않았습니다(변수: {variables}, 데이터 세트: {data_sets}). 변수 패널에 표시되지 않습니다
 	Trim After	이후 실 자르기
 	Embroidery Setup	자수 설정
+	Show Embroidery Settings	자수 설정 표시
 	Embroidery Statistics	자수 통계
 	Embroidery Sewing Order	자수 순서
 	Embroidery Check	자수 검사

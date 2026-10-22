@@ -4864,6 +4864,7 @@ lighting	Light	ライト
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	ファイルの変数とデータセットは読み込まれませんでした (変数: {variables}、データセット: {data_sets})。変数パネルには表示されません
 	Trim After	後で糸切り
 	Embroidery Setup	刺繍設定
+	Show Embroidery Settings	刺繍設定を表示
 	Embroidery Statistics	刺繍の統計
 	Embroidery Sewing Order	刺繍の縫い順
 	Embroidery Check	刺繍のチェック

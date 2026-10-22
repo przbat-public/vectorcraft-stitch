@@ -5210,6 +5210,7 @@ mark-style	Japanese	Japonské
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	proměnné a sady dat souboru nebyly načteny (proměnné: {variables}, sady dat: {data_sets}): panel Proměnné je nezobrazuje
 	Trim After	Odstřihnout nit po
 	Embroidery Setup	Nastavení vyšívání
+	Show Embroidery Settings	Zobrazit nastavení vyšívání
 	Embroidery Statistics	Statistika vyšívání
 	Embroidery Sewing Order	Pořadí vyšívání
 	Embroidery Check	Kontrola výšivky

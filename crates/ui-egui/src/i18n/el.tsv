@@ -5162,6 +5162,7 @@ effect	Points	Σημεία
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	οι μεταβλητές και τα σύνολα δεδομένων του αρχείου δεν διαβάστηκαν (μεταβλητές: {variables}, σύνολα δεδομένων: {data_sets}): ο πίνακας Μεταβλητές δεν τα εμφανίζει
 	Trim After	Κοπή κλωστής μετά
 	Embroidery Setup	Ρύθμιση κεντήματος
+	Show Embroidery Settings	Εμφάνιση ρυθμίσεων κεντήματος
 	Embroidery Statistics	Στατιστικά κεντήματος
 	Embroidery Sewing Order	Σειρά κεντήματος
 	Embroidery Check	Έλεγχος κεντήματος

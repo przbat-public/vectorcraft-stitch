@@ -73,9 +73,18 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Setup",
             [],
             None,
-            "{palette?: \"pec\"|\"jef\"|null (the thread palette the design's colours are matched to, the target machine format's: Brother's 61 threads, which PES files number, or Janome's 78, which JEF files number; null unsets it, and JEF is used), threadPalette?: (reported only: ignored when passed back)} change the document's embroidery settings in one undo step, saved with the document; no params → the current settings → {palette: as set (null when unset; one a newer version wrote, as it is), threadPalette: \"pec\"|\"jef\" (the palette the stitch plan matches to: palette, else JEF)}",
+            "{palette?: \"pec\"|\"jef\"|null (the thread palette the design's colours are matched to, the target machine format's: Brother's 61 threads, which PES files number, or Janome's 78, which JEF files number; null unsets it, and JEF is used), settings?: {palette?} (the settings of its own reply, passed back)} change the document's embroidery settings in one undo step, saved with the document (resolved, which the reply only reports, is refused); no params → no change → {settings: {palette: as set (null when unset; one a newer version wrote, as it is)}, resolved: {palette: {value: \"pec\"|\"jef\" (the palette the stitch plan matches to), source: \"document\"|\"default\" (set by the document, or the default because it sets none this version knows)}}}",
             has_doc,
             setup
+        ),
+        cmd!(
+            query "embroidery.settings",
+            "Show Embroidery Settings",
+            [],
+            None,
+            "{} the document's embroidery settings, read only → {settings, resolved} as embroidery.setup answers",
+            has_doc,
+            settings
         ),
         cmd!(
             query "embroidery.threads",
@@ -163,10 +172,25 @@ pub(crate) fn thread_palette(d: &Document) -> Palette {
     d.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(ThreadPalette::id).and_then(Palette::from_id).unwrap_or(DEFAULT_PALETTE)
 }
 
-/// The document's embroidery settings as `embroidery.setup` reports them (and takes them back).
-fn setup_json(d: &Document) -> Value {
-    let palette = d.embroidery.as_deref().and_then(|e| e.palette.clone()).map(Value::from);
-    json!({"palette": palette, "threadPalette": thread_palette(d).id()})
+/// Where a resolved setting's value comes from: the document sets it, or it is the default.
+fn source(set: bool) -> &'static str {
+    if set { "document" } else { "default" }
+}
+
+/// The document's embroidery settings as `embroidery.setup` and `embroidery.settings` report them:
+/// each as the document stores it (`settings`, which can be passed back to `embroidery.setup`), and
+/// the value the stitch plan uses with where it comes from (`resolved`).
+fn settings_json(d: &Document) -> Value {
+    let stored = d.embroidery.as_deref().and_then(|e| e.palette.as_ref());
+    let known = stored.and_then(ThreadPalette::id).and_then(Palette::from_id).is_some();
+    json!({
+        "settings": {"palette": stored.cloned().map(Value::from)},
+        "resolved": {"palette": {"value": thread_palette(d).id(), "source": source(known)}},
+    })
+}
+
+fn settings(s: &mut Session, _: &Value) -> Result<Value> {
+    Ok(settings_json(&s.doc()?.doc))
 }
 
 fn setup(s: &mut Session, p: &Value) -> Result<Value> {
@@ -174,11 +198,25 @@ fn setup(s: &mut Session, p: &Value) -> Result<Value> {
     let o = object(p, C)?;
     let d = &s.doc()?.doc;
     let mut new = d.embroidery.as_deref().cloned().unwrap_or_default();
+    // The settings given, at the top or under `settings` (the reply's, passed back), each once.
+    let mut given: Map<String, Value> = Map::new();
     for (k, v) in o.iter() {
+        let more = match (k.as_str(), v) {
+            ("settings", Value::Object(inner)) => inner.clone(),
+            ("settings", _) => return Err(bad(C, format!("`settings` {v}: an object of settings, as the reply gives it"))),
+            ("resolved", _) => return Err(bad(C, "`resolved` is read only: pass back `settings`")),
+            _ => Map::from_iter([(k.clone(), v.clone())]),
+        };
+        for (k, v) in more {
+            if given.get(&k).is_some_and(|w| *w != v) {
+                return Err(bad(C, format!("`{k}` given twice, with different values")));
+            }
+            given.insert(k, v);
+        }
+    }
+    for (k, v) in &given {
         match k.as_str() {
             "palette" => new.set_palette(palette_param(v, new.palette.as_ref())?),
-            // Reported only.
-            "threadPalette" => {}
             _ => return Err(bad(C, format!("unknown setting `{k}`: the only setting is palette"))),
         }
     }
@@ -186,13 +224,13 @@ fn setup(s: &mut Session, p: &Value) -> Result<Value> {
     // A file may hold settings with nothing in them (`"embroidery": {}`): as good as none, so
     // asking for the settings doesn't edit the document.
     if new.as_deref() == d.embroidery.as_deref().filter(|e| !e.is_empty()) {
-        return Ok(setup_json(d));
+        return Ok(settings_json(d));
     }
     s.edit("Embroidery Setup", |d, _| {
         d.embroidery = new;
         Ok(())
     })?;
-    Ok(setup_json(&s.doc()?.doc))
+    Ok(settings_json(&s.doc()?.doc))
 }
 
 /// The palette `v` names: `pec`, `jef`, or null to unset it. The palette already set stays as it

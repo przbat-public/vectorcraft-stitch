@@ -5127,6 +5127,7 @@ mark-style	Japanese	Japonesas
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	as variáveis e os conjuntos de dados do arquivo não foram lidos (variáveis: {variables}, conjuntos de dados: {data_sets}): o painel Variáveis não os lista
 	Trim After	Cortar a linha depois
 	Embroidery Setup	Configuração do Bordado
+	Show Embroidery Settings	Mostrar Configuração do Bordado
 	Embroidery Statistics	Estatísticas do Bordado
 	Embroidery Sewing Order	Ordem do Bordado
 	Embroidery Check	Verificar Bordado

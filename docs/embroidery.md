@@ -109,8 +109,10 @@ Applique Material, Applique Position and Applique), not threads, so no colour is
 them, the export never writes them and the swatch library leaves them out. A file that names them
 (the real designs' fox, digitized with Ink/Stitch, names 62 and 63 for its orange and its light
 yellow) opens in their colours; written again, those blocks get Brother's nearest threads.
-`embroidery.setup {palette}` sets it in one undo step, saved with the document; unset, Janome's is
-used (the project owner's choice, not a sourced default). The blocks are matched in sewing order:
+`embroidery.setup {palette}` sets it in one undo step, saved with the document, and
+`embroidery.settings` reads it: the palette as stored, and the one in use with where it comes from
+(`resolved: {palette: {value, source}}`, the shape every resolved setting will take). Unset,
+Janome's is used (the project owner's choice, not a sourced default). The blocks are matched in sewing order:
 a block whose art colour (its objects' fill or stroke) is a thread's own colour is sewn in that
 thread, and every other block in the thread that looks nearest, the smallest CIEDE2000 colour
 difference (ΔE₀₀, below). When a neighbouring block has that thread (the block before, or the
@@ -757,8 +759,8 @@ thread; 23 and 28 of them are past 5, and 8 and 12 past 10.
   longer by its reach at most.
 - `crates/engine`: 62 tests (37 through the commands, 19 on the stitch plan, its threads and the
   document's settings, 2 on the export options, 4 on the sewing order and the blocks' threads) —
-  `embroidery.setup` sets and unsets the palette in one undo step (none for no change, its reply
-  passed back changes nothing, other palettes and settings refused; settings with nothing in them,
+  `embroidery.setup` sets and unsets the palette in one undo step (none for no change, its reply's
+  settings passed back change nothing, the resolved values refused, other palettes and settings refused; settings with nothing in them,
   as a file may hold them, are none, so asking for them is no edit), the palette is saved in
   `.vectorcraft` files and a newer version's settings and palette are kept as they were (the
   palette matched as Janome's, with a warning), and so are settings of another shape than an

@@ -5117,6 +5117,7 @@ imageTrace	Outline	კონტური
 @msg	it decompresses to more than {_1} MB	გაშლისას {_1} MB-ს აღემატება
 	Trim After	ძაფის მოჭრა შემდეგ
 	Embroidery Setup	ქარგვის პარამეტრები
+	Show Embroidery Settings	ქარგვის პარამეტრების ჩვენება
 	Embroidery Statistics	ქარგვის სტატისტიკა
 	Embroidery Sewing Order	ქარგვის თანმიმდევრობა
 	Embroidery Check	ქარგვის შემოწმება

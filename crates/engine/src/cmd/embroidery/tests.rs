@@ -287,29 +287,52 @@ fn native(s: &mut Session) -> Vec<u8> {
     }
 }
 
+/// The settings of a document that sets none: the palette unset, Janome's by default.
+fn unset() -> Value {
+    json!({"settings": {"palette": null}, "resolved": {"palette": {"value": "jef", "source": "default"}}})
+}
+
 /// `embroidery.setup` sets the document's thread palette in one undo step and unsets it with null;
-/// setting what is set already, or passing its reply back, changes nothing and takes no step; a
-/// palette it doesn't know, or a setting, is refused.
+/// setting what is set already, or passing its reply's settings back, changes nothing and takes no
+/// step; a palette it doesn't know, a setting, or the resolved values are refused.
+/// `embroidery.settings` reads them without a step.
 #[test]
 fn the_document_sets_its_thread_palette() {
     let mut s = blank();
     let steps = |s: &Session| s.doc().unwrap().history.undo.len();
     let before = steps(&s);
-    assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap(), json!({"palette": null, "threadPalette": "jef"}));
+    assert_eq!(s.execute("embroidery.settings", &json!({})).unwrap(), unset());
+    assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap(), unset());
     let r = s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
-    assert_eq!(r, json!({"palette": "pec", "threadPalette": "pec"}));
+    assert_eq!(r, json!({"settings": {"palette": "pec"}, "resolved": {"palette": {"value": "pec", "source": "document"}}}));
     assert_eq!(steps(&s), before + 1);
-    assert_eq!(s.execute("embroidery.setup", &r).unwrap(), r);
+    assert_eq!(s.execute("embroidery.setup", &json!({"settings": r["settings"]})).unwrap(), r);
     assert_eq!(s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap(), r);
+    assert_eq!(s.execute("embroidery.settings", &json!({})).unwrap(), r);
     assert_eq!(steps(&s), before + 1, "no change, no step");
-    for bad in [json!({"palette": "madeira"}), json!({"palette": 5}), json!({"palette": ["pec"]}), json!({"palete": "pec"}), json!([1])] {
+    for bad in [
+        json!({"palette": "madeira"}),
+        json!({"palette": 5}),
+        json!({"palette": ["pec"]}),
+        json!({"palete": "pec"}),
+        json!([1]),
+        // The reply's resolved values are only reported; the same setting twice must agree.
+        r.clone(),
+        json!({"palette": "jef", "settings": {"palette": "pec"}}),
+        json!({"settings": "pec"}),
+    ] {
         assert!(s.execute("embroidery.setup", &bad).is_err(), "{bad}");
     }
+    // The params check every frontend runs refuses it first; the command says why.
+    assert!(s.execute("embroidery.setup", &r).unwrap_err().to_string().contains("`resolved`"));
+    assert!(super::setup(&mut s, &r).unwrap_err().to_string().contains("`resolved` is read only"));
     assert_eq!(steps(&s), before + 1);
-    assert_eq!(s.execute("embroidery.setup", &json!({"palette": null})).unwrap(), json!({"palette": null, "threadPalette": "jef"}));
+    assert_eq!(s.execute("embroidery.setup", &json!({"palette": null})).unwrap(), unset());
     assert!(s.doc().unwrap().doc.embroidery.is_none(), "nothing set, nothing kept");
     s.execute("edit.undo", &json!({})).unwrap();
-    assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap()["palette"], "pec");
+    assert_eq!(s.execute("embroidery.settings", &json!({})).unwrap()["settings"]["palette"], "pec");
+    // The getter is a query: it is not recorded as an action.
+    assert!(!crate::cmd::find_command("embroidery.settings").unwrap().journal);
     // The document's palettes are the stitch planner's, by name.
     let known: Vec<Option<Palette>> = ThreadPalette::KNOWN.iter().map(|p| p.id().and_then(Palette::from_id)).collect();
     assert_eq!(known, Palette::ALL.map(Some));
@@ -327,7 +350,7 @@ fn empty_settings_in_a_file_are_none() {
         s.execute("document.open", &json!({"name": "empty.vectorcraft", "dataBase64": data})).unwrap();
         let steps = s.doc().unwrap().history.undo.len();
         for p in [json!({}), json!({"palette": null})] {
-            assert_eq!(s.execute("embroidery.setup", &p).unwrap(), json!({"palette": null, "threadPalette": "jef"}), "{empty}: {p}");
+            assert_eq!(s.execute("embroidery.setup", &p).unwrap(), unset(), "{empty}: {p}");
         }
         let st = s.doc().unwrap();
         assert_eq!(st.history.undo.len(), steps, "{empty}: no step");
@@ -350,7 +373,7 @@ fn a_newer_versions_settings_of_another_shape_open() {
         let data = vectorcraft_format::base64_encode(&serde_json::to_vec(&file).unwrap());
         let mut s = Session::new();
         s.execute("document.open", &json!({"name": "newer.vectorcraft", "dataBase64": data})).unwrap_or_else(|e| panic!("{newer}: {e}"));
-        assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap(), json!({"palette": null, "threadPalette": "jef"}), "{newer}");
+        assert_eq!(s.execute("embroidery.settings", &json!({})).unwrap(), unset(), "{newer}");
         assert!(!s.doc().unwrap().is_dirty(), "{newer}: unchanged");
         let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
         assert_eq!(kept["document"]["embroidery"], newer);
@@ -370,7 +393,7 @@ fn the_thread_palette_is_saved_and_a_newer_versions_settings_are_kept() {
     let saved = native(&mut s);
     let mut again = Session::new();
     again.execute("document.open", &json!({"name": "threads.vectorcraft", "dataBase64": vectorcraft_format::base64_encode(&saved)})).unwrap();
-    assert_eq!(again.execute("embroidery.setup", &json!({})).unwrap()["palette"], "jef");
+    assert_eq!(again.execute("embroidery.settings", &json!({})).unwrap()["settings"]["palette"], "jef");
     // As a newer version might write it.
     let mut file: serde_json::Value = serde_json::from_slice(&saved).unwrap();
     let newer = json!({"palette": {"chart": "madeira", "line": "polyneon"}, "fabric": {"preset": "knit", "pull": 0.35}});
@@ -378,10 +401,10 @@ fn the_thread_palette_is_saved_and_a_newer_versions_settings_are_kept() {
     let bytes = serde_json::to_vec(&file).unwrap();
     let mut s = Session::new();
     s.execute("document.open", &json!({"name": "newer.vectorcraft", "dataBase64": vectorcraft_format::base64_encode(&bytes)})).unwrap();
-    let r = s.execute("embroidery.setup", &json!({})).unwrap();
-    assert_eq!(r, json!({"palette": newer["palette"], "threadPalette": "jef"}));
-    // Its own reply passed back changes nothing; another palette replaces it, keeping the fabric.
-    s.execute("embroidery.setup", &r).unwrap();
+    let r = s.execute("embroidery.settings", &json!({})).unwrap();
+    assert_eq!(r, json!({"settings": {"palette": newer["palette"]}, "resolved": {"palette": {"value": "jef", "source": "default"}}}));
+    // Its own settings passed back change nothing; another palette replaces it, keeping the fabric.
+    s.execute("embroidery.setup", &json!({"settings": r["settings"]})).unwrap();
     let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
     assert_eq!(kept["document"]["embroidery"], newer);
     // Its threads are Janome's, and the plan says why.
@@ -425,7 +448,7 @@ fn an_opened_design_is_in_its_formats_palette() {
         opened.execute("document.open", &json!({"name": format!("design.{}", format.id()), "dataBase64": data})).unwrap();
         assert!(!opened.doc().unwrap().is_dirty(), "{format:?}");
         let palette = format.palette().map(Palette::id);
-        assert_eq!(opened.execute("embroidery.setup", &json!({})).unwrap()["palette"], json!(palette), "{format:?}");
+        assert_eq!(opened.execute("embroidery.settings", &json!({})).unwrap()["settings"]["palette"], json!(palette), "{format:?}");
         let threads = opened.execute("embroidery.threads", &json!({})).unwrap();
         let blocks = threads["blocks"].as_array().unwrap();
         assert_eq!(blocks.len(), 2, "{format:?}: {blocks:?}");

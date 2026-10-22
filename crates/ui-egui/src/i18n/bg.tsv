@@ -5175,6 +5175,7 @@ theme	Appearance	Външен вид
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	променливите и наборите от данни на файла не бяха прочетени (променливи: {variables}, набори от данни: {data_sets}): панелът „Променливи“ не ги показва
 	Trim After	Отрязване на конеца след
 	Embroidery Setup	Настройка на бродирането
+	Show Embroidery Settings	Показване на настройките на бродирането
 	Embroidery Statistics	Статистика на бродирането
 	Embroidery Sewing Order	Ред на бродиране
 	Embroidery Check	Проверка на бродирането

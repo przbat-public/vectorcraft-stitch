@@ -4820,6 +4820,7 @@ lighting	Light	Свет
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	переменные и наборы данных файла не прочитаны (переменных: {variables}, наборов данных: {data_sets}): панель «Переменные» их не показывает
 	Trim After	Обрезать нить после
 	Embroidery Setup	Параметры вышивки
+	Show Embroidery Settings	Показать параметры вышивки
 	Embroidery Statistics	Статистика вышивки
 	Embroidery Sewing Order	Порядок вышивания
 	Embroidery Check	Проверка вышивки

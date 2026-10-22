@@ -4804,6 +4804,7 @@ theme	Appearance	Giao diện
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	các biến và tập dữ liệu của tệp chưa được đọc (biến: {variables}, tập dữ liệu: {data_sets}): bảng Biến không liệt kê chúng
 	Trim After	Cắt chỉ sau
 	Embroidery Setup	Thiết lập thêu
+	Show Embroidery Settings	Hiện thiết lập thêu
 	Embroidery Statistics	Thống kê thêu
 	Embroidery Sewing Order	Thứ tự thêu
 	Embroidery Check	Kiểm tra thêu

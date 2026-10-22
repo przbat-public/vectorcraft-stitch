@@ -4804,6 +4804,7 @@ lighting	Light	Світло
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	змінні та набори даних файлу не прочитано (змінних: {variables}, наборів даних: {data_sets}): панель «Змінні» їх не показує
 	Trim After	Обрізати нитку після
 	Embroidery Setup	Параметри вишивки
+	Show Embroidery Settings	Показати параметри вишивки
 	Embroidery Statistics	Статистика вишивки
 	Embroidery Sewing Order	Порядок вишивання
 	Embroidery Check	Перевірка вишивки

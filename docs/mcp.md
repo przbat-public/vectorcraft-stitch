@@ -4296,8 +4296,11 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
 
 - `embroidery.setup {palette?}` sets the document's thread palette, `"pec"` (Brother's 61 threads, which PES files
   number) or `"jef"` (Janome's 78, which JEF files number), in one undo step; `null` unsets it, and Janome's is used.
-  No params report `{palette, threadPalette}` (the palette set, and the one the stitch plan uses); the reply can be
-  passed back unchanged. A PES, PEC or JEF file opens in its own format's palette.
+  It answers `{settings: {palette}, resolved: {palette: {value, source}}}`: the palette as the document stores it
+  (null when unset, one a newer version wrote as it is), and the one the stitch plan uses with where it comes from
+  (`document`, or `default`). The reply's `settings` can be passed back (`{settings: …}`); `resolved` is only
+  reported and refused as input. `embroidery.settings {}` reads the same without editing anything. A PES, PEC or JEF
+  file opens in its own format's palette.
 - `embroidery.threads {…embroidery options, offset?, limit?}` lists the thread each colour block is sewn in, in sewing
   order: `{palette, threshold, blockCount, offset, truncated, blocks: [{block, thread: {palette, index, name, color, art,
   deltaE, mismatch}, unitCount}], options, warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour

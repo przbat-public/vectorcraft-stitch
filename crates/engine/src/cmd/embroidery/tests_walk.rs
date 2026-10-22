@@ -226,6 +226,8 @@ fn a_dashed_stroke_is_sewn_dash_by_dash() {
     assert!(dashed["stitches"].as_u64().unwrap() < plain["stitches"].as_u64().unwrap(), "half the length sewn");
     let order = run(&mut s, "embroidery.sequence", json!({}));
     assert_eq!(order["blocks"][0]["units"][0]["rule"], json!("strokeOutlined"));
+    let described = super::specs().into_iter().find(|c| c.id == "embroidery.sequence").unwrap().params;
+    assert!(described.contains("\"strokeOutlined\""), "the command's description names the rule");
 }
 
 /// An object with a live effect is sewn as the effect shapes it: an Offset Path of 10 pt sews the

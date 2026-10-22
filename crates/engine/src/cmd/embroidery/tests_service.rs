@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 
 use super::cache::{UnitCache, UnitKey};
 use super::digitize::digitize;
-use super::service::PlanService;
+use super::service::{Of, PlanService};
 use super::test_support::run;
 use super::unit::{PlanError, UnitRequest, UnitStitches};
 use super::*;
@@ -153,7 +153,7 @@ proptest! {
                 apply(&mut s, &mut ids, e);
             }
             let doc = s.doc().unwrap().doc.clone();
-            let kept = service.plan(&doc, &opts).map(|p| (*p).clone());
+            let kept = service.plan(Of::whole(&doc), &doc, &opts).map(|p| (*p).clone());
             let fresh = digitize(&doc, &opts, None);
             prop_assert_eq!(kept, fresh, "after {:?}", e);
         }
@@ -301,23 +301,23 @@ fn a_snapshot_with_the_same_options_is_planned_once() {
     let doc = s.doc().unwrap().doc.clone();
     let service = PlanService::default();
     let opts = Options::default();
-    let first = service.plan(&doc, &opts).unwrap();
-    assert!(Arc::ptr_eq(&first, &service.plan(&doc, &opts).unwrap()), "the same snapshot, the same plan");
+    let first = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    assert!(Arc::ptr_eq(&first, &service.plan(Of::whole(&doc), &doc, &opts).unwrap()), "the same snapshot, the same plan");
     assert_eq!(service.walks(), 1);
     // Fonts added since (a text clipping path is outlined with them): not the plan remembered.
     let fonts = vectorcraft_text::FontDb::global().generation();
-    assert!(service.remembered(&doc, &opts, fonts).is_some());
-    assert!(service.remembered(&doc, &opts, fonts.wrapping_add(1)).is_none());
+    assert!(service.remembered(Of::whole(&doc), &opts, fonts).is_some());
+    assert!(service.remembered(Of::whole(&doc), &opts, fonts.wrapping_add(1)).is_none());
     // The same art in another snapshot: walked again, every unit from what was kept.
     let kept = service.kept();
     let copy = Arc::new((*doc).clone());
-    let again = service.plan(&copy, &opts).unwrap();
+    let again = service.plan(Of::whole(&copy), &copy, &opts).unwrap();
     assert!(!Arc::ptr_eq(&first, &again));
     assert_eq!((*first).clone(), (*again).clone());
     assert_eq!((service.walks(), service.kept()), (2, kept), "no unit planned anew");
     // Other options: another plan.
     let satin = Options::from_params(&json!({"stitchStyle": "satin"}), "test").unwrap();
-    assert_ne!(*service.plan(&doc, &satin).unwrap(), *first);
+    assert_ne!(*service.plan(Of::whole(&doc), &doc, &satin).unwrap(), *first);
     // Through the commands: three in a row walk the document once; an edit, and its undo (an
     // earlier snapshot), walk it again.
     let uid = s.doc().unwrap().uid;
@@ -364,7 +364,7 @@ fn a_cancelled_plan_leaves_no_plan_and_keeps_its_finished_units() {
     // Cancelled before it starts: nothing planned, nothing kept.
     let token = CancelToken::new();
     token.cancel();
-    assert_eq!(cancel::scope(&token, None, || service.plan(&doc, &opts)), Err(PlanError::Cancelled));
+    assert_eq!(cancel::scope(&token, None, || service.plan(Of::whole(&doc), &doc, &opts)), Err(PlanError::Cancelled));
     assert_eq!(service.kept(), 0);
     // Cancelled as the third unit is reported: two units finished and kept, the third (a fill)
     // stopped while its narrow parts were looked for.
@@ -379,12 +379,12 @@ fn a_cancelled_plan_leaves_no_plan_and_keeps_its_finished_units() {
             }
         })
     };
-    assert_eq!(cancel::scope(&token, Some(sink), || service.plan(&doc, &opts)), Err(PlanError::Cancelled));
+    assert_eq!(cancel::scope(&token, Some(sink), || service.plan(Of::whole(&doc), &doc, &opts)), Err(PlanError::Cancelled));
     assert_eq!(*steps.borrow(), [(1, 7), (2, 7), (3, 7)]);
     assert_eq!(service.kept(), 2, "the units finished before the cancel");
     // Not cancelled: the fresh plan, with only the other five planned.
     let walks = service.walks();
-    assert_eq!(*service.plan(&doc, &opts).unwrap(), fresh);
+    assert_eq!(*service.plan(Of::whole(&doc), &doc, &opts).unwrap(), fresh);
     assert_eq!((service.walks(), service.kept()), (walks + 1, 7));
 }
 
@@ -418,11 +418,12 @@ fn the_service_plans_on_another_thread() {
     let service = Arc::new(PlanService::default());
     let there = {
         let (service, doc, opts) = (service.clone(), doc.clone(), opts.clone());
-        std::thread::spawn(move || service.plan(&doc, &opts).map(|p| (*p).clone())).join().unwrap()
+        std::thread::spawn(move || service.plan(Of::whole(&doc), &doc, &opts).map(|p| (*p).clone())).join().unwrap()
     };
     assert_eq!(there, digitize(&doc, &opts, None));
     let kept = service.kept();
-    let here = service.plan(&Arc::new((*doc).clone()), &opts).unwrap();
+    let copy = Arc::new((*doc).clone());
+    let here = service.plan(Of::whole(&copy), &copy, &opts).unwrap();
     assert_eq!(Ok((*here).clone()), there);
     assert_eq!((service.walks(), service.kept()), (2, kept), "every unit taken from what was kept there");
 }
@@ -448,6 +449,32 @@ fn a_planner_plans_on_another_thread_what_the_commands_plan() {
     assert_eq!(s.embroidery_plans.of(uid).walks(), 1);
     assert_eq!(run(&mut s, "embroidery.stats", json!({"spacing": 0.5, "stitch": "tatami"}))["records"], json!(on_worker.0));
     assert_eq!(s.embroidery_plans.of(uid).walks(), 1, "the command reads the same plan");
+}
+
+/// While an opacity mask is edited, the planner plans what the read commands and the export plan,
+/// without the mask's editing layer, and shares the plan they remember: it is remembered by the
+/// snapshot, not by the document cut from it, which is made anew each time.
+#[test]
+fn the_planner_plans_what_the_commands_plan_while_a_mask_is_edited() {
+    let (mut s, ids) = build(&[
+        Art { kind: 0, x: 20.0, y: 20.0, w: 60.0, h: 40.0, fill: Some(0), stroke: None },
+        Art { kind: 0, x: 40.0, y: 30.0, w: 60.0, h: 40.0, fill: Some(2), stroke: None },
+    ]);
+    let opts = Options::default();
+    run(&mut s, "select.all", json!({}));
+    run(&mut s, "transparency.makeOpacityMask", json!({}));
+    let masked = s.embroidery_plan(&opts).unwrap();
+    run(&mut s, "transparency.editOpacityMask", json!({"id": ids[0]}));
+    assert!(s.doc().unwrap().doc.mask_edit.is_some());
+    let planner = s.embroidery_planner().unwrap();
+    assert!(planner.document().mask_edit.is_none(), "the editing layer left out");
+    let editing = planner.plan(&opts).unwrap();
+    assert_eq!(*editing, *masked);
+    let uid = s.doc().unwrap().uid;
+    let walks = s.embroidery_plans.of(uid).walks();
+    assert_eq!(run(&mut s, "embroidery.stats", json!({}))["records"], json!(editing.len()));
+    assert!(Arc::ptr_eq(&editing, &s.embroidery_planner().unwrap().plan(&opts).unwrap()));
+    assert_eq!(s.embroidery_plans.of(uid).walks(), walks, "the command and the planner read the plan remembered");
 }
 
 /// A document a batch opened and planned is gone when the batch fails, and so is its planning

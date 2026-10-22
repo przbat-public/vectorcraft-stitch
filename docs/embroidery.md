@@ -1192,9 +1192,13 @@ its plan. Each open document has one (`Session::embroidery_plans`, by `DocState:
 when the document closes; the commands that read a design (`embroidery.threads`, `stats`,
 `sequence`, `check`) plan through it. The app reaches it too, for the stitch preview to come:
 `Session::embroidery_plan(&EmbroideryOptions)` gives the active document's plan, and
-`Session::embroidery_planner()` a `Send` handle (`EmbroideryPlanner`: the document's service and
-its snapshot) that plans on a worker thread into the same memo the commands read;
-`EmbroideryOptions::from_json` takes the commands' options, checked as they check them.
+`Session::embroidery_planner()` a `Send` handle (`EmbroideryPlanner`: the document's service, its
+snapshot and the document planned of it) that plans on a worker thread into the same memo the
+commands read; `EmbroideryOptions::from_json` takes the commands' options, checked as they check
+them. The planner plans what the commands and the export plan: while an opacity mask is edited,
+without the mask's editing layer (`EmbroideryPlanner::document`). That document, and the selected
+objects alone with `selectedOnly`, is cut from the snapshot anew each time, so the memo is keyed
+on the snapshot and the selection it was cut to, not on the copy.
 
 ```mermaid
 flowchart LR

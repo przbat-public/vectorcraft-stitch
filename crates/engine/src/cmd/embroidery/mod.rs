@@ -59,23 +59,27 @@ pub(crate) use service::Services;
 pub(crate) use unit::PlanError;
 
 /// A document's stitch planning, to hand to another thread: the planning service of the document
-/// it was taken from (its kept units and last plan, shared with the commands) and the snapshot to
-/// plan. Planning is `Send`: the app's stitch preview can plan on a worker while commands plan on
-/// theirs, and a plan is cancelled as a command is ([`crate::cancel`]).
+/// it was taken from (its kept units and last plan, shared with the commands), the snapshot it was
+/// taken of, and the document planned of it, as the read commands plan it. Planning is `Send`: the
+/// app's stitch preview can plan on a worker while commands plan on theirs, and a plan is
+/// cancelled as a command is ([`crate::cancel`]).
 #[derive(Clone)]
 pub struct Planner {
     service: Arc<service::PlanService>,
+    snapshot: Arc<Document>,
     doc: Arc<Document>,
 }
 
 impl Planner {
-    /// The snapshot's plan with `opts`: the last plan when it was of this snapshot with these
-    /// options, else planned, each unit's stitches reused where nothing it is planned from changed.
+    /// The plan with `opts`: the last plan when it was of this snapshot with these options (the
+    /// commands' too), else planned, each unit's stitches reused where nothing it is planned from
+    /// changed.
     pub fn plan(&self, opts: &Options) -> Result<Arc<plan::DesignPlan>> {
-        self.service.plan(&self.doc, opts).map_err(PlanError::error)
+        self.service.plan(service::Of::whole(&self.snapshot), &self.doc, opts).map_err(PlanError::error)
     }
 
-    /// The document snapshot it plans.
+    /// The document it plans: the snapshot as the export prepares it (without an opacity mask's
+    /// editing layer, which no export writes). Plan positions and ids are this document's.
     pub fn document(&self) -> &Arc<Document> {
         &self.doc
     }
@@ -88,11 +92,12 @@ const _: () = {
 };
 
 impl Session {
-    /// The active document's planner: its planning service and its current snapshot.
+    /// The active document's planner: its planning service and its current snapshot, planned as
+    /// the read commands plan the whole document.
     pub fn embroidery_planner(&mut self) -> Result<Planner> {
         let st = self.doc()?;
-        let (uid, doc) = (st.uid, st.doc.clone());
-        Ok(Planner { service: self.embroidery_plans.of(uid), doc })
+        let (uid, snapshot, doc) = (st.uid, st.doc.clone(), to_plan(st, false)?);
+        Ok(Planner { service: self.embroidery_plans.of(uid), snapshot, doc })
     }
 
     /// The active document's stitch plan with `opts`, as the read commands plan it (the whole
@@ -156,7 +161,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Sewing Order",
             [],
             None,
-            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, offset?: the first unit listed (default 0), limit?: the most units listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's sewing order, read only (sewing order follows stacking order: move objects with node.move to change it), its units from offset in sewing order within their blocks; positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {blockCount, unitCount, offset, truncated: whether units after the listed ones are left out, blocks: [{block: from 1 in sewing order, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches: needle points, records: needle points, jumps and cuts, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), jumps, trims, unitCount, units: [{unit: from 1, its position in this plan, id: the object a person selects (the symbol instance for art inside a symbol), node: the object sewn, instance: the symbol instance or null, part: \"fill\"|\"stroke\"|\"literal\", partIndex: which fill or stroke, from 1 in appearance order (null for literal; id, part and partIndex tell a unit apart from one plan to the next), sewn: \"running\"|\"satin\"|\"tatami\"|\"literal\" (as the stitch option names them), columns: whether a fill's narrow parts are satin columns, rule: \"fill\"|\"wideStroke\"|\"narrowStroke\"|\"strokeFilled\"|\"forced\"|\"literal\" (the rule that chose how it is sewn), ruleValues: the values the rule turned on, why: the same as a sentence, stitches, records, firstRecord, lastRecord (null when it adds none: one needle point where the needle already is), jumps, trims, entry, exit: [x, y] (its first and last needle points), bounds}] (only the listed units), then: {colorChange: true, trim: whether the block ends with a cut} (null after the last block)}] (the blocks of the listed units), splitCount, split: [{id, blocks}] (objects whose units are sewn in more than one block; at most limit), options: the embroidery options planned with, warnings}",
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, offset?: the first unit listed (default 0), limit?: the most units listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's sewing order, read only (sewing order follows stacking order: move objects with node.move to change it), its units from offset in sewing order within their blocks; positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {blockCount, unitCount, offset, truncated: whether units after the listed ones are left out, blocks: [{block: from 1 in sewing order, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches: needle points, records: needle points, jumps and cuts, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), jumps, trims, unitCount, units: [{unit: from 1, its position in this plan, id: the object a person selects (the symbol instance for art inside a symbol), node: the object sewn, instance: the symbol instance or null, part: \"fill\"|\"stroke\"|\"literal\", partIndex: which fill or stroke, from 1 in appearance order (null for literal; id, part and partIndex tell a unit apart from one plan to the next), sewn: \"running\"|\"satin\"|\"tatami\"|\"literal\" (as the stitch option names them), columns: whether a fill's narrow parts are satin columns, rule: \"fill\"|\"wideStroke\"|\"narrowStroke\"|\"strokeFilled\"|\"strokeOutlined\"|\"forced\"|\"literal\" (the rule that chose how it is sewn), ruleValues: the values the rule turned on, why: the same as a sentence, stitches, records, firstRecord, lastRecord (null when it adds none: one needle point where the needle already is), jumps, trims, entry, exit: [x, y] (its first and last needle points), bounds}] (only the listed units), then: {colorChange: true, trim: whether the block ends with a cut} (null after the last block)}] (the blocks of the listed units), splitCount, split: [{id, blocks}] (objects whose units are sewn in more than one block; at most limit), options: the embroidery options planned with, warnings}",
             has_doc,
             sequence_cmd
         ),
@@ -336,16 +341,25 @@ fn planned(s: &mut Session, opts: &Options, selected_only: bool, cmd: &str) -> R
     if selected_only && st.selection.objects.is_empty() {
         return Err(bad(cmd, format!("select something to plan (or leave out `{SELECTED_ONLY}`)")));
     }
-    let uid = st.uid;
-    let doc = if !selected_only && matches!(st.doc.without_edit_modes(), std::borrow::Cow::Borrowed(_)) {
-        // The snapshot itself, so that the commands reading it one after another plan it once.
-        st.doc.clone()
-    } else {
-        let picked = crate::cmd::fileio::export_source(st, &json!({ SELECTED_ONLY: selected_only }))?;
-        Arc::new(picked.without_edit_modes().into_owned())
-    };
-    let plan = s.embroidery_plans.of(uid).plan(&doc, opts).map_err(PlanError::error)?;
+    let (uid, snapshot, doc) = (st.uid, st.doc.clone(), to_plan(st, selected_only)?);
+    // The plan is remembered by the snapshot and the objects it was cut to, in any order.
+    let mut selection = if selected_only { st.selection.objects.clone() } else { Vec::new() };
+    selection.sort_unstable();
+    selection.dedup();
+    let of = service::Of { snapshot: &snapshot, selection: &selection };
+    let plan = s.embroidery_plans.of(uid).plan(of, &doc, opts).map_err(PlanError::error)?;
     Ok((plan, doc))
+}
+
+/// The document planned of `st`'s snapshot, as the export prepares it: the selected objects alone
+/// when `selected_only` (in their layers and groups, as `document.export {selectedOnly}` writes
+/// them), and without an opacity mask's editing layer. The snapshot itself when that is all of it.
+fn to_plan(st: &crate::DocState, selected_only: bool) -> Result<Arc<Document>> {
+    if !selected_only && matches!(st.doc.without_edit_modes(), std::borrow::Cow::Borrowed(_)) {
+        return Ok(st.doc.clone());
+    }
+    let picked = crate::cmd::fileio::export_source(st, &json!({ SELECTED_ONLY: selected_only }))?;
+    Ok(Arc::new(picked.without_edit_modes().into_owned()))
 }
 
 /// The keys of `p`, an object or null (none), as a map; another value is refused, naming `cmd`.

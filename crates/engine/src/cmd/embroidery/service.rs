@@ -5,7 +5,10 @@
 //! It also remembers its last plan, of which snapshot of the document and with which options: a
 //! document snapshot (`Arc<Document>`, shared with the undo history) never changes, so the same
 //! snapshot with the same options has the same plan, and the commands that read a design one
-//! after another (`embroidery.threads`, and the statistics, sewing order and checks) plan it once.
+//! after another (`embroidery.threads`, and the statistics, sewing order and checks) and the app's
+//! planner plan it once. The document planned may be cut from the snapshot (the selected objects
+//! alone, or without an opacity mask's editing layer): the plan is remembered by the snapshot and
+//! the selection it was cut to ([`Of`]), not by the copy, which is made anew each time.
 //!
 //! A plan can be cancelled ([`vectorcraft_doc::cancel`]): it stops before the next unit (or within
 //! a fill's search for its narrow parts) with [`PlanError::Cancelled`] and leaves no plan, while
@@ -16,7 +19,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, Weak};
 
-use vectorcraft_doc::Document;
+use vectorcraft_doc::{Document, NodeId};
 
 use super::Options;
 use super::cache::UnitCache;
@@ -24,12 +27,31 @@ use super::digitize::digitize;
 use super::plan::DesignPlan;
 use super::unit::PlanError;
 
+/// What a plan is of: a document snapshot, cut to the selected objects when `selection` lists
+/// them (empty: all of it). The document planned is made from these alone (and without an opacity
+/// mask's editing layer, which no export writes), so the same snapshot cut the same way plans the
+/// same.
+#[derive(Clone, Copy)]
+pub(crate) struct Of<'a> {
+    pub(crate) snapshot: &'a Arc<Document>,
+    pub(crate) selection: &'a [NodeId],
+}
+
+impl<'a> Of<'a> {
+    /// The whole of `snapshot`.
+    pub(crate) fn whole(snapshot: &'a Arc<Document>) -> Self {
+        Self { snapshot, selection: &[] }
+    }
+}
+
 /// The last plan a service made: of which snapshot (held weakly: the plan doesn't keep a closed
-/// or undone document alive), with which options, and with which fonts: a text clipping path is
-/// outlined with the fonts installed, so a font added since can change the plan of the same
-/// snapshot ([`vectorcraft_text::FontDb::generation`], as the renderer's caches key on it).
+/// or undone document alive) cut to which selection, with which options, and with which fonts: a
+/// text clipping path is outlined with the fonts installed, so a font added since can change the
+/// plan of the same snapshot ([`vectorcraft_text::FontDb::generation`], as the renderer's caches
+/// key on it).
 struct Memo {
-    doc: Weak<Document>,
+    snapshot: Weak<Document>,
+    selection: Vec<NodeId>,
     opts: Options,
     fonts: u64,
     plan: Arc<DesignPlan>,
@@ -46,13 +68,13 @@ pub(crate) struct PlanService {
 }
 
 impl PlanService {
-    /// `doc`'s plan with `opts`: the last plan when it was of this snapshot with these options;
-    /// else planned, each unit's stitches taken from those kept where nothing it is planned from
-    /// has changed, and kept for the next plan. The same as a fresh plan
-    /// ([`super::digitize::digitize`]).
-    pub(crate) fn plan(&self, doc: &Arc<Document>, opts: &Options) -> Result<Arc<DesignPlan>, PlanError> {
+    /// The plan of `doc`, the document planned of `of`, with `opts`: the last plan when it was of
+    /// this snapshot cut the same way with these options; else planned, each unit's stitches taken
+    /// from those kept where nothing it is planned from has changed, and kept for the next plan.
+    /// The same as a fresh plan ([`super::digitize::digitize`]).
+    pub(crate) fn plan(&self, of: Of<'_>, doc: &Document, opts: &Options) -> Result<Arc<DesignPlan>, PlanError> {
         let fonts = vectorcraft_text::FontDb::global().generation();
-        if let Some(plan) = self.remembered(doc, opts, fonts) {
+        if let Some(plan) = self.remembered(of, opts, fonts) {
             return Ok(plan);
         }
         #[cfg(test)]
@@ -60,7 +82,8 @@ impl PlanService {
         let plan = Arc::new(digitize(doc, opts, Some(&self.units))?);
         // A memo that a panic elsewhere left locked is passed by: the next plan walks again.
         if let Ok(mut last) = self.last.lock() {
-            *last = Some(Memo { doc: Arc::downgrade(doc), opts: opts.clone(), fonts, plan: plan.clone() });
+            let snapshot = Arc::downgrade(of.snapshot);
+            *last = Some(Memo { snapshot, selection: of.selection.to_vec(), opts: opts.clone(), fonts, plan: plan.clone() });
         }
         Ok(plan)
     }
@@ -68,10 +91,11 @@ impl PlanService {
     /// The last plan, when it was of snapshot `doc` with `opts` and the fonts of generation
     /// `fonts`. A snapshot held only weakly can't be mistaken for another made since: its memory
     /// isn't reused while a weak reference is held.
-    pub(super) fn remembered(&self, doc: &Arc<Document>, opts: &Options, fonts: u64) -> Option<Arc<DesignPlan>> {
+    pub(super) fn remembered(&self, of: Of<'_>, opts: &Options, fonts: u64) -> Option<Arc<DesignPlan>> {
         let last = self.last.lock().ok()?;
         let memo = last.as_ref()?;
-        (std::ptr::eq(memo.doc.as_ptr(), Arc::as_ptr(doc)) && memo.opts == *opts && memo.fonts == fonts).then(|| memo.plan.clone())
+        let same = std::ptr::eq(memo.snapshot.as_ptr(), Arc::as_ptr(of.snapshot)) && memo.selection == of.selection;
+        (same && memo.opts == *opts && memo.fonts == fonts).then(|| memo.plan.clone())
     }
 
     /// How many times it walked a document.

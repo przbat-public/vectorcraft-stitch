@@ -23,6 +23,31 @@ const MIN_STEP: f64 = 0.01;
 /// it rather than leave a stub of a stitch ([`resample`]).
 const STUB: f64 = 0.3;
 
+/// The farthest a shape's control points may lie from the origin, millimetres: 1,500 m, just
+/// beyond the document's whole range (`vectorcraft_doc::MAX_COORD`, 4,000,000 points, about
+/// 1,411 m). A shape beyond it (from a malformed file) is refused before it is flattened: a curve's
+/// flattened points grow with the square root of its size, without bound.
+pub const MAX_COORD_MM: f64 = 1.5e6;
+
+/// Whether every control point of `path` is a finite number within [`MAX_COORD_MM`] of the origin:
+/// what may be flattened and planned.
+pub fn in_range(path: &BezPath) -> bool {
+    path.elements().iter().all(|el| {
+        let pts: &[Point] = match el {
+            PathEl::MoveTo(p) | PathEl::LineTo(p) => std::slice::from_ref(p),
+            PathEl::QuadTo(a, b) => return [*a, *b].iter().all(|p| near(*p)),
+            PathEl::CurveTo(a, b, c) => return [*a, *b, *c].iter().all(|p| near(*p)),
+            PathEl::ClosePath => &[],
+        };
+        pts.iter().all(|p| near(*p))
+    })
+}
+
+/// Whether `p` is finite and within [`MAX_COORD_MM`] of the origin on both axes.
+fn near(p: Point) -> bool {
+    p.x.is_finite() && p.y.is_finite() && p.x.abs() <= MAX_COORD_MM && p.y.abs() <= MAX_COORD_MM
+}
+
 /// A polyline: its points and whether it closes.
 pub(super) struct SubPath {
     pub(super) pts: Vec<Point>,

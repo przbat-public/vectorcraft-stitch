@@ -25,6 +25,7 @@ const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › I
 const LIVE_LEFT_OUT: &str = "live blends, envelopes, meshes and repeats are not stitched: expand them first";
 const EXPANDED_AWAY: &str = "a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less";
 const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colour of their first stop; a design sews one thread per block";
+const OUT_OF_RANGE: &str = "art far outside the document's range (or with coordinates that aren't numbers) is not stitched";
 /// A stroke at least this wide (millimetres) is sewn as a satin column, a narrower one as a running
 /// line (unless `stitchStyle` says otherwise): below about a millimetre the two rails are too
 /// close for the crossings to lie side by side. An estimate.
@@ -307,6 +308,10 @@ impl<'a> Digitizer<'a> {
             _ => return,
         };
         let mm = in_mm(bp);
+        if !plan::in_range(&mm) {
+            self.warn(OUT_OF_RANGE);
+            return;
+        }
         let mut points: Vec<Stitch> = Vec::new();
         kurbo::flatten(mm.iter(), LITERAL_FLATTEN, |el| {
             if let PathEl::MoveTo(p) | PathEl::LineTo(p) = el {
@@ -345,6 +350,11 @@ impl<'a> Digitizer<'a> {
         let Some((clip, rest)) = children.split_first() else { return };
         let Some((region, rule)) = vectorcraft_render::effects::clip_outline(clip) else { return };
         let region = in_mm(&region);
+        // A clipping path out of range clips nothing that can be stitched: its art is left out.
+        if !plan::in_range(&region) {
+            self.warn(OUT_OF_RANGE);
+            return;
+        }
         let paint = clip.clip_paint();
         if let Some(fill) = &paint.fill {
             self.node(fill);
@@ -370,6 +380,12 @@ impl<'a> Digitizer<'a> {
     /// one fill or one stroke of `n`.
     fn shape(&mut self, n: &Node, bp: &BezPath, rule: FillRule) {
         let mm = in_mm(bp);
+        if !plan::in_range(&mm) {
+            if n.appearance.items.iter().any(|i| i.visible() && painted(i)) {
+                self.warn(OUT_OF_RANGE);
+            }
+            return;
+        }
         // Which of the object's fills, or of its strokes, each item is.
         let (mut fills, mut strokes) = (0, 0);
         for item in &n.appearance.items {

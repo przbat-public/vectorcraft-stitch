@@ -17,8 +17,8 @@ pub const MIN_AREA: f64 = 0.01;
 /// A large fill's second underlay, sparse tatami rows across the top ones: the spacing of its rows
 /// and its stitch length (millimetres), how far inside the edge it stays, and the smallest fill
 /// (both ways, millimetres) that gets it. Estimates.
-const TATAMI_UNDERLAY_SPACING: f64 = 2.0;
-const TATAMI_UNDERLAY_STITCH: f64 = 3.0;
+pub(super) const TATAMI_UNDERLAY_SPACING: f64 = 2.0;
+pub(super) const TATAMI_UNDERLAY_STITCH: f64 = 3.0;
 const TATAMI_UNDERLAY_INSET: f64 = 0.6;
 const TATAMI_UNDERLAY_MIN: f64 = 10.0;
 /// How much of a travel run in a fill's top stitching may show (millimetres over stitching already
@@ -26,8 +26,8 @@ const TATAMI_UNDERLAY_MIN: f64 = 10.0;
 /// lifts the needle instead. Travels under the top stitching (in the underlay) have no limit: the
 /// top stitching hides them. An estimate.
 const MAX_SEEN: f64 = 25.0;
-/// The most rows one layer may have (a guard against absurd parameters).
-const MAX_ROWS: usize = 100_000;
+/// The most rows one layer may have: a shape that needs more is refused ([`super::try_stitches`]).
+pub(super) const MAX_ROWS: usize = 100_000;
 /// Where the first row sits from the edge of the shape's extent, as a share of the row spacing:
 /// half a spacing in, so that no row lies on a tangent and the thread's own width covers to the
 /// edge. A shape thinner than this across the rows gets no rows.
@@ -52,7 +52,7 @@ const MIN_ROW_SPACINGS: f64 = 2.0;
 const MIN_ROW: f64 = 0.8;
 /// The tatami underlay's rows run this many degrees from the top rows: across them, so the
 /// underlay holds the fabric the other way.
-const UNDERLAY_TURN: f64 = 90.0;
+pub(super) const UNDERLAY_TURN: f64 = 90.0;
 
 /// A tatami fill of `path`: rows of stitches at [`Params::angle`] degrees, [`Params::density`]
 /// apart, each split into stitches at most [`Params::stitch_length`] long and reaching past the
@@ -941,7 +941,7 @@ impl Sewing<'_, '_, '_> {
 /// longer than a stitch length; only a row's first and last stitches are shorter. A grid point
 /// within [`Params::min_stitch`] of an end is left out, so the end stitch isn't a stub (and is then
 /// at most that much longer, and pull compensation's reach more).
-fn row_points(a: f64, b: f64, phase: f64, p: &Params) -> Vec<f64> {
+pub(super) fn row_points(a: f64, b: f64, phase: f64, p: &Params) -> Vec<f64> {
     let len = b - a;
     let shortest = (MIN_ROW_SPACINGS * p.density).max(MIN_ROW);
     if !len.is_finite() || len < shortest || len < p.min_stitch {
@@ -951,7 +951,13 @@ fn row_points(a: f64, b: f64, phase: f64, p: &Params) -> Vec<f64> {
     let mut out: Vec<f64> = vec![a];
     // The first grid point past `a`.
     let mut g = ((a / step - phase).floor() + 1.0 + phase) * step;
-    while g < b - p.min_stitch && out.len() < MAX_STITCHES {
+    // The grid points a row this long can hold, and two more for rounding: a bound on the loop, so
+    // that it ends where a step no longer moves `g` (coordinates past 2^52 steps).
+    let most = ((len / step).ceil() + 2.0).min(MAX_STITCHES as f64) as usize;
+    for _ in 0..most {
+        if g >= b - p.min_stitch {
+            break;
+        }
         if g - a >= p.min_stitch {
             out.push(g);
         }

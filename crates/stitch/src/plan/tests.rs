@@ -540,7 +540,66 @@ fn an_absurd_plan_is_refused_up_front() {
     assert!(try_stitches(&rect(0.0, 0.0, 50.0, 50.0), FillRule::NonZero, &p).is_ok_and(|s| !s.is_empty()));
     let mut run = Params::for_style(Style::Running);
     run.stitch_length = 0.2;
-    assert!(matches!(try_stitches(&line((0.0, 0.0), (1e7, 0.0)), FillRule::NonZero, &run), Err(Error::TooLarge(_))));
+    assert!(matches!(try_stitches(&line((0.0, 0.0), (1e6, 0.0)), FillRule::NonZero, &run), Err(Error::TooLarge(_))));
+}
+
+/// The estimate counts what a shape really costs, so that it refuses before planning: a comb of
+/// thousands of teeth whose every row crosses every tooth, a satin wide enough that each crossing
+/// is split, and a fill of more rows than a layer may have, each refused (quickly, from the edges
+/// alone), while a comb of a few teeth is planned.
+#[test]
+fn the_estimate_is_an_upper_bound() {
+    /// A comb of `teeth` teeth 0.81 mm wide and 100 mm long, 0.05 mm apart, on a 2 mm back.
+    fn comb(teeth: usize) -> BezPath {
+        let mut pts = vec![(0.0, 102.0)];
+        for k in 0..teeth {
+            let x = k as f64 * 0.86;
+            pts.extend([(x, 0.0), (x + 0.81, 0.0), (x + 0.81, 100.0), (x + 0.86, 100.0)]);
+        }
+        pts.push((teeth as f64 * 0.86, 102.0));
+        polygon(pts)
+    }
+    let mut fill = Params::for_style(Style::Fill);
+    (fill.density, fill.stitch_length, fill.angle) = (0.05, 12.0, 0.0);
+    let started = std::time::Instant::now();
+    assert!(matches!(try_stitches(&comb(15_900), FillRule::NonZero, &fill), Err(Error::TooLarge(_))));
+    assert!(try_stitches(&comb(5), FillRule::NonZero, &Params::for_style(Style::Fill)).is_ok_and(|s| !s.is_empty()));
+    // Six metres tall: 120,000 rows at 0.05 mm, more than a layer may have.
+    assert!(matches!(try_stitches(&rect(0.0, 0.0, 3.0, 6000.0), FillRule::NonZero, &fill), Err(Error::TooLarge(_))));
+    let mut satin = Params::for_style(Style::Satin);
+    (satin.width, satin.density, satin.auto_spacing) = (50.0, 0.05, false);
+    assert!(matches!(try_stitches(&line((0.0, 0.0), (99_000.0, 0.0)), FillRule::NonZero, &satin), Err(Error::TooLarge(_))));
+    assert!(started.elapsed().as_secs() < 5, "refused from the edges alone");
+}
+
+/// A shape whose control points lie far beyond the document's range, or aren't numbers, is
+/// refused before it is flattened (a curve's flattened points grow with its size, without bound),
+/// and has no narrow parts to look for.
+#[test]
+fn a_shape_out_of_range_is_refused_before_it_is_flattened() {
+    let mut far = BezPath::new();
+    far.move_to((0.0, 0.0));
+    far.curve_to((1e16, 0.0), (1e16, 1e16), (0.0, 10.0));
+    far.close_path();
+    let mut nan = rect(0.0, 0.0, 10.0, 10.0);
+    nan.line_to((f64::NAN, 5.0));
+    for style in [Style::Fill, Style::Satin, Style::Running] {
+        for shape in [&far, &nan] {
+            assert!(matches!(try_stitches(shape, FillRule::NonZero, &Params::for_style(style)), Err(Error::TooLarge(_))), "{style:?}");
+        }
+    }
+    assert_eq!(narrow_columns(&far, FillRule::NonZero, NARROW_SATIN), Vec::new());
+    assert!(try_stitches(&rect(MAX_COORD_MM - 20.0, 0.0, 10.0, 10.0), FillRule::NonZero, &Params::for_style(Style::Fill)).is_ok());
+}
+
+/// A row far from the origin, where a step no longer moves a coordinate, ends: its loop counts.
+#[test]
+fn a_row_far_away_ends() {
+    let p = Params::for_style(Style::Fill).sane();
+    for at in [3e15, 1e16, 7.2e16] {
+        let points = super::fill::row_points(at, at + 50.0, 0.0, &p);
+        assert!(points.len() <= 50, "{at}: {} points", points.len());
+    }
 }
 
 #[test]

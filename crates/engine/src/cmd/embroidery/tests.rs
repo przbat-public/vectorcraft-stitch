@@ -561,3 +561,48 @@ fn the_threads_command_takes_only_the_embroidery_options() {
         assert!(e.contains(why), "{given}: {e}");
     }
 }
+
+/// Art far outside the document's range (a malformed file's curve, or a symbol scaled enormously)
+/// is left out with a warning, quickly, instead of being flattened into more points than memory
+/// holds; the rest of the design is planned.
+#[test]
+fn art_out_of_range_is_left_out_with_a_warning() {
+    use std::sync::Arc;
+
+    use vectorcraft_color::{Color, Paint};
+    use vectorcraft_doc::{Appearance, Document, Node, NodeKind, Symbol};
+    use vectorcraft_geom::{Affine, BezPath, PathData};
+
+    let mut doc = Document::new(300.0, 300.0);
+    let layer = doc.layers.first().map(|l| l.id);
+    let red = Appearance::basic(Paint::solid(Color::rgb8(200, 30, 30)), Paint::None, 0.0);
+    let mut far = BezPath::new();
+    far.move_to((0.0, 0.0));
+    far.curve_to((1e16, 0.0), (1e16, 1e16), (0.0, 10.0));
+    far.close_path();
+    let id = doc.alloc_id();
+    doc.insert(layer, usize::MAX, Node::path(id, PathData::from_bezpath(&far), red.clone())).unwrap();
+    // A symbol of a small square, placed scaled a hundred trillion times.
+    let mut square = BezPath::new();
+    square.move_to((0.0, 0.0));
+    square.line_to((10.0, 0.0));
+    square.line_to((10.0, 10.0));
+    square.close_path();
+    let art = Node::path(doc.alloc_id(), PathData::from_bezpath(&square), red.clone());
+    doc.symbols.push(Symbol { name: "huge".into(), art: Arc::new(art) });
+    let id = doc.alloc_id();
+    doc.insert(layer, usize::MAX, Node::new(id, NodeKind::SymbolInstance { symbol: "huge".into(), xf: Affine::scale(1e14) })).unwrap();
+    // And a square that is in range.
+    let id = doc.alloc_id();
+    let mut near = BezPath::new();
+    near.move_to((20.0, 20.0));
+    near.line_to((60.0, 20.0));
+    near.line_to((60.0, 60.0));
+    near.close_path();
+    doc.insert(layer, usize::MAX, Node::path(id, PathData::from_bezpath(&near), red)).unwrap();
+    let started = std::time::Instant::now();
+    let plan = digitize(&doc, &Options::default(), None).unwrap();
+    assert!(started.elapsed().as_secs() < 5);
+    assert_eq!(plan.units.len(), 1, "only the square in range");
+    assert!(plan.warnings.iter().any(|w| w.contains("far outside the document's range")), "{:?}", plan.warnings);
+}

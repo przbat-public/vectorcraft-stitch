@@ -51,6 +51,8 @@ pub use runs::join_cut;
 pub use satin::satin_spacing;
 
 use crate::{Error, Stitch};
+pub use geometry::MAX_COORD_MM;
+pub use geometry::in_range;
 use geometry::{Axes, SubPath, length, subpaths};
 
 /// A move longer than this lifts the needle (a jump) instead of being sewn, unless
@@ -458,6 +460,7 @@ pub fn try_stitches(path: &BezPath, rule: FillRule, p: &Params) -> crate::Result
 /// [`try_stitches`], the needle at `from` before the shape starts ([`stitches_from`]).
 pub fn try_stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> crate::Result<Vec<Stitch>> {
     let p = p.sane();
+    placed(path)?;
     within_limit(estimate(&subpaths(path), &p))?;
     Ok(stitches_from(path, rule, &p, from))
 }
@@ -478,12 +481,29 @@ pub fn try_fill_with_columns(
     /// underlay's (up to three runs at [`UNDERLAY_STITCH`]) and its splits.
     const UNDERLAYS: f64 = 3.0;
     let (f, s) = (Params { style: Style::Fill, ..*fill }.sane(), Params { style: Style::Satin, ..*satin }.sane());
+    placed(shape)?;
+    placed(rest)?;
     let closest = s.density.min(satin_spacing(f64::INFINITY) * thread_scale(s.thread_weight));
-    within_limit(
-        estimate(&subpaths(shape), &f)
-            + columns.iter().map(|c| c.length() * (satin::CROSSINGS_PER_SPACING / closest + UNDERLAYS / UNDERLAY_STITCH)).sum::<f64>(),
-    )?;
+    let column = |c: &Column| {
+        // Its widest crossing, with the most pull compensation at both sides, split as satin's are.
+        let widest = c.stations.iter().map(|(a, b)| a.distance(*b)).fold(0.0, f64::max);
+        let split = satin::splits(widest + 2.0 * PULL_RANGE.1, s.max_satin);
+        let crossings = c.length() * satin::CROSSINGS_PER_SPACING / closest * satin::MAX_RAIL_STRETCH;
+        (crossings + 1.0) * split + c.length() * (UNDERLAYS / UNDERLAY_STITCH + split / satin::ZIGZAG_UNDERLAY_SPACING)
+    };
+    within_limit(estimate(&subpaths(shape), &f) + columns.iter().map(column).sum::<f64>())?;
     Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, from))
+}
+
+/// Refused with [`Error::TooLarge`] when `path` lies beyond [`MAX_COORD_MM`] or has a coordinate
+/// that isn't a number: flattening it could take without bound.
+fn placed(path: &BezPath) -> crate::Result<()> {
+    if in_range(path) {
+        return Ok(());
+    }
+    Err(Error::TooLarge(format!(
+        "a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched"
+    )))
 }
 
 /// Refused with [`Error::TooLarge`] when a shape would need `n` stitches, more than
@@ -497,32 +517,75 @@ fn within_limit(n: f64) -> crate::Result<()> {
     Ok(())
 }
 
-/// About how many points `subs` plan into in style `p` (an upper estimate; not finite when the
-/// geometry is not).
+/// How many points `subs` plan into in style `p` at most: an upper bound, so that a shape refused
+/// past [`MAX_STITCHES`] is refused before any of it is planned. Not finite when a point isn't, or
+/// when a fill needs more rows than one layer may have ([`fill::MAX_ROWS`]).
 fn estimate(subs: &[SubPath], p: &Params) -> f64 {
     /// More than the points a subpath adds beyond its stitches: the lock stitch, tie-in or tie-off
     /// at each of its two ends.
     const POINTS_PER_SUBPATH: f64 = 6.0;
-    /// More than the points each fill row adds beyond its stitches: its two ends.
-    const POINTS_PER_ROW: f64 = 2.0;
+    /// The runs a satin column's underlay sews along its length, at most: a centre run, or an edge
+    /// run along both sides (its zigzag is counted apart).
+    const SATIN_UNDERLAY_RUNS: f64 = 2.0;
+    if subs.iter().flat_map(|s| s.pts.iter()).any(|q| !(q.x.is_finite() && q.y.is_finite())) {
+        return f64::NAN;
+    }
     let total: f64 = subs.iter().map(|s| length(&s.points(), s.closed)).sum();
     let ends = POINTS_PER_SUBPATH * subs.len() as f64;
     match sewn_style(p) {
         Style::Running => total / p.stitch_length + ends,
-        Style::Satin => total / UNDERLAY_STITCH + 2.0 * total / p.column_spacing(p.width).min(p.density) + ends,
+        Style::Satin => {
+            // Each crossing split as `split_long` splits the longest a crossing can be (the column
+            // and the most pull compensation at both rails); round a bend, the crossings come up to
+            // MAX_RAIL_STRETCH times closer along the centre line.
+            let split = satin::splits(p.width + 2.0 * PULL_RANGE.1, p.max_satin);
+            let crossings = total * satin::CROSSINGS_PER_SPACING / p.column_spacing(p.width).min(p.density) * satin::MAX_RAIL_STRETCH;
+            let underlay = total * SATIN_UNDERLAY_RUNS / UNDERLAY_STITCH + total / satin::ZIGZAG_UNDERLAY_SPACING * split;
+            (crossings + 1.0) * split + underlay + ends
+        }
         Style::Fill => {
-            let axes = Axes::new(p.angle);
-            let extent = |f: &dyn Fn(vectorcraft_geom::Point) -> f64| {
-                let (lo, hi) = subs
-                    .iter()
-                    .flat_map(|s| s.pts.iter())
-                    .map(|q| f(*q))
-                    .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), t| (lo.min(t), hi.max(t)));
-                if hi >= lo { hi - lo } else { 0.0 }
+            let top = layer_points(subs, p.angle, p.density, p.stitch_length);
+            let underlay = if p.underlay {
+                total / UNDERLAY_STITCH
+                    + layer_points(subs, p.angle + fill::UNDERLAY_TURN, fill::TATAMI_UNDERLAY_SPACING, fill::TATAMI_UNDERLAY_STITCH)
+            } else {
+                0.0
             };
-            // One row more than fit in the extent: a part row at the edge.
-            let rows = extent(&|q| axes.across(q)) / p.density + 1.0;
-            total / UNDERLAY_STITCH + rows * (extent(&|q| axes.along(q)) / p.stitch_length + POINTS_PER_ROW) + ends
+            // A subpath that encloses nothing is sewn as a running line.
+            top + underlay + total / p.stitch_length + ends
         }
     }
+}
+
+/// The most points one layer of rows at `angle`, `spacing` apart and split into stitches up to
+/// `stitch` long, can plan across `subs`: every row across the shapes' extent split along all of
+/// it, and each stretch of a row (two edge crossings) its ends, its stagger's part stitch and the
+/// row a region takes of its neighbour's. An edge crosses as many rows as fit across it: counted
+/// edge by edge, without finding a row's stretches. Infinite past [`fill::MAX_ROWS`] rows.
+fn layer_points(subs: &[SubPath], angle: f64, spacing: f64, stitch: f64) -> f64 {
+    /// More than the points each edge crossing of a row adds beyond the row's stitches.
+    const POINTS_PER_CROSSING: f64 = 4.0;
+    let axes = Axes::new(angle);
+    let extent = |f: &dyn Fn(vectorcraft_geom::Point) -> f64| {
+        let (lo, hi) =
+            subs.iter().flat_map(|s| s.pts.iter()).map(|q| f(*q)).fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), t| (lo.min(t), hi.max(t)));
+        if hi >= lo { hi - lo } else { 0.0 }
+    };
+    let across = extent(&|q| axes.across(q));
+    if across / spacing > fill::MAX_ROWS as f64 {
+        return f64::INFINITY;
+    }
+    // One row more than fit in the extent: a part row at the edge.
+    let rows = across / spacing + 1.0;
+    let crossings: f64 = subs
+        .iter()
+        .map(|s| {
+            let n = s.pts.len();
+            (0..n)
+                .filter_map(|i| Some((*s.pts.get(i)?, *s.pts.get((i + 1) % n)?)))
+                .map(|(a, b)| (axes.across(b) - axes.across(a)).abs() / spacing + 1.0)
+                .sum::<f64>()
+        })
+        .sum();
+    rows * (extent(&|q| axes.along(q)) / stitch + 1.0) + crossings * POINTS_PER_CROSSING
 }

@@ -14,7 +14,7 @@ use crate::{SAME_POINT, Stitch};
 /// run, from this one an edge run and a zigzag; and the zigzag's spacing. Estimates.
 const SATIN_EDGE_UNDERLAY: f64 = 2.0;
 const SATIN_ZIGZAG_UNDERLAY: f64 = 4.5;
-const ZIGZAG_UNDERLAY_SPACING: f64 = 2.0;
+pub(super) const ZIGZAG_UNDERLAY_SPACING: f64 = 2.0;
 /// How far inside the column's sides the edge underlay runs: this share of the column's width, at
 /// most [`UNDERLAY_INSET_MAX`] millimetres, so the underlay doesn't show at the edges.
 const UNDERLAY_INSET: f64 = 0.25;
@@ -35,6 +35,15 @@ const SPACING_BY_WIDTH: [(f64, f64); 3] = [(2.0, 0.5), (4.0, 0.45), (6.0, 0.4)];
 const WIDE_SPACING: f64 = 0.37;
 /// The most stitches a long crossing is split into ([`split_long`]): enough for the widest column.
 const MAX_SPLIT: f64 = 64.0;
+/// How far the cuts of a split crossing move along it, as a share of one part (either way): see
+/// [`split_long`].
+const SPLIT_JITTER: f64 = 0.25;
+
+/// The most stitches [`split_long`] cuts a crossing `len` long into with `max` its longest: one
+/// when it is no longer.
+pub(super) fn splits(len: f64, max: f64) -> f64 {
+    ((len * (1.0 + SPLIT_JITTER)) / max).ceil().clamp(1.0, MAX_SPLIT)
+}
 /// The golden ratio's fractional part: its multiples' fractions spread evenly over the unit
 /// interval and never repeat, so the shift of a split moves on from one crossing to the next
 /// without a pattern ([`split_long`]).
@@ -392,8 +401,7 @@ fn satin_underlay(pts: &[Point], closed: bool, width: f64) -> Vec<(Vec<Point>, b
 /// The inner parts are `1/n` long and the two end parts at most `(1 + JITTER)/n`, so `n` is chosen
 /// to keep that under `max`.
 fn split_long(zigzag: &[Point], max: f64) -> Vec<Point> {
-    /// How far the cuts move along a crossing, as a share of one part (either way).
-    const JITTER: f64 = 0.25;
+    const JITTER: f64 = SPLIT_JITTER;
     let mut out: Vec<Point> = Vec::with_capacity(zigzag.len());
     let mut crossing = 0u32;
     for (i, &q) in zigzag.iter().enumerate() {
@@ -426,7 +434,7 @@ const MIN_COLUMN_WIDTH: f64 = 1.0;
 /// column, round a round end's tip, or a stroke is drawn round a tighter radius than half its width
 /// and its inner rail folds over: the crossings there come no closer along the middle than half
 /// their pitch.
-const MAX_RAIL_STRETCH: f64 = 2.0;
+pub(super) const MAX_RAIL_STRETCH: f64 = 2.0;
 
 /// `column` (a narrow part of a fill, [`Column`]) sewn after `runs` as a satin column whose width
 /// follows the shape, from its end nearest the needle (a ring from its station nearest):

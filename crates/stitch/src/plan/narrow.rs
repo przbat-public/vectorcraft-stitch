@@ -167,7 +167,7 @@ pub fn columns(path: &BezPath, rule: FillRule, max_width: f64) -> Vec<Column> {
 /// [`columns`], asking `stopped` every [`STOP_CHECK`] samples, between rings and between sides
 /// whether to stop (a plan that is cancelled): `None` once it says so.
 pub fn columns_until(path: &BezPath, rule: FillRule, max_width: f64, stopped: &dyn Fn() -> bool) -> Option<Vec<Column>> {
-    if !(max_width.is_finite() && max_width > 0.0) {
+    if !(max_width.is_finite() && max_width > 0.0 && super::geometry::in_range(path)) {
         return Some(Vec::new());
     }
     let max_width = max_width.min(MAX_SATIN_WIDTH);

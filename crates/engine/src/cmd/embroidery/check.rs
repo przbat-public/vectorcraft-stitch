@@ -395,11 +395,9 @@ impl<'a> Checker<'a> {
     /// layers it adds to.
     fn record(&mut self, r: &Record) {
         let Some(length) = r.sewn() else {
-            // A jump or a cut ends a row of short stitches; the needle point after one starts the
-            // next row.
-            if r.stitch.command != Command::Stitch {
-                self.end_short_run();
-            }
+            // No thread laid from the record before (a jump, a cut, the needle point after one, a
+            // block's first after the thread change): a row of short stitches ends here.
+            self.end_short_run();
             return;
         };
         if length > LONGEST_STITCH {

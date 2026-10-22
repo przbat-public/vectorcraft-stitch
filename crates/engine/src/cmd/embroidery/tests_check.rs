@@ -124,6 +124,14 @@ fn more_than_five_short_stitches_in_a_row_fire() {
     let row = |n: usize| [vec![3.0], vec![0.9; n], vec![3.0]].concat();
     assert_eq!(hits(&one(Style::Satin, &row(6)), "shortStitchesInARow", Format::Dst), 1);
     assert_eq!(hits(&one(Style::Satin, &row(5)), "shortStitchesInARow", Format::Dst), 0);
+    // Three at the end of one block and three at the start of the next: the thread is changed
+    // between them, so two rows of three.
+    let across = plan(vec![
+        unit(1, Style::Satin, RED, &line(&[3.0, 0.9, 0.9, 0.9]), None),
+        unit(2, Style::Satin, [30, 30, 200], &line(&[0.9, 0.9, 0.9, 3.0]), None),
+    ]);
+    assert_eq!(across.blocks.len(), 2);
+    assert_eq!(hits(&across, "shortStitchesInARow", Format::Dst), 0);
     // Two rows of four, split by a long stitch: none.
     let split = [vec![0.9; 4], vec![3.0], vec![0.9; 4]].concat();
     assert_eq!(hits(&one(Style::Satin, &split), "shortStitchesInARow", Format::Dst), 0);

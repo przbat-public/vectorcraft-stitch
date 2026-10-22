@@ -87,18 +87,14 @@ pub const DELTA_E_HUNDREDTHS: f64 = 100.0;
 /// The thread a block is sewn in: a thread of the document's palette, matched to the colour the
 /// block's art is painted with ([`Palette::nearest`], in sewing order).
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct BlockThread {
     /// The colour the block's art is painted with (sRGB): its units' fill or stroke, a literal
     /// run's stroke.
     pub art: [u8; 3],
-    /// The palette the thread is from: the document's (`embroidery.setup`, Janome's JEF when it
-    /// sets none).
-    pub palette: Palette,
-    /// The thread's number in the palette, from 1 as the formats count.
-    pub index: usize,
-    /// Its name and colour as the palette lists them.
-    pub name: String,
-    pub color: [u8; 3],
+    /// The palette thread: one of the palette's threads by construction, of the document's
+    /// palette (`embroidery.setup`, Janome's JEF when it sets none).
+    pub thread: PaletteThread,
     /// The CIEDE2000 colour difference between the art's colour and the thread's
     /// (`vectorcraft_stitch::color`): 0 when the art is painted with the thread's own colour, a
     /// swatch of the palette's thread library.
@@ -108,9 +104,27 @@ pub struct BlockThread {
 impl BlockThread {
     /// `palette`'s thread `matched` to art colour `art`.
     pub(super) fn new(art: [u8; 3], palette: Palette, matched: Match) -> Self {
-        // A match is always one of the palette's threads; were it not, the art's own colour.
-        let (color, name) = palette.get(matched.index).unwrap_or((art, ""));
-        Self { art, palette, index: matched.index, name: name.to_string(), color, delta_e: matched.delta_e }
+        Self { art, thread: PaletteThread::matched(palette, matched), delta_e: matched.delta_e }
+    }
+
+    /// The palette the thread is from.
+    pub fn palette(&self) -> Palette {
+        self.thread.palette()
+    }
+
+    /// The thread's number in the palette, from 1 as the formats count.
+    pub fn index(&self) -> usize {
+        self.thread.index()
+    }
+
+    /// Its name as the palette lists it.
+    pub fn name(&self) -> &'static str {
+        self.thread.entry().1
+    }
+
+    /// Its colour as the palette lists it (sRGB).
+    pub fn color(&self) -> [u8; 3] {
+        self.thread.entry().0
     }
 
     /// The colour difference as a list of threads shows it (`embroidery.threads`): to
@@ -131,7 +145,7 @@ impl BlockThread {
     /// numbers its threads from this palette writes this one, and any other matches the art's
     /// colour to its own palette.
     pub fn to_thread(&self) -> Thread {
-        Thread { color: self.art, name: self.name.clone(), chosen: PaletteThread::new(self.palette, self.index) }
+        Thread { color: self.art, name: self.name().to_string(), chosen: Some(self.thread) }
     }
 }
 
@@ -140,17 +154,17 @@ impl DesignPlan {
     /// that palette's; else each block's art matched to `palette` in sewing order
     /// ([`Palette::assign`]), as the writer of such a format matches them ([`Palette::numbers`]).
     pub fn threads_in(&self, palette: Palette) -> Vec<BlockThread> {
-        if self.blocks.iter().all(|b| b.thread.palette == palette) {
+        if self.blocks.iter().all(|b| b.thread.palette() == palette) {
             return self.blocks.iter().map(|b| b.thread.clone()).collect();
         }
-        let blocks: Vec<([u8; 3], Option<PaletteThread>)> =
-            self.blocks.iter().map(|b| (b.thread.art, PaletteThread::new(b.thread.palette, b.thread.index))).collect();
+        let blocks: Vec<([u8; 3], Option<PaletteThread>)> = self.blocks.iter().map(|b| (b.thread.art, Some(b.thread.thread))).collect();
         self.blocks.iter().zip(palette.assign(&blocks)).map(|(b, m)| BlockThread::new(b.thread.art, palette, m)).collect()
     }
 }
 
 /// One sewing unit, and where its stitches are in the plan.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct Unit {
     pub origin: Origin,
     /// The thread it is sewn in: its block's.
@@ -194,6 +208,7 @@ impl Unit {
 
 /// One thread's stitches as the machine sews them, and the units they come from.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct ThreadBlock {
     pub thread: BlockThread,
     /// Its stitches in needle order.
@@ -219,6 +234,7 @@ impl ThreadBlock {
 /// A design's stitch plan: its sewing units and thread blocks in sewing order, and what was left
 /// out or approximated.
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct DesignPlan {
     /// The design's name (the document's title), which machine files carry as a label.
     pub name: String,

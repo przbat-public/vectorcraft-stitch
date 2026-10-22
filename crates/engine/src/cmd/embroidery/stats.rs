@@ -244,7 +244,7 @@ pub(crate) fn rect(r: Rect) -> Value {
 /// difference as shown, and whether it is past the mismatch threshold.
 pub(crate) fn thread_json(t: &BlockThread) -> Value {
     let hex = super::hex;
-    json!({"palette": t.palette.id(), "index": t.index, "name": t.name, "color": hex(t.color), "art": hex(t.art), "deltaE": t.shown_delta_e(), "mismatch": t.mismatch()})
+    json!({"palette": t.palette().id(), "index": t.index(), "name": t.name(), "color": hex(t.color()), "art": hex(t.art), "deltaE": t.shown_delta_e(), "mismatch": t.mismatch()})
 }
 
 /// The largest whole number a JSON number holds exactly (2^53).
@@ -343,7 +343,7 @@ pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread, page: P
         (Some(b), Some(s)) => json!({"left": mm(s.x - b.x0), "right": mm(b.x1 - s.x), "up": mm(s.y - b.y0), "down": mm(b.y1 - s.y)}),
         _ => Value::Null,
     };
-    let mut threads: Vec<(&str, usize)> = plan.blocks.iter().map(|b| (b.thread.palette.id(), b.thread.index)).collect();
+    let mut threads: Vec<(&str, usize)> = plan.blocks.iter().map(|b| (b.thread.palette().id(), b.thread.index())).collect();
     threads.sort_unstable();
     threads.dedup();
     let listed = page.range(plan.blocks.len());

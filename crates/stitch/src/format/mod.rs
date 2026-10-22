@@ -21,12 +21,12 @@
 //! - jumps between stitches carry no thread: consecutive jumps collapse to the point the thread
 //!   is taken up from.
 
-pub mod dst;
-pub mod exp;
-pub mod jef;
-pub mod pes;
-pub mod tap;
-pub mod vp3;
+pub(crate) mod dst;
+pub(crate) mod exp;
+pub(crate) mod jef;
+pub(crate) mod pes;
+pub(crate) mod tap;
+pub(crate) mod vp3;
 
 use crate::thread;
 use crate::{Block, Command, Error, MAX_TENTHS, Pattern, Result, Stitch, Thread, quantize};

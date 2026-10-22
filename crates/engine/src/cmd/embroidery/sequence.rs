@@ -298,8 +298,8 @@ mod tests {
         assert_eq!(plan.blocks.len(), 1, "one colour, one block");
         assert!(plan.units.iter().all(|u| u.thread == plan.blocks[0].thread), "{:?}", plan.units);
         let t = &plan.blocks[0].thread;
-        assert_eq!((t.art, t.palette, t.index), ([200, 30, 30], Palette::Jef, Palette::Jef.nearest([200, 30, 30], &[]).index));
-        assert_ne!(t.name, "first");
+        assert_eq!((t.art, t.palette(), t.index()), ([200, 30, 30], Palette::Jef, Palette::Jef.nearest([200, 30, 30], &[]).index));
+        assert_ne!(t.name(), "first");
     }
 
     /// The plan of two blocks of `first` and `second` on top of each other, in `palette`: each
@@ -313,7 +313,7 @@ mod tests {
         seq.add(b);
         let plan = seq.plan(String::new(), Vec::new(), palette);
         assert_eq!(plan.blocks.len(), 2, "two colours on top of each other");
-        plan.blocks.iter().map(|b| (b.thread.index, b.thread.delta_e == 0.0)).collect()
+        plan.blocks.iter().map(|b| (b.thread.index(), b.thread.delta_e == 0.0)).collect()
     }
 
     /// Blocks are matched in sewing order. A block whose nearest thread is the block before's takes

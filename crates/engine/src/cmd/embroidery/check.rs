@@ -567,7 +567,7 @@ impl<'a> Checker<'a> {
         let threads = std::mem::take(&mut self.threads);
         for (k, (b, thread)) in plan.blocks.iter().zip(&threads).enumerate() {
             if thread.mismatch() {
-                let note = format!("block {}: {} {} for the art's {}", k + 1, thread.palette.id(), thread.index, hex(thread.art));
+                let note = format!("block {}: {} {} for the art's {}", k + 1, thread.palette().id(), thread.index(), hex(thread.art));
                 let hit = Hit {
                     record: Some(b.first_number),
                     unit: Some(b.units.start),
@@ -648,7 +648,7 @@ impl<'a> Checker<'a> {
         let [errors, warnings, info] = totals.map(|(rules, hits)| json!({"rules": rules, "hits": hits}));
         json!({
             "format": self.ask.format.id(),
-            "palette": self.ask.format.palette().map_or_else(|| self.plan.blocks.first().map(|b| b.thread.palette.id()), |p| Some(p.id())),
+            "palette": self.ask.format.palette().map_or_else(|| self.plan.blocks.first().map(|b| b.thread.palette().id()), |p| Some(p.id())),
             "rules": rules,
             "summary": {"errors": errors, "warnings": warnings, "info": info},
             "notChecked": NOT_CHECKED.iter().map(|(what, why)| json!({"what": what, "why": why})).collect::<Vec<_>>(),

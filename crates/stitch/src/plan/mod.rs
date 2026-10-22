@@ -45,7 +45,8 @@ mod tests_narrow;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
-pub use fill::{MIN_AREA, fill_with_columns};
+pub use fill::MIN_AREA;
+pub(crate) use fill::fill_with_columns;
 pub use narrow::{Column, columns as narrow_columns, columns_until as narrow_columns_until};
 pub use runs::join_cut;
 pub use satin::satin_spacing;
@@ -265,8 +266,8 @@ pub struct Params {
     pub auto_spacing: bool,
     /// Fill only: the widest part of a filled shape sewn as a satin column instead of tatami,
     /// millimetres; 0 sews every part as tatami. The planner's [`narrow_columns`] finds such parts,
-    /// and [`fill_with_columns`] sews them with the rest of the shape, which the caller cuts out
-    /// (the planner has no path operations); [`stitches`] itself fills the whole shape.
+    /// and [`try_fill_with_columns`] sews them with the rest of the shape, which the caller cuts
+    /// out (the planner has no path operations); [`try_stitches`] itself fills the whole shape.
     pub narrow: f64,
 }
 
@@ -465,18 +466,16 @@ fn sane_weight(weight: f64) -> f64 {
     if weight.is_finite() { weight.clamp(THREAD_WEIGHT_RANGE.0, THREAD_WEIGHT_RANGE.1) } else { THREAD_WEIGHT }
 }
 
-/// The stitches of `path` in style `p`: one block, in needle order.
-///
-/// `rule` decides what a fill covers when its subpaths overlap (a hole wound against its shape
-/// is a hole under the non-zero rule; under the even-odd rule any two crossings change side).
-pub fn stitches(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
+/// [`try_stitches`] without its checks, for this crate's tests.
+#[cfg(test)]
+pub(crate) fn stitches(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
     stitches_from(path, rule, p, None)
 }
 
-/// [`stitches`], the needle at `from` before the shape starts (where the object sewn before it
-/// ended): the shape starts as near it as it can, which saves jumps and trims. `None`: the shape
-/// starts where it is drawn to.
-pub fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Vec<Stitch> {
+/// [`try_stitches_from`] without its checks: what the planners build. Unchecked, a shape far out
+/// of range or a tiny stitch length builds without bound, so only the checked entry points are
+/// public.
+pub(crate) fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Vec<Stitch> {
     let p = p.sane();
     match sewn_style(&p) {
         Style::Running => running::running_from(path, &p, from),
@@ -496,14 +495,20 @@ pub fn sewn_style(p: &Params) -> Style {
     }
 }
 
-/// [`stitches`], refused with [`Error::TooLarge`] when the shape would need more than
-/// [`MAX_STITCHES`] (a huge shape, or a tiny stitch length or spacing): estimated from the
-/// geometry before any stitch is planned, so an absurd request costs no memory.
+/// The stitches of `path` in style `p`: one block, in needle order; refused with
+/// [`Error::TooLarge`] when the shape would need more than [`MAX_STITCHES`] (a huge shape, or a
+/// tiny stitch length or spacing), estimated from the geometry before any stitch is planned, so an
+/// absurd request costs no memory, and when it lies out of range ([`in_range`]).
+///
+/// `rule` decides what a fill covers when its subpaths overlap (a hole wound against its shape
+/// is a hole under the non-zero rule; under the even-odd rule any two crossings change side).
 pub fn try_stitches(path: &BezPath, rule: FillRule, p: &Params) -> crate::Result<Vec<Stitch>> {
     try_stitches_from(path, rule, p, None)
 }
 
-/// [`try_stitches`], the needle at `from` before the shape starts ([`stitches_from`]).
+/// [`try_stitches`], the needle at `from` before the shape starts (where the object sewn before it
+/// ended): the shape starts as near it as it can, which saves jumps and trims. `None`: the shape
+/// starts where it is drawn to.
 pub fn try_stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> crate::Result<Vec<Stitch>> {
     let p = p.sane();
     placed(path)?;
@@ -511,9 +516,13 @@ pub fn try_stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Optio
     Ok(stitches_from(path, rule, &p, from))
 }
 
-/// [`fill_with_columns`], refused with [`Error::TooLarge`] when it would need more than
-/// [`MAX_STITCHES`] stitches: the whole `shape` filled, plus each column's crossings and underlay,
-/// estimated before any stitch is planned.
+/// A filled shape sewn in parts: `rest`, the shape without its narrow `columns` (cut out by the
+/// caller with path operations), as a tatami fill, and each column as a satin column whose width
+/// follows the shape, one after another, whichever starts nearest the needle next, travelling
+/// inside the whole `shape`; `fill` and `satin` are the two kinds of parts' parameters. Refused
+/// with [`Error::TooLarge`] when it would need more than [`MAX_STITCHES`] stitches (the whole
+/// `shape` filled, plus each column's crossings and underlay, estimated before any stitch is
+/// planned), and when a shape lies out of range ([`in_range`]).
 pub fn try_fill_with_columns(
     shape: &BezPath,
     rule: FillRule,

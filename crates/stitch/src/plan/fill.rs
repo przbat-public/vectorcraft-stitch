@@ -142,7 +142,7 @@ const MIN_PIECE: f64 = 1.0;
 /// over a column already sewn it is not counted as showing. `fill` and `satin`
 /// are the two kinds of parts' parameters. A piece of the rest smaller than [`MIN_PIECE`] is left
 /// out.
-pub fn fill_with_columns(
+pub(crate) fn fill_with_columns(
     shape: &BezPath,
     rule: FillRule,
     rest: &BezPath,

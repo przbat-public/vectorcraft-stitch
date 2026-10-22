@@ -428,7 +428,7 @@ fn a_document_without_a_palette_is_sewn_in_janomes_threads() {
     rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
     rect(&mut s, "#2233cc", 100.0, 20.0, 40.0, 30.0);
     let plan = plan_of(&s);
-    assert!(plan.blocks.iter().all(|b| b.thread.palette == Palette::Jef), "{:?}", plan.blocks.iter().map(|b| &b.thread).collect::<Vec<_>>());
+    assert!(plan.blocks.iter().all(|b| b.thread.palette() == Palette::Jef), "{:?}", plan.blocks.iter().map(|b| &b.thread).collect::<Vec<_>>());
     let unset = export(&mut s, Format::Pes);
     s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
     assert_eq!(export(&mut s, Format::Pes), unset, "the PES export matches to Brother's palette either way");
@@ -476,19 +476,19 @@ fn blocks_are_sewn_in_threads_of_the_documents_palette() {
     s.execute("select.none", &json!({})).unwrap();
     let plan = plan_of(&s);
     let [red, blue] = &plan.blocks[..] else { panic!("two blocks: {:?}", plan.blocks.len()) };
-    assert_eq!((red.thread.palette, red.thread.art), (Palette::Pec, [0xcc, 0x22, 0x22]));
-    assert_eq!(red.thread.index, Palette::Pec.nearest([0xcc, 0x22, 0x22], &[]).index);
+    assert_eq!((red.thread.palette(), red.thread.art), (Palette::Pec, [0xcc, 0x22, 0x22]));
+    assert_eq!(red.thread.index(), Palette::Pec.nearest([0xcc, 0x22, 0x22], &[]).index);
     assert!(red.thread.delta_e > 0.0);
-    assert_eq!((blue.thread.index, blue.thread.name.as_str(), blue.thread.delta_e), (38, "Peacock Blue", 0.0));
-    assert_eq!(blue.thread.art, blue.thread.color);
+    assert_eq!((blue.thread.index(), blue.thread.name(), blue.thread.delta_e), (38, "Peacock Blue", 0.0));
+    assert_eq!(blue.thread.art, blue.thread.color());
     assert!(!blue.thread.mismatch());
-    let names = |plan: &DesignPlan| plan.blocks.iter().map(|b| b.thread.name.clone()).collect::<Vec<_>>();
+    let names = |plan: &DesignPlan| plan.blocks.iter().map(|b| b.thread.name().to_string()).collect::<Vec<_>>();
     let named = |bytes: &[u8], format: Format| format.read(bytes).unwrap().blocks.iter().map(|b| b.thread.name.clone()).collect::<Vec<_>>();
     assert_eq!(named(&export(&mut s, Format::Pes), Format::Pes), names(&plan));
     // In Janome's palette, the plan's threads are Janome's, and the JEF export names them.
     s.execute("embroidery.setup", &json!({"palette": "jef"})).unwrap();
     let plan = plan_of(&s);
-    assert!(plan.blocks.iter().all(|b| b.thread.palette == Palette::Jef), "{:?}", plan.blocks.iter().map(|b| &b.thread).collect::<Vec<_>>());
+    assert!(plan.blocks.iter().all(|b| b.thread.palette() == Palette::Jef), "{:?}", plan.blocks.iter().map(|b| &b.thread).collect::<Vec<_>>());
     assert_eq!(named(&export(&mut s, Format::Jef), Format::Jef), names(&plan));
 }
 
@@ -510,8 +510,8 @@ fn a_swatch_of_the_other_palette_is_matched_and_its_own_format_names_it() {
         let own = theirs.palette().and_then(|p| p.get(number)).map(|(rgb, _)| rgb).unwrap();
         let plan = plan_of(&s);
         let [block] = &plan.blocks[..] else { panic!("{swatch}: one block, not {}", plan.blocks.len()) };
-        assert_eq!((block.thread.palette, block.thread.art), (palette, own), "{swatch}");
-        assert_eq!(block.thread.index, palette.nearest(own, &[]).index, "{swatch}");
+        assert_eq!((block.thread.palette(), block.thread.art), (palette, own), "{swatch}");
+        assert_eq!(block.thread.index(), palette.nearest(own, &[]).index, "{swatch}");
         assert!(block.thread.delta_e > 0.0, "{swatch}: no thread of the document's palette has its colour");
         let written = theirs.read(&export(&mut s, theirs)).unwrap();
         assert_eq!(written.blocks[0].thread, theirs.palette().and_then(|p| p.thread(number)).unwrap(), "{swatch}");
@@ -540,7 +540,7 @@ fn the_threads_command_lists_each_blocks_thread() {
         assert_eq!(b["thread"], super::stats::thread_json(&p.thread));
         assert_eq!(
             (&b["thread"]["palette"], &b["thread"]["index"], &b["thread"]["name"]),
-            (&json!("pec"), &json!(p.thread.index), &json!(p.thread.name))
+            (&json!("pec"), &json!(p.thread.index()), &json!(p.thread.name()))
         );
         let t = &b["thread"];
         assert!((t["deltaE"].as_f64().unwrap() - p.thread.delta_e).abs() <= 0.005, "{b}");
@@ -563,7 +563,7 @@ fn the_threads_command_lists_each_blocks_thread() {
 /// not flagged, one shown past it is.
 #[test]
 fn a_mismatch_is_flagged_by_the_difference_shown() {
-    let thread = |delta_e| BlockThread { art: [0; 3], palette: Palette::Pec, index: 1, name: String::new(), color: [0; 3], delta_e };
+    let thread = |delta_e| BlockThread::new([0; 3], Palette::Pec, vectorcraft_stitch::thread::Match { index: 1, delta_e });
     let step = 1.0 / DELTA_E_HUNDREDTHS;
     let (at, past) = (thread(MISMATCH_DELTA_E + 0.4 * step), thread(MISMATCH_DELTA_E + 0.6 * step));
     assert_eq!((at.shown_delta_e(), at.mismatch()), (MISMATCH_DELTA_E, false));

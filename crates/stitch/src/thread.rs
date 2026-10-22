@@ -238,7 +238,24 @@ impl PaletteThread {
     pub fn index(self) -> usize {
         self.index
     }
+
+    /// The thread `m` matched in `palette` ([`Palette::nearest`], [`Palette::assign`], which only
+    /// ever match threads); were `m` no thread of it, the palette's first.
+    pub fn matched(palette: Palette, m: Match) -> Self {
+        Self::new(palette, m.index).unwrap_or(Self { palette, index: FIRST_THREAD })
+    }
+
+    /// Its colour and name as the palette lists them.
+    pub fn entry(self) -> Entry {
+        self.palette.get(self.index).unwrap_or(NO_ENTRY)
+    }
 }
+
+/// The number of every palette's first thread (the formats count from 1; 0 is "no colour").
+const FIRST_THREAD: usize = 1;
+/// What a thread that isn't in its palette would show: never, since a [`PaletteThread`] is always
+/// one of its palette's threads.
+const NO_ENTRY: Entry = ([0; 3], "");
 
 /// A colour matched to a palette's thread ([`Palette::nearest`], [`Palette::assign`]).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -440,6 +457,20 @@ pub fn unknown_thread(block: usize, number: u64) -> Thread {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A match is always a thread of its palette; the stand-in for one that isn't, the first
+    /// thread, is one in every palette.
+    #[test]
+    fn a_matched_thread_is_always_one_of_its_palette() {
+        for palette in Palette::ALL {
+            assert!(palette.is_thread(FIRST_THREAD), "{palette:?}");
+            let m = palette.nearest([10, 200, 90], &[]);
+            let t = PaletteThread::matched(palette, m);
+            assert_eq!((t.palette(), t.index()), (palette, m.index));
+            assert_eq!(t.entry(), palette.get(m.index).unwrap());
+            assert_eq!(PaletteThread::matched(palette, Match { index: 0, delta_e: 0.0 }).index(), FIRST_THREAD);
+        }
+    }
 
     /// A thread chosen for a block is its number when it is the palette's own; another palette's
     /// is matched by colour; a number the palette doesn't have is no thread; and a block isn't

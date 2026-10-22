@@ -6,7 +6,7 @@
 
 use proptest::prelude::*;
 use vectorcraft_geom::{BezPath, FillRule, Shape};
-use vectorcraft_stitch::plan::{Params, Style, Underlay, fill_with_columns, narrow_columns, stitches};
+use vectorcraft_stitch::plan::{Params, Style, Underlay, narrow_columns, try_fill_with_columns, try_stitches};
 use vectorcraft_stitch::{Command, Stitch};
 use vectorcraft_testkit::strategies::arb_closed_shape;
 
@@ -66,7 +66,7 @@ proptest! {
         let [start, end] = p.compensation(bounds.width().hypot(bounds.height()));
         let reach = start.max(end) + 1e-6;
         let b = bounds.inflate(reach, reach);
-        for s in stitches(&path, FillRule::NonZero, &p) {
+        for s in try_stitches(&path, FillRule::NonZero, &p).unwrap() {
             prop_assert!(s.x.is_finite() && s.y.is_finite(), "{s:?}");
             prop_assert!(b.contains(s.point()), "{:?} outside {b:?} ({:?})", s.point(), p.style);
         }
@@ -81,7 +81,7 @@ proptest! {
     #[test]
     fn no_stitch_is_too_long(shape in arb_closed_shape(), p in arb_params()) {
         let p = Params { pull: [0.0; 2], pull_percent: [0.0; 2], ..p };
-        let out = stitches(&shape.to_bezpath(), FillRule::NonZero, &p);
+        let out = try_stitches(&shape.to_bezpath(), FillRule::NonZero, &p).unwrap();
         let longest = (p.stitch_length + p.min_stitch).max(1.3 * p.stitch_length).max(3.0 + p.min_stitch).max(2.6).max(p.jump) + p.min_stitch + 1e-6;
         for (d, up, _) in moves(&out) {
             prop_assert!(up || d <= longest, "a {d} mm stitch, longer than {longest} ({p:?})");
@@ -93,7 +93,7 @@ proptest! {
     #[test]
     fn compensation_lengthens_stitches_by_its_reach_at_most(shape in arb_closed_shape(), p in arb_params()) {
         let path = shape.to_bezpath();
-        let out = stitches(&path, FillRule::NonZero, &p);
+        let out = try_stitches(&path, FillRule::NonZero, &p).unwrap();
         let bounds = path.bounding_box();
         let [start, end] = p.compensation(bounds.width().hypot(bounds.height()));
         let longest = (p.stitch_length + p.min_stitch + start + end).max(1.3 * p.stitch_length).max(3.0 + p.min_stitch).max(2.6).max(p.jump)
@@ -108,7 +108,7 @@ proptest! {
     /// moves longer than the trim length.
     #[test]
     fn only_jumps_longer_than_the_trim_length_are_cut(shape in arb_closed_shape(), p in arb_params()) {
-        for (d, up, cut) in moves(&stitches(&shape.to_bezpath(), FillRule::NonZero, &p)) {
+        for (d, up, cut) in moves(&try_stitches(&shape.to_bezpath(), FillRule::NonZero, &p).unwrap()) {
             prop_assert_eq!(cut, up && d > p.trim, "a {} mm move, needle up {}, cut {} (trim {}, {:?})", d, up, cut, p.trim, p.style);
             prop_assert!(!up || d > p.min_stitch - 1e-9, "the needle lifts for a {} mm move", d);
         }
@@ -133,7 +133,7 @@ proptest! {
         }
         let reach = fill.compensation(bounds.width().hypot(bounds.height()))[0].max(satin.compensation(1.5 * widest)[0]) + 1e-6;
         let b = bounds.inflate(reach, reach);
-        for s in fill_with_columns(&path, FillRule::NonZero, &path, &columns, &fill, &satin, None) {
+        for s in try_fill_with_columns(&path, FillRule::NonZero, &path, &columns, &fill, &satin, None).unwrap() {
             prop_assert!(s.x.is_finite() && s.y.is_finite() && b.contains(s.point()), "{:?} outside {b:?}", s.point());
         }
     }

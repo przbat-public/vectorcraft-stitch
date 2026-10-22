@@ -75,6 +75,15 @@ impl Palette {
         Self::ALL.into_iter().find(|p| p.id() == id)
     }
 
+    /// The format whose threads it numbers, the one a design in it is written as: PES for
+    /// Brother's (PEC numbers them too), JEF for Janome's.
+    pub fn format(self) -> crate::format::Format {
+        match self {
+            Self::Pec => crate::format::Format::Pes,
+            Self::Jef => crate::format::Format::Jef,
+        }
+    }
+
     /// Its entries, each a colour and a name, in the order the format numbers them from 1: its
     /// threads, then, in PEC, three entries that are not ([`Palette::is_thread`]).
     pub fn threads(self) -> &'static [Entry] {

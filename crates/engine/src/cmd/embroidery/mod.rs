@@ -291,8 +291,7 @@ fn check_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     };
     let (plan, doc) = planned(s, &opts, C)?;
     // The format of the document's thread palette, when none is asked for.
-    let palette = thread_palette(&doc);
-    let format = format.or_else(|| StitchFormat::ALL.into_iter().find(|f| f.palette() == Some(palette))).unwrap_or(StitchFormat::Pes);
+    let format = format.unwrap_or_else(|| thread_palette(&doc).format());
     Ok(check::check(&plan, &check::Ask { rules, format, limit }))
 }
 

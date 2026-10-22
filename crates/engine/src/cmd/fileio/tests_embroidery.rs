@@ -229,15 +229,31 @@ fn an_opened_design_is_not_restitched_by_the_options() {
     assert_eq!(sewn(&plain), sewn(&forced));
 }
 
+/// Every embroidery format is listed wherever formats are, as the stitch crate describes it: in
+/// `document.formats` (its label and extensions), the extensions opened, placed and left
+/// unassociated, and the hand-written format lists of the export and check commands' params.
 #[test]
 fn the_format_table_lists_embroidery() {
     let mut s = Session::new();
     let r = s.execute("document.formats", &json!({})).unwrap();
     let formats = r["formats"].as_array().expect("formats");
-    for id in Format::ALL.map(Format::id) {
+    let doc = |id: &str| crate::cmd::command_specs().iter().find(|c| c.id == id).map_or("", |c| c.params);
+    let listings = ["document.serialize", "document.export", "document.exportSelection"].map(doc);
+    for format in Format::ALL {
+        let (id, spec) = (format.id(), format.spec());
         let f = formats.iter().find(|f| f["id"] == id).unwrap_or_else(|| panic!("{id} is listed"));
         assert_eq!(f["read"].as_bool(), Some(true), "{id}");
         assert_eq!(f["write"].as_bool(), Some(true), "{id}");
+        assert_eq!(f["label"].as_str(), Some(spec.label), "{id}");
+        for ext in spec.extensions {
+            for (list, name) in [(super::OPEN_EXTS, "opened"), (super::PLACE_EXTS, "placed"), (super::UNASSOCIATED_EXTS, "unassociated")] {
+                assert!(list.contains(ext), "{ext} is {name}");
+            }
+        }
+        for listing in &listings {
+            assert!([format!("|{id}|"), format!("|{id} ")].iter().any(|word| listing.contains(word.as_str())), "{id} in {listing}");
+        }
+        assert!(doc("embroidery.check").contains(&format!("\"{id}\"")), "{id} in embroidery.check's formats");
     }
 }
 

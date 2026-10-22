@@ -120,6 +120,13 @@ const MIN_STITCH: FormatOption =
 pub const OPTIONS: &[FormatOption] =
     &[STYLE, DENSITY, STITCH_LENGTH, ANGLE, PULL, PULL_PERCENT, PUSH, EXPAND, NARROW, THREAD_WEIGHT_OPTION, UNDERLAY, JUMP, TRIM, MIN_STITCH];
 
+/// The entry of `f` in the formats `document.open` and `document.export` know: as the stitch crate
+/// describes it ([`StitchFormat::spec`]), read and written, with the embroidery options.
+pub(super) const fn format(f: StitchFormat) -> Format {
+    let s = f.spec();
+    Format { id: s.id, label: s.label, extensions: s.extensions, mime: s.mime, read: true, write: true, raster: false, options: OPTIONS }
+}
+
 /// Whether `id` names an embroidery format: one the stitch crate reads and writes.
 pub(super) fn is_format(id: &str) -> bool {
     StitchFormat::from_id(id).is_some()

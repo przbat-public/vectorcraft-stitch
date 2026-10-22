@@ -69,52 +69,162 @@ pub enum Format {
     Vp3,
 }
 
+/// Where a format's files put the machine's origin, the needle's start: a corner of the design, or
+/// its centre.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Start {
+    /// A corner of the design (DST, TAP, T01, EXP, PES and PEC, as the decodings start them).
+    Corner,
+    /// The design's centre (JEF: Janome sews around the hoop's centre; VP3: its files start there).
+    Centre,
+}
+
+/// What the code knows about one format, in one place ([`Format::spec`]): adding a format is one
+/// of these, its module's reader and writer, and the arm that names it in [`Format::spec`], which
+/// fails to compile until it is there.
+#[derive(Clone, Copy, Debug)]
+pub struct Spec {
+    /// The `format` parameter value.
+    pub id: &'static str,
+    /// Its name in menus and dialogs.
+    pub label: &'static str,
+    /// Its file extensions, without the dot, the one written first.
+    pub extensions: &'static [&'static str],
+    /// The MIME type its files are offered as.
+    pub mime: &'static str,
+    /// The thread palette it numbers its threads in, if any ([`Format::palette`]).
+    pub palette: Option<thread::Palette>,
+    /// The longest move one stitch record holds along x or along y, tenths of a millimetre
+    /// ([`Format::max_step`]).
+    pub max_step: i32,
+    /// The most colour blocks it holds, if its layout sets a limit ([`Format::max_colors`]).
+    pub max_colors: Option<usize>,
+    /// Where its files start the needle.
+    pub start: Start,
+    /// The bytes its files start with, if they announce themselves ([`Format::sniff`]).
+    pub magic: Option<&'static [u8]>,
+    /// Its reader and writer.
+    pub read: fn(&[u8]) -> Result<Pattern>,
+    pub write: fn(&Pattern) -> Result<Vec<u8>>,
+}
+
+/// Tajima DST: no colours, 3-byte records ([`dst`]).
+const DST: Spec = Spec {
+    id: "dst",
+    label: "Tajima DST",
+    extensions: &["dst"],
+    mime: "application/x-dst",
+    palette: None,
+    max_step: dst::MAX_DELTA,
+    max_colors: None,
+    start: Start::Corner,
+    magic: None,
+    read: dst::read,
+    write: dst::write,
+};
+/// Happy TAP: DST's records alone ([`tap`]).
+const TAP: Spec = Spec { id: "tap", label: "Happy TAP", extensions: &["tap"], mime: "application/x-tap", read: tap::read, write: tap::write, ..DST };
+/// Wilcom T01: the same bytes as a TAP ([`tap`]).
+const T01: Spec =
+    Spec { id: "t01", label: "Wilcom T01", extensions: &["t01"], mime: "application/x-t01", read: tap::read_t01, write: tap::write, ..DST };
+/// Melco EXP: 2-byte records, no header ([`exp`]).
+const EXP: Spec = Spec {
+    id: "exp",
+    label: "Melco EXP",
+    extensions: &["exp"],
+    mime: "application/x-exp",
+    palette: None,
+    max_step: exp::MAX_DELTA,
+    max_colors: None,
+    start: Start::Corner,
+    magic: None,
+    read: exp::read,
+    write: exp::write,
+};
+/// Brother PES: a PES header and the PEC section ([`pes`]).
+const PES: Spec = Spec {
+    id: "pes",
+    label: "Brother PES",
+    extensions: &["pes"],
+    mime: "application/x-pes",
+    palette: Some(thread::Palette::Pec),
+    max_step: pes::MAX_DELTA,
+    max_colors: Some(pes::MAX_COLORS),
+    start: Start::Corner,
+    magic: Some(b"#PES"),
+    read: pes::read,
+    write: pes::write,
+};
+/// Brother PEC: the PEC section on its own ([`pes`]).
+const PEC: Spec =
+    Spec { id: "pec", label: "Brother PEC", extensions: &["pec"], mime: "application/x-pec", magic: Some(b"#PEC"), write: pes::write_pec, ..PES };
+/// Janome JEF: a header and 2-byte records ([`jef`]).
+const JEF: Spec = Spec {
+    id: "jef",
+    label: "Janome JEF",
+    extensions: &["jef"],
+    mime: "application/x-jef",
+    palette: Some(thread::Palette::Jef),
+    max_step: jef::MAX_DELTA,
+    max_colors: None,
+    start: Start::Centre,
+    magic: None,
+    read: jef::read,
+    write: jef::write,
+};
+/// Husqvarna Viking and Pfaff VP3: nested packets ([`vp3`]).
+const VP3: Spec = Spec {
+    id: "vp3",
+    label: "Husqvarna Viking / Pfaff VP3",
+    extensions: &["vp3"],
+    mime: "application/x-vp3",
+    palette: None,
+    max_step: vp3::MAX_SHORT,
+    max_colors: Some(vp3::MAX_COLORS),
+    start: Start::Centre,
+    magic: Some(vp3::MAGIC),
+    read: vp3::read,
+    write: vp3::write,
+};
+
 impl Format {
     /// Every format, as menus list them.
     pub const ALL: [Self; 8] = [Self::Dst, Self::Tap, Self::T01, Self::Exp, Self::Pes, Self::Pec, Self::Jef, Self::Vp3];
 
-    /// The `format` parameter value.
-    pub fn id(self) -> &'static str {
+    /// What the code knows about the format ([`Spec`]).
+    pub const fn spec(self) -> &'static Spec {
         match self {
-            Self::Dst => "dst",
-            Self::Tap => "tap",
-            Self::T01 => "t01",
-            Self::Exp => "exp",
-            Self::Pes => "pes",
-            Self::Pec => "pec",
-            Self::Jef => "jef",
-            Self::Vp3 => "vp3",
+            Self::Dst => &DST,
+            Self::Tap => &TAP,
+            Self::T01 => &T01,
+            Self::Exp => &EXP,
+            Self::Pes => &PES,
+            Self::Pec => &PEC,
+            Self::Jef => &JEF,
+            Self::Vp3 => &VP3,
         }
+    }
+
+    /// The `format` parameter value.
+    pub const fn id(self) -> &'static str {
+        self.spec().id
     }
 
     /// The format's name in menus and dialogs.
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Dst => "Tajima DST",
-            Self::Exp => "Melco EXP",
-            Self::Tap => "Happy TAP",
-            Self::T01 => "Wilcom T01",
-            Self::Pes => "Brother PES",
-            Self::Pec => "Brother PEC",
-            Self::Jef => "Janome JEF",
-            Self::Vp3 => "Husqvarna Viking / Pfaff VP3",
-        }
+    pub const fn label(self) -> &'static str {
+        self.spec().label
     }
 
-    /// The file extension (without the dot).
+    /// The file extension written (without the dot).
     pub fn extension(self) -> &'static str {
-        self.id()
+        self.spec().extensions.first().copied().unwrap_or(self.spec().id)
     }
 
     /// The thread palette the format numbers its threads in: Brother's for PES (its PEC part) and
     /// PEC, Janome's for JEF; `None` for DST, TAP, T01 and EXP, which name no colours, and for VP3,
     /// which writes each thread's own colour.
     pub fn palette(self) -> Option<thread::Palette> {
-        match self {
-            Self::Dst | Self::Exp | Self::Tap | Self::T01 | Self::Vp3 => None,
-            Self::Pes | Self::Pec => Some(thread::Palette::Pec),
-            Self::Jef => Some(thread::Palette::Jef),
-        }
+        self.spec().palette
     }
 
     /// The longest move one stitch record holds along x or along y, millimetres: 12.1 in DST, TAP
@@ -122,13 +232,7 @@ impl Format {
     /// longer stitch as several stitches of equal steps, so more needle points than planned, and a
     /// longer jump as several jumps.
     pub fn max_step(self) -> f64 {
-        mm(match self {
-            Self::Dst | Self::Tap | Self::T01 => dst::MAX_DELTA,
-            Self::Exp => exp::MAX_DELTA,
-            Self::Pes | Self::Pec => pes::MAX_DELTA,
-            Self::Jef => jef::MAX_DELTA,
-            Self::Vp3 => vp3::MAX_SHORT,
-        })
+        mm(self.spec().max_step)
     }
 
     /// The most colour blocks the format holds, `None` where its layout sets no limit: the PEC
@@ -136,11 +240,12 @@ impl Format {
     /// TAP, T01, EXP and JEF have no such field (DST's header counts colour changes in text a reader
     /// recomputes, TAP and T01 have no header, JEF counts them in a 32-bit word).
     pub fn max_colors(self) -> Option<usize> {
-        match self {
-            Self::Pes | Self::Pec => Some(pes::MAX_COLORS),
-            Self::Vp3 => Some(vp3::MAX_COLORS),
-            Self::Dst | Self::Tap | Self::T01 | Self::Exp | Self::Jef => None,
-        }
+        self.spec().max_colors
+    }
+
+    /// Where the format's files start the needle: a corner of the design or its centre.
+    pub fn start(self) -> Start {
+        self.spec().start
     }
 
     /// The format `id` names (`dst`, `tap`, `t01`, `exp`, `pes`, `pec`, `jef`, `vp3`).
@@ -151,34 +256,18 @@ impl Format {
     /// The format a file named `extension` has, in any case.
     pub fn from_extension(extension: &str) -> Option<Self> {
         let e = extension.trim_start_matches('.').to_ascii_lowercase();
-        Self::ALL.into_iter().find(|f| f.extension() == e)
+        Self::ALL.into_iter().find(|f| f.spec().extensions.contains(&e.as_str()))
     }
 
     /// The format a file's first bytes announce, when they announce one: Brother's and VP3 files
     /// carry a magic string; DST, TAP, T01, EXP and JEF are recognised by their extension.
     pub fn sniff(bytes: &[u8]) -> Option<Self> {
-        if bytes.starts_with(b"#PES") {
-            Some(Self::Pes)
-        } else if bytes.starts_with(b"#PEC") {
-            Some(Self::Pec)
-        } else if bytes.starts_with(vp3::MAGIC) {
-            Some(Self::Vp3)
-        } else {
-            None
-        }
+        Self::ALL.into_iter().find(|f| f.spec().magic.is_some_and(|m| bytes.starts_with(m)))
     }
 
     /// Read a design from `bytes`.
     pub fn read(self, bytes: &[u8]) -> Result<Pattern> {
-        match self {
-            Self::Dst => dst::read(bytes),
-            Self::Exp => exp::read(bytes),
-            Self::Tap => tap::read(bytes),
-            Self::T01 => tap::read_t01(bytes),
-            Self::Pes | Self::Pec => pes::read(bytes),
-            Self::Jef => jef::read(bytes),
-            Self::Vp3 => vp3::read(bytes),
-        }
+        (self.spec().read)(bytes)
     }
 
     /// Write `pattern` in this format.
@@ -186,17 +275,7 @@ impl Format {
         if pattern.is_empty() {
             return Err(Error::Format("the design has no stitches to write".into()));
         }
-        match self {
-            Self::Dst => dst::write(pattern),
-            Self::Exp => exp::write(pattern),
-            Self::Tap => tap::write(pattern),
-            // The same bytes as a TAP.
-            Self::T01 => tap::write(pattern),
-            Self::Pes => pes::write(pattern),
-            Self::Pec => pes::write_pec(pattern),
-            Self::Jef => jef::write(pattern),
-            Self::Vp3 => vp3::write(pattern),
-        }
+        (self.spec().write)(pattern)
     }
 }
 
@@ -540,6 +619,23 @@ mod tests {
             assert!(format.write(&many(most + 1)).is_err(), "{format:?}");
         }
         assert_eq!(Format::ALL.map(Format::max_colors), [None, None, None, None, Some(255), Some(255), None, Some(65_535)]);
+    }
+
+    /// Each format's spec is its own (its id names it back, its extension finds it), every format is
+    /// in `ALL` once, and the starts are the ones the writers use: a corner, the centre in JEF and VP3.
+    #[test]
+    fn every_format_has_a_spec_of_its_own() {
+        for f in Format::ALL {
+            assert_eq!(Format::from_id(f.id()), Some(f));
+            assert_eq!(Format::from_extension(f.extension()), Some(f));
+            assert_eq!(Format::ALL.iter().filter(|g| **g == f).count(), 1, "{f:?}");
+        }
+        let centred: Vec<Format> = Format::ALL.into_iter().filter(|f| f.start() == Start::Centre).collect();
+        assert_eq!(centred, [Format::Jef, Format::Vp3]);
+        assert_eq!(Format::sniff(b"#PES0001"), Some(Format::Pes));
+        assert_eq!(Format::sniff(b"#PEC0001"), Some(Format::Pec));
+        assert_eq!(Format::sniff(vp3::MAGIC), Some(Format::Vp3));
+        assert_eq!(Format::sniff(b"LA:"), None);
     }
 
     #[test]

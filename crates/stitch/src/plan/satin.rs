@@ -19,7 +19,8 @@ pub(super) const ZIGZAG_UNDERLAY_SPACING: f64 = 2.0;
 /// most [`UNDERLAY_INSET_MAX`] millimetres, so the underlay doesn't show at the edges.
 const UNDERLAY_INSET: f64 = 0.25;
 const UNDERLAY_INSET_MAX: f64 = 0.5;
-/// A column shorter than this many spacings is left out: it would be a knot, not a column.
+/// A column shorter than this many of its own spacings ([`Params::column_spacing`]) is left out:
+/// it would be a knot, not a column. A stroke's and a fill's narrow part alike.
 const MIN_CROSSINGS: f64 = 2.0;
 /// A satin's spacing is measured between two penetrations on the same rail (peak to peak), as
 /// Madeira's stitch density chart (51 satin stitches a centimetre for its 0.40 mm, 40 wt:
@@ -74,7 +75,7 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
     let mut runs = Runs::from(from);
     for Line { pts, closed, reversed } in nearest_order(subpaths(path), from) {
         // Push compensation: an open column is sewn shorter at its ends, the underlay with it.
-        let shortest = p.density * MIN_CROSSINGS;
+        let shortest = spacing * MIN_CROSSINGS;
         let pts = if closed { pts } else { pushed(&pts, if reversed { [p.push[1], p.push[0]] } else { p.push }, shortest) };
         if length(&pts, closed) < shortest {
             continue;
@@ -511,10 +512,10 @@ pub(super) fn sew_column(column: &Column, p: &Params, runs: &mut Runs, reach: &m
         let push = ((p.push[0] + p.push[1]) / 2.0).max(0.0);
         let [start, end] = tips.map(|tip| if tip { push } else { 0.0 });
         // At most down to MIN_PUSHED of it, and never shorter than a column that is sewn.
-        let k = push_share(along.len, start, end, p.min_stitch * MIN_CROSSINGS);
+        let k = push_share(along.len, start, end, p.column_spacing(width) * MIN_CROSSINGS);
         Along::new(&along.between(start * k, along.len - end * k), false)
     };
-    if along.len < p.min_stitch * MIN_CROSSINGS {
+    if along.len < p.column_spacing(width) * MIN_CROSSINGS {
         return;
     }
     let mut first = true;

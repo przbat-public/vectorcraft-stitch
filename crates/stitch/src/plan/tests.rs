@@ -1510,3 +1510,13 @@ fn locks_and_ties_are_no_shorter_than_the_shortest_stitch() {
         assert!(d < crate::SAME_POINT || d + 1e-9 >= min_stitch, "a {d} mm stitch");
     }
 }
+
+/// A satin column shorter than two of its own spacings is left out, a stroke's by the spacing its
+/// width gives it (0.5 mm under 2 mm wide: 1 mm), not by a fill's.
+#[test]
+fn a_column_shorter_than_two_of_its_spacings_is_left_out() {
+    let p = Params { width: 1.5, ..Params::for_style(Style::Satin) };
+    assert!((p.column_spacing(p.width) - 0.5).abs() < 1e-9);
+    assert!(stitches(&line((0.0, 0.0), (0.9, 0.0)), FillRule::NonZero, &p).is_empty(), "0.9 mm: a knot");
+    assert!(!stitches(&line((0.0, 0.0), (1.1, 0.0)), FillRule::NonZero, &p).is_empty(), "1.1 mm: a column");
+}

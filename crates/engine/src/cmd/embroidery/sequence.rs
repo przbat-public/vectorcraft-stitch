@@ -85,14 +85,13 @@ pub(super) struct Sequence {
     blocks: Vec<Sewn>,
     /// The jump and trim lengths between objects.
     connect: Params,
-    /// How many units were added, and the block the last one went to.
-    added: usize,
-    last: Option<usize>,
+    /// The block each unit added went into, in the order they were added.
+    adds: Vec<usize>,
 }
 
 impl Sequence {
     pub(super) fn new(connect: Params) -> Self {
-        Self { blocks: Vec::new(), connect: connect.sane(), added: 0, last: None }
+        Self { blocks: Vec::new(), connect: connect.sane(), adds: Vec::new() }
     }
 
     /// The block an object of `color` that covers `bounds` (grown by [`CLEARANCE`]) joins: the
@@ -124,7 +123,6 @@ impl Sequence {
     pub(super) fn add(&mut self, planned: Planned) {
         let Planned { facts, block, literal } = planned;
         let Some(&first) = block.stitches.first() else { return };
-        self.added += 1;
         let planned_bounds = block.bounds();
         let member = |start: usize| Member { facts, bounds: planned_bounds, start };
         match literal {
@@ -158,7 +156,7 @@ impl Sequence {
                 self.blocks.push(Sewn { block: b, bounds, literal: Some(owner), members });
             }
         }
-        self.last = self.blocks.len().checked_sub(1);
+        self.adds.push(self.blocks.len().saturating_sub(1));
     }
 
     /// Art's stitches (`b`, starting at `first`): into the last block of its colour when nothing
@@ -166,7 +164,7 @@ impl Sequence {
     fn add_art(&mut self, b: Block, first: Stitch, member: impl Fn(usize) -> Member) {
         let bounds = b.bounds().map(|r| r.inflate(CLEARANCE, CLEARANCE));
         let target = self.target(b.thread.color, bounds);
-        self.last = Some(target.unwrap_or(self.blocks.len()));
+        self.adds.push(target.unwrap_or(self.blocks.len()));
         match target.and_then(|j| self.blocks.get_mut(j)) {
             Some(sewn) => {
                 let start = sewn.block.stitches.len();
@@ -200,14 +198,17 @@ impl Sequence {
 
     /// How many units with stitches were added so far.
     pub(super) fn added(&self) -> usize {
-        self.added
+        self.adds.len()
     }
 
-    /// Cut the thread after the last unit added (an object that asks for it, or the last of a
-    /// group that does), however near the next one starts: the cut is the last of that unit's
-    /// stitches.
-    pub(super) fn trim_last(&mut self) {
-        if let Some(sewn) = self.last.and_then(|j| self.blocks.get_mut(j)) {
+    /// Cut the thread after the units added since `since` (an [`Sequence::added`] count: those of
+    /// an object that asks for it, or of a group that does), however near the next one starts:
+    /// after the one sewn last, which ends the latest block any of them went into (a group's
+    /// units may join earlier blocks of their colours, so the last one added isn't always the
+    /// last one sewn).
+    pub(super) fn trim_after_since(&mut self, since: usize) {
+        let latest = self.adds.get(since..).and_then(|blocks| blocks.iter().max().copied());
+        if let Some(sewn) = latest.and_then(|j| self.blocks.get_mut(j)) {
             cut_after(&mut sewn.block.stitches);
         }
     }

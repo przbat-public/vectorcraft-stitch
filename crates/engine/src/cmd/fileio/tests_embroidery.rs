@@ -481,6 +481,40 @@ fn literal_stitches_survive_the_native_format() {
     assert_eq!(sewn(&plan(&export(&mut s, "dst", json!({})))), sewn(&plan(&dst)));
 }
 
+/// A run of two needle points at one spot (a tack between two jumps) is written back as two, and a
+/// run of one as one: their lines, from a point to the same point, look alike, and the run says
+/// which it is.
+#[test]
+fn a_tack_and_a_single_stitch_round_trip() {
+    use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
+    let mut a = Block::new(Thread::rgb([200, 0, 0]));
+    for i in 0..5 {
+        a.stitches.push(Stitch::new(f64::from(i) * 2.0, 0.0, Command::Stitch));
+    }
+    // A tack: two penetrations in one hole, between two jumps.
+    a.stitches.push(Stitch::new(14.0, 0.0, Command::Jump));
+    a.stitches.push(Stitch::new(14.0, 0.0, Command::Stitch));
+    a.stitches.push(Stitch::new(14.0, 0.0, Command::Stitch));
+    // A single stitch, between two jumps.
+    a.stitches.push(Stitch::new(20.0, 0.0, Command::Jump));
+    a.stitches.push(Stitch::new(20.0, 0.0, Command::Stitch));
+    a.stitches.push(Stitch::new(26.0, 0.0, Command::Jump));
+    for i in 0..5 {
+        a.stitches.push(Stitch::new(26.0 + f64::from(i) * 2.0, 0.0, Command::Stitch));
+    }
+    let p = Pattern { blocks: vec![a], ..Pattern::default() };
+    let file = Format::Dst.write(&p).unwrap();
+    let sewn = |p: &Pattern| p.points().filter(|s| s.command == Command::Stitch).count();
+    let mut s = Session::new();
+    open(&mut s, "tack.dst", &file).expect("opens");
+    assert_eq!(sewn(&plan(&export(&mut s, "dst", json!({})))), sewn(&plan(&file)));
+    // Saved and opened again, it still says so.
+    let saved = export(&mut s, "vectorcraft", json!({}));
+    let mut again = Session::new();
+    open(&mut again, "tack.vectorcraft", &saved).unwrap();
+    assert_eq!(sewn(&plan(&export(&mut again, "dst", json!({})))), sewn(&plan(&file)));
+}
+
 /// A file that cuts the thread at the end of a colour block (before the change) and at the start
 /// of the next, as Ink/Stitch writes them, is written back with those cuts.
 #[test]

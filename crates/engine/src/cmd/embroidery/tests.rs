@@ -756,3 +756,24 @@ fn an_intertwine_is_named_when_it_is_left_out() {
     assert!(warnings.iter().any(|w| w.starts_with("intertwined objects are not stitched")), "{warnings:?}");
     assert!(!warnings.iter().any(|w| w.contains("live blends")), "{warnings:?}");
 }
+
+/// Trim After on a group whose units join different blocks cuts after its unit sewn last: the one
+/// ending the latest block, not the one added last, which may have joined an earlier block of its
+/// colour.
+#[test]
+fn trim_after_a_group_cuts_after_its_unit_sewn_last() {
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    // The group: a blue square, then a red one, which joins the first red block (sewn first).
+    let blue = rect(&mut s, "#2233cc", 100.0, 20.0, 40.0, 30.0);
+    let red = rect(&mut s, "#cc2222", 200.0, 20.0, 40.0, 30.0);
+    s.execute("select.set", &json!({"ids": [blue, red]})).unwrap();
+    let group = s.execute("object.group", &json!({})).unwrap()["id"].as_u64().unwrap();
+    let before = plan_of(&s);
+    assert_eq!(before.blocks.len(), 2, "red (with the group's red), then blue");
+    let ends_cut = |p: &DesignPlan| p.blocks.iter().map(|b| b.stitches.last().is_some_and(|s| s.command == Command::Trim)).collect::<Vec<_>>();
+    assert_eq!(ends_cut(&before), [false, false]);
+    s.execute("embroidery.setTrimAfter", &json!({"on": true, "ids": [group]})).unwrap();
+    // Cut after the blue square, sewn last; not after the red one, sewn before it.
+    assert_eq!(ends_cut(&plan_of(&s)), [false, true]);
+}

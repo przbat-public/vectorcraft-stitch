@@ -74,17 +74,21 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
                     bp.line_to(p);
                 }
             }
-            // A single stitch is a line that goes nowhere: still one needle point.
+            // A single stitch is a line that goes nowhere: still one needle point. Two at one spot
+            // draw the same line, and say so.
             if let [only] = run.as_slice() {
                 bp.line_to(Point::new((only.x + MARGIN) * scale, (only.y + MARGIN) * scale));
             }
+            let double_point = matches!(run.as_slice(), [a, b] if a.distance(*b) < vectorcraft_stitch::SAME_POINT);
             let path = PathData::from_bezpath(&bp);
             let mut node = Node::path(doc.alloc_id(), path, Appearance::default());
             node.appearance = stroke.clone();
             // The line's points are the file's needle points: exported, they are sewn as they are,
             // so the design is written back unchanged.
-            node.extras_mut().embroidery =
-                Some(Box::new(Embroidery { stitches: Some(StitchRun { trim_before, trim_after, ..StitchRun::default() }), ..Embroidery::default() }));
+            node.extras_mut().embroidery = Some(Box::new(Embroidery {
+                stitches: Some(StitchRun { trim_before, trim_after, double_point, ..StitchRun::default() }),
+                ..Embroidery::default()
+            }));
             children.push(Arc::new(node));
         }
         if children.is_empty() {

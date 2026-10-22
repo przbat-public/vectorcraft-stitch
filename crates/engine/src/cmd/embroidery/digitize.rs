@@ -244,7 +244,7 @@ impl<'a> Digitizer<'a> {
         self.kind(n);
         // An object (or group) that asks for it: the thread is cut after its last stitch.
         if n.extras().embroidery.as_deref().is_some_and(|e| e.trim_after) && self.seq.added() > added {
-            self.seq.trim_last();
+            self.seq.trim_after_since(added);
         }
     }
 
@@ -328,9 +328,11 @@ impl<'a> Digitizer<'a> {
                 points.push(Stitch::sew(p));
             }
         });
-        // A single stitch is stored as a line that goes nowhere: one needle point.
+        // A single stitch is stored as a line that goes nowhere: one needle point, unless the run
+        // says it is two at that spot.
         if let [a, b] = points.as_slice()
             && a.distance(*b) < SAME_POINT
+            && !run.double_point
         {
             points.pop();
         }

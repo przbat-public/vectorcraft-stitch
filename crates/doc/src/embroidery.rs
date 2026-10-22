@@ -46,6 +46,10 @@ pub struct StitchRun {
     /// The thread was cut after the run, at the end of its colour block, as the file had it
     /// (machines and digitizers often cut before the thread is changed).
     pub trim_after: bool,
+    /// The run is two needle points at one spot (a tack), which its line, from a point to the
+    /// same point, says no differently from a single stitch: without this, a line that goes
+    /// nowhere is one needle point.
+    pub double_point: bool,
     /// Keys this version doesn't read, kept as they are.
     pub extra: serde_json::Map<String, serde_json::Value>,
 }
@@ -63,6 +67,7 @@ impl Embroidery {
 const STITCHES: &str = "stitches";
 const TRIM_AFTER: &str = "trim_after";
 const TRIM_BEFORE: &str = "trim_before";
+const DOUBLE_POINT: &str = "double_point";
 
 /// Take boolean `key` out of `map`: its value when it is one (a missing key is false); a value of
 /// another type stays in `map`, to be written back as it was.
@@ -97,7 +102,8 @@ impl From<serde_json::Map<String, serde_json::Value>> for StitchRun {
     fn from(mut map: serde_json::Map<String, serde_json::Value>) -> Self {
         let trim_before = take_flag(&mut map, TRIM_BEFORE);
         let trim_after = take_flag(&mut map, TRIM_AFTER);
-        Self { trim_before, trim_after, extra: map }
+        let double_point = take_flag(&mut map, DOUBLE_POINT);
+        Self { trim_before, trim_after, double_point, extra: map }
     }
 }
 
@@ -105,7 +111,8 @@ impl From<StitchRun> for serde_json::Value {
     /// The run as it is saved: its cuts when there are, then the keys kept.
     fn from(r: StitchRun) -> Self {
         let flag = |key: &'static str, on: bool| on.then_some((key, serde_json::Value::Bool(true)));
-        with_kept(flag(TRIM_BEFORE, r.trim_before).into_iter().chain(flag(TRIM_AFTER, r.trim_after)), r.extra)
+        let flags = flag(TRIM_BEFORE, r.trim_before).into_iter().chain(flag(TRIM_AFTER, r.trim_after)).chain(flag(DOUBLE_POINT, r.double_point));
+        with_kept(flags, r.extra)
     }
 }
 

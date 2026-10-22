@@ -53,6 +53,14 @@ pub struct Origin {
     pub instance: Option<NodeId>,
 }
 
+impl Origin {
+    /// The object a person selects for the unit: the symbol instance that places it, else the
+    /// object itself.
+    pub fn selected(&self) -> NodeId {
+        self.instance.unwrap_or(self.node)
+    }
+}
+
 /// Why a sewing unit is sewn the way it is: the rule that chose its stitch.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Choice {
@@ -181,6 +189,18 @@ pub struct ThreadBlock {
     pub first_number: usize,
 }
 
+impl ThreadBlock {
+    /// The number of its last stitch in the design (its first's, for a block of none).
+    pub fn last_number(&self) -> usize {
+        self.first_number + self.stitches.len().saturating_sub(1)
+    }
+
+    /// How many of its stitches are needle points (needle-down).
+    pub fn needle_points(&self) -> usize {
+        self.stitches.iter().filter(|s| s.command.needle_down()).count()
+    }
+}
+
 /// A design's stitch plan: its sewing units and thread blocks in sewing order, and what was left
 /// out or approximated.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -233,6 +253,11 @@ impl DesignPlan {
         let units = self.units.get(b.units.clone())?;
         let i = units.partition_point(|u| u.stitches.end <= index);
         units.get(i).filter(|u| u.stitches.contains(&index)).map(|_| b.units.start + i)
+    }
+
+    /// Unit `unit`'s stitches ([`Unit::stitches`]): empty for a unit that isn't there.
+    pub fn unit_stitches(&self, unit: usize) -> &[Stitch] {
+        self.units.get(unit).and_then(|u| self.blocks.get(u.block)?.stitches.get(u.stitches.clone())).unwrap_or_default()
     }
 
     /// The numbers of unit `unit`'s stitches ([`Unit::stitches`], numbered as

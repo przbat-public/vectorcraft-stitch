@@ -154,7 +154,7 @@ proptest! {
             }
             let doc = s.doc().unwrap().doc.clone();
             let kept = service.plan(&doc, &opts).map(|p| (*p).clone());
-            let fresh = digitize(&doc, &opts);
+            let fresh = digitize(&doc, &opts, None);
             prop_assert_eq!(kept, fresh, "after {:?}", e);
         }
     }
@@ -354,7 +354,7 @@ fn a_cancelled_plan_leaves_no_plan_and_keeps_its_finished_units() {
     let (s, _) = five();
     let doc = s.doc().unwrap().doc.clone();
     let opts = Options::default();
-    let fresh = digitize(&doc, &opts).unwrap();
+    let fresh = digitize(&doc, &opts, None).unwrap();
     assert_eq!(fresh.units.len(), 7);
     let service = PlanService::default();
     // Cancelled before it starts: nothing planned, nothing kept.
@@ -416,7 +416,7 @@ fn the_service_plans_on_another_thread() {
         let (service, doc, opts) = (service.clone(), doc.clone(), opts.clone());
         std::thread::spawn(move || service.plan(&doc, &opts).map(|p| (*p).clone())).join().unwrap()
     };
-    assert_eq!(there, digitize(&doc, &opts));
+    assert_eq!(there, digitize(&doc, &opts, None));
     let kept = service.kept();
     let here = service.plan(&Arc::new((*doc).clone()), &opts).unwrap();
     assert_eq!(Ok((*here).clone()), there);

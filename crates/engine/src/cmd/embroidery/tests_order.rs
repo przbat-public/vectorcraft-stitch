@@ -36,7 +36,7 @@ fn each_unit_maps_to_its_object_and_its_stitches() {
     let framed = rect(&mut s, Some("#cc2222"), Some(("#2233cc", 6.0)), 20.0, 20.0, 60.0, 40.0);
     let far = rect(&mut s, Some("#cc2222"), None, 200.0, 200.0, 40.0, 30.0);
     let v = run(&mut s, "embroidery.sequence", json!({}));
-    let plan = digitize(&s.doc().unwrap().doc, &Options::default()).unwrap();
+    let plan = digitize(&s.doc().unwrap().doc, &Options::default(), None).unwrap();
     let listed = units(&v);
     assert_eq!(listed.len(), plan.units.len());
     for (k, (u, l)) in plan.units.iter().zip(&listed).enumerate() {

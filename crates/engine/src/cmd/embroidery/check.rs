@@ -398,7 +398,7 @@ impl<'a> Checker<'a> {
         if let Some(u) = hit.unit.and_then(|u| self.plan.units.get(u))
             && f.objects.len() < MAX_OBJECTS
         {
-            f.objects.insert(u.origin.instance.unwrap_or(u.origin.node).0);
+            f.objects.insert(u.origin.selected().0);
         }
         if f.listed.len() < self.ask.limit {
             f.listed.push(hit);
@@ -413,7 +413,7 @@ impl<'a> Checker<'a> {
             if f.objects.len() >= MAX_OBJECTS {
                 break;
             }
-            f.objects.insert(u.origin.instance.unwrap_or(u.origin.node).0);
+            f.objects.insert(u.origin.selected().0);
         }
     }
 
@@ -509,12 +509,7 @@ impl<'a> Checker<'a> {
         for (k, u) in plan.units.iter().enumerate() {
             // At the unit: its first stitch and needle point.
             let first = plan.numbers(k).map(|n| n.start);
-            let at = plan
-                .blocks
-                .get(u.block)
-                .and_then(|b| b.stitches.get(u.stitches.clone()))
-                .and_then(|s| s.iter().find(|s| s.command == Command::Stitch))
-                .map(|s| s.point());
+            let at = plan.unit_stitches(k).iter().find(|s| s.command == Command::Stitch).map(|s| s.point());
             let hit = |value: f64| Hit { number: first, at, unit: Some(k), value: Some(value), note: None };
             if let Some([narrowest, widest]) = u.satin_widths {
                 if widest > SATIN_WIDEST {
@@ -557,7 +552,7 @@ impl<'a> Checker<'a> {
             let note = format!("{} holds {most}", self.ask.format.label());
             self.add("formatColors", Hit { value: Some(blocks as f64), note: Some(note), ..Hit::default() });
         }
-        let needle: usize = plan.blocks.iter().map(|b| b.stitches.iter().filter(|s| s.command == Command::Stitch).count()).sum();
+        let needle: usize = plan.blocks.iter().map(|b| b.needle_points()).sum();
         if needle as f64 > MACHINE_STITCHES {
             self.add("machineStitches", Hit { value: Some(needle as f64), ..Hit::default() });
         }
@@ -612,7 +607,7 @@ impl<'a> Checker<'a> {
     }
 
     fn hit_json(&self, h: &Hit) -> Value {
-        let id = h.unit.and_then(|u| self.plan.units.get(u)).map(|u| u.origin.instance.unwrap_or(u.origin.node).0);
+        let id = h.unit.and_then(|u| self.plan.units.get(u)).map(|u| u.origin.selected().0);
         json!({"number": h.number, "at": h.at.map(point), "value": h.value.map(mm), "id": id, "note": h.note})
     }
 }

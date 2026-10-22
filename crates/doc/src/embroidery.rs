@@ -143,14 +143,18 @@ impl ThreadPalette {
             Self::Unknown(_) => None,
         }
     }
+
+    /// The palette this version knows by name `id` ([`ThreadPalette::id`]).
+    pub fn from_id(id: &str) -> Option<Self> {
+        Self::KNOWN.into_iter().find(|p| p.id() == Some(id))
+    }
 }
 
 impl From<serde_json::Value> for ThreadPalette {
     fn from(v: serde_json::Value) -> Self {
-        match v.as_str() {
-            Some("pec") => Self::Pec,
-            Some("jef") => Self::Jef,
-            _ => Self::Unknown(v),
+        match v.as_str().and_then(Self::from_id) {
+            Some(known) => known,
+            None => Self::Unknown(v),
         }
     }
 }

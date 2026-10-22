@@ -116,7 +116,7 @@ fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.setTrimAfter";
     let on = p.get("on").and_then(Value::as_bool).ok_or_else(|| bad(C, "`on` must be true or false"))?;
     let ids = targets(s, p)?;
-    let changed = super::overprint::edit_counted(s, "Trim After", |d| {
+    let changed = edit_counted(s, "Trim After", |d| {
         let mut changed = 0;
         for id in &ids {
             let Some(n) = d.node_mut(*id) else { return Err(bad(C, format!("no object {}", id.0))) };
@@ -131,6 +131,20 @@ fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
         Ok(changed)
     })?;
     Ok(serde_json::json!({ "changed": changed }))
+}
+
+/// Edit the active document as `f` says, on a copy, in one undo step labelled `label` when `f`
+/// changed something: `f` answers how many objects it changed, and none takes no step.
+fn edit_counted(s: &mut Session, label: &str, f: impl FnOnce(&mut Document) -> Result<usize>) -> Result<usize> {
+    let mut d = (*s.doc()?.doc).clone();
+    let n = f(&mut d)?;
+    if n > 0 {
+        s.edit(label, |doc, _| {
+            *doc = d;
+            Ok(())
+        })?;
+    }
+    Ok(n)
 }
 
 /// The palette the stitch plan matches a document's colours to when the document sets none, or
@@ -153,15 +167,10 @@ fn setup_json(d: &Document) -> Value {
 
 fn setup(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.setup";
-    let empty = Map::new();
-    let o = match p {
-        Value::Null => &empty,
-        Value::Object(o) => o,
-        _ => return Err(bad(C, "params must be an object")),
-    };
+    let o = object(p, C)?;
     let d = &s.doc()?.doc;
     let mut new = d.embroidery.as_deref().cloned().unwrap_or_default();
-    for (k, v) in o {
+    for (k, v) in o.iter() {
         match k.as_str() {
             "palette" => new.set_palette(palette_param(v, new.palette.as_ref())?),
             // Reported only.

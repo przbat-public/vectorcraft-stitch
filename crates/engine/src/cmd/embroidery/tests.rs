@@ -55,7 +55,7 @@ fn letter_t(s: &mut Session, color: &str, x: f64, y: f64) -> u64 {
 }
 
 fn plan_of(s: &Session) -> DesignPlan {
-    digitize(&s.doc().unwrap().doc, &Options::default()).unwrap()
+    digitize(&s.doc().unwrap().doc, &Options::default(), None).unwrap()
 }
 
 fn export(s: &mut Session, format: Format) -> Vec<u8> {

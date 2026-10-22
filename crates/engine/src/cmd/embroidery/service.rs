@@ -20,7 +20,7 @@ use vectorcraft_doc::Document;
 
 use super::Options;
 use super::cache::UnitCache;
-use super::digitize::digitize_with;
+use super::digitize::digitize;
 use super::plan::DesignPlan;
 use super::unit::PlanError;
 
@@ -53,7 +53,7 @@ impl PlanService {
         }
         #[cfg(test)]
         self.walks.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let plan = Arc::new(digitize_with(doc, opts, Some(&self.units))?);
+        let plan = Arc::new(digitize(doc, opts, Some(&self.units))?);
         // A memo that a panic elsewhere left locked is passed by: the next plan walks again.
         if let Ok(mut last) = self.last.lock() {
             *last = Some(Memo { doc: Arc::downgrade(doc), opts: opts.clone(), plan: plan.clone() });
@@ -92,7 +92,7 @@ const _: () = {
 /// The export plans the document it writes this way, as edited for the file, so that what a file
 /// holds never depends on what was kept.
 pub(crate) fn plan_afresh(doc: &Document, opts: &Options) -> Result<DesignPlan, PlanError> {
-    super::digitize::digitize(doc, opts)
+    digitize(doc, opts, None)
 }
 
 /// The planning service of each open document, by [`crate::DocState::uid`].

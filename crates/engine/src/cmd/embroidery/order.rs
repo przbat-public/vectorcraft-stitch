@@ -63,7 +63,7 @@ pub(crate) fn sequence(plan: &DesignPlan) -> Value {
     // Each object (as a person selects it) and the blocks its units are in.
     let mut blocks_of: BTreeMap<u64, Vec<usize>> = BTreeMap::new();
     for u in &plan.units {
-        let blocks = blocks_of.entry(u.origin.instance.unwrap_or(u.origin.node).0).or_default();
+        let blocks = blocks_of.entry(u.origin.selected().0).or_default();
         if !blocks.contains(&(u.block + 1)) {
             blocks.push(u.block + 1);
         }
@@ -79,12 +79,12 @@ pub(crate) fn sequence(plan: &DesignPlan) -> Value {
                 .filter_map(|i| Some((i, plan.units.get(i)?)))
                 .map(|(i, u)| {
                     let t = units.get(i).copied().unwrap_or_default();
-                    let needle = || b.stitches.get(u.stitches.clone()).into_iter().flatten().filter(|s| s.command == Command::Stitch);
+                    let needle = || plan.unit_stitches(i).iter().filter(|s| s.command == Command::Stitch);
                     // A unit of one needle point where the needle already is adds no record: no numbers.
                     let numbers = plan.numbers(i).filter(|n| !n.is_empty());
                     json!({
                         "unit": i + 1,
-                        "id": u.origin.instance.unwrap_or(u.origin.node).0,
+                        "id": u.origin.selected().0,
                         "node": u.origin.node.0,
                         "instance": u.origin.instance.map(|n| n.0),
                         "part": part(u.origin.part),
@@ -107,7 +107,7 @@ pub(crate) fn sequence(plan: &DesignPlan) -> Value {
                 "thread": thread_json(&b.thread),
                 "stitches": t.needle,
                 "first": b.first_number,
-                "last": b.first_number + b.stitches.len().saturating_sub(1),
+                "last": b.last_number(),
                 "jumps": t.jumps,
                 "trims": t.trims,
                 "units": list,

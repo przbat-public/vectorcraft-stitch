@@ -34,9 +34,8 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
     }
     // A design from a format that numbers its threads is in that format's palette: its colours
     // are matched to the threads the file names (`embroidery.threads`), not to another maker's.
-    if let Some(palette) = format.palette() {
-        let palette = Some(ThreadPalette::from(serde_json::Value::from(palette.id())));
-        doc.embroidery = Some(Box::new(EmbroiderySetup { palette, ..EmbroiderySetup::default() }));
+    if let Some(palette) = format.palette().and_then(|p| ThreadPalette::from_id(p.id())) {
+        doc.embroidery = Some(Box::new(EmbroiderySetup { palette: Some(palette), ..EmbroiderySetup::default() }));
     }
     let mut layer = Node::layer(doc.alloc_id(), "Embroidery", LayerColor::Preset(0));
     let mut groups: Vec<Arc<Node>> = Vec::new();

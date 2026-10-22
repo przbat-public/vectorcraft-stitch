@@ -302,7 +302,7 @@ pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread) -> Valu
                 "jumps": t.jumps,
                 "trims": t.trims,
                 "first": b.first_number,
-                "last": b.first_number + b.stitches.len().saturating_sub(1),
+                "last": b.last_number(),
                 "topThread": metres(t.top),
                 "bobbinThread": metres(t.bobbin),
                 "seconds": t.seconds.round(),

@@ -42,6 +42,13 @@ const MAX_DESIGN_STITCHES: usize = 2_000_000;
 /// How deep symbols placed in symbols are sewn: deeper art is left out, a bound on a walk through
 /// symbols that place one another.
 const MAX_SYMBOL_NESTING: u32 = 8;
+/// `bp` (document points) in millimetres, as the stitch planner counts.
+fn in_mm(bp: &BezPath) -> BezPath {
+    let mut mm = bp.clone();
+    mm.apply_affine(Affine::scale(vectorcraft_stitch::MM_PER_PT));
+    mm
+}
+
 /// `path`'s subpaths, each a path of its own (as drawn: closed or not).
 fn subpaths(path: &BezPath) -> Vec<BezPath> {
     let mut out: Vec<BezPath> = Vec::new();
@@ -62,14 +69,11 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
 /// ([`super::thread_palette`]), and the warnings for what was left out or approximated; an error
 /// when the design would need too many stitches, or when the plan is cancelled
 /// ([`vectorcraft_doc::cancel`]: checked before each unit, and while a fill's narrow parts are
-/// looked for and cut out). Each unit planned is reported as a step of the plan's progress.
-pub(crate) fn digitize(doc: &Document, opts: &Options) -> Result<DesignPlan, PlanError> {
-    digitize_with(doc, opts, None)
-}
-
-/// [`digitize`], each unit's stitches taken from `cache` when it keeps them for exactly what the
-/// unit is planned from, and kept there when it doesn't ([`UnitCache`]).
-pub(crate) fn digitize_with(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>) -> Result<DesignPlan, PlanError> {
+/// looked for and cut out). Each unit planned is reported as a step of the plan's progress. With
+/// a `cache`, each unit's stitches are taken from it when it keeps them for exactly what the unit
+/// is planned from, and kept there when it doesn't ([`UnitCache`]); without, every unit is planned
+/// afresh.
+pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>) -> Result<DesignPlan, PlanError> {
     let seq = Sequence::new(opts.params(Style::Running, NO_WIDTH));
     let mut warnings = Vec::new();
     if let Some(ThreadPalette::Unknown(palette)) = doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()) {
@@ -204,6 +208,19 @@ impl<'a> Digitizer<'a> {
         true
     }
 
+    /// Count `n` more stitches against [`MAX_DESIGN_STITCHES`]; `false`, and the walk stops,
+    /// when the design would need more.
+    fn count(&mut self, n: usize) -> bool {
+        self.stitches = self.stitches.saturating_add(n);
+        if self.stitches > MAX_DESIGN_STITCHES {
+            self.failed = Some(PlanError::TooLarge(format!(
+                "the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art"
+            )));
+            return false;
+        }
+        true
+    }
+
     fn warn(&mut self, w: &str) {
         if !self.warnings.iter().any(|x| x == w) {
             self.warnings.push(w.to_string());
@@ -289,8 +306,7 @@ impl<'a> Digitizer<'a> {
             // Unpainted (or a pattern): it shows nothing, so it sews nothing.
             _ => return,
         };
-        let mut mm = bp.clone();
-        mm.apply_affine(Affine::scale(vectorcraft_stitch::MM_PER_PT));
+        let mm = in_mm(bp);
         let mut points: Vec<Stitch> = Vec::new();
         kurbo::flatten(mm.iter(), LITERAL_FLATTEN, |el| {
             if let PathEl::MoveTo(p) | PathEl::LineTo(p) = el {
@@ -306,12 +322,7 @@ impl<'a> Digitizer<'a> {
         if let Some(clip) = &self.clip {
             points = cut_to(points, clip, &self.opts.params(Style::Running, NO_WIDTH));
         }
-        if points.is_empty() {
-            return;
-        }
-        self.stitches = self.stitches.saturating_add(points.len());
-        if self.stitches > MAX_DESIGN_STITCHES {
-            self.failed = Some(PlanError::TooLarge(format!("the design would need more than {MAX_DESIGN_STITCHES} stitches")));
+        if points.is_empty() || !self.count(points.len()) {
             return;
         }
         let mut block = Block::new(Thread::rgb(color));
@@ -332,8 +343,8 @@ impl<'a> Digitizer<'a> {
     /// path. Nothing to clip by (an empty clipping path) hides the clipped art.
     fn clip_group(&mut self, children: &[Arc<Node>]) {
         let Some((clip, rest)) = children.split_first() else { return };
-        let Some((mut region, rule)) = vectorcraft_render::effects::clip_outline(clip) else { return };
-        region.apply_affine(Affine::scale(vectorcraft_stitch::MM_PER_PT));
+        let Some((region, rule)) = vectorcraft_render::effects::clip_outline(clip) else { return };
+        let region = in_mm(&region);
         let paint = clip.clip_paint();
         if let Some(fill) = &paint.fill {
             self.node(fill);
@@ -358,8 +369,7 @@ impl<'a> Digitizer<'a> {
     /// Stitch `bp` (document points) once per visible appearance item: each one a sewing unit,
     /// one fill or one stroke of `n`.
     fn shape(&mut self, n: &Node, bp: &BezPath, rule: FillRule) {
-        let mut mm = bp.clone();
-        mm.apply_affine(Affine::scale(vectorcraft_stitch::MM_PER_PT));
+        let mm = in_mm(bp);
         // Which of the object's fills, or of its strokes, each item is.
         let (mut fills, mut strokes) = (0, 0);
         for item in &n.appearance.items {
@@ -552,14 +562,7 @@ impl<'a> Digitizer<'a> {
             Style::Fill => widths,
             Style::Running => None,
         };
-        if stitches.is_empty() {
-            return;
-        }
-        self.stitches = self.stitches.saturating_add(stitches.len());
-        if self.stitches > MAX_DESIGN_STITCHES {
-            self.failed = Some(PlanError::TooLarge(format!(
-                "the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art"
-            )));
+        if stitches.is_empty() || !self.count(stitches.len()) {
             return;
         }
         let mut block = Block::new(Thread::rgb(color));

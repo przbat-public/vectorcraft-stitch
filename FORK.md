@@ -274,7 +274,8 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
 - No test files made with commercial embroidery software in the repository. Write test inputs from
   scratch in code.
 - **Real designs for testing** come from public projects whose licence allows it, made with open
-  tools (today: the Emoji Embroidery Project, CC BY-SA 4.0, digitized with Ink/Stitch). They are
+  tools (today: the Emoji Embroidery Project, CC BY-SA 4.0 as its mirror's index says, digitized
+  with Ink/Stitch; two radish designs' artwork licences are unverified). They are
   fetched by `cargo xtask corpus --embroidery` into the gitignored `corpus/embroidery/`, verified
   against `xtask/embroidery-corpus.sha256`, used locally and never committed. Prefer them to random
   shapes when checking stitch quality.

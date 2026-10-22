@@ -935,8 +935,11 @@ the object a person selects (`id`).
 
 **Real designs** (`crates/engine/tests/embroidery_corpus.rs`): `cargo xtask corpus --embroidery`
 fetches eleven designs of the [Emoji Embroidery Project](https://edutechwiki.unige.ch/en/Emoji_Embroidery_Project)
-(University of Geneva and Arbores Tech; machine files CC BY-SA 4.0, artwork from Twemoji, CC BY
-4.0, and Fluent Emoji, MIT) into the gitignored `corpus/embroidery/`, sha256-verified: for each, the
+(University of Geneva and Arbores Tech; machine files CC BY-SA 4.0 as the [mirror's index](https://arbores.tech/e/e/)
+says, while the project's English page says CC BY-SA in one place and CC BY-NC-SA in its Copyright
+section; artwork from Twemoji, CC BY 4.0, and Fluent Emoji, MIT; the two radish designs' artwork,
+from MOREmoji and svgrepo.com, under licences the project doesn't state) into the gitignored
+`corpus/embroidery/`, sha256-verified: for each, the
 flat artwork and the PES file a person digitized from it with Ink/Stitch (the fox also as JEF);
 and eight more designs as Ink/Stitch wrote them in VP3, seven of them also in PES. They are used
 locally, never committed. The test checks that:

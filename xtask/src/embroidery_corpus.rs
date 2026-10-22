@@ -11,8 +11,13 @@
 //! made with Ink/Stitch are listed (the project's other machine files come from commercial
 //! software).
 //!
-//! Licences: the designs and machine files are CC BY-SA 4.0; the artwork derives from Twemoji
-//! (CC BY 4.0) or Fluent Emoji (MIT). They are used locally as test inputs, never redistributed.
+//! Licences: the designs and machine files are CC BY-SA 4.0, as the mirror's index says
+//! (<https://arbores.tech/e/e/>); the project's English page (edutechwiki.unige.ch/en/
+//! Emoji_Embroidery_Project) says CC BY-SA in its introduction but CC BY-NC-SA in its Copyright
+//! section, so the mirror's statement is the one cited. The artwork derives from Twemoji (CC BY
+//! 4.0) or Fluent Emoji (MIT); the two radish designs in `z_candidates` come from MOREmoji and
+//! svgrepo.com artwork whose licences the project doesn't state (unverified). They are used
+//! locally as test inputs, never redistributed.
 //! Files are fetched from the project's mirror at arbores.tech (the same tree as
 //! tecfa.unige.ch/guides/embroid/emoji/AAA_EMOJIS). The manifest pins every file's bytes: a file
 //! the site changes fails the fetch instead of changing what the tests read. Moving to new files:
@@ -64,10 +69,10 @@ const FILES: &[(&str, &str, &str)] = &[
     ("people_body/person", "old-man-twemoji-inkstitch.pes", "CC BY-SA 4.0"),
     ("people_body/person", "old-woman-twemoji-inkstitch.vp3", "CC BY-SA 4.0"),
     ("people_body/person", "old-woman-twemoji-inkstitch.pes", "CC BY-SA 4.0"),
-    ("z_candidates", "radish-MOREmoji-inkstitch.vp3", "CC BY-SA 4.0"),
-    ("z_candidates", "radish-MOREmoji-inkstitch.pes", "CC BY-SA 4.0"),
-    ("z_candidates", "radish-svgrepo-com-inkstitch.vp3", "CC BY-SA 4.0"),
-    ("z_candidates", "radish-svgrepo-com-inkstitch.pes", "CC BY-SA 4.0"),
+    ("z_candidates", "radish-MOREmoji-inkstitch.vp3", "CC BY-SA 4.0 (machine file); artwork licence unverified"),
+    ("z_candidates", "radish-MOREmoji-inkstitch.pes", "CC BY-SA 4.0 (machine file); artwork licence unverified"),
+    ("z_candidates", "radish-svgrepo-com-inkstitch.vp3", "CC BY-SA 4.0 (machine file); artwork licence unverified"),
+    ("z_candidates", "radish-svgrepo-com-inkstitch.pes", "CC BY-SA 4.0 (machine file); artwork licence unverified"),
     ("smileys_emotion/face-smiling", "smiling-face-with-smiling-eyes-twemoji.clipart.svg", "Twemoji artwork, CC BY 4.0"),
     ("smileys_emotion/face-smiling", "smiling-face-with-smiling-eyes-twemoji-inkstitch.pes", "CC BY-SA 4.0"),
     ("symbols/alphanum", "sos-button-fluent.clipart.svg", "Fluent Emoji artwork, MIT"),

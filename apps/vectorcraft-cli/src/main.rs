@@ -416,7 +416,7 @@ fn bench(args: &[String]) -> Result<(), String> {
                 w = a.parse().map_err(|_| "bad width")?;
                 h = b.parse().map_err(|_| "bad height")?;
             }
-            "--iters" => iters = it.next().and_then(|v| v.parse().ok()).ok_or("--iters needs a number")?,
+            "--iters" => iters = it.next().and_then(|v| v.parse().ok()).filter(|n| *n >= 1).ok_or("--iters needs a whole number of at least 1")?,
             f if file.is_none() => file = Some(f.to_string()),
             other => return Err(format!("unknown bench option `{other}`")),
         }

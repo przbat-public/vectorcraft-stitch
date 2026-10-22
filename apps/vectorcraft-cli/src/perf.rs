@@ -69,9 +69,10 @@ fn middle(mut samples: Vec<f64>) -> f64 {
 
 /// Milliseconds to plan `doc`'s embroidery (`embroidery.stats`, with the export's default options):
 /// cold, in a session that never planned it; warm, every unit kept from earlier plans of the same
-/// art (another snapshot of it: an undo); and after moving one object 0.5 mm. `None` when the
-/// document has nothing to stitch.
+/// art (another snapshot of it: an undo); and after moving one object 0.5 mm; each the middle of
+/// `runs` (at least one). `None` when the document has nothing to stitch.
 pub fn embroidery_times(doc: &Document, runs: usize) -> Result<Option<(f64, f64, f64)>, String> {
+    let runs = runs.max(1);
     let err = |e: vectorcraft_engine::EngineError| e.to_string();
     let fresh = || {
         let mut s = vectorcraft_engine::Session::new();

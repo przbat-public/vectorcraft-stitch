@@ -924,8 +924,10 @@ locally, never committed. The test checks that:
 - each real VP3 file's colour blocks start, as stated, where the stitches before them took the
   needle, to 0.3 mm;
 - every machine file, opened and exported again, keeps every needle point, trim and colour block
-  (this found that the cuts Ink/Stitch writes at a block's start and end were lost), and starts
-  where it started, to a tenth of a millimetre;
+  (this found that the cuts Ink/Stitch writes at a block's start and end were lost), each block's
+  thread (a VP3's thread record too; a PEC entry that isn't a thread, 62 to 64, which the cat face
+  and the fox use for an orange, becomes the nearest thread that is), its name, and starts where
+  it started, to a tenth of a millimetre;
 - each artwork, digitized at the size of the person's design, comes out the same size, with no
   stitch longer than 10 mm, at most two shorter than 0.3 mm, no more trims and jumps than its ceilings (one above
   the counts below) and 30–80 % of the person's stitch count.

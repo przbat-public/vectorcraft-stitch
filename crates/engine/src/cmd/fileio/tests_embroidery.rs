@@ -192,7 +192,8 @@ fn threads(p: &vectorcraft_stitch::Pattern) -> Vec<([u8; 3], String, Option<vect
 }
 
 /// A design opened from a machine file and exported again is the same design: every needle
-/// point, trim and colour block where the file had it, in every format.
+/// point, trim and colour block where the file had it, each block's thread (and VP3's thread
+/// record), the design's name and where the needle starts, in every format.
 #[test]
 fn an_opened_design_is_written_back_unchanged() {
     for format in Format::ALL {
@@ -205,6 +206,8 @@ fn an_opened_design_is_written_back_unchanged() {
         let (a, b) = (format.read(&first).expect("reads"), format.read(&again).expect("reads"));
         assert_eq!(sewn(&a), sewn(&b), "{}", format.id());
         assert_eq!(start(&a), start(&b), "{}: the needle starts where it did", format.id());
+        assert_eq!(threads(&a), threads(&b), "{}", format.id());
+        assert_eq!(a.name, b.name, "{}: the design's name", format.id());
         // Opened again and written again: still the same.
         open(&mut s, &format!("again.{}", format.id()), &again).expect("opens");
         assert_eq!(sewn(&format.read(&export(&mut s, format.id(), json!({}))).expect("reads")), sewn(&a), "{}", format.id());

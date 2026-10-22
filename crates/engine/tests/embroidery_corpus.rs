@@ -7,7 +7,7 @@
 //!   colour block, each where the PES puts it (to the rounding of the two files).
 //! - Every PES file's PEC section, on its own after `#PEC0001` (a PEC file), reads as the PES does.
 //! - Opened and exported again, every machine file keeps every needle point, trim and colour
-//!   block, and starts where it started.
+//!   block, each block's thread, its name, and starts where it started.
 //! - Each artwork, digitized by VectorCraft at the size of the person's design, comes out sound:
 //!   the same size, every needle point on the painted artwork and its painted interior sewn
 //!   (checked against the art drawn as a PNG), no stitch too long or too short, no more
@@ -403,6 +403,19 @@ fn real_machine_files_are_written_back_unchanged() {
         // files a tenth off it, which the VP3 export, starting at the centre, rounds away).
         let (a, b) = (start(&before), start(&after));
         assert!((a.0 - b.0).abs() <= 1 && (a.1 - b.1).abs() <= 1, "{name}: starts at {b:?}, not {a:?}");
+        // Each block's thread (its colour, its palette thread's name, a VP3's thread record) and
+        // the design's name. A PEC entry that isn't a thread (62 to 64, which the cat face and the
+        // fox use for an orange) is written as the nearest thread that is.
+        assert_eq!(after.blocks.len(), before.blocks.len(), "{name}");
+        for (b, a) in before.blocks.iter().zip(&after.blocks) {
+            let palette = format.palette();
+            if palette.is_none_or(|p| p.nearest(b.thread.color, &[]).delta_e == 0.0) {
+                assert_eq!(a.thread, b.thread, "{name}");
+            } else if let Some(p) = palette {
+                assert_eq!(p.nearest(a.thread.color, &[]).delta_e, 0.0, "{name}: {:?} for {:?}", a.thread, b.thread);
+            }
+        }
+        assert_eq!(after.name, before.name, "{name}");
     }
 }
 

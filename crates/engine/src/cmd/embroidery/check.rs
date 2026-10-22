@@ -123,6 +123,12 @@ const MACHINE_STITCHES: f64 = 500_000.0;
 /// The colour changes the same machine shows at most.
 const MACHINE_COLOR_CHANGES: f64 = 127.0;
 
+/// The grid the formats count in, millimetres: the writers round each end of a stitch to it before
+/// splitting a long one, so a stitch's length on the grid is within one step of its own. A stitch no
+/// longer than a format's step is never split; how many pieces a longer one makes is certain only
+/// when that holds for both roundings.
+const GRID: f64 = 1.0 / vectorcraft_stitch::UNITS_PER_MM;
+
 /// The hits listed per rule when `limit` is left out: enough to show where a rule bites.
 pub(crate) const LIMIT: usize = 20;
 /// The most hits per rule `limit` may ask for: the output is bounded whatever the design.
@@ -419,8 +425,14 @@ impl<'a> Checker<'a> {
             let step = self.ask.format.max_step();
             let longest = (r.stitch.x - before.x).abs().max((r.stitch.y - before.y).abs());
             if longest > step {
-                let pieces = (longest / step).ceil();
-                self.add("formatStep", Hit { note: Some(format!("written as {pieces} stitches")), ..Hit::at(r, length) });
+                let fewest = ((longest - GRID) / step).ceil().max(1.0);
+                let most = ((longest + GRID) / step).ceil();
+                let note = if fewest == most {
+                    format!("written as {most} stitches")
+                } else {
+                    format!("written as {fewest} or {most} stitches: this close to a multiple of the step, rounding to the format's 0.1 mm decides")
+                };
+                self.add("formatStep", Hit { note: Some(note), ..Hit::at(r, length) });
             }
         }
         if length < NEEDLE_BLADE {

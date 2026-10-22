@@ -77,6 +77,17 @@ fn each_stitch_length_rule_fires_past_its_threshold() {
         assert_eq!(hits(&one(style, &[3.0, past, 3.0]), id, Format::Dst), 1, "{id}: {past}");
         assert_eq!(hits(&one(style, &[3.0, at, 3.0]), id, Format::Dst), 0, "{id}: {at}");
     }
+    // How many stitches a split one is written as, and when the rounding to 0.1 mm decides.
+    let note = |steps: &[f64]| {
+        let v = check::check(
+            &one(Style::Running, steps),
+            &Ask { rules: vec![check::rule("formatStep").unwrap()], format: Format::Dst, limit: check::LIMIT },
+        );
+        v["rules"][0]["first"][0]["note"].as_str().unwrap().to_string()
+    };
+    assert!(note(&[12.15]).starts_with("written as 1 or 2 stitches"), "{}", note(&[12.15]));
+    assert_eq!(note(&[12.3]), "written as 2 stitches");
+    assert!(note(&[24.15]).starts_with("written as 2 or 3 stitches"), "{}", note(&[24.15]));
     // The format's step is along x or y: PES's is far longer than DST's.
     assert_eq!(hits(&one(Style::Running, &[12.2]), "formatStep", Format::Pes), 0);
     assert_eq!(hits(&one(Style::Running, &[12.6]), "formatStep", Format::Jef), 0);

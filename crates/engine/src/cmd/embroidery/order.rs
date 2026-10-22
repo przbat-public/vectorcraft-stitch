@@ -24,7 +24,7 @@ fn part(p: Part) -> String {
 
 /// How a unit is sewn.
 fn sewn(u: &Unit) -> &'static str {
-    match (u.params.map(|p| p.style), u.columns) {
+    match (u.sewn(), u.columns) {
         (None, _) => "literal",
         (Some(Style::Running), _) => "running",
         (Some(Style::Satin), _) => "satin",
@@ -49,7 +49,10 @@ fn why(u: &Unit) -> String {
         Choice::WideStroke => format!("a stroke at least {SATIN_MIN_WIDTH} mm wide is a satin column, here {} mm", mm(width)),
         Choice::NarrowStroke => format!("a stroke narrower than {SATIN_MIN_WIDTH} mm is a running line"),
         Choice::StrokeFilled => "stitchStyle fill: the area the stroke paints is filled".into(),
-        Choice::Forced => format!("stitchStyle {}", u.params.map_or("auto", |p| p.style.id())),
+        Choice::Forced => match (u.params.map(|p| p.style), u.sewn()) {
+            (Some(Style::Satin), Some(Style::Fill)) => "stitchStyle satin: a fill has no width to sew a satin across, so it is filled".into(),
+            (asked, _) => format!("stitchStyle {}", asked.map_or("auto", Style::id)),
+        },
         Choice::Literal => "stitches read from a machine file, sewn as they are".into(),
     }
 }

@@ -173,7 +173,9 @@ trims, and what follows it (a colour change, after a cut when the block ends wit
 block, its units in order, each with the object a person selects (`id`: the symbol instance for
 art inside a symbol, with the object sewn as `node`), the part ("fill 1", "stroke 1", or
 "stitches" for a run opened from a file), how it is sewn (running, satin, tatami, tatami with
-satin columns, literal) and why: the rule that chose it ("a stroke at least 1 mm wide is a satin
+satin columns, literal; as the planner sews it: a fill under `stitchStyle: satin` has no width to
+sew a satin across and is filled, so it is listed as tatami) and why: the rule that chose it ("a
+stroke at least 1 mm wide is a satin
 column, here 2.12 mm", "a stroke narrower than 1 mm is a running line", "a fill is tatami; its
 parts narrower than 7 mm are satin columns that follow the shape", "stitchStyle satin"); and its
 needle points, stitch numbers, jumps, trims, entry and exit points and box. `split` names the

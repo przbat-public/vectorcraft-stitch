@@ -215,6 +215,10 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
         (&short["hits"], &short["objects"], &short["first"][0]["id"], &short["first"][0]["value"]),
         (&json!(1), &json!([id]), &json!(id), &json!(2.0))
     );
+    // Satin forced on the rectangle's fill: it is filled (a fill has no width to sew a satin
+    // across), so no satin column, and its fill stitch length is the one judged.
+    let forced = run(&mut s, "embroidery.check", json!({"stitchStyle": "satin", "rules": ["satinStitchShort", "satinTooWide"]}));
+    assert_eq!((&forced["rules"][0]["hits"], &forced["rules"][1]["hits"]), (&json!(0), &json!(0)), "{forced}");
     // The needle-blade rule is information until the planner spreads rows' remainders.
     let blade = v["rules"].as_array().unwrap().iter().find(|r| r["id"] == json!("stitchBelowNeedle")).unwrap();
     assert_eq!(blade["severity"], json!("info"));

@@ -423,11 +423,21 @@ pub fn stitches(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
 /// starts where it is drawn to.
 pub fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Vec<Stitch> {
     let p = p.sane();
-    match p.style {
+    match sewn_style(&p) {
         Style::Running => running::running_from(path, &p, from),
-        Style::Satin if p.width > 0.0 => satin::satin_from(path, &p, from),
-        // A satin column needs a width: without one the shape is filled instead.
-        Style::Satin | Style::Fill => fill::fill_from(path, rule, &p, from),
+        Style::Satin => satin::satin_from(path, &p, from),
+        Style::Fill => fill::fill_from(path, rule, &p, from),
+    }
+}
+
+/// The style a shape with `p` is sewn in: its own, except that a satin column needs a width, and a
+/// satin without one (a fill whose `stitchStyle` is satin) is filled instead.
+pub fn sewn_style(p: &Params) -> Style {
+    let p = p.sane();
+    match p.style {
+        Style::Satin if p.width > 0.0 => Style::Satin,
+        Style::Satin | Style::Fill => Style::Fill,
+        Style::Running => Style::Running,
     }
 }
 

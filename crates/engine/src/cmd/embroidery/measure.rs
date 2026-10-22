@@ -39,9 +39,10 @@ impl Record {
     }
 }
 
-/// How a unit is sewn: its style, `None` for a literal run (points sewn as they are).
+/// How a unit is sewn ([`super::plan::Unit::sewn`]), `None` for a literal run (points sewn as they
+/// are).
 pub(crate) fn style(plan: &DesignPlan, unit: usize) -> Option<Style> {
-    plan.units.get(unit).and_then(|u| u.params).map(|p| p.style)
+    plan.units.get(unit).and_then(|u| u.sewn())
 }
 
 /// Call `f` with every record of `plan`, in sewing order.

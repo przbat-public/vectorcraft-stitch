@@ -19,7 +19,7 @@ use std::ops::Range;
 
 use vectorcraft_doc::NodeId;
 use vectorcraft_geom::Rect;
-use vectorcraft_stitch::plan::Params;
+use vectorcraft_stitch::plan::{self, Params, Style};
 use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Match, Palette, PaletteThread};
 use vectorcraft_stitch::{Block, Pattern, Stitch, Thread};
 
@@ -158,6 +158,15 @@ pub struct Unit {
     /// Its runs: each stretch of needle-down stitches one after another, sewn without lifting the
     /// needle, as a range of its block's stitches (within [`Unit::stitches`]).
     pub runs: Vec<Range<usize>>,
+}
+
+impl Unit {
+    /// The style it is sewn in, as the planner sews its parameters ([`plan::sewn_style`]: a satin
+    /// without a width, a fill whose `stitchStyle` is satin, is filled); `None` for a literal run,
+    /// sewn as its points are.
+    pub fn sewn(&self) -> Option<Style> {
+        self.params.map(|p| plan::sewn_style(&p))
+    }
 }
 
 /// One thread's stitches as the machine sews them, and the units they come from.

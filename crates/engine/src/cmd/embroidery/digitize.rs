@@ -546,7 +546,7 @@ impl<'a> Digitizer<'a> {
             Ok(UnitStitches { stitches, columns, widths }) => (stitches, columns, widths),
             Err(kept) => (kept.stitches.clone(), kept.columns, kept.widths),
         };
-        let satin_widths = match style {
+        let satin_widths = match plan::sewn_style(&params) {
             Style::Satin => Some([params.width; 2]),
             Style::Fill => widths,
             Style::Running => None,

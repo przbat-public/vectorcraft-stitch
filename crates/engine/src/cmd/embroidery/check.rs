@@ -482,10 +482,11 @@ impl<'a> Checker<'a> {
                     self.add("satinStitchShort", hit(narrowest));
                 }
             }
-            // A literal run has no settings: it is sewn as its points are.
-            match u.params {
-                Some(p) if p.style == Style::Fill && p.stitch_length < FILL_SHORTEST => self.add("fillStitchShort", hit(p.stitch_length)),
-                Some(p) if p.style == Style::Running && p.stitch_length < RUN_SHORTEST => self.add("runStitchShort", hit(p.stitch_length)),
+            // A literal run has no settings: it is sewn as its points are. A unit is judged by how
+            // it is sewn: a fill under `stitchStyle: satin` is filled, with its fill stitch length.
+            match (u.sewn(), u.params) {
+                (Some(Style::Fill), Some(p)) if p.stitch_length < FILL_SHORTEST => self.add("fillStitchShort", hit(p.stitch_length)),
+                (Some(Style::Running), Some(p)) if p.stitch_length < RUN_SHORTEST => self.add("runStitchShort", hit(p.stitch_length)),
                 _ => {}
             }
         }

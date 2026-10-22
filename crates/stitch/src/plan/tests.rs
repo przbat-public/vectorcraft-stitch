@@ -62,6 +62,28 @@ fn a_running_line_steps_at_the_stitch_length() {
     assert!((q[1].x - LOCK).abs() < 1e-9 && (q[q.len() - 2].x - (20.0 - LOCK)).abs() < 1e-9, "{q:?}");
 }
 
+/// A closed running line is locked where it starts and ends too, so that a cut after it can't pull
+/// it out: a square starts with a step forward and back, and ends with a step back and forward.
+#[test]
+fn a_closed_running_line_is_locked() {
+    let mut square = BezPath::new();
+    square.move_to((0.0, 0.0));
+    square.line_to((20.0, 0.0));
+    square.line_to((20.0, 20.0));
+    square.line_to((0.0, 20.0));
+    square.close_path();
+    let q = points(&stitches(&square, FillRule::NonZero, &Params::for_style(Style::Running)));
+    let (first, last) = (q[0], q[q.len() - 1]);
+    assert!(first.distance(last) < 1e-9, "it ends where it starts: {q:?}");
+    // Forward a lock step and back to the start; at the end back a lock step and forward again.
+    assert!((q[1].distance(first) - LOCK).abs() < 1e-9 && q[2].distance(first) < 1e-9, "{q:?}");
+    let n = q.len();
+    assert!((q[n - 2].distance(last) - LOCK).abs() < 1e-9 && q[n - 3].distance(last) < 1e-9, "{q:?}");
+    // Without lock, none.
+    let loose = points(&stitches(&square, FillRule::NonZero, &Params { lock: false, ..Params::for_style(Style::Running) }));
+    assert_eq!(loose.len(), n - 4);
+}
+
 #[test]
 fn a_fill_covers_the_rectangle_and_no_stitch_is_longer_than_asked() {
     let p = Params::for_style(Style::Fill);

@@ -302,7 +302,7 @@ the fabric.
 
 - **Running** follows a path at `length` steps, with a lock stitch (a short stitch back
   along the line and forward again, never past its end) at each end so the thread does not pull
-  out. Sharp corners (turns over about 30°) get a needle point of their own, so the stitches follow
+  out; a closed line too, where it starts and ends. Sharp corners (turns over about 30°) get a needle point of their own, so the stitches follow
   the outline instead of cutting across a corner; the same holds for underlay. A point that would
   fall within 0.3 of a stitch of a corner moves onto it, once at most: a corner that close to one
   already stitched into is passed, so along a fine zigzag the stitches keep their length (at most

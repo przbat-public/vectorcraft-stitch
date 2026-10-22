@@ -8,9 +8,10 @@ use super::geometry::{Line, length, nearest_order, resample, subpaths};
 use super::runs::{Runs, Travel, lock_step};
 use crate::Stitch;
 
-/// A running line of stitches along `path`, [`Params::stitch_length`] apart, each open run locked
-/// at both ends when [`Params::lock`] is on; the needle at `from` before it starts: each line is
-/// sewn from its end nearest the needle, the nearest first.
+/// A running line of stitches along `path`, [`Params::stitch_length`] apart, each run locked at
+/// both ends when [`Params::lock`] is on (a closed one too, where it starts and ends, so that a cut
+/// after it can't pull it out); the needle at `from` before it starts: each line is sewn from its
+/// end nearest the needle, the nearest first.
 pub(super) fn running_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec<Stitch> {
     let p = p.sane();
     let mut runs = Runs::from(from);
@@ -19,7 +20,7 @@ pub(super) fn running_from(path: &BezPath, p: &Params, from: Option<Point>) -> V
             continue;
         }
         let mut run = resample(&pts, p.stitch_length, closed);
-        if p.lock && !closed {
+        if p.lock {
             run = locked(&run);
         }
         runs.push(run, Travel::Auto);

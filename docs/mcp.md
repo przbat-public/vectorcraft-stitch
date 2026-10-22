@@ -4286,8 +4286,11 @@ the entry names and decodes the codes that VectorCraft's default shortcuts agree
 ## Embroidery
 
 The document's art is stitched by `document.export` to `dst`, `tap`, `t01`, `exp`, `pes`, `pec`, `jef` or `vp3`, with the embroidery options
-`document.formats` lists for those formats (`stitchStyle`, `density`, `trimLength`…), and `document.open` reads such a
-file back as art, one group per thread. The whole feature is described in [embroidery.md](embroidery.md).
+`document.formats` lists for those formats (`stitch`, `spacing`, `trimLength`…; the earlier names `stitchStyle`, `density`,
+`stitchLength`, `stitchAngle`, `pullCompensation`, `pullCompensationPercent` and `pushCompensation` are taken as aliases),
+and `document.open` reads such a file back as art, one group per thread. A value outside an option's range (each
+description gives it) is refused, not clamped, and the read commands below echo the options they planned with under
+`options`. The whole feature is described in [embroidery.md](embroidery.md).
 
 - `embroidery.setup {palette?}` sets the document's thread palette, `"pec"` (Brother's 61 threads, which PES files
   number) or `"jef"` (Janome's 78, which JEF files number), in one undo step; `null` unsets it, and Janome's is used.
@@ -4295,7 +4298,7 @@ file back as art, one group per thread. The whole feature is described in [embro
   passed back unchanged. A PES, PEC or JEF file opens in its own format's palette.
 - `embroidery.threads {…embroidery options}` lists the thread each colour block is sewn in, in sewing order:
   `{palette, threshold, blocks: [{block, art, thread: {palette, index, name, color}, deltaE, mismatch, units}],
-  warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour and the thread's, to two decimals, and
+  options, warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour and the thread's, to two decimals, and
   `mismatch` flags one past `threshold` (10). It takes the export's embroidery options only: any other key, such as
   `format` or `selectedOnly`, is refused.
 - `embroidery.setTrimAfter {on, ids?}` asks for the thread to be cut after each object.
@@ -4320,7 +4323,7 @@ its block). A plan can be cancelled with `notifications/cancelled`.
 
 ```json
 {"name":"run_command","arguments":{"command":"embroidery.setup","params":{"palette":"pec"}}}
-{"name":"run_command","arguments":{"command":"embroidery.threads","params":{"stitchStyle":"fill"}}}
+{"name":"run_command","arguments":{"command":"embroidery.threads","params":{"stitch":"tatami"}}}
 {"name":"run_command","arguments":{"command":"embroidery.stats","params":{"speed":800}}}
 {"name":"run_command","arguments":{"command":"embroidery.check","params":{"format":"dst","rules":["stitchTooLong","formatStep"]}}}
 ```

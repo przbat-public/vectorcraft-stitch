@@ -5176,7 +5176,7 @@ theme	Appearance	Utseende
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	levande blandningar, kuvert, nät och upprepningar broderas inte: expandera dem först
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	ett negativt expand-värde lämnade inget kvar av vissa fyllda former, så de broderas inte: krymp dem mindre
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	gradienter och mönster målas i färgen på sitt första stopp; ett broderi syr en tråd per block
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	konturer bredare än {widest} mm sys som satinkolumner {widest} mm breda: fyll dem i stället (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	konturer bredare än {widest} mm sys som satinkolumner {widest} mm breda: fyll dem i stället (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	den här versionen känner inte till dokumentets trådpalett {palette}, så dess trådar väljs ur paletten {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	inget att brodera: dokumentet har inga synliga banor med fyllning eller kontur
 @msg	nothing to stitch: {_1}	inget att brodera: {_1}

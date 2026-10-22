@@ -8,7 +8,7 @@ use super::geometry::{Axes, SubPath, area, length, resample, subpaths};
 use super::narrow::Column;
 use super::runs::{COST_SEEN, Runs, Travel};
 use super::satin::{column_returns, sew_column};
-use super::{MAX_STITCHES, Params, Style, UNDERLAY_STITCH};
+use super::{MAX_STITCHES, Params, Style, UNDERLAY_STITCH, Underlay};
 use crate::{SAME_POINT, Stitch};
 
 /// The smallest area (square millimetres) a subpath must enclose for a fill to treat it as a
@@ -104,9 +104,18 @@ pub(super) fn closed_subpaths(path: &BezPath) -> Vec<SubPath> {
 /// `toward` names places sewn next, the top rows end as near one of them as their order allows
 /// ([`sew`]).
 fn sew_area(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, toward: &[Point], runs: &mut Runs) {
-    if p.underlay {
+    // A fill's underlay: an edge run, and the tatami layer (by its size, or whatever its size).
+    let tatami = match p.underlay {
+        Underlay::None => None,
+        Underlay::Center | Underlay::Edge => Some(Tatami::Never),
+        Underlay::Auto => Some(Tatami::Large),
+        Underlay::EdgeZigzag | Underlay::EdgeTatami => Some(Tatami::Always),
+    };
+    if let Some(tatami) = tatami {
         edge_runs(rows, travels, p, runs);
-        tatami_underlay(rows, travels, p, runs);
+        if tatami != Tatami::Never {
+            tatami_underlay(rows, travels, p, tatami == Tatami::Always, runs);
+        }
     }
     let axes = Axes::new(p.angle);
     if let Some((lo, hi)) = rows.extent(axes.across)
@@ -387,9 +396,17 @@ fn edge_runs(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut R
     }
 }
 
-/// A large fill's second underlay: sparse tatami rows across the top rows' direction, kept a
-/// little inside the edge of `rows` so they never peek out.
-fn tatami_underlay(shape: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs: &mut Runs) {
+/// When a fill gets its tatami underlay: never, when it is large, or always.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Tatami {
+    Never,
+    Large,
+    Always,
+}
+
+/// A large fill's second underlay (any fill's when `always`): sparse tatami rows across the top
+/// rows' direction, kept a little inside the edge of `shape` so they never peek out.
+fn tatami_underlay(shape: Area<'_>, travels: &mut Travels<'_>, p: &Params, always: bool, runs: &mut Runs) {
     // Under the top stitching, the underlay needs no pull compensation: it stays inside the edge.
     let under = Params {
         angle: p.angle + UNDERLAY_TURN,
@@ -402,7 +419,7 @@ fn tatami_underlay(shape: Area<'_>, travels: &mut Travels<'_>, p: &Params, runs:
     .sane();
     let axes = Axes::new(under.angle);
     let (Some(w), Some(h)) = (shape.extent(axes.along), shape.extent(axes.across)) else { return };
-    if w.1 - w.0 < TATAMI_UNDERLAY_MIN || h.1 - h.0 < TATAMI_UNDERLAY_MIN {
+    if !always && (w.1 - w.0 < TATAMI_UNDERLAY_MIN || h.1 - h.0 < TATAMI_UNDERLAY_MIN) {
         return;
     }
     let layer = Layer { axes, spacing: under.density, inset: TATAMI_UNDERLAY_INSET };

@@ -4109,7 +4109,7 @@ lighting	Light	光源
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	即時漸變、封套、網格與重複不會被刺繡：請先展開
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	負的 expand 值使部分填色形狀什麼也不剩，因此不會被刺繡：請少縮一些
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	漸層與圖樣以其第一個色標的顏色上色；刺繡每個色塊只用一條線縫製
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	寬於 {widest} mm 的筆畫會縫成 {widest} mm 寬的緞面柱：請改為填色 (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	寬於 {widest} mm 的筆畫會縫成 {widest} mm 寬的緞面柱：請改為填色 (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	此版本無法辨識文件的刺繡線色盤 {palette}，因此其繡線會從 {default} 色盤中選取
 @msg	nothing to stitch: the document has no visible filled or stroked paths	沒有可刺繡的內容：文件中沒有可見的含填色或筆畫的路徑
 @msg	nothing to stitch: {_1}	沒有可刺繡的內容：{_1}

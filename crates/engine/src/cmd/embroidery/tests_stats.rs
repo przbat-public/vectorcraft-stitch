@@ -119,7 +119,7 @@ fn the_stats_command_checks_its_params() {
         (json!({"speed": 5000}), "`speed`"),
         (json!({"speed": "fast"}), "`speed`"),
         (json!({"fabricThickness": -1}), "`fabricThickness`"),
-        (json!({"density": "x"}), "embroidery options"),
+        (json!({"density": "x"}), "`density` \"x\": a number of millimetres"),
     ] {
         let e = s.execute("embroidery.stats", &bad).unwrap_err().to_string();
         assert!(e.contains(why), "{bad}: {e}");

@@ -84,7 +84,7 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
    3) are not followed, so VectorCraft still sews 40–55 % of the person's stitches. Per-fabric
    values wait for the fabric presets below.
 3. **Pull compensation for fills, and gaps between shapes.** Done: a fill's rows reach past the
-   edge at each end by `pullCompensation` (0.2 mm, as satins), at most half way across a gap, and
+   edge at each end by `pull` (0.2 mm, as satins), at most half way across a gap, and
    without changing the sewing order; `expand` grows a fill all round (path operations in the
    engine) so shapes drawn apart meet. With the default 0.2 mm, rows square to a gap close 0.4 mm of it (less where they cross it at an angle); two fills drawn 0.6 mm apart meet with 0.3 mm of pull compensation or `expand`. A move along two
    edges in line no longer crosses the gap between them.
@@ -95,8 +95,8 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
    moves least. On the real designs trims fell from 26 to 19 and jumps from 57 to 44. Branching
    columns into one another (instead of a square of tatami where strokes meet) is left for
    "branching of touching objects" below.
-5. **Satin compensation.** Done: `pullCompensationPercent` adds a share of the column's width,
-   each compensation takes a value per side, and `pushCompensation` shortens an open column's
+5. **Satin compensation.** Done: `pullPercent` adds a share of the column's width,
+   each compensation takes a value per side, and `push` shortens an open column's
    ends (off by default: no published starting value was found). A column's last crossing now goes across
    it whichever way it runs. A satin's spacing is measured between two penetrations on one rail
    (peak to peak, as Madeira's chart, Ink/Stitch and Hatch do): its crossings lie half that apart,

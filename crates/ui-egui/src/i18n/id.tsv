@@ -5203,7 +5203,7 @@ swatch	Bright Violet	Violet cerah
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	blend, amplop, mesh, dan perulangan langsung tidak dibordir: perluas terlebih dahulu
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	nilai expand negatif tidak menyisakan apa pun dari beberapa bentuk berisi, jadi bentuk itu tidak dibordir: perkecil lebih sedikit
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	gradien dan pola diwarnai dengan warna stop pertamanya; bordir menjahit satu benang per blok
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	stroke yang lebih lebar dari {widest} mm dijahit sebagai kolom satin selebar {widest} mm: isi saja bentuknya (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	stroke yang lebih lebar dari {widest} mm dijahit sebagai kolom satin selebar {widest} mm: isi saja bentuknya (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	versi ini tidak mengenal palet benang {palette} dokumen, jadi benangnya dipilih dari palet {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	tidak ada yang dibordir: dokumen tidak memiliki jalur terlihat dengan isian atau stroke
 @msg	nothing to stitch: {_1}	tidak ada yang dibordir: {_1}

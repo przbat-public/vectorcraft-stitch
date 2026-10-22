@@ -169,6 +169,51 @@ impl Style {
     }
 }
 
+/// What is sewn under a shape before its top stitching, to hold the fabric still
+/// ([`Params::underlay`]). The kinds are a satin column's and a fill's together, as the settings
+/// name them: a kind of the other's is taken as its nearest (a fill takes `Center` as `Edge` and
+/// `EdgeZigzag` as `EdgeTatami`; a satin takes `EdgeTatami` as `EdgeZigzag`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum Underlay {
+    /// None.
+    None,
+    /// Chosen by the shape: under a satin column by its width (a centre run, an edge run from 2 mm,
+    /// an edge run and a zigzag from 4.5 mm), under a fill an edge run and, when it is at least
+    /// 10 mm across both ways, a sparse tatami layer.
+    #[default]
+    Auto,
+    /// A run along a satin column's centre.
+    Center,
+    /// A run along the edges.
+    Edge,
+    /// An edge run, then a zigzag across a satin column.
+    EdgeZigzag,
+    /// An edge run, then a sparse tatami layer under a fill whatever its size.
+    EdgeTatami,
+}
+
+impl Underlay {
+    /// Every kind, as the settings list them.
+    pub const ALL: [Self; 6] = [Self::None, Self::Auto, Self::Center, Self::Edge, Self::EdgeZigzag, Self::EdgeTatami];
+
+    /// Its name in parameters: `none`, `auto`, `center`, `edge`, `edgeZigzag`, `edgeTatami`.
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Auto => "auto",
+            Self::Center => "center",
+            Self::Edge => "edge",
+            Self::EdgeZigzag => "edgeZigzag",
+            Self::EdgeTatami => "edgeTatami",
+        }
+    }
+
+    /// The kind `id` names ([`Underlay::id`]).
+    pub fn from_id(id: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|u| u.id() == id)
+    }
+}
+
 /// What one shape is stitched as.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Params {
@@ -195,8 +240,8 @@ pub struct Params {
     /// spacing ([`Params::auto_spacing`]) and [`Params::for_thread`]'s spacing follow it
     /// ([`thread_scale`]).
     pub thread_weight: f64,
-    /// Sew an underlay first: an edge run under a fill, a centre run under a satin column.
-    pub underlay: bool,
+    /// What is sewn under the shape first ([`Underlay`]).
+    pub underlay: Underlay,
     /// A move longer than this lifts the needle (a jump) instead of running the thread across,
     /// millimetres. A jump this long or longer is tied off before and in after (when [`Params::lock`]
     /// is on), so that the machine or a person can cut it without the stitching coming undone.
@@ -227,41 +272,42 @@ pub struct Params {
 
 // The ranges [`Params::sane`] clamps each value to (millimetres, lowest and highest). They are
 // not settings: they keep the planning finite and the stitches within what a machine sews, and
-// anything outside them is a mistake or hostile input.
+// anything outside them is a mistake or hostile input. The commands refuse a value outside them
+// rather than let it be clamped (the engine's embroidery options read them from here).
 
 /// A stitch length: from 0.2 mm (two of the 0.1 mm steps the machine formats count in) to 12 mm,
 /// about the longest move one record of the machine formats holds (12.1 mm in DST).
-const STITCH_LENGTH_RANGE: (f64, f64) = (0.2, 12.0);
+pub const STITCH_LENGTH_RANGE: (f64, f64) = (0.2, 12.0);
 /// The distance between threads: from 0.05 mm (twenty threads a millimetre, far denser than any
 /// fabric takes) to 5 mm (rows that no longer cover).
-const DENSITY_RANGE: (f64, f64) = (0.05, 5.0);
+pub const DENSITY_RANGE: (f64, f64) = (0.05, 5.0);
 /// Pull compensation: none to 2 mm at a side, far more than the most stretchy fabric needs. Also
 /// the most a side gets with [`Params::pull_percent`] added.
-const PULL_RANGE: (f64, f64) = (0.0, 2.0);
+pub const PULL_RANGE: (f64, f64) = (0.0, 2.0);
 /// Pull compensation by size: none to half the stitch again at each side (a column twice as wide).
-const PULL_PERCENT_RANGE: (f64, f64) = (0.0, 50.0);
+pub const PULL_PERCENT_RANGE: (f64, f64) = (0.0, 50.0);
 /// Push compensation: none to 5 mm at an end. A column keeps at least [`MIN_PUSHED`] of its length
 /// whatever is asked.
-const PUSH_RANGE: (f64, f64) = (0.0, 5.0);
+pub const PUSH_RANGE: (f64, f64) = (0.0, 5.0);
 /// The share of an open satin column's length that push compensation leaves, at least: both ends
 /// are shortened in proportion when they would take more. Push compensation corrects a fraction of
 /// a millimetre; more than half a column is a mistake.
 const MIN_PUSHED: f64 = 0.5;
 /// The widest part sewn as a satin column: none to 12 mm, the longest stitch a column's crossing
 /// may be before it is split ([`MAX_SATIN_STITCH_RANGE`]).
-const NARROW_RANGE: (f64, f64) = (0.0, 12.0);
+pub const NARROW_RANGE: (f64, f64) = (0.0, 12.0);
 /// The thread's weight: from 10 wt (a heavy decorative thread, thicker than any embroidery
 /// thread) to 150 wt (finer than the finest bobbin and lettering threads).
-const THREAD_WEIGHT_RANGE: (f64, f64) = (10.0, 150.0);
+pub const THREAD_WEIGHT_RANGE: (f64, f64) = (10.0, 150.0);
 /// The longest move sewn rather than jumped: from 0.5 mm to 20 mm, past which a sewn move would be
 /// a loose thread across the design.
-const JUMP_RANGE: (f64, f64) = (0.5, 20.0);
+pub const JUMP_RANGE: (f64, f64) = (0.5, 20.0);
 /// The longest jump left uncut: from the jump length itself (every jump cut) to a metre (none).
-const MAX_TRIM: f64 = 1000.0;
+pub const MAX_TRIM: f64 = 1000.0;
 /// The shortest stitch kept: from 0.05 mm to 3 mm.
-const MIN_STITCH_RANGE: (f64, f64) = (0.05, 3.0);
+pub const MIN_STITCH_RANGE: (f64, f64) = (0.05, 3.0);
 /// The longest satin stitch before it is split: from 2 mm to the 12 mm of [`STITCH_LENGTH_RANGE`].
-const MAX_SATIN_STITCH_RANGE: (f64, f64) = (2.0, 12.0);
+pub const MAX_SATIN_STITCH_RANGE: (f64, f64) = (2.0, 12.0);
 
 impl Default for Params {
     fn default() -> Self {
@@ -291,7 +337,7 @@ impl Params {
                 pull_percent: [0.0; 2],
                 push: [0.0; 2],
                 thread_weight: weight,
-                underlay: false,
+                underlay: Underlay::None,
                 jump: JUMP,
                 trim: TRIM,
                 lock: true,
@@ -312,7 +358,7 @@ impl Params {
                 pull_percent: [PULL_PERCENT; 2],
                 push: [PUSH; 2],
                 thread_weight: weight,
-                underlay: true,
+                underlay: Underlay::Auto,
                 jump: JUMP,
                 trim: TRIM,
                 lock: true,
@@ -332,7 +378,7 @@ impl Params {
                 pull_percent: [PULL_PERCENT; 2],
                 push: [0.0; 2],
                 thread_weight: weight,
-                underlay: true,
+                underlay: Underlay::Auto,
                 jump: JUMP,
                 trim: TRIM,
                 lock: true,
@@ -440,7 +486,7 @@ pub fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Po
 }
 
 /// The style a shape with `p` is sewn in: its own, except that a satin column needs a width, and a
-/// satin without one (a fill whose `stitchStyle` is satin) is filled instead.
+/// satin without one (a fill whose `stitch` option is satin) is filled instead.
 pub fn sewn_style(p: &Params) -> Style {
     let p = p.sane();
     match p.style {
@@ -545,7 +591,7 @@ fn estimate(subs: &[SubPath], p: &Params) -> f64 {
         }
         Style::Fill => {
             let top = layer_points(subs, p.angle, p.density, p.stitch_length);
-            let underlay = if p.underlay {
+            let underlay = if p.underlay != Underlay::None {
                 total / UNDERLAY_STITCH
                     + layer_points(subs, p.angle + fill::UNDERLAY_TURN, fill::TATAMI_UNDERLAY_SPACING, fill::TATAMI_UNDERLAY_STITCH)
             } else {

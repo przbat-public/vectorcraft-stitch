@@ -5246,7 +5246,7 @@ swatch	Bright Violet	Felviolet
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	live vermengingen, omvormingen, netten en herhalingen worden niet geborduurd: breid ze eerst uit
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	een negatieve expand-waarde liet van sommige gevulde vormen niets over, dus worden ze niet geborduurd: verklein ze minder
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	verlopen en patronen worden geschilderd in de kleur van hun eerste stoppunt; een borduurwerk naait één garen per blok
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	contouren breder dan {widest} mm worden genaaid als satijnkolommen van {widest} mm breed: vul ze in plaats daarvan (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	contouren breder dan {widest} mm worden genaaid als satijnkolommen van {widest} mm breed: vul ze in plaats daarvan (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	deze versie kent het garenpalet {palette} van het document niet, dus worden de garens gekozen uit het palet {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	niets te borduren: het document heeft geen zichtbare paden met een vulling of contour
 @msg	nothing to stitch: {_1}	niets te borduren: {_1}

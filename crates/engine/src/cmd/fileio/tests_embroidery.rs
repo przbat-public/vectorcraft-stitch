@@ -571,10 +571,9 @@ fn trim_length_decides_which_jumps_are_cut() {
     assert!(longest > 15.0, "{jumps:?}");
     let (trims, jumps) = moves(&export(&mut s, "pes", json!({"trimLength": longest + 1.0})));
     assert_eq!(trims, 0, "{jumps:?}");
-    assert_eq!(
-        export(&mut s, "pes", json!({"trimLength": 1.0, "jumpLength": 5.0})),
-        export(&mut s, "pes", json!({"trimLength": 5.0, "jumpLength": 5.0}))
-    );
+    // Only a jump is cut, so a trim length shorter than the jump length is refused, not raised.
+    let e = s.execute("document.export", &params("pes", json!({"trimLength": 1.0, "jumpLength": 5.0}))).unwrap_err();
+    assert!(e.to_string().contains("at least `jumpLength`"), "{e}");
 }
 
 /// Each object starts near where the one sewn before it ended: a satin column drawn from its far

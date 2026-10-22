@@ -48,10 +48,10 @@ fn why(u: &Unit) -> String {
         }
         Choice::WideStroke => format!("a stroke at least {SATIN_MIN_WIDTH} mm wide is a satin column, here {} mm", mm(width)),
         Choice::NarrowStroke => format!("a stroke narrower than {SATIN_MIN_WIDTH} mm is a running line"),
-        Choice::StrokeFilled => "stitchStyle fill: the area the stroke paints is filled".into(),
+        Choice::StrokeFilled => "stitch fill: the area the stroke paints is filled".into(),
         Choice::Forced => match (u.params.map(|p| p.style), u.sewn()) {
-            (Some(Style::Satin), Some(Style::Fill)) => "stitchStyle satin: a fill has no width to sew a satin across, so it is filled".into(),
-            (asked, _) => format!("stitchStyle {}", asked.map_or("auto", Style::id)),
+            (Some(Style::Satin), Some(Style::Fill)) => "stitch satin: a fill has no width to sew a satin across, so it is filled".into(),
+            (asked, _) => format!("stitch {}", asked.map_or("auto", Style::id)),
         },
         Choice::Literal => "stitches read from a machine file, sewn as they are".into(),
     }

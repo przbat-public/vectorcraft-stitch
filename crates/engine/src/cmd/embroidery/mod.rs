@@ -78,7 +78,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Threads",
             [],
             None,
-            "{stitchStyle?, density?, stitchLength?, stitchAngle?, pullCompensation?, pullCompensationPercent?, pushCompensation?, expand?, narrowAsSatin?, threadWeight?, underlay?, jumpLength?, trimLength?, minStitch? (the embroidery options of document.export, as document.formats describes them, and no other: they decide which objects share a colour block)} the thread each colour block of the design is sewn in, as the PES or JEF export of the document's palette writes it (embroidery.setup): the palette's thread nearest the colour the block's art is painted with, in sewing order, or, when a neighbouring block has that one, the nearest other thread within threshold → {palette: \"pec\"|\"jef\", threshold: the colour difference past which a thread is flagged, blocks: [{block: from 1 in sewing order, art: \"#rrggbb\", thread: {palette, index: from 1 as the format numbers it, name, color: \"#rrggbb\"}, deltaE: the CIEDE2000 difference between the art's colour and the thread's, to two decimals (0: painted with the thread's own colour, a swatch of its thread library), mismatch: deltaE past threshold, units: the fills, strokes and stitch runs sewn in it}], warnings}",
+            "{stitch?|stitchStyle?, spacing?|density?, length?|stitchLength?, angle?|stitchAngle?, pull?|pullCompensation?, pullPercent?|pullCompensationPercent?, push?|pushCompensation?, expand?, narrowAsSatin?, threadWeight?, underlay?, jumpLength?, trimLength?, minStitch? (the embroidery options of document.export, as document.formats describes them, each also under its earlier name, and no other: they decide which objects share a colour block; a value out of its range is refused; null leaves one to its default)} the thread each colour block of the design is sewn in, as the PES or JEF export of the document's palette writes it (embroidery.setup): the palette's thread nearest the colour the block's art is painted with, in sewing order, or, when a neighbouring block has that one, the nearest other thread within threshold → {palette: \"pec\"|\"jef\", threshold: the colour difference past which a thread is flagged, blocks: [{block: from 1 in sewing order, art: \"#rrggbb\", thread: {palette, index: from 1 as the format numbers it, name, color: \"#rrggbb\"}, deltaE: the CIEDE2000 difference between the art's colour and the thread's, to two decimals (0: painted with the thread's own colour, a swatch of its thread library), mismatch: deltaE past threshold, units: the fills, strokes and stitch runs sewn in it}], warnings}",
             has_doc,
             threads
         ),
@@ -223,11 +223,10 @@ fn object<'a>(p: &'a Value, cmd: &str) -> Result<std::borrow::Cow<'a, Map<String
     }
 }
 
-/// The embroidery options in `p`, an object of them and of the command's own keys (`own`), which
-/// the options leave aside.
+/// The embroidery options in `o`, an object of them and of the command's own keys (`own`), which
+/// the options leave aside; any other key is refused.
 fn options_in(o: &Map<String, Value>, own: &[&str], cmd: &str) -> Result<Options> {
-    let options: Map<String, Value> = o.iter().filter(|(k, _)| !own.contains(&k.as_str())).map(|(k, v)| (k.clone(), v.clone())).collect();
-    Options::from_params(&Value::Object(options), cmd)
+    Options::from_object(o, options::Others::Refuse(own), cmd)
 }
 
 /// The keys `embroidery.stats` takes besides the embroidery options.
@@ -239,7 +238,7 @@ fn stats_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     let (machine, thread) = stats::model(&o, C)?;
     let opts = options_in(&o, &STATS_KEYS, C)?;
     let (plan, _) = planned(s, &opts, C)?;
-    Ok(stats::stats(&plan, machine, thread))
+    Ok(with_options(stats::stats(&plan, machine, thread), &opts))
 }
 
 fn sequence_cmd(s: &mut Session, p: &Value) -> Result<Value> {
@@ -247,7 +246,7 @@ fn sequence_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     let o = object(p, C)?;
     let opts = options_in(&o, &[], C)?;
     let (plan, _) = planned(s, &opts, C)?;
-    Ok(order::sequence(&plan))
+    Ok(with_options(order::sequence(&plan), &opts))
 }
 
 /// The keys `embroidery.check` takes besides the embroidery options.
@@ -292,7 +291,16 @@ fn check_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     let (plan, doc) = planned(s, &opts, C)?;
     // The format of the document's thread palette, when none is asked for.
     let format = format.unwrap_or_else(|| thread_palette(&doc).format());
-    Ok(check::check(&plan, &check::Ask { rules, format, limit }))
+    Ok(with_options(check::check(&plan, &check::Ask { rules, format, limit }), &opts))
+}
+
+/// A read command's answer `v` with the options it was planned with, under their names
+/// (`options`; those left out are the planner's defaults).
+fn with_options(mut v: Value, opts: &Options) -> Value {
+    if let Value::Object(o) = &mut v {
+        o.insert("options".into(), opts.to_json());
+    }
+    v
 }
 
 /// An sRGB colour as the commands give it: `#rrggbb`.
@@ -322,5 +330,5 @@ fn threads(s: &mut Session, p: &Value) -> Result<Value> {
             })
         })
         .collect();
-    Ok(json!({"palette": thread_palette(d).id(), "threshold": MISMATCH_DELTA_E, "blocks": blocks, "warnings": plan.warnings}))
+    Ok(with_options(json!({"palette": thread_palette(d).id(), "threshold": MISMATCH_DELTA_E, "blocks": blocks, "warnings": plan.warnings}), &opts))
 }

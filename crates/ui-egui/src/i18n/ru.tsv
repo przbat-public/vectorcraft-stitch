@@ -4830,7 +4830,7 @@ lighting	Light	Свет
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	динамические переходы, оболочки, сетки и повторы не вышиваются: сначала разберите их
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	отрицательное значение expand не оставило ничего от некоторых залитых фигур, поэтому они не вышиваются: уменьшайте их меньше
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	градиенты и узоры окрашиваются в цвет их первой точки перехода; вышивка шьёт одной нитью на блок
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	обводки шире {widest} мм шьются столбиками гладью шириной {widest} мм: вместо этого залейте их (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	обводки шире {widest} мм шьются столбиками гладью шириной {widest} мм: вместо этого залейте их (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	эта версия не знает палитру нитей {palette} документа, поэтому его нити подбираются из палитры {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	нечего вышивать: в документе нет видимых контуров с заливкой или обводкой
 @msg	nothing to stitch: {_1}	нечего вышивать: {_1}

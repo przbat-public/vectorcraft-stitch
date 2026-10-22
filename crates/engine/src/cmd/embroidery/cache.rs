@@ -14,7 +14,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use vectorcraft_geom::{BezPath, FillRule, PathEl, Point};
-use vectorcraft_stitch::plan::{Params, Style};
+use vectorcraft_stitch::plan::{Params, Style, Underlay};
 
 use super::unit::{UnitRequest, UnitStitches};
 
@@ -163,7 +163,15 @@ fn params_words(k: &mut Vec<u64>, p: &Params) {
     ] {
         k.push(v.to_bits());
     }
-    for flag in [underlay, lock, auto_spacing] {
+    k.push(match underlay {
+        Underlay::None => 0,
+        Underlay::Auto => 1,
+        Underlay::Center => 2,
+        Underlay::Edge => 3,
+        Underlay::EdgeZigzag => 4,
+        Underlay::EdgeTatami => 5,
+    });
+    for flag in [lock, auto_spacing] {
         k.push(u64::from(flag));
     }
 }

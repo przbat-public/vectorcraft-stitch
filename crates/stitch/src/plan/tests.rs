@@ -214,7 +214,7 @@ fn wide_satins_are_split_without_a_seam() {
     let mut p = Params::for_style(Style::Satin);
     p.width = 20.0;
     p.pull = [0.0; 2];
-    p.underlay = false;
+    p.underlay = Underlay::None;
     p.lock = false;
     let out = stitches(&line((0.0, 0.0), (30.0, 0.0)), FillRule::NonZero, &p);
     for w in out.windows(2) {
@@ -247,7 +247,7 @@ fn regions_travel_inside_and_overlap() {
     for angle in [0.0, 30.0, 90.0] {
         let mut p = Params::for_style(Style::Fill);
         p.angle = angle;
-        p.underlay = false;
+        p.underlay = Underlay::None;
         let out = stitches(&ring, FillRule::NonZero, &p);
         let trims = out.iter().filter(|s| s.command == Command::Trim).count();
         assert!(trims <= 1, "angle {angle}: {trims} trims");
@@ -256,7 +256,7 @@ fn regions_travel_inside_and_overlap() {
     // Rows sewn twice where regions meet: at 0° the rows just above and below the hole.
     let mut p = Params::for_style(Style::Fill);
     p.angle = 0.0;
-    p.underlay = false;
+    p.underlay = Underlay::None;
     let out = stitches(&ring, FillRule::NonZero, &p);
     let plain = stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p);
     let count = |v: &[Stitch], y: f64| v.iter().filter(|s| s.command == Command::Stitch && (s.y - y).abs() < 1e-6).count();
@@ -320,7 +320,7 @@ fn large_fills_get_a_tatami_underlay() {
     };
     assert!(vertical(&stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p), 30.0) > 20);
     assert_eq!(vertical(&stitches(&rect(0.0, 0.0, 8.0, 30.0), FillRule::NonZero, &p), 8.0), 0);
-    p.underlay = false;
+    p.underlay = Underlay::None;
     assert_eq!(vertical(&stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p), 30.0), 0);
 }
 
@@ -332,7 +332,7 @@ fn tight_satin_curves_get_short_stitches() {
     let (r, width) = (3.0, 5.0);
     let mut p = Params::for_style(Style::Satin);
     p.width = width;
-    p.underlay = false;
+    p.underlay = Underlay::None;
     p.lock = false;
     let half = width / 2.0 + p.pull[0];
     let arc = vectorcraft_geom::kurbo::Arc::new((0.0, 0.0), (r, r), 0.0, 1.5 * std::f64::consts::PI, 0.0);
@@ -362,7 +362,7 @@ fn satin_spacing_follows_the_width() {
         let mut p = Params::for_style(Style::Satin);
         p.width = width;
         p.pull = [0.0; 2];
-        p.underlay = false;
+        p.underlay = Underlay::None;
         p.lock = false;
         p.auto_spacing = auto;
         p.density = 0.3;
@@ -417,7 +417,7 @@ fn no_stitch_is_shorter_than_the_shortest() {
 #[test]
 fn separate_pieces_jump_and_trim_only_when_far() {
     let mut p = Params::for_style(Style::Fill);
-    p.underlay = false;
+    p.underlay = Underlay::None;
     // Vertical rows: the first square ends at its right edge, right by the second.
     p.angle = 90.0;
     let count = |gap: f64| {
@@ -466,7 +466,7 @@ fn a_concave_shape_is_sewn_in_one_go_never_across_its_gaps() {
         }
     }
     e.close_path();
-    for underlay in [false, true] {
+    for underlay in [Underlay::None, Underlay::Auto] {
         for angle in (0..360).step_by(5).map(f64::from) {
             let mut p = Params::for_style(Style::Fill);
             p.angle = angle;
@@ -475,10 +475,10 @@ fn a_concave_shape_is_sewn_in_one_go_never_across_its_gaps() {
             assert_eq!(
                 over(&out, (10.0, 8.0, 40.0, 16.0)) + over(&out, (10.0, 24.0, 40.0, 32.0)),
                 0,
-                "angle {angle}, underlay {underlay}: across a gap"
+                "angle {angle}, underlay {underlay:?}: across a gap"
             );
             let lifts = out.iter().filter(|s| s.command != Command::Stitch).count();
-            assert_eq!(lifts, 0, "angle {angle}, underlay {underlay}: {lifts} jumps and trims");
+            assert_eq!(lifts, 0, "angle {angle}, underlay {underlay:?}: {lifts} jumps and trims");
         }
     }
 }
@@ -846,7 +846,7 @@ fn a_travel_passes_a_corner_just_inside() {
 fn fill_rows_stagger_through_a_cycle_of_four() {
     let mut p = Params::for_style(Style::Fill);
     p.angle = 0.0;
-    p.underlay = false;
+    p.underlay = Underlay::None;
     let out = stitches(&rect(0.3, 0.0, 40.0, 10.0), FillRule::NonZero, &p);
     // Each row's penetrations away from its ends (where the row starts and stops, ties
     // included), by row.
@@ -911,7 +911,7 @@ fn the_order_that_travels_least_wins() {
     for angle in [45.0, 60.0, 135.0] {
         let mut p = Params::for_style(Style::Fill);
         p.angle = angle;
-        p.underlay = false;
+        p.underlay = Underlay::None;
         let out = stitches(&u, FillRule::NonZero, &p);
         assert_eq!(out.iter().filter(|s| s.command != Command::Stitch).count(), 0, "angle {angle}: sewn in one go");
         let (longest, total) = travels(&out);
@@ -964,14 +964,14 @@ fn branching_shapes_are_sewn_in_one_go() {
     ]);
     let shapes = [("U", u), ("3 teeth", comb(3, 30.0, 4.0, 4.0, 6.0)), ("5 teeth", comb(5, 35.0, 4.0, 4.0, 6.0)), ("ring", ring(4.0)), ("H", h)];
     for (name, shape) in &shapes {
-        for underlay in [false, true] {
+        for underlay in [Underlay::None, Underlay::Auto] {
             for angle in (0..180).step_by(15).map(f64::from) {
                 let mut p = Params::for_style(Style::Fill);
                 p.angle = angle;
                 p.underlay = underlay;
                 let out = stitches(shape, FillRule::NonZero, &p);
                 let lifts = out.iter().filter(|s| s.command != Command::Stitch).count();
-                assert_eq!(lifts, 0, "{name}, angle {angle}, underlay {underlay}: {lifts} jumps and trims");
+                assert_eq!(lifts, 0, "{name}, angle {angle}, underlay {underlay:?}: {lifts} jumps and trims");
             }
         }
     }
@@ -990,7 +990,7 @@ fn a_turn_along_a_straight_edge_is_sewn() {
             let mut p = Params::for_style(Style::Fill);
             p.density = density;
             p.angle = angle;
-            p.underlay = false;
+            p.underlay = Underlay::None;
             for (name, shape) in [("U", &u), ("wide U", &wide)] {
                 let out = stitches(shape, FillRule::NonZero, &p);
                 let lifts = out.iter().filter(|s| s.command != Command::Stitch).count();
@@ -1013,7 +1013,7 @@ fn a_turn_along_a_straight_edge_is_sewn() {
 fn a_travel_that_would_show_too_much_lifts_the_needle() {
     let mut p = Params::for_style(Style::Fill);
     p.angle = 0.0;
-    p.underlay = false;
+    p.underlay = Underlay::None;
     let jumps = |long: f64| stitches(&comb(200, long, 2.0, 1.5, 4.0), FillRule::NonZero, &p).iter().filter(|s| s.command == Command::Jump).count();
     assert_eq!(jumps(20.0), 0);
     assert!(jumps(30.0) >= 50, "{}", jumps(30.0));
@@ -1111,7 +1111,7 @@ fn bare_satin(path: &BezPath, width: f64, pull: [f64; 2], pull_percent: [f64; 2]
     let mut p = Params::for_style(Style::Satin);
     p.width = width;
     (p.pull, p.pull_percent, p.push) = (pull, pull_percent, push);
-    p.underlay = false;
+    p.underlay = Underlay::None;
     p.lock = false;
     points(&stitches_from(path, FillRule::NonZero, &p, from))
 }
@@ -1180,7 +1180,7 @@ fn fill_rows_reach_past_the_edge_by_the_pull_compensation() {
     let reach = |pull: [f64; 2], pull_percent: [f64; 2]| {
         let mut p = Params::for_style(Style::Fill);
         p.angle = 0.0;
-        p.underlay = false;
+        p.underlay = Underlay::None;
         (p.pull, p.pull_percent) = (pull, pull_percent);
         let q = points(&stitches(&rect(0.0, 0.0, 20.0, 10.0), FillRule::NonZero, &p));
         assert!(q.iter().all(|a| a.y >= -1e-6 && a.y <= 10.0 + 1e-6), "{pull:?} {pull_percent:?}: a row off the shape across");
@@ -1275,7 +1275,7 @@ fn spacing_follows_the_thread_weight() {
         let mut p = Params::for_thread(Style::Satin, weight);
         p.width = 5.0;
         p.pull = [0.0; 2];
-        p.underlay = false;
+        p.underlay = Underlay::None;
         p.lock = false;
         let top: Vec<f64> = points(&stitches(&line((0.0, 0.0), (20.0, 0.0)), FillRule::NonZero, &p))
             .iter()
@@ -1313,7 +1313,7 @@ fn a_regions_last_row_reaches_its_edge() {
     for (w, h) in [(5.0, 0.5), (10.0, 0.5), (10.0, 3.0), (17.0, 2.0)] {
         let mut p = Params::for_style(Style::Fill);
         p.angle = 0.0;
-        p.underlay = false;
+        p.underlay = Underlay::None;
         let out = stitches(&rect(0.0, 0.0, w, h), FillRule::NonZero, &p);
         let q = points(&out);
         // The last row ends past one edge (its last needle point, before the tie-off's step back).
@@ -1357,7 +1357,7 @@ fn a_cut_on_a_point_of_the_line_is_one_point() {
 fn a_satin_sews_as_densely_as_the_thread_chart() {
     let mut p = Params::for_style(Style::Satin);
     p.width = 5.0;
-    p.underlay = false;
+    p.underlay = Underlay::None;
     p.lock = false;
     let q = points(&stitches(&line((0.0, 0.0), (30.0, 0.0)), FillRule::NonZero, &p));
     let in_a_cm = q.iter().filter(|a| a.x >= 10.0 && a.x < 20.0).count();
@@ -1378,7 +1378,7 @@ fn a_satin_stroke_keeps_its_spacing_on_the_outer_rail() {
     let (r, width) = (6.0, 5.0);
     let mut p = Params::for_style(Style::Satin);
     p.width = width;
-    p.underlay = false;
+    p.underlay = Underlay::None;
     p.lock = false;
     let spacing = satin_spacing(width);
     let rails = [r + width / 2.0 + p.pull[0], r - width / 2.0 - p.pull[1]];

@@ -247,7 +247,7 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
         (json!({"rules": "layers"}), "a list of rule ids"),
         (json!({"limit": 1001}), "limit"),
         (json!({"limit": -1}), "limit"),
-        (json!({"density": "x"}), "embroidery options"),
+        (json!({"density": "x"}), "`density` \"x\": a number of millimetres"),
     ] {
         let e = s.execute("embroidery.check", &bad).unwrap_err().to_string();
         assert!(e.contains(why), "{bad}: {e}");

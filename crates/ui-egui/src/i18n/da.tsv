@@ -5203,7 +5203,7 @@ swatch	Bright Violet	Kraftig violet
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	levende blandinger, konvolutter, net og gentagelser broderes ikke: udvid dem først
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	en negativ expand-værdi efterlod intet af nogle udfyldte former, så de broderes ikke: formindsk dem mindre
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	gradienter og mønstre males i farven fra deres første stop; et broderi syr ét garn pr. blok
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	streger bredere end {widest} mm sys som satinsøjler på {widest} mm: udfyld dem i stedet (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	streger bredere end {widest} mm sys som satinsøjler på {widest} mm: udfyld dem i stedet (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	denne version kender ikke dokumentets garnpalet {palette}, så dets garn vælges fra paletten {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	intet at brodere: dokumentet har ingen synlige kurver med udfyldning eller streg
 @msg	nothing to stitch: {_1}	intet at brodere: {_1}

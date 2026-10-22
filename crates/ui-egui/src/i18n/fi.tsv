@@ -5184,7 +5184,7 @@ mark-style	Japanese	Japanilainen
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	eläviä sulautuksia, vääristyskuoria, verkkoja ja toistoja ei kirjota: laajenna ne ensin
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	negatiivinen expand-arvo ei jättänyt mitään joistakin täytetyistä muodoista, joten niitä ei kirjota: pienennä niitä vähemmän
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	liukuvärit ja kuviot maalataan ensimmäisen väripisteensä värillä; kirjonta ompelee yhdellä langalla lohkoa kohden
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	yli {widest} mm leveät viivat ommellaan {widest} mm levyisinä satiinipylväinä: täytä ne mieluummin (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	yli {widest} mm leveät viivat ommellaan {widest} mm levyisinä satiinipylväinä: täytä ne mieluummin (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	tämä versio ei tunne asiakirjan lankapalettia {palette}, joten sen langat valitaan paletista {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	ei mitään kirjottavaa: asiakirjassa ei ole näkyviä polkuja, joilla on täyttö tai viiva
 @msg	nothing to stitch: {_1}	ei mitään kirjottavaa: {_1}

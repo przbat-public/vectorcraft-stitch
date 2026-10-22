@@ -6,12 +6,12 @@
 
 use proptest::prelude::*;
 use vectorcraft_geom::{BezPath, FillRule, Shape};
-use vectorcraft_stitch::plan::{Params, Style, fill_with_columns, narrow_columns, stitches};
+use vectorcraft_stitch::plan::{Params, Style, Underlay, fill_with_columns, narrow_columns, stitches};
 use vectorcraft_stitch::{Command, Stitch};
 use vectorcraft_testkit::strategies::arb_closed_shape;
 
 /// Fill or running parameters across their useful range: stitch length, row spacing, angle,
-/// underlay, jump length, how much longer the trim length is, and pull compensation at each end of
+/// underlay (every kind), jump length, how much longer the trim length is, and pull compensation at each end of
 /// a row (fixed and by the row's length).
 fn arb_params() -> impl Strategy<Value = Params> {
     (
@@ -19,7 +19,7 @@ fn arb_params() -> impl Strategy<Value = Params> {
         1.0..6.0f64,
         0.25..1.5f64,
         0.0..360.0f64,
-        any::<bool>(),
+        prop::sample::select(&Underlay::ALL[..]),
         1.0..10.0f64,
         0.0..20.0f64,
         [0.0..1.0f64, 0.0..1.0f64],

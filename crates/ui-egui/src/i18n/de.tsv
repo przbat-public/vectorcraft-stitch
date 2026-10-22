@@ -4796,7 +4796,7 @@ effect	Regular	Regelmäßig
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	Live-Angleichungen, Verzerrungshüllen, Gitter und Wiederholungen werden nicht gestickt: wandeln Sie sie zuerst um
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	ein negativer expand-Wert hat von einigen gefüllten Formen nichts übrig gelassen, daher werden sie nicht gestickt: verkleinern Sie sie weniger
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	Verläufe und Muster werden in der Farbe ihres ersten Farbstopps gemalt; eine Stickerei näht ein Garn je Block
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	Konturen breiter als {widest} mm werden als Satinsäulen von {widest} mm Breite genäht: füllen Sie sie stattdessen (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	Konturen breiter als {widest} mm werden als Satinsäulen von {widest} mm Breite genäht: füllen Sie sie stattdessen (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	diese Version kennt die Garnpalette {palette} des Dokuments nicht, daher werden seine Garne aus der Palette {default} gewählt
 @msg	nothing to stitch: the document has no visible filled or stroked paths	nichts zu sticken: das Dokument hat keine sichtbaren Pfade mit Fläche oder Kontur
 @msg	nothing to stitch: {_1}	nichts zu sticken: {_1}

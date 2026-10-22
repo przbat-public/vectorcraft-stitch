@@ -200,7 +200,7 @@ fn sew(shape: &BezPath, p: Params) -> Vec<Stitch> {
 fn a_column_is_sewn_across_it() {
     let stripe = polygon([(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (0.0, 3.0)]);
     let mut p = Params::for_style(Style::Satin);
-    p.underlay = false;
+    p.underlay = Underlay::None;
     let out = sew(&stripe, p);
     assert!(out.iter().all(|s| s.command == Command::Stitch), "no jumps");
     let q = points(&out);
@@ -218,7 +218,7 @@ fn a_column_is_sewn_across_it() {
 fn the_spacing_follows_the_width() {
     let wedge = polygon([(0.0, 0.0), (40.0, -2.25), (40.0, 3.75), (0.0, 1.5)]);
     let mut p = Params::for_style(Style::Satin);
-    p.underlay = false;
+    p.underlay = Underlay::None;
     p.lock = false;
     let q = points(&sew(&wedge, p));
     // Two crossings apart is the spacing: the distance between two penetrations on one side.
@@ -324,13 +324,13 @@ fn parts_are_sewn_in_the_order_that_moves_least() {
     let found = narrow_columns(&shape, FillRule::NonZero, WIDEST);
     assert_eq!(found.len(), 2, "{found:?}");
     let rest = polygon([(0.0, 0.0), (20.0, 0.0), (20.0, 20.0), (0.0, 20.0)]);
-    for (from, underlay) in [((37.0, 10.0), true), ((37.0, 10.0), false), ((-17.0, 10.0), true)] {
+    for (from, underlay) in [((37.0, 10.0), Underlay::Auto), ((37.0, 10.0), Underlay::None), ((-17.0, 10.0), Underlay::Auto)] {
         let mut satin = Params::for_style(Style::Satin);
         satin.underlay = underlay;
         let out =
             fill_with_columns(&shape, FillRule::NonZero, &rest, &found, &Params::for_style(Style::Fill), &satin, Some(Point::new(from.0, from.1)));
         let lifts = out.iter().filter(|s| s.command != Command::Stitch).count();
-        assert_eq!(lifts, 0, "from {from:?}, underlay {underlay}: {lifts} jumps and trims");
+        assert_eq!(lifts, 0, "from {from:?}, underlay {underlay:?}: {lifts} jumps and trims");
     }
 }
 
@@ -385,7 +385,7 @@ pub(super) fn quantile(sorted: &[f64], at: f64) -> f64 {
 #[test]
 fn a_bend_keeps_its_spacing_on_the_outer_rail() {
     let mut p = Params::for_style(Style::Satin);
-    p.underlay = false;
+    p.underlay = Underlay::None;
     p.lock = false;
     let width = 5.0;
     let spacing = satin_spacing(width);
@@ -523,7 +523,7 @@ fn push_compensation_spares_the_end_that_meets_the_rest() {
     assert_eq!(c.tips, if at_free { [true, false] } else { [false, true] }, "{:?}", c.middles());
     let mut p = Params::for_style(Style::Satin);
     p.push = [1.0, 1.0];
-    p.underlay = false;
+    p.underlay = Underlay::None;
     // The column alone (the block's rest left out).
     let q = points(&fill_with_columns(&bar, FillRule::NonZero, &BezPath::new(), &found, &Params::for_style(Style::Fill), &p, None));
     let (lo, hi) = q.iter().fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), a| (lo.min(a.x), hi.max(a.x)));

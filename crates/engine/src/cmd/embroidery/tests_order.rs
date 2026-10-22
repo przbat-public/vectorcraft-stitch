@@ -115,15 +115,15 @@ fn each_unit_says_how_it_is_sewn_and_why() {
     assert!(auto[1].1.contains("at least 1 mm wide is a satin column"), "{}", auto[1].1);
     assert!(auto[2].1.contains("narrower than 1 mm is a running line"), "{}", auto[2].1);
     assert!(auto[3].1.contains("narrower than 7 mm are satin columns"), "{}", auto[3].1);
-    // Forced by stitchStyle: every unit says so; a stroke filled is the area it paints.
+    // Forced by the stitch option: every unit says so; a stroke filled is the area it paints.
     // Satin forced on a fill, which has no width to sew across: the planner fills it, and the list
     // says so.
     let satin = sewn(&mut s, json!({"stitchStyle": "satin"}));
-    let fill_as_satin = ("tatami".to_string(), "stitchStyle satin: a fill has no width to sew a satin across, so it is filled".to_string());
-    let stroke_as_satin = ("satin".to_string(), "stitchStyle satin".to_string());
+    let fill_as_satin = ("tatami".to_string(), "stitch satin: a fill has no width to sew a satin across, so it is filled".to_string());
+    let stroke_as_satin = ("satin".to_string(), "stitch satin".to_string());
     assert_eq!(satin, [fill_as_satin.clone(), stroke_as_satin.clone(), stroke_as_satin, fill_as_satin]);
     let fill = sewn(&mut s, json!({"stitchStyle": "fill"}));
-    assert_eq!(fill[1].1, "stitchStyle fill: the area the stroke paints is filled");
+    assert_eq!(fill[1].1, "stitch fill: the area the stroke paints is filled");
 }
 
 /// Art inside a symbol is listed under the instance a person selects, with the object sewn; a

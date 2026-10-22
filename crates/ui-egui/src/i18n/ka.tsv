@@ -5127,7 +5127,7 @@ imageTrace	Outline	კონტური
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	ცოცხალი გადასვლები, გარსები, ბადეები და გამეორებები არ იქარგება: ჯერ გაშალეთ ისინი
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	expand-ის უარყოფითმა მნიშვნელობამ ზოგიერთი შევსებული ფიგურისგან არაფერი დატოვა, ამიტომ ისინი არ იქარგება: ნაკლებად შეამცირეთ ისინი
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	გრადიენტები და პატერნები მათი პირველი გადასვლის წერტილის ფერით იღებება; ნაქარგი თითო ბლოკს ერთი ძაფით კერავს
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	{widest} მმ-ზე განიერი კონტურები იკერება {widest} მმ სიგანის ატლასის სვეტებად: ამის ნაცვლად შეავსეთ ისინი (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	{widest} მმ-ზე განიერი კონტურები იკერება {widest} მმ სიგანის ატლასის სვეტებად: ამის ნაცვლად შეავსეთ ისინი (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	ეს ვერსია არ იცნობს დოკუმენტის ძაფების პალიტრას {palette}, ამიტომ მისი ძაფები {default} პალიტრიდან შეირჩევა
 @msg	nothing to stitch: the document has no visible filled or stroked paths	საქარგავი არაფერია: დოკუმენტს არ აქვს ხილული ტრაექტორიები შევსებით ან კონტურით
 @msg	nothing to stitch: {_1}	საქარგავი არაფერია: {_1}

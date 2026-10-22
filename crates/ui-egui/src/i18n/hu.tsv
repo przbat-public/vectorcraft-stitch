@@ -5206,7 +5206,7 @@ imageTrace	Outline	Körvonal
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	az élő összemosások, burkolók, hálók és ismétlések nem kerülnek kihímzésre: előbb bontsd ki őket
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	a negatív expand érték egyes kitöltött alakzatokból semmit sem hagyott, ezért azok nem kerülnek kihímzésre: kicsinyítsd őket kevésbé
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	a színátmenetek és a mintázatok az első színátmenet-pontjuk színét kapják; a hímzés blokkonként egy cérnával varr
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	a(z) {widest} mm-nél szélesebb körvonalak {widest} mm széles szaténoszlopként varródnak: inkább töltsd ki őket (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	a(z) {widest} mm-nél szélesebb körvonalak {widest} mm széles szaténoszlopként varródnak: inkább töltsd ki őket (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	ez a verzió nem ismeri a dokumentum {palette} cérnapalettáját, ezért a cérnái a(z) {default} palettából lesznek kiválasztva
 @msg	nothing to stitch: the document has no visible filled or stroked paths	nincs mit kihímezni: a dokumentumban nincs látható, kitöltéssel vagy körvonallal rendelkező útvonal
 @msg	nothing to stitch: {_1}	nincs mit kihímezni: {_1}

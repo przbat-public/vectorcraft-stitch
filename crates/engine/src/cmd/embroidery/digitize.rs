@@ -27,7 +27,7 @@ const EXPANDED_AWAY: &str = "a negative expand left nothing of some filled shape
 const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colour of their first stop; a design sews one thread per block";
 const OUT_OF_RANGE: &str = "art far outside the document's range (or with coordinates that aren't numbers) is not stitched";
 /// A stroke at least this wide (millimetres) is sewn as a satin column, a narrower one as a running
-/// line (unless `stitchStyle` says otherwise): below about a millimetre the two rails are too
+/// line (unless the `stitch` option says otherwise): below about a millimetre the two rails are too
 /// close for the crossings to lie side by side. An estimate.
 pub(super) const SATIN_MIN_WIDTH: f64 = 1.0;
 /// How far a literal stitch line's curves are flattened into needle points (millimetres): the
@@ -408,7 +408,7 @@ impl<'a> Digitizer<'a> {
             let unit = self.origin(n, part);
             let opts = self.settings(&unit);
             match item {
-                // A fill is filled unless `stitchStyle` asks for another way of stitching it.
+                // A fill is filled unless the `stitch` option asks for another way of stitching it.
                 AppearanceItem::Fill(fill) => {
                     let (style, why) = match opts.forced() {
                         Some(style) => (style, Choice::Forced),
@@ -441,7 +441,7 @@ impl<'a> Digitizer<'a> {
                             self.colour(sewing, &area, area_rule, &stroke.paint);
                         }
                         // A satin column when it is wide enough to have two rails, a running line
-                        // when not, unless `stitchStyle` says which.
+                        // when not, unless the `stitch` option says which.
                         forced => {
                             let (style, why) = match forced {
                                 Some(style) => (style, Choice::Forced),
@@ -451,7 +451,7 @@ impl<'a> Digitizer<'a> {
                             if style == Style::Satin && width > plan::MAX_SATIN_WIDTH {
                                 let widest = plan::MAX_SATIN_WIDTH;
                                 self.warn(&format!(
-                                    "strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)"
+                                    "strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)"
                                 ));
                             }
                             self.colour(Sewing { unit, opts, style, why, width, clip_stitches: true }, &mm, rule, &stroke.paint);
@@ -556,7 +556,7 @@ impl<'a> Digitizer<'a> {
             shape: bp,
             rule,
             params,
-            // A fill's narrow parts are satin columns, unless `stitchStyle` forces tatami.
+            // A fill's narrow parts are satin columns, unless the `stitch` option forces tatami.
             columns: (style == Style::Fill && opts.forced().is_none()).then(|| opts.params(Style::Satin, NO_WIDTH)),
             from,
             clip: if clip_stitches { self.clip.as_ref() } else { None },

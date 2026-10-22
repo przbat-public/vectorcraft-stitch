@@ -5219,7 +5219,7 @@ theme	Appearance	Apparence
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	les dégradés de formes, enveloppes, filets et répétitions dynamiques ne sont pas brodés : décomposez-les d’abord
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	une valeur expand négative n’a rien laissé de certaines formes remplies, elles ne sont donc pas brodées : réduisez-les moins
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	les dégradés et les motifs sont peints de la couleur de leur première étape ; une broderie coud un seul fil par bloc
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	les contours plus larges que {widest} mm sont cousus en colonnes de satin de {widest} mm de large : remplissez-les plutôt (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	les contours plus larges que {widest} mm sont cousus en colonnes de satin de {widest} mm de large : remplissez-les plutôt (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	cette version ne connaît pas la palette de fils {palette} du document, ses fils sont donc choisis dans la palette {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	rien à broder : le document n’a aucun tracé visible avec un fond ou un contour
 @msg	nothing to stitch: {_1}	rien à broder : {_1}

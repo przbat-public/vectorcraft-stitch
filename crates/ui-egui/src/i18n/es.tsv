@@ -5162,7 +5162,7 @@ mark-style	Japanese	Japonesas
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	las fusiones, envolventes, mallas y repeticiones dinámicas no se bordan: expándelas primero
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	un valor negativo de expand no dejó nada de algunas formas rellenas, así que no se bordan: redúcelas menos
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	los degradados y motivos se pintan con el color de su primera parada; un bordado cose un hilo por bloque
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	los trazos de más de {widest} mm de ancho se cosen como columnas de satén de {widest} mm: rellénalos en su lugar (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	los trazos de más de {widest} mm de ancho se cosen como columnas de satén de {widest} mm: rellénalos en su lugar (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	esta versión no conoce la paleta de hilos {palette} del documento, así que sus hilos se eligen de la paleta {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	nada que bordar: el documento no tiene trazados visibles con relleno o trazo
 @msg	nothing to stitch: {_1}	nada que bordar: {_1}

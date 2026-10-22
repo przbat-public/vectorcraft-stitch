@@ -5220,7 +5220,7 @@ mark-style	Japanese	Japonské
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	živá prolnutí, obálky, sítě a opakování se nevyšívají: nejprve je rozložte
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	záporná hodnota expand z některých vyplněných tvarů nic nenechala, proto se nevyšívají: zmenšete je méně
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	přechody a vzorky se malují barvou své první zarážky; výšivka šije jednou nití na blok
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	tahy širší než {widest} mm se šijí jako saténové sloupce široké {widest} mm: místo toho je vyplňte (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	tahy širší než {widest} mm se šijí jako saténové sloupce široké {widest} mm: místo toho je vyplňte (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	tato verze nezná paletu nití {palette} dokumentu, proto se jeho nitě vybírají z palety {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	není co vyšívat: dokument nemá žádné viditelné cesty s výplní nebo tahem
 @msg	nothing to stitch: {_1}	není co vyšívat: {_1}

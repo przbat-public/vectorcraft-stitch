@@ -65,7 +65,7 @@ pub(crate) struct UnitRequest<'a> {
     /// The parameters it is planned with; their style says how it is sewn.
     pub(crate) params: Params,
     /// A fill whose narrow parts may be sewn as satin columns: the parameters those columns are
-    /// sewn with. `None` for everything else (strokes, and fills `stitchStyle` forces to tatami).
+    /// sewn with. `None` for everything else (strokes, and fills the `stitch` option forces to tatami).
     pub(crate) columns: Option<Params>,
     /// Where the needle is when the unit starts (`None`: nowhere yet, the design's first unit), so
     /// that it starts as near there as it can.

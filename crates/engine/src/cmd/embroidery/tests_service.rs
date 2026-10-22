@@ -165,7 +165,7 @@ proptest! {
 #[test]
 fn a_key_changes_with_every_value_a_unit_depends_on() {
     use vectorcraft_geom::{BezPath, FillRule, Point, Rect, Shape};
-    use vectorcraft_stitch::plan::{Params, Style};
+    use vectorcraft_stitch::plan::{Params, Style, Underlay};
     let shape = Rect::new(0.0, 0.0, 20.0, 10.0).to_path(0.1);
     let clip = (Rect::new(0.0, 0.0, 15.0, 15.0).to_path(0.1), FillRule::NonZero);
     let base = UnitRequest {
@@ -208,7 +208,7 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
         |p| p.push[0] += 0.1,
         |p| p.push[1] += 0.1,
         |p| p.thread_weight += 1.0,
-        |p| p.underlay = !p.underlay,
+        |p| p.underlay = if p.underlay == Underlay::None { Underlay::Auto } else { Underlay::None },
         |p| p.jump += 0.5,
         |p| p.trim += 0.5,
         |p| p.lock = !p.lock,

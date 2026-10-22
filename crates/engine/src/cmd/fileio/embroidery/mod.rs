@@ -5,18 +5,19 @@
 //! Reading draws each colour block as a group of thin lines in the thread's colour, so the design
 //! looks like it will sew, and can be measured, traced over or recoloured. Writing takes every
 //! visible filled or stroked path and plans its stitches: fills with a tatami fill, strokes with
-//! a satin column when they are wide enough (1 mm) and a running line when not, `stitchStyle`
+//! a satin column when they are wide enough (1 mm) and a running line when not, `stitch`
 //! overrides that. Type, images and live art are not stitched (their outlines would be needed);
 //! each is listed in the export's warnings. Blocks of the same thread are sewn together, so the
 //! machine changes colour as few times as the artwork allows.
 //!
-//! Options: `stitchStyle` (`auto`, `fill`, `satin`, `running`), `density` (mm between rows or rail
-//! crossings), `stitchLength` (mm), `stitchAngle` (degrees), `pullCompensation` (mm at each side of
-//! satin columns and fill rows, one value or one per side), `pullCompensationPercent` (the same, a
-//! share of each stitch), `pushCompensation` (mm off each end of satin columns), `expand` (mm all
-//! round a fill), `narrowAsSatin` (mm: a fill's narrower parts are satin columns), `threadWeight`
-//! (wt, the spacing follows it), `underlay`, `jumpLength` (mm before
-//! the needle lifts), `trimLength` (mm before a jump cuts the thread) and `minStitch` (mm).
+//! Options (`cmd::embroidery::options`, where their earlier names are also taken): `stitch`
+//! (`auto`, `tatami` or `fill`, `satin`, `running`), `spacing` (mm between rows or rail crossings),
+//! `length` (mm), `angle` (degrees), `pull` (mm at each side of satin columns and fill rows, one
+//! value or one per side), `pullPercent` (the same, a share of each stitch), `push` (mm off each
+//! end of satin columns), `expand` (mm all round a fill), `narrowAsSatin` (mm: a fill's narrower
+//! parts are satin columns), `threadWeight` (wt, the spacing follows it), `underlay` (true, false or
+//! a kind), `jumpLength` (mm before the needle lifts), `trimLength` (mm before a jump cuts the
+//! thread) and `minStitch` (mm). A value outside its range is refused.
 //!
 //! The parts: [`import`] (a design read as art) and [`encode`] (the export: its options, and the
 //! stitches `cmd::embroidery` plans from the document's art, written in the format).
@@ -29,53 +30,59 @@ use vectorcraft_stitch::format::Format as StitchFormat;
 
 use super::super::*;
 use super::{Encoded, Format, FormatOption};
+use crate::cmd::embroidery::options::Others;
 use crate::cmd::embroidery::{Options, service};
 
 pub(super) use import::import;
 
 const C: &str = "document.export";
 
-const STYLE: FormatOption = FormatOption {
-    name: "stitchStyle",
+const STITCH: FormatOption = FormatOption {
+    name: "stitch",
     ty: "string",
     default: "\"auto\"",
-    description: "how the art is stitched: auto (fills filled, wide strokes satin, narrow ones running), fill, satin or running",
+    description: "how the art is stitched: auto (fills tatami, strokes 1 mm wide or more satin, narrower ones running), tatami or fill (a fill tatami, a stroke the area it paints filled), satin or running; earlier name stitchStyle",
 };
 // Defaults are the stitch planner's (`plan::Params::for_style`): an option left out keeps the
 // style's own value. Those that every style that uses them shares are given as JSON defaults
 // (checked against the planner by `defaults_are_the_planners`); the stitch length differs by
-// style, so its default is `null` and its description says which.
-const DENSITY: FormatOption = FormatOption {
-    name: "density",
+// style, so its default is `null` and its description says which. Each range is the planner's
+// (`plan::*_RANGE`, checked by `ranges_are_the_planners`): a value outside it is refused.
+const SPACING: FormatOption = FormatOption {
+    name: "spacing",
     ty: "number",
     default: "0.38",
-    description: "millimetres between threads: between the rows of a fill; between two penetrations on one rail of a satin column (peak to peak: its crossings lie half that apart). Left out, a satin column picks it by its width: 0.5 under 2 mm, 0.45 under 4, 0.4 under 6, 0.37 wider",
+    description: "millimetres between threads: between the rows of a fill; between two penetrations on one rail of a satin column (peak to peak: its crossings lie half that apart). Left out, a satin column picks it by its width: 0.5 under 2 mm, 0.45 under 4, 0.4 under 6, 0.37 wider; 0.05 to 5; earlier name density",
 };
-const STITCH_LENGTH: FormatOption = FormatOption {
-    name: "stitchLength",
+const LENGTH: FormatOption = FormatOption {
+    name: "length",
     ty: "number",
     default: "null",
-    description: "the longest stitch of a running line or a fill row, millimetres (default: 4 in fills, 2.5 in running lines)",
+    description: "the longest stitch of a running line or a fill row, millimetres (default: 4 in fills, 2.5 in running lines); 0.2 to 12; earlier name stitchLength",
 };
-const ANGLE: FormatOption =
-    FormatOption { name: "stitchAngle", ty: "number", default: "45", description: "the direction a fill's rows run, degrees (0: left to right)" };
-const PULL: FormatOption = FormatOption {
-    name: "pullCompensation",
+const ANGLE: FormatOption = FormatOption {
+    name: "angle",
     ty: "number",
+    default: "45",
+    description: "the direction a fill's rows run, degrees (0: left to right; any angle, taken modulo 360); earlier name stitchAngle",
+};
+const PULL: FormatOption = FormatOption {
+    name: "pull",
+    ty: "number|array",
     default: "0.2",
-    description: "how much farther the stitches reach at each side so the fabric's pull leaves no gap, millimetres: each rail of a satin column, each end of a fill's rows. One value for both sides, or two ([left, right] of a satin as its path runs, [start, end] of a fill's rows); 0 to 2 (a negative value counts as 0)",
+    description: "pull compensation: how much farther the stitches reach at each side so the fabric's pull leaves no gap, millimetres: each rail of a satin column, each end of a fill's rows. One value for both sides, or two ([left, right] of a satin as its path runs, [start, end] of a fill's rows); 0 to 2; earlier name pullCompensation",
 };
 const PULL_PERCENT: FormatOption = FormatOption {
-    name: "pullCompensationPercent",
-    ty: "number",
+    name: "pullPercent",
+    ty: "number|array",
     default: "0",
-    description: "pull compensation that grows with the stitch, on top of pullCompensation: percent of a satin column's width, or of a fill row's length, added at each side (at most 2 mm a side with pullCompensation); one value or two, as pullCompensation; 0 to 50",
+    description: "pull compensation that grows with the stitch, on top of pull: percent of a satin column's width, or of a fill row's length, added at each side (at most 2 mm a side with pull); one value or two, as pull; 0 to 50; earlier name pullCompensationPercent",
 };
 const PUSH: FormatOption = FormatOption {
-    name: "pushCompensation",
-    ty: "number",
+    name: "push",
+    ty: "number|array",
     default: "0",
-    description: "how much shorter an open satin column is sewn at each end, millimetres, since sewing pushes the fabric out there (a column keeps at least half its length, and a column long enough to sew stays so); one value or two ([start, end] as its path is drawn); 0 to 5 (a negative value counts as 0)",
+    description: "push compensation: how much shorter an open satin column is sewn at each end, millimetres, since sewing pushes the fabric out there (a column keeps at least half its length, and a column long enough to sew stays so); one value or two ([start, end] as its path is drawn); 0 to 5; earlier name pushCompensation",
 };
 const EXPAND: FormatOption = FormatOption {
     name: "expand",
@@ -87,9 +94,9 @@ const NARROW: FormatOption = FormatOption {
     name: "narrowAsSatin",
     ty: "number",
     default: "7",
-    description: "a filled shape's parts narrower than this are sewn as satin columns that follow the shape (the rest stays tatami), millimetres; 0 sews every fill as tatami, as stitchStyle fill does; 0 to 12",
+    description: "a filled shape's parts narrower than this are sewn as satin columns that follow the shape (the rest stays tatami), millimetres; 0 sews every fill as tatami, as stitch tatami does; 0 to 12",
 };
-const THREAD_WEIGHT_OPTION: FormatOption = FormatOption {
+const WEIGHT: FormatOption = FormatOption {
     name: "threadWeight",
     ty: "number",
     default: "40",
@@ -99,26 +106,26 @@ const UNDERLAY: FormatOption = FormatOption {
     name: "underlay",
     ty: "boolean",
     default: "true",
-    description: "sew an underlay first: an edge run under fills, a centre run under satin columns",
+    description: "what is sewn under the art first: true (auto: under a satin column a centre run, an edge run from 2 mm wide, an edge run and a zigzag from 4.5 mm; under a fill an edge run, and sparse tatami when it is at least 10 mm across), false (none), or one kind: none, auto, center, edge, edgeZigzag (a satin's; a fill takes edgeTatami), edgeTatami (a fill's, whatever its size; a satin takes edgeZigzag)",
 };
 const JUMP: FormatOption = FormatOption {
     name: "jumpLength",
     ty: "number",
     default: "5",
-    description: "a move longer than this lifts the needle (a jump) instead of being sewn, tied off before and in after so it can be cut, millimetres",
+    description: "a move longer than this lifts the needle (a jump) instead of being sewn, tied off before and in after so it can be cut, millimetres; 0.5 to 20",
 };
 const TRIM: FormatOption = FormatOption {
     name: "trimLength",
     ty: "number",
     default: "10",
-    description: "a jump longer than this cuts the thread (a trim); shorter ones are left for the machine or a person to cut, millimetres; never less than jumpLength (a smaller value acts as jumpLength)",
+    description: "a jump longer than this cuts the thread (a trim); shorter ones are left for the machine or a person to cut, millimetres; from jumpLength to 1000",
 };
 const MIN_STITCH: FormatOption =
-    FormatOption { name: "minStitch", ty: "number", default: "0.4", description: "shorter stitches are left out, millimetres" };
+    FormatOption { name: "minStitch", ty: "number", default: "0.4", description: "shorter stitches are left out, millimetres; 0.05 to 3" };
 
 /// The options the embroidery writers read.
 pub const OPTIONS: &[FormatOption] =
-    &[STYLE, DENSITY, STITCH_LENGTH, ANGLE, PULL, PULL_PERCENT, PUSH, EXPAND, NARROW, THREAD_WEIGHT_OPTION, UNDERLAY, JUMP, TRIM, MIN_STITCH];
+    &[STITCH, SPACING, LENGTH, ANGLE, PULL, PULL_PERCENT, PUSH, EXPAND, NARROW, WEIGHT, UNDERLAY, JUMP, TRIM, MIN_STITCH];
 
 /// The entry of `f` in the formats `document.open` and `document.export` know: as the stitch crate
 /// describes it ([`StitchFormat::spec`]), read and written, with the embroidery options.
@@ -132,9 +139,14 @@ pub(super) fn is_format(id: &str) -> bool {
     StitchFormat::from_id(id).is_some()
 }
 
-/// The options in `p`, checked.
+/// The embroidery options in the export's params `p`, checked: the export's own keys (and other
+/// formats' options) pass, a key that looks like a misspelt embroidery option is refused.
 fn options(p: &Value) -> Result<Options> {
-    Options::from_params(p, C)
+    match p {
+        Value::Object(o) => Options::from_object(o, Others::PassUnlessNear, C),
+        Value::Null => Ok(Options::default()),
+        _ => Err(bad(C, "params must be an object")),
+    }
 }
 
 /// Write a machine file from the document's visible art: its stitch plan, as the format writes it.
@@ -159,7 +171,10 @@ pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
 
 #[cfg(test)]
 mod tests {
-    use vectorcraft_stitch::plan::{Params, Style, THREAD_WEIGHT};
+    use vectorcraft_stitch::plan::{
+        DENSITY_RANGE, JUMP_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PULL_PERCENT_RANGE, PULL_RANGE, PUSH_RANGE, Params, STITCH_LENGTH_RANGE,
+        Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay,
+    };
 
     use super::*;
     use crate::cmd::embroidery::options::{EXPAND_DEFAULT, MAX_EXPAND};
@@ -169,17 +184,17 @@ mod tests {
     fn defaults_are_the_planners() {
         let num = |o: &FormatOption| o.default.parse::<f64>().unwrap();
         let (fill, satin, running) = (Params::for_style(Style::Fill), Params::for_style(Style::Satin), Params::for_style(Style::Running));
-        assert_eq!(num(&DENSITY), fill.density);
-        assert_eq!(num(&DENSITY), satin.density);
+        assert_eq!(num(&SPACING), fill.density);
+        assert_eq!(num(&SPACING), satin.density);
         // The satin spacing by width the description gives is the planner's.
         for (w, spacing) in [(1.0, "0.5 under 2"), (3.0, "0.45 under 4"), (5.0, "0.4 under 6"), (9.0, "0.37 wider")] {
             assert!(
-                DENSITY.description.contains(spacing) && spacing.starts_with(&vectorcraft_stitch::plan::satin_spacing(w).to_string()),
+                SPACING.description.contains(spacing) && spacing.starts_with(&vectorcraft_stitch::plan::satin_spacing(w).to_string()),
                 "{spacing}"
             );
         }
         // A density given turns the satin's auto spacing off.
-        let given = Options { density: Some(0.3), ..Options::default() };
+        let given = Options { spacing: Some(0.3), ..Options::default() };
         assert!(Options::default().params(Style::Satin, 3.0).auto_spacing);
         assert!(!given.params(Style::Satin, 3.0).auto_spacing);
         assert_eq!(num(&ANGLE), fill.angle);
@@ -192,7 +207,7 @@ mod tests {
         }
         assert_eq!(num(&EXPAND), EXPAND_DEFAULT);
         assert!(EXPAND.description.contains(&format!("-{MAX_EXPAND} to {MAX_EXPAND}")));
-        assert_eq!(num(&THREAD_WEIGHT_OPTION), THREAD_WEIGHT);
+        assert_eq!(num(&WEIGHT), THREAD_WEIGHT);
         assert_eq!(num(&NARROW), fill.narrow);
         assert_eq!((satin.narrow, running.narrow), (0.0, 0.0));
         assert!(NARROW.description.contains("0 to 12"));
@@ -200,16 +215,16 @@ mod tests {
         // The spacings the thread weight's description gives are the planner's.
         for (weight, rows) in [(30.0, "0.44 mm rows for 30 wt"), (60.0, "0.31 for 60")] {
             let spacing = Params::for_thread(Style::Fill, weight).density;
-            assert!(THREAD_WEIGHT_OPTION.description.contains(rows) && rows.starts_with(&format!("{spacing:.2}")), "{rows}: {spacing}");
+            assert!(WEIGHT.description.contains(rows) && rows.starts_with(&format!("{spacing:.2}")), "{rows}: {spacing}");
         }
-        assert_eq!(UNDERLAY.default == "true", fill.underlay && satin.underlay);
+        assert_eq!(UNDERLAY.default == "true", fill.underlay == Underlay::Auto && satin.underlay == Underlay::Auto);
         for p in [fill, satin, running] {
             assert_eq!(num(&JUMP), p.jump);
             assert_eq!(num(&TRIM), p.trim);
             assert_eq!(num(&MIN_STITCH), p.min_stitch);
         }
-        assert!(STITCH_LENGTH.description.contains(&format!("{} in fills", fill.stitch_length)));
-        assert!(STITCH_LENGTH.description.contains(&format!("{} in running lines", running.stitch_length)));
+        assert!(LENGTH.description.contains(&format!("{} in fills", fill.stitch_length)));
+        assert!(LENGTH.description.contains(&format!("{} in running lines", running.stitch_length)));
         // Nothing given: each style plans with its own values.
         let o = Options::default();
         assert_eq!(o.params(Style::Fill, 0.0), fill.sane());
@@ -220,7 +235,7 @@ mod tests {
     /// have it, and anything else is refused with a message.
     #[test]
     fn compensation_options_take_one_value_or_two() {
-        let o = options(&serde_json::json!({"pullCompensation": [0.3, 0.1], "pullCompensationPercent": 5, "pushCompensation": [0.4, 0.2]})).unwrap();
+        let o = options(&serde_json::json!({"pull": [0.3, 0.1], "pullCompensationPercent": 5, "push": [0.4, 0.2]})).unwrap();
         let (satin, fill, running) = (o.params(Style::Satin, 3.0), o.params(Style::Fill, 0.0), o.params(Style::Running, 0.0));
         assert_eq!((satin.pull, satin.pull_percent, satin.push), ([0.3, 0.1], [5.0, 5.0], [0.4, 0.2]));
         assert_eq!((fill.pull, fill.pull_percent, fill.push), ([0.3, 0.1], [5.0, 5.0], [0.0, 0.0]), "a fill has no column ends to push");
@@ -237,9 +252,69 @@ mod tests {
         assert_eq!(fine.params(Style::Satin, 3.0).thread_weight, 60.0);
         let given = options(&serde_json::json!({"threadWeight": 60, "density": 0.5})).unwrap();
         assert_eq!(given.params(Style::Fill, 0.0).density, 0.5);
-        // `expand` is clamped and a value that is not a number grows nothing.
-        assert_eq!(options(&serde_json::json!({"expand": 9})).unwrap().expand(), MAX_EXPAND);
-        assert_eq!(options(&serde_json::json!({"expand": -9})).unwrap().expand(), -MAX_EXPAND);
+        // `expand` out of its range is refused; a value that is not a number grows nothing.
+        assert!(options(&serde_json::json!({"expand": 9})).is_err());
+        assert_eq!(options(&serde_json::json!({"expand": -2})).unwrap().expand(), -MAX_EXPAND);
         assert_eq!(Options { expand: Some(f64::NAN), ..Options::default() }.expand(), 0.0);
+    }
+
+    /// Each option's range in `document.formats` is the planner's: its ends are accepted, a value
+    /// just past them refused with the range named, instead of being clamped.
+    #[test]
+    fn ranges_are_the_planners() {
+        let ranges = [
+            (&SPACING, DENSITY_RANGE),
+            (&LENGTH, STITCH_LENGTH_RANGE),
+            (&PULL, PULL_RANGE),
+            (&PULL_PERCENT, PULL_PERCENT_RANGE),
+            (&PUSH, PUSH_RANGE),
+            (&EXPAND, (-MAX_EXPAND, MAX_EXPAND)),
+            (&NARROW, NARROW_RANGE),
+            (&WEIGHT, THREAD_WEIGHT_RANGE),
+            (&JUMP, JUMP_RANGE),
+            (&MIN_STITCH, MIN_STITCH_RANGE),
+        ];
+        for (o, (lo, hi)) in ranges {
+            assert!(o.description.contains(&format!("{lo} to {hi}")), "{}: {}", o.name, o.description);
+            for ok in [lo, hi] {
+                assert!(options(&serde_json::json!({ o.name: ok })).is_ok(), "{} {ok}", o.name);
+            }
+            for past in [lo - 0.01, hi + 0.01] {
+                let e = options(&serde_json::json!({ o.name: past })).unwrap_err().to_string();
+                assert!(e.contains(&format!("from {lo} to {hi}")), "{} {past}: {e}", o.name);
+            }
+        }
+        assert!(TRIM.description.contains(&format!("from jumpLength to {MAX_TRIM}")));
+        assert!(options(&serde_json::json!({"trimLength": 3})).is_err(), "less than the default jump length");
+        assert!(options(&serde_json::json!({"trimLength": 3, "jumpLength": 2})).is_ok());
+    }
+
+    /// The earlier names are taken as well, a value under both names must agree, null leaves an
+    /// option to its default, `underlay` takes a kind, and a key that looks like a misspelt option
+    /// is refused while the export's own keys pass.
+    #[test]
+    fn earlier_names_and_kinds_are_taken() {
+        let old = options(&serde_json::json!({"stitchStyle": "satin", "density": 0.5, "stitchLength": 3, "stitchAngle": 30, "pullCompensation": 0.3, "pullCompensationPercent": 10, "pushCompensation": 0.4})).unwrap();
+        let new =
+            options(&serde_json::json!({"stitch": "satin", "spacing": 0.5, "length": 3, "angle": 30, "pull": 0.3, "pullPercent": 10, "push": 0.4}))
+                .unwrap();
+        assert_eq!(old, new);
+        assert_eq!(new.to_json()["stitch"], serde_json::json!("satin"));
+        assert!(options(&serde_json::json!({"spacing": 0.5, "density": 0.4})).is_err());
+        assert!(options(&serde_json::json!({"spacing": 0.5, "density": 0.5})).is_ok());
+        let unset = options(&serde_json::json!({"stitch": null, "spacing": null, "underlay": null})).unwrap();
+        assert_eq!(unset, Options::default());
+        assert_eq!(options(&serde_json::json!({"stitch": "tatami"})).unwrap().forced(), Some(Style::Fill));
+        for (v, kind) in [
+            (serde_json::json!(true), Underlay::Auto),
+            (serde_json::json!(false), Underlay::None),
+            (serde_json::json!("edgeZigzag"), Underlay::EdgeZigzag),
+        ] {
+            assert_eq!(options(&serde_json::json!({ "underlay": v })).unwrap().params(Style::Satin, 3.0).underlay, kind);
+        }
+        assert!(options(&serde_json::json!({"underlay": "zigzag"})).is_err());
+        let e = options(&serde_json::json!({"format": "dst", "path": "x.dst", "densty": 0.5})).unwrap_err().to_string();
+        assert!(e.contains("did you mean the embroidery option `density`"), "{e}");
+        assert!(options(&serde_json::json!({"format": "dst", "path": "x.dst", "selectedOnly": true, "artboard": 0})).is_ok());
     }
 }

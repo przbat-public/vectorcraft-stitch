@@ -71,9 +71,9 @@ pub enum Choice {
     WideStroke,
     /// A narrower stroke: a running line along it.
     NarrowStroke,
-    /// `stitchStyle fill` on a stroke: the area the stroke paints, filled.
+    /// `stitch: fill` on a stroke: the area the stroke paints, filled.
     StrokeFilled,
-    /// `stitchStyle` forced the style.
+    /// The `stitch` option forced the style.
     Forced,
     /// Stitches read from a machine file, sewn as they are.
     Literal,
@@ -170,7 +170,7 @@ pub struct Unit {
 
 impl Unit {
     /// The style it is sewn in, as the planner sews its parameters ([`plan::sewn_style`]: a satin
-    /// without a width, a fill whose `stitchStyle` is satin, is filled); `None` for a literal run,
+    /// without a width, a fill whose `stitch` is satin, is filled); `None` for a literal run,
     /// sewn as its points are.
     pub fn sewn(&self) -> Option<Style> {
         self.params.map(|p| plan::sewn_style(&p))

@@ -16,29 +16,38 @@ observed, and no GPL implementation was read or copied.
 **Writing a design.** Draw the artwork as usual, select nothing (or the art you want) and export:
 
 ```json
-{"id": 1, "method": "engine.execute", "params": {"command": "document.export", "params": {"format": "pes", "density": 0.4, "stitchAngle": 45}}}
+{"id": 1, "method": "engine.execute", "params": {"command": "document.export", "params": {"format": "pes", "spacing": 0.4, "angle": 45}}}
 ```
 
 `document.export` writes the whole document's visible art unless `selectedOnly` is given. The file
 goes to `path`, or comes back as `dataBase64` when no path is given (that is how the tests and the
 control channel use it). Every writable format's options are listed by `document.formats`.
 
-| Option | Default | Meaning |
-|---|---|---|
-| `stitchStyle` | `auto` | `auto` fills fills (their narrow parts as satin columns, see `narrowAsSatin`), satins strokes 1 mm and wider, runs narrower ones; `fill`, `satin` and `running` force one style (`fill` on a stroke fills the area the stroke paints, at its width, caps and joins; `fill` on a fill sews all of it as tatami) |
-| `density` | 0.38 mm in fills; satin by width | distance between threads: between a fill's rows; between two penetrations on one rail of a satin column (peak to peak), its crossings lying half that apart. Left out, a satin column picks it by its width (*auto spacing*: 0.5 mm under 2 mm wide, 0.45 under 4, 0.4 under 6, 0.37 wider; estimates), and both follow `threadWeight`; given, it is used as it is |
-| `stitchLength` | 4 mm in fills, 2.5 mm in running lines | the longest stitch of a running line or a fill row |
-| `stitchAngle` | 45° | the direction a fill's rows run |
-| `pullCompensation` | 0.2 mm | how much farther the stitches reach at each side so the fabric's pull leaves no gap: each rail of a satin column, each end of a fill's rows. One number for both sides, or two: `[left, right]` of a satin as its path runs, `[start, end]` of a fill's rows along their direction; 0 to 2 mm a side (a negative value counts as 0) |
-| `pullCompensationPercent` | 0 | pull compensation that grows with the stitch, on top of `pullCompensation`: percent of a satin column's width, or of a fill row's length, added at each side (at most 2 mm a side with the fixed value). One number or two, as `pullCompensation`; 0 to 50 % |
-| `pushCompensation` | 0 mm | how much shorter an open satin column is sewn at each end, since sewing pushes the fabric out there; one number or two (`[start, end]` as the path is drawn). A fill's narrow part sewn as satin is shortened only at an end where the shape ends, not where it meets the rest of the fill. A column keeps at least half its length; 0 to 5 mm an end (a negative value counts as 0) |
-| `narrowAsSatin` | 7 mm | a filled shape's parts narrower than this are sewn as satin columns that follow the shape, the rest as tatami; 0 sews every fill as tatami; 0 to 12 |
-| `expand` | 0 mm | how far a filled shape grows all round before it is stitched, so that neighbouring shapes drawn apart meet; negative shrinks it; −2 to 2 |
-| `threadWeight` | 40 | the thread's weight (wt: kilometres per kilogram, so a larger number is a finer thread): the default spacing of fills and satin columns follows its thickness (fill rows 0.44 mm apart for 30 wt, 0.31 for 60); 10 to 150 |
-| `underlay` | `true` | an edge run under fills, a centre run under satin columns |
-| `jumpLength` | 5 mm | a longer move lifts the needle (a jump), tied off before and in after so that it can be cut; a shorter move that can't be sewn (between separate pieces) jumps with the thread on |
-| `trimLength` | 10 mm | a jump longer than this cuts the thread first (a trim); shorter jumps are left for the machine or a person to cut. Never less than `jumpLength`: a smaller value acts as `jumpLength` |
-| `minStitch` | 0.4 mm | shorter stitches are left out |
+| Option | Earlier name | Default | Meaning |
+|---|---|---|---|
+| `stitch` | `stitchStyle` | `auto` | `auto` fills fills (their narrow parts as satin columns, see `narrowAsSatin`), satins strokes 1 mm and wider, runs narrower ones; `tatami` (or `fill`), `satin` and `running` force one style (`tatami` on a stroke fills the area the stroke paints, at its width, caps and joins; on a fill it sews all of it as tatami) |
+| `spacing` | `density` | 0.38 mm in fills; satin by width | distance between threads: between a fill's rows; between two penetrations on one rail of a satin column (peak to peak), its crossings lying half that apart. Left out, a satin column picks it by its width (*auto spacing*: 0.5 mm under 2 mm wide, 0.45 under 4, 0.4 under 6, 0.37 wider; estimates), and both follow `threadWeight`; given, it is used as it is. 0.05 to 5 mm |
+| `length` | `stitchLength` | 4 mm in fills, 2.5 mm in running lines | the longest stitch of a running line or a fill row; 0.2 to 12 mm |
+| `angle` | `stitchAngle` | 45° | the direction a fill's rows run; any angle |
+| `pull` | `pullCompensation` | 0.2 mm | pull compensation: how much farther the stitches reach at each side so the fabric's pull leaves no gap: each rail of a satin column, each end of a fill's rows. One number for both sides, or two: `[left, right]` of a satin as its path runs, `[start, end]` of a fill's rows along their direction; 0 to 2 mm a side |
+| `pullPercent` | `pullCompensationPercent` | 0 | pull compensation that grows with the stitch, on top of `pull`: percent of a satin column's width, or of a fill row's length, added at each side (at most 2 mm a side with the fixed value). One number or two, as `pull`; 0 to 50 % |
+| `push` | `pushCompensation` | 0 mm | push compensation: how much shorter an open satin column is sewn at each end, since sewing pushes the fabric out there; one number or two (`[start, end]` as the path is drawn). A fill's narrow part sewn as satin is shortened only at an end where the shape ends, not where it meets the rest of the fill. A column keeps at least half its length; 0 to 5 mm an end |
+| `narrowAsSatin` | | 7 mm | a filled shape's parts narrower than this are sewn as satin columns that follow the shape, the rest as tatami; 0 sews every fill as tatami; 0 to 12 mm |
+| `expand` | | 0 mm | how far a filled shape grows all round before it is stitched, so that neighbouring shapes drawn apart meet; negative shrinks it; −2 to 2 mm |
+| `threadWeight` | | 40 | the thread's weight (wt: kilometres per kilogram, so a larger number is a finer thread): the default spacing of fills and satin columns follows its thickness (fill rows 0.44 mm apart for 30 wt, 0.31 for 60); 10 to 150 |
+| `underlay` | | `true` | what is sewn under the art first: `true` or `auto` (by the shape: under a satin column a centre run, an edge run from 2 mm wide, an edge run and a zigzag from 4.5 mm; under a fill an edge run, and sparse tatami when it is at least 10 mm across), `false` or `none`, or one kind for every shape: `center`, `edge`, `edgeZigzag` (a satin's; a fill takes `edgeTatami`), `edgeTatami` (a fill's, whatever its size; a satin takes `edgeZigzag`) |
+| `jumpLength` | | 5 mm | a longer move lifts the needle (a jump), tied off before and in after so that it can be cut; a shorter move that can't be sewn (between separate pieces) jumps with the thread on; 0.5 to 20 mm |
+| `trimLength` | | 10 mm | a jump longer than this cuts the thread first (a trim); shorter jumps are left for the machine or a person to cut. From `jumpLength` (only a jump is cut) to 1,000 mm |
+| `minStitch` | | 0.4 mm | shorter stitches are left out; 0.05 to 3 mm |
+
+**One vocabulary.** These names are the ones the per-object settings will use, so that a value
+resolved for an object can say which layer it came from (object, export option, document,
+default) under one name. The earlier names are still taken, as aliases: a request may use either,
+not both for one option. A value outside its range is refused with the range in the message, not
+clamped; the ranges are the stitch planner's (`plan::*_RANGE`), and a test keeps the descriptions
+`document.formats` lists equal to them. `null` leaves an option unset. Every read command
+(`embroidery.stats`, `sequence`, `check`, `threads`) echoes the options it planned with, under
+`options`, with the new names.
 
 An option left out keeps the style's own value. The defaults are the stitch planner's
 (`plan::Params::for_style`, or `plan::Params::for_thread` for another thread weight);
@@ -77,7 +86,7 @@ thread's description (else its catalogue number), which names the group; it sets
 as a run of literal stitches (`NodeExtras::embroidery`, kept in `.vectorcraft` files), and the
 export sews its points exactly as they are, one needle point per point, with the jumps and trims
 the file had between runs. The runs of one thread group stay one colour block, and the export
-options (`stitchStyle`, `density`…) don't touch them. So a design opened and written again, in the
+options (`stitch`, `spacing`…) don't touch them. So a design opened and written again, in the
 same format or another, has every needle point, trim and colour block where the file had it (see
 `an_opened_design_is_written_back_unchanged` in `crates/engine/src/cmd/fileio/tests_embroidery.rs`).
 Put inside a clip group, the lines are cut to the clipping path as any stroke is, and the needle
@@ -175,11 +184,11 @@ trims, and what follows it (a colour change, after a cut when the block ends wit
 block, its units in order, each with the object a person selects (`id`: the symbol instance for
 art inside a symbol, with the object sewn as `node`), the part ("fill 1", "stroke 1", or
 "stitches" for a run opened from a file), how it is sewn (running, satin, tatami, tatami with
-satin columns, literal; as the planner sews it: a fill under `stitchStyle: satin` has no width to
+satin columns, literal; as the planner sews it: a fill under `stitch: satin` has no width to
 sew a satin across and is filled, so it is listed as tatami) and why: the rule that chose it ("a
 stroke at least 1 mm wide is a satin
 column, here 2.12 mm", "a stroke narrower than 1 mm is a running line", "a fill is tatami; its
-parts narrower than 7 mm are satin columns that follow the shape", "stitchStyle satin"); and its
+parts narrower than 7 mm are satin columns that follow the shape", "stitch satin"); and its
 needle points, stitch numbers, jumps, trims, entry and exit points and box. `split` names the
 objects whose units are sewn in more than one block (an object filled in one thread and stroked in
 another always is). Sewing order follows stacking order: moving objects (`node.move`) changes it,
@@ -264,7 +273,7 @@ every long jump and at the end: a short stitch back and forth on the spot. A sti
 `minStitch` is left out, as professional software removes them: it can break the thread or cut
 the fabric.
 
-- **Running** follows a path at `stitchLength` steps, with a lock stitch (a short stitch back
+- **Running** follows a path at `length` steps, with a lock stitch (a short stitch back
   along the line and forward again, never past its end) at each end so the thread does not pull
   out. Sharp corners (turns over about 30°) get a needle point of their own, so the stitches follow
   the outline instead of cutting across a corner; the same holds for underlay. A point that would
@@ -276,17 +285,17 @@ the fabric.
   measured between two penetrations on one rail (peak to peak), as Madeira's thread chart,
   Ink/Stitch and Hatch measure a satin's density, so its crossings lie half that apart: more open
   in a narrow column, where the thread bunches at the rails, denser in a wide one so it covers (or
-  `density`, when given). A 5 mm column at 40 wt (0.40 mm) puts 50 crossings in a centimetre;
+  `spacing`, when given). A 5 mm column at 40 wt (0.40 mm) puts 50 crossings in a centimetre;
   Madeira's chart gives 51 for 40 wt. (Until this was settled the crossings lay a whole spacing
   apart, half as dense as meant: the satins the person sewed in the real designs below lie
   0.41–0.42 mm apart on a rail, as Ink/Stitch's default 0.4 mm does, and VectorCraft's lay about
   1.08 mm apart.) Pull compensation widens the column at each rail: a fixed
-  `pullCompensation` (0.2 mm, Wilcom's starting value for drill and cotton) plus, if asked,
-  `pullCompensationPercent` of the column's width, which gives wide columns more than narrow ones
+  `pull` (0.2 mm, Wilcom's starting value for drill and cotton) plus, if asked,
+  `pullPercent` of the column's width, which gives wide columns more than narrow ones
   (as Ink/Stitch's percentage does); each can differ between the rails (the left one as the path
   is drawn, then the right one), as Wilcom's double-sided compensation does for a column that lies
   on fabric on one side and on other stitching on the other. Push compensation
-  (`pushCompensation`) shortens an open column at its start and its end, underlay and all: the
+  (`push`) shortens an open column at its start and its end, underlay and all: the
   stitches pile up at a column's ends and push the fabric out, so a column comes out longer than
   drawn (Wilcom's push and pull article, Ink/Stitch's push compensation). No starting value is
   published, so it is off by default. Every crossing goes across the column, the last one too (the
@@ -319,16 +328,16 @@ the fabric.
   straight column keeps its full width. A 5 mm column round a 3 mm radius had 16 of its 18 inner
   penetrations within 0.15 mm of the one before; now none is. The depths are estimates (15–25 % is
   the usual shortening).
-- **Tatami fill** fills a shape with rows `density` apart at `stitchAngle` degrees, alternating
+- **Tatami fill** fills a shape with rows `spacing` apart at `angle` degrees, alternating
   their direction. The defaults, rows 0.38 mm apart and stitches up to 4 mm, are Wilcom's tatami
   defaults ([Wilcom: satin and tatami stitch](https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch)),
   and 0.38 mm is the spacing David Morrish's *Digital Embroidery* (2025, ch. 2) gives for 40 wt
   thread without gaps (0.40 mm lies the threads flush). Fabrics that need more or less wait for
   fabric presets. A shape drawn without a final close is still filled, as paint fills it; only a
-  subpath with no area is sewn as a line. The penetrations sit on a grid every `stitchLength`
+  subpath with no area is sewn as a line. The penetrations sit on a grid every `length`
   along the rows' direction, shifted a quarter stitch from one row to the next over a four-row
   cycle, so neighbouring rows — in any region — form one stagger pattern and never line up into a
-  groove; no stitch is longer than `stitchLength` (an end stitch at most `minStitch` more, and
+  groove; no stitch is longer than `length` (an end stitch at most `minStitch` more, and
   its pull compensation), and only a row's first and last stitches are shorter. A row's last
   stitch is left out when it is short, so the needle turns diagonally into the next row instead
   of crawling along the edge (a region's last row keeps it: it has no next row to turn into, and
@@ -342,8 +351,8 @@ the fabric.
   its length, so a fill sewn exactly to its outline comes out narrower and leaves a line of
   background where it meets its neighbour (Wilcom: tatami fills are pulled less than satins, but
   noticeably over large areas). Each row's first and last needle points move out by
-  `pullCompensation` (the first value at the rows' start, the second at their end) plus
-  `pullCompensationPercent` of the row's length, as Ink/Stitch's fill pull compensation extends
+  `pull` (the first value at the rows' start, the second at their end) plus
+  `pullPercent` of the row's length, as Ink/Stitch's fill pull compensation extends
   each row outward from its centre; at most half way to the next stretch of the same row, so rows
   either side of a narrow gap or hole meet in its middle at most, never across it (a hole
   narrower than twice the compensation is closed in the stitches; the fabric's pull opens it
@@ -450,7 +459,7 @@ the fabric.
   outside and 0.22 inside where the table asks 0.40, leaving more fabric bare along the letter's
   edge than the tatami it replaced; now 0.40 outside and 0.15 inside (a 5 mm ring round a 3 mm
   hole: 0.60 → 0.40 outside, 0.21 → 0.14 inside). Pull compensation
-  widens both sides by the mean of `pullCompensation`'s two values (a fill has no drawn direction
+  widens both sides by the mean of `pull`'s two values (a fill has no drawn direction
   to tell its sides apart), push compensation shortens an end where the shape ends by the mean of
   its two (not an end that meets the rest of the shape: the rest is cut out up to the column's
   whole length, so a shorter column there would leave a band sewn by neither), and the underlay,
@@ -582,7 +591,7 @@ thread; 23 and 28 of them are past 5, and 8 and 12 past 10.
 - Fill pull compensation stretches rows along their direction only: across the rows, a fill keeps
   half a row spacing inside its edge, as before. `expand` grows it both ways.
 - A fill's narrow parts become satin by their width alone, not by what a person would choose (a
-  wide stem, a stripe the art wants flat). `narrowAsSatin: 0` or `stitchStyle: fill` keeps all of
+  wide stem, a stripe the art wants flat). `narrowAsSatin: 0` or `stitch: tatami` keeps all of
   it tatami; there is no per-object choice until embroidery properties on objects.
 - A part of a fill narrower than 1 mm is a single running line along its middle, not a bean or
   triple run: on a part 0.6–1 mm wide its edges stay bare.
@@ -757,7 +766,7 @@ thread; 23 and 28 of them are past 5, and 8 and 12 past 10.
   its unit with it, stitches are numbered from 1 in sewing order (each number finds its block, index
   and unit; none past the end), and the export writes the plan in every format; export writes a
   readable design in every format,
-  a narrow fill is sewn as satin across it (tatami with `stitchStyle: fill` or `narrowAsSatin: 0`),
+  a narrow fill is sewn as satin across it (tatami with `stitch: tatami` or `narrowAsSatin: 0`),
   a filled letter T is sewn in one go with no jump or trim, a negative `expand` shrinks the region
   two overlapping squares cover (no groove along the outlines inside it), a shape expanded away is
   warned about (and named in the error when it was all there was), `expand` leaves an open line in
@@ -916,7 +925,7 @@ Sunflower 4.3). Past 10, the mismatch flag's threshold, are 8 of the 44 blocks i
 palette (10 before) and 12 in Janome's (17). Stitches, trims and jumps are unchanged.
 
 The comparison also found and fixed: a shape drawn without a final close sewn as an outline (the
-heart: 42 stitches instead of a fill), fill stitches up to 1.5 times `stitchLength` (the old
+heart: 42 stitches instead of a fill), fill stitches up to 1.5 times `length` (the old
 stagger), tiny stitches at the ends of resampled lines, long loose row turns, and trims where a
 travel along the outline was too long but a way through the shape was short (the puzzle piece:
 6 trims, now 1).

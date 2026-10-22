@@ -4814,7 +4814,7 @@ theme	Appearance	Giao diện
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	hòa trộn, envelope, lưới và lặp lại động không được thêu: hãy mở rộng chúng trước
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	giá trị expand âm không để lại gì của một số hình được tô, nên chúng không được thêu: hãy thu nhỏ ít hơn
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	chuyển sắc và họa tiết được tô bằng màu của điểm dừng đầu tiên; một mẫu thêu may một sợi chỉ cho mỗi khối
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	nét rộng hơn {widest} mm được may thành cột satin rộng {widest} mm: hãy tô chúng thay vào đó (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	nét rộng hơn {widest} mm được may thành cột satin rộng {widest} mm: hãy tô chúng thay vào đó (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	phiên bản này không biết bảng màu chỉ {palette} của tài liệu, nên chỉ được chọn từ bảng màu {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	không có gì để thêu: tài liệu không có đường dẫn hiển thị nào có tô hoặc nét
 @msg	nothing to stitch: {_1}	không có gì để thêu: {_1}

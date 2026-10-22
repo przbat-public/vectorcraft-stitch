@@ -4814,7 +4814,7 @@ lighting	Light	Світло
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	динамічні переходи, оболонки, сітки й повтори не вишиваються: спершу розберіть їх
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	від’ємне значення expand не залишило нічого від деяких залитих фігур, тому вони не вишиваються: зменшуйте їх менше
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	градієнти й візерунки фарбуються кольором їхньої першої точки переходу; вишивка шиє однією ниткою на блок
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	обведення ширші за {widest} мм шиються стовпчиками гладдю шириною {widest} мм: натомість залийте їх (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	обведення ширші за {widest} мм шиються стовпчиками гладдю шириною {widest} мм: натомість залийте їх (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	ця версія не знає палітри ниток {palette} документа, тому його нитки добираються з палітри {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	немає чого вишивати: у документі немає видимих контурів із заливкою чи обведенням
 @msg	nothing to stitch: {_1}	немає чого вишивати: {_1}

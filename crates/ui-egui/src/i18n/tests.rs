@@ -1880,7 +1880,7 @@ fn embroidery_export_messages_are_translated() {
         let lang = Lang::from_code(info.code).unwrap();
         for m in &messages {
             let shown = message(lang, m);
-            let left = english.iter().find(|w| shown.replace("stitchStyle", "").contains(**w));
+            let left = english.iter().find(|w| shown.replace("stitch fill", "").contains(**w));
             if shown == *m || left.is_some() {
                 untranslated.push(format!("{}: {shown}", info.code));
             }

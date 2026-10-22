@@ -5185,7 +5185,7 @@ theme	Appearance	Външен вид
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	динамичните преливания, пликове, мрежи и повторения не се бродират: първо ги разширете
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	отрицателна стойност на expand не остави нищо от някои запълнени форми, затова те не се бродират: смалявайте ги по-малко
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	градиентите и мострите се оцветяват в цвета на първия си репер; бродерията шие с един конец на блок
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	щрихи, по-широки от {widest} мм, се шият като сатенени колони с ширина {widest} мм: вместо това ги запълнете (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	щрихи, по-широки от {widest} мм, се шият като сатенени колони с ширина {widest} мм: вместо това ги запълнете (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	тази версия не познава палитрата конци {palette} на документа, затова конците му се избират от палитрата {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	няма какво да се бродира: документът няма видими пътища със запълване или щрих
 @msg	nothing to stitch: {_1}	няма какво да се бродира: {_1}

@@ -181,7 +181,7 @@ fn distance(a: &str, b: &str) -> usize {
 }
 
 /// The key of `keys` a misspelt `key` most likely meant: the nearest one, when it is near.
-fn nearest<'a>(key: &str, keys: &[&'a str]) -> Option<&'a str> {
+pub(crate) fn nearest<'a>(key: &str, keys: &[&'a str]) -> Option<&'a str> {
     let near = keys.iter().map(|k| (distance(key, k), *k)).min()?;
     (near.0 <= (key.chars().count() / 3).max(1)).then_some(near.1)
 }

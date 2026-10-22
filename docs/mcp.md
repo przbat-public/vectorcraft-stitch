@@ -4302,7 +4302,7 @@ file back as art, one group per thread. The whole feature is described in [embro
 - `embroidery.stats {…embroidery options, speed?, fabricThickness?}` gives the design's figures as the export sews
   it, for the design and per block: needle points, jumps, trims, colour changes, threads, blocks; size, bounds, start
   and end points, extents from the start; the shortest and longest stitch and the longest jump; top and bobbin thread
-  in metres and the sewing time, both estimates whose constants and sources `embroidery.md` lists (`speed`, stitches
+  in metres and the sewing time, both estimates (each says so in `estimate`) whose constants and sources `embroidery.md` lists (`speed`, stitches
   a minute, 60 to 1500, default 650; `fabricThickness`, mm, 0 to 5, default 0.5). The time leaves out thread changes,
   which are counted apart.
 - `embroidery.sequence {…embroidery options}` lists the sewing order, read only: the blocks in order with their

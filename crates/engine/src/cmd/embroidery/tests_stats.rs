@@ -122,6 +122,10 @@ fn the_stats_command_checks_its_params() {
     let v = s.execute("embroidery.stats", &json!({"speed": 800, "fabricThickness": 1, "density": 0.5})).unwrap();
     assert_eq!((&v["time"]["speed"], &v["thread"]["fabricThickness"]), (&json!(800.0), &json!(1.0)));
     assert!(v["stitches"].as_u64().unwrap() > 100);
+    // Both figures say they are estimates, and what they rest on.
+    for field in [&v["thread"]["estimate"], &v["time"]["estimate"]] {
+        assert!(field.as_str().unwrap().starts_with("an estimate: "), "{field}");
+    }
     let defaults = s.execute("embroidery.stats", &json!({})).unwrap();
     assert_eq!((&defaults["time"]["speed"], &defaults["thread"]["fabricThickness"]), (&json!(650.0), &json!(0.5)));
     for (bad, why) in [

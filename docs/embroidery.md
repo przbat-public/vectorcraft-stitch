@@ -160,7 +160,9 @@ marked as an estimate (`cmd/embroidery/stats.rs`):
 
 So each needle point and jump is one turn of the machine at the normal or the slow speed, each trim
 takes 3.5 s, and the start and end of the design are not timed; the answer says what the time
-includes. On the real designs VectorCraft's plans use about 5.6 m of top thread per 1,000 needle
+includes, and marks the thread and the time as estimates (`estimate`: what each rests on). All
+these numbers stay estimates until they are measured on machines (the project owner's choice,
+2026-10-22). On the real designs VectorCraft's plans use about 5.6 m of top thread per 1,000 needle
 points, and the real designs' watermelon (46 × 32 mm, 1,509 needle points) sews in about 2.5
 minutes at 650 stitches a minute. Values out of range are refused, not clamped.
 

@@ -77,6 +77,11 @@ const BOBBIN_FACTOR_MIXED: f64 = 1.0;
 const BOBBIN_FACTOR_RUN_OR_TATAMI: f64 = 1.25;
 const BOBBIN_FACTOR_SATIN: f64 = 0.65;
 
+/// What the thread figures rest on, as the answer says it: an estimate.
+const THREAD_ESTIMATE: &str = "an estimate: each needle-down stitch's length on the face, its length on the back shared between bobbin and top thread (a third bobbin under a satin, the balance thread makers teach, scaled by Wilcom's bobbin factors for the other stitches), and twice fabricThickness of top thread at every needle point";
+/// What the time rests on, as the answer says it: an estimate.
+const TIME_ESTIMATE: &str = "an estimate: each needle point and jump one turn of a home machine at speed (a default setting, 650 by default), slowSpeed past slowAbove mm, and trimSeconds a trim; not timed: thread changes, the design's start and end";
+
 /// Millimetres in a metre.
 const MM_PER_M: f64 = 1000.0;
 /// Seconds in a minute.
@@ -303,7 +308,7 @@ pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread) -> Valu
         "shortestStitch": total.shortest.map(mm),
         "longestStitch": total.longest.map(mm),
         "longestJump": total.longest_jump.map(mm),
-        "thread": {"top": metres(total.top), "bobbin": metres(total.bobbin), "fabricThickness": thread.fabric},
+        "thread": {"top": metres(total.top), "bobbin": metres(total.bobbin), "fabricThickness": thread.fabric, "estimate": THREAD_ESTIMATE},
         "time": {
             "seconds": total.seconds.round(),
             "minutes": (total.seconds / SECONDS_PER_MINUTE * TENTHS).round() / TENTHS,
@@ -313,6 +318,7 @@ pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread) -> Valu
             "trimSeconds": TRIM_SECONDS,
             "threadChanges": plan.blocks.len().saturating_sub(1),
             "includes": "needle points and jumps at speed (slowSpeed past slowAbove mm) and trims; not the thread changes (threadChanges, each a stop to rethread), nor the start and end of the design",
+            "estimate": TIME_ESTIMATE,
         },
         "perBlock": per_block,
         "warnings": plan.warnings,

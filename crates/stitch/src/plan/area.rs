@@ -33,6 +33,16 @@ impl Area<'_> {
         edges(self.outlines)
     }
 
+    /// Whether `hit` holds for an edge that segment `a`–`b` may meet: with the grid, the edges in
+    /// the cells the segment passes (an edge in several of them may come more than once); without,
+    /// every edge.
+    fn any_edge_along(&self, a: Point, b: Point, mut hit: impl FnMut(Point, Point) -> bool) -> bool {
+        match self.grid {
+            Some(grid) => grid.any_along(a, b, hit),
+            None => self.edges().any(|(c, d)| hit(c, d)),
+        }
+    }
+
     /// Whether `q` is inside.
     pub(super) fn contains(&self, q: Point) -> bool {
         let winding = match self.grid {
@@ -59,11 +69,7 @@ impl Area<'_> {
         if a.distance(b) < SAME_POINT {
             return self.contains(a);
         }
-        let crosses = match self.grid {
-            Some(grid) => grid.any_along(a, b, |c, d| crossing(a, b, c, d)),
-            None => self.edges().any(|(c, d)| crossing(a, b, c, d)),
-        };
-        if crosses {
+        if self.any_edge_along(a, b, |c, d| crossing(a, b, c, d)) {
             return false;
         }
         if self.along_edge(a, b) {
@@ -83,16 +89,11 @@ impl Area<'_> {
                 cuts.push(((c - a).dot(ab) / len2).clamp(0.0, 1.0));
             }
         };
-        match self.grid {
-            Some(grid) => grid.for_each_along(a, b, |c, d| {
-                note(c);
-                note(d);
-            }),
-            None => self.edges().for_each(|(c, d)| {
-                note(c);
-                note(d);
-            }),
-        }
+        self.any_edge_along(a, b, |c, d| {
+            note(c);
+            note(d);
+            false
+        });
         cuts.sort_by(f64::total_cmp);
         cuts.dedup_by(|x, y| (*x - *y).abs() < f64::EPSILON);
         cuts.windows(2).all(|w| {
@@ -109,10 +110,9 @@ impl Area<'_> {
     pub(super) fn edges_along(&self, a: Point, b: Point, mut visit: impl FnMut(usize, Point, Point)) {
         match self.grid {
             Some(grid) => {
-                let visit = std::cell::RefCell::new(&mut visit);
                 grid.any_along_index(a, b, |i| {
                     if let (Some(&id), Some(&(c, d))) = (grid.ids.get(i), grid.edges.get(i)) {
-                        (visit.borrow_mut())(id, c, d);
+                        visit(id, c, d);
                     }
                     false
                 });
@@ -123,20 +123,13 @@ impl Area<'_> {
 
     /// Whether `q` lies on one of the outlines' edges (within [`ON_EDGE`]).
     pub(super) fn on_outline(&self, q: Point) -> bool {
-        match self.grid {
-            Some(grid) => grid.any_along(q, q, |c, d| near_segment(q, c, d)),
-            None => self.edges().any(|(c, d)| near_segment(q, c, d)),
-        }
+        self.any_edge_along(q, q, |c, d| near_segment(q, c, d))
     }
 
     /// Whether the segment from `a` to `b` lies on one of the outlines' edges, both its ends within
     /// [`ON_EDGE`] of it.
     fn along_edge(&self, a: Point, b: Point) -> bool {
-        let on = |c: Point, d: Point| near_segment(a, c, d) && near_segment(b, c, d);
-        match self.grid {
-            Some(grid) => grid.any_along(a, b, on),
-            None => self.edges().any(|(c, d)| on(c, d)),
-        }
+        self.any_edge_along(a, b, |c, d| near_segment(a, c, d) && near_segment(b, c, d))
     }
 
     /// Where the outlines' points fall along `v`: the lowest and highest, `None` when none is
@@ -545,24 +538,14 @@ impl Grid {
         ids.into_iter().filter_map(|i| self.edges.get(i as usize).copied()).collect()
     }
 
-    /// `visit` called with every edge in the cells segment `a`–`b` passes through (an edge in
-    /// several of them more than once).
-    fn for_each_along(&self, a: Point, b: Point, mut visit: impl FnMut(Point, Point)) {
-        let seen = std::cell::RefCell::new(&mut visit);
-        self.any_along(a, b, |c, d| {
-            (seen.borrow_mut())(c, d);
-            false
-        });
-    }
-
     /// Whether `hit` holds for any edge in the cells segment `a`–`b` passes through (walked cell by
-    /// cell, Amanatides and Woo's traversal).
-    fn any_along(&self, a: Point, b: Point, hit: impl Fn(Point, Point) -> bool) -> bool {
+    /// cell, Amanatides and Woo's traversal; an edge in several of them may come more than once).
+    fn any_along(&self, a: Point, b: Point, mut hit: impl FnMut(Point, Point) -> bool) -> bool {
         self.any_along_index(a, b, |i| self.edges.get(i).is_some_and(|&(p, q)| hit(p, q)))
     }
 
     /// [`Grid::any_along`], `hit` given each edge's index in the grid's list.
-    fn any_along_index(&self, a: Point, b: Point, hit: impl Fn(usize) -> bool) -> bool {
+    fn any_along_index(&self, a: Point, b: Point, mut hit: impl FnMut(usize) -> bool) -> bool {
         let (mut c, mut r) = (self.col(a.x), self.row(a.y));
         let (ec, er) = (self.col(b.x), self.row(b.y));
         let d = b - a;

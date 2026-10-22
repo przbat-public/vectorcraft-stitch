@@ -67,24 +67,25 @@ fn the_counts_and_lengths_are_the_designs() {
     assert_eq!((first["blocks"].as_array().unwrap().len(), &first["truncated"]), (1, &json!(true)));
 }
 
-/// The thread: on the face each stitch's length; on the back its length shared between the bobbin
-/// (a third under a satin, scaled by Wilcom's factors for the other styles: 125 / 65 of that under
-/// a running line) and the top thread pulled under; and twice the fabric's thickness of top thread
-/// at every needle point.
+/// The thread: top thread, on the face each stitch's length; on the back the share of its length
+/// that is top thread pulled under (two thirds under a satin, scaled by Wilcom's factors for the
+/// other styles: 125 / 65 of the bobbin's third under a running line); and twice the fabric's
+/// thickness at every needle point. Bobbin thread, 3/5 of the top thread (Madeira).
 #[test]
 fn the_thread_follows_the_stitches_and_the_fabric() {
     let (blocks, _) = stats::tally(&two_blocks(), Machine { speed: 650.0 }, Fabric { fabric: 0.5 });
     let (running, satin) = (7.0, 2.0 + 2f64.sqrt());
     let (run_share, satin_share) = (1.0 / 3.0 * 1.25 / 0.65, 1.0 / 3.0);
     let through = 2.0 * 0.5;
-    assert!(close(blocks[0].bobbin, running * run_share), "{}", blocks[0].bobbin);
-    assert!(close(blocks[0].top, running * (2.0 - run_share) + 4.0 * through), "{}", blocks[0].top);
-    assert!(close(blocks[1].bobbin, satin * satin_share), "{}", blocks[1].bobbin);
-    assert!(close(blocks[1].top, satin * (2.0 - satin_share) + 4.0 * through), "{}", blocks[1].top);
-    // A thicker fabric only adds to the top thread.
+    let (run_top, satin_top) = (running * (2.0 - run_share) + 4.0 * through, satin * (2.0 - satin_share) + 4.0 * through);
+    assert!(close(blocks[0].top, run_top), "{}", blocks[0].top);
+    assert!(close(blocks[0].bobbin, run_top * 0.6), "{}", blocks[0].bobbin);
+    assert!(close(blocks[1].top, satin_top), "{}", blocks[1].top);
+    assert!(close(blocks[1].bobbin, satin_top * 0.6), "{}", blocks[1].bobbin);
+    // A thicker fabric adds to the top thread, and to the bobbin in proportion.
     let (thick, _) = stats::tally(&two_blocks(), Machine { speed: 650.0 }, Fabric { fabric: 1.5 });
     assert!(close(thick[0].top - blocks[0].top, 4.0 * 2.0 * 1.0));
-    assert!(close(thick[0].bobbin, blocks[0].bobbin));
+    assert!(close(thick[0].bobbin, thick[0].top * 0.6));
 }
 
 /// The time: each needle point and jump one turn of the machine at its speed, slower past 4 mm,

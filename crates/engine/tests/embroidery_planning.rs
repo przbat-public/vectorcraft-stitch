@@ -8,6 +8,7 @@
 //!   fire. The hit counts are printed (`--nocapture`); `docs/embroidery.md` › Checks records them.
 //! - A plan after an edit, its unchanged units taken from what earlier plans kept, is the plan a
 //!   session that never planned the document makes.
+//! - The thread estimate is near Madeira's figures a 1,000 stitches, top and bobbin.
 //!
 //! Local runs skip an absent corpus; `EMBROIDERY_CORPUS_REQUIRED=1` requires it.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
@@ -93,6 +94,34 @@ fn a_plan_after_an_edit_is_a_fresh_plan_on_the_real_designs() {
             run(&mut fresh, "object.move", nudge);
             assert_eq!(after, run(&mut fresh, "embroidery.sequence", json!({"limit": 10_000})), "{art}: after nudging {id}");
             run(&mut kept, "edit.undo", json!({}));
+        }
+    }
+}
+
+/// Madeira's rule of thumb for standard-length stitches, metres of thread a 1,000 stitches: about
+/// 5 of top thread and 3 of bobbin (density sheet,
+/// <https://www.madeirausa.com/_resources/common/userfiles/file/Resources/TH.Reads/Density.pdf>).
+const MADEIRA_TOP: f64 = 5.0;
+const MADEIRA_BOBBIN: f64 = 3.0;
+/// How far a design's thread a 1,000 needle points may be from Madeira's, as a share: VectorCraft's
+/// plans of the real designs come within 12 % of both (4.7 to 5.6 m top, 2.8 to 3.4 m bobbin), the
+/// person's designs (denser, shorter stitches) within 39 %.
+const FROM_MADEIRA: f64 = 0.4;
+
+/// The thread estimate on the real designs is near Madeira's figures a 1,000 stitches, top and
+/// bobbin, for VectorCraft's plans and the person's designs alike.
+#[test]
+fn thread_on_the_real_designs_is_near_madeiras_figures() {
+    let Some(dir) = corpus() else { return };
+    let near = |m: f64, madeira: f64| (m - madeira).abs() <= FROM_MADEIRA * madeira;
+    for &(art, theirs) in DESIGNS {
+        for (who, mut s) in [("VectorCraft", artwork(&dir, art, theirs)), ("person", persons(&dir, theirs))] {
+            let v = run(&mut s, "embroidery.stats", json!({}));
+            let thousands = v["stitches"].as_f64().unwrap() / 1000.0;
+            let (top, bobbin) =
+                (v["threadUsage"]["topMetres"].as_f64().unwrap() / thousands, v["threadUsage"]["bobbinMetres"].as_f64().unwrap() / thousands);
+            println!("{art} ({who}): {top:.2} m top, {bobbin:.2} m bobbin a 1,000 needle points");
+            assert!(near(top, MADEIRA_TOP) && near(bobbin, MADEIRA_BOBBIN), "{art} {who}: {top:.2} m top, {bobbin:.2} m bobbin a 1,000");
         }
     }
 }

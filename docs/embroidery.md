@@ -205,8 +205,9 @@ marked as an estimate (`cmd/embroidery/stats.rs`):
 
 | Value | Default | Source |
 |---|---|---|
-| top thread per needle-down stitch | its length on the face, and its share of the back | the balance thread makers teach: the back of a satin is ⅓ bobbin, ⅔ top thread pulled under ([Madeira](https://www.madeira.com/fileadmin/user_upload/Downloads/HowTo/EN_Avoid_Puckering.pdf), [American & Efird](http://www.amefird.com/wp-content/uploads/2010/02/EmbroideryUnqualityMatrix-2-11-10.pdf)) |
-| bobbin's share of the back | ⅓ under a satin, ⅓ × 125 / 65 under running and tatami, ⅓ × 100 / 65 for stitches read from a file | Wilcom's bobbin factors: 100 % for a mixed design, about 125 % for one all of run or tatami, about 65 % for one all of satin ([thread usage](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Basics/threads/threads-5.htm)); anchoring satin at ⅓ is ours, an estimate |
+| top thread per needle-down stitch | its length on the face, and the share of its length on the back that is top thread pulled under | the balance thread makers teach: the back of a satin is ⅓ bobbin, ⅔ top thread pulled under ([Madeira](https://www.madeira.com/fileadmin/user_upload/Downloads/HowTo/EN_Avoid_Puckering.pdf), [American & Efird](http://www.amefird.com/wp-content/uploads/2010/02/EmbroideryUnqualityMatrix-2-11-10.pdf)) |
+| bobbin's share of the back (for the top thread) | ⅓ under a satin, ⅓ × 125 / 65 under running and tatami, ⅓ × 100 / 65 for stitches read from a file | Wilcom's bobbin factors: 100 % for a mixed design, about 125 % for one all of run or tatami, about 65 % for one all of satin ([thread usage](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Basics/threads/threads-5.htm)); anchoring satin at ⅓ is ours, an estimate |
+| bobbin thread | 3/5 of the top thread | Madeira's rule of thumb for standard-length stitches, about 3 m of bobbin to 5 m of top thread a 1,000 stitches ([density sheet](https://www.madeirausa.com/_resources/common/userfiles/file/Resources/TH.Reads/Density.pdf)); the project owner's choice of calibration (2026-10-22), an estimate. Scaled by Wilcom's factors instead, the real designs' plans came to 4 m a 1,000 needle points |
 | top thread through the fabric | twice `fabricThickness` per needle point (down and back up) | an estimate; Wilcom takes the fabric's thickness as an input |
 | `fabricThickness` | 0.5 mm (0 to 5) | an estimate (a medium cotton, a T-shirt jersey) |
 | `speed` | 650 stitches a minute (60 to 1500) | Janome's Memory Craft 200E to 350E default to 650 ([MC230E manual](https://www.janome.ca/wp-content/uploads/2025/02/inst-manual-mc230e.pdf)); an estimate for home machines |
@@ -218,8 +219,9 @@ So each needle point and jump is one turn of the machine at the normal or the sl
 takes 3.5 s, and the start and end of the design are not timed; the answer says what the time
 includes, and marks the thread and the time as estimates (`estimate`: what each rests on). All
 these numbers stay estimates until they are measured on machines (the project owner's choice,
-2026-10-22). On the real designs VectorCraft's plans use about 5.6 m of top thread per 1,000 needle
-points, and the real designs' watermelon (46 × 32 mm, 1,509 needle points) sews in about 2.5
+2026-10-22). On the real designs VectorCraft's plans use 4.7 to 5.6 m of top thread and 2.8 to
+3.4 m of bobbin thread a 1,000 needle points, within 12 % of Madeira's 5 m and 3 m (the people's
+denser designs within 39 %; `embroidery_planning.rs` checks both), and the real designs' watermelon (46 × 32 mm, 1,509 needle points) sews in about 2.5
 minutes at 650 stitches a minute. Values out of range are refused, not clamped.
 
 **The sewing order.** `embroidery.sequence` (with the export's embroidery options, and `offset`

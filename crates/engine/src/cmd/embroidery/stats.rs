@@ -8,10 +8,12 @@
 //!   or tatami stitches, about 65 % for one all of satin
 //!   (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Basics/threads/threads-5.htm>),
 //!   and gives no formula. Here each needle-down stitch lays its length of top thread on the face
-//!   of the fabric; on the back, its length is shared between the bobbin thread and the top thread
-//!   pulled under, a third of it bobbin under a satin, as thread makers tell a balanced stitch
-//!   ([`BOBBIN_SHARE_SATIN`]), and the other styles in proportion to Wilcom's factors; and every
-//!   penetration takes top thread down through the fabric and back up ([`PASSES`]).
+//!   of the fabric; on the back, its length of top thread pulled under, a share of it under a
+//!   satin as thread makers tell a balanced stitch ([`BOBBIN_SHARE_SATIN`]) and the other styles in
+//!   proportion to Wilcom's factors; and every penetration takes top thread down through the
+//!   fabric and back up ([`PASSES`]). The bobbin thread is a share of the top thread: Madeira's
+//!   figures for standard stitches, about 3 m of bobbin to 5 m of top thread a 1,000 stitches
+//!   ([`BOBBIN_PER_TOP`]).
 //! - **Time** ([`Machine`]): Wilcom times a design with a machine's normal speed, a slow speed for
 //!   stitches longer than a set length, and the time a trim, a colour change, a stop, and the
 //!   design's start and end take
@@ -76,9 +78,16 @@ const BOBBIN_SHARE_SATIN: f64 = 1.0 / 3.0;
 const BOBBIN_FACTOR_MIXED: f64 = 1.0;
 const BOBBIN_FACTOR_RUN_OR_TATAMI: f64 = 1.25;
 const BOBBIN_FACTOR_SATIN: f64 = 0.65;
+/// The bobbin thread a design takes, as a share of its top thread: Madeira's rule of thumb for
+/// standard-length stitches, about 3 m of bobbin and 5 m of upper thread a 1,000 stitches (density
+/// sheet, <https://www.madeirausa.com/_resources/common/userfiles/file/Resources/TH.Reads/Density.pdf>).
+/// The project owner's choice of calibration (2026-10-22); still an estimate. Scaled by Wilcom's
+/// factors instead, the real designs' plans (fills, 125 %) came to 4 m a 1,000 needle points,
+/// against Madeira's 3; so, 3.2 m.
+const BOBBIN_PER_TOP: f64 = 3.0 / 5.0;
 
 /// What the thread figures rest on, as the answer says it: an estimate.
-const THREAD_ESTIMATE: &str = "an estimate: each needle-down stitch's length on the face, its length on the back shared between bobbin and top thread (a third bobbin under a satin, the balance thread makers teach, scaled by Wilcom's bobbin factors for the other stitches), and twice fabricThickness of top thread at every needle point";
+const THREAD_ESTIMATE: &str = "an estimate: top thread, each needle-down stitch's length on the face, the share of its length on the back that is top thread pulled under (two thirds under a satin, the balance thread makers teach, scaled by Wilcom's bobbin factors for the other stitches), and twice fabricThickness at every needle point; bobbin thread, 3/5 of the top thread (Madeira's 3 m to 5 m a 1,000 standard stitches)";
 /// What the time rests on, as the answer says it: an estimate.
 const TIME_ESTIMATE: &str = "an estimate: each needle point and jump one turn of a home machine at speed (a default setting, 650 by default), slowSpeed past slowAbove mm, and trimSeconds a trim; not timed: thread changes, the design's start and end";
 
@@ -105,8 +114,9 @@ pub(crate) struct Thread {
     pub(crate) fabric: f64,
 }
 
-/// The share of a needle-down stitch's length laid on the back as bobbin thread, by how its unit
-/// is sewn (`None`: a literal run, whose style is not known: a mix).
+/// The share of a needle-down stitch's length on the back that is bobbin thread, the rest top
+/// thread pulled under, by how its unit is sewn (`None`: a literal run, whose style is not known: a
+/// mix).
 fn bobbin_share(style: Option<Style>) -> f64 {
     let factor = match style {
         Some(Style::Satin) => BOBBIN_FACTOR_SATIN,
@@ -153,14 +163,14 @@ impl Tally {
         match r.stitch.command {
             Command::Stitch => {
                 self.seconds += turn(r.moved());
-                self.top += PASSES * thread.fabric;
+                let mut top = PASSES * thread.fabric;
                 if let Some(length) = r.sewn() {
                     self.shortest = Some(self.shortest.map_or(length, |s| s.min(length)));
                     self.longest = Some(self.longest.map_or(length, |s| s.max(length)));
-                    let share = bobbin_share(style);
-                    self.top += length * (2.0 - share);
-                    self.bobbin += length * share;
+                    top += length * (2.0 - bobbin_share(style));
                 }
+                self.top += top;
+                self.bobbin += top * BOBBIN_PER_TOP;
             }
             Command::Jump => {
                 let length = r.moved();

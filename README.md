@@ -357,3 +357,7 @@ ArtCraft Team and are not covered by this license. They may be used only unmodif
 part of this repository and VectorCraft, under [`docs/brand/LICENSE-brand.txt`](docs/brand/LICENSE-brand.txt).
 Forks and modified versions must remove them: this fork shows none of them (they stay in `docs/brand/`
 as part of the repository).
+
+Tajima, Melco, Happy, Wilcom, Brother, Janome, Husqvarna Viking, Pfaff and Madeira are trademarks
+of their owners, used here only to name file formats, threads and sources; this fork is not
+affiliated with or endorsed by them.

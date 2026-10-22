@@ -261,7 +261,9 @@ hits, the objects hit (`objectCount`, at most 1,000 listed, `truncated` when mor
 measure compared with the threshold (for `formatStep` the stitch's longer extent along x or y,
 with its own length and the records it is written as beside it). The summary gives, for each
 severity, how many rules found something and how many hits they found. `format` (the document's thread palette's
-format when left out: PES for Brother's, JEF for Janome's) decides the format limits checked, and the threads judged: those the format writes, matched to
+format when left out: PES for Brother's, JEF for Janome's; with Janome's, the default, the colour
+limit of `formatColors` never fires, since JEF has none: ask for `format: "pes"` or `"vp3"` to check
+theirs) decides the format limits checked, and the threads judged: those the format writes, matched to
 its own palette when it numbers its threads from another than the document's (`palette` names it).
 Melco's design checker works on a design's objects and their settings (many of the issues it
 flags "can be addressed with simple object property changes"), so its fill, satin and walk-stitch limits are checked on each

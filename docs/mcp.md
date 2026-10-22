@@ -4306,7 +4306,9 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   deltaE, mismatch}, unitCount}], options, warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour
   and the thread's, to two decimals, and `mismatch` flags one past `threshold` (10). Besides the export's embroidery
   options it takes only the stretch of blocks to list: any other key, such as `format`, is refused.
-- `embroidery.setTrimAfter {on, ids?}` asks for the thread to be cut after each object.
+- `embroidery.setTrimAfter {on?, ids?}` asks for the thread to be cut after each object (or with `on: false` for no
+  cut, a file's own included); left out, `on` toggles. It needs a selection or `ids`, answers `{on, changed}`, and
+  reports an id that names no object as a missing object.
 - `embroidery.stats {…embroidery options, speed?, fabricThickness?, offset?, limit?}` gives the design's figures as the
   export sews it, for the design and per block: `stitches` (needle points), `records` (needle points, jumps and cuts),
   `jumps`, `trims`, `colorChanges`, `threadCount`, `blockCount`; `size`, `bounds`, `start` and `end` points, `extents`

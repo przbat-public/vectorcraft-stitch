@@ -5060,7 +5060,7 @@ mark-style	Japanese	Japońskie
 	Minimum must not exceed Desired, nor Desired Maximum.	Minimum nie może przekraczać wartości optymalnej, a wartość optymalna maksimum.
 	Justification	Justowanie
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	zmienne i zestawy danych pliku nie zostały wczytane (zmienne: {variables}, zestawy danych: {data_sets}): panel Zmienne ich nie wyświetla
-	Trim After	Obetnij nić po
+	Embroidery Trim After	Haft: obetnij nić po
 	Embroidery Setup	Ustawienia haftu
 	Show Embroidery Settings	Pokaż ustawienia haftu
 	Embroidery Statistics	Statystyki haftu

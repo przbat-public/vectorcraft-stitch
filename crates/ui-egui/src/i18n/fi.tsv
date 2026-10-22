@@ -5172,7 +5172,7 @@ mark-style	Japanese	Japanilainen
 	Minimum must not exceed Desired, nor Desired Maximum.	Minimi ei saa ylittää haluttua arvoa eikä haluttu arvo maksimia.
 	Justification	Tasaus
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	tiedoston muuttujia ja tietojoukkoja ei luettu (muuttujia: {variables}, tietojoukkoja: {data_sets}): Muuttujat-paneeli ei näytä niitä
-	Trim After	Katkaise lanka jälkeen
+	Embroidery Trim After	Kirjonta: katkaise lanka jälkeen
 	Embroidery Setup	Kirjonnan asetukset
 	Show Embroidery Settings	Näytä kirjonnan asetukset
 	Embroidery Statistics	Kirjonnan tilastot

@@ -61,11 +61,11 @@ pub fn specs() -> Vec<CommandSpec> {
     vec![
         cmd!(
             "embroidery.setTrimAfter",
-            "Trim After",
+            "Embroidery Trim After",
             [],
             None,
-            "{on: bool, ids?|id?} whether the thread is cut after each object (or group) in ids or the selection when the document is stitched (document.export to dst, exp, pes or jef), however near the next object starts; off, only a jump longer than the export's trimLength is cut. One undo step; saved with the document → {changed}",
-            has_doc,
+            "{on?: bool (left out: on, unless every object is marked already, then off), ids?|id?} whether the thread is cut after each object (or group) in ids or the selection when the document is stitched (document.export to dst, tap, t01, exp, pes, pec, jef or vp3), however near the next object starts; off, only a jump longer than the export's trimLength is cut, and a run of stitches opened from a file loses the cut the file had after it. One undo step; saved with the document → {on, changed}",
+            has_selection,
             set_trim_after
         ),
         cmd!(
@@ -127,23 +127,43 @@ pub fn specs() -> Vec<CommandSpec> {
 
 fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.setTrimAfter";
-    let on = p.get("on").and_then(Value::as_bool).ok_or_else(|| bad(C, "`on` must be true or false"))?;
+    let o = object(p, C)?;
+    let on = match o.get("on") {
+        None | Some(Value::Null) => None,
+        Some(v) => Some(v.as_bool().ok_or_else(|| bad(C, format!("`on` {v}: true or false")))?),
+    };
     let ids = targets(s, p)?;
-    let changed = edit_counted(s, "Trim After", |d| {
+    if ids.is_empty() {
+        return Err(bad(C, "select the objects whose thread is cut after them, or give ids"));
+    }
+    // Every id names an object, before anything changes.
+    let d = &s.doc()?.doc;
+    if let Some(missing) = ids.iter().find(|id| d.node(**id).is_none()) {
+        return Err(EngineError::NoNode(*missing));
+    }
+    // Marked: asked for a cut after it, or a run of stitches whose file had one.
+    let marked = |e: Option<&Embroidery>| e.is_some_and(|e| e.trim_after || e.stitches.is_some_and(|r| r.trim_after));
+    let on = on.unwrap_or_else(|| !ids.iter().all(|id| marked(d.node(*id).and_then(|n| n.extras().embroidery.as_deref()))));
+    let changed = edit_counted(s, "Embroidery Trim After", |d| {
         let mut changed = 0;
         for id in &ids {
-            let Some(n) = d.node_mut(*id) else { return Err(bad(C, format!("no object {}", id.0))) };
+            let n = d.node_mut(*id).ok_or(EngineError::NoNode(*id))?;
             let mut e = n.extras().embroidery.as_deref().cloned().unwrap_or_default();
-            if e.trim_after == on {
+            let before = e.clone();
+            e.trim_after = on;
+            // Off: no cut after it, the one its file had included.
+            if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
+                run.trim_after = false;
+            }
+            if e == before {
                 continue;
             }
-            e.trim_after = on;
             n.extras_mut().embroidery = (e != Embroidery::default()).then(|| Box::new(e));
             changed += 1;
         }
         Ok(changed)
     })?;
-    Ok(serde_json::json!({ "changed": changed }))
+    Ok(json!({ "on": on, "changed": changed }))
 }
 
 /// Edit the active document as `f` says, on a copy, in one undo step labelled `label` when `f`

@@ -5150,7 +5150,7 @@ mark-style	Japanese	Japonesas
 	Minimum must not exceed Desired, nor Desired Maximum.	El mínimo no puede superar el deseado, ni el deseado el máximo.
 	Justification	Justificación
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	no se leyeron las variables ni los conjuntos de datos del archivo (variables: {variables}, conjuntos de datos: {data_sets}): el panel Variables no los muestra
-	Trim After	Cortar el hilo después
+	Embroidery Trim After	Bordado: cortar el hilo después
 	Embroidery Setup	Ajustar bordado
 	Show Embroidery Settings	Mostrar ajustes de bordado
 	Embroidery Statistics	Estadísticas del bordado

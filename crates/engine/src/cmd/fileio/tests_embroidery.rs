@@ -578,11 +578,64 @@ fn an_object_can_ask_for_a_trim_after_it() {
     assert_eq!(r["changed"], 1);
     assert_eq!(moves(&export(&mut s, "pes", json!({}))).0, 0);
     assert!(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(first)).unwrap().extras().embroidery.is_none());
-    assert!(s.execute("embroidery.setTrimAfter", &json!({"ids": [first]})).is_err(), "`on` is required");
+    // `on` left out toggles: on, unless every object is marked already (as the command palette
+    // runs it, on the selection).
+    s.execute("select.set", &json!({"ids": [first]})).unwrap();
+    assert_eq!(s.execute("embroidery.setTrimAfter", &json!({})).unwrap(), json!({"on": true, "changed": 1}));
+    assert_eq!(s.execute("embroidery.setTrimAfter", &json!({})).unwrap(), json!({"on": false, "changed": 1}));
+    // Nothing selected and no ids: not available.
+    s.execute("select.none", &json!({})).unwrap();
+    let e = s.execute("embroidery.setTrimAfter", &json!({"on": true})).unwrap_err();
+    assert!(matches!(e, EngineError::Disabled(..)), "{e:?}");
+    // Its description names every format it applies to; its label says it is embroidery's.
+    let spec = crate::cmd::find_command("embroidery.setTrimAfter").unwrap();
+    for f in Format::ALL {
+        assert!(spec.params.contains(&format!(" {}", f.id())), "{}", f.id());
+    }
+    assert!(spec.label.starts_with("Embroidery"), "{}", spec.label);
+}
+
+/// Off, the thread isn't cut after a run of stitches opened from a file either: the cut its file
+/// had after it goes too.
+#[test]
+fn trim_after_off_clears_a_runs_cut_from_its_file() {
+    use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
+    // A block whose thread is cut at its end, before the change.
+    let mut p = Pattern::default();
+    let mut a = Block::new(Thread::rgb([200, 0, 0]));
+    for i in 0..10 {
+        a.stitches.push(Stitch::new(f64::from(i) * 2.0, 0.0, Command::Stitch));
+    }
+    a.stitches.push(Stitch::new(18.0, 0.0, Command::Trim));
+    let mut b = Block::new(Thread::rgb([0, 0, 200]));
+    for i in 0..10 {
+        b.stitches.push(Stitch::new(f64::from(i) * 2.0, 10.0, Command::Stitch));
+    }
+    p.blocks.extend([a, b]);
+    let mut opened = Session::new();
+    open(&mut opened, "cut.pes", &Format::Pes.write(&p).unwrap()).unwrap();
+    let runs: Vec<u64> = {
+        let d = &opened.doc().unwrap().doc;
+        let mut ids = Vec::new();
+        d.walk(|n| {
+            if n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some_and(|r| r.trim_after)) {
+                ids.push(n.id.0);
+            }
+        });
+        ids
+    };
+    assert!(!runs.is_empty(), "the file cuts at the end of a block");
+    let r = opened.execute("embroidery.setTrimAfter", &json!({"on": false, "ids": runs})).unwrap();
+    assert_eq!(r["changed"], json!(runs.len()));
+    let d = &opened.doc().unwrap().doc;
+    for id in &runs {
+        let e = d.node(vectorcraft_doc::NodeId(*id)).unwrap().extras().embroidery.as_deref().cloned().unwrap();
+        assert!(!e.trim_after && !e.stitches.unwrap().trim_after, "{id}");
+    }
 }
 
 /// `trimLength` decides which jumps cut the thread: a jump between two objects is cut only when it
-/// is longer, and a value below `jumpLength` acts as `jumpLength`.
+/// is longer; a value below `jumpLength` is refused.
 #[test]
 fn trim_length_decides_which_jumps_are_cut() {
     let mut s = blank();
@@ -694,16 +747,16 @@ fn a_group_compound_or_clip_group_can_ask_for_a_trim_after_it() {
     }
 }
 
-/// `embroidery.setTrimAfter` with an id that names no object fails, and changes none of the others
-/// it was given.
+/// `embroidery.setTrimAfter` with an id that names no object fails as a missing object, and
+/// changes none of the others it was given.
 #[test]
 fn trim_after_refuses_a_missing_object() {
     let mut s = blank();
     rect(&mut s, "#cc2222", 20.0, 20.0, 30.0, 30.0);
     let first = s.doc().unwrap().doc.layers[0].children().unwrap().last().unwrap().id.0;
     rect(&mut s, "#cc2222", 60.0, 20.0, 30.0, 30.0);
-    let e = s.execute("embroidery.setTrimAfter", &json!({"on": true, "ids": [first, 999_999]})).unwrap_err().to_string();
-    assert!(e.contains("999999"), "{e}");
+    let e = s.execute("embroidery.setTrimAfter", &json!({"on": true, "ids": [first, 999_999]})).unwrap_err();
+    assert!(matches!(e, EngineError::NoNode(vectorcraft_doc::NodeId(999_999))), "{e:?}");
     assert!(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(first)).unwrap().extras().embroidery.is_none());
     assert_eq!(moves(&export(&mut s, "pes", json!({}))).0, 0);
 }

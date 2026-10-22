@@ -95,12 +95,14 @@ Moving or scaling the lines moves or scales the stitches; editing a line's point
 stitches. Turning a design back into shapes that are stitched by the rules (what professional
 software calls recognising objects) is not done yet.
 
-**Cutting the thread after an object.** `embroidery.setTrimAfter` (`{on: true, ids?}`, the
-selection by default) marks objects or groups whose thread is cut after their last stitch, however
-near the next object starts, as Ink/Stitch's and Wilcom's "Trim After" do. Unmarked, only a jump
-longer than `trimLength` is cut. The mark is saved in `.vectorcraft` files
-(`NodeExtras::embroidery`). No menu or panel sets it yet: for now it is run through MCP or the
-control channel (the command palette lists it, but runs it without `on`, which it refuses).
+**Cutting the thread after an object.** `embroidery.setTrimAfter` (`{on?, ids?}`, the selection
+by default) marks objects or groups whose thread is cut after their last stitch, however near the
+next object starts, as Ink/Stitch's and Wilcom's "Trim After" do, in every format. Unmarked, only a
+jump longer than `trimLength` is cut; off also takes away the cut a run of stitches opened from a
+file had after it. Left out, `on` toggles: on, unless every object is marked already. The mark is
+saved in `.vectorcraft` files (`NodeExtras::embroidery`). No menu or panel sets it yet: the command
+palette runs it on the selection (Embroidery Trim After), and MCP and the control channel with
+ids; an id that names no object is reported as a missing object.
 
 **Threads.** Each colour block is sewn in a thread of the document's thread palette: Janome's 78
 threads, which JEF files number (`jef`), or Brother's 61, which PES files number (`pec`) among 64

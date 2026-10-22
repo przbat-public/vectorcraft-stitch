@@ -164,7 +164,10 @@ stitches fast, is tried before anything is built on it.
 its own; they need only `Pattern`, `Block` and `Thread`); real thread colours in PES (the plan
 now carries each block's thread); more real designs (the corpus has eleven, all PES and one JEF,
 all from one project: add real DST and EXP files, lettering and larger designs, and test on a
-machine).
+machine); a planner fix: a fill row's remainder spread over its last stitches so that no fill
+stitch is shorter than the needle's blade (0.75 mm for a 75/11; the rows end in stitches of 0.4 to
+0.75 mm today, which `embroidery.check`'s `stitchBelowNeedle` flags in 41 of the real designs' 44
+blocks), after which that check becomes a warning again.
 
 **Later**, on the steps above: embroidery lettering; satins from rails, angle lines, and turning
 (variable-angle) satin and fill; quality options (triple running stitch, corners, more underlay

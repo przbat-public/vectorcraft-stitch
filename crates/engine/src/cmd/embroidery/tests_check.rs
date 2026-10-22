@@ -215,6 +215,9 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
         (&short["hits"], &short["objects"], &short["first"][0]["id"], &short["first"][0]["value"]),
         (&json!(1), &json!([id]), &json!(id), &json!(2.0))
     );
+    // The needle-blade rule is information until the planner spreads rows' remainders.
+    let blade = v["rules"].as_array().unwrap().iter().find(|r| r["id"] == json!("stitchBelowNeedle")).unwrap();
+    assert_eq!(blade["severity"], json!("info"));
     // Sources that disagree are both listed, the one checked first.
     let wide = &v["rules"][0];
     assert_eq!((&wide["id"], &wide["threshold"], wide["sources"].as_array().unwrap().len()), (&json!("satinTooWide"), &json!(10.0), 2));

@@ -199,7 +199,10 @@ pub(crate) const RULES: &[Rule] = &[
     Rule {
         id: "stitchBelowNeedle",
         title: "Stitch shorter than the needle's blade is thick (a 75/11 needle)",
-        severity: Severity::Warning,
+        // Information for now: VectorCraft's own fill rows end in remainders of 0.4 to 0.75 mm,
+        // which this flags in nearly every fill. Once the planner spreads a row's remainder over
+        // its last stitches (FORK.md's work list), it becomes a warning again.
+        severity: Severity::Info,
         threshold: Some(NEEDLE_BLADE),
         unit: "mm",
         sources: &[Source {

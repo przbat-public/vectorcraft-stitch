@@ -544,7 +544,7 @@ run to a few hundred thousand.
 | Brother PES | home machines (Brother, Bernina) | a PES section for PE-Design and a PEC section the machine reads | a minimal version 1 PES header pointing at a complete PEC block: 512-byte header, Brother palette indices (see below), a 20-byte block header with the two origin words real Brother files carry, the stitch stream, blank preview pictures |
 | Brother PEC | home machines (Brother, Baby Lock) | the PEC section of a PES on its own, after the magic `#PEC0001` (EduTechWiki: what machines read directly) | the same PEC section our PES carries, byte for byte |
 | Janome JEF | home machines (Janome) | 116-byte header plus the thread list, then 2-byte records | header with counts, hoop, size and margins, Janome palette indices (see below), records, three zero-length jumps per trim (see below) |
-| Husqvarna Viking / Pfaff VP3 | home machines (Husqvarna Viking, Pfaff; some read only VP3) | nested packets (file, design, colour block, stitch run), each a tag and a length; a thread record per colour block (colour, material, weight, catalogue number, description, brand); 2-byte stitches up to ±12.7 mm and a long form for longer moves; no jump, trim or colour-change command | one design around its centre, a colour block per thread block (and per stop), each block's colour, a jump as the long form and a zero-length stitch, no trim record (see below) |
+| Husqvarna Viking / Pfaff VP3 | home machines (Husqvarna Viking, Pfaff; some read only VP3) | nested packets (file, design, colour block, stitch run), each a tag and a length; a thread record per colour block (colour, material, weight, catalogue number, description, brand); 2-byte stitches up to ±12.7 mm and a long form for longer moves; no jump, trim or colour-change command | one design around its centre, a colour block per thread block (and per stop), each block's colour, a jump as long forms and a zero-length stitch, a trim as a long form reaching 25.5 mm (see below) |
 
 Thread numbers: PES, PEC and JEF name each block's thread by its number in the maker's palette
 (`crates/stitch/src/thread.rs`). The writers take the thread the stitch plan chose for the block
@@ -566,25 +566,42 @@ downwards. The reader finds designs and colour blocks by their tags, so a file o
 that claims too little hides nothing, and a file cut short reads as the blocks before the cut. The
 writer's extents, hoop values and centre are where the needle goes down: a jump's own point,
 never reached in VP3 (below), is left out. The public descriptions (EduTechWiki, the KDE Community Wiki, Jason Weiler's page)
-agree on the layout but leave three things open, decided here so that every reading sews the
+agree on the layout but leave four things open, decided here so that every reading sews the
 same:
 
 - *Jumps.* VP3 has no jump command: its long form (`80 01`, two 16-bit moves, `80 02`), the only
   move longer than 12.7 mm, is called a move, a jump stitch or a jump, and nobody says whether the
-  needle goes down where it lands; pyembroidery reads one as a stitch there. We read it as a jump
-  after which the needle goes down where it lands: so read, the seven real designs written by
-  Ink/Stitch both as VP3 and as PES have exactly as many needle points in every colour block in
-  both (read as a jump alone, each long form would lose one). We write each jump, and each
-  block's way to its first stitch, as a long form to the next needle point followed by a
+  needle goes down where it lands; pyembroidery reads one as a stitch there. We read long forms
+  one after another as one move with the needle up, after which the needle goes down where the
+  last lands. So read, the seven real designs written by Ink/Stitch both as VP3 and as PES have
+  exactly as many needle points in every colour block in both (read as a jump alone, each long
+  form would lose one), and each long form is a move their PES makes with the needle up, a jump
+  record (read as a stitch, it would be a stitch there). We write each move with the needle up,
+  and each block's way to its first stitch, as long forms to the next needle point followed by a
   zero-length stitch, so the needle goes down there under either reading, and read that
   zero-length stitch as the same needle point.
-- *Trims.* VP3 has no trim record. EduTechWiki's overview says Pfaff's own software writes a trim
-  and a jump as the long form, and Pfaff's machines cut jump stitches themselves ("Cut Jump
-  Stitches"), so a trim writes nothing and the jump after it is a long form. A trim with no jump
-  after it (before a colour change) is lost; a design read from VP3 has no trims, and the export
-  cuts its moves longer than `trimLength` as it does any other's. `80 03` is found only at the
-  end of the last block (EduTechWiki: the end; the KDE wiki and Weiler: an empty command): we
-  write it there and read it as nothing.
+- *Trims.* VP3 has no trim record. EduTechWiki's VP3 page says to take a long-form value of 255
+  or more (25.5 mm) as a trim, that shorter ones are often sewn, and that jumping away and back
+  is a way to force one; its format overview says the long form may mean a trim and a jump, as
+  Pfaff's software seems to write it, and Pfaff's creative 3.0 cuts jump stitches itself ("Cut
+  Jump Stitches"; other machines' behaviour isn't documented). Following the VP3 page (the
+  project owner's choice, 2026-10-22), we write a trim as a long form reaching 25.5 mm along x:
+  the move itself when it is that long, else out and back, laid across the design's centre when
+  the needle is near it, so the needle stays within 12.8 mm of the centre or within the design. A
+  move that keeps the thread on is written as long forms of at most 9.8 mm. Reading, a move is a
+  cut when one of its long forms is longer than the default `trimLength` (10 mm): EduTechWiki's
+  trims and the long forms other writers use for every move too long for a stitch record alike,
+  so a design opened from VP3 keeps its cuts in PES, PEC, JEF, DST, EXP, TAP and T01 (the real
+  VP3 files' long forms inside a colour block, read as cuts, are trims in the PES export). A move
+  before a block's first stitch follows a thread change and cuts nothing; a trim with no stitch
+  after it in its block (before a colour change) writes nothing. A reader that takes every long
+  form for a stitch, as pyembroidery does, would sew the far ends of a trim's long forms. `80 03`
+  is found only at the end of the last block (EduTechWiki: the end; the KDE wiki and Weiler: an
+  empty command): we write it there and read it as nothing.
+- *Block starts.* A block picks up where the last left off (Weiler). Its stated start, which the
+  KDE wiki calls "move needle", is written and not read: on the eight real VP3 files every block's
+  stated start lies within 0.2 mm of where the stitches before it took the needle (a corpus test
+  allows 0.3 mm).
 - *Thread colours.* VP3 names no palette: each block carries its thread's own colour and name. We
   write the block's art colour (rayon, 40 wt), exactly the colour the object is painted with, so a
   design opened from VP3 and exported again keeps its colours exactly: the project owner's choice
@@ -602,7 +619,7 @@ start it at the design's centre too, as the real files do.
 
 Known limits of the formats themselves, and so of us: DST, TAP and T01 hold no colour (TAP and T01
 no name either), PEC holds no vector shapes, JEF's and VP3's stitches go at most 12.7 mm per record,
-VP3 holds no trim, and PES, PEC and JEF name threads by palette index, whose RGB values differ
+VP3 holds no trim record (a trim is a long form reaching 25.5 mm), and PES, PEC and JEF name threads by palette index, whose RGB values differ
 between published charts — preview colour is not truth. The palettes are coarse, too: the eleven
 real designs' 44 blocks lie a median ΔE₀₀ of 5.4 from their Brother thread and 6.0 from their Janome
 thread; 23 and 28 of them are past 5, and 8 and 12 past 10.
@@ -884,7 +901,11 @@ locally, never committed. The test checks that:
   the PES reads;
 - each design written as VP3 and as PES reads the same from both: as many needle points in every
   colour block, each within 0.3 mm of the PES's (each file rounds its own moves; 0.3 mm is the
-  most measured);
+  most measured), and each VP3 long form a move the PES makes with the needle up, read as a cut
+  when it is longer than 10 mm inside a colour block;
+- each VP3 design, opened and exported as PES, has a trim at every cut read from the VP3;
+- each real VP3 file's colour blocks start, as stated, where the stitches before them took the
+  needle, to 0.3 mm;
 - every machine file, opened and exported again, keeps every needle point, trim and colour block
   (this found that the cuts Ink/Stitch writes at a block's start and end were lost);
 - each artwork, digitized at the size of the person's design, comes out the same size, with no
@@ -1017,7 +1038,9 @@ environment, never in the repo:
   (written from a corner, so an off-grid point may round the other way); the eight real VP3
   files, opened and exported again as VP3, read in it exactly as our PES of them. It reads a
   long form as a stitch where it lands, and the zero-length stitch we write after one as a second
-  stitch there.
+  stitch there. Measured before trims were written as long forms reaching 25.5 mm (2026-10-22):
+  pyembroidery would now also read a stitch at the far ends of each trim's long forms, and at the
+  joins of a kept move longer than 9.8 mm; not re-run.
 
 Still unverified, and listed in the local research notes (`plan/research/formats-pes-jef.md`
 §Appendix B): behaviour on real hardware, blank preview pictures, JEF's version letter, and how
@@ -1262,10 +1285,11 @@ Public documentation, cited per claim in the crate and in the local research not
 - EduTechWiki, [Embroidery format JEF](https://edutechwiki.unige.ch/en/Embroidery_format_JEF) —
   the JEF header, records and the zero-length jump as trim command.
 - VP3: EduTechWiki, [Embroidery format VP3](https://edutechwiki.unige.ch/en/Embroidery_format_VP3)
-  (the packets, the micrometre positions, the thread record, the long form, `80 03` at the end of
-  the last block) and [Embroidery format](https://edutechwiki.unige.ch/en/Embroidery_format)
-  (Pfaff's software writes a trim and a jump as the long form; TAP and T01 are DST's records
-  without the header); the KDE Community Wiki,
+  (the packets, the micrometre positions, the thread record, the long form, a long-form value of
+  255 or more taken as a trim and away-and-back to force one, `80 03` at the end of the last
+  block) and [Embroidery format](https://edutechwiki.unige.ch/en/Embroidery_format) (the long
+  form may mean a trim and a jump, as Pfaff's software seems to write it; TAP and T01 are DST's
+  records without the header); the KDE Community Wiki,
   [Viking/Husqvarna Pfaff/Singer 3 VP3](https://community.kde.org/Projects/Liberty/File_Formats/Viking_Pfaff)
   (CC BY-SA 4.0; the packet grammar, the hoop fields, the colour entry, the move command); Jason
   Weiler, [VP3 File Format](http://www.jasonweiler.com/VP3FileFormatInfo.html) (a block picks up

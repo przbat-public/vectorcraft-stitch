@@ -17,7 +17,7 @@
 //!   each block's colour and name;
 //! - no explicit trim in DST, JEF or VP3: three small jumps that go nowhere in DST, which a
 //!   machine reads as "cut", and three jumps of zero length in JEF (one is already a trim when
-//!   read); VP3 machines cut jump stitches themselves;
+//!   read); in VP3, a long form reaching 25.5 mm (see `vp3`);
 //! - jumps between stitches carry no thread: consecutive jumps collapse to the point the thread
 //!   is taken up from.
 

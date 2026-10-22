@@ -32,10 +32,13 @@
 //! starts a command: `80 01`, x and y as big-endian i16, then `80 02`, is the long form, the only
 //! move longer than one byte holds. `80 03` is found at the end of the last block; `80 00` and,
 //! elsewhere, `80 03` are empty. VP3 has no jump and no trim command of its own. The descriptions
-//! call the long form a move, a jump stitch or a jump, and say that Pfaff's software writes a trim
-//! and a jump as one; Pfaff machines cut jump stitches themselves, pulling the threads to the back
-//! (Pfaff's "Cut Jump Stitches" function). None says whether the needle goes down where a long
-//! form ends; pyembroidery reads one as a stitch there.
+//! call the long form a move, a jump stitch or a jump. EduTechWiki's VP3 page says to take a
+//! long-form value of 255 or more (25.5 mm, in tenths) as a trim, that shorter ones are often
+//! sewn, and that jumping away and back is a way to force one; its format overview says the long
+//! form may mean a trim and a jump, as Pfaff's software seems to write it. Pfaff's creative 3.0
+//! cuts jump stitches itself ("Cut Jump Stitches"); whether other machines do isn't documented.
+//! None says whether the needle goes down where a long form ends; pyembroidery reads one as a
+//! stitch there.
 //!
 //! What this module does, so that both readings sew the same:
 //!
@@ -43,17 +46,31 @@
 //!   design's lengths are written but not relied on (EduTechWiki gives the file packet's length
 //!   field two widths), and a colour block's and a stitch run's bound what is read in them. A file
 //!   cut short, or damaged after some colour blocks, reads as the blocks before the damage.
-//! - It reads a long form as a jump after which the needle goes down where it lands: a
-//!   [`Command::Jump`] and a stitch at the same point. Read this way, the Emoji Embroidery
-//!   Project's designs made with Ink/Stitch have as many needle points in each colour block in VP3
-//!   as in PES. A zero-length stitch right after a long form is that same needle point, read once.
-//! - It writes every jump, and each block's way to its first stitch, as a long form to the stitch
-//!   the needle goes down at next (with the needle up, the way it travels doesn't matter), then a
-//!   zero-length stitch there: the needle goes down there whichever way a machine reads the long
-//!   form.
-//! - A trim has no record: the jump after it is a long form, which the machine cuts. A stop or a
-//!   colour change inside a block starts another colour block in the same thread (the machine
-//!   stops at each block for its thread). The last block ends with `80 03`.
+//! - It reads long forms one after another as one move with the needle up, after which the
+//!   needle goes down where the last lands: a [`Command::Jump`] and a stitch at the same point.
+//!   Read this way, the Emoji Embroidery Project's designs made with Ink/Stitch have as many
+//!   needle points in each colour block in VP3 as in PES, and each long form is a move their PES
+//!   makes with the needle up. A zero-length stitch right after long forms is that same needle
+//!   point, read once.
+//! - It reads a move as a cut when one of its long forms is longer than the planner's trim
+//!   length ([`crate::plan::TRIM`], 10 mm): EduTechWiki's trims (25.5 mm) and the long forms
+//!   other writers use for every move too long for a stitch record (the machine cutting jump
+//!   stitches) alike, so a design read from VP3 keeps its cuts in the formats that write trims. A
+//!   move before a block's first stitch follows a thread change and cuts nothing.
+//! - It writes every move with the needle up, and each block's way to its first stitch, as long
+//!   forms to the stitch the needle goes down at next, then a zero-length stitch there: the needle
+//!   goes down there whichever way a machine reads a long form. A move that keeps the thread on is
+//!   long forms of at most 9.8 mm, which neither EduTechWiki's rule nor this reader takes for a
+//!   trim. A trim is a long form reaching 25.5 mm along x: the move itself when it is that long,
+//!   else out and back, the long form laid across the design's centre when the needle is near it
+//!   (so the needle stays within 12.8 mm of the centre or within the design).
+//! - A trim with no stitch after it in its block (before a colour change, where the machine
+//!   stops for the thread) writes nothing. A stop or a colour change inside a block starts another
+//!   colour block in the same thread (the machine stops at each block for its thread). The last
+//!   block ends with `80 03`.
+//! - A block picks up where the last left off (Weiler); its stated start (the KDE wiki's "move
+//!   needle") is written and not read. On the real files the two agree to the rounding of their
+//!   moves.
 //! - The needle starts at the design's centre, as in the real files. The design's extent (and so
 //!   its centre, and the hoop values) is where the needle goes down: the points of jumps, which
 //!   the needle never reaches here, are left out.
@@ -146,6 +163,15 @@ const LAST: u8 = 0x03;
 pub(crate) const MAX_SHORT: i32 = 127;
 /// The largest delta a long form holds, in tenths of a millimetre (a big-endian i16).
 const MAX_LONG: i32 = i16::MAX as i32;
+/// A long form that reaches this far along an axis is a trim, in tenths of a millimetre (25.5 mm):
+/// EduTechWiki's VP3 page says to take a long-form value of 255 or more as a trim, and that
+/// shorter ones are often sewn.
+const TRIM_REACH: i32 = 255;
+/// The longest long form written for a move that keeps the thread on, in tenths of a millimetre
+/// (9.8 mm): short of the trim reach, and short of [`crate::plan::TRIM`] (10 mm), past which this
+/// reader takes a long form for a cut, with a part of a tenth each way to spare for the rounding
+/// of the parts.
+const KEPT_REACH: i32 = 98;
 /// The most colour blocks a file holds: the summary and the design count them in a big-endian
 /// u16.
 pub(crate) const MAX_COLORS: usize = u16::MAX as usize;
@@ -263,31 +289,46 @@ struct Run {
     /// Where the needle is, in tenths of a millimetre from the design's centre (y down).
     x: i32,
     y: i32,
-    /// Whether the needle is up: at the block's start and after a jump or a trim, so the next
-    /// stitch is reached with a long form.
-    up: bool,
+    /// How the needle reaches the next stitch: up at the block's start.
+    needle: Needle,
     /// The stitches and long forms written: the summary's estimate of the sewing time.
     needle_points: usize,
 }
 
+/// How a [`Run`]'s next stitch is reached.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Needle {
+    /// Sewn: a stitch from the last.
+    Down,
+    /// With the needle up and the thread kept (after a jump, and at a block's start).
+    Up,
+    /// With the thread cut first (after a trim).
+    Cut,
+}
+
 impl Run {
     fn new((x, y): (i32, i32)) -> Self {
-        Self { bytes: Vec::new(), x, y, up: true, needle_points: 0 }
+        Self { bytes: Vec::new(), x, y, needle: Needle::Up, needle_points: 0 }
     }
 
     fn add(&mut self, s: Stitch, frame: &super::Frame) {
         match s.command {
             Command::Stitch => {
                 let (tx, ty) = frame.point(s);
-                if std::mem::take(&mut self.up) {
-                    self.travel(tx, ty);
-                } else {
-                    self.sew(tx, ty);
+                match std::mem::replace(&mut self.needle, Needle::Down) {
+                    Needle::Down => self.sew(tx, ty),
+                    Needle::Up => self.travel(tx, ty, false),
+                    Needle::Cut => self.travel(tx, ty, true),
                 }
             }
-            // The needle lifts: the next stitch is reached with a long form, which the machine
-            // cuts after a trim (VP3 has no trim of its own).
-            Command::Jump | Command::Trim => self.up = true,
+            // The needle lifts: the next stitch is reached with long forms.
+            Command::Jump => {
+                if self.needle == Needle::Down {
+                    self.needle = Needle::Up;
+                }
+            }
+            // A trim: one of those long forms reaches far enough to be taken as one.
+            Command::Trim => self.needle = Needle::Cut,
             Command::ColorChange | Command::Stop => {}
         }
     }
@@ -304,22 +345,54 @@ impl Run {
     }
 
     /// The needle travels up to (tx, ty) and goes down there: long forms, then a zero-length
-    /// stitch (see the module doc). Already there: just the stitch.
-    fn travel(&mut self, tx: i32, ty: i32) {
+    /// stitch (see the module doc). Cut: one long form reaches [`TRIM_REACH`] along an axis (out
+    /// and back when the move is shorter). Kept: long forms no longer than [`KEPT_REACH`], which
+    /// no reading takes for a trim. Already there and kept: just the stitch.
+    fn travel(&mut self, tx: i32, ty: i32, cut: bool) {
         let (dx, dy) = (tx - self.x, ty - self.y);
-        if dx != 0 || dy != 0 {
+        if cut && dx.abs().max(dy.abs()) < TRIM_REACH {
+            // Out along x to a trim's reach and back. The trimming long form is laid across the
+            // design's centre when the needle is near it, so that the needle stays within half a
+            // trim's reach of the centre or within the design (a small hoop has room for it).
+            let half = TRIM_REACH / 2;
+            let from = if self.x.abs() >= half { self.x } else { -half };
+            let out = if from > 0 { -TRIM_REACH } else { TRIM_REACH };
+            for (lx, ly) in [(from - self.x, 0), (out, 0), (tx - (from + out), dy)] {
+                if lx != 0 || ly != 0 {
+                    self.long(lx, ly);
+                }
+            }
+        } else if cut {
             for (sx, sy) in super::steps(dx, dy, MAX_LONG) {
-                self.bytes.extend_from_slice(&[CONTROL, LONG_START]);
-                self.bytes.extend_from_slice(&(sx as i16).to_be_bytes());
-                self.bytes.extend_from_slice(&(sy as i16).to_be_bytes());
-                self.bytes.extend_from_slice(&[CONTROL, LONG_END]);
-                self.needle_points += 1;
+                self.long(sx, sy);
+            }
+        } else if dx != 0 || dy != 0 {
+            for (sx, sy) in kept_steps(dx, dy) {
+                self.long(sx, sy);
             }
         }
         self.bytes.extend_from_slice(&[0, 0]);
         self.needle_points += 1;
         (self.x, self.y) = (tx, ty);
     }
+
+    /// One long form, (dx, dy) tenths of a millimetre.
+    fn long(&mut self, dx: i32, dy: i32) {
+        self.bytes.extend_from_slice(&[CONTROL, LONG_START]);
+        self.bytes.extend_from_slice(&(dx as i16).to_be_bytes());
+        self.bytes.extend_from_slice(&(dy as i16).to_be_bytes());
+        self.bytes.extend_from_slice(&[CONTROL, LONG_END]);
+        self.needle_points += 1;
+    }
+}
+
+/// A move with the thread kept, as long forms no longer than [`KEPT_REACH`] each (equal parts).
+fn kept_steps(dx: i32, dy: i32) -> Vec<(i32, i32)> {
+    let parts = (f64::from(dx).hypot(f64::from(dy)) / f64::from(KEPT_REACH)).ceil().max(1.0);
+    let span = f64::from(dx.abs().max(dy.abs()));
+    // The parts' reach along the longer axis; at least 1, so that the parts are finitely many.
+    let max = (span / parts).ceil().max(1.0) as i32;
+    super::steps(dx, dy, max)
 }
 
 /// Start a packet: `tag` and room for its length (filled in by [`end`]), whose position it
@@ -534,41 +607,84 @@ fn read_thread(r: &mut Reader<'_>, block: usize) -> Result<Thread> {
 
 /// The stitch records up to `end`; refused past [`super::MAX_POINTS`] points.
 fn read_stitches(r: &mut Reader<'_>, d: &mut Decoded, end: usize) -> Result<()> {
-    // Whether the last record was a long form, whose needle point a zero-length stitch repeats.
-    let mut after_long = false;
+    // Long forms read since the needle last went down: one move, the needle going down where the
+    // last of them lands.
+    let mut lift: Option<Lift> = None;
+    // Whether the block has sewn: a move before its first stitch follows a thread change, with
+    // nothing to cut.
+    let mut sewn = false;
     while r.pos() + 2 <= end {
-        let (Some(b0), Some(b1)) = (r.u8(), r.u8()) else { return Ok(()) };
+        let (Some(b0), Some(b1)) = (r.u8(), r.u8()) else { break };
         if b0 != CONTROL {
             let (dx, dy) = (i64::from(b0 as i8), i64::from(b1 as i8));
-            if !(std::mem::take(&mut after_long) && dx == 0 && dy == 0) {
-                d.x += dx;
-                d.y += dy;
-                d.push(Command::Stitch)?;
+            // A zero-length stitch right after long forms is the needle point they reach, read once.
+            if let Some(l) = lift.take() {
+                land(d, l)?;
+                sewn = true;
+                if dx == 0 && dy == 0 {
+                    continue;
+                }
             }
+            d.x += dx;
+            d.y += dy;
+            d.push(Command::Stitch)?;
+            sewn = true;
             continue;
         }
         match b1 {
             LONG_START => {
                 if r.pos() + 4 > end {
-                    return Ok(());
+                    break;
                 }
-                let (Some(dx), Some(dy)) = (r.i16_be(), r.i16_be()) else { return Ok(()) };
+                let (Some(dx), Some(dy)) = (r.i16_be(), r.i16_be()) else { break };
+                let l = lift.get_or_insert(Lift { from: (d.x, d.y), cut: false });
+                l.cut |= sewn && cuts(dx, dy);
                 d.x += i64::from(dx);
                 d.y += i64::from(dy);
-                d.push(Command::Jump)?;
-                d.push(Command::Stitch)?;
                 if r.pos() + 2 <= end && r.data().get(r.pos()..r.pos() + 2) == Some(&[CONTROL, LONG_END][..]) {
                     r.seek(r.pos() + 2);
                 }
-                after_long = true;
             }
             // Empty: a long form's end on its own, an empty command, and the end of the last block.
             NOTHING | LONG_END | LAST => {}
             // An unknown command: stop rather than guess where the needle goes next.
-            _ => return Ok(()),
+            _ => break,
         }
     }
-    Ok(())
+    // The run ends after long forms: the needle goes down where they land.
+    match lift {
+        Some(l) => land(d, l),
+        None => Ok(()),
+    }
+}
+
+/// Long forms read one after another: where the needle was when they began, and whether the
+/// thread is cut.
+struct Lift {
+    from: (i64, i64),
+    cut: bool,
+}
+
+/// The needle goes down where long forms took it: a cut where it was (when one of them is), the
+/// move, and the needle point.
+fn land(d: &mut Decoded, l: Lift) -> Result<()> {
+    if l.cut {
+        let here = (d.x, d.y);
+        (d.x, d.y) = l.from;
+        d.push(Command::Trim)?;
+        (d.x, d.y) = here;
+    }
+    d.push(Command::Jump)?;
+    d.push(Command::Stitch)
+}
+
+/// Whether a long form of (dx, dy) tenths of a millimetre cuts the thread: when it is longer than
+/// [`crate::plan::TRIM`], the move past which the stitch planner cuts. That takes in EduTechWiki's
+/// rule (a long form reaching 25.5 mm along an axis is a trim) and the long forms other writers
+/// use for any move too long for a stitch record, which their machines cut (Pfaff's "Cut Jump
+/// Stitches"): a design read from VP3 keeps its cuts in the formats that write trims.
+fn cuts(dx: i16, dy: i16) -> bool {
+    f64::from(dx).hypot(f64::from(dy)) / UNITS_PER_MM > crate::plan::TRIM
 }
 
 /// Whether `tag` is at `at`.
@@ -749,29 +865,157 @@ mod tests {
         assert_eq!(int(extents + 4) - int(extents + 12), quantize(b.height()) * 100);
     }
 
-    /// A jump is a long form to the next needle point and a zero-length stitch there, whatever its
-    /// length; a trim has no record of its own; read back, a jump and the needle point.
+    /// A jump is a long form to the next needle point and a zero-length stitch there; a trim is a
+    /// long form reaching a trim's reach (out and back, for a short move). Read back: the jump, and
+    /// the trim where the thread was cut.
     #[test]
-    fn a_jump_is_a_long_form_and_a_zero_stitch_and_a_trim_has_no_record() {
+    fn a_jump_is_a_long_form_and_a_zero_stitch_and_a_trim_reaches_far() {
         let mut p = design();
         let here = p.blocks[0].stitches[3];
-        p.blocks[0].stitches.insert(4, Stitch::new(here.x, here.y, Command::Trim));
-        p.blocks[0].stitches.insert(5, Stitch::new(here.x + 2.0, here.y, Command::Jump));
-        p.blocks[0].stitches.insert(6, Stitch::new(here.x + 2.0, here.y, Command::Stitch));
+        p.blocks[0].stitches.insert(4, Stitch::new(here.x + 2.0, here.y, Command::Jump));
+        p.blocks[0].stitches.insert(5, Stitch::new(here.x + 2.0, here.y, Command::Stitch));
+        p.blocks[0].stitches.insert(6, Stitch::new(here.x + 2.0, here.y, Command::Trim));
+        p.blocks[0].stitches.insert(7, Stitch::new(here.x + 4.0, here.y, Command::Jump));
+        p.blocks[0].stitches.insert(8, Stitch::new(here.x + 4.0, here.y, Command::Stitch));
         let bytes = write(&p).expect("writes");
-        // The long form: 2 mm right, then its end and a zero-length stitch.
+        // The jump: a long form 2 mm right, then its end and a zero-length stitch.
         assert!(bytes.windows(10).any(|w| w == [CONTROL, LONG_START, 0, 20, 0, 0, CONTROL, LONG_END, 0, 0]), "a long form for the 2 mm jump");
-        // Each block's first stitch is reached the same way, and the last block ends with 80 03.
-        let longs = bytes.windows(2).filter(|w| *w == [CONTROL, LONG_START]).count();
-        assert_eq!(longs, 3);
+        // The trim: one long form 25.5 mm along x.
+        let forms = long_forms(&bytes);
+        assert_eq!(forms.iter().filter(|(x, y)| x.abs().max(y.abs()) >= TRIM_REACH).count(), 1, "{forms:?}");
         let block_end = bytes.len() - 1;
         assert_eq!(&bytes[block_end - 2..], &[CONTROL, LAST, BLOCK_END]);
         let back = read(&bytes).expect("reads");
         assert_eq!(needle_points(&back), needle_points(&p));
-        assert_eq!(back.points().filter(|s| s.command == Command::Trim).count(), 0);
+        let trims: Vec<Stitch> = back.points().filter(|s| s.command == Command::Trim).collect();
+        assert_eq!(trims.len(), 1);
+        let first = back.blocks[0].stitches.iter().find(|s| s.command == Command::Stitch).unwrap();
+        let (tx, ty) = (quantize(trims[0].x - first.x), quantize(trims[0].y - first.y));
+        assert_eq!((tx, ty), (quantize(here.x + 2.0), quantize(here.y)), "cut where the thread was");
         let commands: Vec<Command> = back.blocks[0].stitches.iter().map(|s| s.command).collect();
         assert_eq!(commands[..2], [Command::Jump, Command::Stitch], "the block's first stitch, reached with the needle up");
-        assert_eq!(commands.iter().filter(|c| **c == Command::Jump).count(), 2);
+        assert_eq!(commands.iter().filter(|c| **c == Command::Jump).count(), 3);
+        // Written again, the same bytes.
+        assert_eq!(write(&back).expect("writes"), bytes);
+    }
+
+    /// Every long form's (x, y) in written bytes.
+    fn long_forms(bytes: &[u8]) -> Vec<(i32, i32)> {
+        let i16_at = |at: usize| i32::from(i16::from_be_bytes([bytes[at], bytes[at + 1]]));
+        bytes
+            .windows(8)
+            .enumerate()
+            .filter(|(_, w)| w[..2] == [CONTROL, LONG_START] && w[6..8] == [CONTROL, LONG_END])
+            .map(|(i, _)| (i16_at(i + 2), i16_at(i + 4)))
+            .collect()
+    }
+
+    /// A trimmed move of any length, from anywhere, has a long form that reaches a trim's reach,
+    /// and keeps the needle within the design or within half that reach of its centre (a small
+    /// hoop has room for it); read back, it is one cut and the needle point it reaches.
+    #[test]
+    fn a_trimmed_move_reaches_a_trims_reach_and_stays_near_the_design() {
+        for width in [10.0, 40.0, 100.0] {
+            for along in [0.0, 0.3, 0.5, 0.7, 1.0] {
+                for by in [0.0, 1.0, -7.5, 12.0, 26.0, -40.0] {
+                    let from: f64 = width * along;
+                    let to = (from + by).clamp(0.0, width);
+                    let mut b = Block::new(Thread::rgb([5, 5, 5]));
+                    let steps = (width / 5.0) as u32;
+                    b.stitches.extend((0..=steps).map(|i| Stitch::sew(Point::new(f64::from(i) * 5.0, 0.0))));
+                    b.stitches.extend([
+                        Stitch::new(from, 1.0, Command::Jump),
+                        Stitch::sew(Point::new(from, 1.0)),
+                        Stitch::sew(Point::new(from, 2.0)),
+                    ]);
+                    b.stitches.extend([Stitch::new(from, 2.0, Command::Trim), Stitch::new(to, 3.0, Command::Jump), Stitch::sew(Point::new(to, 3.0))]);
+                    let p = Pattern { blocks: vec![b], ..Pattern::default() };
+                    let bytes = write(&p).expect("writes");
+                    let case = format!("{width} mm wide, from {from} to {to}");
+                    // The needle through the stitch run, from the design's centre.
+                    let run = bytes.windows(10).position(|w| w[..3] == STITCHES_TAG && w[7..] == SCALE).unwrap() + 7 + SCALE.len();
+                    let (mut x, mut at, mut reached) = (0i32, run, false);
+                    let room = quantize(width / 2.0).max(TRIM_REACH / 2) + 1;
+                    while bytes[at..at + 2] != [CONTROL, LAST] {
+                        if bytes[at] == CONTROL {
+                            let dx = i32::from(i16::from_be_bytes([bytes[at + 2], bytes[at + 3]]));
+                            let dy = i32::from(i16::from_be_bytes([bytes[at + 4], bytes[at + 5]]));
+                            reached |= dx.abs().max(dy.abs()) >= TRIM_REACH;
+                            x += dx;
+                            at += 8;
+                        } else {
+                            x += i32::from(bytes[at] as i8);
+                            at += 2;
+                        }
+                        assert!(x.abs() <= room, "{case}: the needle {x} tenths from the centre");
+                    }
+                    assert!(reached, "{case}: no long form reaches a trim's reach");
+                    let back = read(&bytes).expect("reads");
+                    assert_eq!(needle_points(&back), needle_points(&p), "{case}");
+                    assert_eq!(back.points().filter(|s| s.command == Command::Trim).count(), 1, "{case}");
+                }
+            }
+        }
+    }
+
+    /// A move that keeps the thread on is written as long forms none of which is taken for a cut,
+    /// adding up to the move.
+    #[test]
+    fn a_kept_move_is_never_taken_for_a_cut() {
+        for dx in (-700..=700).step_by(7) {
+            for dy in (-700..=700).step_by(11) {
+                let parts = kept_steps(dx, dy);
+                assert_eq!(parts.iter().fold((0, 0), |a, b| (a.0 + b.0, a.1 + b.1)), (dx, dy));
+                for (x, y) in parts {
+                    let (x, y) = (i16::try_from(x).unwrap(), i16::try_from(y).unwrap());
+                    assert!(!cuts(x, y), "{dx},{dy}: a part {x},{y}");
+                }
+            }
+        }
+    }
+
+    /// Read: a long form longer than the planner's trim length is a cut where the needle was, long
+    /// forms read one after another are one move, and a move before a block's first stitch (after
+    /// its thread change) cuts nothing.
+    #[test]
+    fn long_moves_are_read_as_cuts() {
+        let long = |dx: i16, dy: i16| {
+            let mut v = vec![CONTROL, LONG_START];
+            v.extend_from_slice(&dx.to_be_bytes());
+            v.extend_from_slice(&dy.to_be_bytes());
+            v.extend_from_slice(&[CONTROL, LONG_END]);
+            v
+        };
+        // A 12 mm move from the block's start, a stitch, a 12 mm long form and a stitch on; then
+        // 9 mm, three times over, a 10 mm one, and a zero-length stitch.
+        let mut run = long(120, 0);
+        run.extend_from_slice(&[0, 0, 10, 0]);
+        run.extend(long(0, 120));
+        run.extend_from_slice(&[10, 0]);
+        for _ in 0..3 {
+            run.extend(long(-90, 0));
+        }
+        run.extend(long(0, 100));
+        run.extend_from_slice(&[0, 0]);
+        let p = read(&assemble(&[((0, 0), vec![(thread([1, 2, 3], "A"), run)])])).expect("reads");
+        let points: Vec<(Command, (i32, i32))> = p.blocks[0].stitches.iter().map(|s| (s.command, (quantize(s.x), quantize(s.y)))).collect();
+        // Normalised: the design's left edge is x 0 (the last needle point, 27 mm left of the
+        // first long form's end).
+        let at = |x: i32, y: i32| (x + 260 - 130, y);
+        assert_eq!(
+            points,
+            [
+                (Command::Jump, at(120, 0)),
+                (Command::Stitch, at(120, 0)),
+                (Command::Stitch, at(130, 0)),
+                (Command::Trim, at(130, 0)),
+                (Command::Jump, at(130, 120)),
+                (Command::Stitch, at(130, 120)),
+                (Command::Stitch, at(140, 120)),
+                (Command::Jump, at(-130, 220)),
+                (Command::Stitch, at(-130, 220)),
+            ]
+        );
     }
 
     /// A long form followed by a stitch that moves on (as other writers write it): the needle goes
@@ -781,8 +1025,8 @@ mod tests {
         let mut p = design();
         p.blocks.truncate(1);
         let mut bytes = write(&p).expect("writes");
-        // The block's first move: a long form and a zero-length stitch. Make the stitch move on.
-        let at = bytes.windows(10).position(|w| w[..2] == [CONTROL, LONG_START] && w[6..8] == [CONTROL, LONG_END]).unwrap();
+        // The block's first move: long forms and a zero-length stitch. Make the stitch move on.
+        let at = bytes.windows(10).position(|w| w[..2] == [CONTROL, LONG_START] && w[6..10] == [CONTROL, LONG_END, 0, 0]).unwrap();
         bytes[at + 8] = 5;
         let back = read(&bytes).expect("reads");
         let first: Vec<Command> = back.blocks[0].stitches.iter().take(3).map(|s| s.command).collect();
@@ -813,8 +1057,8 @@ mod tests {
         assert_eq!(back.blocks[1].thread, Thread::named([20, 40, 210], "Royal"));
     }
 
-    /// Stitches longer than a byte holds are sewn as several; jumps longer than a long form holds
-    /// as several long forms.
+    /// Stitches longer than a byte holds are sewn as several; a long jump that keeps the thread on
+    /// as several long forms, read back as one move.
     #[test]
     fn long_stitches_and_jumps_are_split() {
         let mut p = Pattern::default();

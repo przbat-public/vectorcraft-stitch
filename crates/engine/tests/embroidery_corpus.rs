@@ -197,9 +197,10 @@ fn a_design_reads_the_same_in_pes_and_jef() {
 }
 
 /// The same digitizing written as VP3 and as PES (by Ink/Stitch) reads the same from both: as
-/// many needle points in each colour block, where the PES puts them. This is what says a VP3 long
-/// form is a jump after which the needle goes down where it lands (`format::vp3`): read as a jump
-/// alone, each block would lack a needle point for every long form.
+/// many needle points in each colour block, where the PES puts them. That rules out reading a VP3
+/// long form as a jump alone (each block would lack a needle point for every long form); it can't
+/// tell the needle going down where a long form lands from a long form read as a stitch, which
+/// `a_vp3_long_form_is_a_move_the_pes_makes_with_the_needle_up` does.
 #[test]
 fn a_design_reads_the_same_in_vp3_and_pes() {
     let Some(dir) = corpus() else { return };
@@ -213,6 +214,161 @@ fn a_design_reads_the_same_in_vp3_and_pes() {
         assert_eq!(counts(&vp3), counts(&pes), "{stem}: needle points in each block");
         let worst = vp3.iter().flatten().zip(pes.iter().flatten()).map(|(a, b)| (a.0 - b.0).abs().max((a.1 - b.1).abs())).fold(0.0, f64::max);
         assert!(worst <= TWIN_ROUNDING + 1e-9, "{stem}: a needle point {worst:.2} mm from the PES's");
+    }
+}
+
+/// The planner's default trim length (millimetres): a VP3 long form longer than this, inside a
+/// colour block, is read as a cut (`format::vp3`).
+const TRIM_LENGTH: f64 = 10.0;
+
+/// A move the needle makes with the needle up: a run of jump and trim records between two needle
+/// points, across colour blocks too.
+struct Lift {
+    /// How far, millimetres.
+    by: (f64, f64),
+    /// Whether the thread is cut on the way.
+    cut: bool,
+    /// Whether its colour block had sewn before it (else it follows a thread change).
+    in_block: bool,
+}
+
+fn lifts(p: &Pattern) -> Vec<Lift> {
+    let mut out = Vec::new();
+    let (mut last, mut up, mut cut) = (None::<(f64, f64)>, false, false);
+    for b in &p.blocks {
+        let mut sewn = false;
+        for s in &b.stitches {
+            match s.command {
+                Command::Stitch => {
+                    if let (Some((x, y)), true) = (last, up) {
+                        out.push(Lift { by: (s.x - x, s.y - y), cut, in_block: sewn });
+                    }
+                    (last, up, cut, sewn) = (Some((s.x, s.y)), false, false, true);
+                }
+                Command::Jump => up = true,
+                Command::Trim => (up, cut) = (true, true),
+                _ => {}
+            }
+        }
+        // The next block's first needle point is reached with the needle up.
+        up = true;
+    }
+    out
+}
+
+/// Whether two moves are the same, written by two files each rounding to its 0.1 mm grid.
+fn same_move(a: (f64, f64), b: (f64, f64)) -> bool {
+    (a.0 - b.0).abs() <= 2.0 * TWIN_ROUNDING && (a.1 - b.1).abs() <= 2.0 * TWIN_ROUNDING
+}
+
+/// Each long form of a VP3 twin is a move its PES makes with the needle up (a jump record, in the
+/// same order), not a stitch: that tells "a jump after which the needle goes down where it lands"
+/// (`format::vp3`) from reading a long form as a stitch, which the counts of needle points can't.
+/// Each is read as a cut when it is longer than the trim length inside a colour block.
+#[test]
+fn a_vp3_long_form_is_a_move_the_pes_makes_with_the_needle_up() {
+    let Some(dir) = corpus() else { return };
+    let read = |name: String| format_of(Path::new(&name)).read(&std::fs::read(dir.join(&name)).unwrap()).unwrap();
+    for stem in VP3_AND_PES {
+        let (vp3, pes) = (lifts(&read(format!("{stem}.vp3"))), lifts(&read(format!("{stem}.pes"))));
+        assert!(!vp3.is_empty(), "{stem}: no long forms");
+        let mut rest = pes.iter();
+        for l in &vp3 {
+            let length = l.by.0.hypot(l.by.1);
+            assert!(rest.any(|p| same_move(p.by, l.by)), "{stem}: a {length:.1} mm long form the PES doesn't make with the needle up");
+            assert_eq!(l.cut, l.in_block && length > TRIM_LENGTH, "{stem}: a {length:.1} mm long form");
+        }
+    }
+}
+
+/// A design opened from VP3 keeps its cuts when exported to a format with trims: each cut the VP3
+/// reads inside a colour block is a trim in the PES export, on the same move.
+#[test]
+fn a_design_opened_from_vp3_keeps_its_cuts_in_pes() {
+    let Some(dir) = corpus() else { return };
+    let mut all = 0;
+    for stem in VP3_AND_PES {
+        let name = format!("{stem}.vp3");
+        let bytes = std::fs::read(dir.join(&name)).unwrap();
+        let mut s = Session::new();
+        open(&mut s, &name, &bytes);
+        let pes = Format::Pes.read(&decode(&s.execute("document.export", &json!({"format": "pes"})).unwrap())).unwrap();
+        let cuts = |p: &Pattern| lifts(p).into_iter().filter(|l| l.cut && l.in_block).map(|l| l.by).collect::<Vec<_>>();
+        let (want, got) = (cuts(&Format::Vp3.read(&bytes).unwrap()), cuts(&pes));
+        assert_eq!(want.len(), got.len(), "{stem}: cuts read, then trims exported");
+        assert!(want.iter().zip(&got).all(|(a, b)| same_move(*a, *b)), "{stem}: {want:?} vs {got:?}");
+        all += want.len();
+    }
+    assert!(all > 0, "no cuts read from the VP3 files");
+}
+
+/// Each colour block of a VP3 file: where it says its needle starts, and where the stitches before
+/// it took the needle (where the design's first block says, for that block), tenths of a
+/// millimetre, y down. A packet walk of its own, so as not to read the files through the reader
+/// under test.
+fn vp3_block_starts(b: &[u8]) -> Vec<((i64, i64), (i64, i64))> {
+    let u16_at = |at: usize| usize::from(u16::from_be_bytes([b[at], b[at + 1]]));
+    let i32_at = |at: usize| i64::from(i32::from_be_bytes(b[at..at + 4].try_into().unwrap()));
+    let u32_at = |at: usize| u32::from_be_bytes(b[at..at + 4].try_into().unwrap()) as usize;
+    // Past a string: its u16 count and its bytes.
+    let string = |at: usize| at + 2 + u16_at(at);
+    const MICRONS_PER_TENTH: i64 = 100;
+    let mut out = Vec::new();
+    // The magic and the producer; the file packet's tag and length, its notes and its summary.
+    let mut at = string(6) + 7;
+    at = string(at) + 4 * 4 + 4 + 2 + 1 + 2;
+    while b.get(at..at + 3) == Some(&[0, 3, 0][..]) {
+        let (cx, cy) = (i32_at(at + 7), i32_at(at + 11));
+        // The design's gap and edges, its notes, its fixed bytes, the producer and the block count.
+        at = string(string(at + 15 + 3 + 6 * 4) + 2 + 16 + 6) + 2;
+        let mut needle = None;
+        while b.get(at..at + 3) == Some(&[0, 5, 0][..]) {
+            let end = at + 7 + u32_at(at + 3);
+            let (sx, sy) = (i32_at(at + 7), i32_at(at + 11));
+            let stated = ((cx + sx) / MICRONS_PER_TENTH, -(cy + sy) / MICRONS_PER_TENTH);
+            let (mut x, mut y) = needle.unwrap_or(stated);
+            out.push((stated, (x, y)));
+            // The thread: its colours, the byte after them, material and weight, three strings.
+            let mut t = at + 15;
+            t += 1 + 6 * usize::from(b[t]) + 3;
+            t = string(string(string(t)));
+            // How far the block moves the needle; the stitch run's tag, length and scale.
+            let run_end = t + 8 + 7 + u32_at(t + 8 + 3);
+            let mut r = t + 8 + 7 + 3;
+            while r + 2 <= run_end {
+                if b[r] != 0x80 {
+                    x += i64::from(b[r] as i8);
+                    y += i64::from(b[r + 1] as i8);
+                    r += 2;
+                } else if b[r + 1] == 0x01 {
+                    x += i64::from(i16::from_be_bytes([b[r + 2], b[r + 3]]));
+                    y += i64::from(i16::from_be_bytes([b[r + 4], b[r + 5]]));
+                    r += if b[r + 6..r + 8] == [0x80, 0x02] { 8 } else { 6 };
+                } else {
+                    r += 2;
+                }
+            }
+            needle = Some((x, y));
+            at = end;
+        }
+    }
+    out
+}
+
+/// Each colour block of the real VP3 files starts where the stitches before it took the needle,
+/// to the rounding of the file's moves: the reader picks each block up where the last left off
+/// and reads no block's stated start, which agrees.
+#[test]
+fn real_vp3_blocks_start_where_the_last_left_off() {
+    let Some(dir) = corpus() else { return };
+    for path in machine_files(&dir).into_iter().filter(|p| format_of(p) == Format::Vp3) {
+        let name = path.file_name().unwrap().to_string_lossy().to_string();
+        let starts = vp3_block_starts(&std::fs::read(&path).unwrap());
+        assert!(starts.len() > 1, "{name}: {} blocks", starts.len());
+        for (k, (stated, chained)) in starts.iter().enumerate() {
+            let off = (stated.0 - chained.0).abs().max((stated.1 - chained.1).abs());
+            assert!(off as f64 / 10.0 <= TWIN_ROUNDING, "{name}: block {k} starts {off} tenths from where the last left off");
+        }
     }
 }
 

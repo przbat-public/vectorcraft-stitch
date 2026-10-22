@@ -58,7 +58,7 @@ d83d6fb4a1b0e263f6052c51118b8f980c90ab482f766d0bab5f77957f779854  fills.t01
 03539b9e7fbf1ea340f29c0eb9d61c944bdc7df5ca5d13b43c7450a961b17aa3  fills.pes
 dd984043c9f8e90f5785ee5e15e8864268a8690e32ad6b122986307e7b1dc1ff  fills.pec
 55f71114cad5eb31a2b4013aeef70790b359a68e8d3a04aef15d6364a6ad1ccd  fills.jef
-219d0ca8c9b2b5e5611468fceb15eb4c93d95355c04b394a464d2216f42e7bae  fills.vp3
+f0b126586ad743cdd15a8399941dc3fd806ebaa02d2e2c69e957acd9cc95625e  fills.vp3
 39797e76b30fbc5590344f74d78f56d2df5650b568fa19e4524b51e9bf735a81  strokes.dst
 f836d6d6fd8511fad23882411900ce7fd44c47dd9f9f89afb7735bc21c51aaa4  strokes.tap
 f836d6d6fd8511fad23882411900ce7fd44c47dd9f9f89afb7735bc21c51aaa4  strokes.t01
@@ -66,7 +66,7 @@ eb533088cadf0e803acb15d5346d50cb1689df0c0a95b151ca3072c5c713cdd0  strokes.exp
 36a596ccfaf7b525a17aa7c501657b86dd6a54a6e073e02c50bf3c97a3290703  strokes.pes
 85d22fedc8cb41e60c101a3950bfbd9961ade8f731b08b227988123ab7a6a197  strokes.pec
 89335107460998a8cc4a8d1ce76ea5b47dad41a5602e00b323e2e8a2bb68181a  strokes.jef
-7c571736fc1b1b2db830c1717200a8d4bd4b08c46537f5cff4d083f11639d402  strokes.vp3
+88d25ea4c0d4a14088d77d6557ecc70181aef075d591b7add39ea17a5f015e17  strokes.vp3
 eff5ce99a798abd87bdfe0de5afeaf2bef01524734adb05677df70d77735785b  compound-path-with-a-hole.dst
 0abed765c7047a8983dcaf3db08525f38dfec3d60efacfb8d88fb6ce8a102763  compound-path-with-a-hole.tap
 0abed765c7047a8983dcaf3db08525f38dfec3d60efacfb8d88fb6ce8a102763  compound-path-with-a-hole.t01
@@ -74,7 +74,7 @@ eff5ce99a798abd87bdfe0de5afeaf2bef01524734adb05677df70d77735785b  compound-path-
 3f1c4dcb8b4253521a930b2eb4c356198ee441bb66634f8ac28578e7661c5bf0  compound-path-with-a-hole.pes
 c9be8a855c8ea00349158ba21026a4476473c06f9b9882ec65f389237a35c7c6  compound-path-with-a-hole.pec
 de2e37a82b2f7f53f991261962e202e182e8af819ca154a80c63a4732c7af32c  compound-path-with-a-hole.jef
-a48b832cc1740ecb3d291f0fb8144b935c491117d2b3ca686b65555266ea8190  compound-path-with-a-hole.vp3
+8c572a204b7b9368a49535f701f2df48965be3cbd9e74ee3d9d197c97ea2c86a  compound-path-with-a-hole.vp3
 9f81cb7eda102267fbaeb06f45013f5c0c493dec3e53adbb297a1d59037143ac  clip-groups.dst
 a5ff05ef476f74540b5d4696b7dc99189a2aa7fecf745dc6b49f8aaf0e28e0b0  clip-groups.tap
 a5ff05ef476f74540b5d4696b7dc99189a2aa7fecf745dc6b49f8aaf0e28e0b0  clip-groups.t01
@@ -82,7 +82,7 @@ a5ff05ef476f74540b5d4696b7dc99189a2aa7fecf745dc6b49f8aaf0e28e0b0  clip-groups.t0
 8896f294fd6dbbdf6b0782c73d50002af699916b10dd9957c9750303db087737  clip-groups.pes
 52f4da01db5bc485a51eccf305638f428c847ba0ed34911a04d0c1a35b4d3083  clip-groups.pec
 36978e02311698098b63d2760f90a7f414d56349a4a54d3cb412a45078e095f1  clip-groups.jef
-b0b219a8d8ba268eec4235f122d5fb16337a693e555f85ae98c461e931ce3d1b  clip-groups.vp3
+cde69313d5b4d2bfa3d96d4a03e174d067e467fd52e5bf29f98f0551814d9cbc  clip-groups.vp3
 f8b68f2f053586b5ba1157d727992e7da6d292fba40a8dc1f16a7c31bd272d53  symbols.dst
 46ac4ca5c04e5ed49f57462bfd4708c747788fc7488988f38554ad93fe4240db  symbols.tap
 46ac4ca5c04e5ed49f57462bfd4708c747788fc7488988f38554ad93fe4240db  symbols.t01
@@ -90,7 +90,7 @@ bbb4059dc3f24cd91aad3a7c836b9da1c5c39c88f761c362cc2f85e0e3eaf723  symbols.exp
 3c44b14027f8903cd455cc0f0ae41a05b0ace683181d5fc3d49b260d3442c3a3  symbols.pes
 0b56837c1cfa6afd0c196bfa2f55371916c2c7c4eb69e98d06b45612137f439d  symbols.pec
 f0613950519a1d81612a27ad31cb9e075d37e38806032c768db650dbeff17b79  symbols.jef
-1d45081b32e36aa19835a7f12844a6f3f0e2af1b29fb5b87676779a887278e4d  symbols.vp3
+21f774fa4834cfe69df807dd17dd7950992133aad84cd9a6b6aab97a91aac539  symbols.vp3
 acc376edb11b4c6fda9bc7a66d9f5364395b3091ba9675c511123d801eb76ace  trim-after.dst
 379c27976c8dd221c00526da6fcb7cefbfb04c74d07bf14be68cab0ee933427e  trim-after.tap
 379c27976c8dd221c00526da6fcb7cefbfb04c74d07bf14be68cab0ee933427e  trim-after.t01
@@ -98,7 +98,7 @@ acc376edb11b4c6fda9bc7a66d9f5364395b3091ba9675c511123d801eb76ace  trim-after.dst
 efea759a00d4625d06bd982d1d13e6a41252838a7aa86392deb7d68627d88b7d  trim-after.pes
 fc82fa6b1f72ef26b1c1b0c6f01723ffa18dafe2ca5d42cdc312ef454b9ecdad  trim-after.pec
 bc1ad67e7e327908887b9625e781abeb3565b3fb99385d4126b1705d8ec0d304  trim-after.jef
-76260a4fd0b3baf245f2ef4ba1e8ab9d8be3865ce1a8cffbd36f6391907026be  trim-after.vp3
+12d963aa3794c56549c49b0f3f6c2ce1d54add0d472e5bbcce3d614ef5fbbe12  trim-after.vp3
 2a6dbf72191279cfd55331f585e09ab0484a1f8a5a0c794f2c282fc84a2ac3e8  opened-design.dst
 e8a7abd2549356ecaa06fbc86d0dce03afa7d677fe6f48e090c6158a1c00661b  opened-design.tap
 e8a7abd2549356ecaa06fbc86d0dce03afa7d677fe6f48e090c6158a1c00661b  opened-design.t01
@@ -106,7 +106,7 @@ de630f94beada292b3aef0aac568e058d54082225f7e0aec0458f03163542930  opened-design.
 3c65b8cd20df97272c4da80c09bc04e366bb9872e0f323dffbc41bcc060ca491  opened-design.pes
 fcbd414254df19b3bf8157d6877bd3f9ffaccb2a144e1eb79d1a2e84f74cc1ec  opened-design.pec
 fff7d43d2e75987e2ac5308fdf631af70551b0d0e73b52addf5ca10081ae2865  opened-design.jef
-870065d25529d8d4a64e58ba8016dc12b5cae993441ac84e3b644b6801cf077b  opened-design.vp3
+c1c7cf69785b7865188b78ef6ce2194c73c02839520f068732d69be52e29ab21  opened-design.vp3
 cef25d97d2473cfcc03d84ecc03e1f2b0ee792af912ed0ebd87d85c1939a05a8  opened-design-clipped.dst
 b00588928472f96b0e5c93082eadf1944a3a68bf5f03bc5d930284c4d3911b08  opened-design-clipped.tap
 b00588928472f96b0e5c93082eadf1944a3a68bf5f03bc5d930284c4d3911b08  opened-design-clipped.t01
@@ -114,7 +114,7 @@ b00588928472f96b0e5c93082eadf1944a3a68bf5f03bc5d930284c4d3911b08  opened-design-
 99279a3a87b87359ad24231ae08502420c4a3cf9f13a1c2e492f4826c26f61d4  opened-design-clipped.pes
 61216e3421e7bd5eabc5113e08232d6ba11948877635a08dbda8cf781844268d  opened-design-clipped.pec
 329bcf71915fcfcd043e965e16cd05f835a0ed860925f76b1c8410a63fd2c819  opened-design-clipped.jef
-619a782411ecb81f4129a0660c88f5c5b7e76f2095b299224d1942a59a579e54  opened-design-clipped.vp3
+d5eeb44fa89713ab78017866574aa9a3a13358f95c7f79fee33a8779647d05d3  opened-design-clipped.vp3
 0ac667d8c405ccf71442f9d2ef8fe450d60cba77786ab14feaff61f8737653b3  opened-design-cut-at-block-ends.dst
 fce192774f923868bdd5f800fd2afb9e03ed6f0d62c4cd2577b3029f1174830c  opened-design-cut-at-block-ends.tap
 fce192774f923868bdd5f800fd2afb9e03ed6f0d62c4cd2577b3029f1174830c  opened-design-cut-at-block-ends.t01
@@ -122,7 +122,7 @@ fce192774f923868bdd5f800fd2afb9e03ed6f0d62c4cd2577b3029f1174830c  opened-design-
 326f4d74c9c76f053fdc11c17ad0a4d0d3617a8e72f0ab6be3fb6d634b63ed98  opened-design-cut-at-block-ends.pes
 3c069140aa070e4e345ebf6b8ccd9d976807b81683ed7c19d95f270c2eeb0a68  opened-design-cut-at-block-ends.pec
 2c95dbb97edb623dfa6d1d6b7163ed2f04e8d5132b9c509efaa0dfe287c3941b  opened-design-cut-at-block-ends.jef
-d0c5af020602f9e85c6b002d4d122c14fd4e4e84a18897d2f3e620ea08f9af4b  opened-design-cut-at-block-ends.vp3
+04cca51b1f4ab2431c82fd5b34a41225acb9267b78762940b4e2ceb59ada014c  opened-design-cut-at-block-ends.vp3
 16d22beabdd60cad0d9eeb7b30c30cf71eb8f198edad1117bae7727286f776b4  mixed-stitch-style-fill.dst
 e751bbb64713b8fbbc72a5f69b248ed7ce53a7325fec738a3c7247980f4ae2cc  mixed-stitch-style-fill.tap
 e751bbb64713b8fbbc72a5f69b248ed7ce53a7325fec738a3c7247980f4ae2cc  mixed-stitch-style-fill.t01
@@ -130,7 +130,7 @@ e751bbb64713b8fbbc72a5f69b248ed7ce53a7325fec738a3c7247980f4ae2cc  mixed-stitch-s
 d2061f444d93cfd18e30c7cb028f8b599232c190b6f01ef9314bb7c627ba10bf  mixed-stitch-style-fill.pes
 9350de5dbaad6e73e9403fa910b9fbda5929fe44704e238fe408d5ccb3ad172b  mixed-stitch-style-fill.pec
 1334231fa48788fc53b9b59f2904b2e5eeae3468f89c80a94e2cfd188bb9d6c2  mixed-stitch-style-fill.jef
-a404cc769750f730f427bcb447827820a42778711877f9cc3ecfa817939147d1  mixed-stitch-style-fill.vp3
+bc6837faa07a1e8bb2cf4267b59dc67a16e40fd83cb201065ce719c724153602  mixed-stitch-style-fill.vp3
 6c8c082a8b6d8e6809a02d53fa7d7d4d627f76b443301d33e9fb0d96bd935532  mixed-stitch-style-satin.dst
 d33cdd3dd6f0cfe4236546a15259889a16b0fa797b4e6ec268445ff63795a6a6  mixed-stitch-style-satin.tap
 d33cdd3dd6f0cfe4236546a15259889a16b0fa797b4e6ec268445ff63795a6a6  mixed-stitch-style-satin.t01
@@ -138,7 +138,7 @@ d33cdd3dd6f0cfe4236546a15259889a16b0fa797b4e6ec268445ff63795a6a6  mixed-stitch-s
 538e794f1da73f5a430e724d0fbd11a4636cd9fdcdbfcbff2819bed15ad82b1e  mixed-stitch-style-satin.pes
 c42d730d7af599da0023f4793fe0274a5bd49ae65b0adc90af77cac7fea61d0f  mixed-stitch-style-satin.pec
 eaee935976be194416276120e87a492a3ac283f45c6279f27c70b29e92f763c1  mixed-stitch-style-satin.jef
-26afbb0f789ef25a580cae51c67119e24d9f238f616badd80e95c5bdb7b7ad88  mixed-stitch-style-satin.vp3
+72e7699f1d5d25a5ed3716b85991bf3faea43844c5b15837de658d524571e6b9  mixed-stitch-style-satin.vp3
 1eafce568d27a982c416ef59cb1d89f085ae0f2cfc2ba94c71399d8cd5a5c0a4  mixed-stitch-style-running.dst
 0d1a7534cdc23ab1e0ee259273fc11da46a790ed03cc7ad31a9797f5d67bf904  mixed-stitch-style-running.tap
 0d1a7534cdc23ab1e0ee259273fc11da46a790ed03cc7ad31a9797f5d67bf904  mixed-stitch-style-running.t01
@@ -146,7 +146,7 @@ eaee935976be194416276120e87a492a3ac283f45c6279f27c70b29e92f763c1  mixed-stitch-s
 1db76897959188959fce0e009cd8124c2af9c6f7442df576dd027407bdc886ce  mixed-stitch-style-running.pes
 bcb015f33e25490c91b0f0478be6d78f5d4abe0d1f5888f9c653b5f2058e9e64  mixed-stitch-style-running.pec
 ca1adee7a0404173151e9e990db31da999e2457bb3c3a81df567f56a63df456c  mixed-stitch-style-running.jef
-d4a87b4081ccf614a206937bfef1fc51dca30c3823460f21ae5ebbeb82d41831  mixed-stitch-style-running.vp3
+93bc1b19ecdd85b4532efcfbd77029f8e489dac9e6396dd32a88fe342a98b83d  mixed-stitch-style-running.vp3
 233070a6889b2e93eec90934714681982139bcdcd7af47d00b1702739067185b  mixed-every-option.dst
 1170588cf3682b413e1495e337fccc65185ca9162324cda808b9e2db4fb7f0d1  mixed-every-option.tap
 1170588cf3682b413e1495e337fccc65185ca9162324cda808b9e2db4fb7f0d1  mixed-every-option.t01
@@ -154,7 +154,7 @@ d4a87b4081ccf614a206937bfef1fc51dca30c3823460f21ae5ebbeb82d41831  mixed-stitch-s
 abcda3b55ed25b1ce80033496737f2cd1cf948758769ec6596d145bc9c75cf41  mixed-every-option.pes
 e50f40c1be8d0c74f9ac88dcdf8799ddf6500524efa36904049d9f43589f70e4  mixed-every-option.pec
 40734acd42f09b45f298c736b5ef458b22c965f716409f6cdacc76bedfc67327  mixed-every-option.jef
-7152032691ed15592e09c36cf8b9c4ae65009eff709d7f20be10653ac34482ff  mixed-every-option.vp3
+3846774866961a52cc6a446390fa0b90e7e58db5979ee83ae77fc67d976852d0  mixed-every-option.vp3
 a8cb4189cee41465a25d1a4d8191cc122b302ae5289a2150e3b4aca03d7aa049  mixed-shrunk.dst
 3e4baff4739859b1ade5923c927bae77fc823c45082d9f1645fbb882716297ca  mixed-shrunk.tap
 3e4baff4739859b1ade5923c927bae77fc823c45082d9f1645fbb882716297ca  mixed-shrunk.t01
@@ -162,7 +162,7 @@ a785608b345ea6ed9039e9d2db3ea25883d022539fbaeb69c6d6943d988e5248  mixed-shrunk.e
 cf022f2b570ef05b9940d64c49219c013c7ee80b5ac0dc33e8b3d84453edd5ad  mixed-shrunk.pes
 027cea918ef3dc5b2c52850e8091be257377c075041287de86bed6ebc3b0c629  mixed-shrunk.pec
 e488e732b9fb9f7d1a68872d0bc3d79de3165f50df07bae429220b2761ff57a5  mixed-shrunk.jef
-ce449d7103e445cd3f8b323a2595c2a2f2aa178a7864c41a6ad2e6b9733dd4a5  mixed-shrunk.vp3
+e8fc1c3736b9371fad3f6b129d07262de075693622014418ac0c7f241480aadb  mixed-shrunk.vp3
 ";
 
 /// The real designs' artwork at the person's size ([`DESIGNS`]), listed as [`SYNTHETIC`] is.
@@ -174,7 +174,7 @@ ad3aaf8945c67d9e706a3b47d230611f186f4d69190662fa18f9c5df818c5f0d  bullseye-twemo
 467bff688288710650df332d4dcb92e8a4ff8ce6b33521d8b85dcf8946dbf545  bullseye-twemoji.pes
 e28af61cc1acdd408c4562dc6a964cee1c085103f55133c3a4249b400affc77c  bullseye-twemoji.pec
 523dbf9a258e8b259b1698e53c337a86d55306d05e410c1b80cd392e08495d12  bullseye-twemoji.jef
-c3d466ffde3e505cd57cba78ee41ca57ee6f7a5413c56d98bcb6a731db77df99  bullseye-twemoji.vp3
+e0ac16c407b086bd1c964569b655b2b33ae7daa05689e78f9fecc1e708c4b618  bullseye-twemoji.vp3
 beae2e150caf987f5a39397dbef9238bf14f09acd707e9d18d139928b579cbad  fox-twemoji.clipart.dst
 2b0c4f2447243770c7215c90de2dd376dd0553501399e1ab059184272107837d  fox-twemoji.clipart.tap
 2b0c4f2447243770c7215c90de2dd376dd0553501399e1ab059184272107837d  fox-twemoji.clipart.t01
@@ -182,7 +182,7 @@ beae2e150caf987f5a39397dbef9238bf14f09acd707e9d18d139928b579cbad  fox-twemoji.cl
 2ee47aa9f7dd1002a1b4d5c36b07274cefd738bd6991e383ffa931ee64b8bb6a  fox-twemoji.clipart.pes
 85dbeb2226be44505aecbed7568227b742e0f70dc5f7443ca7864e2b4af645b8  fox-twemoji.clipart.pec
 f069741c54bbc08d740a4d28f9cc8888b260f32f0dcf3d576748b979e13be899  fox-twemoji.clipart.jef
-500dd4352493268c0a46edfd6095f8daa37e46e051371bfdf1c2ab46ee757881  fox-twemoji.clipart.vp3
+8f1a10785bde9a48aeee19350f2d64f068e89cde053a982d7ef5985fc8e7b62b  fox-twemoji.clipart.vp3
 a0465592a39b91b6be9070b7f5205361db9ff5a3e33d4593a6ad86d931c44f33  heart-suit-twemoji.clipart.dst
 9e25d01d186774e3eec73b4427abb21edec84541e15f0cb15f82593616bea9a5  heart-suit-twemoji.clipart.tap
 9e25d01d186774e3eec73b4427abb21edec84541e15f0cb15f82593616bea9a5  heart-suit-twemoji.clipart.t01
@@ -190,7 +190,7 @@ a0465592a39b91b6be9070b7f5205361db9ff5a3e33d4593a6ad86d931c44f33  heart-suit-twe
 0986deff7fa231d01098344499c2f0a531b2cdf94c3c88392182a962dc3fbefa  heart-suit-twemoji.clipart.pes
 d2c0daeed2ac136d8c68d85c09212948c28563b0b245100defb688ab30a35852  heart-suit-twemoji.clipart.pec
 dfbaebe23679c276c14ebf06d8d056b5bb5a9ccea53d08967bdbe449f2504797  heart-suit-twemoji.clipart.jef
-f81f49ae03fb46c475ee6192eeaa2394c96ce77d93e5aa25a4f98209aebd33f3  heart-suit-twemoji.clipart.vp3
+9ac180717f459d64e1de2056683fd228a91187f008ca041bb35b343b2bb8bea9  heart-suit-twemoji.clipart.vp3
 41cdd3a94031c2ced989b08d7a5bc2e35567ed7b3d331a58c19229832b9bd0ff  joystick-twemoji.dst
 8f763b55e74106ddd2a68657ede308f5eb61e59775e2e8c7575053d0038880a5  joystick-twemoji.tap
 8f763b55e74106ddd2a68657ede308f5eb61e59775e2e8c7575053d0038880a5  joystick-twemoji.t01
@@ -198,7 +198,7 @@ f81f49ae03fb46c475ee6192eeaa2394c96ce77d93e5aa25a4f98209aebd33f3  heart-suit-twe
 5892e82bc9c6be6060aa86fbd36304aca37fbeae70b1bfda5158d18beb649d41  joystick-twemoji.pes
 9fe0186a0c04c91e1a68f413ad53149b8257a94312ccf518591e1b49d4d025e1  joystick-twemoji.pec
 8012d1a66a7c2b4702e585c2939ddb82f5529c58362468e7731a87590a60ee90  joystick-twemoji.jef
-36a1e047165e47b09dbedfefcca208b26a74b6801fd438de530c5502a6fe07e5  joystick-twemoji.vp3
+e32c85414608c0999f028664f71e4c298b689dc509b38e1c234d2791d70556fb  joystick-twemoji.vp3
 937ce6005ca277fd1b8e33f71f31d257f682b7844f3f2d41d4919e13534d1b2c  pool-8-ball-twemoji.dst
 7561f3be7423f8039b1757566dd15bc2274f9c172875eb4c52354842d35e67f3  pool-8-ball-twemoji.tap
 7561f3be7423f8039b1757566dd15bc2274f9c172875eb4c52354842d35e67f3  pool-8-ball-twemoji.t01
@@ -206,7 +206,7 @@ ffc977db44a67fb4fcc5a8c9a42b7d83d77aaa641dd807db2661f03e8f9973e7  pool-8-ball-tw
 ae9a0054b5760b6d8c939fe62cdbdaf1755fd76aa74fbb955424ba868d5d5d85  pool-8-ball-twemoji.pes
 0044ecacfd8f040c325775356219c6e9957bf93502150cd90c550f970c48af36  pool-8-ball-twemoji.pec
 3274ddae121d2641f473ff13e10295c0234904b874fd196c6e655c127878162b  pool-8-ball-twemoji.jef
-63ba1d3b248ba86da6655fdf923eedce3c478eb2a139318fb9345fadaa5c49a7  pool-8-ball-twemoji.vp3
+d3a65699f56d047b593acd795e8b1e11697c02cc07a822140b9daf0e8835f5d2  pool-8-ball-twemoji.vp3
 2745472aa7ecb5cf1b462edcc2726c589f298b36621bd65c0f3f40f6a2c161c5  puzzle-piece-twemoji.dst
 ea063b2fd303dd23756ec75d633a0c1d6bd1e04d0040515bab5374b4829583fe  puzzle-piece-twemoji.tap
 ea063b2fd303dd23756ec75d633a0c1d6bd1e04d0040515bab5374b4829583fe  puzzle-piece-twemoji.t01
@@ -214,7 +214,7 @@ ea063b2fd303dd23756ec75d633a0c1d6bd1e04d0040515bab5374b4829583fe  puzzle-piece-t
 fdcf0af314400b90877fc07cd4bf2be34587c65719767b338aceb2703972f99a  puzzle-piece-twemoji.pes
 99239d1d9fd27161ab6050dd4df592c69545fa0c008bcefbfc30798a7151fd7f  puzzle-piece-twemoji.pec
 f4aa4bac74bcac57a19f1c5368a7358ae049fcd417e82ecdb12fee6ebe104a2c  puzzle-piece-twemoji.jef
-f49847a3158d7ac84aeb4541ad2721f72e801e4868b95af6057b2078d9bbb9bc  puzzle-piece-twemoji.vp3
+34b8fc99ca073fda7681b6e0c8f35e4d54873bb71580f60e173293609220bf8d  puzzle-piece-twemoji.vp3
 1db23447b17b5df2ff6c898df0b0a70f46fa37b277f8ad948ac4398d2457f9de  smiling-face-with-smiling-eyes-twemoji.clipart.dst
 14abcb883c9bb68fd32733468f4f71e577b1c4d3c95a4b55ece840cd6cdcacfe  smiling-face-with-smiling-eyes-twemoji.clipart.tap
 14abcb883c9bb68fd32733468f4f71e577b1c4d3c95a4b55ece840cd6cdcacfe  smiling-face-with-smiling-eyes-twemoji.clipart.t01
@@ -222,7 +222,7 @@ f49847a3158d7ac84aeb4541ad2721f72e801e4868b95af6057b2078d9bbb9bc  puzzle-piece-t
 4a3f0f02b18c68b51a6012b8414c72b002f51cc9a55756658aa1320445e06b83  smiling-face-with-smiling-eyes-twemoji.clipart.pes
 b7dc5d51320bd367150ebd1395ee821f439ad7946022b79aee9df74ee6f9c80d  smiling-face-with-smiling-eyes-twemoji.clipart.pec
 9052b32dae1382a6f2156e509bdf994dbaf63ae1852bc8538fc31c689ce63d52  smiling-face-with-smiling-eyes-twemoji.clipart.jef
-b26591e940bc8a9f1c4530d0d1a403f703ab0b3b5986dbff364edbfbf81df2cb  smiling-face-with-smiling-eyes-twemoji.clipart.vp3
+018378309cc8904355ebb97e122b1626198b29dbc5f8c537133a201582e77019  smiling-face-with-smiling-eyes-twemoji.clipart.vp3
 e556ec1fbb766bc1cfef7790f7307ebc94d8e5ff5662ddc05075e31254a36841  sos-button-fluent.clipart.dst
 7b85ad77234d9b9ce29bfabc8cd0d3b8b549fb52f60baf10fad907e1a7b895b5  sos-button-fluent.clipart.tap
 7b85ad77234d9b9ce29bfabc8cd0d3b8b549fb52f60baf10fad907e1a7b895b5  sos-button-fluent.clipart.t01
@@ -230,7 +230,7 @@ e556ec1fbb766bc1cfef7790f7307ebc94d8e5ff5662ddc05075e31254a36841  sos-button-flu
 0c6d0f065557dffaac67fd6db943b7735dfff7c4517fca6be67dce1344ee5529  sos-button-fluent.clipart.pes
 b3ea1d943f382921bb4ed29c7f712656544c525ad8701d4972dacbac6cd59294  sos-button-fluent.clipart.pec
 05147fb7c1f075fb2c46c49e227aacc233aa56acd2501f7b33c7ffd89555b260  sos-button-fluent.clipart.jef
-c9a6c63e14d65a190f32e942e44b6208370997a825d868d14798e8cae1106019  sos-button-fluent.clipart.vp3
+e963cbf7a923eee89e621cc40d4058c751b64e47df05aa68a416c1152cefdaaa  sos-button-fluent.clipart.vp3
 61cd25c0894c0784312870219a56001d37a58d1629ad9fe12a40590067d0f5a1  video-game-twemoji.dst
 24dec2e0a353ca02b61d8691dbd5388f3bab86e8a5d6b964c90355dfa560a268  video-game-twemoji.tap
 24dec2e0a353ca02b61d8691dbd5388f3bab86e8a5d6b964c90355dfa560a268  video-game-twemoji.t01
@@ -238,7 +238,7 @@ c9a6c63e14d65a190f32e942e44b6208370997a825d868d14798e8cae1106019  sos-button-flu
 5b60086836be865519df4b0ceee9775db2359cee15e2b4077de600c497fa8282  video-game-twemoji.pes
 ed9705aa27c8c699b4635f495568adecf071702afdd44ab64314e8551df52337  video-game-twemoji.pec
 3c1a16ea40fdb5089ebd6da6b2ff3a74008879ad59ff4fb140f5968f8eacebc1  video-game-twemoji.jef
-0c3f33ac2a7e6afab0adeb255dccfad17a20fb1dee95921298bcfd2294546831  video-game-twemoji.vp3
+d86211d4d504372840fa0ae1d22f33de8684ebfd2a589bd2d91152c718f4152d  video-game-twemoji.vp3
 f4c151c3583b0fee92777903df59e82a837b981835dbb8d9219cde0096bdc9b3  watermelon-twemoji.clipart.dst
 83dbc939ff28097a39c8976f166757ee58ffb6f28a657d2373567a82d63008ae  watermelon-twemoji.clipart.tap
 83dbc939ff28097a39c8976f166757ee58ffb6f28a657d2373567a82d63008ae  watermelon-twemoji.clipart.t01
@@ -246,7 +246,7 @@ f4c151c3583b0fee92777903df59e82a837b981835dbb8d9219cde0096bdc9b3  watermelon-twe
 8ce685df0a530ecb72bd68d87c6bb52e5430e63a21dcdba69068f4cdeb643dac  watermelon-twemoji.clipart.pes
 88dc2ec1c3f51a14eb38e598c53dbc8f9151b1735c60d917a36d90d77221fdb3  watermelon-twemoji.clipart.pec
 8e3e9895af14cb9352257e6e726712074b4634ed58ea41e3430a0e8b69872973  watermelon-twemoji.clipart.jef
-3d509031f248ea83d4d25b97d71c1095902bdf6bbf61872c7764dfff892b78d3  watermelon-twemoji.clipart.vp3
+30182404b39ec0494f7a52d9fa66ca5d67c7843990413059d4f6a91da8bedd98  watermelon-twemoji.clipart.vp3
 5c1e9736a5de173cea8305f4eea9000fb91d9dcc8fffb8c9166eed28e8c734ee  zebra-twemoji.clipart.dst
 b31a34432500ec09051ad49d5bccce781fc274026aa5bc25371f3e6bcb13eb71  zebra-twemoji.clipart.tap
 b31a34432500ec09051ad49d5bccce781fc274026aa5bc25371f3e6bcb13eb71  zebra-twemoji.clipart.t01
@@ -254,7 +254,7 @@ b31a34432500ec09051ad49d5bccce781fc274026aa5bc25371f3e6bcb13eb71  zebra-twemoji.
 3ae9dc6fbb10712cb4182eed3d2c90653f648c7d70bd9bc3a34eddc60c169d9c  zebra-twemoji.clipart.pes
 f98b0cb567866d72216177a7956d5dd15c3df5eb0c9828b6ebc349a86dc96b6b  zebra-twemoji.clipart.pec
 eada359ba5693692f487d9861a1b91084b3b77025d19475e38faedf5cfed8a58  zebra-twemoji.clipart.jef
-f39d519570c4543fa7c7edf089fe76e07b39f6331d225ade5640bdc285f8c7cb  zebra-twemoji.clipart.vp3
+775da5e5511e4e77349f5ec405bd12253e7ac3dd4785b7e270fa169a7be83081  zebra-twemoji.clipart.vp3
 ";
 
 /// The PES, PEC and JEF exports of [`SYNTHETIC`] apart from their thread numbers ([`threads_apart`]):
@@ -351,7 +351,7 @@ fills.exp  blocks 4  needle 360/135/301/90  jumps 2/1/1/1  trims 1/0/0/0  size 7
 fills.pes  blocks 4  needle 360/135/301/90  jumps 2/1/1/1  trims 1/0/0/0  size 76.0x70.8  longest 4.60  shortest 0.36  cells 573
 fills.pec  blocks 4  needle 360/135/301/90  jumps 2/1/1/1  trims 1/0/0/0  size 76.0x70.8  longest 4.60  shortest 0.36  cells 573
 fills.jef  blocks 4  needle 360/135/301/90  jumps 2/1/1/1  trims 1/0/0/0  size 76.0x70.9  longest 4.60  shortest 0.40  cells 576
-fills.vp3  blocks 4  needle 360/135/301/90  jumps 2/1/1/1  trims 0/0/0/0  size 76.0x70.9  longest 4.60  shortest 0.40  cells 576
+fills.vp3  blocks 4  needle 360/135/301/90  jumps 2/1/1/1  trims 1/0/0/0  size 76.0x70.9  longest 4.60  shortest 0.40  cells 576
 strokes.dst  blocks 6  needle 353/611/265/66/558/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.3x89.5  longest 4.53  shortest 0.50  cells 1592
 strokes.tap  blocks 6  needle 353/611/265/66/558/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.3x89.5  longest 4.53  shortest 0.50  cells 1592
 strokes.t01  blocks 6  needle 353/611/265/66/558/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.3x89.5  longest 4.53  shortest 0.50  cells 1592
@@ -359,7 +359,7 @@ strokes.exp  blocks 6  needle 353/611/265/66/558/390  jumps 1/1/1/2/1/1  trims 0
 strokes.pes  blocks 6  needle 353/611/265/66/558/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.3x89.5  longest 4.53  shortest 0.42  cells 1593
 strokes.pec  blocks 6  needle 353/611/265/66/558/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.3x89.5  longest 4.53  shortest 0.42  cells 1593
 strokes.jef  blocks 6  needle 353/611/265/66/558/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.2x89.5  longest 4.67  shortest 0.50  cells 1598
-strokes.vp3  blocks 6  needle 353/611/265/66/558/390  jumps 1/1/1/2/1/1  trims 0/0/0/0/0/0  size 88.2x89.5  longest 4.67  shortest 0.50  cells 1598
+strokes.vp3  blocks 6  needle 353/611/265/66/558/390  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 88.2x89.5  longest 4.67  shortest 0.50  cells 1598
 compound-path-with-a-hole.dst  blocks 2  needle 1006/362  jumps 1/4  trims 0/3  size 74.4x28.5  longest 4.60  shortest 0.36  cells 1068
 compound-path-with-a-hole.tap  blocks 2  needle 1006/362  jumps 1/4  trims 0/3  size 74.4x28.5  longest 4.60  shortest 0.36  cells 1068
 compound-path-with-a-hole.t01  blocks 2  needle 1006/362  jumps 1/4  trims 0/3  size 74.4x28.5  longest 4.60  shortest 0.36  cells 1068
@@ -367,7 +367,7 @@ compound-path-with-a-hole.exp  blocks 2  needle 1006/362  jumps 1/4  trims 0/3  
 compound-path-with-a-hole.pes  blocks 2  needle 1006/362  jumps 1/4  trims 0/3  size 74.4x28.5  longest 4.60  shortest 0.36  cells 1068
 compound-path-with-a-hole.pec  blocks 2  needle 1006/362  jumps 1/4  trims 0/3  size 74.4x28.5  longest 4.60  shortest 0.36  cells 1068
 compound-path-with-a-hole.jef  blocks 2  needle 1006/362  jumps 1/4  trims 0/3  size 74.3x28.5  longest 4.67  shortest 0.41  cells 1068
-compound-path-with-a-hole.vp3  blocks 2  needle 1006/362  jumps 1/4  trims 0/0  size 74.3x28.5  longest 4.67  shortest 0.41  cells 1068
+compound-path-with-a-hole.vp3  blocks 2  needle 1006/362  jumps 1/4  trims 0/3  size 74.3x28.5  longest 4.67  shortest 0.41  cells 1068
 clip-groups.dst  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1191
 clip-groups.tap  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1191
 clip-groups.t01  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1191
@@ -375,7 +375,7 @@ clip-groups.exp  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 
 clip-groups.pes  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1192
 clip-groups.pec  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1192
 clip-groups.jef  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1192
-clip-groups.vp3  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/0  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1192
+clip-groups.vp3  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1192
 symbols.dst  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.42  cells 558
 symbols.tap  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.42  cells 558
 symbols.t01  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.42  cells 558
@@ -383,7 +383,7 @@ symbols.exp  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  lon
 symbols.pes  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.36  cells 559
 symbols.pec  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.36  cells 559
 symbols.jef  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.67  shortest 0.42  cells 562
-symbols.vp3  blocks 2  needle 661/437  jumps 3/3  trims 0/0  size 51.4x74.3  longest 4.67  shortest 0.42  cells 562
+symbols.vp3  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.67  shortest 0.42  cells 562
 trim-after.dst  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.53  shortest 0.50  cells 144
 trim-after.tap  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.53  shortest 0.50  cells 144
 trim-after.t01  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.53  shortest 0.50  cells 144
@@ -391,7 +391,7 @@ trim-after.exp  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4
 trim-after.pes  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.53  shortest 0.50  cells 144
 trim-after.pec  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.53  shortest 0.50  cells 144
 trim-after.jef  blocks 1  needle 242  jumps 4  trims 2  size 26.8x5.6  longest 4.53  shortest 0.50  cells 144
-trim-after.vp3  blocks 1  needle 242  jumps 4  trims 0  size 26.8x5.6  longest 4.53  shortest 0.50  cells 144
+trim-after.vp3  blocks 1  needle 242  jumps 4  trims 2  size 26.8x5.6  longest 4.53  shortest 0.50  cells 144
 opened-design.dst  blocks 2  needle 360/135  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.67  shortest 0.36  cells 364
 opened-design.tap  blocks 2  needle 360/135  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.67  shortest 0.36  cells 364
 opened-design.t01  blocks 2  needle 360/135  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.67  shortest 0.36  cells 364
@@ -399,7 +399,7 @@ opened-design.exp  blocks 2  needle 360/135  jumps 2/1  trims 1/0  size 35.5x42.
 opened-design.pes  blocks 2  needle 360/135  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.67  shortest 0.36  cells 364
 opened-design.pec  blocks 2  needle 360/135  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.67  shortest 0.36  cells 364
 opened-design.jef  blocks 2  needle 360/135  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.67  shortest 0.36  cells 364
-opened-design.vp3  blocks 2  needle 360/135  jumps 2/1  trims 0/0  size 35.5x42.6  longest 4.67  shortest 0.36  cells 364
+opened-design.vp3  blocks 2  needle 360/135  jumps 2/1  trims 1/0  size 35.5x42.6  longest 4.67  shortest 0.36  cells 364
 opened-design-clipped.dst  blocks 1  needle 119  jumps 15  trims 1  size 7.3x10.9  longest 4.46  shortest 0.41  cells 80
 opened-design-clipped.tap  blocks 1  needle 119  jumps 15  trims 1  size 7.3x10.9  longest 4.46  shortest 0.41  cells 80
 opened-design-clipped.t01  blocks 1  needle 119  jumps 15  trims 1  size 7.3x10.9  longest 4.46  shortest 0.41  cells 80
@@ -407,7 +407,7 @@ opened-design-clipped.exp  blocks 1  needle 119  jumps 15  trims 1  size 7.3x10.
 opened-design-clipped.pes  blocks 1  needle 119  jumps 15  trims 1  size 7.3x10.9  longest 4.46  shortest 0.41  cells 80
 opened-design-clipped.pec  blocks 1  needle 119  jumps 15  trims 1  size 7.3x10.9  longest 4.46  shortest 0.41  cells 80
 opened-design-clipped.jef  blocks 1  needle 119  jumps 15  trims 1  size 7.3x10.9  longest 4.46  shortest 0.41  cells 80
-opened-design-clipped.vp3  blocks 1  needle 119  jumps 15  trims 0  size 7.3x10.9  longest 4.46  shortest 0.41  cells 80
+opened-design-clipped.vp3  blocks 1  needle 119  jumps 15  trims 1  size 7.3x10.9  longest 4.46  shortest 0.41  cells 80
 opened-design-cut-at-block-ends.dst  blocks 2  needle 20/20  jumps 3/2  trims 0/1  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
 opened-design-cut-at-block-ends.tap  blocks 2  needle 20/20  jumps 3/2  trims 0/1  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
 opened-design-cut-at-block-ends.t01  blocks 2  needle 20/20  jumps 3/2  trims 0/1  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
@@ -415,7 +415,7 @@ opened-design-cut-at-block-ends.exp  blocks 2  needle 20/20  jumps 2/2  trims 1/
 opened-design-cut-at-block-ends.pes  blocks 2  needle 20/20  jumps 2/2  trims 1/2  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
 opened-design-cut-at-block-ends.pec  blocks 2  needle 20/20  jumps 2/2  trims 1/2  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
 opened-design-cut-at-block-ends.jef  blocks 2  needle 20/20  jumps 2/2  trims 1/2  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
-opened-design-cut-at-block-ends.vp3  blocks 2  needle 20/20  jumps 2/2  trims 0/0  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
+opened-design-cut-at-block-ends.vp3  blocks 2  needle 20/20  jumps 2/2  trims 0/1  size 58.0x10.0  longest 2.00  shortest 2.00  cells 76
 mixed-stitch-style-fill.dst  blocks 6  needle 393/331/337/102/546/410  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 86.0x78.6  longest 4.67  shortest 0.36  cells 1443
 mixed-stitch-style-fill.tap  blocks 6  needle 393/331/337/102/546/410  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 86.0x78.6  longest 4.67  shortest 0.36  cells 1443
 mixed-stitch-style-fill.t01  blocks 6  needle 393/331/337/102/546/410  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 86.0x78.6  longest 4.67  shortest 0.36  cells 1443
@@ -423,7 +423,7 @@ mixed-stitch-style-fill.exp  blocks 6  needle 393/331/337/102/546/410  jumps 1/1
 mixed-stitch-style-fill.pes  blocks 6  needle 393/331/337/102/546/410  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 86.0x78.6  longest 4.67  shortest 0.36  cells 1444
 mixed-stitch-style-fill.pec  blocks 6  needle 393/331/337/102/546/410  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 86.0x78.6  longest 4.67  shortest 0.36  cells 1444
 mixed-stitch-style-fill.jef  blocks 6  needle 393/331/337/102/546/410  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 86.0x78.6  longest 4.67  shortest 0.36  cells 1440
-mixed-stitch-style-fill.vp3  blocks 6  needle 393/331/337/102/546/410  jumps 1/1/1/2/1/1  trims 0/0/0/0/0/0  size 86.0x78.6  longest 4.67  shortest 0.36  cells 1440
+mixed-stitch-style-fill.vp3  blocks 6  needle 393/331/337/102/546/410  jumps 1/1/1/2/1/1  trims 0/0/0/1/0/0  size 86.0x78.6  longest 4.67  shortest 0.36  cells 1440
 mixed-stitch-style-satin.dst  blocks 6  needle 393/300/369/365/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1486
 mixed-stitch-style-satin.tap  blocks 6  needle 393/300/369/365/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1486
 mixed-stitch-style-satin.t01  blocks 6  needle 393/300/369/365/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1486
@@ -475,7 +475,7 @@ fox-twemoji.clipart.exp  blocks 4  needle 1414/460/148/248  jumps 1/2/3/2  trims
 fox-twemoji.clipart.pes  blocks 4  needle 1414/460/148/248  jumps 1/2/3/2  trims 0/0/2/1  size 45.3x40.7  longest 10.06  shortest 0.32  cells 1328
 fox-twemoji.clipart.pec  blocks 4  needle 1414/460/148/248  jumps 1/2/3/2  trims 0/0/2/1  size 45.3x40.7  longest 10.06  shortest 0.32  cells 1328
 fox-twemoji.clipart.jef  blocks 4  needle 1414/460/148/248  jumps 1/2/3/2  trims 0/0/2/1  size 45.2x40.7  longest 10.04  shortest 0.32  cells 1332
-fox-twemoji.clipart.vp3  blocks 4  needle 1414/460/148/248  jumps 1/2/3/2  trims 0/0/0/0  size 45.2x40.7  longest 10.04  shortest 0.32  cells 1332
+fox-twemoji.clipart.vp3  blocks 4  needle 1414/460/148/248  jumps 1/2/3/2  trims 0/0/2/1  size 45.2x40.7  longest 10.04  shortest 0.32  cells 1332
 heart-suit-twemoji.clipart.dst  blocks 1  needle 1374  jumps 1  trims 0  size 45.3x42.3  longest 4.61  shortest 0.32  cells 1366
 heart-suit-twemoji.clipart.tap  blocks 1  needle 1374  jumps 1  trims 0  size 45.3x42.3  longest 4.61  shortest 0.32  cells 1366
 heart-suit-twemoji.clipart.t01  blocks 1  needle 1374  jumps 1  trims 0  size 45.3x42.3  longest 4.61  shortest 0.32  cells 1366
@@ -491,7 +491,7 @@ joystick-twemoji.exp  blocks 4  needle 155/254/1031/229  jumps 1/2/4/1  trims 0/
 joystick-twemoji.pes  blocks 4  needle 155/254/1031/229  jumps 1/2/4/1  trims 0/1/2/0  size 42.7x45.4  longest 5.70  shortest 0.41  cells 1006
 joystick-twemoji.pec  blocks 4  needle 155/254/1031/229  jumps 1/2/4/1  trims 0/1/2/0  size 42.7x45.4  longest 5.70  shortest 0.41  cells 1006
 joystick-twemoji.jef  blocks 4  needle 155/254/1031/229  jumps 1/2/4/1  trims 0/1/2/0  size 42.7x45.3  longest 5.70  shortest 0.36  cells 986
-joystick-twemoji.vp3  blocks 4  needle 155/254/1031/229  jumps 1/2/4/1  trims 0/0/0/0  size 42.7x45.3  longest 5.70  shortest 0.36  cells 986
+joystick-twemoji.vp3  blocks 4  needle 155/254/1031/229  jumps 1/2/4/1  trims 0/1/2/0  size 42.7x45.3  longest 5.70  shortest 0.36  cells 986
 pool-8-ball-twemoji.dst  blocks 3  needle 1640/483/315  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.67  shortest 0.32  cells 1757
 pool-8-ball-twemoji.tap  blocks 3  needle 1640/483/315  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.67  shortest 0.32  cells 1757
 pool-8-ball-twemoji.t01  blocks 3  needle 1640/483/315  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.67  shortest 0.32  cells 1757
@@ -515,7 +515,7 @@ smiling-face-with-smiling-eyes-twemoji.clipart.exp  blocks 3  needle 1907/373/38
 smiling-face-with-smiling-eyes-twemoji.clipart.pes  blocks 3  needle 1907/373/388  jumps 1/2/3  trims 0/1/0  size 47.8x47.7  longest 5.92  shortest 0.32  cells 1852
 smiling-face-with-smiling-eyes-twemoji.clipart.pec  blocks 3  needle 1907/373/388  jumps 1/2/3  trims 0/1/0  size 47.8x47.7  longest 5.92  shortest 0.32  cells 1852
 smiling-face-with-smiling-eyes-twemoji.clipart.jef  blocks 3  needle 1907/373/388  jumps 1/2/3  trims 0/1/0  size 47.7x47.7  longest 5.92  shortest 0.32  cells 1853
-smiling-face-with-smiling-eyes-twemoji.clipart.vp3  blocks 3  needle 1907/373/388  jumps 1/2/3  trims 0/0/0  size 47.7x47.7  longest 5.92  shortest 0.32  cells 1853
+smiling-face-with-smiling-eyes-twemoji.clipart.vp3  blocks 3  needle 1907/373/388  jumps 1/2/3  trims 0/1/0  size 47.7x47.7  longest 5.92  shortest 0.32  cells 1853
 sos-button-fluent.clipart.dst  blocks 2  needle 1988/770  jumps 1/3  trims 0/1  size 45.3x45.3  longest 4.67  shortest 0.41  cells 2076
 sos-button-fluent.clipart.tap  blocks 2  needle 1988/770  jumps 1/3  trims 0/1  size 45.3x45.3  longest 4.67  shortest 0.41  cells 2076
 sos-button-fluent.clipart.t01  blocks 2  needle 1988/770  jumps 1/3  trims 0/1  size 45.3x45.3  longest 4.67  shortest 0.41  cells 2076
@@ -523,7 +523,7 @@ sos-button-fluent.clipart.exp  blocks 2  needle 1988/770  jumps 1/3  trims 0/1  
 sos-button-fluent.clipart.pes  blocks 2  needle 1988/770  jumps 1/3  trims 0/1  size 45.3x45.3  longest 4.60  shortest 0.40  cells 2076
 sos-button-fluent.clipart.pec  blocks 2  needle 1988/770  jumps 1/3  trims 0/1  size 45.3x45.3  longest 4.60  shortest 0.40  cells 2076
 sos-button-fluent.clipart.jef  blocks 2  needle 1988/770  jumps 1/3  trims 0/1  size 45.2x45.2  longest 4.60  shortest 0.32  cells 2075
-sos-button-fluent.clipart.vp3  blocks 2  needle 1988/770  jumps 1/3  trims 0/0  size 45.2x45.2  longest 4.60  shortest 0.32  cells 2075
+sos-button-fluent.clipart.vp3  blocks 2  needle 1988/770  jumps 1/3  trims 0/1  size 45.2x45.2  longest 4.60  shortest 0.32  cells 2075
 video-game-twemoji.dst  blocks 8  needle 581/1199/142/33/32/32/33/140  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.2x32.1  longest 4.95  shortest 0.32  cells 1222
 video-game-twemoji.tap  blocks 8  needle 581/1199/142/33/32/32/33/140  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.2x32.1  longest 4.95  shortest 0.32  cells 1222
 video-game-twemoji.t01  blocks 8  needle 581/1199/142/33/32/32/33/140  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.2x32.1  longest 4.95  shortest 0.32  cells 1222
@@ -531,7 +531,7 @@ video-game-twemoji.exp  blocks 8  needle 581/1199/142/33/32/32/33/140  jumps 4/3
 video-game-twemoji.pes  blocks 8  needle 581/1199/142/33/32/32/33/140  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.2x32.1  longest 4.88  shortest 0.32  cells 1221
 video-game-twemoji.pec  blocks 8  needle 581/1199/142/33/32/32/33/140  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.2x32.1  longest 4.88  shortest 0.32  cells 1221
 video-game-twemoji.jef  blocks 8  needle 581/1199/142/33/32/32/33/140  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.2x32.1  longest 4.88  shortest 0.32  cells 1217
-video-game-twemoji.vp3  blocks 8  needle 581/1199/142/33/32/32/33/140  jumps 4/3/2/1/1/1/1/4  trims 0/0/0/0/0/0/0/0  size 45.2x32.1  longest 4.88  shortest 0.32  cells 1217
+video-game-twemoji.vp3  blocks 8  needle 581/1199/142/33/32/32/33/140  jumps 4/3/2/1/1/1/1/4  trims 2/2/0/0/0/0/0/0  size 45.2x32.1  longest 4.88  shortest 0.32  cells 1217
 watermelon-twemoji.clipart.dst  blocks 4  needle 411/367/605/152  jumps 1/1/1/8  trims 0/0/0/0  size 46.2x32.1  longest 4.67  shortest 0.36  cells 966
 watermelon-twemoji.clipart.tap  blocks 4  needle 411/367/605/152  jumps 1/1/1/8  trims 0/0/0/0  size 46.2x32.1  longest 4.67  shortest 0.36  cells 966
 watermelon-twemoji.clipart.t01  blocks 4  needle 411/367/605/152  jumps 1/1/1/8  trims 0/0/0/0  size 46.2x32.1  longest 4.67  shortest 0.36  cells 966
@@ -547,7 +547,7 @@ zebra-twemoji.clipart.exp  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps
 zebra-twemoji.clipart.pes  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1568
 zebra-twemoji.clipart.pec  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1568
 zebra-twemoji.clipart.jef  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
-zebra-twemoji.clipart.vp3  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps 2/2/2/1/1/3/1/9  trims 0/0/0/0/0/0/0/0  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
+zebra-twemoji.clipart.vp3  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
 ";
 
 /// Points per millimetre: the documents count points, the designs millimetres.

@@ -623,6 +623,37 @@ mod tests {
     use crate::{Block, quantize};
     use vectorcraft_geom::Point;
 
+    /// The summary counts what the file holds: as many colour blocks as the design writes, one
+    /// design, and a sewing-time estimate of its needle points; the design's own block count too.
+    #[test]
+    fn the_summary_counts_what_the_file_holds() {
+        let mut p = Pattern::default();
+        for k in 0..3u8 {
+            let mut b = Block::new(Thread::rgb([200, 60 * k, 30]));
+            for i in 0..5 {
+                b.stitches.push(Stitch::sew(Point::new(f64::from(i) * 2.0, f64::from(k) * 10.0)));
+            }
+            p.blocks.push(b);
+        }
+        let bytes = write(&p).unwrap();
+        let u16_at = |at: usize| usize::from(u16::from_be_bytes([bytes[at], bytes[at + 1]]));
+        let u32_at = |at: usize| u32::from_be_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]) as usize;
+        // The magic and the producer string, the file packet's tag and length, its notes string,
+        // then the four edges.
+        let file = 8 + u16_at(6);
+        let edges = file + 9 + u16_at(file + 7);
+        let (estimate, colors, mark, designs) = (u32_at(edges + 16), u16_at(edges + 20), bytes[edges + 22], u16_at(edges + 23));
+        assert_eq!((colors, mark, designs), (3, SUMMARY_MARK, 1));
+        // The estimate counts what the machine sews through: the needle points and the long forms
+        // that reach them.
+        let long_forms = bytes.windows(2).filter(|w| w == &[CONTROL, LONG_START]).count();
+        assert_eq!(estimate, read(&bytes).unwrap().sewn() + long_forms);
+        // The design's own count, after the producer string again.
+        let producer = PRODUCER.encode_utf16().count() * 2;
+        let at = bytes.windows(DESIGN_MAGIC.len()).position(|w| w == DESIGN_MAGIC).unwrap() + DESIGN_MAGIC.len();
+        assert_eq!(u16_at(at + 2 + producer), 3);
+    }
+
     fn design() -> Pattern {
         let mut p = Pattern::default();
         let mut a = Block::new(Thread::named([230, 20, 20], "Poppy"));

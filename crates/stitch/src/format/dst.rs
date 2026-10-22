@@ -87,7 +87,7 @@ pub(crate) struct Records {
     pub(crate) bytes: Vec<u8>,
     /// How many records there are before the end record (the header's `ST`).
     count: usize,
-    /// The colour changes (the header's `CO`).
+    /// The colour change records (the header's `CO`).
     colors: usize,
     /// The design's size in tenths of a millimetre (the header's `+X` and `+Y`).
     width: i32,
@@ -144,7 +144,8 @@ struct Body {
     x: i32,
     y: i32,
     records: usize,
-    /// The colour changes between blocks (the header's `CO`).
+    /// The colour change records written (the header's `CO`): between blocks, and a stop or a
+    /// change inside one.
     colors: usize,
 }
 
@@ -164,13 +165,15 @@ impl Emitter for Body {
         }
     }
 
+    /// A colour change record, between blocks or a stop inside one: the header's `CO` counts
+    /// every one.
     fn color_change(&mut self) {
         self.push(0, 0, Kind::ColorChange);
+        self.colors += 1;
     }
 
     fn next_block(&mut self) {
         self.color_change();
-        self.colors += 1;
     }
 
     /// Any record: a trim or a stop too.
@@ -376,7 +379,10 @@ fn insert_trims(points: &mut Vec<Stitch>) {
 
 #[cfg(test)]
 mod tests {
+    use vectorcraft_geom::Point;
+
     use super::*;
+    use crate::{Block, Thread};
 
     #[test]
     fn balanced_ternary_covers_the_range() {
@@ -442,5 +448,51 @@ mod tests {
         assert_eq!(b2, 0x83);
         let [_, _, b2] = encode(0, 0, Kind::Stitch);
         assert_eq!(b2, 0x03);
+    }
+
+    /// The header's `ST`, `CO` and extents are the records': as many records before the end
+    /// record, as many colour change records (between blocks, and a stop inside one), and the
+    /// farthest the records take the needle from where it starts, each way.
+    #[test]
+    fn the_header_counts_and_measures_the_records() {
+        let mut a = Block::new(Thread::rgb([200, 0, 0]));
+        for (x, y) in [(0.0, 0.0), (5.0, 2.0), (10.0, -3.0)] {
+            a.stitches.push(Stitch::sew(Point::new(x, y)));
+        }
+        // A stop inside the block, a trim and a 30 mm jump.
+        a.stitches.push(Stitch::new(10.0, -3.0, Command::Stop));
+        a.stitches.push(Stitch::sew(Point::new(12.0, 4.0)));
+        a.stitches.push(Stitch::new(12.0, 4.0, Command::Trim));
+        a.stitches.push(Stitch::new(42.0, 4.0, Command::Jump));
+        a.stitches.push(Stitch::sew(Point::new(42.0, 4.0)));
+        let mut b = Block::new(Thread::rgb([0, 0, 200]));
+        b.stitches.push(Stitch::sew(Point::new(40.0, 20.0)));
+        b.stitches.push(Stitch::sew(Point::new(30.0, 25.0)));
+        let p = Pattern { blocks: vec![a, b], ..Pattern::default() };
+        let bytes = write(&p).unwrap();
+        let header = String::from_utf8_lossy(&bytes[..HEADER]).to_string();
+        let field = |name: &str| -> i64 {
+            let at = header.find(name).unwrap() + name.len();
+            header[at..].split('\r').next().unwrap().trim().trim_start_matches('+').trim().parse().unwrap()
+        };
+        let (mut records, mut changes) = (0i64, 0i64);
+        let (mut x, mut y) = (0i64, 0i64);
+        let (mut x0, mut x1, mut y0, mut y1) = (0i64, 0i64, 0i64, 0i64);
+        for r in bytes[HEADER..].chunks_exact(RECORD) {
+            if r[2] & END_BITS == END_BITS {
+                break;
+            }
+            records += 1;
+            if r[2] & COLOR_CHANGE_BITS == COLOR_CHANGE_BITS {
+                changes += 1;
+                continue;
+            }
+            x += i64::from(decode(r, &X_DIGITS));
+            y += i64::from(decode(r, &Y_DIGITS));
+            (x0, x1, y0, y1) = (x0.min(x), x1.max(x), y0.min(y), y1.max(y));
+        }
+        assert_eq!((field("ST:"), field("CO:")), (records, changes));
+        assert_eq!(changes, 2, "the block change and the stop");
+        assert_eq!((field("+X:"), field("-X:"), field("+Y:"), field("-Y:")), (x1, -x0, y1, -y0));
     }
 }

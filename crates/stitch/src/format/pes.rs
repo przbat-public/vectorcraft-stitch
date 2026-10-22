@@ -424,8 +424,28 @@ fn pec_start(bytes: &[u8]) -> Result<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::format::Format;
     use crate::{Block, Thread};
     use vectorcraft_geom::Point;
+
+    /// The PEC block's width and height are the design's, in tenths of a millimetre: in a PES and
+    /// in a PEC on its own.
+    #[test]
+    fn the_pec_block_states_the_designs_size() {
+        let p = design();
+        let b = p.bounds().unwrap();
+        let tenths = |mm: f64| (mm * 10.0).round() as u16;
+        let size = |bytes: &[u8], pec: usize| {
+            let block = pec + 512;
+            (u16::from_le_bytes([bytes[block + 8], bytes[block + 9]]), u16::from_le_bytes([bytes[block + 10], bytes[block + 11]]))
+        };
+        let pes = write(&p).unwrap();
+        let pec_at = u32::from_le_bytes([pes[8], pes[9], pes[10], pes[11]]) as usize;
+        assert_eq!(size(&pes, pec_at), (tenths(b.width()), tenths(b.height())));
+        let pec = Format::Pec.write(&p).unwrap();
+        // A PEC file is the PEC section after its 8-byte magic.
+        assert_eq!(size(&pec, 8), (tenths(b.width()), tenths(b.height())));
+    }
 
     fn design() -> Pattern {
         let mut p = Pattern { name: "Test".into(), ..Pattern::default() };

@@ -142,5 +142,15 @@ mod tests {
         assert_eq!(back.blocks.len(), 2);
         let sewn = |q: &Pattern| q.blocks.iter().map(|b| b.sewn()).sum::<usize>();
         assert_eq!(sewn(&back), 11);
+        // Every needle point where it was (to the 0.1 mm the file counts in), y the right way up:
+        // the design read back sits at its corner, as the one written did.
+        let needle = |q: &Pattern| -> Vec<(i64, i64)> {
+            let b = q.bounds().unwrap();
+            q.points()
+                .filter(|s| s.command == Command::Stitch)
+                .map(|s| (((s.x - b.x0) * 10.0).round() as i64, ((s.y - b.y0) * 10.0).round() as i64))
+                .collect()
+        };
+        assert_eq!(needle(&back), needle(&p));
     }
 }

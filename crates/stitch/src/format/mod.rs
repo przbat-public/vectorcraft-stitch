@@ -649,6 +649,9 @@ fn collapse_jumps(points: &mut Vec<Stitch>) {
 }
 
 #[cfg(test)]
+mod tests_fixtures;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

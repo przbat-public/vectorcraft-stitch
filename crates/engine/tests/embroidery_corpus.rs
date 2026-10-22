@@ -6,6 +6,8 @@
 //! - A design written as VP3 and as PES reads the same from both: as many needle points in each
 //!   colour block, each where the PES puts it (to the rounding of the two files).
 //! - Every PES file's PEC section, on its own after `#PEC0001` (a PEC file), reads as the PES does.
+//! - Each file says what reading it leaves out (a PES's own section, preview pictures, a PEC entry
+//!   that isn't a thread, a JEF's date).
 //! - Opened and exported again, every machine file keeps every needle point, trim and colour
 //!   block, each block's thread, its name, and starts where it started.
 //! - Each artwork, digitized by VectorCraft at the size of the person's design, comes out sound:
@@ -583,5 +585,30 @@ fn jef_headers_count_the_records_they_hold() {
         let mut s = artwork(&dir, art, theirs);
         let bytes = decode(&run(&mut s, "document.export", json!({"format": "jef"})));
         assert_eq!(word(&bytes, 28), holds(&bytes), "{art}");
+    }
+}
+
+/// What reading each real file leaves out, which opening it says: every PES's own section (what
+/// PE-Design edits) and its preview pictures; the cat face's and the fox's PEC entry 62, which
+/// isn't a thread; the fox JEF's date. The VP3 files leave nothing out.
+#[test]
+fn real_files_say_what_reading_them_leaves_out() {
+    use vectorcraft_stitch::format::Loss;
+    let Some(dir) = corpus() else { return };
+    for path in machine_files(&dir) {
+        let name = path.file_name().unwrap().to_string_lossy().to_string();
+        let bytes = std::fs::read(&path).unwrap();
+        let format = format_of(&path);
+        let want = match format {
+            Format::Pes if name.starts_with("cat-face") || name.starts_with("fox") => vec![Loss::PesSection, Loss::NotThreads, Loss::Previews],
+            Format::Pes => vec![Loss::PesSection, Loss::Previews],
+            Format::Jef => vec![Loss::JefHeader],
+            _ => vec![],
+        };
+        assert_eq!(format.losses(&bytes), want, "{name}");
+        let mut s = Session::new();
+        let r = s.execute("document.open", &json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(&bytes)})).unwrap();
+        let notes = r["warnings"].as_array().map_or(0, Vec::len);
+        assert_eq!(notes, want.len(), "{name}: {r}");
     }
 }

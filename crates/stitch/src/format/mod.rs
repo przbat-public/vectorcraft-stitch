@@ -126,6 +126,41 @@ pub struct Spec {
     /// Its reader and writer.
     pub read: fn(&[u8]) -> Result<Pattern>,
     pub write: fn(&Pattern) -> Result<Vec<u8>>,
+    /// What a file of it holds that reading it leaves out ([`Format::losses`]).
+    pub losses: fn(&[u8]) -> Vec<Loss>,
+}
+
+/// What a machine file holds that reading it leaves out, so that a file written from the design
+/// read lacks it ([`Format::losses`]): said once each, when the file has it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Loss {
+    /// A PES's own section before its PEC part: what PE-Design edits (its objects, and their
+    /// stitches as it keeps them). A PES written from the design holds the PEC part alone.
+    PesSection,
+    /// The preview pictures after a PEC part's stitches: a PES or PEC written from the design has
+    /// blank ones.
+    Previews,
+    /// Thread numbers that name no thread of the format's palette (PEC's 62 to 64, which mark
+    /// appliqué; 0, which names no colour; numbers past the palette's end): written as a thread
+    /// that is.
+    NotThreads,
+    /// A JEF header's date and version, and its hoop when it names another than the smallest the
+    /// design fits: written anew.
+    JefHeader,
+    /// A DST header's end position and multi-volume fields (`AX`, `AY`, `MX`, `MY`, `PD`): written
+    /// as zeros.
+    DstFields,
+    /// VP3 threads that twist several colours: read, and so written, in their first.
+    TwistedThreads,
+    /// A VP3 file's several designs: read, and so written, as one.
+    Designs,
+}
+
+/// No losses: a format whose files hold nothing a reader leaves out (TAP, T01 and EXP have no
+/// header).
+fn no_losses(_: &[u8]) -> Vec<Loss> {
+    Vec::new()
 }
 
 /// Tajima DST: no colours, 3-byte records ([`dst`]).
@@ -142,6 +177,7 @@ const DST: Spec = Spec {
     magic: None,
     read: dst::read,
     write: dst::write,
+    losses: dst::losses,
 };
 /// Happy TAP: DST's records alone ([`tap`]).
 const TAP: Spec = Spec {
@@ -151,6 +187,7 @@ const TAP: Spec = Spec {
     mime: "application/x-tap",
     read: tap::read,
     write: tap::write,
+    losses: no_losses,
     // No header: only the coordinates' range bounds the design.
     max_size: MAX_TENTHS,
     ..DST
@@ -171,6 +208,7 @@ const EXP: Spec = Spec {
     magic: None,
     read: exp::read,
     write: exp::write,
+    losses: no_losses,
 };
 /// Brother PES: a PES header and the PEC section ([`pes`]).
 const PES: Spec = Spec {
@@ -186,6 +224,7 @@ const PES: Spec = Spec {
     magic: Some(b"#PES"),
     read: pes::read,
     write: pes::write,
+    losses: pes::losses,
 };
 /// Brother PEC: the PEC section on its own ([`pes`]).
 const PEC: Spec =
@@ -204,6 +243,7 @@ const JEF: Spec = Spec {
     magic: None,
     read: jef::read,
     write: jef::write,
+    losses: jef::losses,
 };
 /// Husqvarna Viking and Pfaff VP3: nested packets ([`vp3`]).
 const VP3: Spec = Spec {
@@ -219,6 +259,7 @@ const VP3: Spec = Spec {
     magic: Some(vp3::MAGIC),
     read: vp3::read,
     write: vp3::write,
+    losses: vp3::losses,
 };
 
 impl Format {
@@ -302,6 +343,12 @@ impl Format {
     /// Read a design from `bytes`.
     pub fn read(self, bytes: &[u8]) -> Result<Pattern> {
         (self.spec().read)(bytes)
+    }
+
+    /// What `bytes`, a file of this format, holds that [`Format::read`] leaves out, each once: what a
+    /// file written from the design read lacks. None for a file that doesn't read.
+    pub fn losses(self, bytes: &[u8]) -> Vec<Loss> {
+        (self.spec().losses)(bytes)
     }
 
     /// Write `pattern` in this format: refused with [`Error::TooLarge`] when the design is wider or
@@ -912,6 +959,53 @@ mod tests {
         };
         assert_eq!((field("+X:"), field("-X:")), (quantize(b.x1 - 9.03 - b.x0), 90));
         assert_eq!((field("+Y:"), field("-Y:")), (40, quantize(b.height() - 4.0)));
+    }
+
+    /// The files written here hold nothing a reader leaves out; a file that holds what the readers
+    /// leave out says so, each once.
+    #[test]
+    fn a_file_says_what_reading_it_leaves_out() {
+        let p = design();
+        for format in Format::ALL {
+            assert_eq!(format.losses(&format.write(&p).unwrap()), [], "{format:?}");
+        }
+        assert_eq!(Format::Dst.losses(b"not a DST"), []);
+        // DST: an end position, or a design that is one volume of several.
+        let dst = Format::Dst.write(&p).unwrap();
+        let with = |bytes: &[u8], from: &str, to: &str| {
+            let at = bytes.windows(from.len()).position(|w| w == from.as_bytes()).unwrap();
+            let mut out = bytes.to_vec();
+            out[at..at + to.len()].copy_from_slice(to.as_bytes());
+            out
+        };
+        assert_eq!(Format::Dst.losses(&with(&dst, "AX:+    0", "AX:-  123")), [Loss::DstFields]);
+        assert_eq!(Format::Dst.losses(&with(&dst, "PD:******", "PD:000002")), [Loss::DstFields]);
+        // PES: a section of its own before the PEC part (the header points past it).
+        let pes = Format::Pes.write(&p).unwrap();
+        let mut sectioned = pes[..8].to_vec();
+        let section = b"CEmbOne and its stitches, as PE-Design keeps them";
+        sectioned.extend_from_slice(&u32::try_from(8 + 4 + section.len()).unwrap().to_le_bytes());
+        sectioned.extend_from_slice(section);
+        sectioned.extend_from_slice(&pes[22..]);
+        assert_eq!(Format::Pes.read(&sectioned).unwrap(), Format::Pes.read(&pes).unwrap());
+        assert_eq!(Format::Pes.losses(&sectioned), [Loss::PesSection]);
+        // PEC: entry 62 (appliqué), and preview pictures drawn.
+        let pec = Format::Pec.write(&p).unwrap();
+        let mut applique = pec.clone();
+        applique[8 + 48 + 1] = 62;
+        assert_eq!(Format::Pec.losses(&applique), [Loss::NotThreads]);
+        let mut drawn = pec.clone();
+        *drawn.last_mut().unwrap() = 0x18;
+        assert_eq!(Format::Pec.losses(&drawn), [Loss::Previews]);
+        // JEF: a date, another hoop, a number that names no thread.
+        let jef = Format::Jef.write(&p).unwrap();
+        assert_eq!(Format::Jef.losses(&with(&jef, "00000000000000", "20251228124602")), [Loss::JefHeader]);
+        let mut big_hoop = jef.clone();
+        big_hoop[32..36].copy_from_slice(&4u32.to_le_bytes());
+        assert_eq!(Format::Jef.losses(&big_hoop), [Loss::JefHeader]);
+        let mut no_thread = jef.clone();
+        no_thread[0x74..0x78].copy_from_slice(&0u32.to_le_bytes());
+        assert_eq!(Format::Jef.losses(&no_thread), [Loss::NotThreads]);
     }
 
     /// A deterministic pseudo-random stream (no dependency on a random crate).

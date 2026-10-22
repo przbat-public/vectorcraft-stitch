@@ -4884,3 +4884,13 @@ lighting	Light	ライト
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	このバージョンはドキュメントの糸パレット {palette} を認識できないため、糸は {default} パレットから選ばれます
 @msg	nothing to stitch: the document has no visible filled or stroked paths	刺繍するものがありません: ドキュメントに塗りまたは線のある表示されたパスがありません
 @msg	nothing to stitch: {_1}	刺繍するものがありません: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	PE-Design が編集する PES ファイル独自のセクションは保持されません: この書類から書き出した PES には針目だけが入ります
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	ファイルのプレビュー画像は保持されません: この書類から書き出した PES や PEC のプレビューは空白になります
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	パレットの糸を示さない糸番号 (PEC の 62〜64 はアップリケを表します) は最も近い糸として書き出されます
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	JEF ヘッダーの日付とバージョン、およびデザインに必要な大きさを超える刺繍枠は保持されません
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	DST ヘッダーの終了位置と複数ボリュームのフィールド (AX、AY、MX、MY、PD) は保持されません
+@msg	threads that twist several colours are read in their first colour	複数の色を撚り合わせた糸は最初の色で読み込まれます
+@msg	the file's several designs are read as one	ファイル内の複数のデザインは 1 つとして読み込まれます
+@msg	the file holds things this version doesn't read	このファイルには、このバージョンが読み込まない内容が含まれています

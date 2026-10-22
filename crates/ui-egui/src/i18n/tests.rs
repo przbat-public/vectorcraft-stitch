@@ -1894,6 +1894,25 @@ fn embroidery_export_messages_are_translated() {
     assert!(untranslated.is_empty(), "untranslated embroidery messages:\n{}", untranslated.join("\n"));
 }
 
+/// What opening a machine file says it left out (which makes writing over the file ask first) is
+/// translated whole in every language.
+#[test]
+fn embroidery_open_losses_are_translated() {
+    // Phrases of the English notes no other language shares.
+    let english = ["kept", "written as", "are read", "doesn't read", "this document", "nearest thread", "stitches"];
+    let mut untranslated = Vec::new();
+    for info in LANGUAGES.iter().filter(|l| l.code != "en") {
+        let lang = Lang::from_code(info.code).unwrap();
+        for note in vectorcraft_engine::EMBROIDERY_LOSS_NOTES {
+            let shown = message(lang, note);
+            if shown == note || english.iter().any(|w| shown.contains(*w)) {
+                untranslated.push(format!("{}: {shown}", info.code));
+            }
+        }
+    }
+    assert!(untranslated.is_empty(), "untranslated notes:\n{}", untranslated.join("\n"));
+}
+
 /// Languages whose catalogs cover every status and error message.
 const COMPLETE_MESSAGES: &[&str] =
     &["cs", "de", "el", "es", "fr", "hu", "it", "ja", "ka", "ko", "pl", "pt-br", "ru", "sv", "uk", "vi", "zh-hans", "fi"];

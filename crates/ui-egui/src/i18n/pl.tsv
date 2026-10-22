@@ -5082,3 +5082,13 @@ mark-style	Japanese	Japońskie
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	paleta nici dokumentu {palette} jest nieznana tej wersji, więc jego nici są dobierane z palety {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	nic do wyhaftowania: dokument nie ma widocznych ścieżek z wypełnieniem ani obrysem
 @msg	nothing to stitch: {_1}	nic do wyhaftowania: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	własna sekcja pliku PES, którą edytuje PE-Design, nie jest zachowywana: PES zapisany z tego dokumentu zawiera tylko ściegi
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	obrazy podglądu pliku nie są zachowywane: PES lub PEC zapisany z tego dokumentu ma puste
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	numery nici, które nie wskazują żadnej nici palety (62–64 w PEC oznaczają aplikację), są zapisywane jako najbliższa nić
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	data i wersja w nagłówku JEF oraz tamborek większy, niż wymaga wzór, nie są zachowywane
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	pozycja końcowa i pola wzorów wielotomowych w nagłówku DST (AX, AY, MX, MY, PD) nie są zachowywane
+@msg	threads that twist several colours are read in their first colour	nici skręcone z kilku kolorów są wczytywane w pierwszym kolorze
+@msg	the file's several designs are read as one	kilka wzorów z pliku jest wczytywanych jako jeden
+@msg	the file holds things this version doesn't read	plik zawiera elementy, których ta wersja nie odczytuje

@@ -402,6 +402,31 @@ fn pec_value(r: &mut Reader<'_>, first: u8) -> Option<(i32, u8)> {
     Some((v, first & FLAGS))
 }
 
+/// What a PES or PEC holds that reading it leaves out: a PES's own section before its PEC part,
+/// thread numbers that name no Brother thread, and preview pictures that aren't blank.
+pub(crate) fn losses(bytes: &[u8]) -> Vec<super::Loss> {
+    let Ok(start) = pec_start(bytes) else { return Vec::new() };
+    let mut out = Vec::new();
+    if bytes.starts_with(b"#PES") && start > PES_HEADER.len() {
+        out.push(super::Loss::PesSection);
+    }
+    let count = bytes.get(start + COLOR_COUNT_AT).copied().unwrap_or(NO_COLORS);
+    let colors = if count == NO_COLORS { 0 } else { usize::from(count) + 1 };
+    let numbers = bytes.get(start + COLOR_COUNT_AT + 1..).unwrap_or_default().iter().take(colors);
+    if numbers.clone().any(|n| !Palette::Pec.is_thread(usize::from(*n))) {
+        out.push(super::Loss::NotThreads);
+    }
+    // The previews follow the stitch block, whose length says where it ends.
+    let block = start.saturating_add(PEC_HEADER);
+    let mut r = Reader::new(bytes);
+    r.seek(block.saturating_add(BLOCK_LENGTH_AT));
+    let previews = r.u24().and_then(|v| usize::try_from(v).ok()).and_then(|v| bytes.get(block.saturating_add(v)..));
+    if previews.is_some_and(|p| p.iter().any(|b| *b != 0)) {
+        out.push(super::Loss::Previews);
+    }
+    out
+}
+
 /// Where the PEC section starts: a PES header states it; a bare PEC starts after its magic.
 fn pec_start(bytes: &[u8]) -> Result<usize> {
     if bytes.starts_with(b"#PEC") {

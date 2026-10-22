@@ -5195,3 +5195,13 @@ theme	Appearance	Външен вид
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	тази версия не познава палитрата конци {palette} на документа, затова конците му се избират от палитрата {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	няма какво да се бродира: документът няма видими пътища със запълване или щрих
 @msg	nothing to stitch: {_1}	няма какво да се бродира: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	собствената секция на PES файла, която PE-Design редактира, не се запазва: PES, записан от този документ, съдържа само бодовете
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	картинките за преглед на файла не се запазват: PES или PEC, записан от този документ, има празни
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	номерата на конци, които не назовават конец от палитрата (62 до 64 в PEC означават апликация), се записват като най-близкия конец
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	датата и версията в заглавката на JEF, както и гергеф, по-голям от необходимия за дизайна, не се запазват
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	крайната позиция и полетата за многотомни дизайни в заглавката на DST (AX, AY, MX, MY, PD) не се запазват
+@msg	threads that twist several colours are read in their first colour	конци, които усукват няколко цвята, се четат в първия си цвят
+@msg	the file's several designs are read as one	няколкото дизайна във файла се четат като един
+@msg	the file holds things this version doesn't read	файлът съдържа неща, които тази версия не чете

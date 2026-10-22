@@ -4807,3 +4807,13 @@ lighting	Light	광원
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	이 버전은 문서의 실 팔레트 {palette}을(를) 알지 못하므로 실을 {default} 팔레트에서 고릅니다
 @msg	nothing to stitch: the document has no visible filled or stroked paths	자수할 것이 없습니다: 문서에 칠이나 선이 있는 보이는 패스가 없습니다
 @msg	nothing to stitch: {_1}	자수할 것이 없습니다: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	PE-Design이 편집하는 PES 파일 고유의 섹션은 유지되지 않습니다: 이 문서에서 쓴 PES에는 땀만 들어갑니다
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	파일의 미리 보기 이미지는 유지되지 않습니다: 이 문서에서 쓴 PES나 PEC에는 빈 이미지가 들어갑니다
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	팔레트의 어떤 실도 가리키지 않는 실 번호(PEC의 62~64는 아플리케 표시)는 가장 가까운 실로 기록됩니다
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	JEF 헤더의 날짜와 버전, 그리고 디자인에 필요한 것보다 큰 수틀은 유지되지 않습니다
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	DST 헤더의 끝 위치와 여러 볼륨 디자인 필드(AX, AY, MX, MY, PD)는 유지되지 않습니다
+@msg	threads that twist several colours are read in their first colour	여러 색을 꼰 실은 첫 번째 색으로 읽힙니다
+@msg	the file's several designs are read as one	파일의 여러 디자인은 하나로 읽힙니다
+@msg	the file holds things this version doesn't read	이 파일에는 이 버전이 읽지 않는 내용이 있습니다

@@ -251,6 +251,43 @@ fn an_opened_designs_thread_records_and_label_are_written_back() {
     assert!(s.execute("embroidery.setup", &json!({"label": 5})).is_err());
 }
 
+/// Opening a machine file says what reading it left out (a PES's own section, PE-Design's), and
+/// writing over that file is then refused unless the loss is acknowledged; a file this app wrote
+/// leaves nothing out and is written over without asking.
+#[test]
+fn writing_over_a_file_whose_opening_left_something_out_asks_first() {
+    let d = std::env::temp_dir().join(format!("vc-embroidery-loss-{}", std::process::id()));
+    std::fs::create_dir_all(&d).unwrap();
+    let mut s = art();
+    let pes = export(&mut s, "pes", json!({}));
+    // A PES section before the PEC part, as PE-Design's files have one: the header points past it.
+    let mut sectioned = pes[..8].to_vec();
+    let section = b"CEmbOne and its stitches, as PE-Design keeps them";
+    sectioned.extend_from_slice(&u32::try_from(12 + section.len()).unwrap().to_le_bytes());
+    sectioned.extend_from_slice(section);
+    sectioned.extend_from_slice(&pes[22..]);
+    for (name, file, lost) in [("ours.pes", &pes, false), ("theirs.pes", &sectioned, true)] {
+        let path = d.join(name);
+        std::fs::write(&path, file).unwrap();
+        let path = path.to_string_lossy().to_string();
+        let mut s = Session::new();
+        let r = s.execute("document.open", &json!({"path": path})).unwrap();
+        let said = warnings(&r).contains(&super::embroidery::LOSS_NOTES[0].to_string());
+        assert_eq!(said, lost, "{name}: {r}");
+        let over = s.execute("document.export", &json!({"path": path}));
+        if lost {
+            let e = over.unwrap_err().to_string();
+            assert!(e.contains("left things out") && e.contains("PE-Design"), "{name}: {e}");
+            assert_eq!(&std::fs::read(&path).unwrap(), file, "{name}: untouched");
+            s.execute("document.export", &json!({"path": path, "acknowledgeLoss": true})).unwrap();
+            assert_ne!(&std::fs::read(&path).unwrap(), file, "{name}");
+        } else {
+            over.unwrap();
+        }
+    }
+    std::fs::remove_dir_all(d).ok();
+}
+
 /// Where the needle starts, on the 0.1 mm grid from the design's top-left corner.
 fn start(p: &vectorcraft_stitch::Pattern) -> (i32, i32) {
     use vectorcraft_stitch::quantize;

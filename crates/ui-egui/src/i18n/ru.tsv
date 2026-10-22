@@ -4840,3 +4840,13 @@ lighting	Light	Свет
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	эта версия не знает палитру нитей {palette} документа, поэтому его нити подбираются из палитры {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	нечего вышивать: в документе нет видимых контуров с заливкой или обводкой
 @msg	nothing to stitch: {_1}	нечего вышивать: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	собственный раздел файла PES, который редактирует PE-Design, не сохраняется: PES, записанный из этого документа, содержит только стежки
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	изображения предпросмотра файла не сохраняются: у PES или PEC, записанного из этого документа, они пустые
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	номера нитей, не обозначающие ни одной нити палитры (62–64 в PEC обозначают аппликацию), записываются как ближайшая нить
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	дата и версия в заголовке JEF, а также пяльцы больше, чем нужно дизайну, не сохраняются
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	конечная позиция и поля многотомного дизайна в заголовке DST (AX, AY, MX, MY, PD) не сохраняются
+@msg	threads that twist several colours are read in their first colour	нити, скрученные из нескольких цветов, читаются в их первом цвете
+@msg	the file's several designs are read as one	несколько дизайнов файла читаются как один
+@msg	the file holds things this version doesn't read	файл содержит то, что эта версия не читает

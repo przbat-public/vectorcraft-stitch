@@ -5229,3 +5229,13 @@ theme	Appearance	Apparence
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	cette version ne connaît pas la palette de fils {palette} du document, ses fils sont donc choisis dans la palette {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	rien à broder : le document n’a aucun tracé visible avec un fond ou un contour
 @msg	nothing to stitch: {_1}	rien à broder : {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	la section propre du fichier PES, que modifie PE-Design, n’est pas conservée : un PES écrit depuis ce document ne contient que les points
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	les images d’aperçu du fichier ne sont pas conservées : un PES ou PEC écrit depuis ce document en a des vides
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	les numéros de fil qui ne désignent aucun fil de la palette (62 à 64 en PEC marquent l’appliqué) sont écrits comme le fil le plus proche
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	la date et la version de l’en-tête JEF, ainsi qu’un cadre plus grand que ce dont le motif a besoin, ne sont pas conservés
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	la position finale et les champs de motif en plusieurs volumes de l’en-tête DST (AX, AY, MX, MY, PD) ne sont pas conservés
+@msg	threads that twist several colours are read in their first colour	les fils qui torsadent plusieurs couleurs sont lus dans leur première couleur
+@msg	the file's several designs are read as one	les différents motifs du fichier sont lus comme un seul
+@msg	the file holds things this version doesn't read	le fichier contient des éléments que cette version ne lit pas

@@ -489,6 +489,24 @@ fn thread_record(out: &mut Vec<u8>, t: &Thread) -> Result<()> {
 }
 
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
+    let d = decode(bytes)?;
+    // The needle starts where the first block says (the real files' design centre).
+    let mm = |v: i64| v as f64 / UNITS_PER_MM;
+    let start = d.start.map_or(vectorcraft_geom::Point::ZERO, |(x, y)| vectorcraft_geom::Point::new(mm(x), mm(y)));
+    Ok(super::finish_from(String::new(), d.points, &d.threads, start))
+}
+
+/// What a VP3 holds that reading it leaves out: threads that twist several colours (read in their
+/// first), and designs past the first (read into one).
+pub(crate) fn losses(bytes: &[u8]) -> Vec<super::Loss> {
+    let Ok(d) = decode(bytes) else { return Vec::new() };
+    let twisted = d.twisted.then_some(super::Loss::TwistedThreads);
+    let designs = (d.designs > 1).then_some(super::Loss::Designs);
+    twisted.into_iter().chain(designs).collect()
+}
+
+/// The file's designs and colour blocks, read in order.
+fn decode(bytes: &[u8]) -> Result<Decoded> {
     if !bytes.starts_with(MAGIC) {
         return Err(Error::Format("not a VP3 file: it does not start with %vsm%".into()));
     }
@@ -506,6 +524,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     // A file cut short, or damaged after some colour blocks, keeps the blocks read before the cut.
     let mut stopped: Option<Error> = None;
     while at_tag(bytes, r.pos(), DESIGN_TAG) {
+        d.designs += 1;
         let read = open(&mut r, DESIGN_TAG, bytes.len(), "design").and_then(|end| read_design(&mut r, &mut d).map(|()| end));
         match read {
             // Past the design's blocks, or as far as its length says when that is farther (a
@@ -522,10 +541,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     if d.points.is_empty() {
         return Err(stopped.unwrap_or_else(|| Error::Format("the VP3 file has no stitches".into())));
     }
-    // The needle starts where the first block says (the real files' design centre).
-    let mm = |v: i64| v as f64 / UNITS_PER_MM;
-    let start = d.start.map_or(vectorcraft_geom::Point::ZERO, |(x, y)| vectorcraft_geom::Point::new(mm(x), mm(y)));
-    Ok(super::finish_from(String::new(), d.points, &d.threads, start))
+    Ok(d)
 }
 
 /// What a reader decoded so far: the needle points in order and each colour block's thread.
@@ -539,6 +555,9 @@ struct Decoded {
     y: i64,
     /// Where the needle starts: where the file's first block says.
     start: Option<(i64, i64)>,
+    /// Whether a thread twists several colours, and how many designs were found.
+    twisted: bool,
+    designs: usize,
 }
 
 impl Decoded {
@@ -569,7 +588,8 @@ fn read_design(r: &mut Reader<'_>, d: &mut Decoded) -> Result<()> {
         // again from inside the last).
         let mut b = r.up_to(block_end);
         let (sx, sy) = (i64::from(b.i32_be().ok_or_else(|| short(len))?), i64::from(b.i32_be().ok_or_else(|| short(len))?));
-        let thread = read_thread(&mut b, d.threads.len())?;
+        let (thread, colors) = read_thread(&mut b, d.threads.len())?;
+        d.twisted |= colors > 1;
         // How far the block's stitches move the needle: the stitches say so themselves.
         b.take(POSITION).ok_or_else(|| short(len))?;
         let run_end = open(&mut b, STITCHES_TAG, block_end, "stitch run")?;
@@ -601,7 +621,7 @@ fn read_design(r: &mut Reader<'_>, d: &mut Decoded) -> Result<()> {
 
 /// A thread record: its first colour, and its description (else its catalogue number) as its
 /// name.
-fn read_thread(r: &mut Reader<'_>, block: usize) -> Result<Thread> {
+fn read_thread(r: &mut Reader<'_>, block: usize) -> Result<(Thread, usize)> {
     let len = r.data_len();
     let colors = usize::from(r.u8().ok_or_else(|| short(len))?);
     // Six bytes a colour (a byte, then the RGB colour), the byte after them, the material and the
@@ -620,10 +640,11 @@ fn read_thread(r: &mut Reader<'_>, block: usize) -> Result<Thread> {
     let clean = |s: &str| s.trim_matches(|c: char| c == '\0' || c.is_whitespace()).to_string();
     let (catalogue, description) = (clean(&record.catalogue), clean(&record.description));
     let name = if description.is_empty() { catalogue } else { description };
-    Ok(match rgb {
+    let thread = match rgb {
         Some(color) => Thread { record: Some(record), ..Thread::named(color, &name) },
         None => crate::thread::default_thread(block),
-    })
+    };
+    Ok((thread, colors))
 }
 
 /// The stitch records up to `end`; refused past [`super::MAX_POINTS`] points.
@@ -1208,6 +1229,7 @@ mod tests {
         let p = read(&bytes).expect("reads");
         let threads: Vec<([u8; 3], &str)> = p.blocks.iter().map(shown).collect();
         assert_eq!(threads, [([200, 10, 10], "Twist"), ([1, 2, 3], "After")]);
+        assert_eq!(losses(&bytes), [super::super::Loss::TwistedThreads]);
         assert_eq!(needle_points(&p), [vec![(0, 0), (10, 0)], vec![(10, 10), (10, 20)]]);
     }
 
@@ -1217,7 +1239,9 @@ mod tests {
         let first = ((0, 0), vec![(thread([1, 1, 1], "A"), vec![10, 0, 10, 0])]);
         // 50 mm right of the first design's centre (micrometres).
         let second = ((50_000, 0), vec![(thread([2, 2, 2], "B"), vec![0, 10])]);
-        let p = read(&assemble(&[first, second])).expect("reads");
+        let bytes = assemble(&[first, second]);
+        let p = read(&bytes).expect("reads");
+        assert_eq!(losses(&bytes), [super::super::Loss::Designs]);
         assert_eq!(p.blocks.len(), 2);
         assert_eq!(needle_points(&p), [vec![(0, 0), (10, 0)], vec![(490, 10)]]);
     }

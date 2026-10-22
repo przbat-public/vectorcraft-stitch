@@ -607,7 +607,7 @@ pub(super) fn raster_doc(name: &str, bytes: &[u8]) -> Result<Document> {
 
 /// Does this import note say that the file has something the document doesn't?
 fn is_loss(note: &str) -> bool {
-    note == vectorcraft_pdf::OFF_ARTBOARD_NOTE || vectorcraft_eps::is_loss(note)
+    note == vectorcraft_pdf::OFF_ARTBOARD_NOTE || vectorcraft_eps::is_loss(note) || super::embroidery::is_loss(note)
 }
 
 /// Writing the file `target` for document `st`: not over the file `st` was read from when reading

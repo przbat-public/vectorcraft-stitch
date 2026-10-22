@@ -97,7 +97,21 @@ and `embroidery.setup {label}` changes or unsets it (unset, the export writes th
 title). Put inside a clip group, the lines are cut to the clipping path as any stroke is, and the
 needle lifts across each cut the same way (tied off and in around a long jump).
 Moving or scaling the lines moves or scales the stitches; editing a line's points edits the
-stitches. Turning a design back into shapes that are stitched by the rules (what professional
+stitches.
+
+**What opening leaves out.** Opening a machine file says, one note each, what the file holds that
+reading it leaves out, and so a file written from the document lacks (`Format::losses`): a PES's
+own section before its PEC part (what PE-Design edits: a PES written here holds its stitches
+alone), preview pictures that aren't blank, thread numbers that name no thread of the palette
+(PEC's 62 to 64, which mark appliqué, written as the nearest thread), a JEF header's date and
+version and a hoop larger than the design needs, a DST header's end position and multi-volume
+fields (`AX`, `AY`, `MX`, `MY`, `PD`), VP3 threads that twist several colours (read in their first)
+and a VP3's several designs (read as one). These are upstream's import losses: writing over the
+file that was opened is then refused until `acknowledgeLoss: true` is passed, and the app asks
+first (project owner's choice, 2026-10-22). What a design keeps instead is kept: its needle points,
+trims and colour blocks, each block's thread (a VP3's thread record too), its name and where it
+starts. Every real PES in the corpus says it loses its own section and previews (the cat face and
+the fox an entry 62 too), the fox's JEF its date; the VP3 files lose nothing. Turning a design back into shapes that are stitched by the rules (what professional
 software calls recognising objects) is not done yet.
 
 **Cutting the thread after an object.** `embroidery.setTrimAfter` (`{on?, ids?}`, the selection

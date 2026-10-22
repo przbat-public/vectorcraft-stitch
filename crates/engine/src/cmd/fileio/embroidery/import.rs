@@ -7,7 +7,7 @@ use vectorcraft_color::{Color, Paint};
 use vectorcraft_doc::embroidery::{Embroidery, EmbroiderySetup, StitchRun, ThreadPalette};
 use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, LineJoin, Node, Shared};
 use vectorcraft_geom::{BezPath, PathData, Point, Rect, Size};
-use vectorcraft_stitch::format::Format as StitchFormat;
+use vectorcraft_stitch::format::{Format as StitchFormat, Loss};
 use vectorcraft_stitch::{Block, Command, Stitch, mm_to_pt};
 
 use super::super::super::*;
@@ -24,7 +24,38 @@ const MARGIN: f64 = 5.0;
 /// file can make (one for every few bytes of a stream of stitches and jumps).
 const MAX_RUNS: usize = 100_000;
 
-/// Read a design into a document: one group per thread, each run of stitches a thin line.
+/// What reading a machine file left out, as opening it says it, one note each (in this order):
+/// a file written from the document lacks it, so writing over the file asks first
+/// ([`super::is_loss`]). The last is said for what a newer stitch crate reports and this list
+/// doesn't name yet.
+pub const LOSS_NOTES: [&str; 8] = [
+    "the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone",
+    "the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones",
+    "thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread",
+    "the JEF header's date and version, and a hoop larger than the design needs, aren't kept",
+    "the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept",
+    "threads that twist several colours are read in their first colour",
+    "the file's several designs are read as one",
+    "the file holds things this version doesn't read",
+];
+
+/// The note for `loss` ([`LOSS_NOTES`]).
+fn loss_note(loss: Loss) -> &'static str {
+    let k = match loss {
+        Loss::PesSection => 0,
+        Loss::Previews => 1,
+        Loss::NotThreads => 2,
+        Loss::JefHeader => 3,
+        Loss::DstFields => 4,
+        Loss::TwistedThreads => 5,
+        Loss::Designs => 6,
+        _ => 7,
+    };
+    LOSS_NOTES.get(k).copied().unwrap_or_default()
+}
+
+/// Read a design into a document: one group per thread, each run of stitches a thin line. The
+/// notes say what reading it left out ([`LOSS_NOTES`]).
 pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Vec<String>)> {
     let format = StitchFormat::from_id(f.id).ok_or_else(|| bad("document.open", format!("{} is not an embroidery format", f.label)))?;
     let pattern = format.read(bytes).map_err(err)?;
@@ -114,7 +145,13 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
         a.rect = Rect::from_origin_size(Point::ZERO, Size::new(width, height));
     }
     doc.fix_next_id();
-    Ok((doc, Vec::new()))
+    let mut notes: Vec<String> = Vec::new();
+    for note in format.losses(bytes).into_iter().map(loss_note) {
+        if !notes.iter().any(|n| n == note) {
+            notes.push(note.to_string());
+        }
+    }
+    Ok((doc, notes))
 }
 
 /// The stitches of one block cut into runs at every lift of the needle (a jump, a trim, a stop),

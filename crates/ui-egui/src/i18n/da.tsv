@@ -5213,3 +5213,13 @@ swatch	Bright Violet	Kraftig violet
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	denne version kender ikke dokumentets garnpalet {palette}, så dets garn vælges fra paletten {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	intet at brodere: dokumentet har ingen synlige kurver med udfyldning eller streg
 @msg	nothing to stitch: {_1}	intet at brodere: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	PES-filens egen sektion, som PE-Design redigerer, bevares ikke: en PES skrevet fra dette dokument indeholder kun stingene
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	filens forhåndsvisningsbilleder bevares ikke: en PES eller PEC skrevet fra dette dokument har tomme
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	trådnumre, der ikke angiver nogen tråd i paletten (62 til 64 i PEC markerer applikation), skrives som den nærmeste tråd
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	JEF-headerens dato og version samt en ramme, der er større end designet kræver, bevares ikke
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	DST-headerens slutposition og felter for flerbindsdesign (AX, AY, MX, MY, PD) bevares ikke
+@msg	threads that twist several colours are read in their first colour	tråde, der snor flere farver sammen, læses i deres første farve
+@msg	the file's several designs are read as one	filens flere designs læses som ét
+@msg	the file holds things this version doesn't read	filen indeholder ting, som denne version ikke læser

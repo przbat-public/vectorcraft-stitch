@@ -5230,3 +5230,13 @@ mark-style	Japanese	Japonské
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	tato verze nezná paletu nití {palette} dokumentu, proto se jeho nitě vybírají z palety {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	není co vyšívat: dokument nemá žádné viditelné cesty s výplní nebo tahem
 @msg	nothing to stitch: {_1}	není co vyšívat: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	vlastní oddíl souboru PES, který upravuje PE-Design, se nezachová: PES zapsaný z tohoto dokumentu obsahuje jen stehy
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	náhledové obrázky souboru se nezachovají: PES nebo PEC zapsaný z tohoto dokumentu má prázdné
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	čísla nití, která neoznačují žádnou nit palety (62 až 64 v PEC značí aplikaci), se zapíší jako nejbližší nit
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	datum a verze v hlavičce JEF a rámeček větší, než návrh potřebuje, se nezachovají
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	koncová pozice a pole vícesvazkového návrhu v hlavičce DST (AX, AY, MX, MY, PD) se nezachovají
+@msg	threads that twist several colours are read in their first colour	nitě skané z několika barev se čtou v první barvě
+@msg	the file's several designs are read as one	několik návrhů v souboru se čte jako jeden
+@msg	the file holds things this version doesn't read	soubor obsahuje věci, které tato verze nečte

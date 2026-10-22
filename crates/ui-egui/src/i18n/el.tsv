@@ -5182,3 +5182,13 @@ effect	Points	Σημεία
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	αυτή η έκδοση δεν γνωρίζει την παλέτα κλωστών {palette} του εγγράφου, οπότε οι κλωστές του επιλέγονται από την παλέτα {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	τίποτα για κέντημα: το έγγραφο δεν έχει ορατές διαδρομές με γέμισμα ή περίγραμμα
 @msg	nothing to stitch: {_1}	τίποτα για κέντημα: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	η δική ενότητα του αρχείου PES, την οποία επεξεργάζεται το PE-Design, δεν διατηρείται: ένα PES που γράφεται από αυτό το έγγραφο περιέχει μόνο τις βελονιές
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	οι εικόνες προεπισκόπησης του αρχείου δεν διατηρούνται: ένα PES ή PEC που γράφεται από αυτό το έγγραφο έχει κενές
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	οι αριθμοί κλωστών που δεν αντιστοιχούν σε κλωστή της παλέτας (τα 62 έως 64 του PEC σημαίνουν απλικέ) γράφονται ως η πλησιέστερη κλωστή
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	η ημερομηνία και η έκδοση της κεφαλίδας JEF, καθώς και ένα τελάρο μεγαλύτερο από όσο χρειάζεται το σχέδιο, δεν διατηρούνται
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	η τελική θέση και τα πεδία πολυτομικού σχεδίου της κεφαλίδας DST (AX, AY, MX, MY, PD) δεν διατηρούνται
+@msg	threads that twist several colours are read in their first colour	οι κλωστές που συστρέφουν πολλά χρώματα διαβάζονται στο πρώτο τους χρώμα
+@msg	the file's several designs are read as one	τα πολλά σχέδια του αρχείου διαβάζονται ως ένα
+@msg	the file holds things this version doesn't read	το αρχείο περιέχει στοιχεία που αυτή η έκδοση δεν διαβάζει

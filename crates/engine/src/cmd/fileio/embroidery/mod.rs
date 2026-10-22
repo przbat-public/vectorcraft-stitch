@@ -19,8 +19,9 @@
 //! a kind), `jumpLength` (mm before the needle lifts), `trimLength` (mm before a jump cuts the
 //! thread) and `minStitch` (mm). A value outside its range is refused.
 //!
-//! The parts: [`import`] (a design read as art) and [`encode`] (the export: its options, and the
-//! stitches `cmd::embroidery` plans from the document's art, written in the format).
+//! The parts: [`import`] (a design read as art, with notes of what reading it left out, which
+//! make writing over the file ask first: [`is_loss`]) and [`encode`] (the export: its options, and
+//! the stitches `cmd::embroidery` plans from the document's art, written in the format).
 
 mod import;
 
@@ -33,7 +34,14 @@ use super::{Encoded, Format, FormatOption};
 use crate::cmd::embroidery::options::Others;
 use crate::cmd::embroidery::{Options, PlanError, service};
 
+pub use import::LOSS_NOTES;
 pub(super) use import::import;
+
+/// Whether `note`, said when a file was opened, says that reading a machine file left something
+/// out ([`LOSS_NOTES`]): writing over that file then asks first.
+pub(super) fn is_loss(note: &str) -> bool {
+    LOSS_NOTES.contains(&note)
+}
 
 const C: &str = "document.export";
 

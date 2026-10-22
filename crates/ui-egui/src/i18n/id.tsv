@@ -5213,3 +5213,13 @@ swatch	Bright Violet	Violet cerah
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	versi ini tidak mengenal palet benang {palette} dokumen, jadi benangnya dipilih dari palet {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	tidak ada yang dibordir: dokumen tidak memiliki jalur terlihat dengan isian atau stroke
 @msg	nothing to stitch: {_1}	tidak ada yang dibordir: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	bagian milik file PES sendiri, yang diedit PE-Design, tidak disimpan: PES yang ditulis dari dokumen ini hanya berisi jahitannya
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	gambar pratinjau file tidak disimpan: PES atau PEC yang ditulis dari dokumen ini memiliki gambar kosong
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	nomor benang yang tidak menyebut benang mana pun di palet (62 sampai 64 di PEC menandai aplikasi) ditulis sebagai benang terdekat
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	tanggal dan versi di header JEF, serta ram yang lebih besar dari yang dibutuhkan desain, tidak disimpan
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	posisi akhir dan kolom desain multi-volume di header DST (AX, AY, MX, MY, PD) tidak disimpan
+@msg	threads that twist several colours are read in their first colour	benang yang memilin beberapa warna dibaca dengan warna pertamanya
+@msg	the file's several designs are read as one	beberapa desain dalam file dibaca sebagai satu
+@msg	the file holds things this version doesn't read	file berisi hal-hal yang tidak dibaca versi ini

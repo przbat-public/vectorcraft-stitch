@@ -5066,3 +5066,13 @@ lighting	Light	光源
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	此版本无法识别文档的刺绣线调色板 {palette}，因此其线从 {default} 调色板中选择
 @msg	nothing to stitch: the document has no visible filled or stroked paths	没有可刺绣的内容：文档中没有可见的带填色或描边的路径
 @msg	nothing to stitch: {_1}	没有可刺绣的内容：{_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	PE-Design 编辑的 PES 文件自身部分不会保留：从此文档写出的 PES 只包含针迹
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	文件的预览图不会保留：从此文档写出的 PES 或 PEC 中为空白
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	不对应调色板中任何绣线的绣线编号（PEC 的 62 至 64 表示贴布）会写为最接近的绣线
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	JEF 文件头的日期和版本，以及比图案所需更大的绣框，不会保留
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	DST 文件头的结束位置和多卷字段（AX、AY、MX、MY、PD）不会保留
+@msg	threads that twist several colours are read in their first colour	由多种颜色捻成的绣线按其第一种颜色读取
+@msg	the file's several designs are read as one	文件中的多个图案作为一个读取
+@msg	the file holds things this version doesn't read	该文件包含此版本不读取的内容

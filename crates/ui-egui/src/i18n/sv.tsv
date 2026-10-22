@@ -5186,3 +5186,13 @@ theme	Appearance	Utseende
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	den här versionen känner inte till dokumentets trådpalett {palette}, så dess trådar väljs ur paletten {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	inget att brodera: dokumentet har inga synliga banor med fyllning eller kontur
 @msg	nothing to stitch: {_1}	inget att brodera: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	PES-filens egen sektion, som PE-Design redigerar, behålls inte: en PES som skrivs från det här dokumentet innehåller bara stygnen
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	filens förhandsgranskningsbilder behålls inte: en PES eller PEC som skrivs från det här dokumentet har tomma
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	trådnummer som inte anger någon tråd i paletten (62 till 64 i PEC markerar applikation) skrivs som närmaste tråd
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	datum och version i JEF-huvudet, och en båge som är större än mönstret behöver, behålls inte
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	slutpositionen och fälten för mönster i flera volymer i DST-huvudet (AX, AY, MX, MY, PD) behålls inte
+@msg	threads that twist several colours are read in their first colour	trådar som tvinnar flera färger läses i sin första färg
+@msg	the file's several designs are read as one	filens flera mönster läses som ett
+@msg	the file holds things this version doesn't read	filen innehåller saker som den här versionen inte läser

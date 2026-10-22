@@ -4824,3 +4824,13 @@ theme	Appearance	Giao diện
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	phiên bản này không biết bảng màu chỉ {palette} của tài liệu, nên chỉ được chọn từ bảng màu {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	không có gì để thêu: tài liệu không có đường dẫn hiển thị nào có tô hoặc nét
 @msg	nothing to stitch: {_1}	không có gì để thêu: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	phần riêng của tệp PES, phần mà PE-Design chỉnh sửa, không được giữ lại: tệp PES ghi từ tài liệu này chỉ chứa các mũi thêu
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	ảnh xem trước của tệp không được giữ lại: tệp PES hoặc PEC ghi từ tài liệu này có ảnh trống
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	các số chỉ không ứng với chỉ nào trong bảng màu (62 đến 64 của PEC đánh dấu đắp vải) được ghi thành chỉ gần nhất
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	ngày và phiên bản trong phần đầu JEF, cùng khung thêu lớn hơn mức thiết kế cần, không được giữ lại
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	vị trí kết thúc và các trường thiết kế nhiều tập trong phần đầu DST (AX, AY, MX, MY, PD) không được giữ lại
+@msg	threads that twist several colours are read in their first colour	các sợi chỉ xoắn nhiều màu được đọc theo màu đầu tiên
+@msg	the file's several designs are read as one	nhiều thiết kế trong tệp được đọc thành một
+@msg	the file holds things this version doesn't read	tệp chứa những thứ mà phiên bản này không đọc

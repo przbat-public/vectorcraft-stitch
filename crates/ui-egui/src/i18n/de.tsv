@@ -4806,3 +4806,13 @@ effect	Regular	Regelmäßig
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	diese Version kennt die Garnpalette {palette} des Dokuments nicht, daher werden seine Garne aus der Palette {default} gewählt
 @msg	nothing to stitch: the document has no visible filled or stroked paths	nichts zu sticken: das Dokument hat keine sichtbaren Pfade mit Fläche oder Kontur
 @msg	nothing to stitch: {_1}	nichts zu sticken: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	der eigene Abschnitt der PES-Datei, den PE-Design bearbeitet, wird nicht übernommen: eine aus diesem Dokument geschriebene PES enthält nur die Stiche
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	die Vorschaubilder der Datei werden nicht übernommen: eine aus diesem Dokument geschriebene PES oder PEC hat leere
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	Garnnummern, die kein Garn der Palette bezeichnen (62 bis 64 markieren in PEC Applikationen), werden als nächstliegendes Garn geschrieben
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	Datum und Version im JEF-Kopf sowie ein Rahmen, der größer ist, als das Design braucht, werden nicht übernommen
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	die Endposition und die Felder für mehrteilige Designs im DST-Kopf (AX, AY, MX, MY, PD) werden nicht übernommen
+@msg	threads that twist several colours are read in their first colour	Garne, die mehrere Farben verdrillen, werden in ihrer ersten Farbe gelesen
+@msg	the file's several designs are read as one	die mehreren Designs der Datei werden als eines gelesen
+@msg	the file holds things this version doesn't read	die Datei enthält Dinge, die diese Version nicht liest

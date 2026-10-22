@@ -5172,3 +5172,13 @@ mark-style	Japanese	Japonesas
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	esta versión no conoce la paleta de hilos {palette} del documento, así que sus hilos se eligen de la paleta {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	nada que bordar: el documento no tiene trazados visibles con relleno o trazo
 @msg	nothing to stitch: {_1}	nada que bordar: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	la sección propia del archivo PES, que edita PE-Design, no se conserva: un PES escrito desde este documento contiene solo las puntadas
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	las imágenes de vista previa del archivo no se conservan: un PES o PEC escrito desde este documento las tiene en blanco
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	los números de hilo que no nombran ningún hilo de la paleta (62 a 64 en PEC marcan aplique) se escriben como el hilo más cercano
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	la fecha y la versión del encabezado JEF, y un bastidor mayor de lo que el diseño necesita, no se conservan
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	la posición final y los campos de diseño en varios volúmenes del encabezado DST (AX, AY, MX, MY, PD) no se conservan
+@msg	threads that twist several colours are read in their first colour	los hilos que retuercen varios colores se leen en su primer color
+@msg	the file's several designs are read as one	los varios diseños del archivo se leen como uno
+@msg	the file holds things this version doesn't read	el archivo contiene cosas que esta versión no lee

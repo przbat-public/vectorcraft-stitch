@@ -5256,3 +5256,13 @@ swatch	Bright Violet	Felviolet
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	deze versie kent het garenpalet {palette} van het document niet, dus worden de garens gekozen uit het palet {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	niets te borduren: het document heeft geen zichtbare paden met een vulling of contour
 @msg	nothing to stitch: {_1}	niets te borduren: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	de eigen sectie van het PES-bestand, die PE-Design bewerkt, blijft niet behouden: een PES die vanuit dit document wordt geschreven bevat alleen de steken
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	de voorbeeldafbeeldingen van het bestand blijven niet behouden: een PES of PEC die vanuit dit document wordt geschreven heeft lege
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	garennummers die geen garen van het palet aanduiden (62 tot 64 in PEC staan voor applicatie) worden geschreven als het dichtstbijzijnde garen
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	de datum en versie in de JEF-header, en een borduurring die groter is dan het ontwerp nodig heeft, blijven niet behouden
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	de eindpositie en de velden voor ontwerpen in meerdere delen in de DST-header (AX, AY, MX, MY, PD) blijven niet behouden
+@msg	threads that twist several colours are read in their first colour	garens die meerdere kleuren ineendraaien worden in hun eerste kleur gelezen
+@msg	the file's several designs are read as one	de verschillende ontwerpen in het bestand worden als één gelezen
+@msg	the file holds things this version doesn't read	het bestand bevat dingen die deze versie niet leest

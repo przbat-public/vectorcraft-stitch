@@ -5137,3 +5137,13 @@ imageTrace	Outline	კონტური
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	ეს ვერსია არ იცნობს დოკუმენტის ძაფების პალიტრას {palette}, ამიტომ მისი ძაფები {default} პალიტრიდან შეირჩევა
 @msg	nothing to stitch: the document has no visible filled or stroked paths	საქარგავი არაფერია: დოკუმენტს არ აქვს ხილული ტრაექტორიები შევსებით ან კონტურით
 @msg	nothing to stitch: {_1}	საქარგავი არაფერია: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	PES ფაილის საკუთარი განყოფილება, რომელსაც PE-Design არედაქტირებს, არ ინახება: ამ დოკუმენტიდან ჩაწერილი PES მხოლოდ ნაკერებს შეიცავს
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	ფაილის წინასწარი ხედის სურათები არ ინახება: ამ დოკუმენტიდან ჩაწერილ PES-სა და PEC-ს ცარიელი სურათები აქვს
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	ძაფის ნომრები, რომლებიც პალიტრის არცერთ ძაფს არ აღნიშნავს (PEC-ის 62–64 აპლიკაციას აღნიშნავს), უახლოეს ძაფად იწერება
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	JEF-ის სათაურის თარიღი და ვერსია, ასევე დიზაინისთვის საჭიროზე დიდი ჩარჩო, არ ინახება
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	DST-ის სათაურის საბოლოო პოზიცია და მრავალტომიანი დიზაინის ველები (AX, AY, MX, MY, PD) არ ინახება
+@msg	threads that twist several colours are read in their first colour	რამდენიმე ფერისგან დაგრეხილი ძაფები პირველი ფერით იკითხება
+@msg	the file's several designs are read as one	ფაილის რამდენიმე დიზაინი ერთად იკითხება
+@msg	the file holds things this version doesn't read	ფაილი შეიცავს ისეთ რამეს, რასაც ეს ვერსია არ კითხულობს

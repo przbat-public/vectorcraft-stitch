@@ -258,6 +258,23 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     read_records(bytes.get(HEADER..).unwrap_or_default(), header_name(bytes.get(..HEADER).unwrap_or_default()), "DST")
 }
 
+/// The header fields a DST reader leaves out, and the writer writes as zeros: the needle's end
+/// position (`AX`, `AY`) and the multi-volume fields (`MX`, `MY`, `PD`).
+const END_FIELDS: [&str; 4] = ["AX:", "AY:", "MX:", "MY:"];
+const MULTI_VOLUME: &str = "PD:";
+/// What `PD` holds in a design that is not one of several volumes.
+const NO_VOLUME: char = '*';
+
+/// What a DST's header holds that reading it leaves out: an end position or multi-volume fields
+/// that aren't zero (or, for `PD`, asterisks).
+pub(crate) fn losses(bytes: &[u8]) -> Vec<super::Loss> {
+    let header = String::from_utf8_lossy(bytes.get(..HEADER).unwrap_or_default()).to_string();
+    let field = |name: &str| header.split('\r').find_map(|line| line.trim_start_matches('\n').strip_prefix(name).map(str::trim));
+    let set = END_FIELDS.iter().filter_map(|f| field(f)).any(|v| v.trim_start_matches(['+', '-']).trim().parse::<i64>().is_ok_and(|n| n != 0))
+        || field(MULTI_VOLUME).is_some_and(|v| !v.chars().all(|c| c == NO_VOLUME || c == ' ' || c == '0'));
+    if set { vec![super::Loss::DstFields] } else { Vec::new() }
+}
+
 /// Whether `records` are DST records: every one up to the end record has [`SET_BITS`] in its
 /// third byte, as every record does. A TAP or T01, with no header, is told from another file by
 /// this alone; `what` names the format in the error.

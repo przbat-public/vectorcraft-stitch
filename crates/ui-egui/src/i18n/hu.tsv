@@ -5216,3 +5216,13 @@ imageTrace	Outline	Körvonal
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	ez a verzió nem ismeri a dokumentum {palette} cérnapalettáját, ezért a cérnái a(z) {default} palettából lesznek kiválasztva
 @msg	nothing to stitch: the document has no visible filled or stroked paths	nincs mit kihímezni: a dokumentumban nincs látható, kitöltéssel vagy körvonallal rendelkező útvonal
 @msg	nothing to stitch: {_1}	nincs mit kihímezni: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	a PES-fájl saját szakasza, amelyet a PE-Design szerkeszt, nem marad meg: az ebből a dokumentumból írt PES csak az öltéseket tartalmazza
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	a fájl előnézeti képei nem maradnak meg: az ebből a dokumentumból írt PES vagy PEC üres képeket kap
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	a palettán szálat nem jelölő szálszámok (a PEC 62–64-es száma applikációt jelöl) a legközelebbi szálként íródnak ki
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	a JEF-fejléc dátuma és verziója, valamint a mintához szükségesnél nagyobb keret nem marad meg
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	a DST-fejléc végpozíciója és többkötetes mezői (AX, AY, MX, MY, PD) nem maradnak meg
+@msg	threads that twist several colours are read in their first colour	a több színt összesodró szálak az első színükben olvasódnak be
+@msg	the file's several designs are read as one	a fájl több mintája egyként olvasódik be
+@msg	the file holds things this version doesn't read	a fájl olyan dolgokat tartalmaz, amelyeket ez a verzió nem olvas

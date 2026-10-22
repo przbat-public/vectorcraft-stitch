@@ -172,6 +172,38 @@ fn hoop(width: i32, height: i32) -> u32 {
     HOOPS.iter().find(|(hw, hh, _)| w < *hw && h < *hh).map_or(DEFAULT_HOOP, |(_, _, n)| *n)
 }
 
+/// Where the header gives the date, the version letter (and a byte after it), the hoop and the
+/// design's extents (left, top, right and bottom from its centre, a word each).
+const DATE_AT: usize = 8;
+const VERSION_AT: usize = DATE_AT + NO_DATE.len();
+const VERSION: usize = 2;
+const HOOP_AT: usize = 32;
+const EXTENTS_AT: usize = 36;
+
+/// What a JEF's header holds that reading it leaves out: a date or version the writer doesn't
+/// write, a hoop other than the smallest the design fits, and thread numbers that name no Janome
+/// thread.
+pub(crate) fn losses(bytes: &[u8]) -> Vec<super::Loss> {
+    let mut out = Vec::new();
+    let word = |at: usize| bytes.get(at..at + WORD).map(|w| u32::from_le_bytes([w[0], w[1], w[2], w[3]]));
+    let dated = bytes.get(DATE_AT..VERSION_AT).is_some_and(|d| d != NO_DATE && d.iter().any(|b| !matches!(b, 0 | b' ')));
+    let versioned = bytes.get(VERSION_AT..VERSION_AT + VERSION).is_some_and(|v| v.iter().any(|b| *b != 0));
+    let extents: Option<Vec<i32>> = (0..4).map(|k| word(EXTENTS_AT + k * WORD).map(|w| w as i32)).collect();
+    let rehooped = match (word(HOOP_AT), extents.as_deref()) {
+        (Some(code), Some(&[left, top, right, bottom])) => code != hoop(left.saturating_add(right), top.saturating_add(bottom)),
+        _ => false,
+    };
+    if dated || versioned || rehooped {
+        out.push(super::Loss::JefHeader);
+    }
+    let offset = word(0).map_or(0, |o| o as usize);
+    let colors = word(COLOR_COUNT_AT).map_or(0, |c| c as usize).min(offset.saturating_sub(HEADER) / BYTES_PER_COLOR);
+    if (0..colors).filter_map(|k| word(HEADER + k * WORD)).any(|n| !usize::try_from(n).is_ok_and(|n| Palette::Jef.is_thread(n))) {
+        out.push(super::Loss::NotThreads);
+    }
+    out
+}
+
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
     let mut r = Reader::new(bytes);
     let offset = r.u32().ok_or_else(|| short(bytes.len()))? as usize;

@@ -23,11 +23,6 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     dst::read_records(bytes, String::new(), "TAP")
 }
 
-/// A T01 file: the same records as a TAP ([`write`]).
-pub fn write_t01(p: &Pattern) -> Result<Vec<u8>> {
-    write(p)
-}
-
 /// A T01 file, read as a TAP is ([`read`]); its errors name T01.
 pub fn read_t01(bytes: &[u8]) -> Result<Pattern> {
     dst::read_records(bytes, String::new(), "T01")
@@ -78,7 +73,7 @@ mod tests {
     #[test]
     fn a_t01_is_a_tap() {
         let p = design();
-        let (t01, tap) = (write_t01(&p).expect("writes"), write(&p).expect("writes"));
+        let (t01, tap) = (Format::T01.write(&p).expect("writes"), write(&p).expect("writes"));
         assert_eq!(t01, tap);
         assert_eq!(read_t01(&t01).expect("reads"), read(&tap).expect("reads"));
         assert!(read_t01(&[]).expect_err("nothing").to_string().contains("T01"));

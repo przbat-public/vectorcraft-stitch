@@ -1,13 +1,13 @@
-//! The machine formats: DST, TAP and T01 (DST's records alone), EXP, PES (its PEC part), PEC on its own,
-//! JEF and VP3 — read and written here.
+//! The machine formats: DST, TAP and T01 (DST's records alone), EXP, PES (its PEC part), PEC on
+//! its own, JEF and VP3 — read and written here.
 //!
 //! Files count coordinates in tenths of a millimetre; this crate counts millimetres. The y axis
-//! points up in DST, EXP and JEF (a design's top is its largest y there) and down in PEC and in
-//! VP3's stitches, as Brother and Husqvarna write them: the readers and writers flip y
+//! points up in DST, TAP, T01, EXP and JEF (a design's top is its largest y there) and down in PEC
+//! and in VP3's stitches, as Brother and Husqvarna write them: the readers and writers flip y
 //! accordingly. Every reader finishes with the design's top-left corner at the origin. Writers put
-//! the origin where the format expects the needle to start: a corner of the design in DST, EXP and
-//! PEC, its centre in JEF and VP3 (Janome sews around the hoop's centre, and VP3 files start
-//! there). A design read and written again keeps its shape.
+//! the origin where the format expects the needle to start: a corner of the design in DST, TAP,
+//! T01, EXP and PEC, its centre in JEF and VP3 (Janome sews around the hoop's centre, and VP3 files
+//! start there). A design read and written again keeps its shape.
 //!
 //! The formats' own documentation (there is no specification; these were reverse-engineered
 //! publicly) is summarised in each module. What they share, and what this module holds:
@@ -164,7 +164,8 @@ impl Format {
             Self::Dst => dst::write(pattern),
             Self::Exp => exp::write(pattern),
             Self::Tap => tap::write(pattern),
-            Self::T01 => tap::write_t01(pattern),
+            // The same bytes as a TAP.
+            Self::T01 => tap::write(pattern),
             Self::Pes => pes::write(pattern),
             Self::Pec => pes::write_pec(pattern),
             Self::Jef => jef::write(pattern),
@@ -269,6 +270,30 @@ impl<'a> Reader<'a> {
     pub(crate) fn u32(&mut self) -> Option<u32> {
         let b = self.take(4)?;
         Some(u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+    }
+
+    /// A big-endian u16 (VP3 counts and string lengths).
+    pub(crate) fn u16_be(&mut self) -> Option<u16> {
+        let b = self.take(2)?;
+        Some(u16::from_be_bytes([b[0], b[1]]))
+    }
+
+    /// A big-endian i16 (VP3's long moves).
+    pub(crate) fn i16_be(&mut self) -> Option<i16> {
+        let b = self.take(2)?;
+        Some(i16::from_be_bytes([b[0], b[1]]))
+    }
+
+    /// A big-endian u32 (VP3's packet lengths).
+    pub(crate) fn u32_be(&mut self) -> Option<u32> {
+        let b = self.take(4)?;
+        Some(u32::from_be_bytes([b[0], b[1], b[2], b[3]]))
+    }
+
+    /// A big-endian i32 (VP3's positions).
+    pub(crate) fn i32_be(&mut self) -> Option<i32> {
+        let b = self.take(4)?;
+        Some(i32::from_be_bytes([b[0], b[1], b[2], b[3]]))
     }
 }
 

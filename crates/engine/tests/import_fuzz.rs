@@ -3908,10 +3908,12 @@ fn ai_cut_inside_an_array_or_dictionary_opens_without_panicking() {
 
 const EMBROIDERY: [&str; 8] = ["dst", "tap", "t01", "exp", "pes", "pec", "jef", "vp3"];
 
-/// Where a VP3 written here has its first stitch record: past the scale bytes `0A F6 00` that
-/// open its first stitch run.
+/// Where a VP3 written here has its first stitch record: past its first stitch run's tag
+/// `00 01 00`, its length and the scale bytes `0A F6 00` that open the run (the ten bytes together,
+/// which no position or string before them holds).
 fn vp3_records(sample: &[u8]) -> usize {
-    sample.windows(3).position(|w| w == [0x0A, 0xF6, 0x00]).map_or(sample.len(), |at| at + 3)
+    const RUN_START: usize = 10;
+    sample.windows(RUN_START).position(|w| w[..3] == [0x00, 0x01, 0x00] && w[7..] == [0x0A, 0xF6, 0x00]).map_or(sample.len(), |at| at + RUN_START)
 }
 
 /// The rich document stitched into each embroidery format.

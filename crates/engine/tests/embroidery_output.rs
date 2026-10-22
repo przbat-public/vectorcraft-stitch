@@ -366,7 +366,7 @@ const LETTER_T: [(f64, f64); 8] = [(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 
 /// Where a PES header gives the PEC section's position (a little-endian word).
 const PEC_POSITION: usize = 8;
 /// Where a PEC file's PEC header starts: after its magic `#PEC0001`.
-const PEC_MAGIC: usize = 8;
+const PEC_HEADER_AT: usize = 8;
 /// Where the PEC header holds its colour count, one fewer than the colours ([`NO_COLORS`]: none);
 /// one palette index a byte follows for each colour.
 const PEC_COLOR_COUNT: usize = 48;
@@ -418,7 +418,7 @@ fn threads_apart(format: Format, bytes: &[u8]) -> Option<(Vec<u8>, Vec<u32>)> {
     let word = |at: usize| u32::from_le_bytes(bytes[at..at + WORD].try_into().unwrap()) as usize;
     let (first, count, width) = match format {
         Format::Pes | Format::Pec => {
-            let header = if format == Format::Pec { PEC_MAGIC } else { word(PEC_POSITION) };
+            let header = if format == Format::Pec { PEC_HEADER_AT } else { word(PEC_POSITION) };
             let count = match bytes[header + PEC_COLOR_COUNT] {
                 NO_COLORS => 0,
                 c => usize::from(c) + 1,

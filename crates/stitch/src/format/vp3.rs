@@ -152,9 +152,40 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
     let colors = u16::try_from(segments.len()).map_err(|_| Error::TooLarge(format!("VP3 holds at most {} colour blocks", u16::MAX)))?;
+    // Written in one buffer, in file order: each packet's length is filled in when it ends.
+    let mut out: Vec<u8> = Vec::with_capacity(p.points().count() * 2 + 1024);
+    out.extend_from_slice(MAGIC);
+    utf16(&mut out, PRODUCER)?;
+    let file = begin(&mut out, FILE_TAG);
+    utf16(&mut out, "")?;
+    // Right, top, left and bottom (y upwards).
+    for v in [x1, -y0, x0, -y1] {
+        microns(&mut out, v)?;
+    }
+    // The sewing-time estimate, filled in once the stitches are written.
+    let estimate_at = out.len();
+    out.extend_from_slice(&[0; WORD]);
+    out.extend_from_slice(&colors.to_be_bytes());
+    out.push(SUMMARY_MARK);
+    out.extend_from_slice(&DESIGNS.to_be_bytes());
+    let design = begin(&mut out, DESIGN_TAG);
+    // The design's centre is the frame's origin.
+    position(&mut out, (0, 0))?;
+    out.extend_from_slice(&DESIGN_GAP);
+    // Left, right, bottom and top from the centre (y upwards), then the width and height.
+    for v in [x0, x1, -y1, -y0, x1 - x0, y1 - y0] {
+        microns(&mut out, v)?;
+    }
+    utf16(&mut out, "")?;
+    out.extend_from_slice(&DESIGN_MARK);
+    for w in DESIGN_WORDS {
+        out.extend_from_slice(&w.to_be_bytes());
+    }
+    out.extend_from_slice(&DESIGN_MAGIC);
+    utf16(&mut out, PRODUCER)?;
+    out.extend_from_slice(&colors.to_be_bytes());
     // The colour blocks: each starts where the last ended, at the design's centre for the first.
     let mut at = (0i32, 0i32);
-    let mut blocks: Vec<u8> = Vec::new();
     let mut needle_points = 0usize;
     for (k, (thread, stitches)) in segments.iter().enumerate() {
         let start = at;
@@ -167,49 +198,21 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
         }
         needle_points += run.needle_points;
         at = (run.x, run.y);
-        let mut block: Vec<u8> = Vec::new();
-        position(&mut block, start)?;
-        thread_record(&mut block, thread)?;
-        position(&mut block, (at.0 - start.0, at.1 - start.1))?;
-        let mut stitch_run = SCALE.to_vec();
-        stitch_run.extend_from_slice(&run.bytes);
-        packet(&mut block, STITCHES_TAG, &stitch_run)?;
-        block.push(BLOCK_END);
-        packet(&mut blocks, BLOCK_TAG, &block)?;
+        let block = begin(&mut out, BLOCK_TAG);
+        position(&mut out, start)?;
+        thread_record(&mut out, thread)?;
+        position(&mut out, (at.0 - start.0, at.1 - start.1))?;
+        let stitch_run = begin(&mut out, STITCHES_TAG);
+        out.extend_from_slice(&SCALE);
+        out.extend_from_slice(&run.bytes);
+        end(&mut out, stitch_run)?;
+        out.push(BLOCK_END);
+        end(&mut out, block)?;
     }
-    let mut design: Vec<u8> = Vec::new();
-    // The design's centre is the frame's origin.
-    position(&mut design, (0, 0))?;
-    design.extend_from_slice(&DESIGN_GAP);
-    // Left, right, bottom and top from the centre (y upwards), then the width and height.
-    for v in [x0, x1, -y1, -y0, x1 - x0, y1 - y0] {
-        microns(&mut design, v)?;
-    }
-    utf16(&mut design, "")?;
-    design.extend_from_slice(&DESIGN_MARK);
-    for w in DESIGN_WORDS {
-        design.extend_from_slice(&w.to_be_bytes());
-    }
-    design.extend_from_slice(&DESIGN_MAGIC);
-    utf16(&mut design, PRODUCER)?;
-    design.extend_from_slice(&colors.to_be_bytes());
-    design.extend_from_slice(&blocks);
-    let mut file: Vec<u8> = Vec::new();
-    utf16(&mut file, "")?;
-    // Right, top, left and bottom (y upwards).
-    for v in [x1, -y0, x0, -y1] {
-        microns(&mut file, v)?;
-    }
+    end(&mut out, design)?;
+    end(&mut out, file)?;
     let estimate = u32::try_from(needle_points).map_err(|_| Error::TooLarge("too many stitches for a VP3 file".into()))?;
-    file.extend_from_slice(&estimate.to_be_bytes());
-    file.extend_from_slice(&colors.to_be_bytes());
-    file.push(SUMMARY_MARK);
-    file.extend_from_slice(&DESIGNS.to_be_bytes());
-    packet(&mut file, DESIGN_TAG, &design)?;
-    let mut out: Vec<u8> = Vec::with_capacity(file.len() + 64);
-    out.extend_from_slice(MAGIC);
-    utf16(&mut out, PRODUCER)?;
-    packet(&mut out, FILE_TAG, &file)?;
+    fill(&mut out, estimate_at, estimate);
     Ok(out)
 }
 
@@ -308,13 +311,29 @@ impl Run {
     }
 }
 
-/// A packet: `tag`, the length of `body` (a big-endian u32) and `body`.
-fn packet(out: &mut Vec<u8>, tag: [u8; 3], body: &[u8]) -> Result<()> {
-    let len = u32::try_from(body.len()).map_err(|_| Error::TooLarge("the design is too large for a VP3 file".into()))?;
+/// Start a packet: `tag` and room for its length (filled in by [`end`]), whose position it
+/// answers.
+fn begin(out: &mut Vec<u8>, tag: [u8; 3]) -> usize {
     out.extend_from_slice(&tag);
-    out.extend_from_slice(&len.to_be_bytes());
-    out.extend_from_slice(body);
+    let at = out.len();
+    out.extend_from_slice(&[0; WORD]);
+    at
+}
+
+/// End the packet whose length field is at `at`: its length counts from the end of that field to
+/// here.
+fn end(out: &mut [u8], at: usize) -> Result<()> {
+    let len = out.len().saturating_sub(at + WORD);
+    let len = u32::try_from(len).map_err(|_| Error::TooLarge("the design is too large for a VP3 file".into()))?;
+    fill(out, at, len);
     Ok(())
+}
+
+/// Write `v` (a big-endian u32) into the field at `at`.
+fn fill(out: &mut [u8], at: usize, v: u32) {
+    if let Some(field) = out.get_mut(at..at + WORD) {
+        field.copy_from_slice(&v.to_be_bytes());
+    }
 }
 
 /// A position in tenths of a millimetre (y down) as the packets write it: x and −y in micrometres.
@@ -416,7 +435,7 @@ impl Decoded {
 
 fn read_design(r: &mut Reader<'_>, d: &mut Decoded, end: usize) -> Result<()> {
     let len = r.data_len();
-    let (cx, cy) = (i64::from(be_i32(r).ok_or_else(|| short(len))?), i64::from(be_i32(r).ok_or_else(|| short(len))?));
+    let (cx, cy) = (i64::from(r.i32_be().ok_or_else(|| short(len))?), i64::from(r.i32_be().ok_or_else(|| short(len))?));
     // Three zero bytes; the edges from the centre and the size.
     r.take(DESIGN_GAP.len() + DESIGN_EDGES * WORD).ok_or_else(|| short(len))?;
     skip_string(r)?;
@@ -427,7 +446,7 @@ fn read_design(r: &mut Reader<'_>, d: &mut Decoded, end: usize) -> Result<()> {
     let mut first = true;
     while r.pos() < end && at_tag(r.data(), r.pos(), BLOCK_TAG) {
         let block_end = open(r, BLOCK_TAG, end, "colour block")?;
-        let (sx, sy) = (i64::from(be_i32(r).ok_or_else(|| short(len))?), i64::from(be_i32(r).ok_or_else(|| short(len))?));
+        let (sx, sy) = (i64::from(r.i32_be().ok_or_else(|| short(len))?), i64::from(r.i32_be().ok_or_else(|| short(len))?));
         let thread = read_thread(r, d.threads.len())?;
         // How far the block's stitches move the needle: the stitches say so themselves.
         r.take(POSITION).ok_or_else(|| short(len))?;
@@ -498,7 +517,7 @@ fn read_stitches(r: &mut Reader<'_>, d: &mut Decoded, end: usize) {
                 if r.pos() + 4 > end {
                     return;
                 }
-                let (Some(dx), Some(dy)) = (be_i16(r), be_i16(r)) else { return };
+                let (Some(dx), Some(dy)) = (r.i16_be(), r.i16_be()) else { return };
                 d.x += i64::from(dx);
                 d.y += i64::from(dy);
                 d.push(Command::Jump);
@@ -529,39 +548,32 @@ fn open(r: &mut Reader<'_>, tag: [u8; 3], limit: usize, what: &str) -> Result<us
     if found != tag {
         return Err(Error::Format(format!("the VP3 file has no {what} packet at byte {at}")));
     }
-    let len = r.take(WORD).map(|b| u32::from_be_bytes([b[0], b[1], b[2], b[3]])).ok_or_else(|| short(r.data_len()))?;
+    let len = r.u32_be().ok_or_else(|| short(r.data_len()))?;
     let len = usize::try_from(len).unwrap_or(usize::MAX);
     // A length past what holds it is the file's claim: what it holds is read.
     Ok(r.pos().saturating_add(len).min(limit))
 }
 
-/// Skip a string: its byte count (a big-endian u16) and its bytes.
-fn skip_string(r: &mut Reader<'_>) -> Result<()> {
+/// A string's bytes: its byte count (a big-endian u16), then the bytes.
+fn string<'a>(r: &mut Reader<'a>) -> Result<&'a [u8]> {
     let len = r.data_len();
-    let n = r.take(2).map(|b| usize::from(u16::from_be_bytes([b[0], b[1]]))).ok_or_else(|| short(len))?;
-    r.take(n).ok_or_else(|| short(len))?;
-    Ok(())
+    let n = r.u16_be().ok_or_else(|| short(len))?;
+    r.take(usize::from(n)).ok_or_else(|| short(len))
 }
 
-/// A UTF-8 string: its byte count (a big-endian u16) and its bytes (anything not UTF-8 replaced).
+/// Skip a string ([`string`]).
+fn skip_string(r: &mut Reader<'_>) -> Result<()> {
+    string(r).map(|_| ())
+}
+
+/// A UTF-8 string ([`string`]; anything not UTF-8 replaced).
 fn read_utf8(r: &mut Reader<'_>) -> Result<String> {
-    let len = r.data_len();
-    let n = r.take(2).map(|b| usize::from(u16::from_be_bytes([b[0], b[1]]))).ok_or_else(|| short(len))?;
-    let b = r.take(n).ok_or_else(|| short(len))?;
-    Ok(String::from_utf8_lossy(b).into_owned())
+    string(r).map(|b| String::from_utf8_lossy(b).into_owned())
 }
 
 /// `microns` as tenths of a millimetre, rounded.
 fn tenths(microns: i64) -> i64 {
     (microns + MICRONS_PER_TENTH / 2).div_euclid(MICRONS_PER_TENTH)
-}
-
-fn be_i32(r: &mut Reader<'_>) -> Option<i32> {
-    r.take(WORD).map(|b| i32::from_be_bytes([b[0], b[1], b[2], b[3]]))
-}
-
-fn be_i16(r: &mut Reader<'_>) -> Option<i16> {
-    r.take(2).map(|b| i16::from_be_bytes([b[0], b[1]]))
 }
 
 fn short(len: usize) -> Error {

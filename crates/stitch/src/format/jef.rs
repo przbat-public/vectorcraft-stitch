@@ -112,7 +112,7 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     for _ in 0..colors {
         out.extend_from_slice(&COLOR_WORD.to_le_bytes());
     }
-    write_body(&mut out, p, &frame);
+    write_body(&mut out, p, &frame)?;
     Ok(out)
 }
 
@@ -130,9 +130,10 @@ fn record_count(p: &Pattern) -> usize {
     n
 }
 
-fn write_body(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) {
-    walk(p, frame, &mut Jef { out, at: (0, 0), wrote: false });
+fn write_body(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) -> Result<()> {
+    walk(p, frame, &mut Jef { out, at: (0, 0), wrote: false }, "JEF")?;
     out.extend_from_slice(&[CONTROL, END]);
+    Ok(())
 }
 
 /// A JEF body being written: its records, where the needle is, and whether a stitch was written
@@ -165,6 +166,10 @@ impl Emitter for Jef<'_> {
 
     fn wrote(&self) -> bool {
         self.wrote
+    }
+
+    fn size(&self) -> usize {
+        self.out.len()
     }
 }
 

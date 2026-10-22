@@ -37,6 +37,11 @@ const DIGITS: usize = 5;
 /// The largest delta one record holds, in tenths of a millimetre: 1 + 3 + 9 + 27 + 81 = 121, all
 /// [`DIGITS`] digits at +1.
 pub(crate) const MAX_DELTA: i32 = (3i32.pow(DIGITS as u32) - 1) / 2;
+/// The largest extent the header's five-digit `+X`, `-X`, `+Y` and `-Y` fields state, tenths of a
+/// millimetre (9,999.9 mm).
+pub(crate) const MAX_EXTENT: i32 = 99_999;
+/// The most records the header's seven-digit `ST` field counts.
+const MAX_RECORDS: usize = 9_999_999;
 
 // A record's third byte: its two bottom bits are always set, and its top bits say what the record
 // is. A stitch sets only the bottom two.
@@ -94,9 +99,12 @@ pub(crate) struct Records {
 pub(crate) fn records(p: &Pattern) -> Result<Records> {
     let frame = Frame::of(p, true)?;
     let mut body: Body = Body::default();
-    walk(p, &frame, &mut body);
+    walk(p, &frame, &mut body, "DST")?;
     if body.out.is_empty() {
         return Err(Error::Format("the design has no stitches to write".into()));
+    }
+    if body.records > MAX_RECORDS {
+        return Err(Error::TooLarge(format!("a DST header counts at most {MAX_RECORDS} records, and the design takes {}", body.records)));
     }
     let count = body.records;
     let (width, height) = frame.size();
@@ -168,6 +176,10 @@ impl Emitter for Body {
     /// Any record: a trim or a stop too.
     fn wrote(&self) -> bool {
         !self.out.is_empty()
+    }
+
+    fn size(&self) -> usize {
+        self.out.len()
     }
 }
 

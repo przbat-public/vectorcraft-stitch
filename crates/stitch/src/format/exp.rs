@@ -30,7 +30,7 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     let frame = Frame::of(p, true)?;
     // Two bytes a point, and a little more for commands (a guess; the buffer grows as needed).
     let mut w = Exp { out: Vec::with_capacity(p.points().count() * 2 + 16), at: (0, 0), wrote: false };
-    walk(p, &frame, &mut w);
+    walk(p, &frame, &mut w, "EXP")?;
     if !w.wrote {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
@@ -66,6 +66,10 @@ impl Emitter for Exp {
 
     fn wrote(&self) -> bool {
         self.wrote
+    }
+
+    fn size(&self) -> usize {
+        self.out.len()
     }
 }
 

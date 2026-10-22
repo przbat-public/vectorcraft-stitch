@@ -204,6 +204,9 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
         let mut run = Run::new(start);
         for s in stitches {
             run.add(*s, &frame);
+            if out.len() + run.bytes.len() > super::MAX_FILE_BYTES {
+                return Err(super::file_too_large("VP3"));
+            }
         }
         if k + 1 == segments.len() {
             run.bytes.extend_from_slice(&[CONTROL, LAST]);

@@ -44,13 +44,20 @@ pub fn mm_to_pt(v: f64) -> f64 {
     v / MM_PER_PT
 }
 
+/// The farthest a coordinate is written from a file's origin, tenths of a millimetre (±200 m): well
+/// within every format's 32-bit fields. [`quantize`] clamps to it; the writers refuse a design that
+/// reaches past it, or past what a format's header can state, instead of writing it clamped
+/// ([`format::Format::write`]).
+pub const MAX_TENTHS: i32 = 2_000_000;
+
 /// `mm` snapped to the 0.1 mm machine formats count in (0 for anything not finite, so a bad
-/// coordinate writes as the origin instead of a wrapped integer).
+/// coordinate writes as the origin instead of a wrapped integer), within ±[`MAX_TENTHS`].
 pub fn quantize(mm: f64) -> i32 {
     if !mm.is_finite() {
         return 0;
     }
-    (mm * UNITS_PER_MM).round().clamp(-2_000_000.0, 2_000_000.0) as i32
+    let limit = f64::from(MAX_TENTHS);
+    (mm * UNITS_PER_MM).round().clamp(-limit, limit) as i32
 }
 
 /// What the machine does at a point.

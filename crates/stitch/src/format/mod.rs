@@ -29,7 +29,7 @@ pub mod tap;
 pub mod vp3;
 
 use crate::thread;
-use crate::{Block, Command, Error, Pattern, Result, Stitch, Thread, quantize};
+use crate::{Block, Command, Error, MAX_TENTHS, Pattern, Result, Stitch, Thread, quantize};
 
 /// How many characters of the design's name the DST and PEC headers hold, after `LA:`.
 pub(crate) const LABEL_LEN: usize = 16;
@@ -97,6 +97,9 @@ pub struct Spec {
     /// The longest move one stitch record holds along x or along y, tenths of a millimetre
     /// ([`Format::max_step`]).
     pub max_step: i32,
+    /// The widest and tallest design the format's fields can state, tenths of a millimetre: what
+    /// its header holds (DST's five-digit extents, PEC's 16-bit size), else [`MAX_TENTHS`].
+    pub max_size: i32,
     /// The most colour blocks it holds, if its layout sets a limit ([`Format::max_colors`]).
     pub max_colors: Option<usize>,
     /// Where its files start the needle.
@@ -116,6 +119,7 @@ const DST: Spec = Spec {
     mime: "application/x-dst",
     palette: None,
     max_step: dst::MAX_DELTA,
+    max_size: dst::MAX_EXTENT,
     max_colors: None,
     start: Start::Corner,
     magic: None,
@@ -123,10 +127,19 @@ const DST: Spec = Spec {
     write: dst::write,
 };
 /// Happy TAP: DST's records alone ([`tap`]).
-const TAP: Spec = Spec { id: "tap", label: "Happy TAP", extensions: &["tap"], mime: "application/x-tap", read: tap::read, write: tap::write, ..DST };
+const TAP: Spec = Spec {
+    id: "tap",
+    label: "Happy TAP",
+    extensions: &["tap"],
+    mime: "application/x-tap",
+    read: tap::read,
+    write: tap::write,
+    // No header: only the coordinates' range bounds the design.
+    max_size: MAX_TENTHS,
+    ..DST
+};
 /// Wilcom T01: the same bytes as a TAP ([`tap`]).
-const T01: Spec =
-    Spec { id: "t01", label: "Wilcom T01", extensions: &["t01"], mime: "application/x-t01", read: tap::read_t01, write: tap::write, ..DST };
+const T01: Spec = Spec { id: "t01", label: "Wilcom T01", extensions: &["t01"], mime: "application/x-t01", read: tap::read_t01, ..TAP };
 /// Melco EXP: 2-byte records, no header ([`exp`]).
 const EXP: Spec = Spec {
     id: "exp",
@@ -135,6 +148,7 @@ const EXP: Spec = Spec {
     mime: "application/x-exp",
     palette: None,
     max_step: exp::MAX_DELTA,
+    max_size: MAX_TENTHS,
     max_colors: None,
     start: Start::Corner,
     magic: None,
@@ -149,6 +163,7 @@ const PES: Spec = Spec {
     mime: "application/x-pes",
     palette: Some(thread::Palette::Pec),
     max_step: pes::MAX_DELTA,
+    max_size: pes::MAX_SIZE,
     max_colors: Some(pes::MAX_COLORS),
     start: Start::Corner,
     magic: Some(b"#PES"),
@@ -166,6 +181,7 @@ const JEF: Spec = Spec {
     mime: "application/x-jef",
     palette: Some(thread::Palette::Jef),
     max_step: jef::MAX_DELTA,
+    max_size: MAX_TENTHS,
     max_colors: None,
     start: Start::Centre,
     magic: None,
@@ -180,6 +196,7 @@ const VP3: Spec = Spec {
     mime: "application/x-vp3",
     palette: None,
     max_step: vp3::MAX_SHORT,
+    max_size: MAX_TENTHS,
     max_colors: Some(vp3::MAX_COLORS),
     start: Start::Centre,
     magic: Some(vp3::MAGIC),
@@ -270,10 +287,25 @@ impl Format {
         (self.spec().read)(bytes)
     }
 
-    /// Write `pattern` in this format.
+    /// Write `pattern` in this format: refused with [`Error::TooLarge`] when the design is wider or
+    /// taller than the format can state ([`Spec::max_size`]), or its file would be larger than
+    /// [`MAX_FILE_BYTES`] (moves split into many records).
     pub fn write(self, pattern: &Pattern) -> Result<Vec<u8>> {
         if pattern.is_empty() {
             return Err(Error::Format("the design has no stitches to write".into()));
+        }
+        if let Some(b) = pattern.bounds() {
+            let most = self.spec().max_size;
+            let (w, h) = (b.width() * crate::UNITS_PER_MM, b.height() * crate::UNITS_PER_MM);
+            if !(w.is_finite() && h.is_finite()) || w > f64::from(most) || h > f64::from(most) {
+                return Err(Error::TooLarge(format!(
+                    "the design is {:.0} × {:.0} mm, larger than {} can hold ({} mm a side)",
+                    b.width(),
+                    b.height(),
+                    self.label(),
+                    mm(most)
+                )));
+            }
         }
         (self.spec().write)(pattern)
     }
@@ -340,6 +372,20 @@ impl Frame {
     }
 }
 
+/// The largest machine file a writer writes, bytes (64 MiB): far beyond any design a hoop holds
+/// (2 million stitches, the most a design may have, take about 6 MB in DST), so only a design
+/// whose moves split into a great many records (objects hundreds of metres apart) reaches it, and
+/// is refused rather than written into memory without bound.
+pub const MAX_FILE_BYTES: usize = 64 << 20;
+
+/// The error a writer gives when the file would be larger than [`MAX_FILE_BYTES`].
+pub(crate) fn file_too_large(format: &str) -> Error {
+    Error::TooLarge(format!(
+        "the {format} file would be larger than {} MiB: the design's moves are too long (objects far apart)",
+        MAX_FILE_BYTES >> 20
+    ))
+}
+
 /// What a record-based writer (DST, TAP and T01, EXP, JEF, PEC) writes for a design's points, in
 /// the file's tenths of a millimetre; [`walk`] calls it in needle order.
 pub(crate) trait Emitter {
@@ -357,13 +403,16 @@ pub(crate) trait Emitter {
     }
     /// Whether what is written so far calls for a thread change before the next block.
     fn wrote(&self) -> bool;
+    /// How many bytes are written so far.
+    fn size(&self) -> usize;
 }
 
 /// Walk `p`'s blocks in sewing order, telling `w` what to write: a thread change before each block
 /// that follows one that wrote something ([`Emitter::wrote`]), each block's first stitch reached
 /// with the needle up (a jump to it, then the stitch), then its stitches, jumps, trims and stops as
-/// they come. Empty blocks are passed by.
-pub(crate) fn walk(p: &Pattern, frame: &Frame, w: &mut impl Emitter) {
+/// they come. Empty blocks are passed by. Refused with [`file_too_large`] (naming `format`) once
+/// more than [`MAX_FILE_BYTES`] are written.
+pub(crate) fn walk(p: &Pattern, frame: &Frame, w: &mut impl Emitter, format: &str) -> Result<()> {
     for (i, block) in p.blocks.iter().enumerate() {
         if block.stitches.is_empty() {
             continue;
@@ -391,8 +440,12 @@ pub(crate) fn walk(p: &Pattern, frame: &Frame, w: &mut impl Emitter) {
                 Command::Trim => w.trim(),
                 Command::ColorChange | Command::Stop => w.color_change(),
             }
+            if w.size() > MAX_FILE_BYTES {
+                return Err(file_too_large(format));
+            }
         }
     }
+    Ok(())
 }
 
 /// The prefix of a command record in the two-byte formats (EXP and JEF): `0x80`, which no delta
@@ -636,6 +689,19 @@ mod tests {
         assert_eq!(Format::sniff(b"#PEC0001"), Some(Format::Pec));
         assert_eq!(Format::sniff(vp3::MAGIC), Some(Format::Vp3));
         assert_eq!(Format::sniff(b"LA:"), None);
+    }
+
+    /// A design whose moves split into a great many records (stitches 150 m apart) is refused by
+    /// every format, with an error that says so, rather than written into memory without bound.
+    #[test]
+    fn a_file_too_large_is_refused() {
+        let mut far = Pattern::default();
+        let mut b = Block::new(Thread::rgb([200, 30, 30]));
+        b.stitches = (0..10_000).map(|k| Stitch::new(if k % 2 == 0 { 0.0 } else { 150_000.0 }, 0.0, Command::Stitch)).collect();
+        far.blocks.push(b);
+        for format in Format::ALL {
+            assert!(matches!(format.write(&far), Err(Error::TooLarge(_))), "{format:?}");
+        }
     }
 
     #[test]

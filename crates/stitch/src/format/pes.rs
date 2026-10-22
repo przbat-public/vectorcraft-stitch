@@ -44,6 +44,11 @@ const ICON_LINES: usize = 38;
 const PREVIEW: usize = ICON_LINE * ICON_LINES;
 /// The largest delta one value holds, as a 12-bit signed number.
 pub(crate) const MAX_DELTA: i32 = 2047;
+/// The widest and tallest design the stitch block's 16-bit width and height state, tenths of a
+/// millimetre (6,553.5 mm).
+pub(crate) const MAX_SIZE: i32 = u16::MAX as i32;
+/// The longest stitch block its 24-bit length counts, bytes.
+const MAX_BLOCK: usize = 0xFF_FFFF;
 /// The most stitches one stitch block may hold (a stream that lost step stops rather than growing).
 const MAX_STITCHES: usize = 1_048_576;
 /// The most colours a PEC header holds: it stores one fewer than their count in a byte, and
@@ -153,6 +158,7 @@ fn pec_section(p: &Pattern) -> Result<Vec<u8>> {
     // The stitch block's length, filled in below.
     block.extend_from_slice(&[0, 0, 0]);
     block.extend_from_slice(&BLOCK_MARKER);
+    // Within MAX_SIZE: a larger design is refused before it is written (`Format::write`).
     block.extend_from_slice(&u16::try_from(width).unwrap_or(u16::MAX).to_le_bytes());
     block.extend_from_slice(&u16::try_from(height).unwrap_or(u16::MAX).to_le_bytes());
     for v in BLOCK_VALUES {
@@ -164,7 +170,7 @@ fn pec_section(p: &Pattern) -> Result<Vec<u8>> {
     block.extend_from_slice(&ORIGIN.to_be_bytes());
     block.extend_from_slice(&ORIGIN.to_be_bytes());
     write_stitches(&mut block, p, &frame)?;
-    let length = u32::try_from(block.len()).unwrap_or(u32::MAX);
+    let length = block_length(block.len())?;
     if let [_, _, l0, l1, l2, ..] = block.as_mut_slice() {
         *l0 = length as u8;
         *l1 = (length >> 8) as u8;
@@ -174,6 +180,14 @@ fn pec_section(p: &Pattern) -> Result<Vec<u8>> {
     // The preview pictures: the whole design and one per colour, drawn blank.
     out.resize(out.len() + (colors + 1) * PREVIEW, 0);
     Ok(out)
+}
+
+/// A stitch block's length as its 24-bit field holds it; refused past [`MAX_BLOCK`] rather than
+/// written with its top byte dropped.
+fn block_length(len: usize) -> Result<u32> {
+    u32::try_from(len).ok().filter(|l| *l as usize <= MAX_BLOCK).ok_or_else(|| {
+        Error::TooLarge(format!("a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}"))
+    })
 }
 
 /// The 512-byte PEC header.
@@ -198,7 +212,7 @@ fn header(p: &Pattern, colors: usize) -> Result<Vec<u8>> {
 
 fn write_stitches(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) -> Result<()> {
     let mut w = Pec { out, x: 0, y: 0, wrote: false, color_two: true };
-    walk(p, frame, &mut w);
+    walk(p, frame, &mut w, "PEC")?;
     if !w.wrote {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
@@ -239,6 +253,10 @@ impl Emitter for Pec<'_> {
 
     fn wrote(&self) -> bool {
         self.wrote
+    }
+
+    fn size(&self) -> usize {
+        self.out.len()
     }
 }
 
@@ -573,6 +591,22 @@ mod tests {
         let threads: Vec<&Thread> = read.blocks.iter().map(|b| &b.thread).collect();
         let want = [thread::unknown_thread(0, 0), Palette::Pec.thread(64).unwrap(), thread::unknown_thread(2, 65), thread::unknown_thread(3, 255)];
         assert_eq!(threads, want.iter().collect::<Vec<_>>());
+    }
+
+    /// A stitch block's length past 24 bits is refused, not written with its top byte dropped; a
+    /// design wider than the block's 16-bit width states is refused before it is written.
+    #[test]
+    fn what_the_block_cant_state_is_refused() {
+        assert_eq!(block_length(MAX_BLOCK).ok(), Some(MAX_BLOCK as u32));
+        assert!(matches!(block_length(MAX_BLOCK + 1), Err(Error::TooLarge(_))));
+        let mut wide = Pattern::default();
+        let mut b = Block::new(Thread::rgb([1, 2, 3]));
+        b.stitches = (0..=70).map(|k| Stitch::sew(Point::new(f64::from(k) * 100.0, 0.0))).collect();
+        wide.blocks.push(b);
+        for format in [crate::format::Format::Pes, crate::format::Format::Pec] {
+            assert!(matches!(format.write(&wide), Err(Error::TooLarge(_))), "{format:?}");
+        }
+        assert!(crate::format::Format::Dst.write(&wide).is_ok(), "7 m: within DST's extents");
     }
 
     #[test]

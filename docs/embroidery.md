@@ -185,18 +185,22 @@ two sources disagree, both are listed and the first is the one checked), its sev
 the format can't hold it; *warning*: the quality may suffer; *info*), the number of hits, the
 objects hit (at most 1,000) and the first `limit` hits (20 by default, at most 1,000) as stitch
 numbers and points with the length or count measured. `format` (the document's thread palette's
-format when left out: PES for Brother's, JEF for Janome's) decides the format limits checked. A
-stitch's length is that of a needle-down stitch, and a unit's underlay, travel and tie stitches are
-its own: a fill's rules see its underlay too.
+format when left out: PES for Brother's, JEF for Janome's) decides the format limits checked.
+Melco's design checker works on a design's objects and their settings ("can be addressed with
+simple object property changes"), so its fill, satin and walk-stitch limits are checked on each
+object's settings and report the objects: its fill or running stitch length, its satin columns'
+width. Stitches read from a machine file have no such settings and those three rules pass them by.
+The other length rules measure needle-down stitches, a unit's underlay, travel and tie stitches
+included.
 
 | Rule (`id`) | Flags | Severity | Sources |
 |---|---|---|---|
 | `satinTooWide` | a satin column wider than 10 mm (a satin stroke's width; a fill's widest narrow part) | warning | Melco DesignShop v11's design checker, 10 mm ([user manual](http://www.melco-service.com/docs/DSv11_Manual.pdf), Design Checker Tab, p. 38); Ricoma: shapes 12 mm and wider are usually not satin ([digitizing tips](https://www.ricoma.cn/cn/ndetail13_604)) |
 | `stitchTooLong` | a stitch longer than 12.7 mm | warning | Melco's design checker |
 | `formatStep` | a stitch longer along x or y than one record of the format holds: DST 12.1 mm, EXP and JEF 12.7, PES 204.7. Our writers write it as several stitches of equal steps (the hit says how many), so the machine sews more needle points than planned | info | the formats' pages on EduTechWiki; `Format::max_step`, read from each writer |
-| `fillStitchShort` | a stitch of a fill shorter than 2.5 mm | warning | Melco's design checker, 2.5 mm; Melco's machine manual: fill stitches ideally 2 mm or longer ([Melco OS manual](https://www.melco-service.com/docs/X/melco-os-ai-en.pdf), pp. 301–302) |
-| `satinStitchShort` | a stitch of a satin shorter than 1 mm | warning | Melco's design checker; Melco's machine manual agrees |
-| `runStitchShort` | a stitch of a running line shorter than 1.5 mm | warning | Melco's design checker; Melco's machine manual agrees |
+| `fillStitchShort` | a fill's stitch length set shorter than 2.5 mm (the object's setting) | warning | Melco's design checker, 2.5 mm; Melco's machine manual: fill stitches ideally 2 mm or longer ([Melco OS manual](https://www.melco-service.com/docs/X/melco-os-ai-en.pdf), pp. 301–302) |
+| `satinStitchShort` | a satin column narrower than 1 mm: a satin stroke, or a fill's narrowest narrow part (a satin stitch spans its column) | warning | Melco's design checker; Melco's machine manual agrees |
+| `runStitchShort` | a running line's stitch length set shorter than 1.5 mm | warning | Melco's design checker; Melco's machine manual agrees |
 | `stitchBelowNeedle` | a stitch shorter than the needle's blade, 0.75 mm for a 75/11 | warning | Melco's machine manual: keep stitches longer than the needle's blade |
 | `stitchTiny` | a stitch of 0.3 mm or less, which machines delete | warning | Ricoma deletes stitches under 0.3 mm ([digitizing tips](https://www.ricoma.cn/cn/ndetail13_539)); Brother's machines delete stitches of the set pitch or less, 0.3 mm as they come ([PRT23 manual](https://download.brother.com/welcome/doch102354/prt23_om01ja.pdf), p. 107) |
 | `shortStitchesInARow` | more than 5 stitches in a row, each shorter than 1 mm | warning | Wilcom's stitch shortening allows up to five ([help](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm)); 1 mm is Melco's machine manual's general minimum |
@@ -216,7 +220,7 @@ it), counted in blocks hit:
 
 | Rule | VectorCraft's plans (44 blocks) | The person's files (42 blocks) |
 |---|---|---|
-| `fillStitchShort` | all 44 (7,504 hits, about 29 % of the needle points: the 2 mm underlay, 2,210, and the rows' short ends) | none (opened stitches have no style) |
+| `fillStitchShort`, `satinStitchShort`, `runStitchShort` | none: the default settings (4 mm fill, 2.5 mm running stitches, no satin column under 1 mm) pass | none: opened stitches have no settings |
 | `stitchBelowNeedle` | 41 (1,109: rows' remainders from 0.4 to 0.75 mm) | 32 or more (11,577) |
 | `stitchTiny` | none: the planner leaves out stitches under 0.4 mm | 30 or more (5,375) |
 | `layers` | 18 (1,247 squares) | 8 or more (741) |
@@ -224,10 +228,10 @@ it), counted in blocks hit:
 | `shortStitchesInARow` | 1 | 14 or more (66) |
 | the rest | none | none |
 
-("Or more": blocks counted from the first 1,000 hits of each design.) The two short-stitch rules
-flag most blocks of normal designs, VectorCraft's and the person's alike: their thresholds are kept
-as the sources give them, and whether to change them, or to leave a fill's underlay out of
-`fillStitchShort`, is for the project owner to decide.
+("Or more": blocks counted from the first 1,000 hits of each design.) Checked stitch by stitch,
+Melco's fill limit flagged all 44 of VectorCraft's blocks (7,504 stitches, about 29 % of the needle
+points: the 2 mm underlay and the rows' short ends); read as Melco's checker reads it, on each
+object's settings, it flags none. The project owner chose that reading (2026-10-22).
 
 ## How a shape becomes stitches
 

@@ -2,9 +2,12 @@
 //! format can't hold, each with its threshold and where the threshold comes from ([`RULES`]).
 //! Where two sources give different thresholds, both are listed and the first is the one checked.
 //!
-//! The stitch lengths checked are those of needle-down stitches: the thread laid from one needle
-//! point to the next without lifting the needle ([`super::measure::Record::sewn`]). A unit's
-//! underlay, travel and tie stitches belong to it, so a fill's rules see its underlay too.
+//! Melco's design checker works on a design's objects and their settings: its fill, satin and
+//! walk-stitch limits are checked here on each sewing unit's settings (its fill or running stitch
+//! length, its satin columns' width), and report the objects; stitches read from a machine file
+//! have no such settings, so those three rules pass them by. The other length rules measure
+//! needle-down stitches: the thread laid from one needle point to the next without lifting the
+//! needle ([`super::measure::Record::sewn`]), a unit's underlay, travel and tie stitches included.
 //!
 //! Not checked: "density too tight" and "too many needle penetrations in an area", which Melco's
 //! design checker names without a number ([`NOT_CHECKED`]; `docs/embroidery.md` › Using it ›
@@ -76,7 +79,9 @@ const MELCO_CHECKER: &str = "http://www.melco-service.com/docs/DSv11_Manual.pdf"
 const SATIN_WIDEST: f64 = 10.0;
 /// The longest stitch it lets pass (millimetres).
 const LONGEST_STITCH: f64 = 12.7;
-/// The shortest fill, satin and running (walk) stitches it lets pass (millimetres).
+/// The shortest fill, satin and running (walk) stitches it lets pass (millimetres), checked on
+/// each object's settings: its fill stitch length, its satin columns' width (a satin stitch spans
+/// the column), its running stitch length.
 const FILL_SHORTEST: f64 = 2.5;
 const SATIN_SHORTEST: f64 = 1.0;
 const RUN_SHORTEST: f64 = 1.5;
@@ -160,10 +165,10 @@ pub(crate) const RULES: &[Rule] = &[
     },
     Rule {
         id: "fillStitchShort",
-        title: "Fill stitch shorter than the shortest a fill sews well",
+        title: "Fill stitch length set shorter than a fill sews well",
         severity: Severity::Warning,
         threshold: Some(FILL_SHORTEST),
-        unit: "mm",
+        unit: "mm, the object's fill stitch length",
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "fill stitches smaller than 2.5 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "fill stitches ideally 2 mm or longer" },
@@ -171,10 +176,10 @@ pub(crate) const RULES: &[Rule] = &[
     },
     Rule {
         id: "satinStitchShort",
-        title: "Satin stitch shorter than the shortest a satin sews well",
+        title: "Satin column narrower than a satin stitch sews well",
         severity: Severity::Warning,
         threshold: Some(SATIN_SHORTEST),
-        unit: "mm",
+        unit: "mm, the object's narrowest satin column",
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "satin stitches shorter than 1 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "satin stitches ideally 1 mm or longer" },
@@ -182,10 +187,10 @@ pub(crate) const RULES: &[Rule] = &[
     },
     Rule {
         id: "runStitchShort",
-        title: "Running stitch shorter than the shortest a running line sews well",
+        title: "Running stitch length set shorter than a running line sews well",
         severity: Severity::Warning,
         threshold: Some(RUN_SHORTEST),
-        unit: "mm",
+        unit: "mm, the object's running stitch length",
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "walk stitches shorter than 1.5 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "walk stitches ideally 1.5 mm or longer" },
@@ -397,12 +402,6 @@ impl<'a> Checker<'a> {
                 self.add("formatStep", Hit { note: Some(format!("written as {pieces} stitches")), ..Hit::at(r, length) });
             }
         }
-        match measure::style(self.plan, r.unit) {
-            Some(Style::Fill) if length < FILL_SHORTEST => self.add("fillStitchShort", Hit::at(r, length)),
-            Some(Style::Satin) if length < SATIN_SHORTEST => self.add("satinStitchShort", Hit::at(r, length)),
-            Some(Style::Running) if length < RUN_SHORTEST => self.add("runStitchShort", Hit::at(r, length)),
-            _ => {}
-        }
         if length < NEEDLE_BLADE {
             self.add("stitchBelowNeedle", Hit::at(r, length));
         }
@@ -459,11 +458,11 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// The rules on whole units, blocks and the design.
+    /// The rules on whole units (their settings), blocks and the design.
     fn rest(&mut self) {
         let plan = self.plan;
         for (k, u) in plan.units.iter().enumerate() {
-            let Some(widest) = u.satin_width.filter(|w| *w > SATIN_WIDEST) else { continue };
+            // At the unit: its first stitch and needle point.
             let first = plan.numbers(k).map(|n| n.start);
             let at = plan
                 .blocks
@@ -471,7 +470,21 @@ impl<'a> Checker<'a> {
                 .and_then(|b| b.stitches.get(u.stitches.clone()))
                 .and_then(|s| s.iter().find(|s| s.command == Command::Stitch))
                 .map(|s| s.point());
-            self.add("satinTooWide", Hit { number: first, at, unit: Some(k), value: Some(widest), note: None });
+            let hit = |value: f64| Hit { number: first, at, unit: Some(k), value: Some(value), note: None };
+            if let Some([narrowest, widest]) = u.satin_widths {
+                if widest > SATIN_WIDEST {
+                    self.add("satinTooWide", hit(widest));
+                }
+                if narrowest < SATIN_SHORTEST {
+                    self.add("satinStitchShort", hit(narrowest));
+                }
+            }
+            // A literal run has no settings: it is sewn as its points are.
+            match u.params {
+                Some(p) if p.style == Style::Fill && p.stitch_length < FILL_SHORTEST => self.add("fillStitchShort", hit(p.stitch_length)),
+                Some(p) if p.style == Style::Running && p.stitch_length < RUN_SHORTEST => self.add("runStitchShort", hit(p.stitch_length)),
+                _ => {}
+            }
         }
         for (k, b) in plan.blocks.iter().enumerate() {
             if b.thread.mismatch() {

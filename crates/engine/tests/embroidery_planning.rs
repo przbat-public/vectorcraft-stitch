@@ -3,8 +3,9 @@
 //!
 //! - `embroidery.stats`, `embroidery.sequence` and `embroidery.check` run on every one and agree
 //!   with each other; VectorCraft's own plans never have a stitch the planner leaves out (0.3 mm or
-//!   less), one longer than Melco's 12.7 mm, or a satin wider than 10 mm. The hit counts are
-//!   printed (`--nocapture`); `docs/embroidery.md` › Checks records them.
+//!   less), one longer than Melco's 12.7 mm, or a satin wider than 10 mm, and their default settings
+//!   pass Melco's fill, satin and walk-stitch limits, which opened stitches (no settings) never
+//!   fire. The hit counts are printed (`--nocapture`); `docs/embroidery.md` › Checks records them.
 //! - A plan after an edit, its unchanged units taken from what earlier plans kept, is the plan a
 //!   session that never planned the document makes.
 //!
@@ -116,6 +117,9 @@ fn stats_sequence_and_check_run_on_the_real_designs() {
             let units: u64 = blocks.iter().flat_map(|b| b["units"].as_array().unwrap()).map(|u| u["stitches"].as_u64().unwrap()).sum();
             assert_eq!((per_block, listed, units), (stats["stitches"].as_u64().unwrap(), per_block, per_block), "{art} {who}");
             assert_eq!(check["summary"]["errors"], json!(0), "{art} {who}: {}", check["rules"]);
+            for id in ["fillStitchShort", "satinStitchShort", "runStitchShort"] {
+                assert_eq!(hits(&check, id), 0, "{art} {who}: {id}");
+            }
             if who == "VectorCraft" {
                 for id in ["stitchTiny", "stitchTooLong", "satinTooWide", "formatStep", "notSewn"] {
                     assert_eq!(hits(&check, id), 0, "{art}: {id}");

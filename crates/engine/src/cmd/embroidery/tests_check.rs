@@ -14,13 +14,19 @@ use super::plan::{Choice, DesignPlan, Origin, Part};
 use super::sequence::{Planned, Sequence};
 use super::*;
 
-/// A unit of `style` in `color` sewing needle points at `points` (millimetres), whose widest satin
-/// column is `satin_width`.
-fn unit(node: u64, style: Style, color: [u8; 3], points: &[(f64, f64)], satin_width: Option<f64>) -> Planned {
+/// A unit of `style` in `color` sewing needle points at `points` (millimetres), whose narrowest
+/// and widest satin columns are `satin_widths`.
+fn unit(node: u64, style: Style, color: [u8; 3], points: &[(f64, f64)], satin_widths: Option<[f64; 2]>) -> Planned {
+    planned(node, Some(Params::for_style(style)), color, points, satin_widths)
+}
+
+/// A unit planned with `params` (`None`: a literal run read from a file).
+fn planned(node: u64, params: Option<Params>, color: [u8; 3], points: &[(f64, f64)], satin_widths: Option<[f64; 2]>) -> Planned {
     let mut block = Block::new(Thread::rgb(color));
     block.stitches = points.iter().map(|&(x, y)| Stitch::sew(Point::new(x, y))).collect();
     let origin = Origin { node: NodeId(node), part: Part::Fill(0), instance: None };
-    Planned { origin, params: Some(Params::for_style(style)), columns: None, satin_width, why: Choice::Forced, block, literal: None }
+    let why = if params.is_some() { Choice::Forced } else { Choice::Literal };
+    Planned { origin, params, columns: None, satin_widths, why, block, literal: None }
 }
 
 fn plan(units: Vec<Planned>) -> DesignPlan {
@@ -60,11 +66,8 @@ fn one(style: Style, steps: &[f64]) -> DesignPlan {
 /// just inside it), and the style rules only on their style.
 #[test]
 fn each_stitch_length_rule_fires_past_its_threshold() {
-    let cases: [(&str, Style, f64, f64); 7] = [
+    let cases: [(&str, Style, f64, f64); 4] = [
         ("stitchTooLong", Style::Running, 12.8, 12.7),
-        ("fillStitchShort", Style::Fill, 2.49, 2.5),
-        ("satinStitchShort", Style::Satin, 0.99, 1.0),
-        ("runStitchShort", Style::Running, 1.49, 1.5),
         ("stitchBelowNeedle", Style::Running, 0.74, 0.75),
         ("stitchTiny", Style::Running, 0.3, 0.31),
         ("formatStep", Style::Running, 12.2, 12.1),
@@ -74,13 +77,44 @@ fn each_stitch_length_rule_fires_past_its_threshold() {
         assert_eq!(hits(&one(style, &[3.0, past, 3.0]), id, Format::Dst), 1, "{id}: {past}");
         assert_eq!(hits(&one(style, &[3.0, at, 3.0]), id, Format::Dst), 0, "{id}: {at}");
     }
-    // A style's rule leaves the other styles alone.
-    assert_eq!(hits(&one(Style::Satin, &[3.0, 2.0, 3.0]), "fillStitchShort", Format::Dst), 0);
-    assert_eq!(hits(&one(Style::Fill, &[3.0, 0.9, 3.0]), "satinStitchShort", Format::Dst), 0);
     // The format's step is along x or y: PES's is far longer than DST's.
     assert_eq!(hits(&one(Style::Running, &[12.2]), "formatStep", Format::Pes), 0);
     assert_eq!(hits(&one(Style::Running, &[12.6]), "formatStep", Format::Jef), 0);
     assert_eq!(hits(&one(Style::Running, &[12.8]), "formatStep", Format::Jef), 1);
+}
+
+/// Melco's fill, satin and walk-stitch limits look at each object's settings: a fill or running
+/// stitch length set short of them, a satin column narrower than 1 mm (a satin stroke, or a fill's
+/// narrowest narrow part), whatever its stitches measure; one hit per object, measuring the
+/// setting. A run of stitches read from a file has no settings and never fires them.
+#[test]
+fn melcos_length_rules_look_at_each_objects_settings() {
+    let set = |style: Style, length: f64| Params { stitch_length: length, ..Params::for_style(style) };
+    let points = line(&[3.0, 3.0]);
+    let one_unit = |params: Option<Params>, widths: Option<[f64; 2]>| plan(vec![planned(1, params, RED, &points, widths)]);
+    for (id, style, past, at) in [("fillStitchShort", Style::Fill, 2.49, 2.5), ("runStitchShort", Style::Running, 1.49, 1.5)] {
+        assert_eq!(hits(&one_unit(Some(set(style, past)), None), id, Format::Dst), 1, "{id}: {past}");
+        assert_eq!(hits(&one_unit(Some(set(style, at)), None), id, Format::Dst), 0, "{id}: {at}");
+    }
+    let satin = Some(Params::for_style(Style::Satin));
+    assert_eq!(hits(&one_unit(satin, Some([0.99, 0.99])), "satinStitchShort", Format::Dst), 1);
+    assert_eq!(hits(&one_unit(satin, Some([1.0, 1.0])), "satinStitchShort", Format::Dst), 0);
+    assert_eq!(hits(&one_unit(Some(Params::for_style(Style::Fill)), Some([0.8, 3.0])), "satinStitchShort", Format::Dst), 1);
+    // Short stitches with sound settings: none; the setting is what is measured.
+    let short_stitches = plan(vec![unit(1, Style::Fill, RED, &line(&[0.5, 0.5, 0.5]), None)]);
+    assert_eq!(hits(&short_stitches, "fillStitchShort", Format::Dst), 0);
+    let two = plan(vec![
+        planned(1, Some(set(Style::Fill, 2.0)), RED, &points, None),
+        planned(2, Some(set(Style::Fill, 1.0)), [30, 30, 200], &points, None),
+    ]);
+    let v = check::check(&two, &Ask { rules: vec![check::rule("fillStitchShort").unwrap()], format: Format::Dst, limit: check::LIMIT });
+    assert_eq!((&v["rules"][0]["hits"], &v["rules"][0]["objects"]), (&json!(2), &json!([1, 2])));
+    assert_eq!((&v["rules"][0]["first"][0]["value"], &v["rules"][0]["first"][1]["value"]), (&json!(2.0), &json!(1.0)));
+    // A literal run: none of the three, however short its stitches.
+    let literal = plan(vec![planned(1, None, RED, &line(&[0.5, 0.5, 0.5]), None)]);
+    for id in ["fillStitchShort", "satinStitchShort", "runStitchShort"] {
+        assert_eq!(hits(&literal, id, Format::Dst), 0, "{id}");
+    }
 }
 
 /// More than five short stitches in a row fire, five don't; a long stitch, a jump or a cut ends a
@@ -111,7 +145,7 @@ fn three_layers_on_one_spot_fire() {
 /// A satin column wider than 10 mm fires, one 10 mm wide doesn't; so does a fill's narrow part.
 #[test]
 fn a_satin_wider_than_ten_millimetres_fires() {
-    let satin = |width: f64, style: Style| plan(vec![unit(1, style, RED, &line(&[3.0, 3.0]), Some(width))]);
+    let satin = |width: f64, style: Style| plan(vec![unit(1, style, RED, &line(&[3.0, 3.0]), Some([3.0_f64.min(width), width]))]);
     assert_eq!(hits(&satin(10.1, Style::Satin), "satinTooWide", Format::Dst), 1);
     assert_eq!(hits(&satin(10.0, Style::Satin), "satinTooWide", Format::Dst), 0);
     assert_eq!(hits(&satin(10.1, Style::Fill), "satinTooWide", Format::Dst), 1);
@@ -172,18 +206,26 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
         assert!(!r["sources"].as_array().unwrap().is_empty(), "{}", r["id"]);
         assert!(r["first"].as_array().unwrap().len() <= check::LIMIT);
     }
-    // A fill's short row ends and underlay fire its rule, on the rectangle.
-    let fill = v["rules"].as_array().unwrap().iter().find(|r| r["id"] == json!("fillStitchShort")).unwrap();
-    assert!(fill["hits"].as_u64().unwrap() > 0);
-    assert_eq!(fill["objects"], json!([id]));
-    assert_eq!(fill["first"][0]["id"], json!(id));
+    // The rectangle's fill stitch length, 4 mm by default, passes; set to 2 mm it fires, on the
+    // rectangle.
+    let fill = |v: &Value| v["rules"].as_array().unwrap().iter().find(|r| r["id"] == json!("fillStitchShort")).unwrap().clone();
+    assert_eq!(fill(&v)["hits"], json!(0));
+    let short = fill(&run(&mut s, "embroidery.check", json!({"stitchLength": 2})));
+    assert_eq!(
+        (&short["hits"], &short["objects"], &short["first"][0]["id"], &short["first"][0]["value"]),
+        (&json!(1), &json!([id]), &json!(id), &json!(2.0))
+    );
     // Sources that disagree are both listed, the one checked first.
     let wide = &v["rules"][0];
     assert_eq!((&wide["id"], &wide["threshold"], wide["sources"].as_array().unwrap().len()), (&json!("satinTooWide"), &json!(10.0), 2));
     // Asked for: some rules, a format, a limit.
-    let v = run(&mut s, "embroidery.check", json!({"rules": ["fillStitchShort", "layers", "fillStitchShort"], "format": "dst", "limit": 2}));
+    let v = run(
+        &mut s,
+        "embroidery.check",
+        json!({"rules": ["fillStitchShort", "layers", "fillStitchShort"], "format": "dst", "limit": 0, "stitchLength": 2}),
+    );
     assert_eq!((v["format"].clone(), v["rules"].as_array().unwrap().len()), (json!("dst"), 2));
-    assert_eq!(v["rules"][0]["first"].as_array().unwrap().len(), 2);
+    assert_eq!((&v["rules"][0]["hits"], v["rules"][0]["first"].as_array().unwrap().len()), (&json!(1), 0), "counted, none listed");
     run(&mut s, "embroidery.setup", json!({"palette": "pec"}));
     assert_eq!(run(&mut s, "embroidery.check", json!({"rules": []}))["format"], json!("pes"));
     for (bad, why) in [

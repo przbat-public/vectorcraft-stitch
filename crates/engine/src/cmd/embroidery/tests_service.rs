@@ -248,7 +248,7 @@ fn the_units_used_least_recently_are_dropped_first() {
         UnitKey::of(&UnitRequest { shape, rule: FillRule::NonZero, params: Params::for_style(Style::Running), columns: None, from: None, clip: None })
     };
     // Each unit 100 stitches and a key of about 40 words: 4 such units don't fit a limit of 320.
-    let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widest: None });
+    let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None });
     let mut cache = UnitCache::with_limit(320);
     cache.insert(key(&shapes[0]), unit());
     cache.insert(key(&shapes[1]), unit());
@@ -260,7 +260,7 @@ fn the_units_used_least_recently_are_dropped_first() {
     assert!(cache.get(&key(&shapes[3])).is_some(), "the last added stays");
     // A unit larger than the whole limit is not kept, and drops nothing.
     let before = cache.units();
-    cache.insert(key(&shapes[1]), Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 400], columns: None, widest: None }));
+    cache.insert(key(&shapes[1]), Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 400], columns: None, widths: None }));
     assert_eq!(cache.units(), before);
     assert!(cache.get(&key(&shapes[1])).is_none());
 }

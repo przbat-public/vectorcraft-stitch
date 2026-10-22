@@ -127,8 +127,8 @@ stitches fast, is tried before anything is built on it.
    size, stitch lengths, thread and sewing time, estimates on models whose numbers are named and
    sourced), `embroidery.sequence` (each unit with how it is sewn and why), and `embroidery.check`
    (Melco's design checker's thresholds and others, each rule with its sources, the format's
-   limits). On the real designs the short-stitch rules flag most blocks: their thresholds wait for
-   the owner's decision (`docs/embroidery.md` › Using it › Checks).
+   limits; Melco's fill, satin and walk-stitch limits checked on each object's settings, as its
+   checker reads them, the owner's choice).
 4. **The stitch preview on the canvas, and the Embroidery panel's Sewing order and Check tabs.** The
    stitch scene and its renderer (settling the layering, see Architecture), an Art/Stitches switch
    with planning in the background, the selected object highlighted and the checks marked, counts in

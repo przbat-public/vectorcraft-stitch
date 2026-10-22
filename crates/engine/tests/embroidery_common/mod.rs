@@ -68,16 +68,24 @@ pub fn export(s: &mut Session, format: Format, options: &Value) -> Result<Vec<u8
     vectorcraft_format::base64_decode(r["dataBase64"].as_str().ok_or("no dataBase64")?).ok_or_else(|| "dataBase64 is not base64".to_string())
 }
 
+/// Millimetres in a point (1/72 in), the unit the documents count in.
+const MM_PER_PT: f64 = 25.4 / 72.0;
+
 /// A session holding artwork `art` (in `dir`) scaled to the size of the person's design `theirs`:
-/// scaled so that its stitched size matches the design's.
+/// the art's own bounds (as the renderer measures what it draws) scaled to the design's, so that
+/// the scale depends on the art alone, never on how VectorCraft stitches it. Titled after the
+/// artwork's file, without its extension, whatever title an opened file gets: the label the
+/// machine files carry is the title.
 pub fn artwork(dir: &Path, art: &str, theirs: &str) -> Session {
     let person = Format::Pes.read(&std::fs::read(dir.join(theirs)).unwrap()).unwrap();
     let target = person.bounds().unwrap();
     let mut s = Session::new();
     open(&mut s, art, &std::fs::read(dir.join(art)).unwrap());
-    let first = Format::Pes.read(&export(&mut s, Format::Pes, &json!({})).unwrap()).unwrap().bounds().unwrap();
-    let k = (target.width() / first.width()).max(target.height() / first.height());
+    run(&mut s, "file.info", json!({"title": art.trim_end_matches(".svg")}));
     run(&mut s, "select.all", json!({}));
+    let drawn = run(&mut s, "document.exportSelection", json!({"format": "svg"}))["bounds"].clone();
+    let (width, height) = (drawn[2].as_f64().unwrap() * MM_PER_PT, drawn[3].as_f64().unwrap() * MM_PER_PT);
+    let k = (target.width() / width).max(target.height() / height);
     run(&mut s, "object.scale", json!({"sx": k * 100.0, "sy": k * 100.0, "strokes": true}));
     run(&mut s, "select.none", json!({}));
     s

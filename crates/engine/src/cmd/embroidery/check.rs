@@ -116,8 +116,11 @@ const SHORT: f64 = 1.0;
 /// (PRT23 manual, p. 107): the source checked, so a stitch of 0.3 mm is flagged. Ricoma's
 /// digitizing tips delete stitches under 0.3 mm (<https://www.ricoma.cn/cn/ndetail13_539>).
 const TINY: f64 = 0.3;
-/// Wilcom's stitch shortening allows up to five short stitches in a row
-/// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm>).
+/// The most stitches shorter than [`SHORT`] in a row before they are flagged. An estimate: no
+/// source gives a limit for runs of tiny stitches. Five is the most consecutive shortened satin
+/// stitches Wilcom's Shortening effect allows on a tight curve
+/// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm>), a
+/// setting of that effect, not a quality limit: background for the estimate.
 const MOST_SHORT_IN_A_ROW: usize = 5;
 /// Brother's PRT51 manual warns that stitching sewn over three times or more may break the thread
 /// or the needle (<https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf>, data
@@ -170,6 +173,11 @@ pub(crate) const RULES: &[Rule] = &[
         measures: "the object's widest satin column",
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "satin stitches wider than 10 mm" },
+            Source {
+                name: "Wilcom, Mastering basic stitch types: satin stitch and tatami stitch",
+                url: "https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch",
+                value: "keep satin widths within 10 mm (auto split at 7 mm)",
+            },
             Source {
                 name: "Ricoma digitizing tips",
                 url: "https://www.ricoma.cn/cn/ndetail13_604",
@@ -269,16 +277,16 @@ pub(crate) const RULES: &[Rule] = &[
     },
     Rule {
         id: "shortStitchesInARow",
-        title: "More short stitches in a row than stitch shortening allows (each shorter than 1 mm)",
+        title: "Many short stitches in a row (each shorter than 1 mm)",
         severity: Severity::Warning,
         threshold: Some(MOST_SHORT_IN_A_ROW as f64),
         unit: Some("stitches"),
         measures: "short stitches in a row",
         sources: &[
             Source {
-                name: "Wilcom EmbroideryStudio help, Apply stitch shortening",
+                name: "an estimate; background: Wilcom EmbroideryStudio help, Apply stitch shortening",
                 url: "https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm",
-                value: "up to five short stitches in a row",
+                value: "its Shortening effect shortens up to five satin stitches in a row on a tight curve (a setting, not a quality limit)",
             },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "stitches 1 mm or longer" },
         ],
@@ -336,9 +344,19 @@ pub(crate) const RULES: &[Rule] = &[
                 value: "PES and PEC: 255 colours",
             },
             Source {
-                name: "EduTechWiki, Embroidery format VP3 (its summary counts the colour blocks in a 16-bit word)",
-                url: "https://edutechwiki.unige.ch/en/Embroidery_format_VP3",
+                name: "KDE Community Wiki, Viking/Husqvarna Pfaff/Singer 3 VP3 (a 16-bit thread-change count)",
+                url: "https://community.kde.org/Projects/Liberty/File_Formats/Viking_Pfaff",
                 value: "VP3: 65,535 colour blocks",
+            },
+            Source {
+                name: "Jason Weiler, VP3 File Format (a 2-byte colour count)",
+                url: "http://www.jasonweiler.com/VP3FileFormatInfo.html",
+                value: "VP3: 65,535 colour blocks",
+            },
+            Source {
+                name: "EduTechWiki, Embroidery format VP3 (the summary's count is a byte, the design's 16 bits)",
+                url: "https://edutechwiki.unige.ch/en/Embroidery_format_VP3",
+                value: "VP3: 255 colour blocks, read as a byte",
             },
         ],
     },

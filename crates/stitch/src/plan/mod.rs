@@ -66,9 +66,12 @@ const JUMP: f64 = 5.0;
 /// for one. Longer ones are cut in the file, so they don't lie loose on a machine that can't cut
 /// jumps itself. A choice within those bounds, not a published value.
 pub(crate) const TRIM: f64 = 10.0;
-/// The longest satin stitch before it is split (millimetres): longer stitches snag and sag. An
-/// estimate (professional software makes it a setting, bounded by the machine format: 12.1 mm
-/// per record in DST).
+/// The longest satin stitch before it is split (millimetres): longer stitches snag and sag.
+/// Professional software makes it a setting, bounded by the machine format (12.1 mm per record in
+/// DST). Wilcom recommends an Auto Split of 7 mm and satin widths within 10 mm (the article cited
+/// for [`DENSITY`] below); Melco's design checker lets satin stitches up to 10 mm pass. 10 is kept,
+/// by judgement: splitting at 7 would change every satin wider than that, and the narrow parts of
+/// fills sewn as satin reach 10 mm.
 const MAX_SATIN_STITCH: f64 = 10.0;
 /// The widest satin column (millimetres): a wider one is sewn this wide. Far beyond what a satin
 /// can cover (professional practice tops out near 10–12 mm), a bound on the stitching.

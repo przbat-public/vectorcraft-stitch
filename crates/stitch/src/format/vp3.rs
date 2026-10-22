@@ -176,7 +176,9 @@ const TRIM_REACH: i32 = 255;
 /// of the parts.
 const KEPT_REACH: i32 = 98;
 /// The most colour blocks a file holds: the summary and the design count them in a big-endian
-/// u16.
+/// u16, as the KDE Community Wiki and Jason Weiler give the field (EduTechWiki gives the summary's
+/// count as a byte, and the design's as 16 bits; a reader of that kind would miscount a design of
+/// 256 blocks or more).
 pub(crate) const MAX_COLORS: usize = u16::MAX as usize;
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {

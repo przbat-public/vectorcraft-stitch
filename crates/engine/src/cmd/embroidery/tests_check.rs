@@ -258,7 +258,7 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
     assert_eq!(blade["severity"], json!("info"));
     // Sources that disagree are both listed, the one checked first.
     let wide = &v["rules"][0];
-    assert_eq!((&wide["id"], &wide["threshold"], wide["sources"].as_array().unwrap().len()), (&json!("satinTooWide"), &json!(10.0), 2));
+    assert_eq!((&wide["id"], &wide["threshold"], wide["sources"].as_array().unwrap().len()), (&json!("satinTooWide"), &json!(10.0), 3));
     // Asked for: some rules, a format, a limit.
     let v = run(
         &mut s,

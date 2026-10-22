@@ -269,7 +269,7 @@ included.
 
 | Rule (`id`) | Flags | Severity | Sources |
 |---|---|---|---|
-| `satinTooWide` | a satin column wider than 10 mm (a satin stroke's width; a fill's widest narrow part) | warning | Melco DesignShop v11's design checker, 10 mm ([user manual](http://www.melco-service.com/docs/DSv11_Manual.pdf), Design Checker Tab, p. 38); Ricoma: shapes 12 mm and wider are usually not satin ([digitizing tips](https://www.ricoma.cn/cn/ndetail13_604)) |
+| `satinTooWide` | a satin column wider than 10 mm (a satin stroke's width; a fill's widest narrow part) | warning | Melco DesignShop v11's design checker, 10 mm ([user manual](http://www.melco-service.com/docs/DSv11_Manual.pdf), Design Checker Tab, p. 38); Wilcom: keep satin widths within 10 mm ([satin and tatami](https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch)); Ricoma: shapes 12 mm and wider are usually not satin ([digitizing tips](https://www.ricoma.cn/cn/ndetail13_604)) |
 | `stitchTooLong` | a stitch longer than 12.7 mm | warning | Melco's design checker |
 | `formatStep` | a stitch longer along x or y than one record of the format holds: DST, TAP and T01 12.1 mm, EXP, JEF and VP3 12.7, PES and PEC 204.7. Our writers write it as several stitches of equal steps (the hit says how many; they round each end to 0.1 mm first, so within a tenth of a millimetre of a multiple of the step it gives both counts), so the machine sews more needle points than planned | info | the formats' pages on EduTechWiki; `Format::max_step`, read from each writer |
 | `fillStitchShort` | a fill's stitch length set shorter than 2.5 mm (the object's setting) | warning | Melco's design checker, 2.5 mm; Melco's machine manual: fill stitches ideally 2 mm or longer ([Melco OS manual](https://www.melco-service.com/docs/X/melco-os-ai-en.pdf), pp. 301–302) |
@@ -277,11 +277,11 @@ included.
 | `runStitchShort` | a running line's stitch length set shorter than 1.5 mm | warning | Melco's design checker; Melco's machine manual agrees |
 | `stitchBelowNeedle` | a stitch shorter than the needle's blade, 0.75 mm for a 75/11 | info, until the planner spreads a fill row's remainder (its rows end in stitches of 0.4 to 0.75 mm today); then a warning | Melco's machine manual: keep stitches longer than the needle's blade |
 | `stitchTiny` | a stitch of 0.3 mm or less, which machines delete | warning | Ricoma deletes stitches under 0.3 mm ([digitizing tips](https://www.ricoma.cn/cn/ndetail13_539)); Brother's machines delete stitches of the set pitch or less, 0.3 mm as they come ([PRT23 manual](https://download.brother.com/welcome/doch102354/prt23_om01ja.pdf), p. 107) |
-| `shortStitchesInARow` | more than 5 stitches in a row, each shorter than 1 mm (a jump, a cut or a thread change ends a row) | warning | Wilcom's stitch shortening allows up to five ([help](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm)); 1 mm is Melco's machine manual's general minimum |
+| `shortStitchesInARow` | more than 5 stitches in a row, each shorter than 1 mm (a jump, a cut or a thread change ends a row) | warning | five is an estimate: no source gives a limit for runs of tiny stitches; Wilcom's Shortening effect shortens up to five satin stitches in a row on a tight curve, a setting of that effect, not a quality limit ([help](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm)); 1 mm is Melco's machine manual's general minimum |
 | `layers` | three or more sewing units over one 1 mm square (the square an estimate; a stitch is counted at most at 64 points, every half millimetre along one up to 32 mm long, and at most 4 million squares are counted, bounds on the work a file can ask for) | warning | Brother's PRT51 manual: stitching sewn over three times or more can break the thread or the needle ([manual](https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf)) |
 | `threadMismatch` | a thread past ΔE 10 as shown, as `embroidery.threads` flags it | warning | the project owner's choice (Threads, above) |
 | `notSewn` | what the plan leaves out or approximates: its warnings (type, images, live art, patterns, gradients) | warning | What is not stitched, below |
-| `formatColors` | more colour blocks than the format holds: PES and PEC 255 (the PEC header counts them in a byte), VP3 65,535 (a 16-bit word); DST, TAP, T01, EXP and JEF have no such limit | error | EduTechWiki's [PEC page](https://edutechwiki.unige.ch/en/Embroidery_format_PEC) and [VP3 page](https://edutechwiki.unige.ch/en/Embroidery_format_VP3); `Format::max_colors` |
+| `formatColors` | more colour blocks than the format holds: PES and PEC 255 (the PEC header counts them in a byte), VP3 65,535 (a 16-bit word); DST, TAP, T01, EXP and JEF have no such limit | error | EduTechWiki's [PEC page](https://edutechwiki.unige.ch/en/Embroidery_format_PEC); for VP3 the KDE Community Wiki ([VP3](https://community.kde.org/Projects/Liberty/File_Formats/Viking_Pfaff)) and Jason Weiler ([VP3 File Format](http://www.jasonweiler.com/VP3FileFormatInfo.html)), while EduTechWiki's [VP3 page](https://edutechwiki.unige.ch/en/Embroidery_format_VP3) gives the summary's count as a byte (a reader that takes it so would miscount a design of 256 blocks or more); `Format::max_colors` |
 | `machineStitches` | more than 500,000 needle points | info | Brother PR680W's manual: the `.pes` files it shows ([specifications](https://download.brother.com/welcome/doch102285/884t23_om01en.pdf)); one machine's limit, not the format's |
 | `machineColorChanges` | more than 127 colour changes | info | the same manual |
 
@@ -363,7 +363,9 @@ the fabric.
   column up and follows its width: a centre run under columns narrower than 2 mm, an edge run (along one side and back along
   the other, kept inside the column) from 2 mm, and an edge run then a zigzag between its sides
   from 4.5 mm (estimates from the usual practice). The top stitching starts where the underlay
-  ended, so the needle never travels back along the column. A crossing longer than 10 mm (an estimate; professional software makes it a setting) is split
+  ended, so the needle never travels back along the column. A crossing longer than 10 mm is split
+  (by judgement: Wilcom recommends an Auto Split of 7 mm and satin widths within 10 mm, Melco's
+  checker lets satin stitches up to 10 mm pass; splitting at 7 would change every wider satin)
   into shorter stitches (*auto split*), and the cuts move from one crossing to the next so they
   never line up into a seam down the column. The underlay is split the same way: a zigzag's
   stitches run at an angle and are longer than the column is wide, and Ink/Stitch's underlay guide

@@ -22,14 +22,18 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
 }
 
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
-    dst::check_records(bytes, "TAP")?;
-    dst::read_records(bytes, String::new(), "TAP")
+    read_named(bytes, "TAP")
 }
 
 /// A T01 file, read as a TAP is ([`read`]); its errors name T01.
 pub fn read_t01(bytes: &[u8]) -> Result<Pattern> {
-    dst::check_records(bytes, "T01")?;
-    dst::read_records(bytes, String::new(), "T01")
+    read_named(bytes, "T01")
+}
+
+/// DST's records alone, read as a design; `what` names the format in the errors.
+fn read_named(bytes: &[u8], what: &str) -> Result<Pattern> {
+    dst::check_records(bytes, what)?;
+    dst::read_records(bytes, String::new(), what)
 }
 
 #[cfg(test)]

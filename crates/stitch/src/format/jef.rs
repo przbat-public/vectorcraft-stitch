@@ -69,7 +69,7 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     // Janome places a design around the hoop's centre: the stitches start there, and the header's
     // extents are distances from it.
     let frame = Frame::centered(p, true)?;
-    let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
+    let b = frame.bounds;
     let colors = p.blocks.iter().filter(|b| !b.stitches.is_empty()).count();
     if colors == 0 {
         return Err(Error::Format("the design has no stitches to write".into()));

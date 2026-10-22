@@ -23,7 +23,7 @@
 //! Reference: EduTechWiki, *Embroidery format DST* (edutechwiki.unige.ch/en/Embroidery_format_DST),
 //! which transcribes the public decodings by Achatina and Embroidermodder.
 
-use super::{Frame, LABEL_LEN, PAD, collapse_jumps, finish, label, mm, steps};
+use super::{Frame, LABEL_LEN, PAD, finish, label, mm, steps};
 use crate::{Block, Command, Error, Pattern, Result, Stitch};
 
 /// The header's length; records follow it.
@@ -105,18 +105,18 @@ pub(crate) fn records(p: &Pattern) -> Result<Records> {
         }
         // Each block starts with the needle up: travel to its first stitch.
         body.started = false;
-        write_block(&mut body, block, &frame)?;
+        write_block(&mut body, block, &frame);
     }
     if body.out.is_empty() {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
     let count = body.records;
-    let (width, height) = extent(p, &frame);
+    let (width, height) = frame.size();
     body.push(0, 0, Kind::End);
     Ok(Records { bytes: body.out, count, colors, width, height })
 }
 
-fn write_block(body: &mut Body, block: &Block, frame: &Frame) -> Result<()> {
+fn write_block(body: &mut Body, block: &Block, frame: &Frame) {
     for s in &block.stitches {
         match s.command {
             Command::Stitch => {
@@ -143,7 +143,6 @@ fn write_block(body: &mut Body, block: &Block, frame: &Frame) -> Result<()> {
             Command::ColorChange | Command::Stop => body.push(0, 0, Kind::ColorChange),
         }
     }
-    Ok(())
 }
 
 /// The header's text lines, its end marker and the padding to [`HEADER`].
@@ -168,14 +167,6 @@ fn header(p: &Pattern, records: usize, colors: usize, width: i32, height: i32) -
     out.push(HEADER_END);
     out.resize(HEADER, PAD);
     out
-}
-
-/// The design's size in tenths of a millimetre.
-fn extent(p: &Pattern, frame: &Frame) -> (i32, i32) {
-    match p.bounds() {
-        Some(b) => frame.size(b),
-        None => (0, 0),
-    }
 }
 
 /// The records of a design being written.
@@ -345,7 +336,8 @@ fn decode(record: &[u8], layout: &[(usize, u8, u8); DIGITS]) -> i32 {
 const TRIM_JUMPS: usize = TRIM_RECORDS.len();
 
 /// A trim before every run of at least [`TRIM_JUMPS`] jumps that sits between stitches, and every
-/// run collapsed to the point the thread is taken up at.
+/// run collapsed to the point the thread is taken up at (its last jump: runs are maximal, so no two
+/// jumps end up side by side).
 fn insert_trims(points: &mut Vec<Stitch>) {
     let mut out: Vec<Stitch> = Vec::with_capacity(points.len() + 4);
     let mut i = 0;
@@ -376,7 +368,6 @@ fn insert_trims(points: &mut Vec<Stitch>) {
         }
         i += 1;
     }
-    collapse_jumps(&mut out);
     *points = out;
 }
 

@@ -116,18 +116,19 @@ const COLOR_TWO: u8 = 0x02;
 const END: u8 = 0xFF;
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
-    let pec = pec_section(p)?;
-    let mut out: Vec<u8> = Vec::with_capacity(PES_HEADER.len() + pec.len());
-    out.extend_from_slice(&PES_HEADER);
-    out.extend_from_slice(&pec);
-    Ok(out)
+    after(&PES_HEADER, p)
 }
 
 /// A PEC file: [`PEC_MAGIC`] and the PEC section, as a PES carries it.
 pub fn write_pec(p: &Pattern) -> Result<Vec<u8>> {
+    after(PEC_MAGIC, p)
+}
+
+/// `head` (a PES header or PEC's magic), then the PEC section of `p`.
+fn after(head: &[u8], p: &Pattern) -> Result<Vec<u8>> {
     let pec = pec_section(p)?;
-    let mut out: Vec<u8> = Vec::with_capacity(PEC_MAGIC.len() + pec.len());
-    out.extend_from_slice(PEC_MAGIC);
+    let mut out: Vec<u8> = Vec::with_capacity(head.len() + pec.len());
+    out.extend_from_slice(head);
     out.extend_from_slice(&pec);
     Ok(out)
 }
@@ -135,7 +136,6 @@ pub fn write_pec(p: &Pattern) -> Result<Vec<u8>> {
 /// The PEC section: the PEC header, the stitch block and the previews.
 fn pec_section(p: &Pattern) -> Result<Vec<u8>> {
     let frame = Frame::of(p, false)?;
-    let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
     let colors = p.blocks.iter().filter(|b| !b.stitches.is_empty()).count();
     if colors == 0 {
         return Err(Error::Format("the design has no stitches to write".into()));
@@ -143,12 +143,11 @@ fn pec_section(p: &Pattern) -> Result<Vec<u8>> {
     if colors > MAX_COLORS {
         return Err(Error::TooLarge(format!("PEC carries at most {MAX_COLORS} colours, not {colors}")));
     }
-    let (width, height) = frame.size(b);
+    let (width, height) = frame.size();
     // The header, room for the start of the stitch block, and the previews (a guess for the
     // stitches: the buffer grows as needed).
     let mut out: Vec<u8> = Vec::with_capacity(PEC_HEADER + 64 + colors * PREVIEW);
     out.extend_from_slice(&header(p, colors)?);
-    let block_start = out.len();
     let mut block: Vec<u8> = Vec::with_capacity(1024);
     block.extend_from_slice(&[0, 0]);
     // The stitch block's length, filled in below.
@@ -171,7 +170,6 @@ fn pec_section(p: &Pattern) -> Result<Vec<u8>> {
         *l1 = (length >> 8) as u8;
         *l2 = (length >> 16) as u8;
     }
-    debug_assert_eq!(out.len(), block_start);
     out.extend_from_slice(&block);
     // The preview pictures: the whole design and one per colour, drawn blank.
     out.resize(out.len() + (colors + 1) * PREVIEW, 0);
@@ -298,15 +296,12 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     // words after BLOCK_VALUES), 16 in pyembroidery's, which omit them. The stitch block's length
     // says where the stream must end: where the preview pictures begin.
     let block = start.saturating_add(PEC_HEADER);
-    let (length, have_length) = {
+    // Where the stream must end, when the stitch block's length is there to say.
+    let expected_end = {
         let mut r = Reader::new(bytes);
         r.seek(block.saturating_add(BLOCK_LENGTH_AT));
-        match r.u24() {
-            Some(v) => (usize::try_from(v).unwrap_or(usize::MAX), true),
-            None => (0, false),
-        }
+        r.u24().map(|v| block.saturating_add(usize::try_from(v).unwrap_or(usize::MAX)))
     };
-    let expected_end = block.saturating_add(length);
     // Which header, guessed from the first byte after the short one: the origin words Brother
     // writes have a high byte of 0x9_ (ORIGIN plus the design's offset). A first jump written as a
     // long value starts with 0x9_ too (LONG and JUMP), so a 16-byte header can be taken for a
@@ -326,7 +321,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
             continue;
         }
         let (parsed, end) = stream(bytes, from);
-        if !parsed.is_empty() && have_length && end == expected_end {
+        if !parsed.is_empty() && expected_end == Some(end) {
             points = Some(parsed);
             break;
         }
@@ -334,12 +329,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
             first = Some(parsed);
         }
     }
-    let Some(points) = points.or(first) else {
-        return Err(Error::Format("the PEC block has no stitches".into()));
-    };
-    if points.is_empty() {
-        return Err(Error::Format("the PEC block has no stitches".into()));
-    }
+    let points = points.or(first).filter(|p| !p.is_empty()).ok_or_else(|| Error::Format("the PEC block has no stitches".into()))?;
     Ok(finish(name, points, &threads))
 }
 

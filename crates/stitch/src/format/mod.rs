@@ -200,18 +200,23 @@ impl Format {
     }
 }
 
-/// The design's points in the file's frame: tenths of a millimetre, its top-left corner at the
-/// origin, y flipped when the format counts y upwards.
+/// The design's points in the file's frame: tenths of a millimetre from the frame's origin (the
+/// design's top-left corner, or its centre), y flipped when the format counts y upwards; and the
+/// box the design's points fall in, which the frame was made from.
 pub(crate) struct Frame {
     left: f64,
     top: f64,
     flip: bool,
+    /// The box the design's points fall in (millimetres).
+    pub(crate) bounds: vectorcraft_geom::Rect,
 }
 
 impl Frame {
+    /// A frame whose origin is the design's corner: its top-left corner, or its bottom-left one
+    /// when `flip` (y counting upwards from it).
     pub(crate) fn of(p: &Pattern, flip: bool) -> Result<Self> {
         let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
-        Ok(Self { left: b.x0, top: if flip { b.y1 } else { b.y0 }, flip })
+        Ok(Self { left: b.x0, top: if flip { b.y1 } else { b.y0 }, flip, bounds: b })
     }
 
     /// A frame whose origin is the design's centre, for formats that place the design around the
@@ -221,13 +226,14 @@ impl Frame {
         Ok(Self::centered_on(b, flip))
     }
 
-    /// A frame whose origin is the centre of `b`, y flipped when `flip`.
+    /// A frame whose origin is the centre of `b` (the box the design's points fall in), y flipped
+    /// when `flip`.
     pub(crate) fn centered_on(b: vectorcraft_geom::Rect, flip: bool) -> Self {
         // On the 0.1 mm grid the file counts in: a centre between two grid points would round
         // the points on either side of it in opposite directions, moving some by a tenth.
         let c = b.center();
         let snap = |v: f64| f64::from(quantize(v)) / crate::UNITS_PER_MM;
-        Self { left: snap(c.x), top: snap(c.y), flip }
+        Self { left: snap(c.x), top: snap(c.y), flip, bounds: b }
     }
 
     /// The file's x for a design x, in tenths.
@@ -244,9 +250,11 @@ impl Frame {
         (self.x(s.x), self.y(s.y))
     }
 
-    /// The design's size in tenths of a millimetre: its width, then its height (the top and the
-    /// bottom swap when the format counts y upwards).
-    pub(crate) fn size(&self, b: vectorcraft_geom::Rect) -> (i32, i32) {
+    /// The design's size in tenths of a millimetre, from a frame whose origin is its corner
+    /// ([`Frame::of`]): its width, then its height (the top and the bottom swap when the format
+    /// counts y upwards).
+    pub(crate) fn size(&self) -> (i32, i32) {
+        let b = self.bounds;
         let width = self.x(b.x1).max(0);
         let height = if self.flip { self.y(b.y0) } else { self.y(b.y1) };
         (width, height.max(0))

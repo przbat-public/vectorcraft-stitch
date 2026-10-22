@@ -1480,3 +1480,33 @@ fn a_fills_edge_run_is_inset() {
         assert!((nearest - inset * std::f64::consts::SQRT_2).abs() < 0.05, "{corner:?}: {nearest}");
     }
 }
+
+/// With a shortest stitch above the lock's 1 mm, locks, tie-ins and tie-offs step that far, so the
+/// planner's filter of short stitches keeps them: a running line keeps its locks, and a fill
+/// started after a long jump is tied in.
+#[test]
+fn locks_and_ties_are_no_shorter_than_the_shortest_stitch() {
+    let min_stitch = 1.5;
+    let line = line((0.0, 0.0), (20.0, 0.0));
+    let p = Params { min_stitch, ..Params::for_style(Style::Running) };
+    let q = points(&stitches(&line, FillRule::NonZero, &p));
+    assert!((q[1].x - min_stitch).abs() < 1e-9 && q[2].x.abs() < 1e-9, "locked at the start: {q:?}");
+    let n = q.len();
+    assert!((q[n - 2].x - (20.0 - min_stitch)).abs() < 1e-9, "locked at the end: {q:?}");
+    // Two squares far apart in one fill: the second is reached by a jump, tied off before and in
+    // after, each a step of the shortest stitch.
+    let mut two = rect(0.0, 0.0, 10.0, 10.0);
+    two.extend(rect(40.0, 0.0, 50.0, 10.0));
+    let p = Params { min_stitch, ..Params::for_style(Style::Fill) };
+    let out = stitches(&two, FillRule::NonZero, &p);
+    let jump = out.iter().position(|s| s.command == Command::Jump).expect("a jump to the second square");
+    let landing = out[jump].point();
+    let after: Vec<Point> = out[jump + 1..].iter().take(3).map(|s| s.point()).collect();
+    assert!((after[0].distance(landing)) < 1e-9, "down where the jump lands: {after:?}");
+    assert!((after[1].distance(landing) - min_stitch).abs() < 1e-6 && after[2].distance(landing) < 1e-9, "tied in: {after:?}");
+    // No needle-down stitch is shorter than asked, the ties included.
+    for w in out.windows(2).filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch) {
+        let d = w[0].point().distance(w[1].point());
+        assert!(d < crate::SAME_POINT || d + 1e-9 >= min_stitch, "a {d} mm stitch");
+    }
+}

@@ -10,14 +10,15 @@ use super::{MAX_RUNS, MAX_STITCHES, Params, Style};
 use crate::{Command, SAME_POINT, Stitch};
 
 /// The reach of a lock stitch, tie-in or tie-off (millimetres): how far the needle steps along the
-/// line and back so the thread holds. Shorter where the line's first stitch is shorter. An
-/// estimate.
+/// line and back so the thread holds. Longer where the shortest stitch asked for is longer, shorter
+/// where the line's first stitch is shorter. An estimate.
 pub(super) const LOCK: f64 = 1.0;
 
 /// Where a lock stitch, tie-in or tie-off at `at` steps to: [`LOCK`] along the stitch towards
-/// `toward`, or all of it when it is shorter; `None` when the two are one point.
-pub(super) fn lock_step(at: Point, toward: Point) -> Option<Point> {
-    unit(toward - at).map(|d| at + d * LOCK.min(at.distance(toward)))
+/// `toward`, or `min_stitch` when that is longer, so that the lock is no stitch the planner leaves
+/// out as too short; all of the stitch when it is shorter still. `None` when the two are one point.
+pub(super) fn lock_step(at: Point, toward: Point, min_stitch: f64) -> Option<Point> {
+    unit(toward - at).map(|d| at + d * LOCK.max(min_stitch).min(at.distance(toward)))
 }
 
 /// How the needle gets to a run from the end of the one before.
@@ -225,7 +226,7 @@ impl Runs {
                 }
             }
             if tie && fresh {
-                run = tie_in(&run);
+                run = tie_in(&run, p.min_stitch);
             }
             fresh = false;
             for q in run {
@@ -233,14 +234,15 @@ impl Runs {
                     return out;
                 }
                 // The stitch where a jump lands is always sewn: the needle goes down there,
-                // holding the thread.
-                if out.last().is_none_or(|last| last.command != Command::Stitch || last.point().distance(q) >= p.min_stitch) {
+                // holding the thread. (A stitch exactly the shortest allowed is kept, rounding
+                // aside: the locks step that far.)
+                if out.last().is_none_or(|last| last.command != Command::Stitch || last.point().distance(q) + SAME_POINT >= p.min_stitch) {
                     out.push(Stitch::sew(q));
                 }
             }
         }
         if tie {
-            tie_off(&mut out);
+            tie_off(&mut out, p.min_stitch);
         }
         out
     }
@@ -250,7 +252,7 @@ impl Runs {
 /// `tie`, and the thread cut when it is longer than [`Params::trim`].
 fn connect(out: &mut Vec<Stitch>, to: Point, d: f64, p: &Params, tie: bool) {
     if tie {
-        tie_off(out);
+        tie_off(out, p.min_stitch);
     }
     if d > p.trim
         && let Some(last) = out.last().copied()
@@ -287,7 +289,7 @@ pub fn join_cut(pieces: Vec<Vec<Stitch>>, p: &Params) -> Vec<Stitch> {
         }
         if tie && let Some(next) = piece.get(1).filter(|s| s.command == Command::Stitch) {
             // The tie-in's three points: down at the start, a step forward, back at the start.
-            out.extend(tie_in(&[first.point(), next.point()]).into_iter().take(3).map(Stitch::sew));
+            out.extend(tie_in(&[first.point(), next.point()], p.min_stitch).into_iter().take(3).map(Stitch::sew));
             out.extend(piece.get(1..).unwrap_or_default());
         } else {
             out.extend_from_slice(piece);
@@ -300,10 +302,10 @@ pub fn join_cut(pieces: Vec<Vec<Stitch>>, p: &Params) -> Vec<Stitch> {
 }
 
 /// `run` started with a tie-in: a short stitch forward along it and back, so the cut thread's
-/// tail is held.
-fn tie_in(run: &[Point]) -> Vec<Point> {
+/// tail is held; no shorter than `min_stitch` ([`lock_step`]).
+fn tie_in(run: &[Point], min_stitch: f64) -> Vec<Point> {
     let (Some(&first), Some(&next)) = (run.first(), run.get(1)) else { return run.to_vec() };
-    let Some(step) = lock_step(first, next) else { return run.to_vec() };
+    let Some(step) = lock_step(first, next, min_stitch) else { return run.to_vec() };
     let mut out = Vec::with_capacity(run.len() + 2);
     out.push(first);
     out.push(step);
@@ -312,14 +314,14 @@ fn tie_in(run: &[Point]) -> Vec<Point> {
 }
 
 /// A tie-off after the last stitch: a short stitch back along it and forward again, before the
-/// thread is cut.
-fn tie_off(out: &mut Vec<Stitch>) {
+/// thread is cut; no shorter than `min_stitch` ([`lock_step`]).
+fn tie_off(out: &mut Vec<Stitch>, min_stitch: f64) {
     let [.., a, b] = out.as_slice() else { return };
     let (a, b) = (*a, *b);
     if a.command != Command::Stitch || b.command != Command::Stitch {
         return;
     }
-    let Some(step) = lock_step(b.point(), a.point()) else { return };
+    let Some(step) = lock_step(b.point(), a.point(), min_stitch) else { return };
     out.push(Stitch::sew(step));
     out.push(b);
 }

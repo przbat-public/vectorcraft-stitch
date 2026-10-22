@@ -108,6 +108,14 @@ const LAYERS: usize = 3;
 /// The cells layers are counted in, millimetres square: a few rows of fill wide, so that two units
 /// sewn on the same spot share a cell. An estimate.
 const LAYER_CELL: f64 = 1.0;
+/// The most points one stitch is counted at for layers: every half cell along a stitch up to 32 mm
+/// long, more sparsely along a longer one (which no machine sews well, and `stitchTooLong` flags).
+/// A bound on the work a stitch read from a file can ask for, however long it is.
+const MAX_LAYER_SAMPLES: usize = 64;
+/// The most cells layers are counted over: four million square millimetres, far more stitched area
+/// than any hoop holds. Past it, new cells are not counted: a bound on the memory a design read
+/// from a file can ask for.
+const MAX_LAYER_CELLS: usize = 4_000_000;
 /// Brother's PR680W shows `.pes` files of up to 500,000 stitches and 127 colour changes
 /// (<https://download.brother.com/welcome/doch102285/884t23_om01en.pdf>, specifications): one
 /// machine's limits, not the format's.
@@ -443,11 +451,15 @@ impl<'a> Checker<'a> {
         if !length.is_finite() {
             return;
         }
-        // Samples half a cell apart, so that no cell the stitch crosses is skipped.
-        let samples = (length / (LAYER_CELL / 2.0)).ceil().max(1.0) as usize;
+        // Samples half a cell apart, so that no cell the stitch crosses is skipped, at most
+        // MAX_LAYER_SAMPLES of them.
+        let samples = ((length / (LAYER_CELL / 2.0)).ceil().max(1.0) as usize).min(MAX_LAYER_SAMPLES);
         for i in 0..=samples {
             let p = a.lerp(b, i as f64 / samples as f64);
             let cell = ((p.x / LAYER_CELL).floor() as i64, (p.y / LAYER_CELL).floor() as i64);
+            if self.cells.len() >= MAX_LAYER_CELLS && !self.cells.contains_key(&cell) {
+                continue;
+            }
             let (count, last) = self.cells.entry(cell).or_insert((0, usize::MAX));
             if *last == r.unit {
                 continue;

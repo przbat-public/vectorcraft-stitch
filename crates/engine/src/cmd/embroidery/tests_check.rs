@@ -142,6 +142,18 @@ fn three_layers_on_one_spot_fire() {
     assert_eq!(hits(&back_and_forth, "layers", Format::Dst), 0);
 }
 
+/// Counting layers costs a bounded amount whatever a stitch's length: a run read from a file with
+/// stitches kilometres long is checked at once.
+#[test]
+fn layers_are_counted_in_bounded_work_however_long_the_stitches() {
+    let far = 1.0e6;
+    let long = plan(vec![planned(1, None, RED, &[(0.0, 0.0), (far, 0.0), (0.0, far), (far, far)], None)]);
+    let t = std::time::Instant::now();
+    assert_eq!(hits(&long, "layers", Format::Dst), 0);
+    // Far below what sampling every half millimetre would take (millions of cells a stitch).
+    assert!(t.elapsed() < std::time::Duration::from_secs(1), "{:?}", t.elapsed());
+}
+
 /// A satin column wider than 10 mm fires, one 10 mm wide doesn't; so does a fill's narrow part.
 #[test]
 fn a_satin_wider_than_ten_millimetres_fires() {

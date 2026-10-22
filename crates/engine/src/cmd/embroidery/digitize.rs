@@ -414,6 +414,19 @@ impl<'a> Digitizer<'a> {
                         Some(style) => (style, Choice::Forced),
                         None => (Style::Fill, Choice::Fill),
                     };
+                    // Paint that isn't sewn is said so (or passed by) before any path operation
+                    // runs on its area.
+                    if !matches!(solid(&fill.paint), Colour::Solid(_) | Colour::Approx(_)) {
+                        self.colour(Sewing { unit, opts, style, why, width: NO_WIDTH, clip_stitches: false }, &mm, rule, &fill.paint);
+                        continue;
+                    }
+                    // A fill sewn as a running line follows its outline, as a stroke does: the
+                    // clip groups around it cut its stitches, rather than its area, whose cut
+                    // edge would be sewn as a line the art doesn't have.
+                    if style == Style::Running {
+                        self.colour(Sewing { unit, opts, style, why, width: NO_WIDTH, clip_stitches: true }, &mm, rule, &fill.paint);
+                        continue;
+                    }
                     let (area, area_rule) = if style == Style::Fill { self.expanded(&mm, rule, opts.expand()) } else { (mm.clone(), rule) };
                     let (area, area_rule) = self.clipped(&area, area_rule);
                     self.colour(Sewing { unit, opts, style, why, width: NO_WIDTH, clip_stitches: false }, &area, area_rule, &fill.paint);

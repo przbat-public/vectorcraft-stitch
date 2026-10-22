@@ -338,6 +338,40 @@ fn a_clipping_mask_cuts_the_stitches() {
     assert!(b.width() > 16.0 && b.height() > 16.0, "{b:?}");
 }
 
+/// A fill forced to a running line inside a clip group follows its own outline where it shows: its
+/// stitches are cut to the clipping path, as a stroke's are, not its area, whose cut edge would be
+/// sewn as a line the art doesn't have.
+#[test]
+fn a_running_fill_in_a_clip_group_follows_its_own_outline() {
+    let mut s = blank();
+    // A 100 pt square, its right half shown through a 100 × 200 pt clipping path.
+    rect(&mut s, "#cc2222", 50.0, 50.0, 100.0, 100.0);
+    s.execute("paint.setFill", &json!({"none": true})).unwrap();
+    s.execute("paint.setStroke", &json!({"none": true})).unwrap();
+    s.execute("shape.rectangle", &json!({"x": 100, "y": 0, "width": 100, "height": 200})).unwrap();
+    s.execute("select.all", &json!({})).unwrap();
+    s.execute("object.clippingMask.make", &json!({})).unwrap();
+    let p = plan(&export(&mut s, "dst", json!({"stitch": "running"})));
+    // Needle points lie on the square's outline (left 50, right 150, top 50, bottom 150 pt) within
+    // the clip, never along the clip's edge at x = 100 pt inside the square.
+    let mm = |pt: f64| pt * 25.4 / 72.0;
+    let b = p.bounds().expect("bounds");
+    let (dx, dy) = (b.x0, b.y0);
+    let on_outline = |x: f64, y: f64| {
+        let (x, y) = (x - dx + mm(100.0), y - dy + mm(50.0));
+        let near = |a: f64, b: f64| (a - b).abs() < 0.3;
+        near(y, mm(50.0)) || near(y, mm(150.0)) || near(x, mm(150.0)) || near(x, mm(100.0)) && (near(y, mm(50.0)) || near(y, mm(150.0)))
+    };
+    let inside_cut: Vec<(f64, f64)> = p
+        .points()
+        .filter(|st| st.command == vectorcraft_stitch::Command::Stitch)
+        .map(|st| (st.x, st.y))
+        .filter(|(x, y)| !on_outline(*x, *y))
+        .collect();
+    assert!(inside_cut.is_empty(), "needle points off the square's outline: {inside_cut:?}");
+    assert!(b.width() < mm(50.0) + 0.5, "only the shown half: {b:?}");
+}
+
 /// Template layers are references to trace over, not art: they are not sewn.
 #[test]
 fn template_layers_are_not_stitched() {

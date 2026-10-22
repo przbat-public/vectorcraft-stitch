@@ -718,3 +718,27 @@ fn a_newer_versions_object_settings_open_and_are_kept() {
     off.as_object_mut().unwrap().remove("trim_after");
     assert_eq!(saved(&mut s), off, "the box stays: it holds what a newer version wrote");
 }
+
+/// A fill whose paint isn't sewn is passed by before any path operation runs on its area: a
+/// negative `expand` that would leave nothing of it doesn't warn about art that was never to be
+/// sewn.
+#[test]
+fn an_unpainted_fill_is_passed_by_before_it_is_expanded() {
+    let mut s = blank();
+    rect(&mut s, "#2233cc", 100.0, 100.0, 60.0, 60.0);
+    let small = rect(&mut s, "#cc2222", 20.0, 20.0, 8.0, 8.0);
+    let expanded_away = |s: &mut Session| {
+        let r = s.execute("document.export", &json!({"format": "dst", "expand": -2})).unwrap();
+        r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("negative expand"))
+    };
+    assert!(expanded_away(&mut s), "a painted 2.8 mm square shrunk by 2 mm all round is left out, and said so");
+    s.edit("Unpaint", |d, _| {
+        let n = d.node_mut(NodeId(small)).unwrap();
+        if let Some(fill) = n.appearance.fill_at_mut(None) {
+            fill.paint = vectorcraft_color::Paint::None;
+        }
+        Ok(())
+    })
+    .unwrap();
+    assert!(!expanded_away(&mut s), "unpainted, it was never to be sewn");
+}

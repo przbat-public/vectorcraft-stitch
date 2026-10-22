@@ -31,7 +31,7 @@ commands:
   pdf-deps        verify immutable shared PDF writer and patched Krilla sources
   layers          enforce the crate dependency layering (plan/architecture.md §3)
   wasm            cargo check --target wasm32-unknown-unknown for the wasm-safe crates and the web app
-  ci              fmt --check, clippy -D warnings, test, no-bundled-fonts, pdf-deps, assets, brands, cursors (warnings only), layers, wasm (stops at first failure)
+  ci              fmt --check, clippy -D warnings, the embroidery corpus (fetched and required), test, no-bundled-fonts, pdf-deps, assets, brands, cursors (warnings only), layers, wasm (stops at first failure)
   corpus [--download] [--affinity] [--embroidery]
                   show where test corpora live; --download fetches PngSuite into corpus/pngsuite,
                   --affinity the pinned public Affinity documents into corpus/affinity,
@@ -201,11 +201,12 @@ fn cmd_ci() -> Result<(), String> {
                 run(c, "cargo clippy --workspace --all-targets -- -D warnings")
             }),
         ),
+        ("embroidery-corpus", Box::new(embroidery_corpus::for_ci)),
         (
             "test",
             Box::new(|| {
                 let mut c = cargo();
-                c.args(["test", "--workspace"]);
+                c.args(["test", "--workspace"]).env(embroidery_corpus::REQUIRED, embroidery_corpus::required_for_tests());
                 run(c, "cargo test --workspace")
             }),
         ),

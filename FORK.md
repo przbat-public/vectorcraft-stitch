@@ -288,9 +288,12 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
 - **`.gitignore` ignores every directory named `plan/`** (meant for the local notes at the root):
   `crates/stitch/src/plan/` is let back in by name. A new directory called `plan` anywhere else
   would silently stay out of commits.
-- **Fetch the real designs once** with `cargo +1.95.0 xtask corpus --embroidery`: the engine's
-  `embroidery_corpus` test skips without them (`EMBROIDERY_CORPUS_REQUIRED=1` makes it fail
-  instead).
+- **The real designs are part of the gate.** `cargo xtask ci` fetches them (only what is missing,
+  each file checked against `xtask/embroidery-corpus.sha256`) and runs the tests with
+  `EMBROIDERY_CORPUS_REQUIRED=1`, so the tests on them fail rather than pass without running. In a
+  fresh checkout, copy a checked `corpus/embroidery` in or let the gate fetch it; offline, it fails
+  and says how to fetch them (`EMBROIDERY_CORPUS_REQUIRED=0` runs the gate without them, said out
+  loud). A plain `cargo test` skips an absent corpus with a note.
 - **The fork has no CI on GitHub:** say so when you report results, and don't claim checks passed
   there.
 - **When a task lands:** update `docs/embroidery.md` (algorithms, limitations, test counts) and the

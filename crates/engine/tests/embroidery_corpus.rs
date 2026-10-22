@@ -26,8 +26,8 @@ use vectorcraft_engine::Session;
 use vectorcraft_stitch::format::Format;
 use vectorcraft_stitch::{Command, Pattern, quantize};
 
-#[path = "../../../xtask/src/sha256.rs"]
-mod sha256;
+mod embroidery_common;
+use embroidery_common::{artwork, corpus, open};
 
 /// (artwork, the person's machine file, most trims, most jumps). Ceilings one above what was last
 /// measured, with the person's counts: see the comments (trims, then jumps: a move with the needle up, cut or not). (Before
@@ -66,25 +66,6 @@ const GRID: f64 = 0.1;
 /// until they and the documentation are brought up to date.
 const ALL_TRIMS: usize = 19;
 const ALL_JUMPS: usize = 44;
-
-/// The corpus, checked against its manifest; `None` (the tests skip) when it is absent and not
-/// required.
-fn corpus() -> Option<PathBuf> {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../corpus/embroidery");
-    let required = std::env::var_os("EMBROIDERY_CORPUS_REQUIRED").is_some_and(|v| v != "0");
-    if !dir.exists() {
-        assert!(!required, "required embroidery corpus absent: run `cargo xtask corpus --embroidery`");
-        eprintln!("embroidery corpus absent: run `cargo xtask corpus --embroidery`");
-        return None;
-    }
-    for line in include_str!("../../../xtask/embroidery-corpus.sha256").lines().filter(|l| !l.trim().is_empty()) {
-        let (digest, name) = line.split_once("  ").expect("malformed embroidery corpus manifest");
-        let bytes =
-            std::fs::read(dir.join(name)).unwrap_or_else(|e| panic!("missing corpus file {name}: {e}; run `cargo xtask corpus --embroidery`"));
-        assert_eq!(sha256::hex(&bytes), digest, "{name}: corpus file changed; run `cargo xtask corpus --embroidery`");
-    }
-    Some(dir)
-}
 
 fn format_of(path: &Path) -> Format {
     Format::from_extension(path.extension().and_then(|e| e.to_str()).unwrap()).unwrap()
@@ -129,10 +110,6 @@ fn stitch_lengths(p: &Pattern) -> Vec<f64> {
 
 fn decode(r: &Value) -> Vec<u8> {
     vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap()
-}
-
-fn open(s: &mut Session, name: &str, bytes: &[u8]) {
-    s.execute("document.open", &json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(bytes)})).unwrap();
 }
 
 /// The design size a PES file's PEC block header states, millimetres.
@@ -273,13 +250,8 @@ fn artwork_digitizes_soundly_next_to_a_persons_design() {
     for &(art, theirs, max_trims, max_jumps) in DESIGNS {
         let person = Format::Pes.read(&std::fs::read(dir.join(theirs)).unwrap()).unwrap();
         let target = person.bounds().unwrap();
-        let mut s = Session::new();
-        open(&mut s, art, &std::fs::read(dir.join(art)).unwrap());
-        // At the person's size: scale the art so its stitched size matches the design's.
-        let first = Format::Pes.read(&decode(&s.execute("document.export", &json!({"format": "pes"})).unwrap())).unwrap();
-        let k = (target.width() / first.bounds().unwrap().width()).max(target.height() / first.bounds().unwrap().height());
-        s.execute("select.all", &json!({})).unwrap();
-        s.execute("object.scale", &json!({"sx": k * 100.0, "sy": k * 100.0, "strokes": true})).unwrap();
+        // At the person's size.
+        let mut s = artwork(&dir, art, theirs);
         let started = std::time::Instant::now();
         let r = s.execute("document.export", &json!({"format": "pes"})).unwrap();
         let took = started.elapsed().as_millis();

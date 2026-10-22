@@ -28,16 +28,14 @@
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use std::path::PathBuf;
-
 use serde_json::{Value, json};
 use vectorcraft_engine::Session;
 use vectorcraft_stitch::format::Format;
 use vectorcraft_stitch::thread::Palette;
 use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
 
-#[path = "../../../xtask/src/sha256.rs"]
-mod sha256;
+mod embroidery_common;
+use embroidery_common::{DESIGNS, artwork, corpus, export, open, run, sha256};
 
 /// The documents built here ([`documents`]), as `sha256sum` lists files: the hash, two spaces, the
 /// document's name and the format's extension.
@@ -333,22 +331,6 @@ fc1c386b8c347c703e9a6947af98a0770a85b6eb23c85977dfd78bab01cee641  watermelon-twe
 2853d6536561088d04462d9cdaed53bdd8d48d8f9895f06a9155eb9a8dd55ea5  zebra-twemoji.clipart.jef  51 1 51 50 1 1 50 1
 ";
 
-/// The real designs: each artwork, and the machine file a person digitized from it, whose size the
-/// artwork is scaled to (as `embroidery_corpus.rs` scales it).
-const DESIGNS: &[(&str, &str)] = &[
-    ("bullseye-twemoji.svg", "bullseye-twemoji-inkstitch.pes"),
-    ("fox-twemoji.clipart.svg", "fox-twemoji-inkstitch.pes"),
-    ("heart-suit-twemoji.clipart.svg", "heart-suit-twemoji-inkstitch.pes"),
-    ("joystick-twemoji.svg", "joystick-twemoji-institch.pes"),
-    ("pool-8-ball-twemoji.svg", "pool-8-ball-twemoji-inkstitch.pes"),
-    ("puzzle-piece-twemoji.svg", "puzzle-piece-twemoji-inkstitch.pes"),
-    ("smiling-face-with-smiling-eyes-twemoji.clipart.svg", "smiling-face-with-smiling-eyes-twemoji-inkstitch.pes"),
-    ("sos-button-fluent.clipart.svg", "sos-button-fluent-inkstitch.pes"),
-    ("video-game-twemoji.svg", "video-game-twemoji-inkstitch.pes"),
-    ("watermelon-twemoji.clipart.svg", "watermelon-twemoji-inkstitch.pes"),
-    ("zebra-twemoji.clipart.svg", "zebra-twemoji-inkstitch.pes"),
-];
-
 /// Points per millimetre: the documents count points, the designs millimetres.
 const PT_PER_MM: f64 = 72.0 / 25.4;
 
@@ -446,15 +428,8 @@ fn the_real_designs_artwork_exports_unchanged() {
     let Some(dir) = corpus() else { return };
     let mut now = Vec::new();
     for &(art, theirs) in DESIGNS {
-        let person = Format::Pes.read(&std::fs::read(dir.join(theirs)).unwrap()).unwrap();
-        let target = person.bounds().unwrap();
-        let mut s = Session::new();
-        open(&mut s, art, &std::fs::read(dir.join(art)).unwrap());
-        // At the person's size: the art scaled so that its stitched size matches the design's.
-        let first = Format::Pes.read(&export(&mut s, Format::Pes, &json!({})).unwrap()).unwrap().bounds().unwrap();
-        let k = (target.width() / first.width()).max(target.height() / first.height());
-        run(&mut s, "select.all", json!({}));
-        run(&mut s, "object.scale", json!({"sx": k * 100.0, "sy": k * 100.0, "strokes": true}));
+        // At the person's size.
+        let mut s = artwork(&dir, art, theirs);
         let stem = art.trim_end_matches(".svg");
         for format in Format::ALL {
             let bytes = export(&mut s, format, &json!({})).unwrap_or_else(|e| panic!("{art} as {}: {e}", format.id()));
@@ -754,10 +729,6 @@ fn blank(width: f64, height: f64) -> Session {
     s
 }
 
-fn run(s: &mut Session, command: &str, params: Value) -> Value {
-    s.execute(command, &params).unwrap_or_else(|e| panic!("{command} {params}: {e}"))
-}
-
 fn id(created: &Value) -> u64 {
     created["id"].as_u64().unwrap_or_else(|| panic!("no id in {created}"))
 }
@@ -804,34 +775,4 @@ fn filled_mm(s: &mut Session, color: &str, at: (f64, f64), polygons: &[&[(f64, f
     }
     run(s, "path.create", json!({"d": d}));
     run(s, "select.none", json!({}));
-}
-
-fn export(s: &mut Session, format: Format, options: &Value) -> Result<Vec<u8>, String> {
-    let mut p = options.clone();
-    p["format"] = json!(format.id());
-    let r = s.execute("document.export", &p).map_err(|e| e.to_string())?;
-    vectorcraft_format::base64_decode(r["dataBase64"].as_str().ok_or("no dataBase64")?).ok_or_else(|| "dataBase64 is not base64".to_string())
-}
-
-fn open(s: &mut Session, name: &str, bytes: &[u8]) {
-    run(s, "document.open", json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(bytes)}));
-}
-
-/// The real designs, checked against their manifest; `None` (the test skips) when they are absent
-/// and not required.
-fn corpus() -> Option<PathBuf> {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../corpus/embroidery");
-    let required = std::env::var_os("EMBROIDERY_CORPUS_REQUIRED").is_some_and(|v| v != "0");
-    if !dir.exists() {
-        assert!(!required, "required embroidery corpus absent: run `cargo xtask corpus --embroidery`");
-        eprintln!("embroidery corpus absent: run `cargo xtask corpus --embroidery`");
-        return None;
-    }
-    for line in include_str!("../../../xtask/embroidery-corpus.sha256").lines().filter(|l| !l.trim().is_empty()) {
-        let (digest, name) = line.split_once("  ").expect("malformed embroidery corpus manifest");
-        let bytes =
-            std::fs::read(dir.join(name)).unwrap_or_else(|e| panic!("missing corpus file {name}: {e}; run `cargo xtask corpus --embroidery`"));
-        assert_eq!(sha256::hex(&bytes), digest, "{name}: corpus file changed; run `cargo xtask corpus --embroidery`");
-    }
-    Some(dir)
 }

@@ -13,87 +13,15 @@
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use std::path::PathBuf;
-
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
-use vectorcraft_stitch::format::Format;
 
-#[path = "../../../xtask/src/sha256.rs"]
-mod sha256;
-
-/// The real designs: each artwork, and the machine file a person digitized from it.
-const DESIGNS: &[(&str, &str)] = &[
-    ("bullseye-twemoji.svg", "bullseye-twemoji-inkstitch.pes"),
-    ("fox-twemoji.clipart.svg", "fox-twemoji-inkstitch.pes"),
-    ("heart-suit-twemoji.clipart.svg", "heart-suit-twemoji-inkstitch.pes"),
-    ("joystick-twemoji.svg", "joystick-twemoji-institch.pes"),
-    ("pool-8-ball-twemoji.svg", "pool-8-ball-twemoji-inkstitch.pes"),
-    ("puzzle-piece-twemoji.svg", "puzzle-piece-twemoji-inkstitch.pes"),
-    ("smiling-face-with-smiling-eyes-twemoji.clipart.svg", "smiling-face-with-smiling-eyes-twemoji-inkstitch.pes"),
-    ("sos-button-fluent.clipart.svg", "sos-button-fluent-inkstitch.pes"),
-    ("video-game-twemoji.svg", "video-game-twemoji-inkstitch.pes"),
-    ("watermelon-twemoji.clipart.svg", "watermelon-twemoji-inkstitch.pes"),
-    ("zebra-twemoji.clipart.svg", "zebra-twemoji-inkstitch.pes"),
-];
+mod embroidery_common;
+use embroidery_common::{DESIGNS, artwork, corpus, persons, run};
 
 /// Points per millimetre: the documents count points, the designs millimetres.
 const PT_PER_MM: f64 = 72.0 / 25.4;
 /// How far an object is moved to edit it, millimetres: a nudge.
 const NUDGE: f64 = 0.5;
-
-fn run(s: &mut Session, command: &str, params: Value) -> Value {
-    s.execute(command, &params).unwrap_or_else(|e| panic!("{command} {params}: {e}"))
-}
-
-fn export(s: &mut Session, format: Format) -> Vec<u8> {
-    let r = run(s, "document.export", json!({"format": format.id()}));
-    vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap()
-}
-
-fn open(s: &mut Session, name: &str, bytes: &[u8]) {
-    run(s, "document.open", json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(bytes)}));
-}
-
-/// The real designs, checked against their manifest; `None` (the test skips) when they are absent
-/// and not required.
-fn corpus() -> Option<PathBuf> {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../corpus/embroidery");
-    let required = std::env::var_os("EMBROIDERY_CORPUS_REQUIRED").is_some_and(|v| v != "0");
-    if !dir.exists() {
-        assert!(!required, "required embroidery corpus absent: run `cargo xtask corpus --embroidery`");
-        eprintln!("embroidery corpus absent: run `cargo xtask corpus --embroidery`");
-        return None;
-    }
-    for line in include_str!("../../../xtask/embroidery-corpus.sha256").lines().filter(|l| !l.trim().is_empty()) {
-        let (digest, name) = line.split_once("  ").expect("malformed embroidery corpus manifest");
-        let bytes = std::fs::read(dir.join(name)).unwrap_or_else(|e| panic!("missing corpus file {name}: {e}"));
-        assert_eq!(sha256::hex(&bytes), digest, "{name}: corpus file changed; run `cargo xtask corpus --embroidery`");
-    }
-    Some(dir)
-}
-
-/// A session holding artwork `art` scaled to the size of the person's design `theirs`, as
-/// `embroidery_output.rs` scales it.
-fn artwork(dir: &std::path::Path, art: &str, theirs: &str) -> Session {
-    let person = Format::Pes.read(&std::fs::read(dir.join(theirs)).unwrap()).unwrap();
-    let target = person.bounds().unwrap();
-    let mut s = Session::new();
-    open(&mut s, art, &std::fs::read(dir.join(art)).unwrap());
-    let first = Format::Pes.read(&export(&mut s, Format::Pes)).unwrap().bounds().unwrap();
-    let k = (target.width() / first.width()).max(target.height() / first.height());
-    run(&mut s, "select.all", json!({}));
-    run(&mut s, "object.scale", json!({"sx": k * 100.0, "sy": k * 100.0, "strokes": true}));
-    run(&mut s, "select.none", json!({}));
-    s
-}
-
-/// The person's design, opened as stitches.
-fn persons(dir: &std::path::Path, theirs: &str) -> Session {
-    let mut s = Session::new();
-    open(&mut s, theirs, &std::fs::read(dir.join(theirs)).unwrap());
-    s
-}
 
 /// A rule's hits in a check's answer.
 fn hits(check: &Value, id: &str) -> u64 {

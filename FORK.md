@@ -288,6 +288,22 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   calls, `NodeWire`, `From<NodeWire>`), not at their ends, where upstream appends its own extras.
   `skips` and the `field!` calls pair up by position: keep them in the same order, or a field is
   written as skipped and the next as `null`. The key-order test in `node.rs` checks it.
+- **The interface catalogues (`crates/ui-egui/src/i18n/*.tsv`):** both sides add rows at the end.
+  `.gitattributes` merges them as a union, so both sides' rows are kept without a conflict. A row
+  both sides changed comes back twice: keep the newer (the i18n tests fail on a broken row).
+- **`crates/engine/src/cmd/fileio/mod.rs`:** `UNASSOCIATED_EXTS` is a union of both sides' lists
+  (taking either alone would associate the embroidery extensions with the app, or drop upstream's
+  new ones). In the param docs of `document.serialize`, `document.export` and `export.selection`,
+  take upstream's text and add `|dst|tap|t01|exp|pes|pec|jef|vp3` to its format list again.
+- **One-line hooks the fork keeps in upstream files**, to keep when resolving: `fileio/load.rs`'s
+  `is_loss` (`super::embroidery::is_loss`), `cmd/swatchlib.rs`'s `libraries` and `library`
+  (`cmd/embroidery/threadlib.rs`), `i18n/mod.rs`'s `mod tests_embroidery`, `command_sweep.rs`'s
+  `mod embroidery_common` and `cases.extend(…)`, and the `pub use` lines in `engine/src/lib.rs`.
+- **Files saved by upstream VectorCraft:** upstream keeps the document's `embroidery` settings it
+  doesn't know (in `Document::extra`) but drops every object's (`NodeWire` keeps no unknown keys),
+  so a design opened from a machine file, saved by upstream and opened here again, is art: its
+  lines are stitched as thin strokes, and its Trim After marks are gone. No warning can say so.
+  Upstream keeping a node's unknown keys would fix it (a proposal for upstream).
 
 ## Practicalities
 

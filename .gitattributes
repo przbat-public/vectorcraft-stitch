@@ -1,0 +1,3 @@
+# The interface catalogues: the fork and upstream both add rows at their ends, which would conflict
+# on every merge; a union merge keeps both sides' rows (FORK.md › Keeping up with upstream).
+crates/ui-egui/src/i18n/*.tsv merge=union

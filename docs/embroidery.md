@@ -99,6 +99,11 @@ needle lifts across each cut the same way (tied off and in around a long jump).
 Moving or scaling the lines moves or scales the stitches; editing a line's points edits the
 stitches.
 
+**Saved by upstream VectorCraft.** Upstream keeps the document's embroidery settings it doesn't
+know but drops every object's (its node format keeps no unknown keys): a design opened from a
+machine file, saved by upstream VectorCraft and opened here again is art, its lines stitched as
+thin strokes and its Trim After marks gone, with no warning (FORK.md › Keeping up with upstream).
+
 **What opening leaves out.** Opening a machine file says, one note each, what the file holds that
 reading it leaves out, and so a file written from the document lacks (`Format::losses`): a PES's
 own section before its PEC part (what PE-Design edits: a PES written here holds its stitches
@@ -1262,7 +1267,10 @@ flowchart LR
   start point to the formats' 0.1 mm was measured: it changes none of the pinned exports but saves
   nothing either (still 1.85 after a 0.5 mm nudge), so it is not done. The cache holds at most
   2 million stitches (`MAX_CACHED_STITCHES`, as many as the largest design; a key counts as stitches
-  of its size, about 50 MB), the units used least recently dropped first. A plan made with kept
+  of its size, about 50 MB), the units used least recently dropped first. It is a cache, dropped
+  with its document, and not counted in the document's memory estimate (`mem.rs`, which the undo
+  history's budget reads): on the web build's 32-bit heap, a background preview of several open
+  documents could keep 50 MB for each. A plan made with kept
   units equals a fresh plan: a property test plans random documents through random edits, and
   `embroidery_planning.rs` nudges every object of the real designs.
 - **The last plan** is kept with the snapshot (held weakly) and options it was made for. A snapshot

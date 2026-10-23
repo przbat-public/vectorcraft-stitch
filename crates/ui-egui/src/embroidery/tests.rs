@@ -110,3 +110,68 @@ fn the_view_menu_the_tab_and_the_control_channel_reach_the_stitch_view() {
     assert_eq!(request(&mut app, &tx, "ui.set", json!({"stitchPreview": false}))["ok"], true);
     assert!(title(&app).ends_with("(RGB/Outline)"), "{}", title(&app));
 }
+
+/// One headless frame at `time`, as the app runs one: the logic, the canvas and what is drawn over
+/// it, and the preview's scheduling at its end.
+fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64) {
+    let raw = egui::RawInput {
+        time: Some(time),
+        screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(900.0, 600.0))),
+        ..Default::default()
+    };
+    let mut out = ctx.run_ui(raw, |ui| {
+        app.logic(ui.ctx());
+        crate::canvas::show(app, ui);
+        crate::embroidery::canvas_controls(app, ui);
+        crate::embroidery::stitch_preview::schedule(app, ui.ctx());
+    });
+    out.textures_delta.clear();
+}
+
+/// `ui.inspect {stitchPreview}` says how the active document's stitch view stands; a window
+/// capture waits while its plan is waiting or under way; the canvas's notice says it is planning
+/// once the stitches shown have been out of date a while, and why a design can't be planned.
+#[test]
+fn inspect_screenshots_and_the_notice_follow_the_plan() {
+    let (mut app, tx) = controlled();
+    let ctx = egui::Context::default();
+    let inspect = |app: &mut VectorcraftApp| request(app, &tx, "ui.inspect", json!({}))["result"]["stitchPreview"].clone();
+    assert_eq!(inspect(&mut app), Value::Null, "no document");
+    app.run("file.new", json!({"width": 200, "height": 200, "artboards": 1})).unwrap();
+    app.run("shape.rectangle", json!({"x": 20, "y": 20, "width": 100, "height": 100})).unwrap();
+    frame(&mut app, &ctx, 0.0);
+    let v = inspect(&mut app);
+    assert_eq!((&v["state"], &v["on"], &v["drawn"]), (&json!("off"), &json!(false), &json!(false)), "{v}");
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    for t in [0.1, 0.2] {
+        frame(&mut app, &ctx, t);
+    }
+    let v = inspect(&mut app);
+    assert_eq!((&v["state"], &v["drawn"], &v["notice"]), (&json!("fresh"), &json!(true), &Value::Null), "{v}");
+    assert!(v["generation"].as_u64().is_some() && v["planMs"].as_f64().is_some(), "{v}");
+    let uid = app.session.active().unwrap().uid;
+    assert!(!crate::embroidery::holds_screenshots(&app, 0.2));
+    // A heavy design after an edit: stale while it waits for the quiet time, the capture waits.
+    app.embroidery.preview.set_plan_ms(uid, 1000.0);
+    app.run("object.move", json!({"dx": 2, "dy": 0})).unwrap();
+    frame(&mut app, &ctx, 1.0);
+    assert!(crate::embroidery::holds_screenshots(&app, 1.0));
+    assert_eq!(inspect(&mut app)["state"], "stale");
+    assert_eq!(crate::embroidery::notice::text(&app, 1.0), None, "no notice at once");
+    let notice = crate::embroidery::notice::text(&app, 1.5).map(|(t, _)| t);
+    assert_eq!(notice.as_deref(), Some("Planning stitches…"));
+    frame(&mut app, &ctx, 1.2);
+    frame(&mut app, &ctx, 1.3);
+    assert!(!crate::embroidery::holds_screenshots(&app, 1.3), "planned once quiet");
+    assert_eq!(inspect(&mut app)["state"], "fresh");
+    // Three metres a side: more stitches than one shape may have.
+    app.run("shape.rectangle", json!({"x": 0, "y": 0, "width": 8500, "height": 8500})).unwrap();
+    for t in [2.0, 2.2, 2.4] {
+        frame(&mut app, &ctx, t);
+    }
+    let v = inspect(&mut app);
+    assert_eq!(v["state"], "failed", "{v}");
+    assert!(v["error"].as_str().is_some_and(|e| !e.is_empty()));
+    assert!(v["notice"].as_str().is_some_and(|n| n.starts_with("Can't plan the stitches: ")), "{v}");
+    assert!(!crate::embroidery::holds_screenshots(&app, 2.4), "a failure doesn't hold a capture");
+}

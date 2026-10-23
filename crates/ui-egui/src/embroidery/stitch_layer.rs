@@ -173,6 +173,18 @@ pub struct StitchLayer {
     pub(crate) uploads: u64,
 }
 
+impl StitchLayer {
+    /// Whether the last frame drew the stitch view.
+    pub fn drawn(&self) -> bool {
+        self.shown
+    }
+
+    /// Whether a frame of stitches asked of the layer's thread hasn't come back yet.
+    pub fn waiting(&self) -> bool {
+        self.asked.is_some()
+    }
+}
+
 /// The stitch view's layers for the active document, as the canvas draws them this frame.
 fn stitch_layers(app: &VectorcraftApp) -> Option<(u64, Layers)> {
     let st = app.session.active()?;

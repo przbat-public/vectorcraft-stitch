@@ -916,9 +916,11 @@ impl VectorcraftApp {
 
     fn issue_screenshots(&mut self, ctx: &egui::Context) {
         let now = now_ms();
+        // VectorCraft Stitch: a capture waits for the stitch view of the document as it is.
+        let stitches = embroidery::holds_screenshots(self, ctx.input(|i| i.time));
         self.queued_screenshots.retain_mut(|(token, at, frames)| {
             *frames += 1;
-            if now >= *at && *frames >= 3 {
+            if now >= *at && *frames >= 3 && !(stitches && now < *at + embroidery::MAX_SCREENSHOT_WAIT_MS) {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(egui::UserData::new(*token)));
                 false
             } else {

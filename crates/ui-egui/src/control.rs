@@ -160,6 +160,8 @@ pub fn inspect(app: &VectorcraftApp, ctx: &egui::Context) -> Value {
         "nativeMenuBar": app.services.native_menu.is_some(),
         // Saves and exports still being written in the background (Background Save / Export).
         "background": app.background.jobs.iter().filter(|j| !j.label.is_empty()).map(|j| j.label.as_str()).collect::<Vec<_>>(),
+        // VectorCraft Stitch: the active document's stitch view and how its plan stands.
+        "stitchPreview": crate::embroidery::inspect(app, ctx.input(|i| i.time)),
         // Documents still being read off the UI thread (File › Open, Open Recent): their paths.
         "opening": app.opening.pending.iter().map(|p| p.path.as_str()).collect::<Vec<_>>(),
         // The screen color sampler is shown, waiting for the person at the computer

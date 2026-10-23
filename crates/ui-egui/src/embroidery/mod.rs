@@ -8,11 +8,13 @@
 //! - [`stitch_layer`]: the canvas in the stitch view.
 //! - [`menu`]: View › Stitch Preview, its options, and the document tab's mode.
 //! - [`switch`]: the canvas's Art | Stitches switch.
+//! - [`notice`]: the canvas's notice while the stitches are planned, or can't be.
 //! - [`text`]: the embroidery interface's words, in the catalogues' `embroidery` context
 //!   ([`crate::et!`], [`crate::etn!`]).
 //! - [`render_stitches`]: the control channel's picture of the stitches.
 
 pub mod menu;
+pub mod notice;
 pub mod numbers;
 pub mod plan_worker;
 pub mod stitch_layer;
@@ -34,10 +36,39 @@ pub struct Embroidery {
     pub layer: stitch_layer::StitchLayer,
 }
 
-/// What the fork draws over the canvas, after it: the Art | Stitches switch.
+/// What the fork draws over the canvas, after it: the Art | Stitches switch, and the notice under
+/// it.
 pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
     let Some(canvas) = app.canvas_rect.filter(|_| !crate::menus::home_showing(app)) else { return };
     switch::show(app, ui, canvas);
+    notice::show(app, ui, canvas);
+}
+
+/// The longest a window capture (`ui.screenshot`) waits for the stitch view to be drawn for the
+/// document as it is, milliseconds: far longer than a real design plans and draws, so it only ends
+/// the wait for a design that is slow to plan. An estimate.
+pub const MAX_SCREENSHOT_WAIT_MS: f64 = 5000.0;
+
+/// Whether a window capture should wait: the active document's stitches are being planned, or
+/// drawn on the stitch layer's thread, for the document as it is.
+pub fn holds_screenshots(app: &VectorcraftApp, now: f64) -> bool {
+    let Some(uid) = app.session.active().map(|st| st.uid) else { return false };
+    app.embroidery.preview.busy(uid, now) || app.embroidery.layer.waiting()
+}
+
+/// `ui.inspect`'s `stitchPreview`: the active document's stitch view, how its plan stands
+/// (`state`: off, fresh, pending, stale or failed; `planning`, `progress`, `error`, `planMs`,
+/// `generation`), whether the canvas draws it (`drawn`), and the notice shown (`notice`). Null with
+/// no document.
+pub fn inspect(app: &VectorcraftApp, now: f64) -> serde_json::Value {
+    let Some(st) = app.session.active() else { return serde_json::Value::Null };
+    let mut v = app.embroidery.preview.inspect(st.uid, now);
+    if let Some(o) = v.as_object_mut() {
+        o.insert("on".into(), app.session.stitch_view_of(st.uid).on.into());
+        o.insert("drawn".into(), app.embroidery.layer.drawn().into());
+        o.insert("notice".into(), notice::text(app, now).map(|(t, _)| t).into());
+    }
+    v
 }
 
 /// The control channel's `ui.render {stitchPreview: true}`: artboard `artboard` of the active

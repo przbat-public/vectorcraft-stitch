@@ -242,6 +242,14 @@ impl StitchPreview {
         })
     }
 
+    /// Say document `uid`'s last plan took `ms` (the tests make a design heavy).
+    #[cfg(test)]
+    pub(crate) fn set_plan_ms(&mut self, uid: u64, ms: f64) {
+        if let Some(d) = self.docs.get_mut(&uid) {
+            d.plan_ms = Some(ms);
+        }
+    }
+
     /// Use `runner` for the jobs from now on (the tests' own).
     #[cfg(test)]
     fn with_runner(runner: Box<dyn Runner>) -> Self {

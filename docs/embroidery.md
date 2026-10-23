@@ -1444,6 +1444,10 @@ choice; `view.stitchPreview` answers which), never saved in the file.
   (`STALE_NOTICE_SECS`, as long as an export runs before its progress shows) the preview says it is
   planning, with the plan's progress. A design that can't be planned (too many stitches) keeps its
   last good stitches with the reason, and isn't planned again until it changes.
+- **For agents and tests.** `ui.inspect` reports the stitch view and how its plan stands
+  (`stitchPreview`), and `ui.screenshot` waits for the stitches of the document as it is (at most
+  5 s more, `MAX_SCREENSHOT_WAIT_MS`, an estimate). The canvas's notice under the switch says
+  "Planning stitches…" with a progress bar after the 0.4 s, or why the design can't be planned.
 - **Never a wrong plan.** Plans are tagged by what they are of (`EmbroideryPlanKey`: the snapshot,
   the options, the fonts), never by the document's revision. A step is taken in only when it is of
   the job under way and that job wasn't cancelled, so a cancelled or replaced plan never shows.

@@ -213,7 +213,17 @@ fn the_art_shows_as_the_view_says() {
     assert_eq!(drawn_with(&shapes, art_texture(&app)), [faded()], "the art faint");
     app.run("view.outline", json!({})).unwrap();
     assert_eq!(art_pass(&mut app), ArtPass { stitches: true, render: true, hidden: vec![], hide_templates: true });
-    let shapes = frame(&mut app, &ctx, 1.1);
+    // The outlines, once the canvas has them (it may render them on its thread).
+    let (mut time, t0) = (1.1, std::time::Instant::now());
+    let shapes = loop {
+        let shapes = frame(&mut app, &ctx, time);
+        if app.canvas.key.as_ref().is_some_and(|k| k.outline) {
+            break shapes;
+        }
+        assert!(t0.elapsed() < WAIT, "the outlines never came");
+        time += 0.02;
+        std::thread::yield_now();
+    };
     let order: Vec<Option<egui::TextureId>> = shapes
         .iter()
         .filter_map(|s| match s {
@@ -365,4 +375,38 @@ fn a_frame_asked_of_the_thread_is_forgotten_when_the_stitches_go() {
     frame(&mut app, &ctx, time + 0.2);
     assert!(!app.embroidery.layer.waiting());
     assert!(!crate::embroidery::holds_screenshots(&app, time + 0.2));
+}
+
+/// The art over or under the stitches is only ever the art of the pass shown: on a document whose
+/// art the canvas renders on its thread, Outline turned on in the stitch view shows no art until the
+/// outlines come, never the art in colour over the stitches.
+#[test]
+fn the_art_of_another_pass_never_shows_with_the_stitches() {
+    let mut app = app();
+    let ctx = egui::Context::default();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("view.stitchPreview.artwork", json!({"on": true})).unwrap();
+    let mut time = until_stitches(&mut app, &ctx, 0.0);
+    time += 0.05;
+    let shapes = frame(&mut app, &ctx, time);
+    assert_eq!(drawn_with(&shapes, art_texture(&app)), [faded()], "the art, faint under the stitches");
+    // A document slow to render: the canvas's next frame goes to its thread, the texture kept.
+    app.canvas.last_ms = 1000.0;
+    app.run("view.outline", json!({})).unwrap();
+    time += 0.05;
+    let shapes = frame(&mut app, &ctx, time);
+    if app.canvas.key.as_ref().is_some_and(|k| !k.outline) {
+        assert!(drawn_with(&shapes, art_texture(&app)).is_empty(), "not the art in colour while the outlines are made");
+    }
+    let t0 = std::time::Instant::now();
+    loop {
+        time += 0.02;
+        let shapes = frame(&mut app, &ctx, time);
+        if app.canvas.key.as_ref().is_some_and(|k| k.outline) {
+            assert_eq!(drawn_with(&shapes, art_texture(&app)), [Color32::WHITE], "the outlines over the stitches");
+            break;
+        }
+        assert!(t0.elapsed() < WAIT, "the outlines never came");
+        std::thread::yield_now();
+    }
 }

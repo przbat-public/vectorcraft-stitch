@@ -357,11 +357,11 @@ pub fn draw(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::Paint
     let outline = app.ui.view.outline;
     let faint = stitch_layers(app).is_some_and(|(_, l)| l.faint_art);
     if pass.render && !outline {
-        draw_art(app, painter, xf, if faint { faded() } else { Color32::WHITE });
+        draw_art(app, painter, xf, pass, if faint { faded() } else { Color32::WHITE });
     }
     draw_stitches(app, ctx, painter, xf, v, emphasis);
     if pass.render && outline {
-        draw_art(app, painter, xf, Color32::WHITE);
+        draw_art(app, painter, xf, pass, Color32::WHITE);
     }
 }
 
@@ -371,11 +371,14 @@ fn faded() -> Color32 {
 }
 
 /// The canvas's art texture, as the canvas places it (moved into this view when it was rendered
-/// for another), tinted `tint`.
-fn draw_art(app: &VectorcraftApp, painter: &egui::Painter, xf: &Xf, tint: Color32) {
+/// for another), tinted `tint`; only when it was rendered for `pass` (with what of the art it
+/// shows, and Outline as it is): a texture of another pass (the art in full while only templates
+/// are to show, in colour while Outline is on) waits for the canvas's new one.
+fn draw_art(app: &VectorcraftApp, painter: &egui::Painter, xf: &Xf, pass: &ArtPass, tint: Color32) {
     let Some(uid) = app.session.active().map(|st| st.uid) else { return };
     let (Some(tex), Some(k)) = (&app.canvas.texture, &app.canvas.key) else { return };
-    if k.doc != uid as usize {
+    let templates = app.ui.view.templates && !pass.hide_templates;
+    if k.doc != uid as usize || k.outline != app.ui.view.outline || k.hidden != pass.hidden || k.templates != templates {
         return;
     }
     let quad = match k.pixel {

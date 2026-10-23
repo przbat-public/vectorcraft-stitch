@@ -11,7 +11,8 @@
 //!
 //! [`PlanWorker::spawn`] gives `None` on wasm (no threads), in unit tests (they look at the
 //! preview right after the frame that asks) and with `VECTORCRAFT_SYNC_RENDER` set: the preview
-//! then plans on the interface thread with the same [`run`].
+//! then plans on the interface thread, in one go, with the same [`run`] ([`Driver::InLine`]); so
+//! it does if the thread ever ends.
 
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
@@ -145,6 +146,8 @@ pub struct PlanWorker {
     rx: Receiver<Done>,
     /// The jobs sent and not finished: cancelled on drop.
     pending: Vec<(u64, Arc<Progress>)>,
+    /// The thread has ended.
+    gone: bool,
     /// The thread, so the tests can see it end.
     #[cfg(test)]
     thread: Option<std::thread::JoinHandle<()>>,
@@ -197,26 +200,30 @@ impl PlanWorker {
             tx,
             rx,
             pending: Vec::new(),
+            gone: false,
             #[cfg(test)]
             thread: Some(thread),
         })
     }
 
-    /// Send `job`. False when the thread is gone: the caller plans on the interface thread from
-    /// now on.
+    /// Send `job` → `None`, or the job back when the thread is gone: the caller plans on the
+    /// interface thread from now on.
     #[must_use]
-    pub fn submit(&mut self, job: Job) -> bool {
+    pub fn submit(&mut self, job: Job) -> Option<Job> {
         let (ticket, progress) = (job.ticket, job.progress.clone());
-        let sent = self.tx.send(job).is_ok();
-        if sent {
-            self.pending.push((ticket, progress));
+        match self.tx.send(job) {
+            Ok(()) => {
+                self.pending.push((ticket, progress));
+                None
+            }
+            Err(std::sync::mpsc::SendError(job)) => Some(job),
         }
-        sent
     }
 
-    /// The steps finished since the last call, oldest first; `None` when the thread is gone (the
-    /// jobs it had will never finish).
-    pub fn poll(&mut self) -> Option<Vec<Done>> {
+    /// The steps finished since the last call, oldest first. Once the thread is gone
+    /// ([`PlanWorker::gone`]) the jobs it had are answered as cancelled, so the caller decides
+    /// again.
+    pub fn poll(&mut self) -> Vec<Done> {
         let mut done = vec![];
         loop {
             match self.rx.try_recv() {
@@ -226,10 +233,19 @@ impl PlanWorker {
                     }
                     done.push(d);
                 }
-                Err(TryRecvError::Empty) => return Some(done),
-                Err(TryRecvError::Disconnected) => return None,
+                Err(TryRecvError::Empty) => return done,
+                Err(TryRecvError::Disconnected) => {
+                    done.extend(self.pending.drain(..).map(|(ticket, _)| Done { ticket, outcome: Outcome::Cancelled, ms: 0.0, last: true }));
+                    self.gone = true;
+                    return done;
+                }
             }
         }
+    }
+
+    /// Whether the thread has ended (it never does while the worker is held, short of a bug).
+    pub fn gone(&self) -> bool {
+        self.gone
     }
 }
 
@@ -238,6 +254,62 @@ impl Drop for PlanWorker {
         for (_, p) in &self.pending {
             p.cancel();
         }
+    }
+}
+
+/// Where the stitch preview's jobs run: on the planning thread, or on the interface thread in one
+/// go where there is none (wasm, unit tests, `VECTORCRAFT_SYNC_RENDER`, or once it has ended).
+pub enum Driver {
+    Thread(PlanWorker),
+    /// The steps of the jobs run in line, waiting for the next [`Driver::poll`].
+    InLine(Vec<Done>),
+}
+
+impl Driver {
+    /// The planning thread where there can be one, else planning in line.
+    pub fn new(ctx: &egui::Context) -> Self {
+        PlanWorker::spawn(ctx).map_or_else(|| Self::InLine(Vec::new()), Self::Thread)
+    }
+
+    /// Send `job` to the thread, or run it now (in line, or because the thread is gone): its steps
+    /// come back from the next [`Driver::poll`].
+    pub fn submit(&mut self, job: Job) {
+        let job = match self {
+            Self::Thread(w) => match w.submit(job) {
+                None => return,
+                Some(job) => job,
+            },
+            Self::InLine(_) => job,
+        };
+        let mut done = match std::mem::replace(self, Self::InLine(Vec::new())) {
+            Self::Thread(mut w) => w.poll(),
+            Self::InLine(done) => done,
+        };
+        if job.progress.cancelled() {
+            done.push(job.done(Outcome::Cancelled, crate::now_ms(), true));
+        } else {
+            run(&job, &mut |d| done.push(d));
+        }
+        *self = Self::InLine(done);
+    }
+
+    /// The steps finished since the last call, oldest first.
+    pub fn poll(&mut self) -> Vec<Done> {
+        match self {
+            Self::Thread(w) => {
+                let done = w.poll();
+                if w.gone() {
+                    *self = Self::InLine(Vec::new());
+                }
+                done
+            }
+            Self::InLine(done) => std::mem::take(done),
+        }
+    }
+
+    /// Whether jobs run on the planning thread.
+    pub fn threaded(&self) -> bool {
+        matches!(self, Self::Thread(_))
     }
 }
 

@@ -701,10 +701,11 @@ impl Region {
         }
         // The region's last row keeps its last stitch: there is no next row to turn into, and
         // without it the row would stop up to half a stitch short of the edge (in a region of one
-        // row, a thin fill, nothing else covers that end). The needle's way on is planned from
-        // where the row would end without it, as before: the stitch only covers the end.
-        if let (Some(last), Some((q, _))) = (out.last_mut(), left_out) {
-            last.last_inside = last.pts.last().copied();
+        // row, a thin fill, nothing else covers that end). The needle's way on is planned from the
+        // row's end on the edge, as every row's is: from the stitch before, a straight way that
+        // stays inside could leave the shape once the needle starts it from the row's end.
+        if let (Some(last), Some((q, edge))) = (out.last_mut(), left_out) {
+            last.last_inside = Some(edge);
             last.pts.push(q);
         }
         out

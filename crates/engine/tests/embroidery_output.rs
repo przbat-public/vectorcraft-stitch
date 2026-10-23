@@ -199,14 +199,14 @@ dfbaebe23679c276c14ebf06d8d056b5bb5a9ccea53d08967bdbe449f2504797  heart-suit-twe
 9fe0186a0c04c91e1a68f413ad53149b8257a94312ccf518591e1b49d4d025e1  joystick-twemoji.pec
 8012d1a66a7c2b4702e585c2939ddb82f5529c58362468e7731a87590a60ee90  joystick-twemoji.jef
 e32c85414608c0999f028664f71e4c298b689dc509b38e1c234d2791d70556fb  joystick-twemoji.vp3
-937ce6005ca277fd1b8e33f71f31d257f682b7844f3f2d41d4919e13534d1b2c  pool-8-ball-twemoji.dst
-7561f3be7423f8039b1757566dd15bc2274f9c172875eb4c52354842d35e67f3  pool-8-ball-twemoji.tap
-7561f3be7423f8039b1757566dd15bc2274f9c172875eb4c52354842d35e67f3  pool-8-ball-twemoji.t01
-ffc977db44a67fb4fcc5a8c9a42b7d83d77aaa641dd807db2661f03e8f9973e7  pool-8-ball-twemoji.exp
-ae9a0054b5760b6d8c939fe62cdbdaf1755fd76aa74fbb955424ba868d5d5d85  pool-8-ball-twemoji.pes
-0044ecacfd8f040c325775356219c6e9957bf93502150cd90c550f970c48af36  pool-8-ball-twemoji.pec
-3274ddae121d2641f473ff13e10295c0234904b874fd196c6e655c127878162b  pool-8-ball-twemoji.jef
-d3a65699f56d047b593acd795e8b1e11697c02cc07a822140b9daf0e8835f5d2  pool-8-ball-twemoji.vp3
+897fd9a5da0fd317c70e054f762a2bbee2a24e83fd36962862ef9427f887531c  pool-8-ball-twemoji.dst
+c838575586b1994b4d907091497e585f5d270e05b85e9a264a90704d3f9ae383  pool-8-ball-twemoji.tap
+c838575586b1994b4d907091497e585f5d270e05b85e9a264a90704d3f9ae383  pool-8-ball-twemoji.t01
+788d28076f8b3381bbc800b13959eb855ee70ffb4f4c0ba156628315796d400f  pool-8-ball-twemoji.exp
+95698fa0f5b71adc2276be56d9cf8ae16835afe521ec9f7a0aec91ecc1538d42  pool-8-ball-twemoji.pes
+b024631ac32884dbfcf25f9db97506f648dd512b893b51f674161081769a05b8  pool-8-ball-twemoji.pec
+dd93f048a375e0a5f66067d7cdf5ebb891fb607eb57884741f5bb2c9aac10f06  pool-8-ball-twemoji.jef
+d46fe82e3fcfdcfb5b2660c5bb9c4ed11ef5e49554723560b122b0eef442525f  pool-8-ball-twemoji.vp3
 2745472aa7ecb5cf1b462edcc2726c589f298b36621bd65c0f3f40f6a2c161c5  puzzle-piece-twemoji.dst
 ea063b2fd303dd23756ec75d633a0c1d6bd1e04d0040515bab5374b4829583fe  puzzle-piece-twemoji.tap
 ea063b2fd303dd23756ec75d633a0c1d6bd1e04d0040515bab5374b4829583fe  puzzle-piece-twemoji.t01
@@ -247,14 +247,14 @@ f4c151c3583b0fee92777903df59e82a837b981835dbb8d9219cde0096bdc9b3  watermelon-twe
 88dc2ec1c3f51a14eb38e598c53dbc8f9151b1735c60d917a36d90d77221fdb3  watermelon-twemoji.clipart.pec
 8e3e9895af14cb9352257e6e726712074b4634ed58ea41e3430a0e8b69872973  watermelon-twemoji.clipart.jef
 30182404b39ec0494f7a52d9fa66ca5d67c7843990413059d4f6a91da8bedd98  watermelon-twemoji.clipart.vp3
-5c1e9736a5de173cea8305f4eea9000fb91d9dcc8fffb8c9166eed28e8c734ee  zebra-twemoji.clipart.dst
-b31a34432500ec09051ad49d5bccce781fc274026aa5bc25371f3e6bcb13eb71  zebra-twemoji.clipart.tap
-b31a34432500ec09051ad49d5bccce781fc274026aa5bc25371f3e6bcb13eb71  zebra-twemoji.clipart.t01
-56bcbfba52d9102e92415906b28337c78a3f0fd476fb286ca9f13d91c901d5cf  zebra-twemoji.clipart.exp
-3ae9dc6fbb10712cb4182eed3d2c90653f648c7d70bd9bc3a34eddc60c169d9c  zebra-twemoji.clipart.pes
-f98b0cb567866d72216177a7956d5dd15c3df5eb0c9828b6ebc349a86dc96b6b  zebra-twemoji.clipart.pec
-eada359ba5693692f487d9861a1b91084b3b77025d19475e38faedf5cfed8a58  zebra-twemoji.clipart.jef
-775da5e5511e4e77349f5ec405bd12253e7ac3dd4785b7e270fa169a7be83081  zebra-twemoji.clipart.vp3
+ae9dd329a4ceb90e69f806d7aaa0473ad092f0d53b33aee877b1156bd895d266  zebra-twemoji.clipart.dst
+50af3d41ebd4f210ad87dd0c5a70b8579857c816a04dc248e0f51e0dfde25e2d  zebra-twemoji.clipart.tap
+50af3d41ebd4f210ad87dd0c5a70b8579857c816a04dc248e0f51e0dfde25e2d  zebra-twemoji.clipart.t01
+a78b747fe515ebd5ae70a47fb505068878aa7c5c61f62173a902e6a706edaa33  zebra-twemoji.clipart.exp
+9653679744b38e251e4c2634b6d80821be40eed1148048ffeb1dec9426369863  zebra-twemoji.clipart.pes
+eb752886eeeb6d4e3d74468f26ca832c27aad23a244e2a6e0eb84deeccc312f5  zebra-twemoji.clipart.pec
+f7dcc4f7d05fbb6dede6397385494dd37944ca02d152a5235c3ae5246242ca6a  zebra-twemoji.clipart.jef
+5b6bce2b60bd703cd1362607f1bfdb95579b7b14c137345473bf9ccd6a5d645f  zebra-twemoji.clipart.vp3
 ";
 
 /// The PES, PEC and JEF exports of [`SYNTHETIC`] apart from their thread numbers ([`threads_apart`]):
@@ -319,9 +319,9 @@ f1d38145b030ab084d0360845649b99fdb6428059e139d7c07d024bbda436f3e  bullseye-twemo
 759b74dfeebe531ef1d531ac0025547a1711930912cf925c113b0f50fab912a6  joystick-twemoji.pes  16 48 23 39
 f5812a8d5555df69ad6a06776680eefc35010bf8246b9670781750df064479aa  joystick-twemoji.pec  16 48 23 39
 efdb43ed6fa33d17ca0925ec1c1aecf1b9d5fd5c7ece602067f388b04e30327e  joystick-twemoji.jef  21 33 50 50
-53fe0a747776a4d064aeb6409da11da0bfce60288928e16fb34de8a2b63713a7  pool-8-ball-twemoji.pes  23 29 23
-c146aa62eb1bcbd125609c65167fe8b958b8dd61f1bd9ed2ca6e967c4d83b5a5  pool-8-ball-twemoji.pec  23 29 23
-ba8889d49ad53f7440811f6fc979728befaba19559ba67f9ce270183fc5a0ee2  pool-8-ball-twemoji.jef  50 23 50
+17f54ebfd152b2d4b8c57c029bf3a5d3981f2c38b92828966443f5a9013fe9d8  pool-8-ball-twemoji.pes  23 29 23
+7d7b839b6e358f2dfbee2166a583c60ac857ceb7d785a52bd1ce82973f1b75fc  pool-8-ball-twemoji.pec  23 29 23
+10af81e2aa90c9e6b956d8a3b39932af0f19cd76070f7e02447b2926efbde8f0  pool-8-ball-twemoji.jef  50 23 50
 5f3d9d63a7f6ba7851bebc971ae131c0b70679b0325bbc3b04ccfb70880bfe91  puzzle-piece-twemoji.pes  37
 01cb0ae4a54d67f012dd057c0adec922d0440ca90668a849f59a4f7851a08cca  puzzle-piece-twemoji.pec  37
 7405078c0713095cf336caec247c38fa4156836a998d54fb7179218d90ff4737  puzzle-piece-twemoji.jef  22
@@ -337,9 +337,9 @@ b0761a252aabae4db874192df3a33d8f471957310a74b2400818e5563bdc91e0  video-game-twe
 9540190ec9bb71ea3259ab1c99ce9849b02e6b572a92b1c9bca22728e0734d10  watermelon-twemoji.clipart.pes  54 29 5 20
 02c14a192c1762880a15651a3128b06c3b3244b94e9a205c66ae25af06ec1f6a  watermelon-twemoji.clipart.pec  54 29 5 20
 8991b02f2eb2b9ad1fbc2a3b00423452c5bdeee092c6930a059a9d683994c8c2  watermelon-twemoji.clipart.jef  6 51 42 1
-18eb3b2037d0fc286bb4f65cba84fa7d7e70afa15ddf37ed676f61b500363e17  zebra-twemoji.clipart.pes  29 20 29 39 23 20 39 20
-b217f801b1fb6b3790896dcc27a013922a02e0e7065bf3d6625bb9b9da4e7d7c  zebra-twemoji.clipart.pec  29 20 29 39 23 20 39 20
-7ab082c5d6a83e7d10c974fbee0b3cf6d2c96c53ee012043f9753444014cfe34  zebra-twemoji.clipart.jef  51 1 51 50 1 1 50 1
+91e719c2ddb4782284072f2e0b0ec258deed034332a0b7924e3775897eecb715  zebra-twemoji.clipart.pes  29 20 29 39 23 20 39 20
+ab11db170971d29e1d43c6e9b5c1ca631d00dc84d68dccd3104c4b1be783d639  zebra-twemoji.clipart.pec  29 20 29 39 23 20 39 20
+96946308b260eed6f18dcca23a67dc25b94b6793907b1beb1af5f6c1357366a6  zebra-twemoji.clipart.jef  51 1 51 50 1 1 50 1
 ";
 
 /// What each export of [`SYNTHETIC`] holds, read back ([`Summary`]): its name, then its fields.
@@ -492,14 +492,14 @@ joystick-twemoji.pes  blocks 4  needle 155/254/1031/229  jumps 1/2/4/1  trims 0/
 joystick-twemoji.pec  blocks 4  needle 155/254/1031/229  jumps 1/2/4/1  trims 0/1/2/0  size 42.7x45.4  longest 5.70  shortest 0.41  cells 1006
 joystick-twemoji.jef  blocks 4  needle 155/254/1031/229  jumps 1/2/4/1  trims 0/1/2/0  size 42.7x45.3  longest 5.70  shortest 0.36  cells 986
 joystick-twemoji.vp3  blocks 4  needle 155/254/1031/229  jumps 1/2/4/1  trims 0/1/2/0  size 42.7x45.3  longest 5.70  shortest 0.36  cells 986
-pool-8-ball-twemoji.dst  blocks 3  needle 1640/483/315  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.67  shortest 0.32  cells 1757
-pool-8-ball-twemoji.tap  blocks 3  needle 1640/483/315  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.67  shortest 0.32  cells 1757
-pool-8-ball-twemoji.t01  blocks 3  needle 1640/483/315  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.67  shortest 0.32  cells 1757
-pool-8-ball-twemoji.exp  blocks 3  needle 1640/483/315  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.67  shortest 0.32  cells 1757
-pool-8-ball-twemoji.pes  blocks 3  needle 1640/483/315  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.60  shortest 0.32  cells 1758
-pool-8-ball-twemoji.pec  blocks 3  needle 1640/483/315  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.60  shortest 0.32  cells 1758
-pool-8-ball-twemoji.jef  blocks 3  needle 1640/483/315  jumps 1/1/1  trims 0/0/0  size 46.2x46.2  longest 4.60  shortest 0.32  cells 1756
-pool-8-ball-twemoji.vp3  blocks 3  needle 1640/483/315  jumps 1/1/1  trims 0/0/0  size 46.2x46.2  longest 4.60  shortest 0.32  cells 1756
+pool-8-ball-twemoji.dst  blocks 3  needle 1640/483/314  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.67  shortest 0.32  cells 1757
+pool-8-ball-twemoji.tap  blocks 3  needle 1640/483/314  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.67  shortest 0.32  cells 1757
+pool-8-ball-twemoji.t01  blocks 3  needle 1640/483/314  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.67  shortest 0.32  cells 1757
+pool-8-ball-twemoji.exp  blocks 3  needle 1640/483/314  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.67  shortest 0.32  cells 1757
+pool-8-ball-twemoji.pes  blocks 3  needle 1640/483/314  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.60  shortest 0.32  cells 1758
+pool-8-ball-twemoji.pec  blocks 3  needle 1640/483/314  jumps 1/1/1  trims 0/0/0  size 46.3x46.3  longest 4.60  shortest 0.32  cells 1758
+pool-8-ball-twemoji.jef  blocks 3  needle 1640/483/314  jumps 1/1/1  trims 0/0/0  size 46.2x46.2  longest 4.60  shortest 0.32  cells 1756
+pool-8-ball-twemoji.vp3  blocks 3  needle 1640/483/314  jumps 1/1/1  trims 0/0/0  size 46.2x46.2  longest 4.60  shortest 0.32  cells 1756
 puzzle-piece-twemoji.dst  blocks 1  needle 1325  jumps 1  trims 0  size 45.3x45.2  longest 4.67  shortest 0.36  cells 1203
 puzzle-piece-twemoji.tap  blocks 1  needle 1325  jumps 1  trims 0  size 45.3x45.2  longest 4.67  shortest 0.36  cells 1203
 puzzle-piece-twemoji.t01  blocks 1  needle 1325  jumps 1  trims 0  size 45.3x45.2  longest 4.67  shortest 0.36  cells 1203
@@ -540,14 +540,14 @@ watermelon-twemoji.clipart.pes  blocks 4  needle 411/367/605/152  jumps 1/1/1/8 
 watermelon-twemoji.clipart.pec  blocks 4  needle 411/367/605/152  jumps 1/1/1/8  trims 0/0/0/0  size 46.2x32.1  longest 4.67  shortest 0.36  cells 966
 watermelon-twemoji.clipart.jef  blocks 4  needle 411/367/605/152  jumps 1/1/1/8  trims 0/0/0/0  size 46.2x32.1  longest 4.74  shortest 0.40  cells 966
 watermelon-twemoji.clipart.vp3  blocks 4  needle 411/367/605/152  jumps 1/1/1/8  trims 0/0/0/0  size 46.2x32.1  longest 4.74  shortest 0.40  cells 966
-zebra-twemoji.clipart.dst  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
-zebra-twemoji.clipart.tap  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
-zebra-twemoji.clipart.t01  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
-zebra-twemoji.clipart.exp  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
-zebra-twemoji.clipart.pes  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1568
-zebra-twemoji.clipart.pec  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1568
-zebra-twemoji.clipart.jef  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
-zebra-twemoji.clipart.vp3  blocks 8  needle 1603/322/270/42/25/572/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
+zebra-twemoji.clipart.dst  blocks 8  needle 1604/322/270/42/25/563/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
+zebra-twemoji.clipart.tap  blocks 8  needle 1604/322/270/42/25/563/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
+zebra-twemoji.clipart.t01  blocks 8  needle 1604/322/270/42/25/563/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
+zebra-twemoji.clipart.exp  blocks 8  needle 1604/322/270/42/25/563/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
+zebra-twemoji.clipart.pes  blocks 8  needle 1604/322/270/42/25/563/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1569
+zebra-twemoji.clipart.pec  blocks 8  needle 1604/322/270/42/25/563/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1569
+zebra-twemoji.clipart.jef  blocks 8  needle 1604/322/270/42/25/563/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
+zebra-twemoji.clipart.vp3  blocks 8  needle 1604/322/270/42/25/563/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
 ";
 
 /// Points per millimetre: the documents count points, the designs millimetres.

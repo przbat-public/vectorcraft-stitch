@@ -313,3 +313,38 @@ proptest! {
         }
     }
 }
+
+/// A case the property above found: the last row of a region keeps its last stitch, and the way
+/// on to the next region was judged from the stitch before it (2 mm back along the row) but sewn
+/// from the row's end, so it ran up to a millimetre outside the copy's edge.
+#[test]
+fn the_way_on_from_a_regions_last_row_stays_on_the_art() {
+    let corners = [
+        (56.85166158337017, 95.10254807380309),
+        (34.0100328904633, 80.4694424264317),
+        (11.09327452415717, 89.49751773399532),
+        (5.8612841733958945, 54.4861973869284),
+        (35.50103571303082, 61.88913907865753),
+        (23.223338743940822, 35.402036977685015),
+        (39.41902244869237, 60.26538066676839),
+        (42.345316438522374, 60.8156896921764),
+        (45.0, 65.2315124697793),
+    ];
+    let (angle, apart) = (98.74448839765469, 35.48049976168461);
+    let mut outer = BezPath::new();
+    outer.move_to(corners[0]);
+    for c in &corners[1..] {
+        outer.line_to(*c);
+    }
+    outer.close_path();
+    let mut two = outer.clone();
+    let mut copy = outer.clone();
+    copy.apply_affine(Affine::translate((outer.bounding_box().width() + apart, 0.0)));
+    two.extend(copy.iter());
+    let p = Params { angle, ..Params::for_style(Style::Fill) };
+    let b = two.bounding_box();
+    let [start, end] = p.compensation(b.width().hypot(b.height()));
+    let reach = 2.0 * start.max(end) + SHAVED + FLATTEN;
+    let out = try_stitches(&two, FillRule::NonZero, &p).unwrap();
+    assert_eq!(on_the_art(&two, &out, reach), Ok(()));
+}

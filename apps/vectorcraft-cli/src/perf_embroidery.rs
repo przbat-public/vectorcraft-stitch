@@ -11,6 +11,8 @@
 //! - a lattice: a fill with a hundred holes, which its travels go round;
 //! - strokes inside a clip group whose clipping path has thousands of segments;
 //! - thousands of objects each in a colour of its own;
+//! - a symbol placed a thousand times (its art copied for each instance on every plan);
+//! - the embroidery export, which plans its document afresh rather than from what was kept;
 //! - the 50,000-path document, which needs more stitches than a design may have: how long it takes
 //!   to be refused, the first time and again.
 //!
@@ -42,7 +44,7 @@ const PT_PER_MM: f64 = 72.0 / 25.4;
 const RUNS: usize = 3;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 18] = [
+pub const ROWS: [&str; 20] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -59,13 +61,15 @@ pub const ROWS: [&str; 18] = [
     "embroidery: 500 clipped strokes, cold",
     "embroidery: 500 clipped strokes, warm",
     "embroidery: 5,000 colours, warm",
+    "embroidery: 1,000 symbol instances, warm",
+    "embroidery: DST export, 1,000 paths",
     "embroidery: refused, 50,000 paths, first",
     "embroidery: refused, 50,000 paths, again",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`]: estimates.
-const BUDGETS: [f64; 18] =
-    [400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 1000.0, 50.0];
+const BUDGETS: [f64; 20] =
+    [400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 100.0, 400.0, 1000.0, 50.0];
 
 /// The middle of `samples` (milliseconds), 0 for none.
 fn middle(mut samples: Vec<f64>) -> f64 {
@@ -131,13 +135,15 @@ fn cold(doc: &Document) -> Result<f64, String> {
 }
 
 /// Milliseconds `command` takes on `doc` once its plan is kept (planned once before), the middle
-/// of [`RUNS`].
+/// of [`RUNS`]. The export (as DST) plans afresh, by design: what a file holds never depends on
+/// what was kept.
 fn kept(doc: &Document, command: &str) -> Result<f64, String> {
     let mut s = fresh(doc);
     s.execute("embroidery.stats", &json!({})).map_err(err)?;
+    let params = if command == "document.export" { json!({"format": "dst"}) } else { json!({}) };
     let mut samples = Vec::with_capacity(RUNS);
     for _ in 0..RUNS {
-        samples.push(timed(&mut s, command, &json!({}))?.0);
+        samples.push(timed(&mut s, command, &params)?.0);
     }
     Ok(middle(samples))
 }
@@ -196,6 +202,8 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.push(cold(&clipped)?);
     ms.push(warm(&clipped)?);
     ms.push(warm(&colours(5000)?)?);
+    ms.push(warm(&symbols(1000)?)?);
+    ms.push(kept(&doc, "document.export")?);
     let (first, again) = refused(&synthetic(REFUSED_PATHS)?)?;
     ms.extend([first, again]);
     Ok(ROWS.iter().zip(ms).zip(BUDGETS).map(|((name, ms), budget)| (*name, ms, budget)).collect())
@@ -378,6 +386,41 @@ fn colours(n: usize) -> Result<Document, String> {
     Ok(d)
 }
 
+/// A symbol of a few filled shapes placed `n` times in a grid: every instance's art is copied,
+/// transformed and keyed on every plan.
+fn symbols(n: usize) -> Result<Document, String> {
+    /// The shapes in the symbol, the side of each (points), and how far apart the instances are
+    /// (points) and how many a row holds.
+    const SHAPES: usize = 8;
+    const SIDE: f64 = 4.0;
+    const PITCH: f64 = 40.0;
+    const PER_ROW: usize = 40;
+    let mut d = Document::new(1600.0, 1600.0);
+    let mut children = Vec::with_capacity(SHAPES);
+    for k in 0..SHAPES {
+        let x = (k % 4) as f64 * 2.0 * SIDE;
+        let y = (k / 4) as f64 * 2.0 * SIDE;
+        let mut square = BezPath::new();
+        polygon(&mut square, &[(x, y), (x + SIDE, y), (x + SIDE, y + SIDE), (x, y + SIDE)]);
+        let c = if k % 2 == 0 { Color::rgb(0.8, 0.1, 0.1) } else { Color::rgb(0.1, 0.2, 0.7) };
+        children.push(std::sync::Arc::new(Node::path(
+            d.alloc_id(),
+            PathData::from_bezpath(&square),
+            Appearance::basic(Paint::solid(c), Paint::None, 0.0),
+        )));
+    }
+    let art = Node::new(d.alloc_id(), NodeKind::Group { children, clip: false });
+    let name = "Tile".to_string();
+    d.symbols.push(vectorcraft_doc::Symbol { name: name.clone(), art: std::sync::Arc::new(art) });
+    let layer = d.layers.first().map(|l| l.id);
+    for k in 0..n {
+        let xf = kurbo::Affine::translate(((k % PER_ROW) as f64 * PITCH, (k / PER_ROW) as f64 * PITCH));
+        let instance = Node::new(d.alloc_id(), NodeKind::SymbolInstance { symbol: name.clone(), xf });
+        d.insert(layer, usize::MAX, instance).map_err(|e| format!("placing the symbol: {e}"))?;
+    }
+    Ok(d)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -397,6 +440,8 @@ mod tests {
         let (count, colours) = (doc.layers[0].children().map_or(0, Vec::len), colours(10).unwrap());
         assert_eq!(count, 1);
         assert_eq!(colours.layers[0].children().map_or(0, Vec::len), 10);
+        let tiles = symbols(3).unwrap();
+        assert_eq!((tiles.layers[0].children().map_or(0, Vec::len), tiles.symbols.len()), (3, 1));
         let clipped = clipped_strokes(5, 100).unwrap();
         assert!(matches!(&clipped.layers[0].children().unwrap()[0].kind, NodeKind::Group { clip: true, children } if children.len() == 6));
     }

@@ -48,13 +48,15 @@ impl<'a> Of<'a> {
 /// or undone document alive) cut to which selection, with which options, and with which fonts: a
 /// text clipping path is outlined with the fonts installed, so a font added since can change the
 /// plan of the same snapshot ([`vectorcraft_text::FontDb::generation`], as the renderer's caches
-/// key on it).
+/// key on it). A design too large to plan is remembered too, so that the commands that read it one
+/// after another are refused at once rather than each planning up to the limit again; a cancelled
+/// plan never is (the next one plans).
 struct Memo {
     snapshot: Weak<Document>,
     selection: Vec<NodeId>,
     opts: Options,
     fonts: u64,
-    plan: Arc<DesignPlan>,
+    plan: Result<Arc<DesignPlan>, PlanError>,
 }
 
 /// One document's planning: its units' stitches kept between plans, and its last plan.
@@ -75,27 +77,41 @@ impl PlanService {
     pub(crate) fn plan(&self, of: Of<'_>, doc: &Document, opts: &Options) -> Result<Arc<DesignPlan>, PlanError> {
         let fonts = vectorcraft_text::FontDb::global().generation();
         if let Some(plan) = self.remembered(of, opts, fonts) {
-            return Ok(plan);
+            return plan;
         }
         #[cfg(test)]
         self.walks.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let plan = Arc::new(digitize(doc, opts, Some(&self.units))?);
+        let plan = digitize(doc, opts, Some(&self.units)).map(Arc::new);
         // A memo that a panic elsewhere left locked is passed by: the next plan walks again.
-        if let Ok(mut last) = self.last.lock() {
+        if plan.as_ref().err() != Some(&PlanError::Cancelled)
+            && let Ok(mut last) = self.last.lock()
+        {
             let snapshot = Arc::downgrade(of.snapshot);
             *last = Some(Memo { snapshot, selection: of.selection.to_vec(), opts: opts.clone(), fonts, plan: plan.clone() });
         }
-        Ok(plan)
+        plan
     }
 
-    /// The last plan, when it was of snapshot `doc` with `opts` and the fonts of generation
-    /// `fonts`. A snapshot held only weakly can't be mistaken for another made since: its memory
-    /// isn't reused while a weak reference is held.
-    pub(super) fn remembered(&self, of: Of<'_>, opts: &Options, fonts: u64) -> Option<Arc<DesignPlan>> {
+    /// The last plan (or why there is none), when it was of snapshot `doc` with `opts` and the
+    /// fonts of generation `fonts`. A snapshot held only weakly can't be mistaken for another made
+    /// since: its memory isn't reused while a weak reference is held.
+    pub(super) fn remembered(&self, of: Of<'_>, opts: &Options, fonts: u64) -> Option<Result<Arc<DesignPlan>, PlanError>> {
         let last = self.last.lock().ok()?;
         let memo = last.as_ref()?;
         let same = std::ptr::eq(memo.snapshot.as_ptr(), Arc::as_ptr(of.snapshot)) && memo.selection == of.selection;
         (same && memo.opts == *opts && memo.fonts == fonts).then(|| memo.plan.clone())
+    }
+
+    /// A service whose cache holds at most `limit` stitches (small, in tests that drop units).
+    #[cfg(test)]
+    pub(crate) fn with_limit(limit: usize) -> Self {
+        Self { units: Mutex::new(UnitCache::with_limit(limit)), ..Self::default() }
+    }
+
+    /// How many areas the path operations made are kept.
+    #[cfg(test)]
+    pub(crate) fn shapes(&self) -> usize {
+        self.units.lock().map_or(0, |c| c.shapes())
     }
 
     /// How many times it walked a document.

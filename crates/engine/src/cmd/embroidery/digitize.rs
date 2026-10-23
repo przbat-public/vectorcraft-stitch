@@ -10,14 +10,14 @@ use vectorcraft_color::Paint;
 use vectorcraft_doc::cancel;
 use vectorcraft_doc::embroidery::{StitchRun, ThreadPalette};
 use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind, StrokeAlign, StrokeLayer};
-use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Point, Shape, kurbo};
+use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Point, Rect, Shape, kurbo};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
 use vectorcraft_render::effects::stroke::outline_region;
 use vectorcraft_stitch::plan::{self, Style};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
 use super::Options;
-use super::cache::{UnitCache, UnitKey};
+use super::cache::{Shaped, Shared, UnitCache, UnitKey, clip_words, path as path_words, rule_word};
 use super::plan::{Choice, DesignPlan, Origin, Part};
 use super::sequence::{CLEARANCE, Facts, Planned, Sequence};
 use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
@@ -40,6 +40,14 @@ pub(super) use vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 const LITERAL_FLATTEN: f64 = 0.05;
 /// The column width given for what is not a satin column: fills and running lines have none.
 const NO_WIDTH: f64 = 0.0;
+/// What an area the path operations make is made of, the first word of its key ([`Digitizer::area`]):
+/// a fill's own area, a stroke's painted area (dashed, aligned, of varying width, with arrowheads),
+/// a stroke filled at its width.
+const AREA_FILL: u64 = 0;
+const AREA_STROKE_PAINTED: u64 = 1;
+const AREA_STROKE_FILLED: u64 = 2;
+/// What a clip group inside another leaves visible: its region with the outer one's.
+const AREA_CLIPS: u64 = 3;
 /// The most stitches a design may have: far beyond any hoop (large designs run to a few hundred
 /// thousand), and a bound on the memory an export can take.
 const MAX_DESIGN_STITCHES: usize = 2_000_000;
@@ -85,6 +93,10 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
 /// afresh.
 pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>) -> Result<DesignPlan, PlanError> {
     let seq = Sequence::new(opts.params(Style::Running, NO_WIDTH));
+    // The units this plan uses and adds are its own: the cache drops none for another of them.
+    if let Some(mut kept) = cache.and_then(|c| c.lock().ok()) {
+        kept.begin();
+    }
     // The document as it prints: appearances expanded, what can't be sewn said.
     let sewable = super::printed::sewable(doc);
     // Not about the art: said, but not counted as art left out.
@@ -144,6 +156,15 @@ struct Sewing<'a> {
     clip_stitches: bool,
 }
 
+/// The region the clip groups around an object leave visible (millimetres, with its fill rule),
+/// its words as a key part shared by the keys of everything inside ([`Shared`]), and its bounds:
+/// each worked out once a clip group, not once an object.
+struct Clip {
+    region: (BezPath, FillRule),
+    key: Arc<Shared>,
+    bounds: Rect,
+}
+
 /// The document walk that plans each object's stitches.
 struct Digitizer<'a> {
     /// The document as it prints ([`super::printed::sewable`]).
@@ -161,9 +182,9 @@ struct Digitizer<'a> {
     nest: u32,
     /// The symbol instances placed so far, against [`MAX_SYMBOL_PLACEMENTS`].
     placements: u64,
-    /// The region the clip groups around the current object leave visible (millimetres), `None`
-    /// outside any clip group.
-    clip: Option<(BezPath, FillRule)>,
+    /// The region the clip groups around the current object leave visible, `None` outside any
+    /// clip group.
+    clip: Option<Clip>,
     /// The group the walk is in: literal stitch runs ([`StitchRun`]) of one group are one colour
     /// block of the file they came from, and stay one.
     owner: Option<NodeId>,
@@ -396,7 +417,7 @@ impl<'a> Digitizer<'a> {
             points.pop();
         }
         if let Some(clip) = &self.clip {
-            points = cut_to(points, clip, &self.opts.params(Style::Running, NO_WIDTH));
+            points = cut_to(points, &clip.region, &self.opts.params(Style::Running, NO_WIDTH));
         }
         if points.is_empty() || !self.count(points.len()) {
             return;
@@ -431,14 +452,27 @@ impl<'a> Digitizer<'a> {
         if let Some(fill) = &paint.fill {
             self.node(fill);
         }
-        let inner = match &self.clip {
-            None => (region, rule),
-            Some((outer, outer_rule)) => {
-                let both = boolean(&PathData::from_bezpath(outer), *outer_rule, &PathData::from_bezpath(&region), rule, BoolOp::Intersect);
-                (both.to_bezpath(), FillRule::NonZero)
+        // Inside another clip group, what both leave visible (kept between plans as a fill's area
+        // is: the outer region is the key's shared part).
+        let inner = match self.clip.is_some() {
+            false => (region, rule),
+            true => {
+                let what = || {
+                    let mut k = vec![AREA_CLIPS];
+                    path_words(&mut k, &region);
+                    k.push(rule_word(rule));
+                    Some(k)
+                };
+                let shaped = self.area(what, |d| {
+                    let (area, rule) = d.clipped(&region, rule);
+                    Shaped { area, rule, expanded_away: false }
+                });
+                (shaped.area.clone(), shaped.rule)
             }
         };
-        let outer = self.clip.replace(inner);
+        let key = self.shared(clip_words(&inner.0, inner.1));
+        let bounds = inner.0.bounding_box();
+        let outer = self.clip.replace(Clip { region: inner, key, bounds });
         for c in rest {
             self.node(c);
         }
@@ -502,9 +536,15 @@ impl<'a> Digitizer<'a> {
                         self.colour(Sewing { unit, opts, style, why, width: NO_WIDTH, clip_stitches: true }, &mm, rule, &fill.paint);
                         continue;
                     }
-                    let (area, area_rule) = if style == Style::Fill { self.expanded(&mm, rule, opts.expand()) } else { (mm.clone(), rule) };
-                    let (area, area_rule) = self.clipped(&area, area_rule);
-                    self.colour(Sewing { unit, opts, style, why, width: NO_WIDTH, clip_stitches: false }, &area, area_rule, &fill.paint);
+                    let e = if style == Style::Fill { opts.expand() } else { 0.0 };
+                    let what = || {
+                        let mut k = vec![AREA_FILL];
+                        path_words(&mut k, &mm);
+                        k.extend([rule_word(rule), e.to_bits()]);
+                        Some(k)
+                    };
+                    let shaped = self.area(what, |d| d.expanded_and_clipped(&mm, rule, e));
+                    self.colour(Sewing { unit, opts, style, why, width: NO_WIDTH, clip_stitches: false }, &shaped.area, shaped.rule, &fill.paint);
                 }
                 AppearanceItem::Stroke(stroke) => {
                     let width = pt_to_mm(stroke.width).max(0.0);
@@ -513,11 +553,23 @@ impl<'a> Digitizer<'a> {
                     // area, as on the canvas, is filled, its narrow parts satin columns that
                     // follow it; unless the `stitch` option sews it along its path.
                     if paints_off_its_path(stroke, bp) && matches!(opts.forced(), None | Some(Style::Fill)) {
-                        let outline = outline_region(&PathData::from_bezpath(bp), rule, stroke).to_bezpath();
-                        let (area, area_rule) = self.expanded(&in_mm(&outline), FillRule::NonZero, opts.expand());
-                        let (area, area_rule) = self.clipped(&area, area_rule);
+                        let e = opts.expand();
+                        // The stroke's every setting, as saved: a stroke that can't be (none can)
+                        // is outlined each plan.
+                        let what = || {
+                            let settings = serde_json::to_vec(stroke).ok()?;
+                            let mut k = vec![AREA_STROKE_PAINTED];
+                            path_words(&mut k, bp);
+                            k.extend([rule_word(rule), e.to_bits(), settings.len() as u64]);
+                            k.extend(settings.chunks(8).map(|c| c.iter().rev().fold(0u64, |w, b| (w << 8) | u64::from(*b))));
+                            Some(k)
+                        };
+                        let shaped = self.area(what, |d| {
+                            let outline = outline_region(&PathData::from_bezpath(bp), rule, stroke).to_bezpath();
+                            d.expanded_and_clipped(&in_mm(&outline), FillRule::NonZero, e)
+                        });
                         let sewing = Sewing { unit, opts, style: Style::Fill, why: Choice::StrokeOutlined, width: NO_WIDTH, clip_stitches: false };
-                        self.colour(sewing, &area, area_rule, &stroke.paint);
+                        self.colour(sewing, &shaped.area, shaped.rule, &stroke.paint);
                         continue;
                     }
                     match opts.forced() {
@@ -534,11 +586,19 @@ impl<'a> Digitizer<'a> {
                                 LineJoin::Round => Join::Round,
                                 LineJoin::Bevel => Join::Bevel,
                             };
-                            let outline = outline_stroke(&PathData::from_bezpath(&mm), width, cap, join, stroke.miter_limit).to_bezpath();
-                            let (area, area_rule) = self.expanded(&outline, FillRule::NonZero, opts.expand());
-                            let (area, area_rule) = self.clipped(&area, area_rule);
+                            let (e, miter) = (opts.expand(), stroke.miter_limit);
+                            let what = || {
+                                let mut k = vec![AREA_STROKE_FILLED];
+                                path_words(&mut k, &mm);
+                                k.extend([width.to_bits(), cap as u64, join as u64, miter.to_bits(), e.to_bits()]);
+                                Some(k)
+                            };
+                            let shaped = self.area(what, |d| {
+                                let outline = outline_stroke(&PathData::from_bezpath(&mm), width, cap, join, miter).to_bezpath();
+                                d.expanded_and_clipped(&outline, FillRule::NonZero, e)
+                            });
                             let sewing = Sewing { unit, opts, style: Style::Fill, why: Choice::StrokeFilled, width: NO_WIDTH, clip_stitches: false };
-                            self.colour(sewing, &area, area_rule, &stroke.paint);
+                            self.colour(sewing, &shaped.area, shaped.rule, &stroke.paint);
                         }
                         // A satin column when it is wide enough to have two rails, a running line
                         // when not, unless the `stitch` option says which.
@@ -562,52 +622,53 @@ impl<'a> Digitizer<'a> {
         }
     }
 
-    /// A filled area (millimetres) grown all round by `e` millimetres, the unit's `expand` (shrunk
-    /// when it is negative), so that neighbouring fills meet without a gap: its union with a band
-    /// twice as wide along its outlines, round at the corners, or what is left of it without that
-    /// band. A subpath that encloses no area (sewn as a line) is left as it is. Unchanged when `e`
-    /// is 0. The clip groups around it cut the result ([`Digitizer::clipped`]): it grows only where
-    /// it shows.
-    fn expanded(&mut self, area: &BezPath, rule: FillRule, e: f64) -> (BezPath, FillRule) {
-        if e.abs() < SAME_POINT {
-            return (area.clone(), rule);
-        }
-        let (mut shapes, mut lines) = (BezPath::new(), BezPath::new());
-        for sub in subpaths(area) {
-            // Closed, as paint closes it; whether it encloses an area is judged closed too (an
-            // open subpath's area would depend on where it lies on the page).
-            let mut closed = sub.clone();
-            if closed.elements().last() != Some(&PathEl::ClosePath) {
-                closed.close_path();
+    /// The area a unit fills, made by `make` (the path operations: `expand`, the clip groups
+    /// around it, a stroke's outline) from what `what` gives the words of (the path and every value
+    /// the operations take; the clip groups' region is the key's shared part, added here): kept
+    /// between plans, so that the operations don't run again on an object that hasn't changed.
+    /// Without a cache (a plan made afresh), or when `what` has no words, it is made each time.
+    /// Says when a negative `expand` left nothing of it.
+    fn area(&mut self, what: impl FnOnce() -> Option<Vec<u64>>, make: impl FnOnce(&Self) -> Shaped) -> Arc<Shaped> {
+        let key = self.cache.and_then(|_| what()).map(|own| UnitKey::new(own, self.clip.as_ref().map(|c| c.key.clone())));
+        let kept = key.as_ref().and_then(|k| self.cache.and_then(|c| c.lock().ok()).and_then(|mut c| c.shape(k)));
+        let shaped = match kept {
+            Some(shaped) => shaped,
+            None => {
+                let shaped = Arc::new(make(self));
+                // A cache that a panic elsewhere left locked is passed by.
+                if let (Some(key), Some(mut c)) = (key, self.cache.and_then(|c| c.lock().ok())) {
+                    c.keep_shape(key, shaped.clone());
+                }
+                shaped
             }
-            if closed.area().abs() >= plan::MIN_AREA {
-                shapes.extend(closed);
-            } else {
-                lines.extend(sub);
-            }
-        }
-        if shapes.elements().is_empty() {
-            return (area.clone(), rule);
-        }
-        // The region the shape covers, by its rule: overlapping or crossing outlines resolved into
-        // its edge, so the band runs along that edge only (a band along an outline inside the
-        // region would cut a groove through it).
-        let region = normalize(&PathData::from_bezpath(&shapes), rule);
-        let band = outline_stroke(&region, 2.0 * e.abs(), Cap::Round, Join::Round, ROUND_JOINS);
-        let op = if e > 0.0 { BoolOp::Union } else { BoolOp::Difference };
-        let mut out = boolean(&region, FillRule::NonZero, &band, FillRule::NonZero, op).to_bezpath();
-        if out.elements().is_empty() && lines.elements().is_empty() {
+        };
+        if shaped.expanded_away {
             self.warn(EXPANDED_AWAY);
         }
-        out.extend(lines);
-        (out, FillRule::NonZero)
+        shaped
+    }
+
+    /// `words` as a key part the keys of everything in a clip group share ([`UnitCache::shared`]).
+    fn shared(&self, words: Vec<u64>) -> Arc<Shared> {
+        match self.cache.and_then(|c| c.lock().ok()) {
+            Some(mut c) => c.shared(words),
+            None => Shared::of(words),
+        }
+    }
+
+    /// A filled area grown by `e` ([`expanded`]), then cut by the clip groups around it
+    /// ([`Digitizer::clipped`]): it grows only where it shows.
+    fn expanded_and_clipped(&self, area: &BezPath, rule: FillRule, e: f64) -> Shaped {
+        let (area, rule, expanded_away) = expanded(area, rule, e);
+        let (area, rule) = self.clipped(&area, rule);
+        Shaped { area, rule, expanded_away }
     }
 
     /// A filled area (millimetres) as the clip groups around it leave it: its intersection with
     /// the clipping path, cut exactly before it is planned; the area itself outside any.
     fn clipped(&self, area: &BezPath, rule: FillRule) -> (BezPath, FillRule) {
         match &self.clip {
-            Some((clip, clip_rule)) => {
+            Some(Clip { region: (clip, clip_rule), .. }) => {
                 let cut = boolean(&PathData::from_bezpath(area), rule, &PathData::from_bezpath(clip), *clip_rule, BoolOp::Intersect);
                 (cut.to_bezpath(), FillRule::NonZero)
             }
@@ -648,8 +709,8 @@ impl<'a> Digitizer<'a> {
         } + left.max(right)
             + CLEARANCE;
         let mut estimate = Some(bounds).filter(|r| r.is_finite() && reach.is_finite()).map(|r| r.inflate(reach, reach));
-        if let (Some(r), Some((clip, _))) = (estimate, &self.clip) {
-            estimate = Some(r.intersect(clip.bounding_box()));
+        if let (Some(r), Some(clip)) = (estimate, &self.clip) {
+            estimate = Some(r.intersect(clip.bounds));
         }
         let from = self.seq.needle(self.seq.target(color, estimate));
         let request = UnitRequest {
@@ -660,7 +721,7 @@ impl<'a> Digitizer<'a> {
             // (on a fill, or on a stroke filled).
             columns: (style == Style::Fill && opts.forced() != Some(Style::Fill)).then(|| opts.params(Style::Satin, NO_WIDTH)),
             from,
-            clip: if clip_stitches { self.clip.as_ref() } else { None },
+            clip: if clip_stitches { self.clip.as_ref().map(|c| &c.region) } else { None },
         };
         let planned = match self.planned(&request) {
             Ok(planned) => planned,
@@ -691,7 +752,7 @@ impl<'a> Digitizer<'a> {
     /// `request`'s stitches: those the cache keeps for it, else planned, and kept.
     fn planned(&self, request: &UnitRequest<'_>) -> Result<Arc<UnitStitches>, PlanError> {
         let Some(cache) = self.cache else { return plan_unit(request).map(Arc::new) };
-        let key = UnitKey::of(request);
+        let key = UnitKey::of(request, self.clip.as_ref().filter(|_| request.clip.is_some()).map(|c| &c.key));
         // A cache that a panic elsewhere left locked is passed by: planning afresh is always right.
         if let Some(kept) = cache.lock().ok().and_then(|mut c| c.get(&key)) {
             return Ok(kept);
@@ -702,6 +763,44 @@ impl<'a> Digitizer<'a> {
         }
         Ok(planned)
     }
+}
+
+/// A filled area (millimetres) grown all round by `e` millimetres, the unit's `expand` (shrunk
+/// when it is negative), so that neighbouring fills meet without a gap: its union with a band
+/// twice as wide along its outlines, round at the corners, or what is left of it without that
+/// band. A subpath that encloses no area (sewn as a line) is left as it is. Unchanged when `e`
+/// is 0. Also whether it left nothing (a negative `expand`).
+fn expanded(area: &BezPath, rule: FillRule, e: f64) -> (BezPath, FillRule, bool) {
+    if e.abs() < SAME_POINT {
+        return (area.clone(), rule, false);
+    }
+    let (mut shapes, mut lines) = (BezPath::new(), BezPath::new());
+    for sub in subpaths(area) {
+        // Closed, as paint closes it; whether it encloses an area is judged closed too (an
+        // open subpath's area would depend on where it lies on the page).
+        let mut closed = sub.clone();
+        if closed.elements().last() != Some(&PathEl::ClosePath) {
+            closed.close_path();
+        }
+        if closed.area().abs() >= plan::MIN_AREA {
+            shapes.extend(closed);
+        } else {
+            lines.extend(sub);
+        }
+    }
+    if shapes.elements().is_empty() {
+        return (area.clone(), rule, false);
+    }
+    // The region the shape covers, by its rule: overlapping or crossing outlines resolved into
+    // its edge, so the band runs along that edge only (a band along an outline inside the
+    // region would cut a groove through it).
+    let region = normalize(&PathData::from_bezpath(&shapes), rule);
+    let band = outline_stroke(&region, 2.0 * e.abs(), Cap::Round, Join::Round, ROUND_JOINS);
+    let op = if e > 0.0 { BoolOp::Union } else { BoolOp::Difference };
+    let mut out = boolean(&region, FillRule::NonZero, &band, FillRule::NonZero, op).to_bezpath();
+    let away = out.elements().is_empty() && lines.elements().is_empty();
+    out.extend(lines);
+    (out, FillRule::NonZero, away)
 }
 
 /// Whether an appearance item is painted at all (not `none`): only painted items are sewn, and

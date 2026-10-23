@@ -1,5 +1,6 @@
-//! The planning service: a plan made with the units' stitches kept from the plans before it is
-//! the plan made afresh, for random documents edited at random; what is kept stays within its
+//! The planning service: a plan made with the units' stitches (and the areas the path operations
+//! made) kept from the plans before it is the plan made afresh, for random documents edited at
+//! random, with a cache small enough to drop what it keeps or not; what is kept stays within its
 //! bound; one snapshot of a document with the same options is planned once.
 
 use std::sync::Arc;
@@ -30,7 +31,8 @@ struct Art {
     stroke: Option<(usize, f64)>,
 }
 
-/// One random edit, of the object at an index of the objects still there.
+/// One random edit, of the object at an index of the objects still there, of the document or of
+/// how it is planned.
 #[derive(Clone, Debug)]
 enum Edit {
     Move(usize, f64, f64),
@@ -39,6 +41,20 @@ enum Edit {
     Delete(usize),
     ToFront(usize),
     Undo,
+    Redo,
+    Hide(usize),
+    ShowAll,
+    TrimAfter(usize, bool),
+    /// The thread palette: Brother's, or Janome's.
+    Palette(bool),
+    /// A clip group of two objects (the upper one clips).
+    Clip(usize, usize),
+    /// An object made a symbol, and the symbol placed once more.
+    Symbol(usize, f64, f64),
+    /// Planned with the options at an index of [`OPTIONS`] from here on.
+    Options(usize),
+    /// The document exported to PES and opened: its runs literal stitches.
+    Open,
 }
 
 fn art() -> impl Strategy<Value = Art> {
@@ -59,13 +75,33 @@ fn edit() -> impl Strategy<Value = Edit> {
         1 => (0usize..16).prop_map(Edit::Delete),
         1 => (0usize..16).prop_map(Edit::ToFront),
         1 => Just(Edit::Undo),
+        1 => Just(Edit::Redo),
+        1 => (0usize..16).prop_map(Edit::Hide),
+        1 => Just(Edit::ShowAll),
+        1 => (0usize..16, any::<bool>()).prop_map(|(i, on)| Edit::TrimAfter(i, on)),
+        1 => any::<bool>().prop_map(Edit::Palette),
+        1 => (0usize..16, 0usize..16).prop_map(|(a, b)| Edit::Clip(a, b)),
+        1 => (0usize..16, 0.0..220.0f64, 0.0..220.0f64).prop_map(|(i, x, y)| Edit::Symbol(i, x, y)),
+        1 => (0..OPTIONS.len()).prop_map(Edit::Options),
+        1 => Just(Edit::Open),
     ]
 }
 
-/// The export options a random document is planned with: the defaults, or ones that change how
-/// every unit is sewn.
-fn options() -> impl Strategy<Value = Value> {
-    prop_oneof![Just(json!({})), Just(json!({"stitchStyle": "satin"})), Just(json!({"density": 0.5, "jumpLength": 3, "trimLength": 4}))]
+/// The export options a random document is planned with: the defaults, ones that change how every
+/// unit is sewn, and `expand` both ways (fills grown or shrunk by the path operations).
+const OPTIONS: [&str; 5] =
+    [r#"{}"#, r#"{"stitchStyle": "satin"}"#, r#"{"density": 0.5, "jumpLength": 3, "trimLength": 4}"#, r#"{"expand": 0.3}"#, r#"{"expand": -0.4}"#];
+
+/// The options at index `k` of [`OPTIONS`].
+fn options_at(k: usize) -> Options {
+    let v: Value = serde_json::from_str(OPTIONS[k % OPTIONS.len()]).unwrap();
+    Options::from_params(&v, "test").unwrap()
+}
+
+/// How many stitches the service's cache may hold: the default, or few enough that it drops units
+/// within a plan and between plans.
+fn cache_limit() -> impl Strategy<Value = Option<usize>> {
+    prop_oneof![2 => Just(None), 1 => Just(Some(400)), 1 => Just(Some(4000))]
 }
 
 /// A session holding `arts` → it and their ids, in stacking order.
@@ -98,8 +134,9 @@ fn objects(s: &Session) -> Vec<u64> {
     s.doc().unwrap().doc.layers.iter().filter_map(|l| l.children()).flatten().map(|c| c.id.0).collect()
 }
 
-/// Apply `e` to the objects `ids` (those still there, in no particular order).
-fn apply(s: &mut Session, ids: &mut Vec<u64>, e: &Edit) {
+/// Apply `e` to the objects `ids` (those still there, in no particular order), planned with
+/// `opts`.
+fn apply(s: &mut Session, ids: &mut Vec<u64>, opts: &mut Options, e: &Edit) {
     let pick = |i: usize| ids.get(i % ids.len().max(1)).copied();
     match *e {
         Edit::Move(i, dx, dy) => {
@@ -128,29 +165,83 @@ fn apply(s: &mut Session, ids: &mut Vec<u64>, e: &Edit) {
                 run(s, "object.arrange.bringToFront", json!({"ids": [id]}));
             }
         }
-        // An undo may bring back an object deleted: the objects to edit are the document's again,
-        // restored ones included.
+        // An undo (or a redo) may bring back an object deleted: the objects to edit are the
+        // document's again, restored ones included.
         Edit::Undo => {
             let _ = s.execute("edit.undo", &json!({}));
             *ids = objects(s);
+        }
+        Edit::Redo => {
+            let _ = s.execute("edit.redo", &json!({}));
+            *ids = objects(s);
+        }
+        Edit::Hide(i) => {
+            if let Some(id) = pick(i) {
+                run(s, "object.hide", json!({"ids": [id]}));
+            }
+        }
+        Edit::ShowAll => {
+            let _ = s.execute("object.showAll", &json!({}));
+        }
+        Edit::TrimAfter(i, on) => {
+            if let Some(id) = pick(i) {
+                run(s, "embroidery.setTrimAfter", json!({"on": on, "ids": [id]}));
+            }
+        }
+        Edit::Palette(pec) => {
+            run(s, "embroidery.setup", json!({"palette": if pec { "pec" } else { "jef" }}));
+        }
+        // Either may fail (one object, or objects in different groups): the document is then as
+        // it was.
+        Edit::Clip(a, b) => {
+            if let (Some(a), Some(b)) = (pick(a), pick(b))
+                && a != b
+            {
+                run(s, "select.set", json!({"ids": [a, b]}));
+                let _ = s.execute("object.clippingMask.make", &json!({}));
+                *ids = objects(s);
+            }
+        }
+        Edit::Symbol(i, x, y) => {
+            if let Some(id) = pick(i) {
+                let name = format!("Symbol {}", s.doc().unwrap().doc.symbols.len());
+                run(s, "select.set", json!({"ids": [id]}));
+                if s.execute("symbol.new", &json!({"name": name})).is_ok() {
+                    let _ = s.execute("symbol.place", &json!({"name": name, "x": x, "y": y}));
+                }
+                *ids = objects(s);
+            }
+        }
+        Edit::Options(k) => *opts = options_at(k),
+        Edit::Open => {
+            if let Ok(r) = s.execute("document.export", &json!({"format": "pes"})) {
+                let data = r["dataBase64"].as_str().unwrap().to_string();
+                run(s, "document.open", json!({"name": "design.pes", "dataBase64": data}));
+                *ids = objects(s);
+            }
         }
     }
     run(s, "select.none", json!({}));
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 48, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(ProptestConfig { cases: 64, failure_persistence: None, ..ProptestConfig::default() })]
 
-    /// A plan made with the stitches kept from the plans before it, after every edit, is the plan
-    /// made afresh.
+    /// A plan made with the stitches and areas kept from the plans before it, after every edit, is
+    /// the plan made afresh, whatever the cache had room for.
     #[test]
-    fn a_plan_with_kept_units_is_a_fresh_plan(arts in proptest::collection::vec(art(), 1..8), edits in proptest::collection::vec(edit(), 1..8), opts in options()) {
-        let opts = Options::from_params(&opts, "test").unwrap();
+    fn a_plan_with_kept_units_is_a_fresh_plan(
+        arts in proptest::collection::vec(art(), 1..8),
+        edits in proptest::collection::vec(edit(), 1..10),
+        first in 0..OPTIONS.len(),
+        limit in cache_limit(),
+    ) {
+        let mut opts = options_at(first);
         let (mut s, mut ids) = build(&arts);
-        let service = PlanService::default();
+        let service = limit.map_or_else(PlanService::default, PlanService::with_limit);
         for e in std::iter::once(None).chain(edits.iter().map(Some)) {
             if let Some(e) = e {
-                apply(&mut s, &mut ids, e);
+                apply(&mut s, &mut ids, &mut opts, e);
             }
             let doc = s.doc().unwrap().doc.clone();
             let kept = service.plan(Of::whole(&doc), &doc, &opts).map(|p| (*p).clone());
@@ -176,8 +267,8 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
         from: Some(Point::new(3.0, 4.0)),
         clip: Some(&clip),
     };
-    let key = UnitKey::of(&base);
-    assert_eq!(key, UnitKey::of(&base.clone()), "the same request, the same key");
+    let key = UnitKey::of(&base, None);
+    assert_eq!(key, UnitKey::of(&base.clone(), None), "the same request, the same key");
     let moved: BezPath = {
         let mut p = shape.clone();
         p.apply_affine(vectorcraft_geom::Affine::translate((0.1, 0.0)));
@@ -227,7 +318,7 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
         changed.push(UnitRequest { columns: Some(columns), ..base });
     }
     for (k, req) in changed.iter().enumerate() {
-        assert_ne!(UnitKey::of(req), key, "change {k}");
+        assert_ne!(UnitKey::of(req, None), key, "change {k}");
     }
 }
 
@@ -247,17 +338,27 @@ fn the_units_used_least_recently_are_dropped_first() {
         })
         .collect();
     let key = |shape: &BezPath| {
-        UnitKey::of(&UnitRequest { shape, rule: FillRule::NonZero, params: Params::for_style(Style::Running), columns: None, from: None, clip: None })
+        UnitKey::of(
+            &UnitRequest { shape, rule: FillRule::NonZero, params: Params::for_style(Style::Running), columns: None, from: None, clip: None },
+            None,
+        )
     };
     // Each unit 100 stitches and a key of about 40 words: 4 such units don't fit a limit of 320.
     let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None });
+    // Each step a plan of its own (one plan's units are never dropped for each other).
     let mut cache = UnitCache::with_limit(320);
+    cache.begin();
     cache.insert(key(&shapes[0]), unit());
+    cache.begin();
     cache.insert(key(&shapes[1]), unit());
+    cache.begin();
     assert!(cache.get(&key(&shapes[0])).is_some(), "the first is used again");
+    cache.begin();
     cache.insert(key(&shapes[2]), unit());
+    cache.begin();
     cache.insert(key(&shapes[3]), unit());
     assert!(cache.held() <= 320, "{}", cache.held());
+    cache.begin();
     assert!(cache.get(&key(&shapes[1])).is_none(), "the one used least recently went first");
     assert!(cache.get(&key(&shapes[3])).is_some(), "the last added stays");
     // A unit larger than the whole limit is not kept, and drops nothing.
@@ -265,6 +366,92 @@ fn the_units_used_least_recently_are_dropped_first() {
     cache.insert(key(&shapes[1]), Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 400], columns: None, widths: None }));
     assert_eq!(cache.units(), before);
     assert!(cache.get(&key(&shapes[1])).is_none());
+}
+
+/// A plan whose units don't all fit keeps those it planned first, never dropping one of its own for
+/// another: the next plan of the same units finds those, where dropping the least recently used
+/// would have dropped, unit by unit, the very one asked for next, and kept none.
+#[test]
+fn a_plan_keeps_its_first_units_when_not_all_fit() {
+    use vectorcraft_geom::{BezPath, FillRule, Point};
+    use vectorcraft_stitch::Stitch;
+    use vectorcraft_stitch::plan::{Params, Style};
+    let shapes: Vec<BezPath> = (0..3)
+        .map(|k| {
+            let mut p = BezPath::new();
+            p.move_to(Point::new(f64::from(k), 0.0));
+            p.line_to(Point::new(f64::from(k), 10.0));
+            p
+        })
+        .collect();
+    let key = |shape: &BezPath| {
+        UnitKey::of(
+            &UnitRequest { shape, rule: FillRule::NonZero, params: Params::for_style(Style::Running), columns: None, from: None, clip: None },
+            None,
+        )
+    };
+    let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None });
+    // Two units of 100 stitches and their keys fit 320, three don't.
+    let mut cache = UnitCache::with_limit(320);
+    for _ in 0..3 {
+        cache.begin();
+        let found: Vec<bool> = shapes
+            .iter()
+            .map(|shape| {
+                let kept = cache.get(&key(shape)).is_some();
+                if !kept {
+                    cache.insert(key(shape), unit());
+                }
+                kept
+            })
+            .collect();
+        assert!(cache.held() <= 320, "{}", cache.held());
+        assert_eq!(cache.units(), 2);
+        if found.iter().any(|k| *k) {
+            assert_eq!(found, [true, true, false], "the first two kept, plan after plan");
+        }
+    }
+}
+
+/// A design too large to plan is refused again at once, without planning up to the limit again;
+/// a plan of it with other options is planned.
+#[test]
+fn a_design_too_large_is_refused_once_per_snapshot() {
+    let mut s = Session::new();
+    run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
+    run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+    // Three metres a side: more stitches than one shape may have.
+    run(&mut s, "shape.rectangle", json!({"x": 0, "y": 0, "width": 8500, "height": 8500}));
+    let doc = s.doc().unwrap().doc.clone();
+    let service = PlanService::default();
+    let opts = Options::default();
+    let first = service.plan(Of::whole(&doc), &doc, &opts);
+    assert!(matches!(first, Err(PlanError::TooLarge(_))), "{first:?}");
+    assert_eq!(service.walks(), 1);
+    assert_eq!(service.plan(Of::whole(&doc), &doc, &opts), first, "the same refusal");
+    assert_eq!(service.walks(), 1, "not planned again");
+    let other = options_at(2);
+    assert!(service.plan(Of::whole(&doc), &doc, &other).is_err());
+    assert_eq!(service.walks(), 2, "other options, planned");
+}
+
+/// The areas the path operations make are kept: a plan after one object moves makes that
+/// object's area again, and takes every other one's from what was kept.
+#[test]
+fn a_plan_after_a_nudge_makes_only_the_moved_objects_area() {
+    let arts: Vec<Art> =
+        (0..3).map(|k| Art { kind: 0, x: 20.0 + 70.0 * f64::from(k), y: 40.0, w: 50.0, h: 40.0, fill: Some(k as usize), stroke: None }).collect();
+    let (mut s, ids) = build(&arts);
+    let opts = options_at(3);
+    let service = PlanService::default();
+    let doc = s.doc().unwrap().doc.clone();
+    service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    assert_eq!(service.shapes(), 3, "each fill's grown area");
+    run(&mut s, "object.move", json!({"ids": [ids[1]], "dx": 2, "dy": 0}));
+    let doc = s.doc().unwrap().doc.clone();
+    let kept = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    assert_eq!(service.shapes(), 4, "only the moved one's made again");
+    assert_eq!(*kept, digitize(&doc, &opts, None).unwrap());
 }
 
 /// Each document has a service of its own, dropped when it closes; a second plan of a document

@@ -1479,6 +1479,14 @@ nudged ten times and timed until the stitches drawn are of the document as it is
 Edit to fresh counts whole frames: the edit's frame schedules the plan, the next takes it in and
 draws it. A selection change uploads nothing and renders no art (`stitch_layer` tests).
 
+Measured again with the whole PR in (2026-10-23, load about 3, twice), now that every plan also
+makes `embroidery.stats` for the status bar's counters: a drag's frames at most 5.2 ms at the 95th
+percentile; an edit to its stitches drawn 29 to 34 ms per design (median), 38 ms at worst. Changing
+the sewing order (`perf --embroidery`'s "sewing order: move one object, re-plan": one object of
+1,000 paths moved with `layer.move`, then planned again with the units kept) takes 2.6 to 2.7 ms
+against a 100 ms budget; the other 31 embroidery rows stay within theirs (the 20 rings in one fill
+plan in 584 ms cold against 600).
+
 ### Drawing stitches
 
 One stitch scene is built from the plan and drawn by the same renderer in the app and headless, in

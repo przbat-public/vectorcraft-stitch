@@ -142,6 +142,10 @@ pub struct Counters {
     slot: Option<(u64, Variant, f32)>,
     /// What the last frame showed, for `ui.inspect`.
     last: Option<(State, String)>,
+    /// The room the counters had in the last frame and their shortest wording's width, points (the
+    /// tests hold them to show whenever it fits).
+    #[cfg(test)]
+    pub(crate) fit: Option<(f32, f32)>,
 }
 
 impl Counters {
@@ -312,6 +316,10 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, timings: &egui::RichText) -> 
     let separator = ui.spacing().item_spacing.x * 2.0 + 1.0;
     let rest = ui.available_width() - readout_w - if message { MIN_MESSAGE_ROOM + gap } else { 0.0 } - separator;
     let widths: Vec<f32> = choices.iter().map(|(_, w, _)| measure(w, FontId::proportional(TEXT))).collect();
+    #[cfg(test)]
+    {
+        app.embroidery.counters.fit = widths.last().map(|w| (rest, *w));
+    }
     let fits = |k: usize, room: f32| widths.get(k).is_some_and(|w| *w <= room);
     // With the timings, the three longest wordings; without, any.
     let with_timings = rest - timings_w - gap;

@@ -88,11 +88,19 @@ fn the_figures_show_while_the_stitches_are_wanted() {
     let v = app.embroidery.counters.inspect();
     assert_eq!((&v["state"], &v["stitches"], &v["colors"], &v["threadChanges"]), (&json!("figures"), &json!(f.stitches), &json!(3), &json!(2)));
     assert_eq!(v["shown"], json!(full));
-    // The panel closed: hidden again, and nothing asks for a plan.
+    // The panel closed: hidden again, and the bar alone asks for nothing: no plan, no reply.
+    let sent = app.embroidery.preview.log.sent.len();
+    let uid = app.session.active().unwrap().uid;
     frame(&mut app, &ctx, 1.0, 1600.0, 1.0, false);
+    // An edit too: the bar plans nothing for it.
+    app.run("select.all", json!({})).unwrap();
+    app.run("object.move", json!({"dx": 1, "dy": 0})).unwrap();
     let texts = frame(&mut app, &ctx, 1.1, 1600.0, 1.0, false);
+    frame(&mut app, &ctx, 1.5, 1600.0, 1.0, false);
     assert!(!said(&texts, "stitches"), "{texts:?}");
     assert!(!app.embroidery.preview.plan_wanted());
+    assert_eq!(app.embroidery.preview.log.sent.len(), sent, "nothing sent for the bar alone");
+    assert_eq!(app.embroidery.preview.freshness(uid, 1.5), crate::embroidery::stitch_preview::Freshness::Off);
 }
 
 /// The wordings, longest first, and in Polish with the language's numbers.
@@ -209,6 +217,10 @@ fn the_counters_fit_the_bar() {
                         }
                         if !shown.is_empty() {
                             assert!(texts.iter().any(|(t, _)| *t == shown), "{case}: {shown:?} drawn");
+                        }
+                        // Shown whenever the shortest wording fits the room the bar leaves.
+                        if let Some((room, shortest)) = app.embroidery.counters.fit {
+                            assert_eq!(!shown.is_empty(), shortest <= room, "{case}: {shortest} in {room}");
                         }
                     }
                     crate::i18n::set_current(crate::i18n::Lang::EN);

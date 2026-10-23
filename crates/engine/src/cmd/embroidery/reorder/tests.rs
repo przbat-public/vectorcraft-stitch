@@ -268,6 +268,11 @@ fn the_sew_commands() {
     assert!(e.contains("sewn last already"), "{e}");
     s.execute("embroidery.sewFirst", &json!({})).unwrap();
     assert_eq!(sewn(&plan_of(&mut s))[0], order[1]);
+    // Sewn first, then a step later: second, just above the object that was sewn next.
+    let next = sewn(&plan_of(&mut s))[1];
+    let r = s.execute("embroidery.sewLater", &json!({})).unwrap();
+    assert_eq!((&r["ids"], &r["target"], &r["place"]), (&json!([order[1]]), &json!(next), &json!("above")));
+    assert_eq!(sewn(&plan_of(&mut s))[..2], [next, order[1]]);
     s.execute("select.none", &json!({})).unwrap();
     let e = s.execute("embroidery.sewLater", &json!({})).unwrap_err().to_string();
     assert!(e.contains("nothing selected is sewn"), "{e}");

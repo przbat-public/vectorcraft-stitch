@@ -7,7 +7,7 @@
 
 use vectorcraft_doc::cancel;
 use vectorcraft_geom::{BezPath, FillRule, PathData, Point, Shape};
-use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke};
+use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke, unite_all};
 use vectorcraft_stitch::plan::{self, Params};
 use vectorcraft_stitch::{Command, Stitch};
 
@@ -125,17 +125,16 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError
 /// and the columns as the same operations give them, every row's end lies on or inside it.) An
 /// error when the plan is cancelled between two columns.
 fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column]) -> Result<(BezPath, BezPath), PlanError> {
-    let mut cut: Option<PathData> = None;
+    // Every column's outline and the band along it, united in one sweep (uniting them one at a
+    // time swept everything so far again for each column).
+    let mut parts: Vec<PathData> = Vec::with_capacity(2 * columns.len());
     for c in columns {
         cancel::check().map_err(|_| PlanError::Cancelled)?;
         let outline = PathData::from_bezpath(&c.outline());
-        let band = outline_stroke(&outline, 2.0 * COLUMN_GROWTH, Cap::Round, Join::Round, ROUND_JOINS);
-        let grown = boolean(&outline, FillRule::NonZero, &band, FillRule::NonZero, BoolOp::Union);
-        cut = Some(match cut {
-            Some(all) => boolean(&all, FillRule::NonZero, &grown, FillRule::NonZero, BoolOp::Union),
-            None => grown,
-        });
+        parts.push(outline_stroke(&outline, 2.0 * COLUMN_GROWTH, Cap::Round, Join::Round, ROUND_JOINS));
+        parts.push(outline);
     }
+    let cut = (!parts.is_empty()).then(|| unite_all(&parts.iter().map(|p| (p, FillRule::NonZero)).collect::<Vec<_>>()));
     match cut {
         Some(cut) => {
             let rest = boolean(&PathData::from_bezpath(area), rule, &cut, FillRule::NonZero, BoolOp::Difference);

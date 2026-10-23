@@ -29,15 +29,17 @@ pub fn stitch_preview_options() -> Item {
 }
 
 /// Whether command `id`'s item is checked, for the stitch view's commands: as the active
-/// document's stitch view is set; Show Check Marks, as the session has it. `None` for any other
-/// command.
+/// document's stitch view is set, Stitch Preview only while the canvas can show the stitches (not
+/// while an opacity mask or a pattern is edited, which shows the art, as the switch does); Show
+/// Check Marks, as the session has it. `None` for any other command.
 pub fn checked(app: &VectorcraftApp, id: &str) -> Option<bool> {
     if id == "view.checkMarks" {
         return Some(!app.embroidery.check.hide_marks);
     }
     let v = app.session.stitch_view();
+    let paused = app.session.active().is_some_and(|st| paused(&st.doc).is_some());
     Some(match id {
-        "view.stitchPreview" => v.on,
+        "view.stitchPreview" => v.on && !paused,
         "view.stitchPreview.jumps" => v.jumps,
         "view.stitchPreview.needlePoints" => v.needle_points,
         "view.stitchPreview.artwork" => v.artwork,

@@ -104,6 +104,14 @@ fn hidden_in_presentation_mode_and_disabled_while_a_pattern_is_edited() {
     click(&mut app, &ctx, 0.2, stitches);
     assert!(!app.session.stitch_view().on, "disabled");
     assert!(app.session.active().unwrap().doc.pattern_edit.is_some(), "the canvas didn't take the click");
+    // Turned on by the menu, the art still shows: View › Stitch Preview isn't checked meanwhile.
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    assert_eq!(crate::embroidery::menu::checked(&app, "view.stitchPreview"), Some(false));
+    app.run("object.pattern.cancel", json!({})).unwrap();
+    assert_eq!(crate::embroidery::menu::checked(&app, "view.stitchPreview"), Some(true), "and checked again once the edit ends");
+    app.run("view.stitchPreview", json!({"on": false})).unwrap();
+    app.run("select.all", json!({})).unwrap();
+    app.run("object.pattern.make", json!({})).unwrap();
     app.run("object.pattern.cancel", json!({})).unwrap();
     app.ui.screen_mode = 3;
     let ctx = egui::Context::default();

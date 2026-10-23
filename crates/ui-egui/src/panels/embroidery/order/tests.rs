@@ -208,6 +208,175 @@ fn a_drag_held_at_the_lists_edge_scrolls_it() {
     frame(&mut app, &ctx, time + 0.05, vec![button(top, false)]);
 }
 
+/// Where `row` shows in the list drawn last (not scrolled): the middle of its upper or lower half,
+/// left of its step buttons.
+fn at_row(app: &VectorcraftApp, row: Row, upper: bool) -> egui::Pos2 {
+    let r = app.embroidery.order.list_rect.expect("the list shown");
+    let (all, tops) = rows(&order_of(app), &HashSet::new());
+    let i = all.iter().position(|x| *x == row).expect("the row listed");
+    egui::pos2(r.left() + r.width() * 0.4, r.top() + tops[i] + row.height() * if upper { 0.25 } else { 0.75 })
+}
+
+fn moved(p: egui::Pos2) -> egui::Event {
+    egui::Event::PointerMoved(p)
+}
+
+fn button(p: egui::Pos2, pressed: bool) -> egui::Event {
+    egui::Event::PointerButton { pos: p, button: egui::PointerButton::Primary, pressed, modifiers: egui::Modifiers::NONE }
+}
+
+/// Press on `from` and drag to `to`, frame by frame from `time` → the words of the last frame,
+/// the button still down.
+fn drag_to(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, from: egui::Pos2, to: egui::Pos2) -> Vec<String> {
+    let mut words = vec![];
+    for (k, events) in
+        [vec![moved(from)], vec![button(from, true)], vec![moved(from + egui::vec2(0.0, 12.0))], vec![moved(to)], vec![]].into_iter().enumerate()
+    {
+        words = frame(app, ctx, time + 0.05 * k as f64, events);
+    }
+    words
+}
+
+fn sewn_place(app: &VectorcraftApp, id: u64) -> usize {
+    order_of(app).blocks.iter().flat_map(|b| b.units.iter()).position(|u| u.id == id).expect("listed")
+}
+
+/// A row dragged over another says where its object would go before the button is let go, and the
+/// release drops it there, as one undo step that selects it; dragged onto itself, or with its
+/// object locked, it says why it can't, and the release changes nothing.
+#[test]
+fn a_dragged_row_says_where_it_lands_and_drops_on_release() {
+    let mut app = app_with(4);
+    let ctx = egui::Context::default();
+    ready(&mut app, &ctx);
+    let last = order_of(&app).blocks[1].units[1].id;
+    let undo = app.session.doc().unwrap().history.undo.len();
+    let (from, to) = (at_row(&app, Row::Unit(1, 1), true), at_row(&app, Row::Unit(0, 0), true));
+    let words = drag_to(&mut app, &ctx, 0.2, from, to);
+    assert!(app.embroidery.order.drag.is_some(), "dragging");
+    assert!(words.iter().any(|w| w == "Before <Rectangle>"), "the hint before the release: {words:?}");
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo, "nothing moved yet");
+    frame(&mut app, &ctx, 0.5, vec![button(to, false)]);
+    assert!(app.embroidery.order.drag.is_none());
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
+    assert_eq!(app.session.doc().unwrap().selection.objects, [NodeId(last)]);
+    for t in [0.6, 0.65, 0.7] {
+        frame(&mut app, &ctx, t, vec![]);
+    }
+    assert_eq!(sewn_place(&app, last), 0, "sewn first");
+    // Onto itself: the order is that already.
+    let undo = app.session.doc().unwrap().history.undo.len();
+    let (from, to) = (at_row(&app, Row::Unit(0, 0), false), at_row(&app, Row::Unit(0, 0), true));
+    let words = drag_to(&mut app, &ctx, 1.0, from, to);
+    assert!(words.iter().any(|w| w.contains("sewing order is that already")), "{words:?}");
+    frame(&mut app, &ctx, 1.5, vec![button(to, false)]);
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo, "refused: nothing moved");
+    // Locked: it can't move.
+    let locked = order_of(&app).blocks.last().unwrap().units.last().unwrap().id;
+    app.run("layer.setProps", json!({"id": locked, "locked": true})).unwrap();
+    for t in [2.0, 2.05, 2.1] {
+        frame(&mut app, &ctx, t, vec![]);
+    }
+    let undo = app.session.doc().unwrap().history.undo.len();
+    let rows_now = rows(&order_of(&app), &HashSet::new()).0;
+    let (b, u) = rows_now.iter().rev().find_map(|r| if let Row::Unit(b, u) = r { Some((*b, *u)) } else { None }).unwrap();
+    let (from, to) = (at_row(&app, Row::Unit(b, u), true), at_row(&app, Row::Unit(0, 0), true));
+    let words = drag_to(&mut app, &ctx, 2.2, from, to);
+    assert!(words.iter().any(|w| w.contains("is locked")), "{words:?}");
+    frame(&mut app, &ctx, 2.6, vec![button(to, false)]);
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo, "refused: nothing moved");
+}
+
+/// A lit row's ↑ and ↓ buttons sew its object a step earlier and later, without a drag.
+#[test]
+fn a_lit_rows_buttons_sew_it_earlier_and_later() {
+    use vectorcraft_engine::cmd::embroidery::reorder::{Step, step_move};
+    let mut app = app_with(6);
+    let ctx = egui::Context::default();
+    ready(&mut app, &ctx);
+    let mut time = 0.2;
+    for (k, step) in [(0, Step::Earlier), (1, Step::Later)] {
+        let order = order_of(&app);
+        let id = order.blocks[1].units[1].id;
+        app.run("select.set", json!({ "ids": [id] })).unwrap();
+        for _ in 0..2 {
+            time += 0.05;
+            frame(&mut app, &ctx, time, vec![]);
+        }
+        let uid = app.session.active().unwrap().uid;
+        let plan = app.embroidery.preview.shown(uid).unwrap().planned.plan.clone();
+        assert!(step_move(&app.session.doc().unwrap().doc.clone(), &plan, &[NodeId(id)], step).is_ok(), "{step:?} moves it");
+        let before = sewn_place(&app, id);
+        let undo = app.session.doc().unwrap().history.undo.len();
+        let r = app.embroidery.order.list_rect.unwrap();
+        let (all, tops) = rows(&order, &HashSet::new());
+        let i = all.iter().position(|x| *x == Row::Unit(1, 1)).unwrap();
+        let at = egui::pos2(r.right() - STEP_BUTTONS_FROM_RIGHT + STEP_BUTTON_PITCH * k as f32, r.top() + tops[i] + UNIT_ROW * UNIT_SECOND_LINE);
+        for events in [vec![moved(at)], vec![button(at, true)], vec![button(at, false)]] {
+            time += 0.05;
+            frame(&mut app, &ctx, time, events);
+        }
+        assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1, "{step:?}: one undo step");
+        for _ in 0..3 {
+            time += 0.05;
+            frame(&mut app, &ctx, time, vec![]);
+        }
+        let after = sewn_place(&app, id);
+        assert!(if step == Step::Earlier { after < before } else { after > before }, "{step:?}: from {before} to {after}");
+    }
+}
+
+/// No drag starts while the list's plan is of an earlier state, in isolation mode, or while an
+/// opacity mask or a pattern is edited.
+#[test]
+fn no_drag_on_a_stale_list_or_in_the_edit_modes() {
+    use crate::embroidery::stitch_preview::{Held, StitchPreview};
+    let held = Held::default();
+    let mut app = app_with(4);
+    app.embroidery.preview = StitchPreview::with_runner(Box::new(held.clone()));
+    let ctx = egui::Context::default();
+    frame(&mut app, &ctx, 0.0, vec![]);
+    held.release();
+    ready(&mut app, &ctx);
+    let ids: Vec<u64> = order_of(&app).blocks.iter().flat_map(|b| b.units.iter().map(|u| u.id)).collect();
+    let mut time = 1.0;
+    let mut tried = |app: &mut VectorcraftApp, state: &str| {
+        let undo = app.session.doc().unwrap().history.undo.len();
+        for _ in 0..3 {
+            time += 0.05;
+            frame(app, &ctx, time, vec![]);
+        }
+        let (from, to) = (at_row(app, Row::Unit(1, 1), true), at_row(app, Row::Unit(0, 0), true));
+        let words = drag_to(app, &ctx, time, from, to);
+        assert!(words.iter().any(|w| w.starts_with("<Rectangle>")), "{state}: the list shows: {words:?}");
+        assert!(app.embroidery.order.drag.is_none(), "{state}: no drag");
+        time += 0.3;
+        frame(app, &ctx, time, vec![button(to, false)]);
+        assert_eq!(app.session.doc().unwrap().history.undo.len(), undo, "{state}: nothing moved");
+    };
+    // An edit whose plan is held: the list shown is the plan before's.
+    app.run("select.set", json!({ "ids": [ids[0]] })).unwrap();
+    app.run("object.move", json!({"dx": 1, "dy": 0})).unwrap();
+    tried(&mut app, "stale");
+    held.release();
+    app.run("select.set", json!({ "ids": [] })).unwrap();
+    app.run("object.isolate", json!({ "id": ids[0] })).unwrap();
+    held.release();
+    tried(&mut app, "isolation");
+    app.run("object.exitIsolation", json!({})).unwrap();
+    held.release();
+    app.run("select.set", json!({ "ids": [ids[0], ids[1]] })).unwrap();
+    app.run("transparency.makeOpacityMask", json!({})).unwrap();
+    app.run("transparency.editOpacityMask", json!({})).unwrap();
+    held.release();
+    tried(&mut app, "mask edit");
+    app.run("transparency.stopEditingOpacityMask", json!({})).unwrap();
+    app.run("select.set", json!({ "ids": [ids[2]] })).unwrap();
+    app.run("object.pattern.make", json!({})).unwrap();
+    held.release();
+    tried(&mut app, "pattern edit");
+}
+
 /// One headless frame with a screen reader on → the accessibility tree.
 fn tree_frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<egui::Event>) -> egui::accesskit::TreeUpdate {
     let raw = egui::RawInput {

@@ -21,6 +21,8 @@
 //! not fan across a wide part. Points repeated where flattened curves join are dropped first
 //! ([`REPEATED`]): at one, the rays stopped turning and a ring broke open.
 
+use std::cell::OnceCell;
+
 use vectorcraft_geom::{BezPath, FillRule, Point, Rect, Shape, Vec2};
 
 use super::MAX_SATIN_WIDTH;
@@ -240,6 +242,9 @@ struct Ring<'a> {
     smooth: Vec<Option<Vec2>>,
     len: f64,
     flipped: bool,
+    /// Its sharp corners ([`Ring::corners`]), worked out the first time they are asked for (once
+    /// the way it is walked is decided), not at every column end.
+    corners: OnceCell<Vec<f64>>,
 }
 
 impl<'a> Ring<'a> {
@@ -263,7 +268,7 @@ impl<'a> Ring<'a> {
                 if turn(u, v) > CORNER { None } else { unit(u + v) }
             })
             .collect();
-        (len.is_finite() && len > NO_LENGTH).then_some(Self { pts, at, smooth, len, flipped: false })
+        (len.is_finite() && len > NO_LENGTH).then_some(Self { pts, at, smooth, len, flipped: false, corners: OnceCell::new() })
     }
 
     /// The point `s` along the ring (as drawn), and the ring's direction there.
@@ -296,16 +301,18 @@ impl<'a> Ring<'a> {
 
     /// The walked positions of the ring's sharp corners (turns over geometry's `CORNER`): at a
     /// column's end the column's side reaches one (a square end).
-    fn corners(&self) -> Vec<f64> {
-        let n = self.pts.len();
-        (0..n)
-            .filter_map(|i| {
-                let (a, q, b) = (*self.pts.get((i + n - 1) % n)?, *self.pts.get(i)?, *self.pts.get((i + 1) % n)?);
-                let (u, v) = (unit(q - a)?, unit(b - q)?);
-                let at = *self.at.get(i)?;
-                (turn(u, v) > CORNER).then(|| self.walk(at))
-            })
-            .collect()
+    fn corners(&self) -> &[f64] {
+        self.corners.get_or_init(|| {
+            let n = self.pts.len();
+            (0..n)
+                .filter_map(|i| {
+                    let (a, q, b) = (*self.pts.get((i + n - 1) % n)?, *self.pts.get(i)?, *self.pts.get((i + 1) % n)?);
+                    let (u, v) = (unit(q - a)?, unit(b - q)?);
+                    let at = *self.at.get(i)?;
+                    (turn(u, v) > CORNER).then(|| self.walk(at))
+                })
+                .collect()
+        })
     }
 }
 

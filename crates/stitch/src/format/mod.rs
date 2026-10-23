@@ -639,24 +639,15 @@ impl<'a> Reader<'a> {
 }
 
 /// The delta steps of at most `max` tenths a move is written as: `n` steps whose sum is exactly
-/// (dx, dy), each rounded to whole tenths.
-pub(crate) fn steps(dx: i32, dy: i32, max: i32) -> Vec<(i32, i32)> {
-    let max = max.max(1);
-    let span = i64::from(dx.abs().max(dy.abs()));
-    let n = i32::try_from((span + i64::from(max) - 1) / i64::from(max)).unwrap_or(1).max(1);
-    if n <= 1 {
-        return vec![(dx, dy)];
-    }
-    let mut out = Vec::with_capacity(n as usize);
-    let (mut px, mut py) = (0i32, 0i32);
-    for i in 1..=n {
-        let tx = (i64::from(i) * i64::from(dx) / i64::from(n)) as i32;
-        let ty = (i64::from(i) * i64::from(dy) / i64::from(n)) as i32;
-        out.push((tx - px, ty - py));
-        px = tx;
-        py = ty;
-    }
-    out
+/// (dx, dy), each rounded to whole tenths. Worked out as they are taken (a design's moves are
+/// written by the million, most of them one step).
+pub(crate) fn steps(dx: i32, dy: i32, max: i32) -> impl Iterator<Item = (i32, i32)> {
+    let max = i64::from(max.max(1));
+    let span = i64::from(dx.unsigned_abs().max(dy.unsigned_abs()));
+    let n = i64::from(i32::try_from((span + max - 1) / max).unwrap_or(1).max(1));
+    // Where the needle is after `i` of the `n` steps, along one axis of the move `d`.
+    let at = move |d: i32, i: i64| (i * i64::from(d) / n) as i32;
+    (1..=n).map(move |i| (at(dx, i) - at(dx, i - 1), at(dy, i) - at(dy, i - 1)))
 }
 
 /// A design built from what a reader decoded, one block per colour change.
@@ -892,7 +883,7 @@ mod tests {
     #[test]
     fn steps_sum_to_the_move() {
         for (dx, dy) in [(0, 0), (5, -3), (121, 121), (-400, 17), (1000, 0), (0, -999)] {
-            let s = steps(dx, dy, 121);
+            let s: Vec<(i32, i32)> = steps(dx, dy, 121).collect();
             let sum = s.iter().fold((0, 0), |a, b| (a.0 + b.0, a.1 + b.1));
             assert_eq!(sum, (dx, dy), "{dx},{dy}");
             for (sx, sy) in s {

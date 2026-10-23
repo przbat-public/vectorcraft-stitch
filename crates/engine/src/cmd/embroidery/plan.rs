@@ -330,6 +330,13 @@ impl DesignPlan {
         let blocks = self.blocks.iter().map(|b| Block { thread: b.thread.to_thread(), stitches: b.stitches.clone() }).collect();
         Pattern { name: self.name.clone(), blocks, start: self.start }
     }
+
+    /// [`DesignPlan::to_pattern`], the plan's stitches moved into it rather than copied (the export,
+    /// which writes the plan and drops it).
+    pub fn into_pattern(self) -> Pattern {
+        let blocks = self.blocks.into_iter().map(|b| Block { thread: b.thread.to_thread(), stitches: b.stitches }).collect();
+        Pattern { name: self.name, blocks, start: self.start }
+    }
 }
 
 /// The stretches of `range` of `stitches` sewn without lifting the needle: needle-down stitches

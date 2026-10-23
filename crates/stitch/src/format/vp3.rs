@@ -233,7 +233,7 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     for (k, (thread, stitches)) in segments.iter().enumerate() {
         let start = at;
         let mut run = Run::new(start);
-        for s in stitches {
+        for s in stitches.iter() {
             run.add(*s, &frame);
             if out.len() + run.bytes.len() > super::MAX_FILE_BYTES {
                 return Err(super::file_too_large("VP3"));
@@ -264,28 +264,15 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
 
 /// The design's colour blocks as VP3 writes them: a block's stitches, cut where it stops or changes
 /// colour (each piece a colour block in its thread); empty pieces left out.
-fn segments(p: &Pattern) -> Vec<(&Thread, Vec<Stitch>)> {
-    let mut out: Vec<(&Thread, Vec<Stitch>)> = Vec::new();
+fn segments(p: &Pattern) -> Vec<(&Thread, &[Stitch])> {
+    let mut out: Vec<(&Thread, &[Stitch])> = Vec::new();
     for block in &p.blocks {
-        let mut piece: Vec<Stitch> = Vec::new();
-        for s in &block.stitches {
-            match s.command {
-                Command::ColorChange | Command::Stop => {
-                    push_piece(&mut out, &block.thread, std::mem::take(&mut piece));
-                }
-                _ => piece.push(*s),
-            }
-        }
-        push_piece(&mut out, &block.thread, piece);
+        // The stretches between its colour changes and stops (which aren't written), each a
+        // colour block when it sews anything; borrowed, not copied.
+        let pieces = block.stitches.split(|s| matches!(s.command, Command::ColorChange | Command::Stop));
+        out.extend(pieces.filter(|piece| piece.iter().any(|s| s.command == Command::Stitch)).map(|piece| (&block.thread, piece)));
     }
     out
-}
-
-/// `piece` as a colour block in `thread`, when it sews anything.
-fn push_piece<'a>(out: &mut Vec<(&'a Thread, Vec<Stitch>)>, thread: &'a Thread, piece: Vec<Stitch>) {
-    if piece.iter().any(|s| s.command == Command::Stitch) {
-        out.push((thread, piece));
-    }
 }
 
 /// One colour block's stitch bytes, written from where the needle is.
@@ -392,9 +379,9 @@ impl Run {
 }
 
 /// A move with the thread kept, as long forms no longer than [`KEPT_REACH`] each (equal parts).
-fn kept_steps(dx: i32, dy: i32) -> Vec<(i32, i32)> {
+fn kept_steps(dx: i32, dy: i32) -> impl Iterator<Item = (i32, i32)> {
     let parts = (f64::from(dx).hypot(f64::from(dy)) / f64::from(KEPT_REACH)).ceil().max(1.0);
-    let span = f64::from(dx.abs().max(dy.abs()));
+    let span = f64::from(dx.unsigned_abs().max(dy.unsigned_abs()));
     // The parts' reach along the longer axis; at least 1, so that the parts are finitely many.
     let max = (span / parts).ceil().max(1.0) as i32;
     super::steps(dx, dy, max)
@@ -1013,7 +1000,7 @@ mod tests {
     fn a_kept_move_is_never_taken_for_a_cut() {
         for dx in (-700..=700).step_by(7) {
             for dy in (-700..=700).step_by(11) {
-                let parts = kept_steps(dx, dy);
+                let parts: Vec<(i32, i32)> = kept_steps(dx, dy).collect();
                 assert_eq!(parts.iter().fold((0, 0), |a, b| (a.0 + b.0, a.1 + b.1)), (dx, dy));
                 for (x, y) in parts {
                     let (x, y) = (i16::try_from(x).unwrap(), i16::try_from(y).unwrap());

@@ -171,8 +171,9 @@ pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
         }));
     }
     // What the format can't hold is the design's limit, not a wrong parameter.
-    let bytes = format.write(&plan.to_pattern()).map_err(|e| EngineError::Other(e.to_string()))?;
-    Ok(Encoded { warnings: plan.messages(), ..Encoded::one(bytes) })
+    let warnings = plan.messages();
+    let bytes = format.write(&plan.into_pattern()).map_err(|e| EngineError::Other(e.to_string()))?;
+    Ok(Encoded { warnings, ..Encoded::one(bytes) })
 }
 
 #[cfg(test)]

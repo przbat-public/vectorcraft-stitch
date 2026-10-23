@@ -116,6 +116,8 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError
     if let Some(clip) = clip {
         stitches = cut_to(stitches, clip, &params);
     }
+    // Kept between plans at its length (the planner grows its vector by doubling).
+    stitches.shrink_to_fit();
     Ok(UnitStitches { stitches, columns, widths })
 }
 

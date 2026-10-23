@@ -321,8 +321,8 @@ fn short_stitches(crossings: &[(Point, Vec2)], pitch: f64, width: f64) -> Vec<Po
     let mut out: Vec<Point> = Vec::with_capacity(crossings.len());
     for (i, &(q, offset)) in crossings.iter().enumerate() {
         // The earlier penetrations on this rail: every other one back.
-        let before: Vec<Point> = (1..=SHORT_LOOKBACK).filter_map(|k| i.checked_sub(2 * k).and_then(|j| out.get(j)).copied()).collect();
-        let clearance = |r: Point| before.iter().map(|b| b.distance(r)).fold(f64::INFINITY, f64::min);
+        let before: [Option<Point>; SHORT_LOOKBACK] = std::array::from_fn(|k| i.checked_sub(2 * (k + 1)).and_then(|j| out.get(j)).copied());
+        let clearance = |r: Point| before.iter().flatten().map(|b| b.distance(r)).fold(f64::INFINITY, f64::min);
         // An inset is a share of the whole width, taken off this side's offset.
         let reach = offset.hypot();
         let inward = unit(offset).unwrap_or(Vec2::ZERO);

@@ -178,6 +178,16 @@ pub fn place_moving(doc: &Document, plan: &DesignPlan, moving: &Moving, gap: usi
     }
     let dragged = |u: &Unit| moving.drags(u);
     let gap = gap.min(plan.units.len());
+    // Where the dragged rows are already (on them, or at either edge of their run): the order is
+    // that already, whatever the stack says. Moved beside the next row's object instead, an object
+    // sewn first would go above another thread's lower in the stack, and be sewn after it.
+    let mut at = plan.units.iter().enumerate().filter(|(_, u)| dragged(u)).map(|(i, _)| i);
+    if let Some(first) = at.next()
+        && let Some(last) = at.try_fold(first, |before, i| (i == before + 1).then_some(i))
+        && (first..=last + 1).contains(&gap)
+    {
+        return Err(Refusal::NoChange);
+    }
     let prev = plan.units.get(..gap).unwrap_or_default().iter().rev().find(|u| !dragged(u));
     let next = plan.units.get(gap..).unwrap_or_default().iter().find(|u| !dragged(u));
     if let (Some(p), Some(n)) = (prev, next)

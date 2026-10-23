@@ -64,6 +64,38 @@ fn a_drop_goes_just_above_the_object_sewn_before_the_gap() {
     assert_eq!(place(&doc_of(&s), &plan, &[NodeId(blue)], 1), Err(Refusal::NoChange));
 }
 
+/// A drop where the rows already are, on them or at either edge, changes nothing, also when the
+/// next row's object isn't the next in the stack: moved beside it instead, an object sewn first
+/// would go above another thread's, and be sewn after it.
+#[test]
+fn a_drop_where_the_rows_are_changes_nothing() {
+    let mut s = Session::new();
+    fx::blank(&mut runner(&mut s));
+    let mut ids = vec![];
+    for (k, color) in [fx::RED, fx::BLUE, fx::RED, fx::BLUE].into_iter().enumerate() {
+        s.execute("select.none", &json!({})).unwrap();
+        ids.push(fx::rect(&mut runner(&mut s), color, 20.0 + 80.0 * k as f64, 20.0, 50.0, 50.0));
+    }
+    let plan = plan_of(&mut s);
+    assert_eq!(sewn(&plan), [ids[0], ids[2], ids[1], ids[3]], "each thread's squares join");
+    // The last blue sewn first: the blues join ahead of the reds; in the stack it lies below the
+    // first red, the other blue above it.
+    let m = place(&doc_of(&s), &plan, &[NodeId(ids[3])], 0).unwrap();
+    s.execute("command.batch", &m.batch()).unwrap();
+    let plan = plan_of(&mut s);
+    assert_eq!(sewn(&plan), [ids[3], ids[1], ids[0], ids[2]]);
+    for gap in [0, 1] {
+        assert_eq!(place(&doc_of(&s), &plan, &[NodeId(ids[3])], gap), Err(Refusal::NoChange), "gap {gap}");
+    }
+    // Both blues, where they are.
+    for gap in [0, 1, 2] {
+        assert_eq!(place(&doc_of(&s), &plan, &[NodeId(ids[3]), NodeId(ids[1])], gap), Err(Refusal::NoChange), "both at {gap}");
+    }
+    // Two rows apart (the last blue and the second red) dropped between them gather: a change.
+    let apart = [NodeId(ids[3]), NodeId(ids[2])];
+    assert!(place(&doc_of(&s), &plan, &apart, 2).is_ok());
+}
+
 #[test]
 fn each_refusal() {
     let mut s = Session::new();
@@ -76,11 +108,17 @@ fn each_refusal() {
     // The locked layer's square.
     assert_eq!(place(&doc, &plan, &[NodeId(st.locked)], 0), Err(Refusal::Locked(NodeId(st.locked))));
 
-    // Out of the clip group: its clipped square moved beside the group's square.
+    // Out of the clip group: its clipped square, sewn right after the group's square, moved before
+    // it.
     let clip = doc.node(NodeId(st.clip_group)).unwrap().children().unwrap().iter().map(|n| n.id).collect::<Vec<_>>();
     let (path, clipped) = (clip[0], clip[1]);
     let group_square = at(st.grouped[0]);
-    assert_eq!(place(&doc, &plan, &[clipped], group_square + 1), Err(Refusal::ChangesClipping(clipped)));
+    assert_eq!(at(clipped.0), group_square + 1);
+    assert_eq!(place(&doc, &plan, &[clipped], group_square), Err(Refusal::ChangesClipping(clipped)));
+    // Where it is already, on either edge of its row: no change.
+    for gap in [group_square + 1, group_square + 2] {
+        assert_eq!(place(&doc, &plan, &[clipped], gap), Err(Refusal::NoChange), "gap {gap}");
+    }
     assert_eq!(place(&doc, &plan, &[path], group_square + 1), Err(Refusal::ClippingPath(path)));
     // Into the locked layer: right after its square.
     let locked = at(st.locked);
@@ -126,10 +164,10 @@ fn what_is_sewn(plan: &DesignPlan) -> Vec<(u64, String, [u8; 3])> {
     out
 }
 
-/// Every single object dropped at every gap of the fixtures: a drop allowed runs as one undo step,
-/// moves the object just above or below the object it goes beside, in its parent, leaves what
-/// clips it as it was and changes when, never what, is sewn; a refused one names a reason that
-/// holds.
+/// Every single object dropped at every gap of the fixtures: a drop allowed is never at the
+/// object's own place, runs as one undo step, moves the object just above or below the object it
+/// goes beside, in its parent, leaves what clips it as it was and changes when, never what, is
+/// sewn; a refused one names a reason that holds.
 #[test]
 fn every_drop_runs_or_is_refused_for_a_reason() {
     let mut s = Session::new();
@@ -155,6 +193,8 @@ fn every_drop_runs_or_is_refused_for_a_reason() {
             let next = plan.units.get(gap..).unwrap_or_default().iter().map(mover).find(|o| o != m);
             match place(&doc, &plan, &[*m], gap) {
                 Ok(row) => {
+                    let together = own.len() == last + 1 - first;
+                    assert!(!(together && (first..=last + 1).contains(&gap)), "{case}: at its own place");
                     let undo = s.doc().unwrap().history.undo.len();
                     s.execute("command.batch", &row.batch()).unwrap_or_else(|e| panic!("{case}: {e}"));
                     assert_eq!(s.doc().unwrap().history.undo.len(), undo + 1);
@@ -209,7 +249,7 @@ fn every_drop_runs_or_is_refused_for_a_reason() {
 }
 
 /// How many single-object drops at every gap of `fx::structures` go through.
-const DROPS_MADE: usize = 27;
+const DROPS_MADE: usize = 25;
 
 #[test]
 fn the_gaps_sew_earlier_later_first_and_last_try() {
@@ -290,10 +330,10 @@ fn the_sew_commands() {
 fn explaining_a_reorder() {
     let mut s = Session::new();
     fx::blank(&mut runner(&mut s));
-    let [_, blue, _] = fx::three_threads(&mut runner(&mut s), false);
+    let [_, blue, again] = fx::three_threads(&mut runner(&mut s), false);
     let before = plan_of(&mut s);
-    // Blue just above the first red: the reds still join ahead of it.
-    let row = place(&doc_of(&s), &before, &[NodeId(blue)], 2).unwrap();
+    // Blue to the top of the stack: the reds still join ahead of it.
+    let row = RowMove { ids: vec![NodeId(blue)], target: NodeId(again), place: Place::Above };
     s.execute("command.batch", &row.batch()).unwrap();
     let after = plan_of(&mut s);
     let e = explain(&before, &after, &[NodeId(blue)]);

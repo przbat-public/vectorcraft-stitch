@@ -1626,7 +1626,10 @@ below the one sewn after it at the very start), the project owner's rule, as one
 never what: a drop that would put an object into a clip group or take it out of one, move a
 clipping path or a locked object, go into a locked layer or group, fall between two parts of one
 object, or move a run of an opened machine file alone is refused, and the hint under the list says
-why before the release (the drop line shows only where a drop goes). Near the list's edges a drag
+why before the release (the drop line shows only where a drop goes). A drop where the dragged rows
+already are (on them, or at either edge of them) changes nothing, also when the stack isn't in the
+sewing order there: moved beside the next row's object instead, an object sewn first could go above
+another thread's lower in the stack, and be sewn after it. Near the list's edges a drag
 scrolls it. Drags are off while the list shows an earlier plan, in isolation mode and while a mask or
 a pattern is edited. Once the new plan comes, a note over the list says what the drop did
 (`reorder::explain`): where the object is sewn now, whether it joined others of its thread, the

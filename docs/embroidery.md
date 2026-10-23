@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-23 · **Last updated:** 2026-10-23 · **Change:** the stitch preview on the canvas, planned in the background, with the app's frames measured (Architecture › Planning for the stitch preview, Drawing stitches). Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-23 · **Last updated:** 2026-10-23 · **Change:** the stitch preview: on the canvas, planned in the background, the Embroidery panel's Sewing order and Check tabs, the check's marks and the status bar's counters (Architecture › Planning for the stitch preview, Drawing stitches). Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -1851,6 +1851,8 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-23 | minor | The stitch preview, done: the Check tab (the check's measured extremes, a hit's start, thread and objects, the stitch lengths in bins ending at 12.7 mm; severity marks; problems first; Show and Next and Previous Finding through `view.zoomTo`; rings on the canvas, thinned; the chart), the status bar's counters, and every language checked at 256 and 300 points. |
+| 2026-10-23 | minor | The stitch preview, in progress: the Embroidery panel (docked beside Properties, Layers and Libraries), its Sewing order tab, changing the sewing order (dragged rows, Sew Earlier, Later, First and Last), the selection's entry and exit, a hovered row's stitches stood out. |
 | 2026-10-23 | minor | The stitch preview, in progress: on the canvas (the stitch layer, View › Stitch Preview, the Art \| Stitches switch), planned on a thread of its own while something shows it; the app's frames measured (gate 3). |
 | 2026-10-23 | minor | The stitch preview, in progress: the planning service remembers several plans with a generation and a scene each, plans once for callers asking at once, and gives the read commands' replies from a planner; the end-to-end rows measured (gate 2). |
 | 2026-10-23 | minor | The stitch preview, in progress: stitches drawn as line pictures by the renderer (flat at the thread's laid width, an edge for threads close to the fabric, jumps and cuts marked), measured first. |

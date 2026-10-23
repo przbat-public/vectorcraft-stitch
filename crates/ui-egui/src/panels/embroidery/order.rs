@@ -127,6 +127,11 @@ pub struct OrderState {
     /// What the selection covers (the selected objects and everything inside them), for
     /// (document, revision).
     covered: Option<((u64, u64), Covered)>,
+    /// Where the list showed in the last frame: a drag held near its edges scrolls it.
+    list_rect: Option<Rect>,
+    /// How far the list was scrolled in the last frame, points (the tests look).
+    #[cfg(test)]
+    scrolled: f32,
 }
 
 impl OrderState {
@@ -270,8 +275,33 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
     let mut dropped: Option<RowMove> = None;
     let mut hint: Option<String> = None;
     let pointer = ui.input(|i| i.pointer.interact_pos());
+    // While a drag is held near the list's top or bottom edge (where it showed last frame), the list
+    // scrolls by itself: asked inside the list, which takes the scroll as it ends.
+    let auto_scroll = match (&app.embroidery.order.drag, pointer, app.embroidery.order.list_rect) {
+        (Some(_), Some(at), Some(r)) if r.x_range().contains(at.x) => {
+            let dt = ui.input(|i| i.stable_dt).min(MAX_SCROLL_STEP_SECS);
+            let depth = if at.y < r.top() + AUTO_SCROLL_EDGE {
+                (r.top() + AUTO_SCROLL_EDGE - at.y) / AUTO_SCROLL_EDGE
+            } else if at.y > r.bottom() - AUTO_SCROLL_EDGE {
+                -(at.y - (r.bottom() - AUTO_SCROLL_EDGE)) / AUTO_SCROLL_EDGE
+            } else {
+                0.0
+            };
+            (depth != 0.0).then(|| depth.clamp(-1.0, 1.0) * AUTO_SCROLL_MAX * dt)
+        }
+        _ => None,
+    };
     let area =
         egui::ScrollArea::vertical().id_salt("embroidery-order").max_height(height).auto_shrink([false, false]).show_viewport(ui, |ui, viewport| {
+            if let Some(dy) = auto_scroll {
+                // A step each frame, so not eased: an eased one would run on past a turn.
+                ui.scroll_with_delta_animation(vec2(0.0, dy), egui::style::ScrollAnimation::none());
+                ui.ctx().request_repaint();
+            }
+            #[cfg(test)]
+            {
+                app.embroidery.order.scrolled = viewport.min.y;
+            }
             let total = tops.last().copied().unwrap_or(0.0);
             ui.set_height(total);
             let width = ui.available_width();
@@ -359,27 +389,10 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                 }
             }
         });
-    // While a drag is held, the list scrolls by itself near its top and bottom edges.
-    if app.embroidery.order.drag.is_some()
-        && let Some(at) = pointer
-    {
-        let r = area.inner_rect;
-        let dt = ui.input(|i| i.stable_dt).min(MAX_SCROLL_STEP_SECS);
-        let depth = if at.y < r.top() + AUTO_SCROLL_EDGE {
-            (r.top() + AUTO_SCROLL_EDGE - at.y) / AUTO_SCROLL_EDGE
-        } else if at.y > r.bottom() - AUTO_SCROLL_EDGE {
-            -(at.y - (r.bottom() - AUTO_SCROLL_EDGE)) / AUTO_SCROLL_EDGE
-        } else {
-            0.0
-        };
-        if depth != 0.0 && r.x_range().contains(at.x) {
-            ui.scroll_with_delta(vec2(0.0, depth.clamp(-1.0, 1.0) * AUTO_SCROLL_MAX * dt));
-            ui.ctx().request_repaint();
-        }
-        // The objects dragged, at the pointer.
-        if let Some(drag) = &app.embroidery.order.drag {
-            ui.painter().text(at + vec2(12.0, 0.0), Align2::LEFT_CENTER, &drag.label, FontId::proportional(SMALL), t.text.gamma_multiply(GHOST));
-        }
+    app.embroidery.order.list_rect = Some(area.inner_rect);
+    // The objects dragged, at the pointer.
+    if let (Some(drag), Some(at)) = (&app.embroidery.order.drag, pointer) {
+        ui.painter().text(at + vec2(12.0, 0.0), Align2::LEFT_CENTER, &drag.label, FontId::proportional(SMALL), t.text.gamma_multiply(GHOST));
     }
     let released = ui.input(|i| !i.pointer.any_down());
     ui.label(egui::RichText::new(hint.clone().unwrap_or_default()).size(SMALL).color(t.text_dim));

@@ -168,6 +168,46 @@ fn a_blocks_objects_and_parts_are_worked_out_once() {
     assert!(how_sewn(&listed.order.blocks[0].units[n], true).contains(" 2"));
 }
 
+/// A row dragged to the list's bottom edge and held there scrolls the list down, and back up at
+/// its top edge.
+#[test]
+fn a_drag_held_at_the_lists_edge_scrolls_it() {
+    let mut app = app_with(300);
+    let ctx = egui::Context::default();
+    ready(&mut app, &ctx);
+    let r = app.embroidery.order.list_rect.expect("the list shown");
+    let row = egui::pos2(r.center().x, r.top() + HEADER_ROW + UNIT_ROW / 2.0);
+    let moved = |p: egui::Pos2| egui::Event::PointerMoved(p);
+    let button = |p: egui::Pos2, pressed: bool| egui::Event::PointerButton {
+        pos: p,
+        button: egui::PointerButton::Primary,
+        pressed,
+        modifiers: egui::Modifiers::NONE,
+    };
+    let mut time = 0.2;
+    for events in [vec![moved(row)], vec![button(row, true)], vec![moved(row + egui::vec2(0.0, 12.0))]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, events);
+    }
+    assert!(app.embroidery.order.drag.is_some(), "dragging");
+    assert_eq!(app.embroidery.order.scrolled, 0.0);
+    let bottom = egui::pos2(row.x, r.bottom() - 4.0);
+    for _ in 0..10 {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![moved(bottom)]);
+    }
+    let down = app.embroidery.order.scrolled;
+    assert!(down > 50.0, "scrolled down {down} points");
+    // A scroll asked shows a pass or two later (egui takes it in as the list ends).
+    let top = egui::pos2(row.x, r.top() + 4.0);
+    for _ in 0..8 {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![moved(top)]);
+    }
+    assert!(app.embroidery.order.scrolled < down, "and back up");
+    frame(&mut app, &ctx, time + 0.05, vec![button(top, false)]);
+}
+
 #[test]
 fn a_header_collapses() {
     let mut app = app_with(4);

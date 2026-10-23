@@ -7,6 +7,8 @@
 //! where their stitches start, and [`Sequence::plan`] makes the design's plan of them, each block's
 //! art colour matched to a thread of the palette.
 
+use std::collections::HashMap;
+
 use vectorcraft_doc::NodeId;
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_stitch::plan::Params;
@@ -84,6 +86,9 @@ struct Sewn {
 /// else.
 pub(super) struct Sequence {
     blocks: Vec<Sewn>,
+    /// The last block of art of each colour (literal runs' blocks are never joined), so that an
+    /// object of a colour not sewn yet is told so without looking at every block.
+    last_of: HashMap<[u8; 3], usize>,
     /// The jump and trim lengths between objects.
     connect: Params,
     /// The block each unit added went into, in the order they were added.
@@ -92,14 +97,14 @@ pub(super) struct Sequence {
 
 impl Sequence {
     pub(super) fn new(connect: Params) -> Self {
-        Self { blocks: Vec::new(), connect: connect.sane(), adds: Vec::new() }
+        Self { blocks: Vec::new(), last_of: HashMap::new(), connect: connect.sane(), adds: Vec::new() }
     }
 
     /// The block an object of `color` that covers `bounds` (grown by [`CLEARANCE`]) joins: the
     /// last of its thread, when none sewn after that one overlaps it. `None`: it starts a block of
     /// its own.
     pub(super) fn target(&self, color: [u8; 3], bounds: Option<Rect>) -> Option<usize> {
-        let j = self.blocks.iter().rposition(|m| m.literal.is_none() && m.block.thread.color == color)?;
+        let j = *self.last_of.get(&color)?;
         self.blocks
             .iter()
             .skip(j + 1)
@@ -192,6 +197,7 @@ impl Sequence {
             }
             None => {
                 let members = vec![member(0)];
+                self.last_of.insert(b.thread.color, self.blocks.len());
                 self.blocks.push(Sewn { block: b, bounds, literal: None, members });
             }
         }

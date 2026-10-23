@@ -257,3 +257,22 @@ fn a_design_that_fails_shows_its_last_stitches_faded() {
     assert_eq!(drawn_with(&shapes, stitch_texture(&app)), [faded()]);
     let _: Value = app.run("edit.undo", json!({})).unwrap();
 }
+
+/// Zoomed in on one square, the other square's lines are left out of the frame, not drawn outside
+/// it.
+#[test]
+fn lines_outside_the_view_are_left_out() {
+    let mut app = app();
+    let ctx = egui::Context::default();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    let time = until_stitches(&mut app, &ctx, 0.0);
+    let whole = app.embroidery.layer.renderer.stats;
+    assert_eq!(whole.culled, 0, "everything in view at first: {whole:?}");
+    if let Some(v) = app.view_mut() {
+        v.zoom *= 4.0;
+        v.center = vectorcraft_geom::Point::new(55.0, 75.0);
+    }
+    frame(&mut app, &ctx, time + 0.1);
+    let zoomed = app.embroidery.layer.renderer.stats;
+    assert!(zoomed.culled > 0 && zoomed.drawn < whole.drawn, "{zoomed:?} against {whole:?}");
+}

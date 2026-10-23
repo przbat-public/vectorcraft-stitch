@@ -168,6 +168,18 @@ pub struct StitchPreview {
     asked: bool,
     runner: Option<Box<dyn Runner>>,
     next_ticket: u64,
+    /// What the tests check the scheduler against: each job sent, and each plan taken in.
+    #[cfg(test)]
+    pub(crate) log: Log,
+}
+
+/// The scheduler's record for the tests: the jobs sent (their key, and whether they plan), and the
+/// plans taken in (their ticket, and whether its job was cancelled then).
+#[cfg(test)]
+#[derive(Default)]
+pub(crate) struct Log {
+    pub(crate) sent: Vec<(EmbroideryPlanKey, bool)>,
+    pub(crate) taken: Vec<(u64, bool)>,
 }
 
 impl StitchPreview {
@@ -252,7 +264,7 @@ impl StitchPreview {
 
     /// Use `runner` for the jobs from now on (the tests' own).
     #[cfg(test)]
-    fn with_runner(runner: Box<dyn Runner>) -> Self {
+    pub(crate) fn with_runner(runner: Box<dyn Runner>) -> Self {
         Self { runner: Some(runner), ..Self::default() }
     }
 
@@ -273,6 +285,8 @@ impl StitchPreview {
             {
                 match d.outcome {
                     Outcome::Planned(planned) => {
+                        #[cfg(test)]
+                        self.log.taken.push((f.ticket, f.progress.cancelled()));
                         let replies = doc.shown.take().map(|s| s.replies).unwrap_or_default();
                         doc.shown = Some(Shown { key: f.key.clone(), planned, replies });
                         doc.failed = None;
@@ -388,6 +402,8 @@ impl StitchPreview {
         let ticket = self.next_ticket;
         let progress = Progress::new();
         let sent = queries.iter().map(|q| with_options(q, &opts)).collect();
+        #[cfg(test)]
+        self.log.sent.push((key.clone(), plans));
         self.in_flight = Some(InFlight { uid, ticket, key, queries, progress: progress.clone(), plans });
         runner.submit(Job::new(ticket, planner, opts, sent, progress));
     }

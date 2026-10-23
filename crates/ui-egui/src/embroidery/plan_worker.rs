@@ -164,7 +164,7 @@ impl PlanWorker {
     }
 
     /// Start the thread.
-    fn start(ctx: &egui::Context) -> Option<Self> {
+    pub(crate) fn start(ctx: &egui::Context) -> Option<Self> {
         let (tx, jobs) = channel::<Job>();
         let (done_tx, rx) = channel::<Done>();
         let ctx = ctx.clone();

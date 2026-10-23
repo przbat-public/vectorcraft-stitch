@@ -83,3 +83,5 @@ pub fn render_stitches(app: &mut VectorcraftApp, artboard: usize, scale: f64) ->
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_preview;

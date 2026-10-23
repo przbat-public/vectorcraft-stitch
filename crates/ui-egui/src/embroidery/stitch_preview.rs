@@ -69,6 +69,25 @@ impl Runner for Driver {
     }
 }
 
+/// A runner for the tests that runs each job in line but hands its steps over one a poll, as the
+/// planning thread does when a plan's replies come a frame or more after the plan.
+#[cfg(test)]
+#[derive(Default)]
+pub(crate) struct OneStepAPoll {
+    done: std::collections::VecDeque<Done>,
+}
+
+#[cfg(test)]
+impl Runner for OneStepAPoll {
+    fn submit(&mut self, job: Job) {
+        super::plan_worker::run(&job, &mut |d| self.done.push_back(d));
+    }
+
+    fn poll(&mut self) -> Vec<Done> {
+        self.done.pop_front().into_iter().collect()
+    }
+}
+
 /// A plan shown: what it is of, the plan with its scene, and the replies made from it.
 pub struct Shown {
     pub key: EmbroideryPlanKey,
@@ -85,16 +104,28 @@ struct Reply {
     result: Result<Value, String>,
 }
 
+/// A reply as the preview holds it: its result, the generation of the plan it was made from, and
+/// whether that is the plan shown (a reply of the plan before stays until the new one's comes, so
+/// a reader must not take it for the plan shown's).
+pub struct ReplyOf<'a> {
+    pub result: &'a Result<Value, String>,
+    pub generation: u64,
+    pub current: bool,
+}
+
 impl Shown {
-    /// The reply to `query`, and whether it is of the plan shown (a reply of the plan before stays
-    /// until the new one's comes).
-    pub fn reply(&self, query: &Query) -> Option<(&Result<Value, String>, bool)> {
-        self.replies.iter().find(|r| r.query == *query).map(|r| (&r.result, r.generation == self.planned.generation))
+    /// The reply to `query`.
+    pub fn reply(&self, query: &Query) -> Option<ReplyOf<'_>> {
+        self.replies.iter().find(|r| r.query == *query).map(|r| ReplyOf {
+            result: &r.result,
+            generation: r.generation,
+            current: r.generation == self.planned.generation,
+        })
     }
 
     /// Whether `query` has a reply of the plan shown.
     fn answers(&self, query: &Query) -> bool {
-        self.reply(query).is_some_and(|(_, current)| current)
+        self.reply(query).is_some_and(|r| r.current)
     }
 }
 

@@ -389,7 +389,7 @@ pub(crate) fn current_check(app: &VectorcraftApp) -> Option<(u64, &Value)> {
     let st = app.session.active()?;
     let preview = &app.embroidery.preview;
     let shown = preview.shown(st.uid)?;
-    let (result, current) = shown.reply(&query(&app.embroidery.check, st.uid))?;
+    let crate::embroidery::stitch_preview::ReplyOf { result, current, .. } = shown.reply(&query(&app.embroidery.check, st.uid))?;
     let fresh = current && preview.is_fresh(st.uid) && std::sync::Arc::ptr_eq(&shown.document, &st.doc);
     fresh.then(|| result.as_ref().ok().map(|r| (st.uid, r))).flatten()
 }

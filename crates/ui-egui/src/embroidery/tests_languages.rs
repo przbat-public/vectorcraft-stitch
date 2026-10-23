@@ -67,7 +67,7 @@ fn check_tab(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> (Vec<
     frames(app, ctx, Tab::Check, width);
     let uid = app.session.active().unwrap().uid;
     let q = check::query(&app.embroidery.check, uid);
-    let reply = app.embroidery.preview.shown(uid).and_then(|s| s.reply(&q)).and_then(|(r, _)| r.clone().ok()).expect("the check");
+    let reply = app.embroidery.preview.shown(uid).and_then(|s| s.reply(&q)).and_then(|r| r.result.clone().ok()).expect("the check");
     app.canvas_rect = Some(Rect::from_min_size(Pos2::ZERO, vec2(800.0, 600.0)));
     check::show_findings(app, uid, &reply, "layers", Some(0)).unwrap();
     app.embroidery.check.open.insert("layers".into());
@@ -120,7 +120,7 @@ fn names(app: &VectorcraftApp, lang: Lang) -> Vec<String> {
             shown.planned.plan.units.iter().filter_map(|u| doc.node(u.origin.selected())).map(|n| crate::panels::layers::shown_name(app, n, lang)),
         );
         let q = check::query(&app.embroidery.check, uid);
-        if let Some((Ok(reply), _)) = shown.reply(&q) {
+        if let Some(Ok(reply)) = shown.reply(&q).map(|r| r.result) {
             for rule in reply["rules"].as_array().into_iter().flatten() {
                 names.extend(rule["sources"].as_array().into_iter().flatten().filter_map(|s| s["name"].as_str().map(str::to_string)));
             }

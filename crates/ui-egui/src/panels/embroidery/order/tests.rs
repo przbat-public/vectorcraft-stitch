@@ -206,3 +206,50 @@ fn a_rows_units() {
     assert_eq!(units_of(&order, Row::Header(0)), [0, 1]);
     assert!(units_of(&order, Row::Change(0)).is_empty());
 }
+
+/// The plan comes a frame before its replies, as on the planning thread: until the new plan's
+/// order comes, the list shows the plan before's, dimmed, with no drag, step or hover; then the
+/// new plan's, read anew (never the plan before's kept under the new plan's generation).
+#[test]
+fn the_list_never_takes_the_plan_befores_order_for_the_new_ones() {
+    use crate::embroidery::stitch_preview::{OneStepAPoll, StitchPreview};
+    let mut app = app_with(4);
+    app.embroidery.preview = StitchPreview::with_runner(Box::new(OneStepAPoll::default()));
+    let ctx = egui::Context::default();
+    let mut t = 0.0;
+    let mut settle = |app: &mut VectorcraftApp| {
+        for _ in 0..8 {
+            t += 0.05;
+            frame(app, &ctx, t, vec![]);
+        }
+    };
+    settle(&mut app);
+    let first = order_of(&app);
+    let last = first.blocks[1].units[1].id;
+    // The last square moves first in the stack: the new plan's order starts with it.
+    let uid = app.session.active().unwrap().uid;
+    let plan = app.embroidery.preview.shown(uid).unwrap().planned.plan.clone();
+    let m = place(&app.session.doc().unwrap().doc.clone(), &plan, &[NodeId(last)], 0).unwrap();
+    app.run("command.batch", m.batch()).unwrap();
+    // Frame by frame: once the new plan is shown and its order not yet come, the order read is the
+    // plan before's, and the list is stale.
+    let mut seen_stale = false;
+    for _ in 0..12 {
+        t += 0.05;
+        frame(&mut app, &ctx, t, vec![]);
+        let shown = app.embroidery.preview.shown(uid).unwrap();
+        let reply = shown.reply(&query()).unwrap();
+        if !reply.current {
+            seen_stale = true;
+            assert_eq!(order_of(&app).blocks[0].units[0].id, first.blocks[0].units[0].id, "the plan before's order, read as such");
+        }
+    }
+    assert!(seen_stale, "the runner hands the replies over after the plan");
+    let now = order_of(&app);
+    assert_eq!(
+        now.blocks[0].units[0].id,
+        last,
+        "the new plan's order, read anew: {:?}",
+        now.blocks[0].units.iter().map(|u| u.id).collect::<Vec<_>>()
+    );
+}

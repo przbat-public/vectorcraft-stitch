@@ -369,7 +369,8 @@ fn the_replies_are_the_commands_and_a_new_one_reuses_the_plan() {
     p.take_in();
     let shown = p.shown(uid).unwrap();
     for (q, params) in [(stats.clone(), json!({})), (check("dst"), json!({"format": "dst"}))] {
-        let (reply, current) = shown.reply(&q).unwrap();
+        let r = shown.reply(&q).unwrap();
+        let (reply, current) = (r.result, r.current);
         assert!(current);
         assert_eq!(reply.as_ref().unwrap(), &exec(&mut s, q.cmd, params), "{}", q.cmd);
     }
@@ -382,7 +383,7 @@ fn the_replies_are_the_commands_and_a_new_one_reuses_the_plan() {
     let shown = p.shown(uid).unwrap();
     assert!(Arc::ptr_eq(&shown.planned.plan, &plan), "the plan remembered");
     assert_eq!(p.docs[&uid].plan_ms, Some(LIGHT_MS), "a job that only made replies says nothing of the design's weight");
-    assert_eq!(shown.reply(&check("pes")).unwrap().0.as_ref().unwrap(), &exec(&mut s, "embroidery.check", json!({"format": "pes"})));
+    assert_eq!(shown.reply(&check("pes")).unwrap().result.as_ref().unwrap(), &exec(&mut s, "embroidery.check", json!({"format": "pes"})));
     assert!(shown.reply(&check("dst")).is_none(), "replies nobody asks for any more are dropped");
     // Asked again as it is: nothing to do.
     ask(&mut p, "pes");
@@ -405,7 +406,7 @@ fn the_preview_plans_with_its_options() {
     let shown = p.shown(uid).unwrap();
     assert_eq!(shown.key, s.embroidery_plan_key(&opts).unwrap());
     assert_eq!(*shown.planned.plan, *s.embroidery_plan(&opts).unwrap());
-    let (reply, _) = shown.reply(&Query { cmd: "embroidery.stats", params: json!({}) }).unwrap();
+    let reply = shown.reply(&Query { cmd: "embroidery.stats", params: json!({}) }).unwrap().result;
     assert_eq!(reply.as_ref().unwrap(), &exec(&mut s, "embroidery.stats", json!({"spacing": 0.5})));
 }
 

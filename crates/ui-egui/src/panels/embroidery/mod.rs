@@ -248,10 +248,11 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         nothing_to_sew(ui, &warnings);
         return;
     }
-    // The figures, and the tab's own reply.
-    let reply = |k: usize| asked.get(k).and_then(|q| shown.reply(q)).and_then(|(r, _)| r.as_ref().ok()).cloned();
-    let (stats, own, generation) = (reply(0), reply(1), shown.planned.generation);
-    let checked = asked.get(1).and_then(|q| shown.reply(q)).map(|(r, current)| (r.clone(), current));
+    // The figures, and the tab's own reply (with the generation of the plan it was made from:
+    // the plan before's stays until the new one's comes).
+    let stats = asked.first().and_then(|q| shown.reply(q)).and_then(|r| r.result.as_ref().ok()).cloned();
+    let own = asked.get(1).and_then(|q| shown.reply(q)).map(|r| (r.result.clone(), r.generation, r.current));
+    let generation = shown.planned.generation;
     let stale = !matches!(freshness, Freshness::Fresh);
     ui.horizontal(|ui| {
         if let Some(stats) = &stats {
@@ -274,13 +275,15 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         }
     });
     let plan = shown.planned.plan.clone();
-    match (tab, own) {
-        (Tab::Order, Some(own)) => order::show(app, ui, order::Shown { generation, reply: &own, stats: stats.as_ref(), stale, plan }),
+    match (tab, &own) {
+        (Tab::Order, Some((Ok(reply), of, current))) => {
+            order::show(app, ui, order::Shown { generation, reply, of: *of, current: *current, stats: stats.as_ref(), stale, plan })
+        }
         (Tab::Check, _) => {
-            let reply = checked.as_ref().map(|(r, current)| (r, *current));
+            let reply = own.as_ref().map(|(r, _, current)| (r, *current));
             check::show(app, ui, check::Shown { uid, reply, stats: stats.as_ref(), stale });
         }
-        (Tab::Order, None) => {}
+        (Tab::Order, _) => {}
     }
 }
 

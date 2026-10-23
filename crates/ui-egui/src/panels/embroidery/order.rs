@@ -152,7 +152,7 @@ pub(crate) fn query() -> crate::embroidery::plan_worker::Query {
 /// The most units the tab lists: as many as `embroidery.sequence` lists at most.
 pub const MAX_LIST_UNITS: usize = 10_000;
 
-/// The order of the plan of generation `generation` from `reply`, read once.
+/// The order of the plan of generation `generation` from `reply` (made from that plan), read once.
 fn read(state: &mut OrderState, generation: u64, reply: &Value) -> Option<Arc<SewingOrder>> {
     if let Some((g, order)) = &state.read
         && *g == generation
@@ -184,13 +184,15 @@ fn covered(state: &mut OrderState, uid: u64, revision: u64, doc: &Document, sele
     set
 }
 
-/// The tab's body, under the panel's header: the list, then the footer. `stale`: the plan shown
-/// is of an earlier state (the list is dimmed). `reply` is `embroidery.sequence`'s for the plan
-/// of generation `generation`, `stats` the figures.
+/// The tab's body, under the panel's header: the list, then the footer. The list is stale (dimmed;
+/// no drag, step or hover emphasis) when the plan shown is of an earlier state, or the order is of
+/// an earlier plan than the one shown (its reply not come yet): its units and their numbers are
+/// another plan's, so a drop or a hover would land beside or light the wrong object.
 pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
-    let Shown { generation, reply, stats, stale, plan } = shown;
+    let Shown { generation, reply, of, current, stats, stale, plan } = shown;
+    let stale = stale || !current;
     let t = Tokens::get(ui.ctx());
-    let Some(order) = read(&mut app.embroidery.order, generation, reply) else { return };
+    let Some(order) = read(&mut app.embroidery.order, of, reply) else { return };
     ui.label(
         egui::RichText::new(crate::et!("Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them."))
             .size(SMALL)
@@ -237,8 +239,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                     node.set_selected(lit);
                     node.set_label(label.clone());
                 });
-                // Hovered, a row's stitches stand out on the canvas for the moment (the rest faded).
-                if resp.hovered() && app.embroidery.order.drag.is_none() {
+                // Hovered, a row's stitches stand out on the canvas for the moment (the rest faded):
+                // only on the plan shown's own order, whose unit numbers are the canvas's.
+                if resp.hovered() && app.embroidery.order.drag.is_none() && !stale {
                     let units = units_of(&order, *row);
                     if !units.is_empty() {
                         app.embroidery.layer.emphasize(units);
@@ -351,11 +354,14 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
     }
 }
 
-/// What the tab draws: the plan shown (its generation and the plan itself), its replies, and
-/// whether it is of an earlier state.
+/// What the tab draws: the plan shown (its generation and the plan itself), `embroidery.sequence`'s
+/// reply (made from the plan of generation `of`, `current` when that is the plan shown), the
+/// figures, and whether the plan shown is of an earlier state.
 pub struct Shown<'a> {
     pub generation: u64,
     pub reply: &'a Value,
+    pub of: u64,
+    pub current: bool,
     pub stats: Option<&'a Value>,
     pub stale: bool,
     pub plan: Arc<DesignPlan>,

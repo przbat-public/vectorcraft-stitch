@@ -228,7 +228,8 @@ fn shown_check(app: &mut VectorcraftApp, ctx: &egui::Context) -> (u64, Value) {
     ready(app, ctx);
     let uid = app.session.active().unwrap().uid;
     let q = query(&app.embroidery.check, uid);
-    let (result, current) = app.embroidery.preview.shown(uid).unwrap().reply(&q).unwrap();
+    let r = app.embroidery.preview.shown(uid).unwrap().reply(&q).unwrap();
+    let (result, current) = (r.result, r.current);
     assert!(current);
     (uid, result.clone().unwrap())
 }

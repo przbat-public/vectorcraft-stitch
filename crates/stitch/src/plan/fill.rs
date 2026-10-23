@@ -302,11 +302,10 @@ impl Order<'_> {
             let mut left: Vec<usize> = (0..n).collect();
             let mut at = start;
             let mut out = Vec::with_capacity(n);
-            while let Some(k) =
-                (0..left.len()).min_by(|&i, &j| self.step(at, left.get(i).copied()).0.total_cmp(&self.step(at, left.get(j).copied()).0))
-            {
+            // Each part's step worked out once a round; of equally near ones, the first.
+            while let Some((k, (_, next))) = left.iter().map(|&part| self.step(at, Some(part))).enumerate().min_by(|a, b| a.1.0.total_cmp(&b.1.0)) {
                 let part = left.swap_remove(k);
-                at = self.step(at, Some(part)).1;
+                at = next;
                 out.push(part);
             }
             return out;
@@ -342,10 +341,14 @@ impl Order<'_> {
     fn step(&self, at: At, k: Option<usize>) -> (f64, At) {
         let Some(k) = k else { return (f64::INFINITY, at) };
         let Some(points) = self.contacts.get(k) else { return (f64::INFINITY, at) };
-        let from: Vec<Point> = match at {
-            At::Point(p) => vec![p],
-            At::Part(j) => self.contacts.get(j).cloned().unwrap_or_default(),
-            At::Nowhere => Vec::new(),
+        let one: [Point; 1];
+        let from: &[Point] = match at {
+            At::Point(p) => {
+                one = [p];
+                &one
+            }
+            At::Part(j) => self.contacts.get(j).map_or(&[], Vec::as_slice),
+            At::Nowhere => &[],
         };
         // The nearest pair of a point the needle may be at and a point of the part.
         let nearest = points

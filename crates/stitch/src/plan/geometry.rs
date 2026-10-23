@@ -330,17 +330,29 @@ impl Axes {
 pub(super) fn nearest_order(subs: Vec<SubPath>, here: Option<Point>) -> Vec<Line> {
     /// The most subpaths ordered by distance.
     const MAX_REORDERED: usize = 64;
-    let reorder = subs.len() <= MAX_REORDERED;
-    let mut pending: Vec<SubPath> = subs;
-    let mut out: Vec<Line> = Vec::with_capacity(pending.len());
+    let mut out: Vec<Line> = Vec::with_capacity(subs.len());
     let mut here = here;
+    if subs.len() > MAX_REORDERED {
+        // In the drawing's order, taken one after another (not removed from the front, which
+        // would shift the rest each time).
+        for sub in subs {
+            let (pts, reversed) = match here {
+                Some(h) if out.is_empty() => sub.starting_near(h),
+                _ => (sub.points(), false),
+            };
+            here = pts.last().copied();
+            out.push(Line { pts, closed: sub.closed, reversed });
+        }
+        return out;
+    }
+    let mut pending: Vec<SubPath> = subs;
     while !pending.is_empty() {
-        let at = |s: &SubPath| here.map_or(0.0, |h| s.nearest(h).1);
-        let i = if reorder { pending.iter().enumerate().min_by(|a, b| at(a.1).total_cmp(&at(b.1))).map_or(0, |(i, _)| i) } else { 0 };
+        // The nearest (the first of equally near ones), each distance worked out once.
+        let i = here.and_then(|h| pending.iter().map(|s| s.nearest(h).1).enumerate().min_by(|a, b| a.1.total_cmp(&b.1))).map_or(0, |(i, _)| i);
         let sub = pending.remove(i);
         let (pts, reversed) = match here {
-            Some(h) if out.is_empty() || reorder => sub.starting_near(h),
-            _ => (sub.points(), false),
+            Some(h) => sub.starting_near(h),
+            None => (sub.points(), false),
         };
         here = pts.last().copied();
         out.push(Line { pts, closed: sub.closed, reversed });

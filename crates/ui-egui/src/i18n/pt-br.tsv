@@ -5252,3 +5252,18 @@ embroidery	Can't plan the stitches:	Não é possível planejar os pontos:
 embroidery	Entry	Entrada
 embroidery	Exit	Saída
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} objeto selecionado não é bordado|{count} objetos selecionados não são bordados
+	Embroidery	Bordado
+	Embroidery Panel	Painel Bordado
+embroidery	Sewing Order	Ordem de bordado
+embroidery	Check	Verificação
+embroidery	No document	Nenhum documento
+embroidery	Open or draw a design to see how it will be sewn.	Abra ou desenhe um desenho para ver como ele será bordado.
+embroidery	Updating…	Atualizando…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Estes são os pontos anteriores à última alteração; os novos estão sendo planejados.
+embroidery	Change the design and the stitches are planned again.	Altere o desenho e os pontos serão planejados novamente.
+embroidery	Nothing to sew	Nada para bordar
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	São bordados os demarcadores com preenchimento ou traçado; objetos ocultos, guias e camadas que não imprimem, não.
+@plural	{count} thread block|{count} thread blocks	{count} bloco de linha|{count} blocos de linha
+@plural	{count} stitch|{count} stitches	{count} ponto|{count} pontos
+@msg	tab {tab}: one of {_1}	aba {tab}: uma de {_1}
+@msg	unknown key `{k}`: the only one is tab	chave desconhecida `{k}`: a única é tab

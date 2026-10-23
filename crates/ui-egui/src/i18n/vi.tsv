@@ -4929,3 +4929,18 @@ embroidery	Can't plan the stitches:	Không thể lên mũi thêu:
 embroidery	Entry	Điểm vào
 embroidery	Exit	Điểm ra
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} đối tượng được chọn không được thêu
+	Embroidery	Thêu
+	Embroidery Panel	Bảng Thêu
+embroidery	Sewing Order	Thứ tự thêu
+embroidery	Check	Kiểm tra
+embroidery	No document	Không có tài liệu
+embroidery	Open or draw a design to see how it will be sewn.	Mở hoặc vẽ một mẫu để xem nó sẽ được thêu thế nào.
+embroidery	Updating…	Đang cập nhật…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Đây là các mũi thêu trước lần thay đổi gần nhất; các mũi mới đang được lên.
+embroidery	Change the design and the stitches are planned again.	Thay đổi mẫu thì các mũi thêu sẽ được lên lại.
+embroidery	Nothing to sew	Không có gì để thêu
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Các đường có tô hoặc nét được thêu; đối tượng ẩn, đường gióng và lớp không in thì không.
+@plural	{count} thread block|{count} thread blocks	{count} khối chỉ
+@plural	{count} stitch|{count} stitches	{count} mũi
+@msg	tab {tab}: one of {_1}	thẻ {tab}: một trong {_1}
+@msg	unknown key `{k}`: the only one is tab	khóa không xác định `{k}`: khóa duy nhất là tab

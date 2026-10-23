@@ -5362,3 +5362,18 @@ embroidery	Can't plan the stitches:	De steken kunnen niet worden gepland:
 embroidery	Entry	Ingang
 embroidery	Exit	Uitgang
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} geselecteerd object wordt niet geborduurd|{count} geselecteerde objecten worden niet geborduurd
+	Embroidery	Borduurwerk
+	Embroidery Panel	Deelvenster Borduurwerk
+embroidery	Sewing Order	Borduurvolgorde
+embroidery	Check	Controle
+embroidery	No document	Geen document
+embroidery	Open or draw a design to see how it will be sewn.	Open of teken een ontwerp om te zien hoe het wordt geborduurd.
+embroidery	Updating…	Bijwerken…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Dit zijn de steken van vóór de laatste wijziging; de nieuwe worden gepland.
+embroidery	Change the design and the stitches are planned again.	Wijzig het ontwerp en de steken worden opnieuw gepland.
+embroidery	Nothing to sew	Niets te borduren
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Paden met een vulling of lijn worden geborduurd; verborgen objecten, hulplijnen en niet-afdrukbare lagen niet.
+@plural	{count} thread block|{count} thread blocks	{count} draadblok|{count} draadblokken
+@plural	{count} stitch|{count} stitches	{count} steek|{count} steken
+@msg	tab {tab}: one of {_1}	tabblad {tab}: een van {_1}
+@msg	unknown key `{k}`: the only one is tab	onbekende sleutel `{k}`: de enige is tab

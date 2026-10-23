@@ -4945,3 +4945,18 @@ embroidery	Can't plan the stitches:	Не удаётся рассчитать с�
 embroidery	Entry	Вход
 embroidery	Exit	Выход
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} выделенный объект не вышивается|{count} выделенных объекта не вышиваются|{count} выделенных объектов не вышиваются
+	Embroidery	Вышивка
+	Embroidery Panel	Панель «Вышивка»
+embroidery	Sewing Order	Порядок вышивки
+embroidery	Check	Проверка
+embroidery	No document	Нет документа
+embroidery	Open or draw a design to see how it will be sewn.	Откройте или нарисуйте дизайн, чтобы увидеть, как он будет вышит.
+embroidery	Updating…	Обновление…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Это стежки до последнего изменения; новые рассчитываются.
+embroidery	Change the design and the stitches are planned again.	Измените дизайн, и стежки будут рассчитаны заново.
+embroidery	Nothing to sew	Нечего вышивать
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Вышиваются контуры с заливкой или обводкой; скрытые объекты, направляющие и непечатаемые слои — нет.
+@plural	{count} thread block|{count} thread blocks	{count} блок нити|{count} блока нити|{count} блоков нити
+@plural	{count} stitch|{count} stitches	{count} стежок|{count} стежка|{count} стежков
+@msg	tab {tab}: one of {_1}	вкладка {tab}: одна из {_1}
+@msg	unknown key `{k}`: the only one is tab	неизвестный ключ `{k}`: единственный — tab

@@ -5319,3 +5319,18 @@ embroidery	Can't plan the stitches:	Stingene kan ikke planlægges:
 embroidery	Entry	Indgang
 embroidery	Exit	Udgang
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} markeret objekt sys ikke|{count} markerede objekter sys ikke
+	Embroidery	Broderi
+	Embroidery Panel	Panelet Broderi
+embroidery	Sewing Order	Syrækkefølge
+embroidery	Check	Kontrol
+embroidery	No document	Intet dokument
+embroidery	Open or draw a design to see how it will be sewn.	Åbn eller tegn et design for at se, hvordan det sys.
+embroidery	Updating…	Opdaterer…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Dette er stingene før den seneste ændring; de nye planlægges.
+embroidery	Change the design and the stitches are planned again.	Ændr designet, så planlægges stingene igen.
+embroidery	Nothing to sew	Intet at sy
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Stier med udfyldning eller streg sys; skjulte objekter, hjælpelinjer og lag, der ikke udskrives, sys ikke.
+@plural	{count} thread block|{count} thread blocks	{count} trådblok|{count} trådblokke
+@plural	{count} stitch|{count} stitches	{count} sting|{count} sting
+@msg	tab {tab}: one of {_1}	fane {tab}: en af {_1}
+@msg	unknown key `{k}`: the only one is tab	ukendt nøgle `{k}`: den eneste er tab

@@ -5187,3 +5187,18 @@ embroidery	Can't plan the stitches:	Nie można zaplanować ściegów:
 embroidery	Entry	Wejście
 embroidery	Exit	Wyjście
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} zaznaczony obiekt nie jest szyty|{count} zaznaczone obiekty nie są szyte|{count} zaznaczonych obiektów nie jest szytych
+	Embroidery	Haft
+	Embroidery Panel	Panel Haft
+embroidery	Sewing Order	Kolejność
+embroidery	Check	Kontrola
+embroidery	No document	Brak dokumentu
+embroidery	Open or draw a design to see how it will be sewn.	Otwórz lub narysuj projekt, aby zobaczyć, jak zostanie wyszyty.
+embroidery	Updating…	Aktualizowanie…
+embroidery	These are the stitches before the last change; the new ones are being planned.	To ściegi sprzed ostatniej zmiany; nowe są planowane.
+embroidery	Change the design and the stitches are planned again.	Zmień projekt, a ściegi zostaną zaplanowane od nowa.
+embroidery	Nothing to sew	Nie ma czego szyć
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Szyte są ścieżki z wypełnieniem lub obrysem; ukryte obiekty, linie pomocnicze i warstwy niedrukowane nie.
+@plural	{count} thread block|{count} thread blocks	{count} blok nici|{count} bloki nici|{count} bloków nici
+@plural	{count} stitch|{count} stitches	{count} ścieg|{count} ściegi|{count} ściegów
+@msg	tab {tab}: one of {_1}	karta {tab}: jedna z {_1}
+@msg	unknown key `{k}`: the only one is tab	nieznany klucz `{k}`: jedyny to tab

@@ -151,6 +151,8 @@ pub const ICON_PANELS: &[(&str, &str, &str)] = &[
     ("imageTrace", "Image Trace", "image"),
     ("magicWand", "Magic Wand", "wand-sparkles"),
     (crate::panels::flattener_preview::ID, "Flattener Preview", "eye"),
+    // VectorCraft Stitch: Window › Embroidery.
+    (crate::panels::embroidery::ID, "Embroidery", "dc-embroidery"),
     ("attributes", "Attributes", "settings"),
     (crate::panels::svg_interactivity::ID, "SVG Interactivity", "spline-pointer"),
     ("colorThemes", "Color Themes", "sun"),
@@ -402,6 +404,9 @@ pub struct UiState {
     /// Flattener Preview panel: highlight, overprints, preset and options (`ui.flattenerPreview`).
     #[serde(default)]
     pub flattener_preview: crate::panels::flattener_preview::Settings,
+    /// VectorCraft Stitch: the Embroidery panel's open tab (`ui.embroideryPanel`).
+    #[serde(default)]
+    pub embroidery_panel: crate::panels::embroidery::Settings,
     /// Color Guide panel: Limit to Library, a swatch library id, "document" (the document's
     /// swatches) or "" (none) (`ui.colorGuideLimit`).
     #[serde(default)]
@@ -773,6 +778,7 @@ impl Default for UiState {
             color_guide: Default::default(),
             library_panels: vec![],
             flattener_preview: Default::default(),
+            embroidery_panel: Default::default(),
             color_guide_limit: String::new(),
             align_to: Default::default(),
             color_mode: None,

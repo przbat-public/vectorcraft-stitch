@@ -5292,3 +5292,18 @@ embroidery	Can't plan the stitches:	Stygnen kan inte planeras:
 embroidery	Entry	Ingång
 embroidery	Exit	Utgång
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} markerat objekt broderas inte|{count} markerade objekt broderas inte
+	Embroidery	Broderi
+	Embroidery Panel	Panelen Broderi
+embroidery	Sewing Order	Sömnadsordning
+embroidery	Check	Kontroll
+embroidery	No document	Inget dokument
+embroidery	Open or draw a design to see how it will be sewn.	Öppna eller rita en design för att se hur den broderas.
+embroidery	Updating…	Uppdaterar…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Det här är stygnen före den senaste ändringen; de nya planeras.
+embroidery	Change the design and the stitches are planned again.	Ändra designen så planeras stygnen om.
+embroidery	Nothing to sew	Inget att brodera
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Banor med fyllning eller linje broderas; dolda objekt, stödlinjer och lager som inte skrivs ut gör det inte.
+@plural	{count} thread block|{count} thread blocks	{count} trådblock|{count} trådblock
+@plural	{count} stitch|{count} stitches	{count} stygn|{count} stygn
+@msg	tab {tab}: one of {_1}	flik {tab}: en av {_1}
+@msg	unknown key `{k}`: the only one is tab	okänd nyckel `{k}`: den enda är tab

@@ -229,6 +229,12 @@ impl StitchPreview {
         }
     }
 
+    /// For how long, seconds, document `uid`'s stitches shown have not been of it as it is (a newer
+    /// plan waits or is made): `None` while they are, or it can't be planned.
+    pub fn out_of_date_for(&self, uid: u64, now: f64) -> Option<f64> {
+        self.docs.get(&uid)?.stale_since.map(|since| now - since)
+    }
+
     /// Whether document `uid` as it was at the end of the last frame can't be planned.
     pub fn failed(&self, uid: u64) -> bool {
         self.docs.get(&uid).is_some_and(|d| matches!((&d.failed, &d.wanted), (Some((f, _)), Some((w, _))) if f == w))

@@ -5322,3 +5322,18 @@ embroidery	Can't plan the stitches:	Az öltések nem tervezhetők meg:
 embroidery	Entry	Belépés
 embroidery	Exit	Kilépés
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} kijelölt objektum nem kerül hímzésre
+	Embroidery	Hímzés
+	Embroidery Panel	Hímzés panel
+embroidery	Sewing Order	Varrási sorrend
+embroidery	Check	Ellenőrzés
+embroidery	No document	Nincs dokumentum
+embroidery	Open or draw a design to see how it will be sewn.	Nyisson meg vagy rajzoljon egy mintát, hogy lássa, hogyan lesz kihímezve.
+embroidery	Updating…	Frissítés…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Ezek az utolsó módosítás előtti öltések; az újak tervezése folyamatban van.
+embroidery	Change the design and the stitches are planned again.	Módosítsa a mintát, és az öltések újra megtervezésre kerülnek.
+embroidery	Nothing to sew	Nincs mit hímezni
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	A kitöltéssel vagy körvonallal rendelkező útvonalak hímzésre kerülnek; a rejtett objektumok, segédvonalak és nem nyomtatható rétegek nem.
+@plural	{count} thread block|{count} thread blocks	{count} szálblokk
+@plural	{count} stitch|{count} stitches	{count} öltés
+@msg	tab {tab}: one of {_1}	lap {tab}: ezek egyike: {_1}
+@msg	unknown key `{k}`: the only one is tab	ismeretlen kulcs `{k}`: az egyetlen a tab

@@ -5301,3 +5301,18 @@ embroidery	Can't plan the stitches:	Бодовете не могат да се �
 embroidery	Entry	Вход
 embroidery	Exit	Изход
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} избран обект не се шие|{count} избрани обекта не се шият
+	Embroidery	Бродерия
+	Embroidery Panel	Панел „Бродерия“
+embroidery	Sewing Order	Ред на шиене
+embroidery	Check	Проверка
+embroidery	No document	Няма документ
+embroidery	Open or draw a design to see how it will be sewn.	Отворете или нарисувайте дизайн, за да видите как ще бъде ушит.
+embroidery	Updating…	Обновяване…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Това са бодовете преди последната промяна; новите се планират.
+embroidery	Change the design and the stitches are planned again.	Променете дизайна и бодовете ще бъдат планирани отново.
+embroidery	Nothing to sew	Няма какво да се шие
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Шият се контури със запълване или щрих; скритите обекти, водачите и непечатаемите слоеве — не.
+@plural	{count} thread block|{count} thread blocks	{count} блок нишки|{count} блока нишки
+@plural	{count} stitch|{count} stitches	{count} бод|{count} бода
+@msg	tab {tab}: one of {_1}	раздел {tab}: един от {_1}
+@msg	unknown key `{k}`: the only one is tab	непознат ключ `{k}`: единственият е tab

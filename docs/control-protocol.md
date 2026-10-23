@@ -394,6 +394,12 @@ Presets (a new preset can't take a name in use). Delete, Import… and Export…
 imports its presets. In the Save PDF dialog, Save Preset… shows a name field (`__savePresetAs`): while it shows,
 `ui.dialog.confirm` saves the dialog's settings as that preset and selects it instead of writing the PDF.
 
+Embroidery (VectorCraft Stitch): `window.panel {panel: "embroidery"}` shows the panel, the first time docked as the
+last tab beside Properties, Layers and Libraries (the dock turns into the shared layout then), after that where it
+was left; `ui.embroideryPanel {tab?: "order"|"check"}` shows it at a tab and answers `{tab}`. `ui.inspect` reports the
+open tab as `ui.embroidery_panel`. The panel never plans: it asks the stitch preview for the plan and its tab's
+replies, so it shows what `ui.inspect.stitchPreview` says.
+
 Flattener Preview: `window.panel {panel: "flattenerPreview"}` shows the panel; `ui.flattenerPreview {highlight?,
 overprints?, preset?, options?, showOptions?}` sets it (a preset loads its options, `options` adjust them), shows it
 and refreshes its snapshot of the document, answering as `flattener.preview` does. `ui.inspect` reports the settings

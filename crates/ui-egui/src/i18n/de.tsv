@@ -4911,3 +4911,18 @@ embroidery	Can't plan the stitches:	Die Stiche lassen sich nicht planen:
 embroidery	Entry	Einstieg
 embroidery	Exit	Ausstieg
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} ausgewähltes Objekt wird nicht gestickt|{count} ausgewählte Objekte werden nicht gestickt
+	Embroidery	Stickerei
+	Embroidery Panel	Bedienfeld „Stickerei“
+embroidery	Sewing Order	Stickreihenfolge
+embroidery	Check	Prüfung
+embroidery	No document	Kein Dokument
+embroidery	Open or draw a design to see how it will be sewn.	Öffnen oder zeichnen Sie ein Design, um zu sehen, wie es gestickt wird.
+embroidery	Updating…	Wird aktualisiert…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Das sind die Stiche vor der letzten Änderung; die neuen werden geplant.
+embroidery	Change the design and the stitches are planned again.	Ändern Sie das Design, dann werden die Stiche neu geplant.
+embroidery	Nothing to sew	Nichts zu sticken
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Gestickt werden Pfade mit Fläche oder Kontur; ausgeblendete Objekte, Hilfslinien und nicht druckende Ebenen nicht.
+@plural	{count} thread block|{count} thread blocks	{count} Garnblock|{count} Garnblöcke
+@plural	{count} stitch|{count} stitches	{count} Stich|{count} Stiche
+@msg	tab {tab}: one of {_1}	Register {tab}: eines von {_1}
+@msg	unknown key `{k}`: the only one is tab	unbekannter Schlüssel `{k}`: der einzige ist tab

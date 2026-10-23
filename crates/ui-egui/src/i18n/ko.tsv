@@ -4912,3 +4912,18 @@ embroidery	Can't plan the stitches:	스티치를 계획할 수 없습니다:
 embroidery	Entry	진입
 embroidery	Exit	진출
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	선택한 개체 {count}개는 수놓이지 않습니다
+	Embroidery	자수
+	Embroidery Panel	자수 패널
+embroidery	Sewing Order	자수 순서
+embroidery	Check	검사
+embroidery	No document	문서 없음
+embroidery	Open or draw a design to see how it will be sewn.	디자인을 열거나 그리면 어떻게 수놓일지 볼 수 있습니다.
+embroidery	Updating…	업데이트 중…
+embroidery	These are the stitches before the last change; the new ones are being planned.	마지막 변경 전의 스티치입니다. 새 스티치를 계획하고 있습니다.
+embroidery	Change the design and the stitches are planned again.	디자인을 바꾸면 스티치를 다시 계획합니다.
+embroidery	Nothing to sew	수놓을 것이 없습니다
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	칠이나 선이 있는 패스를 수놓습니다. 숨긴 개체, 안내선, 인쇄하지 않는 레이어는 수놓지 않습니다.
+@plural	{count} thread block|{count} thread blocks	실 블록 {count}개
+@plural	{count} stitch|{count} stitches	{count}땀
+@msg	tab {tab}: one of {_1}	탭 {tab}: {_1} 중 하나
+@msg	unknown key `{k}`: the only one is tab	알 수 없는 키 `{k}`: 사용할 수 있는 키는 tab뿐입니다

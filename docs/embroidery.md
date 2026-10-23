@@ -1544,6 +1544,18 @@ moment (a Sewing order row hovered, a check's hits shown) the stitch layer fades
 already drew with a tint and draws the units concerned over it from a small raster of their own
 (`StitchLayer::emphasize`), never drawing the whole design again.
 
+**The Embroidery panel** (`ui-egui/src/panels/embroidery/`, Window › Embroidery). The first time it
+docks as the last tab beside Properties, Layers and Libraries, as the mockups draw it (the project
+owner's choice), turning the dock into the shared layout once; after that it shows where it was
+left (`ui.embroideryPanel {tab?}` too). It is no `DockTab` of its own: the preferences file is shared
+with upstream VectorCraft, which would drop every saved preference over a tab it doesn't know. Its
+tabs are Sewing Order and Check (Object and Stitches come with the PRs that build them), the open
+one kept with the interface's state and read leniently. It never plans: drawing it asks the stitch
+preview for the plan and its tab's replies. Its states: no document; not planned yet (blank for
+0.1 s, so a quick plan never flashes a busy mark); planning; nothing to sew (the plan's own warnings);
+can't be planned (the reason); ready; updating (the last result, and "Updating…" once the newer one
+takes over 0.1 s).
+
 **Measured first** (gate 1 of the stitch preview: `vectorcraft-cli perf --embroidery`, release
 build, 12-core Apple Silicon, load about 4, the median of five frames, twice; 2026-10-23). The
 pictures are built in code without the planner (`perf_embroidery::stitch_picture`: square tiles of

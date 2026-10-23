@@ -586,6 +586,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{selected?: preset name} open the presets manager (dialog `flattenerPresets`, fields `selected`, then the selected preset's `name` and option keys: setting them on a saved preset saves it, a new `name` renames it; built-in presets don't change). New, Delete, Import… and Export… run flattener.presets.save / delete / import / export",
     ),
     (
+        "ui.embroideryPanel",
+        "Embroidery Panel",
+        "",
+        "{tab?: order|check} show the Embroidery panel (VectorCraft Stitch), at a tab: the first time docked as the last tab beside Properties, Layers and Libraries → {tab}",
+    ),
+    (
         "ui.flattenerPreview",
         "Flattener Preview",
         "",
@@ -1056,6 +1062,10 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             return Some(Ok(json!({"open": null})));
         }
         return Some(app.run("window.panel.close", json!({"panel": panel})));
+    }
+    // VectorCraft Stitch: Window › Embroidery and `ui.embroideryPanel`.
+    if let Some(result) = crate::panels::embroidery::command(app, id, p) {
+        return Some(result);
     }
     if let Some(result) = crate::panel_docking::command(app, id, p) {
         return Some(result);
@@ -2942,6 +2952,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 panel("Color Themes", "colorThemes"),
                 panel("CSS Properties", crate::panels::css_properties::ID),
                 panel("Document Info", "docInfo"),
+                panel("Embroidery", crate::panels::embroidery::ID),
                 panel("Flattener Preview", crate::panels::flattener_preview::ID),
                 panel("Gradient", "gradient"),
                 panel("Graphic Styles", "graphicStyles"),

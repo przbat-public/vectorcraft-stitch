@@ -5319,3 +5319,18 @@ embroidery	Can't plan the stitches:	Jahitan tidak dapat direncanakan:
 embroidery	Entry	Masuk
 embroidery	Exit	Keluar
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} objek terpilih tidak dijahit
+	Embroidery	Bordir
+	Embroidery Panel	Panel Bordir
+embroidery	Sewing Order	Urutan jahit
+embroidery	Check	Pemeriksaan
+embroidery	No document	Tidak ada dokumen
+embroidery	Open or draw a design to see how it will be sewn.	Buka atau gambar desain untuk melihat cara menjahitnya.
+embroidery	Updating…	Memperbarui…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Ini jahitan sebelum perubahan terakhir; jahitan baru sedang direncanakan.
+embroidery	Change the design and the stitches are planned again.	Ubah desain dan jahitan akan direncanakan ulang.
+embroidery	Nothing to sew	Tidak ada yang dijahit
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Jalur dengan isian atau goresan dijahit; objek tersembunyi, panduan, dan lapisan yang tidak dicetak tidak.
+@plural	{count} thread block|{count} thread blocks	{count} blok benang
+@plural	{count} stitch|{count} stitches	{count} jahitan
+@msg	tab {tab}: one of {_1}	tab {tab}: salah satu dari {_1}
+@msg	unknown key `{k}`: the only one is tab	kunci tidak dikenal `{k}`: satu-satunya adalah tab

@@ -5242,3 +5242,18 @@ embroidery	Can't plan the stitches:	ნაკერების დაგეგ�
 embroidery	Entry	შესვლა
 embroidery	Exit	გამოსვლა
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	მონიშნული ობიექტები, რომლებიც არ იქარგება: {count}
+	Embroidery	ნაქარგობა
+	Embroidery Panel	ნაქარგობის პანელი
+embroidery	Sewing Order	კერვის რიგი
+embroidery	Check	შემოწმება
+embroidery	No document	დოკუმენტი არ არის
+embroidery	Open or draw a design to see how it will be sewn.	გახსენით ან დახატეთ დიზაინი, რომ ნახოთ, როგორ დაიქარგება.
+embroidery	Updating…	განახლება…
+embroidery	These are the stitches before the last change; the new ones are being planned.	ეს ნაკერებია ბოლო ცვლილებამდე; ახლები იგეგმება.
+embroidery	Change the design and the stitches are planned again.	შეცვალეთ დიზაინი და ნაკერები თავიდან დაიგეგმება.
+embroidery	Nothing to sew	საქარგავი არაფერია
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	იქარგება კონტურები შევსებით ან ხაზით; დამალული ობიექტები, მიმმართველები და დაუბეჭდავი შრეები — არა.
+@plural	{count} thread block|{count} thread blocks	ძაფის ბლოკები: {count}
+@plural	{count} stitch|{count} stitches	ნაკერები: {count}
+@msg	tab {tab}: one of {_1}	ჩანართი {tab}: ერთ-ერთი: {_1}
+@msg	unknown key `{k}`: the only one is tab	უცნობი გასაღები `{k}`: ერთადერთია tab

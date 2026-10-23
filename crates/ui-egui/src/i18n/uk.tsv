@@ -4929,3 +4929,18 @@ embroidery	Can't plan the stitches:	Не вдається розрахувати
 embroidery	Entry	Вхід
 embroidery	Exit	Вихід
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} виділений об’єкт не вишивається|{count} виділені об’єкти не вишиваються|{count} виділених об’єктів не вишивається
+	Embroidery	Вишивка
+	Embroidery Panel	Панель «Вишивка»
+embroidery	Sewing Order	Порядок вишивання
+embroidery	Check	Перевірка
+embroidery	No document	Немає документа
+embroidery	Open or draw a design to see how it will be sewn.	Відкрийте або намалюйте дизайн, щоб побачити, як його буде вишито.
+embroidery	Updating…	Оновлення…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Це стібки до останньої зміни; нові розраховуються.
+embroidery	Change the design and the stitches are planned again.	Змініть дизайн, і стібки буде розраховано знову.
+embroidery	Nothing to sew	Нічого вишивати
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Вишиваються контури із заливкою або обведенням; приховані об’єкти, напрямні та шари, що не друкуються, — ні.
+@plural	{count} thread block|{count} thread blocks	{count} блок нитки|{count} блоки нитки|{count} блоків нитки
+@plural	{count} stitch|{count} stitches	{count} стібок|{count} стібки|{count} стібків
+@msg	tab {tab}: one of {_1}	вкладка {tab}: одна з {_1}
+@msg	unknown key `{k}`: the only one is tab	невідомий ключ `{k}`: єдиний — tab

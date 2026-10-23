@@ -4989,3 +4989,18 @@ embroidery	Can't plan the stitches:	ステッチを計画できません:
 embroidery	Entry	入口
 embroidery	Exit	出口
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	選択したオブジェクトのうち {count} 個は縫われません
+	Embroidery	刺繍
+	Embroidery Panel	刺繍パネル
+embroidery	Sewing Order	縫い順
+embroidery	Check	チェック
+embroidery	No document	ドキュメントがありません
+embroidery	Open or draw a design to see how it will be sewn.	デザインを開くか描くと、どのように縫われるかがわかります。
+embroidery	Updating…	更新中…
+embroidery	These are the stitches before the last change; the new ones are being planned.	最後の変更前のステッチです。新しいステッチを計画しています。
+embroidery	Change the design and the stitches are planned again.	デザインを変更すると、ステッチがもう一度計画されます。
+embroidery	Nothing to sew	縫うものがありません
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	塗りまたは線のあるパスが縫われます。非表示のオブジェクト、ガイド、印刷しないレイヤーは縫われません。
+@plural	{count} thread block|{count} thread blocks	{count} 個の糸ブロック
+@plural	{count} stitch|{count} stitches	{count} 針
+@msg	tab {tab}: one of {_1}	タブ {tab}: {_1} のいずれか
+@msg	unknown key `{k}`: the only one is tab	不明なキー `{k}`: 使えるのは tab だけです

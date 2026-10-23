@@ -17,6 +17,8 @@ pub mod color_guide;
 pub mod color_themes;
 pub mod css_properties;
 pub mod doc_info;
+// VectorCraft Stitch: Window › Embroidery.
+pub mod embroidery;
 pub mod flattener_preview;
 pub mod glyphs;
 pub mod gradient;
@@ -171,6 +173,7 @@ pub fn show_icon_panel(app: &mut VectorcraftApp, ui: &mut Ui, id: &str) {
         "magicWand" => magic_wand::show(app, ui),
         "tabs" => tabs::show(app, ui),
         flattener_preview::ID => flattener_preview::show(app, ui),
+        embroidery::ID => embroidery::show(app, ui),
         "attributes" => attributes::show(app, ui),
         svg_interactivity::ID => svg_interactivity::show(app, ui),
         variables::ID => variables::show(app, ui),

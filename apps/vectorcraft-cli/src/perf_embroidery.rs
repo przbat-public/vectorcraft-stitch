@@ -18,6 +18,10 @@
 //!
 //! The budgets are estimates of what a stitch preview that follows edits needs: a cold plan of a
 //! heavy shape within a fraction of a second, a warm plan and a re-plan after a nudge within 100 ms.
+//! A design too large is refused only once it is planned up to the limit (the stitch estimate is an
+//! upper bound, so refusing on it would refuse designs that fit): its first refusal is given twice
+//! the time of a cold plan of the two million stitches (the 1,000-path document's 90,000 stitches
+//! plan in about 0.1 s), and refusing it again is at once.
 
 use std::time::Instant;
 
@@ -69,7 +73,7 @@ pub const ROWS: [&str; 20] = [
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`]: estimates.
 const BUDGETS: [f64; 20] =
-    [400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 100.0, 400.0, 1000.0, 50.0];
+    [400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 100.0, 400.0, 4000.0, 50.0];
 
 /// The middle of `samples` (milliseconds), 0 for none.
 fn middle(mut samples: Vec<f64>) -> f64 {

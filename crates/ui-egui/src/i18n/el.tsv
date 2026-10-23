@@ -5434,3 +5434,4 @@ embroidery	about {value} m	περίπου {value} μ.
 @msg	`rule` must be a check rule's id	το `rule` πρέπει να είναι αναγνωριστικό κανόνα ελέγχου
 @msg	`hit` must be a listed hit's place, from 0	το `hit` πρέπει να είναι η θέση ενός καταγεγραμμένου ευρήματος, από το 0
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	δεν υπάρχει έλεγχος του εγγράφου όπως είναι τώρα: εμφανίστε την καρτέλα «Έλεγχος» του πίνακα «Κέντημα» και περιμένετε να σχεδιαστούν οι βελονιές
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	και άλλη {count} γραμμή δεν εμφανίζεται (η λίστα δείχνει τις πρώτες {limit})|και άλλες {count} γραμμές δεν εμφανίζονται (η λίστα δείχνει τις πρώτες {limit})

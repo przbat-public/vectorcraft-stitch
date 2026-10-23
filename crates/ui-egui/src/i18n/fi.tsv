@@ -5446,3 +5446,4 @@ embroidery	about {value} m	noin {value} m
 @msg	`rule` must be a check rule's id	`rule` on oltava tarkistussäännön tunnus
 @msg	`hit` must be a listed hit's place, from 0	`hit` on oltava luetellun löydöksen kohta, alkaen 0:sta
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	asiakirjasta nykyisellään ei ole tarkistusta: näytä Kirjonta-paneelin Tarkistus-välilehti ja odota, että pistot suunnitellaan
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	ja {count} rivi lisää puuttuu (luettelossa ovat ensimmäiset {limit})|ja {count} riviä lisää puuttuu (luettelossa ovat ensimmäiset {limit})

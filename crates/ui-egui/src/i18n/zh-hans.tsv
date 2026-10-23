@@ -5318,3 +5318,4 @@ embroidery	about {value} m	约 {value} 米
 @msg	`rule` must be a check rule's id	`rule` 必须是检查规则的 ID
 @msg	`hit` must be a listed hit's place, from 0	`hit` 必须是列出的问题的位置，从 0 开始
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	没有当前文档的检查结果：请显示“刺绣”面板的“检查”标签页，并等待针迹规划完成
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	另有 {count} 行未列出 (列表显示前 {limit} 行)

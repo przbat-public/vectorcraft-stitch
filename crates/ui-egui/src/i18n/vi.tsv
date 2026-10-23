@@ -5075,3 +5075,4 @@ embroidery	about {value} m	khoảng {value} m
 @msg	`rule` must be a check rule's id	`rule` phải là id của một quy tắc kiểm tra
 @msg	`hit` must be a listed hit's place, from 0	`hit` phải là vị trí của một phát hiện trong danh sách, tính từ 0
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	chưa có kết quả kiểm tra cho tài liệu hiện tại: hãy hiển thị thẻ Kiểm tra của bảng Thêu và chờ các mũi thêu được lên kế hoạch
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	và còn {count} dòng không có trong danh sách (danh sách hiển thị {limit} dòng đầu tiên)

@@ -306,6 +306,43 @@ fn a_rows_words_keep_to_their_room() {
     assert!(how.pos.x + how.galley.size().x < r.right() - STEP_BUTTONS_FROM_RIGHT - STEP_BUTTON / 2.0, "short of the buttons");
 }
 
+/// A list cut at its limit says how many rows it leaves out; a whole one says nothing.
+#[test]
+fn a_list_cut_short_says_how_many_rows_it_leaves_out() {
+    let mut app = app_with(4);
+    let ctx = egui::Context::default();
+    ready(&mut app, &ctx);
+    let uid = app.session.active().unwrap().uid;
+    let shown = app.embroidery.preview.shown(uid).unwrap();
+    let (generation, plan) = (shown.planned.generation, shown.planned.plan.clone());
+    let reply = (**shown.reply(&query()).unwrap().result.as_ref().unwrap()).clone();
+    let words_of = |app: &mut VectorcraftApp, reply: &Value| {
+        let mut out = ctx.run_ui(egui::RawInput { time: Some(1.0), ..Default::default() }, |ui| {
+            let shown = Shown { generation, reply, of: generation, current: true, stats: None, stale: false, plan: plan.clone() };
+            show(app, ui, shown);
+        });
+        out.textures_delta.clear();
+        let mut words = vec![];
+        let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
+        while let Some(s) = pending.pop() {
+            match s {
+                Shape::Vec(v) => pending.extend(v),
+                Shape::Text(t) => words.push(t.galley.text().to_string()),
+                _ => {}
+            }
+        }
+        words
+    };
+    assert!(!words_of(&mut app, &reply).iter().any(|w| w.contains("more rows")), "a whole list");
+    let mut cut = reply.clone();
+    cut["truncated"] = json!(true);
+    cut["unitCount"] = json!(reply["unitCount"].as_u64().unwrap() + 5);
+    // The order is read once a plan: forgotten, so the cut reply is read.
+    app.embroidery.order.read = None;
+    let words = words_of(&mut app, &cut);
+    assert!(words.iter().any(|w| w == "and 5 more rows aren't listed (the list shows the first 4)"), "{words:?}");
+}
+
 #[test]
 fn a_header_collapses() {
     let mut app = app_with(4);

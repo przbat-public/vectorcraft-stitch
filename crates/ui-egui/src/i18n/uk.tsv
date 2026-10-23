@@ -5075,3 +5075,4 @@ embroidery	about {value} m	близько {value} м
 @msg	`rule` must be a check rule's id	`rule` має бути ідентифікатором правила перевірки
 @msg	`hit` must be a listed hit's place, from 0	`hit` має бути місцем знахідки у списку, починаючи з 0
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	немає перевірки документа в його поточному вигляді: відкрийте вкладку «Перевірка» панелі «Вишивка» й дочекайтеся планування стібків
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	і ще {count} рядок не показано (у списку перші {limit})|і ще {count} рядки не показано (у списку перші {limit})|і ще {count} рядків не показано (у списку перші {limit})

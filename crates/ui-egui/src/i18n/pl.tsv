@@ -5333,3 +5333,4 @@ embroidery	about {value} m	ok. {value} m
 @msg	`rule` must be a check rule's id	`rule` musi być identyfikatorem reguły kontroli
 @msg	`hit` must be a listed hit's place, from 0	`hit` musi być pozycją znaleziska na liście, licząc od 0
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	brak kontroli dokumentu w obecnym stanie: pokaż kartę Kontrola panelu Haft i poczekaj, aż ściegi zostaną zaplanowane
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	i jeszcze {count} wiersz, którego nie ma na liście (lista pokazuje pierwsze {limit})|i jeszcze {count} wiersze, których nie ma na liście (lista pokazuje pierwsze {limit})|i jeszcze {count} wierszy, których nie ma na liście (lista pokazuje pierwsze {limit})

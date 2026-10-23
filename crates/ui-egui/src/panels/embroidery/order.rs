@@ -540,6 +540,18 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
             t.text.gamma_multiply(GHOST),
         );
     }
+    // A list cut at its limit says so: the footer counts every unit, the list only those listed.
+    if order.truncated {
+        let listed: usize = order.blocks.iter().map(|b| b.units.len()).sum();
+        let rest = order.unit_count.saturating_sub(order.offset + listed) as u64;
+        let words = crate::etn!(
+            rest,
+            "and {count} more row isn't listed (the list shows the first {limit})",
+            "and {count} more rows aren't listed (the list shows the first {limit})"
+        );
+        let words = crate::embroidery::text::fill(&words, &[("limit", &numbers::count(crate::i18n::current(), listed as u64))]);
+        ui.label(egui::RichText::new(words).size(SMALL).color(t.text_dim));
+    }
     let released = ui.input(|i| !i.pointer.any_down());
     ui.label(egui::RichText::new(hint.clone().unwrap_or_default()).size(SMALL).color(t.text_dim));
     if let Some(m) = dropped {

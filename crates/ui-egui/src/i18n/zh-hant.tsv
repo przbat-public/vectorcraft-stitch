@@ -4370,3 +4370,4 @@ embroidery	about {value} m	約 {value} 公尺
 @msg	`rule` must be a check rule's id	`rule` 必須是檢查規則的 ID
 @msg	`hit` must be a listed hit's place, from 0	`hit` 必須是列出的問題的位置，從 0 開始
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	沒有目前文件的檢查結果：請顯示「刺繡」面板的「檢查」標籤頁，並等待針跡規劃完成
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	另有 {count} 列未列出 (清單顯示前 {limit} 列)

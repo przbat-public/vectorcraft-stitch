@@ -23,6 +23,11 @@ fn with_art() -> VectorcraftApp {
 /// The panel drawn alone in a headless frame at `time`, then the preview's scheduling → the
 /// words drawn.
 fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64) -> Vec<String> {
+    frame_and_tree(app, ctx, time).0
+}
+
+/// [`frame`], with the screen-reader tree when screen readers are on.
+fn frame_and_tree(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64) -> (Vec<String>, Option<egui::accesskit::TreeUpdate>) {
     let raw = egui::RawInput {
         time: Some(time),
         screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(300.0, 600.0))),
@@ -42,7 +47,7 @@ fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64) -> Vec<String
             _ => {}
         }
     }
-    words
+    (words, out.platform_output.accesskit_update)
 }
 
 fn has(words: &[String], what: &str) -> bool {
@@ -161,6 +166,39 @@ fn its_states() {
     }
     let words = frame(&mut app, &ctx, 4.3);
     assert!(has(&words, "Can't plan the stitches:") && has(&words, "Change the design"), "{words:?}");
+}
+
+/// A design that takes long to plan: blank at first, then "Planning stitches…" with how far the
+/// plan got; once planned, an edit that can't be planned says why over the last stitches, which
+/// stay shown.
+#[test]
+fn planning_with_its_progress_then_a_failure_over_the_last_stitches() {
+    use crate::embroidery::stitch_preview::{Held, StitchPreview};
+    let ctx = egui::Context::default();
+    ctx.enable_accesskit();
+    let mut app = with_art();
+    let held = Held::default();
+    app.embroidery.preview = StitchPreview::with_runner(Box::new(held.clone()));
+    let words = frame(&mut app, &ctx, 0.0);
+    assert!(!has(&words, "Planning"), "no busy mark at once: {words:?}");
+    held.progress(2, 5);
+    let (words, tree) = frame_and_tree(&mut app, &ctx, 0.2);
+    assert!(has(&words, "Planning stitches…"), "{words:?}");
+    let tree = tree.expect("an accessibility tree");
+    let bar = tree.nodes.iter().find(|(_, n)| n.role() == egui::accesskit::Role::ProgressIndicator).map(|(_, n)| n.numeric_value());
+    assert_eq!(bar, Some(Some(40.0)), "two steps of five");
+    held.release();
+    frame(&mut app, &ctx, 0.3);
+    let words = frame(&mut app, &ctx, 0.4);
+    assert!(has(&words, "2 thread blocks · ") && !has(&words, "Planning"), "{words:?}");
+    // Three metres a side: it can't be planned; the last stitches stay, with why.
+    app.run("shape.rectangle", json!({"x": 0, "y": 0, "width": 8500, "height": 8500})).unwrap();
+    frame(&mut app, &ctx, 1.0);
+    held.release();
+    frame(&mut app, &ctx, 1.1);
+    let words = frame(&mut app, &ctx, 1.2);
+    assert!(has(&words, "Can't plan the stitches:") && has(&words, "Change the design"), "{words:?}");
+    assert!(has(&words, "2 thread blocks · "), "the last stitches stay: {words:?}");
 }
 
 /// Screen readers find the tabs as tabs, the open one selected; a click opens the other.

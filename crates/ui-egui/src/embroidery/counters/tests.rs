@@ -177,6 +177,37 @@ fn nothing_to_sew_and_cant_be_planned() {
     assert!(stale.iter().all(|(_, w, c)| w.starts_with("Updating… ") && *c == t.text_dim));
 }
 
+/// A design that takes long to plan: nothing in the bar at first (waiting), then "Planning
+/// stitches…" with how far the plan got, never 100 % before it is in; then the figures.
+#[test]
+fn planning_says_how_far_it_got_never_all_of_it() {
+    use crate::embroidery::stitch_preview::{Held, STALE_NOTICE_SECS, StitchPreview};
+    let mut app = app_with_art();
+    let held = Held::default();
+    app.embroidery.preview = StitchPreview::with_runner(Box::new(held.clone()));
+    let ctx = egui::Context::default();
+    // The bar is drawn before the panel: it shows from the frame after the panel asked.
+    frame(&mut app, &ctx, 0.0, 1600.0, 1.0, true);
+    let texts = frame(&mut app, &ctx, 0.05, 1600.0, 1.0, true);
+    assert_eq!(app.embroidery.counters.inspect()["state"], json!("waiting"));
+    assert!(!said(&texts, "Planning") && !said(&texts, "stitches"), "{texts:?}");
+    let later = STALE_NOTICE_SECS + 0.1;
+    held.progress(2, 5);
+    let texts = frame(&mut app, &ctx, later, 1600.0, 1.0, true);
+    assert_eq!(app.embroidery.counters.inspect()["state"], json!("planning"));
+    assert!(said(&texts, "Planning stitches… 40%"), "{texts:?}");
+    for (done, all) in [(999, 1000), (1000, 1000)] {
+        held.progress(done, all);
+        let texts = frame(&mut app, &ctx, later + 0.1, 1600.0, 1.0, true);
+        assert!(said(&texts, "Planning stitches… 99%"), "{done} of {all}: {texts:?}");
+    }
+    held.release();
+    for t in [0.2, 0.3] {
+        frame(&mut app, &ctx, later + t, 1600.0, 1.0, true);
+    }
+    assert_eq!(app.embroidery.counters.inspect()["state"], json!("figures"));
+}
+
 /// Across window widths, scales, themes, languages, with and without the pointer over the canvas
 /// and a long message: the bar's texts never overlap and stay in the window; the counters show
 /// whenever their shortest wording fits beside what the bar keeps, the full one in a wide window.

@@ -106,6 +106,44 @@ impl Runner for OneStepAPoll {
     }
 }
 
+/// A runner for the tests that holds every job, finishing none until [`Held::release`], as a
+/// design that takes long to plan: the interface's planning states, with the progress the test
+/// reports on the jobs held. A clone is a handle on the same jobs.
+#[cfg(test)]
+#[derive(Default, Clone)]
+pub(crate) struct Held {
+    jobs: Arc<std::sync::Mutex<(Vec<Job>, Vec<Done>)>>,
+}
+
+#[cfg(test)]
+impl Held {
+    /// Report `done` of `total` steps on the jobs held, as a plan under way does.
+    pub(crate) fn progress(&self, done: u64, total: u64) {
+        for job in &self.jobs.lock().unwrap().0 {
+            vectorcraft_engine::cmd::fileio::progress::scope(&job.progress, || vectorcraft_engine::doc::cancel::progress(done, total, "test"));
+        }
+    }
+
+    /// Run the jobs held, in line: their steps come at the next poll.
+    pub(crate) fn release(&self) {
+        let (jobs, done) = &mut *self.jobs.lock().unwrap();
+        for job in jobs.drain(..) {
+            super::plan_worker::run(&job, &mut |d| done.push(d));
+        }
+    }
+}
+
+#[cfg(test)]
+impl Runner for Held {
+    fn submit(&mut self, job: Job) {
+        self.jobs.lock().unwrap().0.push(job);
+    }
+
+    fn poll(&mut self) -> Vec<Done> {
+        std::mem::take(&mut self.jobs.lock().unwrap().1)
+    }
+}
+
 /// A plan shown: what it is of, the plan with its scene, and the replies made from it.
 pub struct Shown {
     pub key: EmbroideryPlanKey,

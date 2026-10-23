@@ -68,6 +68,43 @@ fn check_reply(app: &mut VectorcraftApp, params: Value) -> Value {
     app.session.execute("embroidery.check", &params).unwrap()
 }
 
+/// The tab alone in a headless frame at `time`, with `reply` (`None`: asked, not answered yet) →
+/// the words drawn.
+fn tab_with(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, reply: Option<(&Result<Arc<Value>, String>, bool)>) -> Vec<String> {
+    let uid = app.session.active().unwrap().uid;
+    let mut out = ctx.run_ui(egui::RawInput { time: Some(time), ..Default::default() }, |ui| {
+        show(app, ui, Shown { uid, reply, stats: None, stale: false });
+    });
+    out.textures_delta.clear();
+    let mut words = vec![];
+    let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
+    while let Some(s) = pending.pop() {
+        match s {
+            Shape::Vec(v) => pending.extend(v),
+            Shape::Text(t) => words.push(t.galley.text().to_string()),
+            _ => {}
+        }
+    }
+    words
+}
+
+/// A check asked and not answered yet: blank at first, so a quick one never flashes a busy mark,
+/// then "Checking…"; a check that fails says why.
+#[test]
+fn checking_and_a_check_that_fails() {
+    let mut app = app_with_findings();
+    let ctx = egui::Context::default();
+    ready(&mut app, &ctx);
+    let words = tab_with(&mut app, &ctx, 1.0, None);
+    assert!(!has(&words, "Checking"), "{words:?}");
+    let words = tab_with(&mut app, &ctx, 1.0 + crate::panels::embroidery::SHOW_BUSY_AFTER_SECS, None);
+    assert!(has(&words, "Checking…"), "{words:?}");
+    let failed = Err("the design is too big to check".to_string());
+    let words = tab_with(&mut app, &ctx, 2.0, Some((&failed, true)));
+    assert!(has(&words, "Can't check the design:") && has(&words, "he design is too big to check"), "{words:?}");
+    assert!(!has(&words, "Checking"), "{words:?}");
+}
+
 /// Every rule the engine checks has the interface's own words.
 #[test]
 fn every_rule_the_engine_lists_is_worded() {

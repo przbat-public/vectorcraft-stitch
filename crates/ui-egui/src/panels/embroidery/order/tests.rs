@@ -8,6 +8,7 @@ use vectorcraft_engine::Session;
 use super::*;
 use crate::Services;
 use crate::embroidery::stitch_preview;
+use vectorcraft_engine::cmd::embroidery::reorder::place;
 
 fn app_with(squares: usize) -> VectorcraftApp {
     let mut app = VectorcraftApp::new(Session::new(), Services::default());

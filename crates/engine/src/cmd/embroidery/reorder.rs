@@ -12,6 +12,8 @@
 //! ([`Refusal`]), so the panel can say why before the drop. A run of an opened machine file moves
 //! with its block (its group), never alone.
 
+use std::collections::{HashMap, HashSet};
+
 use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId};
 
@@ -141,31 +143,69 @@ fn clipping_path(doc: &Document, id: NodeId) -> bool {
     doc.parent_of(id).and_then(|p| doc.node(p)).is_some_and(|p| p.clips() && p.children().and_then(|c| c.first()).is_some_and(|first| first.id == id))
 }
 
-/// Whether `inner` is `outer` or lies inside it.
-fn within(doc: &Document, inner: NodeId, outer: NodeId) -> bool {
-    inner == outer || doc.ancestry(inner).is_some_and(|a| a.contains(&outer))
+/// Objects to move, with what they cover worked out once: every node inside each of them (a unit is
+/// dragged when its mover is one of those), so that a drag, which asks where a drop goes at every
+/// frame, and a step cost a walk of the movers' subtrees and a pass over the units, never a search
+/// of the document per unit and mover.
+pub struct Moving {
+    movers: Vec<NodeId>,
+    inside: HashSet<NodeId>,
 }
 
-/// Where a drop of `movers` at `gap` in `plan`'s sewing order goes in `doc`: the gap lies before
+impl Moving {
+    /// `movers` (objects of `doc`) and what they cover.
+    pub fn new(doc: &Document, movers: Vec<NodeId>) -> Self {
+        let mut inside = HashSet::new();
+        for m in &movers {
+            inside.insert(*m);
+            if let Some(n) = doc.node(*m) {
+                n.walk(&mut |c| {
+                    inside.insert(c.id);
+                });
+            }
+        }
+        Self { movers, inside }
+    }
+
+    /// The objects moved.
+    pub fn movers(&self) -> &[NodeId] {
+        &self.movers
+    }
+
+    /// Whether unit `u` moves with them.
+    fn drags(&self, u: &Unit) -> bool {
+        self.inside.contains(&mover(u))
+    }
+}
+
+/// Where a drop of `movers` at `gap` in `plan`'s sewing order goes in `doc` ([`place_moving`]).
+pub fn place(doc: &Document, plan: &DesignPlan, movers: &[NodeId], gap: usize) -> std::result::Result<RowMove, Refusal> {
+    if movers.len() > MAX_ROWS {
+        return Err(Refusal::TooMany);
+    }
+    place_moving(doc, plan, &Moving::new(doc, movers.to_vec()), gap)
+}
+
+/// Where a drop of `moving` at `gap` in `plan`'s sewing order goes in `doc`: the gap lies before
 /// unit `gap` (`plan.units.len()`: after the last). The objects go just above the object of the last
 /// unit before the gap that isn't dragged, in its parent; when there is none, just below the object
 /// of the first unit after it.
-pub fn place(doc: &Document, plan: &DesignPlan, movers: &[NodeId], gap: usize) -> std::result::Result<RowMove, Refusal> {
+pub fn place_moving(doc: &Document, plan: &DesignPlan, moving: &Moving, gap: usize) -> std::result::Result<RowMove, Refusal> {
+    let movers = moving.movers();
     if movers.is_empty() {
         return Err(Refusal::Nothing);
     }
     if movers.len() > MAX_ROWS {
         return Err(Refusal::TooMany);
     }
-    for m in movers {
-        if doc.node(*m).is_none() {
-            return Err(Refusal::Gone(*m));
-        }
-        if plan.units.iter().any(|u| u.origin.part == Part::Literal && mover(u) == *m) {
-            return Err(Refusal::FromFile(*m));
-        }
+    if let Some(m) = movers.iter().find(|m| doc.node(**m).is_none()) {
+        return Err(Refusal::Gone(*m));
     }
-    let dragged = |u: &Unit| movers.iter().any(|m| within(doc, mover(u), *m));
+    let named: HashSet<NodeId> = movers.iter().copied().collect();
+    if let Some(u) = plan.units.iter().find(|u| u.origin.part == Part::Literal && named.contains(&mover(u))) {
+        return Err(Refusal::FromFile(mover(u)));
+    }
+    let dragged = |u: &Unit| moving.drags(u);
     let gap = gap.min(plan.units.len());
     let prev = plan.units.get(..gap).unwrap_or_default().iter().rev().find(|u| !dragged(u));
     let next = plan.units.get(gap..).unwrap_or_default().iter().find(|u| !dragged(u));
@@ -217,14 +257,28 @@ pub fn place(doc: &Document, plan: &DesignPlan, movers: &[NodeId], gap: usize) -
     Ok(RowMove { ids, target, place })
 }
 
-/// The movers of `ids` (objects of `doc`): the units' movers each covers, once, in sewing order —
-/// what a selection moves (a selected group moves as one).
+/// The movers of `ids` (objects of `doc`): the ids that cover a unit's mover, or lie inside one,
+/// once each, in sewing order — what a selection moves (a selected group moves as one). One walk of
+/// the ids' subtrees and ancestries, then one pass over the units.
 pub fn movers_of(doc: &Document, plan: &DesignPlan, ids: &[NodeId]) -> Vec<NodeId> {
+    // The given id each node belongs to: inside it, or above it (the first given wins).
+    let mut of: HashMap<NodeId, NodeId> = HashMap::new();
+    for id in ids {
+        of.entry(*id).or_insert(*id);
+        if let Some(n) = doc.node(*id) {
+            n.walk(&mut |c| {
+                of.entry(c.id).or_insert(*id);
+            });
+        }
+        for above in doc.ancestry(*id).unwrap_or_default() {
+            of.entry(above).or_insert(*id);
+        }
+    }
     let mut out: Vec<NodeId> = Vec::new();
+    let mut seen: HashSet<NodeId> = HashSet::new();
     for u in &plan.units {
-        let m = mover(u);
-        if let Some(id) = ids.iter().find(|id| within(doc, m, **id) || within(doc, **id, m))
-            && !out.contains(id)
+        if let Some(id) = of.get(&mover(u))
+            && seen.insert(*id)
         {
             out.push(*id);
         }
@@ -236,7 +290,12 @@ pub fn movers_of(doc: &Document, plan: &DesignPlan, ids: &[NodeId]) -> Vec<NodeI
 /// sewn just before them, after the one sewn just after them, before everything, after
 /// everything. `None` when there is nothing to pass.
 pub fn gap_for(doc: &Document, plan: &DesignPlan, movers: &[NodeId], step: Step) -> Option<usize> {
-    let dragged = |u: &Unit| movers.iter().any(|m| within(doc, mover(u), *m));
+    gap_for_moving(plan, &Moving::new(doc, movers.to_vec()), step)
+}
+
+/// [`gap_for`] of movers whose cover is worked out.
+fn gap_for_moving(plan: &DesignPlan, moving: &Moving, step: Step) -> Option<usize> {
+    let dragged = |u: &Unit| moving.drags(u);
     let first = plan.units.iter().position(dragged)?;
     let last = plan.units.iter().rposition(dragged)?;
     match step {
@@ -343,17 +402,17 @@ pub fn reason(r: Refusal) -> &'static str {
 /// or why they can't, as the message the commands and the panel give. Pure: the panel works it out
 /// on the plan its list shows, the commands on the plan they ask for.
 pub fn step_move(doc: &Document, plan: &DesignPlan, ids: &[NodeId], step: Step) -> std::result::Result<RowMove, &'static str> {
-    let movers = movers_of(doc, plan, ids);
+    let moving = Moving::new(doc, movers_of(doc, plan, ids));
     let edge = match step {
         Step::Earlier | Step::First => "the selection is sewn first already",
         Step::Later | Step::Last => "the selection is sewn last already",
     };
-    let gap = match gap_for(doc, plan, &movers, step) {
+    let gap = match gap_for_moving(plan, &moving, step) {
         Some(g) => g,
-        None if movers.is_empty() => return Err(reason(Refusal::Nothing)),
+        None if moving.movers().is_empty() => return Err(reason(Refusal::Nothing)),
         None => return Err(edge),
     };
-    place(doc, plan, &movers, gap).map_err(|r| match r {
+    place_moving(doc, plan, &moving, gap).map_err(|r| match r {
         Refusal::NoChange => edge,
         r => reason(r),
     })

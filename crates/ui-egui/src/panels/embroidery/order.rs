@@ -22,7 +22,7 @@ use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_engine::cmd::embroidery::order::{OrderBlock, OrderUnit, SewingOrder};
 use vectorcraft_engine::cmd::embroidery::plan::DesignPlan;
-use vectorcraft_engine::cmd::embroidery::reorder::{Explained, Place, RowMove, Step, explain, movers_of, place, reason, step_move};
+use vectorcraft_engine::cmd::embroidery::reorder::{Explained, Moving, Place, RowMove, Step, explain, movers_of, place_moving, reason, step_move};
 
 use crate::VectorcraftApp;
 use crate::embroidery::numbers;
@@ -250,13 +250,13 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                 // A dragged row moves its objects, or the selection's when it is lit.
                 if resp.drag_started() {
                     let movers = if lit { movers_of(&doc, &plan, &selected) } else { objects_of(&order, *row).into_iter().map(NodeId).collect() };
-                    app.embroidery.order.drag = Some(Drag { movers, label: label.clone() });
+                    app.embroidery.order.drag = Some(Drag { moving: Moving::new(&doc, movers), label: label.clone() });
                 }
                 if let (Some(drag), Some(at)) = (&app.embroidery.order.drag, pointer)
                     && rect.contains(at)
                     && let Some(gap) = gap_at(&order, *row, at.y < rect.center().y)
                 {
-                    match place(&doc, &plan, &drag.movers, gap) {
+                    match place_moving(&doc, &plan, &drag.moving, gap) {
                         Ok(m) => {
                             let y = if at.y < rect.center().y { rect.top() } else { rect.bottom() };
                             ui.painter().hline(rect.x_range(), y, Stroke::new(DROP_LINE, t.accent));
@@ -363,9 +363,10 @@ pub struct Shown<'a> {
     pub plan: Arc<DesignPlan>,
 }
 
-/// A drag under way: the objects it moves, and what its row said.
+/// A drag under way: the objects it moves (with what they cover, worked out once for the drag), and
+/// what its row said.
 pub(crate) struct Drag {
-    movers: Vec<NodeId>,
+    moving: Moving,
     label: String,
 }
 

@@ -4987,3 +4987,22 @@ embroidery	Size	Dimensioni
 embroidery	Time	Tempo
 embroidery	Design	Motivo
 embroidery	The time at {speed} stitches a minute, an estimate.	Il tempo a {speed} punti al minuto, una stima.
+	Sew Earlier	Ricama prima
+	Sew Later	Ricama dopo
+	Sew First	Ricama per primo
+	Sew Last	Ricama per ultimo
+	Change Sewing Order	Cambia ordine di cucitura
+@msg	nothing selected is sewn	nulla della selezione viene ricamato
+@msg	the selection is sewn first already	la selezione è già ricamata per prima
+@msg	the selection is sewn last already	la selezione è già ricamata per ultima
+@msg	the sewing order is that already	l’ordine di cucitura è già questo
+@msg	can't change the sewing order: an object is no longer in the document	impossibile cambiare l’ordine di cucitura: un oggetto non è più nel documento
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	impossibile cambiare l’ordine di cucitura: un oggetto, o un livello o gruppo in cui si trova, è bloccato
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	impossibile cambiare l’ordine di cucitura: un tracciato di ritaglio resta in fondo al suo gruppo di ritaglio
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	impossibile cambiare l’ordine di cucitura: un oggetto entrerebbe in un gruppo di ritaglio o ne uscirebbe
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	impossibile cambiare l’ordine di cucitura: un tratto di un file macchina aperto si sposta con il suo blocco, quindi sposta il suo gruppo
+@msg	can't change the sewing order: a layer can't go into a group	impossibile cambiare l’ordine di cucitura: un livello non può entrare in un gruppo
+@msg	can't change the sewing order: the layer or group it would go into is locked	impossibile cambiare l’ordine di cucitura: il livello o gruppo in cui andrebbe è bloccato
+@msg	can't change the sewing order: it would go between two parts of one object	impossibile cambiare l’ordine di cucitura: finirebbe tra due parti di uno stesso oggetto
+@msg	can't change the sewing order: there is nothing to sew it beside	impossibile cambiare l’ordine di cucitura: non c’è nulla accanto a cui ricamarlo
+@msg	can't change the sewing order: too many objects at once	impossibile cambiare l’ordine di cucitura: troppi oggetti insieme

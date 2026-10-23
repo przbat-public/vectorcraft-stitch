@@ -5027,3 +5027,22 @@ embroidery	Size	サイズ
 embroidery	Time	時間
 embroidery	Design	デザイン
 embroidery	The time at {speed} stitches a minute, an estimate.	1 分あたり {speed} 針での時間 (推定)。
+	Sew Earlier	前に縫う
+	Sew Later	後に縫う
+	Sew First	最初に縫う
+	Sew Last	最後に縫う
+	Change Sewing Order	縫い順の変更
+@msg	nothing selected is sewn	選択したものは縫われません
+@msg	the selection is sewn first already	選択範囲はすでに最初に縫われます
+@msg	the selection is sewn last already	選択範囲はすでに最後に縫われます
+@msg	the sewing order is that already	縫い順はすでにそのとおりです
+@msg	can't change the sewing order: an object is no longer in the document	縫い順を変更できません: オブジェクトがドキュメントにもうありません
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	縫い順を変更できません: オブジェクト、またはそれを含むレイヤーかグループがロックされています
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	縫い順を変更できません: クリッピングパスはクリップグループの一番下にとどまります
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	縫い順を変更できません: オブジェクトがクリップグループに入るか、そこから出てしまいます
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	縫い順を変更できません: 開いたミシンファイルの区間はブロックごと移動するので、そのグループを移動してください
+@msg	can't change the sewing order: a layer can't go into a group	縫い順を変更できません: レイヤーはグループに入れられません
+@msg	can't change the sewing order: the layer or group it would go into is locked	縫い順を変更できません: 入る先のレイヤーまたはグループがロックされています
+@msg	can't change the sewing order: it would go between two parts of one object	縫い順を変更できません: 1 つのオブジェクトの 2 つの部分の間に入ってしまいます
+@msg	can't change the sewing order: there is nothing to sew it beside	縫い順を変更できません: 隣に縫うものがありません
+@msg	can't change the sewing order: too many objects at once	縫い順を変更できません: 一度に扱うオブジェクトが多すぎます

@@ -5225,3 +5225,22 @@ embroidery	Size	Rozmiar
 embroidery	Time	Czas
 embroidery	Design	Projekt
 embroidery	The time at {speed} stitches a minute, an estimate.	Czas przy {speed} ściegach na minutę, szacunek.
+	Sew Earlier	Szyj wcześniej
+	Sew Later	Szyj później
+	Sew First	Szyj najpierw
+	Sew Last	Szyj na końcu
+	Change Sewing Order	Zmień kolejność szycia
+@msg	nothing selected is sewn	nic z zaznaczenia nie jest szyte
+@msg	the selection is sewn first already	zaznaczenie jest już szyte najpierw
+@msg	the selection is sewn last already	zaznaczenie jest już szyte na końcu
+@msg	the sewing order is that already	kolejność szycia już jest taka
+@msg	can't change the sewing order: an object is no longer in the document	nie można zmienić kolejności szycia: obiektu nie ma już w dokumencie
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	nie można zmienić kolejności szycia: obiekt albo warstwa lub grupa, w której jest, jest zablokowany
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	nie można zmienić kolejności szycia: ścieżka przycinająca zostaje na dnie swojej grupy przycinającej
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	nie można zmienić kolejności szycia: obiekt trafiłby do grupy przycinającej albo z niej wyszedł
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	nie można zmienić kolejności szycia: odcinek otwartego pliku maszynowego przesuwa się z całym blokiem, więc przesuń jego grupę
+@msg	can't change the sewing order: a layer can't go into a group	nie można zmienić kolejności szycia: warstwa nie może trafić do grupy
+@msg	can't change the sewing order: the layer or group it would go into is locked	nie można zmienić kolejności szycia: warstwa lub grupa, do której by trafił, jest zablokowana
+@msg	can't change the sewing order: it would go between two parts of one object	nie można zmienić kolejności szycia: trafiłby między dwie części jednego obiektu
+@msg	can't change the sewing order: there is nothing to sew it beside	nie można zmienić kolejności szycia: nie ma niczego, obok czego można by go szyć
+@msg	can't change the sewing order: too many objects at once	nie można zmienić kolejności szycia: zbyt wiele obiektów naraz

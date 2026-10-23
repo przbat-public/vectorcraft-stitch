@@ -5357,3 +5357,22 @@ embroidery	Size	Størrelse
 embroidery	Time	Tid
 embroidery	Design	Design
 embroidery	The time at {speed} stitches a minute, an estimate.	Tiden ved {speed} sting i minuttet, et skøn.
+	Sew Earlier	Sy tidligere
+	Sew Later	Sy senere
+	Sew First	Sy først
+	Sew Last	Sy sidst
+	Change Sewing Order	Skift syrækkefølge
+@msg	nothing selected is sewn	intet af det markerede sys
+@msg	the selection is sewn first already	det markerede sys allerede først
+@msg	the selection is sewn last already	det markerede sys allerede sidst
+@msg	the sewing order is that already	syrækkefølgen er allerede sådan
+@msg	can't change the sewing order: an object is no longer in the document	syrækkefølgen kan ikke ændres: et objekt er ikke længere i dokumentet
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	syrækkefølgen kan ikke ændres: et objekt eller et lag eller en gruppe, det ligger i, er låst
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	syrækkefølgen kan ikke ændres: en beskæringssti bliver nederst i sin beskæringsgruppe
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	syrækkefølgen kan ikke ændres: det ville flytte et objekt ind i eller ud af en beskæringsgruppe
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	syrækkefølgen kan ikke ændres: et forløb fra en åbnet maskinfil flytter med sin blok, så flyt dens gruppe
+@msg	can't change the sewing order: a layer can't go into a group	syrækkefølgen kan ikke ændres: et lag kan ikke komme i en gruppe
+@msg	can't change the sewing order: the layer or group it would go into is locked	syrækkefølgen kan ikke ændres: laget eller gruppen, det ville komme i, er låst
+@msg	can't change the sewing order: it would go between two parts of one object	syrækkefølgen kan ikke ændres: det ville komme mellem to dele af ét objekt
+@msg	can't change the sewing order: there is nothing to sew it beside	syrækkefølgen kan ikke ændres: der er intet at sy det ved siden af
+@msg	can't change the sewing order: too many objects at once	syrækkefølgen kan ikke ændres: for mange objekter på én gang

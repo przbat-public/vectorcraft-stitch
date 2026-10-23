@@ -4355,6 +4355,15 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   (`optionsFrom: "document"`), else of the last embroidery export of any document while the app runs (`"app"`),
   else the defaults (`"defaults"`); they are never saved in the file. Exports never show the stitches.
 
+- `embroidery.sewEarlier`, `sewLater`, `sewFirst` and `sewLast {ids?, …embroidery options}` change the sewing order
+  by moving the objects (default: the selection; a selected group as one) in the stacking order: before the object
+  sewn just before them (just below it, in its parent), after the one sewn just after them (just above it), first
+  or last. One undo step, "Change Sewing Order"; the answer is `layer.move`'s params `{ids, target, place}`. Where a
+  drop in the Sewing order list would be refused, so are they, saying why: into or out of a clip group (what is sewn
+  would change), a locked object or layer, a clipping path, a run of an opened machine file alone, between two
+  parts of one object. Objects of one thread still join a block sewn earlier when nothing between lies under them,
+  so a move may change no stitch.
+
 The four read commands (threads, stats, sequence, check) take `selectedOnly` (the selected objects alone, as `document.export {selectedOnly}` writes them)
 and plan the document as the export does: an opacity mask's editing layer, which no export writes, is left out.
 

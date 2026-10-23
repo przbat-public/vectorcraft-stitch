@@ -4967,3 +4967,22 @@ embroidery	Size	Kích thước
 embroidery	Time	Thời gian
 embroidery	Design	Mẫu
 embroidery	The time at {speed} stitches a minute, an estimate.	Thời gian ở tốc độ {speed} mũi mỗi phút, ước tính.
+	Sew Earlier	Thêu sớm hơn
+	Sew Later	Thêu muộn hơn
+	Sew First	Thêu đầu tiên
+	Sew Last	Thêu sau cùng
+	Change Sewing Order	Đổi thứ tự thêu
+@msg	nothing selected is sewn	không có gì trong vùng chọn được thêu
+@msg	the selection is sewn first already	vùng chọn đã được thêu đầu tiên
+@msg	the selection is sewn last already	vùng chọn đã được thêu sau cùng
+@msg	the sewing order is that already	thứ tự thêu đã như vậy
+@msg	can't change the sewing order: an object is no longer in the document	không thể đổi thứ tự thêu: một đối tượng không còn trong tài liệu
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	không thể đổi thứ tự thêu: một đối tượng, hoặc lớp hay nhóm chứa nó, bị khóa
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	không thể đổi thứ tự thêu: đường cắt nằm yên ở đáy nhóm cắt của nó
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	không thể đổi thứ tự thêu: một đối tượng sẽ vào hoặc ra khỏi nhóm cắt
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	không thể đổi thứ tự thêu: một đoạn của tệp máy đã mở di chuyển cùng khối của nó, vì vậy hãy di chuyển nhóm của nó
+@msg	can't change the sewing order: a layer can't go into a group	không thể đổi thứ tự thêu: lớp không thể vào trong nhóm
+@msg	can't change the sewing order: the layer or group it would go into is locked	không thể đổi thứ tự thêu: lớp hoặc nhóm mà nó sẽ vào bị khóa
+@msg	can't change the sewing order: it would go between two parts of one object	không thể đổi thứ tự thêu: nó sẽ nằm giữa hai phần của cùng một đối tượng
+@msg	can't change the sewing order: there is nothing to sew it beside	không thể đổi thứ tự thêu: không có gì để thêu bên cạnh
+@msg	can't change the sewing order: too many objects at once	không thể đổi thứ tự thêu: quá nhiều đối tượng cùng lúc

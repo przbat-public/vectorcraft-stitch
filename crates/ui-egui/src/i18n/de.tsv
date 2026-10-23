@@ -4949,3 +4949,22 @@ embroidery	Size	Größe
 embroidery	Time	Zeit
 embroidery	Design	Design
 embroidery	The time at {speed} stitches a minute, an estimate.	Die Zeit bei {speed} Stichen pro Minute, geschätzt.
+	Sew Earlier	Früher sticken
+	Sew Later	Später sticken
+	Sew First	Zuerst sticken
+	Sew Last	Zuletzt sticken
+	Change Sewing Order	Stickreihenfolge ändern
+@msg	nothing selected is sewn	nichts Ausgewähltes wird gestickt
+@msg	the selection is sewn first already	die Auswahl wird schon zuerst gestickt
+@msg	the selection is sewn last already	die Auswahl wird schon zuletzt gestickt
+@msg	the sewing order is that already	die Stickreihenfolge ist schon so
+@msg	can't change the sewing order: an object is no longer in the document	die Stickreihenfolge lässt sich nicht ändern: ein Objekt ist nicht mehr im Dokument
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	die Stickreihenfolge lässt sich nicht ändern: ein Objekt oder eine Ebene oder Gruppe, in der es liegt, ist gesperrt
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	die Stickreihenfolge lässt sich nicht ändern: ein Beschneidungspfad bleibt unten in seiner Beschneidungsgruppe
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	die Stickreihenfolge lässt sich nicht ändern: ein Objekt käme in eine Beschneidungsgruppe oder aus einer heraus
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	die Stickreihenfolge lässt sich nicht ändern: ein Abschnitt einer geöffneten Maschinendatei bewegt sich mit seinem Block, verschieben Sie also seine Gruppe
+@msg	can't change the sewing order: a layer can't go into a group	die Stickreihenfolge lässt sich nicht ändern: eine Ebene kann nicht in eine Gruppe
+@msg	can't change the sewing order: the layer or group it would go into is locked	die Stickreihenfolge lässt sich nicht ändern: die Ebene oder Gruppe, in die es käme, ist gesperrt
+@msg	can't change the sewing order: it would go between two parts of one object	die Stickreihenfolge lässt sich nicht ändern: es käme zwischen zwei Teile eines Objekts
+@msg	can't change the sewing order: there is nothing to sew it beside	die Stickreihenfolge lässt sich nicht ändern: es gibt nichts, neben dem es gestickt würde
+@msg	can't change the sewing order: too many objects at once	die Stickreihenfolge lässt sich nicht ändern: zu viele Objekte auf einmal

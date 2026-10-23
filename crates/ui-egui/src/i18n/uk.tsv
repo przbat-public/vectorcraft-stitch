@@ -4967,3 +4967,22 @@ embroidery	Size	Розмір
 embroidery	Time	Час
 embroidery	Design	Дизайн
 embroidery	The time at {speed} stitches a minute, an estimate.	Час при {speed} стібках за хвилину, оцінка.
+	Sew Earlier	Вишивати раніше
+	Sew Later	Вишивати пізніше
+	Sew First	Вишивати першим
+	Sew Last	Вишивати останнім
+	Change Sewing Order	Змінити порядок вишивання
+@msg	nothing selected is sewn	нічого з виділеного не вишивається
+@msg	the selection is sewn first already	виділене вже вишивається першим
+@msg	the selection is sewn last already	виділене вже вишивається останнім
+@msg	the sewing order is that already	порядок вишивання вже такий
+@msg	can't change the sewing order: an object is no longer in the document	не вдається змінити порядок вишивання: об’єкта більше немає в документі
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	не вдається змінити порядок вишивання: об’єкт або шар чи група, де він є, заблоковані
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	не вдається змінити порядок вишивання: обтравлювальний контур лишається внизу своєї групи
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	не вдається змінити порядок вишивання: об’єкт потрапив би до обтравлювальної групи або вийшов би з неї
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	не вдається змінити порядок вишивання: ділянка відкритого машинного файлу рухається разом із блоком, тож перемістіть його групу
+@msg	can't change the sewing order: a layer can't go into a group	не вдається змінити порядок вишивання: шар не можна помістити в групу
+@msg	can't change the sewing order: the layer or group it would go into is locked	не вдається змінити порядок вишивання: шар або група, куди він потрапив би, заблоковані
+@msg	can't change the sewing order: it would go between two parts of one object	не вдається змінити порядок вишивання: він опинився б між двома частинами одного об’єкта
+@msg	can't change the sewing order: there is nothing to sew it beside	не вдається змінити порядок вишивання: поруч нічого вишивати
+@msg	can't change the sewing order: too many objects at once	не вдається змінити порядок вишивання: забагато об’єктів одночасно

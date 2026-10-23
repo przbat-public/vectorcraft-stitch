@@ -5326,3 +5326,22 @@ embroidery	Size	Μέγεθος
 embroidery	Time	Χρόνος
 embroidery	Design	Σχέδιο
 embroidery	The time at {speed} stitches a minute, an estimate.	Ο χρόνος με {speed} βελονιές το λεπτό, κατ’ εκτίμηση.
+	Sew Earlier	Ράψιμο νωρίτερα
+	Sew Later	Ράψιμο αργότερα
+	Sew First	Ράψιμο πρώτο
+	Sew Last	Ράψιμο τελευταίο
+	Change Sewing Order	Αλλαγή σειράς ραφής
+@msg	nothing selected is sewn	τίποτα από τα επιλεγμένα δεν κεντιέται
+@msg	the selection is sewn first already	η επιλογή κεντιέται ήδη πρώτη
+@msg	the selection is sewn last already	η επιλογή κεντιέται ήδη τελευταία
+@msg	the sewing order is that already	η σειρά ραφής είναι ήδη αυτή
+@msg	can't change the sewing order: an object is no longer in the document	δεν είναι δυνατή η αλλαγή της σειράς ραφής: ένα αντικείμενο δεν υπάρχει πια στο έγγραφο
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	δεν είναι δυνατή η αλλαγή της σειράς ραφής: ένα αντικείμενο ή ένα επίπεδο ή μια ομάδα όπου βρίσκεται είναι κλειδωμένο
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	δεν είναι δυνατή η αλλαγή της σειράς ραφής: μια διαδρομή αποκοπής μένει στο κάτω μέρος της ομάδας της
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	δεν είναι δυνατή η αλλαγή της σειράς ραφής: ένα αντικείμενο θα έμπαινε σε ομάδα αποκοπής ή θα έβγαινε από αυτή
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	δεν είναι δυνατή η αλλαγή της σειράς ραφής: ένα τμήμα ανοιγμένου αρχείου μηχανής μετακινείται με το μπλοκ του, οπότε μετακινήστε την ομάδα του
+@msg	can't change the sewing order: a layer can't go into a group	δεν είναι δυνατή η αλλαγή της σειράς ραφής: ένα επίπεδο δεν μπαίνει σε ομάδα
+@msg	can't change the sewing order: the layer or group it would go into is locked	δεν είναι δυνατή η αλλαγή της σειράς ραφής: το επίπεδο ή η ομάδα όπου θα έμπαινε είναι κλειδωμένο
+@msg	can't change the sewing order: it would go between two parts of one object	δεν είναι δυνατή η αλλαγή της σειράς ραφής: θα έμπαινε ανάμεσα σε δύο μέρη ενός αντικειμένου
+@msg	can't change the sewing order: there is nothing to sew it beside	δεν είναι δυνατή η αλλαγή της σειράς ραφής: δεν υπάρχει τίποτα δίπλα στο οποίο να κεντηθεί
+@msg	can't change the sewing order: too many objects at once	δεν είναι δυνατή η αλλαγή της σειράς ραφής: πάρα πολλά αντικείμενα ταυτόχρονα

@@ -5400,3 +5400,22 @@ embroidery	Size	Grootte
 embroidery	Time	Tijd
 embroidery	Design	Ontwerp
 embroidery	The time at {speed} stitches a minute, an estimate.	De tijd bij {speed} steken per minuut, een schatting.
+	Sew Earlier	Eerder borduren
+	Sew Later	Later borduren
+	Sew First	Eerst borduren
+	Sew Last	Laatst borduren
+	Change Sewing Order	Borduurvolgorde wijzigen
+@msg	nothing selected is sewn	niets van de selectie wordt geborduurd
+@msg	the selection is sewn first already	de selectie wordt al als eerste geborduurd
+@msg	the selection is sewn last already	de selectie wordt al als laatste geborduurd
+@msg	the sewing order is that already	de borduurvolgorde is al zo
+@msg	can't change the sewing order: an object is no longer in the document	de borduurvolgorde kan niet worden gewijzigd: een object staat niet meer in het document
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	de borduurvolgorde kan niet worden gewijzigd: een object, of een laag of groep waarin het staat, is vergrendeld
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	de borduurvolgorde kan niet worden gewijzigd: een uitknippad blijft onderaan in zijn uitknipgroep
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	de borduurvolgorde kan niet worden gewijzigd: een object zou in een uitknipgroep komen of eruit gaan
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	de borduurvolgorde kan niet worden gewijzigd: een stuk van een geopend machinebestand beweegt met zijn blok mee, dus verplaats de groep
+@msg	can't change the sewing order: a layer can't go into a group	de borduurvolgorde kan niet worden gewijzigd: een laag kan niet in een groep
+@msg	can't change the sewing order: the layer or group it would go into is locked	de borduurvolgorde kan niet worden gewijzigd: de laag of groep waarin het zou komen is vergrendeld
+@msg	can't change the sewing order: it would go between two parts of one object	de borduurvolgorde kan niet worden gewijzigd: het zou tussen twee delen van één object komen
+@msg	can't change the sewing order: there is nothing to sew it beside	de borduurvolgorde kan niet worden gewijzigd: er is niets om het naast te borduren
+@msg	can't change the sewing order: too many objects at once	de borduurvolgorde kan niet worden gewijzigd: te veel objecten tegelijk

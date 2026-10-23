@@ -5357,3 +5357,22 @@ embroidery	Size	Ukuran
 embroidery	Time	Waktu
 embroidery	Design	Desain
 embroidery	The time at {speed} stitches a minute, an estimate.	Waktu pada {speed} jahitan per menit, perkiraan.
+	Sew Earlier	Jahit lebih awal
+	Sew Later	Jahit lebih akhir
+	Sew First	Jahit pertama
+	Sew Last	Jahit terakhir
+	Change Sewing Order	Ubah urutan jahit
+@msg	nothing selected is sewn	tidak ada pilihan yang dijahit
+@msg	the selection is sewn first already	pilihan sudah dijahit pertama
+@msg	the selection is sewn last already	pilihan sudah dijahit terakhir
+@msg	the sewing order is that already	urutan jahit sudah seperti itu
+@msg	can't change the sewing order: an object is no longer in the document	urutan jahit tidak dapat diubah: sebuah objek tidak lagi ada di dokumen
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	urutan jahit tidak dapat diubah: sebuah objek, atau lapisan atau grup tempatnya, terkunci
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	urutan jahit tidak dapat diubah: jalur kliping tetap di bagian bawah grup klipingnya
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	urutan jahit tidak dapat diubah: sebuah objek akan masuk ke grup kliping atau keluar darinya
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	urutan jahit tidak dapat diubah: satu bagian dari berkas mesin yang dibuka bergerak bersama bloknya, jadi pindahkan grupnya
+@msg	can't change the sewing order: a layer can't go into a group	urutan jahit tidak dapat diubah: lapisan tidak dapat masuk ke grup
+@msg	can't change the sewing order: the layer or group it would go into is locked	urutan jahit tidak dapat diubah: lapisan atau grup tujuannya terkunci
+@msg	can't change the sewing order: it would go between two parts of one object	urutan jahit tidak dapat diubah: akan berada di antara dua bagian satu objek
+@msg	can't change the sewing order: there is nothing to sew it beside	urutan jahit tidak dapat diubah: tidak ada yang bisa dijahit di sebelahnya
+@msg	can't change the sewing order: too many objects at once	urutan jahit tidak dapat diubah: terlalu banyak objek sekaligus

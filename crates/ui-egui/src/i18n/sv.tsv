@@ -5330,3 +5330,22 @@ embroidery	Size	Storlek
 embroidery	Time	Tid
 embroidery	Design	Design
 embroidery	The time at {speed} stitches a minute, an estimate.	Tiden vid {speed} stygn i minuten, en uppskattning.
+	Sew Earlier	Brodera tidigare
+	Sew Later	Brodera senare
+	Sew First	Brodera först
+	Sew Last	Brodera sist
+	Change Sewing Order	Ändra sömnadsordning
+@msg	nothing selected is sewn	inget av det markerade broderas
+@msg	the selection is sewn first already	markeringen broderas redan först
+@msg	the selection is sewn last already	markeringen broderas redan sist
+@msg	the sewing order is that already	sömnadsordningen är redan sådan
+@msg	can't change the sewing order: an object is no longer in the document	sömnadsordningen kan inte ändras: ett objekt finns inte längre i dokumentet
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	sömnadsordningen kan inte ändras: ett objekt, eller ett lager eller en grupp det ligger i, är låst
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	sömnadsordningen kan inte ändras: en urklippsbana stannar längst ned i sin urklippsgrupp
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	sömnadsordningen kan inte ändras: ett objekt skulle hamna i en urklippsgrupp eller lämna den
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	sömnadsordningen kan inte ändras: ett avsnitt ur en öppnad maskinfil flyttas med sitt block, så flytta dess grupp
+@msg	can't change the sewing order: a layer can't go into a group	sömnadsordningen kan inte ändras: ett lager kan inte hamna i en grupp
+@msg	can't change the sewing order: the layer or group it would go into is locked	sömnadsordningen kan inte ändras: lagret eller gruppen det skulle hamna i är låst
+@msg	can't change the sewing order: it would go between two parts of one object	sömnadsordningen kan inte ändras: det skulle hamna mellan två delar av ett objekt
+@msg	can't change the sewing order: there is nothing to sew it beside	sömnadsordningen kan inte ändras: det finns inget att brodera det bredvid
+@msg	can't change the sewing order: too many objects at once	sömnadsordningen kan inte ändras: för många objekt på en gång

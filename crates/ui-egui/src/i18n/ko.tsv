@@ -4950,3 +4950,22 @@ embroidery	Size	크기
 embroidery	Time	시간
 embroidery	Design	디자인
 embroidery	The time at {speed} stitches a minute, an estimate.	분당 {speed}땀 기준 시간(추정치)입니다.
+	Sew Earlier	먼저 수놓기
+	Sew Later	나중에 수놓기
+	Sew First	맨 먼저 수놓기
+	Sew Last	맨 나중에 수놓기
+	Change Sewing Order	자수 순서 바꾸기
+@msg	nothing selected is sewn	선택한 것 중 수놓이는 것이 없습니다
+@msg	the selection is sewn first already	선택 항목은 이미 맨 먼저 수놓입니다
+@msg	the selection is sewn last already	선택 항목은 이미 맨 나중에 수놓입니다
+@msg	the sewing order is that already	자수 순서가 이미 그렇습니다
+@msg	can't change the sewing order: an object is no longer in the document	자수 순서를 바꿀 수 없습니다: 개체가 더 이상 문서에 없습니다
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	자수 순서를 바꿀 수 없습니다: 개체 또는 개체가 속한 레이어나 그룹이 잠겨 있습니다
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	자수 순서를 바꿀 수 없습니다: 클리핑 패스는 클립 그룹의 맨 아래에 남습니다
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	자수 순서를 바꿀 수 없습니다: 개체가 클립 그룹에 들어가거나 빠져나오게 됩니다
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	자수 순서를 바꿀 수 없습니다: 연 머신 파일의 구간은 블록과 함께 움직이므로 해당 그룹을 옮기세요
+@msg	can't change the sewing order: a layer can't go into a group	자수 순서를 바꿀 수 없습니다: 레이어는 그룹에 들어갈 수 없습니다
+@msg	can't change the sewing order: the layer or group it would go into is locked	자수 순서를 바꿀 수 없습니다: 들어갈 레이어나 그룹이 잠겨 있습니다
+@msg	can't change the sewing order: it would go between two parts of one object	자수 순서를 바꿀 수 없습니다: 한 개체의 두 부분 사이에 들어가게 됩니다
+@msg	can't change the sewing order: there is nothing to sew it beside	자수 순서를 바꿀 수 없습니다: 옆에 수놓을 것이 없습니다
+@msg	can't change the sewing order: too many objects at once	자수 순서를 바꿀 수 없습니다: 한 번에 너무 많은 개체입니다

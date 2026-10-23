@@ -16,6 +16,7 @@ use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId};
 
 use super::plan::{DesignPlan, Part, Unit};
+use super::*;
 use crate::cmd::layer::{MAX_ROWS, accepts, locked_within};
 
 /// The undo step's name for every change of the sewing order (drags, keys, commands).
@@ -149,7 +150,7 @@ fn within(doc: &Document, inner: NodeId, outer: NodeId) -> bool {
 /// unit `gap` (`plan.units.len()`: after the last). The objects go just above the object of the last
 /// unit before the gap that isn't dragged, in its parent; when there is none, just below the object
 /// of the first unit after it.
-pub fn place(doc: &Document, plan: &DesignPlan, movers: &[NodeId], gap: usize) -> Result<RowMove, Refusal> {
+pub fn place(doc: &Document, plan: &DesignPlan, movers: &[NodeId], gap: usize) -> std::result::Result<RowMove, Refusal> {
     if movers.is_empty() {
         return Err(Refusal::Nothing);
     }
@@ -264,6 +265,109 @@ pub enum Step {
     Later,
     First,
     Last,
+}
+
+impl Step {
+    fn id(self) -> &'static str {
+        match self {
+            Step::Earlier => "embroidery.sewEarlier",
+            Step::Later => "embroidery.sewLater",
+            Step::First => "embroidery.sewFirst",
+            Step::Last => "embroidery.sewLast",
+        }
+    }
+}
+
+/// Why a move can't be made, as a message (the commands' error, the Sewing order list's hint,
+/// translated by the interface's message catalogue).
+pub fn reason(r: Refusal) -> &'static str {
+    match r {
+        Refusal::Nothing => "nothing selected is sewn",
+        Refusal::Gone(_) => "can't change the sewing order: an object is no longer in the document",
+        Refusal::Locked(_) => "can't change the sewing order: an object, or a layer or group it is in, is locked",
+        Refusal::ClippingPath(_) => "can't change the sewing order: a clipping path stays at the bottom of its clip group",
+        Refusal::ChangesClipping(_) => "can't change the sewing order: it would put an object into a clip group or take it out of one",
+        Refusal::FromFile(_) => "can't change the sewing order: a run of an opened machine file moves with its block, so move its group",
+        Refusal::NotAccepted(_) => "can't change the sewing order: a layer can't go into a group",
+        Refusal::TargetLocked(_) => "can't change the sewing order: the layer or group it would go into is locked",
+        Refusal::InsideObject => "can't change the sewing order: it would go between two parts of one object",
+        Refusal::NoChange => "the sewing order is that already",
+        Refusal::Nowhere => "can't change the sewing order: there is nothing to sew it beside",
+        Refusal::TooMany => "can't change the sewing order: too many objects at once",
+    }
+}
+
+/// Sew Earlier, Later, First or Last: the objects `ids` names (default: the selection), each a
+/// selected group moving as one, go before the object sewn just before them, after the one sewn
+/// just after them, first or last, planned with the embroidery options in `p` → `{ids, target,
+/// place}` (`layer.move`'s params), one undo step named [`LABEL`].
+fn sew(s: &mut Session, p: &Value, step: Step) -> Result<Value> {
+    let cmd = step.id();
+    let o = super::object(p, cmd)?;
+    let opts = super::options_in(&o, &["ids"], cmd)?;
+    let ids = match crate::cmd::ids_param(p, "ids") {
+        Some(ids) => ids,
+        None => s.doc()?.selection.objects.clone(),
+    };
+    let (plan, doc) = super::planned(s, &opts, false, cmd)?;
+    let movers = movers_of(&doc, &plan, &ids);
+    let edge = |step: Step| match step {
+        Step::Earlier | Step::First => crate::EngineError::Other("the selection is sewn first already".into()),
+        Step::Later | Step::Last => crate::EngineError::Other("the selection is sewn last already".into()),
+    };
+    let gap = match gap_for(&doc, &plan, &movers, step) {
+        Some(g) => g,
+        None if movers.is_empty() => return Err(crate::EngineError::Other(reason(Refusal::Nothing).into())),
+        None => return Err(edge(step)),
+    };
+    let row = place(&doc, &plan, &movers, gap).map_err(|r| match r {
+        Refusal::NoChange => edge(step),
+        r => crate::EngineError::Other(reason(r).into()),
+    })?;
+    s.execute("command.batch", &row.batch())?;
+    Ok(row.params())
+}
+
+/// The commands that change the sewing order by a step.
+pub(super) fn specs() -> Vec<CommandSpec> {
+    vec![
+        cmd!(
+            "embroidery.sewEarlier",
+            "Sew Earlier",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection), …the embroidery options} move the objects (a selected group as one) in the stacking order so that they are sewn before the object sewn just before them: just below it, in its parent, one undo step \"Change Sewing Order\"; refused, saying why, where a drop in the Embroidery panel's Sewing order list would be (into or out of a clip group, a lock, a clipping path, a run of an opened machine file alone, between two parts of one object) → {ids, target, place} (layer.move's params). Objects of one thread still join a block sewn earlier when nothing between lies under them, so a move may change no stitch",
+            has_doc,
+            |s, p| sew(s, p, Step::Earlier)
+        ),
+        cmd!(
+            "embroidery.sewLater",
+            "Sew Later",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection), …the embroidery options} as embroidery.sewEarlier, after the object sewn just after them: just above it, in its parent → {ids, target, place}",
+            has_doc,
+            |s, p| sew(s, p, Step::Later)
+        ),
+        cmd!(
+            "embroidery.sewFirst",
+            "Sew First",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection), …the embroidery options} as embroidery.sewEarlier, before everything: just below the object sewn first, in its parent → {ids, target, place}",
+            has_doc,
+            |s, p| sew(s, p, Step::First)
+        ),
+        cmd!(
+            "embroidery.sewLast",
+            "Sew Last",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection), …the embroidery options} as embroidery.sewEarlier, after everything: just above the object sewn last, in its parent → {ids, target, place}",
+            has_doc,
+            |s, p| sew(s, p, Step::Last)
+        ),
+    ]
 }
 
 #[cfg(test)]

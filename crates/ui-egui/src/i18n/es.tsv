@@ -5315,3 +5315,22 @@ embroidery	Size	Tamaño
 embroidery	Time	Tiempo
 embroidery	Design	Diseño
 embroidery	The time at {speed} stitches a minute, an estimate.	El tiempo a {speed} puntadas por minuto, una estimación.
+	Sew Earlier	Bordar antes
+	Sew Later	Bordar después
+	Sew First	Bordar primero
+	Sew Last	Bordar al final
+	Change Sewing Order	Cambiar el orden de bordado
+@msg	nothing selected is sewn	nada de lo seleccionado se borda
+@msg	the selection is sewn first already	la selección ya se borda primero
+@msg	the selection is sewn last already	la selección ya se borda al final
+@msg	the sewing order is that already	el orden de bordado ya es ese
+@msg	can't change the sewing order: an object is no longer in the document	no se puede cambiar el orden de bordado: un objeto ya no está en el documento
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	no se puede cambiar el orden de bordado: un objeto, o una capa o grupo en que está, está bloqueado
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	no se puede cambiar el orden de bordado: un trazado de recorte se queda al fondo de su grupo de recorte
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	no se puede cambiar el orden de bordado: un objeto entraría en un grupo de recorte o saldría de él
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	no se puede cambiar el orden de bordado: un tramo de un archivo de máquina abierto se mueve con su bloque, así que mueva su grupo
+@msg	can't change the sewing order: a layer can't go into a group	no se puede cambiar el orden de bordado: una capa no puede ir dentro de un grupo
+@msg	can't change the sewing order: the layer or group it would go into is locked	no se puede cambiar el orden de bordado: la capa o el grupo donde iría está bloqueado
+@msg	can't change the sewing order: it would go between two parts of one object	no se puede cambiar el orden de bordado: quedaría entre dos partes de un mismo objeto
+@msg	can't change the sewing order: there is nothing to sew it beside	no se puede cambiar el orden de bordado: no hay nada junto a lo que bordarlo
+@msg	can't change the sewing order: too many objects at once	no se puede cambiar el orden de bordado: demasiados objetos a la vez

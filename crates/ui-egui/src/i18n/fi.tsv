@@ -5338,3 +5338,22 @@ embroidery	Size	Koko
 embroidery	Time	Aika
 embroidery	Design	Kuvio
 embroidery	The time at {speed} stitches a minute, an estimate.	Aika nopeudella {speed} pistoa minuutissa, arvio.
+	Sew Earlier	Kirjo aiemmin
+	Sew Later	Kirjo myöhemmin
+	Sew First	Kirjo ensimmäisenä
+	Sew Last	Kirjo viimeisenä
+	Change Sewing Order	Muuta ompelujärjestystä
+@msg	nothing selected is sewn	mitään valituista ei kirjota
+@msg	the selection is sewn first already	valinta kirjotaan jo ensimmäisenä
+@msg	the selection is sewn last already	valinta kirjotaan jo viimeisenä
+@msg	the sewing order is that already	ompelujärjestys on jo tämä
+@msg	can't change the sewing order: an object is no longer in the document	ompelujärjestystä ei voi muuttaa: objektia ei enää ole asiakirjassa
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	ompelujärjestystä ei voi muuttaa: objekti tai taso tai ryhmä, jossa se on, on lukittu
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	ompelujärjestystä ei voi muuttaa: leikkauspolku pysyy leikkausryhmänsä pohjalla
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	ompelujärjestystä ei voi muuttaa: objekti siirtyisi leikkausryhmään tai pois siitä
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	ompelujärjestystä ei voi muuttaa: avatun konetiedoston jakso siirtyy lohkonsa mukana, joten siirrä sen ryhmää
+@msg	can't change the sewing order: a layer can't go into a group	ompelujärjestystä ei voi muuttaa: taso ei voi mennä ryhmään
+@msg	can't change the sewing order: the layer or group it would go into is locked	ompelujärjestystä ei voi muuttaa: taso tai ryhmä, johon se menisi, on lukittu
+@msg	can't change the sewing order: it would go between two parts of one object	ompelujärjestystä ei voi muuttaa: se menisi yhden objektin kahden osan väliin
+@msg	can't change the sewing order: there is nothing to sew it beside	ompelujärjestystä ei voi muuttaa: ei ole mitään, minkä viereen se kirjottaisiin
+@msg	can't change the sewing order: too many objects at once	ompelujärjestystä ei voi muuttaa: liian monta objektia kerralla

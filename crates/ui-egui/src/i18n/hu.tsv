@@ -5360,3 +5360,22 @@ embroidery	Size	Méret
 embroidery	Time	Idő
 embroidery	Design	Minta
 embroidery	The time at {speed} stitches a minute, an estimate.	Az idő percenként {speed} öltéssel, becslés.
+	Sew Earlier	Hímezze korábban
+	Sew Later	Hímezze később
+	Sew First	Hímezze elsőként
+	Sew Last	Hímezze utolsóként
+	Change Sewing Order	Varrási sorrend módosítása
+@msg	nothing selected is sewn	a kijelölésből semmi nem kerül hímzésre
+@msg	the selection is sewn first already	a kijelölés már elsőként kerül hímzésre
+@msg	the selection is sewn last already	a kijelölés már utolsóként kerül hímzésre
+@msg	the sewing order is that already	a varrási sorrend már ilyen
+@msg	can't change the sewing order: an object is no longer in the document	a varrási sorrend nem módosítható: egy objektum már nincs a dokumentumban
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	a varrási sorrend nem módosítható: egy objektum vagy az azt tartalmazó réteg vagy csoport zárolva van
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	a varrási sorrend nem módosítható: a vágógörbe a vágócsoportja alján marad
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	a varrási sorrend nem módosítható: egy objektum vágócsoportba kerülne vagy kikerülne belőle
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	a varrási sorrend nem módosítható: egy megnyitott gépfájl szakasza a blokkjával mozog, ezért a csoportját mozgassa
+@msg	can't change the sewing order: a layer can't go into a group	a varrási sorrend nem módosítható: réteg nem kerülhet csoportba
+@msg	can't change the sewing order: the layer or group it would go into is locked	a varrási sorrend nem módosítható: a réteg vagy csoport, ahová kerülne, zárolva van
+@msg	can't change the sewing order: it would go between two parts of one object	a varrási sorrend nem módosítható: egy objektum két része közé kerülne
+@msg	can't change the sewing order: there is nothing to sew it beside	a varrási sorrend nem módosítható: nincs mi mellé hímezni
+@msg	can't change the sewing order: too many objects at once	a varrási sorrend nem módosítható: túl sok objektum egyszerre

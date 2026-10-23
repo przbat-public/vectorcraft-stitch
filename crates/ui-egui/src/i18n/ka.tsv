@@ -5280,3 +5280,22 @@ embroidery	Size	ზომა
 embroidery	Time	დრო
 embroidery	Design	დიზაინი
 embroidery	The time at {speed} stitches a minute, an estimate.	დრო წუთში {speed} ნაკერით, შეფასება.
+	Sew Earlier	ადრე დაქარგვა
+	Sew Later	მოგვიანებით დაქარგვა
+	Sew First	პირველად დაქარგვა
+	Sew Last	ბოლოს დაქარგვა
+	Change Sewing Order	კერვის რიგის შეცვლა
+@msg	nothing selected is sewn	მონიშნულიდან არაფერი იქარგება
+@msg	the selection is sewn first already	მონიშნული უკვე პირველი იქარგება
+@msg	the selection is sewn last already	მონიშნული უკვე ბოლოს იქარგება
+@msg	the sewing order is that already	კერვის რიგი უკვე ასეთია
+@msg	can't change the sewing order: an object is no longer in the document	კერვის რიგის შეცვლა შეუძლებელია: ობიექტი აღარ არის დოკუმენტში
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	კერვის რიგის შეცვლა შეუძლებელია: ობიექტი ან მისი შემცველი შრე ან ჯგუფი ჩაკეტილია
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	კერვის რიგის შეცვლა შეუძლებელია: ჩამოჭრის კონტური რჩება თავისი ჯგუფის ფსკერზე
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	კერვის რიგის შეცვლა შეუძლებელია: ობიექტი ჩამოჭრის ჯგუფში შევიდოდა ან გამოვიდოდა
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	კერვის რიგის შეცვლა შეუძლებელია: გახსნილი მანქანური ფაილის მონაკვეთი თავის ბლოკთან ერთად გადაადგილდება, ამიტომ გადააადგილეთ მისი ჯგუფი
+@msg	can't change the sewing order: a layer can't go into a group	კერვის რიგის შეცვლა შეუძლებელია: შრე ჯგუფში ვერ შევა
+@msg	can't change the sewing order: the layer or group it would go into is locked	კერვის რიგის შეცვლა შეუძლებელია: შრე ან ჯგუფი, სადაც შევიდოდა, ჩაკეტილია
+@msg	can't change the sewing order: it would go between two parts of one object	კერვის რიგის შეცვლა შეუძლებელია: ერთი ობიექტის ორ ნაწილს შორის მოხვდებოდა
+@msg	can't change the sewing order: there is nothing to sew it beside	კერვის რიგის შეცვლა შეუძლებელია: გვერდით დასაქარგი არაფერია
+@msg	can't change the sewing order: too many objects at once	კერვის რიგის შეცვლა შეუძლებელია: ერთდროულად ზედმეტად ბევრი ობიექტია

@@ -4983,3 +4983,22 @@ embroidery	Size	Размер
 embroidery	Time	Время
 embroidery	Design	Дизайн
 embroidery	The time at {speed} stitches a minute, an estimate.	Время при {speed} стежках в минуту, оценка.
+	Sew Earlier	Вышивать раньше
+	Sew Later	Вышивать позже
+	Sew First	Вышивать первым
+	Sew Last	Вышивать последним
+	Change Sewing Order	Изменить порядок вышивки
+@msg	nothing selected is sewn	ничего из выделенного не вышивается
+@msg	the selection is sewn first already	выделенное уже вышивается первым
+@msg	the selection is sewn last already	выделенное уже вышивается последним
+@msg	the sewing order is that already	порядок вышивки уже такой
+@msg	can't change the sewing order: an object is no longer in the document	не удаётся изменить порядок вышивки: объекта больше нет в документе
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	не удаётся изменить порядок вышивки: объект или слой либо группа, в которой он находится, заблокированы
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	не удаётся изменить порядок вышивки: обтравочный контур остаётся внизу своей группы
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	не удаётся изменить порядок вышивки: объект попал бы в обтравочную группу или вышел бы из неё
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	не удаётся изменить порядок вышивки: участок открытого машинного файла перемещается вместе с блоком, поэтому переместите его группу
+@msg	can't change the sewing order: a layer can't go into a group	не удаётся изменить порядок вышивки: слой нельзя поместить в группу
+@msg	can't change the sewing order: the layer or group it would go into is locked	не удаётся изменить порядок вышивки: слой или группа, куда он попал бы, заблокированы
+@msg	can't change the sewing order: it would go between two parts of one object	не удаётся изменить порядок вышивки: он оказался бы между двумя частями одного объекта
+@msg	can't change the sewing order: there is nothing to sew it beside	не удаётся изменить порядок вышивки: рядом нечего вышивать
+@msg	can't change the sewing order: too many objects at once	не удаётся изменить порядок вышивки: слишком много объектов сразу

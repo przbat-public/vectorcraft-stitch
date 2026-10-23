@@ -174,3 +174,42 @@ fn the_gaps_sew_earlier_later_first_and_last_try() {
     // A selected group moves as one.
     assert_eq!(movers_of(&doc_of(&s), &plan, &[NodeId(order[2]), NodeId(order[2])]), [NodeId(order[2])]);
 }
+
+/// Sew Earlier, Later, First and Last move the selection (or `ids`) by a step, one undo step named
+/// "Change Sewing Order", and say why they can't.
+#[test]
+fn the_sew_commands() {
+    let mut s = Session::new();
+    fx::blank(&mut runner(&mut s));
+    let mut ids = vec![];
+    // Four threads, so that no two join.
+    for k in 0..4 {
+        let color = [fx::RED, fx::BLUE, fx::GREEN, "#e0a000"][k];
+        s.execute("select.none", &json!({})).unwrap();
+        ids.push(fx::rect(&mut runner(&mut s), color, 20.0 + 80.0 * k as f64, 20.0, 50.0, 50.0));
+    }
+    let order = sewn(&plan_of(&mut s));
+    assert_eq!(order, ids);
+    s.execute("select.set", &json!({"ids": [order[1]]})).unwrap();
+    let r = s.execute("embroidery.sewEarlier", &json!({})).unwrap();
+    assert_eq!((&r["ids"], &r["place"]), (&json!([order[1]]), &json!("below")));
+    assert_eq!(sewn(&plan_of(&mut s))[0], order[1]);
+    assert_eq!(s.doc().unwrap().history.undo.last().map(|e| e.label.as_str()), Some(LABEL));
+    let e = s.execute("embroidery.sewEarlier", &json!({})).unwrap_err().to_string();
+    assert!(e.contains("the selection is sewn first already"), "{e}");
+    s.execute("embroidery.sewLast", &json!({"ids": [order[1]]})).unwrap();
+    assert_eq!(sewn(&plan_of(&mut s)).last(), Some(&order[1]));
+    let e = s.execute("embroidery.sewLater", &json!({})).unwrap_err().to_string();
+    assert!(e.contains("sewn last already"), "{e}");
+    s.execute("embroidery.sewFirst", &json!({})).unwrap();
+    assert_eq!(sewn(&plan_of(&mut s))[0], order[1]);
+    s.execute("select.none", &json!({})).unwrap();
+    let e = s.execute("embroidery.sewLater", &json!({})).unwrap_err().to_string();
+    assert!(e.contains("nothing selected is sewn"), "{e}");
+    // A locked object is refused, saying why.
+    s.execute("select.set", &json!({"ids": [order[2]]})).unwrap();
+    s.execute("object.lock", &json!({})).unwrap();
+    let e = s.execute("embroidery.sewFirst", &json!({"ids": [order[2]]})).unwrap_err().to_string();
+    assert!(e.contains("is locked"), "{e}");
+    assert!(s.execute("embroidery.sewFirst", &json!({"idz": [1]})).is_err(), "a key it doesn't take");
+}

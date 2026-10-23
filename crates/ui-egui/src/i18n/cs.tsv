@@ -5374,3 +5374,22 @@ embroidery	Size	Velikost
 embroidery	Time	Čas
 embroidery	Design	Návrh
 embroidery	The time at {speed} stitches a minute, an estimate.	Čas při {speed} stezích za minutu, odhad.
+	Sew Earlier	Šít dříve
+	Sew Later	Šít později
+	Sew First	Šít jako první
+	Sew Last	Šít jako poslední
+	Change Sewing Order	Změnit pořadí šití
+@msg	nothing selected is sewn	nic z výběru se nešije
+@msg	the selection is sewn first already	výběr se už šije jako první
+@msg	the selection is sewn last already	výběr se už šije jako poslední
+@msg	the sewing order is that already	pořadí šití už takové je
+@msg	can't change the sewing order: an object is no longer in the document	pořadí šití nelze změnit: objekt už v dokumentu není
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	pořadí šití nelze změnit: objekt nebo vrstva či skupina, ve které je, je zamčený
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	pořadí šití nelze změnit: ořezová cesta zůstává na dně své ořezové skupiny
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	pořadí šití nelze změnit: objekt by se dostal do ořezové skupiny nebo z ní
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	pořadí šití nelze změnit: úsek otevřeného strojového souboru se přesouvá se svým blokem, přesuňte tedy jeho skupinu
+@msg	can't change the sewing order: a layer can't go into a group	pořadí šití nelze změnit: vrstva nemůže do skupiny
+@msg	can't change the sewing order: the layer or group it would go into is locked	pořadí šití nelze změnit: vrstva nebo skupina, do které by se dostal, je zamčená
+@msg	can't change the sewing order: it would go between two parts of one object	pořadí šití nelze změnit: dostal by se mezi dvě části jednoho objektu
+@msg	can't change the sewing order: there is nothing to sew it beside	pořadí šití nelze změnit: není nic, vedle čeho by se šil
+@msg	can't change the sewing order: too many objects at once	pořadí šití nelze změnit: příliš mnoho objektů najednou

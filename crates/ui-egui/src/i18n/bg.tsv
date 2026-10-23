@@ -5339,3 +5339,22 @@ embroidery	Size	Размер
 embroidery	Time	Време
 embroidery	Design	Дизайн
 embroidery	The time at {speed} stitches a minute, an estimate.	Времето при {speed} бода в минута, приблизително.
+	Sew Earlier	Ший по-рано
+	Sew Later	Ший по-късно
+	Sew First	Ший първо
+	Sew Last	Ший последно
+	Change Sewing Order	Промяна на реда на шиене
+@msg	nothing selected is sewn	нищо от избраното не се шие
+@msg	the selection is sewn first already	избраното вече се шие първо
+@msg	the selection is sewn last already	избраното вече се шие последно
+@msg	the sewing order is that already	редът на шиене вече е такъв
+@msg	can't change the sewing order: an object is no longer in the document	сменяне на реда на шиене не е възможно: обектът вече не е в документа
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	сменяне на реда на шиене не е възможно: обектът или слоят или групата, в които е, е заключен
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	сменяне на реда на шиене не е възможно: изрязващият контур остава в дъното на групата си
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	сменяне на реда на шиене не е възможно: обектът би влязъл в изрязваща група или би излязъл от нея
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	сменяне на реда на шиене не е възможно: участък от отворен машинен файл се мести с блока си, затова преместете групата му
+@msg	can't change the sewing order: a layer can't go into a group	сменяне на реда на шиене не е възможно: слой не може да влезе в група
+@msg	can't change the sewing order: the layer or group it would go into is locked	сменяне на реда на шиене не е възможно: слоят или групата, в които би влязъл, са заключени
+@msg	can't change the sewing order: it would go between two parts of one object	сменяне на реда на шиене не е възможно: би попаднал между две части на един обект
+@msg	can't change the sewing order: there is nothing to sew it beside	сменяне на реда на шиене не е възможно: няма до какво да се шие
+@msg	can't change the sewing order: too many objects at once	сменяне на реда на шиене не е възможно: твърде много обекти наведнъж

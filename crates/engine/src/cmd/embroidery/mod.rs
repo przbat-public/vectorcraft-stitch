@@ -268,6 +268,7 @@ pub fn specs() -> Vec<CommandSpec> {
         ),
     ];
     specs.extend(view::specs());
+    specs.extend(reorder::specs());
     specs
 }
 

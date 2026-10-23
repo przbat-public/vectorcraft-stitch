@@ -4262,3 +4262,22 @@ embroidery	Size	尺寸
 embroidery	Time	時間
 embroidery	Design	設計
 embroidery	The time at {speed} stitches a minute, an estimate.	按每分鐘 {speed} 針計算的時間，為估計值。
+	Sew Earlier	提前繡製
+	Sew Later	延後繡製
+	Sew First	最先繡製
+	Sew Last	最後繡製
+	Change Sewing Order	變更刺繡順序
+@msg	nothing selected is sewn	所選內容都不會被繡製
+@msg	the selection is sewn first already	所選內容已經最先繡製
+@msg	the selection is sewn last already	所選內容已經最後繡製
+@msg	the sewing order is that already	刺繡順序已經是這樣
+@msg	can't change the sewing order: an object is no longer in the document	無法變更刺繡順序：物件已不在文件中
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	無法變更刺繡順序：物件或其所在的圖層或群組已鎖定
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	無法變更刺繡順序：剪裁路徑留在其剪裁群組的最底層
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	無法變更刺繡順序：物件會進入或離開剪裁群組
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	無法變更刺繡順序：已開啟的機器檔案中的一段會隨其色塊一起移動，請移動其群組
+@msg	can't change the sewing order: a layer can't go into a group	無法變更刺繡順序：圖層不能放進群組
+@msg	can't change the sewing order: the layer or group it would go into is locked	無法變更刺繡順序：要放入的圖層或群組已鎖定
+@msg	can't change the sewing order: it would go between two parts of one object	無法變更刺繡順序：會落在同一物件的兩個部分之間
+@msg	can't change the sewing order: there is nothing to sew it beside	無法變更刺繡順序：旁邊沒有可繡製的內容
+@msg	can't change the sewing order: too many objects at once	無法變更刺繡順序：一次的物件太多

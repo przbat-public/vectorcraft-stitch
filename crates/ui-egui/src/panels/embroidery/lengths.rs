@@ -29,6 +29,12 @@ const AXIS_PT: f32 = 14.0;
 const AXIS_EVERY_MM: f64 = 5.0;
 /// The size of the chart's words, points.
 const SMALL: f32 = 11.0;
+/// The band's "Too long" a size under the small text, inset from the chart's top right corner; the
+/// axis's figures two sizes under it, under the axis, points.
+const BAND_TEXT: f32 = SMALL - 1.0;
+const BAND_TEXT_INSET: egui::Vec2 = vec2(-2.0, 1.0);
+const AXIS_TEXT: f32 = SMALL - 2.0;
+const AXIS_TEXT_GAP: f32 = 2.0;
 /// How strongly the "too long" band tints the chart's background behind it: a quarter of the
 /// warning colour. An estimate: visible, quieter than the bars.
 const BAND_TINT: f32 = 0.25;
@@ -65,7 +71,7 @@ pub fn show(ui: &mut Ui, stats: &Value, too_long: Option<f64>, stale: bool) {
     let Some((bins, median)) = bins(stats) else { return };
     let t = Tokens::get(ui.ctx());
     let lang = crate::i18n::current();
-    let ink = |c: Color32| if stale { c.gamma_multiply(0.6) } else { c };
+    let ink = |c: Color32| if stale { c.gamma_multiply(super::STALE_INK) } else { c };
     let title = crate::et!("Stitch lengths");
     let median_words = median.map(|m| fill(crate::et!("Median: {value} mm"), &[("value", &numbers::decimal(lang, m, 1))]));
     egui::Frame::NONE.fill(t.panel_darker).corner_radius(t.cr()).inner_margin(PAD_PT).show(ui, |ui| {
@@ -90,7 +96,7 @@ pub fn show(ui: &mut Ui, stats: &Value, too_long: Option<f64>, stale: bool) {
             let band = Rect::from_min_max(pos2(x, area.top()), area.right_bottom());
             p.rect_filled(band, 0.0, ink(warning.gamma_multiply(BAND_TINT)));
             let words = marks::text_colour(&t, Mark::Warning);
-            p.text(band.right_top() + vec2(-2.0, 1.0), Align2::RIGHT_TOP, crate::et!("Too long"), FontId::proportional(SMALL - 1.0), ink(words));
+            p.text(band.right_top() + BAND_TEXT_INSET, Align2::RIGHT_TOP, crate::et!("Too long"), FontId::proportional(BAND_TEXT), ink(words));
         }
         p.line_segment([area.left_bottom(), area.right_bottom()], Stroke::new(1.0, ink(t.border)));
         let pointer = resp.hover_pos();
@@ -118,10 +124,10 @@ pub fn show(ui: &mut Ui, stats: &Value, too_long: Option<f64>, stale: bool) {
             let Some(k) = bins.iter().position(|b| b.from == from) else { continue };
             let x = area.left() + k as f32 * (width / n);
             p.text(
-                pos2(x, area.bottom() + 2.0),
+                pos2(x, area.bottom() + AXIS_TEXT_GAP),
                 Align2::CENTER_TOP,
                 numbers::decimal(lang, from, 1),
-                FontId::proportional(SMALL - 2.0),
+                FontId::proportional(AXIS_TEXT),
                 ink(t.text_dim),
             );
         }

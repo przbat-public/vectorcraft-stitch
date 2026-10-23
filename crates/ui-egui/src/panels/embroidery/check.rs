@@ -35,6 +35,8 @@ use crate::embroidery::text::fill;
 use crate::i18n::Lang;
 use crate::theme::Tokens;
 
+use super::STALE_INK;
+
 /// The hits asked for per rule: enough for the canvas's marks and for stepping through them, within
 /// the engine's [`vectorcraft_engine::cmd::embroidery::MAX_LIMIT`]. An estimate.
 pub const CHECK_LIST_LIMIT: usize = 100;
@@ -50,8 +52,14 @@ const CHEVRON: f32 = 12.0;
 /// The sizes of the rows' words, points: the interface's text and its small text.
 const TEXT: f32 = 12.0;
 const SMALL: f32 = 11.0;
-/// How much a result checked on an older plan is dimmed, as the Sewing order dims its rows.
-const STALE_INK: f32 = 0.6;
+/// The room between a rule's title and the line under it, and round the Show button's words,
+/// points.
+const LINE_GAP: f32 = 2.0;
+const SHOW_PAD: f32 = 2.0;
+/// The room under the tab's summary and around a rule's opened part, and between the list's parts
+/// (the rules, the chart, what wasn't checked), points.
+const PART_GAP: f32 = 4.0;
+const SECTION_GAP: f32 = 8.0;
 /// How long Show stands the stitches it shows out on the canvas, seconds: only for a moment (the
 /// project owner's choice). An estimate: long enough to find them, short enough not to linger.
 pub const SHOW_EMPHASIS_SECS: f64 = 1.5;
@@ -449,7 +457,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
         let since = *app.embroidery.check.waiting_since.get_or_insert(now);
         if now - since >= super::SHOW_BUSY_AFTER_SECS {
             ui.horizontal(|ui| {
-                ui.add(egui::Spinner::new().size(11.0).color(t.accent));
+                ui.add(egui::Spinner::new().size(SMALL).color(t.accent));
                 ui.label(egui::RichText::new(crate::et!("Checking…")).size(SMALL).color(t.text_dim));
             });
         }
@@ -486,7 +494,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
             }
         });
     });
-    ui.add_space(4.0);
+    ui.add_space(PART_GAP);
     // What was shown last: its index dropped when the hit is no longer listed; its stitches stood
     // out for a moment.
     if let Some(f) = app.embroidery.check.focus.as_mut().filter(|f| f.uid == shown.uid) {
@@ -521,11 +529,11 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
         for rule in ordered(reply) {
             row(app, ui, rule, format_label(format), stale, doc.as_deref(), focus.as_ref(), &mut acts);
         }
-        ui.add_space(8.0);
+        ui.add_space(SECTION_GAP);
         if let Some(stats) = shown.stats {
             let too_long = rule_of(reply, "stitchTooLong").and_then(|r| r["threshold"].as_f64());
             super::lengths::show(ui, stats, too_long, stale);
-            ui.add_space(8.0);
+            ui.add_space(SECTION_GAP);
         }
         not_checked(ui, reply, &t);
     });
@@ -589,7 +597,7 @@ fn row(
     let below = lines.join("\n");
     let title_g = ui.painter().layout(heading.clone(), FontId::proportional(TEXT), ink(t.text), wrap);
     let below_g = ui.painter().layout(below.clone(), FontId::proportional(SMALL), ink(t.text_dim), wrap);
-    let height = 2.0 * ROW_PAD + title_g.rect.height() + 2.0 + below_g.rect.height();
+    let height = 2.0 * ROW_PAD + title_g.rect.height() + LINE_GAP + below_g.rect.height();
     let (rect, resp) = ui.allocate_exact_size(vec2(width, height), Sense::click());
     let p = ui.painter_at(rect);
     if focused.is_some() {
@@ -601,7 +609,7 @@ fn row(
     marks::paint(&p, pos2(rect.left() + ROW_PAD + MARK_SIZE / 2.0, rect.top() + ROW_PAD + first_line / 2.0), MARK_SIZE, mark, &t);
     let top = rect.top() + ROW_PAD;
     p.galley(pos2(rect.left() + left, top), title_g.clone(), ink(t.text));
-    p.galley(pos2(rect.left() + left, top + title_g.rect.height() + 2.0), below_g, ink(t.text_dim));
+    p.galley(pos2(rect.left() + left, top + title_g.rect.height() + LINE_GAP), below_g, ink(t.text_dim));
     let chevron = Rect::from_center_size(pos2(rect.right() - ROW_PAD - CHEVRON / 2.0, top + first_line / 2.0), vec2(CHEVRON, CHEVRON));
     crate::icons::paint(ui, if open { "chevron-down" } else { "chevron-right" }, chevron, ink(t.text_dim));
     let said = format!("{}: {heading}. {below}", severity_name(mark));
@@ -609,10 +617,10 @@ fn row(
     // Show sits over the row, so it takes the clicks on it.
     let mut showing = false;
     if let Some(g) = show_g {
-        let at = Rect::from_min_size(pos2(chevron.left() - ROW_PAD - g.rect.width(), top), g.rect.size()).expand(2.0);
+        let at = Rect::from_min_size(pos2(chevron.left() - ROW_PAD - g.rect.width(), top), g.rect.size()).expand(SHOW_PAD);
         let button = ui.interact(at, ui.id().with(("embroidery-check-show", &id)), Sense::click());
         let words = if button.hovered() { ink(t.accent_strong) } else { ink(t.accent) };
-        ui.painter().galley(at.min + vec2(2.0, 2.0), g, words);
+        ui.painter().galley(at.min + vec2(SHOW_PAD, SHOW_PAD), g, words);
         button.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, !stale, format!("{show_words}: {heading}")));
         if button.clicked() && !stale {
             acts.push(Act::Show(id.clone(), None));
@@ -717,7 +725,7 @@ fn details(
             }
         });
     });
-    ui.add_space(4.0);
+    ui.add_space(PART_GAP);
 }
 
 /// What isn't checked, and why.

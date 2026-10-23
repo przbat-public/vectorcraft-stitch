@@ -42,6 +42,26 @@ pub const SHOW_BUSY_AFTER_SECS: f64 = 0.1;
 const STRIP_HEIGHT: f32 = 22.0;
 /// Room under the strip and between the header's lines, points.
 const GAP: f32 = 8.0;
+/// How much of a stale result's colour the panel keeps: its words and marks dimmed while a newer
+/// plan is made. An estimate.
+pub(crate) const STALE_INK: f32 = 0.6;
+/// The words of the panel's states and of the strip, points: the strip's tabs as the interface's
+/// text, the states' lines a size under it, their titles a size over the states' lines.
+const STRIP_TEXT: f32 = 12.0;
+const STATE_TEXT: f32 = 11.5;
+const STATE_TITLE: f32 = 12.5;
+/// "Updating…" and its spinner, points: the header's small text.
+const UPDATING_TEXT: f32 = 11.0;
+/// The empty state's icon, the planning state's spinner and its progress bar, points (the
+/// mockups' sizes: estimates).
+const STATE_ICON: f32 = 28.0;
+const STATE_SPINNER: f32 = 18.0;
+const STATE_PROGRESS: f32 = 160.0;
+/// The room over a state, and between its icon and its words, points.
+const STATE_TOP: f32 = 12.0;
+const STATE_GAP: f32 = 4.0;
+/// How far a tab's highlight sits inside its segment, points.
+const SEGMENT_INSET: f32 = 2.0;
 
 /// The panel's tabs, in the order they show. Their ids are stable (`ui.embroideryPanel`, the saved
 /// interface state).
@@ -315,9 +335,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         }
         if stale && busy {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                ui.label(egui::RichText::new(crate::et!("Updating…")).size(11.0).color(t.text_dim))
+                ui.label(egui::RichText::new(crate::et!("Updating…")).size(UPDATING_TEXT).color(t.text_dim))
                     .on_hover_text(crate::et!("These are the stitches before the last change; the new ones are being planned."));
-                ui.add(egui::Spinner::new().size(11.0).color(t.accent));
+                ui.add(egui::Spinner::new().size(UPDATING_TEXT).color(t.accent));
             });
         }
     });
@@ -353,9 +373,9 @@ fn strip(app: &mut VectorcraftApp, ui: &mut Ui) {
             } else {
                 Color32::TRANSPARENT
             };
-            ui.painter().rect_filled(segment.shrink(2.0), radius, fill);
+            ui.painter().rect_filled(segment.shrink(SEGMENT_INSET), radius, fill);
             let color = if selected { t.text_strong } else { t.text_dim };
-            ui.painter().text(segment.center(), egui::Align2::CENTER_CENTER, label, egui::FontId::proportional(12.0), color);
+            ui.painter().text(segment.center(), egui::Align2::CENTER_CENTER, label, egui::FontId::proportional(STRIP_TEXT), color);
         });
         if resp.clicked() {
             app.ui.embroidery_panel.tab = tab;
@@ -366,25 +386,25 @@ fn strip(app: &mut VectorcraftApp, ui: &mut Ui) {
 /// A state with no content: a title and a line under it.
 fn empty_state(ui: &mut Ui, title: &str, body: &str) {
     let t = Tokens::get(ui.ctx());
-    ui.add_space(12.0);
+    ui.add_space(STATE_TOP);
     ui.vertical_centered(|ui| {
-        crate::icons::icon(ui, "dc-embroidery", 28.0, t.text_disabled);
-        ui.add_space(4.0);
-        ui.label(egui::RichText::new(title).size(12.5).color(t.text));
-        ui.label(egui::RichText::new(body).size(11.5).color(t.text_dim));
+        crate::icons::icon(ui, "dc-embroidery", STATE_ICON, t.text_disabled);
+        ui.add_space(STATE_GAP);
+        ui.label(egui::RichText::new(title).size(STATE_TITLE).color(t.text));
+        ui.label(egui::RichText::new(body).size(STATE_TEXT).color(t.text_dim));
     });
 }
 
 /// Planning, with the plan's progress when it can say.
 fn planning(ui: &mut Ui, progress: Option<f64>) {
     let t = Tokens::get(ui.ctx());
-    ui.add_space(12.0);
+    ui.add_space(STATE_TOP);
     ui.vertical_centered(|ui| {
-        ui.add(egui::Spinner::new().size(18.0).color(t.accent));
-        ui.add_space(4.0);
-        ui.label(egui::RichText::new(crate::et!("Planning stitches…")).size(12.0).color(t.text));
+        ui.add(egui::Spinner::new().size(STATE_SPINNER).color(t.accent));
+        ui.add_space(STATE_GAP);
+        ui.label(egui::RichText::new(crate::et!("Planning stitches…")).size(STATE_TITLE).color(t.text));
         if let Some(done) = progress.filter(|p| p.is_finite()) {
-            ui.add(egui::ProgressBar::new(done.clamp(0.0, 1.0) as f32).desired_width(160.0));
+            ui.add(egui::ProgressBar::new(done.clamp(0.0, 1.0) as f32).desired_width(STATE_PROGRESS));
         }
     });
 }
@@ -396,8 +416,8 @@ fn failed(ui: &mut Ui, error: &str) {
         egui::RichText::new(crate::et!("Can't plan the stitches:"))
             .color(crate::embroidery::marks::text_colour(&t, crate::embroidery::marks::Mark::Error)),
     );
-    ui.label(egui::RichText::new(crate::i18n::msg(error)).size(11.5).color(t.text));
-    ui.label(egui::RichText::new(crate::et!("Change the design and the stitches are planned again.")).size(11.5).color(t.text_dim));
+    ui.label(egui::RichText::new(crate::i18n::msg(error)).size(STATE_TEXT).color(t.text));
+    ui.label(egui::RichText::new(crate::et!("Change the design and the stitches are planned again.")).size(STATE_TEXT).color(t.text_dim));
 }
 
 /// A plan that sews nothing: the plan's own warnings, and what is sewn.
@@ -405,11 +425,11 @@ fn nothing_to_sew(ui: &mut Ui, warnings: &[String]) {
     let t = Tokens::get(ui.ctx());
     ui.label(egui::RichText::new(crate::et!("Nothing to sew")).strong().color(t.text));
     for w in warnings {
-        ui.label(egui::RichText::new(crate::i18n::msg(w)).size(11.5).color(t.text));
+        ui.label(egui::RichText::new(crate::i18n::msg(w)).size(STATE_TEXT).color(t.text));
     }
     ui.label(
         egui::RichText::new(crate::et!("Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't."))
-            .size(11.5)
+            .size(STATE_TEXT)
             .color(t.text_dim),
     );
 }

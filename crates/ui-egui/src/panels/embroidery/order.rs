@@ -75,6 +75,29 @@ const UNIT_SECOND_LINE: f32 = 0.72;
 /// The room a row's words leave at its right end, and between two words on a line, points.
 const ROW_END_PAD: f32 = 6.0;
 const WORD_GAP: f32 = 6.0;
+/// The rows' icons (the fold chevron, the thread change's scissors), and the chevron's centre from
+/// the row's left, points.
+const ICON: f32 = 12.0;
+const FOLD_ICON_X: f32 = 9.0;
+/// The ΔE badge: from the thread's name to its words, its frame round them, its corners, and from it
+/// to what follows, points.
+const BADGE_INSET: f32 = 4.0;
+const BADGE_PAD: egui::Vec2 = vec2(3.0, 1.0);
+const BADGE_RADIUS: f32 = 3.0;
+const BADGE_AFTER: f32 = 8.0;
+/// The thread chip's corners, points.
+const CHIP_RADIUS: f32 = 2.0;
+/// The room under the note about the last drop, and inside its card, points.
+const NOTE_GAP: f32 = 4.0;
+const NOTE_PAD: f32 = 6.0;
+/// The fewest rows of room the list keeps however little the panel has: two headers' height.
+const MIN_LIST_ROWS: f32 = 2.0;
+/// How far right of the pointer the dragged objects' name shows, points: clear of the cursor.
+const DRAG_LABEL_OFFSET: f32 = 12.0;
+/// The footer's labels and note, a size under the small text, and the room between a figure's
+/// label and its value, points.
+const FIGURE_LABEL: f32 = SMALL - 1.0;
+const FIGURE_LINE_GAP: f32 = 2.0;
 /// The sizes of the rows' words, points: the interface's text and its small text.
 const TEXT: f32 = 12.0;
 const SMALL: f32 = 11.0;
@@ -332,7 +355,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
     let open: HashSet<u64> = app.session.documents().iter().map(|d| d.uid).collect();
     app.embroidery.order.docs.retain(|d, _| open.contains(d));
     note(app, ui, uid, generation, &plan, &t);
-    ui.add_space(4.0);
+    ui.add_space(NOTE_GAP);
     let Some(st) = app.session.active() else { return };
     // Drags only on the plan of the document as it is, outside the edit modes.
     let movable = !stale && st.isolation.is_none() && doc.mask_edit.is_none() && doc.pattern_edit.is_none();
@@ -341,7 +364,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
     let folded = app.embroidery.order.folded(uid);
     let (rows, tops) = rows(&order, &folded);
     let footer_room = footer_room(ui, shown.stats, ui.available_width());
-    let height = (ui.available_height() - footer_room - HINT).max(HEADER_ROW * 2.0);
+    let height = (ui.available_height() - footer_room - HINT).max(HEADER_ROW * MIN_LIST_ROWS);
     let mut clicked: Option<(Row, egui::Modifiers)> = None;
     let mut toggle: Option<usize> = None;
     let mut step: Option<(Step, u64)> = None;
@@ -511,7 +534,13 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
     app.embroidery.order.list_rect = Some(area.inner_rect);
     // The objects dragged, at the pointer.
     if let (Some(drag), Some(at)) = (&app.embroidery.order.drag, pointer) {
-        ui.painter().text(at + vec2(12.0, 0.0), Align2::LEFT_CENTER, &drag.label, FontId::proportional(SMALL), t.text.gamma_multiply(GHOST));
+        ui.painter().text(
+            at + vec2(DRAG_LABEL_OFFSET, 0.0),
+            Align2::LEFT_CENTER,
+            &drag.label,
+            FontId::proportional(SMALL),
+            t.text.gamma_multiply(GHOST),
+        );
     }
     let released = ui.input(|i| !i.pointer.any_down());
     ui.label(egui::RichText::new(hint.clone().unwrap_or_default()).size(SMALL).color(t.text_dim));
@@ -646,7 +675,7 @@ fn note(app: &mut VectorcraftApp, ui: &mut Ui, uid: u64, generation: u64, plan: 
         let (a, b) = (numbers::count(lang, e.changes.0 as u64), numbers::count(lang, e.changes.1 as u64));
         lines.push(crate::embroidery::text::fill(crate::et!("Thread changes: {before} → {after}"), &[("before", &a), ("after", &b)]));
     }
-    egui::Frame::NONE.fill(t.panel_darker).corner_radius(t.radius).inner_margin(6.0).show(ui, |ui| {
+    egui::Frame::NONE.fill(t.panel_darker).corner_radius(t.radius).inner_margin(NOTE_PAD).show(ui, |ui| {
         ui.set_width(ui.available_width());
         for line in lines {
             ui.label(egui::RichText::new(line).size(SMALL).color(t.text));
@@ -724,7 +753,7 @@ fn paint_row(
     let p = ui.painter_at(rect);
     let order = &listed.order;
     let lang = crate::i18n::current();
-    let ink = |c: Color32| if stale { c.gamma_multiply(0.6) } else { c };
+    let ink = |c: Color32| if stale { c.gamma_multiply(super::STALE_INK) } else { c };
     if selected {
         p.rect_filled(rect, 0.0, t.row_selected);
     } else if hovered {
@@ -735,32 +764,32 @@ fn paint_row(
             let Some(block) = order.blocks.get(b) else { return String::new() };
             let collapsed = folded.contains(&block.block);
             let mid = rect.center().y;
-            let arrow = Rect::from_center_size(pos2(rect.left() + 9.0, mid), vec2(12.0, 12.0));
+            let arrow = Rect::from_center_size(pos2(rect.left() + FOLD_ICON_X, mid), vec2(ICON, ICON));
             crate::icons::paint(ui, if collapsed { "chevron-right" } else { "chevron-down" }, arrow, ink(t.text_dim));
             let number = numbers::count(lang, block.block as u64);
             let mut x = rect.left() + INDENT;
             let g = p.text(pos2(x, mid), Align2::LEFT_CENTER, &number, FontId::proportional(SMALL), ink(t.text_dim));
-            x = g.right() + 6.0;
+            x = g.right() + WORD_GAP;
             chip(&p, pos2(x, mid), block, t);
-            x += CHIP + 6.0;
+            x += CHIP + WORD_GAP;
             let name = format!("{}  {} {}", block.thread.name, block.thread.palette.to_uppercase(), block.thread.index);
             let g = p.text(pos2(x, mid), Align2::LEFT_CENTER, &name, FontId::proportional(TEXT), ink(t.text_strong));
-            x = g.right() + 6.0;
+            x = g.right() + WORD_GAP;
             if block.thread.mismatch {
                 let badge = format!("ΔE {}", numbers::decimal(lang, block.thread.delta_e, 1));
                 let amber = crate::embroidery::marks::text_colour(t, crate::embroidery::marks::Mark::Warning);
-                let g = p.text(pos2(x + 4.0, mid), Align2::LEFT_CENTER, &badge, FontId::proportional(SMALL), ink(amber));
-                p.rect_stroke(g.expand2(vec2(3.0, 1.0)), 3.0, Stroke::new(1.0, ink(amber)), StrokeKind::Outside);
-                x = g.right() + 8.0;
+                let g = p.text(pos2(x + BADGE_INSET, mid), Align2::LEFT_CENTER, &badge, FontId::proportional(SMALL), ink(amber));
+                p.rect_stroke(g.expand2(BADGE_PAD), BADGE_RADIUS, Stroke::new(1.0, ink(amber)), StrokeKind::Outside);
+                x = g.right() + BADGE_AFTER;
             }
             let objects = listed.object_count(b) as u64;
             let stitches = numbers::count(lang, block.stitches as u64);
             let right = format!("{} · {stitches}", crate::etn!(objects, "{count} object", "{count} objects"));
             // The counts at the right, as much of them as fits beside the thread's name.
-            let room = rect.right() - 6.0 - x;
+            let room = rect.right() - ROW_END_PAD - x;
             let fits = |s: &str| p.layout_no_wrap(s.to_string(), FontId::proportional(SMALL), Color32::WHITE).size().x <= room;
             if let Some(shown) = [right.as_str(), stitches.as_str()].into_iter().find(|s| fits(s)) {
-                p.text(pos2(rect.right() - 6.0, mid), Align2::RIGHT_CENTER, shown, FontId::proportional(SMALL), ink(t.text_dim));
+                p.text(pos2(rect.right() - ROW_END_PAD, mid), Align2::RIGHT_CENTER, shown, FontId::proportional(SMALL), ink(t.text_dim));
             }
             format!("{number} {name} {right}")
         }
@@ -787,10 +816,10 @@ fn paint_row(
         Row::Change(b) => {
             let trim = order.blocks.get(b).and_then(|b| b.then).is_some_and(|t| t.trim);
             let mid = rect.center().y;
-            let icon = Rect::from_center_size(pos2(rect.left() + INDENT + 6.0, mid), vec2(12.0, 12.0));
+            let icon = Rect::from_center_size(pos2(rect.left() + INDENT + ICON / 2.0, mid), vec2(ICON, ICON));
             crate::icons::paint(ui, "scissors", icon, ink(t.text_dim));
             let words = if trim { crate::et!("Trim and thread change") } else { crate::et!("Thread change") };
-            p.text(pos2(icon.right() + 6.0, mid), Align2::LEFT_CENTER, words, FontId::proportional(SMALL), ink(t.text_dim));
+            p.text(pos2(icon.right() + WORD_GAP, mid), Align2::LEFT_CENTER, words, FontId::proportional(SMALL), ink(t.text_dim));
             words.to_string()
         }
     }
@@ -801,13 +830,13 @@ fn paint_row(
 fn chip(p: &egui::Painter, left_mid: egui::Pos2, block: &OrderBlock, t: &Tokens) {
     let rect = Rect::from_min_size(pos2(left_mid.x, left_mid.y - CHIP / 2.0), vec2(CHIP, CHIP));
     let thread = hex(&block.thread.color).unwrap_or(t.text);
-    p.rect_filled(rect, 2.0, thread);
+    p.rect_filled(rect, CHIP_RADIUS, thread);
     if block.thread.delta_e > 0.0
         && let Some(art) = hex(&block.thread.art)
     {
         p.add(egui::Shape::convex_polygon(vec![rect.right_top(), rect.right_bottom(), rect.left_bottom()], art, Stroke::NONE));
     }
-    p.rect_stroke(rect, 2.0, Stroke::new(1.0, t.border), StrokeKind::Inside);
+    p.rect_stroke(rect, CHIP_RADIUS, Stroke::new(1.0, t.border), StrokeKind::Inside);
 }
 
 /// `#rrggbb` as a colour.
@@ -891,7 +920,7 @@ fn figures(stats: &Value) -> [(&'static str, String); 8] {
 fn columns(ui: &Ui, cells: &[(&str, String)], room: f32) -> usize {
     let widest = cells
         .iter()
-        .flat_map(|(label, value)| [(*label, SMALL - 1.0), (value.as_str(), TEXT)])
+        .flat_map(|(label, value)| [(*label, FIGURE_LABEL), (value.as_str(), TEXT)])
         .map(|(s, size)| ui.painter().layout_no_wrap(s.to_string(), FontId::proportional(size), Color32::WHITE).size().x)
         .fold(FIGURE_WIDTH, f32::max);
     (((room + FIGURE_GAP) / (widest + FIGURE_GAP)).floor() as usize).clamp(1, 3)
@@ -916,10 +945,10 @@ fn footer(ui: &mut Ui, stats: &Value, t: &Tokens) {
         let room = ui.available_width();
         ui.label(egui::RichText::new(crate::et!("Design")).size(TEXT).color(t.text_strong));
         let columns = columns(ui, &cells, room);
-        egui::Grid::new("embroidery-figures").num_columns(columns).spacing(vec2(FIGURE_GAP, 2.0)).show(ui, |ui| {
+        egui::Grid::new("embroidery-figures").num_columns(columns).spacing(vec2(FIGURE_GAP, FIGURE_LINE_GAP)).show(ui, |ui| {
             for (k, (label, value)) in cells.iter().enumerate() {
                 ui.vertical(|ui| {
-                    ui.add(egui::Label::new(egui::RichText::new(*label).size(SMALL - 1.0).color(t.text_dim)).extend());
+                    ui.add(egui::Label::new(egui::RichText::new(*label).size(FIGURE_LABEL).color(t.text_dim)).extend());
                     ui.add(egui::Label::new(egui::RichText::new(value).size(TEXT).color(t.text)).extend());
                 });
                 if k % columns == columns - 1 {
@@ -931,7 +960,7 @@ fn footer(ui: &mut Ui, stats: &Value, t: &Tokens) {
         // Wrapped within the card, however wide the grid made it.
         ui.scope(|ui| {
             ui.set_max_width(room);
-            ui.add(egui::Label::new(egui::RichText::new(note).size(SMALL - 1.0).color(t.text_dim)).wrap());
+            ui.add(egui::Label::new(egui::RichText::new(note).size(FIGURE_LABEL).color(t.text_dim)).wrap());
         });
     });
 }

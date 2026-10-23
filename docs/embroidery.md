@@ -1564,7 +1564,10 @@ object gets an entry ◆ (the accent colour) where the needle enters it and an e
 colour) where it leaves, at most 32 of them (`MARKED_OBJECTS_MAX`, an estimate), labelled "Entry"
 and "Exit" when one object is selected; they come from `StitchScene::ends_of`, as the Sewing order
 list's do. A selected object changed since the plan shown is outlined dashed in its layer's colour
-until its plan comes, and the canvas's notice counts the selected objects that sew nothing. For a
+until its plan comes (past 32 such objects or 20,000 anchors, `PENDING_OUTLINES_MAX` and
+`PENDING_ANCHORS_MAX`, the box they fall in is dashed instead, as the canvas leaves out outlines
+past its own cap; at most 20,000 dashes a frame, `PENDING_DASHES_MAX`, where they cross the canvas;
+estimates), and the canvas's notice counts the selected objects that sew nothing. For a
 moment (a Sewing order row hovered, a check's hits shown) the stitch layer fades the frame it
 already drew with a tint and draws the units concerned over it from a raster of them alone
 (`StitchLayer::emphasize`), never drawing the whole design again. The raster is drawn as the frames

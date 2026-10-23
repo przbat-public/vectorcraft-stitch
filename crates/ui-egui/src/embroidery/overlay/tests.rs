@@ -150,6 +150,70 @@ fn a_changed_object_is_outlined_dashed_until_its_plan_comes() {
     assert_eq!(segments(&shapes), segments(&before), "no more dashes");
 }
 
+/// More changed objects than are outlined: the box they fall in is dashed, worked out once for the
+/// plan and the selection, not every frame.
+#[test]
+fn many_changed_objects_have_their_box_dashed() {
+    let mut app = app();
+    let ctx = egui::Context::default();
+    for k in 0..=PENDING_OUTLINES_MAX as u64 {
+        app.run("shape.rectangle", json!({"x": 5 * (k % 10), "y": 150 + 5 * (k / 10), "width": 4, "height": 4})).unwrap();
+    }
+    app.run("select.all", json!({})).unwrap();
+    let mut time = 0.0;
+    let before = settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    app.embroidery.preview.set_plan_ms(uid, 1000.0);
+    app.run("object.move", json!({"dx": 3, "dy": 0})).unwrap();
+    time += 0.01;
+    let shapes = frame(&mut app, &ctx, time);
+    let ids: Vec<NodeId> = app.session.doc().unwrap().selection.objects.clone();
+    assert!(pending(&app).len() > PENDING_OUTLINES_MAX);
+    let (key, kept) = app.embroidery.ends.pending.clone().unwrap();
+    let Pending::Bounds(color, b) = &*kept else { panic!("the box, not the outlines") };
+    assert_eq!(*b, app.session.doc().unwrap().doc.bounds_of(&ids, false).unwrap());
+    // The box's dashes, about its perimeter on screen over a dash and a gap.
+    let zoom = app.view_mut().unwrap().zoom;
+    let perimeter = 2.0 * (b.width() + b.height()) * zoom;
+    let segments = |shapes: &[Shape]| shapes.iter().filter(|s| matches!(s, Shape::LineSegment { stroke, .. } if stroke.color == *color)).count();
+    let dashes = segments(&shapes) - segments(&before);
+    let most = perimeter / f64::from(DASH + GAP) + 4.0;
+    assert!(dashes > 4 && dashes as f64 <= most, "{dashes} dashes for a perimeter of {perimeter}");
+    frame(&mut app, &ctx, time + 0.01);
+    assert!(Arc::ptr_eq(&app.embroidery.ends.pending.as_ref().unwrap().1, &kept), "found once");
+    assert_eq!(app.embroidery.ends.pending.as_ref().unwrap().0, key);
+}
+
+/// Dashes are drawn only where a line crosses the canvas, and no more than the budget.
+#[test]
+fn dashes_are_drawn_on_the_canvas_only_and_capped() {
+    let ctx = egui::Context::default();
+    let (red, green, blue) = (Color32::RED, Color32::GREEN, Color32::BLUE);
+    let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
+        let p = ui.painter().with_clip_rect(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(100.0, 100.0)));
+        let clip = p.clip_rect();
+        let mut budget = usize::MAX;
+        // Across the canvas, from far past it either side: the 100 points inside only.
+        dash(&p, &[egui::pos2(-1e9, 50.0), egui::pos2(1e9, 50.0)], red, clip, &mut budget);
+        // Outside it: nothing.
+        dash(&p, &[egui::pos2(-50.0, -50.0), egui::pos2(500.0, -50.0)], green, clip, &mut budget);
+        let mut budget = 3;
+        dash(&p, &[egui::pos2(0.0, 20.0), egui::pos2(100.0, 20.0)], blue, clip, &mut budget);
+        assert_eq!(budget, 0);
+    });
+    out.textures_delta.clear();
+    let mut shapes = vec![];
+    flatten(out.shapes.into_iter().map(|c| c.shape).collect(), &mut shapes);
+    let count = |c: Color32| shapes.iter().filter(|s| matches!(s, Shape::LineSegment { stroke, .. } if stroke.color == c)).count();
+    let across = (100.0 / f64::from(DASH + GAP)).ceil() as usize;
+    assert!((across - 1..=across + 1).contains(&count(red)), "{} dashes", count(red));
+    assert_eq!((count(green), count(blue)), (0, 3));
+    assert_eq!(
+        clip_segment(egui::pos2(-10.0, 5.0), egui::pos2(10.0, 5.0), egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(5.0, 10.0))),
+        Some((0.5, 0.75))
+    );
+}
+
 /// Selected objects that sew nothing are counted, and the canvas's notice says so.
 #[test]
 fn the_notice_counts_selected_objects_that_arent_sewn() {

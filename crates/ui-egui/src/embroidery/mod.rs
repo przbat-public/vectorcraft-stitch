@@ -3,11 +3,13 @@
 //!
 //! - [`numbers`]: numbers as the interface language writes them, in the embroidery interface's
 //!   read-only text.
+//! - [`plan_worker`]: the stitch preview's planning thread.
 //! - [`text`]: the embroidery interface's words, in the catalogues' `embroidery` context
 //!   ([`crate::et!`], [`crate::etn!`]).
 //! - [`render_stitches`]: the control channel's picture of the stitches.
 
 pub mod numbers;
+pub mod plan_worker;
 pub mod text;
 
 use vectorcraft_engine::EmbroideryOptions;

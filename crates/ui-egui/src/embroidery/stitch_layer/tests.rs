@@ -302,3 +302,24 @@ fn emphasis_fades_the_rest_without_drawing_the_stitches_again() {
     assert_eq!(drawn_with(&shapes, stitch_texture(&app)), [Color32::WHITE], "a moment only");
     assert!(drawn_with(&shapes, emphasized).is_empty());
 }
+
+/// A frame asked of the layer's thread is forgotten when the stitch view stops being drawn: a
+/// window capture never waits for it (it would wait its whole bound, 5 s, every time).
+#[test]
+fn a_frame_asked_of_the_thread_is_forgotten_when_the_stitches_go() {
+    let ctx = egui::Context::default();
+    let Some(worker) = LineWorker::start(&ctx) else { panic!("the layer's thread starts") };
+    let mut app = app();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    let time = until_stitches(&mut app, &ctx, 0.0);
+    app.embroidery.layer.use_worker(worker);
+    // A design slow to draw: the next frame goes to the thread.
+    app.embroidery.layer.last_ms = 1000.0;
+    app.run("view.zoomIn", json!({})).unwrap();
+    frame(&mut app, &ctx, time + 0.1);
+    assert!(app.embroidery.layer.waiting(), "asked of the thread");
+    app.run("view.stitchPreview", json!({"on": false})).unwrap();
+    frame(&mut app, &ctx, time + 0.2);
+    assert!(!app.embroidery.layer.waiting());
+    assert!(!crate::embroidery::holds_screenshots(&app, time + 0.2));
+}

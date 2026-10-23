@@ -81,8 +81,9 @@ struct LayerKey {
     anti_alias: bool,
 }
 
-/// A frame of stitches to draw on the thread.
+/// A frame of stitches to draw on the thread, numbered in the order frames are made.
 struct LayerJob {
+    seq: u64,
     key: LayerKey,
     picture: Arc<LinePicture>,
     view: Affine,
@@ -91,6 +92,7 @@ struct LayerJob {
 
 /// A frame drawn on the thread, and how long it took.
 struct LayerDone {
+    seq: u64,
     key: LayerKey,
     img: Rendered,
     ms: f64,
@@ -127,8 +129,13 @@ impl LineWorker {
                         job = newer;
                     }
                     let t0 = crate::now_ms();
-                    let img = r.render(&job.picture, job.key.w, job.key.h, job.view, &job.style);
-                    if done_tx.send(LayerDone { key: job.key, img, ms: crate::now_ms() - t0 }).is_err() {
+                    // A panic in the drawing ends the thread (the guard logs it): the canvas finds the
+                    // thread gone and draws in line from then on.
+                    let Ok(img) = vectorcraft_engine::guard::catch_panic(|| r.render(&job.picture, job.key.w, job.key.h, job.view, &job.style))
+                    else {
+                        break;
+                    };
+                    if done_tx.send(LayerDone { seq: job.seq, key: job.key, img, ms: crate::now_ms() - t0 }).is_err() {
                         break;
                     }
                     ctx.request_repaint();
@@ -160,8 +167,13 @@ impl LineWorker {
 pub struct StitchLayer {
     texture: Option<egui::TextureHandle>,
     key: Option<LayerKey>,
-    /// The frame asked of the thread and not back yet: not asked again.
-    asked: Option<LayerKey>,
+    /// The frame asked of the thread and not back yet (and its number): not asked again. Forgotten
+    /// when the stitch view stops being drawn, or the thread is gone.
+    asked: Option<(LayerKey, u64)>,
+    /// The number of the last frame made (drawn in line or asked of the thread), and of the frame
+    /// shown: a frame the thread finishes is shown only when it is newer than the one shown.
+    seq: u64,
+    shown_seq: u64,
     renderer: LineRenderer,
     worker: Option<LineWorker>,
     worker_started: bool,
@@ -200,7 +212,7 @@ impl StitchLayer {
 
     /// Whether a frame of stitches asked of the layer's thread hasn't come back yet.
     pub fn waiting(&self) -> bool {
-        self.asked.is_some()
+        self.shown && self.asked.is_some()
     }
 
     /// The generation of the plan whose stitches the texture holds.
@@ -249,6 +261,10 @@ pub fn art_pass(app: &mut VectorcraftApp) -> ArtPass {
     let layer = &mut app.embroidery.layer;
     if layer.shown && !pass.stitches {
         app.canvas.texture = None;
+    }
+    // The stitch view no longer drawn: the frame asked of the thread is wanted no more.
+    if !pass.stitches {
+        layer.asked = None;
     }
     layer.shown = pass.stitches;
     pass
@@ -403,19 +419,25 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
         isolated: isolated.map(|i| i.0),
         anti_alias,
     };
-    // A frame the thread finished: shown when it is of this document.
+    // A frame the thread finished: shown when it is of this document and newer than the frame shown
+    // (one drawn in line since may be).
     match layer.worker.as_ref().map(LineWorker::poll) {
-        Some(Ok(Some(done))) if done.key.uid == uid => {
-            layer.last_ms = done.ms;
-            if layer.asked.as_ref() == Some(&done.key) {
+        Some(Ok(Some(done))) => {
+            if layer.asked.as_ref().is_some_and(|(_, seq)| *seq == done.seq) {
                 layer.asked = None;
             }
-            upload(layer, ctx, &done.img, done.key);
+            if done.key.uid == uid && done.seq > layer.shown_seq {
+                layer.last_ms = done.ms;
+                upload(layer, ctx, &done.img, done.key, done.seq);
+            }
         }
-        Some(Err(())) => layer.worker = None,
+        Some(Err(())) => {
+            layer.worker = None;
+            layer.asked = None;
+        }
         _ => {}
     }
-    if (layer.key.as_ref() != Some(&key) || layer.texture.is_none()) && layer.asked.as_ref() != Some(&key) {
+    if (layer.key.as_ref() != Some(&key) || layer.texture.is_none()) && layer.asked.as_ref().map(|(k, _)| k) != Some(&key) {
         let faded = isolated.map(|i| {
             let id = (generation, i.0);
             match &layer.faded {
@@ -435,11 +457,13 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
             * Affine::translate(-v.center.to_vec2());
         let switched = layer.key.as_ref().is_none_or(|k| k.uid != uid);
         let heavy = layer.last_ms > INLINE_DRAW_MS || switched;
-        let job = LayerJob { key: key.clone(), picture: scene.picture().clone(), view: affine, style };
+        layer.seq += 1;
+        let seq = layer.seq;
+        let job = LayerJob { seq, key: key.clone(), picture: scene.picture().clone(), view: affine, style };
         match &layer.worker {
             Some(worker) if heavy => {
                 if worker.submit(job) {
-                    layer.asked = Some(key);
+                    layer.asked = Some((key, seq));
                 } else {
                     layer.worker = None;
                 }
@@ -453,7 +477,9 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
                 let t0 = crate::now_ms();
                 let img = layer.renderer.render(&job.picture, w, h, job.view, &job.style);
                 layer.last_ms = crate::now_ms() - t0;
-                upload(layer, ctx, &img, key.clone());
+                // Newer than anything the thread is drawing: that frame is wanted no more.
+                layer.asked = None;
+                upload(layer, ctx, &img, key.clone(), seq);
             }
         }
     }
@@ -488,7 +514,8 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
 }
 
 /// Make `img`, a frame for `key`, the layer's texture.
-fn upload(layer: &mut StitchLayer, ctx: &egui::Context, img: &Rendered, key: LayerKey) {
+fn upload(layer: &mut StitchLayer, ctx: &egui::Context, img: &Rendered, key: LayerKey, seq: u64) {
+    layer.shown_seq = seq;
     let color = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
     match &mut layer.texture {
         Some(tex) => tex.set(color, egui::TextureOptions::LINEAR),

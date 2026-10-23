@@ -209,12 +209,14 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
         }
     }
     ui.separator();
-    let blocks: Vec<usize> = app.embroidery.order.blocks();
-    if crate::widgets::menu_item_name(ui, crate::et!("Collapse All"), !blocks.is_empty(), false) {
-        app.embroidery.order.collapse(blocks);
-    }
-    if crate::widgets::menu_item_name(ui, crate::et!("Expand All"), true, false) {
-        app.embroidery.order.collapse(Vec::new());
+    let uid = app.session.active().map(|st| st.uid);
+    let has_blocks = app.embroidery.order.has_blocks();
+    for (label, fold, enabled) in [(crate::et!("Collapse All"), true, has_blocks), (crate::et!("Expand All"), false, true)] {
+        if crate::widgets::menu_item_name(ui, label, enabled && uid.is_some(), false)
+            && let Some(uid) = uid
+        {
+            app.embroidery.order.fold_all(uid, fold);
+        }
     }
     ui.separator();
     let steps = check::can_step(app);

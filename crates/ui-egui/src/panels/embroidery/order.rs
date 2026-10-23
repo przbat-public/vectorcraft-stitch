@@ -14,7 +14,7 @@
 //!   selected, or inside one that is, is highlighted.
 //! - Blocks collapse and expand (the header's triangle).
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use egui::{Align2, Color32, FontId, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
@@ -113,17 +113,13 @@ pub(crate) fn rows(order: &SewingOrder, collapsed: &HashSet<usize>) -> (Vec<Row>
     (rows, tops)
 }
 
-/// The tab's state: the order read for the plan shown, its rows, the collapsed blocks (by
-/// number), the unit row clicked last (for Shift-click ranges), a drag under way, a drop waiting
-/// for its plan and the note about the last one.
+/// The tab's state: the order read for the plan shown, each open document's own ([`DocOrder`]), a
+/// drag under way.
 #[derive(Default)]
 pub struct OrderState {
     read: Option<(u64, Arc<Listed>)>,
-    collapsed: HashSet<usize>,
-    anchor: Option<(usize, usize)>,
+    docs: HashMap<u64, DocOrder>,
     drag: Option<Drag>,
-    dropped: Option<Dropped>,
-    note: Option<(u64, Explained)>,
     /// What the selection covers (the selected objects and everything inside them), for
     /// (document, revision).
     covered: Option<((u64, u64), Covered)>,
@@ -136,15 +132,51 @@ pub struct OrderState {
     scrolled: f32,
 }
 
+/// One document's Sewing order: its folded blocks, the unit row clicked last (for Shift-click
+/// ranges), a drop waiting for its plan and the note about the last one. Never another
+/// document's: a note of a drop made in one is never worked out against another's plan.
+#[derive(Default)]
+struct DocOrder {
+    /// The folded blocks, by thread ([`BlockKey`]): a block a reorder renumbers stays folded, and
+    /// another thread's block that takes its number doesn't fold.
+    collapsed: HashSet<BlockKey>,
+    anchor: Option<(usize, usize)>,
+    dropped: Option<Dropped>,
+    note: Option<(u64, Explained)>,
+}
+
+/// A block as folding knows it: its thread (palette and number) and which of that thread's blocks
+/// it is, from 0.
+type BlockKey = (String, usize, usize);
+
 impl OrderState {
-    /// The numbers of the blocks of the order read last.
-    pub(crate) fn blocks(&self) -> Vec<usize> {
-        self.read.as_ref().map(|(_, l)| l.order.blocks.iter().map(|b| b.block).collect()).unwrap_or_default()
+    /// Whether the order read last has blocks to fold.
+    pub(crate) fn has_blocks(&self) -> bool {
+        self.read.as_ref().is_some_and(|(_, l)| !l.keys.is_empty())
     }
 
-    /// Collapse the blocks `blocks` (by number), and expand every other.
-    pub(crate) fn collapse(&mut self, blocks: Vec<usize>) {
-        self.collapsed = blocks.into_iter().collect();
+    /// Fold every block of document `uid`'s order (the one read last), or (`fold` false) unfold
+    /// them all.
+    pub(crate) fn fold_all(&mut self, uid: u64, fold: bool) {
+        let keys = if fold { self.read.as_ref().map(|(_, l)| l.keys.clone()).unwrap_or_default() } else { Vec::new() };
+        self.docs.entry(uid).or_default().collapsed = keys.into_iter().collect();
+    }
+
+    /// Fold block `block` (by number) of document `uid`'s order read last, or unfold it.
+    pub(crate) fn toggle_fold(&mut self, uid: u64, block: usize) {
+        let Some(key) = self.read.as_ref().and_then(|(_, l)| l.key_of(block).cloned()) else { return };
+        let doc = self.docs.entry(uid).or_default();
+        if !doc.collapsed.remove(&key) {
+            doc.collapsed.insert(key);
+        }
+    }
+
+    /// The numbers of document `uid`'s folded blocks in the order read last.
+    pub(crate) fn folded(&self, uid: u64) -> HashSet<usize> {
+        match (&self.read, self.docs.get(&uid)) {
+            (Some((_, l)), Some(d)) => l.folded(&d.collapsed),
+            _ => HashSet::new(),
+        }
     }
 }
 
@@ -167,6 +199,8 @@ pub(crate) struct Listed {
     /// Each block's units: whether the block has other units of the same part of the same object
     /// (the part is then numbered).
     several: Vec<Vec<bool>>,
+    /// Each block's key for folding.
+    keys: Vec<BlockKey>,
 }
 
 impl Listed {
@@ -190,7 +224,29 @@ impl Listed {
                 b.units.iter().map(|u| parts.get(&(u.id, u.part.as_str())).is_some_and(|n| *n > 1)).collect()
             })
             .collect();
-        Self { order: Arc::new(order), objects, several }
+        let mut seen: HashMap<(String, usize), usize> = HashMap::new();
+        let keys = order
+            .blocks
+            .iter()
+            .map(|b| {
+                let thread = (b.thread.palette.clone(), b.thread.index);
+                let k = seen.entry(thread.clone()).or_default();
+                let key = (thread.0, thread.1, *k);
+                *k += 1;
+                key
+            })
+            .collect();
+        Self { order: Arc::new(order), objects, several, keys }
+    }
+
+    /// The key of block `block` (by number).
+    fn key_of(&self, block: usize) -> Option<&BlockKey> {
+        self.order.blocks.iter().position(|b| b.block == block).and_then(|i| self.keys.get(i))
+    }
+
+    /// The numbers of the blocks `collapsed` folds.
+    fn folded(&self, collapsed: &HashSet<BlockKey>) -> HashSet<usize> {
+        self.order.blocks.iter().zip(&self.keys).filter(|(_, k)| collapsed.contains(*k)).map(|(b, _)| b.block).collect()
     }
 
     /// The objects `row` stands for: a unit's object, a header's block's objects (in order, once).
@@ -260,15 +316,20 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
             .size(SMALL)
             .color(t.text_dim),
     );
-    note(app, ui, generation, &plan, &t);
-    ui.add_space(4.0);
     let Some(st) = app.session.active() else { return };
     let (uid, revision, doc) = (st.uid, st.revision, st.doc.clone());
+    // A closed document's state goes with it.
+    let open: HashSet<u64> = app.session.documents().iter().map(|d| d.uid).collect();
+    app.embroidery.order.docs.retain(|d, _| open.contains(d));
+    note(app, ui, uid, generation, &plan, &t);
+    ui.add_space(4.0);
+    let Some(st) = app.session.active() else { return };
     // Drags only on the plan of the document as it is, outside the edit modes.
     let movable = !stale && st.isolation.is_none() && doc.mask_edit.is_none() && doc.pattern_edit.is_none();
     let selected = st.selection.objects.clone();
     let covered = covered(&mut app.embroidery.order, uid, revision, &doc, &selected);
-    let (rows, tops) = rows(&order, &app.embroidery.order.collapsed);
+    let folded = app.embroidery.order.folded(uid);
+    let (rows, tops) = rows(&order, &folded);
     let footer_room = footer_room(ui, shown.stats, ui.available_width());
     let height = (ui.available_height() - footer_room - HINT).max(HEADER_ROW * 2.0);
     let mut clicked: Option<(Row, egui::Modifiers)> = None;
@@ -328,10 +389,10 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                 let sense = if movable && !matches!(row, Row::Change(_)) { Sense::click_and_drag() } else { Sense::click() };
                 let resp = ui.interact(rect, id, sense);
                 let lit = row_selected(&order, *row, &covered);
-                let label = paint_row(app, ui, &doc, &listed, *row, rect, lit, resp.hovered(), stale, &t);
+                let label = paint_row(app, ui, &doc, &listed, &folded, *row, rect, lit, resp.hovered(), stale, &t);
                 resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, lit, &label));
                 let collapsed = match row {
-                    Row::Header(b) => order.blocks.get(*b).map(|k| app.embroidery.order.collapsed.contains(&k.block)),
+                    Row::Header(b) => order.blocks.get(*b).map(|k| folded.contains(&k.block)),
                     _ => None,
                 };
                 ui.ctx().accesskit_node_builder(id, |node| {
@@ -453,10 +514,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
     if let Some((which, id)) = step {
         step_selection(app, which, &[NodeId(id)]);
     }
-    if let Some(block) = toggle
-        && !app.embroidery.order.collapsed.remove(&block)
-    {
-        app.embroidery.order.collapsed.insert(block);
+    if let Some(block) = toggle {
+        app.embroidery.order.toggle_fold(uid, block);
     }
     if let Some((row, mods)) = clicked {
         select(app, &listed, &rows, row, mods);
@@ -514,8 +573,10 @@ fn drop_rows(app: &mut VectorcraftApp, plan: &Arc<DesignPlan>, generation: u64, 
     }
     let ids: Vec<u64> = m.ids.iter().map(|i| i.0).collect();
     let _ = app.run("select.set", json!({ "ids": ids }));
-    app.embroidery.order.dropped = Some(Dropped { before: plan.clone(), generation, moved: m.ids });
-    app.embroidery.order.note = None;
+    let Some(uid) = app.session.active().map(|st| st.uid) else { return };
+    let doc = app.embroidery.order.docs.entry(uid).or_default();
+    doc.dropped = Some(Dropped { before: plan.clone(), generation, moved: m.ids });
+    doc.note = None;
 }
 
 /// The plan the list shows and its generation, when objects can be moved on it: the plan of the
@@ -543,8 +604,8 @@ pub(crate) fn step_selection(app: &mut VectorcraftApp, step: Step, ids: &[NodeId
 }
 
 /// The note over the list after a drop, once its plan comes: what the drop did ([`explain`]).
-fn note(app: &mut VectorcraftApp, ui: &mut Ui, generation: u64, plan: &Arc<DesignPlan>, t: &Tokens) {
-    let state = &mut app.embroidery.order;
+fn note(app: &mut VectorcraftApp, ui: &mut Ui, uid: u64, generation: u64, plan: &Arc<DesignPlan>, t: &Tokens) {
+    let state = app.embroidery.order.docs.entry(uid).or_default();
     if let Some(d) = &state.dropped
         && d.generation != generation
     {
@@ -609,7 +670,8 @@ fn units_of(order: &SewingOrder, row: Row) -> Vec<u32> {
 /// A click on `row` with `mods`: select its objects; with Shift, the unit rows from the one
 /// clicked last; with Cmd/Ctrl, add or remove them.
 fn select(app: &mut VectorcraftApp, listed: &Listed, rows: &[Row], row: Row, mods: egui::Modifiers) {
-    let anchor = app.embroidery.order.anchor;
+    let Some(uid) = app.session.active().map(|st| st.uid) else { return };
+    let anchor = app.embroidery.order.docs.get(&uid).and_then(|d| d.anchor);
     let ids: Vec<u64> = match (row, anchor) {
         (Row::Unit(b, u), Some(a)) if mods.shift => {
             let at = |r: (usize, usize)| rows.iter().position(|x| *x == Row::Unit(r.0, r.1));
@@ -623,7 +685,7 @@ fn select(app: &mut VectorcraftApp, listed: &Listed, rows: &[Row], row: Row, mod
     if let Row::Unit(b, u) = row
         && !mods.shift
     {
-        app.embroidery.order.anchor = Some((b, u));
+        app.embroidery.order.docs.entry(uid).or_default().anchor = Some((b, u));
     }
     if ids.is_empty() {
         return;
@@ -641,6 +703,7 @@ fn paint_row(
     ui: &Ui,
     doc: &Document,
     listed: &Listed,
+    folded: &HashSet<usize>,
     row: Row,
     rect: Rect,
     selected: bool,
@@ -660,7 +723,7 @@ fn paint_row(
     match row {
         Row::Header(b) => {
             let Some(block) = order.blocks.get(b) else { return String::new() };
-            let collapsed = app.embroidery.order.collapsed.contains(&block.block);
+            let collapsed = folded.contains(&block.block);
             let mid = rect.center().y;
             let arrow = Rect::from_center_size(pos2(rect.left() + 9.0, mid), vec2(12.0, 12.0));
             crate::icons::paint(ui, if collapsed { "chevron-right" } else { "chevron-down" }, arrow, ink(t.text_dim));

@@ -247,9 +247,10 @@ fn the_keyboard_folds_blocks_and_walks_the_rows() {
     assert_eq!(step(&mut app, vec![]).focus, *header, "the header has the focus");
     let block = order_of(&app).blocks[0].block;
     step(&mut app, vec![key(egui::Key::ArrowLeft)]);
-    assert!(app.embroidery.order.collapsed.contains(&block), "← folds it");
+    let uid = app.session.active().unwrap().uid;
+    assert!(app.embroidery.order.folded(uid).contains(&block), "← folds it");
     step(&mut app, vec![key(egui::Key::ArrowRight)]);
-    assert!(!app.embroidery.order.collapsed.contains(&block), "→ unfolds it");
+    assert!(!app.embroidery.order.folded(uid).contains(&block), "→ unfolds it");
     // Down the list, past what shows.
     let mut tree = step(&mut app, vec![]);
     for _ in 0..40 {
@@ -271,7 +272,7 @@ fn a_header_collapses() {
     ready(&mut app, &ctx);
     let order = order_of(&app);
     let block = order.blocks[0].block;
-    app.embroidery.order.collapsed.insert(block);
+    app.embroidery.order.toggle_fold(app.session.active().unwrap().uid, block);
     let words = frame(&mut app, &ctx, 1.0, vec![]);
     assert_eq!(words.iter().filter(|w| w.starts_with("<Rectangle>")).count(), 2, "{words:?}");
 }
@@ -318,6 +319,44 @@ fn a_drop_and_its_note() {
         words = frame(&mut app, &ctx, t, vec![]);
     }
     assert!(!words.iter().any(|w| w.contains("is sewn in block")), "{words:?}");
+}
+
+/// The tab's state is each document's: a block folded stays folded when a reorder renumbers it,
+/// and another thread's block taking its number doesn't fold; another document has its own folds,
+/// and a drop waiting for its plan in one is never noted in another.
+#[test]
+fn each_document_keeps_its_own_order_state() {
+    let mut app = app_with(4);
+    let ctx = egui::Context::default();
+    ready(&mut app, &ctx);
+    let a = app.session.active().unwrap().uid;
+    let order = order_of(&app);
+    // Fold the second thread's block, then sew one of its objects first: its block comes first.
+    app.embroidery.order.toggle_fold(a, order.blocks[1].block);
+    app.run("embroidery.sewFirst", json!({"ids": [order.blocks[1].units[0].id]})).unwrap();
+    for t in [1.0, 1.05, 1.1, 1.2] {
+        frame(&mut app, &ctx, t, vec![]);
+    }
+    let after = order_of(&app);
+    assert_eq!(after.blocks[0].thread.color, order.blocks[1].thread.color, "renumbered");
+    let folded = app.embroidery.order.folded(a);
+    assert!(folded.contains(&after.blocks[0].block) && !folded.contains(&after.blocks[1].block), "{folded:?}");
+    // A drop waiting for its plan, then another document.
+    let shown = app.embroidery.preview.shown(a).unwrap();
+    let (plan, generation) = (shown.planned.plan.clone(), shown.planned.generation);
+    let last = NodeId(after.blocks[1].units[1].id);
+    let m = place(&app.session.doc().unwrap().doc.clone(), &plan, &[last], 0).unwrap();
+    drop_rows(&mut app, &plan, generation, m);
+    app.run("file.new", json!({"width": 200, "height": 200, "artboards": 1})).unwrap();
+    app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 30, "height": 30})).unwrap();
+    for t in [2.0, 2.05, 2.1, 2.2] {
+        frame(&mut app, &ctx, t, vec![]);
+    }
+    let b = app.session.active().unwrap().uid;
+    assert_ne!(a, b);
+    assert!(app.embroidery.order.folded(b).is_empty(), "nothing folded in the other");
+    assert!(app.embroidery.order.docs.get(&b).is_none_or(|d| d.note.is_none() && d.dropped.is_none()), "no note in the other");
+    assert!(app.embroidery.order.docs.get(&a).is_some_and(|d| d.dropped.is_some()), "the drop still waits for its own plan");
 }
 
 #[test]

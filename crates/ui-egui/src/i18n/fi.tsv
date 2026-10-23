@@ -5423,7 +5423,7 @@ embroidery	Threads unlike the art's colour (over {value})	Langat, jotka eivät v
 embroidery	Largest difference: {value}	Suurin ero: {value}
 embroidery	Block {block}: {thread}, {value}	Lohko {block}: {thread}, {value}
 	Zoom to Box	Zoomaa ruutuun
-@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] asiakirjan pisteinä; right ei saa olla ennen left-arvoa eikä bottom top-arvon yläpuolella
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] asiakirjan pisteinä, kukin välillä ±{max}; right ei saa olla ennen left-arvoa eikä bottom top-arvon yläpuolella
 @msg	margin: screen points, 0 or more	margin: näytön pisteinä, 0 tai enemmän
 @msg	no canvas is shown	piirtoaluetta ei näytetä
 	Next Finding	Seuraava löydös

@@ -5442,7 +5442,7 @@ embroidery	Threads unlike the art's colour (over {value})	Benang yang berbeda da
 embroidery	Largest difference: {value}	Perbedaan terbesar: {value}
 embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 	Zoom to Box	Perbesar ke kotak
-@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] dalam poin dokumen, dengan right tidak sebelum left dan bottom tidak di atas top
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] dalam poin dokumen, masing-masing dalam ±{max}, dengan right tidak sebelum left dan bottom tidak di atas top
 @msg	margin: screen points, 0 or more	margin: poin layar, 0 atau lebih
 @msg	no canvas is shown	tidak ada kanvas yang ditampilkan
 	Next Finding	Temuan berikutnya

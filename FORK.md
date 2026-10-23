@@ -351,13 +351,15 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   - `canvas.rs`: `art_pass` before the art, `paint_fabric` instead of the paper and the outline's
     ground, `templates`/`hidden` in the art's key and options, `&& art.render`, `&& !art.stitches`,
     `stitch_layer::draw` after the art, `to_screen_path` and `node_outline` made `pub(crate)`, the
-    selection overlay's `frame_only`; `fit_zoom`, `FIT_MARGIN` and `zoom_to` (View › Zoom to Box);
+    selection overlay's `frame_only`; `fit_zoom` and `FIT_MARGIN` split out of `fit` for View › Zoom
+    to Box (`embroidery/zoom.rs`);
   - `chrome.rs`: the tab title's mode (`tab_title`), and in the status bar the counters drawn
     before the timings, which are drawn only when the counters leave room;
   - `menus.rs`: View › Stitch Preview and its options after Pixel Preview, the `checked` and
     `enabled` hooks, Window › Embroidery, the `UI_COMMANDS` rows (`ui.embroideryPanel`,
     `view.zoomTo`, `view.checkMarks`, `embroidery.nextHit`, `embroidery.previousHit`), the
-    `view.zoomTo` arm, and `panels::embroidery::command` before the dock's commands;
+    `view.zoomTo` arm (into `embroidery::zoom`), and `panels::embroidery::command` before the dock's
+    commands;
   - `control.rs`: `ui.set {stitchPreview}`, `ui.render {stitchPreview}`, `ui.inspect`'s
     `stitchPreview`;
   - `panels/mod.rs`, `dock.rs`, `state.rs`, `icon_data.rs`: the panel's module, its show and menu

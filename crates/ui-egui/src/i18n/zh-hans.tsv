@@ -5295,7 +5295,7 @@ embroidery	Threads unlike the art's colour (over {value})	与图稿颜色不符�
 embroidery	Largest difference: {value}	最大差异：{value}
 embroidery	Block {block}: {thread}, {value}	第 {block} 块：{thread}，{value}
 	Zoom to Box	缩放到框
-@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect：[left， top， right， bottom](文档点)，right 不小于 left，bottom 不小于 top
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect：[left， top， right， bottom](文档点)，每个值在 ±{max} 以内，right 不小于 left，bottom 不小于 top
 @msg	margin: screen points, 0 or more	margin：屏幕点，0 或更大
 @msg	no canvas is shown	未显示画布
 	Next Finding	下一个问题

@@ -15,6 +15,7 @@
 //! - [`overlay`]: the selection in the stitch view: entry and exit markers, changed objects.
 //! - [`text`]: the embroidery interface's words, in the catalogues' `embroidery` context
 //!   ([`crate::et!`], [`crate::etn!`]).
+//! - [`zoom`]: View › Zoom to Box (`view.zoomTo`).
 //! - [`render_stitches`]: the control channel's picture of the stitches.
 
 pub mod check_marks;
@@ -29,6 +30,7 @@ pub mod stitch_layer;
 pub mod stitch_preview;
 pub mod switch;
 pub mod text;
+pub mod zoom;
 
 use vectorcraft_engine::cmd::embroidery::render::{Look, Region, picture};
 use vectorcraft_engine::cmd::embroidery::scene::FABRIC;

@@ -5458,7 +5458,7 @@ embroidery	Threads unlike the art's colour (over {value})	Fils éloignés de la 
 embroidery	Largest difference: {value}	Écart maximal : {value}
 embroidery	Block {block}: {thread}, {value}	Bloc {block} : {thread}, {value}
 	Zoom to Box	Zoom sur un cadre
-@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect : [left, top, right, bottom] en points du document, right au moins égal à left et bottom au moins égal à top
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect : [left, top, right, bottom] en points du document, chacun dans la plage ±{max}, right au moins égal à left et bottom au moins égal à top
 @msg	margin: screen points, 0 or more	margin : points d’écran, 0 ou plus
 @msg	no canvas is shown	aucun canevas n’est affiché
 	Next Finding	Constat suivant

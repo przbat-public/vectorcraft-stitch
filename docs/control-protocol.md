@@ -406,8 +406,9 @@ check's marks on the canvas off or on for the session (no `on`: the other way), 
 
 `view.zoomTo {rect: [left, top, right, bottom], margin?}` centres a box of document points in the window and zooms
 so that it fills it less `margin` screen points on each side (default 30, as Fit Artboard in Window leaves), within
-the zoom's range, answering `{zoom}` (percent); a box with its right left of its left or its bottom above its top, or
-with a number that isn't finite, is refused, and so is a call before the canvas is first shown.
+the zoom's range, answering `{zoom}` (percent); `rect` is exactly four numbers, each within ±4,000,000 points (the
+document's range, as `embroidery.render` reads its `rect`), and a box with its right left of its left or its bottom
+above its top is refused, and so is a call before the canvas is first shown.
 
 Flattener Preview: `window.panel {panel: "flattenerPreview"}` shows the panel; `ui.flattenerPreview {highlight?,
 overprints?, preset?, options?, showOptions?}` sets it (a preset loads its options, `options` adjust them), shows it

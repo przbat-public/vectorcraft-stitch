@@ -5445,7 +5445,7 @@ embroidery	Threads unlike the art's colour (over {value})	A grafika színétől 
 embroidery	Largest difference: {value}	Legnagyobb eltérés: {value}
 embroidery	Block {block}: {thread}, {value}	{block}. blokk: {thread}, {value}
 	Zoom to Box	Nagyítás keretre
-@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] dokumentumpontban; a right nem lehet a left előtt, a bottom pedig nem lehet a top fölött
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] dokumentumpontban, mindegyik ±{max} tartományon belül; a right nem lehet a left előtt, a bottom pedig nem lehet a top fölött
 @msg	margin: screen points, 0 or more	margin: képernyőpont, 0 vagy több
 @msg	no canvas is shown	nincs megjelenítve rajzvászon
 	Next Finding	Következő találat

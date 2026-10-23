@@ -1316,7 +1316,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             crate::canvas::fit(app, id);
             Ok(Value::Null)
         }
-        "view.zoomTo" => crate::canvas::zoom_to(app, p),
+        "view.zoomTo" => crate::embroidery::zoom::zoom_to(app, p),
         "view.goToArtboard" => go_to_artboard(app, p),
         "view.presentation" => {
             app.ui.screen_mode = if app.ui.screen_mode == 3 { 0 } else { 3 };

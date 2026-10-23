@@ -5034,7 +5034,7 @@ embroidery	Threads unlike the art's colour (over {value})	Garne, die der Farbe d
 embroidery	Largest difference: {value}	Größter Unterschied: {value}
 embroidery	Block {block}: {thread}, {value}	Block {block}: {thread}, {value}
 	Zoom to Box	Auf Rahmen zoomen
-@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] in Dokumentpunkten, right nicht vor left und bottom nicht über top
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] in Dokumentpunkten, jeweils innerhalb von ±{max}, right nicht vor left und bottom nicht über top
 @msg	margin: screen points, 0 or more	margin: Bildschirmpunkte, 0 oder mehr
 @msg	no canvas is shown	keine Zeichenfläche angezeigt
 	Next Finding	Nächster Befund

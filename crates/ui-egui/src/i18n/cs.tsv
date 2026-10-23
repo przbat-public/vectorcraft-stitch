@@ -5459,7 +5459,7 @@ embroidery	Threads unlike the art's colour (over {value})	Nitě odlišné od bar
 embroidery	Largest difference: {value}	Největší rozdíl: {value}
 embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 	Zoom to Box	Přiblížit na rámeček
-@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] v bodech dokumentu; right nesmí být před left a bottom nad top
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] v bodech dokumentu, každá v rozsahu ±{max}; right nesmí být před left a bottom nad top
 @msg	margin: screen points, 0 or more	margin: body obrazovky, 0 nebo více
 @msg	no canvas is shown	není zobrazeno žádné plátno
 	Next Finding	Další nález

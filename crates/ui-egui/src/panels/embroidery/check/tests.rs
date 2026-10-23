@@ -217,9 +217,32 @@ fn zoom_to_fits_a_box() {
     // A point is fitted as a box a point wide, as the fit commands fit: 540 of 600 points high.
     app.run("view.zoomTo", json!({"rect": [10, 10, 10, 10]})).unwrap();
     assert_eq!(app.view().unwrap().zoom, 540.0);
-    for bad in [json!({"rect": [200, 100, 100, 150]}), json!({"rect": [0, 0, 1]}), json!({}), json!({"rect": [0, 0, 1, 1], "margin": -1})] {
-        assert!(app.run("view.zoomTo", bad.clone()).is_err(), "{bad}");
+    let view = |app: &VectorcraftApp| app.view().map(|v| (v.center.x, v.center.y, v.zoom)).unwrap();
+    let before = view(&app);
+    for bad in [
+        json!({"rect": [200, 100, 100, 150]}),
+        json!({"rect": [0, 0, 1]}),
+        json!({}),
+        json!({"rect": [0, 0, 1, 1], "margin": -1}),
+        // Exactly four numbers: nothing else is skipped over.
+        json!({"rect": [0, "x", 10, 10, 20]}),
+        json!({"rect": [0, null, 10, 10, 20]}),
+        // Within the document's range: a far centre would stop the rulers' ticks advancing.
+        json!({"rect": [1e15, 1e15, 1e15, 1e15]}),
+        json!({"rect": [1e308, 0, 1.7e308, 0]}),
+        json!({"rect": [0, 0, vectorcraft_doc::MAX_COORD * 2.0, 10]}),
+    ] {
+        let err = app.run("view.zoomTo", bad.clone()).unwrap_err();
+        assert_eq!(view(&app), before, "{bad}: the view stays");
+        if err.starts_with("rect:") {
+            let pl = crate::i18n::message(crate::i18n::Lang::from_code("pl").unwrap(), &err);
+            assert!(pl != err && pl.contains("4000000"), "{bad}: {err} in Polish: {pl}");
+        }
     }
+    // The document's whole range: centred halfway.
+    let m = vectorcraft_doc::MAX_COORD;
+    app.run("view.zoomTo", json!({"rect": [-m, -m, m, m]})).unwrap();
+    assert_eq!((app.view().unwrap().center.x, app.view().unwrap().center.y), (0.0, 0.0));
     app.canvas_rect = None;
     assert!(app.run("view.zoomTo", json!({"rect": [0, 0, 1, 1]})).is_err(), "no canvas");
 }

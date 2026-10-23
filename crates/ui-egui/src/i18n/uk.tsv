@@ -5052,7 +5052,7 @@ embroidery	Threads unlike the art's colour (over {value})	Нитки, не сх�
 embroidery	Largest difference: {value}	Найбільша різниця: {value}
 embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}
 	Zoom to Box	Масштаб за рамкою
-@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] у пунктах документа; right не лівіше за left, bottom не вище за top
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] у пунктах документа, кожне в межах ±{max}; right не лівіше за left, bottom не вище за top
 @msg	margin: screen points, 0 or more	margin: пункти екрана, 0 або більше
 @msg	no canvas is shown	полотно не показано
 	Next Finding	Наступна знахідка

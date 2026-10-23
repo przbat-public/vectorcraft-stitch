@@ -181,31 +181,6 @@ pub fn fit(app: &mut VectorcraftApp, how: &str) {
     v.zoom = zoom;
 }
 
-/// `view.zoomTo {rect: [left, top, right, bottom], margin?}`: centre box `rect` (document points)
-/// in the window and zoom so that it fills it less `margin` screen points on each side (default
-/// [`FIT_MARGIN`]), within the zoom's range → `{zoom}` (percent).
-pub(crate) fn zoom_to(app: &mut VectorcraftApp, p: &serde_json::Value) -> Result<serde_json::Value, String> {
-    const BAD_RECT: &str = "rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top";
-    let corners: Vec<f64> =
-        p.get("rect").and_then(serde_json::Value::as_array).map(|a| a.iter().filter_map(serde_json::Value::as_f64).collect()).unwrap_or_default();
-    let [left, top, right, bottom] = corners[..] else { return Err(BAD_RECT.into()) };
-    if ![left, top, right, bottom].iter().all(|v| v.is_finite()) || right < left || bottom < top {
-        return Err(BAD_RECT.into());
-    }
-    let margin = match p.get("margin").filter(|m| !m.is_null()) {
-        None => FIT_MARGIN,
-        Some(m) => m.as_f64().filter(|m| m.is_finite() && *m >= 0.0).ok_or("margin: screen points, 0 or more")?,
-    };
-    let Some(canvas) = app.canvas_rect else { return Err("no canvas is shown".into()) };
-    let target = Rect::new(left, top, right, bottom);
-    let zoom = fit_zoom(app, canvas, target, margin);
-    let v = app.view_mut().ok_or("no document")?;
-    v.center = target.center();
-    v.fitted = true;
-    v.zoom = zoom;
-    Ok(json!({ "zoom": zoom * 100.0 }))
-}
-
 /// The room Fit Artboard and Fit All leave round what they fit, screen points on each side.
 pub(crate) const FIT_MARGIN: f64 = 30.0;
 

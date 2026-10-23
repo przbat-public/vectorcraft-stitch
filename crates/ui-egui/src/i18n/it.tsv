@@ -5072,7 +5072,7 @@ embroidery	Threads unlike the art's colour (over {value})	Fili diversi dal color
 embroidery	Largest difference: {value}	Differenza massima: {value}
 embroidery	Block {block}: {thread}, {value}	Blocco {block}: {thread}, {value}
 	Zoom to Box	Zoom su riquadro
-@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] in punti del documento, con right non prima di left e bottom non sopra top
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] in punti del documento, ciascuno entro ±{max}, con right non prima di left e bottom non sopra top
 @msg	margin: screen points, 0 or more	margin: punti dello schermo, 0 o più
 @msg	no canvas is shown	nessuna area di disegno visualizzata
 	Next Finding	Rilievo successivo

@@ -340,6 +340,8 @@ fn the_picture_refuses_what_it_cant_draw() {
         json!({"scale": 1000}),
         json!({"rect": [10, 10, 5, 5]}),
         json!({"rect": [0, 0, 10]}),
+        json!({"rect": [0, "x", 10, 10, 20]}),
+        json!({"rect": [0, 0, 10, 4.1e6]}),
         json!({"artboard": 3}),
         json!({"artboard": 0, "rect": [0, 0, 10, 10]}),
         json!({"region": "page"}),

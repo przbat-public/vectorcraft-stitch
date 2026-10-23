@@ -119,6 +119,16 @@ pub(super) fn render_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     ))
 }
 
+/// The corners `[left, top, right, bottom]` (document points) that a box param `v` gives: exactly
+/// four numbers, each finite and within ±[`vectorcraft_doc::MAX_COORD`]; `None` for anything
+/// else. Whether the box may be empty is the caller's rule. `embroidery.render` reads its `rect`
+/// this way, and the app's `view.zoomTo` its own.
+pub fn corners(v: &Value) -> Option<[f64; 4]> {
+    let [l, t, r, b] = v.as_array()?.as_slice() else { return None };
+    let c = [l.as_f64()?, t.as_f64()?, r.as_f64()?, b.as_f64()?];
+    c.iter().all(|x| x.is_finite() && x.abs() <= vectorcraft_doc::MAX_COORD).then_some(c)
+}
+
 /// The region `embroidery.render`'s params ask for: `rect`, `artboard` or `region`, at most one.
 fn region_param(o: &Map<String, Value>) -> Result<Region> {
     const C: &str = "embroidery.render";
@@ -128,13 +138,8 @@ fn region_param(o: &Map<String, Value>) -> Result<Region> {
     }
     if let Some(v) = o.get("rect").filter(|v| !v.is_null()) {
         let refused = || bad(C, format!("rect {v}: [left, top, right, bottom] in points, each within ±{}", vectorcraft_doc::MAX_COORD));
-        let nums: Vec<f64> = v.as_array().ok_or_else(refused)?.iter().map(Value::as_f64).collect::<Option<_>>().ok_or_else(refused)?;
-        let [l, t, r, b] = nums.as_slice() else { return Err(refused()) };
-        let within = |c: &f64| c.is_finite() && c.abs() <= vectorcraft_doc::MAX_COORD;
-        if ![l, t, r, b].into_iter().all(within) || r <= l || b <= t {
-            return Err(refused());
-        }
-        return Ok(Region::Rect(Rect::new(*l, *t, *r, *b)));
+        let [l, t, r, b] = corners(v).filter(|[l, t, r, b]| r > l && b > t).ok_or_else(refused)?;
+        return Ok(Region::Rect(Rect::new(l, t, r, b)));
     }
     if let Some(v) = o.get("artboard").filter(|v| !v.is_null()) {
         let i = v.as_u64().and_then(|i| usize::try_from(i).ok()).ok_or_else(|| bad(C, format!("artboard {v}: an artboard's index, from 0")))?;

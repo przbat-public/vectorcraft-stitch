@@ -5310,7 +5310,7 @@ embroidery	Threads unlike the art's colour (over {value})	Nici niepodobne do kol
 embroidery	Largest difference: {value}	Największa różnica: {value}
 embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 	Zoom to Box	Powiększ do ramki
-@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] w punktach dokumentu, przy czym right nie może być przed left, a bottom nad top
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] w punktach dokumentu, każda wartość w granicach ±{max}, przy czym right nie może być przed left, a bottom nad top
 @msg	margin: screen points, 0 or more	margin: punkty ekranu, 0 lub więcej
 @msg	no canvas is shown	nie jest wyświetlany żaden obszar roboczy
 	Next Finding	Następne znalezisko

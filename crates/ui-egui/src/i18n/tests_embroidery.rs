@@ -260,7 +260,7 @@ fn embroidery_text() -> EmbroideryText {
                 stack.push(path);
             } else if name.ends_with(".rs") && !name.starts_with("tests") {
                 let text = std::fs::read_to_string(&path).unwrap_or_default();
-                embroidery_text_in(text.split("#[cfg(test)]").next().unwrap_or(""), &mut out);
+                embroidery_text_in(shipped(&text), &mut out);
             }
         }
     }
@@ -321,7 +321,7 @@ fn the_embroidery_interface_never_uses_plain_rows() {
                 stack.push(path);
             } else if path.extension().is_some_and(|e| e == "rs") {
                 let text = std::fs::read_to_string(&path).unwrap_or_default();
-                let code = text.split("#[cfg(test)]").next().unwrap_or("");
+                let code = shipped(&text);
                 let plain = code.match_indices("tl!(").any(|(at, _)| starts_a_name(code, at));
                 assert!(!plain, "{} shows a string through tl!", path.display());
             }
@@ -337,4 +337,20 @@ fn the_embroidery_text_scan_reads_both_macros() {
     embroidery_text_in(code, &mut out);
     assert_eq!(out.strings.iter().collect::<Vec<_>>(), ["Stitches"]);
     assert_eq!(out.plurals.iter().collect::<Vec<_>>(), [&("{count} stitch".to_string(), "{count} stitches".to_string())]);
+}
+
+/// A source file's shipped code: all of it before its first test module (`#[cfg(test)]` then a
+/// `mod`). A `#[cfg(test)]` on a helper further up doesn't end it, so the strings after one are
+/// still read.
+fn shipped(text: &str) -> &str {
+    text.find("#[cfg(test)]\nmod ").map_or(text, |at| text.get(..at).unwrap_or(text))
+}
+
+/// The scans read past a test helper, up to the test module.
+#[test]
+fn the_scans_read_past_a_test_helper() {
+    let code = "let a = crate::et!(\"Before\");\n#[cfg(test)]\nfn helper() {}\nlet b = crate::et!(\"After\");\n#[cfg(test)]\nmod tests;\nlet c = crate::et!(\"Test\");";
+    let mut out = EmbroideryText::default();
+    embroidery_text_in(shipped(code), &mut out);
+    assert_eq!(out.strings.iter().collect::<Vec<_>>(), ["After", "Before"]);
 }

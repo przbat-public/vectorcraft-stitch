@@ -44,7 +44,12 @@ fn ui_render_draws_the_stitches_when_asked() {
     let engine = image::load_from_memory(&png).unwrap().to_rgba8();
     assert_eq!(stitches, engine, "the same drawing as embroidery.render");
     assert_eq!(art.get_pixel(100, 100).0, [0x2a, 0x6f, 0xdb, 255]);
-    assert_ne!(stitches.get_pixel(100, 100).0, art.get_pixel(100, 100).0, "the palette thread, not the art's colour");
+    // The square's middle in its palette thread's colour, not the art's.
+    let threads = app.run("embroidery.threads", json!({})).unwrap();
+    let thread = threads["blocks"][0]["thread"]["color"].as_str().unwrap();
+    let rgb = u32::from_str_radix(thread.trim_start_matches('#'), 16).unwrap().to_be_bytes();
+    assert_ne!(thread, "#2a6fdb", "a palette thread other than the art's colour");
+    assert_eq!(stitches.get_pixel(100, 100).0, [rgb[1], rgb[2], rgb[3], 255], "the thread {thread}");
     assert_eq!(stitches.get_pixel(2, 2).0, [255, 255, 255, 255], "the fabric");
     // Marked as the stitch view marks them: with Show Needle Points on, as embroidery.render with
     // needlePoints draws them; with Show Jumps and Cuts off, without jumps.

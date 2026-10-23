@@ -101,14 +101,15 @@ pub struct Shown {
 struct Reply {
     query: Query,
     generation: u64,
-    result: Result<Value, String>,
+    /// Shared: whoever reads it (the panel each frame) takes a reference, never a copy.
+    result: Result<Arc<Value>, String>,
 }
 
 /// A reply as the preview holds it: its result, the generation of the plan it was made from, and
 /// whether that is the plan shown (a reply of the plan before stays until the new one's comes, so
 /// a reader must not take it for the plan shown's).
 pub struct ReplyOf<'a> {
-    pub result: &'a Result<Value, String>,
+    pub result: &'a Result<Arc<Value>, String>,
     pub generation: u64,
     pub current: bool,
 }
@@ -170,6 +171,32 @@ struct DocPreview {
     wanted: Option<(EmbroideryPlanKey, f64)>,
     /// Since when the plan shown hasn't been of the document as it is.
     stale_since: Option<f64>,
+}
+
+/// The most replies of a plan shown kept: the figures, both tabs' replies and a few checks for other
+/// formats, so that switching tabs back answers at once (never fewer than its job asked). An
+/// estimate.
+pub const MAX_KEPT_REPLIES: usize = 6;
+
+/// Take `new` replies (of the plan of generation `generation`, made by a job asked `asked`) into
+/// `kept`: each replaces the reply to its query; the plan's own replies to other queries stay (the
+/// newest, [`MAX_KEPT_REPLIES`] of the plan's in all); an earlier plan's reply stays only while this
+/// job is to answer its query (shown meanwhile, marked as not the plan shown's), the rest are dropped.
+fn merge_replies(kept: &mut Vec<Reply>, new: Vec<Reply>, generation: u64, asked: &[Query]) {
+    kept.retain(|r| !new.iter().any(|n| n.query == r.query) && (r.generation == generation || asked.contains(&r.query)));
+    kept.extend(new);
+    let own = kept.iter().filter(|r| r.generation == generation).count();
+    if own > MAX_KEPT_REPLIES {
+        // The oldest first: drop the plan's own replies from the front until the cap holds.
+        let mut extra = own - MAX_KEPT_REPLIES;
+        kept.retain(|r| {
+            let drop = extra > 0 && r.generation == generation && !asked.contains(&r.query);
+            if drop {
+                extra -= 1;
+            }
+            !drop
+        });
+    }
 }
 
 /// The job under way: the active document's.
@@ -359,8 +386,14 @@ impl StitchPreview {
                     Outcome::Replies(replies) => {
                         if let Some(shown) = doc.shown.as_mut().filter(|s| s.key == f.key) {
                             let generation = shown.planned.generation;
-                            shown.replies =
-                                f.queries.iter().cloned().zip(replies).map(|(query, (_, result))| Reply { query, generation, result }).collect();
+                            let new: Vec<Reply> = f
+                                .queries
+                                .iter()
+                                .cloned()
+                                .zip(replies)
+                                .map(|(query, (_, result))| Reply { query, generation, result: result.map(Arc::new) })
+                                .collect();
+                            merge_replies(&mut shown.replies, new, generation, &f.queries);
                         }
                     }
                     Outcome::Failed(error) => {

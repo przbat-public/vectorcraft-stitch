@@ -280,11 +280,11 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     let plan = shown.planned.plan.clone();
     match (tab, &own) {
         (Tab::Order, Some((Ok(reply), of, current))) => {
-            order::show(app, ui, order::Shown { generation, reply, of: *of, current: *current, stats: stats.as_ref(), stale, plan })
+            order::show(app, ui, order::Shown { generation, reply, of: *of, current: *current, stats: stats.as_deref(), stale, plan })
         }
         (Tab::Check, _) => {
             let reply = own.as_ref().map(|(r, _, current)| (r, *current));
-            check::show(app, ui, check::Shown { uid, reply, stats: stats.as_ref(), stale });
+            check::show(app, ui, check::Shown { uid, reply, stats: stats.as_deref(), stale });
         }
         (Tab::Order, _) => {}
     }

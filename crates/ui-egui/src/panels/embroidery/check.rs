@@ -125,7 +125,7 @@ pub fn query(state: &CheckState, uid: u64) -> Query {
 /// whether the plan itself is out of date.
 pub struct Shown<'a> {
     pub uid: u64,
-    pub reply: Option<(&'a Result<Value, String>, bool)>,
+    pub reply: Option<(&'a Result<std::sync::Arc<Value>, String>, bool)>,
     /// The design's figures (`embroidery.stats`), for the stitch-length chart.
     pub stats: Option<&'a Value>,
     pub stale: bool,
@@ -391,7 +391,7 @@ pub(crate) fn current_check(app: &VectorcraftApp) -> Option<(u64, &Value)> {
     let shown = preview.shown(st.uid)?;
     let crate::embroidery::stitch_preview::ReplyOf { result, current, .. } = shown.reply(&query(&app.embroidery.check, st.uid))?;
     let fresh = current && preview.is_fresh(st.uid) && std::sync::Arc::ptr_eq(&shown.document, &st.doc);
-    fresh.then(|| result.as_ref().ok().map(|r| (st.uid, r))).flatten()
+    fresh.then(|| result.as_ref().ok().map(|r| (st.uid, &**r))).flatten()
 }
 
 /// Whether Next and Previous Finding can step: a finding shown in the active document, and its
@@ -442,7 +442,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     app.embroidery.check.waiting_since = None;
     app.embroidery.check.drawn_pass = Some(ui.ctx().cumulative_pass_nr());
     let reply = match result {
-        Ok(reply) => reply,
+        Ok(reply) => &**reply,
         Err(e) => {
             ui.label(egui::RichText::new(crate::et!("Can't check the design:")).color(t.error));
             ui.label(egui::RichText::new(crate::i18n::msg(e)).size(SMALL).color(t.text));

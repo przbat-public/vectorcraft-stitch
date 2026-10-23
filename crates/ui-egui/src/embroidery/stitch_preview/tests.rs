@@ -372,7 +372,7 @@ fn the_replies_are_the_commands_and_a_new_one_reuses_the_plan() {
         let r = shown.reply(&q).unwrap();
         let (reply, current) = (r.result, r.current);
         assert!(current);
-        assert_eq!(reply.as_ref().unwrap(), &exec(&mut s, q.cmd, params), "{}", q.cmd);
+        assert_eq!(**reply.as_ref().unwrap(), exec(&mut s, q.cmd, params), "{}", q.cmd);
     }
     let plan = shown.planned.plan.clone();
     ask(&mut p, "pes");
@@ -383,12 +383,15 @@ fn the_replies_are_the_commands_and_a_new_one_reuses_the_plan() {
     let shown = p.shown(uid).unwrap();
     assert!(Arc::ptr_eq(&shown.planned.plan, &plan), "the plan remembered");
     assert_eq!(p.docs[&uid].plan_ms, Some(LIGHT_MS), "a job that only made replies says nothing of the design's weight");
-    assert_eq!(shown.reply(&check("pes")).unwrap().result.as_ref().unwrap(), &exec(&mut s, "embroidery.check", json!({"format": "pes"})));
-    assert!(shown.reply(&check("dst")).is_none(), "replies nobody asks for any more are dropped");
-    // Asked again as it is: nothing to do.
+    assert_eq!(**shown.reply(&check("pes")).unwrap().result.as_ref().unwrap(), exec(&mut s, "embroidery.check", json!({"format": "pes"})));
+    assert!(shown.reply(&check("dst")).is_some_and(|r| r.current), "the plan's own replies are kept");
+    // Asked again as it is: nothing to do; nor for the other format checked on this plan.
     ask(&mut p, "pes");
     p.schedule_at(&mut s, 0.2, false);
     assert!(fake.waiting().is_empty());
+    ask(&mut p, "dst");
+    p.schedule_at(&mut s, 0.3, false);
+    assert!(fake.waiting().is_empty(), "a tab switched back answers at once");
 }
 
 /// The preview plans with its options, the last embroidery export's, and the replies are of them.
@@ -407,7 +410,7 @@ fn the_preview_plans_with_its_options() {
     assert_eq!(shown.key, s.embroidery_plan_key(&opts).unwrap());
     assert_eq!(*shown.planned.plan, *s.embroidery_plan(&opts).unwrap());
     let reply = shown.reply(&Query { cmd: "embroidery.stats", params: json!({}) }).unwrap().result;
-    assert_eq!(reply.as_ref().unwrap(), &exec(&mut s, "embroidery.stats", json!({"spacing": 0.5})));
+    assert_eq!(**reply.as_ref().unwrap(), exec(&mut s, "embroidery.stats", json!({"spacing": 0.5})));
 }
 
 #[test]
@@ -430,4 +433,33 @@ fn the_notice_shows_once_the_stitches_have_been_out_of_date_a_while() {
     fake.finish_all();
     frame(&mut p, &mut s, 1.6, false, true);
     assert_eq!(p.freshness(uid, 1.6), Freshness::Fresh);
+}
+
+/// Replies are merged, not replaced: a new reply replaces its query's; the plan's own replies to
+/// other queries stay (at most the cap); an earlier plan's stays only while this job is to answer
+/// its query.
+#[test]
+fn replies_are_merged_per_plan() {
+    let q = |cmd: &'static str, n: u64| Query { cmd, params: json!({ "n": n }) };
+    let reply = |query: Query, generation: u64| Reply { query, generation, result: Ok(Arc::new(json!(generation))) };
+    let mut kept = vec![reply(q("a", 0), 1), reply(q("b", 0), 1), reply(q("c", 0), 2)];
+    // Plan 2's job answers a: the earlier plan's b, not asked, goes; c, the plan's own, stays.
+    merge_replies(&mut kept, vec![reply(q("a", 0), 2)], 2, &[q("a", 0)]);
+    let has = |k: &[Reply], query: &Query, g: u64| k.iter().any(|r| r.query == *query && r.generation == g);
+    assert!(
+        has(&kept, &q("a", 0), 2) && has(&kept, &q("c", 0), 2) && kept.len() == 2,
+        "{:?}",
+        kept.iter().map(|r| (r.query.cmd, r.generation)).collect::<Vec<_>>()
+    );
+    // An earlier plan's reply to a query being answered stays until its new one comes.
+    let mut kept = vec![reply(q("a", 0), 1), reply(q("b", 0), 1)];
+    merge_replies(&mut kept, vec![reply(q("a", 0), 2)], 2, &[q("a", 0), q("b", 0)]);
+    assert!(has(&kept, &q("b", 0), 1));
+    // The plan's own, the newest kept, at most the cap in all.
+    let mut kept = vec![];
+    for n in 0..10 {
+        merge_replies(&mut kept, vec![reply(q("d", n), 3)], 3, &[q("d", n)]);
+    }
+    assert_eq!(kept.len(), MAX_KEPT_REPLIES);
+    assert!(has(&kept, &q("d", 9), 3) && !has(&kept, &q("d", 0), 3));
 }

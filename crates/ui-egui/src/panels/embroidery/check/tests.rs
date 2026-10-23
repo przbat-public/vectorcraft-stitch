@@ -231,7 +231,7 @@ fn shown_check(app: &mut VectorcraftApp, ctx: &egui::Context) -> (u64, Value) {
     let r = app.embroidery.preview.shown(uid).unwrap().reply(&q).unwrap();
     let (result, current) = (r.result, r.current);
     assert!(current);
-    (uid, result.clone().unwrap())
+    (uid, (**result.as_ref().unwrap()).clone())
 }
 
 fn selection(app: &VectorcraftApp) -> Vec<u64> {

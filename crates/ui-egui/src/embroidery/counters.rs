@@ -190,7 +190,7 @@ fn state(app: &mut VectorcraftApp, now: f64) -> (State, Option<f64>) {
         return (State::Nothing, None);
     }
     let generation = shown.planned.generation;
-    let latest = shown.reply(&super::stitch_preview::figures_query()).and_then(|r| r.result.as_ref().ok()).and_then(Figures::of);
+    let latest = shown.reply(&super::stitch_preview::figures_query()).and_then(|r| r.result.as_ref().ok()).and_then(|v| Figures::of(v));
     let stale = matches!(freshness, Freshness::Stale { notice: true, .. });
     let counters = &mut app.embroidery.counters;
     // New figures at most every so often: the ones shown stay until then.

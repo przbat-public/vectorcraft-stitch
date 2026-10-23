@@ -51,7 +51,9 @@ fn the_stitch_view_is_view_state() {
     let mut s = Session::new();
     fx::blank(&mut runner(&mut s));
     fx::rect(&mut runner(&mut s), fx::RED, 10.0, 10.0, 50.0, 50.0);
-    s.doc_mut().unwrap().mark_saved();
+    // Saved to a file, so that Revert has one to go back to.
+    let file = std::env::temp_dir().join(format!("vectorcraft-stitch-view-state-{}.vectorcraft", std::process::id()));
+    s.execute("file.saveAs", &json!({"path": file.to_string_lossy()})).unwrap();
     let undo = s.doc().unwrap().history.undo.len();
     for id in ["view.stitchPreview", "view.stitchPreview.jumps", "view.stitchPreview.needlePoints", "view.stitchPreview.artwork"] {
         s.execute(id, &json!({})).unwrap();
@@ -61,10 +63,14 @@ fn the_stitch_view_is_view_state() {
     assert_eq!(st.history.undo.len(), undo, "not undoable");
     assert!(!st.is_dirty(), "not a change to save");
     let uid = st.uid;
-    // Revert keeps it (the document keeps its uid); closing drops it.
+    // Revert, after an edit, keeps it (the document keeps its uid); closing drops it.
     let view = s.stitch_view();
     assert!(view.on);
-    s.execute("file.revert", &json!({})).ok();
+    fx::rect(&mut runner(&mut s), fx::BLUE, 60.0, 60.0, 20.0, 20.0);
+    s.execute("file.revert", &json!({})).unwrap();
+    let _ = std::fs::remove_file(&file);
+    assert_eq!(s.doc().unwrap().uid, uid, "the same document");
+    assert_eq!(s.doc().unwrap().doc.layers[0].children().map_or(0, |c| c.len()), 1, "reverted");
     assert_eq!(s.stitch_view_of(uid), view);
     s.execute("file.close", &json!({})).unwrap();
     assert!(!s.embroidery_plans.uids().contains(&uid), "dropped with the document");

@@ -207,7 +207,10 @@ impl Tally {
 
 /// The figures of each block of `plan`, in sewing order, and of each unit.
 pub(crate) fn tally(plan: &DesignPlan, machine: Machine, thread: Thread) -> (Vec<Tally>, Vec<Tally>) {
-    tally_with(plan, |t, r| t.add(r, measure::style(plan, r.unit), machine, thread))
+    // How each unit is sewn, worked out once (not for every record: it resolves the unit's
+    // parameters).
+    let styles: Vec<Option<Style>> = (0..plan.units.len()).map(|u| measure::style(plan, u)).collect();
+    tally_with(plan, |t, r| t.add(r, styles.get(r.unit).copied().flatten(), machine, thread))
 }
 
 /// The needle points, jumps and cuts of each block of `plan` and of each unit, without measuring

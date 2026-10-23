@@ -135,10 +135,16 @@ const LAYER_CELL: f64 = 1.0;
 /// long, more sparsely along a longer one (which no machine sews well, and `stitchTooLong` flags).
 /// A bound on the work a stitch read from a file can ask for, however long it is.
 const MAX_LAYER_SAMPLES: usize = 64;
-/// The most cells layers are counted over: four million square millimetres, far more stitched area
-/// than any hoop holds. Past it, new cells are not counted: a bound on the memory a design read
-/// from a file can ask for.
+/// The most cells layers are counted over as one grid over the design's box ([`Layers`]): four
+/// million square millimetres (2 m a side), far more than any hoop holds, at 5 bytes a cell 20 MB.
+/// A larger box (only a file's stitches spread far apart) is counted in a table of the cells
+/// stitched, at most [`MAX_SPARSE_LAYER_CELLS`] of them. Bounds on the memory a design read from a
+/// file can ask for.
 const MAX_LAYER_CELLS: usize = 4_000_000;
+/// The most cells the table counts: past it, new cells are not counted. A million entries keep a
+/// hash table at 2^21 slots of 16 bytes (about 36 MB): its next growth, to 2^22, comes at 1.8
+/// million.
+const MAX_SPARSE_LAYER_CELLS: usize = 1_000_000;
 /// Brother's PR680W shows `.pes` files of up to 500,000 stitches and 127 colour changes
 /// (<https://download.brother.com/welcome/doch102285/884t23_om01en.pdf>, specifications): one
 /// machine's limits, not the format's.
@@ -397,6 +403,66 @@ pub(crate) const RULES: &[Rule] = &[
     },
 ];
 
+/// No unit yet over a cell ([`Layers`]).
+const NO_UNIT: u32 = u32::MAX;
+
+/// The units sewn over each cell ([`LAYER_CELL`]) so far, each counted once (up to [`LAYERS`]),
+/// and the last of them: a grid over the design's box, or for a box of more than
+/// [`MAX_LAYER_CELLS`] cells a table of the cells stitched.
+enum Layers {
+    Grid { x0: i64, y0: i64, width: usize, count: Vec<u8>, last: Vec<u32> },
+    Table(HashMap<(i64, i64), (u8, u32)>),
+}
+
+impl Layers {
+    /// Counting over `plan`'s stitches: a grid over the cells their box takes, when it is small
+    /// enough.
+    fn new(plan: &DesignPlan) -> Self {
+        let cells = plan
+            .blocks
+            .iter()
+            .flat_map(|b| b.stitches.iter())
+            .map(|s| (s.x / LAYER_CELL, s.y / LAYER_CELL))
+            .filter(|(x, y)| x.is_finite() && y.is_finite())
+            .fold(None, |b: Option<[f64; 4]>, (x, y)| Some(b.map_or([x, y, x, y], |[x0, y0, x1, y1]| [x0.min(x), y0.min(y), x1.max(x), y1.max(y)])));
+        // A cell more on every side: a point along a stitch may round a hair past its ends.
+        let grid = cells.and_then(|[x0, y0, x1, y1]| {
+            let (x0, y0) = (x0.floor() - 1.0, y0.floor() - 1.0);
+            let (width, height) = (x1.floor() + 2.0 - x0, y1.floor() + 2.0 - y0);
+            (width * height <= MAX_LAYER_CELLS as f64).then_some((x0 as i64, y0 as i64, width as usize, height as usize))
+        });
+        match grid {
+            Some((x0, y0, width, height)) => Self::Grid { x0, y0, width, count: vec![0; width * height], last: vec![NO_UNIT; width * height] },
+            None => Self::Table(HashMap::new()),
+        }
+    }
+
+    /// Unit `unit` sews over `cell`: how many units now have, when it is the first time this unit
+    /// is counted there; `None` when it was already, or the cell is not counted.
+    fn add(&mut self, cell: (i64, i64), unit: u32) -> Option<usize> {
+        let (count, last) = match self {
+            Self::Grid { x0, y0, width, count, last } => {
+                let (x, y) = (usize::try_from(cell.0 - *x0).ok()?, usize::try_from(cell.1 - *y0).ok()?);
+                let k = y.checked_mul(*width)?.checked_add(x).filter(|_| x < *width)?;
+                (count.get_mut(k)?, last.get_mut(k)?)
+            }
+            Self::Table(cells) => {
+                if cells.len() >= MAX_SPARSE_LAYER_CELLS && !cells.contains_key(&cell) {
+                    return None;
+                }
+                let (count, last) = cells.entry(cell).or_insert((0, NO_UNIT));
+                (count, last)
+            }
+        };
+        if *last == unit {
+            return None;
+        }
+        *last = unit;
+        *count = count.saturating_add(1);
+        Some(usize::from(*count))
+    }
+}
+
 /// One finding: where (a record number and a point, millimetres), the unit, and a measure.
 #[derive(Clone, Debug, Default)]
 struct Hit {
@@ -443,18 +509,15 @@ struct Checker<'a> {
     found: HashMap<&'static str, Found>,
     /// The short stitches in a row so far, and the first of them.
     short_run: Option<(usize, Record)>,
-    /// The units sewn over each cell so far, and the last of them ([`LAYER_CELL`]).
-    cells: HashMap<(i64, i64), (usize, usize)>,
+    /// The units sewn over each cell so far, and the last of them, when layers are counted.
+    layers: Option<Layers>,
 }
 
 impl<'a> Checker<'a> {
     fn new(plan: &'a DesignPlan, ask: &'a Ask) -> Self {
         let found = ask.rules.iter().map(|r| (r.id, Found::default())).collect();
-        Self { plan, ask, threads: threads_judged(plan, ask.format), found, short_run: None, cells: HashMap::new() }
-    }
-
-    fn wants(&self, id: &str) -> bool {
-        self.found.contains_key(id)
+        let layers = ask.rules.iter().any(|r| r.id == "layers").then(|| Layers::new(plan));
+        Self { plan, ask, threads: threads_judged(plan, ask.format), found, short_run: None, layers }
     }
 
     /// Count `hit` for rule `id`, when it was asked for.
@@ -520,7 +583,7 @@ impl<'a> Checker<'a> {
             self.end_short_run();
         }
         if let Some(before) = r.before
-            && self.wants("layers")
+            && self.layers.is_some()
         {
             self.cover(before.point(), r);
         }
@@ -546,19 +609,12 @@ impl<'a> Checker<'a> {
         // Samples half a cell apart, so that no cell the stitch crosses is skipped, at most
         // MAX_LAYER_SAMPLES of them.
         let samples = ((length / (LAYER_CELL / 2.0)).ceil().max(1.0) as usize).min(MAX_LAYER_SAMPLES);
+        let unit = u32::try_from(r.unit).unwrap_or(NO_UNIT - 1);
         for i in 0..=samples {
             let p = a.lerp(b, i as f64 / samples as f64);
             let cell = ((p.x / LAYER_CELL).floor() as i64, (p.y / LAYER_CELL).floor() as i64);
-            if self.cells.len() >= MAX_LAYER_CELLS && !self.cells.contains_key(&cell) {
-                continue;
-            }
-            let (count, last) = self.cells.entry(cell).or_insert((0, usize::MAX));
-            if *last == r.unit {
-                continue;
-            }
-            *count += 1;
-            *last = r.unit;
-            if *count == LAYERS {
+            let Some(layers) = self.layers.as_mut() else { return };
+            if layers.add(cell, unit) == Some(LAYERS) {
                 let centre = Point::new((cell.0 as f64 + 0.5) * LAYER_CELL, (cell.1 as f64 + 0.5) * LAYER_CELL);
                 self.add(
                     "layers",

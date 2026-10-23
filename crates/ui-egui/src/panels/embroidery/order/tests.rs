@@ -512,6 +512,28 @@ fn a_list_cut_short_says_how_many_rows_it_leaves_out() {
     assert!(words.iter().any(|w| w == "and 5 more rows aren't listed (the list shows the first 4)"), "{words:?}");
 }
 
+/// A list cut inside a block (the engine's own reply, at a small limit): the cut block shows no
+/// thread change after the units listed, since more of its own follow; the blocks before keep
+/// theirs.
+#[test]
+fn a_block_cut_by_the_limit_has_no_thread_change_row() {
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    app.run("file.new", json!({"width": 600, "height": 600, "artboards": 1})).unwrap();
+    app.run("paint.setStroke", json!({"none": true})).unwrap();
+    for k in 0..6 {
+        app.run("select.set", json!({"ids": []})).unwrap();
+        let color = ["#d01818", "#1830c8", "#18a030"][k % 3];
+        app.run("paint.setFill", json!({ "color": color })).unwrap();
+        app.run("shape.rectangle", json!({"x": 10 + 60 * k, "y": 10, "width": 25, "height": 25})).unwrap();
+    }
+    let reply = app.session.execute("embroidery.sequence", &json!({"limit": 3})).unwrap();
+    let order: SewingOrder = serde_json::from_value(reply).unwrap();
+    assert!(order.truncated);
+    assert_eq!(order.blocks.iter().map(|b| (b.units.len(), b.unit_count)).collect::<Vec<_>>(), [(2, 2), (1, 2)], "cut inside the second block");
+    let (all, _) = rows(&order, &HashSet::new());
+    assert_eq!(all, [Row::Header(0), Row::Unit(0, 0), Row::Unit(0, 1), Row::Change(0), Row::Header(1), Row::Unit(1, 0)]);
+}
+
 #[test]
 fn a_header_collapses() {
     let mut app = app_with(4);

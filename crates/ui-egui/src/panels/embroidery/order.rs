@@ -125,6 +125,8 @@ impl Row {
 
 /// The rows of an order, with the blocks in `collapsed` showing their header alone, and where
 /// each row starts (points from the list's top); the last entry of `tops` is the list's height.
+/// A block the list's limit cuts has no thread change after the units listed: more of its own
+/// follow (the tab lists from the first unit, so only the last block listed can be cut).
 pub(crate) fn rows(order: &SewingOrder, collapsed: &HashSet<usize>) -> (Vec<Row>, Vec<f32>) {
     let mut rows = Vec::new();
     for (b, block) in order.blocks.iter().enumerate() {
@@ -132,7 +134,8 @@ pub(crate) fn rows(order: &SewingOrder, collapsed: &HashSet<usize>) -> (Vec<Row>
         if !collapsed.contains(&block.block) {
             rows.extend((0..block.units.len()).map(|u| Row::Unit(b, u)));
         }
-        if block.then.is_some() {
+        let cut = order.truncated && b + 1 == order.blocks.len() && block.units.len() < block.unit_count;
+        if block.then.is_some() && !cut {
             rows.push(Row::Change(b));
         }
     }

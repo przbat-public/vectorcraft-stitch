@@ -37,6 +37,23 @@ fn one(style: Style, steps: &[f64]) -> DesignPlan {
 
 /// The stitch-length rules: each fires on a stitch past its threshold and not on one at it (or
 /// just inside it), and the style rules only on their style.
+/// Every rule with a threshold says which extreme it reports as `measured`: a limit not to pass the
+/// largest it judged, one not to fall under the smallest; a rule that measures nothing, none.
+#[test]
+fn every_rule_with_a_threshold_reports_an_extreme() {
+    use super::check::Extreme;
+    for rule in RULES {
+        match rule.extreme {
+            None => assert!(rule.unit.is_none(), "{} measures {:?} but reports no extreme", rule.id, rule.unit),
+            Some(e) => {
+                assert!(rule.unit.is_some(), "{}", rule.id);
+                let short = rule.id.contains("Short") || rule.id.contains("Below") || rule.id.contains("Tiny");
+                assert_eq!(e == Extreme::Smallest, short, "{}", rule.id);
+            }
+        }
+    }
+}
+
 #[test]
 fn each_stitch_length_rule_fires_past_its_threshold() {
     let cases: [(&str, Style, f64, f64); 4] = [

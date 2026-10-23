@@ -83,6 +83,9 @@ pub(crate) struct Rule {
     pub(crate) unit: Option<&'static str>,
     /// What each hit's value measures, for display.
     pub(crate) measures: &'static str,
+    /// Which extreme of the values it judges it reports as `measured` (`None`: it measures
+    /// nothing): the largest for a limit not to pass, the smallest for one not to fall under.
+    pub(crate) extreme: Option<Extreme>,
     /// Its sources, the one checked first.
     pub(crate) sources: &'static [Source],
 }
@@ -179,6 +182,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(SATIN_WIDEST),
         unit: Some("mm"),
         measures: "the object's widest satin column",
+        extreme: Some(Extreme::Largest),
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "satin stitches wider than 10 mm" },
             Source {
@@ -200,6 +204,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(LONGEST_STITCH),
         unit: Some("mm"),
         measures: "a needle-down stitch's length",
+        extreme: Some(Extreme::Largest),
         sources: &[Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "any stitch over 12.7 mm" }],
     },
     Rule {
@@ -209,6 +214,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: None,
         unit: Some("mm"),
         measures: "a stitch's longer extent along x or y (its length is given apart)",
+        extreme: Some(Extreme::Largest),
         sources: &[Source {
             name: "EduTechWiki's pages on the formats (DST, TAP and T01: 12.1 mm a record; EXP, JEF and VP3: 12.7 mm; PES and PEC: 204.7 mm)",
             url: "https://edutechwiki.unige.ch/en/Embroidery_format_DST",
@@ -222,6 +228,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(FILL_SHORTEST),
         unit: Some("mm"),
         measures: "the object's fill stitch length",
+        extreme: Some(Extreme::Smallest),
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "fill stitches smaller than 2.5 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "fill stitches ideally 2 mm or longer" },
@@ -234,6 +241,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(SATIN_SHORTEST),
         unit: Some("mm"),
         measures: "the object's narrowest satin column",
+        extreme: Some(Extreme::Smallest),
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "satin stitches shorter than 1 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "satin stitches ideally 1 mm or longer" },
@@ -246,6 +254,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(RUN_SHORTEST),
         unit: Some("mm"),
         measures: "the object's running stitch length",
+        extreme: Some(Extreme::Smallest),
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "walk stitches shorter than 1.5 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "walk stitches ideally 1.5 mm or longer" },
@@ -261,6 +270,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(NEEDLE_BLADE),
         unit: Some("mm"),
         measures: "a needle-down stitch's length",
+        extreme: Some(Extreme::Smallest),
         sources: &[Source {
             name: MELCO_MACHINE_NAME,
             url: MELCO_MACHINE,
@@ -274,6 +284,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(TINY),
         unit: Some("mm"),
         measures: "a needle-down stitch's length",
+        extreme: Some(Extreme::Smallest),
         sources: &[
             Source {
                 name: "Brother PRT23 manual, printed p. 108 (p. 110 of the PDF)",
@@ -294,6 +305,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(MOST_SHORT_IN_A_ROW as f64),
         unit: Some("stitches"),
         measures: "short stitches in a row",
+        extreme: Some(Extreme::Largest),
         sources: &[
             Source {
                 name: "an estimate; background: Wilcom EmbroideryStudio help, Apply stitch shortening",
@@ -310,6 +322,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(LAYERS as f64),
         unit: Some("units"),
         measures: "sewing units over one 1 mm square",
+        extreme: Some(Extreme::Largest),
         sources: &[
             Source {
                 name: "Brother PRT51 manual (Japanese), data precautions and troubleshooting",
@@ -326,6 +339,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(MISMATCH_DELTA_E),
         unit: Some("deltaE"),
         measures: "the CIEDE2000 difference between the art's colour and its block's thread",
+        extreme: Some(Extreme::Largest),
         sources: &[Source {
             name: "the project owner's choice (docs/embroidery.md › Threads)",
             url: "",
@@ -339,6 +353,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: None,
         unit: None,
         measures: "nothing: each hit is a warning of the stitch plan",
+        extreme: None,
         sources: &[Source {
             name: "the stitch plan's warnings (docs/embroidery.md › What is not stitched)",
             url: "",
@@ -352,6 +367,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: None,
         unit: Some("blocks"),
         measures: "the design's colour blocks",
+        extreme: Some(Extreme::Largest),
         sources: &[
             Source {
                 name: "EduTechWiki, Embroidery format PEC (its header counts the colours in a byte)",
@@ -382,6 +398,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(MACHINE_STITCHES),
         unit: Some("stitches"),
         measures: "the design's needle points",
+        extreme: Some(Extreme::Largest),
         sources: &[Source {
             name: "Brother PR680W manual, specifications",
             url: "https://download.brother.com/welcome/doch102285/884t23_om01en.pdf",
@@ -395,6 +412,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(MACHINE_COLOR_CHANGES),
         unit: Some("colorChanges"),
         measures: "the design's colour changes",
+        extreme: Some(Extreme::Largest),
         sources: &[Source {
             name: "Brother PR680W manual, specifications",
             url: "https://download.brother.com/welcome/doch102285/884t23_om01en.pdf",
@@ -524,23 +542,15 @@ struct Found {
     objects: BTreeSet<u64>,
     listed: Vec<Hit>,
     measured: Option<f64>,
+    /// Its rule's extreme ([`Rule::extreme`]).
+    extreme: Option<Extreme>,
 }
 
-/// Which extreme a rule's `measured` is: the largest value judged, or the smallest.
-fn largest(id: &str) -> Option<bool> {
-    match id {
-        "satinTooWide"
-        | "stitchTooLong"
-        | "formatStep"
-        | "shortStitchesInARow"
-        | "layers"
-        | "threadMismatch"
-        | "formatColors"
-        | "machineStitches"
-        | "machineColorChanges" => Some(true),
-        "fillStitchShort" | "satinStitchShort" | "runStitchShort" | "stitchBelowNeedle" | "stitchTiny" => Some(false),
-        _ => None,
-    }
+/// Which extreme of the values a rule judges it reports ([`Rule::extreme`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Extreme {
+    Largest,
+    Smallest,
 }
 
 /// What a check is asked for: the rules to run, the format whose limits apply, and how many hits
@@ -589,7 +599,7 @@ fn extreme(m: &mut Option<f64>, v: f64, more: bool) {
 
 impl<'a> Checker<'a> {
     fn new(plan: &'a DesignPlan, ask: &'a Ask) -> Self {
-        let found = ask.rules.iter().map(|r| (r.id, Found::default())).collect();
+        let found = ask.rules.iter().map(|r| (r.id, Found { extreme: r.extreme, ..Found::default() })).collect();
         let layers = ask.rules.iter().any(|r| r.id == "layers").then(|| Layers::new(plan));
         Self { plan, ask, threads: threads_judged(plan, ask.format), found, short_run: None, layers, extremes: Extremes::default() }
     }
@@ -608,11 +618,10 @@ impl<'a> Checker<'a> {
 
     /// Note value `v` judged by rule `id`, hit or not: the extreme it reports as `measured`.
     fn judged(&mut self, id: &'static str, v: f64) {
-        let (Some(f), Some(largest)) = (self.found.get_mut(id), largest(id)) else { return };
-        if !v.is_finite() {
-            return;
+        let Some(f) = self.found.get_mut(id) else { return };
+        if let Some(e) = f.extreme {
+            extreme(&mut f.measured, v, e == Extreme::Largest);
         }
-        f.measured = Some(f.measured.map_or(v, |m| if largest { m.max(v) } else { m.min(v) }));
     }
 
     /// Name the objects units `units` sew among those rule `id` hit.

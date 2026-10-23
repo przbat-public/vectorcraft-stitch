@@ -202,6 +202,89 @@ fn planning_with_its_progress_then_a_failure_over_the_last_stitches() {
     assert!(!has(&words, "Updating"), "nothing is planned meanwhile, from the first frame that says why: {words:?}");
 }
 
+/// The ≡ menu drawn alone at `time` with `events` → its items as a screen reader has them: the
+/// node, the words, and whether the item is on.
+fn menu_items(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<egui::Event>) -> Vec<(egui::accesskit::NodeId, String, bool)> {
+    let raw = egui::RawInput { time: Some(time), events, ..Default::default() };
+    let mut out = ctx.run_ui(raw, |ui| menu(app, ui));
+    out.textures_delta.clear();
+    let tree = out.platform_output.accesskit_update.expect("an accessibility tree");
+    tree.nodes
+        .iter()
+        .filter(|(_, n)| n.role() == egui::accesskit::Role::Button)
+        .map(|(id, n)| (*id, n.label().unwrap_or_default().trim().to_string(), !n.is_disabled()))
+        .collect()
+}
+
+/// The ≡ menu: the Sew items on while something selected is sewn and the list's plan is of the
+/// document as it is, and they move it as the panel's steps do; Collapse All folds every block and
+/// Expand All unfolds them; Next and Previous Finding on only while a finding is shown.
+#[test]
+fn the_panels_menu() {
+    use egui::accesskit::{Action, ActionRequest, TreeId};
+    let ctx = egui::Context::default();
+    ctx.enable_accesskit();
+    let mut app = blank_app();
+    app.run("file.new", json!({"width": 400, "height": 400, "artboards": 1})).unwrap();
+    app.run("paint.setStroke", json!({"none": true})).unwrap();
+    let mut ids = vec![];
+    for (x, color) in [(20, "#cc2222"), (40, "#2233cc"), (60, "#22aa33")] {
+        app.run("select.set", json!({"ids": []})).unwrap();
+        app.run("paint.setFill", json!({ "color": color })).unwrap();
+        ids.push(app.run("shape.rectangle", json!({"x": x, "y": 20, "width": 60, "height": 40})).unwrap()["id"].as_u64().unwrap());
+    }
+    app.run("select.set", json!({"ids": []})).unwrap();
+    let mut time = 0.0;
+    let mut panel = |app: &mut VectorcraftApp| {
+        for _ in 0..3 {
+            time += 0.05;
+            frame(app, &ctx, time);
+        }
+        time
+    };
+    let t = panel(&mut app);
+    let items = menu_items(&mut app, &ctx, t, vec![]);
+    let item = |items: &[(egui::accesskit::NodeId, String, bool)], words: &str| {
+        items.iter().find(|(_, w, _)| w == words).map(|(id, _, on)| (*id, *on)).unwrap_or_else(|| panic!("no {words}: {items:?}"))
+    };
+    for words in ["Sew Earlier", "Sew Later", "Sew First", "Sew Last", "Next Finding", "Previous Finding"] {
+        assert!(!item(&items, words).1, "{words} off with nothing selected and no finding shown");
+    }
+    assert!(item(&items, "Collapse All").1 && item(&items, "Expand All").1);
+    let click =
+        |id| egui::Event::AccessKitActionRequest(ActionRequest { action: Action::Click, target_node: id, target_tree: TreeId::ROOT, data: None });
+    // Collapse All folds every block; Expand All unfolds them.
+    let uid = app.session.active().unwrap().uid;
+    menu_items(&mut app, &ctx, t + 0.01, vec![click(item(&items, "Collapse All").0)]);
+    assert_eq!(app.embroidery.order.folded(uid).len(), 3, "three threads' blocks folded");
+    menu_items(&mut app, &ctx, t + 0.02, vec![click(item(&items, "Expand All").0)]);
+    assert!(app.embroidery.order.folded(uid).is_empty());
+    // The top square selected: sewn first from the menu, as one undo step.
+    app.run("select.set", json!({ "ids": [ids[2]] })).unwrap();
+    let items = menu_items(&mut app, &ctx, t + 0.03, vec![]);
+    assert!(["Sew Earlier", "Sew Later", "Sew First", "Sew Last"].iter().all(|w| item(&items, w).1), "{items:?}");
+    let undo = app.session.doc().unwrap().history.undo.len();
+    menu_items(&mut app, &ctx, t + 0.04, vec![click(item(&items, "Sew First").0)]);
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
+    // Off until the plan of the document as it is comes.
+    let items = menu_items(&mut app, &ctx, t + 0.05, vec![]);
+    assert!(!item(&items, "Sew Last").1, "{items:?}");
+    let t = panel(&mut app);
+    let first = app.embroidery.preview.shown(uid).unwrap().planned.plan.units.first().map(|u| u.origin.selected());
+    assert_eq!(first, Some(vectorcraft_doc::NodeId(ids[2])), "sewn first");
+    assert!(item(&menu_items(&mut app, &ctx, t, vec![]), "Sew Last").1);
+    // A finding shown: Next and Previous Finding step through its hits.
+    app.ui.embroidery_panel.tab = Tab::Check;
+    app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 600.0)));
+    let t = panel(&mut app);
+    let reply = app.embroidery.preview.shown(uid).unwrap().reply(&check::query(&app.embroidery.check, uid)).unwrap().result.clone().unwrap();
+    check::show_findings(&mut app, uid, &reply, "layers", None).unwrap();
+    let items = menu_items(&mut app, &ctx, t, vec![]);
+    assert!(item(&items, "Next Finding").1 && item(&items, "Previous Finding").1, "{items:?}");
+    menu_items(&mut app, &ctx, t + 0.01, vec![click(item(&items, "Next Finding").0)]);
+    assert_eq!(app.embroidery.check.focus.as_ref().and_then(|f| f.hit), Some(0), "the first hit");
+}
+
 /// Screen readers find the tabs as tabs, the open one selected; a click opens the other.
 #[test]
 fn the_tabs_are_tabs() {

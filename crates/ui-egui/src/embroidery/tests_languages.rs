@@ -74,18 +74,52 @@ fn check_tab(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> (Vec<
     frames(app, ctx, Tab::Check, width)
 }
 
-/// A drawn text that may read as its English: a name (a format's, a thread's, a source's), a
-/// number with its unit, or what the language's catalogue `catalogue` gives (a row translated to
-/// the same words, as German's "Design").
+/// A drawn text that may read as its English: a name (a format's, a thread's, a source's) with no
+/// other English word round it, a number with its unit, or what the language's catalogue
+/// `catalogue` gives for the embroidery interface (one of its own rows, its plurals or messages,
+/// translated to the same words, as German's "Design"), never a template whose fixed words have no
+/// letters (`{path}: {e}` would pass anything with a colon).
 fn may_be_english(catalogue: &str, text: &str, names: &[String]) -> bool {
-    let letters = text.chars().filter(|c| c.is_ascii_alphabetic()).count();
+    let ascii_letters = |t: &str| t.chars().filter(|c| c.is_ascii_alphabetic()).count();
     let units = text.split_whitespace().all(|w| ["fps", "ms"].contains(&w) || !w.chars().any(|c| c.is_ascii_alphabetic()));
     if text.contains(" · ") {
         return text.split(" · ").all(|part| may_be_english(catalogue, part, names));
     }
     let text = text.trim_start_matches("· ");
-    let translated = || catalogue.lines().filter_map(|l| l.rsplit('\t').next()).flat_map(|t| t.split('|')).any(|t| fills(t, text));
-    letters < 3 || units || names.iter().any(|n| text.contains(n.as_str())) || translated()
+    let without_names = names.iter().fold(text.to_string(), |t, n| t.replace(n.as_str(), ""));
+    let worded = |t: &str| {
+        let mut fixed = String::new();
+        let mut rest = t;
+        while let Some(open) = rest.find('{') {
+            fixed.push_str(&rest[..open]);
+            rest = rest[open..].find('}').map_or("", |close| &rest[open + close + 1..]);
+        }
+        fixed.push_str(rest);
+        fixed.chars().filter(|c| c.is_alphabetic()).count() >= 3
+    };
+    let ours = |l: &&str| ["embroidery\t", "@plural\t", "@msg\t"].iter().any(|c| l.starts_with(c));
+    let translated = || {
+        catalogue.lines().filter(ours).filter_map(|l| l.rsplit('\t').next()).flat_map(|t| t.split('|')).filter(|t| worded(t)).any(|t| fills(t, text))
+    };
+    ascii_letters(text) < 3 || units || ascii_letters(&without_names) < 3 || translated()
+}
+
+/// `text` with its numbers (digits and the marks between them) blanked: an English text and its
+/// translation drawn with the language's own decimal mark compare equal when it isn't translated.
+fn numbers_blanked(text: &str) -> String {
+    let mut out = String::new();
+    let mut in_number = false;
+    for c in text.chars() {
+        let part = c.is_ascii_digit() || (in_number && matches!(c, '.' | ',' | '\u{a0}' | '\u{202f}'));
+        if part && !in_number {
+            out.push('#');
+        }
+        if !part {
+            out.push(c);
+        }
+        in_number = part;
+    }
+    out
 }
 
 /// Whether `text` is template `template` with its `{placeholders}` filled (any text for each).
@@ -115,6 +149,8 @@ fn names(app: &VectorcraftApp, lang: Lang) -> Vec<String> {
     let uid = app.session.active().map(|st| st.uid).unwrap_or_default();
     if let Some(shown) = app.embroidery.preview.shown(uid) {
         names.extend(shown.planned.plan.blocks.iter().map(|b| b.thread.name().to_string()));
+        // The palettes' ids, as a block's header writes them ("JEF 45").
+        names.extend(shown.planned.plan.blocks.iter().map(|b| b.thread.palette().id().to_uppercase()));
         let doc = &shown.document;
         names.extend(
             shown.planned.plan.units.iter().filter_map(|u| doc.node(u.origin.selected())).map(|n| crate::panels::layers::shown_name(app, n, lang)),
@@ -141,7 +177,7 @@ fn the_embroidery_interface_in_every_language() {
         let mut app = app_with_findings();
         let (mut texts, _) = frames(&mut app, &ctx, Tab::Order, 300.0);
         texts.extend(check_tab(&mut app, &ctx, 300.0).0);
-        texts.into_iter().map(|(t, _)| t).collect()
+        texts.into_iter().map(|(t, _)| numbers_blanked(&t)).collect()
     };
     for info in LANGUAGES.iter().filter(|l| l.complete_menus) {
         let lang = Lang::from_code(info.code).unwrap();
@@ -168,7 +204,7 @@ fn the_embroidery_interface_in_every_language() {
                 }
                 // The panel's words and the counters (the rest of the status bar is upstream's).
                 for (text, rect) in texts.iter().filter(|(t, r)| panel.intersects(*r) || *t == counters) {
-                    if english.contains(text) {
+                    if english.contains(&numbers_blanked(text)) {
                         assert!(may_be_english(catalogue, text, &names), "{}: {text:?} is drawn in English", info.code);
                     }
                     if panel.intersects(*rect) {

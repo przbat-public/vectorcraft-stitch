@@ -518,32 +518,106 @@ const STATS_KEYS: [&str; 5] = ["speed", "fabricThickness", Page::KEYS[0], Page::
 /// The keys a read command that lists a stretch takes besides the embroidery options.
 const LIST_KEYS: [&str; 3] = [Page::KEYS[0], Page::KEYS[1], SELECTED_ONLY];
 
+/// What a read command asks for besides its options: which reply, and what the reply takes.
+enum Read {
+    Threads(Page),
+    Stats { machine: stats::Machine, thread: stats::Thread, page: Page },
+    Sequence(Page),
+    Check { rules: Vec<&'static check::Rule>, format: Option<StitchFormat>, limit: usize },
+}
+
+/// A read command's params: what it reads, the options it plans with, and whether it plans the
+/// selected objects alone.
+struct ReadParams {
+    read: Read,
+    opts: Options,
+    selected_only: bool,
+}
+
+/// The read commands: `embroidery.threads`, `stats`, `sequence` and `check`.
+const READ_COMMANDS: [&str; 4] = ["embroidery.threads", "embroidery.stats", "embroidery.sequence", "embroidery.check"];
+
+/// Read command `cmd`'s params `p`, checked as the command checks them.
+fn read_params(cmd: &str, p: &Value) -> Result<ReadParams> {
+    let o = object(p, cmd)?;
+    let selected_only = selected_only(&o, cmd)?;
+    let (read, opts) = match cmd {
+        "embroidery.threads" => (Read::Threads(Page::from_params(&o, cmd)?), options_in(&o, &LIST_KEYS, cmd)?),
+        "embroidery.stats" => {
+            let (machine, thread) = stats::model(&o, cmd)?;
+            (Read::Stats { machine, thread, page: Page::from_params(&o, cmd)? }, options_in(&o, &STATS_KEYS, cmd)?)
+        }
+        "embroidery.sequence" => (Read::Sequence(Page::from_params(&o, cmd)?), options_in(&o, &LIST_KEYS, cmd)?),
+        "embroidery.check" => {
+            let opts = options_in(&o, &CHECK_KEYS, cmd)?;
+            (check_params(&o)?, opts)
+        }
+        _ => return Err(bad(cmd, format!("not a read command: one of {}", READ_COMMANDS.join(", ")))),
+    };
+    Ok(ReadParams { read, opts, selected_only })
+}
+
+/// The reply of read `read` from `plan`, the plan of `doc` with `opts`: the read commands' own
+/// replies, made the same way on any thread.
+fn reply(read: Read, plan: &plan::DesignPlan, doc: &Document, opts: &Options) -> Value {
+    let v = match read {
+        Read::Threads(page) => threads_reply(plan, doc, page),
+        Read::Stats { machine, thread, page } => stats::stats(plan, machine, thread, page),
+        Read::Sequence(page) => order::sequence(plan, page),
+        Read::Check { rules, format, limit } => {
+            // The format of the document's thread palette, when none is asked for.
+            let format = format.unwrap_or_else(|| thread_palette(doc).format());
+            check::check(plan, &check::Ask { rules, format, limit })
+        }
+    };
+    with_options(v, opts)
+}
+
+/// A read command run on the active document: its params read, its plan made (or the plan
+/// remembered), its reply.
+fn read_cmd(s: &mut Session, p: &Value, cmd: &str) -> Result<Value> {
+    let r = read_params(cmd, p)?;
+    let (plan, doc) = planned(s, &r.opts, r.selected_only, cmd)?;
+    Ok(reply(r.read, &plan, &doc, &r.opts))
+}
+
+impl Planner {
+    /// The reply read command `cmd` (`embroidery.threads`, `stats`, `sequence` or `check`) gives
+    /// with `params` for the planner's snapshot, made by the command's own code on any thread (the
+    /// stitch preview's panel and status bar read the design off the interface thread). The plan
+    /// is the one remembered, or planned. `selectedOnly` is refused: a planner has no selection.
+    pub fn query(&self, cmd: &str, params: &Value) -> Result<Value> {
+        let r = read_params(cmd, params)?;
+        if r.selected_only {
+            return Err(bad(cmd, format!("a planner plans the whole document: leave out `{SELECTED_ONLY}`")));
+        }
+        let planned = self.planned(&r.opts)?;
+        Ok(reply(r.read, &planned.plan, &self.doc, &r.opts))
+    }
+}
+
 fn stats_cmd(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.stats";
-    let o = object(p, C)?;
-    let (machine, thread) = stats::model(&o, C)?;
-    let page = Page::from_params(&o, C)?;
-    let opts = options_in(&o, &STATS_KEYS, C)?;
-    let (plan, _) = planned(s, &opts, selected_only(&o, C)?, C)?;
-    Ok(with_options(stats::stats(&plan, machine, thread, page), &opts))
+    read_cmd(s, p, "embroidery.stats")
 }
 
 fn sequence_cmd(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.sequence";
-    let o = object(p, C)?;
-    let page = Page::from_params(&o, C)?;
-    let opts = options_in(&o, &LIST_KEYS, C)?;
-    let (plan, _) = planned(s, &opts, selected_only(&o, C)?, C)?;
-    Ok(with_options(order::sequence(&plan, page), &opts))
+    read_cmd(s, p, "embroidery.sequence")
+}
+
+fn check_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    read_cmd(s, p, "embroidery.check")
+}
+
+fn threads(s: &mut Session, p: &Value) -> Result<Value> {
+    read_cmd(s, p, "embroidery.threads")
 }
 
 /// The keys `embroidery.check` takes besides the embroidery options.
 const CHECK_KEYS: [&str; 4] = ["format", "rules", "limit", SELECTED_ONLY];
 
-fn check_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+/// `embroidery.check`'s own params: the rules, the format and the hits listed.
+fn check_params(o: &Map<String, Value>) -> Result<Read> {
     const C: &str = "embroidery.check";
-    let o = object(p, C)?;
-    let opts = options_in(&o, &CHECK_KEYS, C)?;
     let format = match o.get("format") {
         None | Some(Value::Null) => None,
         Some(v) => Some(v.as_str().and_then(StitchFormat::from_id).ok_or_else(|| {
@@ -576,10 +650,7 @@ fn check_cmd(s: &mut Session, p: &Value) -> Result<Value> {
             .filter(|n| *n <= check::MAX_LIMIT)
             .ok_or_else(|| bad(C, format!("limit {v}: a whole number from 0 to {}", check::MAX_LIMIT)))?,
     };
-    let (plan, doc) = planned(s, &opts, selected_only(&o, C)?, C)?;
-    // The format of the document's thread palette, when none is asked for.
-    let format = format.unwrap_or_else(|| thread_palette(&doc).format());
-    Ok(with_options(check::check(&plan, &check::Ask { rules, format, limit }), &opts))
+    Ok(Read::Check { rules, format, limit })
 }
 
 /// A read command's answer `v` with the options it was planned with, under their names
@@ -596,12 +667,9 @@ pub(crate) fn hex([r, g, b]: [u8; 3]) -> String {
     Color::rgb8(r, g, b).to_hex()
 }
 
-fn threads(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.threads";
-    let o = object(p, C)?;
-    let page = Page::from_params(&o, C)?;
-    let opts = options_in(&o, &LIST_KEYS, C)?;
-    let (plan, d) = planned(s, &opts, selected_only(&o, C)?, C)?;
+/// `embroidery.threads`' reply (its options aside): `plan`'s blocks `page` lists, with the
+/// threads of `d`'s palette.
+fn threads_reply(plan: &plan::DesignPlan, d: &Document, page: Page) -> Value {
     let listed = page.range(plan.blocks.len());
     let blocks: Vec<Value> = listed
         .clone()
@@ -609,16 +677,13 @@ fn threads(s: &mut Session, p: &Value) -> Result<Value> {
         // Numbered from 1, as a list of threads shows them.
         .map(|(k, b)| json!({"block": k + 1, "thread": stats::thread_json(&b.thread), "unitCount": b.units.len()}))
         .collect();
-    Ok(with_options(
-        json!({
-            "palette": thread_palette(&d).id(),
-            "threshold": MISMATCH_DELTA_E,
-            "blockCount": plan.blocks.len(),
-            "offset": listed.start,
-            "truncated": page.truncated(plan.blocks.len()),
-            "blocks": blocks,
-            "warnings": plan.messages(),
-        }),
-        &opts,
-    ))
+    json!({
+        "palette": thread_palette(d).id(),
+        "threshold": MISMATCH_DELTA_E,
+        "blockCount": plan.blocks.len(),
+        "offset": listed.start,
+        "truncated": page.truncated(plan.blocks.len()),
+        "blocks": blocks,
+        "warnings": plan.messages(),
+    })
 }

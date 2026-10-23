@@ -898,3 +898,33 @@ fn a_wait_for_another_callers_plan_always_ends() {
     assert!(panicked.is_err());
     assert_eq!(service.flights(), 0);
 }
+
+/// A planner's query gives each read command's own reply for its snapshot, on another thread,
+/// reading the plan the commands remember: the same reply, no second walk.
+#[test]
+fn a_planners_query_is_the_commands_reply() {
+    let (mut s, _) = build(&[
+        Art { kind: 0, x: 20.0, y: 20.0, w: 60.0, h: 40.0, fill: Some(0), stroke: Some((1, 6.0)) },
+        Art { kind: 1, x: 120.0, y: 40.0, w: 50.0, h: 50.0, fill: Some(2), stroke: None },
+    ]);
+    let asks = [
+        ("embroidery.threads", json!({"limit": 1})),
+        ("embroidery.stats", json!({"speed": 800, "limit": 0})),
+        ("embroidery.sequence", json!({"offset": 1, "limit": 2})),
+        ("embroidery.check", json!({"format": "dst", "limit": 5})),
+        ("embroidery.check", json!({"spacing": 0.5, "rules": ["layers"]})),
+    ];
+    let planner = s.embroidery_planner().unwrap();
+    let asked: Vec<(&str, Value)> = asks.iter().map(|(c, p)| (*c, p.clone())).collect();
+    let replies = std::thread::spawn(move || asked.iter().map(|(c, p)| planner.query(c, p).unwrap()).collect::<Vec<Value>>()).join().unwrap();
+    let uid = s.doc().unwrap().uid;
+    let walks = s.embroidery_plans.of(uid).walks();
+    for ((cmd, params), reply) in asks.iter().zip(&replies) {
+        assert_eq!(&run(&mut s, cmd, params.clone()), reply, "{cmd} {params}");
+    }
+    assert_eq!(s.embroidery_plans.of(uid).walks(), walks, "the commands read the plans the queries made");
+    let planner = s.embroidery_planner().unwrap();
+    assert!(planner.query("embroidery.stats", &json!({"selectedOnly": true})).is_err(), "a planner has no selection");
+    assert!(planner.query("embroidery.setup", &json!({})).is_err(), "only the read commands");
+    assert!(planner.query("embroidery.stats", &json!({"speed": 1e9})).is_err(), "checked as the command checks");
+}

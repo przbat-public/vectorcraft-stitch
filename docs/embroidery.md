@@ -1571,7 +1571,7 @@ Selection tool the canvas draws the selection's frame and the key object's outli
 outlines or anchors over the stitches (other tools, which edit the art, show them). Each selected
 object gets an entry ◆ (the accent colour) where the needle enters it and an exit ⊕ (its layer's
 colour) where it leaves, at most 32 of them (`MARKED_OBJECTS_MAX`, an estimate), labelled "Entry"
-and "Exit" when one object is selected; they come from `StitchScene::ends_of`, as the Sewing order
+and "Exit" when one of them is marked (an object selected with it that sews nothing takes nothing from it); they come from `StitchScene::ends_of`, as the Sewing order
 list's do. A selected object changed since the plan shown is outlined dashed in its layer's colour
 until its plan comes (past 32 such objects or 20,000 anchors, `PENDING_OUTLINES_MAX` and
 `PENDING_ANCHORS_MAX`, the box they fall in is dashed instead, as the canvas leaves out outlines

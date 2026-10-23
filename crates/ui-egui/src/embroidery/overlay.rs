@@ -4,7 +4,7 @@
 //! - with the Selection tool the canvas draws only the selection's frame and the key object's
 //!   outline ([`frame_only`]), no path outlines or anchors over the stitches;
 //! - each selected object gets an entry ◆ where the needle enters it and an exit ⊕ where it leaves
-//!   it, at most [`MARKED_OBJECTS_MAX`] of them, labelled when one object is selected; they come from
+//!   it, at most [`MARKED_OBJECTS_MAX`] of them, labelled when one of them is marked; they come from
 //!   the scene's ends ([`StitchScene::ends_of`]), as the Sewing order list's do;
 //! - a selected object the stitches shown aren't of yet (it changed since the plan shown) is outlined
 //!   dashed in its layer's colour until the new plan comes; past [`PENDING_OUTLINES_MAX`] objects or
@@ -258,7 +258,9 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         None => {}
     }
     let marked: Vec<&ObjectEnds> = ends.iter().filter(|e| !e.units.is_empty()).take(MARKED_OBJECTS_MAX).collect();
-    let labelled = ends.len() == 1;
+    // Labelled when one object is marked: an object selected with it that sews nothing (a text
+    // left out, an empty path) takes nothing from it.
+    let labelled = marked.len() == 1;
     for e in &marked {
         let color = layer_color(&st.doc, e.object);
         if let Some(exit) = e.exit {

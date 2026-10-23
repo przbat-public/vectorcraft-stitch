@@ -98,6 +98,16 @@ fn each_selected_object_gets_its_entry_and_exit() {
     let shapes = settle(&mut app, &ctx, &mut time);
     assert_eq!((entries(&shapes, accent), exits(&shapes)), (3, 3));
     assert!(!words(&shapes).contains(&"Entry".to_string()), "no labels for several");
+    // One sewn object with one that sews nothing (no fill, no stroke): labelled as one.
+    app.run("select.set", json!({"ids": []})).unwrap();
+    app.run("paint.setFill", json!({"none": true})).unwrap();
+    let empty = app.run("shape.rectangle", json!({"x": 20, "y": 200, "width": 30, "height": 30})).unwrap()["id"].as_u64().unwrap();
+    app.run("select.set", json!({"ids": [ids[0], empty]})).unwrap();
+    let shapes = settle(&mut app, &ctx, &mut time);
+    assert_eq!((entries(&shapes, accent), exits(&shapes)), (1, 1));
+    assert!(words(&shapes).contains(&"Entry".to_string()), "labelled: {:?}", words(&shapes));
+    app.run("select.all", json!({})).unwrap();
+    settle(&mut app, &ctx, &mut time);
     // The ends are the scene's.
     let uid = app.session.active().unwrap().uid;
     let scene = app.embroidery.preview.shown(uid).unwrap().planned.scene();

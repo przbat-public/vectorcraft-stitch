@@ -26,7 +26,8 @@
 //! EduTechWiki is cited for facts only (the numbering, PEC 42's name and colour): its default
 //! licence, CC BY-NC-SA 3.0, doesn't fit this code's, so its tables are no source to take.
 
-use std::sync::OnceLock;
+use std::collections::HashMap;
+use std::sync::{Mutex, OnceLock};
 
 use crate::{Thread, color};
 
@@ -150,6 +151,33 @@ impl Palette {
         if let Some(own) = self.own(color) {
             return own;
         }
+        // A design's colours repeat from plan to plan (a plan after an edit matches every block
+        // again): each match is worked out once and remembered, for a skip of up to two threads
+        // (the neighbours [`Palette::assign`] avoids).
+        let key = match skip {
+            [] => Some([NO_THREAD; 2]),
+            [a] => Some([*a, NO_THREAD]),
+            [a, b] => Some([*a, *b]),
+            _ => None,
+        }
+        .map(|skip| (self, color, skip));
+        let memo = || MATCHES.get_or_init(Default::default).lock().ok();
+        if let Some(m) = key.and_then(|k| memo()?.get(&k).copied()) {
+            return m;
+        }
+        let m = self.nearest_of_all(color, skip);
+        if let (Some(k), Some(mut kept)) = (key, memo()) {
+            if kept.len() >= MAX_MATCHES_KEPT {
+                kept.clear();
+            }
+            kept.insert(k, m);
+        }
+        m
+    }
+
+    /// [`Palette::nearest`] for a colour that is no thread's own, worked out: compared with every
+    /// thread.
+    fn nearest_of_all(self, color: [u8; 3], skip: &[usize]) -> Match {
         let lab = color::lab(color);
         let (mut best, mut any): (Option<Match>, Option<Match>) = (None, None);
         for (i, &thread) in self.labs().iter().enumerate().take(self.thread_count()) {
@@ -275,6 +303,16 @@ const FIRST_THREAD: usize = 1;
 /// What a thread that isn't in its palette would show: never, since a [`PaletteThread`] is always
 /// one of its palette's threads.
 const NO_ENTRY: Entry = ([0; 3], "");
+
+/// The matches [`Palette::nearest`] has worked out: by palette, colour and the (up to two)
+/// threads skipped, [`NO_THREAD`] for none. A lock that a panic elsewhere left poisoned is passed
+/// by: matching afresh is always right.
+static MATCHES: OnceLock<Mutex<HashMap<MatchKey, Match>>> = OnceLock::new();
+/// What a remembered match is of: the palette, the colour and the threads skipped.
+type MatchKey = (Palette, [u8; 3], [usize; 2]);
+/// The most matches remembered, about 3 MB: past it they are forgotten and remembered again from
+/// the next one. Many more than a design's colours. An estimate.
+const MAX_MATCHES_KEPT: usize = 65_536;
 
 /// A colour matched to a palette's thread ([`Palette::nearest`], [`Palette::assign`]).
 #[derive(Clone, Copy, Debug, PartialEq)]

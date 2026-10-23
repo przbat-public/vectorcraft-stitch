@@ -12,7 +12,6 @@ pub mod numbers;
 pub mod plan_worker;
 pub mod text;
 
-use vectorcraft_engine::EmbroideryOptions;
 use vectorcraft_engine::cmd::embroidery::render::{Region, picture};
 use vectorcraft_engine::cmd::embroidery::scene::FABRIC;
 
@@ -20,9 +19,11 @@ use crate::VectorcraftApp;
 
 /// The control channel's `ui.render {stitchPreview: true}`: artboard `artboard` of the active
 /// document drawn as its stitches at `scale` pixels a point, on the fabric, jumps and cuts marked,
-/// as the stitch preview draws it (`embroidery.render`'s own drawing).
+/// with the options the stitch preview plans with, as it draws them (`embroidery.render`'s own
+/// drawing).
 pub fn render_stitches(app: &mut VectorcraftApp, artboard: usize, scale: f64) -> Result<vectorcraft_render::Rendered, String> {
-    let opts = EmbroideryOptions::default();
+    let uid = app.session.active().ok_or("no document")?.uid;
+    let (opts, _) = app.session.stitch_preview_options(uid);
     picture(&mut app.session, Region::Artboard(artboard), scale, true, Some(FABRIC), &opts).map(|(img, _, _)| img).map_err(|e| e.to_string())
 }
 

@@ -401,6 +401,10 @@ pub(crate) fn plan_afresh(doc: &Document, opts: &Options) -> Result<DesignPlan, 
 pub(crate) struct Services {
     plans: HashMap<u64, Arc<PlanService>>,
     views: HashMap<u64, super::view::StitchView>,
+    /// Each document's last embroidery export's options, and the last export's of any document:
+    /// what the stitch preview plans with ([`super::view::OptionsSource`]).
+    exports: HashMap<u64, Options>,
+    last_export: Option<Options>,
 }
 
 impl Services {
@@ -418,16 +422,29 @@ impl Services {
         self.views.insert(uid, view);
     }
 
-    /// Drop document `uid`'s service (the document closed), what it kept, and its stitch view.
+    /// Note that document `uid` was exported with embroidery options `opts`.
+    pub(crate) fn note_export(&mut self, uid: u64, opts: Options) {
+        self.exports.insert(uid, opts.clone());
+        self.last_export = Some(opts);
+    }
+
+    /// Document `uid`'s last embroidery export's options, and the last export's of any document.
+    pub(crate) fn exported(&self, uid: u64) -> (Option<&Options>, Option<&Options>) {
+        (self.exports.get(&uid), self.last_export.as_ref())
+    }
+
+    /// Drop document `uid`'s service (the document closed), what it kept, its stitch view and its
+    /// export's options (the last export's of any document stay).
     pub(crate) fn forget(&mut self, uid: u64) {
         self.plans.remove(&uid);
         self.views.remove(&uid);
+        self.exports.remove(&uid);
     }
 
-    /// The documents that have a service or a stitch view.
+    /// The documents that have a service, a stitch view or an export's options.
     #[cfg(test)]
     pub(crate) fn uids(&self) -> Vec<u64> {
-        let mut uids: Vec<u64> = self.plans.keys().chain(self.views.keys()).copied().collect();
+        let mut uids: Vec<u64> = self.plans.keys().chain(self.views.keys()).chain(self.exports.keys()).copied().collect();
         uids.sort_unstable();
         uids.dedup();
         uids

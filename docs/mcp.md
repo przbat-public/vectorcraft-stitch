@@ -4349,9 +4349,11 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   Grid: not saved, not undoable, not journaled, kept through Revert, dropped on close. Its options, kept while the
   preview is off, are set the same way: `view.stitchPreview.jumps` (jumps and cuts marked, on by default),
   `view.stitchPreview.needlePoints` (off) and `view.stitchPreview.artwork` (the art faint under the stitches, off).
-  Each answers with the whole setting, `{on, jumps, needlePoints, artwork, shown, pausedBy}`: `shown` is
-  `"stitches"` or `"art"`, and `pausedBy` (`"opacityMask"`, `"pattern"` or null) names the edit mode that shows
-  the art while it lasts. Exports never show the stitches.
+  Each answers with the whole setting, `{on, jumps, needlePoints, artwork, shown, pausedBy, options, optionsFrom}`:
+  `shown` is `"stitches"` or `"art"`, and `pausedBy` (`"opacityMask"`, `"pattern"` or null) names the edit mode that
+  shows the art while it lasts. The preview plans with `options`: those of the document's last embroidery export
+  (`optionsFrom: "document"`), else of the last embroidery export of any document while the app runs (`"app"`),
+  else the defaults (`"defaults"`); they are never saved in the file. Exports never show the stitches.
 
 The four read commands (threads, stats, sequence, check) take `selectedOnly` (the selected objects alone, as `document.export {selectedOnly}` writes them)
 and plan the document as the export does: an opacity mask's editing layer, which no export writes, is left out.

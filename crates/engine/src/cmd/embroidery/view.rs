@@ -7,6 +7,10 @@
 //!
 //! [`layers`] says, as a pure function the canvas and its tests share, what the canvas draws for
 //! a setting: the stitches or the art, the art faint under the stitches, outlines over them.
+//!
+//! The preview plans with the options of the document's last embroidery export, else those of the
+//! last embroidery export of any document, else the defaults ([`OptionsSource`], the project
+//! owner's choice): remembered while the app runs, never saved in the file.
 
 use serde_json::{Value, json};
 
@@ -88,7 +92,49 @@ pub fn layers(view: StitchView, paused: Option<Paused>, outline: bool) -> Layers
     Layers { art: false, fabric: true, faint_art: view.artwork && !outline, stitches: true, outlines: outline }
 }
 
+/// Where the options the stitch preview plans with come from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OptionsSource {
+    /// The document's last embroidery export.
+    Document,
+    /// The last embroidery export of another document, while the app runs.
+    App,
+    /// No embroidery export yet: the defaults.
+    Defaults,
+}
+
+impl OptionsSource {
+    /// The id the replies give it.
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Document => "document",
+            Self::App => "app",
+            Self::Defaults => "defaults",
+        }
+    }
+}
+
+/// Note an export of the active document in `format` with `params` (`document.export`'s, or the
+/// app's export's): when it is an embroidery format, its options are the ones the stitch preview
+/// plans with from now on. Params the export would refuse note nothing.
+pub fn note_export(s: &mut Session, format: &str, params: &Value) {
+    if !crate::cmd::fileio::embroidery::is_format(format) {
+        return;
+    }
+    let (Some(uid), Ok(opts)) = (s.active().map(|st| st.uid), crate::cmd::fileio::embroidery::options(params)) else { return };
+    s.embroidery_plans.note_export(uid, opts);
+}
+
 impl Session {
+    /// The options document `uid`'s stitch preview plans with, and where they come from.
+    pub fn stitch_preview_options(&self, uid: u64) -> (Options, OptionsSource) {
+        match self.embroidery_plans.exported(uid) {
+            (Some(own), _) => (own.clone(), OptionsSource::Document),
+            (None, Some(last)) => (last.clone(), OptionsSource::App),
+            (None, None) => (Options::default(), OptionsSource::Defaults),
+        }
+    }
+
     /// The active document's stitch view (the default with no document).
     pub fn stitch_view(&self) -> StitchView {
         self.active().map_or_else(StitchView::default, |st| self.stitch_view_of(st.uid))
@@ -108,7 +154,7 @@ pub(super) fn specs() -> Vec<CommandSpec> {
             "Stitch Preview",
             ["View"],
             Some("Cmd+E"),
-            "{on?: bool (default: toggle)} show the active document's design as the stitches it is sewn with instead of its art (planned as the read commands plan it); each open document has its own setting, view state that is neither saved nor undoable; the canvas, ui.screenshot and ui.render {stitchPreview} show it, exports never do; while an opacity mask or a pattern is edited the art shows → {on, jumps, needlePoints, artwork, shown: \"stitches\"|\"art\", pausedBy: null|\"opacityMask\"|\"pattern\"}",
+            "{on?: bool (default: toggle)} show the active document's design as the stitches it is sewn with instead of its art (planned as the read commands plan it); each open document has its own setting, view state that is neither saved nor undoable; the canvas, ui.screenshot and ui.render {stitchPreview} show it, exports never do; while an opacity mask or a pattern is edited the art shows → {on, jumps, needlePoints, artwork, shown: \"stitches\"|\"art\", pausedBy: null|\"opacityMask\"|\"pattern\", options: {…the embroidery options it plans with}, optionsFrom: \"document\" (this document's last embroidery export)|\"app\" (another document's, while the app runs)|\"defaults\"}",
             has_doc,
             |s, p| set(s, p, "view.stitchPreview", |v, on| v.on = on, |v| v.on)
         ),
@@ -160,11 +206,12 @@ fn set(s: &mut Session, p: &Value, cmd: &str, put: fn(&mut StitchView, bool), ge
     let on = on.unwrap_or(!get(&view));
     put(&mut view, on);
     s.embroidery_plans.set_view(uid, view);
-    Ok(view_json(view, paused))
+    Ok(view_json(view, paused, s.stitch_preview_options(uid)))
 }
 
-/// A stitch view as the commands answer with it.
-pub fn view_json(view: StitchView, paused: Option<Paused>) -> Value {
+/// A stitch view as the commands answer with it, with the options the preview plans with and
+/// where they come from.
+pub fn view_json(view: StitchView, paused: Option<Paused>, (opts, from): (Options, OptionsSource)) -> Value {
     let shown = if layers(view, paused, false).stitches { "stitches" } else { "art" };
     json!({
         "on": view.on,
@@ -173,5 +220,7 @@ pub fn view_json(view: StitchView, paused: Option<Paused>) -> Value {
         "artwork": view.artwork,
         "shown": shown,
         "pausedBy": paused.map(Paused::id),
+        "options": opts.to_json(),
+        "optionsFrom": from.id(),
     })
 }

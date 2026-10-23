@@ -1,11 +1,12 @@
 //! The stitch preview's view setting: per document, toggled and set by its commands, view state
 //! (not undoable, not journaled, never marking a document modified), dropped on close, kept through
-//! Revert; paused while an opacity mask or a pattern is edited; and the layers the canvas draws.
+//! Revert; paused while an opacity mask or a pattern is edited; the layers the canvas draws; and
+//! the options it plans with, from the last embroidery export.
 
 use serde_json::{Value, json};
 use vectorcraft_testkit::embroidery as fx;
 
-use super::view::{Layers, Paused, StitchView, layers};
+use super::view::{Layers, OptionsSource, Paused, StitchView, layers};
 use super::*;
 
 fn runner(s: &mut Session) -> impl FnMut(&str, Value) -> Value + '_ {
@@ -19,7 +20,10 @@ fn the_stitch_view_is_toggled_and_set_per_document() {
     fx::blank(&mut runner(&mut s));
     let first = s.active().unwrap().uid;
     let r = s.execute("view.stitchPreview", &json!({})).unwrap();
-    assert_eq!(r, json!({"on": true, "jumps": true, "needlePoints": false, "artwork": false, "shown": "stitches", "pausedBy": null}));
+    assert_eq!(
+        r,
+        json!({"on": true, "jumps": true, "needlePoints": false, "artwork": false, "shown": "stitches", "pausedBy": null, "options": {"stitch": "auto"}, "optionsFrom": "defaults"})
+    );
     assert_eq!(s.execute("view.stitchPreview", &json!({"on": true})).unwrap()["on"], true, "idempotent");
     assert_eq!(s.execute("view.stitchPreview", &json!({"on": null})).unwrap()["on"], false, "null toggles");
     // The options are kept, and set, while the preview is off.
@@ -115,4 +119,37 @@ fn the_canvas_layers_follow_the_setting() {
             }
         }
     }
+}
+
+/// The preview plans with the options of the document's last embroidery export, else the last
+/// embroidery export's of any document, else the defaults; another format's export, or one whose
+/// options are refused, changes nothing; closing a document forgets its own.
+#[test]
+fn the_preview_plans_with_the_last_embroidery_exports_options() {
+    let mut s = Session::new();
+    fx::blank(&mut runner(&mut s));
+    fx::rect(&mut runner(&mut s), fx::RED, 10.0, 10.0, 50.0, 50.0);
+    let first = s.active().unwrap().uid;
+    let defaults = (Options::default(), OptionsSource::Defaults);
+    assert_eq!(s.stitch_preview_options(first), defaults);
+    s.execute("document.export", &json!({"format": "png"})).unwrap();
+    assert_eq!(s.stitch_preview_options(first), defaults, "not an embroidery format");
+    s.execute("document.export", &json!({"format": "dst", "spacing": 0.5})).unwrap();
+    let ours = Options::from_json(&json!({"spacing": 0.5})).unwrap();
+    assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::Document));
+    assert!(s.execute("document.export", &json!({"format": "dst", "spacing": "wide"})).is_err());
+    assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::Document), "a refused export notes nothing");
+    let r = s.execute("view.stitchPreview", &json!({})).unwrap();
+    assert_eq!((&r["options"], &r["optionsFrom"]), (&json!({"stitch": "auto", "spacing": 0.5}), &json!("document")));
+    // Another document plans with the app's last, until it is exported itself.
+    fx::blank(&mut runner(&mut s));
+    fx::rect(&mut runner(&mut s), fx::BLUE, 10.0, 10.0, 50.0, 50.0);
+    let second = s.active().unwrap().uid;
+    assert_eq!(s.stitch_preview_options(second), (ours.clone(), OptionsSource::App));
+    s.execute("document.export", &json!({"format": "pes", "length": 3})).unwrap();
+    let theirs = Options::from_json(&json!({"length": 3})).unwrap();
+    assert_eq!(s.stitch_preview_options(second), (theirs.clone(), OptionsSource::Document));
+    assert_eq!(s.stitch_preview_options(first), (ours, OptionsSource::Document), "the first keeps its own");
+    s.execute("file.close", &json!({})).unwrap();
+    assert_eq!(s.stitch_preview_options(second), (theirs, OptionsSource::App), "closing forgets the document's own");
 }

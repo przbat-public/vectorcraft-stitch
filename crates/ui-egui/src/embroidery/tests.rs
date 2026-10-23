@@ -47,3 +47,20 @@ fn ui_render_draws_the_stitches_when_asked() {
     assert_ne!(stitches.get_pixel(100, 100).0, art.get_pixel(100, 100).0, "the palette thread, not the art's colour");
     assert_eq!(stitches.get_pixel(2, 2).0, [255, 255, 255, 255], "the fabric");
 }
+
+/// An embroidery export from the app (File › Export) gives the stitch preview its options.
+#[test]
+fn an_export_from_the_app_gives_the_preview_its_options() {
+    use vectorcraft_engine::EmbroideryOptions;
+    use vectorcraft_engine::cmd::embroidery::view::OptionsSource;
+    let services = Services { write: Some(Box::new(|_: &str, _: &[u8]| Ok(()))), ..Default::default() };
+    let mut app = VectorcraftApp::new(Session::new(), services);
+    app.session.execute("prefs.set", &json!({"values": {"backgroundExport": false}})).unwrap();
+    app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    app.run("shape.rectangle", json!({"x": 20, "y": 20, "width": 60, "height": 60})).unwrap();
+    let uid = app.session.active().unwrap().uid;
+    assert_eq!(app.session.stitch_preview_options(uid).1, OptionsSource::Defaults);
+    crate::io::export(&mut app, Some("dst"), Some("/out/a.dst".into()), &json!({"spacing": 0.5})).unwrap();
+    let ours = EmbroideryOptions::from_json(&json!({"spacing": 0.5})).unwrap();
+    assert_eq!(app.session.stitch_preview_options(uid), (ours, OptionsSource::Document));
+}

@@ -717,6 +717,8 @@ pub fn export(app: &mut VectorcraftApp, format: Option<&str>, path: Option<Strin
     if let Some(r) = ask_before_losing(app, &path, "file.exportAs", &again) {
         return Ok(r);
     }
+    // VectorCraft Stitch: an embroidery export's options are the stitch preview's from now on.
+    vectorcraft_engine::cmd::embroidery::view::note_export(&mut app.session, f.id, params);
     // An SVG given a .svgz name is written compressed.
     let f = match fileio::format_for_name(&path) {
         Some(z) if f.id == "svg" && z.id == "svgz" => z,

@@ -366,7 +366,8 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   - `panels/mod.rs`, `dock.rs`, `state.rs`, `icon_data.rs`: the panel's module, its show and menu
     arms, its height, its `ICON_PANELS` row and `UiState::embroidery_panel`, its icon
     (`assets/icons/dc-embroidery.svg`, a row in `ASSETS.md`);
-  - `io.rs` and the engine's `fileio/export.rs`: `view::note_export` before an export is written;
+  - `io.rs` and the engine's `fileio/export.rs`: `view::note_export` (`note_export_of` in the
+    background export's completion) once an export is written;
   - the engine's `lib.rs`: the `pub use` of `StitchView`, `PlanKey` and `Planned`, and in
     `close_document` the closed document's planning forgotten (in a batch, by `fileio/batch.rs`
     once the batch holds; its `roll_back` forgets a document the batch opened);

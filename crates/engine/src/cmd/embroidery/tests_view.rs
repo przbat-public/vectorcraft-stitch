@@ -139,6 +139,11 @@ fn the_preview_plans_with_the_last_embroidery_exports_options() {
     assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::Document));
     assert!(s.execute("document.export", &json!({"format": "dst", "spacing": "wide"})).is_err());
     assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::Document), "a refused export notes nothing");
+    // Nor one that can't be written.
+    let nowhere = std::env::temp_dir().join("vectorcraft-no-such-folder").join("a.dst");
+    let failed = json!({"format": "dst", "spacing": 0.3, "path": nowhere.to_string_lossy()});
+    assert!(s.execute("document.export", &failed).is_err());
+    assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::Document), "an export not written notes nothing");
     let r = s.execute("view.stitchPreview", &json!({})).unwrap();
     assert_eq!((&r["options"], &r["optionsFrom"]), (&json!({"stitch": "auto", "spacing": 0.5}), &json!("document")));
     // Another document plans with the app's last, until it is exported itself.

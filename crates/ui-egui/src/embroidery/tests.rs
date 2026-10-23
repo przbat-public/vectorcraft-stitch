@@ -53,7 +53,10 @@ fn ui_render_draws_the_stitches_when_asked() {
 fn an_export_from_the_app_gives_the_preview_its_options() {
     use vectorcraft_engine::EmbroideryOptions;
     use vectorcraft_engine::cmd::embroidery::view::OptionsSource;
-    let services = Services { write: Some(Box::new(|_: &str, _: &[u8]| Ok(()))), ..Default::default() };
+    let services = Services {
+        write: Some(Box::new(|path: &str, _: &[u8]| if path.contains("denied") { Err("permission denied".into()) } else { Ok(()) })),
+        ..Default::default()
+    };
     let mut app = VectorcraftApp::new(Session::new(), services);
     app.session.execute("prefs.set", &json!({"values": {"backgroundExport": false}})).unwrap();
     app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
@@ -62,6 +65,9 @@ fn an_export_from_the_app_gives_the_preview_its_options() {
     assert_eq!(app.session.stitch_preview_options(uid).1, OptionsSource::Defaults);
     crate::io::export(&mut app, Some("dst"), Some("/out/a.dst".into()), &json!({"spacing": 0.5})).unwrap();
     let ours = EmbroideryOptions::from_json(&json!({"spacing": 0.5})).unwrap();
+    assert_eq!(app.session.stitch_preview_options(uid), (ours.clone(), OptionsSource::Document));
+    // An export that isn't written notes nothing.
+    assert!(crate::io::export(&mut app, Some("dst"), Some("/denied/b.dst".into()), &json!({"spacing": 0.3})).is_err());
     assert_eq!(app.session.stitch_preview_options(uid), (ours, OptionsSource::Document));
 }
 

@@ -1441,7 +1441,8 @@ stitch view, or a read command's reply the Embroidery panel or the status bar sh
 (`ui-egui/src/embroidery/stitch_preview.rs`). An app that never shows stitches never plans. The
 preview plans with the options of the document's last embroidery export, else those of the last
 embroidery export of any document while the app runs, else the defaults (the project owner's
-choice; `view.stitchPreview` answers which), never saved in the file.
+choice; `view.stitchPreview` answers which), never saved in the file. An export counts once it is
+written: one refused, failed or cancelled notes nothing.
 
 - **On a thread of its own** (`plan_worker.rs`), newest job first: the plan and its scene are
   handed over first, then the read commands' replies one by one as each is made (by the commands'

@@ -114,14 +114,24 @@ impl OptionsSource {
     }
 }
 
-/// Note an export of the active document in `format` with `params` (`document.export`'s, or the
-/// app's export's): when it is an embroidery format, its options are the ones the stitch preview
-/// plans with from now on. Params the export would refuse note nothing.
+/// Note an export of the active document in `format` with `params` (`document.export`'s), once
+/// it is written: when it is an embroidery format, its options are the ones the stitch preview
+/// plans with from now on ([`note_export_of`]).
 pub fn note_export(s: &mut Session, format: &str, params: &Value) {
-    if !crate::cmd::fileio::embroidery::is_format(format) {
+    if let Some(uid) = s.active().map(|st| st.uid) {
+        note_export_of(s, uid, format, params);
+    }
+}
+
+/// Note an export of open document `uid` in `format` with `params` (the app's background export's,
+/// once written, whichever document is active then): when it is an embroidery format, its options
+/// are the ones that document's stitch preview plans with from now on. Params the export would
+/// refuse note nothing, nor a document closed meanwhile.
+pub fn note_export_of(s: &mut Session, uid: u64, format: &str, params: &Value) {
+    if !crate::cmd::fileio::embroidery::is_format(format) || !s.documents().iter().any(|d| d.uid == uid) {
         return;
     }
-    let (Some(uid), Ok(opts)) = (s.active().map(|st| st.uid), crate::cmd::fileio::embroidery::options(params)) else { return };
+    let Ok(opts) = crate::cmd::fileio::embroidery::options(params) else { return };
     s.embroidery_plans.note_export(uid, opts);
 }
 

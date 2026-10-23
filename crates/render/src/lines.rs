@@ -39,8 +39,10 @@ pub const MAX_LINE_POINTS: usize = 64;
 
 /// The most segments one path is drawn with: consecutive lines of one colour are joined into paths
 /// of at most this many, so that vello's threads share a frame's work and no path's tile sort grows
-/// large. An estimate (research for the stitch preview: 512 against 128 to a whole block), set by
-/// the drawing measurements.
+/// large. Measured (`vectorcraft-cli perf --embroidery` with `VECTORCRAFT_STITCH_SWEEP`, 12 cores,
+/// 2026-10-23): from 64 segments to a whole run of one colour, frames of 10,000 to 500,000
+/// stitches took the same time within noise (100,000 at fit 6.1 to 6.5 ms), so the size the
+/// research proposed is kept; a path never grows with a design.
 pub const MAX_BATCH_SEGMENTS: usize = 512;
 
 /// The narrowest a laid line is drawn, device pixels: as the art renderer keeps a stroke at least
@@ -592,6 +594,8 @@ pub struct LineStats {
 pub struct LineRenderer {
     /// Rasterizer worker threads (0: on the calling thread), as [`crate::Renderer::threads`].
     pub threads: u16,
+    /// The most segments a path is drawn with ([`MAX_BATCH_SEGMENTS`]; measurements sweep it).
+    pub batch_segments: usize,
     ctx: Option<RenderContext>,
     resources: Resources,
     pub stats: LineStats,
@@ -611,7 +615,13 @@ struct Batch {
 
 impl LineRenderer {
     pub fn new() -> Self {
-        Self { threads: crate::default_threads(), ctx: None, resources: Resources::new(), stats: LineStats::default() }
+        Self {
+            threads: crate::default_threads(),
+            batch_segments: MAX_BATCH_SEGMENTS,
+            ctx: None,
+            resources: Resources::new(),
+            stats: LineStats::default(),
+        }
     }
 
     /// Draw `picture` into a `width`×`height` image through `view` (document points to device
@@ -728,7 +738,7 @@ impl LineRenderer {
             }
             // One width a path: a line of another width ends the batch.
             let w = px / scale;
-            if width.is_some_and(|x: f64| (x - w).abs() > f64::EPSILON) || batch.segments >= MAX_BATCH_SEGMENTS {
+            if width.is_some_and(|x: f64| (x - w).abs() > f64::EPSILON) || batch.segments >= self.batch_segments {
                 self.flush(ctx, &mut batch, width);
             }
             width = Some(w);

@@ -238,8 +238,16 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
 }
 
 /// `vectorcraft-cli perf --embroidery`: only the embroidery rows, each printed by `row` (its name,
-/// milliseconds, budget, and whether it is within it).
+/// milliseconds, budget, and whether it is within it). With `VECTORCRAFT_STITCH_SWEEP` set, the
+/// drawing's batch sizes are swept instead ([`sweep`]); with `VECTORCRAFT_STITCH_PNG` set to a
+/// folder, the drawing rows' pictures are written there as PNG, to look at.
 pub fn report(row: fn(&str, f64, f64, bool) -> String) -> Result<(), String> {
+    if std::env::var_os("VECTORCRAFT_STITCH_SWEEP").is_some() {
+        return sweep();
+    }
+    if let Some(dir) = std::env::var_os("VECTORCRAFT_STITCH_PNG") {
+        pictures(std::path::Path::new(&dir))?;
+    }
     let rows = rows()?;
     outln!("  {:<42} {:>10} {:>10}", "", "measured", "budget");
     let mut over = 0;
@@ -356,20 +364,18 @@ pub fn stitch_picture(n: usize) -> LinePicture {
 /// `zoom` about its centre, on `threads` threads (`None`: the default), the median of
 /// [`DRAW_RUNS`].
 fn draw(picture: &LinePicture, zoom: f64, threads: Option<u16>) -> f64 {
-    let (w, h) = CANVAS;
+    draw_with(picture, zoom, threads, vectorcraft_render::lines::MAX_BATCH_SEGMENTS)
+}
+
+/// [`draw`] with paths of at most `batch` segments.
+fn draw_with(picture: &LinePicture, zoom: f64, threads: Option<u16>, batch: usize) -> f64 {
     let mut r = LineRenderer::new();
+    r.batch_segments = batch;
     if let Some(t) = threads {
         r.threads = t;
     }
-    let style = LineStyle {
-        colors: THREADS.to_vec(),
-        edges: THREADS.iter().map(|c| edge_against(*c, [255, 255, 255])).collect(),
-        px_per_pt: 2.0,
-        ..LineStyle::default()
-    };
-    let Some(bounds) = picture.bounds() else { return 0.0 };
-    let fit = (f64::from(w) / bounds.width()).min(f64::from(h) / bounds.height()) * FIT_SHARE * zoom;
-    let view = Affine::translate((f64::from(w) / 2.0, f64::from(h) / 2.0)) * Affine::scale(fit) * Affine::translate(-bounds.center().to_vec2());
+    let (style, view) = framed(picture, zoom);
+    let (w, h) = CANVAS;
     // A first frame makes the contexts.
     drop(r.render(picture, w, h, view, &style));
     let mut samples = Vec::with_capacity(DRAW_RUNS);
@@ -379,6 +385,56 @@ fn draw(picture: &LinePicture, zoom: f64, threads: Option<u16>) -> f64 {
         samples.push(t.elapsed().as_secs_f64() * 1000.0);
     }
     middle(samples)
+}
+
+/// The batch sizes [`sweep`] measures: from a few lines a path to a whole run of one colour.
+const SWEPT_BATCHES: [usize; 7] = [64, 128, 256, 512, 1024, 4096, usize::MAX];
+
+/// `VECTORCRAFT_STITCH_SWEEP`: the drawing rows at each of [`SWEPT_BATCHES`].
+fn sweep() -> Result<(), String> {
+    let (ten, hundred, five) = (stitch_picture(10_000), stitch_picture(100_000), stitch_picture(500_000));
+    outln!("  {:>10} {:>14} {:>14} {:>14} {:>14}", "batch", "100k fit", "100k 400%", "500k fit", "10k 1 thread");
+    for batch in SWEPT_BATCHES {
+        let shown = if batch == usize::MAX { "a run".to_string() } else { batch.to_string() };
+        outln!(
+            "  {shown:>10} {:>11.2} ms {:>11.2} ms {:>11.2} ms {:>11.2} ms",
+            draw_with(&hundred, FIT, None, batch),
+            draw_with(&hundred, ZOOMED, None, batch),
+            draw_with(&five, FIT, None, batch),
+            draw_with(&ten, FIT, Some(0), batch)
+        );
+    }
+    Ok(())
+}
+
+/// `VECTORCRAFT_STITCH_PNG`: the 10,000-stitch picture at fit and zoomed in, written to `dir`.
+fn pictures(dir: &std::path::Path) -> Result<(), String> {
+    let p = stitch_picture(10_000);
+    let mut r = LineRenderer::new();
+    let (w, h) = CANVAS;
+    for (name, zoom) in [("stitches-fit.png", FIT), ("stitches-zoomed.png", ZOOMED)] {
+        let (style, view) = framed(&p, zoom);
+        let style = LineStyle { background: Some([255, 255, 255, 255]), ..style };
+        let png = r.render(&p, w, h, view, &style).to_png()?;
+        std::fs::write(dir.join(name), png).map_err(|e| format!("{}: {e}", dir.join(name).display()))?;
+    }
+    Ok(())
+}
+
+/// The style the drawing rows draw with, and the view that fits `picture` to their canvas, zoomed
+/// by `zoom` about its centre.
+fn framed(picture: &LinePicture, zoom: f64) -> (LineStyle, Affine) {
+    let (w, h) = CANVAS;
+    let style = LineStyle {
+        colors: THREADS.to_vec(),
+        edges: THREADS.iter().map(|c| edge_against(*c, [255, 255, 255])).collect(),
+        px_per_pt: 2.0,
+        ..LineStyle::default()
+    };
+    let Some(bounds) = picture.bounds() else { return (style, Affine::IDENTITY) };
+    let fit = (f64::from(w) / bounds.width()).min(f64::from(h) / bounds.height()) * FIT_SHARE * zoom;
+    let view = Affine::translate((f64::from(w) / 2.0, f64::from(h) / 2.0)) * Affine::scale(fit) * Affine::translate(-bounds.center().to_vec2());
+    (style, view)
 }
 
 /// A document holding one filled path of `path` (millimetres) under `rule`.

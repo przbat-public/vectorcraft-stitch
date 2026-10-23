@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-23 · **Last updated:** 2026-10-23 · **Change:** the fixes from the review of the embroidery work: VP3 trims as long forms, an opened design's start point, name, thread records and losses kept, closed lines locked, fill rows centred, the planner's and the planning service's speed (kept areas, a remembered refusal), the docs' tables regenerated from the tests, a contents list, terms and a revision history. Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-23 · **Last updated:** 2026-10-23 · **Change:** the stitch preview's drawing: line pictures drawn by the renderer, the look decided and measured before anything is built on it (Architecture › Drawing stitches). Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -1402,12 +1402,64 @@ times the three for any file with art to stitch; perf's other budgets did not mo
 
 ### Drawing stitches
 
-One stitch scene is built from the plan and drawn by the same renderer in the app and headless (to
-PNG or PDF), in modes: threads, thin lines with their needle points, a range of stitches, one unit
-highlighted, the rest dimmed. Built from the plan, every stitch drawn maps back to its unit and its
-object. The layering is still to settle: `vectorcraft-render` and `vectorcraft-stitch` are both
-layer 3, so either `cargo xtask layers` lets `render` depend on `stitch` (which keeps depending on
-`geom` alone) or the engine builds the scene from the document's own drawing primitives.
+One stitch scene is built from the plan and drawn by the same renderer in the app and headless, in
+looks chosen when it is drawn: thread colours or others, laid widths or hairlines, a range of
+stitch numbers, units hidden or faded, jumps and cuts on or off. Built from the plan, every stitch
+drawn maps back to its unit and its object.
+
+**The layering (settled 2026-10-23).** `vectorcraft-render` draws *line pictures*
+(`render::lines`): polylines in colour slots with opaque tags, links between points and point
+marks, knowing nothing about stitches, so the renderer gains no dependency on `vectorcraft-stitch`
+and `cargo xtask layers` is unchanged. The engine builds the picture from the plan
+(`cmd::embroidery::scene`, below) and keeps beside it what its tags and slots mean.
+
+**The look** (the project owner's choices of 2026-10-22/23):
+- **Flat threads at their laid width:** 0.40 mm for 40 wt (`plan::THREAD_WIDTH`, where 40 wt rows
+  lie flush, the width an opened machine file's lines are drawn too), scaled by the thread's
+  thickness (`plan::thread_width`), never narrower than half a device pixel. In the colour of the
+  block's palette thread, what the machine gets (a VP3 file writes the art's colour instead: the
+  preview shows the palette thread for it too).
+- **An edge for a thread close to the fabric:** a colour within ΔE₀₀ 10 of the backdrop (the line
+  `thread::MISMATCH_DELTA_E` draws between colours that look alike and unlike) is drawn over an edge
+  one device pixel wider each side, mixed toward black or white until it reaches 3:1 against the
+  backdrop (WCAG's non-text contrast), so white thread on white fabric shows. A run's edges are all
+  drawn before its colour, so no edge shows between two pieces of one thread.
+- **Jumps and cuts shown, with a toggle:** a move after a cut as two-tone dashes (no thread lies
+  there), a move the thread lies along as a thin line in its colour with a contrasting halo, a × at
+  each cut and a square at each stop, at a fixed size on screen, in two tones the same in every
+  theme (one of them contrasts with any thread). No move is drawn between blocks: the machine
+  changes thread there.
+- Lines are stroked in sewing order with round joins and caps, later stitches over earlier ones.
+
+**How it is drawn** (`render::lines::LineRenderer`): a picture holds `f32` offsets from an `f64`
+origin, each point with its record number, in lines of at most 64 points that never cross units.
+Consecutive lines of one colour are batched into paths of at most 512 segments, each line culled by
+its box against the view; points a line passes straight through (within 2 µm) are left out when the
+whole design is drawn, which changes no pixel, and kept when a range of numbers is, so a range can
+end there. Geometry beyond the renderer's device limit is left out, and a cancelled frame stops
+between batches.
+
+**Measured first** (gate 1 of the stitch preview: `vectorcraft-cli perf --embroidery`, release
+build, 12-core Apple Silicon, load about 4, the median of five frames, twice; 2026-10-23). The
+pictures are built in code without the planner (`perf_embroidery::stitch_picture`: square tiles of
+fill rows 0.38 mm apart with 4 mm stitches, a 3 mm satin column advancing 0.2 mm and a running
+line, in twelve threads, a move between tiles, cut every fourth), drawn on a 2880 × 1800 canvas:
+
+| Row | Measured | Budget (estimate) |
+|---|---:|---:|
+| 10,000 stitches at fit, one thread (the web build has none) | 7.6 ms | 20 ms |
+| 100,000 at fit | 5.2 ms | 50 ms |
+| 100,000 zoomed in four times | 2.5 ms | 16 ms |
+| 500,000 at fit | 12.9 ms | 100 ms |
+| 2,000,000 at fit | 37 ms | 1 s |
+
+Every row is far within its budget, so the canvas draws the stitches whole, frame by frame; the
+cached stitch raster per zoom step that a slower drawing would have needed is not built. A sweep of
+the batch size (64, 128, 256, 512, 1,024, 4,096 segments and a whole run of one colour) changed no
+row beyond noise, so 512 stays; simplifying the round ends of threads under 1.5 px wide, the other
+lever the research proposed, isn't needed. `VECTORCRAFT_STITCH_SWEEP=1 vectorcraft-cli perf
+--embroidery` runs the sweep again, and `VECTORCRAFT_STITCH_PNG=<folder>` writes the 10,000-stitch
+picture at fit and zoomed in, to look at.
 
 ### One embroidery tool
 
@@ -1555,6 +1607,7 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-23 | minor | The stitch preview, in progress: stitches drawn as line pictures by the renderer (flat at the thread's laid width, an edge for threads close to the fabric, jumps and cuts marked), measured first. |
 | 2026-10-23 | minor | The review's fixes: VP3 trims written as long forms and read back as cuts; an opened design's start point, name, thread records and losses kept (overwriting its file asks first); closed lines locked; fill rows centred; the planner's and the planning service's speed (kept path-operation areas, a remembered refusal, a plan's own units kept); bobbin thread after Madeira; the results and check tables regenerated from the tests; contents, terms and this history added. |
 | 2026-10-22 | minor | The planning service (#17): units kept between plans, cancelling and progress; `embroidery.stats`, `sequence` and `check`. One option vocabulary, the expanded appearance sewn, the replies' vocabulary. |
 | 2026-10-22 | minor | New formats (#16): VP3, PEC on its own, TAP and T01. |

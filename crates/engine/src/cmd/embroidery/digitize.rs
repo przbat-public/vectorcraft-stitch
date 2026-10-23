@@ -463,9 +463,14 @@ impl<'a> Digitizer<'a> {
                     k.push(rule_word(rule));
                     Some(k)
                 };
-                let shaped = self.area(what, |d| {
-                    let (area, rule) = d.clipped(&region, rule);
-                    Shaped { area, rule, expanded_away: false }
+                // The outer region first, as it always was: the operation's path, not only its
+                // area, decides the stitches.
+                let shaped = self.area(what, |d| match &d.clip {
+                    Some(Clip { region: (outer, outer_rule), .. }) => {
+                        let both = boolean(&PathData::from_bezpath(outer), *outer_rule, &PathData::from_bezpath(&region), rule, BoolOp::Intersect);
+                        Shaped { area: both.to_bezpath(), rule: FillRule::NonZero, expanded_away: false }
+                    }
+                    None => Shaped { area: region.clone(), rule, expanded_away: false },
                 });
                 (shaped.area.clone(), shaped.rule)
             }

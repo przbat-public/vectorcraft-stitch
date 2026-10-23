@@ -3,5 +3,8 @@
 //!
 //! - [`numbers`]: numbers as the interface language writes them, in the embroidery interface's
 //!   read-only text.
+//! - [`text`]: the embroidery interface's words, in the catalogues' `embroidery` context
+//!   ([`crate::et!`], [`crate::etn!`]).
 
 pub mod numbers;
+pub mod text;

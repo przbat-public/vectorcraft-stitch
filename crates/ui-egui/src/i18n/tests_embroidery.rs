@@ -206,3 +206,134 @@ fn embroidery_export_dialog_is_translated() {
         assert!(untranslated.is_empty(), "{}: {untranslated:#?}", info.code);
     }
 }
+
+/// The strings the embroidery interface shows through `et!("…")` and the counts it shows through
+/// `etn!(n, "…", "…")` in this crate's sources (test files and inline test modules aside): what
+/// [`every_embroidery_string_is_translated`] checks.
+#[derive(Default)]
+struct EmbroideryText {
+    strings: std::collections::BTreeSet<String>,
+    plurals: std::collections::BTreeSet<(String, String)>,
+}
+
+/// Whether `code[..at]` ends a macro name of its own (not inside a longer name, such as `set!(`).
+fn starts_a_name(code: &str, at: usize) -> bool {
+    code[..at].chars().next_back().is_none_or(|c| !(c.is_ascii_alphanumeric() || c == '_'))
+}
+
+/// [`EmbroideryText`] of `source`, its comment lines left out (a doc comment may show the macros).
+fn embroidery_text_in(source: &str, out: &mut EmbroideryText) {
+    let code: String = source.lines().filter(|l| !l.trim_start().starts_with("//")).collect::<Vec<_>>().join("\n");
+    let code = code.as_str();
+    for (at, m) in code.match_indices("et!(\"") {
+        if starts_a_name(code, at)
+            && let Some(lit) = literal(&code[at + m.len()..])
+        {
+            out.strings.insert(lit);
+        }
+    }
+    for (at, m) in code.match_indices("etn!(") {
+        if !starts_a_name(code, at) {
+            continue;
+        }
+        let rest = &code[at + m.len()..];
+        // The count, then its two forms.
+        let Some(first) = rest.find('"') else { continue };
+        let Some(one) = literal(&rest[first + 1..]) else { continue };
+        let after = &rest[first + 1..];
+        let Some(end) = after.find('"').and_then(|e| after[e + 1..].find('"').map(|f| e + 1 + f)) else { continue };
+        let Some(other) = literal(&after[end + 1..]) else { continue };
+        out.plurals.insert((one, other));
+    }
+}
+
+/// [`EmbroideryText`] of every source file of this crate.
+fn embroidery_text() -> EmbroideryText {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut out = EmbroideryText::default();
+    let mut stack = vec![dir];
+    while let Some(d) = stack.pop() {
+        for entry in std::fs::read_dir(&d).into_iter().flatten().flatten() {
+            let path = entry.path();
+            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            if path.is_dir() {
+                stack.push(path);
+            } else if name.ends_with(".rs") && !name.starts_with("tests") {
+                let text = std::fs::read_to_string(&path).unwrap_or_default();
+                embroidery_text_in(text.split("#[cfg(test)]").next().unwrap_or(""), &mut out);
+            }
+        }
+    }
+    out
+}
+
+/// How many plural forms `info`'s rule tells apart.
+fn plural_forms(info: &LangInfo) -> usize {
+    let forms: std::collections::BTreeSet<usize> = (0..=1000u64).map(info.plural).collect();
+    forms.len()
+}
+
+/// Every string the embroidery interface shows has its `embroidery` row, and every count its
+/// `@plural` row with as many forms as the language has, in each catalogue that claims complete
+/// menus: a missing row would show English (the lookup is strict).
+#[test]
+fn every_embroidery_string_is_translated() {
+    let text = embroidery_text();
+    let context = crate::embroidery::text::CONTEXT;
+    for info in LANGUAGES.iter().filter(|l| l.complete_menus) {
+        let cat = info.catalog();
+        let missing: Vec<&String> = text.strings.iter().filter(|s| cat.contextual(context, s).is_none()).collect();
+        assert!(missing.is_empty(), "{}: {} untranslated embroidery strings: {missing:#?}", info.code, missing.len());
+        let (entries, _) = super::catalog::parse_entries(info.source);
+        for (one, other) in &text.plurals {
+            let key = format!("{one}|{other}");
+            let row = entries.iter().find(|(ctx, src, _)| ctx == "@plural" && *src == key);
+            let forms = row.map(|(_, _, tr)| tr.split('|').count());
+            assert_eq!(forms, Some(plural_forms(info)), "{}: the plural row of {key:?}", info.code);
+        }
+    }
+}
+
+/// Every `embroidery` row keeps its source's ellipsis (upstream's consistency test checks plain
+/// rows only).
+#[test]
+fn embroidery_rows_keep_their_ellipsis() {
+    let context = crate::embroidery::text::CONTEXT;
+    for info in LANGUAGES.iter().filter(|l| !l.source.is_empty()) {
+        let (entries, _) = super::catalog::parse_entries(info.source);
+        for (_, src, tr) in entries.iter().filter(|(ctx, _, _)| ctx == context) {
+            assert_eq!(src.ends_with('…'), tr.ends_with('…'), "{}: ellipsis in {src:?}", info.code);
+        }
+    }
+}
+
+/// The embroidery interface's files show their strings through `et!` and `etn!`, never `tl!`,
+/// whose plain rows may mean something else ("Art" is the Art brush).
+#[test]
+fn the_embroidery_interface_never_uses_plain_rows() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src").join("embroidery");
+    let mut stack = vec![dir];
+    while let Some(d) = stack.pop() {
+        for entry in std::fs::read_dir(&d).into_iter().flatten().flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+            } else if path.extension().is_some_and(|e| e == "rs") {
+                let text = std::fs::read_to_string(&path).unwrap_or_default();
+                let code = text.split("#[cfg(test)]").next().unwrap_or("");
+                let plain = code.match_indices("tl!(").any(|(at, _)| starts_a_name(code, at));
+                assert!(!plain, "{} shows a string through tl!", path.display());
+            }
+        }
+    }
+}
+
+/// The scan finds what the macros are given, and nothing inside longer names.
+#[test]
+fn the_embroidery_text_scan_reads_both_macros() {
+    let mut out = EmbroideryText::default();
+    let code = "/// crate::et!(\"Comment\")\nlet a = crate::et!(\"Stitches\"); set!(\"no\");\ncrate::etn!(\n    n as u64,\n    \"{count} stitch\",\n    \"{count} stitches\"\n);";
+    embroidery_text_in(code, &mut out);
+    assert_eq!(out.strings.iter().collect::<Vec<_>>(), ["Stitches"]);
+    assert_eq!(out.plurals.iter().collect::<Vec<_>>(), [&("{count} stitch".to_string(), "{count} stitches".to_string())]);
+}

@@ -368,7 +368,19 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   - `io.rs` and the engine's `fileio/export.rs`: `view::note_export` before an export is written;
   - the engine's `lib.rs`: the `pub use` of `StitchView`, `PlanKey` and `Planned`;
   - `render/src/lib.rs`: `pub mod lines`; `testkit/src/lib.rs`: `pub mod embroidery`;
-    `vectorcraft-cli`'s `main.rs`: `bench` prints the preview's line.
+    `vectorcraft-cli`'s `main.rs`: `bench` prints the preview's line;
+  - `apps/vectorcraft/src/prefs_dir.rs`: `mod stitch_profile`; `profile.rs`'s `prefs_path`: the
+    path passed through `stitch_profile::own` (the fork's settings folder).
+- **The settings folder:** the fork keeps `ui.json` and the folders beside it (Swatches, Fonts,
+  Data Recovery, logs and the rest) in `VectorCraft Stitch` (`vectorcraft-stitch` on Linux) beside
+  upstream's `VectorCraft`, wherever upstream's docs name VectorCraft's folder; the first start
+  copies VectorCraft's settings into it, all but its logs and Data Recovery copies
+  (`apps/vectorcraft/src/stitch_profile.rs`, the project owner's choice). Upstream's own
+  `VECTORCRAFT_CONFIG_DIR`, portable and DrawCraft folders are kept as they are. The reason:
+  upstream's `panel_docking::valid` resets a dock layout holding a panel it doesn't know, so a
+  shared `ui.json` would lose the person's layout in both apps once the Embroidery panel is docked.
+  Upstream dropping the unknown ids instead of the layout would let them share it again (a proposal
+  for upstream, not filed).
 - **Files saved by upstream VectorCraft:** upstream keeps the document's `embroidery` settings it
   doesn't know (in `Document::extra`) but drops every object's (`NodeWire` keeps no unknown keys),
   so a design opened from a machine file, saved by upstream and opened here again, is art: its

@@ -7,9 +7,9 @@
 //! - **Where it goes.** The first Window › Embroidery docks it as the last tab of the group holding
 //!   Properties, Layers and Libraries, as the mockups draw it (the project owner's choice), turning
 //!   the dock into the shared layout once; after that it shows where the person left it. It is no
-//!   `DockTab`: the preferences file is shared with upstream VectorCraft, which would refuse one it
-//!   doesn't know. It has no icon in the collapsed icon column (its icon shows on its collapsed
-//!   tab).
+//!   `DockTab`, so the preferences keep upstream's shape; they live in the fork's own folder, since
+//!   upstream resets a layout holding a panel it doesn't know (`apps/vectorcraft/src/stitch_profile.rs`).
+//!   It has no icon in the collapsed icon column (its icon shows on its collapsed tab).
 //! - **States**: no document; not planned yet (blank for [`SHOW_BUSY_AFTER_SECS`]); planning;
 //!   nothing to sew; can't be planned (the reason; the last good result stays when there is one);
 //!   ready; updating (the last result, and "Updating…" once the newer one takes a while).

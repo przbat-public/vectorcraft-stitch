@@ -6,6 +6,9 @@ use std::path::PathBuf;
 
 #[path = "profile.rs"]
 mod profile;
+// VectorCraft Stitch: its own settings folder.
+#[path = "stitch_profile.rs"]
+mod stitch_profile;
 
 /// The settings file `ui.json` of the app `name`: in a folder named `name` in ~/Library/Application
 /// Support (macOS) or %APPDATA% (Windows), or `lower` in $XDG_CONFIG_HOME or ~/.config (Linux and

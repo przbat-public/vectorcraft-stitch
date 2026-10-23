@@ -25,7 +25,9 @@ pub const PORTABLE_MARKERS: [&str; 2] = ["portable.txt", "VectorCraft.portable"]
 pub const PORTABLE_DATA_DIR: &str = "VectorCraftData";
 
 pub fn prefs_path(legacy: bool) -> Option<PathBuf> {
-    prefs_path_with(std::env::consts::OS, legacy, |key| std::env::var_os(key), portable_dir)
+    let path = prefs_path_with(std::env::consts::OS, legacy, |key| std::env::var_os(key), portable_dir);
+    // VectorCraft Stitch: the platform folder is its own, first made from a copy of VectorCraft's.
+    super::stitch_profile::own(path, platform_dir(std::env::consts::OS, false, &|key: &str| std::env::var_os(key)))
 }
 
 /// `portable` is the portable settings folder, if any: only asked for when no override is set and

@@ -265,6 +265,47 @@ fn the_keyboard_folds_blocks_and_walks_the_rows() {
     assert!(app.embroidery.order.scrolled > 0.0, "brought into view");
 }
 
+/// A row's words keep to the room they have: a long name stops short of the stitch count, cut with
+/// "…", and a lit row's second line short of its Sew Earlier and Sew Later buttons.
+#[test]
+fn a_rows_words_keep_to_their_room() {
+    let mut app = app_with(2);
+    let ctx = egui::Context::default();
+    ready(&mut app, &ctx);
+    let first = order_of(&app).blocks[0].units[0].id;
+    let long = "A very long name for one small square of red thread ".repeat(4);
+    app.run("layer.setProps", json!({"id": first, "name": long.trim()})).unwrap();
+    app.run("select.set", json!({"ids": [first]})).unwrap();
+    let raw = egui::RawInput {
+        time: Some(1.0),
+        screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(320.0, 700.0))),
+        ..Default::default()
+    };
+    let mut shapes = vec![];
+    for t in [1.0, 1.05, 1.1] {
+        let mut out = ctx.run_ui(egui::RawInput { time: Some(t), ..raw.clone() }, |ui| {
+            super::super::show(&mut app, ui);
+            stitch_preview::schedule(&mut app, ui.ctx());
+        });
+        out.textures_delta.clear();
+        shapes = out.shapes.into_iter().map(|c| c.shape).collect::<Vec<_>>();
+    }
+    let mut texts = vec![];
+    while let Some(s) = shapes.pop() {
+        match s {
+            Shape::Vec(v) => shapes.extend(v),
+            Shape::Text(t) => texts.push(t),
+            _ => {}
+        }
+    }
+    let r = app.embroidery.order.list_rect.unwrap();
+    let name = texts.iter().find(|t| t.galley.text().starts_with("A very long name")).expect("the name drawn");
+    assert!(name.pos.x + name.galley.size().x < r.right() - ROW_END_PAD, "the name stops short: {:?}", name.galley.rect);
+    assert!(name.galley.rows.len() == 1, "on one line");
+    let how = texts.iter().find(|t| t.galley.text().starts_with("fill") && t.pos.y > name.pos.y).expect("the second line drawn");
+    assert!(how.pos.x + how.galley.size().x < r.right() - STEP_BUTTONS_FROM_RIGHT - STEP_BUTTON / 2.0, "short of the buttons");
+}
+
 #[test]
 fn a_header_collapses() {
     let mut app = app_with(4);

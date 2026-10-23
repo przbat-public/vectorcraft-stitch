@@ -63,8 +63,18 @@ const AUTO_SCROLL_EDGE: f32 = 24.0;
 const AUTO_SCROLL_MAX: f32 = 600.0;
 /// The longest frame time a scroll step counts, seconds: a stalled frame doesn't jump the list.
 const MAX_SCROLL_STEP_SECS: f32 = 0.05;
-/// The Sew Earlier and Sew Later buttons' side, points.
+/// The Sew Earlier and Sew Later buttons' side, how far the first one's centre sits from the row's
+/// right end, and from one centre to the next, points.
 const STEP_BUTTON: f32 = 14.0;
+const STEP_BUTTONS_FROM_RIGHT: f32 = 54.0;
+const STEP_BUTTON_PITCH: f32 = 20.0;
+/// Where a unit row's two lines sit, as shares of its height: its name and stitches, then how it
+/// is sewn.
+const UNIT_FIRST_LINE: f32 = 0.3;
+const UNIT_SECOND_LINE: f32 = 0.72;
+/// The room a row's words leave at its right end, and between two words on a line, points.
+const ROW_END_PAD: f32 = 6.0;
+const WORD_GAP: f32 = 6.0;
 /// The sizes of the rows' words, points: the interface's text and its small text.
 const TEXT: f32 = 12.0;
 const SMALL: f32 = 11.0;
@@ -478,7 +488,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                             .enumerate()
                     {
                         let button = Rect::from_center_size(
-                            pos2(rect.right() - 54.0 + 20.0 * k as f32, rect.top() + UNIT_ROW * 0.72),
+                            pos2(rect.right() - STEP_BUTTONS_FROM_RIGHT + STEP_BUTTON_PITCH * k as f32, rect.top() + UNIT_ROW * UNIT_SECOND_LINE),
                             vec2(STEP_BUTTON, STEP_BUTTON),
                         );
                         let b = ui.interact(button, id.with(k), Sense::click()).on_hover_text(tip);
@@ -758,17 +768,20 @@ fn paint_row(
             let (Some(block), Some(unit)) = (order.blocks.get(b), order.blocks.get(b).and_then(|b| b.units.get(u))) else { return String::new() };
             let name = doc.node(NodeId(unit.id)).map_or_else(|| format!("#{}", unit.id), |n| crate::panels::layers::shown_name(app, n, lang));
             let x = rect.left() + INDENT;
-            let top = rect.top() + UNIT_ROW * 0.3;
-            let bottom = rect.top() + UNIT_ROW * 0.72;
-            // Rows of one object that follow each other show its name once.
+            let top = rect.top() + UNIT_ROW * UNIT_FIRST_LINE;
+            let bottom = rect.top() + UNIT_ROW * UNIT_SECOND_LINE;
+            let stitches = numbers::count(lang, unit.stitches as u64);
+            let count = p.text(pos2(rect.right() - ROW_END_PAD, top), Align2::RIGHT_CENTER, &stitches, FontId::proportional(SMALL), ink(t.text));
+            // Rows of one object that follow each other show its name once; a long name stops short
+            // of the stitch count, cut with "…".
             let same = u > 0 && block.units.get(u - 1).is_some_and(|before| before.id == unit.id);
             if !same {
-                p.text(pos2(x, top), Align2::LEFT_CENTER, &name, FontId::proportional(TEXT), ink(t.text));
+                one_line(&p, &name, FontId::proportional(TEXT), ink(t.text), pos2(x, top), count.left() - WORD_GAP - x);
             }
-            let stitches = numbers::count(lang, unit.stitches as u64);
-            p.text(pos2(rect.right() - 6.0, top), Align2::RIGHT_CENTER, &stitches, FontId::proportional(SMALL), ink(t.text));
+            // How it is sewn, short of the Sew Earlier and Sew Later buttons a lit row has.
             let how = how_sewn(unit, listed.several(b, u));
-            p.text(pos2(x, bottom), Align2::LEFT_CENTER, &how, FontId::proportional(SMALL), ink(t.text_dim));
+            let end = if selected { rect.right() - STEP_BUTTONS_FROM_RIGHT - STEP_BUTTON / 2.0 - WORD_GAP } else { rect.right() - ROW_END_PAD };
+            one_line(&p, &how, FontId::proportional(SMALL), ink(t.text_dim), pos2(x, bottom), end - x);
             format!("{name} {how} {stitches}")
         }
         Row::Change(b) => {
@@ -802,6 +815,15 @@ fn hex(s: &str) -> Option<Color32> {
     let s = s.strip_prefix('#')?;
     let v = u32::from_str_radix(s, 16).ok().filter(|_| s.len() == 6)?;
     Some(Color32::from_rgb((v >> 16) as u8, (v >> 8) as u8, v as u8))
+}
+
+/// Draw `text` from `at` (its left middle) on one line at most `width` points wide, cut short with
+/// "…" past it.
+fn one_line(p: &egui::Painter, text: &str, font: FontId, color: Color32, at: egui::Pos2, width: f32) {
+    let mut job = egui::text::LayoutJob::simple_singleline(text.to_string(), font, color);
+    job.wrap = egui::text::TextWrapping { max_width: width.max(0.0), max_rows: 1, break_anywhere: true, overflow_character: Some('…') };
+    let galley = p.layout_job(job);
+    p.galley(at - vec2(0.0, galley.size().y / 2.0), galley, color);
 }
 
 /// A unit's second line: what part it sews (its number when the object has more than one of that

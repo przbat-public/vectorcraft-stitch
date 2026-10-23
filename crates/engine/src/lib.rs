@@ -1538,7 +1538,11 @@ impl Session {
         // Closed (saved or discarded): nothing left to recover.
         let uid = self.docs[index].uid;
         cmd::recovery::forget(self, uid);
-        self.embroidery_plans.forget(uid);
+        // VectorCraft Stitch: its stitch planning, view and export's options go with it; in a
+        // batch, once the batch succeeds (a failed one brings the document back with them).
+        if self.batch_stash.is_none() {
+            self.embroidery_plans.forget(uid);
+        }
         let old = self.docs.remove(index);
         if let Some(stash) = &mut self.batch_stash {
             stash.push(old);

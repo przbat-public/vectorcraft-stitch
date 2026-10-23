@@ -35,6 +35,11 @@ pub(super) fn batch(s: &mut Session, p: &Value) -> Result<Value> {
             return Err(e);
         }
     };
+    // VectorCraft Stitch: a document the steps closed (and that stays closed) loses its stitch
+    // planning, view and export's options now that the batch holds.
+    for closed in stash.iter().filter(|c| !s.docs.iter().any(|d| d.uid == c.uid)) {
+        s.embroidery_plans.forget(closed.uid);
+    }
     // Each document the steps edited keeps them as one undo step.
     s.remember_pending_paint();
     for st in &mut s.docs {

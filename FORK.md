@@ -367,7 +367,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     arms, its height, its `ICON_PANELS` row and `UiState::embroidery_panel`, its icon
     (`assets/icons/dc-embroidery.svg`, a row in `ASSETS.md`);
   - `io.rs` and the engine's `fileio/export.rs`: `view::note_export` before an export is written;
-  - the engine's `lib.rs`: the `pub use` of `StitchView`, `PlanKey` and `Planned`;
+  - the engine's `lib.rs`: the `pub use` of `StitchView`, `PlanKey` and `Planned`, and in
+    `close_document` the closed document's planning forgotten (in a batch, by `fileio/batch.rs`
+    once the batch holds; its `roll_back` forgets a document the batch opened);
   - `render/src/lib.rs`: `pub mod lines`; `testkit/src/lib.rs`: `pub mod embroidery`;
     `vectorcraft-cli`'s `main.rs`: `bench` prints the preview's line;
   - `apps/vectorcraft/src/prefs_dir.rs`: `mod stitch_profile`; `profile.rs`'s `prefs_path`: the

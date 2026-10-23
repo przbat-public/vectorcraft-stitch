@@ -23,7 +23,7 @@ mod check;
 pub(crate) mod digitize;
 mod measure;
 pub(crate) mod options;
-mod order;
+pub mod order;
 pub mod plan;
 mod printed;
 pub mod render;

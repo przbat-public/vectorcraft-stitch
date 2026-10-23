@@ -505,8 +505,8 @@ fn a_snapshot_with_the_same_options_is_planned_once() {
     // Other options: another plan.
     let satin = Options::from_params(&json!({"stitchStyle": "satin"}), "test").unwrap();
     assert_ne!(*service.plan(Of::whole(&doc), &doc, &satin).unwrap(), *first);
-    // Through the commands: three in a row walk the document once; an edit, and its undo (an
-    // earlier snapshot), walk it again.
+    // Through the commands: three in a row walk the document once; an edit walks it again, and
+    // its undo (the earlier snapshot, whose plan is still remembered) doesn't.
     let uid = s.doc().unwrap().uid;
     for _ in 0..3 {
         run(&mut s, "embroidery.threads", json!({}));
@@ -518,7 +518,79 @@ fn a_snapshot_with_the_same_options_is_planned_once() {
     run(&mut s, "edit.undo", json!({}));
     run(&mut s, "embroidery.threads", json!({}));
     run(&mut s, "embroidery.threads", json!({}));
-    assert_eq!(service.walks(), 3);
+    assert_eq!(service.walks(), 2);
+}
+
+/// A service remembers its last few plans: the most recently used are kept, the least recently
+/// used beyond `MAX_MEMOS` go, and so do those of snapshots no longer held.
+#[test]
+fn a_service_remembers_its_last_few_plans() {
+    use super::service::MAX_MEMOS;
+    let (s, _) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: None }]);
+    let doc = s.doc().unwrap().doc.clone();
+    let service = PlanService::default();
+    let options: Vec<Options> = (0..=MAX_MEMOS).map(options_at).collect();
+    for o in &options {
+        service.plan(Of::whole(&doc), &doc, o).unwrap();
+    }
+    assert_eq!((service.walks(), service.memos()), (MAX_MEMOS + 1, MAX_MEMOS));
+    // The newest are still remembered, the oldest is planned again.
+    service.plan(Of::whole(&doc), &doc, &options[MAX_MEMOS]).unwrap();
+    service.plan(Of::whole(&doc), &doc, &options[1]).unwrap();
+    assert_eq!(service.walks(), MAX_MEMOS + 1);
+    service.plan(Of::whole(&doc), &doc, &options[0]).unwrap();
+    assert_eq!(service.walks(), MAX_MEMOS + 2);
+    // A snapshot no longer held: its plans go when the next is remembered.
+    let copy = Arc::new((*doc).clone());
+    service.plan(Of::whole(&copy), &copy, &options[0]).unwrap();
+    drop(copy);
+    let other = Arc::new((*doc).clone());
+    service.plan(Of::whole(&other), &other, &options[0]).unwrap();
+    assert!(service.memos() <= MAX_MEMOS);
+}
+
+/// Each plan made has a generation of its own; reading a remembered plan gives the same one, and
+/// its scene is built once and shared.
+#[test]
+fn each_plan_has_a_generation_and_its_scene_is_built_once() {
+    let (s, _) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: Some((1, 4.0)) }]);
+    let doc = s.doc().unwrap().doc.clone();
+    let service = PlanService::default();
+    let opts = Options::default();
+    let first = service.planned(Of::whole(&doc), &doc, &opts).unwrap();
+    assert!(first.built_scene().is_none(), "built when asked for");
+    let again = service.planned(Of::whole(&doc), &doc, &opts).unwrap();
+    assert_eq!(first.generation, again.generation);
+    assert!(Arc::ptr_eq(&first.scene(), &again.scene()), "one scene for one plan");
+    assert!(again.built_scene().is_some());
+    let copy = Arc::new((*doc).clone());
+    let other = service.planned(Of::whole(&copy), &copy, &opts).unwrap();
+    assert!(other.generation > first.generation, "another snapshot: another plan, a later generation");
+    assert!(!Arc::ptr_eq(&first.scene(), &other.scene()));
+    assert!(first.plan.byte_size() > 0);
+}
+
+/// The planner's latest plan never plans; a plan key tells whether a plan is of the document as it
+/// is: a selection doesn't change it, an edit and other options do.
+#[test]
+fn the_latest_plan_never_plans_and_a_key_follows_the_document() {
+    let (mut s, ids) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: None }]);
+    let opts = Options::default();
+    let planner = s.embroidery_planner().unwrap();
+    let uid = s.doc().unwrap().uid;
+    assert!(planner.latest(&opts).is_none());
+    assert_eq!(s.embroidery_plans.of(uid).walks(), 0);
+    let planned = planner.planned(&opts).unwrap();
+    assert_eq!(planner.latest(&opts).unwrap().unwrap().generation, planned.generation);
+    let key = s.embroidery_plan_key(&opts).unwrap();
+    assert_eq!(key, planner.key(&opts));
+    assert!(key.is_of(&s.doc().unwrap().doc) && key.uid() == uid);
+    run(&mut s, "select.set", json!({"ids": [ids[0]]}));
+    assert_eq!(s.embroidery_plan_key(&opts).unwrap(), key, "a selection plans nothing new");
+    assert_ne!(s.embroidery_plan_key(&options_at(2)).unwrap(), key, "other options");
+    run(&mut s, "object.move", json!({"ids": [ids[0]], "dx": 5, "dy": 0}));
+    assert_ne!(s.embroidery_plan_key(&opts).unwrap(), key, "an edit");
+    assert_eq!(s.embroidery_plans.of(uid).walks(), 1);
 }
 
 /// Five objects of two colours, side by side: seven units (each fill, and two strokes).

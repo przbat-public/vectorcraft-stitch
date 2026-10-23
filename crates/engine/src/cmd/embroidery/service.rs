@@ -2,13 +2,20 @@
 //! its stitch plan and keeps each sewing unit's stitches between plans ([`UnitCache`]), so that a
 //! plan after an edit plans again only the units the edit changed.
 //!
-//! It also remembers its last plan, of which snapshot of the document and with which options: a
-//! document snapshot (`Arc<Document>`, shared with the undo history) never changes, so the same
-//! snapshot with the same options has the same plan, and the commands that read a design one
-//! after another (`embroidery.threads`, and the statistics, sewing order and checks) and the app's
-//! planner plan it once. The document planned may be cut from the snapshot (the selected objects
-//! alone, or without an opacity mask's editing layer): the plan is remembered by the snapshot and
-//! the selection it was cut to ([`Of`]), not by the copy, which is made anew each time.
+//! It also remembers its last few plans ([`MAX_MEMOS`], within [`MAX_MEMO_BYTES`]), each of which
+//! snapshot of the document and with which options: a document snapshot (`Arc<Document>`, shared
+//! with the undo history) never changes, so the same snapshot with the same options has the same
+//! plan, and the commands that read a design one after another (`embroidery.threads`, and the
+//! statistics, sewing order and checks) and the app's planner plan it once. Several are kept so that
+//! the stitch preview's plan, a command's with other options and an undo back to the last snapshot
+//! don't push one another out. The document planned may be cut from the snapshot (the selected
+//! objects alone, or without an opacity mask's editing layer): a plan is remembered by the snapshot
+//! and the selection it was cut to ([`Of`]), not by the copy, which is made anew each time.
+//!
+//! Each plan made gets a generation, a number no other plan of the process has
+//! ([`Planned::generation`]): what is drawn from it (its stitch scene, built once on first request
+//! and remembered with it) is keyed by that number, never by the document's revision, which also
+//! moves when the selection does.
 //!
 //! A plan can be cancelled ([`vectorcraft_doc::cancel`]): it stops before the next unit (or within
 //! a fill's search for its narrow parts) with [`PlanError::Cancelled`] and leaves no plan, while
@@ -17,7 +24,8 @@
 //! on theirs; commands and the web build plan synchronously.
 
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex, OnceLock, Weak};
 
 use vectorcraft_doc::{Document, NodeId};
 
@@ -25,7 +33,22 @@ use super::Options;
 use super::cache::UnitCache;
 use super::digitize::digitize;
 use super::plan::DesignPlan;
+use super::scene::{StitchScene, scene};
 use super::unit::PlanError;
+
+/// The most plans a service remembers: the stitch preview's, a read command's with other options
+/// or of the selection alone, an agent's, and the snapshot before the last edit (an undo). An
+/// estimate.
+pub const MAX_MEMOS: usize = 4;
+
+/// The most bytes the plans a service remembers, and their scenes, may hold together, beyond the
+/// newest (which is always kept): at the 2-million-stitch limit a plan holds about 50 MB and its
+/// scene 20 MB (24 and 10 bytes a record, research for the stitch preview), so about three of
+/// those. An estimate.
+pub const MAX_MEMO_BYTES: usize = 256 << 20;
+
+/// The generation the next plan made gets: one counter for the process, so no two plans share one.
+static NEXT_GENERATION: AtomicU64 = AtomicU64::new(1);
 
 /// What a plan is of: a document snapshot, cut to the selected objects when `selection` lists
 /// them (empty: all of it). The document planned is made from these alone (and without an opacity
@@ -56,14 +79,61 @@ struct Memo {
     selection: Vec<NodeId>,
     opts: Options,
     fonts: u64,
-    plan: Result<Arc<DesignPlan>, PlanError>,
+    plan: Result<Planned, PlanError>,
+    /// About how many bytes the plan holds (its scene's are counted once it is built).
+    bytes: usize,
 }
 
-/// One document's planning: its units' stitches kept between plans, and its last plan.
+impl Memo {
+    fn of(&self, of: Of<'_>, opts: &Options, fonts: u64) -> bool {
+        std::ptr::eq(self.snapshot.as_ptr(), Arc::as_ptr(of.snapshot)) && self.selection == of.selection && self.opts == *opts && self.fonts == fonts
+    }
+
+    /// The bytes it holds, its scene's included once built.
+    fn held(&self) -> usize {
+        self.bytes + self.plan.as_ref().ok().and_then(|p| p.scene.get()).map_or(0, |s| s.byte_size())
+    }
+}
+
+/// A plan as the service remembers it: the plan, its generation (a number no other plan of the
+/// process has, which what is drawn from it is keyed by), and its stitch scene, built once on
+/// first request ([`Planned::scene`]).
+#[derive(Clone, Debug)]
+pub struct Planned {
+    pub plan: Arc<DesignPlan>,
+    pub generation: u64,
+    scene: Arc<OnceLock<Arc<StitchScene>>>,
+}
+
+impl Planned {
+    fn new(plan: Arc<DesignPlan>) -> Self {
+        Self { plan, generation: NEXT_GENERATION.fetch_add(1, Ordering::Relaxed), scene: Arc::default() }
+    }
+
+    /// The plan's stitch scene, built the first time it is asked for (on the asking thread, outside
+    /// the service's locks) and remembered with the plan.
+    pub fn scene(&self) -> Arc<StitchScene> {
+        self.scene.get_or_init(|| Arc::new(scene(&self.plan))).clone()
+    }
+
+    /// The scene when it has been built already.
+    pub fn built_scene(&self) -> Option<Arc<StitchScene>> {
+        self.scene.get().cloned()
+    }
+}
+
+impl PartialEq for Planned {
+    fn eq(&self, other: &Self) -> bool {
+        self.generation == other.generation
+    }
+}
+
+/// One document's planning: its units' stitches kept between plans, and its last plans.
 #[derive(Default)]
 pub(crate) struct PlanService {
     units: Mutex<UnitCache>,
-    last: Mutex<Option<Memo>>,
+    /// The plans remembered, the most recently used last.
+    memos: Mutex<Vec<Memo>>,
     /// How many times it walked a document (the tests count plans made).
     #[cfg(test)]
     walks: std::sync::atomic::AtomicUsize,
@@ -75,31 +145,57 @@ impl PlanService {
     /// from those kept where nothing it is planned from has changed, and kept for the next plan.
     /// The same as a fresh plan ([`super::digitize::digitize`]).
     pub(crate) fn plan(&self, of: Of<'_>, doc: &Document, opts: &Options) -> Result<Arc<DesignPlan>, PlanError> {
+        self.planned(of, doc, opts).map(|p| p.plan)
+    }
+
+    /// [`PlanService::plan`], with the plan's generation and scene.
+    pub(crate) fn planned(&self, of: Of<'_>, doc: &Document, opts: &Options) -> Result<Planned, PlanError> {
         let fonts = vectorcraft_text::FontDb::global().generation();
         if let Some(plan) = self.remembered(of, opts, fonts) {
             return plan;
         }
         #[cfg(test)]
         self.walks.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let plan = digitize(doc, opts, Some(&self.units)).map(Arc::new);
-        // A memo that a panic elsewhere left locked is passed by: the next plan walks again.
-        if plan.as_ref().err() != Some(&PlanError::Cancelled)
-            && let Ok(mut last) = self.last.lock()
-        {
+        let plan = digitize(doc, opts, Some(&self.units)).map(|p| Planned::new(Arc::new(p)));
+        if plan.as_ref().err() != Some(&PlanError::Cancelled) {
+            let bytes = plan.as_ref().map_or(0, |p| p.plan.byte_size());
             let snapshot = Arc::downgrade(of.snapshot);
-            *last = Some(Memo { snapshot, selection: of.selection.to_vec(), opts: opts.clone(), fonts, plan: plan.clone() });
+            self.remember(Memo { snapshot, selection: of.selection.to_vec(), opts: opts.clone(), fonts, plan: plan.clone(), bytes });
         }
         plan
     }
 
-    /// The last plan (or why there is none), when it was of snapshot `doc` with `opts` and the
-    /// fonts of generation `fonts`. A snapshot held only weakly can't be mistaken for another made
-    /// since: its memory isn't reused while a weak reference is held.
-    pub(super) fn remembered(&self, of: Of<'_>, opts: &Options, fonts: u64) -> Option<Result<Arc<DesignPlan>, PlanError>> {
-        let last = self.last.lock().ok()?;
-        let memo = last.as_ref()?;
-        let same = std::ptr::eq(memo.snapshot.as_ptr(), Arc::as_ptr(of.snapshot)) && memo.selection == of.selection;
-        (same && memo.opts == *opts && memo.fonts == fonts).then(|| memo.plan.clone())
+    /// Keep `memo` as the most recent, dropping the plans of snapshots gone (no plan of theirs can
+    /// be asked for again), and the least recently used beyond [`MAX_MEMOS`] or
+    /// [`MAX_MEMO_BYTES`]. A memo list that a panic elsewhere left locked is passed by: the next
+    /// plan walks again.
+    fn remember(&self, memo: Memo) {
+        let Ok(mut memos) = self.memos.lock() else { return };
+        memos.retain(|m| {
+            m.snapshot.strong_count() > 0 && !(m.snapshot.ptr_eq(&memo.snapshot) && m.selection == memo.selection && m.opts == memo.opts)
+        });
+        memos.push(memo);
+        while memos.len() > MAX_MEMOS || (memos.len() > 1 && memos.iter().map(Memo::held).sum::<usize>() > MAX_MEMO_BYTES) {
+            memos.remove(0);
+        }
+    }
+
+    /// The plan remembered (or why there is none) of snapshot `of` with `opts` and the fonts of
+    /// generation `fonts`, made the most recently used. A snapshot held only weakly can't be
+    /// mistaken for another made since: its memory isn't reused while a weak reference is held.
+    pub(super) fn remembered(&self, of: Of<'_>, opts: &Options, fonts: u64) -> Option<Result<Planned, PlanError>> {
+        let mut memos = self.memos.lock().ok()?;
+        let at = memos.iter().position(|m| m.of(of, opts, fonts))?;
+        let memo = memos.remove(at);
+        let plan = memo.plan.clone();
+        memos.push(memo);
+        Some(plan)
+    }
+
+    /// How many plans are remembered.
+    #[cfg(test)]
+    pub(crate) fn memos(&self) -> usize {
+        self.memos.lock().map_or(0, |m| m.len())
     }
 
     /// A service whose cache holds at most `limit` stitches (small, in tests that drop units).

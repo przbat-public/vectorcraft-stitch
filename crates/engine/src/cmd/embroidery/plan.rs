@@ -304,6 +304,16 @@ impl DesignPlan {
         self.blocks.iter().map(|b| b.stitches.len()).sum()
     }
 
+    /// About how many bytes it holds: its units (their runs included) and its blocks' stitches, as
+    /// allocated (the planning service bounds what it remembers by this).
+    pub fn byte_size(&self) -> usize {
+        let units: usize = self.units.iter().map(|u| std::mem::size_of::<Unit>() + u.runs.capacity() * std::mem::size_of::<Range<usize>>()).sum();
+        let blocks: usize =
+            self.blocks.iter().map(|b| std::mem::size_of::<ThreadBlock>() + b.stitches.capacity() * std::mem::size_of::<Stitch>()).sum();
+        let words: usize = self.warnings.iter().chain(&self.notes).map(String::capacity).sum();
+        std::mem::size_of::<Self>() + self.units.capacity().saturating_sub(self.units.len()) * std::mem::size_of::<Unit>() + units + blocks + words
+    }
+
     /// Everything the export and the read commands say about the plan: its notes, then its
     /// warnings.
     pub fn messages(&self) -> Vec<String> {

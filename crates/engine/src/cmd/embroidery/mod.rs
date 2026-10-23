@@ -66,6 +66,7 @@ use self::stats::Page;
 use super::*;
 
 pub use options::Options;
+pub use service::Planned;
 pub(crate) use service::Services;
 pub(crate) use unit::PlanError;
 
@@ -76,17 +77,75 @@ pub(crate) use unit::PlanError;
 /// cancelled as a command is ([`crate::cancel`]).
 #[derive(Clone)]
 pub struct Planner {
+    uid: u64,
     service: Arc<service::PlanService>,
     snapshot: Arc<Document>,
     doc: Arc<Document>,
 }
 
+/// What a plan is of: one open document's snapshot (held weakly, so a key never keeps a document
+/// alive, and its memory can't be reused for another snapshot while the key is held), the options,
+/// and the fonts' generation (a text clipping path is outlined with the fonts installed). Two keys
+/// are equal when a plan of one is a plan of the other. Cheap to make every frame: nothing is
+/// planned or copied.
+#[derive(Clone, Debug)]
+pub struct PlanKey {
+    uid: u64,
+    snapshot: std::sync::Weak<Document>,
+    opts: Options,
+    fonts: u64,
+}
+
+impl PlanKey {
+    fn new(uid: u64, snapshot: &Arc<Document>, opts: &Options) -> Self {
+        Self { uid, snapshot: Arc::downgrade(snapshot), opts: opts.clone(), fonts: vectorcraft_text::FontDb::global().generation() }
+    }
+
+    /// The open document it is of ([`crate::DocState::uid`]).
+    pub fn uid(&self) -> u64 {
+        self.uid
+    }
+
+    /// Whether it is of snapshot `doc`.
+    pub fn is_of(&self, doc: &Arc<Document>) -> bool {
+        std::ptr::eq(self.snapshot.as_ptr(), Arc::as_ptr(doc))
+    }
+
+    /// The options planned with.
+    pub fn options(&self) -> &Options {
+        &self.opts
+    }
+}
+
+impl PartialEq for PlanKey {
+    fn eq(&self, o: &Self) -> bool {
+        self.uid == o.uid && self.snapshot.ptr_eq(&o.snapshot) && self.opts == o.opts && self.fonts == o.fonts
+    }
+}
+
 impl Planner {
-    /// The plan with `opts`: the last plan when it was of this snapshot with these options (the
-    /// commands' too), else planned, each unit's stitches reused where nothing it is planned from
-    /// changed.
+    /// The plan with `opts`: the plan remembered when one was of this snapshot with these options
+    /// (the commands' too), else planned, each unit's stitches reused where nothing it is planned
+    /// from changed.
     pub fn plan(&self, opts: &Options) -> Result<Arc<plan::DesignPlan>> {
-        self.service.plan(service::Of::whole(&self.snapshot), &self.doc, opts).map_err(PlanError::error)
+        self.planned(opts).map(|p| p.plan)
+    }
+
+    /// [`Planner::plan`], with its generation and its stitch scene ([`Planned`]).
+    pub fn planned(&self, opts: &Options) -> Result<Planned> {
+        self.service.planned(service::Of::whole(&self.snapshot), &self.doc, opts).map_err(PlanError::error)
+    }
+
+    /// The plan remembered with `opts` (or why there is none: a design too large), without
+    /// planning: `None` when this snapshot hasn't been planned with them. It never waits.
+    pub fn latest(&self, opts: &Options) -> Option<Result<Planned>> {
+        let fonts = vectorcraft_text::FontDb::global().generation();
+        self.service.remembered(service::Of::whole(&self.snapshot), opts, fonts).map(|r| r.map_err(PlanError::error))
+    }
+
+    /// What the planner's plans with `opts` are of ([`PlanKey`]).
+    pub fn key(&self, opts: &Options) -> PlanKey {
+        PlanKey::new(self.uid, &self.snapshot, opts)
     }
 
     /// The document it plans: the snapshot as the export prepares it (without an opacity mask's
@@ -108,7 +167,14 @@ impl Session {
     pub fn embroidery_planner(&mut self) -> Result<Planner> {
         let st = self.doc()?;
         let (uid, snapshot, doc) = (st.uid, st.doc.clone(), to_plan(st, false)?);
-        Ok(Planner { service: self.embroidery_plans.of(uid), snapshot, doc })
+        Ok(Planner { uid, service: self.embroidery_plans.of(uid), snapshot, doc })
+    }
+
+    /// The key of the active document's plan with `opts` as it is now ([`PlanKey`]): cheap, for
+    /// telling every frame whether the plan shown is of the document as it is.
+    pub fn embroidery_plan_key(&self, opts: &Options) -> Option<PlanKey> {
+        let st = self.active()?;
+        Some(PlanKey::new(st.uid, &st.doc, opts))
     }
 
     /// The active document's stitch plan with `opts`, as the read commands plan it (the whole

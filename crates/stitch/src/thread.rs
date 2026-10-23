@@ -1,6 +1,6 @@
 //! Thread palettes: the colours the machine formats name their threads from.
 //!
-//! DST and EXP name no colours at all, so a design read from them gets [`default_thread`]'s
+//! DST, TAP, T01 and EXP name no colours at all, so a design read from them gets [`default_thread`]'s
 //! colours, one per block, which read well on screen and tell the blocks apart. JEF names one of
 //! Janome's 78 threads by index, and PEC one of 64 entries: Brother's 61 threads, then three that
 //! are not threads ([`Palette`], [`Palette::is_thread`]). Writing a design names each block's

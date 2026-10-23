@@ -257,7 +257,7 @@ pub struct Params {
     /// What is sewn under the shape first ([`Underlay`]).
     pub underlay: Underlay,
     /// A move longer than this lifts the needle (a jump) instead of running the thread across,
-    /// millimetres. A jump this long or longer is tied off before and in after (when [`Params::lock`]
+    /// millimetres. A jump longer than this is tied off before and in after (when [`Params::lock`]
     /// is on), so that the machine or a person can cut it without the stitching coming undone.
     pub jump: f64,
     /// A jump longer than this cuts the thread first (a trim), millimetres. Never less than

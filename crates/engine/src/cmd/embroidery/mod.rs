@@ -1,6 +1,9 @@
-//! Machine embroidery in the document: the settings an object carries for it and the document's
-//! own (`embroidery.setup`: the thread palette), the walk that plans the document's art as
-//! stitches, and the threads the plan sews it in (`embroidery.threads`). The machine files
+//! Machine embroidery in the document: the settings an object carries for it (`embroidery.
+//! setTrimAfter`) and the document's own (`embroidery.setup` and `embroidery.settings`: the thread
+//! palette, the start point, the label), the walk that plans the document's art as stitches, and
+//! what is read from the plan: its threads (`embroidery.threads`), its figures
+//! (`embroidery.stats`), its sewing order (`embroidery.sequence`) and its checks
+//! (`embroidery.check`). The machine files
 //! themselves are read and written in `cmd::fileio::embroidery` (`document.open`,
 //! `document.export`).
 //!
@@ -111,8 +114,8 @@ impl Session {
     }
 }
 
-/// The embroidery settings an object carries, the document's, and the threads its design is sewn
-/// in.
+/// The embroidery commands: the settings an object carries and the document's, and the threads,
+/// figures, sewing order and checks of its design.
 pub fn specs() -> Vec<CommandSpec> {
     vec![
         cmd!(

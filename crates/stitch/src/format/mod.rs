@@ -12,10 +12,11 @@
 //! The formats' own documentation (there is no specification; these were reverse-engineered
 //! publicly) is summarised in each module. What they share, and what this module holds:
 //!
-//! - no colour names in DST and EXP: a design read from them gets [`crate::thread::DEFAULT`]'s
+//! - no colour names in DST, TAP, T01 and EXP: a design read from them gets [`crate::thread::DEFAULT`]'s
 //!   colours, one per block; PES and JEF number their threads in a maker's palette, and VP3 gives
 //!   each block's colour and name;
-//! - no explicit trim in DST, JEF or VP3: three small jumps that go nowhere in DST, which a
+//! - no explicit trim in DST, TAP, T01, JEF or VP3: three small jumps that go nowhere in DST (and
+//!   in TAP and T01, which are its records), which a
 //!   machine reads as "cut", and three jumps of zero length in JEF (one is already a trim when
 //!   read); in VP3, a long form reaching 25.5 mm (see `vp3`);
 //! - jumps between stitches carry no thread: consecutive jumps collapse to the point the thread

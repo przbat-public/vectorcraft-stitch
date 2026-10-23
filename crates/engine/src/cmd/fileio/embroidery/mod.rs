@@ -4,10 +4,11 @@
 //!
 //! Reading draws each colour block as a group of thin lines in the thread's colour, so the design
 //! looks like it will sew, and can be measured, traced over or recoloured. Writing takes every
-//! visible filled or stroked path and plans its stitches: fills with a tatami fill, strokes with
-//! a satin column when they are wide enough (1 mm) and a running line when not, `stitch`
-//! overrides that. Type, images and live art are not stitched (their outlines would be needed);
-//! each is listed in the export's warnings. Blocks of the same thread are sewn together, so the
+//! visible filled or stroked path and plans its stitches: fills with a tatami fill (their narrow
+//! parts as satin columns that follow the shape), strokes with a satin column when they are wide
+//! enough (1 mm) and a running line when not, `stitch` overrides that. Type, images and live art
+//! are not stitched (their outlines would be needed); each is listed in the export's warnings.
+//! Objects of the same art colour are sewn together where nothing lies between them, so the
 //! machine changes colour as few times as the artwork allows.
 //!
 //! Options (`cmd::embroidery::options`, where their earlier names are also taken): `stitch`

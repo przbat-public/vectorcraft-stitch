@@ -39,8 +39,9 @@ use embroidery_common::{artwork, corpus, open, run};
 /// a turn along a straight edge was sewn; 26 and 58 with rows 0.38 mm apart; 27 and 57 with pull
 /// compensation on fills; 26 and 57 once a region's last row kept its last stitch; 20 and 45 when
 /// a fill's narrow parts became satin; 19 and 44, its rings closing and a narrow part beside a
-/// wider block keeping its column; now 18 and 44, the artwork scaled by its own bounds rather than
-/// by a first export, which put the zebra a hair smaller.)
+/// wider block keeping its column; 18 and 44, the artwork scaled by its own bounds rather than
+/// by a first export, which put the zebra a hair smaller; now 18 and 43, fill rows centred across
+/// each shape.)
 const DESIGNS: &[(&str, &str, usize, usize)] = &[
     ("bullseye-twemoji.svg", "bullseye-twemoji-inkstitch.pes", 1, 2), // 0 (the person's design: 6), 1 (8)
     ("fox-twemoji.clipart.svg", "fox-twemoji-inkstitch.pes", 4, 5),   // 3 (6), 4 (3)
@@ -53,7 +54,7 @@ const DESIGNS: &[(&str, &str, usize, usize)] = &[
     ("sos-button-fluent.clipart.svg", "sos-button-fluent-inkstitch.pes", 2, 3), // 1 (3), 2 (2)
     ("video-game-twemoji.svg", "video-game-twemoji-inkstitch.pes", 5, 10),      // 4 (11), 9 (12)
     ("watermelon-twemoji.clipart.svg", "watermelon-twemoji-inkstitch.pes", 1, 8), // 0 (2), 7 (2)
-    ("zebra-twemoji.clipart.svg", "zebra-twemoji-inkstitch.pes", 7, 15),        // 6 (21), 14 (39)
+    ("zebra-twemoji.clipart.svg", "zebra-twemoji-inkstitch.pes", 7, 14),        // 6 (21), 13 (39)
 ];
 
 /// The longest stitch the export sews (millimetres): a satin crossing longer is split (the satin

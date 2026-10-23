@@ -4,9 +4,10 @@
 //!
 //! RGB distance weighs the three channels alike, which the eye does not: two blues far apart in
 //! RGB can look alike, and two yellows close in RGB can look unlike. CIE L*a*b* places colours by
-//! how they look, and CIEDE2000 corrects what L*a*b* still gets wrong (blues, greys, saturated
-//! colours), so the thread nearest by CIEDE2000 is the one that looks nearest. A difference of
-//! about 1 is the smallest seen side by side.
+//! how they look, and CIEDE2000 corrects much of what L*a*b* still gets wrong (greys and other
+//! neutrals, saturated colours, and blues in part: a saturated blue can still match a purple, see
+//! `docs/embroidery.md` › What is not stitched), so the thread nearest by CIEDE2000 is usually the
+//! one that looks nearest. A difference of about 1 is the smallest seen side by side.
 //!
 //! Its scope: CIEDE2000 was fitted to small differences, and its standard and Sharma, Wu, Dalal
 //! and Celik (below) advise keeping it to them: within about 5 CIELAB units its discontinuities

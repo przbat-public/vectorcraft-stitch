@@ -2,9 +2,10 @@
 //!
 //! A design is a [`Pattern`]: colour blocks ([`Block`]) of [`Stitch`] points in needle order, one
 //! thread each. Coordinates are millimetres with y pointing down, like the document's own points
-//! (1/72 in; [`pt_to_mm`] and [`mm_to_pt`] convert). The machine formats count in 0.1 mm with y
-//! pointing up: every writer flips y as it writes and every reader flips it back, so a file keeps
-//! its shape when it is read and written again.
+//! (1/72 in; [`pt_to_mm`] and [`mm_to_pt`] convert). The machine formats count in 0.1 mm, DST,
+//! TAP, T01, EXP and JEF with y pointing up, PEC's and VP3's stitches with y pointing down: each
+//! writer converts as it writes and each reader converts back, so a file keeps its shape when it is
+//! read and written again.
 //!
 //! - [`plan`]: how a path becomes stitches — running, satin and tatami fill, underlay and trims.
 //! - [`format`]: the machine formats (DST, TAP, T01, EXP, PES, PEC, JEF, VP3), read and written.
@@ -13,7 +14,8 @@
 //!   palette's thread uses.
 //!
 //! Nothing here panics on bad input: a malformed file gives an [`Error`], and stitch parameters
-//! that are missing or out of range fall back to the style's defaults.
+//! out of range are clamped to their range ([`plan::Params::sane`]; the engine refuses them before
+//! they get here), while ones that aren't numbers fall back to the style's defaults.
 
 #![forbid(unsafe_code)]
 
@@ -227,7 +229,8 @@ impl Pattern {
         self.blocks.iter().all(|b| b.stitches.is_empty())
     }
 
-    /// The box the design's needle points fall in (millimetres), `None` when it has none.
+    /// The box all the design's points fall in, jumps and cuts as well as needle points
+    /// (millimetres), `None` when it has none.
     pub fn bounds(&self) -> Option<Rect> {
         bounds_of(self.points())
     }
@@ -246,7 +249,7 @@ impl Pattern {
         }
     }
 
-    /// Move the design so its top-left needle point is the origin, as the machine formats record
+    /// Move the design so the top-left corner of its points' box ([`Pattern::bounds`]) is the origin, as the machine formats record
     /// their designs; answers whether it moved.
     pub fn normalize(&mut self) -> bool {
         let Some(b) = self.bounds() else { return false };

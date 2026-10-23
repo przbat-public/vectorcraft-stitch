@@ -89,7 +89,7 @@ pub enum Choice {
 pub use vectorcraft_stitch::thread::DELTA_E_HUNDREDTHS;
 
 /// The thread a block is sewn in: a thread of the document's palette, matched to the colour the
-/// block's art is painted with ([`Palette::nearest`], in sewing order).
+/// block's art is painted with ([`Palette::assign`], in sewing order).
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct BlockThread {

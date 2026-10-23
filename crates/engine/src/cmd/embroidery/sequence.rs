@@ -221,8 +221,9 @@ impl Sequence {
     }
 
     /// The design's plan, named `name`, with the `warnings` of what was left out: the blocks in
-    /// sewing order, each in the thread of `palette` matched to its art's colour (the nearest, not
-    /// a neighbouring block's: a colour change changes thread; [`Palette::assign`]), each unit with
+    /// sewing order, each in the thread of `palette` matched to its art's colour (the nearest; when
+    /// a neighbouring block has it, the nearest other within ΔE 10, else the nearest all the same,
+    /// with a machine stop between the two: [`Palette::assign`]), each unit with
     /// its block's thread, its stitches (from its first in its block up to the next unit's first,
     /// the last unit's to the block's end) and its runs, the stitches numbered from
     /// [`FIRST_NUMBER`].

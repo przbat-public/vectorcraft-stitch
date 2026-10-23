@@ -5,20 +5,24 @@ This repository (`przbat-public/vectorcraft-stitch`) is a fork of
 turning vector art into stitches and reading and writing embroidery machine files.
 
 **This file comes first.** Everything in [`CLAUDE.md`](CLAUDE.md) / [`AGENTS.md`](AGENTS.md) still
-applies (clean-room, never crash, everything is a command, layering, wasm, quality gates), with one
-exception: **don't pick work from `docs/gaps.md` or the Illustrator-parity roadmap.** In this fork,
-work comes from the list below, unless the user gives you a task.
+applies (clean-room, never crash, everything is a command, layering, wasm, quality gates), with
+these exceptions: **don't pick work from `docs/gaps.md` or the Illustrator-parity roadmap** (in
+this fork, work comes from the list below, unless the user gives you a task); embroidery work
+targets `feat/embroidery`, not `main` (Branches); and embroidery doesn't move the
+Illustrator-parity scores (Practicalities, last item).
 
 ## Orient
 
 1. Read [`docs/embroidery.md`](docs/embroidery.md): what exists, how it works, its limits and
    sources, and its Architecture section: the stitch plan every view of the stitches reads, and the
    decisions the next steps rest on.
-2. Read the open embroidery PR's description on GitHub: it explains the terms (stitch, density,
-   underlay, pull compensation, trim, tie-in…) for newcomers and lists what is verified.
+2. The terms (needle point, stitch, record, jump, trim, tie, block, unit, satin, tatami,
+   underlay, pull compensation, palette, ΔE) are explained at the top of `docs/embroidery.md` ›
+   Terms; what is verified is in its Validation section.
 3. Code: `crates/stitch` (L3: `plan/` stitch planning, `format/` DST/TAP/T01/EXP/PES/PEC/JEF/VP3,
-   `thread.rs` palettes), `crates/engine/src/cmd/embroidery/` (the embroidery commands and the
-   digitizer) and `crates/engine/src/cmd/fileio/embroidery/` (opening and exporting machine files).
+   `thread.rs` palettes, `color.rs` the colour difference), `crates/engine/src/cmd/embroidery/`
+   (the embroidery commands and the digitizer) and `crates/engine/src/cmd/fileio/embroidery/`
+   (opening and exporting machine files).
 
 ## Branches
 
@@ -81,7 +85,8 @@ corners and the outlines' edges are indexed in a grid, so jagged shapes travel i
    of 18 inner penetrations within 0.15 mm of the last to none.
 2. **Default density and stitch length.** Done: fill rows 0.38 mm apart (Wilcom's tatami default,
    Morrish's gap-free spacing), stitches up to 4 mm (Wilcom). Ink/Stitch's denser defaults (0.25 and
-   3) are not followed, so VectorCraft still sews 40–55 % of the person's stitches. Per-fabric
+   3) are not followed, so VectorCraft sews fewer of the person's stitches (the current share is
+   in `docs/embroidery.md` › Validation, Real designs). Per-fabric
    values wait for the fabric presets below.
 3. **Pull compensation for fills, and gaps between shapes.** Done: a fill's rows reach past the
    edge at each end by `pull` (0.2 mm, as satins), at most half way across a gap, and
@@ -137,7 +142,7 @@ stitches fast, is tried before anything is built on it.
    unit's stitches kept by exactly what they are planned from (bounded, least recently used out;
    a plan with them equals a fresh plan, tested as a property and on the real designs), the last
    plan kept per document snapshot and options, cancelling and progress, `Send` and `Sync`; the
-   export plans afresh through it. Commands (so reachable over MCP): `embroidery.stats` (counts,
+   export plans afresh, past the document's service (`service::plan_afresh`). Commands (so reachable over MCP): `embroidery.stats` (counts,
    size, stitch lengths, thread and sewing time, estimates on models whose numbers are named and
    sourced), `embroidery.sequence` (each unit with how it is sewn and why), and `embroidery.check`
    (Melco's design checker's thresholds and others, each rule with its sources, the format's
@@ -148,13 +153,13 @@ stitches fast, is tried before anything is built on it.
    with planning in the background, the selected object highlighted and the checks marked, counts in
    the status bar. Dragging in the Sewing order tab moves objects in the stacking order with the
    existing commands (`node.move`; sewing order is stacking order), in one undo step; objects of one
-   thread still join when nothing lies between them, and the list says so rather than pretend
+   colour still join when nothing lies between them, and the list says so rather than pretend
    another order. The first change a user sees.
 5. **Embroidery settings on objects and in the document.** Stored as Architecture describes (per
    fill and stroke, allowed on type and groups, points moved with the object, files from newer
    versions still opening); values resolved with their source (the object's, then the export's
    option, then the document's, then the default); document settings: fabric (a preset copied into
-   the document), thread weight, machine, joining one thread's objects. The trim length comes from
+   the document), thread weight, machine, joining one colour's objects. The trim length comes from
    the machine here: machines differ in whether, and past what length, they cut jumps themselves.
    Commands to set, reset and inspect them, and to store entry and exit points.
 6. **The Object tab, and an Embroidery tab in Document Setup.** The interface on the commands
@@ -176,7 +181,7 @@ stitches fast, is tried before anything is built on it.
 
 **Alongside, at any time:** new machine formats (done: Husqvarna Viking and Pfaff VP3, read and
 written with each block's own colour, Brother PEC on its own, Happy TAP and Wilcom T01; next: HUS,
-Singer's XXX, Barudan's U01 and SEW; they need only `Pattern`, `Block` and `Thread`); real thread
+Singer's XXX, Barudan's U01 and SEW; see Adding a machine format below); real thread
 colours in PES (the plan now carries each block's thread); more real designs (the corpus has
 nineteen, all from one project: eleven PES, one also JEF, with their artwork, and eight VP3, seven
 also PES; add real DST and EXP files, lettering and larger designs, and test on a machine); a
@@ -194,8 +199,28 @@ variation of satin width and spacing, which hides seams (Ink/Stitch and Wilcom o
 branching of touching objects; a full PES block, so Brother's PE-Design opens our files;
 validation on real Brother and Janome machines.
 
-Known limitations not on this list are in `docs/embroidery.md` › What is not stitched, and in the
-PR descriptions.
+Known limitations not on this list are in `docs/embroidery.md` › What is not stitched.
+
+## Adding a machine format
+
+A reader and a writer take a `Pattern` (blocks of stitches, each in a `Thread`). Then, in this
+order, so that nothing is left half done:
+
+1. `crates/stitch/src/format/<format>.rs`: `read`, `write`, and `losses` (what opening a file
+   leaves out), each cited from public documentation; the reader bounded by `MAX_POINTS` and the
+   file's size, the writer's output by `MAX_FILE_BYTES`.
+2. `crates/stitch/src/format/mod.rs`: the `Format` variant and its row in the format table
+   (extension, label, palette, `max_step`, `max_colors`, where it starts the needle, `sniff` when
+   its bytes can be told), and `Format::ALL`.
+3. The engine: `FORMATS` and `UNASSOCIATED_EXTS` in `crates/engine/src/cmd/fileio/mod.rs`, and the
+   format lists in the param docs of `document.export`, `document.serialize`, `export.selection`
+   and `embroidery.setTrimAfter`.
+4. Tests: round trips in the format's module, the `EMBROIDERY` list in
+   `crates/engine/tests/import_fuzz.rs`, its pinned exports in
+   `crates/engine/tests/embroidery_output.rs` (a new listing, in its own commit), and real files in
+   the corpus when a public, licensed source has them.
+5. Docs: `docs/embroidery.md` (The formats, Validation), `docs/file-format-parity.md` (its row and
+   counts), `docs/mcp.md`, and the ROADMAP's progress log.
 
 ## Decisions register
 
@@ -312,8 +337,8 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
 
 - **Rust 1.95 is required:** `cargo +1.95.0 …`. The default toolchain on this machine may be older.
 - **Use a separate `CARGO_TARGET_DIR` per agent**, and delete it when done (it grows to tens of GB).
-- **The full gate is `cargo +1.95.0 xtask ci`.** It takes over 10 minutes, so run it in the
-  background. It needs the `wasm32-unknown-unknown` target for 1.95
+- **The full gate is `cargo +1.95.0 xtask ci`.** It takes about 10 minutes on a 12-core machine
+  (25 or more while other builds run), so run it in the background. It needs the `wasm32-unknown-unknown` target for 1.95
   (`rustup target add wasm32-unknown-unknown --toolchain 1.95.0`).
 - **`.gitignore` ignores every directory named `plan/`** (meant for the local notes at the root):
   `crates/stitch/src/plan/` is let back in by name. A new directory called `plan` anywhere else

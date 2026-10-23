@@ -4306,7 +4306,7 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   deltaE, mismatch}, unitCount}], options, warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour
   and the thread's, to two decimals, and `mismatch` flags one past `threshold` (10). Besides the export's embroidery
   options it takes only the stretch of blocks to list: any other key, such as `format`, is refused.
-- `embroidery.setTrimAfter {on?, ids?}` asks for the thread to be cut after each object (or with `on: false` for no
+- `embroidery.setTrimAfter {on?, ids?|id?}` asks for the thread to be cut after each object (or with `on: false` for no
   cut, a file's own included); left out, `on` toggles. It needs a selection or `ids`, answers `{on, changed}`, and
   reports an id that names no object as a missing object.
 - `embroidery.stats {…embroidery options, speed?, fabricThickness?, offset?, limit?}` gives the design's figures as the
@@ -4342,8 +4342,8 @@ counts needle points only. Lengths, positions and boxes are millimetres from the
 `[left, top, right, bottom]`; counts are integers. The replies change only by addition: a test pins each one's keys
 and value types.
 
-The three plan once for one state of the document and the same options: asking for the figures, the order and the
-checks in a row plans the design once, and an edit plans again only the objects it changed (and usually the one sewn after each, in
+The four plan once for one state of the document and the same options: asking for the threads, the figures, the
+order and the checks in a row plans the design once (a design too large is refused once, the same way), and an edit plans again only the objects it changed (and usually the one sewn after each, in
 its block). A plan can be cancelled with `notifications/cancelled`.
 
 ```json

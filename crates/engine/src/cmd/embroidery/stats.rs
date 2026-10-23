@@ -135,7 +135,7 @@ fn bobbin_share(style: Option<Style>) -> f64 {
 /// What a stretch of a design holds and takes.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub(crate) struct Tally {
-    /// Needle points, jumps and cuts.
+    /// Needle points (jumps and cuts are counted apart).
     pub(crate) needle: usize,
     pub(crate) jumps: usize,
     pub(crate) trims: usize,

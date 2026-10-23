@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-22 · **Last updated:** 2026-10-22 · **Change:** the planning service: each sewing unit's stitches kept between plans, one plan per document snapshot, cancelling and progress, the export planning afresh through it; `embroidery.stats` (counts, size, stitch lengths, thread and sewing time, with the models' sources), `embroidery.sequence` (the sewing order, each unit with how and why it is sewn) and `embroidery.check` (design checks, each rule with its sources and every format's limits, and what they find on the real designs). Before it the same day: new formats, read and written: Husqvarna Viking and Pfaff VP3 (each block's own colour and thread name, a jump as the long form and a zero-length stitch, no trim record: the machine cuts jump stitches; eight real VP3 files in the corpus, seven of them beside the same digitizing in PES), Brother PEC on its own (a PES's PEC section after `#PEC0001`), and Happy TAP and Wilcom T01 (both DST's records without its header)
+> **Last reviewed:** 2026-10-23 · **Last updated:** 2026-10-23 · **Change:** the fixes from the review of the embroidery work: VP3 trims as long forms, an opened design's start point, name, thread records and losses kept, closed lines locked, fill rows centred, the planner's and the planning service's speed (kept areas, a remembered refusal), the docs' tables regenerated from the tests, a contents list, terms and a revision history. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -11,9 +11,40 @@ Everything is implemented from public format documentation — the formats were 
 publicly long before this project (see [References](#references)); no proprietary software was
 observed, and no GPL implementation was read or copied.
 
+**Contents:** [Terms](#terms) · [Using it](#using-it) · [How a shape becomes stitches](#how-a-shape-becomes-stitches) ·
+[The formats](#the-formats) · [What is not stitched](#what-is-not-stitched) · [Validation](#validation) ·
+[Architecture](#architecture) · [References](#references) · [Files](#files) ·
+[Revision history](#revision-history). The fork's own instructions and the project owner's
+decisions are in [FORK.md](../FORK.md).
+
+## Terms
+
+- **Needle point:** where the needle goes down. A **stitch** (a *needle-down stitch*) is the
+  thread laid from one needle point to the next without lifting the needle.
+- **Record:** one entry of a machine file: a needle point, a jump or a cut. *Record numbers*
+  count every record from 1 in sewing order.
+- **Jump:** a move with the needle up. **Trim** (or *cut*): the thread cut, before a long jump or
+  after an object that asks for it. **Tie** (*lock*): a few tiny stitches back and forth that
+  hold the thread at the start and end of a run, so a cut can't pull it out.
+- **Run:** a stretch sewn without lifting the needle. **Travel run:** short stitches that carry
+  the needle inside a shape from one place to another, hidden under what is sewn next.
+- **Block:** the stitches sewn in one thread, between two colour changes. **Sewing unit:** what
+  is planned as one: one fill or one stroke of an object, or one run of stitches opened from a
+  file.
+- **Running stitch**, **satin** (a column sewn across, side to side; its two sides are its
+  *rails*, the points matched across it its *stations*) and **tatami** (a fill of rows; the rows
+  of one shape split into *regions* where the shape branches).
+- **Underlay:** stitches sewn under the art first, to hold the fabric. **Pull compensation:**
+  stitches reaching a little past the edge, since the thread pulls the fabric in;
+  **push compensation:** a satin's ends sewn a little short, since sewing pushes the fabric out
+  there.
+- **Palette:** the threads a format numbers (Brother's for PES and PEC, Janome's for JEF).
+  **ΔE₀₀:** the CIEDE2000 colour difference between an art colour and a thread's.
+
 ## Using it
 
-**Writing a design.** Draw the artwork as usual, select nothing (or the art you want) and export:
+**Writing a design.** Draw the artwork as usual and export it (the whole document's visible art,
+or with `selectedOnly` the selected art alone):
 
 ```json
 {"id": 1, "method": "engine.execute", "params": {"command": "document.export", "params": {"format": "pes", "spacing": 0.4, "angle": 45}}}
@@ -160,7 +191,8 @@ Tatol's bands, drawn up for the older CIE 1976 difference, which is not on CIEDE
 61 or 78 threads lie farther than 5 from about half the colours of real art (23 and 28 of the real
 designs' 44 blocks). The JEF export writes the plan's threads when the
 document's palette is Janome's, the PES export when it is Brother's; the other format matches the
-art colours to its own palette by the same rule. DST and EXP name no threads.
+art colours to its own palette by the same rule. DST, TAP, T01 and EXP name no threads, and VP3
+writes each block's colour (and its thread's name) instead of a number.
 
 A colour difference: the art's sRGB colour and the thread's are put in CIE L*a*b* (D65), and
 CIEDE2000 measures between them as the eye sees it, where RGB distance weighs the three channels
@@ -230,7 +262,7 @@ includes, and marks the thread and the time as estimates (`estimate`: what each 
 these numbers stay estimates until they are measured on machines (the project owner's choice,
 2026-10-22). On the real designs VectorCraft's plans use 4.7 to 5.6 m of top thread and 2.8 to
 3.4 m of bobbin thread a 1,000 needle points, within 12 % of Madeira's 5 m and 3 m (the people's
-denser designs within 39 %; `embroidery_planning.rs` checks both), and the real designs' watermelon (46 × 32 mm, 1,509 needle points) sews in about 2.5
+denser designs within 39 %; `embroidery_planning.rs` checks both), and the real designs' watermelon (46 × 32 mm, 1,535 needle points) sews in about 2.5
 minutes at 650 stitches a minute. Values out of range are refused, not clamped.
 
 **The sewing order.** `embroidery.sequence` (with the export's embroidery options, and `offset`
@@ -249,7 +281,10 @@ mm"); and its needle points, records and record numbers, jumps, trims, entry and
 box. `unit` is a position in one plan: the object's `id` with `part` and `partIndex` tells a unit
 apart from one plan to the next. `split` names the objects whose units are sewn in more than one
 block (an object filled in one thread and stroked in another always is). Sewing order follows stacking order: moving objects (`node.move`) changes it,
-and objects of one thread still join where nothing lies between them.
+and objects of one colour (the same art colour, before threads are matched) still join where
+nothing lies between them: their boxes, grown by 1 mm, overlap none of the blocks sewn between.
+Two art colours a hair apart that match one thread are two blocks, sewn in that thread with a
+machine stop between them when they are neighbours (the project owner's choice, 2026-10-22).
 
 **Checks.** `embroidery.check` (with the export's embroidery options, `format`, `rules` and
 `limit`) runs design checks on the plan. Each rule gives its threshold, its unit as a token (`mm`,
@@ -297,22 +332,23 @@ number: the second source of `layers`.
 
 What the rules find on the real designs (11 artworks digitized at the person's size, and the
 person's Ink/Stitch files opened as stitches; `crates/engine/tests/embroidery_planning.rs` prints
-it), counted in blocks hit:
+each design's hits and the objects hit, rule by rule, with the default palette's format, JEF):
+hits, then the objects hit and the designs, added up over the eleven.
 
-| Rule | VectorCraft's plans (44 blocks) | The person's files (42 blocks) |
+| Rule | VectorCraft's plans (44 blocks, 25,662 needle points) | The person's files (42 blocks, 55,717 needle points) |
 |---|---|---|
 | `fillStitchShort`, `satinStitchShort`, `runStitchShort` | none: the default settings (4 mm fill, 2.5 mm running stitches, no satin column under 1 mm) pass | none: opened stitches have no settings |
-| `stitchBelowNeedle` | 41 (1,109: rows' remainders from 0.4 to 0.75 mm) | 32 or more (11,577) |
-| `stitchTiny` | none: the planner leaves out stitches under 0.4 mm | 30 or more (5,375) |
-| `layers` | 18 (1,247 squares) | 8 or more (741) |
-| `threadMismatch` | 12 | none: a file's own threads |
-| `shortStitchesInARow` | 1 | 14 or more (66) |
+| `stitchBelowNeedle` | 1,090 (61 objects, 11 designs): rows' remainders from 0.4 to 0.75 mm | 11,577 (92 objects, 11 designs) |
+| `stitchTiny` | none: the planner leaves out stitches under 0.4 mm | 5,375 (74 objects, 11 designs) |
+| `layers` | 1,250 squares (32 objects, 7 designs) | 741 (27 objects, 5 designs) |
+| `threadMismatch` | 9 blocks (11 objects, 6 designs) | none: a file's own threads |
+| `shortStitchesInARow` | none | 66 rows (39 objects, 8 designs) |
 | the rest | none | none |
 
-("Or more": blocks counted from the first 1,000 hits of each design.) Checked stitch by stitch,
-Melco's fill limit flagged all 44 of VectorCraft's blocks (7,504 stitches, about 29 % of the needle
-points: the 2 mm underlay and the rows' short ends); read as Melco's checker reads it, on each
-object's settings, it flags none. The project owner chose that reading (2026-10-22).
+Measured once on 2026-10-22, before the project owner chose to read Melco's limits on settings:
+checked stitch by stitch, Melco's fill limit flagged all 44 of VectorCraft's blocks (7,504
+stitches, about 29 % of the needle points then: the 2 mm underlay and the rows' short ends); read
+as Melco's checker reads it, on each object's settings, it flags none.
 
 ## How a shape becomes stitches
 
@@ -553,8 +589,9 @@ the fabric.
   the eleven real designs below this removed a quarter of the trims and a fifth of the jumps.
 
 Blocks are sewn in stacking order, back to front, because thread sewn later lies on top of thread
-sewn earlier, as paint does. An object joins an earlier block of its thread only when it overlaps
-none of the blocks sewn between the two, so the machine changes colour as few times as the stacking
+sewn earlier, as paint does. An object joins the last block of its art colour (the same RGB; the
+threads are matched afterwards) only when its box, grown by 1 mm, overlaps none of the blocks sewn
+between the two, so the machine changes colour as few times as the stacking
 allows rather than once per object; it is reached by a jump, with a trim when the jump is longer
 than `trimLength` or the object before asked for one. Each object starts as near as it can to
 where the needle is when its turn comes, as Ink/Stitch starts fills and satins: a satin column or
@@ -654,8 +691,8 @@ same:
 
 Coordinate conventions: files count tenths of a millimetre. DST, TAP, T01, EXP and JEF count y
 upwards, PEC and VP3's stitches downwards; the readers and writers flip accordingly, so a design
-written and read back keeps its shape. Our DST, TAP, T01, EXP and PEC files start the needle at a
-corner of the design; JEF files start it at the design's centre, which Janome machines put at the
+written and read back keeps its shape. Our DST, TAP, T01, EXP, PES and PEC files start the needle at
+a corner of the design; JEF files start it at the design's centre, which Janome machines put at the
 hoop's centre, and the JEF header's extents and hoop margins are measured from there. VP3 files
 start it at the design's centre too, as the real files do.
 
@@ -666,7 +703,7 @@ from commercial software that starts at the design's centre is written back star
 centre, its header's `+X`, `-X`, `+Y` and `-Y` measured from there, so the operator lines the
 needle up on the garment as before (project owner's choice, 2026-10-22). JEF and VP3 start every
 design at its centre all the same: their machines put the start at the hoop's centre, and a start
-at a corner, as our own DST, EXP, PES and PEC files have it, would put the design beside it. The
+at a corner, as our own DST, TAP, T01, EXP, PES and PEC files have it, would put the design beside it. The
 real files in the corpus (Ink/Stitch's PES, JEF and VP3) all start at the design's centre, to a
 tenth of a millimetre. New art has no start point and starts at a corner, as before.
 
@@ -752,12 +789,13 @@ the object a person selects (`id`).
 - Only the order of a fill's regions is searched; the order of objects follows the stacking, and
   each object's start is the nearest one, not chosen with the next object in view.
 - The default spacing and stitch length follow professional software (Wilcom), which is more
-  open than Ink/Stitch's (rows 0.25 mm apart, 3 mm stitches): VectorCraft sews about 40–55 % as
+  open than Ink/Stitch's (rows 0.25 mm apart, 3 mm stitches): VectorCraft sews about 41–59 % as
   many stitches for the same artwork (measured below). No fabric presets yet.
 
 ## Validation
 
-- `crates/stitch`: 131 unit tests and 6 property tests — CIEDE2000 matches the 34 published test
+- `crates/stitch`: 164 unit tests, 9 property tests and a case one of them found (`tests/prop_plan.rs`,
+  `tests/prop_threads.rs`) — CIEDE2000 matches the 34 published test
   pairs of Sharma, Wu and Dalal to their four decimals either way round (and a colour that isn't
   one has a difference that is not a number, never 0), the sRGB matrix derives
   from the primaries and D65, sRGB's primaries land where published conversions put them, the
@@ -853,8 +891,10 @@ the object a person selects (`id`).
   parameters allow (this found the zigzag fault fixed above: a 50 mm zigzag with corners 0.5 mm
   apart was one 50 mm stitch): without pull compensation to the bound it always had, and with it
   longer by its reach at most.
-- `crates/engine`: 62 tests (37 through the commands, 19 on the stitch plan, its threads and the
-  document's settings, 2 on the export options, 4 on the sewing order and the blocks' threads) —
+- `crates/engine`: 144 tests (55 through the files' commands and the export's options,
+  `cmd/fileio/tests_embroidery.rs` and `cmd/fileio/embroidery/mod.rs`; 89 on the stitch plan, the
+  walk, threads, settings, statistics, sewing order, checks and the planning service,
+  `cmd/embroidery/tests*.rs`) and 19 more beside them (`tests/embroidery_*.rs`) —
   `embroidery.setup` sets and unsets the palette in one undo step (none for no change, its reply's
   settings passed back change nothing, the resolved values refused, other palettes and settings refused; settings with nothing in them,
   as a file may hold them, are none, so asking for them is no edit), the palette is saved in
@@ -877,7 +917,7 @@ the object a person selects (`id`).
   trim, an opened design), planned twice the plan is the same, a unit says what it sews (an object's
   fill and its stroke are two units, each with its parameters; a fill with narrow parts records its
   columns' satin parameters), a symbol's units name the instance that places them, an opened
-  design's runs are literal units, units of one thread share its block in document order (the second
+  design's runs are literal units, units of one colour share its block in document order (the second
   reached by a cut and a jump) and are sewn in the block's thread, an object asking for a trim ends
   its unit with it, stitches are numbered from 1 in sewing order (each number finds its block, index
   and unit; none past the end), and the export writes the plan in every format; export writes a
@@ -894,7 +934,7 @@ the object a person selects (`id`).
   options change the plan, a written PES opens as art (also by its magic bytes), an opened design
   is written back unchanged in every format (and again after a second round), with the cuts at
   its blocks' ends, converts between formats with the same needle points, ignores the style
-  options and survives the native format, `document.formats` lists the four, empty documents,
+  options and survives the native format, `document.formats` lists all eight, empty documents,
   bad styles and absurd densities are refused, type is left out with a warning, the stacking
   order survives grouping by thread, clipping masks cut fills and strokes, template layers are not
   sewn, a forced fill fills a stroke's area rather than its path's inside, a satin wider than
@@ -904,7 +944,21 @@ the object a person selects (`id`).
   id is refused without changing the others, the move to the next object is cut only when longer
   than `trimLength` (one of exactly that length is not), an object starts near
   the one before (one that starts where the last ended adds no second needle point there), and the defaults `document.formats` lists (the satin spacing table included) are
-  the planner's.
+  the planner's. The planning service (`cmd/embroidery/tests_service.rs`): a unit's key changes
+  with every value it depends on; the units used least recently are dropped first, but a plan
+  whose units don't all fit keeps those it planned first, plan after plan; a design too large is
+  refused once per snapshot and options; the areas the path operations made are kept (a plan after
+  a nudge makes only the moved object's again); a plan after one object moves plans again its
+  unit and the next of its block only; one snapshot with the same options is planned once; a plan
+  cancelled part way (before it starts, from its progress, or from another thread while a worker
+  plans) leaves no plan, keeps the units it finished and is followed by the fresh plan; an export
+  cancelled part way writes nothing; the service plans on another thread; and, as a property,
+  a plan made with what was kept is the fresh plan after random edits (moves, paints, strokes,
+  deletes, stacking, undo and redo, hiding, clip groups, symbols, Trim After, the palette, the
+  options and `expand` both ways, an opened design), with caches small enough to drop units.
+  A design of more than two million stitches is refused (`tests_walk.rs`). Random documents with
+  embroidery among their edits save and read back as they were, and their embroidery reads,
+  checks and exports or is refused (`tests/embroidery_random_documents.rs`).
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
 - `crates/engine/tests/embroidery_output.rs`: the bytes every export writes, pinned by their sha256
@@ -937,8 +991,9 @@ the object a person selects (`id`).
   (`tests_swatchlib.rs`, `tests_build.rs`), the window menu lists them, the document's settings
   round-trip with what a newer version wrote, whatever its shape, and the undo history's memory
   estimate counts them (`crates/doc`), the export's seven warnings and its errors when nothing is
-  left to stitch are translated in every interface language (`ui-egui`), MCP reaches
-  `embroidery.setup` and `embroidery.threads`, and the command sweep feeds both junk.
+  left to stitch, the machine files' errors and the export dialog's embroidery labels are
+  translated in every interface language (`ui-egui`), MCP reaches every embroidery command, and
+  the command sweep feeds every one junk.
 
 **Real designs** (`crates/engine/tests/embroidery_corpus.rs`): `cargo xtask corpus --embroidery`
 fetches eleven designs of the [Emoji Embroidery Project](https://edutechwiki.unige.ch/en/Emoji_Embroidery_Project)
@@ -971,12 +1026,33 @@ locally, never committed. The test checks that:
   stitch longer than 10 mm, at most two shorter than 0.3 mm, no more trims and jumps than its ceilings (one above
   the counts below) and 30–80 % of the person's stitch count.
 
-Measured with VectorCraft's defaults, before and after the ordering of fill regions and the trim
-length landed (the person's design in brackets; its count includes the cuts before colour
-changes, which ours doesn't). Jumps count every move with the needle up, cut or not, and include
-short hops with the thread on (the bullseye's 8 new ones are about 1 mm, between its rings).
+Now, with VectorCraft's defaults, as `artwork_digitizes_soundly_next_to_a_persons_design` prints
+it (the person's design in brackets; its count includes the cuts before colour changes, which
+ours doesn't). Jumps count every move with the needle up, cut or not, short hops with the thread
+on included.
 
-| Design | Stitches | Trims, before → now | Jumps, before → now |
+| Design | Needle points | Trims | Jumps | Longest stitch |
+|---|---|---|---|---|
+| bullseye | 3,794 (8,133) | 0 (6) | 1 (8) | 8.5 mm |
+| fox | 2,270 (5,268) | 3 (6) | 4 (3) | 10.1 mm |
+| heart suit | 1,374 (3,429) | 0 (0) | 0 (0) | 4.6 mm |
+| joystick | 1,669 (3,148) | 3 (4) | 4 (4) | 5.7 mm |
+| pool 8 ball | 2,437 (5,214) | 0 (2) | 0 (2) | 4.6 mm |
+| puzzle piece | 1,325 (2,988) | 0 (0) | 0 (0) | 4.7 mm |
+| smiling face | 2,668 (5,733) | 1 (3) | 3 (6) | 5.9 mm |
+| SOS button | 2,758 (5,849) | 1 (3) | 2 (2) | 4.6 mm |
+| video game | 2,192 (4,496) | 4 (11) | 9 (12) | 4.9 mm |
+| watermelon | 1,535 (2,598) | 0 (2) | 7 (2) | 4.7 mm |
+| zebra | 3,640 (8,861) | 6 (21) | 13 (39) | 7.0 mm |
+
+25,662 needle points in all (41–59 % of the person's), 18 trims and 43 jumps (`ALL_TRIMS`,
+`ALL_JUMPS`); no stitch under 0.3 mm. The longest, 10.1 mm, is a crossing of the fox's ear where its
+column runs on past the 10 mm limit (9.99 mm as planned, rounded to the file's 0.1 mm grid).
+
+How the counts got here, change by change. When the ordering of fill regions and the trim length
+landed (the bullseye's 8 new jumps are about 1 mm, between its rings):
+
+| Design | Stitches | Trims, before → after | Jumps, before → after |
 |---|---|---|---|
 | bullseye | 3590 (8133) | 1 → 0 (6) | 1 → 9 (8) |
 | fox | 2205 (5268) | 5 → 3 (6) | 5 → 4 (3) |
@@ -990,7 +1066,7 @@ short hops with the thread on (the bullseye's 8 new ones are about 1 mm, between
 | watermelon | 1549 (2598) | 13 → 2 (2) | 14 → 14 (2) |
 | zebra | 3530 (8861) | 11 → 6 (21) | 12 → 15 (39) |
 
-55 trims in all before, 25 now; stitch counts within 2 % of before (hidden travels add a few). With
+55 trims in all before, 25 after; stitch counts within 2 % of before (hidden travels add a few). With
 a 25 mm trim length it would be 7; with 5 mm (every jump cut, as before) about 46. The
 watermelon's seeds, which the person did not sew, are joined by tied jumps of 4–10 mm and two
 trims.
@@ -1101,8 +1177,7 @@ environment, never in the repo:
   pyembroidery would now also read a stitch at the far ends of each trim's long forms, and at the
   joins of a kept move longer than 9.8 mm; not re-run.
 
-Still unverified, and listed in the local research notes (`plan/research/formats-pes-jef.md`
-§Appendix B): behaviour on real hardware, blank preview pictures, JEF's version letter, and how
+Still unverified: behaviour on real hardware, blank preview pictures, JEF's version letter, and how
 machines treat our trim encodings. For VP3: no file written by Husqvarna's or Pfaff's own
 software was read (the corpus takes only files made with open tools), so whether the needle goes
 down where a long form lands, what `80 03` means, and how the machine shows a thread without a
@@ -1131,7 +1206,7 @@ reason, what was not chosen and where the code holds it: `FORK.md` › Decisions
 - **A fabric is copied, not linked.** Choosing a fabric copies its values into the document, with
   no live link to the preset; values changed from the preset's are marked.
 - **Sewing order is stacking order.** The Sewing order tab lets a person drag objects from its
-  first version, and a drag moves layers (`node.move`); joining objects of one thread stays
+  first version, and a drag moves layers (`node.move`); joining objects of one colour stays
   automatic.
 - **An Embroidery panel of its own**, with the tabs Object, Sewing order, Check and Stitches; the
   document-wide embroidery settings go in a new tab of Document Setup.
@@ -1168,9 +1243,10 @@ worksheet, a stitch player. So each one shows what will be sewn.
   - its block, its stitches as a range of the block's (the move that reaches it, its own stitches,
     and the cut after it when one is asked for) and its runs, the stretches sewn without lifting
     the needle.
-- **Thread blocks** (`ThreadBlock`). Units of one thread are joined into one block wherever the
-  stacking allows, as before: an object joins an earlier block of its thread only when it overlaps
-  none of the blocks sewn in between. A block lists its units, whose ranges cover its stitches
+- **Thread blocks** (`ThreadBlock`). Units of one art colour (the same RGB, before threads are
+  matched) are joined into one block wherever the stacking allows, as before: an object joins the
+  last block of its colour only when its box, grown by 1 mm, overlaps none of the blocks sewn in
+  between. A block lists its units, whose ranges cover its stitches
   without a gap.
 - **Stitch numbers.** Stitches are numbered from 1 in sewing order, block after block, every needle
   point, jump and cut taking one (a thread change between blocks takes none): the numbers a stitch
@@ -1189,8 +1265,8 @@ between objects belong to the design, or the machine, rather than to a unit.)
 
 - **Resolved in the decided order** (the object's value, the export's option, the document's, the
   built-in default): an export option applies to the objects that have no value of their own, and
-  every value resolved comes back with where it came from, so that a panel and `embroidery.info`
-  can show it.
+  every value resolved comes back with where it came from, so that a panel and a read command
+  (neither built yet) can show it.
 - **Stored in the `.vectorcraft` file, so that a file saved by a newer version still opens in an
   older one:**
   - per part of an object, its fill and its stroke, each value set or unset;
@@ -1208,7 +1284,7 @@ between objects belong to the design, or the machine, rather than to a unit.)
     camelCase in commands and replies (`trimAfter` would be the parameter's name).
 - **Document settings:** the thread palette (done: `embroidery.setup`, below), the fabric (its
   values copied in, as decided), the thread's weight, the machine (and with it the trim length),
-  and the joining of one thread's objects (automatic, where nothing lies between them). They are
+  and the joining of one colour's objects (automatic, where nothing lies between them). They are
   `Document::embroidery` (`EmbroiderySetup` in `crates/doc/src/embroidery.rs`): left out of the file
   while nothing is set; keys this version doesn't read are kept as they are
   (`EmbroiderySetup::extra`), and so is a palette it doesn't know, which reads as unset with a
@@ -1334,7 +1410,7 @@ which would have to be merged later.
 
 ## References
 
-Public documentation, cited per claim in the crate and in the local research notes:
+Public documentation, cited per claim in the crate:
 
 - EduTechWiki, [Embroidery format DST](https://edutechwiki.unige.ch/en/Embroidery_format_DST),
   [EXP](https://edutechwiki.unige.ch/en/Embroidery_format_EXP),
@@ -1375,7 +1451,7 @@ Public documentation, cited per claim in the crate and in the local research not
   fragments by a recursive walk from the one where sewing ends; read for the idea only.
 - Ink/Stitch documentation (GPL-3.0 project, documentation read only) and vendor manuals
   (Wilcom/Hatch, ZSK, Madeira, Brother, Janome) for densities, stitch lengths, pull compensation
-  and underlay — summarised in the local research notes with a source per number.
+  and underlay — each number cited in the crate where it is used.
 - Compensation: Wilcom's [automatic pull compensation](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/stabilizing/stabilizing-17.htm)
   (one overstitch allowance per fabric, 0.20 mm for drill and cotton, double-sided values) and
   [push and pull compensation](https://wilcom.com/resources/blog/push-and-pull-compensation)
@@ -1433,8 +1509,10 @@ Public documentation, cited per claim in the crate and in the local research not
   thread by CIEDE2000, a design's blocks to threads (`Palette::assign`), and the thread numbers a
   format writes (`Palette::numbers`).
 - `crates/stitch/src/color.rs` — sRGB in CIE L*a*b* (D65), and the CIEDE2000 colour difference.
-- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (the `embroidery.setTrimAfter`,
-  `embroidery.setup` and `embroidery.threads` commands, and the document's thread palette),
+- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (the seven commands,
+  `embroidery.setTrimAfter`, `setup`, `settings`, `threads`, `stats`, `sequence` and `check`, and the
+  document's thread palette), `printed.rs` (the document as it prints, appearances expanded),
+  `threadlib.rs` (the thread swatch libraries),
   `options.rs` (the export options, and the planner's parameters they give an object),
   `digitize.rs` (the document's art planned into the stitch plan, unit by unit; a fill's narrow
   columns cut out of it with path operations), `plan.rs` (the stitch plan: sewing units, thread
@@ -1444,8 +1522,9 @@ Public documentation, cited per claim in the crate and in the local research not
   between plans), `service.rs` (each document's planning service), `measure.rs` (a plan's records
   in sewing order), `stats.rs` (`embroidery.stats`: counts, size, thread and time), `order.rs`
   (`embroidery.sequence`), `check.rs` (`embroidery.check`: its rules and their sources),
-  `tests.rs` (the plan's, the threads' and the document's settings'), `tests_service.rs`,
-  `tests_stats.rs`, `tests_order.rs`, `tests_check.rs`.
+  `tests.rs` (the plan's, the threads' and the document's settings'), `tests_walk.rs` (the walk's
+  branches and the design's size limit), `tests_service.rs`, `tests_stats.rs`, `tests_order.rs`,
+  `tests_check.rs`, `tests_contract.rs` (the replies' keys and types), `tests_threadlib.rs`.
 - `crates/engine/src/cmd/swatchlib.rs` — the swatch libraries, the embroidery thread libraries
   among them; `crates/doc/src/embroidery.rs` — what an object and the document keep for embroidery.
 - `crates/engine/src/cmd/fileio/embroidery/` — the files' side: `mod.rs` (the export's options as
@@ -1453,7 +1532,8 @@ Public documentation, cited per claim in the crate and in the local research not
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real
   designs and the test that uses them; `crates/engine/tests/embroidery_output.rs` — the sha256 of
   every export; `crates/engine/tests/embroidery_planning.rs` — the statistics, sewing order and
-  checks on the real designs, and a plan after an edit against a fresh one.
+  checks on the real designs, and a plan after an edit against a fresh one;
+  `crates/engine/tests/embroidery_random_documents.rs` — random documents with embroidery edits.
 
 Every value these files decide with is a named constant with a description: what it is, its unit,
 and its source (a format's documentation, a cited default) or that it is an estimate. What stays
@@ -1463,3 +1543,15 @@ than it are one, `lib.rs`) and `NO_LENGTH` (a segment without a direction, far b
 on dividing by a length, `plan/geometry.rs`). The default stitch parameters are at the top of
 `plan/mod.rs`, with the ranges `Params::sane` clamps them to; each format's record codes and
 header fields are at the top of its module.
+
+## Revision history
+
+| Date | Change | Summary |
+|---|---|---|
+| 2026-10-23 | minor | The review's fixes: VP3 trims written as long forms and read back as cuts; an opened design's start point, name, thread records and losses kept (overwriting its file asks first); closed lines locked; fill rows centred; the planner's and the planning service's speed (kept path-operation areas, a remembered refusal, a plan's own units kept); bobbin thread after Madeira; the results and check tables regenerated from the tests; contents, terms and this history added. |
+| 2026-10-22 | minor | The planning service (#17): units kept between plans, cancelling and progress; `embroidery.stats`, `sequence` and `check`. One option vocabulary, the expanded appearance sewn, the replies' vocabulary. |
+| 2026-10-22 | minor | New formats (#16): VP3, PEC on its own, TAP and T01. |
+| 2026-10-21 | minor | Threads from the format's palette, matched by CIEDE2000 (#14); Brother's table fixed, odd thread numbers handled (#15); the stitch plan with units (#13). |
+| 2026-10-20 | minor | Pull, push and per-side compensation, `expand`, spacing by thread weight (#10); a fill's narrow parts as satin columns (#11); satin spacing kept round bends (#12). |
+| 2026-10-19 | minor | Fill regions ordered, the trim length, turns along straight edges, rows 0.38 mm apart; named values (#9). |
+| 2026-10-18 | minor | First version: the stitch planner (running, satin, tatami) and DST, EXP, PES and JEF read and written. |

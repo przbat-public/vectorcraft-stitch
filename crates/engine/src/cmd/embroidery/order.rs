@@ -15,9 +15,10 @@ use super::plan::{Choice, DesignPlan, Part, Unit};
 use super::stats::{self, Page, mm, point, rect, thread_json};
 
 /// What part of its object a unit sews, as an id (`fill`, `stroke`, `literal`), and which fill or
-/// stroke, counted from 1 in appearance order (`None` for a literal run). With the object's id,
-/// the pair is what tells a unit apart from one plan to the next; `unit` is a position in one
-/// plan.
+/// stroke, counted from 1 in appearance order (`None` for a literal run). With the object's id and
+/// the unit's `occurrence` it tells a unit apart ([`super::plan::Unit::occurrence`]); `unit` is a
+/// position in one plan, and `node` (the object sewn) changes between plans for an expanded
+/// object's pieces.
 fn part(p: Part) -> (&'static str, Option<usize>) {
     match p {
         Part::Fill(k) => ("fill", Some(k + 1)),
@@ -119,6 +120,7 @@ pub(crate) fn sequence(plan: &DesignPlan, page: Page) -> Value {
                         "instance": u.origin.instance.map(|n| n.0),
                         "part": part,
                         "partIndex": part_index,
+                        "occurrence": u.occurrence,
                         "sewn": sewn(u),
                         "columns": u.columns.is_some(),
                         "rule": rule,

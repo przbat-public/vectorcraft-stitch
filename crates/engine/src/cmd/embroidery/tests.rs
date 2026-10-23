@@ -148,7 +148,7 @@ fn units_say_what_they_sew_and_with_what() {
     stroke(&mut s, square, "#2233cc", 6.0);
     let t = letter_t(&mut s, "#22aa44", 20.0, 120.0);
     let plan = plan_of(&s);
-    let of = |id: u64| plan.units.iter().filter(|u| u.origin.node == NodeId(id)).collect::<Vec<_>>();
+    let of = |id: u64| plan.units.iter().filter(|u| u.origin.selected() == NodeId(id)).collect::<Vec<_>>();
     let parts: Vec<Part> = of(square).iter().map(|u| u.origin.part).collect();
     assert_eq!(parts, [Part::Fill(0), Part::Stroke(0)]);
     let (fill, line) = (of(square)[0], of(square)[1]);
@@ -211,7 +211,7 @@ fn units_of_one_thread_share_its_block_in_document_order() {
     let plan = plan_of(&s);
     check(&plan);
     assert_eq!(plan.blocks.len(), 2);
-    let red: Vec<NodeId> = plan.units[plan.blocks[0].units.clone()].iter().map(|u| u.origin.node).collect();
+    let red: Vec<NodeId> = plan.units[plan.blocks[0].units.clone()].iter().map(|u| u.origin.selected()).collect();
     assert_eq!(red, [NodeId(a), NodeId(c)]);
     let second = &plan.units[plan.blocks[0].units.start + 1];
     let lead: Vec<Command> = plan.blocks[0].stitches[second.stitches.clone()].iter().take(2).map(|s| s.command).collect();

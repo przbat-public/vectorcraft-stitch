@@ -49,14 +49,18 @@ pub struct Origin {
     pub node: NodeId,
     pub part: Part,
     /// The symbol instance that places the art in the document (the outermost, where a symbol's
-    /// art places another symbol): the object a person selects. `None` outside symbols. Two units
-    /// share an origin only where a symbol places another symbol more than once.
+    /// art places another symbol), or the object an expanded appearance's pieces come from: the
+    /// object a person selects. `None` otherwise. Units that share an origin, or its selected object
+    /// and part, are told apart by [`Unit::occurrence`].
     pub instance: Option<NodeId>,
 }
 
 impl Origin {
-    /// The object a person selects for the unit: the symbol instance that places it, else the
-    /// object itself.
+    /// The object a person selects for the unit: the symbol instance that places it (or the object
+    /// whose expanded appearance it is a piece of), else the object itself. A selection maps to
+    /// units through this id, or an object that holds it (its group, its layer), never through
+    /// [`Origin::node`], which a symbol's instances share and an expanded object's pieces get anew
+    /// at every plan.
     pub fn selected(&self) -> NodeId {
         self.instance.unwrap_or(self.node)
     }
@@ -179,6 +183,14 @@ impl DesignPlan {
 #[non_exhaustive]
 pub struct Unit {
     pub origin: Origin,
+    /// Which of the plan's units of the same selected object and part ([`Origin::selected`],
+    /// [`Origin::part`]) it is, from 1 in walk order: the art a symbol instance places, and an
+    /// expanded object's pieces, share their object and often their part. With them it tells a
+    /// unit apart within the plan, and from one plan to the next as long as the object's own art
+    /// (its symbol's paths, the pieces its appearance expands to) keeps its number and order.
+    /// [`Origin::node`] is no such key: an expanded object's pieces get new ids at every plan, and
+    /// a symbol's paths are the same nodes in every instance.
+    pub occurrence: usize,
     /// The thread it is sewn in: its block's.
     pub thread: BlockThread,
     /// The parameters its shape was planned with (their style says how it is sewn); `None` for a

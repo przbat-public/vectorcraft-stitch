@@ -278,8 +278,15 @@ a satin across and is filled, so it is listed as tatami) and why: the rule that 
 with the values it turned on (`rule: "wideStroke"`, `ruleValues: {width: 2.12, satinFrom: 1,
 widest: 10}`) and as a sentence (`why`: "a stroke at least 1 mm wide is a satin column, here 2.12
 mm"); and its needle points, records and record numbers, jumps, trims, entry and exit points and
-box. `unit` is a position in one plan: the object's `id` with `part` and `partIndex` tells a unit
-apart from one plan to the next. `split` names the objects whose units are sewn in more than one
+box. What tells a unit apart is `id` (the object a person selects: the object itself, the symbol
+instance that places a symbol's art, or the object an expanded appearance's pieces come from),
+`part`, `partIndex` and `occurrence` (which unit of that object and part it is, from 1 in walk
+order: one instance's symbol paths, or an expanded object's pieces, often share a part, "fill 1").
+The four are unique within a plan, and stay the same from one plan to the next while the object
+and its own art (its symbol's paths, the pieces its appearance expands to) keep their number and
+order. `unit` is a position in one plan; `node`, the object sewn, is no key: an expanded object's
+pieces get new ids at every plan, and a symbol's paths are the same nodes in every instance. A
+selection maps to units through `id` (and the objects that hold it), never through `node`. `split` names the objects whose units are sewn in more than one
 block (an object filled in one thread and stroked in another always is). Sewing order follows stacking order: moving objects (`node.move`) changes it,
 and objects of one colour (the same art colour, before threads are matched) still join where
 nothing lies between them: their boxes, grown by 1 mm, overlap none of the blocks sewn between.

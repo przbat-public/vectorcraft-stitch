@@ -755,7 +755,7 @@ fn an_edit_plans_again_only_what_it_changed() {
     run(&mut s, "object.move", json!({"ids": [ids[1]], "dx": 3, "dy": 2}));
     let doc = s.doc().unwrap().doc.clone();
     let after = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
-    let moved: Vec<usize> = after.units.iter().enumerate().filter(|(_, u)| u.origin.node.0 == ids[1]).map(|(k, _)| k).collect();
+    let moved: Vec<usize> = after.units.iter().enumerate().filter(|(_, u)| u.origin.selected().0 == ids[1]).map(|(k, _)| k).collect();
     let last = *moved.last().unwrap();
     let next = after.units.get(last + 1).is_some_and(|u| u.block == after.units[last].block);
     assert!(next, "the moved object isn't its block's last: the test needs the unit after it");

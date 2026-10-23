@@ -4319,7 +4319,10 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   counts, `firstRecord`/`lastRecord`, `topThreadMetres`, `bobbinThreadMetres` and `seconds`.
 - `embroidery.sequence {…embroidery options, offset?, limit?}` lists the sewing order, read only: the units from
   `offset` in sewing order within their blocks, each block with its thread, counts, record numbers and what follows it,
-  each unit with the object a person selects (`id`), `part` (`fill`, `stroke`, `literal`) and `partIndex`, how it is
+  each unit with the object a person selects (`id`), `part` (`fill`, `stroke`, `literal`), `partIndex` and
+  `occurrence` (which unit of that object and part, from 1 in walk order: the four tell a unit apart within a plan and
+  from one plan to the next while the object's own art keeps its number and order; `node`, the object sewn, is no key,
+  as an expanded object's pieces get new ids at every plan), how it is
   sewn (`sewn`: `running`, `satin`, `tatami`, `literal`; `columns`) and why (`rule` id, `ruleValues`, and `why` as a
   sentence), its counts, record numbers, entry and exit points and bounds; `blockCount`, `unitCount` and `truncated`
   say what was left out, and `split` names the objects sewn in more than one block. Sewing order follows stacking

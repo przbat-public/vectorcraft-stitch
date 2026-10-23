@@ -127,6 +127,7 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
         failed: None,
         cache,
         progress,
+        occurrences: HashMap::new(),
     };
     d.run();
     match d.failed {
@@ -200,6 +201,9 @@ struct Digitizer<'a> {
     cache: Option<&'a Mutex<UnitCache>>,
     /// The units the walk has come to so far, of about how many.
     progress: Progress,
+    /// How many units the plan holds so far of each object a person selects and part
+    /// ([`Origin::selected`], [`Origin::part`]): the next one's [`Facts::occurrence`] is one more.
+    occurrences: HashMap<(NodeId, Part), usize>,
 }
 
 /// How far a plan has got: the units come to, of about how many ([`units_under`]).
@@ -263,6 +267,15 @@ impl<'a> Digitizer<'a> {
     /// What the unit that sews `part` of `n` sews.
     fn origin(&self, n: &Node, part: Part) -> Origin {
         Origin { node: n.id, part, instance: self.instance }
+    }
+
+    /// The next unit of `origin`'s selected object and part to go into the plan: which one it is,
+    /// from 1 in walk order. A symbol's art placed by one instance, and an expanded object's pieces,
+    /// share their object and often their part ("fill 1"): this tells them apart.
+    fn occurrence(&mut self, origin: &Origin) -> usize {
+        let n = self.occurrences.entry((origin.selected(), origin.part)).or_insert(0);
+        *n += 1;
+        *n
     }
 
     /// One more unit to plan, reported as a step of the plan's progress; `false` when the walk
@@ -432,7 +445,8 @@ impl<'a> Digitizer<'a> {
         block.stitches = points;
         let origin = self.origin(n, Part::Literal);
         let literal = self.owner.map(|g| (g, run.trim_before));
-        let facts = Facts { origin, params: None, columns: None, satin_widths: None, why: Choice::Literal };
+        let occurrence = self.occurrence(&origin);
+        let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, why: Choice::Literal };
         self.seq.add(Planned { facts, block, literal });
     }
 
@@ -750,7 +764,8 @@ impl<'a> Digitizer<'a> {
         }
         let mut block = Block::new(Thread::rgb(color));
         block.stitches = stitches;
-        let facts = Facts { origin: unit, params: Some(params), columns, satin_widths, why };
+        let occurrence = self.occurrence(&unit);
+        let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, why };
         self.seq.add(Planned { facts, block, literal: None });
     }
 

@@ -42,7 +42,7 @@ fn each_unit_maps_to_its_object_and_its_stitches() {
     assert_eq!(listed.len(), plan.units.len());
     for (k, (u, l)) in plan.units.iter().zip(&listed).enumerate() {
         assert_eq!(l["unit"], json!(k + 1));
-        assert_eq!(l["id"], json!(u.origin.node.0));
+        assert_eq!(l["id"], json!(u.origin.selected().0));
         let numbers = plan.numbers(k).unwrap();
         assert_eq!((&l["firstRecord"], &l["lastRecord"]), (&json!(numbers.start), &json!(numbers.end - 1)), "unit {k}");
         assert_eq!(l["records"], json!(numbers.len()), "unit {k}");
@@ -54,8 +54,17 @@ fn each_unit_maps_to_its_object_and_its_stitches() {
     }
     // The framed rectangle's fill, then the far one joining its block after a cut; its stroke in a
     // block of its own.
-    let ids: Vec<(Value, Value, Value)> = listed.iter().map(|l| (l["id"].clone(), l["part"].clone(), l["partIndex"].clone())).collect();
-    assert_eq!(ids, [(json!(framed), json!("fill"), json!(1)), (json!(far), json!("fill"), json!(1)), (json!(framed), json!("stroke"), json!(1))]);
+    let ids: Vec<(Value, Value, Value, Value)> =
+        listed.iter().map(|l| (l["id"].clone(), l["part"].clone(), l["partIndex"].clone(), l["occurrence"].clone())).collect();
+    let one = json!(1);
+    assert_eq!(
+        ids,
+        [
+            (json!(framed), json!("fill"), one.clone(), one.clone()),
+            (json!(far), json!("fill"), one.clone(), one.clone()),
+            (json!(framed), json!("stroke"), one.clone(), one.clone())
+        ]
+    );
     let blocks = v["blocks"].as_array().unwrap();
     assert_eq!(blocks.len(), 2);
     assert_eq!(blocks[0]["units"].as_array().unwrap().len(), 2);
@@ -169,4 +178,77 @@ fn symbols_and_opened_designs_are_listed_by_what_a_person_selects() {
             && l["instance"].is_null()),
         "{listed:?}"
     );
+}
+
+/// A listed unit's key: `id`, `part`, `partIndex` and `occurrence`.
+type Key = (Value, Value, Value, Value);
+
+/// Each listed unit's key, and the object it sews.
+fn keys_of(v: &Value) -> (Vec<Key>, Vec<Value>) {
+    let listed = units(v);
+    let keys = listed.iter().map(|l| (l["id"].clone(), l["part"].clone(), l["partIndex"].clone(), l["occurrence"].clone())).collect();
+    (keys, listed.iter().map(|l| l["node"].clone()).collect())
+}
+
+/// The keys of `keys`, each once, sorted: what a plan's units are told apart by.
+fn unique(keys: &[Key]) -> Vec<String> {
+    let mut seen: Vec<String> = keys.iter().map(|k| format!("{k:?}")).collect();
+    seen.sort();
+    let all = seen.len();
+    seen.dedup();
+    assert_eq!(seen.len(), all, "a key twice: {keys:?}");
+    seen
+}
+
+/// A symbol whose art is two paths, placed twice: each instance's two units share its id and part
+/// ("fill 1") and are told apart by their occurrence, 1 and 2; the keys are unique and the same
+/// after an edit elsewhere.
+#[test]
+fn a_symbols_paths_are_told_apart_by_their_occurrence() {
+    let mut s = blank();
+    let a = rect(&mut s, Some("#cc2222"), None, 20.0, 20.0, 20.0, 20.0);
+    let b = rect(&mut s, Some("#cc2222"), None, 50.0, 20.0, 20.0, 20.0);
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    let first = run(&mut s, "symbol.new", json!({"name": "Pair"}))["id"].as_u64().unwrap();
+    run(&mut s, "select.none", json!({}));
+    let second = run(&mut s, "symbol.place", json!({"name": "Pair", "x": 150, "y": 150}))["id"].as_u64().unwrap();
+    let (keys, _) = keys_of(&run(&mut s, "embroidery.sequence", json!({})));
+    let before = unique(&keys);
+    for instance in [first, second] {
+        let mine: Vec<&Value> = keys.iter().filter(|k| k.0 == json!(instance)).map(|k| &k.3).collect();
+        assert_eq!(mine, [&json!(1), &json!(2)], "instance {instance}: {keys:?}");
+        assert!(keys.iter().filter(|k| k.0 == json!(instance)).all(|k| k.1 == json!("fill") && k.2 == json!(1)));
+    }
+    rect(&mut s, Some("#2233cc"), None, 250.0, 250.0, 20.0, 20.0);
+    let (after, _) = keys_of(&run(&mut s, "embroidery.sequence", json!({})));
+    let after = unique(&after);
+    assert!(before.iter().all(|k| after.contains(k)), "{before:?} → {after:?}");
+}
+
+/// An object whose appearance expands into several pieces (two fills): its pieces are sewn as new
+/// objects, with new ids at every plan, all selected as the object and each "fill 1"; their
+/// occurrences tell them apart, and the keys are the same at the next plan while the pieces' own
+/// ids are not.
+#[test]
+fn an_expanded_objects_pieces_are_told_apart_by_their_occurrence() {
+    let mut s = blank();
+    let id = rect(&mut s, Some("#cc2222"), None, 20.0, 20.0, 80.0, 60.0);
+    run(&mut s, "appearance.addFill", json!({"ids": [id]}));
+    run(&mut s, "appearance.setItem", json!({"ids": [id], "index": 0, "color": "#2233cc"}));
+    let v = run(&mut s, "embroidery.sequence", json!({}));
+    let (keys, nodes) = keys_of(&v);
+    let before = unique(&keys);
+    let mine: Vec<&Key> = keys.iter().filter(|k| k.0 == json!(id)).collect();
+    assert_eq!(mine.len(), 2, "two pieces: {v}");
+    assert!(mine.iter().all(|k| k.1 == json!("fill") && k.2 == json!(1)), "{mine:?}");
+    assert_eq!(mine.iter().map(|k| k.3.clone()).collect::<Vec<_>>(), [json!(1), json!(2)]);
+    assert!(nodes.iter().all(|n| *n != json!(id)), "the pieces are sewn as new objects: {nodes:?}");
+    // An edit that makes a new object: the pieces get other ids, the keys stay.
+    rect(&mut s, Some("#22aa44"), None, 200.0, 200.0, 20.0, 20.0);
+    let (keys_after, nodes_after) = keys_of(&run(&mut s, "embroidery.sequence", json!({})));
+    let after = unique(&keys_after);
+    assert!(before.iter().all(|k| after.contains(k)), "{before:?} → {after:?}");
+    let pieces =
+        |keys: &[Key], nodes: &[Value]| -> Vec<Value> { keys.iter().zip(nodes).filter(|(k, _)| k.0 == json!(id)).map(|(_, n)| n.clone()).collect() };
+    assert_ne!(pieces(&keys, &nodes), pieces(&keys_after, &nodes_after), "node is no key: the pieces' ids change");
 }

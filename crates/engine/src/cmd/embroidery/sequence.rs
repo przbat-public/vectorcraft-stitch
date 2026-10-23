@@ -27,6 +27,9 @@ pub(super) const CLEARANCE: f64 = 1.0;
 pub(super) struct Facts {
     /// What it sews.
     pub(super) origin: Origin,
+    /// Which unit of its origin's selected object and part it is, from 1 in walk order
+    /// ([`super::plan::Unit::occurrence`]).
+    pub(super) occurrence: usize,
     /// The parameters it was planned with (`None`: a literal run, sewn as its points are), and
     /// those of a fill's narrow parts sewn as satin columns (`None`: it had none).
     pub(super) params: Option<Params>,
@@ -239,8 +242,20 @@ impl Sequence {
             for (m, end) in members.into_iter().zip(ends) {
                 let range = m.start..end;
                 let runs = runs(&stitches, range.clone());
-                let Member { facts: Facts { origin, params, columns, satin_widths, why }, bounds, .. } = m;
-                plan.units.push(Unit { origin, thread: thread.clone(), params, columns, satin_widths, why, bounds, block: k, stitches: range, runs });
+                let Member { facts: Facts { origin, occurrence, params, columns, satin_widths, why }, bounds, .. } = m;
+                plan.units.push(Unit {
+                    origin,
+                    occurrence,
+                    thread: thread.clone(),
+                    params,
+                    columns,
+                    satin_widths,
+                    why,
+                    bounds,
+                    block: k,
+                    stitches: range,
+                    runs,
+                });
             }
             let first_number = number;
             number = number.saturating_add(stitches.len());
@@ -277,7 +292,8 @@ mod tests {
         let n = ((x1 - x0) / 2.0).round() as usize;
         b.stitches = (0..=n).map(|k| Stitch::sew(Point::new(x0 + 2.0 * k as f64, 0.0))).collect();
         let origin = Origin { node: NodeId(0), part: Part::Fill(0), instance: None };
-        let facts = Facts { origin, params: Some(Params::for_style(Style::Fill)), columns: None, satin_widths: None, why: Choice::Fill };
+        let facts =
+            Facts { origin, occurrence: 1, params: Some(Params::for_style(Style::Fill)), columns: None, satin_widths: None, why: Choice::Fill };
         Planned { facts, block: b, literal: None }
     }
 

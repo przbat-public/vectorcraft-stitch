@@ -37,12 +37,21 @@ pub const CHANGE_ROW: f32 = 20.0;
 const INDENT: f32 = 24.0;
 /// The thread chip's side, points.
 const CHIP: f32 = 12.0;
-/// The room kept under the list for the footer, points: its title, up to four rows of figures and
-/// a note. An estimate fitted to the mockups.
+/// The least room kept under the list for the footer, points: its title, three rows of figures and
+/// a note. An estimate fitted to the mockups; narrower panels and longer words take more
+/// ([`footer_room`]).
 const FOOTER: f32 = 180.0;
-/// The room a figure takes in the footer, points: its widest value ("about 120 min") and a gap.
-/// An estimate.
+/// The least room a figure takes in the footer, points: "about 120 min" in English. An estimate; a
+/// language's longer words take their own width.
 const FIGURE_WIDTH: f32 = 96.0;
+/// The gap between the footer's columns, points.
+const FIGURE_GAP: f32 = 12.0;
+/// The footer's room inside its card, its title's height, a row of figures (a label over its
+/// value) and its note (two lines), points: estimates from the text sizes.
+const FOOTER_PAD: f32 = 8.0;
+const FOOTER_TITLE: f32 = 18.0;
+const FIGURE_ROW: f32 = 30.0;
+const FOOTER_NOTE: f32 = 28.0;
 /// The drop line's width, points, and the dragged row's opacity: as the Layers panel draws them.
 const DROP_LINE: f32 = 2.0;
 const GHOST: f32 = 0.5;
@@ -196,7 +205,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
     let selected = st.selection.objects.clone();
     let covered = covered(&mut app.embroidery.order, uid, revision, &doc, &selected);
     let (rows, tops) = rows(&order, &app.embroidery.order.collapsed);
-    let height = (ui.available_height() - FOOTER - HINT).max(HEADER_ROW * 2.0);
+    let footer_room = footer_room(ui, shown.stats, ui.available_width());
+    let height = (ui.available_height() - footer_room - HINT).max(HEADER_ROW * 2.0);
     let mut clicked: Option<(Row, egui::Modifiers)> = None;
     let mut toggle: Option<usize> = None;
     let mut step: Option<(&'static str, u64)> = None;
@@ -550,10 +560,17 @@ fn paint_row(
                 let badge = format!("ΔE {}", numbers::decimal(lang, block.thread.delta_e, 1));
                 let g = p.text(pos2(x + 4.0, mid), Align2::LEFT_CENTER, &badge, FontId::proportional(SMALL), ink(t.warning));
                 p.rect_stroke(g.expand2(vec2(3.0, 1.0)), 3.0, Stroke::new(1.0, ink(t.warning)), StrokeKind::Outside);
+                x = g.right() + 8.0;
             }
             let objects = objects_of(order, row).len() as u64;
-            let right = format!("{} · {}", crate::etn!(objects, "{count} object", "{count} objects"), numbers::count(lang, block.stitches as u64));
-            p.text(pos2(rect.right() - 6.0, mid), Align2::RIGHT_CENTER, &right, FontId::proportional(SMALL), ink(t.text_dim));
+            let stitches = numbers::count(lang, block.stitches as u64);
+            let right = format!("{} · {stitches}", crate::etn!(objects, "{count} object", "{count} objects"));
+            // The counts at the right, as much of them as fits beside the thread's name.
+            let room = rect.right() - 6.0 - x;
+            let fits = |s: &str| p.layout_no_wrap(s.to_string(), FontId::proportional(SMALL), Color32::WHITE).size().x <= room;
+            if let Some(shown) = [right.as_str(), stitches.as_str()].into_iter().find(|s| fits(s)) {
+                p.text(pos2(rect.right() - 6.0, mid), Align2::RIGHT_CENTER, shown, FontId::proportional(SMALL), ink(t.text_dim));
+            }
             format!("{number} {name} {right}")
         }
         Row::Unit(b, u) => {
@@ -641,7 +658,8 @@ fn how_sewn(block: &OrderBlock, unit: &OrderUnit) -> String {
 
 /// The design's figures under the list: stitches, colours, thread changes, trims, jumps, the top
 /// thread, the size and the time (the last two estimates, said so), and the speed the time is at.
-fn footer(ui: &mut Ui, stats: &Value, t: &Tokens) {
+/// The design's figures in the footer: a label and its value.
+fn figures(stats: &Value) -> [(&'static str, String); 8] {
     let lang = crate::i18n::current();
     let count = |k: &str| numbers::count(lang, stats[k].as_u64().unwrap_or(0));
     let about = |v: String| crate::embroidery::text::fill(crate::et!("about {value}"), &[("value", &v)]);
@@ -651,8 +669,7 @@ fn footer(ui: &mut Ui, stats: &Value, t: &Tokens) {
         (Some(w), Some(h)) => format!("{} × {} mm", numbers::decimal(lang, w, 1), numbers::decimal(lang, h, 1)),
         _ => numbers::NOT_A_NUMBER.to_string(),
     };
-    let speed = numbers::count(lang, stats["time"]["speed"].as_f64().unwrap_or(0.0).max(0.0) as u64);
-    let cells = [
+    [
         (crate::et!("Stitches"), count("stitches")),
         (crate::et!("Colours"), count("threadCount")),
         (crate::et!("Thread changes"), count("colorChanges")),
@@ -661,13 +678,40 @@ fn footer(ui: &mut Ui, stats: &Value, t: &Tokens) {
         (crate::et!("Top thread"), metres),
         (crate::et!("Size"), size),
         (crate::et!("Time"), minutes),
-    ];
-    egui::Frame::NONE.fill(t.panel_darker).corner_radius(t.radius).inner_margin(8.0).show(ui, |ui| {
+    ]
+}
+
+/// How many columns of figures fit in `room` points: as many of the widest figure as fit, three at
+/// most (the mockups' wide panel); words never wrap.
+fn columns(ui: &Ui, cells: &[(&str, String)], room: f32) -> usize {
+    let widest = cells
+        .iter()
+        .flat_map(|(label, value)| [(*label, SMALL - 1.0), (value.as_str(), TEXT)])
+        .map(|(s, size)| ui.painter().layout_no_wrap(s.to_string(), FontId::proportional(size), Color32::WHITE).size().x)
+        .fold(FIGURE_WIDTH, f32::max);
+    (((room + FIGURE_GAP) / (widest + FIGURE_GAP)).floor() as usize).clamp(1, 3)
+}
+
+/// The room the footer takes in a panel `width` points wide: its title, its rows of figures and
+/// its note; at least [`FOOTER`].
+fn footer_room(ui: &Ui, stats: Option<&Value>, width: f32) -> f32 {
+    let Some(stats) = stats else { return FOOTER };
+    let cells = figures(stats);
+    let rows = cells.len().div_ceil(columns(ui, &cells, width - 2.0 * FOOTER_PAD));
+    (2.0 * FOOTER_PAD + FOOTER_TITLE + rows as f32 * FIGURE_ROW + FOOTER_NOTE).max(FOOTER)
+}
+
+fn footer(ui: &mut Ui, stats: &Value, t: &Tokens) {
+    let lang = crate::i18n::current();
+    let speed = numbers::count(lang, stats["time"]["speed"].as_f64().unwrap_or(0.0).max(0.0) as u64);
+    let cells = figures(stats);
+    egui::Frame::NONE.fill(t.panel_darker).corner_radius(t.radius).inner_margin(FOOTER_PAD).show(ui, |ui| {
         ui.set_width(ui.available_width());
+        // The room inside the card, before the grid of figures (which never wraps) can widen it.
+        let room = ui.available_width();
         ui.label(egui::RichText::new(crate::et!("Design")).size(TEXT).color(t.text_strong));
-        // As many columns as fit, three at most (the mockups' wide panel); words never wrap.
-        let columns = ((ui.available_width() / FIGURE_WIDTH).floor() as usize).clamp(1, 3);
-        egui::Grid::new("embroidery-figures").num_columns(columns).spacing(vec2(12.0, 2.0)).show(ui, |ui| {
+        let columns = columns(ui, &cells, room);
+        egui::Grid::new("embroidery-figures").num_columns(columns).spacing(vec2(FIGURE_GAP, 2.0)).show(ui, |ui| {
             for (k, (label, value)) in cells.iter().enumerate() {
                 ui.vertical(|ui| {
                     ui.add(egui::Label::new(egui::RichText::new(*label).size(SMALL - 1.0).color(t.text_dim)).extend());
@@ -679,7 +723,11 @@ fn footer(ui: &mut Ui, stats: &Value, t: &Tokens) {
             }
         });
         let note = crate::embroidery::text::fill(crate::et!("The time at {speed} stitches a minute, an estimate."), &[("speed", &speed)]);
-        ui.label(egui::RichText::new(note).size(SMALL - 1.0).color(t.text_dim));
+        // Wrapped within the card, however wide the grid made it.
+        ui.scope(|ui| {
+            ui.set_max_width(room);
+            ui.add(egui::Label::new(egui::RichText::new(note).size(SMALL - 1.0).color(t.text_dim)).wrap());
+        });
     });
 }
 

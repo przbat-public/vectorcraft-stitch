@@ -262,7 +262,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 crate::etn!(blocks, "{count} thread block", "{count} thread blocks"),
                 crate::etn!(stitches, "{count} stitch", "{count} stitches")
             );
-            ui.label(egui::RichText::new(title).strong().color(if stale { t.text_dim } else { t.text_strong }));
+            // Wrapped in the panel's width: a long line would widen the panel's content.
+            ui.add(egui::Label::new(egui::RichText::new(title).strong().color(if stale { t.text_dim } else { t.text_strong })).wrap());
         }
         if stale && busy {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {

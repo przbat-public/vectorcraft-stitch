@@ -5424,3 +5424,5 @@ embroidery	{index} of {count}	{index} από {count}
 @msg	the check is out of date: wait for the stitches to be planned	ο έλεγχος δεν είναι ενημερωμένος: περιμένετε να σχεδιαστούν οι βελονιές
 @msg	no such rule in the check	δεν υπάρχει τέτοιος κανόνας στον έλεγχο
 @msg	no such finding in the check	δεν υπάρχει τέτοιο εύρημα στον έλεγχο
+	Show Check Marks	Εμφάνιση σημαδιών ελέγχου
+@msg	on: true or false	on: true ή false

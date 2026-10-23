@@ -5458,3 +5458,5 @@ embroidery	{index} of {count}	{index}/{count}
 @msg	the check is out of date: wait for the stitches to be planned	az ellenőrzés elavult: várja meg, amíg az öltések megtervezése elkészül
 @msg	no such rule in the check	nincs ilyen szabály az ellenőrzésben
 @msg	no such finding in the check	nincs ilyen találat az ellenőrzésben
+	Show Check Marks	Ellenőrzési jelölések megjelenítése
+@msg	on: true or false	on: true vagy false

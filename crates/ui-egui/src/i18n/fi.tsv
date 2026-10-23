@@ -5436,3 +5436,5 @@ embroidery	{index} of {count}	{index}/{count}
 @msg	the check is out of date: wait for the stitches to be planned	tarkistus on vanhentunut: odota, että pistot suunnitellaan
 @msg	no such rule in the check	tarkistuksessa ei ole tällaista sääntöä
 @msg	no such finding in the check	tarkistuksessa ei ole tällaista löydöstä
+	Show Check Marks	Näytä tarkistusmerkit
+@msg	on: true or false	on: true tai false

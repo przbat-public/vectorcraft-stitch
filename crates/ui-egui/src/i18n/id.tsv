@@ -5455,3 +5455,5 @@ embroidery	{index} of {count}	{index} dari {count}
 @msg	the check is out of date: wait for the stitches to be planned	pemeriksaan sudah usang: tunggu hingga jahitan selesai direncanakan
 @msg	no such rule in the check	tidak ada aturan itu dalam pemeriksaan
 @msg	no such finding in the check	tidak ada temuan itu dalam pemeriksaan
+	Show Check Marks	Tampilkan tanda pemeriksaan
+@msg	on: true or false	on: true atau false

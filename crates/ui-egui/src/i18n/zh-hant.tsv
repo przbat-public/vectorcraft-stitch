@@ -4360,3 +4360,5 @@ embroidery	{index} of {count}	第 {index} 個，共 {count} 個
 @msg	the check is out of date: wait for the stitches to be planned	檢查結果已過時：請等待針跡規劃完成
 @msg	no such rule in the check	檢查中沒有此規則
 @msg	no such finding in the check	檢查中沒有此問題
+	Show Check Marks	顯示檢查標記
+@msg	on: true or false	on：true 或 false

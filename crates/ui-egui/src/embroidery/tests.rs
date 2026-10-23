@@ -84,7 +84,7 @@ fn the_view_menu_the_tab_and_the_control_channel_reach_the_stitch_view() {
         })
         .unwrap();
     let options: Vec<&str> = options.iter().filter_map(|i| if let Item::Cmd(_, id, _) = i { Some(*id) } else { None }).collect();
-    assert_eq!(options, ["view.stitchPreview.jumps", "view.stitchPreview.needlePoints", "view.stitchPreview.artwork"]);
+    assert_eq!(options, ["view.stitchPreview.jumps", "view.stitchPreview.needlePoints", "view.stitchPreview.artwork", "view.checkMarks"]);
     let sc = crate::shortcuts::all_shortcuts().into_iter().find(|(_, id, _)| *id == "view.stitchPreview").map(|(sc, ..)| sc);
     assert_eq!(sc, crate::shortcuts::parse("Cmd+E"));
 

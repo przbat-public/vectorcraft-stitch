@@ -5048,3 +5048,5 @@ embroidery	{index} of {count}	{index} / {count}
 @msg	the check is out of date: wait for the stitches to be planned	검사가 최신이 아닙니다: 땀 계획이 끝날 때까지 기다리세요
 @msg	no such rule in the check	검사에 그런 규칙이 없습니다
 @msg	no such finding in the check	검사에 그런 발견 항목이 없습니다
+	Show Check Marks	검사 표시 보기
+@msg	on: true or false	on: true 또는 false

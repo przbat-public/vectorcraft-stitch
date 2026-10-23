@@ -401,7 +401,8 @@ open tab as `ui.embroidery_panel`. The panel never plans: it asks the stitch pre
 replies, so it shows what `ui.inspect.stitchPreview` says. In the Check tab, Show selects a rule's objects (or one
 hit's) and zooms to its hits with `view.zoomTo`; `embroidery.nextHit` and `embroidery.previousHit` then show the next
 or previous listed hit of that rule (round from the end), answering `{rule, hit}` (from 0). They are refused while no
-finding is shown or while the check is of an older plan than the document's.
+finding is shown or while the check is of an older plan than the document's. `view.checkMarks {on?: bool}` turns the
+check's marks on the canvas off or on for the session (no `on`: the other way), answering whether they are on.
 
 `view.zoomTo {rect: [left, top, right, bottom], margin?}` centres a box of document points in the window and zooms
 so that it fills it less `margin` screen points on each side (default 30, as Fit Artboard in Window leaves), within

@@ -2,6 +2,7 @@
 //! design's stitches. Fork-owned, so that upstream files carry only one-line hooks into it.
 //!
 //! - [`marks`]: severity marks, drawn in code: error, warning, note, passed.
+//! - [`check_marks`]: the Check tab's findings ringed on the canvas.
 //! - [`numbers`]: numbers as the interface language writes them, in the embroidery interface's
 //!   read-only text.
 //! - [`plan_worker`]: the stitch preview's planning thread.
@@ -15,6 +16,7 @@
 //!   ([`crate::et!`], [`crate::etn!`]).
 //! - [`render_stitches`]: the control channel's picture of the stitches.
 
+pub mod check_marks;
 pub mod marks;
 pub mod menu;
 pub mod notice;
@@ -47,11 +49,13 @@ pub struct Embroidery {
 }
 
 /// What the fork draws over the canvas, after it: the selection's markers in the stitch view, the
-/// Art | Stitches switch, and the notice under it.
+/// check's marks, the Art | Stitches switch, and the notice under it.
 pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
     let Some(canvas) = app.canvas_rect.filter(|_| !crate::menus::home_showing(app)) else { return };
     if let Some(view) = app.view().copied() {
-        overlay::draw(app, &ui.painter_at(canvas), &crate::canvas::Xf::new(canvas, &view));
+        let xf = crate::canvas::Xf::new(canvas, &view);
+        overlay::draw(app, &ui.painter_at(canvas), &xf);
+        check_marks::draw(app, ui.ctx(), &ui.painter_at(canvas), &xf);
     }
     switch::show(app, ui, canvas);
     notice::show(app, ui, canvas);

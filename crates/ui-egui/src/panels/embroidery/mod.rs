@@ -107,9 +107,21 @@ pub(crate) fn command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         "window.panel" if p.get("panel").and_then(Value::as_str).and_then(crate::menus::normalize_panel) == Some(ID) => Some(show_panel(app)),
         "ui.embroideryPanel" => Some(panel_command(app, p)),
         "embroidery.nextHit" => Some(check::step(app, true)),
+        "view.checkMarks" => Some(check_marks(app, p)),
         "embroidery.previousHit" => Some(check::step(app, false)),
         _ => None,
     }
+}
+
+/// `view.checkMarks {on?}`: the Check tab's findings marked on the canvas or not, for the session
+/// (no `on`: the other way) → whether they are.
+fn check_marks(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
+    let on = match p.get("on").filter(|v| !v.is_null()) {
+        None => app.embroidery.check.hide_marks,
+        Some(v) => v.as_bool().ok_or("on: true or false")?,
+    };
+    app.embroidery.check.hide_marks = !on;
+    Ok(json!(on))
 }
 
 /// Whether the panel's own commands can run now (`None` for any other command): Next and Previous

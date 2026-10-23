@@ -5455,3 +5455,5 @@ embroidery	{index} of {count}	{index} af {count}
 @msg	the check is out of date: wait for the stitches to be planned	kontrollen er forældet: vent, til stingene er planlagt
 @msg	no such rule in the check	kontrollen har ingen sådan regel
 @msg	no such finding in the check	kontrollen har intet sådant fund
+	Show Check Marks	Vis kontrolmærker
+@msg	on: true or false	on: true eller false

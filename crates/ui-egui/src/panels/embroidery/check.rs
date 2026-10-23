@@ -91,6 +91,11 @@ pub struct CheckState {
     waiting_since: Option<f64>,
     /// What Show showed last.
     pub(crate) focus: Option<Focus>,
+    /// The pass the tab was last drawn in (`egui::Context::cumulative_pass_nr`): the canvas marks
+    /// the findings only while the tab shows.
+    pub(crate) drawn_pass: Option<u64>,
+    /// View › Stitch Preview Options › Show Check Marks turned off, for the session.
+    pub(crate) hide_marks: bool,
 }
 
 /// What Show showed last: a rule's findings, or one of its hits (by its place in the rule's listed
@@ -131,12 +136,12 @@ pub fn ordered(reply: &Value) -> Vec<&Value> {
     rules
 }
 
-fn mark_of(rule: &Value) -> Mark {
+pub(crate) fn mark_of(rule: &Value) -> Mark {
     Mark::of(rule["severity"].as_str().unwrap_or_default(), rule["hits"].as_u64().unwrap_or(0))
 }
 
 /// The name of the format whose limits a reply checked, as the export lists it.
-fn format_label(id: &str) -> &'static str {
+pub(crate) fn format_label(id: &str) -> &'static str {
     check_formats().into_iter().find(|(f, _)| *f == id).map_or("", |(_, label)| label)
 }
 
@@ -227,7 +232,7 @@ pub fn found(rule: &Value, lang: Lang) -> String {
 }
 
 /// A hit of rule `id` in a line: where it is and what it measured.
-fn hit_line(app: &VectorcraftApp, doc: Option<&Document>, id: &str, hit: &Value, lang: Lang) -> Option<String> {
+pub(crate) fn hit_line(app: &VectorcraftApp, doc: Option<&Document>, id: &str, hit: &Value, lang: Lang) -> Option<String> {
     let value = measure(lang, &hit["value"]).unwrap_or_default();
     let record = hit["record"].as_u64().map(|n| numbers::count(lang, n)).unwrap_or_default();
     let name = || {
@@ -261,7 +266,7 @@ fn hit_line(app: &VectorcraftApp, doc: Option<&Document>, id: &str, hit: &Value,
 }
 
 /// A severity's name, said with each rule to a screen reader.
-fn severity_name(mark: Mark) -> &'static str {
+pub(crate) fn severity_name(mark: Mark) -> &'static str {
     match mark {
         Mark::Error => crate::et!("Error"),
         Mark::Warning => crate::et!("Warning"),
@@ -305,17 +310,17 @@ enum Act {
 }
 
 /// A rule's listed hits.
-fn listed(rule: &Value) -> &[Value] {
+pub(crate) fn listed(rule: &Value) -> &[Value] {
     rule["examples"].as_array().map(Vec::as_slice).unwrap_or_default()
 }
 
 /// The rule `id` of a reply.
-fn rule_of<'a>(reply: &'a Value, id: &str) -> Option<&'a Value> {
+pub(crate) fn rule_of<'a>(reply: &'a Value, id: &str) -> Option<&'a Value> {
     reply["rules"].as_array()?.iter().find(|r| r["id"] == id)
 }
 
 /// Where a hit is, millimetres: where its stitch starts and ends, or its one point.
-fn hit_points(hit: &Value) -> Vec<Point> {
+pub(crate) fn hit_points(hit: &Value) -> Vec<Point> {
     let point = |v: &Value| Some(Point::new(v.get(0)?.as_f64()?, v.get(1)?.as_f64()?)).filter(|p| p.x.is_finite() && p.y.is_finite());
     [point(&hit["from"]), point(&hit["at"])].into_iter().flatten().collect()
 }
@@ -376,29 +381,31 @@ pub(crate) fn show_findings(app: &mut VectorcraftApp, uid: u64, reply: &Value, i
 
 /// The active document's check as shown, when it is the plan's own and the plan is of the document
 /// as it is (no change since, even one no frame has drawn yet): the check that Next and Previous
-/// Finding step through.
-fn current_check(app: &VectorcraftApp) -> Option<(u64, Value)> {
+/// Finding step through and the canvas marks.
+pub(crate) fn current_check(app: &VectorcraftApp) -> Option<(u64, &Value)> {
     let st = app.session.active()?;
     let preview = &app.embroidery.preview;
     let shown = preview.shown(st.uid)?;
     let (result, current) = shown.reply(&query(&app.embroidery.check, st.uid))?;
     let fresh = current && preview.is_fresh(st.uid) && std::sync::Arc::ptr_eq(&shown.document, &st.doc);
-    fresh.then(|| result.as_ref().ok().map(|r| (st.uid, r.clone()))).flatten()
+    fresh.then(|| result.as_ref().ok().map(|r| (st.uid, r))).flatten()
 }
 
 /// Whether Next and Previous Finding can step: a finding shown in the active document, and its
 /// check the plan's own.
 pub(crate) fn can_step(app: &VectorcraftApp) -> bool {
     let Some(focus) = &app.embroidery.check.focus else { return false };
-    current_check(app).is_some_and(|(uid, reply)| uid == focus.uid && rule_of(&reply, &focus.rule).is_some_and(|r| !listed(r).is_empty()))
+    current_check(app).is_some_and(|(uid, reply)| uid == focus.uid && rule_of(reply, &focus.rule).is_some_and(|r| !listed(r).is_empty()))
 }
 
 /// `embroidery.nextHit` and `embroidery.previousHit`: show the next (`forward`) or previous listed
 /// hit of the rule shown last, round from the last to the first → `{rule, hit}`.
 pub(crate) fn step(app: &mut VectorcraftApp, forward: bool) -> Result<Value, String> {
     let focus = app.embroidery.check.focus.clone().ok_or("no finding is shown: show one in the Embroidery panel's Check tab")?;
-    let (uid, reply) =
-        current_check(app).filter(|(uid, _)| *uid == focus.uid).ok_or("the check is out of date: wait for the stitches to be planned")?;
+    let (uid, reply) = current_check(app)
+        .filter(|(uid, _)| *uid == focus.uid)
+        .map(|(uid, r)| (uid, r.clone()))
+        .ok_or("the check is out of date: wait for the stitches to be planned")?;
     let n = rule_of(&reply, &focus.rule).map(|r| listed(r).len()).unwrap_or(0);
     if n == 0 {
         return Err("no finding is shown: show one in the Embroidery panel's Check tab".into());
@@ -430,6 +437,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
         return;
     };
     app.embroidery.check.waiting_since = None;
+    app.embroidery.check.drawn_pass = Some(ui.ctx().cumulative_pass_nr());
     let reply = match result {
         Ok(reply) => reply,
         Err(e) => {

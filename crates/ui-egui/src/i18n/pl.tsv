@@ -5323,3 +5323,5 @@ embroidery	{index} of {count}	{index} z {count}
 @msg	the check is out of date: wait for the stitches to be planned	kontrola jest nieaktualna: poczekaj, aż ściegi zostaną zaplanowane
 @msg	no such rule in the check	nie ma takiej reguły w kontroli
 @msg	no such finding in the check	nie ma takiego znaleziska w kontroli
+	Show Check Marks	Pokaż znaczniki kontroli
+@msg	on: true or false	on: true albo false

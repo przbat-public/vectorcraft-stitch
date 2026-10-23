@@ -1618,6 +1618,19 @@ moment). What was shown last is the tab's focus: Next and Previous Finding (`emb
 hits, round from the end. They are off while the check is of an older plan than the document's,
 even in the moment after a change before a frame has drawn.
 
+**Check marks on the canvas** (`embroidery::check_marks`). While the Check tab shows, each listed hit
+of a rule that found an error or a warning is ringed on the canvas, in the art view and the stitch
+view alike: round its stitch (a stitch's hit gives where it starts and ends) or round its spot
+(layers). A note's hits are ringed only while its rule is the tab's focus: notes are many (a fill's
+row ends are often shorter than the needle is thick). A ring is black on white, so that it reads on
+any fabric, thread or art, with the severity's mark on a white disc at its upper right; the focus's
+hit is ringed again in the accent colour, and hovering a ring says its rule and hit as the tab words
+them. At most 300 are drawn (an estimate; the focus's first; no clustering). None are drawn on a
+check of an older plan than the document's (they would point where the stitches no longer are), in
+Presentation Mode, with the edges hidden, or while a tool transforms the selection. View › Stitch
+Preview Options › Show Check Marks (`view.checkMarks {on?}`) turns them off for the session. Rules on
+objects' settings, art left out and threads point at no stitch: Show selects their objects instead.
+
 **Measured first** (gate 1 of the stitch preview: `vectorcraft-cli perf --embroidery`, release
 build, 12-core Apple Silicon, load about 4, the median of five frames, twice; 2026-10-23). The
 pictures are built in code without the planner (`perf_embroidery::stitch_picture`: square tiles of

@@ -5065,3 +5065,5 @@ embroidery	{index} of {count}	{index} з {count}
 @msg	the check is out of date: wait for the stitches to be planned	перевірка застаріла: дочекайтеся планування стібків
 @msg	no such rule in the check	у перевірці немає такого правила
 @msg	no such finding in the check	у перевірці немає такої знахідки
+	Show Check Marks	Показати позначки перевірки
+@msg	on: true or false	on: true або false

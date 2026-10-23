@@ -5437,3 +5437,5 @@ embroidery	{index} of {count}	{index} от {count}
 @msg	the check is out of date: wait for the stitches to be planned	проверката е остаряла: изчакайте бодовете да бъдат планирани
 @msg	no such rule in the check	няма такова правило в проверката
 @msg	no such finding in the check	няма такава находка в проверката
+	Show Check Marks	Показване на отметките от проверката
+@msg	on: true or false	on: true или false

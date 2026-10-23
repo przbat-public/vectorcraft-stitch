@@ -5498,3 +5498,5 @@ embroidery	{index} of {count}	{index} van {count}
 @msg	the check is out of date: wait for the stitches to be planned	de controle is verouderd: wacht tot de steken zijn gepland
 @msg	no such rule in the check	deze regel komt niet voor in de controle
 @msg	no such finding in the check	deze bevinding komt niet voor in de controle
+	Show Check Marks	Controlemarkeringen tonen
+@msg	on: true or false	on: true of false

@@ -592,6 +592,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{selected?: preset name} open the presets manager (dialog `flattenerPresets`, fields `selected`, then the selected preset's `name` and option keys: setting them on a saved preset saves it, a new `name` renames it; built-in presets don't change). New, Delete, Import… and Export… run flattener.presets.save / delete / import / export",
     ),
     (
+        "view.checkMarks",
+        "Show Check Marks",
+        "",
+        "{on?: bool} (VectorCraft Stitch) ring the findings of the Embroidery panel's Check tab on the canvas while the tab shows (the default), or not, for the session; no on: the other way → whether they are",
+    ),
+    (
         "embroidery.nextHit",
         "Next Finding",
         "",

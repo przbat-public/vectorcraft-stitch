@@ -5428,3 +5428,5 @@ embroidery	{index} of {count}	{index} av {count}
 @msg	the check is out of date: wait for the stitches to be planned	kontrollen är inaktuell: vänta tills stygnen har planerats
 @msg	no such rule in the check	kontrollen har ingen sådan regel
 @msg	no such finding in the check	kontrollen har inget sådant fynd
+	Show Check Marks	Visa kontrollmarkeringar
+@msg	on: true or false	on: true eller false

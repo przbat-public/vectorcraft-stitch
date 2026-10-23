@@ -5085,3 +5085,5 @@ embroidery	{index} of {count}	{index} di {count}
 @msg	the check is out of date: wait for the stitches to be planned	la verifica non è aggiornata: attendi che i punti siano pianificati
 @msg	no such rule in the check	questa regola non è presente nella verifica
 @msg	no such finding in the check	questo rilievo non è presente nella verifica
+	Show Check Marks	Mostra i segni della verifica
+@msg	on: true or false	on: true o false

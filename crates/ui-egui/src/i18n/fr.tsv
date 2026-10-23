@@ -5471,3 +5471,5 @@ embroidery	{index} of {count}	{index} sur {count}
 @msg	the check is out of date: wait for the stitches to be planned	la vérification n’est plus à jour : attendez que les points soient planifiés
 @msg	no such rule in the check	cette règle ne figure pas dans la vérification
 @msg	no such finding in the check	ce constat ne figure pas dans la vérification
+	Show Check Marks	Afficher les repères de vérification
+@msg	on: true or false	on : true ou false

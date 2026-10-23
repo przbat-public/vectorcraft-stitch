@@ -1,6 +1,7 @@
 //! The fork's items in the app's menus and title: View › Stitch Preview (⌘E) and its options, after
-//! Pixel Preview, checked as the active document's stitch view is; and the document tab's mode,
-//! "Stitches" while the canvas shows them.
+//! Pixel Preview, checked as the active document's stitch view is (and Show Check Marks, for the
+//! check's marks on the canvas); and the document tab's mode, "Stitches" while the canvas shows
+//! them.
 
 use serde_json::Value;
 use vectorcraft_engine::DocState;
@@ -22,13 +23,18 @@ pub fn stitch_preview_options() -> Item {
             Item::Cmd("Show Jumps and Cuts", "view.stitchPreview.jumps", Value::Null),
             Item::Cmd("Show Needle Points", "view.stitchPreview.needlePoints", Value::Null),
             Item::Cmd("Show Artwork Under Stitches", "view.stitchPreview.artwork", Value::Null),
+            Item::Cmd("Show Check Marks", "view.checkMarks", Value::Null),
         ],
     )
 }
 
 /// Whether command `id`'s item is checked, for the stitch view's commands: as the active
-/// document's stitch view is set. `None` for any other command.
+/// document's stitch view is set; Show Check Marks, as the session has it. `None` for any other
+/// command.
 pub fn checked(app: &VectorcraftApp, id: &str) -> Option<bool> {
+    if id == "view.checkMarks" {
+        return Some(!app.embroidery.check.hide_marks);
+    }
     let v = app.session.stitch_view();
     Some(match id {
         "view.stitchPreview" => v.on,

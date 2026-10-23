@@ -323,3 +323,75 @@ fn next_and_previous_finding() {
     }
     assert!(crate::menus::enabled(&app, "embroidery.nextHit"));
 }
+
+/// The canvas's marks: the warnings' hits while the tab shows; a note's only once shown; the
+/// focus's first, its hit marked; none on a check of an older plan, none once the tab is gone, none
+/// when turned off; at most the cap.
+#[test]
+fn the_canvas_marks_the_findings_while_the_tab_shows() {
+    use crate::embroidery::check_marks::{MAX_DRAWN_MARKS, marks};
+    let mut app = app_with_findings();
+    let ctx = egui::Context::default();
+    let (uid, reply) = shown_check(&mut app, &ctx);
+    let pass = ctx.cumulative_pass_nr();
+    let all = marks(&app, pass);
+    let layers = listed(rule_of(&reply, "layers").unwrap()).len();
+    assert_eq!(all.len(), layers, "the layers warning's hits; the note's aren't marked");
+    assert!(all.iter().all(|m| m.rule == "layers" && m.mark == Mark::Warning && m.half == 0.0));
+    // A note shown: its hits first, the one shown marked.
+    show_findings(&mut app, uid, &reply, "stitchBelowNeedle", Some(1)).unwrap();
+    let all = marks(&app, pass);
+    let first = all.first().unwrap();
+    assert_eq!((first.rule.as_str(), first.mark), ("stitchBelowNeedle", Mark::Info));
+    assert!(first.half > 0.0, "a stitch is ringed round its length");
+    assert!(all.iter().filter(|m| m.focused).map(|m| (m.rule.as_str(), m.hit)).eq([("stitchBelowNeedle", 1)]));
+    assert!(all.len() <= MAX_DRAWN_MARKS);
+    // Turned off, the tab gone, or the check of an older plan: none.
+    app.run("view.checkMarks", json!({"on": false})).unwrap();
+    assert!(marks(&app, pass).is_empty());
+    assert!(!crate::menus::checked(&app, "view.checkMarks", &json!({})).unwrap());
+    app.run("view.checkMarks", json!({})).unwrap();
+    assert!(!marks(&app, pass).is_empty());
+    assert!(marks(&app, pass + 2).is_empty(), "the tab no longer drawn");
+    app.run("select.all", json!({})).unwrap();
+    app.run("object.move", json!({"dx": 1, "dy": 0})).unwrap();
+    assert!(marks(&app, pass).is_empty(), "the document changed since the check");
+}
+
+/// The marks drawn: rings and badges on the canvas, and a hovered mark's words.
+#[test]
+fn the_marks_drawn_and_hovered() {
+    use crate::embroidery::check_marks::{draw, marks};
+    let mut app = app_with_findings();
+    let ctx = egui::Context::default();
+    let (uid, reply) = shown_check(&mut app, &ctx);
+    show_findings(&mut app, uid, &reply, "layers", Some(0)).unwrap();
+    let pass = ctx.cumulative_pass_nr();
+    let first = marks(&app, pass).first().cloned().unwrap();
+    let canvas = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 600.0));
+    let view = *app.view().unwrap();
+    let xf = crate::canvas::Xf::new(canvas, &view);
+    let at = xf.to_screen(first.centre);
+    let (mut circles, mut words) = (0, vec![]);
+    // The tab drawn in these passes too, so that its marks show; a tooltip shows from its second.
+    for time in [5.0, 5.1] {
+        let raw = egui::RawInput { time: Some(time), screen_rect: Some(canvas), events: vec![egui::Event::PointerMoved(at)], ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| {
+            super::super::show(&mut app, ui);
+            draw(&app, ui.ctx(), &ui.painter_at(canvas), &xf);
+        });
+        out.textures_delta.clear();
+        (circles, words) = (0, vec![]);
+        let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
+        while let Some(s) = pending.pop() {
+            match s {
+                Shape::Vec(v) => pending.extend(v),
+                Shape::Circle(_) => circles += 1,
+                Shape::Text(t) => words.push(t.galley.text().to_string()),
+                _ => {}
+            }
+        }
+    }
+    assert!(circles >= 3 * marks(&app, pass).len(), "{circles}");
+    assert!(words.iter().any(|w| w.starts_with("Warning: 3 or more layers") && w.contains("\nStitch ")), "{words:?}");
+}

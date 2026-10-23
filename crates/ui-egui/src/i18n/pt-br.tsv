@@ -5388,3 +5388,5 @@ embroidery	{index} of {count}	{index} de {count}
 @msg	the check is out of date: wait for the stitches to be planned	a verificação está desatualizada: aguarde o planejamento dos pontos
 @msg	no such rule in the check	essa regra não existe na verificação
 @msg	no such finding in the check	essa ocorrência não existe na verificação
+	Show Check Marks	Mostrar Marcas de Verificação
+@msg	on: true or false	on: true ou false

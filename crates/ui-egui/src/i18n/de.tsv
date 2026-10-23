@@ -5047,3 +5047,5 @@ embroidery	{index} of {count}	{index} von {count}
 @msg	the check is out of date: wait for the stitches to be planned	die Prüfung ist veraltet: warten Sie, bis die Stiche geplant sind
 @msg	no such rule in the check	diese Regel gibt es in der Prüfung nicht
 @msg	no such finding in the check	diesen Befund gibt es in der Prüfung nicht
+	Show Check Marks	Prüfmarkierungen einblenden
+@msg	on: true or false	on: true oder false

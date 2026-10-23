@@ -5065,3 +5065,5 @@ embroidery	{index} of {count}	{index} / {count}
 @msg	the check is out of date: wait for the stitches to be planned	kết quả kiểm tra đã cũ: hãy chờ các mũi thêu được lên kế hoạch
 @msg	no such rule in the check	không có quy tắc này trong kết quả kiểm tra
 @msg	no such finding in the check	không có phát hiện này trong kết quả kiểm tra
+	Show Check Marks	Hiện dấu kiểm tra
+@msg	on: true or false	on: true hoặc false

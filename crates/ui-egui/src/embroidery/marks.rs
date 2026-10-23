@@ -66,12 +66,16 @@ impl Mark {
 /// The colour `mark` is drawn in on the panel `t` describes (its plain, darker, hovered and
 /// selected backgrounds).
 pub fn colour(t: &Tokens, mark: Mark) -> Color32 {
-    let base = match mark {
+    readable(base(t, mark), &backgrounds(t), t.dark)
+}
+
+/// The theme's colour for `mark`, before it is made to stand out.
+fn base(t: &Tokens, mark: Mark) -> Color32 {
+    match mark {
         Mark::Error => t.error,
         Mark::Warning => t.warning,
         Mark::Info | Mark::Passed => t.text_dim,
-    };
-    readable(base, &backgrounds(t), t.dark)
+    }
 }
 
 /// What a mark in a panel row is drawn on.
@@ -87,7 +91,16 @@ fn glyph_on(t: &Tokens, fill: Color32) -> Color32 {
 
 /// Draw `mark` centred on `centre`, `size` points across, on the panel `t` describes.
 pub fn paint(p: &Painter, centre: Pos2, size: f32, mark: Mark, t: &Tokens) {
-    let c = colour(t, mark);
+    paint_in(p, centre, size, mark, t, colour(t, mark));
+}
+
+/// Draw `mark` on a background of `back` (the canvas's marks draw it on a white disc): its colour
+/// made to stand out from `back` instead of the panel.
+pub fn paint_on(p: &Painter, centre: Pos2, size: f32, mark: Mark, t: &Tokens, back: Color32) {
+    paint_in(p, centre, size, mark, t, readable(base(t, mark), &[back], luminance(back) < 0.5));
+}
+
+fn paint_in(p: &Painter, centre: Pos2, size: f32, mark: Mark, t: &Tokens, c: Color32) {
     let r = size / 2.0;
     let weight = (size * GLYPH_WEIGHT).max(1.0);
     match mark {
@@ -242,6 +255,17 @@ mod tests {
         let k = (0..=CONTRAST_STEPS).find(|k| mix(light.warning, Color32::BLACK, f32::from(*k) / f32::from(CONTRAST_STEPS)) == amber);
         let k = k.expect("a step of the mix");
         assert!(k > 0 && short(mix(light.warning, Color32::BLACK, f32::from(k - 1) / f32::from(CONTRAST_STEPS))));
+    }
+
+    /// On a white disc, every mark stands out by 3:1, whatever the theme.
+    #[test]
+    fn marks_on_white_reach_three_to_one() {
+        for t in every_theme() {
+            for mark in [Mark::Error, Mark::Warning, Mark::Info, Mark::Passed] {
+                let c = readable(base(&t, mark), &[Color32::WHITE], false);
+                assert!(contrast(c, Color32::WHITE) >= NON_TEXT_CONTRAST, "{mark:?}");
+            }
+        }
     }
 
     #[test]

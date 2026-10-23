@@ -5125,3 +5125,5 @@ embroidery	{index} of {count}	{index} / {count}
 @msg	the check is out of date: wait for the stitches to be planned	チェックが古くなっています: 針目の計画が終わるまでお待ちください
 @msg	no such rule in the check	チェックにそのようなルールはありません
 @msg	no such finding in the check	チェックにそのような検出箇所はありません
+	Show Check Marks	チェックの印を表示
+@msg	on: true or false	on: true または false

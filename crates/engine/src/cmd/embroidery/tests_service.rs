@@ -834,3 +834,67 @@ fn an_edit_plans_again_only_what_it_changed() {
     assert_eq!(service.kept(), 7 + moved.len() + 1, "{} moved", moved.len());
     assert_eq!(*after, digitize(&doc, &opts, None).unwrap());
 }
+
+/// Two callers asking for one plan at once walk the document once and get the same plan.
+#[test]
+fn two_callers_at_once_plan_once() {
+    let (s, _) = build(&[
+        Art { kind: 0, x: 10.0, y: 10.0, w: 80.0, h: 60.0, fill: Some(0), stroke: Some((1, 4.0)) },
+        Art { kind: 1, x: 120.0, y: 20.0, w: 60.0, h: 60.0, fill: Some(2), stroke: None },
+    ]);
+    let doc = s.doc().unwrap().doc.clone();
+    let service = Arc::new(PlanService::default());
+    let start = Arc::new(std::sync::Barrier::new(2));
+    let callers: Vec<_> = (0..2)
+        .map(|_| {
+            let (service, doc, start) = (service.clone(), doc.clone(), start.clone());
+            std::thread::spawn(move || {
+                start.wait();
+                service.planned(Of::whole(&doc), &doc, &Options::default()).unwrap().generation
+            })
+        })
+        .collect();
+    let generations: Vec<u64> = callers.into_iter().map(|c| c.join().unwrap()).collect();
+    assert_eq!(generations[0], generations[1], "the same plan");
+    assert_eq!((service.walks(), service.flights()), (1, 0));
+}
+
+/// A caller waiting for a flight that lands without a plan (a cancelled one) plans itself; a
+/// cancelled waiter stops waiting; a wait past its bound plans; a flight ends when its plan panics.
+#[test]
+fn a_wait_for_another_callers_plan_always_ends() {
+    let (s, _) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 80.0, h: 60.0, fill: Some(0), stroke: None }]);
+    let doc = s.doc().unwrap().doc.clone();
+    let opts = Options::default();
+    let service = Arc::new(PlanService::default());
+    // Cancelled while it waits: no plan, no walk.
+    service.in_flight(Of::whole(&doc), &opts, || {
+        let (service, doc) = (service.clone(), doc.clone());
+        let waiter = std::thread::spawn(move || {
+            let token = vectorcraft_doc::cancel::CancelToken::new();
+            token.cancel();
+            vectorcraft_doc::cancel::scope(&token, None, || service.planned(Of::whole(&doc), &doc, &Options::default()).err())
+        });
+        assert_eq!(waiter.join().unwrap(), Some(PlanError::Cancelled));
+    });
+    assert_eq!((service.walks(), service.flights()), (0, 0));
+    // Past its bound: it plans itself.
+    service.in_flight(Of::whole(&doc), &opts, || {
+        let planned = service.planned_waiting(Of::whole(&doc), &doc, &opts, std::time::Duration::from_millis(1));
+        assert!(planned.is_ok());
+    });
+    assert_eq!(service.walks(), 1);
+    // The flight lands without a plan (as a cancelled one does): the waiter plans.
+    let other = Options::from_params(&json!({"stitchStyle": "satin"}), "test").unwrap();
+    let waiter = service.in_flight(Of::whole(&doc), &other, || {
+        let (service, doc, other) = (service.clone(), doc.clone(), other.clone());
+        std::thread::spawn(move || service.planned(Of::whole(&doc), &doc, &other).is_ok())
+    });
+    assert!(waiter.join().unwrap());
+    assert_eq!((service.walks(), service.flights()), (2, 0));
+    // A plan that panics ends its flight.
+    let panicked =
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| service.in_flight(Of::whole(&doc), &opts, || panic!("a fault in planning"))));
+    assert!(panicked.is_err());
+    assert_eq!(service.flights(), 0);
+}

@@ -22,6 +22,13 @@
 //! the units it finished stay kept for the next. Each unit is reported as a step of its progress.
 //! The service is `Send` and `Sync`, so the app can plan on a worker thread while commands plan
 //! on theirs; commands and the web build plan synchronously.
+//!
+//! Two callers asking for the same plan at once (the app's worker and a command, say) plan it once:
+//! the second waits for the first's plan instead of walking the document too (one flight per plan).
+//! The wait ends when the first lands (its plan remembered, or not when it was cancelled: the second
+//! then plans), when the second is cancelled itself, or after [`MAX_FLIGHT_WAIT_MS`], past which it
+//! plans for itself; a flight ends even when its plan panics. The web build, which has one thread,
+//! has no flights.
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -49,6 +56,69 @@ pub const MAX_MEMO_BYTES: usize = 256 << 20;
 
 /// The generation the next plan made gets: one counter for the process, so no two plans share one.
 static NEXT_GENERATION: AtomicU64 = AtomicU64::new(1);
+
+/// How long a caller waits for another that plans the same snapshot with the same options before
+/// planning it itself, milliseconds: far longer than a plan of a real design takes (under 20 ms), so
+/// that it ends only a wait for a caller that got stuck. An estimate.
+#[cfg(not(target_arch = "wasm32"))]
+pub const MAX_FLIGHT_WAIT_MS: u64 = 10_000;
+
+/// How often a waiting caller looks whether it was cancelled, milliseconds. An estimate.
+#[cfg(not(target_arch = "wasm32"))]
+const FLIGHT_CHECK_MS: u64 = 10;
+
+/// A plan under way: what it is of, and its number among the service's flights.
+#[cfg(not(target_arch = "wasm32"))]
+struct Flight {
+    id: u64,
+    snapshot: Weak<Document>,
+    selection: Vec<NodeId>,
+    opts: Options,
+    fonts: u64,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Flight {
+    fn of(&self, of: Of<'_>, opts: &Options, fonts: u64) -> bool {
+        std::ptr::eq(self.snapshot.as_ptr(), Arc::as_ptr(of.snapshot)) && self.selection == of.selection && self.opts == *opts && self.fonts == fonts
+    }
+}
+
+/// The plans under way of one service, and what wakes those waiting for one.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Default)]
+struct Flights {
+    under_way: Mutex<(u64, Vec<Flight>)>,
+    landed: std::sync::Condvar,
+}
+
+/// Ends its flight when dropped, also when the plan unwinds, and wakes the callers waiting for it.
+/// `None`: planning without a flight (the flights' lock poisoned, or a wait given up).
+#[cfg(not(target_arch = "wasm32"))]
+struct Landing<'a> {
+    flights: &'a Flights,
+    id: Option<u64>,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Drop for Landing<'_> {
+    fn drop(&mut self) {
+        let Some(id) = self.id else { return };
+        // A poisoned lock still holds the list: the flight is taken off it all the same.
+        let mut under_way = self.flights.under_way.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        under_way.1.retain(|f| f.id != id);
+        drop(under_way);
+        self.flights.landed.notify_all();
+    }
+}
+
+/// What a caller who wants a plan does: plan it (its flight landing when the plan is done), or look
+/// again for the plan another landed with.
+#[cfg(not(target_arch = "wasm32"))]
+enum Turn<'a> {
+    Plan(Landing<'a>),
+    LookAgain,
+}
 
 /// What a plan is of: a document snapshot, cut to the selected objects when `selection` lists
 /// them (empty: all of it). The document planned is made from these alone (and without an opacity
@@ -134,6 +204,8 @@ pub(crate) struct PlanService {
     units: Mutex<UnitCache>,
     /// The plans remembered, the most recently used last.
     memos: Mutex<Vec<Memo>>,
+    #[cfg(not(target_arch = "wasm32"))]
+    flights: Flights,
     /// How many times it walked a document (the tests count plans made).
     #[cfg(test)]
     walks: std::sync::atomic::AtomicUsize,
@@ -150,10 +222,77 @@ impl PlanService {
 
     /// [`PlanService::plan`], with the plan's generation and scene.
     pub(crate) fn planned(&self, of: Of<'_>, doc: &Document, opts: &Options) -> Result<Planned, PlanError> {
-        let fonts = vectorcraft_text::FontDb::global().generation();
-        if let Some(plan) = self.remembered(of, opts, fonts) {
-            return plan;
+        #[cfg(not(target_arch = "wasm32"))]
+        return self.planned_waiting(of, doc, opts, std::time::Duration::from_millis(MAX_FLIGHT_WAIT_MS));
+        #[cfg(target_arch = "wasm32")]
+        {
+            let fonts = vectorcraft_text::FontDb::global().generation();
+            match self.remembered(of, opts, fonts) {
+                Some(plan) => plan,
+                None => self.walk(of, doc, opts, fonts),
+            }
         }
+    }
+
+    /// [`PlanService::planned`], waiting at most `max_wait` for another caller that plans the same.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(super) fn planned_waiting(&self, of: Of<'_>, doc: &Document, opts: &Options, max_wait: std::time::Duration) -> Result<Planned, PlanError> {
+        let fonts = vectorcraft_text::FontDb::global().generation();
+        let asked = std::time::Instant::now();
+        loop {
+            if let Some(plan) = self.remembered(of, opts, fonts) {
+                return plan;
+            }
+            match self.take_off(of, opts, fonts, asked, max_wait)? {
+                Turn::Plan(landing) => {
+                    let plan = self.walk(of, doc, opts, fonts);
+                    drop(landing);
+                    return plan;
+                }
+                Turn::LookAgain => {}
+            }
+        }
+    }
+
+    /// Start the flight of this plan, or wait for the one under way to land: then look again for
+    /// the plan it remembered. `Cancelled` when this caller was cancelled while it waited.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn take_off(
+        &self,
+        of: Of<'_>,
+        opts: &Options,
+        fonts: u64,
+        asked: std::time::Instant,
+        max_wait: std::time::Duration,
+    ) -> Result<Turn<'_>, PlanError> {
+        let flights = &self.flights;
+        let alone = || Ok(Turn::Plan(Landing { flights, id: None }));
+        let Ok(mut under_way) = flights.under_way.lock() else { return alone() };
+        if !under_way.1.iter().any(|f| f.of(of, opts, fonts)) {
+            under_way.0 += 1;
+            let id = under_way.0;
+            let flight = Flight { id, snapshot: Arc::downgrade(of.snapshot), selection: of.selection.to_vec(), opts: opts.clone(), fonts };
+            under_way.1.push(flight);
+            return Ok(Turn::Plan(Landing { flights, id: Some(id) }));
+        }
+        loop {
+            if vectorcraft_doc::cancel::is_cancelled() {
+                return Err(PlanError::Cancelled);
+            }
+            if asked.elapsed() >= max_wait {
+                return alone();
+            }
+            let Ok((guard, _)) = flights.landed.wait_timeout(under_way, std::time::Duration::from_millis(FLIGHT_CHECK_MS)) else { return alone() };
+            under_way = guard;
+            if !under_way.1.iter().any(|f| f.of(of, opts, fonts)) {
+                return Ok(Turn::LookAgain);
+            }
+        }
+    }
+
+    /// Walk `doc` (planned of `of`) with `opts` and the fonts of generation `fonts`, and remember
+    /// the plan, or the refusal (never a cancel).
+    fn walk(&self, of: Of<'_>, doc: &Document, opts: &Options, fonts: u64) -> Result<Planned, PlanError> {
         #[cfg(test)]
         self.walks.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let plan = digitize(doc, opts, Some(&self.units)).map(|p| Planned::new(Arc::new(p)));
@@ -196,6 +335,26 @@ impl PlanService {
     #[cfg(test)]
     pub(crate) fn memos(&self) -> usize {
         self.memos.lock().map_or(0, |m| m.len())
+    }
+
+    /// How many plans are under way.
+    #[cfg(test)]
+    pub(crate) fn flights(&self) -> usize {
+        self.flights.under_way.lock().map_or(0, |f| f.1.len())
+    }
+
+    /// Run `f` as if a flight of `of` with `opts` were under way, which ends when `f` returns or
+    /// unwinds (the tests' stand-in for a plan another caller makes).
+    #[cfg(test)]
+    pub(crate) fn in_flight<T>(&self, of: Of<'_>, opts: &Options, f: impl FnOnce() -> T) -> T {
+        let fonts = vectorcraft_text::FontDb::global().generation();
+        let landing = match self.take_off(of, opts, fonts, std::time::Instant::now(), std::time::Duration::ZERO) {
+            Ok(Turn::Plan(landing)) => landing,
+            _ => panic!("a flight under way already"),
+        };
+        let out = f();
+        drop(landing);
+        out
     }
 
     /// A service whose cache holds at most `limit` stitches (small, in tests that drop units).

@@ -183,6 +183,19 @@ impl StitchLayer {
     pub fn waiting(&self) -> bool {
         self.asked.is_some()
     }
+
+    /// The generation of the plan whose stitches the texture holds.
+    #[cfg(test)]
+    pub(crate) fn generation(&self) -> Option<u64> {
+        self.key.as_ref().map(|k| k.generation)
+    }
+
+    /// Draw on `worker` from now on (the tests start the thread themselves).
+    #[cfg(test)]
+    pub(crate) fn use_worker(&mut self, worker: LineWorker) {
+        self.worker = Some(worker);
+        self.worker_started = true;
+    }
 }
 
 /// The stitch view's layers for the active document, as the canvas draws them this frame.

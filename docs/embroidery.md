@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-23 · **Last updated:** 2026-10-23 · **Change:** the stitch preview's planning measured end to end (gate 2): several plans remembered with their scenes, one walk for callers asking at once, the read commands' replies from a planner (Architecture › Planning service, Drawing stitches). Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-23 · **Last updated:** 2026-10-23 · **Change:** the stitch preview on the canvas, planned in the background, with the app's frames measured (Architecture › Planning for the stitch preview, Drawing stitches). Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -1454,6 +1454,25 @@ choice; `view.stitchPreview` answers which), never saved in the file.
   Each open document keeps its last plan (switching back shows it at once, never another
   document's), dropped when it closes.
 
+**Measured in the app's frames** (gate 3 of the stitch preview, 2026-10-23: release build, 12-core
+Apple Silicon, load about 2.5, twice; `cargo test --release -p vectorcraft-ui-egui --lib -- --ignored
+--nocapture stitch_preview_gate`). On each of the corpus's eleven SVG designs, with the planning
+thread and the stitch layer's thread running and frames coming at 60 Hz, one object is dragged with
+the Selection tool, a pointer move a frame, and each frame is timed (the app's logic, the canvas,
+the controls over it, the scheduling and egui's tessellation, not the GPU's work); then an object is
+nudged ten times and timed until the stitches drawn are of the document as it is:
+
+| Row | Measured | Budget |
+|---|---:|---:|
+| A frame while dragging, 95th percentile, worst design | 5.9 ms | 16.7 ms (60 Hz) |
+| A frame while dragging, median, per design | 1.4–4.8 ms | |
+| Plans shown while dragging, of about 90 pointer moves | 45–89 | |
+| Edit to the stitches drawn fresh, median per design | 28–48 ms | |
+| Edit to the stitches drawn fresh, worst | 56 ms | 100 ms |
+
+Edit to fresh counts whole frames: the edit's frame schedules the plan, the next takes it in and
+draws it. A selection change uploads nothing and renders no art (`stitch_layer` tests).
+
 ### Drawing stitches
 
 One stitch scene is built from the plan and drawn by the same renderer in the app and headless, in
@@ -1709,6 +1728,7 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-23 | minor | The stitch preview, in progress: on the canvas (the stitch layer, View › Stitch Preview, the Art \| Stitches switch), planned on a thread of its own while something shows it; the app's frames measured (gate 3). |
 | 2026-10-23 | minor | The stitch preview, in progress: the planning service remembers several plans with a generation and a scene each, plans once for callers asking at once, and gives the read commands' replies from a planner; the end-to-end rows measured (gate 2). |
 | 2026-10-23 | minor | The stitch preview, in progress: stitches drawn as line pictures by the renderer (flat at the thread's laid width, an edge for threads close to the fabric, jumps and cuts marked), measured first. |
 | 2026-10-23 | minor | The review's fixes: VP3 trims written as long forms and read back as cuts; an opened design's start point, name, thread records and losses kept (overwriting its file asks first); closed lines locked; fill rows centred; the planner's and the planning service's speed (kept path-operation areas, a remembered refusal, a plan's own units kept); bobbin thread after Madeira; the results and check tables regenerated from the tests; contents, terms and this history added. |

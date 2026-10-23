@@ -1,0 +1,171 @@
+//! The stitch preview's third measurement gate, run by hand on an idle machine (left out of the
+//! usual test run: it times frames):
+//!
+//! `cargo test --release -p vectorcraft-ui-egui --lib -- --ignored --nocapture stitch_preview_gate`
+//!
+//! On each of the corpus's SVG designs, with the planning thread and the stitch layer's thread
+//! running as in the app and frames coming at 60 Hz, it drags one object across the canvas with the
+//! Selection tool, a pointer move a frame, and times each frame (the app's logic, the canvas and
+//! the controls over it, the scheduling and egui's tessellation; not the GPU's work): the 95th
+//! percentile must stay within a 60 Hz frame, and the stitches must follow the drag. Then it nudges
+//! an object and times until the stitches drawn are of the document as it is ("edit to fresh"),
+//! within 100 ms. Both budgets are the plan's.
+
+use std::time::Instant;
+
+use egui::{Event, PointerButton, Pos2};
+use serde_json::json;
+use vectorcraft_engine::Session;
+
+use super::plan_worker::{Driver, PlanWorker};
+use super::stitch_layer::LineWorker;
+use super::stitch_preview::{Freshness, StitchPreview};
+use crate::{Services, VectorcraftApp};
+
+/// A frame at 60 Hz, milliseconds: the 95th percentile of the frames while dragging stays within it.
+const FRAME_BUDGET_MS: f64 = 1000.0 / 60.0;
+/// From an edit to the stitches of the document as it is drawn, milliseconds.
+const EDIT_TO_FRESH_BUDGET_MS: f64 = 100.0;
+/// Pointer moves in a drag, and how far each goes, points.
+const DRAG_FRAMES: usize = 90;
+const DRAG_STEP: f32 = 2.0;
+/// Edits timed per design.
+const EDITS: usize = 10;
+/// The canvas's window, points.
+const WINDOW: [f32; 2] = [1440.0, 900.0];
+
+/// One frame at `time` with `events`, as the app runs one, tessellated → its wall time, ms.
+fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) -> f64 {
+    let raw = egui::RawInput {
+        time: Some(time),
+        screen_rect: Some(egui::Rect::from_min_size(Pos2::ZERO, egui::vec2(WINDOW[0], WINDOW[1]))),
+        events,
+        ..Default::default()
+    };
+    let t0 = Instant::now();
+    let mut out = ctx.run_ui(raw, |ui| {
+        app.logic(ui.ctx());
+        crate::canvas::show(app, ui);
+        crate::embroidery::canvas_controls(app, ui);
+        super::stitch_preview::schedule(app, ui.ctx());
+    });
+    let shapes = std::mem::take(&mut out.shapes);
+    drop(ctx.tessellate(shapes, out.pixels_per_point));
+    let ms = t0.elapsed().as_secs_f64() * 1000.0;
+    out.textures_delta.clear();
+    ms
+}
+
+/// The value below which `p` of `samples` lie.
+fn percentile(mut samples: Vec<f64>, p: f64) -> f64 {
+    samples.sort_by(f64::total_cmp);
+    let i = ((samples.len() as f64 - 1.0) * p).round() as usize;
+    samples.get(i).copied().unwrap_or(f64::NAN)
+}
+
+/// Whether the stitches drawn are of the active document as it is.
+fn drawn_fresh(app: &VectorcraftApp, time: f64) -> bool {
+    let uid = app.session.active().map(|st| st.uid).unwrap_or_default();
+    let preview = &app.embroidery.preview;
+    preview.freshness(uid, time) == Freshness::Fresh
+        && !app.embroidery.layer.waiting()
+        && preview.shown(uid).map(|s| s.planned.generation) == app.embroidery.layer.generation()
+}
+
+#[test]
+#[ignore = "a measurement, run by hand on an idle machine"]
+fn stitch_preview_gate() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/embroidery");
+    let mut files: Vec<_> = std::fs::read_dir(&dir)
+        .map(|d| d.flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|e| e == "svg")).collect())
+        .unwrap_or_default();
+    files.sort();
+    assert!(!files.is_empty(), "no corpus at {}", dir.display());
+    let (mut worst_p95, mut worst_fresh) = (0.0_f64, 0.0_f64);
+    println!("{:<52} {:>9} {:>9} {:>11} {:>11}", "design", "drag p50", "drag p95", "fresh p50", "fresh max");
+    for path in files {
+        let ctx = egui::Context::default();
+        let mut session = Session::new();
+        session.execute("document.open", &json!({"path": path.to_string_lossy()})).unwrap();
+        let mut app = VectorcraftApp::new(session, Services::default());
+        let (Some(plans), Some(lines)) = (PlanWorker::start(&ctx), LineWorker::start(&ctx)) else { return };
+        app.embroidery.preview = StitchPreview::with_runner(Box::new(Driver::Thread(plans)));
+        app.embroidery.layer.use_worker(lines);
+        app.run("view.stitchPreview", json!({"on": true})).unwrap();
+        let mut time = 0.0;
+        // Frames come at the display's pace, as in the app (a frame drawn sooner would leave the
+        // threads no time to answer): each waits out the rest of its 60 Hz slot. The pace of a
+        // measurement, not a wait for a result.
+        let mut next = Instant::now();
+        let mut tick = |app: &mut VectorcraftApp, events: Vec<Event>| {
+            time += 1.0 / 60.0;
+            next += std::time::Duration::from_secs_f64(FRAME_BUDGET_MS / 1000.0);
+            let ms = frame(app, &ctx, time, events);
+            std::thread::sleep(next.saturating_duration_since(Instant::now()));
+            (ms, time)
+        };
+        // Settle: the first plan and its frame.
+        let t0 = Instant::now();
+        loop {
+            let (_, now) = tick(&mut app, vec![]);
+            if drawn_fresh(&app, now) {
+                break;
+            }
+            assert!(t0.elapsed().as_secs() < 30, "{}: never drawn", path.display());
+        }
+        // Drag the first object sewn from its middle, a pointer move a frame.
+        let uid = app.session.active().unwrap().uid;
+        let unit = app.embroidery.preview.shown(uid).and_then(|s| s.planned.scene().units().first().and_then(|u| u.bounds));
+        let (Some(b), Some(canvas)) = (unit, app.canvas_rect) else { continue };
+        let view = *app.view().unwrap();
+        let xf = crate::canvas::Xf::new(canvas, &view);
+        let mut at = xf.to_screen(b.center());
+        let mut drag = vec![];
+        let (revision, taken) = (app.session.active().unwrap().revision, app.embroidery.preview.log.taken.len());
+        let mut drawn = std::collections::HashSet::new();
+        tick(&mut app, vec![Event::PointerMoved(at)]);
+        tick(&mut app, vec![Event::PointerButton { pos: at, button: PointerButton::Primary, pressed: true, modifiers: Default::default() }]);
+        for _ in 0..DRAG_FRAMES {
+            at += egui::vec2(DRAG_STEP, DRAG_STEP / 2.0);
+            drag.push(tick(&mut app, vec![Event::PointerMoved(at)]).0);
+            drawn.extend(app.embroidery.layer.generation());
+        }
+        // The drag moved the art, and the stitches followed it, plan after plan.
+        assert!(app.session.active().unwrap().revision > revision, "{}: nothing was dragged", path.display());
+        let (plans, frames) = (app.embroidery.preview.log.taken.len() - taken, drawn.len());
+        assert!(plans > 1 && frames > 1, "{}: the stitches didn't follow the drag ({plans} plans, {frames} frames)", path.display());
+        tick(&mut app, vec![Event::PointerButton { pos: at, button: PointerButton::Primary, pressed: false, modifiers: Default::default() }]);
+        // Edit to fresh: a nudge, then frames as fast as they come until the stitches drawn are of
+        // the document as it is.
+        let mut fresh = vec![];
+        for k in 0..EDITS {
+            let t0 = Instant::now();
+            loop {
+                let (_, now) = tick(&mut app, vec![]);
+                if drawn_fresh(&app, now) {
+                    break;
+                }
+                assert!(t0.elapsed().as_secs() < 30, "{}: never fresh", path.display());
+            }
+            let dx = if k % 2 == 0 { 1.0 } else { -1.0 };
+            app.run("object.move", json!({"dx": dx, "dy": 0})).unwrap();
+            let t0 = Instant::now();
+            loop {
+                let (_, now) = tick(&mut app, vec![]);
+                if drawn_fresh(&app, now) {
+                    break;
+                }
+                assert!(t0.elapsed().as_secs() < 30, "{}: never fresh", path.display());
+            }
+            fresh.push(t0.elapsed().as_secs_f64() * 1000.0);
+        }
+        let (p50, p95) = (percentile(drag.clone(), 0.5), percentile(drag, 0.95));
+        let (f50, fmax) = (percentile(fresh.clone(), 0.5), percentile(fresh, 1.0));
+        let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        println!("{name:<52} {p50:>6.2} ms {p95:>6.2} ms {f50:>8.2} ms {fmax:>8.2} ms   {plans} plans, {frames} frames drawn while dragging");
+        worst_p95 = worst_p95.max(p95);
+        worst_fresh = worst_fresh.max(fmax);
+    }
+    println!("worst: drag p95 {worst_p95:.2} ms (budget {FRAME_BUDGET_MS:.1}), edit to fresh {worst_fresh:.2} ms (budget {EDIT_TO_FRESH_BUDGET_MS})");
+    assert!(worst_p95 <= FRAME_BUDGET_MS && worst_fresh <= EDIT_TO_FRESH_BUDGET_MS);
+}

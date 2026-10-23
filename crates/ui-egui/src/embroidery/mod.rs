@@ -96,13 +96,14 @@ pub fn inspect(app: &VectorcraftApp, now: f64) -> serde_json::Value {
 }
 
 /// The control channel's `ui.render {stitchPreview: true}`: artboard `artboard` of the active
-/// document drawn as its stitches at `scale` pixels a point, on the fabric, jumps and cuts marked,
-/// with the options the stitch preview plans with, as it draws them (`embroidery.render`'s own
-/// drawing).
+/// document drawn as its stitches at `scale` pixels a point, on the fabric, marked as its stitch
+/// view marks them (Show Jumps and Cuts, Show Needle Points), with the options the stitch preview
+/// plans with, as it draws them (`embroidery.render`'s own drawing).
 pub fn render_stitches(app: &mut VectorcraftApp, artboard: usize, scale: f64) -> Result<vectorcraft_render::Rendered, String> {
     let uid = app.session.active().ok_or("no document")?.uid;
     let (opts, _) = app.session.stitch_preview_options(uid);
-    let look = Look { jumps: true, needle_points: false };
+    let view = app.session.stitch_view_of(uid);
+    let look = Look { jumps: view.jumps, needle_points: view.needle_points };
     picture(&mut app.session, Region::Artboard(artboard), scale, look, Some(FABRIC), &opts).map(|(img, _, _)| img).map_err(|e| e.to_string())
 }
 

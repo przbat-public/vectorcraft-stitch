@@ -46,6 +46,14 @@ fn ui_render_draws_the_stitches_when_asked() {
     assert_eq!(art.get_pixel(100, 100).0, [0x2a, 0x6f, 0xdb, 255]);
     assert_ne!(stitches.get_pixel(100, 100).0, art.get_pixel(100, 100).0, "the palette thread, not the art's colour");
     assert_eq!(stitches.get_pixel(2, 2).0, [255, 255, 255, 255], "the fabric");
+    // Marked as the stitch view marks them: with Show Needle Points on, as embroidery.render with
+    // needlePoints draws them; with Show Jumps and Cuts off, without jumps.
+    app.run("view.stitchPreview.needlePoints", json!({"on": true})).unwrap();
+    app.run("view.stitchPreview.jumps", json!({"on": false})).unwrap();
+    let marked = image(&request(&mut app, &tx, "ui.render", json!({"stitchPreview": true, "scale": 2})));
+    let r = app.run("embroidery.render", json!({"artboard": 0, "scale": 2, "needlePoints": true, "jumps": false})).unwrap();
+    let png = vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap();
+    assert_eq!(marked, image::load_from_memory(&png).unwrap().to_rgba8(), "the view's own marks");
 }
 
 /// An embroidery export from the app (File › Export) gives the stitch preview its options.

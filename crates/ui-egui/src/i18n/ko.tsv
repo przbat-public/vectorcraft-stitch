@@ -4968,16 +4968,12 @@ embroidery	The time at {speed} stitches a minute, an estimate.	분당 {speed}땀
 @msg	can't change the sewing order: it would go between two parts of one object	자수 순서를 바꿀 수 없습니다: 한 개체의 두 부분 사이에 들어가게 됩니다
 @msg	can't change the sewing order: there is nothing to sew it beside	자수 순서를 바꿀 수 없습니다: 옆에 수놓을 것이 없습니다
 @msg	can't change the sewing order: too many objects at once	자수 순서를 바꿀 수 없습니다: 한 번에 너무 많은 개체입니다
-embroidery	Sew Earlier	먼저 수놓기
-embroidery	Sew Later	나중에 수놓기
 embroidery	After {name}	{name} 다음
 embroidery	Before {name}	{name} 앞
 embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	스티치가 움직이지 않았습니다. 사이에 있는 것이 아래에 놓이지 않으면 같은 실의 개체는 계속 합쳐집니다.
 embroidery	{name} is sewn in block {block}, joined with its thread	{name}은(는) 블록 {block}에서 같은 실과 합쳐 수놓입니다
 embroidery	{name} is sewn in block {block}	{name}은(는) 블록 {block}에서 수놓입니다
 embroidery	Thread changes: {before} → {after}	실 교체: {before} → {after}
-embroidery	Sew First	맨 먼저 수놓기
-embroidery	Sew Last	맨 나중에 수놓기
 embroidery	Collapse All	모두 접기
 embroidery	Expand All	모두 펼치기
 embroidery	Satin columns wider than {value} mm	폭이 {value}mm보다 넓은 새틴 기둥
@@ -5039,8 +5035,6 @@ embroidery	Block {block}: {thread}, {value}	{block}번 블록: {thread}, {value}
 @msg	no canvas is shown	표시된 캔버스가 없습니다
 	Next Finding	다음 발견 항목
 	Previous Finding	이전 발견 항목
-embroidery	Next Finding	다음 발견 항목
-embroidery	Previous Finding	이전 발견 항목
 embroidery	Show	보기
 embroidery	{index} of {count}	{index} / {count}
 @msg	no finding is shown: show one in the Embroidery panel's Check tab	표시된 발견 항목이 없습니다: 자수 패널의 검사 탭에서 하나를 표시하세요

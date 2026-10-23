@@ -4985,16 +4985,12 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Thời gian ở t
 @msg	can't change the sewing order: it would go between two parts of one object	không thể đổi thứ tự thêu: nó sẽ nằm giữa hai phần của cùng một đối tượng
 @msg	can't change the sewing order: there is nothing to sew it beside	không thể đổi thứ tự thêu: không có gì để thêu bên cạnh
 @msg	can't change the sewing order: too many objects at once	không thể đổi thứ tự thêu: quá nhiều đối tượng cùng lúc
-embroidery	Sew Earlier	Thêu sớm hơn
-embroidery	Sew Later	Thêu muộn hơn
 embroidery	After {name}	Sau {name}
 embroidery	Before {name}	Trước {name}
 embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Không mũi nào di chuyển: các đối tượng cùng chỉ vẫn được gộp khi không có gì ở giữa nằm dưới chúng.
 embroidery	{name} is sewn in block {block}, joined with its thread	{name} được thêu trong khối {block}, gộp với chỉ của nó
 embroidery	{name} is sewn in block {block}	{name} được thêu trong khối {block}
 embroidery	Thread changes: {before} → {after}	Đổi chỉ: {before} → {after}
-embroidery	Sew First	Thêu đầu tiên
-embroidery	Sew Last	Thêu sau cùng
 embroidery	Collapse All	Thu gọn tất cả
 embroidery	Expand All	Mở rộng tất cả
 embroidery	Satin columns wider than {value} mm	Cột sa-tanh rộng hơn {value} mm
@@ -5056,8 +5052,6 @@ embroidery	Block {block}: {thread}, {value}	Khối {block}: {thread}, {value}
 @msg	no canvas is shown	không có khung vẽ nào được hiển thị
 	Next Finding	Phát hiện tiếp theo
 	Previous Finding	Phát hiện trước
-embroidery	Next Finding	Phát hiện tiếp theo
-embroidery	Previous Finding	Phát hiện trước
 embroidery	Show	Hiện
 embroidery	{index} of {count}	{index} / {count}
 @msg	no finding is shown: show one in the Embroidery panel's Check tab	không có phát hiện nào được hiển thị: hãy hiện một mục trong thẻ Kiểm tra của bảng Thêu

@@ -5418,16 +5418,12 @@ embroidery	The time at {speed} stitches a minute, an estimate.	De tijd bij {spee
 @msg	can't change the sewing order: it would go between two parts of one object	de borduurvolgorde kan niet worden gewijzigd: het zou tussen twee delen van één object komen
 @msg	can't change the sewing order: there is nothing to sew it beside	de borduurvolgorde kan niet worden gewijzigd: er is niets om het naast te borduren
 @msg	can't change the sewing order: too many objects at once	de borduurvolgorde kan niet worden gewijzigd: te veel objecten tegelijk
-embroidery	Sew Earlier	Eerder borduren
-embroidery	Sew Later	Later borduren
 embroidery	After {name}	Na {name}
 embroidery	Before {name}	Voor {name}
 embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Er is geen steek verschoven: objecten van één draad blijven samengevoegd als niets ertussen eronder ligt.
 embroidery	{name} is sewn in block {block}, joined with its thread	{name} wordt geborduurd in blok {block}, samengevoegd met zijn draad
 embroidery	{name} is sewn in block {block}	{name} wordt geborduurd in blok {block}
 embroidery	Thread changes: {before} → {after}	Draadwissels: {before} → {after}
-embroidery	Sew First	Eerst borduren
-embroidery	Sew Last	Laatst borduren
 embroidery	Collapse All	Alles samenvouwen
 embroidery	Expand All	Alles uitvouwen
 embroidery	Satin columns wider than {value} mm	Satijnkolommen breder dan {value} mm
@@ -5489,8 +5485,6 @@ embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 @msg	no canvas is shown	er wordt geen canvas weergegeven
 	Next Finding	Volgende bevinding
 	Previous Finding	Vorige bevinding
-embroidery	Next Finding	Volgende bevinding
-embroidery	Previous Finding	Vorige bevinding
 embroidery	Show	Tonen
 embroidery	{index} of {count}	{index} van {count}
 @msg	no finding is shown: show one in the Embroidery panel's Check tab	er wordt geen bevinding getoond: toon er een op het tabblad Controle van het deelvenster Borduurwerk

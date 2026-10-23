@@ -5005,16 +5005,12 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Il tempo a {speed
 @msg	can't change the sewing order: it would go between two parts of one object	impossibile cambiare l’ordine di cucitura: finirebbe tra due parti di uno stesso oggetto
 @msg	can't change the sewing order: there is nothing to sew it beside	impossibile cambiare l’ordine di cucitura: non c’è nulla accanto a cui ricamarlo
 @msg	can't change the sewing order: too many objects at once	impossibile cambiare l’ordine di cucitura: troppi oggetti insieme
-embroidery	Sew Earlier	Ricama prima
-embroidery	Sew Later	Ricama dopo
 embroidery	After {name}	Dopo {name}
 embroidery	Before {name}	Prima di {name}
 embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Nessun punto si è spostato: gli oggetti di uno stesso filo restano uniti quando nulla in mezzo sta sotto di loro.
 embroidery	{name} is sewn in block {block}, joined with its thread	{name} è ricamato nel blocco {block}, unito al suo filo
 embroidery	{name} is sewn in block {block}	{name} è ricamato nel blocco {block}
 embroidery	Thread changes: {before} → {after}	Cambi filo: {before} → {after}
-embroidery	Sew First	Ricama per primo
-embroidery	Sew Last	Ricama per ultimo
 embroidery	Collapse All	Comprimi tutto
 embroidery	Expand All	Espandi tutto
 embroidery	Satin columns wider than {value} mm	Colonne a raso più larghe di {value} mm
@@ -5076,8 +5072,6 @@ embroidery	Block {block}: {thread}, {value}	Blocco {block}: {thread}, {value}
 @msg	no canvas is shown	nessuna area di disegno visualizzata
 	Next Finding	Rilievo successivo
 	Previous Finding	Rilievo precedente
-embroidery	Next Finding	Rilievo successivo
-embroidery	Previous Finding	Rilievo precedente
 embroidery	Show	Mostra
 embroidery	{index} of {count}	{index} di {count}
 @msg	no finding is shown: show one in the Embroidery panel's Check tab	nessun rilievo mostrato: mostrane uno nella scheda Verifica del pannello Ricamo

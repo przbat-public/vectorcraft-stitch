@@ -5344,16 +5344,12 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Ο χρόνος �
 @msg	can't change the sewing order: it would go between two parts of one object	δεν είναι δυνατή η αλλαγή της σειράς ραφής: θα έμπαινε ανάμεσα σε δύο μέρη ενός αντικειμένου
 @msg	can't change the sewing order: there is nothing to sew it beside	δεν είναι δυνατή η αλλαγή της σειράς ραφής: δεν υπάρχει τίποτα δίπλα στο οποίο να κεντηθεί
 @msg	can't change the sewing order: too many objects at once	δεν είναι δυνατή η αλλαγή της σειράς ραφής: πάρα πολλά αντικείμενα ταυτόχρονα
-embroidery	Sew Earlier	Ράψιμο νωρίτερα
-embroidery	Sew Later	Ράψιμο αργότερα
 embroidery	After {name}	Μετά το {name}
 embroidery	Before {name}	Πριν από το {name}
 embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Καμία βελονιά δεν μετακινήθηκε: τα αντικείμενα μιας κλωστής ενώνονται ακόμα όταν τίποτα ανάμεσα δεν βρίσκεται κάτω από αυτά.
 embroidery	{name} is sewn in block {block}, joined with its thread	Το {name} κεντιέται στο μπλοκ {block}, ενωμένο με την κλωστή του
 embroidery	{name} is sewn in block {block}	Το {name} κεντιέται στο μπλοκ {block}
 embroidery	Thread changes: {before} → {after}	Αλλαγές κλωστής: {before} → {after}
-embroidery	Sew First	Ράψιμο πρώτο
-embroidery	Sew Last	Ράψιμο τελευταίο
 embroidery	Collapse All	Σύμπτυξη όλων
 embroidery	Expand All	Ανάπτυξη όλων
 embroidery	Satin columns wider than {value} mm	Στήλες σατέν φαρδύτερες από {value} mm
@@ -5415,8 +5411,6 @@ embroidery	Block {block}: {thread}, {value}	Μπλοκ {block}: {thread}, {value
 @msg	no canvas is shown	δεν εμφανίζεται καμβάς
 	Next Finding	Επόμενο εύρημα
 	Previous Finding	Προηγούμενο εύρημα
-embroidery	Next Finding	Επόμενο εύρημα
-embroidery	Previous Finding	Προηγούμενο εύρημα
 embroidery	Show	Εμφάνιση
 embroidery	{index} of {count}	{index} από {count}
 @msg	no finding is shown: show one in the Embroidery panel's Check tab	δεν εμφανίζεται κανένα εύρημα: εμφανίστε ένα στην καρτέλα «Έλεγχος» του πίνακα «Κέντημα»

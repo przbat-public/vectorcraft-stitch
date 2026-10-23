@@ -5375,16 +5375,12 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Waktu pada {speed
 @msg	can't change the sewing order: it would go between two parts of one object	urutan jahit tidak dapat diubah: akan berada di antara dua bagian satu objek
 @msg	can't change the sewing order: there is nothing to sew it beside	urutan jahit tidak dapat diubah: tidak ada yang bisa dijahit di sebelahnya
 @msg	can't change the sewing order: too many objects at once	urutan jahit tidak dapat diubah: terlalu banyak objek sekaligus
-embroidery	Sew Earlier	Jahit lebih awal
-embroidery	Sew Later	Jahit lebih akhir
 embroidery	After {name}	Setelah {name}
 embroidery	Before {name}	Sebelum {name}
 embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Tidak ada jahitan yang berpindah: objek satu benang tetap digabung bila tidak ada apa pun di antaranya di bawahnya.
 embroidery	{name} is sewn in block {block}, joined with its thread	{name} dijahit di blok {block}, digabung dengan benangnya
 embroidery	{name} is sewn in block {block}	{name} dijahit di blok {block}
 embroidery	Thread changes: {before} → {after}	Ganti benang: {before} → {after}
-embroidery	Sew First	Jahit pertama
-embroidery	Sew Last	Jahit terakhir
 embroidery	Collapse All	Ciutkan semua
 embroidery	Expand All	Bentangkan semua
 embroidery	Satin columns wider than {value} mm	Kolom satin lebih lebar dari {value} mm
@@ -5446,8 +5442,6 @@ embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 @msg	no canvas is shown	tidak ada kanvas yang ditampilkan
 	Next Finding	Temuan berikutnya
 	Previous Finding	Temuan sebelumnya
-embroidery	Next Finding	Temuan berikutnya
-embroidery	Previous Finding	Temuan sebelumnya
 embroidery	Show	Tampilkan
 embroidery	{index} of {count}	{index} dari {count}
 @msg	no finding is shown: show one in the Embroidery panel's Check tab	tidak ada temuan yang ditampilkan: tampilkan satu di tab Pemeriksaan pada panel Bordir

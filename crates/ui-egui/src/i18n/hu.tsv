@@ -5378,16 +5378,12 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Az idő percenké
 @msg	can't change the sewing order: it would go between two parts of one object	a varrási sorrend nem módosítható: egy objektum két része közé kerülne
 @msg	can't change the sewing order: there is nothing to sew it beside	a varrási sorrend nem módosítható: nincs mi mellé hímezni
 @msg	can't change the sewing order: too many objects at once	a varrási sorrend nem módosítható: túl sok objektum egyszerre
-embroidery	Sew Earlier	Hímezze korábban
-embroidery	Sew Later	Hímezze később
 embroidery	After {name}	{name} után
 embroidery	Before {name}	{name} előtt
 embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Egy öltés sem mozdult: az egy szálhoz tartozó objektumok továbbra is összevonódnak, ha semmi sincs közöttük alattuk.
 embroidery	{name} is sewn in block {block}, joined with its thread	{name} a(z) {block}. blokkban kerül hímzésre, a szálával összevonva
 embroidery	{name} is sewn in block {block}	{name} a(z) {block}. blokkban kerül hímzésre
 embroidery	Thread changes: {before} → {after}	Szálcserék: {before} → {after}
-embroidery	Sew First	Hímezze elsőként
-embroidery	Sew Last	Hímezze utolsóként
 embroidery	Collapse All	Összes összecsukása
 embroidery	Expand All	Összes kibontása
 embroidery	Satin columns wider than {value} mm	{value} mm-nél szélesebb szaténoszlopok
@@ -5449,8 +5445,6 @@ embroidery	Block {block}: {thread}, {value}	{block}. blokk: {thread}, {value}
 @msg	no canvas is shown	nincs megjelenítve rajzvászon
 	Next Finding	Következő találat
 	Previous Finding	Előző találat
-embroidery	Next Finding	Következő találat
-embroidery	Previous Finding	Előző találat
 embroidery	Show	Mutasd
 embroidery	{index} of {count}	{index}/{count}
 @msg	no finding is shown: show one in the Embroidery panel's Check tab	nincs megjelenítve találat: jelenítsen meg egyet a Hímzés panel Ellenőrzés lapján

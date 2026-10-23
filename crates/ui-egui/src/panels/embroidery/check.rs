@@ -680,17 +680,14 @@ fn details(
                 && !hits.is_empty()
             {
                 ui.horizontal(|ui| {
-                    let back = ui
-                        .add_enabled(!stale, egui::Button::new(egui::RichText::new("‹").size(SMALL)).small())
-                        .on_hover_text(crate::et!("Previous Finding"));
-                    back.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, !stale, crate::et!("Previous Finding")));
+                    let (previous, next) = (super::command_label(app, "embroidery.previousHit"), super::command_label(app, "embroidery.nextHit"));
+                    let back = ui.add_enabled(!stale, egui::Button::new(egui::RichText::new("‹").size(SMALL)).small()).on_hover_text(&previous);
+                    back.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, !stale, &previous));
                     let place = f.hit.map_or_else(|| "–".to_string(), |k| numbers::count(lang, k as u64 + 1));
                     let of = fill(crate::et!("{index} of {count}"), &[("index", &place), ("count", &numbers::count(lang, hits.len() as u64))]);
                     ui.label(egui::RichText::new(of).size(SMALL).color(ink(t.text_dim)));
-                    let on = ui
-                        .add_enabled(!stale, egui::Button::new(egui::RichText::new("›").size(SMALL)).small())
-                        .on_hover_text(crate::et!("Next Finding"));
-                    on.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, !stale, crate::et!("Next Finding")));
+                    let on = ui.add_enabled(!stale, egui::Button::new(egui::RichText::new("›").size(SMALL)).small()).on_hover_text(&next);
+                    on.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, !stale, &next));
                     if back.clicked() {
                         acts.push(Act::Step(false));
                     }

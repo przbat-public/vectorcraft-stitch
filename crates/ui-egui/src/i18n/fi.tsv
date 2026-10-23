@@ -5356,16 +5356,12 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Aika nopeudella {
 @msg	can't change the sewing order: it would go between two parts of one object	ompelujärjestystä ei voi muuttaa: se menisi yhden objektin kahden osan väliin
 @msg	can't change the sewing order: there is nothing to sew it beside	ompelujärjestystä ei voi muuttaa: ei ole mitään, minkä viereen se kirjottaisiin
 @msg	can't change the sewing order: too many objects at once	ompelujärjestystä ei voi muuttaa: liian monta objektia kerralla
-embroidery	Sew Earlier	Kirjo aiemmin
-embroidery	Sew Later	Kirjo myöhemmin
 embroidery	After {name}	Kohteen {name} jälkeen
 embroidery	Before {name}	Ennen kohdetta {name}
 embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Mikään pisto ei siirtynyt: saman langan objektit yhdistyvät yhä, kun mikään välissä ei ole niiden alla.
 embroidery	{name} is sewn in block {block}, joined with its thread	{name} kirjotaan lohkossa {block}, yhdistettynä lankansa kanssa
 embroidery	{name} is sewn in block {block}	{name} kirjotaan lohkossa {block}
 embroidery	Thread changes: {before} → {after}	Langanvaihdot: {before} → {after}
-embroidery	Sew First	Kirjo ensimmäisenä
-embroidery	Sew Last	Kirjo viimeisenä
 embroidery	Collapse All	Kutista kaikki
 embroidery	Expand All	Laajenna kaikki
 embroidery	Satin columns wider than {value} mm	Satiinipylväät, jotka ovat leveämpiä kuin {value} mm
@@ -5427,8 +5423,6 @@ embroidery	Block {block}: {thread}, {value}	Lohko {block}: {thread}, {value}
 @msg	no canvas is shown	piirtoaluetta ei näytetä
 	Next Finding	Seuraava löydös
 	Previous Finding	Edellinen löydös
-embroidery	Next Finding	Seuraava löydös
-embroidery	Previous Finding	Edellinen löydös
 embroidery	Show	Näytä
 embroidery	{index} of {count}	{index}/{count}
 @msg	no finding is shown: show one in the Embroidery panel's Check tab	löydöstä ei näytetä: näytä jokin Kirjonta-paneelin Tarkistus-välilehdellä

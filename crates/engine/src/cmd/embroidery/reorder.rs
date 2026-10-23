@@ -352,7 +352,8 @@ pub enum Step {
 }
 
 impl Step {
-    fn id(self) -> &'static str {
+    /// Its command's id.
+    pub fn id(self) -> &'static str {
         match self {
             Step::Earlier => "embroidery.sewEarlier",
             Step::Later => "embroidery.sewLater",

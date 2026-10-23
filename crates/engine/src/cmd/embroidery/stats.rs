@@ -287,7 +287,7 @@ pub(crate) struct Page {
 pub(crate) const LIST_LIMIT: usize = 1000;
 /// The most items `limit` may ask for: the reply stays bounded (a few megabytes) whatever the
 /// design.
-pub(crate) const MAX_LIST_LIMIT: usize = 10_000;
+pub const MAX_LIST_LIMIT: usize = 10_000;
 
 impl Page {
     /// The keys a command that answers with a list takes for it.

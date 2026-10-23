@@ -222,7 +222,7 @@ pub(crate) fn query() -> crate::embroidery::plan_worker::Query {
 }
 
 /// The most units the tab lists: as many as `embroidery.sequence` lists at most.
-pub const MAX_LIST_UNITS: usize = 10_000;
+pub const MAX_LIST_UNITS: usize = vectorcraft_engine::cmd::embroidery::MAX_LIST_LIMIT;
 
 /// An order read, with what its rows show worked out once (never for each row on each frame).
 pub(crate) struct Listed {
@@ -505,11 +505,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                 if let (Row::Unit(b, u), true, true) = (row, lit, movable)
                     && let Some(unit) = order.blocks.get(*b).and_then(|b| b.units.get(*u))
                 {
-                    for (k, (icon, which, tip)) in
-                        [("dc-arrow-up", Step::Earlier, crate::et!("Sew Earlier")), ("dc-arrow-down", Step::Later, crate::et!("Sew Later"))]
-                            .into_iter()
-                            .enumerate()
-                    {
+                    for (k, (icon, which)) in [("dc-arrow-up", Step::Earlier), ("dc-arrow-down", Step::Later)].into_iter().enumerate() {
+                        let tip = super::command_label(app, which.id());
+                        let tip = tip.as_str();
                         let button = Rect::from_center_size(
                             pos2(rect.right() - STEP_BUTTONS_FROM_RIGHT + STEP_BUTTON_PITCH * k as f32, rect.top() + UNIT_ROW * UNIT_SECOND_LINE),
                             vec2(STEP_BUTTON, STEP_BUTTON),

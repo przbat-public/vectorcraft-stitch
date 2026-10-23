@@ -248,13 +248,8 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
     // Worked out on the plan the list shows, as a drop is; off while that plan is out of date.
     let selection = app.session.active().map(|st| st.selection.objects.clone()).unwrap_or_default();
     let enabled = !selection.is_empty() && order::steppable(app).is_some();
-    for (label, step) in [
-        (crate::et!("Sew Earlier"), Step::Earlier),
-        (crate::et!("Sew Later"), Step::Later),
-        (crate::et!("Sew First"), Step::First),
-        (crate::et!("Sew Last"), Step::Last),
-    ] {
-        if crate::widgets::menu_item_name(ui, label, enabled, false) {
+    for step in [Step::Earlier, Step::Later, Step::First, Step::Last] {
+        if crate::widgets::menu_item_name(ui, &command_label(app, step.id()), enabled, false) {
             order::step_selection(app, step, &selection);
         }
     }
@@ -270,12 +265,23 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
     }
     ui.separator();
     let steps = check::can_step(app);
-    if crate::widgets::menu_item_name(ui, crate::et!("Next Finding"), steps, false) {
-        crate::menus::invoke(app, "embroidery.nextHit", json!({}));
+    for id in ["embroidery.nextHit", "embroidery.previousHit"] {
+        if crate::widgets::menu_item_name(ui, &command_label(app, id), steps, false) {
+            crate::menus::invoke(app, id, json!({}));
+        }
     }
-    if crate::widgets::menu_item_name(ui, crate::et!("Previous Finding"), steps, false) {
-        crate::menus::invoke(app, "embroidery.previousHit", json!({}));
-    }
+}
+
+/// Command `id`'s label as the menus show it, in the interface language: the panel's items and
+/// buttons for commands are named as the commands are, from the commands' own rows.
+pub(crate) fn command_label(app: &VectorcraftApp, id: &str) -> String {
+    let label = vectorcraft_engine::cmd::command_specs()
+        .iter()
+        .find(|c| c.id == id)
+        .map(|c| c.label)
+        .or_else(|| crate::menus::UI_COMMANDS.iter().find(|c| c.0 == id).map(|c| c.1))
+        .unwrap_or(id);
+    crate::menus::display_label(app, id, label)
 }
 
 /// The panel.

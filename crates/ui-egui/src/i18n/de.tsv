@@ -4967,16 +4967,12 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Die Zeit bei {spe
 @msg	can't change the sewing order: it would go between two parts of one object	die Stickreihenfolge lässt sich nicht ändern: es käme zwischen zwei Teile eines Objekts
 @msg	can't change the sewing order: there is nothing to sew it beside	die Stickreihenfolge lässt sich nicht ändern: es gibt nichts, neben dem es gestickt würde
 @msg	can't change the sewing order: too many objects at once	die Stickreihenfolge lässt sich nicht ändern: zu viele Objekte auf einmal
-embroidery	Sew Earlier	Früher sticken
-embroidery	Sew Later	Später sticken
 embroidery	After {name}	Nach {name}
 embroidery	Before {name}	Vor {name}
 embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Kein Stich hat sich verschoben: Objekte eines Garns werden weiter zusammengefasst, wenn nichts dazwischen unter ihnen liegt.
 embroidery	{name} is sewn in block {block}, joined with its thread	{name} wird in Block {block} gestickt, mit seinem Garn zusammengefasst
 embroidery	{name} is sewn in block {block}	{name} wird in Block {block} gestickt
 embroidery	Thread changes: {before} → {after}	Garnwechsel: {before} → {after}
-embroidery	Sew First	Zuerst sticken
-embroidery	Sew Last	Zuletzt sticken
 embroidery	Collapse All	Alle reduzieren
 embroidery	Expand All	Alle erweitern
 embroidery	Satin columns wider than {value} mm	Satinsäulen breiter als {value} mm
@@ -5038,8 +5034,6 @@ embroidery	Block {block}: {thread}, {value}	Block {block}: {thread}, {value}
 @msg	no canvas is shown	keine Zeichenfläche angezeigt
 	Next Finding	Nächster Befund
 	Previous Finding	Vorheriger Befund
-embroidery	Next Finding	Nächster Befund
-embroidery	Previous Finding	Vorheriger Befund
 embroidery	Show	Zeigen
 embroidery	{index} of {count}	{index} von {count}
 @msg	no finding is shown: show one in the Embroidery panel's Check tab	kein Befund angezeigt: zeigen Sie einen auf der Registerkarte „Prüfung“ des Bedienfelds „Stickerei“

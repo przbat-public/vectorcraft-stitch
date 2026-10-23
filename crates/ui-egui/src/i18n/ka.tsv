@@ -5298,16 +5298,12 @@ embroidery	The time at {speed} stitches a minute, an estimate.	დრო წუ�
 @msg	can't change the sewing order: it would go between two parts of one object	კერვის რიგის შეცვლა შეუძლებელია: ერთი ობიექტის ორ ნაწილს შორის მოხვდებოდა
 @msg	can't change the sewing order: there is nothing to sew it beside	კერვის რიგის შეცვლა შეუძლებელია: გვერდით დასაქარგი არაფერია
 @msg	can't change the sewing order: too many objects at once	კერვის რიგის შეცვლა შეუძლებელია: ერთდროულად ზედმეტად ბევრი ობიექტია
-embroidery	Sew Earlier	ადრე დაქარგვა
-embroidery	Sew Later	მოგვიანებით დაქარგვა
 embroidery	After {name}	{name}-ის შემდეგ
 embroidery	Before {name}	{name}-მდე
 embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	არცერთი ნაკერი არ გადაადგილებულა: ერთი ძაფის ობიექტები კვლავ ერთიანდება, როცა შუაში არაფერი დევს მათ ქვეშ.
 embroidery	{name} is sewn in block {block}, joined with its thread	{name} იქარგება ბლოკში {block}, თავის ძაფთან ერთად
 embroidery	{name} is sewn in block {block}	{name} იქარგება ბლოკში {block}
 embroidery	Thread changes: {before} → {after}	ძაფის ცვლა: {before} → {after}
-embroidery	Sew First	პირველად დაქარგვა
-embroidery	Sew Last	ბოლოს დაქარგვა
 embroidery	Collapse All	ყველას აკეცვა
 embroidery	Expand All	ყველას გაშლა
 embroidery	Satin columns wider than {value} mm	{value} მმ-ზე განიერი ატლასის სვეტები
@@ -5369,8 +5365,6 @@ embroidery	Block {block}: {thread}, {value}	ბლოკი {block}: {thread}, {
 @msg	no canvas is shown	ტილო არ ჩანს
 	Next Finding	შემდეგი აღმოჩენა
 	Previous Finding	წინა აღმოჩენა
-embroidery	Next Finding	შემდეგი აღმოჩენა
-embroidery	Previous Finding	წინა აღმოჩენა
 embroidery	Show	ჩვენება
 embroidery	{index} of {count}	{index} / {count}
 @msg	no finding is shown: show one in the Embroidery panel's Check tab	აღმოჩენა არ ჩანს: აჩვენეთ ერთ-ერთი პანელის „ნაქარგობა“ ჩანართში „შემოწმება“

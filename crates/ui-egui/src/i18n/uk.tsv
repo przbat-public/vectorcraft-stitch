@@ -4985,16 +4985,12 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Час при {sp
 @msg	can't change the sewing order: it would go between two parts of one object	не вдається змінити порядок вишивання: він опинився б між двома частинами одного об’єкта
 @msg	can't change the sewing order: there is nothing to sew it beside	не вдається змінити порядок вишивання: поруч нічого вишивати
 @msg	can't change the sewing order: too many objects at once	не вдається змінити порядок вишивання: забагато об’єктів одночасно
-embroidery	Sew Earlier	Вишивати раніше
-embroidery	Sew Later	Вишивати пізніше
 embroidery	After {name}	Після {name}
 embroidery	Before {name}	Перед {name}
 embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Жоден стібок не зсунувся: об’єкти однієї нитки й далі об’єднуються, коли ніщо між ними не лежить під ними.
 embroidery	{name} is sewn in block {block}, joined with its thread	{name} вишивається в блоці {block}, разом зі своєю ниткою
 embroidery	{name} is sewn in block {block}	{name} вишивається в блоці {block}
 embroidery	Thread changes: {before} → {after}	Зміни нитки: {before} → {after}
-embroidery	Sew First	Вишивати першим
-embroidery	Sew Last	Вишивати останнім
 embroidery	Collapse All	Згорнути все
 embroidery	Expand All	Розгорнути все
 embroidery	Satin columns wider than {value} mm	Колонки гладі, ширші за {value} мм
@@ -5056,8 +5052,6 @@ embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}
 @msg	no canvas is shown	полотно не показано
 	Next Finding	Наступна знахідка
 	Previous Finding	Попередня знахідка
-embroidery	Next Finding	Наступна знахідка
-embroidery	Previous Finding	Попередня знахідка
 embroidery	Show	Показати
 embroidery	{index} of {count}	{index} з {count}
 @msg	no finding is shown: show one in the Embroidery panel's Check tab	знахідку не показано: покажіть її на вкладці «Перевірка» панелі «Вишивка»

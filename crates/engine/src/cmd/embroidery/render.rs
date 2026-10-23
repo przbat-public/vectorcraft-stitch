@@ -21,6 +21,12 @@ pub const DESIGN_MARGIN_MM: f64 = 5.0;
 /// estimate.
 pub const MAX_PICTURE_PX: u32 = 8192;
 
+thread_local! {
+    /// The renderer [`picture`] draws with on a thread, kept between calls: a new one would start a
+    /// render context and its worker threads every time.
+    static RENDERER: std::cell::RefCell<LineRenderer> = std::cell::RefCell::new(LineRenderer::new());
+}
+
 /// The part of the document a picture of the stitches shows.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Region {
@@ -75,7 +81,11 @@ pub fn picture(
     let view = Affine::scale(scale) * Affine::translate((-r.x0, -r.y0));
     let mut style = scene.style(FABRIC, look.jumps, look.needle_points, scale);
     style.background = background.map(|[r, g, b]| [r, g, b, 255]);
-    let img = LineRenderer::new().render(scene.picture(), w, h, view, &style);
+    let img = RENDERER.with(|r| match r.try_borrow_mut() {
+        Ok(mut r) => r.render(scene.picture(), w, h, view, &style),
+        // In use already (a picture asked for while one is drawn): one of its own.
+        Err(_) => LineRenderer::new().render(scene.picture(), w, h, view, &style),
+    });
     Ok((img, r, planned.generation))
 }
 

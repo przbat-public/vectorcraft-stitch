@@ -212,6 +212,9 @@ pub struct StitchLayer {
     emphasis_asked: Option<(LayerKey, Vec<u32>)>,
     /// Frames of stitches uploaded so far (the tests count them).
     pub(crate) uploads: u64,
+    /// What the art leaves out to show its template layers alone ([`all_but_templates`]), for the
+    /// snapshot it was worked out for (held weakly): once a snapshot, not every frame.
+    templates_only: Option<(std::sync::Weak<Document>, Option<Vec<u64>>)>,
 }
 
 impl StitchLayer {
@@ -282,7 +285,7 @@ pub fn art_pass(app: &mut VectorcraftApp) -> ArtPass {
             } else if l.faint_art {
                 ArtPass { stitches: true, render: true, hidden: Vec::new(), hide_templates: false }
             } else {
-                let hidden = app.session.active().map(|st| all_but_templates(&st.doc)).unwrap_or_default();
+                let hidden = app.session.active().and_then(|st| templates_only(&mut app.embroidery.layer, &st.doc));
                 let render = app.ui.view.templates && hidden.as_ref().is_some();
                 ArtPass { stitches: true, render, hidden: hidden.unwrap_or_default(), hide_templates: false }
             }
@@ -299,6 +302,18 @@ pub fn art_pass(app: &mut VectorcraftApp) -> ArtPass {
     }
     layer.shown = pass.stitches;
     pass
+}
+
+/// [`all_but_templates`] of snapshot `doc`, worked out once a snapshot (a snapshot never changes).
+fn templates_only(layer: &mut StitchLayer, doc: &Arc<Document>) -> Option<Vec<u64>> {
+    if let Some((of, hidden)) = &layer.templates_only
+        && std::ptr::eq(of.as_ptr(), Arc::as_ptr(doc))
+    {
+        return hidden.clone();
+    }
+    let hidden = all_but_templates(doc);
+    layer.templates_only = Some((Arc::downgrade(doc), hidden.clone()));
+    hidden
 }
 
 /// The objects to leave out so that only `doc`'s template layers are drawn: every top-level layer

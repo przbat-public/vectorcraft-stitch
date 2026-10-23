@@ -207,6 +207,9 @@ fn the_art_shows_as_the_view_says() {
     let pass = art_pass(&mut app);
     let ids: Vec<u64> = app.session.doc().unwrap().doc.layers.iter().map(|l| l.id.0).filter(|id| *id != layer).collect();
     assert_eq!((pass.render, pass.hidden), (true, ids), "everything but the template");
+    // Worked out once for the snapshot.
+    let doc = app.session.doc().unwrap().doc.clone();
+    assert!(app.embroidery.layer.templates_only.as_ref().is_some_and(|(of, _)| std::ptr::eq(of.as_ptr(), Arc::as_ptr(&doc))));
     app.run("view.stitchPreview.artwork", json!({"on": true})).unwrap();
     assert_eq!(art_pass(&mut app), ArtPass { stitches: true, render: true, hidden: vec![], hide_templates: false });
     let shapes = frame(&mut app, &ctx, 1.0);

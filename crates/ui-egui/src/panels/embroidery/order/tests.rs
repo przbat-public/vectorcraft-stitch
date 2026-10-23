@@ -350,9 +350,15 @@ fn a_header_collapses() {
     ready(&mut app, &ctx);
     let order = order_of(&app);
     let block = order.blocks[0].block;
+    // The rows are laid out once for an order and its folds, not every frame.
+    let laid = |app: &VectorcraftApp| app.embroidery.order.laid_out.as_ref().map(|(_, _, r)| r.clone()).unwrap();
+    let before = laid(&app);
+    frame(&mut app, &ctx, 0.5, vec![]);
+    assert!(Arc::ptr_eq(&before, &laid(&app)), "the same rows");
     app.embroidery.order.toggle_fold(app.session.active().unwrap().uid, block);
     let words = frame(&mut app, &ctx, 1.0, vec![]);
     assert_eq!(words.iter().filter(|w| w.starts_with("<Rectangle>")).count(), 2, "{words:?}");
+    assert!(!Arc::ptr_eq(&before, &laid(&app)), "laid out again once folded");
 }
 
 #[test]

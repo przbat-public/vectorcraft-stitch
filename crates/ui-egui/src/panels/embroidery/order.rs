@@ -160,10 +160,16 @@ pub struct OrderState {
     list_rect: Option<Rect>,
     /// The row the keyboard moved to, scrolled into view until it is laid out to take the focus.
     focus_row: Option<usize>,
+    /// The rows and where each starts, for the order read and the blocks folded: laid out once for
+    /// them, not every frame.
+    laid_out: Option<(Arc<Listed>, HashSet<usize>, Arc<LaidOut>)>,
     /// How far the list was scrolled in the last frame, points (the tests look).
     #[cfg(test)]
     scrolled: f32,
 }
+
+/// The rows of an order and where each starts ([`rows`]).
+type LaidOut = (Vec<Row>, Vec<f32>);
 
 /// One document's Sewing order: its folded blocks, the unit row clicked last (for Shift-click
 /// ranges), a drop waiting for its plan and the note about the last one. Never another
@@ -362,7 +368,15 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
     let selected = st.selection.objects.clone();
     let covered = covered(&mut app.embroidery.order, uid, revision, &doc, &selected);
     let folded = app.embroidery.order.folded(uid);
-    let (rows, tops) = rows(&order, &folded);
+    let laid_out = match &app.embroidery.order.laid_out {
+        Some((l, f, r)) if Arc::ptr_eq(l, &listed) && *f == folded => r.clone(),
+        _ => {
+            let r = Arc::new(rows(&order, &folded));
+            app.embroidery.order.laid_out = Some((listed.clone(), folded.clone(), r.clone()));
+            r
+        }
+    };
+    let (rows, tops) = (&laid_out.0, &laid_out.1);
     let footer_room = footer_room(ui, shown.stats, ui.available_width());
     let height = (ui.available_height() - footer_room - HINT).max(HEADER_ROW * MIN_LIST_ROWS);
     let mut clicked: Option<(Row, egui::Modifiers)> = None;
@@ -567,7 +581,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
         app.embroidery.order.toggle_fold(uid, block);
     }
     if let Some((row, mods)) = clicked {
-        select(app, &listed, &rows, row, mods);
+        select(app, &listed, rows, row, mods);
     }
     if let Some(stats) = stats {
         footer(ui, stats, &t);

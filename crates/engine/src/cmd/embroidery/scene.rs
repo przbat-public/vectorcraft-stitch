@@ -90,6 +90,8 @@ pub struct StitchScene {
     picture: Arc<LinePicture>,
     blocks: Vec<SceneBlock>,
     units: Vec<SceneUnit>,
+    /// The picture's box, worked out once (the canvas lays the fabric under it every frame).
+    bounds: Option<Rect>,
 }
 
 /// Scenes are built and drawn on worker threads.
@@ -121,7 +123,7 @@ impl StitchScene {
 
     /// The box everything it draws falls in, document points (`None`: it draws nothing).
     pub fn bounds(&self) -> Option<Rect> {
-        self.picture.bounds()
+        self.bounds
     }
 
     /// Where each of `selected` (objects of `doc`, as a selection holds them) is sewn: its units,
@@ -253,5 +255,7 @@ pub fn scene(plan: &DesignPlan) -> StitchScene {
             SceneUnit { object: u.origin.selected(), key: u.key(), block: u.block, entry, exit, bounds }
         })
         .collect();
-    StitchScene { picture: Arc::new(b.build()), blocks, units }
+    let picture = b.build();
+    let bounds = picture.bounds();
+    StitchScene { picture: Arc::new(picture), blocks, units, bounds }
 }

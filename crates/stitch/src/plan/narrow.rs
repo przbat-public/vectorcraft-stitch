@@ -117,22 +117,24 @@ impl Column {
     /// ring its two sides as two loops wound opposite ways.
     pub fn outline(&self) -> BezPath {
         let mut path = BezPath::new();
-        let first = self.stations.iter().map(|(a, _)| *a);
-        let second = self.stations.iter().rev().map(|(_, b)| *b);
-        if self.closed {
-            for side in [first.collect::<Vec<_>>(), second.collect::<Vec<_>>()] {
-                for (k, q) in side.into_iter().enumerate() {
-                    if k == 0 { path.move_to(q) } else { path.line_to(q) }
-                }
-                path.close_path();
-            }
-        } else {
-            for (k, q) in first.chain(second).enumerate() {
+        for ring in self.loops() {
+            for (k, q) in ring.pts.into_iter().enumerate() {
                 if k == 0 { path.move_to(q) } else { path.line_to(q) }
             }
             path.close_path();
         }
         path
+    }
+
+    /// [`Column::outline`] as closed polylines: one, or for a ring two.
+    fn loops(&self) -> Vec<SubPath> {
+        let first = self.stations.iter().map(|(a, _)| *a);
+        let second = self.stations.iter().rev().map(|(_, b)| *b);
+        if self.closed {
+            vec![SubPath { pts: first.collect(), closed: true }, SubPath { pts: second.collect(), closed: true }]
+        } else {
+            vec![SubPath { pts: first.chain(second).collect(), closed: true }]
+        }
     }
 
     /// The middle of each station.
@@ -607,18 +609,34 @@ impl Finder<'_> {
                 break;
             }
         }
-        found.sort_by(|a, b| b.length().total_cmp(&a.length()));
-        // Each kept column with its outline and the outline's bounds: a middle outside the bounds
-        // is outside the outline, which spares the winding test of every middle against every
-        // column kept before it.
-        let mut kept: Vec<(Column, BezPath, Rect)> = Vec::new();
-        for column in found {
+        // Longest first (each length worked out once, not in every comparison).
+        let mut found: Vec<(f64, Column)> = found.into_iter().map(|c| (c.length(), c)).collect();
+        found.sort_by(|a, b| b.0.total_cmp(&a.0));
+        // Each kept column with its outline, the outline's edge grid and its bounds: a middle
+        // outside the bounds is outside the outline, and one inside them is tested against the
+        // edges near it, not against every edge of the outline (concentric rings each hold the
+        // next one in their bounds).
+        let mut kept: Vec<(Column, Vec<SubPath>, Option<Grid>, Rect)> = Vec::new();
+        for (_, column) in found {
+            if (self.stopped)() {
+                return None;
+            }
             let middles = column.middles();
-            let inside = middles.iter().filter(|m| kept.iter().any(|(_, o, bounds)| bounds.contains(**m) && o.winding(**m) != 0)).count();
+            let mut inside = vec![false; middles.len()];
+            for (_, loops, grid, bounds) in &kept {
+                let outlines: Vec<&SubPath> = loops.iter().collect();
+                let area = Area { outlines: &outlines, rule: FillRule::NonZero, grid: grid.as_ref() };
+                for (m, hit) in middles.iter().zip(inside.iter_mut()) {
+                    *hit = *hit || (bounds.contains(*m) && area.contains(*m));
+                }
+            }
+            let inside = inside.into_iter().filter(|hit| *hit).count();
             if (inside as f64) <= MAX_OVERLAP * middles.len() as f64 {
-                let outline = column.outline();
-                let bounds = outline.bounding_box().inflate(SAME_POINT, SAME_POINT);
-                kept.push((column, outline, bounds));
+                let loops = column.loops();
+                let outlines: Vec<&SubPath> = loops.iter().collect();
+                let grid = Grid::new(&outlines);
+                let bounds = column.outline().bounding_box().inflate(SAME_POINT, SAME_POINT);
+                kept.push((column, loops, grid, bounds));
             }
         }
         Some(kept.into_iter().map(|(c, ..)| c).collect())

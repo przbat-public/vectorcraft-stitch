@@ -1383,7 +1383,10 @@ flowchart LR
   units equals a fresh plan: a property test plans random documents through random edits, and
   `embroidery_planning.rs` nudges every object of the real designs.
 - **The last plans** are kept, each with the snapshot (held weakly), the selection, the options and
-  the fonts' generation it was made for. A snapshot never changes (it is shared with the undo
+  the fonts' generation it was made for, where it counts: only a design that has type and a clip
+  group may outline type (a text clipping path is outlined with the fonts installed; text itself is
+  left out), so a font loaded for something else (a text shaped in another document, a font menu's
+  previews) leaves the plans of every other design as they are. A snapshot never changes (it is shared with the undo
   history), so the same snapshot with the same options returns the same plan without walking
   again: commands that read a design one after another plan it once. Up to four plans are kept
   (`MAX_MEMOS`: the stitch preview's, a read command's with other options or of the selection

@@ -35,7 +35,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock, Weak};
 
-use vectorcraft_doc::{Document, NodeId};
+use vectorcraft_doc::{Document, Node, NodeId, NodeKind};
 
 use super::Options;
 use super::cache::UnitCache;
@@ -63,6 +63,52 @@ pub const MAX_MEMO_BYTES: usize = 96 << 20;
 /// before its scene is built: 8 for the point, 4 for its number, and its share of the lines. 12.9
 /// to 13.1 measured on the tests' designs (2026-10-23), rounded up.
 pub const SCENE_BYTES_PER_RECORD: usize = 14;
+
+/// How many snapshots [`fonts_of`] remembers its answer for: the documents open and the snapshots
+/// before their last edits. An estimate.
+const FONTS_OF_KEPT: usize = 32;
+
+/// The fonts' generation a plan of `snapshot` depends on: the generation of the fonts installed
+/// ([`vectorcraft_text::FontDb::generation`]) when the snapshot may outline type for its stitches,
+/// else 0, so that a font loaded for something else (a text shaped in another document, a font
+/// menu's previews) never makes its plan out of date. Text itself is left out of the stitches; a
+/// text clipping path is outlined with the fonts installed, so a snapshot that has type and a clip
+/// group, in its layers or its symbols' art, may (an over-estimate on purpose: the type may be
+/// elsewhere). Worked out once a snapshot, which never changes.
+pub(crate) fn fonts_of(snapshot: &Arc<Document>) -> u64 {
+    static SEEN: Mutex<Vec<(Weak<Document>, bool)>> = Mutex::new(Vec::new());
+    let ptr = Arc::as_ptr(snapshot);
+    let known = SEEN.lock().ok().and_then(|seen| seen.iter().find(|(w, _)| std::ptr::eq(w.as_ptr(), ptr)).map(|(_, f)| *f));
+    let uses = known.unwrap_or_else(|| {
+        let uses = may_outline_type(snapshot);
+        // A snapshot held only weakly can't be mistaken for another made since: its memory isn't
+        // reused while the weak reference is held.
+        if let Ok(mut seen) = SEEN.lock() {
+            seen.retain(|(w, _)| w.strong_count() > 0);
+            seen.push((Arc::downgrade(snapshot), uses));
+            if seen.len() > FONTS_OF_KEPT {
+                seen.remove(0);
+            }
+        }
+        uses
+    });
+    if uses { vectorcraft_text::FontDb::global().generation() } else { 0 }
+}
+
+/// Whether `d` has type and a clip group, in its layers or its symbols' art ([`fonts_of`]).
+fn may_outline_type(d: &Document) -> bool {
+    let (mut text, mut clip) = (false, false);
+    let mut look = |n: &Node| match &n.kind {
+        NodeKind::Text(_) => text = true,
+        NodeKind::Layer { clip: true, .. } | NodeKind::Group { clip: true, .. } => clip = true,
+        _ => {}
+    };
+    d.walk(&mut look);
+    for s in &d.symbols {
+        s.art.walk(&mut look);
+    }
+    text && clip
+}
 
 /// The generation the next plan made gets: one counter for the process, so no two plans share one.
 static NEXT_GENERATION: AtomicU64 = AtomicU64::new(1);
@@ -184,8 +230,8 @@ impl Memos {
 /// The last plan a service made: of which snapshot (held weakly: the plan doesn't keep a closed
 /// or undone document alive) cut to which selection, with which options, and with which fonts: a
 /// text clipping path is outlined with the fonts installed, so a font added since can change the
-/// plan of the same snapshot ([`vectorcraft_text::FontDb::generation`], as the renderer's caches
-/// key on it). A design too large to plan is remembered too, so that the commands that read it one
+/// plan of the same snapshot ([`fonts_of`]: the fonts' generation where the snapshot may outline
+/// type, 0 elsewhere). A design too large to plan is remembered too, so that the commands that read it one
 /// after another are refused at once rather than each planning up to the limit again; a cancelled
 /// plan never is (the next one plans).
 struct Memo {
@@ -292,7 +338,7 @@ impl PlanService {
         return self.planned_waiting(of, doc, opts, std::time::Duration::from_millis(MAX_FLIGHT_WAIT_MS));
         #[cfg(target_arch = "wasm32")]
         {
-            let fonts = vectorcraft_text::FontDb::global().generation();
+            let fonts = fonts_of(of.snapshot);
             match self.remembered(of, opts, fonts) {
                 Some(plan) => (plan, false),
                 None => (self.walk(of, doc, opts, fonts), true),
@@ -310,7 +356,7 @@ impl PlanService {
         opts: &Options,
         max_wait: std::time::Duration,
     ) -> (Result<Planned, PlanError>, bool) {
-        let fonts = vectorcraft_text::FontDb::global().generation();
+        let fonts = fonts_of(of.snapshot);
         let asked = std::time::Instant::now();
         loop {
             if let Some(plan) = self.remembered(of, opts, fonts) {
@@ -428,7 +474,7 @@ impl PlanService {
     /// unwinds (the tests' stand-in for a plan another caller makes).
     #[cfg(test)]
     pub(crate) fn in_flight<T>(&self, of: Of<'_>, opts: &Options, f: impl FnOnce() -> T) -> T {
-        let fonts = vectorcraft_text::FontDb::global().generation();
+        let fonts = fonts_of(of.snapshot);
         let landing = match self.take_off(of, opts, fonts, std::time::Instant::now(), std::time::Duration::ZERO) {
             Ok(Turn::Plan(landing)) => landing,
             _ => panic!("a flight under way already"),

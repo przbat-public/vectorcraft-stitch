@@ -100,7 +100,9 @@ pub struct Planner {
 
 /// What a plan is of: one open document's snapshot (held weakly, so a key never keeps a document
 /// alive, and its memory can't be reused for another snapshot while the key is held), the options,
-/// and the fonts' generation (a text clipping path is outlined with the fonts installed). Two keys
+/// and the fonts' generation where the snapshot may outline type (a text clipping path is outlined
+/// with the fonts installed; [`service::fonts_of`]: 0 elsewhere, so a font loaded for something
+/// else never makes the plan shown out of date). Two keys
 /// are equal when a plan of one is a plan of the other. Cheap to make every frame: nothing is
 /// planned or copied.
 #[derive(Clone, Debug)]
@@ -113,7 +115,7 @@ pub struct PlanKey {
 
 impl PlanKey {
     fn new(uid: u64, snapshot: &Arc<Document>, opts: &Options) -> Self {
-        Self { uid, snapshot: Arc::downgrade(snapshot), opts: opts.clone(), fonts: vectorcraft_text::FontDb::global().generation() }
+        Self { uid, snapshot: Arc::downgrade(snapshot), opts: opts.clone(), fonts: service::fonts_of(snapshot) }
     }
 
     /// The open document it is of ([`crate::DocState::uid`]).

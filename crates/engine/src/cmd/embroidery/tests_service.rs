@@ -491,8 +491,9 @@ fn a_snapshot_with_the_same_options_is_planned_once() {
     let first = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
     assert!(Arc::ptr_eq(&first, &service.plan(Of::whole(&doc), &doc, &opts).unwrap()), "the same snapshot, the same plan");
     assert_eq!(service.walks(), 1);
-    // Fonts added since (a text clipping path is outlined with them): not the plan remembered.
-    let fonts = vectorcraft_text::FontDb::global().generation();
+    // A plan is remembered with the fonts it depends on ([`super::service::fonts_of`]): with
+    // others, not the plan remembered.
+    let fonts = super::service::fonts_of(&doc);
     assert!(service.remembered(Of::whole(&doc), &opts, fonts).is_some());
     assert!(service.remembered(Of::whole(&doc), &opts, fonts.wrapping_add(1)).is_none());
     // The same art in another snapshot: walked again, every unit from what was kept.
@@ -1005,4 +1006,33 @@ fn a_cancelled_query_gives_no_reply() {
         let r = cancel::scope(&cancelled, None, || planner.query(cmd, &json!({})));
         assert!(matches!(r, Err(EngineError::Cancelled)), "{cmd}: {r:?}");
     }
+}
+
+/// A plan depends on the fonts installed only where it may outline type (type and a clip group:
+/// a text clipping path is outlined with them): a font loaded for something else makes the plan
+/// of a design without them neither out of date nor planned again; with them, it does.
+#[test]
+fn only_a_design_that_may_outline_type_depends_on_the_fonts() {
+    use super::service::fonts_of;
+    let (mut s, _) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: None }]);
+    let opts = Options::default();
+    run(&mut s, "embroidery.stats", json!({}));
+    let uid = s.doc().unwrap().uid;
+    let (key, walks) = (s.embroidery_plan_key(&opts).unwrap(), s.embroidery_plans.of(uid).walks());
+    assert_eq!(fonts_of(&s.doc().unwrap().doc), 0, "no type");
+    // The fonts scanned again: their generation moves on.
+    run(&mut s, "text.rescanFonts", json!({}));
+    assert_eq!(s.embroidery_plan_key(&opts).unwrap(), key, "the plan shown is still of the document as it is");
+    run(&mut s, "embroidery.stats", json!({}));
+    assert_eq!(s.embroidery_plans.of(uid).walks(), walks, "not planned again");
+    // Type and a clip group (here the rectangle clips the type): the plan depends on the fonts.
+    let text = run(&mut s, "text.create", json!({"x": 10, "y": 30, "text": "Haft"}))["id"].clone();
+    let rect = run(&mut s, "shape.rectangle", json!({"x": 0, "y": 0, "width": 80, "height": 60}))["id"].clone();
+    run(&mut s, "select.set", json!({"ids": [text, rect]}));
+    run(&mut s, "object.clippingMask.make", json!({}));
+    let doc = s.doc().unwrap().doc.clone();
+    assert_eq!(fonts_of(&doc), vectorcraft_text::FontDb::global().generation());
+    let key = s.embroidery_plan_key(&opts).unwrap();
+    run(&mut s, "text.rescanFonts", json!({}));
+    assert_ne!(s.embroidery_plan_key(&opts).unwrap(), key, "with type to outline, the fonts count");
 }

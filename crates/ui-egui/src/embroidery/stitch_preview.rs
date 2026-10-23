@@ -8,9 +8,9 @@
 //!   fonts), never by the document's revision, which also moves on selection and view changes.
 //! - **Light and heavy designs.** A design whose last plan took at most [`LIVE_PLAN_MS`] is planned
 //!   on every change, also during a drag, and the plan under way is let finish, so the stitches
-//!   follow the drag. Any other is planned once the document has stayed unchanged for
-//!   [`QUIET_SECS`] with no drag, and a new change cancels the plan under way. The first plan of a
-//!   document starts at once.
+//!   follow the drag; once it is in, a change cancels the replies still to come and plans at once.
+//!   Any other is planned once the document has stayed unchanged for [`QUIET_SECS`] with no drag,
+//!   and a new change cancels the plan under way. The first plan of a document starts at once.
 //! - **The last plan stays shown** while a newer one is made ([`Freshness::Stale`]); after
 //!   [`STALE_NOTICE_SECS`] the preview says it is planning. A design that can't be planned keeps
 //!   its last good stitches with the reason ([`Freshness::Failed`]), and isn't planned again until
@@ -210,6 +210,9 @@ struct InFlight {
     /// Its key wasn't the one shown when it was sent: it plans (its time says how heavy the design
     /// is), rather than only making replies.
     plans: bool,
+    /// Its plan is taken in (or it only makes replies): what is left of it are replies, of a plan a
+    /// newer one replaces.
+    plan_in: bool,
     /// The document it plans.
     document: Arc<Document>,
 }
@@ -368,6 +371,7 @@ impl StitchPreview {
     fn take_in(&mut self) {
         let Some(runner) = self.runner.as_mut() else { return };
         for d in runner.poll() {
+            let mut plan_in = false;
             let Some(f) = self.in_flight.as_ref().filter(|f| f.ticket == d.ticket) else { continue };
             if !f.progress.cancelled()
                 && let Some(doc) = self.docs.get_mut(&f.uid)
@@ -376,6 +380,7 @@ impl StitchPreview {
                     Outcome::Planned(planned) => {
                         #[cfg(test)]
                         self.log.taken.push((f.ticket, f.progress.cancelled()));
+                        plan_in = true;
                         let replies = doc.shown.take().map(|s| s.replies).unwrap_or_default();
                         doc.shown = Some(Shown { key: f.key.clone(), planned, document: f.document.clone(), replies });
                         doc.failed = None;
@@ -383,16 +388,10 @@ impl StitchPreview {
                             doc.plan_ms = Some(d.ms);
                         }
                     }
-                    Outcome::Replies(replies) => {
-                        if let Some(shown) = doc.shown.as_mut().filter(|s| s.key == f.key) {
+                    Outcome::Reply(k, result) => {
+                        if let (Some(shown), Some(query)) = (doc.shown.as_mut().filter(|s| s.key == f.key), f.queries.get(k)) {
                             let generation = shown.planned.generation;
-                            let new: Vec<Reply> = f
-                                .queries
-                                .iter()
-                                .cloned()
-                                .zip(replies)
-                                .map(|(query, (_, result))| Reply { query, generation, result: result.map(Arc::new) })
-                                .collect();
+                            let new = vec![Reply { query: query.clone(), generation, result: result.map(Arc::new) }];
                             merge_replies(&mut shown.replies, new, generation, &f.queries);
                         }
                     }
@@ -404,6 +403,9 @@ impl StitchPreview {
                     }
                     Outcome::Cancelled => {}
                 }
+            }
+            if let Some(f) = self.in_flight.as_mut().filter(|_| plan_in) {
+                f.plan_in = true;
             }
             if d.last {
                 self.in_flight = None;
@@ -470,11 +472,14 @@ impl StitchPreview {
             return None;
         }
         let notice = stale_since.map(|t| (STALE_NOTICE_SECS - (now - t)).max(0.0));
+        // Once a job's plan is in, what is left of it are replies of a plan this one replaces: never
+        // waited for.
+        let plan_in = self.in_flight.as_ref().is_some_and(|f| f.plan_in);
         match flying {
             Some(true) => return notice.map(|wait| if wait > 0.0 { wait } else { PROGRESS_REPAINT_SECS }),
             // A light design's plan of an earlier state is let finish: shown, still stale, and the
             // next starts after it.
-            Some(false) if light => return notice,
+            Some(false) if light && !plan_in => return notice,
             Some(false) => self.cancel(),
             None => {}
         }
@@ -505,7 +510,7 @@ impl StitchPreview {
         #[cfg(test)]
         self.log.sent.push((key.clone(), plans));
         let document = planner.document().clone();
-        self.in_flight = Some(InFlight { uid, ticket, key, queries, progress: progress.clone(), plans, document });
+        self.in_flight = Some(InFlight { uid, ticket, key, queries, progress: progress.clone(), plans, plan_in: !plans, document });
         runner.submit(Job::new(ticket, planner, opts, sent, progress));
     }
 }

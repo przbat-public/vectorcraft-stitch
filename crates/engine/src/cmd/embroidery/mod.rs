@@ -585,8 +585,10 @@ fn read_params(cmd: &str, p: &Value) -> Result<ReadParams> {
 }
 
 /// The reply of read `read` from `plan`, the plan of `doc` with `opts`: the read commands' own
-/// replies, made the same way on any thread.
-fn reply(read: Read, plan: &plan::DesignPlan, doc: &Document, opts: &Options) -> Value {
+/// replies, made the same way on any thread. Cancelled ([`EngineError::Cancelled`]) when the work
+/// on this thread is: the walks stop early then ([`measure::each_until_cancelled`]), and a reply
+/// cut short is never given.
+fn reply(read: Read, plan: &plan::DesignPlan, doc: &Document, opts: &Options) -> Result<Value> {
     let v = match read {
         Read::Threads(page) => threads_reply(plan, doc, page),
         Read::Stats { machine, thread, page } => stats::stats(plan, machine, thread, page),
@@ -597,7 +599,8 @@ fn reply(read: Read, plan: &plan::DesignPlan, doc: &Document, opts: &Options) ->
             check::check(plan, &check::Ask { rules, format, limit })
         }
     };
-    with_options(v, opts)
+    vectorcraft_doc::cancel::check()?;
+    Ok(with_options(v, opts))
 }
 
 /// A read command run on the active document: its params read, its plan made (or the plan
@@ -605,7 +608,7 @@ fn reply(read: Read, plan: &plan::DesignPlan, doc: &Document, opts: &Options) ->
 fn read_cmd(s: &mut Session, p: &Value, cmd: &str) -> Result<Value> {
     let r = read_params(cmd, p)?;
     let (plan, doc) = planned(s, &r.opts, r.selected_only, cmd)?;
-    Ok(reply(r.read, &plan, &doc, &r.opts))
+    reply(r.read, &plan, &doc, &r.opts)
 }
 
 impl Planner {
@@ -619,7 +622,7 @@ impl Planner {
             return Err(bad(cmd, format!("a planner plans the whole document: leave out `{SELECTED_ONLY}`")));
         }
         let planned = self.planned(&r.opts)?;
-        Ok(reply(r.read, &planned.plan, &self.doc, &r.opts))
+        reply(r.read, &planned.plan, &self.doc, &r.opts)
     }
 }
 

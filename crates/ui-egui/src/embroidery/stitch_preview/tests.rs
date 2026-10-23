@@ -58,6 +58,22 @@ impl Fake {
         job.ticket
     }
 
+    /// Run the oldest job sent, handing over only its first `steps` steps → the rest, made but not
+    /// yet handed over (still being made, as far as the scheduler can tell).
+    fn finish_steps(&self, ms: f64, steps: usize) -> Vec<Done> {
+        let job = self.0.borrow_mut().waiting.remove(0);
+        let mut done = vec![];
+        run(&job, &mut |d| done.push(Done { ms, ..d }));
+        let rest = done.split_off(steps.min(done.len()));
+        self.0.borrow_mut().done.extend(done);
+        rest
+    }
+
+    /// Hand over steps kept back by [`Fake::finish_steps`].
+    fn hand_over(&self, steps: Vec<Done>) {
+        self.0.borrow_mut().done.extend(steps);
+    }
+
     fn finish_all(&self) {
         let ms = self.0.borrow().ms;
         while !self.0.borrow().waiting.is_empty() {
@@ -392,6 +408,46 @@ fn the_replies_are_the_commands_and_a_new_one_reuses_the_plan() {
     ask(&mut p, "dst");
     p.schedule_at(&mut s, 0.3, false);
     assert!(fake.waiting().is_empty(), "a tab switched back answers at once");
+}
+
+/// The replies are taken in one by one, each as it comes; once a light design's plan is in, a change
+/// doesn't wait for the rest of its job's replies: they are cancelled and the next plan starts at
+/// once, and a reply the cancelled job made anyway is never taken in.
+#[test]
+fn replies_come_one_by_one_and_never_hold_up_the_next_plan() {
+    let (mut p, fake) = preview();
+    let mut s = Session::new();
+    let uid = document(&mut s);
+    let stats = Query { cmd: "embroidery.stats", params: json!({}) };
+    let check = Query { cmd: "embroidery.check", params: json!({}) };
+    let ask = |p: &mut StitchPreview| {
+        p.want(stats.clone());
+        p.want(check.clone());
+    };
+    p.take_in();
+    ask(&mut p);
+    p.schedule_at(&mut s, 0.0, false);
+    // The plan and the figures in; the check still being made.
+    let check_step = fake.finish_steps(LIGHT_MS, 2);
+    p.take_in();
+    let shown = p.shown(uid).unwrap();
+    assert!(shown.reply(&stats).is_some_and(|r| r.current), "the figures, before the check");
+    assert!(shown.reply(&check).is_none());
+    let first = generation(&p, uid);
+    let under_way = p.in_flight.as_ref().unwrap().progress.clone();
+    edit(&mut s);
+    ask(&mut p);
+    p.schedule_at(&mut s, 0.01, true);
+    assert!(under_way.cancelled(), "the rest of the replies are cancelled");
+    assert_eq!(fake.waiting(), [2], "and the next plan starts at once, also during a drag");
+    fake.hand_over(check_step);
+    p.take_in();
+    assert!(p.shown(uid).unwrap().reply(&check).is_none(), "a cancelled job's reply is never taken in");
+    fake.finish(LIGHT_MS);
+    p.take_in();
+    assert_ne!(generation(&p, uid), first);
+    let shown = p.shown(uid).unwrap();
+    assert!(shown.reply(&stats).is_some_and(|r| r.current) && shown.reply(&check).is_some_and(|r| r.current));
 }
 
 /// The preview plans with its options, the last embroidery export's, and the replies are of them.

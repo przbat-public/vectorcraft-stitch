@@ -928,3 +928,19 @@ fn a_planners_query_is_the_commands_reply() {
     assert!(planner.query("embroidery.setup", &json!({})).is_err(), "only the read commands");
     assert!(planner.query("embroidery.stats", &json!({"speed": 1e9})).is_err(), "checked as the command checks");
 }
+
+/// A planner's reply made in work that has been cancelled is refused as cancelled, never given
+/// cut short; the same query outside it gives the reply.
+#[test]
+fn a_cancelled_query_gives_no_reply() {
+    use vectorcraft_doc::cancel::{self, CancelToken};
+    let (mut s, _) = build(&[Art { kind: 0, x: 20.0, y: 20.0, w: 60.0, h: 40.0, fill: Some(0), stroke: Some((1, 6.0)) }]);
+    let planner = s.embroidery_planner().unwrap();
+    let cancelled = CancelToken::new();
+    cancelled.cancel();
+    for cmd in READ_COMMANDS {
+        assert!(planner.query(cmd, &json!({})).is_ok(), "{cmd}");
+        let r = cancel::scope(&cancelled, None, || planner.query(cmd, &json!({})));
+        assert!(matches!(r, Err(EngineError::Cancelled)), "{cmd}: {r:?}");
+    }
+}

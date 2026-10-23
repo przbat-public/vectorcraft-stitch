@@ -1437,15 +1437,18 @@ embroidery export of any document while the app runs, else the defaults (the pro
 choice; `view.stitchPreview` answers which), never saved in the file.
 
 - **On a thread of its own** (`plan_worker.rs`), newest job first: the plan and its scene are
-  handed over first, then the read commands' replies (made by the commands' own code,
-  `EmbroideryPlanner::query`), so the canvas never waits for the panel. A panic is answered as a
+  handed over first, then the read commands' replies one by one as each is made (by the commands'
+  own code, `EmbroideryPlanner::query`), so the canvas never waits for the panel nor the figures
+  for a long check. A panic is answered as a
   failure and the thread goes on. The web build, the unit tests and `VECTORCRAFT_SYNC_RENDER` plan
   on the interface thread in one go, with the same steps.
 - **Light and heavy designs.** A design whose last plan took at most 50 ms (`LIVE_PLAN_MS`, half
   the re-plan budget, an estimate) is planned on every change, also during a drag, and the plan
-  under way is let finish, so the stitches follow the drag. Any other is planned once the document
-  has stayed unchanged for 0.1 s (`QUIET_SECS`, the panels' settle time) with no drag or scrubbing,
-  and a new change cancels the plan under way. A document's first plan starts at once.
+  under way is let finish, so the stitches follow the drag; once that plan is in, a change cancels
+  the replies still to come (their walks stop within a few thousand records, and a reply cut short
+  is never given) and plans at once. Any other is planned once the document has stayed unchanged
+  for 0.1 s (`QUIET_SECS`, the panels' settle time) with no drag or scrubbing, and a new change
+  cancels the plan under way. A document's first plan starts at once.
 - **What is shown meanwhile.** The last plan stays shown while a newer one is made; after 0.4 s
   (`STALE_NOTICE_SECS`, as long as an export runs before its progress shows) the preview says it is
   planning, with the plan's progress. A design that can't be planned (too many stitches) keeps its

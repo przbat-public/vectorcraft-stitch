@@ -903,7 +903,7 @@ fn threads_judged(plan: &DesignPlan, format: Format) -> Vec<BlockThread> {
 /// found something, and what is not checked.
 pub(crate) fn check(plan: &DesignPlan, ask: &Ask) -> Value {
     let mut c = Checker::new(plan, ask);
-    measure::each(plan, |r| c.record(r));
+    measure::each_until_cancelled(plan, |r| c.record(r));
     c.end_short_run();
     c.rest();
     c.into_json()

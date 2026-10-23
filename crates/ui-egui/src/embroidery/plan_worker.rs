@@ -34,8 +34,9 @@ pub struct Query {
 pub enum Outcome {
     /// The plan and its stitch scene, built: sent first.
     Planned(EmbroideryPlanned),
-    /// The replies to the job's queries, in the order asked, each a reply or its error.
-    Replies(Vec<(Query, Result<Value, String>)>),
+    /// The reply to the job's query `.0` (its place among the job's queries) or its error: each
+    /// handed over as soon as it is made, in the order asked.
+    Reply(usize, Result<Value, String>),
     /// The design can't be planned as it is (too many stitches), or planning hit a bug.
     Failed(String),
     /// The job was cancelled, or replaced by a newer one before it started.
@@ -94,9 +95,10 @@ fn internal(msg: &str) -> String {
 }
 
 /// Run `job`: plan (or take the plan remembered) and build its scene, hand them to `send`, then
-/// make the replies and hand those over. Everything runs inside the job's progress scope with
-/// panics caught; a cancel shows as [`Outcome::Cancelled`] and ends the job. The thread and the
-/// interface thread both run it.
+/// make the replies, handing each over as soon as it is made (the figures never wait for a long
+/// check). Everything runs inside the job's progress scope with panics caught; a cancel (between
+/// steps, or inside a reply's walk) shows as [`Outcome::Cancelled`] and ends the job. The thread
+/// and the interface thread both run it.
 pub fn run(job: &Job, send: &mut dyn FnMut(Done)) {
     let t0 = crate::now_ms();
     let planned = progress::scope(&job.progress, || {
@@ -122,9 +124,8 @@ pub fn run(job: &Job, send: &mut dyn FnMut(Done)) {
     if last {
         return;
     }
-    let t1 = crate::now_ms();
-    let mut replies = Vec::with_capacity(job.queries.len());
-    for q in &job.queries {
+    for (k, q) in job.queries.iter().enumerate() {
+        let t1 = crate::now_ms();
         if job.progress.cancelled() {
             return send(job.done(Outcome::Cancelled, t1, true));
         }
@@ -134,9 +135,8 @@ pub fn run(job: &Job, send: &mut dyn FnMut(Done)) {
             Ok(Err(e)) => Err(e.to_string()),
             Err(msg) => Err(internal(&msg)),
         };
-        replies.push((q.clone(), reply));
+        send(job.done(Outcome::Reply(k, reply), t1, k + 1 == job.queries.len()));
     }
-    send(job.done(Outcome::Replies(replies), t1, true));
 }
 
 /// The planning thread. Dropping it cancels the jobs it hasn't answered in full and ends the

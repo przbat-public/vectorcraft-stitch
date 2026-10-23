@@ -45,8 +45,38 @@ pub(crate) fn style(plan: &DesignPlan, unit: usize) -> Option<Style> {
     plan.units.get(unit).and_then(|u| u.sewn())
 }
 
+/// How many records [`each_until_cancelled`] walks between two looks at the cancel (estimate: a
+/// look reads a thread-local, cheap next to this many records; a few thousand records take well
+/// under a millisecond, so a cancelled reply stops within one).
+pub(crate) const RECORDS_PER_CANCEL_LOOK: usize = 4096;
+
 /// Call `f` with every record of `plan`, in sewing order.
 pub(crate) fn each(plan: &DesignPlan, mut f: impl FnMut(&Record)) {
+    walk(plan, |r| {
+        f(r);
+        true
+    });
+}
+
+/// [`each`] for a reply, which stops early once the work on this thread is cancelled
+/// ([`vectorcraft_doc::cancel::is_cancelled`]), so a cancelled reply on the planning thread
+/// doesn't hold up the next plan. The caller asks [`vectorcraft_doc::cancel::check`] after it,
+/// so a walk cut short never makes a reply.
+pub(crate) fn each_until_cancelled(plan: &DesignPlan, mut f: impl FnMut(&Record)) {
+    let mut until_look = RECORDS_PER_CANCEL_LOOK;
+    walk(plan, |r| {
+        f(r);
+        until_look = until_look.saturating_sub(1);
+        if until_look > 0 {
+            return true;
+        }
+        until_look = RECORDS_PER_CANCEL_LOOK;
+        !vectorcraft_doc::cancel::is_cancelled()
+    });
+}
+
+/// Call `f` with the records of `plan` in sewing order, while it answers `true`.
+fn walk(plan: &DesignPlan, mut f: impl FnMut(&Record) -> bool) {
     let mut before: Option<Stitch> = None;
     for block in &plan.blocks {
         for unit in block.units.clone() {
@@ -54,7 +84,9 @@ pub(crate) fn each(plan: &DesignPlan, mut f: impl FnMut(&Record)) {
             for index in u.stitches.clone() {
                 let Some(&stitch) = block.stitches.get(index) else { continue };
                 let number = block.first_number.saturating_add(index);
-                f(&Record { number, unit, stitch, before, same_block: index > 0 });
+                if !f(&Record { number, unit, stitch, before, same_block: index > 0 }) {
+                    return;
+                }
                 before = Some(stitch);
             }
         }

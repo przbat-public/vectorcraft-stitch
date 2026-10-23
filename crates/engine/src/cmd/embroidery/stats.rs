@@ -224,7 +224,7 @@ pub(crate) fn counts(plan: &DesignPlan) -> (Vec<Tally>, Vec<Tally>) {
 fn tally_with(plan: &DesignPlan, mut take: impl FnMut(&mut Tally, &Record)) -> (Vec<Tally>, Vec<Tally>) {
     let mut blocks = vec![Tally::default(); plan.blocks.len()];
     let mut units = vec![Tally::default(); plan.units.len()];
-    measure::each(plan, |r| {
+    measure::each_until_cancelled(plan, |r| {
         if let Some(t) = units.get_mut(r.unit) {
             take(t, r);
         }
@@ -416,7 +416,7 @@ pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread, page: P
     let mut bounds: Option<Rect> = None;
     let (mut start, mut end): (Option<Point>, Option<Point>) = (None, None);
     let mut lengths = Lengths::default();
-    measure::each(plan, |r| {
+    measure::each_until_cancelled(plan, |r| {
         if let Some(length) = r.sewn() {
             lengths.add(length);
         }

@@ -173,7 +173,10 @@ stitches fast, is tried before anything is built on it.
 8. **Manual stitches.** "Convert to manual stitches" and "Restore object" (the original kept in
    the node's extras), editing needle points with the tool above, drawn thin with their needle
    points by the stitch scene; a Stitches tab listing the plan's numbered stitches; stops, trims,
-   and stitches turned into jumps.
+   and stitches turned into jumps. A converted object's run is a literal run, as an opened file's
+   are: the Sewing order's refusal of a lone run (`reorder::Refusal::FromFile`, "a run of an
+   opened machine file moves with its block") then needs to tell the two apart, by a mark the
+   convert or the import leaves.
 9. **Digitizing from an image.** First the engine, through commands: the smallest area in mm²,
    colour overlap in mm, centre lines as running stitch or satin, optionally an angle along the
    shape, colours matched to the format's palette through Image Trace with the thread library.

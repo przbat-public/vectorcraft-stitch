@@ -76,7 +76,8 @@ pub enum Refusal {
     /// The move would put the object into a clip group, or take it out of one: what is sewn would
     /// change, not only when.
     ChangesClipping(NodeId),
-    /// The object is a run of an opened machine file: it moves with its block.
+    /// The object is a run of an opened machine file: it moves with its block. Every literal run
+    /// is one today; manual stitches (FORK.md's step 8) will need a mark to be told apart.
     FromFile(NodeId),
     /// The object can't go where the gap is (a layer into a group).
     NotAccepted(NodeId),

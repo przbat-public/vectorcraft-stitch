@@ -92,3 +92,34 @@ fn the_stitch_preview_commands_are_reachable() {
     let refused = call_tool(&mut h, "run_command", &json!({"command": "view.stitchPreview", "params": {"show": true}}));
     assert!(refused.is_error, "{refused:?}");
 }
+
+/// `embroidery.render` answers a picture of the stitches through MCP, its size bounded by the
+/// scale, and refuses what it can't draw; the sew commands move an object by a step and refuse
+/// ids that aren't the document's.
+#[test]
+fn the_picture_and_the_sew_commands_are_reachable() {
+    let mut h = Headless::with_document();
+    for (x, color) in [(10, "#d01818"), (80, "#2a6fdb")] {
+        text(&call_tool(&mut h, "run_command", &json!({"command": "paint.setFill", "params": {"color": color}})));
+        let rect = json!({"command": "shape.rectangle", "params": {"x": x, "y": 10, "width": 50, "height": 40}});
+        text(&call_tool(&mut h, "run_command", &rect));
+    }
+    let r = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.render", "params": {"scale": 2, "jumps": false}})));
+    let (w, h_px) = (r["width"].as_u64().unwrap(), r["height"].as_u64().unwrap());
+    let region = r["region"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect::<Vec<_>>();
+    assert!((w as f64 - (region[2] - region[0]) * 2.0).abs() <= 2.0 && h_px > 0, "{w}×{h_px} for {region:?}");
+    assert!(r["dataBase64"].as_str().is_some_and(|d| d.len() > 100), "a picture");
+    for given in [json!({"scale": 1000}), json!({"rect": [0, 0, 1e308, 10]}), json!({"background": "red"}), json!({"zoom": 2})] {
+        let refused = call_tool(&mut h, "run_command", &json!({"command": "embroidery.render", "params": given}));
+        assert!(refused.is_error, "{given}: {refused:?}");
+    }
+    let ids: Vec<u64> = h.session.doc().unwrap().doc.layers[0].children().unwrap().iter().map(|n| n.id.0).collect();
+    let moved = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.sewFirst", "params": {"ids": [ids[1]]}})));
+    assert_eq!(moved["ids"], json!([ids[1]]), "{moved}");
+    let after: Vec<u64> = h.session.doc().unwrap().doc.layers[0].children().unwrap().iter().map(|n| n.id.0).collect();
+    assert_eq!(after.first(), Some(&ids[1]), "sewn first: the bottom of the stack");
+    for given in [json!({"ids": [999_999]}), json!({"ids": "all"}), json!({"ids": [ids[0]], "speed": 800})] {
+        let refused = call_tool(&mut h, "run_command", &json!({"command": "embroidery.sewLast", "params": given}));
+        assert!(refused.is_error, "{given}: {refused:?}");
+    }
+}

@@ -28,5 +28,25 @@ pub fn structured() -> Vec<(&'static str, Value)> {
         ("embroidery.render", json!({"artboard": 1e9, "region": "everything", "background": "#zzzzzz"})),
         ("embroidery.render", json!({"rect": [10, 10, 5, 5], "artboard": 0})),
         ("embroidery.render", json!({"scale": 0.0001, "region": "design", "background": null, "jumps": false})),
+        ("embroidery.render", json!({"rect": [0, "x", 10, 10, 20], "needlePoints": "yes"})),
+        ("embroidery.sewEarlier", json!({"ids": "all"})),
+        ("embroidery.sewEarlier", json!({"ids": [1e308, -1, null, "x", {"id": 1}]})),
+        ("embroidery.sewLater", json!({"ids": [u64::MAX, u64::MAX], "density": 1e308})),
+        ("embroidery.sewLater", json!({"ids": {"0": 1}, "spacing": "close"})),
+        ("embroidery.sewFirst", json!({"ids": too_many_ids()})),
+        ("embroidery.sewFirst", json!({"ids": [], "stitchStyle": [5]})),
+        ("embroidery.sewLast", json!({"ids": [1, 1, 1, 1], "pullCompensation": -1e308})),
+        ("embroidery.sewLast", json!({"selectedOnly": true})),
+        ("view.stitchPreview", json!({"on": "yes"})),
+        ("view.stitchPreview", json!({"on": true, "jumps": false})),
+        ("view.stitchPreview.jumps", json!({"on": [true]})),
+        ("view.stitchPreview.needlePoints", json!({"on": 1e308})),
+        ("view.stitchPreview.artwork", json!({"on": null, "artwork": null})),
+        ("view.stitchPreview.artwork", json!([true])),
     ]
+}
+
+/// More ids than a move takes: refused before anything is looked up.
+fn too_many_ids() -> Vec<u64> {
+    (0..100_001).collect()
 }

@@ -175,3 +175,38 @@ fn inspect_screenshots_and_the_notice_follow_the_plan() {
     assert!(v["notice"].as_str().is_some_and(|n| n.starts_with("Can't plan the stitches: ")), "{v}");
     assert!(!crate::embroidery::holds_screenshots(&app, 2.4), "a failure doesn't hold a capture");
 }
+
+/// The fork's UI commands and control keys answer every junk parameter, with and without a
+/// document, without a panic, as upstream's own UI commands are swept; the app draws a frame after.
+#[test]
+fn the_embroidery_ui_commands_and_control_keys_answer_junk_without_a_panic() {
+    use vectorcraft_testkit::strategies::{junk_params, junk_values};
+    let ids = ["ui.embroideryPanel", "view.zoomTo", "view.checkMarks", "embroidery.nextHit", "embroidery.previousHit"];
+    for with_document in [false, true] {
+        let (mut app, tx) = controlled();
+        if with_document {
+            app.run("file.new", json!({"width": 200, "height": 200, "artboards": 1})).unwrap();
+            app.run("shape.rectangle", json!({"x": 20, "y": 20, "width": 60, "height": 40})).unwrap();
+            app.run("view.stitchPreview", json!({"on": true})).unwrap();
+        }
+        app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 600.0)));
+        for id in ids {
+            let doc = crate::menus::UI_COMMANDS.iter().find(|c| c.0 == id).unwrap_or_else(|| panic!("{id} is a UI command")).3;
+            let params = junk_params(doc, "/nonexistent");
+            assert!(params.len() >= 5, "{id}");
+            for p in params.into_iter().chain(junk_values()) {
+                let _ = app.run(id, p);
+            }
+        }
+        for method in ["ui.set", "ui.render"] {
+            for v in junk_values() {
+                let r = request(&mut app, &tx, method, json!({ "stitchPreview": v }));
+                assert!(r.get("ok").is_some(), "{method} {v}: {r}");
+            }
+        }
+        // The app's fonts: with no document the canvas draws its empty state's heading.
+        let ctx = egui::Context::default();
+        crate::theme::install_fonts(&ctx);
+        frame(&mut app, &ctx, 1.0);
+    }
+}

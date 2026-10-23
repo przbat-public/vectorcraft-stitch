@@ -920,7 +920,19 @@ fn connected(neighbours: &[Vec<(usize, bool)>]) -> Vec<Vec<usize>> {
 /// with the most links (where a shape branches), the largest first among equals: at most
 /// [`MAX_ROOTS`], fewer in a piece of many regions ([`ROOT_BUDGET`]).
 fn roots(piece: &[usize], regions: &Regions) -> Vec<usize> {
-    let links = |r: usize| regions.links.iter().filter(|(a, b)| *a == r || *b == r).count();
+    // Each region's links, counted once (not in every comparison of the sort).
+    let mut counts = vec![0usize; regions.list.len()];
+    for &(a, b) in &regions.links {
+        if let Some(c) = counts.get_mut(a) {
+            *c += 1;
+        }
+        if b != a
+            && let Some(c) = counts.get_mut(b)
+        {
+            *c += 1;
+        }
+    }
+    let links = |r: usize| counts.get(r).copied().unwrap_or(0);
     let rows = |r: usize| regions.list.get(r).map_or(0, |g| g.rows.len());
     let mut v: Vec<usize> = piece.to_vec();
     v.sort_by(|&a, &b| links(b).cmp(&links(a)).then(rows(b).cmp(&rows(a))));

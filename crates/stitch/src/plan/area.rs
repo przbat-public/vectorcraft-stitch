@@ -1,6 +1,8 @@
 //! A filled area: what is inside it, where a row crosses it, and the ways the needle can travel
 //! inside it from one place to another ([`Travels`]).
 
+use std::collections::HashMap;
+
 use vectorcraft_geom::{FillRule, Point, Vec2};
 
 use super::geometry::{Axes, NO_LENGTH, SubPath, unit};
@@ -201,7 +203,13 @@ pub(super) struct Travels<'a> {
     /// Whether two corners see each other ([`UNKNOWN`], [`SEES`] or [`BLOCKED`]; row-major, the
     /// lower index first).
     sees: Vec<u8>,
+    /// The ways found so far, by their ends' coordinates (a fill weighs several orders of its
+    /// regions, each travelling between the same places), at most [`MAX_KEPT_WAYS`].
+    ways: HashMap<[u64; 4], Option<Vec<Point>>>,
 }
+
+/// The most ways a [`Travels`] keeps: past it, ways are worked out each time (a bound on memory).
+const MAX_KEPT_WAYS: usize = 4096;
 
 /// Whether two of a travel graph's corners see each other: not worked out yet, yes (the straight
 /// line between them stays inside), or no.
@@ -211,7 +219,7 @@ const BLOCKED: u8 = 2;
 
 impl<'a> Travels<'a> {
     pub(super) fn new(area: Area<'a>) -> Self {
-        Self { area, corners: None, sees: Vec::new() }
+        Self { area, corners: None, sees: Vec::new(), ways: HashMap::new() }
     }
 
     /// The graph's corners, built the first time: how many there are.
@@ -256,10 +264,42 @@ impl<'a> Travels<'a> {
         }
     }
 
+    /// Whether an end of a travel sees a corner (worked out once, kept in `ends` at `k`): `a`
+    /// seeing corner `k` when `to_b` is `None`, else corner `to_b` seeing `end` (`b`).
+    fn end_sees(&self, ends: &mut [u8], k: usize, end: Point, to_b: Option<usize>) -> bool {
+        match ends.get(k).copied() {
+            Some(SEES) => true,
+            Some(BLOCKED) => false,
+            Some(_) => {
+                let corner = self.corner(to_b.unwrap_or(k));
+                let yes =
+                    corner.is_some_and(|c| if to_b.is_some() { self.area.contains_segment(c, end) } else { self.area.contains_segment(end, c) });
+                if let Some(v) = ends.get_mut(k) {
+                    *v = if yes { SEES } else { BLOCKED };
+                }
+                yes
+            }
+            None => false,
+        }
+    }
+
     /// The shortest way from `a` to `b` that stays inside the area (straight when that does), as
     /// the points it turns at, both ends included; `None` when there is none (two separate
     /// shapes).
     pub(super) fn way(&mut self, a: Point, b: Point) -> Option<Vec<Point>> {
+        let key = [a.x.to_bits(), a.y.to_bits(), b.x.to_bits(), b.y.to_bits()];
+        if let Some(way) = self.ways.get(&key) {
+            return way.clone();
+        }
+        let way = self.find_way(a, b);
+        if self.ways.len() < MAX_KEPT_WAYS {
+            self.ways.insert(key, way.clone());
+        }
+        way
+    }
+
+    /// [`Travels::way`], worked out.
+    fn find_way(&mut self, a: Point, b: Point) -> Option<Vec<Point>> {
         if !a.distance(b).is_finite() {
             return None;
         }
@@ -267,9 +307,10 @@ impl<'a> Travels<'a> {
             return Some(vec![a, b]);
         }
         let n = self.corners();
-        // Node 0 is `a`, node 1 is `b`, node 2 + i is corner i; what the ends see is tested once.
-        let sees_a: Vec<bool> = (0..n).map(|i| self.corner(i).is_some_and(|c| self.area.contains_segment(a, c))).collect();
-        let sees_b: Vec<bool> = (0..n).map(|i| self.corner(i).is_some_and(|c| self.area.contains_segment(c, b))).collect();
+        // Node 0 is `a`, node 1 is `b`, node 2 + i is corner i. What the ends see is tested once,
+        // when the search first needs it ([`UNKNOWN`], [`SEES`] or [`BLOCKED`]; `a`'s view of each
+        // corner, then each corner's view of `b`).
+        let mut ends = vec![UNKNOWN; 2 * n];
         let total = n + 2;
         let at = |t: &Self, u: usize| match u {
             0 => Some(a),
@@ -305,8 +346,8 @@ impl<'a> Travels<'a> {
                 let sees = match (u, v) {
                     // Straight from end to end was tested first.
                     (0, 1) => false,
-                    (0, c) => sees_a.get(c - 2).copied().unwrap_or(false),
-                    (c, 1) => sees_b.get(c - 2).copied().unwrap_or(false),
+                    (0, c) => self.end_sees(&mut ends, c - 2, a, None),
+                    (c, 1) => self.end_sees(&mut ends, n + c - 2, b, Some(c - 2)),
                     (c, d) => self.corners_see(c - 2, d - 2),
                 };
                 if sees {

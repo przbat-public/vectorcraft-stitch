@@ -15,6 +15,8 @@
 //! - [`tiff`]: hand-written TIFF files, chunky or planar, or compressed with CCITT Group 3, for
 //!   image import tests.
 //! - [`fonts`]: font files made from the bundled fonts (a renamed family) for font tests.
+//! - [`embroidery`]: embroidery documents built by commands (shapes in thread colours, the
+//!   structures a stitch plan maps back to objects, a design opened from a machine file).
 //!
 //! This crate may only be used as a dev-dependency (enforced by `cargo xtask layers`).
 // Test support only (a dev-dependency of every crate that uses it): a failed setup or assertion
@@ -25,6 +27,7 @@
 
 pub mod ai;
 pub mod ase;
+pub mod embroidery;
 pub mod fixtures;
 pub mod fonts;
 pub mod geom;

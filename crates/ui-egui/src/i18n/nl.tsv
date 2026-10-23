@@ -5431,3 +5431,56 @@ embroidery	Sew First	Eerst borduren
 embroidery	Sew Last	Laatst borduren
 embroidery	Collapse All	Alles samenvouwen
 embroidery	Expand All	Alles uitvouwen
+embroidery	Satin columns wider than {value} mm	Satijnkolommen breder dan {value} mm
+embroidery	Stitches longer than {value} mm	Steken langer dan {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Steken langer dan één {format}-record ({value} mm)
+embroidery	Fill stitch length under {value} mm	Vulsteeklengte onder {value} mm
+embroidery	Satin columns narrower than {value} mm	Satijnkolommen smaller dan {value} mm
+embroidery	Running stitch length under {value} mm	Rechte-steeklengte onder {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Steken korter dan de naald dik is ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Steken van {value} mm of minder, die machines overslaan
+embroidery	More than {value} short stitches in a row	Meer dan {value} korte steken achter elkaar
+embroidery	{value} or more layers of stitches on one spot	{value} of meer lagen steken op één plek
+embroidery	Everything is sewn	Alles wordt geborduurd
+embroidery	Art that isn't sewn	Illustratie die niet wordt geborduurd
+embroidery	More colour blocks than {format} holds ({value})	Meer kleurblokken dan {format} bevat ({value})
+embroidery	{format} holds any number of colour blocks	{format} bevat een willekeurig aantal kleurblokken
+embroidery	More stitches than a machine shows ({value})	Meer steken dan een machine toont ({value})
+embroidery	More thread changes than a machine shows ({value})	Meer draadwissels dan een machine toont ({value})
+embroidery	No findings	Niets gevonden
+embroidery	Longest: {value} mm	Langste: {value} mm
+embroidery	Widest: {value} mm	Breedste: {value} mm
+embroidery	Narrowest: {value} mm	Smalste: {value} mm
+embroidery	Shortest: {value} mm	Kortste: {value} mm
+embroidery	At most {value} in a row	Hoogstens {value} achter elkaar
+embroidery	At most {value} on one spot	Hoogstens {value} op één plek
+embroidery	Stitch {record}: {value} mm	Steek {record}: {value} mm
+embroidery	From stitch {record}: {value} in a row	Vanaf steek {record}: {value} achter elkaar
+embroidery	Stitch {record}	Steek {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Fout
+embroidery	Warning	Waarschuwing
+embroidery	Note	Opmerking
+embroidery	Passed	Geslaagd
+embroidery	No problems found	Geen problemen gevonden
+embroidery	stitch density	steekdichtheid
+embroidery	needle penetrations in an area	naaldsteken in een gebied
+embroidery	tie stitches	afhechtsteken
+embroidery	Checking…	Controleren…
+embroidery	Can't check the design:	Het ontwerp kan niet worden gecontroleerd:
+embroidery	Checked for	Gecontroleerd voor
+embroidery	Source: {name}	Bron: {name}
+embroidery	Also: {name}	Ook: {name}
+embroidery	Not checked: {list}	Niet gecontroleerd: {list}
+embroidery	No source gives a number to check these against.	Geen enkele bron geeft een getal om ze aan te toetsen.
+@plural	{count} thread change|{count} thread changes	{count} draadwissel|{count} draadwissels
+@plural	{count} row|{count} rows	{count} reeks|{count} reeksen
+@plural	{count} spot|{count} spots	{count} plek|{count} plekken
+@plural	{count} thread|{count} threads	{count} draad|{count} draden
+@plural	{count} error|{count} errors	{count} fout|{count} fouten
+@plural	{count} warning|{count} warnings	{count} waarschuwing|{count} waarschuwingen
+@plural	{count} note|{count} notes	{count} opmerking|{count} opmerkingen
+@plural	and {count} more|and {count} more	en nog {count}|en nog {count}
+embroidery	Threads unlike the art's colour (over {value})	Draden die afwijken van de kleur van de illustratie (boven {value})
+embroidery	Largest difference: {value}	Grootste verschil: {value}
+embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}

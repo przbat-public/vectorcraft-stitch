@@ -5058,3 +5058,56 @@ embroidery	Sew First	最初に縫う
 embroidery	Sew Last	最後に縫う
 embroidery	Collapse All	すべて折りたたむ
 embroidery	Expand All	すべて展開
+embroidery	Satin columns wider than {value} mm	幅が {value} mm を超えるサテンの列
+embroidery	Stitches longer than {value} mm	{value} mm より長い針目
+embroidery	Stitches longer than one {format} record ({value} mm)	{format} の 1 レコードより長い針目 ({value} mm)
+embroidery	Fill stitch length under {value} mm	塗りの針目の長さが {value} mm 未満
+embroidery	Satin columns narrower than {value} mm	幅が {value} mm 未満のサテンの列
+embroidery	Running stitch length under {value} mm	ランニングステッチの長さが {value} mm 未満
+embroidery	Stitches shorter than the needle is thick ({value} mm)	針の太さより短い針目 ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	ミシンが省く {value} mm 以下の針目
+embroidery	More than {value} short stitches in a row	短い針目が {value} 個を超えて連続
+embroidery	{value} or more layers of stitches on one spot	1 か所に {value} 層以上の針目
+embroidery	Everything is sewn	すべて縫われます
+embroidery	Art that isn't sewn	縫われないアートワーク
+embroidery	More colour blocks than {format} holds ({value})	{format} に収まる数を超える色ブロック ({value})
+embroidery	{format} holds any number of colour blocks	{format} は色ブロックをいくつでも収められます
+embroidery	More stitches than a machine shows ({value})	ミシンが表示できる数を超える針数 ({value})
+embroidery	More thread changes than a machine shows ({value})	ミシンが表示できる数を超える糸替え ({value})
+embroidery	No findings	問題なし
+embroidery	Longest: {value} mm	最長: {value} mm
+embroidery	Widest: {value} mm	最大幅: {value} mm
+embroidery	Narrowest: {value} mm	最小幅: {value} mm
+embroidery	Shortest: {value} mm	最短: {value} mm
+embroidery	At most {value} in a row	連続は最大 {value} 個
+embroidery	At most {value} on one spot	1 か所に最大 {value} 層
+embroidery	Stitch {record}: {value} mm	針目 {record}: {value} mm
+embroidery	From stitch {record}: {value} in a row	針目 {record} から: {value} 個連続
+embroidery	Stitch {record}	針目 {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	エラー
+embroidery	Warning	警告
+embroidery	Note	注記
+embroidery	Passed	合格
+embroidery	No problems found	問題は見つかりませんでした
+embroidery	stitch density	針目の密度
+embroidery	needle penetrations in an area	一定範囲の針落ち数
+embroidery	tie stitches	止め縫い
+embroidery	Checking…	チェック中…
+embroidery	Can't check the design:	デザインをチェックできません:
+embroidery	Checked for	チェック対象
+embroidery	Source: {name}	出典: {name}
+embroidery	Also: {name}	ほかに: {name}
+embroidery	Not checked: {list}	チェックしない項目: {list}
+embroidery	No source gives a number to check these against.	これらを判定する数値を示す出典がありません。
+@plural	{count} thread change|{count} thread changes	{count} 回の糸替え
+@plural	{count} row|{count} rows	{count} か所の連続
+@plural	{count} spot|{count} spots	{count} か所
+@plural	{count} thread|{count} threads	{count} 本の糸
+@plural	{count} error|{count} errors	エラー {count} 件
+@plural	{count} warning|{count} warnings	警告 {count} 件
+@plural	{count} note|{count} notes	注記 {count} 件
+@plural	and {count} more|and {count} more	ほか {count} 件
+embroidery	Threads unlike the art's colour (over {value})	アートワークの色と違う糸 ({value} 超)
+embroidery	Largest difference: {value}	最大差: {value}
+embroidery	Block {block}: {thread}, {value}	ブロック {block}: {thread}、{value}

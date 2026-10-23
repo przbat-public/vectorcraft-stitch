@@ -79,6 +79,12 @@ pub(crate) use service::Services;
 pub(crate) use unit::PlanError;
 pub use vectorcraft_stitch::{mm_to_pt, pt_to_mm};
 
+/// The machine formats `embroidery.check {format}` checks for, as (id, the name the export lists
+/// it by), in the export's order: the Check tab's choice of format.
+pub fn check_formats() -> Vec<(&'static str, &'static str)> {
+    StitchFormat::ALL.iter().map(|f| (f.id(), f.label())).collect()
+}
+
 /// A document's stitch planning, to hand to another thread: the planning service of the document
 /// it was taken from (its kept units and last plan, shared with the commands), the snapshot it was
 /// taken of, and the document planned of it, as the read commands plan it. Planning is `Send`: the

@@ -23,6 +23,7 @@ use serde_json::{Value, json};
 use crate::VectorcraftApp;
 use crate::embroidery::plan_worker::Query;
 
+pub mod check;
 pub mod order;
 use crate::embroidery::stitch_preview::Freshness;
 use crate::theme::Tokens;
@@ -89,12 +90,13 @@ pub struct Settings {
     pub tab: Tab,
 }
 
-/// What a tab asks the scheduler for besides the plan: the figures, always, and its own reply.
-fn queries(tab: Tab) -> Vec<Query> {
+/// What a tab asks the scheduler for besides the plan, for document `uid`: the figures, always,
+/// and its own reply.
+fn queries(app: &VectorcraftApp, uid: u64, tab: Tab) -> Vec<Query> {
     let stats = Query { cmd: "embroidery.stats", params: json!({}) };
     match tab {
         Tab::Order => vec![stats, order::query()],
-        Tab::Check => vec![stats, Query { cmd: "embroidery.check", params: json!({}) }],
+        Tab::Check => vec![stats, check::query(&app.embroidery.check, uid)],
     }
 }
 
@@ -187,10 +189,11 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     strip(app, ui);
     ui.add_space(GAP);
     let tab = app.ui.embroidery_panel.tab;
+    let asked = queries(app, uid, tab);
     let preview = &mut app.embroidery.preview;
     preview.want_plan();
-    for q in queries(tab) {
-        preview.want(q);
+    for q in &asked {
+        preview.want(q.clone());
     }
     let now = ui.input(|i| i.time);
     let freshness = preview.freshness(uid, now);
@@ -214,9 +217,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         return;
     }
     // The figures, and the tab's own reply.
-    let asked = queries(tab);
     let reply = |k: usize| asked.get(k).and_then(|q| shown.reply(q)).and_then(|(r, _)| r.as_ref().ok()).cloned();
     let (stats, own, generation) = (reply(0), reply(1), shown.planned.generation);
+    let checked = asked.get(1).and_then(|q| shown.reply(q)).map(|(r, current)| (r.clone(), current));
     let stale = !matches!(freshness, Freshness::Fresh);
     ui.horizontal(|ui| {
         if let Some(stats) = &stats {
@@ -240,7 +243,11 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     let plan = shown.planned.plan.clone();
     match (tab, own) {
         (Tab::Order, Some(own)) => order::show(app, ui, order::Shown { generation, reply: &own, stats: stats.as_ref(), stale, plan }),
-        (Tab::Check, _) | (_, None) => {}
+        (Tab::Check, _) => {
+            let reply = checked.as_ref().map(|(r, current)| (r, *current));
+            check::show(app, ui, check::Shown { uid, reply, stale });
+        }
+        (Tab::Order, None) => {}
     }
 }
 

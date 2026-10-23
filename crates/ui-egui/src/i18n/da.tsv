@@ -5388,3 +5388,56 @@ embroidery	Sew First	Sy først
 embroidery	Sew Last	Sy sidst
 embroidery	Collapse All	Skjul alle
 embroidery	Expand All	Udvid alle
+embroidery	Satin columns wider than {value} mm	Satinsøjler bredere end {value} mm
+embroidery	Stitches longer than {value} mm	Sting længere end {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Sting længere end én {format}-post ({value} mm)
+embroidery	Fill stitch length under {value} mm	Udfyldningens stinglængde under {value} mm
+embroidery	Satin columns narrower than {value} mm	Satinsøjler smallere end {value} mm
+embroidery	Running stitch length under {value} mm	Forstingets længde under {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Sting kortere end nålens tykkelse ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Sting på {value} mm eller mindre, som maskiner udelader
+embroidery	More than {value} short stitches in a row	Mere end {value} korte sting i træk
+embroidery	{value} or more layers of stitches on one spot	{value} eller flere lag sting på ét sted
+embroidery	Everything is sewn	Alt bliver syet
+embroidery	Art that isn't sewn	Grafik, der ikke bliver syet
+embroidery	More colour blocks than {format} holds ({value})	Flere farveblokke, end {format} kan rumme ({value})
+embroidery	{format} holds any number of colour blocks	{format} kan rumme et vilkårligt antal farveblokke
+embroidery	More stitches than a machine shows ({value})	Flere sting, end en maskine viser ({value})
+embroidery	More thread changes than a machine shows ({value})	Flere trådskift, end en maskine viser ({value})
+embroidery	No findings	Intet fundet
+embroidery	Longest: {value} mm	Længste: {value} mm
+embroidery	Widest: {value} mm	Bredeste: {value} mm
+embroidery	Narrowest: {value} mm	Smalleste: {value} mm
+embroidery	Shortest: {value} mm	Korteste: {value} mm
+embroidery	At most {value} in a row	Højst {value} i træk
+embroidery	At most {value} on one spot	Højst {value} på ét sted
+embroidery	Stitch {record}: {value} mm	Sting {record}: {value} mm
+embroidery	From stitch {record}: {value} in a row	Fra sting {record}: {value} i træk
+embroidery	Stitch {record}	Sting {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Fejl
+embroidery	Warning	Advarsel
+embroidery	Note	Bemærkning
+embroidery	Passed	Bestået
+embroidery	No problems found	Ingen problemer fundet
+embroidery	stitch density	stingtæthed
+embroidery	needle penetrations in an area	nålestik i et område
+embroidery	tie stitches	hæftesting
+embroidery	Checking…	Kontrollerer…
+embroidery	Can't check the design:	Designet kan ikke kontrolleres:
+embroidery	Checked for	Kontrolleret for
+embroidery	Source: {name}	Kilde: {name}
+embroidery	Also: {name}	Også: {name}
+embroidery	Not checked: {list}	Kontrolleres ikke: {list}
+embroidery	No source gives a number to check these against.	Ingen kilde giver et tal at kontrollere dem mod.
+@plural	{count} thread change|{count} thread changes	{count} trådskift|{count} trådskift
+@plural	{count} row|{count} rows	{count} række|{count} rækker
+@plural	{count} spot|{count} spots	{count} sted|{count} steder
+@plural	{count} thread|{count} threads	{count} tråd|{count} tråde
+@plural	{count} error|{count} errors	{count} fejl|{count} fejl
+@plural	{count} warning|{count} warnings	{count} advarsel|{count} advarsler
+@plural	{count} note|{count} notes	{count} bemærkning|{count} bemærkninger
+@plural	and {count} more|and {count} more	og {count} mere|og {count} mere
+embroidery	Threads unlike the art's colour (over {value})	Tråde, der ikke ligner grafikkens farve (over {value})
+embroidery	Largest difference: {value}	Største forskel: {value}
+embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}

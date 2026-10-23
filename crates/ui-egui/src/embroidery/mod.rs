@@ -42,6 +42,8 @@ pub struct Embroidery {
     pub(crate) ends: overlay::Ends,
     /// The Embroidery panel's Sewing order tab.
     pub(crate) order: crate::panels::embroidery::order::OrderState,
+    /// The Embroidery panel's Check tab.
+    pub(crate) check: crate::panels::embroidery::check::CheckState,
 }
 
 /// What the fork draws over the canvas, after it: the selection's markers in the stitch view, the

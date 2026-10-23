@@ -4981,3 +4981,56 @@ embroidery	Sew First	맨 먼저 수놓기
 embroidery	Sew Last	맨 나중에 수놓기
 embroidery	Collapse All	모두 접기
 embroidery	Expand All	모두 펼치기
+embroidery	Satin columns wider than {value} mm	폭이 {value}mm보다 넓은 새틴 기둥
+embroidery	Stitches longer than {value} mm	{value}mm보다 긴 땀
+embroidery	Stitches longer than one {format} record ({value} mm)	{format} 레코드 하나보다 긴 땀({value}mm)
+embroidery	Fill stitch length under {value} mm	칠 땀 길이 {value}mm 미만
+embroidery	Satin columns narrower than {value} mm	폭이 {value}mm보다 좁은 새틴 기둥
+embroidery	Running stitch length under {value} mm	러닝 스티치 길이 {value}mm 미만
+embroidery	Stitches shorter than the needle is thick ({value} mm)	바늘 굵기보다 짧은 땀({value}mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	기계가 건너뛰는 {value}mm 이하의 땀
+embroidery	More than {value} short stitches in a row	짧은 땀이 {value}개를 넘게 연속
+embroidery	{value} or more layers of stitches on one spot	한 곳에 {value}겹 이상 겹친 땀
+embroidery	Everything is sewn	모두 수놓아집니다
+embroidery	Art that isn't sewn	수놓아지지 않는 아트워크
+embroidery	More colour blocks than {format} holds ({value})	{format}에 담을 수 있는 것보다 많은 색 블록({value})
+embroidery	{format} holds any number of colour blocks	{format}은(는) 색 블록을 개수 제한 없이 담습니다
+embroidery	More stitches than a machine shows ({value})	기계가 표시하는 것보다 많은 땀({value})
+embroidery	More thread changes than a machine shows ({value})	기계가 표시하는 것보다 많은 실 교체({value})
+embroidery	No findings	발견된 항목 없음
+embroidery	Longest: {value} mm	최장: {value}mm
+embroidery	Widest: {value} mm	최대 폭: {value}mm
+embroidery	Narrowest: {value} mm	최소 폭: {value}mm
+embroidery	Shortest: {value} mm	최단: {value}mm
+embroidery	At most {value} in a row	최대 {value}개 연속
+embroidery	At most {value} on one spot	한 곳에 최대 {value}겹
+embroidery	Stitch {record}: {value} mm	{record}번째 땀: {value}mm
+embroidery	From stitch {record}: {value} in a row	{record}번째 땀부터: {value}개 연속
+embroidery	Stitch {record}	{record}번째 땀
+embroidery	{name}: {value} mm	{name}: {value}mm
+embroidery	Error	오류
+embroidery	Warning	경고
+embroidery	Note	참고
+embroidery	Passed	통과
+embroidery	No problems found	문제를 찾지 못했습니다
+embroidery	stitch density	땀 밀도
+embroidery	needle penetrations in an area	한 영역의 바늘 땀 수
+embroidery	tie stitches	매듭 땀
+embroidery	Checking…	검사하는 중…
+embroidery	Can't check the design:	디자인을 검사할 수 없습니다:
+embroidery	Checked for	검사 대상
+embroidery	Source: {name}	출처: {name}
+embroidery	Also: {name}	또한: {name}
+embroidery	Not checked: {list}	검사하지 않음: {list}
+embroidery	No source gives a number to check these against.	이 항목을 검사할 기준 수치를 제시한 출처가 없습니다.
+@plural	{count} thread change|{count} thread changes	실 교체 {count}회
+@plural	{count} row|{count} rows	연속 {count}곳
+@plural	{count} spot|{count} spots	{count}곳
+@plural	{count} thread|{count} threads	실 {count}개
+@plural	{count} error|{count} errors	오류 {count}개
+@plural	{count} warning|{count} warnings	경고 {count}개
+@plural	{count} note|{count} notes	참고 {count}개
+@plural	and {count} more|and {count} more	외 {count}개
+embroidery	Threads unlike the art's colour (over {value})	아트워크 색과 다른 실({value} 초과)
+embroidery	Largest difference: {value}	최대 차이: {value}
+embroidery	Block {block}: {thread}, {value}	{block}번 블록: {thread}, {value}

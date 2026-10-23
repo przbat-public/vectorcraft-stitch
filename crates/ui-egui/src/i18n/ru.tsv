@@ -5014,3 +5014,56 @@ embroidery	Sew First	Вышивать первым
 embroidery	Sew Last	Вышивать последним
 embroidery	Collapse All	Свернуть все
 embroidery	Expand All	Развернуть все
+embroidery	Satin columns wider than {value} mm	Колонны глади шире {value} мм
+embroidery	Stitches longer than {value} mm	Стежки длиннее {value} мм
+embroidery	Stitches longer than one {format} record ({value} mm)	Стежки длиннее одной записи {format} ({value} мм)
+embroidery	Fill stitch length under {value} mm	Длина стежка заливки меньше {value} мм
+embroidery	Satin columns narrower than {value} mm	Колонны глади уже {value} мм
+embroidery	Running stitch length under {value} mm	Длина прямого стежка меньше {value} мм
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Стежки короче толщины иглы ({value} мм)
+embroidery	Stitches of {value} mm or less, which machines leave out	Стежки длиной {value} мм и меньше, которые машины пропускают
+embroidery	More than {value} short stitches in a row	Более {value} коротких стежков подряд
+embroidery	{value} or more layers of stitches on one spot	{value} или больше слоёв стежков в одном месте
+embroidery	Everything is sewn	Вышивается всё
+embroidery	Art that isn't sewn	Графика, которая не вышивается
+embroidery	More colour blocks than {format} holds ({value})	Больше цветовых блоков, чем вмещает {format} ({value})
+embroidery	{format} holds any number of colour blocks	{format} вмещает любое число цветовых блоков
+embroidery	More stitches than a machine shows ({value})	Больше стежков, чем показывает машина ({value})
+embroidery	More thread changes than a machine shows ({value})	Больше смен нити, чем показывает машина ({value})
+embroidery	No findings	Ничего не найдено
+embroidery	Longest: {value} mm	Самый длинный: {value} мм
+embroidery	Widest: {value} mm	Самая широкая: {value} мм
+embroidery	Narrowest: {value} mm	Самая узкая: {value} мм
+embroidery	Shortest: {value} mm	Самый короткий: {value} мм
+embroidery	At most {value} in a row	Не более {value} подряд
+embroidery	At most {value} on one spot	Не более {value} в одном месте
+embroidery	Stitch {record}: {value} mm	Стежок {record}: {value} мм
+embroidery	From stitch {record}: {value} in a row	Со стежка {record}: {value} подряд
+embroidery	Stitch {record}	Стежок {record}
+embroidery	{name}: {value} mm	{name}: {value} мм
+embroidery	Error	Ошибка
+embroidery	Warning	Предупреждение
+embroidery	Note	Примечание
+embroidery	Passed	Пройдена
+embroidery	No problems found	Проблем не найдено
+embroidery	stitch density	плотность стежков
+embroidery	needle penetrations in an area	проколы иглы на одном участке
+embroidery	tie stitches	закрепки
+embroidery	Checking…	Проверка…
+embroidery	Can't check the design:	Не удаётся проверить дизайн:
+embroidery	Checked for	Проверено для
+embroidery	Source: {name}	Источник: {name}
+embroidery	Also: {name}	Также: {name}
+embroidery	Not checked: {list}	Не проверяется: {list}
+embroidery	No source gives a number to check these against.	Ни один источник не даёт числа, с которым их сверить.
+@plural	{count} thread change|{count} thread changes	{count} смена нити|{count} смены нити|{count} смен нити
+@plural	{count} row|{count} rows	{count} серия|{count} серии|{count} серий
+@plural	{count} spot|{count} spots	{count} место|{count} места|{count} мест
+@plural	{count} thread|{count} threads	{count} нить|{count} нити|{count} нитей
+@plural	{count} error|{count} errors	{count} ошибка|{count} ошибки|{count} ошибок
+@plural	{count} warning|{count} warnings	{count} предупреждение|{count} предупреждения|{count} предупреждений
+@plural	{count} note|{count} notes	{count} примечание|{count} примечания|{count} примечаний
+@plural	and {count} more|and {count} more	и ещё {count}|и ещё {count}|и ещё {count}
+embroidery	Threads unlike the art's colour (over {value})	Нити, не похожие на цвет графики (больше {value})
+embroidery	Largest difference: {value}	Наибольшая разница: {value}
+embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}

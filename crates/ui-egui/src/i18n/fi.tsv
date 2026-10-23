@@ -5369,3 +5369,56 @@ embroidery	Sew First	Kirjo ensimmäisenä
 embroidery	Sew Last	Kirjo viimeisenä
 embroidery	Collapse All	Kutista kaikki
 embroidery	Expand All	Laajenna kaikki
+embroidery	Satin columns wider than {value} mm	Satiinipylväät, jotka ovat leveämpiä kuin {value} mm
+embroidery	Stitches longer than {value} mm	Pistot, jotka ovat pidempiä kuin {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Pistot, jotka ovat pidempiä kuin yksi {format}-tietue ({value} mm)
+embroidery	Fill stitch length under {value} mm	Täytön pistonpituus alle {value} mm
+embroidery	Satin columns narrower than {value} mm	Satiinipylväät, jotka ovat kapeampia kuin {value} mm
+embroidery	Running stitch length under {value} mm	Suoran piston pituus alle {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Pistot, jotka ovat lyhyempiä kuin neulan paksuus ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Enintään {value} mm:n pistot, jotka koneet jättävät pois
+embroidery	More than {value} short stitches in a row	Yli {value} lyhyttä pistoa peräkkäin
+embroidery	{value} or more layers of stitches on one spot	{value} tai useampia pistokerroksia samassa kohdassa
+embroidery	Everything is sewn	Kaikki kirjotaan
+embroidery	Art that isn't sewn	Kuvitus, jota ei kirjota
+embroidery	More colour blocks than {format} holds ({value})	Enemmän värilohkoja kuin {format} mahduttaa ({value})
+embroidery	{format} holds any number of colour blocks	{format} mahduttaa minkä tahansa määrän värilohkoja
+embroidery	More stitches than a machine shows ({value})	Enemmän pistoja kuin kone näyttää ({value})
+embroidery	More thread changes than a machine shows ({value})	Enemmän langanvaihtoja kuin kone näyttää ({value})
+embroidery	No findings	Ei löydöksiä
+embroidery	Longest: {value} mm	Pisin: {value} mm
+embroidery	Widest: {value} mm	Levein: {value} mm
+embroidery	Narrowest: {value} mm	Kapein: {value} mm
+embroidery	Shortest: {value} mm	Lyhin: {value} mm
+embroidery	At most {value} in a row	Enintään {value} peräkkäin
+embroidery	At most {value} on one spot	Enintään {value} samassa kohdassa
+embroidery	Stitch {record}: {value} mm	Pisto {record}: {value} mm
+embroidery	From stitch {record}: {value} in a row	Pistosta {record} alkaen: {value} peräkkäin
+embroidery	Stitch {record}	Pisto {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Virhe
+embroidery	Warning	Varoitus
+embroidery	Note	Huomautus
+embroidery	Passed	Läpäisty
+embroidery	No problems found	Ongelmia ei löytynyt
+embroidery	stitch density	pistotiheys
+embroidery	needle penetrations in an area	neulanpistot samalla alueella
+embroidery	tie stitches	päättelypistot
+embroidery	Checking…	Tarkistetaan…
+embroidery	Can't check the design:	Mallia ei voi tarkistaa:
+embroidery	Checked for	Tarkistettu muodolle
+embroidery	Source: {name}	Lähde: {name}
+embroidery	Also: {name}	Myös: {name}
+embroidery	Not checked: {list}	Ei tarkisteta: {list}
+embroidery	No source gives a number to check these against.	Mikään lähde ei anna lukua, johon niitä voisi verrata.
+@plural	{count} thread change|{count} thread changes	{count} langanvaihto|{count} langanvaihtoa
+@plural	{count} row|{count} rows	{count} jakso|{count} jaksoa
+@plural	{count} spot|{count} spots	{count} kohta|{count} kohtaa
+@plural	{count} thread|{count} threads	{count} lanka|{count} lankaa
+@plural	{count} error|{count} errors	{count} virhe|{count} virhettä
+@plural	{count} warning|{count} warnings	{count} varoitus|{count} varoitusta
+@plural	{count} note|{count} notes	{count} huomautus|{count} huomautusta
+@plural	and {count} more|and {count} more	ja {count} muu|ja {count} muuta
+embroidery	Threads unlike the art's colour (over {value})	Langat, jotka eivät vastaa kuvituksen väriä (yli {value})
+embroidery	Largest difference: {value}	Suurin ero: {value}
+embroidery	Block {block}: {thread}, {value}	Lohko {block}: {thread}, {value}

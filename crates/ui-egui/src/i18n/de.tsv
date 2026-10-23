@@ -4980,3 +4980,56 @@ embroidery	Sew First	Zuerst sticken
 embroidery	Sew Last	Zuletzt sticken
 embroidery	Collapse All	Alle reduzieren
 embroidery	Expand All	Alle erweitern
+embroidery	Satin columns wider than {value} mm	Satinsäulen breiter als {value} mm
+embroidery	Stitches longer than {value} mm	Stiche länger als {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Stiche länger als ein {format}-Datensatz ({value} mm)
+embroidery	Fill stitch length under {value} mm	Flächenstichlänge unter {value} mm
+embroidery	Satin columns narrower than {value} mm	Satinsäulen schmaler als {value} mm
+embroidery	Running stitch length under {value} mm	Geradstichlänge unter {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Stiche kürzer als die Nadel dick ist ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Stiche von {value} mm oder weniger, die Maschinen auslassen
+embroidery	More than {value} short stitches in a row	Mehr als {value} kurze Stiche hintereinander
+embroidery	{value} or more layers of stitches on one spot	{value} oder mehr Stichlagen an einer Stelle
+embroidery	Everything is sewn	Alles wird gestickt
+embroidery	Art that isn't sewn	Grafik, die nicht gestickt wird
+embroidery	More colour blocks than {format} holds ({value})	Mehr Farbblöcke, als {format} aufnimmt ({value})
+embroidery	{format} holds any number of colour blocks	{format} nimmt beliebig viele Farbblöcke auf
+embroidery	More stitches than a machine shows ({value})	Mehr Stiche, als eine Maschine anzeigt ({value})
+embroidery	More thread changes than a machine shows ({value})	Mehr Garnwechsel, als eine Maschine anzeigt ({value})
+embroidery	No findings	Nichts gefunden
+embroidery	Longest: {value} mm	Längster: {value} mm
+embroidery	Widest: {value} mm	Breiteste: {value} mm
+embroidery	Narrowest: {value} mm	Schmalste: {value} mm
+embroidery	Shortest: {value} mm	Kürzester: {value} mm
+embroidery	At most {value} in a row	Höchstens {value} hintereinander
+embroidery	At most {value} on one spot	Höchstens {value} an einer Stelle
+embroidery	Stitch {record}: {value} mm	Stich {record}: {value} mm
+embroidery	From stitch {record}: {value} in a row	Ab Stich {record}: {value} hintereinander
+embroidery	Stitch {record}	Stich {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Fehler
+embroidery	Warning	Warnung
+embroidery	Note	Hinweis
+embroidery	Passed	Bestanden
+embroidery	No problems found	Keine Probleme gefunden
+embroidery	stitch density	Stichdichte
+embroidery	needle penetrations in an area	Nadeleinstiche in einem Bereich
+embroidery	tie stitches	Vernähstiche
+embroidery	Checking…	Wird geprüft…
+embroidery	Can't check the design:	Das Design lässt sich nicht prüfen:
+embroidery	Checked for	Geprüft für
+embroidery	Source: {name}	Quelle: {name}
+embroidery	Also: {name}	Auch: {name}
+embroidery	Not checked: {list}	Nicht geprüft: {list}
+embroidery	No source gives a number to check these against.	Keine Quelle nennt einen Wert, an dem sie sich prüfen ließen.
+@plural	{count} thread change|{count} thread changes	{count} Garnwechsel|{count} Garnwechsel
+@plural	{count} row|{count} rows	{count} Folge|{count} Folgen
+@plural	{count} spot|{count} spots	{count} Stelle|{count} Stellen
+@plural	{count} thread|{count} threads	{count} Garn|{count} Garne
+@plural	{count} error|{count} errors	{count} Fehler|{count} Fehler
+@plural	{count} warning|{count} warnings	{count} Warnung|{count} Warnungen
+@plural	{count} note|{count} notes	{count} Hinweis|{count} Hinweise
+@plural	and {count} more|and {count} more	und {count} weitere|und {count} weitere
+embroidery	Threads unlike the art's colour (over {value})	Garne, die der Farbe der Grafik nicht gleichen (über {value})
+embroidery	Largest difference: {value}	Größter Unterschied: {value}
+embroidery	Block {block}: {thread}, {value}	Block {block}: {thread}, {value}

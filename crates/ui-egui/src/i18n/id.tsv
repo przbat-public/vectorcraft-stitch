@@ -5388,3 +5388,56 @@ embroidery	Sew First	Jahit pertama
 embroidery	Sew Last	Jahit terakhir
 embroidery	Collapse All	Ciutkan semua
 embroidery	Expand All	Bentangkan semua
+embroidery	Satin columns wider than {value} mm	Kolom satin lebih lebar dari {value} mm
+embroidery	Stitches longer than {value} mm	Jahitan lebih panjang dari {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Jahitan lebih panjang dari satu rekaman {format} ({value} mm)
+embroidery	Fill stitch length under {value} mm	Panjang jahitan isian di bawah {value} mm
+embroidery	Satin columns narrower than {value} mm	Kolom satin lebih sempit dari {value} mm
+embroidery	Running stitch length under {value} mm	Panjang jahitan lurus di bawah {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Jahitan lebih pendek dari tebal jarum ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Jahitan {value} mm atau kurang, yang dilewati mesin
+embroidery	More than {value} short stitches in a row	Lebih dari {value} jahitan pendek berturut-turut
+embroidery	{value} or more layers of stitches on one spot	{value} lapisan jahitan atau lebih di satu tempat
+embroidery	Everything is sewn	Semua dijahit
+embroidery	Art that isn't sewn	Gambar yang tidak dijahit
+embroidery	More colour blocks than {format} holds ({value})	Blok warna lebih banyak dari yang dimuat {format} ({value})
+embroidery	{format} holds any number of colour blocks	{format} memuat blok warna berapa pun
+embroidery	More stitches than a machine shows ({value})	Jahitan lebih banyak dari yang ditampilkan mesin ({value})
+embroidery	More thread changes than a machine shows ({value})	Ganti benang lebih banyak dari yang ditampilkan mesin ({value})
+embroidery	No findings	Tidak ada temuan
+embroidery	Longest: {value} mm	Terpanjang: {value} mm
+embroidery	Widest: {value} mm	Terlebar: {value} mm
+embroidery	Narrowest: {value} mm	Tersempit: {value} mm
+embroidery	Shortest: {value} mm	Terpendek: {value} mm
+embroidery	At most {value} in a row	Paling banyak {value} berturut-turut
+embroidery	At most {value} on one spot	Paling banyak {value} di satu tempat
+embroidery	Stitch {record}: {value} mm	Jahitan {record}: {value} mm
+embroidery	From stitch {record}: {value} in a row	Dari jahitan {record}: {value} berturut-turut
+embroidery	Stitch {record}	Jahitan {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Kesalahan
+embroidery	Warning	Peringatan
+embroidery	Note	Catatan
+embroidery	Passed	Lolos
+embroidery	No problems found	Tidak ada masalah
+embroidery	stitch density	kerapatan jahitan
+embroidery	needle penetrations in an area	tusukan jarum di satu area
+embroidery	tie stitches	jahitan pengunci
+embroidery	Checking…	Memeriksa…
+embroidery	Can't check the design:	Desain tidak dapat diperiksa:
+embroidery	Checked for	Diperiksa untuk
+embroidery	Source: {name}	Sumber: {name}
+embroidery	Also: {name}	Juga: {name}
+embroidery	Not checked: {list}	Tidak diperiksa: {list}
+embroidery	No source gives a number to check these against.	Tidak ada sumber yang memberi angka untuk memeriksanya.
+@plural	{count} thread change|{count} thread changes	{count} ganti benang
+@plural	{count} row|{count} rows	{count} rangkaian
+@plural	{count} spot|{count} spots	{count} tempat
+@plural	{count} thread|{count} threads	{count} benang
+@plural	{count} error|{count} errors	{count} kesalahan
+@plural	{count} warning|{count} warnings	{count} peringatan
+@plural	{count} note|{count} notes	{count} catatan
+@plural	and {count} more|and {count} more	dan {count} lagi
+embroidery	Threads unlike the art's colour (over {value})	Benang yang berbeda dari warna gambar (di atas {value})
+embroidery	Largest difference: {value}	Perbedaan terbesar: {value}
+embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}

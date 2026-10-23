@@ -5321,3 +5321,56 @@ embroidery	Sew First	Bordar primeiro
 embroidery	Sew Last	Bordar por último
 embroidery	Collapse All	Recolher tudo
 embroidery	Expand All	Expandir tudo
+embroidery	Satin columns wider than {value} mm	Colunas de cetim mais largas que {value} mm
+embroidery	Stitches longer than {value} mm	Pontos maiores que {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Pontos maiores que um registro {format} ({value} mm)
+embroidery	Fill stitch length under {value} mm	Comprimento do ponto de preenchimento abaixo de {value} mm
+embroidery	Satin columns narrower than {value} mm	Colunas de cetim mais estreitas que {value} mm
+embroidery	Running stitch length under {value} mm	Comprimento do ponto reto abaixo de {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Pontos mais curtos que a espessura da agulha ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Pontos de {value} mm ou menos, que as máquinas omitem
+embroidery	More than {value} short stitches in a row	Mais de {value} pontos curtos seguidos
+embroidery	{value} or more layers of stitches on one spot	{value} ou mais camadas de pontos no mesmo local
+embroidery	Everything is sewn	Tudo é bordado
+embroidery	Art that isn't sewn	Arte que não é bordada
+embroidery	More colour blocks than {format} holds ({value})	Mais blocos de cor do que {format} comporta ({value})
+embroidery	{format} holds any number of colour blocks	{format} comporta qualquer número de blocos de cor
+embroidery	More stitches than a machine shows ({value})	Mais pontos do que uma máquina mostra ({value})
+embroidery	More thread changes than a machine shows ({value})	Mais trocas de linha do que uma máquina mostra ({value})
+embroidery	No findings	Nada encontrado
+embroidery	Longest: {value} mm	Mais longo: {value} mm
+embroidery	Widest: {value} mm	Mais larga: {value} mm
+embroidery	Narrowest: {value} mm	Mais estreita: {value} mm
+embroidery	Shortest: {value} mm	Mais curto: {value} mm
+embroidery	At most {value} in a row	No máximo {value} seguidos
+embroidery	At most {value} on one spot	No máximo {value} no mesmo local
+embroidery	Stitch {record}: {value} mm	Ponto {record}: {value} mm
+embroidery	From stitch {record}: {value} in a row	A partir do ponto {record}: {value} seguidos
+embroidery	Stitch {record}	Ponto {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Erro
+embroidery	Warning	Aviso
+embroidery	Note	Observação
+embroidery	Passed	Aprovada
+embroidery	No problems found	Nenhum problema encontrado
+embroidery	stitch density	densidade de pontos
+embroidery	needle penetrations in an area	perfurações da agulha numa área
+embroidery	tie stitches	pontos de arremate
+embroidery	Checking…	Verificando…
+embroidery	Can't check the design:	Não é possível verificar o desenho:
+embroidery	Checked for	Verificado para
+embroidery	Source: {name}	Fonte: {name}
+embroidery	Also: {name}	Também: {name}
+embroidery	Not checked: {list}	Não verificado: {list}
+embroidery	No source gives a number to check these against.	Nenhuma fonte dá um número para verificá-los.
+@plural	{count} thread change|{count} thread changes	{count} troca de linha|{count} trocas de linha
+@plural	{count} row|{count} rows	{count} sequência|{count} sequências
+@plural	{count} spot|{count} spots	{count} local|{count} locais
+@plural	{count} thread|{count} threads	{count} linha|{count} linhas
+@plural	{count} error|{count} errors	{count} erro|{count} erros
+@plural	{count} warning|{count} warnings	{count} aviso|{count} avisos
+@plural	{count} note|{count} notes	{count} observação|{count} observações
+@plural	and {count} more|and {count} more	e mais {count}|e mais {count}
+embroidery	Threads unlike the art's colour (over {value})	Linhas diferentes da cor da arte (acima de {value})
+embroidery	Largest difference: {value}	Maior diferença: {value}
+embroidery	Block {block}: {thread}, {value}	Bloco {block}: {thread}, {value}

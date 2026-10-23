@@ -5357,3 +5357,56 @@ embroidery	Sew First	Ράψιμο πρώτο
 embroidery	Sew Last	Ράψιμο τελευταίο
 embroidery	Collapse All	Σύμπτυξη όλων
 embroidery	Expand All	Ανάπτυξη όλων
+embroidery	Satin columns wider than {value} mm	Στήλες σατέν φαρδύτερες από {value} mm
+embroidery	Stitches longer than {value} mm	Βελονιές μακρύτερες από {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Βελονιές μακρύτερες από μία εγγραφή {format} ({value} mm)
+embroidery	Fill stitch length under {value} mm	Μήκος βελονιάς γεμίσματος κάτω από {value} mm
+embroidery	Satin columns narrower than {value} mm	Στήλες σατέν στενότερες από {value} mm
+embroidery	Running stitch length under {value} mm	Μήκος ευθείας βελονιάς κάτω από {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Βελονιές μικρότερες από το πάχος της βελόνας ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Βελονιές {value} mm ή λιγότερο, που οι μηχανές παραλείπουν
+embroidery	More than {value} short stitches in a row	Περισσότερες από {value} κοντές βελονιές στη σειρά
+embroidery	{value} or more layers of stitches on one spot	{value} ή περισσότερες στρώσεις βελονιών σε ένα σημείο
+embroidery	Everything is sewn	Όλα κεντιούνται
+embroidery	Art that isn't sewn	Γραφικά που δεν κεντιούνται
+embroidery	More colour blocks than {format} holds ({value})	Περισσότερα μπλοκ χρώματος από όσα χωράει το {format} ({value})
+embroidery	{format} holds any number of colour blocks	Το {format} χωράει οποιονδήποτε αριθμό μπλοκ χρώματος
+embroidery	More stitches than a machine shows ({value})	Περισσότερες βελονιές από όσες εμφανίζει μια μηχανή ({value})
+embroidery	More thread changes than a machine shows ({value})	Περισσότερες αλλαγές κλωστής από όσες εμφανίζει μια μηχανή ({value})
+embroidery	No findings	Δεν βρέθηκε τίποτα
+embroidery	Longest: {value} mm	Μακρύτερη: {value} mm
+embroidery	Widest: {value} mm	Φαρδύτερη: {value} mm
+embroidery	Narrowest: {value} mm	Στενότερη: {value} mm
+embroidery	Shortest: {value} mm	Κοντύτερη: {value} mm
+embroidery	At most {value} in a row	Το πολύ {value} στη σειρά
+embroidery	At most {value} on one spot	Το πολύ {value} σε ένα σημείο
+embroidery	Stitch {record}: {value} mm	Βελονιά {record}: {value} mm
+embroidery	From stitch {record}: {value} in a row	Από τη βελονιά {record}: {value} στη σειρά
+embroidery	Stitch {record}	Βελονιά {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Σφάλμα
+embroidery	Warning	Προειδοποίηση
+embroidery	Note	Σημείωση
+embroidery	Passed	Επιτυχής
+embroidery	No problems found	Δεν βρέθηκαν προβλήματα
+embroidery	stitch density	πυκνότητα βελονιών
+embroidery	needle penetrations in an area	τρυπήματα βελόνας σε μια περιοχή
+embroidery	tie stitches	βελονιές στερέωσης
+embroidery	Checking…	Έλεγχος…
+embroidery	Can't check the design:	Δεν είναι δυνατός ο έλεγχος του σχεδίου:
+embroidery	Checked for	Έλεγχος για
+embroidery	Source: {name}	Πηγή: {name}
+embroidery	Also: {name}	Επίσης: {name}
+embroidery	Not checked: {list}	Δεν ελέγχεται: {list}
+embroidery	No source gives a number to check these against.	Καμία πηγή δεν δίνει αριθμό για να ελεγχθούν.
+@plural	{count} thread change|{count} thread changes	{count} αλλαγή κλωστής|{count} αλλαγές κλωστής
+@plural	{count} row|{count} rows	{count} σειρά|{count} σειρές
+@plural	{count} spot|{count} spots	{count} σημείο|{count} σημεία
+@plural	{count} thread|{count} threads	{count} κλωστή|{count} κλωστές
+@plural	{count} error|{count} errors	{count} σφάλμα|{count} σφάλματα
+@plural	{count} warning|{count} warnings	{count} προειδοποίηση|{count} προειδοποιήσεις
+@plural	{count} note|{count} notes	{count} σημείωση|{count} σημειώσεις
+@plural	and {count} more|and {count} more	και {count} ακόμη|και {count} ακόμη
+embroidery	Threads unlike the art's colour (over {value})	Κλωστές που διαφέρουν από το χρώμα του γραφικού (πάνω από {value})
+embroidery	Largest difference: {value}	Μεγαλύτερη διαφορά: {value}
+embroidery	Block {block}: {thread}, {value}	Μπλοκ {block}: {thread}, {value}

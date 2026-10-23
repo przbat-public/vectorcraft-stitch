@@ -4293,3 +4293,56 @@ embroidery	Sew First	最先繡製
 embroidery	Sew Last	最後繡製
 embroidery	Collapse All	全部摺疊
 embroidery	Expand All	全部展開
+embroidery	Satin columns wider than {value} mm	寬於 {value} mm 的緞紋列
+embroidery	Stitches longer than {value} mm	長於 {value} mm 的針跡
+embroidery	Stitches longer than one {format} record ({value} mm)	長於一筆 {format} 記錄的針跡 ({value} mm)
+embroidery	Fill stitch length under {value} mm	填色針距小於 {value} mm
+embroidery	Satin columns narrower than {value} mm	窄於 {value} mm 的緞紋列
+embroidery	Running stitch length under {value} mm	平針針距小於 {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	短於針粗的針跡 ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	繡花機會略去的 {value} mm 及以下的針跡
+embroidery	More than {value} short stitches in a row	連續超過 {value} 個短針跡
+embroidery	{value} or more layers of stitches on one spot	同一處有 {value} 層或更多針跡
+embroidery	Everything is sewn	全部都會繡出
+embroidery	Art that isn't sewn	不會繡出的圖稿
+embroidery	More colour blocks than {format} holds ({value})	色塊數超過 {format} 所能容納的數量 ({value})
+embroidery	{format} holds any number of colour blocks	{format} 可容納任意數量的色塊
+embroidery	More stitches than a machine shows ({value})	針數超過繡花機能顯示的數量 ({value})
+embroidery	More thread changes than a machine shows ({value})	換線次數超過繡花機能顯示的數量 ({value})
+embroidery	No findings	未發現問題
+embroidery	Longest: {value} mm	最長：{value} mm
+embroidery	Widest: {value} mm	最寬：{value} mm
+embroidery	Narrowest: {value} mm	最窄：{value} mm
+embroidery	Shortest: {value} mm	最短：{value} mm
+embroidery	At most {value} in a row	最多連續 {value} 個
+embroidery	At most {value} on one spot	同一處最多 {value} 層
+embroidery	Stitch {record}: {value} mm	第 {record} 針：{value} mm
+embroidery	From stitch {record}: {value} in a row	自第 {record} 針起：連續 {value} 個
+embroidery	Stitch {record}	第 {record} 針
+embroidery	{name}: {value} mm	{name}：{value} mm
+embroidery	Error	錯誤
+embroidery	Warning	警告
+embroidery	Note	提示
+embroidery	Passed	通過
+embroidery	No problems found	未發現問題
+embroidery	stitch density	針跡密度
+embroidery	needle penetrations in an area	同一區域的落針次數
+embroidery	tie stitches	打結針
+embroidery	Checking…	正在檢查…
+embroidery	Can't check the design:	無法檢查設計：
+embroidery	Checked for	檢查依據
+embroidery	Source: {name}	來源：{name}
+embroidery	Also: {name}	另見：{name}
+embroidery	Not checked: {list}	未檢查：{list}
+embroidery	No source gives a number to check these against.	沒有來源給出可據以檢查的數值。
+@plural	{count} thread change|{count} thread changes	{count} 次換線
+@plural	{count} row|{count} rows	{count} 處連續
+@plural	{count} spot|{count} spots	{count} 處
+@plural	{count} thread|{count} threads	{count} 種線
+@plural	{count} error|{count} errors	{count} 個錯誤
+@plural	{count} warning|{count} warnings	{count} 個警告
+@plural	{count} note|{count} notes	{count} 條提示
+@plural	and {count} more|and {count} more	另有 {count} 處
+embroidery	Threads unlike the art's colour (over {value})	與圖稿顏色不符的線 (大於 {value})
+embroidery	Largest difference: {value}	最大差異：{value}
+embroidery	Block {block}: {thread}, {value}	第 {block} 塊：{thread}，{value}

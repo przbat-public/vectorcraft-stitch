@@ -5311,3 +5311,56 @@ embroidery	Sew First	პირველად დაქარგვა
 embroidery	Sew Last	ბოლოს დაქარგვა
 embroidery	Collapse All	ყველას აკეცვა
 embroidery	Expand All	ყველას გაშლა
+embroidery	Satin columns wider than {value} mm	{value} მმ-ზე განიერი ატლასის სვეტები
+embroidery	Stitches longer than {value} mm	{value} მმ-ზე გრძელი ნაკერები
+embroidery	Stitches longer than one {format} record ({value} mm)	ერთ {format} ჩანაწერზე გრძელი ნაკერები ({value} მმ)
+embroidery	Fill stitch length under {value} mm	შევსების ნაკერის სიგრძე {value} მმ-ზე ნაკლები
+embroidery	Satin columns narrower than {value} mm	{value} მმ-ზე ვიწრო ატლასის სვეტები
+embroidery	Running stitch length under {value} mm	სწორი ნაკერის სიგრძე {value} მმ-ზე ნაკლები
+embroidery	Stitches shorter than the needle is thick ({value} mm)	ნემსის სისქეზე მოკლე ნაკერები ({value} მმ)
+embroidery	Stitches of {value} mm or less, which machines leave out	{value} მმ ან ნაკლები ნაკერები, რომლებსაც მანქანები ტოვებს
+embroidery	More than {value} short stitches in a row	{value}-ზე მეტი მოკლე ნაკერი ზედიზედ
+embroidery	{value} or more layers of stitches on one spot	{value} ან მეტი ფენა ნაკერი ერთ ადგილას
+embroidery	Everything is sewn	ყველაფერი იქარგება
+embroidery	Art that isn't sewn	გრაფიკა, რომელიც არ იქარგება
+embroidery	More colour blocks than {format} holds ({value})	მეტი ფერის ბლოკი, ვიდრე {format} იტევს ({value})
+embroidery	{format} holds any number of colour blocks	{format} ნებისმიერი რაოდენობის ფერის ბლოკს იტევს
+embroidery	More stitches than a machine shows ({value})	მეტი ნაკერი, ვიდრე მანქანა აჩვენებს ({value})
+embroidery	More thread changes than a machine shows ({value})	მეტი ძაფის შეცვლა, ვიდრე მანქანა აჩვენებს ({value})
+embroidery	No findings	არაფერი მოიძებნა
+embroidery	Longest: {value} mm	უგრძესი: {value} მმ
+embroidery	Widest: {value} mm	უგანიერესი: {value} მმ
+embroidery	Narrowest: {value} mm	უვიწროესი: {value} მმ
+embroidery	Shortest: {value} mm	უმოკლესი: {value} მმ
+embroidery	At most {value} in a row	მაქსიმუმ {value} ზედიზედ
+embroidery	At most {value} on one spot	მაქსიმუმ {value} ერთ ადგილას
+embroidery	Stitch {record}: {value} mm	ნაკერი {record}: {value} მმ
+embroidery	From stitch {record}: {value} in a row	ნაკერი {record}-დან: {value} ზედიზედ
+embroidery	Stitch {record}	ნაკერი {record}
+embroidery	{name}: {value} mm	{name}: {value} მმ
+embroidery	Error	შეცდომა
+embroidery	Warning	გაფრთხილება
+embroidery	Note	შენიშვნა
+embroidery	Passed	გაიარა
+embroidery	No problems found	პრობლემები არ მოიძებნა
+embroidery	stitch density	ნაკერების სიმჭიდროვე
+embroidery	needle penetrations in an area	ნემსის ჩხვლეტები ერთ არეში
+embroidery	tie stitches	დამაგრების ნაკერები
+embroidery	Checking…	მოწმდება…
+embroidery	Can't check the design:	დიზაინის შემოწმება შეუძლებელია:
+embroidery	Checked for	შემოწმებულია
+embroidery	Source: {name}	წყარო: {name}
+embroidery	Also: {name}	ასევე: {name}
+embroidery	Not checked: {list}	არ მოწმდება: {list}
+embroidery	No source gives a number to check these against.	არცერთი წყარო არ იძლევა რიცხვს მათ შესამოწმებლად.
+@plural	{count} thread change|{count} thread changes	ძაფის ცვლა: {count}
+@plural	{count} row|{count} rows	მიმდევრობები: {count}
+@plural	{count} spot|{count} spots	ადგილები: {count}
+@plural	{count} thread|{count} threads	ძაფები: {count}
+@plural	{count} error|{count} errors	შეცდომები: {count}
+@plural	{count} warning|{count} warnings	გაფრთხილებები: {count}
+@plural	{count} note|{count} notes	შენიშვნები: {count}
+@plural	and {count} more|and {count} more	და კიდევ {count}
+embroidery	Threads unlike the art's colour (over {value})	გრაფიკის ფერისგან განსხვავებული ძაფები ({value}-ზე მეტი)
+embroidery	Largest difference: {value}	უდიდესი სხვაობა: {value}
+embroidery	Block {block}: {thread}, {value}	ბლოკი {block}: {thread}, {value}

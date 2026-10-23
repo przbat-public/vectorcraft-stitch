@@ -5405,3 +5405,56 @@ embroidery	Sew First	Šít jako první
 embroidery	Sew Last	Šít jako poslední
 embroidery	Collapse All	Sbalit vše
 embroidery	Expand All	Rozbalit vše
+embroidery	Satin columns wider than {value} mm	Saténové sloupce širší než {value} mm
+embroidery	Stitches longer than {value} mm	Stehy delší než {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Stehy delší než jeden záznam {format} ({value} mm)
+embroidery	Fill stitch length under {value} mm	Délka stehu výplně pod {value} mm
+embroidery	Satin columns narrower than {value} mm	Saténové sloupce užší než {value} mm
+embroidery	Running stitch length under {value} mm	Délka rovného stehu pod {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Stehy kratší, než je tloušťka jehly ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Stehy {value} mm nebo kratší, které stroje vynechávají
+embroidery	More than {value} short stitches in a row	Více než {value} krátkých stehů za sebou
+embroidery	{value} or more layers of stitches on one spot	{value} nebo více vrstev stehů na jednom místě
+embroidery	Everything is sewn	Vše se vyšije
+embroidery	Art that isn't sewn	Grafika, která se nevyšije
+embroidery	More colour blocks than {format} holds ({value})	Více barevných bloků, než pojme {format} ({value})
+embroidery	{format} holds any number of colour blocks	{format} pojme libovolný počet barevných bloků
+embroidery	More stitches than a machine shows ({value})	Více stehů, než zobrazí stroj ({value})
+embroidery	More thread changes than a machine shows ({value})	Více výměn nitě, než zobrazí stroj ({value})
+embroidery	No findings	Nic nenalezeno
+embroidery	Longest: {value} mm	Nejdelší: {value} mm
+embroidery	Widest: {value} mm	Nejširší: {value} mm
+embroidery	Narrowest: {value} mm	Nejužší: {value} mm
+embroidery	Shortest: {value} mm	Nejkratší: {value} mm
+embroidery	At most {value} in a row	Nejvýše {value} za sebou
+embroidery	At most {value} on one spot	Nejvýše {value} na jednom místě
+embroidery	Stitch {record}: {value} mm	Steh {record}: {value} mm
+embroidery	From stitch {record}: {value} in a row	Od stehu {record}: {value} za sebou
+embroidery	Stitch {record}	Steh {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Chyba
+embroidery	Warning	Upozornění
+embroidery	Note	Poznámka
+embroidery	Passed	V pořádku
+embroidery	No problems found	Nenalezeny žádné problémy
+embroidery	stitch density	hustota stehů
+embroidery	needle penetrations in an area	vpichy jehly v jedné oblasti
+embroidery	tie stitches	zapošívací stehy
+embroidery	Checking…	Kontroluje se…
+embroidery	Can't check the design:	Návrh nelze zkontrolovat:
+embroidery	Checked for	Kontrolováno pro
+embroidery	Source: {name}	Zdroj: {name}
+embroidery	Also: {name}	Také: {name}
+embroidery	Not checked: {list}	Nekontroluje se: {list}
+embroidery	No source gives a number to check these against.	Žádný zdroj neuvádí číslo, podle kterého je kontrolovat.
+@plural	{count} thread change|{count} thread changes	{count} výměna nitě|{count} výměny nitě|{count} výměn nitě
+@plural	{count} row|{count} rows	{count} řada|{count} řady|{count} řad
+@plural	{count} spot|{count} spots	{count} místo|{count} místa|{count} míst
+@plural	{count} thread|{count} threads	{count} nit|{count} nitě|{count} nití
+@plural	{count} error|{count} errors	{count} chyba|{count} chyby|{count} chyb
+@plural	{count} warning|{count} warnings	{count} upozornění|{count} upozornění|{count} upozornění
+@plural	{count} note|{count} notes	{count} poznámka|{count} poznámky|{count} poznámek
+@plural	and {count} more|and {count} more	a ještě {count}|a ještě {count}|a ještě {count}
+embroidery	Threads unlike the art's colour (over {value})	Nitě odlišné od barvy grafiky (nad {value})
+embroidery	Largest difference: {value}	Největší rozdíl: {value}
+embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}

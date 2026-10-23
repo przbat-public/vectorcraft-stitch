@@ -5241,3 +5241,56 @@ embroidery	Sew First	最先绣制
 embroidery	Sew Last	最后绣制
 embroidery	Collapse All	全部折叠
 embroidery	Expand All	全部展开
+embroidery	Satin columns wider than {value} mm	宽于 {value} mm 的缎纹列
+embroidery	Stitches longer than {value} mm	长于 {value} mm 的针迹
+embroidery	Stitches longer than one {format} record ({value} mm)	长于一条 {format} 记录的针迹 ({value} mm)
+embroidery	Fill stitch length under {value} mm	填色针距小于 {value} mm
+embroidery	Satin columns narrower than {value} mm	窄于 {value} mm 的缎纹列
+embroidery	Running stitch length under {value} mm	平针针距小于 {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	短于针粗的针迹 ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	绣花机会略去的 {value} mm 及以下的针迹
+embroidery	More than {value} short stitches in a row	连续超过 {value} 个短针迹
+embroidery	{value} or more layers of stitches on one spot	同一处有 {value} 层或更多针迹
+embroidery	Everything is sewn	全部都会绣出
+embroidery	Art that isn't sewn	不会绣出的图稿
+embroidery	More colour blocks than {format} holds ({value})	色块数超过 {format} 所能容纳的数量 ({value})
+embroidery	{format} holds any number of colour blocks	{format} 可容纳任意数量的色块
+embroidery	More stitches than a machine shows ({value})	针数超过绣花机能显示的数量 ({value})
+embroidery	More thread changes than a machine shows ({value})	换线次数超过绣花机能显示的数量 ({value})
+embroidery	No findings	未发现问题
+embroidery	Longest: {value} mm	最长：{value} mm
+embroidery	Widest: {value} mm	最宽：{value} mm
+embroidery	Narrowest: {value} mm	最窄：{value} mm
+embroidery	Shortest: {value} mm	最短：{value} mm
+embroidery	At most {value} in a row	最多连续 {value} 个
+embroidery	At most {value} on one spot	同一处最多 {value} 层
+embroidery	Stitch {record}: {value} mm	第 {record} 针：{value} mm
+embroidery	From stitch {record}: {value} in a row	自第 {record} 针起：连续 {value} 个
+embroidery	Stitch {record}	第 {record} 针
+embroidery	{name}: {value} mm	{name}：{value} mm
+embroidery	Error	错误
+embroidery	Warning	警告
+embroidery	Note	提示
+embroidery	Passed	通过
+embroidery	No problems found	未发现问题
+embroidery	stitch density	针迹密度
+embroidery	needle penetrations in an area	同一区域的落针次数
+embroidery	tie stitches	打结针
+embroidery	Checking…	正在检查…
+embroidery	Can't check the design:	无法检查设计：
+embroidery	Checked for	检查依据
+embroidery	Source: {name}	来源：{name}
+embroidery	Also: {name}	另见：{name}
+embroidery	Not checked: {list}	未检查：{list}
+embroidery	No source gives a number to check these against.	没有来源给出可据以检查的数值。
+@plural	{count} thread change|{count} thread changes	{count} 次换线
+@plural	{count} row|{count} rows	{count} 处连续
+@plural	{count} spot|{count} spots	{count} 处
+@plural	{count} thread|{count} threads	{count} 种线
+@plural	{count} error|{count} errors	{count} 个错误
+@plural	{count} warning|{count} warnings	{count} 个警告
+@plural	{count} note|{count} notes	{count} 条提示
+@plural	and {count} more|and {count} more	另有 {count} 处
+embroidery	Threads unlike the art's colour (over {value})	与图稿颜色不符的线 (大于 {value})
+embroidery	Largest difference: {value}	最大差异：{value}
+embroidery	Block {block}: {thread}, {value}	第 {block} 块：{thread}，{value}

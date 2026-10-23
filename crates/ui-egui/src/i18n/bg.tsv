@@ -5370,3 +5370,56 @@ embroidery	Sew First	Ший първо
 embroidery	Sew Last	Ший последно
 embroidery	Collapse All	Свий всички
 embroidery	Expand All	Разгъни всички
+embroidery	Satin columns wider than {value} mm	Сатенени колони, по-широки от {value} мм
+embroidery	Stitches longer than {value} mm	Бодове, по-дълги от {value} мм
+embroidery	Stitches longer than one {format} record ({value} mm)	Бодове, по-дълги от един запис на {format} ({value} мм)
+embroidery	Fill stitch length under {value} mm	Дължина на бода на запълването под {value} мм
+embroidery	Satin columns narrower than {value} mm	Сатенени колони, по-тесни от {value} мм
+embroidery	Running stitch length under {value} mm	Дължина на правия бод под {value} мм
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Бодове, по-къси от дебелината на иглата ({value} мм)
+embroidery	Stitches of {value} mm or less, which machines leave out	Бодове от {value} мм или по-малко, които машините пропускат
+embroidery	More than {value} short stitches in a row	Повече от {value} къси бода подред
+embroidery	{value} or more layers of stitches on one spot	{value} или повече слоя бодове на едно място
+embroidery	Everything is sewn	Всичко се бродира
+embroidery	Art that isn't sewn	Графика, която не се бродира
+embroidery	More colour blocks than {format} holds ({value})	Повече цветни блокове, отколкото побира {format} ({value})
+embroidery	{format} holds any number of colour blocks	{format} побира произволен брой цветни блокове
+embroidery	More stitches than a machine shows ({value})	Повече бодове, отколкото показва машина ({value})
+embroidery	More thread changes than a machine shows ({value})	Повече смени на нишката, отколкото показва машина ({value})
+embroidery	No findings	Няма открити
+embroidery	Longest: {value} mm	Най-дълъг: {value} мм
+embroidery	Widest: {value} mm	Най-широка: {value} мм
+embroidery	Narrowest: {value} mm	Най-тясна: {value} мм
+embroidery	Shortest: {value} mm	Най-къс: {value} мм
+embroidery	At most {value} in a row	Най-много {value} подред
+embroidery	At most {value} on one spot	Най-много {value} на едно място
+embroidery	Stitch {record}: {value} mm	Бод {record}: {value} мм
+embroidery	From stitch {record}: {value} in a row	От бод {record}: {value} подред
+embroidery	Stitch {record}	Бод {record}
+embroidery	{name}: {value} mm	{name}: {value} мм
+embroidery	Error	Грешка
+embroidery	Warning	Предупреждение
+embroidery	Note	Бележка
+embroidery	Passed	Успешно
+embroidery	No problems found	Не са открити проблеми
+embroidery	stitch density	плътност на бодовете
+embroidery	needle penetrations in an area	убождания на иглата в една площ
+embroidery	tie stitches	закрепващи бодове
+embroidery	Checking…	Проверка…
+embroidery	Can't check the design:	Дизайнът не може да се провери:
+embroidery	Checked for	Проверено за
+embroidery	Source: {name}	Източник: {name}
+embroidery	Also: {name}	Също: {name}
+embroidery	Not checked: {list}	Не се проверява: {list}
+embroidery	No source gives a number to check these against.	Нито един източник не дава число, спрямо което да се проверят.
+@plural	{count} thread change|{count} thread changes	{count} смяна на нишката|{count} смени на нишката
+@plural	{count} row|{count} rows	{count} поредица|{count} поредици
+@plural	{count} spot|{count} spots	{count} място|{count} места
+@plural	{count} thread|{count} threads	{count} нишка|{count} нишки
+@plural	{count} error|{count} errors	{count} грешка|{count} грешки
+@plural	{count} warning|{count} warnings	{count} предупреждение|{count} предупреждения
+@plural	{count} note|{count} notes	{count} бележка|{count} бележки
+@plural	and {count} more|and {count} more	и още {count}|и още {count}
+embroidery	Threads unlike the art's colour (over {value})	Нишки, различни от цвета на графиката (над {value})
+embroidery	Largest difference: {value}	Най-голяма разлика: {value}
+embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}

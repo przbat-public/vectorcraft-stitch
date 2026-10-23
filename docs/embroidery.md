@@ -301,8 +301,14 @@ machine stop between them when they are neighbours (the project owner's choice, 
 hits, the objects hit (`objectCount`, at most 1,000 listed, `truncated` when more) and the first
 `limit` hits (`examples`, 20 by default, at most 1,000) as record numbers and points with the
 measure compared with the threshold (for `formatStep` the stitch's longer extent along x or y,
-with its own length and the records it is written as beside it). The summary gives, for each
-severity, how many rules found something and how many hits they found. `format` (the document's thread palette's
+with its own length and the records it is written as beside it; a stitch's hit also gives where the
+stitch starts, a thread's its block and thread, a `notSewn` hit the objects whose art it left out,
+which the plan keeps for each warning, at most 1,000). Each rule also gives `measured`, the extreme
+of what it judged, hit or not: the longest stitch, the shortest, the widest column, the most layers
+on one spot, the largest colour difference, the design's blocks. The summary gives, for each
+severity, how many rules found something and how many hits they found. `embroidery.stats` gives the
+needle-down stitches by length (`lengths`: half-millimetre bins up to 12.5 mm, one up to 12.7 mm and
+one for every longer stitch, which holds exactly `stitchTooLong`'s hits) and their median. `format` (the document's thread palette's
 format when left out: PES for Brother's, JEF for Janome's; with Janome's, the default, the colour
 limit of `formatColors` never fires, since JEF has none: ask for `format: "pes"` or `"vp3"` to check
 theirs) decides the format limits checked, and the threads judged: those the format writes, matched to
@@ -1585,6 +1591,21 @@ thread changes when their number changed, or that no stitch moved (objects of on
 a block sewn earlier when the objects moved lie apart from what they passed). Without a drag: the
 ↑ and ↓ buttons on a lit row, the panel's ≡ menu, and the commands `embroidery.sewEarlier`,
 `sewLater`, `sewFirst` and `sewLast` (no default shortcuts).
+
+**The Check tab** (`panels/embroidery/check.rs`) shows `embroidery.check`'s reply, asked for only
+while the tab is open, with the first 100 hits of each rule. Rules that found something come first
+(errors, warnings, then notes), then those that passed, each group in the engine's order. Each is
+marked by shape as well as colour (`embroidery::marks`: a filled circle with "!" for an error, a
+triangle with "!" for a warning, a ring with "i" for a note, a neutral tick for a pass, drawn in
+code from the theme's colours, darkened or lightened until they stand out 3:1 from the panel). A
+rule's title is the interface's own sentence for its id with its threshold, the format's own for the
+format's limits, written as the language writes numbers; under it, what was found (stitches, spots,
+rows, threads, objects) or, for a rule that passed, the extreme it measured ("Longest: 4.6 mm").
+The art the plan leaves out is listed as the plan says it. Opened, a rule lists its published sources
+(links; the first is the one checked) and its first ten hits. The format whose limits apply is the
+palette's by default; another can be chosen for the document for the session, which checks again
+without planning again. Under the rules, what isn't checked (stitch density, needle penetrations in
+an area, tie stitches: no source gives a number for them).
 
 **Measured first** (gate 1 of the stitch preview: `vectorcraft-cli perf --embroidery`, release
 build, 12-core Apple Silicon, load about 4, the median of five frames, twice; 2026-10-23). The

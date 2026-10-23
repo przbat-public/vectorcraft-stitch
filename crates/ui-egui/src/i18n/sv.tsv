@@ -5361,3 +5361,56 @@ embroidery	Sew First	Brodera först
 embroidery	Sew Last	Brodera sist
 embroidery	Collapse All	Fäll ihop alla
 embroidery	Expand All	Fäll ut alla
+embroidery	Satin columns wider than {value} mm	Satinpelare bredare än {value} mm
+embroidery	Stitches longer than {value} mm	Stygn längre än {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Stygn längre än en {format}-post ({value} mm)
+embroidery	Fill stitch length under {value} mm	Fyllningens stygnlängd under {value} mm
+embroidery	Satin columns narrower than {value} mm	Satinpelare smalare än {value} mm
+embroidery	Running stitch length under {value} mm	Rakstygnets längd under {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Stygn kortare än nålens tjocklek ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Stygn på {value} mm eller mindre, som maskiner hoppar över
+embroidery	More than {value} short stitches in a row	Fler än {value} korta stygn i följd
+embroidery	{value} or more layers of stitches on one spot	{value} eller fler lager stygn på samma ställe
+embroidery	Everything is sewn	Allt broderas
+embroidery	Art that isn't sewn	Grafik som inte broderas
+embroidery	More colour blocks than {format} holds ({value})	Fler färgblock än {format} rymmer ({value})
+embroidery	{format} holds any number of colour blocks	{format} rymmer hur många färgblock som helst
+embroidery	More stitches than a machine shows ({value})	Fler stygn än en maskin visar ({value})
+embroidery	More thread changes than a machine shows ({value})	Fler trådbyten än en maskin visar ({value})
+embroidery	No findings	Inget hittat
+embroidery	Longest: {value} mm	Längsta: {value} mm
+embroidery	Widest: {value} mm	Bredaste: {value} mm
+embroidery	Narrowest: {value} mm	Smalaste: {value} mm
+embroidery	Shortest: {value} mm	Kortaste: {value} mm
+embroidery	At most {value} in a row	Högst {value} i följd
+embroidery	At most {value} on one spot	Högst {value} på samma ställe
+embroidery	Stitch {record}: {value} mm	Stygn {record}: {value} mm
+embroidery	From stitch {record}: {value} in a row	Från stygn {record}: {value} i följd
+embroidery	Stitch {record}	Stygn {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Fel
+embroidery	Warning	Varning
+embroidery	Note	Anmärkning
+embroidery	Passed	Godkänd
+embroidery	No problems found	Inga problem hittades
+embroidery	stitch density	stygntäthet
+embroidery	needle penetrations in an area	nålstick inom ett område
+embroidery	tie stitches	fästsömmar
+embroidery	Checking…	Kontrollerar…
+embroidery	Can't check the design:	Det går inte att kontrollera designen:
+embroidery	Checked for	Kontrollerat för
+embroidery	Source: {name}	Källa: {name}
+embroidery	Also: {name}	Även: {name}
+embroidery	Not checked: {list}	Kontrolleras inte: {list}
+embroidery	No source gives a number to check these against.	Ingen källa anger ett tal att kontrollera dem mot.
+@plural	{count} thread change|{count} thread changes	{count} trådbyte|{count} trådbyten
+@plural	{count} row|{count} rows	{count} följd|{count} följder
+@plural	{count} spot|{count} spots	{count} ställe|{count} ställen
+@plural	{count} thread|{count} threads	{count} tråd|{count} trådar
+@plural	{count} error|{count} errors	{count} fel|{count} fel
+@plural	{count} warning|{count} warnings	{count} varning|{count} varningar
+@plural	{count} note|{count} notes	{count} anmärkning|{count} anmärkningar
+@plural	and {count} more|and {count} more	och {count} till|och {count} till
+embroidery	Threads unlike the art's colour (over {value})	Trådar som inte liknar grafikens färg (över {value})
+embroidery	Largest difference: {value}	Största skillnad: {value}
+embroidery	Block {block}: {thread}, {value}	Block {block}: {thread}, {value}

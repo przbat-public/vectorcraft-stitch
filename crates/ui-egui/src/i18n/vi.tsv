@@ -4998,3 +4998,56 @@ embroidery	Sew First	Thêu đầu tiên
 embroidery	Sew Last	Thêu sau cùng
 embroidery	Collapse All	Thu gọn tất cả
 embroidery	Expand All	Mở rộng tất cả
+embroidery	Satin columns wider than {value} mm	Cột sa-tanh rộng hơn {value} mm
+embroidery	Stitches longer than {value} mm	Mũi dài hơn {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Mũi dài hơn một bản ghi {format} ({value} mm)
+embroidery	Fill stitch length under {value} mm	Độ dài mũi tô dưới {value} mm
+embroidery	Satin columns narrower than {value} mm	Cột sa-tanh hẹp hơn {value} mm
+embroidery	Running stitch length under {value} mm	Độ dài mũi chạy dưới {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Mũi ngắn hơn độ dày của kim ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Mũi dài {value} mm trở xuống, mà máy bỏ qua
+embroidery	More than {value} short stitches in a row	Hơn {value} mũi ngắn liên tiếp
+embroidery	{value} or more layers of stitches on one spot	Từ {value} lớp mũi trở lên tại một chỗ
+embroidery	Everything is sewn	Mọi thứ đều được thêu
+embroidery	Art that isn't sewn	Hình vẽ không được thêu
+embroidery	More colour blocks than {format} holds ({value})	Nhiều khối màu hơn mức {format} chứa được ({value})
+embroidery	{format} holds any number of colour blocks	{format} chứa được bao nhiêu khối màu cũng được
+embroidery	More stitches than a machine shows ({value})	Nhiều mũi hơn mức máy hiển thị được ({value})
+embroidery	More thread changes than a machine shows ({value})	Nhiều lần đổi chỉ hơn mức máy hiển thị được ({value})
+embroidery	No findings	Không phát hiện gì
+embroidery	Longest: {value} mm	Dài nhất: {value} mm
+embroidery	Widest: {value} mm	Rộng nhất: {value} mm
+embroidery	Narrowest: {value} mm	Hẹp nhất: {value} mm
+embroidery	Shortest: {value} mm	Ngắn nhất: {value} mm
+embroidery	At most {value} in a row	Tối đa {value} liên tiếp
+embroidery	At most {value} on one spot	Tối đa {value} tại một chỗ
+embroidery	Stitch {record}: {value} mm	Mũi {record}: {value} mm
+embroidery	From stitch {record}: {value} in a row	Từ mũi {record}: {value} liên tiếp
+embroidery	Stitch {record}	Mũi {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Lỗi
+embroidery	Warning	Cảnh báo
+embroidery	Note	Ghi chú
+embroidery	Passed	Đạt
+embroidery	No problems found	Không tìm thấy vấn đề
+embroidery	stitch density	mật độ mũi
+embroidery	needle penetrations in an area	số lần kim đâm trong một vùng
+embroidery	tie stitches	mũi khóa chỉ
+embroidery	Checking…	Đang kiểm tra…
+embroidery	Can't check the design:	Không thể kiểm tra mẫu thêu:
+embroidery	Checked for	Kiểm tra cho
+embroidery	Source: {name}	Nguồn: {name}
+embroidery	Also: {name}	Ngoài ra: {name}
+embroidery	Not checked: {list}	Không kiểm tra: {list}
+embroidery	No source gives a number to check these against.	Không nguồn nào đưa ra con số để đối chiếu.
+@plural	{count} thread change|{count} thread changes	{count} lần đổi chỉ
+@plural	{count} row|{count} rows	{count} chuỗi
+@plural	{count} spot|{count} spots	{count} chỗ
+@plural	{count} thread|{count} threads	{count} chỉ
+@plural	{count} error|{count} errors	{count} lỗi
+@plural	{count} warning|{count} warnings	{count} cảnh báo
+@plural	{count} note|{count} notes	{count} ghi chú
+@plural	and {count} more|and {count} more	và {count} mục khác
+embroidery	Threads unlike the art's colour (over {value})	Chỉ khác màu hình vẽ (trên {value})
+embroidery	Largest difference: {value}	Chênh lệch lớn nhất: {value}
+embroidery	Block {block}: {thread}, {value}	Khối {block}: {thread}, {value}

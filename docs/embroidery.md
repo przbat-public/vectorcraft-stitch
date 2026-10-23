@@ -1646,7 +1646,9 @@ view alike: round its stitch (a stitch's hit gives where it starts and ends) or 
 row ends are often shorter than the needle is thick). A ring is black on white, so that it reads on
 any fabric, thread or art, with the severity's mark on a white disc at its upper right; the focus's
 hit is ringed again in the accent colour, and hovering a ring says its rule and hit as the tab words
-them. At most 300 are drawn (an estimate; the focus's first; no clustering). None are drawn on a
+them. At most 300 are drawn (an estimate; the focus's first; no clustering), and a ring whose centre
+falls inside a ring already drawn is left out, the focus's hit always kept: hits half a millimetre
+apart (layers along an edge) would otherwise stack into a chain. None are drawn on a
 check of an older plan than the document's (they would point where the stitches no longer are), in
 Presentation Mode, with the edges hidden, or while a tool transforms the selection. View › Stitch
 Preview Options › Show Check Marks (`view.checkMarks {on?}`) turns them off for the session. Rules on

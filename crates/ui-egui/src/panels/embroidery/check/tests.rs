@@ -467,3 +467,29 @@ fn a_bins_words() {
     assert_eq!((bins.len(), bins.last().unwrap().to), (27, None));
     assert!(median.is_some_and(|m| m > 0.0));
 }
+
+/// Rings that would stack are left out: at a small zoom, the hits half a millimetre apart along an
+/// edge keep a ring each only where no ring kept already covers them; the focus's always.
+#[test]
+fn stacked_rings_are_thinned() {
+    use crate::embroidery::check_marks::{marks, thinned};
+    let mut app = app_with_findings();
+    let ctx = egui::Context::default();
+    let (uid, reply) = shown_check(&mut app, &ctx);
+    show_findings(&mut app, uid, &reply, "layers", Some(5)).unwrap();
+    let all = marks(&app, ctx.cumulative_pass_nr());
+    let canvas = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 600.0));
+    let mut view = *app.view().unwrap();
+    view.zoom = 0.5;
+    let kept = thinned(&all, &crate::canvas::Xf::new(canvas, &view));
+    assert!(kept.len() < all.len() / 2, "{} of {}", kept.len(), all.len());
+    assert!(kept.first().is_some_and(|(m, ..)| m.focused), "the focus's ring first");
+    for (k, (_, a, _)) in kept.iter().enumerate() {
+        for (_, b, rb) in &kept[..k] {
+            assert!(a.distance(*b) >= *rb, "a ring's centre inside one kept before it");
+        }
+    }
+    // Zoomed in, they stand apart: every one is kept.
+    view.zoom = 40.0;
+    assert_eq!(thinned(&all, &crate::canvas::Xf::new(canvas, &view)).len(), all.len());
+}

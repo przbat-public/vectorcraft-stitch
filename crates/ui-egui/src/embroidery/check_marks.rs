@@ -12,7 +12,10 @@
 //!   their objects instead.
 //! - **How**: a black ring on a white one, so that it reads on any fabric, thread or art; the
 //!   mark on a white disc at its upper right; the focus's hit ringed again in the accent colour.
-//!   At most [`MAX_DRAWN_MARKS`], the focus's first (no clustering: a hard cap).
+//!   At most [`MAX_DRAWN_MARKS`], the focus's first (no clustering: a hard cap). A ring whose
+//!   centre falls inside a ring already drawn is left out ([`thinned`]): hits half a millimetre
+//!   apart (layers along an edge) would stack into a chain, and what it would mark lies within the
+//!   ring drawn.
 //! - Hovering a mark tells its rule and hit, as the tab words them.
 
 use egui::{Color32, Pos2, Stroke, vec2};
@@ -95,6 +98,19 @@ pub(crate) fn marks(app: &VectorcraftApp, pass: u64) -> Vec<CanvasMark> {
     out
 }
 
+/// The marks to draw of `all` at view `xf`, with their rings: the focus's hit first, always, then
+/// each whose ring's centre isn't inside a ring kept before it.
+pub(crate) fn thinned<'a>(all: &'a [CanvasMark], xf: &Xf) -> Vec<(&'a CanvasMark, Pos2, f32)> {
+    let mut kept: Vec<(&CanvasMark, Pos2, f32)> = Vec::new();
+    for m in all.iter().filter(|m| m.focused).chain(all.iter().filter(|m| !m.focused)) {
+        let (c, r) = ring(m, xf);
+        if m.focused || kept.iter().all(|(_, kc, kr)| c.distance(*kc) >= *kr) {
+            kept.push((m, c, r));
+        }
+    }
+    kept
+}
+
 /// A mark's ring on screen: its centre and radius.
 fn ring(m: &CanvasMark, xf: &Xf) -> (Pos2, f32) {
     let r = (m.half * xf.zoom) as f32 + RING_ROOM_PT;
@@ -114,8 +130,7 @@ pub fn draw(app: &VectorcraftApp, ctx: &egui::Context, painter: &egui::Painter, 
     let pointer = ctx.pointer_hover_pos().filter(|p| painter.clip_rect().contains(*p));
     let mut hovered: Option<(f32, &CanvasMark)> = None;
     // The focus's marks come first in the list: drawn last, on top.
-    for m in all.iter().rev() {
-        let (c, r) = ring(m, xf);
+    for (m, c, r) in thinned(&all, xf).into_iter().rev() {
         painter.circle_stroke(c, r, Stroke::new(WHITE_EDGE_PT, Color32::WHITE));
         painter.circle_stroke(c, r, Stroke::new(BLACK_EDGE_PT, Color32::BLACK));
         if m.focused {

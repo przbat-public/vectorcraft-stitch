@@ -328,6 +328,12 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     let generation = shown.planned.generation;
     let stale = !matches!(freshness, Freshness::Fresh);
     ui.horizontal(|ui| {
+        // "Updating…" and its spinner at the right, in the room the figures leave them.
+        let updating = (stale && busy).then(|| crate::et!("Updating…"));
+        let room = updating.map_or(0.0, |words| {
+            let font = egui::FontId::proportional(UPDATING_TEXT);
+            ui.painter().layout_no_wrap(words.to_string(), font, t.text_dim).size().x + UPDATING_TEXT + 2.0 * ui.spacing().item_spacing.x
+        });
         if let Some(stats) = &stats {
             let blocks = stats["blockCount"].as_u64().unwrap_or(0);
             let stitches = stats["stitches"].as_u64().unwrap_or(0);
@@ -336,12 +342,16 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 crate::etn!(blocks, "{count} thread block", "{count} thread blocks"),
                 crate::etn!(stitches, "{count} stitch", "{count} stitches")
             );
-            // Wrapped in the panel's width: a long line would widen the panel's content.
-            ui.add(egui::Label::new(egui::RichText::new(title).strong().color(if stale { t.text_dim } else { t.text_strong })).wrap());
+            // Wrapped in the panel's width (a long line would widen the panel's content), short of
+            // "Updating…".
+            ui.scope(|ui| {
+                ui.set_max_width((ui.available_width() - room).max(0.0));
+                ui.add(egui::Label::new(egui::RichText::new(title).strong().color(if stale { t.text_dim } else { t.text_strong })).wrap());
+            });
         }
-        if stale && busy {
+        if let Some(words) = updating {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                ui.label(egui::RichText::new(crate::et!("Updating…")).size(UPDATING_TEXT).color(t.text_dim))
+                ui.label(egui::RichText::new(words).size(UPDATING_TEXT).color(t.text_dim))
                     .on_hover_text(crate::et!("These are the stitches before the last change; the new ones are being planned."));
                 ui.add(egui::Spinner::new().size(UPDATING_TEXT).color(t.accent));
             });

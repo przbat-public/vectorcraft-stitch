@@ -1,7 +1,8 @@
 //! The embroidery interface drawn in every language: the Embroidery panel's tabs (a check's rule
-//! opened and shown, its chart) and the status bar's counters draw no English the language's
-//! catalogue doesn't give, and the panel's words stay inside it at 256 and 300 points; and what
-//! screen readers are told.
+//! opened and shown, its chart), its states (planning, failed over the last stitches, checking,
+//! a check that failed) and the status bar's counters draw no English the language's catalogue
+//! doesn't give, and the panel's words stay inside it at 256 and 300 points; and what screen
+//! readers are told.
 
 use egui::accesskit::{Node, Role};
 use egui::{Pos2, Rect, Shape, vec2};
@@ -38,28 +39,92 @@ fn app_with_findings() -> VectorcraftApp {
 /// and its screen-reader tree.
 fn frames(app: &mut VectorcraftApp, ctx: &egui::Context, tab: Tab, width: f32) -> (Vec<(String, Rect)>, Vec<Node>) {
     app.ui.embroidery_panel.tab = tab;
-    let mut texts = vec![];
-    let mut nodes = vec![];
+    let mut last = (vec![], vec![]);
     for time in [0.0, 0.05, 0.1, 0.2, 0.3] {
-        let raw = egui::RawInput { time: Some(time), screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(WINDOW, HEIGHT))), ..Default::default() };
-        let mut out = ctx.run_ui(raw, |ui| {
-            crate::chrome::status_bar(app, ui);
-            egui::Panel::right("embroidery-test").exact_size(width).resizable(false).show(ui, |ui| crate::panels::embroidery::show(app, ui));
-            crate::embroidery::stitch_preview::schedule(app, ui.ctx());
-        });
-        out.textures_delta.clear();
-        texts.clear();
-        let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
-        while let Some(s) = pending.pop() {
-            match s {
-                Shape::Vec(v) => pending.extend(v),
-                Shape::Text(t) => texts.push((t.galley.text().to_string(), t.visual_bounding_rect())),
-                _ => {}
-            }
-        }
-        nodes = out.platform_output.accesskit_update.map(|u| u.nodes.into_iter().map(|(_, n)| n).collect()).unwrap_or_default();
+        last = frame_at(app, ctx, time, width, &mut |app, ui| crate::panels::embroidery::show(app, ui));
     }
+    last
+}
+
+/// One frame at `time`: the status bar, `panel` drawn `width` points wide on the window's right,
+/// and the preview's scheduling → the texts with their boxes, and the screen-reader tree.
+fn frame_at(
+    app: &mut VectorcraftApp,
+    ctx: &egui::Context,
+    time: f64,
+    width: f32,
+    panel: &mut dyn FnMut(&mut VectorcraftApp, &mut egui::Ui),
+) -> (Vec<(String, Rect)>, Vec<Node>) {
+    let raw = egui::RawInput { time: Some(time), screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(WINDOW, HEIGHT))), ..Default::default() };
+    let mut out = ctx.run_ui(raw, |ui| {
+        crate::chrome::status_bar(app, ui);
+        egui::Panel::right("embroidery-test").exact_size(width).resizable(false).show(ui, |ui| panel(app, ui));
+        crate::embroidery::stitch_preview::schedule(app, ui.ctx());
+    });
+    out.textures_delta.clear();
+    let mut texts = vec![];
+    let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
+    while let Some(s) = pending.pop() {
+        match s {
+            Shape::Vec(v) => pending.extend(v),
+            Shape::Text(t) => texts.push((t.galley.text().to_string(), t.visual_bounding_rect())),
+            _ => {}
+        }
+    }
+    let nodes = out.platform_output.accesskit_update.map(|u| u.nodes.into_iter().map(|(_, n)| n).collect()).unwrap_or_default();
     (texts, nodes)
+}
+
+/// The states the panel and the status bar pass through, at `width`: a design that takes long to
+/// plan (the panel's "Planning stitches…" with its progress, and the bar's), an edit of it
+/// planned (its last stitches, "Updating…"), one that can't be planned over its last stitches, and
+/// the Check tab with its check asked and not answered, then
+/// failed (with the plan's reason) → each one's texts, with the counters' words then.
+fn states(ctx: &egui::Context, width: f32) -> Vec<(Vec<(String, Rect)>, String)> {
+    use crate::embroidery::stitch_preview::{Freshness, Held, STALE_NOTICE_SECS, StitchPreview};
+    let mut app = app_with_findings();
+    let held = Held::default();
+    app.embroidery.preview = StitchPreview::with_runner(Box::new(held.clone()));
+    app.ui.embroidery_panel.tab = Tab::Order;
+    let panel = &mut |app: &mut VectorcraftApp, ui: &mut egui::Ui| crate::panels::embroidery::show(app, ui);
+    let counters = |app: &VectorcraftApp| app.embroidery.counters.inspect()["shown"].as_str().unwrap_or_default().to_string();
+    let mut out = vec![];
+    // Each state from a second of its own, its frames at `later` (the notices show) and after.
+    let later = STALE_NOTICE_SECS + 0.1;
+    frame_at(&mut app, ctx, 0.0, width, panel);
+    held.progress(2, 5);
+    frame_at(&mut app, ctx, later, width, panel);
+    let (texts, _) = frame_at(&mut app, ctx, later + 0.05, width, panel);
+    assert!(texts.iter().any(|(t, _)| *t == counters(&app)) && !counters(&app).is_empty(), "the bar says it plans: {texts:?}");
+    out.push((texts, counters(&app)));
+    held.release();
+    frame_at(&mut app, ctx, later + 0.1, width, panel);
+    // An edit whose plan takes long: the last stitches, "Updating…" beside their figures.
+    app.run("select.all", json!({})).unwrap();
+    app.run("object.move", json!({"dx": 1, "dy": 0})).unwrap();
+    frame_at(&mut app, ctx, 1.0, width, panel);
+    let (texts, _) = frame_at(&mut app, ctx, 1.0 + later, width, panel);
+    assert!(texts.iter().any(|(t, _)| t == crate::et!("Updating…")), "{texts:?}");
+    out.push((texts, counters(&app)));
+    held.release();
+    frame_at(&mut app, ctx, 1.1 + later, width, panel);
+    // Three metres a side: it can't be planned.
+    app.run("shape.rectangle", json!({"x": 0, "y": 0, "width": 8500, "height": 8500})).unwrap();
+    frame_at(&mut app, ctx, 2.0, width, panel);
+    held.release();
+    frame_at(&mut app, ctx, 2.1, width, panel);
+    let (texts, _) = frame_at(&mut app, ctx, 2.2, width, panel);
+    out.push((texts, counters(&app)));
+    let uid = app.session.active().unwrap().uid;
+    let Freshness::Failed { error } = app.embroidery.preview.freshness(uid, 2.2) else { panic!("the big square can't be planned") };
+    let failed: Result<std::sync::Arc<serde_json::Value>, String> = Err(error);
+    let busy = crate::panels::embroidery::SHOW_BUSY_AFTER_SECS;
+    for (time, reply) in [(3.0, None), (3.0 + busy, None), (4.0, Some((&failed, true)))] {
+        let (texts, _) =
+            frame_at(&mut app, ctx, time, width, &mut |app, ui| check::show(app, ui, check::Shown { uid, reply, stats: None, stale: false }));
+        out.push((texts, String::new()));
+    }
+    out
 }
 
 /// The Check tab with its layers rule shown (selected, zoomed to, focused) and opened.
@@ -177,6 +242,7 @@ fn the_embroidery_interface_in_every_language() {
         let mut app = app_with_findings();
         let (mut texts, _) = frames(&mut app, &ctx, Tab::Order, 300.0);
         texts.extend(check_tab(&mut app, &ctx, 300.0).0);
+        texts.extend(states(&ctx, 300.0).into_iter().flat_map(|(t, _)| t));
         texts.into_iter().map(|(t, _)| numbers_blanked(&t)).collect()
     };
     for info in LANGUAGES.iter().filter(|l| l.complete_menus) {
@@ -190,10 +256,12 @@ fn the_embroidery_interface_in_every_language() {
             let order = frames(&mut app, &ctx, Tab::Order, width).0;
             let checked = check_tab(&mut app, &ctx, width).0;
             let names = names(&app, lang);
+            let counters = app.embroidery.counters.inspect()["shown"].as_str().unwrap_or_default().to_string();
+            let mut drawn = vec![(order, counters.clone()), (checked, counters)];
+            drawn.extend(states(&ctx, width));
             crate::i18n::set_current(Lang::EN);
             let panel = Rect::from_min_max(Pos2::new(WINDOW - width, 0.0), Pos2::new(WINDOW, HEIGHT - 24.0));
-            let counters = app.embroidery.counters.inspect()["shown"].as_str().unwrap_or_default().to_string();
-            for texts in [order, checked] {
+            for (texts, counters) in drawn {
                 // The panel's words overlap nothing (the icons, unloaded in the tests, draw a
                 // placeholder).
                 let panel_texts: Vec<&(String, Rect)> = texts.iter().filter(|(t, r)| panel.intersects(*r) && t != "⚠").collect();
@@ -203,7 +271,7 @@ fn the_embroidery_interface_in_every_language() {
                     }
                 }
                 // The panel's words and the counters (the rest of the status bar is upstream's).
-                for (text, rect) in texts.iter().filter(|(t, r)| panel.intersects(*r) || *t == counters) {
+                for (text, rect) in texts.iter().filter(|(t, r)| panel.intersects(*r) || (*t == counters && !t.is_empty())) {
                     if english.contains(&numbers_blanked(text)) {
                         assert!(may_be_english(catalogue, text, &names), "{}: {text:?} is drawn in English", info.code);
                     }

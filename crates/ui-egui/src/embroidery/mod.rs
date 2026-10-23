@@ -1,6 +1,7 @@
 //! The machine-embroidery interface of VectorCraft Stitch (this fork): what the app shows of a
 //! design's stitches. Fork-owned, so that upstream files carry only one-line hooks into it.
 //!
+//! - [`marks`]: severity marks, drawn in code: error, warning, note, passed.
 //! - [`numbers`]: numbers as the interface language writes them, in the embroidery interface's
 //!   read-only text.
 //! - [`plan_worker`]: the stitch preview's planning thread.
@@ -14,6 +15,7 @@
 //!   ([`crate::et!`], [`crate::etn!`]).
 //! - [`render_stitches`]: the control channel's picture of the stitches.
 
+pub mod marks;
 pub mod menu;
 pub mod notice;
 pub mod numbers;

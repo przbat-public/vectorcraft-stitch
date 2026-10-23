@@ -290,8 +290,10 @@ fn entry_marker(p: &egui::Painter, at: Pos2, color: Color32) {
     p.add(Shape::convex_polygon(points, color, Stroke::new(1.5, Color32::WHITE)));
 }
 
-/// The exit ⊕: a white face with a ring and a plus in `color`.
+/// The exit ⊕: a white face with a ring and a plus in `color`, darkened as far as it takes to stand
+/// out from the white face (a light layer colour, yellow or cyan, would hardly show).
 fn exit_marker(p: &egui::Painter, at: Pos2, color: Color32) {
+    let color = super::marks::readable(color, &[Color32::WHITE], false);
     let r = EXIT_MARKER_PT / 2.0;
     p.circle(at, r, Color32::WHITE, Stroke::new(1.5, color));
     let arm = r * 0.6;
@@ -300,13 +302,15 @@ fn exit_marker(p: &egui::Painter, at: Pos2, color: Color32) {
     p.line_segment([at - vec2(0.0, arm), at + vec2(0.0, arm)], stroke);
 }
 
-/// A pill reading `text` in white on `color`, anchored at `at` by `align`.
+/// A pill reading `text` on `color`, anchored at `at` by `align`: in black or white, whichever reads
+/// better on it.
 fn label(p: &egui::Painter, at: Pos2, align: Align2, text: &str, color: Color32) {
-    let galley = p.layout_no_wrap(text.to_string(), FontId::proportional(LABEL_SIZE), Color32::WHITE);
+    let ink = super::marks::text_on(color);
+    let galley = p.layout_no_wrap(text.to_string(), FontId::proportional(LABEL_SIZE), ink);
     let size = galley.size() + vec2(2.0 * LABEL_PAD, LABEL_PAD);
     let rect = align.anchor_size(at, size);
     p.rect(rect, CornerRadius::same(u8::MAX), color, Stroke::NONE, StrokeKind::Inside);
-    p.galley(rect.center() - galley.size() / 2.0, galley, Color32::WHITE);
+    p.galley(rect.center() - galley.size() / 2.0, galley, ink);
 }
 
 #[cfg(test)]

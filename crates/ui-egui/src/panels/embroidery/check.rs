@@ -446,7 +446,10 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     let reply = match result {
         Ok(reply) => &**reply,
         Err(e) => {
-            ui.label(egui::RichText::new(crate::et!("Can't check the design:")).color(t.error));
+            ui.label(
+                egui::RichText::new(crate::et!("Can't check the design:"))
+                    .color(crate::embroidery::marks::text_colour(&t, crate::embroidery::marks::Mark::Error)),
+            );
             ui.label(egui::RichText::new(crate::i18n::msg(e)).size(SMALL).color(t.text));
             return;
         }

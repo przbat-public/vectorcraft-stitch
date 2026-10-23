@@ -360,7 +360,10 @@ fn planning(ui: &mut Ui, progress: Option<f64>) {
 /// The design can't be planned: why, and what makes it plan again.
 fn failed(ui: &mut Ui, error: &str) {
     let t = Tokens::get(ui.ctx());
-    ui.label(egui::RichText::new(crate::et!("Can't plan the stitches:")).color(t.error));
+    ui.label(
+        egui::RichText::new(crate::et!("Can't plan the stitches:"))
+            .color(crate::embroidery::marks::text_colour(&t, crate::embroidery::marks::Mark::Error)),
+    );
     ui.label(egui::RichText::new(crate::i18n::msg(error)).size(11.5).color(t.text));
     ui.label(egui::RichText::new(crate::et!("Change the design and the stitches are planned again.")).size(11.5).color(t.text_dim));
 }

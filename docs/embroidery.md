@@ -1638,7 +1638,10 @@ while the tab is open, with the first 100 hits of each rule. Rules that found so
 (errors, warnings, then notes), then those that passed, each group in the engine's order. Each is
 marked by shape as well as colour (`embroidery::marks`: a filled circle with "!" for an error, a
 triangle with "!" for a warning, a ring with "i" for a note, a neutral tick for a pass, drawn in
-code from the theme's colours, darkened or lightened until they stand out 3:1 from the panel). A
+code from the theme's colours, darkened or lightened until they stand out 3:1 from the panel; an
+error's or a warning's words, here, in the panel's states and in the status bar, until they read
+4.5:1, WCAG 2.1's 1.4.3; the canvas's Entry and Exit labels in black or white, whichever reads
+better on their pill). A
 rule's title is the interface's own sentence for its id with its threshold, the format's own for the
 format's limits, written as the language writes numbers; under it, what was found (stitches, spots,
 rows, threads, objects) or, for a rule that passed, the extreme it measured ("Longest: 4.6 mm").

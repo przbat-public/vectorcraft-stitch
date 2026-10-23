@@ -21,6 +21,10 @@ use crate::theme::Tokens;
 /// (<https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html>).
 pub const NON_TEXT_CONTRAST: f32 = 3.0;
 
+/// The contrast text keeps against what it is drawn on: WCAG 2.1's 1.4.3 Contrast (Minimum), 4.5:1
+/// for text of normal size (<https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html>).
+pub const TEXT_CONTRAST: f32 = 4.5;
+
 /// How finely a colour is moved towards black or white to reach the contrast: twentieths.
 const CONTRAST_STEPS: u8 = 20;
 
@@ -67,6 +71,18 @@ impl Mark {
 /// selected backgrounds).
 pub fn colour(t: &Tokens, mark: Mark) -> Color32 {
     readable(base(t, mark), &backgrounds(t), t.dark)
+}
+
+/// The colour of text that speaks for `mark` (an error's or a warning's words) on the panel `t`
+/// describes: the mark's colour, moved only as far as it takes to read by [`TEXT_CONTRAST`].
+pub fn text_colour(t: &Tokens, mark: Mark) -> Color32 {
+    towards(base(t, mark), &backgrounds(t), t.dark, TEXT_CONTRAST)
+}
+
+/// The colour of text on a fill (a label's pill): black or white, whichever reads better (one of
+/// them always reaches [`TEXT_CONTRAST`]).
+pub fn text_on(fill: Color32) -> Color32 {
+    if contrast(Color32::BLACK, fill) >= contrast(Color32::WHITE, fill) { Color32::BLACK } else { Color32::WHITE }
 }
 
 /// The theme's colour for `mark`, before it is made to stand out.
@@ -136,9 +152,15 @@ fn bang(p: &Painter, centre: Pos2, r: f32, weight: f32, c: Color32) {
 /// `c`, moved towards white on dark backgrounds or black on light ones only as far as it takes to
 /// stand out by [`NON_TEXT_CONTRAST`] from each of `backs`.
 pub fn readable(c: Color32, backs: &[Color32], dark: bool) -> Color32 {
+    towards(c, backs, dark, NON_TEXT_CONTRAST)
+}
+
+/// `c`, moved towards white (`dark` backgrounds) or black only as far as it takes to stand out by
+/// `ratio` from each of `backs`; all the way when even that falls short.
+fn towards(c: Color32, backs: &[Color32], dark: bool, ratio: f32) -> Color32 {
     let target = if dark { Color32::WHITE } else { Color32::BLACK };
     let worst = |c: Color32| backs.iter().map(|b| contrast(c, *b)).fold(f32::INFINITY, f32::min);
-    (0..=CONTRAST_STEPS).map(|k| mix(c, target, f32::from(k) / f32::from(CONTRAST_STEPS))).find(|m| worst(*m) >= NON_TEXT_CONTRAST).unwrap_or(target)
+    (0..=CONTRAST_STEPS).map(|k| mix(c, target, f32::from(k) / f32::from(CONTRAST_STEPS))).find(|m| worst(*m) >= ratio).unwrap_or(target)
 }
 
 /// `a` mixed with `b` by `k` (0: `a`, 1: `b`), channel by channel.
@@ -236,6 +258,26 @@ mod tests {
                     let ratio = contrast(glyph_on(&t, c), c);
                     assert!(ratio >= NON_TEXT_CONTRAST, "{mark:?}'s glyph: {ratio}");
                 }
+            }
+        }
+    }
+
+    /// An error's and a warning's words read by 4.5:1 on every background a panel row has, in every
+    /// theme; a label's words by 4.5:1 on any fill.
+    #[test]
+    fn text_reaches_four_and_a_half_to_one() {
+        for t in every_theme() {
+            for mark in [Mark::Error, Mark::Warning] {
+                let c = text_colour(&t, mark);
+                for back in backgrounds(&t) {
+                    let ratio = contrast(c, back);
+                    assert!(ratio >= TEXT_CONTRAST, "{mark:?}'s words {c:?} on {back:?}: {ratio}");
+                }
+            }
+            for fill in
+                [t.accent, t.error, t.warning, Color32::from_rgb(79, 128, 255), Color32::YELLOW, Color32::GREEN, Color32::from_rgb(0, 255, 255)]
+            {
+                assert!(contrast(text_on(fill), fill) >= TEXT_CONTRAST, "{fill:?}");
             }
         }
     }

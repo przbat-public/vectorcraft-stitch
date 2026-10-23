@@ -627,8 +627,9 @@ fn paint_row(
             x = g.right() + 6.0;
             if block.thread.mismatch {
                 let badge = format!("ΔE {}", numbers::decimal(lang, block.thread.delta_e, 1));
-                let g = p.text(pos2(x + 4.0, mid), Align2::LEFT_CENTER, &badge, FontId::proportional(SMALL), ink(t.warning));
-                p.rect_stroke(g.expand2(vec2(3.0, 1.0)), 3.0, Stroke::new(1.0, ink(t.warning)), StrokeKind::Outside);
+                let amber = crate::embroidery::marks::text_colour(t, crate::embroidery::marks::Mark::Warning);
+                let g = p.text(pos2(x + 4.0, mid), Align2::LEFT_CENTER, &badge, FontId::proportional(SMALL), ink(amber));
+                p.rect_stroke(g.expand2(vec2(3.0, 1.0)), 3.0, Stroke::new(1.0, ink(amber)), StrokeKind::Outside);
                 x = g.right() + 8.0;
             }
             let objects = listed.object_count(b) as u64;

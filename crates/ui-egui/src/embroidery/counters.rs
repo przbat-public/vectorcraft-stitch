@@ -237,7 +237,9 @@ fn wordings(state: &State, t: &Tokens) -> Vec<(Option<Variant>, String, Color32)
         // the bar.
         State::Stale(f) => Variant::ALL.iter().map(|v| (Some(*v), format!("{} {}", crate::et!("Updating…"), words(f, *v)), t.text_dim)).collect(),
         State::Nothing => vec![(None, crate::et!("Nothing to sew").to_string(), t.text_dim)],
-        State::Failed(_) => vec![(None, format!("⚠ {}", crate::et!("Stitches can't be planned")), t.warning)],
+        State::Failed(_) => {
+            vec![(None, format!("⚠ {}", crate::et!("Stitches can't be planned")), super::marks::text_colour(t, super::marks::Mark::Warning))]
+        }
     }
 }
 

@@ -368,7 +368,7 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     (`assets/icons/dc-embroidery.svg`, a row in `ASSETS.md`);
   - `io.rs` and the engine's `fileio/export.rs`: `view::note_export` (`note_export_of` in the
     background export's completion) once an export is written;
-  - the engine's `lib.rs`: the `pub use` of `StitchView`, `PlanKey` and `Planned`, and in
+  - the engine's `lib.rs`: the `pub use` of `PlanKey` and `Planned`, and in
     `close_document` the closed document's planning forgotten (in a batch, by `fileio/batch.rs`
     once the batch holds; its `roll_back` forgets a document the batch opened);
   - `render/src/lib.rs`: `pub mod lines`; `testkit/src/lib.rs`: `pub mod embroidery`;

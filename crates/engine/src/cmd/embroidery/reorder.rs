@@ -93,40 +93,6 @@ pub enum Refusal {
     TooMany,
 }
 
-impl Refusal {
-    /// The id replies give it.
-    pub fn id(self) -> &'static str {
-        match self {
-            Refusal::Nothing => "nothing",
-            Refusal::Gone(_) => "gone",
-            Refusal::Locked(_) => "locked",
-            Refusal::ClippingPath(_) => "clippingPath",
-            Refusal::ChangesClipping(_) => "changesClipping",
-            Refusal::FromFile(_) => "fromFile",
-            Refusal::NotAccepted(_) => "notAccepted",
-            Refusal::TargetLocked(_) => "targetLocked",
-            Refusal::InsideObject => "insideObject",
-            Refusal::NoChange => "noChange",
-            Refusal::Nowhere => "nowhere",
-            Refusal::TooMany => "tooMany",
-        }
-    }
-
-    /// The object it is about, if one.
-    pub fn object(self) -> Option<NodeId> {
-        match self {
-            Refusal::Gone(id)
-            | Refusal::Locked(id)
-            | Refusal::ClippingPath(id)
-            | Refusal::ChangesClipping(id)
-            | Refusal::FromFile(id)
-            | Refusal::NotAccepted(id)
-            | Refusal::TargetLocked(id) => Some(id),
-            _ => None,
-        }
-    }
-}
-
 /// What a person moves for unit `u`: the outermost symbol instance it is drawn through, else its
 /// object ([`super::plan::Origin::selected`]).
 pub fn mover(u: &Unit) -> NodeId {

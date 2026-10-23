@@ -77,7 +77,7 @@ pub use options::Options;
 pub use service::Planned;
 pub(crate) use service::Services;
 pub(crate) use unit::PlanError;
-pub use vectorcraft_stitch::{mm_to_pt, pt_to_mm};
+pub use vectorcraft_stitch::mm_to_pt;
 
 /// The machine formats `embroidery.check {format}` checks for, as (id, the name the export lists
 /// it by), in the export's order: the Check tab's choice of format.
@@ -123,11 +123,6 @@ impl PlanKey {
         self.uid
     }
 
-    /// Whether it is of snapshot `doc`.
-    pub fn is_of(&self, doc: &Arc<Document>) -> bool {
-        std::ptr::eq(self.snapshot.as_ptr(), Arc::as_ptr(doc))
-    }
-
     /// The options planned with.
     pub fn options(&self) -> &Options {
         &self.opts
@@ -159,13 +154,6 @@ impl Planner {
     pub fn planned_and_walked(&self, opts: &Options) -> (Result<Planned>, bool) {
         let (planned, walked) = self.service.planned_and_walked(service::Of::whole(&self.snapshot), &self.doc, opts);
         (planned.map_err(PlanError::error), walked)
-    }
-
-    /// The plan remembered with `opts` (or why there is none: a design too large), without
-    /// planning: `None` when this snapshot hasn't been planned with them. It never waits.
-    pub fn latest(&self, opts: &Options) -> Option<Result<Planned>> {
-        let fonts = vectorcraft_text::FontDb::global().generation();
-        self.service.remembered(service::Of::whole(&self.snapshot), opts, fonts).map(|r| r.map_err(PlanError::error))
     }
 
     /// What the planner's plans with `opts` are of ([`PlanKey`]).

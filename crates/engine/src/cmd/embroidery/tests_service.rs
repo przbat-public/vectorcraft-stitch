@@ -633,21 +633,19 @@ fn a_plan_says_whether_it_was_walked() {
     assert!(refused.is_err() && !walked);
 }
 
-/// The planner's latest plan never plans; a plan key tells whether a plan is of the document as it
-/// is: a selection doesn't change it, an edit and other options do.
+/// A plan key tells whether a plan is of the document as it is: a selection doesn't change it, an
+/// edit and other options do.
 #[test]
-fn the_latest_plan_never_plans_and_a_key_follows_the_document() {
+fn a_key_follows_the_document() {
     let (mut s, ids) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: None }]);
     let opts = Options::default();
     let planner = s.embroidery_planner().unwrap();
     let uid = s.doc().unwrap().uid;
-    assert!(planner.latest(&opts).is_none());
     assert_eq!(s.embroidery_plans.of(uid).walks(), 0);
-    let planned = planner.planned(&opts).unwrap();
-    assert_eq!(planner.latest(&opts).unwrap().unwrap().generation, planned.generation);
+    planner.planned(&opts).unwrap();
     let key = s.embroidery_plan_key(&opts).unwrap();
     assert_eq!(key, planner.key(&opts));
-    assert!(key.is_of(&s.doc().unwrap().doc) && key.uid() == uid);
+    assert_eq!(key.uid(), uid);
     run(&mut s, "select.set", json!({"ids": [ids[0]]}));
     assert_eq!(s.embroidery_plan_key(&opts).unwrap(), key, "a selection plans nothing new");
     assert_ne!(s.embroidery_plan_key(&options_at(2)).unwrap(), key, "other options");

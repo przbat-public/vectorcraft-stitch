@@ -14,7 +14,8 @@
 //! [`plan`] (the plan: sewing units, thread blocks, stitch numbers), [`sequence`] (the order the
 //! blocks are sewn in), [`measure`] (a plan's records walked in sewing order), [`stats`] (a
 //! design's figures: counts, size, thread, time), [`order`] (the sewing order as
-//! `embroidery.sequence` lists it) and [`check`] (the design checks, each rule with its source).
+//! `embroidery.sequence` lists it), [`check`] (the design checks, each rule with its source) and
+//! [`scene`] (the plan as the stitch preview draws it).
 
 mod cache;
 mod check;
@@ -24,6 +25,7 @@ pub(crate) mod options;
 mod order;
 pub mod plan;
 mod printed;
+pub mod scene;
 mod sequence;
 pub(crate) mod service;
 mod stats;

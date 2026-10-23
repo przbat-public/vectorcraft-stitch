@@ -11,6 +11,10 @@
 //! object or into a locked layer or group, or split an object's own stitches is refused, typed
 //! ([`Refusal`]), so the panel can say why before the drop. A run of an opened machine file moves
 //! with its block (its group), never alone.
+//!
+//! Sew Earlier, Later, First and Last ([`step_move`]) go where a drop at the gap past their
+//! neighbour goes, except Sew Earlier, which goes just below the object sewn just before them, in
+//! its parent: beside it, so an object in a group stays in it.
 
 use std::collections::{HashMap, HashSet};
 
@@ -219,6 +223,14 @@ pub fn place_moving(doc: &Document, plan: &DesignPlan, moving: &Moving, gap: usi
         (None, Some(n)) => (mover(n), Place::Below),
         (None, None) => return Err(Refusal::Nowhere),
     };
+    beside(doc, moving, target, place)
+}
+
+/// The move of `moving` just above or below `target`, in its parent, or why it can't be made: the
+/// refusals every move shares (a lock, a clipping path, a layer into a group, into or out of a clip
+/// group), and none when they are there already.
+fn beside(doc: &Document, moving: &Moving, target: NodeId, place: Place) -> std::result::Result<RowMove, Refusal> {
+    let movers = moving.movers();
     let parent = doc.parent_of(target);
     let context = clip_context(doc, parent);
     for m in movers {
@@ -291,6 +303,12 @@ pub fn movers_of(doc: &Document, plan: &DesignPlan, ids: &[NodeId]) -> Vec<NodeI
 /// everything. `None` when there is nothing to pass.
 pub fn gap_for(doc: &Document, plan: &DesignPlan, movers: &[NodeId], step: Step) -> Option<usize> {
     gap_for_moving(plan, &Moving::new(doc, movers.to_vec()), step)
+}
+
+/// The object sewn just before the first unit of `moving`, when one is.
+fn sewn_before(plan: &DesignPlan, moving: &Moving) -> Option<NodeId> {
+    let first = plan.units.iter().position(|u| moving.drags(u))?;
+    plan.units.get(..first)?.iter().rev().find(|u| !moving.drags(u)).map(mover)
 }
 
 /// [`gap_for`] of movers whose cover is worked out.
@@ -412,7 +430,14 @@ pub fn step_move(doc: &Document, plan: &DesignPlan, ids: &[NodeId], step: Step) 
         None if moving.movers().is_empty() => return Err(reason(Refusal::Nothing)),
         None => return Err(edge),
     };
-    place_moving(doc, plan, &moving, gap).map_err(|r| match r {
+    let made = match (step, sewn_before(plan, &moving)) {
+        // Just below the object sewn just before them, in its parent: beside it, in the group
+        // they share with it (a drop at that gap would go above the object before that one, in
+        // its parent, and could take them out of their group).
+        (Step::Earlier, Some(object)) => beside(doc, &moving, object, Place::Below),
+        _ => place_moving(doc, plan, &moving, gap),
+    };
+    made.map_err(|r| match r {
         Refusal::NoChange => edge,
         r => reason(r),
     })

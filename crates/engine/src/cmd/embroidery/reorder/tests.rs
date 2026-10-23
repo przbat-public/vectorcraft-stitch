@@ -303,3 +303,27 @@ fn the_sew_commands_check_their_ids() {
     assert_eq!(s.doc().unwrap().history.undo.len(), undo, "nothing moved");
     s.execute("embroidery.sewLast", &json!({"ids": [a]})).unwrap();
 }
+
+/// Sew Earlier goes just below the object sewn just before, in its parent, as documented: an object
+/// in a group stays in it, beside its neighbour, though the object sewn before that one lies
+/// outside the group (where a drop at that gap would go).
+#[test]
+fn sew_earlier_stays_beside_its_neighbour() {
+    let mut s = Session::new();
+    fx::blank(&mut runner(&mut s));
+    let rect = |s: &mut Session, color: &str, x: f64| {
+        s.execute("select.none", &json!({})).unwrap();
+        fx::rect(&mut runner(s), color, x, 20.0, 50.0, 50.0)
+    };
+    let w = rect(&mut s, fx::RED, 20.0);
+    let x = rect(&mut s, fx::BLUE, 120.0);
+    let m = rect(&mut s, fx::GREEN, 220.0);
+    s.execute("select.set", &json!({"ids": [x, m]})).unwrap();
+    let group = s.execute("object.group", &json!({})).unwrap()["id"].as_u64().unwrap();
+    assert_eq!(sewn(&plan_of(&mut s)), [w, x, m]);
+    s.execute("select.set", &json!({"ids": [m]})).unwrap();
+    let r = s.execute("embroidery.sewEarlier", &json!({})).unwrap();
+    assert_eq!((&r["target"], &r["place"]), (&json!(x), &json!("below")));
+    assert_eq!(s.doc().unwrap().doc.parent_of(NodeId(m)), Some(NodeId(group)), "still in its group");
+    assert_eq!(sewn(&plan_of(&mut s)), [w, m, x]);
+}

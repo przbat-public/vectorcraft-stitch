@@ -425,7 +425,16 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context, req: &ControlReques
             if let Err(e) = vectorcraft_render::raster_size(r, scale) {
                 return err(e);
             }
-            let img = app.canvas.renderer.render_region(&doc, r, scale, true);
+            // VectorCraft Stitch: the artboard's stitches, as the stitch preview draws them.
+            let stitches = p.get("stitchPreview").and_then(Value::as_bool) == Some(true);
+            let img = if stitches {
+                match crate::embroidery::render_stitches(app, index.unwrap_or(0), scale) {
+                    Ok(img) => img,
+                    Err(e) => return err(e),
+                }
+            } else {
+                app.canvas.renderer.render_region(&doc, r, scale, true)
+            };
             let png = match img.to_png() {
                 Ok(png) => png,
                 Err(e) => return err(e),

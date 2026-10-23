@@ -4930,3 +4930,5 @@ lighting	Light	Свет
 	Edge Run	Проход по краю
 	Edge Run and Zigzag	Проход по краю и зигзаг
 	Edge Run and Tatami	Проход по краю и татами
+	Embroidery Picture	Изображение вышивки
+@msg	nothing to draw: the document sews no stitch	нечего рисовать: в документе нет ни одного стежка

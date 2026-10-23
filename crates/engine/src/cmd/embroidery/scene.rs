@@ -27,7 +27,7 @@ use std::sync::Arc;
 
 use vectorcraft_doc::NodeId;
 use vectorcraft_geom::{Point, Rect};
-use vectorcraft_render::lines::{LinePicture, LinePictureBuilder, LinkKind, MarkKind};
+use vectorcraft_render::lines::{LinePicture, LinePictureBuilder, LineStyle, LinkKind, MarkKind, edge_against};
 use vectorcraft_stitch::plan::{self, THREAD_WIDTH};
 use vectorcraft_stitch::{Command, mm_to_pt};
 
@@ -38,6 +38,16 @@ use super::plan::{DesignPlan, UnitKey};
 /// through when the whole design is drawn, millimetres: 2 µm, far under a pixel at the closest zoom
 /// (6,400 %, where a millimetre is about 180 px) and under the formats' 0.1 mm. An estimate.
 pub const STRAIGHT_TOLERANCE_MM: f64 = 0.002;
+
+/// The fabric the stitches are drawn on (sRGB): white in this version, the colour an artboard is
+/// drawn in. A fabric colour comes with the fabric presets of the document's embroidery settings.
+pub const FABRIC: [u8; 3] = [255, 255, 255];
+
+/// The two tones jumps and cuts are drawn in: near-black and near-white, so one of them contrasts
+/// with any thread, the same in every theme (they lie on thread and fabric, not on the interface).
+/// Estimates.
+pub const MARK_DARK: [u8; 3] = [0x1e, 0x1e, 0x1e];
+pub const MARK_LIGHT: [u8; 3] = [0xf5, 0xf5, 0xf5];
 
 /// One thread block as drawn: its thread's colour and its art's (sRGB).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -100,6 +110,25 @@ impl StitchScene {
     /// The box everything it draws falls in, document points (`None`: it draws nothing).
     pub fn bounds(&self) -> Option<Rect> {
         self.picture.bounds()
+    }
+
+    /// How the stitch preview draws it on `fabric`: each block in its thread's colour, an edge for
+    /// a thread close to the fabric, jumps and cuts when `jumps`, at `px_per_pt` device pixels a
+    /// screen point. The rest is the drawing's defaults.
+    pub fn style(&self, fabric: [u8; 3], jumps: bool, px_per_pt: f64) -> LineStyle {
+        let colors = self.thread_colors();
+        let edges = colors.iter().map(|c| edge_against(*c, fabric)).collect();
+        LineStyle {
+            colors,
+            edges,
+            backdrop: fabric,
+            links: jumps,
+            marks: jumps,
+            dark: MARK_DARK,
+            light: MARK_LIGHT,
+            px_per_pt,
+            ..LineStyle::default()
+        }
     }
 
     /// About how many bytes it holds (the planning service's memory bound counts it).

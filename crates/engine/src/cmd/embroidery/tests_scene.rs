@@ -260,3 +260,91 @@ fn an_empty_plan_draws_nothing() {
     let sc = scene::scene(&DesignPlan::default());
     assert!(sc.picture().lines().is_empty() && sc.units().is_empty() && sc.bounds().is_none());
 }
+
+/// `embroidery.render`'s picture as an image, and its reply.
+fn rendered(s: &mut Session, params: Value) -> (image::RgbaImage, Value) {
+    let r = s.execute("embroidery.render", &params).unwrap();
+    let png = vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap();
+    (image::load_from_memory(&png).unwrap().to_rgba8(), r)
+}
+
+/// A filled square drawn as its stitches: the middle in its thread's colour (the rows just cover),
+/// on the white fabric outside; the reply says the region drawn and the plan's generation.
+#[test]
+fn the_stitches_render_in_their_threads_colour_on_the_fabric() {
+    let mut s = Session::new();
+    let mut run = runner(&mut s);
+    fx::blank(&mut run);
+    fx::rect(&mut run, fx::RED, 50.0, 50.0, 100.0, 100.0);
+    drop(run);
+    let thread = scene::scene(&plan_of(&mut s)).thread_colors()[0];
+    let (img, r) = rendered(&mut s, json!({"scale": 2}));
+    let region: Vec<f64> = r["region"].as_array().unwrap().iter().filter_map(Value::as_f64).collect();
+    let margin = vectorcraft_stitch::mm_to_pt(super::render::DESIGN_MARGIN_MM);
+    assert!((region[0] - (50.0 - margin)).abs() < 2.0 && (region[2] - (150.0 + margin)).abs() < 2.0, "{region:?}");
+    assert_eq!((img.width(), img.height()), (r["width"].as_u64().unwrap() as u32, r["height"].as_u64().unwrap() as u32));
+    let middle = img.get_pixel(img.width() / 2, img.height() / 2).0;
+    assert_eq!([middle[0], middle[1], middle[2]], thread, "the thread's colour");
+    assert_eq!(img.get_pixel(1, 1).0, [255, 255, 255, 255], "the fabric");
+    assert!(r["generation"].as_u64().is_some());
+    // Transparent when asked; an artboard; a box.
+    let (clear, _) = rendered(&mut s, json!({"background": null}));
+    assert_eq!(clear.get_pixel(1, 1).0[3], 0);
+    let (board, r) = rendered(&mut s, json!({"artboard": 0}));
+    assert_eq!((board.width(), board.height(), &r["region"]), (400, 400, &json!([0.0, 0.0, 400.0, 400.0])));
+    let (bx, _) = rendered(&mut s, json!({"rect": [90, 90, 110, 110], "scale": 4}));
+    assert_eq!((bx.width(), bx.height()), (80, 80));
+}
+
+/// What can't be drawn is an error, never a panic: no document, nothing sewn, a region or scale out
+/// of range, two regions, an unknown key.
+#[test]
+fn the_picture_refuses_what_it_cant_draw() {
+    let mut s = Session::new();
+    assert!(s.execute("embroidery.render", &json!({})).is_err(), "no document");
+    fx::blank(&mut runner(&mut s));
+    let e = s.execute("embroidery.render", &json!({})).unwrap_err().to_string();
+    assert!(e.contains("nothing to draw"), "{e}");
+    fx::rect(&mut runner(&mut s), fx::RED, 50.0, 50.0, 100.0, 100.0);
+    for bad in [
+        json!({"scale": 0}),
+        json!({"scale": 1000}),
+        json!({"rect": [10, 10, 5, 5]}),
+        json!({"rect": [0, 0, 10]}),
+        json!({"artboard": 3}),
+        json!({"artboard": 0, "rect": [0, 0, 10, 10]}),
+        json!({"region": "page"}),
+        json!({"background": "red"}),
+        json!({"jumps": 1}),
+        json!({"zoom": 2}),
+        json!({"rect": [0, 0, 4e6, 4e6], "scale": 64}),
+    ] {
+        assert!(s.execute("embroidery.render", &bad).is_err(), "{bad}");
+    }
+}
+
+/// An opened design drawn as stitches covers what its art (the same lines, 0.4 mm wide, round)
+/// covers: the two views of an opened file agree, colours aside (the preview draws palette
+/// threads).
+#[test]
+fn an_opened_design_draws_as_its_art_does() {
+    let mut s = Session::new();
+    fx::opened_design(&mut runner(&mut s), "dst");
+    let (img, r) = rendered(&mut s, json!({"scale": 3, "jumps": false}));
+    let region: Vec<f64> = r["region"].as_array().unwrap().iter().filter_map(Value::as_f64).collect();
+    let rect = vectorcraft_geom::Rect::new(region[0], region[1], region[2], region[3]);
+    let doc = s.doc().unwrap().doc.clone();
+    let art = vectorcraft_render::Renderer::new().render_region(&doc, rect, 3.0, true);
+    assert_eq!((art.width, art.height), (img.width(), img.height()));
+    let inked = |p: [u8; 4]| p[3] > 0 && p[..3].iter().any(|c| *c < 200);
+    let (mut both, mut differ) = (0usize, 0usize);
+    for y in 0..img.height() {
+        for x in 0..img.width() {
+            let (a, b) = (inked(img.get_pixel(x, y).0), inked(art.pixel(x, y)));
+            both += usize::from(a || b);
+            differ += usize::from(a != b);
+        }
+    }
+    assert!(both > 1000, "something drawn");
+    assert!((differ as f64) < 0.02 * both as f64, "{differ} of {both} pixels inked in one view only");
+}

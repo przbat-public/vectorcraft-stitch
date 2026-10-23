@@ -4336,8 +4336,16 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   thread palette) sets the format limits checked and the threads judged: those the format writes (a PES of a
   document in Janome's palette writes Brother's threads, matched to the art's colours), named in `palette`; `rules`
   picks rules by id.
+- `embroidery.render {…embroidery options, region?, artboard?, rect?, scale?, jumps?, background?}` draws the
+  design's stitches as the stitch preview draws them, as a PNG (`dataBase64`): each block in its palette thread's
+  colour, threads as wide as they lie (0.4 mm for 40 wt), an edge for a thread close to the fabric, and with `jumps`
+  (default true) the moves marked (two-tone dashes where the thread was cut, a thin line in the thread's colour where
+  it lies, a × at each cut). The region is the design's stitches with a 5 mm margin (`region: "design"`, the default),
+  an artboard (`artboard`, from 0) or a box (`rect`, points); `scale` is pixels a point (default 1, at most 64);
+  `background` `"#rrggbb"` (default white, the fabric) or null for none. It answers with `width`, `height`, the
+  `region` drawn and the plan's `generation` (another plan, another number). A design with nothing sewn is an error.
 
-The four read commands take `selectedOnly` (the selected objects alone, as `document.export {selectedOnly}` writes them)
+The four read commands (threads, stats, sequence, check) take `selectedOnly` (the selected objects alone, as `document.export {selectedOnly}` writes them)
 and plan the document as the export does: an opacity mask's editing layer, which no export writes, is left out.
 
 A *record* is every needle point, jump and cut; record numbers count them from 1 in sewing order, and `stitches`
@@ -4354,4 +4362,5 @@ its block). A plan can be cancelled with `notifications/cancelled`.
 {"name":"run_command","arguments":{"command":"embroidery.threads","params":{"stitch":"tatami"}}}
 {"name":"run_command","arguments":{"command":"embroidery.stats","params":{"speed":800}}}
 {"name":"run_command","arguments":{"command":"embroidery.check","params":{"format":"dst","rules":["stitchTooLong","formatStep"]}}}
+{"name":"run_command","arguments":{"command":"embroidery.render","params":{"scale":4,"jumps":false}}}
 ```

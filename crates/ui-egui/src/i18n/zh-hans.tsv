@@ -5157,3 +5157,5 @@ lighting	Light	光源
 	Edge Run	边缘行针
 	Edge Run and Zigzag	边缘行针加锯齿
 	Edge Run and Tatami	边缘行针加榻榻米
+	Embroidery Picture	刺绣图像
+@msg	nothing to draw: the document sews no stitch	无可绘制：文档没有要缝的针迹

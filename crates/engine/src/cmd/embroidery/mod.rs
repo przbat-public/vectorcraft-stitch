@@ -14,8 +14,9 @@
 //! [`plan`] (the plan: sewing units, thread blocks, stitch numbers), [`sequence`] (the order the
 //! blocks are sewn in), [`measure`] (a plan's records walked in sewing order), [`stats`] (a
 //! design's figures: counts, size, thread, time), [`order`] (the sewing order as
-//! `embroidery.sequence` lists it), [`check`] (the design checks, each rule with its source) and
-//! [`scene`] (the plan as the stitch preview draws it).
+//! `embroidery.sequence` lists it), [`check`] (the design checks, each rule with its source),
+//! [`scene`] (the plan as the stitch preview draws it) and [`render`] (that drawing as a picture,
+//! `embroidery.render`).
 
 mod cache;
 mod check;
@@ -25,6 +26,7 @@ pub(crate) mod options;
 mod order;
 pub mod plan;
 mod printed;
+pub mod render;
 pub mod scene;
 mod sequence;
 pub(crate) mod service;
@@ -241,6 +243,15 @@ pub fn specs() -> Vec<CommandSpec> {
             "{…the embroidery options that decide what is sewn as embroidery.threads takes them, offset?: the first unit listed (default 0), limit?: the most units listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's sewing order, read only (sewing order follows stacking order: move objects with node.move to change it), its units from offset in sewing order within their blocks; positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {blockCount, unitCount, offset, truncated: whether units after the listed ones are left out, blocks: [{block: from 1 in sewing order, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches: needle points, records: needle points, jumps and cuts, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), jumps, trims, unitCount, units: [{unit: from 1, its position in this plan, id: the object a person selects (the symbol instance for art inside a symbol), node: the object sewn, instance: the symbol instance or null, part: \"fill\"|\"stroke\"|\"literal\", partIndex: which fill or stroke, from 1 in appearance order (null for literal), occurrence: which unit of the same id and part, from 1 in walk order (a symbol instance's paths, an expanded object's pieces; id, part, partIndex and occurrence tell a unit apart within a plan, and from one plan to the next while the object's own art keeps its number and order; node changes between plans for an expanded object's pieces and is shared by a symbol's instances, unit is a position in one plan), sewn: \"running\"|\"satin\"|\"tatami\"|\"literal\" (as the stitch option names them), columns: whether a fill's narrow parts are satin columns, rule: \"fill\"|\"wideStroke\"|\"narrowStroke\"|\"strokeFilled\"|\"strokeOutlined\"|\"forced\"|\"literal\" (the rule that chose how it is sewn), ruleValues: the values the rule turned on, why: the same as a sentence, stitches, records, firstRecord, lastRecord (null when it adds none: one needle point where the needle already is), jumps, trims, entry, exit: [x, y] (its first and last needle points), bounds}] (only the listed units), then: {colorChange: true, trim: whether the block ends with a cut} (null after the last block)}] (the blocks of the listed units), splitCount, split: [{id, blocks}] (objects whose units are sewn in more than one block; at most limit), options: the embroidery options planned with, warnings}",
             has_doc,
             sequence_cmd
+        ),
+        cmd!(
+            query "embroidery.render",
+            "Embroidery Picture",
+            [],
+            None,
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, region?: \"design\" (default: the design's stitches with a 5 mm margin), artboard?: index from 0, rect?: [left, top, right, bottom] (points; give one of region, artboard and rect), scale?: pixels a point (above 0, at most 64; default 1), jumps?: true (jumps and cuts marked: two-tone dashes where the thread was cut, a thin line in the thread's colour where it lies, a × at each cut), background?: \"#rrggbb\" (default white, the fabric; null: transparent)} the design's stitches as the stitch preview draws them, as a PNG: each block in its palette thread's colour, threads as wide as they lie (0.4 mm for 40 wt), an edge for a thread close to the fabric; planned as the read commands plan → {dataBase64, width, height, region: [left, top, right, bottom] points, generation: the plan's (another plan, another number), options}",
+            has_doc,
+            render::render_cmd
         ),
         cmd!(
             query "embroidery.check",

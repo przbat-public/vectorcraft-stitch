@@ -4897,3 +4897,5 @@ lighting	Light	광원
 	Edge Run	가장자리 러닝
 	Edge Run and Zigzag	가장자리 러닝과 지그재그
 	Edge Run and Tatami	가장자리 러닝과 타타미
+	Embroidery Picture	자수 이미지
+@msg	nothing to draw: the document sews no stitch	그릴 것이 없습니다: 문서에 바느질할 스티치가 없습니다

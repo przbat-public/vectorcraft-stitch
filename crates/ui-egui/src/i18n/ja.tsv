@@ -4974,3 +4974,5 @@ lighting	Light	ライト
 	Edge Run	エッジラン
 	Edge Run and Zigzag	エッジランとジグザグ
 	Edge Run and Tatami	エッジランとタタミ
+	Embroidery Picture	刺繍の画像
+@msg	nothing to draw: the document sews no stitch	描画するものがありません: ドキュメントには縫うステッチがありません

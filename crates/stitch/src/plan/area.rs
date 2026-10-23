@@ -19,7 +19,7 @@ const MAX_TRAVEL_NODES: usize = 400;
 
 /// A filled shape: its closed outlines (holes included) and the rule that decides what they
 /// enclose; with the outlines' [`Grid`], whether a point is inside and whether a segment stays
-/// inside look only at the edges near them ([`Area::spans`], once a row, looks at every edge).
+/// inside look only at the edges near them, and a row ([`Sweep`]) only at the edges it crosses.
 #[derive(Clone, Copy)]
 pub(super) struct Area<'a> {
     pub(super) outlines: &'a [&'a SubPath],
@@ -46,7 +46,7 @@ impl Area<'_> {
     /// Whether `q` is inside.
     pub(super) fn contains(&self, q: Point) -> bool {
         let winding = match self.grid {
-            Some(grid) => winding(grid.right_of(q).into_iter(), q),
+            Some(grid) => winding(grid.right_of(q), q),
             None => winding(self.edges(), q),
         };
         match self.rule {
@@ -149,50 +149,17 @@ impl Area<'_> {
         (lo <= hi).then_some((lo, hi))
     }
 
-    /// Where the row at `t` (across `axes`) crosses the area: the stretches along it that are
-    /// inside, by the fill rule.
-    pub(super) fn spans(&self, axes: Axes, t: f64) -> Vec<(f64, f64)> {
-        let mut crossings: Vec<(f64, i32)> = Vec::new();
-        for (a, b) in self.edges() {
-            let (ta, tb) = (axes.across(a), axes.across(b));
-            // Half-open: a vertex exactly on the row counts once.
-            if (ta > t) == (tb > t) {
-                continue;
-            }
-            let f = (t - ta) / (tb - ta);
-            if !f.is_finite() {
-                continue;
-            }
-            let s = axes.along(a) + f * (axes.along(b) - axes.along(a));
-            crossings.push((s, if tb > ta { 1 } else { -1 }));
-        }
-        crossings.sort_by(|a, b| a.0.total_cmp(&b.0));
-        let mut spans: Vec<(f64, f64)> = Vec::new();
-        match self.rule {
-            FillRule::EvenOdd => {
-                for pair in crossings.chunks(2) {
-                    if let [a, b] = pair
-                        && b.0 - a.0 > SAME_POINT
-                    {
-                        spans.push((a.0, b.0));
-                    }
-                }
-            }
-            FillRule::NonZero => {
-                let mut winding = 0;
-                let mut start = 0.0;
-                for (s, dir) in crossings {
-                    let before = winding;
-                    winding += dir;
-                    if before == 0 && winding != 0 {
-                        start = s;
-                    } else if before != 0 && winding == 0 && s - start > SAME_POINT {
-                        spans.push((start, s));
-                    }
-                }
-            }
-        }
-        spans
+    /// The area's rows across `axes`, asked for in order ([`Sweep::spans`]).
+    pub(super) fn sweep(&self, axes: Axes) -> Sweep {
+        let mut edges: Vec<SweepEdge> = self
+            .edges()
+            .enumerate()
+            .map(|(id, (a, b))| SweepEdge { id, ta: axes.across(a), tb: axes.across(b), sa: axes.along(a), sb: axes.along(b) })
+            // An edge with an end that isn't finite across the rows crosses no row.
+            .filter(|e| e.ta.is_finite() && e.tb.is_finite() && e.ta != e.tb)
+            .collect();
+        edges.sort_by(|x, y| x.ta.min(x.tb).total_cmp(&y.ta.min(y.tb)));
+        Sweep { rule: self.rule, edges, met: 0, active: Vec::new(), last: f64::NEG_INFINITY }
     }
 
     /// Corner `i` of outline `corners` moved [`TRAVEL_MARGIN`] inside along the bisector of its two
@@ -370,6 +337,90 @@ fn edges<'a>(outlines: &'a [&'a SubPath]) -> impl Iterator<Item = (Point, Point)
     })
 }
 
+/// An edge as the rows meet it: its place in the outlines' list of edges, and where its ends lie
+/// across the rows (`ta`, `tb`) and along them.
+struct SweepEdge {
+    id: usize,
+    ta: f64,
+    tb: f64,
+    sa: f64,
+    sb: f64,
+}
+
+/// An area's rows, one after another across it: the edges sorted by where the rows first meet
+/// them, and those the current row crosses (`active`, indices into `edges` in sorted order), so a
+/// row looks only at the edges it crosses instead of at every edge.
+pub(super) struct Sweep {
+    rule: FillRule,
+    edges: Vec<SweepEdge>,
+    /// How many of `edges` the rows have reached.
+    met: usize,
+    active: Vec<usize>,
+    /// The last row asked for.
+    last: f64,
+}
+
+impl Sweep {
+    /// Where the row at `t` crosses the area: the stretches along it that are inside, by the fill
+    /// rule. Rows are asked for in order; one asked for out of order starts the sweep again.
+    pub(super) fn spans(&mut self, t: f64) -> Vec<(f64, f64)> {
+        if t < self.last {
+            (self.met, self.last) = (0, f64::NEG_INFINITY);
+            self.active.clear();
+        }
+        self.last = t;
+        // Half-open: an edge is crossed from its lower end (a vertex exactly on the row counts
+        // once) up to, not at, its higher one.
+        while let Some(e) = self.edges.get(self.met) {
+            if e.ta.min(e.tb) > t {
+                break;
+            }
+            self.active.push(self.met);
+            self.met += 1;
+        }
+        let edges = &self.edges;
+        self.active.retain(|&i| edges.get(i).is_some_and(|e| e.ta.max(e.tb) > t));
+        let mut crossings: Vec<(f64, i32, usize)> = Vec::with_capacity(self.active.len());
+        for &i in &self.active {
+            let Some(e) = edges.get(i) else { continue };
+            let f = (t - e.ta) / (e.tb - e.ta);
+            if !f.is_finite() {
+                continue;
+            }
+            crossings.push((e.sa + f * (e.sb - e.sa), if e.tb > e.ta { 1 } else { -1 }, e.id));
+        }
+        // Along the row; crossings at one place in the outlines' order of their edges (which
+        // decides, by the fill rule, whether two stretches that meet there are one).
+        crossings.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.2.cmp(&b.2)));
+        let mut spans: Vec<(f64, f64)> = Vec::new();
+        match self.rule {
+            FillRule::EvenOdd => {
+                for pair in crossings.chunks(2) {
+                    if let [a, b] = pair
+                        && b.0 - a.0 > SAME_POINT
+                    {
+                        spans.push((a.0, b.0));
+                    }
+                }
+            }
+            FillRule::NonZero => {
+                let mut winding = 0;
+                let mut start = 0.0;
+                for (s, dir, _) in crossings {
+                    let before = winding;
+                    winding += dir;
+                    if before == 0 && winding != 0 {
+                        start = s;
+                    } else if before != 0 && winding == 0 && s - start > SAME_POINT {
+                        spans.push((start, s));
+                    }
+                }
+            }
+        }
+        spans
+    }
+}
+
 /// The winding number of `edges` round `q`: each edge crossing the horizontal line through `q` to
 /// its right counts one, plus or minus by its direction. Edges that don't cross it count nothing,
 /// so any set that includes every crossing one will do; none may come twice.
@@ -533,16 +584,20 @@ impl Grid {
         (((y - self.y0) / self.cell).floor().max(0.0) as usize).min(self.ny - 1)
     }
 
-    /// Every edge that may cross the horizontal line through `q` to its right (each once).
-    fn right_of(&self, q: Point) -> Vec<(Point, Point)> {
-        if !(q.x.is_finite() && q.y.is_finite()) || q.y < self.y0 || q.y > self.y0 + self.cell * self.ny as f64 {
-            return Vec::new();
-        }
-        let r = self.row(q.y);
-        let mut ids: Vec<u32> = (self.col(q.x)..self.nx).filter_map(|c| self.cells.get(r * self.nx + c)).flatten().copied().collect();
-        ids.sort_unstable();
-        ids.dedup();
-        ids.into_iter().filter_map(|i| self.edges.get(i as usize).copied()).collect()
+    /// Every edge that may cross the horizontal line through `q` to its right (each once). An
+    /// edge takes cells side by side in a row, so it is counted in the first of them the line
+    /// passes: where the cell before (to the left, also passed) doesn't hold it. Nothing is
+    /// allocated: the inside test runs millions of times in a fill.
+    fn right_of(&self, q: Point) -> impl Iterator<Item = (Point, Point)> + '_ {
+        let passed = q.x.is_finite() && q.y.is_finite() && q.y >= self.y0 && q.y <= self.y0 + self.cell * self.ny as f64;
+        let (r, first) = if passed { (self.row(q.y), self.col(q.x)) } else { (0, self.nx) };
+        let cell = move |c: usize| self.cells.get(r * self.nx + c).map_or(&[][..], Vec::as_slice);
+        (first..self.nx)
+            .flat_map(move |c| {
+                let before = if c > first { cell(c - 1) } else { &[][..] };
+                cell(c).iter().filter(move |i| !before.contains(i))
+            })
+            .filter_map(|&i| self.edges.get(i as usize).copied())
     }
 
     /// Whether `hit` holds for any edge in the cells segment `a`–`b` passes through (walked cell by

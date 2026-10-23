@@ -517,10 +517,10 @@ impl Layer {
         // Every row's position, spans and how far each reaches past its ends, for the overlaps
         // below.
         let mut all: Vec<Scan> = Vec::with_capacity(rows);
+        let mut sweep = shape.sweep(self.axes);
         for row in 0..rows {
             let t = first + self.spacing * row as f64;
-            let spans: Vec<(f64, f64)> =
-                shape.spans(self.axes, t).into_iter().map(|(a, b)| (a + self.inset, b - self.inset)).filter(|(a, b)| b > a).collect();
+            let spans: Vec<(f64, f64)> = sweep.spans(t).into_iter().map(|(a, b)| (a + self.inset, b - self.inset)).filter(|(a, b)| b > a).collect();
             let reaches: Vec<(f64, f64)> = (0..spans.len()).map(|j| reach(&spans, j, p)).collect();
             all.push(Scan { t, spans: spans.clone(), reaches: reaches.clone() });
             let mut next: Vec<(usize, (f64, f64))> = Vec::with_capacity(spans.len());

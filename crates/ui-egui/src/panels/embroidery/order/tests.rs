@@ -59,7 +59,11 @@ fn ready(app: &mut VectorcraftApp, ctx: &egui::Context) -> Vec<String> {
 }
 
 fn order_of(app: &VectorcraftApp) -> Arc<SewingOrder> {
-    app.embroidery.order.read.as_ref().map(|(_, o)| o.clone()).expect("the order read")
+    listed_of(app).order.clone()
+}
+
+fn listed_of(app: &VectorcraftApp) -> Arc<Listed> {
+    app.embroidery.order.read.as_ref().map(|(_, l)| l.clone()).expect("the order read")
 }
 
 #[test]
@@ -113,19 +117,20 @@ fn rows_and_the_selection() {
     let mut app = app_with(4);
     let ctx = egui::Context::default();
     ready(&mut app, &ctx);
-    let order = order_of(&app);
+    let listed = listed_of(&app);
+    let order = listed.order.clone();
     let (list, _) = rows(&order, &HashSet::new());
     let first = order.blocks[0].units[0].id;
-    select(&mut app, &order, &list, Row::Unit(0, 0), egui::Modifiers::NONE);
+    select(&mut app, &listed, &list, Row::Unit(0, 0), egui::Modifiers::NONE);
     assert_eq!(app.session.doc().unwrap().selection.objects, [NodeId(first)]);
     let last = order.blocks[1].units[1].id;
-    select(&mut app, &order, &list, Row::Unit(1, 1), egui::Modifiers::SHIFT);
+    select(&mut app, &listed, &list, Row::Unit(1, 1), egui::Modifiers::SHIFT);
     assert_eq!(app.session.doc().unwrap().selection.objects.len(), 4, "the range");
     assert!(app.session.doc().unwrap().selection.objects.contains(&NodeId(last)));
-    select(&mut app, &order, &list, Row::Header(1), egui::Modifiers::NONE);
+    select(&mut app, &listed, &list, Row::Header(1), egui::Modifiers::NONE);
     let block: Vec<NodeId> = order.blocks[1].units.iter().map(|u| NodeId(u.id)).collect();
     assert_eq!(app.session.doc().unwrap().selection.objects, block);
-    select(&mut app, &order, &list, Row::Unit(0, 0), egui::Modifiers::COMMAND);
+    select(&mut app, &listed, &list, Row::Unit(0, 0), egui::Modifiers::COMMAND);
     assert_eq!(app.session.doc().unwrap().selection.objects.len(), 3, "added");
     // From the canvas: the selection lights its rows, and a header when all its rows are.
     app.run("select.set", json!({ "ids": [first] })).unwrap();
@@ -141,6 +146,28 @@ fn rows_and_the_selection() {
 }
 
 /// A collapsed block shows its header alone.
+/// What the rows show is worked out once for an order: a block's objects, each counted once, and
+/// whether a unit's part is numbered (its object has another of that part in the block).
+#[test]
+fn a_blocks_objects_and_parts_are_worked_out_once() {
+    let mut app = app_with(4);
+    let ctx = egui::Context::default();
+    ready(&mut app, &ctx);
+    let mut order = (*order_of(&app)).clone();
+    let block = &mut order.blocks[0];
+    let n = block.units.len();
+    assert!(n >= 2, "{n} units");
+    let mut twin = block.units[0].clone();
+    twin.part_index = Some(2);
+    block.units.push(twin);
+    let listed = Listed::new(order);
+    assert_eq!(listed.object_count(0), n, "the second part's object counted once");
+    assert_eq!(listed.objects_of(Row::Header(0)).len(), n);
+    assert!(listed.several(0, 0) && listed.several(0, n), "both parts numbered");
+    assert!(!listed.several(0, 1));
+    assert!(how_sewn(&listed.order.blocks[0].units[n], true).contains(" 2"));
+}
+
 #[test]
 fn a_header_collapses() {
     let mut app = app_with(4);

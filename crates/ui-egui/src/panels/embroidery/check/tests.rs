@@ -1,6 +1,8 @@
 //! The Check tab: its rules in order, their words from ids and numbers (in English and Polish),
 //! the format chosen, its states, and a real check end to end.
 
+use std::sync::Arc;
+
 use egui::Shape;
 use serde_json::json;
 use vectorcraft_engine::Session;
@@ -257,6 +259,12 @@ fn show_selects_the_rules_objects_and_zooms_to_its_hits() {
     frame(&mut app, &ctx, 1.0);
     assert!(app.embroidery.layer.emphasis().is_some_and(|u| !u.is_empty()));
     assert_eq!(app.embroidery.check.focus.as_ref().map(|f| f.rule.as_str()), Some("stitchBelowNeedle"));
+    // Its units are found once for the plan, not on every frame.
+    let units = |app: &VectorcraftApp| app.embroidery.check.focus.as_ref().and_then(|f| f.units.clone()).unwrap().1;
+    let found = units(&app);
+    frame(&mut app, &ctx, 1.05);
+    assert!(Arc::ptr_eq(&found, &units(&app)));
+    assert_eq!(app.embroidery.layer.emphasis(), Some(&found[..]));
     // Only for a moment.
     app.embroidery.layer.emphasize(vec![]);
     frame(&mut app, &ctx, 1.0 + SHOW_EMPHASIS_SECS + 0.1);

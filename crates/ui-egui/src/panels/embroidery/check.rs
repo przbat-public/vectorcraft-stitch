@@ -101,7 +101,8 @@ pub struct CheckState {
 
 /// What Show showed last: a rule's findings, or one of its hits (by its place in the rule's listed
 /// hits), in a document; the objects whose stitches it stands out, and since when (the frame's
-/// clock; set by the first frame that draws it).
+/// clock; set by the first frame that draws it); their units in the plan shown (the scene's tags),
+/// found once for a plan's generation.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Focus {
     pub(crate) uid: u64,
@@ -109,6 +110,7 @@ pub(crate) struct Focus {
     pub(crate) hit: Option<usize>,
     pub(crate) objects: Vec<u64>,
     pub(crate) since: Option<f64>,
+    pub(crate) units: Option<(u64, std::sync::Arc<Vec<u32>>)>,
 }
 
 /// What the tab asks the planning thread for: the check, with the hits it lists and the format
@@ -378,7 +380,7 @@ pub(crate) fn show_findings(app: &mut VectorcraftApp, uid: u64, reply: &Value, i
         let rect = [c.x - w / 2.0, c.y - h / 2.0, c.x + w / 2.0, c.y + h / 2.0];
         app.run("view.zoomTo", json!({ "rect": rect }))?;
     }
-    app.embroidery.check.focus = Some(Focus { uid, rule: id.to_string(), hit, objects: present, since: None });
+    app.embroidery.check.focus = Some(Focus { uid, rule: id.to_string(), hit, objects: present, since: None, units: None });
     Ok(json!({ "rule": id, "hit": hit }))
 }
 
@@ -475,17 +477,21 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
         }
         let since = *f.since.get_or_insert(now);
         if now - since < SHOW_EMPHASIS_SECS {
-            let objects = f.objects.clone();
-            if let Some(plan) = app.embroidery.preview.shown(shown.uid).map(|s| s.planned.plan.clone()) {
-                let units: Vec<u32> = plan
-                    .units
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, u)| objects.contains(&u.origin.selected().0))
-                    .filter_map(|(k, _)| u32::try_from(k).ok())
-                    .collect();
-                if !units.is_empty() {
-                    app.embroidery.layer.emphasize(units);
+            if let Some(planned) = app.embroidery.preview.shown(shown.uid).map(|s| &s.planned) {
+                if f.units.as_ref().is_none_or(|(g, _)| *g != planned.generation) {
+                    let objects: HashSet<u64> = f.objects.iter().copied().collect();
+                    let units = planned
+                        .plan
+                        .units
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, u)| objects.contains(&u.origin.selected().0))
+                        .filter_map(|(k, _)| u32::try_from(k).ok())
+                        .collect();
+                    f.units = Some((planned.generation, std::sync::Arc::new(units)));
+                }
+                if let Some((_, units)) = f.units.as_ref().filter(|(_, u)| !u.is_empty()) {
+                    app.embroidery.layer.emphasize(units.to_vec());
                 }
             }
             ui.ctx().request_repaint();

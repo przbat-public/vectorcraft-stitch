@@ -118,7 +118,7 @@ pub(crate) fn rows(order: &SewingOrder, collapsed: &HashSet<usize>) -> (Vec<Row>
 /// for its plan and the note about the last one.
 #[derive(Default)]
 pub struct OrderState {
-    read: Option<(u64, Arc<SewingOrder>)>,
+    read: Option<(u64, Arc<Listed>)>,
     collapsed: HashSet<usize>,
     anchor: Option<(usize, usize)>,
     drag: Option<Drag>,
@@ -132,7 +132,7 @@ pub struct OrderState {
 impl OrderState {
     /// The numbers of the blocks of the order read last.
     pub(crate) fn blocks(&self) -> Vec<usize> {
-        self.read.as_ref().map(|(_, o)| o.blocks.iter().map(|b| b.block).collect()).unwrap_or_default()
+        self.read.as_ref().map(|(_, l)| l.order.blocks.iter().map(|b| b.block).collect()).unwrap_or_default()
     }
 
     /// Collapse the blocks `blocks` (by number), and expand every other.
@@ -152,16 +152,70 @@ pub(crate) fn query() -> crate::embroidery::plan_worker::Query {
 /// The most units the tab lists: as many as `embroidery.sequence` lists at most.
 pub const MAX_LIST_UNITS: usize = 10_000;
 
+/// An order read, with what its rows show worked out once (never for each row on each frame).
+pub(crate) struct Listed {
+    pub(crate) order: Arc<SewingOrder>,
+    /// Each block's objects, in order, once.
+    objects: Vec<Vec<u64>>,
+    /// Each block's units: whether the block has other units of the same part of the same object
+    /// (the part is then numbered).
+    several: Vec<Vec<bool>>,
+}
+
+impl Listed {
+    fn new(order: SewingOrder) -> Self {
+        let objects = order
+            .blocks
+            .iter()
+            .map(|b| {
+                let mut seen = HashSet::new();
+                b.units.iter().map(|u| u.id).filter(|id| seen.insert(*id)).collect()
+            })
+            .collect();
+        let several = order
+            .blocks
+            .iter()
+            .map(|b| {
+                let mut parts: std::collections::HashMap<(u64, &str), usize> = std::collections::HashMap::new();
+                for u in &b.units {
+                    *parts.entry((u.id, u.part.as_str())).or_default() += 1;
+                }
+                b.units.iter().map(|u| parts.get(&(u.id, u.part.as_str())).is_some_and(|n| *n > 1)).collect()
+            })
+            .collect();
+        Self { order: Arc::new(order), objects, several }
+    }
+
+    /// The objects `row` stands for: a unit's object, a header's block's objects (in order, once).
+    fn objects_of(&self, row: Row) -> Vec<u64> {
+        match row {
+            Row::Unit(b, u) => self.order.blocks.get(b).and_then(|b| b.units.get(u)).map(|u| u.id).into_iter().collect(),
+            Row::Header(b) => self.objects.get(b).cloned().unwrap_or_default(),
+            Row::Change(_) => Vec::new(),
+        }
+    }
+
+    /// How many objects block `b` sews.
+    fn object_count(&self, b: usize) -> usize {
+        self.objects.get(b).map_or(0, Vec::len)
+    }
+
+    /// Whether unit `u` of block `b` shares its block with other units of its part of its object.
+    fn several(&self, b: usize, u: usize) -> bool {
+        self.several.get(b).and_then(|s| s.get(u)).copied().unwrap_or(false)
+    }
+}
+
 /// The order of the plan of generation `generation` from `reply` (made from that plan), read once.
-fn read(state: &mut OrderState, generation: u64, reply: &Value) -> Option<Arc<SewingOrder>> {
-    if let Some((g, order)) = &state.read
+fn read(state: &mut OrderState, generation: u64, reply: &Value) -> Option<Arc<Listed>> {
+    if let Some((g, listed)) = &state.read
         && *g == generation
     {
-        return Some(order.clone());
+        return Some(listed.clone());
     }
-    let order = Arc::new(serde_json::from_value::<SewingOrder>(reply.clone()).ok()?);
-    state.read = Some((generation, order.clone()));
-    Some(order)
+    let listed = Arc::new(Listed::new(serde_json::from_value::<SewingOrder>(reply.clone()).ok()?));
+    state.read = Some((generation, listed.clone()));
+    Some(listed)
 }
 
 /// The ids the selection covers in `doc`: the selected objects and everything inside them.
@@ -192,7 +246,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
     let Shown { generation, reply, of, current, stats, stale, plan } = shown;
     let stale = stale || !current;
     let t = Tokens::get(ui.ctx());
-    let Some(order) = read(&mut app.embroidery.order, of, reply) else { return };
+    let Some(listed) = read(&mut app.embroidery.order, of, reply) else { return };
+    let order = listed.order.clone();
     ui.label(
         egui::RichText::new(crate::et!("Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them."))
             .size(SMALL)
@@ -232,7 +287,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                 let sense = if movable && !matches!(row, Row::Change(_)) { Sense::click_and_drag() } else { Sense::click() };
                 let resp = ui.interact(rect, id, sense);
                 let lit = row_selected(&order, *row, &covered);
-                let label = paint_row(app, ui, &doc, &order, *row, rect, lit, resp.hovered(), stale, &t);
+                let label = paint_row(app, ui, &doc, &listed, *row, rect, lit, resp.hovered(), stale, &t);
                 resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, lit, &label));
                 ui.ctx().accesskit_node_builder(id, |node| {
                     node.set_role(egui::accesskit::Role::TreeItem);
@@ -249,7 +304,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                 }
                 // A dragged row moves its objects, or the selection's when it is lit.
                 if resp.drag_started() {
-                    let movers = if lit { movers_of(&doc, &plan, &selected) } else { objects_of(&order, *row).into_iter().map(NodeId).collect() };
+                    let movers = if lit { movers_of(&doc, &plan, &selected) } else { listed.objects_of(*row).into_iter().map(NodeId).collect() };
                     app.embroidery.order.drag = Some(Drag { moving: Moving::new(&doc, movers), label: label.clone() });
                 }
                 if let (Some(drag), Some(at)) = (&app.embroidery.order.drag, pointer)
@@ -343,7 +398,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
         app.embroidery.order.collapsed.insert(block);
     }
     if let Some((row, mods)) = clicked {
-        select(app, &order, &rows, row, mods);
+        select(app, &listed, &rows, row, mods);
     }
     if let Some(stats) = stats {
         footer(ui, stats, &t);
@@ -479,26 +534,6 @@ fn row_selected(order: &SewingOrder, row: Row, covered: &HashSet<u64>) -> bool {
     }
 }
 
-/// The objects `row` stands for: a unit's object, a header's block's objects (in order, once).
-fn objects_of(order: &SewingOrder, row: Row) -> Vec<u64> {
-    let mut ids: Vec<u64> = Vec::new();
-    let mut add = |id: u64| {
-        if !ids.contains(&id) {
-            ids.push(id);
-        }
-    };
-    match row {
-        Row::Unit(b, u) => {
-            if let Some(u) = order.blocks.get(b).and_then(|b| b.units.get(u)) {
-                add(u.id);
-            }
-        }
-        Row::Header(b) => order.blocks.get(b).into_iter().flat_map(|b| &b.units).for_each(|u| add(u.id)),
-        Row::Change(_) => {}
-    }
-    ids
-}
-
 /// The scene's units `row` stands for (their tags: the plan's unit indices): a unit's, a header's
 /// block's.
 fn units_of(order: &SewingOrder, row: Row) -> Vec<u32> {
@@ -512,24 +547,17 @@ fn units_of(order: &SewingOrder, row: Row) -> Vec<u32> {
 
 /// A click on `row` with `mods`: select its objects; with Shift, the unit rows from the one
 /// clicked last; with Cmd/Ctrl, add or remove them.
-fn select(app: &mut VectorcraftApp, order: &SewingOrder, rows: &[Row], row: Row, mods: egui::Modifiers) {
+fn select(app: &mut VectorcraftApp, listed: &Listed, rows: &[Row], row: Row, mods: egui::Modifiers) {
     let anchor = app.embroidery.order.anchor;
     let ids: Vec<u64> = match (row, anchor) {
         (Row::Unit(b, u), Some(a)) if mods.shift => {
             let at = |r: (usize, usize)| rows.iter().position(|x| *x == Row::Unit(r.0, r.1));
             let (Some(from), Some(to)) = (at(a), at((b, u))) else { return };
             let (lo, hi) = (from.min(to), from.max(to));
-            let mut ids = Vec::new();
-            for r in rows.get(lo..=hi).unwrap_or_default() {
-                for id in objects_of(order, *r) {
-                    if !ids.contains(&id) {
-                        ids.push(id);
-                    }
-                }
-            }
-            ids
+            let mut seen = HashSet::new();
+            rows.get(lo..=hi).unwrap_or_default().iter().flat_map(|r| listed.objects_of(*r)).filter(|id| seen.insert(*id)).collect()
         }
-        _ => objects_of(order, row),
+        _ => listed.objects_of(row),
     };
     if let Row::Unit(b, u) = row
         && !mods.shift
@@ -551,7 +579,7 @@ fn paint_row(
     app: &VectorcraftApp,
     ui: &Ui,
     doc: &Document,
-    order: &SewingOrder,
+    listed: &Listed,
     row: Row,
     rect: Rect,
     selected: bool,
@@ -560,6 +588,7 @@ fn paint_row(
     t: &Tokens,
 ) -> String {
     let p = ui.painter_at(rect);
+    let order = &listed.order;
     let lang = crate::i18n::current();
     let ink = |c: Color32| if stale { c.gamma_multiply(0.6) } else { c };
     if selected {
@@ -589,7 +618,7 @@ fn paint_row(
                 p.rect_stroke(g.expand2(vec2(3.0, 1.0)), 3.0, Stroke::new(1.0, ink(t.warning)), StrokeKind::Outside);
                 x = g.right() + 8.0;
             }
-            let objects = objects_of(order, row).len() as u64;
+            let objects = listed.object_count(b) as u64;
             let stitches = numbers::count(lang, block.stitches as u64);
             let right = format!("{} · {stitches}", crate::etn!(objects, "{count} object", "{count} objects"));
             // The counts at the right, as much of them as fits beside the thread's name.
@@ -613,7 +642,7 @@ fn paint_row(
             }
             let stitches = numbers::count(lang, unit.stitches as u64);
             p.text(pos2(rect.right() - 6.0, top), Align2::RIGHT_CENTER, &stitches, FontId::proportional(SMALL), ink(t.text));
-            let how = how_sewn(block, unit);
+            let how = how_sewn(unit, listed.several(b, u));
             p.text(pos2(x, bottom), Align2::LEFT_CENTER, &how, FontId::proportional(SMALL), ink(t.text_dim));
             format!("{name} {how} {stitches}")
         }
@@ -652,8 +681,7 @@ fn hex(s: &str) -> Option<Color32> {
 
 /// A unit's second line: what part it sews (its number when the object has more than one of that
 /// part in the block), how, and its jumps and trims.
-fn how_sewn(block: &OrderBlock, unit: &OrderUnit) -> String {
-    let several = block.units.iter().filter(|u| u.id == unit.id && u.part == unit.part).count() > 1;
+fn how_sewn(unit: &OrderUnit, several: bool) -> String {
     let part = match unit.part.as_str() {
         "fill" => crate::et!("fill"),
         "stroke" => crate::et!("stroke"),

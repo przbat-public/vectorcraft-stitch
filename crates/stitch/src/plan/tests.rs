@@ -1310,6 +1310,14 @@ fn pull_compensation_changes_no_sewing_order() {
 #[test]
 fn spacing_follows_the_thread_weight() {
     assert!((thread_scale(THREAD_WEIGHT) - 1.0).abs() < 1e-12);
+    // Thread lies as wide as its rows are flush: 0.40 mm for 40 wt, by thickness for the others,
+    // and the default spacing for each weight under its width, so default rows always cover.
+    assert_eq!(thread_width(THREAD_WEIGHT), THREAD_WIDTH);
+    assert!((thread_width(30.0) - 0.462).abs() < 1e-3 && (thread_width(60.0) - 0.327).abs() < 1e-3);
+    assert_eq!(thread_width(f64::NAN), THREAD_WIDTH);
+    for w in [10.0, 30.0, 40.0, 60.0, 100.0, 150.0] {
+        assert!(Params::for_thread(Style::Fill, w).density < thread_width(w), "{w} wt");
+    }
     assert_eq!(Params::for_thread(Style::Fill, THREAD_WEIGHT), Params::for_style(Style::Fill));
     let fill = |w: f64| Params::for_thread(Style::Fill, w).density;
     assert!((fill(60.0) - 0.310).abs() < 1e-3 && (fill(30.0) - 0.439).abs() < 1e-3, "{} {}", fill(60.0), fill(30.0));

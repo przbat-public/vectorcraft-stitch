@@ -8,14 +8,12 @@ use vectorcraft_doc::embroidery::{Embroidery, EmbroiderySetup, StitchRun, Thread
 use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, LineJoin, Node, Shared};
 use vectorcraft_geom::{BezPath, PathData, Point, Rect, Size};
 use vectorcraft_stitch::format::{Format as StitchFormat, Loss};
+use vectorcraft_stitch::plan::THREAD_WIDTH;
 use vectorcraft_stitch::{Block, Command, Stitch, mm_to_pt};
 
 use super::super::super::*;
 use super::super::{Format, err};
 
-/// The width of the lines a design's stitches are drawn with, millimetres: about a thread's (40 wt
-/// thread is about 0.4 mm across; an estimate).
-const THREAD_WIDTH: f64 = 0.4;
 /// The margin round an opened design on its new artboard, millimetres: a little room to see its
 /// edges. It doesn't move the stitches as written: the file's start point moves with them, and
 /// every writer measures a design from that or from its own bounds, so it is gone again on export.
@@ -89,6 +87,7 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
     let mut groups: Vec<Arc<Node>> = Vec::new();
     for block in &pattern.blocks {
         let color = Color::rgb8(block.thread.color[0], block.thread.color[1], block.thread.color[2]);
+        // As wide as 40 wt thread lies: an opened file records no weight.
         let mut stroke = Appearance::basic(Paint::None, Paint::solid(color), THREAD_WIDTH * scale);
         // Round at the ends and the turns, as thread lies: a sharp turn mitred would draw a spike
         // far past the needle point (a satin's zigzag turns at every penetration).

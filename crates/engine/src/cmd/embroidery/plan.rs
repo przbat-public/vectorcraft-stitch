@@ -66,6 +66,20 @@ impl Origin {
     }
 }
 
+/// What tells a sewing unit apart, within a plan and from one plan to the next: the object a
+/// person selects ([`Origin::selected`]), the part it sews, and which of that object's units of
+/// that part it is ([`Unit::occurrence`]). It holds while the object's own art (a symbol's paths,
+/// the pieces its appearance expands to) keeps its number and order. A unit's index, its block and
+/// its stitch numbers are positions in one plan only, and [`Origin::node`] is no key: a symbol's
+/// instances share it, and an expanded object's pieces get it anew at every plan. What the
+/// interface keeps between plans (a row of the sewing order, a unit just moved) is kept by this.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct UnitKey {
+    pub object: NodeId,
+    pub part: Part,
+    pub occurrence: usize,
+}
+
 /// Why a sewing unit is sewn the way it is: the rule that chose its stitch.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Choice {
@@ -222,6 +236,11 @@ pub struct Unit {
 }
 
 impl Unit {
+    /// What tells it apart from the plan's other units, in this plan and the next.
+    pub fn key(&self) -> UnitKey {
+        UnitKey { object: self.origin.selected(), part: self.origin.part, occurrence: self.occurrence }
+    }
+
     /// The style it is sewn in, as the planner sews its parameters ([`plan::sewn_style`]: a satin
     /// without a width, a fill whose `stitch` is satin, is filled); `None` for a literal run,
     /// sewn as its points are.
@@ -321,6 +340,11 @@ impl DesignPlan {
         let units = self.units.get(b.units.clone())?;
         let i = units.partition_point(|u| u.stitches.end <= index);
         units.get(i).filter(|u| u.stitches.contains(&index)).map(|_| b.units.start + i)
+    }
+
+    /// The unit whose key is `key` ([`Unit::key`]): an index into [`DesignPlan::units`].
+    pub fn find(&self, key: &UnitKey) -> Option<usize> {
+        self.units.iter().position(|u| u.key() == *key)
     }
 
     /// Unit `unit`'s stitches ([`Unit::stitches`]): empty for a unit that isn't there.

@@ -38,6 +38,8 @@ mod tests_contract;
 #[cfg(test)]
 mod tests_order;
 #[cfg(test)]
+mod tests_scene;
+#[cfg(test)]
 mod tests_service;
 #[cfg(test)]
 mod tests_stats;

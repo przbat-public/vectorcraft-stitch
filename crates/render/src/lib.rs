@@ -13,6 +13,8 @@ mod fx;
 mod group;
 mod images;
 mod ink;
+/// Line pictures: the stitch preview's drawing (VectorCraft Stitch).
+pub mod lines;
 mod live;
 mod lru;
 mod paint;

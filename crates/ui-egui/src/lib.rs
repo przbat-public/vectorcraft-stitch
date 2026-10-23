@@ -489,6 +489,8 @@ pub struct VectorcraftApp {
     /// This frame carries input the control channel injected ([`Self::raw_input_hook`]): it runs
     /// confined to [`Self::automation_roots`].
     synthetic_frame: bool,
+    /// VectorCraft Stitch: the machine-embroidery interface's own state.
+    pub embroidery: embroidery::Embroidery,
 }
 
 /// A window capture asked for through the control channel (`ui.screenshot`), answered once a
@@ -582,6 +584,7 @@ impl VectorcraftApp {
             scrub_group: false,
             automation_roots: None,
             synthetic_frame: false,
+            embroidery: Default::default(),
         }
     }
 
@@ -1216,6 +1219,7 @@ impl VectorcraftApp {
         picks::poll(self, ctx);
         self.write_formats_before_text_input(ctx);
         background::poll(self);
+        embroidery::stitch_preview::poll(self);
         screen_color::poll(self, ctx);
         opening::poll(self);
         #[cfg(not(target_arch = "wasm32"))]
@@ -1471,6 +1475,7 @@ impl VectorcraftApp {
         scrub::end_frame(self, &ctx);
         native_menu::sync(self, &ctx);
         self.drop_formats_after_egui_copy(&ctx);
+        embroidery::stitch_preview::schedule(self, &ctx);
         self.perf.frame_ms = now_ms() - t0;
         let _ = json!(null);
     }

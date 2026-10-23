@@ -4,18 +4,27 @@
 //! - [`numbers`]: numbers as the interface language writes them, in the embroidery interface's
 //!   read-only text.
 //! - [`plan_worker`]: the stitch preview's planning thread.
+//! - [`stitch_preview`]: when the preview plans, and what it shows meanwhile.
 //! - [`text`]: the embroidery interface's words, in the catalogues' `embroidery` context
 //!   ([`crate::et!`], [`crate::etn!`]).
 //! - [`render_stitches`]: the control channel's picture of the stitches.
 
 pub mod numbers;
 pub mod plan_worker;
+pub mod stitch_preview;
 pub mod text;
 
 use vectorcraft_engine::cmd::embroidery::render::{Region, picture};
 use vectorcraft_engine::cmd::embroidery::scene::FABRIC;
 
 use crate::VectorcraftApp;
+
+/// The fork's own state in the app.
+#[derive(Default)]
+pub struct Embroidery {
+    /// The stitch preview's scheduler and the plans it shows.
+    pub preview: stitch_preview::StitchPreview,
+}
 
 /// The control channel's `ui.render {stitchPreview: true}`: artboard `artboard` of the active
 /// document drawn as its stitches at `scale` pixels a point, on the fabric, jumps and cuts marked,

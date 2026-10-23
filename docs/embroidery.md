@@ -1489,6 +1489,22 @@ whole design is drawn, which changes no pixel, and kept when a range of numbers 
 end there. Geometry beyond the renderer's device limit is left out, and a cancelled frame stops
 between batches.
 
+**On the canvas** (`ui-egui/src/embroidery/stitch_layer.rs`). The stitch view draws, bottom to top:
+the fabric (white) on the artboards and under the stitches' box (where they reach past the
+artboards); the art faint under the stitches when Show Artwork
+Under Stitches is on, else the template layers alone (Hide Template hides them); the stitches; and
+with View › Outline on, the art's outlines over them (template layers left out there, so that a
+template image doesn't cover the stitches). Guides, the grid and the selection are drawn as always.
+The stitches are a raster and texture of their own, keyed by the document, the plan's generation,
+the view, the size and the look, never by the document's revision: a selection change or a hover
+uploads nothing, and the art isn't rendered at all while it is hidden. A frame that drew in more
+than 8 ms (the canvas's line for its art) is drawn from then on on a thread of its own, the last
+frame shown meanwhile, moved into the new view; a document switch is always drawn there where the
+thread runs, the fabric shown until it comes, never the other document's stitches. Until the first
+plan comes the art stays shown; a design that fails keeps its last good stitches, faded. In
+isolation mode the stitches of the objects outside the group are faded. Back in the art view, the
+art is rendered before it shows, never the art as it was before the edits made meanwhile.
+
 **Measured first** (gate 1 of the stitch preview: `vectorcraft-cli perf --embroidery`, release
 build, 12-core Apple Silicon, load about 4, the median of five frames, twice; 2026-10-23). The
 pictures are built in code without the planner (`perf_embroidery::stitch_picture`: square tiles of

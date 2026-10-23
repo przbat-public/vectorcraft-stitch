@@ -212,6 +212,11 @@ impl StitchPreview {
         }
     }
 
+    /// Whether document `uid` as it was at the end of the last frame can't be planned.
+    pub fn failed(&self, uid: u64) -> bool {
+        self.docs.get(&uid).is_some_and(|d| matches!((&d.failed, &d.wanted), (Some((f, _)), Some((w, _))) if f == w))
+    }
+
     /// Whether the preview of document `uid` is waiting for a plan or making one, while asked:
     /// `ui.screenshot` waits for it.
     pub fn busy(&self, uid: u64, now: f64) -> bool {

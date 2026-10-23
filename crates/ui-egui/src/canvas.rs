@@ -245,6 +245,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         context_menu(app, &resp, &xf);
     }
     let painter = ui.painter_at(rect);
+    // VectorCraft Stitch: what of the art the stitch view draws.
+    let art = crate::embroidery::stitch_layer::art_pass(app);
     let Some(st) = app.session.active() else { return };
     let doc = st.doc.clone();
     let mask_view = st.shown_mask();
@@ -252,7 +254,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     // Pasteboard, artboard shadows and paper (Document Setup: the transparency grid's look, the
     // simulated paper colour; a white Background Contents hides the grid).
     painter.rect_filled(rect, 0.0, t.pasteboard);
-    if app.ui.view.artboards && !app.ui.view.outline {
+    let fabric = crate::embroidery::stitch_layer::paint_fabric(app, &painter, &xf, &doc);
+    if !fabric && app.ui.view.artboards && !app.ui.view.outline {
         let setup = &doc.setup;
         let grid = (st.transparency_grid && setup.background == vectorcraft_doc::Background::Transparent).then(|| checker_texture(ui.ctx(), setup));
         let paper = if setup.simulate_paper { crate::panels::c32(&setup.paper()) } else { Color32::WHITE };
@@ -269,7 +272,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 }
             }
         }
-    } else if app.ui.view.outline {
+    } else if !fabric && app.ui.view.outline {
         for ab in &doc.artboards {
             painter.add(Shape::convex_polygon(xf.quad(ab.rect), Color32::WHITE, Stroke::NONE));
         }
@@ -304,9 +307,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         h,
         outline: app.ui.view.outline,
         trim: app.ui.view.trim_view,
-        templates: app.ui.view.templates,
+        templates: app.ui.view.templates && !art.hide_templates,
         ppp,
-        hidden: vec![],
+        hidden: art.hidden.clone(),
         rot: v.rotation,
         anti_alias: app.session.prefs.anti_aliased_artwork,
         highlight_alternate_glyphs: app.session.prefs.highlight_alternate_glyphs,
@@ -339,7 +342,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         app.canvas.last_ms = done.ms;
         app.canvas.moved = done.moved > 0;
     }
-    if app.canvas.key.as_ref() != Some(&key) || app.canvas.texture.is_none() {
+    if (app.canvas.key.as_ref() != Some(&key) || app.canvas.texture.is_none()) && art.render {
         let (w, h, view) = match pixel {
             Some([x0, y0, x1, y1]) => ((x1 - x0) as u32, (y1 - y0) as u32, Affine::translate((-x0 as f64, -y0 as f64))),
             None => (
@@ -356,7 +359,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             proof: vectorcraft_render::proof::active_proof(),
             overprint_preview: vectorcraft_render::proof::overprint_preview_on(),
             trim: app.ui.view.trim_view,
-            hide_templates: !app.ui.view.templates,
+            hide_templates: !key.templates,
+            hidden: key.hidden.iter().copied().map(vectorcraft_doc::NodeId).collect(),
             tile_edge: vectorcraft_color::Color::from_hex(&app.session.prefs.pattern_tile_edge_color).map_or(opts.tile_edge, |c| {
                 let [r, g, b, _] = c.to_rgba8(1.0);
                 [r, g, b]
@@ -407,6 +411,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     }
     if let (Some(tex), Some(k)) = (&app.canvas.texture, &app.canvas.key)
         && k.doc == key.doc
+        && !art.stitches
     {
         match k.pixel {
             // Document pixels: placed over the document rect they cover, turning with the view.
@@ -430,6 +435,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             }
         }
     }
+    crate::embroidery::stitch_layer::draw(app, ui.ctx(), &painter, &xf, &v, &art);
     if let Some(look) = grid_look.filter(|_| !grids_in_back) {
         grid(&painter, &xf, doc.grid.spacing, doc.grid.subdivisions, look);
     }

@@ -12,7 +12,9 @@
 //! - **Off the interface thread when slow.** Light frames are drawn in line, as the canvas draws
 //!   light art; slower ones on a thread of their own ([`LineWorker`]), the last frame shown
 //!   meanwhile, moved into the new view. A document switch never draws the stitches in line where
-//!   that thread runs: the fabric shows until they come, never another document's stitches.
+//!   that thread runs: the fabric shows until they come, never another document's stitches. A
+//!   moment's emphasis ([`StitchLayer::emphasize`]) is drawn the same way, the rest faded while it
+//!   comes.
 //! - **Until the first plan comes** the art stays, so turning the preview on never flashes an
 //!   empty canvas. A design that fails keeps its last good stitches, faded.
 
@@ -81,24 +83,35 @@ struct LayerKey {
     anti_alias: bool,
 }
 
-/// A frame of stitches to draw on the thread, numbered in the order frames are made.
+/// A frame of stitches to draw on the thread, numbered in the order frames are made; or, with
+/// `emphasis`, those units alone, to go over the frame of `key`.
 struct LayerJob {
     seq: u64,
     key: LayerKey,
+    emphasis: Option<Vec<u32>>,
     picture: Arc<LinePicture>,
     view: Affine,
     style: LineStyle,
 }
 
-/// A frame drawn on the thread, and how long it took.
+/// A frame (or an emphasis) drawn on the thread, and how long it took.
 struct LayerDone {
     seq: u64,
     key: LayerKey,
+    emphasis: Option<Vec<u32>>,
     img: Rendered,
     ms: f64,
 }
 
-/// The stitch layer's thread: it draws the newest frame asked for and drops the ones it replaces.
+/// What the thread finished since the last look: the newest frame and the newest emphasis.
+#[derive(Default)]
+struct Finished {
+    frame: Option<LayerDone>,
+    emphasis: Option<LayerDone>,
+}
+
+/// The stitch layer's thread: it draws the newest frame asked for, then the newest emphasis, and
+/// drops the ones they replace.
 pub(crate) struct LineWorker {
     tx: Sender<LayerJob>,
     rx: Receiver<LayerDone>,
@@ -124,21 +137,25 @@ impl LineWorker {
             .spawn(move || {
                 let mut r = LineRenderer::new();
                 // The canvas is gone (its sender dropped): end the thread.
-                while let Ok(mut job) = jobs.recv() {
-                    while let Ok(newer) = jobs.try_recv() {
-                        job = newer;
+                'jobs: while let Ok(job) = jobs.recv() {
+                    let (mut frame, mut emphasis) = (None, None);
+                    for job in std::iter::once(job).chain(std::iter::from_fn(|| jobs.try_recv().ok())) {
+                        if job.emphasis.is_some() { emphasis = Some(job) } else { frame = Some(job) }
                     }
-                    let t0 = crate::now_ms();
-                    // A panic in the drawing ends the thread (the guard logs it): the canvas finds the
-                    // thread gone and draws in line from then on.
-                    let Ok(img) = vectorcraft_engine::guard::catch_panic(|| r.render(&job.picture, job.key.w, job.key.h, job.view, &job.style))
-                    else {
-                        break;
-                    };
-                    if done_tx.send(LayerDone { seq: job.seq, key: job.key, img, ms: crate::now_ms() - t0 }).is_err() {
-                        break;
+                    for job in [frame, emphasis].into_iter().flatten() {
+                        let t0 = crate::now_ms();
+                        // A panic in the drawing ends the thread (the guard logs it): the canvas finds
+                        // the thread gone and draws in line from then on.
+                        let Ok(img) = vectorcraft_engine::guard::catch_panic(|| r.render(&job.picture, job.key.w, job.key.h, job.view, &job.style))
+                        else {
+                            break 'jobs;
+                        };
+                        let done = LayerDone { seq: job.seq, key: job.key, emphasis: job.emphasis, img, ms: crate::now_ms() - t0 };
+                        if done_tx.send(done).is_err() {
+                            break 'jobs;
+                        }
+                        ctx.request_repaint();
                     }
-                    ctx.request_repaint();
                 }
             })
             .ok()?;
@@ -149,12 +166,13 @@ impl LineWorker {
         self.tx.send(job).is_ok()
     }
 
-    /// The newest frame finished since the last call; `Err` when the thread is gone.
-    fn poll(&self) -> Result<Option<LayerDone>, ()> {
-        let mut newest = None;
+    /// The newest frame and emphasis finished since the last call; `Err` when the thread is gone.
+    fn poll(&self) -> Result<Finished, ()> {
+        let mut newest = Finished::default();
         loop {
             match self.rx.try_recv() {
-                Ok(d) => newest = Some(d),
+                Ok(d) if d.emphasis.is_some() => newest.emphasis = Some(d),
+                Ok(d) => newest.frame = Some(d),
                 Err(TryRecvError::Empty) => return Ok(newest),
                 Err(TryRecvError::Disconnected) => return Err(()),
             }
@@ -182,10 +200,14 @@ pub struct StitchLayer {
     faded: Option<((u64, u64), Arc<TagSet>)>,
     /// The last frame drew the stitch view.
     shown: bool,
-    /// The units emphasised this frame ([`StitchLayer::emphasize`]), and the raster of them alone,
-    /// for (the frame it goes over, the units).
+    /// The units emphasised this frame ([`StitchLayer::emphasize`]).
     emphasis: Option<Vec<u32>>,
-    emphasized: Option<((LayerKey, Vec<u32>), egui::TextureHandle)>,
+    /// What the emphasis texture holds, the raster of the units alone (the frame it goes over, the
+    /// units), and the texture: one, drawn again for each emphasis, dropped when it ends.
+    emphasized: Option<(LayerKey, Vec<u32>)>,
+    emphasis_texture: Option<egui::TextureHandle>,
+    /// The emphasis asked of the thread and not back yet: not asked again.
+    emphasis_asked: Option<(LayerKey, Vec<u32>)>,
     /// Frames of stitches uploaded so far (the tests count them).
     pub(crate) uploads: u64,
 }
@@ -203,6 +225,13 @@ impl StitchLayer {
     #[cfg(test)]
     pub(crate) fn emphasis(&self) -> Option<&[u32]> {
         self.emphasis.as_deref()
+    }
+
+    /// The emphasis is over: its texture goes.
+    fn end_emphasis(&mut self) {
+        self.emphasized = None;
+        self.emphasis_texture = None;
+        self.emphasis_asked = None;
     }
 
     /// Whether the last frame drew the stitch view.
@@ -322,6 +351,7 @@ pub fn draw(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::Paint
     // Asked for this frame only.
     let emphasis = app.embroidery.layer.emphasis.take();
     if !pass.stitches {
+        app.embroidery.layer.end_emphasis();
         return;
     }
     let outline = app.ui.view.outline;
@@ -420,22 +450,35 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
         anti_alias,
     };
     // A frame the thread finished: shown when it is of this document and newer than the frame shown
-    // (one drawn in line since may be).
+    // (one drawn in line since may be). An emphasis it finished: shown when it is of the units
+    // emphasised now, for the frame shown.
     match layer.worker.as_ref().map(LineWorker::poll) {
-        Some(Ok(Some(done))) => {
-            if layer.asked.as_ref().is_some_and(|(_, seq)| *seq == done.seq) {
-                layer.asked = None;
+        Some(Ok(finished)) => {
+            if let Some(done) = finished.frame {
+                if layer.asked.as_ref().is_some_and(|(_, seq)| *seq == done.seq) {
+                    layer.asked = None;
+                }
+                if done.key.uid == uid && done.seq > layer.shown_seq {
+                    layer.last_ms = done.ms;
+                    upload(layer, ctx, &done.img, done.key, done.seq);
+                }
             }
-            if done.key.uid == uid && done.seq > layer.shown_seq {
-                layer.last_ms = done.ms;
-                upload(layer, ctx, &done.img, done.key, done.seq);
+            if let Some(LayerDone { key, emphasis: Some(units), img, .. }) = finished.emphasis {
+                let of = (key, units);
+                if layer.emphasis_asked.as_ref() == Some(&of) {
+                    layer.emphasis_asked = None;
+                }
+                if layer.key.as_ref() == Some(&of.0) && emphasis.as_ref() == Some(&of.1) {
+                    upload_emphasis(layer, ctx, &img, of);
+                }
             }
         }
         Some(Err(())) => {
             layer.worker = None;
             layer.asked = None;
+            layer.emphasis_asked = None;
         }
-        _ => {}
+        None => {}
     }
     if (layer.key.as_ref() != Some(&key) || layer.texture.is_none()) && layer.asked.as_ref().map(|(k, _)| k) != Some(&key) {
         let faded = isolated.map(|i| {
@@ -459,7 +502,7 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
         let heavy = layer.last_ms > INLINE_DRAW_MS || switched;
         layer.seq += 1;
         let seq = layer.seq;
-        let job = LayerJob { seq, key: key.clone(), picture: scene.picture().clone(), view: affine, style };
+        let job = LayerJob { seq, key: key.clone(), emphasis: None, picture: scene.picture().clone(), view: affine, style };
         match &layer.worker {
             Some(worker) if heavy => {
                 if worker.submit(job) {
@@ -490,27 +533,59 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
     let quad = rendered_quad(xf, k.zoom, Point::new(k.cx, k.cy), k.rot);
     let tint = if failed || emphasis.is_some() { faded() } else { Color32::WHITE };
     textured_quad(painter, tex.id(), &quad, tint);
-    if let Some(units) = emphasis {
-        let k = k.clone();
-        let wanted = (k.clone(), units);
-        if layer.emphasized.as_ref().is_none_or(|(have, _)| *have != wanted) {
-            let shown: std::collections::HashSet<u32> = wanted.1.iter().copied().collect();
-            let rest = (0..scene.units().len()).filter_map(|i| u32::try_from(i).ok()).filter(|i| !shown.contains(i));
-            let style =
-                LineStyle { hidden: Some(TagSet::of(rest)), anti_alias, ..scene.style(FABRIC, view.jumps, view.needle_points, f64::from(k.ppp)) };
-            let affine = Affine::translate((f64::from(k.w) / 2.0, f64::from(k.h) / 2.0))
-                * Affine::rotate(k.rot.to_radians())
-                * Affine::scale(k.zoom * f64::from(k.ppp))
-                * Affine::translate((-k.cx, -k.cy));
-            let img = layer.renderer.render(scene.picture(), k.w, k.h, affine, &style);
-            let color = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
-            let tex = ctx.load_texture("emphasized stitches", color, egui::TextureOptions::LINEAR);
-            layer.emphasized = Some((wanted, tex));
-        }
-        if let Some((_, tex)) = &layer.emphasized {
-            textured_quad(painter, tex.id(), &quad, Color32::WHITE);
+    let Some(units) = emphasis else {
+        layer.end_emphasis();
+        return;
+    };
+    let wanted = (k.clone(), units);
+    if layer.emphasized.as_ref() != Some(&wanted) && layer.emphasis_asked.as_ref() != Some(&wanted) {
+        let k = &wanted.0;
+        let shown: std::collections::HashSet<u32> = wanted.1.iter().copied().collect();
+        let rest = (0..scene.units().len()).filter_map(|i| u32::try_from(i).ok()).filter(|i| !shown.contains(i));
+        let style = LineStyle { hidden: Some(TagSet::of(rest)), anti_alias, ..scene.style(FABRIC, view.jumps, view.needle_points, f64::from(k.ppp)) };
+        let affine = Affine::translate((f64::from(k.w) / 2.0, f64::from(k.h) / 2.0))
+            * Affine::rotate(k.rot.to_radians())
+            * Affine::scale(k.zoom * f64::from(k.ppp))
+            * Affine::translate((-k.cx, -k.cy));
+        // As the frames are: in line when they are light, else on the thread, the rest faded
+        // meanwhile.
+        let job = LayerJob {
+            seq: layer.shown_seq,
+            key: k.clone(),
+            emphasis: Some(wanted.1.clone()),
+            picture: scene.picture().clone(),
+            view: affine,
+            style,
+        };
+        match &layer.worker {
+            Some(worker) if layer.last_ms > INLINE_DRAW_MS => {
+                if worker.submit(job) {
+                    layer.emphasis_asked = Some(wanted.clone());
+                } else {
+                    layer.worker = None;
+                }
+            }
+            _ => {
+                let img = layer.renderer.render(&job.picture, k.w, k.h, job.view, &job.style);
+                upload_emphasis(layer, ctx, &img, wanted.clone());
+            }
         }
     }
+    if layer.emphasized.as_ref() == Some(&wanted)
+        && let Some(tex) = &layer.emphasis_texture
+    {
+        textured_quad(painter, tex.id(), &quad, Color32::WHITE);
+    }
+}
+
+/// Make `img`, the raster of units `of.1` alone for the frame of `of.0`, the emphasis texture.
+fn upload_emphasis(layer: &mut StitchLayer, ctx: &egui::Context, img: &Rendered, of: (LayerKey, Vec<u32>)) {
+    let color = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
+    match &mut layer.emphasis_texture {
+        Some(tex) => tex.set(color, egui::TextureOptions::LINEAR),
+        None => layer.emphasis_texture = Some(ctx.load_texture("emphasized stitches", color, egui::TextureOptions::LINEAR)),
+    }
+    layer.emphasized = Some(of);
 }
 
 /// Make `img`, a frame for `key`, the layer's texture.

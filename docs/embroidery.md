@@ -1566,8 +1566,10 @@ and "Exit" when one object is selected; they come from `StitchScene::ends_of`, a
 list's do. A selected object changed since the plan shown is outlined dashed in its layer's colour
 until its plan comes, and the canvas's notice counts the selected objects that sew nothing. For a
 moment (a Sewing order row hovered, a check's hits shown) the stitch layer fades the frame it
-already drew with a tint and draws the units concerned over it from a small raster of their own
-(`StitchLayer::emphasize`), never drawing the whole design again.
+already drew with a tint and draws the units concerned over it from a raster of them alone
+(`StitchLayer::emphasize`), never drawing the whole design again. The raster is drawn as the frames
+are: in line for a design light to draw, else on the stitch layer's thread, the rest faded until it
+comes; one texture holds it, dropped when the moment ends.
 
 **The Embroidery panel** (`ui-egui/src/panels/embroidery/`, Window › Embroidery). The first time it
 docks as the last tab beside Properties, Layers and Libraries, as the mockups draw it (the project

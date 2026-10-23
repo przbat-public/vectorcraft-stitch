@@ -72,6 +72,10 @@ fn stitch_texture(app: &VectorcraftApp) -> Option<egui::TextureId> {
     app.embroidery.layer.texture.as_ref().map(egui::TextureHandle::id)
 }
 
+fn emphasis_texture(app: &VectorcraftApp) -> Option<egui::TextureId> {
+    app.embroidery.layer.emphasis_texture.as_ref().map(egui::TextureHandle::id)
+}
+
 fn art_texture(app: &VectorcraftApp) -> Option<egui::TextureId> {
     app.canvas.texture.as_ref().map(egui::TextureHandle::id)
 }
@@ -295,12 +299,51 @@ fn emphasis_fades_the_rest_without_drawing_the_stitches_again() {
     app.embroidery.layer.emphasize(vec![0]);
     let shapes = frame(&mut app, &ctx, time + 0.1);
     assert_eq!(drawn_with(&shapes, stitch_texture(&app)), [faded()], "the rest faded");
-    let emphasized = app.embroidery.layer.emphasized.as_ref().map(|(_, t)| t.id());
+    let emphasized = emphasis_texture(&app);
     assert_eq!(drawn_with(&shapes, emphasized), [Color32::WHITE], "the unit over them");
     assert_eq!(app.embroidery.layer.uploads, uploads, "the stitches aren't drawn again");
+    // Another unit: drawn into the same texture.
+    app.embroidery.layer.emphasize(vec![1]);
+    let shapes = frame(&mut app, &ctx, time + 0.15);
+    assert_eq!(drawn_with(&shapes, emphasized), [Color32::WHITE]);
+    assert_eq!(emphasis_texture(&app), emphasized, "one texture");
     let shapes = frame(&mut app, &ctx, time + 0.2);
     assert_eq!(drawn_with(&shapes, stitch_texture(&app)), [Color32::WHITE], "a moment only");
     assert!(drawn_with(&shapes, emphasized).is_empty());
+    assert!(emphasis_texture(&app).is_none(), "its texture goes when it ends");
+}
+
+/// A design slow to draw has its emphasis drawn on the layer's thread, as its frames are: the rest
+/// faded meanwhile, the units over them once they come; one asked is not asked again.
+#[test]
+fn a_slow_designs_emphasis_is_drawn_on_the_layers_thread() {
+    let ctx = egui::Context::default();
+    let Some(worker) = LineWorker::start(&ctx) else { panic!("the layer's thread starts") };
+    let mut app = app();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    let mut time = until_stitches(&mut app, &ctx, 0.0);
+    app.embroidery.layer.use_worker(worker);
+    app.embroidery.layer.last_ms = 1000.0;
+    let drawn = app.embroidery.layer.renderer.stats;
+    app.embroidery.layer.emphasize(vec![0]);
+    time += 0.1;
+    let shapes = frame(&mut app, &ctx, time);
+    assert_eq!(drawn_with(&shapes, stitch_texture(&app)), [faded()], "the rest faded at once");
+    assert!(app.embroidery.layer.emphasis_asked.is_some(), "asked of the thread");
+    assert_eq!(app.embroidery.layer.renderer.stats, drawn, "nothing drawn in line");
+    let t0 = std::time::Instant::now();
+    loop {
+        app.embroidery.layer.emphasize(vec![0]);
+        time += 0.02;
+        let shapes = frame(&mut app, &ctx, time);
+        if !drawn_with(&shapes, emphasis_texture(&app)).is_empty() {
+            break;
+        }
+        assert!(t0.elapsed() < WAIT, "the thread never drew it");
+        std::thread::yield_now();
+    }
+    assert!(app.embroidery.layer.emphasis_asked.is_none());
+    assert_eq!(app.embroidery.layer.renderer.stats, drawn, "still nothing drawn in line");
 }
 
 /// A frame asked of the layer's thread is forgotten when the stitch view stops being drawn: a

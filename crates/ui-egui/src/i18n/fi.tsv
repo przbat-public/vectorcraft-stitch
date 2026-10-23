@@ -5443,3 +5443,8 @@ embroidery	Median: {value} mm	Mediaani: {value} mm
 embroidery	Too long	Liian pitkät
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Yli {value} mm: {stitches}
+@plural	{count} colour|{count} colours	{count} väri|{count} väriä
+embroidery	Embroidery: {figures}	Kirjonta: {figures}
+embroidery	Stitches can't be planned	Pistoja ei voi suunnitella
+embroidery	Click to open the Embroidery panel.	Avaa Kirjonta-paneeli napsauttamalla.
+embroidery	{width} × {height} mm	{width} × {height} mm

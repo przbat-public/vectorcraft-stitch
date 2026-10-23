@@ -163,14 +163,22 @@ struct Interest {
     queries: Vec<Query>,
 }
 
+/// The figures every plan wanted comes with (`embroidery.stats`): the status bar's counters and
+/// the Embroidery panel read them, so neither asks for a plan of its own.
+pub fn figures_query() -> Query {
+    Query { cmd: "embroidery.stats", params: serde_json::json!({}) }
+}
+
 /// The stitch preview's scheduler and what it shows ([`self`]).
 #[derive(Default)]
 pub struct StitchPreview {
     docs: HashMap<u64, DocPreview>,
     in_flight: Option<InFlight>,
-    /// What this frame asks for, and whether the last frame asked anything.
+    /// What this frame asks for, whether the last frame asked anything, and whether it asked for
+    /// the plan.
     interest: Interest,
     asked: bool,
+    plan_asked: bool,
     runner: Option<Box<dyn Runner>>,
     next_ticket: u64,
     /// What the tests check the scheduler against: each job sent, and each plan taken in.
@@ -191,6 +199,12 @@ impl StitchPreview {
     /// The canvas shows stitches this frame: the active document's design is wanted.
     pub fn want_plan(&mut self) {
         self.interest.plan = true;
+    }
+
+    /// Whether the last frame wanted the active document's plan (the stitch view or the
+    /// Embroidery panel showing): the status bar's counters show then.
+    pub fn plan_wanted(&self) -> bool {
+        self.plan_asked
     }
 
     /// The reply to `query` (a read command and its own params, the options left out: the
@@ -337,8 +351,13 @@ impl StitchPreview {
     /// asked: `busy` while a drag, a tool's gesture or a field's scrubbing goes on. → in how many
     /// seconds to draw again when nothing else would (a quiet time ending, the notice showing).
     fn schedule_at(&mut self, s: &mut Session, now: f64, busy: bool) -> Option<f64> {
-        let interest = std::mem::take(&mut self.interest);
+        let mut interest = std::mem::take(&mut self.interest);
+        // A plan wanted comes with its figures, for the counters.
+        if interest.plan && !interest.queries.contains(&figures_query()) {
+            interest.queries.push(figures_query());
+        }
         self.asked = interest.plan || !interest.queries.is_empty();
+        self.plan_asked = interest.plan;
         let open: HashSet<u64> = s.documents().iter().map(|d| d.uid).collect();
         self.docs.retain(|uid, _| open.contains(uid));
         let active = s.active().map(|st| st.uid);

@@ -5395,3 +5395,8 @@ embroidery	Median: {value} mm	Mediana: {value} mm
 embroidery	Too long	Longos demais
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Acima de {value} mm: {stitches}
+@plural	{count} colour|{count} colours	{count} cor|{count} cores
+embroidery	Embroidery: {figures}	Bordado: {figures}
+embroidery	Stitches can't be planned	Não é possível planejar os pontos
+embroidery	Click to open the Embroidery panel.	Clique para abrir o painel Bordado.
+embroidery	{width} × {height} mm	{width} × {height} mm

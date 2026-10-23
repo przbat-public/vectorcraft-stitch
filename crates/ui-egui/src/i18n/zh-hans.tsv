@@ -5315,3 +5315,8 @@ embroidery	Median: {value} mm	中位数：{value} mm
 embroidery	Too long	过长
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm：{stitches}
 embroidery	Over {value} mm: {stitches}	超过 {value} mm：{stitches}
+@plural	{count} colour|{count} colours	{count} 种颜色
+embroidery	Embroidery: {figures}	刺绣：{figures}
+embroidery	Stitches can't be planned	无法规划针迹
+embroidery	Click to open the Embroidery panel.	点按可打开“刺绣”面板。
+embroidery	{width} × {height} mm	{width} × {height} mm

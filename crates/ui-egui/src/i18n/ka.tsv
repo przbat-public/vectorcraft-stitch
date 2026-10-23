@@ -5385,3 +5385,8 @@ embroidery	Median: {value} mm	მედიანა: {value} მმ
 embroidery	Too long	ზედმეტად გრძელი
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} მმ: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} მმ-ზე მეტი: {stitches}
+@plural	{count} colour|{count} colours	ფერები: {count}
+embroidery	Embroidery: {figures}	ნაქარგობა: {figures}
+embroidery	Stitches can't be planned	ნაკერების დაგეგმვა შეუძლებელია
+embroidery	Click to open the Embroidery panel.	დააწკაპუნეთ პანელის „ნაქარგობა“ გასახსნელად.
+embroidery	{width} × {height} mm	{width} × {height} მმ

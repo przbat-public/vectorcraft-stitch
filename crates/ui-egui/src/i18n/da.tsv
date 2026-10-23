@@ -5462,3 +5462,8 @@ embroidery	Median: {value} mm	Median: {value} mm
 embroidery	Too long	For lange
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Over {value} mm: {stitches}
+@plural	{count} colour|{count} colours	{count} farve|{count} farver
+embroidery	Embroidery: {figures}	Broderi: {figures}
+embroidery	Stitches can't be planned	Stingene kan ikke planlægges
+embroidery	Click to open the Embroidery panel.	Klik for at åbne panelet Broderi.
+embroidery	{width} × {height} mm	{width} × {height} mm

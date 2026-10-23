@@ -94,7 +94,7 @@ pub struct Settings {
 /// What a tab asks the scheduler for besides the plan, for document `uid`: the figures, always,
 /// and its own reply.
 fn queries(app: &VectorcraftApp, uid: u64, tab: Tab) -> Vec<Query> {
-    let stats = Query { cmd: "embroidery.stats", params: json!({}) };
+    let stats = crate::embroidery::stitch_preview::figures_query();
     match tab {
         Tab::Order => vec![stats, order::query()],
         Tab::Check => vec![stats, check::query(&app.embroidery.check, uid)],

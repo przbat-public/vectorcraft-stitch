@@ -5465,3 +5465,8 @@ embroidery	Median: {value} mm	Medián: {value} mm
 embroidery	Too long	Túl hosszú
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} mm fölött: {stitches}
+@plural	{count} colour|{count} colours	{count} szín
+embroidery	Embroidery: {figures}	Hímzés: {figures}
+embroidery	Stitches can't be planned	Az öltések nem tervezhetők meg
+embroidery	Click to open the Embroidery panel.	Kattintson a Hímzés panel megnyitásához.
+embroidery	{width} × {height} mm	{width} × {height} mm

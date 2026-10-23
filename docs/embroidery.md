@@ -1624,6 +1624,21 @@ with stitches, so that a few long stitches still show), the median in its header
 5 mm. The "too long" band starts where the longest-stitch check's threshold is, 12.7 mm (the project
 owner's choice), so its bar counts that rule's hits exactly; hovering a bar says its range and count.
 
+**The status bar's counters** (`embroidery::counters`). At the bar's right end, for the active
+document, while its stitches are wanted (the stitch view or the Embroidery panel showing: the
+project owner's choice): "4,752 stitches · 4 colours · 3 thread changes · about 7 min", with
+"Embroidery:" before them when there is room; trims, jumps, the size and what the time rests on are
+in the tooltip and the Sewing order's footer. The figures are `embroidery.stats`' own: the scheduler
+adds it to every plan wanted, on the planning thread, so the bar never starts a plan and reads its
+figures once per plan. They change at most four times a second (an estimate). Blank for a quick first
+plan; "Planning stitches… 37%" once a plan takes 0.4 s; "Updating…" before dimmed figures once a newer
+plan takes that long; "Nothing to sew"; "⚠ Stitches can't be planned", the reason in the tooltip.
+While the bar says these, the canvas's notice leaves planning and failure to it. They take the longest
+of five wordings that fits, the render and interface timings giving way first, then hide; the X/Y
+readout and 60 points of the last message keep their room, and the slot keeps its widest width while
+its wording stays. A click opens the panel at its Sewing order. `ui.inspect`'s
+`stitchPreview.counters` gives their state, figures and words.
+
 **Check marks on the canvas** (`embroidery::check_marks`). While the Check tab shows, each listed hit
 of a rule that found an error or a warning is ringed on the canvas, in the art view and the stitch
 view alike: round its stitch (a stitch's hit gives where it starts and ends) or round its spot

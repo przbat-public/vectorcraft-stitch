@@ -5132,3 +5132,8 @@ embroidery	Median: {value} mm	中央値: {value} mm
 embroidery	Too long	長すぎ
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} mm 超: {stitches}
+@plural	{count} colour|{count} colours	{count} 色
+embroidery	Embroidery: {figures}	刺繍: {figures}
+embroidery	Stitches can't be planned	針目を計画できません
+embroidery	Click to open the Embroidery panel.	クリックすると刺繍パネルが開きます。
+embroidery	{width} × {height} mm	{width} × {height} mm

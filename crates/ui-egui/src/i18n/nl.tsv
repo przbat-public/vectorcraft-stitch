@@ -5505,3 +5505,8 @@ embroidery	Median: {value} mm	Mediaan: {value} mm
 embroidery	Too long	Te lang
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Boven {value} mm: {stitches}
+@plural	{count} colour|{count} colours	{count} kleur|{count} kleuren
+embroidery	Embroidery: {figures}	Borduurwerk: {figures}
+embroidery	Stitches can't be planned	De steken kunnen niet worden gepland
+embroidery	Click to open the Embroidery panel.	Klik om het deelvenster Borduurwerk te openen.
+embroidery	{width} × {height} mm	{width} × {height} mm

@@ -5444,3 +5444,8 @@ embroidery	Median: {value} mm	Медиана: {value} мм
 embroidery	Too long	Твърде дълги
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
 embroidery	Over {value} mm: {stitches}	Над {value} мм: {stitches}
+@plural	{count} colour|{count} colours	{count} цвят|{count} цвята
+embroidery	Embroidery: {figures}	Бродерия: {figures}
+embroidery	Stitches can't be planned	Бодовете не могат да бъдат планирани
+embroidery	Click to open the Embroidery panel.	Щракнете, за да отворите панела „Бродерия“.
+embroidery	{width} × {height} mm	{width} × {height} мм

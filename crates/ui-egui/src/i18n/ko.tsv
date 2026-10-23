@@ -5055,3 +5055,8 @@ embroidery	Median: {value} mm	중앙값: {value}mm
 embroidery	Too long	너무 김
 embroidery	{from}–{to} mm: {stitches}	{from}–{to}mm: {stitches}
 embroidery	Over {value} mm: {stitches}	{value}mm 초과: {stitches}
+@plural	{count} colour|{count} colours	{count}색
+embroidery	Embroidery: {figures}	자수: {figures}
+embroidery	Stitches can't be planned	땀을 계획할 수 없습니다
+embroidery	Click to open the Embroidery panel.	클릭하면 자수 패널이 열립니다.
+embroidery	{width} × {height} mm	{width} × {height}mm

@@ -5072,3 +5072,8 @@ embroidery	Median: {value} mm	Медіана: {value} мм
 embroidery	Too long	Задовгі
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
 embroidery	Over {value} mm: {stitches}	Понад {value} мм: {stitches}
+@plural	{count} colour|{count} colours	{count} колір|{count} кольори|{count} кольорів
+embroidery	Embroidery: {figures}	Вишивка: {figures}
+embroidery	Stitches can't be planned	Не вдається спланувати стібки
+embroidery	Click to open the Embroidery panel.	Клацніть, щоб відкрити панель «Вишивка».
+embroidery	{width} × {height} mm	{width} × {height} мм

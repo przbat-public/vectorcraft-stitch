@@ -3,6 +3,7 @@
 //!
 //! - [`marks`]: severity marks, drawn in code: error, warning, note, passed.
 //! - [`check_marks`]: the Check tab's findings ringed on the canvas.
+//! - [`counters`]: the status bar's stitches, colours, thread changes and time.
 //! - [`numbers`]: numbers as the interface language writes them, in the embroidery interface's
 //!   read-only text.
 //! - [`plan_worker`]: the stitch preview's planning thread.
@@ -17,6 +18,7 @@
 //! - [`render_stitches`]: the control channel's picture of the stitches.
 
 pub mod check_marks;
+pub mod counters;
 pub mod marks;
 pub mod menu;
 pub mod notice;
@@ -46,6 +48,8 @@ pub struct Embroidery {
     pub(crate) order: crate::panels::embroidery::order::OrderState,
     /// The Embroidery panel's Check tab.
     pub(crate) check: crate::panels::embroidery::check::CheckState,
+    /// The status bar's counters.
+    pub(crate) counters: counters::Counters,
 }
 
 /// What the fork draws over the canvas, after it: the selection's markers in the stitch view, the
@@ -84,6 +88,7 @@ pub fn inspect(app: &VectorcraftApp, now: f64) -> serde_json::Value {
         o.insert("on".into(), app.session.stitch_view_of(st.uid).on.into());
         o.insert("drawn".into(), app.embroidery.layer.drawn().into());
         o.insert("notice".into(), notice::text(app, now).map(|(t, _)| t).into());
+        o.insert("counters".into(), app.embroidery.counters.inspect());
     }
     v
 }

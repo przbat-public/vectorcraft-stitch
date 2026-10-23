@@ -1,7 +1,8 @@
 //! The canvas's notice in the stitch view, under the Art | Stitches switch: "Planning stitches…"
 //! with the plan's progress once the stitches shown have been out of date a while
-//! ([`super::stitch_preview::STALE_NOTICE_SECS`]), why the design can't be planned, or how many
-//! selected objects aren't sewn.
+//! ([`super::stitch_preview::STALE_NOTICE_SECS`]), or why the design can't be planned, while the
+//! status bar's counters don't say it (the bar hidden, or too short of room); how many selected
+//! objects aren't sewn.
 
 use egui::{CornerRadius, FontId, Id, Rect, Stroke, StrokeKind, Ui, pos2, vec2};
 use vectorcraft_engine::cmd::embroidery::view::{layers, paused};
@@ -30,7 +31,11 @@ pub fn text(app: &VectorcraftApp, now: f64) -> Option<(String, Option<f64>)> {
     if !layers(view, paused(&st.doc), app.ui.view.outline).stitches {
         return None;
     }
+    // The status bar's counters say when the stitches are planned or can't be: the notice says it
+    // only while the bar doesn't.
+    let bar = app.ui.status_bar && app.ui.screen_mode < 3 && app.embroidery.counters.says();
     match app.embroidery.preview.freshness(st.uid, now) {
+        Freshness::Pending { .. } | Freshness::Stale { .. } | Freshness::Failed { .. } if bar => None,
         Freshness::Pending { progress, notice: true } | Freshness::Stale { progress, notice: true } => {
             Some((crate::et!("Planning stitches…").to_string(), progress))
         }

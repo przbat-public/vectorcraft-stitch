@@ -67,7 +67,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 31] = [
+pub const ROWS: [&str; 32] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -99,12 +99,13 @@ pub const ROWS: [&str; 31] = [
     "preview: nudge to frame, 1,000 paths",
     "preview: nudge to frame, a drop shadow",
     "preview: cancel, 20 rings in one fill",
+    "sewing order: move one object, re-plan",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`]: estimates.
-const BUDGETS: [f64; 31] = [
+const BUDGETS: [f64; 32] = [
     400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 100.0, 400.0, 4000.0, 50.0, 20.0,
-    50.0, 16.0, 100.0, 1000.0, 5.0, 25.0, 50.0, 100.0, 100.0, 100.0,
+    50.0, 16.0, 100.0, 1000.0, 5.0, 25.0, 50.0, 100.0, 100.0, 100.0, 100.0,
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -254,6 +255,7 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.push(nudge_to_frame(&doc, false)?);
     ms.push(nudge_to_frame(&doc, true)?);
     ms.push(cancel_latency(&one_fill(rings(20), FillRule::EvenOdd))?);
+    ms.push(reorder(&doc)?);
     Ok(ROWS.iter().zip(ms).zip(BUDGETS).map(|((name, ms), budget)| (*name, ms, budget)).collect())
 }
 
@@ -319,6 +321,28 @@ fn nudge_to_frame(doc: &Document, shadow: bool) -> Result<f64, String> {
         let (style, view) = framed(scene.picture(), FIT);
         let style = LineStyle { colors: scene.thread_colors(), ..style };
         drop(r.render(scene.picture(), w, h, view, &style));
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    Ok(middle(samples))
+}
+
+/// Milliseconds from moving the object sewn first to the end of the sewing order (and back, in
+/// turn) with the Sewing order list's own rule (`embroidery.sewLast`, `embroidery.sewFirst`) to the
+/// plan of the document then, the median of [`DRAW_RUNS`]: what a drop in the list costs before its
+/// stitches can show.
+fn reorder(doc: &Document) -> Result<f64, String> {
+    let opts = vectorcraft_engine::EmbroideryOptions::default();
+    let mut s = fresh(doc);
+    let order = s.execute("embroidery.sequence", &json!({"limit": 1})).map_err(err)?;
+    let moved = order["blocks"].get(0).and_then(|b| b["units"].get(0)).and_then(|u| u["id"].as_u64());
+    let Some(moved) = moved else { return Err("embroidery: the document has nothing to move".into()) };
+    s.embroidery_plan(&opts).map_err(err)?;
+    let mut samples = Vec::with_capacity(DRAW_RUNS);
+    for k in 0..DRAW_RUNS {
+        let command = if k % 2 == 0 { "embroidery.sewLast" } else { "embroidery.sewFirst" };
+        let t = Instant::now();
+        s.execute(command, &json!({"ids": [moved]})).map_err(err)?;
+        s.embroidery_plan(&opts).map_err(err)?;
         samples.push(t.elapsed().as_secs_f64() * 1000.0);
     }
     Ok(middle(samples))

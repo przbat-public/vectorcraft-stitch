@@ -1489,7 +1489,10 @@ whole design is drawn, which changes no pixel, and kept when a range of numbers 
 end there. Geometry beyond the renderer's device limit is left out, and a cancelled frame stops
 between batches.
 
-**On the canvas** (`ui-egui/src/embroidery/stitch_layer.rs`). The stitch view draws, bottom to top:
+**On the canvas** (`ui-egui/src/embroidery/stitch_layer.rs`). View › Stitch Preview (⌘E), or the
+Art | Stitches switch at the canvas's top right (two radio buttons for screen readers; hidden in
+Presentation Mode, disabled while an opacity mask or a pattern is edited), shows the active
+document as its stitches; the document's tab then says "(RGB/Stitches)". The stitch view draws, bottom to top:
 the fabric (white) on the artboards and under the stitches' box (where they reach past the
 artboards); the art faint under the stitches when Show Artwork
 Under Stitches is on, else the template layers alone (Hide Template hides them); the stitches; and

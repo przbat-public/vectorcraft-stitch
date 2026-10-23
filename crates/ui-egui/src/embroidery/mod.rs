@@ -7,6 +7,7 @@
 //! - [`stitch_preview`]: when the preview plans, and what it shows meanwhile.
 //! - [`stitch_layer`]: the canvas in the stitch view.
 //! - [`menu`]: View › Stitch Preview, its options, and the document tab's mode.
+//! - [`switch`]: the canvas's Art | Stitches switch.
 //! - [`text`]: the embroidery interface's words, in the catalogues' `embroidery` context
 //!   ([`crate::et!`], [`crate::etn!`]).
 //! - [`render_stitches`]: the control channel's picture of the stitches.
@@ -16,6 +17,7 @@ pub mod numbers;
 pub mod plan_worker;
 pub mod stitch_layer;
 pub mod stitch_preview;
+pub mod switch;
 pub mod text;
 
 use vectorcraft_engine::cmd::embroidery::render::{Region, picture};
@@ -30,6 +32,12 @@ pub struct Embroidery {
     pub preview: stitch_preview::StitchPreview,
     /// The canvas's stitch layer.
     pub layer: stitch_layer::StitchLayer,
+}
+
+/// What the fork draws over the canvas, after it: the Art | Stitches switch.
+pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
+    let Some(canvas) = app.canvas_rect.filter(|_| !crate::menus::home_showing(app)) else { return };
+    switch::show(app, ui, canvas);
 }
 
 /// The control channel's `ui.render {stitchPreview: true}`: artboard `artboard` of the active

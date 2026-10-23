@@ -1462,6 +1462,8 @@ impl VectorcraftApp {
                 chrome::doc_tabs(self, ui);
             }
             canvas::show(self, ui);
+            // VectorCraft Stitch: the Art | Stitches switch over the canvas.
+            embroidery::canvas_controls(self, ui);
         });
         dock::floating_panel(self, &ctx);
         floating::show(self, &ctx);

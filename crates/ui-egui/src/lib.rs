@@ -25,6 +25,8 @@ pub mod cursors;
 pub mod dialogs;
 pub mod dock;
 mod edit_toolbar;
+/// Machine embroidery: the fork's own interface (VectorCraft Stitch).
+pub mod embroidery;
 pub mod export_progress;
 pub mod find_font;
 pub mod floating;

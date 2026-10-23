@@ -5449,9 +5449,9 @@ embroidery	Narrowest: {value} mm	Smalste: {value} mm
 embroidery	Shortest: {value} mm	Kortste: {value} mm
 embroidery	At most {value} in a row	Hoogstens {value} achter elkaar
 embroidery	At most {value} on one spot	Hoogstens {value} op één plek
-embroidery	Stitch {record}: {value} mm	Steek {record}: {value} mm
-embroidery	From stitch {record}: {value} in a row	Vanaf steek {record}: {value} achter elkaar
-embroidery	Stitch {record}	Steek {record}
+embroidery	Record {record}: {value} mm	Record {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Vanaf record {record}: {value} achter elkaar
+embroidery	Record {record}	Record {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Fout
 embroidery	Warning	Waarschuwing

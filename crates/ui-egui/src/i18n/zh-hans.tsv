@@ -5259,9 +5259,9 @@ embroidery	Narrowest: {value} mm	最窄：{value} mm
 embroidery	Shortest: {value} mm	最短：{value} mm
 embroidery	At most {value} in a row	最多连续 {value} 个
 embroidery	At most {value} on one spot	同一处最多 {value} 层
-embroidery	Stitch {record}: {value} mm	第 {record} 针：{value} mm
-embroidery	From stitch {record}: {value} in a row	自第 {record} 针起：连续 {value} 个
-embroidery	Stitch {record}	第 {record} 针
+embroidery	Record {record}: {value} mm	第 {record} 条记录：{value} mm
+embroidery	From record {record}: {value} in a row	自第 {record} 条记录起：连续 {value} 个
+embroidery	Record {record}	第 {record} 条记录
 embroidery	{name}: {value} mm	{name}：{value} mm
 embroidery	Error	错误
 embroidery	Warning	警告

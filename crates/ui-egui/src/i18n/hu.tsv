@@ -5409,9 +5409,9 @@ embroidery	Narrowest: {value} mm	Legkeskenyebb: {value} mm
 embroidery	Shortest: {value} mm	Legrövidebb: {value} mm
 embroidery	At most {value} in a row	Legfeljebb {value} egymás után
 embroidery	At most {value} on one spot	Legfeljebb {value} egy helyen
-embroidery	Stitch {record}: {value} mm	{record}. öltés: {value} mm
-embroidery	From stitch {record}: {value} in a row	A(z) {record}. öltéstől: {value} egymás után
-embroidery	Stitch {record}	{record}. öltés
+embroidery	Record {record}: {value} mm	{record}. rekord: {value} mm
+embroidery	From record {record}: {value} in a row	A(z) {record}. rekordtól: {value} egymás után
+embroidery	Record {record}	{record}. rekord
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Hiba
 embroidery	Warning	Figyelmeztetés

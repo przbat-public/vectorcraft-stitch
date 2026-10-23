@@ -5076,9 +5076,9 @@ embroidery	Narrowest: {value} mm	最小幅: {value} mm
 embroidery	Shortest: {value} mm	最短: {value} mm
 embroidery	At most {value} in a row	連続は最大 {value} 個
 embroidery	At most {value} on one spot	1 か所に最大 {value} 層
-embroidery	Stitch {record}: {value} mm	針目 {record}: {value} mm
-embroidery	From stitch {record}: {value} in a row	針目 {record} から: {value} 個連続
-embroidery	Stitch {record}	針目 {record}
+embroidery	Record {record}: {value} mm	レコード {record}: {value} mm
+embroidery	From record {record}: {value} in a row	レコード {record} から: {value} 個連続
+embroidery	Record {record}	レコード {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	エラー
 embroidery	Warning	警告

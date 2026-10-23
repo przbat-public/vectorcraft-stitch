@@ -4311,9 +4311,9 @@ embroidery	Narrowest: {value} mm	最窄：{value} mm
 embroidery	Shortest: {value} mm	最短：{value} mm
 embroidery	At most {value} in a row	最多連續 {value} 個
 embroidery	At most {value} on one spot	同一處最多 {value} 層
-embroidery	Stitch {record}: {value} mm	第 {record} 針：{value} mm
-embroidery	From stitch {record}: {value} in a row	自第 {record} 針起：連續 {value} 個
-embroidery	Stitch {record}	第 {record} 針
+embroidery	Record {record}: {value} mm	第 {record} 筆記錄：{value} mm
+embroidery	From record {record}: {value} in a row	自第 {record} 筆記錄起：連續 {value} 個
+embroidery	Record {record}	第 {record} 筆記錄
 embroidery	{name}: {value} mm	{name}：{value} mm
 embroidery	Error	錯誤
 embroidery	Warning	警告

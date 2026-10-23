@@ -5387,9 +5387,9 @@ embroidery	Narrowest: {value} mm	Kapein: {value} mm
 embroidery	Shortest: {value} mm	Lyhin: {value} mm
 embroidery	At most {value} in a row	Enintään {value} peräkkäin
 embroidery	At most {value} on one spot	Enintään {value} samassa kohdassa
-embroidery	Stitch {record}: {value} mm	Pisto {record}: {value} mm
-embroidery	From stitch {record}: {value} in a row	Pistosta {record} alkaen: {value} peräkkäin
-embroidery	Stitch {record}	Pisto {record}
+embroidery	Record {record}: {value} mm	Tietue {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Tietueesta {record} alkaen: {value} peräkkäin
+embroidery	Record {record}	Tietue {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Virhe
 embroidery	Warning	Varoitus

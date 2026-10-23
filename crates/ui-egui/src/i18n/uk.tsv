@@ -5016,9 +5016,9 @@ embroidery	Narrowest: {value} mm	Найвужча: {value} мм
 embroidery	Shortest: {value} mm	Найкоротший: {value} мм
 embroidery	At most {value} in a row	Щонайбільше {value} поспіль
 embroidery	At most {value} on one spot	Щонайбільше {value} в одному місці
-embroidery	Stitch {record}: {value} mm	Стібок {record}: {value} мм
-embroidery	From stitch {record}: {value} in a row	Від стібка {record}: {value} поспіль
-embroidery	Stitch {record}	Стібок {record}
+embroidery	Record {record}: {value} mm	Запис {record}: {value} мм
+embroidery	From record {record}: {value} in a row	Від запису {record}: {value} поспіль
+embroidery	Record {record}	Запис {record}
 embroidery	{name}: {value} mm	{name}: {value} мм
 embroidery	Error	Помилка
 embroidery	Warning	Попередження

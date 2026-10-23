@@ -5388,9 +5388,9 @@ embroidery	Narrowest: {value} mm	Най-тясна: {value} мм
 embroidery	Shortest: {value} mm	Най-къс: {value} мм
 embroidery	At most {value} in a row	Най-много {value} подред
 embroidery	At most {value} on one spot	Най-много {value} на едно място
-embroidery	Stitch {record}: {value} mm	Бод {record}: {value} мм
-embroidery	From stitch {record}: {value} in a row	От бод {record}: {value} подред
-embroidery	Stitch {record}	Бод {record}
+embroidery	Record {record}: {value} mm	Запис {record}: {value} мм
+embroidery	From record {record}: {value} in a row	От запис {record}: {value} подред
+embroidery	Record {record}	Запис {record}
 embroidery	{name}: {value} mm	{name}: {value} мм
 embroidery	Error	Грешка
 embroidery	Warning	Предупреждение

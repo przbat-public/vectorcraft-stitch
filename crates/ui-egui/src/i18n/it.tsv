@@ -5036,9 +5036,9 @@ embroidery	Narrowest: {value} mm	La più stretta: {value} mm
 embroidery	Shortest: {value} mm	Il più corto: {value} mm
 embroidery	At most {value} in a row	Al massimo {value} di fila
 embroidery	At most {value} on one spot	Al massimo {value} nello stesso punto
-embroidery	Stitch {record}: {value} mm	Punto {record}: {value} mm
-embroidery	From stitch {record}: {value} in a row	Dal punto {record}: {value} di fila
-embroidery	Stitch {record}	Punto {record}
+embroidery	Record {record}: {value} mm	Record {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Dal record {record}: {value} di fila
+embroidery	Record {record}	Record {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Errore
 embroidery	Warning	Avviso

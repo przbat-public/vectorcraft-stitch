@@ -5423,9 +5423,9 @@ embroidery	Narrowest: {value} mm	Nejužší: {value} mm
 embroidery	Shortest: {value} mm	Nejkratší: {value} mm
 embroidery	At most {value} in a row	Nejvýše {value} za sebou
 embroidery	At most {value} on one spot	Nejvýše {value} na jednom místě
-embroidery	Stitch {record}: {value} mm	Steh {record}: {value} mm
-embroidery	From stitch {record}: {value} in a row	Od stehu {record}: {value} za sebou
-embroidery	Stitch {record}	Steh {record}
+embroidery	Record {record}: {value} mm	Záznam {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Od záznamu {record}: {value} za sebou
+embroidery	Record {record}	Záznam {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Chyba
 embroidery	Warning	Upozornění

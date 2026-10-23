@@ -5016,9 +5016,9 @@ embroidery	Narrowest: {value} mm	Hẹp nhất: {value} mm
 embroidery	Shortest: {value} mm	Ngắn nhất: {value} mm
 embroidery	At most {value} in a row	Tối đa {value} liên tiếp
 embroidery	At most {value} on one spot	Tối đa {value} tại một chỗ
-embroidery	Stitch {record}: {value} mm	Mũi {record}: {value} mm
-embroidery	From stitch {record}: {value} in a row	Từ mũi {record}: {value} liên tiếp
-embroidery	Stitch {record}	Mũi {record}
+embroidery	Record {record}: {value} mm	Bản ghi {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Từ bản ghi {record}: {value} liên tiếp
+embroidery	Record {record}	Bản ghi {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Lỗi
 embroidery	Warning	Cảnh báo

@@ -5364,9 +5364,9 @@ embroidery	Narrowest: {value} mm	Más estrecha: {value} mm
 embroidery	Shortest: {value} mm	Más corta: {value} mm
 embroidery	At most {value} in a row	Como máximo {value} seguidas
 embroidery	At most {value} on one spot	Como máximo {value} en un mismo sitio
-embroidery	Stitch {record}: {value} mm	Puntada {record}: {value} mm
-embroidery	From stitch {record}: {value} in a row	Desde la puntada {record}: {value} seguidas
-embroidery	Stitch {record}	Puntada {record}
+embroidery	Record {record}: {value} mm	Registro {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Desde el registro {record}: {value} seguidas
+embroidery	Record {record}	Registro {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Error
 embroidery	Warning	Advertencia

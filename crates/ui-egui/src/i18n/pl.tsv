@@ -5274,9 +5274,9 @@ embroidery	Narrowest: {value} mm	Najwęższa: {value} mm
 embroidery	Shortest: {value} mm	Najkrótszy: {value} mm
 embroidery	At most {value} in a row	Najwyżej {value} z rzędu
 embroidery	At most {value} on one spot	Najwyżej {value} w jednym miejscu
-embroidery	Stitch {record}: {value} mm	Ścieg {record}: {value} mm
-embroidery	From stitch {record}: {value} in a row	Od ściegu {record}: {value} z rzędu
-embroidery	Stitch {record}	Ścieg {record}
+embroidery	Record {record}: {value} mm	Rekord {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Od rekordu {record}: {value} z rzędu
+embroidery	Record {record}	Rekord {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Błąd
 embroidery	Warning	Ostrzeżenie

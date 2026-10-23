@@ -5375,9 +5375,9 @@ embroidery	Narrowest: {value} mm	Στενότερη: {value} mm
 embroidery	Shortest: {value} mm	Κοντύτερη: {value} mm
 embroidery	At most {value} in a row	Το πολύ {value} στη σειρά
 embroidery	At most {value} on one spot	Το πολύ {value} σε ένα σημείο
-embroidery	Stitch {record}: {value} mm	Βελονιά {record}: {value} mm
-embroidery	From stitch {record}: {value} in a row	Από τη βελονιά {record}: {value} στη σειρά
-embroidery	Stitch {record}	Βελονιά {record}
+embroidery	Record {record}: {value} mm	Εγγραφή {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Από την εγγραφή {record}: {value} στη σειρά
+embroidery	Record {record}	Εγγραφή {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Σφάλμα
 embroidery	Warning	Προειδοποίηση

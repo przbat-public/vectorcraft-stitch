@@ -403,7 +403,8 @@ it asks the stitch preview for the plan and its tab's replies, so it shows what 
 the Check tab, Show selects a rule's objects (or one hit's) and zooms to its hits with `view.zoomTo`;
 `embroidery.showFinding {rule, hit?}` does the same as a command, on the check the tab shows for the document as it
 is (refused while there is none), answering `{rule, hit}`; `embroidery.nextHit` and `embroidery.previousHit` then show the next
-or previous listed hit of that rule (round from the end), answering `{rule, hit}` (from 0). They are refused while no
+or previous listed hit of that rule (round from the end), answering `{rule, hit}` (`hit` from 0: its place among the
+rule's listed `hits`, unlike the replies' block, unit and record numbers, which count from 1). They are refused while no
 finding is shown or while the check is of an older plan than the document's. `view.checkMarks {on?: bool}` turns the
 check's marks on the canvas off or on for the session (no `on`: the other way; no other key), answering `{on}` as the
 other view switches do.

@@ -5329,9 +5329,9 @@ embroidery	Narrowest: {value} mm	უვიწროესი: {value} მმ
 embroidery	Shortest: {value} mm	უმოკლესი: {value} მმ
 embroidery	At most {value} in a row	მაქსიმუმ {value} ზედიზედ
 embroidery	At most {value} on one spot	მაქსიმუმ {value} ერთ ადგილას
-embroidery	Stitch {record}: {value} mm	ნაკერი {record}: {value} მმ
-embroidery	From stitch {record}: {value} in a row	ნაკერი {record}-დან: {value} ზედიზედ
-embroidery	Stitch {record}	ნაკერი {record}
+embroidery	Record {record}: {value} mm	ჩანაწერი {record}: {value} მმ
+embroidery	From record {record}: {value} in a row	ჩანაწერი {record}-დან: {value} ზედიზედ
+embroidery	Record {record}	ჩანაწერი {record}
 embroidery	{name}: {value} mm	{name}: {value} მმ
 embroidery	Error	შეცდომა
 embroidery	Warning	გაფრთხილება

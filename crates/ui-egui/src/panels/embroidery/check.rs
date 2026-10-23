@@ -255,10 +255,10 @@ pub(crate) fn hit_line(app: &VectorcraftApp, doc: Option<&Document>, id: &str, h
     };
     let line = match id {
         "stitchTooLong" | "formatStep" | "stitchBelowNeedle" | "stitchTiny" => {
-            fill(crate::et!("Stitch {record}: {value} mm"), &[("record", &record), ("value", &value)])
+            fill(crate::et!("Record {record}: {value} mm"), &[("record", &record), ("value", &value)])
         }
-        "shortStitchesInARow" => fill(crate::et!("From stitch {record}: {value} in a row"), &[("record", &record), ("value", &value)]),
-        "layers" => fill(crate::et!("Stitch {record}"), &[("record", &record)]),
+        "shortStitchesInARow" => fill(crate::et!("From record {record}: {value} in a row"), &[("record", &record), ("value", &value)]),
+        "layers" => fill(crate::et!("Record {record}"), &[("record", &record)]),
         "satinTooWide" | "fillStitchShort" | "satinStitchShort" | "runStitchShort" => {
             fill(crate::et!("{name}: {value} mm"), &[("name", &name()?), ("value", &value)])
         }

@@ -4999,9 +4999,9 @@ embroidery	Narrowest: {value} mm	최소 폭: {value}mm
 embroidery	Shortest: {value} mm	최단: {value}mm
 embroidery	At most {value} in a row	최대 {value}개 연속
 embroidery	At most {value} on one spot	한 곳에 최대 {value}겹
-embroidery	Stitch {record}: {value} mm	{record}번째 땀: {value}mm
-embroidery	From stitch {record}: {value} in a row	{record}번째 땀부터: {value}개 연속
-embroidery	Stitch {record}	{record}번째 땀
+embroidery	Record {record}: {value} mm	{record}번째 레코드: {value}mm
+embroidery	From record {record}: {value} in a row	{record}번째 레코드부터: {value}개 연속
+embroidery	Record {record}	{record}번째 레코드
 embroidery	{name}: {value} mm	{name}: {value}mm
 embroidery	Error	오류
 embroidery	Warning	경고

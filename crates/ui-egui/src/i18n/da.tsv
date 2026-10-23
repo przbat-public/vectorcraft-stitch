@@ -5406,9 +5406,9 @@ embroidery	Narrowest: {value} mm	Smalleste: {value} mm
 embroidery	Shortest: {value} mm	Korteste: {value} mm
 embroidery	At most {value} in a row	Højst {value} i træk
 embroidery	At most {value} on one spot	Højst {value} på ét sted
-embroidery	Stitch {record}: {value} mm	Sting {record}: {value} mm
-embroidery	From stitch {record}: {value} in a row	Fra sting {record}: {value} i træk
-embroidery	Stitch {record}	Sting {record}
+embroidery	Record {record}: {value} mm	Post {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Fra post {record}: {value} i træk
+embroidery	Record {record}	Post {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Fejl
 embroidery	Warning	Advarsel

@@ -4998,9 +4998,9 @@ embroidery	Narrowest: {value} mm	Schmalste: {value} mm
 embroidery	Shortest: {value} mm	Kürzester: {value} mm
 embroidery	At most {value} in a row	Höchstens {value} hintereinander
 embroidery	At most {value} on one spot	Höchstens {value} an einer Stelle
-embroidery	Stitch {record}: {value} mm	Stich {record}: {value} mm
-embroidery	From stitch {record}: {value} in a row	Ab Stich {record}: {value} hintereinander
-embroidery	Stitch {record}	Stich {record}
+embroidery	Record {record}: {value} mm	Datensatz {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Ab Datensatz {record}: {value} hintereinander
+embroidery	Record {record}	Datensatz {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Fehler
 embroidery	Warning	Warnung

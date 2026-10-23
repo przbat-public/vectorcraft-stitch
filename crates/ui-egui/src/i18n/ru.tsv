@@ -5032,9 +5032,9 @@ embroidery	Narrowest: {value} mm	Самая узкая: {value} мм
 embroidery	Shortest: {value} mm	Самый короткий: {value} мм
 embroidery	At most {value} in a row	Не более {value} подряд
 embroidery	At most {value} on one spot	Не более {value} в одном месте
-embroidery	Stitch {record}: {value} mm	Стежок {record}: {value} мм
-embroidery	From stitch {record}: {value} in a row	Со стежка {record}: {value} подряд
-embroidery	Stitch {record}	Стежок {record}
+embroidery	Record {record}: {value} mm	Запись {record}: {value} мм
+embroidery	From record {record}: {value} in a row	С записи {record}: {value} подряд
+embroidery	Record {record}	Запись {record}
 embroidery	{name}: {value} mm	{name}: {value} мм
 embroidery	Error	Ошибка
 embroidery	Warning	Предупреждение

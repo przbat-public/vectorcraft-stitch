@@ -151,7 +151,7 @@ fn the_tab_drawn() {
     app.embroidery.check.open.insert("stitchBelowNeedle".into());
     let words = frame(&mut app, &ctx, 1.0);
     assert!(has(&words, "Source: Melco"), "{words:?}");
-    assert!(words.iter().any(|w| w.starts_with("Stitch ") && w.ends_with(" mm")), "{words:?}");
+    assert!(words.iter().any(|w| w.starts_with("Record ") && w.ends_with(" mm")), "{words:?}");
     assert!(words.iter().any(|w| w.starts_with("and ") && w.ends_with(" more")), "{words:?}");
     // A source with no address (the plan's own warnings) is no citation.
     app.embroidery.check.open.insert("notSewn".into());
@@ -458,7 +458,7 @@ fn the_marks_drawn_and_hovered() {
         }
     }
     assert!(circles >= 3 * marks(&app, pass).len(), "{circles}");
-    assert!(words.iter().any(|w| w.starts_with("Warning: 3 or more layers") && w.contains("\nStitch ")), "{words:?}");
+    assert!(words.iter().any(|w| w.starts_with("Warning: 3 or more layers") && w.contains("\nRecord ")), "{words:?}");
 }
 
 /// A stats reply with these counts in its 27 bins (half a millimetre each up to 12.5, then 12.7,

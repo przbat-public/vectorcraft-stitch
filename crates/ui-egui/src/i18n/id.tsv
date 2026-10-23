@@ -5406,9 +5406,9 @@ embroidery	Narrowest: {value} mm	Tersempit: {value} mm
 embroidery	Shortest: {value} mm	Terpendek: {value} mm
 embroidery	At most {value} in a row	Paling banyak {value} berturut-turut
 embroidery	At most {value} on one spot	Paling banyak {value} di satu tempat
-embroidery	Stitch {record}: {value} mm	Jahitan {record}: {value} mm
-embroidery	From stitch {record}: {value} in a row	Dari jahitan {record}: {value} berturut-turut
-embroidery	Stitch {record}	Jahitan {record}
+embroidery	Record {record}: {value} mm	Rekaman {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Dari rekaman {record}: {value} berturut-turut
+embroidery	Record {record}	Rekaman {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Kesalahan
 embroidery	Warning	Peringatan

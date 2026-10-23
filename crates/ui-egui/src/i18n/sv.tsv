@@ -5379,9 +5379,9 @@ embroidery	Narrowest: {value} mm	Smalaste: {value} mm
 embroidery	Shortest: {value} mm	Kortaste: {value} mm
 embroidery	At most {value} in a row	Högst {value} i följd
 embroidery	At most {value} on one spot	Högst {value} på samma ställe
-embroidery	Stitch {record}: {value} mm	Stygn {record}: {value} mm
-embroidery	From stitch {record}: {value} in a row	Från stygn {record}: {value} i följd
-embroidery	Stitch {record}	Stygn {record}
+embroidery	Record {record}: {value} mm	Post {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Från post {record}: {value} i följd
+embroidery	Record {record}	Post {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Fel
 embroidery	Warning	Varning

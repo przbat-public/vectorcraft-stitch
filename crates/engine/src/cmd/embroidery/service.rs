@@ -395,26 +395,41 @@ pub(crate) fn plan_afresh(doc: &Document, opts: &Options) -> Result<DesignPlan, 
     digitize(doc, opts, None)
 }
 
-/// The planning service of each open document, by [`crate::DocState::uid`].
+/// The planning service of each open document, by [`crate::DocState::uid`], and its stitch
+/// preview's view setting ([`super::view::StitchView`]).
 #[derive(Default)]
-pub(crate) struct Services(HashMap<u64, Arc<PlanService>>);
+pub(crate) struct Services {
+    plans: HashMap<u64, Arc<PlanService>>,
+    views: HashMap<u64, super::view::StitchView>,
+}
 
 impl Services {
     /// Document `uid`'s service, made when it is first asked for.
     pub(crate) fn of(&mut self, uid: u64) -> Arc<PlanService> {
-        self.0.entry(uid).or_default().clone()
+        self.plans.entry(uid).or_default().clone()
     }
 
-    /// Drop document `uid`'s service (the document closed), and what it kept.
+    /// Document `uid`'s stitch view (the default until one is set).
+    pub(crate) fn view(&self, uid: u64) -> super::view::StitchView {
+        self.views.get(&uid).copied().unwrap_or_default()
+    }
+
+    pub(crate) fn set_view(&mut self, uid: u64, view: super::view::StitchView) {
+        self.views.insert(uid, view);
+    }
+
+    /// Drop document `uid`'s service (the document closed), what it kept, and its stitch view.
     pub(crate) fn forget(&mut self, uid: u64) {
-        self.0.remove(&uid);
+        self.plans.remove(&uid);
+        self.views.remove(&uid);
     }
 
-    /// The documents that have a service.
+    /// The documents that have a service or a stitch view.
     #[cfg(test)]
     pub(crate) fn uids(&self) -> Vec<u64> {
-        let mut uids: Vec<u64> = self.0.keys().copied().collect();
+        let mut uids: Vec<u64> = self.plans.keys().chain(self.views.keys()).copied().collect();
         uids.sort_unstable();
+        uids.dedup();
         uids
     }
 }

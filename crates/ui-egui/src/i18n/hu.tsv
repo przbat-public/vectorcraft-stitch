@@ -5309,3 +5309,8 @@ imageTrace	Outline	Körvonal
 	Edge Run and Tatami	Szegélymenet és tatami
 	Embroidery Picture	Hímzés képe
 @msg	nothing to draw: the document sews no stitch	nincs mit rajzolni: a dokumentum egyetlen öltést sem varr
+	Stitch Preview	Öltések előnézete
+	Stitch Preview Options	Öltések előnézetének beállításai
+	Show Jumps and Cuts	Ugrások és vágások megjelenítése
+	Show Needle Points	Tűszúrások megjelenítése
+	Show Artwork Under Stitches	Grafika megjelenítése az öltések alatt

@@ -4916,3 +4916,8 @@ lighting	Light	Світло
 	Edge Run and Tatami	Прохід по краю і татамі
 	Embroidery Picture	Зображення вишивки
 @msg	nothing to draw: the document sews no stitch	нічого малювати: документ не шиє жодного стібка
+	Stitch Preview	Перегляд стібків
+	Stitch Preview Options	Параметри перегляду стібків
+	Show Jumps and Cuts	Показати перескоки й обрізання
+	Show Needle Points	Показати проколи голки
+	Show Artwork Under Stitches	Показати графіку під стібками

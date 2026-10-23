@@ -5159,3 +5159,8 @@ lighting	Light	光源
 	Edge Run and Tatami	边缘行针加榻榻米
 	Embroidery Picture	刺绣图像
 @msg	nothing to draw: the document sews no stitch	无可绘制：文档没有要缝的针迹
+	Stitch Preview	针迹预览
+	Stitch Preview Options	针迹预览选项
+	Show Jumps and Cuts	显示跳针和剪线
+	Show Needle Points	显示落针点
+	Show Artwork Under Stitches	在针迹下显示图稿

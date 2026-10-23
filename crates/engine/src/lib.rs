@@ -29,6 +29,7 @@ use vectorcraft_tools::{PaintDefaults, Tool};
 pub use cmd::EyedropperOptions;
 pub use cmd::clipboard::Clipboard;
 pub use cmd::distortcmds::perspective_click;
+pub use cmd::embroidery::view::StitchView;
 pub use cmd::embroidery::{Options as EmbroideryOptions, PlanKey as EmbroideryPlanKey, Planned as EmbroideryPlanned, Planner as EmbroideryPlanner};
 pub use cmd::fileio::embroidery::LOSS_NOTES as EMBROIDERY_LOSS_NOTES;
 pub use cmd::params::{check_keys, check_params};

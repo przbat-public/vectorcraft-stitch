@@ -5229,3 +5229,8 @@ imageTrace	Outline	კონტური
 	Edge Run and Tatami	კიდის გავლა და ტატამი
 	Embroidery Picture	ქარგვის სურათი
 @msg	nothing to draw: the document sews no stitch	დასახატი არაფერია: დოკუმენტი არც ერთ ნაკერს არ კერავს
+	Stitch Preview	ნაკერების წინასწარი ნახვა
+	Stitch Preview Options	ნაკერების წინასწარი ნახვის პარამეტრები
+	Show Jumps and Cuts	ნახტომებისა და ჭრების ჩვენება
+	Show Needle Points	ნემსის ჩხვლეტის წერტილების ჩვენება
+	Show Artwork Under Stitches	გრაფიკის ჩვენება ნაკერების ქვეშ

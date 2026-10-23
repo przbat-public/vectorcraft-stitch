@@ -4932,3 +4932,8 @@ lighting	Light	Свет
 	Edge Run and Tatami	Проход по краю и татами
 	Embroidery Picture	Изображение вышивки
 @msg	nothing to draw: the document sews no stitch	нечего рисовать: в документе нет ни одного стежка
+	Stitch Preview	Просмотр стежков
+	Stitch Preview Options	Параметры просмотра стежков
+	Show Jumps and Cuts	Показать перескоки и обрезки
+	Show Needle Points	Показать проколы иглы
+	Show Artwork Under Stitches	Показать графику под стежками

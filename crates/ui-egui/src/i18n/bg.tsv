@@ -5288,3 +5288,8 @@ theme	Appearance	Външен вид
 	Edge Run and Tatami	Ход по ръба и татами
 	Embroidery Picture	Изображение на бродерията
 @msg	nothing to draw: the document sews no stitch	няма какво да се изобрази: документът не шие нито един бод
+	Stitch Preview	Преглед на бодовете
+	Stitch Preview Options	Опции за прегледа на бодовете
+	Show Jumps and Cuts	Показване на прескоците и срязванията
+	Show Needle Points	Показване на точките на убождане
+	Show Artwork Under Stitches	Показване на графиката под бодовете

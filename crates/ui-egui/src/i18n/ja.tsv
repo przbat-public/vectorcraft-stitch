@@ -4976,3 +4976,8 @@ lighting	Light	ライト
 	Edge Run and Tatami	エッジランとタタミ
 	Embroidery Picture	刺繍の画像
 @msg	nothing to draw: the document sews no stitch	描画するものがありません: ドキュメントには縫うステッチがありません
+	Stitch Preview	ステッチプレビュー
+	Stitch Preview Options	ステッチプレビューのオプション
+	Show Jumps and Cuts	ジャンプとカットを表示
+	Show Needle Points	針落ち点を表示
+	Show Artwork Under Stitches	ステッチの下にアートワークを表示

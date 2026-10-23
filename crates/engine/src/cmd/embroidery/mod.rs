@@ -50,9 +50,12 @@ mod tests_stats;
 #[cfg(test)]
 mod tests_threadlib;
 #[cfg(test)]
+mod tests_view;
+#[cfg(test)]
 mod tests_walk;
 pub mod threadlib;
 mod unit;
+pub mod view;
 
 use std::sync::Arc;
 
@@ -189,7 +192,7 @@ impl Session {
 /// The embroidery commands: the settings an object carries and the document's, and the threads,
 /// figures, sewing order and checks of its design.
 pub fn specs() -> Vec<CommandSpec> {
-    vec![
+    let mut specs = vec![
         cmd!(
             "embroidery.setTrimAfter",
             "Embroidery Trim After",
@@ -262,7 +265,9 @@ pub fn specs() -> Vec<CommandSpec> {
             has_doc,
             check_cmd
         ),
-    ]
+    ];
+    specs.extend(view::specs());
+    specs
 }
 
 fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {

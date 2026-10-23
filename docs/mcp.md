@@ -4344,6 +4344,14 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   an artboard (`artboard`, from 0) or a box (`rect`, points); `scale` is pixels a point (default 1, at most 64);
   `background` `"#rrggbb"` (default white, the fabric) or null for none. It answers with `width`, `height`, the
   `region` drawn and the plan's `generation` (another plan, another number). A design with nothing sewn is an error.
+- `view.stitchPreview {on?}` (⌘E) shows the active document's design on the canvas as its stitches instead of its
+  art; `on` left out or null toggles. Each open document has its own setting, view state like Show Transparency
+  Grid: not saved, not undoable, not journaled, kept through Revert, dropped on close. Its options, kept while the
+  preview is off, are set the same way: `view.stitchPreview.jumps` (jumps and cuts marked, on by default),
+  `view.stitchPreview.needlePoints` (off) and `view.stitchPreview.artwork` (the art faint under the stitches, off).
+  Each answers with the whole setting, `{on, jumps, needlePoints, artwork, shown, pausedBy}`: `shown` is
+  `"stitches"` or `"art"`, and `pausedBy` (`"opacityMask"`, `"pattern"` or null) names the edit mode that shows
+  the art while it lasts. Exports never show the stitches.
 
 The four read commands (threads, stats, sequence, check) take `selectedOnly` (the selected objects alone, as `document.export {selectedOnly}` writes them)
 and plan the document as the export does: an opacity mask's editing layer, which no export writes, is left out.

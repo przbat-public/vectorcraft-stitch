@@ -73,3 +73,22 @@ fn the_stats_sequence_and_check_are_reachable() {
         assert!(refused.is_error, "{id} {refused:?}");
     }
 }
+
+/// The stitch preview's view commands are reachable, set the setting the canvas reads, and refuse
+/// a key they don't take.
+#[test]
+fn the_stitch_preview_commands_are_reachable() {
+    let mut h = Headless::with_document();
+    let listed = text(&call_tool(&mut h, "list_commands", &json!({"filter": "view.stitchPreview"})));
+    let ids: Vec<&str> = listed["commands"].as_array().unwrap().iter().filter_map(|c| c["id"].as_str()).collect();
+    for id in ["view.stitchPreview", "view.stitchPreview.jumps", "view.stitchPreview.needlePoints", "view.stitchPreview.artwork"] {
+        assert!(ids.contains(&id), "{id} in {ids:?}");
+    }
+    let r = text(&call_tool(&mut h, "run_command", &json!({"command": "view.stitchPreview", "params": {"on": true}})));
+    assert_eq!((&r["on"], &r["shown"]), (&json!(true), &json!("stitches")), "{r}");
+    let r = text(&call_tool(&mut h, "run_command", &json!({"command": "view.stitchPreview.artwork"})));
+    assert_eq!(r["artwork"], true);
+    assert!(h.session.stitch_view().on && h.session.stitch_view().artwork);
+    let refused = call_tool(&mut h, "run_command", &json!({"command": "view.stitchPreview", "params": {"show": true}}));
+    assert!(refused.is_error, "{refused:?}");
+}

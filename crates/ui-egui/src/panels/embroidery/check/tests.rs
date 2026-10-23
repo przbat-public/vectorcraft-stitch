@@ -531,3 +531,29 @@ fn stacked_rings_are_thinned() {
     view.zoom = 40.0;
     assert_eq!(thinned(&all, &crate::canvas::Xf::new(canvas, &view)).len(), all.len());
 }
+
+/// The cap comes after the thinning: one rule's hits stacked on a spot never take the room of
+/// another rule's, which stand apart; and never more than the cap are drawn.
+#[test]
+fn the_cap_comes_after_the_thinning() {
+    use crate::embroidery::check_marks::{CanvasMark, MAX_DRAWN_MARKS, thinned};
+    let mark = |rule: &str, k: usize, x: f64| CanvasMark {
+        rule: rule.into(),
+        hit: k,
+        mark: Mark::Warning,
+        centre: Point::new(x, 0.0),
+        half: 0.0,
+        focused: false,
+    };
+    // A first rule's many hits on one spot, then a second's apart.
+    let mut all: Vec<CanvasMark> = (0..MAX_DRAWN_MARKS * 2).map(|k| mark("layers", k, 0.0)).collect();
+    all.extend((0..10).map(|k| mark("stitchTooLong", k, 100.0 * (k as f64 + 1.0))));
+    let canvas = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 600.0));
+    let view = crate::state::View { zoom: 1.0, center: Point::new(500.0, 0.0), ..Default::default() };
+    let kept = thinned(&all, &crate::canvas::Xf::new(canvas, &view));
+    assert_eq!(kept.iter().filter(|(m, ..)| m.rule == "stitchTooLong").count(), 10, "the second rule's rings all drawn");
+    assert_eq!(kept.iter().filter(|(m, ..)| m.rule == "layers").count(), 1, "the stack, once");
+    // Spread out, more than the cap: the cap.
+    let spread: Vec<CanvasMark> = (0..MAX_DRAWN_MARKS * 2).map(|k| mark("layers", k, 50.0 * k as f64)).collect();
+    assert_eq!(thinned(&spread, &crate::canvas::Xf::new(canvas, &view)).len(), MAX_DRAWN_MARKS);
+}

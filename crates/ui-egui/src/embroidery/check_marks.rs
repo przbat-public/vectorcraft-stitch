@@ -12,10 +12,10 @@
 //!   their objects instead.
 //! - **How**: a black ring on a white one, so that it reads on any fabric, thread or art; the
 //!   mark on a white disc at its upper right; the focus's hit ringed again in the accent colour.
-//!   At most [`MAX_DRAWN_MARKS`], the focus's first (no clustering: a hard cap). A ring whose
-//!   centre falls inside a ring already drawn is left out ([`thinned`]): hits half a millimetre
-//!   apart (layers along an edge) would stack into a chain, and what it would mark lies within the
-//!   ring drawn.
+//!   A ring whose centre falls inside a ring already drawn is left out ([`thinned`]): hits half a
+//!   millimetre apart (layers along an edge) would stack into a chain, and what it would mark lies
+//!   within the ring drawn. Then at most [`MAX_DRAWN_MARKS`], the focus's first (no clustering: a
+//!   hard cap): thinned first, so that one rule's stacked hits never take the room of another's.
 //! - Hovering a mark tells its rule and hit, as the tab words them.
 
 use egui::{Color32, Pos2, Stroke, vec2};
@@ -56,7 +56,9 @@ pub(crate) struct CanvasMark {
     pub(crate) focused: bool,
 }
 
-/// The marks to draw in pass `pass` (as the module says when and where), the focus's first.
+/// The marks that may be drawn in pass `pass` (as the module says when and where), the focus's
+/// first: every hit the check lists (at most its limit a rule), before [`thinned`] thins and caps
+/// them.
 pub(crate) fn marks(app: &VectorcraftApp, pass: u64) -> Vec<CanvasMark> {
     let state = &app.embroidery.check;
     // Not while the tab isn't drawn: in this pass or the last.
@@ -82,9 +84,6 @@ pub(crate) fn marks(app: &VectorcraftApp, pass: u64) -> Vec<CanvasMark> {
         let id = rule["id"].as_str().unwrap_or_default();
         let mark = check::mark_of(rule);
         for (k, hit) in check::listed(rule).iter().enumerate() {
-            if out.len() >= MAX_DRAWN_MARKS {
-                return out;
-            }
             let points: Vec<Point> = check::hit_points(hit).into_iter().map(|p| Point::new(mm_to_pt(p.x), mm_to_pt(p.y))).collect();
             let (centre, half) = match points.as_slice() {
                 [from, to] => (from.midpoint(*to), from.distance(*to) / 2.0),
@@ -99,10 +98,13 @@ pub(crate) fn marks(app: &VectorcraftApp, pass: u64) -> Vec<CanvasMark> {
 }
 
 /// The marks to draw of `all` at view `xf`, with their rings: the focus's hit first, always, then
-/// each whose ring's centre isn't inside a ring kept before it.
+/// each whose ring's centre isn't inside a ring kept before it, at most [`MAX_DRAWN_MARKS`].
 pub(crate) fn thinned<'a>(all: &'a [CanvasMark], xf: &Xf) -> Vec<(&'a CanvasMark, Pos2, f32)> {
     let mut kept: Vec<(&CanvasMark, Pos2, f32)> = Vec::new();
     for m in all.iter().filter(|m| m.focused).chain(all.iter().filter(|m| !m.focused)) {
+        if kept.len() >= MAX_DRAWN_MARKS {
+            break;
+        }
         let (c, r) = ring(m, xf);
         if m.focused || kept.iter().all(|(_, kc, kr)| c.distance(*kc) >= *kr) {
             kept.push((m, c, r));

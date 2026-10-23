@@ -173,20 +173,26 @@ pub fn fit(app: &mut VectorcraftApp, how: &str) {
         _ => st.doc.artboards.get(current).or(st.doc.artboards.first()).map(|a| a.rect),
     };
     let Some(target) = target else { return };
-    let zoom = if how == "view.actualSize" {
-        actual_size_zoom(app.session.prefs.display_print_size)
-    } else {
-        // The width and height of the box round the target turned with the view, at zoom 1.
-        let (sn, cs) = app.view().map_or(0.0, |v| v.rotation.to_radians()).sin_cos();
-        let (w, h) = (target.width(), target.height());
-        let zx = (rect.width() as f64 - 60.0) / (w * cs.abs() + h * sn.abs()).max(1.0);
-        let zy = (rect.height() as f64 - 60.0) / (w * sn.abs() + h * cs.abs()).max(1.0);
-        zx.min(zy).clamp(0.0313, 640.0)
-    };
+    let zoom =
+        if how == "view.actualSize" { actual_size_zoom(app.session.prefs.display_print_size) } else { fit_zoom(app, rect, target, FIT_MARGIN) };
     let Some(v) = app.view_mut() else { return };
     v.center = target.center();
     v.fitted = true;
     v.zoom = zoom;
+}
+
+/// The room Fit Artboard and Fit All leave round what they fit, screen points on each side.
+pub(crate) const FIT_MARGIN: f64 = 30.0;
+
+/// The zoom at which `target` (document points) fills canvas `rect` less `margin` screen points on
+/// each side, turned as the view is, within the zoom's range.
+pub(crate) fn fit_zoom(app: &VectorcraftApp, rect: egui::Rect, target: Rect, margin: f64) -> f64 {
+    // The width and height of the box round the target turned with the view, at zoom 1.
+    let (sn, cs) = app.view().map_or(0.0, |v| v.rotation.to_radians()).sin_cos();
+    let (w, h) = (target.width(), target.height());
+    let zx = (rect.width() as f64 - 2.0 * margin) / (w * cs.abs() + h * sn.abs()).max(1.0);
+    let zy = (rect.height() as f64 - 2.0 * margin) / (w * sn.abs() + h * cs.abs()).max(1.0);
+    zx.min(zy).clamp(0.0313, 640.0)
 }
 
 pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {

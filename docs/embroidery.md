@@ -1586,7 +1586,7 @@ comes; one texture holds it, dropped when the moment ends.
 **The Embroidery panel** (`ui-egui/src/panels/embroidery/`, Window › Embroidery). The first time it
 docks as the last tab beside Properties, Layers and Libraries, as the mockups draw it (the project
 owner's choice), turning the dock into the shared layout once; after that it shows where it was
-left (`ui.embroideryPanel {tab?}` too). It is no `DockTab` of its own, so the preferences keep
+left (`ui.embroideryPanel {tab?, format?}` too, the format the Check tab checks for). It is no `DockTab` of its own, so the preferences keep
 upstream's shape. They live in a folder of the fork's own, `VectorCraft Stitch` (`vectorcraft-stitch`
 on Linux), beside VectorCraft's, first made from a copy of VectorCraft's settings (the project
 owner's choice; `apps/vectorcraft/src/stitch_profile.rs`): upstream resets a dock layout that holds

@@ -5449,3 +5449,7 @@ embroidery	Click to open the Embroidery panel.	Щракнете, за да от�
 embroidery	{width} × {height} mm	{width} × {height} мм
 embroidery	about {value} min	около {value} мин
 embroidery	about {value} m	около {value} м
+	Show Finding	Покажи находката
+@msg	`rule` must be a check rule's id	`rule` трябва да е идентификатор на правило от проверката
+@msg	`hit` must be a listed hit's place, from 0	`hit` трябва да е мястото на изброена находка, от 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	няма проверка на документа в сегашния му вид: покажете раздела „Проверка“ на панела „Бродерия“ и изчакайте бодовете да бъдат планирани

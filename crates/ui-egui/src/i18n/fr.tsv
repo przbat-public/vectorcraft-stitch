@@ -5483,3 +5483,7 @@ embroidery	Click to open the Embroidery panel.	Cliquez pour ouvrir le panneau Br
 embroidery	{width} × {height} mm	{width} × {height} mm
 embroidery	about {value} min	environ {value} min
 embroidery	about {value} m	environ {value} m
+	Show Finding	Afficher le constat
+@msg	`rule` must be a check rule's id	`rule` doit être l’identifiant d’une règle de la vérification
+@msg	`hit` must be a listed hit's place, from 0	`hit` doit être la place d’un constat listé, à partir de 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	aucune vérification du document tel qu’il est : affichez l’onglet Vérification du panneau Broderie et attendez que les points soient planifiés

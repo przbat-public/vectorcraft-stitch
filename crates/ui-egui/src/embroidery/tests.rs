@@ -181,7 +181,7 @@ fn inspect_screenshots_and_the_notice_follow_the_plan() {
 #[test]
 fn the_embroidery_ui_commands_and_control_keys_answer_junk_without_a_panic() {
     use vectorcraft_testkit::strategies::{junk_params, junk_values};
-    let ids = ["ui.embroideryPanel", "view.zoomTo", "view.checkMarks", "embroidery.nextHit", "embroidery.previousHit"];
+    let ids = ["ui.embroideryPanel", "view.zoomTo", "view.checkMarks", "embroidery.nextHit", "embroidery.previousHit", "embroidery.showFinding"];
     for with_document in [false, true] {
         let (mut app, tx) = controlled();
         if with_document {

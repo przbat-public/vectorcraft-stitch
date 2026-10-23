@@ -5400,3 +5400,7 @@ embroidery	Click to open the Embroidery panel.	Clique para abrir o painel Bordad
 embroidery	{width} × {height} mm	{width} × {height} mm
 embroidery	about {value} min	cerca de {value} min
 embroidery	about {value} m	cerca de {value} m
+	Show Finding	Mostrar ocorrência
+@msg	`rule` must be a check rule's id	`rule` deve ser o id de uma regra da verificação
+@msg	`hit` must be a listed hit's place, from 0	`hit` deve ser a posição de uma ocorrência listada, a partir de 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	não há verificação do documento como ele está: mostre a guia Verificação do painel Bordado e aguarde o planejamento dos pontos

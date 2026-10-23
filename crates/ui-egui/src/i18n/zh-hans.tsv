@@ -5320,3 +5320,7 @@ embroidery	Click to open the Embroidery panel.	点按可打开“刺绣”面板
 embroidery	{width} × {height} mm	{width} × {height} mm
 embroidery	about {value} min	约 {value} 分钟
 embroidery	about {value} m	约 {value} 米
+	Show Finding	显示问题
+@msg	`rule` must be a check rule's id	`rule` 必须是检查规则的 ID
+@msg	`hit` must be a listed hit's place, from 0	`hit` 必须是列出的问题的位置，从 0 开始
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	没有当前文档的检查结果：请显示“刺绣”面板的“检查”标签页，并等待针迹规划完成

@@ -5436,3 +5436,7 @@ embroidery	Click to open the Embroidery panel.	Κάντε κλικ για να �
 embroidery	{width} × {height} mm	{width} × {height} mm
 embroidery	about {value} min	περίπου {value} λεπτά
 embroidery	about {value} m	περίπου {value} μ.
+	Show Finding	Εμφάνιση ευρήματος
+@msg	`rule` must be a check rule's id	το `rule` πρέπει να είναι αναγνωριστικό κανόνα ελέγχου
+@msg	`hit` must be a listed hit's place, from 0	το `hit` πρέπει να είναι η θέση ενός καταγεγραμμένου ευρήματος, από το 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	δεν υπάρχει έλεγχος του εγγράφου όπως είναι τώρα: εμφανίστε την καρτέλα «Έλεγχος» του πίνακα «Κέντημα» και περιμένετε να σχεδιαστούν οι βελονιές

@@ -5093,3 +5093,7 @@ embroidery	Click to open the Embroidery panel.	Щёлкните, чтобы от
 embroidery	{width} × {height} mm	{width} × {height} мм
 embroidery	about {value} min	около {value} мин
 embroidery	about {value} m	около {value} м
+	Show Finding	Показать находку
+@msg	`rule` must be a check rule's id	`rule` должен быть идентификатором правила проверки
+@msg	`hit` must be a listed hit's place, from 0	`hit` должен быть номером находки в списке, начиная с 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	нет проверки документа в его текущем виде: откройте вкладку «Проверка» панели «Вышивка» и дождитесь планирования стежков

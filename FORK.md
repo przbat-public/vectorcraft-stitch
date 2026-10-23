@@ -357,7 +357,8 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     before the timings, which are drawn only when the counters leave room;
   - `menus.rs`: View › Stitch Preview and its options after Pixel Preview, the `checked` and
     `enabled` hooks, Window › Embroidery, the `UI_COMMANDS` rows (`ui.embroideryPanel`,
-    `view.zoomTo`, `view.checkMarks`, `embroidery.nextHit`, `embroidery.previousHit`), the
+    `view.zoomTo`, `view.checkMarks`, `embroidery.showFinding`, `embroidery.nextHit`,
+    `embroidery.previousHit`), the
     `view.zoomTo` arm (into `embroidery::zoom`), and `panels::embroidery::command` before the dock's
     commands;
   - `control.rs`: `ui.set {stitchPreview}`, `ui.render {stitchPreview}`, `ui.inspect`'s

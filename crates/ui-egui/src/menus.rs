@@ -613,7 +613,13 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "ui.embroideryPanel",
         "Embroidery Panel",
         "",
-        "{tab?: order|check} show the Embroidery panel (VectorCraft Stitch), at a tab: the first time docked as the last tab beside Properties, Layers and Libraries → {tab}",
+        "{tab?: order|check, format?: a format's id (embroidery.check's), or null for the thread palette's} show the Embroidery panel (VectorCraft Stitch), at a tab: the first time docked as the last tab beside Properties, Layers and Libraries; format: the one the active document's Check tab checks for → {tab, format}",
+    ),
+    (
+        "embroidery.showFinding",
+        "Show Finding",
+        "",
+        "{rule: a check rule's id, hit?: a listed hit's place, from 0} (VectorCraft Stitch) Show from the Embroidery panel's Check tab: select the rule's objects (or the hit's) and zoom to its hits, on the check the tab shows for the document as it is; then embroidery.nextHit and embroidery.previousHit step from it → {rule, hit}",
     ),
     (
         "ui.flattenerPreview",

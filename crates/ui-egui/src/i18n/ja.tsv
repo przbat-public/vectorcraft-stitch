@@ -5137,3 +5137,7 @@ embroidery	Click to open the Embroidery panel.	クリックすると刺繍パネ
 embroidery	{width} × {height} mm	{width} × {height} mm
 embroidery	about {value} min	約 {value} 分
 embroidery	about {value} m	約 {value} m
+	Show Finding	検出箇所を表示
+@msg	`rule` must be a check rule's id	`rule` にはチェックのルールの ID を指定してください
+@msg	`hit` must be a listed hit's place, from 0	`hit` には一覧の検出箇所の位置を 0 から指定してください
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	現在のドキュメントのチェックがありません: 刺繍パネルの「チェック」タブを表示して、針目の計画が終わるまでお待ちください

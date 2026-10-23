@@ -5467,3 +5467,7 @@ embroidery	Click to open the Embroidery panel.	Klik for at åbne panelet Broderi
 embroidery	{width} × {height} mm	{width} × {height} mm
 embroidery	about {value} min	ca. {value} min
 embroidery	about {value} m	ca. {value} m
+	Show Finding	Vis fund
+@msg	`rule` must be a check rule's id	`rule` skal være id'et for en kontrolregel
+@msg	`hit` must be a listed hit's place, from 0	`hit` skal være pladsen for et anført fund, fra 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	der er ingen kontrol af dokumentet, som det er nu: vis fanen Kontrol i panelet Broderi, og vent, til stingene er planlagt

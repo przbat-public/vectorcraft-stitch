@@ -5440,3 +5440,7 @@ embroidery	Click to open the Embroidery panel.	Klicka för att öppna panelen Br
 embroidery	{width} × {height} mm	{width} × {height} mm
 embroidery	about {value} min	cirka {value} min
 embroidery	about {value} m	cirka {value} m
+	Show Finding	Visa fynd
+@msg	`rule` must be a check rule's id	`rule` måste vara id:t för en kontrollregel
+@msg	`hit` must be a listed hit's place, from 0	`hit` måste vara platsen för ett listat fynd, från 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	det finns ingen kontroll av dokumentet som det är nu: visa fliken Kontroll i panelen Broderi och vänta tills stygnen har planerats

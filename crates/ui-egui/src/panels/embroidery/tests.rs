@@ -74,14 +74,27 @@ fn window_embroidery_docks_it_beside_the_three_tabs() {
 #[test]
 fn ui_embroidery_panel_shows_it_at_a_tab() {
     let mut app = blank_app();
-    assert_eq!(app.run("ui.embroideryPanel", json!({"tab": "check"})).unwrap(), json!({"tab": "check"}));
+    let none = Value::Null;
+    assert_eq!(app.run("ui.embroideryPanel", json!({"tab": "check"})).unwrap(), json!({"tab": "check", "format": none}));
     assert_eq!(app.ui.embroidery_panel.tab, Tab::Check);
     assert!(app.ui.docking.as_ref().is_some_and(|l| l.contains(&ID.to_string())));
-    assert_eq!(app.run("ui.embroideryPanel", json!({})).unwrap(), json!({"tab": "check"}), "the tab stays");
+    assert_eq!(app.run("ui.embroideryPanel", json!({})).unwrap(), json!({"tab": "check", "format": none}), "the tab stays");
     assert!(app.run("ui.embroideryPanel", json!({"tab": "stitches"})).is_err(), "not shown yet");
     assert!(app.run("ui.embroideryPanel", json!({"tab": 1})).is_err());
     assert!(app.run("ui.embroideryPanel", json!({"tabs": "order"})).is_err());
     assert_eq!(app.ui.embroidery_panel.tab, Tab::Check);
+    // The format the check is for: no document, none to set.
+    assert!(app.run("ui.embroideryPanel", json!({"format": "dst"})).is_err());
+    app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    let uid = app.session.active().unwrap().uid;
+    assert_eq!(app.run("ui.embroideryPanel", json!({"format": "dst"})).unwrap()["format"], "dst");
+    assert_eq!(app.embroidery.check.format.get(&uid), Some(&"dst"));
+    for bad in [json!({"format": "zzz"}), json!({"format": 5})] {
+        assert!(app.run("ui.embroideryPanel", bad.clone()).is_err(), "{bad}");
+    }
+    assert_eq!(app.embroidery.check.format.get(&uid), Some(&"dst"), "a refused format changes nothing");
+    assert_eq!(app.run("ui.embroideryPanel", json!({"format": null})).unwrap()["format"], none, "back to the palette's");
+    assert!(!app.embroidery.check.format.contains_key(&uid));
 }
 
 /// A tab this version doesn't show, or anything else, reads as the first; the interface's state

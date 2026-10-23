@@ -265,6 +265,33 @@ fn selection(app: &VectorcraftApp) -> Vec<u64> {
     app.session.doc().unwrap().selection.objects.iter().map(|id| id.0).collect()
 }
 
+/// `embroidery.showFinding` is Show as a command: a rule's objects, or one hit's, from the check
+/// the tab shows; then Next Finding steps from it. Refused with no check of the document as it is,
+/// for a rule or hit the check hasn't, or junk.
+#[test]
+fn show_finding_is_show_as_a_command() {
+    let mut app = app_with_findings();
+    let ctx = egui::Context::default();
+    assert!(app.run("embroidery.showFinding", json!({"rule": "layers"})).is_err(), "no check yet");
+    let (_, reply) = shown_check(&mut app, &ctx);
+    let rule = rule_of(&reply, "stitchBelowNeedle").unwrap().clone();
+    let shown = app.run("embroidery.showFinding", json!({"rule": "stitchBelowNeedle"})).unwrap();
+    assert_eq!(shown, json!({"rule": "stitchBelowNeedle", "hit": null}));
+    let objects: Vec<u64> = rule["objects"].as_array().unwrap().iter().map(|o| o.as_u64().unwrap()).collect();
+    assert_eq!(selection(&app), objects);
+    assert_eq!(app.run("embroidery.nextHit", json!({})).unwrap()["hit"], 0, "Next Finding goes on from it");
+    assert_eq!(app.run("embroidery.showFinding", json!({"rule": "stitchBelowNeedle", "hit": 1})).unwrap()["hit"], 1);
+    for bad in [
+        json!({}),
+        json!({"rule": "nothing"}),
+        json!({"rule": "stitchBelowNeedle", "hit": 999}),
+        json!({"rule": "layers", "hit": -1}),
+        json!({"rule": "layers", "hits": 1}),
+    ] {
+        assert!(app.run("embroidery.showFinding", bad.clone()).is_err(), "{bad}");
+    }
+}
+
 /// Show selects a rule's objects and zooms to its hits; its stitches stand out for a moment.
 #[test]
 fn show_selects_the_rules_objects_and_zooms_to_its_hits() {

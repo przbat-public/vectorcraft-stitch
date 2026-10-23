@@ -5059,3 +5059,7 @@ embroidery	Click to open the Embroidery panel.	Klicken, um das Bedienfeld „Sti
 embroidery	{width} × {height} mm	{width} × {height} mm
 embroidery	about {value} min	etwa {value} Min.
 embroidery	about {value} m	etwa {value} m
+	Show Finding	Befund zeigen
+@msg	`rule` must be a check rule's id	`rule` muss die ID einer Prüfregel sein
+@msg	`hit` must be a listed hit's place, from 0	`hit` muss die Stelle eines aufgeführten Befunds sein, ab 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	keine Prüfung des Dokuments in seinem jetzigen Zustand: zeigen Sie den Tab „Prüfung“ des Bedienfelds „Stickerei“ und warten Sie, bis die Stiche geplant sind

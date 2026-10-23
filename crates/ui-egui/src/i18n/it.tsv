@@ -5097,3 +5097,7 @@ embroidery	Click to open the Embroidery panel.	Fai clic per aprire il pannello R
 embroidery	{width} × {height} mm	{width} × {height} mm
 embroidery	about {value} min	circa {value} min
 embroidery	about {value} m	circa {value} m
+	Show Finding	Mostra rilievo
+@msg	`rule` must be a check rule's id	`rule` deve essere l'id di una regola della verifica
+@msg	`hit` must be a listed hit's place, from 0	`hit` deve essere la posizione di un rilievo elencato, da 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	nessuna verifica del documento così com'è: mostra la scheda Verifica del pannello Ricamo e attendi che i punti siano pianificati

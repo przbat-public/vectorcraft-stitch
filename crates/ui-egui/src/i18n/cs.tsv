@@ -5484,3 +5484,7 @@ embroidery	Click to open the Embroidery panel.	Kliknutím otevřete panel Výši
 embroidery	{width} × {height} mm	{width} × {height} mm
 embroidery	about {value} min	asi {value} min
 embroidery	about {value} m	asi {value} m
+	Show Finding	Zobrazit nález
+@msg	`rule` must be a check rule's id	`rule` musí být identifikátor pravidla kontroly
+@msg	`hit` must be a listed hit's place, from 0	`hit` musí být pořadí uvedeného nálezu, od 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	kontrola dokumentu v aktuálním stavu není k dispozici: zobrazte kartu Kontrola panelu Výšivka a počkejte, až budou stehy naplánovány

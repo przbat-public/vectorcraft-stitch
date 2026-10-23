@@ -4372,3 +4372,7 @@ embroidery	Click to open the Embroidery panel.	按一下可開啟「刺繡」面
 embroidery	{width} × {height} mm	{width} × {height} mm
 embroidery	about {value} min	約 {value} 分鐘
 embroidery	about {value} m	約 {value} 公尺
+	Show Finding	顯示問題
+@msg	`rule` must be a check rule's id	`rule` 必須是檢查規則的 ID
+@msg	`hit` must be a listed hit's place, from 0	`hit` 必須是列出的問題的位置，從 0 開始
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	沒有目前文件的檢查結果：請顯示「刺繡」面板的「檢查」標籤頁，並等待針跡規劃完成

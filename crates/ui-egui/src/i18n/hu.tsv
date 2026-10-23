@@ -5470,3 +5470,7 @@ embroidery	Click to open the Embroidery panel.	Kattintson a Hímzés panel megny
 embroidery	{width} × {height} mm	{width} × {height} mm
 embroidery	about {value} min	kb. {value} perc
 embroidery	about {value} m	kb. {value} m
+	Show Finding	Találat megjelenítése
+@msg	`rule` must be a check rule's id	a `rule` értékének egy ellenőrzési szabály azonosítójának kell lennie
+@msg	`hit` must be a listed hit's place, from 0	a `hit` értékének egy felsorolt találat helyének kell lennie, 0-tól
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	a dokumentum jelenlegi állapotáról nincs ellenőrzés: jelenítse meg a Hímzés panel Ellenőrzés lapját, és várja meg, amíg az öltések megtervezése elkészül

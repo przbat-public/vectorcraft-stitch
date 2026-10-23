@@ -112,13 +112,15 @@ fn queries(app: &VectorcraftApp, uid: u64, tab: Tab) -> Vec<Query> {
     }
 }
 
-/// Window › Embroidery, `ui.embroideryPanel {tab?}`, and Next and Previous Finding: the panel's own
-/// handling of its commands, before the dock's (`None` for any other command).
+/// Window › Embroidery, `ui.embroideryPanel {tab?, format?}`, Show (`embroidery.showFinding`) and
+/// Next and Previous Finding: the panel's own handling of its commands, before the dock's (`None`
+/// for any other command).
 pub(crate) fn command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<Result<Value, String>> {
     match id {
         "window.panel" if p.get("panel").and_then(Value::as_str).and_then(crate::menus::normalize_panel) == Some(ID) => Some(show_panel(app)),
         "ui.embroideryPanel" => Some(panel_command(app, p)),
         "embroidery.nextHit" => Some(check::step(app, true)),
+        "embroidery.showFinding" => Some(check::show_finding_command(app, p)),
         "view.checkMarks" => Some(check_marks(app, p)),
         "embroidery.previousHit" => Some(check::step(app, false)),
         _ => None,
@@ -132,6 +134,17 @@ fn check_marks(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
     let on = crate::menus::opt_bool(p, "on")?.unwrap_or(app.embroidery.check.hide_marks);
     app.embroidery.check.hide_marks = !on;
     Ok(json!({ "on": on }))
+}
+
+/// Refuse a key of `p` other than `keys`, those a panel command reads.
+pub(crate) fn only_keys(p: &Value, keys: &[&str]) -> Result<(), String> {
+    match p.as_object().and_then(|o| o.keys().find(|k| !keys.contains(&k.as_str()))) {
+        Some(key) => {
+            let keys = keys.join(", ");
+            Err(format!("unknown parameter `{key}`; the command takes: {keys}"))
+        }
+        None => Ok(()),
+    }
 }
 
 /// Refuse a key of `p` other than `only`, the one key a panel command reads.
@@ -151,15 +164,32 @@ pub(crate) fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
     }
 }
 
-/// `ui.embroideryPanel {tab?: "order"|"check"}`: show the panel, at `tab` → `{tab}`.
+/// `ui.embroideryPanel {tab?: "order"|"check", format?: a format's id, or null}`: show the panel,
+/// at `tab`; `format` the one the active document's check is for (null: its thread palette's, as
+/// the Check tab's "Checked for" chooses) → `{tab, format}` (`format` null when none is chosen).
 fn panel_command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
-    only_key(p, "tab")?;
+    only_keys(p, &["tab", "format"])?;
     if let Some(tab) = p.get("tab").filter(|v| !v.is_null()) {
         let ids: Vec<&str> = Tab::ALL.iter().map(|t| t.id()).collect();
         app.ui.embroidery_panel.tab = tab.as_str().and_then(Tab::from_id).ok_or_else(|| format!("tab {tab}: one of {}", ids.join(", ")))?;
     }
+    if let Some(format) = p.get("format") {
+        let uid = app.session.active().map(|st| st.uid).ok_or("no document")?;
+        match format.as_str() {
+            None if format.is_null() => {
+                app.embroidery.check.format.remove(&uid);
+            }
+            given => {
+                let ids: Vec<&'static str> = vectorcraft_engine::cmd::embroidery::check_formats().into_iter().map(|(id, _)| id).collect();
+                let key = "format";
+                let id = given.and_then(|g| ids.iter().find(|id| **id == g)).ok_or_else(|| format!("`{key}` must be one of {}", ids.join(", ")))?;
+                app.embroidery.check.format.insert(uid, id);
+            }
+        }
+    }
     show_panel(app)?;
-    Ok(json!({ "tab": app.ui.embroidery_panel.tab.id() }))
+    let format = app.session.active().and_then(|st| app.embroidery.check.format.get(&st.uid).copied());
+    Ok(json!({ "tab": app.ui.embroidery_panel.tab.id(), "format": format }))
 }
 
 /// Show the panel: brought forward where it is; else where it was closed from, by the dock's own

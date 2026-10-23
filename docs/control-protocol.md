@@ -396,10 +396,13 @@ imports its presets. In the Save PDF dialog, Save Preset… shows a name field (
 
 Embroidery (VectorCraft Stitch): `window.panel {panel: "embroidery"}` shows the panel, the first time docked as the
 last tab beside Properties, Layers and Libraries (the dock turns into the shared layout then), after that where it
-was left; `ui.embroideryPanel {tab?: "order"|"check"}` shows it at a tab and answers `{tab}`. `ui.inspect` reports the
-open tab as `ui.embroidery_panel`. The panel never plans: it asks the stitch preview for the plan and its tab's
-replies, so it shows what `ui.inspect.stitchPreview` says. In the Check tab, Show selects a rule's objects (or one
-hit's) and zooms to its hits with `view.zoomTo`; `embroidery.nextHit` and `embroidery.previousHit` then show the next
+was left; `ui.embroideryPanel {tab?: "order"|"check", format?}` shows it at a tab, `format` (a format's id as
+`embroidery.check` takes it, or `null` for the thread palette's) being the one the active document's Check tab checks
+for, and answers `{tab, format}`. `ui.inspect` reports the open tab as `ui.embroidery_panel`. The panel never plans:
+it asks the stitch preview for the plan and its tab's replies, so it shows what `ui.inspect.stitchPreview` says. In
+the Check tab, Show selects a rule's objects (or one hit's) and zooms to its hits with `view.zoomTo`;
+`embroidery.showFinding {rule, hit?}` does the same as a command, on the check the tab shows for the document as it
+is (refused while there is none), answering `{rule, hit}`; `embroidery.nextHit` and `embroidery.previousHit` then show the next
 or previous listed hit of that rule (round from the end), answering `{rule, hit}` (from 0). They are refused while no
 finding is shown or while the check is of an older plan than the document's. `view.checkMarks {on?: bool}` turns the
 check's marks on the canvas off or on for the session (no `on`: the other way; no other key), answering `{on}` as the

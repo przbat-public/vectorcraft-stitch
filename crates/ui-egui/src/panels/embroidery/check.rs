@@ -384,6 +384,21 @@ pub(crate) fn show_findings(app: &mut VectorcraftApp, uid: u64, reply: &Value, i
     Ok(json!({ "rule": id, "hit": hit }))
 }
 
+/// `embroidery.showFinding {rule, hit?}`: Show from the Check tab, of rule `rule`'s findings, or of
+/// its listed hit `hit` (from 0), on the active document's check as the tab shows it → `{rule, hit}`.
+pub(crate) fn show_finding_command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
+    super::only_keys(p, &["rule", "hit"])?;
+    let rule = p.get("rule").and_then(Value::as_str).ok_or("`rule` must be a check rule's id")?.to_string();
+    let hit = match p.get("hit") {
+        None | Some(Value::Null) => None,
+        Some(v) => Some(v.as_u64().and_then(|k| usize::try_from(k).ok()).ok_or("`hit` must be a listed hit's place, from 0")?),
+    };
+    let (uid, reply) = current_check(app)
+        .map(|(uid, r)| (uid, r.clone()))
+        .ok_or("no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned")?;
+    show_findings(app, uid, &reply, &rule, hit)
+}
+
 /// The active document's check as shown, when it is the plan's own and the plan is of the document
 /// as it is (no change since, even one no frame has drawn yet): the check that Next and Previous
 /// Finding step through and the canvas marks.

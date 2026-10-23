@@ -48,7 +48,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, canvas: Rect) -> bool {
         return false;
     }
     let group = group_id();
-    ui.ctx().accesskit_node_builder(group, |node| {
+    // The radio group: a child of the canvas's, whose node the two radios are parented under.
+    let segments_ui = ui.new_child(egui::UiBuilder::new().id_salt(group).max_rect(frame));
+    ui.ctx().accesskit_node_builder(segments_ui.unique_id(), |node| {
         node.set_role(egui::accesskit::Role::RadioGroup);
         node.set_label(crate::et!("View"));
     });
@@ -63,7 +65,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, canvas: Rect) -> bool {
         let id = group.with(stitches);
         // A drag too, so that the canvas under it never takes a press there (it drags), also while
         // the switch is disabled.
-        let resp = ui.interact(rect, id, Sense::click_and_drag());
+        let resp = segments_ui.interact(rect, id, Sense::click_and_drag());
         resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::RadioButton, enabled, selected, word));
         ui.ctx().accesskit_node_builder(id, |node| {
             node.set_role(egui::accesskit::Role::RadioButton);

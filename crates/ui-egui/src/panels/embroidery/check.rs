@@ -641,7 +641,8 @@ fn details(
                 let url = source["url"].as_str().unwrap_or_default();
                 // What the source says, as it says it.
                 let says = source["value"].as_str().unwrap_or_default();
-                let link = ui.add(egui::Label::new(egui::RichText::new(words).size(SMALL).color(ink(t.accent))).sense(Sense::click()));
+                let link = ui.add(egui::Label::new(egui::RichText::new(&words).size(SMALL).color(ink(t.accent))).sense(Sense::click()));
+                link.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Link, true, &words));
                 let link = link.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text(format!("{says}\n{url}"));
                 if link.clicked() {
                     acts.push(Act::Open(url.to_string()));
@@ -659,12 +660,14 @@ fn details(
                     let back = ui
                         .add_enabled(!stale, egui::Button::new(egui::RichText::new("‹").size(SMALL)).small())
                         .on_hover_text(crate::et!("Previous Finding"));
+                    back.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, !stale, crate::et!("Previous Finding")));
                     let place = f.hit.map_or_else(|| "–".to_string(), |k| numbers::count(lang, k as u64 + 1));
                     let of = fill(crate::et!("{index} of {count}"), &[("index", &place), ("count", &numbers::count(lang, hits.len() as u64))]);
                     ui.label(egui::RichText::new(of).size(SMALL).color(ink(t.text_dim)));
                     let on = ui
                         .add_enabled(!stale, egui::Button::new(egui::RichText::new("›").size(SMALL)).small())
                         .on_hover_text(crate::et!("Next Finding"));
+                    on.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, !stale, crate::et!("Next Finding")));
                     if back.clicked() {
                         acts.push(Act::Step(false));
                     }
@@ -682,9 +685,12 @@ fn details(
                 }
                 let Some(line) = hit_line(app, doc, id, h, lang) else { continue };
                 lines += 1;
-                let text = egui::RichText::new(line).size(SMALL).color(ink(if current == Some(k) { t.text_strong } else { t.text }));
+                let text = egui::RichText::new(&line).size(SMALL).color(ink(if current == Some(k) { t.text_strong } else { t.text }));
                 let text = if current == Some(k) { text.background_color(t.row_selected) } else { text };
-                let clicked = ui.add(egui::Label::new(text).sense(Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand).clicked();
+                // A button for a screen reader: it shows the hit.
+                let hit = ui.add(egui::Label::new(text).sense(Sense::click()));
+                hit.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, !stale, &line));
+                let clicked = hit.on_hover_cursor(egui::CursorIcon::PointingHand).clicked();
                 if clicked && !stale {
                     acts.push(Act::Show(id.to_string(), Some(k)));
                 }

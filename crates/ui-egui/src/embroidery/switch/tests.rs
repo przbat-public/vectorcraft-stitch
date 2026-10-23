@@ -86,6 +86,10 @@ fn screen_readers_get_two_radio_buttons() {
     assert!(checked.contains(&Some(egui::accesskit::Toggled::True)) && checked.contains(&Some(egui::accesskit::Toggled::False)));
     let labels: Vec<Option<String>> = radios.iter().map(|(_, n)| n.label().map(str::to_string)).collect();
     assert!(labels.contains(&Some("Art".into())) && labels.contains(&Some("Stitches".into())), "{labels:?}");
+    // In their group: a screen reader says "View" and that it holds two.
+    let (_, group) = tree.nodes.iter().find(|(_, n)| n.role() == egui::accesskit::Role::RadioGroup).expect("the group");
+    assert_eq!(group.label(), Some("View"));
+    assert!(radios.iter().all(|(id, _)| group.children().contains(id)), "the radios are the group's");
 }
 
 #[test]

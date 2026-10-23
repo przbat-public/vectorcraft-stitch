@@ -203,12 +203,23 @@ fn screen_readers_hear_the_embroidery_interface() {
     assert!(named("Note: Stitches shorter than the needle is thick").label().is_some());
     assert!(named("Passed: Stitches longer than 12.7 mm").label().unwrap().contains("Longest: "));
     assert_eq!(named("Show: 3 or more layers").role(), Role::Button);
-    assert_eq!(named("Stitch lengths. Median: ").role(), Role::Unknown);
+    // The chart is a figure, its bins in words (a pointer reads one at a time).
+    let chart = named("Stitch lengths. Median: ");
+    assert_eq!(chart.role(), Role::Figure);
+    assert!(chart.description().is_some_and(|d| d.contains(" mm: ") && d.contains("stitches")), "{:?}", chart.description());
     let counters = named("Embroidery: ");
     assert_eq!(counters.role(), Role::Button);
     assert!(counters.label().unwrap().ends_with("Click to open the Embroidery panel."));
     let (_, nodes) = frames(&mut app, &ctx, Tab::Order, 300.0);
     // The Sewing order's rows are a tree: a block's header with its thread, a unit with its object.
-    let item = |start: &str| nodes.iter().any(|n| n.role() == Role::TreeItem && n.label().is_some_and(|l| l.starts_with(start)));
-    assert!(item("1 ") && item("<Rectangle> fill · tatami") && item("Thread change"));
+    let item = |start: &str| nodes.iter().find(|n| n.role() == Role::TreeItem && n.label().is_some_and(|l| l.starts_with(start)));
+    let (header, unit, change) = (item("1 ").unwrap(), item("<Rectangle> fill · tatami").unwrap(), item("Thread change").unwrap());
+    // In a tree: a block's header unfolded at the first level, its units at the second.
+    assert_eq!((header.level(), header.is_expanded()), (Some(1), Some(true)));
+    assert_eq!((unit.level(), unit.is_expanded()), (Some(2), None));
+    assert_eq!(change.level(), Some(1));
+    let tree = nodes.iter().find(|n| n.role() == Role::Tree).expect("the list is a tree");
+    assert_eq!(tree.label(), Some("Sewing Order"));
+    let items = nodes.iter().filter(|n| n.role() == Role::TreeItem).count();
+    assert!(tree.children().len() >= items, "{} children for {items} rows", tree.children().len());
 }

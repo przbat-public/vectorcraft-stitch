@@ -89,7 +89,8 @@ pub fn show(ui: &mut Ui, stats: &Value, too_long: Option<f64>, stale: bool) {
             let x = area.left() + k as f32 * (width / n);
             let band = Rect::from_min_max(pos2(x, area.top()), area.right_bottom());
             p.rect_filled(band, 0.0, ink(warning.gamma_multiply(BAND_TINT)));
-            p.text(band.right_top() + vec2(-2.0, 1.0), Align2::RIGHT_TOP, crate::et!("Too long"), FontId::proportional(SMALL - 1.0), ink(warning));
+            let words = marks::text_colour(&t, Mark::Warning);
+            p.text(band.right_top() + vec2(-2.0, 1.0), Align2::RIGHT_TOP, crate::et!("Too long"), FontId::proportional(SMALL - 1.0), ink(words));
         }
         p.line_segment([area.left_bottom(), area.right_bottom()], Stroke::new(1.0, ink(t.border)));
         let pointer = resp.hover_pos();
@@ -126,6 +127,12 @@ pub fn show(ui: &mut Ui, stats: &Value, too_long: Option<f64>, stale: bool) {
         }
         let said = [Some(title.to_string()), median_words.clone()].into_iter().flatten().collect::<Vec<_>>().join(". ");
         resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Other, true, &said));
+        // A figure for a screen reader, its bins in words (a pointer reads one at a time).
+        let described: Vec<String> = bins.iter().filter(|b| b.count > 0).map(bin_words).collect();
+        ui.ctx().accesskit_node_builder(resp.id, |node| {
+            node.set_role(egui::accesskit::Role::Figure);
+            node.set_description(described.join("; "));
+        });
         if let Some(b) = hovered {
             resp.on_hover_text(bin_words(&b));
         }

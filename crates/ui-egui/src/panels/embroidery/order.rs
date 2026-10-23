@@ -129,6 +129,8 @@ pub struct OrderState {
     covered: Option<((u64, u64), Covered)>,
     /// Where the list showed in the last frame: a drag held near its edges scrolls it.
     list_rect: Option<Rect>,
+    /// The row the keyboard moved to, scrolled into view until it is laid out to take the focus.
+    focus_row: Option<usize>,
     /// How far the list was scrolled in the last frame, points (the tests look).
     #[cfg(test)]
     scrolled: f32,
@@ -302,6 +304,15 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
             {
                 app.embroidery.order.scrolled = viewport.min.y;
             }
+            // The rows are a tree for a screen reader: the blocks, their units under them.
+            ui.ctx().accesskit_node_builder(ui.unique_id(), |node| {
+                node.set_role(egui::accesskit::Role::Tree);
+                node.set_label(crate::et!("Sewing Order"));
+            });
+            // A row the keyboard moved to, gone past the rows (they changed): forgotten.
+            if app.embroidery.order.focus_row.is_some_and(|j| j >= rows.len()) {
+                app.embroidery.order.focus_row = None;
+            }
             let total = tops.last().copied().unwrap_or(0.0);
             ui.set_height(total);
             let width = ui.available_width();
@@ -319,11 +330,40 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                 let lit = row_selected(&order, *row, &covered);
                 let label = paint_row(app, ui, &doc, &listed, *row, rect, lit, resp.hovered(), stale, &t);
                 resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, lit, &label));
+                let collapsed = match row {
+                    Row::Header(b) => order.blocks.get(*b).map(|k| app.embroidery.order.collapsed.contains(&k.block)),
+                    _ => None,
+                };
                 ui.ctx().accesskit_node_builder(id, |node| {
                     node.set_role(egui::accesskit::Role::TreeItem);
                     node.set_selected(lit);
                     node.set_label(label.clone());
+                    node.set_level(if matches!(row, Row::Unit(..)) { 2 } else { 1 });
+                    if let Some(collapsed) = collapsed {
+                        node.set_expanded(!collapsed);
+                    }
                 });
+                if app.embroidery.order.focus_row == Some(i) {
+                    resp.request_focus();
+                    app.embroidery.order.focus_row = None;
+                }
+                // The keyboard: ↓ and ↑ to the next and previous row, ← and → to fold and unfold
+                // a block.
+                if resp.has_focus() {
+                    let key = |k: egui::Key| ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, k));
+                    let (down, up, left, right) =
+                        (key(egui::Key::ArrowDown), key(egui::Key::ArrowUp), key(egui::Key::ArrowLeft), key(egui::Key::ArrowRight));
+                    if down && i + 1 < rows.len() {
+                        app.embroidery.order.focus_row = Some(i + 1);
+                    } else if up {
+                        app.embroidery.order.focus_row = i.checked_sub(1);
+                    }
+                    if let (Row::Header(b), Some(collapsed)) = (row, collapsed)
+                        && ((left && !collapsed) || (right && collapsed))
+                    {
+                        toggle = order.blocks.get(*b).map(|k| k.block);
+                    }
+                }
                 // Hovered, a row's stitches stand out on the canvas for the moment (the rest faded):
                 // only on the plan shown's own order, whose unit numbers are the canvas's.
                 if resp.hovered() && app.embroidery.order.drag.is_none() && !stale {
@@ -381,12 +421,20 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                             vec2(STEP_BUTTON, STEP_BUTTON),
                         );
                         let b = ui.interact(button, id.with(k), Sense::click()).on_hover_text(tip);
+                        b.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tip));
                         crate::icons::paint(ui, icon, button, if b.hovered() { t.text_strong } else { t.text_dim });
                         if b.clicked() {
                             step = Some((which, unit.id));
                         }
                     }
                 }
+            }
+            // Not laid out yet: brought into view, to take the focus when it is.
+            if let Some(j) = app.embroidery.order.focus_row
+                && let (Some(&top), Some(row)) = (tops.get(j), rows.get(j))
+            {
+                ui.scroll_to_rect(Rect::from_min_size(origin + vec2(0.0, top), vec2(width, row.height())), None);
+                ui.ctx().request_repaint();
             }
         });
     app.embroidery.order.list_rect = Some(area.inner_rect);

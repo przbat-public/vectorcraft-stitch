@@ -208,6 +208,62 @@ fn a_drag_held_at_the_lists_edge_scrolls_it() {
     frame(&mut app, &ctx, time + 0.05, vec![button(top, false)]);
 }
 
+/// One headless frame with a screen reader on → the accessibility tree.
+fn tree_frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<egui::Event>) -> egui::accesskit::TreeUpdate {
+    let raw = egui::RawInput {
+        time: Some(time),
+        screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(320.0, 700.0))),
+        events,
+        ..Default::default()
+    };
+    let mut out = ctx.run_ui(raw, |ui| {
+        super::super::show(app, ui);
+        stitch_preview::schedule(app, ui.ctx());
+    });
+    out.textures_delta.clear();
+    out.platform_output.accesskit_update.expect("an accessibility tree")
+}
+
+/// The keyboard reaches every row: ← folds a block's header and → unfolds it; ↓ moves to the next
+/// row, bringing it into view, so a long list is walked to its end.
+#[test]
+fn the_keyboard_folds_blocks_and_walks_the_rows() {
+    use egui::accesskit::{Action, ActionRequest, Role, TreeId};
+    let mut app = app_with(300);
+    let ctx = egui::Context::default();
+    ctx.enable_accesskit();
+    ready(&mut app, &ctx);
+    let key = |key: egui::Key| egui::Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers: egui::Modifiers::NONE };
+    let mut time = 0.2;
+    let mut step = |app: &mut VectorcraftApp, events: Vec<egui::Event>| {
+        time += 0.05;
+        tree_frame(app, &ctx, time, events)
+    };
+    let tree = step(&mut app, vec![]);
+    let (header, _) = tree.nodes.iter().find(|(_, n)| n.role() == Role::TreeItem && n.label().is_some_and(|l| l.starts_with("1 "))).unwrap();
+    let focus =
+        egui::Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: *header, target_tree: TreeId::ROOT, data: None });
+    step(&mut app, vec![focus]);
+    assert_eq!(step(&mut app, vec![]).focus, *header, "the header has the focus");
+    let block = order_of(&app).blocks[0].block;
+    step(&mut app, vec![key(egui::Key::ArrowLeft)]);
+    assert!(app.embroidery.order.collapsed.contains(&block), "← folds it");
+    step(&mut app, vec![key(egui::Key::ArrowRight)]);
+    assert!(!app.embroidery.order.collapsed.contains(&block), "→ unfolds it");
+    // Down the list, past what shows.
+    let mut tree = step(&mut app, vec![]);
+    for _ in 0..40 {
+        step(&mut app, vec![key(egui::Key::ArrowDown)]);
+        // A row out of view takes a pass or two to come into it.
+        for _ in 0..3 {
+            tree = step(&mut app, vec![]);
+        }
+    }
+    let focused = tree.nodes.iter().find(|(id, _)| *id == tree.focus).map(|(_, n)| n.clone()).expect("a row has the focus");
+    assert_eq!((focused.role(), focused.level()), (Role::TreeItem, Some(2)), "a unit row");
+    assert!(app.embroidery.order.scrolled > 0.0, "brought into view");
+}
+
 #[test]
 fn a_header_collapses() {
     let mut app = app_with(4);

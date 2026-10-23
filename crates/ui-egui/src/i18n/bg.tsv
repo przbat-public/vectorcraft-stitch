@@ -5173,8 +5173,9 @@ theme	Appearance	Външен вид
 	Minimum must not exceed Desired, nor Desired Maximum.	Минималната стойност не може да надвишава желаната, нито желаната – максималната.
 	Justification	Подравняване
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	променливите и наборите от данни на файла не бяха прочетени (променливи: {variables}, набори от данни: {data_sets}): панелът „Променливи“ не ги показва
-	Trim After	Отрязване на конеца след
+	Embroidery Trim After	Бродиране: отрязване на конеца след
 	Embroidery Setup	Настройка на бродирането
+	Show Embroidery Settings	Показване на настройките на бродирането
 	Embroidery Statistics	Статистика на бродирането
 	Embroidery Sewing Order	Ред на бродиране
 	Embroidery Check	Проверка на бродирането
@@ -5183,9 +5184,105 @@ theme	Appearance	Външен вид
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	текстът не се бродира: превърнете го в контур (Тип › Създаване на контур) и експортирайте отново
 @msg	images are not stitched: trace them (Object › Image Trace) first	изображенията не се бродират: първо ги трасирайте (Обект › Трасиране на изображение)
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	динамичните преливания, пликове, мрежи и повторения не се бродират: първо ги разширете
+@msg	placed documents are not stitched: embed them first (Links › Embed)	поставените документи не се бродират: първо ги вградете (Връзки › Вграждане)
+@msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	преплетените обекти не се бродират: първо ги пуснете (Обект › Преплитане › Пускане)
+@msg	symbols placed more than 100,000 times (placing one another) are left out past that	символите, поставени повече от 100 000 пъти (един в друг), се пропускат след това
+@msg	shadows, glows, blurs and other raster effects are not stitched: the art under them is	сенките, сиянията, размазванията и другите растерни ефекти не се бродират: изкуството под тях се бродира
+@msg	opacity masks are not stitched: the masked art is sewn whole	маските за непрозрачност не се бродират: маскираното изкуство се бродира цялото
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	отрицателна стойност на expand не остави нищо от някои запълнени форми, затова те не се бродират: смалявайте ги по-малко
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	градиентите и мострите се оцветяват в цвета на първия си репер; бродерията шие с един конец на блок
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	щрихи, по-широки от {widest} мм, се шият като сатенени колони с ширина {widest} мм: вместо това ги запълнете (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	щрихи, по-широки от {widest} мм, се шият като сатенени колони с ширина {widest} мм: вместо това ги запълнете (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	тази версия не познава палитрата конци {palette} на документа, затова конците му се избират от палитрата {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	няма какво да се бродира: документът няма видими пътища със запълване или щрих
 @msg	nothing to stitch: {_1}	няма какво да се бродира: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	собствената секция на PES файла, която PE-Design редактира, не се запазва: PES, записан от този документ, съдържа само бодовете
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	картинките за преглед на файла не се запазват: PES или PEC, записан от този документ, има празни
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	номерата на конци, които не назовават конец от палитрата (62 до 64 в PEC означават апликация), се записват като най-близкия конец
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	датата и версията в заглавката на JEF, както и гергеф, по-голям от необходимия за дизайна, не се запазват
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	крайната позиция и полетата за многотомни дизайни в заглавката на DST (AX, AY, MX, MY, PD) не се запазват
+@msg	threads that twist several colours are read in their first colour	конци, които усукват няколко цвята, се четат в първия си цвят
+@msg	the file's several designs are read as one	няколкото дизайна във файла се четат като един
+@msg	the file holds things this version doesn't read	файлът съдържа неща, които тази версия не чете
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Базирано на VectorCraft от екипа на ArtCraft. MIT ИЛИ Apache-2.0. Шрифтове: Source Sans 3, Inter, JetBrains Mono (OFL). Икони: Lucide (ISC) + VectorCraft.
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Базирано на VectorCraft от екипа на ArtCraft. MIT ИЛИ Apache-2.0. Шрифтове: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Икони: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC побира най-много {MAX_COLORS} цвята, а не {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 побира най-много {MAX_COLORS} цветни блока
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST файлът има заглавка от {HEADER} байта и поне един 3-байтов запис, но този файл е {_1} байта
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	заглавката на DST брои най-много {MAX_RECORDS} записа, а дизайнът изисква {_1}
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	блокът с бодове на PEC побира най-много {MAX_BLOCK} байта (дължината му е 24 бита), а дизайнът изисква {len}
+@msg	a VP3 string is too long	низ във VP3 е твърде дълъг
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	форма е на повече от {MAX_COORD_MM} mm от началото или има координата, която не е число: не може да се бродира
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	формата би изисквала около {n} бода, повече от {MAX_STITCHES}, колкото може да има една форма: използвайте по-дълъг бод, по-голямо разстояние или по-малък дизайн
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	не е PES или PEC файл: не започва с #PES или #PEC
+@msg	not a VP3 file: it does not start with %vsm%	не е VP3 файл: не започва с %vsm%
+@msg	not a {what} file: its record {_1} is not a DST record	не е {what} файл: записът му {_1} не е DST запис
+@msg	params must be an object	параметрите трябва да са обект
+@msg	the EXP file has no stitch records	EXP файлът няма записи на бодове
+@msg	the JEF file has no stitch records	JEF файлът няма записи на бодове
+@msg	the JEF file is cut short: {len} bytes	JEF файлът е съкратен: {len} байта
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	заглавката на JEF сочи към байт {offset}, след {_1}-те байта на файла
+@msg	the PEC block has no stitches	PEC блокът няма бодове
+@msg	the PEC header is cut short	заглавката на PEC е съкратена
+@msg	the PES header is cut short	заглавката на PES е съкратена
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	заглавката на PES сочи към байт {at}, след {_1}-те байта на файла
+@msg	the VP3 file has no stitches	VP3 файлът няма бодове
+@msg	the VP3 file has no {what} packet at byte {at}	VP3 файлът няма пакет {what} на байт {at}
+@msg	the VP3 file is cut short: {len} bytes	VP3 файлът е съкратен: {len} байта
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	дизайнът има повече от {MAX_RUNS} отделни поредици от бодове, повече, отколкото документ може да отвори
+@msg	the design has no points to write	дизайнът няма точки за записване
+@msg	the design has no stitches to draw	дизайнът няма бодове за изчертаване
+@msg	the design has no stitches to write	дизайнът няма бодове за записване
+@msg	the design is too large for a VP3 file	дизайнът е твърде голям за VP3 файл
+@msg	the design is {_1} × {_2} mm, larger than a document holds	дизайнът е {_1} × {_2} mm, по-голям, отколкото документ побира
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	дизайнът е {_1} × {_2} mm, по-голям, отколкото {_3} побира ({_4} mm на страна)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	дизайнът би изисквал повече от {MAX_DESIGN_STITCHES} бода: използвайте по-дълъг бод, по-голямо разстояние или по-малко графика
+@msg	the file has no stitches	файлът няма бодове
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	файлът {format} би бил по-голям от {_1} MiB: преходите на дизайна са твърде дълги (обектите са далеч един от друг)
+@msg	the {what} file has no stitch records	файлът {what} няма записи на бодове
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	файлът {what} съдържа повече от {MAX_POINTS} бода, повече, отколкото може да има един дизайн
+@msg	thread number {index} doesn't fit a JEF header	номерът на конец {index} не се побира в заглавка на JEF
+@msg	thread number {index} doesn't fit a PEC header	номерът на конец {index} не се побира в заглавка на PEC
+@msg	too many stitches for a VP3 file	твърде много бодове за VP3 файл
+@msg	{_1} is not an embroidery format	{_1} не е формат за бродерия
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Бод:
+	Stitch Length:	Дължина на бода:
+	Fill Angle:	Ъгъл на запълването:
+	Pull Compensation:	Компенсация на свиване:
+	Pull Compensation (%):	Компенсация на свиване (%):
+	Push Compensation:	Компенсация на избутване:
+	Expand Fills:	Разширяване на запълванията:
+	Narrow Parts as Satin:	Тесни части като сатен:
+	Thread Weight:	Дебелина на конеца:
+	Underlay:	Подложка:
+	Jump Length:	Дължина на прехода:
+	Trim Length:	Дължина за срязване:
+	Shortest Stitch:	Най-къс бод:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Как се шият формите: Автоматично запълва формите с татами и шие контурите като сатенени колони или прав бод според ширината им; друг избор шие така всяка форма
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Разстоянието между редовете на запълването и между сатенените бодове; ако се остави, сатенената колона го избира според ширината си
+	The length of the stitches along fill rows and running lines	Дължината на бодовете по редовете на запълването и правия бод
+	The direction of the fill rows	Посоката на редовете на запълването
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Разширява сатенените колони и редовете на запълването от всяка страна, за да компенсира свиването на плата
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Разширява сатенените колони и редовете на запълването с част от ширината им, за да компенсира свиването на плата
+	Shortens satin columns at their ends, where the thread pushes outward	Скъсява сатенените колони в краищата им, където конецът избутва навън
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Уголемява всяка запълнена форма отвсякъде, за да затвори пролуките между формите; отрицателна стойност я смалява
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Частите на запълване, по-тесни от това, се шият като сатенени колони; 0 не шие никакви
+	The thread's weight: thinner thread (a higher number) packs the rows closer	Дебелината на конеца: по-тънък конец (по-голям номер) нарежда редовете по-плътно
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Бодовете, които се шият първи, за да държат плата: избрани от всяка форма, никакви или един вид за всяка форма
+	A move longer than this lifts the needle instead of being sewn	По-дълъг преход вдига иглата, вместо да се шие
+	A jump longer than this cuts the thread first	По-дълъг скок първо срязва конеца
+	Shorter stitches are left out	По-късите бодове се пропускат
+	Tatami Fill	Запълване татами
+	Satin	Сатен
+	Running Stitch	Прав бод
+	Centre Run	Централен ход
+	Edge Run	Ход по ръба
+	Edge Run and Zigzag	Ход по ръба и зигзаг
+	Edge Run and Tatami	Ход по ръба и татами

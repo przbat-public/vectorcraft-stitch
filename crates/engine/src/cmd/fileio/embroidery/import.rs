@@ -5,38 +5,85 @@ use std::sync::Arc;
 
 use vectorcraft_color::{Color, Paint};
 use vectorcraft_doc::embroidery::{Embroidery, EmbroiderySetup, StitchRun, ThreadPalette};
-use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, LineJoin, Node};
+use vectorcraft_doc::{Appearance, AppearanceItem, Document, LayerColor, LineCap, LineJoin, Node, Shared};
 use vectorcraft_geom::{BezPath, PathData, Point, Rect, Size};
-use vectorcraft_stitch::format::Format as StitchFormat;
+use vectorcraft_stitch::format::{Format as StitchFormat, Loss};
 use vectorcraft_stitch::{Block, Command, Stitch, mm_to_pt};
 
 use super::super::super::*;
 use super::super::{Format, err};
 
-/// The width of the lines a design's stitches are drawn with, millimetres: about a thread's.
+/// The width of the lines a design's stitches are drawn with, millimetres: about a thread's (40 wt
+/// thread is about 0.4 mm across; an estimate).
 const THREAD_WIDTH: f64 = 0.4;
+/// The margin round an opened design on its new artboard, millimetres: a little room to see its
+/// edges. It doesn't move the stitches as written: the file's start point moves with them, and
+/// every writer measures a design from that or from its own bounds, so it is gone again on export.
+const MARGIN: f64 = 5.0;
+/// The most runs of stitches (each stitched without lifting the needle) a design opens as, one
+/// object each: far more than real designs have (a few thousand), a bound on the objects a hostile
+/// file can make (one for every few bytes of a stream of stitches and jumps).
+const MAX_RUNS: usize = 100_000;
 
-/// Read a design into a document: one group per thread, each run of stitches a thin line.
+/// What reading a machine file left out, as opening it says it, one note each (in this order):
+/// a file written from the document lacks it, so writing over the file asks first
+/// ([`super::is_loss`]). The last is said for what a newer stitch crate reports and this list
+/// doesn't name yet.
+pub const LOSS_NOTES: [&str; 8] = [
+    "the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone",
+    "the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones",
+    "thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread",
+    "the JEF header's date and version, and a hoop larger than the design needs, aren't kept",
+    "the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept",
+    "threads that twist several colours are read in their first colour",
+    "the file's several designs are read as one",
+    "the file holds things this version doesn't read",
+];
+
+/// The note for `loss` ([`LOSS_NOTES`]).
+fn loss_note(loss: Loss) -> &'static str {
+    let k = match loss {
+        Loss::PesSection => 0,
+        Loss::Previews => 1,
+        Loss::NotThreads => 2,
+        Loss::JefHeader => 3,
+        Loss::DstFields => 4,
+        Loss::TwistedThreads => 5,
+        Loss::Designs => 6,
+        _ => 7,
+    };
+    LOSS_NOTES.get(k).copied().unwrap_or_default()
+}
+
+/// Read a design into a document: one group per thread, each run of stitches a thin line. The
+/// notes say what reading it left out ([`LOSS_NOTES`]).
 pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Vec<String>)> {
     let format = StitchFormat::from_id(f.id).ok_or_else(|| bad("document.open", format!("{} is not an embroidery format", f.label)))?;
     let pattern = format.read(bytes).map_err(err)?;
     let b = pattern.bounds().ok_or_else(|| err("the file has no stitches"))?;
-    // A margin round the design on the new artboard. It doesn't move the stitches as written:
-    // every writer measures a design from its own bounds, so it is gone again on export.
-    const MARGIN: f64 = 5.0;
     // Points per millimetre.
     let scale = mm_to_pt(1.0);
     let width = (b.width() + 2.0 * MARGIN) * scale;
     let height = (b.height() + 2.0 * MARGIN) * scale;
-    let mut doc = Document::new(width, height);
-    if !pattern.name.is_empty() {
-        doc.title = pattern.name.clone();
+    // A design larger than a document holds would open, and then every edit would be refused.
+    if !(width.is_finite() && height.is_finite()) || width > vectorcraft_doc::MAX_COORD || height > vectorcraft_doc::MAX_COORD {
+        return Err(err(format!("the design is {:.0} × {:.0} mm, larger than a document holds", b.width(), b.height())));
     }
+    let runs_in = |block: &Block| runs(block).len();
+    if pattern.blocks.iter().map(runs_in).sum::<usize>() > MAX_RUNS {
+        return Err(err(format!("the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens")));
+    }
+    let mut doc = Document::new(width, height);
     // A design from a format that numbers its threads is in that format's palette: its colours
     // are matched to the threads the file names (`embroidery.threads`), not to another maker's.
-    if let Some(palette) = format.palette() {
-        let palette = Some(ThreadPalette::from(serde_json::Value::from(palette.id())));
-        doc.embroidery = Some(Box::new(EmbroiderySetup { palette, ..EmbroiderySetup::default() }));
+    // The file's start point and its design's name (the document is named after the file) are
+    // kept, for the export to write again.
+    let palette = format.palette().and_then(|p| ThreadPalette::from_id(p.id()));
+    let start = pattern.start.map(|s| Point::new((s.x + MARGIN) * scale, (s.y + MARGIN) * scale)).filter(|s| s.x.is_finite() && s.y.is_finite());
+    let label = Some(pattern.name.clone()).filter(|n| !n.is_empty());
+    let setup = EmbroiderySetup { palette, start, label, ..EmbroiderySetup::default() };
+    if !setup.is_empty() {
+        doc.embroidery = Some(Box::new(setup));
     }
     let mut layer = Node::layer(doc.alloc_id(), "Embroidery", LayerColor::Preset(0));
     let mut groups: Vec<Arc<Node>> = Vec::new();
@@ -49,6 +96,10 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
             s.cap = LineCap::Round;
             s.join = LineJoin::Round;
         }
+        // One appearance shared by the block's lines, not a copy each.
+        let stroke = Shared::new(stroke);
+        // The file's thread record, kept on each run for the export to write back.
+        let record = block.thread.record.as_ref().map(crate::cmd::embroidery::kept_thread);
         let mut children: Vec<Arc<Node>> = Vec::new();
         for (run, trim_before, trim_after) in runs(block) {
             let mut bp = BezPath::new();
@@ -60,16 +111,21 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
                     bp.line_to(p);
                 }
             }
-            // A single stitch is a line that goes nowhere: still one needle point.
+            // A single stitch is a line that goes nowhere: still one needle point. Two at one spot
+            // draw the same line, and say so.
             if let [only] = run.as_slice() {
                 bp.line_to(Point::new((only.x + MARGIN) * scale, (only.y + MARGIN) * scale));
             }
+            let double_point = matches!(run.as_slice(), [a, b] if a.distance(*b) < vectorcraft_stitch::SAME_POINT);
             let path = PathData::from_bezpath(&bp);
-            let mut node = Node::path(doc.alloc_id(), path, stroke.clone());
+            let mut node = Node::path(doc.alloc_id(), path, Appearance::default());
+            node.appearance = stroke.clone();
             // The line's points are the file's needle points: exported, they are sewn as they are,
             // so the design is written back unchanged.
-            node.extras_mut().embroidery =
-                Some(Box::new(Embroidery { stitches: Some(StitchRun { trim_before, trim_after }), ..Embroidery::default() }));
+            node.extras_mut().embroidery = Some(Box::new(Embroidery {
+                stitches: Some(StitchRun { trim_before, trim_after, double_point, thread: record.clone(), ..StitchRun::default() }),
+                ..Embroidery::default()
+            }));
             children.push(Arc::new(node));
         }
         if children.is_empty() {
@@ -90,7 +146,13 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
         a.rect = Rect::from_origin_size(Point::ZERO, Size::new(width, height));
     }
     doc.fix_next_id();
-    Ok((doc, Vec::new()))
+    let mut notes: Vec<String> = Vec::new();
+    for note in format.losses(bytes).into_iter().map(loss_note) {
+        if !notes.iter().any(|n| n == note) {
+            notes.push(note.to_string());
+        }
+    }
+    Ok((doc, notes))
 }
 
 /// The stitches of one block cut into runs at every lift of the needle (a jump, a trim, a stop),

@@ -11,7 +11,7 @@ use crate::SAME_POINT;
 /// How far curves are flattened before stitching, millimetres: far below the 0.1 mm a machine
 /// counts in.
 const FLATTEN: f64 = 0.05;
-/// A turn sharper than this (radians, about 30°) is a corner the stitches keep.
+/// A turn sharper than this (radians, about 30°) is a corner the stitches keep. An estimate.
 pub(super) const CORNER: f64 = 0.52;
 /// A vector or segment shorter than this (millimetres) has no direction: dividing by its length
 /// would give noise. A guard on that arithmetic rather than a geometric choice, so it sits well
@@ -20,8 +20,33 @@ pub(super) const NO_LENGTH: f64 = 1e-12;
 /// The shortest step [`resample`] takes (millimetres): a bound on the points it makes.
 const MIN_STEP: f64 = 0.01;
 /// How close to a corner or the end a point may fall, as a share of a step, before it moves onto
-/// it rather than leave a stub of a stitch ([`resample`]).
+/// it rather than leave a stub of a stitch ([`resample`]). An estimate.
 const STUB: f64 = 0.3;
+
+/// The farthest a shape's control points may lie from the origin, millimetres: 1,500 m, just
+/// beyond the document's whole range (`vectorcraft_doc::MAX_COORD`, 4,000,000 points, about
+/// 1,411 m). A shape beyond it (from a malformed file) is refused before it is flattened: a curve's
+/// flattened points grow with the square root of its size, without bound.
+pub const MAX_COORD_MM: f64 = 1.5e6;
+
+/// Whether every control point of `path` is a finite number within [`MAX_COORD_MM`] of the origin:
+/// what may be flattened and planned.
+pub fn in_range(path: &BezPath) -> bool {
+    path.elements().iter().all(|el| {
+        let pts: &[Point] = match el {
+            PathEl::MoveTo(p) | PathEl::LineTo(p) => std::slice::from_ref(p),
+            PathEl::QuadTo(a, b) => return [*a, *b].iter().all(|p| near(*p)),
+            PathEl::CurveTo(a, b, c) => return [*a, *b, *c].iter().all(|p| near(*p)),
+            PathEl::ClosePath => &[],
+        };
+        pts.iter().all(|p| near(*p))
+    })
+}
+
+/// Whether `p` is finite and within [`MAX_COORD_MM`] of the origin on both axes.
+fn near(p: Point) -> bool {
+    p.x.is_finite() && p.y.is_finite() && p.x.abs() <= MAX_COORD_MM && p.y.abs() <= MAX_COORD_MM
+}
 
 /// A polyline: its points and whether it closes.
 pub(super) struct SubPath {
@@ -126,7 +151,7 @@ pub(super) fn resample_by(pts: &[Point], closed: bool, step: &dyn Fn(f64) -> f64
         if has_next
             && let Some(c) = at(i + 2)
             && let (Some(u), Some(v)) = (unit(b - a), unit(c - b))
-            && u.dot(v).clamp(-1.0, 1.0).acos() > CORNER
+            && turn(u, v) > CORNER
             && land_on(&mut out, (b, travelled), last_step, fixed, false)
         {
             fixed = true;
@@ -251,6 +276,12 @@ pub(super) fn tangent(pts: &[Point], i: usize, closed: bool) -> Vec2 {
     unit(t).unwrap_or(Vec2::new(1.0, 0.0))
 }
 
+/// The angle between two unit directions `u` and `v` (radians, 0 to π): how sharply a line turns
+/// from one to the other.
+pub(super) fn turn(u: Vec2, v: Vec2) -> f64 {
+    u.dot(v).clamp(-1.0, 1.0).acos()
+}
+
 /// `v` scaled to length one, `None` when it has no length.
 pub(super) fn unit(v: Vec2) -> Option<Vec2> {
     let len = v.hypot();
@@ -299,17 +330,29 @@ impl Axes {
 pub(super) fn nearest_order(subs: Vec<SubPath>, here: Option<Point>) -> Vec<Line> {
     /// The most subpaths ordered by distance.
     const MAX_REORDERED: usize = 64;
-    let reorder = subs.len() <= MAX_REORDERED;
-    let mut pending: Vec<SubPath> = subs;
-    let mut out: Vec<Line> = Vec::with_capacity(pending.len());
+    let mut out: Vec<Line> = Vec::with_capacity(subs.len());
     let mut here = here;
+    if subs.len() > MAX_REORDERED {
+        // In the drawing's order, taken one after another (not removed from the front, which
+        // would shift the rest each time).
+        for sub in subs {
+            let (pts, reversed) = match here {
+                Some(h) if out.is_empty() => sub.starting_near(h),
+                _ => (sub.points(), false),
+            };
+            here = pts.last().copied();
+            out.push(Line { pts, closed: sub.closed, reversed });
+        }
+        return out;
+    }
+    let mut pending: Vec<SubPath> = subs;
     while !pending.is_empty() {
-        let at = |s: &SubPath| here.map_or(0.0, |h| s.nearest(h).1);
-        let i = if reorder { pending.iter().enumerate().min_by(|a, b| at(a.1).total_cmp(&at(b.1))).map_or(0, |(i, _)| i) } else { 0 };
+        // The nearest (the first of equally near ones), each distance worked out once.
+        let i = here.and_then(|h| pending.iter().map(|s| s.nearest(h).1).enumerate().min_by(|a, b| a.1.total_cmp(&b.1))).map_or(0, |(i, _)| i);
         let sub = pending.remove(i);
         let (pts, reversed) = match here {
-            Some(h) if out.is_empty() || reorder => sub.starting_near(h),
-            _ => (sub.points(), false),
+            Some(h) => sub.starting_near(h),
+            None => (sub.points(), false),
         };
         here = pts.last().copied();
         out.push(Line { pts, closed: sub.closed, reversed });
@@ -328,7 +371,7 @@ pub(super) struct Line {
 impl SubPath {
     /// The point to start from nearest `q` (an end of an open polyline, any point of a closed
     /// one): its index and distance.
-    fn nearest(&self, q: Point) -> (usize, f64) {
+    pub(super) fn nearest(&self, q: Point) -> (usize, f64) {
         let d = |i: usize| self.pts.get(i).map_or(f64::INFINITY, |p| p.distance(q));
         if self.closed {
             (0..self.pts.len()).map(|i| (i, d(i))).min_by(|a, b| a.1.total_cmp(&b.1)).unwrap_or((0, f64::INFINITY))

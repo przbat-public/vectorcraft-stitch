@@ -11,11 +11,20 @@
 //! made with Ink/Stitch are listed (the project's other machine files come from commercial
 //! software).
 //!
-//! Licences: the designs and machine files are CC BY-SA 4.0; the artwork derives from Twemoji
-//! (CC BY 4.0) or Fluent Emoji (MIT). They are used locally as test inputs, never redistributed.
+//! Licences: the designs and machine files are CC BY-SA 4.0, as the mirror's index says
+//! (<https://arbores.tech/e/e/>); the project's English page (edutechwiki.unige.ch/en/
+//! Emoji_Embroidery_Project) says CC BY-SA in its introduction but CC BY-NC-SA in its Copyright
+//! section, so the mirror's statement is the one cited. The artwork derives from Twemoji (CC BY
+//! 4.0) or Fluent Emoji (MIT); the two radish designs in `z_candidates` come from MOREmoji and
+//! svgrepo.com artwork whose licences the project doesn't state (unverified). They are used
+//! locally as test inputs, never redistributed.
 //! Files are fetched from the project's mirror at arbores.tech (the same tree as
-//! tecfa.unige.ch/guides/embroid/emoji/AAA_EMOJIS). Moving to new files: change the list, re-run,
-//! update the manifest with the new hashes after checking the files.
+//! tecfa.unige.ch/guides/embroid/emoji/AAA_EMOJIS). The manifest pins every file's bytes: a file
+//! the site changes fails the fetch instead of changing what the tests read. Moving to new files:
+//! change the list, re-run, update the manifest with the new hashes after checking the files.
+//!
+//! `cargo xtask ci` fetches and checks them before the tests ([`for_ci`]) and requires them there
+//! (`EMBROIDERY_CORPUS_REQUIRED=1`), so the tests on the real designs never pass without running.
 
 use std::path::Path;
 use std::process::Command;
@@ -60,10 +69,10 @@ const FILES: &[(&str, &str, &str)] = &[
     ("people_body/person", "old-man-twemoji-inkstitch.pes", "CC BY-SA 4.0"),
     ("people_body/person", "old-woman-twemoji-inkstitch.vp3", "CC BY-SA 4.0"),
     ("people_body/person", "old-woman-twemoji-inkstitch.pes", "CC BY-SA 4.0"),
-    ("z_candidates", "radish-MOREmoji-inkstitch.vp3", "CC BY-SA 4.0"),
-    ("z_candidates", "radish-MOREmoji-inkstitch.pes", "CC BY-SA 4.0"),
-    ("z_candidates", "radish-svgrepo-com-inkstitch.vp3", "CC BY-SA 4.0"),
-    ("z_candidates", "radish-svgrepo-com-inkstitch.pes", "CC BY-SA 4.0"),
+    ("z_candidates", "radish-MOREmoji-inkstitch.vp3", "CC BY-SA 4.0 (machine file); artwork licence unverified"),
+    ("z_candidates", "radish-MOREmoji-inkstitch.pes", "CC BY-SA 4.0 (machine file); artwork licence unverified"),
+    ("z_candidates", "radish-svgrepo-com-inkstitch.vp3", "CC BY-SA 4.0 (machine file); artwork licence unverified"),
+    ("z_candidates", "radish-svgrepo-com-inkstitch.pes", "CC BY-SA 4.0 (machine file); artwork licence unverified"),
     ("smileys_emotion/face-smiling", "smiling-face-with-smiling-eyes-twemoji.clipart.svg", "Twemoji artwork, CC BY 4.0"),
     ("smileys_emotion/face-smiling", "smiling-face-with-smiling-eyes-twemoji-inkstitch.pes", "CC BY-SA 4.0"),
     ("symbols/alphanum", "sos-button-fluent.clipart.svg", "Fluent Emoji artwork, MIT"),
@@ -71,6 +80,36 @@ const FILES: &[(&str, &str, &str)] = &[
 ];
 
 const MANIFEST: &str = "xtask/embroidery-corpus.sha256";
+
+/// The variable the engine's tests on the real designs read: `1` requires the corpus (a test fails
+/// without it), `0` lets them pass without it.
+pub const REQUIRED: &str = "EMBROIDERY_CORPUS_REQUIRED";
+
+/// Whether the gate is told to run without the real designs (`EMBROIDERY_CORPUS_REQUIRED=0`).
+fn opted_out() -> bool {
+    std::env::var(REQUIRED).is_ok_and(|v| v == "0")
+}
+
+/// The gate's step: the real designs fetched (only what is missing) and checked against the
+/// manifest, so that the tests that use them run; an error that says how to fetch them when they
+/// can't be. Asked to run without them (`EMBROIDERY_CORPUS_REQUIRED=0`), it says so and passes.
+pub fn for_ci() -> Result<(), String> {
+    if opted_out() {
+        eprintln!("embroidery corpus: {REQUIRED}=0, so the tests on the real designs pass without running");
+        return Ok(());
+    }
+    fetch().map_err(|e| {
+        format!(
+            "{e}\nThe gate runs the embroidery tests on the real designs: fetch them with `cargo xtask corpus --embroidery` (or copy a checked corpus/embroidery in), or set {REQUIRED}=0 to run the gate without them"
+        )
+    })
+}
+
+/// The value the gate's test step gives [`REQUIRED`]: `1` unless the gate was told to run without
+/// the real designs.
+pub fn required_for_tests() -> &'static str {
+    if opted_out() { "0" } else { "1" }
+}
 
 pub fn fetch() -> Result<(), String> {
     let root = root();

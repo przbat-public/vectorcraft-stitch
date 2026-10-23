@@ -49,67 +49,6 @@ pub fn synthetic(n: usize) -> Result<Document, String> {
     Ok(d)
 }
 
-/// The paths of the synthetic document whose embroidery is planned: few enough to stay within the
-/// 2 million stitches a design may have (the 50,000-path document needs more), about a hundred
-/// embroidery designs' worth of objects.
-const EMBROIDERY_PATHS: usize = 1000;
-/// The budget rows of embroidery planning ([`embroidery_times`]).
-const EMBROIDERY_ROWS: [&str; 3] =
-    ["embroidery: cold plan, 1,000 paths", "embroidery: warm plan, 1,000 paths", "embroidery: nudge and re-plan, 1,000 paths"];
-/// How far an object is moved to edit it before a re-plan, millimetres: a nudge.
-const EMBROIDERY_NUDGE_MM: f64 = 0.5;
-/// Points in a millimetre.
-const PT_PER_MM: f64 = 72.0 / 25.4;
-
-/// The middle of `samples` (milliseconds), 0 for none.
-fn middle(mut samples: Vec<f64>) -> f64 {
-    samples.sort_by(f64::total_cmp);
-    samples.get(samples.len() / 2).copied().unwrap_or(0.0)
-}
-
-/// Milliseconds to plan `doc`'s embroidery (`embroidery.stats`, with the export's default options):
-/// cold, in a session that never planned it; warm, every unit kept from earlier plans of the same
-/// art (another snapshot of it: an undo); and after moving one object 0.5 mm; each the middle of
-/// `runs` (at least one). `None` when the document has nothing to stitch.
-pub fn embroidery_times(doc: &Document, runs: usize) -> Result<Option<(f64, f64, f64)>, String> {
-    let runs = runs.max(1);
-    let err = |e: vectorcraft_engine::EngineError| e.to_string();
-    let fresh = || {
-        let mut s = vectorcraft_engine::Session::new();
-        s.add_document(doc.clone(), None);
-        s
-    };
-    let stats = json!({});
-    let time = |s: &mut vectorcraft_engine::Session| -> Result<f64, String> {
-        let t = Instant::now();
-        s.execute("embroidery.stats", &stats).map_err(err)?;
-        Ok(t.elapsed().as_secs_f64() * 1000.0)
-    };
-    let mut s = fresh();
-    let order = s.execute("embroidery.sequence", &json!({})).map_err(err)?;
-    let Some(id) = order["blocks"].get(0).and_then(|b| b["units"].get(0)).and_then(|u| u["id"].as_u64()) else { return Ok(None) };
-    let mut cold = Vec::with_capacity(runs);
-    for _ in 0..runs {
-        let mut s = fresh();
-        cold.push(time(&mut s)?);
-    }
-    // Moved and planned, then each undo and redo a plan of a snapshot whose units are all kept.
-    let nudge = json!({"ids": [id], "dx": EMBROIDERY_NUDGE_MM * PT_PER_MM, "dy": 0});
-    s.execute("object.move", &nudge).map_err(err)?;
-    time(&mut s)?;
-    let mut warm = Vec::with_capacity(runs);
-    for k in 0..runs {
-        s.execute(if k % 2 == 0 { "edit.undo" } else { "edit.redo" }, &json!({})).map_err(err)?;
-        warm.push(time(&mut s)?);
-    }
-    let mut edited = Vec::with_capacity(runs);
-    for _ in 0..runs {
-        s.execute("object.move", &nudge).map_err(err)?;
-        edited.push(time(&mut s)?);
-    }
-    Ok(Some((middle(cold), middle(warm), middle(edited))))
-}
-
 fn median_ms(runs: usize, mut f: impl FnMut()) -> f64 {
     let mut v: Vec<f64> = (0..runs)
         .map(|_| {
@@ -384,6 +323,7 @@ pub fn run(args: &[String]) -> Result<(), String> {
     while let Some(a) = it.next() {
         match a.as_str() {
             "--deep" => want_deep = true,
+            "--embroidery" => return crate::perf_embroidery::report(budget_row),
             "--paths" => n = it.next().and_then(|v| v.parse().ok()).ok_or("--paths needs a number")?,
             other => return Err(format!("unknown perf option `{other}`")),
         }
@@ -468,17 +408,9 @@ pub fn run(args: &[String]) -> Result<(), String> {
     rows.push(("handle drag, 5,000-anchor path (per move)", handle, 8.0));
     rows.push(("segment drag, 5,000-anchor path (per move)", segment, 8.0));
 
-    // Embroidery planning, on a smaller synthetic document. The budgets are estimates: a cold plan
-    // well under half a second; the warm plan (every unit kept) and the re-plan after a nudge (the
-    // moved object and the next in its block) within the 100 ms the design notes ask of a re-plan
-    // after an edit, so that a preview can follow edits.
-    match synthetic(EMBROIDERY_PATHS).and_then(|d| embroidery_times(&d, 3)) {
-        Ok(Some((cold, warm, edited))) => {
-            rows.push((EMBROIDERY_ROWS[0], cold, 400.0));
-            rows.push((EMBROIDERY_ROWS[1], warm, 100.0));
-            rows.push((EMBROIDERY_ROWS[2], edited, 100.0));
-        }
-        Ok(None) => failed = Some("embroidery: the synthetic document has nothing to stitch".into()),
+    // Embroidery planning, on documents built for it (`perf_embroidery`).
+    match crate::perf_embroidery::rows() {
+        Ok(embroidery) => rows.extend(embroidery),
         Err(e) => failed = Some(format!("embroidery: {e}")),
     }
     if let Some(e) = failed {
@@ -583,7 +515,10 @@ mod tests {
         let longest = tracked_row("render 4 embedded 24 MP photos with 3 renderers (cold)", 774.61);
         let short = tracked_row("Pathfinder crop, 300 paths", 30.94);
         assert_eq!(longest.chars().count(), short.chars().count(), "{longest}\n{short}");
-        for name in ["handle drag, 5,000-anchor path (per move)", "segment drag, 5,000-anchor path (per move)"].into_iter().chain(EMBROIDERY_ROWS) {
+        for name in ["handle drag, 5,000-anchor path (per move)", "segment drag, 5,000-anchor path (per move)"]
+            .into_iter()
+            .chain(crate::perf_embroidery::ROWS)
+        {
             let (longest, short) = (budget_row(name, 0.12, 8.0, true), budget_row("export SVG", 7.81, 500.0, true));
             assert_eq!(longest.chars().count(), short.chars().count(), "{longest}\n{short}");
         }

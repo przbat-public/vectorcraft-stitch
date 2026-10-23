@@ -1,6 +1,6 @@
 # File format parity
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-22 · **Change:** minor (embroidery: Husqvarna Viking and Pfaff VP3, Brother PEC on its own, Happy TAP and Wilcom T01 opened and exported)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-23 · **Change:** minor (embroidery: the review fixes; the format counts brought up to date, the revision history mended)
 
 Every format Illustrator opens, places, saves or exports, against VectorCraft's format table (`FORMATS`,
 `OPEN_EXTS`, `PLACE_EXTS` in `crates/engine/src/cmd/fileio/mod.rs`). Illustrator's list comes from its public
@@ -17,9 +17,9 @@ from the public specifications, and users' own `.ai` files are used locally only
 
 | | Illustrator | VectorCraft | Notes |
 |---|---:|---:|---|
-| Formats opened or placed | ~30 | 28 | missing: FreeHand, CorelDRAW, DWG, HEIC/HEIF, JPEG 2000, PICT, PCX, Pixar, Word `.doc`, PS; embroidery designs (DST, TAP, T01, EXP, PES, PEC, JEF, VP3) open as art |
+| Formats opened or placed | ~30 | 32 | embroidery designs (DST, TAP, T01, EXP, PES, PEC, JEF, VP3) open as art; missing: FreeHand, CorelDRAW, DWG, HEIC/HEIF, JPEG 2000, PICT, PCX, Pixar, Word `.doc`, PS |
 | Formats saved (Save As) | 6 (AI, AIT, PDF, EPS, SVG, SVGZ) | 6 + native | `.ai` written PDF-compatible (no Illustrator editing data) or as legacy version 7 (layers and groups, one artboard per file) |
-| Formats exported | ~16 | 21 | missing: DWG, 3D (OBJ/USDA/glTF); extra: GIF/PNG-8 palette export, DXF up to 2018, layered PSD, and embroidery designs (DST, TAP, T01, EXP, PES, PEC, JEF, VP3) |
+| Formats exported | ~16 | 25 | missing: DWG, 3D (OBJ/USDA/glTF); extra: GIF/PNG-8 palette export, DXF up to 2018, layered PSD, and embroidery designs (DST, TAP, T01, EXP, PES, PEC, JEF, VP3) |
 | **Overall (weighted by use)** | | **~75%** | `.ai` and PDF dominate the weighting |
 
 EPS editing-data follow-up (2026-10-16): both mesh-corner layouts (with and without opacity)
@@ -126,10 +126,17 @@ the app's own editing copy of a file (an EPS after its `%%EOF`, a `.ai`'s `AIPri
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-23 | minor | Embroidery: the review fixes (an opened design keeps its start point, name and VP3 thread records, and says what opening left out; VP3 trims as long forms); the format counts above brought up to date (32 opened or placed, 25 exported: the embroidery formats counted as the other formats are) and this table mended (a blank line had cut it in two; the embroidery rows in date order, the first one dated 2026-10-18) |
 | 2026-10-22 | minor | Embroidery: Wilcom T01 files (the same bytes as a TAP) open as art and export ([embroidery.md](embroidery.md)) |
 | 2026-10-22 | minor | Embroidery: Happy TAP files (DST's records without its header) open as art and export ([embroidery.md](embroidery.md)) |
 | 2026-10-22 | minor | Embroidery: Brother PEC files (a PES's PEC section on its own) open as art and export ([embroidery.md](embroidery.md)) |
 | 2026-10-22 | minor | Embroidery: Husqvarna Viking and Pfaff VP3 designs open as art and export, each block with its own colour; jumps as VP3's long form and a zero-length stitch; no trim record ([embroidery.md](embroidery.md)) |
+| 2026-10-21 | minor | Embroidery: PEC thread 42 is Linen and PEC's appliqué entries 62 to 64 are never matched or written; a thread number that names no thread opens as a stand-in named after it ([embroidery.md](embroidery.md)) |
+| 2026-10-21 | minor | Embroidery: each colour block is sewn in a thread of the document's palette (Brother's PEC or Janome's JEF threads, `embroidery.setup`), matched by CIEDE2000 instead of RGB distance; the palettes are built-in swatch libraries; PES and JEF write the plan's threads ([embroidery.md](embroidery.md)) |
+| 2026-10-19 | minor | Embroidery export: a filled shape's narrow parts are sewn as satin columns that follow the shape, the rest as tatami (`narrowAsSatin`, 7 mm) ([embroidery.md](embroidery.md)) |
+| 2026-10-19 | minor | Embroidery export: fill rows reach past the edge by `pullCompensation`, `expand` grows fills so neighbours meet, satin compensation per rail and by width (`pullCompensationPercent`), `pushCompensation` at satin ends, `threadWeight` sets the default spacing ([embroidery.md](embroidery.md)) |
+| 2026-10-18 | minor | Embroidery export: jumps between pieces are tied and trimmed only past `trimLength` (10 mm) or after an object marked with `embroidery.setTrimAfter`; fill regions are ordered so travels stay hidden; objects start near the one before ([embroidery.md](embroidery.md)) |
+| 2026-10-18 | minor | Embroidery: `document.open` reads Tajima DST, Melco EXP, Brother PES and Janome JEF designs as art, and `document.export` stitches the art into those formats (running, satin, tatami fill, underlay, trims). Implemented from public format documentation; no hardware test yet ([embroidery.md](embroidery.md)) |
 | 2026-10-16 | minor | An Illustrator 3 file without prolog or layers (an image editor's exported paths) opens with its art on one layer instead of being refused (storytold/photocraft#6036); scores unchanged |
 | 2026-10-16 | minor | EPS editing data: legacy mesh corners, vector opacity masks and compound member paint retained; raster page comparison filters minification without relaxing limits; scores and hours unchanged. Synthetic EPS/parser/minification regressions; user EPS/SVG/JPG kept local. |
 | 2026-10-16 | minor | Batch exporting in Export for Screens (#1935): a file name pattern (document and item names, a counter, the date), folders per format, item or both, Layers and Selection tabs with thumbnails, EPS, AI and VectorCraft rows, a PDF row with printer's marks, and export presets (built-in Logo Package and Print-Ready PDF, saved ones); scores and hours unchanged (estimated) |
@@ -155,13 +162,6 @@ the app's own editing copy of a file (an EPS after its `%%EOF`, a `.ai`'s `AIPri
 | 2026-10-12 | minor | `.ai` read as its PDF part keeps the RGB numbers of its `ICCBased` spaces (`uncalibrated_rgb`, on for `.ai`, off for PDFs): a user-visible colour change for `.ai` files tagged with a non-sRGB RGB profile |
 | 2026-10-12 | minor | PDF import: a fill that took its opacity or soft mask from a transparency group no longer absorbs the same-outline stroke drawn after the group, so the stroke keeps neither |
 | 2026-10-12 | minor | A `.ai` whose PDF part draws only text opens from that part when its editing data can't be read, instead of being refused as saved without PDF compatibility: a page that states an art, trim or bleed box is art, not the placeholder (#1387); scores unchanged |
-| 2026-10-21 | minor | Embroidery: PEC thread 42 is Linen and PEC's appliqué entries 62 to 64 are never matched or written; a thread number that names no thread opens as a stand-in named after it ([embroidery.md](embroidery.md)) |
-| 2026-10-21 | minor | Embroidery: each colour block is sewn in a thread of the document's palette (Brother's PEC or Janome's JEF threads, `embroidery.setup`), matched by CIEDE2000 instead of RGB distance; the palettes are built-in swatch libraries; PES and JEF write the plan's threads ([embroidery.md](embroidery.md)) |
-| 2026-10-19 | minor | Embroidery export: a filled shape's narrow parts are sewn as satin columns that follow the shape, the rest as tatami (`narrowAsSatin`, 7 mm) ([embroidery.md](embroidery.md)) |
-| 2026-10-19 | minor | Embroidery export: fill rows reach past the edge by `pullCompensation`, `expand` grows fills so neighbours meet, satin compensation per rail and by width (`pullCompensationPercent`), `pushCompensation` at satin ends, `threadWeight` sets the default spacing ([embroidery.md](embroidery.md)) |
-| 2026-10-18 | minor | Embroidery export: jumps between pieces are tied and trimmed only past `trimLength` (10 mm) or after an object marked with `embroidery.setTrimAfter`; fill regions are ordered so travels stay hidden; objects start near the one before ([embroidery.md](embroidery.md)) |
-| 2026-10-19 | minor | Embroidery: `document.open` reads Tajima DST, Melco EXP, Brother PES and Janome JEF designs as art, and `document.export` stitches the art into those formats (running, satin, tatami fill, underlay, trims). Implemented from public format documentation; no hardware test yet ([embroidery.md](embroidery.md)) |
-
 | 2026-10-12 | minor | PDF and `.ai` import, and placed PDFs, keep overprint: the graphics state's `/OP` and `/op` (ISO 32000-1 §8.6.7) become the overprint of fills, strokes and type, so a spot colour set to overprint still does after export; `/OPM 0` is reported in a note (#1388); scores unchanged |
 | 2026-10-12 | minor | `.ai` editing data: a gradient with middle stops runs its whole ramp (#1390); type of objects with an appearance, of hidden layers and on later artboards goes to its own text object (#1391); area type in a frame too short for the fallback font shows its first line (#1392); scores unchanged |
 | 2026-10-12 | minor | `.ai` editing data: placed (linked) files come in as linked images showing the preview the file keeps, so a file with them opens through its layers, with its guides (#1264); scores unchanged |

@@ -23,11 +23,11 @@
 //! Reference: EduTechWiki, *Embroidery format DST* (edutechwiki.unige.ch/en/Embroidery_format_DST),
 //! which transcribes the public decodings by Achatina and Embroidermodder.
 
-use super::{Frame, LABEL_LEN, PAD, collapse_jumps, finish, label, mm, steps};
-use crate::{Block, Command, Error, Pattern, Result, Stitch};
+use super::{Emitter, Frame, LABEL_LEN, PAD, add, finish, label, mm, steps, walk};
+use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The header's length; records follow it.
-const HEADER: usize = 512;
+pub(crate) const HEADER: usize = 512;
 /// The byte that ends the header's text, before the padding (ASCII SUB, the old end-of-file mark).
 const HEADER_END: u8 = 0x1A;
 /// The length of a record.
@@ -37,6 +37,11 @@ const DIGITS: usize = 5;
 /// The largest delta one record holds, in tenths of a millimetre: 1 + 3 + 9 + 27 + 81 = 121, all
 /// [`DIGITS`] digits at +1.
 pub(crate) const MAX_DELTA: i32 = (3i32.pow(DIGITS as u32) - 1) / 2;
+/// The largest extent the header's five-digit `+X`, `-X`, `+Y` and `-Y` fields state, tenths of a
+/// millimetre (9,999.9 mm).
+pub(crate) const MAX_EXTENT: i32 = 99_999;
+/// The most records the header's seven-digit `ST` field counts.
+const MAX_RECORDS: usize = 9_999_999;
 
 // A record's third byte: its two bottom bits are always set, and its top bits say what the record
 // is. A stitch sets only the bottom two.
@@ -71,7 +76,7 @@ enum Kind {
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     let r = records(p)?;
-    let mut out = header(p, r.count, r.colors, r.width, r.height);
+    let mut out = header(p, r.count, r.colors, r.extents);
     out.extend_from_slice(&r.bytes);
     Ok(out)
 }
@@ -82,11 +87,11 @@ pub(crate) struct Records {
     pub(crate) bytes: Vec<u8>,
     /// How many records there are before the end record (the header's `ST`).
     count: usize,
-    /// The colour changes (the header's `CO`).
+    /// The colour change records (the header's `CO`).
     colors: usize,
-    /// The design's size in tenths of a millimetre (the header's `+X` and `+Y`).
-    width: i32,
-    height: i32,
+    /// How far the design reaches from where it starts, tenths of a millimetre: right, left, up
+    /// and down (the header's `+X`, `-X`, `+Y` and `-Y`).
+    extents: (i32, i32, i32, i32),
 }
 
 /// The records `p` is written as: stitches, jumps, trims as three small jumps, a colour change
@@ -94,61 +99,21 @@ pub(crate) struct Records {
 pub(crate) fn records(p: &Pattern) -> Result<Records> {
     let frame = Frame::of(p, true)?;
     let mut body: Body = Body::default();
-    let mut colors = 0usize;
-    for (i, block) in p.blocks.iter().enumerate() {
-        if block.stitches.is_empty() {
-            continue;
-        }
-        if i > 0 && !body.out.is_empty() {
-            body.push(0, 0, Kind::ColorChange);
-            colors += 1;
-        }
-        // Each block starts with the needle up: travel to its first stitch.
-        body.started = false;
-        write_block(&mut body, block, &frame)?;
-    }
+    walk(p, &frame, &mut body, "DST")?;
     if body.out.is_empty() {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
-    let count = body.records;
-    let (width, height) = extent(p, &frame);
-    body.push(0, 0, Kind::End);
-    Ok(Records { bytes: body.out, count, colors, width, height })
-}
-
-fn write_block(body: &mut Body, block: &Block, frame: &Frame) -> Result<()> {
-    for s in &block.stitches {
-        match s.command {
-            Command::Stitch => {
-                let (x, y) = frame.point(*s);
-                if !body.started {
-                    // The design starts at the origin: travel to its first stitch with the
-                    // needle up so no thread runs from there.
-                    body.move_to(x, y, Kind::Jump);
-                    body.started = true;
-                }
-                body.move_to(x, y, Kind::Stitch);
-            }
-            Command::Jump => {
-                let (x, y) = frame.point(*s);
-                body.move_to(x, y, Kind::Jump);
-                body.started = true;
-            }
-            Command::Trim => {
-                // Three small jumps that go nowhere: a machine trims after a run of jumps.
-                for (dx, dy) in TRIM_RECORDS {
-                    body.push(dx, dy, Kind::Jump);
-                }
-            }
-            Command::ColorChange | Command::Stop => body.push(0, 0, Kind::ColorChange),
-            Command::End => break,
-        }
+    if body.records > MAX_RECORDS {
+        return Err(Error::TooLarge(format!("a DST header counts at most {MAX_RECORDS} records, and the design takes {}", body.records)));
     }
-    Ok(())
+    let count = body.records;
+    let extents = frame.extents();
+    body.push(0, 0, Kind::End);
+    Ok(Records { bytes: body.out, count, colors: body.colors, extents })
 }
 
 /// The header's text lines, its end marker and the padding to [`HEADER`].
-fn header(p: &Pattern, records: usize, colors: usize, width: i32, height: i32) -> Vec<u8> {
+fn header(p: &Pattern, records: usize, colors: usize, (right, left, up, down): (i32, i32, i32, i32)) -> Vec<u8> {
     let name = label(&p.name);
     let mut s = String::with_capacity(HEADER);
     // Fixed-width fields: the label, the record count, the colour changes, the four extents and
@@ -156,10 +121,10 @@ fn header(p: &Pattern, records: usize, colors: usize, width: i32, height: i32) -
     s.push_str(&format!("LA:{name:<LABEL_LEN$}\r"));
     s.push_str(&format!("ST:{records:7}\r"));
     s.push_str(&format!("CO:{colors:3}\r"));
-    s.push_str(&format!("+X:{width:5}\r"));
-    s.push_str(&format!("-X:{:5}\r", 0));
-    s.push_str(&format!("+Y:{height:5}\r"));
-    s.push_str(&format!("-Y:{:5}\r", 0));
+    s.push_str(&format!("+X:{right:5}\r"));
+    s.push_str(&format!("-X:{left:5}\r"));
+    s.push_str(&format!("+Y:{up:5}\r"));
+    s.push_str(&format!("-Y:{down:5}\r"));
     s.push_str(&format!("AX:+{:5}\r", 0));
     s.push_str(&format!("AY:+{:5}\r", 0));
     s.push_str(&format!("MX:+{:5}\r", 0));
@@ -171,14 +136,6 @@ fn header(p: &Pattern, records: usize, colors: usize, width: i32, height: i32) -
     out
 }
 
-/// The design's size in tenths of a millimetre.
-fn extent(p: &Pattern, frame: &Frame) -> (i32, i32) {
-    match p.bounds() {
-        Some(b) => frame.size(b),
-        None => (0, 0),
-    }
-}
-
 /// The records of a design being written.
 #[derive(Default)]
 struct Body {
@@ -187,7 +144,46 @@ struct Body {
     x: i32,
     y: i32,
     records: usize,
-    started: bool,
+    /// The colour change records written (the header's `CO`): between blocks, and a stop or a
+    /// change inside one.
+    colors: usize,
+}
+
+impl Emitter for Body {
+    fn stitch(&mut self, x: i32, y: i32) {
+        self.move_to(x, y, Kind::Stitch);
+    }
+
+    fn jump(&mut self, x: i32, y: i32) {
+        self.move_to(x, y, Kind::Jump);
+    }
+
+    fn trim(&mut self) {
+        // Three small jumps that go nowhere: a machine trims after a run of jumps.
+        for (dx, dy) in TRIM_RECORDS {
+            self.push(dx, dy, Kind::Jump);
+        }
+    }
+
+    /// A colour change record, between blocks or a stop inside one: the header's `CO` counts
+    /// every one.
+    fn color_change(&mut self) {
+        self.push(0, 0, Kind::ColorChange);
+        self.colors += 1;
+    }
+
+    fn next_block(&mut self) {
+        self.color_change();
+    }
+
+    /// Any record: a trim or a stop too.
+    fn wrote(&self) -> bool {
+        !self.out.is_empty()
+    }
+
+    fn size(&self) -> usize {
+        self.out.len()
+    }
 }
 
 impl Body {
@@ -262,6 +258,23 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     read_records(bytes.get(HEADER..).unwrap_or_default(), header_name(bytes.get(..HEADER).unwrap_or_default()), "DST")
 }
 
+/// The header fields a DST reader leaves out, and the writer writes as zeros: the needle's end
+/// position (`AX`, `AY`) and the multi-volume fields (`MX`, `MY`, `PD`).
+const END_FIELDS: [&str; 4] = ["AX:", "AY:", "MX:", "MY:"];
+const MULTI_VOLUME: &str = "PD:";
+/// What `PD` holds in a design that is not one of several volumes.
+const NO_VOLUME: char = '*';
+
+/// What a DST's header holds that reading it leaves out: an end position or multi-volume fields
+/// that aren't zero (or, for `PD`, asterisks).
+pub(crate) fn losses(bytes: &[u8]) -> Vec<super::Loss> {
+    let header = String::from_utf8_lossy(bytes.get(..HEADER).unwrap_or_default()).to_string();
+    let field = |name: &str| header.split('\r').find_map(|line| line.trim_start_matches('\n').strip_prefix(name).map(str::trim));
+    let set = END_FIELDS.iter().filter_map(|f| field(f)).any(|v| v.trim_start_matches(['+', '-']).trim().parse::<i64>().is_ok_and(|n| n != 0))
+        || field(MULTI_VOLUME).is_some_and(|v| !v.chars().all(|c| c == NO_VOLUME || c == ' ' || c == '0'));
+    if set { vec![super::Loss::DstFields] } else { Vec::new() }
+}
+
 /// Whether `records` are DST records: every one up to the end record has [`SET_BITS`] in its
 /// third byte, as every record does. A TAP or T01, with no header, is told from another file by
 /// this alone; `what` names the format in the error.
@@ -281,30 +294,30 @@ pub(crate) fn check_records(records: &[u8], what: &str) -> Result<()> {
 /// The design `records` hold (a DST's after its header, or a whole TAP file), named `name`; `what`
 /// names the format in an error.
 pub(crate) fn read_records(records: &[u8], name: String, what: &str) -> Result<Pattern> {
-    let mut x = 0i32;
-    let mut y = 0i32;
+    // Wide enough that no file overflows it: each record moves the needle at most 121 tenths.
+    let (mut x, mut y) = (0i64, 0i64);
     let mut points: Vec<Stitch> = Vec::new();
     for record in records.chunks_exact(RECORD) {
         let b2 = record[2];
-        let (dx, dy) = (decode(record, &X_DIGITS), decode(record, &Y_DIGITS));
+        let (dx, dy) = (i64::from(decode(record, &X_DIGITS)), i64::from(decode(record, &Y_DIGITS)));
         if b2 & END_BITS == END_BITS {
             break;
         }
         if b2 & COLOR_CHANGE_BITS == COLOR_CHANGE_BITS {
-            points.push(Stitch::new(mm(x), mm(-y), Command::ColorChange));
+            add(&mut points, Stitch::new(mm(x), mm(-y), Command::ColorChange), what)?;
             // Some writers move the frame in the colour-change record itself: the move is a jump
             // to where the next thread starts.
             if dx != 0 || dy != 0 {
                 x += dx;
                 y += dy;
-                points.push(Stitch::new(mm(x), mm(-y), Command::Jump));
+                add(&mut points, Stitch::new(mm(x), mm(-y), Command::Jump), what)?;
             }
             continue;
         }
         x += dx;
         y += dy;
         let command = if b2 & JUMP_BITS == JUMP_BITS { Command::Jump } else { Command::Stitch };
-        points.push(Stitch::new(mm(x), mm(-y), command));
+        add(&mut points, Stitch::new(mm(x), mm(-y), command), what)?;
     }
     if points.is_empty() {
         return Err(Error::Format(format!("the {what} file has no stitch records")));
@@ -346,7 +359,8 @@ fn decode(record: &[u8], layout: &[(usize, u8, u8); DIGITS]) -> i32 {
 const TRIM_JUMPS: usize = TRIM_RECORDS.len();
 
 /// A trim before every run of at least [`TRIM_JUMPS`] jumps that sits between stitches, and every
-/// run collapsed to the point the thread is taken up at.
+/// run collapsed to the point the thread is taken up at (its last jump: runs are maximal, so no two
+/// jumps end up side by side).
 fn insert_trims(points: &mut Vec<Stitch>) {
     let mut out: Vec<Stitch> = Vec::with_capacity(points.len() + 4);
     let mut i = 0;
@@ -377,13 +391,15 @@ fn insert_trims(points: &mut Vec<Stitch>) {
         }
         i += 1;
     }
-    collapse_jumps(&mut out);
     *points = out;
 }
 
 #[cfg(test)]
 mod tests {
+    use vectorcraft_geom::Point;
+
     use super::*;
+    use crate::{Block, Thread};
 
     #[test]
     fn balanced_ternary_covers_the_range() {
@@ -449,5 +465,51 @@ mod tests {
         assert_eq!(b2, 0x83);
         let [_, _, b2] = encode(0, 0, Kind::Stitch);
         assert_eq!(b2, 0x03);
+    }
+
+    /// The header's `ST`, `CO` and extents are the records': as many records before the end
+    /// record, as many colour change records (between blocks, and a stop inside one), and the
+    /// farthest the records take the needle from where it starts, each way.
+    #[test]
+    fn the_header_counts_and_measures_the_records() {
+        let mut a = Block::new(Thread::rgb([200, 0, 0]));
+        for (x, y) in [(0.0, 0.0), (5.0, 2.0), (10.0, -3.0)] {
+            a.stitches.push(Stitch::sew(Point::new(x, y)));
+        }
+        // A stop inside the block, a trim and a 30 mm jump.
+        a.stitches.push(Stitch::new(10.0, -3.0, Command::Stop));
+        a.stitches.push(Stitch::sew(Point::new(12.0, 4.0)));
+        a.stitches.push(Stitch::new(12.0, 4.0, Command::Trim));
+        a.stitches.push(Stitch::new(42.0, 4.0, Command::Jump));
+        a.stitches.push(Stitch::sew(Point::new(42.0, 4.0)));
+        let mut b = Block::new(Thread::rgb([0, 0, 200]));
+        b.stitches.push(Stitch::sew(Point::new(40.0, 20.0)));
+        b.stitches.push(Stitch::sew(Point::new(30.0, 25.0)));
+        let p = Pattern { blocks: vec![a, b], ..Pattern::default() };
+        let bytes = write(&p).unwrap();
+        let header = String::from_utf8_lossy(&bytes[..HEADER]).to_string();
+        let field = |name: &str| -> i64 {
+            let at = header.find(name).unwrap() + name.len();
+            header[at..].split('\r').next().unwrap().trim().trim_start_matches('+').trim().parse().unwrap()
+        };
+        let (mut records, mut changes) = (0i64, 0i64);
+        let (mut x, mut y) = (0i64, 0i64);
+        let (mut x0, mut x1, mut y0, mut y1) = (0i64, 0i64, 0i64, 0i64);
+        for r in bytes[HEADER..].chunks_exact(RECORD) {
+            if r[2] & END_BITS == END_BITS {
+                break;
+            }
+            records += 1;
+            if r[2] & COLOR_CHANGE_BITS == COLOR_CHANGE_BITS {
+                changes += 1;
+                continue;
+            }
+            x += i64::from(decode(r, &X_DIGITS));
+            y += i64::from(decode(r, &Y_DIGITS));
+            (x0, x1, y0, y1) = (x0.min(x), x1.max(x), y0.min(y), y1.max(y));
+        }
+        assert_eq!((field("ST:"), field("CO:")), (records, changes));
+        assert_eq!(changes, 2, "the block change and the stop");
+        assert_eq!((field("+X:"), field("-X:"), field("+Y:"), field("-Y:")), (x1, -x0, y1, -y0));
     }
 }

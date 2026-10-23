@@ -1,15 +1,14 @@
 //! A design's figures (`embroidery.stats`), exactly, on designs built stitch by stitch.
 
 use serde_json::json;
-use vectorcraft_doc::NodeId;
 use vectorcraft_geom::Point;
-use vectorcraft_stitch::plan::{Params, Style};
-use vectorcraft_stitch::thread::Palette;
-use vectorcraft_stitch::{Block, Command, Stitch, Thread};
+use vectorcraft_stitch::plan::Style;
+use vectorcraft_stitch::{Command, Stitch};
 
-use super::plan::{Choice, DesignPlan, Origin, Part};
-use super::sequence::{Planned, Sequence};
-use super::stats::{self, Machine, Thread as Fabric};
+use super::plan::DesignPlan;
+use super::sequence::Planned;
+use super::stats::{self, Machine, Page, Thread as Fabric};
+use super::test_support::{self, ALL, plan};
 use super::*;
 
 /// How close two figures worked out two ways must be: rounding only.
@@ -17,19 +16,7 @@ const ROUNDING: f64 = 1e-9;
 
 /// A unit of `style` in `color`, sewing `points` (millimetres) as needle points.
 fn unit(node: u64, style: Style, color: [u8; 3], points: &[(f64, f64)]) -> Planned {
-    let mut block = Block::new(Thread::rgb(color));
-    block.stitches = points.iter().map(|&(x, y)| Stitch::sew(Point::new(x, y))).collect();
-    let origin = Origin { node: NodeId(node), part: Part::Fill(0), instance: None };
-    Planned { origin, params: Some(Params::for_style(style)), columns: None, satin_widths: None, why: Choice::Forced, block, literal: None }
-}
-
-/// A plan of `units`, in order.
-fn plan(units: Vec<Planned>) -> DesignPlan {
-    let mut seq = Sequence::new(Params::for_style(Style::Fill));
-    for u in units {
-        seq.add(u);
-    }
-    seq.plan("test".into(), Vec::new(), Palette::Jef)
+    test_support::unit(node, style, color, points, None)
 }
 
 const RED: [u8; 3] = [200, 30, 30];
@@ -51,9 +38,9 @@ fn close(a: f64, b: f64) -> bool {
 /// Counts, lengths, size, start, end and extents, as laid out stitch by stitch.
 #[test]
 fn the_counts_and_lengths_are_the_designs() {
-    let v = stats::stats(&two_blocks(), Machine { speed: 650.0 }, Fabric { fabric: 0.5 });
+    let v = stats::stats(&two_blocks(), Machine { speed: 650.0 }, Fabric { fabric: 0.5 }, ALL);
     assert_eq!(
-        (&v["stitches"], &v["records"], &v["jumps"], &v["trims"], &v["colorChanges"], &v["threads"], &v["blocks"]),
+        (&v["stitches"], &v["records"], &v["jumps"], &v["trims"], &v["colorChanges"], &v["threadCount"], &v["blockCount"]),
         (&json!(8), &json!(8), &json!(0), &json!(0), &json!(1), &json!(2), &json!(2))
     );
     assert_eq!((&v["shortestStitch"], &v["longestStitch"], &v["longestJump"]), (&json!(1.0), &json!(3.0), &json!(null)));
@@ -61,30 +48,44 @@ fn the_counts_and_lengths_are_the_designs() {
     assert_eq!(v["bounds"], json!([0.0, 0.0, 31.0, 3.0]));
     assert_eq!((&v["start"], &v["end"]), (&json!([0.0, 0.0]), &json!([31.0, 1.0])));
     assert_eq!(v["extents"], json!({"left": 0.0, "right": 31.0, "up": 0.0, "down": 3.0}));
-    let blocks = v["perBlock"].as_array().unwrap();
-    assert_eq!(blocks.len(), 2);
-    assert_eq!((&blocks[0]["first"], &blocks[0]["last"], &blocks[1]["first"], &blocks[1]["last"]), (&json!(1), &json!(4), &json!(5), &json!(8)));
-    assert_eq!(v["time"]["threadChanges"], json!(1));
+    let blocks = v["blocks"].as_array().unwrap();
+    assert_eq!((blocks.len(), &v["offset"], &v["truncated"]), (2, &json!(0), &json!(false)));
+    assert_eq!(
+        (&blocks[0]["firstRecord"], &blocks[0]["lastRecord"], &blocks[1]["firstRecord"], &blocks[1]["lastRecord"]),
+        (&json!(1), &json!(4), &json!(5), &json!(8))
+    );
+    assert_eq!((&blocks[0]["records"], &blocks[0]["stitches"]), (&json!(4), &json!(4)));
+    // Integral figures are integers.
+    assert!(v["time"]["seconds"].is_u64() && v["time"]["speed"].is_u64() && blocks[0]["seconds"].is_u64(), "{v}");
+    // One block from the second: the rest are counted, and said to be left out or not.
+    let second = stats::stats(&two_blocks(), Machine { speed: 650.0 }, Fabric { fabric: 0.5 }, Page { offset: 1, limit: 1 });
+    assert_eq!(
+        (&second["blocks"][0]["block"], &second["offset"], &second["truncated"], &second["blockCount"]),
+        (&json!(2), &json!(1), &json!(false), &json!(2))
+    );
+    let first = stats::stats(&two_blocks(), Machine { speed: 650.0 }, Fabric { fabric: 0.5 }, Page { offset: 0, limit: 1 });
+    assert_eq!((first["blocks"].as_array().unwrap().len(), &first["truncated"]), (1, &json!(true)));
 }
 
-/// The thread: on the face each stitch's length; on the back its length shared between the bobbin
-/// (a third under a satin, scaled by Wilcom's factors for the other styles: 125 / 65 of that under
-/// a running line) and the top thread pulled under; and twice the fabric's thickness of top thread
-/// at every needle point.
+/// The thread: top thread, on the face each stitch's length; on the back the share of its length
+/// that is top thread pulled under (two thirds under a satin, scaled by Wilcom's factors for the
+/// other styles: 125 / 65 of the bobbin's third under a running line); and twice the fabric's
+/// thickness at every needle point. Bobbin thread, 3/5 of the top thread (Madeira).
 #[test]
 fn the_thread_follows_the_stitches_and_the_fabric() {
     let (blocks, _) = stats::tally(&two_blocks(), Machine { speed: 650.0 }, Fabric { fabric: 0.5 });
     let (running, satin) = (7.0, 2.0 + 2f64.sqrt());
     let (run_share, satin_share) = (1.0 / 3.0 * 1.25 / 0.65, 1.0 / 3.0);
     let through = 2.0 * 0.5;
-    assert!(close(blocks[0].bobbin, running * run_share), "{}", blocks[0].bobbin);
-    assert!(close(blocks[0].top, running * (2.0 - run_share) + 4.0 * through), "{}", blocks[0].top);
-    assert!(close(blocks[1].bobbin, satin * satin_share), "{}", blocks[1].bobbin);
-    assert!(close(blocks[1].top, satin * (2.0 - satin_share) + 4.0 * through), "{}", blocks[1].top);
-    // A thicker fabric only adds to the top thread.
+    let (run_top, satin_top) = (running * (2.0 - run_share) + 4.0 * through, satin * (2.0 - satin_share) + 4.0 * through);
+    assert!(close(blocks[0].top, run_top), "{}", blocks[0].top);
+    assert!(close(blocks[0].bobbin, run_top * 0.6), "{}", blocks[0].bobbin);
+    assert!(close(blocks[1].top, satin_top), "{}", blocks[1].top);
+    assert!(close(blocks[1].bobbin, satin_top * 0.6), "{}", blocks[1].bobbin);
+    // A thicker fabric adds to the top thread, and to the bobbin in proportion.
     let (thick, _) = stats::tally(&two_blocks(), Machine { speed: 650.0 }, Fabric { fabric: 1.5 });
     assert!(close(thick[0].top - blocks[0].top, 4.0 * 2.0 * 1.0));
-    assert!(close(thick[0].bobbin, blocks[0].bobbin));
+    assert!(close(thick[0].bobbin, thick[0].top * 0.6));
 }
 
 /// The time: each needle point and jump one turn of the machine at its speed, slower past 4 mm,
@@ -120,19 +121,21 @@ fn the_stats_command_checks_its_params() {
     s.execute("paint.setFill", &json!({"color": "#cc2222"})).unwrap();
     s.execute("shape.rectangle", &json!({"x": 20, "y": 20, "width": 40, "height": 30})).unwrap();
     let v = s.execute("embroidery.stats", &json!({"speed": 800, "fabricThickness": 1, "density": 0.5})).unwrap();
-    assert_eq!((&v["time"]["speed"], &v["thread"]["fabricThickness"]), (&json!(800.0), &json!(1.0)));
+    assert_eq!((&v["time"]["speed"], &v["threadUsage"]["fabricThickness"]), (&json!(800), &json!(1)));
     assert!(v["stitches"].as_u64().unwrap() > 100);
     // Both figures say they are estimates, and what they rest on.
-    for field in [&v["thread"]["estimate"], &v["time"]["estimate"]] {
+    for field in [&v["threadUsage"]["estimate"], &v["time"]["estimate"]] {
         assert!(field.as_str().unwrap().starts_with("an estimate: "), "{field}");
     }
     let defaults = s.execute("embroidery.stats", &json!({})).unwrap();
-    assert_eq!((&defaults["time"]["speed"], &defaults["thread"]["fabricThickness"]), (&json!(650.0), &json!(0.5)));
+    assert_eq!((&defaults["time"]["speed"], &defaults["threadUsage"]["fabricThickness"]), (&json!(650), &json!(0.5)));
     for (bad, why) in [
         (json!({"speed": 5000}), "`speed`"),
         (json!({"speed": "fast"}), "`speed`"),
         (json!({"fabricThickness": -1}), "`fabricThickness`"),
-        (json!({"density": "x"}), "embroidery options"),
+        (json!({"density": "x"}), "`density` \"x\": a number of millimetres"),
+        (json!({"limit": 10_001}), "`limit`"),
+        (json!({"offset": -1}), "`offset`"),
     ] {
         let e = s.execute("embroidery.stats", &bad).unwrap_err().to_string();
         assert!(e.contains(why), "{bad}: {e}");
@@ -140,7 +143,7 @@ fn the_stats_command_checks_its_params() {
     // The keys it takes: the export's embroidery options and its own two.
     let spec = crate::cmd::find_command("embroidery.stats").unwrap();
     let mut keys: Vec<&str> = crate::cmd::fileio::embroidery::OPTIONS.iter().map(|o| o.name).collect();
-    keys.extend(["speed", "fabricThickness"]);
+    keys.extend(["speed", "fabricThickness", "offset", "limit"]);
     for key in &keys {
         assert!(crate::cmd::params::takes_key(spec.params, key), "{key}");
     }
@@ -159,9 +162,29 @@ fn only_needle_down_stitches_have_lengths() {
     red.push(Stitch::sew(Point::new(14.0, 3.0)));
     red.push(Stitch::sew(Point::new(14.5, 3.0)));
     p.units[0].stitches.end = red.len();
+    // The blue block is numbered after the red block's three new records, as a plan numbers it.
+    p.blocks[1].first_number += 3;
+    assert_eq!(p.locate(p.blocks[1].first_number), Some((1, 0)));
     let (blocks, _) = stats::tally(&p, Machine { speed: 650.0 }, Fabric { fabric: 0.5 });
     assert_eq!(
         (blocks[0].needle, blocks[0].jumps, blocks[0].shortest, blocks[0].longest, blocks[0].longest_jump),
         (6, 1, Some(0.5), Some(3.0), Some(10.0))
     );
+}
+
+/// Distinct threads are not blocks: two blocks of one thread (a red, a blue on top, a red again)
+/// are one thread. The extents are measured from where the design starts, not from its corner.
+#[test]
+fn threads_are_counted_apart_from_blocks_and_extents_from_the_start() {
+    // A red line, a blue line across it, a red line on top of the blue: three blocks, two threads.
+    let p = plan(vec![
+        unit(1, Style::Running, RED, &[(10.0, 5.0), (12.0, 5.0), (14.0, 5.0)]),
+        unit(2, Style::Running, BLUE, &[(12.0, 0.0), (12.0, 10.0)]),
+        unit(3, Style::Running, RED, &[(11.0, 4.0), (13.0, 6.0)]),
+    ]);
+    let v = stats::stats(&p, Machine { speed: 650.0 }, Fabric { fabric: 0.5 }, ALL);
+    assert_eq!((&v["blockCount"], &v["threadCount"]), (&json!(3), &json!(2)));
+    // It starts at (10, 5), inside its box (10..14 × 0..10): 0 left, 4 right, 5 up, 5 down.
+    assert_eq!(v["start"], json!([10.0, 5.0]));
+    assert_eq!(v["extents"], json!({"left": 0.0, "right": 4.0, "up": 5.0, "down": 5.0}));
 }

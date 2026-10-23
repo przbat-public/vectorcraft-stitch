@@ -4,16 +4,11 @@
 
 use serde_json::{Value, json};
 use vectorcraft_stitch::Command;
+use vectorcraft_stitch::plan::MAX_SATIN_WIDTH;
 
 use super::digitize::digitize;
+use super::test_support::{ALL, PT_PER_MM, blank, run};
 use super::*;
-
-/// Points per millimetre: the documents count points, the designs millimetres.
-const PT_PER_MM: f64 = 72.0 / 25.4;
-
-fn run(s: &mut Session, command: &str, params: Value) -> Value {
-    s.execute(command, &params).unwrap_or_else(|e| panic!("{command} {params}: {e}"))
-}
 
 /// A rectangle filled with `fill` (or none) and stroked with `stroke` at `weight` points (or not)
 /// → its id.
@@ -29,12 +24,6 @@ fn rect(s: &mut Session, fill: Option<&str>, stroke: Option<(&str, f64)>, x: f64
     id
 }
 
-fn blank() -> Session {
-    let mut s = Session::new();
-    run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
-    s
-}
-
 /// Every unit listed: its object, part, stitch numbers, entry and exit; how and why it is sewn.
 fn units(v: &Value) -> Vec<Value> {
     v["blocks"].as_array().unwrap().iter().flat_map(|b| b["units"].as_array().unwrap().clone()).collect()
@@ -48,14 +37,15 @@ fn each_unit_maps_to_its_object_and_its_stitches() {
     let framed = rect(&mut s, Some("#cc2222"), Some(("#2233cc", 6.0)), 20.0, 20.0, 60.0, 40.0);
     let far = rect(&mut s, Some("#cc2222"), None, 200.0, 200.0, 40.0, 30.0);
     let v = run(&mut s, "embroidery.sequence", json!({}));
-    let plan = digitize(&s.doc().unwrap().doc, &Options::default()).unwrap();
+    let plan = digitize(&s.doc().unwrap().doc, &Options::default(), None).unwrap();
     let listed = units(&v);
     assert_eq!(listed.len(), plan.units.len());
     for (k, (u, l)) in plan.units.iter().zip(&listed).enumerate() {
         assert_eq!(l["unit"], json!(k + 1));
-        assert_eq!(l["id"], json!(u.origin.node.0));
+        assert_eq!(l["id"], json!(u.origin.selected().0));
         let numbers = plan.numbers(k).unwrap();
-        assert_eq!((&l["first"], &l["last"]), (&json!(numbers.start), &json!(numbers.end - 1)), "unit {k}");
+        assert_eq!((&l["firstRecord"], &l["lastRecord"]), (&json!(numbers.start), &json!(numbers.end - 1)), "unit {k}");
+        assert_eq!(l["records"], json!(numbers.len()), "unit {k}");
         let block = &plan.blocks[u.block];
         let needle: Vec<_> = block.stitches[u.stitches.clone()].iter().filter(|s| s.command == Command::Stitch).collect();
         assert_eq!(l["stitches"], json!(needle.len()));
@@ -64,8 +54,17 @@ fn each_unit_maps_to_its_object_and_its_stitches() {
     }
     // The framed rectangle's fill, then the far one joining its block after a cut; its stroke in a
     // block of its own.
-    let ids: Vec<(Value, Value)> = listed.iter().map(|l| (l["id"].clone(), l["part"].clone())).collect();
-    assert_eq!(ids, [(json!(framed), json!("fill 1")), (json!(far), json!("fill 1")), (json!(framed), json!("stroke 1"))]);
+    let ids: Vec<(Value, Value, Value, Value)> =
+        listed.iter().map(|l| (l["id"].clone(), l["part"].clone(), l["partIndex"].clone(), l["occurrence"].clone())).collect();
+    let one = json!(1);
+    assert_eq!(
+        ids,
+        [
+            (json!(framed), json!("fill"), one.clone(), one.clone()),
+            (json!(far), json!("fill"), one.clone(), one.clone()),
+            (json!(framed), json!("stroke"), one.clone(), one.clone())
+        ]
+    );
     let blocks = v["blocks"].as_array().unwrap();
     assert_eq!(blocks.len(), 2);
     assert_eq!(blocks[0]["units"].as_array().unwrap().len(), 2);
@@ -80,37 +79,21 @@ fn each_unit_maps_to_its_object_and_its_stitches() {
 /// listed without stitch numbers, rather than with a last number before its first.
 #[test]
 fn a_unit_that_adds_no_record_has_no_numbers() {
-    use vectorcraft_doc::NodeId;
-    use vectorcraft_geom::Point;
     use vectorcraft_stitch::plan::{Params, Style};
     use vectorcraft_stitch::thread::Palette;
-    use vectorcraft_stitch::{Block, Stitch, Thread};
 
-    use super::plan::{Choice, Origin, Part};
-    use super::sequence::{Planned, Sequence};
+    use super::sequence::Sequence;
+    use super::test_support::unit;
 
-    let unit = |node: u64, points: &[(f64, f64)]| {
-        let mut block = Block::new(Thread::rgb([200, 30, 30]));
-        block.stitches = points.iter().map(|&(x, y)| Stitch::sew(Point::new(x, y))).collect();
-        let origin = Origin { node: NodeId(node), part: Part::Fill(0), instance: None };
-        Planned {
-            origin,
-            params: Some(Params::for_style(Style::Running)),
-            columns: None,
-            satin_widths: None,
-            why: Choice::Forced,
-            block,
-            literal: None,
-        }
-    };
+    let unit = |node: u64, points: &[(f64, f64)]| unit(node, Style::Running, [200, 30, 30], points, None);
     let mut seq = Sequence::new(Params::for_style(Style::Running));
     seq.add(unit(1, &[(0.0, 0.0), (2.0, 0.0), (4.0, 0.0)]));
     seq.add(unit(2, &[(4.0, 0.0)]));
     let plan = seq.plan(String::new(), Vec::new(), Palette::Jef);
-    let units = units(&super::order::sequence(&plan));
+    let units = units(&super::order::sequence(&plan, ALL));
     assert_eq!(units.len(), 2);
-    assert_eq!((&units[0]["first"], &units[0]["last"]), (&json!(1), &json!(3)));
-    assert_eq!((&units[1]["first"], &units[1]["last"], &units[1]["stitches"]), (&json!(null), &json!(null), &json!(0)));
+    assert_eq!((&units[0]["firstRecord"], &units[0]["lastRecord"]), (&json!(1), &json!(3)));
+    assert_eq!((&units[1]["firstRecord"], &units[1]["lastRecord"], &units[1]["stitches"]), (&json!(null), &json!(null), &json!(0)));
 }
 
 /// How each unit is sewn and the rule that chose it.
@@ -138,20 +121,36 @@ fn each_unit_says_how_it_is_sewn_and_why() {
     };
     let auto = sewn(&mut s, json!({}));
     let how: Vec<&str> = auto.iter().map(|(h, _)| h.as_str()).collect();
-    assert_eq!(how, ["tatami", "satin", "running", "tatami with satin columns"]);
+    assert_eq!(how, ["tatami", "satin", "running", "tatami"]);
+    // The rule as an id with its values, and whether a fill's narrow parts are satin columns.
+    let listed = units(&run(&mut s, "embroidery.sequence", json!({})));
+    let rules: Vec<(Value, Value, Value)> = listed.iter().map(|l| (l["rule"].clone(), l["ruleValues"].clone(), l["columns"].clone())).collect();
+    assert_eq!(
+        rules,
+        [
+            (json!("fill"), json!({"narrowAsSatin": 7.0}), json!(false)),
+            (json!("wideStroke"), json!({"width": 2.12, "satinFrom": 1.0, "widest": MAX_SATIN_WIDTH}), json!(false)),
+            (json!("narrowStroke"), json!({"satinFrom": 1.0}), json!(false)),
+            (json!("fill"), json!({"narrowAsSatin": 7.0}), json!(true)),
+        ]
+    );
     assert!(auto[0].1.contains("no part narrower than 7 mm"), "{}", auto[0].1);
     assert!(auto[1].1.contains("at least 1 mm wide is a satin column"), "{}", auto[1].1);
     assert!(auto[2].1.contains("narrower than 1 mm is a running line"), "{}", auto[2].1);
     assert!(auto[3].1.contains("narrower than 7 mm are satin columns"), "{}", auto[3].1);
-    // Forced by stitchStyle: every unit says so; a stroke filled is the area it paints.
+    // Forced by the stitch option: every unit says so; a stroke filled is the area it paints.
     // Satin forced on a fill, which has no width to sew across: the planner fills it, and the list
     // says so.
     let satin = sewn(&mut s, json!({"stitchStyle": "satin"}));
-    let fill_as_satin = ("tatami".to_string(), "stitchStyle satin: a fill has no width to sew a satin across, so it is filled".to_string());
-    let stroke_as_satin = ("satin".to_string(), "stitchStyle satin".to_string());
-    assert_eq!(satin, [fill_as_satin.clone(), stroke_as_satin.clone(), stroke_as_satin, fill_as_satin]);
+    let fill_as_satin = ("tatami".to_string(), "stitch satin: a fill has no width to sew a satin across, so it is filled".to_string());
+    let stroke_as_satin = ("satin".to_string(), "stitch satin".to_string());
+    // Filled as without the option: the T's narrow strokes are satin columns.
+    let t_as_satin = ("tatami".to_string(), format!("{}, its narrow parts as satin columns", fill_as_satin.1));
+    assert_eq!(satin, [fill_as_satin, stroke_as_satin.clone(), stroke_as_satin, t_as_satin]);
     let fill = sewn(&mut s, json!({"stitchStyle": "fill"}));
-    assert_eq!(fill[1].1, "stitchStyle fill: the area the stroke paints is filled");
+    assert_eq!(fill[1].1, "stitch fill: the area the stroke paints is filled");
+    let forced = units(&run(&mut s, "embroidery.sequence", json!({"stitch": "satin"})));
+    assert_eq!((&forced[1]["rule"], &forced[1]["ruleValues"]), (&json!("forced"), &json!({"stitch": "satin"})));
 }
 
 /// Art inside a symbol is listed under the instance a person selects, with the object sewn; a
@@ -171,5 +170,85 @@ fn symbols_and_opened_designs_are_listed_by_what_a_person_selects() {
     run(&mut s, "document.open", json!({"name": "design.pes", "dataBase64": r["dataBase64"]}));
     let listed = units(&run(&mut s, "embroidery.sequence", json!({})));
     assert!(!listed.is_empty());
-    assert!(listed.iter().all(|l| l["part"] == json!("stitches") && l["sewn"] == json!("literal") && l["instance"].is_null()), "{listed:?}");
+    assert!(
+        listed.iter().all(|l| l["part"] == json!("literal")
+            && l["partIndex"].is_null()
+            && l["sewn"] == json!("literal")
+            && l["rule"] == json!("literal")
+            && l["instance"].is_null()),
+        "{listed:?}"
+    );
+}
+
+/// A listed unit's key: `id`, `part`, `partIndex` and `occurrence`.
+type Key = (Value, Value, Value, Value);
+
+/// Each listed unit's key, and the object it sews.
+fn keys_of(v: &Value) -> (Vec<Key>, Vec<Value>) {
+    let listed = units(v);
+    let keys = listed.iter().map(|l| (l["id"].clone(), l["part"].clone(), l["partIndex"].clone(), l["occurrence"].clone())).collect();
+    (keys, listed.iter().map(|l| l["node"].clone()).collect())
+}
+
+/// The keys of `keys`, each once, sorted: what a plan's units are told apart by.
+fn unique(keys: &[Key]) -> Vec<String> {
+    let mut seen: Vec<String> = keys.iter().map(|k| format!("{k:?}")).collect();
+    seen.sort();
+    let all = seen.len();
+    seen.dedup();
+    assert_eq!(seen.len(), all, "a key twice: {keys:?}");
+    seen
+}
+
+/// A symbol whose art is two paths, placed twice: each instance's two units share its id and part
+/// ("fill 1") and are told apart by their occurrence, 1 and 2; the keys are unique and the same
+/// after an edit elsewhere.
+#[test]
+fn a_symbols_paths_are_told_apart_by_their_occurrence() {
+    let mut s = blank();
+    let a = rect(&mut s, Some("#cc2222"), None, 20.0, 20.0, 20.0, 20.0);
+    let b = rect(&mut s, Some("#cc2222"), None, 50.0, 20.0, 20.0, 20.0);
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    let first = run(&mut s, "symbol.new", json!({"name": "Pair"}))["id"].as_u64().unwrap();
+    run(&mut s, "select.none", json!({}));
+    let second = run(&mut s, "symbol.place", json!({"name": "Pair", "x": 150, "y": 150}))["id"].as_u64().unwrap();
+    let (keys, _) = keys_of(&run(&mut s, "embroidery.sequence", json!({})));
+    let before = unique(&keys);
+    for instance in [first, second] {
+        let mine: Vec<&Value> = keys.iter().filter(|k| k.0 == json!(instance)).map(|k| &k.3).collect();
+        assert_eq!(mine, [&json!(1), &json!(2)], "instance {instance}: {keys:?}");
+        assert!(keys.iter().filter(|k| k.0 == json!(instance)).all(|k| k.1 == json!("fill") && k.2 == json!(1)));
+    }
+    rect(&mut s, Some("#2233cc"), None, 250.0, 250.0, 20.0, 20.0);
+    let (after, _) = keys_of(&run(&mut s, "embroidery.sequence", json!({})));
+    let after = unique(&after);
+    assert!(before.iter().all(|k| after.contains(k)), "{before:?} → {after:?}");
+}
+
+/// An object whose appearance expands into several pieces (two fills): its pieces are sewn as new
+/// objects, with new ids at every plan, all selected as the object and each "fill 1"; their
+/// occurrences tell them apart, and the keys are the same at the next plan while the pieces' own
+/// ids are not.
+#[test]
+fn an_expanded_objects_pieces_are_told_apart_by_their_occurrence() {
+    let mut s = blank();
+    let id = rect(&mut s, Some("#cc2222"), None, 20.0, 20.0, 80.0, 60.0);
+    run(&mut s, "appearance.addFill", json!({"ids": [id]}));
+    run(&mut s, "appearance.setItem", json!({"ids": [id], "index": 0, "color": "#2233cc"}));
+    let v = run(&mut s, "embroidery.sequence", json!({}));
+    let (keys, nodes) = keys_of(&v);
+    let before = unique(&keys);
+    let mine: Vec<&Key> = keys.iter().filter(|k| k.0 == json!(id)).collect();
+    assert_eq!(mine.len(), 2, "two pieces: {v}");
+    assert!(mine.iter().all(|k| k.1 == json!("fill") && k.2 == json!(1)), "{mine:?}");
+    assert_eq!(mine.iter().map(|k| k.3.clone()).collect::<Vec<_>>(), [json!(1), json!(2)]);
+    assert!(nodes.iter().all(|n| *n != json!(id)), "the pieces are sewn as new objects: {nodes:?}");
+    // An edit that makes a new object: the pieces get other ids, the keys stay.
+    rect(&mut s, Some("#22aa44"), None, 200.0, 200.0, 20.0, 20.0);
+    let (keys_after, nodes_after) = keys_of(&run(&mut s, "embroidery.sequence", json!({})));
+    let after = unique(&keys_after);
+    assert!(before.iter().all(|k| after.contains(k)), "{before:?} → {after:?}");
+    let pieces =
+        |keys: &[Key], nodes: &[Value]| -> Vec<Value> { keys.iter().zip(nodes).filter(|(k, _)| k.0 == json!(id)).map(|(_, n)| n.clone()).collect() };
+    assert_ne!(pieces(&keys, &nodes), pieces(&keys_after, &nodes_after), "node is no key: the pieces' ids change");
 }

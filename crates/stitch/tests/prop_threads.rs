@@ -9,7 +9,7 @@
 use proptest::prelude::*;
 use vectorcraft_stitch::Thread;
 use vectorcraft_stitch::color::delta_e_rgb;
-use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette, PaletteThread};
+use vectorcraft_stitch::thread::{Palette, PaletteThread, mismatched};
 
 /// The most entries a palette has (Janome's 78), and one past it for numbers that name none.
 const MOST_ENTRIES: usize = 78;
@@ -50,14 +50,29 @@ proptest! {
             let nearest = palette.nearest(t.color, &[]);
             let other = palette.nearest(t.color, &neighbours);
             if n == nearest.index {
-                // Its nearest, which a neighbour has only when no other thread is similar.
-                prop_assert!(!neighbours.contains(&n) || other.delta_e > MISMATCH_DELTA_E, "block {}: {:?} beside {:?}", k, other, neighbours);
+                // Its nearest, which a neighbour has only when no other thread is similar (as the
+                // difference is shown, to two decimals: the rule's own line).
+                prop_assert!(!neighbours.contains(&n) || mismatched(other.delta_e), "block {}: {:?} beside {:?}", k, other, neighbours);
             } else {
                 // Another: the nearest neither neighbour has, similar, because a neighbour has the nearest.
                 prop_assert!(neighbours.contains(&nearest.index), "block {}", k);
                 prop_assert_eq!(n, other.index);
-                prop_assert!(!neighbours.contains(&n) && delta_e_rgb(t.color, palette.get(n).unwrap().0) <= MISMATCH_DELTA_E);
+                prop_assert!(!neighbours.contains(&n) && !mismatched(delta_e_rgb(t.color, palette.get(n).unwrap().0)));
             }
         }
     }
+}
+
+/// A case the property found: a green beside a block of its nearest thread takes Brother's next
+/// nearest, 10.0032 from it, shown as 10.00: similar by the rule, which reads the difference as
+/// shown.
+#[test]
+fn a_thread_shown_at_the_threshold_is_similar() {
+    let threads = vec![Thread::rgb([64, 154, 0]), Thread::rgb([57, 210, 106])];
+    let numbers = Palette::Pec.numbers(&threads);
+    let nearest = Palette::Pec.nearest([57, 210, 106], &[]);
+    assert_eq!(nearest.index, numbers[0], "the block before has the green's nearest thread");
+    let other = Palette::Pec.nearest([57, 210, 106], &[numbers[0]]);
+    assert!(other.delta_e > 10.0 && !mismatched(other.delta_e), "{other:?}");
+    assert_eq!(numbers[1], other.index);
 }

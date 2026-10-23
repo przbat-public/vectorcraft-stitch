@@ -6,8 +6,8 @@
 //! vectorcraft-cli commands
 //! vectorcraft-cli convert IN OUT [--scale 2] [--artboard 0 | --range 1-3,5] [--outline-text] [--decimals N] [--replace-lossy] [--editing-data] [--ai-version 7|pdf] [--hidden-objects layer|omit|visible] [--transparent-images flatten|omit]
 //! vectorcraft-cli info FILE
-//! vectorcraft-cli bench FILE [--size 2880x1800] [--iters 5]
-//! vectorcraft-cli perf [--paths 50000] [--deep]
+//! vectorcraft-cli bench FILE [--size 2880x1800] [--iters 5] [--embroidery '{"expand": 0.3}']
+//! vectorcraft-cli perf [--paths 50000] [--deep] [--embroidery]
 //! ```
 // Denied, not forbidden: the font listers shared with the desktop app allow it for their
 // DirectWrite (Windows) and CoreText (macOS) calls, and nothing else may.
@@ -42,6 +42,7 @@ macro_rules! out {
 #[path = "../../vectorcraft/src/mac_fonts.rs"]
 mod mac_fonts;
 mod perf;
+mod perf_embroidery;
 /// The desktop app's settings folder, shared: exports and MCP read the same Fonts folder.
 #[path = "../../vectorcraft/src/prefs_dir.rs"]
 mod prefs_dir;
@@ -108,17 +109,19 @@ USAGE:
       read from its preview and why), title, colour mode, units, artboards, object counts by
       kind, fonts.
 
-  vectorcraft-cli bench FILE [--size WxH] [--iters N]
+  vectorcraft-cli bench FILE [--size WxH] [--iters N] [--embroidery JSON]
       Render FILE (any readable format) fitted to WxH (default 2880x1800) and print ms per frame
       (warm), multithreaded and single-threaded; then, when FILE has art to stitch, the ms to plan
-      its embroidery: cold, warm (every object's stitches kept) and after moving one object.
+      its embroidery: cold, warm (every object's stitches kept) and after moving one object, with
+      the embroidery export's options given as a JSON object (default none).
 
-  vectorcraft-cli perf [--paths N] [--deep]
+  vectorcraft-cli perf [--paths N] [--deep] [--embroidery]
       Check the performance budgets (render, pan, hit test, save/load, SVG, Pathfinder, handle
       and segment drags) on a synthetic N-path document (default 50000). Exits non-zero if a
       budget is exceeded, unless the report says the machine is busy. --deep also times work with
       no budget yet and prints memory use (the working set on Windows), with the peak so far on
-      Windows and Linux.
+      Windows and Linux. --embroidery runs only the embroidery planning rows (documents built to
+      stress the stitch plan: narrow fills, holes, clip groups, many colours, a design refused).
 ";
 
 /// The usage text plus the formats `document.open` reads and `document.export` writes.
@@ -407,6 +410,7 @@ fn run(args: &[String]) -> Result<(), String> {
 fn bench(args: &[String]) -> Result<(), String> {
     let mut file = None;
     let (mut w, mut h, mut iters) = (2880u32, 1800u32, 5u32);
+    let mut embroidery = json!({});
     let mut it = args.iter();
     while let Some(a) = it.next() {
         match a.as_str() {
@@ -417,6 +421,13 @@ fn bench(args: &[String]) -> Result<(), String> {
                 h = b.parse().map_err(|_| "bad height")?;
             }
             "--iters" => iters = it.next().and_then(|v| v.parse().ok()).filter(|n| *n >= 1).ok_or("--iters needs a whole number of at least 1")?,
+            "--embroidery" => {
+                embroidery = it
+                    .next()
+                    .and_then(|v| serde_json::from_str(v).ok())
+                    .filter(serde_json::Value::is_object)
+                    .ok_or("--embroidery needs a JSON object of the export's options")?
+            }
             f if file.is_none() => file = Some(f.to_string()),
             other => return Err(format!("unknown bench option `{other}`")),
         }
@@ -449,7 +460,7 @@ fn bench(args: &[String]) -> Result<(), String> {
     }
     // A design to stitch: how long its embroidery takes to plan (an error, such as a design too
     // large to stitch, is reported as such).
-    match perf::embroidery_times(&doc, iters as usize) {
+    match perf_embroidery::embroidery_times(&doc, iters as usize, &embroidery) {
         Ok(Some((cold, warm, edited))) => outln!("  embroidery plan: cold {cold:.1} ms, warm {warm:.1} ms, after moving one object {edited:.1} ms"),
         Ok(None) => {}
         Err(e) => outln!("  embroidery plan: {e}"),

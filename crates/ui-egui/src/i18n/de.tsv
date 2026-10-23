@@ -4784,8 +4784,9 @@ effect	Regular	Regelmäßig
 	Minimum	Minimum
 	Justification	Abstände
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	die Variablen und Datensätze der Datei wurden nicht gelesen (Variablen: {variables}, Datensätze: {data_sets}): Das Bedienfeld „Variablen“ listet sie nicht auf
-	Trim After	Faden danach schneiden
+	Embroidery Trim After	Stickerei: Faden danach schneiden
 	Embroidery Setup	Stickerei einrichten
+	Show Embroidery Settings	Stickerei-Einstellungen anzeigen
 	Embroidery Statistics	Stickerei-Statistik
 	Embroidery Sewing Order	Stickreihenfolge
 	Embroidery Check	Stickerei prüfen
@@ -4794,9 +4795,104 @@ effect	Regular	Regelmäßig
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	Text wird nicht gestickt: wandeln Sie ihn in Pfade um (Text › In Pfade umwandeln) und exportieren Sie erneut
 @msg	images are not stitched: trace them (Object › Image Trace) first	Bilder werden nicht gestickt: zeichnen Sie sie zuerst nach (Objekt › Bildnachzeichner)
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	Live-Angleichungen, Verzerrungshüllen, Gitter und Wiederholungen werden nicht gestickt: wandeln Sie sie zuerst um
+@msg	placed documents are not stitched: embed them first (Links › Embed)	platzierte Dokumente werden nicht gestickt: betten Sie sie zuerst ein (Verknüpfungen › Einbetten)
+@msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	verflochtene Objekte werden nicht gestickt: wandeln Sie sie zuerst zurück (Objekt › Verflechten › Zurückwandeln)
+@msg	symbols placed more than 100,000 times (placing one another) are left out past that	Symbole, die mehr als 100.000-mal (ineinander) platziert sind, werden darüber hinaus ausgelassen
+@msg	shadows, glows, blurs and other raster effects are not stitched: the art under them is	Schatten, Schein, Weichzeichner und andere Rastereffekte werden nicht gestickt: die Grafik darunter schon
+@msg	opacity masks are not stitched: the masked art is sewn whole	Deckkraftmasken werden nicht gestickt: die maskierte Grafik wird ganz gestickt
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	ein negativer expand-Wert hat von einigen gefüllten Formen nichts übrig gelassen, daher werden sie nicht gestickt: verkleinern Sie sie weniger
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	Verläufe und Muster werden in der Farbe ihres ersten Farbstopps gemalt; eine Stickerei näht ein Garn je Block
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	Konturen breiter als {widest} mm werden als Satinsäulen von {widest} mm Breite genäht: füllen Sie sie stattdessen (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	Konturen breiter als {widest} mm werden als Satinsäulen von {widest} mm Breite genäht: füllen Sie sie stattdessen (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	diese Version kennt die Garnpalette {palette} des Dokuments nicht, daher werden seine Garne aus der Palette {default} gewählt
 @msg	nothing to stitch: the document has no visible filled or stroked paths	nichts zu sticken: das Dokument hat keine sichtbaren Pfade mit Fläche oder Kontur
 @msg	nothing to stitch: {_1}	nichts zu sticken: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	der eigene Abschnitt der PES-Datei, den PE-Design bearbeitet, wird nicht übernommen: eine aus diesem Dokument geschriebene PES enthält nur die Stiche
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	die Vorschaubilder der Datei werden nicht übernommen: eine aus diesem Dokument geschriebene PES oder PEC hat leere
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	Garnnummern, die kein Garn der Palette bezeichnen (62 bis 64 markieren in PEC Applikationen), werden als nächstliegendes Garn geschrieben
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	Datum und Version im JEF-Kopf sowie ein Rahmen, der größer ist, als das Design braucht, werden nicht übernommen
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	die Endposition und die Felder für mehrteilige Designs im DST-Kopf (AX, AY, MX, MY, PD) werden nicht übernommen
+@msg	threads that twist several colours are read in their first colour	Garne, die mehrere Farben verdrillen, werden in ihrer ersten Farbe gelesen
+@msg	the file's several designs are read as one	die mehreren Designs der Datei werden als eines gelesen
+@msg	the file holds things this version doesn't read	die Datei enthält Dinge, die diese Version nicht liest
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Basiert auf VectorCraft vom ArtCraft-Team. MIT OR Apache-2.0. Schriften: Source Sans 3, Inter, JetBrains Mono (OFL). Symbole: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC fasst höchstens {MAX_COLORS} Farben, nicht {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 fasst höchstens {MAX_COLORS} Farbblöcke
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	eine DST-Datei hat einen {HEADER}-Byte-Kopf und mindestens einen 3-Byte-Datensatz, aber diese Datei hat {_1} Bytes
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	ein DST-Kopf zählt höchstens {MAX_RECORDS} Datensätze, und das Design braucht {_1}
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	ein PEC-Stichblock fasst höchstens {MAX_BLOCK} Bytes (seine Länge hat 24 Bit), und das Design braucht {len}
+@msg	a VP3 string is too long	eine VP3-Zeichenkette ist zu lang
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	eine Form liegt mehr als {MAX_COORD_MM} mm vom Ursprung entfernt oder hat eine Koordinate, die keine Zahl ist: sie kann nicht gestickt werden
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	eine Form bräuchte etwa {n} Stiche, mehr als die {MAX_STITCHES}, die eine Form haben darf: verwenden Sie einen längeren Stich, größeren Abstand oder ein kleineres Design
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	keine PES- oder PEC-Datei: sie beginnt nicht mit #PES oder #PEC
+@msg	not a VP3 file: it does not start with %vsm%	keine VP3-Datei: sie beginnt nicht mit %vsm%
+@msg	not a {what} file: its record {_1} is not a DST record	keine {what}-Datei: ihr Datensatz {_1} ist kein DST-Datensatz
+@msg	params must be an object	die Parameter müssen ein Objekt sein
+@msg	the EXP file has no stitch records	die EXP-Datei hat keine Stichdatensätze
+@msg	the JEF file has no stitch records	die JEF-Datei hat keine Stichdatensätze
+@msg	the JEF file is cut short: {len} bytes	die JEF-Datei ist abgeschnitten: {len} Bytes
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	der JEF-Kopf zeigt auf Byte {offset}, hinter den {_1} Bytes der Datei
+@msg	the PEC block has no stitches	der PEC-Block hat keine Stiche
+@msg	the PEC header is cut short	der PEC-Kopf ist abgeschnitten
+@msg	the PES header is cut short	der PES-Kopf ist abgeschnitten
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	der PES-Kopf zeigt auf Byte {at}, hinter den {_1} Bytes der Datei
+@msg	the VP3 file has no stitches	die VP3-Datei hat keine Stiche
+@msg	the VP3 file has no {what} packet at byte {at}	die VP3-Datei hat kein {what}-Paket bei Byte {at}
+@msg	the VP3 file is cut short: {len} bytes	die VP3-Datei ist abgeschnitten: {len} Bytes
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	das Design hat mehr als {MAX_RUNS} getrennte Stichfolgen, mehr als ein Dokument öffnet
+@msg	the design has no points to write	das Design hat keine Punkte zum Schreiben
+@msg	the design has no stitches to draw	das Design hat keine Stiche zum Zeichnen
+@msg	the design has no stitches to write	das Design hat keine Stiche zum Schreiben
+@msg	the design is too large for a VP3 file	das Design ist zu groß für eine VP3-Datei
+@msg	the design is {_1} × {_2} mm, larger than a document holds	das Design ist {_1} × {_2} mm groß, größer als ein Dokument fasst
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	das Design ist {_1} × {_2} mm groß, größer als {_3} fassen kann ({_4} mm pro Seite)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	das Design bräuchte mehr als {MAX_DESIGN_STITCHES} Stiche: verwenden Sie einen längeren Stich, größeren Abstand oder weniger Grafik
+@msg	the file has no stitches	die Datei hat keine Stiche
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	die {format}-Datei wäre größer als {_1} MiB: die Wege des Designs sind zu lang (Objekte weit auseinander)
+@msg	the {what} file has no stitch records	die {what}-Datei hat keine Stichdatensätze
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	die {what}-Datei enthält mehr als {MAX_POINTS} Stiche, mehr als ein Design haben darf
+@msg	thread number {index} doesn't fit a JEF header	die Garnnummer {index} passt nicht in einen JEF-Kopf
+@msg	thread number {index} doesn't fit a PEC header	die Garnnummer {index} passt nicht in einen PEC-Kopf
+@msg	too many stitches for a VP3 file	zu viele Stiche für eine VP3-Datei
+@msg	{_1} is not an embroidery format	{_1} ist kein Stickformat
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Stich:
+	Stitch Length:	Stichlänge:
+	Fill Angle:	Füllwinkel:
+	Pull Compensation:	Zugausgleich:
+	Pull Compensation (%):	Zugausgleich (%):
+	Push Compensation:	Schubausgleich:
+	Expand Fills:	Füllungen erweitern:
+	Narrow Parts as Satin:	Schmale Teile als Satin:
+	Thread Weight:	Garnstärke:
+	Underlay:	Unterlage:
+	Jump Length:	Sprunglänge:
+	Trim Length:	Schnittlänge:
+	Shortest Stitch:	Kürzester Stich:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Wie Formen genäht werden: Automatisch füllt Formen mit Tatami und näht Konturen je nach Breite als Satinsäulen oder Steppstiche; eine andere Wahl näht jede Form so
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Der Abstand zwischen Füllreihen und zwischen Satinstichen; unverändert wählt eine Satinsäule ihn nach ihrer Breite
+	The length of the stitches along fill rows and running lines	Die Länge der Stiche entlang der Füllreihen und Steppstiche
+	The direction of the fill rows	Die Richtung der Füllreihen
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Verbreitert Satinsäulen und Füllreihen auf jeder Seite, um das Einziehen des Stoffes auszugleichen
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Verbreitert Satinsäulen und Füllreihen um einen Anteil ihrer Breite, um das Einziehen des Stoffes auszugleichen
+	Shortens satin columns at their ends, where the thread pushes outward	Verkürzt Satinsäulen an ihren Enden, wo das Garn nach außen drückt
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Vergrößert jede gefüllte Form ringsum, um Lücken zwischen Formen zu schließen; ein negativer Wert verkleinert sie
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Teile einer Füllung, die schmaler sind, werden als Satinsäulen genäht; 0 näht keine
+	The thread's weight: thinner thread (a higher number) packs the rows closer	Die Garnstärke: dünneres Garn (eine höhere Zahl) legt die Reihen enger
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Die zuerst genähten Stiche, die den Stoff halten: von jeder Form gewählt, keine oder eine Art für jede Form
+	A move longer than this lifts the needle instead of being sewn	Ein längerer Weg hebt die Nadel, statt genäht zu werden
+	A jump longer than this cuts the thread first	Ein längerer Sprung schneidet zuerst den Faden
+	Shorter stitches are left out	Kürzere Stiche werden ausgelassen
+	Tatami Fill	Tatami-Füllung
+	Satin	Satin
+	Running Stitch	Steppstich
+	Centre Run	Mittellauf
+	Edge Run	Kantenlauf
+	Edge Run and Zigzag	Kantenlauf und Zickzack
+	Edge Run and Tatami	Kantenlauf und Tatami

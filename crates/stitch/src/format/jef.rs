@@ -11,35 +11,37 @@
 //! chart: a block's is the thread chosen for it when it is Janome's, else the thread nearest its
 //! colour ([`Palette::numbers`]).
 //!
-//! JEF has no trim record of its own. The wiki calls a jump of zero length the trim command, which
-//! Janome machines set to cut at a "cutting command" obey; set to cut automatically, they also cut
-//! before any jump longer than 3 mm. pyembroidery, asked to write trims, writes each as three
-//! zero-length jumps (its `trim_at` setting, 3 by default), and its reader, asked for trims, takes
-//! a run of three jumps as one and drops jumps that go nowhere. So we write three, which both read
-//! as a trim, and read each zero-length jump as a trim (consecutive trims are one cut,
-//! [`super::finish`]).
+//! JEF has no trim record of its own. EduTechWiki calls a jump of zero length the trim command,
+//! which Janome machines obey when they are set to cut at a "cutting command"; set to cut
+//! automatically, they also cut before any jump longer than 3 mm. We write a trim as three zero-length jumps and read
+//! each zero-length jump as a trim (consecutive trims are one cut, [`super::finish`]): one is the
+//! wiki's trim command, and three is what pyembroidery 1.5.1, run as an outside reader of our
+//! files, takes as a trim with its trims setting on (a single one it drops as a jump that goes
+//! nowhere).
 //!
-//! References: EduTechWiki, *Embroidery format JEF* (edutechwiki.unige.ch/en/Embroidery_format_JEF);
-//! pyembroidery 1.5.1 (MIT), `JefWriter.py` and `JefReader.py`
-//! (github.com/EmbroidePy/pyembroidery/tree/1.5.1/pyembroidery).
+//! References: EduTechWiki, *Embroidery format JEF* (edutechwiki.unige.ch/en/Embroidery_format_JEF).
+//! pyembroidery 1.5.1 (MIT) served only as an outside reader of the files written here
+//! (`docs/embroidery.md` › Validation); none of its code was read.
 
-use super::{Frame, Reader, finish, mm, steps};
+use super::{Emitter, Frame, Reader, TWO_BYTE_COMMAND, add, finish, mm, two_byte_move, walk};
 use crate::thread::{self, Palette};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The header's fixed length: everything before the per-colour arrays.
 const HEADER: usize = 0x74;
+/// The bytes of one record: a command takes two records.
+const RECORD_BYTES: usize = 2;
 /// The largest delta one record holds, in tenths of a millimetre.
 pub(crate) const MAX_DELTA: i32 = 127;
 /// The command prefix: `0x80` is not a delta a record uses.
-const CONTROL: u8 = 0x80;
+const CONTROL: u8 = TWO_BYTE_COMMAND;
 /// The commands' second bytes: the end of the design, a jump (then the deltas), a colour change
 /// (then two bytes that don't move the frame).
 const END: u8 = 0x10;
 const JUMP: u8 = 0x02;
 const COLOR_CHANGE: u8 = 0x01;
 /// A trim is written as three jumps that go nowhere: one is the wiki's trim command, three is what
-/// pyembroidery writes and reads back as a trim (see the module doc).
+/// pyembroidery, run as an outside reader, reads as a trim (see the module doc).
 const TRIM_JUMPS: usize = 3;
 /// The length of a header word (little-endian).
 const WORD: usize = 4;
@@ -69,7 +71,7 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     // Janome places a design around the hoop's centre: the stitches start there, and the header's
     // extents are distances from it.
     let frame = Frame::centered(p, true)?;
-    let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
+    let b = frame.bounds;
     let colors = p.blocks.iter().filter(|b| !b.stitches.is_empty()).count();
     if colors == 0 {
         return Err(Error::Format("the design has no stitches to write".into()));
@@ -78,9 +80,13 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     let extents = [(-frame.x(b.x0)).max(0), frame.y(b.y0).max(0), frame.x(b.x1).max(0), (-frame.y(b.y1)).max(0)];
     let [left, top, right, bottom] = extents;
     let (width, height) = (left + right, top + bottom);
-    let records = record_count(p);
+    // The body first: the header counts its records (two bytes each, the end record included), as
+    // Janome's and Ink/Stitch's files do: (file length − offset) / 2.
+    let mut body: Vec<u8> = Vec::new();
+    write_body(&mut body, p, &frame)?;
+    let records = body.len() / RECORD_BYTES;
     let offset = HEADER + BYTES_PER_COLOR * colors;
-    let mut out: Vec<u8> = Vec::with_capacity(offset + records * 2);
+    let mut out: Vec<u8> = Vec::with_capacity(offset + body.len());
     out.extend_from_slice(&(offset as u32).to_le_bytes());
     out.extend_from_slice(&SECOND_WORD.to_le_bytes());
     out.extend_from_slice(NO_DATE);
@@ -112,84 +118,50 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     for _ in 0..colors {
         out.extend_from_slice(&COLOR_WORD.to_le_bytes());
     }
-    write_body(&mut out, p, &frame);
+    out.extend_from_slice(&body);
     Ok(out)
 }
 
-/// The number of 2-byte records the body holds (the header's `points length / 2`).
-fn record_count(p: &Pattern) -> usize {
-    let mut n = 1; // the end record
-    for s in p.points() {
-        n += match s.command {
-            Command::Stitch => 1,
-            Command::Jump => 2,
-            Command::ColorChange | Command::Stop => 2,
-            Command::Trim => 2 * TRIM_JUMPS,
-            Command::End => break,
-        };
-    }
-    n
-}
-
-fn write_body(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) {
-    let mut x = 0i32;
-    let mut y = 0i32;
-    let mut started: bool;
-    let mut wrote_any = false;
-    for (i, block) in p.blocks.iter().enumerate() {
-        if block.stitches.is_empty() {
-            continue;
-        }
-        if i > 0 && wrote_any {
-            out.extend_from_slice(&[CONTROL, COLOR_CHANGE, 0, 0]);
-        }
-        // Each block starts with the needle up: travel to its first stitch.
-        started = false;
-        for s in &block.stitches {
-            match s.command {
-                Command::Stitch => {
-                    let (nx, ny) = frame.point(*s);
-                    if !started {
-                        write_move(out, &mut x, &mut y, nx, ny, Some(JUMP));
-                        started = true;
-                    }
-                    write_move(out, &mut x, &mut y, nx, ny, None);
-                    wrote_any = true;
-                }
-                Command::Jump => {
-                    let (nx, ny) = frame.point(*s);
-                    write_move(out, &mut x, &mut y, nx, ny, Some(JUMP));
-                    started = true;
-                }
-                Command::Trim => {
-                    for _ in 0..TRIM_JUMPS {
-                        out.extend_from_slice(&[CONTROL, JUMP, 0, 0]);
-                    }
-                }
-                Command::ColorChange | Command::Stop => out.extend_from_slice(&[CONTROL, COLOR_CHANGE, 0, 0]),
-                Command::End => break,
-            }
-        }
-    }
+fn write_body(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) -> Result<()> {
+    walk(p, frame, &mut Jef { out, at: (0, 0), wrote: false }, "JEF")?;
     out.extend_from_slice(&[CONTROL, END]);
+    Ok(())
 }
 
-fn write_move(out: &mut Vec<u8>, x: &mut i32, y: &mut i32, tx: i32, ty: i32, control: Option<u8>) {
-    let (dx, dy) = (tx - *x, ty - *y);
-    *x = tx;
-    *y = ty;
-    if dx == 0 && dy == 0 {
-        if control.is_none() {
-            out.extend_from_slice(&[0, 0]);
-        }
-        return;
+/// A JEF body being written: its records, where the needle is, and whether a stitch was written
+/// yet.
+struct Jef<'a> {
+    out: &'a mut Vec<u8>,
+    at: (i32, i32),
+    wrote: bool,
+}
+
+impl Emitter for Jef<'_> {
+    fn stitch(&mut self, x: i32, y: i32) {
+        two_byte_move(self.out, &mut self.at, (x, y), None, MAX_DELTA);
+        self.wrote = true;
     }
-    for (sx, sy) in steps(dx, dy, MAX_DELTA) {
-        let (bx, by) = ((sx as i8) as u8, (sy as i8) as u8);
-        match control {
-            Some(c) => out.extend_from_slice(&[CONTROL, c, bx, by]),
-            None => out.extend_from_slice(&[bx, by]),
+
+    fn jump(&mut self, x: i32, y: i32) {
+        two_byte_move(self.out, &mut self.at, (x, y), Some(JUMP), MAX_DELTA);
+    }
+
+    fn trim(&mut self) {
+        for _ in 0..TRIM_JUMPS {
+            self.out.extend_from_slice(&[CONTROL, JUMP, 0, 0]);
         }
+    }
+
+    fn color_change(&mut self) {
+        self.out.extend_from_slice(&[CONTROL, COLOR_CHANGE, 0, 0]);
+    }
+
+    fn wrote(&self) -> bool {
+        self.wrote
+    }
+
+    fn size(&self) -> usize {
+        self.out.len()
     }
 }
 
@@ -198,6 +170,38 @@ fn write_move(out: &mut Vec<u8>, x: &mut i32, y: &mut i32, tx: i32, ty: i32, con
 fn hoop(width: i32, height: i32) -> u32 {
     let (w, h) = (u32::try_from(width).unwrap_or(u32::MAX), u32::try_from(height).unwrap_or(u32::MAX));
     HOOPS.iter().find(|(hw, hh, _)| w < *hw && h < *hh).map_or(DEFAULT_HOOP, |(_, _, n)| *n)
+}
+
+/// Where the header gives the date, the version letter (and a byte after it), the hoop and the
+/// design's extents (left, top, right and bottom from its centre, a word each).
+const DATE_AT: usize = 8;
+const VERSION_AT: usize = DATE_AT + NO_DATE.len();
+const VERSION: usize = 2;
+const HOOP_AT: usize = 32;
+const EXTENTS_AT: usize = 36;
+
+/// What a JEF's header holds that reading it leaves out: a date or version the writer doesn't
+/// write, a hoop other than the smallest the design fits, and thread numbers that name no Janome
+/// thread.
+pub(crate) fn losses(bytes: &[u8]) -> Vec<super::Loss> {
+    let mut out = Vec::new();
+    let word = |at: usize| bytes.get(at..at + WORD).map(|w| u32::from_le_bytes([w[0], w[1], w[2], w[3]]));
+    let dated = bytes.get(DATE_AT..VERSION_AT).is_some_and(|d| d != NO_DATE && d.iter().any(|b| !matches!(b, 0 | b' ')));
+    let versioned = bytes.get(VERSION_AT..VERSION_AT + VERSION).is_some_and(|v| v.iter().any(|b| *b != 0));
+    let extents: Option<Vec<i32>> = (0..4).map(|k| word(EXTENTS_AT + k * WORD).map(|w| w as i32)).collect();
+    let rehooped = match (word(HOOP_AT), extents.as_deref()) {
+        (Some(code), Some(&[left, top, right, bottom])) => code != hoop(left.saturating_add(right), top.saturating_add(bottom)),
+        _ => false,
+    };
+    if dated || versioned || rehooped {
+        out.push(super::Loss::JefHeader);
+    }
+    let offset = word(0).map_or(0, |o| o as usize);
+    let colors = word(COLOR_COUNT_AT).map_or(0, |c| c as usize).min(offset.saturating_sub(HEADER) / BYTES_PER_COLOR);
+    if (0..colors).filter_map(|k| word(HEADER + k * WORD)).any(|n| !usize::try_from(n).is_ok_and(|n| Palette::Jef.is_thread(n))) {
+        out.push(super::Loss::NotThreads);
+    }
+    out
 }
 
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
@@ -209,9 +213,9 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         return Err(Error::Format(format!("the JEF header points at byte {offset}, past the file's {} bytes", bytes.len())));
     }
     r.seek(HEADER);
-    // The count is the file's claim: each colour's index takes a word of the header, so no more
-    // fit than the file holds (an absurd count must not size an allocation).
-    let colors = colors.min(bytes.len().saturating_sub(HEADER) / WORD);
+    // The count is the file's claim: each colour takes two words of the header before the records
+    // start (`offset`), so no more fit than that (an absurd count must not size an allocation).
+    let colors = colors.min(offset.saturating_sub(HEADER) / BYTES_PER_COLOR);
     let mut threads = Vec::with_capacity(colors);
     for block in 0..colors {
         // Janome's chart numbers its threads from 1 to 78: 0 and a number past it name none, and
@@ -223,13 +227,14 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     }
     r.seek(offset);
     let mut points: Vec<Stitch> = Vec::new();
-    let (mut x, mut y) = (0i32, 0i32);
+    // Wide enough that no file overflows it: each record moves the needle at most 127 tenths.
+    let (mut x, mut y) = (0i64, 0i64);
     while let Some(b0) = r.u8() {
         let Some(b1) = r.u8() else { break };
         if b0 != CONTROL {
-            x += i32::from(b0 as i8);
-            y -= i32::from(b1 as i8);
-            points.push(Stitch::new(mm(x), mm(y), Command::Stitch));
+            x += i64::from(b0 as i8);
+            y -= i64::from(b1 as i8);
+            add(&mut points, Stitch::new(mm(x), mm(y), Command::Stitch), "JEF")?;
             continue;
         }
         match b1 {
@@ -237,18 +242,18 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
             COLOR_CHANGE => {
                 // The colour change's two delta bytes, which don't move the frame.
                 let _ = r.take(2);
-                points.push(Stitch::new(mm(x), mm(y), Command::ColorChange));
+                add(&mut points, Stitch::new(mm(x), mm(y), Command::ColorChange), "JEF")?;
             }
             JUMP => {
                 let (Some(dx), Some(dy)) = (r.u8(), r.u8()) else { break };
-                let (dx, dy) = (i32::from(dx as i8), i32::from(dy as i8));
+                let (dx, dy) = (i64::from(dx as i8), i64::from(dy as i8));
                 let here = Stitch::new(mm(x), mm(y), Command::Trim);
                 if dx == 0 && dy == 0 {
-                    points.push(here);
+                    add(&mut points, here, "JEF")?;
                 } else {
                     x += dx;
                     y -= dy;
-                    points.push(Stitch::new(mm(x), mm(y), Command::Jump));
+                    add(&mut points, Stitch::new(mm(x), mm(y), Command::Jump), "JEF")?;
                 }
             }
             // An unknown command: stop rather than guess where the needle goes next.
@@ -284,6 +289,46 @@ mod tests {
         b.stitches.push(Stitch::sew(Point::new(18.0, 23.0)));
         p.blocks.extend([a, b]);
         p
+    }
+
+    /// The header's record count is the records the body holds, the end record included, as
+    /// Janome's and Ink/Stitch's files have it ((file length − offset) / 2): for designs of one to
+    /// three blocks with a jump, a trim and a 30 mm stitch (written as three records).
+    #[test]
+    fn the_header_counts_the_records_the_body_holds() {
+        let int = |bytes: &[u8], at: usize| u32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]) as usize;
+        for blocks in 1..=3 {
+            let mut p = Pattern::default();
+            for k in 0..blocks {
+                let y = f64::from(k) * 10.0;
+                let mut b = Block::new(Thread::rgb([200, 30 * k as u8, 30]));
+                b.stitches.push(Stitch::sew(Point::new(0.0, y)));
+                b.stitches.push(Stitch::sew(Point::new(3.0, y)));
+                b.stitches.push(Stitch::new(20.0, y, Command::Jump));
+                b.stitches.push(Stitch::sew(Point::new(20.0, y)));
+                b.stitches.push(Stitch::new(20.0, y, Command::Trim));
+                b.stitches.push(Stitch::new(40.0, y, Command::Jump));
+                b.stitches.push(Stitch::sew(Point::new(40.0, y)));
+                // 30 mm: three records of at most 12.7 mm.
+                b.stitches.push(Stitch::sew(Point::new(70.0, y)));
+                p.blocks.push(b);
+            }
+            let bytes = write(&p).unwrap();
+            let offset = int(&bytes, 0);
+            assert_eq!(int(&bytes, 28), (bytes.len() - offset) / RECORD_BYTES, "{blocks} blocks");
+            // Walking them from the offset to the end record counts the same.
+            let (mut at, mut walked) = (offset, 0);
+            loop {
+                let (b0, b1) = (bytes[at], bytes[at + 1]);
+                let records = if b0 == CONTROL { if b1 == END { 1 } else { 2 } } else { 1 };
+                walked += records;
+                at += records * RECORD_BYTES;
+                if b0 == CONTROL && b1 == END {
+                    break;
+                }
+            }
+            assert_eq!(int(&bytes, 28), walked, "{blocks} blocks");
+        }
     }
 
     /// The header's extents are distances from the hoop's centre, where the needle starts: they

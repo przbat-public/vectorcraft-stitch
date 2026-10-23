@@ -31,7 +31,7 @@
 //! References: EduTechWiki, *Embroidery format PES* and *Embroidery format PEC*
 //! (edutechwiki.unige.ch/en/Embroidery_format_PES, …/Embroidery_format_PEC).
 
-use super::{Frame, LABEL_LEN, PAD, Reader, finish, label, mm, steps};
+use super::{Emitter, Frame, LABEL_LEN, PAD, Reader, add, finish, label, mm, steps, walk};
 use crate::thread::{self, Palette};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
@@ -44,8 +44,11 @@ const ICON_LINES: usize = 38;
 const PREVIEW: usize = ICON_LINE * ICON_LINES;
 /// The largest delta one value holds, as a 12-bit signed number.
 pub(crate) const MAX_DELTA: i32 = 2047;
-/// The most stitches one stitch block may hold (a stream that lost step stops rather than growing).
-const MAX_STITCHES: usize = 1_048_576;
+/// The widest and tallest design the stitch block's 16-bit width and height state, tenths of a
+/// millimetre (6,553.5 mm).
+pub(crate) const MAX_SIZE: i32 = u16::MAX as i32;
+/// The longest stitch block its 24-bit length counts, bytes.
+const MAX_BLOCK: usize = 0xFF_FFFF;
 /// The most colours a PEC header holds: it stores one fewer than their count in a byte, and
 /// `0xFF` there means none ([`NO_COLORS`]).
 pub(crate) const MAX_COLORS: usize = 255;
@@ -116,18 +119,19 @@ const COLOR_TWO: u8 = 0x02;
 const END: u8 = 0xFF;
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
-    let pec = pec_section(p)?;
-    let mut out: Vec<u8> = Vec::with_capacity(PES_HEADER.len() + pec.len());
-    out.extend_from_slice(&PES_HEADER);
-    out.extend_from_slice(&pec);
-    Ok(out)
+    after(&PES_HEADER, p)
 }
 
 /// A PEC file: [`PEC_MAGIC`] and the PEC section, as a PES carries it.
 pub fn write_pec(p: &Pattern) -> Result<Vec<u8>> {
+    after(PEC_MAGIC, p)
+}
+
+/// `head` (a PES header or PEC's magic), then the PEC section of `p`.
+fn after(head: &[u8], p: &Pattern) -> Result<Vec<u8>> {
     let pec = pec_section(p)?;
-    let mut out: Vec<u8> = Vec::with_capacity(PEC_MAGIC.len() + pec.len());
-    out.extend_from_slice(PEC_MAGIC);
+    let mut out: Vec<u8> = Vec::with_capacity(head.len() + pec.len());
+    out.extend_from_slice(head);
     out.extend_from_slice(&pec);
     Ok(out)
 }
@@ -135,7 +139,6 @@ pub fn write_pec(p: &Pattern) -> Result<Vec<u8>> {
 /// The PEC section: the PEC header, the stitch block and the previews.
 fn pec_section(p: &Pattern) -> Result<Vec<u8>> {
     let frame = Frame::of(p, false)?;
-    let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
     let colors = p.blocks.iter().filter(|b| !b.stitches.is_empty()).count();
     if colors == 0 {
         return Err(Error::Format("the design has no stitches to write".into()));
@@ -143,17 +146,17 @@ fn pec_section(p: &Pattern) -> Result<Vec<u8>> {
     if colors > MAX_COLORS {
         return Err(Error::TooLarge(format!("PEC carries at most {MAX_COLORS} colours, not {colors}")));
     }
-    let (width, height) = frame.size(b);
+    let (width, height) = frame.size();
     // The header, room for the start of the stitch block, and the previews (a guess for the
     // stitches: the buffer grows as needed).
     let mut out: Vec<u8> = Vec::with_capacity(PEC_HEADER + 64 + colors * PREVIEW);
     out.extend_from_slice(&header(p, colors)?);
-    let block_start = out.len();
     let mut block: Vec<u8> = Vec::with_capacity(1024);
     block.extend_from_slice(&[0, 0]);
     // The stitch block's length, filled in below.
     block.extend_from_slice(&[0, 0, 0]);
     block.extend_from_slice(&BLOCK_MARKER);
+    // Within MAX_SIZE: a larger design is refused before it is written (`Format::write`).
     block.extend_from_slice(&u16::try_from(width).unwrap_or(u16::MAX).to_le_bytes());
     block.extend_from_slice(&u16::try_from(height).unwrap_or(u16::MAX).to_le_bytes());
     for v in BLOCK_VALUES {
@@ -165,17 +168,24 @@ fn pec_section(p: &Pattern) -> Result<Vec<u8>> {
     block.extend_from_slice(&ORIGIN.to_be_bytes());
     block.extend_from_slice(&ORIGIN.to_be_bytes());
     write_stitches(&mut block, p, &frame)?;
-    let length = u32::try_from(block.len()).unwrap_or(u32::MAX);
+    let length = block_length(block.len())?;
     if let [_, _, l0, l1, l2, ..] = block.as_mut_slice() {
         *l0 = length as u8;
         *l1 = (length >> 8) as u8;
         *l2 = (length >> 16) as u8;
     }
-    debug_assert_eq!(out.len(), block_start);
     out.extend_from_slice(&block);
     // The preview pictures: the whole design and one per colour, drawn blank.
     out.resize(out.len() + (colors + 1) * PREVIEW, 0);
     Ok(out)
+}
+
+/// A stitch block's length as its 24-bit field holds it; refused past [`MAX_BLOCK`] rather than
+/// written with its top byte dropped.
+fn block_length(len: usize) -> Result<u32> {
+    u32::try_from(len).ok().filter(|l| *l as usize <= MAX_BLOCK).ok_or_else(|| {
+        Error::TooLarge(format!("a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}"))
+    })
 }
 
 /// The 512-byte PEC header.
@@ -199,56 +209,53 @@ fn header(p: &Pattern, colors: usize) -> Result<Vec<u8>> {
 }
 
 fn write_stitches(out: &mut Vec<u8>, p: &Pattern, frame: &Frame) -> Result<()> {
-    let mut x = 0i32;
-    let mut y = 0i32;
-    let mut started: bool;
-    let mut wrote_any = false;
-    let mut color_two = true;
-    for (i, block) in p.blocks.iter().enumerate() {
-        if block.stitches.is_empty() {
-            continue;
-        }
-        if i > 0 && wrote_any {
-            out.extend_from_slice(&COLOR_CHANGE);
-            out.push(if color_two { COLOR_TWO } else { COLOR_ONE });
-            color_two = !color_two;
-        }
-        // Each block starts with the needle up: travel to its first stitch.
-        started = false;
-        for s in &block.stitches {
-            match s.command {
-                Command::Stitch => {
-                    let (nx, ny) = frame.point(*s);
-                    if !started {
-                        move_values(out, &mut x, &mut y, nx, ny, JUMP | LONG);
-                        started = true;
-                    }
-                    move_values(out, &mut x, &mut y, nx, ny, 0);
-                    wrote_any = true;
-                }
-                Command::Jump => {
-                    let (nx, ny) = frame.point(*s);
-                    move_values(out, &mut x, &mut y, nx, ny, JUMP | LONG);
-                    started = true;
-                }
-                Command::Trim => {
-                    value(out, 0, TRIM | LONG);
-                    value(out, 0, TRIM | LONG);
-                }
-                Command::ColorChange | Command::Stop => {
-                    out.extend_from_slice(&COLOR_CHANGE);
-                    out.push(if color_two { COLOR_TWO } else { COLOR_ONE });
-                    color_two = !color_two;
-                }
-                Command::End => break,
-            }
-        }
-    }
-    if !wrote_any {
+    let mut w = Pec { out, x: 0, y: 0, wrote: false, color_two: true };
+    walk(p, frame, &mut w, "PEC")?;
+    if !w.wrote {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
-    out.push(END);
+    w.out.push(END);
     Ok(())
+}
+
+/// A PEC stitch stream being written: its bytes, where the needle is, whether a stitch was written
+/// yet, and which of the two colour-change bytes comes next.
+struct Pec<'a> {
+    out: &'a mut Vec<u8>,
+    x: i32,
+    y: i32,
+    wrote: bool,
+    color_two: bool,
+}
+
+impl Emitter for Pec<'_> {
+    fn stitch(&mut self, x: i32, y: i32) {
+        move_values(self.out, &mut self.x, &mut self.y, x, y, 0);
+        self.wrote = true;
+    }
+
+    fn jump(&mut self, x: i32, y: i32) {
+        move_values(self.out, &mut self.x, &mut self.y, x, y, JUMP | LONG);
+    }
+
+    fn trim(&mut self) {
+        value(self.out, 0, TRIM | LONG);
+        value(self.out, 0, TRIM | LONG);
+    }
+
+    fn color_change(&mut self) {
+        self.out.extend_from_slice(&COLOR_CHANGE);
+        self.out.push(if self.color_two { COLOR_TWO } else { COLOR_ONE });
+        self.color_two = !self.color_two;
+    }
+
+    fn wrote(&self) -> bool {
+        self.wrote
+    }
+
+    fn size(&self) -> usize {
+        self.out.len()
+    }
 }
 
 fn move_values(out: &mut Vec<u8>, x: &mut i32, y: &mut i32, tx: i32, ty: i32, flags: u8) {
@@ -299,15 +306,12 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     // words after BLOCK_VALUES), 16 in pyembroidery's, which omit them. The stitch block's length
     // says where the stream must end: where the preview pictures begin.
     let block = start.saturating_add(PEC_HEADER);
-    let (length, have_length) = {
+    // Where the stream must end, when the stitch block's length is there to say.
+    let expected_end = {
         let mut r = Reader::new(bytes);
         r.seek(block.saturating_add(BLOCK_LENGTH_AT));
-        match r.u24() {
-            Some(v) => (usize::try_from(v).unwrap_or(usize::MAX), true),
-            None => (0, false),
-        }
+        r.u24().map(|v| block.saturating_add(usize::try_from(v).unwrap_or(usize::MAX)))
     };
-    let expected_end = block.saturating_add(length);
     // Which header, guessed from the first byte after the short one: the origin words Brother
     // writes have a high byte of 0x9_ (ORIGIN plus the design's offset). A first jump written as a
     // long value starts with 0x9_ too (LONG and JUMP), so a 16-byte header can be taken for a
@@ -326,8 +330,8 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         if from >= bytes.len() {
             continue;
         }
-        let (parsed, end) = stream(bytes, from);
-        if !parsed.is_empty() && have_length && end == expected_end {
+        let (parsed, end) = stream(bytes, from)?;
+        if !parsed.is_empty() && expected_end == Some(end) {
             points = Some(parsed);
             break;
         }
@@ -335,57 +339,52 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
             first = Some(parsed);
         }
     }
-    let Some(points) = points.or(first) else {
-        return Err(Error::Format("the PEC block has no stitches".into()));
-    };
-    if points.is_empty() {
-        return Err(Error::Format("the PEC block has no stitches".into()));
-    }
+    let points = points.or(first).filter(|p| !p.is_empty()).ok_or_else(|| Error::Format("the PEC block has no stitches".into()))?;
     Ok(finish(name, points, &threads))
 }
 
-/// The stitches from `from`, and where the [`END`] that ends them lies (just past it).
-fn stream(bytes: &[u8], from: usize) -> (Vec<Stitch>, usize) {
+/// The stitches from `from`, and where the [`END`] that ends them lies (just past it); refused past
+/// [`super::MAX_POINTS`] (a stream that lost step would otherwise grow without bound).
+fn stream(bytes: &[u8], from: usize) -> Result<(Vec<Stitch>, usize)> {
     let mut r = Reader::new(bytes);
     r.seek(from);
     let mut points: Vec<Stitch> = Vec::new();
-    let (mut x, mut y) = (0i32, 0i32);
+    // Wide enough that no file overflows it: each value moves the needle at most 2,047 tenths.
+    let (mut x, mut y) = (0i64, 0i64);
     loop {
         let at = r.pos();
-        let Some(b0) = r.u8() else { return (points, at) };
+        let Some(b0) = r.u8() else { return Ok((points, at)) };
         if b0 == END {
-            return (points, r.pos());
+            return Ok((points, r.pos()));
         }
         if b0 == COLOR_CHANGE[0] {
             // A colour change: COLOR_CHANGE and one byte (COLOR_TWO or COLOR_ONE).
-            let Some(next) = r.u8() else { return (points, at) };
+            let Some(next) = r.u8() else { return Ok((points, at)) };
             if next != COLOR_CHANGE[1] {
-                return (points, at);
+                return Ok((points, at));
             }
             let _ = r.u8();
-            points.push(Stitch::new(mm(x), mm(y), Command::ColorChange));
+            add(&mut points, Stitch::new(mm(x), mm(y), Command::ColorChange), "PEC")?;
             continue;
         }
-        let Some((dx, fx)) = pec_value(&mut r, b0) else { return (points, at) };
-        let Some(b1) = r.u8() else { return (points, at) };
-        let Some((dy, fy)) = pec_value(&mut r, b1) else { return (points, at) };
+        let Some((dx, fx)) = pec_value(&mut r, b0) else { return Ok((points, at)) };
+        let Some(b1) = r.u8() else { return Ok((points, at)) };
+        let Some((dy, fy)) = pec_value(&mut r, b1) else { return Ok((points, at)) };
+        let (dx, dy) = (i64::from(dx), i64::from(dy));
         let flags = fx | fy;
         if flags & TRIM != 0 {
-            points.push(Stitch::new(mm(x), mm(y), Command::Trim));
+            add(&mut points, Stitch::new(mm(x), mm(y), Command::Trim), "PEC")?;
             if dx != 0 || dy != 0 {
                 x += dx;
                 y += dy;
-                points.push(Stitch::new(mm(x), mm(y), Command::Jump));
+                add(&mut points, Stitch::new(mm(x), mm(y), Command::Jump), "PEC")?;
             }
             continue;
         }
         x += dx;
         y += dy;
         let command = if flags & JUMP != 0 { Command::Jump } else { Command::Stitch };
-        points.push(Stitch::new(mm(x), mm(y), command));
-        if points.len() > MAX_STITCHES {
-            return (points, r.pos());
-        }
+        add(&mut points, Stitch::new(mm(x), mm(y), command), "PEC")?;
     }
 }
 
@@ -401,6 +400,31 @@ fn pec_value(r: &mut Reader<'_>, first: u8) -> Option<(i32, u8)> {
     let raw = (bits & LONG_BITS) as i32;
     let v = if raw >= LONG_NEGATIVE { raw - (LONG_BITS as i32 + 1) } else { raw };
     Some((v, first & FLAGS))
+}
+
+/// What a PES or PEC holds that reading it leaves out: a PES's own section before its PEC part,
+/// thread numbers that name no Brother thread, and preview pictures that aren't blank.
+pub(crate) fn losses(bytes: &[u8]) -> Vec<super::Loss> {
+    let Ok(start) = pec_start(bytes) else { return Vec::new() };
+    let mut out = Vec::new();
+    if bytes.starts_with(b"#PES") && start > PES_HEADER.len() {
+        out.push(super::Loss::PesSection);
+    }
+    let count = bytes.get(start + COLOR_COUNT_AT).copied().unwrap_or(NO_COLORS);
+    let colors = if count == NO_COLORS { 0 } else { usize::from(count) + 1 };
+    let numbers = bytes.get(start + COLOR_COUNT_AT + 1..).unwrap_or_default().iter().take(colors);
+    if numbers.clone().any(|n| !Palette::Pec.is_thread(usize::from(*n))) {
+        out.push(super::Loss::NotThreads);
+    }
+    // The previews follow the stitch block, whose length says where it ends.
+    let block = start.saturating_add(PEC_HEADER);
+    let mut r = Reader::new(bytes);
+    r.seek(block.saturating_add(BLOCK_LENGTH_AT));
+    let previews = r.u24().and_then(|v| usize::try_from(v).ok()).and_then(|v| bytes.get(block.saturating_add(v)..));
+    if previews.is_some_and(|p| p.iter().any(|b| *b != 0)) {
+        out.push(super::Loss::Previews);
+    }
+    out
 }
 
 /// Where the PEC section starts: a PES header states it; a bare PEC starts after its magic.
@@ -425,8 +449,28 @@ fn pec_start(bytes: &[u8]) -> Result<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::format::Format;
     use crate::{Block, Thread};
     use vectorcraft_geom::Point;
+
+    /// The PEC block's width and height are the design's, in tenths of a millimetre: in a PES and
+    /// in a PEC on its own.
+    #[test]
+    fn the_pec_block_states_the_designs_size() {
+        let p = design();
+        let b = p.bounds().unwrap();
+        let tenths = |mm: f64| (mm * 10.0).round() as u16;
+        let size = |bytes: &[u8], pec: usize| {
+            let block = pec + 512;
+            (u16::from_le_bytes([bytes[block + 8], bytes[block + 9]]), u16::from_le_bytes([bytes[block + 10], bytes[block + 11]]))
+        };
+        let pes = write(&p).unwrap();
+        let pec_at = u32::from_le_bytes([pes[8], pes[9], pes[10], pes[11]]) as usize;
+        assert_eq!(size(&pes, pec_at), (tenths(b.width()), tenths(b.height())));
+        let pec = Format::Pec.write(&p).unwrap();
+        // A PEC file is the PEC section after its 8-byte magic.
+        assert_eq!(size(&pec, 8), (tenths(b.width()), tenths(b.height())));
+    }
 
     fn design() -> Pattern {
         let mut p = Pattern { name: "Test".into(), ..Pattern::default() };
@@ -590,6 +634,22 @@ mod tests {
         let threads: Vec<&Thread> = read.blocks.iter().map(|b| &b.thread).collect();
         let want = [thread::unknown_thread(0, 0), Palette::Pec.thread(64).unwrap(), thread::unknown_thread(2, 65), thread::unknown_thread(3, 255)];
         assert_eq!(threads, want.iter().collect::<Vec<_>>());
+    }
+
+    /// A stitch block's length past 24 bits is refused, not written with its top byte dropped; a
+    /// design wider than the block's 16-bit width states is refused before it is written.
+    #[test]
+    fn what_the_block_cant_state_is_refused() {
+        assert_eq!(block_length(MAX_BLOCK).ok(), Some(MAX_BLOCK as u32));
+        assert!(matches!(block_length(MAX_BLOCK + 1), Err(Error::TooLarge(_))));
+        let mut wide = Pattern::default();
+        let mut b = Block::new(Thread::rgb([1, 2, 3]));
+        b.stitches = (0..=70).map(|k| Stitch::sew(Point::new(f64::from(k) * 100.0, 0.0))).collect();
+        wide.blocks.push(b);
+        for format in [crate::format::Format::Pes, crate::format::Format::Pec] {
+            assert!(matches!(format.write(&wide), Err(Error::TooLarge(_))), "{format:?}");
+        }
+        assert!(crate::format::Format::Dst.write(&wide).is_ok(), "7 m: within DST's extents");
     }
 
     #[test]

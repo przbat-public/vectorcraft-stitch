@@ -2,8 +2,8 @@
 //!
 //! A *run* is a stretch the needle sews without lifting: a set of needle points in order. Runs
 //! are joined into a block: a short move between two runs stays down (it is just the next stitch),
-//! a long one becomes a [`Command::Jump`], tied off and in, with a [`Command::Trim`] first when it
-//! is longer than [`Params::trim`].
+//! a long one becomes a [`crate::Command::Jump`], tied off and in, with a [`crate::Command::Trim`]
+//! first when it is longer than [`Params::trim`].
 //!
 //! Parameters are millimetres and degrees. Everything is clamped to a sane range before use, so
 //! out-of-range or non-finite input gives a usable stitch plan rather than a loop that never
@@ -26,10 +26,10 @@
 //! The spacing defaults are for 40 wt thread; [`Params::for_thread`] gives them for another
 //! weight ([`thread_scale`]).
 //!
-//! The parts: [`geometry`] (polylines, spacing points along them, the rows' axes), [`area`] (what
-//! is inside a filled shape, where rows cross it, travelling inside it), [`runs`] (runs joined into
-//! stitches: jumps, trims, tie-ins and tie-offs), and one module per style ([`running`],
-//! [`satin`], [`fill`]).
+//! The parts: `geometry` (polylines, spacing points along them, the rows' axes), `area` (what is
+//! inside a filled shape, where rows cross it, travelling inside it), `runs` (runs joined into
+//! stitches: jumps, trims, tie-ins and tie-offs), one module per style (`running`, `satin`, `fill`),
+//! and `narrow` (a fill's narrow parts, sewn as satin columns).
 
 mod area;
 mod fill;
@@ -45,17 +45,20 @@ mod tests_narrow;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
-pub use fill::{MIN_AREA, fill, fill_with_columns};
+pub use fill::MIN_AREA;
+pub(crate) use fill::fill_with_columns;
 pub use narrow::{Column, columns as narrow_columns, columns_until as narrow_columns_until};
-pub use running::running;
 pub use runs::join_cut;
-pub use satin::{satin, satin_spacing};
+pub use satin::satin_spacing;
 
 use crate::{Error, Stitch};
+pub use geometry::MAX_COORD_MM;
+pub use geometry::in_range;
 use geometry::{Axes, SubPath, length, subpaths};
 
 /// A move longer than this lifts the needle (a jump) instead of being sewn, unless
-/// [`Params::jump`] says otherwise (millimetres).
+/// [`Params::jump`] says otherwise (millimetres). An estimate: past 5 mm a sewn move lies loose on
+/// the fabric; machines' jump trimming starts about there (Brother's settings run from 5 mm).
 const JUMP: f64 = 5.0;
 /// A jump longer than this cuts the thread first, unless [`Params::trim`] says otherwise
 /// (millimetres). Shorter jumps (hops between letters or seeds) are left for the machine or a
@@ -63,11 +66,22 @@ const JUMP: f64 = 5.0;
 /// (Brother's settings run from 5 to 50 mm), and Ink/Stitch adds no trims unless an object asks
 /// for one. Longer ones are cut in the file, so they don't lie loose on a machine that can't cut
 /// jumps itself. A choice within those bounds, not a published value.
-pub const TRIM: f64 = 10.0;
-/// The longest satin stitch before it is split (millimetres): longer stitches snag and sag. An
-/// estimate (professional software makes it a setting, bounded by the machine format: 12.1 mm
-/// per record in DST).
+pub(crate) const TRIM: f64 = 10.0;
+/// The longest satin stitch before it is split (millimetres): longer stitches snag and sag.
+/// Professional software makes it a setting, bounded by the machine format (12.1 mm per record in
+/// DST). Wilcom recommends an Auto Split of 7 mm and satin widths within 10 mm (the article cited
+/// for [`DENSITY`] below); Melco's design checker lets satin stitches up to 10 mm pass. 10 mm, by
+/// judgement: splitting at 7 would split every satin wider than that, and the narrow parts of fills
+/// sewn as satin reach 10 mm.
 const MAX_SATIN_STITCH: f64 = 10.0;
+/// The narrowest satin column (millimetres): a stroke, or a fill's narrow part, narrower than this
+/// is sewn as a running line along its middle, since below about a millimetre a satin's two rails
+/// are too close for its crossings to lie side by side. Melco's design checker flags satin stitches
+/// shorter than 1 mm (DesignShop v11 user manual, Design Checker Tab, p. 38,
+/// <http://www.melco-service.com/docs/DSv11_Manual.pdf>), and its machine manual keeps satin
+/// stitches 1 mm or longer (OS manual, pp. 301–302,
+/// <https://www.melco-service.com/docs/X/melco-os-ai-en.pdf>).
+pub const SATIN_MIN_WIDTH: f64 = 1.0;
 /// The widest satin column (millimetres): a wider one is sewn this wide. Far beyond what a satin
 /// can cover (professional practice tops out near 10–12 mm), a bound on the stitching.
 pub const MAX_SATIN_WIDTH: f64 = 50.0;
@@ -90,7 +104,8 @@ const RUNNING_STITCH: f64 = 2.5;
 /// fabric, and a repeated point is noise. An estimate.
 const MIN_STITCH: f64 = 0.4;
 /// The direction of a fill's rows, degrees (0: left to right). Diagonal, so that rows don't run
-/// along a shape's horizontal and vertical edges, where they would show each step of the edge.
+/// along a shape's horizontal and vertical edges, where they would show each step of the edge. By
+/// judgement.
 const FILL_ANGLE: f64 = 45.0;
 /// Pull compensation (millimetres added at each side of a stitch: each rail of a satin column, each
 /// end of a fill row): the fabric draws the thread in, so stitching sewn exactly as drawn comes out
@@ -125,16 +140,16 @@ pub const THREAD_WEIGHT: f64 = 40.0;
 /// warns that a satin too wide sews loose and covers badly
 /// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/stitches/stitches-8.htm>);
 /// 7 mm stays below that, with room for pull compensation. An estimate.
-pub const NARROW_SATIN: f64 = 7.0;
+pub(crate) const NARROW_SATIN: f64 = 7.0;
 /// A satin column's width when none is given (millimetres). The export always gives one, the
 /// stroke's width; this is for callers of the planner that don't.
 const SATIN_WIDTH: f64 = 3.0;
-/// The underlay's own stitch length (millimetres): short, to hold the fabric still.
+/// The underlay's own stitch length (millimetres): short, to hold the fabric still. An estimate.
 const UNDERLAY_STITCH: f64 = 2.0;
 /// The most runs one shape may produce (a guard against absurd parameters).
 const MAX_RUNS: usize = 1_000_000;
 /// The most stitches one shape may plan: [`try_stitches`] refuses a shape that would need more.
-pub const MAX_STITCHES: usize = 4_000_000;
+pub(crate) const MAX_STITCHES: usize = 4_000_000;
 
 /// How a shape is stitched.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
@@ -166,9 +181,51 @@ impl Style {
             _ => return None,
         })
     }
+}
 
-    /// All styles, as menus list them.
-    pub const ALL: [Self; 3] = [Self::Running, Self::Satin, Self::Fill];
+/// What is sewn under a shape before its top stitching, to hold the fabric still
+/// ([`Params::underlay`]). The kinds are a satin column's and a fill's together, as the settings
+/// name them: a kind of the other's is taken as its nearest (a fill takes `Center` as `Edge` and
+/// `EdgeZigzag` as `EdgeTatami`; a satin takes `EdgeTatami` as `EdgeZigzag`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum Underlay {
+    /// None.
+    None,
+    /// Chosen by the shape: under a satin column by its width (a centre run, an edge run from 2 mm,
+    /// an edge run and a zigzag from 4.5 mm), under a fill an edge run and, when it is at least
+    /// 10 mm across both ways, a sparse tatami layer.
+    #[default]
+    Auto,
+    /// A run along a satin column's centre.
+    Center,
+    /// A run along the edges.
+    Edge,
+    /// An edge run, then a zigzag across a satin column.
+    EdgeZigzag,
+    /// An edge run, then a sparse tatami layer under a fill whatever its size.
+    EdgeTatami,
+}
+
+impl Underlay {
+    /// Every kind, as the settings list them.
+    pub const ALL: [Self; 6] = [Self::None, Self::Auto, Self::Center, Self::Edge, Self::EdgeZigzag, Self::EdgeTatami];
+
+    /// Its name in parameters: `none`, `auto`, `center`, `edge`, `edgeZigzag`, `edgeTatami`.
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Auto => "auto",
+            Self::Center => "center",
+            Self::Edge => "edge",
+            Self::EdgeZigzag => "edgeZigzag",
+            Self::EdgeTatami => "edgeTatami",
+        }
+    }
+
+    /// The kind `id` names ([`Underlay::id`]).
+    pub fn from_id(id: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|u| u.id() == id)
+    }
 }
 
 /// What one shape is stitched as.
@@ -197,10 +254,10 @@ pub struct Params {
     /// spacing ([`Params::auto_spacing`]) and [`Params::for_thread`]'s spacing follow it
     /// ([`thread_scale`]).
     pub thread_weight: f64,
-    /// Sew an underlay first: an edge run under a fill, a centre run under a satin column.
-    pub underlay: bool,
+    /// What is sewn under the shape first ([`Underlay`]).
+    pub underlay: Underlay,
     /// A move longer than this lifts the needle (a jump) instead of running the thread across,
-    /// millimetres. A jump this long or longer is tied off before and in after (when [`Params::lock`]
+    /// millimetres. A jump longer than this is tied off before and in after (when [`Params::lock`]
     /// is on), so that the machine or a person can cut it without the stitching coming undone.
     pub jump: f64,
     /// A jump longer than this cuts the thread first (a trim), millimetres. Never less than
@@ -222,48 +279,49 @@ pub struct Params {
     pub auto_spacing: bool,
     /// Fill only: the widest part of a filled shape sewn as a satin column instead of tatami,
     /// millimetres; 0 sews every part as tatami. The planner's [`narrow_columns`] finds such parts,
-    /// and [`fill_with_columns`] sews them with the rest of the shape, which the caller cuts out
-    /// (the planner has no path operations); [`stitches`] itself fills the whole shape.
+    /// and [`try_fill_with_columns`] sews them with the rest of the shape, which the caller cuts
+    /// out (the planner has no path operations); [`try_stitches`] itself fills the whole shape.
     pub narrow: f64,
 }
 
 // The ranges [`Params::sane`] clamps each value to (millimetres, lowest and highest). They are
 // not settings: they keep the planning finite and the stitches within what a machine sews, and
-// anything outside them is a mistake or hostile input.
+// anything outside them is a mistake or hostile input. The commands refuse a value outside them
+// rather than let it be clamped (the engine's embroidery options read them from here).
 
 /// A stitch length: from 0.2 mm (two of the 0.1 mm steps the machine formats count in) to 12 mm,
 /// about the longest move one record of the machine formats holds (12.1 mm in DST).
-const STITCH_LENGTH_RANGE: (f64, f64) = (0.2, 12.0);
+pub const STITCH_LENGTH_RANGE: (f64, f64) = (0.2, 12.0);
 /// The distance between threads: from 0.05 mm (twenty threads a millimetre, far denser than any
 /// fabric takes) to 5 mm (rows that no longer cover).
-const DENSITY_RANGE: (f64, f64) = (0.05, 5.0);
+pub const DENSITY_RANGE: (f64, f64) = (0.05, 5.0);
 /// Pull compensation: none to 2 mm at a side, far more than the most stretchy fabric needs. Also
 /// the most a side gets with [`Params::pull_percent`] added.
-const PULL_RANGE: (f64, f64) = (0.0, 2.0);
+pub const PULL_RANGE: (f64, f64) = (0.0, 2.0);
 /// Pull compensation by size: none to half the stitch again at each side (a column twice as wide).
-const PULL_PERCENT_RANGE: (f64, f64) = (0.0, 50.0);
+pub const PULL_PERCENT_RANGE: (f64, f64) = (0.0, 50.0);
 /// Push compensation: none to 5 mm at an end. A column keeps at least [`MIN_PUSHED`] of its length
 /// whatever is asked.
-const PUSH_RANGE: (f64, f64) = (0.0, 5.0);
+pub const PUSH_RANGE: (f64, f64) = (0.0, 5.0);
 /// The share of an open satin column's length that push compensation leaves, at least: both ends
 /// are shortened in proportion when they would take more. Push compensation corrects a fraction of
 /// a millimetre; more than half a column is a mistake.
 const MIN_PUSHED: f64 = 0.5;
 /// The widest part sewn as a satin column: none to 12 mm, the longest stitch a column's crossing
 /// may be before it is split ([`MAX_SATIN_STITCH_RANGE`]).
-const NARROW_RANGE: (f64, f64) = (0.0, 12.0);
+pub const NARROW_RANGE: (f64, f64) = (0.0, 12.0);
 /// The thread's weight: from 10 wt (a heavy decorative thread, thicker than any embroidery
 /// thread) to 150 wt (finer than the finest bobbin and lettering threads).
-const THREAD_WEIGHT_RANGE: (f64, f64) = (10.0, 150.0);
+pub const THREAD_WEIGHT_RANGE: (f64, f64) = (10.0, 150.0);
 /// The longest move sewn rather than jumped: from 0.5 mm to 20 mm, past which a sewn move would be
 /// a loose thread across the design.
-const JUMP_RANGE: (f64, f64) = (0.5, 20.0);
+pub const JUMP_RANGE: (f64, f64) = (0.5, 20.0);
 /// The longest jump left uncut: from the jump length itself (every jump cut) to a metre (none).
-const MAX_TRIM: f64 = 1000.0;
+pub const MAX_TRIM: f64 = 1000.0;
 /// The shortest stitch kept: from 0.05 mm to 3 mm.
-const MIN_STITCH_RANGE: (f64, f64) = (0.05, 3.0);
+pub const MIN_STITCH_RANGE: (f64, f64) = (0.05, 3.0);
 /// The longest satin stitch before it is split: from 2 mm to the 12 mm of [`STITCH_LENGTH_RANGE`].
-const MAX_SATIN_STITCH_RANGE: (f64, f64) = (2.0, 12.0);
+pub const MAX_SATIN_STITCH_RANGE: (f64, f64) = (2.0, 12.0);
 
 impl Default for Params {
     fn default() -> Self {
@@ -280,7 +338,7 @@ impl Params {
     /// The defaults of one style for thread of `weight` (wt): the spacing between threads follows
     /// the thread's thickness ([`thread_scale`]), a fill's rows and a satin column's crossings alike.
     pub fn for_thread(style: Style, weight: f64) -> Self {
-        let weight = if weight.is_finite() { weight.clamp(THREAD_WEIGHT_RANGE.0, THREAD_WEIGHT_RANGE.1) } else { THREAD_WEIGHT };
+        let weight = sane_weight(weight);
         let density = FILL_SPACING * thread_scale(weight);
         match style {
             // A running line uses no density, angle, compensation, underlay or width.
@@ -293,7 +351,7 @@ impl Params {
                 pull_percent: [0.0; 2],
                 push: [0.0; 2],
                 thread_weight: weight,
-                underlay: false,
+                underlay: Underlay::None,
                 jump: JUMP,
                 trim: TRIM,
                 lock: true,
@@ -314,7 +372,7 @@ impl Params {
                 pull_percent: [PULL_PERCENT; 2],
                 push: [PUSH; 2],
                 thread_weight: weight,
-                underlay: true,
+                underlay: Underlay::Auto,
                 jump: JUMP,
                 trim: TRIM,
                 lock: true,
@@ -334,7 +392,7 @@ impl Params {
                 pull_percent: [PULL_PERCENT; 2],
                 push: [0.0; 2],
                 thread_weight: weight,
-                underlay: true,
+                underlay: Underlay::Auto,
                 jump: JUMP,
                 trim: TRIM,
                 lock: true,
@@ -378,6 +436,13 @@ impl Params {
         }
     }
 
+    /// The spacing of a satin column `width` wide (millimetres, peak to peak on a rail): picked by
+    /// its width and the thread with [`Params::auto_spacing`] ([`satin_spacing`], [`thread_scale`]),
+    /// else [`Params::density`].
+    pub fn column_spacing(&self, width: f64) -> f64 {
+        if self.auto_spacing { satin_spacing(width) * thread_scale(self.thread_weight) } else { self.density }
+    }
+
     /// How much farther a stitch `length` long reaches at each side for pull compensation
     /// ([`Params::pull`] plus [`Params::pull_percent`] of `length`), millimetres, at most 2 mm at
     /// a side (the most [`Params::sane`] lets [`Params::pull`] be).
@@ -401,27 +466,30 @@ impl Params {
 /// (<https://www.madeirausa.com/_resources/common/userfiles/file/Resources/TH.Reads/Density.pdf>).
 /// The chart is for satin; fills follow it too here, an estimate: no source scales fill spacing
 /// by thread. (Wilcom's satin auto spacing shifts its spacing by thread class too, by fixed
-/// offsets of a few hundredths of a millimetre,
+/// offsets of 0.01, 0.03, −0.03 and −0.06 with no unit stated, read here as millimetres, an
+/// assumption,
 /// <https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/stitches/stitches-10.htm>.)
 pub fn thread_scale(weight: f64) -> f64 {
     /// The square root: the thread's thickness follows it.
     const SPACING_EXPONENT: f64 = 0.5;
-    let weight = if weight.is_finite() { weight.clamp(THREAD_WEIGHT_RANGE.0, THREAD_WEIGHT_RANGE.1) } else { THREAD_WEIGHT };
-    (THREAD_WEIGHT / weight).powf(SPACING_EXPONENT)
+    (THREAD_WEIGHT / sane_weight(weight)).powf(SPACING_EXPONENT)
 }
 
-/// The stitches of `path` in style `p`: one block, in needle order.
-///
-/// `rule` decides what a fill covers when its subpaths overlap (a hole wound against its shape
-/// is a hole under the non-zero rule; under the even-odd rule any two crossings change side).
-pub fn stitches(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
+/// A thread weight within [`THREAD_WEIGHT_RANGE`]; one that isn't finite is [`THREAD_WEIGHT`].
+fn sane_weight(weight: f64) -> f64 {
+    if weight.is_finite() { weight.clamp(THREAD_WEIGHT_RANGE.0, THREAD_WEIGHT_RANGE.1) } else { THREAD_WEIGHT }
+}
+
+/// [`try_stitches`] without its checks, for this crate's tests.
+#[cfg(test)]
+pub(crate) fn stitches(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch> {
     stitches_from(path, rule, p, None)
 }
 
-/// [`stitches`], the needle at `from` before the shape starts (where the object sewn before it
-/// ended): the shape starts as near it as it can, which saves jumps and trims. `None`: the shape
-/// starts where it is drawn to.
-pub fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Vec<Stitch> {
+/// [`try_stitches_from`] without its checks: what the planners build. Unchecked, a shape far out
+/// of range or a tiny stitch length builds without bound, so only the checked entry points are
+/// public.
+pub(crate) fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Vec<Stitch> {
     let p = p.sane();
     match sewn_style(&p) {
         Style::Running => running::running_from(path, &p, from),
@@ -431,7 +499,7 @@ pub fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Po
 }
 
 /// The style a shape with `p` is sewn in: its own, except that a satin column needs a width, and a
-/// satin without one (a fill whose `stitchStyle` is satin) is filled instead.
+/// satin without one (a fill whose `stitch` option is satin) is filled instead.
 pub fn sewn_style(p: &Params) -> Style {
     let p = p.sane();
     match p.style {
@@ -441,28 +509,34 @@ pub fn sewn_style(p: &Params) -> Style {
     }
 }
 
-/// [`stitches`], refused with [`Error::TooLarge`] when the shape would need more than
-/// [`MAX_STITCHES`] (a huge shape, or a tiny stitch length or spacing): estimated from the
-/// geometry before any stitch is planned, so an absurd request costs no memory.
+/// The stitches of `path` in style `p`: one block, in needle order; refused with
+/// [`Error::TooLarge`] when the shape would need more than [`MAX_STITCHES`] (a huge shape, or a
+/// tiny stitch length or spacing), estimated from the geometry before any stitch is planned, so an
+/// absurd request costs no memory, and when it lies out of range ([`in_range`]).
+///
+/// `rule` decides what a fill covers when its subpaths overlap (a hole wound against its shape
+/// is a hole under the non-zero rule; under the even-odd rule any two crossings change side).
 pub fn try_stitches(path: &BezPath, rule: FillRule, p: &Params) -> crate::Result<Vec<Stitch>> {
     try_stitches_from(path, rule, p, None)
 }
 
-/// [`try_stitches`], the needle at `from` before the shape starts ([`stitches_from`]).
+/// [`try_stitches`], the needle at `from` before the shape starts (where the object sewn before it
+/// ended): the shape starts as near it as it can, which saves jumps and trims. `None`: the shape
+/// starts where it is drawn to.
 pub fn try_stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> crate::Result<Vec<Stitch>> {
     let p = p.sane();
-    let n = estimate(&subpaths(path), &p);
-    if !n.is_finite() || n > MAX_STITCHES as f64 {
-        return Err(Error::TooLarge(format!(
-            "a shape would need about {n:.0} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design"
-        )));
-    }
+    placed(path)?;
+    within_limit(estimate(&subpaths(path), &p))?;
     Ok(stitches_from(path, rule, &p, from))
 }
 
-/// [`fill_with_columns`], refused with [`Error::TooLarge`] when it would need more than
-/// [`MAX_STITCHES`] stitches: the whole `shape` filled, plus each column's crossings and underlay,
-/// estimated before any stitch is planned.
+/// A filled shape sewn in parts: `rest`, the shape without its narrow `columns` (cut out by the
+/// caller with path operations), as a tatami fill, and each column as a satin column whose width
+/// follows the shape, one after another, whichever starts nearest the needle next, travelling
+/// inside the whole `shape`; `fill` and `satin` are the two kinds of parts' parameters. Refused
+/// with [`Error::TooLarge`] when it would need more than [`MAX_STITCHES`] stitches (the whole
+/// `shape` filled, plus each column's crossings and underlay, estimated before any stitch is
+/// planned), and when a shape lies out of range ([`in_range`]).
 pub fn try_fill_with_columns(
     shape: &BezPath,
     rule: FillRule,
@@ -476,46 +550,111 @@ pub fn try_fill_with_columns(
     /// underlay's (up to three runs at [`UNDERLAY_STITCH`]) and its splits.
     const UNDERLAYS: f64 = 3.0;
     let (f, s) = (Params { style: Style::Fill, ..*fill }.sane(), Params { style: Style::Satin, ..*satin }.sane());
+    placed(shape)?;
+    placed(rest)?;
     let closest = s.density.min(satin_spacing(f64::INFINITY) * thread_scale(s.thread_weight));
-    let n = estimate(&subpaths(shape), &f)
-        + columns.iter().map(|c| c.length() * (satin::CROSSINGS_PER_SPACING / closest + UNDERLAYS / UNDERLAY_STITCH)).sum::<f64>();
+    let column = |c: &Column| {
+        // Its widest crossing, with the most pull compensation at both sides, split as satin's are.
+        let widest = c.stations.iter().map(|(a, b)| a.distance(*b)).fold(0.0, f64::max);
+        let split = satin::splits(widest + 2.0 * PULL_RANGE.1, s.max_satin);
+        let crossings = c.length() * satin::CROSSINGS_PER_SPACING / closest * satin::MAX_RAIL_STRETCH;
+        (crossings + 1.0) * split + c.length() * (UNDERLAYS / UNDERLAY_STITCH + split / satin::ZIGZAG_UNDERLAY_SPACING)
+    };
+    within_limit(estimate(&subpaths(shape), &f) + columns.iter().map(column).sum::<f64>())?;
+    Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, from))
+}
+
+/// Refused with [`Error::TooLarge`] when `path` lies beyond [`MAX_COORD_MM`] or has a coordinate
+/// that isn't a number: flattening it could take without bound.
+fn placed(path: &BezPath) -> crate::Result<()> {
+    if in_range(path) {
+        return Ok(());
+    }
+    Err(Error::TooLarge(format!(
+        "a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched"
+    )))
+}
+
+/// Refused with [`Error::TooLarge`] when a shape would need `n` stitches, more than
+/// [`MAX_STITCHES`] (or a number that isn't finite).
+fn within_limit(n: f64) -> crate::Result<()> {
     if !n.is_finite() || n > MAX_STITCHES as f64 {
         return Err(Error::TooLarge(format!(
             "a shape would need about {n:.0} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design"
         )));
     }
-    Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, from))
+    Ok(())
 }
 
-/// About how many points `subs` plan into in style `p` (an upper estimate; not finite when the
-/// geometry is not).
+/// How many points `subs` plan into in style `p` at most: an upper bound, so that a shape refused
+/// past [`MAX_STITCHES`] is refused before any of it is planned. Not finite when a point isn't, or
+/// when a fill needs more rows than one layer may have ([`fill::MAX_ROWS`]).
 fn estimate(subs: &[SubPath], p: &Params) -> f64 {
     /// More than the points a subpath adds beyond its stitches: the lock stitch, tie-in or tie-off
     /// at each of its two ends.
     const POINTS_PER_SUBPATH: f64 = 6.0;
-    /// More than the points each fill row adds beyond its stitches: its two ends.
-    const POINTS_PER_ROW: f64 = 2.0;
+    /// The runs a satin column's underlay sews along its length, at most: a centre run, or an edge
+    /// run along both sides (its zigzag is counted apart).
+    const SATIN_UNDERLAY_RUNS: f64 = 2.0;
+    if subs.iter().flat_map(|s| s.pts.iter()).any(|q| !(q.x.is_finite() && q.y.is_finite())) {
+        return f64::NAN;
+    }
     let total: f64 = subs.iter().map(|s| length(&s.points(), s.closed)).sum();
     let ends = POINTS_PER_SUBPATH * subs.len() as f64;
-    match p.style {
+    match sewn_style(p) {
         Style::Running => total / p.stitch_length + ends,
-        Style::Satin if p.width > 0.0 => {
-            let spacing = if p.auto_spacing { satin_spacing(p.width) * thread_scale(p.thread_weight) } else { p.density };
-            total / UNDERLAY_STITCH + 2.0 * total / spacing.min(p.density) + ends
+        Style::Satin => {
+            // Each crossing split as `split_long` splits the longest a crossing can be (the column
+            // and the most pull compensation at both rails); round a bend, the crossings come up to
+            // MAX_RAIL_STRETCH times closer along the centre line.
+            let split = satin::splits(p.width + 2.0 * PULL_RANGE.1, p.max_satin);
+            let crossings = total * satin::CROSSINGS_PER_SPACING / p.column_spacing(p.width).min(p.density) * satin::MAX_RAIL_STRETCH;
+            let underlay = total * SATIN_UNDERLAY_RUNS / UNDERLAY_STITCH + total / satin::ZIGZAG_UNDERLAY_SPACING * split;
+            (crossings + 1.0) * split + underlay + ends
         }
-        Style::Satin | Style::Fill => {
-            let axes = Axes::new(p.angle);
-            let extent = |f: &dyn Fn(vectorcraft_geom::Point) -> f64| {
-                let (lo, hi) = subs
-                    .iter()
-                    .flat_map(|s| s.pts.iter())
-                    .map(|q| f(*q))
-                    .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), t| (lo.min(t), hi.max(t)));
-                if hi >= lo { hi - lo } else { 0.0 }
+        Style::Fill => {
+            let top = layer_points(subs, p.angle, p.density, p.stitch_length);
+            let underlay = if p.underlay != Underlay::None {
+                total / UNDERLAY_STITCH
+                    + layer_points(subs, p.angle + fill::UNDERLAY_TURN, fill::TATAMI_UNDERLAY_SPACING, fill::TATAMI_UNDERLAY_STITCH)
+            } else {
+                0.0
             };
-            // One row more than fit in the extent: a part row at the edge.
-            let rows = extent(&|q| axes.across(q)) / p.density + 1.0;
-            total / UNDERLAY_STITCH + rows * (extent(&|q| axes.along(q)) / p.stitch_length + POINTS_PER_ROW) + ends
+            // A subpath that encloses nothing is sewn as a running line.
+            top + underlay + total / p.stitch_length + ends
         }
     }
+}
+
+/// The most points one layer of rows at `angle`, `spacing` apart and split into stitches up to
+/// `stitch` long, can plan across `subs`: every row across the shapes' extent split along all of
+/// it, and each stretch of a row (two edge crossings) its ends, its stagger's part stitch and the
+/// row a region takes of its neighbour's. An edge crosses as many rows as fit across it: counted
+/// edge by edge, without finding a row's stretches. Infinite past [`fill::MAX_ROWS`] rows.
+fn layer_points(subs: &[SubPath], angle: f64, spacing: f64, stitch: f64) -> f64 {
+    /// More than the points each edge crossing of a row adds beyond the row's stitches.
+    const POINTS_PER_CROSSING: f64 = 4.0;
+    let axes = Axes::new(angle);
+    let extent = |f: &dyn Fn(vectorcraft_geom::Point) -> f64| {
+        let (lo, hi) =
+            subs.iter().flat_map(|s| s.pts.iter()).map(|q| f(*q)).fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), t| (lo.min(t), hi.max(t)));
+        if hi >= lo { hi - lo } else { 0.0 }
+    };
+    let across = extent(&|q| axes.across(q));
+    if across / spacing > fill::MAX_ROWS as f64 {
+        return f64::INFINITY;
+    }
+    // One row more than fit in the extent: a part row at the edge.
+    let rows = across / spacing + 1.0;
+    let crossings: f64 = subs
+        .iter()
+        .map(|s| {
+            let n = s.pts.len();
+            (0..n)
+                .filter_map(|i| Some((*s.pts.get(i)?, *s.pts.get((i + 1) % n)?)))
+                .map(|(a, b)| (axes.across(b) - axes.across(a)).abs() / spacing + 1.0)
+                .sum::<f64>()
+        })
+        .sum();
+    rows * (extent(&|q| axes.along(q)) / stitch + 1.0) + crossings * POINTS_PER_CROSSING
 }

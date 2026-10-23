@@ -1,6 +1,6 @@
 //! Thread palettes: the colours the machine formats name their threads from.
 //!
-//! DST and EXP name no colours at all, so a design read from them gets [`default_thread`]'s
+//! DST, TAP, T01 and EXP name no colours at all, so a design read from them gets [`default_thread`]'s
 //! colours, one per block, which read well on screen and tell the blocks apart. JEF names one of
 //! Janome's 78 threads by index, and PEC one of 64 entries: Brother's 61 threads, then three that
 //! are not threads ([`Palette`], [`Palette::is_thread`]). Writing a design names each block's
@@ -26,7 +26,8 @@
 //! EduTechWiki is cited for facts only (the numbering, PEC 42's name and colour): its default
 //! licence, CC BY-NC-SA 3.0, doesn't fit this code's, so its tables are no source to take.
 
-use std::sync::OnceLock;
+use std::collections::HashMap;
+use std::sync::{Mutex, OnceLock};
 
 use crate::{Thread, color};
 
@@ -43,10 +44,29 @@ const NO_THREAD: usize = 0;
 /// stitch plan flags a farther thread as a mismatch. An estimate, the project owner's choice
 /// (2026-10-21); no embroidery source gives a threshold. Past about 5, two colours side by side are
 /// already seen as two different colours (the bands of W. S. Mokrzycki and M. Tatol, "Color
-/// difference Delta E — a survey", *Machine Graphics and Vision* 20, 2011, drawn up for the older
-/// CIE 1976 difference), but a palette of 64 or 78 threads lies that far from about half the
-/// colours of real art, so the line is drawn at twice that.
+/// difference Delta E — a survey", *Machine Graphics and Vision* 20, 2011), but those bands were
+/// drawn up for the older CIE 1976 difference, which is not on CIEDE2000's scale (CIEDE2000 shrinks
+/// differences of saturated colours: its 10 can be a CIE 1976 distance of 20 to 30). A palette of
+/// 61 or 78 threads lies farther than 5 from about half the colours of real art, so the line is
+/// drawn farther out, at 10, by judgement; and at such distances CIEDE2000 itself is outside the
+/// range it was made for ([`crate::color`]).
 pub const MISMATCH_DELTA_E: f64 = 10.0;
+
+/// A colour difference is shown to two decimals, in hundredths: finer than any difference the eye
+/// sees (about 1 is the smallest seen side by side).
+pub const DELTA_E_HUNDREDTHS: f64 = 100.0;
+
+/// Colour difference `delta_e` as it is shown: to [`DELTA_E_HUNDREDTHS`].
+pub fn shown_delta_e(delta_e: f64) -> f64 {
+    (delta_e * DELTA_E_HUNDREDTHS).round() / DELTA_E_HUNDREDTHS
+}
+
+/// Whether a thread `delta_e` from the art looks unlike it: its difference as shown is past
+/// [`MISMATCH_DELTA_E`]. As shown, so that a thread is never flagged at a difference shown as the
+/// threshold itself, and the same line decides which thread a block takes ([`Palette::assign`]).
+pub fn mismatched(delta_e: f64) -> bool {
+    shown_delta_e(delta_e) > MISMATCH_DELTA_E
+}
 
 /// A thread palette a machine format names its threads from, by number.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -73,6 +93,15 @@ impl Palette {
     /// The palette `id` names ([`Palette::id`]).
     pub fn from_id(id: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|p| p.id() == id)
+    }
+
+    /// The format whose threads it numbers, the one a design in it is written as: PES for
+    /// Brother's (PEC numbers them too), JEF for Janome's.
+    pub fn format(self) -> crate::format::Format {
+        match self {
+            Self::Pec => crate::format::Format::Pes,
+            Self::Jef => crate::format::Format::Jef,
+        }
     }
 
     /// Its entries, each a colour and a name, in the order the format numbers them from 1: its
@@ -122,6 +151,33 @@ impl Palette {
         if let Some(own) = self.own(color) {
             return own;
         }
+        // A design's colours repeat from plan to plan (a plan after an edit matches every block
+        // again): each match is worked out once and remembered, for a skip of up to two threads
+        // (the neighbours [`Palette::assign`] avoids).
+        let key = match skip {
+            [] => Some([NO_THREAD; 2]),
+            [a] => Some([*a, NO_THREAD]),
+            [a, b] => Some([*a, *b]),
+            _ => None,
+        }
+        .map(|skip| (self, color, skip));
+        let memo = || MATCHES.get_or_init(Default::default).lock().ok();
+        if let Some(m) = key.and_then(|k| memo()?.get(&k).copied()) {
+            return m;
+        }
+        let m = self.nearest_of_all(color, skip);
+        if let (Some(k), Some(mut kept)) = (key, memo()) {
+            if kept.len() >= MAX_MATCHES_KEPT {
+                kept.clear();
+            }
+            kept.insert(k, m);
+        }
+        m
+    }
+
+    /// [`Palette::nearest`] for a colour that is no thread's own, worked out: compared with every
+    /// thread.
+    fn nearest_of_all(self, color: [u8; 3], skip: &[usize]) -> Match {
         let lab = color::lab(color);
         let (mut best, mut any): (Option<Match>, Option<Match>) = (None, None);
         for (i, &thread) in self.labs().iter().enumerate().take(self.thread_count()) {
@@ -184,7 +240,7 @@ impl Palette {
                     let neighbours = [before, after];
                     match neighbours.contains(&nearest.index) {
                         false => nearest,
-                        true => Some(self.nearest(color, &neighbours)).filter(|other| other.delta_e <= MISMATCH_DELTA_E).unwrap_or(nearest),
+                        true => Some(self.nearest(color, &neighbours)).filter(|other| !mismatched(other.delta_e)).unwrap_or(nearest),
                     }
                 }
             };
@@ -229,7 +285,34 @@ impl PaletteThread {
     pub fn index(self) -> usize {
         self.index
     }
+
+    /// The thread `m` matched in `palette` ([`Palette::nearest`], [`Palette::assign`], which only
+    /// ever match threads); were `m` no thread of it, the palette's first.
+    pub fn matched(palette: Palette, m: Match) -> Self {
+        Self::new(palette, m.index).unwrap_or(Self { palette, index: FIRST_THREAD })
+    }
+
+    /// Its colour and name as the palette lists them.
+    pub fn entry(self) -> Entry {
+        self.palette.get(self.index).unwrap_or(NO_ENTRY)
+    }
 }
+
+/// The number of every palette's first thread (the formats count from 1; 0 is "no colour").
+const FIRST_THREAD: usize = 1;
+/// What a thread that isn't in its palette would show: never, since a [`PaletteThread`] is always
+/// one of its palette's threads.
+const NO_ENTRY: Entry = ([0; 3], "");
+
+/// The matches [`Palette::nearest`] has worked out: by palette, colour and the (up to two)
+/// threads skipped, [`NO_THREAD`] for none. A lock that a panic elsewhere left poisoned is passed
+/// by: matching afresh is always right.
+static MATCHES: OnceLock<Mutex<HashMap<MatchKey, Match>>> = OnceLock::new();
+/// What a remembered match is of: the palette, the colour and the threads skipped.
+type MatchKey = (Palette, [u8; 3], [usize; 2]);
+/// The most matches remembered, about 3 MB: past it they are forgotten and remembered again from
+/// the next one. Many more than a design's colours. An estimate.
+const MAX_MATCHES_KEPT: usize = 65_536;
 
 /// A colour matched to a palette's thread ([`Palette::nearest`], [`Palette::assign`]).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -431,6 +514,20 @@ pub fn unknown_thread(block: usize, number: u64) -> Thread {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A match is always a thread of its palette; the stand-in for one that isn't, the first
+    /// thread, is one in every palette.
+    #[test]
+    fn a_matched_thread_is_always_one_of_its_palette() {
+        for palette in Palette::ALL {
+            assert!(palette.is_thread(FIRST_THREAD), "{palette:?}");
+            let m = palette.nearest([10, 200, 90], &[]);
+            let t = PaletteThread::matched(palette, m);
+            assert_eq!((t.palette(), t.index()), (palette, m.index));
+            assert_eq!(t.entry(), palette.get(m.index).unwrap());
+            assert_eq!(PaletteThread::matched(palette, Match { index: 0, delta_e: 0.0 }).index(), FIRST_THREAD);
+        }
+    }
 
     /// A thread chosen for a block is its number when it is the palette's own; another palette's
     /// is matched by colour; a number the palette doesn't have is no thread; and a block isn't

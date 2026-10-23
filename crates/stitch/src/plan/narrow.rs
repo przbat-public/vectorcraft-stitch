@@ -21,12 +21,15 @@
 //! not fan across a wide part. Points repeated where flattened curves join are dropped first
 //! ([`REPEATED`]): at one, the rays stopped turning and a ring broke open.
 
+use std::cell::OnceCell;
+
 use vectorcraft_geom::{BezPath, FillRule, Point, Rect, Shape, Vec2};
 
 use super::MAX_SATIN_WIDTH;
 use super::area::{Area, Grid};
-use super::fill::closed_subpaths;
-use super::geometry::{NO_LENGTH, SubPath, unit};
+use super::fill::{closed_subpaths, outlines};
+use super::geometry::{CORNER, NO_LENGTH, SubPath, turn, unit};
+use super::satin::Along;
 use crate::SAME_POINT;
 
 /// How far apart the outline is sampled (millimetres): fine enough that a 1 mm wide column's end
@@ -44,7 +47,8 @@ const PROBE: f64 = 0.02;
 const FACING: f64 = 0.5;
 /// How near the first point the ray back from the far one must land: this share of the width,
 /// plus two samples. On sides that converge at the angle [`FACING`] allows, it lands within about
-/// half the width.
+/// half the width. Estimates, as are the other bounds below that tell a column's sides apart: each
+/// tuned on test shapes and the real designs' artwork, none from a source.
 const MUTUAL_SHARE: f64 = 0.5;
 const MUTUAL_SAMPLES: f64 = 2.0;
 /// Two points of one outline less than this far apart along it are the two sides of a pointed tip
@@ -84,9 +88,6 @@ const MIN_PAIRED: f64 = 1.0 / 3.0;
 /// the other there is at most this many times the column's width (a round or pointed end); a
 /// longer one leads elsewhere (a junction).
 const END_STRETCH: f64 = 3.0;
-/// A turn of the outline sharper than this (radians, about 30°) is a corner: its direction is not
-/// smoothed across it, and at a column's end the column's side reaches it (a square end).
-const END_CORNER: f64 = 0.52;
 /// A column that has this share of its stations inside a longer column is the same part seen
 /// across: it is left out.
 const MAX_OVERLAP: f64 = 0.25;
@@ -118,22 +119,24 @@ impl Column {
     /// ring its two sides as two loops wound opposite ways.
     pub fn outline(&self) -> BezPath {
         let mut path = BezPath::new();
-        let first = self.stations.iter().map(|(a, _)| *a);
-        let second = self.stations.iter().rev().map(|(_, b)| *b);
-        if self.closed {
-            for side in [first.collect::<Vec<_>>(), second.collect::<Vec<_>>()] {
-                for (k, q) in side.into_iter().enumerate() {
-                    if k == 0 { path.move_to(q) } else { path.line_to(q) }
-                }
-                path.close_path();
-            }
-        } else {
-            for (k, q) in first.chain(second).enumerate() {
+        for ring in self.loops() {
+            for (k, q) in ring.pts.into_iter().enumerate() {
                 if k == 0 { path.move_to(q) } else { path.line_to(q) }
             }
             path.close_path();
         }
         path
+    }
+
+    /// [`Column::outline`] as closed polylines: one, or for a ring two.
+    fn loops(&self) -> Vec<SubPath> {
+        let first = self.stations.iter().map(|(a, _)| *a);
+        let second = self.stations.iter().rev().map(|(_, b)| *b);
+        if self.closed {
+            vec![SubPath { pts: first.collect(), closed: true }, SubPath { pts: second.collect(), closed: true }]
+        } else {
+            vec![SubPath { pts: first.chain(second).collect(), closed: true }]
+        }
     }
 
     /// The middle of each station.
@@ -157,6 +160,12 @@ impl Column {
         w.sort_by(f64::total_cmp);
         w.get(w.len() / 2).copied().unwrap_or(0.0)
     }
+
+    /// Whether it is sewn as a satin column: one narrower than a satin's crossings need is a
+    /// running line along its middle.
+    pub fn is_satin(&self) -> bool {
+        self.width() >= super::satin::MIN_COLUMN_WIDTH
+    }
 }
 
 /// The narrow parts of the filled `path` (`rule` decides what it covers): the columns typically at
@@ -169,12 +178,12 @@ pub fn columns(path: &BezPath, rule: FillRule, max_width: f64) -> Vec<Column> {
 /// [`columns`], asking `stopped` every [`STOP_CHECK`] samples, between rings and between sides
 /// whether to stop (a plan that is cancelled): `None` once it says so.
 pub fn columns_until(path: &BezPath, rule: FillRule, max_width: f64, stopped: &dyn Fn() -> bool) -> Option<Vec<Column>> {
-    if !(max_width.is_finite() && max_width > 0.0) {
+    if !(max_width.is_finite() && max_width > 0.0 && super::geometry::in_range(path)) {
         return Some(Vec::new());
     }
     let max_width = max_width.min(MAX_SATIN_WIDTH);
     let subs: Vec<SubPath> = closed_subpaths(path).into_iter().map(without_repeats).collect();
-    let outlines: Vec<&SubPath> = subs.iter().filter(|s| s.closed && s.pts.len() >= 3).collect();
+    let outlines = outlines(&subs);
     if outlines.is_empty() {
         return Some(Vec::new());
     }
@@ -233,6 +242,9 @@ struct Ring<'a> {
     smooth: Vec<Option<Vec2>>,
     len: f64,
     flipped: bool,
+    /// Its sharp corners ([`Ring::corners`]), worked out the first time they are asked for (once
+    /// the way it is walked is decided), not at every column end.
+    corners: OnceCell<Vec<f64>>,
 }
 
 impl<'a> Ring<'a> {
@@ -252,10 +264,11 @@ impl<'a> Ring<'a> {
             .map(|i| {
                 let (a, q, b) = (*pts.get((i + n - 1) % n)?, *pts.get(i)?, *pts.get((i + 1) % n)?);
                 let (u, v) = (unit(q - a)?, unit(b - q)?);
-                if u.dot(v).clamp(-1.0, 1.0).acos() > END_CORNER { None } else { unit(u + v) }
+                // A sharp corner (geometry's CORNER): the direction is not smoothed across it.
+                if turn(u, v) > CORNER { None } else { unit(u + v) }
             })
             .collect();
-        (len.is_finite() && len > NO_LENGTH).then_some(Self { pts, at, smooth, len, flipped: false })
+        (len.is_finite() && len > NO_LENGTH).then_some(Self { pts, at, smooth, len, flipped: false, corners: OnceCell::new() })
     }
 
     /// The point `s` along the ring (as drawn), and the ring's direction there.
@@ -286,17 +299,20 @@ impl<'a> Ring<'a> {
         self.point(self.walk(w)).map(|(q, _)| q)
     }
 
-    /// The walked positions of the ring's sharp corners (turns over [`END_CORNER`]).
-    fn corners(&self) -> Vec<f64> {
-        let n = self.pts.len();
-        (0..n)
-            .filter_map(|i| {
-                let (a, q, b) = (*self.pts.get((i + n - 1) % n)?, *self.pts.get(i)?, *self.pts.get((i + 1) % n)?);
-                let (u, v) = (unit(q - a)?, unit(b - q)?);
-                let at = *self.at.get(i)?;
-                (u.dot(v).clamp(-1.0, 1.0).acos() > END_CORNER).then(|| self.walk(at))
-            })
-            .collect()
+    /// The walked positions of the ring's sharp corners (turns over geometry's `CORNER`): at a
+    /// column's end the column's side reaches one (a square end).
+    fn corners(&self) -> &[f64] {
+        self.corners.get_or_init(|| {
+            let n = self.pts.len();
+            (0..n)
+                .filter_map(|i| {
+                    let (a, q, b) = (*self.pts.get((i + n - 1) % n)?, *self.pts.get(i)?, *self.pts.get((i + 1) % n)?);
+                    let (u, v) = (unit(q - a)?, unit(b - q)?);
+                    let at = *self.at.get(i)?;
+                    (turn(u, v) > CORNER).then(|| self.walk(at))
+                })
+                .collect()
+        })
     }
 }
 
@@ -600,18 +616,34 @@ impl Finder<'_> {
                 break;
             }
         }
-        found.sort_by(|a, b| b.length().total_cmp(&a.length()));
-        // Each kept column with its outline and the outline's bounds: a middle outside the bounds
-        // is outside the outline, which spares the winding test of every middle against every
-        // column kept before it.
-        let mut kept: Vec<(Column, BezPath, Rect)> = Vec::new();
-        for column in found {
+        // Longest first (each length worked out once, not in every comparison).
+        let mut found: Vec<(f64, Column)> = found.into_iter().map(|c| (c.length(), c)).collect();
+        found.sort_by(|a, b| b.0.total_cmp(&a.0));
+        // Each kept column with its outline, the outline's edge grid and its bounds: a middle
+        // outside the bounds is outside the outline, and one inside them is tested against the
+        // edges near it, not against every edge of the outline (concentric rings each hold the
+        // next one in their bounds).
+        let mut kept: Vec<(Column, Vec<SubPath>, Option<Grid>, Rect)> = Vec::new();
+        for (_, column) in found {
+            if (self.stopped)() {
+                return None;
+            }
             let middles = column.middles();
-            let inside = middles.iter().filter(|m| kept.iter().any(|(_, o, bounds)| bounds.contains(**m) && o.winding(**m) != 0)).count();
+            let mut inside = vec![false; middles.len()];
+            for (_, loops, grid, bounds) in &kept {
+                let outlines: Vec<&SubPath> = loops.iter().collect();
+                let area = Area { outlines: &outlines, rule: FillRule::NonZero, grid: grid.as_ref() };
+                for (m, hit) in middles.iter().zip(inside.iter_mut()) {
+                    *hit = *hit || (bounds.contains(*m) && area.contains(*m));
+                }
+            }
+            let inside = inside.into_iter().filter(|hit| *hit).count();
             if (inside as f64) <= MAX_OVERLAP * middles.len() as f64 {
-                let outline = column.outline();
-                let bounds = outline.bounding_box().inflate(SAME_POINT, SAME_POINT);
-                kept.push((column, outline, bounds));
+                let loops = column.loops();
+                let outlines: Vec<&SubPath> = loops.iter().collect();
+                let grid = Grid::new(&outlines);
+                let bounds = column.outline().bounding_box().inflate(SAME_POINT, SAME_POINT);
+                kept.push((column, loops, grid, bounds));
             }
         }
         Some(kept.into_iter().map(|(c, ..)| c).collect())
@@ -670,15 +702,7 @@ impl Finder<'_> {
             0
         };
         // Distance along the middle to each station.
-        let mut at: Vec<f64> = Vec::with_capacity(stations.len());
-        let mut walked = 0.0;
-        for (k, (a, b)) in stations.iter().enumerate() {
-            if let Some((c, d)) = k.checked_sub(1).and_then(|j| stations.get(j)) {
-                let step = c.midpoint(*d).distance(a.midpoint(*b));
-                walked += if step.is_finite() { step } else { 0.0 };
-            }
-            at.push(walked);
-        }
+        let at = Along::new(&stations, false).at;
         let n = stations.len();
         let mut pieces: Vec<Vec<(Point, Point)>> = vec![Vec::new()];
         let mut cut = false;

@@ -18,13 +18,14 @@
 use std::ops::Range;
 
 use vectorcraft_doc::NodeId;
-use vectorcraft_geom::Rect;
+use vectorcraft_geom::{Point, Rect};
 use vectorcraft_stitch::plan::{self, Params, Style};
-use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Match, Palette, PaletteThread};
-use vectorcraft_stitch::{Block, Pattern, Stitch, Thread};
+use vectorcraft_stitch::thread::{Match, Palette, PaletteThread};
+use vectorcraft_stitch::{Block, Pattern, Stitch, Thread, ThreadRecord};
 
-/// The number of a design's first stitch: stitches are numbered from 1, as a stitch list shows
-/// them.
+/// The number of a design's first record (needle point, jump or cut): records are numbered from 1,
+/// as a stitch list shows them. The commands call these record numbers (`firstRecord`, `record`),
+/// apart from `stitches`, which counts needle points only.
 pub const FIRST_NUMBER: usize = 1;
 
 /// The part of an object a sewing unit sews.
@@ -48,9 +49,21 @@ pub struct Origin {
     pub node: NodeId,
     pub part: Part,
     /// The symbol instance that places the art in the document (the outermost, where a symbol's
-    /// art places another symbol): the object a person selects. `None` outside symbols. Two units
-    /// share an origin only where a symbol places another symbol more than once.
+    /// art places another symbol), or the object an expanded appearance's pieces come from: the
+    /// object a person selects. `None` otherwise. Units that share an origin, or its selected object
+    /// and part, are told apart by [`Unit::occurrence`].
     pub instance: Option<NodeId>,
+}
+
+impl Origin {
+    /// The object a person selects for the unit: the symbol instance that places it (or the object
+    /// whose expanded appearance it is a piece of), else the object itself. A selection maps to
+    /// units through this id, or an object that holds it (its group, its layer), never through
+    /// [`Origin::node`], which a symbol's instances share and an expanded object's pieces get anew
+    /// at every plan.
+    pub fn selected(&self) -> NodeId {
+        self.instance.unwrap_or(self.node)
+    }
 }
 
 /// Why a sewing unit is sewn the way it is: the rule that chose its stitch.
@@ -63,73 +76,121 @@ pub enum Choice {
     WideStroke,
     /// A narrower stroke: a running line along it.
     NarrowStroke,
-    /// `stitchStyle fill` on a stroke: the area the stroke paints, filled.
+    /// `stitch: fill` on a stroke: the area the stroke paints, filled.
     StrokeFilled,
-    /// `stitchStyle` forced the style.
+    /// The `stitch` option forced the style.
     Forced,
+    /// A stroke that paints an area its path doesn't run down the middle of (dashed, aligned,
+    /// of varying width, with arrowheads): that area, as on the canvas, filled.
+    StrokeOutlined,
+    /// `stitch: satin` on a fill: a satin needs a width a fill doesn't have, so the fill is
+    /// filled as a fill is without the option (its narrow parts as satin columns).
+    SatinFilled,
     /// Stitches read from a machine file, sewn as they are.
     Literal,
 }
 
-/// A colour difference is shown to two decimals, in hundredths: finer than any difference the eye
-/// sees (about 1 is the smallest seen side by side).
-pub const DELTA_E_HUNDREDTHS: f64 = 100.0;
+pub use vectorcraft_stitch::thread::DELTA_E_HUNDREDTHS;
 
 /// The thread a block is sewn in: a thread of the document's palette, matched to the colour the
-/// block's art is painted with ([`Palette::nearest`], in sewing order).
+/// block's art is painted with ([`Palette::assign`], in sewing order).
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct BlockThread {
     /// The colour the block's art is painted with (sRGB): its units' fill or stroke, a literal
     /// run's stroke.
     pub art: [u8; 3],
-    /// The palette the thread is from: the document's (`embroidery.setup`, Janome's JEF when it
-    /// sets none).
-    pub palette: Palette,
-    /// The thread's number in the palette, from 1 as the formats count.
-    pub index: usize,
-    /// Its name and colour as the palette lists them.
-    pub name: String,
-    pub color: [u8; 3],
+    /// The palette thread: one of the palette's threads by construction, of the document's
+    /// palette (`embroidery.setup`, Janome's JEF when it sets none).
+    pub thread: PaletteThread,
     /// The CIEDE2000 colour difference between the art's colour and the thread's
     /// (`vectorcraft_stitch::color`): 0 when the art is painted with the thread's own colour, a
     /// swatch of the palette's thread library.
     pub delta_e: f64,
+    /// The thread record the machine file the block was read from gave (a VP3's: catalogue
+    /// number, description, brand, material and weight), which a format that has one writes back.
+    /// `None` for art, and for a file that records none.
+    pub record: Option<ThreadRecord>,
 }
 
 impl BlockThread {
     /// `palette`'s thread `matched` to art colour `art`.
     pub(super) fn new(art: [u8; 3], palette: Palette, matched: Match) -> Self {
-        // A match is always one of the palette's threads; were it not, the art's own colour.
-        let (color, name) = palette.get(matched.index).unwrap_or((art, ""));
-        Self { art, palette, index: matched.index, name: name.to_string(), color, delta_e: matched.delta_e }
+        Self { art, thread: PaletteThread::matched(palette, matched), delta_e: matched.delta_e, record: None }
+    }
+
+    /// The palette the thread is from.
+    pub fn palette(&self) -> Palette {
+        self.thread.palette()
+    }
+
+    /// The thread's number in the palette, from 1 as the formats count.
+    pub fn index(&self) -> usize {
+        self.thread.index()
+    }
+
+    /// Its name as the palette lists it.
+    pub fn name(&self) -> &'static str {
+        self.thread.entry().1
+    }
+
+    /// Its colour as the palette lists it (sRGB).
+    pub fn color(&self) -> [u8; 3] {
+        self.thread.entry().0
     }
 
     /// The colour difference as a list of threads shows it (`embroidery.threads`): to
     /// [`DELTA_E_HUNDREDTHS`].
     pub fn shown_delta_e(&self) -> f64 {
-        (self.delta_e * DELTA_E_HUNDREDTHS).round() / DELTA_E_HUNDREDTHS
+        vectorcraft_stitch::thread::shown_delta_e(self.delta_e)
     }
 
     /// Whether the thread looks like another colour than the art: its difference as shown is past
-    /// [`MISMATCH_DELTA_E`] (`vectorcraft_stitch::thread`), the line that also decides when a block
-    /// takes another thread than a neighbour's. As shown, so that a list never flags a thread whose
-    /// difference it gives as the threshold itself.
+    /// `vectorcraft_stitch::thread::MISMATCH_DELTA_E`; the same line, read the same way, decides
+    /// when a block takes another thread than a neighbour's. As shown (to two decimals), so that a
+    /// list never flags a thread whose difference it shows as the threshold itself.
     pub fn mismatch(&self) -> bool {
-        self.shown_delta_e() > MISMATCH_DELTA_E
+        vectorcraft_stitch::thread::mismatched(self.delta_e)
     }
 
     /// The thread as the machine formats take it ([`DesignPlan::to_pattern`]): a format that
     /// numbers its threads from this palette writes this one, and any other matches the art's
     /// colour to its own palette.
     pub fn to_thread(&self) -> Thread {
-        Thread { color: self.art, name: self.name.clone(), chosen: PaletteThread::new(self.palette, self.index) }
+        Thread { color: self.art, name: self.name().to_string(), chosen: Some(self.thread), record: self.record.clone() }
+    }
+}
+
+impl DesignPlan {
+    /// Its blocks' threads as a format of `palette` writes them: the plan's own when they are
+    /// that palette's; else each block's art matched to `palette` in sewing order
+    /// ([`Palette::assign`]), as the writer of such a format matches them ([`Palette::numbers`]).
+    pub fn threads_in(&self, palette: Palette) -> Vec<BlockThread> {
+        if self.blocks.iter().all(|b| b.thread.palette() == palette) {
+            return self.blocks.iter().map(|b| b.thread.clone()).collect();
+        }
+        let blocks: Vec<([u8; 3], Option<PaletteThread>)> = self.blocks.iter().map(|b| (b.thread.art, Some(b.thread.thread))).collect();
+        self.blocks
+            .iter()
+            .zip(palette.assign(&blocks))
+            .map(|(b, m)| BlockThread { record: b.thread.record.clone(), ..BlockThread::new(b.thread.art, palette, m) })
+            .collect()
     }
 }
 
 /// One sewing unit, and where its stitches are in the plan.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct Unit {
     pub origin: Origin,
+    /// Which of the plan's units of the same selected object and part ([`Origin::selected`],
+    /// [`Origin::part`]) it is, from 1 in walk order: the art a symbol instance places, and an
+    /// expanded object's pieces, share their object and often their part. With them it tells a
+    /// unit apart within the plan, and from one plan to the next as long as the object's own art
+    /// (its symbol's paths, the pieces its appearance expands to) keeps its number and order.
+    /// [`Origin::node`] is no such key: an expanded object's pieces get new ids at every plan, and
+    /// a symbol's paths are the same nodes in every instance.
+    pub occurrence: usize,
     /// The thread it is sewn in: its block's.
     pub thread: BlockThread,
     /// The parameters its shape was planned with (their style says how it is sewn); `None` for a
@@ -162,7 +223,7 @@ pub struct Unit {
 
 impl Unit {
     /// The style it is sewn in, as the planner sews its parameters ([`plan::sewn_style`]: a satin
-    /// without a width, a fill whose `stitchStyle` is satin, is filled); `None` for a literal run,
+    /// without a width, a fill whose `stitch` is satin, is filled); `None` for a literal run,
     /// sewn as its points are.
     pub fn sewn(&self) -> Option<Style> {
         self.params.map(|p| plan::sewn_style(&p))
@@ -171,6 +232,7 @@ impl Unit {
 
 /// One thread's stitches as the machine sews them, and the units they come from.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct ThreadBlock {
     pub thread: BlockThread,
     /// Its stitches in needle order.
@@ -181,9 +243,22 @@ pub struct ThreadBlock {
     pub first_number: usize,
 }
 
+impl ThreadBlock {
+    /// The number of its last stitch in the design (its first's, for a block of none).
+    pub fn last_number(&self) -> usize {
+        self.first_number + self.stitches.len().saturating_sub(1)
+    }
+
+    /// How many of its stitches are needle points (needle-down).
+    pub fn needle_points(&self) -> usize {
+        self.stitches.iter().filter(|s| s.command.needle_down()).count()
+    }
+}
+
 /// A design's stitch plan: its sewing units and thread blocks in sewing order, and what was left
 /// out or approximated.
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct DesignPlan {
     /// The design's name (the document's title), which machine files carry as a label.
     pub name: String,
@@ -191,9 +266,16 @@ pub struct DesignPlan {
     pub units: Vec<Unit>,
     /// The thread blocks in sewing order.
     pub blocks: Vec<ThreadBlock>,
-    /// What was left out or approximated, once each (type, images, gradients…): the export's
-    /// warnings.
+    /// What was left out or approximated, once each (type, images, gradients…): the art the
+    /// `notSewn` check counts.
     pub warnings: Vec<String>,
+    /// What else the export says that isn't about the art (a thread palette this version doesn't
+    /// know): said with the warnings ([`DesignPlan::messages`]), not counted as art left out.
+    pub notes: Vec<String>,
+    /// Where the machine starts the needle (millimetres from the document's origin, y down): the
+    /// document's start point ([`vectorcraft_doc::embroidery::EmbroiderySetup::start`]), `None`
+    /// when it sets none.
+    pub start: Option<Point>,
 }
 
 impl DesignPlan {
@@ -201,6 +283,12 @@ impl DesignPlan {
     /// change between two blocks is not a stitch of its own).
     pub fn len(&self) -> usize {
         self.blocks.iter().map(|b| b.stitches.len()).sum()
+    }
+
+    /// Everything the export and the read commands say about the plan: its notes, then its
+    /// warnings.
+    pub fn messages(&self) -> Vec<String> {
+        self.notes.iter().chain(&self.warnings).cloned().collect()
     }
 
     /// Whether the design has no stitch at all.
@@ -235,6 +323,11 @@ impl DesignPlan {
         units.get(i).filter(|u| u.stitches.contains(&index)).map(|_| b.units.start + i)
     }
 
+    /// Unit `unit`'s stitches ([`Unit::stitches`]): empty for a unit that isn't there.
+    pub fn unit_stitches(&self, unit: usize) -> &[Stitch] {
+        self.units.get(unit).and_then(|u| self.blocks.get(u.block)?.stitches.get(u.stitches.clone())).unwrap_or_default()
+    }
+
     /// The numbers of unit `unit`'s stitches ([`Unit::stitches`], numbered as
     /// [`DesignPlan::number`] numbers them).
     pub fn numbers(&self, unit: usize) -> Option<Range<usize>> {
@@ -247,7 +340,14 @@ impl DesignPlan {
     /// thread ([`BlockThread::to_thread`]), under its name.
     pub fn to_pattern(&self) -> Pattern {
         let blocks = self.blocks.iter().map(|b| Block { thread: b.thread.to_thread(), stitches: b.stitches.clone() }).collect();
-        Pattern { name: self.name.clone(), blocks }
+        Pattern { name: self.name.clone(), blocks, start: self.start }
+    }
+
+    /// [`DesignPlan::to_pattern`], the plan's stitches moved into it rather than copied (the export,
+    /// which writes the plan and drops it).
+    pub fn into_pattern(self) -> Pattern {
+        let blocks = self.blocks.into_iter().map(|b| Block { thread: b.thread.to_thread(), stitches: b.stitches }).collect();
+        Pattern { name: self.name, blocks, start: self.start }
     }
 }
 

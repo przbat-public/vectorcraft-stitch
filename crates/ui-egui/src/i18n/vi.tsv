@@ -4802,8 +4802,9 @@ theme	Appearance	Giao diện
 	Minimum	Tối thiểu
 	Justification	Căn đều
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	các biến và tập dữ liệu của tệp chưa được đọc (biến: {variables}, tập dữ liệu: {data_sets}): bảng Biến không liệt kê chúng
-	Trim After	Cắt chỉ sau
+	Embroidery Trim After	Thêu: cắt chỉ sau
 	Embroidery Setup	Thiết lập thêu
+	Show Embroidery Settings	Hiện thiết lập thêu
 	Embroidery Statistics	Thống kê thêu
 	Embroidery Sewing Order	Thứ tự thêu
 	Embroidery Check	Kiểm tra thêu
@@ -4812,9 +4813,104 @@ theme	Appearance	Giao diện
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	chữ không được thêu: hãy tạo đường bao cho chữ (Chữ › Tạo đường bao) rồi xuất lại
 @msg	images are not stitched: trace them (Object › Image Trace) first	ảnh không được thêu: hãy vector hóa ảnh trước (Đối tượng › Vector hóa ảnh)
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	hòa trộn, envelope, lưới và lặp lại động không được thêu: hãy mở rộng chúng trước
+@msg	placed documents are not stitched: embed them first (Links › Embed)	tài liệu được đặt vào không được thêu: hãy nhúng chúng trước (Liên kết › Nhúng)
+@msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	đối tượng đan xen không được thêu: hãy giải phóng chúng trước (Đối tượng › Đan xen › Giải phóng)
+@msg	symbols placed more than 100,000 times (placing one another) are left out past that	các biểu tượng được đặt hơn 100.000 lần (lồng nhau) sẽ bị bỏ qua sau mức đó
+@msg	shadows, glows, blurs and other raster effects are not stitched: the art under them is	bóng đổ, phát sáng, làm mờ và các hiệu ứng raster khác không được thêu: phần hình bên dưới vẫn được thêu
+@msg	opacity masks are not stitched: the masked art is sewn whole	mặt nạ độ mờ không được thêu: phần hình bị che được thêu toàn bộ
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	giá trị expand âm không để lại gì của một số hình được tô, nên chúng không được thêu: hãy thu nhỏ ít hơn
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	chuyển sắc và họa tiết được tô bằng màu của điểm dừng đầu tiên; một mẫu thêu may một sợi chỉ cho mỗi khối
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	nét rộng hơn {widest} mm được may thành cột satin rộng {widest} mm: hãy tô chúng thay vào đó (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	nét rộng hơn {widest} mm được may thành cột satin rộng {widest} mm: hãy tô chúng thay vào đó (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	phiên bản này không biết bảng màu chỉ {palette} của tài liệu, nên chỉ được chọn từ bảng màu {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	không có gì để thêu: tài liệu không có đường dẫn hiển thị nào có tô hoặc nét
 @msg	nothing to stitch: {_1}	không có gì để thêu: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	phần riêng của tệp PES, phần mà PE-Design chỉnh sửa, không được giữ lại: tệp PES ghi từ tài liệu này chỉ chứa các mũi thêu
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	ảnh xem trước của tệp không được giữ lại: tệp PES hoặc PEC ghi từ tài liệu này có ảnh trống
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	các số chỉ không ứng với chỉ nào trong bảng màu (62 đến 64 của PEC đánh dấu đắp vải) được ghi thành chỉ gần nhất
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	ngày và phiên bản trong phần đầu JEF, cùng khung thêu lớn hơn mức thiết kế cần, không được giữ lại
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	vị trí kết thúc và các trường thiết kế nhiều tập trong phần đầu DST (AX, AY, MX, MY, PD) không được giữ lại
+@msg	threads that twist several colours are read in their first colour	các sợi chỉ xoắn nhiều màu được đọc theo màu đầu tiên
+@msg	the file's several designs are read as one	nhiều thiết kế trong tệp được đọc thành một
+@msg	the file holds things this version doesn't read	tệp chứa những thứ mà phiên bản này không đọc
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Dựa trên VectorCraft của nhóm ArtCraft. MIT OR Apache-2.0. Phông chữ: Source Sans 3, Inter, JetBrains Mono (OFL). Biểu tượng: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC chứa tối đa {MAX_COLORS} màu, không phải {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 chứa tối đa {MAX_COLORS} khối màu
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	tệp DST có phần đầu {HEADER} byte và ít nhất một bản ghi 3 byte, nhưng tệp này có {_1} byte
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	phần đầu DST đếm tối đa {MAX_RECORDS} bản ghi, còn thiết kế cần {_1}
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	khối mũi thêu PEC chứa tối đa {MAX_BLOCK} byte (độ dài 24 bit), còn thiết kế cần {len}
+@msg	a VP3 string is too long	một chuỗi VP3 quá dài
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	một hình nằm cách gốc tọa độ hơn {MAX_COORD_MM} mm hoặc có tọa độ không phải là số: không thể thêu
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	một hình sẽ cần khoảng {n} mũi thêu, nhiều hơn mức {MAX_STITCHES} cho phép của một hình: hãy dùng mũi dài hơn, khoảng cách rộng hơn hoặc thiết kế nhỏ hơn
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	không phải tệp PES hay PEC: tệp không bắt đầu bằng #PES hay #PEC
+@msg	not a VP3 file: it does not start with %vsm%	không phải tệp VP3: tệp không bắt đầu bằng %vsm%
+@msg	not a {what} file: its record {_1} is not a DST record	không phải tệp {what}: bản ghi {_1} của tệp không phải bản ghi DST
+@msg	params must be an object	tham số phải là một đối tượng
+@msg	the EXP file has no stitch records	tệp EXP không có bản ghi mũi thêu
+@msg	the JEF file has no stitch records	tệp JEF không có bản ghi mũi thêu
+@msg	the JEF file is cut short: {len} bytes	tệp JEF bị cắt cụt: {len} byte
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	phần đầu JEF trỏ tới byte {offset}, vượt quá {_1} byte của tệp
+@msg	the PEC block has no stitches	khối PEC không có mũi thêu
+@msg	the PEC header is cut short	phần đầu PEC bị cắt cụt
+@msg	the PES header is cut short	phần đầu PES bị cắt cụt
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	phần đầu PES trỏ tới byte {at}, vượt quá {_1} byte của tệp
+@msg	the VP3 file has no stitches	tệp VP3 không có mũi thêu
+@msg	the VP3 file has no {what} packet at byte {at}	tệp VP3 không có gói {what} tại byte {at}
+@msg	the VP3 file is cut short: {len} bytes	tệp VP3 bị cắt cụt: {len} byte
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	thiết kế có hơn {MAX_RUNS} chuỗi mũi thêu riêng rẽ, nhiều hơn số tài liệu có thể mở
+@msg	the design has no points to write	thiết kế không có điểm nào để ghi
+@msg	the design has no stitches to draw	thiết kế không có mũi thêu nào để vẽ
+@msg	the design has no stitches to write	thiết kế không có mũi thêu nào để ghi
+@msg	the design is too large for a VP3 file	thiết kế quá lớn đối với tệp VP3
+@msg	the design is {_1} × {_2} mm, larger than a document holds	thiết kế có kích thước {_1} × {_2} mm, lớn hơn mức tài liệu chứa được
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	thiết kế có kích thước {_1} × {_2} mm, lớn hơn mức {_3} chứa được ({_4} mm mỗi cạnh)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	thiết kế sẽ cần hơn {MAX_DESIGN_STITCHES} mũi thêu: hãy dùng mũi dài hơn, khoảng cách rộng hơn hoặc ít hình vẽ hơn
+@msg	the file has no stitches	tệp không có mũi thêu
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	tệp {format} sẽ lớn hơn {_1} MiB: các di chuyển của thiết kế quá dài (các đối tượng cách xa nhau)
+@msg	the {what} file has no stitch records	tệp {what} không có bản ghi mũi thêu
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	tệp {what} chứa hơn {MAX_POINTS} mũi thêu, nhiều hơn mức một thiết kế được phép có
+@msg	thread number {index} doesn't fit a JEF header	số chỉ {index} không vừa trong phần đầu JEF
+@msg	thread number {index} doesn't fit a PEC header	số chỉ {index} không vừa trong phần đầu PEC
+@msg	too many stitches for a VP3 file	quá nhiều mũi thêu cho tệp VP3
+@msg	{_1} is not an embroidery format	{_1} không phải định dạng thêu
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Mũi thêu:
+	Stitch Length:	Độ dài mũi:
+	Fill Angle:	Góc phủ:
+	Pull Compensation:	Bù co kéo:
+	Pull Compensation (%):	Bù co kéo (%):
+	Push Compensation:	Bù đẩy:
+	Expand Fills:	Mở rộng vùng phủ:
+	Narrow Parts as Satin:	Phần hẹp thành satin:
+	Thread Weight:	Độ dày chỉ:
+	Underlay:	Lớp lót:
+	Jump Length:	Độ dài bước nhảy:
+	Trim Length:	Độ dài cắt chỉ:
+	Shortest Stitch:	Mũi ngắn nhất:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Cách thêu các hình: Tự động phủ các hình bằng tatami và thêu nét thành cột satin hoặc mũi chạy theo độ rộng; lựa chọn khác thêu mọi hình theo cách đó
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Khoảng cách giữa các hàng phủ và giữa các mũi satin; để nguyên thì cột satin tự chọn theo độ rộng của nó
+	The length of the stitches along fill rows and running lines	Độ dài các mũi dọc theo hàng phủ và mũi chạy
+	The direction of the fill rows	Hướng của các hàng phủ
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Nới rộng cột satin và hàng phủ ở mỗi bên để bù cho vải bị co kéo
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Nới rộng cột satin và hàng phủ theo một phần độ rộng của chúng để bù cho vải bị co kéo
+	Shortens satin columns at their ends, where the thread pushes outward	Rút ngắn cột satin ở hai đầu, nơi chỉ đẩy ra ngoài
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Phóng to mỗi hình được phủ ra xung quanh để lấp khe hở giữa các hình; giá trị âm sẽ thu nhỏ nó
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Các phần của vùng phủ hẹp hơn giá trị này được thêu thành cột satin; 0 không thêu phần nào
+	The thread's weight: thinner thread (a higher number) packs the rows closer	Độ dày chỉ: chỉ mảnh hơn (số cao hơn) xếp các hàng sát hơn
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Các mũi thêu trước để giữ vải: do từng hình chọn, không có, hoặc một loại cho mọi hình
+	A move longer than this lifts the needle instead of being sewn	Di chuyển dài hơn sẽ nhấc kim thay vì được thêu
+	A jump longer than this cuts the thread first	Bước nhảy dài hơn sẽ cắt chỉ trước
+	Shorter stitches are left out	Các mũi ngắn hơn bị bỏ qua
+	Tatami Fill	Phủ tatami
+	Satin	Satin
+	Running Stitch	Mũi chạy
+	Centre Run	Đường chạy giữa
+	Edge Run	Đường chạy mép
+	Edge Run and Zigzag	Đường chạy mép và zigzag
+	Edge Run and Tatami	Đường chạy mép và tatami

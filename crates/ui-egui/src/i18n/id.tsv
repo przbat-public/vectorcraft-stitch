@@ -5191,8 +5191,9 @@ swatch	Bright Violet	Violet cerah
 	Full Justify	Rata Penuh
 	Minimum must not exceed Desired, nor Desired Maximum.	Minimum tidak boleh melebihi Diinginkan, dan Diinginkan tidak boleh melebihi Maksimum.
 	Justification	Justifikasi
-	Trim After	Potong benang sesudahnya
+	Embroidery Trim After	Bordir: potong benang sesudahnya
 	Embroidery Setup	Pengaturan bordir
+	Show Embroidery Settings	Tampilkan pengaturan bordir
 	Embroidery Statistics	Statistik bordir
 	Embroidery Sewing Order	Urutan bordir
 	Embroidery Check	Periksa bordir
@@ -5201,9 +5202,105 @@ swatch	Bright Violet	Violet cerah
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	teks tidak dibordir: ubah menjadi garis luar (Teks › Buat garis luar) lalu ekspor lagi
 @msg	images are not stitched: trace them (Object › Image Trace) first	gambar tidak dibordir: lacak terlebih dahulu (Objek › Image Trace)
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	blend, amplop, mesh, dan perulangan langsung tidak dibordir: perluas terlebih dahulu
+@msg	placed documents are not stitched: embed them first (Links › Embed)	dokumen yang ditempatkan tidak dibordir: sematkan terlebih dahulu (Tautan › Sematkan)
+@msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	objek yang dijalin tidak dibordir: lepaskan terlebih dahulu (Objek › Jalin › Lepaskan)
+@msg	symbols placed more than 100,000 times (placing one another) are left out past that	simbol yang ditempatkan lebih dari 100.000 kali (saling di dalam) dilewati setelah itu
+@msg	shadows, glows, blurs and other raster effects are not stitched: the art under them is	bayangan, cahaya, blur, dan efek raster lain tidak dibordir: gambar di bawahnya dibordir
+@msg	opacity masks are not stitched: the masked art is sewn whole	masker opasitas tidak dibordir: gambar yang dimasker dibordir utuh
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	nilai expand negatif tidak menyisakan apa pun dari beberapa bentuk berisi, jadi bentuk itu tidak dibordir: perkecil lebih sedikit
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	gradien dan pola diwarnai dengan warna stop pertamanya; bordir menjahit satu benang per blok
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	stroke yang lebih lebar dari {widest} mm dijahit sebagai kolom satin selebar {widest} mm: isi saja bentuknya (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	stroke yang lebih lebar dari {widest} mm dijahit sebagai kolom satin selebar {widest} mm: isi saja bentuknya (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	versi ini tidak mengenal palet benang {palette} dokumen, jadi benangnya dipilih dari palet {default}
 @msg	nothing to stitch: the document has no visible filled or stroked paths	tidak ada yang dibordir: dokumen tidak memiliki jalur terlihat dengan isian atau stroke
 @msg	nothing to stitch: {_1}	tidak ada yang dibordir: {_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	bagian milik file PES sendiri, yang diedit PE-Design, tidak disimpan: PES yang ditulis dari dokumen ini hanya berisi jahitannya
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	gambar pratinjau file tidak disimpan: PES atau PEC yang ditulis dari dokumen ini memiliki gambar kosong
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	nomor benang yang tidak menyebut benang mana pun di palet (62 sampai 64 di PEC menandai aplikasi) ditulis sebagai benang terdekat
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	tanggal dan versi di header JEF, serta ram yang lebih besar dari yang dibutuhkan desain, tidak disimpan
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	posisi akhir dan kolom desain multi-volume di header DST (AX, AY, MX, MY, PD) tidak disimpan
+@msg	threads that twist several colours are read in their first colour	benang yang memilin beberapa warna dibaca dengan warna pertamanya
+@msg	the file's several designs are read as one	beberapa desain dalam file dibaca sebagai satu
+@msg	the file holds things this version doesn't read	file berisi hal-hal yang tidak dibaca versi ini
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Berdasarkan VectorCraft dari tim ArtCraft. MIT OR Apache-2.0. Font: Source Sans 3, Inter, JetBrains Mono (OFL). Ikon: Lucide (ISC) + VectorCraft.
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Berdasarkan VectorCraft dari tim ArtCraft. MIT OR Apache-2.0. Font: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikon: Lucide (ISC) + VectorCraft.
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC memuat paling banyak {MAX_COLORS} warna, bukan {colors}
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 memuat paling banyak {MAX_COLORS} blok warna
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	file DST memiliki header {HEADER} byte dan setidaknya satu rekaman 3 byte, tetapi file ini berukuran {_1} byte
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	header DST menghitung paling banyak {MAX_RECORDS} rekaman, dan desain memerlukan {_1}
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	blok jahitan PEC memuat paling banyak {MAX_BLOCK} byte (panjangnya 24 bit), dan desain memerlukan {len}
+@msg	a VP3 string is too long	string VP3 terlalu panjang
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	sebuah bentuk berada lebih dari {MAX_COORD_MM} mm dari titik asal atau memiliki koordinat yang bukan angka: tidak dapat dibordir
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	sebuah bentuk akan memerlukan sekitar {n} jahitan, lebih dari {MAX_STITCHES} yang boleh dimiliki satu bentuk: gunakan jahitan lebih panjang, jarak lebih lebar, atau desain lebih kecil
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	bukan file PES atau PEC: tidak diawali #PES atau #PEC
+@msg	not a VP3 file: it does not start with %vsm%	bukan file VP3: tidak diawali %vsm%
+@msg	not a {what} file: its record {_1} is not a DST record	bukan file {what}: rekamannya {_1} bukan rekaman DST
+@msg	params must be an object	parameter harus berupa objek
+@msg	the EXP file has no stitch records	file EXP tidak memiliki rekaman jahitan
+@msg	the JEF file has no stitch records	file JEF tidak memiliki rekaman jahitan
+@msg	the JEF file is cut short: {len} bytes	file JEF terpotong: {len} byte
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	header JEF menunjuk ke byte {offset}, melewati {_1} byte file
+@msg	the PEC block has no stitches	blok PEC tidak memiliki jahitan
+@msg	the PEC header is cut short	header PEC terpotong
+@msg	the PES header is cut short	header PES terpotong
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	header PES menunjuk ke byte {at}, melewati {_1} byte file
+@msg	the VP3 file has no stitches	file VP3 tidak memiliki jahitan
+@msg	the VP3 file has no {what} packet at byte {at}	file VP3 tidak memiliki paket {what} pada byte {at}
+@msg	the VP3 file is cut short: {len} bytes	file VP3 terpotong: {len} byte
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	desain memiliki lebih dari {MAX_RUNS} rangkaian jahitan terpisah, lebih dari yang dapat dibuka dokumen
+@msg	the design has no points to write	desain tidak memiliki titik untuk ditulis
+@msg	the design has no stitches to draw	desain tidak memiliki jahitan untuk digambar
+@msg	the design has no stitches to write	desain tidak memiliki jahitan untuk ditulis
+@msg	the design is too large for a VP3 file	desain terlalu besar untuk file VP3
+@msg	the design is {_1} × {_2} mm, larger than a document holds	desain berukuran {_1} × {_2} mm, lebih besar dari yang dapat dimuat dokumen
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	desain berukuran {_1} × {_2} mm, lebih besar dari yang dapat dimuat {_3} ({_4} mm per sisi)
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	desain akan memerlukan lebih dari {MAX_DESIGN_STITCHES} jahitan: gunakan jahitan lebih panjang, jarak lebih lebar, atau lebih sedikit gambar
+@msg	the file has no stitches	file tidak memiliki jahitan
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	file {format} akan lebih besar dari {_1} MiB: perpindahan desain terlalu panjang (objek berjauhan)
+@msg	the {what} file has no stitch records	file {what} tidak memiliki rekaman jahitan
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	file {what} berisi lebih dari {MAX_POINTS} jahitan, lebih dari yang boleh dimiliki desain
+@msg	thread number {index} doesn't fit a JEF header	nomor benang {index} tidak muat di header JEF
+@msg	thread number {index} doesn't fit a PEC header	nomor benang {index} tidak muat di header PEC
+@msg	too many stitches for a VP3 file	terlalu banyak jahitan untuk file VP3
+@msg	{_1} is not an embroidery format	{_1} bukan format bordir
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	Jahitan:
+	Stitch Length:	Panjang jahitan:
+	Fill Angle:	Sudut isian:
+	Pull Compensation:	Kompensasi tarikan:
+	Pull Compensation (%):	Kompensasi tarikan (%):
+	Push Compensation:	Kompensasi dorongan:
+	Expand Fills:	Perluas isian:
+	Narrow Parts as Satin:	Bagian sempit sebagai satin:
+	Thread Weight:	Ketebalan benang:
+	Underlay:	Lapisan dasar:
+	Jump Length:	Panjang lompatan:
+	Trim Length:	Panjang potong:
+	Shortest Stitch:	Jahitan terpendek:
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Cara bentuk dijahit: Otomatis mengisi bentuk dengan tatami dan menjahit garis sebagai kolom satin atau jahitan lurus menurut lebarnya; pilihan lain menjahit setiap bentuk dengan cara itu
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Jarak antara baris isian dan antara jahitan satin; jika dibiarkan, kolom satin memilihnya menurut lebarnya
+	The length of the stitches along fill rows and running lines	Panjang jahitan di sepanjang baris isian dan jahitan lurus
+	The direction of the fill rows	Arah baris isian
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Melebarkan kolom satin dan baris isian di tiap sisi, untuk mengimbangi kain yang tertarik
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Melebarkan kolom satin dan baris isian sebesar sebagian lebarnya, untuk mengimbangi kain yang tertarik
+	Shortens satin columns at their ends, where the thread pushes outward	Memendekkan kolom satin di ujungnya, tempat benang mendorong ke luar
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Membesarkan setiap bentuk berisi di sekelilingnya untuk menutup celah antarbentuk; nilai negatif mengecilkannya
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Bagian isian yang lebih sempit dijahit sebagai kolom satin; 0 tidak menjahit satu pun
+	The thread's weight: thinner thread (a higher number) packs the rows closer	Ketebalan benang: benang yang lebih tipis (nomor lebih tinggi) merapatkan baris
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Jahitan yang dijahit lebih dulu untuk menahan kain: dipilih oleh tiap bentuk, tidak ada, atau satu jenis untuk semua bentuk
+	A move longer than this lifts the needle instead of being sewn	Perpindahan yang lebih panjang mengangkat jarum alih-alih dijahit
+	A jump longer than this cuts the thread first	Lompatan yang lebih panjang memotong benang lebih dulu
+	Shorter stitches are left out	Jahitan yang lebih pendek dihilangkan
+	Tatami Fill	Isian tatami
+	Satin	Satin
+	Running Stitch	Jahitan lurus
+	Centre Run	Jalur tengah
+	Edge Run	Jalur tepi
+	Edge Run and Zigzag	Jalur tepi dan zigzag
+	Edge Run and Tatami	Jalur tepi dan tatami

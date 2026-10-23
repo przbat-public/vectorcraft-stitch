@@ -10,13 +10,13 @@
 //!
 //! Reference: EduTechWiki, *Embroidery format EXP* (edutechwiki.unige.ch/en/Embroidery_format_EXP).
 
-use super::{Frame, Reader, finish, mm, steps};
+use super::{Emitter, Frame, Reader, TWO_BYTE_COMMAND, add, finish, mm, two_byte_move, walk};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
 /// The largest delta one record holds, in tenths of a millimetre.
 pub(crate) const MAX_DELTA: i32 = 127;
 /// The command prefix: `0x80` is not a valid delta.
-const CONTROL: u8 = 0x80;
+const CONTROL: u8 = TWO_BYTE_COMMAND;
 /// The commands' second bytes: a jump (the needle up, then the deltas), the needle put down where
 /// it is, a colour change (the machine stops), and a trim.
 const JUMP: u8 = 0x04;
@@ -29,103 +29,85 @@ const TRIM_PAYLOAD: [u8; 2] = [0x07, 0x00];
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     let frame = Frame::of(p, true)?;
     // Two bytes a point, and a little more for commands (a guess; the buffer grows as needed).
-    let mut out: Vec<u8> = Vec::with_capacity(p.points().count() * 2 + 16);
-    let mut x = 0i32;
-    let mut y = 0i32;
-    let mut started: bool;
-    let mut wrote_any = false;
-    for (i, block) in p.blocks.iter().enumerate() {
-        if block.stitches.is_empty() {
-            continue;
-        }
-        if i > 0 && wrote_any {
-            out.extend_from_slice(&[CONTROL, COLOR_CHANGE, 0, 0]);
-        }
-        // Each block starts with the needle up: travel to its first stitch.
-        started = false;
-        for s in &block.stitches {
-            match s.command {
-                Command::Stitch => {
-                    let (nx, ny) = frame.point(*s);
-                    if !started {
-                        write_move(&mut out, &mut x, &mut y, nx, ny, Some(JUMP));
-                        started = true;
-                    }
-                    write_move(&mut out, &mut x, &mut y, nx, ny, None);
-                    wrote_any = true;
-                }
-                Command::Jump => {
-                    let (nx, ny) = frame.point(*s);
-                    write_move(&mut out, &mut x, &mut y, nx, ny, Some(JUMP));
-                    started = true;
-                    wrote_any = true;
-                }
-                Command::Trim => out.extend_from_slice(&[CONTROL, TRIM, TRIM_PAYLOAD[0], TRIM_PAYLOAD[1]]),
-                Command::ColorChange | Command::Stop => out.extend_from_slice(&[CONTROL, COLOR_CHANGE, 0, 0]),
-                Command::End => break,
-            }
-        }
-    }
-    if !wrote_any {
+    let mut w = Exp { out: Vec::with_capacity(p.points().count() * 2 + 16), at: (0, 0), wrote: false };
+    walk(p, &frame, &mut w, "EXP")?;
+    if !w.wrote {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
-    Ok(out)
+    Ok(w.out)
 }
 
-/// Move from (`x`, `y`) to (`tx`, `ty`) as stitches, or as jumps when `control` names one.
-fn write_move(out: &mut Vec<u8>, x: &mut i32, y: &mut i32, tx: i32, ty: i32, control: Option<u8>) {
-    let (dx, dy) = (tx - *x, ty - *y);
-    *x = tx;
-    *y = ty;
-    if dx == 0 && dy == 0 {
-        if control.is_none() {
-            out.extend_from_slice(&[0, 0]);
-        }
-        return;
+/// An EXP file being written: its records, where the needle is, and whether a stitch or a jump was
+/// written yet.
+struct Exp {
+    out: Vec<u8>,
+    at: (i32, i32),
+    wrote: bool,
+}
+
+impl Emitter for Exp {
+    fn stitch(&mut self, x: i32, y: i32) {
+        two_byte_move(&mut self.out, &mut self.at, (x, y), None, MAX_DELTA);
+        self.wrote = true;
     }
-    for (sx, sy) in steps(dx, dy, MAX_DELTA) {
-        let (bx, by) = ((sx as i8) as u8, (sy as i8) as u8);
-        match control {
-            Some(c) => out.extend_from_slice(&[CONTROL, c, bx, by]),
-            None => out.extend_from_slice(&[bx, by]),
-        }
+
+    fn jump(&mut self, x: i32, y: i32) {
+        two_byte_move(&mut self.out, &mut self.at, (x, y), Some(JUMP), MAX_DELTA);
+        self.wrote = true;
+    }
+
+    fn trim(&mut self) {
+        self.out.extend_from_slice(&[CONTROL, TRIM, TRIM_PAYLOAD[0], TRIM_PAYLOAD[1]]);
+    }
+
+    fn color_change(&mut self) {
+        self.out.extend_from_slice(&[CONTROL, COLOR_CHANGE, 0, 0]);
+    }
+
+    fn wrote(&self) -> bool {
+        self.wrote
+    }
+
+    fn size(&self) -> usize {
+        self.out.len()
     }
 }
 
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
     let mut r = Reader::new(bytes);
     let mut points: Vec<Stitch> = Vec::new();
-    let (mut x, mut y) = (0i32, 0i32);
+    // Wide enough that no file overflows it: each record moves the needle at most 127 tenths.
+    let (mut x, mut y) = (0i64, 0i64);
     while let Some(b0) = r.u8() {
         let Some(b1) = r.u8() else { break };
         if b0 != CONTROL {
-            x += i32::from(b0 as i8);
-            y -= i32::from(b1 as i8);
-            points.push(Stitch::new(mm(x), mm(y), Command::Stitch));
+            x += i64::from(b0 as i8);
+            y -= i64::from(b1 as i8);
+            add(&mut points, Stitch::new(mm(x), mm(y), Command::Stitch), "EXP")?;
             continue;
         }
         let (Some(dx), Some(dy)) = (r.u8(), r.u8()) else { break };
-        let (dx, dy) = (i32::from(dx as i8), i32::from(dy as i8));
+        let (dx, dy) = (i64::from(dx as i8), i64::from(dy as i8));
         match b1 {
             JUMP => {
                 x += dx;
                 y -= dy;
-                points.push(Stitch::new(mm(x), mm(y), Command::Jump));
+                add(&mut points, Stitch::new(mm(x), mm(y), Command::Jump), "EXP")?;
             }
             STITCH_DOWN => {
                 x += dx;
                 y -= dy;
-                points.push(Stitch::new(mm(x), mm(y), Command::Stitch));
+                add(&mut points, Stitch::new(mm(x), mm(y), Command::Stitch), "EXP")?;
             }
             COLOR_CHANGE => {
-                points.push(Stitch::new(mm(x), mm(y), Command::ColorChange));
+                add(&mut points, Stitch::new(mm(x), mm(y), Command::ColorChange), "EXP")?;
                 if dx != 0 || dy != 0 {
                     x += dx;
                     y -= dy;
-                    points.push(Stitch::new(mm(x), mm(y), Command::Jump));
+                    add(&mut points, Stitch::new(mm(x), mm(y), Command::Jump), "EXP")?;
                 }
             }
-            TRIM => points.push(Stitch::new(mm(x), mm(y), Command::Trim)),
+            TRIM => add(&mut points, Stitch::new(mm(x), mm(y), Command::Trim), "EXP")?,
             // An unknown command: stop rather than guess where the needle goes next.
             _ => break,
         }
@@ -160,5 +142,15 @@ mod tests {
         assert_eq!(back.blocks.len(), 2);
         let sewn = |q: &Pattern| q.blocks.iter().map(|b| b.sewn()).sum::<usize>();
         assert_eq!(sewn(&back), 11);
+        // Every needle point where it was (to the 0.1 mm the file counts in), y the right way up:
+        // the design read back sits at its corner, as the one written did.
+        let needle = |q: &Pattern| -> Vec<(i64, i64)> {
+            let b = q.bounds().unwrap();
+            q.points()
+                .filter(|s| s.command == Command::Stitch)
+                .map(|s| (((s.x - b.x0) * 10.0).round() as i64, ((s.y - b.y0) * 10.0).round() as i64))
+                .collect()
+        };
+        assert_eq!(needle(&back), needle(&p));
     }
 }

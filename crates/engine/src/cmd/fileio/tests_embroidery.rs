@@ -185,8 +185,15 @@ fn sewn(p: &vectorcraft_stitch::Pattern) -> Vec<(Vec<(i32, i32)>, usize)> {
         .collect()
 }
 
+/// Each block's thread as the file gives it: its colour, its name (a palette thread's for the
+/// formats that number them) and its record (VP3's).
+fn threads(p: &vectorcraft_stitch::Pattern) -> Vec<([u8; 3], String, Option<vectorcraft_stitch::ThreadRecord>)> {
+    p.blocks.iter().map(|b| (b.thread.color, b.thread.name.clone(), b.thread.record.clone())).collect()
+}
+
 /// A design opened from a machine file and exported again is the same design: every needle
-/// point, trim and colour block where the file had it, in every format.
+/// point, trim and colour block where the file had it, each block's thread (and VP3's thread
+/// record), the design's name and where the needle starts, in every format.
 #[test]
 fn an_opened_design_is_written_back_unchanged() {
     for format in Format::ALL {
@@ -198,10 +205,118 @@ fn an_opened_design_is_written_back_unchanged() {
         let again = export(&mut s, format.id(), json!({}));
         let (a, b) = (format.read(&first).expect("reads"), format.read(&again).expect("reads"));
         assert_eq!(sewn(&a), sewn(&b), "{}", format.id());
+        assert_eq!(start(&a), start(&b), "{}: the needle starts where it did", format.id());
+        assert_eq!(threads(&a), threads(&b), "{}", format.id());
+        assert_eq!(a.name, b.name, "{}: the design's name", format.id());
         // Opened again and written again: still the same.
         open(&mut s, &format!("again.{}", format.id()), &again).expect("opens");
         assert_eq!(sewn(&format.read(&export(&mut s, format.id(), json!({}))).expect("reads")), sewn(&a), "{}", format.id());
     }
+}
+
+/// A VP3 opened and exported again writes each block's thread record back as the file had it
+/// (catalogue number, description, brand, material and weight); a DST's label is written again,
+/// not the file's name, and `embroidery.setup {label}` changes it.
+#[test]
+fn an_opened_designs_thread_records_and_label_are_written_back() {
+    let mut s = art();
+    let mut p = Format::Vp3.read(&export(&mut s, "vp3", json!({}))).expect("reads");
+    let records = [("2296", "Pink", "Robison-Anton", 5, 40), ("1801", "Royal", "Madeira", 7, 60)];
+    for (b, (catalogue, description, brand, material, weight)) in p.blocks.iter_mut().zip(records) {
+        b.thread.record = Some(vectorcraft_stitch::ThreadRecord {
+            catalogue: catalogue.into(),
+            description: description.into(),
+            brand: brand.into(),
+            material,
+            weight,
+        });
+        // Read back, a thread is named by its description.
+        b.thread.name = description.into();
+    }
+    let vp3 = Format::Vp3.write(&p).expect("writes");
+    open(&mut s, "flower.vp3", &vp3).expect("opens");
+    let back = Format::Vp3.read(&export(&mut s, "vp3", json!({}))).expect("reads");
+    assert_eq!(threads(&back), threads(&p));
+    p.name = "ACME_01".into();
+    let dst = Format::Dst.write(&p).expect("writes");
+    open(&mut s, "my-logo.dst", &dst).expect("opens");
+    assert_eq!(s.execute("embroidery.settings", &json!({})).unwrap()["settings"]["label"], "ACME_01");
+    for format in [Format::Dst, Format::Pes, Format::Pec] {
+        assert_eq!(format.read(&export(&mut s, format.id(), json!({}))).expect("reads").name, "ACME_01", "{}", format.id());
+    }
+    s.execute("embroidery.setup", &json!({"label": "Logo 2"})).unwrap();
+    assert_eq!(Format::Dst.read(&export(&mut s, "dst", json!({}))).expect("reads").name, "Logo 2");
+    s.execute("embroidery.setup", &json!({"label": null})).unwrap();
+    assert_eq!(Format::Dst.read(&export(&mut s, "dst", json!({}))).expect("reads").name, "my-logo.dst", "the document's title");
+    assert!(s.execute("embroidery.setup", &json!({"label": 5})).is_err());
+}
+
+/// Opening a machine file says what reading it left out (a PES's own section, PE-Design's), and
+/// writing over that file is then refused unless the loss is acknowledged; a file this app wrote
+/// leaves nothing out and is written over without asking.
+#[test]
+fn writing_over_a_file_whose_opening_left_something_out_asks_first() {
+    let d = std::env::temp_dir().join(format!("vc-embroidery-loss-{}", std::process::id()));
+    std::fs::create_dir_all(&d).unwrap();
+    let mut s = art();
+    let pes = export(&mut s, "pes", json!({}));
+    // A PES section before the PEC part, as PE-Design's files have one: the header points past it.
+    let mut sectioned = pes[..8].to_vec();
+    let section = b"CEmbOne and its stitches, as PE-Design keeps them";
+    sectioned.extend_from_slice(&u32::try_from(12 + section.len()).unwrap().to_le_bytes());
+    sectioned.extend_from_slice(section);
+    sectioned.extend_from_slice(&pes[22..]);
+    for (name, file, lost) in [("ours.pes", &pes, false), ("theirs.pes", &sectioned, true)] {
+        let path = d.join(name);
+        std::fs::write(&path, file).unwrap();
+        let path = path.to_string_lossy().to_string();
+        let mut s = Session::new();
+        let r = s.execute("document.open", &json!({"path": path})).unwrap();
+        let said = warnings(&r).contains(&super::embroidery::LOSS_NOTES[0].to_string());
+        assert_eq!(said, lost, "{name}: {r}");
+        let over = s.execute("document.export", &json!({"path": path}));
+        if lost {
+            let e = over.unwrap_err().to_string();
+            assert!(e.contains("left things out") && e.contains("PE-Design"), "{name}: {e}");
+            assert_eq!(&std::fs::read(&path).unwrap(), file, "{name}: untouched");
+            s.execute("document.export", &json!({"path": path, "acknowledgeLoss": true})).unwrap();
+            assert_ne!(&std::fs::read(&path).unwrap(), file, "{name}");
+        } else {
+            over.unwrap();
+        }
+    }
+    std::fs::remove_dir_all(d).ok();
+}
+
+/// Where the needle starts, on the 0.1 mm grid from the design's top-left corner.
+fn start(p: &vectorcraft_stitch::Pattern) -> (i32, i32) {
+    use vectorcraft_stitch::quantize;
+    let (s, b) = (p.start.expect("read from a file"), p.bounds().expect("has stitches"));
+    (quantize(s.x - b.x0), quantize(s.y - b.y0))
+}
+
+/// A design opened from a file that starts at its centre, as commercial DST files often do, is
+/// written again from there: the DST, TAP, T01, EXP, PES and PEC exports start where the file
+/// started (JEF and VP3 start every design at its centre). With the start unset
+/// (`embroidery.setup {start: null}`), they start at the design's corner again.
+#[test]
+fn an_opened_design_starts_where_its_file_started() {
+    use vectorcraft_stitch::quantize;
+    let mut s = art();
+    let mut p = Format::Dst.read(&export(&mut s, "dst", json!({}))).expect("reads");
+    p.start = p.bounds().map(|b| b.center());
+    let centred = Format::Dst.write(&p).expect("writes");
+    open(&mut s, "centred.dst", &centred).expect("opens");
+    assert!(s.execute("embroidery.settings", &json!({})).unwrap()["settings"]["start"].is_array());
+    for format in Format::ALL {
+        let back = format.read(&export(&mut s, format.id(), json!({}))).expect("reads");
+        let (at, b) = (start(&back), back.bounds().expect("has stitches"));
+        let centre = (quantize(b.width() / 2.0), quantize(b.height() / 2.0));
+        assert!((at.0 - centre.0).abs() <= 1 && (at.1 - centre.1).abs() <= 1, "{}: starts at {at:?}, not {centre:?}", format.id());
+    }
+    s.execute("embroidery.setup", &json!({"start": null})).unwrap();
+    let corner = Format::Dst.read(&export(&mut s, "dst", json!({}))).expect("reads");
+    assert_eq!(start(&corner), (0, quantize(corner.bounds().expect("has stitches").height())), "the bottom-left corner");
 }
 
 /// An opened design written to another format keeps its needle points too (as far as the target
@@ -229,15 +344,31 @@ fn an_opened_design_is_not_restitched_by_the_options() {
     assert_eq!(sewn(&plain), sewn(&forced));
 }
 
+/// Every embroidery format is listed wherever formats are, as the stitch crate describes it: in
+/// `document.formats` (its label and extensions), the extensions opened, placed and left
+/// unassociated, and the hand-written format lists of the export and check commands' params.
 #[test]
 fn the_format_table_lists_embroidery() {
     let mut s = Session::new();
     let r = s.execute("document.formats", &json!({})).unwrap();
     let formats = r["formats"].as_array().expect("formats");
-    for id in Format::ALL.map(Format::id) {
+    let doc = |id: &str| crate::cmd::command_specs().iter().find(|c| c.id == id).map_or("", |c| c.params);
+    let listings = ["document.serialize", "document.export", "document.exportSelection"].map(doc);
+    for format in Format::ALL {
+        let (id, spec) = (format.id(), format.spec());
         let f = formats.iter().find(|f| f["id"] == id).unwrap_or_else(|| panic!("{id} is listed"));
         assert_eq!(f["read"].as_bool(), Some(true), "{id}");
         assert_eq!(f["write"].as_bool(), Some(true), "{id}");
+        assert_eq!(f["label"].as_str(), Some(spec.label), "{id}");
+        for ext in spec.extensions {
+            for (list, name) in [(super::OPEN_EXTS, "opened"), (super::PLACE_EXTS, "placed"), (super::UNASSOCIATED_EXTS, "unassociated")] {
+                assert!(list.contains(ext), "{ext} is {name}");
+            }
+        }
+        for listing in &listings {
+            assert!([format!("|{id}|"), format!("|{id} ")].iter().any(|word| listing.contains(word.as_str())), "{id} in {listing}");
+        }
+        assert!(doc("embroidery.check").contains(&format!("\"{id}\"")), "{id} in embroidery.check's formats");
     }
 }
 
@@ -322,6 +453,40 @@ fn a_clipping_mask_cuts_the_stitches() {
     assert!(b.width() > 16.0 && b.height() > 16.0, "{b:?}");
 }
 
+/// A fill forced to a running line inside a clip group follows its own outline where it shows: its
+/// stitches are cut to the clipping path, as a stroke's are, not its area, whose cut edge would be
+/// sewn as a line the art doesn't have.
+#[test]
+fn a_running_fill_in_a_clip_group_follows_its_own_outline() {
+    let mut s = blank();
+    // A 100 pt square, its right half shown through a 100 × 200 pt clipping path.
+    rect(&mut s, "#cc2222", 50.0, 50.0, 100.0, 100.0);
+    s.execute("paint.setFill", &json!({"none": true})).unwrap();
+    s.execute("paint.setStroke", &json!({"none": true})).unwrap();
+    s.execute("shape.rectangle", &json!({"x": 100, "y": 0, "width": 100, "height": 200})).unwrap();
+    s.execute("select.all", &json!({})).unwrap();
+    s.execute("object.clippingMask.make", &json!({})).unwrap();
+    let p = plan(&export(&mut s, "dst", json!({"stitch": "running"})));
+    // Needle points lie on the square's outline (left 50, right 150, top 50, bottom 150 pt) within
+    // the clip, never along the clip's edge at x = 100 pt inside the square.
+    let mm = |pt: f64| pt * 25.4 / 72.0;
+    let b = p.bounds().expect("bounds");
+    let (dx, dy) = (b.x0, b.y0);
+    let on_outline = |x: f64, y: f64| {
+        let (x, y) = (x - dx + mm(100.0), y - dy + mm(50.0));
+        let near = |a: f64, b: f64| (a - b).abs() < 0.3;
+        near(y, mm(50.0)) || near(y, mm(150.0)) || near(x, mm(150.0)) || near(x, mm(100.0)) && (near(y, mm(50.0)) || near(y, mm(150.0)))
+    };
+    let inside_cut: Vec<(f64, f64)> = p
+        .points()
+        .filter(|st| st.command == vectorcraft_stitch::Command::Stitch)
+        .map(|st| (st.x, st.y))
+        .filter(|(x, y)| !on_outline(*x, *y))
+        .collect();
+    assert!(inside_cut.is_empty(), "needle points off the square's outline: {inside_cut:?}");
+    assert!(b.width() < mm(50.0) + 0.5, "only the shown half: {b:?}");
+}
+
 /// Template layers are references to trace over, not art: they are not sewn.
 #[test]
 fn template_layers_are_not_stitched() {
@@ -367,8 +532,32 @@ fn an_absurd_density_is_refused() {
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 14000, "height": 14000, "artboards": 1})).unwrap();
     rect(&mut s, "#cc2222", 0.0, 0.0, 14000.0, 14000.0);
-    let e = s.execute("document.export", &params("dst", json!({"density": 0.05, "stitchLength": 0.2}))).unwrap_err().to_string();
-    assert!(e.contains("stitches"), "{e}");
+    let e = s.execute("document.export", &params("dst", json!({"density": 0.05, "stitchLength": 0.2}))).unwrap_err();
+    assert!(e.to_string().contains("stitches"), "{e}");
+    // The design's limit, not a wrong parameter: a caller that fixes its parameters on
+    // `BadParams` would only loop. The read commands report it the same way.
+    assert!(matches!(e, EngineError::Other(_)), "{e:?}");
+    let e = s.execute("embroidery.stats", &json!({"spacing": 0.05, "length": 0.2})).unwrap_err();
+    assert!(matches!(e, EngineError::Other(_)), "{e:?}");
+    // So is a document with nothing to stitch.
+    s.execute("select.all", &json!({})).unwrap();
+    s.execute("edit.clear", &json!({})).unwrap();
+    let e = s.execute("document.export", &params("dst", json!({}))).unwrap_err();
+    assert!(matches!(&e, EngineError::Other(m) if m.starts_with("nothing to stitch")), "{e:?}");
+}
+
+/// A design a format can't hold (more colours than PES numbers) is the design's limit too.
+#[test]
+fn more_colours_than_a_format_holds_is_not_a_bad_parameter() {
+    let mut s = blank();
+    let most = Format::Pes.max_colors().unwrap();
+    for k in 0..=most {
+        // Colours far enough apart to keep their own blocks: one grey step each.
+        let grey = u8::try_from(k % 256).unwrap();
+        rect(&mut s, &format!("#{grey:02x}{:02x}{:02x}", 255 - grey, (k / 256) * 128), 2.0 * k as f64, 0.0, 1.5, 1.5);
+    }
+    let e = s.execute("document.export", &params("pes", json!({}))).unwrap_err();
+    assert!(matches!(&e, EngineError::Other(m) if m.contains("colour")), "{e:?}");
 }
 
 /// `stitchStyle: fill` on a stroke fills the area the stroke paints (a ring for a stroked
@@ -405,6 +594,40 @@ fn literal_stitches_survive_the_native_format() {
     };
     open(&mut s, "design.vectorcraft", &native).expect("opens the native file");
     assert_eq!(sewn(&plan(&export(&mut s, "dst", json!({})))), sewn(&plan(&dst)));
+}
+
+/// A run of two needle points at one spot (a tack between two jumps) is written back as two, and a
+/// run of one as one: their lines, from a point to the same point, look alike, and the run says
+/// which it is.
+#[test]
+fn a_tack_and_a_single_stitch_round_trip() {
+    use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
+    let mut a = Block::new(Thread::rgb([200, 0, 0]));
+    for i in 0..5 {
+        a.stitches.push(Stitch::new(f64::from(i) * 2.0, 0.0, Command::Stitch));
+    }
+    // A tack: two penetrations in one hole, between two jumps.
+    a.stitches.push(Stitch::new(14.0, 0.0, Command::Jump));
+    a.stitches.push(Stitch::new(14.0, 0.0, Command::Stitch));
+    a.stitches.push(Stitch::new(14.0, 0.0, Command::Stitch));
+    // A single stitch, between two jumps.
+    a.stitches.push(Stitch::new(20.0, 0.0, Command::Jump));
+    a.stitches.push(Stitch::new(20.0, 0.0, Command::Stitch));
+    a.stitches.push(Stitch::new(26.0, 0.0, Command::Jump));
+    for i in 0..5 {
+        a.stitches.push(Stitch::new(26.0 + f64::from(i) * 2.0, 0.0, Command::Stitch));
+    }
+    let p = Pattern { blocks: vec![a], ..Pattern::default() };
+    let file = Format::Dst.write(&p).unwrap();
+    let sewn = |p: &Pattern| p.points().filter(|s| s.command == Command::Stitch).count();
+    let mut s = Session::new();
+    open(&mut s, "tack.dst", &file).expect("opens");
+    assert_eq!(sewn(&plan(&export(&mut s, "dst", json!({})))), sewn(&plan(&file)));
+    // Saved and opened again, it still says so.
+    let saved = export(&mut s, "vectorcraft", json!({}));
+    let mut again = Session::new();
+    open(&mut again, "tack.vectorcraft", &saved).unwrap();
+    assert_eq!(sewn(&plan(&export(&mut again, "dst", json!({})))), sewn(&plan(&file)));
 }
 
 /// A file that cuts the thread at the end of a colour block (before the change) and at the start
@@ -538,11 +761,64 @@ fn an_object_can_ask_for_a_trim_after_it() {
     assert_eq!(r["changed"], 1);
     assert_eq!(moves(&export(&mut s, "pes", json!({}))).0, 0);
     assert!(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(first)).unwrap().extras().embroidery.is_none());
-    assert!(s.execute("embroidery.setTrimAfter", &json!({"ids": [first]})).is_err(), "`on` is required");
+    // `on` left out toggles: on, unless every object is marked already (as the command palette
+    // runs it, on the selection).
+    s.execute("select.set", &json!({"ids": [first]})).unwrap();
+    assert_eq!(s.execute("embroidery.setTrimAfter", &json!({})).unwrap(), json!({"on": true, "changed": 1}));
+    assert_eq!(s.execute("embroidery.setTrimAfter", &json!({})).unwrap(), json!({"on": false, "changed": 1}));
+    // Nothing selected and no ids: not available.
+    s.execute("select.none", &json!({})).unwrap();
+    let e = s.execute("embroidery.setTrimAfter", &json!({"on": true})).unwrap_err();
+    assert!(matches!(e, EngineError::Disabled(..)), "{e:?}");
+    // Its description names every format it applies to; its label says it is embroidery's.
+    let spec = crate::cmd::find_command("embroidery.setTrimAfter").unwrap();
+    for f in Format::ALL {
+        assert!(spec.params.contains(&format!(" {}", f.id())), "{}", f.id());
+    }
+    assert!(spec.label.starts_with("Embroidery"), "{}", spec.label);
+}
+
+/// Off, the thread isn't cut after a run of stitches opened from a file either: the cut its file
+/// had after it goes too.
+#[test]
+fn trim_after_off_clears_a_runs_cut_from_its_file() {
+    use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
+    // A block whose thread is cut at its end, before the change.
+    let mut p = Pattern::default();
+    let mut a = Block::new(Thread::rgb([200, 0, 0]));
+    for i in 0..10 {
+        a.stitches.push(Stitch::new(f64::from(i) * 2.0, 0.0, Command::Stitch));
+    }
+    a.stitches.push(Stitch::new(18.0, 0.0, Command::Trim));
+    let mut b = Block::new(Thread::rgb([0, 0, 200]));
+    for i in 0..10 {
+        b.stitches.push(Stitch::new(f64::from(i) * 2.0, 10.0, Command::Stitch));
+    }
+    p.blocks.extend([a, b]);
+    let mut opened = Session::new();
+    open(&mut opened, "cut.pes", &Format::Pes.write(&p).unwrap()).unwrap();
+    let runs: Vec<u64> = {
+        let d = &opened.doc().unwrap().doc;
+        let mut ids = Vec::new();
+        d.walk(|n| {
+            if n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.as_ref().is_some_and(|r| r.trim_after)) {
+                ids.push(n.id.0);
+            }
+        });
+        ids
+    };
+    assert!(!runs.is_empty(), "the file cuts at the end of a block");
+    let r = opened.execute("embroidery.setTrimAfter", &json!({"on": false, "ids": runs})).unwrap();
+    assert_eq!(r["changed"], json!(runs.len()));
+    let d = &opened.doc().unwrap().doc;
+    for id in &runs {
+        let e = d.node(vectorcraft_doc::NodeId(*id)).unwrap().extras().embroidery.as_deref().cloned().unwrap();
+        assert!(!e.trim_after && !e.stitches.unwrap().trim_after, "{id}");
+    }
 }
 
 /// `trimLength` decides which jumps cut the thread: a jump between two objects is cut only when it
-/// is longer, and a value below `jumpLength` acts as `jumpLength`.
+/// is longer; a value below `jumpLength` is refused.
 #[test]
 fn trim_length_decides_which_jumps_are_cut() {
     let mut s = blank();
@@ -555,10 +831,9 @@ fn trim_length_decides_which_jumps_are_cut() {
     assert!(longest > 15.0, "{jumps:?}");
     let (trims, jumps) = moves(&export(&mut s, "pes", json!({"trimLength": longest + 1.0})));
     assert_eq!(trims, 0, "{jumps:?}");
-    assert_eq!(
-        export(&mut s, "pes", json!({"trimLength": 1.0, "jumpLength": 5.0})),
-        export(&mut s, "pes", json!({"trimLength": 5.0, "jumpLength": 5.0}))
-    );
+    // Only a jump is cut, so a trim length shorter than the jump length is refused, not raised.
+    let e = s.execute("document.export", &params("pes", json!({"trimLength": 1.0, "jumpLength": 5.0}))).unwrap_err();
+    assert!(e.to_string().contains("at least `jumpLength`"), "{e}");
 }
 
 /// Each object starts near where the one sewn before it ended: a satin column drawn from its far
@@ -655,16 +930,16 @@ fn a_group_compound_or_clip_group_can_ask_for_a_trim_after_it() {
     }
 }
 
-/// `embroidery.setTrimAfter` with an id that names no object fails, and changes none of the others
-/// it was given.
+/// `embroidery.setTrimAfter` with an id that names no object fails as a missing object, and
+/// changes none of the others it was given.
 #[test]
 fn trim_after_refuses_a_missing_object() {
     let mut s = blank();
     rect(&mut s, "#cc2222", 20.0, 20.0, 30.0, 30.0);
     let first = s.doc().unwrap().doc.layers[0].children().unwrap().last().unwrap().id.0;
     rect(&mut s, "#cc2222", 60.0, 20.0, 30.0, 30.0);
-    let e = s.execute("embroidery.setTrimAfter", &json!({"on": true, "ids": [first, 999_999]})).unwrap_err().to_string();
-    assert!(e.contains("999999"), "{e}");
+    let e = s.execute("embroidery.setTrimAfter", &json!({"on": true, "ids": [first, 999_999]})).unwrap_err();
+    assert!(matches!(e, EngineError::NoNode(vectorcraft_doc::NodeId(999_999))), "{e:?}");
     assert!(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(first)).unwrap().extras().embroidery.is_none());
     assert_eq!(moves(&export(&mut s, "pes", json!({}))).0, 0);
 }
@@ -692,10 +967,12 @@ fn fills_are_stretched_by_pull_compensation_and_grown_by_expand() {
     assert!((w - 20.4).abs() < 0.15 && (h - h0).abs() < 0.15, "0.2 mm past each end by default: {w} × {h}");
     let (w, _) = size(&mut s, json!({"pullCompensation": [0.5, 0.0]}));
     assert!((w - 20.5).abs() < 0.15, "one side only: {w}");
+    // Across the rows, as many fit as the spacing allows, centred: within a spacing (0.38 mm).
+    let across = 0.4;
     let (w, h) = size(&mut s, json!({"pullCompensation": 0, "expand": 1}));
-    assert!((w - 22.0).abs() < 0.15 && (h - (h0 + 2.0)).abs() < 0.15, "grown 1 mm all round: {w} × {h} (from {w0} × {h0})");
+    assert!((w - 22.0).abs() < 0.15 && (h - (h0 + 2.0)).abs() < across, "grown 1 mm all round: {w} × {h} (from {w0} × {h0})");
     let (w, h) = size(&mut s, json!({"pullCompensation": 0, "expand": -1}));
-    assert!((w - 18.0).abs() < 0.15 && (h - (h0 - 2.0)).abs() < 0.15, "shrunk 1 mm all round: {w} × {h}");
+    assert!((w - 18.0).abs() < 0.15 && (h - (h0 - 2.0)).abs() < across, "shrunk 1 mm all round: {w} × {h}");
 }
 
 /// Two fills drawn 0.6 mm apart leave a gap of background between them; pull compensation or
@@ -870,4 +1147,77 @@ fn expand_leaves_a_line_in_a_fill_a_line() {
     let near_line: Vec<f64> = p.points().filter(|s| s.command == vectorcraft_stitch::Command::Stitch && s.x - b.x0 > 15.0).map(|s| s.y).collect();
     let spread = near_line.iter().fold(f64::NEG_INFINITY, |m, y| m.max(*y)) - near_line.iter().fold(f64::INFINITY, |m, y| m.min(*y));
     assert!(!near_line.is_empty() && spread < 0.15, "the line's stitches spread {spread} mm across it");
+}
+
+/// A DST of `records` behind a blank header (each record three bytes, the end record added).
+fn dst_of(records: &[[u8; 3]]) -> Vec<u8> {
+    let mut b = vec![b' '; 512];
+    for r in records {
+        b.extend_from_slice(r);
+    }
+    b.extend_from_slice(&[0, 0, 0xF3]);
+    b
+}
+
+/// A design wider than a document holds (1.45 km) is refused when it opens, rather than opening
+/// into a document whose every edit is then refused; so is one of more separate runs of stitches
+/// than a document opens as objects.
+#[test]
+fn an_opened_design_too_large_for_a_document_is_refused() {
+    // 120,000 stitches of +12.1 mm along x.
+    let wide = dst_of(&vec![[0x05, 0x05, 0x07]; 120_000]);
+    let mut s = Session::new();
+    let e = open(&mut s, "wide.dst", &wide).expect_err("too wide").to_string();
+    assert!(e.contains("larger than a document holds"), "{e}");
+    // A stitch, then a jump, 100,001 times: as many runs.
+    let stitch = [0x01, 0x00, 0x03];
+    let jump = [0x02, 0x00, 0x83];
+    let mut many = Vec::new();
+    for _ in 0..100_001 {
+        many.extend([stitch, jump]);
+    }
+    let e = open(&mut s, "many.dst", &dst_of(&many)).expect_err("too many runs").to_string();
+    assert!(e.contains("separate runs"), "{e}");
+}
+
+/// Export Selection writes the selected objects alone: one of two rectangles, one block.
+#[test]
+fn export_selection_writes_the_selected_objects_alone() {
+    let mut s = blank();
+    let red = {
+        rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+        s.doc().unwrap().doc.layers[0].children().unwrap().last().unwrap().id.0
+    };
+    rect(&mut s, "#2233cc", 120.0, 20.0, 40.0, 30.0);
+    s.execute("select.set", &json!({"ids": [red]})).unwrap();
+    let r = s.execute("document.exportSelection", &json!({"format": "pes"})).unwrap();
+    let bytes = vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap();
+    assert_eq!(Format::Pes.read(&bytes).unwrap().blocks.len(), 1);
+}
+
+/// A machine file placed beside art keeps its needle points (moved to where it is placed), and the
+/// art beside it is planned: the export sews both.
+#[test]
+fn a_placed_design_keeps_its_needle_points_beside_planned_art() {
+    use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
+    let mut a = Block::new(Thread::rgb([0, 0, 200]));
+    for i in 0..10 {
+        a.stitches.push(Stitch::new(f64::from(i) * 2.0, f64::from(i % 2), Command::Stitch));
+    }
+    let design = Pattern { blocks: vec![a], ..Pattern::default() };
+    let file = Format::Dst.write(&design).unwrap();
+    let mut s = blank();
+    rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    s.execute("file.place", &json!({"name": "run.dst", "dataBase64": vectorcraft_format::base64_encode(&file), "at": [200, 200]})).unwrap();
+    let written = plan(&export(&mut s, "dst", json!({})));
+    assert_eq!(written.blocks.len(), 2, "the rectangle and the placed run");
+    // The placed run's needle points, as they were relative to one another.
+    let placed = written.blocks.iter().find(|b| b.sewn() == 10).expect("a block of the run's ten needle points");
+    let steps: Vec<(f64, f64)> = placed
+        .stitches
+        .windows(2)
+        .filter(|w| w.iter().all(|s| s.command == Command::Stitch))
+        .map(|w| ((w[1].x - w[0].x).round(), (w[1].y - w[0].y).abs().round()))
+        .collect();
+    assert!(steps.iter().all(|&(dx, dy)| dx == 2.0 && dy == 1.0), "{steps:?}");
 }

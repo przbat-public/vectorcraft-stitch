@@ -32,10 +32,13 @@
 //! starts a command: `80 01`, x and y as big-endian i16, then `80 02`, is the long form, the only
 //! move longer than one byte holds. `80 03` is found at the end of the last block; `80 00` and,
 //! elsewhere, `80 03` are empty. VP3 has no jump and no trim command of its own. The descriptions
-//! call the long form a move, a jump stitch or a jump, and say that Pfaff's software writes a trim
-//! and a jump as one; Pfaff machines cut jump stitches themselves, pulling the threads to the back
-//! (Pfaff's "Cut Jump Stitches" function). None says whether the needle goes down where a long
-//! form ends; pyembroidery reads one as a stitch there.
+//! call the long form a move, a jump stitch or a jump. EduTechWiki's VP3 page says to take a
+//! long-form value of 255 or more (25.5 mm, in tenths) as a trim, that shorter ones are often
+//! sewn, and that jumping away and back is a way to force one; its format overview says the long
+//! form may mean a trim and a jump, as Pfaff's software seems to write it. Pfaff's creative 3.0
+//! cuts jump stitches itself ("Cut Jump Stitches"); whether other machines do isn't documented.
+//! None says whether the needle goes down where a long form ends; pyembroidery reads one as a
+//! stitch there.
 //!
 //! What this module does, so that both readings sew the same:
 //!
@@ -43,26 +46,43 @@
 //!   design's lengths are written but not relied on (EduTechWiki gives the file packet's length
 //!   field two widths), and a colour block's and a stitch run's bound what is read in them. A file
 //!   cut short, or damaged after some colour blocks, reads as the blocks before the damage.
-//! - It reads a long form as a jump after which the needle goes down where it lands: a
-//!   [`Command::Jump`] and a stitch at the same point. Read this way, the Emoji Embroidery
-//!   Project's designs made with Ink/Stitch have as many needle points in each colour block in VP3
-//!   as in PES. A zero-length stitch right after a long form is that same needle point, read once.
-//! - It writes every jump, and each block's way to its first stitch, as a long form to the stitch
-//!   the needle goes down at next (with the needle up, the way it travels doesn't matter), then a
-//!   zero-length stitch there: the needle goes down there whichever way a machine reads the long
-//!   form.
-//! - A trim has no record: the jump after it is a long form, which the machine cuts. A stop or a
-//!   colour change inside a block starts another colour block in the same thread (the machine
-//!   stops at each block for its thread). The last block ends with `80 03`.
-//! - The needle starts at the design's centre, as in the real files. The design's extent (and so
+//! - It reads long forms one after another as one move with the needle up, after which the
+//!   needle goes down where the last lands: a [`Command::Jump`] and a stitch at the same point.
+//!   Read this way, the Emoji Embroidery Project's designs made with Ink/Stitch have as many
+//!   needle points in each colour block in VP3 as in PES, and each long form is a move their PES
+//!   makes with the needle up. A zero-length stitch right after long forms is that same needle
+//!   point, read once.
+//! - It reads a move as a cut when one of its long forms is longer than the planner's trim
+//!   length ([`crate::plan::TRIM`], 10 mm): EduTechWiki's trims (25.5 mm) and the long forms
+//!   other writers use for every move too long for a stitch record (the machine cutting jump
+//!   stitches) alike, so a design read from VP3 keeps its cuts in the formats that write trims. A
+//!   move before a block's first stitch follows a thread change and cuts nothing.
+//! - It writes every move with the needle up, and each block's way to its first stitch, as long
+//!   forms to the stitch the needle goes down at next, then a zero-length stitch there: the needle
+//!   goes down there whichever way a machine reads a long form. A move that keeps the thread on is
+//!   long forms of at most 9.8 mm, which neither EduTechWiki's rule nor this reader takes for a
+//!   trim. A trim is a long form reaching 25.5 mm along x: the move itself when it is that long,
+//!   else out and back, the long form laid across the design's centre when the needle is near it
+//!   (so the needle stays within 12.8 mm of the centre or within the design).
+//! - A trim with no stitch after it in its block (before a colour change, where the machine
+//!   stops for the thread) writes nothing. A stop or a colour change inside a block starts another
+//!   colour block in the same thread (the machine stops at each block for its thread). The last
+//!   block ends with `80 03`.
+//! - A block picks up where the last left off (Weiler); its stated start (the KDE wiki's "move
+//!   needle") is written and not read. On the real files the two agree to the rounding of their
+//!   moves.
+//! - The needle starts at the design's centre, as in the real files, also for a design read from a
+//!   file that started elsewhere (see [`super::Frame::centered`]). The design's extent (and so
 //!   its centre, and the hoop values) is where the needle goes down: the points of jumps, which
 //!   the needle never reaches here, are left out.
-//! - The thread record: the block's colour ([`Thread::color`], the art's), material rayon, 40 wt.
-//!   The art's colour rather than the stitch plan's palette thread is the project owner's choice
-//!   (2026-10-22): an opened VP3 written again keeps its colours. Its description is the thread's name only for a design read from a file ([`Thread::chosen`]
-//!   unset): a name a stitch plan gives is a palette thread's, matched to the colour, not the
-//!   colour written. Reading takes each block's first colour and its description (else its
-//!   catalogue number) as the thread's name.
+//! - The thread record: the block's colour ([`Thread::color`], the art's). The art's colour rather
+//!   than the stitch plan's palette thread is the project owner's choice (2026-10-22): an opened
+//!   VP3 written again keeps its colours. A thread read from a file keeps its record
+//!   ([`Thread::record`]: catalogue number, description, brand, material and weight), written
+//!   back as it was. Otherwise: rayon, 40 wt, and as its description the thread's name only when
+//!   no palette thread was chosen for it ([`Thread::chosen`] unset): a name a stitch plan gives is
+//!   a palette thread's, matched to the colour, not the colour written. Reading takes each block's
+//!   first colour and its description (else its catalogue number) as the thread's name.
 //!
 //! References: EduTechWiki, *Embroidery format VP3* and *Embroidery format*
 //! (edutechwiki.unige.ch/en/Embroidery_format_VP3, …/Embroidery_format); KDE Community Wiki,
@@ -146,8 +166,19 @@ const LAST: u8 = 0x03;
 pub(crate) const MAX_SHORT: i32 = 127;
 /// The largest delta a long form holds, in tenths of a millimetre (a big-endian i16).
 const MAX_LONG: i32 = i16::MAX as i32;
+/// A long form that reaches this far along an axis is a trim, in tenths of a millimetre (25.5 mm):
+/// EduTechWiki's VP3 page says to take a long-form value of 255 or more as a trim, and that
+/// shorter ones are often sewn.
+const TRIM_REACH: i32 = 255;
+/// The longest long form written for a move that keeps the thread on, in tenths of a millimetre
+/// (9.8 mm): short of the trim reach, and short of [`crate::plan::TRIM`] (10 mm), past which this
+/// reader takes a long form for a cut, with a part of a tenth each way to spare for the rounding
+/// of the parts.
+const KEPT_REACH: i32 = 98;
 /// The most colour blocks a file holds: the summary and the design count them in a big-endian
-/// u16.
+/// u16, as the KDE Community Wiki and Jason Weiler give the field (EduTechWiki gives the summary's
+/// count as a byte, and the design's as 16 bits; a reader of that kind would miscount a design of
+/// 256 blocks or more).
 pub(crate) const MAX_COLORS: usize = u16::MAX as usize;
 
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
@@ -202,8 +233,11 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     for (k, (thread, stitches)) in segments.iter().enumerate() {
         let start = at;
         let mut run = Run::new(start);
-        for s in stitches {
+        for s in stitches.iter() {
             run.add(*s, &frame);
+            if out.len() + run.bytes.len() > super::MAX_FILE_BYTES {
+                return Err(super::file_too_large("VP3"));
+            }
         }
         if k + 1 == segments.len() {
             run.bytes.extend_from_slice(&[CONTROL, LAST]);
@@ -229,33 +263,16 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
 }
 
 /// The design's colour blocks as VP3 writes them: a block's stitches, cut where it stops or changes
-/// colour (each piece a colour block in its thread), up to the design's end; empty pieces left out.
-fn segments(p: &Pattern) -> Vec<(&Thread, Vec<Stitch>)> {
-    let mut out: Vec<(&Thread, Vec<Stitch>)> = Vec::new();
-    'blocks: for block in &p.blocks {
-        let mut piece: Vec<Stitch> = Vec::new();
-        for s in &block.stitches {
-            match s.command {
-                Command::ColorChange | Command::Stop => {
-                    push_piece(&mut out, &block.thread, std::mem::take(&mut piece));
-                }
-                Command::End => {
-                    push_piece(&mut out, &block.thread, piece);
-                    break 'blocks;
-                }
-                _ => piece.push(*s),
-            }
-        }
-        push_piece(&mut out, &block.thread, piece);
+/// colour (each piece a colour block in its thread); empty pieces left out.
+fn segments(p: &Pattern) -> Vec<(&Thread, &[Stitch])> {
+    let mut out: Vec<(&Thread, &[Stitch])> = Vec::new();
+    for block in &p.blocks {
+        // The stretches between its colour changes and stops (which aren't written), each a
+        // colour block when it sews anything; borrowed, not copied.
+        let pieces = block.stitches.split(|s| matches!(s.command, Command::ColorChange | Command::Stop));
+        out.extend(pieces.filter(|piece| piece.iter().any(|s| s.command == Command::Stitch)).map(|piece| (&block.thread, piece)));
     }
     out
-}
-
-/// `piece` as a colour block in `thread`, when it sews anything.
-fn push_piece<'a>(out: &mut Vec<(&'a Thread, Vec<Stitch>)>, thread: &'a Thread, piece: Vec<Stitch>) {
-    if piece.iter().any(|s| s.command == Command::Stitch) {
-        out.push((thread, piece));
-    }
 }
 
 /// One colour block's stitch bytes, written from where the needle is.
@@ -264,32 +281,47 @@ struct Run {
     /// Where the needle is, in tenths of a millimetre from the design's centre (y down).
     x: i32,
     y: i32,
-    /// Whether the needle is up: at the block's start and after a jump or a trim, so the next
-    /// stitch is reached with a long form.
-    up: bool,
+    /// How the needle reaches the next stitch: up at the block's start.
+    needle: Needle,
     /// The stitches and long forms written: the summary's estimate of the sewing time.
     needle_points: usize,
 }
 
+/// How a [`Run`]'s next stitch is reached.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Needle {
+    /// Sewn: a stitch from the last.
+    Down,
+    /// With the needle up and the thread kept (after a jump, and at a block's start).
+    Up,
+    /// With the thread cut first (after a trim).
+    Cut,
+}
+
 impl Run {
     fn new((x, y): (i32, i32)) -> Self {
-        Self { bytes: Vec::new(), x, y, up: true, needle_points: 0 }
+        Self { bytes: Vec::new(), x, y, needle: Needle::Up, needle_points: 0 }
     }
 
     fn add(&mut self, s: Stitch, frame: &super::Frame) {
         match s.command {
             Command::Stitch => {
                 let (tx, ty) = frame.point(s);
-                if std::mem::take(&mut self.up) {
-                    self.travel(tx, ty);
-                } else {
-                    self.sew(tx, ty);
+                match std::mem::replace(&mut self.needle, Needle::Down) {
+                    Needle::Down => self.sew(tx, ty),
+                    Needle::Up => self.travel(tx, ty, false),
+                    Needle::Cut => self.travel(tx, ty, true),
                 }
             }
-            // The needle lifts: the next stitch is reached with a long form, which the machine
-            // cuts after a trim (VP3 has no trim of its own).
-            Command::Jump | Command::Trim => self.up = true,
-            Command::ColorChange | Command::Stop | Command::End => {}
+            // The needle lifts: the next stitch is reached with long forms.
+            Command::Jump => {
+                if self.needle == Needle::Down {
+                    self.needle = Needle::Up;
+                }
+            }
+            // A trim: one of those long forms reaches far enough to be taken as one.
+            Command::Trim => self.needle = Needle::Cut,
+            Command::ColorChange | Command::Stop => {}
         }
     }
 
@@ -305,22 +337,54 @@ impl Run {
     }
 
     /// The needle travels up to (tx, ty) and goes down there: long forms, then a zero-length
-    /// stitch (see the module doc). Already there: just the stitch.
-    fn travel(&mut self, tx: i32, ty: i32) {
+    /// stitch (see the module doc). Cut: one long form reaches [`TRIM_REACH`] along an axis (out
+    /// and back when the move is shorter). Kept: long forms no longer than [`KEPT_REACH`], which
+    /// no reading takes for a trim. Already there and kept: just the stitch.
+    fn travel(&mut self, tx: i32, ty: i32, cut: bool) {
         let (dx, dy) = (tx - self.x, ty - self.y);
-        if dx != 0 || dy != 0 {
+        if cut && dx.abs().max(dy.abs()) < TRIM_REACH {
+            // Out along x to a trim's reach and back. The trimming long form is laid across the
+            // design's centre when the needle is near it, so that the needle stays within half a
+            // trim's reach of the centre or within the design (a small hoop has room for it).
+            let half = TRIM_REACH / 2;
+            let from = if self.x.abs() >= half { self.x } else { -half };
+            let out = if from > 0 { -TRIM_REACH } else { TRIM_REACH };
+            for (lx, ly) in [(from - self.x, 0), (out, 0), (tx - (from + out), dy)] {
+                if lx != 0 || ly != 0 {
+                    self.long(lx, ly);
+                }
+            }
+        } else if cut {
             for (sx, sy) in super::steps(dx, dy, MAX_LONG) {
-                self.bytes.extend_from_slice(&[CONTROL, LONG_START]);
-                self.bytes.extend_from_slice(&(sx as i16).to_be_bytes());
-                self.bytes.extend_from_slice(&(sy as i16).to_be_bytes());
-                self.bytes.extend_from_slice(&[CONTROL, LONG_END]);
-                self.needle_points += 1;
+                self.long(sx, sy);
+            }
+        } else if dx != 0 || dy != 0 {
+            for (sx, sy) in kept_steps(dx, dy) {
+                self.long(sx, sy);
             }
         }
         self.bytes.extend_from_slice(&[0, 0]);
         self.needle_points += 1;
         (self.x, self.y) = (tx, ty);
     }
+
+    /// One long form, (dx, dy) tenths of a millimetre.
+    fn long(&mut self, dx: i32, dy: i32) {
+        self.bytes.extend_from_slice(&[CONTROL, LONG_START]);
+        self.bytes.extend_from_slice(&(dx as i16).to_be_bytes());
+        self.bytes.extend_from_slice(&(dy as i16).to_be_bytes());
+        self.bytes.extend_from_slice(&[CONTROL, LONG_END]);
+        self.needle_points += 1;
+    }
+}
+
+/// A move with the thread kept, as long forms no longer than [`KEPT_REACH`] each (equal parts).
+fn kept_steps(dx: i32, dy: i32) -> impl Iterator<Item = (i32, i32)> {
+    let parts = (f64::from(dx).hypot(f64::from(dy)) / f64::from(KEPT_REACH)).ceil().max(1.0);
+    let span = f64::from(dx.unsigned_abs().max(dy.unsigned_abs()));
+    // The parts' reach along the longer axis; at least 1, so that the parts are finitely many.
+    let max = (span / parts).ceil().max(1.0) as i32;
+    super::steps(dx, dy, max)
 }
 
 /// Start a packet: `tag` and room for its length (filled in by [`end`]), whose position it
@@ -394,16 +458,44 @@ fn thread_record(out: &mut Vec<u8>, t: &Thread) -> Result<()> {
     out.extend_from_slice(&t.color);
     out.extend_from_slice(&AFTER_RGB);
     out.push(AFTER_COLORS);
-    out.push(RAYON);
-    out.push(WEIGHT);
-    let description = if t.chosen.is_none() { t.name.as_str() } else { "" };
-    for s in ["", description, ""] {
-        utf8(out, s)?;
+    match &t.record {
+        // The file's record, as it was.
+        Some(r) => {
+            out.extend_from_slice(&[r.material, r.weight]);
+            for s in [&r.catalogue, &r.description, &r.brand] {
+                utf8(out, s)?;
+            }
+        }
+        None => {
+            out.extend_from_slice(&[RAYON, WEIGHT]);
+            let description = if t.chosen.is_none() { t.name.as_str() } else { "" };
+            for s in ["", description, ""] {
+                utf8(out, s)?;
+            }
+        }
     }
     Ok(())
 }
 
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
+    let d = decode(bytes)?;
+    // The needle starts where the first block says (the real files' design centre).
+    let mm = |v: i64| v as f64 / UNITS_PER_MM;
+    let start = d.start.map_or(vectorcraft_geom::Point::ZERO, |(x, y)| vectorcraft_geom::Point::new(mm(x), mm(y)));
+    Ok(super::finish_from(String::new(), d.points, &d.threads, start))
+}
+
+/// What a VP3 holds that reading it leaves out: threads that twist several colours (read in their
+/// first), and designs past the first (read into one).
+pub(crate) fn losses(bytes: &[u8]) -> Vec<super::Loss> {
+    let Ok(d) = decode(bytes) else { return Vec::new() };
+    let twisted = d.twisted.then_some(super::Loss::TwistedThreads);
+    let designs = (d.designs > 1).then_some(super::Loss::Designs);
+    twisted.into_iter().chain(designs).collect()
+}
+
+/// The file's designs and colour blocks, read in order.
+fn decode(bytes: &[u8]) -> Result<Decoded> {
     if !bytes.starts_with(MAGIC) {
         return Err(Error::Format("not a VP3 file: it does not start with %vsm%".into()));
     }
@@ -421,11 +513,14 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     // A file cut short, or damaged after some colour blocks, keeps the blocks read before the cut.
     let mut stopped: Option<Error> = None;
     while at_tag(bytes, r.pos(), DESIGN_TAG) {
+        d.designs += 1;
         let read = open(&mut r, DESIGN_TAG, bytes.len(), "design").and_then(|end| read_design(&mut r, &mut d).map(|()| end));
         match read {
             // Past the design's blocks, or as far as its length says when that is farther (a
             // packet this reader doesn't know between designs).
             Ok(end) => r.seek(end.max(r.pos())),
+            // More stitches than a design may have: refused, not cut short.
+            Err(e @ Error::TooLarge(_)) => return Err(e),
             Err(e) => {
                 stopped = Some(e);
                 break;
@@ -435,7 +530,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     if d.points.is_empty() {
         return Err(stopped.unwrap_or_else(|| Error::Format("the VP3 file has no stitches".into())));
     }
-    Ok(super::finish(String::new(), d.points, &d.threads))
+    Ok(d)
 }
 
 /// What a reader decoded so far: the needle points in order and each colour block's thread.
@@ -447,12 +542,18 @@ struct Decoded {
     /// it: each record moves it by at most a long form's reach).
     x: i64,
     y: i64,
+    /// Where the needle starts: where the file's first block says.
+    start: Option<(i64, i64)>,
+    /// Whether a thread twists several colours, and how many designs were found.
+    twisted: bool,
+    designs: usize,
 }
 
 impl Decoded {
-    fn push(&mut self, command: Command) {
+    /// A point where the needle is; refused past [`super::MAX_POINTS`].
+    fn push(&mut self, command: Command) -> Result<()> {
         let mm = |v: i64| v as f64 / UNITS_PER_MM;
-        self.points.push(Stitch::new(mm(self.x), mm(self.y), command));
+        super::add(&mut self.points, Stitch::new(mm(self.x), mm(self.y), command), "VP3")
     }
 }
 
@@ -471,38 +572,45 @@ fn read_design(r: &mut Reader<'_>, d: &mut Decoded) -> Result<()> {
     let mut first = true;
     while at_tag(r.data(), r.pos(), BLOCK_TAG) {
         let block_end = open(r, BLOCK_TAG, len, "colour block")?;
-        let (sx, sy) = (i64::from(r.i32_be().ok_or_else(|| short(len))?), i64::from(r.i32_be().ok_or_else(|| short(len))?));
-        let thread = read_thread(r, d.threads.len())?;
+        // The block's fields are read within its declared length, so that a block claiming less
+        // than it holds can't send the reader back over what it read (each block would be read
+        // again from inside the last).
+        let mut b = r.up_to(block_end);
+        let (sx, sy) = (i64::from(b.i32_be().ok_or_else(|| short(len))?), i64::from(b.i32_be().ok_or_else(|| short(len))?));
+        let (thread, colors) = read_thread(&mut b, d.threads.len())?;
+        d.twisted |= colors > 1;
         // How far the block's stitches move the needle: the stitches say so themselves.
-        r.take(POSITION).ok_or_else(|| short(len))?;
-        let run_end = open(r, STITCHES_TAG, block_end, "stitch run")?;
-        r.take(SCALE.len()).ok_or_else(|| short(len))?;
+        b.take(POSITION).ok_or_else(|| short(len))?;
+        let run_end = open(&mut b, STITCHES_TAG, block_end, "stitch run")?;
+        b.take(SCALE.len()).ok_or_else(|| short(len))?;
         if first {
             // A design's first block starts where it says (from the design's centre); every other
             // picks up where the last left off.
             d.x = tenths(cx + sx);
             d.y = tenths(-(cy + sy));
+            d.start.get_or_insert((d.x, d.y));
             first = false;
         }
         let mark = d.points.len();
         if !d.threads.is_empty() {
-            d.push(Command::ColorChange);
+            d.push(Command::ColorChange)?;
         }
         d.threads.push(thread);
-        read_stitches(r, d, run_end);
+        read_stitches(&mut b, d, run_end)?;
         // A block that sews nothing is no block: the next one keeps its own thread.
         if !d.points.get(mark..).unwrap_or_default().iter().any(|s| s.command == Command::Stitch) {
             d.points.truncate(mark);
             d.threads.pop();
         }
-        r.seek(block_end);
+        // Forward only: past the block's header at least.
+        r.seek(block_end.max(b.pos()).max(r.pos()));
     }
     Ok(())
 }
 
 /// A thread record: its first colour, and its description (else its catalogue number) as its
 /// name.
-fn read_thread(r: &mut Reader<'_>, block: usize) -> Result<Thread> {
+fn read_thread(r: &mut Reader<'_>, block: usize) -> Result<(Thread, usize)> {
     let len = r.data_len();
     let colors = usize::from(r.u8().ok_or_else(|| short(len))?);
     // Six bytes a colour (a byte, then the RGB colour), the byte after them, the material and the
@@ -512,55 +620,102 @@ fn read_thread(r: &mut Reader<'_>, block: usize) -> Result<Thread> {
         Some(&[red, green, blue]) if colors > 0 => Some([red, green, blue]),
         _ => None,
     };
-    let catalogue = read_utf8(r)?;
-    let description = read_utf8(r)?;
-    let _brand = read_utf8(r)?;
+    let (material, weight) = match table {
+        [.., material, weight] => (*material, *weight),
+        _ => (RAYON, WEIGHT),
+    };
+    let record = crate::ThreadRecord { catalogue: read_utf8(r)?, description: read_utf8(r)?, brand: read_utf8(r)?, material, weight };
     // Whitespace and NULs (a writer that ends its strings with one) are no part of a name.
     let clean = |s: &str| s.trim_matches(|c: char| c == '\0' || c.is_whitespace()).to_string();
-    let (catalogue, description) = (clean(&catalogue), clean(&description));
+    let (catalogue, description) = (clean(&record.catalogue), clean(&record.description));
     let name = if description.is_empty() { catalogue } else { description };
-    Ok(match rgb {
-        Some(color) => Thread::named(color, &name),
+    let thread = match rgb {
+        Some(color) => Thread { record: Some(record), ..Thread::named(color, &name) },
         None => crate::thread::default_thread(block),
-    })
+    };
+    Ok((thread, colors))
 }
 
-/// The stitch records up to `end`.
-fn read_stitches(r: &mut Reader<'_>, d: &mut Decoded, end: usize) {
-    // Whether the last record was a long form, whose needle point a zero-length stitch repeats.
-    let mut after_long = false;
+/// The stitch records up to `end`; refused past [`super::MAX_POINTS`] points.
+fn read_stitches(r: &mut Reader<'_>, d: &mut Decoded, end: usize) -> Result<()> {
+    // Long forms read since the needle last went down: one move, the needle going down where the
+    // last of them lands.
+    let mut lift: Option<Lift> = None;
+    // Whether the block has sewn: a move before its first stitch follows a thread change, with
+    // nothing to cut.
+    let mut sewn = false;
     while r.pos() + 2 <= end {
-        let (Some(b0), Some(b1)) = (r.u8(), r.u8()) else { return };
+        let (Some(b0), Some(b1)) = (r.u8(), r.u8()) else { break };
         if b0 != CONTROL {
             let (dx, dy) = (i64::from(b0 as i8), i64::from(b1 as i8));
-            if !(std::mem::take(&mut after_long) && dx == 0 && dy == 0) {
-                d.x += dx;
-                d.y += dy;
-                d.push(Command::Stitch);
+            // A zero-length stitch right after long forms is the needle point they reach, read once.
+            if let Some(l) = lift.take() {
+                land(d, l)?;
+                sewn = true;
+                if dx == 0 && dy == 0 {
+                    continue;
+                }
             }
+            d.x += dx;
+            d.y += dy;
+            d.push(Command::Stitch)?;
+            sewn = true;
             continue;
         }
         match b1 {
             LONG_START => {
                 if r.pos() + 4 > end {
-                    return;
+                    break;
                 }
-                let (Some(dx), Some(dy)) = (r.i16_be(), r.i16_be()) else { return };
+                let (Some(dx), Some(dy)) = (r.i16_be(), r.i16_be()) else { break };
+                let l = lift.get_or_insert(Lift { from: (d.x, d.y), cut: false });
+                l.cut |= sewn && cuts(dx, dy);
                 d.x += i64::from(dx);
                 d.y += i64::from(dy);
-                d.push(Command::Jump);
-                d.push(Command::Stitch);
                 if r.pos() + 2 <= end && r.data().get(r.pos()..r.pos() + 2) == Some(&[CONTROL, LONG_END][..]) {
                     r.seek(r.pos() + 2);
                 }
-                after_long = true;
             }
             // Empty: a long form's end on its own, an empty command, and the end of the last block.
             NOTHING | LONG_END | LAST => {}
             // An unknown command: stop rather than guess where the needle goes next.
-            _ => return,
+            _ => break,
         }
     }
+    // The run ends after long forms: the needle goes down where they land.
+    match lift {
+        Some(l) => land(d, l),
+        None => Ok(()),
+    }
+}
+
+/// Long forms read one after another: where the needle was when they began, and whether the
+/// thread is cut.
+struct Lift {
+    from: (i64, i64),
+    cut: bool,
+}
+
+/// The needle goes down where long forms took it: a cut where it was (when one of them is), the
+/// move, and the needle point.
+fn land(d: &mut Decoded, l: Lift) -> Result<()> {
+    if l.cut {
+        let here = (d.x, d.y);
+        (d.x, d.y) = l.from;
+        d.push(Command::Trim)?;
+        (d.x, d.y) = here;
+    }
+    d.push(Command::Jump)?;
+    d.push(Command::Stitch)
+}
+
+/// Whether a long form of (dx, dy) tenths of a millimetre cuts the thread: when it is longer than
+/// [`crate::plan::TRIM`], the move past which the stitch planner cuts. That takes in EduTechWiki's
+/// rule (a long form reaching 25.5 mm along an axis is a trim) and the long forms other writers
+/// use for any move too long for a stitch record, which their machines cut (Pfaff's "Cut Jump
+/// Stitches"): a design read from VP3 keeps its cuts in the formats that write trims.
+fn cuts(dx: i16, dy: i16) -> bool {
+    f64::from(dx).hypot(f64::from(dy)) / UNITS_PER_MM > crate::plan::TRIM
 }
 
 /// Whether `tag` is at `at`.
@@ -612,8 +767,39 @@ fn short(len: usize) -> Error {
 mod tests {
     use super::*;
     use crate::thread::{Palette, PaletteThread};
-    use crate::{Block, quantize};
+    use crate::{Block, ThreadRecord, quantize};
     use vectorcraft_geom::Point;
+
+    /// The summary counts what the file holds: as many colour blocks as the design writes, one
+    /// design, and a sewing-time estimate of its needle points; the design's own block count too.
+    #[test]
+    fn the_summary_counts_what_the_file_holds() {
+        let mut p = Pattern::default();
+        for k in 0..3u8 {
+            let mut b = Block::new(Thread::rgb([200, 60 * k, 30]));
+            for i in 0..5 {
+                b.stitches.push(Stitch::sew(Point::new(f64::from(i) * 2.0, f64::from(k) * 10.0)));
+            }
+            p.blocks.push(b);
+        }
+        let bytes = write(&p).unwrap();
+        let u16_at = |at: usize| usize::from(u16::from_be_bytes([bytes[at], bytes[at + 1]]));
+        let u32_at = |at: usize| u32::from_be_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]) as usize;
+        // The magic and the producer string, the file packet's tag and length, its notes string,
+        // then the four edges.
+        let file = 8 + u16_at(6);
+        let edges = file + 9 + u16_at(file + 7);
+        let (estimate, colors, mark, designs) = (u32_at(edges + 16), u16_at(edges + 20), bytes[edges + 22], u16_at(edges + 23));
+        assert_eq!((colors, mark, designs), (3, SUMMARY_MARK, 1));
+        // The estimate counts what the machine sews through: the needle points and the long forms
+        // that reach them.
+        let long_forms = bytes.windows(2).filter(|w| w == &[CONTROL, LONG_START]).count();
+        assert_eq!(estimate, read(&bytes).unwrap().sewn() + long_forms);
+        // The design's own count, after the producer string again.
+        let producer = PRODUCER.encode_utf16().count() * 2;
+        let at = bytes.windows(DESIGN_MAGIC.len()).position(|w| w == DESIGN_MAGIC).unwrap() + DESIGN_MAGIC.len();
+        assert_eq!(u16_at(at + 2 + producer), 3);
+    }
 
     fn design() -> Pattern {
         let mut p = Pattern::default();
@@ -627,6 +813,11 @@ mod tests {
         b.stitches.push(Stitch::sew(Point::new(18.0, 23.0)));
         p.blocks.extend([a, b]);
         p
+    }
+
+    /// A block's thread as a machine shows it: its colour and name.
+    fn shown(b: &Block) -> ([u8; 3], &str) {
+        (b.thread.color, b.thread.name.as_str())
     }
 
     /// Each block's needle points on the 0.1 mm grid, the design's top-left corner at the origin.
@@ -644,8 +835,8 @@ mod tests {
         assert!(bytes.starts_with(MAGIC));
         let back = read(&bytes).expect("reads");
         assert_eq!(needle_points(&back), needle_points(&p));
-        let threads: Vec<&Thread> = back.blocks.iter().map(|b| &b.thread).collect();
-        assert_eq!(threads, [&Thread::named([230, 20, 20], "Poppy"), &Thread::named([20, 40, 210], "Royal")]);
+        let threads: Vec<([u8; 3], &str)> = back.blocks.iter().map(shown).collect();
+        assert_eq!(threads, [([230, 20, 20], "Poppy"), ([20, 40, 210], "Royal")]);
         // Written again, the same bytes.
         assert_eq!(write(&back).expect("writes"), bytes);
     }
@@ -710,29 +901,157 @@ mod tests {
         assert_eq!(int(extents + 4) - int(extents + 12), quantize(b.height()) * 100);
     }
 
-    /// A jump is a long form to the next needle point and a zero-length stitch there, whatever its
-    /// length; a trim has no record of its own; read back, a jump and the needle point.
+    /// A jump is a long form to the next needle point and a zero-length stitch there; a trim is a
+    /// long form reaching a trim's reach (out and back, for a short move). Read back: the jump, and
+    /// the trim where the thread was cut.
     #[test]
-    fn a_jump_is_a_long_form_and_a_zero_stitch_and_a_trim_has_no_record() {
+    fn a_jump_is_a_long_form_and_a_zero_stitch_and_a_trim_reaches_far() {
         let mut p = design();
         let here = p.blocks[0].stitches[3];
-        p.blocks[0].stitches.insert(4, Stitch::new(here.x, here.y, Command::Trim));
-        p.blocks[0].stitches.insert(5, Stitch::new(here.x + 2.0, here.y, Command::Jump));
-        p.blocks[0].stitches.insert(6, Stitch::new(here.x + 2.0, here.y, Command::Stitch));
+        p.blocks[0].stitches.insert(4, Stitch::new(here.x + 2.0, here.y, Command::Jump));
+        p.blocks[0].stitches.insert(5, Stitch::new(here.x + 2.0, here.y, Command::Stitch));
+        p.blocks[0].stitches.insert(6, Stitch::new(here.x + 2.0, here.y, Command::Trim));
+        p.blocks[0].stitches.insert(7, Stitch::new(here.x + 4.0, here.y, Command::Jump));
+        p.blocks[0].stitches.insert(8, Stitch::new(here.x + 4.0, here.y, Command::Stitch));
         let bytes = write(&p).expect("writes");
-        // The long form: 2 mm right, then its end and a zero-length stitch.
+        // The jump: a long form 2 mm right, then its end and a zero-length stitch.
         assert!(bytes.windows(10).any(|w| w == [CONTROL, LONG_START, 0, 20, 0, 0, CONTROL, LONG_END, 0, 0]), "a long form for the 2 mm jump");
-        // Each block's first stitch is reached the same way, and the last block ends with 80 03.
-        let longs = bytes.windows(2).filter(|w| *w == [CONTROL, LONG_START]).count();
-        assert_eq!(longs, 3);
+        // The trim: one long form 25.5 mm along x.
+        let forms = long_forms(&bytes);
+        assert_eq!(forms.iter().filter(|(x, y)| x.abs().max(y.abs()) >= TRIM_REACH).count(), 1, "{forms:?}");
         let block_end = bytes.len() - 1;
         assert_eq!(&bytes[block_end - 2..], &[CONTROL, LAST, BLOCK_END]);
         let back = read(&bytes).expect("reads");
         assert_eq!(needle_points(&back), needle_points(&p));
-        assert_eq!(back.points().filter(|s| s.command == Command::Trim).count(), 0);
+        let trims: Vec<Stitch> = back.points().filter(|s| s.command == Command::Trim).collect();
+        assert_eq!(trims.len(), 1);
+        let first = back.blocks[0].stitches.iter().find(|s| s.command == Command::Stitch).unwrap();
+        let (tx, ty) = (quantize(trims[0].x - first.x), quantize(trims[0].y - first.y));
+        assert_eq!((tx, ty), (quantize(here.x + 2.0), quantize(here.y)), "cut where the thread was");
         let commands: Vec<Command> = back.blocks[0].stitches.iter().map(|s| s.command).collect();
         assert_eq!(commands[..2], [Command::Jump, Command::Stitch], "the block's first stitch, reached with the needle up");
-        assert_eq!(commands.iter().filter(|c| **c == Command::Jump).count(), 2);
+        assert_eq!(commands.iter().filter(|c| **c == Command::Jump).count(), 3);
+        // Written again, the same bytes.
+        assert_eq!(write(&back).expect("writes"), bytes);
+    }
+
+    /// Every long form's (x, y) in written bytes.
+    fn long_forms(bytes: &[u8]) -> Vec<(i32, i32)> {
+        let i16_at = |at: usize| i32::from(i16::from_be_bytes([bytes[at], bytes[at + 1]]));
+        bytes
+            .windows(8)
+            .enumerate()
+            .filter(|(_, w)| w[..2] == [CONTROL, LONG_START] && w[6..8] == [CONTROL, LONG_END])
+            .map(|(i, _)| (i16_at(i + 2), i16_at(i + 4)))
+            .collect()
+    }
+
+    /// A trimmed move of any length, from anywhere, has a long form that reaches a trim's reach,
+    /// and keeps the needle within the design or within half that reach of its centre (a small
+    /// hoop has room for it); read back, it is one cut and the needle point it reaches.
+    #[test]
+    fn a_trimmed_move_reaches_a_trims_reach_and_stays_near_the_design() {
+        for width in [10.0, 40.0, 100.0] {
+            for along in [0.0, 0.3, 0.5, 0.7, 1.0] {
+                for by in [0.0, 1.0, -7.5, 12.0, 26.0, -40.0] {
+                    let from: f64 = width * along;
+                    let to = (from + by).clamp(0.0, width);
+                    let mut b = Block::new(Thread::rgb([5, 5, 5]));
+                    let steps = (width / 5.0) as u32;
+                    b.stitches.extend((0..=steps).map(|i| Stitch::sew(Point::new(f64::from(i) * 5.0, 0.0))));
+                    b.stitches.extend([
+                        Stitch::new(from, 1.0, Command::Jump),
+                        Stitch::sew(Point::new(from, 1.0)),
+                        Stitch::sew(Point::new(from, 2.0)),
+                    ]);
+                    b.stitches.extend([Stitch::new(from, 2.0, Command::Trim), Stitch::new(to, 3.0, Command::Jump), Stitch::sew(Point::new(to, 3.0))]);
+                    let p = Pattern { blocks: vec![b], ..Pattern::default() };
+                    let bytes = write(&p).expect("writes");
+                    let case = format!("{width} mm wide, from {from} to {to}");
+                    // The needle through the stitch run, from the design's centre.
+                    let run = bytes.windows(10).position(|w| w[..3] == STITCHES_TAG && w[7..] == SCALE).unwrap() + 7 + SCALE.len();
+                    let (mut x, mut at, mut reached) = (0i32, run, false);
+                    let room = quantize(width / 2.0).max(TRIM_REACH / 2) + 1;
+                    while bytes[at..at + 2] != [CONTROL, LAST] {
+                        if bytes[at] == CONTROL {
+                            let dx = i32::from(i16::from_be_bytes([bytes[at + 2], bytes[at + 3]]));
+                            let dy = i32::from(i16::from_be_bytes([bytes[at + 4], bytes[at + 5]]));
+                            reached |= dx.abs().max(dy.abs()) >= TRIM_REACH;
+                            x += dx;
+                            at += 8;
+                        } else {
+                            x += i32::from(bytes[at] as i8);
+                            at += 2;
+                        }
+                        assert!(x.abs() <= room, "{case}: the needle {x} tenths from the centre");
+                    }
+                    assert!(reached, "{case}: no long form reaches a trim's reach");
+                    let back = read(&bytes).expect("reads");
+                    assert_eq!(needle_points(&back), needle_points(&p), "{case}");
+                    assert_eq!(back.points().filter(|s| s.command == Command::Trim).count(), 1, "{case}");
+                }
+            }
+        }
+    }
+
+    /// A move that keeps the thread on is written as long forms none of which is taken for a cut,
+    /// adding up to the move.
+    #[test]
+    fn a_kept_move_is_never_taken_for_a_cut() {
+        for dx in (-700..=700).step_by(7) {
+            for dy in (-700..=700).step_by(11) {
+                let parts: Vec<(i32, i32)> = kept_steps(dx, dy).collect();
+                assert_eq!(parts.iter().fold((0, 0), |a, b| (a.0 + b.0, a.1 + b.1)), (dx, dy));
+                for (x, y) in parts {
+                    let (x, y) = (i16::try_from(x).unwrap(), i16::try_from(y).unwrap());
+                    assert!(!cuts(x, y), "{dx},{dy}: a part {x},{y}");
+                }
+            }
+        }
+    }
+
+    /// Read: a long form longer than the planner's trim length is a cut where the needle was, long
+    /// forms read one after another are one move, and a move before a block's first stitch (after
+    /// its thread change) cuts nothing.
+    #[test]
+    fn long_moves_are_read_as_cuts() {
+        let long = |dx: i16, dy: i16| {
+            let mut v = vec![CONTROL, LONG_START];
+            v.extend_from_slice(&dx.to_be_bytes());
+            v.extend_from_slice(&dy.to_be_bytes());
+            v.extend_from_slice(&[CONTROL, LONG_END]);
+            v
+        };
+        // A 12 mm move from the block's start, a stitch, a 12 mm long form and a stitch on; then
+        // 9 mm, three times over, a 10 mm one, and a zero-length stitch.
+        let mut run = long(120, 0);
+        run.extend_from_slice(&[0, 0, 10, 0]);
+        run.extend(long(0, 120));
+        run.extend_from_slice(&[10, 0]);
+        for _ in 0..3 {
+            run.extend(long(-90, 0));
+        }
+        run.extend(long(0, 100));
+        run.extend_from_slice(&[0, 0]);
+        let p = read(&assemble(&[((0, 0), vec![(thread([1, 2, 3], "A"), run)])])).expect("reads");
+        let points: Vec<(Command, (i32, i32))> = p.blocks[0].stitches.iter().map(|s| (s.command, (quantize(s.x), quantize(s.y)))).collect();
+        // Normalised: the design's left edge is x 0 (the last needle point, 27 mm left of the
+        // first long form's end).
+        let at = |x: i32, y: i32| (x + 260 - 130, y);
+        assert_eq!(
+            points,
+            [
+                (Command::Jump, at(120, 0)),
+                (Command::Stitch, at(120, 0)),
+                (Command::Stitch, at(130, 0)),
+                (Command::Trim, at(130, 0)),
+                (Command::Jump, at(130, 120)),
+                (Command::Stitch, at(130, 120)),
+                (Command::Stitch, at(140, 120)),
+                (Command::Jump, at(-130, 220)),
+                (Command::Stitch, at(-130, 220)),
+            ]
+        );
     }
 
     /// A long form followed by a stitch that moves on (as other writers write it): the needle goes
@@ -742,8 +1061,8 @@ mod tests {
         let mut p = design();
         p.blocks.truncate(1);
         let mut bytes = write(&p).expect("writes");
-        // The block's first move: a long form and a zero-length stitch. Make the stitch move on.
-        let at = bytes.windows(10).position(|w| w[..2] == [CONTROL, LONG_START] && w[6..8] == [CONTROL, LONG_END]).unwrap();
+        // The block's first move: long forms and a zero-length stitch. Make the stitch move on.
+        let at = bytes.windows(10).position(|w| w[..2] == [CONTROL, LONG_START] && w[6..10] == [CONTROL, LONG_END, 0, 0]).unwrap();
         bytes[at + 8] = 5;
         let back = read(&bytes).expect("reads");
         let first: Vec<Command> = back.blocks[0].stitches.iter().take(3).map(|s| s.command).collect();
@@ -763,6 +1082,38 @@ mod tests {
         assert_eq!(back.sewn(), p.sewn());
     }
 
+    /// A thread read from a file keeps its record (catalogue number, description, brand, material
+    /// and weight), written back as it was; its name is the description, else the catalogue number.
+    #[test]
+    fn a_files_thread_record_is_written_back_as_it_was() {
+        let record = |catalogue: &str, description: &str, brand: &str, material: u8, weight: u8| {
+            let mut t = vec![1, 0x00, 200, 30, 90, 0x00, 0x00, 0x00, material, weight];
+            for s in [catalogue, description, brand] {
+                utf8(&mut t, s).unwrap();
+            }
+            t
+        };
+        let first = record("2296", "Pink", "Robison-Anton", 5, 40);
+        let second = record("1801", "", "Madeira Polyneon", 7, 60);
+        let bytes = assemble(&[((0, 0), vec![(first.clone(), vec![10, 0, 10, 0]), (second.clone(), vec![0, 10, 0, 10])])]);
+        let p = read(&bytes).expect("reads");
+        let records: Vec<Option<ThreadRecord>> = p.blocks.iter().map(|b| b.thread.record.clone()).collect();
+        let want = |catalogue: &str, description: &str, brand: &str, material, weight| {
+            Some(ThreadRecord { catalogue: catalogue.into(), description: description.into(), brand: brand.into(), material, weight })
+        };
+        assert_eq!(records, [want("2296", "Pink", "Robison-Anton", 5, 40), want("1801", "", "Madeira Polyneon", 7, 60)]);
+        let names: Vec<&str> = p.blocks.iter().map(|b| b.thread.name.as_str()).collect();
+        assert_eq!(names, ["Pink", "1801"]);
+        let again = write(&p).expect("writes");
+        assert!(again.windows(first.len()).any(|w| w == first) && again.windows(second.len()).any(|w| w == second));
+        let threads = |p: &Pattern| p.blocks.iter().map(|b| b.thread.clone()).collect::<Vec<_>>();
+        assert_eq!(threads(&read(&again).expect("reads")), threads(&p));
+        // Even with a palette thread chosen for it (an opened design, planned again).
+        let mut planned = p.clone();
+        planned.blocks[0].thread.chosen = PaletteThread::new(Palette::Jef, 12);
+        assert!(write(&planned).expect("writes").windows(first.len()).any(|w| w == first));
+    }
+
     /// A design planned from art carries its palette thread's name, which is not the colour's: the
     /// description is left empty. A design read from a file keeps its own.
     #[test]
@@ -770,12 +1121,11 @@ mod tests {
         let mut p = design();
         p.blocks[0].thread.chosen = PaletteThread::new(Palette::Jef, 12);
         let back = read(&write(&p).expect("writes")).expect("reads");
-        assert_eq!(back.blocks[0].thread, Thread::named([230, 20, 20], ""));
-        assert_eq!(back.blocks[1].thread, Thread::named([20, 40, 210], "Royal"));
+        assert_eq!((shown(&back.blocks[0]), shown(&back.blocks[1])), (([230, 20, 20], ""), ([20, 40, 210], "Royal")));
     }
 
-    /// Stitches longer than a byte holds are sewn as several; jumps longer than a long form holds
-    /// as several long forms.
+    /// Stitches longer than a byte holds are sewn as several; a long jump that keeps the thread on
+    /// as several long forms, read back as one move.
     #[test]
     fn long_stitches_and_jumps_are_split() {
         let mut p = Pattern::default();
@@ -866,8 +1216,9 @@ mod tests {
         }
         let bytes = assemble(&[((0, 0), vec![(twisted, vec![10, 0, 10, 0]), (thread([1, 2, 3], "After"), vec![0, 10, 0, 10])])]);
         let p = read(&bytes).expect("reads");
-        let threads: Vec<&Thread> = p.blocks.iter().map(|b| &b.thread).collect();
-        assert_eq!(threads, [&Thread::named([200, 10, 10], "Twist"), &Thread::named([1, 2, 3], "After")]);
+        let threads: Vec<([u8; 3], &str)> = p.blocks.iter().map(shown).collect();
+        assert_eq!(threads, [([200, 10, 10], "Twist"), ([1, 2, 3], "After")]);
+        assert_eq!(losses(&bytes), [super::super::Loss::TwistedThreads]);
         assert_eq!(needle_points(&p), [vec![(0, 0), (10, 0)], vec![(10, 10), (10, 20)]]);
     }
 
@@ -877,7 +1228,9 @@ mod tests {
         let first = ((0, 0), vec![(thread([1, 1, 1], "A"), vec![10, 0, 10, 0])]);
         // 50 mm right of the first design's centre (micrometres).
         let second = ((50_000, 0), vec![(thread([2, 2, 2], "B"), vec![0, 10])]);
-        let p = read(&assemble(&[first, second])).expect("reads");
+        let bytes = assemble(&[first, second]);
+        let p = read(&bytes).expect("reads");
+        assert_eq!(losses(&bytes), [super::super::Loss::Designs]);
         assert_eq!(p.blocks.len(), 2);
         assert_eq!(needle_points(&p), [vec![(0, 0), (10, 0)], vec![(490, 10)]]);
     }
@@ -928,7 +1281,9 @@ mod tests {
             utf8(&mut t, s).unwrap();
         }
         let p = read(&assemble(&[((0, 0), vec![(t, vec![10, 0])])])).expect("reads");
-        assert_eq!(p.blocks[0].thread, Thread::named([9, 8, 7], "Meadow Red"));
+        assert_eq!(shown(&p.blocks[0]), ([9, 8, 7], "Meadow Red"));
+        // The record keeps the file's string as it was.
+        assert_eq!(p.blocks[0].thread.record.as_ref().map(|r| r.description.as_str()), Some(" Meadow Red\0"));
     }
 
     /// A file that names no colours in a thread reads in a default colour; one cut short or with a
@@ -950,11 +1305,24 @@ mod tests {
         let file = long.windows(3).position(|w| w == FILE_TAG).unwrap();
         long[file + 3..file + 7].copy_from_slice(&u32::MAX.to_be_bytes());
         assert_eq!(read(&long).expect("reads").sewn(), design().sewn());
-        let mut no_colour = bytes;
+        // The first thread's colour count 0, its record six bytes shorter as it would be, and the
+        // packets round it as much shorter: it reads in the default colour of its block.
+        let mut no_colour = bytes.clone();
         let block = no_colour.windows(3).position(|w| w == BLOCK_TAG).unwrap();
-        // The thread's colour count 0: the record is six bytes shorter, which misreads the rest of
-        // the block; still a design or an error.
         no_colour[block + 15] = 0;
-        let _ = read(&no_colour);
+        no_colour.drain(block + 16..block + 16 + COLOR_ENTRY);
+        for tag in [FILE_TAG, DESIGN_TAG, BLOCK_TAG] {
+            let at = no_colour.windows(3).position(|w| w == tag).unwrap() + 3;
+            let len = u32::from_be_bytes(no_colour[at..at + 4].try_into().unwrap()) - COLOR_ENTRY as u32;
+            no_colour[at..at + 4].copy_from_slice(&len.to_be_bytes());
+        }
+        let p = read(&no_colour).expect("reads");
+        assert_eq!(p.blocks[0].thread.color, crate::thread::default_thread(0).color);
+        assert_eq!(p.sewn(), design().sewn(), "the stitches read as before");
+        // Its colour count 0 with the colour's bytes left in: the rest of the block misreads; still
+        // a design or an error.
+        let mut misread = bytes;
+        misread[block + 15] = 0;
+        let _ = read(&misread);
     }
 }

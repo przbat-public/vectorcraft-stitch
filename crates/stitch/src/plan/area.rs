@@ -1,16 +1,18 @@
 //! A filled area: what is inside it, where a row crosses it, and the ways the needle can travel
 //! inside it from one place to another ([`Travels`]).
 
+use std::collections::HashMap;
+
 use vectorcraft_geom::{FillRule, Point, Vec2};
 
 use super::geometry::{Axes, NO_LENGTH, SubPath, unit};
 use crate::SAME_POINT;
 
 /// A travel run's stitch length (millimetres): short, so it follows curves and hides under the
-/// fill.
+/// fill. An estimate.
 pub(super) const TRAVEL_STITCH: f64 = 2.0;
 /// How far inside the shape a travel passes its corners (millimetres), so it doesn't show at the
-/// edge.
+/// edge. An estimate.
 const TRAVEL_MARGIN: f64 = 0.5;
 /// How closely a travel's graph follows the outlines (millimetres), and the most corners it may
 /// have: enough for any real outline, a bound on the work a travel costs.
@@ -19,7 +21,7 @@ const MAX_TRAVEL_NODES: usize = 400;
 
 /// A filled shape: its closed outlines (holes included) and the rule that decides what they
 /// enclose; with the outlines' [`Grid`], whether a point is inside and whether a segment stays
-/// inside look only at the edges near them ([`Area::spans`], once a row, looks at every edge).
+/// inside look only at the edges near them, and a row ([`Sweep`]) only at the edges it crosses.
 #[derive(Clone, Copy)]
 pub(super) struct Area<'a> {
     pub(super) outlines: &'a [&'a SubPath],
@@ -33,10 +35,20 @@ impl Area<'_> {
         edges(self.outlines)
     }
 
+    /// Whether `hit` holds for an edge that segment `a`–`b` may meet: with the grid, the edges in
+    /// the cells the segment passes (an edge in several of them may come more than once); without,
+    /// every edge.
+    fn any_edge_along(&self, a: Point, b: Point, mut hit: impl FnMut(Point, Point) -> bool) -> bool {
+        match self.grid {
+            Some(grid) => grid.any_along(a, b, hit),
+            None => self.edges().any(|(c, d)| hit(c, d)),
+        }
+    }
+
     /// Whether `q` is inside.
     pub(super) fn contains(&self, q: Point) -> bool {
         let winding = match self.grid {
-            Some(grid) => winding(grid.right_of(q).into_iter(), q),
+            Some(grid) => winding(grid.right_of(q), q),
             None => winding(self.edges(), q),
         };
         match self.rule {
@@ -59,10 +71,19 @@ impl Area<'_> {
         if a.distance(b) < SAME_POINT {
             return self.contains(a);
         }
-        let crosses = match self.grid {
-            Some(grid) => grid.any_along(a, b, |c, d| crossing(a, b, c, d)),
-            None => self.edges().any(|(c, d)| crossing(a, b, c, d)),
-        };
+        // The corners of the outline the line passes, as shares of it, noted while looking for a
+        // crossing.
+        let ab = b - a;
+        let len2 = ab.hypot2();
+        let mut cuts: Vec<f64> = vec![0.0, 1.0];
+        let crosses = self.any_edge_along(a, b, |c, d| {
+            for corner in [c, d] {
+                if near_segment(corner, a, b) {
+                    cuts.push(((corner - a).dot(ab) / len2).clamp(0.0, 1.0));
+                }
+            }
+            crossing(a, b, c, d)
+        });
         if crosses {
             return false;
         }
@@ -70,29 +91,16 @@ impl Area<'_> {
             return true;
         }
         let middle = a.midpoint(b);
-        if !self.on_outline(middle) {
+        // A corner passed inside the line (not at its ends): the line may leave the shape there
+        // without crossing an edge (where a line only touches a corner, it meets each of the
+        // corner's two edges at an end, which the crossing test doesn't count), so it is tested
+        // stretch by stretch, as one along the outline is.
+        let through_corner = cuts.iter().any(|t| *t > CORNER_INSIDE && *t < 1.0 - CORNER_INSIDE);
+        if !through_corner && !self.on_outline(middle) {
             return self.contains(middle);
         }
         // Where the line passes a corner of the outline, it may leave it: every stretch between
         // two such corners must lie on the outline or inside.
-        let ab = b - a;
-        let len2 = ab.hypot2();
-        let mut cuts: Vec<f64> = vec![0.0, 1.0];
-        let mut note = |c: Point| {
-            if near_segment(c, a, b) {
-                cuts.push(((c - a).dot(ab) / len2).clamp(0.0, 1.0));
-            }
-        };
-        match self.grid {
-            Some(grid) => grid.for_each_along(a, b, |c, d| {
-                note(c);
-                note(d);
-            }),
-            None => self.edges().for_each(|(c, d)| {
-                note(c);
-                note(d);
-            }),
-        }
         cuts.sort_by(f64::total_cmp);
         cuts.dedup_by(|x, y| (*x - *y).abs() < f64::EPSILON);
         cuts.windows(2).all(|w| {
@@ -109,10 +117,9 @@ impl Area<'_> {
     pub(super) fn edges_along(&self, a: Point, b: Point, mut visit: impl FnMut(usize, Point, Point)) {
         match self.grid {
             Some(grid) => {
-                let visit = std::cell::RefCell::new(&mut visit);
                 grid.any_along_index(a, b, |i| {
                     if let (Some(&id), Some(&(c, d))) = (grid.ids.get(i), grid.edges.get(i)) {
-                        (visit.borrow_mut())(id, c, d);
+                        visit(id, c, d);
                     }
                     false
                 });
@@ -123,20 +130,13 @@ impl Area<'_> {
 
     /// Whether `q` lies on one of the outlines' edges (within [`ON_EDGE`]).
     pub(super) fn on_outline(&self, q: Point) -> bool {
-        match self.grid {
-            Some(grid) => grid.any_along(q, q, |c, d| near_segment(q, c, d)),
-            None => self.edges().any(|(c, d)| near_segment(q, c, d)),
-        }
+        self.any_edge_along(q, q, |c, d| near_segment(q, c, d))
     }
 
     /// Whether the segment from `a` to `b` lies on one of the outlines' edges, both its ends within
     /// [`ON_EDGE`] of it.
     fn along_edge(&self, a: Point, b: Point) -> bool {
-        let on = |c: Point, d: Point| near_segment(a, c, d) && near_segment(b, c, d);
-        match self.grid {
-            Some(grid) => grid.any_along(a, b, on),
-            None => self.edges().any(|(c, d)| on(c, d)),
-        }
+        self.any_edge_along(a, b, |c, d| near_segment(a, c, d) && near_segment(b, c, d))
     }
 
     /// Where the outlines' points fall along `v`: the lowest and highest, `None` when none is
@@ -152,50 +152,17 @@ impl Area<'_> {
         (lo <= hi).then_some((lo, hi))
     }
 
-    /// Where the row at `t` (across `axes`) crosses the area: the stretches along it that are
-    /// inside, by the fill rule.
-    pub(super) fn spans(&self, axes: Axes, t: f64) -> Vec<(f64, f64)> {
-        let mut crossings: Vec<(f64, i32)> = Vec::new();
-        for (a, b) in self.edges() {
-            let (ta, tb) = (axes.across(a), axes.across(b));
-            // Half-open: a vertex exactly on the row counts once.
-            if (ta > t) == (tb > t) {
-                continue;
-            }
-            let f = (t - ta) / (tb - ta);
-            if !f.is_finite() {
-                continue;
-            }
-            let s = axes.along(a) + f * (axes.along(b) - axes.along(a));
-            crossings.push((s, if tb > ta { 1 } else { -1 }));
-        }
-        crossings.sort_by(|a, b| a.0.total_cmp(&b.0));
-        let mut spans: Vec<(f64, f64)> = Vec::new();
-        match self.rule {
-            FillRule::EvenOdd => {
-                for pair in crossings.chunks(2) {
-                    if let [a, b] = pair
-                        && b.0 - a.0 > SAME_POINT
-                    {
-                        spans.push((a.0, b.0));
-                    }
-                }
-            }
-            FillRule::NonZero => {
-                let mut winding = 0;
-                let mut start = 0.0;
-                for (s, dir) in crossings {
-                    let before = winding;
-                    winding += dir;
-                    if before == 0 && winding != 0 {
-                        start = s;
-                    } else if before != 0 && winding == 0 && s - start > SAME_POINT {
-                        spans.push((start, s));
-                    }
-                }
-            }
-        }
-        spans
+    /// The area's rows across `axes`, asked for in order ([`Sweep::spans`]).
+    pub(super) fn sweep(&self, axes: Axes) -> Sweep {
+        let mut edges: Vec<SweepEdge> = self
+            .edges()
+            .enumerate()
+            .map(|(id, (a, b))| SweepEdge { id, ta: axes.across(a), tb: axes.across(b), sa: axes.along(a), sb: axes.along(b) })
+            // An edge with an end that isn't finite across the rows crosses no row.
+            .filter(|e| e.ta.is_finite() && e.tb.is_finite() && e.ta != e.tb)
+            .collect();
+        edges.sort_by(|x, y| x.ta.min(x.tb).total_cmp(&y.ta.min(y.tb)));
+        Sweep { rule: self.rule, edges, met: 0, active: Vec::new(), last: f64::NEG_INFINITY }
     }
 
     /// Corner `i` of outline `corners` moved [`TRAVEL_MARGIN`] inside along the bisector of its two
@@ -237,7 +204,13 @@ pub(super) struct Travels<'a> {
     /// Whether two corners see each other ([`UNKNOWN`], [`SEES`] or [`BLOCKED`]; row-major, the
     /// lower index first).
     sees: Vec<u8>,
+    /// The ways found so far, by their ends' coordinates (a fill weighs several orders of its
+    /// regions, each travelling between the same places), at most [`MAX_KEPT_WAYS`].
+    ways: HashMap<[u64; 4], Option<Vec<Point>>>,
 }
+
+/// The most ways a [`Travels`] keeps: past it, ways are worked out each time (a bound on memory).
+const MAX_KEPT_WAYS: usize = 4096;
 
 /// Whether two of a travel graph's corners see each other: not worked out yet, yes (the straight
 /// line between them stays inside), or no.
@@ -247,7 +220,7 @@ const BLOCKED: u8 = 2;
 
 impl<'a> Travels<'a> {
     pub(super) fn new(area: Area<'a>) -> Self {
-        Self { area, corners: None, sees: Vec::new() }
+        Self { area, corners: None, sees: Vec::new(), ways: HashMap::new() }
     }
 
     /// The graph's corners, built the first time: how many there are.
@@ -292,10 +265,42 @@ impl<'a> Travels<'a> {
         }
     }
 
+    /// Whether an end of a travel sees a corner (worked out once, kept in `ends` at `k`): `a`
+    /// seeing corner `k` when `to_b` is `None`, else corner `to_b` seeing `end` (`b`).
+    fn end_sees(&self, ends: &mut [u8], k: usize, end: Point, to_b: Option<usize>) -> bool {
+        match ends.get(k).copied() {
+            Some(SEES) => true,
+            Some(BLOCKED) => false,
+            Some(_) => {
+                let corner = self.corner(to_b.unwrap_or(k));
+                let yes =
+                    corner.is_some_and(|c| if to_b.is_some() { self.area.contains_segment(c, end) } else { self.area.contains_segment(end, c) });
+                if let Some(v) = ends.get_mut(k) {
+                    *v = if yes { SEES } else { BLOCKED };
+                }
+                yes
+            }
+            None => false,
+        }
+    }
+
     /// The shortest way from `a` to `b` that stays inside the area (straight when that does), as
     /// the points it turns at, both ends included; `None` when there is none (two separate
     /// shapes).
     pub(super) fn way(&mut self, a: Point, b: Point) -> Option<Vec<Point>> {
+        let key = [a.x.to_bits(), a.y.to_bits(), b.x.to_bits(), b.y.to_bits()];
+        if let Some(way) = self.ways.get(&key) {
+            return way.clone();
+        }
+        let way = self.find_way(a, b);
+        if self.ways.len() < MAX_KEPT_WAYS {
+            self.ways.insert(key, way.clone());
+        }
+        way
+    }
+
+    /// [`Travels::way`], worked out.
+    fn find_way(&mut self, a: Point, b: Point) -> Option<Vec<Point>> {
         if !a.distance(b).is_finite() {
             return None;
         }
@@ -303,9 +308,10 @@ impl<'a> Travels<'a> {
             return Some(vec![a, b]);
         }
         let n = self.corners();
-        // Node 0 is `a`, node 1 is `b`, node 2 + i is corner i; what the ends see is tested once.
-        let sees_a: Vec<bool> = (0..n).map(|i| self.corner(i).is_some_and(|c| self.area.contains_segment(a, c))).collect();
-        let sees_b: Vec<bool> = (0..n).map(|i| self.corner(i).is_some_and(|c| self.area.contains_segment(c, b))).collect();
+        // Node 0 is `a`, node 1 is `b`, node 2 + i is corner i. What the ends see is tested once,
+        // when the search first needs it ([`UNKNOWN`], [`SEES`] or [`BLOCKED`]; `a`'s view of each
+        // corner, then each corner's view of `b`).
+        let mut ends = vec![UNKNOWN; 2 * n];
         let total = n + 2;
         let at = |t: &Self, u: usize| match u {
             0 => Some(a),
@@ -341,8 +347,8 @@ impl<'a> Travels<'a> {
                 let sees = match (u, v) {
                     // Straight from end to end was tested first.
                     (0, 1) => false,
-                    (0, c) => sees_a.get(c - 2).copied().unwrap_or(false),
-                    (c, 1) => sees_b.get(c - 2).copied().unwrap_or(false),
+                    (0, c) => self.end_sees(&mut ends, c - 2, a, None),
+                    (c, 1) => self.end_sees(&mut ends, n + c - 2, b, Some(c - 2)),
                     (c, d) => self.corners_see(c - 2, d - 2),
                 };
                 if sees {
@@ -373,6 +379,90 @@ fn edges<'a>(outlines: &'a [&'a SubPath]) -> impl Iterator<Item = (Point, Point)
     })
 }
 
+/// An edge as the rows meet it: its place in the outlines' list of edges, and where its ends lie
+/// across the rows (`ta`, `tb`) and along them.
+struct SweepEdge {
+    id: usize,
+    ta: f64,
+    tb: f64,
+    sa: f64,
+    sb: f64,
+}
+
+/// An area's rows, one after another across it: the edges sorted by where the rows first meet
+/// them, and those the current row crosses (`active`, indices into `edges` in sorted order), so a
+/// row looks only at the edges it crosses instead of at every edge.
+pub(super) struct Sweep {
+    rule: FillRule,
+    edges: Vec<SweepEdge>,
+    /// How many of `edges` the rows have reached.
+    met: usize,
+    active: Vec<usize>,
+    /// The last row asked for.
+    last: f64,
+}
+
+impl Sweep {
+    /// Where the row at `t` crosses the area: the stretches along it that are inside, by the fill
+    /// rule. Rows are asked for in order; one asked for out of order starts the sweep again.
+    pub(super) fn spans(&mut self, t: f64) -> Vec<(f64, f64)> {
+        if t < self.last {
+            (self.met, self.last) = (0, f64::NEG_INFINITY);
+            self.active.clear();
+        }
+        self.last = t;
+        // Half-open: an edge is crossed from its lower end (a vertex exactly on the row counts
+        // once) up to, not at, its higher one.
+        while let Some(e) = self.edges.get(self.met) {
+            if e.ta.min(e.tb) > t {
+                break;
+            }
+            self.active.push(self.met);
+            self.met += 1;
+        }
+        let edges = &self.edges;
+        self.active.retain(|&i| edges.get(i).is_some_and(|e| e.ta.max(e.tb) > t));
+        let mut crossings: Vec<(f64, i32, usize)> = Vec::with_capacity(self.active.len());
+        for &i in &self.active {
+            let Some(e) = edges.get(i) else { continue };
+            let f = (t - e.ta) / (e.tb - e.ta);
+            if !f.is_finite() {
+                continue;
+            }
+            crossings.push((e.sa + f * (e.sb - e.sa), if e.tb > e.ta { 1 } else { -1 }, e.id));
+        }
+        // Along the row; crossings at one place in the outlines' order of their edges (which
+        // decides, by the fill rule, whether two stretches that meet there are one).
+        crossings.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.2.cmp(&b.2)));
+        let mut spans: Vec<(f64, f64)> = Vec::new();
+        match self.rule {
+            FillRule::EvenOdd => {
+                for pair in crossings.chunks(2) {
+                    if let [a, b] = pair
+                        && b.0 - a.0 > SAME_POINT
+                    {
+                        spans.push((a.0, b.0));
+                    }
+                }
+            }
+            FillRule::NonZero => {
+                let mut winding = 0;
+                let mut start = 0.0;
+                for (s, dir, _) in crossings {
+                    let before = winding;
+                    winding += dir;
+                    if before == 0 && winding != 0 {
+                        start = s;
+                    } else if before != 0 && winding == 0 && s - start > SAME_POINT {
+                        spans.push((start, s));
+                    }
+                }
+            }
+        }
+        spans
+    }
+}
+
 /// The winding number of `edges` round `q`: each edge crossing the horizontal line through `q` to
 /// its right counts one, plus or minus by its direction. Edges that don't cross it count nothing,
 /// so any set that includes every crossing one will do; none may come twice.
@@ -394,6 +484,9 @@ fn winding(edges: impl Iterator<Item = (Point, Point)>, q: Point) -> i32 {
 /// How near a point must be to an edge to lie on it (millimetres): row ends are computed on the
 /// edges, so they lie within rounding of them.
 const ON_EDGE: f64 = 1e-6;
+/// How far inside a line (a share of its length) a corner it passes counts as passed inside it,
+/// not at its ends, where row ends and corners lie within rounding.
+const CORNER_INSIDE: f64 = 1e-6;
 
 /// Whether `q` lies within [`ON_EDGE`] of the segment from `c` to `d`.
 fn near_segment(q: Point, c: Point, d: Point) -> bool {
@@ -533,36 +626,30 @@ impl Grid {
         (((y - self.y0) / self.cell).floor().max(0.0) as usize).min(self.ny - 1)
     }
 
-    /// Every edge that may cross the horizontal line through `q` to its right (each once).
-    fn right_of(&self, q: Point) -> Vec<(Point, Point)> {
-        if !(q.x.is_finite() && q.y.is_finite()) || q.y < self.y0 || q.y > self.y0 + self.cell * self.ny as f64 {
-            return Vec::new();
-        }
-        let r = self.row(q.y);
-        let mut ids: Vec<u32> = (self.col(q.x)..self.nx).filter_map(|c| self.cells.get(r * self.nx + c)).flatten().copied().collect();
-        ids.sort_unstable();
-        ids.dedup();
-        ids.into_iter().filter_map(|i| self.edges.get(i as usize).copied()).collect()
-    }
-
-    /// `visit` called with every edge in the cells segment `a`–`b` passes through (an edge in
-    /// several of them more than once).
-    fn for_each_along(&self, a: Point, b: Point, mut visit: impl FnMut(Point, Point)) {
-        let seen = std::cell::RefCell::new(&mut visit);
-        self.any_along(a, b, |c, d| {
-            (seen.borrow_mut())(c, d);
-            false
-        });
+    /// Every edge that may cross the horizontal line through `q` to its right (each once). An
+    /// edge takes cells side by side in a row, so it is counted in the first of them the line
+    /// passes: where the cell before (to the left, also passed) doesn't hold it. Nothing is
+    /// allocated: the inside test runs millions of times in a fill.
+    fn right_of(&self, q: Point) -> impl Iterator<Item = (Point, Point)> + '_ {
+        let passed = q.x.is_finite() && q.y.is_finite() && q.y >= self.y0 && q.y <= self.y0 + self.cell * self.ny as f64;
+        let (r, first) = if passed { (self.row(q.y), self.col(q.x)) } else { (0, self.nx) };
+        let cell = move |c: usize| self.cells.get(r * self.nx + c).map_or(&[][..], Vec::as_slice);
+        (first..self.nx)
+            .flat_map(move |c| {
+                let before = if c > first { cell(c - 1) } else { &[][..] };
+                cell(c).iter().filter(move |i| !before.contains(i))
+            })
+            .filter_map(|&i| self.edges.get(i as usize).copied())
     }
 
     /// Whether `hit` holds for any edge in the cells segment `a`–`b` passes through (walked cell by
-    /// cell, Amanatides and Woo's traversal).
-    fn any_along(&self, a: Point, b: Point, hit: impl Fn(Point, Point) -> bool) -> bool {
+    /// cell, Amanatides and Woo's traversal; an edge in several of them may come more than once).
+    fn any_along(&self, a: Point, b: Point, mut hit: impl FnMut(Point, Point) -> bool) -> bool {
         self.any_along_index(a, b, |i| self.edges.get(i).is_some_and(|&(p, q)| hit(p, q)))
     }
 
     /// [`Grid::any_along`], `hit` given each edge's index in the grid's list.
-    fn any_along_index(&self, a: Point, b: Point, hit: impl Fn(usize) -> bool) -> bool {
+    fn any_along_index(&self, a: Point, b: Point, mut hit: impl FnMut(usize) -> bool) -> bool {
         let (mut c, mut r) = (self.col(a.x), self.row(a.y));
         let (ec, er) = (self.col(b.x), self.row(b.y));
         let d = b - a;
@@ -640,4 +727,31 @@ fn simplify(pts: &[Point], tolerance: f64) -> Vec<Point> {
         }
     }
     pts.iter().zip(keep).filter_map(|(p, k)| k.then_some(*p)).collect()
+}
+
+#[cfg(test)]
+mod tests_corner {
+    use vectorcraft_geom::{FillRule, Point};
+
+    use super::super::geometry::SubPath;
+    use super::*;
+
+    /// A line that leaves the shape through a convex corner, its middle inside, doesn't stay inside:
+    /// two squares 2.5 mm apart, A = [0, 10]², B = [12.5, 20] × [−10, 0], and the line from (5, 5)
+    /// to (12.5, −2.5), through A's corner (10, 0), whose middle lies in A.
+    #[test]
+    fn a_line_out_through_a_corner_leaves() {
+        let square = |x0: f64, y0: f64, x1: f64, y1: f64| SubPath {
+            pts: vec![Point::new(x0, y0), Point::new(x1, y0), Point::new(x1, y1), Point::new(x0, y1)],
+            closed: true,
+        };
+        let subs = [square(0.0, 0.0, 10.0, 10.0), square(12.5, -10.0, 20.0, 0.0)];
+        let outlines: Vec<&SubPath> = subs.iter().collect();
+        let area = Area { outlines: &outlines, rule: FillRule::NonZero, grid: None };
+        assert!(!area.contains_segment(Point::new(5.0, 5.0), Point::new(12.5, -2.5)));
+        // Inside one square, through nothing: inside.
+        assert!(area.contains_segment(Point::new(1.0, 1.0), Point::new(9.0, 9.0)));
+        // Into a corner and back along its edge: on the outline, inside.
+        assert!(area.contains_segment(Point::new(5.0, 5.0), Point::new(10.0, 0.0)));
+    }
 }

@@ -593,3 +593,5 @@ pub fn tn(n: u64, one: &str, other: &str) -> String {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_embroidery;

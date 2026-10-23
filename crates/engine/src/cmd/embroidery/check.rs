@@ -24,8 +24,8 @@ use vectorcraft_stitch::thread::MISMATCH_DELTA_E;
 
 use super::hex;
 use super::measure::{self, Record};
-use super::plan::DesignPlan;
-use super::stats::{mm, point};
+use super::plan::{BlockThread, DesignPlan};
+use super::stats::{mm, number, point};
 
 /// How much a finding matters.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -36,6 +36,19 @@ pub(crate) enum Severity {
     Warning,
     /// Worth knowing.
     Info,
+}
+
+impl Rule {
+    /// Whether its values are counts (stitches, units, blocks, colour changes): given as integers.
+    fn counts(&self) -> bool {
+        matches!(self.unit, Some("stitches" | "units" | "blocks" | "colorChanges"))
+    }
+
+    /// A value of its unit as the answer gives it: a count as an integer, a measure to the
+    /// hundredth.
+    fn value(&self, v: f64) -> Value {
+        if self.counts() { number(v) } else { json!(mm(v)) }
+    }
 }
 
 impl Severity {
@@ -65,7 +78,11 @@ pub(crate) struct Rule {
     /// What it is checked against, and its unit (`None`: no number; for the format's own limits,
     /// the format's value).
     pub(crate) threshold: Option<f64>,
-    pub(crate) unit: &'static str,
+    /// The unit of the threshold and of each hit's value, as a token (`mm`, `stitches`, `units`,
+    /// `deltaE`, `blocks`, `colorChanges`); `None` for a rule that measures nothing.
+    pub(crate) unit: Option<&'static str>,
+    /// What each hit's value measures, for display.
+    pub(crate) measures: &'static str,
     /// Its sources, the one checked first.
     pub(crate) sources: &'static [Source],
 }
@@ -86,21 +103,26 @@ const LONGEST_STITCH: f64 = 12.7;
 const FILL_SHORTEST: f64 = 2.5;
 const SATIN_SHORTEST: f64 = 1.0;
 const RUN_SHORTEST: f64 = 1.5;
-/// Melco's machine manual: keep stitches longer than the needle's blade, 0.75 mm for a 75/11
-/// needle; most needles are 0.7 to 0.8 mm, so 1 mm or longer; ideally walk stitches 1.5 mm, satin
-/// 1 mm and fill 2 mm or longer (Melco OS manual, "Stitch Size vs. Needle Size", pp. 301–302).
+/// Melco's machine manual: needles are 7 to 8 points (0.7 to 0.8 mm) thick, so keep stitches at
+/// 1 mm or longer; ideally walk stitches 1.5 mm, satin 1 mm and fill 2 mm or longer (Melco OS
+/// manual, "Stitch Size vs. Needle Size", pp. 301–302); a 75/11 needle's blade is 0.75 mm ("Needle
+/// Sizes", p. 202).
 const MELCO_MACHINE: &str = "https://www.melco-service.com/docs/X/melco-os-ai-en.pdf";
-/// A 75/11 needle's blade, millimetres (the same manual).
+/// A 75/11 needle's blade, millimetres (the same manual, p. 202).
 const NEEDLE_BLADE: f64 = 0.75;
 /// A stitch shorter than this is short in a row of short stitches ([`MOST_SHORT_IN_A_ROW`]): the
 /// 1 mm Melco's machine manual keeps stitches above for most needles.
 const SHORT: f64 = 1.0;
-/// Ricoma's digitizing tips delete stitches under 0.3 mm
-/// (<https://www.ricoma.cn/cn/ndetail13_539>), and Brother's embroidery machines delete stitches
-/// of the set pitch or less, 0.3 mm as they come (PRT23 manual, p. 107).
+/// Brother's embroidery machines delete stitches of the set pitch or less, 0.3 mm as they come
+/// (PRT23 manual, printed p. 108, p. 110 of the PDF): the source checked, so a stitch of 0.3 mm is
+/// flagged. Ricoma's digitizing tips advise deleting stitches under 0.3 mm while making a design
+/// (<https://www.ricoma.cn/cn/ndetail13_539>): advice to digitizers, not what a machine does.
 const TINY: f64 = 0.3;
-/// Wilcom's stitch shortening allows up to five short stitches in a row
-/// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm>).
+/// The most stitches shorter than [`SHORT`] in a row before they are flagged. An estimate: no
+/// source gives a limit for runs of tiny stitches. Five is the most consecutive shortened satin
+/// stitches Wilcom's Shortening effect allows on a tight curve
+/// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm>), a
+/// setting of that effect, not a quality limit: background for the estimate.
 const MOST_SHORT_IN_A_ROW: usize = 5;
 /// Brother's PRT51 manual warns that stitching sewn over three times or more may break the thread
 /// or the needle (<https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf>, data
@@ -112,11 +134,17 @@ const LAYER_CELL: f64 = 1.0;
 /// The most points one stitch is counted at for layers: every half cell along a stitch up to 32 mm
 /// long, more sparsely along a longer one (which no machine sews well, and `stitchTooLong` flags).
 /// A bound on the work a stitch read from a file can ask for, however long it is.
-const MAX_LAYER_SAMPLES: usize = 64;
-/// The most cells layers are counted over: four million square millimetres, far more stitched area
-/// than any hoop holds. Past it, new cells are not counted: a bound on the memory a design read
-/// from a file can ask for.
+pub(super) const MAX_LAYER_SAMPLES: usize = 64;
+/// The most cells layers are counted over as one grid over the design's box ([`Layers`]): four
+/// million square millimetres (2 m a side), far more than any hoop holds, at 5 bytes a cell 20 MB.
+/// A larger box (only a file's stitches spread far apart) is counted in a table of the cells
+/// stitched, at most [`MAX_SPARSE_LAYER_CELLS`] of them. Bounds on the memory a design read from a
+/// file can ask for.
 const MAX_LAYER_CELLS: usize = 4_000_000;
+/// The most cells the table counts: past it, new cells are not counted. A million entries keep a
+/// hash table at 2^21 slots of 16 bytes (about 36 MB): its next growth, to 2^22, comes at 1.8
+/// million.
+const MAX_SPARSE_LAYER_CELLS: usize = 1_000_000;
 /// Brother's PR680W shows `.pes` files of up to 500,000 stitches and 127 colour changes
 /// (<https://download.brother.com/welcome/doch102285/884t23_om01en.pdf>, specifications): one
 /// machine's limits, not the format's.
@@ -134,7 +162,8 @@ const GRID: f64 = 1.0 / vectorcraft_stitch::UNITS_PER_MM;
 pub(crate) const LIMIT: usize = 20;
 /// The most hits per rule `limit` may ask for: the output is bounded whatever the design.
 pub(crate) const MAX_LIMIT: usize = 1000;
-/// The most objects a rule lists as hit (the count of hits is never cut).
+/// The most objects a rule lists as hit; `objectCount` counts them all, and the count of hits is
+/// never cut.
 const MAX_OBJECTS: usize = 1000;
 
 /// How the two Melco manuals are named in the sources the checks list.
@@ -148,9 +177,15 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Satin column wider than the widest a satin sews well",
         severity: Severity::Warning,
         threshold: Some(SATIN_WIDEST),
-        unit: "mm",
+        unit: Some("mm"),
+        measures: "the object's widest satin column",
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "satin stitches wider than 10 mm" },
+            Source {
+                name: "Wilcom, Mastering basic stitch types: satin stitch and tatami stitch",
+                url: "https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch",
+                value: "keep satin widths within 10 mm (auto split at 7 mm)",
+            },
             Source {
                 name: "Ricoma digitizing tips",
                 url: "https://www.ricoma.cn/cn/ndetail13_604",
@@ -163,7 +198,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Stitch longer than the longest a machine sews well",
         severity: Severity::Warning,
         threshold: Some(LONGEST_STITCH),
-        unit: "mm",
+        unit: Some("mm"),
+        measures: "a needle-down stitch's length",
         sources: &[Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "any stitch over 12.7 mm" }],
     },
     Rule {
@@ -171,7 +207,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Stitch longer than one record of the format holds: written as several shorter stitches",
         severity: Severity::Info,
         threshold: None,
-        unit: "mm along x or y",
+        unit: Some("mm"),
+        measures: "a stitch's longer extent along x or y (its length is given apart)",
         sources: &[Source {
             name: "EduTechWiki's pages on the formats (DST, TAP and T01: 12.1 mm a record; EXP, JEF and VP3: 12.7 mm; PES and PEC: 204.7 mm)",
             url: "https://edutechwiki.unige.ch/en/Embroidery_format_DST",
@@ -183,7 +220,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Fill stitch length set shorter than a fill sews well",
         severity: Severity::Warning,
         threshold: Some(FILL_SHORTEST),
-        unit: "mm, the object's fill stitch length",
+        unit: Some("mm"),
+        measures: "the object's fill stitch length",
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "fill stitches smaller than 2.5 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "fill stitches ideally 2 mm or longer" },
@@ -194,7 +232,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Satin column narrower than a satin stitch sews well",
         severity: Severity::Warning,
         threshold: Some(SATIN_SHORTEST),
-        unit: "mm, the object's narrowest satin column",
+        unit: Some("mm"),
+        measures: "the object's narrowest satin column",
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "satin stitches shorter than 1 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "satin stitches ideally 1 mm or longer" },
@@ -205,7 +244,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Running stitch length set shorter than a running line sews well",
         severity: Severity::Warning,
         threshold: Some(RUN_SHORTEST),
-        unit: "mm, the object's running stitch length",
+        unit: Some("mm"),
+        measures: "the object's running stitch length",
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "walk stitches shorter than 1.5 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "walk stitches ideally 1.5 mm or longer" },
@@ -219,11 +259,12 @@ pub(crate) const RULES: &[Rule] = &[
         // its last stitches (FORK.md's work list), it becomes a warning again.
         severity: Severity::Info,
         threshold: Some(NEEDLE_BLADE),
-        unit: "mm",
+        unit: Some("mm"),
+        measures: "a needle-down stitch's length",
         sources: &[Source {
             name: MELCO_MACHINE_NAME,
             url: MELCO_MACHINE,
-            value: "keep stitches longer than the needle's blade: 0.75 mm for a 75/11 needle",
+            value: "keep stitches longer than the needle's blade (pp. 301–302): 0.75 mm for a 75/11 needle (p. 202)",
         }],
     },
     Rule {
@@ -231,27 +272,33 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Stitch so short that machines delete it",
         severity: Severity::Warning,
         threshold: Some(TINY),
-        unit: "mm",
+        unit: Some("mm"),
+        measures: "a needle-down stitch's length",
         sources: &[
-            Source { name: "Ricoma digitizing tips", url: "https://www.ricoma.cn/cn/ndetail13_539", value: "delete stitches under 0.3 mm" },
             Source {
-                name: "Brother PRT23 manual, p. 107",
+                name: "Brother PRT23 manual, printed p. 108 (p. 110 of the PDF)",
                 url: "https://download.brother.com/welcome/doch102354/prt23_om01ja.pdf",
                 value: "the machine deletes stitches of 0.3 mm or less, as it comes",
+            },
+            Source {
+                name: "Ricoma digitizing tips (advice to digitizers)",
+                url: "https://www.ricoma.cn/cn/ndetail13_539",
+                value: "delete stitches under 0.3 mm while making the design",
             },
         ],
     },
     Rule {
         id: "shortStitchesInARow",
-        title: "More short stitches in a row than stitch shortening allows (each shorter than 1 mm)",
+        title: "Many short stitches in a row (each shorter than 1 mm)",
         severity: Severity::Warning,
         threshold: Some(MOST_SHORT_IN_A_ROW as f64),
-        unit: "stitches",
+        unit: Some("stitches"),
+        measures: "short stitches in a row",
         sources: &[
             Source {
-                name: "Wilcom EmbroideryStudio help, Apply stitch shortening",
+                name: "an estimate; background: Wilcom EmbroideryStudio help, Apply stitch shortening",
                 url: "https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm",
-                value: "up to five short stitches in a row",
+                value: "its Shortening effect shortens up to five satin stitches in a row on a tight curve (a setting, not a quality limit)",
             },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "stitches 1 mm or longer" },
         ],
@@ -261,19 +308,24 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Three or more layers of stitching on one spot",
         severity: Severity::Warning,
         threshold: Some(LAYERS as f64),
-        unit: "sewing units over a 1 mm square",
-        sources: &[Source {
-            name: "Brother PRT51 manual (Japanese), data precautions and troubleshooting",
-            url: "https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf",
-            value: "stitching sewn over three times or more may break the thread or the needle",
-        }],
+        unit: Some("units"),
+        measures: "sewing units over one 1 mm square",
+        sources: &[
+            Source {
+                name: "Brother PRT51 manual (Japanese), data precautions and troubleshooting",
+                url: "https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf",
+                value: "stitching sewn over three times or more may break the thread or the needle",
+            },
+            Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "too many layers, without a number" },
+        ],
     },
     Rule {
         id: "threadMismatch",
         title: "Thread that looks unlike the art's colour",
         severity: Severity::Warning,
         threshold: Some(MISMATCH_DELTA_E),
-        unit: "ΔE (CIEDE2000)",
+        unit: Some("deltaE"),
+        measures: "the CIEDE2000 difference between the art's colour and its block's thread",
         sources: &[Source {
             name: "the project owner's choice (docs/embroidery.md › Threads)",
             url: "",
@@ -285,7 +337,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "Art that is not sewn, or sewn approximately",
         severity: Severity::Warning,
         threshold: None,
-        unit: "",
+        unit: None,
+        measures: "nothing: each hit is a warning of the stitch plan",
         sources: &[Source {
             name: "the stitch plan's warnings (docs/embroidery.md › What is not stitched)",
             url: "",
@@ -297,7 +350,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "More colour blocks than the format holds",
         severity: Severity::Error,
         threshold: None,
-        unit: "blocks",
+        unit: Some("blocks"),
+        measures: "the design's colour blocks",
         sources: &[
             Source {
                 name: "EduTechWiki, Embroidery format PEC (its header counts the colours in a byte)",
@@ -305,9 +359,19 @@ pub(crate) const RULES: &[Rule] = &[
                 value: "PES and PEC: 255 colours",
             },
             Source {
-                name: "EduTechWiki, Embroidery format VP3 (its summary counts the colour blocks in a 16-bit word)",
-                url: "https://edutechwiki.unige.ch/en/Embroidery_format_VP3",
+                name: "KDE Community Wiki, Viking/Husqvarna Pfaff/Singer 3 VP3 (a 16-bit thread-change count)",
+                url: "https://community.kde.org/Projects/Liberty/File_Formats/Viking_Pfaff",
                 value: "VP3: 65,535 colour blocks",
+            },
+            Source {
+                name: "Jason Weiler, VP3 File Format (a 2-byte colour count)",
+                url: "http://www.jasonweiler.com/VP3FileFormatInfo.html",
+                value: "VP3: 65,535 colour blocks",
+            },
+            Source {
+                name: "EduTechWiki, Embroidery format VP3 (the summary's count is a byte, the design's 16 bits)",
+                url: "https://edutechwiki.unige.ch/en/Embroidery_format_VP3",
+                value: "VP3: 255 colour blocks, read as a byte",
             },
         ],
     },
@@ -316,7 +380,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "More stitches than one home machine shows",
         severity: Severity::Info,
         threshold: Some(MACHINE_STITCHES),
-        unit: "stitches",
+        unit: Some("stitches"),
+        measures: "the design's needle points",
         sources: &[Source {
             name: "Brother PR680W manual, specifications",
             url: "https://download.brother.com/welcome/doch102285/884t23_om01en.pdf",
@@ -328,7 +393,8 @@ pub(crate) const RULES: &[Rule] = &[
         title: "More colour changes than one home machine shows",
         severity: Severity::Info,
         threshold: Some(MACHINE_COLOR_CHANGES),
-        unit: "colour changes",
+        unit: Some("colorChanges"),
+        measures: "the design's colour changes",
         sources: &[Source {
             name: "Brother PR680W manual, specifications",
             url: "https://download.brother.com/welcome/doch102285/884t23_om01en.pdf",
@@ -337,24 +403,105 @@ pub(crate) const RULES: &[Rule] = &[
     },
 ];
 
-/// One finding: where (a stitch number and a point, millimetres), the unit, and a measure.
+/// No unit yet over a cell ([`Layers`]).
+const NO_UNIT: u32 = u32::MAX;
+
+/// The units sewn over each cell ([`LAYER_CELL`]) so far, each counted once (up to [`LAYERS`]),
+/// and the last of them: a grid over the design's box, or for a box of more than
+/// [`MAX_LAYER_CELLS`] cells a table of the cells stitched.
+enum Layers {
+    Grid { x0: i64, y0: i64, width: usize, count: Vec<u8>, last: Vec<u32> },
+    Table(HashMap<(i64, i64), (u8, u32)>),
+}
+
+impl Layers {
+    /// Counting over `plan`'s stitches: a grid over the cells their box takes, when it is small
+    /// enough.
+    fn new(plan: &DesignPlan) -> Self {
+        let cells = plan
+            .blocks
+            .iter()
+            .flat_map(|b| b.stitches.iter())
+            .map(|s| (s.x / LAYER_CELL, s.y / LAYER_CELL))
+            .filter(|(x, y)| x.is_finite() && y.is_finite())
+            .fold(None, |b: Option<[f64; 4]>, (x, y)| Some(b.map_or([x, y, x, y], |[x0, y0, x1, y1]| [x0.min(x), y0.min(y), x1.max(x), y1.max(y)])));
+        // A cell more on every side: a point along a stitch may round a hair past its ends.
+        let grid = cells.and_then(|[x0, y0, x1, y1]| {
+            let (x0, y0) = (x0.floor() - 1.0, y0.floor() - 1.0);
+            let (width, height) = (x1.floor() + 2.0 - x0, y1.floor() + 2.0 - y0);
+            (width * height <= MAX_LAYER_CELLS as f64).then_some((x0 as i64, y0 as i64, width as usize, height as usize))
+        });
+        match grid {
+            Some((x0, y0, width, height)) => Self::Grid { x0, y0, width, count: vec![0; width * height], last: vec![NO_UNIT; width * height] },
+            None => Self::Table(HashMap::new()),
+        }
+    }
+
+    /// Count unit `unit` over `cell`: how many units have sewn over it, when this is the first time
+    /// this unit is counted there; `None` when it was counted there already, or the cell is not
+    /// counted.
+    fn add(&mut self, cell: (i64, i64), unit: u32) -> Option<usize> {
+        let (count, last) = match self {
+            Self::Grid { x0, y0, width, count, last } => {
+                let (x, y) = (usize::try_from(cell.0 - *x0).ok()?, usize::try_from(cell.1 - *y0).ok()?);
+                let k = y.checked_mul(*width)?.checked_add(x).filter(|_| x < *width)?;
+                (count.get_mut(k)?, last.get_mut(k)?)
+            }
+            Self::Table(cells) => {
+                if cells.len() >= MAX_SPARSE_LAYER_CELLS && !cells.contains_key(&cell) {
+                    return None;
+                }
+                let (count, last) = cells.entry(cell).or_insert((0, NO_UNIT));
+                (count, last)
+            }
+        };
+        if *last == unit {
+            return None;
+        }
+        *last = unit;
+        *count = count.saturating_add(1);
+        Some(usize::from(*count))
+    }
+}
+
+/// The samples a stitch `length` millimetres long is counted at for layers, besides its start: half
+/// a cell apart, so that no cell it crosses is skipped, at most [`MAX_LAYER_SAMPLES`].
+pub(super) fn layer_samples(length: f64) -> usize {
+    ((length / (LAYER_CELL / 2.0)).ceil().max(1.0) as usize).min(MAX_LAYER_SAMPLES)
+}
+
+/// The cells of the grid layers are counted on for `plan`, `None` when its box is too large for
+/// one (they are counted in a table).
+#[cfg(test)]
+pub(super) fn layer_grid_cells(plan: &DesignPlan) -> Option<usize> {
+    match Layers::new(plan) {
+        Layers::Grid { count, .. } => Some(count.len()),
+        Layers::Table(_) => None,
+    }
+}
+
+/// One finding: where (a record number and a point, millimetres), the unit, and a measure.
 #[derive(Clone, Debug, Default)]
 struct Hit {
-    number: Option<usize>,
+    record: Option<usize>,
     at: Option<Point>,
     unit: Option<usize>,
     value: Option<f64>,
+    /// A stitch's own length, when the value measures something else (`formatStep`).
+    length: Option<f64>,
+    /// The fewest and the most records a stitch is written as (`formatStep`).
+    pieces: Option<[u64; 2]>,
     note: Option<String>,
 }
 
 impl Hit {
     /// A hit at record `r`, measuring `value`.
     fn at(r: &Record, value: f64) -> Self {
-        Self { number: Some(r.number), at: Some(r.stitch.point()), unit: Some(r.unit), value: Some(value), note: None }
+        Self { record: Some(r.number), at: Some(r.stitch.point()), unit: Some(r.unit), value: Some(value), ..Self::default() }
     }
 }
 
-/// A rule's findings: how many, the objects hit, and the first few.
+/// A rule's findings: how many, every object hit, and the first few hits.
 #[derive(Default)]
 struct Found {
     count: usize,
@@ -374,47 +521,39 @@ pub(crate) struct Ask {
 struct Checker<'a> {
     plan: &'a DesignPlan,
     ask: &'a Ask,
+    /// The blocks' threads as the format asked for writes them ([`threads_judged`]).
+    threads: Vec<BlockThread>,
     found: HashMap<&'static str, Found>,
     /// The short stitches in a row so far, and the first of them.
     short_run: Option<(usize, Record)>,
-    /// The units sewn over each cell so far, and the last of them ([`LAYER_CELL`]).
-    cells: HashMap<(i64, i64), (usize, usize)>,
+    /// The units sewn over each cell so far, and the last of them, when layers are counted.
+    layers: Option<Layers>,
 }
 
 impl<'a> Checker<'a> {
     fn new(plan: &'a DesignPlan, ask: &'a Ask) -> Self {
         let found = ask.rules.iter().map(|r| (r.id, Found::default())).collect();
-        Self { plan, ask, found, short_run: None, cells: HashMap::new() }
-    }
-
-    fn wants(&self, id: &str) -> bool {
-        self.found.contains_key(id)
+        let layers = ask.rules.iter().any(|r| r.id == "layers").then(|| Layers::new(plan));
+        Self { plan, ask, threads: threads_judged(plan, ask.format), found, short_run: None, layers }
     }
 
     /// Count `hit` for rule `id`, when it was asked for.
     fn add(&mut self, id: &'static str, hit: Hit) {
         let Some(f) = self.found.get_mut(id) else { return };
         f.count += 1;
-        if let Some(u) = hit.unit.and_then(|u| self.plan.units.get(u))
-            && f.objects.len() < MAX_OBJECTS
-        {
-            f.objects.insert(u.origin.instance.unwrap_or(u.origin.node).0);
+        if let Some(u) = hit.unit.and_then(|u| self.plan.units.get(u)) {
+            f.objects.insert(u.origin.selected().0);
         }
         if f.listed.len() < self.ask.limit {
             f.listed.push(hit);
         }
     }
 
-    /// Name the objects units `units` sew among those rule `id` hit (while its list has room).
+    /// Name the objects units `units` sew among those rule `id` hit.
     fn add_objects(&mut self, id: &'static str, units: std::ops::Range<usize>) {
         let plan = self.plan;
         let Some(f) = self.found.get_mut(id) else { return };
-        for u in units.filter_map(|u| plan.units.get(u)) {
-            if f.objects.len() >= MAX_OBJECTS {
-                break;
-            }
-            f.objects.insert(u.origin.instance.unwrap_or(u.origin.node).0);
-        }
+        f.objects.extend(units.filter_map(|u| plan.units.get(u)).map(|u| u.origin.selected().0));
     }
 
     /// The rules on one record: its stitch's length, and the short stitches in a row and the
@@ -440,10 +579,13 @@ impl<'a> Checker<'a> {
                 } else {
                     format!("written as {fewest} or {most} stitches: this close to a multiple of the step, rounding to the format's 0.1 mm decides")
                 };
-                self.add("formatStep", Hit { note: Some(note), ..Hit::at(r, length) });
+                // The measure compared with the step, and the stitch's length beside it.
+                let pieces = [fewest, most].map(|n| n as u64);
+                self.add("formatStep", Hit { length: Some(length), pieces: Some(pieces), note: Some(note), ..Hit::at(r, longest) });
             }
         }
-        if length < NEEDLE_BLADE {
+        // "Longer than the blade": a stitch as long as the blade is flagged.
+        if length <= NEEDLE_BLADE {
             self.add("stitchBelowNeedle", Hit::at(r, length));
         }
         if length <= TINY {
@@ -458,7 +600,7 @@ impl<'a> Checker<'a> {
             self.end_short_run();
         }
         if let Some(before) = r.before
-            && self.wants("layers")
+            && self.layers.is_some()
         {
             self.cover(before.point(), r);
         }
@@ -481,24 +623,18 @@ impl<'a> Checker<'a> {
         if !length.is_finite() {
             return;
         }
-        // Samples half a cell apart, so that no cell the stitch crosses is skipped, at most
-        // MAX_LAYER_SAMPLES of them.
-        let samples = ((length / (LAYER_CELL / 2.0)).ceil().max(1.0) as usize).min(MAX_LAYER_SAMPLES);
+        let samples = layer_samples(length);
+        let unit = u32::try_from(r.unit).unwrap_or(NO_UNIT - 1);
         for i in 0..=samples {
             let p = a.lerp(b, i as f64 / samples as f64);
             let cell = ((p.x / LAYER_CELL).floor() as i64, (p.y / LAYER_CELL).floor() as i64);
-            if self.cells.len() >= MAX_LAYER_CELLS && !self.cells.contains_key(&cell) {
-                continue;
-            }
-            let (count, last) = self.cells.entry(cell).or_insert((0, usize::MAX));
-            if *last == r.unit {
-                continue;
-            }
-            *count += 1;
-            *last = r.unit;
-            if *count == LAYERS {
+            let Some(layers) = self.layers.as_mut() else { return };
+            if layers.add(cell, unit) == Some(LAYERS) {
                 let centre = Point::new((cell.0 as f64 + 0.5) * LAYER_CELL, (cell.1 as f64 + 0.5) * LAYER_CELL);
-                self.add("layers", Hit { number: Some(r.number), at: Some(centre), unit: Some(r.unit), value: Some(LAYERS as f64), note: None });
+                self.add(
+                    "layers",
+                    Hit { record: Some(r.number), at: Some(centre), unit: Some(r.unit), value: Some(LAYERS as f64), ..Hit::default() },
+                );
             }
         }
     }
@@ -508,14 +644,11 @@ impl<'a> Checker<'a> {
         let plan = self.plan;
         for (k, u) in plan.units.iter().enumerate() {
             // At the unit: its first stitch and needle point.
-            let first = plan.numbers(k).map(|n| n.start);
-            let at = plan
-                .blocks
-                .get(u.block)
-                .and_then(|b| b.stitches.get(u.stitches.clone()))
-                .and_then(|s| s.iter().find(|s| s.command == Command::Stitch))
-                .map(|s| s.point());
-            let hit = |value: f64| Hit { number: first, at, unit: Some(k), value: Some(value), note: None };
+            // None for a unit that adds no record (one needle point where the needle already is):
+            // the number after it is the next unit's.
+            let first = plan.numbers(k).filter(|n| !n.is_empty()).map(|n| n.start);
+            let at = plan.unit_stitches(k).iter().find(|s| s.command == Command::Stitch).map(|s| s.point());
+            let hit = |value: f64| Hit { record: first, at, unit: Some(k), value: Some(value), ..Hit::default() };
             if let Some([narrowest, widest]) = u.satin_widths {
                 if widest > SATIN_WIDEST {
                     self.add("satinTooWide", hit(widest));
@@ -532,13 +665,14 @@ impl<'a> Checker<'a> {
                 _ => {}
             }
         }
-        for (k, b) in plan.blocks.iter().enumerate() {
-            if b.thread.mismatch() {
-                let note = format!("block {}: {} {} for the art's {}", k + 1, b.thread.palette.id(), b.thread.index, hex(b.thread.art));
+        let threads = std::mem::take(&mut self.threads);
+        for (k, (b, thread)) in plan.blocks.iter().zip(&threads).enumerate() {
+            if thread.mismatch() {
+                let note = format!("block {}: {} {} for the art's {}", k + 1, thread.palette().id(), thread.index(), hex(thread.art));
                 let hit = Hit {
-                    number: Some(b.first_number),
+                    record: Some(b.first_number),
                     unit: Some(b.units.start),
-                    value: Some(b.thread.shown_delta_e()),
+                    value: Some(thread.shown_delta_e()),
                     note: Some(note),
                     ..Hit::default()
                 };
@@ -557,7 +691,7 @@ impl<'a> Checker<'a> {
             let note = format!("{} holds {most}", self.ask.format.label());
             self.add("formatColors", Hit { value: Some(blocks as f64), note: Some(note), ..Hit::default() });
         }
-        let needle: usize = plan.blocks.iter().map(|b| b.stitches.iter().filter(|s| s.command == Command::Stitch).count()).sum();
+        let needle: usize = plan.blocks.iter().map(|b| b.needle_points()).sum();
         if needle as f64 > MACHINE_STITCHES {
             self.add("machineStitches", Hit { value: Some(needle as f64), ..Hit::default() });
         }
@@ -567,10 +701,11 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// The findings, rule by rule in the order asked, and how many rules of each severity found
-    /// something.
+    /// The findings, rule by rule in the order asked, and for each severity how many rules found
+    /// something and how many hits they found.
     fn into_json(mut self) -> Value {
-        let (mut errors, mut warnings, mut notes) = (0, 0, 0);
+        // Rules and hits by severity: error, warning, info.
+        let mut totals = [(0usize, 0usize); 3];
         let rules: Vec<Value> = self
             .ask
             .rules
@@ -578,10 +713,14 @@ impl<'a> Checker<'a> {
             .map(|rule| {
                 let f = self.found.remove(rule.id).unwrap_or_default();
                 if f.count > 0 {
-                    match rule.severity {
-                        Severity::Error => errors += 1,
-                        Severity::Warning => warnings += 1,
-                        Severity::Info => notes += 1,
+                    let at = match rule.severity {
+                        Severity::Error => 0,
+                        Severity::Warning => 1,
+                        Severity::Info => 2,
+                    };
+                    if let Some((rules, hits)) = totals.get_mut(at) {
+                        *rules += 1;
+                        *hits += f.count;
                     }
                 }
                 let threshold = match rule.id {
@@ -589,39 +728,64 @@ impl<'a> Checker<'a> {
                     "formatColors" => self.ask.format.max_colors().map(|c| c as f64),
                     _ => rule.threshold,
                 };
-                let objects: Vec<u64> = f.objects.into_iter().collect();
+                let object_count = f.objects.len();
+                let objects: Vec<u64> = f.objects.into_iter().take(MAX_OBJECTS).collect();
                 json!({
                     "id": rule.id,
                     "title": rule.title,
                     "severity": rule.severity.id(),
-                    "threshold": threshold,
+                    "threshold": threshold.map(|t| rule.value(t)),
                     "unit": rule.unit,
+                    "measures": rule.measures,
                     "sources": rule.sources.iter().map(|s| json!({"name": s.name, "url": s.url, "value": s.value})).collect::<Vec<_>>(),
                     "hits": f.count,
+                    "objectCount": object_count,
                     "objects": objects,
-                    "first": f.listed.iter().map(|h| self.hit_json(h)).collect::<Vec<_>>(),
+                    "truncated": object_count > MAX_OBJECTS,
+                    "examples": f.listed.iter().map(|h| self.hit_json(rule, h)).collect::<Vec<_>>(),
                 })
             })
             .collect();
+        let [errors, warnings, info] = totals.map(|(rules, hits)| json!({"rules": rules, "hits": hits}));
         json!({
             "format": self.ask.format.id(),
+            "palette": self.ask.format.palette().map_or_else(|| self.plan.blocks.first().map(|b| b.thread.palette().id()), |p| Some(p.id())),
             "rules": rules,
-            "summary": {"errors": errors, "warnings": warnings, "info": notes},
+            "summary": {"errors": errors, "warnings": warnings, "info": info},
             "notChecked": NOT_CHECKED.iter().map(|(what, why)| json!({"what": what, "why": why})).collect::<Vec<_>>(),
         })
     }
 
-    fn hit_json(&self, h: &Hit) -> Value {
-        let id = h.unit.and_then(|u| self.plan.units.get(u)).map(|u| u.origin.instance.unwrap_or(u.origin.node).0);
-        json!({"number": h.number, "at": h.at.map(point), "value": h.value.map(mm), "id": id, "note": h.note})
+    fn hit_json(&self, rule: &Rule, h: &Hit) -> Value {
+        let id = h.unit.and_then(|u| self.plan.units.get(u)).map(|u| u.origin.selected().0);
+        json!({
+            "record": h.record,
+            "at": h.at.map(point),
+            "value": h.value.map(|v| rule.value(v)),
+            "length": h.length.map(mm),
+            "pieces": h.pieces,
+            "id": id,
+            "note": h.note,
+        })
     }
 }
 
 /// What Melco's design checker flags that is not checked here, and why.
-const NOT_CHECKED: [(&str, &str); 2] = [
+const NOT_CHECKED: [(&str, &str); 3] = [
     ("density too tight", "Melco's design checker names it without a threshold"),
     ("too many needle penetrations in an area", "Melco's design checker names it without a threshold"),
+    ("too many or too few tie stitches (missed trims or starts)", "Melco's design checker names it without a threshold"),
 ];
+
+/// The threads a check judges: those the format writes, matched to its own palette when it numbers
+/// its threads from one other than the plan's (a PES of a document in Janome's palette writes
+/// Brother's threads); the plan's for a format that names no threads.
+fn threads_judged(plan: &DesignPlan, format: Format) -> Vec<BlockThread> {
+    match format.palette() {
+        Some(palette) => plan.threads_in(palette),
+        None => plan.blocks.iter().map(|b| b.thread.clone()).collect(),
+    }
+}
 
 /// Run `ask`'s rules on `plan` → each rule with its findings, how many rules of each severity
 /// found something, and what is not checked.

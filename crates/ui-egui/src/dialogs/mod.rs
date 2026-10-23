@@ -24,6 +24,7 @@ pub mod dxf_import;
 pub mod dxf_options;
 pub mod edit_selection;
 mod effect;
+mod embroidery_options;
 pub mod envelope;
 pub mod eps_options;
 pub mod expand;

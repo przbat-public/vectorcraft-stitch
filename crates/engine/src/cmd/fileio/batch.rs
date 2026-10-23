@@ -103,6 +103,11 @@ fn run_steps(s: &mut Session, label: &str, artboard: Option<u64>, cmds: &mut [Va
 fn roll_back(s: &mut Session, start: Vec<DocState>, stash: &[DocState]) {
     let open = std::mem::take(&mut s.docs);
     s.docs = start;
+    // A document the batch opened is gone, and its stitch planning with it (up to a design's
+    // worth of kept stitches).
+    for gone in open.iter().filter(|o| !s.docs.iter().any(|d| d.uid == o.uid)) {
+        s.embroidery_plans.forget(gone.uid);
+    }
     for st in &mut s.docs {
         // Past the newest revision the document reached, so the restored one redraws.
         let newest = open.iter().chain(stash).filter(|d| d.uid == st.uid).map(|d| d.revision).max().unwrap_or(st.revision);

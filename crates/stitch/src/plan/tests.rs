@@ -62,6 +62,28 @@ fn a_running_line_steps_at_the_stitch_length() {
     assert!((q[1].x - LOCK).abs() < 1e-9 && (q[q.len() - 2].x - (20.0 - LOCK)).abs() < 1e-9, "{q:?}");
 }
 
+/// A closed running line is locked where it starts and ends too, so that a cut after it can't pull
+/// it out: a square starts with a step forward and back, and ends with a step back and forward.
+#[test]
+fn a_closed_running_line_is_locked() {
+    let mut square = BezPath::new();
+    square.move_to((0.0, 0.0));
+    square.line_to((20.0, 0.0));
+    square.line_to((20.0, 20.0));
+    square.line_to((0.0, 20.0));
+    square.close_path();
+    let q = points(&stitches(&square, FillRule::NonZero, &Params::for_style(Style::Running)));
+    let (first, last) = (q[0], q[q.len() - 1]);
+    assert!(first.distance(last) < 1e-9, "it ends where it starts: {q:?}");
+    // Forward a lock step and back to the start; at the end back a lock step and forward again.
+    assert!((q[1].distance(first) - LOCK).abs() < 1e-9 && q[2].distance(first) < 1e-9, "{q:?}");
+    let n = q.len();
+    assert!((q[n - 2].distance(last) - LOCK).abs() < 1e-9 && q[n - 3].distance(last) < 1e-9, "{q:?}");
+    // Without lock, none.
+    let loose = points(&stitches(&square, FillRule::NonZero, &Params { lock: false, ..Params::for_style(Style::Running) }));
+    assert_eq!(loose.len(), n - 4);
+}
+
 #[test]
 fn a_fill_covers_the_rectangle_and_no_stitch_is_longer_than_asked() {
     let p = Params::for_style(Style::Fill);
@@ -73,15 +95,21 @@ fn a_fill_covers_the_rectangle_and_no_stitch_is_longer_than_asked() {
     for a in &q {
         assert!(a.x >= -reach && a.x <= 20.0 + reach && a.y >= -reach && a.y <= 10.0 + reach, "{a:?}");
     }
+    // Neighbouring penetrations of one row (on one line across the rows, which run at the fill's
+    // angle; needle down twice in a row) are at most a stitch length apart: an end stitch at most
+    // the shortest stitch more (a grid point nearer the end than that is left out) and the pull
+    // compensation that stretches the row past the edge. Row turns and travels are other
+    // stitches, and a jump is not a stitch at all.
+    let axes = Axes::new(p.angle);
+    let mut in_rows = 0;
     for w in out.windows(2) {
-        // Neighbouring penetrations of one row (same y, needle down twice in a row) are at
-        // most a stitch length apart (an end stitch at most the shortest stitch more); row
-        // turns and travels are other stitches, and a jump is not a stitch at all.
         let (a, b) = (w[0], w[1]);
-        if a.command == Command::Stitch && b.command == Command::Stitch && (a.y - b.y).abs() < 1e-6 {
-            assert!(a.distance(b) <= p.stitch_length + p.min_stitch + 1e-6, "{:?} .. {:?}", a.point(), b.point());
+        if a.command == Command::Stitch && b.command == Command::Stitch && (axes.across(a.point()) - axes.across(b.point())).abs() < 1e-6 {
+            in_rows += 1;
+            assert!(a.distance(b) <= p.stitch_length + p.min_stitch + reach, "{:?} .. {:?}", a.point(), b.point());
         }
     }
+    assert!(in_rows > q.len() / 2, "most stitches lie along rows: {in_rows} of {}", q.len());
     // About the area divided by the thread's coverage.
     let area = 20.0 * 10.0;
     let expected = area / (p.density * p.stitch_length);
@@ -214,7 +242,7 @@ fn wide_satins_are_split_without_a_seam() {
     let mut p = Params::for_style(Style::Satin);
     p.width = 20.0;
     p.pull = [0.0; 2];
-    p.underlay = false;
+    p.underlay = Underlay::None;
     p.lock = false;
     let out = stitches(&line((0.0, 0.0), (30.0, 0.0)), FillRule::NonZero, &p);
     for w in out.windows(2) {
@@ -247,7 +275,7 @@ fn regions_travel_inside_and_overlap() {
     for angle in [0.0, 30.0, 90.0] {
         let mut p = Params::for_style(Style::Fill);
         p.angle = angle;
-        p.underlay = false;
+        p.underlay = Underlay::None;
         let out = stitches(&ring, FillRule::NonZero, &p);
         let trims = out.iter().filter(|s| s.command == Command::Trim).count();
         assert!(trims <= 1, "angle {angle}: {trims} trims");
@@ -256,12 +284,13 @@ fn regions_travel_inside_and_overlap() {
     // Rows sewn twice where regions meet: at 0° the rows just above and below the hole.
     let mut p = Params::for_style(Style::Fill);
     p.angle = 0.0;
-    p.underlay = false;
+    p.underlay = Underlay::None;
     let out = stitches(&ring, FillRule::NonZero, &p);
     let plain = stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p);
     let count = |v: &[Stitch], y: f64| v.iter().filter(|s| s.command == Command::Stitch && (s.y - y).abs() < 1e-6).count();
-    // The last row above the hole (rows sit half a spacing in, then a spacing apart).
-    let above = (0..1000).map(|k| p.density * (0.5 + f64::from(k))).take_while(|y| *y < 10.0).last().unwrap_or(0.0);
+    // The last row above the hole (rows centred across the ring, a spacing apart).
+    let first = first_row(0.0, 30.0, p.density);
+    let above = (0..1000).map(|k| first + p.density * f64::from(k)).take_while(|y| *y < 10.0).last().unwrap_or(0.0);
     assert!(count(&out, above) > count(&plain, above), "the row above the hole is sewn by two regions");
 }
 
@@ -311,16 +340,17 @@ fn large_fills_get_a_tatami_underlay() {
     let mut p = Params::for_style(Style::Fill);
     p.angle = 0.0;
     // Rows of the underlay run at 90°: vertical stitches, 3 mm long, inside the edge.
-    // (Away from the shape's left and right edges, where the edge run is vertical too.)
+    // (Away from the shape's left and right edges, where the edge run, half a spacing in, is
+    // vertical too.)
     let vertical = |out: &[Stitch], width: f64| {
         out.windows(2)
             .filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch)
-            .filter(|w| (w[0].x - w[1].x).abs() < 1e-6 && (w[0].y - w[1].y).abs() > 1.0 && w[0].x > 0.1 && w[0].x < width - 0.1)
+            .filter(|w| (w[0].x - w[1].x).abs() < 1e-6 && (w[0].y - w[1].y).abs() > 1.0 && w[0].x > 0.5 && w[0].x < width - 0.5)
             .count()
     };
     assert!(vertical(&stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p), 30.0) > 20);
     assert_eq!(vertical(&stitches(&rect(0.0, 0.0, 8.0, 30.0), FillRule::NonZero, &p), 8.0), 0);
-    p.underlay = false;
+    p.underlay = Underlay::None;
     assert_eq!(vertical(&stitches(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &p), 30.0), 0);
 }
 
@@ -332,7 +362,7 @@ fn tight_satin_curves_get_short_stitches() {
     let (r, width) = (3.0, 5.0);
     let mut p = Params::for_style(Style::Satin);
     p.width = width;
-    p.underlay = false;
+    p.underlay = Underlay::None;
     p.lock = false;
     let half = width / 2.0 + p.pull[0];
     let arc = vectorcraft_geom::kurbo::Arc::new((0.0, 0.0), (r, r), 0.0, 1.5 * std::f64::consts::PI, 0.0);
@@ -362,7 +392,7 @@ fn satin_spacing_follows_the_width() {
         let mut p = Params::for_style(Style::Satin);
         p.width = width;
         p.pull = [0.0; 2];
-        p.underlay = false;
+        p.underlay = Underlay::None;
         p.lock = false;
         p.auto_spacing = auto;
         p.density = 0.3;
@@ -417,7 +447,7 @@ fn no_stitch_is_shorter_than_the_shortest() {
 #[test]
 fn separate_pieces_jump_and_trim_only_when_far() {
     let mut p = Params::for_style(Style::Fill);
-    p.underlay = false;
+    p.underlay = Underlay::None;
     // Vertical rows: the first square ends at its right edge, right by the second.
     p.angle = 90.0;
     let count = |gap: f64| {
@@ -466,7 +496,7 @@ fn a_concave_shape_is_sewn_in_one_go_never_across_its_gaps() {
         }
     }
     e.close_path();
-    for underlay in [false, true] {
+    for underlay in [Underlay::None, Underlay::Auto] {
         for angle in (0..360).step_by(5).map(f64::from) {
             let mut p = Params::for_style(Style::Fill);
             p.angle = angle;
@@ -475,10 +505,10 @@ fn a_concave_shape_is_sewn_in_one_go_never_across_its_gaps() {
             assert_eq!(
                 over(&out, (10.0, 8.0, 40.0, 16.0)) + over(&out, (10.0, 24.0, 40.0, 32.0)),
                 0,
-                "angle {angle}, underlay {underlay}: across a gap"
+                "angle {angle}, underlay {underlay:?}: across a gap"
             );
             let lifts = out.iter().filter(|s| s.command != Command::Stitch).count();
-            assert_eq!(lifts, 0, "angle {angle}, underlay {underlay}: {lifts} jumps and trims");
+            assert_eq!(lifts, 0, "angle {angle}, underlay {underlay:?}: {lifts} jumps and trims");
         }
     }
 }
@@ -540,7 +570,66 @@ fn an_absurd_plan_is_refused_up_front() {
     assert!(try_stitches(&rect(0.0, 0.0, 50.0, 50.0), FillRule::NonZero, &p).is_ok_and(|s| !s.is_empty()));
     let mut run = Params::for_style(Style::Running);
     run.stitch_length = 0.2;
-    assert!(matches!(try_stitches(&line((0.0, 0.0), (1e7, 0.0)), FillRule::NonZero, &run), Err(Error::TooLarge(_))));
+    assert!(matches!(try_stitches(&line((0.0, 0.0), (1e6, 0.0)), FillRule::NonZero, &run), Err(Error::TooLarge(_))));
+}
+
+/// The estimate counts what a shape really costs, so that it refuses before planning: a comb of
+/// thousands of teeth whose every row crosses every tooth, a satin wide enough that each crossing
+/// is split, and a fill of more rows than a layer may have, each refused (quickly, from the edges
+/// alone), while a comb of a few teeth is planned.
+#[test]
+fn the_estimate_is_an_upper_bound() {
+    /// A comb of `teeth` teeth 0.81 mm wide and 100 mm long, 0.05 mm apart, on a 2 mm back.
+    fn comb(teeth: usize) -> BezPath {
+        let mut pts = vec![(0.0, 102.0)];
+        for k in 0..teeth {
+            let x = k as f64 * 0.86;
+            pts.extend([(x, 0.0), (x + 0.81, 0.0), (x + 0.81, 100.0), (x + 0.86, 100.0)]);
+        }
+        pts.push((teeth as f64 * 0.86, 102.0));
+        polygon(pts)
+    }
+    let mut fill = Params::for_style(Style::Fill);
+    (fill.density, fill.stitch_length, fill.angle) = (0.05, 12.0, 0.0);
+    let started = std::time::Instant::now();
+    assert!(matches!(try_stitches(&comb(15_900), FillRule::NonZero, &fill), Err(Error::TooLarge(_))));
+    assert!(try_stitches(&comb(5), FillRule::NonZero, &Params::for_style(Style::Fill)).is_ok_and(|s| !s.is_empty()));
+    // Six metres tall: 120,000 rows at 0.05 mm, more than a layer may have.
+    assert!(matches!(try_stitches(&rect(0.0, 0.0, 3.0, 6000.0), FillRule::NonZero, &fill), Err(Error::TooLarge(_))));
+    let mut satin = Params::for_style(Style::Satin);
+    (satin.width, satin.density, satin.auto_spacing) = (50.0, 0.05, false);
+    assert!(matches!(try_stitches(&line((0.0, 0.0), (99_000.0, 0.0)), FillRule::NonZero, &satin), Err(Error::TooLarge(_))));
+    assert!(started.elapsed().as_secs() < 5, "refused from the edges alone");
+}
+
+/// A shape whose control points lie far beyond the document's range, or aren't numbers, is
+/// refused before it is flattened (a curve's flattened points grow with its size, without bound),
+/// and has no narrow parts to look for.
+#[test]
+fn a_shape_out_of_range_is_refused_before_it_is_flattened() {
+    let mut far = BezPath::new();
+    far.move_to((0.0, 0.0));
+    far.curve_to((1e16, 0.0), (1e16, 1e16), (0.0, 10.0));
+    far.close_path();
+    let mut nan = rect(0.0, 0.0, 10.0, 10.0);
+    nan.line_to((f64::NAN, 5.0));
+    for style in [Style::Fill, Style::Satin, Style::Running] {
+        for shape in [&far, &nan] {
+            assert!(matches!(try_stitches(shape, FillRule::NonZero, &Params::for_style(style)), Err(Error::TooLarge(_))), "{style:?}");
+        }
+    }
+    assert_eq!(narrow_columns(&far, FillRule::NonZero, NARROW_SATIN), Vec::new());
+    assert!(try_stitches(&rect(MAX_COORD_MM - 20.0, 0.0, 10.0, 10.0), FillRule::NonZero, &Params::for_style(Style::Fill)).is_ok());
+}
+
+/// A row far from the origin, where a step no longer moves a coordinate, ends: its loop counts.
+#[test]
+fn a_row_far_away_ends() {
+    let p = Params::for_style(Style::Fill).sane();
+    for at in [3e15, 1e16, 7.2e16] {
+        let points = super::fill::row_points(at, at + 50.0, 0.0, &p);
+        assert!(points.len() <= 50, "{at}: {} points", points.len());
+    }
 }
 
 #[test]
@@ -787,14 +876,15 @@ fn a_travel_passes_a_corner_just_inside() {
 fn fill_rows_stagger_through_a_cycle_of_four() {
     let mut p = Params::for_style(Style::Fill);
     p.angle = 0.0;
-    p.underlay = false;
+    p.underlay = Underlay::None;
     let out = stitches(&rect(0.3, 0.0, 40.0, 10.0), FillRule::NonZero, &p);
     // Each row's penetrations away from its ends (where the row starts and stops, ties
     // included), by row.
     let mut rows: std::collections::BTreeMap<i64, Vec<f64>> = Default::default();
+    let first = first_row(0.0, 10.0, p.density);
     for q in points(&out) {
-        let k = (q.y / p.density - 0.5).round();
-        assert!((q.y - p.density * (k + 0.5)).abs() < 1e-6, "{q:?} is on no row");
+        let k = ((q.y - first) / p.density).round();
+        assert!((q.y - first - p.density * k).abs() < 1e-6, "{q:?} is on no row");
         rows.entry(k as i64).or_default().push(q.x);
     }
     let phases: Vec<f64> = rows
@@ -852,7 +942,7 @@ fn the_order_that_travels_least_wins() {
     for angle in [45.0, 60.0, 135.0] {
         let mut p = Params::for_style(Style::Fill);
         p.angle = angle;
-        p.underlay = false;
+        p.underlay = Underlay::None;
         let out = stitches(&u, FillRule::NonZero, &p);
         assert_eq!(out.iter().filter(|s| s.command != Command::Stitch).count(), 0, "angle {angle}: sewn in one go");
         let (longest, total) = travels(&out);
@@ -905,14 +995,14 @@ fn branching_shapes_are_sewn_in_one_go() {
     ]);
     let shapes = [("U", u), ("3 teeth", comb(3, 30.0, 4.0, 4.0, 6.0)), ("5 teeth", comb(5, 35.0, 4.0, 4.0, 6.0)), ("ring", ring(4.0)), ("H", h)];
     for (name, shape) in &shapes {
-        for underlay in [false, true] {
+        for underlay in [Underlay::None, Underlay::Auto] {
             for angle in (0..180).step_by(15).map(f64::from) {
                 let mut p = Params::for_style(Style::Fill);
                 p.angle = angle;
                 p.underlay = underlay;
                 let out = stitches(shape, FillRule::NonZero, &p);
                 let lifts = out.iter().filter(|s| s.command != Command::Stitch).count();
-                assert_eq!(lifts, 0, "{name}, angle {angle}, underlay {underlay}: {lifts} jumps and trims");
+                assert_eq!(lifts, 0, "{name}, angle {angle}, underlay {underlay:?}: {lifts} jumps and trims");
             }
         }
     }
@@ -931,7 +1021,7 @@ fn a_turn_along_a_straight_edge_is_sewn() {
             let mut p = Params::for_style(Style::Fill);
             p.density = density;
             p.angle = angle;
-            p.underlay = false;
+            p.underlay = Underlay::None;
             for (name, shape) in [("U", &u), ("wide U", &wide)] {
                 let out = stitches(shape, FillRule::NonZero, &p);
                 let lifts = out.iter().filter(|s| s.command != Command::Stitch).count();
@@ -954,7 +1044,7 @@ fn a_turn_along_a_straight_edge_is_sewn() {
 fn a_travel_that_would_show_too_much_lifts_the_needle() {
     let mut p = Params::for_style(Style::Fill);
     p.angle = 0.0;
-    p.underlay = false;
+    p.underlay = Underlay::None;
     let jumps = |long: f64| stitches(&comb(200, long, 2.0, 1.5, 4.0), FillRule::NonZero, &p).iter().filter(|s| s.command == Command::Jump).count();
     assert_eq!(jumps(20.0), 0);
     assert!(jumps(30.0) >= 50, "{}", jumps(30.0));
@@ -1052,7 +1142,7 @@ fn bare_satin(path: &BezPath, width: f64, pull: [f64; 2], pull_percent: [f64; 2]
     let mut p = Params::for_style(Style::Satin);
     p.width = width;
     (p.pull, p.pull_percent, p.push) = (pull, pull_percent, push);
-    p.underlay = false;
+    p.underlay = Underlay::None;
     p.lock = false;
     points(&stitches_from(path, FillRule::NonZero, &p, from))
 }
@@ -1121,7 +1211,7 @@ fn fill_rows_reach_past_the_edge_by_the_pull_compensation() {
     let reach = |pull: [f64; 2], pull_percent: [f64; 2]| {
         let mut p = Params::for_style(Style::Fill);
         p.angle = 0.0;
-        p.underlay = false;
+        p.underlay = Underlay::None;
         (p.pull, p.pull_percent) = (pull, pull_percent);
         let q = points(&stitches(&rect(0.0, 0.0, 20.0, 10.0), FillRule::NonZero, &p));
         assert!(q.iter().all(|a| a.y >= -1e-6 && a.y <= 10.0 + 1e-6), "{pull:?} {pull_percent:?}: a row off the shape across");
@@ -1154,20 +1244,33 @@ fn compensated_rows_never_cross_a_gap() {
     assert!(q.iter().any(|a| (a.x - middle).abs() < 1e-6), "the rows reach the middle of the gap");
 }
 
+/// Where a fill puts its first row across an extent from `lo` to `hi`: the rows the spacing fits,
+/// rounded, centred, `spacing` apart.
+fn first_row(lo: f64, hi: f64, spacing: f64) -> f64 {
+    let rows = ((hi - lo) / spacing).round().max(1.0);
+    lo + ((hi - lo) - spacing * (rows - 1.0)) / 2.0
+}
+
 /// The rows `out` sews in the order it first reaches them, by number: a fill of `shape` at `angle`
-/// degrees has its rows `spacing` apart from half a spacing inside its extent, and every needle
-/// point on one of them counts for it (travels between rows fall between them). Coming back to a
-/// row (a tie-off along the last stitch, a region's overlap with its neighbour) counts nothing.
+/// degrees has its rows `spacing` apart, centred across its extent ([`first_row`]), and every
+/// needle point on one of them counts for it (travels between rows fall between them). Coming back
+/// to a row (a tie-off along the last stitch, a region's overlap with its neighbour) counts nothing.
 fn row_order(out: &[Stitch], shape: &BezPath, angle: f64, spacing: f64) -> Vec<i64> {
     let axes = Axes::new(angle);
-    let corners = shape.elements().iter().filter_map(|el| match el {
-        vectorcraft_geom::PathEl::MoveTo(q) | vectorcraft_geom::PathEl::LineTo(q) => Some(*q),
-        _ => None,
-    });
-    let lo = corners.map(|q| axes.across(q)).fold(f64::INFINITY, f64::min);
+    let corners: Vec<f64> = shape
+        .elements()
+        .iter()
+        .filter_map(|el| match el {
+            vectorcraft_geom::PathEl::MoveTo(q) | vectorcraft_geom::PathEl::LineTo(q) => Some(axes.across(*q)),
+            _ => None,
+        })
+        .collect();
+    let lo = corners.iter().copied().fold(f64::INFINITY, f64::min);
+    let hi = corners.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    let first = first_row(lo, hi, spacing);
     let mut order: Vec<i64> = Vec::new();
     for q in points(out) {
-        let k = (axes.across(q) - lo) / spacing - 0.5;
+        let k = (axes.across(q) - first) / spacing;
         if (k - k.round()).abs() < 1e-6 && !order.contains(&(k.round() as i64)) {
             order.push(k.round() as i64);
         }
@@ -1216,7 +1319,7 @@ fn spacing_follows_the_thread_weight() {
         let mut p = Params::for_thread(Style::Satin, weight);
         p.width = 5.0;
         p.pull = [0.0; 2];
-        p.underlay = false;
+        p.underlay = Underlay::None;
         p.lock = false;
         let top: Vec<f64> = points(&stitches(&line((0.0, 0.0), (20.0, 0.0)), FillRule::NonZero, &p))
             .iter()
@@ -1254,7 +1357,7 @@ fn a_regions_last_row_reaches_its_edge() {
     for (w, h) in [(5.0, 0.5), (10.0, 0.5), (10.0, 3.0), (17.0, 2.0)] {
         let mut p = Params::for_style(Style::Fill);
         p.angle = 0.0;
-        p.underlay = false;
+        p.underlay = Underlay::None;
         let out = stitches(&rect(0.0, 0.0, w, h), FillRule::NonZero, &p);
         let q = points(&out);
         // The last row ends past one edge (its last needle point, before the tie-off's step back).
@@ -1298,7 +1401,7 @@ fn a_cut_on_a_point_of_the_line_is_one_point() {
 fn a_satin_sews_as_densely_as_the_thread_chart() {
     let mut p = Params::for_style(Style::Satin);
     p.width = 5.0;
-    p.underlay = false;
+    p.underlay = Underlay::None;
     p.lock = false;
     let q = points(&stitches(&line((0.0, 0.0), (30.0, 0.0)), FillRule::NonZero, &p));
     let in_a_cm = q.iter().filter(|a| a.x >= 10.0 && a.x < 20.0).count();
@@ -1319,7 +1422,7 @@ fn a_satin_stroke_keeps_its_spacing_on_the_outer_rail() {
     let (r, width) = (6.0, 5.0);
     let mut p = Params::for_style(Style::Satin);
     p.width = width;
-    p.underlay = false;
+    p.underlay = Underlay::None;
     p.lock = false;
     let spacing = satin_spacing(width);
     let rails = [r + width / 2.0 + p.pull[0], r - width / 2.0 - p.pull[1]];
@@ -1348,4 +1451,198 @@ fn a_satin_stroke_keeps_its_spacing_on_the_outer_rail() {
     let q = points(&stitches(&s, FillRule::NonZero, &p));
     check("the S's upper turn", &q, (0.0, 0.0), (-1.0, 0.0));
     check("the S's lower turn", &q, (0.0, -12.0), (1.0, 0.0));
+}
+
+/// Fill rows are centred across the shape: the margin at both sides is the same, a quarter to three
+/// quarters of a spacing (a band 10.9 spacings tall had 0.19 mm at one side and 0.57 at the
+/// other).
+#[test]
+fn fill_rows_are_centred_across_the_shape() {
+    let mut p = Params::for_style(Style::Fill);
+    (p.angle, p.underlay) = (0.0, Underlay::None);
+    for tall in [10.9, 10.5, 11.0, 3.2] {
+        let h = tall * p.density;
+        let out = stitches(&rect(0.0, 0.0, 30.0, h), FillRule::NonZero, &p);
+        let ys: Vec<f64> = points(&out).iter().map(|q| q.y).collect();
+        let (top, bottom) = ys.iter().fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), y| (lo.min(*y), hi.max(*y)));
+        assert!((top - (h - bottom)).abs() < 1e-6, "{tall} spacings: margins {top} and {}", h - bottom);
+        assert!(top >= 0.25 * p.density - 1e-9 && top <= 0.75 * p.density + 1e-9, "{tall} spacings: margin {top}");
+    }
+}
+
+/// A fill's edge-run underlay runs half a spacing inside its outline, about where the outermost
+/// rows lie, so the top stitching covers it.
+#[test]
+fn a_fills_edge_run_is_inset() {
+    let p = Params::for_style(Style::Fill);
+    let (w, h) = (20.0, 12.0);
+    let out = stitches(&rect(0.0, 0.0, w, h), FillRule::NonZero, &p);
+    // The edge run comes first: needle points up to the first top row's long stitches. Its
+    // corners, the points nearest the rectangle's.
+    let inset = p.density * 0.5;
+    for corner in [Point::new(0.0, 0.0), Point::new(w, 0.0), Point::new(w, h), Point::new(0.0, h)] {
+        let nearest = points(&out).iter().map(|q| q.distance(corner)).fold(f64::INFINITY, f64::min);
+        // A corner moves along its bisector: √2 times the inset from the outline's corner.
+        assert!((nearest - inset * std::f64::consts::SQRT_2).abs() < 0.05, "{corner:?}: {nearest}");
+    }
+}
+
+/// With a shortest stitch above the lock's 1 mm, locks, tie-ins and tie-offs step that far, so the
+/// planner's filter of short stitches keeps them: a running line keeps its locks, and a fill
+/// started after a long jump is tied in.
+#[test]
+fn locks_and_ties_are_no_shorter_than_the_shortest_stitch() {
+    let min_stitch = 1.5;
+    let line = line((0.0, 0.0), (20.0, 0.0));
+    let p = Params { min_stitch, ..Params::for_style(Style::Running) };
+    let q = points(&stitches(&line, FillRule::NonZero, &p));
+    assert!((q[1].x - min_stitch).abs() < 1e-9 && q[2].x.abs() < 1e-9, "locked at the start: {q:?}");
+    let n = q.len();
+    assert!((q[n - 2].x - (20.0 - min_stitch)).abs() < 1e-9, "locked at the end: {q:?}");
+    // Two squares far apart in one fill: the second is reached by a jump, tied off before and in
+    // after, each a step of the shortest stitch.
+    let mut two = rect(0.0, 0.0, 10.0, 10.0);
+    two.extend(rect(40.0, 0.0, 50.0, 10.0));
+    let p = Params { min_stitch, ..Params::for_style(Style::Fill) };
+    let out = stitches(&two, FillRule::NonZero, &p);
+    let jump = out.iter().position(|s| s.command == Command::Jump).expect("a jump to the second square");
+    let landing = out[jump].point();
+    let after: Vec<Point> = out[jump + 1..].iter().take(3).map(|s| s.point()).collect();
+    assert!((after[0].distance(landing)) < 1e-9, "down where the jump lands: {after:?}");
+    assert!((after[1].distance(landing) - min_stitch).abs() < 1e-6 && after[2].distance(landing) < 1e-9, "tied in: {after:?}");
+    // No needle-down stitch is shorter than asked, the ties included.
+    for w in out.windows(2).filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch) {
+        let d = w[0].point().distance(w[1].point());
+        assert!(d < crate::SAME_POINT || d + 1e-9 >= min_stitch, "a {d} mm stitch");
+    }
+}
+
+/// A satin column shorter than two of its own spacings is left out, a stroke's by the spacing its
+/// width gives it (0.5 mm under 2 mm wide: 1 mm), not by a fill's.
+#[test]
+fn a_column_shorter_than_two_of_its_spacings_is_left_out() {
+    let p = Params { width: 1.5, ..Params::for_style(Style::Satin) };
+    assert!((p.column_spacing(p.width) - 0.5).abs() < 1e-9);
+    assert!(stitches(&line((0.0, 0.0), (0.9, 0.0)), FillRule::NonZero, &p).is_empty(), "0.9 mm: a knot");
+    assert!(!stitches(&line((0.0, 0.0), (1.1, 0.0)), FillRule::NonZero, &p).is_empty(), "1.1 mm: a column");
+}
+
+/// The places inside `shape` (at least `inset` mm from its outline, on a 0.25 mm grid) farther than
+/// `reach` mm from every needle-down stitch of `out`: where a fill leaves fabric bare.
+fn uncovered(shape: &BezPath, out: &[Stitch], inset: f64, reach: f64) -> Vec<Point> {
+    use std::collections::HashMap;
+    use vectorcraft_geom::Shape;
+    /// The sampling grid, and the cells the stitches are binned in (millimetres).
+    const STEP: f64 = 0.25;
+    const CELL: f64 = 1.0;
+    let inside = |q: Point| shape.winding(q) != 0;
+    let mut cells: HashMap<(i64, i64), Vec<(Point, Point)>> = HashMap::new();
+    for w in out.windows(2).filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch) {
+        let (a, b) = (w[0].point(), w[1].point());
+        let (x0, x1) = ((a.x.min(b.x) / CELL).floor() as i64, (a.x.max(b.x) / CELL).floor() as i64);
+        let (y0, y1) = ((a.y.min(b.y) / CELL).floor() as i64, (a.y.max(b.y) / CELL).floor() as i64);
+        for i in x0..=x1 {
+            for j in y0..=y1 {
+                cells.entry((i, j)).or_default().push((a, b));
+            }
+        }
+    }
+    let near = |q: Point| {
+        let (ci, cj) = ((q.x / CELL).floor() as i64, (q.y / CELL).floor() as i64);
+        (ci - 1..=ci + 1).flat_map(|i| (cj - 1..=cj + 1).map(move |j| (i, j))).filter_map(|c| cells.get(&c)).flatten().any(|&(a, b)| {
+            let ab = b - a;
+            let t = if ab.hypot2() > 0.0 { ((q - a).dot(ab) / ab.hypot2()).clamp(0.0, 1.0) } else { 0.0 };
+            q.distance(a + ab * t) <= reach
+        })
+    };
+    let b = shape.bounding_box();
+    let mut bare = Vec::new();
+    let (nx, ny) = (((b.x1 - b.x0) / STEP) as i64, ((b.y1 - b.y0) / STEP) as i64);
+    for i in 0..=nx {
+        for j in 0..=ny {
+            let q = Point::new(b.x0 + i as f64 * STEP, b.y0 + j as f64 * STEP);
+            let deep = inside(q)
+                && [(-1.0, -1.0), (0.0, -1.0), (1.0, -1.0), (-1.0, 0.0), (1.0, 0.0), (-1.0, 1.0), (0.0, 1.0), (1.0, 1.0)]
+                    .iter()
+                    .all(|&(dx, dy)| inside(Point::new(q.x + dx * inset, q.y + dy * inset)));
+            if deep && !near(q) {
+                bare.push(q);
+            }
+        }
+    }
+    bare
+}
+
+/// A fill covers its shape: every place more than 0.6 mm inside the outline lies within half a row
+/// spacing (and 0.1 mm) of a needle-down stitch, for shapes whose regions branch and turn (an E, a
+/// U, combs, a ring, an H), at several angles, with and without underlay. A region dropped, or a
+/// band left between regions, would leave bare fabric here.
+#[test]
+fn a_fill_covers_its_shape() {
+    let e = polygon([
+        (0.0, 0.0),
+        (40.0, 0.0),
+        (40.0, 8.0),
+        (10.0, 8.0),
+        (10.0, 16.0),
+        (30.0, 16.0),
+        (30.0, 24.0),
+        (10.0, 24.0),
+        (10.0, 32.0),
+        (40.0, 32.0),
+        (40.0, 40.0),
+        (0.0, 40.0),
+    ]);
+    let u = polygon([(0.0, 0.0), (14.0, 0.0), (14.0, 30.0), (9.0, 30.0), (9.0, 8.0), (5.0, 8.0), (5.0, 30.0), (0.0, 30.0)]);
+    let mut ring = rect(0.0, 0.0, 40.0, 30.0);
+    ring.extend(polygon([(13.0, 13.0), (13.0, 17.0), (17.0, 17.0), (17.0, 13.0)]));
+    let h = polygon([
+        (0.0, 0.0),
+        (8.0, 0.0),
+        (8.0, 16.0),
+        (22.0, 16.0),
+        (22.0, 0.0),
+        (30.0, 0.0),
+        (30.0, 40.0),
+        (22.0, 40.0),
+        (22.0, 24.0),
+        (8.0, 24.0),
+        (8.0, 40.0),
+        (0.0, 40.0),
+    ]);
+    let shapes = [("E", e), ("U", u), ("comb", comb(5, 35.0, 4.0, 4.0, 6.0)), ("ring", ring), ("H", h)];
+    /// How far inside the outline a place must be to count, and how far past half a spacing from a
+    /// stitch it may lie (millimetres): the thread's own width covers the rest. Within 2 mm of an
+    /// edge square to the rows, a row may start a stitch in (its turn along the edge, one spacing,
+    /// 0.38 mm, is shorter than the shortest stitch, 0.4 mm, and left out), leaving wedges up to
+    /// about 0.35 mm bare: measured, and left for the project owner to decide (it moves every fill).
+    /// Past that, nothing may be.
+    const INSET: f64 = 2.0;
+    const SLACK: f64 = 0.1;
+    for (name, shape) in &shapes {
+        for underlay in [Underlay::None, Underlay::Auto] {
+            for angle in [0.0, 30.0, 45.0, 90.0, 135.0] {
+                let p = Params { angle, underlay, ..Params::for_style(Style::Fill) };
+                let out = stitches(shape, FillRule::NonZero, &p);
+                let bare = uncovered(shape, &out, INSET, p.density / 2.0 + SLACK);
+                assert!(bare.is_empty(), "{name}, {angle}°, underlay {underlay:?}: {} places bare, first {:?}", bare.len(), bare.first());
+            }
+        }
+    }
+    // The check itself: with the E's top arm's stitches taken out, its arm is found bare.
+    let (_, e) = &shapes[0];
+    let p = Params { angle: 0.0, ..Params::for_style(Style::Fill) };
+    let out: Vec<Stitch> = stitches(e, FillRule::NonZero, &p).into_iter().filter(|s| !(s.y > 33.0 && s.x > 12.0)).collect();
+    assert!(!uncovered(e, &out, INSET, p.density / 2.0 + SLACK).is_empty());
+}
+
+/// A fill with narrow columns that would need more stitches than one shape may have is refused
+/// before it is planned, as a fill alone is.
+#[test]
+fn a_fill_with_columns_too_large_is_refused() {
+    let big = rect(0.0, 0.0, 3000.0, 3000.0);
+    let (fill, satin) = (Params::for_style(Style::Fill), Params::for_style(Style::Satin));
+    let refused = try_fill_with_columns(&big, FillRule::NonZero, &big, &[], &fill, &satin, None);
+    assert!(matches!(refused, Err(crate::Error::TooLarge(_))), "{refused:?}");
+    assert!(try_fill_with_columns(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &rect(0.0, 0.0, 30.0, 30.0), &[], &fill, &satin, None).is_ok());
 }

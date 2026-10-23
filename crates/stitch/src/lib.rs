@@ -2,9 +2,10 @@
 //!
 //! A design is a [`Pattern`]: colour blocks ([`Block`]) of [`Stitch`] points in needle order, one
 //! thread each. Coordinates are millimetres with y pointing down, like the document's own points
-//! (1/72 in; [`pt_to_mm`] and [`mm_to_pt`] convert). The machine formats count in 0.1 mm with y
-//! pointing up: every writer flips y as it writes and every reader flips it back, so a file keeps
-//! its shape when it is read and written again.
+//! (1/72 in; [`pt_to_mm`] and [`mm_to_pt`] convert). The machine formats count in 0.1 mm, DST,
+//! TAP, T01, EXP and JEF with y pointing up, PEC's and VP3's stitches with y pointing down: each
+//! writer converts as it writes and each reader converts back, so a file keeps its shape when it is
+//! read and written again.
 //!
 //! - [`plan`]: how a path becomes stitches — running, satin and tatami fill, underlay and trims.
 //! - [`format`]: the machine formats (DST, TAP, T01, EXP, PES, PEC, JEF, VP3), read and written.
@@ -13,7 +14,8 @@
 //!   palette's thread uses.
 //!
 //! Nothing here panics on bad input: a malformed file gives an [`Error`], and stitch parameters
-//! that are missing or out of range fall back to the style's defaults.
+//! out of range are clamped to their range ([`plan::Params::sane`]; the engine refuses them before
+//! they get here), while ones that aren't numbers fall back to the style's defaults.
 
 #![forbid(unsafe_code)]
 
@@ -44,13 +46,20 @@ pub fn mm_to_pt(v: f64) -> f64 {
     v / MM_PER_PT
 }
 
+/// The farthest a coordinate is written from a file's origin, tenths of a millimetre (±200 m): well
+/// within every format's 32-bit fields. [`quantize`] clamps to it; the writers refuse a design that
+/// reaches past it, or past what a format's header can state, instead of writing it clamped
+/// ([`format::Format::write`]).
+pub const MAX_TENTHS: i32 = 2_000_000;
+
 /// `mm` snapped to the 0.1 mm machine formats count in (0 for anything not finite, so a bad
-/// coordinate writes as the origin instead of a wrapped integer).
+/// coordinate writes as the origin instead of a wrapped integer), within ±[`MAX_TENTHS`].
 pub fn quantize(mm: f64) -> i32 {
     if !mm.is_finite() {
         return 0;
     }
-    (mm * UNITS_PER_MM).round().clamp(-2_000_000.0, 2_000_000.0) as i32
+    let limit = f64::from(MAX_TENTHS);
+    (mm * UNITS_PER_MM).round().clamp(-limit, limit) as i32
 }
 
 /// What the machine does at a point.
@@ -66,23 +75,9 @@ pub enum Command {
     ColorChange,
     /// The machine stops and waits (for an appliqué piece, say), the needle up.
     Stop,
-    /// The design ends here.
-    End,
 }
 
 impl Command {
-    /// The command's name in the file-format and command parameters (`stitch`, `jump`, …).
-    pub fn id(self) -> &'static str {
-        match self {
-            Self::Stitch => "stitch",
-            Self::Jump => "jump",
-            Self::Trim => "trim",
-            Self::ColorChange => "colorChange",
-            Self::Stop => "stop",
-            Self::End => "end",
-        }
-    }
-
     /// Does the needle go down at this point?
     pub fn needle_down(self) -> bool {
         matches!(self, Self::Stitch)
@@ -119,8 +114,7 @@ impl Stitch {
 
     /// The distance from `self` to `other`, millimetres.
     pub fn distance(self, other: Self) -> f64 {
-        let (dx, dy) = (other.x - self.x, other.y - self.y);
-        (dx * dx + dy * dy).sqrt()
+        self.point().distance(other.point())
     }
 }
 
@@ -139,16 +133,35 @@ pub struct Thread {
     /// [`Thread::color`] to its own ([`thread::Palette::numbers`]). `None`: every format matches
     /// the colour.
     pub chosen: Option<thread::PaletteThread>,
+    /// The thread record the file gave beside the colour (VP3's), written back as it was by a
+    /// format that has one. `None`: a planned design's thread, or a format that records none.
+    pub record: Option<ThreadRecord>,
 }
 
 impl Thread {
     pub fn rgb(color: [u8; 3]) -> Self {
-        Self { color, name: String::new(), chosen: None }
+        Self { color, name: String::new(), chosen: None, record: None }
     }
 
     pub fn named(color: [u8; 3], name: &str) -> Self {
-        Self { color, name: name.to_string(), chosen: None }
+        Self { color, name: name.to_string(), chosen: None, record: None }
     }
+}
+
+/// A thread as a machine file records it beside its colour (a VP3 colour block's thread record):
+/// kept so that a design read from a file is written back with it.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ThreadRecord {
+    /// The maker's catalogue number, as the file has it.
+    pub catalogue: String,
+    /// The thread's description.
+    pub description: String,
+    /// The maker.
+    pub brand: String,
+    /// The material's code (5 is rayon).
+    pub material: u8,
+    /// The thread's weight (40 wt is standard embroidery thread).
+    pub weight: u8,
 }
 
 /// One thread's stitches: a colour block.
@@ -194,6 +207,11 @@ pub struct Pattern {
     /// The design's name as the file's header or title gives it (`""` when it has none).
     pub name: String,
     pub blocks: Vec<Block>,
+    /// Where the machine starts the needle (millimetres, in the design's frame): for a design read
+    /// from a file, the file's own start point (its origin); `None` for one planned from art. The
+    /// formats that start at a corner ([`format::Start::Corner`]) start here when it is set; JEF and
+    /// VP3, whose machines put the start at the hoop's centre, always start at the design's centre.
+    pub start: Option<Point>,
 }
 
 impl Pattern {
@@ -211,12 +229,13 @@ impl Pattern {
         self.blocks.iter().all(|b| b.stitches.is_empty())
     }
 
-    /// The box the design's needle points fall in (millimetres), `None` when it has none.
+    /// The box all the design's points fall in, jumps and cuts as well as needle points
+    /// (millimetres), `None` when it has none.
     pub fn bounds(&self) -> Option<Rect> {
         bounds_of(self.points())
     }
 
-    /// Move every point by (`dx`, `dy`) millimetres.
+    /// Move every point, and the start, by (`dx`, `dy`) millimetres.
     pub fn translate(&mut self, dx: f64, dy: f64) {
         if !(dx.is_finite() && dy.is_finite()) {
             return;
@@ -225,9 +244,12 @@ impl Pattern {
             s.x += dx;
             s.y += dy;
         }
+        if let Some(start) = &mut self.start {
+            *start = Point::new(start.x + dx, start.y + dy);
+        }
     }
 
-    /// Move the design so its top-left needle point is the origin, as the machine formats record
+    /// Move the design so the top-left corner of its points' box ([`Pattern::bounds`]) is the origin, as the machine formats record
     /// their designs; answers whether it moved.
     pub fn normalize(&mut self) -> bool {
         let Some(b) = self.bounds() else { return false };
@@ -236,11 +258,6 @@ impl Pattern {
         }
         self.translate(-b.x0, -b.y0);
         true
-    }
-
-    /// The number of thread changes the design needs: one fewer than its blocks.
-    pub fn color_changes(&self) -> usize {
-        self.blocks.len().saturating_sub(1)
     }
 }
 

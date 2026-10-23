@@ -99,7 +99,7 @@ fn label(o: &FormatOption) -> String {
         "embedProfiles" => tl!("Embed ICC Profiles").into(),
         "pdfCompatible" => tl!("Create PDF-Compatible File").into(),
         "compress" => tl!("Use Compression").into(),
-        _ => form::humanize(o.name),
+        _ => super::embroidery_options::label(o.name).unwrap_or_else(|| form::humanize(o.name)),
     }
 }
 
@@ -328,6 +328,9 @@ fn option_row(app: &VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog, o: &Forma
     let t = Tokens::get(ui.ctx());
     let label = label(o);
     let value = d.fields.get(o.name).cloned().unwrap_or(Value::Null);
+    if super::embroidery_options::row(ui, d, o, &value) {
+        return;
+    }
     if o.name == "aiVersion" {
         ui.label(egui::RichText::new(tl!("Version:")).color(t.text_dim)).on_hover_text(o.description);
         let versions = [tl!("PDF-compatible"), tl!("Legacy (version 7)")];

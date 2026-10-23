@@ -4097,8 +4097,9 @@ lighting	Light	光源
 	Minimum must not exceed Desired, nor Desired Maximum.	最小值不可超過所需值，所需值不可超過最大值。
 	Minimum	最小值
 	Justification	對齊設定
-	Trim After	之後剪線
+	Embroidery Trim After	刺繡：之後剪線
 	Embroidery Setup	刺繡設定
+	Show Embroidery Settings	顯示刺繡設定
 	Embroidery Statistics	刺繡統計
 	Embroidery Sewing Order	刺繡順序
 	Embroidery Check	刺繡檢查
@@ -4107,9 +4108,104 @@ lighting	Light	光源
 @msg	type is not stitched: outline it (Type › Create Outlines) and export again	文字不會被刺繡：請先建立外框 (文字 › 建立外框)，再重新匯出
 @msg	images are not stitched: trace them (Object › Image Trace) first	影像不會被刺繡：請先描圖 (物件 › 影像描圖)
 @msg	live blends, envelopes, meshes and repeats are not stitched: expand them first	即時漸變、封套、網格與重複不會被刺繡：請先展開
+@msg	placed documents are not stitched: embed them first (Links › Embed)	置入的文件不會被刺繡：請先嵌入 (連結 › 嵌入)
+@msg	intertwined objects are not stitched: release them first (Object › Intertwine › Release)	交織的物件不會被刺繡：請先釋放 (物件 › 交織 › 釋放)
+@msg	symbols placed more than 100,000 times (placing one another) are left out past that	相互巢狀置入超過 100,000 次的符號，超過的部分不會刺繡
+@msg	shadows, glows, blurs and other raster effects are not stitched: the art under them is	陰影、光暈、模糊等點陣效果不會刺繡：其下方的圖稿會
+@msg	opacity masks are not stitched: the masked art is sewn whole	不透明遮色片不會刺繡：被遮色的圖稿會完整刺繡
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	負的 expand 值使部分填色形狀什麼也不剩，因此不會被刺繡：請少縮一些
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	漸層與圖樣以其第一個色標的顏色上色；刺繡每個色塊只用一條線縫製
-@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitchStyle fill)	寬於 {widest} mm 的筆畫會縫成 {widest} mm 寬的緞面柱：請改為填色 (stitchStyle fill)
+@msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	寬於 {widest} mm 的筆畫會縫成 {widest} mm 寬的緞面柱：請改為填色 (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	此版本無法辨識文件的刺繡線色盤 {palette}，因此其繡線會從 {default} 色盤中選取
 @msg	nothing to stitch: the document has no visible filled or stroked paths	沒有可刺繡的內容：文件中沒有可見的含填色或筆畫的路徑
 @msg	nothing to stitch: {_1}	沒有可刺繡的內容：{_1}
+
+# Machine embroidery: what opening a machine file leaves out, which makes writing over it ask first.
+@msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	PE-Design 編輯的 PES 檔案自身區段不會保留：從此文件寫出的 PES 只包含針跡
+@msg	the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones	檔案的預覽圖不會保留：從此文件寫出的 PES 或 PEC 中為空白
+@msg	thread numbers that name no thread of the palette (PEC's 62 to 64 mark appliqué) are written as the nearest thread	不對應色盤中任何繡線的繡線編號（PEC 的 62 至 64 表示貼布）會寫為最接近的繡線
+@msg	the JEF header's date and version, and a hoop larger than the design needs, aren't kept	JEF 檔頭的日期與版本，以及比圖案所需更大的繡框，不會保留
+@msg	the DST header's end position and multi-volume fields (AX, AY, MX, MY, PD) aren't kept	DST 檔頭的結束位置與多卷欄位（AX、AY、MX、MY、PD）不會保留
+@msg	threads that twist several colours are read in their first colour	由多種顏色撚成的繡線以其第一種顏色讀取
+@msg	the file's several designs are read as one	檔案中的多個圖案會當作一個讀取
+@msg	the file holds things this version doesn't read	此檔案包含此版本不讀取的內容
+
+# The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
+	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	基於 ArtCraft 團隊的 VectorCraft。MIT OR Apache-2.0。字體：Source Sans 3、Inter、JetBrains Mono (OFL)。圖示：Lucide (ISC) + VectorCraft。
+
+# Machine embroidery: errors opening and writing machine files, and the size limits.
+@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC 最多容納 {MAX_COLORS} 種顏色，而不是 {colors} 種
+@msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 最多容納 {MAX_COLORS} 個顏色區塊
+@msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST 檔案有 {HEADER} 位元組的檔頭與至少一筆 3 位元組的記錄，但此檔案只有 {_1} 位元組
+@msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST 檔頭最多計 {MAX_RECORDS} 筆記錄，而圖案需要 {_1} 筆
+@msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	PEC 針跡區塊最多容納 {MAX_BLOCK} 位元組（其長度為 24 位元），而圖案需要 {len} 位元組
+@msg	a VP3 string is too long	VP3 字串過長
+@msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	某個形狀距原點超過 {MAX_COORD_MM} mm，或有不是數字的座標：無法刺繡
+@msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	某個形狀約需 {n} 針，超過單一形狀允許的 {MAX_STITCHES} 針：請使用更長的針跡、更寬的間距或更小的圖案
+@msg	not a PES or PEC file: it does not start with #PES or #PEC	不是 PES 或 PEC 檔案：不以 #PES 或 #PEC 開頭
+@msg	not a VP3 file: it does not start with %vsm%	不是 VP3 檔案：不以 %vsm% 開頭
+@msg	not a {what} file: its record {_1} is not a DST record	不是 {what} 檔案：其第 {_1} 筆記錄不是 DST 記錄
+@msg	params must be an object	參數必須是物件
+@msg	the EXP file has no stitch records	EXP 檔案沒有針跡記錄
+@msg	the JEF file has no stitch records	JEF 檔案沒有針跡記錄
+@msg	the JEF file is cut short: {len} bytes	JEF 檔案被截斷：{len} 位元組
+@msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF 檔頭指向第 {offset} 位元組，超出檔案的 {_1} 位元組
+@msg	the PEC block has no stitches	PEC 區塊沒有針跡
+@msg	the PEC header is cut short	PEC 檔頭被截斷
+@msg	the PES header is cut short	PES 檔頭被截斷
+@msg	the PES header points at byte {at}, past the file's {_1} bytes	PES 檔頭指向第 {at} 位元組，超出檔案的 {_1} 位元組
+@msg	the VP3 file has no stitches	VP3 檔案沒有針跡
+@msg	the VP3 file has no {what} packet at byte {at}	VP3 檔案在第 {at} 位元組處沒有 {what} 封包
+@msg	the VP3 file is cut short: {len} bytes	VP3 檔案被截斷：{len} 位元組
+@msg	the design has more than {MAX_RUNS} separate runs of stitches, more than a document opens	圖案有超過 {MAX_RUNS} 段獨立的針跡，超過文件能開啟的數量
+@msg	the design has no points to write	圖案沒有可寫出的點
+@msg	the design has no stitches to draw	圖案沒有可繪製的針跡
+@msg	the design has no stitches to write	圖案沒有可寫出的針跡
+@msg	the design is too large for a VP3 file	圖案對 VP3 檔案來說太大
+@msg	the design is {_1} × {_2} mm, larger than a document holds	圖案為 {_1} × {_2} mm，超出文件能容納的大小
+@msg	the design is {_1} × {_2} mm, larger than {_3} can hold ({_4} mm a side)	圖案為 {_1} × {_2} mm，超出 {_3} 能容納的大小（每邊 {_4} mm）
+@msg	the design would need more than {MAX_DESIGN_STITCHES} stitches: use a longer stitch, wider spacing or less art	圖案將需要超過 {MAX_DESIGN_STITCHES} 針：請使用更長的針跡、更寬的間距或更少的圖稿
+@msg	the file has no stitches	檔案沒有針跡
+@msg	the {format} file would be larger than {_1} MiB: the design's moves are too long (objects far apart)	{format} 檔案將超過 {_1} MiB：圖案的移動過長（物件相距太遠）
+@msg	the {what} file has no stitch records	{what} 檔案沒有針跡記錄
+@msg	the {what} file holds more than {MAX_POINTS} stitches, more than a design may have	{what} 檔案包含超過 {MAX_POINTS} 針，超過一個圖案允許的數量
+@msg	thread number {index} doesn't fit a JEF header	繡線編號 {index} 無法寫入 JEF 檔頭
+@msg	thread number {index} doesn't fit a PEC header	繡線編號 {index} 無法寫入 PEC 檔頭
+@msg	too many stitches for a VP3 file	VP3 檔案的針數過多
+@msg	{_1} is not an embroidery format	{_1} 不是刺繡格式
+
+# Machine embroidery: the export options dialog (labels, tips and lists).
+	Stitch:	針法：
+	Stitch Length:	針跡長度：
+	Fill Angle:	填充角度：
+	Pull Compensation:	拉縮補償：
+	Pull Compensation (%):	拉縮補償（%）：
+	Push Compensation:	推擠補償：
+	Expand Fills:	擴展填充：
+	Narrow Parts as Satin:	窄處用緞紋：
+	Thread Weight:	線的粗細：
+	Underlay:	底襯：
+	Jump Length:	跳針長度：
+	Trim Length:	剪線長度：
+	Shortest Stitch:	最短針跡：
+	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	形狀的繡法：「自動」以榻榻米填充形狀，並依寬度將筆畫繡成緞紋柱或平針；其他選擇會以該方式繡所有形狀
+	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	填充列之間及緞紋針跡之間的距離；保持不變時，緞紋柱會依其寬度選擇
+	The length of the stitches along fill rows and running lines	沿填充列與平針的針跡長度
+	The direction of the fill rows	填充列的方向
+	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	在兩側加寬緞紋柱與填充列，以補償布料的收縮
+	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	依寬度的一定比例加寬緞紋柱與填充列，以補償布料的收縮
+	Shortens satin columns at their ends, where the thread pushes outward	在緞紋柱兩端縮短，那裡繡線會向外推擠
+	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	將每個填充形狀向四周擴大，以填合形狀之間的縫隙；負值會將其縮小
+	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	填充中比此值更窄的部分繡成緞紋柱；0 表示一處也不繡
+	The thread's weight: thinner thread (a higher number) packs the rows closer	線的粗細：較細的線（編號較大）會讓列排得更密
+	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	先繡以固定布料的針跡：由每個形狀選擇、不繡，或所有形狀用同一種
+	A move longer than this lifts the needle instead of being sewn	比此值更長的移動會抬起針，而不是繡出來
+	A jump longer than this cuts the thread first	比此值更長的跳針會先剪線
+	Shorter stitches are left out	較短的針跡不會繡出
+	Tatami Fill	榻榻米填充
+	Satin	緞紋
+	Running Stitch	平針
+	Centre Run	中線行針
+	Edge Run	邊緣行針
+	Edge Run and Zigzag	邊緣行針加鋸齒
+	Edge Run and Tatami	邊緣行針加榻榻米

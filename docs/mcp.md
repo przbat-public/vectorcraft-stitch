@@ -4286,41 +4286,72 @@ the entry names and decodes the codes that VectorCraft's default shortcuts agree
 ## Embroidery
 
 The document's art is stitched by `document.export` to `dst`, `tap`, `t01`, `exp`, `pes`, `pec`, `jef` or `vp3`, with the embroidery options
-`document.formats` lists for those formats (`stitchStyle`, `density`, `trimLength`…), and `document.open` reads such a
-file back as art, one group per thread. The whole feature is described in [embroidery.md](embroidery.md).
+`document.formats` lists for those formats (`stitch`, `spacing`, `trimLength`…; the earlier names `stitchStyle`, `density`,
+`stitchLength`, `stitchAngle`, `pullCompensation`, `pullCompensationPercent` and `pushCompensation` are taken as aliases),
+and `document.open` reads such a file back as art, one group per thread. A value outside an option's range (each
+description gives it) is refused, not clamped, and the read commands below echo the options they planned with under
+`options`. A design that would need too many stitches, one a format can't hold (more colours than it numbers, a size
+past its header) and a document with nothing to stitch are errors of the design, not "invalid parameters": changing the
+request's keys won't fix them. The whole feature is described in [embroidery.md](embroidery.md).
 
 - `embroidery.setup {palette?}` sets the document's thread palette, `"pec"` (Brother's 61 threads, which PES files
   number) or `"jef"` (Janome's 78, which JEF files number), in one undo step; `null` unsets it, and Janome's is used.
-  No params report `{palette, threadPalette}` (the palette set, and the one the stitch plan uses); the reply can be
-  passed back unchanged. A PES, PEC or JEF file opens in its own format's palette.
-- `embroidery.threads {…embroidery options}` lists the thread each colour block is sewn in, in sewing order:
-  `{palette, threshold, blocks: [{block, art, thread: {palette, index, name, color}, deltaE, mismatch, units}],
-  warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour and the thread's, to two decimals, and
-  `mismatch` flags one past `threshold` (10). It takes the export's embroidery options only: any other key, such as
-  `format` or `selectedOnly`, is refused.
-- `embroidery.setTrimAfter {on, ids?}` asks for the thread to be cut after each object.
-- `embroidery.stats {…embroidery options, speed?, fabricThickness?}` gives the design's figures as the export sews
-  it, for the design and per block: needle points, jumps, trims, colour changes, threads, blocks; size, bounds, start
-  and end points, extents from the start; the shortest and longest stitch and the longest jump; top and bobbin thread
-  in metres and the sewing time, both estimates (each says so in `estimate`) whose constants and sources `embroidery.md` lists (`speed`, stitches
-  a minute, 60 to 1500, default 650; `fabricThickness`, mm, 0 to 5, default 0.5). The time leaves out thread changes,
-  which are counted apart.
-- `embroidery.sequence {…embroidery options}` lists the sewing order, read only: the blocks in order with their
-  thread, stitch numbers, jumps and trims, and each block's units with the object a person selects (`id`), the part,
-  how it is sewn and why (the rule that chose it), its stitches, entry and exit points and bounds; `split` names the
-  objects sewn in more than one block. Sewing order follows stacking order: `node.move` changes it.
+  It answers `{settings: {palette}, resolved: {palette: {value, source}}}`: the palette as the document stores it
+  (null when unset, one a newer version wrote as it is), and the one the stitch plan uses with where it comes from
+  (`document`, or `default`). The reply's `settings` can be passed back (`{settings: …}`); `resolved` is only
+  reported and refused as input. `embroidery.settings {}` reads the same without editing anything. A PES, PEC or JEF
+  file opens in its own format's palette.
+- `embroidery.threads {…embroidery options, offset?, limit?}` lists the thread each colour block is sewn in, in sewing
+  order: `{palette, threshold, blockCount, offset, truncated, blocks: [{block, thread: {palette, index, name, color, art,
+  deltaE, mismatch}, unitCount}], options, warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour
+  and the thread's, to two decimals, and `mismatch` flags one past `threshold` (10). Besides the export's embroidery
+  options it takes only the stretch of blocks to list: any other key, such as `format`, is refused.
+- `embroidery.setTrimAfter {on?, ids?|id?}` asks for the thread to be cut after each object (or with `on: false` for no
+  cut, a file's own included); left out, `on` toggles. It needs a selection or `ids`, answers `{on, changed}`, and
+  reports an id that names no object as a missing object.
+- `embroidery.stats {…embroidery options, speed?, fabricThickness?, offset?, limit?}` gives the design's figures as the
+  export sews it, for the design and per block: `stitches` (needle points), `records` (needle points, jumps and cuts),
+  `jumps`, `trims`, `colorChanges`, `threadCount`, `blockCount`; `size`, `bounds`, `start` and `end` points, `extents`
+  from the start; the shortest and longest stitch and the longest jump; `threadUsage: {topMetres, bobbinMetres,
+  fabricThickness, estimate}` and the sewing `time`, both estimates (each says so in `estimate`) whose constants and
+  sources `embroidery.md` lists (`speed`, stitches a minute, 60 to 1500, default 650; `fabricThickness`, mm, 0 to 5,
+  default 0.5). The time leaves out colour changes, which are counted apart. `blocks` lists each block's thread,
+  counts, `firstRecord`/`lastRecord`, `topThreadMetres`, `bobbinThreadMetres` and `seconds`.
+- `embroidery.sequence {…embroidery options, offset?, limit?}` lists the sewing order, read only: the units from
+  `offset` in sewing order within their blocks, each block with its thread, counts, record numbers and what follows it,
+  each unit with the object a person selects (`id`), `part` (`fill`, `stroke`, `literal`), `partIndex` and
+  `occurrence` (which unit of that object and part, from 1 in walk order: the four tell a unit apart within a plan and
+  from one plan to the next while the object's own art keeps its number and order; `node`, the object sewn, is no key,
+  as an expanded object's pieces get new ids at every plan), how it is
+  sewn (`sewn`: `running`, `satin`, `tatami`, `literal`; `columns`) and why (`rule` id, `ruleValues`, and `why` as a
+  sentence), its counts, record numbers, entry and exit points and bounds; `blockCount`, `unitCount` and `truncated`
+  say what was left out, and `split` names the objects sewn in more than one block. Sewing order follows stacking
+  order: `node.move` changes it.
 - `embroidery.check {…embroidery options, format?, rules?, limit?}` runs the design checks: each rule with its
-  severity, threshold, unit, sources (the first is the one checked; where sources disagree each is listed), hits, the
-  objects hit and the first `limit` hits (20 by default, at most 1000) as stitch numbers and points. `format` (any format
-  `document.export` writes; default: the format of the document's thread palette) sets the format limits checked; `rules` picks rules by id.
+  severity, threshold, `unit` (a token: `mm`, `stitches`, `units`, `deltaE`, `blocks`, `colorChanges`), `measures`,
+  sources (the first is the one checked; where sources disagree each is listed), `hits`, the objects hit
+  (`objectCount`, at most 1000 in `objects`, `truncated`) and the first `limit` hits (`examples`, 20 by default, at
+  most 1000) as record numbers and points with the measure compared. `summary` gives, per severity, the rules that
+  found something and their hits. `format` (one of the eight embroidery formats; default: the format of the document's
+  thread palette) sets the format limits checked and the threads judged: those the format writes (a PES of a
+  document in Janome's palette writes Brother's threads, matched to the art's colours), named in `palette`; `rules`
+  picks rules by id.
 
-The three plan once for one state of the document and the same options: asking for the figures, the order and the
-checks in a row plans the design once, and an edit plans again only the objects it changed (and usually the one sewn after each, in
+The four read commands take `selectedOnly` (the selected objects alone, as `document.export {selectedOnly}` writes them)
+and plan the document as the export does: an opacity mask's editing layer, which no export writes, is left out.
+
+A *record* is every needle point, jump and cut; record numbers count them from 1 in sewing order, and `stitches`
+counts needle points only. Lengths, positions and boxes are millimetres from the document's origin, y down, boxes
+`[left, top, right, bottom]`; counts are integers. The replies change only by addition: a test pins each one's keys
+and value types.
+
+The four plan once for one state of the document and the same options: asking for the threads, the figures, the
+order and the checks in a row plans the design once (a design too large is refused once, the same way), and an edit plans again only the objects it changed (and usually the one sewn after each, in
 its block). A plan can be cancelled with `notifications/cancelled`.
 
 ```json
 {"name":"run_command","arguments":{"command":"embroidery.setup","params":{"palette":"pec"}}}
-{"name":"run_command","arguments":{"command":"embroidery.threads","params":{"stitchStyle":"fill"}}}
+{"name":"run_command","arguments":{"command":"embroidery.threads","params":{"stitch":"tatami"}}}
 {"name":"run_command","arguments":{"command":"embroidery.stats","params":{"speed":800}}}
 {"name":"run_command","arguments":{"command":"embroidery.check","params":{"format":"dst","rules":["stitchTooLong","formatStep"]}}}
 ```

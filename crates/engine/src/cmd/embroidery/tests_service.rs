@@ -1,5 +1,6 @@
-//! The planning service: a plan made with the units' stitches kept from the plans before it is
-//! the plan made afresh, for random documents edited at random; what is kept stays within its
+//! The planning service: a plan made with the units' stitches (and the areas the path operations
+//! made) kept from the plans before it is the plan made afresh, for random documents edited at
+//! random, with a cache small enough to drop what it keeps or not; what is kept stays within its
 //! bound; one snapshot of a document with the same options is planned once.
 
 use std::sync::Arc;
@@ -9,7 +10,8 @@ use serde_json::{Value, json};
 
 use super::cache::{UnitCache, UnitKey};
 use super::digitize::digitize;
-use super::service::PlanService;
+use super::service::{Of, PlanService};
+use super::test_support::run;
 use super::unit::{PlanError, UnitRequest, UnitStitches};
 use super::*;
 
@@ -29,7 +31,8 @@ struct Art {
     stroke: Option<(usize, f64)>,
 }
 
-/// One random edit, of the object at an index of the objects still there.
+/// One random edit, of the object at an index of the objects still there, of the document or of
+/// how it is planned.
 #[derive(Clone, Debug)]
 enum Edit {
     Move(usize, f64, f64),
@@ -38,6 +41,20 @@ enum Edit {
     Delete(usize),
     ToFront(usize),
     Undo,
+    Redo,
+    Hide(usize),
+    ShowAll,
+    TrimAfter(usize, bool),
+    /// The thread palette: Brother's, or Janome's.
+    Palette(bool),
+    /// A clip group of two objects (the upper one clips).
+    Clip(usize, usize),
+    /// An object made a symbol, and the symbol placed once more.
+    Symbol(usize, f64, f64),
+    /// Planned with the options at an index of [`OPTIONS`] from here on.
+    Options(usize),
+    /// The document exported to PES and opened: its runs literal stitches.
+    Open,
 }
 
 fn art() -> impl Strategy<Value = Art> {
@@ -58,17 +75,33 @@ fn edit() -> impl Strategy<Value = Edit> {
         1 => (0usize..16).prop_map(Edit::Delete),
         1 => (0usize..16).prop_map(Edit::ToFront),
         1 => Just(Edit::Undo),
+        1 => Just(Edit::Redo),
+        1 => (0usize..16).prop_map(Edit::Hide),
+        1 => Just(Edit::ShowAll),
+        1 => (0usize..16, any::<bool>()).prop_map(|(i, on)| Edit::TrimAfter(i, on)),
+        1 => any::<bool>().prop_map(Edit::Palette),
+        1 => (0usize..16, 0usize..16).prop_map(|(a, b)| Edit::Clip(a, b)),
+        1 => (0usize..16, 0.0..220.0f64, 0.0..220.0f64).prop_map(|(i, x, y)| Edit::Symbol(i, x, y)),
+        1 => (0..OPTIONS.len()).prop_map(Edit::Options),
+        1 => Just(Edit::Open),
     ]
 }
 
-/// The export options a random document is planned with: the defaults, or ones that change how
-/// every unit is sewn.
-fn options() -> impl Strategy<Value = Value> {
-    prop_oneof![Just(json!({})), Just(json!({"stitchStyle": "satin"})), Just(json!({"density": 0.5, "jumpLength": 3, "trimLength": 4}))]
+/// The export options a random document is planned with: the defaults, ones that change how every
+/// unit is sewn, and `expand` both ways (fills grown or shrunk by the path operations).
+const OPTIONS: [&str; 5] =
+    [r#"{}"#, r#"{"stitchStyle": "satin"}"#, r#"{"density": 0.5, "jumpLength": 3, "trimLength": 4}"#, r#"{"expand": 0.3}"#, r#"{"expand": -0.4}"#];
+
+/// The options at index `k` of [`OPTIONS`].
+fn options_at(k: usize) -> Options {
+    let v: Value = serde_json::from_str(OPTIONS[k % OPTIONS.len()]).unwrap();
+    Options::from_params(&v, "test").unwrap()
 }
 
-fn run(s: &mut Session, command: &str, params: Value) -> Value {
-    s.execute(command, &params).unwrap_or_else(|e| panic!("{command} {params}: {e}"))
+/// How many stitches the service's cache may hold: the default, or few enough that it drops units
+/// within a plan and between plans.
+fn cache_limit() -> impl Strategy<Value = Option<usize>> {
+    prop_oneof![2 => Just(None), 1 => Just(Some(400)), 1 => Just(Some(4000))]
 }
 
 /// A session holding `arts` → it and their ids, in stacking order.
@@ -101,8 +134,9 @@ fn objects(s: &Session) -> Vec<u64> {
     s.doc().unwrap().doc.layers.iter().filter_map(|l| l.children()).flatten().map(|c| c.id.0).collect()
 }
 
-/// Apply `e` to the objects `ids` (those still there, in no particular order).
-fn apply(s: &mut Session, ids: &mut Vec<u64>, e: &Edit) {
+/// Apply `e` to the objects `ids` (those still there, in no particular order), planned with
+/// `opts`.
+fn apply(s: &mut Session, ids: &mut Vec<u64>, opts: &mut Options, e: &Edit) {
     let pick = |i: usize| ids.get(i % ids.len().max(1)).copied();
     match *e {
         Edit::Move(i, dx, dy) => {
@@ -131,33 +165,87 @@ fn apply(s: &mut Session, ids: &mut Vec<u64>, e: &Edit) {
                 run(s, "object.arrange.bringToFront", json!({"ids": [id]}));
             }
         }
-        // An undo may bring back an object deleted: the objects to edit are the document's again,
-        // restored ones included.
+        // An undo (or a redo) may bring back an object deleted: the objects to edit are the
+        // document's again, restored ones included.
         Edit::Undo => {
             let _ = s.execute("edit.undo", &json!({}));
             *ids = objects(s);
+        }
+        Edit::Redo => {
+            let _ = s.execute("edit.redo", &json!({}));
+            *ids = objects(s);
+        }
+        Edit::Hide(i) => {
+            if let Some(id) = pick(i) {
+                run(s, "object.hide", json!({"ids": [id]}));
+            }
+        }
+        Edit::ShowAll => {
+            let _ = s.execute("object.showAll", &json!({}));
+        }
+        Edit::TrimAfter(i, on) => {
+            if let Some(id) = pick(i) {
+                run(s, "embroidery.setTrimAfter", json!({"on": on, "ids": [id]}));
+            }
+        }
+        Edit::Palette(pec) => {
+            run(s, "embroidery.setup", json!({"palette": if pec { "pec" } else { "jef" }}));
+        }
+        // Either may fail (one object, or objects in different groups): the document is then as
+        // it was.
+        Edit::Clip(a, b) => {
+            if let (Some(a), Some(b)) = (pick(a), pick(b))
+                && a != b
+            {
+                run(s, "select.set", json!({"ids": [a, b]}));
+                let _ = s.execute("object.clippingMask.make", &json!({}));
+                *ids = objects(s);
+            }
+        }
+        Edit::Symbol(i, x, y) => {
+            if let Some(id) = pick(i) {
+                let name = format!("Symbol {}", s.doc().unwrap().doc.symbols.len());
+                run(s, "select.set", json!({"ids": [id]}));
+                if s.execute("symbol.new", &json!({"name": name})).is_ok() {
+                    let _ = s.execute("symbol.place", &json!({"name": name, "x": x, "y": y}));
+                }
+                *ids = objects(s);
+            }
+        }
+        Edit::Options(k) => *opts = options_at(k),
+        Edit::Open => {
+            if let Ok(r) = s.execute("document.export", &json!({"format": "pes"})) {
+                let data = r["dataBase64"].as_str().unwrap().to_string();
+                run(s, "document.open", json!({"name": "design.pes", "dataBase64": data}));
+                *ids = objects(s);
+            }
         }
     }
     run(s, "select.none", json!({}));
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 48, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(ProptestConfig { cases: 64, failure_persistence: None, ..ProptestConfig::default() })]
 
-    /// A plan made with the stitches kept from the plans before it, after every edit, is the plan
-    /// made afresh.
+    /// A plan made with the stitches and areas kept from the plans before it, after every edit, is
+    /// the plan made afresh, whatever the cache had room for.
     #[test]
-    fn a_plan_with_kept_units_is_a_fresh_plan(arts in proptest::collection::vec(art(), 1..8), edits in proptest::collection::vec(edit(), 1..8), opts in options()) {
-        let opts = Options::from_params(&opts, "test").unwrap();
+    fn a_plan_with_kept_units_is_a_fresh_plan(
+        arts in proptest::collection::vec(art(), 1..8),
+        edits in proptest::collection::vec(edit(), 1..10),
+        first in 0..OPTIONS.len(),
+        limit in cache_limit(),
+    ) {
+        let mut opts = options_at(first);
         let (mut s, mut ids) = build(&arts);
-        let service = PlanService::default();
+        let service = limit.map_or_else(PlanService::default, PlanService::with_limit);
         for e in std::iter::once(None).chain(edits.iter().map(Some)) {
             if let Some(e) = e {
-                apply(&mut s, &mut ids, e);
+                apply(&mut s, &mut ids, &mut opts, e);
             }
             let doc = s.doc().unwrap().doc.clone();
-            let kept = service.plan(&doc, &opts).map(|p| (*p).clone());
-            let fresh = digitize(&doc, &opts);
+            let kept = service.plan(Of::whole(&doc), &doc, &opts).map(|p| (*p).clone());
+            let fresh = digitize(&doc, &opts, None);
             prop_assert_eq!(kept, fresh, "after {:?}", e);
         }
     }
@@ -168,7 +256,7 @@ proptest! {
 #[test]
 fn a_key_changes_with_every_value_a_unit_depends_on() {
     use vectorcraft_geom::{BezPath, FillRule, Point, Rect, Shape};
-    use vectorcraft_stitch::plan::{Params, Style};
+    use vectorcraft_stitch::plan::{Params, Style, Underlay};
     let shape = Rect::new(0.0, 0.0, 20.0, 10.0).to_path(0.1);
     let clip = (Rect::new(0.0, 0.0, 15.0, 15.0).to_path(0.1), FillRule::NonZero);
     let base = UnitRequest {
@@ -179,8 +267,8 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
         from: Some(Point::new(3.0, 4.0)),
         clip: Some(&clip),
     };
-    let key = UnitKey::of(&base);
-    assert_eq!(key, UnitKey::of(&base.clone()), "the same request, the same key");
+    let key = UnitKey::of(&base, None);
+    assert_eq!(key, UnitKey::of(&base.clone(), None), "the same request, the same key");
     let moved: BezPath = {
         let mut p = shape.clone();
         p.apply_affine(vectorcraft_geom::Affine::translate((0.1, 0.0)));
@@ -211,7 +299,7 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
         |p| p.push[0] += 0.1,
         |p| p.push[1] += 0.1,
         |p| p.thread_weight += 1.0,
-        |p| p.underlay = !p.underlay,
+        |p| p.underlay = if p.underlay == Underlay::None { Underlay::Auto } else { Underlay::None },
         |p| p.jump += 0.5,
         |p| p.trim += 0.5,
         |p| p.lock = !p.lock,
@@ -230,7 +318,7 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
         changed.push(UnitRequest { columns: Some(columns), ..base });
     }
     for (k, req) in changed.iter().enumerate() {
-        assert_ne!(UnitKey::of(req), key, "change {k}");
+        assert_ne!(UnitKey::of(req, None), key, "change {k}");
     }
 }
 
@@ -250,17 +338,27 @@ fn the_units_used_least_recently_are_dropped_first() {
         })
         .collect();
     let key = |shape: &BezPath| {
-        UnitKey::of(&UnitRequest { shape, rule: FillRule::NonZero, params: Params::for_style(Style::Running), columns: None, from: None, clip: None })
+        UnitKey::of(
+            &UnitRequest { shape, rule: FillRule::NonZero, params: Params::for_style(Style::Running), columns: None, from: None, clip: None },
+            None,
+        )
     };
     // Each unit 100 stitches and a key of about 40 words: 4 such units don't fit a limit of 320.
     let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None });
+    // Each step a plan of its own (one plan's units are never dropped for each other).
     let mut cache = UnitCache::with_limit(320);
+    cache.begin();
     cache.insert(key(&shapes[0]), unit());
+    cache.begin();
     cache.insert(key(&shapes[1]), unit());
+    cache.begin();
     assert!(cache.get(&key(&shapes[0])).is_some(), "the first is used again");
+    cache.begin();
     cache.insert(key(&shapes[2]), unit());
+    cache.begin();
     cache.insert(key(&shapes[3]), unit());
     assert!(cache.held() <= 320, "{}", cache.held());
+    cache.begin();
     assert!(cache.get(&key(&shapes[1])).is_none(), "the one used least recently went first");
     assert!(cache.get(&key(&shapes[3])).is_some(), "the last added stays");
     // A unit larger than the whole limit is not kept, and drops nothing.
@@ -268,6 +366,92 @@ fn the_units_used_least_recently_are_dropped_first() {
     cache.insert(key(&shapes[1]), Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 400], columns: None, widths: None }));
     assert_eq!(cache.units(), before);
     assert!(cache.get(&key(&shapes[1])).is_none());
+}
+
+/// A plan whose units don't all fit keeps those it planned first, never dropping one of its own for
+/// another: the next plan of the same units finds those, where dropping the least recently used
+/// would have dropped, unit by unit, the very one asked for next, and kept none.
+#[test]
+fn a_plan_keeps_its_first_units_when_not_all_fit() {
+    use vectorcraft_geom::{BezPath, FillRule, Point};
+    use vectorcraft_stitch::Stitch;
+    use vectorcraft_stitch::plan::{Params, Style};
+    let shapes: Vec<BezPath> = (0..3)
+        .map(|k| {
+            let mut p = BezPath::new();
+            p.move_to(Point::new(f64::from(k), 0.0));
+            p.line_to(Point::new(f64::from(k), 10.0));
+            p
+        })
+        .collect();
+    let key = |shape: &BezPath| {
+        UnitKey::of(
+            &UnitRequest { shape, rule: FillRule::NonZero, params: Params::for_style(Style::Running), columns: None, from: None, clip: None },
+            None,
+        )
+    };
+    let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None });
+    // Two units of 100 stitches and their keys fit 320, three don't.
+    let mut cache = UnitCache::with_limit(320);
+    for _ in 0..3 {
+        cache.begin();
+        let found: Vec<bool> = shapes
+            .iter()
+            .map(|shape| {
+                let kept = cache.get(&key(shape)).is_some();
+                if !kept {
+                    cache.insert(key(shape), unit());
+                }
+                kept
+            })
+            .collect();
+        assert!(cache.held() <= 320, "{}", cache.held());
+        assert_eq!(cache.units(), 2);
+        if found.iter().any(|k| *k) {
+            assert_eq!(found, [true, true, false], "the first two kept, plan after plan");
+        }
+    }
+}
+
+/// A design too large to plan is refused again at once, without planning up to the limit again;
+/// a plan of it with other options is planned.
+#[test]
+fn a_design_too_large_is_refused_once_per_snapshot() {
+    let mut s = Session::new();
+    run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
+    run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+    // Three metres a side: more stitches than one shape may have.
+    run(&mut s, "shape.rectangle", json!({"x": 0, "y": 0, "width": 8500, "height": 8500}));
+    let doc = s.doc().unwrap().doc.clone();
+    let service = PlanService::default();
+    let opts = Options::default();
+    let first = service.plan(Of::whole(&doc), &doc, &opts);
+    assert!(matches!(first, Err(PlanError::TooLarge(_))), "{first:?}");
+    assert_eq!(service.walks(), 1);
+    assert_eq!(service.plan(Of::whole(&doc), &doc, &opts), first, "the same refusal");
+    assert_eq!(service.walks(), 1, "not planned again");
+    let other = options_at(2);
+    assert!(service.plan(Of::whole(&doc), &doc, &other).is_err());
+    assert_eq!(service.walks(), 2, "other options, planned");
+}
+
+/// The areas the path operations make are kept: a plan after one object moves makes that
+/// object's area again, and takes every other one's from what was kept.
+#[test]
+fn a_plan_after_a_nudge_makes_only_the_moved_objects_area() {
+    let arts: Vec<Art> =
+        (0..3).map(|k| Art { kind: 0, x: 20.0 + 70.0 * f64::from(k), y: 40.0, w: 50.0, h: 40.0, fill: Some(k as usize), stroke: None }).collect();
+    let (mut s, ids) = build(&arts);
+    let opts = options_at(3);
+    let service = PlanService::default();
+    let doc = s.doc().unwrap().doc.clone();
+    service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    assert_eq!(service.shapes(), 3, "each fill's grown area");
+    run(&mut s, "object.move", json!({"ids": [ids[1]], "dx": 2, "dy": 0}));
+    let doc = s.doc().unwrap().doc.clone();
+    let kept = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    assert_eq!(service.shapes(), 4, "only the moved one's made again");
+    assert_eq!(*kept, digitize(&doc, &opts, None).unwrap());
 }
 
 /// Each document has a service of its own, dropped when it closes; a second plan of a document
@@ -304,19 +488,23 @@ fn a_snapshot_with_the_same_options_is_planned_once() {
     let doc = s.doc().unwrap().doc.clone();
     let service = PlanService::default();
     let opts = Options::default();
-    let first = service.plan(&doc, &opts).unwrap();
-    assert!(Arc::ptr_eq(&first, &service.plan(&doc, &opts).unwrap()), "the same snapshot, the same plan");
+    let first = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    assert!(Arc::ptr_eq(&first, &service.plan(Of::whole(&doc), &doc, &opts).unwrap()), "the same snapshot, the same plan");
     assert_eq!(service.walks(), 1);
+    // Fonts added since (a text clipping path is outlined with them): not the plan remembered.
+    let fonts = vectorcraft_text::FontDb::global().generation();
+    assert!(service.remembered(Of::whole(&doc), &opts, fonts).is_some());
+    assert!(service.remembered(Of::whole(&doc), &opts, fonts.wrapping_add(1)).is_none());
     // The same art in another snapshot: walked again, every unit from what was kept.
     let kept = service.kept();
     let copy = Arc::new((*doc).clone());
-    let again = service.plan(&copy, &opts).unwrap();
+    let again = service.plan(Of::whole(&copy), &copy, &opts).unwrap();
     assert!(!Arc::ptr_eq(&first, &again));
     assert_eq!((*first).clone(), (*again).clone());
     assert_eq!((service.walks(), service.kept()), (2, kept), "no unit planned anew");
     // Other options: another plan.
     let satin = Options::from_params(&json!({"stitchStyle": "satin"}), "test").unwrap();
-    assert_ne!(*service.plan(&doc, &satin).unwrap(), *first);
+    assert_ne!(*service.plan(Of::whole(&doc), &doc, &satin).unwrap(), *first);
     // Through the commands: three in a row walk the document once; an edit, and its undo (an
     // earlier snapshot), walk it again.
     let uid = s.doc().unwrap().uid;
@@ -357,13 +545,13 @@ fn a_cancelled_plan_leaves_no_plan_and_keeps_its_finished_units() {
     let (s, _) = five();
     let doc = s.doc().unwrap().doc.clone();
     let opts = Options::default();
-    let fresh = digitize(&doc, &opts).unwrap();
+    let fresh = digitize(&doc, &opts, None).unwrap();
     assert_eq!(fresh.units.len(), 7);
     let service = PlanService::default();
     // Cancelled before it starts: nothing planned, nothing kept.
     let token = CancelToken::new();
     token.cancel();
-    assert_eq!(cancel::scope(&token, None, || service.plan(&doc, &opts)), Err(PlanError::Cancelled));
+    assert_eq!(cancel::scope(&token, None, || service.plan(Of::whole(&doc), &doc, &opts)), Err(PlanError::Cancelled));
     assert_eq!(service.kept(), 0);
     // Cancelled as the third unit is reported: two units finished and kept, the third (a fill)
     // stopped while its narrow parts were looked for.
@@ -378,12 +566,12 @@ fn a_cancelled_plan_leaves_no_plan_and_keeps_its_finished_units() {
             }
         })
     };
-    assert_eq!(cancel::scope(&token, Some(sink), || service.plan(&doc, &opts)), Err(PlanError::Cancelled));
+    assert_eq!(cancel::scope(&token, Some(sink), || service.plan(Of::whole(&doc), &doc, &opts)), Err(PlanError::Cancelled));
     assert_eq!(*steps.borrow(), [(1, 7), (2, 7), (3, 7)]);
     assert_eq!(service.kept(), 2, "the units finished before the cancel");
     // Not cancelled: the fresh plan, with only the other five planned.
     let walks = service.walks();
-    assert_eq!(*service.plan(&doc, &opts).unwrap(), fresh);
+    assert_eq!(*service.plan(Of::whole(&doc), &doc, &opts).unwrap(), fresh);
     assert_eq!((service.walks(), service.kept()), (walks + 1, 7));
 }
 
@@ -417,11 +605,160 @@ fn the_service_plans_on_another_thread() {
     let service = Arc::new(PlanService::default());
     let there = {
         let (service, doc, opts) = (service.clone(), doc.clone(), opts.clone());
-        std::thread::spawn(move || service.plan(&doc, &opts).map(|p| (*p).clone())).join().unwrap()
+        std::thread::spawn(move || service.plan(Of::whole(&doc), &doc, &opts).map(|p| (*p).clone())).join().unwrap()
     };
-    assert_eq!(there, digitize(&doc, &opts));
+    assert_eq!(there, digitize(&doc, &opts, None));
     let kept = service.kept();
-    let here = service.plan(&Arc::new((*doc).clone()), &opts).unwrap();
+    let copy = Arc::new((*doc).clone());
+    let here = service.plan(Of::whole(&copy), &copy, &opts).unwrap();
     assert_eq!(Ok((*here).clone()), there);
     assert_eq!((service.walks(), service.kept()), (2, kept), "every unit taken from what was kept there");
+}
+
+/// The planner a session hands out plans on another thread what the commands plan, through the
+/// same service: a plan made on the worker is the one the next command reads, without planning
+/// again. Its options come from the commands' params, checked as they are.
+#[test]
+fn a_planner_plans_on_another_thread_what_the_commands_plan() {
+    let (mut s, _) = build(&[
+        Art { kind: 0, x: 20.0, y: 20.0, w: 60.0, h: 40.0, fill: Some(0), stroke: Some((1, 6.0)) },
+        Art { kind: 1, x: 120.0, y: 40.0, w: 50.0, h: 50.0, fill: Some(2), stroke: None },
+    ]);
+    let opts = crate::EmbroideryOptions::from_json(&json!({"spacing": 0.5, "stitch": "tatami"})).unwrap();
+    assert!(crate::EmbroideryOptions::from_json(&json!({"spacing": 0.01})).is_err());
+    assert!(crate::EmbroideryOptions::from_json(&json!({"format": "pes"})).is_err());
+    let planner = s.embroidery_planner().unwrap();
+    let on_worker = std::thread::spawn(move || planner.plan(&opts).map(|p| (p.len(), p))).join().unwrap().unwrap();
+    let opts = crate::EmbroideryOptions::from_json(&json!({"spacing": 0.5, "stitch": "tatami"})).unwrap();
+    let here = s.embroidery_plan(&opts).unwrap();
+    assert!(Arc::ptr_eq(&on_worker.1, &here), "the worker's plan is the one remembered");
+    let uid = s.doc().unwrap().uid;
+    assert_eq!(s.embroidery_plans.of(uid).walks(), 1);
+    assert_eq!(run(&mut s, "embroidery.stats", json!({"spacing": 0.5, "stitch": "tatami"}))["records"], json!(on_worker.0));
+    assert_eq!(s.embroidery_plans.of(uid).walks(), 1, "the command reads the same plan");
+}
+
+/// While an opacity mask is edited, the planner plans what the read commands and the export plan,
+/// without the mask's editing layer, and shares the plan they remember: it is remembered by the
+/// snapshot, not by the document cut from it, which is made anew each time.
+#[test]
+fn the_planner_plans_what_the_commands_plan_while_a_mask_is_edited() {
+    let (mut s, ids) = build(&[
+        Art { kind: 0, x: 20.0, y: 20.0, w: 60.0, h: 40.0, fill: Some(0), stroke: None },
+        Art { kind: 0, x: 40.0, y: 30.0, w: 60.0, h: 40.0, fill: Some(2), stroke: None },
+    ]);
+    let opts = Options::default();
+    run(&mut s, "select.all", json!({}));
+    run(&mut s, "transparency.makeOpacityMask", json!({}));
+    let masked = s.embroidery_plan(&opts).unwrap();
+    run(&mut s, "transparency.editOpacityMask", json!({"id": ids[0]}));
+    assert!(s.doc().unwrap().doc.mask_edit.is_some());
+    let planner = s.embroidery_planner().unwrap();
+    assert!(planner.document().mask_edit.is_none(), "the editing layer left out");
+    let editing = planner.plan(&opts).unwrap();
+    assert_eq!(*editing, *masked);
+    let uid = s.doc().unwrap().uid;
+    let walks = s.embroidery_plans.of(uid).walks();
+    assert_eq!(run(&mut s, "embroidery.stats", json!({}))["records"], json!(editing.len()));
+    assert!(Arc::ptr_eq(&editing, &s.embroidery_planner().unwrap().plan(&opts).unwrap()));
+    assert_eq!(s.embroidery_plans.of(uid).walks(), walks, "the command and the planner read the plan remembered");
+}
+
+/// A document a batch opened and planned is gone when the batch fails, and so is its planning
+/// service, with what it kept.
+#[test]
+fn a_document_a_failed_batch_opened_leaves_no_planning_behind() {
+    let mut s = Session::new();
+    run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
+    run(&mut s, "embroidery.stats", json!({}));
+    let before: Vec<u64> = s.docs.iter().map(|d| d.uid).collect();
+    assert_eq!(s.embroidery_plans.uids(), before);
+    let r = s.execute(
+        "command.batch",
+        &json!({"commands": [
+            {"command": "file.new", "params": {"width": 200, "height": 200, "artboards": 1}},
+            {"command": "shape.rectangle", "params": {"x": 10, "y": 10, "width": 50, "height": 40}},
+            {"command": "embroidery.stats", "params": {}},
+            {"command": "no.such.command", "params": {}},
+        ]}),
+    );
+    assert!(r.is_err());
+    let after: Vec<u64> = s.docs.iter().map(|d| d.uid).collect();
+    assert_eq!(after, before);
+    assert_eq!(s.embroidery_plans.uids(), before, "the opened document's service is gone");
+}
+
+/// A plan cancelled from another thread, as the app cancels its planning worker, stops at the
+/// next unit: a stroke being planned when the cancel comes (a satin has no check of its own) is
+/// finished and kept, and the next plan is the fresh one. An export cancelled part way writes
+/// nothing.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_plan_cancelled_from_another_thread_stops_at_the_next_unit() {
+    use std::rc::Rc;
+    use std::sync::mpsc;
+
+    use vectorcraft_doc::cancel::{self, CancelToken, ProgressSink};
+
+    let (s, _) = five();
+    let doc = s.doc().unwrap().doc.clone();
+    let opts = Options::default();
+    let service = Arc::new(PlanService::default());
+    let token = CancelToken::new();
+    let (reached, at_second) = mpsc::channel::<()>();
+    let (go, cancelled) = mpsc::channel::<()>();
+    let worker = {
+        let (service, doc, opts, token) = (service.clone(), doc.clone(), opts.clone(), token.clone());
+        std::thread::spawn(move || {
+            // As the second unit (the first object's stroke) is reported, the worker waits for the
+            // cancel, then plans it.
+            let sink: ProgressSink = Rc::new(move |done, _, _| {
+                if done == 2 {
+                    let _ = reached.send(());
+                    let _ = cancelled.recv();
+                }
+            });
+            cancel::scope(&token, Some(sink), || service.plan(Of::whole(&doc), &doc, &opts).map(|p| (*p).clone()))
+        })
+    };
+    at_second.recv().unwrap();
+    token.cancel();
+    go.send(()).unwrap();
+    assert_eq!(worker.join().unwrap(), Err(PlanError::Cancelled));
+    assert_eq!(service.kept(), 2, "the fill before, and the stroke under way when the cancel came");
+    assert_eq!(*service.plan(Of::whole(&doc), &doc, &opts).unwrap(), digitize(&doc, &opts, None).unwrap());
+
+    let (mut s, _) = five();
+    let token = CancelToken::new();
+    let sink: ProgressSink = {
+        let token = token.clone();
+        Rc::new(move |done, _, _| {
+            if done == 3 {
+                token.cancel();
+            }
+        })
+    };
+    let r = cancel::scope(&token, Some(sink), || s.execute("document.export", &json!({"format": "dst"})));
+    assert!(matches!(r, Err(crate::EngineError::Cancelled)), "{r:?}");
+}
+
+/// A plan after one object moves plans again only that object's units, and the unit after them in
+/// their block, which starts where they end: every other unit is taken from what was kept.
+#[test]
+fn an_edit_plans_again_only_what_it_changed() {
+    let (mut s, ids) = five();
+    let opts = Options::default();
+    let service = PlanService::default();
+    let doc = s.doc().unwrap().doc.clone();
+    service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    assert_eq!(service.kept(), 7);
+    run(&mut s, "object.move", json!({"ids": [ids[1]], "dx": 3, "dy": 2}));
+    let doc = s.doc().unwrap().doc.clone();
+    let after = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    let moved: Vec<usize> = after.units.iter().enumerate().filter(|(_, u)| u.origin.selected().0 == ids[1]).map(|(k, _)| k).collect();
+    let last = *moved.last().unwrap();
+    let next = after.units.get(last + 1).is_some_and(|u| u.block == after.units[last].block);
+    assert!(next, "the moved object isn't its block's last: the test needs the unit after it");
+    assert_eq!(service.kept(), 7 + moved.len() + 1, "{} moved", moved.len());
+    assert_eq!(*after, digitize(&doc, &opts, None).unwrap());
 }

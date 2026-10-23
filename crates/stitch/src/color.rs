@@ -4,9 +4,17 @@
 //!
 //! RGB distance weighs the three channels alike, which the eye does not: two blues far apart in
 //! RGB can look alike, and two yellows close in RGB can look unlike. CIE L*a*b* places colours by
-//! how they look, and CIEDE2000 corrects what L*a*b* still gets wrong (blues, greys, saturated
-//! colours), so the thread nearest by CIEDE2000 is the one that looks nearest. A difference of
-//! about 1 is the smallest seen side by side.
+//! how they look, and CIEDE2000 corrects much of what L*a*b* still gets wrong (greys and other
+//! neutrals, saturated colours, and blues in part: a saturated blue can still match a purple, see
+//! `docs/embroidery.md` › What is not stitched), so the thread nearest by CIEDE2000 is usually the
+//! one that looks nearest. A difference of about 1 is the smallest seen side by side.
+//!
+//! Its scope: CIEDE2000 was fitted to small differences, and its standard and Sharma, Wu, Dalal
+//! and Celik (below) advise keeping it to them: within about 5 CIELAB units its discontinuities
+//! stay under 0.3, and past that they grow. Matching art to a palette of 61 or 78 threads works
+//! well past that range (a median of 5 to 6 on the real designs, some blocks past 10), so the
+//! ranking of threads far from a colour is less sure than that of near ones; the project owner
+//! chose CIEDE2000 over OKLab all the same.
 //!
 //! References:
 //! - sRGB: IEC 61966-2-1:1999, its transfer function and primaries; its white, CIE's D65.
@@ -15,6 +23,9 @@
 //!   implementation notes, supplementary test data, and mathematical observations", *Color
 //!   Research and Application* 30(1), 21–30, 2005: equations (2) to (22), and the test data of its
 //!   Table I (hajim.rochester.edu/ece/sites/gsharma/ciede2000/).
+//! - Its range: G. Sharma, W. Wu, E. N. Dalal and M. U. Celik, "Mathematical discontinuities in
+//!   CIEDE2000 color difference computations", *Color and Imaging Conference* 12, 2004
+//!   (library.imaging.org/cic/articles/12/1/art00058).
 
 /// A colour in CIE L*a*b*: lightness from 0 (black) to 100 (white), then green (negative) to red
 /// (positive), then blue (negative) to yellow (positive).

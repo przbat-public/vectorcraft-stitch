@@ -1,13 +1,3 @@
-<p align="center">
-  <a href="https://getartcraft.com/">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/brand/artcraft-logo-white.svg">
-      <img alt="ArtCraft" src="docs/brand/artcraft-logo.svg" width="200">
-    </picture>
-  </a>
-</p>
-
-
 <h1 align="center">VectorCraft</h1>
 
 <p align="center">
@@ -16,8 +6,17 @@
 
 <p align="center">
   A fast, open-source vector illustration workflow. It runs natively on
-  macOS, Windows, Linux and FreeBSD, and in the browser via WebAssembly. Built by the ArtCraft team.
+  macOS, Windows, Linux and FreeBSD, and in the browser via WebAssembly. Based on VectorCraft by the
+  ArtCraft team.
 </p>
+
+> [!NOTE]
+> **This is VectorCraft Stitch, a fork of VectorCraft that adds machine embroidery:** the art is
+> planned into stitches (fills, satin columns, running lines) and written as DST, TAP, T01, EXP,
+> PES, PEC, JEF and VP3 machine files, which also open as art. What the fork works on, and how it
+> keeps up with VectorCraft, is in [FORK.md](FORK.md); the embroidery itself is in
+> [docs/embroidery.md](docs/embroidery.md). As a modified version it shows none of the ArtCraft
+> marks (`docs/brand/LICENSE-brand.txt`).
 
 <p align="center">
   <img alt="Status: in active development" src="https://img.shields.io/badge/status-in%20active%20development-e8573f">
@@ -27,26 +26,12 @@
   <img alt="License: MIT OR Apache-2.0" src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-555555">
 </p>
 
-<p align="center">
-  <a href="https://discord.gg/artcraft"><img alt="Join the ArtCraft community on Discord" src="https://img.shields.io/badge/Join%20us%20on%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" height="40"></a>
-</p>
-
-<p align="center">
-  <a href="https://getartcraft.com/apps/vectorcraft"><b>VectorCraft on getartcraft.com</b></a> ·
-  <a href="https://getartcraft.com/">ArtCraft</a> ·
-  <a href="https://getartcraft.com/apps">All Crafting Apps</a>
-</p>
-
 <br>
 
 <p align="center">
   <img src="docs/images/shot-1-neon.png" alt="VectorCraft editing the Neon Drive poster: the title is selected, the Appearance panel shows the settings of its live Outer Glow, and the Properties panel shows its character settings" width="100%">
   <br><sub><b>Neon Drive</b>: a Pathfinder-cut sun, live Outer Glow on the type and grid, and clipping masks · <code>examples/neon-drive.vectorcraft</code></sub>
 </p>
-
-> [!NOTE]
-> **ArtCraft is a community of artists from all walks of life.** Digital, generative, music,
-> games &mdash; if you make things, you're one of us. **[Come say hi on Discord](https://discord.gg/artcraft).**
 
 <p align="center">
   <a href="#a-look-around">A look around</a> ·
@@ -255,7 +240,7 @@ The scores are self-assessed from our code against public documentation;
 alongside the raster-effects package; then type, recent additions and 3D. The ranked list is in
 [`docs/gaps.md`](docs/gaps.md).
 
-**Workspace:** `crates/{geom, color, doc, pathops, text, effects, three-d, trace, brush, render, svg, pdf, eps, cad, metafile, format, tools, engine, ui-egui, mcp, testkit}`
+**Workspace:** `crates/{geom, color, doc, pathops, text, effects, three-d, trace, brush, render, svg, pdf, eps, cad, metafile, format, stitch, tools, engine, ui-egui, mcp, testkit}`
 and `apps/{vectorcraft, vectorcraft-cli, vectorcraft-web}`. The egui frontend is its own crate, so
 the UI can be swapped without touching the engine.
 
@@ -266,7 +251,8 @@ signed and published. Every bundled asset is listed with its licence in [`ASSETS
 
 ## Downloads
 
-**New to VectorCraft?** Download it from the [VectorCraft page on getartcraft.com](https://getartcraft.com/apps/vectorcraft). That's the easiest way to install it.
+This fork (VectorCraft Stitch) has no builds of its own yet: build it from source (Quick start
+above). The builds below are VectorCraft's, without embroidery.
 
 **Want a specific build or format?** On GitHub, the [latest release](https://github.com/storytold/vectorcraft/releases/latest) has every build listed below, and [all releases](https://github.com/storytold/vectorcraft/releases) has earlier versions and their notes. `<ver>` in the file names is the version number, and `SHA256SUMS.txt` lists a checksum for every file.
 
@@ -369,9 +355,9 @@ palette and files are in [`assets/app-icon/`](assets/app-icon/README.md).
 The ArtCraft name, wordmark and logos in [`docs/brand/`](docs/brand/) are trademarks of the
 ArtCraft Team and are not covered by this license. They may be used only unmodified, and only as
 part of this repository and VectorCraft, under [`docs/brand/LICENSE-brand.txt`](docs/brand/LICENSE-brand.txt).
-Forks and modified versions must remove them.
+Forks and modified versions must remove them: this fork shows none of them (they stay in `docs/brand/`
+as part of the repository).
 
-<p align="center">
-  <a href="https://getartcraft.com/"><img alt="ArtCraft" src="docs/brand/artcraft-mark.svg" width="28"></a><br>
-  <sub>Made by the <a href="https://getartcraft.com/">ArtCraft</a> team and community.</sub>
-</p>
+Tajima, Melco, Happy, Wilcom, Brother, Janome, Husqvarna Viking, Pfaff and Madeira are trademarks
+of their owners, used here only to name file formats, threads and sources; this fork is not
+affiliated with or endorsed by them.

@@ -4,22 +4,23 @@
 
 use vectorcraft_geom::{BezPath, Point, Vec2};
 
-use super::geometry::{CORNER, Line, NO_LENGTH, length, nearest_order, resample, resample_by, subpaths, tangent, trimmed, unit};
+use super::geometry::{CORNER, Line, NO_LENGTH, length, nearest_order, resample, resample_by, subpaths, tangent, trimmed, turn, unit};
 use super::narrow::Column;
 use super::runs::{Runs, Travel};
-use super::{MAX_STITCHES, MIN_PUSHED, Params, Style, UNDERLAY_STITCH, thread_scale};
+use super::{MAX_STITCHES, MIN_PUSHED, Params, UNDERLAY_STITCH, Underlay};
 use crate::{SAME_POINT, Stitch};
 
 /// Satin underlay by column width (millimetres): from this width an edge run instead of a centre
 /// run, from this one an edge run and a zigzag; and the zigzag's spacing. Estimates.
 const SATIN_EDGE_UNDERLAY: f64 = 2.0;
 const SATIN_ZIGZAG_UNDERLAY: f64 = 4.5;
-const ZIGZAG_UNDERLAY_SPACING: f64 = 2.0;
+pub(super) const ZIGZAG_UNDERLAY_SPACING: f64 = 2.0;
 /// How far inside the column's sides the edge underlay runs: this share of the column's width, at
-/// most [`UNDERLAY_INSET_MAX`] millimetres, so the underlay doesn't show at the edges.
+/// most [`UNDERLAY_INSET_MAX`] millimetres, so the underlay doesn't show at the edges. Estimates.
 const UNDERLAY_INSET: f64 = 0.25;
 const UNDERLAY_INSET_MAX: f64 = 0.5;
-/// A column shorter than this many spacings is left out: it would be a knot, not a column.
+/// A column shorter than this many of its own spacings ([`Params::column_spacing`]) is left out:
+/// it would be a knot, not a column. A stroke's and a fill's narrow part alike. By judgement.
 const MIN_CROSSINGS: f64 = 2.0;
 /// A satin's spacing is measured between two penetrations on the same rail (peak to peak), as
 /// Madeira's stitch density chart (51 satin stitches a centimetre for its 0.40 mm, 40 wt:
@@ -35,6 +36,15 @@ const SPACING_BY_WIDTH: [(f64, f64); 3] = [(2.0, 0.5), (4.0, 0.45), (6.0, 0.4)];
 const WIDE_SPACING: f64 = 0.37;
 /// The most stitches a long crossing is split into ([`split_long`]): enough for the widest column.
 const MAX_SPLIT: f64 = 64.0;
+/// How far the cuts of a split crossing move along it, as a share of one part (either way): see
+/// [`split_long`]. By judgement: enough that no two neighbours' cuts line up.
+const SPLIT_JITTER: f64 = 0.25;
+
+/// The most stitches [`split_long`] cuts a crossing `len` long into with `max` its longest: one
+/// when it is no longer.
+pub(super) fn splits(len: f64, max: f64) -> f64 {
+    ((len * (1.0 + SPLIT_JITTER)) / max).ceil().clamp(1.0, MAX_SPLIT)
+}
 /// The golden ratio's fractional part: its multiples' fractions spread evenly over the unit
 /// interval and never repeat, so the shift of a split moves on from one crossing to the next
 /// without a pattern ([`split_long`]).
@@ -46,16 +56,12 @@ const GOLDEN: f64 = 0.618_033_988_75;
 /// penetrations on each rail are [`satin_spacing`] apart for 40 wt thread, closer for finer thread
 /// ([`thread_scale`]), or [`Params::density`] when auto spacing is off; the crossings, rail to rail
 /// in turn, lie half that apart ([`CROSSINGS_PER_SPACING`]). Round a bend the spacing is kept on
-/// the outer rail, and the crossings turn with the path ([`Centre`]).
-pub fn satin(path: &BezPath, p: &Params) -> Vec<Stitch> {
-    satin_from(path, p, None)
-}
-
-/// [`satin`], the needle at `from` before it starts: each column starts at its end nearest the
-/// needle (a closed one at its point nearest), the nearest first, as Ink/Stitch starts satins.
+/// the outer rail, and the crossings turn with the path ([`Centre`]). The needle is at `from`
+/// before it starts: each column starts at its end nearest the needle (a closed one at its point
+/// nearest), the nearest first, as Ink/Stitch starts satins. `p`'s style is satin (the caller,
+/// [`super::stitches_from`], sews a satin only then).
 pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec<Stitch> {
-    let mut p = p.sane();
-    p.style = Style::Satin;
+    let p = p.sane();
     if p.width <= 0.0 {
         return Vec::new();
     }
@@ -63,13 +69,13 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
     // the path is drawn, then the right one.
     let [left, right] = p.compensation(p.width);
     let half = p.width / 2.0;
-    let spacing = if p.auto_spacing { satin_spacing(p.width) * thread_scale(p.thread_weight) } else { p.density };
+    let spacing = p.column_spacing(p.width);
     // The crossings go to one rail and the other in turn: half the spacing apart.
     let pitch = spacing / CROSSINGS_PER_SPACING;
     let mut runs = Runs::from(from);
     for Line { pts, closed, reversed } in nearest_order(subpaths(path), from) {
         // Push compensation: an open column is sewn shorter at its ends, the underlay with it.
-        let shortest = p.density * MIN_CROSSINGS;
+        let shortest = spacing * MIN_CROSSINGS;
         let pts = if closed { pts } else { pushed(&pts, if reversed { [p.push[1], p.push[0]] } else { p.push }, shortest) };
         if length(&pts, closed) < shortest {
             continue;
@@ -80,8 +86,8 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
         // The underlay, by the column's width; it may end at the column's far end, and then the
         // top stitching starts there and comes back.
         let mut back = false;
-        if p.underlay {
-            for (under, ends_far) in satin_underlay(&pts, closed, p.width) {
+        if let Some(kind) = satin_kind(p.underlay, p.width) {
+            for (under, ends_far) in satin_underlay(&pts, closed, p.width, kind) {
                 if under.len() >= 2 {
                     push_split(&mut runs, under, travel, p.max_satin);
                     travel = Travel::Sew;
@@ -154,11 +160,17 @@ fn pushed(pts: &[Point], push: [f64; 2], shortest: f64) -> Vec<Point> {
     if start + end <= 0.0 {
         return pts.to_vec();
     }
-    let len = length(pts, false);
+    let k = push_share(length(pts, false), start, end, shortest);
+    trimmed(pts, start * k, end * k)
+}
+
+/// The share of push compensation `start` and `end` (millimetres off a column's two ends) that a
+/// column `len` long takes: all of it, or both in proportion when together they would leave less
+/// than [`MIN_PUSHED`] of it, or less than `shortest` (the shortest column that is sewn).
+fn push_share(len: f64, start: f64, end: f64, shortest: f64) -> f64 {
     let keep = (len * MIN_PUSHED).max(shortest).min(len);
     let most = len - keep;
-    let k = if start + end > most { most / (start + end) } else { 1.0 };
-    trimmed(pts, start * k, end * k)
+    if start + end > most { most / (start + end) } else { 1.0 }
 }
 
 /// A stroke's centre line measured along, its direction turning smoothly round its curves. Where
@@ -208,7 +220,7 @@ impl Centre {
         };
         let sharp: Vec<bool> = (0..n)
             .map(|k| match (incoming(k), dirs.get(k)) {
-                (Some(u), Some(v)) => u.dot(*v).clamp(-1.0, 1.0).acos() > CORNER,
+                (Some(u), Some(v)) => turn(*u, *v) > CORNER,
                 _ => false,
             })
             .collect();
@@ -292,7 +304,8 @@ impl Centre {
 /// <https://hatch.embroideryhelp.net/v3/en/downloads/UserGuide.pdf>); 15–25 % is the usual
 /// shortening. Estimates.
 const SHORT_INSETS: [f64; 3] = [0.0, 0.2, 0.4];
-/// How many earlier penetrations on the same rail a penetration keeps its distance from.
+/// How many earlier penetrations on the same rail a penetration keeps its distance from. An
+/// estimate.
 const SHORT_LOOKBACK: usize = 4;
 
 /// A satin column's needle points from its `crossings` (each a point on the centreline and the
@@ -308,8 +321,8 @@ fn short_stitches(crossings: &[(Point, Vec2)], pitch: f64, width: f64) -> Vec<Po
     let mut out: Vec<Point> = Vec::with_capacity(crossings.len());
     for (i, &(q, offset)) in crossings.iter().enumerate() {
         // The earlier penetrations on this rail: every other one back.
-        let before: Vec<Point> = (1..=SHORT_LOOKBACK).filter_map(|k| i.checked_sub(2 * k).and_then(|j| out.get(j)).copied()).collect();
-        let clearance = |r: Point| before.iter().map(|b| b.distance(r)).fold(f64::INFINITY, f64::min);
+        let before: [Option<Point>; SHORT_LOOKBACK] = std::array::from_fn(|k| i.checked_sub(2 * (k + 1)).and_then(|j| out.get(j)).copied());
+        let clearance = |r: Point| before.iter().flatten().map(|b| b.distance(r)).fold(f64::INFINITY, f64::min);
         // An inset is a share of the whole width, taken off this side's offset.
         let reach = offset.hypot();
         let inward = unit(offset).unwrap_or(Vec2::ZERO);
@@ -353,16 +366,38 @@ pub fn satin_spacing(width: f64) -> f64 {
     SPACING_BY_WIDTH.iter().find(|(w, _)| width < *w).map_or(WIDE_SPACING, |(_, spacing)| *spacing)
 }
 
-/// The underlay of a satin column along `pts` (its centreline), `width` wide, by width: a centre
-/// run for a narrow column, an edge run (along one side and back along the other) for a medium one,
-/// and an edge run then a zigzag between its sides for a wide one. Each run comes with whether it
+/// The underlays a satin column takes ([`Underlay`] as a column sews it).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SatinUnderlay {
+    Center,
+    Edge,
+    EdgeZigzag,
+}
+
+/// The underlay `u` asks of a satin column `width` wide: by its width with [`Underlay::Auto`] (a
+/// centre run under [`SATIN_EDGE_UNDERLAY`], an edge run, an edge run and a zigzag from
+/// [`SATIN_ZIGZAG_UNDERLAY`]); `None` for none.
+fn satin_kind(u: Underlay, width: f64) -> Option<SatinUnderlay> {
+    match u {
+        Underlay::None => None,
+        Underlay::Auto if width < SATIN_EDGE_UNDERLAY => Some(SatinUnderlay::Center),
+        Underlay::Auto if width < SATIN_ZIGZAG_UNDERLAY => Some(SatinUnderlay::Edge),
+        Underlay::Auto | Underlay::EdgeZigzag | Underlay::EdgeTatami => Some(SatinUnderlay::EdgeZigzag),
+        Underlay::Center => Some(SatinUnderlay::Center),
+        Underlay::Edge => Some(SatinUnderlay::Edge),
+    }
+}
+
+/// The underlay of a satin column along `pts` (its centreline), `width` wide, of `kind`: a centre
+/// run, an edge run (along one side and back along the other), or an edge run then a zigzag
+/// between its sides. Each run comes with whether it
 /// ends at the column's far end. The thresholds are estimates from the usual practice. (The
 /// zigzag's stitches run at an angle across the column, longer than its width, and the edge run
 /// crosses the column at its far end: the caller splits them like the top stitching, as
 /// Ink/Stitch's underlay guide recommends; an unbounded zigzag destabilises the column.)
-fn satin_underlay(pts: &[Point], closed: bool, width: f64) -> Vec<(Vec<Point>, bool)> {
+fn satin_underlay(pts: &[Point], closed: bool, width: f64, kind: SatinUnderlay) -> Vec<(Vec<Point>, bool)> {
     let centre = resample(pts, UNDERLAY_STITCH, closed);
-    if width < SATIN_EDGE_UNDERLAY {
+    if kind == SatinUnderlay::Center {
         return vec![(centre, !closed)];
     }
     // The sides, kept inside the column so the underlay doesn't show at its edges.
@@ -375,7 +410,7 @@ fn satin_underlay(pts: &[Point], closed: bool, width: f64) -> Vec<(Vec<Point>, b
     let mut edge: Vec<Point> = (0..centre.len()).filter_map(|i| offset(&centre, i, side)).collect();
     edge.extend((0..centre.len()).rev().filter_map(|i| offset(&centre, i, -side)));
     let mut out = vec![(edge, false)];
-    if width >= SATIN_ZIGZAG_UNDERLAY {
+    if kind == SatinUnderlay::EdgeZigzag {
         let steps = resample(pts, ZIGZAG_UNDERLAY_SPACING, closed);
         let zigzag: Vec<Point> = (0..steps.len()).filter_map(|i| offset(&steps, i, if i % 2 == 0 { side } else { -side })).collect();
         out.push((zigzag, !closed));
@@ -390,8 +425,7 @@ fn satin_underlay(pts: &[Point], closed: bool, width: f64) -> Vec<(Vec<Point>, b
 /// The inner parts are `1/n` long and the two end parts at most `(1 + JITTER)/n`, so `n` is chosen
 /// to keep that under `max`.
 fn split_long(zigzag: &[Point], max: f64) -> Vec<Point> {
-    /// How far the cuts move along a crossing, as a share of one part (either way).
-    const JITTER: f64 = 0.25;
+    const JITTER: f64 = SPLIT_JITTER;
     let mut out: Vec<Point> = Vec::with_capacity(zigzag.len());
     let mut crossing = 0u32;
     for (i, &q) in zigzag.iter().enumerate() {
@@ -412,10 +446,9 @@ fn split_long(zigzag: &[Point], max: f64) -> Vec<Point> {
     out
 }
 
-/// A column narrower than this (its typical width, millimetres) is sewn as a running line along
-/// its middle: below about a millimetre a satin's two rails are too close for its crossings to lie
-/// side by side, as the export sews strokes that narrow as running lines.
-const MIN_COLUMN_WIDTH: f64 = 1.0;
+/// A column narrower than this (its typical width) is sewn as a running line along its middle, as
+/// the export sews strokes that narrow as running lines ([`super::SATIN_MIN_WIDTH`]).
+pub(super) const MIN_COLUMN_WIDTH: f64 = super::SATIN_MIN_WIDTH;
 /// The most a column's farther rail is taken to run for each millimetre of its middle when its
 /// crossings are spaced along that rail ([`Along::crossings`], [`Centre::stretch`]). Round a bend
 /// whose middle has radius r, a rail R out runs (r + R) / r as far; the inner side's radius can't
@@ -424,7 +457,7 @@ const MIN_COLUMN_WIDTH: f64 = 1.0;
 /// column, round a round end's tip, or a stroke is drawn round a tighter radius than half its width
 /// and its inner rail folds over: the crossings there come no closer along the middle than half
 /// their pitch.
-const MAX_RAIL_STRETCH: f64 = 2.0;
+pub(super) const MAX_RAIL_STRETCH: f64 = 2.0;
 
 /// `column` (a narrow part of a fill, [`Column`]) sewn after `runs` as a satin column whose width
 /// follows the shape, from its end nearest the needle (a ring from its station nearest):
@@ -479,18 +512,16 @@ pub(super) fn sew_column(column: &Column, p: &Params, runs: &mut Runs, reach: &m
         let push = ((p.push[0] + p.push[1]) / 2.0).max(0.0);
         let [start, end] = tips.map(|tip| if tip { push } else { 0.0 });
         // At most down to MIN_PUSHED of it, and never shorter than a column that is sewn.
-        let keep = (along.len * MIN_PUSHED).max(p.min_stitch * MIN_CROSSINGS).min(along.len);
-        let most = along.len - keep;
-        let k = if start + end > most { most / (start + end) } else { 1.0 };
+        let k = push_share(along.len, start, end, p.column_spacing(width) * MIN_CROSSINGS);
         Along::new(&along.between(start * k, along.len - end * k), false)
     };
-    if along.len < p.min_stitch * MIN_CROSSINGS {
+    if along.len < p.column_spacing(width) * MIN_CROSSINGS {
         return;
     }
     let mut first = true;
     let mut back = false;
-    if p.underlay {
-        for (under, ends_far) in column_underlay(&along, width) {
+    if let Some(kind) = satin_kind(p.underlay, width) {
+        for (under, ends_far) in column_underlay(&along, kind) {
             if under.len() >= 2
                 && let Some(&start) = under.first()
             {
@@ -534,23 +565,23 @@ pub(super) fn column_returns(column: &Column, p: &Params) -> bool {
         return true;
     }
     let width = column.width();
-    // A centre run (narrow) or an edge run then a zigzag (wide) ends at the far end, and the top
-    // stitching comes back; an edge run alone ends where it began, and the top goes on.
-    width >= MIN_COLUMN_WIDTH && p.underlay && !(SATIN_EDGE_UNDERLAY..SATIN_ZIGZAG_UNDERLAY).contains(&width)
+    // A centre run or an edge run then a zigzag ends at the far end, and the top stitching comes
+    // back; an edge run alone ends where it began, and the top goes on.
+    width >= MIN_COLUMN_WIDTH && matches!(satin_kind(p.underlay, width), Some(SatinUnderlay::Center | SatinUnderlay::EdgeZigzag))
 }
 
 /// A column measured along its middle: each station's middle, the half crossing from it to the
 /// first side, the distance along to each, and the length (round to the start for a ring).
-struct Along {
+pub(super) struct Along {
     middles: Vec<Point>,
     halves: Vec<Vec2>,
-    at: Vec<f64>,
+    pub(super) at: Vec<f64>,
     len: f64,
     closed: bool,
 }
 
 impl Along {
-    fn new(stations: &[(Point, Point)], closed: bool) -> Self {
+    pub(super) fn new(stations: &[(Point, Point)], closed: bool) -> Self {
         let middles: Vec<Point> = stations.iter().map(|(a, b)| a.midpoint(*b)).collect();
         let halves: Vec<Vec2> = stations.iter().map(|(a, b)| (*a - *b) / 2.0).collect();
         let mut at = Vec::with_capacity(middles.len());
@@ -616,8 +647,7 @@ impl Along {
     /// along it. An open column's last crossing lies on its end.
     fn crossings(&self, p: &Params) -> (Vec<(Point, Vec2)>, Vec<Point>, f64, f64) {
         // The distance between crossings at a width: half the spacing on a rail (peak to peak).
-        let pitch_at =
-            |width: f64| (if p.auto_spacing { satin_spacing(width) * thread_scale(p.thread_weight) } else { p.density }) / CROSSINGS_PER_SPACING;
+        let pitch_at = |width: f64| p.column_spacing(width) / CROSSINGS_PER_SPACING;
         // How far a crossing reaches either side of the middle, half its width `half` widened by
         // pull compensation.
         let reach_at = |half: f64| {
@@ -689,13 +719,14 @@ impl Along {
     }
 }
 
-/// The underlay of a column measured `along` its middle, by its typical `width`, as a stroke's
-/// ([`satin_underlay`]): a centre run, an edge run (along one side and back along the other, kept
-/// inside), and an edge run then a zigzag; each with whether it ends at the column's far end.
-fn column_underlay(along: &Along, width: f64) -> Vec<(Vec<Point>, bool)> {
+/// The underlay of a column measured `along` its middle, of `kind` (chosen by its typical width
+/// unless asked for), as a stroke's ([`satin_underlay`]): a centre run, an edge run (along one side
+/// and back along the other, kept inside), or an edge run then a zigzag; each with whether it ends
+/// at the column's far end.
+fn column_underlay(along: &Along, kind: SatinUnderlay) -> Vec<(Vec<Point>, bool)> {
     let closed = along.closed;
     let centre = resample(&along.middles, UNDERLAY_STITCH, closed);
-    if width < SATIN_EDGE_UNDERLAY {
+    if kind == SatinUnderlay::Center {
         return vec![(centre, !closed)];
     }
     // A point on one side (`sign`), kept inside the column by the inset.
@@ -710,7 +741,7 @@ fn column_underlay(along: &Along, width: f64) -> Vec<(Vec<Point>, bool)> {
     other.reverse();
     edge.extend(other);
     let mut out = vec![(edge, false)];
-    if width >= SATIN_ZIGZAG_UNDERLAY {
+    if kind == SatinUnderlay::EdgeZigzag {
         let steps = (along.len / ZIGZAG_UNDERLAY_SPACING).ceil().clamp(1.0, MAX_STITCHES as f64) as usize;
         let zigzag: Vec<Point> = (0..=steps)
             .filter_map(|k| {

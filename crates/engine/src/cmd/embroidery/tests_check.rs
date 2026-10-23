@@ -2,40 +2,13 @@
 //! quiet on one just short of it; the command checks its params and bounds what it lists.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::NodeId;
-use vectorcraft_geom::Point;
 use vectorcraft_stitch::format::Format;
 use vectorcraft_stitch::plan::{Params, Style};
-use vectorcraft_stitch::thread::Palette;
-use vectorcraft_stitch::{Block, Stitch, Thread};
 
 use super::check::{self, Ask, RULES};
-use super::plan::{Choice, DesignPlan, Origin, Part};
-use super::sequence::{Planned, Sequence};
+use super::plan::DesignPlan;
+use super::test_support::{plan, planned, run, unit};
 use super::*;
-
-/// A unit of `style` in `color` sewing needle points at `points` (millimetres), whose narrowest
-/// and widest satin columns are `satin_widths`.
-fn unit(node: u64, style: Style, color: [u8; 3], points: &[(f64, f64)], satin_widths: Option<[f64; 2]>) -> Planned {
-    planned(node, Some(Params::for_style(style)), color, points, satin_widths)
-}
-
-/// A unit planned with `params` (`None`: a literal run read from a file).
-fn planned(node: u64, params: Option<Params>, color: [u8; 3], points: &[(f64, f64)], satin_widths: Option<[f64; 2]>) -> Planned {
-    let mut block = Block::new(Thread::rgb(color));
-    block.stitches = points.iter().map(|&(x, y)| Stitch::sew(Point::new(x, y))).collect();
-    let origin = Origin { node: NodeId(node), part: Part::Fill(0), instance: None };
-    let why = if params.is_some() { Choice::Forced } else { Choice::Literal };
-    Planned { origin, params, columns: None, satin_widths, why, block, literal: None }
-}
-
-fn plan(units: Vec<Planned>) -> DesignPlan {
-    let mut seq = Sequence::new(Params::for_style(Style::Fill));
-    for u in units {
-        seq.add(u);
-    }
-    seq.plan("test".into(), Vec::new(), Palette::Jef)
-}
 
 const RED: [u8; 3] = [200, 30, 30];
 
@@ -68,7 +41,7 @@ fn one(style: Style, steps: &[f64]) -> DesignPlan {
 fn each_stitch_length_rule_fires_past_its_threshold() {
     let cases: [(&str, Style, f64, f64); 4] = [
         ("stitchTooLong", Style::Running, 12.8, 12.7),
-        ("stitchBelowNeedle", Style::Running, 0.74, 0.75),
+        ("stitchBelowNeedle", Style::Running, 0.75, 0.76),
         ("stitchTiny", Style::Running, 0.3, 0.31),
         ("formatStep", Style::Running, 12.2, 12.1),
     ];
@@ -78,13 +51,18 @@ fn each_stitch_length_rule_fires_past_its_threshold() {
         assert_eq!(hits(&one(style, &[3.0, at, 3.0]), id, Format::Dst), 0, "{id}: {at}");
     }
     // How many stitches a split one is written as, and when the rounding to 0.1 mm decides.
-    let note = |steps: &[f64]| {
+    let hit = |steps: &[f64]| {
         let v = check::check(
             &one(Style::Running, steps),
             &Ask { rules: vec![check::rule("formatStep").unwrap()], format: Format::Dst, limit: check::LIMIT },
         );
-        v["rules"][0]["first"][0]["note"].as_str().unwrap().to_string()
+        v["rules"][0]["examples"][0].clone()
     };
+    let note = |steps: &[f64]| hit(steps)["note"].as_str().unwrap().to_string();
+    assert_eq!((&hit(&[12.15])["pieces"], &hit(&[12.3])["pieces"]), (&json!([1, 2]), &json!([2, 2])));
+    // The value is the measure compared with the step (the longer of x and y), the length apart:
+    // the same for a stitch along x.
+    assert_eq!((&hit(&[12.3])["value"], &hit(&[12.3])["length"]), (&json!(12.3), &json!(12.3)));
     assert!(note(&[12.15]).starts_with("written as 1 or 2 stitches"), "{}", note(&[12.15]));
     assert_eq!(note(&[12.3]), "written as 2 stitches");
     assert!(note(&[24.15]).starts_with("written as 2 or 3 stitches"), "{}", note(&[24.15]));
@@ -110,7 +88,7 @@ fn melcos_length_rules_look_at_each_objects_settings() {
     let satin = Some(Params::for_style(Style::Satin));
     assert_eq!(hits(&one_unit(satin, Some([0.99, 0.99])), "satinStitchShort", Format::Dst), 1);
     assert_eq!(hits(&one_unit(satin, Some([1.0, 1.0])), "satinStitchShort", Format::Dst), 0);
-    assert_eq!(hits(&one_unit(Some(Params::for_style(Style::Fill)), Some([0.8, 3.0])), "satinStitchShort", Format::Dst), 1);
+    assert_eq!(hits(&one_unit(Some(Params::for_style(Style::Fill)), Some([1.2, 3.0])), "satinStitchShort", Format::Dst), 0);
     // Short stitches with sound settings: none; the setting is what is measured.
     let short_stitches = plan(vec![unit(1, Style::Fill, RED, &line(&[0.5, 0.5, 0.5]), None)]);
     assert_eq!(hits(&short_stitches, "fillStitchShort", Format::Dst), 0);
@@ -120,7 +98,7 @@ fn melcos_length_rules_look_at_each_objects_settings() {
     ]);
     let v = check::check(&two, &Ask { rules: vec![check::rule("fillStitchShort").unwrap()], format: Format::Dst, limit: check::LIMIT });
     assert_eq!((&v["rules"][0]["hits"], &v["rules"][0]["objects"]), (&json!(2), &json!([1, 2])));
-    assert_eq!((&v["rules"][0]["first"][0]["value"], &v["rules"][0]["first"][1]["value"]), (&json!(2.0), &json!(1.0)));
+    assert_eq!((&v["rules"][0]["examples"][0]["value"], &v["rules"][0]["examples"][1]["value"]), (&json!(2.0), &json!(1.0)));
     // A literal run: none of the three, however short its stitches.
     let literal = plan(vec![planned(1, None, RED, &line(&[0.5, 0.5, 0.5]), None)]);
     for id in ["fillStitchShort", "satinStitchShort", "runStitchShort"] {
@@ -161,16 +139,19 @@ fn three_layers_on_one_spot_fire() {
     assert_eq!(hits(&back_and_forth, "layers", Format::Dst), 0);
 }
 
-/// Counting layers costs a bounded amount whatever a stitch's length: a run read from a file with
-/// stitches kilometres long is checked at once.
+/// Counting layers costs a bounded amount whatever a stitch's length and however far apart the
+/// stitches: a run read from a file with stitches kilometres long is counted at a bounded number
+/// of points a stitch, in a table of the cells stitched rather than a grid over its box; a design
+/// of a hoop's size is counted on a grid.
 #[test]
 fn layers_are_counted_in_bounded_work_however_long_the_stitches() {
     let far = 1.0e6;
     let long = plan(vec![planned(1, None, RED, &[(0.0, 0.0), (far, 0.0), (0.0, far), (far, far)], None)]);
-    let t = std::time::Instant::now();
     assert_eq!(hits(&long, "layers", Format::Dst), 0);
-    // Far below what sampling every half millimetre would take (millions of cells a stitch).
-    assert!(t.elapsed() < std::time::Duration::from_secs(1), "{:?}", t.elapsed());
+    assert_eq!(check::layer_samples(far * std::f64::consts::SQRT_2), check::MAX_LAYER_SAMPLES);
+    assert_eq!(check::layer_grid_cells(&long), None, "no grid over a kilometre square");
+    let hoop = one(Style::Running, &[3.0, 3.0, 3.0]);
+    assert!(check::layer_grid_cells(&hoop).is_some_and(|n| n < 100), "{:?}", check::layer_grid_cells(&hoop));
 }
 
 /// A satin column wider than 10 mm fires, one 10 mm wide doesn't; so does a fill's narrow part.
@@ -200,6 +181,21 @@ fn a_mismatched_thread_and_art_left_out_fire() {
     assert_eq!(hits(&p, "notSewn", Format::Dst), 0);
     p.warnings = vec!["type is not stitched".into(), "images are not stitched".into()];
     assert_eq!(hits(&p, "notSewn", Format::Dst), 2);
+    // A note that isn't about the art (a palette this version doesn't know) is said, not counted.
+    p.notes = vec!["the document's thread palette is not one this version knows".into()];
+    assert_eq!(hits(&p, "notSewn", Format::Dst), 2);
+    assert_eq!(p.messages().len(), 3);
+}
+
+/// A hit on a unit that adds no record (one needle point where the needle already is) has no
+/// record number, rather than the next unit's.
+#[test]
+fn a_unit_that_adds_no_record_is_hit_without_a_number() {
+    let satin = Some(Params::for_style(Style::Satin));
+    let p = plan(vec![planned(1, None, RED, &line(&[3.0]), None), planned(2, satin, RED, &[(3.0, 0.0)], Some([0.5, 0.5]))]);
+    assert!(p.numbers(1).unwrap().is_empty(), "the second unit adds no record");
+    let v = check::check(&p, &Ask { rules: vec![check::rule("satinStitchShort").unwrap()], format: Format::Dst, limit: check::LIMIT });
+    assert_eq!((&v["rules"][0]["hits"], &v["rules"][0]["examples"][0]["record"]), (&json!(1), &json!(null)), "{v}");
 }
 
 /// More colour blocks than PES holds is an error there and nothing in the other formats; more
@@ -222,10 +218,6 @@ fn the_format_and_machine_limits_fire_past_them() {
     assert_eq!(hits(&long(500_001), "machineStitches", Format::Pes), 1);
 }
 
-fn run(s: &mut Session, command: &str, params: Value) -> Value {
-    s.execute(command, &params).unwrap_or_else(|e| panic!("{command} {params}: {e}"))
-}
-
 /// The command: every rule listed with its threshold and sources, the objects hit, at most `limit`
 /// hits each; the format of the document's palette by default; params checked.
 #[test]
@@ -241,7 +233,15 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
     assert_eq!(v["format"], json!("jef"), "the default palette's format");
     for r in v["rules"].as_array().unwrap() {
         assert!(!r["sources"].as_array().unwrap().is_empty(), "{}", r["id"]);
-        assert!(r["first"].as_array().unwrap().len() <= check::LIMIT);
+        assert!(r["examples"].as_array().unwrap().len() <= check::LIMIT);
+        assert_eq!(r["objectCount"], json!(r["objects"].as_array().unwrap().len()), "{}", r["id"]);
+        assert_eq!(r["truncated"], json!(false), "{}", r["id"]);
+        assert!(r["measures"].as_str().is_some_and(|m| !m.is_empty()), "{}", r["id"]);
+    }
+    // For each severity, the rules that found something and their hits.
+    for severity in ["errors", "warnings", "info"] {
+        let (rules, hits) = (v["summary"][severity]["rules"].as_u64().unwrap(), v["summary"][severity]["hits"].as_u64().unwrap());
+        assert!(rules <= hits, "{severity}: {}", v["summary"]);
     }
     // The rectangle's fill stitch length, 4 mm by default, passes; set to 2 mm it fires, on the
     // rectangle.
@@ -249,7 +249,7 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
     assert_eq!(fill(&v)["hits"], json!(0));
     let short = fill(&run(&mut s, "embroidery.check", json!({"stitchLength": 2})));
     assert_eq!(
-        (&short["hits"], &short["objects"], &short["first"][0]["id"], &short["first"][0]["value"]),
+        (&short["hits"], &short["objects"], &short["examples"][0]["id"], &short["examples"][0]["value"]),
         (&json!(1), &json!([id]), &json!(id), &json!(2.0))
     );
     // Satin forced on the rectangle's fill: it is filled (a fill has no width to sew a satin
@@ -261,7 +261,7 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
     assert_eq!(blade["severity"], json!("info"));
     // Sources that disagree are both listed, the one checked first.
     let wide = &v["rules"][0];
-    assert_eq!((&wide["id"], &wide["threshold"], wide["sources"].as_array().unwrap().len()), (&json!("satinTooWide"), &json!(10.0), 2));
+    assert_eq!((&wide["id"], &wide["threshold"], wide["sources"].as_array().unwrap().len()), (&json!("satinTooWide"), &json!(10.0), 3));
     // Asked for: some rules, a format, a limit.
     let v = run(
         &mut s,
@@ -269,7 +269,7 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
         json!({"rules": ["fillStitchShort", "layers", "fillStitchShort"], "format": "dst", "limit": 0, "stitchLength": 2}),
     );
     assert_eq!((v["format"].clone(), v["rules"].as_array().unwrap().len()), (json!("dst"), 2));
-    assert_eq!((&v["rules"][0]["hits"], v["rules"][0]["first"].as_array().unwrap().len()), (&json!(1), 0), "counted, none listed");
+    assert_eq!((&v["rules"][0]["hits"], v["rules"][0]["examples"].as_array().unwrap().len()), (&json!(1), 0), "counted, none listed");
     run(&mut s, "embroidery.setup", json!({"palette": "pec"}));
     assert_eq!(run(&mut s, "embroidery.check", json!({"rules": []}))["format"], json!("pes"));
     for (bad, why) in [
@@ -278,20 +278,81 @@ fn the_check_command_lists_every_rule_and_checks_its_params() {
         (json!({"rules": "layers"}), "a list of rule ids"),
         (json!({"limit": 1001}), "limit"),
         (json!({"limit": -1}), "limit"),
-        (json!({"density": "x"}), "embroidery options"),
+        (json!({"density": "x"}), "`density` \"x\": a number of millimetres"),
     ] {
         let e = s.execute("embroidery.check", &bad).unwrap_err().to_string();
         assert!(e.contains(why), "{bad}: {e}");
     }
-    // The keys it takes: the export's embroidery options and its own three; the rules its
+    // The keys it takes: the export's embroidery options and its own four; the rules its
     // description lists are the rules there are.
     let spec = crate::cmd::find_command("embroidery.check").unwrap();
-    for key in crate::cmd::fileio::embroidery::OPTIONS.iter().map(|o| o.name).chain(["format", "rules", "limit"]) {
+    for key in crate::cmd::fileio::embroidery::OPTIONS.iter().map(|o| o.name).chain(["format", "rules", "limit", "selectedOnly"]) {
         assert!(crate::cmd::params::takes_key(spec.params, key), "{key}");
     }
     for rule in RULES {
         assert!(spec.params.contains(&format!(" {} ", rule.id)) || spec.params.contains(&format!(" {})", rule.id)), "{}", rule.id);
     }
-    let e = crate::check_params("embroidery.check", &json!({"selectedOnly": true})).unwrap_err().to_string();
-    assert!(e.contains("unknown parameter `selectedOnly`"), "{e}");
+    let e = crate::check_params("embroidery.check", &json!({"speed": 800})).unwrap_err().to_string();
+    assert!(e.contains("unknown parameter `speed`"), "{e}");
+}
+
+/// `embroidery.check {format}` judges the threads that format writes: a PES of a document in
+/// Janome's palette writes Brother's threads, matched to the art's colours, and those are judged;
+/// the reply says which palette.
+#[test]
+fn the_check_judges_the_threads_its_format_writes() {
+    let mut s = Session::new();
+    run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
+    run(&mut s, "paint.setStroke", json!({"none": true}));
+    // Brother's Peacock Blue (PEC 38), in a document of Janome's palette.
+    run(&mut s, "paint.setFill", json!({"color": "#134a46"}));
+    run(&mut s, "shape.rectangle", json!({"x": 20, "y": 20, "width": 60, "height": 40}));
+    let check = |s: &mut Session, format: &str| run(s, "embroidery.check", json!({"format": format, "rules": ["threadMismatch"]}));
+    let (jef, pes) = (check(&mut s, "jef"), check(&mut s, "pes"));
+    assert_eq!((&jef["palette"], &pes["palette"]), (&json!("jef"), &json!("pec")));
+    // Brother's own colour: no mismatch in a PES. In a JEF, what the document's palette gives.
+    assert_eq!(pes["rules"][0]["hits"], json!(0));
+    let threads = run(&mut s, "embroidery.threads", json!({}));
+    let janome = threads["blocks"][0]["thread"]["mismatch"].as_bool().unwrap();
+    assert_eq!(jef["rules"][0]["hits"], json!(u64::from(janome)));
+    // A format that names no threads judges the document's.
+    assert_eq!(check(&mut s, "dst")["palette"], json!("jef"));
+}
+
+/// A fill's narrow part narrower than 1 mm is sewn as a running line, not a satin column: the
+/// satin rule has no satin stitch to flag in it.
+#[test]
+fn a_narrow_part_sewn_as_a_running_line_is_no_short_satin() {
+    let mut s = Session::new();
+    run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
+    run(&mut s, "paint.setStroke", json!({"none": true}));
+    run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+    // A 20 mm square with a 0.8 mm wide, 12 mm long strip off its right side, in points.
+    let pt = |mm: f64| mm * 72.0 / 25.4;
+    let d = format!(
+        "M 20 20 L {r} 20 L {r} {t} L {e} {t} L {e} {b} L {r} {b} L {r} {bottom} L 20 {bottom} Z",
+        r = 20.0 + pt(20.0),
+        e = 20.0 + pt(32.0),
+        t = 20.0 + pt(9.6),
+        b = 20.0 + pt(10.4),
+        bottom = 20.0 + pt(20.0)
+    );
+    run(&mut s, "path.create", json!({"d": d}));
+    let order = run(&mut s, "embroidery.sequence", json!({}));
+    assert_eq!(order["blocks"][0]["units"][0]["columns"], json!(true), "the strip is found as a narrow part: {order}");
+    let check = run(&mut s, "embroidery.check", json!({"rules": ["satinStitchShort"]}));
+    assert_eq!(check["rules"][0]["hits"], json!(0), "{check}");
+}
+
+/// The `formatStep` note says how many records the writer writes a long stitch as: a 30 mm stitch
+/// along x in a DST (12.1 mm a record) is written as three.
+#[test]
+fn the_format_step_note_is_what_the_writer_writes() {
+    let p = one(Style::Running, &[3.0, 30.0, 3.0]);
+    let v = check::check(&p, &Ask { rules: vec![check::rule("formatStep").unwrap()], format: Format::Dst, limit: check::LIMIT });
+    assert_eq!(v["rules"][0]["examples"][0]["note"], json!("written as 3 stitches"));
+    let written = Format::Dst.read(&Format::Dst.write(&p.to_pattern()).unwrap()).unwrap();
+    // Four needle points become six: the 30 mm stitch's two more on the way.
+    let sewn = written.points().filter(|s| s.command == vectorcraft_stitch::Command::Stitch).count();
+    assert_eq!(sewn, p.blocks[0].needle_points() + 2);
 }

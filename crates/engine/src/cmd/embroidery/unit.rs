@@ -6,8 +6,9 @@
 //! stitches be kept between plans and used again when nothing it is planned from has changed.
 
 use vectorcraft_doc::cancel;
-use vectorcraft_geom::{BezPath, FillRule, PathData, Point, Shape};
-use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke};
+use vectorcraft_geom::kurbo::ParamCurveExtrema;
+use vectorcraft_geom::{BezPath, FillRule, PathData, PathSeg, Point, Rect, Shape};
+use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke, unite_all};
 use vectorcraft_stitch::plan::{self, Params};
 use vectorcraft_stitch::{Command, Stitch};
 
@@ -30,11 +31,12 @@ pub(crate) enum PlanError {
 }
 
 impl PlanError {
-    /// The error command `cmd` reports: its parameters' error for a design too large, a cancel as
+    /// The error a command reports: a design too large is the design's limit, not a wrong
+    /// parameter (a caller that fixes its parameters on `BadParams` would only loop); a cancel is
     /// a cancel.
-    pub(crate) fn error(self, cmd: &str) -> crate::EngineError {
+    pub(crate) fn error(self) -> crate::EngineError {
         match self {
-            Self::TooLarge(why) => crate::cmd::bad(cmd, why),
+            Self::TooLarge(why) => crate::EngineError::Other(why),
             Self::Cancelled => crate::EngineError::Cancelled,
         }
     }
@@ -65,7 +67,7 @@ pub(crate) struct UnitRequest<'a> {
     /// The parameters it is planned with; their style says how it is sewn.
     pub(crate) params: Params,
     /// A fill whose narrow parts may be sewn as satin columns: the parameters those columns are
-    /// sewn with. `None` for everything else (strokes, and fills `stitchStyle` forces to tatami).
+    /// sewn with. `None` for everything else (strokes, and fills the `stitch` option forces to tatami).
     pub(crate) columns: Option<Params>,
     /// Where the needle is when the unit starts (`None`: nowhere yet, the design's first unit), so
     /// that it starts as near there as it can.
@@ -95,7 +97,8 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError
         Some(_) => plan::narrow_columns_until(shape, rule, params.narrow, &cancel::is_cancelled).ok_or(PlanError::Cancelled)?,
         None => Vec::new(),
     };
-    let widths = found.iter().map(plan::Column::width).fold(None, |range: Option<[f64; 2]>, w| match range {
+    // The widths of the columns sewn as satin (a narrower one is a running line).
+    let widths = found.iter().filter(|c| c.is_satin()).map(plan::Column::width).fold(None, |range: Option<[f64; 2]>, w| match range {
         Some([narrowest, widest]) => Some([narrowest.min(w), widest.max(w)]),
         None => Some([w, w]),
     });
@@ -113,6 +116,9 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError
     if let Some(clip) = clip {
         stitches = cut_to(stitches, clip, &params);
     }
+    // Shrunk to its length before it is kept between plans: the planner grows the vector by
+    // doubling, so it could hold up to twice the memory the cache counts.
+    stitches.shrink_to_fit();
     Ok(UnitStitches { stitches, columns, widths })
 }
 
@@ -123,17 +129,16 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError
 /// and the columns as the same operations give them, every row's end lies on or inside it.) An
 /// error when the plan is cancelled between two columns.
 fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column]) -> Result<(BezPath, BezPath), PlanError> {
-    let mut cut: Option<PathData> = None;
+    // Every column's outline and the band along it, united in one sweep (uniting them one at a
+    // time would sweep everything united so far again for each column).
+    let mut parts: Vec<PathData> = Vec::with_capacity(2 * columns.len());
     for c in columns {
         cancel::check().map_err(|_| PlanError::Cancelled)?;
         let outline = PathData::from_bezpath(&c.outline());
-        let band = outline_stroke(&outline, 2.0 * COLUMN_GROWTH, Cap::Round, Join::Round, ROUND_JOINS);
-        let grown = boolean(&outline, FillRule::NonZero, &band, FillRule::NonZero, BoolOp::Union);
-        cut = Some(match cut {
-            Some(all) => boolean(&all, FillRule::NonZero, &grown, FillRule::NonZero, BoolOp::Union),
-            None => grown,
-        });
+        parts.push(outline_stroke(&outline, 2.0 * COLUMN_GROWTH, Cap::Round, Join::Round, ROUND_JOINS));
+        parts.push(outline);
     }
+    let cut = (!parts.is_empty()).then(|| unite_all(&parts.iter().map(|p| (p, FillRule::NonZero)).collect::<Vec<_>>()));
     match cut {
         Some(cut) => {
             let rest = boolean(&PathData::from_bezpath(area), rule, &cut, FillRule::NonZero, BoolOp::Difference);
@@ -149,8 +154,9 @@ fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column]) -> Result<(
 /// the thread tied off and in around a long jump).
 pub(super) fn cut_to(stitches: Vec<Stitch>, region: &(BezPath, FillRule), p: &Params) -> Vec<Stitch> {
     let (path, rule) = region;
+    let banded = Banded::new(path);
     let inside = |s: &Stitch| {
-        let w = path.winding(s.point());
+        let w = banded.winding(s.point());
         match rule {
             FillRule::NonZero => w != 0,
             FillRule::EvenOdd => w % 2 != 0,
@@ -176,4 +182,119 @@ pub(super) fn cut_to(stitches: Vec<Stitch>, region: &(BezPath, FillRule), p: &Pa
         }
     }
     plan::join_cut(pieces, p)
+}
+
+/// A margin round each segment's box when it is sorted into bands (millimetres). The box comes from
+/// the curve's extrema, as the winding test's pieces do, so the two agree to within rounding; the
+/// margin covers that rounding.
+const BOX_MARGIN: f64 = 1e-7;
+/// The most horizontal bands [`Banded`] sorts segments into, and the most bands a segment is in
+/// on average: past that (segments as tall as the path, for their number) the whole path is
+/// tested. Bounds on the work and memory.
+const MAX_BANDS: usize = 4096;
+const ENTRIES_PER_SEGMENT: usize = 32;
+
+/// A path's segments sorted into horizontal bands, so that whether a point is inside it is worked
+/// out from the segments near the point's height alone: a stroke in a clip group tests every
+/// stitch against the clipping path, which may have thousands of segments. The winding is
+/// kurbo's (`BezPath::winding`) exactly: that sums, segment by segment, the crossings of a ray to
+/// the left of the point, and a segment whose box lies above or below the point adds nothing. So
+/// each band is a path of the segments whose boxes reach into it, each a subpath of its own (a
+/// move to its start, then the segment), and a point's winding is its band's.
+struct Banded {
+    whole: BezPath,
+    y0: f64,
+    height: f64,
+    /// Each band's segments; none when the whole path is tested.
+    bands: Vec<BezPath>,
+}
+
+impl Banded {
+    fn new(path: &BezPath) -> Self {
+        let segments: Vec<(PathSeg, Rect)> =
+            path.segments().map(|s| (s, ParamCurveExtrema::bounding_box(&s).inflate(BOX_MARGIN, BOX_MARGIN))).collect();
+        let (y0, y1) = segments.iter().fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), (_, b)| (lo.min(b.y0), hi.max(b.y1)));
+        let whole = Self { whole: path.clone(), y0: 0.0, height: 0.0, bands: Vec::new() };
+        let n = (segments.len() / 2).clamp(1, MAX_BANDS);
+        let height = (y1 - y0) / n as f64;
+        if !(height.is_finite() && height > 0.0) {
+            return whole;
+        }
+        let band = |y: f64| (((y - y0) / height).floor().max(0.0) as usize).min(n - 1);
+        let mut bands: Vec<BezPath> = vec![BezPath::new(); n];
+        let budget = segments.len().saturating_mul(ENTRIES_PER_SEGMENT);
+        let mut entries = 0usize;
+        for (seg, b) in &segments {
+            let (first, last) = (band(b.y0), band(b.y1));
+            entries = entries.saturating_add(last - first + 1);
+            if entries > budget {
+                return whole;
+            }
+            for bp in bands.get_mut(first..=last).into_iter().flatten() {
+                match *seg {
+                    PathSeg::Line(l) => {
+                        bp.move_to(l.p0);
+                        bp.line_to(l.p1);
+                    }
+                    PathSeg::Quad(q) => {
+                        bp.move_to(q.p0);
+                        bp.quad_to(q.p1, q.p2);
+                    }
+                    PathSeg::Cubic(c) => {
+                        bp.move_to(c.p0);
+                        bp.curve_to(c.p1, c.p2, c.p3);
+                    }
+                }
+            }
+        }
+        Self { bands, y0, height, ..whole }
+    }
+
+    /// The path's winding number about `q`, as `BezPath::winding` gives it.
+    fn winding(&self, q: Point) -> i32 {
+        if self.bands.is_empty() {
+            return self.whole.winding(q);
+        }
+        let k = (q.y - self.y0) / self.height;
+        if !(k >= 0.0 && k < self.bands.len() as f64 + 1.0) {
+            // Above or below every segment's box (or not a number): no segment adds to it.
+            return 0;
+        }
+        self.bands.get((k.floor() as usize).min(self.bands.len() - 1)).map_or(0, |band| band.winding(q))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The banded winding is kurbo's: on a grid of points all over a wavy ring of curves with a
+    /// wavy hole (and on every one of its points), and with every segment tested (one band).
+    #[test]
+    fn the_banded_winding_is_kurbos() {
+        let mut path = BezPath::new();
+        for (radius, turn) in [(40.0, 1.0), (15.0, -1.0)] {
+            let at = |k: f64| {
+                let a = turn * std::f64::consts::TAU * k / 48.0;
+                let r = radius + 3.0 * (6.0 * a).sin();
+                Point::new(50.0 + r * a.cos(), 50.0 + r * a.sin())
+            };
+            path.move_to(at(0.0));
+            for k in 0..48 {
+                let k = k as f64;
+                path.curve_to(at(k + 0.3) + (0.0, 2.0), at(k + 0.7) - (2.0, 0.0), at(k + 1.0));
+            }
+            path.close_path();
+        }
+        let banded = Banded::new(&path);
+        assert!(!banded.bands.is_empty(), "banded");
+        let one = Banded { bands: Vec::new(), ..Banded::new(&path) };
+        assert_eq!(one.whole, path);
+        let mut points: Vec<Point> = (0..=120).flat_map(|i| (0..=120).map(move |j| Point::new(i as f64 * 0.85, j as f64 * 0.85))).collect();
+        points.extend(path.elements().iter().filter_map(|el| el.end_point()));
+        for q in points {
+            assert_eq!(banded.winding(q), path.winding(q), "at {q:?}");
+            assert_eq!(one.winding(q), path.winding(q), "at {q:?}, every segment");
+        }
+    }
 }

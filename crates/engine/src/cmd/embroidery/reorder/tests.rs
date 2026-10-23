@@ -279,3 +279,27 @@ fn the_sew_commands_plan_with_the_previews_options() {
     s.execute("embroidery.sewLast", &json!({"stitch": "running"})).unwrap();
     assert_eq!(service.walks(), walks + 1);
 }
+
+/// The ids a sew command is given are checked before anything is planned: an array of objects of
+/// the document, at most as many as a move takes; nothing else falls back to the selection.
+#[test]
+fn the_sew_commands_check_their_ids() {
+    let mut s = Session::new();
+    fx::blank(&mut runner(&mut s));
+    let a = fx::rect(&mut runner(&mut s), fx::RED, 20.0, 20.0, 50.0, 50.0);
+    s.execute("select.none", &json!({})).unwrap();
+    fx::rect(&mut runner(&mut s), fx::BLUE, 120.0, 20.0, 50.0, 50.0);
+    s.execute("select.set", &json!({"ids": [a]})).unwrap();
+    let undo = s.doc().unwrap().history.undo.len();
+    for bad in
+        [json!({"ids": 42}), json!({"ids": "42"}), json!({"ids": [a, "x"]}), json!({"ids": [999_999]}), json!({"ids": [-1]}), json!({"ids": null})]
+    {
+        let e = s.execute("embroidery.sewLast", &bad).unwrap_err().to_string();
+        assert!(!e.is_empty(), "{bad}");
+    }
+    let many: Vec<u64> = (0..=100_000).collect();
+    let e = s.execute("embroidery.sewLast", &json!({ "ids": many })).unwrap_err().to_string();
+    assert!(e.contains("too many objects"), "{e}");
+    assert_eq!(s.doc().unwrap().history.undo.len(), undo, "nothing moved");
+    s.execute("embroidery.sewLast", &json!({"ids": [a]})).unwrap();
+}

@@ -373,10 +373,12 @@ fn sew(s: &mut Session, p: &Value, step: Step) -> Result<Value> {
         let uid = s.doc()?.uid;
         s.stitch_preview_options(uid).0
     };
-    let ids = match crate::cmd::ids_param(p, "ids") {
-        Some(ids) => ids,
-        None => s.doc()?.selection.objects.clone(),
-    };
+    // Every id given checked (an array of objects of the document, at most as many as a move
+    // takes), before anything is planned or walked; none given: the selection.
+    if p.get("ids").and_then(Value::as_array).is_some_and(|a| a.len() > MAX_ROWS) {
+        return Err(crate::EngineError::Other(reason(Refusal::TooMany).into()));
+    }
+    let ids = crate::cmd::checked_ids_or_selection(s, p, cmd)?;
     let (plan, doc) = super::planned(s, &opts, false, cmd)?;
     let row = step_move(&doc, &plan, &ids, step).map_err(|e| crate::EngineError::Other(e.into()))?;
     s.execute("command.batch", &row.batch())?;
@@ -391,7 +393,7 @@ pub(super) fn specs() -> Vec<CommandSpec> {
             "Sew Earlier",
             [],
             None,
-            "{ids?: [id…] (default: the selection), …the embroidery options (default: the stitch preview's, those of the document's last embroidery export: the plan the Embroidery panel's Sewing order list shows)} move the objects (a selected group as one) in the stacking order so that they are sewn before the object sewn just before them: just below it, in its parent, one undo step \"Change Sewing Order\"; refused, saying why, where a drop in the Embroidery panel's Sewing order list would be (into or out of a clip group, a lock, a clipping path, a run of an opened machine file alone, between two parts of one object) → {ids, target, place} (layer.move's params). Objects of one thread still join a block sewn earlier when nothing between lies under them, so a move may change no stitch",
+            "{ids?: [id…] (objects of the document, at most 100,000; default: the selection), …the embroidery options (default: the stitch preview's, those of the document's last embroidery export: the plan the Embroidery panel's Sewing order list shows)} move the objects (a selected group as one) in the stacking order so that they are sewn before the object sewn just before them: just below it, in its parent, one undo step \"Change Sewing Order\"; refused, saying why, where a drop in the Embroidery panel's Sewing order list would be (into or out of a clip group, a lock, a clipping path, a run of an opened machine file alone, between two parts of one object) → {ids, target, place} (layer.move's params). Objects of one thread still join a block sewn earlier when nothing between lies under them, so a move may change no stitch",
             has_doc,
             |s, p| sew(s, p, Step::Earlier)
         ),

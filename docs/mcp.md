@@ -4363,7 +4363,8 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   else the defaults (`"defaults"`); they are never saved in the file. Exports never show the stitches.
 
 - `embroidery.sewEarlier`, `sewLater`, `sewFirst` and `sewLast {ids?, …embroidery options}` change the sewing order
-  by moving the objects (default: the selection; a selected group as one) in the stacking order: before the object
+  by moving the objects (`ids`: objects of the document, each checked, at most 100,000; default: the selection; a
+  selected group as one) in the stacking order: before the object
   sewn just before them (just below it, in its parent), after the one sewn just after them (just above it), first
   or last. One undo step, "Change Sewing Order"; the answer is `layer.move`'s params `{ids, target, place}`. Where a
   drop in the Sewing order list would be refused, so are they, saying why: into or out of a clip group (what is sewn

@@ -94,6 +94,11 @@ pub const MAX_NEEDLE_POINTS: usize = 250_000;
 pub const MARK_LINE_PT: f64 = 1.0;
 pub const MARK_HALO_PT: f64 = 2.5;
 
+/// The most a point left out as straight may lie off the line drawn in its place, device pixels: a
+/// tenth of a pixel, which no anti-aliasing shows. An estimate. Zoomed in closer than that keeps
+/// (the picture's tolerance over a tenth of a pixel), every point is drawn.
+pub const STRAIGHT_SKIP_PX: f64 = 0.1;
+
 /// How many lines are drawn between two checks of the cancel flag ([`vectorcraft_doc::cancel`]),
 /// so that a frame for a view nobody waits for any longer stops soon. An estimate.
 const CANCEL_EVERY: usize = 256;
@@ -167,9 +172,11 @@ pub struct LinePicture {
     /// Each point's number, in step with `points`.
     numbers: Vec<u32>,
     /// The points a line passes straight through (one bit each, by index into `points`): a drawing
-    /// of the whole picture leaves them out, which changes no pixel; one of a range of numbers keeps
-    /// them, so a range can end there.
+    /// of the whole picture leaves them out while that changes no pixel ([`STRAIGHT_SKIP_PX`]); one
+    /// of a range of numbers keeps them, so a range can end there.
     straight: Vec<u64>,
+    /// How far off the line drawn a point left out may lie, picture units.
+    straight_tolerance: f32,
     lines: Vec<Line>,
     links: Vec<Link>,
     marks: Vec<Mark>,
@@ -288,8 +295,9 @@ struct Open {
 
 /// Builds a [`LinePicture`]: lines point by point, links and marks. Points that aren't finite (or
 /// that would not fit an offset from the origin) are left out: a line is broken there. A point
-/// within the straight tolerance of the segment between its neighbours, going on the same way, is
-/// marked as one its line passes straight through ([`LinePicture::is_straight`]).
+/// that the segment from the last point kept to the next passes within the straight tolerance of,
+/// with every point left out since, is marked as one its line passes straight through
+/// ([`LinePicture::is_straight`]).
 pub struct LinePictureBuilder {
     picture: LinePicture,
     open: Option<Open>,
@@ -308,31 +316,42 @@ impl LinePictureBuilder {
         Self { picture: LinePicture { origin, to_doc, ..LinePicture::default() }, open: None, straight_tolerance: 0.0 }
     }
 
-    /// Mark the points a line passes straight through within `tolerance` picture units (far under a
-    /// pixel at any zoom the picture is seen at, so leaving them out changes nothing drawn).
+    /// Mark the points a line passes straight through within `tolerance` picture units: left out of
+    /// a drawing while that tolerance is under a tenth of a pixel ([`STRAIGHT_SKIP_PX`]), so leaving
+    /// them out changes nothing drawn.
     pub fn straight_within(mut self, tolerance: f64) -> Self {
         self.straight_tolerance = if tolerance.is_finite() && tolerance > 0.0 { tolerance as f32 } else { 0.0 };
+        self.picture.straight_tolerance = self.straight_tolerance;
         self
     }
 
-    /// Mark the point before the last of the open line when the line passes straight through it.
+    /// Mark the point before the last of the open line when the line, drawn straight from the last
+    /// point kept to the new one, passes within the tolerance of it and of every point left out
+    /// since: points left out one after another never add up to a chord that strays off a curve.
     fn mark_straight(&mut self, start: usize) {
         let n = self.picture.points.len();
         if self.straight_tolerance <= 0.0 || n < start + 3 {
             return;
         }
-        let (Some(a), Some(m), Some(b)) = (self.picture.points.get(n - 3), self.picture.points.get(n - 2), self.picture.points.get(n - 1)) else {
-            return;
-        };
+        let i = n - 2;
+        // The last point kept before it: the line's start, or the last not left out.
+        let kept = (start..i).rev().find(|k| !self.picture.is_straight(*k)).unwrap_or(start);
+        let (Some(a), Some(b)) = (self.picture.points.get(kept), self.picture.points.get(n - 1)) else { return };
+        let (a, b) = (*a, *b);
         let (dx, dy) = (b[0] - a[0], b[1] - a[1]);
         let len = (dx * dx + dy * dy).sqrt();
-        let (mx, my) = (m[0] - a[0], m[1] - a[1]);
-        // Between its neighbours (going on the same way), and off their segment by less than the
+        if len <= 0.0 {
+            return;
+        }
+        // Each between the two (going on the same way), and off their segment by at most the
         // tolerance.
-        let along = (mx * dx + my * dy) / len.max(f32::MIN_POSITIVE);
-        let off = (mx * dy - my * dx).abs() / len.max(f32::MIN_POSITIVE);
-        if len > 0.0 && along > 0.0 && along < len && off <= self.straight_tolerance {
-            let i = n - 2;
+        let within = |m: &[f32; 2]| {
+            let (mx, my) = (m[0] - a[0], m[1] - a[1]);
+            let along = (mx * dx + my * dy) / len;
+            let off = (mx * dy - my * dx).abs() / len;
+            along > 0.0 && along < len && off <= self.straight_tolerance
+        };
+        if self.picture.points.get(kept + 1..=i).is_some_and(|run| run.iter().all(within)) {
             let word = i / 64;
             if self.picture.straight.len() <= word {
                 self.picture.straight.resize(word + 1, 0);
@@ -592,9 +611,10 @@ pub fn edge_against(color: [u8; 3], backdrop: [u8; 3]) -> Option<[u8; 3]> {
 /// What one frame drew.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct LineStats {
-    /// Lines drawn and lines left out because they lie outside the view.
+    /// Lines drawn and lines left out because they lie outside the view, and the segments drawn.
     pub drawn: usize,
     pub culled: usize,
+    pub segments: usize,
     /// Paths stroked (edges included).
     pub paths: usize,
     pub links: usize,
@@ -759,9 +779,11 @@ impl LineRenderer {
                 self.flush(ctx, &mut batch, width);
             }
             width = Some(w);
-            batch.segments += add_line(&mut batch.path, p, line, style, w);
+            let added = add_line(&mut batch.path, p, line, style, w, scale);
+            batch.segments += added;
             if count {
                 self.stats.drawn += 1;
+                self.stats.segments += added;
             }
         }
         self.flush(ctx, &mut batch, width);
@@ -902,8 +924,8 @@ impl LineRenderer {
 const DOT: f64 = 1e-3;
 
 /// Add `line`'s segments within the style's numbers to `path` (a lone point as a dot, the line
-/// `width` picture units wide); how many segments were added.
-fn add_line(path: &mut BezPath, p: &LinePicture, line: &Line, style: &LineStyle, width: f64) -> usize {
+/// `width` picture units wide, `scale` device pixels a picture unit); how many segments were added.
+fn add_line(path: &mut BezPath, p: &LinePicture, line: &Line, style: &LineStyle, width: f64, scale: f64) -> usize {
     let r = line.points.start as usize..line.points.end as usize;
     let (Some(points), Some(numbers)) = (p.points.get(r.clone()), p.numbers.get(r)) else { return 0 };
     let at = |q: &[f32; 2]| (f64::from(q[0]), f64::from(q[1]));
@@ -918,8 +940,9 @@ fn add_line(path: &mut BezPath, p: &LinePicture, line: &Line, style: &LineStyle,
     }
     let mut added = 0;
     let mut pen_down = false;
-    // The whole picture leaves out the points its lines pass straight through; a range keeps them.
-    let skip_straight = style.numbers.is_none();
+    // The whole picture leaves out the points its lines pass straight through, while that changes
+    // no pixel at this scale; a range keeps them.
+    let skip_straight = style.numbers.is_none() && f64::from(p.straight_tolerance) * scale <= STRAIGHT_SKIP_PX;
     let last = points.len().saturating_sub(1);
     // The point before, of those kept.
     let mut before: Option<&[f32; 2]> = None;

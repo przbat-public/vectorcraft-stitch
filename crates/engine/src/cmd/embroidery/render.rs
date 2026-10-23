@@ -71,7 +71,8 @@ pub fn picture(
 /// The keys `embroidery.render` takes besides the embroidery options.
 const KEYS: [&str; 7] = ["artboard", "rect", "region", "scale", "jumps", "needlePoints", "background"];
 
-/// The most pixels a point `embroidery.render` draws at: as the canvas's closest zoom (6,400 %).
+/// The most pixels a point `embroidery.render` draws at: 6,400 % at a pixel a point, a tenth of the
+/// canvas's closest zoom (64,000 %); a picture of the stitches needs no closer look. An estimate.
 const MAX_SCALE: f64 = 64.0;
 
 pub(super) fn render_cmd(s: &mut Session, p: &Value) -> Result<Value> {

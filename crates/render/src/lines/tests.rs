@@ -270,6 +270,75 @@ fn points_a_line_passes_straight_through_change_nothing_drawn() {
     assert!((0..p.point_count()).all(|i| !p.is_straight(i)));
 }
 
+/// On a gentle curve sewn in short stitches, every point is within the tolerance of its own
+/// neighbours' chord, yet the points left out never add up to a chord that strays: each is within
+/// the tolerance of the line drawn in its place, and the drawing matches one of every point.
+#[test]
+fn points_left_out_on_a_curve_stay_within_the_tolerance_of_the_line_drawn() {
+    // Millimetres: 0.5 mm stitches round a circle 64 mm across, with a 2 µm tolerance (the
+    // stitch preview's), where each point is about 0.5 µm off its neighbours' chord.
+    let (radius, step, tolerance) = (64.0_f64, 0.5_f64, 0.002_f64);
+    let mut b = LinePictureBuilder::new(Point::new(0.0, 0.0), 1.0).straight_within(tolerance);
+    b.begin_line(0, 0, 0.2);
+    let n = 400;
+    let pts: Vec<Point> = (0..n)
+        .map(|k| {
+            let a = f64::from(k) * step / radius;
+            Point::new(radius * a.sin(), radius * (1.0 - a.cos()))
+        })
+        .collect();
+    for (k, q) in pts.iter().enumerate() {
+        b.point(*q, k as u32 + 1);
+    }
+    let p = b.build();
+    let line_of = |i: usize| p.lines().iter().find(|l| (l.points.start as usize..l.points.end as usize).contains(&i)).unwrap().clone();
+    let mut left_out = 0;
+    for i in 0..p.point_count() {
+        if !p.is_straight(i) {
+            continue;
+        }
+        left_out += 1;
+        let line = line_of(i);
+        let (s, e) = (line.points.start as usize, line.points.end as usize);
+        let before = (s..i).rev().find(|k| !p.is_straight(*k)).unwrap();
+        let after = (i + 1..e).find(|k| !p.is_straight(*k)).unwrap();
+        let (a, m, c) = (p.point(before).unwrap().0, p.point(i).unwrap().0, p.point(after).unwrap().0);
+        let (dx, dy) = (c.x - a.x, c.y - a.y);
+        let off = ((m.x - a.x) * dy - (m.y - a.y) * dx).abs() / (dx * dx + dy * dy).sqrt();
+        // f32 offsets: a hair of rounding over the tolerance.
+        assert!(off <= tolerance * 1.01, "point {i} lies {off} mm off the line drawn");
+    }
+    assert!(left_out > n as usize / 4, "points are left out: {left_out} of {n}");
+    // Drawn at 40 pixels a millimetre (the tolerance a tenth of a pixel), the same pixels.
+    let s = style(&[RED]);
+    let view = Affine::scale(40.0) * Affine::translate((0.0, -1.0));
+    let mut r = LineRenderer { threads: 0, ..LineRenderer::new() };
+    let whole = r.render(&p, 400, 240, view, &s);
+    let every = r.render(&p, 400, 240, view, &LineStyle { numbers: Some(0..u32::MAX), ..s.clone() });
+    assert!(whole.pixels.iter().zip(&every.pixels).all(|(a, b)| a.abs_diff(*b) <= 1), "the same pixels");
+}
+
+/// Zoomed in so close that the tolerance would show (over a tenth of a pixel), every point is
+/// drawn; further out, the straight ones are left out.
+#[test]
+fn zoomed_in_close_every_point_is_drawn() {
+    let mut b = LinePictureBuilder::new(Point::ZERO, 1.0).straight_within(0.01);
+    b.begin_line(0, 0, 3.0);
+    for (k, x) in (0..10).map(|k| (k, f64::from(k) * 10.0)) {
+        b.point(Point::new(x, 10.0), k + 1);
+    }
+    let p = b.build();
+    let segments = |scale: f64| {
+        let mut r = LineRenderer { threads: 0, ..LineRenderer::new() };
+        // The row's height (10 points) a few pixels down, whatever the scale.
+        r.render(&p, 200, 100, Affine::translate((0.0, 20.0)) * Affine::scale(scale) * Affine::translate((0.0, -10.0)), &style(&[RED]));
+        r.stats.segments
+    };
+    assert_eq!(segments(1.0), 1, "a straight row: one segment, its ends");
+    let close = STRAIGHT_SKIP_PX / 0.01 * 2.0;
+    assert_eq!(segments(close), 9, "every point");
+}
+
 #[test]
 fn a_picture_is_placed_by_its_origin_and_scale() {
     // Picture units of a tenth of a point, offsets from (1000, 1000).

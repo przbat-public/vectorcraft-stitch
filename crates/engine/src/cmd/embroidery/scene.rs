@@ -35,9 +35,10 @@ use vectorcraft_stitch::{Command, mm_to_pt};
 use super::measure;
 use super::plan::{DesignPlan, UnitKey};
 
-/// How far off the line between its neighbours a needle point may lie and still be passed straight
-/// through when the whole design is drawn, millimetres: 2 µm, far under a pixel at the closest zoom
-/// (6,400 %, where a millimetre is about 180 px) and under the formats' 0.1 mm. An estimate.
+/// How far off the line drawn in their place the needle points left out may lie when the whole
+/// design is drawn, millimetres: 2 µm, under the formats' 0.1 mm, and under a tenth of a pixel up
+/// to about 880 % on a screen of two pixels a point (a millimetre is 2.83 points), past which every
+/// point is drawn ([`vectorcraft_render::lines::STRAIGHT_SKIP_PX`]). An estimate.
 pub const STRAIGHT_TOLERANCE_MM: f64 = 0.002;
 
 /// The fabric the stitches are drawn on (sRGB): white in this version, the colour an artboard is

@@ -27,6 +27,7 @@ pub mod order;
 pub mod plan;
 mod printed;
 pub mod render;
+pub mod reorder;
 pub mod scene;
 mod sequence;
 pub(crate) mod service;

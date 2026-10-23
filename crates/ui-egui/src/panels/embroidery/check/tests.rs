@@ -169,7 +169,9 @@ fn a_format_chosen_checks_for_it() {
     let generation = app.embroidery.preview.shown(uid).unwrap().planned.generation;
     app.embroidery.check.format.insert(uid, "dst");
     let mut words = vec![];
-    for t in [1.0, 1.05, 1.1, 1.2] {
+    // Frames past the quiet time, in case the plan shown went out of date meanwhile (the fonts'
+    // generation is the process's, which other tests change).
+    for t in [1.0, 1.05, 1.1, 1.2, 1.4, 1.6] {
         words = frame(&mut app, &ctx, t);
     }
     assert!(has(&words, "Tajima DST"), "{words:?}");

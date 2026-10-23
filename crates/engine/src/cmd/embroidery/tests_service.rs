@@ -549,6 +549,48 @@ fn a_service_remembers_its_last_few_plans() {
     assert!(service.memos() <= MAX_MEMOS);
 }
 
+/// The plans of all documents' services are held within one bound: a plan in one document drops
+/// another's least recently used past it, never the newest; a plan's scene is counted from when
+/// the plan is remembered (ahead, until it is built); a closed document's plans go.
+#[test]
+fn the_plans_of_all_documents_share_one_bound() {
+    use super::service::{Memos, SCENE_BYTES_PER_RECORD};
+    let art = |x: f64| [Art { kind: 0, x, y: 10.0, w: 120.0, h: 90.0, fill: Some(0), stroke: Some((1, 4.0)) }];
+    let (a, _) = build(&art(10.0));
+    let (b, _) = build(&art(20.0));
+    let (a, b) = (a.doc().unwrap().doc.clone(), b.doc().unwrap().doc.clone());
+    let opts = Options::default();
+    // One plan's bytes, its scene counted ahead, then as built.
+    let alone = Arc::new(Memos::default());
+    let planned = PlanService::sharing(alone.clone(), 1).planned(Of::whole(&a), &a, &opts).unwrap();
+    let records: usize = planned.plan.blocks.iter().map(|k| k.stitches.len()).sum();
+    let ahead = alone.held();
+    assert_eq!(ahead, planned.plan.byte_size() + records * SCENE_BYTES_PER_RECORD);
+    planned.scene();
+    let built = alone.held();
+    assert!(built <= ahead && built > planned.plan.byte_size(), "{built} as built, {ahead} ahead");
+    // Room for one and a half: the second document's plan drops the first's.
+    let memos = Arc::new(Memos::with_budget(ahead + ahead / 2));
+    let (first, second) = (PlanService::sharing(memos.clone(), 1), PlanService::sharing(memos.clone(), 2));
+    first.plan(Of::whole(&a), &a, &opts).unwrap();
+    second.plan(Of::whole(&b), &b, &opts).unwrap();
+    assert_eq!((first.memos(), second.memos()), (0, 1));
+    assert!(first.planned_and_walked(Of::whole(&a), &a, &opts).1, "planned again");
+    // The newest is kept whatever its size.
+    let tight = Arc::new(Memos::with_budget(1));
+    let lone = PlanService::sharing(tight.clone(), 3);
+    lone.plan(Of::whole(&a), &a, &opts).unwrap();
+    assert_eq!(lone.memos(), 1);
+    // A closed document's plans go with it.
+    let (mut s, _) = build(&art(10.0));
+    run(&mut s, "embroidery.stats", json!({}));
+    let uid = s.doc().unwrap().uid;
+    assert_eq!(s.embroidery_plans.of(uid).memos(), 1);
+    let held = s.embroidery_plans.memos_held();
+    s.embroidery_plans.forget(uid);
+    assert!(held > 0 && s.embroidery_plans.memos_held() == 0);
+}
+
 /// Each plan made has a generation of its own; reading a remembered plan gives the same one, and
 /// its scene is built once and shared.
 #[test]

@@ -1388,8 +1388,12 @@ flowchart LR
   again: commands that read a design one after another plan it once. Up to four plans are kept
   (`MAX_MEMOS`: the stitch preview's, a read command's with other options or of the selection
   alone, an agent's, and the snapshot before the last edit, so an undo needs no walk), the least
-  recently used dropped first, and together at most 256 MB beyond the newest (`MAX_MEMO_BYTES`;
-  a plan at the 2-million-stitch limit holds about 50 MB and its scene 20 MB). Another snapshot of
+  recently used dropped first. The plans of all open documents, with their scenes, hold at most
+  256 MB together (`MAX_MEMO_BYTES`, one bound for all documents; 96 MB on the web; the newest is
+  kept whatever its size): a plan at the 2-million-stitch limit holds about 50 to 90 MB and its
+  scene about 26 MB (`SCENE_BYTES_PER_RECORD`, 14 bytes a record, counted from when the plan is
+  remembered, before the scene is built). A document's plans go when it closes. The plan each open
+  document's stitch preview shows is held by the preview, outside the bound. Another snapshot of
   the same art walks again, every unit from the cache. A design refused for its size is kept the
   same way, and refused again at once.
 - **A generation and a scene per plan.** Each plan made gets a number no other plan of the process

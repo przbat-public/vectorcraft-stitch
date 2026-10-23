@@ -2,8 +2,9 @@
 //! its stitch plan and keeps each sewing unit's stitches between plans ([`UnitCache`]), so that a
 //! plan after an edit plans again only the units the edit changed.
 //!
-//! It also remembers its last few plans ([`MAX_MEMOS`], within [`MAX_MEMO_BYTES`]), each of which
-//! snapshot of the document and with which options: a document snapshot (`Arc<Document>`, shared
+//! It also remembers its last few plans ([`MAX_MEMOS`]; the plans of all open documents, and their
+//! scenes, within [`MAX_MEMO_BYTES`] together, [`Memos`]), each of which snapshot of the document
+//! and with which options: a document snapshot (`Arc<Document>`, shared
 //! with the undo history) never changes, so the same snapshot with the same options has the same
 //! plan, and the commands that read a design one after another (`embroidery.threads`, and the
 //! statistics, sewing order and checks) and the app's planner plan it once. Several are kept so that
@@ -48,11 +49,20 @@ use super::unit::PlanError;
 /// estimate.
 pub const MAX_MEMOS: usize = 4;
 
-/// The most bytes the plans a service remembers, and their scenes, may hold together, beyond the
-/// newest (which is always kept): at the 2-million-stitch limit a plan holds about 50 MB and its
-/// scene 20 MB (24 and 10 bytes a record, research for the stitch preview), so about three of
-/// those. An estimate.
+/// The most bytes the plans remembered for all open documents ([`Memos`]), and their scenes, may
+/// hold together; the newest is kept whatever its size. At the 2-million-stitch limit a plan holds
+/// about 50 to 90 MB (25 to 45 bytes a record, measured on the tests' designs) and its scene about
+/// 26 MB ([`SCENE_BYTES_PER_RECORD`]), so two or three of those. An estimate. On the web, whose
+/// memory is far smaller, about one.
+#[cfg(not(target_arch = "wasm32"))]
 pub const MAX_MEMO_BYTES: usize = 256 << 20;
+#[cfg(target_arch = "wasm32")]
+pub const MAX_MEMO_BYTES: usize = 96 << 20;
+
+/// About how many bytes a plan's stitch scene holds for each record, counted for a remembered plan
+/// before its scene is built: 8 for the point, 4 for its number, and its share of the lines. 12.9
+/// to 13.1 measured on the tests' designs (2026-10-23), rounded up.
+pub const SCENE_BYTES_PER_RECORD: usize = 14;
 
 /// The generation the next plan made gets: one counter for the process, so no two plans share one.
 static NEXT_GENERATION: AtomicU64 = AtomicU64::new(1);
@@ -137,6 +147,40 @@ impl<'a> Of<'a> {
     }
 }
 
+/// The plans remembered by the services of one [`Services`] (in the app, every open document's), the
+/// most recently used last, and the most bytes they may hold together: one bound for all, so that
+/// several heavy documents open don't each keep their own share.
+pub(crate) struct Memos {
+    list: Mutex<Vec<Memo>>,
+    budget: usize,
+}
+
+impl Default for Memos {
+    fn default() -> Self {
+        Self::with_budget(MAX_MEMO_BYTES)
+    }
+}
+
+impl Memos {
+    /// Memos within `budget` bytes (small, in tests that drop plans).
+    pub(crate) fn with_budget(budget: usize) -> Self {
+        Self { list: Mutex::new(Vec::new()), budget }
+    }
+
+    /// Drop the plans of document `owner` (it closed).
+    fn forget(&self, owner: u64) {
+        if let Ok(mut list) = self.list.lock() {
+            list.retain(|m| m.owner != owner);
+        }
+    }
+
+    /// The bytes the plans remembered hold, their scenes included (counted ahead until built).
+    #[cfg(test)]
+    pub(crate) fn held(&self) -> usize {
+        self.list.lock().map_or(0, |l| l.iter().map(Memo::held).sum())
+    }
+}
+
 /// The last plan a service made: of which snapshot (held weakly: the plan doesn't keep a closed
 /// or undone document alive) cut to which selection, with which options, and with which fonts: a
 /// text clipping path is outlined with the fonts installed, so a font added since can change the
@@ -145,13 +189,17 @@ impl<'a> Of<'a> {
 /// after another are refused at once rather than each planning up to the limit again; a cancelled
 /// plan never is (the next one plans).
 struct Memo {
+    /// The service that made it ([`PlanService::owner`]).
+    owner: u64,
     snapshot: Weak<Document>,
     selection: Vec<NodeId>,
     opts: Options,
     fonts: u64,
     plan: Result<Planned, PlanError>,
-    /// About how many bytes the plan holds (its scene's are counted once it is built).
+    /// About how many bytes the plan holds, and how many records it has (its scene is counted
+    /// ahead from them until it is built).
     bytes: usize,
+    records: usize,
 }
 
 impl Memo {
@@ -159,9 +207,14 @@ impl Memo {
         std::ptr::eq(self.snapshot.as_ptr(), Arc::as_ptr(of.snapshot)) && self.selection == of.selection && self.opts == *opts && self.fonts == fonts
     }
 
-    /// The bytes it holds, its scene's included once built.
+    /// The bytes it holds, its scene's included: as built, or as it will be.
     fn held(&self) -> usize {
-        self.bytes + self.plan.as_ref().ok().and_then(|p| p.scene.get()).map_or(0, |s| s.byte_size())
+        let scene = match self.plan.as_ref().ok().map(|p| p.scene.get()) {
+            Some(Some(built)) => built.byte_size(),
+            Some(None) => self.records.saturating_mul(SCENE_BYTES_PER_RECORD),
+            None => 0,
+        };
+        self.bytes.saturating_add(scene)
     }
 }
 
@@ -202,8 +255,9 @@ impl PartialEq for Planned {
 #[derive(Default)]
 pub(crate) struct PlanService {
     units: Mutex<UnitCache>,
-    /// The plans remembered, the most recently used last.
-    memos: Mutex<Vec<Memo>>,
+    /// The plans remembered, with those of the other documents' services, and which are its own.
+    memos: Arc<Memos>,
+    owner: u64,
     #[cfg(not(target_arch = "wasm32"))]
     flights: Flights,
     /// How many times it walked a document (the tests count plans made).
@@ -212,6 +266,12 @@ pub(crate) struct PlanService {
 }
 
 impl PlanService {
+    /// The service of document `owner`, remembering its plans in `memos` with the other
+    /// documents'.
+    pub(crate) fn sharing(memos: Arc<Memos>, owner: u64) -> Self {
+        Self { memos, owner, ..Self::default() }
+    }
+
     /// The plan of `doc`, the document planned of `of`, with `opts`: the last plan when it was of
     /// this snapshot cut the same way with these options; else planned, each unit's stitches taken
     /// from those kept where nothing it is planned from has changed, and kept for the next plan.
@@ -312,23 +372,30 @@ impl PlanService {
         let plan = digitize(doc, opts, Some(&self.units)).map(|p| Planned::new(Arc::new(p)));
         if plan.as_ref().err() != Some(&PlanError::Cancelled) {
             let bytes = plan.as_ref().map_or(0, |p| p.plan.byte_size());
+            let records = plan.as_ref().map_or(0, |p| p.plan.blocks.iter().map(|b| b.stitches.len()).sum());
             let snapshot = Arc::downgrade(of.snapshot);
-            self.remember(Memo { snapshot, selection: of.selection.to_vec(), opts: opts.clone(), fonts, plan: plan.clone(), bytes });
+            let (selection, opts) = (of.selection.to_vec(), opts.clone());
+            self.remember(Memo { owner: self.owner, snapshot, selection, opts, fonts, plan: plan.clone(), bytes, records });
         }
         plan
     }
 
     /// Keep `memo` as the most recent, dropping the plans of snapshots gone (no plan of theirs can
-    /// be asked for again), and the least recently used beyond [`MAX_MEMOS`] or
-    /// [`MAX_MEMO_BYTES`]. A memo list that a panic elsewhere left locked is passed by: the next
-    /// plan walks again.
+    /// be asked for again), the service's own least recently used beyond [`MAX_MEMOS`], and the
+    /// least recently used of any document while they hold more than the budget
+    /// ([`MAX_MEMO_BYTES`]; never the newest). A memo list that a panic elsewhere left locked is
+    /// passed by: the next plan walks again.
     fn remember(&self, memo: Memo) {
-        let Ok(mut memos) = self.memos.lock() else { return };
+        let Ok(mut memos) = self.memos.list.lock() else { return };
         memos.retain(|m| {
             m.snapshot.strong_count() > 0 && !(m.snapshot.ptr_eq(&memo.snapshot) && m.selection == memo.selection && m.opts == memo.opts)
         });
         memos.push(memo);
-        while memos.len() > MAX_MEMOS || (memos.len() > 1 && memos.iter().map(Memo::held).sum::<usize>() > MAX_MEMO_BYTES) {
+        while memos.iter().filter(|m| m.owner == self.owner).count() > MAX_MEMOS {
+            let Some(oldest) = memos.iter().position(|m| m.owner == self.owner) else { break };
+            memos.remove(oldest);
+        }
+        while memos.len() > 1 && memos.iter().map(Memo::held).sum::<usize>() > self.memos.budget {
             memos.remove(0);
         }
     }
@@ -337,7 +404,7 @@ impl PlanService {
     /// generation `fonts`, made the most recently used. A snapshot held only weakly can't be
     /// mistaken for another made since: its memory isn't reused while a weak reference is held.
     pub(super) fn remembered(&self, of: Of<'_>, opts: &Options, fonts: u64) -> Option<Result<Planned, PlanError>> {
-        let mut memos = self.memos.lock().ok()?;
+        let mut memos = self.memos.list.lock().ok()?;
         let at = memos.iter().position(|m| m.of(of, opts, fonts))?;
         let memo = memos.remove(at);
         let plan = memo.plan.clone();
@@ -345,10 +412,10 @@ impl PlanService {
         Some(plan)
     }
 
-    /// How many plans are remembered.
+    /// How many of its plans are remembered.
     #[cfg(test)]
     pub(crate) fn memos(&self) -> usize {
-        self.memos.lock().map_or(0, |m| m.len())
+        self.memos.list.lock().map_or(0, |m| m.iter().filter(|m| m.owner == self.owner).count())
     }
 
     /// How many plans are under way.
@@ -414,6 +481,8 @@ pub(crate) fn plan_afresh(doc: &Document, opts: &Options) -> Result<DesignPlan, 
 #[derive(Default)]
 pub(crate) struct Services {
     plans: HashMap<u64, Arc<PlanService>>,
+    /// The plans the services remember, within one bound for all.
+    memos: Arc<Memos>,
     views: HashMap<u64, super::view::StitchView>,
     /// Each document's last embroidery export's options, and the last export's of any document:
     /// what the stitch preview plans with ([`super::view::OptionsSource`]).
@@ -424,7 +493,8 @@ pub(crate) struct Services {
 impl Services {
     /// Document `uid`'s service, made when it is first asked for.
     pub(crate) fn of(&mut self, uid: u64) -> Arc<PlanService> {
-        self.plans.entry(uid).or_default().clone()
+        let memos = &self.memos;
+        self.plans.entry(uid).or_insert_with(|| Arc::new(PlanService::sharing(memos.clone(), uid))).clone()
     }
 
     /// Document `uid`'s stitch view (the default until one is set).
@@ -451,8 +521,15 @@ impl Services {
     /// export's options (the last export's of any document stay).
     pub(crate) fn forget(&mut self, uid: u64) {
         self.plans.remove(&uid);
+        self.memos.forget(uid);
         self.views.remove(&uid);
         self.exports.remove(&uid);
+    }
+
+    /// The bytes the plans remembered hold.
+    #[cfg(test)]
+    pub(crate) fn memos_held(&self) -> usize {
+        self.memos.held()
     }
 
     /// The documents that have a service, a stitch view or an export's options.

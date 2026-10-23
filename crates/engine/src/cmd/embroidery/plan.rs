@@ -15,6 +15,7 @@
 //! stitches), so that each shows what will be sewn. `docs/embroidery.md` › Architecture records
 //! the decisions that rest on it.
 
+use std::collections::BTreeMap;
 use std::ops::Range;
 
 use vectorcraft_doc::NodeId;
@@ -274,6 +275,10 @@ impl ThreadBlock {
     }
 }
 
+/// The most objects a plan names for one warning ([`DesignPlan::warned`]): as many as a check lists
+/// for a rule, whatever the design.
+pub const MAX_WARNED_OBJECTS: usize = 1000;
+
 /// A design's stitch plan: its sewing units and thread blocks in sewing order, and what was left
 /// out or approximated.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -288,6 +293,11 @@ pub struct DesignPlan {
     /// What was left out or approximated, once each (type, images, gradients…): the art the
     /// `notSewn` check counts.
     pub warnings: Vec<String>,
+    /// The objects each warning is about, by its words: those a person selects (a symbol's
+    /// instance for art inside the symbol), in the order the walk met them, at most
+    /// [`MAX_WARNED_OBJECTS`] each. A warning about no object in particular (what the document's
+    /// appearances leave out) has none.
+    pub warned: BTreeMap<String, Vec<NodeId>>,
     /// What else the export says that isn't about the art (a thread palette this version doesn't
     /// know): said with the warnings ([`DesignPlan::messages`]), not counted as art left out.
     pub notes: Vec<String>,
@@ -311,6 +321,8 @@ impl DesignPlan {
         let blocks: usize =
             self.blocks.iter().map(|b| std::mem::size_of::<ThreadBlock>() + b.stitches.capacity() * std::mem::size_of::<Stitch>()).sum();
         let words: usize = self.warnings.iter().chain(&self.notes).map(String::capacity).sum();
+        let warned: usize = self.warned.iter().map(|(w, ids)| w.capacity() + ids.capacity() * std::mem::size_of::<NodeId>()).sum();
+        let words = words + warned;
         std::mem::size_of::<Self>() + self.units.capacity().saturating_sub(self.units.len()) * std::mem::size_of::<Unit>() + units + blocks + words
     }
 

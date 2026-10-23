@@ -33,6 +33,7 @@ use vectorcraft_geom::{Point, Rect};
 use vectorcraft_stitch::Command;
 use vectorcraft_stitch::plan::Style;
 
+use super::check::LONGEST_STITCH;
 use super::measure::{self, Record};
 use super::plan::{BlockThread, DesignPlan};
 
@@ -337,6 +338,72 @@ pub(crate) fn model(p: &Map<String, Value>, cmd: &str) -> crate::Result<(Machine
     Ok((Machine { speed }, Thread { fabric }))
 }
 
+/// The width of the stitch-length chart's bins, millimetres. An estimate: half a millimetre shows
+/// where a design's stitches gather (most are sewn 2 to 4 mm long) in a chart a panel wide.
+pub(crate) const LENGTH_BIN_MM: f64 = 0.5;
+/// The half-millimetre bins, up to 12.5 mm; then one up to the longest stitch the check allows
+/// ([`LONGEST_STITCH`], 12.7 mm, inclusive), and one for every longer stitch, which holds exactly
+/// the `stitchTooLong` hits.
+const EVEN_BINS: usize = 25;
+pub(crate) const LENGTH_BINS: usize = EVEN_BINS + 2;
+/// The resolution the median is found at, millimetres.
+const MEDIAN_STEP_MM: f64 = 0.1;
+/// The median's bins: a tenth of a millimetre each up to 13 mm, and one for longer stitches.
+const MEDIAN_BINS: usize = 131;
+
+/// Needle-down stitch lengths counted into the chart's bins, and finely for the median.
+struct Lengths {
+    bins: [u64; LENGTH_BINS],
+    fine: Vec<u64>,
+    count: u64,
+}
+
+impl Default for Lengths {
+    fn default() -> Self {
+        Self { bins: [0; LENGTH_BINS], fine: vec![0; MEDIAN_BINS], count: 0 }
+    }
+}
+
+impl Lengths {
+    fn add(&mut self, length: f64) {
+        if !length.is_finite() || length < 0.0 {
+            return;
+        }
+        // As the check compares: too long is longer than the longest allowed.
+        let bin = if length > LONGEST_STITCH { EVEN_BINS + 1 } else { ((length / LENGTH_BIN_MM).floor() as usize).min(EVEN_BINS) };
+        let fine = ((length / MEDIAN_STEP_MM).floor() as usize).min(MEDIAN_BINS - 1);
+        if let (Some(b), Some(f)) = (self.bins.get_mut(bin), self.fine.get_mut(fine)) {
+            *b += 1;
+            *f += 1;
+            self.count += 1;
+        }
+    }
+
+    /// `{bins: [{from, to, count}], median}`: the last bin's `to` is null (and longer); the median
+    /// to the tenth of a millimetre (the middle of its tenth), null with no stitch.
+    fn to_json(&self) -> Value {
+        let edge = |k: usize| match k {
+            k if k <= EVEN_BINS => Some(k as f64 * LENGTH_BIN_MM),
+            k if k == EVEN_BINS + 1 => Some(LONGEST_STITCH),
+            _ => None,
+        };
+        let bins: Vec<Value> =
+            self.bins.iter().enumerate().map(|(k, n)| json!({"from": edge(k).map(mm), "to": edge(k + 1).map(mm), "count": n})).collect();
+        let mut seen = 0;
+        let half = self.count.div_ceil(2);
+        let median = (self.count > 0)
+            .then(|| {
+                self.fine.iter().position(|n| {
+                    seen += n;
+                    seen >= half
+                })
+            })
+            .flatten()
+            .map(|k| mm((k as f64 + 0.5) * MEDIAN_STEP_MM));
+        json!({"bins": bins, "median": median})
+    }
+}
+
 /// The design's figures ([`tally`]) as `embroidery.stats` gives them, its blocks those `page`
 /// lists.
 pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread, page: Page) -> Value {
@@ -345,10 +412,14 @@ pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread, page: P
     for b in &blocks {
         total.merge(b);
     }
-    // The needle points: the design's box, where it starts and ends.
+    // The needle points: the design's box, where it starts and ends; the stitches' lengths.
     let mut bounds: Option<Rect> = None;
     let (mut start, mut end): (Option<Point>, Option<Point>) = (None, None);
+    let mut lengths = Lengths::default();
     measure::each(plan, |r| {
+        if let Some(length) = r.sewn() {
+            lengths.add(length);
+        }
         let p = r.stitch.point();
         if r.stitch.command != Command::Stitch || !(p.x.is_finite() && p.y.is_finite()) {
             return;
@@ -402,6 +473,7 @@ pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread, page: P
         "shortestStitch": total.shortest.map(mm),
         "longestStitch": total.longest.map(mm),
         "longestJump": total.longest_jump.map(mm),
+        "lengths": lengths.to_json(),
         "threadUsage": {
             "topMetres": metres(total.top),
             "bobbinMetres": metres(total.bobbin),

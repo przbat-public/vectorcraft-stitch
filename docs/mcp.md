@@ -4316,7 +4316,10 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   fabricThickness, estimate}` and the sewing `time`, both estimates (each says so in `estimate`) whose constants and
   sources `embroidery.md` lists (`speed`, stitches a minute, 60 to 1500, default 650; `fabricThickness`, mm, 0 to 5,
   default 0.5). The time leaves out colour changes, which are counted apart. `blocks` lists each block's thread,
-  counts, `firstRecord`/`lastRecord`, `topThreadMetres`, `bobbinThreadMetres` and `seconds`.
+  counts, `firstRecord`/`lastRecord`, `topThreadMetres`, `bobbinThreadMetres` and `seconds`. `lengths` counts the
+  needle-down stitches by length in `bins` (`{from, to, count}`): half a millimetre each up to 12.5 mm, then one up to
+  12.7 mm (the longest the check lets pass, inclusive) and one, with `to` null, for every longer stitch (the
+  `stitchTooLong` hits); `median` is their middle length to the tenth of a millimetre.
 - `embroidery.sequence {…embroidery options, offset?, limit?}` lists the sewing order, read only: the units from
   `offset` in sewing order within their blocks, each block with its thread, counts, record numbers and what follows it,
   each unit with the object a person selects (`id`), `part` (`fill`, `stroke`, `literal`), `partIndex` and
@@ -4332,7 +4335,11 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   sources (the first is the one checked; where sources disagree each is listed), `hits`, the objects hit
   (`objectCount`, at most 1000 in `objects`, `truncated`) and the first `limit` hits (`examples`, 20 by default, at
   most 1000) as record numbers and points with the measure compared. `summary` gives, per severity, the rules that
-  found something and their hits. `format` (one of the eight embroidery formats; default: the format of the document's
+  found something and their hits. Each rule also gives `measured`, the extreme of what it judged, hit or not (the
+  longest stitch for `stitchTooLong`, the shortest for `stitchTiny`; null for a rule that measures nothing); a
+  stitch's hit gives where the stitch starts (`from`) besides where it ends (`at`), a thread's hit its `block` and
+  `thread`, a `notSewn` hit the `objects` whose art it left out (none for what the appearances leave out); and
+  `notChecked` names each item by `id`. `format` (one of the eight embroidery formats; default: the format of the document's
   thread palette) sets the format limits checked and the threads judged: those the format writes (a PES of a
   document in Janome's palette writes Brother's threads, matched to the art's colours), named in `palette`; `rules`
   picks rules by id.

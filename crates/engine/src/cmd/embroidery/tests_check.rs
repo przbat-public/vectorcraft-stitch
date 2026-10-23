@@ -356,3 +356,93 @@ fn the_format_step_note_is_what_the_writer_writes() {
     let sewn = written.points().filter(|s| s.command == vectorcraft_stitch::Command::Stitch).count();
     assert_eq!(sewn, p.blocks[0].needle_points() + 2);
 }
+
+/// What the Check tab and its chart read besides the hits: each rule's extreme measured over
+/// everything it judged (the longest stitch equals the figures' longest), a stitch hit's start, a
+/// thread hit's block, the not-checked items' ids, and the stitch lengths in half-millimetre bins
+/// with their median.
+#[test]
+fn the_checks_extremes_and_the_lengths_chart() {
+    use vectorcraft_testkit::embroidery as fx;
+    let mut s = Session::new();
+    let mut runner = |c: &str, p: Value| s.execute(c, &p).unwrap_or_else(|e| panic!("{c} {p}: {e}"));
+    fx::blank(&mut runner);
+    fx::three_threads(&mut runner, true);
+    fx::stroke(&mut runner, fx::GREEN, fx::RUNNING_WEIGHT, &[(20.0, 300.0), (300.0, 300.0)]);
+    let check = s.execute("embroidery.check", &json!({"limit": 5})).unwrap();
+    let stats = s.execute("embroidery.stats", &json!({})).unwrap();
+    let rule = |id: &str| check["rules"].as_array().unwrap().iter().find(|r| r["id"] == id).unwrap().clone();
+    assert_eq!(rule("stitchTooLong")["measured"], stats["longestStitch"], "the longest stitch judged");
+    assert_eq!(rule("stitchTiny")["measured"].as_f64(), stats["shortestStitch"].as_f64());
+    assert!(rule("threadMismatch")["measured"].as_f64().is_some());
+    assert!(rule("notSewn")["measured"].is_null(), "a rule that measures nothing");
+    // The design's own figures, against the format's and the machine's limits; the most layers.
+    assert_eq!((&rule("formatColors")["measured"], &rule("machineStitches")["measured"]), (&stats["blockCount"], &stats["stitches"]));
+    assert_eq!(rule("machineColorChanges")["measured"], stats["colorChanges"]);
+    assert!(rule("layers")["measured"].as_u64().is_some_and(|n| n >= 1), "{}", rule("layers"));
+    let ids: Vec<&str> = check["notChecked"].as_array().unwrap().iter().filter_map(|n| n["id"].as_str()).collect();
+    assert_eq!(ids, ["density", "penetrations", "ties"]);
+    let lengths = &stats["lengths"];
+    let bins = lengths["bins"].as_array().unwrap();
+    assert_eq!(bins.len(), super::stats::LENGTH_BINS);
+    assert_eq!((&bins[0]["from"], &bins[1]["from"], &bins[25]["from"], &bins[25]["to"]), (&json!(0.0), &json!(0.5), &json!(12.5), &json!(12.7)));
+    assert_eq!((&bins[26]["from"], &bins[26]["to"]), (&json!(12.7), &Value::Null));
+    let counted: u64 = bins.iter().map(|b| b["count"].as_u64().unwrap()).sum();
+    assert!(counted > 0 && counted <= stats["stitches"].as_u64().unwrap(), "{counted}");
+    let median = lengths["median"].as_f64().unwrap();
+    assert!(median > 0.0 && median <= stats["longestStitch"].as_f64().unwrap(), "{median}");
+    // A stitch hit says where its stitch starts.
+    let tiny = s.execute("embroidery.check", &json!({"rules": ["stitchBelowNeedle"], "limit": 1})).unwrap();
+    if let Some(hit) = tiny["rules"][0]["examples"].get(0) {
+        assert!(hit["from"].as_array().is_some_and(|a| a.len() == 2), "{hit}");
+    }
+}
+
+/// A not-sewn hit names the objects whose art was left out (a symbol's instance for the art inside
+/// it), and the rule's objects are theirs; what the appearances leave out names none. A thread hit
+/// carries its block and thread.
+#[test]
+fn what_is_not_sewn_names_its_objects_and_a_thread_hit_its_thread() {
+    let mut s = Session::new();
+    run(&mut s, "file.new", json!({"width": 400, "height": 400, "artboards": 1}));
+    run(&mut s, "shape.rectangle", json!({"x": 20, "y": 20, "width": 60, "height": 40}));
+    let rect = run(&mut s, "effect.apply", json!({"effect": "stylize.dropShadow"}));
+    assert!(rect.is_object(), "{rect}");
+    let first = run(&mut s, "text.create", json!({"x": 10, "y": 150, "text": "Haft"}))["id"].as_u64().unwrap();
+    let second = run(&mut s, "text.create", json!({"x": 10, "y": 250, "text": "Nić"}))["id"].as_u64().unwrap();
+    run(&mut s, "select.set", json!({"ids": [second]}));
+    let instance = run(&mut s, "symbol.new", json!({"name": "Word"}))["id"].as_u64().unwrap();
+    let v = run(&mut s, "embroidery.check", json!({"rules": ["notSewn"]}));
+    let rule = &v["rules"][0];
+    let hits = rule["examples"].as_array().unwrap();
+    let of = |start: &str| hits.iter().find(|h| h["note"].as_str().is_some_and(|n| n.starts_with(start))).unwrap_or_else(|| panic!("{start}: {v}"));
+    assert_eq!(of("type is not stitched")["objects"], json!([first, instance]), "{v}");
+    assert_eq!(of("shadows, glows, blurs")["objects"], json!([]), "{v}");
+    assert_eq!(rule["objects"], json!([first, instance]));
+    // A mismatched thread's hit: its block and its thread.
+    let mut p = one(Style::Running, &[3.0]);
+    p.blocks[0].thread.delta_e = 12.0;
+    let v = check::check(&p, &Ask { rules: vec![check::rule("threadMismatch").unwrap()], format: Format::Dst, limit: check::LIMIT });
+    let hit = &v["rules"][0]["examples"][0];
+    assert_eq!(hit["block"], json!(1));
+    assert_eq!(hit["thread"]["deltaE"], json!(12.0), "{hit}");
+}
+
+/// The chart's bins compare as the checks do: a stitch up to 12.7 mm is in the bin before it, one
+/// past it in the last, which holds exactly the `stitchTooLong` hits; the median is the middle
+/// length's tenth.
+#[test]
+fn the_lengths_bins_agree_with_the_longest_stitch_check() {
+    use super::stats::{self, Machine, Page, Thread};
+    let p = one(Style::Running, &[0.3, 3.04, 3.06, 3.33, 12.6, 12.71, 20.0]);
+    let v = stats::stats(&p, Machine { speed: 650.0 }, Thread { fabric: 0.5 }, Page { offset: 0, limit: 0 });
+    let bins = v["lengths"]["bins"].as_array().unwrap();
+    let count = |k: usize| bins[k]["count"].as_u64().unwrap();
+    assert_eq!((count(0), count(6), count(25), count(26)), (1, 3, 1, 2), "{bins:?}");
+    assert_eq!(count(26), hits(&p, "stitchTooLong", Format::Dst));
+    assert_eq!(bins.iter().map(|b| b["count"].as_u64().unwrap()).sum::<u64>(), 7);
+    // Seven lengths: the fourth, 3.33 mm, is the middle, given as the middle of its tenth.
+    assert_eq!(v["lengths"]["median"], json!(3.35));
+    let empty = stats::stats(&plan(vec![]), Machine { speed: 650.0 }, Thread { fabric: 0.5 }, Page { offset: 0, limit: 0 });
+    assert_eq!(empty["lengths"]["median"], Value::Null);
+}

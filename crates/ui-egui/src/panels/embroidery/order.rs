@@ -227,6 +227,13 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                     node.set_selected(lit);
                     node.set_label(label.clone());
                 });
+                // Hovered, a row's stitches stand out on the canvas for the moment (the rest faded).
+                if resp.hovered() && app.embroidery.order.drag.is_none() {
+                    let units = units_of(&order, *row);
+                    if !units.is_empty() {
+                        app.embroidery.layer.emphasize(units);
+                    }
+                }
                 // A dragged row moves its objects, or the selection's when it is lit.
                 if resp.drag_started() {
                     let movers = if lit { movers_of(&doc, &plan, &selected) } else { objects_of(&order, *row).into_iter().map(NodeId).collect() };
@@ -453,6 +460,17 @@ fn objects_of(order: &SewingOrder, row: Row) -> Vec<u64> {
         Row::Change(_) => {}
     }
     ids
+}
+
+/// The scene's units `row` stands for (their tags: the plan's unit indices): a unit's, a header's
+/// block's.
+fn units_of(order: &SewingOrder, row: Row) -> Vec<u32> {
+    let tag = |u: &OrderUnit| u.unit.checked_sub(1).and_then(|i| u32::try_from(i).ok());
+    match row {
+        Row::Unit(b, u) => order.blocks.get(b).and_then(|b| b.units.get(u)).and_then(tag).into_iter().collect(),
+        Row::Header(b) => order.blocks.get(b).into_iter().flat_map(|b| &b.units).filter_map(tag).collect(),
+        Row::Change(_) => Vec::new(),
+    }
 }
 
 /// A click on `row` with `mods`: select its objects; with Shift, the unit rows from the one

@@ -195,3 +195,14 @@ fn a_drop_and_its_note() {
     }
     assert!(!words.iter().any(|w| w.contains("is sewn in block")), "{words:?}");
 }
+
+#[test]
+fn a_rows_units() {
+    let mut app = app_with(4);
+    let ctx = egui::Context::default();
+    ready(&mut app, &ctx);
+    let order = order_of(&app);
+    assert_eq!(units_of(&order, Row::Unit(1, 0)), [2]);
+    assert_eq!(units_of(&order, Row::Header(0)), [0, 1]);
+    assert!(units_of(&order, Row::Change(0)).is_empty());
+}

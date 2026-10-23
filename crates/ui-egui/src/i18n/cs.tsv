@@ -5483,3 +5483,4 @@ embroidery	about {value} m	asi {value} m
 @msg	`hit` must be a listed hit's place, from 0	`hit` musí být pořadí uvedeného nálezu, od 0
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	kontrola dokumentu v aktuálním stavu není k dispozici: zobrazte kartu Kontrola panelu Výšivka a počkejte, až budou stehy naplánovány
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	a {count} další řádek není v seznamu (seznam ukazuje prvních {limit})|a {count} další řádky nejsou v seznamu (seznam ukazuje prvních {limit})|a {count} dalších řádků není v seznamu (seznam ukazuje prvních {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	obrázek by měl {w} × {h} pixelů, víc než {most} na stranu: vykreslete menší oblast nebo v menším měřítku

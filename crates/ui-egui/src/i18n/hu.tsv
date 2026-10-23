@@ -5469,3 +5469,4 @@ embroidery	about {value} m	kb. {value} m
 @msg	`hit` must be a listed hit's place, from 0	a `hit` értékének egy felsorolt találat helyének kell lennie, 0-tól
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	a dokumentum jelenlegi állapotáról nincs ellenőrzés: jelenítse meg a Hímzés panel Ellenőrzés lapját, és várja meg, amíg az öltések megtervezése elkészül
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	és további {count} sor nincs a listán (a lista az első {limit} sort mutatja)
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	a kép {w} × {h} képpontos lenne, oldalanként több mint {most}: rajzoljon kisebb területet vagy kisebb léptékben

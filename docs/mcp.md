@@ -4349,9 +4349,11 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   (default true) the moves marked (two-tone dashes where the thread was cut, a thin line in the thread's colour where
   it lies, a × at each cut), and with `needlePoints` (default false) a dot at each needle point where they stand at
   least 6 screen points apart. The region is the design's stitches with a 5 mm margin (`region: "design"`, the default),
-  an artboard (`artboard`, from 0) or a box (`rect`, points); `scale` is pixels a point (default 1, at most 64);
-  `background` `"#rrggbb"` (default white, the fabric) or null for none. It answers with `width`, `height`, the
-  `region` drawn and the plan's `generation` (another plan, another number). A design with nothing sewn is an error.
+  an artboard (`artboard`, from 0) or a box (`rect`, points); `scale` is pixels a point (default 1, at most 64), the
+  picture at most 8,192 pixels a side; `background` exactly `"#rrggbb"` (default white, the fabric) or null for none.
+  It answers with `width`, `height`, the `region` drawn and `units: "pt"` (unlike the read commands, whose boxes and
+  points are millimetres: multiply those by 72 / 25.4 for a `rect`), and the plan's `generation` (another plan,
+  another number). A design with nothing sewn is an error.
 - `view.stitchPreview {on?}` (⌘E) shows the active document's design on the canvas as its stitches instead of its
   art; `on` left out or null toggles. Each open document has its own setting, view state like Show Transparency
   Grid: not saved, not undoable, not journaled, kept through Revert, dropped on close. Its options, kept while the

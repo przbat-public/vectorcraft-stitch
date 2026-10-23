@@ -5439,3 +5439,4 @@ embroidery	about {value} m	cirka {value} m
 @msg	`hit` must be a listed hit's place, from 0	`hit` måste vara platsen för ett listat fynd, från 0
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	det finns ingen kontroll av dokumentet som det är nu: visa fliken Kontroll i panelen Broderi och vänta tills stygnen har planerats
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	och {count} rad till visas inte (listan visar de första {limit})|och {count} rader till visas inte (listan visar de första {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	bilden skulle bli {w} × {h} pixlar, mer än {most} per sida: rita ett mindre område eller i mindre skala

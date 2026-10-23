@@ -5448,3 +5448,4 @@ embroidery	about {value} m	около {value} м
 @msg	`hit` must be a listed hit's place, from 0	`hit` трябва да е мястото на изброена находка, от 0
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	няма проверка на документа в сегашния му вид: покажете раздела „Проверка“ на панела „Бродерия“ и изчакайте бодовете да бъдат планирани
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	и още {count} ред не е в списъка (списъкът показва първите {limit})|и още {count} реда не са в списъка (списъкът показва първите {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	картината би била {w} × {h} пиксела, повече от {most} на страна: изобразете по-малка област или в по-малък мащаб

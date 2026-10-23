@@ -5389,3 +5389,4 @@ embroidery	about {value} m	დაახლოებით {value} მ
 @msg	`hit` must be a listed hit's place, from 0	`hit` უნდა იყოს ჩამოთვლილი აღმოჩენის ადგილი, 0-დან
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	დოკუმენტის ამჟამინდელი მდგომარეობის შემოწმება არ არის: გამოაჩინეთ ნაქარგობის პანელის „შემოწმების“ ჩანართი და დაელოდეთ ნაკერების დაგეგმვას
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	და კიდევ {count} სტრიქონი სიაში არ არის (სიაში ჩანს პირველი {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	სურათი იქნებოდა {w} × {h} პიქსელი, თითო მხარეზე {most}-ზე მეტი: დახატეთ უფრო მცირე არე ან უფრო მცირე მასშტაბით

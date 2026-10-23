@@ -16,6 +16,11 @@ use super::*;
 /// room to see its edges).
 pub const DESIGN_MARGIN_MM: f64 = 5.0;
 
+/// The most pixels a side of a picture of the stitches may have: a picture to look at (an export
+/// writes a file of any size), whose pixels, their copy and the PNG stay under about a gigabyte. An
+/// estimate.
+pub const MAX_PICTURE_PX: u32 = 8192;
+
 /// The part of the document a picture of the stitches shows.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Region {
@@ -61,6 +66,12 @@ pub fn picture(
         Region::Rect(r) => r,
     };
     let (w, h) = vectorcraft_render::raster_size(r, scale).map_err(EngineError::Other)?;
+    if w > MAX_PICTURE_PX || h > MAX_PICTURE_PX {
+        let most = MAX_PICTURE_PX;
+        return Err(EngineError::Other(format!(
+            "the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale"
+        )));
+    }
     let view = Affine::scale(scale) * Affine::translate((-r.x0, -r.y0));
     let mut style = scene.style(FABRIC, look.jumps, look.needle_points, scale);
     style.background = background.map(|[r, g, b]| [r, g, b, 255]);
@@ -95,9 +106,10 @@ pub(super) fn render_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     let background = match o.get("background") {
         None => Some(FABRIC),
         Some(Value::Null) => None,
+        // Exactly `#rrggbb`: an alpha would be dropped, a short form is no colour of the docs'.
         Some(v) => Some(
             v.as_str()
-                .filter(|h| h.starts_with('#'))
+                .filter(|h| h.len() == 7 && h.starts_with('#') && h.bytes().skip(1).all(|b| b.is_ascii_hexdigit()))
                 .and_then(vectorcraft_color::Color::from_hex)
                 .map(|c| {
                     let [r, g, b, _] = c.to_rgba8(1.0);
@@ -114,6 +126,8 @@ pub(super) fn render_cmd(s: &mut Session, p: &Value) -> Result<Value> {
             "width": img.width,
             "height": img.height,
             "region": [r.x0, r.y0, r.x1, r.y1],
+            // Unlike the read commands' millimetres: the canvas's own document points.
+            "units": "pt",
             "generation": generation,
         }),
         &opts,

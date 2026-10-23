@@ -5136,3 +5136,4 @@ embroidery	about {value} m	約 {value} m
 @msg	`hit` must be a listed hit's place, from 0	`hit` には一覧の検出箇所の位置を 0 から指定してください
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	現在のドキュメントのチェックがありません: 刺繍パネルの「チェック」タブを表示して、針目の計画が終わるまでお待ちください
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	ほか {count} 行は一覧にありません (一覧には最初の {limit} 行を表示)
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	画像が {w} × {h} ピクセルになり、1 辺 {most} を超えます: もっと小さい範囲か小さい倍率で描いてください

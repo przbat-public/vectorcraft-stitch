@@ -5466,3 +5466,4 @@ embroidery	about {value} m	sekitar {value} m
 @msg	`hit` must be a listed hit's place, from 0	`hit` harus berupa urutan temuan yang tercantum, mulai dari 0
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	tidak ada pemeriksaan untuk dokumen dalam keadaannya sekarang: tampilkan tab Pemeriksaan di panel Bordir dan tunggu hingga jahitan selesai direncanakan
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	dan {count} baris lagi tidak tercantum (daftar menampilkan {limit} baris pertama)
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	gambar akan berukuran {w} × {h} piksel, lebih dari {most} per sisi: gambar wilayah yang lebih kecil atau dengan skala lebih kecil

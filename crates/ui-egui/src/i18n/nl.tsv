@@ -5509,3 +5509,4 @@ embroidery	about {value} m	ongeveer {value} m
 @msg	`hit` must be a listed hit's place, from 0	`hit` moet de plaats van een vermelde bevinding zijn, vanaf 0
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	geen controle van het document zoals het nu is: toon het tabblad Controle van het paneel Borduurwerk en wacht tot de steken zijn gepland
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	en {count} rij meer staat niet in de lijst (de lijst toont de eerste {limit})|en {count} rijen meer staan niet in de lijst (de lijst toont de eerste {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	de afbeelding zou {w} × {h} pixels worden, meer dan {most} per zijde: teken een kleiner gebied of op een kleinere schaal

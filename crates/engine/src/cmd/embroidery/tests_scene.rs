@@ -316,6 +316,7 @@ fn the_stitches_render_in_their_threads_colour_on_the_fabric() {
     assert_eq!([middle[0], middle[1], middle[2]], thread, "the thread's colour");
     assert_eq!(img.get_pixel(1, 1).0, [255, 255, 255, 255], "the fabric");
     assert!(r["generation"].as_u64().is_some());
+    assert_eq!(r["units"], "pt", "the region in points, said so");
     // Transparent when asked; an artboard; a box.
     let (clear, _) = rendered(&mut s, json!({"background": null}));
     assert_eq!(clear.get_pixel(1, 1).0[3], 0);
@@ -349,6 +350,11 @@ fn the_picture_refuses_what_it_cant_draw() {
         json!({"jumps": 1}),
         json!({"zoom": 2}),
         json!({"rect": [0, 0, 4e6, 4e6], "scale": 64}),
+        // More than 8,192 pixels a side.
+        json!({"rect": [0, 0, 1000, 10], "scale": 10}),
+        // Exactly #rrggbb: no alpha, no short form.
+        json!({"background": "#00000000"}),
+        json!({"background": "#fff"}),
     ] {
         assert!(s.execute("embroidery.render", &bad).is_err(), "{bad}");
     }

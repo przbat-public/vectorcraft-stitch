@@ -5424,3 +5424,4 @@ embroidery	about {value} m	unos {value} m
 @msg	`hit` must be a listed hit's place, from 0	`hit` debe ser la posición de un hallazgo de la lista, desde 0
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	no hay comprobación del documento tal como está: muestre la pestaña Comprobación del panel Bordado y espere a que se planifiquen las puntadas
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	y {count} fila más no aparece (la lista muestra las primeras {limit})|y {count} filas más no aparecen (la lista muestra las primeras {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	la imagen tendría {w} × {h} píxeles, más de {most} por lado: dibuje una región más pequeña o a una escala menor

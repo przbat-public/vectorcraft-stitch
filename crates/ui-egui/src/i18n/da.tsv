@@ -5466,3 +5466,4 @@ embroidery	about {value} m	ca. {value} m
 @msg	`hit` must be a listed hit's place, from 0	`hit` skal være pladsen for et anført fund, fra 0
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	der er ingen kontrol af dokumentet, som det er nu: vis fanen Kontrol i panelet Broderi, og vent, til stingene er planlagt
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	og {count} række mere er ikke med (listen viser de første {limit})|og {count} rækker mere er ikke med (listen viser de første {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	billedet ville blive {w} × {h} pixel, mere end {most} på en side: tegn et mindre område eller i en mindre skala

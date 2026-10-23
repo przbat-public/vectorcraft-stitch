@@ -5076,3 +5076,4 @@ embroidery	about {value} m	khoảng {value} m
 @msg	`hit` must be a listed hit's place, from 0	`hit` phải là vị trí của một phát hiện trong danh sách, tính từ 0
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	chưa có kết quả kiểm tra cho tài liệu hiện tại: hãy hiển thị thẻ Kiểm tra của bảng Thêu và chờ các mũi thêu được lên kế hoạch
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	và còn {count} dòng không có trong danh sách (danh sách hiển thị {limit} dòng đầu tiên)
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	ảnh sẽ có kích thước {w} × {h} điểm ảnh, quá {most} mỗi cạnh: hãy vẽ vùng nhỏ hơn hoặc ở tỉ lệ nhỏ hơn

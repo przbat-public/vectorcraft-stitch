@@ -5059,3 +5059,4 @@ embroidery	about {value} m	약 {value}m
 @msg	`hit` must be a listed hit's place, from 0	`hit`은 나열된 발견 항목의 위치(0부터)여야 합니다
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	현재 문서에 대한 검사가 없습니다: 자수 패널의 검사 탭을 표시하고 땀 계획이 끝날 때까지 기다리세요
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	그 밖에 {count}개 행은 목록에 없습니다 (목록에는 처음 {limit}개 행을 표시)
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	그림이 {w} × {h}픽셀이 되어 한 변이 {most}를 넘습니다: 더 작은 영역이나 더 작은 배율로 그리세요

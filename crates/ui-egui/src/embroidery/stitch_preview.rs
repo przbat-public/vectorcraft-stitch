@@ -24,7 +24,9 @@
 //!   closes the document it opened).
 //!
 //! The plan is made on the planning thread ([`super::plan_worker`]), or in line where there is
-//! none. The options are the preview's ([`Session::stitch_preview_options`]).
+//! none: there a design is light only when its plan fits a frame ([`INLINE_PLAN_MS`]), and the
+//! replies wait while a drag goes on. The options are the preview's
+//! ([`Session::stitch_preview_options`]).
 
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -45,6 +47,11 @@ pub const QUIET_SECS: f64 = crate::thumb_worker::SETTLE_SECS;
 /// so a change still shows within that budget when it waits for the plan before it. An estimate.
 pub const LIVE_PLAN_MS: f64 = 50.0;
 
+/// Where there is no planning thread (the web), a design is planned on every change only when its
+/// last plan took at most this long, milliseconds: it is made in the frame, so the time the canvas
+/// lets its art render in line.
+pub const INLINE_PLAN_MS: f64 = super::stitch_layer::INLINE_DRAW_MS;
+
 /// How long the stitches shown may be out of date before the preview says it is planning,
 /// seconds: as long as an export runs before its progress shows.
 pub const STALE_NOTICE_SECS: f64 = crate::export_progress::DELAY;
@@ -59,6 +66,11 @@ pub trait Runner {
     fn submit(&mut self, job: Job);
     /// The steps finished since the last call, oldest first.
     fn poll(&mut self) -> Vec<Done>;
+    /// Whether the jobs run in the frame (no planning thread): a design is then light only when
+    /// its plan fits a frame ([`INLINE_PLAN_MS`]), and the replies wait while a drag goes on.
+    fn in_line(&self) -> bool {
+        false
+    }
 }
 
 impl Runner for Driver {
@@ -68,6 +80,10 @@ impl Runner for Driver {
 
     fn poll(&mut self) -> Vec<Done> {
         Driver::poll(self)
+    }
+
+    fn in_line(&self) -> bool {
+        !self.threaded()
     }
 }
 
@@ -442,6 +458,9 @@ impl StitchPreview {
         };
         let (opts, _) = s.stitch_preview_options(uid);
         let key = s.embroidery_plan_key(&opts)?;
+        // Made in the frame: the replies wait for the drag's end, which draws a frame anyway.
+        let in_line = self.runner.as_ref().is_some_and(|r| r.in_line());
+        let queries = if in_line && busy { Vec::new() } else { interest.queries };
         let doc = self.docs.entry(uid).or_default();
         if doc.wanted.as_ref().is_none_or(|(k, _)| *k != key) {
             doc.wanted = Some((key.clone(), now));
@@ -455,11 +474,11 @@ impl StitchPreview {
             doc.stale_since = Some(now);
         }
         let stale_since = doc.stale_since;
-        let light = doc.plan_ms.is_some_and(|ms| ms <= LIVE_PLAN_MS);
+        let light = doc.plan_ms.is_some_and(|ms| ms <= if in_line { INLINE_PLAN_MS } else { LIVE_PLAN_MS });
         let first = !doc.sent_a_plan;
         let flying = self.in_flight.as_ref().map(|f| f.key == key);
         if fresh {
-            let missing = doc.shown.as_ref().is_some_and(|sh| interest.queries.iter().any(|q| !sh.answers(q)));
+            let missing = doc.shown.as_ref().is_some_and(|sh| queries.iter().any(|q| !sh.answers(q)));
             match flying {
                 // An undo back to the plan shown: the job for another state isn't wanted.
                 Some(false) => self.cancel(),
@@ -467,7 +486,7 @@ impl StitchPreview {
                 None => {}
             }
             if missing {
-                self.start(s, uid, key, opts, interest.queries, false);
+                self.start(s, uid, key, opts, queries, false);
             }
             return None;
         }
@@ -493,7 +512,7 @@ impl StitchPreview {
         // The clock went back (a new egui context): don't wait for it to catch up.
         let quiet = !waited.is_nan() && !(0.0..QUIET_SECS).contains(&waited);
         if light || (!busy && (first || quiet)) {
-            self.start(s, uid, key, opts, interest.queries, true);
+            self.start(s, uid, key, opts, queries, true);
             return notice;
         }
         if busy {

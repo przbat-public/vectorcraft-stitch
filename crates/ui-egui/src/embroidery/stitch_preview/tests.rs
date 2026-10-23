@@ -27,6 +27,8 @@ struct Jobs {
     done: Vec<Done>,
     /// How long each step says it took.
     ms: f64,
+    /// It says it runs the jobs in the frame, as where there is no planning thread.
+    in_line: bool,
 }
 
 /// Jobs kept until the test finishes them, as the planning thread would.
@@ -40,6 +42,10 @@ impl Runner for Fake {
 
     fn poll(&mut self) -> Vec<Done> {
         std::mem::take(&mut self.0.borrow_mut().done)
+    }
+
+    fn in_line(&self) -> bool {
+        self.0.borrow().in_line
     }
 }
 
@@ -510,6 +516,47 @@ fn replies_come_one_by_one_and_never_hold_up_the_next_plan() {
     assert_ne!(generation(&p, uid), first);
     let shown = p.shown(uid).unwrap();
     assert!(shown.reply(&stats).is_some_and(|r| r.current) && shown.reply(&check).is_some_and(|r| r.current));
+}
+
+/// Where the jobs run in the frame, a design is planned on every change only when its plan fits a
+/// frame, and during a drag without the replies, which come once the drag ends.
+#[test]
+fn in_line_a_design_is_light_when_it_fits_a_frame_and_the_replies_wait_for_the_drags_end() {
+    let (mut p, fake) = preview();
+    fake.0.borrow_mut().in_line = true;
+    let mut s = Session::new();
+    let uid = document(&mut s);
+    let stats = Query { cmd: "embroidery.stats", params: json!({}) };
+    let ask = |p: &mut StitchPreview| p.want(stats.clone());
+    // Light on the thread, too slow for a frame: during a drag it waits.
+    frame(&mut p, &mut s, 0.0, false, true);
+    fake.finish((INLINE_PLAN_MS + LIVE_PLAN_MS) / 2.0);
+    frame(&mut p, &mut s, 0.01, false, true);
+    edit(&mut s);
+    frame(&mut p, &mut s, 1.0, true, true);
+    assert!(fake.waiting().is_empty(), "not planned during the drag");
+    frame(&mut p, &mut s, 1.0 + AFTER_QUIET, false, true);
+    assert_eq!(fake.waiting().len(), 1, "once it ends and the document rests");
+    // Fits a frame: planned on every change of the drag, without its replies.
+    fake.finish(INLINE_PLAN_MS / 2.0);
+    frame(&mut p, &mut s, 1.2, false, true);
+    edit(&mut s);
+    ask(&mut p);
+    frame(&mut p, &mut s, 2.0, true, true);
+    let job = fake.0.borrow().waiting.first().map(|j| (j.queries.len(), j.ticket));
+    assert_eq!(job.map(|(queries, _)| queries), Some(0), "during the drag, at once, the plan alone");
+    fake.finish(INLINE_PLAN_MS / 2.0);
+    ask(&mut p);
+    frame(&mut p, &mut s, 2.01, true, true);
+    assert!(fake.waiting().is_empty(), "the replies wait while the drag goes on");
+    assert!(p.shown(uid).unwrap().reply(&stats).is_none_or(|r| !r.current));
+    // The drag's end: the replies of the plan shown.
+    ask(&mut p);
+    frame(&mut p, &mut s, 2.02, false, true);
+    assert_eq!(fake.waiting().len(), 1);
+    fake.finish(INLINE_PLAN_MS / 2.0);
+    p.take_in();
+    assert!(p.shown(uid).unwrap().reply(&stats).is_some_and(|r| r.current));
 }
 
 /// The preview plans with its options, the last embroidery export's, and the replies are of them.

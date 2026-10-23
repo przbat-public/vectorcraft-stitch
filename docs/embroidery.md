@@ -1441,7 +1441,9 @@ choice; `view.stitchPreview` answers which), never saved in the file.
   own code, `EmbroideryPlanner::query`), so the canvas never waits for the panel nor the figures
   for a long check. A panic is answered as a
   failure and the thread goes on. The web build, the unit tests and `VECTORCRAFT_SYNC_RENDER` plan
-  on the interface thread in one go, with the same steps.
+  on the interface thread in one go, with the same steps; there a design is planned on every change
+  only when its plan fits a frame (8 ms, `INLINE_PLAN_MS`, the time the canvas lets its art render
+  in line), and the replies wait while a drag goes on.
 - **Light and heavy designs.** A design whose last plan walked took at most 50 ms (`LIVE_PLAN_MS`,
   half the re-plan budget, an estimate; a remembered plan says nothing of it) is planned on every
   change, also during a drag, and the plan

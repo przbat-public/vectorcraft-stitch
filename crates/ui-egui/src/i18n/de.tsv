@@ -4925,7 +4925,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} Garnblock|{count} Garnblöcke
 @plural	{count} stitch|{count} stitches	{count} Stich|{count} Stiche
 @msg	tab {tab}: one of {_1}	Register {tab}: eines von {_1}
-@msg	unknown key `{k}`: the only one is tab	unbekannter Schlüssel `{k}`: der einzige ist tab
+@msg	unknown key `{k}`: the only one is {only}	unbekannter Schlüssel `{k}`: der einzige ist {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Gestickt wird von unten nach oben; Objekte eines Garns werden zusammengefasst, wenn nichts dazwischen liegt.
 embroidery	Trim and thread change	Schnitt und Garnwechsel
 embroidery	Thread change	Garnwechsel
@@ -5048,7 +5048,6 @@ embroidery	{index} of {count}	{index} von {count}
 @msg	no such rule in the check	diese Regel gibt es in der Prüfung nicht
 @msg	no such finding in the check	diesen Befund gibt es in der Prüfung nicht
 	Show Check Marks	Prüfmarkierungen einblenden
-@msg	on: true or false	on: true oder false
 embroidery	Stitch lengths	Stichlängen
 embroidery	Median: {value} mm	Median: {value} mm
 embroidery	Too long	Zu lang

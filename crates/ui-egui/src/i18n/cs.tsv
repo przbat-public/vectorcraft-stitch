@@ -5350,7 +5350,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} blok nití|{count} bloky nití|{count} bloků nití
 @plural	{count} stitch|{count} stitches	{count} steh|{count} stehy|{count} stehů
 @msg	tab {tab}: one of {_1}	karta {tab}: jedna z {_1}
-@msg	unknown key `{k}`: the only one is tab	neznámý klíč `{k}`: jediný je tab
+@msg	unknown key `{k}`: the only one is {only}	neznámý klíč `{k}`: jediný je {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Šije se odspodu nahoru; objekty jedné nitě se spojí, když mezi nimi nic neleží.
 embroidery	Trim and thread change	Ustřižení a výměna nitě
 embroidery	Thread change	Výměna nitě
@@ -5473,7 +5473,6 @@ embroidery	{index} of {count}	{index} z {count}
 @msg	no such rule in the check	takové pravidlo v kontrole není
 @msg	no such finding in the check	takový nález v kontrole není
 	Show Check Marks	Zobrazit značky kontroly
-@msg	on: true or false	on: true, nebo false
 embroidery	Stitch lengths	Délky stehů
 embroidery	Median: {value} mm	Medián: {value} mm
 embroidery	Too long	Příliš dlouhé

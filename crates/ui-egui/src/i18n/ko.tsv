@@ -4926,7 +4926,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	실 블록 {count}개
 @plural	{count} stitch|{count} stitches	{count}땀
 @msg	tab {tab}: one of {_1}	탭 {tab}: {_1} 중 하나
-@msg	unknown key `{k}`: the only one is tab	알 수 없는 키 `{k}`: 사용할 수 있는 키는 tab뿐입니다
+@msg	unknown key `{k}`: the only one is {only}	알 수 없는 키 `{k}`: 사용할 수 있는 키는 {only}뿐입니다
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	쌓인 순서의 아래부터 위로 수놓습니다. 사이에 아무것도 없으면 같은 실의 개체는 합쳐집니다.
 embroidery	Trim and thread change	실 자르기 및 실 교체
 embroidery	Thread change	실 교체
@@ -5049,7 +5049,6 @@ embroidery	{index} of {count}	{index} / {count}
 @msg	no such rule in the check	검사에 그런 규칙이 없습니다
 @msg	no such finding in the check	검사에 그런 발견 항목이 없습니다
 	Show Check Marks	검사 표시 보기
-@msg	on: true or false	on: true 또는 false
 embroidery	Stitch lengths	땀 길이
 embroidery	Median: {value} mm	중앙값: {value}mm
 embroidery	Too long	너무 김

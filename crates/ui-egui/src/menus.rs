@@ -595,7 +595,7 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "view.checkMarks",
         "Show Check Marks",
         "",
-        "{on?: bool} (VectorCraft Stitch) ring the findings of the Embroidery panel's Check tab on the canvas while the tab shows (the default), or not, for the session; no on: the other way → whether they are",
+        "{on?: bool} (VectorCraft Stitch) ring the findings of the Embroidery panel's Check tab on the canvas while the tab shows (the default), or not, for the session; no on: the other way → {on}",
     ),
     (
         "embroidery.nextHit",

@@ -5003,7 +5003,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} 個の糸ブロック
 @plural	{count} stitch|{count} stitches	{count} 針
 @msg	tab {tab}: one of {_1}	タブ {tab}: {_1} のいずれか
-@msg	unknown key `{k}`: the only one is tab	不明なキー `{k}`: 使えるのは tab だけです
+@msg	unknown key `{k}`: the only one is {only}	不明なキー `{k}`: 使えるのは {only} だけです
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	重なりの下から順に縫われます。間に何もなければ同じ糸のオブジェクトはまとめられます。
 embroidery	Trim and thread change	糸切りと糸替え
 embroidery	Thread change	糸替え
@@ -5126,7 +5126,6 @@ embroidery	{index} of {count}	{index} / {count}
 @msg	no such rule in the check	チェックにそのようなルールはありません
 @msg	no such finding in the check	チェックにそのような検出箇所はありません
 	Show Check Marks	チェックの印を表示
-@msg	on: true or false	on: true または false
 embroidery	Stitch lengths	針目の長さ
 embroidery	Median: {value} mm	中央値: {value} mm
 embroidery	Too long	長すぎ

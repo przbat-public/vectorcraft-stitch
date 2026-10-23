@@ -4943,7 +4943,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} khối chỉ
 @plural	{count} stitch|{count} stitches	{count} mũi
 @msg	tab {tab}: one of {_1}	thẻ {tab}: một trong {_1}
-@msg	unknown key `{k}`: the only one is tab	khóa không xác định `{k}`: khóa duy nhất là tab
+@msg	unknown key `{k}`: the only one is {only}	khóa không xác định `{k}`: khóa duy nhất là {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Thêu từ dưới lên theo thứ tự xếp chồng; các đối tượng cùng chỉ được gộp khi không có gì nằm giữa.
 embroidery	Trim and thread change	Cắt chỉ và đổi chỉ
 embroidery	Thread change	Đổi chỉ
@@ -5066,7 +5066,6 @@ embroidery	{index} of {count}	{index} / {count}
 @msg	no such rule in the check	không có quy tắc này trong kết quả kiểm tra
 @msg	no such finding in the check	không có phát hiện này trong kết quả kiểm tra
 	Show Check Marks	Hiện dấu kiểm tra
-@msg	on: true or false	on: true hoặc false
 embroidery	Stitch lengths	Độ dài mũi
 embroidery	Median: {value} mm	Trung vị: {value} mm
 embroidery	Too long	Quá dài

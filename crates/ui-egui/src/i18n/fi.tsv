@@ -5314,7 +5314,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} lankalohko|{count} lankalohkoa
 @plural	{count} stitch|{count} stitches	{count} pisto|{count} pistoa
 @msg	tab {tab}: one of {_1}	välilehti {tab}: yksi seuraavista: {_1}
-@msg	unknown key `{k}`: the only one is tab	tuntematon avain `{k}`: ainoa on tab
+@msg	unknown key `{k}`: the only one is {only}	tuntematon avain `{k}`: ainoa on {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Kirjotaan pinon alhaalta ylös; saman langan objektit yhdistyvät, kun niiden välissä ei ole mitään.
 embroidery	Trim and thread change	Leikkaus ja langanvaihto
 embroidery	Thread change	Langanvaihto
@@ -5437,7 +5437,6 @@ embroidery	{index} of {count}	{index}/{count}
 @msg	no such rule in the check	tarkistuksessa ei ole tällaista sääntöä
 @msg	no such finding in the check	tarkistuksessa ei ole tällaista löydöstä
 	Show Check Marks	Näytä tarkistusmerkit
-@msg	on: true or false	on: true tai false
 embroidery	Stitch lengths	Pistojen pituudet
 embroidery	Median: {value} mm	Mediaani: {value} mm
 embroidery	Too long	Liian pitkät

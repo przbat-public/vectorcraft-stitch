@@ -5201,7 +5201,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} blok nici|{count} bloki nici|{count} bloków nici
 @plural	{count} stitch|{count} stitches	{count} ścieg|{count} ściegi|{count} ściegów
 @msg	tab {tab}: one of {_1}	karta {tab}: jedna z {_1}
-@msg	unknown key `{k}`: the only one is tab	nieznany klucz `{k}`: jedyny to tab
+@msg	unknown key `{k}`: the only one is {only}	nieznany klucz `{k}`: jedyny to {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Szyte od dołu stosu; obiekty jednej nici łączą się, gdy nic nie leży między nimi.
 embroidery	Trim and thread change	Cięcie i zmiana nici
 embroidery	Thread change	Zmiana nici
@@ -5324,7 +5324,6 @@ embroidery	{index} of {count}	{index} z {count}
 @msg	no such rule in the check	nie ma takiej reguły w kontroli
 @msg	no such finding in the check	nie ma takiego znaleziska w kontroli
 	Show Check Marks	Pokaż znaczniki kontroli
-@msg	on: true or false	on: true albo false
 embroidery	Stitch lengths	Długości ściegów
 embroidery	Median: {value} mm	Mediana: {value} mm
 embroidery	Too long	Za długie

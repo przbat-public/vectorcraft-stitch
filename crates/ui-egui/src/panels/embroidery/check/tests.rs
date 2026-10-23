@@ -379,10 +379,14 @@ fn the_canvas_marks_the_findings_while_the_tab_shows() {
     assert!(all.iter().filter(|m| m.focused).map(|m| (m.rule.as_str(), m.hit)).eq([("stitchBelowNeedle", 1)]));
     assert!(all.len() <= MAX_DRAWN_MARKS);
     // Turned off, the tab gone, or the check of an older plan: none.
-    app.run("view.checkMarks", json!({"on": false})).unwrap();
+    assert_eq!(app.run("view.checkMarks", json!({"on": false})).unwrap(), json!({"on": false}));
     assert!(marks(&app, pass).is_empty());
     assert!(!crate::menus::checked(&app, "view.checkMarks", &json!({})).unwrap());
-    app.run("view.checkMarks", json!({})).unwrap();
+    for bad in [json!({"show": false}), json!({"on": 1})] {
+        assert!(app.run("view.checkMarks", bad.clone()).is_err(), "{bad}");
+    }
+    assert!(marks(&app, pass).is_empty(), "a refused call changes nothing");
+    assert_eq!(app.run("view.checkMarks", json!({})).unwrap(), json!({"on": true}));
     assert!(!marks(&app, pass).is_empty());
     assert!(marks(&app, pass + 2).is_empty(), "the tab no longer drawn");
     app.run("select.all", json!({})).unwrap();

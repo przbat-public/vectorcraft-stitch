@@ -4943,7 +4943,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} блок нитки|{count} блоки нитки|{count} блоків нитки
 @plural	{count} stitch|{count} stitches	{count} стібок|{count} стібки|{count} стібків
 @msg	tab {tab}: one of {_1}	вкладка {tab}: одна з {_1}
-@msg	unknown key `{k}`: the only one is tab	невідомий ключ `{k}`: єдиний — tab
+@msg	unknown key `{k}`: the only one is {only}	невідомий ключ `{k}`: єдиний — {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Вишивається знизу вгору; об’єкти однієї нитки об’єднуються, коли між ними нічого немає.
 embroidery	Trim and thread change	Обрізання й зміна нитки
 embroidery	Thread change	Зміна нитки
@@ -5066,7 +5066,6 @@ embroidery	{index} of {count}	{index} з {count}
 @msg	no such rule in the check	у перевірці немає такого правила
 @msg	no such finding in the check	у перевірці немає такої знахідки
 	Show Check Marks	Показати позначки перевірки
-@msg	on: true or false	on: true або false
 embroidery	Stitch lengths	Довжини стібків
 embroidery	Median: {value} mm	Медіана: {value} мм
 embroidery	Too long	Задовгі

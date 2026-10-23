@@ -4959,7 +4959,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} блок нити|{count} блока нити|{count} блоков нити
 @plural	{count} stitch|{count} stitches	{count} стежок|{count} стежка|{count} стежков
 @msg	tab {tab}: one of {_1}	вкладка {tab}: одна из {_1}
-@msg	unknown key `{k}`: the only one is tab	неизвестный ключ `{k}`: единственный — tab
+@msg	unknown key `{k}`: the only one is {only}	неизвестный ключ `{k}`: единственный — {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Вышивается снизу вверх по стопке; объекты одной нити объединяются, если между ними ничего нет.
 embroidery	Trim and thread change	Обрезка и смена нити
 embroidery	Thread change	Смена нити
@@ -5082,7 +5082,6 @@ embroidery	{index} of {count}	{index} из {count}
 @msg	no such rule in the check	в проверке нет такого правила
 @msg	no such finding in the check	в проверке нет такой находки
 	Show Check Marks	Показать метки проверки
-@msg	on: true or false	on: true или false
 embroidery	Stitch lengths	Длины стежков
 embroidery	Median: {value} mm	Медиана: {value} мм
 embroidery	Too long	Слишком длинные

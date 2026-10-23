@@ -4963,7 +4963,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} blocco di filo|{count} blocchi di filo
 @plural	{count} stitch|{count} stitches	{count} punto|{count} punti
 @msg	tab {tab}: one of {_1}	scheda {tab}: una tra {_1}
-@msg	unknown key `{k}`: the only one is tab	chiave sconosciuta `{k}`: l’unica è tab
+@msg	unknown key `{k}`: the only one is {only}	chiave sconosciuta `{k}`: l’unica è {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Si ricama dal fondo della pila verso l’alto; gli oggetti di uno stesso filo si uniscono quando nulla sta tra loro.
 embroidery	Trim and thread change	Taglio e cambio filo
 embroidery	Thread change	Cambio filo
@@ -5086,7 +5086,6 @@ embroidery	{index} of {count}	{index} di {count}
 @msg	no such rule in the check	questa regola non è presente nella verifica
 @msg	no such finding in the check	questo rilievo non è presente nella verifica
 	Show Check Marks	Mostra i segni della verifica
-@msg	on: true or false	on: true o false
 embroidery	Stitch lengths	Lunghezze dei punti
 embroidery	Median: {value} mm	Mediana: {value} mm
 embroidery	Too long	Troppo lunghi

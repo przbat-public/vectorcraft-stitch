@@ -5302,7 +5302,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} μπλοκ κλωστής|{count} μπλοκ κλωστής
 @plural	{count} stitch|{count} stitches	{count} βελονιά|{count} βελονιές
 @msg	tab {tab}: one of {_1}	καρτέλα {tab}: μία από {_1}
-@msg	unknown key `{k}`: the only one is tab	άγνωστο κλειδί `{k}`: το μόνο είναι tab
+@msg	unknown key `{k}`: the only one is {only}	άγνωστο κλειδί `{k}`: το μόνο είναι {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Κεντιέται από το κάτω μέρος της στοίβας προς τα πάνω· τα αντικείμενα μιας κλωστής ενώνονται όταν τίποτα δεν βρίσκεται ανάμεσά τους.
 embroidery	Trim and thread change	Κόψιμο και αλλαγή κλωστής
 embroidery	Thread change	Αλλαγή κλωστής
@@ -5425,7 +5425,6 @@ embroidery	{index} of {count}	{index} από {count}
 @msg	no such rule in the check	δεν υπάρχει τέτοιος κανόνας στον έλεγχο
 @msg	no such finding in the check	δεν υπάρχει τέτοιο εύρημα στον έλεγχο
 	Show Check Marks	Εμφάνιση σημαδιών ελέγχου
-@msg	on: true or false	on: true ή false
 embroidery	Stitch lengths	Μήκη βελονιών
 embroidery	Median: {value} mm	Διάμεσος: {value} mm
 embroidery	Too long	Πολύ μακριές

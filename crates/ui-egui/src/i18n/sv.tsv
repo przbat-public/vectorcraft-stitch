@@ -5306,7 +5306,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} trådblock|{count} trådblock
 @plural	{count} stitch|{count} stitches	{count} stygn|{count} stygn
 @msg	tab {tab}: one of {_1}	flik {tab}: en av {_1}
-@msg	unknown key `{k}`: the only one is tab	okänd nyckel `{k}`: den enda är tab
+@msg	unknown key `{k}`: the only one is {only}	okänd nyckel `{k}`: den enda är {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Broderas nerifrån och upp; objekt med samma tråd slås ihop när inget ligger mellan dem.
 embroidery	Trim and thread change	Klipp och trådbyte
 embroidery	Thread change	Trådbyte
@@ -5429,7 +5429,6 @@ embroidery	{index} of {count}	{index} av {count}
 @msg	no such rule in the check	kontrollen har ingen sådan regel
 @msg	no such finding in the check	kontrollen har inget sådant fynd
 	Show Check Marks	Visa kontrollmarkeringar
-@msg	on: true or false	on: true eller false
 embroidery	Stitch lengths	Stygnlängder
 embroidery	Median: {value} mm	Median: {value} mm
 embroidery	Too long	För långa

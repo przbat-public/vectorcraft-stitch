@@ -4238,7 +4238,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} 個線塊
 @plural	{count} stitch|{count} stitches	{count} 針
 @msg	tab {tab}: one of {_1}	標籤 {tab}：{_1} 之一
-@msg	unknown key `{k}`: the only one is tab	未知的鍵 `{k}`：唯一的鍵是 tab
+@msg	unknown key `{k}`: the only one is {only}	未知的鍵 `{k}`：唯一的鍵是 {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	從堆疊的底部向上繡製；同一條線的物件在中間沒有其他內容時會合併。
 embroidery	Trim and thread change	剪線並換線
 embroidery	Thread change	換線
@@ -4361,7 +4361,6 @@ embroidery	{index} of {count}	第 {index} 個，共 {count} 個
 @msg	no such rule in the check	檢查中沒有此規則
 @msg	no such finding in the check	檢查中沒有此問題
 	Show Check Marks	顯示檢查標記
-@msg	on: true or false	on：true 或 false
 embroidery	Stitch lengths	針距分布
 embroidery	Median: {value} mm	中位數：{value} mm
 embroidery	Too long	過長

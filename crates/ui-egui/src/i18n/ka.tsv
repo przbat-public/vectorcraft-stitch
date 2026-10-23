@@ -5256,7 +5256,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	ძაფის ბლოკები: {count}
 @plural	{count} stitch|{count} stitches	ნაკერები: {count}
 @msg	tab {tab}: one of {_1}	ჩანართი {tab}: ერთ-ერთი: {_1}
-@msg	unknown key `{k}`: the only one is tab	უცნობი გასაღები `{k}`: ერთადერთია tab
+@msg	unknown key `{k}`: the only one is {only}	უცნობი გასაღები `{k}`: ერთადერთია {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	იქარგება დასტის ქვემოდან ზემოთ; ერთი ძაფის ობიექტები ერთიანდება, როცა მათ შორის არაფერია.
 embroidery	Trim and thread change	ჭრა და ძაფის შეცვლა
 embroidery	Thread change	ძაფის შეცვლა
@@ -5379,7 +5379,6 @@ embroidery	{index} of {count}	{index} / {count}
 @msg	no such rule in the check	შემოწმებაში ასეთი წესი არ არის
 @msg	no such finding in the check	შემოწმებაში ასეთი აღმოჩენა არ არის
 	Show Check Marks	შემოწმების ნიშნების ჩვენება
-@msg	on: true or false	on: true ან false
 embroidery	Stitch lengths	ნაკერების სიგრძეები
 embroidery	Median: {value} mm	მედიანა: {value} მმ
 embroidery	Too long	ზედმეტად გრძელი

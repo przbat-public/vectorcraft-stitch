@@ -5333,7 +5333,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} trådblok|{count} trådblokke
 @plural	{count} stitch|{count} stitches	{count} sting|{count} sting
 @msg	tab {tab}: one of {_1}	fane {tab}: en af {_1}
-@msg	unknown key `{k}`: the only one is tab	ukendt nøgle `{k}`: den eneste er tab
+@msg	unknown key `{k}`: the only one is {only}	ukendt nøgle `{k}`: den eneste er {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Sys nedefra og op; objekter med samme tråd samles, når intet ligger imellem dem.
 embroidery	Trim and thread change	Klip og trådskift
 embroidery	Thread change	Trådskift
@@ -5456,7 +5456,6 @@ embroidery	{index} of {count}	{index} af {count}
 @msg	no such rule in the check	kontrollen har ingen sådan regel
 @msg	no such finding in the check	kontrollen har intet sådant fund
 	Show Check Marks	Vis kontrolmærker
-@msg	on: true or false	on: true eller false
 embroidery	Stitch lengths	Stinglængder
 embroidery	Median: {value} mm	Median: {value} mm
 embroidery	Too long	For lange

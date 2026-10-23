@@ -5376,7 +5376,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} thread block|{count} thread blocks	{count} draadblok|{count} draadblokken
 @plural	{count} stitch|{count} stitches	{count} steek|{count} steken
 @msg	tab {tab}: one of {_1}	tabblad {tab}: een van {_1}
-@msg	unknown key `{k}`: the only one is tab	onbekende sleutel `{k}`: de enige is tab
+@msg	unknown key `{k}`: the only one is {only}	onbekende sleutel `{k}`: de enige is {only}
 embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Geborduurd van onder naar boven; objecten van één draad worden samengevoegd als er niets tussen ligt.
 embroidery	Trim and thread change	Knippen en draadwissel
 embroidery	Thread change	Draadwissel
@@ -5499,7 +5499,6 @@ embroidery	{index} of {count}	{index} van {count}
 @msg	no such rule in the check	deze regel komt niet voor in de controle
 @msg	no such finding in the check	deze bevinding komt niet voor in de controle
 	Show Check Marks	Controlemarkeringen tonen
-@msg	on: true or false	on: true of false
 embroidery	Stitch lengths	Steeklengtes
 embroidery	Median: {value} mm	Mediaan: {value} mm
 embroidery	Too long	Te lang

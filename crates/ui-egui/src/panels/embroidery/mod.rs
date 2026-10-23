@@ -116,14 +116,20 @@ pub(crate) fn command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
 }
 
 /// `view.checkMarks {on?}`: the Check tab's findings marked on the canvas or not, for the session
-/// (no `on`: the other way) → whether they are.
+/// (no `on`: the other way) → `{on}`, as the other view switches answer.
 fn check_marks(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
-    let on = match p.get("on").filter(|v| !v.is_null()) {
-        None => app.embroidery.check.hide_marks,
-        Some(v) => v.as_bool().ok_or("on: true or false")?,
-    };
+    only_key(p, "on")?;
+    let on = crate::menus::opt_bool(p, "on")?.unwrap_or(app.embroidery.check.hide_marks);
     app.embroidery.check.hide_marks = !on;
-    Ok(json!(on))
+    Ok(json!({ "on": on }))
+}
+
+/// Refuse a key of `p` other than `only`, the one key a panel command reads.
+fn only_key(p: &Value, only: &str) -> Result<(), String> {
+    match p.as_object().and_then(|o| o.keys().find(|k| *k != only)) {
+        Some(k) => Err(format!("unknown key `{k}`: the only one is {only}")),
+        None => Ok(()),
+    }
 }
 
 /// Whether the panel's own commands can run now (`None` for any other command): Next and Previous
@@ -137,11 +143,7 @@ pub(crate) fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
 
 /// `ui.embroideryPanel {tab?: "order"|"check"}`: show the panel, at `tab` → `{tab}`.
 fn panel_command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
-    if let Some(o) = p.as_object()
-        && let Some(k) = o.keys().find(|k| *k != "tab")
-    {
-        return Err(format!("unknown key `{k}`: the only one is tab"));
-    }
+    only_key(p, "tab")?;
     if let Some(tab) = p.get("tab").filter(|v| !v.is_null()) {
         let ids: Vec<&str> = Tab::ALL.iter().map(|t| t.id()).collect();
         app.ui.embroidery_panel.tab = tab.as_str().and_then(Tab::from_id).ok_or_else(|| format!("tab {tab}: one of {}", ids.join(", ")))?;

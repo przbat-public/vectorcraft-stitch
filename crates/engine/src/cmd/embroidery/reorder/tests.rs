@@ -213,3 +213,42 @@ fn the_sew_commands() {
     assert!(e.contains("is locked"), "{e}");
     assert!(s.execute("embroidery.sewFirst", &json!({"idz": [1]})).is_err(), "a key it doesn't take");
 }
+
+/// What a reorder did: nothing, when the objects moved lie apart from what they passed and still
+/// join their thread; otherwise the blocks and thread changes after.
+#[test]
+fn explaining_a_reorder() {
+    let mut s = Session::new();
+    fx::blank(&mut runner(&mut s));
+    let [_, blue, _] = fx::three_threads(&mut runner(&mut s), false);
+    let before = plan_of(&mut s);
+    // Blue just above the first red: the reds still join ahead of it.
+    let row = place(&doc_of(&s), &before, &[NodeId(blue)], 2).unwrap();
+    s.execute("command.batch", &row.batch()).unwrap();
+    let after = plan_of(&mut s);
+    let e = explain(&before, &after, &[NodeId(blue)]);
+    assert!(e.unchanged, "{e:?}");
+    assert_eq!(e.changes, (1, 1));
+    // Blue sewn first: the reds still join, after it.
+    s.execute("edit.undo", &json!({})).unwrap();
+    let before = plan_of(&mut s);
+    let row = place(&doc_of(&s), &before, &[NodeId(blue)], 0).unwrap();
+    s.execute("command.batch", &row.batch()).unwrap();
+    let after = plan_of(&mut s);
+    let e = explain(&before, &after, &[NodeId(blue)]);
+    assert!(!e.unchanged);
+    assert_eq!(e.moved, [MovedObject { id: NodeId(blue), block: 1, joined: false }]);
+    assert_eq!(e.changes, (1, 1));
+    // Overlapping: the top red moved first joins the bottom red's block.
+    let mut s = Session::new();
+    fx::blank(&mut runner(&mut s));
+    let [_, _, top] = fx::three_threads(&mut runner(&mut s), true);
+    let before = plan_of(&mut s);
+    assert_eq!(before.blocks.len(), 3, "red, blue on it, red on that");
+    let row = place(&doc_of(&s), &before, &[NodeId(top)], 0).unwrap();
+    s.execute("command.batch", &row.batch()).unwrap();
+    let after = plan_of(&mut s);
+    let e = explain(&before, &after, &[NodeId(top)]);
+    assert_eq!(e.changes.0, 2);
+    assert_eq!(e.moved.first().map(|m| (m.block, m.joined)), Some((1, true)), "joined the first red: {e:?}");
+}

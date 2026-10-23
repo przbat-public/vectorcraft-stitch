@@ -258,6 +258,47 @@ pub fn gap_for(doc: &Document, plan: &DesignPlan, movers: &[NodeId], step: Step)
     }
 }
 
+/// What a change of the sewing order did, plan to plan ([`explain`]).
+#[derive(Clone, Debug, PartialEq)]
+pub struct Explained {
+    /// No stitch is sewn in another order: objects of one thread still join as before (the
+    /// objects moved lie apart from what they passed).
+    pub unchanged: bool,
+    /// The thread changes before and after.
+    pub changes: (usize, usize),
+    /// Each object moved: the block it is sewn in now (from 1; its first unit's), and whether
+    /// that block holds other objects too (it joined them).
+    pub moved: Vec<MovedObject>,
+}
+
+/// An object moved, as [`Explained`] says it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MovedObject {
+    pub id: NodeId,
+    pub block: usize,
+    pub joined: bool,
+}
+
+/// Each unit's mover and thread, in sewing order: what tells two sewing orders apart.
+fn order_of(plan: &DesignPlan) -> Vec<(NodeId, Part, [u8; 3])> {
+    plan.units.iter().map(|u| (mover(u), u.origin.part, u.thread.art)).collect()
+}
+
+/// What moving `moved` did, from the plan `before` to the plan `after`.
+pub fn explain(before: &DesignPlan, after: &DesignPlan, moved: &[NodeId]) -> Explained {
+    let changes = |p: &DesignPlan| p.blocks.len().saturating_sub(1);
+    let moved = moved
+        .iter()
+        .filter_map(|id| {
+            let unit = after.units.iter().find(|u| mover(u) == *id)?;
+            let block = after.blocks.get(unit.block)?;
+            let joined = after.units.get(block.units.clone()).unwrap_or_default().iter().any(|u| mover(u) != *id);
+            Some(MovedObject { id: *id, block: unit.block + 1, joined })
+        })
+        .collect();
+    Explained { unchanged: order_of(before) == order_of(after), changes: (changes(before), changes(after)), moved }
+}
+
 /// A move of the selection by the keys or the commands.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Step {

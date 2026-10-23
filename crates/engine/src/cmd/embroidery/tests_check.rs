@@ -139,16 +139,19 @@ fn three_layers_on_one_spot_fire() {
     assert_eq!(hits(&back_and_forth, "layers", Format::Dst), 0);
 }
 
-/// Counting layers costs a bounded amount whatever a stitch's length: a run read from a file with
-/// stitches kilometres long is checked at once.
+/// Counting layers costs a bounded amount whatever a stitch's length and however far apart the
+/// stitches: a run read from a file with stitches kilometres long is counted at a bounded number
+/// of points a stitch, in a table of the cells stitched rather than a grid over its box; a design
+/// of a hoop's size is counted on a grid.
 #[test]
 fn layers_are_counted_in_bounded_work_however_long_the_stitches() {
     let far = 1.0e6;
     let long = plan(vec![planned(1, None, RED, &[(0.0, 0.0), (far, 0.0), (0.0, far), (far, far)], None)]);
-    let t = std::time::Instant::now();
     assert_eq!(hits(&long, "layers", Format::Dst), 0);
-    // Far below what sampling every half millimetre would take (millions of cells a stitch).
-    assert!(t.elapsed() < std::time::Duration::from_secs(1), "{:?}", t.elapsed());
+    assert_eq!(check::layer_samples(far * std::f64::consts::SQRT_2), check::MAX_LAYER_SAMPLES);
+    assert_eq!(check::layer_grid_cells(&long), None, "no grid over a kilometre square");
+    let hoop = one(Style::Running, &[3.0, 3.0, 3.0]);
+    assert!(check::layer_grid_cells(&hoop).is_some_and(|n| n < 100), "{:?}", check::layer_grid_cells(&hoop));
 }
 
 /// A satin column wider than 10 mm fires, one 10 mm wide doesn't; so does a fill's narrow part.

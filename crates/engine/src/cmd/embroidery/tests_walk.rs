@@ -299,3 +299,42 @@ fn raster_effects_masks_and_no_opacity_are_said_or_left_out() {
     run(&mut s, "transparency.set", json!({"ids": [art], "opacity": 0}));
     assert_eq!(run(&mut s, "embroidery.threads", json!({}))["blockCount"], json!(0), "nothing prints at no opacity");
 }
+
+/// A design of more than two million stitches is refused, however many objects it takes: here two
+/// opened runs of a million and one needle points each, neither past any other limit.
+#[test]
+fn a_design_past_two_million_stitches_is_refused() {
+    use std::sync::Arc;
+
+    use vectorcraft_doc::embroidery::{Embroidery, StitchRun};
+    use vectorcraft_doc::{Appearance, Node};
+    use vectorcraft_geom::{BezPath, PathData, Point};
+
+    /// Needle points in each run: together one more than the two million a design may have.
+    const POINTS: usize = 1_000_001;
+    let mut s = blank();
+    let doc = Arc::make_mut(&mut s.doc_mut().unwrap().doc);
+    let mut runs = Vec::new();
+    for row in 0..2 {
+        // A zigzag 2 mm a step (in points), within 100 mm of the corner.
+        let mut bp = BezPath::new();
+        for k in 0..POINTS {
+            let p = Point::new((k % 50) as f64 * 5.67, f64::from(row) * 20.0 + (k % 2) as f64 * 5.67);
+            if k == 0 { bp.move_to(p) } else { bp.line_to(p) }
+        }
+        let mut node = Node::path(
+            doc.alloc_id(),
+            PathData::from_bezpath(&bp),
+            Appearance::basic(Paint::None, Paint::solid(vectorcraft_color::Color::rgb(0.8, 0.1, 0.1)), 1.0),
+        );
+        node.extras_mut().embroidery = Some(Box::new(Embroidery { stitches: Some(StitchRun::default()), ..Embroidery::default() }));
+        runs.push(Arc::new(node));
+    }
+    let group = Node::group(doc.alloc_id(), runs);
+    let layer = doc.layers.first().map(|l| l.id);
+    doc.insert(layer, usize::MAX, group).unwrap();
+    let refused = s.execute("embroidery.stats", &json!({})).unwrap_err().to_string();
+    assert!(refused.contains("more than 2000000 stitches"), "{refused}");
+    let refused = s.execute("document.export", &json!({"format": "dst"})).unwrap_err().to_string();
+    assert!(refused.contains("more than 2000000 stitches"), "{refused}");
+}

@@ -9,8 +9,8 @@
 //! (mutated object streams, archives and indexed PNG previews, hostile image dimensions), nor the
 //! font files a folder search reads (damaged fonts, collections whose headers give any count of
 //! faces), nor scripts written for the reference app checked without running them (garbage,
-//! generated script text and mutated scripts), nor embroidery designs (DST, EXP, PES and JEF:
-//! damaged files and random bytes behind each format's header) opened or placed.
+//! generated script text and mutated scripts), nor embroidery designs (DST, TAP, T01, EXP, PES,
+//! PEC, JEF and VP3: damaged files and random bytes behind each format's header) opened or placed.
 //!
 //! `PROPTEST_CASES=20000 cargo test -p vectorcraft-engine --test import_fuzz` runs a deeper search.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
@@ -3955,7 +3955,8 @@ proptest! {
             "dst" => 512,
             "pes" => 22 + 512 + 20,
             "pec" => 8 + 512 + 20,
-            "jef" => 116 + 8 * 4,
+            // Where the stitches start: the header's first word.
+            "jef" => sample.get(..4).map_or(0, |w| u32::from_le_bytes([w[0], w[1], w[2], w[3]]) as usize),
             "vp3" => vp3_records(sample),
             _ => 0,
         };

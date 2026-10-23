@@ -134,7 +134,7 @@ const LAYER_CELL: f64 = 1.0;
 /// The most points one stitch is counted at for layers: every half cell along a stitch up to 32 mm
 /// long, more sparsely along a longer one (which no machine sews well, and `stitchTooLong` flags).
 /// A bound on the work a stitch read from a file can ask for, however long it is.
-const MAX_LAYER_SAMPLES: usize = 64;
+pub(super) const MAX_LAYER_SAMPLES: usize = 64;
 /// The most cells layers are counted over as one grid over the design's box ([`Layers`]): four
 /// million square millimetres (2 m a side), far more than any hoop holds, at 5 bytes a cell 20 MB.
 /// A larger box (only a file's stitches spread far apart) is counted in a table of the cells
@@ -463,6 +463,22 @@ impl Layers {
     }
 }
 
+/// The samples a stitch `length` millimetres long is counted at for layers, besides its start: half
+/// a cell apart, so that no cell it crosses is skipped, at most [`MAX_LAYER_SAMPLES`].
+pub(super) fn layer_samples(length: f64) -> usize {
+    ((length / (LAYER_CELL / 2.0)).ceil().max(1.0) as usize).min(MAX_LAYER_SAMPLES)
+}
+
+/// The cells of the grid layers are counted on for `plan`, `None` when its box is too large for
+/// one (they are counted in a table).
+#[cfg(test)]
+pub(super) fn layer_grid_cells(plan: &DesignPlan) -> Option<usize> {
+    match Layers::new(plan) {
+        Layers::Grid { count, .. } => Some(count.len()),
+        Layers::Table(_) => None,
+    }
+}
+
 /// One finding: where (a record number and a point, millimetres), the unit, and a measure.
 #[derive(Clone, Debug, Default)]
 struct Hit {
@@ -606,9 +622,7 @@ impl<'a> Checker<'a> {
         if !length.is_finite() {
             return;
         }
-        // Samples half a cell apart, so that no cell the stitch crosses is skipped, at most
-        // MAX_LAYER_SAMPLES of them.
-        let samples = ((length / (LAYER_CELL / 2.0)).ceil().max(1.0) as usize).min(MAX_LAYER_SAMPLES);
+        let samples = layer_samples(length);
         let unit = u32::try_from(r.unit).unwrap_or(NO_UNIT - 1);
         for i in 0..=samples {
             let p = a.lerp(b, i as f64 / samples as f64);

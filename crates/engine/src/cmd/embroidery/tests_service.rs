@@ -687,3 +687,78 @@ fn a_document_a_failed_batch_opened_leaves_no_planning_behind() {
     assert_eq!(after, before);
     assert_eq!(s.embroidery_plans.uids(), before, "the opened document's service is gone");
 }
+
+/// A plan cancelled from another thread, as the app cancels its planning worker, stops at the
+/// next unit: a stroke being planned when the cancel comes (a satin has no check of its own) is
+/// finished and kept, and the next plan is the fresh one. An export cancelled part way writes
+/// nothing.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_plan_cancelled_from_another_thread_stops_at_the_next_unit() {
+    use std::rc::Rc;
+    use std::sync::mpsc;
+
+    use vectorcraft_doc::cancel::{self, CancelToken, ProgressSink};
+
+    let (s, _) = five();
+    let doc = s.doc().unwrap().doc.clone();
+    let opts = Options::default();
+    let service = Arc::new(PlanService::default());
+    let token = CancelToken::new();
+    let (reached, at_second) = mpsc::channel::<()>();
+    let (go, cancelled) = mpsc::channel::<()>();
+    let worker = {
+        let (service, doc, opts, token) = (service.clone(), doc.clone(), opts.clone(), token.clone());
+        std::thread::spawn(move || {
+            // As the second unit (the first object's stroke) is reported, the worker waits for the
+            // cancel, then plans it.
+            let sink: ProgressSink = Rc::new(move |done, _, _| {
+                if done == 2 {
+                    let _ = reached.send(());
+                    let _ = cancelled.recv();
+                }
+            });
+            cancel::scope(&token, Some(sink), || service.plan(Of::whole(&doc), &doc, &opts).map(|p| (*p).clone()))
+        })
+    };
+    at_second.recv().unwrap();
+    token.cancel();
+    go.send(()).unwrap();
+    assert_eq!(worker.join().unwrap(), Err(PlanError::Cancelled));
+    assert_eq!(service.kept(), 2, "the fill before, and the stroke under way when the cancel came");
+    assert_eq!(*service.plan(Of::whole(&doc), &doc, &opts).unwrap(), digitize(&doc, &opts, None).unwrap());
+
+    let (mut s, _) = five();
+    let token = CancelToken::new();
+    let sink: ProgressSink = {
+        let token = token.clone();
+        Rc::new(move |done, _, _| {
+            if done == 3 {
+                token.cancel();
+            }
+        })
+    };
+    let r = cancel::scope(&token, Some(sink), || s.execute("document.export", &json!({"format": "dst"})));
+    assert!(matches!(r, Err(crate::EngineError::Cancelled)), "{r:?}");
+}
+
+/// A plan after one object moves plans again only that object's units, and the unit after them in
+/// their block, which starts where they end: every other unit is taken from what was kept.
+#[test]
+fn an_edit_plans_again_only_what_it_changed() {
+    let (mut s, ids) = five();
+    let opts = Options::default();
+    let service = PlanService::default();
+    let doc = s.doc().unwrap().doc.clone();
+    service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    assert_eq!(service.kept(), 7);
+    run(&mut s, "object.move", json!({"ids": [ids[1]], "dx": 3, "dy": 2}));
+    let doc = s.doc().unwrap().doc.clone();
+    let after = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    let moved: Vec<usize> = after.units.iter().enumerate().filter(|(_, u)| u.origin.node.0 == ids[1]).map(|(k, _)| k).collect();
+    let last = *moved.last().unwrap();
+    let next = after.units.get(last + 1).is_some_and(|u| u.block == after.units[last].block);
+    assert!(next, "the moved object isn't its block's last: the test needs the unit after it");
+    assert_eq!(service.kept(), 7 + moved.len() + 1, "{} moved", moved.len());
+    assert_eq!(*after, digitize(&doc, &opts, None).unwrap());
+}

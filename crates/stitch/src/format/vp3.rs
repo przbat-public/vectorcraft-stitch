@@ -1305,11 +1305,24 @@ mod tests {
         let file = long.windows(3).position(|w| w == FILE_TAG).unwrap();
         long[file + 3..file + 7].copy_from_slice(&u32::MAX.to_be_bytes());
         assert_eq!(read(&long).expect("reads").sewn(), design().sewn());
-        let mut no_colour = bytes;
+        // The first thread's colour count 0, its record six bytes shorter as it would be, and the
+        // packets round it as much shorter: it reads in the default colour of its block.
+        let mut no_colour = bytes.clone();
         let block = no_colour.windows(3).position(|w| w == BLOCK_TAG).unwrap();
-        // The thread's colour count 0: the record is six bytes shorter, which misreads the rest of
-        // the block; still a design or an error.
         no_colour[block + 15] = 0;
-        let _ = read(&no_colour);
+        no_colour.drain(block + 16..block + 16 + COLOR_ENTRY);
+        for tag in [FILE_TAG, DESIGN_TAG, BLOCK_TAG] {
+            let at = no_colour.windows(3).position(|w| w == tag).unwrap() + 3;
+            let len = u32::from_be_bytes(no_colour[at..at + 4].try_into().unwrap()) - COLOR_ENTRY as u32;
+            no_colour[at..at + 4].copy_from_slice(&len.to_be_bytes());
+        }
+        let p = read(&no_colour).expect("reads");
+        assert_eq!(p.blocks[0].thread.color, crate::thread::default_thread(0).color);
+        assert_eq!(p.sewn(), design().sewn(), "the stitches read as before");
+        // Its colour count 0 with the colour's bytes left in: the rest of the block misreads; still
+        // a design or an error.
+        let mut misread = bytes;
+        misread[block + 15] = 0;
+        let _ = read(&misread);
     }
 }

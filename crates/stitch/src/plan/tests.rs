@@ -95,15 +95,21 @@ fn a_fill_covers_the_rectangle_and_no_stitch_is_longer_than_asked() {
     for a in &q {
         assert!(a.x >= -reach && a.x <= 20.0 + reach && a.y >= -reach && a.y <= 10.0 + reach, "{a:?}");
     }
+    // Neighbouring penetrations of one row (on one line across the rows, which run at the fill's
+    // angle; needle down twice in a row) are at most a stitch length apart: an end stitch at most
+    // the shortest stitch more (a grid point nearer the end than that is left out) and the pull
+    // compensation that stretches the row past the edge. Row turns and travels are other
+    // stitches, and a jump is not a stitch at all.
+    let axes = Axes::new(p.angle);
+    let mut in_rows = 0;
     for w in out.windows(2) {
-        // Neighbouring penetrations of one row (same y, needle down twice in a row) are at
-        // most a stitch length apart (an end stitch at most the shortest stitch more); row
-        // turns and travels are other stitches, and a jump is not a stitch at all.
         let (a, b) = (w[0], w[1]);
-        if a.command == Command::Stitch && b.command == Command::Stitch && (a.y - b.y).abs() < 1e-6 {
-            assert!(a.distance(b) <= p.stitch_length + p.min_stitch + 1e-6, "{:?} .. {:?}", a.point(), b.point());
+        if a.command == Command::Stitch && b.command == Command::Stitch && (axes.across(a.point()) - axes.across(b.point())).abs() < 1e-6 {
+            in_rows += 1;
+            assert!(a.distance(b) <= p.stitch_length + p.min_stitch + reach, "{:?} .. {:?}", a.point(), b.point());
         }
     }
+    assert!(in_rows > q.len() / 2, "most stitches lie along rows: {in_rows} of {}", q.len());
     // About the area divided by the thread's coverage.
     let area = 20.0 * 10.0;
     let expected = area / (p.density * p.stitch_length);
@@ -1628,4 +1634,15 @@ fn a_fill_covers_its_shape() {
     let p = Params { angle: 0.0, ..Params::for_style(Style::Fill) };
     let out: Vec<Stitch> = stitches(e, FillRule::NonZero, &p).into_iter().filter(|s| !(s.y > 33.0 && s.x > 12.0)).collect();
     assert!(!uncovered(e, &out, INSET, p.density / 2.0 + SLACK).is_empty());
+}
+
+/// A fill with narrow columns that would need more stitches than one shape may have is refused
+/// before it is planned, as a fill alone is.
+#[test]
+fn a_fill_with_columns_too_large_is_refused() {
+    let big = rect(0.0, 0.0, 3000.0, 3000.0);
+    let (fill, satin) = (Params::for_style(Style::Fill), Params::for_style(Style::Satin));
+    let refused = try_fill_with_columns(&big, FillRule::NonZero, &big, &[], &fill, &satin, None);
+    assert!(matches!(refused, Err(crate::Error::TooLarge(_))), "{refused:?}");
+    assert!(try_fill_with_columns(&rect(0.0, 0.0, 30.0, 30.0), FillRule::NonZero, &rect(0.0, 0.0, 30.0, 30.0), &[], &fill, &satin, None).is_ok());
 }

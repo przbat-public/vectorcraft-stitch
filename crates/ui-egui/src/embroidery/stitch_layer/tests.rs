@@ -1,7 +1,8 @@
 //! The canvas in the stitch view, frame by frame: the stitches drawn from their own texture, which a
-//! selection change doesn't upload again; the art back fresh when the view goes back to it; a
-//! document switch never drawn in line where the layer's thread runs; the art's passes; isolation
-//! fading the rest; a design that fails faded.
+//! selection change doesn't upload again, over the fabric; the art back fresh when the view goes
+//! back to it; a document switch never drawn in line where the layer's thread runs, a slow frame's
+//! next sent to it, and its being gone; the art's passes; isolation fading the rest; a design that
+//! fails faded.
 
 use serde_json::{Value, json};
 use vectorcraft_engine::Session;
@@ -126,6 +127,34 @@ fn the_stitches_are_drawn_from_their_own_texture_over_the_fabric() {
     frame(&mut app, &ctx, 0.6);
     assert_eq!(app.embroidery.layer.uploads, 3);
     assert!(app.embroidery.layer.key.as_ref().is_some_and(|k| k.needle_points));
+}
+
+/// The stitch view lays the fabric in place of the paper: on the artboard, and under the stitches'
+/// box where they reach past it; the art view lays nothing past the artboard.
+#[test]
+fn the_fabric_is_laid_on_the_artboard_and_under_the_stitches() {
+    let mut app = app();
+    // A bar reaching past the artboard's right edge.
+    app.run("shape.rectangle", json!({"x": 150, "y": 150, "width": 120, "height": 30})).unwrap();
+    let ctx = egui::Context::default();
+    let fabric = Color32::from_rgb(FABRIC[0], FABRIC[1], FABRIC[2]);
+    let laid = |shapes: &[Shape]| -> Vec<egui::Rect> {
+        shapes
+            .iter()
+            .filter_map(|s| match s {
+                Shape::Path(p) if p.closed && p.fill == fabric => Some(egui::Rect::from_points(&p.points)),
+                _ => None,
+            })
+            .collect()
+    };
+    let art = laid(&frame(&mut app, &ctx, 0.0));
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    let time = until_stitches(&mut app, &ctx, 0.0);
+    let stitches = laid(&frame(&mut app, &ctx, time + 0.1));
+    let [artboard, design] = stitches[..] else { panic!("the artboard's fabric and the stitches': {stitches:?}") };
+    assert!(design.right() > artboard.right() + 10.0, "under the stitches past the artboard: {design:?} {artboard:?}");
+    assert!(artboard.contains(design.left_top() + egui::vec2(1.0, 1.0)), "the design starts on the artboard");
+    assert!(art.iter().all(|r| r.right() <= artboard.right() + 0.5), "the art view lays nothing past it: {art:?}");
 }
 
 /// Back in the art view after an edit made in the stitch view, the art is rendered before it shows:
@@ -368,6 +397,63 @@ fn a_slow_designs_emphasis_is_drawn_on_the_layers_thread() {
     }
     assert!(app.embroidery.layer.emphasis_asked.is_none());
     assert_eq!(app.embroidery.layer.renderer.stats, drawn, "still nothing drawn in line");
+}
+
+/// A frame that took longer than [`INLINE_DRAW_MS`] sends the next to the layer's thread, the frame
+/// shown staying meanwhile; one within it has the next drawn in line.
+#[test]
+fn a_slow_frame_sends_the_next_to_the_layers_thread() {
+    let ctx = egui::Context::default();
+    let Some(worker) = LineWorker::start(&ctx) else { panic!("the layer's thread starts") };
+    let mut app = app();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    let mut time = until_stitches(&mut app, &ctx, 0.0);
+    app.embroidery.layer.use_worker(worker);
+    app.embroidery.layer.last_ms = INLINE_DRAW_MS;
+    let uploads = app.embroidery.layer.uploads;
+    app.run("view.zoomIn", json!({})).unwrap();
+    time += 0.1;
+    frame(&mut app, &ctx, time);
+    assert!(!app.embroidery.layer.waiting(), "within a frame's time: in line");
+    assert_eq!(app.embroidery.layer.uploads, uploads + 1);
+    app.embroidery.layer.last_ms = INLINE_DRAW_MS + 1.0;
+    let drawn = app.embroidery.layer.renderer.stats;
+    app.run("view.zoomIn", json!({})).unwrap();
+    time += 0.1;
+    let shapes = frame(&mut app, &ctx, time);
+    assert!(app.embroidery.layer.waiting(), "past it: asked of the thread");
+    assert_eq!(app.embroidery.layer.renderer.stats, drawn, "nothing drawn in line");
+    assert_eq!(drawn_with(&shapes, stitch_texture(&app)), [Color32::WHITE], "the frame before shows meanwhile");
+    let t0 = std::time::Instant::now();
+    while app.embroidery.layer.waiting() {
+        assert!(t0.elapsed() < WAIT, "the thread never drew it");
+        std::thread::yield_now();
+        time += 0.02;
+        frame(&mut app, &ctx, time);
+    }
+    assert_eq!(app.embroidery.layer.uploads, uploads + 2, "the thread's frame shown");
+}
+
+/// With the layer's thread gone (its channels closed), the stitches are drawn in line from then
+/// on, also a frame that would have gone to it.
+#[test]
+fn with_the_layers_thread_gone_the_stitches_are_drawn_in_line() {
+    let ctx = egui::Context::default();
+    let mut app = app();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    let time = until_stitches(&mut app, &ctx, 0.0);
+    let (tx, jobs) = channel::<LayerJob>();
+    let (done, rx) = channel::<LayerDone>();
+    drop((jobs, done));
+    app.embroidery.layer.use_worker(LineWorker { tx, rx });
+    app.embroidery.layer.last_ms = 1000.0;
+    let uploads = app.embroidery.layer.uploads;
+    app.run("view.zoomIn", json!({})).unwrap();
+    let shapes = frame(&mut app, &ctx, time + 0.1);
+    assert!(app.embroidery.layer.worker.is_none(), "found gone");
+    assert!(!app.embroidery.layer.waiting());
+    assert_eq!(app.embroidery.layer.uploads, uploads + 1, "drawn in line");
+    assert_eq!(drawn_with(&shapes, stitch_texture(&app)), [Color32::WHITE]);
 }
 
 /// A frame asked of the layer's thread is forgotten when the stitch view stops being drawn: a

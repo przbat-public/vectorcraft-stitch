@@ -91,9 +91,10 @@ impl Area<'_> {
             return true;
         }
         let middle = a.midpoint(b);
-        // A corner passed inside the line (not at its ends): the line may leave there without
-        // crossing an edge (a corner's contacts count for neither edge), so it is tested stretch by
-        // stretch, as one along the outline is.
+        // A corner passed inside the line (not at its ends): the line may leave the shape there
+        // without crossing an edge (where a line only touches a corner, it meets each of the
+        // corner's two edges at an end, which the crossing test doesn't count), so it is tested
+        // stretch by stretch, as one along the outline is.
         let through_corner = cuts.iter().any(|t| *t > CORNER_INSIDE && *t < 1.0 - CORNER_INSIDE);
         if !through_corner && !self.on_outline(middle) {
             return self.contains(middle);

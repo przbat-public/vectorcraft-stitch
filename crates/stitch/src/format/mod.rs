@@ -91,7 +91,7 @@ pub enum Format {
 /// centre.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Start {
-    /// A corner of the design (DST, TAP, T01, EXP, PES and PEC, as the decodings start them).
+    /// A corner of the design (DST, TAP, T01, EXP, PES and PEC, where their readers put the start).
     Corner,
     /// The design's centre (JEF: Janome sews around the hoop's centre; VP3: its files start there).
     Centre,
@@ -401,8 +401,8 @@ impl Frame {
 
     /// A frame whose origin is the design's centre, for formats that place the design around the
     /// hoop's centre (JEF), y flipped when `flip`. Where a design read from a file started is not
-    /// used: these machines put the start at the hoop's centre, and a start at a corner (as DST,
-    /// EXP, PES and PEC files written here have it) would put the design beside it.
+    /// used: these machines put the start at the hoop's centre, and a start at a corner (as DST, TAP,
+    /// T01, EXP, PES and PEC files written here have it) would put the design beside it.
     pub(crate) fn centered(p: &Pattern, flip: bool) -> Result<Self> {
         let b = p.bounds().ok_or_else(|| Error::Format("the design has no points to write".into()))?;
         Ok(Self::centered_on(b, flip))
@@ -911,7 +911,8 @@ mod tests {
     /// A design read from a file starts where the file started: the formats that start at a corner
     /// start a design that says where it starts there (a DST's header measures it from there), and
     /// read it back from there, written again unchanged; JEF and VP3 start every design at its
-    /// centre. A design that says nothing starts at its corner or centre, as before.
+    /// centre. A design that says nothing starts where its format's frame puts the start: its corner
+    /// or its centre.
     #[test]
     fn a_design_starts_where_it_says_in_the_formats_that_start_at_a_corner() {
         let (plain, mut started) = (design(), design());

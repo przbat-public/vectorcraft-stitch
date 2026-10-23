@@ -87,9 +87,9 @@ const BOBBIN_FACTOR_SATIN: f64 = 0.65;
 /// The bobbin thread a design takes, as a share of its top thread: Madeira's rule of thumb for
 /// standard-length stitches, about 3 m of bobbin and 5 m of upper thread a 1,000 stitches (density
 /// sheet, <https://www.madeirausa.com/_resources/common/userfiles/file/Resources/TH.Reads/Density.pdf>).
-/// The project owner's choice of calibration (2026-10-22); still an estimate. Scaled by Wilcom's
-/// factors instead, the real designs' plans (fills, 125 %) came to 4 m a 1,000 needle points,
-/// against Madeira's 3; so, 3.2 m.
+/// The project owner's choice of calibration (2026-10-22); still an estimate. Wilcom's bobbin
+/// factors alone (125 % for fills) would give the real designs' plans about 4 m of bobbin thread a
+/// 1,000 needle points, against Madeira's 3; with this share they take 2.8 to 3.4 m.
 const BOBBIN_PER_TOP: f64 = 3.0 / 5.0;
 
 /// What the thread figures rest on, as the answer says it: an estimate.

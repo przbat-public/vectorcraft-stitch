@@ -749,7 +749,8 @@ fn a_newer_versions_object_settings_open_and_are_kept() {
     let mut s = Session::new();
     let data = vectorcraft_format::base64_encode(&serde_json::to_vec(&file).unwrap());
     s.execute("document.open", &json!({"name": "newer.vectorcraft", "dataBase64": data})).unwrap();
-    // Sewn as art, as before: its run of another shape is no run, its cut no cut.
+    // Sewn as art, the same as the plain object (`plain`): a run of another shape is no run, and
+    // a cut of another type no cut.
     assert_eq!(s.execute("embroidery.stats", &json!({})).unwrap()["stitches"], plain);
     let saved = |s: &mut Session| node(&mut serde_json::from_slice(&native(s)).unwrap(), id).unwrap()["embroidery"].clone();
     assert_eq!(saved(&mut s), newer);

@@ -43,7 +43,7 @@ const REFUSED_PATHS: usize = 50_000;
 const NUDGE_MM: f64 = 0.5;
 /// Points in a millimetre.
 const PT_PER_MM: f64 = 72.0 / 25.4;
-/// How many times each row is measured (its middle is reported): the heavy shapes are planned once
+/// How many times each row is measured (the median is reported): the heavy shapes are planned once
 /// a run.
 const RUNS: usize = 3;
 
@@ -75,7 +75,7 @@ pub const ROWS: [&str; 20] = [
 const BUDGETS: [f64; 20] =
     [400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 100.0, 400.0, 4000.0, 50.0];
 
-/// The middle of `samples` (milliseconds), 0 for none.
+/// The median of `samples` (milliseconds), 0 for none.
 fn middle(mut samples: Vec<f64>) -> f64 {
     samples.sort_by(f64::total_cmp);
     samples.get(samples.len() / 2).copied().unwrap_or(0.0)
@@ -101,7 +101,7 @@ fn timed(s: &mut Session, command: &str, params: &Value) -> Result<(f64, Value),
 
 /// Milliseconds to plan `doc`'s embroidery (`embroidery.stats` with the export's `options`):
 /// cold, in a session that never planned it; warm, every unit kept from earlier plans of the same
-/// art (another snapshot of it: an undo); and after moving one object 0.5 mm; each the middle of
+/// art (another snapshot of it: an undo); and after moving one object 0.5 mm; each the median of
 /// `runs` (at least one). `None` when the document has nothing to stitch.
 pub fn embroidery_times(doc: &Document, runs: usize, options: &Value) -> Result<Option<(f64, f64, f64)>, String> {
     let runs = runs.max(1);
@@ -129,7 +129,7 @@ pub fn embroidery_times(doc: &Document, runs: usize, options: &Value) -> Result<
     Ok(Some((middle(cold), middle(warm), middle(edited))))
 }
 
-/// Milliseconds a cold plan of `doc` takes (`embroidery.stats`), the middle of [`RUNS`].
+/// Milliseconds a cold plan of `doc` takes (`embroidery.stats`), the median of [`RUNS`].
 fn cold(doc: &Document) -> Result<f64, String> {
     let mut samples = Vec::with_capacity(RUNS);
     for _ in 0..RUNS {
@@ -138,7 +138,7 @@ fn cold(doc: &Document) -> Result<f64, String> {
     Ok(middle(samples))
 }
 
-/// Milliseconds `command` takes on `doc` once its plan is kept (planned once before), the middle
+/// Milliseconds `command` takes on `doc` once its plan is kept (planned once before), the median
 /// of [`RUNS`]. The export (as DST) plans afresh, by design: what a file holds never depends on
 /// what was kept.
 fn kept(doc: &Document, command: &str) -> Result<f64, String> {

@@ -35,7 +35,7 @@ pub(super) const MAX_ROWS: usize = 100_000;
 const FIRST_ROW: f64 = 0.5;
 /// How far inside its outline a fill's edge-run underlay runs, as a share of the row spacing: half
 /// a spacing, about where the outermost rows lie, so that the top stitching covers it (on the
-/// outline, it lay outside the rows wherever their margin was wide).
+/// outline itself it would lie outside the rows wherever their margin is wide).
 const EDGE_RUN_INSET: f64 = 0.5;
 /// The farthest a corner of the inset edge run moves from the outline's corner, as a multiple of
 /// the inset: a sharp corner's bisector would reach far into the shape (a miter limit, as strokes

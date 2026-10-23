@@ -45,7 +45,8 @@ const MAX_SHARED: usize = 1024;
 
 /// A part many keys share (a clip group's clipping path, in the key of every object inside it):
 /// its words held once and their hash worked out once, so that building, hashing and comparing a
-/// key doesn't go over them again. Two are equal when their words are (the same one at once).
+/// key doesn't go over them again. Two are equal when their words are; a part compared with
+/// itself is equal at once, without comparing its words.
 #[derive(Debug)]
 pub(crate) struct Shared {
     words: Box<[u64]>,

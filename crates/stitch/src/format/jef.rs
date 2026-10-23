@@ -12,8 +12,8 @@
 //! colour ([`Palette::numbers`]).
 //!
 //! JEF has no trim record of its own. EduTechWiki calls a jump of zero length the trim command,
-//! which Janome machines set to cut at a "cutting command" obey; set to cut automatically, they
-//! also cut before any jump longer than 3 mm. We write a trim as three zero-length jumps and read
+//! which Janome machines obey when they are set to cut at a "cutting command"; set to cut
+//! automatically, they also cut before any jump longer than 3 mm. We write a trim as three zero-length jumps and read
 //! each zero-length jump as a trim (consecutive trims are one cut, [`super::finish`]): one is the
 //! wiki's trim command, and three is what pyembroidery 1.5.1, run as an outside reader of our
 //! files, takes as a trim with its trims setting on (a single one it drops as a jump that goes

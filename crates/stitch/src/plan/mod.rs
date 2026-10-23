@@ -2,8 +2,8 @@
 //!
 //! A *run* is a stretch the needle sews without lifting: a set of needle points in order. Runs
 //! are joined into a block: a short move between two runs stays down (it is just the next stitch),
-//! a long one becomes a [`Command::Jump`], tied off and in, with a [`Command::Trim`] first when it
-//! is longer than [`Params::trim`].
+//! a long one becomes a [`crate::Command::Jump`], tied off and in, with a [`crate::Command::Trim`]
+//! first when it is longer than [`Params::trim`].
 //!
 //! Parameters are millimetres and degrees. Everything is clamped to a sane range before use, so
 //! out-of-range or non-finite input gives a usable stitch plan rather than a loop that never
@@ -70,9 +70,9 @@ pub(crate) const TRIM: f64 = 10.0;
 /// The longest satin stitch before it is split (millimetres): longer stitches snag and sag.
 /// Professional software makes it a setting, bounded by the machine format (12.1 mm per record in
 /// DST). Wilcom recommends an Auto Split of 7 mm and satin widths within 10 mm (the article cited
-/// for [`DENSITY`] below); Melco's design checker lets satin stitches up to 10 mm pass. 10 is kept,
-/// by judgement: splitting at 7 would change every satin wider than that, and the narrow parts of
-/// fills sewn as satin reach 10 mm.
+/// for [`DENSITY`] below); Melco's design checker lets satin stitches up to 10 mm pass. 10 mm, by
+/// judgement: splitting at 7 would split every satin wider than that, and the narrow parts of fills
+/// sewn as satin reach 10 mm.
 const MAX_SATIN_STITCH: f64 = 10.0;
 /// The narrowest satin column (millimetres): a stroke, or a fill's narrow part, narrower than this
 /// is sewn as a running line along its middle, since below about a millimetre a satin's two rails

@@ -47,8 +47,8 @@ pub struct StitchRun {
     /// The thread was cut after the run, at the end of its colour block, as the file had it
     /// (machines and digitizers often cut before the thread is changed).
     pub trim_after: bool,
-    /// The run is two needle points at one spot (a tack), which its line, from a point to the
-    /// same point, says no differently from a single stitch: without this, a line that goes
+    /// The run is two needle points at one spot (a tack). Its line, from a point to the same point,
+    /// looks the same as a single stitch's, so this tells them apart: without it, a line that goes
     /// nowhere is one needle point.
     pub double_point: bool,
     /// The thread the file recorded for the run's colour block beside its colour (a VP3 thread
@@ -111,8 +111,8 @@ impl From<ThreadRecord> for serde_json::Value {
 }
 
 impl Embroidery {
-    /// Set whether the thread is cut after the object. What a newer version wrote for it in a form
-    /// this version can't read goes: the cut is now this version's.
+    /// Set whether the thread is cut after the object. This replaces whatever a newer version wrote
+    /// under that key in a form this version can't read.
     pub fn set_trim_after(&mut self, on: bool) {
         self.trim_after = on;
         self.extra.remove(TRIM_AFTER);

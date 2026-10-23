@@ -146,9 +146,9 @@ impl BlockThread {
     }
 
     /// Whether the thread looks like another colour than the art: its difference as shown is past
-    /// `vectorcraft_stitch::thread::MISMATCH_DELTA_E`, the line that also decides, the same way,
-    /// when a block takes another thread than a neighbour's. As shown, so that a list never flags a thread whose
-    /// difference it gives as the threshold itself.
+    /// `vectorcraft_stitch::thread::MISMATCH_DELTA_E`; the same line, read the same way, decides
+    /// when a block takes another thread than a neighbour's. As shown (to two decimals), so that a
+    /// list never flags a thread whose difference it shows as the threshold itself.
     pub fn mismatch(&self) -> bool {
         vectorcraft_stitch::thread::mismatched(self.delta_e)
     }

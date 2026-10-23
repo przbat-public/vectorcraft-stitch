@@ -116,7 +116,8 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError
     if let Some(clip) = clip {
         stitches = cut_to(stitches, clip, &params);
     }
-    // Kept between plans at its length (the planner grows its vector by doubling).
+    // Shrunk to its length before it is kept between plans: the planner grows the vector by
+    // doubling, so it could hold up to twice the memory the cache counts.
     stitches.shrink_to_fit();
     Ok(UnitStitches { stitches, columns, widths })
 }
@@ -129,7 +130,7 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError
 /// error when the plan is cancelled between two columns.
 fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column]) -> Result<(BezPath, BezPath), PlanError> {
     // Every column's outline and the band along it, united in one sweep (uniting them one at a
-    // time swept everything so far again for each column).
+    // time would sweep everything united so far again for each column).
     let mut parts: Vec<PathData> = Vec::with_capacity(2 * columns.len());
     for c in columns {
         cancel::check().map_err(|_| PlanError::Cancelled)?;
@@ -183,8 +184,9 @@ pub(super) fn cut_to(stitches: Vec<Stitch>, region: &(BezPath, FillRule), p: &Pa
     plan::join_cut(pieces, p)
 }
 
-/// How far past a segment's box it is still put in a band (millimetres): the box is worked out
-/// from the curve as the winding test works the curve's pieces out, to within rounding.
+/// A margin round each segment's box when it is sorted into bands (millimetres). The box comes from
+/// the curve's extrema, as the winding test's pieces do, so the two agree to within rounding; the
+/// margin covers that rounding.
 const BOX_MARGIN: f64 = 1e-7;
 /// The most horizontal bands [`Banded`] sorts segments into, and the most bands a segment is in
 /// on average: past that (segments as tall as the path, for their number) the whole path is

@@ -437,8 +437,9 @@ impl Layers {
         }
     }
 
-    /// Unit `unit` sews over `cell`: how many units now have, when it is the first time this unit
-    /// is counted there; `None` when it was already, or the cell is not counted.
+    /// Count unit `unit` over `cell`: how many units have sewn over it, when this is the first time
+    /// this unit is counted there; `None` when it was counted there already, or the cell is not
+    /// counted.
     fn add(&mut self, cell: (i64, i64), unit: u32) -> Option<usize> {
         let (count, last) = match self {
             Self::Grid { x0, y0, width, count, last } => {

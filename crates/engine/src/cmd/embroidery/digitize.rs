@@ -40,9 +40,9 @@ pub(super) use vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 const LITERAL_FLATTEN: f64 = 0.05;
 /// The column width given for what is not a satin column: fills and running lines have none.
 const NO_WIDTH: f64 = 0.0;
-/// What an area the path operations make is made of, the first word of its key ([`Digitizer::area`]):
-/// a fill's own area, a stroke's painted area (dashed, aligned, of varying width, with arrowheads),
-/// a stroke filled at its width.
+/// The first word of a kept area's key ([`Digitizer::area`]), saying what the path operations made
+/// the area from: a fill's own area, a stroke's painted area (dashed, aligned, of varying width,
+/// with arrowheads), a stroke filled at its width.
 const AREA_FILL: u64 = 0;
 const AREA_STROKE_PAINTED: u64 = 1;
 const AREA_STROKE_FILLED: u64 = 2;
@@ -99,7 +99,8 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
     }
     // The document as it prints: appearances expanded, what can't be sewn said.
     let sewable = super::printed::sewable(doc);
-    // Not about the art: said, but not counted as art left out.
+    // Notes that aren't about the art (a thread palette this version doesn't know): told with the
+    // warnings, but not counted as art left out.
     let mut notes = Vec::new();
     if let Some(ThreadPalette::Unknown(palette)) = doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()) {
         let default = super::DEFAULT_PALETTE.id();
@@ -477,8 +478,9 @@ impl<'a> Digitizer<'a> {
                     k.push(rule_word(rule));
                     Some(k)
                 };
-                // The outer region first, as it always was: the operation's path, not only its
-                // area, decides the stitches.
+                // The outer region first: the path the intersection returns (its contours' order
+                // and starting points), not only its area, decides the stitches, and the pinned
+                // exports were made with this order.
                 let shaped = self.area(what, |d| match &d.clip {
                     Some(Clip { region: (outer, outer_rule), .. }) => {
                         let both = boolean(&PathData::from_bezpath(outer), *outer_rule, &PathData::from_bezpath(&region), rule, BoolOp::Intersect);
@@ -573,8 +575,9 @@ impl<'a> Digitizer<'a> {
                     // follow it; unless the `stitch` option sews it along its path.
                     if paints_off_its_path(stroke, bp) && matches!(opts.forced(), None | Some(Style::Fill)) {
                         let e = opts.expand();
-                        // The stroke's every setting, as saved: a stroke that can't be (none can)
-                        // is outlined each plan.
+                        // Every setting of the stroke, serialised, goes into the key. Serialising a
+                        // stroke doesn't fail; if it ever did, the stroke would be outlined again at
+                        // every plan.
                         let what = || {
                             let settings = serde_json::to_vec(stroke).ok()?;
                             let mut k = vec![AREA_STROKE_PAINTED];
@@ -641,12 +644,12 @@ impl<'a> Digitizer<'a> {
         }
     }
 
-    /// The area a unit fills, made by `make` (the path operations: `expand`, the clip groups
-    /// around it, a stroke's outline) from what `what` gives the words of (the path and every value
-    /// the operations take; the clip groups' region is the key's shared part, added here): kept
-    /// between plans, so that the operations don't run again on an object that hasn't changed.
-    /// Without a cache (a plan made afresh), or when `what` has no words, it is made each time.
-    /// Says when a negative `expand` left nothing of it.
+    /// The area a unit fills. `make` runs the path operations that make it (`expand`, the clip
+    /// groups around it, a stroke's outline); `what` gives its key: the path and every value those
+    /// operations take (the clip groups' region is added here, as the key's shared part). The area
+    /// is kept between plans by that key, so the operations don't run again for an object that
+    /// hasn't changed. Without a cache (a plan made afresh), or when `what` gives no key, it is
+    /// made each time. Warns when a negative `expand` left nothing of it.
     fn area(&mut self, what: impl FnOnce() -> Option<Vec<u64>>, make: impl FnOnce(&Self) -> Shaped) -> Arc<Shaped> {
         let key = self.cache.and_then(|_| what()).map(|own| UnitKey::new(own, self.clip.as_ref().map(|c| c.key.clone())));
         let kept = key.as_ref().and_then(|k| self.cache.and_then(|c| c.lock().ok()).and_then(|mut c| c.shape(k)));

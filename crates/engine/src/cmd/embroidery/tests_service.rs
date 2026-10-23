@@ -55,6 +55,9 @@ enum Edit {
     Options(usize),
     /// The document exported to PES and opened: its runs literal stitches.
     Open,
+    /// An object moved just above (or below) another in the stacking order, into the other's parent,
+    /// as the Sewing order's drops and steps move it (`layer.move`).
+    Reorder(usize, usize, bool),
 }
 
 fn art() -> impl Strategy<Value = Art> {
@@ -84,6 +87,7 @@ fn edit() -> impl Strategy<Value = Edit> {
         1 => (0usize..16, 0.0..220.0f64, 0.0..220.0f64).prop_map(|(i, x, y)| Edit::Symbol(i, x, y)),
         1 => (0..OPTIONS.len()).prop_map(Edit::Options),
         1 => Just(Edit::Open),
+        2 => (0usize..16, 0usize..16, any::<bool>()).prop_map(|(a, b, above)| Edit::Reorder(a, b, above)),
     ]
 }
 
@@ -170,6 +174,14 @@ fn apply(s: &mut Session, ids: &mut Vec<u64>, opts: &mut Options, e: &Edit) {
         Edit::Undo => {
             let _ = s.execute("edit.undo", &json!({}));
             *ids = objects(s);
+        }
+        Edit::Reorder(a, b, above) => {
+            if let (Some(a), Some(b)) = (pick(a), pick(b))
+                && a != b
+            {
+                // Refused at times (into a clip group as its clipping path, say): nothing changes then.
+                let _ = s.execute("layer.move", &json!({"ids": [a], "target": b, "place": if above { "above" } else { "below" }}));
+            }
         }
         Edit::Redo => {
             let _ = s.execute("edit.redo", &json!({}));

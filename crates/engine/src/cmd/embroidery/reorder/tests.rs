@@ -105,8 +105,31 @@ fn each_refusal() {
     assert_eq!(place(&doc_of(&s), &plan, &[run], plan.units.len()), Err(Refusal::FromFile(run)));
 }
 
+/// `id`'s siblings in stacking order (bottom first) and its place among them.
+fn place_in_stack(doc: &Document, id: NodeId) -> (Vec<NodeId>, usize) {
+    let siblings: Vec<NodeId> = match doc.parent_of(id).and_then(|p| doc.node(p)) {
+        Some(parent) => parent.children().map(|c| c.iter().map(|n| n.id).collect()).unwrap_or_default(),
+        None => doc.layers.iter().map(|l| l.id).collect(),
+    };
+    let at = siblings.iter().position(|n| *n == id).unwrap_or(usize::MAX);
+    (siblings, at)
+}
+
+/// What `plan` sews, whatever the order: each unit's object, part and thread, sorted.
+fn what_is_sewn(plan: &DesignPlan) -> Vec<(u64, String, [u8; 3])> {
+    let mut out: Vec<(u64, String, [u8; 3])> = plan
+        .units
+        .iter()
+        .map(|u| (mover(u).0, format!("{:?}", u.origin.part), plan.blocks.get(u.block).map_or([0; 3], |b| b.thread.color())))
+        .collect();
+    out.sort();
+    out
+}
+
 /// Every single object dropped at every gap of the fixtures: a drop allowed runs as one undo step,
-/// moves the object, and leaves what clips it as it was; a refused one names a reason that holds.
+/// moves the object just above or below the object it goes beside, in its parent, leaves what
+/// clips it as it was and changes when, never what, is sewn; a refused one names a reason that
+/// holds.
 #[test]
 fn every_drop_runs_or_is_refused_for_a_reason() {
     let mut s = Session::new();
@@ -118,33 +141,75 @@ fn every_drop_runs_or_is_refused_for_a_reason() {
         }
         v
     });
+    let sewn_before = what_is_sewn(&plan);
     let mut moved = 0;
     for m in &movers {
+        // The mover's own units, and the units on either side of a gap that aren't its.
+        let own: Vec<usize> = plan.units.iter().enumerate().filter(|(_, u)| mover(u) == *m).map(|(k, _)| k).collect();
+        let (first, last) = (own.first().copied().unwrap_or(0), own.last().copied().unwrap_or(0));
         for gap in 0..=plan.units.len() {
             let doc = doc_of(&s);
             let before = clip_context(&doc, doc.parent_of(*m));
+            let case = format!("{m:?} at {gap}");
+            let prev = plan.units.get(..gap).unwrap_or_default().iter().rev().map(mover).find(|o| o != m);
+            let next = plan.units.get(gap..).unwrap_or_default().iter().map(mover).find(|o| o != m);
             match place(&doc, &plan, &[*m], gap) {
                 Ok(row) => {
                     let undo = s.doc().unwrap().history.undo.len();
-                    s.execute("command.batch", &row.batch()).unwrap_or_else(|e| panic!("{m:?} at {gap}: {e}"));
+                    s.execute("command.batch", &row.batch()).unwrap_or_else(|e| panic!("{case}: {e}"));
                     assert_eq!(s.doc().unwrap().history.undo.len(), undo + 1);
                     let now = doc_of(&s);
-                    assert_ne!(now.layers, doc.layers, "{m:?} at {gap}: something moved");
-                    assert_eq!(clip_context(&now, now.parent_of(*m)), before, "{m:?} at {gap}: what clips it");
-                    assert_eq!(now.parent_of(*m), now.parent_of(row.target), "beside the target");
+                    assert_ne!(now.layers, doc.layers, "{case}: something moved");
+                    assert_eq!(clip_context(&now, now.parent_of(*m)), before, "{case}: what clips it");
+                    assert_eq!(now.parent_of(*m), now.parent_of(row.target), "{case}: beside the target");
+                    // Just above or just below it.
+                    let ((_, at), (_, target)) = (place_in_stack(&now, *m), place_in_stack(&now, row.target));
+                    let beside = match row.place {
+                        Place::Above => target + 1,
+                        Place::Below => target.wrapping_sub(1),
+                    };
+                    assert_eq!(at, beside, "{case}: {:?} its target", row.place);
+                    assert_eq!(what_is_sewn(&plan_of(&mut s)), sewn_before, "{case}: what is sewn");
                     s.execute("edit.undo", &json!({})).unwrap();
                     moved += 1;
                 }
-                Err(Refusal::Locked(id)) => assert!(locked_within(&doc, id)),
-                Err(Refusal::ClippingPath(id)) => assert!(clipping_path(&doc, id)),
-                Err(Refusal::NoChange | Refusal::InsideObject | Refusal::ChangesClipping(_) | Refusal::TargetLocked(_) | Refusal::NotAccepted(_)) => {
+                Err(Refusal::Locked(id)) => assert!(locked_within(&doc, id), "{case}"),
+                Err(Refusal::ClippingPath(id)) => assert!(clipping_path(&doc, id), "{case}"),
+                Err(Refusal::TargetLocked(id)) => assert!(locked_within(&doc, id), "{case}: {id:?} locked"),
+                Err(Refusal::NotAccepted(id)) => {
+                    assert!(
+                        doc.node(id).is_some_and(|n| matches!(n.kind, vectorcraft_doc::NodeKind::Layer { .. })),
+                        "{case}: only a layer is turned away"
+                    )
                 }
-                Err(other) => panic!("{m:?} at {gap}: {other:?}"),
+                Err(Refusal::ChangesClipping(_)) => {
+                    let clips = |o: Option<NodeId>| o.map(|o| clip_context(&doc, doc.parent_of(o)));
+                    assert!(
+                        clips(prev).is_some_and(|c| c != before) || clips(next).is_some_and(|c| c != before),
+                        "{case}: what clips it would change"
+                    );
+                }
+                Err(Refusal::InsideObject) => {
+                    let between = |k: usize| plan.units.get(k.wrapping_sub(1)).zip(plan.units.get(k)).is_some_and(|(a, b)| mover(a) == mover(b));
+                    assert!(between(gap), "{case}: between two parts of one object");
+                }
+                Err(Refusal::NoChange) => {
+                    // At its own place, or beside an object it already sits beside in the stack.
+                    let (siblings, at) = place_in_stack(&doc, *m);
+                    let next_to = |o: Option<NodeId>| o.is_some_and(|o| [at.wrapping_sub(1), at + 1].iter().any(|k| siblings.get(*k) == Some(&o)));
+                    assert!((first..=last + 1).contains(&gap) || next_to(prev) || next_to(next), "{case}: it is there already");
+                }
+                Err(other) => panic!("{case}: {other:?}"),
             }
         }
     }
-    assert!(moved > 20, "{moved} drops made");
+    // The fixtures' drops that go through (the number they make: a change in where a drop may go
+    // shows here).
+    assert_eq!(moved, DROPS_MADE, "drops made");
 }
+
+/// How many single-object drops at every gap of `fx::structures` go through.
+const DROPS_MADE: usize = 27;
 
 #[test]
 fn the_gaps_sew_earlier_later_first_and_last_try() {

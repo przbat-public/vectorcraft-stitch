@@ -376,6 +376,10 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context, req: &ControlReques
             if let Some(v) = p.get("controlBar").and_then(Value::as_bool) {
                 app.ui.control_bar = v;
             }
+            // VectorCraft Stitch: the active document's stitch view.
+            if let Some(on) = p.get("stitchPreview").and_then(Value::as_bool) {
+                r = app.run("view.stitchPreview", json!({"on": on}));
+            }
             if p.get("closePanel").is_some() {
                 app.ui.open_panel = None;
             }

@@ -6,10 +6,12 @@
 //! - [`plan_worker`]: the stitch preview's planning thread.
 //! - [`stitch_preview`]: when the preview plans, and what it shows meanwhile.
 //! - [`stitch_layer`]: the canvas in the stitch view.
+//! - [`menu`]: View › Stitch Preview, its options, and the document tab's mode.
 //! - [`text`]: the embroidery interface's words, in the catalogues' `embroidery` context
 //!   ([`crate::et!`], [`crate::etn!`]).
 //! - [`render_stitches`]: the control channel's picture of the stitches.
 
+pub mod menu;
 pub mod numbers;
 pub mod plan_worker;
 pub mod stitch_layer;

@@ -1719,6 +1719,9 @@ fn go_to_artboard(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> 
 
 /// Checked state for toggle items.
 pub fn checked(app: &VectorcraftApp, id: &str, p: &Value) -> Option<bool> {
+    if let Some(on) = crate::embroidery::menu::checked(app, id) {
+        return Some(on);
+    }
     if id == "app.language" {
         let lang = p.get("lang").and_then(Value::as_str).unwrap_or("");
         let pref = app.session.prefs.interface_language.as_str();
@@ -2812,6 +2815,9 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Outline", "view.outline"),
                 c("Overprint Preview", "view.overprintPreview"),
                 c("Pixel Preview", "view.pixelPreview"),
+                // VectorCraft Stitch: View › Stitch Preview and its options.
+                crate::embroidery::menu::stitch_preview(),
+                crate::embroidery::menu::stitch_preview_options(),
                 c("Trim View", "view.trimView"),
                 c("Presentation Mode", "view.presentation"),
                 sub(

@@ -64,3 +64,49 @@ fn an_export_from_the_app_gives_the_preview_its_options() {
     let ours = EmbroideryOptions::from_json(&json!({"spacing": 0.5})).unwrap();
     assert_eq!(app.session.stitch_preview_options(uid), (ours, OptionsSource::Document));
 }
+
+/// View › Stitch Preview follows Pixel Preview, with its options in a submenu; their checkmarks
+/// follow the active document's stitch view; ⌘E toggles it; the tab says "Stitches" while the
+/// canvas shows them; `ui.set {stitchPreview}` sets it.
+#[test]
+fn the_view_menu_the_tab_and_the_control_channel_reach_the_stitch_view() {
+    use crate::menus::{Item, checked, menu_tree};
+    let tree = menu_tree();
+    let view = &tree.iter().find(|(name, _)| *name == "View").unwrap().1;
+    let ids: Vec<&str> = view.iter().filter_map(|i| if let Item::Cmd(_, id, _) = i { Some(*id) } else { None }).collect();
+    let at = ids.iter().position(|id| *id == "view.pixelPreview").unwrap();
+    assert_eq!(ids.get(at + 1), Some(&"view.stitchPreview"), "{ids:?}");
+    let options = view
+        .iter()
+        .find_map(|i| match i {
+            Item::Sub("Stitch Preview Options", items) => Some(items),
+            _ => None,
+        })
+        .unwrap();
+    let options: Vec<&str> = options.iter().filter_map(|i| if let Item::Cmd(_, id, _) = i { Some(*id) } else { None }).collect();
+    assert_eq!(options, ["view.stitchPreview.jumps", "view.stitchPreview.needlePoints", "view.stitchPreview.artwork"]);
+    let sc = crate::shortcuts::all_shortcuts().into_iter().find(|(_, id, _)| *id == "view.stitchPreview").map(|(sc, ..)| sc);
+    assert_eq!(sc, crate::shortcuts::parse("Cmd+E"));
+
+    let (mut app, tx) = controlled();
+    app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    app.run("shape.rectangle", json!({"x": 20, "y": 20, "width": 60, "height": 60})).unwrap();
+    let none = Value::Null;
+    assert_eq!(checked(&app, "view.stitchPreview", &none), Some(false));
+    assert_eq!(checked(&app, "view.stitchPreview.jumps", &none), Some(true));
+    let title = |app: &VectorcraftApp| {
+        let d = app.session.active().unwrap();
+        crate::chrome::tab_title(d, 1.0, app.ui.view.outline, crate::embroidery::menu::shows_stitches(app, d))
+    };
+    assert!(title(&app).ends_with("(RGB/Preview)"), "{}", title(&app));
+    assert_eq!(request(&mut app, &tx, "ui.set", json!({"stitchPreview": true}))["ok"], true);
+    assert_eq!(checked(&app, "view.stitchPreview", &none), Some(true));
+    assert!(title(&app).ends_with("(RGB/Stitches)"), "{}", title(&app));
+    app.run("view.stitchPreview.artwork", json!({})).unwrap();
+    assert_eq!(checked(&app, "view.stitchPreview.artwork", &none), Some(true));
+    // With Outline on too, the stitches are still what the canvas shows.
+    app.run("view.outline", json!({})).unwrap();
+    assert!(title(&app).ends_with("(RGB/Stitches)"), "{}", title(&app));
+    assert_eq!(request(&mut app, &tx, "ui.set", json!({"stitchPreview": false}))["ok"], true);
+    assert!(title(&app).ends_with("(RGB/Outline)"), "{}", title(&app));
+}

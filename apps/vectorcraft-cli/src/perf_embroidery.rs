@@ -58,8 +58,16 @@ const RUNS: usize = 3;
 /// How many times each drawing row is drawn (the median is reported).
 const DRAW_RUNS: usize = 5;
 
+/// The synthetic documents whose plans the scene rows build scenes of: 1,000 paths (about 90,000
+/// stitches), 5,000 (about 450,000) and 22,000 (about 2 million, the most a design may have).
+const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
+
+/// How long the cancel row lets the 20 rings plan before it cancels them, milliseconds: inside
+/// their one unit, which takes about half a second.
+const CANCEL_AFTER_MS: u64 = 50;
+
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 25] = [
+pub const ROWS: [&str; 31] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -85,12 +93,18 @@ pub const ROWS: [&str; 25] = [
     "stitches: draw 100,000 at 400%",
     "stitches: draw 500,000 at fit",
     "stitches: draw 2,000,000 at fit",
+    "stitch scene: build, 1,000 paths",
+    "stitch scene: build, 5,000 paths",
+    "stitch scene: build, 22,000 paths",
+    "preview: nudge to frame, 1,000 paths",
+    "preview: nudge to frame, a drop shadow",
+    "preview: cancel, 20 rings in one fill",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`]: estimates.
-const BUDGETS: [f64; 25] = [
+const BUDGETS: [f64; 31] = [
     400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 100.0, 400.0, 4000.0, 50.0, 20.0,
-    50.0, 16.0, 100.0, 1000.0,
+    50.0, 16.0, 100.0, 1000.0, 5.0, 25.0, 50.0, 100.0, 100.0, 100.0,
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -234,6 +248,12 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.push(draw(&hundred, ZOOMED, None));
     ms.push(draw(&stitch_picture(500_000), FIT, None));
     ms.push(draw(&stitch_picture(2_000_000), FIT, None));
+    for paths in SCENE_PATHS {
+        ms.push(scene_build(&synthetic(paths)?)?);
+    }
+    ms.push(nudge_to_frame(&doc, false)?);
+    ms.push(nudge_to_frame(&doc, true)?);
+    ms.push(cancel_latency(&one_fill(rings(20), FillRule::EvenOdd))?);
     Ok(ROWS.iter().zip(ms).zip(BUDGETS).map(|((name, ms), budget)| (*name, ms, budget)).collect())
 }
 
@@ -256,6 +276,112 @@ pub fn report(row: fn(&str, f64, f64, bool) -> String) -> Result<(), String> {
         outln!("{}", row(name, ms, budget, ms <= budget));
     }
     if over == 0 { Ok(()) } else { Err(format!("{over} embroidery budget(s) exceeded")) }
+}
+
+/// Milliseconds to build the stitch scene of `doc`'s plan (planned once before), the median of
+/// [`DRAW_RUNS`].
+fn scene_build(doc: &Document) -> Result<f64, String> {
+    let mut s = fresh(doc);
+    let plan = s.embroidery_plan(&vectorcraft_engine::EmbroideryOptions::default()).map_err(err)?;
+    let mut samples = Vec::with_capacity(DRAW_RUNS);
+    for _ in 0..DRAW_RUNS {
+        let t = Instant::now();
+        drop(vectorcraft_engine::cmd::embroidery::scene::scene(&plan));
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    Ok(middle(samples))
+}
+
+/// Milliseconds from moving one object 0.5 mm to the stitch preview's frame of the design as it is
+/// then: the plan (its unchanged units kept), its scene and a frame at fit, the median of
+/// [`DRAW_RUNS`]. With `shadow`, another object has a drop shadow (its appearance is expanded on a
+/// copy of the document at every plan).
+fn nudge_to_frame(doc: &Document, shadow: bool) -> Result<f64, String> {
+    let opts = vectorcraft_engine::EmbroideryOptions::default();
+    let mut s = fresh(doc);
+    let order = s.execute("embroidery.sequence", &json!({})).map_err(err)?;
+    let id = |k: usize| order["blocks"].get(k).and_then(|b| b["units"].get(0)).and_then(|u| u["id"].as_u64());
+    let Some(moved) = id(0) else { return Err("embroidery: the document has nothing to move".into()) };
+    if shadow {
+        let other = id(1).ok_or("embroidery: the synthetic document has too few objects")?;
+        s.execute("effect.apply", &json!({"effect": "stylize.dropShadow", "ids": [other]})).map_err(err)?;
+    }
+    s.embroidery_plan(&opts).map_err(err)?;
+    let mut r = LineRenderer::new();
+    let (w, h) = CANVAS;
+    let mut samples = Vec::with_capacity(DRAW_RUNS);
+    for k in 0..DRAW_RUNS {
+        let dx = if k % 2 == 0 { NUDGE_MM } else { -NUDGE_MM } * PT_PER_MM;
+        s.execute("object.move", &json!({"ids": [moved], "dx": dx, "dy": 0})).map_err(err)?;
+        let t = Instant::now();
+        let planned = s.embroidery_planner().and_then(|p| p.planned(&opts)).map_err(err)?;
+        let scene = planned.scene();
+        let (style, view) = framed(scene.picture(), FIT);
+        let style = LineStyle { colors: scene.thread_colors(), ..style };
+        drop(r.render(scene.picture(), w, h, view, &style));
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    Ok(middle(samples))
+}
+
+/// `vectorcraft-cli bench FILE`'s stitch preview line for a design to stitch: its scene's build
+/// and a frame at fit (the drawing rows' canvas), and from moving one object 0.5 mm to the frame of
+/// the design then (plan, scene and frame); each the median of `runs` (at least one). `None` when
+/// the document has nothing to stitch.
+pub fn preview_line(doc: &Document, runs: usize) -> Option<String> {
+    let opts = vectorcraft_engine::EmbroideryOptions::default();
+    let mut s = fresh(doc);
+    let planned = match s.embroidery_planner().and_then(|p| p.planned(&opts)) {
+        Ok(p) => p,
+        Err(e) => return Some(format!("  stitch preview: {e}")),
+    };
+    planned.plan.units.first()?;
+    let (mut built, mut frames) = (Vec::new(), Vec::new());
+    let mut r = LineRenderer::new();
+    let (w, h) = CANVAS;
+    for _ in 0..runs.max(1) {
+        let t = Instant::now();
+        let scene = vectorcraft_engine::cmd::embroidery::scene::scene(&planned.plan);
+        built.push(t.elapsed().as_secs_f64() * 1000.0);
+        let (style, view) = framed(scene.picture(), FIT);
+        let style = LineStyle { colors: scene.thread_colors(), ..style };
+        let t = Instant::now();
+        drop(r.render(scene.picture(), w, h, view, &style));
+        frames.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    let edited = match nudge_to_frame(doc, false) {
+        Ok(ms) => format!("{ms:.1} ms"),
+        Err(e) => e,
+    };
+    Some(format!(
+        "  stitch preview: scene {:.2} ms, frame at fit {:.1} ms, after moving one object to its frame {edited}",
+        middle(built),
+        middle(frames)
+    ))
+}
+
+/// Milliseconds a plan of `doc` takes to stop once cancelled [`CANCEL_AFTER_MS`] after it started
+/// (on another thread, as the stitch preview's worker plans), the median of [`RUNS`].
+fn cancel_latency(doc: &Document) -> Result<f64, String> {
+    let mut samples = Vec::with_capacity(RUNS);
+    for _ in 0..RUNS {
+        let mut s = fresh(doc);
+        let planner = s.embroidery_planner().map_err(err)?;
+        let token = vectorcraft_engine::cancel::CancelToken::new();
+        let worker_token = token.clone();
+        let worker = std::thread::spawn(move || {
+            vectorcraft_engine::cancel::scope(&worker_token, None, || planner.plan(&vectorcraft_engine::EmbroideryOptions::default()).is_err())
+        });
+        std::thread::sleep(std::time::Duration::from_millis(CANCEL_AFTER_MS));
+        let t = Instant::now();
+        token.cancel();
+        let cancelled = worker.join().map_err(|_| "the plan panicked".to_string())?;
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
+        if !cancelled {
+            return Err(format!("the plan finished within {CANCEL_AFTER_MS} ms, before it was cancelled: nothing to measure"));
+        }
+    }
+    Ok(middle(samples))
 }
 
 /// The canvas the drawing rows draw on, device pixels: a 15-inch laptop's retina window.

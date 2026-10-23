@@ -269,13 +269,19 @@ pub struct StitchPreview {
     pub(crate) log: Log,
 }
 
-/// The scheduler's record for the tests: the jobs sent (their key, and whether they plan), and the
-/// plans taken in (their ticket, and whether its job was cancelled then).
+/// The scheduler's record for the tests: the jobs sent (their ticket, key, and whether they plan),
+/// the plans taken in (the ticket of the step, the ticket of the job under way it was taken for, and
+/// whether that job was cancelled then), the jobs cancelled, and a plan time to keep in place of the
+/// one measured (so a test pins a design light or heavy, whatever the machine).
 #[cfg(test)]
 #[derive(Default)]
 pub(crate) struct Log {
-    pub(crate) sent: Vec<(EmbroideryPlanKey, bool)>,
-    pub(crate) taken: Vec<(u64, bool)>,
+    pub(crate) sent: Vec<(u64, EmbroideryPlanKey, bool)>,
+    pub(crate) taken: Vec<(u64, u64, bool)>,
+    /// Each job cancelled, and how many plans had been taken in by then (a job's plan may come in
+    /// before its replies are cancelled).
+    pub(crate) cancelled: Vec<(u64, usize)>,
+    pub(crate) pinned_ms: Option<f64>,
 }
 
 impl StitchPreview {
@@ -386,6 +392,8 @@ impl StitchPreview {
     fn cancel(&mut self) {
         if let Some(f) = self.in_flight.take() {
             f.progress.cancel();
+            #[cfg(test)]
+            self.log.cancelled.push((f.ticket, self.log.taken.len()));
         }
     }
 
@@ -401,13 +409,17 @@ impl StitchPreview {
                 match d.outcome {
                     Outcome::Planned(planned) => {
                         #[cfg(test)]
-                        self.log.taken.push((f.ticket, f.progress.cancelled()));
+                        self.log.taken.push((d.ticket, f.ticket, f.progress.cancelled()));
                         plan_in = true;
                         let replies = doc.shown.take().map(|s| s.replies).unwrap_or_default();
                         doc.shown = Some(Shown { key: f.key.clone(), planned, document: f.document.clone(), replies });
                         doc.failed = None;
                         if d.walked {
                             doc.plan_ms = Some(d.ms);
+                            #[cfg(test)]
+                            if let Some(ms) = self.log.pinned_ms {
+                                doc.plan_ms = Some(ms);
+                            }
                         }
                     }
                     Outcome::Reply(k, result) => {
@@ -421,6 +433,10 @@ impl StitchPreview {
                         doc.failed = Some((f.key.clone(), error));
                         if d.walked {
                             doc.plan_ms = Some(d.ms);
+                            #[cfg(test)]
+                            if let Some(ms) = self.log.pinned_ms {
+                                doc.plan_ms = Some(ms);
+                            }
                         }
                     }
                     Outcome::Cancelled => {}
@@ -533,7 +549,7 @@ impl StitchPreview {
         let progress = Progress::new();
         let sent = queries.iter().map(|q| with_options(q, &opts)).collect();
         #[cfg(test)]
-        self.log.sent.push((key.clone(), plans));
+        self.log.sent.push((ticket, key.clone(), plans));
         let document = planner.document().clone();
         if plans && let Some(doc) = self.docs.get_mut(&uid) {
             doc.sent_a_plan = true;

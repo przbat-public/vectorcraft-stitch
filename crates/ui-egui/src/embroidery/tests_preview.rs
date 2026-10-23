@@ -80,11 +80,18 @@ fn edit(app: &mut VectorcraftApp, rng: &mut Lcg) {
     };
 }
 
-/// Random edits at random times with the stitch view on, then frames until the plan shown is
-/// fresh: it is the final document's, and equals a fresh plan of it.
-fn random_edits(threaded: bool, seed: u64) {
+/// A design planned on every change, and one that waits for the document to rest, whatever the
+/// machine measures (milliseconds a plan takes, kept in place of the time measured).
+const LIGHT_MS: f64 = 1.0;
+const HEAVY_MS: f64 = 1000.0;
+
+/// Random edits at random times with the stitch view on, its design pinned light or heavy
+/// (`plan_ms`), then frames until the plan shown is fresh: it is the final document's, and equals
+/// a fresh plan of it.
+fn random_edits(threaded: bool, seed: u64, plan_ms: f64) {
     let ctx = egui::Context::default();
     let mut app = app();
+    app.embroidery.preview.log.pinned_ms = Some(plan_ms);
     if threaded {
         let Some(worker) = PlanWorker::start(&ctx) else { return };
         app.embroidery.preview = StitchPreview::with_runner(Box::new(Driver::Thread(worker)));
@@ -112,24 +119,39 @@ fn random_edits(threaded: bool, seed: u64) {
     fresh.add_document(app.session.doc().unwrap().doc.as_ref().clone(), None);
     assert_eq!(*shown.planned.plan, *fresh.embroidery_plan(&EmbroideryOptions::default()).unwrap(), "equal to a fresh plan of it");
     let log = &app.embroidery.preview.log;
-    assert!(log.taken.iter().all(|(_, cancelled)| !cancelled), "a cancelled job's plan was shown: {:?}", log.taken);
-    let planned: Vec<&vectorcraft_engine::EmbroideryPlanKey> = log.sent.iter().filter(|(_, plans)| *plans).map(|(k, _)| k).collect();
-    // A state is planned again only after another (an undo back to it: the plan remembered).
-    assert!(planned.windows(2).all(|w| w[0] != w[1]), "one state planned twice in a row");
+    // Every plan taken in was the job's under way when it came, and of no job cancelled before.
+    let cancelled_before = |k: usize, ticket: u64| log.cancelled.iter().any(|(t, at)| *t == ticket && *at <= k);
+    let wrong: Vec<&(u64, u64, bool)> = log
+        .taken
+        .iter()
+        .enumerate()
+        .filter(|(k, (done, flying, cancelled))| done != flying || *cancelled || cancelled_before(*k, *done))
+        .map(|(_, t)| t)
+        .collect();
+    assert!(wrong.is_empty(), "plans taken in for another job, or a cancelled one: {wrong:?}");
+    let planned: Vec<(u64, &vectorcraft_engine::EmbroideryPlanKey)> =
+        log.sent.iter().filter(|(_, _, plans)| *plans).map(|(t, k, _)| (*t, k)).collect();
+    // A state is planned again only after another (an undo back to it: the plan remembered), or
+    // after its own job was cancelled.
+    assert!(planned.windows(2).all(|w| w[0].1 != w[1].1 || log.cancelled.iter().any(|(t, _)| *t == w[0].0)), "one state planned twice in a row");
     assert!(planned.len() <= EDITS + 1, "at most one plan per edit: {}", planned.len());
 }
 
 #[test]
 fn after_random_edits_the_plan_shown_is_the_final_documents_in_line() {
-    for seed in [1, 7, 42] {
-        random_edits(false, seed);
+    for plan_ms in [LIGHT_MS, HEAVY_MS] {
+        for seed in [1, 7, 42] {
+            random_edits(false, seed, plan_ms);
+        }
     }
 }
 
 #[test]
 fn after_random_edits_the_plan_shown_is_the_final_documents_on_the_thread() {
-    for seed in [3, 11] {
-        random_edits(true, seed);
+    for plan_ms in [LIGHT_MS, HEAVY_MS] {
+        for seed in [3, 11] {
+            random_edits(true, seed, plan_ms);
+        }
     }
 }
 

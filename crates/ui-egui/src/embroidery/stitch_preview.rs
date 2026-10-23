@@ -379,6 +379,10 @@ impl StitchPreview {
     /// For how long, seconds, document `uid`'s stitches shown have not been of it as it is (a newer
     /// plan waits or is made): `None` while they are, or it can't be planned.
     pub fn out_of_date_for(&self, uid: u64, now: f64) -> Option<f64> {
+        // From the poll that took the failure in, not from the scheduling after it.
+        if self.failed(uid) {
+            return None;
+        }
         self.docs.get(&uid)?.stale_since.map(|since| now - since)
     }
 

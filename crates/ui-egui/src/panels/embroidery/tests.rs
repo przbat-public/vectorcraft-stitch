@@ -199,6 +199,7 @@ fn planning_with_its_progress_then_a_failure_over_the_last_stitches() {
     let words = frame(&mut app, &ctx, 1.2);
     assert!(has(&words, "Can't plan the stitches:") && has(&words, "Change the design"), "{words:?}");
     assert!(has(&words, "2 thread blocks · "), "the last stitches stay: {words:?}");
+    assert!(!has(&words, "Updating"), "nothing is planned meanwhile, from the first frame that says why: {words:?}");
 }
 
 /// Screen readers find the tabs as tabs, the open one selected; a click opens the other.

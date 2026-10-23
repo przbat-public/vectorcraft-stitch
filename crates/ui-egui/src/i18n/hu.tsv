@@ -5460,3 +5460,8 @@ embroidery	{index} of {count}	{index}/{count}
 @msg	no such finding in the check	nincs ilyen találat az ellenőrzésben
 	Show Check Marks	Ellenőrzési jelölések megjelenítése
 @msg	on: true or false	on: true vagy false
+embroidery	Stitch lengths	Öltéshosszak
+embroidery	Median: {value} mm	Medián: {value} mm
+embroidery	Too long	Túl hosszú
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	{value} mm fölött: {stitches}

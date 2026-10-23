@@ -15,6 +15,7 @@
 //!   it has none to point at; their stitches stand out on the canvas for a moment. What was shown
 //!   last is the tab's focus, which Next and Previous Finding step through (`embroidery.nextHit`,
 //!   `embroidery.previousHit`), never on a check of an older plan.
+//! - Under the rules, the stitch lengths' chart ([`super::lengths`]).
 //! - The check is asked for only while the tab is open ([`super::queries`]); a newer plan's check
 //!   replaces the last, which stays dimmed until then.
 
@@ -125,6 +126,8 @@ pub fn query(state: &CheckState, uid: u64) -> Query {
 pub struct Shown<'a> {
     pub uid: u64,
     pub reply: Option<(&'a Result<Value, String>, bool)>,
+    /// The design's figures (`embroidery.stats`), for the stitch-length chart.
+    pub stats: Option<&'a Value>,
     pub stale: bool,
 }
 
@@ -495,6 +498,11 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
             row(app, ui, rule, format_label(format), stale, doc.as_deref(), focus.as_ref(), &mut acts);
         }
         ui.add_space(8.0);
+        if let Some(stats) = shown.stats {
+            let too_long = rule_of(reply, "stitchTooLong").and_then(|r| r["threshold"].as_f64());
+            super::lengths::show(ui, stats, too_long, stale);
+            ui.add_space(8.0);
+        }
         not_checked(ui, reply, &t);
     });
     for act in acts {

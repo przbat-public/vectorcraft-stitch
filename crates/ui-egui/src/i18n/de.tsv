@@ -5049,3 +5049,8 @@ embroidery	{index} of {count}	{index} von {count}
 @msg	no such finding in the check	diesen Befund gibt es in der Prüfung nicht
 	Show Check Marks	Prüfmarkierungen einblenden
 @msg	on: true or false	on: true oder false
+embroidery	Stitch lengths	Stichlängen
+embroidery	Median: {value} mm	Median: {value} mm
+embroidery	Too long	Zu lang
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Über {value} mm: {stitches}

@@ -5380,3 +5380,8 @@ embroidery	{index} of {count}	{index} / {count}
 @msg	no such finding in the check	შემოწმებაში ასეთი აღმოჩენა არ არის
 	Show Check Marks	შემოწმების ნიშნების ჩვენება
 @msg	on: true or false	on: true ან false
+embroidery	Stitch lengths	ნაკერების სიგრძეები
+embroidery	Median: {value} mm	მედიანა: {value} მმ
+embroidery	Too long	ზედმეტად გრძელი
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} მმ: {stitches}
+embroidery	Over {value} mm: {stitches}	{value} მმ-ზე მეტი: {stitches}

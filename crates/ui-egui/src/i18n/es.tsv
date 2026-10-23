@@ -5415,3 +5415,8 @@ embroidery	{index} of {count}	{index} de {count}
 @msg	no such finding in the check	no existe ese hallazgo en la comprobación
 	Show Check Marks	Mostrar marcas de comprobación
 @msg	on: true or false	on: true o false
+embroidery	Stitch lengths	Largos de puntada
+embroidery	Median: {value} mm	Mediana: {value} mm
+embroidery	Too long	Demasiado largas
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Más de {value} mm: {stitches}

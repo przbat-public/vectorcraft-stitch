@@ -5500,3 +5500,8 @@ embroidery	{index} of {count}	{index} van {count}
 @msg	no such finding in the check	deze bevinding komt niet voor in de controle
 	Show Check Marks	Controlemarkeringen tonen
 @msg	on: true or false	on: true of false
+embroidery	Stitch lengths	Steeklengtes
+embroidery	Median: {value} mm	Mediaan: {value} mm
+embroidery	Too long	Te lang
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Boven {value} mm: {stitches}

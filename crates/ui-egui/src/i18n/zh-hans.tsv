@@ -5310,3 +5310,8 @@ embroidery	{index} of {count}	第 {index} 个，共 {count} 个
 @msg	no such finding in the check	检查中没有此问题
 	Show Check Marks	显示检查标记
 @msg	on: true or false	on：true 或 false
+embroidery	Stitch lengths	针距分布
+embroidery	Median: {value} mm	中位数：{value} mm
+embroidery	Too long	过长
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm：{stitches}
+embroidery	Over {value} mm: {stitches}	超过 {value} mm：{stitches}

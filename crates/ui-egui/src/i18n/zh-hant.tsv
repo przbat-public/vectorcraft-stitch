@@ -4362,3 +4362,8 @@ embroidery	{index} of {count}	第 {index} 個，共 {count} 個
 @msg	no such finding in the check	檢查中沒有此問題
 	Show Check Marks	顯示檢查標記
 @msg	on: true or false	on：true 或 false
+embroidery	Stitch lengths	針距分布
+embroidery	Median: {value} mm	中位數：{value} mm
+embroidery	Too long	過長
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm：{stitches}
+embroidery	Over {value} mm: {stitches}	超過 {value} mm：{stitches}

@@ -5474,3 +5474,8 @@ embroidery	{index} of {count}	{index} z {count}
 @msg	no such finding in the check	takový nález v kontrole není
 	Show Check Marks	Zobrazit značky kontroly
 @msg	on: true or false	on: true, nebo false
+embroidery	Stitch lengths	Délky stehů
+embroidery	Median: {value} mm	Medián: {value} mm
+embroidery	Too long	Příliš dlouhé
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Nad {value} mm: {stitches}

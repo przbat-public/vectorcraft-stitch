@@ -24,6 +24,7 @@ use crate::VectorcraftApp;
 use crate::embroidery::plan_worker::Query;
 
 pub mod check;
+pub mod lengths;
 pub mod order;
 use crate::embroidery::stitch_preview::Freshness;
 use crate::theme::Tokens;
@@ -276,7 +277,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         (Tab::Order, Some(own)) => order::show(app, ui, order::Shown { generation, reply: &own, stats: stats.as_ref(), stale, plan }),
         (Tab::Check, _) => {
             let reply = checked.as_ref().map(|(r, current)| (r, *current));
-            check::show(app, ui, check::Shown { uid, reply, stale });
+            check::show(app, ui, check::Shown { uid, reply, stats: stats.as_ref(), stale });
         }
         (Tab::Order, None) => {}
     }

@@ -5325,3 +5325,8 @@ embroidery	{index} of {count}	{index} z {count}
 @msg	no such finding in the check	nie ma takiego znaleziska w kontroli
 	Show Check Marks	Pokaż znaczniki kontroli
 @msg	on: true or false	on: true albo false
+embroidery	Stitch lengths	Długości ściegów
+embroidery	Median: {value} mm	Mediana: {value} mm
+embroidery	Too long	Za długie
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Powyżej {value} mm: {stitches}

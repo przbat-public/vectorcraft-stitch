@@ -5067,3 +5067,8 @@ embroidery	{index} of {count}	{index} з {count}
 @msg	no such finding in the check	у перевірці немає такої знахідки
 	Show Check Marks	Показати позначки перевірки
 @msg	on: true or false	on: true або false
+embroidery	Stitch lengths	Довжини стібків
+embroidery	Median: {value} mm	Медіана: {value} мм
+embroidery	Too long	Задовгі
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
+embroidery	Over {value} mm: {stitches}	Понад {value} мм: {stitches}

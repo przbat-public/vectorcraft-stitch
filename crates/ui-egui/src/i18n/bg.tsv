@@ -5439,3 +5439,8 @@ embroidery	{index} of {count}	{index} от {count}
 @msg	no such finding in the check	няма такава находка в проверката
 	Show Check Marks	Показване на отметките от проверката
 @msg	on: true or false	on: true или false
+embroidery	Stitch lengths	Дължини на бодовете
+embroidery	Median: {value} mm	Медиана: {value} мм
+embroidery	Too long	Твърде дълги
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
+embroidery	Over {value} mm: {stitches}	Над {value} мм: {stitches}

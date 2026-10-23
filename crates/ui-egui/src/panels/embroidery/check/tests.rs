@@ -31,7 +31,7 @@ fn app_with_findings() -> VectorcraftApp {
 fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64) -> Vec<String> {
     let raw = egui::RawInput {
         time: Some(time),
-        screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(320.0, 900.0))),
+        screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(320.0, 1400.0))),
         ..Default::default()
     };
     let mut out = ctx.run_ui(raw, |ui| {
@@ -394,4 +394,76 @@ fn the_marks_drawn_and_hovered() {
     }
     assert!(circles >= 3 * marks(&app, pass).len(), "{circles}");
     assert!(words.iter().any(|w| w.starts_with("Warning: 3 or more layers") && w.contains("\nStitch ")), "{words:?}");
+}
+
+/// A stats reply with these counts in its 27 bins (half a millimetre each up to 12.5, then 12.7,
+/// then open), and median `median`.
+fn lengths_reply(counts: &[u64], median: Option<f64>) -> Value {
+    let edge = |k: usize| match k {
+        k if k <= 25 => Some(k as f64 * 0.5),
+        26 => Some(12.7),
+        _ => None,
+    };
+    let bins: Vec<Value> = (0..27).map(|k| json!({"from": edge(k), "to": edge(k + 1), "count": counts.get(k).copied().unwrap_or(0)})).collect();
+    json!({"lengths": {"bins": bins, "median": median}})
+}
+
+/// The chart drawn alone → its filled rectangles' colours and heights, and its words.
+fn chart(stats: &Value, too_long: Option<f64>) -> (Vec<(Color32, f32)>, Vec<String>) {
+    let ctx = egui::Context::default();
+    let mut out = ctx.run_ui(egui::RawInput::default(), |ui| super::super::lengths::show(ui, stats, too_long, false));
+    out.textures_delta.clear();
+    let (mut rects, mut words) = (vec![], vec![]);
+    let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
+    while let Some(s) = pending.pop() {
+        match s {
+            Shape::Vec(v) => pending.extend(v),
+            Shape::Rect(r) => rects.push((r.fill, r.rect.height())),
+            Shape::Text(t) => words.push(t.galley.text().to_string()),
+            _ => {}
+        }
+    }
+    (rects, words)
+}
+
+/// A bar per bin with stitches, as tall as its count against the tallest (never thinner than the
+/// least a bar is); the band from 12.7 mm, its bar in the warning colour; the median in the
+/// header; an empty design draws no chart.
+#[test]
+fn the_stitch_length_chart() {
+    use super::super::lengths::{CHART_PT, MIN_BAR_PT};
+    let t = Tokens::get(&egui::Context::default());
+    let mut counts = vec![0u64; 27];
+    counts[6] = 1000;
+    counts[7] = 1;
+    counts[26] = 4;
+    let (rects, words) = chart(&lengths_reply(&counts, Some(3.25)), Some(12.7));
+    let accent: Vec<f32> = rects.iter().filter(|(c, _)| *c == t.accent).map(|(_, h)| *h).collect();
+    assert_eq!(accent.len(), 2, "{rects:?}");
+    assert!(accent.contains(&CHART_PT) && accent.contains(&MIN_BAR_PT), "{accent:?}");
+    let warning = crate::embroidery::marks::colour(&t, Mark::Warning);
+    assert_eq!(rects.iter().filter(|(c, _)| *c == warning).count(), 1, "the band's bar");
+    assert!(words.iter().any(|w| w == "Too long"), "{words:?}");
+    assert!(words.iter().any(|w| w == "· Median: 3.3 mm" || w == "· Median: 3.2 mm"), "{words:?}");
+    for axis in ["0", "5", "10", "12.7"] {
+        assert!(words.iter().any(|w| w == axis), "{axis}: {words:?}");
+    }
+    // No band without the check's threshold.
+    let (rects, words) = chart(&lengths_reply(&counts, Some(3.25)), None);
+    assert!(!rects.iter().any(|(c, _)| *c == warning) && !words.iter().any(|w| w == "Too long"));
+    // Nothing to chart.
+    assert!(chart(&lengths_reply(&[], None), Some(12.7)).1.is_empty());
+}
+
+#[test]
+fn a_bins_words() {
+    use super::super::lengths::{Bin, bin_words};
+    assert_eq!(bin_words(&Bin { from: 0.5, to: Some(1.0), count: 3 }), "0.5–1 mm: 3 stitches");
+    assert_eq!(bin_words(&Bin { from: 12.7, to: None, count: 1 }), "Over 12.7 mm: 1 stitch");
+    // The real design's figures read back.
+    let mut app = app_with_findings();
+    let stats = app.session.execute("embroidery.stats", &json!({})).unwrap();
+    let (bins, median) = super::super::lengths::bins(&stats).unwrap();
+    assert_eq!((bins.len(), bins.last().unwrap().to), (27, None));
+    assert!(median.is_some_and(|m| m > 0.0));
 }

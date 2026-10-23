@@ -5083,3 +5083,8 @@ embroidery	{index} of {count}	{index} из {count}
 @msg	no such finding in the check	в проверке нет такой находки
 	Show Check Marks	Показать метки проверки
 @msg	on: true or false	on: true или false
+embroidery	Stitch lengths	Длины стежков
+embroidery	Median: {value} mm	Медиана: {value} мм
+embroidery	Too long	Слишком длинные
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
+embroidery	Over {value} mm: {stitches}	Больше {value} мм: {stitches}

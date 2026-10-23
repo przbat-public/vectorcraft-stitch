@@ -5067,3 +5067,8 @@ embroidery	{index} of {count}	{index} / {count}
 @msg	no such finding in the check	không có phát hiện này trong kết quả kiểm tra
 	Show Check Marks	Hiện dấu kiểm tra
 @msg	on: true or false	on: true hoặc false
+embroidery	Stitch lengths	Độ dài mũi
+embroidery	Median: {value} mm	Trung vị: {value} mm
+embroidery	Too long	Quá dài
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Trên {value} mm: {stitches}

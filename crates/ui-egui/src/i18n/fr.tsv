@@ -5473,3 +5473,8 @@ embroidery	{index} of {count}	{index} sur {count}
 @msg	no such finding in the check	ce constat ne figure pas dans la vérification
 	Show Check Marks	Afficher les repères de vérification
 @msg	on: true or false	on : true ou false
+embroidery	Stitch lengths	Longueurs de point
+embroidery	Median: {value} mm	Médiane : {value} mm
+embroidery	Too long	Trop longs
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm : {stitches}
+embroidery	Over {value} mm: {stitches}	Plus de {value} mm : {stitches}

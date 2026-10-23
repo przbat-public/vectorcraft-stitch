@@ -1618,6 +1618,12 @@ moment). What was shown last is the tab's focus: Next and Previous Finding (`emb
 hits, round from the end. They are off while the check is of an older plan than the document's,
 even in the moment after a change before a frame has drawn.
 
+**The stitch-length chart** (`panels/embroidery/lengths.rs`), under the rules: a bar per bin of
+`embroidery.stats`' `lengths`, as tall as its count against the tallest (at least 2 points for a bin
+with stitches, so that a few long stitches still show), the median in its header, the axis every
+5 mm. The "too long" band starts where the longest-stitch check's threshold is, 12.7 mm (the project
+owner's choice), so its bar counts that rule's hits exactly; hovering a bar says its range and count.
+
 **Check marks on the canvas** (`embroidery::check_marks`). While the Check tab shows, each listed hit
 of a rule that found an error or a warning is ringed on the canvas, in the art view and the stitch
 view alike: round its stitch (a stitch's hit gives where it starts and ends) or round its spot

@@ -5438,3 +5438,8 @@ embroidery	{index} of {count}	{index}/{count}
 @msg	no such finding in the check	tarkistuksessa ei ole tällaista löydöstä
 	Show Check Marks	Näytä tarkistusmerkit
 @msg	on: true or false	on: true tai false
+embroidery	Stitch lengths	Pistojen pituudet
+embroidery	Median: {value} mm	Mediaani: {value} mm
+embroidery	Too long	Liian pitkät
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Yli {value} mm: {stitches}

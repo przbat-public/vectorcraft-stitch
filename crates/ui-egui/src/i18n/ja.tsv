@@ -5127,3 +5127,8 @@ embroidery	{index} of {count}	{index} / {count}
 @msg	no such finding in the check	チェックにそのような検出箇所はありません
 	Show Check Marks	チェックの印を表示
 @msg	on: true or false	on: true または false
+embroidery	Stitch lengths	針目の長さ
+embroidery	Median: {value} mm	中央値: {value} mm
+embroidery	Too long	長すぎ
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	{value} mm 超: {stitches}

@@ -5457,3 +5457,8 @@ embroidery	{index} of {count}	{index} dari {count}
 @msg	no such finding in the check	tidak ada temuan itu dalam pemeriksaan
 	Show Check Marks	Tampilkan tanda pemeriksaan
 @msg	on: true or false	on: true atau false
+embroidery	Stitch lengths	Panjang jahitan
+embroidery	Median: {value} mm	Median: {value} mm
+embroidery	Too long	Terlalu panjang
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Di atas {value} mm: {stitches}

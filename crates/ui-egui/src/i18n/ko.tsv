@@ -5050,3 +5050,8 @@ embroidery	{index} of {count}	{index} / {count}
 @msg	no such finding in the check	검사에 그런 발견 항목이 없습니다
 	Show Check Marks	검사 표시 보기
 @msg	on: true or false	on: true 또는 false
+embroidery	Stitch lengths	땀 길이
+embroidery	Median: {value} mm	중앙값: {value}mm
+embroidery	Too long	너무 김
+embroidery	{from}–{to} mm: {stitches}	{from}–{to}mm: {stitches}
+embroidery	Over {value} mm: {stitches}	{value}mm 초과: {stitches}

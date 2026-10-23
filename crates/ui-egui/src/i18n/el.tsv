@@ -5426,3 +5426,8 @@ embroidery	{index} of {count}	{index} από {count}
 @msg	no such finding in the check	δεν υπάρχει τέτοιο εύρημα στον έλεγχο
 	Show Check Marks	Εμφάνιση σημαδιών ελέγχου
 @msg	on: true or false	on: true ή false
+embroidery	Stitch lengths	Μήκη βελονιών
+embroidery	Median: {value} mm	Διάμεσος: {value} mm
+embroidery	Too long	Πολύ μακριές
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Πάνω από {value} mm: {stitches}

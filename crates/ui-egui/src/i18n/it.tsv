@@ -5087,3 +5087,8 @@ embroidery	{index} of {count}	{index} di {count}
 @msg	no such finding in the check	questo rilievo non è presente nella verifica
 	Show Check Marks	Mostra i segni della verifica
 @msg	on: true or false	on: true o false
+embroidery	Stitch lengths	Lunghezze dei punti
+embroidery	Median: {value} mm	Mediana: {value} mm
+embroidery	Too long	Troppo lunghi
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Oltre {value} mm: {stitches}

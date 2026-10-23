@@ -5457,3 +5457,8 @@ embroidery	{index} of {count}	{index} af {count}
 @msg	no such finding in the check	kontrollen har intet sådant fund
 	Show Check Marks	Vis kontrolmærker
 @msg	on: true or false	on: true eller false
+embroidery	Stitch lengths	Stinglængder
+embroidery	Median: {value} mm	Median: {value} mm
+embroidery	Too long	For lange
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Over {value} mm: {stitches}

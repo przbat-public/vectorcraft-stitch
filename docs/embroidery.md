@@ -1597,8 +1597,10 @@ a pattern is edited. Once the new plan comes, a note over the list says what the
 (`reorder::explain`): where the object is sewn now, whether it joined others of its thread, the
 thread changes when their number changed, or that no stitch moved (objects of one thread still join
 a block sewn earlier when the objects moved lie apart from what they passed). Without a drag: the
-↑ and ↓ buttons on a lit row, the panel's ≡ menu, and the commands `embroidery.sewEarlier`,
-`sewLater`, `sewFirst` and `sewLast` (no default shortcuts).
+↑ and ↓ buttons on a lit row and the panel's ≡ menu, which work the move out on the plan the list
+shows, as a drop does, and are off while that plan is out of date (nothing is planned on the
+interface thread); and the commands `embroidery.sewEarlier`, `sewLater`, `sewFirst` and `sewLast`,
+which plan with the stitch preview's options unless given their own (no default shortcuts).
 
 **The Check tab** (`panels/embroidery/check.rs`) shows `embroidery.check`'s reply, asked for only
 while the tab is open, with the first 100 hits of each rule. Rules that found something come first

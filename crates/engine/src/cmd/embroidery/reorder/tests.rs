@@ -252,3 +252,30 @@ fn explaining_a_reorder() {
     assert_eq!(e.changes.0, 2);
     assert_eq!(e.moved.first().map(|m| (m.block, m.joined)), Some((1, true)), "joined the first red: {e:?}");
 }
+
+/// Without options of their own, the sew commands plan with the stitch preview's (the document's
+/// last embroidery export's), so that they move on the plan the Sewing order list shows: after the
+/// preview's plan, the command plans nothing more.
+#[test]
+fn the_sew_commands_plan_with_the_previews_options() {
+    let mut s = Session::new();
+    fx::blank(&mut runner(&mut s));
+    for k in 0..3 {
+        s.execute("select.none", &json!({})).unwrap();
+        fx::rect(&mut runner(&mut s), [fx::RED, fx::BLUE, fx::GREEN][k], 20.0 + 80.0 * k as f64, 20.0, 50.0, 50.0);
+    }
+    super::super::view::note_export(&mut s, "dst", &json!({"spacing": 0.5, "expand": 0.2}));
+    let uid = s.doc().unwrap().uid;
+    let (opts, _) = s.stitch_preview_options(uid);
+    assert_ne!(opts, Options::default());
+    let preview = s.embroidery_plan(&opts).unwrap();
+    let service = s.embroidery_plans.of(uid);
+    let walks = service.walks();
+    let second = preview.units.iter().map(mover).nth(1).unwrap();
+    s.execute("select.set", &json!({"ids": [second.0]})).unwrap();
+    s.execute("embroidery.sewFirst", &json!({})).unwrap();
+    assert_eq!(service.walks(), walks, "the preview's plan, not another");
+    // Options given are the command's own: one plan of the moved design, with them.
+    s.execute("embroidery.sewLast", &json!({"stitch": "running"})).unwrap();
+    assert_eq!(service.walks(), walks + 1);
+}

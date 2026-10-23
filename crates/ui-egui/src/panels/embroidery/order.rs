@@ -22,7 +22,7 @@ use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_engine::cmd::embroidery::order::{OrderBlock, OrderUnit, SewingOrder};
 use vectorcraft_engine::cmd::embroidery::plan::DesignPlan;
-use vectorcraft_engine::cmd::embroidery::reorder::{Explained, Place, RowMove, explain, movers_of, place, reason};
+use vectorcraft_engine::cmd::embroidery::reorder::{Explained, Place, RowMove, Step, explain, movers_of, place, reason, step_move};
 
 use crate::VectorcraftApp;
 use crate::embroidery::numbers;
@@ -211,7 +211,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
     let height = (ui.available_height() - footer_room - HINT).max(HEADER_ROW * 2.0);
     let mut clicked: Option<(Row, egui::Modifiers)> = None;
     let mut toggle: Option<usize> = None;
-    let mut step: Option<(&'static str, u64)> = None;
+    let mut step: Option<(Step, u64)> = None;
     let mut dropped: Option<RowMove> = None;
     let mut hint: Option<String> = None;
     let pointer = ui.input(|i| i.pointer.interact_pos());
@@ -286,21 +286,19 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                 if let (Row::Unit(b, u), true, true) = (row, lit, movable)
                     && let Some(unit) = order.blocks.get(*b).and_then(|b| b.units.get(*u))
                 {
-                    for (k, (icon, cmd, tip)) in [
-                        ("dc-arrow-up", "embroidery.sewEarlier", crate::et!("Sew Earlier")),
-                        ("dc-arrow-down", "embroidery.sewLater", crate::et!("Sew Later")),
-                    ]
-                    .into_iter()
-                    .enumerate()
+                    for (k, (icon, which, tip)) in
+                        [("dc-arrow-up", Step::Earlier, crate::et!("Sew Earlier")), ("dc-arrow-down", Step::Later, crate::et!("Sew Later"))]
+                            .into_iter()
+                            .enumerate()
                     {
                         let button = Rect::from_center_size(
                             pos2(rect.right() - 54.0 + 20.0 * k as f32, rect.top() + UNIT_ROW * 0.72),
                             vec2(STEP_BUTTON, STEP_BUTTON),
                         );
-                        let b = ui.interact(button, id.with(cmd), Sense::click()).on_hover_text(tip);
+                        let b = ui.interact(button, id.with(k), Sense::click()).on_hover_text(tip);
                         crate::icons::paint(ui, icon, button, if b.hovered() { t.text_strong } else { t.text_dim });
                         if b.clicked() {
-                            step = Some((cmd, unit.id));
+                            step = Some((which, unit.id));
                         }
                     }
                 }
@@ -336,10 +334,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
     if released {
         app.embroidery.order.drag = None;
     }
-    if let Some((cmd, id)) = step
-        && let Err(e) = app.run(cmd, json!({ "ids": [id] }))
-    {
-        app.status(crate::i18n::msg(&e));
+    if let Some((which, id)) = step {
+        step_selection(app, which, &[NodeId(id)]);
     }
     if let Some(block) = toggle
         && !app.embroidery.order.collapsed.remove(&block)
@@ -403,6 +399,30 @@ fn drop_rows(app: &mut VectorcraftApp, plan: &Arc<DesignPlan>, generation: u64, 
     let _ = app.run("select.set", json!({ "ids": ids }));
     app.embroidery.order.dropped = Some(Dropped { before: plan.clone(), generation, moved: m.ids });
     app.embroidery.order.note = None;
+}
+
+/// The plan the list shows and its generation, when objects can be moved on it: the plan of the
+/// document as it is (no change since, even one no frame has drawn yet), outside isolation and the
+/// mask and pattern edits. Sew Earlier, Later, First and Last from the panel are off otherwise.
+pub(crate) fn steppable(app: &VectorcraftApp) -> Option<(Arc<DesignPlan>, u64)> {
+    let st = app.session.active()?;
+    let preview = &app.embroidery.preview;
+    let shown = preview.shown(st.uid)?;
+    let fresh = preview.is_fresh(st.uid) && Arc::ptr_eq(&shown.document, &st.doc);
+    let free = st.isolation.is_none() && st.doc.mask_edit.is_none() && st.doc.pattern_edit.is_none();
+    (fresh && free).then(|| (shown.planned.plan.clone(), shown.planned.generation))
+}
+
+/// Sew Earlier, Later, First or Last from the panel (a lit row's ↑ or ↓, the ≡ menu) of the objects
+/// `ids`: worked out on the plan the list shows, as a drop is, and made as one; nothing is planned
+/// (the commands themselves plan, with the preview's options, for MCP and the control channel).
+pub(crate) fn step_selection(app: &mut VectorcraftApp, step: Step, ids: &[NodeId]) {
+    let Some((plan, generation)) = steppable(app) else { return };
+    let Some(doc) = app.session.active().map(|st| st.doc.clone()) else { return };
+    match step_move(&doc, &plan, ids, step) {
+        Ok(m) => drop_rows(app, &plan, generation, m),
+        Err(e) => app.status(crate::i18n::msg(e)),
+    }
 }
 
 /// The note over the list after a drop, once its plan comes: what the drop did ([`explain`]).

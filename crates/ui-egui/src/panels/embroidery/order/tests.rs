@@ -253,3 +253,32 @@ fn the_list_never_takes_the_plan_befores_order_for_the_new_ones() {
         now.blocks[0].units.iter().map(|u| u.id).collect::<Vec<_>>()
     );
 }
+
+/// Sew Earlier, Later, First and Last from the panel are worked out on the plan the list shows, as
+/// a drop is: one undo step, the moved object selected, nothing sent to plan; off while that plan
+/// is out of date (even before a frame has drawn the change), and so is the ≡ menu's.
+#[test]
+fn the_panels_steps_move_on_the_plan_shown() {
+    use vectorcraft_engine::cmd::embroidery::reorder::Step;
+    let mut app = app_with(4);
+    let ctx = egui::Context::default();
+    ready(&mut app, &ctx);
+    let order = order_of(&app);
+    let last = NodeId(order.blocks[1].units[1].id);
+    let sent = app.embroidery.preview.log.sent.len();
+    let undo = app.session.doc().unwrap().history.undo.len();
+    step_selection(&mut app, Step::First, &[last]);
+    assert_eq!(app.embroidery.preview.log.sent.len(), sent, "nothing sent to plan");
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
+    assert_eq!(app.session.doc().unwrap().selection.objects, [last]);
+    for t in [1.0, 1.05, 1.1, 1.2] {
+        frame(&mut app, &ctx, t, vec![]);
+    }
+    assert_eq!(order_of(&app).blocks[0].units[0].id, last.0);
+    // A change: off until its plan comes.
+    app.run("object.move", json!({"dx": 1, "dy": 0})).unwrap();
+    assert!(steppable(&app).is_none());
+    let undo = app.session.doc().unwrap().history.undo.len();
+    step_selection(&mut app, Step::Last, &[last]);
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo, "nothing moved on an out-of-date plan");
+}

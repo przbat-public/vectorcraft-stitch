@@ -19,6 +19,7 @@
 use egui::{Color32, CornerRadius, Rect, Sense, Stroke, StrokeKind, Ui, vec2};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use vectorcraft_engine::cmd::embroidery::reorder::Step;
 
 use crate::VectorcraftApp;
 use crate::embroidery::plan_worker::Query;
@@ -182,15 +183,17 @@ fn show_panel(app: &mut VectorcraftApp) -> Result<Value, String> {
 /// The panel's ≡ menu: the selection sewn earlier, later, first or last; the Sewing order's blocks
 /// collapsed or expanded; the next or previous finding of the check.
 pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
-    for (label, cmd) in [
-        (crate::et!("Sew Earlier"), "embroidery.sewEarlier"),
-        (crate::et!("Sew Later"), "embroidery.sewLater"),
-        (crate::et!("Sew First"), "embroidery.sewFirst"),
-        (crate::et!("Sew Last"), "embroidery.sewLast"),
+    // Worked out on the plan the list shows, as a drop is; off while that plan is out of date.
+    let selection = app.session.active().map(|st| st.selection.objects.clone()).unwrap_or_default();
+    let enabled = !selection.is_empty() && order::steppable(app).is_some();
+    for (label, step) in [
+        (crate::et!("Sew Earlier"), Step::Earlier),
+        (crate::et!("Sew Later"), Step::Later),
+        (crate::et!("Sew First"), Step::First),
+        (crate::et!("Sew Last"), Step::Last),
     ] {
-        let enabled = app.session.active().is_some_and(|st| !st.selection.objects.is_empty());
         if crate::widgets::menu_item_name(ui, label, enabled, false) {
-            crate::menus::invoke(app, cmd, json!({}));
+            order::step_selection(app, step, &selection);
         }
     }
     ui.separator();

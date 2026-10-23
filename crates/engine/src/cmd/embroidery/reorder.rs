@@ -338,33 +338,47 @@ pub fn reason(r: Refusal) -> &'static str {
     }
 }
 
-/// Sew Earlier, Later, First or Last: the objects `ids` names (default: the selection), each a
-/// selected group moving as one, go before the object sewn just before them, after the one sewn
-/// just after them, first or last, planned with the embroidery options in `p` → `{ids, target,
-/// place}` (`layer.move`'s params), one undo step named [`LABEL`].
+/// A Sew Earlier, Later, First or Last move of the objects `ids` (each a selected group moving as
+/// one) in `plan`'s sewing order: where they go, as a drop at the gap [`gap_for`] gives would go,
+/// or why they can't, as the message the commands and the panel give. Pure: the panel works it out
+/// on the plan its list shows, the commands on the plan they ask for.
+pub fn step_move(doc: &Document, plan: &DesignPlan, ids: &[NodeId], step: Step) -> std::result::Result<RowMove, &'static str> {
+    let movers = movers_of(doc, plan, ids);
+    let edge = match step {
+        Step::Earlier | Step::First => "the selection is sewn first already",
+        Step::Later | Step::Last => "the selection is sewn last already",
+    };
+    let gap = match gap_for(doc, plan, &movers, step) {
+        Some(g) => g,
+        None if movers.is_empty() => return Err(reason(Refusal::Nothing)),
+        None => return Err(edge),
+    };
+    place(doc, plan, &movers, gap).map_err(|r| match r {
+        Refusal::NoChange => edge,
+        r => reason(r),
+    })
+}
+
+/// Sew Earlier, Later, First or Last ([`step_move`]): the objects `ids` names (default: the
+/// selection), planned with the embroidery options in `p`, or, when it gives none, the stitch
+/// preview's (so that the move is made on the plan the Sewing order list shows, which the preview
+/// has made already) → `{ids, target, place}` (`layer.move`'s params), one undo step named
+/// [`LABEL`].
 fn sew(s: &mut Session, p: &Value, step: Step) -> Result<Value> {
     let cmd = step.id();
     let o = super::object(p, cmd)?;
-    let opts = super::options_in(&o, &["ids"], cmd)?;
+    let opts = if o.keys().any(|k| k != "ids") {
+        super::options_in(&o, &["ids"], cmd)?
+    } else {
+        let uid = s.doc()?.uid;
+        s.stitch_preview_options(uid).0
+    };
     let ids = match crate::cmd::ids_param(p, "ids") {
         Some(ids) => ids,
         None => s.doc()?.selection.objects.clone(),
     };
     let (plan, doc) = super::planned(s, &opts, false, cmd)?;
-    let movers = movers_of(&doc, &plan, &ids);
-    let edge = |step: Step| match step {
-        Step::Earlier | Step::First => crate::EngineError::Other("the selection is sewn first already".into()),
-        Step::Later | Step::Last => crate::EngineError::Other("the selection is sewn last already".into()),
-    };
-    let gap = match gap_for(&doc, &plan, &movers, step) {
-        Some(g) => g,
-        None if movers.is_empty() => return Err(crate::EngineError::Other(reason(Refusal::Nothing).into())),
-        None => return Err(edge(step)),
-    };
-    let row = place(&doc, &plan, &movers, gap).map_err(|r| match r {
-        Refusal::NoChange => edge(step),
-        r => crate::EngineError::Other(reason(r).into()),
-    })?;
+    let row = step_move(&doc, &plan, &ids, step).map_err(|e| crate::EngineError::Other(e.into()))?;
     s.execute("command.batch", &row.batch())?;
     Ok(row.params())
 }
@@ -377,7 +391,7 @@ pub(super) fn specs() -> Vec<CommandSpec> {
             "Sew Earlier",
             [],
             None,
-            "{ids?: [id…] (default: the selection), …the embroidery options} move the objects (a selected group as one) in the stacking order so that they are sewn before the object sewn just before them: just below it, in its parent, one undo step \"Change Sewing Order\"; refused, saying why, where a drop in the Embroidery panel's Sewing order list would be (into or out of a clip group, a lock, a clipping path, a run of an opened machine file alone, between two parts of one object) → {ids, target, place} (layer.move's params). Objects of one thread still join a block sewn earlier when nothing between lies under them, so a move may change no stitch",
+            "{ids?: [id…] (default: the selection), …the embroidery options (default: the stitch preview's, those of the document's last embroidery export: the plan the Embroidery panel's Sewing order list shows)} move the objects (a selected group as one) in the stacking order so that they are sewn before the object sewn just before them: just below it, in its parent, one undo step \"Change Sewing Order\"; refused, saying why, where a drop in the Embroidery panel's Sewing order list would be (into or out of a clip group, a lock, a clipping path, a run of an opened machine file alone, between two parts of one object) → {ids, target, place} (layer.move's params). Objects of one thread still join a block sewn earlier when nothing between lies under them, so a move may change no stitch",
             has_doc,
             |s, p| sew(s, p, Step::Earlier)
         ),

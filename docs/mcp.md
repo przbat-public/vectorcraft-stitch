@@ -4369,7 +4369,9 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   drop in the Sewing order list would be refused, so are they, saying why: into or out of a clip group (what is sewn
   would change), a locked object or layer, a clipping path, a run of an opened machine file alone, between two
   parts of one object. Objects of one thread still join a block sewn earlier when nothing between lies under them,
-  so a move may change no stitch.
+  so a move may change no stitch. Without embroidery options of their own they plan with the stitch preview's (the
+  document's last embroidery export's), so they move on the plan the Embroidery panel's Sewing order list shows, which
+  the preview has made already.
 
 The four read commands (threads, stats, sequence, check) take `selectedOnly` (the selected objects alone, as `document.export {selectedOnly}` writes them)
 and plan the document as the export does: an opacity mask's editing layer, which no export writes, is left out.

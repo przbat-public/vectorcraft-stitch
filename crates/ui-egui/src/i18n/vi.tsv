@@ -5051,3 +5051,7 @@ embroidery	No source gives a number to check these against.	Không nguồn nào 
 embroidery	Threads unlike the art's colour (over {value})	Chỉ khác màu hình vẽ (trên {value})
 embroidery	Largest difference: {value}	Chênh lệch lớn nhất: {value}
 embroidery	Block {block}: {thread}, {value}	Khối {block}: {thread}, {value}
+	Zoom to Box	Thu phóng vừa khung
+@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] theo điểm tài liệu, với right không trước left và bottom không trên top
+@msg	margin: screen points, 0 or more	margin: điểm màn hình, 0 trở lên
+@msg	no canvas is shown	không có khung vẽ nào được hiển thị

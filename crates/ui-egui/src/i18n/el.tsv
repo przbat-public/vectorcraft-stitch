@@ -5410,3 +5410,7 @@ embroidery	No source gives a number to check these against.	Καμία πηγή 
 embroidery	Threads unlike the art's colour (over {value})	Κλωστές που διαφέρουν από το χρώμα του γραφικού (πάνω από {value})
 embroidery	Largest difference: {value}	Μεγαλύτερη διαφορά: {value}
 embroidery	Block {block}: {thread}, {value}	Μπλοκ {block}: {thread}, {value}
+	Zoom to Box	Ζουμ σε πλαίσιο
+@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] σε στιγμές εγγράφου, με το right όχι πριν από το left και το bottom όχι πάνω από το top
+@msg	margin: screen points, 0 or more	margin: στιγμές οθόνης, 0 ή περισσότερες
+@msg	no canvas is shown	δεν εμφανίζεται καμβάς

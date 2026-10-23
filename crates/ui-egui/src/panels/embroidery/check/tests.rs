@@ -199,3 +199,25 @@ fn the_tab_in_polish() {
     assert!(!has(&words, "Art that isn't sewn") && !has(&words, "Not checked"), "{words:?}");
     assert!(has(&words, "0,75"), "{words:?}");
 }
+
+/// `view.zoomTo` (what Show zooms with) centres a box and fits it in the canvas less the margin; it
+/// refuses a box that isn't one.
+#[test]
+fn zoom_to_fits_a_box() {
+    let mut app = app_with_findings();
+    app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 600.0)));
+    let zoomed = app.run("view.zoomTo", json!({"rect": [100, 100, 200, 150], "margin": 50})).unwrap();
+    let v = app.view().unwrap();
+    assert_eq!((v.center.x, v.center.y), (150.0, 125.0));
+    // 700 points of width for 100 of box, 500 of height for 50: the width decides.
+    assert!((v.zoom - 7.0).abs() < 1e-9, "{}", v.zoom);
+    assert!((zoomed["zoom"].as_f64().unwrap() - 700.0).abs() < 1e-6);
+    // A point is fitted as a box a point wide, as the fit commands fit: 540 of 600 points high.
+    app.run("view.zoomTo", json!({"rect": [10, 10, 10, 10]})).unwrap();
+    assert_eq!(app.view().unwrap().zoom, 540.0);
+    for bad in [json!({"rect": [200, 100, 100, 150]}), json!({"rect": [0, 0, 1]}), json!({}), json!({"rect": [0, 0, 1, 1], "margin": -1})] {
+        assert!(app.run("view.zoomTo", bad.clone()).is_err(), "{bad}");
+    }
+    app.canvas_rect = None;
+    assert!(app.run("view.zoomTo", json!({"rect": [0, 0, 1, 1]})).is_err(), "no canvas");
+}

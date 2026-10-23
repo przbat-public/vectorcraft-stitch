@@ -4346,3 +4346,7 @@ embroidery	No source gives a number to check these against.	沒有來源給出�
 embroidery	Threads unlike the art's colour (over {value})	與圖稿顏色不符的線 (大於 {value})
 embroidery	Largest difference: {value}	最大差異：{value}
 embroidery	Block {block}: {thread}, {value}	第 {block} 塊：{thread}，{value}
+	Zoom to Box	縮放至框
+@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect：[left， top， right， bottom](文件點)，right 不小於 left，bottom 不小於 top
+@msg	margin: screen points, 0 or more	margin：螢幕點，0 或更大
+@msg	no canvas is shown	未顯示畫布

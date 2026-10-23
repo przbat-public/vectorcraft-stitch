@@ -5067,3 +5067,7 @@ embroidery	No source gives a number to check these against.	Ни один ист
 embroidery	Threads unlike the art's colour (over {value})	Нити, не похожие на цвет графики (больше {value})
 embroidery	Largest difference: {value}	Наибольшая разница: {value}
 embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}
+	Zoom to Box	Масштаб по рамке
+@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] в пунктах документа; right не левее left, bottom не выше top
+@msg	margin: screen points, 0 or more	margin: пункты экрана, 0 или больше
+@msg	no canvas is shown	холст не показан

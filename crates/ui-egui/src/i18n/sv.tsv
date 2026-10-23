@@ -5414,3 +5414,7 @@ embroidery	No source gives a number to check these against.	Ingen källa anger e
 embroidery	Threads unlike the art's colour (over {value})	Trådar som inte liknar grafikens färg (över {value})
 embroidery	Largest difference: {value}	Största skillnad: {value}
 embroidery	Block {block}: {thread}, {value}	Block {block}: {thread}, {value}
+	Zoom to Box	Zooma till ruta
+@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] i dokumentpunkter, med right inte före left och bottom inte ovanför top
+@msg	margin: screen points, 0 or more	margin: skärmpunkter, 0 eller mer
+@msg	no canvas is shown	ingen arbetsyta visas

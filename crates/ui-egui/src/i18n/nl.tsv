@@ -5484,3 +5484,7 @@ embroidery	No source gives a number to check these against.	Geen enkele bron gee
 embroidery	Threads unlike the art's colour (over {value})	Draden die afwijken van de kleur van de illustratie (boven {value})
 embroidery	Largest difference: {value}	Grootste verschil: {value}
 embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
+	Zoom to Box	Zoomen naar kader
+@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] in documentpunten, right niet vóór left en bottom niet boven top
+@msg	margin: screen points, 0 or more	margin: schermpunten, 0 of meer
+@msg	no canvas is shown	er wordt geen canvas weergegeven

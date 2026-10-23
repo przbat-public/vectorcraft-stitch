@@ -5034,3 +5034,7 @@ embroidery	No source gives a number to check these against.	이 항목을 검사
 embroidery	Threads unlike the art's colour (over {value})	아트워크 색과 다른 실({value} 초과)
 embroidery	Largest difference: {value}	최대 차이: {value}
 embroidery	Block {block}: {thread}, {value}	{block}번 블록: {thread}, {value}
+	Zoom to Box	상자에 맞게 확대/축소
+@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] (문서 포인트 단위, right는 left 이상, bottom은 top 이상)
+@msg	margin: screen points, 0 or more	margin: 화면 포인트 단위, 0 이상
+@msg	no canvas is shown	표시된 캔버스가 없습니다

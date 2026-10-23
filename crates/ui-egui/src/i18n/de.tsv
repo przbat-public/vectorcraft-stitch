@@ -5033,3 +5033,7 @@ embroidery	No source gives a number to check these against.	Keine Quelle nennt e
 embroidery	Threads unlike the art's colour (over {value})	Garne, die der Farbe der Grafik nicht gleichen (über {value})
 embroidery	Largest difference: {value}	Größter Unterschied: {value}
 embroidery	Block {block}: {thread}, {value}	Block {block}: {thread}, {value}
+	Zoom to Box	Auf Rahmen zoomen
+@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] in Dokumentpunkten, right nicht vor left und bottom nicht über top
+@msg	margin: screen points, 0 or more	margin: Bildschirmpunkte, 0 oder mehr
+@msg	no canvas is shown	keine Zeichenfläche angezeigt

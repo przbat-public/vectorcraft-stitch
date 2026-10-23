@@ -5374,3 +5374,7 @@ embroidery	No source gives a number to check these against.	Nenhuma fonte dá um
 embroidery	Threads unlike the art's colour (over {value})	Linhas diferentes da cor da arte (acima de {value})
 embroidery	Largest difference: {value}	Maior diferença: {value}
 embroidery	Block {block}: {thread}, {value}	Bloco {block}: {thread}, {value}
+	Zoom to Box	Zoom na caixa
+@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] em pontos do documento, com right não antes de left e bottom não acima de top
+@msg	margin: screen points, 0 or more	margin: pontos de tela, 0 ou mais
+@msg	no canvas is shown	nenhuma tela de desenho é exibida

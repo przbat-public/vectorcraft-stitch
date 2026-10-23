@@ -400,6 +400,11 @@ was left; `ui.embroideryPanel {tab?: "order"|"check"}` shows it at a tab and ans
 open tab as `ui.embroidery_panel`. The panel never plans: it asks the stitch preview for the plan and its tab's
 replies, so it shows what `ui.inspect.stitchPreview` says.
 
+`view.zoomTo {rect: [left, top, right, bottom], margin?}` centres a box of document points in the window and zooms
+so that it fills it less `margin` screen points on each side (default 30, as Fit Artboard in Window leaves), within
+the zoom's range, answering `{zoom}` (percent); a box with its right left of its left or its bottom above its top, or
+with a number that isn't finite, is refused, and so is a call before the canvas is first shown.
+
 Flattener Preview: `window.panel {panel: "flattenerPreview"}` shows the panel; `ui.flattenerPreview {highlight?,
 overprints?, preset?, options?, showOptions?}` sets it (a preset loads its options, `options` adjust them), shows it
 and refreshes its snapshot of the document, answering as `flattener.preview` does. `ui.inspect` reports the settings

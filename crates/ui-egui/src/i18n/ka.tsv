@@ -5364,3 +5364,7 @@ embroidery	No source gives a number to check these against.	არცერთ�
 embroidery	Threads unlike the art's colour (over {value})	გრაფიკის ფერისგან განსხვავებული ძაფები ({value}-ზე მეტი)
 embroidery	Largest difference: {value}	უდიდესი სხვაობა: {value}
 embroidery	Block {block}: {thread}, {value}	ბლოკი {block}: {thread}, {value}
+	Zoom to Box	კადრზე გადიდება
+@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] დოკუმენტის წერტილებში; right არ უნდა იყოს left-ზე ადრე, ხოლო bottom — top-ზე მაღლა
+@msg	margin: screen points, 0 or more	margin: ეკრანის წერტილები, 0 ან მეტი
+@msg	no canvas is shown	ტილო არ ჩანს

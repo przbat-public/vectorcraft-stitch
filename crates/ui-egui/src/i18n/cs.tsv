@@ -5458,3 +5458,7 @@ embroidery	No source gives a number to check these against.	Žádný zdroj neuv�
 embroidery	Threads unlike the art's colour (over {value})	Nitě odlišné od barvy grafiky (nad {value})
 embroidery	Largest difference: {value}	Největší rozdíl: {value}
 embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
+	Zoom to Box	Přiblížit na rámeček
+@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] v bodech dokumentu; right nesmí být před left a bottom nad top
+@msg	margin: screen points, 0 or more	margin: body obrazovky, 0 nebo více
+@msg	no canvas is shown	není zobrazeno žádné plátno

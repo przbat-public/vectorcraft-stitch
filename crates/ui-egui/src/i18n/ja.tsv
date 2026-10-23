@@ -5111,3 +5111,7 @@ embroidery	No source gives a number to check these against.	これらを判定�
 embroidery	Threads unlike the art's colour (over {value})	アートワークの色と違う糸 ({value} 超)
 embroidery	Largest difference: {value}	最大差: {value}
 embroidery	Block {block}: {thread}, {value}	ブロック {block}: {thread}、{value}
+	Zoom to Box	ボックスにズーム
+@msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] (ドキュメントのポイント単位。right は left 以上、bottom は top 以上)
+@msg	margin: screen points, 0 or more	margin: 画面のポイント単位、0 以上
+@msg	no canvas is shown	キャンバスが表示されていません

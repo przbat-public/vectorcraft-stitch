@@ -236,6 +236,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
     ),
     ("view.setZoom", "Set Zoom", "", "{zoom: percent, center?: [x,y]}"),
     (
+        "view.zoomTo",
+        "Zoom to Box",
+        "",
+        "{rect: [left, top, right, bottom] document points, margin?: screen points on each side (default 30, as Fit Artboard in Window leaves)} centre the box in the window and zoom so that it fills it, within 3.13% to 64,000% → {zoom: percent}",
+    ),
+    (
         "view.goToArtboard",
         "Go to Artboard",
         "",
@@ -1292,6 +1298,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             crate::canvas::fit(app, id);
             Ok(Value::Null)
         }
+        "view.zoomTo" => crate::canvas::zoom_to(app, p),
         "view.goToArtboard" => go_to_artboard(app, p),
         "view.presentation" => {
             app.ui.screen_mode = if app.ui.screen_mode == 3 { 0 } else { 3 };

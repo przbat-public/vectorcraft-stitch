@@ -4221,3 +4221,6 @@ embroidery	Art	圖稿
 embroidery	View	檢視
 embroidery	Planning stitches…	正在規劃針跡…
 embroidery	Can't plan the stitches:	無法規劃針跡：
+embroidery	Entry	入針
+embroidery	Exit	出針
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} 個選取的物件不會被繡製

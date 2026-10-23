@@ -169,11 +169,23 @@ pub struct StitchLayer {
     faded: Option<((u64, u64), Arc<TagSet>)>,
     /// The last frame drew the stitch view.
     shown: bool,
+    /// The units emphasised this frame ([`StitchLayer::emphasize`]), and the raster of them alone,
+    /// for (the frame it goes over, the units).
+    emphasis: Option<Vec<u32>>,
+    emphasized: Option<((LayerKey, Vec<u32>), egui::TextureHandle)>,
     /// Frames of stitches uploaded so far (the tests count them).
     pub(crate) uploads: u64,
 }
 
 impl StitchLayer {
+    /// Emphasise `units` (tags of the scene shown) in this frame's stitch view: the rest are drawn
+    /// faded, by a tint of the frame already drawn, and these over them from a raster of their own
+    /// (a Sewing order row hovered, a check's hits shown). The project owner's choice: only for a
+    /// moment, never for the selection. Asked again every frame it lasts.
+    pub fn emphasize(&mut self, units: Vec<u32>) {
+        self.emphasis = Some(units);
+    }
+
     /// Whether the last frame drew the stitch view.
     pub fn drawn(&self) -> bool {
         self.shown
@@ -284,6 +296,8 @@ pub fn paint_fabric(app: &VectorcraftApp, painter: &egui::Painter, xf: &Xf, doc:
 /// Draw the stitch view, after the fabric, where the canvas draws its art: the art faint or its
 /// templates under the stitches, the stitches, the art's outlines over them.
 pub fn draw(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::Painter, xf: &Xf, v: &View, pass: &ArtPass) {
+    // Asked for this frame only.
+    let emphasis = app.embroidery.layer.emphasis.take();
     if !pass.stitches {
         return;
     }
@@ -292,7 +306,7 @@ pub fn draw(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::Paint
     if pass.render && !outline {
         draw_art(app, painter, xf, if faint { faded() } else { Color32::WHITE });
     }
-    draw_stitches(app, ctx, painter, xf, v);
+    draw_stitches(app, ctx, painter, xf, v, emphasis);
     if pass.render && outline {
         draw_art(app, painter, xf, Color32::WHITE);
     }
@@ -349,8 +363,9 @@ fn outside(scene: &StitchScene, doc: &Document, isolated: NodeId) -> TagSet {
 }
 
 /// Draw the active document's stitches: their frame for this view drawn now, or on the thread
-/// when slow (the last frame shown meanwhile, moved into this view).
-fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::Painter, xf: &Xf, v: &View) {
+/// when slow (the last frame shown meanwhile, moved into this view); with `emphasis`, the rest faded
+/// and those units over them.
+fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::Painter, xf: &Xf, v: &View, emphasis: Option<Vec<u32>>) {
     let Some(st) = app.session.active() else { return };
     let (uid, isolated, doc) = (st.uid, st.isolation, st.doc.clone());
     let view = app.session.stitch_view_of(uid);
@@ -438,7 +453,28 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
         return;
     }
     let quad = rendered_quad(xf, k.zoom, Point::new(k.cx, k.cy), k.rot);
-    textured_quad(painter, tex.id(), &quad, if failed { faded() } else { Color32::WHITE });
+    let tint = if failed || emphasis.is_some() { faded() } else { Color32::WHITE };
+    textured_quad(painter, tex.id(), &quad, tint);
+    if let Some(units) = emphasis {
+        let k = k.clone();
+        let wanted = (k.clone(), units);
+        if layer.emphasized.as_ref().is_none_or(|(have, _)| *have != wanted) {
+            let shown: std::collections::HashSet<u32> = wanted.1.iter().copied().collect();
+            let rest = (0..scene.units().len()).filter_map(|i| u32::try_from(i).ok()).filter(|i| !shown.contains(i));
+            let style = LineStyle { hidden: Some(TagSet::of(rest)), anti_alias, ..scene.style(FABRIC, view.jumps, f64::from(k.ppp)) };
+            let affine = Affine::translate((f64::from(k.w) / 2.0, f64::from(k.h) / 2.0))
+                * Affine::rotate(k.rot.to_radians())
+                * Affine::scale(k.zoom * f64::from(k.ppp))
+                * Affine::translate((-k.cx, -k.cy));
+            let img = layer.renderer.render(scene.picture(), k.w, k.h, affine, &style);
+            let color = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
+            let tex = ctx.load_texture("emphasized stitches", color, egui::TextureOptions::LINEAR);
+            layer.emphasized = Some((wanted, tex));
+        }
+        if let Some((_, tex)) = &layer.emphasized {
+            textured_quad(painter, tex.id(), &quad, Color32::WHITE);
+        }
+    }
 }
 
 /// Make `img`, a frame for `key`, the layer's texture.

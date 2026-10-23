@@ -4986,3 +4986,6 @@ embroidery	Art	アートワーク
 embroidery	View	表示
 embroidery	Planning stitches…	ステッチを計画中…
 embroidery	Can't plan the stitches:	ステッチを計画できません:
+embroidery	Entry	入口
+embroidery	Exit	出口
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	選択したオブジェクトのうち {count} 個は縫われません

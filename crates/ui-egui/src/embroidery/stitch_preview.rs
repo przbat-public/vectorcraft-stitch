@@ -29,6 +29,7 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 use vectorcraft_engine::cmd::fileio::progress::Progress;
+use vectorcraft_engine::doc::Document;
 use vectorcraft_engine::{EmbroideryOptions, EmbroideryPlanKey, EmbroideryPlanned, Session};
 
 use super::plan_worker::{Done, Driver, Job, Outcome, Query};
@@ -72,6 +73,8 @@ impl Runner for Driver {
 pub struct Shown {
     pub key: EmbroideryPlanKey,
     pub planned: EmbroideryPlanned,
+    /// The document it was planned from: an object whose node differs now changed since.
+    pub document: Arc<Document>,
     replies: Vec<Reply>,
 }
 
@@ -149,6 +152,8 @@ struct InFlight {
     /// Its key wasn't the one shown when it was sent: it plans (its time says how heavy the design
     /// is), rather than only making replies.
     plans: bool,
+    /// The document it plans.
+    document: Arc<Document>,
 }
 
 /// What this frame's consumers asked for.
@@ -288,7 +293,7 @@ impl StitchPreview {
                         #[cfg(test)]
                         self.log.taken.push((f.ticket, f.progress.cancelled()));
                         let replies = doc.shown.take().map(|s| s.replies).unwrap_or_default();
-                        doc.shown = Some(Shown { key: f.key.clone(), planned, replies });
+                        doc.shown = Some(Shown { key: f.key.clone(), planned, document: f.document.clone(), replies });
                         doc.failed = None;
                         if f.plans {
                             doc.plan_ms = Some(d.ms);
@@ -404,7 +409,8 @@ impl StitchPreview {
         let sent = queries.iter().map(|q| with_options(q, &opts)).collect();
         #[cfg(test)]
         self.log.sent.push((key.clone(), plans));
-        self.in_flight = Some(InFlight { uid, ticket, key, queries, progress: progress.clone(), plans });
+        let document = planner.document().clone();
+        self.in_flight = Some(InFlight { uid, ticket, key, queries, progress: progress.clone(), plans, document });
         runner.submit(Job::new(ticket, planner, opts, sent, progress));
     }
 }

@@ -1,6 +1,7 @@
 //! The canvas's notice in the stitch view, under the Art | Stitches switch: "Planning stitches…"
 //! with the plan's progress once the stitches shown have been out of date a while
-//! ([`super::stitch_preview::STALE_NOTICE_SECS`]), or why the design can't be planned.
+//! ([`super::stitch_preview::STALE_NOTICE_SECS`]), why the design can't be planned, or how many
+//! selected objects aren't sewn.
 
 use egui::{CornerRadius, FontId, Id, Rect, Stroke, StrokeKind, Ui, pos2, vec2};
 use vectorcraft_engine::cmd::embroidery::view::{layers, paused};
@@ -34,6 +35,10 @@ pub fn text(app: &VectorcraftApp, now: f64) -> Option<(String, Option<f64>)> {
             Some((crate::et!("Planning stitches…").to_string(), progress))
         }
         Freshness::Failed { error } => Some((format!("{} {}", crate::et!("Can't plan the stitches:"), crate::i18n::msg(&error)), None)),
+        Freshness::Fresh => match super::overlay::not_sewn(app, now) {
+            0 => None,
+            n => Some((crate::etn!(n as u64, "{count} selected object isn't sewn", "{count} selected objects aren't sewn"), None)),
+        },
         _ => None,
     }
 }

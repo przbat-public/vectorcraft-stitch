@@ -5297,3 +5297,6 @@ embroidery	Art	Kuvitus
 embroidery	View	Näkymä
 embroidery	Planning stitches…	Pistoja suunnitellaan…
 embroidery	Can't plan the stitches:	Pistoja ei voi suunnitella:
+embroidery	Entry	Sisään
+embroidery	Exit	Ulos
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} valittu objekti ei tule kirjontaan|{count} valittua objektia ei tule kirjontaan

@@ -5169,3 +5169,6 @@ embroidery	Art	图稿
 embroidery	View	视图
 embroidery	Planning stitches…	正在规划针迹…
 embroidery	Can't plan the stitches:	无法规划针迹：
+embroidery	Entry	入针
+embroidery	Exit	出针
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} 个选中的对象不会被绣制

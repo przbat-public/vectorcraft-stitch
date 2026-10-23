@@ -5333,3 +5333,6 @@ embroidery	Art	Grafika
 embroidery	View	Zobrazení
 embroidery	Planning stitches…	Plánování stehů…
 embroidery	Can't plan the stitches:	Stehy nelze naplánovat:
+embroidery	Entry	Vstup
+embroidery	Exit	Výstup
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} vybraný objekt se nešije|{count} vybrané objekty se nešijí|{count} vybraných objektů se nešije

@@ -9,6 +9,7 @@
 //! - [`menu`]: View › Stitch Preview, its options, and the document tab's mode.
 //! - [`switch`]: the canvas's Art | Stitches switch.
 //! - [`notice`]: the canvas's notice while the stitches are planned, or can't be.
+//! - [`overlay`]: the selection in the stitch view: entry and exit markers, changed objects.
 //! - [`text`]: the embroidery interface's words, in the catalogues' `embroidery` context
 //!   ([`crate::et!`], [`crate::etn!`]).
 //! - [`render_stitches`]: the control channel's picture of the stitches.
@@ -16,6 +17,7 @@
 pub mod menu;
 pub mod notice;
 pub mod numbers;
+pub mod overlay;
 pub mod plan_worker;
 pub mod stitch_layer;
 pub mod stitch_preview;
@@ -34,12 +36,17 @@ pub struct Embroidery {
     pub preview: stitch_preview::StitchPreview,
     /// The canvas's stitch layer.
     pub layer: stitch_layer::StitchLayer,
+    /// The selected objects' ends in the plan shown ([`overlay`]).
+    pub(crate) ends: overlay::Ends,
 }
 
-/// What the fork draws over the canvas, after it: the Art | Stitches switch, and the notice under
-/// it.
+/// What the fork draws over the canvas, after it: the selection's markers in the stitch view, the
+/// Art | Stitches switch, and the notice under it.
 pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
     let Some(canvas) = app.canvas_rect.filter(|_| !crate::menus::home_showing(app)) else { return };
+    if let Some(view) = app.view().copied() {
+        overlay::draw(app, &ui.painter_at(canvas), &crate::canvas::Xf::new(canvas, &view));
+    }
     switch::show(app, ui, canvas);
     notice::show(app, ui, canvas);
 }

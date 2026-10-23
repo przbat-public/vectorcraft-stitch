@@ -5316,3 +5316,6 @@ embroidery	Art	Gambar
 embroidery	View	Tampilan
 embroidery	Planning stitches…	Merencanakan jahitan…
 embroidery	Can't plan the stitches:	Jahitan tidak dapat direncanakan:
+embroidery	Entry	Masuk
+embroidery	Exit	Keluar
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} objek terpilih tidak dijahit

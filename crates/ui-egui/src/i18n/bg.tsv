@@ -5298,3 +5298,6 @@ embroidery	Art	Графика
 embroidery	View	Изглед
 embroidery	Planning stitches…	Планиране на бодовете…
 embroidery	Can't plan the stitches:	Бодовете не могат да се планират:
+embroidery	Entry	Вход
+embroidery	Exit	Изход
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} избран обект не се шие|{count} избрани обекта не се шият

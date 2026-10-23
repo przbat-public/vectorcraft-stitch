@@ -5274,3 +5274,6 @@ embroidery	Art	Ilustración
 embroidery	View	Vista
 embroidery	Planning stitches…	Planificando puntadas…
 embroidery	Can't plan the stitches:	No se pueden planificar las puntadas:
+embroidery	Entry	Entrada
+embroidery	Exit	Salida
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} objeto seleccionado no se borda|{count} objetos seleccionados no se bordan

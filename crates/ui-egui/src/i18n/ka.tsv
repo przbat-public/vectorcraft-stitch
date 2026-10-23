@@ -5239,3 +5239,6 @@ embroidery	Art	გრაფიკა
 embroidery	View	ხედი
 embroidery	Planning stitches…	ნაკერების დაგეგმვა…
 embroidery	Can't plan the stitches:	ნაკერების დაგეგმვა შეუძლებელია:
+embroidery	Entry	შესვლა
+embroidery	Exit	გამოსვლა
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	მონიშნული ობიექტები, რომლებიც არ იქარგება: {count}

@@ -276,3 +276,24 @@ fn lines_outside_the_view_are_left_out() {
     let zoomed = app.embroidery.layer.renderer.stats;
     assert!(zoomed.culled > 0 && zoomed.drawn < whole.drawn, "{zoomed:?} against {whole:?}");
 }
+
+/// Emphasis for a moment: the frame already drawn is tinted faded and the emphasised units drawn
+/// over it from a raster of their own; the stitches' own texture isn't drawn again, and the next
+/// frame without emphasis shows them as before.
+#[test]
+fn emphasis_fades_the_rest_without_drawing_the_stitches_again() {
+    let mut app = app();
+    let ctx = egui::Context::default();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    let time = until_stitches(&mut app, &ctx, 0.0);
+    let uploads = app.embroidery.layer.uploads;
+    app.embroidery.layer.emphasize(vec![0]);
+    let shapes = frame(&mut app, &ctx, time + 0.1);
+    assert_eq!(drawn_with(&shapes, stitch_texture(&app)), [faded()], "the rest faded");
+    let emphasized = app.embroidery.layer.emphasized.as_ref().map(|(_, t)| t.id());
+    assert_eq!(drawn_with(&shapes, emphasized), [Color32::WHITE], "the unit over them");
+    assert_eq!(app.embroidery.layer.uploads, uploads, "the stitches aren't drawn again");
+    let shapes = frame(&mut app, &ctx, time + 0.2);
+    assert_eq!(drawn_with(&shapes, stitch_texture(&app)), [Color32::WHITE], "a moment only");
+    assert!(drawn_with(&shapes, emphasized).is_empty());
+}

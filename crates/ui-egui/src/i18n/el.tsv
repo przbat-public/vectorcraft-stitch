@@ -5285,3 +5285,6 @@ embroidery	Art	Γραφικό
 embroidery	View	Προβολή
 embroidery	Planning stitches…	Σχεδιασμός βελονιών…
 embroidery	Can't plan the stitches:	Δεν είναι δυνατός ο σχεδιασμός των βελονιών:
+embroidery	Entry	Είσοδος
+embroidery	Exit	Έξοδος
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} επιλεγμένο αντικείμενο δεν κεντιέται|{count} επιλεγμένα αντικείμενα δεν κεντιούνται

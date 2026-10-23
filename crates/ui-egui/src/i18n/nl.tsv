@@ -5359,3 +5359,6 @@ embroidery	Art	Illustratie
 embroidery	View	Weergave
 embroidery	Planning stitches…	Steken plannen…
 embroidery	Can't plan the stitches:	De steken kunnen niet worden gepland:
+embroidery	Entry	Ingang
+embroidery	Exit	Uitgang
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} geselecteerd object wordt niet geborduurd|{count} geselecteerde objecten worden niet geborduurd

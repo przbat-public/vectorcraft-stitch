@@ -4926,3 +4926,6 @@ embroidery	Art	Графіка
 embroidery	View	Вигляд
 embroidery	Planning stitches…	Розрахунок стібків…
 embroidery	Can't plan the stitches:	Не вдається розрахувати стібки:
+embroidery	Entry	Вхід
+embroidery	Exit	Вихід
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} виділений об’єкт не вишивається|{count} виділені об’єкти не вишиваються|{count} виділених об’єктів не вишивається

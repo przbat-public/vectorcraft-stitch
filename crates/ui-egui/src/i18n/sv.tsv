@@ -5289,3 +5289,6 @@ embroidery	Art	Grafik
 embroidery	View	Visning
 embroidery	Planning stitches…	Planerar stygn…
 embroidery	Can't plan the stitches:	Stygnen kan inte planeras:
+embroidery	Entry	Ingång
+embroidery	Exit	Utgång
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} markerat objekt broderas inte|{count} markerade objekt broderas inte

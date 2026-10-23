@@ -5316,3 +5316,6 @@ embroidery	Art	Grafik
 embroidery	View	Visning
 embroidery	Planning stitches…	Planlægger sting…
 embroidery	Can't plan the stitches:	Stingene kan ikke planlægges:
+embroidery	Entry	Indgang
+embroidery	Exit	Udgang
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} markeret objekt sys ikke|{count} markerede objekter sys ikke

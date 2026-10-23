@@ -1703,7 +1703,7 @@ fn rulers(ui: &Ui, full: egui::Rect, xf: &Xf, hover: Option<Point>, unit: Unit, 
     }
 }
 
-fn to_screen_path(bp: &BezPath, xf: &Xf) -> Vec<Vec<Pos2>> {
+pub(crate) fn to_screen_path(bp: &BezPath, xf: &Xf) -> Vec<Vec<Pos2>> {
     // Flatten for drawing: a polyline per subpath (tolerance ~0.25 screen px).
     let mut out: Vec<Vec<Pos2>> = vec![];
     let a = xf.affine();
@@ -1745,7 +1745,7 @@ fn c32(rgb: [u8; 3]) -> Color32 {
 /// Outline of a node for highlighting (paths, compound children, area type frames, other
 /// text/image bounds, symbol instances' bounds measured by their art from `symbols`; a clip
 /// group's clipping path only, as [`walk_drawn`] visits it).
-fn node_outline(n: &Node, symbols: &SymbolBoxes) -> BezPath {
+pub(crate) fn node_outline(n: &Node, symbols: &SymbolBoxes) -> BezPath {
     let mut bp = BezPath::new();
     walk_drawn(n, &mut |c| match &c.kind {
         NodeKind::Path { path, .. } => bp.extend(path.to_bezpath()),
@@ -2310,6 +2310,8 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
     let st = app.session.active();
     let big = st.is_some_and(|st| too_many_anchors(st.selection.objects.iter().filter_map(|id| st.doc.node(*id))));
     let big_bounds = if big { app.selection_bounds() } else { None };
+    // VectorCraft Stitch: over the stitches the Selection tool shows the frame alone.
+    let frame_only = crate::embroidery::overlay::frame_only(app);
     let app = &*app;
     let Some(st) = app.session.active() else { return };
     let symbols = st.doc.symbol_boxes();
@@ -2340,7 +2342,7 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
             stroke_path(p, &bp, xf, Stroke::new(KEY_OUTLINE, c32(st.doc.layer_color(k))));
         }
     }
-    for id in st.selection.objects.iter().filter(|_| !big) {
+    for id in st.selection.objects.iter().filter(|_| !big && !frame_only) {
         let Some(n) = st.doc.node(*id) else { continue };
         let color = c32(st.doc.layer_color(*id));
         let partial = st.selection.partial(*id);

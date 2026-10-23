@@ -5319,3 +5319,6 @@ embroidery	Art	Grafika
 embroidery	View	Nézet
 embroidery	Planning stitches…	Öltések tervezése…
 embroidery	Can't plan the stitches:	Az öltések nem tervezhetők meg:
+embroidery	Entry	Belépés
+embroidery	Exit	Kilépés
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} kijelölt objektum nem kerül hímzésre

@@ -4946,3 +4946,6 @@ embroidery	Art	Grafica
 embroidery	View	Vista
 embroidery	Planning stitches…	Pianificazione dei punti…
 embroidery	Can't plan the stitches:	Impossibile pianificare i punti:
+embroidery	Entry	Entrata
+embroidery	Exit	Uscita
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} oggetto selezionato non viene ricamato|{count} oggetti selezionati non vengono ricamati

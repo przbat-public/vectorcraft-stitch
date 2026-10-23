@@ -1531,6 +1531,19 @@ plan comes the art stays shown; a design that fails keeps its last good stitches
 isolation mode the stitches of the objects outside the group are faded. Back in the art view, the
 art is rendered before it shows, never the art as it was before the edits made meanwhile.
 
+**The selection in the stitch view** (`ui-egui/src/embroidery/overlay.rs`; the project owner's
+choice: a frame and markers, no dimming). Clicks select the art as in the art view. With the
+Selection tool the canvas draws the selection's frame and the key object's outline but no path
+outlines or anchors over the stitches (other tools, which edit the art, show them). Each selected
+object gets an entry ◆ (the accent colour) where the needle enters it and an exit ⊕ (its layer's
+colour) where it leaves, at most 32 of them (`MARKED_OBJECTS_MAX`, an estimate), labelled "Entry"
+and "Exit" when one object is selected; they come from `StitchScene::ends_of`, as the Sewing order
+list's do. A selected object changed since the plan shown is outlined dashed in its layer's colour
+until its plan comes, and the canvas's notice counts the selected objects that sew nothing. For a
+moment (a Sewing order row hovered, a check's hits shown) the stitch layer fades the frame it
+already drew with a tint and draws the units concerned over it from a small raster of their own
+(`StitchLayer::emphasize`), never drawing the whole design again.
+
 **Measured first** (gate 1 of the stitch preview: `vectorcraft-cli perf --embroidery`, release
 build, 12-core Apple Silicon, load about 4, the median of five frames, twice; 2026-10-23). The
 pictures are built in code without the planner (`perf_embroidery::stitch_picture`: square tiles of

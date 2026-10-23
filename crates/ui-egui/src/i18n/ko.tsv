@@ -4909,3 +4909,6 @@ embroidery	Art	아트워크
 embroidery	View	보기
 embroidery	Planning stitches…	스티치 계획 중…
 embroidery	Can't plan the stitches:	스티치를 계획할 수 없습니다:
+embroidery	Entry	진입
+embroidery	Exit	진출
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	선택한 개체 {count}개는 수놓이지 않습니다

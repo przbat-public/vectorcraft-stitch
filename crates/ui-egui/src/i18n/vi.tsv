@@ -4926,3 +4926,6 @@ embroidery	Art	Hình vẽ
 embroidery	View	Chế độ xem
 embroidery	Planning stitches…	Đang lên mũi thêu…
 embroidery	Can't plan the stitches:	Không thể lên mũi thêu:
+embroidery	Entry	Điểm vào
+embroidery	Exit	Điểm ra
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} đối tượng được chọn không được thêu

@@ -94,9 +94,16 @@ fn the_open_tab_is_read_leniently() {
         let s: Settings = serde_json::from_value(saved.clone()).unwrap();
         assert_eq!(s.tab, tab, "{saved}");
     }
+    // Whatever is saved for the panel, the rest of the interface's state loads.
     let mut ui = serde_json::to_value(crate::state::UiState::default()).unwrap();
-    ui["embroidery_panel"] = json!({"tab": "stitches", "zoom": 3});
-    assert!(serde_json::from_value::<crate::state::UiState>(ui).is_ok());
+    ui["recent_files"] = json!(["kept.svg"]);
+    for saved in [json!({"tab": "stitches", "zoom": 3}), json!(null), json!("check"), json!(5), json!([1, 2]), json!({"tab": "check"})] {
+        ui["embroidery_panel"] = saved.clone();
+        let read = serde_json::from_value::<crate::state::UiState>(ui.clone()).unwrap_or_else(|e| panic!("{saved}: {e}"));
+        assert_eq!(read.recent_files, ["kept.svg"], "{saved}");
+        let tab = if saved == json!({"tab": "check"}) { Tab::Check } else { Tab::Order };
+        assert_eq!(read.embroidery_panel.tab, tab, "{saved}");
+    }
 }
 
 #[test]

@@ -86,10 +86,20 @@ impl<'de> Deserialize<'de> for Tab {
 }
 
 /// The panel's settings, kept with the interface's state (`ui.inspect` → `ui.embroidery_panel`).
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub tab: Tab,
+}
+
+/// Settings as saved, read as leniently as the tab: anything but an object (null, a word, a number:
+/// a hand edit, a damaged file, another version's shape) reads as the defaults, so that it never
+/// stops the interface's state, and with it every other preference, from loading.
+impl<'de> Deserialize<'de> for Settings {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let v = Value::deserialize(d)?;
+        Ok(Self { tab: v.get("tab").and_then(Value::as_str).and_then(Tab::from_id).unwrap_or_default() })
+    }
 }
 
 /// What a tab asks the scheduler for besides the plan, for document `uid`: the figures, always,

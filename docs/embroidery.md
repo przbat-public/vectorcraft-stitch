@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-23 · **Last updated:** 2026-10-23 · **Change:** the stitch preview's drawing: line pictures drawn by the renderer, the look decided and measured before anything is built on it (Architecture › Drawing stitches). Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-23 · **Last updated:** 2026-10-23 · **Change:** the stitch preview's planning measured end to end (gate 2): several plans remembered with their scenes, one walk for callers asking at once, the read commands' replies from a planner (Architecture › Planning service, Drawing stitches). Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -1376,18 +1376,39 @@ flowchart LR
   documents could keep 50 MB for each. A plan made with kept
   units equals a fresh plan: a property test plans random documents through random edits, and
   `embroidery_planning.rs` nudges every object of the real designs.
-- **The last plan** is kept with the snapshot (held weakly) and options it was made for. A snapshot
-  never changes (it is shared with the undo history), so the same snapshot with the same options
-  returns the same plan without walking again: commands that read a design one after another plan
-  it once. Another snapshot of the same art (an undo) walks again, every unit from the cache.
+- **The last plans** are kept, each with the snapshot (held weakly), the selection, the options and
+  the fonts' generation it was made for. A snapshot never changes (it is shared with the undo
+  history), so the same snapshot with the same options returns the same plan without walking
+  again: commands that read a design one after another plan it once. Up to four plans are kept
+  (`MAX_MEMOS`: the stitch preview's, a read command's with other options or of the selection
+  alone, an agent's, and the snapshot before the last edit, so an undo needs no walk), the least
+  recently used dropped first, and together at most 256 MB beyond the newest (`MAX_MEMO_BYTES`;
+  a plan at the 2-million-stitch limit holds about 50 MB and its scene 20 MB). Another snapshot of
+  the same art walks again, every unit from the cache. A design refused for its size is kept the
+  same way, and refused again at once.
+- **A generation and a scene per plan.** Each plan made gets a number no other plan of the process
+  has (`EmbroideryPlanned::generation`): what is drawn from it is keyed by that number, never by
+  the document's revision, which also moves on selection and view changes. Its stitch scene is
+  built the first time it is asked for, outside the service's locks, and kept with the plan.
+- **One walk for callers asking at once** (native): a caller that asks for a plan another caller is
+  making of the same snapshot, selection, options and fonts waits for it rather than walking too,
+  and plans itself only if it is cancelled or the wait passes 10 s (`MAX_FLIGHT_WAIT_MS`, far longer
+  than any real design plans). The flight ends when the plan does, also when it unwinds. The web
+  build has one thread and plans directly.
+- **The read commands' replies from a planner.** `EmbroideryPlanner::query(cmd, params)` gives the
+  reply `embroidery.threads`, `stats`, `sequence` or `check` gives, made by the command's own code
+  from the planner's snapshot, on any thread: the stitch preview's panel and status bar read the
+  design without planning on the interface thread. `selectedOnly` is refused (a planner has no
+  selection). `EmbroideryPlanner::latest` gives a plan already made without planning or waiting,
+  and `Session::embroidery_plan_key` tells cheaply whether a plan is of the document as it is.
 - **Cancelling.** A plan checks `vectorcraft_doc::cancel` before each unit, between the columns a
   fill's narrow parts are cut out by, and within the search for those parts
   (`plan::narrow_columns_until`). A cancelled plan returns `PlanError::Cancelled` (the commands'
   `EngineError::Cancelled`) and leaves no plan; the units it finished stay kept. Each painted fill,
   stroke and literal run is a step of the plan's progress (`cancel::progress`).
-- **Threads.** The service is `Send` and `Sync` (checked when it compiles): the app's worker can plan
-  off the interface thread while commands plan on theirs; commands and the web build plan
-  synchronously. No thread is started yet.
+- **Threads.** The service is `Send` and `Sync` (checked when it compiles): the app's planning
+  thread plans off the interface thread while commands plan on theirs; commands and the web build
+  plan synchronously.
 - **The export plans afresh** (`service::plan_afresh`): the document it writes is the one edited for
   the file, and a file never depends on what was kept. It is cancellable and reports its progress
   like the other plans.
@@ -1460,6 +1481,35 @@ row beyond noise, so 512 stays; simplifying the round ends of threads under 1.5 
 lever the research proposed, isn't needed. `VECTORCRAFT_STITCH_SWEEP=1 vectorcraft-cli perf
 --embroidery` runs the sweep again, and `VECTORCRAFT_STITCH_PNG=<folder>` writes the 10,000-stitch
 picture at fit and zoomed in, to look at.
+
+**The scene** (`cmd::embroidery::scene`) is built from the plan as `measure` walks it: a line per run
+of needle points the thread lies along (whether it lies is decided per record, by
+`measure::Record::sewn`), with a lead-in from where the unit before ended when it goes on in the
+same thread; a link for each move with the needle up (`Cut` when the thread was cut since the last
+needle point, else `Thread`); a × at each cut and a square at each stop. Beside the picture it
+keeps each block's thread and each unit's object, key, block, entry, exit and box, so that what is
+drawn maps back to the art. An opened machine file's design is drawn on the same points as its
+imported paths.
+
+**Measured end to end** (gate 2 of the stitch preview, 2026-10-23: release build, 12-core Apple
+Silicon, load about 4 falling to 3, the median of five, twice). The synthetic documents are
+`perf --embroidery`'s (1,000 paths are about 90,000 stitches; 5,000 about 450,000; 22,000 about
+2 million, the most a design may have); the frame is drawn at fit on a 2880 × 1800 canvas:
+
+| Row | Measured | Budget (estimate) |
+|---|---:|---:|
+| Scene built from the plan, 1,000 paths | 0.81 ms | 5 ms |
+| Scene, 5,000 paths | 4.4 ms | 25 ms |
+| Scene, 22,000 paths | 20.4 ms | 50 ms |
+| Move one object 0.5 mm, to its frame (plan with the units kept, scene, frame), 1,000 paths | 8.0 ms | 100 ms |
+| The same with a drop shadow on another object (its appearance expanded on a copy at every plan) | 8.1 ms | 100 ms |
+| A plan of the 20 rings in one fill cancelled midway, until it stops | 0.66–1.04 ms | 100 ms |
+
+On the real designs (`vectorcraft-cli bench FILE`), moving one object to its frame takes 2.9 to
+6.1 ms for the eleven SVGs and 2.7 to 3.6 ms for opened PES files, the scene at most 0.12 ms and a
+frame at fit at most 6.1 ms: within the 50 ms the research set for real designs. Each snapshot is walked once however many callers ask for it (the service's tests count the walks). Cancelling stops within a millisecond, so no further
+cancel checks in the planner's loops are needed. The other embroidery rows didn't move (the 20
+rings in one fill plan in 563 to 572 ms cold against their 600 ms).
 
 ### One embroidery tool
 
@@ -1607,6 +1657,7 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-23 | minor | The stitch preview, in progress: the planning service remembers several plans with a generation and a scene each, plans once for callers asking at once, and gives the read commands' replies from a planner; the end-to-end rows measured (gate 2). |
 | 2026-10-23 | minor | The stitch preview, in progress: stitches drawn as line pictures by the renderer (flat at the thread's laid width, an edge for threads close to the fabric, jumps and cuts marked), measured first. |
 | 2026-10-23 | minor | The review's fixes: VP3 trims written as long forms and read back as cuts; an opened design's start point, name, thread records and losses kept (overwriting its file asks first); closed lines locked; fill rows centred; the planner's and the planning service's speed (kept path-operation areas, a remembered refusal, a plan's own units kept); bobbin thread after Madeira; the results and check tables regenerated from the tests; contents, terms and this history added. |
 | 2026-10-22 | minor | The planning service (#17): units kept between plans, cancelling and progress; `embroidery.stats`, `sequence` and `check`. One option vocabulary, the expanded appearance sewn, the replies' vocabulary. |

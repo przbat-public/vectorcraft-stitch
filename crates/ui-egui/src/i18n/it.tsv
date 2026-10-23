@@ -4964,3 +4964,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} punto|{count} punti
 @msg	tab {tab}: one of {_1}	scheda {tab}: una tra {_1}
 @msg	unknown key `{k}`: the only one is tab	chiave sconosciuta `{k}`: l’unica è tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Si ricama dal fondo della pila verso l’alto; gli oggetti di uno stesso filo si uniscono quando nulla sta tra loro.
+embroidery	Trim and thread change	Taglio e cambio filo
+embroidery	Thread change	Cambio filo
+embroidery	fill	riempimento
+embroidery	stroke	traccia
+embroidery	from the file	dal file
+embroidery	running stitch	punto dritto
+embroidery	satin	raso
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	parti strette a raso
+@plural	{count} object|{count} objects	{count} oggetto|{count} oggetti
+@plural	{count} jump|{count} jumps	{count} salto|{count} salti
+@plural	{count} trim|{count} trims	{count} taglio|{count} tagli
+embroidery	about {value}	circa {value}
+embroidery	Colours	Colori
+embroidery	Thread changes	Cambi filo
+embroidery	Trims	Tagli
+embroidery	Jumps	Salti
+embroidery	Top thread	Filo superiore
+embroidery	Size	Dimensioni
+embroidery	Time	Tempo
+embroidery	Design	Motivo
+embroidery	The time at {speed} stitches a minute, an estimate.	Il tempo a {speed} punti al minuto, una stima.

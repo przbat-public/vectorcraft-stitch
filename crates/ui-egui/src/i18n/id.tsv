@@ -5334,3 +5334,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} jahitan
 @msg	tab {tab}: one of {_1}	tab {tab}: salah satu dari {_1}
 @msg	unknown key `{k}`: the only one is tab	kunci tidak dikenal `{k}`: satu-satunya adalah tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Dijahit dari bawah tumpukan ke atas; objek satu benang digabung bila tidak ada apa pun di antaranya.
+embroidery	Trim and thread change	Potong dan ganti benang
+embroidery	Thread change	Ganti benang
+embroidery	fill	isian
+embroidery	stroke	goresan
+embroidery	from the file	dari berkas
+embroidery	running stitch	jahitan lurus
+embroidery	satin	satin
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	bagian sempit sebagai satin
+@plural	{count} object|{count} objects	{count} objek
+@plural	{count} jump|{count} jumps	{count} lompatan
+@plural	{count} trim|{count} trims	{count} potongan
+embroidery	about {value}	sekitar {value}
+embroidery	Colours	Warna
+embroidery	Thread changes	Ganti benang
+embroidery	Trims	Potongan
+embroidery	Jumps	Lompatan
+embroidery	Top thread	Benang atas
+embroidery	Size	Ukuran
+embroidery	Time	Waktu
+embroidery	Design	Desain
+embroidery	The time at {speed} stitches a minute, an estimate.	Waktu pada {speed} jahitan per menit, perkiraan.

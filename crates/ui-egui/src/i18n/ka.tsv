@@ -5257,3 +5257,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	ნაკერები: {count}
 @msg	tab {tab}: one of {_1}	ჩანართი {tab}: ერთ-ერთი: {_1}
 @msg	unknown key `{k}`: the only one is tab	უცნობი გასაღები `{k}`: ერთადერთია tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	იქარგება დასტის ქვემოდან ზემოთ; ერთი ძაფის ობიექტები ერთიანდება, როცა მათ შორის არაფერია.
+embroidery	Trim and thread change	ჭრა და ძაფის შეცვლა
+embroidery	Thread change	ძაფის შეცვლა
+embroidery	fill	შევსება
+embroidery	stroke	ხაზი
+embroidery	from the file	ფაილიდან
+embroidery	running stitch	სწორი ნაკერი
+embroidery	satin	ატლასი
+embroidery	tatami	ტატამი
+embroidery	narrow parts as satin	ვიწრო ნაწილები ატლასით
+@plural	{count} object|{count} objects	ობიექტები: {count}
+@plural	{count} jump|{count} jumps	ნახტომები: {count}
+@plural	{count} trim|{count} trims	ჭრები: {count}
+embroidery	about {value}	დაახლოებით {value}
+embroidery	Colours	ფერები
+embroidery	Thread changes	ძაფის ცვლა
+embroidery	Trims	ჭრები
+embroidery	Jumps	ნახტომები
+embroidery	Top thread	ზედა ძაფი
+embroidery	Size	ზომა
+embroidery	Time	დრო
+embroidery	Design	დიზაინი
+embroidery	The time at {speed} stitches a minute, an estimate.	დრო წუთში {speed} ნაკერით, შეფასება.

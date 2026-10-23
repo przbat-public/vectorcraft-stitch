@@ -5351,3 +5351,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} steh|{count} stehy|{count} stehů
 @msg	tab {tab}: one of {_1}	karta {tab}: jedna z {_1}
 @msg	unknown key `{k}`: the only one is tab	neznámý klíč `{k}`: jediný je tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Šije se odspodu nahoru; objekty jedné nitě se spojí, když mezi nimi nic neleží.
+embroidery	Trim and thread change	Ustřižení a výměna nitě
+embroidery	Thread change	Výměna nitě
+embroidery	fill	výplň
+embroidery	stroke	tah
+embroidery	from the file	ze souboru
+embroidery	running stitch	rovný steh
+embroidery	satin	saténový steh
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	úzké části saténem
+@plural	{count} object|{count} objects	{count} objekt|{count} objekty|{count} objektů
+@plural	{count} jump|{count} jumps	{count} přeskok|{count} přeskoky|{count} přeskoků
+@plural	{count} trim|{count} trims	{count} střih|{count} střihy|{count} střihů
+embroidery	about {value}	asi {value}
+embroidery	Colours	Barvy
+embroidery	Thread changes	Výměny nitě
+embroidery	Trims	Střihy
+embroidery	Jumps	Přeskoky
+embroidery	Top thread	Vrchní nit
+embroidery	Size	Velikost
+embroidery	Time	Čas
+embroidery	Design	Návrh
+embroidery	The time at {speed} stitches a minute, an estimate.	Čas při {speed} stezích za minutu, odhad.

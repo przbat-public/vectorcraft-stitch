@@ -22,6 +22,8 @@ use serde_json::{Value, json};
 
 use crate::VectorcraftApp;
 use crate::embroidery::plan_worker::Query;
+
+pub mod order;
 use crate::embroidery::stitch_preview::Freshness;
 use crate::theme::Tokens;
 
@@ -91,7 +93,7 @@ pub struct Settings {
 fn queries(tab: Tab) -> Vec<Query> {
     let stats = Query { cmd: "embroidery.stats", params: json!({}) };
     match tab {
-        Tab::Order => vec![stats, Query { cmd: "embroidery.sequence", params: json!({}) }],
+        Tab::Order => vec![stats, order::query()],
         Tab::Check => vec![stats, Query { cmd: "embroidery.check", params: json!({}) }],
     }
 }
@@ -188,7 +190,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         return;
     }
     // The figures, and the tab's own reply.
-    let stats = shown.reply(&queries(tab)[0]).and_then(|(r, _)| r.as_ref().ok()).cloned();
+    let asked = queries(tab);
+    let reply = |k: usize| asked.get(k).and_then(|q| shown.reply(q)).and_then(|(r, _)| r.as_ref().ok()).cloned();
+    let (stats, own, generation) = (reply(0), reply(1), shown.planned.generation);
     let stale = !matches!(freshness, Freshness::Fresh);
     ui.horizontal(|ui| {
         if let Some(stats) = &stats {
@@ -209,6 +213,10 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             });
         }
     });
+    match (tab, own) {
+        (Tab::Order, Some(own)) => order::show(app, ui, generation, &own, stats.as_ref(), stale),
+        (Tab::Check, _) | (_, None) => {}
+    }
 }
 
 /// The tab strip: a segment per tab, accessible as tabs.

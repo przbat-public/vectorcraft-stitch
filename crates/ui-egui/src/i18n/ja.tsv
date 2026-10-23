@@ -5004,3 +5004,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} 針
 @msg	tab {tab}: one of {_1}	タブ {tab}: {_1} のいずれか
 @msg	unknown key `{k}`: the only one is tab	不明なキー `{k}`: 使えるのは tab だけです
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	重なりの下から順に縫われます。間に何もなければ同じ糸のオブジェクトはまとめられます。
+embroidery	Trim and thread change	糸切りと糸替え
+embroidery	Thread change	糸替え
+embroidery	fill	塗り
+embroidery	stroke	線
+embroidery	from the file	ファイルから
+embroidery	running stitch	ランニングステッチ
+embroidery	satin	サテン
+embroidery	tatami	タタミ
+embroidery	narrow parts as satin	細い部分はサテン
+@plural	{count} object|{count} objects	{count} 個のオブジェクト
+@plural	{count} jump|{count} jumps	{count} 回のジャンプ
+@plural	{count} trim|{count} trims	{count} 回の糸切り
+embroidery	about {value}	約 {value}
+embroidery	Colours	色
+embroidery	Thread changes	糸替え
+embroidery	Trims	糸切り
+embroidery	Jumps	ジャンプ
+embroidery	Top thread	上糸
+embroidery	Size	サイズ
+embroidery	Time	時間
+embroidery	Design	デザイン
+embroidery	The time at {speed} stitches a minute, an estimate.	1 分あたり {speed} 針での時間 (推定)。

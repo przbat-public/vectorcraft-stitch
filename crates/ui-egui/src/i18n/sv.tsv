@@ -5307,3 +5307,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} stygn|{count} stygn
 @msg	tab {tab}: one of {_1}	flik {tab}: en av {_1}
 @msg	unknown key `{k}`: the only one is tab	okänd nyckel `{k}`: den enda är tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Broderas nerifrån och upp; objekt med samma tråd slås ihop när inget ligger mellan dem.
+embroidery	Trim and thread change	Klipp och trådbyte
+embroidery	Thread change	Trådbyte
+embroidery	fill	fyllning
+embroidery	stroke	linje
+embroidery	from the file	från filen
+embroidery	running stitch	rakstygn
+embroidery	satin	satin
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	smala delar som satin
+@plural	{count} object|{count} objects	{count} objekt|{count} objekt
+@plural	{count} jump|{count} jumps	{count} hopp|{count} hopp
+@plural	{count} trim|{count} trims	{count} klipp|{count} klipp
+embroidery	about {value}	cirka {value}
+embroidery	Colours	Färger
+embroidery	Thread changes	Trådbyten
+embroidery	Trims	Klipp
+embroidery	Jumps	Hopp
+embroidery	Top thread	Övertråd
+embroidery	Size	Storlek
+embroidery	Time	Tid
+embroidery	Design	Design
+embroidery	The time at {speed} stitches a minute, an estimate.	Tiden vid {speed} stygn i minuten, en uppskattning.

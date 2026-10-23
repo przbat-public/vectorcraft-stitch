@@ -5350,3 +5350,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} point|{count} points
 @msg	tab {tab}: one of {_1}	onglet {tab} : l’un de {_1}
 @msg	unknown key `{k}`: the only one is tab	clé inconnue `{k}` : la seule est tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Brodé du bas de la pile vers le haut ; les objets d’un même fil sont réunis lorsque rien ne se trouve entre eux.
+embroidery	Trim and thread change	Coupe et changement de fil
+embroidery	Thread change	Changement de fil
+embroidery	fill	fond
+embroidery	stroke	contour
+embroidery	from the file	du fichier
+embroidery	running stitch	point droit
+embroidery	satin	satin
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	parties étroites en satin
+@plural	{count} object|{count} objects	{count} objet|{count} objets
+@plural	{count} jump|{count} jumps	{count} saut|{count} sauts
+@plural	{count} trim|{count} trims	{count} coupe|{count} coupes
+embroidery	about {value}	environ {value}
+embroidery	Colours	Couleurs
+embroidery	Thread changes	Changements de fil
+embroidery	Trims	Coupes
+embroidery	Jumps	Sauts
+embroidery	Top thread	Fil supérieur
+embroidery	Size	Taille
+embroidery	Time	Durée
+embroidery	Design	Motif
+embroidery	The time at {speed} stitches a minute, an estimate.	La durée à {speed} points par minute, une estimation.

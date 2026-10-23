@@ -5337,3 +5337,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} öltés
 @msg	tab {tab}: one of {_1}	lap {tab}: ezek egyike: {_1}
 @msg	unknown key `{k}`: the only one is tab	ismeretlen kulcs `{k}`: az egyetlen a tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Alulról felfelé hímezve; az egy szálhoz tartozó objektumok összevonódnak, ha semmi sincs közöttük.
+embroidery	Trim and thread change	Vágás és szálcsere
+embroidery	Thread change	Szálcsere
+embroidery	fill	kitöltés
+embroidery	stroke	körvonal
+embroidery	from the file	a fájlból
+embroidery	running stitch	egyenes öltés
+embroidery	satin	szatén
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	keskeny részek szaténnal
+@plural	{count} object|{count} objects	{count} objektum
+@plural	{count} jump|{count} jumps	{count} ugrás
+@plural	{count} trim|{count} trims	{count} vágás
+embroidery	about {value}	kb. {value}
+embroidery	Colours	Színek
+embroidery	Thread changes	Szálcserék
+embroidery	Trims	Vágások
+embroidery	Jumps	Ugrások
+embroidery	Top thread	Felső szál
+embroidery	Size	Méret
+embroidery	Time	Idő
+embroidery	Design	Minta
+embroidery	The time at {speed} stitches a minute, an estimate.	Az idő percenként {speed} öltéssel, becslés.

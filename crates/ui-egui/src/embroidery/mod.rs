@@ -38,6 +38,8 @@ pub struct Embroidery {
     pub layer: stitch_layer::StitchLayer,
     /// The selected objects' ends in the plan shown ([`overlay`]).
     pub(crate) ends: overlay::Ends,
+    /// The Embroidery panel's Sewing order tab.
+    pub(crate) order: crate::panels::embroidery::order::OrderState,
 }
 
 /// What the fork draws over the canvas, after it: the selection's markers in the stitch view, the

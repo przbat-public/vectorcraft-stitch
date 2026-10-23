@@ -4927,3 +4927,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count}땀
 @msg	tab {tab}: one of {_1}	탭 {tab}: {_1} 중 하나
 @msg	unknown key `{k}`: the only one is tab	알 수 없는 키 `{k}`: 사용할 수 있는 키는 tab뿐입니다
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	쌓인 순서의 아래부터 위로 수놓습니다. 사이에 아무것도 없으면 같은 실의 개체는 합쳐집니다.
+embroidery	Trim and thread change	실 자르기 및 실 교체
+embroidery	Thread change	실 교체
+embroidery	fill	칠
+embroidery	stroke	선
+embroidery	from the file	파일에서
+embroidery	running stitch	러닝 스티치
+embroidery	satin	새틴
+embroidery	tatami	타타미
+embroidery	narrow parts as satin	좁은 부분은 새틴
+@plural	{count} object|{count} objects	개체 {count}개
+@plural	{count} jump|{count} jumps	점프 {count}회
+@plural	{count} trim|{count} trims	실 자르기 {count}회
+embroidery	about {value}	약 {value}
+embroidery	Colours	색
+embroidery	Thread changes	실 교체
+embroidery	Trims	실 자르기
+embroidery	Jumps	점프
+embroidery	Top thread	윗실
+embroidery	Size	크기
+embroidery	Time	시간
+embroidery	Design	디자인
+embroidery	The time at {speed} stitches a minute, an estimate.	분당 {speed}땀 기준 시간(추정치)입니다.

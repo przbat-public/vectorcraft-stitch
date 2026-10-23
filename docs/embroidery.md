@@ -1556,6 +1556,19 @@ preview for the plan and its tab's replies. Its states: no document; not planned
 can't be planned (the reason); ready; updating (the last result, and "Updating…" once the newer one
 takes over 0.1 s).
 
+**The Sewing order tab** (`panels/embroidery/order.rs`) reads `embroidery.sequence`'s reply back
+into the typed model (`cmd::embroidery::order::SewingOrder`, which the reply is serialised from),
+once per plan, and builds its words from the model's ids and numbers, never from the reply's English
+sentences. Each block has a header (its number, its thread's chip with the art's colour in a corner
+when they differ, the thread's name and palette number, a ΔE badge for a mismatch, its objects and
+stitches), a row per sewing unit (the object's name as the Layers panel names it, its stitches, and
+under it the part it sews, how, and its jumps and trims) and a row for the trim and thread change
+after it. Rows are 28, 36 and 20 points high (estimates fitted to the mockups) and only those in
+view are laid out. A click selects the row's object (Shift a range, Cmd or Ctrl adds or removes), a
+header its block's objects; rows of the selection are highlighted. Blocks collapse. Under the list,
+the design's figures: stitches, colours, thread changes, trims, jumps, the top thread, the size and
+the time (estimates, said so), with the speed the time is at.
+
 **Measured first** (gate 1 of the stitch preview: `vectorcraft-cli perf --embroidery`, release
 build, 12-core Apple Silicon, load about 4, the median of five frames, twice; 2026-10-23). The
 pictures are built in code without the planner (`perf_embroidery::stitch_picture`: square tiles of

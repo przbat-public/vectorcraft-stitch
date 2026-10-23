@@ -4944,3 +4944,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} mũi
 @msg	tab {tab}: one of {_1}	thẻ {tab}: một trong {_1}
 @msg	unknown key `{k}`: the only one is tab	khóa không xác định `{k}`: khóa duy nhất là tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Thêu từ dưới lên theo thứ tự xếp chồng; các đối tượng cùng chỉ được gộp khi không có gì nằm giữa.
+embroidery	Trim and thread change	Cắt chỉ và đổi chỉ
+embroidery	Thread change	Đổi chỉ
+embroidery	fill	tô
+embroidery	stroke	nét
+embroidery	from the file	từ tệp
+embroidery	running stitch	mũi chạy
+embroidery	satin	sa-tanh
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	phần hẹp thêu sa-tanh
+@plural	{count} object|{count} objects	{count} đối tượng
+@plural	{count} jump|{count} jumps	{count} mũi nhảy
+@plural	{count} trim|{count} trims	{count} lần cắt chỉ
+embroidery	about {value}	khoảng {value}
+embroidery	Colours	Màu
+embroidery	Thread changes	Đổi chỉ
+embroidery	Trims	Cắt chỉ
+embroidery	Jumps	Mũi nhảy
+embroidery	Top thread	Chỉ trên
+embroidery	Size	Kích thước
+embroidery	Time	Thời gian
+embroidery	Design	Mẫu
+embroidery	The time at {speed} stitches a minute, an estimate.	Thời gian ở tốc độ {speed} mũi mỗi phút, ước tính.

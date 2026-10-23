@@ -5377,3 +5377,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} steek|{count} steken
 @msg	tab {tab}: one of {_1}	tabblad {tab}: een van {_1}
 @msg	unknown key `{k}`: the only one is tab	onbekende sleutel `{k}`: de enige is tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Geborduurd van onder naar boven; objecten van één draad worden samengevoegd als er niets tussen ligt.
+embroidery	Trim and thread change	Knippen en draadwissel
+embroidery	Thread change	Draadwissel
+embroidery	fill	vulling
+embroidery	stroke	lijn
+embroidery	from the file	uit het bestand
+embroidery	running stitch	rechte steek
+embroidery	satin	satijnsteek
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	smalle delen als satijnsteek
+@plural	{count} object|{count} objects	{count} object|{count} objecten
+@plural	{count} jump|{count} jumps	{count} sprong|{count} sprongen
+@plural	{count} trim|{count} trims	{count} knip|{count} knippen
+embroidery	about {value}	ongeveer {value}
+embroidery	Colours	Kleuren
+embroidery	Thread changes	Draadwissels
+embroidery	Trims	Knippen
+embroidery	Jumps	Sprongen
+embroidery	Top thread	Bovendraad
+embroidery	Size	Grootte
+embroidery	Time	Tijd
+embroidery	Design	Ontwerp
+embroidery	The time at {speed} stitches a minute, an estimate.	De tijd bij {speed} steken per minuut, een schatting.

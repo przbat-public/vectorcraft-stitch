@@ -4239,3 +4239,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} 針
 @msg	tab {tab}: one of {_1}	標籤 {tab}：{_1} 之一
 @msg	unknown key `{k}`: the only one is tab	未知的鍵 `{k}`：唯一的鍵是 tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	從堆疊的底部向上繡製；同一條線的物件在中間沒有其他內容時會合併。
+embroidery	Trim and thread change	剪線並換線
+embroidery	Thread change	換線
+embroidery	fill	填色
+embroidery	stroke	筆畫
+embroidery	from the file	來自檔案
+embroidery	running stitch	平針
+embroidery	satin	緞紋
+embroidery	tatami	榻榻米
+embroidery	narrow parts as satin	窄的部分用緞紋
+@plural	{count} object|{count} objects	{count} 個物件
+@plural	{count} jump|{count} jumps	{count} 次跳針
+@plural	{count} trim|{count} trims	{count} 次剪線
+embroidery	about {value}	約 {value}
+embroidery	Colours	顏色
+embroidery	Thread changes	換線次數
+embroidery	Trims	剪線
+embroidery	Jumps	跳針
+embroidery	Top thread	面線
+embroidery	Size	尺寸
+embroidery	Time	時間
+embroidery	Design	設計
+embroidery	The time at {speed} stitches a minute, an estimate.	按每分鐘 {speed} 針計算的時間，為估計值。

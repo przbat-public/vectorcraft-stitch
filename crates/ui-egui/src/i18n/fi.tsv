@@ -5315,3 +5315,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} pisto|{count} pistoa
 @msg	tab {tab}: one of {_1}	välilehti {tab}: yksi seuraavista: {_1}
 @msg	unknown key `{k}`: the only one is tab	tuntematon avain `{k}`: ainoa on tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Kirjotaan pinon alhaalta ylös; saman langan objektit yhdistyvät, kun niiden välissä ei ole mitään.
+embroidery	Trim and thread change	Leikkaus ja langanvaihto
+embroidery	Thread change	Langanvaihto
+embroidery	fill	täyttö
+embroidery	stroke	viiva
+embroidery	from the file	tiedostosta
+embroidery	running stitch	suora pisto
+embroidery	satin	satiini
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	kapeat osat satiinina
+@plural	{count} object|{count} objects	{count} objekti|{count} objektia
+@plural	{count} jump|{count} jumps	{count} hyppy|{count} hyppyä
+@plural	{count} trim|{count} trims	{count} leikkaus|{count} leikkausta
+embroidery	about {value}	noin {value}
+embroidery	Colours	Värit
+embroidery	Thread changes	Langanvaihdot
+embroidery	Trims	Leikkaukset
+embroidery	Jumps	Hypyt
+embroidery	Top thread	Ylälanka
+embroidery	Size	Koko
+embroidery	Time	Aika
+embroidery	Design	Kuvio
+embroidery	The time at {speed} stitches a minute, an estimate.	Aika nopeudella {speed} pistoa minuutissa, arvio.

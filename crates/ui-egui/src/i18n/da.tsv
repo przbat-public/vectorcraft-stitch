@@ -5334,3 +5334,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} sting|{count} sting
 @msg	tab {tab}: one of {_1}	fane {tab}: en af {_1}
 @msg	unknown key `{k}`: the only one is tab	ukendt nøgle `{k}`: den eneste er tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Sys nedefra og op; objekter med samme tråd samles, når intet ligger imellem dem.
+embroidery	Trim and thread change	Klip og trådskift
+embroidery	Thread change	Trådskift
+embroidery	fill	udfyldning
+embroidery	stroke	streg
+embroidery	from the file	fra filen
+embroidery	running stitch	forsting
+embroidery	satin	satin
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	smalle dele som satin
+@plural	{count} object|{count} objects	{count} objekt|{count} objekter
+@plural	{count} jump|{count} jumps	{count} spring|{count} spring
+@plural	{count} trim|{count} trims	{count} klip|{count} klip
+embroidery	about {value}	ca. {value}
+embroidery	Colours	Farver
+embroidery	Thread changes	Trådskift
+embroidery	Trims	Klip
+embroidery	Jumps	Spring
+embroidery	Top thread	Overtråd
+embroidery	Size	Størrelse
+embroidery	Time	Tid
+embroidery	Design	Design
+embroidery	The time at {speed} stitches a minute, an estimate.	Tiden ved {speed} sting i minuttet, et skøn.

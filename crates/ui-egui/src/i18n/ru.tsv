@@ -4960,3 +4960,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} стежок|{count} стежка|{count} стежков
 @msg	tab {tab}: one of {_1}	вкладка {tab}: одна из {_1}
 @msg	unknown key `{k}`: the only one is tab	неизвестный ключ `{k}`: единственный — tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Вышивается снизу вверх по стопке; объекты одной нити объединяются, если между ними ничего нет.
+embroidery	Trim and thread change	Обрезка и смена нити
+embroidery	Thread change	Смена нити
+embroidery	fill	заливка
+embroidery	stroke	обводка
+embroidery	from the file	из файла
+embroidery	running stitch	прямой стежок
+embroidery	satin	гладь
+embroidery	tatami	татами
+embroidery	narrow parts as satin	узкие части гладью
+@plural	{count} object|{count} objects	{count} объект|{count} объекта|{count} объектов
+@plural	{count} jump|{count} jumps	{count} перескок|{count} перескока|{count} перескоков
+@plural	{count} trim|{count} trims	{count} обрезка|{count} обрезки|{count} обрезок
+embroidery	about {value}	около {value}
+embroidery	Colours	Цвета
+embroidery	Thread changes	Смены нити
+embroidery	Trims	Обрезки
+embroidery	Jumps	Перескоки
+embroidery	Top thread	Верхняя нить
+embroidery	Size	Размер
+embroidery	Time	Время
+embroidery	Design	Дизайн
+embroidery	The time at {speed} stitches a minute, an estimate.	Время при {speed} стежках в минуту, оценка.

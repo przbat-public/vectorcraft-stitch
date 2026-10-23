@@ -5303,3 +5303,26 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} βελονιά|{count} βελονιές
 @msg	tab {tab}: one of {_1}	καρτέλα {tab}: μία από {_1}
 @msg	unknown key `{k}`: the only one is tab	άγνωστο κλειδί `{k}`: το μόνο είναι tab
+embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Κεντιέται από το κάτω μέρος της στοίβας προς τα πάνω· τα αντικείμενα μιας κλωστής ενώνονται όταν τίποτα δεν βρίσκεται ανάμεσά τους.
+embroidery	Trim and thread change	Κόψιμο και αλλαγή κλωστής
+embroidery	Thread change	Αλλαγή κλωστής
+embroidery	fill	γέμισμα
+embroidery	stroke	πινελιά
+embroidery	from the file	από το αρχείο
+embroidery	running stitch	ευθεία βελονιά
+embroidery	satin	σατέν
+embroidery	tatami	τατάμι
+embroidery	narrow parts as satin	στενά τμήματα ως σατέν
+@plural	{count} object|{count} objects	{count} αντικείμενο|{count} αντικείμενα
+@plural	{count} jump|{count} jumps	{count} άλμα|{count} άλματα
+@plural	{count} trim|{count} trims	{count} κόψιμο|{count} κοψίματα
+embroidery	about {value}	περίπου {value}
+embroidery	Colours	Χρώματα
+embroidery	Thread changes	Αλλαγές κλωστής
+embroidery	Trims	Κοψίματα
+embroidery	Jumps	Άλματα
+embroidery	Top thread	Πάνω κλωστή
+embroidery	Size	Μέγεθος
+embroidery	Time	Χρόνος
+embroidery	Design	Σχέδιο
+embroidery	The time at {speed} stitches a minute, an estimate.	Ο χρόνος με {speed} βελονιές το λεπτό, κατ’ εκτίμηση.

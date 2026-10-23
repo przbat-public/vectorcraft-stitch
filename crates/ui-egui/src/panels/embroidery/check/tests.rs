@@ -221,3 +221,105 @@ fn zoom_to_fits_a_box() {
     app.canvas_rect = None;
     assert!(app.run("view.zoomTo", json!({"rect": [0, 0, 1, 1]})).is_err(), "no canvas");
 }
+
+/// The check as the tab shows it, ready.
+fn shown_check(app: &mut VectorcraftApp, ctx: &egui::Context) -> (u64, Value) {
+    app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 600.0)));
+    ready(app, ctx);
+    let uid = app.session.active().unwrap().uid;
+    let q = query(&app.embroidery.check, uid);
+    let (result, current) = app.embroidery.preview.shown(uid).unwrap().reply(&q).unwrap();
+    assert!(current);
+    (uid, result.clone().unwrap())
+}
+
+fn selection(app: &VectorcraftApp) -> Vec<u64> {
+    app.session.doc().unwrap().selection.objects.iter().map(|id| id.0).collect()
+}
+
+/// Show selects a rule's objects and zooms to its hits; its stitches stand out for a moment.
+#[test]
+fn show_selects_the_rules_objects_and_zooms_to_its_hits() {
+    let mut app = app_with_findings();
+    let ctx = egui::Context::default();
+    let (uid, reply) = shown_check(&mut app, &ctx);
+    let rule = rule_of(&reply, "stitchBelowNeedle").unwrap().clone();
+    show_findings(&mut app, uid, &reply, "stitchBelowNeedle", None).unwrap();
+    let objects: Vec<u64> = rule["objects"].as_array().unwrap().iter().map(|o| o.as_u64().unwrap()).collect();
+    assert_eq!(selection(&app), objects);
+    // The view is centred inside the hits' box.
+    let points: Vec<Point> = listed(&rule).iter().flat_map(hit_points).map(|p| Point::new(mm_to_pt(p.x), mm_to_pt(p.y))).collect();
+    let (x0, x1) = points.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.x), b.max(p.x)));
+    let c = app.view().unwrap().center;
+    assert!(c.x >= x0 && c.x <= x1, "{c:?} in {x0}..{x1}");
+    // The next frame stands the objects' stitches out, and the row is the focus.
+    frame(&mut app, &ctx, 1.0);
+    assert!(app.embroidery.layer.emphasis().is_some_and(|u| !u.is_empty()));
+    assert_eq!(app.embroidery.check.focus.as_ref().map(|f| f.rule.as_str()), Some("stitchBelowNeedle"));
+    // Only for a moment.
+    app.embroidery.layer.emphasize(vec![]);
+    frame(&mut app, &ctx, 1.0 + SHOW_EMPHASIS_SECS + 0.1);
+    assert_eq!(app.embroidery.layer.emphasis(), Some(&[][..]), "not asked again");
+}
+
+/// A hit shown selects its own object and zooms to it; art left out is shown by its objects.
+#[test]
+fn a_hit_and_art_left_out_shown() {
+    let mut app = app_with_findings();
+    let ctx = egui::Context::default();
+    let (uid, reply) = shown_check(&mut app, &ctx);
+    let hit = listed(rule_of(&reply, "stitchBelowNeedle").unwrap())[2].clone();
+    show_findings(&mut app, uid, &reply, "stitchBelowNeedle", Some(2)).unwrap();
+    assert_eq!(selection(&app), [hit["id"].as_u64().unwrap()]);
+    let wide = app.view().unwrap().zoom;
+    assert!(wide > 1.0, "zoomed in on one stitch: {wide}");
+    // The type left out: no point to zoom to, so its object's box.
+    show_findings(&mut app, uid, &reply, "notSewn", None).unwrap();
+    let text = app.session.doc().unwrap().doc.clone();
+    let id = selection(&app);
+    assert_eq!(id.len(), 1);
+    let bounds = text.node(NodeId(id[0])).unwrap().geometric_bounds().unwrap();
+    let c = app.view().unwrap().center;
+    assert!((c.x - bounds.center().x).abs() < 1e-6 && (c.y - bounds.center().y).abs() < 1e-6, "{c:?} {bounds:?}");
+}
+
+/// Objects deleted since the check are left out of what Show selects.
+#[test]
+fn show_skips_objects_deleted_since_the_check() {
+    let mut app = app_with_findings();
+    let ctx = egui::Context::default();
+    let (uid, reply) = shown_check(&mut app, &ctx);
+    let objects: Vec<u64> =
+        rule_of(&reply, "stitchBelowNeedle").unwrap()["objects"].as_array().unwrap().iter().map(|o| o.as_u64().unwrap()).collect();
+    app.run("select.set", json!({"ids": [objects[0]]})).unwrap();
+    app.run("edit.clear", json!({})).unwrap();
+    show_findings(&mut app, uid, &reply, "stitchBelowNeedle", None).unwrap();
+    assert_eq!(selection(&app), objects[1..]);
+}
+
+/// Next and Previous Finding step through the listed hits of the rule shown, round from the end;
+/// they are off while the check is of an older plan.
+#[test]
+fn next_and_previous_finding() {
+    let mut app = app_with_findings();
+    let ctx = egui::Context::default();
+    let (uid, reply) = shown_check(&mut app, &ctx);
+    assert!(!crate::menus::enabled(&app, "embroidery.nextHit"), "nothing shown yet");
+    assert!(app.run("embroidery.nextHit", json!({})).is_err());
+    show_findings(&mut app, uid, &reply, "layers", None).unwrap();
+    assert!(crate::menus::enabled(&app, "embroidery.nextHit"));
+    let n = listed(rule_of(&reply, "layers").unwrap()).len();
+    assert_eq!(app.run("embroidery.nextHit", json!({})).unwrap()["hit"], json!(0));
+    assert_eq!(app.run("embroidery.nextHit", json!({})).unwrap()["hit"], json!(1));
+    assert_eq!(app.run("embroidery.previousHit", json!({})).unwrap()["hit"], json!(0));
+    assert_eq!(app.run("embroidery.previousHit", json!({})).unwrap()["hit"], json!(n - 1), "round to the last");
+    // A change: off until the new plan's check comes.
+    app.run("select.all", json!({})).unwrap();
+    app.run("object.move", json!({"dx": 1, "dy": 0})).unwrap();
+    assert!(!crate::menus::enabled(&app, "embroidery.nextHit"));
+    assert!(app.run("embroidery.nextHit", json!({})).is_err());
+    for t in [2.0, 2.05, 2.1, 2.2, 2.3] {
+        frame(&mut app, &ctx, t);
+    }
+    assert!(crate::menus::enabled(&app, "embroidery.nextHit"));
+}

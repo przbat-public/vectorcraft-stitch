@@ -5037,3 +5037,13 @@ embroidery	Block {block}: {thread}, {value}	Block {block}: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] in Dokumentpunkten, right nicht vor left und bottom nicht über top
 @msg	margin: screen points, 0 or more	margin: Bildschirmpunkte, 0 oder mehr
 @msg	no canvas is shown	keine Zeichenfläche angezeigt
+	Next Finding	Nächster Befund
+	Previous Finding	Vorheriger Befund
+embroidery	Next Finding	Nächster Befund
+embroidery	Previous Finding	Vorheriger Befund
+embroidery	Show	Zeigen
+embroidery	{index} of {count}	{index} von {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	kein Befund angezeigt: zeigen Sie einen auf der Registerkarte „Prüfung“ des Bedienfelds „Stickerei“
+@msg	the check is out of date: wait for the stitches to be planned	die Prüfung ist veraltet: warten Sie, bis die Stiche geplant sind
+@msg	no such rule in the check	diese Regel gibt es in der Prüfung nicht
+@msg	no such finding in the check	diesen Befund gibt es in der Prüfung nicht

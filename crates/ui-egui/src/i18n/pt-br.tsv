@@ -5378,3 +5378,13 @@ embroidery	Block {block}: {thread}, {value}	Bloco {block}: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] em pontos do documento, com right não antes de left e bottom não acima de top
 @msg	margin: screen points, 0 or more	margin: pontos de tela, 0 ou mais
 @msg	no canvas is shown	nenhuma tela de desenho é exibida
+	Next Finding	Próxima ocorrência
+	Previous Finding	Ocorrência anterior
+embroidery	Next Finding	Próxima ocorrência
+embroidery	Previous Finding	Ocorrência anterior
+embroidery	Show	Mostrar
+embroidery	{index} of {count}	{index} de {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	nenhuma ocorrência é mostrada: mostre uma na guia Verificação do painel Bordado
+@msg	the check is out of date: wait for the stitches to be planned	a verificação está desatualizada: aguarde o planejamento dos pontos
+@msg	no such rule in the check	essa regra não existe na verificação
+@msg	no such finding in the check	essa ocorrência não existe na verificação

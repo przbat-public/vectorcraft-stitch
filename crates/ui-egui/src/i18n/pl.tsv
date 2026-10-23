@@ -5313,3 +5313,13 @@ embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] w punktach dokumentu, przy czym right nie może być przed left, a bottom nad top
 @msg	margin: screen points, 0 or more	margin: punkty ekranu, 0 lub więcej
 @msg	no canvas is shown	nie jest wyświetlany żaden obszar roboczy
+	Next Finding	Następne znalezisko
+	Previous Finding	Poprzednie znalezisko
+embroidery	Next Finding	Następne znalezisko
+embroidery	Previous Finding	Poprzednie znalezisko
+embroidery	Show	Pokaż
+embroidery	{index} of {count}	{index} z {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	nie pokazano żadnego znaleziska: pokaż je na karcie Kontrola panelu Haft
+@msg	the check is out of date: wait for the stitches to be planned	kontrola jest nieaktualna: poczekaj, aż ściegi zostaną zaplanowane
+@msg	no such rule in the check	nie ma takiej reguły w kontroli
+@msg	no such finding in the check	nie ma takiego znaleziska w kontroli

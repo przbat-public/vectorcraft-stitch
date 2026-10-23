@@ -5426,3 +5426,13 @@ embroidery	Block {block}: {thread}, {value}	Lohko {block}: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] asiakirjan pisteinä; right ei saa olla ennen left-arvoa eikä bottom top-arvon yläpuolella
 @msg	margin: screen points, 0 or more	margin: näytön pisteinä, 0 tai enemmän
 @msg	no canvas is shown	piirtoaluetta ei näytetä
+	Next Finding	Seuraava löydös
+	Previous Finding	Edellinen löydös
+embroidery	Next Finding	Seuraava löydös
+embroidery	Previous Finding	Edellinen löydös
+embroidery	Show	Näytä
+embroidery	{index} of {count}	{index}/{count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	löydöstä ei näytetä: näytä jokin Kirjonta-paneelin Tarkistus-välilehdellä
+@msg	the check is out of date: wait for the stitches to be planned	tarkistus on vanhentunut: odota, että pistot suunnitellaan
+@msg	no such rule in the check	tarkistuksessa ei ole tällaista sääntöä
+@msg	no such finding in the check	tarkistuksessa ei ole tällaista löydöstä

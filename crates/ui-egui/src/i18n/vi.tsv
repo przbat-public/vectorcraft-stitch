@@ -5055,3 +5055,13 @@ embroidery	Block {block}: {thread}, {value}	Khối {block}: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] theo điểm tài liệu, với right không trước left và bottom không trên top
 @msg	margin: screen points, 0 or more	margin: điểm màn hình, 0 trở lên
 @msg	no canvas is shown	không có khung vẽ nào được hiển thị
+	Next Finding	Phát hiện tiếp theo
+	Previous Finding	Phát hiện trước
+embroidery	Next Finding	Phát hiện tiếp theo
+embroidery	Previous Finding	Phát hiện trước
+embroidery	Show	Hiện
+embroidery	{index} of {count}	{index} / {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	không có phát hiện nào được hiển thị: hãy hiện một mục trong thẻ Kiểm tra của bảng Thêu
+@msg	the check is out of date: wait for the stitches to be planned	kết quả kiểm tra đã cũ: hãy chờ các mũi thêu được lên kế hoạch
+@msg	no such rule in the check	không có quy tắc này trong kết quả kiểm tra
+@msg	no such finding in the check	không có phát hiện này trong kết quả kiểm tra

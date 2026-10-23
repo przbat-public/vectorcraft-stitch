@@ -5418,3 +5418,13 @@ embroidery	Block {block}: {thread}, {value}	Block {block}: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] i dokumentpunkter, med right inte före left och bottom inte ovanför top
 @msg	margin: screen points, 0 or more	margin: skärmpunkter, 0 eller mer
 @msg	no canvas is shown	ingen arbetsyta visas
+	Next Finding	Nästa fynd
+	Previous Finding	Föregående fynd
+embroidery	Next Finding	Nästa fynd
+embroidery	Previous Finding	Föregående fynd
+embroidery	Show	Visa
+embroidery	{index} of {count}	{index} av {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	inget fynd visas: visa ett på fliken Kontroll i panelen Broderi
+@msg	the check is out of date: wait for the stitches to be planned	kontrollen är inaktuell: vänta tills stygnen har planerats
+@msg	no such rule in the check	kontrollen har ingen sådan regel
+@msg	no such finding in the check	kontrollen har inget sådant fynd

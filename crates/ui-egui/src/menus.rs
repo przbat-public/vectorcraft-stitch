@@ -592,6 +592,18 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{selected?: preset name} open the presets manager (dialog `flattenerPresets`, fields `selected`, then the selected preset's `name` and option keys: setting them on a saved preset saves it, a new `name` renames it; built-in presets don't change). New, Delete, Import… and Export… run flattener.presets.save / delete / import / export",
     ),
     (
+        "embroidery.nextHit",
+        "Next Finding",
+        "",
+        "{} (VectorCraft Stitch) show the next listed hit of the check rule shown last in the Embroidery panel's Check tab (round from the last to the first): select its object and zoom to it; off while no finding is shown or the check is of an older plan → {rule, hit: from 0}",
+    ),
+    (
+        "embroidery.previousHit",
+        "Previous Finding",
+        "",
+        "{} (VectorCraft Stitch) show the previous listed hit of the check rule shown last (round from the first to the last), as embroidery.nextHit → {rule, hit}",
+    ),
+    (
         "ui.embroideryPanel",
         "Embroidery Panel",
         "",
@@ -2255,6 +2267,10 @@ pub(crate) fn waits_for_ime(app: &VectorcraftApp, id: &str) -> bool {
 pub fn enabled(app: &VectorcraftApp, id: &str) -> bool {
     if waits_for_ime(app, id) {
         return false;
+    }
+    // VectorCraft Stitch: the Embroidery panel's own commands.
+    if let Some(on) = crate::panels::embroidery::enabled(app, id) {
+        return on;
     }
     if let Some(c) = vectorcraft_engine::find_command(id) {
         // The system clipboard's contents can be pasted with an empty internal clipboard.

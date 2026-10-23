@@ -4350,3 +4350,13 @@ embroidery	Block {block}: {thread}, {value}	第 {block} 塊：{thread}，{value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect：[left， top， right， bottom](文件點)，right 不小於 left，bottom 不小於 top
 @msg	margin: screen points, 0 or more	margin：螢幕點，0 或更大
 @msg	no canvas is shown	未顯示畫布
+	Next Finding	下一個問題
+	Previous Finding	上一個問題
+embroidery	Next Finding	下一個問題
+embroidery	Previous Finding	上一個問題
+embroidery	Show	顯示
+embroidery	{index} of {count}	第 {index} 個，共 {count} 個
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	未顯示任何問題：請在「刺繡」面板的「檢查」標籤中顯示一個
+@msg	the check is out of date: wait for the stitches to be planned	檢查結果已過時：請等待針跡規劃完成
+@msg	no such rule in the check	檢查中沒有此規則
+@msg	no such finding in the check	檢查中沒有此問題

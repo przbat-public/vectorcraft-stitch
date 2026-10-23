@@ -5055,3 +5055,13 @@ embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] у пунктах документа; right не лівіше за left, bottom не вище за top
 @msg	margin: screen points, 0 or more	margin: пункти екрана, 0 або більше
 @msg	no canvas is shown	полотно не показано
+	Next Finding	Наступна знахідка
+	Previous Finding	Попередня знахідка
+embroidery	Next Finding	Наступна знахідка
+embroidery	Previous Finding	Попередня знахідка
+embroidery	Show	Показати
+embroidery	{index} of {count}	{index} з {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	знахідку не показано: покажіть її на вкладці «Перевірка» панелі «Вишивка»
+@msg	the check is out of date: wait for the stitches to be planned	перевірка застаріла: дочекайтеся планування стібків
+@msg	no such rule in the check	у перевірці немає такого правила
+@msg	no such finding in the check	у перевірці немає такої знахідки

@@ -5038,3 +5038,13 @@ embroidery	Block {block}: {thread}, {value}	{block}번 블록: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] (문서 포인트 단위, right는 left 이상, bottom은 top 이상)
 @msg	margin: screen points, 0 or more	margin: 화면 포인트 단위, 0 이상
 @msg	no canvas is shown	표시된 캔버스가 없습니다
+	Next Finding	다음 발견 항목
+	Previous Finding	이전 발견 항목
+embroidery	Next Finding	다음 발견 항목
+embroidery	Previous Finding	이전 발견 항목
+embroidery	Show	보기
+embroidery	{index} of {count}	{index} / {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	표시된 발견 항목이 없습니다: 자수 패널의 검사 탭에서 하나를 표시하세요
+@msg	the check is out of date: wait for the stitches to be planned	검사가 최신이 아닙니다: 땀 계획이 끝날 때까지 기다리세요
+@msg	no such rule in the check	검사에 그런 규칙이 없습니다
+@msg	no such finding in the check	검사에 그런 발견 항목이 없습니다

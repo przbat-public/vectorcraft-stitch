@@ -5071,3 +5071,13 @@ embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] в пунктах документа; right не левее left, bottom не выше top
 @msg	margin: screen points, 0 or more	margin: пункты экрана, 0 или больше
 @msg	no canvas is shown	холст не показан
+	Next Finding	Следующая находка
+	Previous Finding	Предыдущая находка
+embroidery	Next Finding	Следующая находка
+embroidery	Previous Finding	Предыдущая находка
+embroidery	Show	Показать
+embroidery	{index} of {count}	{index} из {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	находка не показана: покажите её на вкладке «Проверка» панели «Вышивка»
+@msg	the check is out of date: wait for the stitches to be planned	проверка устарела: дождитесь планирования стежков
+@msg	no such rule in the check	в проверке нет такого правила
+@msg	no such finding in the check	в проверке нет такой находки

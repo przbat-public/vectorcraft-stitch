@@ -5115,3 +5115,13 @@ embroidery	Block {block}: {thread}, {value}	ブロック {block}: {thread}、{va
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] (ドキュメントのポイント単位。right は left 以上、bottom は top 以上)
 @msg	margin: screen points, 0 or more	margin: 画面のポイント単位、0 以上
 @msg	no canvas is shown	キャンバスが表示されていません
+	Next Finding	次の検出箇所
+	Previous Finding	前の検出箇所
+embroidery	Next Finding	次の検出箇所
+embroidery	Previous Finding	前の検出箇所
+embroidery	Show	表示
+embroidery	{index} of {count}	{index} / {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	検出箇所が表示されていません: 刺繍パネルのチェックタブで表示してください
+@msg	the check is out of date: wait for the stitches to be planned	チェックが古くなっています: 針目の計画が終わるまでお待ちください
+@msg	no such rule in the check	チェックにそのようなルールはありません
+@msg	no such finding in the check	チェックにそのような検出箇所はありません

@@ -1607,6 +1607,17 @@ palette's by default; another can be chosen for the document for the session, wh
 without planning again. Under the rules, what isn't checked (stitch density, needle penetrations in
 an area, tie stitches: no source gives a number for them).
 
+**Show** (a rule's button, or a hit's line) selects the rule's objects, or the hit's, leaving out any
+deleted since the check, and zooms to its hits (`view.zoomTo`, Zoom to Box: a generic UI command
+that centres a box of document points and fits it in the window), grown by 3 mm and at least 10 mm
+across (estimates, so that one stitch isn't zoomed to the zoom's limit); a rule whose hits point at
+nothing (art left out, a mismatched thread) zooms to its objects. For 1.5 s the objects' stitches
+stand out on the canvas (the stitch layer's emphasis: the project owner's choice, only for a
+moment). What was shown last is the tab's focus: Next and Previous Finding (`embroidery.nextHit`,
+`embroidery.previousHit`, the opened rule's ‹ and › and the panel's ≡ menu) step through its listed
+hits, round from the end. They are off while the check is of an older plan than the document's,
+even in the moment after a change before a frame has drawn.
+
 **Measured first** (gate 1 of the stitch preview: `vectorcraft-cli perf --embroidery`, release
 build, 12-core Apple Silicon, load about 4, the median of five frames, twice; 2026-10-23). The
 pictures are built in code without the planner (`perf_embroidery::stitch_picture`: square tiles of

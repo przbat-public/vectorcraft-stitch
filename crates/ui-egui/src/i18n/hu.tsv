@@ -5448,3 +5448,13 @@ embroidery	Block {block}: {thread}, {value}	{block}. blokk: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] dokumentumpontban; a right nem lehet a left előtt, a bottom pedig nem lehet a top fölött
 @msg	margin: screen points, 0 or more	margin: képernyőpont, 0 vagy több
 @msg	no canvas is shown	nincs megjelenítve rajzvászon
+	Next Finding	Következő találat
+	Previous Finding	Előző találat
+embroidery	Next Finding	Következő találat
+embroidery	Previous Finding	Előző találat
+embroidery	Show	Mutasd
+embroidery	{index} of {count}	{index}/{count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	nincs megjelenítve találat: jelenítsen meg egyet a Hímzés panel Ellenőrzés lapján
+@msg	the check is out of date: wait for the stitches to be planned	az ellenőrzés elavult: várja meg, amíg az öltések megtervezése elkészül
+@msg	no such rule in the check	nincs ilyen szabály az ellenőrzésben
+@msg	no such finding in the check	nincs ilyen találat az ellenőrzésben

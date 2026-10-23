@@ -5488,3 +5488,13 @@ embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] in documentpunten, right niet vóór left en bottom niet boven top
 @msg	margin: screen points, 0 or more	margin: schermpunten, 0 of meer
 @msg	no canvas is shown	er wordt geen canvas weergegeven
+	Next Finding	Volgende bevinding
+	Previous Finding	Vorige bevinding
+embroidery	Next Finding	Volgende bevinding
+embroidery	Previous Finding	Vorige bevinding
+embroidery	Show	Tonen
+embroidery	{index} of {count}	{index} van {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	er wordt geen bevinding getoond: toon er een op het tabblad Controle van het deelvenster Borduurwerk
+@msg	the check is out of date: wait for the stitches to be planned	de controle is verouderd: wacht tot de steken zijn gepland
+@msg	no such rule in the check	deze regel komt niet voor in de controle
+@msg	no such finding in the check	deze bevinding komt niet voor in de controle

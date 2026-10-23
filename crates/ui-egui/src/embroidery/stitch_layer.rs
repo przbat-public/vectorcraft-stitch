@@ -186,6 +186,12 @@ impl StitchLayer {
         self.emphasis = Some(units);
     }
 
+    /// The units asked to stand out in this frame, before it draws.
+    #[cfg(test)]
+    pub(crate) fn emphasis(&self) -> Option<&[u32]> {
+        self.emphasis.as_deref()
+    }
+
     /// Whether the last frame drew the stitch view.
     pub fn drawn(&self) -> bool {
         self.shown

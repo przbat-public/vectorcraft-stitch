@@ -5298,3 +5298,13 @@ embroidery	Block {block}: {thread}, {value}	第 {block} 块：{thread}，{value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect：[left， top， right， bottom](文档点)，right 不小于 left，bottom 不小于 top
 @msg	margin: screen points, 0 or more	margin：屏幕点，0 或更大
 @msg	no canvas is shown	未显示画布
+	Next Finding	下一个问题
+	Previous Finding	上一个问题
+embroidery	Next Finding	下一个问题
+embroidery	Previous Finding	上一个问题
+embroidery	Show	显示
+embroidery	{index} of {count}	第 {index} 个，共 {count} 个
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	未显示任何问题：请在“刺绣”面板的“检查”标签中显示一个
+@msg	the check is out of date: wait for the stitches to be planned	检查结果已过时：请等待针迹规划完成
+@msg	no such rule in the check	检查中没有此规则
+@msg	no such finding in the check	检查中没有此问题

@@ -5445,3 +5445,13 @@ embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] dalam poin dokumen, dengan right tidak sebelum left dan bottom tidak di atas top
 @msg	margin: screen points, 0 or more	margin: poin layar, 0 atau lebih
 @msg	no canvas is shown	tidak ada kanvas yang ditampilkan
+	Next Finding	Temuan berikutnya
+	Previous Finding	Temuan sebelumnya
+embroidery	Next Finding	Temuan berikutnya
+embroidery	Previous Finding	Temuan sebelumnya
+embroidery	Show	Tampilkan
+embroidery	{index} of {count}	{index} dari {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	tidak ada temuan yang ditampilkan: tampilkan satu di tab Pemeriksaan pada panel Bordir
+@msg	the check is out of date: wait for the stitches to be planned	pemeriksaan sudah usang: tunggu hingga jahitan selesai direncanakan
+@msg	no such rule in the check	tidak ada aturan itu dalam pemeriksaan
+@msg	no such finding in the check	tidak ada temuan itu dalam pemeriksaan

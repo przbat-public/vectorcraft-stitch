@@ -206,6 +206,12 @@ impl StitchPreview {
         self.docs.get(&uid)?.shown.as_ref()
     }
 
+    /// Whether document `uid`'s stitches shown are those of the document as it was at the end of
+    /// the last frame.
+    pub fn is_fresh(&self, uid: u64) -> bool {
+        self.docs.get(&uid).is_some_and(|d| matches!((&d.shown, &d.wanted), (Some(s), Some((key, _))) if s.key == *key))
+    }
+
     /// How document `uid`'s stitches shown stand to it as it was at the end of the last frame.
     pub fn freshness(&self, uid: u64, now: f64) -> Freshness {
         if !self.asked {

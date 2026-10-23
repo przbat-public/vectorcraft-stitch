@@ -100,12 +100,23 @@ fn queries(app: &VectorcraftApp, uid: u64, tab: Tab) -> Vec<Query> {
     }
 }
 
-/// Window › Embroidery and `ui.embroideryPanel {tab?}`: the panel's own handling of the commands
-/// that show it, before the dock's (`None` for any other command).
+/// Window › Embroidery, `ui.embroideryPanel {tab?}`, and Next and Previous Finding: the panel's own
+/// handling of its commands, before the dock's (`None` for any other command).
 pub(crate) fn command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<Result<Value, String>> {
     match id {
         "window.panel" if p.get("panel").and_then(Value::as_str).and_then(crate::menus::normalize_panel) == Some(ID) => Some(show_panel(app)),
         "ui.embroideryPanel" => Some(panel_command(app, p)),
+        "embroidery.nextHit" => Some(check::step(app, true)),
+        "embroidery.previousHit" => Some(check::step(app, false)),
+        _ => None,
+    }
+}
+
+/// Whether the panel's own commands can run now (`None` for any other command): Next and Previous
+/// Finding need a finding shown, on a check of the plan shown.
+pub(crate) fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
+    match id {
+        "embroidery.nextHit" | "embroidery.previousHit" => Some(check::can_step(app)),
         _ => None,
     }
 }
@@ -156,7 +167,7 @@ fn show_panel(app: &mut VectorcraftApp) -> Result<Value, String> {
 }
 
 /// The panel's ≡ menu: the selection sewn earlier, later, first or last; the Sewing order's blocks
-/// collapsed or expanded.
+/// collapsed or expanded; the next or previous finding of the check.
 pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
     for (label, cmd) in [
         (crate::et!("Sew Earlier"), "embroidery.sewEarlier"),
@@ -176,6 +187,14 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
     }
     if crate::widgets::menu_item_name(ui, crate::et!("Expand All"), true, false) {
         app.embroidery.order.collapse(Vec::new());
+    }
+    ui.separator();
+    let steps = check::can_step(app);
+    if crate::widgets::menu_item_name(ui, crate::et!("Next Finding"), steps, false) {
+        crate::menus::invoke(app, "embroidery.nextHit", json!({}));
+    }
+    if crate::widgets::menu_item_name(ui, crate::et!("Previous Finding"), steps, false) {
+        crate::menus::invoke(app, "embroidery.previousHit", json!({}));
     }
 }
 

@@ -5427,3 +5427,13 @@ embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] в точки на документа, като right не е преди left, а bottom не е над top
 @msg	margin: screen points, 0 or more	margin: точки на екрана, 0 или повече
 @msg	no canvas is shown	не е показано платно
+	Next Finding	Следваща находка
+	Previous Finding	Предишна находка
+embroidery	Next Finding	Следваща находка
+embroidery	Previous Finding	Предишна находка
+embroidery	Show	Покажи
+embroidery	{index} of {count}	{index} от {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	не е показана находка: покажете такава в раздела „Проверка“ на панела „Бродерия“
+@msg	the check is out of date: wait for the stitches to be planned	проверката е остаряла: изчакайте бодовете да бъдат планирани
+@msg	no such rule in the check	няма такова правило в проверката
+@msg	no such finding in the check	няма такава находка в проверката

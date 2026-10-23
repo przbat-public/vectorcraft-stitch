@@ -5075,3 +5075,13 @@ embroidery	Block {block}: {thread}, {value}	Blocco {block}: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, right at or past left and bottom at or below top	rect: [left, top, right, bottom] in punti del documento, con right non prima di left e bottom non sopra top
 @msg	margin: screen points, 0 or more	margin: punti dello schermo, 0 o più
 @msg	no canvas is shown	nessuna area di disegno visualizzata
+	Next Finding	Rilievo successivo
+	Previous Finding	Rilievo precedente
+embroidery	Next Finding	Rilievo successivo
+embroidery	Previous Finding	Rilievo precedente
+embroidery	Show	Mostra
+embroidery	{index} of {count}	{index} di {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	nessun rilievo mostrato: mostrane uno nella scheda Verifica del pannello Ricamo
+@msg	the check is out of date: wait for the stitches to be planned	la verifica non è aggiornata: attendi che i punti siano pianificati
+@msg	no such rule in the check	questa regola non è presente nella verifica
+@msg	no such finding in the check	questo rilievo non è presente nella verifica

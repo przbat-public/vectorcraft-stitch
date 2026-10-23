@@ -11,6 +11,10 @@
 //!   link) and the first hits.
 //! - **The format** whose limits apply is the document's thread palette's by default, as the
 //!   command picks it; another can be chosen for the document, for the session.
+//! - **Show** selects a rule's objects (or one hit's) and zooms to its hits, or to the objects when
+//!   it has none to point at; their stitches stand out on the canvas for a moment. What was shown
+//!   last is the tab's focus, which Next and Previous Finding step through (`embroidery.nextHit`,
+//!   `embroidery.previousHit`), never on a check of an older plan.
 //! - The check is asked for only while the tab is open ([`super::queries`]); a newer plan's check
 //!   replaces the last, which stays dimmed until then.
 
@@ -19,7 +23,8 @@ use std::collections::{HashMap, HashSet};
 use egui::{Color32, FontId, Rect, Sense, Ui, pos2, vec2};
 use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId};
-use vectorcraft_engine::cmd::embroidery::check_formats;
+use vectorcraft_engine::cmd::embroidery::{check_formats, mm_to_pt};
+use vectorcraft_geom::{Point, Rect as DocRect};
 
 use crate::VectorcraftApp;
 use crate::embroidery::marks::{self, MARK_SIZE, Mark};
@@ -46,6 +51,13 @@ const TEXT: f32 = 12.0;
 const SMALL: f32 = 11.0;
 /// How much a result checked on an older plan is dimmed, as the Sewing order dims its rows.
 const STALE_INK: f32 = 0.6;
+/// How long Show stands the stitches it shows out on the canvas, seconds: only for a moment (the
+/// project owner's choice). An estimate: long enough to find them, short enough not to linger.
+pub const SHOW_EMPHASIS_SECS: f64 = 1.5;
+/// The room Show leaves round what it zooms to, and the smallest box it zooms to, millimetres:
+/// estimates, so that one stitch isn't zoomed to the zoom's limit.
+pub const SHOW_MARGIN_MM: f64 = 3.0;
+pub const SHOW_MIN_BOX_MM: f64 = 10.0;
 
 /// The rules this version words itself, in the engine's order: any other the engine lists shows
 /// its own English title.
@@ -77,6 +89,20 @@ pub struct CheckState {
     /// Since when the check asked for has been waiting (seconds, the frame's clock), for the busy
     /// mark ([`super::SHOW_BUSY_AFTER_SECS`]).
     waiting_since: Option<f64>,
+    /// What Show showed last.
+    pub(crate) focus: Option<Focus>,
+}
+
+/// What Show showed last: a rule's findings, or one of its hits (by its place in the rule's listed
+/// hits), in a document; the objects whose stitches it stands out, and since when (the frame's
+/// clock; set by the first frame that draws it).
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Focus {
+    pub(crate) uid: u64,
+    pub(crate) rule: String,
+    pub(crate) hit: Option<usize>,
+    pub(crate) objects: Vec<u64>,
+    pub(crate) since: Option<f64>,
 }
 
 /// What the tab asks the planning thread for: the check, with the hits it lists and the format
@@ -274,6 +300,116 @@ enum Act {
     Toggle(String),
     Format(&'static str),
     Open(String),
+    Show(String, Option<usize>),
+    Step(bool),
+}
+
+/// A rule's listed hits.
+fn listed(rule: &Value) -> &[Value] {
+    rule["examples"].as_array().map(Vec::as_slice).unwrap_or_default()
+}
+
+/// The rule `id` of a reply.
+fn rule_of<'a>(reply: &'a Value, id: &str) -> Option<&'a Value> {
+    reply["rules"].as_array()?.iter().find(|r| r["id"] == id)
+}
+
+/// Where a hit is, millimetres: where its stitch starts and ends, or its one point.
+fn hit_points(hit: &Value) -> Vec<Point> {
+    let point = |v: &Value| Some(Point::new(v.get(0)?.as_f64()?, v.get(1)?.as_f64()?)).filter(|p| p.x.is_finite() && p.y.is_finite());
+    [point(&hit["from"]), point(&hit["at"])].into_iter().flatten().collect()
+}
+
+/// The objects a hit is about: its own, or those whose art a `notSewn` hit left out.
+fn hit_objects(hit: &Value) -> Vec<u64> {
+    match hit["objects"].as_array() {
+        Some(ids) => ids.iter().filter_map(Value::as_u64).collect(),
+        None => hit["id"].as_u64().into_iter().collect(),
+    }
+}
+
+/// Whether Show has something to show for `rule`: hits, with objects or points.
+fn showable(rule: &Value) -> bool {
+    rule["hits"].as_u64().unwrap_or(0) > 0
+        && (rule["objects"].as_array().is_some_and(|o| !o.is_empty())
+            || listed(rule).iter().any(|h| !hit_points(h).is_empty() || !hit_objects(h).is_empty()))
+}
+
+/// Show rule `id`'s findings in document `uid` (`hit`: one of them): select their objects (those
+/// still in the document), zoom to their hits (or to the objects when they point at none), and
+/// focus them: their stitches stand out for a moment, and Next and Previous Finding go on from
+/// them.
+pub(crate) fn show_findings(app: &mut VectorcraftApp, uid: u64, reply: &Value, id: &str, hit: Option<usize>) -> Result<Value, String> {
+    let rule = rule_of(reply, id).ok_or("no such rule in the check")?;
+    let hits = listed(rule);
+    let shown: Vec<&Value> = match hit {
+        Some(k) => vec![hits.get(k).ok_or("no such finding in the check")?],
+        None => hits.iter().collect(),
+    };
+    let objects: Vec<u64> = match hit {
+        Some(_) => shown.iter().flat_map(|h| hit_objects(h)).collect(),
+        None => rule["objects"].as_array().into_iter().flatten().filter_map(Value::as_u64).collect(),
+    };
+    let doc = app.session.doc().map_err(|e| e.to_string())?.doc.clone();
+    let present: Vec<u64> = objects.iter().copied().filter(|o| doc.node(NodeId(*o)).is_some()).collect();
+    // Where to zoom, in document points: the hits, else the objects.
+    let points: Vec<Point> = shown.iter().flat_map(|h| hit_points(h)).map(|p| Point::new(mm_to_pt(p.x), mm_to_pt(p.y))).collect();
+    let around = match points.split_first() {
+        Some((first, rest)) => Some(rest.iter().fold(DocRect::from_points(*first, *first), |r, p| r.union_pt(*p))),
+        None => present.iter().filter_map(|o| doc.node(NodeId(*o)).and_then(|n| n.geometric_bounds())).reduce(|a, b| a.union(b)),
+    };
+    if !present.is_empty() {
+        app.run("select.set", json!({ "ids": present }))?;
+    }
+    if let Some(r) = around {
+        let margin = mm_to_pt(SHOW_MARGIN_MM);
+        let least = mm_to_pt(SHOW_MIN_BOX_MM);
+        let r = r.inflate(margin, margin);
+        let (w, h) = (r.width().max(least), r.height().max(least));
+        let c = r.center();
+        let rect = [c.x - w / 2.0, c.y - h / 2.0, c.x + w / 2.0, c.y + h / 2.0];
+        app.run("view.zoomTo", json!({ "rect": rect }))?;
+    }
+    app.embroidery.check.focus = Some(Focus { uid, rule: id.to_string(), hit, objects: present, since: None });
+    Ok(json!({ "rule": id, "hit": hit }))
+}
+
+/// The active document's check as shown, when it is the plan's own and the plan is of the document
+/// as it is (no change since, even one no frame has drawn yet): the check that Next and Previous
+/// Finding step through.
+fn current_check(app: &VectorcraftApp) -> Option<(u64, Value)> {
+    let st = app.session.active()?;
+    let preview = &app.embroidery.preview;
+    let shown = preview.shown(st.uid)?;
+    let (result, current) = shown.reply(&query(&app.embroidery.check, st.uid))?;
+    let fresh = current && preview.is_fresh(st.uid) && std::sync::Arc::ptr_eq(&shown.document, &st.doc);
+    fresh.then(|| result.as_ref().ok().map(|r| (st.uid, r.clone()))).flatten()
+}
+
+/// Whether Next and Previous Finding can step: a finding shown in the active document, and its
+/// check the plan's own.
+pub(crate) fn can_step(app: &VectorcraftApp) -> bool {
+    let Some(focus) = &app.embroidery.check.focus else { return false };
+    current_check(app).is_some_and(|(uid, reply)| uid == focus.uid && rule_of(&reply, &focus.rule).is_some_and(|r| !listed(r).is_empty()))
+}
+
+/// `embroidery.nextHit` and `embroidery.previousHit`: show the next (`forward`) or previous listed
+/// hit of the rule shown last, round from the last to the first → `{rule, hit}`.
+pub(crate) fn step(app: &mut VectorcraftApp, forward: bool) -> Result<Value, String> {
+    let focus = app.embroidery.check.focus.clone().ok_or("no finding is shown: show one in the Embroidery panel's Check tab")?;
+    let (uid, reply) =
+        current_check(app).filter(|(uid, _)| *uid == focus.uid).ok_or("the check is out of date: wait for the stitches to be planned")?;
+    let n = rule_of(&reply, &focus.rule).map(|r| listed(r).len()).unwrap_or(0);
+    if n == 0 {
+        return Err("no finding is shown: show one in the Embroidery panel's Check tab".into());
+    }
+    let next = match (focus.hit, forward) {
+        (None, true) => 0,
+        (None, false) => n - 1,
+        (Some(k), true) => (k + 1) % n,
+        (Some(k), false) => (k + n - 1) % n,
+    };
+    show_findings(app, uid, &reply, &focus.rule, Some(next))
 }
 
 /// The tab.
@@ -320,10 +456,35 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
         });
     });
     ui.add_space(4.0);
+    // What was shown last: its index dropped when the hit is no longer listed; its stitches stood
+    // out for a moment.
+    if let Some(f) = app.embroidery.check.focus.as_mut().filter(|f| f.uid == shown.uid) {
+        if f.hit.is_some_and(|k| rule_of(reply, &f.rule).is_none_or(|r| k >= listed(r).len())) {
+            f.hit = None;
+        }
+        let since = *f.since.get_or_insert(now);
+        if now - since < SHOW_EMPHASIS_SECS {
+            let objects = f.objects.clone();
+            if let Some(plan) = app.embroidery.preview.shown(shown.uid).map(|s| s.planned.plan.clone()) {
+                let units: Vec<u32> = plan
+                    .units
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, u)| objects.contains(&u.origin.selected().0))
+                    .filter_map(|(k, _)| u32::try_from(k).ok())
+                    .collect();
+                if !units.is_empty() {
+                    app.embroidery.layer.emphasize(units);
+                }
+            }
+            ui.ctx().request_repaint();
+        }
+    }
+    let focus = app.embroidery.check.focus.clone().filter(|f| f.uid == shown.uid);
     let doc = app.session.doc().ok().map(|st| st.doc.clone());
     egui::ScrollArea::vertical().id_salt("embroidery-check").auto_shrink([false, false]).show(ui, |ui| {
         for rule in ordered(reply) {
-            row(app, ui, rule, format_label(format), stale, doc.as_deref(), &mut acts);
+            row(app, ui, rule, format_label(format), stale, doc.as_deref(), focus.as_ref(), &mut acts);
         }
         ui.add_space(8.0);
         not_checked(ui, reply, &t);
@@ -339,21 +500,46 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
                 app.embroidery.check.format.insert(shown.uid, id);
             }
             Act::Open(url) => app.open_url(&url),
+            Act::Show(id, hit) => {
+                if let Err(e) = show_findings(app, shown.uid, reply, &id, hit) {
+                    app.ui.status = crate::i18n::msg(&e);
+                }
+            }
+            Act::Step(forward) => {
+                if let Err(e) = step(app, forward) {
+                    app.ui.status = crate::i18n::msg(&e);
+                }
+            }
         }
     }
 }
 
 /// A rule's row: its mark, title and findings; opened, its sources and first hits.
-fn row(app: &VectorcraftApp, ui: &mut Ui, rule: &Value, format: &str, stale: bool, doc: Option<&Document>, acts: &mut Vec<Act>) {
+#[allow(clippy::too_many_arguments)]
+fn row(
+    app: &VectorcraftApp,
+    ui: &mut Ui,
+    rule: &Value,
+    format: &str,
+    stale: bool,
+    doc: Option<&Document>,
+    focus: Option<&Focus>,
+    acts: &mut Vec<Act>,
+) {
     let t = Tokens::get(ui.ctx());
     let lang = crate::i18n::current();
     let ink = |c: Color32| if stale { c.gamma_multiply(STALE_INK) } else { c };
     let id = rule["id"].as_str().unwrap_or_default().to_string();
     let mark = mark_of(rule);
     let open = app.embroidery.check.open.contains(&id);
+    let focused = focus.filter(|f| f.rule == id);
     let width = ui.available_width();
     let left = ROW_PAD + MARK_SIZE + MARK_GAP;
-    let wrap = (width - left - CHEVRON - 2.0 * ROW_PAD).max(MARK_SIZE);
+    // Show, for a rule with something to show, at the row's right.
+    let show_words = crate::et!("Show");
+    let show_g = showable(rule).then(|| ui.painter().layout_no_wrap(show_words.to_string(), FontId::proportional(SMALL), ink(t.accent)));
+    let show_w = show_g.as_ref().map_or(0.0, |g| g.rect.width() + ROW_PAD);
+    let wrap = (width - left - CHEVRON - show_w - 2.0 * ROW_PAD).max(MARK_SIZE);
     let heading = title(rule, format, lang);
     let mut lines = vec![found(rule, lang)];
     // The art left out, as the plan says it.
@@ -366,7 +552,9 @@ fn row(app: &VectorcraftApp, ui: &mut Ui, rule: &Value, format: &str, stale: boo
     let height = 2.0 * ROW_PAD + title_g.rect.height() + 2.0 + below_g.rect.height();
     let (rect, resp) = ui.allocate_exact_size(vec2(width, height), Sense::click());
     let p = ui.painter_at(rect);
-    if resp.hovered() {
+    if focused.is_some() {
+        p.rect_filled(rect, 0.0, t.row_selected);
+    } else if resp.hovered() {
         p.rect_filled(rect, 0.0, t.hover);
     }
     let first_line = title_g.rows.first().map_or(TEXT, |r| r.rect().height());
@@ -378,16 +566,39 @@ fn row(app: &VectorcraftApp, ui: &mut Ui, rule: &Value, format: &str, stale: boo
     crate::icons::paint(ui, if open { "chevron-down" } else { "chevron-right" }, chevron, ink(t.text_dim));
     let said = format!("{}: {heading}. {below}", severity_name(mark));
     resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::CollapsingHeader, true, open, &said));
-    if resp.clicked() {
+    // Show sits over the row, so it takes the clicks on it.
+    let mut showing = false;
+    if let Some(g) = show_g {
+        let at = Rect::from_min_size(pos2(chevron.left() - ROW_PAD - g.rect.width(), top), g.rect.size()).expand(2.0);
+        let button = ui.interact(at, ui.id().with(("embroidery-check-show", &id)), Sense::click());
+        let words = if button.hovered() { ink(t.accent_strong) } else { ink(t.accent) };
+        ui.painter().galley(at.min + vec2(2.0, 2.0), g, words);
+        button.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, !stale, format!("{show_words}: {heading}")));
+        if button.clicked() && !stale {
+            acts.push(Act::Show(id.clone(), None));
+            showing = true;
+        }
+    }
+    if resp.clicked() && !showing {
         acts.push(Act::Toggle(id.clone()));
     }
     if open {
-        details(app, ui, rule, &id, doc, stale, acts);
+        details(app, ui, rule, &id, doc, stale, focused, acts);
     }
 }
 
 /// An opened rule: where its threshold comes from, and its first hits.
-fn details(app: &VectorcraftApp, ui: &mut Ui, rule: &Value, id: &str, doc: Option<&Document>, stale: bool, acts: &mut Vec<Act>) {
+#[allow(clippy::too_many_arguments)]
+fn details(
+    app: &VectorcraftApp,
+    ui: &mut Ui,
+    rule: &Value,
+    id: &str,
+    doc: Option<&Document>,
+    stale: bool,
+    focused: Option<&Focus>,
+    acts: &mut Vec<Act>,
+) {
     let t = Tokens::get(ui.ctx());
     let lang = crate::i18n::current();
     let ink = |c: Color32| if stale { c.gamma_multiply(STALE_INK) } else { c };
@@ -414,14 +625,48 @@ fn details(app: &VectorcraftApp, ui: &mut Ui, rule: &Value, id: &str, doc: Optio
             if id == "notSewn" {
                 return;
             }
-            let hits = rule["examples"].as_array().map(Vec::as_slice).unwrap_or_default();
-            let lines: Vec<String> = hits.iter().take(HITS_SHOWN).filter_map(|h| hit_line(app, doc, id, h, lang)).collect();
-            for line in &lines {
-                ui.label(egui::RichText::new(line).size(SMALL).color(ink(t.text)));
+            let hits = listed(rule);
+            // Stepping through the hits of the rule shown last.
+            if let Some(f) = focused
+                && !hits.is_empty()
+            {
+                ui.horizontal(|ui| {
+                    let back = ui
+                        .add_enabled(!stale, egui::Button::new(egui::RichText::new("‹").size(SMALL)).small())
+                        .on_hover_text(crate::et!("Previous Finding"));
+                    let place = f.hit.map_or_else(|| "–".to_string(), |k| numbers::count(lang, k as u64 + 1));
+                    let of = fill(crate::et!("{index} of {count}"), &[("index", &place), ("count", &numbers::count(lang, hits.len() as u64))]);
+                    ui.label(egui::RichText::new(of).size(SMALL).color(ink(t.text_dim)));
+                    let on = ui
+                        .add_enabled(!stale, egui::Button::new(egui::RichText::new("›").size(SMALL)).small())
+                        .on_hover_text(crate::et!("Next Finding"));
+                    if back.clicked() {
+                        acts.push(Act::Step(false));
+                    }
+                    if on.clicked() {
+                        acts.push(Act::Step(true));
+                    }
+                });
+            }
+            let current = focused.and_then(|f| f.hit);
+            let mut lines = 0u64;
+            for (k, h) in hits.iter().enumerate() {
+                // The first few, and the one shown when it is past them.
+                if k >= HITS_SHOWN && current != Some(k) {
+                    continue;
+                }
+                let Some(line) = hit_line(app, doc, id, h, lang) else { continue };
+                lines += 1;
+                let text = egui::RichText::new(line).size(SMALL).color(ink(if current == Some(k) { t.text_strong } else { t.text }));
+                let text = if current == Some(k) { text.background_color(t.row_selected) } else { text };
+                let clicked = ui.add(egui::Label::new(text).sense(Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand).clicked();
+                if clicked && !stale {
+                    acts.push(Act::Show(id.to_string(), Some(k)));
+                }
             }
             let total = rule["hits"].as_u64().unwrap_or(0);
-            let rest = total.saturating_sub(lines.len() as u64);
-            if !lines.is_empty() && rest > 0 {
+            let rest = total.saturating_sub(lines);
+            if lines > 0 && rest > 0 {
                 ui.label(egui::RichText::new(crate::etn!(rest, "and {count} more", "and {count} more")).size(SMALL).color(ink(t.text_dim)));
             }
         });

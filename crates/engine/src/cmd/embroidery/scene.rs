@@ -23,9 +23,10 @@
 //! Positions are the plan's millimetres, as offsets from the design's first point; the picture maps
 //! them to document points (`mm_to_pt`).
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
-use vectorcraft_doc::NodeId;
+use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_render::lines::{LinePicture, LinePictureBuilder, LineStyle, LinkKind, MarkKind, edge_against};
 use vectorcraft_stitch::plan::{self, THREAD_WIDTH};
@@ -70,6 +71,16 @@ pub struct SceneUnit {
     pub bounds: Option<Rect>,
 }
 
+/// Where a selected object is sewn ([`StitchScene::ends_of`]): its units by tag, in sewing order,
+/// and where the needle enters and leaves it (document points; `None` when it sews nothing).
+#[derive(Clone, Debug, PartialEq)]
+pub struct ObjectEnds {
+    pub object: NodeId,
+    pub units: Vec<u32>,
+    pub entry: Option<Point>,
+    pub exit: Option<Point>,
+}
+
 /// A design's stitches as the stitch preview draws them: the picture (its lines tagged with unit
 /// indices, its colour slots the block indices) and what the tags and slots are. Immutable, and
 /// shared between threads.
@@ -110,6 +121,30 @@ impl StitchScene {
     /// The box everything it draws falls in, document points (`None`: it draws nothing).
     pub fn bounds(&self) -> Option<Rect> {
         self.picture.bounds()
+    }
+
+    /// Where each of `selected` (objects of `doc`, as a selection holds them) is sewn: its units,
+    /// those of the objects inside it included, in sewing order, the needle's entry (its first
+    /// unit's first needle point) and its exit (its last unit's last). An object that sews nothing
+    /// has no units. One walk of each selected object and one pass over the units: the Sewing order
+    /// list and the canvas's markers read the same ends.
+    pub fn ends_of(&self, doc: &Document, selected: &[NodeId]) -> Vec<ObjectEnds> {
+        let mut owner: HashMap<NodeId, usize> = HashMap::new();
+        for (i, id) in selected.iter().enumerate() {
+            if let Some(n) = doc.node(*id) {
+                n.walk(&mut |c| {
+                    owner.entry(c.id).or_insert(i);
+                });
+            }
+        }
+        let mut ends: Vec<ObjectEnds> = selected.iter().map(|&object| ObjectEnds { object, units: Vec::new(), entry: None, exit: None }).collect();
+        for (tag, u) in self.units.iter().enumerate() {
+            let (Some(e), Ok(tag)) = (owner.get(&u.object).and_then(|i| ends.get_mut(*i)), u32::try_from(tag)) else { continue };
+            e.units.push(tag);
+            e.entry = e.entry.or(u.entry);
+            e.exit = u.exit.or(e.exit);
+        }
+        ends
     }
 
     /// How the stitch preview draws it on `fabric`: each block in its thread's colour, an edge for

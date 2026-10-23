@@ -228,6 +228,35 @@ fn a_units_entry_and_exit_are_the_sewing_orders() {
     }
 }
 
+/// A selected object's ends: a group covers its members' units, an instance its own, an object
+/// filled and stroked both its units; entry and exit are its first unit's entry and its last
+/// unit's exit; type, which isn't sewn, has none; an id not in the document has none either.
+#[test]
+fn a_selected_objects_ends_are_its_units_first_and_last_needle_points() {
+    let mut s = Session::new();
+    let st = fx::structures(&mut runner(&mut s));
+    let plan = plan_of(&mut s);
+    let sc = scene::scene(&plan);
+    let doc = s.doc().unwrap().doc.clone();
+    let selected: Vec<NodeId> = [st.group, st.instances[1], st.filled_and_stroked, st.text, 999_999].map(NodeId).to_vec();
+    let ends = sc.ends_of(&doc, &selected);
+    assert_eq!(ends.len(), selected.len());
+    let units_of = |ids: &[u64]| -> Vec<u32> {
+        sc.units().iter().enumerate().filter(|(_, u)| ids.contains(&u.object.0)).map(|(i, _)| u32::try_from(i).unwrap()).collect()
+    };
+    assert_eq!(ends[0].units, units_of(&st.grouped), "the group's members");
+    assert_eq!(ends[1].units, units_of(&[st.instances[1]]), "the instance, not its twin");
+    assert_eq!(ends[2].units.len(), 2, "filled and stroked");
+    for e in &ends[..3] {
+        let (first, last) = (e.units[0] as usize, e.units[e.units.len() - 1] as usize);
+        assert_eq!((e.entry, e.exit), (sc.units()[first].entry, sc.units()[last].exit), "{e:?}");
+        assert!(e.units.windows(2).all(|w| w[0] < w[1]), "in sewing order");
+    }
+    for e in &ends[3..] {
+        assert!(e.units.is_empty() && e.entry.is_none() && e.exit.is_none(), "{e:?}");
+    }
+}
+
 /// An opened design's scene lies on its lines: every point drawn is an anchor of the paths it was
 /// opened as, in document points.
 #[test]

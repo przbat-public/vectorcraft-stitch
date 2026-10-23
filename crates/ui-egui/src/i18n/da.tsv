@@ -5376,3 +5376,15 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Tiden ved {speed}
 @msg	can't change the sewing order: it would go between two parts of one object	syrækkefølgen kan ikke ændres: det ville komme mellem to dele af ét objekt
 @msg	can't change the sewing order: there is nothing to sew it beside	syrækkefølgen kan ikke ændres: der er intet at sy det ved siden af
 @msg	can't change the sewing order: too many objects at once	syrækkefølgen kan ikke ændres: for mange objekter på én gang
+embroidery	Sew Earlier	Sy tidligere
+embroidery	Sew Later	Sy senere
+embroidery	After {name}	Efter {name}
+embroidery	Before {name}	Før {name}
+embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Intet sting flyttede sig: objekter med samme tråd samles stadig, når intet imellem ligger under dem.
+embroidery	{name} is sewn in block {block}, joined with its thread	{name} sys i blok {block}, samlet med sin tråd
+embroidery	{name} is sewn in block {block}	{name} sys i blok {block}
+embroidery	Thread changes: {before} → {after}	Trådskift: {before} → {after}
+embroidery	Sew First	Sy først
+embroidery	Sew Last	Sy sidst
+embroidery	Collapse All	Skjul alle
+embroidery	Expand All	Udvid alle

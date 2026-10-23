@@ -1569,6 +1569,23 @@ header its block's objects; rows of the selection are highlighted. Blocks collap
 the design's figures: stitches, colours, thread changes, trims, jumps, the top thread, the size and
 the time (estimates, said so), with the speed the time is at.
 
+**Changing the sewing order** (`cmd::embroidery::reorder`). The sewing order follows the stacking
+order, so a row dragged in the list moves its object (a lit row, the selection's objects; a header,
+its block's) in the stack: just above the object sewn before the gap, in that object's parent (just
+below the one sewn after it at the very start), the project owner's rule, as one `layer.move` in a
+`command.batch` named "Change Sewing Order" (one undo step). A drag changes when something is sewn,
+never what: a drop that would put an object into a clip group or take it out of one, move a
+clipping path or a locked object, go into a locked layer or group, fall between two parts of one
+object, or move a run of an opened machine file alone is refused, and the hint under the list says
+why before the release (the drop line shows only where a drop goes). Near the list's edges a drag
+scrolls it. Drags are off while the list shows an earlier plan, in isolation mode and while a mask or
+a pattern is edited. Once the new plan comes, a note over the list says what the drop did
+(`reorder::explain`): where the object is sewn now, whether it joined others of its thread, the
+thread changes when their number changed, or that no stitch moved (objects of one thread still join
+a block sewn earlier when the objects moved lie apart from what they passed). Without a drag: the
+↑ and ↓ buttons on a lit row, the panel's ≡ menu, and the commands `embroidery.sewEarlier`,
+`sewLater`, `sewFirst` and `sewLast` (no default shortcuts).
+
 **Measured first** (gate 1 of the stitch preview: `vectorcraft-cli perf --embroidery`, release
 build, 12-core Apple Silicon, load about 4, the median of five frames, twice; 2026-10-23). The
 pictures are built in code without the planner (`perf_embroidery::stitch_picture`: square tiles of

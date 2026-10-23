@@ -151,3 +151,47 @@ fn a_header_collapses() {
     let words = frame(&mut app, &ctx, 1.0, vec![]);
     assert_eq!(words.iter().filter(|w| w.starts_with("<Rectangle>")).count(), 2, "{words:?}");
 }
+
+#[test]
+fn where_a_drop_on_a_row_lands() {
+    let mut app = app_with(4);
+    let ctx = egui::Context::default();
+    ready(&mut app, &ctx);
+    let order = order_of(&app);
+    // Units 1 and 2 in the first block, 3 and 4 in the second.
+    assert_eq!((gap_at(&order, Row::Unit(0, 1), true), gap_at(&order, Row::Unit(0, 1), false)), (Some(1), Some(2)));
+    assert_eq!(gap_at(&order, Row::Header(1), true), Some(2), "before the block's first unit");
+    assert_eq!(gap_at(&order, Row::Change(0), false), Some(2), "after the block's last");
+}
+
+/// A drop runs as one undo step and selects what it moved; once its plan comes, the note says
+/// where it is sewn now (and how many thread changes there are, when that changed).
+#[test]
+fn a_drop_and_its_note() {
+    let mut app = app_with(4);
+    let ctx = egui::Context::default();
+    ready(&mut app, &ctx);
+    let order = order_of(&app);
+    let uid = app.session.active().unwrap().uid;
+    let shown = app.embroidery.preview.shown(uid).unwrap();
+    let (plan, generation) = (shown.planned.plan.clone(), shown.planned.generation);
+    let last = NodeId(order.blocks[1].units[1].id);
+    let m = place(&app.session.doc().unwrap().doc.clone(), &plan, &[last], 0).unwrap();
+    let undo = app.session.doc().unwrap().history.undo.len();
+    drop_rows(&mut app, &plan, generation, m);
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
+    assert_eq!(app.session.doc().unwrap().selection.objects, [last]);
+    let mut words = vec![];
+    for t in [1.0, 1.05, 1.1, 1.2] {
+        words = frame(&mut app, &ctx, t, vec![]);
+    }
+    // The blue moved first: the other blue joins it, ahead of the reds; still one thread change.
+    assert!(words.iter().any(|w| w == "<Rectangle> is sewn in block 1, joined with its thread"), "{words:?}");
+    assert!(!words.iter().any(|w| w.starts_with("Thread changes:")), "{words:?}");
+    // Another change drops the note.
+    app.run("object.move", json!({"dx": 1, "dy": 0})).unwrap();
+    for t in [2.0, 2.1, 2.2] {
+        words = frame(&mut app, &ctx, t, vec![]);
+    }
+    assert!(!words.iter().any(|w| w.contains("is sewn in block")), "{words:?}");
+}

@@ -5376,3 +5376,15 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Waktu pada {speed
 @msg	can't change the sewing order: it would go between two parts of one object	urutan jahit tidak dapat diubah: akan berada di antara dua bagian satu objek
 @msg	can't change the sewing order: there is nothing to sew it beside	urutan jahit tidak dapat diubah: tidak ada yang bisa dijahit di sebelahnya
 @msg	can't change the sewing order: too many objects at once	urutan jahit tidak dapat diubah: terlalu banyak objek sekaligus
+embroidery	Sew Earlier	Jahit lebih awal
+embroidery	Sew Later	Jahit lebih akhir
+embroidery	After {name}	Setelah {name}
+embroidery	Before {name}	Sebelum {name}
+embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Tidak ada jahitan yang berpindah: objek satu benang tetap digabung bila tidak ada apa pun di antaranya di bawahnya.
+embroidery	{name} is sewn in block {block}, joined with its thread	{name} dijahit di blok {block}, digabung dengan benangnya
+embroidery	{name} is sewn in block {block}	{name} dijahit di blok {block}
+embroidery	Thread changes: {before} → {after}	Ganti benang: {before} → {after}
+embroidery	Sew First	Jahit pertama
+embroidery	Sew Last	Jahit terakhir
+embroidery	Collapse All	Ciutkan semua
+embroidery	Expand All	Bentangkan semua

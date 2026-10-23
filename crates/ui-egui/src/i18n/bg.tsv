@@ -5358,3 +5358,15 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Времето п
 @msg	can't change the sewing order: it would go between two parts of one object	сменяне на реда на шиене не е възможно: би попаднал между две части на един обект
 @msg	can't change the sewing order: there is nothing to sew it beside	сменяне на реда на шиене не е възможно: няма до какво да се шие
 @msg	can't change the sewing order: too many objects at once	сменяне на реда на шиене не е възможно: твърде много обекти наведнъж
+embroidery	Sew Earlier	Ший по-рано
+embroidery	Sew Later	Ший по-късно
+embroidery	After {name}	След {name}
+embroidery	Before {name}	Преди {name}
+embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Нито един бод не се премести: обектите с една нишка се обединяват, когато нищо между тях не лежи под тях.
+embroidery	{name} is sewn in block {block}, joined with its thread	{name} се шие в блок {block}, обединен със своята нишка
+embroidery	{name} is sewn in block {block}	{name} се шие в блок {block}
+embroidery	Thread changes: {before} → {after}	Смени на нишката: {before} → {after}
+embroidery	Sew First	Ший първо
+embroidery	Sew Last	Ший последно
+embroidery	Collapse All	Свий всички
+embroidery	Expand All	Разгъни всички

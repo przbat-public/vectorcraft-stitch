@@ -311,8 +311,9 @@ fn embroidery_rows_keep_their_ellipsis() {
 /// whose plain rows may mean something else ("Art" is the Art brush).
 #[test]
 fn the_embroidery_interface_never_uses_plain_rows() {
-    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src").join("embroidery");
-    let mut stack = vec![dir];
+    let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    // The fork's own interface: its module and its panel.
+    let mut stack = vec![src.join("embroidery"), src.join("panels").join("embroidery")];
     while let Some(d) = stack.pop() {
         for entry in std::fs::read_dir(&d).into_iter().flatten().flatten() {
             let path = entry.path();

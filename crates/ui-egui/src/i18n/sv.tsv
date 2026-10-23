@@ -5349,3 +5349,15 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Tiden vid {speed}
 @msg	can't change the sewing order: it would go between two parts of one object	sömnadsordningen kan inte ändras: det skulle hamna mellan två delar av ett objekt
 @msg	can't change the sewing order: there is nothing to sew it beside	sömnadsordningen kan inte ändras: det finns inget att brodera det bredvid
 @msg	can't change the sewing order: too many objects at once	sömnadsordningen kan inte ändras: för många objekt på en gång
+embroidery	Sew Earlier	Brodera tidigare
+embroidery	Sew Later	Brodera senare
+embroidery	After {name}	Efter {name}
+embroidery	Before {name}	Före {name}
+embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Inget stygn flyttades: objekt med samma tråd slås fortfarande ihop när inget emellan ligger under dem.
+embroidery	{name} is sewn in block {block}, joined with its thread	{name} broderas i block {block}, ihopslaget med sin tråd
+embroidery	{name} is sewn in block {block}	{name} broderas i block {block}
+embroidery	Thread changes: {before} → {after}	Trådbyten: {before} → {after}
+embroidery	Sew First	Brodera först
+embroidery	Sew Last	Brodera sist
+embroidery	Collapse All	Fäll ihop alla
+embroidery	Expand All	Fäll ut alla

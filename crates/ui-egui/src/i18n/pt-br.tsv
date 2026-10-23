@@ -5309,3 +5309,15 @@ embroidery	The time at {speed} stitches a minute, an estimate.	O tempo a {speed}
 @msg	can't change the sewing order: it would go between two parts of one object	não é possível alterar a ordem de bordado: ficaria entre duas partes de um mesmo objeto
 @msg	can't change the sewing order: there is nothing to sew it beside	não é possível alterar a ordem de bordado: não há nada ao lado do qual bordá-lo
 @msg	can't change the sewing order: too many objects at once	não é possível alterar a ordem de bordado: objetos demais de uma vez
+embroidery	Sew Earlier	Bordar antes
+embroidery	Sew Later	Bordar depois
+embroidery	After {name}	Depois de {name}
+embroidery	Before {name}	Antes de {name}
+embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Nenhum ponto mudou: objetos da mesma linha continuam juntos quando nada entre eles fica por baixo.
+embroidery	{name} is sewn in block {block}, joined with its thread	{name} é bordado no bloco {block}, junto com sua linha
+embroidery	{name} is sewn in block {block}	{name} é bordado no bloco {block}
+embroidery	Thread changes: {before} → {after}	Trocas de linha: {before} → {after}
+embroidery	Sew First	Bordar primeiro
+embroidery	Sew Last	Bordar por último
+embroidery	Collapse All	Recolher tudo
+embroidery	Expand All	Expandir tudo

@@ -21,6 +21,8 @@ use egui::{Align2, Color32, FontId, Rect, Sense, Stroke, StrokeKind, Ui, pos2, v
 use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_engine::cmd::embroidery::order::{OrderBlock, OrderUnit, SewingOrder};
+use vectorcraft_engine::cmd::embroidery::plan::DesignPlan;
+use vectorcraft_engine::cmd::embroidery::reorder::{Explained, Place, RowMove, explain, movers_of, place, reason};
 
 use crate::VectorcraftApp;
 use crate::embroidery::numbers;
@@ -41,6 +43,19 @@ const FOOTER: f32 = 180.0;
 /// The room a figure takes in the footer, points: its widest value ("about 120 min") and a gap.
 /// An estimate.
 const FIGURE_WIDTH: f32 = 96.0;
+/// The drop line's width, points, and the dragged row's opacity: as the Layers panel draws them.
+const DROP_LINE: f32 = 2.0;
+const GHOST: f32 = 0.5;
+/// The room under the list for the drop's hint, points: a line of small text.
+const HINT: f32 = 16.0;
+/// How near the list's top or bottom edge a drag scrolls it, points (about a row), and how fast at
+/// most, points a second. Estimates.
+const AUTO_SCROLL_EDGE: f32 = 24.0;
+const AUTO_SCROLL_MAX: f32 = 600.0;
+/// The longest frame time a scroll step counts, seconds: a stalled frame doesn't jump the list.
+const MAX_SCROLL_STEP_SECS: f32 = 0.05;
+/// The Sew Earlier and Sew Later buttons' side, points.
+const STEP_BUTTON: f32 = 14.0;
 /// The sizes of the rows' words, points: the interface's text and its small text.
 const TEXT: f32 = 12.0;
 const SMALL: f32 = 11.0;
@@ -90,15 +105,31 @@ pub(crate) fn rows(order: &SewingOrder, collapsed: &HashSet<usize>) -> (Vec<Row>
 }
 
 /// The tab's state: the order read for the plan shown, its rows, the collapsed blocks (by
-/// number), and the unit row clicked last (for Shift-click ranges).
+/// number), the unit row clicked last (for Shift-click ranges), a drag under way, a drop waiting
+/// for its plan and the note about the last one.
 #[derive(Default)]
 pub struct OrderState {
     read: Option<(u64, Arc<SewingOrder>)>,
     collapsed: HashSet<usize>,
     anchor: Option<(usize, usize)>,
+    drag: Option<Drag>,
+    dropped: Option<Dropped>,
+    note: Option<(u64, Explained)>,
     /// What the selection covers (the selected objects and everything inside them), for
     /// (document, revision).
     covered: Option<((u64, u64), Covered)>,
+}
+
+impl OrderState {
+    /// The numbers of the blocks of the order read last.
+    pub(crate) fn blocks(&self) -> Vec<usize> {
+        self.read.as_ref().map(|(_, o)| o.blocks.iter().map(|b| b.block).collect()).unwrap_or_default()
+    }
+
+    /// Collapse the blocks `blocks` (by number), and expand every other.
+    pub(crate) fn collapse(&mut self, blocks: Vec<usize>) {
+        self.collapsed = blocks.into_iter().collect();
+    }
 }
 
 /// The ids a selection covers.
@@ -147,7 +178,8 @@ fn covered(state: &mut OrderState, uid: u64, revision: u64, doc: &Document, sele
 /// The tab's body, under the panel's header: the list, then the footer. `stale`: the plan shown
 /// is of an earlier state (the list is dimmed). `reply` is `embroidery.sequence`'s for the plan
 /// of generation `generation`, `stats` the figures.
-pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, generation: u64, reply: &Value, stats: Option<&Value>, stale: bool) {
+pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
+    let Shown { generation, reply, stats, stale, plan } = shown;
     let t = Tokens::get(ui.ctx());
     let Some(order) = read(&mut app.embroidery.order, generation, reply) else { return };
     ui.label(
@@ -155,48 +187,140 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, generation: u64, reply: &Valu
             .size(SMALL)
             .color(t.text_dim),
     );
+    note(app, ui, generation, &plan, &t);
     ui.add_space(4.0);
     let Some(st) = app.session.active() else { return };
     let (uid, revision, doc) = (st.uid, st.revision, st.doc.clone());
+    // Drags only on the plan of the document as it is, outside the edit modes.
+    let movable = !stale && st.isolation.is_none() && doc.mask_edit.is_none() && doc.pattern_edit.is_none();
     let selected = st.selection.objects.clone();
     let covered = covered(&mut app.embroidery.order, uid, revision, &doc, &selected);
     let (rows, tops) = rows(&order, &app.embroidery.order.collapsed);
-    let height = (ui.available_height() - FOOTER).max(HEADER_ROW * 2.0);
+    let height = (ui.available_height() - FOOTER - HINT).max(HEADER_ROW * 2.0);
     let mut clicked: Option<(Row, egui::Modifiers)> = None;
     let mut toggle: Option<usize> = None;
-    egui::ScrollArea::vertical().id_salt("embroidery-order").max_height(height).auto_shrink([false, false]).show_viewport(ui, |ui, viewport| {
-        let total = tops.last().copied().unwrap_or(0.0);
-        ui.set_height(total);
-        let width = ui.available_width();
-        let origin = ui.min_rect().min;
-        let first = tops.partition_point(|y| *y < viewport.min.y).saturating_sub(1);
-        for (i, row) in rows.iter().enumerate().skip(first) {
-            let Some(&top) = tops.get(i) else { break };
-            if top > viewport.max.y {
-                break;
-            }
-            let rect = Rect::from_min_size(origin + vec2(0.0, top), vec2(width, row.height()));
-            let id = ui.id().with(("embroidery-row", i));
-            let resp = ui.interact(rect, id, Sense::click());
-            let lit = row_selected(&order, *row, &covered);
-            let label = paint_row(app, ui, &doc, &order, *row, rect, lit, resp.hovered(), stale, &t);
-            resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, lit, &label));
-            ui.ctx().accesskit_node_builder(id, |node| {
-                node.set_role(egui::accesskit::Role::TreeItem);
-                node.set_selected(lit);
-                node.set_label(label.clone());
-            });
-            if resp.clicked() {
-                if let Row::Header(b) = row
-                    && ui.input(|i| i.pointer.interact_pos()).is_some_and(|p| p.x < rect.left() + INDENT)
+    let mut step: Option<(&'static str, u64)> = None;
+    let mut dropped: Option<RowMove> = None;
+    let mut hint: Option<String> = None;
+    let pointer = ui.input(|i| i.pointer.interact_pos());
+    let area =
+        egui::ScrollArea::vertical().id_salt("embroidery-order").max_height(height).auto_shrink([false, false]).show_viewport(ui, |ui, viewport| {
+            let total = tops.last().copied().unwrap_or(0.0);
+            ui.set_height(total);
+            let width = ui.available_width();
+            let origin = ui.min_rect().min;
+            let first = tops.partition_point(|y| *y < viewport.min.y).saturating_sub(1);
+            for (i, row) in rows.iter().enumerate().skip(first) {
+                let Some(&top) = tops.get(i) else { break };
+                if top > viewport.max.y {
+                    break;
+                }
+                let rect = Rect::from_min_size(origin + vec2(0.0, top), vec2(width, row.height()));
+                let id = ui.id().with(("embroidery-row", i));
+                let sense = if movable && !matches!(row, Row::Change(_)) { Sense::click_and_drag() } else { Sense::click() };
+                let resp = ui.interact(rect, id, sense);
+                let lit = row_selected(&order, *row, &covered);
+                let label = paint_row(app, ui, &doc, &order, *row, rect, lit, resp.hovered(), stale, &t);
+                resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, lit, &label));
+                ui.ctx().accesskit_node_builder(id, |node| {
+                    node.set_role(egui::accesskit::Role::TreeItem);
+                    node.set_selected(lit);
+                    node.set_label(label.clone());
+                });
+                // A dragged row moves its objects, or the selection's when it is lit.
+                if resp.drag_started() {
+                    let movers = if lit { movers_of(&doc, &plan, &selected) } else { objects_of(&order, *row).into_iter().map(NodeId).collect() };
+                    app.embroidery.order.drag = Some(Drag { movers, label: label.clone() });
+                }
+                if let (Some(drag), Some(at)) = (&app.embroidery.order.drag, pointer)
+                    && rect.contains(at)
+                    && let Some(gap) = gap_at(&order, *row, at.y < rect.center().y)
                 {
-                    toggle = order.blocks.get(*b).map(|b| b.block);
-                } else {
-                    clicked = Some((*row, ui.input(|i| i.modifiers)));
+                    match place(&doc, &plan, &drag.movers, gap) {
+                        Ok(m) => {
+                            let y = if at.y < rect.center().y { rect.top() } else { rect.bottom() };
+                            ui.painter().hline(rect.x_range(), y, Stroke::new(DROP_LINE, t.accent));
+                            let target =
+                                doc.node(m.target).map_or_else(String::new, |n| crate::panels::layers::shown_name(app, n, crate::i18n::current()));
+                            hint = Some(match m.place {
+                                Place::Above => crate::embroidery::text::fill(crate::et!("After {name}"), &[("name", &target)]),
+                                Place::Below => crate::embroidery::text::fill(crate::et!("Before {name}"), &[("name", &target)]),
+                            });
+                            if resp.drag_stopped() || ui.input(|i| i.pointer.any_released()) {
+                                dropped = Some(m);
+                            }
+                        }
+                        Err(r) => hint = Some(crate::i18n::msg(reason(r))),
+                    }
+                }
+                if resp.clicked() {
+                    if let Row::Header(b) = row
+                        && ui.input(|i| i.pointer.interact_pos()).is_some_and(|p| p.x < rect.left() + INDENT)
+                    {
+                        toggle = order.blocks.get(*b).map(|b| b.block);
+                    } else {
+                        clicked = Some((*row, ui.input(|i| i.modifiers)));
+                    }
+                }
+                // A lit unit row moves by a step without a drag (Sew Earlier and Sew Later).
+                if let (Row::Unit(b, u), true, true) = (row, lit, movable)
+                    && let Some(unit) = order.blocks.get(*b).and_then(|b| b.units.get(*u))
+                {
+                    for (k, (icon, cmd, tip)) in [
+                        ("dc-arrow-up", "embroidery.sewEarlier", crate::et!("Sew Earlier")),
+                        ("dc-arrow-down", "embroidery.sewLater", crate::et!("Sew Later")),
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    {
+                        let button = Rect::from_center_size(
+                            pos2(rect.right() - 54.0 + 20.0 * k as f32, rect.top() + UNIT_ROW * 0.72),
+                            vec2(STEP_BUTTON, STEP_BUTTON),
+                        );
+                        let b = ui.interact(button, id.with(cmd), Sense::click()).on_hover_text(tip);
+                        crate::icons::paint(ui, icon, button, if b.hovered() { t.text_strong } else { t.text_dim });
+                        if b.clicked() {
+                            step = Some((cmd, unit.id));
+                        }
+                    }
                 }
             }
+        });
+    // While a drag is held, the list scrolls by itself near its top and bottom edges.
+    if app.embroidery.order.drag.is_some()
+        && let Some(at) = pointer
+    {
+        let r = area.inner_rect;
+        let dt = ui.input(|i| i.stable_dt).min(MAX_SCROLL_STEP_SECS);
+        let depth = if at.y < r.top() + AUTO_SCROLL_EDGE {
+            (r.top() + AUTO_SCROLL_EDGE - at.y) / AUTO_SCROLL_EDGE
+        } else if at.y > r.bottom() - AUTO_SCROLL_EDGE {
+            -(at.y - (r.bottom() - AUTO_SCROLL_EDGE)) / AUTO_SCROLL_EDGE
+        } else {
+            0.0
+        };
+        if depth != 0.0 && r.x_range().contains(at.x) {
+            ui.scroll_with_delta(vec2(0.0, depth.clamp(-1.0, 1.0) * AUTO_SCROLL_MAX * dt));
+            ui.ctx().request_repaint();
         }
-    });
+        // The objects dragged, at the pointer.
+        if let Some(drag) = &app.embroidery.order.drag {
+            ui.painter().text(at + vec2(12.0, 0.0), Align2::LEFT_CENTER, &drag.label, FontId::proportional(SMALL), t.text.gamma_multiply(GHOST));
+        }
+    }
+    let released = ui.input(|i| !i.pointer.any_down());
+    ui.label(egui::RichText::new(hint.clone().unwrap_or_default()).size(SMALL).color(t.text_dim));
+    if let Some(m) = dropped {
+        drop_rows(app, &plan, generation, m);
+    }
+    if released {
+        app.embroidery.order.drag = None;
+    }
+    if let Some((cmd, id)) = step
+        && let Err(e) = app.run(cmd, json!({ "ids": [id] }))
+    {
+        app.status(crate::i18n::msg(&e));
+    }
     if let Some(block) = toggle
         && !app.embroidery.order.collapsed.remove(&block)
     {
@@ -208,6 +332,95 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, generation: u64, reply: &Valu
     if let Some(stats) = stats {
         footer(ui, stats, &t);
     }
+}
+
+/// What the tab draws: the plan shown (its generation and the plan itself), its replies, and
+/// whether it is of an earlier state.
+pub struct Shown<'a> {
+    pub generation: u64,
+    pub reply: &'a Value,
+    pub stats: Option<&'a Value>,
+    pub stale: bool,
+    pub plan: Arc<DesignPlan>,
+}
+
+/// A drag under way: the objects it moves, and what its row said.
+pub(crate) struct Drag {
+    movers: Vec<NodeId>,
+    label: String,
+}
+
+/// A drop made, waiting for its plan: the plan before, and the objects moved.
+pub(crate) struct Dropped {
+    before: Arc<DesignPlan>,
+    generation: u64,
+    moved: Vec<NodeId>,
+}
+
+/// The gap a drop on `row` lands in: before its unit (`upper` half) or after it; before a block's
+/// first unit on its header; after its last on its thread change.
+fn gap_at(order: &SewingOrder, row: Row, upper: bool) -> Option<usize> {
+    match row {
+        Row::Unit(b, u) => {
+            let unit = order.blocks.get(b)?.units.get(u)?.unit.checked_sub(1)?;
+            Some(if upper { unit } else { unit + 1 })
+        }
+        Row::Header(b) => order.blocks.get(b)?.units.first()?.unit.checked_sub(1),
+        Row::Change(b) => Some(order.blocks.get(b)?.units.last()?.unit),
+    }
+}
+
+/// Make drop `m`: one undo step, the objects moved selected; the note waits for the new plan.
+fn drop_rows(app: &mut VectorcraftApp, plan: &Arc<DesignPlan>, generation: u64, m: RowMove) {
+    if let Err(e) = app.run("command.batch", m.batch()) {
+        app.status(crate::i18n::msg(&e));
+        return;
+    }
+    let ids: Vec<u64> = m.ids.iter().map(|i| i.0).collect();
+    let _ = app.run("select.set", json!({ "ids": ids }));
+    app.embroidery.order.dropped = Some(Dropped { before: plan.clone(), generation, moved: m.ids });
+    app.embroidery.order.note = None;
+}
+
+/// The note over the list after a drop, once its plan comes: what the drop did ([`explain`]).
+fn note(app: &mut VectorcraftApp, ui: &mut Ui, generation: u64, plan: &Arc<DesignPlan>, t: &Tokens) {
+    let state = &mut app.embroidery.order;
+    if let Some(d) = &state.dropped
+        && d.generation != generation
+    {
+        let e = explain(&d.before, plan, &d.moved);
+        state.note = Some((generation, e));
+        state.dropped = None;
+    }
+    // A note belongs to the plan the drop made: another change drops it.
+    if state.note.as_ref().is_some_and(|(g, ..)| *g != generation) {
+        state.note = None;
+    }
+    let Some((_, e)) = state.note.clone() else { return };
+    let lang = crate::i18n::current();
+    let doc = app.session.active().map(|st| st.doc.clone());
+    let name = |id: NodeId| doc.as_ref().and_then(|d| d.node(id)).map_or_else(String::new, |n| crate::panels::layers::shown_name(app, n, lang));
+    let mut lines = Vec::new();
+    if e.unchanged {
+        lines.push(crate::et!("No stitch moved: objects of one thread still join when nothing between lies under them.").to_string());
+    } else if let Some(m) = e.moved.first() {
+        let template = if m.joined {
+            crate::et!("{name} is sewn in block {block}, joined with its thread")
+        } else {
+            crate::et!("{name} is sewn in block {block}")
+        };
+        lines.push(crate::embroidery::text::fill(template, &[("name", &name(m.id)), ("block", &numbers::count(lang, m.block as u64))]));
+    }
+    if e.changes.0 != e.changes.1 {
+        let (a, b) = (numbers::count(lang, e.changes.0 as u64), numbers::count(lang, e.changes.1 as u64));
+        lines.push(crate::embroidery::text::fill(crate::et!("Thread changes: {before} → {after}"), &[("before", &a), ("after", &b)]));
+    }
+    egui::Frame::NONE.fill(t.panel_darker).corner_radius(t.radius).inner_margin(6.0).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        for line in lines {
+            ui.label(egui::RichText::new(line).size(SMALL).color(t.text));
+        }
+    });
 }
 
 /// Whether `row` is of the selection: a unit whose object is covered, a header all of whose

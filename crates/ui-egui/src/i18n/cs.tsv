@@ -5393,3 +5393,15 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Čas při {speed}
 @msg	can't change the sewing order: it would go between two parts of one object	pořadí šití nelze změnit: dostal by se mezi dvě části jednoho objektu
 @msg	can't change the sewing order: there is nothing to sew it beside	pořadí šití nelze změnit: není nic, vedle čeho by se šil
 @msg	can't change the sewing order: too many objects at once	pořadí šití nelze změnit: příliš mnoho objektů najednou
+embroidery	Sew Earlier	Šít dříve
+embroidery	Sew Later	Šít později
+embroidery	After {name}	Za {name}
+embroidery	Before {name}	Před {name}
+embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Žádný steh se nepřesunul: objekty jedné nitě se dál spojují, když nic mezi nimi neleží pod nimi.
+embroidery	{name} is sewn in block {block}, joined with its thread	{name} se šije v bloku {block}, spojený se svou nití
+embroidery	{name} is sewn in block {block}	{name} se šije v bloku {block}
+embroidery	Thread changes: {before} → {after}	Výměny nitě: {before} → {after}
+embroidery	Sew First	Šít jako první
+embroidery	Sew Last	Šít jako poslední
+embroidery	Collapse All	Sbalit vše
+embroidery	Expand All	Rozbalit vše

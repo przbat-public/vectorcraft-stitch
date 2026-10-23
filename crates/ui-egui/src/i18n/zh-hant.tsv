@@ -4281,3 +4281,15 @@ embroidery	The time at {speed} stitches a minute, an estimate.	按每分鐘 {spe
 @msg	can't change the sewing order: it would go between two parts of one object	無法變更刺繡順序：會落在同一物件的兩個部分之間
 @msg	can't change the sewing order: there is nothing to sew it beside	無法變更刺繡順序：旁邊沒有可繡製的內容
 @msg	can't change the sewing order: too many objects at once	無法變更刺繡順序：一次的物件太多
+embroidery	Sew Earlier	提前繡製
+embroidery	Sew Later	延後繡製
+embroidery	After {name}	在 {name} 之後
+embroidery	Before {name}	在 {name} 之前
+embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	沒有針跡移動：只要中間沒有內容在其下方，同一條線的物件仍會合併。
+embroidery	{name} is sewn in block {block}, joined with its thread	{name} 在第 {block} 塊中與同一條線合併繡製
+embroidery	{name} is sewn in block {block}	{name} 在第 {block} 塊中繡製
+embroidery	Thread changes: {before} → {after}	換線次數：{before} → {after}
+embroidery	Sew First	最先繡製
+embroidery	Sew Last	最後繡製
+embroidery	Collapse All	全部摺疊
+embroidery	Expand All	全部展開

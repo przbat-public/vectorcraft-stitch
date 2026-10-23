@@ -153,6 +153,30 @@ fn show_panel(app: &mut VectorcraftApp) -> Result<Value, String> {
     }
 }
 
+/// The panel's ≡ menu: the selection sewn earlier, later, first or last; the Sewing order's blocks
+/// collapsed or expanded.
+pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
+    for (label, cmd) in [
+        (crate::et!("Sew Earlier"), "embroidery.sewEarlier"),
+        (crate::et!("Sew Later"), "embroidery.sewLater"),
+        (crate::et!("Sew First"), "embroidery.sewFirst"),
+        (crate::et!("Sew Last"), "embroidery.sewLast"),
+    ] {
+        let enabled = app.session.active().is_some_and(|st| !st.selection.objects.is_empty());
+        if crate::widgets::menu_item_name(ui, label, enabled, false) {
+            crate::menus::invoke(app, cmd, json!({}));
+        }
+    }
+    ui.separator();
+    let blocks: Vec<usize> = app.embroidery.order.blocks();
+    if crate::widgets::menu_item_name(ui, crate::et!("Collapse All"), !blocks.is_empty(), false) {
+        app.embroidery.order.collapse(blocks);
+    }
+    if crate::widgets::menu_item_name(ui, crate::et!("Expand All"), true, false) {
+        app.embroidery.order.collapse(Vec::new());
+    }
+}
+
 /// The panel.
 pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
@@ -213,8 +237,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             });
         }
     });
+    let plan = shown.planned.plan.clone();
     match (tab, own) {
-        (Tab::Order, Some(own)) => order::show(app, ui, generation, &own, stats.as_ref(), stale),
+        (Tab::Order, Some(own)) => order::show(app, ui, order::Shown { generation, reply: &own, stats: stats.as_ref(), stale, plan }),
         (Tab::Check, _) | (_, None) => {}
     }
 }

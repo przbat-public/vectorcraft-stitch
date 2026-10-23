@@ -231,6 +231,7 @@ pub fn panel_menu_items(app: &mut VectorcraftApp, ui: &mut Ui, id: &str) -> bool
         asset_export::ID => asset_export::menu(app, ui),
         css_properties::ID => css_properties::menu(app, ui),
         variables::ID => variables::menu(app, ui),
+        embroidery::ID => embroidery::menu(app, ui),
         "actions" => actions::menu(app, ui),
         id if library_panel::parse(id).is_some() => library_panel::menu(app, ui, id),
         _ => return false,

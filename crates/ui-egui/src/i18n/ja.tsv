@@ -5046,3 +5046,15 @@ embroidery	The time at {speed} stitches a minute, an estimate.	1 分あたり {s
 @msg	can't change the sewing order: it would go between two parts of one object	縫い順を変更できません: 1 つのオブジェクトの 2 つの部分の間に入ってしまいます
 @msg	can't change the sewing order: there is nothing to sew it beside	縫い順を変更できません: 隣に縫うものがありません
 @msg	can't change the sewing order: too many objects at once	縫い順を変更できません: 一度に扱うオブジェクトが多すぎます
+embroidery	Sew Earlier	前に縫う
+embroidery	Sew Later	後に縫う
+embroidery	After {name}	{name} の後
+embroidery	Before {name}	{name} の前
+embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	ステッチは移動していません。間にあるものがその下になければ、同じ糸のオブジェクトはまとめられたままです。
+embroidery	{name} is sewn in block {block}, joined with its thread	{name} はブロック {block} で、同じ糸とまとめて縫われます
+embroidery	{name} is sewn in block {block}	{name} はブロック {block} で縫われます
+embroidery	Thread changes: {before} → {after}	糸替え: {before} → {after}
+embroidery	Sew First	最初に縫う
+embroidery	Sew Last	最後に縫う
+embroidery	Collapse All	すべて折りたたむ
+embroidery	Expand All	すべて展開

@@ -5229,3 +5229,15 @@ embroidery	The time at {speed} stitches a minute, an estimate.	按每分钟 {spe
 @msg	can't change the sewing order: it would go between two parts of one object	无法更改刺绣顺序：会落在同一对象的两个部分之间
 @msg	can't change the sewing order: there is nothing to sew it beside	无法更改刺绣顺序：旁边没有可绣制的内容
 @msg	can't change the sewing order: too many objects at once	无法更改刺绣顺序：一次的对象太多
+embroidery	Sew Earlier	提前绣制
+embroidery	Sew Later	推后绣制
+embroidery	After {name}	在 {name} 之后
+embroidery	Before {name}	在 {name} 之前
+embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	没有针迹移动：只要中间没有内容在其下方，同一根线的对象仍会合并。
+embroidery	{name} is sewn in block {block}, joined with its thread	{name} 在第 {block} 块中与同一根线合并绣制
+embroidery	{name} is sewn in block {block}	{name} 在第 {block} 块中绣制
+embroidery	Thread changes: {before} → {after}	换线次数：{before} → {after}
+embroidery	Sew First	最先绣制
+embroidery	Sew Last	最后绣制
+embroidery	Collapse All	全部折叠
+embroidery	Expand All	全部展开

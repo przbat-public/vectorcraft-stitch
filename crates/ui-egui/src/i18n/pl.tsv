@@ -5244,3 +5244,15 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Czas przy {speed}
 @msg	can't change the sewing order: it would go between two parts of one object	nie można zmienić kolejności szycia: trafiłby między dwie części jednego obiektu
 @msg	can't change the sewing order: there is nothing to sew it beside	nie można zmienić kolejności szycia: nie ma niczego, obok czego można by go szyć
 @msg	can't change the sewing order: too many objects at once	nie można zmienić kolejności szycia: zbyt wiele obiektów naraz
+embroidery	Sew Earlier	Szyj wcześniej
+embroidery	Sew Later	Szyj później
+embroidery	After {name}	Po {name}
+embroidery	Before {name}	Przed {name}
+embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Żaden ścieg się nie przesunął: obiekty jednej nici nadal się łączą, gdy nic pomiędzy nie leży pod nimi.
+embroidery	{name} is sewn in block {block}, joined with its thread	{name} jest szyty w bloku {block}, połączony ze swoją nicią
+embroidery	{name} is sewn in block {block}	{name} jest szyty w bloku {block}
+embroidery	Thread changes: {before} → {after}	Zmiany nici: {before} → {after}
+embroidery	Sew First	Szyj najpierw
+embroidery	Sew Last	Szyj na końcu
+embroidery	Collapse All	Zwiń wszystko
+embroidery	Expand All	Rozwiń wszystko

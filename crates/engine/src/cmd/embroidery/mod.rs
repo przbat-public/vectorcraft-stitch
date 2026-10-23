@@ -148,7 +148,15 @@ impl Planner {
 
     /// [`Planner::plan`], with its generation and its stitch scene ([`Planned`]).
     pub fn planned(&self, opts: &Options) -> Result<Planned> {
-        self.service.planned(service::Of::whole(&self.snapshot), &self.doc, opts).map_err(PlanError::error)
+        self.planned_and_walked(opts).0
+    }
+
+    /// [`Planner::planned`], and whether this call walked the document for it (`false`: the plan,
+    /// or the refusal, was remembered, or another caller's was waited for): only a walk's time
+    /// says how long the design takes to plan.
+    pub fn planned_and_walked(&self, opts: &Options) -> (Result<Planned>, bool) {
+        let (planned, walked) = self.service.planned_and_walked(service::Of::whole(&self.snapshot), &self.doc, opts);
+        (planned.map_err(PlanError::error), walked)
     }
 
     /// The plan remembered with `opts` (or why there is none: a design too large), without

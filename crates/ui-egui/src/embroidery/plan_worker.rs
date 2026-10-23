@@ -50,6 +50,10 @@ pub struct Done {
     pub outcome: Outcome,
     /// How long the step took, milliseconds.
     pub ms: f64,
+    /// The step walked the document (planned it, or found it can't be planned), rather than taking
+    /// a remembered plan or waiting for another's: only then does `ms` say how long the design
+    /// takes to plan.
+    pub walked: bool,
     /// The job sends nothing more.
     pub last: bool,
 }
@@ -85,7 +89,7 @@ impl Job {
     }
 
     fn done(&self, outcome: Outcome, since: f64, last: bool) -> Done {
-        Done { ticket: self.ticket, outcome, ms: crate::now_ms() - since, last }
+        Done { ticket: self.ticket, outcome, ms: crate::now_ms() - since, walked: false, last }
     }
 }
 
@@ -101,26 +105,28 @@ fn internal(msg: &str) -> String {
 /// and the interface thread both run it.
 pub fn run(job: &Job, send: &mut dyn FnMut(Done)) {
     let t0 = crate::now_ms();
-    let planned = progress::scope(&job.progress, || {
+    let made = progress::scope(&job.progress, || {
         vectorcraft_engine::guard::catch_panic(|| {
             #[cfg(test)]
             if let Some(hook) = &job.hook {
                 hook(job);
             }
-            let planned = job.planner.planned(&job.opts)?;
+            let (planned, walked) = job.planner.planned_and_walked(&job.opts);
             // Built here, so the interface thread finds it ready.
-            planned.scene();
-            Ok::<_, EngineError>(planned)
+            (planned.inspect(|p| drop(p.scene())), walked)
         })
     });
-    let planned = match planned {
-        Ok(Ok(p)) => p,
-        Ok(Err(EngineError::Cancelled)) => return send(job.done(Outcome::Cancelled, t0, true)),
-        Ok(Err(e)) => return send(job.done(Outcome::Failed(e.to_string()), t0, true)),
+    let (planned, walked) = match made {
+        Ok(made) => made,
         Err(msg) => return send(job.done(Outcome::Failed(internal(&msg)), t0, true)),
     };
+    let planned = match planned {
+        Ok(p) => p,
+        Err(EngineError::Cancelled) => return send(job.done(Outcome::Cancelled, t0, true)),
+        Err(e) => return send(Done { walked, ..job.done(Outcome::Failed(e.to_string()), t0, true) }),
+    };
     let last = job.queries.is_empty();
-    send(job.done(Outcome::Planned(planned), t0, last));
+    send(Done { walked, ..job.done(Outcome::Planned(planned), t0, last) });
     if last {
         return;
     }
@@ -235,7 +241,13 @@ impl PlanWorker {
                 }
                 Err(TryRecvError::Empty) => return done,
                 Err(TryRecvError::Disconnected) => {
-                    done.extend(self.pending.drain(..).map(|(ticket, _)| Done { ticket, outcome: Outcome::Cancelled, ms: 0.0, last: true }));
+                    done.extend(self.pending.drain(..).map(|(ticket, _)| Done {
+                        ticket,
+                        outcome: Outcome::Cancelled,
+                        ms: 0.0,
+                        walked: false,
+                        last: true,
+                    }));
                     self.gone = true;
                     return done;
                 }

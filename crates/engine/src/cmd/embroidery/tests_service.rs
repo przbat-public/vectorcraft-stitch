@@ -570,6 +570,26 @@ fn each_plan_has_a_generation_and_its_scene_is_built_once() {
     assert!(first.plan.byte_size() > 0);
 }
 
+/// A plan says whether the call walked the document for it: a remembered plan or refusal doesn't.
+#[test]
+fn a_plan_says_whether_it_was_walked() {
+    let (s, _) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: Some((1, 4.0)) }]);
+    let doc = s.doc().unwrap().doc.clone();
+    let service = PlanService::default();
+    let opts = Options::default();
+    let walked = |opts: &Options| service.planned_and_walked(Of::whole(&doc), &doc, opts).1;
+    assert!(walked(&opts), "the first plan");
+    assert!(!walked(&opts), "remembered");
+    // A refusal is remembered too: three metres a side, more stitches than one shape may have.
+    let (s, _) = build(&[Art { kind: 0, x: 0.0, y: 0.0, w: 8500.0, h: 8500.0, fill: Some(0), stroke: None }]);
+    let doc = s.doc().unwrap().doc.clone();
+    let service = PlanService::default();
+    let (refused, walked) = service.planned_and_walked(Of::whole(&doc), &doc, &opts);
+    assert!(refused.is_err() && walked);
+    let (refused, walked) = service.planned_and_walked(Of::whole(&doc), &doc, &opts);
+    assert!(refused.is_err() && !walked);
+}
+
 /// The planner's latest plan never plans; a plan key tells whether a plan is of the document as it
 /// is: a selection doesn't change it, an edit and other options do.
 #[test]
@@ -880,8 +900,8 @@ fn a_wait_for_another_callers_plan_always_ends() {
     assert_eq!((service.walks(), service.flights()), (0, 0));
     // Past its bound: it plans itself.
     service.in_flight(Of::whole(&doc), &opts, || {
-        let planned = service.planned_waiting(Of::whole(&doc), &doc, &opts, std::time::Duration::from_millis(1));
-        assert!(planned.is_ok());
+        let (planned, walked) = service.planned_waiting(Of::whole(&doc), &doc, &opts, std::time::Duration::from_millis(1));
+        assert!(planned.is_ok() && walked);
     });
     assert_eq!(service.walks(), 1);
     // The flight lands without a plan (as a cancelled one does): the waiter plans.

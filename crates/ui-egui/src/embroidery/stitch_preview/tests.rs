@@ -249,12 +249,14 @@ fn a_cancelled_job_is_never_shown() {
     edit(&mut s);
     p.want_plan();
     p.schedule_at(&mut s, 0.01, false);
-    assert_eq!(fake.waiting(), [2], "a first plan starts again at once");
     p.take_in();
     assert!(p.shown(uid).is_none(), "the cancelled job's plan is dropped");
+    assert!(fake.waiting().is_empty(), "only the first plan skips the quiet time");
+    frame(&mut p, &mut s, 0.01 + AFTER_QUIET, false, true);
+    assert_eq!(fake.waiting(), [2]);
     fake.finish(HEAVY_MS);
-    frame(&mut p, &mut s, 0.02, false, true);
-    assert_eq!(p.freshness(uid, 0.02), Freshness::Fresh);
+    frame(&mut p, &mut s, 0.2, false, true);
+    assert_eq!(p.freshness(uid, 0.2), Freshness::Fresh);
     let shown = generation(&p, uid);
     // An answer "cancelled" for the job under way ends it, and nothing else changes.
     edit(&mut s);
@@ -262,13 +264,13 @@ fn a_cancelled_job_is_never_shown() {
     frame(&mut p, &mut s, 1.0 + AFTER_QUIET, false, true);
     let ticket = p.in_flight.as_ref().unwrap().ticket;
     fake.0.borrow_mut().waiting.clear();
-    fake.0.borrow_mut().done.push(Done { ticket, outcome: Outcome::Cancelled, ms: 0.0, last: true });
+    fake.0.borrow_mut().done.push(Done { ticket, outcome: Outcome::Cancelled, ms: 0.0, walked: false, last: true });
     p.take_in();
     assert!(p.in_flight.is_none());
     assert_eq!(generation(&p, uid), shown);
     assert!(p.docs[&uid].failed.is_none());
     // A stray step of another ticket is dropped.
-    fake.0.borrow_mut().done.push(Done { ticket: 99, outcome: Outcome::Failed("stray".into()), ms: 0.0, last: true });
+    fake.0.borrow_mut().done.push(Done { ticket: 99, outcome: Outcome::Failed("stray".into()), ms: 0.0, walked: true, last: true });
     p.take_in();
     assert!(p.docs[&uid].failed.is_none());
 }
@@ -300,6 +302,66 @@ fn a_design_that_fails_is_planned_again_only_once_it_changes() {
     frame(&mut p, &mut s, 5.0, false, true);
     frame(&mut p, &mut s, 5.0 + AFTER_QUIET, false, true);
     assert_eq!(fake.waiting().len(), 1, "an edit plans again");
+}
+
+/// Only a document's first plan starts at once whatever goes on: once one has been sent (and
+/// cancelled, or refused with nothing shown), a change waits for the document to stay unchanged, so
+/// a design that can't be planned isn't planned again on every edit.
+#[test]
+fn only_the_first_plan_skips_the_quiet_time() {
+    let (mut p, fake) = preview();
+    let mut s = Session::new();
+    let mut run = |c: &str, v: Value| exec(&mut s, c, v);
+    fx::blank(&mut run);
+    // Three metres a side: more stitches than one shape may have.
+    fx::rect(&mut run, fx::RED, 0.0, 0.0, 8500.0, 8500.0);
+    let uid = s.active().unwrap().uid;
+    frame(&mut p, &mut s, 0.0, false, true);
+    assert_eq!(fake.waiting(), [1], "the first at once");
+    edit(&mut s);
+    frame(&mut p, &mut s, 0.01, false, true);
+    assert!(p.in_flight.is_none(), "cancelled by the edit");
+    assert_eq!(fake.waiting(), [1], "and the next waits for the quiet time");
+    frame(&mut p, &mut s, 0.01 + AFTER_QUIET, false, true);
+    assert_eq!(fake.waiting(), [1, 2]);
+    fake.finish(LIGHT_MS);
+    fake.finish(HEAVY_MS);
+    frame(&mut p, &mut s, 0.2, false, true);
+    assert!(matches!(p.freshness(uid, 0.2), Freshness::Failed { .. }) && p.shown(uid).is_none());
+    edit(&mut s);
+    frame(&mut p, &mut s, 1.0, false, true);
+    assert!(fake.waiting().is_empty(), "refused, nothing ever shown: still not at once");
+    frame(&mut p, &mut s, 1.0 + AFTER_QUIET, false, true);
+    assert_eq!(fake.waiting(), [3]);
+}
+
+/// How long a plan took is kept only from plans walked: a remembered plan (an undo back to a state
+/// planned before) says nothing of how long the design takes to plan.
+#[test]
+fn only_a_walked_plan_says_how_long_the_design_takes() {
+    let (mut p, fake) = preview();
+    let mut s = Session::new();
+    let uid = document(&mut s);
+    frame(&mut p, &mut s, 0.0, false, true);
+    fake.finish(HEAVY_MS);
+    frame(&mut p, &mut s, 0.1, false, true);
+    let steps = s.doc().unwrap().history.undo.len();
+    edit(&mut s);
+    frame(&mut p, &mut s, 1.0, false, true);
+    frame(&mut p, &mut s, 1.0 + AFTER_QUIET, false, true);
+    fake.finish(HEAVY_MS);
+    frame(&mut p, &mut s, 1.2, false, true);
+    assert_eq!(p.docs[&uid].plan_ms, Some(HEAVY_MS));
+    while s.doc().unwrap().history.undo.len() > steps {
+        exec(&mut s, "edit.undo", json!({}));
+    }
+    frame(&mut p, &mut s, 2.0, false, true);
+    frame(&mut p, &mut s, 2.0 + AFTER_QUIET, false, true);
+    assert_eq!(fake.waiting().len(), 1, "the state undone to isn't the one shown");
+    fake.finish(LIGHT_MS);
+    frame(&mut p, &mut s, 2.2, false, true);
+    assert_eq!(p.freshness(uid, 2.2), Freshness::Fresh);
+    assert_eq!(p.docs[&uid].plan_ms, Some(HEAVY_MS), "the plan was remembered: still a heavy design");
 }
 
 #[test]

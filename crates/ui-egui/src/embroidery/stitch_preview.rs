@@ -6,11 +6,13 @@
 //!   shows stitches never plans.
 //! - **Tagged by what it is the plan of** ([`EmbroideryPlanKey`]: the snapshot, the options, the
 //!   fonts), never by the document's revision, which also moves on selection and view changes.
-//! - **Light and heavy designs.** A design whose last plan took at most [`LIVE_PLAN_MS`] is planned
-//!   on every change, also during a drag, and the plan under way is let finish, so the stitches
-//!   follow the drag; once it is in, a change cancels the replies still to come and plans at once.
-//!   Any other is planned once the document has stayed unchanged for [`QUIET_SECS`] with no drag,
-//!   and a new change cancels the plan under way. The first plan of a document starts at once.
+//! - **Light and heavy designs.** A design whose last plan walked took at most [`LIVE_PLAN_MS`] is
+//!   planned on every change, also during a drag, and the plan under way is let finish, so the
+//!   stitches follow the drag; once it is in, a change cancels the replies still to come and plans
+//!   at once. Any other is planned once the document has stayed unchanged for [`QUIET_SECS`] with
+//!   no drag, and a new change cancels the plan under way. Only the first plan of a document
+//!   starts at once whatever goes on, so a design that can't be planned isn't planned on every
+//!   edit.
 //! - **The last plan stays shown** while a newer one is made ([`Freshness::Stale`]); after
 //!   [`STALE_NOTICE_SECS`] the preview says it is planning. A design that can't be planned keeps
 //!   its last good stitches with the reason ([`Freshness::Failed`]), and isn't planned again until
@@ -165,8 +167,12 @@ struct DocPreview {
     shown: Option<Shown>,
     /// The key that failed, and why: not planned again until the document changes.
     failed: Option<(EmbroideryPlanKey, String)>,
-    /// How long the last job that really planned took, milliseconds.
+    /// How long the last plan walked took, milliseconds (a remembered plan, or one waited for, says
+    /// nothing of how long the design takes to plan).
     plan_ms: Option<f64>,
+    /// A job planning it has been sent: only the first plan starts at once whatever goes on, so a
+    /// design that fails or plans slowly isn't planned again on every change.
+    sent_a_plan: bool,
     /// The key wanted at the last frame, and since when (egui time, seconds).
     wanted: Option<(EmbroideryPlanKey, f64)>,
     /// Since when the plan shown hasn't been of the document as it is.
@@ -207,8 +213,8 @@ struct InFlight {
     /// The queries as asked (the job's carry the options).
     queries: Vec<Query>,
     progress: Arc<Progress>,
-    /// Its key wasn't the one shown when it was sent: it plans (its time says how heavy the design
-    /// is), rather than only making replies.
+    /// Its key wasn't the one shown when it was sent: it plans (or takes a remembered plan), rather
+    /// than only making replies.
     plans: bool,
     /// Its plan is taken in (or it only makes replies): what is left of it are replies, of a plan a
     /// newer one replaces.
@@ -384,7 +390,7 @@ impl StitchPreview {
                         let replies = doc.shown.take().map(|s| s.replies).unwrap_or_default();
                         doc.shown = Some(Shown { key: f.key.clone(), planned, document: f.document.clone(), replies });
                         doc.failed = None;
-                        if f.plans {
+                        if d.walked {
                             doc.plan_ms = Some(d.ms);
                         }
                     }
@@ -397,7 +403,7 @@ impl StitchPreview {
                     }
                     Outcome::Failed(error) => {
                         doc.failed = Some((f.key.clone(), error));
-                        if f.plans {
+                        if d.walked {
                             doc.plan_ms = Some(d.ms);
                         }
                     }
@@ -450,7 +456,7 @@ impl StitchPreview {
         }
         let stale_since = doc.stale_since;
         let light = doc.plan_ms.is_some_and(|ms| ms <= LIVE_PLAN_MS);
-        let first = doc.shown.is_none();
+        let first = !doc.sent_a_plan;
         let flying = self.in_flight.as_ref().map(|f| f.key == key);
         if fresh {
             let missing = doc.shown.as_ref().is_some_and(|sh| interest.queries.iter().any(|q| !sh.answers(q)));
@@ -510,6 +516,9 @@ impl StitchPreview {
         #[cfg(test)]
         self.log.sent.push((key.clone(), plans));
         let document = planner.document().clone();
+        if plans && let Some(doc) = self.docs.get_mut(&uid) {
+            doc.sent_a_plan = true;
+        }
         self.in_flight = Some(InFlight { uid, ticket, key, queries, progress: progress.clone(), plans, plan_in: !plans, document });
         runner.submit(Job::new(ticket, planner, opts, sent, progress));
     }

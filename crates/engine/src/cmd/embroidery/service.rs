@@ -222,34 +222,48 @@ impl PlanService {
 
     /// [`PlanService::plan`], with the plan's generation and scene.
     pub(crate) fn planned(&self, of: Of<'_>, doc: &Document, opts: &Options) -> Result<Planned, PlanError> {
+        self.planned_and_walked(of, doc, opts).0
+    }
+
+    /// [`PlanService::planned`], and whether this call walked the document for it (`false`: the
+    /// plan, or the refusal, was remembered, or another caller's was waited for).
+    pub(crate) fn planned_and_walked(&self, of: Of<'_>, doc: &Document, opts: &Options) -> (Result<Planned, PlanError>, bool) {
         #[cfg(not(target_arch = "wasm32"))]
         return self.planned_waiting(of, doc, opts, std::time::Duration::from_millis(MAX_FLIGHT_WAIT_MS));
         #[cfg(target_arch = "wasm32")]
         {
             let fonts = vectorcraft_text::FontDb::global().generation();
             match self.remembered(of, opts, fonts) {
-                Some(plan) => plan,
-                None => self.walk(of, doc, opts, fonts),
+                Some(plan) => (plan, false),
+                None => (self.walk(of, doc, opts, fonts), true),
             }
         }
     }
 
-    /// [`PlanService::planned`], waiting at most `max_wait` for another caller that plans the same.
+    /// [`PlanService::planned_and_walked`], waiting at most `max_wait` for another caller that
+    /// plans the same.
     #[cfg(not(target_arch = "wasm32"))]
-    pub(super) fn planned_waiting(&self, of: Of<'_>, doc: &Document, opts: &Options, max_wait: std::time::Duration) -> Result<Planned, PlanError> {
+    pub(super) fn planned_waiting(
+        &self,
+        of: Of<'_>,
+        doc: &Document,
+        opts: &Options,
+        max_wait: std::time::Duration,
+    ) -> (Result<Planned, PlanError>, bool) {
         let fonts = vectorcraft_text::FontDb::global().generation();
         let asked = std::time::Instant::now();
         loop {
             if let Some(plan) = self.remembered(of, opts, fonts) {
-                return plan;
+                return (plan, false);
             }
-            match self.take_off(of, opts, fonts, asked, max_wait)? {
-                Turn::Plan(landing) => {
+            match self.take_off(of, opts, fonts, asked, max_wait) {
+                Ok(Turn::Plan(landing)) => {
                     let plan = self.walk(of, doc, opts, fonts);
                     drop(landing);
-                    return plan;
+                    return (plan, true);
                 }
-                Turn::LookAgain => {}
+                Ok(Turn::LookAgain) => {}
+                Err(e) => return (Err(e), false),
             }
         }
     }

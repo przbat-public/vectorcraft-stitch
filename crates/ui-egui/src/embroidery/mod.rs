@@ -30,7 +30,7 @@ pub mod stitch_preview;
 pub mod switch;
 pub mod text;
 
-use vectorcraft_engine::cmd::embroidery::render::{Region, picture};
+use vectorcraft_engine::cmd::embroidery::render::{Look, Region, picture};
 use vectorcraft_engine::cmd::embroidery::scene::FABRIC;
 
 use crate::VectorcraftApp;
@@ -100,7 +100,8 @@ pub fn inspect(app: &VectorcraftApp, now: f64) -> serde_json::Value {
 pub fn render_stitches(app: &mut VectorcraftApp, artboard: usize, scale: f64) -> Result<vectorcraft_render::Rendered, String> {
     let uid = app.session.active().ok_or("no document")?.uid;
     let (opts, _) = app.session.stitch_preview_options(uid);
-    picture(&mut app.session, Region::Artboard(artboard), scale, true, Some(FABRIC), &opts).map(|(img, _, _)| img).map_err(|e| e.to_string())
+    let look = Look { jumps: true, needle_points: false };
+    picture(&mut app.session, Region::Artboard(artboard), scale, look, Some(FABRIC), &opts).map(|(img, _, _)| img).map_err(|e| e.to_string())
 }
 
 #[cfg(test)]

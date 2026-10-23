@@ -117,6 +117,11 @@ fn the_stitches_are_drawn_from_their_own_texture_over_the_fabric() {
     app.run("view.zoomIn", json!({})).unwrap();
     frame(&mut app, &ctx, 0.5);
     assert_eq!(app.embroidery.layer.uploads, 2);
+    // So does Show Needle Points, and its dots are drawn.
+    app.run("view.stitchPreview.needlePoints", json!({"on": true})).unwrap();
+    frame(&mut app, &ctx, 0.6);
+    assert_eq!(app.embroidery.layer.uploads, 3);
+    assert!(app.embroidery.layer.key.as_ref().is_some_and(|k| k.needle_points));
 }
 
 /// Back in the art view after an edit made in the stitch view, the art is rendered before it shows:

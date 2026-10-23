@@ -150,7 +150,7 @@ impl StitchScene {
     /// How the stitch preview draws it on `fabric`: each block in its thread's colour, an edge for
     /// a thread close to the fabric, jumps and cuts when `jumps`, at `px_per_pt` device pixels a
     /// screen point. The rest is the drawing's defaults.
-    pub fn style(&self, fabric: [u8; 3], jumps: bool, px_per_pt: f64) -> LineStyle {
+    pub fn style(&self, fabric: [u8; 3], jumps: bool, needle_points: bool, px_per_pt: f64) -> LineStyle {
         let colors = self.thread_colors();
         let edges = colors.iter().map(|c| edge_against(*c, fabric)).collect();
         LineStyle {
@@ -159,6 +159,7 @@ impl StitchScene {
             backdrop: fabric,
             links: jumps,
             marks: jumps,
+            needle_points,
             dark: MARK_DARK,
             light: MARK_LIGHT,
             px_per_pt,

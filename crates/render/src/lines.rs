@@ -82,6 +82,14 @@ pub const LINK_HALO_PT: f64 = 0.75;
 pub const LINK_MIN_PT: f64 = 4.0;
 /// Half the size of a mark (a cut's ×, a stop's square), screen points. An estimate.
 pub const MARK_PT: f64 = 4.5;
+/// A needle point's dot, screen points across, and how far a point must stand from both its
+/// neighbours on screen for its dot to be drawn (so that dots never run into a smear). Estimates:
+/// a 2-point dot leaves a 4-point gap between two drawn.
+pub const NEEDLE_POINT_PT: f64 = 2.0;
+pub const NEEDLE_POINT_GAP_PT: f64 = 6.0;
+/// The most needle points drawn in one frame: more than a 2880 × 1800 screen holds at the gap, a
+/// bound on the work whatever the design. An estimate.
+pub const MAX_NEEDLE_POINTS: usize = 250_000;
 /// How wide a mark's dark stroke is, screen points, and its light halo. Estimates.
 pub const MARK_LINE_PT: f64 = 1.0;
 pub const MARK_HALO_PT: f64 = 2.5;
@@ -479,8 +487,11 @@ pub struct LineStyle {
     pub numbers: Option<Range<u32>>,
     pub links: bool,
     pub marks: bool,
-    /// The two tones links and marks are drawn in: one of them contrasts with whatever is under
-    /// them.
+    /// A dot at each point of a line, once points stand apart on screen ([`NEEDLE_POINT_GAP_PT`]):
+    /// the needle points.
+    pub needle_points: bool,
+    /// The two tones links, marks and needle points are drawn in: one of them contrasts with
+    /// whatever is under them.
     pub dark: [u8; 3],
     pub light: [u8; 3],
     /// Device pixels in a screen point (the screen sizes of links and marks).
@@ -503,6 +514,7 @@ impl Default for LineStyle {
             numbers: None,
             links: true,
             marks: true,
+            needle_points: false,
             dark: [0x1e, 0x1e, 0x1e],
             light: [0xf5, 0xf5, 0xf5],
             px_per_pt: 1.0,
@@ -587,6 +599,8 @@ pub struct LineStats {
     pub paths: usize,
     pub links: usize,
     pub marks: usize,
+    /// Needle points drawn.
+    pub needle_points: usize,
     pub micros: u64,
 }
 
@@ -652,6 +666,9 @@ impl LineRenderer {
         if scale.is_finite() && scale > 0.0 {
             let visible = offsets.inverse().transform_rect_bbox(Rect::new(0.0, 0.0, f64::from(w), f64::from(h)));
             self.draw_lines(&mut ctx, picture, offsets, scale, visible, style);
+            if style.needle_points {
+                self.draw_needle_points(&mut ctx, picture, offsets, w, h, style);
+            }
             if style.links {
                 self.draw_links(&mut ctx, picture, to_device, w, h, style);
             }
@@ -790,6 +807,60 @@ impl LineRenderer {
             }
             self.stats.links += 1;
         }
+    }
+
+    /// The needle points, over the lines: a dot at each point drawn that stands at least
+    /// [`NEEDLE_POINT_GAP_PT`] from both its neighbours on screen, in the tone that contrasts with its
+    /// line, at most [`MAX_NEEDLE_POINTS`].
+    fn draw_needle_points(&mut self, ctx: &mut RenderContext, p: &LinePicture, offsets: Affine, w: u16, h: u16, style: &LineStyle) {
+        ctx.set_transform(Affine::IDENTITY);
+        let pt = style.px_per_pt.max(f64::MIN_POSITIVE);
+        let (r, gap) = (NEEDLE_POINT_PT * pt / 2.0, NEEDLE_POINT_GAP_PT * pt);
+        let screen = Rect::new(-r, -r, f64::from(w) + r, f64::from(h) + r);
+        // One path of dots a tone: the dark tone's, then the light's.
+        let mut dots = [BezPath::new(), BezPath::new()];
+        let mut drawn = 0;
+        'lines: for (k, line) in p.lines().iter().enumerate() {
+            if k % CANCEL_EVERY == 0 && k > 0 && vectorcraft_doc::cancel::is_cancelled() {
+                return;
+            }
+            if !style.shows(line.tag) {
+                continue;
+            }
+            let b = Rect::new(f64::from(line.bounds[0]), f64::from(line.bounds[1]), f64::from(line.bounds[2]), f64::from(line.bounds[3]));
+            let b = offsets.transform_rect_bbox(b);
+            if !(b.x1 >= screen.x0 && b.x0 <= screen.x1 && b.y1 >= screen.y0 && b.y0 <= screen.y1) {
+                continue;
+            }
+            let range = line.points.start as usize..line.points.end as usize;
+            let (Some(points), Some(numbers)) = (p.points.get(range.clone()), p.numbers.get(range)) else { continue };
+            let device: Vec<Point> = points.iter().map(|q| offsets * Point::new(f64::from(q[0]), f64::from(q[1]))).collect();
+            let color = style.color(line.group, style.fades(line.tag));
+            let tone = usize::from(contrast(color, style.dark) < contrast(color, style.light));
+            for (i, (c, n)) in device.iter().zip(numbers).enumerate() {
+                if !(style.counts(*n) && c.x.is_finite() && c.y.is_finite() && screen.contains(*c)) {
+                    continue;
+                }
+                let near = [i.checked_sub(1), i.checked_add(1)].into_iter().flatten().filter_map(|j| device.get(j)).map(|q| q.distance(*c));
+                if near.fold(f64::INFINITY, f64::min) < gap {
+                    continue;
+                }
+                if let Some(path) = dots.get_mut(tone) {
+                    path.extend(kurbo::Circle::new(*c, r).path_elements(0.1));
+                }
+                drawn += 1;
+                if drawn >= MAX_NEEDLE_POINTS {
+                    break 'lines;
+                }
+            }
+        }
+        for (path, color) in dots.iter().zip([style.dark, style.light]) {
+            if !path.elements().is_empty() {
+                ctx.set_paint(peniko::Color::from_rgb8(color[0], color[1], color[2]));
+                ctx.fill_path(path);
+            }
+        }
+        self.stats.needle_points = drawn;
     }
 
     /// The marks, at a fixed size on screen, over everything.

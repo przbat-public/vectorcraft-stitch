@@ -1516,6 +1516,11 @@ and `cargo xtask layers` is unchanged. The engine builds the picture from the pl
   each cut and a square at each stop, at a fixed size on screen, in two tones the same in every
   theme (one of them contrasts with any thread). No move is drawn between blocks: the machine
   changes thread there.
+- **Needle points, with a toggle** (View › Stitch Preview Options › Show Needle Points, off by
+  default): a 2-point dot at each needle point in the tone that contrasts with its thread, once
+  points stand at least 6 screen points from both their neighbours (closer, the dots would run into a
+  smear), at most 250,000 a frame (`render::lines::NEEDLE_POINT_PT`, `NEEDLE_POINT_GAP_PT`,
+  `MAX_NEEDLE_POINTS`, estimates).
 - Lines are stroked in sewing order with round joins and caps, later stitches over earlier ones.
 
 **How it is drawn** (`render::lines::LineRenderer`): a picture holds `f32` offsets from an `f64`

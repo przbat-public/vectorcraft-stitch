@@ -27,14 +27,23 @@ pub enum Region {
     Rect(Rect),
 }
 
+/// What a picture of the stitches marks besides them, as the stitch preview's options do.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Look {
+    /// Jumps and cuts.
+    pub jumps: bool,
+    /// A dot at each needle point, once they stand apart.
+    pub needle_points: bool,
+}
+
 /// The active document's stitches as the stitch preview draws them, planned with `opts`: `region`
-/// at `scale` pixels a point, jumps and cuts marked when `jumps`, on `background` (`None`:
-/// transparent). The picture, the region drawn (document points) and the plan's generation.
+/// at `scale` pixels a point, marked as `look` asks, on `background` (`None`: transparent). The
+/// picture, the region drawn (document points) and the plan's generation.
 pub fn picture(
     s: &mut Session,
     region: Region,
     scale: f64,
-    jumps: bool,
+    look: Look,
     background: Option<[u8; 3]>,
     opts: &Options,
 ) -> Result<(Rendered, Rect, u64)> {
@@ -53,14 +62,14 @@ pub fn picture(
     };
     let (w, h) = vectorcraft_render::raster_size(r, scale).map_err(EngineError::Other)?;
     let view = Affine::scale(scale) * Affine::translate((-r.x0, -r.y0));
-    let mut style = scene.style(FABRIC, jumps, scale);
+    let mut style = scene.style(FABRIC, look.jumps, look.needle_points, scale);
     style.background = background.map(|[r, g, b]| [r, g, b, 255]);
     let img = LineRenderer::new().render(scene.picture(), w, h, view, &style);
     Ok((img, r, planned.generation))
 }
 
 /// The keys `embroidery.render` takes besides the embroidery options.
-const KEYS: [&str; 6] = ["artboard", "rect", "region", "scale", "jumps", "background"];
+const KEYS: [&str; 7] = ["artboard", "rect", "region", "scale", "jumps", "needlePoints", "background"];
 
 /// The most pixels a point `embroidery.render` draws at: as the canvas's closest zoom (6,400 %).
 const MAX_SCALE: f64 = 64.0;
@@ -77,10 +86,11 @@ pub(super) fn render_cmd(s: &mut Session, p: &Value) -> Result<Value> {
             .filter(|k| k.is_finite() && *k > 0.0 && *k <= MAX_SCALE)
             .ok_or_else(|| bad(C, format!("scale {v}: a number of pixels a point, above 0 and at most {MAX_SCALE}")))?,
     };
-    let jumps = match o.get("jumps") {
-        None | Some(Value::Null) => true,
-        Some(v) => v.as_bool().ok_or_else(|| bad(C, format!("jumps {v}: true or false")))?,
+    let flag = |key: &str, default: bool| match o.get(key) {
+        None | Some(Value::Null) => Ok(default),
+        Some(v) => v.as_bool().ok_or_else(|| bad(C, format!("{key} {v}: true or false"))),
     };
+    let look = Look { jumps: flag("jumps", true)?, needle_points: flag("needlePoints", false)? };
     let background = match o.get("background") {
         None => Some(FABRIC),
         Some(Value::Null) => None,
@@ -95,7 +105,7 @@ pub(super) fn render_cmd(s: &mut Session, p: &Value) -> Result<Value> {
                 .ok_or_else(|| bad(C, format!("background {v}: \"#rrggbb\", or null for none")))?,
         ),
     };
-    let (img, r, generation) = picture(s, region, scale, jumps, background, &opts)?;
+    let (img, r, generation) = picture(s, region, scale, look, background, &opts)?;
     let png = img.to_png().map_err(EngineError::Other)?;
     Ok(with_options(
         json!({

@@ -75,6 +75,7 @@ struct LayerKey {
     h: u32,
     ppp: f32,
     jumps: bool,
+    needle_points: bool,
     /// Isolation mode's group or layer: the stitches of the rest are faded.
     isolated: Option<u64>,
     anti_alias: bool,
@@ -398,6 +399,7 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
         h,
         ppp,
         jumps: view.jumps,
+        needle_points: view.needle_points,
         isolated: isolated.map(|i| i.0),
         anti_alias,
     };
@@ -425,7 +427,8 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
                 }
             }
         });
-        let style = LineStyle { faded: faded.map(|f| (*f).clone()), anti_alias, ..scene.style(FABRIC, view.jumps, f64::from(ppp)) };
+        let style =
+            LineStyle { faded: faded.map(|f| (*f).clone()), anti_alias, ..scene.style(FABRIC, view.jumps, view.needle_points, f64::from(ppp)) };
         let affine = Affine::translate((f64::from(w) / 2.0, f64::from(h) / 2.0))
             * Affine::rotate(v.rotation.to_radians())
             * Affine::scale(v.zoom * f64::from(ppp))
@@ -467,7 +470,8 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
         if layer.emphasized.as_ref().is_none_or(|(have, _)| *have != wanted) {
             let shown: std::collections::HashSet<u32> = wanted.1.iter().copied().collect();
             let rest = (0..scene.units().len()).filter_map(|i| u32::try_from(i).ok()).filter(|i| !shown.contains(i));
-            let style = LineStyle { hidden: Some(TagSet::of(rest)), anti_alias, ..scene.style(FABRIC, view.jumps, f64::from(k.ppp)) };
+            let style =
+                LineStyle { hidden: Some(TagSet::of(rest)), anti_alias, ..scene.style(FABRIC, view.jumps, view.needle_points, f64::from(k.ppp)) };
             let affine = Affine::translate((f64::from(k.w) / 2.0, f64::from(k.h) / 2.0))
                 * Affine::rotate(k.rot.to_radians())
                 * Affine::scale(k.zoom * f64::from(k.ppp))

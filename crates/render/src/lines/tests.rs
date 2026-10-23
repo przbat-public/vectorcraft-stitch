@@ -326,3 +326,31 @@ proptest! {
         let _ = r.render(&p, 48, 32, Affine::scale(scale) * Affine::translate((tx, tx)), &s);
     }
 }
+
+/// Needle points: a dot at each point of a line in the tone that contrasts with it, once points
+/// stand at least the gap apart on screen; none while they are closer, and none unless asked.
+#[test]
+fn needle_points_stand_out_once_they_stand_apart() {
+    // Points 20 pixels apart along a thin light line: a dark dot on each.
+    let light = [240, 240, 120];
+    let p = picture(&[(0, 0, 1.0, &[(10.5, 10.5, 1), (30.5, 10.5, 2), (50.5, 10.5, 3), (70.5, 10.5, 4)])]);
+    let on = LineStyle { needle_points: true, background: Some([255, 255, 255, 255]), ..style(&[light]) };
+    let mut r = LineRenderer { threads: 0, ..LineRenderer::new() };
+    let img = r.render(&p, 80, 20, Affine::IDENTITY, &on);
+    assert_eq!(r.stats.needle_points, 4);
+    let dark = LineStyle::default().dark;
+    assert_eq!(rgb(at(&img, 30, 10)), dark, "a dark dot on the light thread");
+    assert_eq!(rgb(at(&img, 20, 10)), light, "the thread between them");
+    // Not asked: no dot.
+    let img = draw(&p, 80, 20, &LineStyle { needle_points: false, ..on.clone() });
+    assert_eq!(rgb(at(&img, 30, 10)), light);
+    // Points 2 pixels apart: too close for dots.
+    let close: Vec<At> = (0..30).map(|k| (10.0 + 2.0 * f64::from(k), 10.5, k)).collect();
+    let p = picture(&[(0, 0, 1.0, &close)]);
+    let mut r = LineRenderer { threads: 0, ..LineRenderer::new() };
+    r.render(&p, 80, 20, Affine::IDENTITY, &on);
+    assert_eq!(r.stats.needle_points, 0);
+    // Zoomed in four times, they stand 8 apart: dots again.
+    r.render(&p, 320, 80, Affine::scale(4.0), &on);
+    assert!(r.stats.needle_points > 0);
+}

@@ -1492,7 +1492,9 @@ nudged ten times and timed until the stitches drawn are of the document as it is
 | Edit to the stitches drawn fresh, worst | 56 ms | 100 ms |
 
 Edit to fresh counts whole frames: the edit's frame schedules the plan, the next takes it in and
-draws it. A selection change uploads nothing and renders no art (`stitch_layer` tests).
+draws it. A selection change uploads no stitches, and renders no art while the art is hidden
+(`stitch_layer` tests); the art shown with them (faint, its outlines, its templates) is the canvas's,
+rendered again on a selection change as the canvas always does.
 
 Measured again with the whole PR in (2026-10-23, load about 3, twice), now that every plan also
 makes `embroidery.stats` for the status bar's counters: a drag's frames at most 5.2 ms at the 95th
@@ -1557,7 +1559,8 @@ with View › Outline on, the art's outlines over them (template layers left out
 template image doesn't cover the stitches). Guides, the grid and the selection are drawn as always.
 The stitches are a raster and texture of their own, keyed by the document, the plan's generation,
 the view, the size and the look, never by the document's revision: a selection change or a hover
-uploads nothing, and the art isn't rendered at all while it is hidden. A frame that drew in more
+uploads no stitches, and the art isn't rendered at all while it is hidden (shown, faint or as
+outlines, it is the canvas's own, rendered again on a selection change). A frame that drew in more
 than 8 ms (the canvas's line for its art) is drawn from then on on a thread of its own, the last
 frame shown meanwhile, moved into the new view; a document switch is always drawn there where the
 thread runs, the fabric shown until it comes, never the other document's stitches. Until the first

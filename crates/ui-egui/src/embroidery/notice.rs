@@ -20,7 +20,7 @@ const PAD: f32 = 10.0;
 const BAR: f32 = 2.0;
 /// The size of its words, points: the interface's small text.
 const TEXT_SIZE: f32 = 12.0;
-/// The longest notice, points: a long reason is cut short with "…" (the panel shows it whole).
+/// The widest notice, points: a long reason wraps onto more lines within it.
 const MAX_WIDTH: f32 = 420.0;
 
 /// What the notice says, and the plan's progress (0 to 1) when it can say: `None` when there is

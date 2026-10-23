@@ -7,6 +7,8 @@
 //! - **A raster and a texture of their own**, keyed by the document, the plan's generation, the
 //!   view, the size and the look ([`LayerKey`]), never by the document's revision: a selection
 //!   change, a hover or a guide moved draws the stitches again from the texture, uploading nothing.
+//!   (The art shown with them, faint, its outlines or its templates, is the canvas's, which renders
+//!   it again on a selection change: its key holds the revision.)
 //!   The art's texture is the canvas's own, rendered only when one of its passes is shown
 //!   ([`ArtPass`]).
 //! - **Off the interface thread when slow.** Light frames are drawn in line, as the canvas draws

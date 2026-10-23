@@ -211,10 +211,21 @@ fn the_art_shows_as_the_view_says() {
     assert_eq!(art_pass(&mut app), ArtPass { stitches: true, render: true, hidden: vec![], hide_templates: false });
     let shapes = frame(&mut app, &ctx, 1.0);
     assert_eq!(drawn_with(&shapes, art_texture(&app)), [faded()], "the art faint");
+    // A selection change with the art shown, once the plan of the document as it is shows: the
+    // stitches aren't drawn again.
+    let uid = app.session.active().unwrap().uid;
+    for t in [1.2, 1.4] {
+        frame(&mut app, &ctx, t);
+    }
+    assert_eq!(app.embroidery.preview.freshness(uid, 1.4), stitch_preview::Freshness::Fresh);
+    let uploads = app.embroidery.layer.uploads;
+    app.run("select.all", json!({})).unwrap();
+    frame(&mut app, &ctx, 1.45);
+    assert_eq!(app.embroidery.layer.uploads, uploads, "no stitches uploaded for a selection change");
     app.run("view.outline", json!({})).unwrap();
     assert_eq!(art_pass(&mut app), ArtPass { stitches: true, render: true, hidden: vec![], hide_templates: true });
     // The outlines, once the canvas has them (it may render them on its thread).
-    let (mut time, t0) = (1.1, std::time::Instant::now());
+    let (mut time, t0) = (1.5, std::time::Instant::now());
     let shapes = loop {
         let shapes = frame(&mut app, &ctx, time);
         if app.canvas.key.as_ref().is_some_and(|k| k.outline) {

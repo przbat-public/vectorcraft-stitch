@@ -4939,7 +4939,6 @@ embroidery	narrow parts as satin	schmale Teile als Satin
 @plural	{count} object|{count} objects	{count} Objekt|{count} Objekte
 @plural	{count} jump|{count} jumps	{count} Sprung|{count} Sprünge
 @plural	{count} trim|{count} trims	{count} Schnitt|{count} Schnitte
-embroidery	about {value}	etwa {value}
 embroidery	Colours	Farben
 embroidery	Thread changes	Garnwechsel
 embroidery	Trims	Schnitte
@@ -5058,3 +5057,5 @@ embroidery	Embroidery: {figures}	Stickerei: {figures}
 embroidery	Stitches can't be planned	Die Stiche lassen sich nicht planen
 embroidery	Click to open the Embroidery panel.	Klicken, um das Bedienfeld „Stickerei“ zu öffnen.
 embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	etwa {value} Min.
+embroidery	about {value} m	etwa {value} m

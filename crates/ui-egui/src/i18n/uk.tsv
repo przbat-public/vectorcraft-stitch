@@ -4957,7 +4957,6 @@ embroidery	narrow parts as satin	вузькі частини гладдю
 @plural	{count} object|{count} objects	{count} об’єкт|{count} об’єкти|{count} об’єктів
 @plural	{count} jump|{count} jumps	{count} перескок|{count} перескоки|{count} перескоків
 @plural	{count} trim|{count} trims	{count} обрізання|{count} обрізання|{count} обрізань
-embroidery	about {value}	близько {value}
 embroidery	Colours	Кольори
 embroidery	Thread changes	Зміни нитки
 embroidery	Trims	Обрізання
@@ -5076,3 +5075,5 @@ embroidery	Embroidery: {figures}	Вишивка: {figures}
 embroidery	Stitches can't be planned	Не вдається спланувати стібки
 embroidery	Click to open the Embroidery panel.	Клацніть, щоб відкрити панель «Вишивка».
 embroidery	{width} × {height} mm	{width} × {height} мм
+embroidery	about {value} min	близько {value} хв
+embroidery	about {value} m	близько {value} м

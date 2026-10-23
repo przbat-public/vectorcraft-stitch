@@ -5328,7 +5328,6 @@ embroidery	narrow parts as satin	kapeat osat satiinina
 @plural	{count} object|{count} objects	{count} objekti|{count} objektia
 @plural	{count} jump|{count} jumps	{count} hyppy|{count} hyppyä
 @plural	{count} trim|{count} trims	{count} leikkaus|{count} leikkausta
-embroidery	about {value}	noin {value}
 embroidery	Colours	Värit
 embroidery	Thread changes	Langanvaihdot
 embroidery	Trims	Leikkaukset
@@ -5447,3 +5446,5 @@ embroidery	Embroidery: {figures}	Kirjonta: {figures}
 embroidery	Stitches can't be planned	Pistoja ei voi suunnitella
 embroidery	Click to open the Embroidery panel.	Avaa Kirjonta-paneeli napsauttamalla.
 embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	noin {value} min
+embroidery	about {value} m	noin {value} m

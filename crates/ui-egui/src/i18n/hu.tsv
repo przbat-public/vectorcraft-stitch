@@ -5350,7 +5350,6 @@ embroidery	narrow parts as satin	keskeny részek szaténnal
 @plural	{count} object|{count} objects	{count} objektum
 @plural	{count} jump|{count} jumps	{count} ugrás
 @plural	{count} trim|{count} trims	{count} vágás
-embroidery	about {value}	kb. {value}
 embroidery	Colours	Színek
 embroidery	Thread changes	Szálcserék
 embroidery	Trims	Vágások
@@ -5469,3 +5468,5 @@ embroidery	Embroidery: {figures}	Hímzés: {figures}
 embroidery	Stitches can't be planned	Az öltések nem tervezhetők meg
 embroidery	Click to open the Embroidery panel.	Kattintson a Hímzés panel megnyitásához.
 embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	kb. {value} perc
+embroidery	about {value} m	kb. {value} m

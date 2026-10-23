@@ -779,11 +779,14 @@ fn how_sewn(unit: &OrderUnit, several: bool) -> String {
 fn figures(stats: &Value) -> [(&'static str, String); 8] {
     let lang = crate::i18n::current();
     let count = |k: &str| numbers::count(lang, stats[k].as_u64().unwrap_or(0));
-    let about = |v: String| crate::embroidery::text::fill(crate::et!("about {value}"), &[("value", &v)]);
-    let metres = about(format!("{} m", numbers::decimal(lang, stats["threadUsage"]["topMetres"].as_f64().unwrap_or(0.0), 0)));
-    let minutes = about(format!("{} min", numbers::decimal(lang, stats["time"]["minutes"].as_f64().unwrap_or(0.0).ceil(), 0)));
+    let fill = crate::embroidery::text::fill;
+    let metres =
+        fill(crate::et!("about {value} m"), &[("value", &numbers::decimal(lang, stats["threadUsage"]["topMetres"].as_f64().unwrap_or(0.0), 0))]);
+    let minutes = crate::embroidery::counters::minutes_words(stats["time"]["minutes"].as_f64().unwrap_or(0.0));
     let size = match (stats["size"]["width"].as_f64(), stats["size"]["height"].as_f64()) {
-        (Some(w), Some(h)) => format!("{} × {} mm", numbers::decimal(lang, w, 1), numbers::decimal(lang, h, 1)),
+        (Some(w), Some(h)) => {
+            fill(crate::et!("{width} × {height} mm"), &[("width", &numbers::decimal(lang, w, 1)), ("height", &numbers::decimal(lang, h, 1))])
+        }
         _ => numbers::NOT_A_NUMBER.to_string(),
     };
     [

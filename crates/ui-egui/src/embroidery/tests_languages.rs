@@ -79,7 +79,7 @@ fn check_tab(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> (Vec<
 /// the same words, as German's "Design").
 fn may_be_english(catalogue: &str, text: &str, names: &[String]) -> bool {
     let letters = text.chars().filter(|c| c.is_ascii_alphabetic()).count();
-    let units = text.split_whitespace().all(|w| ["mm", "min", "fps", "ms"].contains(&w) || !w.chars().any(|c| c.is_ascii_alphabetic()));
+    let units = text.split_whitespace().all(|w| ["fps", "ms"].contains(&w) || !w.chars().any(|c| c.is_ascii_alphabetic()));
     if text.contains(" · ") {
         return text.split(" · ").all(|part| may_be_english(catalogue, part, names));
     }

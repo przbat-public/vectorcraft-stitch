@@ -5017,7 +5017,6 @@ embroidery	narrow parts as satin	細い部分はサテン
 @plural	{count} object|{count} objects	{count} 個のオブジェクト
 @plural	{count} jump|{count} jumps	{count} 回のジャンプ
 @plural	{count} trim|{count} trims	{count} 回の糸切り
-embroidery	about {value}	約 {value}
 embroidery	Colours	色
 embroidery	Thread changes	糸替え
 embroidery	Trims	糸切り
@@ -5136,3 +5135,5 @@ embroidery	Embroidery: {figures}	刺繍: {figures}
 embroidery	Stitches can't be planned	針目を計画できません
 embroidery	Click to open the Embroidery panel.	クリックすると刺繍パネルが開きます。
 embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	約 {value} 分
+embroidery	about {value} m	約 {value} m

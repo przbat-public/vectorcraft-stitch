@@ -4957,7 +4957,6 @@ embroidery	narrow parts as satin	phần hẹp thêu sa-tanh
 @plural	{count} object|{count} objects	{count} đối tượng
 @plural	{count} jump|{count} jumps	{count} mũi nhảy
 @plural	{count} trim|{count} trims	{count} lần cắt chỉ
-embroidery	about {value}	khoảng {value}
 embroidery	Colours	Màu
 embroidery	Thread changes	Đổi chỉ
 embroidery	Trims	Cắt chỉ
@@ -5076,3 +5075,5 @@ embroidery	Embroidery: {figures}	Thêu: {figures}
 embroidery	Stitches can't be planned	Không thể lên kế hoạch mũi thêu
 embroidery	Click to open the Embroidery panel.	Bấm để mở bảng Thêu.
 embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	khoảng {value} phút
+embroidery	about {value} m	khoảng {value} m

@@ -5320,7 +5320,6 @@ embroidery	narrow parts as satin	smala delar som satin
 @plural	{count} object|{count} objects	{count} objekt|{count} objekt
 @plural	{count} jump|{count} jumps	{count} hopp|{count} hopp
 @plural	{count} trim|{count} trims	{count} klipp|{count} klipp
-embroidery	about {value}	cirka {value}
 embroidery	Colours	Färger
 embroidery	Thread changes	Trådbyten
 embroidery	Trims	Klipp
@@ -5439,3 +5438,5 @@ embroidery	Embroidery: {figures}	Broderi: {figures}
 embroidery	Stitches can't be planned	Stygnen kan inte planeras
 embroidery	Click to open the Embroidery panel.	Klicka för att öppna panelen Broderi.
 embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	cirka {value} min
+embroidery	about {value} m	cirka {value} m

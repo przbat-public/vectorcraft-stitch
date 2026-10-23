@@ -5363,7 +5363,6 @@ embroidery	narrow parts as satin	parties étroites en satin
 @plural	{count} object|{count} objects	{count} objet|{count} objets
 @plural	{count} jump|{count} jumps	{count} saut|{count} sauts
 @plural	{count} trim|{count} trims	{count} coupe|{count} coupes
-embroidery	about {value}	environ {value}
 embroidery	Colours	Couleurs
 embroidery	Thread changes	Changements de fil
 embroidery	Trims	Coupes
@@ -5482,3 +5481,5 @@ embroidery	Embroidery: {figures}	Broderie : {figures}
 embroidery	Stitches can't be planned	Impossible de planifier les points
 embroidery	Click to open the Embroidery panel.	Cliquez pour ouvrir le panneau Broderie.
 embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	environ {value} min
+embroidery	about {value} m	environ {value} m

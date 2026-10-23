@@ -4973,7 +4973,6 @@ embroidery	narrow parts as satin	узкие части гладью
 @plural	{count} object|{count} objects	{count} объект|{count} объекта|{count} объектов
 @plural	{count} jump|{count} jumps	{count} перескок|{count} перескока|{count} перескоков
 @plural	{count} trim|{count} trims	{count} обрезка|{count} обрезки|{count} обрезок
-embroidery	about {value}	около {value}
 embroidery	Colours	Цвета
 embroidery	Thread changes	Смены нити
 embroidery	Trims	Обрезки
@@ -5092,3 +5091,5 @@ embroidery	Embroidery: {figures}	Вышивка: {figures}
 embroidery	Stitches can't be planned	Не удаётся спланировать стежки
 embroidery	Click to open the Embroidery panel.	Щёлкните, чтобы открыть панель «Вышивка».
 embroidery	{width} × {height} mm	{width} × {height} мм
+embroidery	about {value} min	около {value} мин
+embroidery	about {value} m	около {value} м

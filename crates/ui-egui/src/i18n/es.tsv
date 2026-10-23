@@ -5305,7 +5305,6 @@ embroidery	narrow parts as satin	partes estrechas en satén
 @plural	{count} object|{count} objects	{count} objeto|{count} objetos
 @plural	{count} jump|{count} jumps	{count} salto|{count} saltos
 @plural	{count} trim|{count} trims	{count} corte|{count} cortes
-embroidery	about {value}	unos {value}
 embroidery	Colours	Colores
 embroidery	Thread changes	Cambios de hilo
 embroidery	Trims	Cortes
@@ -5424,3 +5423,5 @@ embroidery	Embroidery: {figures}	Bordado: {figures}
 embroidery	Stitches can't be planned	No se pueden planificar las puntadas
 embroidery	Click to open the Embroidery panel.	Haga clic para abrir el panel Bordado.
 embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	unos {value} min
+embroidery	about {value} m	unos {value} m

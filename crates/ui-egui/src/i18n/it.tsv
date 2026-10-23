@@ -4977,7 +4977,6 @@ embroidery	narrow parts as satin	parti strette a raso
 @plural	{count} object|{count} objects	{count} oggetto|{count} oggetti
 @plural	{count} jump|{count} jumps	{count} salto|{count} salti
 @plural	{count} trim|{count} trims	{count} taglio|{count} tagli
-embroidery	about {value}	circa {value}
 embroidery	Colours	Colori
 embroidery	Thread changes	Cambi filo
 embroidery	Trims	Tagli
@@ -5096,3 +5095,5 @@ embroidery	Embroidery: {figures}	Ricamo: {figures}
 embroidery	Stitches can't be planned	Impossibile pianificare i punti
 embroidery	Click to open the Embroidery panel.	Fai clic per aprire il pannello Ricamo.
 embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	circa {value} min
+embroidery	about {value} m	circa {value} m

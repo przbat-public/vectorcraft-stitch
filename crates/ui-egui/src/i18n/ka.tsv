@@ -5270,7 +5270,6 @@ embroidery	narrow parts as satin	ვიწრო ნაწილები ატ
 @plural	{count} object|{count} objects	ობიექტები: {count}
 @plural	{count} jump|{count} jumps	ნახტომები: {count}
 @plural	{count} trim|{count} trims	ჭრები: {count}
-embroidery	about {value}	დაახლოებით {value}
 embroidery	Colours	ფერები
 embroidery	Thread changes	ძაფის ცვლა
 embroidery	Trims	ჭრები
@@ -5389,3 +5388,5 @@ embroidery	Embroidery: {figures}	ნაქარგობა: {figures}
 embroidery	Stitches can't be planned	ნაკერების დაგეგმვა შეუძლებელია
 embroidery	Click to open the Embroidery panel.	დააწკაპუნეთ პანელის „ნაქარგობა“ გასახსნელად.
 embroidery	{width} × {height} mm	{width} × {height} მმ
+embroidery	about {value} min	დაახლოებით {value} წთ
+embroidery	about {value} m	დაახლოებით {value} მ

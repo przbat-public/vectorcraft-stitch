@@ -130,7 +130,7 @@ pub fn words(f: &Figures, variant: Variant) -> String {
 pub fn minutes_words(minutes: f64) -> String {
     let lang = crate::i18n::current();
     let whole = if minutes.is_finite() { minutes.max(0.0).ceil() } else { 0.0 };
-    fill(crate::et!("about {value}"), &[("value", &format!("{} min", numbers::decimal(lang, whole, 0)))])
+    fill(crate::et!("about {value} min"), &[("value", &numbers::decimal(lang, whole, 0))])
 }
 
 /// The counters' state across frames: the figures shown and since when, the slot's width.
@@ -228,7 +228,8 @@ fn wordings(state: &State, t: &Tokens) -> Vec<(Option<Variant>, String, Color32)
             let mut words = crate::et!("Planning stitches…").to_string();
             if let Some(p) = progress.filter(|p| p.is_finite()) {
                 // Never 100 % before the plan is in.
-                words = format!("{words} {}%", (p * 100.0).clamp(0.0, 99.0).floor());
+                let whole = (p * 100.0).clamp(0.0, 99.0).floor() as u64;
+                words = format!("{words} {}", numbers::percent(crate::i18n::current(), whole));
             }
             vec![(None, words, t.text_dim)]
         }

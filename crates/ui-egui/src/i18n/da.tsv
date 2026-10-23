@@ -5347,7 +5347,6 @@ embroidery	narrow parts as satin	smalle dele som satin
 @plural	{count} object|{count} objects	{count} objekt|{count} objekter
 @plural	{count} jump|{count} jumps	{count} spring|{count} spring
 @plural	{count} trim|{count} trims	{count} klip|{count} klip
-embroidery	about {value}	ca. {value}
 embroidery	Colours	Farver
 embroidery	Thread changes	Trådskift
 embroidery	Trims	Klip
@@ -5466,3 +5465,5 @@ embroidery	Embroidery: {figures}	Broderi: {figures}
 embroidery	Stitches can't be planned	Stingene kan ikke planlægges
 embroidery	Click to open the Embroidery panel.	Klik for at åbne panelet Broderi.
 embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	ca. {value} min
+embroidery	about {value} m	ca. {value} m

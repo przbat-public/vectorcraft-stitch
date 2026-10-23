@@ -4252,7 +4252,6 @@ embroidery	narrow parts as satin	窄的部分用緞紋
 @plural	{count} object|{count} objects	{count} 個物件
 @plural	{count} jump|{count} jumps	{count} 次跳針
 @plural	{count} trim|{count} trims	{count} 次剪線
-embroidery	about {value}	約 {value}
 embroidery	Colours	顏色
 embroidery	Thread changes	換線次數
 embroidery	Trims	剪線
@@ -4371,3 +4370,5 @@ embroidery	Embroidery: {figures}	刺繡：{figures}
 embroidery	Stitches can't be planned	無法規劃針跡
 embroidery	Click to open the Embroidery panel.	按一下可開啟「刺繡」面板。
 embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	約 {value} 分鐘
+embroidery	about {value} m	約 {value} 公尺

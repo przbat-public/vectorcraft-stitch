@@ -5329,7 +5329,6 @@ embroidery	narrow parts as satin	тесните части като сатен
 @plural	{count} object|{count} objects	{count} обект|{count} обекта
 @plural	{count} jump|{count} jumps	{count} прескок|{count} прескока
 @plural	{count} trim|{count} trims	{count} срязване|{count} срязвания
-embroidery	about {value}	около {value}
 embroidery	Colours	Цветове
 embroidery	Thread changes	Смени на нишката
 embroidery	Trims	Срязвания
@@ -5448,3 +5447,5 @@ embroidery	Embroidery: {figures}	Бродерия: {figures}
 embroidery	Stitches can't be planned	Бодовете не могат да бъдат планирани
 embroidery	Click to open the Embroidery panel.	Щракнете, за да отворите панела „Бродерия“.
 embroidery	{width} × {height} mm	{width} × {height} мм
+embroidery	about {value} min	около {value} мин
+embroidery	about {value} m	около {value} м

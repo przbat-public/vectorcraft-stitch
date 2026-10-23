@@ -4940,7 +4940,6 @@ embroidery	narrow parts as satin	좁은 부분은 새틴
 @plural	{count} object|{count} objects	개체 {count}개
 @plural	{count} jump|{count} jumps	점프 {count}회
 @plural	{count} trim|{count} trims	실 자르기 {count}회
-embroidery	about {value}	약 {value}
 embroidery	Colours	색
 embroidery	Thread changes	실 교체
 embroidery	Trims	실 자르기
@@ -5059,3 +5058,5 @@ embroidery	Embroidery: {figures}	자수: {figures}
 embroidery	Stitches can't be planned	땀을 계획할 수 없습니다
 embroidery	Click to open the Embroidery panel.	클릭하면 자수 패널이 열립니다.
 embroidery	{width} × {height} mm	{width} × {height}mm
+embroidery	about {value} min	약 {value}분
+embroidery	about {value} m	약 {value}m

@@ -5364,7 +5364,6 @@ embroidery	narrow parts as satin	úzké části saténem
 @plural	{count} object|{count} objects	{count} objekt|{count} objekty|{count} objektů
 @plural	{count} jump|{count} jumps	{count} přeskok|{count} přeskoky|{count} přeskoků
 @plural	{count} trim|{count} trims	{count} střih|{count} střihy|{count} střihů
-embroidery	about {value}	asi {value}
 embroidery	Colours	Barvy
 embroidery	Thread changes	Výměny nitě
 embroidery	Trims	Střihy
@@ -5483,3 +5482,5 @@ embroidery	Embroidery: {figures}	Výšivka: {figures}
 embroidery	Stitches can't be planned	Stehy nelze naplánovat
 embroidery	Click to open the Embroidery panel.	Kliknutím otevřete panel Výšivka.
 embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	asi {value} min
+embroidery	about {value} m	asi {value} m

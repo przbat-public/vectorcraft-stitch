@@ -5316,7 +5316,6 @@ embroidery	narrow parts as satin	στενά τμήματα ως σατέν
 @plural	{count} object|{count} objects	{count} αντικείμενο|{count} αντικείμενα
 @plural	{count} jump|{count} jumps	{count} άλμα|{count} άλματα
 @plural	{count} trim|{count} trims	{count} κόψιμο|{count} κοψίματα
-embroidery	about {value}	περίπου {value}
 embroidery	Colours	Χρώματα
 embroidery	Thread changes	Αλλαγές κλωστής
 embroidery	Trims	Κοψίματα
@@ -5435,3 +5434,5 @@ embroidery	Embroidery: {figures}	Κέντημα: {figures}
 embroidery	Stitches can't be planned	Οι βελονιές δεν μπορούν να σχεδιαστούν
 embroidery	Click to open the Embroidery panel.	Κάντε κλικ για να ανοίξει ο πίνακας «Κέντημα».
 embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	περίπου {value} λεπτά
+embroidery	about {value} m	περίπου {value} μ.

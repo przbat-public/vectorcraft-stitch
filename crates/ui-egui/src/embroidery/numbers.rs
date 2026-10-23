@@ -21,6 +21,22 @@ const NO_BREAK_SPACE: char = '\u{a0}';
 /// Narrow no-break space (U+202F): French's group mark (CLDR).
 const NARROW_NO_BREAK_SPACE: char = '\u{202f}';
 
+/// The space each language puts between a number and its percent sign, where it puts one (CLDR's
+/// percent pattern, "#,##0 %", as ICU 78.3 writes it, checked 2026-10-23,
+/// <https://www.unicode.org/cldr/charts/latest/by_type/numbers.number_formatting_patterns.html>):
+/// a no-break space in Czech, Danish, German, Spanish, Finnish, Russian and Swedish, a narrow one
+/// in French. The others write "37%".
+pub const PERCENT_SPACES: &[(&str, char)] = &[
+    ("cs", NO_BREAK_SPACE),
+    ("da", NO_BREAK_SPACE),
+    ("de", NO_BREAK_SPACE),
+    ("es", NO_BREAK_SPACE),
+    ("fi", NO_BREAK_SPACE),
+    ("ru", NO_BREAK_SPACE),
+    ("sv", NO_BREAK_SPACE),
+    ("fr", NARROW_NO_BREAK_SPACE),
+];
+
 /// The digits in a group: thousands.
 const GROUP: usize = 3;
 
@@ -101,6 +117,12 @@ fn grouped(digits: &str, s: Symbols) -> String {
 /// A count as `lang` writes it: "4,752" in English, "4752" and "14 752" in Polish.
 pub fn count(lang: Lang, n: u64) -> String {
     grouped(&n.to_string(), symbols(lang))
+}
+
+/// A whole percentage as `lang` writes it: "37%" in English, "37 %" in German ([`PERCENT_SPACES`]).
+pub fn percent(lang: Lang, value: u64) -> String {
+    let space = PERCENT_SPACES.iter().find(|(code, _)| *code == lang.code()).map(|(_, c)| c.to_string()).unwrap_or_default();
+    format!("{}{space}%", count(lang, value))
 }
 
 /// `v` as `lang` writes it, to at most `places` decimals with trailing zeros left out ("0.38",
@@ -191,6 +213,24 @@ mod tests {
         }
         // Far beyond any measure: written out, never a panic.
         assert!(decimal(lang("en"), f64::MAX, 2).len() > 300);
+    }
+
+    /// A percentage as CLDR writes it: the sign straight after the number, or after the
+    /// language's space.
+    #[test]
+    fn percentages_follow_each_languages_pattern() {
+        let (nb, nnb) = (NO_BREAK_SPACE, NARROW_NO_BREAK_SPACE);
+        for (code, want) in [
+            ("en", "37%".to_string()),
+            ("pl", "37%".into()),
+            ("ja", "37%".into()),
+            ("de", format!("37{nb}%")),
+            ("ru", format!("37{nb}%")),
+            ("fr", format!("37{nnb}%")),
+        ] {
+            assert_eq!(percent(lang(code), 37), want, "{code}");
+        }
+        assert!(PERCENT_SPACES.iter().all(|(code, _)| Lang::from_code(code).is_some()), "every code is a language's");
     }
 
     #[test]

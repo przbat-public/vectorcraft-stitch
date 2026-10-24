@@ -132,12 +132,25 @@ fn embroidery_setup_bytes(e: &EmbroiderySetup) -> usize {
     ALLOC + size_of::<EmbroiderySetup>() + palette + map_bytes(&e.extra) + e.unread.as_ref().map_or(0, json_bytes)
 }
 
-/// What an object's embroidery keeps that a newer version wrote (keys and values this version
-/// can't read), beyond its box.
-fn embroidery_kept_bytes(e: &Embroidery) -> usize {
+/// What an object's embroidery holds beyond its box: its parts' settings (their boxes, ids and
+/// what a newer version wrote in them), and the keys and values this version can't read.
+fn embroidery_bytes(e: &Embroidery) -> usize {
     let thread = |t: &crate::embroidery::ThreadRecord| ALLOC + t.catalogue.len() + t.description.len() + t.brand.len() + map_bytes(&t.extra);
     let run = |r: &crate::embroidery::StitchRun| map_bytes(&r.extra) + r.thread.as_ref().map_or(0, thread);
-    map_bytes(&e.extra) + e.stitches.as_ref().map_or(0, run) + e.unread.as_ref().map_or(0, json_bytes)
+    let text = |t: &Option<String>| t.as_ref().map_or(0, String::capacity);
+    let part = |p: &crate::embroidery::PartSettings| {
+        ALLOC
+            + size_of::<crate::embroidery::PartSettings>()
+            + text(&p.stitch)
+            + text(&p.underlay)
+            + map_bytes(&p.extra)
+            + p.points.as_ref().map_or(0, |q| map_bytes(&q.extra))
+    };
+    map_bytes(&e.extra)
+        + e.stitches.as_ref().map_or(0, run)
+        + e.unread.as_ref().map_or(0, json_bytes)
+        + e.fill.as_deref().map_or(0, part)
+        + e.stroke.as_deref().map_or(0, part)
 }
 
 /// One estimate in progress: two documents walked side by side.
@@ -271,7 +284,7 @@ fn node_bytes(n: &Node, other: Option<&Node>) -> usize {
         b += ALLOC + size_of::<NodeExtras>();
         b += boxed(&e.mask) + boxed(&e.graph) + boxed(&e.shaper) + boxed(&e.attrs) + boxed(&e.slice) + boxed(&e.perspective);
         b += boxed(&e.dimension) + boxed(&e.live_paint_gaps) + boxed(&e.embroidery);
-        b += e.embroidery.as_deref().map_or(0, embroidery_kept_bytes);
+        b += e.embroidery.as_deref().map_or(0, embroidery_bytes);
         b += e.trace.as_ref().map_or(0, |t| ALLOC + size_of::<Value>() + json_bytes(t));
         b += e.intertwine.as_deref().map_or(0, |a| ALLOC + size_of::<PathData>() + path_bytes(a));
         b += e.objects_on_path.as_deref().map_or(0, |o| {
@@ -448,6 +461,23 @@ mod tests {
         setup.extra.insert("notes".into(), Value::String("x".repeat(10_000)));
         after.embroidery = Some(Box::new(setup));
         assert!(after.retained_bytes(&before) > same + 10_000);
+    }
+
+    /// The settings an object keeps for its parts count, one box each and what is in them.
+    #[test]
+    fn embroidery_part_settings_count() {
+        use crate::embroidery::{Embroidery, PartKey, PartKind, PartValue};
+        let before = doc_with_rects(1);
+        let mut after = before.clone();
+        let same = after.retained_bytes(&before);
+        let id = after.layers[0].children().and_then(|c| c.first()).map(|n| n.id).unwrap();
+        let mut e = Embroidery::default();
+        for kind in PartKind::ALL {
+            e.edit_part(kind, |p| p.set(PartKey::Stitch, Some(PartValue::Id("x".repeat(1000)))));
+        }
+        after.node_mut(id).unwrap().extras_mut().embroidery = Some(Box::new(e));
+        let part = size_of::<crate::embroidery::PartSettings>();
+        assert!(after.retained_bytes(&before) >= same + 2 * (part + 1000), "{} against {same}", after.retained_bytes(&before));
     }
 
     #[test]

@@ -12,6 +12,8 @@
 /// Where a setting can be set.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Place {
+    /// On an object's fill or stroke ([`vectorcraft_doc::embroidery::PartSettings`]).
+    Part,
     /// Given to one export or one read command, for that call only (`document.export`'s options).
     Export,
     /// In the document's embroidery settings (`embroidery.setup`).
@@ -34,23 +36,28 @@ pub(crate) struct Setting {
 }
 
 const EXPORT: &[Place] = &[Place::Export];
+const PART_AND_EXPORT: &[Place] = &[Place::Part, Place::Export];
+const PART: &[Place] = &[Place::Part];
 
 /// Every setting, the export's options first, in the order `document.formats` lists them.
-pub(crate) const SETTINGS: [Setting; 18] = [
-    Setting { name: "stitch", earlier: Some("stitchStyle"), file: "stitch", places: EXPORT },
-    Setting { name: "spacing", earlier: Some("density"), file: "spacing", places: EXPORT },
-    Setting { name: "length", earlier: Some("stitchLength"), file: "length", places: EXPORT },
-    Setting { name: "angle", earlier: Some("stitchAngle"), file: "angle", places: EXPORT },
-    Setting { name: "pull", earlier: Some("pullCompensation"), file: "pull", places: EXPORT },
-    Setting { name: "pullPercent", earlier: Some("pullCompensationPercent"), file: "pull_percent", places: EXPORT },
-    Setting { name: "push", earlier: Some("pushCompensation"), file: "push", places: EXPORT },
-    Setting { name: "expand", earlier: None, file: "expand", places: EXPORT },
-    Setting { name: "narrowAsSatin", earlier: None, file: "narrow_as_satin", places: EXPORT },
+pub(crate) const SETTINGS: [Setting; 21] = [
+    Setting { name: "stitch", earlier: Some("stitchStyle"), file: "stitch", places: PART_AND_EXPORT },
+    Setting { name: "spacing", earlier: Some("density"), file: "spacing", places: PART_AND_EXPORT },
+    Setting { name: "length", earlier: Some("stitchLength"), file: "length", places: PART_AND_EXPORT },
+    Setting { name: "angle", earlier: Some("stitchAngle"), file: "angle", places: PART_AND_EXPORT },
+    Setting { name: "pull", earlier: Some("pullCompensation"), file: "pull", places: PART_AND_EXPORT },
+    Setting { name: "pullPercent", earlier: Some("pullCompensationPercent"), file: "pull_percent", places: PART_AND_EXPORT },
+    Setting { name: "push", earlier: Some("pushCompensation"), file: "push", places: PART_AND_EXPORT },
+    Setting { name: "expand", earlier: None, file: "expand", places: PART_AND_EXPORT },
+    Setting { name: "narrowAsSatin", earlier: None, file: "narrow_as_satin", places: PART_AND_EXPORT },
     Setting { name: "threadWeight", earlier: None, file: "thread_weight", places: EXPORT },
-    Setting { name: "underlay", earlier: None, file: "underlay", places: EXPORT },
+    Setting { name: "underlay", earlier: None, file: "underlay", places: PART_AND_EXPORT },
     Setting { name: "jumpLength", earlier: None, file: "jump_length", places: EXPORT },
     Setting { name: "trimLength", earlier: None, file: "trim_length", places: EXPORT },
     Setting { name: "minStitch", earlier: None, file: "min_stitch", places: EXPORT },
+    Setting { name: "splitLength", earlier: None, file: "split_length", places: PART },
+    Setting { name: "entry", earlier: None, file: "entry", places: PART },
+    Setting { name: "exit", earlier: None, file: "exit", places: PART },
     Setting { name: "palette", earlier: None, file: "palette", places: &[Place::Document] },
     Setting { name: "start", earlier: None, file: "start", places: &[Place::Document] },
     Setting { name: "label", earlier: None, file: "label", places: &[Place::Document] },
@@ -118,6 +125,23 @@ mod tests {
         for (file, name) in [("narrowassatin", "narrowAsSatin"), ("narrow_as_satin_", "narrowAsSatin"), ("narrow_as", "narrowAsSatin")] {
             assert!(!is_snake_case_of(file, name), "{file}");
         }
+    }
+
+    /// The settings the document crate keeps on an object are the vocabulary's, under its file
+    /// keys: those of its fills and strokes, and the cut after it.
+    #[test]
+    fn an_objects_settings_are_the_vocabularys() {
+        let mut kept: Vec<&str> = Vec::new();
+        for (name, file) in vectorcraft_doc::embroidery::file_keys() {
+            let s = SETTINGS.iter().find(|s| s.name == name).unwrap_or_else(|| panic!("{name}: not in the vocabulary"));
+            assert_eq!(s.file, file, "{name}");
+            assert!(s.at(Place::Part) || s.at(Place::Object), "{name}");
+            kept.push(name);
+        }
+        let mut on_objects: Vec<&str> = SETTINGS.iter().filter(|s| s.at(Place::Part) || s.at(Place::Object)).map(|s| s.name).collect();
+        kept.sort_unstable();
+        on_objects.sort_unstable();
+        assert_eq!(kept, on_objects, "the vocabulary's settings on objects are those the document keeps");
     }
 
     /// The export's options are those `document.formats` lists for an embroidery format and the

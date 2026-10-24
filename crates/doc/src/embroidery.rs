@@ -3,11 +3,16 @@
 //!
 //! The stitches themselves are planned outside the document model (the `vectorcraft-stitch`
 //! crate, through the engine's embroidery export; see `docs/embroidery.md`). What an object keeps
-//! here is what that export must know about it beyond its geometry and paint, and what the
-//! document keeps is what applies to the whole design.
+//! here is what that export must know about it beyond its geometry and paint (how its fills and
+//! strokes are sewn: [`PartSettings`]), and what the document keeps is what applies to the whole
+//! design.
 
 use serde::{Deserialize, Serialize};
 use vectorcraft_geom::Point;
+
+mod part;
+
+pub use part::{PartKey, PartKind, PartPoints, PartSettings, PartValue};
 
 /// What machine embroidery makes of an object.
 ///
@@ -28,6 +33,11 @@ pub struct Embroidery {
     /// (otherwise only a jump longer than the export's trim length is cut). A run of literal
     /// stitches says the same with [`StitchRun::trim_after`].
     pub trim_after: bool,
+    /// How the object's fills are sewn: every fill in its appearance ([`PartSettings`]). `None`:
+    /// nothing set. A run of literal stitches takes none: its points are sewn as they are.
+    pub fill: Option<Box<PartSettings>>,
+    /// How its strokes are sewn, as [`Embroidery::fill`].
+    pub stroke: Option<Box<PartSettings>>,
     /// Keys this version doesn't know (written by a newer one), and known keys whose value this
     /// version can't read, kept as they are so that saving doesn't lose them.
     pub extra: serde_json::Map<String, serde_json::Value>,
@@ -117,6 +127,54 @@ impl Embroidery {
         self.trim_after = on;
         self.extra.remove(TRIM_AFTER);
     }
+
+    /// The settings of the object's part `kind`, when it keeps any.
+    pub fn part(&self, kind: PartKind) -> Option<&PartSettings> {
+        match kind {
+            PartKind::Fill => self.fill.as_deref(),
+            PartKind::Stroke => self.stroke.as_deref(),
+        }
+    }
+
+    /// Change the settings of part `kind` as `f` does, giving back what `f` gives. A part left with
+    /// something in it replaces what a newer version wrote under its key in a form this version
+    /// can't read (kept unread, or the whole record unread); a part left with nothing in it is
+    /// dropped.
+    pub fn edit_part<T>(&mut self, kind: PartKind, f: impl FnOnce(&mut PartSettings) -> T) -> T {
+        let slot = match kind {
+            PartKind::Fill => &mut self.fill,
+            PartKind::Stroke => &mut self.stroke,
+        };
+        let mut part = slot.take().map(|b| *b).unwrap_or_default();
+        let out = f(&mut part);
+        if !part.is_empty() {
+            *slot = Some(Box::new(part));
+            self.extra.remove(kind.id());
+            self.unread = None;
+        }
+        out
+    }
+
+    /// Whether nothing is set and nothing a newer version wrote is kept: the object then carries
+    /// none. Every field is named, so that one added and left out here fails to compile.
+    pub fn is_empty(&self) -> bool {
+        let Self { stitches, trim_after, fill, stroke, extra, unread } = self;
+        stitches.is_none() && !trim_after && fill.is_none() && stroke.is_none() && extra.is_empty() && unread.is_none()
+    }
+
+    /// Whether nothing is set, whatever is kept: what makes the writer give back a value it
+    /// couldn't read as it was.
+    fn nothing_set(&self) -> bool {
+        let Self { stitches, trim_after, fill, stroke, extra, unread: _ } = self;
+        stitches.is_none() && !trim_after && fill.is_none() && stroke.is_none() && extra.is_empty()
+    }
+}
+
+/// The settings an object keeps, each as the commands name it and as the file saves it, for the
+/// engine to hold to its vocabulary: the cut after the object, and each part's keys
+/// ([`PartKey`]; a point's in the part's `points`).
+pub fn file_keys() -> impl Iterator<Item = (&'static str, &'static str)> {
+    std::iter::once(("trimAfter", TRIM_AFTER)).chain(PartKey::ALL.into_iter().map(|k| (k.name(), k.file())))
 }
 
 /// The keys an object's embroidery and a run of stitches are saved under.
@@ -146,6 +204,20 @@ fn take_flag(map: &mut serde_json::Map<String, serde_json::Value>, key: &str) ->
             false
         }
         _ => false,
+    }
+}
+
+/// Take part `kind`'s settings out of `map` when they are an object ([`PartSettings`]); settings
+/// of another shape stay in `map`, to be written back as they were, and settings with nothing in
+/// them read as none.
+fn take_part(map: &mut serde_json::Map<String, serde_json::Value>, kind: PartKind) -> Option<Box<PartSettings>> {
+    match map.remove(kind.id()) {
+        Some(serde_json::Value::Object(part)) => PartSettings::read(part).map(Box::new),
+        Some(serde_json::Value::Null) | None => None,
+        Some(other) => {
+            map.insert(kind.id().to_string(), other);
+            None
+        }
     }
 }
 
@@ -202,7 +274,9 @@ impl From<serde_json::Value> for Embroidery {
                     }
                 };
                 let trim_after = take_flag(&mut map, TRIM_AFTER);
-                Self { stitches, trim_after, extra: map, unread: None }
+                let fill = take_part(&mut map, PartKind::Fill);
+                let stroke = take_part(&mut map, PartKind::Stroke);
+                Self { stitches, trim_after, fill, stroke, extra: map, unread: None }
             }
             serde_json::Value::Null => Self::default(),
             other => Self { unread: Some(other), ..Self::default() },
@@ -215,14 +289,17 @@ impl From<Embroidery> for serde_json::Value {
     /// keys; or what a newer version wrote that this one can't read, as it was, while nothing is
     /// set.
     fn from(e: Embroidery) -> Self {
-        match e.unread {
-            Some(unread) if e.stitches.is_none() && !e.trim_after && e.extra.is_empty() => unread,
-            _ => {
-                let run = e.stitches.map(|r| (STITCHES, serde_json::Value::from(r)));
-                let cut = e.trim_after.then_some((TRIM_AFTER, serde_json::Value::Bool(true)));
-                with_kept(run.into_iter().chain(cut), e.extra)
-            }
+        if e.nothing_set()
+            && let Some(unread) = e.unread
+        {
+            return unread;
         }
+        let Embroidery { stitches, trim_after, fill, stroke, extra, unread: _ } = e;
+        let run = stitches.map(|r| (STITCHES, serde_json::Value::from(r)));
+        let cut = trim_after.then_some((TRIM_AFTER, serde_json::Value::Bool(true)));
+        let part = |kind: PartKind, p: Option<Box<PartSettings>>| p.filter(|p| !p.is_empty()).map(|p| (kind.id(), serde_json::Value::from(*p)));
+        let parts = part(PartKind::Fill, fill).into_iter().chain(part(PartKind::Stroke, stroke));
+        with_kept(run.into_iter().chain(cut).chain(parts), extra)
     }
 }
 
@@ -451,7 +528,7 @@ mod tests {
         for written in [
             json!({"trim_after": true}),
             json!({"stitches": {"trim_before": true, "trim_after": true}}),
-            json!({"stitches": {"trim_before": true, "density": 4}, "fill": {"angle": 30}}),
+            json!({"stitches": {"trim_before": true, "density": 4}, "fill": {"angle": 30.0}}),
             json!({"stitches": {"thread": {"catalogue": "2296", "description": "Pink", "brand": "Robison-Anton", "material": 5, "weight": 40}}}),
             json!({"stitches": {"thread": {"catalogue": "1", "description": "", "brand": "", "material": 0, "weight": 30, "twist": [1, 2]}}}),
             json!({"stitches": {"thread": {"catalogue": 2296}}}),
@@ -503,6 +580,126 @@ mod tests {
         let mut odd = EmbroiderySetup { palette: Some(ThreadPalette::Jef), ..EmbroiderySetup::default() };
         odd.extra.insert(PALETTE.to_string(), json!("pec"));
         assert_eq!(serde_json::to_value(&odd).unwrap(), json!({"palette": "jef"}));
+    }
+
+    /// An object's part settings round-trip as the commands write them, and as a newer version
+    /// might write them: its stitch kind, numbers, values of another type and keys this version
+    /// doesn't know, each kept where it was.
+    #[test]
+    fn part_settings_round_trip_with_what_a_newer_version_wrote() {
+        let ours = json!({
+            "fill": {"angle": 30.0, "points": {"entry": [412.5, 168.25], "exit": [398.0, 170.5]}, "pull": [0.35, 0.35]},
+            "stroke": {"length": 2.0, "stitch": "running", "split_length": 7.0, "underlay": "edgeZigzag"},
+            "trim_after": true
+        });
+        let newer = json!({
+            "areas": [{"color": "#d01818", "fill": {"stitch": "satin"}, "points": {"at": [120.0, 88.5]}}],
+            "branch": true,
+            "fill": {
+                "motif": {"name": "wave", "scale": 1.5},
+                "points": {"angle_lines": [[[0.0, 0.0], [30.0, 10.0]]], "entry": [10.0, 20.0]},
+                "spacing": "auto",
+                "stitch": "motif"
+            },
+            "stroke": {"pull": [1, 2, 3], "points": "nearest", "underlay": 5}
+        });
+        for written in [ours, newer, json!({"fill": "satin", "stroke": [1]})] {
+            let read: Embroidery = serde_json::from_value(written.clone()).unwrap();
+            assert_eq!(serde_json::to_value(&read).unwrap(), written, "{written}");
+        }
+        let read: Embroidery =
+            serde_json::from_value(json!({"fill": {"motif": 1, "spacing": "auto", "stitch": "motif", "points": {"entry": [10.0, 20.0]}}})).unwrap();
+        let fill = read.part(PartKind::Fill).unwrap();
+        assert_eq!(
+            (fill.stitch.as_deref(), fill.spacing, fill.get(PartKey::Entry)),
+            (Some("motif"), None, Some(PartValue::Point(Point::new(10.0, 20.0))))
+        );
+        assert_eq!(fill.extra.keys().collect::<Vec<_>>(), ["motif", "spacing"]);
+        // A part of another shape is kept, and no part is read.
+        let odd: Embroidery = serde_json::from_value(json!({"fill": "satin"})).unwrap();
+        assert_eq!((odd.part(PartKind::Fill), odd.extra.get("fill")), (None, Some(&json!("satin"))));
+    }
+
+    /// What the commands may write in any form reads in one and is written in it: a number as a
+    /// float, one value for both sides as two. Nulls and parts (and points) with nothing in them
+    /// read as unset and are left out.
+    #[test]
+    fn part_settings_are_written_in_one_form() {
+        for (written, saved) in [
+            (
+                json!({"fill": {"angle": 30, "pull": 0.35, "points": {"entry": [1, 2]}}}),
+                json!({"fill": {"angle": 30.0, "pull": [0.35, 0.35], "points": {"entry": [1.0, 2.0]}}}),
+            ),
+            (json!({"fill": {}, "stroke": {"points": {}}}), json!({})),
+            (json!({"fill": null, "stroke": {"angle": null, "points": {"exit": null}}, "trim_after": true}), json!({"trim_after": true})),
+        ] {
+            let read: Embroidery = serde_json::from_value(written.clone()).unwrap();
+            let once = serde_json::to_value(&read).unwrap();
+            assert_eq!(once, saved, "{written}");
+            let again: Embroidery = serde_json::from_value(once.clone()).unwrap();
+            assert_eq!(serde_json::to_value(&again).unwrap(), once, "{written}: saved twice");
+        }
+        let empty: Embroidery = serde_json::from_value(json!({"fill": {}})).unwrap();
+        assert!(empty.is_empty() && empty == Embroidery::default());
+    }
+
+    /// Setting a value of a part makes the part, replacing what a newer version wrote there in a
+    /// form this version can't read; unsetting every value leaves nothing behind, and a value of
+    /// another type than its key takes changes nothing.
+    #[test]
+    fn a_part_set_and_unset_leaves_nothing_behind() {
+        let mut e = Embroidery::default();
+        e.edit_part(PartKind::Fill, |p| {
+            assert!(p.set(PartKey::Angle, Some(PartValue::Number(30.0))));
+            assert!(p.set(PartKey::Entry, Some(PartValue::Point(Point::new(1.0, 2.0)))));
+            assert!(!p.set(PartKey::Spacing, Some(PartValue::Id("auto".into()))), "an id is no spacing");
+        });
+        assert_eq!(serde_json::to_value(&e).unwrap(), json!({"fill": {"angle": 30.0, "points": {"entry": [1.0, 2.0]}}}));
+        e.edit_part(PartKind::Fill, |p| {
+            for key in PartKey::ALL {
+                assert!(p.set(key, None), "{key:?}");
+            }
+        });
+        assert!(e.is_empty() && e == Embroidery::default(), "{e:?}");
+        // What a newer version wrote under a key, in a form this version can't read, is replaced
+        // when the key is set, and kept when another is.
+        let mut kept: Embroidery = serde_json::from_value(json!({"fill": {"spacing": "auto", "points": "nearest", "angle": 3.0}})).unwrap();
+        kept.edit_part(PartKind::Fill, |p| p.set(PartKey::Length, Some(PartValue::Number(2.5))));
+        assert_eq!(serde_json::to_value(&kept).unwrap(), json!({"fill": {"angle": 3.0, "length": 2.5, "points": "nearest", "spacing": "auto"}}));
+        kept.edit_part(PartKind::Fill, |p| {
+            p.set(PartKey::Spacing, Some(PartValue::Number(0.4)));
+            p.set(PartKey::Exit, Some(PartValue::Point(Point::new(5.0, 6.0))));
+        });
+        assert_eq!(
+            serde_json::to_value(&kept).unwrap(),
+            json!({"fill": {"angle": 3.0, "length": 2.5, "points": {"exit": [5.0, 6.0]}, "spacing": 0.4}})
+        );
+        // A record of another shape, and a part of another shape, are replaced by a part set.
+        for written in [json!(5), json!({"fill": "satin", "branch": true})] {
+            let mut e: Embroidery = serde_json::from_value(written.clone()).unwrap();
+            e.edit_part(PartKind::Fill, |p| p.set(PartKey::Stitch, Some(PartValue::Id("tatami".into()))));
+            let mut want = json!({"fill": {"stitch": "tatami"}});
+            if written.get("branch").is_some() {
+                want["branch"] = json!(true);
+            }
+            assert_eq!(serde_json::to_value(&e).unwrap(), want, "{written}");
+        }
+        // A part edited to nothing changes nothing kept elsewhere.
+        let mut unread: Embroidery = serde_json::from_value(json!("satin")).unwrap();
+        unread.edit_part(PartKind::Stroke, |p| p.set(PartKey::Angle, None));
+        assert_eq!(serde_json::to_value(&unread).unwrap(), json!("satin"));
+    }
+
+    /// Each part setting's name is the one the commands take, and its file key the name in
+    /// snake_case.
+    #[test]
+    fn part_keys_are_the_names_in_snake_case() {
+        for (name, file) in file_keys() {
+            let snake: String = name.chars().flat_map(|c| if c.is_ascii_uppercase() { vec!['_', c.to_ascii_lowercase()] } else { vec![c] }).collect();
+            assert_eq!(file, snake, "{name}");
+        }
+        assert_eq!(PartKey::ALL.map(PartKey::name).iter().filter_map(|n| PartKey::from_name(n)).count(), PartKey::ALL.len());
+        assert_eq!(PartKind::ALL.map(|k| PartKind::from_id(k.id())), [Some(PartKind::Fill), Some(PartKind::Stroke)]);
     }
 
     /// Nothing set reads and writes as an empty object, and a palette of null is none.

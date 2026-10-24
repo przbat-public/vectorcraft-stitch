@@ -733,7 +733,7 @@ fn a_newer_versions_object_settings_open_and_are_kept() {
     let mut s = blank();
     let id = rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
     let plain = s.execute("embroidery.stats", &json!({})).unwrap()["stitches"].clone();
-    let newer = json!({"fill": {"angle": 30, "spacing": 0.4}, "trim_after": "auto", "stitches": "later"});
+    let newer = json!({"motif": {"name": "wave", "scale": 1.5}, "trim_after": "auto", "stitches": "later"});
     let mut file: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
     fn node(v: &mut serde_json::Value, id: u64) -> Option<&mut serde_json::Value> {
         if v.get("id").and_then(serde_json::Value::as_u64) == Some(id) && v.get("kind").is_some() {

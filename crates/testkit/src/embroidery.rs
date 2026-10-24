@@ -185,9 +185,33 @@ pub fn opened_design(run: Run, format: &str) {
     run("document.open", json!({"name": format!("design.{format}"), "dataBase64": data}));
 }
 
+/// The keys an object's embroidery is read by: those this version reads, so that random JSON
+/// holds them, with any value, often enough to test what they read as.
+const EMBROIDERY_KEYS: [&str; 19] = [
+    "stitches",
+    "trim_after",
+    "trim_before",
+    "fill",
+    "stroke",
+    "points",
+    "entry",
+    "exit",
+    "stitch",
+    "spacing",
+    "length",
+    "angle",
+    "pull",
+    "pull_percent",
+    "push",
+    "expand",
+    "narrow_as_satin",
+    "underlay",
+    "split_length",
+];
+
 /// Any JSON value a few levels deep, as a newer version might write under a key this one reads:
 /// every type, numbers finite (JSON has no other), keys that include the embroidery keys this
-/// version reads (`stitches`, `trim_after`, `trim_before`), so that they come with any value.
+/// version reads (`stitches`, `trim_after`, `fill`, `angle`…), so that they come with any value.
 pub fn arb_json() -> impl Strategy<Value = Value> {
     /// Quarter steps: floats JSON writes and reads back exactly.
     const QUARTERS: i32 = 4;
@@ -198,7 +222,7 @@ pub fn arb_json() -> impl Strategy<Value = Value> {
         (-4000i32..4000).prop_map(|n| Value::from(f64::from(n) / f64::from(QUARTERS))),
         "[a-z_]{0,8}".prop_map(Value::from),
     ];
-    let key = prop_oneof!["[a-z_]{1,8}", Just("stitches".to_string()), Just("trim_after".to_string()), Just("trim_before".to_string())];
+    let key = prop_oneof!["[a-z_]{1,8}", prop::sample::select(EMBROIDERY_KEYS.to_vec()).prop_map(str::to_string)];
     leaf.prop_recursive(3, 24, 4, move |inner| {
         prop_oneof![
             prop::collection::vec(inner.clone(), 0..4).prop_map(Value::Array),

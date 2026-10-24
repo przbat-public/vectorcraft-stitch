@@ -22,6 +22,7 @@
 
 mod cache;
 mod check;
+pub(crate) mod derive;
 pub(crate) mod digitize;
 mod measure;
 pub(crate) mod options;
@@ -43,6 +44,8 @@ mod tests;
 mod tests_check;
 #[cfg(test)]
 mod tests_contract;
+#[cfg(test)]
+mod tests_derive;
 #[cfg(test)]
 mod tests_order;
 #[cfg(test)]

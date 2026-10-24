@@ -1927,6 +1927,7 @@ Public documentation, cited per claim in the crate:
   `printed.rs` (the document as it prints, appearances expanded),
   `threadlib.rs` (the thread swatch libraries),
   `vocabulary.rs` (each setting's name, earlier name, file key and where it can be set),
+  `derive.rs` (objects made from others keep the settings of what they come from),
   `options.rs` (the export options, and the planner's parameters they give an object),
   `digitize.rs` (the document's art planned into the stitch plan, unit by unit; a fill's narrow
   columns cut out of it with path operations), `plan.rs` (the stitch plan: sewing units, thread
@@ -1941,7 +1942,7 @@ Public documentation, cited per claim in the crate:
   `tests_check.rs`, `tests_contract.rs` (the replies' keys and types), `tests_threadlib.rs`,
   `tests_scene.rs` (the scene holds the thread the plan sews), `tests_view.rs`, `reorder/tests.rs`,
   `tests_settings.rs` (what each setting does), `tests_transform.rs` (settings under the transform
-  commands).
+  commands), `tests_derive.rs` (settings kept by objects made from others).
 - `crates/render/src/lines.rs` — line pictures and their renderer (`render::lines`), which the
   stitch view draws with, knowing nothing about stitches.
 - `crates/ui-egui/src/embroidery/` — the stitch preview in the app: `stitch_preview.rs` (when a

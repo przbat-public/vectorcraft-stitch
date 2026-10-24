@@ -209,16 +209,19 @@ struct Style {
     appearance: Appearance,
     opacity: f32,
     blend: BlendMode,
+    /// VectorCraft Stitch: the embroidery settings, carried with the paint.
+    embroidery: Option<Box<vectorcraft_doc::embroidery::Embroidery>>,
 }
 
 impl Style {
     fn of(n: &Node) -> Self {
-        Style { appearance: (*n.appearance).clone(), opacity: n.opacity, blend: n.blend }
+        Style { appearance: (*n.appearance).clone(), opacity: n.opacity, blend: n.blend, embroidery: super::embroidery::derive::carried(n) }
     }
     fn apply(&self, n: &mut Node) {
         n.appearance = self.appearance.clone().into();
         n.opacity = self.opacity;
         n.blend = self.blend;
+        n.extras_mut().embroidery = self.embroidery.clone();
     }
 }
 
@@ -248,7 +251,9 @@ pub(crate) fn text_outline(t: &TextObject) -> PathData {
 
 fn style_of(n: &Node) -> Style {
     match &n.kind {
-        NodeKind::Text(t) => Style { appearance: t.first_style().appearance(), opacity: n.opacity, blend: n.blend },
+        NodeKind::Text(t) => {
+            Style { appearance: t.first_style().appearance(), opacity: n.opacity, blend: n.blend, embroidery: super::embroidery::derive::carried(n) }
+        }
         _ => Style::of(n),
     }
 }
@@ -738,7 +743,12 @@ pub(crate) fn outline_strokes(d: &mut Document, brushes: &[vectorcraft_brush::Br
     if !fills.is_empty() {
         parts.push(styled_copy(d, l, fills));
     }
-    assemble(d, l, parts)
+    // VectorCraft Stitch: each part sewn with its fill's or stroke's embroidery settings.
+    let expanding = super::embroidery::derive::Expanding::of(l);
+    assemble(d, l, parts).map(|mut root| {
+        expanding.apply(&mut root);
+        root
+    })
 }
 
 /// A plain copy of path `l` (new ids, no transparency, name or mask) painted with `items`.

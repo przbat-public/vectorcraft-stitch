@@ -596,6 +596,8 @@ fn create_outlines(s: &mut Session, _: &Value) -> Result<Value> {
             g.opacity = n.opacity;
             g.blend = n.blend;
             g.name = n.name.clone();
+            // VectorCraft Stitch: the type's embroidery settings go to its outlines.
+            super::embroidery::derive::outlined_type(&n, &mut g);
             d.insert(par, idx, g)?;
             out.push(gid);
             if roots.contains(&tid) {

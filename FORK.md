@@ -372,6 +372,15 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   take upstream's text and add `|dst|tap|t01|exp|pes|pec|jef|vp3` to its format list again.
 - **The generator string** (`crates/format/src/lib.rs`): the fork's files say `VectorCraft Stitch`
   and the version, so a file from the fork can be told from upstream's in a report.
+- **Objects made from others keep their embroidery settings** (`cmd/embroidery/derive.rs`, each
+  hook marked "VectorCraft Stitch"): in `cmd/pathops.rs`, `Style`'s `embroidery` field (set in
+  `of`, `style_of`'s text arm, given in `apply`: Pathfinder, Offset Path, Shape Builder, Divide
+  Objects Below, Split Into Grid) and the `Expanding` around `assemble` in `outline_strokes`
+  (Outline Stroke); in `cmd/effectcmd.rs`, the `Expanding` around `expand_node` (Expand
+  Appearance, and the embroidery walk's copy of the document as it prints); in `cmd/typecmd.rs`'s
+  `create_outlines`, `outlined_type`; in `cmd/object.rs`, `ungrouped` in `ungroup`, `compound` in
+  `compound_make`, `released` in `compound_release`; in `cmd/brushsym.rs`'s `break_links`,
+  `unlinked`.
 - **One-line hooks the fork keeps in upstream files**, to keep when resolving: `doc/src/node.rs`'s
   `transform_scaled`, after the bounding box's angle (an object's embroidery settings move and turn
   with it, `Embroidery::transform`), `fileio/load.rs`'s `is_loss` (`super::embroidery::is_loss`), `cmd/swatchlib.rs`'s `libraries` and `library`

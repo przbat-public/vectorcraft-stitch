@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-23 · **Last updated:** 2026-10-23 · **Change:** the stitch preview: on the canvas, planned in the background, the Embroidery panel's Sewing order and Check tabs, the check's marks and the status bar's counters (Architecture › Planning for the stitch preview, Drawing stitches). Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-24 · **Change:** the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -11,7 +11,8 @@ Everything is implemented from public format documentation — the formats were 
 publicly long before this project (see [References](#references)); no proprietary software was
 observed, and no GPL implementation was read or copied.
 
-**Contents:** [Terms](#terms) · [Using it](#using-it) · [How a shape becomes stitches](#how-a-shape-becomes-stitches) ·
+**Contents:** [Terms](#terms) · [Using it](#using-it) (writing and reading designs, the read commands, [seeing the
+stitches and the sewing order](#seeing-the-stitches-and-the-sewing-order)) · [How a shape becomes stitches](#how-a-shape-becomes-stitches) ·
 [The formats](#the-formats) · [What is not stitched](#what-is-not-stitched) · [Validation](#validation) ·
 [Architecture](#architecture) · [References](#references) · [Files](#files) ·
 [Revision history](#revision-history). The fork's own instructions and the project owner's
@@ -362,6 +363,32 @@ Measured once on 2026-10-22, before the project owner chose to read Melco's limi
 checked stitch by stitch, Melco's fill limit flagged all 44 of VectorCraft's blocks (7,504
 stitches, about 29 % of the needle points then: the 2 mm underlay and the rows' short ends); read
 as Melco's checker reads it, on each object's settings, it flags none.
+
+### Seeing the stitches and the sewing order
+
+- **The stitches on the canvas.** View › Stitch Preview (⌘E), or the Art | Stitches switch at the
+  canvas's top right, shows the active document's stitches in place of its art, on the fabric,
+  each in its thread's colour; they are planned in the background with the export's options (those
+  of the document's last embroidery export, else the defaults) and follow every edit. View › Stitch
+  Preview Options: Show Jumps and Cuts, Show Needle Points, Show Artwork Under Stitches (faint, or
+  its outlines in Outline) and Show Check Marks. As commands: `view.stitchPreview {on?}` and its
+  options (`view.stitchPreview.jumps`, `needlePoints`, `artwork`); `embroidery.render` draws the
+  same picture headless.
+- **The Embroidery panel** (Window › Embroidery, docked beside Properties, Layers and Libraries) has
+  two tabs. **Sewing Order** lists the thread blocks in the order they are sewn, each object's fill
+  or stroke a row; a row hovered stands its stitches out on the canvas, a click selects its object.
+  Drag a row to sew its object earlier or later (the hint under the list says where it goes, or why
+  it can't), or use a selected row's ↑ and ↓ and the panel's ≡ menu: Sew Earlier, Sew Later, Sew
+  First and Sew Last (also the commands `embroidery.sewEarlier`, `sewLater`, `sewFirst` and
+  `sewLast`, with no default shortcuts). The sewing order follows the stacking order, so each moves
+  the object in the stack, as one undo step. **Check** shows `embroidery.check` for the format chosen ("Checked for"), problems
+  first; Show selects a rule's objects and zooms to its hits, Next and Previous Finding step
+  through them, and rings mark them on the canvas.
+- **The status bar** shows the design's figures (stitches, colours, thread changes, the time) while
+  the stitches or the panel are shown; a click opens the panel.
+
+How it is planned and drawn: [Planning for the stitch preview](#planning-for-the-stitch-preview)
+and [Drawing stitches](#drawing-stitches), under Architecture.
 
 ## How a shape becomes stitches
 
@@ -1412,8 +1439,8 @@ flowchart LR
   reply `embroidery.threads`, `stats`, `sequence` or `check` gives, made by the command's own code
   from the planner's snapshot, on any thread: the stitch preview's panel and status bar read the
   design without planning on the interface thread. `selectedOnly` is refused (a planner has no
-  selection). `EmbroideryPlanner::latest` gives a plan already made without planning or waiting,
-  and `Session::embroidery_plan_key` tells cheaply whether a plan is of the document as it is.
+  selection). `Session::embroidery_plan_key` tells cheaply whether a plan is of the document as it
+  is.
 - **Cancelling.** A plan checks `vectorcraft_doc::cancel` before each unit, between the columns a
   fill's narrow parts are cut out by, and within the search for those parts
   (`plan::narrow_columns_until`). A cancelled plan returns `PlanError::Cancelled` (the commands'
@@ -1863,9 +1890,13 @@ Public documentation, cited per claim in the crate:
   thread by CIEDE2000, a design's blocks to threads (`Palette::assign`), and the thread numbers a
   format writes (`Palette::numbers`).
 - `crates/stitch/src/color.rs` — sRGB in CIE L*a*b* (D65), and the CIEDE2000 colour difference.
-- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (the seven commands,
-  `embroidery.setTrimAfter`, `setup`, `settings`, `threads`, `stats`, `sequence` and `check`, and the
-  document's thread palette), `printed.rs` (the document as it prints, appearances expanded),
+- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (eight commands,
+  `embroidery.setTrimAfter`, `setup`, `settings`, `threads`, `stats`, `sequence`, `check` and
+  `render`, and the document's thread palette), `view.rs` (each document's stitch view: View ›
+  Stitch Preview and its options, four commands; the export's options it plans with), `reorder.rs`
+  (changing the sewing order: a drop's move, Sew Earlier, Later, First and Last, four commands,
+  and what a move did), `scene.rs` (the plan as a line picture), `render.rs` (`embroidery.render`),
+  `printed.rs` (the document as it prints, appearances expanded),
   `threadlib.rs` (the thread swatch libraries),
   `options.rs` (the export options, and the planner's parameters they give an object),
   `digitize.rs` (the document's art planned into the stitch plan, unit by unit; a fill's narrow
@@ -1878,7 +1909,27 @@ Public documentation, cited per claim in the crate:
   (`embroidery.sequence`), `check.rs` (`embroidery.check`: its rules and their sources),
   `tests.rs` (the plan's, the threads' and the document's settings'), `tests_walk.rs` (the walk's
   branches and the design's size limit), `tests_service.rs`, `tests_stats.rs`, `tests_order.rs`,
-  `tests_check.rs`, `tests_contract.rs` (the replies' keys and types), `tests_threadlib.rs`.
+  `tests_check.rs`, `tests_contract.rs` (the replies' keys and types), `tests_threadlib.rs`,
+  `tests_scene.rs` (the scene holds the thread the plan sews), `tests_view.rs`, `reorder/tests.rs`.
+- `crates/render/src/lines.rs` — line pictures and their renderer (`render::lines`), which the
+  stitch view draws with, knowing nothing about stitches.
+- `crates/ui-egui/src/embroidery/` — the stitch preview in the app: `stitch_preview.rs` (when a
+  design is planned, and what shows meanwhile), `plan_worker.rs` (the planning thread),
+  `stitch_layer.rs` (the stitches drawn on the canvas, on a thread of their own when a frame is
+  slow), `overlay.rs` (the selection, entry and exit, objects changed since the plan), `switch.rs`
+  (Art | Stitches), `notice.rs`, `counters.rs` (the status bar's), `check_marks.rs` (the check's
+  rings), `menu.rs` (View › Stitch Preview and its options), `zoom.rs` (`view.zoomTo`), `marks.rs`,
+  `numbers.rs` and `text.rs` (severity marks, numbers in the interface language, filled
+  templates); `tests_preview.rs` (the scheduler end to end), `tests_languages.rs` (every language),
+  `tests_gate.rs` (the third gate, by hand).
+- `crates/ui-egui/src/panels/embroidery/` — the Embroidery panel: `mod.rs` (the tabs, states and ≡
+  menu, `ui.embroideryPanel`), `order.rs` (Sewing Order), `check.rs` (Check), `lengths.rs` (the
+  stitch-length chart).
+- `crates/testkit/src/embroidery.rs` — documents for tests, built by commands;
+  `crates/engine/tests/embroidery_fixtures.rs` checks that each plans and holds together, and
+  `crates/engine/tests/embroidery_scene.rs` the scene on the real designs.
+- `apps/vectorcraft-cli/src/perf_embroidery.rs` — the embroidery rows of `vectorcraft-cli perf`
+  and `bench`; `apps/vectorcraft/src/stitch_profile.rs` — VectorCraft Stitch's own settings folder.
 - `crates/engine/src/cmd/swatchlib.rs` — the swatch libraries, the embroidery thread libraries
   among them; `crates/doc/src/embroidery.rs` — what an object and the document keep for embroidery.
 - `crates/engine/src/cmd/fileio/embroidery/` — the files' side: `mod.rs` (the export's options as
@@ -1902,6 +1953,7 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-24 | minor | The stitch preview's review round: the Sewing order list read only from the plan it shows, its steps worked out on it, a drop where its rows already are refused, a block cut by the list's limit without a thread change; Show Needle Points drawn; the plans' memory bounded for all documents together; planning keyed by the fonts a design uses; an export's options noted once written; `embroidery.render`'s points and strict colours, its size capped; VectorCraft Stitch's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. |
 | 2026-10-23 | minor | The stitch preview, done: the Check tab (the check's measured extremes, a hit's start, thread and objects, the stitch lengths in bins ending at 12.7 mm; severity marks; problems first; Show and Next and Previous Finding through `view.zoomTo`; rings on the canvas, thinned; the chart), the status bar's counters, and every language checked at 256 and 300 points. |
 | 2026-10-23 | minor | The stitch preview, in progress: the Embroidery panel (docked beside Properties, Layers and Libraries), its Sewing order tab, changing the sewing order (dragged rows, Sew Earlier, Later, First and Last), the selection's entry and exit, a hovered row's stitches stood out. |
 | 2026-10-23 | minor | The stitch preview, in progress: on the canvas (the stitch layer, View › Stitch Preview, the Art \| Stitches switch), planned on a thread of its own while something shows it; the app's frames measured (gate 3). |

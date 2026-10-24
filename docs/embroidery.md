@@ -212,8 +212,10 @@ Setup › Embroidery comes next).
   `embroidery.applyFabric {ids?, keys?}` unsets the objects' own values of the keys a fabric gives
   each part (a fill's pull, spacing, length and underlay; a stroke's pull, spacing and underlay,
   never its stitch length, which no fabric gives a satin or a running line) on the selection, or
-  with nothing selected on every object, so that they follow the fabric again; `overrides` counts
-  the same keys.
+  with nothing selected on every object and the symbols' art (which their instances sew), so that
+  they follow the fabric again; `overrides` counts the same keys, by key and the objects that set
+  any (`objectCount`), the symbols' art included. To act on the whole document whatever is selected
+  (Document Setup's bar), pass the layers' ids.
 - **The presets** are Wilcom's eight auto fabrics, under words of our own (`embroidery.fabrics`
   lists them, each value with the publication it rests on, how it was worked out, or why it is an
   estimate; `crates/stitch/src/fabric.rs` cites every source). A dash leaves the built-in value.

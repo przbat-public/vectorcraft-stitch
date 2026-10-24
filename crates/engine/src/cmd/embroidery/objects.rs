@@ -86,38 +86,41 @@ pub(crate) type Takers = (Vec<NodeId>, Vec<(NodeId, Skip)>);
 /// path or a compound path itself; a compound path's member its compound path; the paths and
 /// compound paths in a group or a layer, at any depth. What takes no settings is skipped, with why.
 pub(crate) fn takers(d: &Document, ids: &[NodeId]) -> Takers {
-    fn visit(n: &Node, take: &mut Vec<NodeId>, skip: &mut Vec<(NodeId, Skip)>, seen: &mut HashSet<NodeId>) {
-        if !seen.insert(n.id) {
-            return;
-        }
-        let why = match &n.kind {
-            NodeKind::Layer { children, .. } | NodeKind::Group { children, .. } => {
-                for c in children {
-                    visit(c, take, skip, seen);
-                }
-                return;
-            }
-            NodeKind::Path { guide: true, .. } => Skip::Guide,
-            NodeKind::Path { .. } if n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some()) => Skip::Literal,
-            NodeKind::Path { .. } | NodeKind::Compound { .. } => {
-                take.push(n.id);
-                return;
-            }
-            NodeKind::Text(_) => Skip::Type,
-            NodeKind::Image(_) => Skip::Image,
-            NodeKind::SymbolInstance { .. } => Skip::SymbolInstance,
-            NodeKind::PlacedDocument(_) => Skip::Placed,
-            NodeKind::Intertwine { .. } => Skip::Intertwine,
-            NodeKind::Blend { .. } | NodeKind::Envelope { .. } | NodeKind::Mesh(_) | NodeKind::Repeat(_) => Skip::Live,
-        };
-        skip.push((n.id, why));
-    }
     let (mut take, mut skip, mut seen) = (Vec::new(), Vec::new(), HashSet::new());
     for id in ids {
         let Some(n) = d.node(compound_of(d, *id)) else { continue };
-        visit(n, &mut take, &mut skip, &mut seen);
+        visit_takers(n, &mut take, &mut skip, &mut seen);
     }
-    (take, skip)
+    (take.into_iter().map(|n| n.id).collect(), skip)
+}
+
+/// [`takers`] of `n`, which need not be in a document (a symbol's art): the objects that take
+/// settings into `take`, what is skipped into `skip`, each node once (`seen`).
+pub(crate) fn visit_takers<'a>(n: &'a Node, take: &mut Vec<&'a Node>, skip: &mut Vec<(NodeId, Skip)>, seen: &mut HashSet<NodeId>) {
+    if !seen.insert(n.id) {
+        return;
+    }
+    let why = match &n.kind {
+        NodeKind::Layer { children, .. } | NodeKind::Group { children, .. } => {
+            for c in children {
+                visit_takers(c, take, skip, seen);
+            }
+            return;
+        }
+        NodeKind::Path { guide: true, .. } => Skip::Guide,
+        NodeKind::Path { .. } if n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some()) => Skip::Literal,
+        NodeKind::Path { .. } | NodeKind::Compound { .. } => {
+            take.push(n);
+            return;
+        }
+        NodeKind::Text(_) => Skip::Type,
+        NodeKind::Image(_) => Skip::Image,
+        NodeKind::SymbolInstance { .. } => Skip::SymbolInstance,
+        NodeKind::PlacedDocument(_) => Skip::Placed,
+        NodeKind::Intertwine { .. } => Skip::Intertwine,
+        NodeKind::Blend { .. } | NodeKind::Envelope { .. } | NodeKind::Mesh(_) | NodeKind::Repeat(_) => Skip::Live,
+    };
+    skip.push((n.id, why));
 }
 
 /// The object `id` stands for: its compound path when it is one's member, else itself.

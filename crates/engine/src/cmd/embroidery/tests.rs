@@ -312,7 +312,7 @@ fn unset() -> Value {
                 "speed": {"value": 650.0, "source": "default"},
             },
         },
-        "overrides": {"pull": 0, "spacing": 0, "length": 0, "underlay": 0},
+        "overrides": {"pull": 0, "spacing": 0, "length": 0, "underlay": 0, "objectCount": 0},
     })
 }
 

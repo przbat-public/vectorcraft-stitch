@@ -144,12 +144,15 @@ fn objects_own_fabric_values_are_counted_and_applied_away() {
     run(&mut s, "embroidery.set", json!({"ids": [a, b], "part": "fill", "pull": 0.3, "angle": 10}));
     run(&mut s, "embroidery.set", json!({"ids": [b], "part": "fill", "length": 3}));
     let r = run(&mut s, "embroidery.settings", json!({}));
-    assert_eq!(r["overrides"], json!({"pull": 2, "spacing": 0, "length": 1, "underlay": 0}));
+    assert_eq!(r["overrides"], json!({"pull": 2, "spacing": 0, "length": 1, "underlay": 0, "objectCount": 2}));
     let r = run(&mut s, "embroidery.applyFabric", json!({"ids": [a], "keys": ["pull"]}));
     assert_eq!((&r["changedCount"], &r["keys"]), (&json!(1), &json!(["pull"])));
     let r = run(&mut s, "embroidery.applyFabric", json!({}));
     assert_eq!(r["changedCount"], json!(1));
-    assert_eq!(run(&mut s, "embroidery.settings", json!({}))["overrides"], json!({"pull": 0, "spacing": 0, "length": 0, "underlay": 0}));
+    assert_eq!(
+        run(&mut s, "embroidery.settings", json!({}))["overrides"],
+        json!({"pull": 0, "spacing": 0, "length": 0, "underlay": 0, "objectCount": 0})
+    );
     let info = run(&mut s, "embroidery.info", json!({"ids": [a, b]}));
     assert_eq!(info["fill"]["settings"]["angle"]["value"], json!(10.0), "other values stay");
     let e = s.execute("embroidery.applyFabric", &json!({"keys": ["angle"]})).unwrap_err().to_string();
@@ -163,7 +166,10 @@ fn a_strokes_length_is_no_fabric_value() {
     let mut s = blank();
     let a = rect(&mut s, 20.0);
     run(&mut s, "embroidery.set", json!({"ids": [a], "part": "stroke", "stitch": "running", "length": 1.5, "pull": 0.3}));
-    assert_eq!(run(&mut s, "embroidery.settings", json!({}))["overrides"], json!({"pull": 1, "spacing": 0, "length": 0, "underlay": 0}));
+    assert_eq!(
+        run(&mut s, "embroidery.settings", json!({}))["overrides"],
+        json!({"pull": 1, "spacing": 0, "length": 0, "underlay": 0, "objectCount": 1})
+    );
     run(&mut s, "embroidery.applyFabric", json!({}));
     let info = run(&mut s, "embroidery.info", json!({"ids": [a]}));
     let stroke = &info["stroke"]["settings"];
@@ -194,4 +200,23 @@ fn applying_the_fabric_copies_only_the_objects_it_changes() {
     assert_eq!(run(&mut s, "embroidery.applyFabric", json!({}))["changedCount"], json!(0));
     assert_eq!(steps(&s), steps_before);
     assert!(nodes(&s).iter().zip(&after).all(|(a, b)| std::sync::Arc::ptr_eq(a, b)));
+}
+
+/// Document Setup's bar counts the objects that set the fabric's values themselves, once each
+/// however many they set, symbols' art included (its instances sew it); applying the fabric with
+/// nothing selected reaches the symbols' art too.
+#[test]
+fn overrides_count_objects_and_symbols_art() {
+    let mut s = blank();
+    let a = rect(&mut s, 20.0);
+    run(&mut s, "embroidery.set", json!({"ids": [a], "part": "fill", "pull": 0.3, "spacing": 0.5}));
+    let overrides = |s: &mut Session| run(s, "embroidery.settings", json!({}))["overrides"].clone();
+    assert_eq!(overrides(&mut s), json!({"pull": 1, "spacing": 1, "length": 0, "underlay": 0, "objectCount": 1}));
+    run(&mut s, "select.set", json!({"ids": [a]}));
+    run(&mut s, "symbol.new", json!({"name": "Badge"}));
+    run(&mut s, "select.none", json!({}));
+    assert_eq!(overrides(&mut s)["objectCount"], json!(1), "the symbol's art");
+    let r = run(&mut s, "embroidery.applyFabric", json!({}));
+    assert_eq!(r["changedCount"], json!(1));
+    assert_eq!(overrides(&mut s)["objectCount"], json!(0));
 }

@@ -5102,7 +5102,9 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   merged value by value, or null), `threadWeight`, `joinSameColor` and `machine` (`{jumpLength, trimLength, minStitch,
   splitLength, speed}`, merged), all reported in `settings` and `resolved` (each fabric value `{value, source, preset,
   changed}`), and the reply's `overrides` counts the objects that set the fabric's pull, spacing, length and underlay
-  themselves (read only, as `resolved`).
+  themselves, by key, and how many set any (`objectCount`), symbols' art included (read only, as `resolved`).
+  `embroidery.applyFabric` without `ids` acts on the selection, else on every object, symbols' art included: to act
+  on the whole document whatever is selected, pass the layers' ids (symbols' art is reached only with nothing given).
 - `embroidery.fabrics {}` lists the fabric presets `{default, caveat, fabrics: [{id, label, values: {tatami, satin,
   stabilizer, topping, needlePoint, thickness}, sources: [{key, kind: "published"|"derived"|"estimate", name, url,
   family, how}], estimates: [key…]}]}`; it needs no document. `how` says how a derived value was worked out, why an

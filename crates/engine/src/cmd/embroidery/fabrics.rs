@@ -3,12 +3,15 @@
 //! document ([`settings_of`]), and `embroidery.applyFabric` unsets the objects' own values of the
 //! keys a fabric sets, so that they follow the document's fabric again.
 
+use std::collections::HashSet;
+use std::sync::Arc;
+
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::embroidery::{FabricPreset, FabricSettings, FabricValues, PartKey, PartKind, StitchValues};
-use vectorcraft_doc::{Document, NodeId};
+use vectorcraft_doc::embroidery::{Embroidery, FabricPreset, FabricSettings, FabricValues, PartKey, PartKind, StitchValues};
+use vectorcraft_doc::{Document, Node, NodeId, NodeKind};
 use vectorcraft_stitch::fabric::{Basis, DEFAULT_FABRIC, FABRICS, Fabric, ONE_FAMILY, Sourced, StitchPreset};
 
-use super::objects::{edit_each, given, skipped_json, takers};
+use super::objects::{edit_each, given, skipped_json, takers, visit_takers};
 use super::{edit_counted, object};
 use crate::cmd::bad;
 use crate::{EngineError, Result, Session};
@@ -142,9 +145,63 @@ fn every_object(doc: &Document) -> Vec<NodeId> {
     takers(doc, &layers).0
 }
 
+/// The objects of `doc`'s symbols' art that take settings: what the symbols' instances sew.
+fn symbol_objects(doc: &Document) -> Vec<&Node> {
+    let (mut take, mut seen) = (Vec::new(), HashSet::new());
+    for sym in &doc.symbols {
+        visit_takers(&sym.art, &mut take, &mut Vec::new(), &mut seen);
+    }
+    take
+}
+
+/// `e` with its own values of `keys` unset, on each part those a fabric gives it.
+fn unset_fabric_keys(e: &mut Embroidery, keys: &[PartKey]) {
+    for kind in [PartKind::Fill, PartKind::Stroke] {
+        if e.part(kind).is_some() {
+            e.edit_part(kind, |part| {
+                for key in keys.iter().filter(|k| fabric_keys(kind).contains(k)) {
+                    part.set(*key, None);
+                }
+            });
+        }
+    }
+}
+
+/// [`unset_fabric_keys`] on every object of symbol art `n` that takes settings, copying only what
+/// changes → how many objects changed.
+fn unset_in_art(n: &mut Arc<Node>, keys: &[PartKey]) -> usize {
+    /// The settings object `n` would have, when it takes settings and they change.
+    fn changed(n: &Node, keys: &[PartKey]) -> Option<Embroidery> {
+        let mut take = Vec::new();
+        visit_takers(n, &mut take, &mut Vec::new(), &mut HashSet::new());
+        let before = n.extras().embroidery.as_deref().filter(|_| take.first().is_some_and(|t| t.id == n.id))?;
+        let mut e = before.clone();
+        unset_fabric_keys(&mut e, keys);
+        (e != *before).then_some(e)
+    }
+    /// Whether any object in `n` changes.
+    fn any(n: &Node, keys: &[PartKey]) -> bool {
+        changed(n, keys).is_some()
+            || n.children().is_some_and(|c| matches!(n.kind, NodeKind::Group { .. } | NodeKind::Layer { .. }) && c.iter().any(|c| any(c, keys)))
+    }
+    match &n.kind {
+        NodeKind::Path { .. } | NodeKind::Compound { .. } => match changed(n, keys) {
+            Some(e) => {
+                Arc::make_mut(n).extras_mut().embroidery = (!e.is_empty()).then(|| Box::new(e));
+                1
+            }
+            None => 0,
+        },
+        NodeKind::Group { .. } | NodeKind::Layer { .. } if any(n, keys) => {
+            Arc::make_mut(n).children_mut().into_iter().flatten().map(|c| unset_in_art(c, keys)).sum()
+        }
+        _ => 0,
+    }
+}
+
 /// `embroidery.applyFabric`: the objects' own values of the fabric's keys unset, on each part those
 /// the fabric gives it ([`fabric_keys`]), on the objects given, else the selected ones, else every
-/// object of the document.
+/// object of the document, its symbols' art included.
 pub(super) fn apply_fabric(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.applyFabric";
     let o = object(p, C)?;
@@ -175,45 +232,39 @@ pub(super) fn apply_fabric(s: &mut Session, p: &Value) -> Result<Value> {
     if take.is_empty() && !skipped.is_empty() {
         return Err(EngineError::Other("none of these objects takes embroidery settings".into()));
     }
+    // The whole document's objects include its symbols' art, which its instances sew.
+    let in_symbols = if chosen { 0 } else { symbol_objects(&s.doc()?.doc).len() };
     let changed = edit_counted(s, APPLY, |d| {
-        edit_each(d, &take, |e| {
-            for kind in [PartKind::Fill, PartKind::Stroke] {
-                if e.part(kind).is_some() {
-                    e.edit_part(kind, |part| {
-                        for key in keys.iter().filter(|k| fabric_keys(kind).contains(k)) {
-                            part.set(*key, None);
-                        }
-                    });
-                }
+        let mut changed = edit_each(d, &take, |e| unset_fabric_keys(e, &keys))?;
+        if !chosen {
+            for sym in &mut d.symbols {
+                changed += unset_in_art(&mut sym.art, &keys);
             }
-        })
+        }
+        Ok(changed)
     })?;
     Ok(json!({
         "keys": keys.iter().map(|k| k.name()).collect::<Vec<_>>(),
         "changedCount": changed,
-        "unchangedCount": take.len().saturating_sub(changed),
+        "unchangedCount": (take.len() + in_symbols).saturating_sub(changed),
         "skippedCount": skipped.len(),
         "skipped": skipped_json(&skipped),
     }))
 }
 
-/// How many objects of `doc` set each fabric key themselves, on a part the fabric gives it
-/// ([`fabric_keys`]): what Document Setup's bar counts (`embroidery.setup`'s and
-/// `embroidery.settings`' `overrides`).
+/// How many objects of `doc` (its symbols' art included) set each fabric key themselves, on a part
+/// the fabric gives it ([`fabric_keys`]), and how many set any (`objectCount`): what Document
+/// Setup's bar counts (`embroidery.setup`'s and `embroidery.settings`' `overrides`).
 pub(crate) fn overrides(doc: &Document) -> Value {
-    let objects = every_object(doc);
-    let count = |key: PartKey| {
-        objects
-            .iter()
-            .filter_map(|id| doc.node(*id))
-            .filter(|n| {
-                n.extras().embroidery.as_deref().is_some_and(|e| {
-                    [PartKind::Fill, PartKind::Stroke]
-                        .into_iter()
-                        .any(|k| fabric_keys(k).contains(&key) && e.part(k).is_some_and(|p| p.get(key).is_some()))
-                })
-            })
-            .count()
+    let ids = every_object(doc);
+    let objects: Vec<&Node> = ids.iter().filter_map(|id| doc.node(*id)).chain(symbol_objects(doc)).collect();
+    let sets = |n: &Node, key: PartKey| {
+        n.extras().embroidery.as_deref().is_some_and(|e| {
+            [PartKind::Fill, PartKind::Stroke].into_iter().any(|k| fabric_keys(k).contains(&key) && e.part(k).is_some_and(|p| p.get(key).is_some()))
+        })
     };
-    FABRIC_KEYS.iter().map(|k| (k.name().to_string(), json!(count(*k)))).collect::<Map<String, Value>>().into()
+    let mut out: Map<String, Value> =
+        FABRIC_KEYS.iter().map(|k| (k.name().to_string(), json!(objects.iter().filter(|n| sets(n, *k)).count()))).collect();
+    out.insert("objectCount".into(), json!(objects.iter().filter(|n| FABRIC_KEYS.iter().any(|k| sets(n, *k))).count()));
+    out.into()
 }

@@ -46,7 +46,7 @@ fn a_fabric_is_copied_changed_and_restored() {
     };
     assert_eq!(
         fill(&mut s)["pull"],
-        json!({"value": [pull, pull], "source": "document", "section": "fabric", "setCount": 0, "mixed": false, "inherited": {"value": [pull, pull], "source": "document", "section": "fabric"}, "rule": null})
+        json!({"value": [pull, pull], "source": "document", "section": "fabric", "setCount": 0, "mixed": false, "inherited": {"value": [pull, pull], "source": "document", "section": "fabric"}, "rule": null, "applies": true})
     );
     // A value changed, marked; restored with null.
     let r = run(&mut s, "embroidery.setup", json!({"fabric": {"tatami": {"length": 3.5}}}));

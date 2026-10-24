@@ -200,7 +200,15 @@ fn the_first_layer_that_gives_a_value_wins() {
                     let info = run(&mut s, "embroidery.info", ask);
                     // The part's own keys: the design's are reported by embroidery.settings.
                     if super::resolve::report::REPORTED.contains(&row.key) {
-                        assert_eq!(info[row.part]["settings"][row.key]["source"], json!(source), "{what}");
+                        let reported = &info[row.part]["settings"][row.key];
+                        assert_eq!(reported["source"], json!(source), "{what}");
+                        // The value reported is the one planned (a pull's sides as one), unless a
+                        // rule chooses it (`"auto"`: the part's `sewn` and the key's `rule` say what).
+                        let value = match &reported["value"] {
+                            Value::Array(sides) => sides[0].clone(),
+                            v => v.clone(),
+                        };
+                        assert!(value == json!("auto") || same(&value, &got), "{what}: info says {value}, planned with {got}");
                     }
                     cases += 1;
                 }

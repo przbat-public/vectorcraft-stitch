@@ -5125,7 +5125,8 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   step; nothing selected and no `ids`: an empty answer): `{objectCount, offset, truncated, objects: [{id, kind, fills,
   strokes, expanded, settings: {fill, stroke}, kept}], skippedCount, skipped, trimAfter: {value, setCount, mixed},
   fill, stroke, planned, options, warnings}`, where each part (`null` when no object has it) is `{objectCount,
-  itemCount, sewn, rule, reason, settings: {key: {value, source, section, setCount, mixed, inherited}}, entry, exit,
+  itemCount, sewn, rule, reason, settings: {key: {value, source, section, setCount, mixed, inherited, rule, applies}},
+  entry, exit,
   stitches}`. `sewn` and `rule` are the walk's own: a stroke a brush or an effect reshapes, on an object sewn as
   pieces, is sewn as the area it paints (`strokeOutlined`); a part the walk sews nothing of is `sewn: "none"` with
   its `reason`: `off` (its object sets it not to be sewn), `unpainted` (nothing of the kind is shown painted with a
@@ -5138,7 +5139,9 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   that may grow; a value chosen by a rule is `"auto"`, and its `rule` says what the rule chose: `{id: "underlayByWidth",
   chose, values}` for a satin's underlay, `{id: "underlayBySize", chose: null, values}` for a fill's (only its planned
   area tells), `{id: "spacingByWidth", chose: mm, values: {share}}` for a satin's spacing; `null` for a value set.
-  `stitches` is counted only with `plan: true`. A unit whose style a setting forced says which in
+  `applies` says whether the planner uses the key for the stitch the part is sewn in: a running line's `pull` or
+  `angle` is reported as set but `applies: false` (a fill's `push` applies: it reaches its narrow parts' satin
+  columns); a part not sewn uses none but `stitch`. `stitches` is counted only with `plan: true`. A unit whose style a setting forced says which in
   `embroidery.sequence`'s `ruleValues.source` (`object` or `export`).
 - `embroidery.stats {…embroidery options, speed?, fabricThickness?, offset?, limit?}` gives the design's figures as the
   export sews it, for the design and per block: `stitches` (needle points), `records` (needle points, jumps and cuts),

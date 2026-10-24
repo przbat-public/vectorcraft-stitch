@@ -23,7 +23,7 @@ use super::objects::{MAX_IDS, has_part, part_kind, takers, value_json};
 use super::options::stitch_id;
 use super::plan::{Choice, DesignPlan, Part};
 use super::printed::{keeps_its_path, needs_expanding};
-use super::resolve::report::{Resolved, Source};
+use super::resolve::report::{Reported, Resolved, Source};
 use super::resolve::{DocLayer, Found, PartLayer, Stitch, UnitSettings};
 use super::stats::Page;
 use super::{Options, object, options_in, planned, with_options};
@@ -227,7 +227,7 @@ struct PartRow<'a> {
     /// Why nothing of it is sewn: `off` (its object sets it not to be), `unpainted` (nothing of the
     /// kind is shown painted with a colour or a gradient), `hidden`, `notPrinted`.
     reason: Option<&'static str>,
-    keys: Vec<(&'static str, Resolved, Resolved)>,
+    keys: Vec<Reported>,
     /// What a rule chose for a key whose value is `"auto"`, by the key's name.
     rules: Vec<(&'static str, Value)>,
     kept: Option<&'a PartSettings>,
@@ -306,10 +306,12 @@ fn part_section(
         .collect();
     let item_count: usize = with.iter().map(|n| n.appearance.items.iter().filter(|i| part_kind(i) == kind).count()).sum();
     let mut settings = Map::new();
-    for (k, (name, ..)) in rows.first().map(|r| r.keys.as_slice()).unwrap_or_default().iter().enumerate() {
-        let at = |r: &PartRow| r.keys.get(k).cloned();
-        let now: Vec<Resolved> = rows.iter().filter_map(|r| at(r).map(|(_, a, _)| a)).collect();
-        let inherited: Vec<Resolved> = rows.iter().filter_map(|r| at(r).map(|(_, _, b)| b)).collect();
+    for name in super::resolve::report::REPORTED {
+        let at = |r: &PartRow| r.keys.iter().find(|k| k.name == name).cloned();
+        let now: Vec<Resolved> = rows.iter().filter_map(|r| at(r).map(|k| k.now)).collect();
+        let inherited: Vec<Resolved> = rows.iter().filter_map(|r| at(r).map(|k| k.inherited)).collect();
+        // A part not sewn uses none of its keys but the stitch that says so.
+        let applies = common(rows.iter().map(|r| if r.sewn == "none" { name == "stitch" } else { at(r).is_some_and(|k| k.applies) }));
         // Set: what the object's own settings give, as this version reads them (a stitch or an
         // underlay it doesn't know is kept unread, and the layers below give the value).
         let set_count = now.iter().filter(|r| r.source == Source::Object).count();
@@ -325,7 +327,8 @@ fn part_section(
                 "setCount": set_count,
                 "mixed": value.is_none(),
                 "inherited": inherited.map(|r| json!({"value": r.value, "source": r.source.id(), "section": r.source.section()})),
-                "rule": common(rows.iter().map(|r| r.rules.iter().find(|(k, _)| k == name).map(|(_, v)| v.clone()))).flatten(),
+                "applies": applies,
+                "rule": common(rows.iter().map(|r| r.rules.iter().find(|(k, _)| *k == name).map(|(_, v)| v.clone()))).flatten(),
             }),
         );
     }

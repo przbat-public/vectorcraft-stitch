@@ -49,7 +49,7 @@ fn each_value_says_where_it_comes_from() {
     assert_eq!(
         key("angle"),
         json!({"value": 30.0, "source": "object", "section": null, "setCount": 1, "mixed": false,
-               "inherited": {"value": 135.0, "source": "default", "section": null}, "rule": null})
+               "inherited": {"value": 135.0, "source": "default", "section": null}, "rule": null, "applies": true})
     );
     assert_eq!(key("pull")["inherited"], json!({"value": [0.35, 0.35], "source": "document", "section": "fabric"}));
     assert_eq!(
@@ -227,4 +227,21 @@ fn what_this_version_cant_read_is_kept_and_not_counted_as_set() {
         assert_eq!((&settings[key]["setCount"], &settings[key]["source"]), (&json!(0), &json!("default")), "{key}");
     }
     assert_eq!((&settings["angle"]["setCount"], &settings["angle"]["source"]), (&json!(1), &json!("object")));
+}
+
+/// A key the planner doesn't use for the stitch a part is sewn in is reported as set, and as not
+/// applying: a running line's pull and angle; a fill's push reaches its narrow parts' columns.
+#[test]
+fn a_key_a_stitch_doesnt_use_says_so() {
+    let mut s = blank();
+    let id = shape(&mut s, 20.0, 0.5);
+    run(&mut s, "embroidery.set", json!({"ids": [id], "part": "stroke", "pull": 0.3, "angle": 20}));
+    run(&mut s, "embroidery.set", json!({"ids": [id], "part": "fill", "push": 0.3}));
+    let r = info(&mut s, json!({"ids": [id]}));
+    let stroke = &r["stroke"]["settings"];
+    assert_eq!(r["stroke"]["sewn"], json!("running"));
+    for key in ["pull", "angle"] {
+        assert_eq!((&stroke[key]["source"], &stroke[key]["applies"]), (&json!("object"), &json!(false)), "{key}");
+    }
+    assert_eq!((&stroke["length"]["applies"], &r["fill"]["settings"]["push"]["applies"]), (&json!(true), &json!(true)));
 }

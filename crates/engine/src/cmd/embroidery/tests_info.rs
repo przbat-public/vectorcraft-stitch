@@ -49,7 +49,7 @@ fn each_value_says_where_it_comes_from() {
     assert_eq!(
         key("angle"),
         json!({"value": 30.0, "source": "object", "section": null, "setCount": 1, "mixed": false,
-               "inherited": {"value": 135.0, "source": "default", "section": null}})
+               "inherited": {"value": 135.0, "source": "default", "section": null}, "rule": null})
     );
     assert_eq!(key("pull")["inherited"], json!({"value": [0.35, 0.35], "source": "document", "section": "fabric"}));
     assert_eq!(
@@ -122,4 +122,49 @@ fn a_planner_answers_info_as_the_command_does() {
     let ran = info(&mut s, json!({"ids": [id], "plan": true}));
     assert_eq!(queried, ran);
     assert!(planner.query("embroidery.info", &json!({"ids": [id], "selectedOnly": true})).is_err());
+}
+
+/// What Auto chose is reported where the value is `"auto"`: a satin's underlay by its width
+/// (strokes 1.5, 3 and 5 mm wide: a centre run, an edge run, an edge run and a zigzag) and its
+/// spacing by its width; a fill's underlay by its size, which only the planned area tells. A value
+/// set is no rule's.
+#[test]
+fn what_auto_chose_is_reported() {
+    use vectorcraft_stitch::plan::{Params, Style, satin_auto_underlay};
+    for (width, chose) in [(1.5, "center"), (3.0, "edge"), (5.0, "edgeZigzag")] {
+        assert_eq!(satin_auto_underlay(width).id(), chose);
+        let mut s = blank();
+        let id = shape(&mut s, 20.0, width);
+        let r = info(&mut s, json!({"ids": [id]}));
+        let underlay = &r["stroke"]["settings"]["underlay"];
+        assert_eq!(
+            (&underlay["value"], &underlay["rule"]["id"], &underlay["rule"]["chose"]),
+            (&json!("auto"), &json!("underlayByWidth"), &json!(chose)),
+            "{width} mm"
+        );
+        let spacing = &r["stroke"]["settings"]["spacing"]["rule"];
+        let p = Params { width, ..Params::for_style(Style::Satin) };
+        assert_eq!((&spacing["id"], &spacing["chose"]), (&json!("spacingByWidth"), &json!(p.column_spacing(width))));
+        assert_eq!(
+            (&r["fill"]["settings"]["underlay"]["rule"]["id"], &r["fill"]["settings"]["underlay"]["rule"]["chose"]),
+            (&json!("underlayBySize"), &Value::Null)
+        );
+        run(&mut s, "embroidery.set", json!({"ids": [id], "part": "stroke", "underlay": "center"}));
+        assert_eq!(info(&mut s, json!({"ids": [id]}))["stroke"]["settings"]["underlay"]["rule"], Value::Null, "set: no rule's");
+    }
+}
+
+/// The sewing order says which setting forced a style: the object's own `stitch`, or the option
+/// given to the call.
+#[test]
+fn the_sewing_order_says_which_setting_forced_a_style() {
+    let mut s = blank();
+    let (a, b) = (shape(&mut s, 20.0, 3.0), shape(&mut s, 100.0, 3.0));
+    run(&mut s, "embroidery.set", json!({"ids": [a], "part": "stroke", "stitch": "running"}));
+    let order = run(&mut s, "embroidery.sequence", json!({"stitch": "running"}));
+    let units: Vec<&Value> = order["blocks"].as_array().unwrap().iter().flat_map(|b| b["units"].as_array().unwrap()).collect();
+    let of = |id: u64, part: &str| units.iter().find(|u| u["id"] == json!(id) && u["part"] == json!(part)).unwrap()["ruleValues"].clone();
+    assert_eq!(of(a, "stroke"), json!({"stitch": "running", "source": "object"}));
+    assert_eq!(of(b, "stroke")["source"], json!("export"));
+    assert_eq!(of(a, "fill"), json!({"stitch": "running", "source": "export"}));
 }

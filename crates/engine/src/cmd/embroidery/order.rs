@@ -70,17 +70,17 @@ pub(crate) fn rule_of(u: &Unit) -> (&'static str, Value, String) {
             };
             ("strokeOutlined", json!({}), why.into())
         }
-        Choice::Forced => {
+        Choice::Forced(by) => {
             let stitch = u.params.map(|p| p.style).map_or("auto", stitch_id);
-            ("forced", json!({"stitch": stitch}), format!("stitch {stitch}"))
+            ("forced", json!({"stitch": stitch, "source": by.id()}), format!("stitch {stitch}"))
         }
-        Choice::SatinFilled => {
+        Choice::SatinFilled(by) => {
             let why = if u.columns.is_some() {
                 "stitch satin: a fill has no width to sew a satin across, so it is filled, its narrow parts as satin columns"
             } else {
                 "stitch satin: a fill has no width to sew a satin across, so it is filled"
             };
-            ("forced", json!({"stitch": stitch_id(Style::Satin)}), why.into())
+            ("forced", json!({"stitch": stitch_id(Style::Satin), "source": by.id()}), why.into())
         }
         Choice::Literal => ("literal", json!({}), "stitches read from a machine file, sewn as they are".into()),
     }

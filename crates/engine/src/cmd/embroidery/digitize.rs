@@ -18,7 +18,7 @@ use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
 use super::Options;
 use super::cache::{Shaped, Shared, UnitCache, UnitKey, clip_words, path as path_words, rule_word};
-use super::plan::{Choice, DesignPlan, MAX_WARNED_OBJECTS, Origin, Part};
+use super::plan::{Choice, DesignPlan, ForcedBy, MAX_WARNED_OBJECTS, Origin, Part};
 use super::resolve::{DesignSettings, DocLayer, Found, PartLayer, UnitSettings};
 use super::sequence::{CLEARANCE, Facts, Planned, Sequence};
 use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
@@ -589,7 +589,7 @@ impl<'a> Digitizer<'a> {
             if !settings.sewn() {
                 continue;
             }
-            let (style, why) = part_rule(item, bp, settings.forced());
+            let (style, why) = part_rule(item, bp, settings.forcing());
             match item {
                 AppearanceItem::Fill(fill) => {
                     // Paint that isn't sewn is said so (or passed by) before any path operation
@@ -869,11 +869,9 @@ fn expanded(area: &BezPath, rule: FillRule, e: f64) -> (BezPath, FillRule, bool)
     (out, FillRule::NonZero, away)
 }
 
-/// Whether an appearance item is painted at all (not `none`): only painted items are sewn, and
-/// counted as the plan's progress.
 /// How part `item` of an object whose path is `bp` (document points) is sewn, and the rule that
-/// chose it, `forced` being the style its settings force (`None`: the rule): the one place this is
-/// decided, for the walk and for `embroidery.info`.
+/// chose it, `forced` being the style its settings force and the setting that forces it (`None`:
+/// the rule): the one place this is decided, for the walk and for `embroidery.info`.
 ///
 /// - A fill is filled, unless a style is forced. A satin needs a width, which a fill doesn't have:
 ///   forced on a fill, it is filled, with a fill's settings, `expand` and narrow parts, as without.
@@ -881,19 +879,19 @@ fn expanded(area: &BezPath, rule: FillRule, e: f64) -> (BezPath, FillRule, bool)
 ///   or outside, of varying width, with arrowheads) is that area, filled, unless a style other than
 ///   tatami is forced. Forced tatami, a stroke is the area it paints at its width, filled. Else it is
 ///   a satin column when wide enough to have two rails, a running line when not, unless forced.
-pub(crate) fn part_rule(item: &AppearanceItem, bp: &BezPath, forced: Option<Style>) -> (Style, Choice) {
+pub(crate) fn part_rule(item: &AppearanceItem, bp: &BezPath, forced: Option<(Style, ForcedBy)>) -> (Style, Choice) {
     match item {
         AppearanceItem::Fill(_) => match forced {
-            Some(Style::Satin) => (Style::Fill, Choice::SatinFilled),
-            Some(style) => (style, Choice::Forced),
+            Some((Style::Satin, by)) => (Style::Fill, Choice::SatinFilled(by)),
+            Some((style, by)) => (style, Choice::Forced(by)),
             None => (Style::Fill, Choice::Fill),
         },
-        AppearanceItem::Stroke(stroke) if paints_off_its_path(stroke, bp) && matches!(forced, None | Some(Style::Fill)) => {
+        AppearanceItem::Stroke(stroke) if paints_off_its_path(stroke, bp) && matches!(forced, None | Some((Style::Fill, _))) => {
             (Style::Fill, Choice::StrokeOutlined)
         }
         AppearanceItem::Stroke(stroke) => match forced {
-            Some(Style::Fill) => (Style::Fill, Choice::StrokeFilled),
-            Some(style) => (style, Choice::Forced),
+            Some((Style::Fill, _)) => (Style::Fill, Choice::StrokeFilled),
+            Some((style, by)) => (style, Choice::Forced(by)),
             None if pt_to_mm(stroke.width).max(0.0) >= SATIN_MIN_WIDTH => (Style::Satin, Choice::WideStroke),
             None => (Style::Running, Choice::NarrowStroke),
         },
@@ -912,6 +910,8 @@ fn paints_off_its_path(st: &StrokeLayer, bp: &BezPath) -> bool {
         || (closed && st.align != StrokeAlign::Center)
 }
 
+/// Whether an appearance item is painted at all (not `none`): only painted items are sewn, and
+/// counted as the plan's progress.
 fn painted(item: &AppearanceItem) -> bool {
     let paint = match item {
         AppearanceItem::Fill(f) => &f.paint,

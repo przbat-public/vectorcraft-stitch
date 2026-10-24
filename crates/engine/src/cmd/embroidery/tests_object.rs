@@ -122,7 +122,11 @@ fn an_objects_stitch_decides_first() {
     assert_eq!(whys, [Choice::Fill, Choice::StrokeFilled], "the fill by the rule, the stroke filled");
     give(&mut s, id, json!({"fill": {"stitch": "none"}, "stroke": {"stitch": "satin"}}));
     let plan = plan_with(&s, json!({"stitch": "running"}));
-    assert_eq!(plan.units.iter().map(|u| (u.sewn(), u.why)).collect::<Vec<_>>(), [(Some(Style::Satin), Choice::Forced)], "the fill not sewn");
+    assert_eq!(
+        plan.units.iter().map(|u| (u.sewn(), u.why)).collect::<Vec<_>>(),
+        [(Some(Style::Satin), Choice::Forced(super::plan::ForcedBy::Object))],
+        "the fill not sewn"
+    );
     assert!(plan.messages().is_empty(), "{:?}", plan.messages());
     // Not sewn on both parts: nothing to sew.
     give(&mut s, id, json!({"fill": {"stitch": "none"}, "stroke": {"stitch": "none"}}));

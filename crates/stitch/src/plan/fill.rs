@@ -20,7 +20,7 @@ pub const MIN_AREA: f64 = 0.01;
 pub(super) const TATAMI_UNDERLAY_SPACING: f64 = 2.0;
 pub(super) const TATAMI_UNDERLAY_STITCH: f64 = 3.0;
 const TATAMI_UNDERLAY_INSET: f64 = 0.6;
-const TATAMI_UNDERLAY_MIN: f64 = 10.0;
+pub const TATAMI_UNDERLAY_MIN: f64 = 10.0;
 /// How much of a travel run in a fill's top stitching may show (millimetres over stitching already
 /// sewn; any length of it may run under stitching still to come): a travel that would show more
 /// lifts the needle instead. Travels under the top stitching (in the underlay) have no limit: the

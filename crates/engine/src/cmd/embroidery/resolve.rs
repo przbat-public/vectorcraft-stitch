@@ -36,6 +36,7 @@ use vectorcraft_stitch::plan::{
 };
 
 use super::Options;
+use super::plan::ForcedBy;
 
 pub(crate) mod report;
 use super::options::{MAX_EXPAND, planner_angle};
@@ -97,10 +98,15 @@ impl<'a> UnitSettings<'a> {
     /// The style the settings force, `None` for the rule (Auto): the object's `stitch`, else the
     /// call's.
     pub(crate) fn forced(&self) -> Option<Style> {
+        self.forcing().map(|(style, _)| style)
+    }
+
+    /// The style the settings force and which of them forces it, `None` for the rule (Auto).
+    pub(crate) fn forcing(&self) -> Option<(Style, ForcedBy)> {
         match self.object.stitch {
-            Some(Stitch::Style(style)) => Some(style),
+            Some(Stitch::Style(style)) => Some((style, ForcedBy::Object)),
             Some(Stitch::Auto | Stitch::None) => None,
-            None => self.export.forced(),
+            None => self.export.forced().map(|style| (style, ForcedBy::Export)),
         }
     }
 

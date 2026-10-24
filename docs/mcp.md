@@ -5127,7 +5127,11 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   fill, stroke, planned, options, warnings}`, where each part (`null` when no object has it) is `{objectCount,
   itemCount, sewn, rule, settings: {key: {value, source, section, setCount, mixed, inherited}}, entry, exit,
   stitches}`. `source` is `object`, `export`, `document` (then `section`: `fabric` or `machine`) or `default`, a list
-  that may grow; a value chosen by a rule is `"auto"`. `stitches` is counted only with `plan: true`.
+  that may grow; a value chosen by a rule is `"auto"`, and its `rule` says what the rule chose: `{id: "underlayByWidth",
+  chose, values}` for a satin's underlay, `{id: "underlayBySize", chose: null, values}` for a fill's (only its planned
+  area tells), `{id: "spacingByWidth", chose: mm, values: {share}}` for a satin's spacing; `null` for a value set.
+  `stitches` is counted only with `plan: true`. A unit whose style a setting forced says which in
+  `embroidery.sequence`'s `ruleValues.source` (`object` or `export`).
 - `embroidery.stats {…embroidery options, speed?, fabricThickness?, offset?, limit?}` gives the design's figures as the
   export sews it, for the design and per block: `stitches` (needle points), `records` (needle points, jumps and cuts),
   `jumps`, `trims`, `colorChanges`, `threadCount`, `blockCount`; `size`, `bounds`, `start` and `end` points, `extents`

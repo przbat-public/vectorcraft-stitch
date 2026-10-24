@@ -15,8 +15,8 @@ use serde_json::{Map, Value, json};
 use vectorcraft_doc::embroidery::{PartKey, PartKind, PartSettings};
 use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind};
 use vectorcraft_geom::BezPath;
-use vectorcraft_stitch::Command;
-use vectorcraft_stitch::plan::Style;
+use vectorcraft_stitch::plan::{Params, SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, Style, TATAMI_UNDERLAY_MIN, Underlay, satin_auto_underlay};
+use vectorcraft_stitch::{Command, pt_to_mm};
 
 use super::digitize::part_rule;
 use super::objects::{MAX_IDS, has_part, takers, value_json};
@@ -192,7 +192,7 @@ pub(crate) fn rule_id(why: Choice) -> &'static str {
         Choice::NarrowStroke => "narrowStroke",
         Choice::StrokeFilled => "strokeFilled",
         Choice::StrokeOutlined => "strokeOutlined",
-        Choice::Forced | Choice::SatinFilled => "forced",
+        Choice::Forced(_) | Choice::SatinFilled(_) => "forced",
         Choice::Literal => "literal",
     }
 }
@@ -203,7 +203,29 @@ struct PartRow<'a> {
     sewn: &'static str,
     rule: Option<&'static str>,
     keys: Vec<(&'static str, Resolved, Resolved)>,
+    /// What a rule chose for a key whose value is `"auto"`, by the key's name.
+    rules: Vec<(&'static str, Value)>,
     kept: Option<&'a PartSettings>,
+}
+
+/// What Auto chose for a part sewn in `style` with `p`, by key: a satin's underlay by its width and
+/// its spacing by its width (and the fabric's share of it); a fill's underlay by its size, which
+/// only the planned area tells (`chose` null: the edge run always, a tatami layer too where the
+/// fill is at least [`TATAMI_UNDERLAY_MIN`] across).
+fn rules(style: Style, p: &Params) -> Vec<(&'static str, Value)> {
+    let mut out = Vec::new();
+    match (style, p.underlay) {
+        (Style::Satin, Underlay::Auto) => out.push((
+            "underlay",
+            json!({"id": "underlayByWidth", "chose": satin_auto_underlay(p.width).id(), "values": {"edgeFrom": SATIN_EDGE_UNDERLAY, "zigzagFrom": SATIN_ZIGZAG_UNDERLAY}}),
+        )),
+        (Style::Fill, Underlay::Auto) => out.push(("underlay", json!({"id": "underlayBySize", "chose": null, "values": {"tatamiFrom": TATAMI_UNDERLAY_MIN}}))),
+        _ => {}
+    }
+    if style == Style::Satin && p.auto_spacing {
+        out.push(("spacing", json!({"id": "spacingByWidth", "chose": p.column_spacing(p.width), "values": {"share": p.spacing_scale}})));
+    }
+    out
 }
 
 /// The value the rows share, `None` when they differ.
@@ -229,12 +251,18 @@ fn part_section(nodes: &[&Node], kind: PartKind, opts: &Options, layer: &DocLaye
             let item = items.iter().find(|i| i.visible()).or(items.first()).copied();
             let (sewn, rule, style) = match item {
                 Some(item) if settings.sewn() => {
-                    let (style, why) = part_rule(item, &path_of(n), settings.forced());
+                    let (style, why) = part_rule(item, &path_of(n), settings.forcing());
                     (stitch_id(style), Some(rule_id(why)), style)
                 }
                 _ => ("none", None, Style::Fill),
             };
-            PartRow { sewn, rule, keys: settings.report(style), kept }
+            // A satin's width: its stroke's.
+            let width = match item {
+                Some(AppearanceItem::Stroke(st)) if style == Style::Satin => pt_to_mm(st.width).max(0.0),
+                _ => 0.0,
+            };
+            let rules = if sewn == "none" { Vec::new() } else { rules(style, &settings.params(style, width)) };
+            PartRow { sewn, rule, keys: settings.report(style), rules, kept }
         })
         .collect();
     let item_count: usize = with.iter().map(|n| n.appearance.items.iter().filter(|i| part_kind(i) == kind).count()).sum();
@@ -257,6 +285,7 @@ fn part_section(nodes: &[&Node], kind: PartKind, opts: &Options, layer: &DocLaye
                 "setCount": set_count,
                 "mixed": value.is_none(),
                 "inherited": inherited.map(|r| json!({"value": r.value, "source": r.source.id(), "section": r.source.section()})),
+                "rule": common(rows.iter().map(|r| r.rules.iter().find(|(k, _)| k == name).map(|(_, v)| v.clone()))).flatten(),
             }),
         );
     }

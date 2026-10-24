@@ -150,7 +150,7 @@ fn each_unit_says_how_it_is_sewn_and_why() {
     let fill = sewn(&mut s, json!({"stitchStyle": "fill"}));
     assert_eq!(fill[1].1, "stitch fill: the area the stroke paints is filled");
     let forced = units(&run(&mut s, "embroidery.sequence", json!({"stitch": "satin"})));
-    assert_eq!((&forced[1]["rule"], &forced[1]["ruleValues"]), (&json!("forced"), &json!({"stitch": "satin"})));
+    assert_eq!((&forced[1]["rule"], &forced[1]["ruleValues"]), (&json!("forced"), &json!({"stitch": "satin", "source": "export"})));
 }
 
 /// Art inside a symbol is listed under the instance a person selects, with the object sewn; a

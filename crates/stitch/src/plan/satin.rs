@@ -12,8 +12,8 @@ use crate::{SAME_POINT, Stitch};
 
 /// Satin underlay by column width (millimetres): from this width an edge run instead of a centre
 /// run, from this one an edge run and a zigzag; and the zigzag's spacing. Estimates.
-const SATIN_EDGE_UNDERLAY: f64 = 2.0;
-const SATIN_ZIGZAG_UNDERLAY: f64 = 4.5;
+pub const SATIN_EDGE_UNDERLAY: f64 = 2.0;
+pub const SATIN_ZIGZAG_UNDERLAY: f64 = 4.5;
 pub(super) const ZIGZAG_UNDERLAY_SPACING: f64 = 2.0;
 /// How far inside the column's sides the edge underlay runs: this share of the column's width, at
 /// most [`UNDERLAY_INSET_MAX`] millimetres, so the underlay doesn't show at the edges. Estimates.
@@ -374,15 +374,26 @@ enum SatinUnderlay {
     EdgeZigzag,
 }
 
-/// The underlay `u` asks of a satin column `width` wide: by its width with [`Underlay::Auto`] (a
-/// centre run under [`SATIN_EDGE_UNDERLAY`], an edge run, an edge run and a zigzag from
-/// [`SATIN_ZIGZAG_UNDERLAY`]); `None` for none.
+/// The underlay [`Underlay::Auto`] sews under a satin column `width` wide (millimetres): a centre
+/// run under [`SATIN_EDGE_UNDERLAY`], an edge run, an edge run and a zigzag from
+/// [`SATIN_ZIGZAG_UNDERLAY`]. The planner sews by it, and what Auto chose is reported by it.
+pub fn satin_auto_underlay(width: f64) -> Underlay {
+    if width < SATIN_EDGE_UNDERLAY {
+        Underlay::Center
+    } else if width < SATIN_ZIGZAG_UNDERLAY {
+        Underlay::Edge
+    } else {
+        Underlay::EdgeZigzag
+    }
+}
+
+/// The underlay `u` asks of a satin column `width` wide: by its width with [`Underlay::Auto`]
+/// ([`satin_auto_underlay`]); `None` for none.
 fn satin_kind(u: Underlay, width: f64) -> Option<SatinUnderlay> {
     match u {
         Underlay::None => None,
-        Underlay::Auto if width < SATIN_EDGE_UNDERLAY => Some(SatinUnderlay::Center),
-        Underlay::Auto if width < SATIN_ZIGZAG_UNDERLAY => Some(SatinUnderlay::Edge),
-        Underlay::Auto | Underlay::EdgeZigzag | Underlay::EdgeTatami => Some(SatinUnderlay::EdgeZigzag),
+        Underlay::Auto => satin_kind(satin_auto_underlay(width), width),
+        Underlay::EdgeZigzag | Underlay::EdgeTatami => Some(SatinUnderlay::EdgeZigzag),
         Underlay::Center => Some(SatinUnderlay::Center),
         Underlay::Edge => Some(SatinUnderlay::Edge),
     }

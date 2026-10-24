@@ -183,8 +183,11 @@ selection, and MCP and the control channel with ids:
 for each part every value it is planned with, merged over the objects (the value they share, or
 none and `mixed`), with where it comes from (`object`, `export`, `document` with the part of its
 settings, `default`; a rule's value is `"auto"`, never a source), how many objects set it, what
-unsetting gives (`inherited`), and how the part is sewn by the walk's own rule; with `plan`, what
-the design's plan sews of each part. The stitch preview's planning thread answers it as the other
+unsetting gives (`inherited`), how the part is sewn by the walk's own rule, and what a rule chose
+where the value is `"auto"` (a satin's underlay and spacing by its width, from the planner's own
+functions, `plan::satin_auto_underlay` and `Params::column_spacing`; a fill's underlay by its size,
+which only the planned area tells); with `plan`, what the design's plan sews of each part. The
+sewing order says which setting forced a unit's style (`ruleValues.source`: `object` or `export`). The stitch preview's planning thread answers it as the other
 read commands, the objects given.
 
 Each command that changes them makes one undo step (none when nothing changes). A group or a layer stands for the paths and

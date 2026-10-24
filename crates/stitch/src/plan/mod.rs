@@ -46,10 +46,11 @@ mod tests_narrow;
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
 pub use fill::MIN_AREA;
+pub use fill::TATAMI_UNDERLAY_MIN;
 pub(crate) use fill::fill_with_columns;
 pub use narrow::{Column, columns as narrow_columns, columns_until as narrow_columns_until};
 pub use runs::join_cut;
-pub use satin::satin_spacing;
+pub use satin::{SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, satin_auto_underlay, satin_spacing};
 
 use crate::{Error, Stitch};
 pub use geometry::MAX_COORD_MM;

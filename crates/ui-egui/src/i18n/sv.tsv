@@ -5466,7 +5466,7 @@ theme	Appearance	Utseende
 @msg	too many stitches for a VP3 file	för många stygn för en VP3-fil
 @msg	{_1} is not an embroidery format	{_1} är inte ett broderiformat
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Stygn:
 	Stitch Length:	Stygnlängd:
 	Fill Angle:	Fyllnadsvinkel:

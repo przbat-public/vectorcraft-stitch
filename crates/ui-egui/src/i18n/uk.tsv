@@ -5103,7 +5103,7 @@ lighting	Light	Світло
 @msg	too many stitches for a VP3 file	забагато стібків для файлу VP3
 @msg	{_1} is not an embroidery format	{_1} — не формат вишивки
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Стібок:
 	Stitch Length:	Довжина стібка:
 	Fill Angle:	Кут заливки:

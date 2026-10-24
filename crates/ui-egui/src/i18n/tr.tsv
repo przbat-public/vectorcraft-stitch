@@ -5593,6 +5593,7 @@ axis	Y Axis	Y ekseni
 @msg	thread number {index} doesn't fit a PEC header	{index} numaralı iplik bir PEC başlığına sığmıyor
 @msg	too many stitches for a VP3 file	bir VP3 dosyası için çok fazla dikiş
 @msg	{_1} is not an embroidery format	{_1} bir nakış biçimi değil
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Dikiş:
 	Stitch Length:	Dikiş Uzunluğu:
 	Fill Angle:	Dolgu Açısı:

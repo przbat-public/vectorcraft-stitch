@@ -5103,7 +5103,7 @@ theme	Appearance	Giao diện
 @msg	too many stitches for a VP3 file	quá nhiều mũi thêu cho tệp VP3
 @msg	{_1} is not an embroidery format	{_1} không phải định dạng thêu
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Mũi thêu:
 	Stitch Length:	Độ dài mũi:
 	Fill Angle:	Góc phủ:

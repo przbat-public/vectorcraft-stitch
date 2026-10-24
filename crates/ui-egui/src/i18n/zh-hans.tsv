@@ -5348,7 +5348,7 @@ lighting	Light	光源
 @msg	too many stitches for a VP3 file	VP3 文件的针数过多
 @msg	{_1} is not an embroidery format	{_1} 不是刺绣格式
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	针法：
 	Stitch Length:	针迹长度：
 	Fill Angle:	填充角度：

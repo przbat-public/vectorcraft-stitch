@@ -5474,7 +5474,7 @@ mark-style	Japanese	Japanilainen
 @msg	too many stitches for a VP3 file	liian monta pistoa VP3-tiedostoon
 @msg	{_1} is not an embroidery format	{_1} ei ole kirjontamuoto
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Pisto:
 	Stitch Length:	Piston pituus:
 	Fill Angle:	Täytön kulma:

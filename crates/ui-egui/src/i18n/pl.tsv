@@ -5269,11 +5269,11 @@ mark-style	Japanese	Japońskie
 	Embroidery Trim After	Haft: obetnij nić po
 	Embroidery Object Settings	Ustawienia haftu obiektu
 	Reset Embroidery Object Settings	Przywróć ustawienia haftu obiektu
-	Embroidery Entry and Exit	Wejście i wyjście haftu
+	Embroidery Entry and Exit	Punkty wejścia i wyjścia haftu
 	Paste Embroidery Object Settings	Wklej ustawienia haftu obiektu
 	Show Embroidery Object Settings	Pokaż ustawienia haftu obiektu
 	Embroidery Fabrics	Tkaniny do haftu
-	Apply Embroidery Fabric to Objects	Zastosuj tkaninę haftu do obiektów
+	Apply Embroidery Fabric to Objects	Zastosuj tkaninę do haftu na obiektach
 	Embroidery Setup	Ustawienia haftu
 	Show Embroidery Settings	Pokaż ustawienia haftu
 	Embroidery Statistics	Statystyki haftu
@@ -5292,13 +5292,13 @@ mark-style	Japanese	Japońskie
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	ujemna wartość expand nie zostawiła nic z niektórych wypełnionych kształtów, więc nie są haftowane: zmniejsz je mniej
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	gradienty i wzorki są malowane kolorem ich pierwszego punktu koloru; haft szyje jedną nicią każdy blok
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	obrysy szersze niż {widest} mm są szyte jako kolumny satynowe o szerokości {widest} mm: zamiast tego je wypełnij (stitch fill)
-@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	obrysy rysowane pędzlem lub przekształcone efektem są szyte jako obszar, który malują: ustawiony na nich ścieg prosty ani satyna nie mogą biec wzdłuż ich ścieżki
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	obrysy rysowane pędzlem lub przekształcone efektem są szyte jako obszar, który malują: ani ustawiony na nich ścieg prosty, ani satyna nie mogą biec wzdłuż ich ścieżki
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	paleta nici dokumentu {palette} jest nieznana tej wersji, więc jego nici są dobierane z palety {default}
 @msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	ustawienia haftu dokumentu zawierają takie, których ta wersja nie odczytuje (z nowszej wersji): są zachowywane, a wzór jest haftowany bez nich
-@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	niektóre ustawienia haftu dokumentu wykraczają poza to, co haftuje ta wersja: każde jest haftowane z najbliższą wartością, jaką przyjmuje
-@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	długość cięcia jest krótsza niż długość przeskoku, więc przeskoki są przecinane już od długości przeskoku
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	niektóre ustawienia haftu dokumentu wykraczają poza zakres tej wersji: każde zastępuje najbliższa dopuszczalna wartość
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	długość cięcia jest krótsza niż długość przeskoku, więc nić jest przecinana przy każdym przeskoku
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	ustawienia haftu niektórych obiektów zawierają takie, których ta wersja nie odczytuje (z nowszej wersji): są zachowywane, a te obiekty są haftowane bez nich
-@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	niektóre ustawienia haftu obiektów wykraczają poza to, co haftuje ta wersja: każde jest haftowane z najbliższą wartością, jaką przyjmuje
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	niektóre ustawienia haftu obiektów wykraczają poza zakres tej wersji: każde zastępuje najbliższa dopuszczalna wartość
 @msg	none of these objects takes settings for its `{_1}`: {_2}	żaden z tych obiektów nie przyjmuje ustawień dla swojego `{_1}`: {_2}
 @msg	none of these objects takes embroidery settings: {_1}	żaden z tych obiektów nie przyjmuje ustawień haftu: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	obiekt {_1} nie przyjmuje ustawień haftu ({_2})
@@ -5361,7 +5361,7 @@ mark-style	Japanese	Japońskie
 @msg	too many stitches for a VP3 file	za dużo ściegów na plik VP3
 @msg	{_1} is not an embroidery format	{_1} nie jest formatem haftu
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Ścieg:
 	Stitch Length:	Długość ściegu:
 	Fill Angle:	Kąt wypełnienia:

@@ -5426,7 +5426,7 @@ mark-style	Japanese	Japonesas
 @msg	too many stitches for a VP3 file	pontos demais para um arquivo VP3
 @msg	{_1} is not an embroidery format	{_1} não é um formato de bordado
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Ponto:
 	Stitch Length:	Comprimento do ponto:
 	Fill Angle:	Ângulo do preenchimento:

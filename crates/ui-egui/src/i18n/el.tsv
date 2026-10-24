@@ -5462,7 +5462,7 @@ effect	Points	Σημεία
 @msg	too many stitches for a VP3 file	πάρα πολλές βελονιές για αρχείο VP3
 @msg	{_1} is not an embroidery format	το {_1} δεν είναι μορφή κεντήματος
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Βελονιά:
 	Stitch Length:	Μήκος βελονιάς:
 	Fill Angle:	Γωνία γεμίσματος:

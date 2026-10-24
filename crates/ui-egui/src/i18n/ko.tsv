@@ -5086,7 +5086,7 @@ lighting	Light	광원
 @msg	too many stitches for a VP3 file	VP3 파일에 비해 땀이 너무 많습니다
 @msg	{_1} is not an embroidery format	{_1}은(는) 자수 형식이 아닙니다
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	땀:
 	Stitch Length:	땀 길이:
 	Fill Angle:	채우기 각도:

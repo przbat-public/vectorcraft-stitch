@@ -5123,7 +5123,7 @@ lighting	Light	Luce
 @msg	too many stitches for a VP3 file	troppi punti per un file VP3
 @msg	{_1} is not an embroidery format	{_1} non è un formato di ricamo
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Punto:
 	Stitch Length:	Lunghezza del punto:
 	Fill Angle:	Angolo di riempimento:

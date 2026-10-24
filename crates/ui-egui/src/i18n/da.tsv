@@ -5451,7 +5451,7 @@ swatch	Bright Violet	Kraftig violet
 @msg	too many stitches for a VP3 file	for mange sting til en VP3-fil
 @msg	{_1} is not an embroidery format	{_1} er ikke et broderiformat
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Sting:
 	Stitch Length:	Stinglængde:
 	Fill Angle:	Fyldvinkel:

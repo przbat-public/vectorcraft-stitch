@@ -5451,7 +5451,7 @@ swatch	Bright Violet	Violet cerah
 @msg	too many stitches for a VP3 file	terlalu banyak jahitan untuk file VP3
 @msg	{_1} is not an embroidery format	{_1} bukan format bordir
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Jahitan:
 	Stitch Length:	Panjang jahitan:
 	Fill Angle:	Sudut isian:

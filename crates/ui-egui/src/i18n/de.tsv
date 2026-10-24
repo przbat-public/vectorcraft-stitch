@@ -5089,7 +5089,7 @@ effect	Soft	Weich
 @msg	too many stitches for a VP3 file	zu viele Stiche für eine VP3-Datei
 @msg	{_1} is not an embroidery format	{_1} ist kein Stickformat
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Stich:
 	Stitch Length:	Stichlänge:
 	Fill Angle:	Füllwinkel:

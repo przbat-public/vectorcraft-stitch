@@ -645,6 +645,8 @@ fn expanded_node(d: &mut Document, mut n: Node, brushes: &[vectorcraft_brush::Br
                 };
                 effects::expand_outlined(Some(&*d), &v, symbol.as_deref()).map(|mut m| {
                     expand_pieces(d, &mut m, true, brushes, &mut stroke_art);
+                    // VectorCraft Stitch: the cut after the object on what stands for it.
+                    super::embroidery::derive::outlined(&v, &mut m);
                     m
                 })
             };

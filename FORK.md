@@ -390,7 +390,8 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   `of`, `style_of`'s text arm, given in `apply`: Pathfinder, Offset Path, Shape Builder, Divide
   Objects Below, Split Into Grid) and the `Expanding` around `assemble` in `outline_strokes`
   (Outline Stroke); in `cmd/effectcmd.rs`, `derive::expand_leaf` for `effects::expand_leaf` in
-  `expanded_node` and `derive::expand_art` for `effects::expand_art` in `expand_pieces` (Expand
+  `expanded_node` and `derive::expand_art` for `effects::expand_art` in `expand_pieces`, and `derive::outlined` after
+  the outlines' `expand_pieces` in `expanded_node` (Expand
   Appearance at any depth, and the embroidery walk's copy of the document as it prints; an
   expanded path's pieces also take its bounding box's angle, so that a stroke's outline turns its
   unset rows as the path did); in `cmd/typecmd.rs`'s

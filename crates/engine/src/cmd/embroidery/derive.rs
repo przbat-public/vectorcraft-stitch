@@ -13,7 +13,7 @@
 //!   the object to what stands for the object: Release Compound Path ([`released`]), Create
 //!   Outlines ([`outlined_type`]), Outline Stroke and Expand Appearance ([`Expanding`], through
 //!   [`expand_leaf`] for every path it expands, also what the walk sews an expanded appearance's
-//!   pieces with), Ungroup ([`ungrouped`]: the group's cut to
+//!   pieces with; [`outlined`] for what it expands through its outlines), Ungroup ([`ungrouped`]: the group's cut to
 //!   its last member, so the cut stays after the same stitches) and Break Link ([`unlinked`]).
 
 use std::sync::Arc;
@@ -157,6 +157,35 @@ pub(crate) fn expand_art(d: &mut Document, n: &mut Node, stroke_art: StrokeArt) 
     for c in n.children_mut().into_iter().flatten() {
         expand_art(d, Arc::make_mut(c), stroke_art);
     }
+}
+
+/// What Expand Appearance made of `n` through its outlines (a symbol instance with an effect, type,
+/// a live object, a path whose Transform effect copies it): `result` stands for `n` and takes the
+/// cut after it (and what a newer version kept), so that the thread is cut once, after all of it.
+/// A path's copies each held its settings, the cut too: it goes from them to `result`. A symbol's
+/// art keeps the settings it has in the symbol.
+pub(crate) fn outlined(n: &Node, result: &mut Node) {
+    fn uncut(n: &mut Node) {
+        if let Some(e) = n.extras().embroidery.as_deref().filter(|e| e.trim_after) {
+            let mut e = e.clone();
+            e.trim_after = false;
+            n.extras_mut().embroidery = (!e.is_empty()).then(|| Box::new(e));
+        }
+        for c in n.children_mut().into_iter().flatten() {
+            uncut(Arc::make_mut(c));
+        }
+    }
+    let Some(e) = n.extras().embroidery.as_deref() else { return };
+    if matches!(n.kind, NodeKind::Path { .. } | NodeKind::Compound { .. }) {
+        uncut(result);
+    }
+    let Some(stand_in) = whole(e) else { return };
+    let mut own = result.extras().embroidery.as_deref().cloned().unwrap_or_default();
+    own.trim_after |= stand_in.trim_after;
+    for (k, v) in stand_in.extra {
+        own.extra.entry(k).or_insert(v);
+    }
+    result.extras_mut().embroidery = Some(Box::new(own));
 }
 
 /// An object about to be expanded into pieces (Outline Stroke, Expand Appearance, the walk's copy

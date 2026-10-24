@@ -312,3 +312,24 @@ fn a_brushs_art_takes_the_strokes_settings_on_every_path() {
     });
     assert!(stroke_paths >= 2, "every path of the brush's art: {stroke_paths}");
 }
+
+/// Expand Appearance of a symbol instance with an effect of its own: what stands for it keeps the
+/// cut after it, and the walk cuts once after it, expanded or not.
+#[test]
+fn an_expanded_instance_keeps_the_cut_after_it() {
+    let mut s = blank();
+    let art = rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
+    run(&mut s, "select.set", json!({"ids": [art]}));
+    let instance = run(&mut s, "symbol.new", json!({"name": "Badge"}))["id"].as_u64().unwrap();
+    run(&mut s, "effect.apply", json!({"effect": "distort.roughen", "ids": [instance]}));
+    let mut cut = Embroidery::default();
+    cut.set_trim_after(true);
+    give(&mut s, instance, &cut);
+    // Another object of the colour a short jump after it: only a cut asked for cuts there.
+    rect(&mut s, "#cc2222", 70.0, 20.0, 20.0, 20.0);
+    let trims = |s: &mut Session| run(s, "embroidery.stats", json!({}))["trims"].as_u64().unwrap();
+    assert_eq!(trims(&mut s), 1, "sewn as it prints");
+    run(&mut s, "effect.expandAppearance", json!({"ids": [instance]}));
+    assert!(embroidery(&s, instance).trim_after, "on what stands for it");
+    assert_eq!(trims(&mut s), 1, "expanded: one cut");
+}

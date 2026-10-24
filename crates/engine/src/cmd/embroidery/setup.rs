@@ -335,7 +335,8 @@ fn resolved_machine(m: Option<&MachineSettings>) -> ResolvedMachine {
     }
 }
 
-pub(super) fn settings(s: &mut Session, _: &Value) -> Result<Value> {
+pub(super) fn settings(s: &mut Session, p: &Value) -> Result<Value> {
+    super::only(&*object(p, "embroidery.settings")?, &[], "embroidery.settings")?;
     settings_json(&s.doc()?.doc)
 }
 

@@ -5401,8 +5401,8 @@ theme	Appearance	Външен вид
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	дължината за срязване е по-малка от дължината на прехода, затова преходите се срязват още от дължината на прехода
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	настройките за бродиране на някои обекти съдържат такива, които тази версия не чете (от по-нова версия): те се запазват, а обектите се бродират без тях
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	някои настройки за бродиране на обекти са извън това, което тази версия бродира: всяка се бродира с най-близката стойност, която приема
-@msg	none of these objects has a `{_1}`	нито един от тези обекти няма `{_1}`
-@msg	none of these objects takes embroidery settings	нито един от тези обекти не приема настройки за бродиране
+@msg	none of these objects takes settings for its `{_1}`: {_2}	нито един от тези обекти не приема настройки за своя `{_1}`: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	нито един от тези обекти не приема настройки за бродиране: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	обект {_1} не приема настройки за бродиране ({_2})
 @msg	object {_1} is a group: give one of its objects	обект {_1} е група: посочете един от обектите в нея
 @msg	object {_1} has no `{_2}`	обект {_1} няма `{_2}`

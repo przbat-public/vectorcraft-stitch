@@ -5447,8 +5447,8 @@ mark-style	Japanese	Japonské
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	délka střihu je kratší než délka skoku, proto se skoky stříhají už od délky skoku
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	nastavení vyšívání některých objektů obsahuje některá, která tato verze nečte (z novější verze): zůstávají zachována a objekty se vyšívají bez nich
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	některá nastavení vyšívání objektů leží mimo to, co tato verze vyšívá: každé se vyšívá s nejbližší hodnotou, kterou přijímá
-@msg	none of these objects has a `{_1}`	žádný z těchto objektů nemá `{_1}`
-@msg	none of these objects takes embroidery settings	žádný z těchto objektů nepřijímá nastavení vyšívání
+@msg	none of these objects takes settings for its `{_1}`: {_2}	žádný z těchto objektů nepřijímá nastavení pro svůj `{_1}`: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	žádný z těchto objektů nepřijímá nastavení vyšívání: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	objekt {_1} nepřijímá nastavení vyšívání ({_2})
 @msg	object {_1} is a group: give one of its objects	objekt {_1} je skupina: zadejte jeden z jejích objektů
 @msg	object {_1} has no `{_2}`	objekt {_1} nemá `{_2}`

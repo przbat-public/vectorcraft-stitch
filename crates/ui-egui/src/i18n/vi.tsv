@@ -5041,8 +5041,8 @@ theme	Appearance	Giao diện
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	độ dài cắt chỉ ngắn hơn độ dài bước nhảy, nên các bước nhảy được cắt chỉ ngay từ độ dài bước nhảy
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	cài đặt thêu của một số đối tượng có các mục mà phiên bản này không đọc được (từ phiên bản mới hơn): chúng được giữ lại, và các đối tượng đó được thêu mà không có chúng
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	một số cài đặt thêu của đối tượng nằm ngoài phạm vi phiên bản này thêu được: mỗi cài đặt được thêu với giá trị gần nhất mà nó nhận
-@msg	none of these objects has a `{_1}`	không đối tượng nào trong số này có `{_1}`
-@msg	none of these objects takes embroidery settings	không đối tượng nào trong số này nhận thiết lập thêu
+@msg	none of these objects takes settings for its `{_1}`: {_2}	không đối tượng nào trong số này nhận thiết lập cho `{_1}` của nó: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	không đối tượng nào trong số này nhận thiết lập thêu: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	đối tượng {_1} không nhận thiết lập thêu ({_2})
 @msg	object {_1} is a group: give one of its objects	đối tượng {_1} là một nhóm: hãy chỉ định một đối tượng trong nhóm
 @msg	object {_1} has no `{_2}`	đối tượng {_1} không có `{_2}`

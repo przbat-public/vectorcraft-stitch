@@ -112,9 +112,15 @@ fn set_takes_a_groups_objects_and_lists_what_it_skips() {
     let instance = run(&mut s, "symbol.new", json!({"name": "Badge"}))["id"].as_u64().unwrap();
     let r = run(&mut s, "embroidery.set", json!({"ids": [instance, b], "part": "fill", "angle": 20}));
     assert_eq!(r["skipped"], json!([{"id": instance, "reason": "symbolInstance"}]));
-    // Nothing given takes settings: refused.
-    let e = s.execute("embroidery.set", &json!({"ids": [text], "part": "stroke", "angle": 3})).unwrap_err();
-    assert!(e.to_string().contains("none of these objects"), "{e}");
+    // Nothing given takes settings: refused, saying why for each.
+    let e = s.execute("embroidery.set", &json!({"ids": [text], "part": "stroke", "angle": 3})).unwrap_err().to_string();
+    assert!(e.contains("none of these objects takes settings for its `stroke`") && e.contains(&format!("{text} (type)")), "{e}");
+    let e = s.execute("embroidery.copyFrom", &json!({"source": b, "ids": [b]})).unwrap_err().to_string();
+    assert!(e.contains("the source alone"), "{e}");
+    let e = s.execute("embroidery.settings", &json!({"palete": "pec"})).unwrap_err().to_string();
+    assert!(e.contains("takes no parameters"), "{e}");
+    let e = s.execute("embroidery.applyFabric", &json!({"key": ["pull"]})).unwrap_err().to_string();
+    assert!(e.contains("did you mean `keys`"), "{e}");
 }
 
 /// `embroidery.reset` unsets the objects' values on both parts, or one, or the keys named; the

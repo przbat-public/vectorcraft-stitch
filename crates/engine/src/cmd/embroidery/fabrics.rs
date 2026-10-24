@@ -13,9 +13,9 @@ use vectorcraft_stitch::fabric::{Basis, DEFAULT_FABRIC, FABRICS, Fabric, ONE_FAM
 
 use super::objects::{edit_each, given, skipped_json, takers, visit_takers};
 use super::setup::Overrides;
-use super::{edit_counted, object};
+use super::{edit_counted, object, only};
 use crate::cmd::bad;
-use crate::{EngineError, Result, Session};
+use crate::{Result, Session};
 
 /// The undo step `embroidery.applyFabric` makes.
 pub(crate) const APPLY: &str = "Apply Embroidery Fabric to Objects";
@@ -139,9 +139,7 @@ fn fabric_json(f: &Fabric) -> Value {
 /// `embroidery.fabrics`: the presets, each value with what it rests on.
 pub(super) fn fabrics(_: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.fabrics";
-    if let Some(k) = object(p, C)?.keys().next() {
-        return Err(bad(C, format!("unknown parameter `{k}`; the command takes no parameters")));
-    }
+    only(&*object(p, C)?, &[], C)?;
     Ok(json!({"default": DEFAULT_FABRIC, "caveat": ONE_FAMILY, "fabrics": FABRICS.iter().map(fabric_json).collect::<Vec<_>>()}))
 }
 
@@ -211,9 +209,7 @@ fn unset_in_art(n: &mut Arc<Node>, keys: &[PartKey]) -> usize {
 pub(super) fn apply_fabric(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.applyFabric";
     let o = object(p, C)?;
-    if let Some(k) = o.keys().find(|k| !matches!(k.as_str(), "ids" | "keys")) {
-        return Err(bad(C, format!("unknown parameter `{k}`; the command takes: ids, keys")));
-    }
+    only(&o, &["ids", "keys"], C)?;
     let keys = match o.get("keys").filter(|v| !v.is_null()) {
         None => FABRIC_KEYS.to_vec(),
         Some(v) => {
@@ -236,7 +232,7 @@ pub(super) fn apply_fabric(s: &mut Session, p: &Value) -> Result<Value> {
     let chosen = o.get("ids").is_some_and(|v| !v.is_null()) || !s.doc()?.selection.objects.is_empty();
     let (take, skipped) = if chosen { given(s, p, "to apply the fabric to", C)? } else { (every_object(&s.doc()?.doc), Vec::new()) };
     if take.is_empty() && !skipped.is_empty() {
-        return Err(EngineError::Other("none of these objects takes embroidery settings".into()));
+        return Err(super::objects::none_taken(&skipped, None));
     }
     // The whole document's objects include its symbols' art, which its instances sew.
     let in_symbols = if chosen { 0 } else { symbol_objects(&s.doc()?.doc).len() };

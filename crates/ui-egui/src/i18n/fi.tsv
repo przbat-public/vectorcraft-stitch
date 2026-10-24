@@ -5411,8 +5411,8 @@ mark-style	Japanese	Japanilainen
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	leikkauksen pituus on lyhyempi kuin hypyn pituus, joten hypyt leikataan jo hypyn pituudesta alkaen
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	joidenkin objektien kirjonta-asetuksissa on joitakin, joita tämä versio ei lue (uudemmasta versiosta): ne säilytetään, ja objektit kirjotaan ilman niitä
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	osa objektien kirjonta-asetuksista on sen ulkopuolella, mitä tämä versio kirjoo: kukin kirjotaan lähimmällä arvolla, jonka se hyväksyy
-@msg	none of these objects has a `{_1}`	millään näistä objekteista ei ole `{_1}`
-@msg	none of these objects takes embroidery settings	mikään näistä objekteista ei ota kirjonta-asetuksia
+@msg	none of these objects takes settings for its `{_1}`: {_2}	mikään näistä objekteista ei ota asetuksia osalle `{_1}`: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	mikään näistä objekteista ei ota kirjonta-asetuksia: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	objekti {_1} ei ota kirjonta-asetuksia ({_2})
 @msg	object {_1} is a group: give one of its objects	objekti {_1} on ryhmä: anna jokin sen objekteista
 @msg	object {_1} has no `{_2}`	objektilla {_1} ei ole `{_2}`

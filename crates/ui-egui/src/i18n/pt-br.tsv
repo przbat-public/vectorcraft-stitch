@@ -5364,8 +5364,8 @@ mark-style	Japanese	Japonesas
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	o comprimento do corte é menor que o comprimento do salto, por isso os saltos são cortados já a partir do comprimento do salto
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	as configurações de bordado de alguns objetos incluem algumas que esta versão não lê (de uma versão mais recente): elas são mantidas, e esses objetos são bordados sem elas
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	algumas configurações de bordado de objetos ficam fora do que esta versão borda: cada uma é bordada com o valor mais próximo que aceita
-@msg	none of these objects has a `{_1}`	nenhum destes objetos tem `{_1}`
-@msg	none of these objects takes embroidery settings	nenhum destes objetos aceita configurações de bordado
+@msg	none of these objects takes settings for its `{_1}`: {_2}	nenhum destes objetos aceita configurações para seu `{_1}`: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	nenhum destes objetos aceita configurações de bordado: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	o objeto {_1} não aceita configurações de bordado ({_2})
 @msg	object {_1} is a group: give one of its objects	o objeto {_1} é um grupo: indique um de seus objetos
 @msg	object {_1} has no `{_2}`	o objeto {_1} não tem `{_2}`

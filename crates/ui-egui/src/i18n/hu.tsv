@@ -5433,8 +5433,8 @@ imageTrace	Outline	Körvonal
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	a vágás hossza rövidebb az ugrás hosszánál, ezért az ugrások már az ugrás hosszától kezdve el lesznek vágva
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	egyes objektumok hímzési beállításai között van olyan, amelyet ez a verzió nem olvas (újabb verzióból): megmaradnak, és az objektumok nélkülük lesznek hímezve
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	egyes objektumok néhány hímzési beállítása kívül esik azon, amit ez a verzió hímez: mindegyik a legközelebbi elfogadott értékkel lesz hímezve
-@msg	none of these objects has a `{_1}`	ezen objektumok egyikének sincs `{_1}`
-@msg	none of these objects takes embroidery settings	ezen objektumok egyike sem fogad hímzési beállításokat
+@msg	none of these objects takes settings for its `{_1}`: {_2}	ezen objektumok egyike sem fogad beállításokat a `{_1}` részéhez: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	ezen objektumok egyike sem fogad hímzési beállításokat: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	a(z) {_1} objektum nem fogad hímzési beállításokat ({_2})
 @msg	object {_1} is a group: give one of its objects	a(z) {_1} objektum csoport: adja meg az egyik objektumát
 @msg	object {_1} has no `{_2}`	a(z) {_1} objektumnak nincs `{_2}`

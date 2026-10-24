@@ -5403,8 +5403,8 @@ theme	Appearance	Utseende
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	klipplängden är kortare än hopplängden, så hopp klipps redan från hopplängden
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	vissa objekts broderiinställningar innehåller några som den här versionen inte läser (från en nyare version): de behålls, och objekten broderas utan dem
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	några av objektens broderiinställningar ligger utanför vad den här versionen broderar: var och en broderas med det närmaste värde den tar
-@msg	none of these objects has a `{_1}`	inget av dessa objekt har en `{_1}`
-@msg	none of these objects takes embroidery settings	inget av dessa objekt tar broderiinställningar
+@msg	none of these objects takes settings for its `{_1}`: {_2}	inget av dessa objekt tar inställningar för sin `{_1}`: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	inget av dessa objekt tar broderiinställningar: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	objekt {_1} tar inga broderiinställningar ({_2})
 @msg	object {_1} is a group: give one of its objects	objekt {_1} är en grupp: ange ett av dess objekt
 @msg	object {_1} has no `{_2}`	objekt {_1} har ingen `{_2}`

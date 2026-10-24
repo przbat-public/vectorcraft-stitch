@@ -5431,8 +5431,8 @@ swatch	Bright Violet	Felviolet
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	de kniplengte is korter dan de spronglengte, dus worden sprongen al vanaf de spronglengte geknipt
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	de borduurinstellingen van sommige objecten bevatten er enkele die deze versie niet leest (uit een nieuwere versie): ze blijven bewaard, en die objecten worden zonder ze geborduurd
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	sommige borduurinstellingen van objecten vallen buiten wat deze versie borduurt: elk wordt geborduurd met de dichtstbijzijnde waarde die het aanneemt
-@msg	none of these objects has a `{_1}`	geen van deze objecten heeft een `{_1}`
-@msg	none of these objects takes embroidery settings	geen van deze objecten neemt borduurinstellingen aan
+@msg	none of these objects takes settings for its `{_1}`: {_2}	geen van deze objecten neemt instellingen voor zijn `{_1}` aan: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	geen van deze objecten neemt borduurinstellingen aan: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	object {_1} neemt geen borduurinstellingen aan ({_2})
 @msg	object {_1} is a group: give one of its objects	object {_1} is een groep: geef een van zijn objecten op
 @msg	object {_1} has no `{_2}`	object {_1} heeft geen `{_2}`

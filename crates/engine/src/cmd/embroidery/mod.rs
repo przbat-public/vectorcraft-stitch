@@ -402,6 +402,19 @@ fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({ "on": on, "changed": changed }))
 }
 
+/// The keys of command `cmd`'s params `o` other than `own`, refused, naming the nearest of `own`.
+pub(super) fn only(o: &Map<String, Value>, own: &[&str], cmd: &str) -> Result<()> {
+    let Some(k) = o.keys().find(|k| !own.contains(&k.as_str())) else { return Ok(()) };
+    Err(bad(
+        cmd,
+        match crate::cmd::params::nearest(k, own) {
+            Some(near) => format!("unknown parameter `{k}`; did you mean `{near}`?"),
+            None if own.is_empty() => format!("unknown parameter `{k}`: {cmd} takes no parameters"),
+            None => format!("unknown parameter `{k}`: {cmd} takes {}", own.join(", ")),
+        },
+    ))
+}
+
 /// Edit the active document as `f` says, on a copy, in one undo step labelled `label` when `f`
 /// changed something: `f` answers how many objects it changed, and none takes no step.
 fn edit_counted(s: &mut Session, label: &str, f: impl FnOnce(&mut Document) -> Result<usize>) -> Result<usize> {

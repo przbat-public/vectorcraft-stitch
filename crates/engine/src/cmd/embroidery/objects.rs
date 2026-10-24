@@ -20,7 +20,7 @@ use vectorcraft_geom::Point;
 use super::options::Others;
 use super::resolve::Stitch;
 use super::vocabulary::{self, Place};
-use super::{Options, edit_counted, object};
+use super::{Options, edit_counted, object, only};
 use crate::cmd::{bad, targets};
 use crate::{EngineError, Result, Session};
 
@@ -284,7 +284,7 @@ pub(super) fn set(s: &mut Session, p: &Value) -> Result<Value> {
     let (take, no_part): (Vec<NodeId>, Vec<NodeId>) = take.into_iter().partition(|id| d.node(*id).is_some_and(|n| has_part(n, kind)));
     skipped.extend(no_part.into_iter().map(|id| (id, Skip::NoPart)));
     if take.is_empty() {
-        return Err(EngineError::Other(format!("none of these objects has a `{}`", kind.id())));
+        return Err(none_taken(&skipped, Some(kind)));
     }
     let changed = edit_counted(s, SET, |d| {
         edit_each(d, &take, |e| {
@@ -338,12 +338,21 @@ fn keys_param(v: Option<&Value>, cmd: &str) -> Result<Vec<PartKey>> {
     Ok(keys)
 }
 
-/// The keys of a command's params other than `own`, refused.
-fn only(o: &Map<String, Value>, own: &[&str], cmd: &str) -> Result<()> {
-    match o.keys().find(|k| !own.contains(&k.as_str())) {
-        Some(k) => Err(bad(cmd, format!("unknown parameter `{k}`: {cmd} takes {}", own.join(", ")))),
-        None => Ok(()),
+/// The refusal when none of the objects given takes settings (for part `part`, or at all): each
+/// skipped one's id with why (the first [`NAMED`], then `…`), ids and reason ids that read alike in
+/// every language.
+pub(super) fn none_taken(skipped: &[(NodeId, Skip)], part: Option<PartKind>) -> EngineError {
+    /// The skipped objects a refusal names: enough to see why, short enough to read.
+    const NAMED: usize = 5;
+    let mut named: Vec<String> = skipped.iter().take(NAMED).map(|(id, why)| format!("{} ({})", id.0, why.id())).collect();
+    if skipped.len() > NAMED {
+        named.push("…".into());
     }
+    let named = named.join(", ");
+    EngineError::Other(match part {
+        Some(kind) => format!("none of these objects takes settings for its `{}`: {named}", kind.id()),
+        None => format!("none of these objects takes embroidery settings: {named}"),
+    })
 }
 
 /// `embroidery.reset`: the objects' own values of `keys` unset, on `part` or both.
@@ -355,7 +364,7 @@ pub(super) fn reset(s: &mut Session, p: &Value) -> Result<Value> {
     let keys = keys_param(o.get("keys"), C)?;
     let (take, skipped) = given(s, p, "to reset", C)?;
     if take.is_empty() {
-        return Err(EngineError::Other("none of these objects takes embroidery settings".into()));
+        return Err(none_taken(&skipped, None));
     }
     let changed = edit_counted(s, RESET, |d| {
         edit_each(d, &take, |e| {
@@ -485,8 +494,11 @@ pub(super) fn copy_from(s: &mut Session, p: &Value) -> Result<Value> {
     let (take, no_part): (Vec<NodeId>, Vec<NodeId>) =
         take.into_iter().filter(|id| *id != source).partition(|id| d.node(*id).is_some_and(|n| parts.iter().any(|k| has_part(n, *k))));
     skipped.extend(no_part.into_iter().map(|id| (id, Skip::NoPart)));
+    if take.is_empty() && skipped.is_empty() {
+        return Err(bad(C, "the objects given are the source alone: give others to copy onto"));
+    }
     if take.is_empty() {
-        return Err(EngineError::Other("none of these objects takes embroidery settings".into()));
+        return Err(none_taken(&skipped, None));
     }
     let has: Vec<(NodeId, Vec<PartKind>)> =
         take.iter().map(|id| (*id, parts.iter().copied().filter(|k| d.node(*id).is_some_and(|n| has_part(n, *k))).collect())).collect();

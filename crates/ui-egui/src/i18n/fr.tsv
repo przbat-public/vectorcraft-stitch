@@ -5446,8 +5446,8 @@ theme	Appearance	Apparence
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	la longueur de coupe est plus courte que la longueur de saut, donc les sauts sont coupés dès la longueur de saut
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	les réglages de broderie de certains objets en contiennent que cette version ne lit pas (d’une version plus récente) : ils sont conservés, et ces objets sont brodés sans eux
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	certains réglages de broderie d’objets sortent de ce que cette version brode : chacun est brodé à la valeur la plus proche qu’il accepte
-@msg	none of these objects has a `{_1}`	aucun de ces objets n’a de `{_1}`
-@msg	none of these objects takes embroidery settings	aucun de ces objets n’accepte de paramètres de broderie
+@msg	none of these objects takes settings for its `{_1}`: {_2}	aucun de ces objets n’accepte de paramètres pour son `{_1}` : {_2}
+@msg	none of these objects takes embroidery settings: {_1}	aucun de ces objets n’accepte de paramètres de broderie : {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	l’objet {_1} n’accepte pas de paramètres de broderie ({_2})
 @msg	object {_1} is a group: give one of its objects	l’objet {_1} est un groupe : indiquez l’un de ses objets
 @msg	object {_1} has no `{_2}`	l’objet {_1} n’a pas de `{_2}`

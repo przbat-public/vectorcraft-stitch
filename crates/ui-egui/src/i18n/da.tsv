@@ -5388,8 +5388,8 @@ swatch	Bright Violet	Kraftig violet
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	klippelængden er kortere end springlængden, så spring klippes allerede fra springlængden
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	nogle objekters broderiindstillinger indeholder nogle, som denne version ikke læser (fra en nyere version): de bevares, og objekterne broderes uden dem
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	nogle af objekternes broderiindstillinger ligger uden for, hvad denne version broderer: hver broderes med den nærmeste værdi, den tager
-@msg	none of these objects has a `{_1}`	ingen af disse objekter har en `{_1}`
-@msg	none of these objects takes embroidery settings	ingen af disse objekter tager broderiindstillinger
+@msg	none of these objects takes settings for its `{_1}`: {_2}	ingen af disse objekter tager indstillinger for sin `{_1}`: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	ingen af disse objekter tager broderiindstillinger: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	objekt {_1} tager ingen broderiindstillinger ({_2})
 @msg	object {_1} is a group: give one of its objects	objekt {_1} er en gruppe: angiv et af dens objekter
 @msg	object {_1} has no `{_2}`	objekt {_1} har ingen `{_2}`

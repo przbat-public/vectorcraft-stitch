@@ -5024,8 +5024,8 @@ lighting	Light	광원
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	실 자르기 길이가 점프 길이보다 짧으므로 점프는 점프 길이부터 실을 자릅니다
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	일부 개체의 자수 설정에 이 버전이 읽지 못하는 항목(새 버전의 것)이 있습니다: 그대로 보존되며 해당 개체는 그 항목 없이 놓입니다
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	개체의 자수 설정 일부가 이 버전이 놓을 수 있는 범위를 벗어납니다: 각각 허용되는 가장 가까운 값으로 놓입니다
-@msg	none of these objects has a `{_1}`	이 개체 중 `{_1}`이(가) 있는 개체가 없습니다
-@msg	none of these objects takes embroidery settings	이 개체 중 자수 설정을 받는 개체가 없습니다
+@msg	none of these objects takes settings for its `{_1}`: {_2}	이 개체 중 `{_1}` 설정을 받는 개체가 없습니다: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	이 개체 중 자수 설정을 받는 개체가 없습니다: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	개체 {_1}은(는) 자수 설정을 받지 않습니다({_2})
 @msg	object {_1} is a group: give one of its objects	개체 {_1}은(는) 그룹입니다: 그 안의 개체 하나를 지정하세요
 @msg	object {_1} has no `{_2}`	개체 {_1}에 `{_2}`이(가) 없습니다

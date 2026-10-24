@@ -5538,8 +5538,8 @@ axis	Y Axis	Y ekseni
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	kesme uzunluğu atlama uzunluğundan kısa, bu yüzden atlamalar daha atlama uzunluğundan itibaren kesilir
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	bazı nesnelerin nakış ayarları bu sürümün okumadığı ayarlar içeriyor (daha yeni bir sürümden): bunlar korunur ve bu nesneler onlarsız işlenir
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	nesnelerin bazı nakış ayarları bu sürümün işleyebildiği aralığın dışında: her biri kabul ettiği en yakın değerle işlenir
-@msg	none of these objects has a `{_1}`	bu nesnelerin hiçbirinde `{_1}` yok
-@msg	none of these objects takes embroidery settings	bu nesnelerin hiçbiri nakış ayarı almıyor
+@msg	none of these objects takes settings for its `{_1}`: {_2}	bu nesnelerin hiçbiri `{_1}` için ayar almıyor: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	bu nesnelerin hiçbiri nakış ayarı almıyor: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	{_1} nesnesi nakış ayarı almıyor ({_2})
 @msg	object {_1} is a group: give one of its objects	{_1} nesnesi bir grup: nesnelerinden birini verin
 @msg	object {_1} has no `{_2}`	{_1} nesnesinde `{_2}` yok

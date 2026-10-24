@@ -5041,8 +5041,8 @@ lighting	Light	Світло
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	довжина обрізання коротша за довжину переходу, тому переходи обрізаються вже від довжини переходу
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	налаштування вишивки деяких об’єктів містять такі, які ця версія не читає (з новішої версії): вони зберігаються, а ці об’єкти вишиваються без них
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	деякі налаштування вишивки об’єктів виходять за межі того, що вишиває ця версія: кожне вишивається з найближчим допустимим значенням
-@msg	none of these objects has a `{_1}`	жоден із цих об’єктів не має `{_1}`
-@msg	none of these objects takes embroidery settings	жоден із цих об’єктів не приймає параметрів вишивки
+@msg	none of these objects takes settings for its `{_1}`: {_2}	жоден із цих об’єктів не приймає параметрів для свого `{_1}`: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	жоден із цих об’єктів не приймає параметрів вишивки: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	об’єкт {_1} не приймає параметрів вишивки ({_2})
 @msg	object {_1} is a group: give one of its objects	об’єкт {_1} — група: вкажіть один із її об’єктів
 @msg	object {_1} has no `{_2}`	об’єкт {_1} не має `{_2}`

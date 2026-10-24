@@ -5399,8 +5399,8 @@ effect	Points	Σημεία
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	το μήκος κοπής είναι μικρότερο από το μήκος άλματος, οπότε τα άλματα κόβονται ήδη από το μήκος άλματος
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	οι ρυθμίσεις κεντήματος ορισμένων αντικειμένων περιέχουν κάποιες που αυτή η έκδοση δεν διαβάζει (από νεότερη έκδοση): διατηρούνται, και τα αντικείμενα κεντιούνται χωρίς αυτές
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	ορισμένες ρυθμίσεις κεντήματος αντικειμένων βρίσκονται εκτός όσων κεντά αυτή η έκδοση: η καθεμία κεντιέται με την πλησιέστερη τιμή που δέχεται
-@msg	none of these objects has a `{_1}`	κανένα από αυτά τα αντικείμενα δεν έχει `{_1}`
-@msg	none of these objects takes embroidery settings	κανένα από αυτά τα αντικείμενα δεν δέχεται ρυθμίσεις κεντήματος
+@msg	none of these objects takes settings for its `{_1}`: {_2}	κανένα από αυτά τα αντικείμενα δεν δέχεται ρυθμίσεις για το `{_1}`: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	κανένα από αυτά τα αντικείμενα δεν δέχεται ρυθμίσεις κεντήματος: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	το αντικείμενο {_1} δεν δέχεται ρυθμίσεις κεντήματος ({_2})
 @msg	object {_1} is a group: give one of its objects	το αντικείμενο {_1} είναι ομάδα: δώστε ένα από τα αντικείμενά της
 @msg	object {_1} has no `{_2}`	το αντικείμενο {_1} δεν έχει `{_2}`

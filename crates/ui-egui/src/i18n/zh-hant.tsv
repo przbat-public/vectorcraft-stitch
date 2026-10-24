@@ -5066,8 +5066,8 @@ lighting	Light	光源
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	剪線長度短於跳針長度，因此跳針從跳針長度起就會剪線
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	部分物件的刺繡設定中有此版本無法讀取的項目 (來自較新版本)：它們會被保留，這些物件刺繡時不使用它們
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	部分物件的刺繡設定超出此版本可刺繡的範圍：每項都以其可接受的最接近值刺繡
-@msg	none of these objects has a `{_1}`	這些物件都沒有 `{_1}`
-@msg	none of these objects takes embroidery settings	這些物件都不接受刺繡設定
+@msg	none of these objects takes settings for its `{_1}`: {_2}	這些物件都不接受其 `{_1}` 的設定：{_2}
+@msg	none of these objects takes embroidery settings: {_1}	這些物件都不接受刺繡設定：{_1}
 @msg	object {_1} takes no embroidery settings ({_2})	物件 {_1} 不接受刺繡設定 ({_2})
 @msg	object {_1} is a group: give one of its objects	物件 {_1} 是群組：請指定其中的一個物件
 @msg	object {_1} has no `{_2}`	物件 {_1} 沒有 `{_2}`

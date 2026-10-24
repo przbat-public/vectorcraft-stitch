@@ -5101,8 +5101,8 @@ lighting	Light	ライト
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	糸切りの長さがジャンプの長さより短いため、ジャンプはジャンプの長さから糸切りされます
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	一部のオブジェクトの刺繍設定に、このバージョンが読み取れないもの (新しいバージョンのもの) があります: 保持され、それらのオブジェクトはそれらなしで刺繍されます
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	オブジェクトの刺繍設定の一部が、このバージョンで刺繍できる範囲の外にあります: それぞれ受け付ける最も近い値で刺繍されます
-@msg	none of these objects has a `{_1}`	これらのオブジェクトのどれにも `{_1}` がありません
-@msg	none of these objects takes embroidery settings	これらのオブジェクトはどれも刺繍設定を受け付けません
+@msg	none of these objects takes settings for its `{_1}`: {_2}	これらのオブジェクトはどれも `{_1}` の設定を受け付けません: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	これらのオブジェクトはどれも刺繍設定を受け付けません: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	オブジェクト {_1} は刺繍設定を受け付けません ({_2})
 @msg	object {_1} is a group: give one of its objects	オブジェクト {_1} はグループです: その中のオブジェクトを指定してください
 @msg	object {_1} has no `{_2}`	オブジェクト {_1} には `{_2}` がありません

@@ -5027,8 +5027,8 @@ effect	Soft	Weich
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	die Schnittlänge ist kürzer als die Sprunglänge, daher werden Sprünge schon ab der Sprunglänge geschnitten
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	die Stickeinstellungen einiger Objekte enthalten welche, die diese Version nicht liest (aus einer neueren Version): sie bleiben erhalten, und die Objekte werden ohne sie gestickt
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	einige Stickeinstellungen von Objekten liegen außerhalb dessen, was diese Version stickt: jede wird mit dem nächstgelegenen Wert gestickt, den sie annimmt
-@msg	none of these objects has a `{_1}`	keines dieser Objekte hat `{_1}`
-@msg	none of these objects takes embroidery settings	keines dieser Objekte nimmt Stickeinstellungen an
+@msg	none of these objects takes settings for its `{_1}`: {_2}	keines dieser Objekte nimmt Einstellungen für `{_1}` an: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	keines dieser Objekte nimmt Stickeinstellungen an: {_1}
 @msg	object {_1} takes no embroidery settings ({_2})	Objekt {_1} nimmt keine Stickeinstellungen an ({_2})
 @msg	object {_1} is a group: give one of its objects	Objekt {_1} ist eine Gruppe: geben Sie eines ihrer Objekte an
 @msg	object {_1} has no `{_2}`	Objekt {_1} hat kein `{_2}`

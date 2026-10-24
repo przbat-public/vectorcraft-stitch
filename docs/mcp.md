@@ -5105,7 +5105,9 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   themselves (read only, as `resolved`).
 - `embroidery.fabrics {}` lists the fabric presets `{default, caveat, fabrics: [{id, label, values: {tatami, satin,
   stabilizer, topping, needlePoint, thickness}, sources: [{key, kind: "published"|"derived"|"estimate", name, url,
-  family, how}], estimates: [key…]}]}`; it needs no document. `embroidery.applyFabric {ids?, keys?}` unsets the objects'
+  family, how}], estimates: [key…]}]}`; it needs no document. `how` says how a derived value was worked out, why an
+  estimate is one, and, for a value published as one of BERNINA's fabric classes, which class (`the heavy woven class
+  (F8)`): which class a fabric is taken as is ours to say, as `caveat` also says. `embroidery.applyFabric {ids?, keys?}` unsets the objects'
   own values of the fabric's keys (the selection's, or with nothing selected every object's) and answers `{keys, changedCount, unchangedCount,
   skippedCount, skipped}`.
 - `embroidery.threads {…embroidery options, offset?, limit?}` lists the thread each colour block is sewn in, in sewing

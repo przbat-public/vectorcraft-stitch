@@ -233,7 +233,13 @@ Setup › Embroidery comes next).
   **One family.** Every value that changes from fabric to fabric in how the stitches are made comes
   from one family of software: Wilcom's own help and BERNINA's presets, and BERNINA's embroidery
   software is Wilcom's. No independent source confirms them: sew a test on the fabric. The rows'
-  base spacing (0.38 mm) is the one value two families give (Wilcom and Melco).
+  base spacing (0.38 mm) is the one value two families give (Wilcom and Melco). BERNINA gives its
+  values for eight classes of fabric (F1 light knit to F8 heavy woven) that name no fabrics: which
+  class each preset is taken as is ours to say, and each value says which (`embroidery.fabrics`'
+  `how`): cotton the medium woven class (F7), denim the heavy woven (F8), stretch knit the light
+  knit (F1), piqué the medium knit (F2), fleece the heavy knit (F3), silk the light woven (F6).
+  Cotton keeps the planner's own underlay rule, though its class sews an edge run and a tatami
+  layer under every fill, so that the default sews as a document without a fabric does.
 
   **Silk is an estimate.** Its stitch values are BERNINA's light woven class's (F6), and no source
   says that silk is that class (the project owner's choice, 2026-10-24: kept, each marked so):

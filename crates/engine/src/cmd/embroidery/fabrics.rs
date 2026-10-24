@@ -60,6 +60,7 @@ pub(crate) fn settings_of(f: &Fabric, color: Option<[u8; 3]>) -> FabricSettings 
 fn basis_json(key: &str, b: &Basis) -> Value {
     match b {
         Basis::Published(p) => json!({"key": key, "kind": "published", "name": p.name, "url": p.url, "family": p.family.id(), "how": null}),
+        Basis::PublishedFor(p, row) => json!({"key": key, "kind": "published", "name": p.name, "url": p.url, "family": p.family.id(), "how": row}),
         Basis::Derived(p, how) => json!({"key": key, "kind": "derived", "name": p.name, "url": p.url, "family": p.family.id(), "how": how}),
         Basis::Estimate(why) => json!({"key": key, "kind": "estimate", "name": null, "url": null, "family": null, "how": why}),
     }

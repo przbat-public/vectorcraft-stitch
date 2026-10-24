@@ -127,7 +127,6 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
     let progress = Progress { done: 0, total };
     let mut d = Digitizer {
         doc: printed,
-        drawn: doc,
         expanded: &sewable.expanded,
         opts,
         doc_layer: &doc_layer,
@@ -147,7 +146,6 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
         progress,
         occurrences: HashMap::new(),
         found: Found::default(),
-        turn: None,
     };
     d.run();
     notes.extend(d.found.notes().map(String::from));
@@ -192,8 +190,6 @@ struct Clip {
 struct Digitizer<'a> {
     /// The document as it prints ([`super::printed::sewable`]).
     doc: &'a Document,
-    /// The document as it is drawn: the objects expanded in `doc` as they are.
-    drawn: &'a Document,
     /// The objects expanded in it: a person selects each of them, whatever pieces it became.
     expanded: &'a HashSet<NodeId>,
     /// The export's options (or a read command's), the layer every unit's settings take after the
@@ -239,9 +235,6 @@ struct Digitizer<'a> {
     occurrences: HashMap<(NodeId, Part), usize>,
     /// What reading the objects' settings found that the plan says.
     found: Found,
-    /// How far the expanded object the walk is in is turned (its bounding box's angle), `None`
-    /// outside one: its pieces' fill angles turn with it.
-    turn: Option<f64>,
 }
 
 /// How far a plan has got: the units come to, of about how many ([`units_under`]).
@@ -306,8 +299,8 @@ impl<'a> Digitizer<'a> {
         };
         let part = kind.and_then(|k| n.extras().embroidery.as_deref()?.part(k));
         let object = part.map_or_else(PartLayer::default, |p| PartLayer::read(p, &mut self.found));
-        // An expanded object's pieces turn as the object does, whatever their own boxes.
-        UnitSettings::new(object, self.turn.unwrap_or(n.bbox_angle), self.opts, self.doc_layer)
+        // An expanded object's pieces have its box ([`super::derive::Expanding`]).
+        UnitSettings::new(object, n.bbox_angle, self.opts, self.doc_layer)
     }
 
     /// What the unit that sews `part` of `n` sews.
@@ -375,10 +368,9 @@ impl<'a> Digitizer<'a> {
         let added = self.seq.added();
         // The pieces an expanded object became are placed by it, as a symbol's art is by its
         // instance.
-        let (outer, outer_turn) = (self.instance, self.turn);
+        let outer = self.instance;
         if outer.is_none() && self.expanded.contains(&n.id) {
             self.instance = Some(n.id);
-            self.turn = self.drawn.node(n.id).map(|o| o.bbox_angle);
         }
         // What it leaves out is about it (or the instance placing it); a layer is no object.
         let outer_object = self.object;
@@ -387,7 +379,6 @@ impl<'a> Digitizer<'a> {
         }
         self.kind(n);
         self.instance = outer;
-        self.turn = outer_turn;
         self.object = outer_object;
         // An object (or group) that asks for it: the thread is cut after its last stitch.
         if n.extras().embroidery.as_deref().is_some_and(|e| e.trim_after) && self.seq.added() > added {

@@ -232,3 +232,97 @@ fn an_unset_angle_turns_with_its_object() {
     let back = plan_with(&s, json!({}));
     assert_eq!(sewn(&back, Style::Fill).params.unwrap().angle, sewn(&upright, Style::Fill).params.unwrap().angle);
 }
+
+/// The fill angles of every unit the plan sews as a fill area.
+fn fill_angles(plan: &DesignPlan) -> Vec<f64> {
+    plan.units.iter().filter(|u| u.sewn() == Some(Style::Fill)).filter_map(|u| u.params).map(|p| p.angle).collect()
+}
+
+/// A member of a group the walk expands (a drop shadow on the group, left off; a stroke of the
+/// group's own) turns its unset rows with its own box, as it does on its own.
+#[test]
+fn a_member_of_an_expanded_group_turns_with_its_own_box() {
+    let mut s = blank();
+    let id = shape(&mut s, 20.0, 20.0, 80.0, 40.0, 0.0);
+    run(&mut s, "object.rotate", json!({"ids": [id], "angle": 45}));
+    let group = run(&mut s, "object.group", json!({"ids": [id]}))["id"].as_u64().unwrap();
+    let alone = fill_angles(&plan_with(&s, json!({})));
+    assert!(alone.len() == 1 && (alone[0] - options::planner_angle(135.0 + 45.0)).abs() < 1e-9, "{alone:?}");
+    run(&mut s, "effect.apply", json!({"effect": "stylize.dropShadow", "ids": [group]}));
+    assert_eq!(fill_angles(&plan_with(&s, json!({}))), alone, "a drop shadow on the group");
+    run(&mut s, "edit.undo", json!({}));
+    run(&mut s, "paint.setStroke", json!({"color": "#2233cc"}));
+    run(&mut s, "appearance.addStroke", json!({"ids": [group]}));
+    assert!(fill_angles(&plan_with(&s, json!({}))).contains(&alone[0]), "a stroke of the group's own");
+}
+
+/// An object the walk expands (two fills, a stroke an effect reshapes) turned: each of its pieces,
+/// the stroke's outline included, turns its unset rows with the object.
+#[test]
+fn an_expanded_objects_pieces_turn_with_it() {
+    let mut s = blank();
+    let id = shape(&mut s, 20.0, 20.0, 80.0, 60.0, 3.0);
+    run(&mut s, "appearance.addFill", json!({"ids": [id]}));
+    let items = s.doc().unwrap().doc.node(NodeId(id)).unwrap().appearance.items.clone();
+    let stroke = items.iter().position(|i| matches!(i, vectorcraft_doc::AppearanceItem::Stroke(_))).unwrap();
+    run(&mut s, "effect.apply", json!({"effect": "distort.roughen", "ids": [id], "item": stroke}));
+    run(&mut s, "object.rotate", json!({"ids": [id], "angle": 30}));
+    let angles = fill_angles(&plan_with(&s, json!({})));
+    assert_eq!(angles.len(), 3, "two fills and the stroke's area");
+    assert!(angles.iter().all(|a| (a - options::planner_angle(135.0 + 30.0)).abs() < 1e-9), "{angles:?}");
+}
+
+/// A symbol placed twice, one instance turned: the turned instance's art turns its unset rows with
+/// it, the other sews as the art does unplaced; art the walk expands (two fills) and an instance
+/// with an effect of its own (its art turned in the symbol too) alike.
+#[test]
+fn a_symbols_art_turns_its_unset_rows_with_its_instance() {
+    let mut s = blank();
+    let id = shape(&mut s, 20.0, 20.0, 80.0, 40.0, 0.0);
+    let unplaced = fill_angles(&plan_with(&s, json!({})));
+    run(&mut s, "select.set", json!({"ids": [id]}));
+    let first = run(&mut s, "symbol.new", json!({"name": "Badge"}))["id"].as_u64().unwrap();
+    let second = run(&mut s, "symbol.place", json!({"name": "Badge", "x": 200, "y": 200}))["id"].as_u64().unwrap();
+    run(&mut s, "object.rotate", json!({"ids": [second], "angle": 30}));
+    let of = |plan: &DesignPlan, instance: u64| -> Vec<f64> {
+        let units = plan.units.iter().filter(|u| u.origin.instance == Some(NodeId(instance)) && u.sewn() == Some(Style::Fill));
+        units.filter_map(|u| u.params).map(|p| p.angle).collect()
+    };
+    let turned = options::planner_angle(135.0 + 30.0);
+    let plan = plan_with(&s, json!({}));
+    assert_eq!(of(&plan, first), unplaced, "the upright instance as the art unplaced");
+    assert!(of(&plan, second).iter().all(|a| (a - turned).abs() < 1e-9), "{:?}", of(&plan, second));
+    // Art the walk expands: two fills.
+    fn second_fill(n: &mut vectorcraft_doc::Node) {
+        if matches!(n.kind, vectorcraft_doc::NodeKind::Path { .. })
+            && let Some(fill) = n.appearance.items.first().cloned()
+        {
+            n.appearance.items.push(fill);
+        }
+        for c in n.children_mut().into_iter().flatten() {
+            second_fill(std::sync::Arc::make_mut(c));
+        }
+    }
+    s.edit("Two Fills", |d, _| {
+        second_fill(std::sync::Arc::make_mut(&mut d.symbols.first_mut().unwrap().art));
+        Ok(())
+    })
+    .unwrap();
+    let plan = plan_with(&s, json!({}));
+    assert_eq!(of(&plan, first).len(), 2, "both fills");
+    assert!(of(&plan, second).iter().all(|a| (a - turned).abs() < 1e-9), "{:?}", of(&plan, second));
+    // An instance with an effect of its own, its art turned 20° in the symbol.
+    run(&mut s, "effect.apply", json!({"effect": "distort.roughen", "ids": [second]}));
+    s.edit("Art Turned", |d, _| {
+        let sym = d.symbols.first_mut().unwrap();
+        std::sync::Arc::make_mut(&mut sym.art).transform(vectorcraft_geom::Affine::rotate(20f64.to_radians()), false);
+        Ok(())
+    })
+    .unwrap();
+    // The art's own box (turned 20°, as `transform` keeps it) as the instance places it, scaled.
+    let doc = &s.doc().unwrap().doc;
+    let vectorcraft_doc::NodeKind::SymbolInstance { xf, .. } = doc.node(NodeId(second)).unwrap().kind else { panic!() };
+    let both = options::planner_angle(135.0 + vectorcraft_doc::orient::transformed_angle(doc.symbols[0].art.bbox_angle, xf));
+    let angles = of(&plan_with(&s, json!({})), second);
+    assert!(!angles.is_empty() && angles.iter().all(|a| (a - both).abs() < 1e-6), "{angles:?}");
+}

@@ -137,6 +137,8 @@ pub(crate) struct Expanding {
     leaf: bool,
     /// Whether one of its fills paints (a fill's piece is always made, a stroke's may not be).
     fills: bool,
+    /// Its bounding box's angle, which its pieces take: their unset fill angles turn as its did.
+    angle: f64,
 }
 
 impl Expanding {
@@ -144,7 +146,7 @@ impl Expanding {
     pub(crate) fn of(n: &Node) -> Self {
         let fills = n.appearance.items.iter().any(|i| matches!(i, AppearanceItem::Fill(f) if f.visible && !f.paint.is_none()));
         let settings = n.extras().embroidery.clone().filter(|e| e.stitches.is_none());
-        Self { settings, leaf: matches!(n.kind, NodeKind::Path { .. } | NodeKind::Compound { .. }), fills }
+        Self { settings, leaf: matches!(n.kind, NodeKind::Path { .. } | NodeKind::Compound { .. }), fills, angle: n.bbox_angle }
     }
 
     /// `result`, what the object became, with each piece sewn with the settings of the part it
@@ -152,17 +154,26 @@ impl Expanding {
     /// once, after its last piece. A fill's piece is a copy of the object (it holds the object's
     /// settings as they were); every other piece is a stroke's (its outline, or its brush's art,
     /// whose paths take the settings: the walk reads them from the paths it sews). A single piece
-    /// in the object's place is a fill's when the object has a fill that paints.
+    /// in the object's place is a fill's when the object has a fill that paints. Every piece takes
+    /// the object's bounding box's angle, so that a stroke's outline (a new path, upright) turns
+    /// its unset rows as the object did.
     pub(crate) fn apply(&self, result: &mut Node) {
-        let (Some(e), true) = (self.settings.as_deref(), self.leaf) else { return };
-        let of = |fill: bool| piece(e.part(if fill { PartKind::Fill } else { PartKind::Stroke }));
+        if !self.leaf {
+            return;
+        }
+        let e = self.settings.as_deref();
+        let of = |fill: bool| e.and_then(|e| piece(e.part(if fill { PartKind::Fill } else { PartKind::Stroke })));
+        result.bbox_angle = self.angle;
         if matches!(result.kind, NodeKind::Group { .. }) {
             for c in result.children_mut().into_iter().flatten() {
-                let came_from_fill = c.extras().embroidery.as_deref() == Some(e);
-                on_paths(Arc::make_mut(c), &of(came_from_fill));
+                let came_from_fill = e.is_some() && c.extras().embroidery.as_deref() == e;
+                let settings = e.map(|_| of(came_from_fill));
+                on_paths(Arc::make_mut(c), settings.as_ref(), self.angle);
             }
-            result.extras_mut().embroidery = whole(e);
-        } else {
+            if let Some(e) = e {
+                result.extras_mut().embroidery = whole(e);
+            }
+        } else if let Some(e) = e {
             let mut own = of(self.fills).map(|b| *b).unwrap_or_default();
             own.trim_after = e.trim_after;
             own.extra = e.extra.clone();
@@ -171,15 +182,20 @@ impl Expanding {
     }
 }
 
-/// `settings` on every path and compound path in `n` (itself, when it is one), none on the groups
-/// between them.
-fn on_paths(n: &mut Node, settings: &Option<Box<Embroidery>>) {
+/// `n` and everything in it turned to `angle` (the bounding box's), and `settings`, when given, on
+/// every path and compound path in it (itself, when it is one), none on the groups between them.
+fn on_paths(n: &mut Node, settings: Option<&Option<Box<Embroidery>>>, angle: f64) {
+    n.bbox_angle = angle;
     if matches!(n.kind, NodeKind::Compound { .. }) || n.children().is_none() {
-        n.extras_mut().embroidery = settings.clone();
+        if let Some(settings) = settings {
+            n.extras_mut().embroidery = settings.clone();
+        }
         return;
     }
-    n.extras_mut().embroidery = None;
+    if settings.is_some() {
+        n.extras_mut().embroidery = None;
+    }
     for c in n.children_mut().into_iter().flatten() {
-        on_paths(Arc::make_mut(c), settings);
+        on_paths(Arc::make_mut(c), settings, angle);
     }
 }

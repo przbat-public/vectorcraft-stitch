@@ -146,17 +146,27 @@ fn info_says_what_the_walk_sews() {
 }
 
 /// The stitch preview's planning thread answers `embroidery.info` (objects given) as the command
-/// does with `plan`.
+/// does, planning only with `plan`; a design too large to plan still has its settings answered,
+/// the reason in `warnings`.
 #[test]
 fn a_planner_answers_info_as_the_command_does() {
     let mut s = blank();
     let id = shape(&mut s, 20.0, 3.0);
     run(&mut s, "embroidery.set", json!({"ids": [id], "part": "stroke", "pull": 0.4}));
     let planner = s.embroidery_planner().unwrap();
-    let queried = planner.query("embroidery.info", &json!({"ids": [id]})).unwrap();
-    let ran = info(&mut s, json!({"ids": [id], "plan": true}));
-    assert_eq!(queried, ran);
+    for plan in [false, true] {
+        let ask = json!({"ids": [id], "plan": plan});
+        let queried = planner.query("embroidery.info", &ask).unwrap();
+        assert_eq!(queried, info(&mut s, ask), "plan {plan}");
+        assert_eq!((&queried["planned"], queried["stroke"]["sewing"].is_null()), (&json!(plan), !plan));
+    }
     assert!(planner.query("embroidery.info", &json!({"ids": [id], "selectedOnly": true})).is_err());
+    // Three metres a side: more stitches than one shape may have.
+    let huge = run(&mut s, "shape.rectangle", json!({"x": 0, "y": 0, "width": 8500, "height": 8500}))["id"].as_u64().unwrap();
+    let planner = s.embroidery_planner().unwrap();
+    let queried = planner.query("embroidery.info", &json!({"ids": [huge], "plan": true})).unwrap();
+    assert_eq!((&queried["planned"], &queried["fill"]["sewn"]), (&json!(false), &json!("tatami")));
+    assert!(queried["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("stitches")), "{}", queried["warnings"]);
 }
 
 /// What Auto chose is reported where the value is `"auto"`: a satin's underlay by its width

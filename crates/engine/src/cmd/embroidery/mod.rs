@@ -529,10 +529,11 @@ enum Read {
         format: Option<StitchFormat>,
         limit: usize,
     },
-    /// `embroidery.info` of the objects `ids`.
+    /// `embroidery.info` of the objects `ids`, planning the design only when `plan` asks.
     Info {
         ids: Vec<vectorcraft_doc::NodeId>,
         page: Page,
+        plan: bool,
     },
 }
 
@@ -565,7 +566,7 @@ fn read_params(cmd: &str, p: &Value) -> Result<ReadParams> {
         // A planner has no selection: the objects are given.
         "embroidery.info" => {
             let ask = info::Ask::from_params(&o, cmd)?;
-            (Read::Info { ids: ask.ids.unwrap_or_default(), page: ask.page }, ask.opts)
+            (Read::Info { ids: ask.ids.unwrap_or_default(), page: ask.page, plan: ask.plan }, ask.opts)
         }
         _ => return Err(bad(cmd, format!("not a read command: one of {}", READ_COMMANDS.join(", ")))),
     };
@@ -584,7 +585,7 @@ fn reply(read: Read, plan: &plan::DesignPlan, doc: &Document, opts: &Options) ->
             stats::stats(plan, machine, thread, page)
         }
         Read::Sequence(page) => order::sequence(plan, page),
-        Read::Info { ids, page } => info::to_json(&info::reply(doc, &ids, opts, Some(plan), page, Vec::new()))?,
+        Read::Info { ids, page, .. } => info::to_json(&info::reply(doc, &ids, opts, Some(plan), page, Vec::new()))?,
         Read::Check { rules, format, limit } => {
             // The format of the document's thread palette, when none is asked for.
             let format = format.unwrap_or_else(|| thread_palette(doc).format());
@@ -604,14 +605,31 @@ fn read_cmd(s: &mut Session, p: &Value, cmd: &str) -> Result<Value> {
 }
 
 impl Planner {
-    /// The reply read command `cmd` (`embroidery.threads`, `stats`, `sequence` or `check`) gives
-    /// with `params` for the planner's snapshot, made by the command's own code on any thread (the
-    /// stitch preview's panel and status bar read the design off the interface thread). The plan
-    /// is the one remembered, or planned. `selectedOnly` is refused: a planner has no selection.
+    /// The reply read command `cmd` (`embroidery.threads`, `stats`, `sequence`, `check` or `info`)
+    /// gives with `params` for the planner's snapshot, made by the command's own code on any thread
+    /// (the stitch preview's panel and status bar, and the Object tab, read the design off the
+    /// interface thread). The plan is the one remembered, or planned. `selectedOnly` is refused: a
+    /// planner has no selection. `info` plans only with `plan`, and answers the settings with the
+    /// reason in `warnings` when the design can't be planned, as the command does.
     pub fn query(&self, cmd: &str, params: &Value) -> Result<Value> {
         let r = read_params(cmd, params)?;
         if r.selected_only {
             return Err(bad(cmd, format!("a planner plans the whole document: leave out `{SELECTED_ONLY}`")));
+        }
+        if let Read::Info { ids, page, plan } = &r.read {
+            let (planned, mut warnings) = (if *plan { Some(self.planned(&r.opts)) } else { None }, Vec::new());
+            let plan = match planned {
+                Some(Ok(p)) => Some(p.plan),
+                Some(Err(EngineError::Cancelled)) => return Err(EngineError::Cancelled),
+                Some(Err(e)) => {
+                    warnings.push(e.to_string());
+                    None
+                }
+                None => None,
+            };
+            let v = info::to_json(&info::reply(&self.doc, ids, &r.opts, plan.as_deref(), *page, warnings))?;
+            vectorcraft_doc::cancel::check()?;
+            return Ok(with_options(v, &r.opts));
         }
         let planned = self.planned(&r.opts)?;
         reply(r.read, &planned.plan, &self.doc, &r.opts)

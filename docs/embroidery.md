@@ -1926,6 +1926,7 @@ Public documentation, cited per claim in the crate:
   and what a move did), `scene.rs` (the plan as a line picture), `render.rs` (`embroidery.render`),
   `printed.rs` (the document as it prints, appearances expanded),
   `threadlib.rs` (the thread swatch libraries),
+  `vocabulary.rs` (each setting's name, earlier name, file key and where it can be set),
   `options.rs` (the export options, and the planner's parameters they give an object),
   `digitize.rs` (the document's art planned into the stitch plan, unit by unit; a fill's narrow
   columns cut out of it with path operations), `plan.rs` (the stitch plan: sewing units, thread

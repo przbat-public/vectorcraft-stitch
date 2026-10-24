@@ -7,8 +7,9 @@
 //! themselves are read and written in `cmd::fileio::embroidery` (`document.open`,
 //! `document.export`).
 //!
-//! The parts: [`options`] (the export's options, and the stitch planner's parameters they give an
-//! object), `setup` (the document's embroidery settings: `embroidery.setup` and
+//! The parts: `vocabulary` (each setting's name, earlier name, file key and where it can be set),
+//! [`options`] (the export's options, and the stitch planner's parameters they give an object),
+//! `setup` (the document's embroidery settings: `embroidery.setup` and
 //! `embroidery.settings`), [`digitize`] (the document's art planned as a design: its [`plan::DesignPlan`]),
 //! [`unit`] (one sewing unit's stitches from what it is planned from), [`cache`] (each unit's
 //! stitches kept between plans), [`service`] (each open document's planning, with what it keeps),
@@ -59,6 +60,7 @@ mod tests_walk;
 pub mod threadlib;
 mod unit;
 pub mod view;
+mod vocabulary;
 
 use std::sync::Arc;
 

@@ -623,11 +623,11 @@ fn the_threads_command_takes_only_the_embroidery_options() {
     let spec = crate::cmd::find_command("embroidery.threads").unwrap();
     let named = crate::cmd::params::doc_keys(spec.params).unwrap();
     let options: Vec<&str> = crate::cmd::fileio::embroidery::OPTIONS.iter().map(|o| o.name).collect();
-    let mut names: Vec<&str> = super::options::OPTIONS.iter().flat_map(|n| std::iter::once(n.name).chain(n.earlier)).collect();
+    let mut names: Vec<&str> = super::vocabulary::options().flat_map(|n| std::iter::once(n.name).chain(n.earlier)).collect();
     // And the stretch of blocks it lists, and whether the selection alone.
     names.extend(["offset", "limit", "selectedOnly"]);
     // The export's options, under the names the options take (each earlier name after its own).
-    assert_eq!(super::options::OPTIONS.iter().map(|n| n.name).collect::<Vec<_>>(), options);
+    assert_eq!(super::vocabulary::options().map(|n| n.name).collect::<Vec<_>>(), options);
     assert_eq!((named.keys, named.more.len()), (names, 0));
     for (given, why) in [
         (json!({"densitty": 0.4}), "did you mean `density`?"),

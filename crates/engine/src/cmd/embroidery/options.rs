@@ -6,8 +6,9 @@
 //! `angle`, `pull`, `pullPercent`, `push`, `expand`, `narrowAsSatin`, `threadWeight`, `underlay`,
 //! `jumpLength`, `trimLength` and `minStitch`. The earlier names (`stitchStyle`, `density`,
 //! `stitchLength`, `stitchAngle`, `pullCompensation`, `pullCompensationPercent`,
-//! `pushCompensation`) are taken as well ([`OPTIONS`]). A value outside the planner's range is
-//! refused, naming the range, rather than clamped; `null` leaves an option to its default.
+//! `pushCompensation`) are taken as well (the vocabulary's table, `super::vocabulary`). A value
+//! outside the planner's range is refused, naming the range, rather than clamped; `null` leaves an
+//! option to its default.
 
 use serde_json::{Map, Value, json};
 use vectorcraft_stitch::plan::{
@@ -15,6 +16,7 @@ use vectorcraft_stitch::plan::{
     Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay,
 };
 
+use super::vocabulary;
 use crate::Result;
 use crate::cmd::bad;
 
@@ -26,31 +28,6 @@ pub(crate) const EXPAND_DEFAULT: f64 = 0.0;
 /// The most a filled shape grows or shrinks (millimetres): more than closing gaps between shapes
 /// needs, short of redrawing them.
 pub(crate) const MAX_EXPAND: f64 = 2.0;
-
-/// One option's names: the one it has, and the earlier one it is also taken under.
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct Name {
-    pub(crate) name: &'static str,
-    pub(crate) earlier: Option<&'static str>,
-}
-
-/// Every option, by its name and its earlier name, in the order `document.formats` lists them.
-pub(crate) const OPTIONS: [Name; 14] = [
-    Name { name: "stitch", earlier: Some("stitchStyle") },
-    Name { name: "spacing", earlier: Some("density") },
-    Name { name: "length", earlier: Some("stitchLength") },
-    Name { name: "angle", earlier: Some("stitchAngle") },
-    Name { name: "pull", earlier: Some("pullCompensation") },
-    Name { name: "pullPercent", earlier: Some("pullCompensationPercent") },
-    Name { name: "push", earlier: Some("pushCompensation") },
-    Name { name: "expand", earlier: None },
-    Name { name: "narrowAsSatin", earlier: None },
-    Name { name: "threadWeight", earlier: None },
-    Name { name: "underlay", earlier: None },
-    Name { name: "jumpLength", earlier: None },
-    Name { name: "trimLength", earlier: None },
-    Name { name: "minStitch", earlier: None },
-];
 
 /// The values `stitch` takes, and the style each forces: `auto` (none forced: fills tatami, strokes
 /// satin or running by their width); `tatami` and `fill` (a fill tatami, a stroke the area it
@@ -155,8 +132,8 @@ impl Options {
     pub(crate) fn from_object(o: &Map<String, Value>, others: Others<'_>, cmd: &str) -> Result<Self> {
         let mut out = Self::default();
         for (key, v) in o {
-            let Some(option) = OPTIONS.iter().find(|n| n.name == key || n.earlier == Some(key.as_str())) else {
-                let names: Vec<&str> = OPTIONS.iter().flat_map(|n| std::iter::once(n.name).chain(n.earlier)).collect();
+            let Some(option) = vocabulary::options().find(|n| n.name == key || n.earlier == Some(key.as_str())) else {
+                let names: Vec<&str> = vocabulary::options().flat_map(|n| std::iter::once(n.name).chain(n.earlier)).collect();
                 match others {
                     Others::Refuse(own) if own.contains(&key.as_str()) => continue,
                     Others::Refuse(_) => {

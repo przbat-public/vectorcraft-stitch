@@ -279,7 +279,7 @@ pub(crate) fn losses(bytes: &[u8]) -> Vec<super::Loss> {
 /// third byte, as every record does. A TAP or T01, with no header, is told from another file by
 /// this alone; `what` names the format in the error.
 pub(crate) fn check_records(records: &[u8], what: &str) -> Result<()> {
-    for (k, record) in records.chunks_exact(RECORD).enumerate() {
+    for (k, record) in records.as_chunks::<RECORD>().0.iter().enumerate() {
         let b2 = record.get(2).copied().unwrap_or(0);
         if b2 & SET_BITS != SET_BITS {
             return Err(Error::Format(format!("not a {what} file: its record {} is not a DST record", k + 1)));
@@ -297,7 +297,7 @@ pub(crate) fn read_records(records: &[u8], name: String, what: &str) -> Result<P
     // Wide enough that no file overflows it: each record moves the needle at most 121 tenths.
     let (mut x, mut y) = (0i64, 0i64);
     let mut points: Vec<Stitch> = Vec::new();
-    for record in records.chunks_exact(RECORD) {
+    for record in records.as_chunks::<RECORD>().0 {
         let b2 = record[2];
         let (dx, dy) = (i64::from(decode(record, &X_DIGITS)), i64::from(decode(record, &Y_DIGITS)));
         if b2 & END_BITS == END_BITS {
@@ -495,7 +495,7 @@ mod tests {
         let (mut records, mut changes) = (0i64, 0i64);
         let (mut x, mut y) = (0i64, 0i64);
         let (mut x0, mut x1, mut y0, mut y1) = (0i64, 0i64, 0i64, 0i64);
-        for r in bytes[HEADER..].chunks_exact(RECORD) {
+        for r in bytes[HEADER..].as_chunks::<RECORD>().0 {
             if r[2] & END_BITS == END_BITS {
                 break;
             }

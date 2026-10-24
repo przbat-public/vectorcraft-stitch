@@ -70,7 +70,8 @@ fn quarters(s: &mut Session) {
         d.images.insert("img1".into(), ImageBlob::new("image/png", png));
         let id = d.alloc_id();
         let l = d.default_layer();
-        let image = ImageObject { key: "img1".into(), width: w, height: h, xf: Affine::IDENTITY, link: None, placement: Default::default() };
+        let image =
+            ImageObject { key: "img1".into(), width: w, height: h, xf: Affine::IDENTITY, link: None, placement: Default::default(), pixels: None };
         d.insert(l, 0, Node::new(id, NodeKind::Image(Box::new(image))))?;
         sel.set([id]);
         Ok(())

@@ -37,6 +37,10 @@ pub const PERCENT_SPACES: &[(&str, char)] = &[
     ("fr", NARROW_NO_BREAK_SPACE),
 ];
 
+/// The languages that write the percent sign before the number, with no space (CLDR's percent
+/// pattern "%#,##0", as ICU 78.3 writes it, checked 2026-10-24): Turkish "%37".
+pub const PERCENT_FIRST: &[&str] = &["tr"];
+
 /// The digits in a group: thousands.
 const GROUP: usize = 3;
 
@@ -63,8 +67,8 @@ const COMMA_SPACE_FROM_FIVE: Symbols = Symbols { decimal: ',', group: NO_BREAK_S
 const COMMA_NARROW_SPACE: Symbols = Symbols { decimal: ',', group: NARROW_NO_BREAK_SPACE, min_grouping: 1 };
 
 /// Each interface language's number symbols, by its code (CLDR 48, read through ICU 78.3's
-/// `Intl.NumberFormat` on 2026-10-22; Polish checked in CLDR's own data: decimal ",",
-/// `minimumGroupingDigits` 2).
+/// `Intl.NumberFormat` on 2026-10-22, Turkish on 2026-10-24; Polish checked in CLDR's own data:
+/// decimal ",", `minimumGroupingDigits` 2).
 pub const SYMBOLS: &[(&str, Symbols)] = &[
     ("en", ENGLISH),
     ("ja", ENGLISH),
@@ -75,6 +79,7 @@ pub const SYMBOLS: &[(&str, Symbols)] = &[
     ("vi", COMMA_POINT),
     ("de", COMMA_POINT),
     ("pt-br", COMMA_POINT),
+    ("tr", COMMA_POINT),
     ("nl", COMMA_POINT),
     ("da", COMMA_POINT),
     ("id", COMMA_POINT),
@@ -119,8 +124,12 @@ pub fn count(lang: Lang, n: u64) -> String {
     grouped(&n.to_string(), symbols(lang))
 }
 
-/// A whole percentage as `lang` writes it: "37%" in English, "37 %" in German ([`PERCENT_SPACES`]).
+/// A whole percentage as `lang` writes it: "37%" in English, "37 %" in German ([`PERCENT_SPACES`]),
+/// "%37" in Turkish ([`PERCENT_FIRST`]).
 pub fn percent(lang: Lang, value: u64) -> String {
+    if PERCENT_FIRST.contains(&lang.code()) {
+        return format!("%{}", count(lang, value));
+    }
     let space = PERCENT_SPACES.iter().find(|(code, _)| *code == lang.code()).map(|(_, c)| c.to_string()).unwrap_or_default();
     format!("{}{space}%", count(lang, value))
 }
@@ -180,6 +189,7 @@ mod tests {
             ("fr", 4752, format!("4{nnb}752")),
             ("ja", 14752, "14,752".into()),
             ("ru", 4752, format!("4{nb}752")),
+            ("tr", 4752, "4.752".into()),
             ("en", 0, "0".into()),
         ];
         for (code, n, want) in cases {
@@ -204,6 +214,8 @@ mod tests {
             ("en", -0.0, 2, "0".into()),
             ("en", -0.001, 2, "0".into()),
             ("ja", 0.38, 2, "0.38".into()),
+            ("tr", 0.38, 2, "0,38".into()),
+            ("tr", 12345.6, 1, "12.345,6".into()),
         ];
         for (code, v, places, want) in cases {
             assert_eq!(decimal(lang(code), *v, *places), *want, "{code} {v}");
@@ -227,10 +239,12 @@ mod tests {
             ("de", format!("37{nb}%")),
             ("ru", format!("37{nb}%")),
             ("fr", format!("37{nnb}%")),
+            ("tr", "%37".into()),
         ] {
             assert_eq!(percent(lang(code), 37), want, "{code}");
         }
         assert!(PERCENT_SPACES.iter().all(|(code, _)| Lang::from_code(code).is_some()), "every code is a language's");
+        assert!(PERCENT_FIRST.iter().all(|code| Lang::from_code(code).is_some()), "every code is a language's");
     }
 
     #[test]

@@ -221,6 +221,10 @@ impl<'a> Job<'a> {
         if printed.is_empty() {
             return Err(PdfError::BadSetting("output.inks: no ink is set to print".into()));
         }
+        // Counted before the sheets are made: layouts times inks can be far more than the limit.
+        if layouts.len().saturating_mul(printed.len()).saturating_mul(set.copies as usize) > MAX_PAGES {
+            return Err(PdfError::BadSetting(format!("the job would print more than {MAX_PAGES} pages")));
+        }
         let sheets: Vec<(usize, Option<usize>)> = (0..layouts.len()).flat_map(|l| printed.iter().map(move |i| (l, *i))).collect();
         if sheets.len().saturating_mul(set.copies as usize) > MAX_PAGES {
             return Err(PdfError::BadSetting(format!("the job would print more than {MAX_PAGES} pages")));
@@ -355,7 +359,7 @@ pub fn plan<'a>(doc: &'a Document, opts: &PrintOptions) -> Result<PrintPlan<'a>,
     let set = &opts.settings;
     let job = Job::new(doc, set, opts.postscript)?;
     let title = opts.title.clone().unwrap_or_else(|| job.doc.title.clone());
-    let created = opts.created.or_else(vectorcraft_doc::metadata::now_unix);
+    let created = opts.created.or_else(vectorcraft_doc::metadata::output_time);
     let sep = Separator::new(&job.doc, set);
     let plates: Vec<Document> = (0..job.plates.len()).filter_map(|p| job.ink(Some(p))).map(|i| sep.plate(&i.name)).collect();
     let marks = set.marks.printer_marks();
@@ -392,7 +396,7 @@ pub fn plan<'a>(doc: &'a Document, opts: &PrintOptions) -> Result<PrintPlan<'a>,
 
 /// Print `doc` to a PDF as `opts` say.
 pub fn print(doc: &Document, opts: &PrintOptions) -> Result<PrintReport, PdfError> {
-    craft_pdf::write::guard(|| leaving_out_undecodable(|left_out| print_inner(doc, opts, left_out)))
+    craft_pdf::write::guard(|| leaving_out_undecodable(doc, |left_out| print_inner(doc, opts, left_out)))
 }
 
 fn print_inner(doc: &Document, opts: &PrintOptions, left_out: &mut HashSet<String>) -> Result<PrintReport, PdfError> {
@@ -422,11 +426,12 @@ fn print_inner(doc: &Document, opts: &PrintOptions, left_out: &mut HashSet<Strin
         w.page(ex, &s.sheet())?;
     }
     let overprinted = exporters.iter().any(|ex| ex.overprinted);
+    let invisible = exporters.iter().any(|ex| ex.invisible);
     for ex in exporters {
         w.absorb(ex);
     }
-    let (bytes, more) = w.finish(left_out)?;
-    let bytes = crate::forms::finish(bytes, doc, &pdf, false, overprinted)?;
+    let (bytes, more) = w.finish(left_out, false)?;
+    let bytes = crate::forms::finish(bytes, doc, &pdf, false, overprinted, invisible)?;
     let mut warnings = plan.warnings;
     for m in more {
         if !warnings.contains(&m) {

@@ -44,7 +44,10 @@ Illustrator-parity scores (Practicalities, last item).
   trusting a PR number in a brief, check its title and URL.
 - **Never rename a PR's head branch** on GitHub: GitHub closes the PR instead of following the
   rename.
-- **The owner squash-merges.** After a base PR merges, merge `feat/embroidery` into any branch
+- **The owner squash-merges, except an upstream sync.** A PR that merges `main` into
+  `feat/embroidery` is merged with "Create a merge commit": a squash would drop the record that
+  upstream's commits are merged, and the next sync would meet the same conflicts again. After a
+  base PR merges, merge `feat/embroidery` into any branch
   stacked on it (taking the branch's side: the squash equals the base's last commit), so its diff
   shows only its own changes. Never push to a merged PR's deleted branch: that recreates it.
 - **No code names, anywhere.** Never label work with a stage letter, a step number or any other
@@ -156,7 +159,8 @@ stitches fast, is tried before anything is built on it.
    Sew Earlier, Later, First and Last, move objects in the stacking order with `layer.move`, in one
    undo step, and the list says what the move did) and a Check tab (problems first, Show, the
    findings ringed on the canvas, the stitch lengths' chart); the counters in the status bar. Every
-   word in the 23 languages, numbers as each writes them. The first change a user sees.
+   word in the 23 languages, numbers as each writes them (and in Turkish, which upstream added
+   later, since the sync of 2026-10-24: AI-drafted, not yet reviewed). The first change a user sees.
 5. **Embroidery settings on objects and in the document.** Stored as Architecture describes (per
    fill and stroke, allowed on type and groups, points moved with the object, files from newer
    versions still opening); values resolved with their source (the object's, then the export's
@@ -284,6 +288,7 @@ without asking the owner. A new decision gets a row here in the PR that makes it
 | 2026-10-22 | A drag in the Sewing order moves objects with `layer.move` ("A just above B, in B's parent"), one undo step named Change Sewing Order, locks respected | exactly the stacking change a drop means | `node.move` | `cmd/embroidery/reorder.rs` |
 | 2026-10-22 | The rest of the stitch preview's choices: ⌘E for View › Stitch Preview; Outline draws over the stitches; the art under the stitches hidden by default (a toggle shows it); the fabric white; a passed check a neutral ✓; the panel's Object and Stitches tabs hidden until built; a slow design's stitches refresh about 0.1 s after a drag ends; a design that can't be planned shows its last stitches dimmed, with the reason; the chart's "too long" band from 12.7 mm, as the check's; the web plans in one go; Next and Previous Finding in; the canvas's notice says "planning" or "can't be planned" when the status bar doesn't | the owner accepted them together ("accept all") | each one's alternative in the plan | `embroidery::menu`, `stitch_layer`, `marks`, `stitch_preview`, `panels/embroidery/lengths.rs`, `notice` |
 | 2026-10-22 | The planner sews an object's appearance as it prints (stroke alignment, dashes, width profiles, brushes, arrowheads, live effects, a group's own fills and strokes, a symbol instance's staining); what still can't be sewn gets a warning | sew what prints | sewing the base path and warning | `Digitizer::shape` |
+| 2026-10-24 | The fork has an app identity of its own on macOS and Windows: the bundle identifier `ai.storyteller.vectorcraft.stitch`, the name "VectorCraft Stitch" on the bundle (`VectorCraft Stitch.app`) and in the Windows installer (product, install folder, registry key, shortcuts, descriptions), its own MSI upgrade code and component GUIDs, and "VectorCraft Stitch contributors" as the installer's publisher. The `.vectorcraft` document types stay VectorCraft's (both apps open the same files), and the executables keep their names. Linux comes later | macOS takes two apps of one identifier for one app, and an installer with VectorCraft's upgrade code would uninstall VectorCraft; with its own name the fork installs beside it; the publisher doesn't credit upstream's company with a version it doesn't make | Linux now (its id is in about fifteen places and file names that upstream changes often, and the fork builds no Linux packages); the identifiers alone (two apps named VectorCraft can't sit side by side); upstream's publisher | `packaging/macos/Info.plist.in`, `packaging/macos/package.sh`, `xtask/src/bundle.rs`, `packaging/windows/vectorcraft.wxs` |
 
 ## Clean-room for embroidery
 
@@ -324,6 +329,33 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
 
 ## Keeping up with upstream
 
+**How a sync goes.** `git fetch upstream --prune`; fast-forward `main` to `upstream/main` (never a
+fork commit on it) and push it; on a branch cut from `feat/embroidery`, `git merge main`; resolve
+as below, keeping upstream's changes and putting the fork's hooks back; add the fork's rows to any
+catalogue upstream added (the catalogue tests want every fork row in every language); gate with
+`EMBROIDERY_CORPUS_REQUIRED=1 cargo +1.95.0 xtask ci` in a checkout of its own, with the
+embroidery perf rows (`vectorcraft-cli perf --embroidery`) before and after; open the PR to
+`feat/embroidery`, merged with a merge commit (Branches). The merge commit's message lists every
+conflicted file and how it was resolved.
+
+**Syncs so far.** 2026-10-18, at the fork's start (upstream `904f0fe5`, no conflicts), and again
+the same day (upstream `cdba0aac`, PR #5: the ROADMAP's log and `fileio/mod.rs`'s format lists).
+2026-10-24, after the stitch preview: upstream `cdba0aac..4c82749b`, 1305 commits; 35 conflicting hunks in 14
+files, all listed in the merge commit, of which the status bar (upstream's fixed slots) and
+`tab_title` (a parameter of upstream's in the fork's place) were re-ported by hand; Turkish rows
+for every fork string; three fixes in upstream's code for the fork's Rust 1.95 gate (below).
+
+**Upstream's CI lints with the stable clippy** (on 2026-10-24, Rust 1.99.1), newer than the fork's
+1.95 gate (`rust-version = "1.95"`), and since that sync the same CI runs on the fork's PRs
+(Practicalities). Code must pass both:
+- Upstream code can fail the fork's 1.95 gate, through a lint 1.95 doesn't know or one 1.95 flags
+  and the newer clippy doesn't. Allow it in place, marked "VectorCraft Stitch", and list it with
+  the hooks below. Drop the allow when the fork's gate moves to upstream's clippy.
+- The fork's code can fail the stable clippy (the DST reader's `chunks_exact`, which 1.99 wants as
+  `as_chunks`). Fix it there, in a way 1.95 accepts too.
+- So before pushing, also run `cargo +stable clippy --workspace --all-targets --keep-going -- -D
+  warnings`.
+
 Where merging `main` (upstream) into the fork conflicts, and how to resolve each so nothing is lost:
 
 - **`crates/doc/src/node.rs`, the node's extras:** the fork's `embroidery` sits after `perspective`
@@ -348,16 +380,22 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   (the fork's own code is under `crates/ui-egui/src/embroidery/`, `panels/embroidery/` and
   `cmd/embroidery/`):
   - `ui-egui/src/lib.rs`: `pub mod embroidery`, the app's `embroidery` field and its init,
-    `stitch_preview::poll` after the background jobs, `canvas_controls` after the canvas,
-    `stitch_preview::schedule` at the frame's end, and the screenshot wait
-    (`holds_screenshots`, `MAX_SCREENSHOT_WAIT_MS`);
+    `stitch_preview::poll` after the background jobs, `canvas_controls` after the canvas (before
+    upstream's isolation bar, which lies over the canvas's top: the switch and the notice move
+    below it), `embroidery::end_frame` at the frame's end (a click on the counters, then
+    `stitch_preview::schedule`), and the screenshot wait (`holds_screenshots`,
+    `MAX_SCREENSHOT_WAIT_MS`);
   - `canvas.rs`: `art_pass` before the art, `paint_fabric` instead of the paper and the outline's
     ground, `templates`/`hidden` in the art's key and options, `&& art.render`, `&& !art.stitches`,
     `stitch_layer::draw` after the art, `to_screen_path` and `node_outline` made `pub(crate)`, the
     selection overlay's `frame_only`; `fit_zoom` and `FIT_MARGIN` split out of `fit` for View › Zoom
     to Box (`embroidery/zoom.rs`);
-  - `chrome.rs`: the tab title's mode (`tab_title`), and in the status bar the counters drawn
-    before the timings, which are drawn only when the counters leave room;
+  - `chrome.rs`: the tab title's mode (`tab_title`'s fifth parameter, `stitches`, after upstream's
+    `display_print_size`), and in `status_readouts` the counters (`embroidery::counters::show`)
+    given the bar's area first: they take its right end and return the rest, and `diagnostics`
+    waits on their answer (`timings &&`), so the timings give way to them. The bar is drawn with
+    the app only read: the counters keep their state in cells and act on a click at the frame's
+    end;
   - `menus.rs`: View › Stitch Preview and its options after Pixel Preview, the `checked` and
     `enabled` hooks, Window › Embroidery, the `UI_COMMANDS` rows (`ui.embroideryPanel`,
     `view.zoomTo`, `view.checkMarks`, `embroidery.showFinding`, `embroidery.nextHit`,
@@ -374,10 +412,31 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   - the engine's `lib.rs`: the `pub use` of `PlanKey` and `Planned`, and in
     `close_document` the closed document's planning forgotten (in a batch, by `fileio/batch.rs`
     once the batch holds; its `roll_back` forgets a document the batch opened);
+  - `doc/src/lib.rs`: `Document::same_outside_layers` names the `embroidery` field (upstream's
+    list of every field, for redrawing only what an edit changed);
+  - `xtask/src/main.rs`: the `embroidery-corpus` step before `test`, and `cmd_test`'s `envs`, which
+    the gate's test step passes `EMBROIDERY_CORPUS_REQUIRED` through;
+  - for the fork's Rust 1.95 gate: `#[allow(unknown_lints)]` above `effects/src/group.rs`'s
+    `clippy::manual_isolate_lowest_one`, and `#[allow(clippy::neg_cmp_op_on_partial_ord)]` on
+    `brush/src/track.rs`'s `tracks`;
   - `render/src/lib.rs`: `pub mod lines`; `testkit/src/lib.rs`: `pub mod embroidery`;
     `vectorcraft-cli`'s `main.rs`: `bench` prints the preview's line;
   - `apps/vectorcraft/src/prefs_dir.rs`: `mod stitch_profile`; `profile.rs`'s `prefs_path`: the
     path passed through `stitch_profile::own` (the fork's settings folder).
+- **The fork's app identity in upstream's packaging** (Decisions register, 2026-10-24), to keep
+  when resolving: in `packaging/macos/Info.plist.in` the name, display name and identifier (the
+  document types stay upstream's); `APP_NAME` in `packaging/macos/package.sh`; `APP` in
+  `xtask/src/bundle.rs`, with the `bundle` line of `xtask/src/main.rs`'s usage and of the README's
+  Quick start; in `packaging/windows/vectorcraft.wxs` the product name, publisher, upgrade code,
+  install folder, registry key, shortcuts, descriptions and the two component GUIDs; in the
+  workflows, `windows-arm64.yml`'s `app-dir` (the install test's folder) and `release.yml`'s
+  `app-title`. Still
+  upstream's, and open: Linux's app id (the desktop entry and its file names, the window's
+  `with_app_id`, metainfo, MIME, Flatpak, FreeBSD); the DMG's Finder layout
+  (`packaging/macos/dmg/DS_Store`, from `dmg/generate.py`), which still places `VectorCraft.app`
+  on a volume named VectorCraft, so regenerate it before the fork ships a DMG; and Windows' App
+  Paths entry for `vectorcraft.exe`, which both apps write (the last installed wins, and
+  uninstalling either removes it).
 - **The fork's text in upstream's docs**, to put back on upstream's own text when resolving: the
   pointer to this file at the top of `CLAUDE.md`; in `README.md` the fork's note and "Based on
   VectorCraft", with ArtCraft's marks and links left out (`docs/brand/LICENSE-brand.txt`); the
@@ -420,8 +479,13 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   fresh checkout, copy a checked `corpus/embroidery` in or let the gate fetch it; offline, it fails
   and says how to fetch them (`EMBROIDERY_CORPUS_REQUIRED=0` runs the gate without them, said out
   loud). A plain `cargo test` skips an absent corpus with a note.
-- **The fork has no CI on GitHub:** say so when you report results, and don't claim checks passed
-  there.
+- **CI on GitHub: upstream's workflows, since the 2026-10-24 sync.** Every PR to the fork runs
+  them: the gate (`cargo xtask ci` on the stable toolchain, with the real designs), Desktop
+  printing, Windows ARM64 (builds the MSI, installs it into `Program Files\VectorCraft Stitch` and
+  uninstalls it), Windows 7, FreeBSD, Nix, Packaging lint, SonarCloud and the Affinity 3 corpus.
+  Read them with `gh pr checks <number> --repo przbat-public/vectorcraft-stitch`, and report what
+  they say. The release workflow is upstream's too, and it needs signing secrets the fork
+  doesn't have.
 - **When a task lands:** update `docs/embroidery.md` (algorithms, limitations, test counts) and the
   PR description, and, in every progress doc the change touches (`ROADMAP.md`,
   `docs/file-format-parity.md`, `docs/architecture.md`, `docs/embroidery.md`…), its status line and

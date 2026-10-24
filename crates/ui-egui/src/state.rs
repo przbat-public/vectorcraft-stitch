@@ -62,25 +62,53 @@ pub const ROTATE_VIEW_ANGLES: [(&str, f64); 12] = [
     ("-90°", -90.0),
 ];
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/// Zoom stop stepping reads this (set each UI frame and before commands) so canvas wheel zoom
+/// matches the status bar when Display Print Size at 100% Zoom is on.
+static ZOOM_STOPS_PRINT_SIZE: AtomicBool = AtomicBool::new(false);
+
+pub fn sync_zoom_stops_display_print_size(v: bool) {
+    ZOOM_STOPS_PRINT_SIZE.store(v, Ordering::Relaxed);
+}
+
 /// Illustrator's preset zoom stops, in percent.
 pub const ZOOM_STOPS: [f64; 26] = [
     3.13, 4.17, 6.25, 8.33, 12.5, 16.67, 25.0, 33.33, 50.0, 66.67, 100.0, 150.0, 200.0, 300.0, 400.0, 600.0, 800.0, 1200.0, 1600.0, 2400.0, 3200.0,
     4800.0, 6400.0, 12800.0, 25600.0, 64000.0,
 ];
 
+/// Document zoom at 100% in the status bar: one screen point per document point, or with
+/// Preferences › General › Display Print Size at 100% Zoom, one document inch in 96 screen points.
+pub fn zoom_baseline(display_print_size: bool) -> f64 {
+    if display_print_size { 96.0 / 72.0 } else { 1.0 }
+}
+
+pub fn zoom_display_percent(z: f64, display_print_size: bool) -> f64 {
+    z / zoom_baseline(display_print_size) * 100.0
+}
+
+pub fn zoom_from_display_percent(pct: f64, display_print_size: bool) -> f64 {
+    pct / 100.0 * zoom_baseline(display_print_size)
+}
+
 pub fn next_zoom(z: f64, up: bool) -> f64 {
-    let pct = z * 100.0;
+    next_zoom_with_display(z, up, ZOOM_STOPS_PRINT_SIZE.load(Ordering::Relaxed))
+}
+
+pub fn next_zoom_with_display(z: f64, up: bool, display_print_size: bool) -> f64 {
+    let pct = zoom_display_percent(z, display_print_size);
     let stop = if up {
         ZOOM_STOPS.iter().find(|s| **s > pct + 0.01).copied().unwrap_or(64000.0)
     } else {
         ZOOM_STOPS.iter().rev().find(|s| **s < pct - 0.01).copied().unwrap_or(3.13)
     };
-    stop / 100.0
+    zoom_from_display_percent(stop, display_print_size)
 }
 
 /// Format like Illustrator's tab/zoom field: up to 2 decimals, no trailing zeros.
-pub fn zoom_label(z: f64) -> String {
-    let s = format!("{:.2}", z * 100.0);
+pub fn zoom_label(z: f64, display_print_size: bool) -> String {
+    let s = format!("{:.2}", zoom_display_percent(z, display_print_size));
     let s = s.trim_end_matches('0').trim_end_matches('.');
     format!("{s}%")
 }
@@ -115,6 +143,12 @@ impl DockTab {
 pub fn all_panels() -> impl Iterator<Item = (&'static str, &'static str)> {
     let tabs = DockTab::ALL.into_iter().map(|t| (t.info().0, t.info().1));
     tabs.chain(ICON_PANELS.iter().map(|&(id, label, _)| (id, label)))
+}
+
+/// Panel `id`'s id, English label and icon if it can live in the icon column: an icon panel, or
+/// one of the tabbed group's panels dropped there.
+pub fn rail_panel(id: &str) -> Option<(&'static str, &'static str, &'static str)> {
+    ICON_PANELS.iter().find(|entry| entry.0 == id).copied().or_else(|| DockTab::from_id(id).map(DockTab::info))
 }
 
 /// Panels that live as collapsed icons in the dock (Essentials Classic).
@@ -182,6 +216,10 @@ pub const ICON_PANEL_GROUPS: &[&[&str]] = &[
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ViewFlags {
     pub rulers: bool,
+    /// View › Rulers › Show Video Rulers: while the rulers show, they count the active artboard in
+    /// video pixels, honouring its Video Ruler Pixel Aspect Ratio.
+    #[serde(default)]
+    pub video_rulers: bool,
     pub grid: bool,
     pub guides: bool,
     pub smart_guides: bool,
@@ -198,10 +236,17 @@ pub struct ViewFlags {
     pub corner_widgets: bool,
     /// View → Snap to Pixel.
     pub snap_to_pixel: bool,
+    /// View → Snap to Glyph.
+    #[serde(default)]
+    pub snap_to_glyph: bool,
     /// View → Show/Hide Text Threads.
     pub text_threads: bool,
     /// View → Show/Hide Gradient Annotator.
     pub gradient_annotator: bool,
+    /// View → Show/Hide Live Paint Gaps: draw the gaps of the selected Live Paint groups in their Gap
+    /// Preview Color.
+    #[serde(default)]
+    pub live_paint_gaps: bool,
     /// Type → Show Hidden Characters.
     pub hidden_chars: bool,
     /// View → Hide/Show Template: template layers drawn (dimmed) or left out of the canvas.
@@ -213,6 +258,7 @@ impl Default for ViewFlags {
     fn default() -> Self {
         Self {
             rulers: false,
+            video_rulers: false,
             grid: false,
             guides: true,
             smart_guides: true,
@@ -226,8 +272,10 @@ impl Default for ViewFlags {
             trim_view: false,
             corner_widgets: true,
             snap_to_pixel: false,
+            snap_to_glyph: false,
             text_threads: true,
             gradient_annotator: true,
+            live_paint_gaps: false,
             hidden_chars: false,
             templates: true,
         }
@@ -274,6 +322,9 @@ pub struct UiState {
     pub legacy_language: Option<String>,
     pub brightness: Brightness,
     pub dock_tab: DockTab,
+    /// Tab order in the dock's tabbed group when it differs from [`DockTab::ALL`].
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dock_tab_order: Vec<DockTab>,
     /// The dock's tabbed group (Properties | Layers | Libraries) is collapsed to icons at the top of
     /// the icon column (the dock's double arrow, `window.collapseDock`).
     #[serde(default)]
@@ -325,9 +376,19 @@ pub struct UiState {
     /// Panels whose saved return destination is the iconic rail.
     #[serde(default, skip_serializing_if = "std::collections::BTreeSet::is_empty")]
     pub docking_icons: std::collections::BTreeSet<String>,
+    /// The panels shown by dock groups collapsed to their tabs (a double-click on a tab); a group
+    /// showing another of its panels is expanded.
+    #[serde(default, skip_serializing_if = "std::collections::BTreeSet::is_empty")]
+    pub docking_collapsed: std::collections::BTreeSet<String>,
     /// Invalidates in-flight gestures when a workspace is replaced.
     #[serde(skip)]
     pub docking_generation: u64,
+    /// The main dock column's outer width in screen points (legacy or shared docking).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dock_width: Option<f32>,
+    /// Next frame should seed egui [`PanelState`] from [`Self::dock_width`] (workspace switch).
+    #[serde(skip)]
+    pub dock_width_pending: bool,
     /// The Tools panel floats with its top-left corner here (dragged out by its title bar); `None`:
     /// docked at the window's left edge.
     #[serde(default)]
@@ -366,6 +427,10 @@ pub struct UiState {
     /// Recorded actions (Actions panel), persisted with the UI preferences.
     #[serde(default = "crate::panels::actions::default_sets")]
     pub action_sets: Vec<crate::panels::actions::ActionSet>,
+    /// The current set of the Actions panel (its name clicked, one of its actions clicked, or made
+    /// with New Set): a recording goes into it and Set Options renames it. Not saved.
+    #[serde(skip)]
+    pub action_set: Option<usize>,
     /// Recording in progress: (set index, action name, journal length when recording started).
     #[serde(skip)]
     pub recording: Option<(usize, String, usize)>,
@@ -378,9 +443,16 @@ pub struct UiState {
     /// Current workspace (Window → Workspace).
     #[serde(default = "default_workspace")]
     pub workspace: String,
+    /// Workspace before Preferences › Devices › Enable Touch Workspace switched to Touch (#394).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub touch_workspace_restore: Option<String>,
     /// User-saved workspaces (New Workspace…).
     #[serde(default)]
     pub custom_workspaces: Vec<crate::workspaces::Workspace>,
+    /// Layout changes made in a workspace since it was saved (or last reset), by workspace name:
+    /// switching back to it brings them back; Reset <name> drops them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub workspace_changes: Vec<crate::workspaces::Workspace>,
     /// File → Open Recent Files, most recent first.
     #[serde(default)]
     pub recent_files: Vec<String>,
@@ -415,6 +487,11 @@ pub struct UiState {
     /// buttons follow ([`crate::panels::align::with_align_to`]).
     #[serde(default, deserialize_with = "crate::panels::align::deserialize_align_to")]
     pub align_to: crate::panels::align::AlignTo,
+    /// Align panel: the Distribute Spacing value in points, which the Distribute Objects and
+    /// Distribute Spacing buttons and their commands send while there is a key object or a key
+    /// guide ([`crate::panels::align::run_button`]). Not saved.
+    #[serde(skip)]
+    pub align_spacing: f64,
     /// Color panel: the mode picked last from its menu (`None`: never picked), in which the panel
     /// shows the defaults for new art ([`crate::panels::color::deserialize_mode`]).
     #[serde(default, deserialize_with = "crate::panels::color::deserialize_mode")]
@@ -459,6 +536,11 @@ pub struct UiState {
     /// dialog opens on them (#1152).
     #[serde(default)]
     pub offset_path: Value,
+    /// The Simplify dialog's fields confirmed last with "Open this dialog with these settings next
+    /// time" ticked (null: not ticked): Object › Path › Simplify opens the dialog on them instead
+    /// of the Simplify slider.
+    #[serde(default)]
+    pub simplify: Value,
     /// The Move dialog's checkboxes as it was last confirmed with (copy, objects, preview; null:
     /// never used): it opens with them.
     #[serde(default)]
@@ -472,7 +554,7 @@ pub struct UiState {
     /// becoming active, leaves it.
     #[serde(skip)]
     pub home: Option<(Option<u64>, usize)>,
-    /// Layers panel › Panel Options… (row size, thumbnails, Show Layers Only).
+    /// Layers panel › Panel Options… (row size, thumbnails, Show Layers Only, Locate Selected Objects).
     #[serde(default)]
     pub layers_panel: crate::panels::layers::PanelOptions,
     /// The Layers panel's Filter (`ui.layersFilter`). It is not saved and lasts the session, as the
@@ -716,7 +798,24 @@ impl UiState {
         FloatingPanels::sanitize(&mut self.floating_panels, &mut self.toolbar_pos);
         crate::edit_toolbar::sanitize(&mut self.toolbar_edits);
         self.docking = self.docking.filter(crate::panel_docking::valid);
-        self.docking_icons.retain(|id| ICON_PANELS.iter().any(|entry| entry.0 == id));
+        // The tabbed group's panels live in the icon column too once dropped there.
+        self.docking_icons.retain(|id| rail_panel(id).is_some());
+        self.docking_collapsed = std::mem::take(&mut self.docking_collapsed)
+            .into_iter()
+            .filter(|id| crate::menus::normalize_panel(id) == Some(id.as_str()))
+            .take(64)
+            .collect();
+        // Changes kept for workspaces that still exist, under their saved spelling and one per
+        // workspace whatever the case (a hand-edited file).
+        let mut seen = std::collections::BTreeSet::new();
+        let saved: Vec<String> =
+            self.custom_workspaces.iter().map(|w| w.name.clone()).chain(crate::workspaces::builtins().into_iter().map(|w| w.name)).collect();
+        self.workspace_changes.retain_mut(|w| {
+            let Some(name) = saved.iter().find(|n| n.eq_ignore_ascii_case(&w.name)) else { return false };
+            w.name = name.clone();
+            seen.insert(name.to_ascii_lowercase())
+        });
+        self.workspace_changes.truncate(64);
         // Overrides that can't fire (modifier-only chords recorded by older versions, #487) give
         // the default back.
         self.shortcut_overrides.retain(|_, c| c.is_empty() || crate::shortcut_editor::normalize(c).is_some());
@@ -730,6 +829,7 @@ impl Default for UiState {
             legacy_language: None,
             brightness: Brightness::MediumDark,
             dock_tab: DockTab::Properties,
+            dock_tab_order: Vec::new(),
             dock_collapsed: false,
             open_panel: None,
             control_bar: false,
@@ -748,7 +848,10 @@ impl Default for UiState {
             docking: None,
             docking_hidden: Default::default(),
             docking_icons: Default::default(),
+            docking_collapsed: Default::default(),
             docking_generation: 0,
+            dock_width: None,
+            dock_width_pending: false,
             toolbar_pos: None,
             status_bar: true,
             dock: true,
@@ -766,11 +869,14 @@ impl Default for UiState {
             draw_mode: 0,
             about: false,
             action_sets: crate::panels::actions::default_sets(),
+            action_set: None,
             recording: None,
             shortcut_overrides: Default::default(),
             shortcut_set: default_shortcut_set(),
             workspace: default_workspace(),
+            touch_workspace_restore: None,
             custom_workspaces: vec![],
+            workspace_changes: vec![],
             recent_files: vec![],
             recent_fonts: vec![],
             favorite_fonts: vec![],
@@ -782,6 +888,7 @@ impl Default for UiState {
             embroidery_panel: Default::default(),
             color_guide_limit: String::new(),
             align_to: Default::default(),
+            align_spacing: 0.0,
             color_mode: None,
             color_hide_options: false,
             svg_options: Value::Null,
@@ -794,6 +901,7 @@ impl Default for UiState {
             dxf_options: Value::Null,
             eps_options: Value::Null,
             offset_path: Value::Null,
+            simplify: Value::Null,
             move_options: Value::Null,
             dxf_import: Value::Null,
             home: None,
@@ -828,12 +936,22 @@ mod tests {
 
     #[test]
     fn zoom_steps() {
-        assert_eq!(next_zoom(1.0, true), 1.5);
-        assert!((next_zoom(1.0, false) - 0.6667).abs() < 1e-9);
-        assert_eq!(next_zoom(640.0, true), 640.0);
-        assert_eq!(zoom_label(0.6667), "66.67%");
-        assert_eq!(zoom_label(1.0), "100%");
-        assert_eq!(zoom_label(0.125), "12.5%");
+        assert_eq!(next_zoom_with_display(1.0, true, false), 1.5);
+        assert!((next_zoom_with_display(1.0, false, false) - 0.6667).abs() < 1e-9);
+        assert_eq!(next_zoom_with_display(640.0, true, false), 640.0);
+        assert_eq!(zoom_label(0.6667, false), "66.67%");
+        assert_eq!(zoom_label(1.0, false), "100%");
+        assert_eq!(zoom_label(0.125, false), "12.5%");
+    }
+
+    /// storytold/vectorcraft#2719: 100% in the zoom field matches Actual Size when Display Print Size is on.
+    #[test]
+    fn zoom_percent_honors_display_print_size_baseline() {
+        let b = zoom_baseline(true);
+        assert!((zoom_from_display_percent(100.0, true) - b).abs() < 1e-12);
+        assert_eq!(zoom_from_display_percent(100.0, false), 1.0);
+        assert_eq!(zoom_label(b, true), "100%");
+        assert_eq!(next_zoom_with_display(b, true, true), zoom_from_display_percent(150.0, true));
     }
 
     #[test]

@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-24 · **Change:** the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-24 · **Change:** VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -1732,9 +1732,9 @@ figures once per plan. They change at most four times a second (an estimate). Bl
 plan; "Planning stitches… 37%" once a plan takes 0.4 s; "Updating…" before dimmed figures once a newer
 plan takes that long; "Nothing to sew"; "⚠ Stitches can't be planned", the reason in the tooltip.
 While the bar says these, the canvas's notice leaves planning and failure to it. They take the longest
-of five wordings that fits, the render and interface timings giving way first, then hide; the X/Y
-readout and 60 points of the last message keep their room, and the slot keeps its widest width while
-its wording stays. A click opens the panel at its Sewing order. `ui.inspect`'s
+of five wordings that fits, the render and interface timings giving way first, then hide; the room
+VectorCraft's bar keeps for its message (180 points) and its X/Y readout stays theirs, and the
+slot keeps its widest width while its wording stays. A click opens the panel at its Sewing order. `ui.inspect`'s
 `stitchPreview.counters` gives their state, figures and words.
 
 **Check marks on the canvas** (`embroidery::check_marks`). While the Check tab shows, each listed hit
@@ -1980,6 +1980,7 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-24 | minor | VectorCraft merged in (upstream to 2026-10-23): the status bar's counters take its right end in the bar's new fixed slots, leaving the room it keeps for its message and X/Y readout; the Art \| Stitches switch sits below the isolation mode's bar, which now lies over the canvas; every embroidery word in Turkish too (AI-drafted), its numbers as CLDR writes them ("4.752", "0,38", "%37"). |
 | 2026-10-24 | minor | The stitch preview's review round: the Sewing order list read only from the plan it shows, its steps worked out on it, a drop where its rows already are refused, a block cut by the list's limit without a thread change; Show Needle Points drawn; the plans' memory bounded for all documents together; planning keyed by the fonts a design uses; an export's options noted once written; `embroidery.render`'s points and strict colours, its size capped; VectorCraft Stitch's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. |
 | 2026-10-23 | minor | The stitch preview, done: the Check tab (the check's measured extremes, a hit's start, thread and objects, the stitch lengths in bins ending at 12.7 mm; severity marks; problems first; Show and Next and Previous Finding through `view.zoomTo`; rings on the canvas, thinned; the chart), the status bar's counters, and every language checked at 256 and 300 points. |
 | 2026-10-23 | minor | The stitch preview, in progress: the Embroidery panel (docked beside Properties, Layers and Libraries), its Sewing order tab, changing the sewing order (dragged rows, Sew Earlier, Later, First and Last), the selection's entry and exit, a hovered row's stitches stood out. |

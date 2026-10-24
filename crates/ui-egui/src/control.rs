@@ -164,6 +164,9 @@ pub fn inspect(app: &VectorcraftApp, ctx: &egui::Context) -> Value {
         "stitchPreview": crate::embroidery::inspect(app, ctx.input(|i| i.time)),
         // Documents still being read off the UI thread (File › Open, Open Recent): their paths.
         "opening": app.opening.pending.iter().map(|p| p.path.as_str()).collect::<Vec<_>>(),
+        // Files still being read off the UI thread for Place (the Place dialog's OK, drops): their
+        // names, in the order they are placed.
+        "placing": app.placing.pending.iter().map(|p| p.name.as_str()).collect::<Vec<_>>(),
         // The screen color sampler is shown, waiting for the person at the computer
         // (`ui.sampleScreenColor`).
         "screenSampler": app.screen_sampler.is_some(),

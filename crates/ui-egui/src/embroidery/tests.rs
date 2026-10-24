@@ -115,7 +115,7 @@ fn the_view_menu_the_tab_and_the_control_channel_reach_the_stitch_view() {
     assert_eq!(checked(&app, "view.stitchPreview.jumps", &none), Some(true));
     let title = |app: &VectorcraftApp| {
         let d = app.session.active().unwrap();
-        crate::chrome::tab_title(d, 1.0, app.ui.view.outline, crate::embroidery::menu::shows_stitches(app, d))
+        crate::chrome::tab_title(d, 1.0, app.ui.view.outline, app.session.prefs.display_print_size, crate::embroidery::menu::shows_stitches(app, d))
     };
     assert!(title(&app).ends_with("(RGB/Preview)"), "{}", title(&app));
     assert_eq!(request(&mut app, &tx, "ui.set", json!({"stitchPreview": true}))["ok"], true);

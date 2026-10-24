@@ -274,6 +274,9 @@ fn node_bytes(n: &Node, other: Option<&Node>) -> usize {
         b += e.embroidery.as_deref().map_or(0, embroidery_kept_bytes);
         b += e.trace.as_ref().map_or(0, |t| ALLOC + size_of::<Value>() + json_bytes(t));
         b += e.intertwine.as_deref().map_or(0, |a| ALLOC + size_of::<PathData>() + path_bytes(a));
+        b += e.objects_on_path.as_deref().map_or(0, |o| {
+            ALLOC + size_of::<crate::objects_on_path::ObjectsOnPath>() + o.members.capacity() * size_of::<crate::objects_on_path::Member>()
+        });
     }
     b += match &n.kind {
         NodeKind::Path { path, live, .. } => path_bytes(path) + boxed(live),

@@ -269,6 +269,133 @@ proptest! {
     }
 }
 
+// ---------- Affinity documents with every feature the reader maps ----------
+
+#[path = "support/affinity_docs.rs"]
+mod affinity_docs;
+#[path = "../../affinity/tests/support/text_fixture.rs"]
+mod text_fixture;
+
+/// One sample document: its object stream and, for embedded content, the embedded document's.
+struct AffinitySample {
+    name: &'static str,
+    stream: Vec<u8>,
+    embedded: Option<Vec<u8>>,
+}
+
+/// Original synthetic documents (not an Affinity writer) reaching what the reader maps beyond
+/// [`affinity_native_stream`]: layer effects and colour overlays (also over tables), stroke
+/// styles, dashes and brushes, paragraph alignment, frame text, underline, strikethrough and
+/// line breaks inside a paragraph, tables with merged and two-line cells, master pages, CMYK
+/// pixel layers with and without the document's CMYK profile, and embedded documents.
+fn affinity_feature_samples() -> Vec<AffinitySample> {
+    use affinity_docs::*;
+    let identity = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
+    let fx = vec![shadow(), effect(b"OutG", 6.0), effect(b"InnS", 3.0), effect(b"BevE", 4.0), outline(0, 3.0), outline(2, 4.0), colour_overlay(0.5)];
+    let canvas = canvas_stream(vec![
+        with_effects(stroked(10, 1, &[]), fx),
+        stroked(11, 0, &[]),
+        stroked(12, 2, &[4.0, 2.0]),
+        stroked(13, 3, &[]),
+        mixed_alignment(1, 2),
+        two_line_frame(150.0),
+        decorated_text(70),
+        with_effects(table_with(30, identity, ["A", "B\u{2028}two", "C", "D", "E"]), vec![colour_overlay(1.0)]),
+    ]);
+    let icc = vectorcraft_color::cms::icc_bytes(vectorcraft_color::cms::GENERIC_CMYK).unwrap();
+    let inner = canvas_stream(vec![with_effects(rectangle(10, (0.0, 0.0), (50.0, 50.0)), vec![colour_overlay(1.0)]), artistic_text(20, "Hi", 40.0)]);
+    vec![
+        AffinitySample { name: "effects, strokes, text and tables", stream: canvas, embedded: None },
+        AffinitySample { name: "master pages", stream: master_stream(3), embedded: None },
+        AffinitySample { name: "CMYK pixels with a profile", stream: cmyk_stream(false, Some(&icc)), embedded: None },
+        AffinitySample { name: "CMYK pixels with transparency", stream: cmyk_stream(true, None), embedded: None },
+        AffinitySample { name: "embedded document", stream: canvas_stream(vec![embedded_node(20)]), embedded: Some(inner) },
+    ]
+}
+
+/// A sample's file: its streams stored uncompressed, so mutations reach the object graph
+/// instead of failing a decompressor's checks.
+fn affinity_sample_file(stream: &[u8], embedded: Option<&[u8]>) -> Vec<u8> {
+    use vectorcraft_affinity::synth::Method;
+    let inner = embedded.map(|e| affinity_docs::packed(e, None, Method::Stored));
+    affinity_docs::packed(stream, inner.as_deref(), Method::Stored)
+}
+
+#[test]
+fn the_affinity_feature_samples_reach_what_they_are_for() {
+    use vectorcraft_doc::NodeKind;
+    let samples = affinity_feature_samples();
+    let open = |i: usize| {
+        let s: &AffinitySample = &samples[i];
+        let l = vectorcraft_engine::cmd::fileio::load("x.af", &affinity_sample_file(&s.stream, s.embedded.as_deref())).unwrap();
+        assert!(!l.preview_only, "{}: {:?}", s.name, l.warnings);
+        l
+    };
+    fn all(d: &Document) -> Vec<&vectorcraft_doc::Node> {
+        fn walk<'a>(nodes: &'a [std::sync::Arc<vectorcraft_doc::Node>], out: &mut Vec<&'a vectorcraft_doc::Node>) {
+            for n in nodes {
+                out.push(n);
+                if let Some(c) = n.children() {
+                    walk(c, out);
+                }
+            }
+        }
+        let mut out = Vec::new();
+        walk(&d.layers, &mut out);
+        out
+    }
+    let l = open(0);
+    let nodes = all(&l.doc);
+    let runs: Vec<&vectorcraft_doc::text::TextRun> =
+        nodes.iter().filter_map(|n| if let NodeKind::Text(t) = &n.kind { Some(t.runs.iter()) } else { None }).flatten().collect();
+    assert!(runs.iter().any(|r| r.style.underline) && runs.iter().any(|r| r.style.strikethrough));
+    assert!(runs.iter().any(|r| r.text.contains("two")), "the table's two-line cell");
+    assert!(nodes.iter().any(|n| n.appearance.effects.iter().any(|e| e.id == "stylize.dropShadow")));
+    assert!(l.warnings.iter().any(|w| w.contains("bevel")), "{:?}", l.warnings);
+    // Line styles: solid, None (no stroke), dashed and brush.
+    use vectorcraft_doc::appearance::{AppearanceItem, StrokeLayer};
+    let strokes = |n: &vectorcraft_doc::Node| -> Vec<StrokeLayer> {
+        n.appearance.items.iter().filter_map(|i| if let AppearanceItem::Stroke(s) = i { Some(s.clone()) } else { None }).collect()
+    };
+    let boxes: Vec<_> = nodes.iter().filter(|n| n.name.as_deref() == Some("Magenta box")).collect();
+    assert_eq!(boxes.len(), 4);
+    assert_eq!(boxes.iter().filter(|b| strokes(b).is_empty()).count(), 1, "line style None");
+    assert!(boxes.iter().any(|b| strokes(b).iter().any(|s| s.dash.is_some())), "dashed");
+    let l = open(1);
+    assert_eq!(l.doc.artboards.len(), 3);
+    assert!(l.doc.layers.iter().any(|n| n.name.as_deref() == Some("Master A")));
+    for i in [2, 3] {
+        assert!(all(&open(i).doc).iter().any(|n| matches!(n.kind, NodeKind::Image(_))), "{}", samples[i].name);
+    }
+    assert!(all(&open(4).doc).iter().any(|n| n.name.as_deref() == Some("Magenta box")));
+}
+
+proptest! {
+    #![proptest_config(config())]
+
+    #[test]
+    fn affinity_feature_documents_with_mutated_streams_render_and_export(
+        sample in 0usize..5,
+        inner in any::<bool>(),
+        cut in 0usize..8192,
+        edits in prop::collection::vec((0usize..8192, any::<u8>()), 0..24),
+    ) {
+        let samples = affinity_feature_samples();
+        let s = &samples[sample % samples.len()];
+        let (mut stream, mut embedded) = (s.stream.clone(), s.embedded.clone());
+        // Mutate the embedded document's stream instead, where there is one.
+        let target = match embedded.as_mut() {
+            Some(e) if inner => e,
+            _ => &mut stream,
+        };
+        let n = target.len();
+        for (at, b) in edits { target[at % n] = b; }
+        target.truncate(cut.max(16));
+        let bytes = affinity_sample_file(&stream, embedded.as_deref());
+        survive(s.name, || vectorcraft_engine::cmd::fileio::load("x.af", &bytes).ok().map(|l| l.doc))?;
+    }
+}
+
 /// Import must not panic; whatever comes back must render and export without panicking either.
 fn survive(what: &str, import: impl FnOnce() -> Option<Document>) -> Result<(), TestCaseError> {
     let r = catch_quiet(|| {
@@ -989,7 +1116,8 @@ fn styles(what: &str, data: &str) -> Result<(), TestCaseError> {
 }
 
 /// Libraries panel library file `data` imported, then each kind's first item used on the rich
-/// document and moved into its first group, the group deleted and the library exported (#926).
+/// document, moved into its first group and next to its kind's last item, the group moved and
+/// deleted and the library exported (#926).
 fn libraries(what: &str, data: &str) -> Result<(), TestCaseError> {
     survive_library(what, "library.import", data, |s, r| {
         let lib = r["id"].clone();
@@ -1002,9 +1130,17 @@ fn libraries(what: &str, data: &str) -> Result<(), TestCaseError> {
                 let _ = no_panic(s.execute("library.use", &json!({"library": lib, "kind": kind, "item": item[key]})));
                 let to = json!({"library": lib, "kind": kind, "item": item[key], "group": got["groups"][0]["name"]});
                 let _ = no_panic(s.execute("library.moveItem", &to));
+                // Next to the last item of its kind, whatever group that is in.
+                let last = got[list].as_array().and_then(|a| a.last()).map(|v| v[key].clone()).unwrap_or_default();
+                for side in ["before", "after"] {
+                    let _ = no_panic(s.execute("library.moveItem", &json!({"library": lib, "kind": kind, "item": item[key], side: last})));
+                }
             }
         }
         if let Some(g) = got["groups"].get(0) {
+            for to in [0, 1, 1_000_000] {
+                let _ = no_panic(s.execute("library.moveGroup", &json!({"library": lib, "group": g["name"], "to": to})));
+            }
             let _ = no_panic(s.execute("library.deleteGroup", &json!({"library": lib, "group": g["name"]})));
         }
         let _ = no_panic(s.execute("library.export", &json!({"library": lib})));
@@ -1244,6 +1380,68 @@ proptest! {
     }
 }
 
+// ---------- variable library XML files ----------
+
+/// A variable library written from its public grammar: two text variables (`Title` is a
+/// variable of [`merge_session`]'s document), a variable of another kind and two data sets.
+const VARIABLE_LIBRARY: &str = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n\
+<!DOCTYPE svg [\n<!ENTITY ns_vars \"http://ns.adobe.com/Variables/1.0/\">\n<!ENTITY ns_custom \"http://ns.adobe.com/GenericCustomNamespace/1.0/\">\n]>\n\
+<svg>\n<variableSets xmlns=\"&ns_vars;\">\n<variableSet varSetName=\"binding1\" locked=\"none\">\n<variables>\n\
+<variable varName=\"Title\" trait=\"textcontent\"></variable>\n<variable varName=\"Note\" trait=\"textcontent\"></variable>\n\
+<variable varName=\"Show\" trait=\"other\"></variable>\n</variables>\n\
+<v:sampleDataSets xmlns:v=\"&ns_vars;\" xmlns=\"&ns_custom;\">\n\
+<v:sampleDataSet dataSetName=\"A\">\n<Title><p>One</p><p>Two &amp; three</p></Title>\n<Note><p>x</p></Note>\n<Show><p>true</p></Show>\n</v:sampleDataSet>\n\
+<v:sampleDataSet dataSetName=\"C\">\n<Title><p>Four</p></Title>\n<Note></Note>\n</v:sampleDataSet>\n\
+</v:sampleDataSets>\n</variableSet>\n</variableSets>\n</svg>\n";
+
+/// `variable.loadLibrary` with `params` on [`merge_session`]'s document, the first three data sets
+/// it read selected in turn and every data set exported; the document then renders and exports.
+fn variable_library(what: &str, params: Value) -> Result<(), TestCaseError> {
+    survive(what, || {
+        let mut s = merge_session();
+        if let Ok(r) = no_panic(s.execute("variable.loadLibrary", &params)) {
+            for name in r["names"].as_array().into_iter().flatten().take(3) {
+                let _ = no_panic(s.execute("dataset.select", &json!({"name": name})));
+            }
+        }
+        let _ = no_panic(s.execute("dataset.export", &json!({})));
+        Some((*s.doc().ok()?.doc).clone())
+    })
+}
+
+proptest! {
+    #![proptest_config(config())]
+
+    #[test]
+    fn variable_library_garbage_never_panics(s in ".{0,300}", head in prop::sample::select(vec![
+        "",
+        "<variableSets>",
+        "<variableSets><variableSet><variables><variable varName=\"Title\" trait=\"textcontent\"/></variables><sampleDataSets><sampleDataSet dataSetName=\"A\">",
+        "<variableSets><variableSet><variables><variable varName=\"Title\" trait=\"textcontent\"/></variables><sampleDataSets><sampleDataSet dataSetName=\"A\"><Title><p>",
+        "<!DOCTYPE svg [<!ENTITY a \"",
+    ])) {
+        variable_library("variable library garbage", json!({"xml": format!("{head}{s}")}))?;
+    }
+
+    #[test]
+    fn variable_library_bytes_never_panic(bytes in prop::collection::vec(any::<u8>(), 0..300)) {
+        variable_library("variable library bytes", json!({"dataBase64": vectorcraft_format::base64_encode(&bytes)}))?;
+    }
+
+    /// The library cut short and with characters replaced, then with `nest` elements nested in one
+    /// another inside its `svg` element.
+    #[test]
+    fn mutated_variable_libraries_never_panic(
+        cut in 0usize..1_200,
+        edits in prop::collection::vec((0usize..1_200, prop::sample::select(vec!['<', '>', '"', '/', '=', '&', ';', '!', '[', ']', 'p', 'x', ' '])), 0..10),
+        nest in prop::sample::select(vec![0usize, 0, 0, 240, 100_000]),
+    ) {
+        let xml = mutate_text(VARIABLE_LIBRARY, cut, &edits);
+        let xml = xml.replacen("<svg>", &format!("<svg>{}", "<a>".repeat(nest)), 1).replacen("</svg>", &format!("{}</svg>", "</a>".repeat(nest)), 1);
+        variable_library("mutated variable library", json!({"xml": xml}))?;
+    }
+}
+
 // ---------- shortcut sets ----------
 
 /// Shortcut set `bytes` read with `shortcutSet.read`, with import matches saved to annotate it: an
@@ -1426,6 +1624,57 @@ proptest! {
             let _ = no_panic(s.execute("file.place", &p));
         });
         prop_assert!(r.is_ok(), "panicked: {:?}", r.err());
+    }
+}
+
+/// Targa files, which start with no signature: run-length encoded 24 bits (as the `image` crate
+/// writes them), a 16-bit export with a one-bit alpha, and by hand a 16-bit run-length encoded file
+/// stored right to left and top down, a run-length encoded color-mapped one with 16-bit entries,
+/// and a 32-bit one with an extension area.
+fn targa_samples() -> Vec<(&'static str, Vec<u8>)> {
+    let mut rle = vec![];
+    image::RgbImage::from_pixel(5, 3, image::Rgb([200, 40, 10])).write_to(&mut std::io::Cursor::new(&mut rle), image::ImageFormat::Tga).unwrap();
+    let mut s = rich_session();
+    let r = s.execute("document.export", &json!({"format": "tga", "depth": 16, "ppi": 2})).unwrap();
+    let export = vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap();
+    let mut alpha = vec![0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 2, 0, 16, 0x31, 0x02, 0x00, 0xfc, 0x1f, 0x80, 0x00, 0x00];
+    alpha.extend([0x82, 0xe0, 0x83]);
+    let mut mapped = vec![0, 1, 9, 5, 0, 2, 0, 16, 0, 0, 0, 0, 3, 0, 2, 0, 8, 0x21, 0x00, 0x00, 0x00, 0xfc];
+    mapped.extend([0x80, 6, 0x00, 5, 0x83, 6]);
+    let mut extended = vec![0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 32, 0x28, 50, 50, 50, 128];
+    let mut area = vec![0; 495];
+    area[..2].copy_from_slice(&495u16.to_le_bytes());
+    area[494] = 4;
+    extended.extend(area);
+    extended.extend(22u32.to_le_bytes());
+    extended.extend([0; 4]);
+    extended.extend(b"TRUEVISION-XFILE.\0");
+    vec![("a.tga", rle), ("b.tga", export), ("c.tga", alpha), ("d.vda", mapped), ("e.vst", extended)]
+}
+
+proptest! {
+    #![proptest_config(config())]
+
+    /// Mutated Targa files (headers, run-length packets, color maps, the extension area and the
+    /// footer) never crash placing them.
+    #[test]
+    fn mutated_targa_files_place_without_panics(which in 0usize..5, cut in 0usize..600, edits in prop::collection::vec((0usize..560, any::<u8>()), 0..12)) {
+        let (name, mut bytes) = targa_samples().swap_remove(which);
+        for (at, b) in edits {
+            if let Some(x) = bytes.get_mut(at) {
+                *x = b;
+            }
+        }
+        bytes.truncate(cut.max(8));
+        let r = catch_quiet(|| {
+            let mut s = vectorcraft_engine::Session::new();
+            s.execute("file.new", &json!({"width": 100, "height": 100})).unwrap();
+            let p = json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(&bytes), "thumbnail": 8});
+            let _ = no_panic(s.execute("file.place.info", &p));
+            let _ = no_panic(s.execute("file.place", &p));
+            let _ = no_panic(s.execute("clipboard.importImage", &json!({"dataBase64": vectorcraft_format::base64_encode(&bytes)})));
+        });
+        prop_assert!(r.is_ok(), "{name}: panicked: {:?}", r.err());
     }
 }
 
@@ -1742,6 +1991,27 @@ proptest! {
         let text = mutate_text(&ccitt_images_eps(), cut, &edits);
         survive("mutated EPS CCITT images", || vectorcraft_eps::import(text.as_bytes()).ok().map(|r| r.document))?;
     }
+
+    /// TIFF-predicted Flate data (Predictor 2) at every depth the filter accepts, with any bytes, 1 to 5
+    /// colors and 1 to 39 columns, read by images of up to 23 × 7 pixels at 1, 2, 4, 8, 12 or 16 bits:
+    /// read as an image, or as an error.
+    #[test]
+    fn eps_tiff_predicted_images_never_panic(
+        data in prop::collection::vec(any::<u8>(), 0..300),
+        bpc in prop::sample::select(vec![1u8, 2, 4, 8, 16]),
+        colors in 1u8..6,
+        columns in 1u16..40,
+        image_bpc in prop::sample::select(vec![1u8, 2, 4, 8, 12, 16]),
+        (width, height) in (1u8..24, 1u8..8),
+    ) {
+        let hex: String = deflated(&data).iter().map(|b| format!("{b:02x}")).collect();
+        let text = format!(
+            "%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 100 100\n%%EndComments\n40 30 scale {width} {height} {image_bpc} [{width} 0 0 -{height} 0 {height}] \
+             currentfile /ASCIIHexDecode filter << /Predictor 2 /Colors {colors} /BitsPerComponent {bpc} /Columns {columns} >> /FlateDecode filter image\n\
+             {hex}>\nshowpage\n%%EOF\n"
+        );
+        survive("TIFF-predicted EPS images", || vectorcraft_eps::import(text.as_bytes()).ok().map(|r| r.document))?;
+    }
 }
 
 /// An EPS with two 8 × 3 CCITT fax images that the PostScript interpreter reads, coded by hand from
@@ -1852,7 +2122,8 @@ fn arb_ps_token() -> impl Strategy<Value = String> {
             "status", "token", "bytesavailable", "resetfile", "pdfmark", "execform", "nulldevice", "strokepath", "pathforall",
             "currenthsbcolor", "currentcolorrendering", "gcheck", "rootfont", "setcachedevice2", "writestring", "(%stdout) (w) file",
             "//x", "{ //dup }", "/ReusableStreamDecode", "currentfile /ASCII85Decode filter /ReusableStreamDecode filter",
-            "<< /Predictor 12 /Columns 2 /Colors 1 >> /FlateDecode", "<< /FormType 1 /BBox [0 0 9 9] /PaintProc { pop 0 0 5 5 rectfill } >>",
+            "<< /Predictor 12 /Columns 2 /Colors 1 >> /FlateDecode", "<< /Predictor 2 /Colors 3 /BitsPerComponent 4 /Columns 3 >> /LZWDecode",
+            "<< /Predictor 2 /BitsPerComponent 16 /Columns 5 >> /FlateDecode", "<< /FormType 1 /BBox [0 0 9 9] /PaintProc { pop 0 0 5 5 rectfill } >>",
             // Tiling patterns, uncoloured ones and patterns drawing patterns.
             "<< /PatternType 1 /PaintType 1 /XStep 5 /YStep 5 /BBox [0 0 5 5] /PaintProc { pop 0 0 3 3 rectfill } >> matrix makepattern",
             "<< /PatternType 1 /PaintType 2 /XStep 5 /YStep 5 /BBox [0 0 5 5] /PaintProc { pop dup setpattern 0 0 3 3 rectfill } >>",
@@ -3083,17 +3354,38 @@ fn deeply_nested_svg_is_refused_or_merged() {
             "<svg {SVG_NS} width=\"9\" height=\"9\"><defs>{links}<rect id=\"u3000\" width=\"1\" height=\"1\"/></defs><use href=\"#u0\"/></svg>"
         );
         assert!(open_deep("chain.svg", chain.as_bytes()).is_none());
+        // SVG images in SVG images, read on the same stack: each too deep, of a type that is read
+        // as SVG too (`text/plain`), or each within the cap but not all together (#3562). What is
+        // past the cap is left out.
+        let images = [nested_images(3, 1000), nested_images(12, most - 4)];
+        for (i, file) in images.iter().enumerate() {
+            let (_, warnings) = open_deep("images.svg", file.as_bytes()).expect("opens");
+            assert!(warnings.iter().any(|w| w.contains("SVG images were left out")), "{i}: {warnings:?}");
+        }
         // Placed and pasted, as opened.
         let mut s = vectorcraft_engine::Session::new();
         s.execute("file.new", &json!({"width": 300, "height": 200})).unwrap();
-        for n in [40, 2 * most] {
-            let p = json!({"name": "deep.svg", "dataBase64": vectorcraft_format::base64_encode(nested_svg(n).as_bytes())});
+        for svg in [nested_svg(40), nested_svg(2 * most)].iter().chain(&images) {
+            let p = json!({"name": "deep.svg", "dataBase64": vectorcraft_format::base64_encode(svg.as_bytes())});
             let _ = no_panic(s.execute("file.place", &p));
-            let _ = no_panic(s.execute("clipboard.importSvg", &json!({"svg": nested_svg(n)})));
+            let _ = no_panic(s.execute("clipboard.importSvg", &json!({"svg": svg})));
             let _ = no_panic(s.execute("edit.paste", &json!({})));
             assert!(!s.doc().unwrap().doc.too_deep(None));
         }
     });
+}
+
+/// An SVG showing a chain of `levels` SVG images from `text/plain` data URLs, each `n` groups
+/// deep around the next.
+fn nested_images(levels: usize, n: usize) -> String {
+    let image = |svg: &str| {
+        format!("<image href=\"data:text/plain;base64,{}\" width=\"9\" height=\"9\"/>", vectorcraft_format::base64_encode(svg.as_bytes()))
+    };
+    let mut svg = nested_svg(0);
+    for _ in 0..levels {
+        svg = format!("<svg {SVG_NS} width=\"9\" height=\"9\">{}{}{}</svg>", "<g>".repeat(n), image(&svg), "</g>".repeat(n));
+    }
+    format!("<svg {SVG_NS} width=\"9\" height=\"9\">{}</svg>", image(&svg))
 }
 
 /// A page whose content is `content`, with `resources`.
@@ -3902,6 +4194,18 @@ fn ai_cut_inside_an_array_or_dictionary_opens_without_panicking() {
         b.truncate(44902.min(b.len()));
         survive("ai cut inside an array or dictionary", || vectorcraft_engine::cmd::fileio::load("saved.ai", &b).ok().map(|l| l.doc)).unwrap();
     }
+}
+
+/// Found by the fuzzer above: a shape 3.3 million points long and 50 high, with a drop shadow,
+/// made the PDF export rasterise its shadow wider than the renderer can address (within the
+/// effect image's area limit, past any side), which panicked.
+#[test]
+fn a_long_thin_shape_with_a_shadow_renders_and_exports() {
+    use affinity_docs::*;
+    let stream = canvas_stream(vec![with_effects(rectangle(10, (0.0, 0.0), (3_276_800.0, 50.0)), vec![shadow()])]);
+    let bytes = affinity_sample_file(&stream, None);
+    let doc = vectorcraft_engine::cmd::fileio::load("long.af", &bytes).unwrap().doc;
+    survive("long shape", || Some(doc)).unwrap();
 }
 
 // ---------- Embroidery designs: opened and placed ----------

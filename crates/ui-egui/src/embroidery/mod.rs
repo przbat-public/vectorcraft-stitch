@@ -54,8 +54,13 @@ pub struct Embroidery {
     pub(crate) counters: counters::Counters,
 }
 
+/// The height of the isolation mode's breadcrumb bar, which upstream draws over the canvas's top
+/// after the fork's controls (`chrome::isolation_bar`), points: as it draws it.
+const ISOLATION_BAR: f32 = 24.0;
+
 /// What the fork draws over the canvas, after it: the selection's markers in the stitch view, the
-/// check's marks, the Art | Stitches switch, and the notice under it.
+/// check's marks, the Art | Stitches switch, and the notice under it (both below the isolation
+/// mode's bar while it shows).
 pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
     let Some(canvas) = app.canvas_rect.filter(|_| !crate::menus::home_showing(app)) else { return };
     if let Some(view) = app.view().copied() {
@@ -63,8 +68,17 @@ pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
         overlay::draw(app, &ui.painter_at(canvas), &xf);
         check_marks::draw(app, ui.ctx(), &ui.painter_at(canvas), &xf);
     }
-    switch::show(app, ui, canvas);
-    notice::show(app, ui, canvas);
+    let isolated = app.ui.screen_mode < 3 && app.session.active().is_some_and(|st| st.isolation.is_some());
+    let below = if isolated { egui::Rect::from_min_max(canvas.min + egui::vec2(0.0, ISOLATION_BAR), canvas.max) } else { canvas };
+    switch::show(app, ui, below);
+    notice::show(app, ui, below);
+}
+
+/// The fork's work at the frame's end: a click on the status bar's counters acted on, then what
+/// the frame asked of the stitch preview planned.
+pub fn end_frame(app: &mut VectorcraftApp, ctx: &egui::Context) {
+    counters::act(app);
+    stitch_preview::schedule(app, ctx);
 }
 
 /// The longest a window capture (`ui.screenshot`) waits for the stitch view to be drawn for the

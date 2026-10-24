@@ -179,7 +179,7 @@ pub struct PartSettings {
     /// `points`. `None`: none.
     pub points: Option<PartPoints>,
     /// Keys this version doesn't know, and known keys whose value it can't read, kept as they are.
-    pub extra: Map<String, Value>,
+    pub extra: super::Kept,
 }
 
 /// A part's positions ([`PartSettings::points`]), document points, saved as `[x, y]`: they move
@@ -192,7 +192,7 @@ pub struct PartPoints {
     /// Where it comes out.
     pub exit: Option<Point>,
     /// Keys this version doesn't read (and an entry or exit that isn't a point), kept as they are.
-    pub extra: Map<String, Value>,
+    pub extra: super::Kept,
 }
 
 const STITCH: &str = "stitch";
@@ -217,7 +217,7 @@ impl PartPoints {
     fn read(mut map: Map<String, Value>) -> Option<Self> {
         let entry = take(&mut map, ENTRY, point);
         let exit = take(&mut map, EXIT, point);
-        let p = Self { entry, exit, extra: map };
+        let p = Self { entry, exit, extra: map.into() };
         (!p.is_empty()).then_some(p)
     }
 
@@ -232,7 +232,7 @@ impl From<PartPoints> for Value {
     fn from(p: PartPoints) -> Self {
         let xy = |q: Point| serde_json::json!([q.x, q.y]);
         let set = p.entry.map(|q| (ENTRY, xy(q))).into_iter().chain(p.exit.map(|q| (EXIT, xy(q))));
-        with_kept(set, p.extra)
+        with_kept(set, std::sync::Arc::unwrap_or_clone(p.extra))
     }
 }
 
@@ -260,8 +260,21 @@ impl PartSettings {
                 None
             }
         };
-        let part =
-            Self { stitch, spacing, length, angle, pull, pull_percent, push, expand, narrow_as_satin, underlay, split_length, points, extra: map };
+        let part = Self {
+            stitch,
+            spacing,
+            length,
+            angle,
+            pull,
+            pull_percent,
+            push,
+            expand,
+            narrow_as_satin,
+            underlay,
+            split_length,
+            points,
+            extra: map.into(),
+        };
         (!part.is_empty()).then_some(part)
     }
 
@@ -347,10 +360,10 @@ impl PartSettings {
                     if v.is_none() {
                         return;
                     }
-                    self.extra.remove(POINTS);
+                    super::unkeep(&mut self.extra, POINTS);
                 }
                 let points = self.points.get_or_insert_with(PartPoints::default);
-                points.extra.remove(key.file());
+                super::unkeep(&mut points.extra, key.file());
                 match key {
                     PartKey::Entry => points.entry = v,
                     _ => points.exit = v,
@@ -362,7 +375,7 @@ impl PartSettings {
         }
         .is_some();
         if fits && !key.is_point() {
-            self.extra.remove(key.file());
+            super::unkeep(&mut self.extra, key.file());
         }
         fits
     }
@@ -391,6 +404,6 @@ impl From<PartSettings> for Value {
             num(SPLIT_LENGTH, split_length),
             points.filter(|p| !p.is_empty()).map(|p| (POINTS, Value::from(p))),
         ];
-        with_kept(set.into_iter().flatten(), extra)
+        with_kept(set.into_iter().flatten(), std::sync::Arc::unwrap_or_clone(extra))
     }
 }

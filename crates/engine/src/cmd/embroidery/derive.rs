@@ -199,8 +199,13 @@ pub(crate) fn outlined(n: &Node, result: &mut Node) {
     let Some(stand_in) = whole(e) else { return };
     let mut own = result.extras().embroidery.as_deref().cloned().unwrap_or_default();
     own.trim_after |= stand_in.trim_after;
-    for (k, v) in stand_in.extra {
-        own.extra.entry(k).or_insert(v);
+    if own.extra.is_empty() {
+        own.extra = stand_in.extra;
+    } else if stand_in.extra.keys().any(|k| !own.extra.contains_key(k)) {
+        let kept = Arc::make_mut(&mut own.extra);
+        for (k, v) in stand_in.extra.iter() {
+            kept.entry(k.clone()).or_insert_with(|| v.clone());
+        }
     }
     result.extras_mut().embroidery = Some(Box::new(own));
 }

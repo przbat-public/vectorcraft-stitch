@@ -448,7 +448,7 @@ pub(crate) fn kept_thread(r: &vectorcraft_stitch::ThreadRecord) -> vectorcraft_d
         brand: r.brand.clone(),
         material: r.material,
         weight: r.weight,
-        extra: Map::new(),
+        extra: Default::default(),
     }
 }
 

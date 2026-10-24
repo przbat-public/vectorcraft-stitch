@@ -57,10 +57,17 @@ impl Embroidery {
         for part in [fill, stroke].into_iter().flatten() {
             part.transform(a);
         }
-        move_kept_map(extra, a, 0);
+        move_shared(extra, a);
         if let Some(run) = stitches {
-            move_kept_map(&mut run.extra, a, 0);
+            move_shared(&mut run.extra, a);
         }
+    }
+}
+
+/// [`move_kept_map`] of kept data that may be shared: copied only when there is any.
+fn move_shared(kept: &mut super::Kept, a: Affine) {
+    if !kept.is_empty() {
+        move_kept_map(std::sync::Arc::make_mut(kept), a, 0);
     }
 }
 
@@ -81,9 +88,11 @@ impl PartSettings {
             for p in [&mut points.entry, &mut points.exit] {
                 *p = p.map(|q| a * q).filter(|q| q.x.is_finite() && q.y.is_finite());
             }
-            move_positions_in_map(&mut points.extra, a, 0);
+            if !points.extra.is_empty() {
+                move_positions_in_map(std::sync::Arc::make_mut(&mut points.extra), a, 0);
+            }
         }
-        move_kept_map(&mut self.extra, a, 0);
+        move_shared(&mut self.extra, a);
     }
 }
 

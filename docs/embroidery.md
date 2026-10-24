@@ -1443,7 +1443,9 @@ objects join) is resolved once a plan (`DesignSettings`).
     Done for what objects carry today: `Embroidery` (the node's `embroidery` key) keeps keys it
     doesn't read and known keys of another type (`Embroidery::extra`, `StitchRun::extra`, read as
     unset) and a value that isn't an object (`Embroidery::unread`), as `EmbroiderySetup` does; a
-    property test opens and saves any JSON under that key;
+    property test opens and saves any JSON under that key. An object's kept keys are shared
+    (`Kept`, an `Arc`), so that settings copied onto many objects (the pieces cut from one, the
+    objects pasted onto) share them rather than each holding a copy;
   - keys are snake_case in the file, as every key the file format writes (`trim_after`), and
     camelCase in commands and replies (`trimAfter` would be the parameter's name).
 - **Document settings:** the thread palette (done: `embroidery.setup`, below), the fabric (its

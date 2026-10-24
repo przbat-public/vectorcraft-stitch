@@ -349,3 +349,25 @@ fn ungroup_gives_the_cut_to_the_last_member_sewn() {
     run(&mut s, "object.ungroup", json!({}));
     assert!(embroidery(&s, a).trim_after && !embroidery(&s, label).trim_after);
 }
+
+/// What an object's settings keep that this version doesn't read is shared by the pieces cut from
+/// it, not copied into each: a file's kept value can't make Split Into Grid hold it once a cell.
+#[test]
+fn pieces_share_what_their_source_keeps() {
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 600.0, 600.0);
+    let kept: Embroidery =
+        serde_json::from_value(json!({"fill": {"grain": "x".repeat(100_000), "angle": 30.0}, "branch": "y".repeat(100_000)})).unwrap();
+    give(&mut s, a, &kept);
+    run(&mut s, "select.set", json!({"ids": [a]}));
+    let cells = ids(&run(&mut s, "object.path.splitIntoGrid", json!({"rows": 10, "columns": 10})));
+    assert_eq!(cells.len(), 100);
+    let e: Vec<Embroidery> = cells.iter().map(|id| embroidery(&s, *id)).collect();
+    let first = &e[0];
+    for other in &e[1..] {
+        assert!(std::sync::Arc::ptr_eq(&first.extra, &other.extra), "the object's kept keys shared");
+        let (p, q) = (first.part(PartKind::Fill).unwrap(), other.part(PartKind::Fill).unwrap());
+        assert!(std::sync::Arc::ptr_eq(&p.extra, &q.extra), "the part's kept keys shared");
+    }
+    assert_eq!(angle(first), Some(30.0));
+}

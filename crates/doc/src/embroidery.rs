@@ -18,6 +18,19 @@ mod transform;
 
 pub(crate) use mem::{object_bytes, setup_bytes};
 
+/// `kept` without `key`, copied only when it holds it (it may be shared).
+pub(crate) fn unkeep(kept: &mut Kept, key: &str) {
+    if kept.contains_key(key) {
+        std::sync::Arc::make_mut(kept).remove(key);
+    }
+}
+
+/// What an object's settings keep that this version doesn't read (keys a newer version wrote, known
+/// keys of another type), as they are, shared: settings copied onto many objects (each piece cut
+/// from an object, each object pasted onto) share it rather than each holding a copy, whatever a
+/// file put there. Changed through [`Arc::make_mut`].
+pub type Kept = std::sync::Arc<serde_json::Map<String, serde_json::Value>>;
+
 pub use part::{PartKey, PartKind, PartPoints, PartSettings, PartValue};
 pub use setup::{FabricPreset, FabricSettings, FabricValues, MachineSettings, StitchValues};
 pub use transform::turned_angle;
@@ -48,7 +61,7 @@ pub struct Embroidery {
     pub stroke: Option<Box<PartSettings>>,
     /// Keys this version doesn't know (written by a newer one), and known keys whose value this
     /// version can't read, kept as they are so that saving doesn't lose them.
-    pub extra: serde_json::Map<String, serde_json::Value>,
+    pub extra: Kept,
     /// What a newer version wrote when it is not an object, which this version can't read:
     /// nothing is taken from it, and it is written back as it was while nothing is set here.
     pub unread: Option<serde_json::Value>,
@@ -73,7 +86,7 @@ pub struct StitchRun {
     /// record), written back by a format that has one. `None`: the file recorded none.
     pub thread: Option<ThreadRecord>,
     /// Keys this version doesn't read, kept as they are.
-    pub extra: serde_json::Map<String, serde_json::Value>,
+    pub extra: Kept,
 }
 
 /// A thread as a machine file recorded it beside its colour ([`StitchRun::thread`]), saved as
@@ -92,7 +105,7 @@ pub struct ThreadRecord {
     /// The thread's weight (40 wt is standard embroidery thread).
     pub weight: u8,
     /// Keys this version doesn't read, kept as they are.
-    pub extra: serde_json::Map<String, serde_json::Value>,
+    pub extra: Kept,
 }
 
 impl ThreadRecord {
@@ -111,7 +124,7 @@ impl ThreadRecord {
         let brand = text(&mut map, BRAND)?;
         let material = byte(&mut map, MATERIAL)?;
         let weight = byte(&mut map, WEIGHT)?;
-        Some(Self { catalogue, description, brand, material, weight, extra: map })
+        Some(Self { catalogue, description, brand, material, weight, extra: map.into() })
     }
 }
 
@@ -124,7 +137,7 @@ impl From<ThreadRecord> for serde_json::Value {
             (MATERIAL, serde_json::Value::from(t.material)),
             (WEIGHT, serde_json::Value::from(t.weight)),
         ];
-        with_kept(set, t.extra)
+        with_kept(set, std::sync::Arc::unwrap_or_clone(t.extra))
     }
 }
 
@@ -133,7 +146,7 @@ impl Embroidery {
     /// under that key in a form this version can't read.
     pub fn set_trim_after(&mut self, on: bool) {
         self.trim_after = on;
-        self.extra.remove(TRIM_AFTER);
+        unkeep(&mut self.extra, TRIM_AFTER);
     }
 
     /// The settings of the object's part `kind`, when it keeps any.
@@ -157,7 +170,7 @@ impl Embroidery {
         let out = f(&mut part);
         if !part.is_empty() {
             *slot = Some(Box::new(part));
-            self.extra.remove(kind.id());
+            unkeep(&mut self.extra, kind.id());
             self.unread = None;
         }
         out
@@ -266,7 +279,7 @@ impl From<serde_json::Map<String, serde_json::Value>> for StitchRun {
         if thread.is_some() {
             map.remove(THREAD);
         }
-        Self { trim_before, trim_after, double_point, thread, extra: map }
+        Self { trim_before, trim_after, double_point, thread, extra: map.into() }
     }
 }
 
@@ -276,7 +289,7 @@ impl From<StitchRun> for serde_json::Value {
         let flag = |key: &'static str, on: bool| on.then_some((key, serde_json::Value::Bool(true)));
         let flags = flag(TRIM_BEFORE, r.trim_before).into_iter().chain(flag(TRIM_AFTER, r.trim_after)).chain(flag(DOUBLE_POINT, r.double_point));
         let thread = r.thread.map(|t| (THREAD, serde_json::Value::from(t)));
-        with_kept(flags.chain(thread), r.extra)
+        with_kept(flags.chain(thread), std::sync::Arc::unwrap_or_clone(r.extra))
     }
 }
 
@@ -299,7 +312,7 @@ impl From<serde_json::Value> for Embroidery {
                 let trim_after = take_flag(&mut map, TRIM_AFTER);
                 let fill = take_part(&mut map, PartKind::Fill);
                 let stroke = take_part(&mut map, PartKind::Stroke);
-                Self { stitches, trim_after, fill, stroke, extra: map, unread: None }
+                Self { stitches, trim_after, fill, stroke, extra: map.into(), unread: None }
             }
             serde_json::Value::Null => Self::default(),
             other => Self { unread: Some(other), ..Self::default() },
@@ -322,7 +335,7 @@ impl From<Embroidery> for serde_json::Value {
         let cut = trim_after.then_some((TRIM_AFTER, serde_json::Value::Bool(true)));
         let part = |kind: PartKind, p: Option<Box<PartSettings>>| p.filter(|p| !p.is_empty()).map(|p| (kind.id(), serde_json::Value::from(*p)));
         let parts = part(PartKind::Fill, fill).into_iter().chain(part(PartKind::Stroke, stroke));
-        with_kept(run.into_iter().chain(cut).chain(parts), extra)
+        with_kept(run.into_iter().chain(cut).chain(parts), std::sync::Arc::unwrap_or_clone(extra))
     }
 }
 

@@ -5,8 +5,8 @@
 //!
 //! The fabrics are the eight auto fabrics Wilcom EmbroideryStudio names ([`WILCOM_FABRICS`]): cotton
 //! (light woven, the default), denim and heavy twill, stretch knit, piqué (polo knit), fleece, silk
-//! and satin fabric, nylon and sports fabric, cap backing. Their names here are our own words for
-//! the fabrics, never product names.
+//! and satin fabric, nylon and sports fabric, cap backing. Their labels are Wilcom's fabric names,
+//! generic words, without its trademarks ("Lycra", "Polar Fleece"): never product names.
 //!
 //! Every value is a published fact with its publication, worked out from published facts (said
 //! how), or an estimate (said why) ([`Sourced`], [`Basis`]): the facts are cited, never a table

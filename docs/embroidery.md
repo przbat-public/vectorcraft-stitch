@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-24 · **Change:** an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-25 · **Change:** the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -136,7 +136,10 @@ software calls recognising objects) is not done yet.
 **Saved by upstream VectorCraft.** Upstream keeps the document's embroidery settings it doesn't
 know but drops every object's (its node format keeps no unknown keys): a design opened from a
 machine file, saved by upstream VectorCraft and opened here again is art, its lines stitched as
-thin strokes and its Trim After marks gone, with no warning (FORK.md › Keeping up with upstream).
+thin strokes and its Trim After marks gone, and every object's fill and stroke settings and entry
+and exit points are gone too, with no warning (FORK.md › Keeping up with upstream). Both apps
+open `.vectorcraft` files, so a double-click may open one in upstream VectorCraft: save designs
+with object settings in this app.
 
 **What opening leaves out.** Opening a machine file says, one note each, what the file holds that
 reading it leaves out, and so a file written from the document lacks (`Format::losses`): a PES's
@@ -163,7 +166,9 @@ ids; an id that names no object is reported as a missing object.
 
 **Settings on objects.** Each object keeps settings for its fills and for its strokes (one set
 for all of its fills, one for all its strokes), which beat an export's options, the document's
-settings and the defaults (Settings and where their values come from, below). Four commands set
+settings and the defaults (Settings and where their values come from, below). They are saved in
+the `.vectorcraft` file with the object; upstream VectorCraft drops them when it saves the file
+(Saved by upstream VectorCraft, above). Four commands set
 them; no panel does yet (the Object tab comes next), so the command palette runs them on the
 selection, and MCP and the control channel with ids:
 
@@ -218,8 +223,8 @@ Setup › Embroidery comes next).
   they follow the fabric again; `overrides` counts the same keys, by key and the objects that set
   any (`objectCount`), the symbols' art included. To act on the whole document whatever is selected
   (Document Setup's bar), pass the layers' ids.
-- **The presets** are Wilcom's eight auto fabrics, under words of our own (`embroidery.fabrics`
-  lists them, each value with the publication it rests on, how it was worked out, or why it is an
+- **The presets** are Wilcom's eight auto fabrics, under Wilcom's fabric names (generic words)
+  without its trademarks (`embroidery.fabrics` lists them, each value with the publication it rests on, how it was worked out, or why it is an
   estimate; `crates/stitch/src/fabric.rs` cites every source). A dash leaves the built-in value.
   The default, `cotton`, sews exactly as a document without a fabric (its thickness, 0.55 mm from
   Melco's broadcloth figure, only changes `embroidery.stats`' thread estimate from the 0.5 mm
@@ -1116,11 +1121,13 @@ the object a person selects (`id`).
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
 - `crates/engine/tests/embroidery_output.rs`: the bytes every export writes, pinned by their sha256
-  in DST, TAP, T01, EXP, PES, PEC, JEF and VP3: 14 documents built in code (fills, strokes, a
+  in DST, TAP, T01, EXP, PES, PEC, JEF and VP3: 16 documents built in code (fills, strokes, a
   compound path with a hole,
   clip groups, symbols, trims asked for, opened designs as they are, clipped and cut at their
-  blocks' ends, and the options away from their defaults; always run) and the eleven real
-  designs' artwork at the person's size (when the corpus is present). A change to what is sewn
+  blocks' ends, the options away from their defaults, settings on objects and in the document,
+  and an expanded object's strokes; always run), the test sheet on each of the 8 fabric presets
+  (64 exports), and the eleven real designs' artwork at the person's size (when the corpus is
+  present): 280 exports in all. A change to what is sewn
   fails it, listing the exports that changed and printing the listing as it now stands: such a
   change is made on purpose, with the listing updated in the same commit. Each PES, PEC and JEF export
   is also pinned apart from its thread numbers (the hash of its bytes with them blanked, and the
@@ -1140,7 +1147,13 @@ the object a person selects (`id`).
   eight JEF exports (the zebra's stripes Black, the joystick's grey Dark Gray, the test drawings'
   purple Violet Blue), checked the same way; Janome's palette as the default changed
   none. Against the exports before this work, 38 files and 69 of their 198 blocks have another
-  thread, and no block is farther from its art than it was.
+  thread, and no block is farther from its art than it was. The settings on objects (2026-10-24)
+  changed the 8 `symbols` exports alone: an unset fill angle now turns with its object, and the
+  instance turned 30° sews its square's rows at 165° (the first block, the red squares: needle
+  points 661 → 698), the other instance and the satin ring as before; the 80 exports they added
+  (16 of the two new documents, 64 of the fabric sheets) were pinned as recorded. A document saved
+  before then exports otherwise where an object is turned (its unset rows turn with it) or where
+  an expanded object's strokes are plain (sewn along their path).
 - Elsewhere: the thread libraries are listed, read, added and traced with
   (`tests_swatchlib.rs`, `tests_build.rs`), the window menu lists them, the document's settings
   round-trip with what a newer version wrote, whatever its shape, and the undo history's memory
@@ -1479,6 +1492,15 @@ objects join) is resolved once a plan (`DesignSettings`).
     from different places, the machine and an export's options): jumps are then cut from the jump
     length on.
 
+- **Objects made from others** keep the settings of what they come from (`cmd/embroidery/derive.rs`:
+  Pathfinder, Offset Path, Shape Builder, Divide Objects Below and Split Into Grid take their
+  paint source's, the cut after an object cut into pieces going to its last; Make and Release
+  Compound Path, Outline Stroke, Expand Appearance, Create Outlines, Ungroup and Break Link give
+  each piece the settings of the part it came from and the cut to what stands for the object).
+  A new object gets the bounding box upstream gives it: the pieces of one object expanded or
+  outlined take its box's angle, so their unset rows don't move, but an object Pathfinder, Offset
+  Path or Split Into Grid makes is upright, so its unset rows follow 135° (set an angle on the
+  source to keep them), a consequence of turning unset rows with the box.
 - **How an object's settings reach the stitches** (`PartLayer`): from the node walked, for the
   kind of part a unit sews (all its fills, or all its strokes), so a symbol's art keeps its own in
   every instance, turned with it, and an expanded object's pieces take the settings of the part each
@@ -1488,6 +1510,41 @@ objects join) is resolved once a plan (`DesignSettings`).
   nearest to it. A value a newer version wrote out of its range is sewn at the nearest it takes, and
   a stitch, an underlay or a key this version doesn't read is left out, so the layers below give it;
   the plan says each once.
+
+### Settings and transforms
+
+An object's settings move and turn with it (`Embroidery::transform` in
+`crates/doc/src/embroidery/transform.rs`, called from `Node::transform`, the one path every
+transform of an object takes: Transform, Move, Rotate, Reflect, Scale, Shear, Transform Each,
+nudges, Align, paste and duplicate offsets, a symbol's art placed by its instance, Break Link; and
+Direct Selection moving every anchor of a path). Each rule is a group action: two transforms one
+after the other do what their product does, and a transform and its inverse give the settings back.
+
+- **Points** (entry, exit) map by the whole transform; one the transform sends to no finite place
+  is unset (Auto, nearest).
+- **A set angle** goes where the transform takes its direction, turned half round under a mirror
+  (rows are lines: θ and θ + 180° are the same rows), normalised to (−180°, 180°]; a move, a uniform
+  scale or a turn by whole circles keeps its bits. Angles are taken and reported as any number of
+  degrees counter-clockwise, not brought into 0° to 180°: a mirrored 30° is stored as −30°, and an
+  unset angle turned with its object is reported as the default plus the turn (135° + 90° = 225°).
+- **Per-side values** (`pull`, `pullPercent`) swap under a mirror, so that a mirrored object sews
+  the mirror image; a column's ends (`push`), counted as its path is drawn, never swap.
+- **No length scales:** spacing, stitch length, compensation and the rest describe thread and
+  fabric, which don't change with the art's size.
+- **An unset angle** turns with the object's bounding box's angle (Settings and where their values
+  come from, above).
+- **What a newer version keeps** that this version doesn't read moves by two conventions that every
+  later version keeps to, since a file's kept data is moved by older versions too:
+  - `points` is reserved: every array of exactly two numbers inside a part's `points` object, at
+    any depth up to 16, is a position `[x, y]` in document points, moved by the transform (this
+    version's entry and exit are two of them). A pair of numbers that isn't a position must not
+    be kept under `points`.
+  - `frame` is reserved: an object holding a `frame` of six numbers (its own coordinates to the
+    document's, `[a, b, c, d, e, f]` as `Affine::new` takes them: x′ = a·x + c·y + e,
+    y′ = b·x + d·y + f) has its frame composed with the transform, and nothing inside it moves
+    otherwise.
+  - Every other kept value is left as it is; a kept position or frame that the transform would send
+    to no finite place is left as it was.
 
 ### Threads
 
@@ -2068,6 +2125,19 @@ Public documentation, cited per claim in the crate:
   Vision* 20, 2011 (the bands of noticed difference behind the mismatch threshold); Björn Ottosson,
   ["A perceptual color space for image processing"](https://bottosson.github.io/posts/oklab/),
   2020 (OKLab, weighed against CIEDE2000 for matching threads).
+- Fabric presets (`crates/stitch/src/fabric.rs`, every value cited there): Wilcom EmbroideryStudio
+  28 help, [About auto fabrics](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/properties/properties-9.htm)
+  (the eight fabrics) and [Apply automatic pull compensation](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/stabilizing/stabilizing-17.htm);
+  Wilcom, [Mastering basic stitch types](https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch)
+  (tatami spacing and length); BERNINA Embroidery Software V9 help,
+  [Sticheinstellungen](https://softwarehelp.bernina.com/de/MainHelp/PART_Digitizing/properties/Sticheinstellungen.htm)
+  (eight fabric classes' stitch values) and its [release notes](https://softwarehelp.bernina.com/en/downloads/ReleaseNotes.pdf)
+  (BERNINA's software is Wilcom's); the [Melco OS manual](https://www.melco-service.com/docs/X/melco-os-ai-en.pdf),
+  pp. 182–183 (Acti-feed minimums: the thicknesses) and its standard fill density; Sulky,
+  [Stabilizing-at-a-Glance](https://www.sulky.com/fullpanel/uploads/files/stabilizer-at-a-glance-2017.pdf)
+  (stabiliser, topping and needle by fabric); Gunold,
+  [Wann welche Sticknadel](https://shop.gunold.de/media/66/4a/11/1744012604/Wann%20welche%20Sticknadel.pdf)
+  (the needle's point by fabric, where it agrees with Sulky and where it differs).
 
 ## Files
 
@@ -2120,7 +2190,8 @@ Public documentation, cited per claim in the crate:
   `tests_object_commands.rs`, `tests_setup.rs` and `tests_info.rs` (the settings commands),
   `tests_matrix.rs` (the resolution order, every combination of layers), `tests_transform.rs`
   (settings under the transform commands), `tests_derive.rs` (settings kept by objects made from
-  others).
+  others), `tests_expanded.rs` (an expanded object's strokes, sewn along their path, nested in a
+  group too).
 - `crates/render/src/lines.rs` — line pictures and their renderer (`render::lines`), which the
   stitch view draws with, knowing nothing about stitches.
 - `crates/ui-egui/src/embroidery/` — the stitch preview in the app: `stitch_preview.rs` (when a
@@ -2146,7 +2217,7 @@ Public documentation, cited per claim in the crate:
   among them; `crates/doc/src/embroidery.rs` — what an object and the document keep for embroidery
   (`embroidery/part.rs`: the settings of an object's fills and strokes; `embroidery/setup.rs`: the
   document's fabric and machine; `embroidery/transform.rs`: the settings moved and turned with
-  their object).
+  their object; `embroidery/mem.rs`: the memory they hold, for the undo history's budget).
 - `crates/engine/src/cmd/fileio/embroidery/` — the files' side: `mod.rs` (the export's options as
   `document.formats` lists them, and its entry point), `import.rs` (a design opened as art).
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real
@@ -2169,6 +2240,7 @@ header fields are at the top of its module.
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-24 | minor | An expanded object's strokes that nothing reshapes are sewn along their path, by their own settings, not outlined; a reshaped stroke's running or satin stitch is said not to follow its path. |
+| 2026-10-25 | minor | The settings PR's review round: what objects nested in an expanded group, cut into pieces or expanded through their outlines keep; unset rows turning with each object's own box (a mirror's effect said exactly); `embroidery.info` reporting each part as the walk sews it, or why not, which keys a stitch uses, and only what this version reads as set; typed replies for `info` and `settings`; `copyFrom` copying only what `set` takes, its undo step a paste; `applyFabric` leaving a stroke's length alone, reaching symbols' art, and `overrides` counting objects; the settings passed back whatever the document holds; the earlier name `stitchAngle` keeping its clockwise meaning; silk's values estimates, each fabric value's BERNINA class named, other sources where they differ; a fabric's spacing within what every thread keeps in range; the forward-compatibility conventions written down (Settings and transforms); upstream's loss of objects' settings said; Validation's counts. |
 | 2026-10-24 | minor | Embroidery settings on objects and in the document: each object's fill and stroke settings and entry and exit points, moved and turned with it and kept by the commands that make objects from others; the document's fabric (eight presets, each value sourced), thread weight, joining and machine; each value from the object, the export's options, the document, the default; the commands (`set`, `reset`, `setEntryExit`, `copyFrom`, `info`, `setup` extended, `fabrics`, `applyFabric`); a fill's angle counter-clockwise, an unset one turning with its object; the preview remembering no export's options. |
 | 2026-10-24 | minor | VectorCraft merged in (upstream to 2026-10-23): the status bar's counters take its right end in the bar's new fixed slots, leaving the room it keeps for its message and X/Y readout; the Art \| Stitches switch sits below the isolation mode's bar, which now lies over the canvas; every embroidery word in Turkish too (AI-drafted), its numbers as CLDR writes them ("4.752", "0,38", "%37"). |
 | 2026-10-24 | minor | The stitch preview's review round: the Sewing order list read only from the plan it shows, its steps worked out on it, a drop where its rows already are refused, a block cut by the list's limit without a thread change; Show Needle Points drawn; the plans' memory bounded for all documents together; planning keyed by the fonts a design uses; an export's options noted once written; `embroidery.render`'s points and strict colours, its size capped; VectorCraft Stitch's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. |

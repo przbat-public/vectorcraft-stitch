@@ -1,5 +1,6 @@
-//! The embroidery settings commands on objects (`docs/embroidery.md` › Settings): `embroidery.set`
-//! sets values of a part (all of an object's fills, or all its strokes) on the objects given,
+//! The embroidery settings commands on objects (`docs/embroidery.md` › Settings on objects):
+//! `embroidery.set` sets values of a part (all of an object's fills, or all its strokes) on the
+//! objects given,
 //! `embroidery.reset` unsets them, `embroidery.setEntryExit` sets where one object's part starts and
 //! ends, and `embroidery.copyFrom` copies one object's values onto others.
 //!

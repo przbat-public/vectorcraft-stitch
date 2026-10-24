@@ -184,7 +184,8 @@ pub struct PartSettings {
 
 /// A part's positions ([`PartSettings::points`]), document points, saved as `[x, y]`: they move
 /// with the object, and so does every `[x, y]` in it, those under keys this version doesn't read
-/// included (a newer version's satin rails or angle lines, `docs/embroidery.md` › Settings).
+/// included (a newer version's satin rails or angle lines, `docs/embroidery.md` › Settings and
+/// transforms).
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PartPoints {
     /// Where the needle goes in to sew the part.

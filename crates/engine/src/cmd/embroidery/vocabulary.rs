@@ -3,8 +3,9 @@
 //! under, its key in the `.vectorcraft` file (the name in snake_case, as every key the file keeps
 //! for embroidery), and where it can be set. One row per setting, so that a value set on an
 //! object, given to one export and kept in the document has one name everywhere, and a value
-//! resolved for an object can say which of those it came from. The units, the ranges and the words
-//! the interface shows are in `docs/embroidery.md` › Settings.
+//! resolved for an object can say which of those it came from. The units and ranges are in
+//! `docs/embroidery.md` (the export's options' table, Settings on objects, Document settings) and
+//! `super::setting_field`; the words the interface shows are the catalogues'.
 //!
 //! The document crate keeps the file keys it reads and writes as its own constants (it sits below
 //! the engine); a test holds them to this table.

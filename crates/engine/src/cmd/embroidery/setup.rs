@@ -91,9 +91,11 @@ fn machine_json(m: &MachineSettings) -> Value {
     json!({"jumpLength": m.jump_length, "trimLength": m.trim_length, "minStitch": m.min_stitch, "splitLength": m.split_length, "speed": m.speed})
 }
 
-/// The fabric's values the plan sews with, each `{value, source, preset, changed}`: in force (the
-/// document's), else the built-in default; the preset's value, for one copied from a preset; and
-/// whether the two differ. A tatami spacing, kept for 40 wt, is given for the thread `weight`.
+/// The fabric's values the plan sews with, and those for information (its thickness, stabiliser,
+/// topping and needle point), each `{value, source, preset, changed}`: in force (the document's),
+/// else the built-in default (none for the ids); the preset's value, for one copied from a preset;
+/// and whether the two differ. A tatami spacing, kept for 40 wt, is given for the thread `weight`.
+/// The colour, which is no preset's value, is `{value, source}`.
 fn resolved_fabric(f: Option<&FabricSettings>, weight: f64) -> Value {
     let base = f.and_then(|f| f.preset.as_ref()).map(|p| &p.values);
     let scale = thread_scale(weight);
@@ -124,13 +126,18 @@ fn resolved_fabric(f: Option<&FabricSettings>, weight: f64) -> Value {
             })
         }
     };
-    let thickness = f.and_then(|f| f.values.thickness);
+    let values = f.map(|f| &f.values);
     let color = f.and_then(|f| f.color);
+    // The values for information: none by default but the thickness the thread estimate takes.
+    let information = |now: Option<&Option<String>>, was: Option<&Option<String>>| entry(now.and_then(id), was.and_then(id), Value::Null);
     json!({
         "preset": f.and_then(|f| f.preset.as_ref()).map(|p| json!({"id": p.id, "known": fabric(&p.id).is_some()})),
         "tatami": stitch(true),
         "satin": stitch(false),
-        "thickness": {"value": thickness.unwrap_or(FABRIC_THICKNESS), "source": source(thickness.is_some())},
+        "thickness": entry(num(values.and_then(|v| v.thickness)), num(base.and_then(|b| b.thickness)), json!(FABRIC_THICKNESS)),
+        "stabilizer": information(values.map(|v| &v.stabilizer), base.map(|b| &b.stabilizer)),
+        "topping": information(values.map(|v| &v.topping), base.map(|b| &b.topping)),
+        "needlePoint": information(values.map(|v| &v.needle_point), base.map(|b| &b.needle_point)),
         "color": {"value": hex(color.unwrap_or(super::scene::FABRIC)), "source": source(color.is_some())},
     })
 }

@@ -41,6 +41,9 @@ fn a_fabric_is_copied_changed_and_restored() {
     let resolved = &r["resolved"]["fabric"];
     assert_eq!(resolved["preset"], json!({"id": "stretchKnit", "known": true}));
     assert_eq!(resolved["tatami"]["pull"], json!({"value": pull, "source": "document", "preset": pull, "changed": false}));
+    let thickness = knit.thickness.map(|t| t.value).unwrap();
+    assert_eq!(resolved["thickness"], json!({"value": thickness, "source": "document", "preset": thickness, "changed": false}));
+    assert_eq!(resolved["needlePoint"], json!({"value": "ballPoint", "source": "document", "preset": "ballPoint", "changed": false}));
     let fill = |s: &mut Session| {
         run(s, "embroidery.info", json!({"ids": [s.doc().unwrap().doc.layers[0].children().unwrap()[0].id.0]}))["fill"]["settings"].clone()
     };

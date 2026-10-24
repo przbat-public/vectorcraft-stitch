@@ -5100,8 +5100,8 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   reported and refused as input. `embroidery.settings {}` reads the same without editing anything. A PES, PEC or JEF
   file opens in its own format's palette. It also takes `start`, `label`, `fabric` (a preset's id, an object of values
   merged value by value, or null), `threadWeight`, `joinSameColor` and `machine` (`{jumpLength, trimLength, minStitch,
-  splitLength, speed}`, merged), all reported in `settings` and `resolved` (each fabric value `{value, source, preset,
-  changed}`), and the reply's `overrides` counts the objects that set the fabric's pull, spacing, length and underlay
+  splitLength, speed}`, merged), all reported in `settings` and `resolved` (each fabric value, the information values `thickness`,
+  `stabilizer`, `topping` and `needlePoint` included, `{value, source, preset, changed}`; the colour `{value, source}`), and the reply's `overrides` counts the objects that set the fabric's pull, spacing, length and underlay
   themselves, by key, and how many set any (`objectCount`), symbols' art included (read only, as `resolved`).
   `embroidery.applyFabric` without `ids` acts on the selection, else on every object, symbols' art included: to act
   on the whole document whatever is selected, pass the layers' ids (symbols' art is reached only with nothing given).

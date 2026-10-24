@@ -36,6 +36,8 @@ use vectorcraft_stitch::plan::{
 };
 
 use super::Options;
+
+pub(crate) mod report;
 use super::options::{MAX_EXPAND, planner_angle};
 use super::stats::{FABRIC_THICKNESS_RANGE, SPEED_RANGE};
 

@@ -35,7 +35,7 @@ pub(super) struct Sewable<'a> {
 /// or any of their own opacity, blend or effects, live effects, a brush; for a group or layer, any
 /// fill, stroke or effect of its own; for a symbol instance, effects. Type and images are left to
 /// the walk (type is not sewn; an image is traced first).
-fn needs_expanding(n: &Node) -> bool {
+pub(super) fn needs_expanding(n: &Node) -> bool {
     match &n.kind {
         NodeKind::Path { clipping: true, .. } | NodeKind::Path { guide: true, .. } => false,
         NodeKind::Path { .. } | NodeKind::Compound { .. } => !n.appearance.is_basic() || vectorcraft_brush::has_brush(n),

@@ -24,6 +24,7 @@ mod cache;
 mod check;
 pub(crate) mod derive;
 pub(crate) mod digitize;
+mod info;
 mod measure;
 mod objects;
 pub(crate) mod options;
@@ -48,6 +49,8 @@ mod tests_check;
 mod tests_contract;
 #[cfg(test)]
 mod tests_derive;
+#[cfg(test)]
+mod tests_info;
 #[cfg(test)]
 mod tests_object;
 #[cfg(test)]
@@ -275,6 +278,15 @@ pub fn specs() -> Vec<CommandSpec> {
             setup::setup
         ),
         cmd!(
+            query "embroidery.info",
+            "Show Embroidery Object Settings",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection; groups and compound paths as embroidery.set takes them; none: an empty answer), plan?: false (true: also what the stitch plan sews of each part, planned as the read commands plan the whole document), offset?: the first object listed (default 0), limit?: the most objects listed (0 to 10000; default 1000), …the embroidery options that decide what is sewn as embroidery.threads takes them (document.export's place in where a value comes from; default none)} the objects' embroidery settings as kept, and for each part every value it is planned with, merged over the objects, without planning → {objectCount, offset, truncated, objects: [{id, kind: \"path\"|\"compound\", fills, strokes, expanded: sewn as pieces, settings: {fill, stroke: each key set, by name, or null}, kept: keys a newer version wrote}], skippedCount, skipped: [{id, reason}] as embroidery.set lists them, trimAfter: {value, setCount, mixed}, fill: {objectCount, itemCount, sewn: \"tatami\"|\"satin\"|\"running\"|\"none\"|null (when they differ), rule: the rule id embroidery.sequence names|null, settings: {stitch, spacing, length, angle, pull, pullPercent, push, expand, narrowAsSatin, underlay, splitLength: each {value (null when they differ; \"auto\" for a rule), source: \"object\"|\"export\"|\"document\"|\"default\"|null, section: \"fabric\"|\"machine\"|null (of the document's settings), setCount, mixed, inherited: {value, source, section} (what unsetting the objects' own gives)|null}}, entry, exit: {value: [x, y]|null, setCount, mixed}, stitches: {unitCount, stitches, records, jumps, trims} (with plan)|null} or null (none has a fill), stroke: as fill, planned, options, warnings}",
+            has_doc,
+            info::info
+        ),
+        cmd!(
             query "embroidery.settings",
             "Show Embroidery Settings",
             [],
@@ -492,9 +504,21 @@ const LIST_KEYS: [&str; 3] = [Page::KEYS[0], Page::KEYS[1], SELECTED_ONLY];
 /// What a read command asks for besides its options: which reply, and what the reply takes.
 enum Read {
     Threads(Page),
-    Stats { asked: stats::Asked, page: Page },
+    Stats {
+        asked: stats::Asked,
+        page: Page,
+    },
     Sequence(Page),
-    Check { rules: Vec<&'static check::Rule>, format: Option<StitchFormat>, limit: usize },
+    Check {
+        rules: Vec<&'static check::Rule>,
+        format: Option<StitchFormat>,
+        limit: usize,
+    },
+    /// `embroidery.info` of the objects `ids`.
+    Info {
+        ids: Vec<vectorcraft_doc::NodeId>,
+        page: Page,
+    },
 }
 
 /// A read command's params: what it reads, the options it plans with, and whether it plans the
@@ -505,8 +529,8 @@ struct ReadParams {
     selected_only: bool,
 }
 
-/// The read commands: `embroidery.threads`, `stats`, `sequence` and `check`.
-const READ_COMMANDS: [&str; 4] = ["embroidery.threads", "embroidery.stats", "embroidery.sequence", "embroidery.check"];
+/// The read commands: `embroidery.threads`, `stats`, `sequence`, `check` and `info`.
+const READ_COMMANDS: [&str; 5] = ["embroidery.threads", "embroidery.stats", "embroidery.sequence", "embroidery.check", "embroidery.info"];
 
 /// Read command `cmd`'s params `p`, checked as the command checks them.
 fn read_params(cmd: &str, p: &Value) -> Result<ReadParams> {
@@ -522,6 +546,11 @@ fn read_params(cmd: &str, p: &Value) -> Result<ReadParams> {
         "embroidery.check" => {
             let opts = options_in(&o, &CHECK_KEYS, cmd)?;
             (check_params(&o)?, opts)
+        }
+        // A planner has no selection: the objects are given.
+        "embroidery.info" => {
+            let ask = info::Ask::from_params(&o, cmd)?;
+            (Read::Info { ids: ask.ids.unwrap_or_default(), page: ask.page }, ask.opts)
         }
         _ => return Err(bad(cmd, format!("not a read command: one of {}", READ_COMMANDS.join(", ")))),
     };
@@ -540,6 +569,7 @@ fn reply(read: Read, plan: &plan::DesignPlan, doc: &Document, opts: &Options) ->
             stats::stats(plan, machine, thread, page)
         }
         Read::Sequence(page) => order::sequence(plan, page),
+        Read::Info { ids, page } => info::reply(doc, &ids, opts, Some(plan), page, Vec::new()),
         Read::Check { rules, format, limit } => {
             // The format of the document's thread palette, when none is asked for.
             let format = format.unwrap_or_else(|| thread_palette(doc).format());

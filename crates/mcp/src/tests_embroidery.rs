@@ -131,7 +131,7 @@ fn the_object_settings_commands_are_reachable() {
     let mut h = Headless::with_document();
     let listed = text(&call_tool(&mut h, "list_commands", &json!({"filter": "embroidery."})));
     let ids: Vec<&str> = listed["commands"].as_array().unwrap().iter().filter_map(|c| c["id"].as_str()).collect();
-    for id in ["embroidery.set", "embroidery.reset", "embroidery.setEntryExit", "embroidery.copyFrom"] {
+    for id in ["embroidery.set", "embroidery.reset", "embroidery.setEntryExit", "embroidery.copyFrom", "embroidery.info"] {
         assert!(ids.contains(&id), "{id} in {ids:?}");
     }
     let rect = |x: u64| json!({"command": "shape.rectangle", "params": {"x": x, "y": 10, "width": 50, "height": 40}});
@@ -144,6 +144,8 @@ fn the_object_settings_commands_are_reachable() {
     assert_eq!(r["changedCount"], 1);
     let r = run(&mut h, "embroidery.setEntryExit", json!({"id": b, "part": "fill", "entry": [100, 10]}));
     assert_eq!(r["entry"], json!([100.0, 10.0]));
+    let r = run(&mut h, "embroidery.info", json!({"ids": [a, b], "plan": true}));
+    assert_eq!((&r["objectCount"], &r["fill"]["settings"]["angle"]["value"]), (&json!(2), &json!(30.0)));
     let r = run(&mut h, "embroidery.reset", json!({"ids": [a, b]}));
     assert_eq!(r["changedCount"], 2);
     let alias = call_tool(&mut h, "run_command", &json!({"command": "embroidery.set", "params": {"ids": [a], "part": "fill", "density": 0.4}}));

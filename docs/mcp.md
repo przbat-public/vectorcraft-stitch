@@ -5112,6 +5112,13 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   vocabulary's names only: the session refuses any other key before the command runs, and run in-process the command
   names the one to use (`density` → `spacing`). `reason` is `literal`, `guide`, `type`, `image`, `symbolInstance`,
   `live`, `placed`, `intertwine` or `noPart`; a client must accept others later.
+- `embroidery.info {ids?, plan?, offset?, limit?, …embroidery options}` reads the objects' settings (a query, no undo
+  step; nothing selected and no `ids`: an empty answer): `{objectCount, offset, truncated, objects: [{id, kind, fills,
+  strokes, expanded, settings: {fill, stroke}, kept}], skippedCount, skipped, trimAfter: {value, setCount, mixed},
+  fill, stroke, planned, options, warnings}`, where each part (`null` when no object has it) is `{objectCount,
+  itemCount, sewn, rule, settings: {key: {value, source, section, setCount, mixed, inherited}}, entry, exit,
+  stitches}`. `source` is `object`, `export`, `document` (then `section`: `fabric` or `machine`) or `default`, a list
+  that may grow; a value chosen by a rule is `"auto"`. `stitches` is counted only with `plan: true`.
 - `embroidery.stats {…embroidery options, speed?, fabricThickness?, offset?, limit?}` gives the design's figures as the
   export sews it, for the design and per block: `stitches` (needle points), `records` (needle points, jumps and cuts),
   `jumps`, `trims`, `colorChanges`, `threadCount`, `blockCount`; `size`, `bounds`, `start` and `end` points, `extents`

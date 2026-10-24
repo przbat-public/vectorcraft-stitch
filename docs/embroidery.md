@@ -179,7 +179,15 @@ selection, and MCP and the control channel with ids:
 - `embroidery.copyFrom {source, ids?, part?, keys?}` gives the objects the source's values, set or
   unset: the Object tab's Copy and Paste settings.
 
-Each makes one undo step (none when nothing changes). A group or a layer stands for the paths and
+`embroidery.info {ids?, plan?, …}` reads them, without planning: each object's settings as kept, and
+for each part every value it is planned with, merged over the objects (the value they share, or
+none and `mixed`), with where it comes from (`object`, `export`, `document` with the part of its
+settings, `default`; a rule's value is `"auto"`, never a source), how many objects set it, what
+unsetting gives (`inherited`), and how the part is sewn by the walk's own rule; with `plan`, what
+the design's plan sews of each part. The stitch preview's planning thread answers it as the other
+read commands, the objects given.
+
+Each command that changes them makes one undo step (none when nothing changes). A group or a layer stands for the paths and
 compound paths in it, a compound path's member for its compound path; type, a symbol instance
 (set its art's instead), a run of stitches opened from a file and live objects are skipped and
 listed (`skipped`, at most 1,000), and at most 100,000 ids are taken.

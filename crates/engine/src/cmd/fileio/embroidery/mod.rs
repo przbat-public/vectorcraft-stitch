@@ -260,16 +260,16 @@ mod tests {
         assert_eq!(o.params(Style::Running, 0.0), running.sane());
     }
 
-    /// The export dialog edits every option, and whatever it can write is taken: each choice, and
-    /// each number at both ends of its range (a negative `expand` among them).
+    /// A field edits every option, and whatever it can write is taken: each choice, and each number
+    /// at both ends of its range (a negative `expand` among them).
     #[test]
-    fn the_dialog_writes_only_what_the_options_take() {
-        use crate::cmd::embroidery::{DialogField, dialog_field};
+    fn a_field_writes_only_what_the_options_take() {
+        use crate::cmd::embroidery::{SettingField, setting_field};
         for o in OPTIONS {
-            let field = dialog_field(o.name).unwrap_or_else(|| panic!("{}", o.name));
+            let field = setting_field(o.name).unwrap_or_else(|| panic!("{}", o.name));
             let values: Vec<Value> = match field {
-                DialogField::Choice(ids) => ids.iter().map(|id| serde_json::json!(id)).collect(),
-                DialogField::Number { min, max, .. } => vec![serde_json::json!(min), serde_json::json!(max)],
+                SettingField::Choice(ids) => ids.iter().map(|id| serde_json::json!(id)).collect(),
+                SettingField::Number { min, max, .. } => vec![serde_json::json!(min), serde_json::json!(max)],
             };
             for v in values {
                 let mut p = serde_json::Map::new();
@@ -281,8 +281,12 @@ mod tests {
                 assert!(options(&Value::Object(p)).is_ok(), "{} {v}", o.name);
             }
         }
-        assert!(matches!(dialog_field("expand"), Some(DialogField::Number { min, .. }) if min < 0.0));
-        assert_eq!(dialog_field("format"), None);
+        assert!(matches!(setting_field("expand"), Some(SettingField::Number { min, .. }) if min < 0.0));
+        assert_eq!(setting_field("format"), None);
+        // The document's own: Document Setup writes them, and they are taken.
+        for name in ["spacingPercent", "speed", "thickness"] {
+            assert!(matches!(setting_field(name), Some(SettingField::Number { .. })), "{name}");
+        }
     }
 
     /// Compensation takes one value for both sides or one per side, applies to the styles that

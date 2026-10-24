@@ -42,7 +42,7 @@ const PART: &[Place] = &[Place::Part];
 const DOCUMENT: &[Place] = &[Place::Document];
 
 /// Every setting, the export's options first, in the order `document.formats` lists them.
-pub(crate) const SETTINGS: [Setting; 33] = [
+pub(crate) const SETTINGS: [Setting; 29] = [
     Setting { name: "stitch", earlier: Some("stitchStyle"), file: "stitch", places: PART_AND_EXPORT },
     Setting { name: "spacing", earlier: Some("density"), file: "spacing", places: EVERYWHERE },
     Setting { name: "length", earlier: Some("stitchLength"), file: "length", places: EVERYWHERE },
@@ -61,21 +61,17 @@ pub(crate) const SETTINGS: [Setting; 33] = [
     Setting { name: "entry", earlier: None, file: "entry", places: PART },
     Setting { name: "exit", earlier: None, file: "exit", places: PART },
     Setting { name: "spacingPercent", earlier: None, file: "spacing_percent", places: DOCUMENT },
-    Setting { name: "fabric", earlier: None, file: "fabric", places: DOCUMENT },
     Setting { name: "stabilizer", earlier: None, file: "stabilizer", places: DOCUMENT },
     Setting { name: "topping", earlier: None, file: "topping", places: DOCUMENT },
     Setting { name: "needlePoint", earlier: None, file: "needle_point", places: DOCUMENT },
     Setting { name: "thickness", earlier: None, file: "thickness", places: DOCUMENT },
     Setting { name: "color", earlier: None, file: "color", places: DOCUMENT },
     Setting { name: "joinSameColor", earlier: None, file: "join_same_color", places: DOCUMENT },
-    Setting { name: "machine", earlier: None, file: "machine", places: DOCUMENT },
     Setting { name: "speed", earlier: None, file: "speed", places: DOCUMENT },
     Setting { name: "palette", earlier: None, file: "palette", places: DOCUMENT },
     Setting { name: "start", earlier: None, file: "start", places: DOCUMENT },
     Setting { name: "label", earlier: None, file: "label", places: DOCUMENT },
     Setting { name: "trimAfter", earlier: None, file: "trim_after", places: &[Place::Object] },
-    Setting { name: "fill", earlier: None, file: "fill", places: &[Place::Object] },
-    Setting { name: "stroke", earlier: None, file: "stroke", places: &[Place::Object] },
 ];
 
 impl Setting {
@@ -127,6 +123,16 @@ const _: () = {
 mod tests {
     use super::*;
 
+    /// The groups settings are kept in, not settings themselves: each one's name in commands and
+    /// replies, its key in the file, and where it is (an object's fills and strokes; the document's
+    /// fabric and machine).
+    const GROUPS: [(&str, &str, Place); 4] = [
+        ("fill", "fill", Place::Object),
+        ("stroke", "stroke", Place::Object),
+        ("fabric", "fabric", Place::Document),
+        ("machine", "machine", Place::Document),
+    ];
+
     /// No name or earlier name is given twice, and the snake-case check holds what it should.
     #[test]
     fn names_are_given_once() {
@@ -152,13 +158,7 @@ mod tests {
             assert!(s.at(Place::Part) || s.at(Place::Object), "{name}");
             kept.push(name);
         }
-        // The parts themselves are the groups the part settings are kept in.
-        let mut on_objects: Vec<&str> = SETTINGS
-            .iter()
-            .filter(|s| s.at(Place::Part) || s.at(Place::Object))
-            .map(|s| s.name)
-            .filter(|n| !matches!(*n, "fill" | "stroke"))
-            .collect();
+        let mut on_objects: Vec<&str> = SETTINGS.iter().filter(|s| s.at(Place::Part) || s.at(Place::Object)).map(|s| s.name).collect();
         kept.sort_unstable();
         on_objects.sort_unstable();
         assert_eq!(kept, on_objects, "the vocabulary's settings on objects are those the document keeps");
@@ -170,26 +170,32 @@ mod tests {
     fn the_documents_settings_are_the_vocabularys() {
         let mut kept: Vec<&str> = Vec::new();
         for (name, file) in vectorcraft_doc::embroidery::setup_file_keys() {
-            let s = SETTINGS.iter().find(|s| s.name == name).unwrap_or_else(|| panic!("{name}: not in the vocabulary"));
-            assert_eq!(s.file, file, "{name}");
-            assert!(s.at(Place::Document), "{name}");
+            match GROUPS.iter().find(|(n, ..)| *n == name) {
+                Some((_, group_file, place)) => assert_eq!((*group_file, *place), (file, Place::Document), "{name}"),
+                None => {
+                    let s = SETTINGS.iter().find(|s| s.name == name).unwrap_or_else(|| panic!("{name}: not in the vocabulary"));
+                    assert_eq!(s.file, file, "{name}");
+                    assert!(s.at(Place::Document), "{name}");
+                }
+            }
             kept.push(name);
         }
-        let mut in_document: Vec<&str> = SETTINGS.iter().filter(|s| s.at(Place::Document)).map(|s| s.name).collect();
+        let groups = GROUPS.iter().filter(|(.., place)| *place == Place::Document).map(|(name, ..)| *name);
+        let mut in_document: Vec<&str> = SETTINGS.iter().filter(|s| s.at(Place::Document)).map(|s| s.name).chain(groups).collect();
         kept.sort_unstable();
         in_document.sort_unstable();
         assert_eq!(kept, in_document);
     }
 
-    /// The export's options are those `document.formats` lists for an embroidery format and the
-    /// export options dialog edits, in that order.
+    /// The export's options are those `document.formats` lists for an embroidery format, in that
+    /// order, each with a field to edit it.
     #[test]
     fn the_export_options_are_the_formats() {
         let listed: Vec<&str> = crate::cmd::fileio::embroidery::OPTIONS.iter().map(|o| o.name).collect();
         let ours: Vec<&str> = options().map(|s| s.name).collect();
         assert_eq!(ours, listed);
         for name in ours {
-            assert!(super::super::dialog_field(name).is_some(), "{name}");
+            assert!(super::super::setting_field(name).is_some(), "{name}");
         }
     }
 }

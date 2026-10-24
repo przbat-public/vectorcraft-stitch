@@ -33,7 +33,6 @@ pub type Kept = std::sync::Arc<serde_json::Map<String, serde_json::Value>>;
 
 pub use part::{PartKey, PartKind, PartPoints, PartSettings, PartValue};
 pub use setup::{FabricPreset, FabricSettings, FabricValues, MachineSettings, StitchValues};
-pub use transform::turned_angle;
 
 /// What machine embroidery makes of an object.
 ///

@@ -14,7 +14,7 @@
 use serde_json::{Map, Value, json};
 use vectorcraft_stitch::plan::{
     DENSITY_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PERCENT, PULL_PERCENT_RANGE, PULL_RANGE, PUSH_RANGE,
-    Params, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay,
+    Params, SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay,
 };
 
 use super::vocabulary;
@@ -67,39 +67,45 @@ pub(crate) fn stitch_id(style: Style) -> &'static str {
     STITCHES.iter().find(|(_, s)| *s == Some(style)).map_or("auto", |(id, _)| id)
 }
 
-/// How the export options dialog edits an embroidery option, so that what it writes is never
-/// refused: a choice from the values the option takes, or a number within the range the planner
-/// takes, in `unit`, to `decimals` places.
+/// How a panel edits an embroidery setting, so that what it writes is never refused: a choice from
+/// the values the setting takes, or a number within the range the planner takes, in `unit`, to
+/// `decimals` places. (The export options dialog once used it; the Object tab and Document Setup
+/// come next.)
 #[derive(Clone, Debug, PartialEq)]
-pub enum DialogField {
+pub enum SettingField {
     Choice(Vec<&'static str>),
     Number { min: f64, max: f64, unit: &'static str, decimals: usize },
 }
 
-/// The number of degrees `angle` turns at most each way in the dialog: a full turn (the planner
-/// takes any angle; a full turn either way is every direction).
+/// The number of degrees `angle` turns at most each way in a field: a full turn (the planner takes
+/// any angle; a full turn either way is every direction).
 const FULL_TURN: f64 = 360.0;
 
-/// [`DialogField`] of option `name` (as `document.formats` lists it); `None` for a name that is no
-/// embroidery option.
-pub fn dialog_field(name: &str) -> Option<DialogField> {
-    let mm = |(min, max): (f64, f64)| DialogField::Number { min, max, unit: "mm", decimals: 2 };
+/// [`SettingField`] of setting `name`: the export's options as `document.formats` lists them, and
+/// the document's own (`spacingPercent`, `speed`, `thickness`); `None` for a name that is neither.
+/// As an export takes them: an object's `stitch` also takes `none`, and a fabric's tatami
+/// `spacing` is within `plan::FABRIC_SPACING_RANGE`.
+pub fn setting_field(name: &str) -> Option<SettingField> {
+    let mm = |(min, max): (f64, f64)| SettingField::Number { min, max, unit: "mm", decimals: 2 };
     Some(match name {
-        "stitch" => DialogField::Choice(["auto", "tatami", "satin", "running"].to_vec()),
-        "underlay" => DialogField::Choice(Underlay::ALL.iter().map(|u| u.id()).collect()),
+        "stitch" => SettingField::Choice(["auto", "tatami", "satin", "running"].to_vec()),
+        "underlay" => SettingField::Choice(Underlay::ALL.iter().map(|u| u.id()).collect()),
         "spacing" => mm(DENSITY_RANGE),
         "length" => mm(STITCH_LENGTH_RANGE),
-        "angle" => DialogField::Number { min: -FULL_TURN, max: FULL_TURN, unit: "°", decimals: 1 },
+        "angle" => SettingField::Number { min: -FULL_TURN, max: FULL_TURN, unit: "°", decimals: 1 },
         "pull" => mm(PULL_RANGE),
-        "pullPercent" => DialogField::Number { min: PULL_PERCENT_RANGE.0, max: PULL_PERCENT_RANGE.1, unit: "%", decimals: 1 },
+        "pullPercent" => SettingField::Number { min: PULL_PERCENT_RANGE.0, max: PULL_PERCENT_RANGE.1, unit: "%", decimals: 1 },
         "push" => mm(PUSH_RANGE),
         "expand" => mm((-MAX_EXPAND, MAX_EXPAND)),
         "narrowAsSatin" => mm(NARROW_RANGE),
-        "threadWeight" => DialogField::Number { min: THREAD_WEIGHT_RANGE.0, max: THREAD_WEIGHT_RANGE.1, unit: "wt", decimals: 0 },
+        "threadWeight" => SettingField::Number { min: THREAD_WEIGHT_RANGE.0, max: THREAD_WEIGHT_RANGE.1, unit: "wt", decimals: 0 },
         "jumpLength" => mm(JUMP_RANGE),
         "trimLength" => mm((JUMP_RANGE.0, MAX_TRIM)),
         "minStitch" => mm(MIN_STITCH_RANGE),
         "splitLength" => mm(MAX_SATIN_STITCH_RANGE),
+        "spacingPercent" => SettingField::Number { min: SPACING_PERCENT_RANGE.0, max: SPACING_PERCENT_RANGE.1, unit: "%", decimals: 0 },
+        "speed" => SettingField::Number { min: super::stats::SPEED_RANGE.0, max: super::stats::SPEED_RANGE.1, unit: "/min", decimals: 0 },
+        "thickness" => mm(super::stats::FABRIC_THICKNESS_RANGE),
         _ => return None,
     })
 }

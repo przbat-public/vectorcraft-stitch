@@ -6,7 +6,8 @@
 //!   its literal stitches (they are its path's own points): Pathfinder, Offset Path, Shape Builder,
 //!   Divide Objects Below and Split Into Grid (through Pathfinder's style, [`carried`]), and Make
 //!   Compound Path (from the backmost path, [`compound`]); so two touching shapes of one colour
-//!   whose settings differ stay apart under Merge; the cut after an object cut into several pieces
+//!   whose settings differ stay apart under Merge (their stroke settings left out with their
+//!   strokes, [`strokes_removed`]); the cut after an object cut into several pieces
 //!   goes to its last ([`cut_once`]);
 //! - one object becoming several gives each the settings of the part it came from and the cut after
 //!   the object to what stands for the object: Release Compound Path ([`released`]), Create
@@ -45,6 +46,17 @@ pub(crate) fn cut_once<'a>(pieces: impl DoubleEndedIterator<Item = &'a mut Node>
         let mut e = e.clone();
         e.trim_after = false;
         p.extras_mut().embroidery = (!e.is_empty()).then(|| Box::new(e));
+    }
+}
+
+/// Trim, Merge and Crop of a shape whose settings are `e`: they remove its strokes, and its stroke
+/// settings go with them, so that shapes of one colour whose settings differ only there merge.
+pub(crate) fn strokes_removed(e: &mut Option<Box<Embroidery>>) {
+    if let Some(b) = e {
+        b.stroke = None;
+        if b.is_empty() {
+            *e = None;
+        }
     }
 }
 

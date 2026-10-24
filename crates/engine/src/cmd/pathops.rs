@@ -422,6 +422,8 @@ fn run_pf(s: &mut Session, op: PathfinderOp) -> Result<Value> {
             // public Pathfinder documentation describes.
             if matches!(op, PathfinderOp::Trim | PathfinderOp::Merge | PathfinderOp::Crop) {
                 st.appearance.items.retain(|i| !matches!(i, AppearanceItem::Stroke(_)));
+                // VectorCraft Stitch: the stroke settings go with the strokes.
+                super::embroidery::derive::strokes_removed(&mut st.embroidery);
             }
             if op == PathfinderOp::Divide && st.appearance.items.iter().any(|i| matches!(i, AppearanceItem::Fill(f) if !f.paint.is_none())) {
                 // Filled open contours keep their implicit closing edge. A zero-area line

@@ -156,6 +156,19 @@ fn merge_keeps_shapes_of_one_colour_apart_when_their_settings_differ() {
         let group = ids(&run(&mut s, "object.pathfinder.merge", json!({})))[0];
         assert_eq!(members(&s, group).len(), pieces, "settings differ: {differ}");
     }
+    // Settings that differ only for the strokes Merge removes don't keep the shapes apart.
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+    let b = rect(&mut s, "#cc2222", 60.0, 30.0, 60.0, 40.0);
+    give(&mut s, a, &settings(30.0, false));
+    let mut other_stroke = settings(30.0, false);
+    other_stroke.edit_part(PartKind::Stroke, |p| p.set(PartKey::Length, Some(PartValue::Number(3.0))));
+    give(&mut s, b, &other_stroke);
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    let group = ids(&run(&mut s, "object.pathfinder.merge", json!({})))[0];
+    let merged = members(&s, group);
+    assert_eq!(merged.len(), 1, "one shape");
+    assert_eq!(embroidery(&s, merged[0]).stroke, None, "no stroke, no stroke settings");
 }
 
 /// Offset Path's new object takes its source's settings.

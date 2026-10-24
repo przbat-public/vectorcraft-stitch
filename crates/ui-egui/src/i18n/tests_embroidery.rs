@@ -162,6 +162,31 @@ fn embroidery_object_settings_messages_are_translated() {
     assert!(untranslated.is_empty(), "untranslated messages:\n{}", untranslated.join("\n"));
 }
 
+/// What a plan says of a stroke an effect reshapes whose running or satin stitch can't follow its
+/// path is translated whole in every language.
+#[test]
+fn embroidery_stroke_path_warning_is_translated() {
+    use serde_json::json;
+    use vectorcraft_engine::Session;
+    let mut s = Session::new();
+    s.execute("file.new", &json!({})).unwrap();
+    let id = s.execute("shape.rectangle", &json!({"x": 20, "y": 20, "width": 100, "height": 60})).unwrap()["id"].clone();
+    s.execute("appearance.addStroke", &json!({"ids": [id]})).unwrap();
+    s.execute("effect.apply", &json!({"effect": "distort.roughen", "ids": [id], "item": 1})).unwrap();
+    s.execute("embroidery.set", &json!({"ids": [id], "part": "stroke", "stitch": "running"})).unwrap();
+    let r = s.execute("document.export", &json!({"format": "dst"})).unwrap();
+    let warning =
+        r["warnings"].as_array().unwrap().iter().filter_map(|w| w.as_str()).find(|w| w.contains("reshaped by an effect")).unwrap().to_string();
+    let mut untranslated = Vec::new();
+    for info in LANGUAGES.iter().filter(|l| l.code != "en") {
+        let shown = message(Lang::from_code(info.code).unwrap(), &warning);
+        if shown == warning || ["brush", "reshaped", "can't follow", "stitch"].iter().any(|w| shown.contains(*w)) {
+            untranslated.push(format!("{}: {shown}", info.code));
+        }
+    }
+    assert!(untranslated.is_empty(), "untranslated:\n{}", untranslated.join("\n"));
+}
+
 /// What opening a machine file says it left out (which makes writing over the file ask first) is
 /// translated whole in every language.
 #[test]

@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-24 · **Change:** embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-24 · **Change:** an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -841,7 +841,13 @@ the document is made as it prints (`cmd/embroidery/printed.rs`): an object whose
 than one fill and one stroke (several, or any of their own opacity, blend mode or effects, live
 effects, a brush, a group's own fills and strokes) is expanded as `effect.expandAppearance` expands
 it (each fill and stroke an object, strokes outlined, brushed strokes their brush art, geometry
-effects baked), symbols' art too. A stroke dashed, aligned inside or outside a closed path, of
+effects baked), symbols' art too, but for its strokes that nothing reshapes (no brush, no effect
+of their own or of the object's): each becomes an object of its own, the object's path with that
+stroke alone and the object's stroke settings, sewn as a basic object's stroke is, a satin column
+or a running line along its path (the project owner's choice, 2026-10-24: a stroke set to running
+sews one line, not two round its outline). A stroke a brush or an effect reshapes is outlined, and
+when a running or satin stitch is set on it or given to the export, the plan says that the stitch
+can't follow its path, naming the object. A stroke dashed, aligned inside or outside a closed path, of
 varying width or with arrowheads is sewn as the area it paints, as on the canvas, its narrow parts
 satin columns that follow it (`rule: strokeOutlined`). A symbol instance's art is stained as the
 instance shows it. Art at no opacity isn't sewn. The pieces an expanded object becomes are still
@@ -868,8 +874,8 @@ the object a person selects (`id`).
 - A fill's narrow parts become satin by their width alone, not by what a person would choose (a
   wide stem, a stripe the art wants flat). `narrowAsSatin: 0` or `stitch: tatami`, on the object's
   fill or for the export, keeps all of it tatami.
-- A piece of an expanded appearance that was a stroke takes the stroke's settings as a fill: a
-  stroke's `stitch` of `running` sews the outlined piece's outline, not the stroke's path.
+- A stroke a brush or an effect reshapes is sewn as the area it paints, whatever stitch is set on
+  it (said in the plan's warnings when a running or satin stitch is).
 - An entry point starts its part at the start the stitches can take nearest to it (an end of a
   line, the corner a fill's rows begin at), not at the point itself; an exit point is kept but not
   yet planned toward (both come with the embroidery tool).
@@ -2134,6 +2140,7 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-24 | minor | An expanded object's strokes that nothing reshapes are sewn along their path, by their own settings, not outlined; a reshaped stroke's running or satin stitch is said not to follow its path. |
 | 2026-10-24 | minor | Embroidery settings on objects and in the document: each object's fill and stroke settings and entry and exit points, moved and turned with it and kept by the commands that make objects from others; the document's fabric (eight presets, each value sourced), thread weight, joining and machine; each value from the object, the export's options, the document, the default; the commands (`set`, `reset`, `setEntryExit`, `copyFrom`, `info`, `setup` extended, `fabrics`, `applyFabric`); a fill's angle counter-clockwise, an unset one turning with its object; the preview remembering no export's options. |
 | 2026-10-24 | minor | VectorCraft merged in (upstream to 2026-10-23): the status bar's counters take its right end in the bar's new fixed slots, leaving the room it keeps for its message and X/Y readout; the Art \| Stitches switch sits below the isolation mode's bar, which now lies over the canvas; every embroidery word in Turkish too (AI-drafted), its numbers as CLDR writes them ("4.752", "0,38", "%37"). |
 | 2026-10-24 | minor | The stitch preview's review round: the Sewing order list read only from the plan it shows, its steps worked out on it, a drop where its rows already are refused, a block cut by the list's limit without a thread change; Show Needle Points drawn; the plans' memory bounded for all documents together; planning keyed by the fonts a design uses; an export's options noted once written; `embroidery.render`'s points and strict colours, its size capped; VectorCraft Stitch's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. |

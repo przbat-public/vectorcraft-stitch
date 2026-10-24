@@ -5017,6 +5017,7 @@ lighting	Light	광원
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	음수 expand 값 때문에 일부 칠한 모양이 하나도 남지 않아 자수로 놓이지 않습니다: 덜 축소하세요
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	그레이디언트와 패턴은 첫 번째 정지점의 색으로 칠해집니다. 자수는 블록마다 실 하나로 박습니다
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	{widest} mm보다 넓은 선은 너비 {widest} mm의 새틴 기둥으로 박힙니다: 대신 칠로 채우세요(stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	브러시로 그리거나 효과로 모양이 바뀐 선은 칠하는 영역으로 박힙니다: 그 선에 설정한 러닝 스티치나 새틴은 선의 경로를 따를 수 없습니다
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	이 버전은 문서의 실 팔레트 {palette}을(를) 알지 못하므로 실을 {default} 팔레트에서 고릅니다
 @msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	문서의 자수 설정에 이 버전이 읽지 못하는 항목(새 버전의 것)이 있습니다: 그대로 보존되며 디자인은 그 항목 없이 놓입니다
 @msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	문서의 자수 설정 일부가 이 버전이 놓을 수 있는 범위를 벗어납니다: 각각 허용되는 가장 가까운 값으로 놓입니다

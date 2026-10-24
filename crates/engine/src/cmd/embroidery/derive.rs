@@ -40,7 +40,7 @@ pub(crate) fn compound<'a>(sources: impl IntoIterator<Item = &'a Node>) -> Optio
 
 /// The object-level settings of `e`, for what stands for an object made into several: the cut
 /// after it, and what a newer version kept. `None` when nothing is left.
-fn whole(e: &Embroidery) -> Option<Box<Embroidery>> {
+pub(crate) fn whole(e: &Embroidery) -> Option<Box<Embroidery>> {
     let stand_in = Embroidery { trim_after: e.trim_after, extra: e.extra.clone(), ..Embroidery::default() };
     (!stand_in.is_empty()).then(|| Box::new(stand_in))
 }

@@ -102,7 +102,7 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
         kept.begin();
     }
     // The document as it prints: appearances expanded, what can't be sewn said.
-    let sewable = super::printed::sewable(doc);
+    let sewable = super::printed::sewable(doc, opts.forced());
     // Notes that aren't about the art (a thread palette this version doesn't know): told with the
     // warnings, but not counted as art left out.
     let mut notes: Vec<String> = doc_layer.notes.iter().chain(trim_note.as_ref()).map(|n| n.to_string()).collect();
@@ -113,6 +113,14 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
         ));
     }
     let warnings: Vec<String> = sewable.warnings.iter().map(|w| w.to_string()).collect();
+    // The objects what the expansion said is about, as many as a warning lists.
+    let mut warned: BTreeMap<String, Vec<NodeId>> = BTreeMap::new();
+    for (w, id) in &sewable.about {
+        let ids = warned.entry(w.to_string()).or_default();
+        if ids.len() < MAX_WARNED_OBJECTS && !ids.contains(id) {
+            ids.push(*id);
+        }
+    }
     let printed = &*sewable.doc;
     let mut symbols = HashMap::new();
     let total = printed.layers.iter().map(|l| units_under(printed, l, 0, &mut symbols)).fold(0u64, u64::saturating_add);
@@ -126,7 +134,7 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
         design,
         seq,
         warnings,
-        warned: BTreeMap::new(),
+        warned,
         object: None,
         nest: 0,
         placements: 0,

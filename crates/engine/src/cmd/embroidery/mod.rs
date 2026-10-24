@@ -51,6 +51,8 @@ mod tests_contract;
 #[cfg(test)]
 mod tests_derive;
 #[cfg(test)]
+mod tests_expanded;
+#[cfg(test)]
 mod tests_info;
 #[cfg(test)]
 mod tests_matrix;

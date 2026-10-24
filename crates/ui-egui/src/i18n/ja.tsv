@@ -5094,6 +5094,7 @@ lighting	Light	ライト
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	expand の負の値で一部の塗りのシェイプが何も残らなかったため、刺繍されません: 縮小量を減らしてください
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	グラデーションとパターンは最初の分岐点の色で塗られます。刺繍はブロックごとに 1 本の糸で縫います
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	{widest} mm より太い線は幅 {widest} mm のサテン縫いの柱として縫われます: 代わりに塗りにしてください (stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	ブラシで描かれた線や効果で形が変わった線は、塗る範囲として縫われます: その線に設定したランニングステッチやサテンは線の経路に沿えません
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	このバージョンはドキュメントの糸パレット {palette} を認識できないため、糸は {default} パレットから選ばれます
 @msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	ドキュメントの刺繍設定に、このバージョンが読み取れないもの (新しいバージョンのもの) があります: 保持され、デザインはそれらなしで刺繍されます
 @msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	ドキュメントの刺繍設定の一部が、このバージョンで刺繍できる範囲の外にあります: それぞれ受け付ける最も近い値で刺繍されます

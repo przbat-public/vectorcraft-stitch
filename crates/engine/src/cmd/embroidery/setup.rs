@@ -589,18 +589,7 @@ fn palette_param(v: &Value, current: Option<&ThreadPalette>) -> Result<Option<Th
 /// The start point `v` gives: `[x, y]` in document points, within the coordinates a document
 /// holds, or null to unset it.
 fn start_param(v: &Value) -> Result<Option<vectorcraft_geom::Point>> {
-    if v.is_null() {
-        return Ok(None);
-    }
-    let refused =
-        || bad("embroidery.setup", format!("start {v}: [x, y] in points, each within ±{}, or null to unset it", vectorcraft_doc::MAX_COORD));
-    let [x, y] = v.as_array().map(Vec::as_slice).ok_or_else(refused)? else { return Err(refused()) };
-    let (x, y) = (x.as_f64().ok_or_else(refused)?, y.as_f64().ok_or_else(refused)?);
-    let within = |c: f64| c.is_finite() && c.abs() <= vectorcraft_doc::MAX_COORD;
-    if !(within(x) && within(y)) {
-        return Err(refused());
-    }
-    Ok(Some(vectorcraft_geom::Point::new(x, y)))
+    super::objects::point_param(v, "start", C)
 }
 
 /// The most characters a design's name set by `embroidery.setup` may have: far more than any

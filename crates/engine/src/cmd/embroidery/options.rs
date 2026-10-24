@@ -17,6 +17,7 @@ use vectorcraft_stitch::plan::{
     Params, SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay,
 };
 
+use super::resolve::Stitch;
 use super::vocabulary;
 use crate::Result;
 use crate::cmd::bad;
@@ -55,16 +56,18 @@ fn as_held(name: &str, given: &str, v: &Value) -> Value {
     }
 }
 
-/// The values `stitch` takes, and the style each forces: `auto` (none forced: fills tatami, strokes
-/// satin or running by their width); `tatami` and `fill` (a fill tatami, a stroke the area it
-/// paints, filled); `satin`; `running`.
-const STITCHES: [(&str, Option<Style>); 5] =
-    [("auto", None), ("tatami", Some(Style::Fill)), ("fill", Some(Style::Fill)), ("satin", Some(Style::Satin)), ("running", Some(Style::Running))];
+/// The values the export's `stitch` takes: those an object's takes but `none` (an export sews every
+/// part), each forcing its style: `auto` (none forced: fills tatami, strokes satin or running by
+/// their width); `tatami` and `fill` (a fill tatami, a stroke the area it paints, filled); `satin`;
+/// `running`.
+fn export_stitches() -> impl Iterator<Item = (&'static str, Stitch)> {
+    Stitch::IDS.into_iter().filter(|(_, s)| *s != Stitch::None)
+}
 
-/// The word the `stitch` option takes for `style` (the first of [`STITCHES`] that forces it):
-/// `tatami`, `satin`, `running`.
+/// The word the `stitch` option takes for `style` (the first id that forces it): `tatami`, `satin`,
+/// `running`.
 pub(crate) fn stitch_id(style: Style) -> &'static str {
-    STITCHES.iter().find(|(_, s)| *s == Some(style)).map_or("auto", |(id, _)| id)
+    Stitch::IDS.iter().find(|(_, s)| *s == Stitch::Style(style)).map_or("auto", |(id, _)| id)
 }
 
 /// How a panel edits an embroidery setting, so that what it writes is never refused: a choice from
@@ -88,7 +91,8 @@ const FULL_TURN: f64 = 360.0;
 pub fn setting_field(name: &str) -> Option<SettingField> {
     let mm = |(min, max): (f64, f64)| SettingField::Number { min, max, unit: "mm", decimals: 2 };
     Some(match name {
-        "stitch" => SettingField::Choice(["auto", "tatami", "satin", "running"].to_vec()),
+        // The export's, but `fill`, tatami's earlier name.
+        "stitch" => SettingField::Choice(export_stitches().map(|(id, _)| id).filter(|id| *id != "fill").collect()),
         "underlay" => SettingField::Choice(Underlay::ALL.iter().map(|u| u.id()).collect()),
         "spacing" => mm(DENSITY_RANGE),
         "length" => mm(STITCH_LENGTH_RANGE),
@@ -233,10 +237,14 @@ impl Options {
         match name {
             "stitch" => {
                 let id = v.as_str().unwrap_or_default();
-                self.stitch = STITCHES.iter().find(|(s, _)| *s == id).map(|(_, style)| *style).ok_or_else(|| {
-                    let ids: Vec<&str> = STITCHES.iter().map(|(s, _)| *s).collect();
-                    bad(cmd, format!("`{given}` {v}: one of {}", ids.join(", ")))
-                })?;
+                self.stitch = match export_stitches().find(|(s, _)| *s == id).map(|(_, stitch)| stitch) {
+                    Some(Stitch::Style(style)) => Some(style),
+                    Some(Stitch::Auto | Stitch::None) => None,
+                    None => {
+                        let ids: Vec<&str> = export_stitches().map(|(s, _)| s).collect();
+                        return Err(bad(cmd, format!("`{given}` {v}: one of {}", ids.join(", "))));
+                    }
+                };
             }
             "spacing" => self.spacing = Some(number(DENSITY_RANGE, "millimetres")?),
             "length" => self.length = Some(number(STITCH_LENGTH_RANGE, "millimetres")?),

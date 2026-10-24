@@ -160,15 +160,7 @@ fn symbol_objects(doc: &Document) -> Vec<&Node> {
 
 /// `e` with its own values of `keys` unset, on each part those a fabric gives it.
 fn unset_fabric_keys(e: &mut Embroidery, keys: &[PartKey]) {
-    for kind in [PartKind::Fill, PartKind::Stroke] {
-        if e.part(kind).is_some() {
-            e.edit_part(kind, |part| {
-                for key in keys.iter().filter(|k| fabric_keys(kind).contains(k)) {
-                    part.set(*key, None);
-                }
-            });
-        }
-    }
+    super::objects::unset(e, &PartKind::ALL, keys, |kind, key| fabric_keys(kind).contains(&key));
 }
 
 /// [`unset_fabric_keys`] on every object of symbol art `n` that takes settings, copying only what

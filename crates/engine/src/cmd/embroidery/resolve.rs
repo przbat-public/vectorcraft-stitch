@@ -106,11 +106,7 @@ impl<'a> UnitSettings<'a> {
 
     /// The style the settings force and which of them forces it, `None` for the rule (Auto).
     pub(crate) fn forcing(&self) -> Option<(Style, ForcedBy)> {
-        match self.object.stitch {
-            Some(Stitch::Style(style)) => Some((style, ForcedBy::Object)),
-            Some(Stitch::Auto | Stitch::None) => None,
-            None => self.export.forced().map(|style| (style, ForcedBy::Export)),
-        }
+        forcing(self.object.stitch, self.export.forced())
     }
 
     /// Whether the part is sewn at all: not when its object sets it not to be ("don't sew").
@@ -136,6 +132,18 @@ impl<'a> UnitSettings<'a> {
         let above = self.above_the_document();
         let weight = above.thread_weight.or(self.doc.every.thread_weight).unwrap_or(THREAD_WEIGHT);
         above.over(&self.doc.for_style(style, weight)).params(style, width)
+    }
+}
+
+/// The style forced on a part whose object sets `stitch` and whose export forces `export`, and
+/// which of them forces it, `None` for the rule (Auto): the object's style, else (unless the object
+/// sets Auto, which beats the export's, or not to sew it) the export's. The one place the rule is
+/// kept: the walk asks it for a stroke it expands too (`printed::follows_its_path`).
+pub(crate) fn forcing(stitch: Option<Stitch>, export: Option<Style>) -> Option<(Style, ForcedBy)> {
+    match stitch {
+        Some(Stitch::Style(style)) => Some((style, ForcedBy::Object)),
+        Some(Stitch::Auto | Stitch::None) => None,
+        None => export.map(|style| (style, ForcedBy::Export)),
     }
 }
 

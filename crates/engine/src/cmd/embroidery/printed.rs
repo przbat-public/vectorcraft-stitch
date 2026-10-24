@@ -102,12 +102,7 @@ pub(super) fn keeps_its_path(a: &Appearance, item: &AppearanceItem) -> bool {
 /// on the object's strokes, else given to the export (`forced`).
 fn follows_its_path(n: &Node, forced: Option<Style>) -> bool {
     let set = n.extras().embroidery.as_deref().and_then(|e| e.part(PartKind::Stroke)).and_then(|p| p.stitch.as_deref()).and_then(Stitch::from_id);
-    let style = match set {
-        Some(Stitch::Style(style)) => Some(style),
-        Some(Stitch::Auto | Stitch::None) => None,
-        None => forced,
-    };
-    matches!(style, Some(Style::Running | Style::Satin))
+    matches!(super::resolve::forcing(set, forced), Some((Style::Running | Style::Satin, _)))
 }
 
 /// `n` with its strokes that keep their path ([`keeps_its_path`]) made objects of their own: a

@@ -123,6 +123,21 @@ pub(crate) fn visit_takers<'a>(n: &'a Node, take: &mut Vec<&'a Node>, skip: &mut
     skip.push((n.id, why));
 }
 
+/// The one object `id` stands for as the settings commands take it (its compound path, for a
+/// member of one); refused when it takes no settings, or is a group of several.
+fn one_taker(d: &Document, id: NodeId) -> Result<NodeId> {
+    let given = d.node(id).ok_or(EngineError::NoNode(id))?.id;
+    let id = compound_of(d, given);
+    let (take, skipped) = takers(d, &[id]);
+    if let Some((_, why)) = skipped.first() {
+        return Err(EngineError::Other(format!("object {} takes no embroidery settings ({})", id.0, why.id())));
+    }
+    if take != [id] {
+        return Err(EngineError::Other(format!("object {} is a group: give one of its objects", given.0)));
+    }
+    Ok(id)
+}
+
 /// The object `id` stands for: its compound path when it is one's member, else itself.
 fn compound_of(d: &Document, id: NodeId) -> NodeId {
     d.parent_of(id).filter(|p| matches!(d.node(*p).map(|n| &n.kind), Some(NodeKind::Compound { .. }))).unwrap_or(id)
@@ -355,6 +370,20 @@ pub(super) fn none_taken(skipped: &[(NodeId, Skip)], part: Option<PartKind>) -> 
     })
 }
 
+/// `e` with its own values of `keys` unset on parts `kinds`, those `on` says a part takes. Only a
+/// part kept as this version reads it: one it can't read stays as it is.
+pub(super) fn unset(e: &mut Embroidery, kinds: &[PartKind], keys: &[PartKey], on: impl Fn(PartKind, PartKey) -> bool) {
+    for kind in kinds {
+        if e.part(*kind).is_some() {
+            e.edit_part(*kind, |part| {
+                for key in keys.iter().filter(|key| on(*kind, **key)) {
+                    part.set(*key, None);
+                }
+            });
+        }
+    }
+}
+
 /// `embroidery.reset`: the objects' own values of `keys` unset, on `part` or both.
 pub(super) fn reset(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.reset";
@@ -366,20 +395,7 @@ pub(super) fn reset(s: &mut Session, p: &Value) -> Result<Value> {
     if take.is_empty() {
         return Err(none_taken(&skipped, None));
     }
-    let changed = edit_counted(s, RESET, |d| {
-        edit_each(d, &take, |e| {
-            for kind in &parts {
-                // Only a part kept as this version reads it: one it can't read stays as it is.
-                if e.part(*kind).is_some() {
-                    e.edit_part(*kind, |part| {
-                        for key in &keys {
-                            part.set(*key, None);
-                        }
-                    });
-                }
-            }
-        })
-    })?;
+    let changed = edit_counted(s, RESET, |d| edit_each(d, &take, |e| unset(e, &parts, &keys, |_, _| true)))?;
     Ok(json!({
         "part": one_part(&parts),
         "keys": keys.iter().map(|k| k.name()).collect::<Vec<_>>(),
@@ -392,7 +408,7 @@ pub(super) fn reset(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// A point `v` gives (`what` names it): `[x, y]` in document points, each within the coordinates a
 /// document holds, or null to unset it.
-fn point_param(v: &Value, what: &str, cmd: &str) -> Result<Option<Point>> {
+pub(super) fn point_param(v: &Value, what: &str, cmd: &str) -> Result<Option<Point>> {
     if v.is_null() {
         return Ok(None);
     }
@@ -429,15 +445,7 @@ pub(super) fn set_entry_exit(s: &mut Session, p: &Value) -> Result<Value> {
             _ => return Err(bad(C, "select one object, or give its id")),
         },
     };
-    let n = d.node(id).ok_or(EngineError::NoNode(id))?;
-    let id = compound_of(d, id);
-    let (take, skipped) = takers(d, &[id]);
-    if let Some((_, why)) = skipped.first() {
-        return Err(EngineError::Other(format!("object {} takes no embroidery settings ({})", id.0, why.id())));
-    }
-    if take != [id] {
-        return Err(EngineError::Other(format!("object {} is a group: give one of its objects", n.id.0)));
-    }
+    let id = one_taker(d, id)?;
     if !d.node(id).is_some_and(|n| has_part(n, kind)) {
         return Err(EngineError::Other(format!("object {} has no `{}`", id.0, kind.id())));
     }
@@ -479,14 +487,7 @@ pub(super) fn copy_from(s: &mut Session, p: &Value) -> Result<Value> {
     let parts = parts_param(o.get("part"), C)?;
     let keys = keys_param(o.get("keys"), C)?;
     let d = &s.doc()?.doc;
-    let source = compound_of(d, d.node(source).map(|n| n.id).ok_or(EngineError::NoNode(source))?);
-    let (taken, refused) = takers(d, &[source]);
-    if let Some((_, why)) = refused.first() {
-        return Err(EngineError::Other(format!("object {} takes no embroidery settings ({})", source.0, why.id())));
-    }
-    if taken != [source] {
-        return Err(EngineError::Other(format!("object {} is a group: give one of its objects", source.0)));
-    }
+    let source = one_taker(d, source)?;
     let from = d.node(source).and_then(|n| n.extras().embroidery.as_deref().cloned()).unwrap_or_default();
     let (take, mut skipped) = given(s, p, "to copy onto", C)?;
     let d = &s.doc()?.doc;

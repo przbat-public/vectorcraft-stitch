@@ -12,8 +12,8 @@
 //!   The art's texture is the canvas's own, rendered only when one of its passes is shown
 //!   ([`ArtPass`]).
 //! - **Off the interface thread when slow.** Light frames are drawn in line, as the canvas draws
-//!   light art; slower ones on a thread of their own ([`LineWorker`]), the last frame shown
-//!   meanwhile, moved into the new view. A document switch never draws the stitches in line where
+//!   light art; slower ones on a thread of their own ([`LineWorker`]), which also makes the image
+//!   the texture takes, the last frame shown meanwhile, moved into the new view. A document switch never draws the stitches in line where
 //!   that thread runs: the fabric shows until they come, never another document's stitches. A
 //!   moment's emphasis ([`StitchLayer::emphasize`]) is drawn the same way, the rest faded while it
 //!   comes.
@@ -36,8 +36,9 @@ use crate::VectorcraftApp;
 use crate::canvas::Xf;
 use crate::state::View;
 
-/// A frame of stitches that took longer than this to draw, milliseconds, is drawn on the stitch
-/// layer's thread from then on: the time the canvas lets its art render in line.
+/// A frame of stitches that took longer than this to draw and to make the image its texture takes,
+/// milliseconds, is drawn on the stitch layer's thread from then on (which makes the image too):
+/// the time the canvas lets its art render in line.
 pub const INLINE_DRAW_MS: f64 = 8.0;
 
 /// How much of the colour a faded picture keeps (the art under the stitches, the last good
@@ -96,12 +97,14 @@ struct LayerJob {
     style: LineStyle,
 }
 
-/// A frame (or an emphasis) drawn on the thread, and how long it took.
+/// A frame (or an emphasis) drawn on the thread, made the image a texture takes there (not on the
+/// interface thread, where it would cost as much again as a light frame's drawing), and how long
+/// both took.
 struct LayerDone {
     seq: u64,
     key: LayerKey,
     emphasis: Option<Vec<u32>>,
-    img: Rendered,
+    img: egui::ColorImage,
     ms: f64,
 }
 
@@ -148,8 +151,9 @@ impl LineWorker {
                         let t0 = crate::now_ms();
                         // A panic in the drawing ends the thread (the guard logs it): the canvas finds
                         // the thread gone and draws in line from then on.
-                        let Ok(img) = vectorcraft_engine::guard::catch_panic(|| r.render(&job.picture, job.key.w, job.key.h, job.view, &job.style))
-                        else {
+                        let Ok(img) = vectorcraft_engine::guard::catch_panic(|| {
+                            color_image(&r.render(&job.picture, job.key.w, job.key.h, job.view, &job.style))
+                        }) else {
                             break 'jobs;
                         };
                         let done = LayerDone { seq: job.seq, key: job.key, emphasis: job.emphasis, img, ms: crate::now_ms() - t0 };
@@ -210,8 +214,10 @@ pub struct StitchLayer {
     emphasis_texture: Option<egui::TextureHandle>,
     /// The emphasis asked of the thread and not back yet: not asked again.
     emphasis_asked: Option<(LayerKey, Vec<u32>)>,
-    /// Frames of stitches uploaded so far (the tests count them).
+    /// Frames of stitches uploaded so far, and the bytes of all uploads, emphases too (the tests
+    /// and the third gate count them).
     pub(crate) uploads: u64,
+    pub(crate) uploaded_bytes: u64,
     /// What the art leaves out to show its template layers alone ([`all_but_templates`]), for the
     /// snapshot it was worked out for (held weakly): once a snapshot, not every frame.
     templates_only: Option<(std::sync::Weak<Document>, Option<Vec<u64>>)>,
@@ -480,7 +486,7 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
                 }
                 if done.key.uid == uid && done.seq > layer.shown_seq {
                     layer.last_ms = done.ms;
-                    upload(layer, ctx, &done.img, done.key, done.seq);
+                    upload(layer, ctx, done.img, done.key, done.seq);
                 }
             }
             if let Some(LayerDone { key, emphasis: Some(units), img, .. }) = finished.emphasis {
@@ -489,7 +495,7 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
                     layer.emphasis_asked = None;
                 }
                 if layer.key.as_ref() == Some(&of.0) && emphasis.as_ref() == Some(&of.1) {
-                    upload_emphasis(layer, ctx, &img, of);
+                    upload_emphasis(layer, ctx, img, of);
                 }
             }
         }
@@ -537,12 +543,13 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
                 }
             }
             _ => {
+                // Timed with the image made for the texture, as the thread times it.
                 let t0 = crate::now_ms();
-                let img = layer.renderer.render(&job.picture, w, h, job.view, &job.style);
+                let img = color_image(&layer.renderer.render(&job.picture, w, h, job.view, &job.style));
                 layer.last_ms = crate::now_ms() - t0;
                 // Newer than anything the thread is drawing: that frame is wanted no more.
                 layer.asked = None;
-                upload(layer, ctx, &img, key.clone(), seq);
+                upload(layer, ctx, img, key.clone(), seq);
             }
         }
     }
@@ -586,8 +593,8 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
                 }
             }
             _ => {
-                let img = layer.renderer.render(&job.picture, k.w, k.h, job.view, &job.style);
-                upload_emphasis(layer, ctx, &img, wanted.clone());
+                let img = color_image(&layer.renderer.render(&job.picture, k.w, k.h, job.view, &job.style));
+                upload_emphasis(layer, ctx, img, wanted.clone());
             }
         }
     }
@@ -598,9 +605,9 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
     }
 }
 
-/// Make `img`, the raster of units `of.1` alone for the frame of `of.0`, the emphasis texture.
-fn upload_emphasis(layer: &mut StitchLayer, ctx: &egui::Context, img: &Rendered, of: (LayerKey, Vec<u32>)) {
-    let color = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
+/// Make `color`, the raster of units `of.1` alone for the frame of `of.0`, the emphasis texture.
+fn upload_emphasis(layer: &mut StitchLayer, ctx: &egui::Context, color: egui::ColorImage, of: (LayerKey, Vec<u32>)) {
+    layer.uploaded_bytes += bytes_of(&color);
     match &mut layer.emphasis_texture {
         Some(tex) => tex.set(color, egui::TextureOptions::LINEAR),
         None => layer.emphasis_texture = Some(ctx.load_texture("emphasized stitches", color, egui::TextureOptions::LINEAR)),
@@ -608,16 +615,26 @@ fn upload_emphasis(layer: &mut StitchLayer, ctx: &egui::Context, img: &Rendered,
     layer.emphasized = Some(of);
 }
 
-/// Make `img`, a frame for `key`, the layer's texture.
-fn upload(layer: &mut StitchLayer, ctx: &egui::Context, img: &Rendered, key: LayerKey, seq: u64) {
+/// Make `color`, a frame for `key`, the layer's texture.
+fn upload(layer: &mut StitchLayer, ctx: &egui::Context, color: egui::ColorImage, key: LayerKey, seq: u64) {
     layer.shown_seq = seq;
-    let color = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
+    layer.uploaded_bytes += bytes_of(&color);
     match &mut layer.texture {
         Some(tex) => tex.set(color, egui::TextureOptions::LINEAR),
         None => layer.texture = Some(ctx.load_texture("stitches", color, egui::TextureOptions::LINEAR)),
     }
     layer.key = Some(key);
     layer.uploads += 1;
+}
+
+/// `img` as the image a texture takes.
+fn color_image(img: &Rendered) -> egui::ColorImage {
+    egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels)
+}
+
+/// The bytes an upload of `img` sends: four a pixel.
+fn bytes_of(img: &egui::ColorImage) -> u64 {
+    (img.pixels.len() * std::mem::size_of::<Color32>()) as u64
 }
 
 #[cfg(test)]

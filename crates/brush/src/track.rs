@@ -156,7 +156,12 @@ impl Track {
     }
 }
 
+/// The most flattened elements of a path kept.
+const MAX_FLATTENED: usize = 4_000_000;
+
 /// Flatten `bp` into tracks (one per subpath) with `tol` accuracy.
+// VectorCraft Stitch: clippy 1.95, which the fork's gate runs, flags the NaN-rejecting bounds check.
+#[allow(clippy::neg_cmp_op_on_partial_ord)]
 pub fn tracks(bp: &BezPath, tol: f64) -> Vec<Track> {
     let mut out = vec![];
     let mut cur: Vec<Point> = vec![];
@@ -165,8 +170,18 @@ pub fn tracks(bp: &BezPath, tol: f64) -> Vec<Track> {
             out.push(t);
         }
     };
+    // Far outside any drawing a curve flattens to millions of points; past a few million, the
+    // rest are not kept.
+    let b = bp.control_box();
+    if !(b.x0.abs().max(b.x1.abs()).max(b.y0.abs()).max(b.y1.abs()) <= 1e9) {
+        return out;
+    }
     let mut els = vec![];
-    kurbo::flatten(bp.iter(), tol.max(1e-4), |el| els.push(el));
+    kurbo::flatten(bp.iter(), tol.max(1e-4), |el| {
+        if els.len() < MAX_FLATTENED {
+            els.push(el);
+        }
+    });
     for el in els {
         match el {
             PathEl::MoveTo(p) => {

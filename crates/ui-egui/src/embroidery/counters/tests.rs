@@ -25,6 +25,13 @@ fn app_with_art() -> VectorcraftApp {
     app
 }
 
+/// A context with the app's fonts, which the status bar's readouts are measured in.
+fn context() -> egui::Context {
+    let ctx = egui::Context::default();
+    theme::install_fonts(&ctx);
+    ctx
+}
+
 /// A frame of `width` points at `scale`: the status bar, then (for the plan to be wanted) the
 /// Embroidery panel when `panel`, then the preview's scheduling → the status bar's texts, with
 /// their boxes.
@@ -73,7 +80,7 @@ fn said(texts: &[(String, egui::Rect)], what: &str) -> bool {
 #[test]
 fn the_figures_show_while_the_stitches_are_wanted() {
     let mut app = app_with_art();
-    let ctx = egui::Context::default();
+    let ctx = context();
     let texts = frame(&mut app, &ctx, 0.0, 1600.0, 1.0, false);
     assert!(!said(&texts, "stitches"), "{texts:?}");
     assert_eq!(app.embroidery.counters.inspect()["state"], json!("hidden"));
@@ -123,7 +130,7 @@ fn the_wordings() {
 #[test]
 fn new_figures_show_at_most_every_quarter_second() {
     let mut app = app_with_art();
-    let ctx = egui::Context::default();
+    let ctx = context();
     ready(&mut app, &ctx, 1600.0);
     let stitches = |app: &VectorcraftApp| app.embroidery.counters.inspect()["stitches"].clone();
     let square = |app: &mut VectorcraftApp, x: u32| app.run("shape.rectangle", json!({"x": x, "y": 200, "width": 40, "height": 40})).unwrap();
@@ -165,7 +172,7 @@ fn a_click_opens_the_panel_and_the_tooltip_tells_the_figures() {
 fn nothing_to_sew_and_cant_be_planned() {
     let mut app = VectorcraftApp::new(Session::new(), Services::default());
     app.run("file.new", json!({"width": 400, "height": 400, "artboards": 1})).unwrap();
-    let ctx = egui::Context::default();
+    let ctx = context();
     let texts = ready(&mut app, &ctx, 1600.0);
     assert!(said(&texts, "Nothing to sew"), "{texts:?}");
     assert_eq!(app.embroidery.counters.inspect()["state"], json!("nothing"));
@@ -185,7 +192,7 @@ fn planning_says_how_far_it_got_never_all_of_it() {
     let mut app = app_with_art();
     let held = Held::default();
     app.embroidery.preview = StitchPreview::with_runner(Box::new(held.clone()));
-    let ctx = egui::Context::default();
+    let ctx = context();
     // The bar is drawn before the panel: it shows from the frame after the panel asked.
     frame(&mut app, &ctx, 0.0, 1600.0, 1.0, true);
     let texts = frame(&mut app, &ctx, 0.05, 1600.0, 1.0, true);
@@ -250,7 +257,7 @@ fn the_counters_fit_the_bar() {
                             assert!(texts.iter().any(|(t, _)| *t == shown), "{case}: {shown:?} drawn");
                         }
                         // Shown whenever the shortest wording fits the room the bar leaves.
-                        if let Some((room, shortest)) = app.embroidery.counters.fit {
+                        if let Some((room, shortest)) = app.embroidery.counters.fit.get() {
                             assert_eq!(!shown.is_empty(), shortest <= room, "{case}: {shortest} in {room}");
                         }
                     }

@@ -10,13 +10,17 @@
 //!   the figures; stale (dimmed, after "Updating…", once a newer plan has taken that long);
 //!   nothing to sew; can't be planned (the reason in the tooltip).
 //! - **Room.** The longest of five wordings that fits ([`Variant`]); the render and interface
-//!   timings give way first, then the counters shorten, then they hide. The X/Y readout and the last
-//!   message keep their room ([`MIN_MESSAGE_ROOM`] for the message). The slot keeps its widest width
-//!   while its wording stays, so that changing digits move nothing to its left.
+//!   timings give way first, then the counters shorten, then they hide. The X/Y readout and the
+//!   message keep the room the bar keeps for them (its fixed slots, `chrome::status_readouts`). The
+//!   slot keeps its widest width while its wording stays, so that changing digits move nothing to
+//!   its left.
 //! - **Cadence.** New figures show at most [`FIGURES_EVERY_SECS`] apart.
-//! - A click opens the Embroidery panel at its Sewing order; the tooltip lists the figures.
+//! - A click opens the Embroidery panel at its Sewing order ([`act`], at the frame's end: the bar is
+//!   drawn with the app only read); the tooltip lists the figures.
 
-use egui::{Align2, Color32, FontId, Sense, Ui, vec2};
+use std::cell::{Cell, RefCell};
+
+use egui::{Align2, Color32, FontId, Rect, Sense, Ui, pos2};
 use serde_json::{Value, json};
 
 use super::numbers;
@@ -25,16 +29,11 @@ use super::text::fill;
 use crate::VectorcraftApp;
 use crate::theme::Tokens;
 
-/// The least room kept for the status bar's last message (or background job) beside the counters,
-/// points. An estimate: about ten characters at 11 points; the whole message shows on hover.
-pub const MIN_MESSAGE_ROOM: f32 = 60.0;
 /// The shortest time between two sets of figures shown, seconds. An estimate: four readable
 /// updates a second while a design is edited.
 pub const FIGURES_EVERY_SECS: f64 = 0.25;
 /// The counters' text size, points: as the bar's message.
 const TEXT: f32 = 11.0;
-/// The X/Y readout's and the timings' size, points: as the bar draws them.
-const READOUT: f32 = 10.5;
 
 /// The figures the counters show, read from `embroidery.stats`' reply.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -133,31 +132,35 @@ pub fn minutes_words(minutes: f64) -> String {
     fill(crate::et!("about {value} min"), &[("value", &numbers::decimal(lang, whole, 0))])
 }
 
-/// The counters' state across frames: the figures shown and since when, the slot's width.
+/// The counters' state across frames: the figures shown and since when, the slot's width. Kept in
+/// cells: the status bar draws them with the app only read.
 #[derive(Default)]
 pub struct Counters {
     /// The figures shown: of which document and plan, and when they were shown.
-    shown: Option<(u64, u64, Figures, f64)>,
+    shown: RefCell<Option<(u64, u64, Figures, f64)>>,
     /// The slot: its document, wording and widest width so far.
-    slot: Option<(u64, Variant, f32)>,
+    slot: Cell<Option<(u64, Variant, f32)>>,
     /// What the last frame showed, for `ui.inspect`.
-    last: Option<(State, String)>,
+    last: RefCell<Option<(State, String)>>,
+    /// The counters were clicked this frame: [`act`] opens the panel.
+    clicked: Cell<bool>,
     /// The room the counters had in the last frame and their shortest wording's width, points (the
     /// tests hold them to show whenever it fits).
     #[cfg(test)]
-    pub(crate) fit: Option<(f32, f32)>,
+    pub(crate) fit: Cell<Option<(f32, f32)>>,
 }
 
 impl Counters {
     /// Whether the status bar said something last frame (the canvas's notice then leaves planning
     /// and failure to it).
     pub fn says(&self) -> bool {
-        self.last.as_ref().is_some_and(|(_, words)| !words.is_empty())
+        self.last.borrow().as_ref().is_some_and(|(_, words)| !words.is_empty())
     }
 
     /// `ui.inspect`'s `stitchPreview.counters`: the state, the figures and the words drawn.
     pub fn inspect(&self) -> Value {
-        let Some((state, drawn)) = &self.last else { return json!({ "state": "hidden" }) };
+        let last = self.last.borrow();
+        let Some((state, drawn)) = last.as_ref() else { return json!({ "state": "hidden" }) };
         let mut v = json!({ "state": state.id(), "shown": drawn });
         if let State::Figures(f) | State::Stale(f) = state {
             v["stitches"] = json!(f.stitches);
@@ -176,7 +179,7 @@ impl Counters {
 
 /// What the counters show for the active document at time `now`, and in how many seconds to look
 /// again when held back.
-fn state(app: &mut VectorcraftApp, now: f64) -> (State, Option<f64>) {
+fn state(app: &VectorcraftApp, now: f64) -> (State, Option<f64>) {
     let preview = &app.embroidery.preview;
     let Some(uid) = app.session.active().map(|st| st.uid).filter(|_| preview.plan_wanted()) else { return (State::Hidden, None) };
     let freshness = preview.freshness(uid, now);
@@ -196,27 +199,27 @@ fn state(app: &mut VectorcraftApp, now: f64) -> (State, Option<f64>) {
     let generation = shown.planned.generation;
     let latest = shown.reply(&super::stitch_preview::figures_query()).and_then(|r| r.result.as_ref().ok()).and_then(|v| Figures::of(v));
     let stale = matches!(freshness, Freshness::Stale { notice: true, .. });
-    let counters = &mut app.embroidery.counters;
+    let mut shown = app.embroidery.counters.shown.borrow_mut();
     // New figures at most every so often: the ones shown stay until then.
     let mut wait = None;
-    match (latest, &counters.shown) {
+    match (latest, &*shown) {
         (Some(f), Some((u, g, _, at))) if *u == uid && *g != generation => {
             let left = FIGURES_EVERY_SECS - (now - at);
             if left > 0.0 && left.is_finite() {
                 wait = Some(left);
             } else {
-                counters.shown = Some((uid, generation, f, now));
+                *shown = Some((uid, generation, f, now));
             }
         }
         (Some(f), Some((u, _, _, _))) if *u == uid => {
-            if let Some(s) = counters.shown.as_mut() {
+            if let Some(s) = shown.as_mut() {
                 s.2 = f;
             }
         }
-        (Some(f), _) => counters.shown = Some((uid, generation, f, now)),
+        (Some(f), _) => *shown = Some((uid, generation, f, now)),
         (None, _) => {}
     }
-    match counters.shown.as_ref().filter(|(u, ..)| *u == uid) {
+    match shown.as_ref().filter(|(u, ..)| *u == uid) {
         Some((_, _, f, _)) if stale => (State::Stale(f.clone()), wait),
         Some((_, _, f, _)) => (State::Figures(f.clone()), wait),
         None => (State::Waiting, wait),
@@ -286,74 +289,75 @@ fn tooltip(state: &State) -> String {
     }
 }
 
-/// The counters in the status bar's right-to-left group, drawn first (rightmost): the room left
-/// is shared with the timings `timings`, the X/Y readout and the last message. → whether the
-/// timings keep their place.
-pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, timings: &egui::RichText) -> bool {
+/// The counters at the right end of the status bar's `area`, before its timings, which give way
+/// to them: `keep` is the room the bar keeps for its message and X/Y readout, `timings` the
+/// timings' (each with its gap). → the area left for the rest of the bar, and whether the timings
+/// keep their place.
+pub fn show(app: &VectorcraftApp, ui: &mut Ui, area: Rect, keep: f32, timings: f32) -> (Rect, bool) {
     let t = Tokens::get(ui.ctx());
     let now = ui.input(|i| i.time);
     let (state, wait) = state(app, now);
     if let Some(wait) = wait {
         ui.ctx().request_repaint_after(std::time::Duration::from_secs_f64(wait));
     }
+    let counters = &app.embroidery.counters;
     let choices = wordings(&state, &t);
     let uid = app.session.active().map_or(0, |st| st.uid);
+    let hidden = |state: State| {
+        counters.slot.set(None);
+        counters.last.replace(Some((state, String::new())));
+        (area, true)
+    };
     if choices.is_empty() {
-        app.embroidery.counters.slot = None;
-        app.embroidery.counters.last = Some((state, String::new()));
-        return true;
+        return hidden(state);
     }
-    // The room the group has, less what the other items keep.
+    // The room the counters have: the area less what the bar keeps and the separator beside them.
     let gap = ui.spacing().item_spacing.x;
-    let measure = |text: &str, font: FontId| ui.painter().layout_no_wrap(text.to_string(), font, Color32::WHITE).size().x;
-    let timings_w =
-        egui::WidgetText::from(timings.clone()).into_galley(ui, Some(egui::TextWrapMode::Extend), f32::INFINITY, egui::TextStyle::Body).size().x;
-    let readout_w = app.hover_doc.map_or(0.0, |p| {
-        let u = app.session.general_unit();
-        measure(&format!("X: {}  Y: {}", u.readout(p.x), u.readout(p.y)), crate::theme::mono(READOUT)) + gap
-    });
-    let message = !app.ui.status.is_empty() || !app.background.jobs.is_empty() || !app.opening.pending.is_empty();
-    let separator = ui.spacing().item_spacing.x * 2.0 + 1.0;
-    let rest = ui.available_width() - readout_w - if message { MIN_MESSAGE_ROOM + gap } else { 0.0 } - separator;
-    let widths: Vec<f32> = choices.iter().map(|(_, w, _)| measure(w, FontId::proportional(TEXT))).collect();
+    let separator = gap * 2.0 + 1.0;
+    let rest = area.width() - keep - separator;
+    let measure = |text: &str| ui.painter().layout_no_wrap(text.to_string(), FontId::proportional(TEXT), Color32::WHITE).size().x;
+    let widths: Vec<f32> = choices.iter().map(|(_, w, _)| measure(w)).collect();
     #[cfg(test)]
-    {
-        app.embroidery.counters.fit = widths.last().map(|w| (rest, *w));
-    }
+    counters.fit.set(widths.last().map(|w| (rest, *w)));
     let fits = |k: usize, room: f32| widths.get(k).is_some_and(|w| *w <= room);
     // With the timings, the three longest wordings; without, any.
-    let with_timings = rest - timings_w - gap;
+    let with_timings = rest - timings;
     let pick = (0..choices.len().min(3))
         .find(|k| fits(*k, with_timings))
         .map(|k| (k, true))
         .or_else(|| (0..choices.len()).find(|k| fits(*k, rest)).map(|k| (k, false)));
-    let Some((k, keep_timings)) = pick else {
-        app.embroidery.counters.slot = None;
-        app.embroidery.counters.last = Some((state, String::new()));
-        return true;
-    };
-    let Some((variant, text, colour)) = choices.get(k).cloned() else { return true };
+    let Some((k, keep_timings)) = pick else { return hidden(state) };
+    let Some((variant, text, colour)) = choices.get(k).cloned() else { return (area, true) };
     let natural = widths.get(k).copied().unwrap_or_default();
     // The slot keeps its widest width while the document and the wording stay.
-    let width = match app.embroidery.counters.slot {
+    let width = match counters.slot.get() {
         Some((u, v, w)) if u == uid && Some(v) == variant => w.max(natural),
         _ => natural,
     };
-    app.embroidery.counters.slot = variant.map(|v| (uid, v, width));
-    let (rect, resp) = ui.allocate_exact_size(vec2(width, ui.available_height()), Sense::click());
+    counters.slot.set(variant.map(|v| (uid, v, width)));
+    let rect = Rect::from_min_max(pos2(area.right() - width, area.top()), area.right_bottom());
+    let resp = ui.interact(rect, ui.id().with("embroidery-counters"), Sense::click());
     ui.painter().text(rect.right_center(), Align2::RIGHT_CENTER, &text, FontId::proportional(TEXT), colour);
     let said = format!("{text}. {}", crate::et!("Click to open the Embroidery panel."));
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &said));
     let tip = tooltip(&state);
     let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text(tip);
-    if resp.clicked()
+    if resp.clicked() {
+        counters.clicked.set(true);
+    }
+    // The line between the counters and the rest of the bar, drawn as a separator draws it.
+    ui.painter().vline(rect.left() - separator / 2.0, area.y_range(), ui.visuals().widgets.noninteractive.bg_stroke);
+    counters.last.replace(Some((state, text)));
+    (Rect::from_min_max(area.min, pos2(rect.left() - separator, area.bottom())), keep_timings)
+}
+
+/// A click on the counters this frame opens the Embroidery panel at its Sewing order.
+pub fn act(app: &mut VectorcraftApp) {
+    if app.embroidery.counters.clicked.take()
         && let Err(e) = app.run("ui.embroideryPanel", json!({ "tab": "order" }))
     {
         app.status(e);
     }
-    ui.separator();
-    app.embroidery.counters.last = Some((state, text));
-    keep_timings
 }
 
 #[cfg(test)]

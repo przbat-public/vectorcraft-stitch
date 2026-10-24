@@ -25,7 +25,7 @@ mod check;
 pub(crate) mod derive;
 pub(crate) mod digitize;
 mod fabrics;
-mod info;
+pub mod info;
 mod measure;
 mod objects;
 pub(crate) mod options;
@@ -584,7 +584,7 @@ fn reply(read: Read, plan: &plan::DesignPlan, doc: &Document, opts: &Options) ->
             stats::stats(plan, machine, thread, page)
         }
         Read::Sequence(page) => order::sequence(plan, page),
-        Read::Info { ids, page } => info::reply(doc, &ids, opts, Some(plan), page, Vec::new()),
+        Read::Info { ids, page } => info::to_json(&info::reply(doc, &ids, opts, Some(plan), page, Vec::new()))?,
         Read::Check { rules, format, limit } => {
             // The format of the document's thread palette, when none is asked for.
             let format = format.unwrap_or_else(|| thread_palette(doc).format());

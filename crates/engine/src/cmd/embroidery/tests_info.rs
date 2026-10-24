@@ -245,3 +245,20 @@ fn a_key_a_stitch_doesnt_use_says_so() {
     }
     assert_eq!((&stroke["length"]["applies"], &r["fill"]["settings"]["push"]["applies"]), (&json!(true), &json!(true)));
 }
+
+/// The reply is the typed answer serialised: the command's reply reads back as the answer the
+/// session gives typed (`Session::embroidery_info`), for the Object tab to read without keys typed
+/// as strings.
+#[test]
+fn the_reply_reads_back_as_the_typed_answer() {
+    let mut s = blank();
+    let id = shape(&mut s, 20.0, 3.0);
+    run(&mut s, "embroidery.set", json!({"ids": [id], "part": "fill", "angle": 30}));
+    let mut r = info(&mut s, json!({"ids": [id], "plan": true}));
+    r.as_object_mut().unwrap().remove("options");
+    let read: super::info::ObjectSettings = serde_json::from_value(r).unwrap();
+    let typed = s.embroidery_info(&[vectorcraft_doc::NodeId(id)], true, &Options::default()).unwrap();
+    assert_eq!(read, typed);
+    let fill = typed.fill.unwrap();
+    assert_eq!((fill.settings["angle"].value.clone(), fill.sewing.unwrap().unit_count), (json!(30.0), 1));
+}

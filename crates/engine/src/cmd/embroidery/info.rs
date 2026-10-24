@@ -6,26 +6,30 @@
 //! planning (the stitch each part takes is the walk's own rule, `digitize::part_rule`); with
 //! `plan`, also what the design's plan sews of each part.
 //!
-//! The Object tab reads it, and the stitch preview's planning thread answers it as it answers the
-//! other read commands (`Planner::query`), with ids since a planner has no selection.
+//! The reply is [`ObjectSettings`] serialised: the Object tab reads it back typed, through
+//! [`Session::embroidery_info`] on the interface thread, or through the stitch preview's planning
+//! thread as the other read commands (`Planner::query`), with ids since a planner has no selection.
+//! Each object's values are merged as it is read, so that a reply about a whole document's objects
+//! holds a few values per key, not a row per object.
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::embroidery::{Embroidery, PartKey, PartKind, PartSettings};
+use vectorcraft_doc::embroidery::{Embroidery, PartKey, PartKind, PartSettings, PartValue};
 use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind};
 use vectorcraft_geom::BezPath;
 use vectorcraft_stitch::plan::{Params, SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, Style, TATAMI_UNDERLAY_MIN, Underlay, satin_auto_underlay};
 use vectorcraft_stitch::{Command, pt_to_mm};
 
 use super::digitize::{outlined_rule, part_rule, sews};
-use super::objects::{MAX_IDS, has_part, part_kind, takers, value_json};
+use super::objects::{MAX_IDS, MAX_SKIPPED, has_part, part_kind, takers, value_json};
 use super::options::stitch_id;
 use super::plan::{Choice, DesignPlan, Part};
 use super::printed::{keeps_its_path, needs_expanding};
-use super::resolve::report::{Reported, Resolved, Source};
+use super::resolve::report::{REPORTED, Resolved, Source};
 use super::resolve::{DocLayer, Found, PartLayer, Stitch, UnitSettings};
-use super::stats::Page;
+use super::stats::{LIST_LIMIT, Page};
 use super::{Options, object, options_in, planned, with_options};
 use crate::cmd::bad;
 use crate::{EngineError, Result, Session};
@@ -84,55 +88,194 @@ pub(super) fn info(s: &mut Session, p: &Value) -> Result<Value> {
             Err(e) => warnings.push(e.to_string()),
         }
     }
-    Ok(with_options(reply(&doc, &ids, &ask.opts, plan.as_deref(), ask.page, warnings), &ask.opts))
+    let reply = reply(&doc, &ids, &ask.opts, plan.as_deref(), ask.page, warnings);
+    Ok(with_options(to_json(&reply)?, &ask.opts))
+}
+
+/// A typed reply as the command gives it.
+pub(super) fn to_json(reply: &ObjectSettings) -> Result<Value> {
+    serde_json::to_value(reply).map_err(|e| EngineError::Other(format!("embroidery.info: {e}")))
+}
+
+impl Session {
+    /// `embroidery.info` of objects `ids` of the active document (each listed up to the reply's
+    /// usual limit), typed, with the call's options `opts`; with `plan`, what the plan sews of each
+    /// part. A design that can't be planned leaves the settings and says why in `warnings`.
+    pub fn embroidery_info(&mut self, ids: &[NodeId], plan: bool, opts: &Options) -> Result<ObjectSettings> {
+        let d = &self.doc()?.doc;
+        if let Some(missing) = ids.iter().find(|id| d.node(**id).is_none()) {
+            return Err(EngineError::NoNode(*missing));
+        }
+        let (mut warnings, mut planned_with, mut doc) = (Vec::new(), None, d.clone());
+        if plan {
+            match planned(self, opts, false, "embroidery.info") {
+                Ok((p, d)) => (planned_with, doc) = (Some(p), d),
+                Err(EngineError::Cancelled) => return Err(EngineError::Cancelled),
+                Err(e) => warnings.push(e.to_string()),
+            }
+        }
+        Ok(reply(&doc, ids, opts, planned_with.as_deref(), Page { offset: 0, limit: LIST_LIMIT }, warnings))
+    }
+}
+
+/// `embroidery.info`'s reply, its options aside: the objects it takes, listed from `offset`, those
+/// it passes over, the cut after them, and each part merged over them.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ObjectSettings {
+    pub object_count: usize,
+    pub offset: usize,
+    pub truncated: bool,
+    pub objects: Vec<ObjectInfo>,
+    pub skipped_count: usize,
+    /// At most 1,000 (`MAX_SKIPPED`), each with its reason, as `embroidery.set` lists them.
+    pub skipped: Vec<SkippedObject>,
+    pub trim_after: Merged<bool>,
+    /// Whether the design was planned (`sewing` counted).
+    pub planned: bool,
+    pub warnings: Vec<String>,
+    /// `None` when none of the objects has the part.
+    pub fill: Option<PartInfo>,
+    pub stroke: Option<PartInfo>,
+}
+
+/// One object as listed: its kind (`path` or `compound`), how many fills and strokes, whether the
+/// walk sews its appearance as pieces, its settings as kept (each part's keys by name, `None`:
+/// none), and what it keeps that this version doesn't read, as file keys (`branch`, `fill.grain`,
+/// `fill.stitch` for an id this version doesn't know, `embroidery` for settings that are no
+/// object).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ObjectInfo {
+    pub id: u64,
+    pub kind: String,
+    pub fills: usize,
+    pub strokes: usize,
+    pub expanded: bool,
+    pub settings: KeptParts,
+    pub kept: Vec<String>,
+}
+
+/// An object's parts' settings as kept, each set key by its name.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct KeptParts {
+    pub fill: Option<Map<String, Value>>,
+    pub stroke: Option<Map<String, Value>>,
+}
+
+/// An object passed over, and why (`type`, `instance`, `literal`, `live`…: a list that may grow).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SkippedObject {
+    pub id: u64,
+    pub reason: String,
+}
+
+/// A value merged over objects: the one they share (`None` when they differ, or none sets it),
+/// how many set it, and whether they differ.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Merged<T> {
+    pub value: Option<T>,
+    pub set_count: usize,
+    pub mixed: bool,
+}
+
+/// One part merged over the objects that have it: how many, how many items of it, how the walk
+/// sews it (`sewn`: `tatami`, `satin`, `running`, `none`; `rule`, as `embroidery.sequence` names
+/// it; `reason` when nothing of it is sewn: `off`, `unpainted`, `hidden`, `notPrinted`; each
+/// `None` when they differ, lists that may grow), every key it is planned with, its entry and exit
+/// points (document points), and with `plan` what the plan sews of it.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PartInfo {
+    pub object_count: usize,
+    pub item_count: usize,
+    pub sewn: Option<String>,
+    pub rule: Option<String>,
+    pub reason: Option<String>,
+    /// By key: `stitch`, `spacing`, `length`, `angle`, `pull`, `pullPercent`, `push`, `expand`,
+    /// `narrowAsSatin`, `underlay`, `splitLength`.
+    pub settings: BTreeMap<String, KeyInfo>,
+    pub entry: Merged<[f64; 2]>,
+    pub exit: Merged<[f64; 2]>,
+    pub sewing: Option<Sewing>,
+}
+
+/// One key of a part: its value (`null` when they differ, `"auto"` for a rule's), where it comes
+/// from (`object`, `export`, `document` with its `section`, `fabric` or `machine`, or `default`; a
+/// list that may grow), how many objects set it as this version reads them, what unsetting it
+/// gives, what a rule chose where the value is `"auto"`, and whether the planner uses it for the
+/// stitch the part is sewn in.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KeyInfo {
+    pub value: Value,
+    pub source: Option<String>,
+    pub section: Option<String>,
+    pub set_count: usize,
+    pub mixed: bool,
+    pub inherited: Option<Inherited>,
+    pub rule: Option<Value>,
+    pub applies: Option<bool>,
+}
+
+/// What a key is unset: its value and where that comes from.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Inherited {
+    pub value: Value,
+    pub source: String,
+    pub section: Option<String>,
+}
+
+/// What the plan sews of a part: its units and their needle-down stitches, records, jumps and cuts.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Sewing {
+    pub unit_count: usize,
+    pub stitches: usize,
+    pub records: usize,
+    pub jumps: usize,
+    pub trims: usize,
 }
 
 /// The reply for objects `ids` of `doc` with the call's options `opts`, with what `plan` (the
 /// design's, when planned) sews of each part.
-pub(super) fn reply(doc: &Document, ids: &[NodeId], opts: &Options, plan: Option<&DesignPlan>, page: Page, warnings: Vec<String>) -> Value {
+pub(super) fn reply(doc: &Document, ids: &[NodeId], opts: &Options, plan: Option<&DesignPlan>, page: Page, warnings: Vec<String>) -> ObjectSettings {
     let (take, skipped) = takers(doc, ids);
     let nodes: Vec<&Node> = take.iter().filter_map(|id| doc.node(*id)).collect();
     let layer = DocLayer::of(doc);
     let mut found = Found::default();
-    let parts: Map<String, Value> = [PartKind::Fill, PartKind::Stroke]
-        .into_iter()
-        .map(|kind| (kind.id().to_string(), part_section(doc, &nodes, kind, opts, &layer, plan, &mut found)))
-        .collect();
-    let warnings: Vec<Value> = warnings.into_iter().map(Value::from).chain(found.notes().map(Value::from)).collect();
-    let mut out = json!({
-        "objectCount": nodes.len(),
-        "offset": page.offset,
-        "truncated": page.truncated(nodes.len()),
-        "objects": nodes.get(page.range(nodes.len())).unwrap_or_default().iter().map(|n| object_json(n)).collect::<Vec<_>>(),
-        "skippedCount": skipped.len(),
-        "skipped": skipped.iter().take(super::objects::MAX_SKIPPED).map(|(id, why)| json!({"id": id.0, "reason": why.id()})).collect::<Vec<_>>(),
-        "trimAfter": trim_after(doc, ids),
-        "planned": plan.is_some(),
-        "warnings": warnings,
-    });
-    if let Value::Object(o) = &mut out {
-        o.extend(parts);
+    let fill = part_section(doc, &nodes, PartKind::Fill, opts, &layer, plan, &mut found);
+    let stroke = part_section(doc, &nodes, PartKind::Stroke, opts, &layer, plan, &mut found);
+    ObjectSettings {
+        object_count: nodes.len(),
+        offset: page.offset,
+        truncated: page.truncated(nodes.len()),
+        objects: nodes.get(page.range(nodes.len())).unwrap_or_default().iter().map(|n| object_info(n)).collect(),
+        skipped_count: skipped.len(),
+        skipped: skipped.iter().take(MAX_SKIPPED).map(|(id, why)| SkippedObject { id: id.0, reason: why.id().to_string() }).collect(),
+        trim_after: trim_after(doc, ids),
+        planned: plan.is_some(),
+        warnings: warnings.into_iter().chain(found.notes().map(String::from)).collect(),
+        fill,
+        stroke,
     }
-    out
 }
 
-/// An object as `objects` lists it: its kind, how many fills and strokes, whether its appearance is
-/// sewn as pieces, its settings as kept (each part's keys by name; `null`: none), and what it keeps
-/// that this version doesn't read ([`kept`]).
-fn object_json(n: &Node) -> Value {
+/// Object `n` as listed ([`ObjectInfo`]).
+fn object_info(n: &Node) -> ObjectInfo {
     let count = |kind: PartKind| n.appearance.items.iter().filter(|i| part_kind(i) == kind).count();
     let e = n.extras().embroidery.as_deref();
-    let part = |kind: PartKind| e.and_then(|e| e.part(kind)).map_or(Value::Null, stored);
-    let kept = e.map(kept).unwrap_or_default();
-    json!({
-        "id": n.id.0,
-        "kind": if matches!(n.kind, NodeKind::Compound { .. }) { "compound" } else { "path" },
-        "fills": count(PartKind::Fill),
-        "strokes": count(PartKind::Stroke),
-        "expanded": needs_expanding(n),
-        "settings": {"fill": part(PartKind::Fill), "stroke": part(PartKind::Stroke)},
-        "kept": kept,
-    })
+    let part = |kind: PartKind| e.and_then(|e| e.part(kind)).map(stored);
+    ObjectInfo {
+        id: n.id.0,
+        kind: if matches!(n.kind, NodeKind::Compound { .. }) { "compound" } else { "path" }.to_string(),
+        fills: count(PartKind::Fill),
+        strokes: count(PartKind::Stroke),
+        expanded: needs_expanding(n),
+        settings: KeptParts { fill: part(PartKind::Fill), stroke: part(PartKind::Stroke) },
+        kept: e.map(kept).unwrap_or_default(),
+    }
 }
 
 /// What settings `e` keep that this version doesn't read, as paths of their file keys: keys a newer
@@ -158,24 +301,22 @@ fn kept(e: &Embroidery) -> Vec<String> {
 }
 
 /// A part's settings as kept, each set key by its name.
-fn stored(p: &PartSettings) -> Value {
-    PartKey::ALL.into_iter().filter_map(|k| p.get(k).map(|v| (k.name().to_string(), value_json(&v)))).collect::<Map<String, Value>>().into()
+fn stored(p: &PartSettings) -> Map<String, Value> {
+    PartKey::ALL.into_iter().filter_map(|k| p.get(k).map(|v| (k.name().to_string(), value_json(&v)))).collect()
 }
 
 /// The cut after the objects as given (a group as one, as `embroidery.setTrimAfter` marks it; a
 /// run of stitches opened from a file by its file's cut): whether they ask for it, how many do,
 /// and whether they differ.
-fn trim_after(doc: &Document, ids: &[NodeId]) -> Value {
+fn trim_after(doc: &Document, ids: &[NodeId]) -> Merged<bool> {
     let mut seen = HashSet::new();
-    let marks: Vec<bool> = ids
-        .iter()
-        .filter(|id| seen.insert(**id))
-        .filter_map(|id| doc.node(*id))
-        .map(|n| n.extras().embroidery.as_deref().is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after)))
-        .collect();
-    let set = marks.iter().filter(|m| **m).count();
-    let mixed = set > 0 && set < marks.len();
-    json!({"value": if mixed { Value::Null } else { json!(set > 0) }, "setCount": set, "mixed": mixed})
+    let (mut given, mut set) = (0usize, 0usize);
+    for n in ids.iter().filter(|id| seen.insert(**id)).filter_map(|id| doc.node(*id)) {
+        given += 1;
+        set += usize::from(n.extras().embroidery.as_deref().is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after)));
+    }
+    let mixed = set > 0 && set < given;
+    Merged { value: (!mixed).then_some(set > 0), set_count: set, mixed }
 }
 
 /// `n`'s path, document points: its own, or its compound path's members' together.
@@ -219,20 +360,6 @@ fn unprinted(doc: &Document, n: &Node) -> Option<&'static str> {
     above.iter().any(unprinted_layer).then_some("notPrinted")
 }
 
-/// One object's part as reported: how it is sewn (`none`: not at all, and why) and the rule that
-/// chose it, every reported key, and its settings as kept.
-struct PartRow<'a> {
-    sewn: &'static str,
-    rule: Option<&'static str>,
-    /// Why nothing of it is sewn: `off` (its object sets it not to be), `unpainted` (nothing of the
-    /// kind is shown painted with a colour or a gradient), `hidden`, `notPrinted`.
-    reason: Option<&'static str>,
-    keys: Vec<Reported>,
-    /// What a rule chose for a key whose value is `"auto"`, by the key's name.
-    rules: Vec<(&'static str, Value)>,
-    kept: Option<&'a PartSettings>,
-}
-
 /// What Auto chose for a part sewn in `style` with `p`, by key: a satin's underlay by its width and
 /// its spacing by its width (and the fabric's share of it); a fill's underlay by its size, which
 /// only the planned area tells (`chose` null: the edge run always, a tatami layer too where the
@@ -253,14 +380,89 @@ fn rules(style: Style, p: &Params) -> Vec<(&'static str, Value)> {
     out
 }
 
-/// The value the rows share, `None` when they differ.
-fn common<T: PartialEq + Clone>(mut values: impl Iterator<Item = T>) -> Option<T> {
-    let first = values.next()?;
-    values.all(|v| v == first).then_some(first)
+/// What objects share, merged as each is added: nothing yet, the one value, or several.
+enum Common<T> {
+    Empty,
+    One(T),
+    Mixed,
 }
 
-/// Part `kind` of `nodes` of `doc`, merged (`null` when none of them has the part): see the
-/// module's doc.
+impl<T: PartialEq> Common<T> {
+    fn add(&mut self, v: T) {
+        match self {
+            Common::Empty => *self = Common::One(v),
+            Common::One(x) if *x == v => {}
+            Common::One(_) | Common::Mixed => *self = Common::Mixed,
+        }
+    }
+
+    /// The value they share, `None` when they differ (or none was added).
+    fn get(self) -> Option<T> {
+        match self {
+            Common::One(v) => Some(v),
+            Common::Empty | Common::Mixed => None,
+        }
+    }
+}
+
+/// One key of a part, merged as each object is added ([`KeyInfo`]).
+struct KeyMerge {
+    value: Common<Value>,
+    source: Common<Source>,
+    set: usize,
+    inherited: Common<Resolved>,
+    rule: Common<Option<Value>>,
+    applies: Common<bool>,
+}
+
+impl KeyMerge {
+    fn new() -> Self {
+        Self { value: Common::Empty, source: Common::Empty, set: 0, inherited: Common::Empty, rule: Common::Empty, applies: Common::Empty }
+    }
+
+    fn info(self) -> KeyInfo {
+        let value = self.value.get();
+        let source = self.source.get();
+        KeyInfo {
+            mixed: value.is_none(),
+            value: value.unwrap_or(Value::Null),
+            source: source.map(|s| s.id().to_string()),
+            section: source.and_then(|s| s.section()).map(String::from),
+            set_count: self.set,
+            inherited: self.inherited.get().map(|r| Inherited {
+                value: r.value,
+                source: r.source.id().to_string(),
+                section: r.source.section().map(String::from),
+            }),
+            rule: self.rule.get().flatten(),
+            applies: self.applies.get(),
+        }
+    }
+}
+
+/// An entry or exit point merged as each object is added.
+struct PointMerge {
+    value: Common<Option<[f64; 2]>>,
+    set: usize,
+}
+
+impl PointMerge {
+    fn add(&mut self, p: Option<&PartSettings>, key: PartKey) {
+        let point = p.and_then(|p| p.get(key)).and_then(|v| match v {
+            PartValue::Point(p) => Some([p.x, p.y]),
+            PartValue::Id(_) | PartValue::Number(_) | PartValue::Sides(_) => None,
+        });
+        self.set += usize::from(point.is_some());
+        self.value.add(point);
+    }
+
+    fn merged(self) -> Merged<[f64; 2]> {
+        let value = self.value.get();
+        Merged { mixed: value.is_none(), value: value.flatten(), set_count: self.set }
+    }
+}
+
+/// Part `kind` of `nodes` of `doc`, merged ([`PartInfo`]; `None` when none of them has the part).
 fn part_section(
     doc: &Document,
     nodes: &[&Node],
@@ -269,93 +471,79 @@ fn part_section(
     layer: &DocLayer,
     plan: Option<&DesignPlan>,
     found: &mut Found,
-) -> Value {
-    let with: Vec<&Node> = nodes.iter().copied().filter(|n| has_part(n, kind)).collect();
-    if with.is_empty() {
-        return Value::Null;
+) -> Option<PartInfo> {
+    let (mut object_count, mut item_count) = (0usize, 0usize);
+    let (mut sewn, mut rule, mut reason) = (Common::Empty, Common::Empty, Common::Empty);
+    let mut keys: Vec<(&'static str, KeyMerge)> = REPORTED.iter().map(|k| (*k, KeyMerge::new())).collect();
+    let (mut entry, mut exit) = (PointMerge { value: Common::Empty, set: 0 }, PointMerge { value: Common::Empty, set: 0 });
+    let mut with = Vec::new();
+    for n in nodes.iter().copied().filter(|n| has_part(n, kind)) {
+        object_count += 1;
+        item_count += n.appearance.items.iter().filter(|i| part_kind(i) == kind).count();
+        if plan.is_some() {
+            with.push(n.id);
+        }
+        let kept = n.extras().embroidery.as_deref().and_then(|e| e.part(kind));
+        let object = kept.map_or_else(PartLayer::default, |p| PartLayer::read(p, found));
+        let settings = UnitSettings::new(object, n.bbox_angle, opts, layer);
+        // The part's first item of the kind the walk sews says how it is sewn: as it is, or, for a
+        // stroke the walk outlines first (on an object it expands, reshaped by a brush or an
+        // effect), as the area it paints.
+        let item = n.appearance.items.iter().find(|i| part_kind(i) == kind && sews(i));
+        let outlined = |item: &AppearanceItem| kind == PartKind::Stroke && needs_expanding(n) && !keeps_its_path(&n.appearance, item);
+        let (sewn_as, chose, why_not, style) = match (unprinted(doc, n), item) {
+            (Some(why), _) => ("none", None, Some(why), Style::Fill),
+            (None, _) if !settings.sewn() => ("none", None, Some("off"), Style::Fill),
+            (None, None) => ("none", None, Some("unpainted"), Style::Fill),
+            (None, Some(item)) => {
+                let (style, why) = if outlined(item) { outlined_rule(settings.forcing()) } else { part_rule(item, &path_of(n), settings.forcing()) };
+                (stitch_id(style), Some(rule_id(why)), None, style)
+            }
+        };
+        sewn.add(sewn_as);
+        rule.add(chose);
+        reason.add(why_not);
+        // A satin's width: its stroke's.
+        let width = match item {
+            Some(AppearanceItem::Stroke(st)) if style == Style::Satin => pt_to_mm(st.width).max(0.0),
+            _ => 0.0,
+        };
+        let rules = if sewn_as == "none" { Vec::new() } else { rules(style, &settings.params(style, width)) };
+        for reported in settings.report(style) {
+            let Some((_, k)) = keys.iter_mut().find(|(name, _)| *name == reported.name) else { continue };
+            // Set: what the object's own settings give, as this version reads them (a stitch or an
+            // underlay it doesn't know is kept unread, and the layers below give the value).
+            k.set += usize::from(reported.now.source == Source::Object);
+            k.value.add(reported.now.value.clone());
+            k.source.add(reported.now.source);
+            k.inherited.add(reported.inherited);
+            k.rule.add(rules.iter().find(|(key, _)| *key == reported.name).map(|(_, v)| v.clone()));
+            // A part not sewn uses none of its keys but the stitch that says so.
+            k.applies.add(if sewn_as == "none" { reported.name == "stitch" } else { reported.applies });
+        }
+        entry.add(kept, PartKey::Entry);
+        exit.add(kept, PartKey::Exit);
     }
-    let rows: Vec<PartRow> = with
-        .iter()
-        .map(|n| {
-            let kept = n.extras().embroidery.as_deref().and_then(|e| e.part(kind));
-            let object = kept.map_or_else(PartLayer::default, |p| PartLayer::read(p, found));
-            let settings = UnitSettings::new(object, n.bbox_angle, opts, layer);
-            // The part's first item of the kind the walk sews says how it is sewn: as it is, or,
-            // for a stroke the walk outlines first (on an object it expands, reshaped by a brush or
-            // an effect), as the area it paints.
-            let item = n.appearance.items.iter().find(|i| part_kind(i) == kind && sews(i));
-            let outlined = |item: &AppearanceItem| kind == PartKind::Stroke && needs_expanding(n) && !keeps_its_path(&n.appearance, item);
-            let (sewn, rule, reason, style) = match (unprinted(doc, n), item) {
-                (Some(why), _) => ("none", None, Some(why), Style::Fill),
-                (None, _) if !settings.sewn() => ("none", None, Some("off"), Style::Fill),
-                (None, None) => ("none", None, Some("unpainted"), Style::Fill),
-                (None, Some(item)) => {
-                    let (style, why) =
-                        if outlined(item) { outlined_rule(settings.forcing()) } else { part_rule(item, &path_of(n), settings.forcing()) };
-                    (stitch_id(style), Some(rule_id(why)), None, style)
-                }
-            };
-            // A satin's width: its stroke's.
-            let width = match item {
-                Some(AppearanceItem::Stroke(st)) if style == Style::Satin => pt_to_mm(st.width).max(0.0),
-                _ => 0.0,
-            };
-            let rules = if sewn == "none" { Vec::new() } else { rules(style, &settings.params(style, width)) };
-            PartRow { sewn, rule, reason, keys: settings.report(style), rules, kept }
-        })
-        .collect();
-    let item_count: usize = with.iter().map(|n| n.appearance.items.iter().filter(|i| part_kind(i) == kind).count()).sum();
-    let mut settings = Map::new();
-    for name in super::resolve::report::REPORTED {
-        let at = |r: &PartRow| r.keys.iter().find(|k| k.name == name).cloned();
-        let now: Vec<Resolved> = rows.iter().filter_map(|r| at(r).map(|k| k.now)).collect();
-        let inherited: Vec<Resolved> = rows.iter().filter_map(|r| at(r).map(|k| k.inherited)).collect();
-        // A part not sewn uses none of its keys but the stitch that says so.
-        let applies = common(rows.iter().map(|r| if r.sewn == "none" { name == "stitch" } else { at(r).is_some_and(|k| k.applies) }));
-        // Set: what the object's own settings give, as this version reads them (a stitch or an
-        // underlay it doesn't know is kept unread, and the layers below give the value).
-        let set_count = now.iter().filter(|r| r.source == Source::Object).count();
-        let value = common(now.iter().map(|r| r.value.clone()));
-        let source = common(now.iter().map(|r| r.source));
-        let inherited = common(inherited.into_iter());
-        settings.insert(
-            name.to_string(),
-            json!({
-                "value": value.clone().unwrap_or(Value::Null),
-                "source": source.map(|s| s.id()),
-                "section": source.and_then(|s| s.section()),
-                "setCount": set_count,
-                "mixed": value.is_none(),
-                "inherited": inherited.map(|r| json!({"value": r.value, "source": r.source.id(), "section": r.source.section()})),
-                "applies": applies,
-                "rule": common(rows.iter().map(|r| r.rules.iter().find(|(k, _)| *k == name).map(|(_, v)| v.clone()))).flatten(),
-            }),
-        );
+    if object_count == 0 {
+        return None;
     }
-    let point = |key: PartKey| {
-        let values: Vec<Value> = rows.iter().map(|r| r.kept.and_then(|p| p.get(key)).as_ref().map_or(Value::Null, value_json)).collect();
-        let set = values.iter().filter(|v| !v.is_null()).count();
-        let value = common(values.into_iter());
-        json!({"value": value.clone().unwrap_or(Value::Null), "setCount": set, "mixed": value.is_none()})
-    };
-    json!({
-        "objectCount": with.len(),
-        "itemCount": item_count,
-        "sewn": common(rows.iter().map(|r| r.sewn)),
-        "rule": common(rows.iter().map(|r| r.rule)).flatten(),
-        "reason": common(rows.iter().map(|r| r.reason)).flatten(),
-        "settings": settings,
-        "entry": point(PartKey::Entry),
-        "exit": point(PartKey::Exit),
-        "sewing": plan.map(|p| sewn_of(p, &with, kind)),
+    Some(PartInfo {
+        object_count,
+        item_count,
+        sewn: sewn.get().map(String::from),
+        rule: rule.get().flatten().map(String::from),
+        reason: reason.get().flatten().map(String::from),
+        settings: keys.into_iter().map(|(name, k)| (name.to_string(), k.info())).collect(),
+        entry: entry.merged(),
+        exit: exit.merged(),
+        sewing: plan.map(|p| sewn_of(p, &with, kind)),
     })
 }
 
-/// What `plan` sews of part `kind` of `nodes` (as a person selects them): its units and their
-/// needle-down stitches, records, jumps and cuts.
-fn sewn_of(plan: &DesignPlan, nodes: &[&Node], kind: PartKind) -> Value {
-    let ids: HashSet<NodeId> = nodes.iter().map(|n| n.id).collect();
-    let (mut units, mut stitches, mut records, mut jumps, mut trims) = (0usize, 0usize, 0usize, 0usize, 0usize);
+/// What `plan` sews of part `kind` of objects `ids` (as a person selects them).
+fn sewn_of(plan: &DesignPlan, ids: &[NodeId], kind: PartKind) -> Sewing {
+    let ids: HashSet<NodeId> = ids.iter().copied().collect();
+    let mut out = Sewing::default();
     for (i, u) in plan.units.iter().enumerate() {
         let of_kind = match (u.origin.part, kind) {
             (Part::Fill(_), PartKind::Fill) | (Part::Stroke(_), PartKind::Stroke) => true,
@@ -364,16 +552,16 @@ fn sewn_of(plan: &DesignPlan, nodes: &[&Node], kind: PartKind) -> Value {
         if !of_kind || !ids.contains(&u.origin.selected()) {
             continue;
         }
-        units += 1;
+        out.unit_count += 1;
         for s in plan.unit_stitches(i) {
-            records += 1;
+            out.records += 1;
             match s.command {
-                Command::Stitch => stitches += 1,
-                Command::Jump => jumps += 1,
-                Command::Trim => trims += 1,
+                Command::Stitch => out.stitches += 1,
+                Command::Jump => out.jumps += 1,
+                Command::Trim => out.trims += 1,
                 _ => {}
             }
         }
     }
-    json!({"unitCount": units, "stitches": stitches, "records": records, "jumps": jumps, "trims": trims})
+    out
 }

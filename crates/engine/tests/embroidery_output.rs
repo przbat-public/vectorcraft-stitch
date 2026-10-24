@@ -29,6 +29,10 @@
 //! against the plan's (`embroidery.stats`), block by block, wherever no planned stitch is longer
 //! than one of the format's records.
 //!
+//! Settings that set nothing a plan reads (what a newer version wrote, values set and then reset,
+//! the default fabric) are pinned to change none of these exports
+//! (`settings_that_change_nothing_change_no_export`).
+//!
 //! Only the hashes and summaries are kept here, never the files. They were recorded on macOS
 //! (aarch64). The planner calls the platform's sine, cosine and power functions, whose last bit may
 //! differ in another maths library: there a needle point can round to the next 0.1 mm, and a hash
@@ -820,6 +824,180 @@ fn the_real_designs_artwork_exports_unchanged() {
         }
     }
     check(ARTWORK, ARTWORK_THREADS, ARTWORK_SUMMARIES, &now);
+}
+
+/// Embroidery settings that set nothing a plan reads change no export, of the documents built here
+/// or of the real designs' artwork ([`Unchanging`]): what a newer version wrote at every level,
+/// every value of every part set and then reset, and the default fabric copied into the document
+/// with every machine value at its default.
+#[test]
+fn settings_that_change_nothing_change_no_export() {
+    for how in [Unchanging::Kept, Unchanging::SetAndReset, Unchanging::DefaultFabric] {
+        let mut now = Vec::new();
+        for (name, s, options) in documents() {
+            let mut s = unchanging(s, how);
+            run(&mut s, "file.info", json!({"title": name}));
+            for format in Format::ALL {
+                let bytes = export(&mut s, format, &options).unwrap_or_else(|e| panic!("{name} ({how:?}) as {}: {e}", format.id()));
+                now.push(Pinned::new(format!("{name}.{}", format.extension()), format, &bytes));
+            }
+        }
+        check(SYNTHETIC, SYNTHETIC_THREADS, SYNTHETIC_SUMMARIES, &now);
+        let Some(dir) = corpus() else { continue };
+        let mut now = Vec::new();
+        for &(art, theirs) in DESIGNS {
+            let mut s = unchanging(artwork(&dir, art, theirs), how);
+            let stem = art.trim_end_matches(".svg");
+            run(&mut s, "file.info", json!({"title": stem}));
+            for format in Format::ALL {
+                let bytes = export(&mut s, format, &json!({})).unwrap_or_else(|e| panic!("{art} ({how:?}) as {}: {e}", format.id()));
+                now.push(Pinned::new(format!("{stem}.{}", format.extension()), format, &bytes));
+            }
+        }
+        check(ARTWORK, ARTWORK_THREADS, ARTWORK_SUMMARIES, &now);
+    }
+}
+
+/// Settings that set nothing a plan reads ([`settings_that_change_nothing_change_no_export`]).
+#[derive(Clone, Copy, Debug)]
+enum Unchanging {
+    /// What a newer version wrote that this one doesn't read, at every level: on every object, a
+    /// fill part and a stroke part holding only keys this version doesn't know (and a value of
+    /// another type), and a key of its own; in the document, a fabric, a machine and a key holding
+    /// only such keys. Written into the file and opened, as another version would leave them.
+    Kept,
+    /// Every value of both parts of every object set, and then unset: the document must be the one
+    /// it was, its file the same bytes.
+    SetAndReset,
+    /// The default fabric copied into the document as choosing it copies it, its thread weight 40
+    /// and joining on, and every machine value at the planner's default.
+    DefaultFabric,
+}
+
+/// `s`'s document given `how`'s settings: a session holding it.
+fn unchanging(mut s: Session, how: Unchanging) -> Session {
+    use vectorcraft_doc::embroidery::{EmbroiderySetup, MachineSettings, PartKey, PartKind, PartValue};
+    match how {
+        Unchanging::Kept => {
+            let doc = s.doc().unwrap().doc.clone();
+            let mut file: Value = serde_json::from_slice(&vectorcraft_format::save(&doc, false)).unwrap();
+            let kept = json!({"fill": {"motif": {"name": "wave"}, "spacing": "auto"}, "stroke": {"points": {"rails": [[0.0, 0.0], [5.0, 5.0]]}}, "branch": true});
+            each_node(&mut file["document"], &mut |node| {
+                let e = node.as_object_mut().unwrap().entry("embroidery").or_insert_with(|| json!({}));
+                if let Value::Object(e) = e {
+                    for (k, v) in kept.as_object().unwrap() {
+                        e.entry(k.clone()).or_insert_with(|| v.clone());
+                    }
+                }
+            });
+            let setup = file["document"].as_object_mut().unwrap().entry("embroidery").or_insert_with(|| json!({}));
+            for (k, v) in [("fabric", json!({"grain": 45, "tatami": {"curve": [1, 2]}})), ("machine", json!({"model": "x"})), ("hoop", json!(1))] {
+                setup.as_object_mut().unwrap().insert(k.to_string(), v);
+            }
+            let mut opened = Session::new();
+            open(&mut opened, "kept.vectorcraft", &serde_json::to_vec(&file).unwrap());
+            opened
+        }
+        Unchanging::SetAndReset => {
+            let before = vectorcraft_format::save(&s.doc().unwrap().doc, false);
+            let ids: Vec<vectorcraft_doc::NodeId> = {
+                let mut ids = Vec::new();
+                for layer in &s.doc().unwrap().doc.layers {
+                    layer.walk(&mut |n| ids.push(n.id));
+                }
+                ids
+            };
+            let sample = |key: PartKey| match key {
+                PartKey::Stitch => PartValue::Id("running".into()),
+                PartKey::Underlay => PartValue::Id("edge".into()),
+                PartKey::Pull | PartKey::PullPercent | PartKey::Push => PartValue::Sides([0.3, 0.1]),
+                PartKey::Entry | PartKey::Exit => PartValue::Point(vectorcraft_geom::Point::new(10.0, 20.0)),
+                _ => PartValue::Number(3.0),
+            };
+            for set in [true, false] {
+                s.edit("Embroidery Object Settings", |d, _| {
+                    for id in &ids {
+                        let Some(n) = d.node_mut(*id) else { continue };
+                        let mut e = n.extras().embroidery.as_deref().cloned().unwrap_or_default();
+                        for kind in PartKind::ALL {
+                            e.edit_part(kind, |p| {
+                                for key in PartKey::ALL {
+                                    assert!(p.set(key, set.then(|| sample(key))));
+                                }
+                            });
+                        }
+                        n.extras_mut().embroidery = (!e.is_empty()).then(|| Box::new(e));
+                    }
+                    Ok(())
+                })
+                .unwrap();
+            }
+            let after = vectorcraft_format::save(&s.doc().unwrap().doc, false);
+            assert!(before == after, "set and reset: the file is not the one it was");
+            s
+        }
+        Unchanging::DefaultFabric => {
+            let fill = vectorcraft_stitch::plan::Params::for_style(vectorcraft_stitch::plan::Style::Fill);
+            s.edit("Embroidery Setup", |d, _| {
+                let mut setup = d.embroidery.as_deref().cloned().unwrap_or_else(EmbroiderySetup::default);
+                setup.set_fabric(Some(default_fabric()));
+                setup.set_thread_weight(Some(vectorcraft_stitch::plan::THREAD_WEIGHT));
+                setup.set_join_same_color(Some(true));
+                setup.set_machine(Some(MachineSettings {
+                    jump_length: Some(fill.jump),
+                    trim_length: Some(fill.trim),
+                    min_stitch: Some(fill.min_stitch),
+                    split_length: Some(fill.max_satin),
+                    ..MachineSettings::default()
+                }));
+                d.embroidery = Some(Box::new(setup));
+                Ok(())
+            })
+            .unwrap();
+            s
+        }
+    }
+}
+
+/// The default fabric's values as choosing it copies them into a document: in force and as the
+/// preset's.
+fn default_fabric() -> vectorcraft_doc::embroidery::FabricSettings {
+    use vectorcraft_doc::embroidery::{FabricPreset, FabricSettings, FabricValues, StitchValues};
+    let f = vectorcraft_stitch::fabric::fabric(vectorcraft_stitch::fabric::DEFAULT_FABRIC).unwrap();
+    let stitch = |p: &vectorcraft_stitch::fabric::StitchPreset| StitchValues {
+        pull: p.pull.map(|v| v.value),
+        spacing: p.spacing.map(|v| v.value),
+        spacing_percent: p.spacing_percent.map(|v| v.value),
+        length: p.length.map(|v| v.value),
+        underlay: p.underlay.map(|v| v.value.id().to_string()),
+        ..StitchValues::default()
+    };
+    let values = FabricValues {
+        tatami: Some(stitch(&f.tatami)),
+        satin: Some(stitch(&f.satin)),
+        stabilizer: f.stabilizer.map(|v| v.value.to_string()),
+        topping: f.topping.map(|v| v.value.to_string()),
+        needle_point: f.needle_point.map(|v| v.value.to_string()),
+        thickness: f.thickness.map(|v| v.value),
+        ..FabricValues::default()
+    };
+    FabricSettings {
+        preset: Some(FabricPreset { id: f.id.to_string(), values: values.clone(), ..FabricPreset::default() }),
+        values,
+        ..FabricSettings::default()
+    }
+}
+
+/// Call `f` on every node of a saved document's JSON (an object with an `id` and a `kind`).
+fn each_node(v: &mut Value, f: &mut impl FnMut(&mut Value)) {
+    if v.get("id").is_some_and(Value::is_u64) && v.get("kind").is_some() {
+        f(v);
+    }
+    match v {
+        Value::Object(m) => m.values_mut().for_each(|c| each_node(c, f)),
+        Value::Array(a) => a.iter_mut().for_each(|c| each_node(c, f)),
+        _ => {}
+    }
 }
 
 /// One design written with two sets of threads gives two files that are the same apart from their

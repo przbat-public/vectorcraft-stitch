@@ -5202,7 +5202,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} ścieg|{count} ściegi|{count} ściegów
 @msg	tab {tab}: one of {_1}	karta {tab}: jedna z {_1}
 @msg	unknown key `{k}`: the only one is {only}	nieznany klucz `{k}`: jedyny to {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Szyte od dołu stosu; obiekty jednej nici łączą się, gdy nic nie leży między nimi.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Szyte od dołu stosu; obiekty jednego koloru łączą się, gdy nic nie leży między nimi.
 embroidery	Trim and thread change	Cięcie i zmiana nici
 embroidery	Thread change	Zmiana nici
 embroidery	fill	wypełnienie
@@ -5245,8 +5245,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Czas przy {speed}
 @msg	can't change the sewing order: too many objects at once	nie można zmienić kolejności szycia: zbyt wiele obiektów naraz
 embroidery	After {name}	Po {name}
 embroidery	Before {name}	Przed {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Żaden ścieg się nie przesunął: obiekty jednej nici nadal się łączą, gdy nic pomiędzy nie leży pod nimi.
-embroidery	{name} is sewn in block {block}, joined with its thread	Obiekt {name} jest szyty w bloku {block}, razem z innymi obiektami tej nici
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Żaden ścieg się nie przesunął: obiekty jednego koloru nadal się łączą, gdy nic pomiędzy nie leży pod nimi.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	Obiekt {name} jest szyty w bloku {block}, razem z innymi obiektami tego koloru
 embroidery	{name} is sewn in block {block}	Obiekt {name} jest szyty w bloku {block}
 embroidery	Thread changes: {before} → {after}	Zmiany nici: {before} → {after}
 embroidery	Collapse All	Zwiń wszystko

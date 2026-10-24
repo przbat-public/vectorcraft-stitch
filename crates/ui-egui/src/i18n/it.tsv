@@ -4964,7 +4964,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} punto|{count} punti
 @msg	tab {tab}: one of {_1}	scheda {tab}: una tra {_1}
 @msg	unknown key `{k}`: the only one is {only}	chiave sconosciuta `{k}`: l’unica è {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Si ricama dal fondo della pila verso l’alto; gli oggetti di uno stesso filo si uniscono quando nulla sta tra loro.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Si ricama dal fondo della pila verso l’alto; gli oggetti di uno stesso colore si uniscono quando nulla sta tra loro.
 embroidery	Trim and thread change	Taglio e cambio filo
 embroidery	Thread change	Cambio filo
 embroidery	fill	riempimento
@@ -5007,8 +5007,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Il tempo a {speed
 @msg	can't change the sewing order: too many objects at once	impossibile cambiare l’ordine di cucitura: troppi oggetti insieme
 embroidery	After {name}	Dopo {name}
 embroidery	Before {name}	Prima di {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Nessun punto si è spostato: gli oggetti di uno stesso filo restano uniti quando nulla in mezzo sta sotto di loro.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} è ricamato nel blocco {block}, unito al suo filo
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Nessun punto si è spostato: gli oggetti di uno stesso colore restano uniti quando nulla in mezzo sta sotto di loro.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} è ricamato nel blocco {block}, unito agli altri del suo colore
 embroidery	{name} is sewn in block {block}	{name} è ricamato nel blocco {block}
 embroidery	Thread changes: {before} → {after}	Cambi filo: {before} → {after}
 embroidery	Collapse All	Comprimi tutto

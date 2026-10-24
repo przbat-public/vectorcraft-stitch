@@ -4927,7 +4927,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count}땀
 @msg	tab {tab}: one of {_1}	탭 {tab}: {_1} 중 하나
 @msg	unknown key `{k}`: the only one is {only}	알 수 없는 키 `{k}`: 사용할 수 있는 키는 {only}뿐입니다
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	쌓인 순서의 아래부터 위로 수놓습니다. 사이에 아무것도 없으면 같은 실의 개체는 합쳐집니다.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	쌓인 순서의 아래부터 위로 수놓습니다. 사이에 아무것도 없으면 같은 색의 개체는 합쳐집니다.
 embroidery	Trim and thread change	실 자르기 및 실 교체
 embroidery	Thread change	실 교체
 embroidery	fill	칠
@@ -4970,8 +4970,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	분당 {speed}땀
 @msg	can't change the sewing order: too many objects at once	자수 순서를 바꿀 수 없습니다: 한 번에 너무 많은 개체입니다
 embroidery	After {name}	{name} 다음
 embroidery	Before {name}	{name} 앞
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	스티치가 움직이지 않았습니다. 사이에 있는 것이 아래에 놓이지 않으면 같은 실의 개체는 계속 합쳐집니다.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name}은(는) 블록 {block}에서 같은 실과 합쳐 수놓입니다
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	스티치가 움직이지 않았습니다. 사이에 있는 것이 아래에 놓이지 않으면 같은 색의 개체는 계속 합쳐집니다.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name}은(는) 블록 {block}에서 같은 색의 다른 개체와 합쳐 수놓입니다
 embroidery	{name} is sewn in block {block}	{name}은(는) 블록 {block}에서 수놓입니다
 embroidery	Thread changes: {before} → {after}	실 교체: {before} → {after}
 embroidery	Collapse All	모두 접기

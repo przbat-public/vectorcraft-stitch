@@ -5377,7 +5377,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} steek|{count} steken
 @msg	tab {tab}: one of {_1}	tabblad {tab}: een van {_1}
 @msg	unknown key `{k}`: the only one is {only}	onbekende sleutel `{k}`: de enige is {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Geborduurd van onder naar boven; objecten van één draad worden samengevoegd als er niets tussen ligt.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Geborduurd van onder naar boven; objecten van één kleur worden samengevoegd als er niets tussen ligt.
 embroidery	Trim and thread change	Knippen en draadwissel
 embroidery	Thread change	Draadwissel
 embroidery	fill	vulling
@@ -5420,8 +5420,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	De tijd bij {spee
 @msg	can't change the sewing order: too many objects at once	de borduurvolgorde kan niet worden gewijzigd: te veel objecten tegelijk
 embroidery	After {name}	Na {name}
 embroidery	Before {name}	Voor {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Er is geen steek verschoven: objecten van één draad blijven samengevoegd als niets ertussen eronder ligt.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} wordt geborduurd in blok {block}, samengevoegd met zijn draad
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Er is geen steek verschoven: objecten van één kleur blijven samengevoegd als niets ertussen eronder ligt.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} wordt geborduurd in blok {block}, samengevoegd met de andere van zijn kleur
 embroidery	{name} is sewn in block {block}	{name} wordt geborduurd in blok {block}
 embroidery	Thread changes: {before} → {after}	Draadwissels: {before} → {after}
 embroidery	Collapse All	Alles samenvouwen

@@ -1659,8 +1659,8 @@ sewing order there: moved beside the next row's object instead, an object sewn f
 another thread's lower in the stack, and be sewn after it. Near the list's edges a drag
 scrolls it. Drags are off while the list shows an earlier plan, in isolation mode and while a mask or
 a pattern is edited. Once the new plan comes, a note over the list says what the drop did
-(`reorder::explain`): where the object is sewn now, whether it joined others of its thread, the
-thread changes when their number changed, or that no stitch moved (objects of one thread still join
+(`reorder::explain`): where the object is sewn now, whether it joined others of its colour, the
+thread changes when their number changed, or that no stitch moved (objects of one colour still join
 a block sewn earlier when the objects moved lie apart from what they passed). Without a drag: the
 ↑ and ↓ buttons on a lit row and the panel's ≡ menu, which work the move out on the plan the list
 shows, as a drop does, and are off while that plan is out of date (nothing is planned on the

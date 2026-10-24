@@ -5315,7 +5315,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} pisto|{count} pistoa
 @msg	tab {tab}: one of {_1}	välilehti {tab}: yksi seuraavista: {_1}
 @msg	unknown key `{k}`: the only one is {only}	tuntematon avain `{k}`: ainoa on {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Kirjotaan pinon alhaalta ylös; saman langan objektit yhdistyvät, kun niiden välissä ei ole mitään.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Kirjotaan pinon alhaalta ylös; saman värin objektit yhdistyvät, kun niiden välissä ei ole mitään.
 embroidery	Trim and thread change	Leikkaus ja langanvaihto
 embroidery	Thread change	Langanvaihto
 embroidery	fill	täyttö
@@ -5358,8 +5358,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Aika nopeudella {
 @msg	can't change the sewing order: too many objects at once	ompelujärjestystä ei voi muuttaa: liian monta objektia kerralla
 embroidery	After {name}	Kohteen {name} jälkeen
 embroidery	Before {name}	Ennen kohdetta {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Mikään pisto ei siirtynyt: saman langan objektit yhdistyvät yhä, kun mikään välissä ei ole niiden alla.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} kirjotaan lohkossa {block}, yhdistettynä lankansa kanssa
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Mikään pisto ei siirtynyt: saman värin objektit yhdistyvät yhä, kun mikään välissä ei ole niiden alla.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} kirjotaan lohkossa {block}, yhdistettynä muihin samanvärisiin
 embroidery	{name} is sewn in block {block}	{name} kirjotaan lohkossa {block}
 embroidery	Thread changes: {before} → {after}	Langanvaihdot: {before} → {after}
 embroidery	Collapse All	Kutista kaikki

@@ -5351,7 +5351,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} steh|{count} stehy|{count} stehů
 @msg	tab {tab}: one of {_1}	karta {tab}: jedna z {_1}
 @msg	unknown key `{k}`: the only one is {only}	neznámý klíč `{k}`: jediný je {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Šije se odspodu nahoru; objekty jedné nitě se spojí, když mezi nimi nic neleží.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Šije se odspodu nahoru; objekty jedné barvy se spojí, když mezi nimi nic neleží.
 embroidery	Trim and thread change	Ustřižení a výměna nitě
 embroidery	Thread change	Výměna nitě
 embroidery	fill	výplň
@@ -5394,8 +5394,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Čas při {speed}
 @msg	can't change the sewing order: too many objects at once	pořadí šití nelze změnit: příliš mnoho objektů najednou
 embroidery	After {name}	Za {name}
 embroidery	Before {name}	Před {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Žádný steh se nepřesunul: objekty jedné nitě se dál spojují, když nic mezi nimi neleží pod nimi.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} se šije v bloku {block}, spojený se svou nití
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Žádný steh se nepřesunul: objekty jedné barvy se dál spojují, když nic mezi nimi neleží pod nimi.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} se šije v bloku {block}, spojený s ostatními své barvy
 embroidery	{name} is sewn in block {block}	{name} se šije v bloku {block}
 embroidery	Thread changes: {before} → {after}	Výměny nitě: {before} → {after}
 embroidery	Collapse All	Sbalit vše

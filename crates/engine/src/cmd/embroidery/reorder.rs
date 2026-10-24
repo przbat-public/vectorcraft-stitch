@@ -315,7 +315,7 @@ fn gap_for_moving(plan: &DesignPlan, moving: &Moving, step: Step) -> Option<usiz
 /// What a change of the sewing order did, plan to plan ([`explain`]).
 #[derive(Clone, Debug, PartialEq)]
 pub struct Explained {
-    /// No stitch is sewn in another order: objects of one thread still join as before (the
+    /// No stitch is sewn in another order: objects of one colour still join as before (the
     /// objects moved lie apart from what they passed).
     pub unchanged: bool,
     /// The thread changes before and after.
@@ -455,7 +455,7 @@ pub(super) fn specs() -> Vec<CommandSpec> {
             "Sew Earlier",
             [],
             None,
-            "{ids?: [id…] (objects of the document, at most 100,000; default: the selection), …the embroidery options (default: the stitch preview's, those of the document's last embroidery export: the plan the Embroidery panel's Sewing order list shows)} move the objects (a selected group as one) in the stacking order so that they are sewn before the object sewn just before them: just below it, in its parent, one undo step \"Change Sewing Order\"; refused, saying why, where a drop in the Embroidery panel's Sewing order list would be (into or out of a clip group, a lock, a clipping path, a run of an opened machine file alone, between two parts of one object) → {ids, target, place} (layer.move's params). Objects of one thread still join a block sewn earlier when nothing between lies under them, so a move may change no stitch",
+            "{ids?: [id…] (objects of the document, at most 100,000; default: the selection), …the embroidery options (default: the stitch preview's, those of the document's last embroidery export: the plan the Embroidery panel's Sewing order list shows)} move the objects (a selected group as one) in the stacking order so that they are sewn before the object sewn just before them: just below it, in its parent, one undo step \"Change Sewing Order\"; refused, saying why, where a drop in the Embroidery panel's Sewing order list would be (into or out of a clip group, a lock, a clipping path, a run of an opened machine file alone, between two parts of one object) → {ids, target, place} (layer.move's params). Objects of one colour still join a block sewn earlier when nothing between lies under them, so a move may change no stitch",
             has_doc,
             |s, p| sew(s, p, Step::Earlier)
         ),

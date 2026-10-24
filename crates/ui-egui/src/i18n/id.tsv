@@ -5334,7 +5334,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} jahitan
 @msg	tab {tab}: one of {_1}	tab {tab}: salah satu dari {_1}
 @msg	unknown key `{k}`: the only one is {only}	kunci tidak dikenal `{k}`: satu-satunya adalah {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Dijahit dari bawah tumpukan ke atas; objek satu benang digabung bila tidak ada apa pun di antaranya.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Dijahit dari bawah tumpukan ke atas; objek satu warna digabung bila tidak ada apa pun di antaranya.
 embroidery	Trim and thread change	Potong dan ganti benang
 embroidery	Thread change	Ganti benang
 embroidery	fill	isian
@@ -5377,8 +5377,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Waktu pada {speed
 @msg	can't change the sewing order: too many objects at once	urutan jahit tidak dapat diubah: terlalu banyak objek sekaligus
 embroidery	After {name}	Setelah {name}
 embroidery	Before {name}	Sebelum {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Tidak ada jahitan yang berpindah: objek satu benang tetap digabung bila tidak ada apa pun di antaranya di bawahnya.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} dijahit di blok {block}, digabung dengan benangnya
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Tidak ada jahitan yang berpindah: objek satu warna tetap digabung bila tidak ada apa pun di antaranya di bawahnya.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} dijahit di blok {block}, digabung dengan objek lain berwarna sama
 embroidery	{name} is sewn in block {block}	{name} dijahit di blok {block}
 embroidery	Thread changes: {before} → {after}	Ganti benang: {before} → {after}
 embroidery	Collapse All	Ciutkan semua

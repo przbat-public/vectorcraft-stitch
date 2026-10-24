@@ -5303,7 +5303,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} βελονιά|{count} βελονιές
 @msg	tab {tab}: one of {_1}	καρτέλα {tab}: μία από {_1}
 @msg	unknown key `{k}`: the only one is {only}	άγνωστο κλειδί `{k}`: το μόνο είναι {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Κεντιέται από το κάτω μέρος της στοίβας προς τα πάνω· τα αντικείμενα μιας κλωστής ενώνονται όταν τίποτα δεν βρίσκεται ανάμεσά τους.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Κεντιέται από το κάτω μέρος της στοίβας προς τα πάνω· τα αντικείμενα ενός χρώματος ενώνονται όταν τίποτα δεν βρίσκεται ανάμεσά τους.
 embroidery	Trim and thread change	Κόψιμο και αλλαγή κλωστής
 embroidery	Thread change	Αλλαγή κλωστής
 embroidery	fill	γέμισμα
@@ -5346,8 +5346,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Ο χρόνος �
 @msg	can't change the sewing order: too many objects at once	δεν είναι δυνατή η αλλαγή της σειράς ραφής: πάρα πολλά αντικείμενα ταυτόχρονα
 embroidery	After {name}	Μετά το {name}
 embroidery	Before {name}	Πριν από το {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Καμία βελονιά δεν μετακινήθηκε: τα αντικείμενα μιας κλωστής ενώνονται ακόμα όταν τίποτα ανάμεσα δεν βρίσκεται κάτω από αυτά.
-embroidery	{name} is sewn in block {block}, joined with its thread	Το {name} κεντιέται στο μπλοκ {block}, ενωμένο με την κλωστή του
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Καμία βελονιά δεν μετακινήθηκε: τα αντικείμενα ενός χρώματος ενώνονται ακόμα όταν τίποτα ανάμεσα δεν βρίσκεται κάτω από αυτά.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	Το {name} κεντιέται στο μπλοκ {block}, ενωμένο με τα άλλα του ίδιου χρώματος
 embroidery	{name} is sewn in block {block}	Το {name} κεντιέται στο μπλοκ {block}
 embroidery	Thread changes: {before} → {after}	Αλλαγές κλωστής: {before} → {after}
 embroidery	Collapse All	Σύμπτυξη όλων

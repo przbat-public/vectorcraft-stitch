@@ -5307,7 +5307,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} stygn|{count} stygn
 @msg	tab {tab}: one of {_1}	flik {tab}: en av {_1}
 @msg	unknown key `{k}`: the only one is {only}	okänd nyckel `{k}`: den enda är {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Broderas nerifrån och upp; objekt med samma tråd slås ihop när inget ligger mellan dem.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Broderas nerifrån och upp; objekt med samma färg slås ihop när inget ligger mellan dem.
 embroidery	Trim and thread change	Klipp och trådbyte
 embroidery	Thread change	Trådbyte
 embroidery	fill	fyllning
@@ -5350,8 +5350,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Tiden vid {speed}
 @msg	can't change the sewing order: too many objects at once	sömnadsordningen kan inte ändras: för många objekt på en gång
 embroidery	After {name}	Efter {name}
 embroidery	Before {name}	Före {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Inget stygn flyttades: objekt med samma tråd slås fortfarande ihop när inget emellan ligger under dem.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} broderas i block {block}, ihopslaget med sin tråd
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Inget stygn flyttades: objekt med samma färg slås fortfarande ihop när inget emellan ligger under dem.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} broderas i block {block}, ihopslaget med de andra i sin färg
 embroidery	{name} is sewn in block {block}	{name} broderas i block {block}
 embroidery	Thread changes: {before} → {after}	Trådbyten: {before} → {after}
 embroidery	Collapse All	Fäll ihop alla

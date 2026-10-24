@@ -5334,7 +5334,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} sting|{count} sting
 @msg	tab {tab}: one of {_1}	fane {tab}: en af {_1}
 @msg	unknown key `{k}`: the only one is {only}	ukendt nøgle `{k}`: den eneste er {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Sys nedefra og op; objekter med samme tråd samles, når intet ligger imellem dem.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Sys nedefra og op; objekter med samme farve samles, når intet ligger imellem dem.
 embroidery	Trim and thread change	Klip og trådskift
 embroidery	Thread change	Trådskift
 embroidery	fill	udfyldning
@@ -5377,8 +5377,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Tiden ved {speed}
 @msg	can't change the sewing order: too many objects at once	syrækkefølgen kan ikke ændres: for mange objekter på én gang
 embroidery	After {name}	Efter {name}
 embroidery	Before {name}	Før {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Intet sting flyttede sig: objekter med samme tråd samles stadig, når intet imellem ligger under dem.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} sys i blok {block}, samlet med sin tråd
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Intet sting flyttede sig: objekter med samme farve samles stadig, når intet imellem ligger under dem.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} sys i blok {block}, samlet med de andre i sin farve
 embroidery	{name} is sewn in block {block}	{name} sys i blok {block}
 embroidery	Thread changes: {before} → {after}	Trådskift: {before} → {after}
 embroidery	Collapse All	Skjul alle

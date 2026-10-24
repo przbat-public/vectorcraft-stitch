@@ -4926,7 +4926,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} Stich|{count} Stiche
 @msg	tab {tab}: one of {_1}	Register {tab}: eines von {_1}
 @msg	unknown key `{k}`: the only one is {only}	unbekannter Schlüssel `{k}`: der einzige ist {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Gestickt wird von unten nach oben; Objekte eines Garns werden zusammengefasst, wenn nichts dazwischen liegt.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Gestickt wird von unten nach oben; Objekte einer Farbe werden zusammengefasst, wenn nichts dazwischen liegt.
 embroidery	Trim and thread change	Schnitt und Garnwechsel
 embroidery	Thread change	Garnwechsel
 embroidery	fill	Fläche
@@ -4969,8 +4969,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Die Zeit bei {spe
 @msg	can't change the sewing order: too many objects at once	die Stickreihenfolge lässt sich nicht ändern: zu viele Objekte auf einmal
 embroidery	After {name}	Nach {name}
 embroidery	Before {name}	Vor {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Kein Stich hat sich verschoben: Objekte eines Garns werden weiter zusammengefasst, wenn nichts dazwischen unter ihnen liegt.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} wird in Block {block} gestickt, mit seinem Garn zusammengefasst
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Kein Stich hat sich verschoben: Objekte einer Farbe werden weiter zusammengefasst, wenn nichts dazwischen unter ihnen liegt.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} wird in Block {block} gestickt, mit den anderen seiner Farbe zusammengefasst
 embroidery	{name} is sewn in block {block}	{name} wird in Block {block} gestickt
 embroidery	Thread changes: {before} → {after}	Garnwechsel: {before} → {after}
 embroidery	Collapse All	Alle reduzieren

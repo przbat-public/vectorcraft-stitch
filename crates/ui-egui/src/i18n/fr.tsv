@@ -5350,7 +5350,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} point|{count} points
 @msg	tab {tab}: one of {_1}	onglet {tab} : l’un de {_1}
 @msg	unknown key `{k}`: the only one is {only}	clé inconnue `{k}` : la seule est {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Brodé du bas de la pile vers le haut ; les objets d’un même fil sont réunis lorsque rien ne se trouve entre eux.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Brodé du bas de la pile vers le haut ; les objets d’une même couleur sont réunis lorsque rien ne se trouve entre eux.
 embroidery	Trim and thread change	Coupe et changement de fil
 embroidery	Thread change	Changement de fil
 embroidery	fill	fond
@@ -5393,8 +5393,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	La durée à {spe
 @msg	can't change the sewing order: too many objects at once	impossible de modifier l’ordre de broderie : trop d’objets à la fois
 embroidery	After {name}	Après {name}
 embroidery	Before {name}	Avant {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Aucun point n’a bougé : les objets d’un même fil restent réunis tant que rien entre eux ne se trouve dessous.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} est brodé dans le bloc {block}, réuni avec son fil
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Aucun point n’a bougé : les objets d’une même couleur restent réunis tant que rien entre eux ne se trouve dessous.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} est brodé dans le bloc {block}, réuni avec les autres de sa couleur
 embroidery	{name} is sewn in block {block}	{name} est brodé dans le bloc {block}
 embroidery	Thread changes: {before} → {after}	Changements de fil : {before} → {after}
 embroidery	Collapse All	Tout réduire

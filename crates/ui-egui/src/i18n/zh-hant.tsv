@@ -4239,7 +4239,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} 針
 @msg	tab {tab}: one of {_1}	標籤 {tab}：{_1} 之一
 @msg	unknown key `{k}`: the only one is {only}	未知的鍵 `{k}`：唯一的鍵是 {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	從堆疊的底部向上繡製；同一條線的物件在中間沒有其他內容時會合併。
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	從堆疊的底部向上繡製；同一顏色的物件在中間沒有其他內容時會合併。
 embroidery	Trim and thread change	剪線並換線
 embroidery	Thread change	換線
 embroidery	fill	填色
@@ -4282,8 +4282,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	按每分鐘 {spe
 @msg	can't change the sewing order: too many objects at once	無法變更刺繡順序：一次的物件太多
 embroidery	After {name}	在 {name} 之後
 embroidery	Before {name}	在 {name} 之前
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	沒有針跡移動：只要中間沒有內容在其下方，同一條線的物件仍會合併。
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} 在第 {block} 塊中與同一條線合併繡製
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	沒有針跡移動：只要中間沒有內容在其下方，同一顏色的物件仍會合併。
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} 在第 {block} 塊中與同色的其他物件合併繡製
 embroidery	{name} is sewn in block {block}	{name} 在第 {block} 塊中繡製
 embroidery	Thread changes: {before} → {after}	換線次數：{before} → {after}
 embroidery	Collapse All	全部摺疊

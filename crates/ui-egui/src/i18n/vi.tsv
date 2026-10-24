@@ -4944,7 +4944,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} mũi
 @msg	tab {tab}: one of {_1}	thẻ {tab}: một trong {_1}
 @msg	unknown key `{k}`: the only one is {only}	khóa không xác định `{k}`: khóa duy nhất là {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Thêu từ dưới lên theo thứ tự xếp chồng; các đối tượng cùng chỉ được gộp khi không có gì nằm giữa.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Thêu từ dưới lên theo thứ tự xếp chồng; các đối tượng cùng màu được gộp khi không có gì nằm giữa.
 embroidery	Trim and thread change	Cắt chỉ và đổi chỉ
 embroidery	Thread change	Đổi chỉ
 embroidery	fill	tô
@@ -4987,8 +4987,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Thời gian ở t
 @msg	can't change the sewing order: too many objects at once	không thể đổi thứ tự thêu: quá nhiều đối tượng cùng lúc
 embroidery	After {name}	Sau {name}
 embroidery	Before {name}	Trước {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Không mũi nào di chuyển: các đối tượng cùng chỉ vẫn được gộp khi không có gì ở giữa nằm dưới chúng.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} được thêu trong khối {block}, gộp với chỉ của nó
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Không mũi nào di chuyển: các đối tượng cùng màu vẫn được gộp khi không có gì ở giữa nằm dưới chúng.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} được thêu trong khối {block}, gộp với các đối tượng khác cùng màu
 embroidery	{name} is sewn in block {block}	{name} được thêu trong khối {block}
 embroidery	Thread changes: {before} → {after}	Đổi chỉ: {before} → {after}
 embroidery	Collapse All	Thu gọn tất cả

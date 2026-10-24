@@ -5257,7 +5257,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	ნაკერები: {count}
 @msg	tab {tab}: one of {_1}	ჩანართი {tab}: ერთ-ერთი: {_1}
 @msg	unknown key `{k}`: the only one is {only}	უცნობი გასაღები `{k}`: ერთადერთია {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	იქარგება დასტის ქვემოდან ზემოთ; ერთი ძაფის ობიექტები ერთიანდება, როცა მათ შორის არაფერია.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	იქარგება დასტის ქვემოდან ზემოთ; ერთი ფერის ობიექტები ერთიანდება, როცა მათ შორის არაფერია.
 embroidery	Trim and thread change	ჭრა და ძაფის შეცვლა
 embroidery	Thread change	ძაფის შეცვლა
 embroidery	fill	შევსება
@@ -5300,8 +5300,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	დრო წუ�
 @msg	can't change the sewing order: too many objects at once	კერვის რიგის შეცვლა შეუძლებელია: ერთდროულად ზედმეტად ბევრი ობიექტია
 embroidery	After {name}	{name}-ის შემდეგ
 embroidery	Before {name}	{name}-მდე
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	არცერთი ნაკერი არ გადაადგილებულა: ერთი ძაფის ობიექტები კვლავ ერთიანდება, როცა შუაში არაფერი დევს მათ ქვეშ.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} იქარგება ბლოკში {block}, თავის ძაფთან ერთად
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	არცერთი ნაკერი არ გადაადგილებულა: ერთი ფერის ობიექტები კვლავ ერთიანდება, როცა შუაში არაფერი დევს მათ ქვეშ.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} იქარგება ბლოკში {block}, თავისი ფერის სხვა ობიექტებთან ერთად
 embroidery	{name} is sewn in block {block}	{name} იქარგება ბლოკში {block}
 embroidery	Thread changes: {before} → {after}	ძაფის ცვლა: {before} → {after}
 embroidery	Collapse All	ყველას აკეცვა

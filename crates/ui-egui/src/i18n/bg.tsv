@@ -5316,7 +5316,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} бод|{count} бода
 @msg	tab {tab}: one of {_1}	раздел {tab}: един от {_1}
 @msg	unknown key `{k}`: the only one is {only}	непознат ключ `{k}`: единственият е {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Шие се от дъното на купчината нагоре; обектите с една нишка се обединяват, когато между тях няма нищо.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Шие се от дъното на купчината нагоре; обектите с един цвят се обединяват, когато между тях няма нищо.
 embroidery	Trim and thread change	Срязване и смяна на нишката
 embroidery	Thread change	Смяна на нишката
 embroidery	fill	запълване
@@ -5359,8 +5359,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Времето п
 @msg	can't change the sewing order: too many objects at once	сменяне на реда на шиене не е възможно: твърде много обекти наведнъж
 embroidery	After {name}	След {name}
 embroidery	Before {name}	Преди {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Нито един бод не се премести: обектите с една нишка се обединяват, когато нищо между тях не лежи под тях.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} се шие в блок {block}, обединен със своята нишка
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Нито един бод не се премести: обектите с един цвят се обединяват, когато нищо между тях не лежи под тях.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} се шие в блок {block}, обединен с другите от своя цвят
 embroidery	{name} is sewn in block {block}	{name} се шие в блок {block}
 embroidery	Thread changes: {before} → {after}	Смени на нишката: {before} → {after}
 embroidery	Collapse All	Свий всички

@@ -5337,7 +5337,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} öltés
 @msg	tab {tab}: one of {_1}	lap {tab}: ezek egyike: {_1}
 @msg	unknown key `{k}`: the only one is {only}	ismeretlen kulcs `{k}`: az egyetlen a {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Alulról felfelé hímezve; az egy szálhoz tartozó objektumok összevonódnak, ha semmi sincs közöttük.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Alulról felfelé hímezve; az egy színhez tartozó objektumok összevonódnak, ha semmi sincs közöttük.
 embroidery	Trim and thread change	Vágás és szálcsere
 embroidery	Thread change	Szálcsere
 embroidery	fill	kitöltés
@@ -5380,8 +5380,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Az idő percenké
 @msg	can't change the sewing order: too many objects at once	a varrási sorrend nem módosítható: túl sok objektum egyszerre
 embroidery	After {name}	{name} után
 embroidery	Before {name}	{name} előtt
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Egy öltés sem mozdult: az egy szálhoz tartozó objektumok továbbra is összevonódnak, ha semmi sincs közöttük alattuk.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} a(z) {block}. blokkban kerül hímzésre, a szálával összevonva
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Egy öltés sem mozdult: az egy színhez tartozó objektumok továbbra is összevonódnak, ha semmi sincs közöttük alattuk.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} a(z) {block}. blokkban kerül hímzésre, a többi azonos színűvel összevonva
 embroidery	{name} is sewn in block {block}	{name} a(z) {block}. blokkban kerül hímzésre
 embroidery	Thread changes: {before} → {after}	Szálcserék: {before} → {after}
 embroidery	Collapse All	Összes összecsukása

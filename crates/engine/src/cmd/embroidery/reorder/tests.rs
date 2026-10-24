@@ -325,7 +325,7 @@ fn the_sew_commands() {
 }
 
 /// What a reorder did: nothing, when the objects moved lie apart from what they passed and still
-/// join their thread; otherwise the blocks and thread changes after.
+/// join their colour's block; otherwise the blocks and thread changes after.
 #[test]
 fn explaining_a_reorder() {
     let mut s = Session::new();

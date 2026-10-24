@@ -586,7 +586,7 @@ fn a_drop_and_its_note() {
         words = frame(&mut app, &ctx, t, vec![]);
     }
     // The blue moved first: the other blue joins it, ahead of the reds; still one thread change.
-    assert!(words.iter().any(|w| w == "<Rectangle> is sewn in block 1, joined with its thread"), "{words:?}");
+    assert!(words.iter().any(|w| w == "<Rectangle> is sewn in block 1, joined with others of its colour"), "{words:?}");
     assert!(!words.iter().any(|w| w.starts_with("Thread changes:")), "{words:?}");
     // Another change drops the note.
     app.run("object.move", json!({"dx": 1, "dy": 0})).unwrap();

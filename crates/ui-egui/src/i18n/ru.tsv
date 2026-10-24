@@ -4960,7 +4960,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} стежок|{count} стежка|{count} стежков
 @msg	tab {tab}: one of {_1}	вкладка {tab}: одна из {_1}
 @msg	unknown key `{k}`: the only one is {only}	неизвестный ключ `{k}`: единственный — {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Вышивается снизу вверх по стопке; объекты одной нити объединяются, если между ними ничего нет.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Вышивается снизу вверх по стопке; объекты одного цвета объединяются, если между ними ничего нет.
 embroidery	Trim and thread change	Обрезка и смена нити
 embroidery	Thread change	Смена нити
 embroidery	fill	заливка
@@ -5003,8 +5003,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Время при
 @msg	can't change the sewing order: too many objects at once	не удаётся изменить порядок вышивки: слишком много объектов сразу
 embroidery	After {name}	После {name}
 embroidery	Before {name}	Перед {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Ни один стежок не сдвинулся: объекты одной нити по-прежнему объединяются, если ничто между ними не лежит под ними.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} вышивается в блоке {block}, вместе со своей нитью
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Ни один стежок не сдвинулся: объекты одного цвета по-прежнему объединяются, если ничто между ними не лежит под ними.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} вышивается в блоке {block}, вместе с другими объектами своего цвета
 embroidery	{name} is sewn in block {block}	{name} вышивается в блоке {block}
 embroidery	Thread changes: {before} → {after}	Смены нити: {before} → {after}
 embroidery	Collapse All	Свернуть все

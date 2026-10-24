@@ -5292,7 +5292,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} puntada|{count} puntadas
 @msg	tab {tab}: one of {_1}	pestaña {tab}: una de {_1}
 @msg	unknown key `{k}`: the only one is {only}	clave desconocida `{k}`: la única es {only}
-embroidery	Sewn from the bottom of the stack up; one thread's objects join when nothing lies between them.	Se borda de abajo arriba; los objetos de un mismo hilo se unen cuando nada queda entre ellos.
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Se borda de abajo arriba; los objetos de un mismo color se unen cuando nada queda entre ellos.
 embroidery	Trim and thread change	Corte y cambio de hilo
 embroidery	Thread change	Cambio de hilo
 embroidery	fill	relleno
@@ -5335,8 +5335,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	El tiempo a {spee
 @msg	can't change the sewing order: too many objects at once	no se puede cambiar el orden de bordado: demasiados objetos a la vez
 embroidery	After {name}	Después de {name}
 embroidery	Before {name}	Antes de {name}
-embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Ninguna puntada se movió: los objetos de un mismo hilo siguen uniéndose cuando nada intermedio queda debajo de ellos.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} se borda en el bloque {block}, unido a su hilo
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Ninguna puntada se movió: los objetos de un mismo color siguen uniéndose cuando nada intermedio queda debajo de ellos.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} se borda en el bloque {block}, unido a los demás de su color
 embroidery	{name} is sewn in block {block}	{name} se borda en el bloque {block}
 embroidery	Thread changes: {before} → {after}	Cambios de hilo: {before} → {after}
 embroidery	Collapse All	Contraer todo

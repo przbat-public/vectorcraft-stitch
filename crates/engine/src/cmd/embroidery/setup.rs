@@ -9,7 +9,8 @@
 //! spacing is for 40 wt thread and scales with the document's thread weight (the owner's choice,
 //! 2026-10-23), so it is reported for the thread in use.
 
-use serde_json::{Map, Value, json};
+use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use vectorcraft_doc::Document;
 use vectorcraft_doc::embroidery::{FabricSettings, MachineSettings, StitchValues, ThreadPalette};
 use vectorcraft_stitch::fabric::{FABRICS, fabric};
@@ -28,137 +29,314 @@ use crate::{Result, Session};
 const C: &str = "embroidery.setup";
 
 /// Where a resolved setting's value comes from: the document sets it, or it is the default.
-fn source(set: bool) -> &'static str {
-    if set { "document" } else { "default" }
+fn source(set: bool) -> String {
+    if set { "document" } else { "default" }.to_string()
 }
 
-/// The document's embroidery settings as `embroidery.setup` and `embroidery.settings` report them:
-/// each as the document stores it (`settings`, which can be passed back to `embroidery.setup`), and
-/// the value the stitch plan uses with where it comes from (`resolved`).
-fn settings_json(d: &Document) -> Value {
+/// The document's embroidery settings as `embroidery.setup` and `embroidery.settings` answer with
+/// them, typed (the reply is this serialised, and Document Setup reads it back): each as the
+/// document stores it (`settings`, which can be passed back to `embroidery.setup`), the value the
+/// stitch plan uses with where it comes from (`resolved`), and how many objects set the fabric's
+/// values themselves (`overrides`).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct DocumentSettings {
+    pub settings: StoredSettings,
+    pub resolved: ResolvedSettings,
+    pub overrides: Overrides,
+}
+
+/// The settings as the document stores them, by name; `None`: unset.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StoredSettings {
+    /// The thread palette's id as stored (a newer version's passes back as it is).
+    pub palette: Option<Value>,
+    /// Document points.
+    pub start: Option<[f64; 2]>,
+    pub label: Option<String>,
+    pub fabric: Option<StoredFabric>,
+    pub thread_weight: Option<f64>,
+    pub join_same_color: Option<bool>,
+    pub machine: Option<StoredMachine>,
+}
+
+/// The document's fabric as stored: the preset it was copied from (its id), its values in force,
+/// its colour (`#rrggbb`).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StoredFabric {
+    pub preset: Option<String>,
+    pub tatami: TatamiValues,
+    pub satin: SatinValues,
+    pub stabilizer: Option<String>,
+    pub topping: Option<String>,
+    pub needle_point: Option<String>,
+    pub thickness: Option<f64>,
+    pub color: Option<String>,
+}
+
+/// A fabric's tatami values: pull (mm a side), rows' spacing (mm, for 40 wt), stitch length (mm),
+/// underlay (an id).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct TatamiValues {
+    pub pull: Option<f64>,
+    pub spacing: Option<f64>,
+    pub length: Option<f64>,
+    pub underlay: Option<String>,
+}
+
+/// A fabric's satin values: pull (mm a side), the share of the spacing a column's width picks
+/// (percent), underlay (an id).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SatinValues {
+    pub pull: Option<f64>,
+    pub spacing_percent: Option<f64>,
+    pub underlay: Option<String>,
+}
+
+/// The machine's values as stored: millimetres, and stitches a minute for `speed`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StoredMachine {
+    pub jump_length: Option<f64>,
+    pub trim_length: Option<f64>,
+    pub min_stitch: Option<f64>,
+    pub split_length: Option<f64>,
+    pub speed: Option<f64>,
+}
+
+/// The value the stitch plan uses for each setting, with where it comes from.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolvedSettings {
+    /// The palette's id (`pec` or `jef`): the document's when it is one this version knows.
+    pub palette: Resolved<String>,
+    pub fabric: ResolvedFabric,
+    pub thread_weight: Resolved<f64>,
+    pub join_same_color: Resolved<bool>,
+    pub machine: ResolvedMachine,
+}
+
+/// A value the plan uses and where it comes from: `document`, or `default`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Resolved<T> {
+    pub value: T,
+    pub source: String,
+}
+
+/// A fabric value the plan uses (or, for the information values, says): in force, else the
+/// default; where it comes from; the preset's value, for a fabric copied from one; and whether
+/// the two differ.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct FabricValue<T> {
+    pub value: T,
+    pub source: String,
+    pub preset: Option<T>,
+    pub changed: bool,
+}
+
+/// A fabric's id for information (stabiliser, topping, needle point) as [`FabricValue`] gives a
+/// value: none by default.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct InfoValue {
+    pub value: Option<String>,
+    pub source: String,
+    pub preset: Option<String>,
+    pub changed: bool,
+}
+
+/// The fabric's values the plan uses: its preset (`known`: this version has it), each stitch value,
+/// the information values (thickness in mm; stabiliser, topping, needle point as ids, none by
+/// default) and the colour.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolvedFabric {
+    pub preset: Option<PresetRef>,
+    pub tatami: ResolvedTatami,
+    pub satin: ResolvedSatin,
+    pub thickness: FabricValue<f64>,
+    pub stabilizer: InfoValue,
+    pub topping: InfoValue,
+    pub needle_point: InfoValue,
+    pub color: Resolved<String>,
+}
+
+/// The preset a fabric was copied from, and whether this version has it.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PresetRef {
+    pub id: String,
+    pub known: bool,
+}
+
+/// The tatami values the plan uses (the spacing for the thread in use).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ResolvedTatami {
+    pub pull: FabricValue<f64>,
+    pub spacing: FabricValue<f64>,
+    pub length: FabricValue<f64>,
+    pub underlay: FabricValue<String>,
+}
+
+/// The satin values the plan uses.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolvedSatin {
+    pub pull: FabricValue<f64>,
+    pub spacing_percent: FabricValue<f64>,
+    pub underlay: FabricValue<String>,
+}
+
+/// The machine's values the plan uses.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolvedMachine {
+    pub jump_length: Resolved<f64>,
+    pub trim_length: Resolved<f64>,
+    pub min_stitch: Resolved<f64>,
+    pub split_length: Resolved<f64>,
+    pub speed: Resolved<f64>,
+}
+
+/// How many objects set each of the fabric's values themselves, and how many set any.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Overrides {
+    pub pull: usize,
+    pub spacing: usize,
+    pub length: usize,
+    pub underlay: usize,
+    pub object_count: usize,
+}
+
+/// The document's settings ([`DocumentSettings`]).
+pub(super) fn document_settings(d: &Document) -> DocumentSettings {
     let e = d.embroidery.as_deref();
     let stored = e.and_then(|e| e.palette.as_ref());
     let known = stored.and_then(ThreadPalette::id).and_then(Palette::from_id).is_some();
-    let start = e.and_then(|e| e.start).map(|p| json!([p.x, p.y]));
-    let label = e.and_then(|e| e.label.clone());
     let fabric = e.and_then(|e| e.fabric.as_deref());
     let weight = e.and_then(|e| e.thread_weight);
     let join = e.and_then(|e| e.join_same_color);
     let machine = e.and_then(|e| e.machine.as_deref());
     let resolved_weight = weight.unwrap_or(THREAD_WEIGHT);
-    json!({
-        "settings": {
-            "palette": stored.cloned().map(Value::from), "start": start, "label": label,
-            "fabric": fabric.map(fabric_json), "threadWeight": weight, "joinSameColor": join, "machine": machine.map(machine_json),
+    DocumentSettings {
+        settings: StoredSettings {
+            palette: stored.cloned().map(Value::from),
+            start: e.and_then(|e| e.start).map(|p| [p.x, p.y]),
+            label: e.and_then(|e| e.label.clone()),
+            fabric: fabric.map(stored_fabric),
+            thread_weight: weight,
+            join_same_color: join,
+            machine: machine.map(|m| StoredMachine {
+                jump_length: m.jump_length,
+                trim_length: m.trim_length,
+                min_stitch: m.min_stitch,
+                split_length: m.split_length,
+                speed: m.speed,
+            }),
         },
-        "resolved": {
-            "palette": {"value": thread_palette(d).id(), "source": source(known)},
-            "fabric": resolved_fabric(fabric, resolved_weight),
-            "threadWeight": {"value": resolved_weight, "source": source(weight.is_some())},
-            "joinSameColor": {"value": join.unwrap_or(true), "source": source(join.is_some())},
-            "machine": resolved_machine(machine),
+        resolved: ResolvedSettings {
+            palette: Resolved { value: thread_palette(d).id().to_string(), source: source(known) },
+            fabric: resolved_fabric(fabric, resolved_weight),
+            thread_weight: Resolved { value: resolved_weight, source: source(weight.is_some()) },
+            join_same_color: Resolved { value: join.unwrap_or(true), source: source(join.is_some()) },
+            machine: resolved_machine(machine),
         },
-        "overrides": overrides(d),
-    })
-}
-
-/// A kind of stitch's values as a fabric keeps them, by name (`tatami`: pull, spacing, length,
-/// underlay; `satin`: pull, spacingPercent, underlay); `null` when unset.
-fn stitch_json(v: Option<&StitchValues>, tatami: bool) -> Value {
-    let v = v.cloned().unwrap_or_default();
-    if tatami {
-        json!({"pull": v.pull, "spacing": v.spacing, "length": v.length, "underlay": v.underlay})
-    } else {
-        json!({"pull": v.pull, "spacingPercent": v.spacing_percent, "underlay": v.underlay})
+        overrides: overrides(d),
     }
 }
 
-/// The document's fabric as stored, by name: the preset it was copied from (its id), its values in
-/// force, its colour.
-fn fabric_json(f: &FabricSettings) -> Value {
-    let v = &f.values;
-    json!({
-        "preset": f.preset.as_ref().map(|p| p.id.clone()),
-        "tatami": stitch_json(v.tatami.as_ref(), true),
-        "satin": stitch_json(v.satin.as_ref(), false),
-        "stabilizer": v.stabilizer, "topping": v.topping, "needlePoint": v.needle_point, "thickness": v.thickness,
-        "color": f.color.map(hex),
-    })
+/// [`document_settings`] as the commands answer with them.
+fn settings_json(d: &Document) -> Result<Value> {
+    serde_json::to_value(document_settings(d)).map_err(|e| crate::EngineError::Other(format!("{C}: {e}")))
 }
 
-/// The machine's values as stored, by name.
-fn machine_json(m: &MachineSettings) -> Value {
-    json!({"jumpLength": m.jump_length, "trimLength": m.trim_length, "minStitch": m.min_stitch, "splitLength": m.split_length, "speed": m.speed})
+impl Session {
+    /// The active document's embroidery settings, typed ([`DocumentSettings`]), as
+    /// `embroidery.settings` answers with them.
+    pub fn embroidery_settings(&self) -> Result<DocumentSettings> {
+        Ok(document_settings(&self.doc()?.doc))
+    }
+}
+
+/// The document's fabric as stored ([`StoredFabric`]).
+fn stored_fabric(f: &FabricSettings) -> StoredFabric {
+    let v = &f.values;
+    let tatami = v.tatami.clone().unwrap_or_default();
+    let satin = v.satin.clone().unwrap_or_default();
+    StoredFabric {
+        preset: f.preset.as_ref().map(|p| p.id.clone()),
+        tatami: TatamiValues { pull: tatami.pull, spacing: tatami.spacing, length: tatami.length, underlay: tatami.underlay },
+        satin: SatinValues { pull: satin.pull, spacing_percent: satin.spacing_percent, underlay: satin.underlay },
+        stabilizer: v.stabilizer.clone(),
+        topping: v.topping.clone(),
+        needle_point: v.needle_point.clone(),
+        thickness: v.thickness,
+        color: f.color.map(hex),
+    }
 }
 
 /// The fabric's values the plan sews with, and those for information (its thickness, stabiliser,
-/// topping and needle point), each `{value, source, preset, changed}`: in force (the document's),
-/// else the built-in default (none for the ids); the preset's value, for one copied from a preset;
-/// and whether the two differ. A tatami spacing, kept for 40 wt, is given for the thread `weight`.
-/// The colour, which is no preset's value, is `{value, source}`.
-fn resolved_fabric(f: Option<&FabricSettings>, weight: f64) -> Value {
+/// topping and needle point), each a [`FabricValue`]: in force (the document's), else the built-in
+/// default (none for the ids); the preset's value, for one copied from a preset; and whether the
+/// two differ. A tatami spacing, kept for 40 wt, is given for the thread `weight`. The colour,
+/// which is no preset's value, is a [`Resolved`].
+fn resolved_fabric(f: Option<&FabricSettings>, weight: f64) -> ResolvedFabric {
+    fn entry<T: PartialEq + Clone>(now: Option<T>, preset: Option<T>, default: T, preset_set: bool) -> FabricValue<T> {
+        let changed = preset_set && now != preset;
+        FabricValue { source: source(now.is_some()), value: now.unwrap_or(default), preset, changed }
+    }
     let base = f.and_then(|f| f.preset.as_ref()).map(|p| &p.values);
+    let from_preset = base.is_some();
     let scale = thread_scale(weight);
     let (fill, satin) = (Params::for_thread(Style::Fill, weight), Params::for_style(Style::Satin));
-    let entry = |now: Option<Value>, preset: Option<Value>, default: Value| {
-        let changed = base.is_some() && now != preset;
-        let source = source(now.is_some());
-        json!({"value": now.unwrap_or(default), "source": source, "preset": preset, "changed": changed})
-    };
-    let num = |x: Option<f64>| x.map(Value::from);
-    let id = |x: &Option<String>| x.clone().map(Value::from);
-    let stitch = |tatami: bool| {
-        let now = f.and_then(|f| if tatami { f.values.tatami.clone() } else { f.values.satin.clone() }).unwrap_or_default();
-        let was = base.and_then(|b| if tatami { b.tatami.clone() } else { b.satin.clone() });
-        let was = |g: fn(&StitchValues) -> Option<Value>| was.as_ref().and_then(g);
-        if tatami {
-            json!({
-                "pull": entry(num(now.pull), was(|s| s.pull.map(Value::from)), json!(fill.pull[0])),
-                "spacing": entry(num(now.spacing.map(|s| s * scale)), was(|s| s.spacing.map(Value::from)).and_then(|v| v.as_f64()).map(|s| json!(s * scale)), json!(fill.density)),
-                "length": entry(num(now.length), was(|s| s.length.map(Value::from)), json!(fill.stitch_length)),
-                "underlay": entry(id(&now.underlay), was(|s| s.underlay.clone().map(Value::from)), json!(fill.underlay.id())),
-            })
-        } else {
-            json!({
-                "pull": entry(num(now.pull), was(|s| s.pull.map(Value::from)), json!(satin.pull[0])),
-                "spacingPercent": entry(num(now.spacing_percent), was(|s| s.spacing_percent.map(Value::from)), json!(SPACING_PERCENT_AS_PICKED)),
-                "underlay": entry(id(&now.underlay), was(|s| s.underlay.clone().map(Value::from)), json!(satin.underlay.id())),
-            })
-        }
-    };
+    let now = |tatami: bool| f.and_then(|f| if tatami { f.values.tatami.clone() } else { f.values.satin.clone() }).unwrap_or_default();
+    let was = |tatami: bool| base.and_then(|b| if tatami { b.tatami.clone() } else { b.satin.clone() }).unwrap_or_default();
+    let (t, wt, sa, ws) = (now(true), was(true), now(false), was(false));
     let values = f.map(|f| &f.values);
+    // The values for information: none by default, but the thickness the thread estimate takes.
+    let id = |now: Option<&Option<String>>, was: Option<&Option<String>>| {
+        let (now, was) = (now.cloned().flatten(), was.cloned().flatten());
+        InfoValue { source: source(now.is_some()), changed: from_preset && now != was, value: now, preset: was }
+    };
     let color = f.and_then(|f| f.color);
-    // The values for information: none by default but the thickness the thread estimate takes.
-    let information = |now: Option<&Option<String>>, was: Option<&Option<String>>| entry(now.and_then(id), was.and_then(id), Value::Null);
-    json!({
-        "preset": f.and_then(|f| f.preset.as_ref()).map(|p| json!({"id": p.id, "known": fabric(&p.id).is_some()})),
-        "tatami": stitch(true),
-        "satin": stitch(false),
-        "thickness": entry(num(values.and_then(|v| v.thickness)), num(base.and_then(|b| b.thickness)), json!(FABRIC_THICKNESS)),
-        "stabilizer": information(values.map(|v| &v.stabilizer), base.map(|b| &b.stabilizer)),
-        "topping": information(values.map(|v| &v.topping), base.map(|b| &b.topping)),
-        "needlePoint": information(values.map(|v| &v.needle_point), base.map(|b| &b.needle_point)),
-        "color": {"value": hex(color.unwrap_or(super::scene::FABRIC)), "source": source(color.is_some())},
-    })
+    ResolvedFabric {
+        preset: f.and_then(|f| f.preset.as_ref()).map(|p| PresetRef { id: p.id.clone(), known: fabric(&p.id).is_some() }),
+        tatami: ResolvedTatami {
+            pull: entry(t.pull, wt.pull, fill.pull[0], from_preset),
+            spacing: entry(t.spacing.map(|s| s * scale), wt.spacing.map(|s| s * scale), fill.density, from_preset),
+            length: entry(t.length, wt.length, fill.stitch_length, from_preset),
+            underlay: entry(t.underlay, wt.underlay, fill.underlay.id().to_string(), from_preset),
+        },
+        satin: ResolvedSatin {
+            pull: entry(sa.pull, ws.pull, satin.pull[0], from_preset),
+            spacing_percent: entry(sa.spacing_percent, ws.spacing_percent, SPACING_PERCENT_AS_PICKED, from_preset),
+            underlay: entry(sa.underlay, ws.underlay, satin.underlay.id().to_string(), from_preset),
+        },
+        thickness: entry(values.and_then(|v| v.thickness), base.and_then(|b| b.thickness), FABRIC_THICKNESS, from_preset),
+        stabilizer: id(values.map(|v| &v.stabilizer), base.map(|b| &b.stabilizer)),
+        topping: id(values.map(|v| &v.topping), base.map(|b| &b.topping)),
+        needle_point: id(values.map(|v| &v.needle_point), base.map(|b| &b.needle_point)),
+        color: Resolved { value: hex(color.unwrap_or(super::scene::FABRIC)), source: source(color.is_some()) },
+    }
 }
 
-/// The machine's values the plan sews with, each `{value, source}`: the document's, else the
-/// built-in default.
-fn resolved_machine(m: Option<&MachineSettings>) -> Value {
+/// The machine's values the plan sews with: the document's, else the built-in default.
+fn resolved_machine(m: Option<&MachineSettings>) -> ResolvedMachine {
     let d = Params::for_style(Style::Running);
     let m = m.cloned().unwrap_or_default();
-    let entry = |v: Option<f64>, default: f64| json!({"value": v.unwrap_or(default), "source": source(v.is_some())});
-    json!({
-        "jumpLength": entry(m.jump_length, d.jump),
-        "trimLength": entry(m.trim_length, d.trim),
-        "minStitch": entry(m.min_stitch, d.min_stitch),
-        "splitLength": entry(m.split_length, d.max_satin),
-        "speed": entry(m.speed, SPEED),
-    })
+    let entry = |v: Option<f64>, default: f64| Resolved { value: v.unwrap_or(default), source: source(v.is_some()) };
+    ResolvedMachine {
+        jump_length: entry(m.jump_length, d.jump),
+        trim_length: entry(m.trim_length, d.trim),
+        min_stitch: entry(m.min_stitch, d.min_stitch),
+        split_length: entry(m.split_length, d.max_satin),
+        speed: entry(m.speed, SPEED),
+    }
 }
 
 pub(super) fn settings(s: &mut Session, _: &Value) -> Result<Value> {
-    Ok(settings_json(&s.doc()?.doc))
+    settings_json(&s.doc()?.doc)
 }
 
 pub(super) fn setup(s: &mut Session, p: &Value) -> Result<Value> {
@@ -185,7 +363,7 @@ pub(super) fn setup(s: &mut Session, p: &Value) -> Result<Value> {
     // What equals the document's own settings as the reply reports them changes nothing, and isn't
     // checked again: a value a newer version wrote (or one out of this version's range) passes
     // back, and a null where nothing is set keeps it unset (it doesn't restore a preset's value).
-    let stored = settings_json(d).get("settings").cloned().unwrap_or_default();
+    let stored = serde_json::to_value(document_settings(d).settings).unwrap_or_default();
     let given = unchanged_left_out(given, &stored);
     for (k, v) in &given {
         match k.as_str() {
@@ -212,13 +390,13 @@ pub(super) fn setup(s: &mut Session, p: &Value) -> Result<Value> {
     // A file may hold settings with nothing in them (`"embroidery": {}`): as good as none, so
     // asking for the settings doesn't edit the document.
     if new.as_deref() == d.embroidery.as_deref().filter(|e| !e.is_empty()) {
-        return Ok(settings_json(d));
+        return settings_json(d);
     }
     s.edit("Embroidery Setup", |d, _| {
         d.embroidery = new;
         Ok(())
     })?;
-    Ok(settings_json(&s.doc()?.doc))
+    settings_json(&s.doc()?.doc)
 }
 
 /// `given` less what equals `stored` (the reply's `settings`, as passed back), key by key at any

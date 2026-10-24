@@ -265,3 +265,17 @@ fn settings_pass_back_whatever_the_document_holds() {
     changed["threadWeight"] = json!(5);
     assert!(s.execute("embroidery.setup", &json!({"settings": changed})).is_err());
 }
+
+/// The settings reply is the typed answer serialised: it reads back as what the session gives typed
+/// (`Session::embroidery_settings`), for Document Setup to read without keys typed as strings.
+#[test]
+fn the_settings_reply_reads_back_as_the_typed_answer() {
+    let mut s = blank();
+    let a = rect(&mut s, 20.0);
+    run(&mut s, "embroidery.set", json!({"ids": [a], "part": "fill", "pull": 0.3}));
+    run(&mut s, "embroidery.setup", json!({"fabric": "fleece", "threadWeight": 60, "machine": {"speed": 800}}));
+    let read: super::setup::DocumentSettings = serde_json::from_value(run(&mut s, "embroidery.settings", json!({}))).unwrap();
+    let typed = s.embroidery_settings().unwrap();
+    assert_eq!(read, typed);
+    assert_eq!((typed.overrides.object_count, typed.resolved.fabric.preset.map(|p| p.id)), (1, Some("fleece".to_string())));
+}

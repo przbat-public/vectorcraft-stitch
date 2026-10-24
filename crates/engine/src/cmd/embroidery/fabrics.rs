@@ -12,6 +12,7 @@ use vectorcraft_doc::{Document, Node, NodeId, NodeKind};
 use vectorcraft_stitch::fabric::{Basis, DEFAULT_FABRIC, FABRICS, Fabric, ONE_FAMILY, Sourced, StitchPreset};
 
 use super::objects::{edit_each, given, skipped_json, takers, visit_takers};
+use super::setup::Overrides;
 use super::{edit_counted, object};
 use crate::cmd::bad;
 use crate::{EngineError, Result, Session};
@@ -260,7 +261,7 @@ pub(super) fn apply_fabric(s: &mut Session, p: &Value) -> Result<Value> {
 /// How many objects of `doc` (its symbols' art included) set each fabric key themselves, on a part
 /// the fabric gives it ([`fabric_keys`]), and how many set any (`objectCount`): what Document
 /// Setup's bar counts (`embroidery.setup`'s and `embroidery.settings`' `overrides`).
-pub(crate) fn overrides(doc: &Document) -> Value {
+pub(crate) fn overrides(doc: &Document) -> Overrides {
     let ids = every_object(doc);
     let objects: Vec<&Node> = ids.iter().filter_map(|id| doc.node(*id)).chain(symbol_objects(doc)).collect();
     let sets = |n: &Node, key: PartKey| {
@@ -268,8 +269,12 @@ pub(crate) fn overrides(doc: &Document) -> Value {
             [PartKind::Fill, PartKind::Stroke].into_iter().any(|k| fabric_keys(k).contains(&key) && e.part(k).is_some_and(|p| p.get(key).is_some()))
         })
     };
-    let mut out: Map<String, Value> =
-        FABRIC_KEYS.iter().map(|k| (k.name().to_string(), json!(objects.iter().filter(|n| sets(n, *k)).count()))).collect();
-    out.insert("objectCount".into(), json!(objects.iter().filter(|n| FABRIC_KEYS.iter().any(|k| sets(n, *k))).count()));
-    out.into()
+    let count = |key: PartKey| objects.iter().filter(|n| sets(n, key)).count();
+    Overrides {
+        pull: count(PartKey::Pull),
+        spacing: count(PartKey::Spacing),
+        length: count(PartKey::Length),
+        underlay: count(PartKey::Underlay),
+        object_count: objects.iter().filter(|n| FABRIC_KEYS.iter().any(|k| sets(n, *k))).count(),
+    }
 }

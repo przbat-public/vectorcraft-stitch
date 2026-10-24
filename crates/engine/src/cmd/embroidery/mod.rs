@@ -38,7 +38,7 @@ mod resolve;
 pub mod scene;
 mod sequence;
 pub(crate) mod service;
-mod setup;
+pub mod setup;
 mod stats;
 #[cfg(test)]
 mod test_support;

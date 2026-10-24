@@ -754,6 +754,7 @@ pub fn export(app: &mut VectorcraftApp, format: Option<&str>, path: Option<Strin
             return Ok(json!({ "cancelled": true }));
         }
         let r = r.inspect_err(|e| report_write_error(app, true, &failed, e))?;
+        // VectorCraft Stitch: noted once written.
         if let (Some(uid), format, params) = &noted {
             vectorcraft_engine::cmd::embroidery::view::note_export_of(&mut app.session, *uid, format, params);
         }

@@ -584,6 +584,7 @@ impl VectorcraftApp {
             scrub_group: false,
             automation_roots: None,
             synthetic_frame: false,
+            // VectorCraft Stitch.
             embroidery: Default::default(),
         }
     }
@@ -920,6 +921,7 @@ impl VectorcraftApp {
         let stitches = embroidery::holds_screenshots(self, ctx.input(|i| i.time));
         self.queued_screenshots.retain_mut(|(token, at, frames)| {
             *frames += 1;
+            // VectorCraft Stitch: `&& !(stitches …)`, the wait for the stitch view, bounded.
             if now >= *at && *frames >= 3 && !(stitches && now < *at + embroidery::MAX_SCREENSHOT_WAIT_MS) {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(egui::UserData::new(*token)));
                 false
@@ -1221,6 +1223,7 @@ impl VectorcraftApp {
         picks::poll(self, ctx);
         self.write_formats_before_text_input(ctx);
         background::poll(self);
+        // VectorCraft Stitch: the stitch preview's plans taken in.
         embroidery::stitch_preview::poll(self);
         screen_color::poll(self, ctx);
         opening::poll(self);
@@ -1479,6 +1482,7 @@ impl VectorcraftApp {
         scrub::end_frame(self, &ctx);
         native_menu::sync(self, &ctx);
         self.drop_formats_after_egui_copy(&ctx);
+        // VectorCraft Stitch: what the frame asked of the stitch preview, planned.
         embroidery::stitch_preview::schedule(self, &ctx);
         self.perf.frame_ms = now_ms() - t0;
         let _ = json!(null);

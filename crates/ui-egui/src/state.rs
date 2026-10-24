@@ -778,6 +778,7 @@ impl Default for UiState {
             color_guide: Default::default(),
             library_panels: vec![],
             flattener_preview: Default::default(),
+            // VectorCraft Stitch.
             embroidery_panel: Default::default(),
             color_guide_limit: String::new(),
             align_to: Default::default(),

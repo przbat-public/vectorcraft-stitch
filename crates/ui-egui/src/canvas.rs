@@ -173,6 +173,7 @@ pub fn fit(app: &mut VectorcraftApp, how: &str) {
         _ => st.doc.artboards.get(current).or(st.doc.artboards.first()).map(|a| a.rect),
     };
     let Some(target) = target else { return };
+    // VectorCraft Stitch: the fit's zoom split out as `fit_zoom`, for View › Zoom to Box.
     let zoom =
         if how == "view.actualSize" { actual_size_zoom(app.session.prefs.display_print_size) } else { fit_zoom(app, rect, target, FIT_MARGIN) };
     let Some(v) = app.view_mut() else { return };
@@ -181,6 +182,8 @@ pub fn fit(app: &mut VectorcraftApp, how: &str) {
     v.zoom = zoom;
 }
 
+// VectorCraft Stitch: `FIT_MARGIN` and `fit_zoom` split out of `fit` for View › Zoom to Box
+// (`embroidery/zoom.rs`).
 /// The room Fit Artboard and Fit All leave round what they fit, screen points on each side.
 pub(crate) const FIT_MARGIN: f64 = 30.0;
 
@@ -260,6 +263,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     // Pasteboard, artboard shadows and paper (Document Setup: the transparency grid's look, the
     // simulated paper colour; a white Background Contents hides the grid).
     painter.rect_filled(rect, 0.0, t.pasteboard);
+    // VectorCraft Stitch: the stitch view lays the fabric in place of the paper and the outline's
+    // ground.
     let fabric = crate::embroidery::stitch_layer::paint_fabric(app, &painter, &xf, &doc);
     if !fabric && app.ui.view.artboards && !app.ui.view.outline {
         let setup = &doc.setup;
@@ -279,6 +284,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             }
         }
     } else if !fabric && app.ui.view.outline {
+        // VectorCraft Stitch: `!fabric` (the stitch view lays its own ground).
         for ab in &doc.artboards {
             painter.add(Shape::convex_polygon(xf.quad(ab.rect), Color32::WHITE, Stroke::NONE));
         }
@@ -313,6 +319,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         h,
         outline: app.ui.view.outline,
         trim: app.ui.view.trim_view,
+        // VectorCraft Stitch: what of the art the stitch view leaves out (`templates`, `hidden`).
         templates: app.ui.view.templates && !art.hide_templates,
         ppp,
         hidden: art.hidden.clone(),
@@ -348,6 +355,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         app.canvas.last_ms = done.ms;
         app.canvas.moved = done.moved > 0;
     }
+    // VectorCraft Stitch: `&& art.render`, no art rendered while the stitch view hides it.
     if (app.canvas.key.as_ref() != Some(&key) || app.canvas.texture.is_none()) && art.render {
         let (w, h, view) = match pixel {
             Some([x0, y0, x1, y1]) => ((x1 - x0) as u32, (y1 - y0) as u32, Affine::translate((-x0 as f64, -y0 as f64))),
@@ -365,6 +373,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             proof: vectorcraft_render::proof::active_proof(),
             overprint_preview: vectorcraft_render::proof::overprint_preview_on(),
             trim: app.ui.view.trim_view,
+            // VectorCraft Stitch: the key's `templates` and `hidden`, as the stitch view asks.
             hide_templates: !key.templates,
             hidden: key.hidden.iter().copied().map(vectorcraft_doc::NodeId).collect(),
             tile_edge: vectorcraft_color::Color::from_hex(&app.session.prefs.pattern_tile_edge_color).map_or(opts.tile_edge, |c| {
@@ -417,6 +426,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     }
     if let (Some(tex), Some(k)) = (&app.canvas.texture, &app.canvas.key)
         && k.doc == key.doc
+        // VectorCraft Stitch: the stitch view draws the art's texture itself (`stitch_layer::draw`).
         && !art.stitches
     {
         match k.pixel {
@@ -441,6 +451,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             }
         }
     }
+    // VectorCraft Stitch: the stitch view, after the art's pass.
     crate::embroidery::stitch_layer::draw(app, ui.ctx(), &painter, &xf, &v, &art);
     if let Some(look) = grid_look.filter(|_| !grids_in_back) {
         grid(&painter, &xf, doc.grid.spacing, doc.grid.subdivisions, look);
@@ -1709,6 +1720,7 @@ fn rulers(ui: &Ui, full: egui::Rect, xf: &Xf, hover: Option<Point>, unit: Unit, 
     }
 }
 
+// VectorCraft Stitch: `pub(crate)` for the stitch view's overlay.
 pub(crate) fn to_screen_path(bp: &BezPath, xf: &Xf) -> Vec<Vec<Pos2>> {
     // Flatten for drawing: a polyline per subpath (tolerance ~0.25 screen px).
     let mut out: Vec<Vec<Pos2>> = vec![];
@@ -1751,6 +1763,7 @@ fn c32(rgb: [u8; 3]) -> Color32 {
 /// Outline of a node for highlighting (paths, compound children, area type frames, other
 /// text/image bounds, symbol instances' bounds measured by their art from `symbols`; a clip
 /// group's clipping path only, as [`walk_drawn`] visits it).
+// VectorCraft Stitch: `pub(crate)` for the stitch view's overlay.
 pub(crate) fn node_outline(n: &Node, symbols: &SymbolBoxes) -> BezPath {
     let mut bp = BezPath::new();
     walk_drawn(n, &mut |c| match &c.kind {
@@ -2348,6 +2361,7 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
             stroke_path(p, &bp, xf, Stroke::new(KEY_OUTLINE, c32(st.doc.layer_color(k))));
         }
     }
+    // VectorCraft Stitch: `&& !frame_only`.
     for id in st.selection.objects.iter().filter(|_| !big && !frame_only) {
         let Some(n) = st.doc.node(*id) else { continue };
         let color = c32(st.doc.layer_color(*id));

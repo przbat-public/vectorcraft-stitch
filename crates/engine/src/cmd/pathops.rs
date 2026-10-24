@@ -215,12 +215,14 @@ struct Style {
 
 impl Style {
     fn of(n: &Node) -> Self {
+        // VectorCraft Stitch: the embroidery settings, carried with the paint.
         Style { appearance: (*n.appearance).clone(), opacity: n.opacity, blend: n.blend, embroidery: super::embroidery::derive::carried(n) }
     }
     fn apply(&self, n: &mut Node) {
         n.appearance = self.appearance.clone().into();
         n.opacity = self.opacity;
         n.blend = self.blend;
+        // VectorCraft Stitch: the embroidery settings, given with the paint.
         n.extras_mut().embroidery = self.embroidery.clone();
     }
 }
@@ -252,6 +254,7 @@ pub(crate) fn text_outline(t: &TextObject) -> PathData {
 fn style_of(n: &Node) -> Style {
     match &n.kind {
         NodeKind::Text(t) => {
+            // VectorCraft Stitch: the embroidery settings, carried with the paint.
             Style { appearance: t.first_style().appearance(), opacity: n.opacity, blend: n.blend, embroidery: super::embroidery::derive::carried(n) }
         }
         _ => Style::of(n),

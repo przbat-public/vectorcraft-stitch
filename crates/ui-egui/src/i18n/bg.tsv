@@ -5369,6 +5369,10 @@ theme	Appearance	Външен вид
 	Select artwork to apply effects	Изберете графика, за да приложите ефекти
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	променливите и наборите от данни на файла не бяха прочетени (променливи: {variables}, набори от данни: {data_sets}): панелът „Променливи“ не ги показва
 	Embroidery Trim After	Бродиране: отрязване на конеца след
+	Embroidery Object Settings	Настройки за бродиране на обекта
+	Reset Embroidery Object Settings	Нулиране на настройките за бродиране на обекта
+	Embroidery Entry and Exit	Вход и изход на бродирането
+	Copy Embroidery Object Settings	Копиране на настройките за бродиране на обекта
 	Embroidery Setup	Настройка на бродирането
 	Show Embroidery Settings	Показване на настройките на бродирането
 	Embroidery Statistics	Статистика на бродирането
@@ -5393,6 +5397,11 @@ theme	Appearance	Външен вид
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	дължината за срязване е по-малка от дължината на прехода, затова преходите се срязват още от дължината на прехода
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	настройките за бродиране на някои обекти съдържат такива, които тази версия не чете (от по-нова версия): те се запазват, а обектите се бродират без тях
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	някои настройки за бродиране на обекти са извън това, което тази версия бродира: всяка се бродира с най-близката стойност, която приема
+@msg	none of these objects has a `{_1}`	нито един от тези обекти няма `{_1}`
+@msg	none of these objects takes embroidery settings	нито един от тези обекти не приема настройки за бродиране
+@msg	object {_1} takes no embroidery settings ({_2})	обект {_1} не приема настройки за бродиране ({_2})
+@msg	object {_1} is a group: give one of its objects	обект {_1} е група: посочете един от обектите в нея
+@msg	object {_1} has no `{_2}`	обект {_1} няма `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	няма какво да се бродира: документът няма видими пътища със запълване или щрих
 @msg	nothing to stitch: {_1}	няма какво да се бродира: {_1}
 

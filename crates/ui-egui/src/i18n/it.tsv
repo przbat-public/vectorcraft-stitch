@@ -5029,6 +5029,10 @@ lighting	Light	Luce
 	Select artwork to apply effects	Seleziona la grafica a cui applicare gli effetti
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	le variabili e i set di dati del file non sono stati letti (variabili: {variables}, set di dati: {data_sets}): il pannello Variabili non li elenca
 	Embroidery Trim After	Ricamo: taglia il filo dopo
+	Embroidery Object Settings	Impostazioni di ricamo dell'oggetto
+	Reset Embroidery Object Settings	Ripristina impostazioni di ricamo dell'oggetto
+	Embroidery Entry and Exit	Entrata e uscita del ricamo
+	Copy Embroidery Object Settings	Copia impostazioni di ricamo dell'oggetto
 	Embroidery Setup	Imposta ricamo
 	Show Embroidery Settings	Mostra impostazioni ricamo
 	Embroidery Statistics	Statistiche del ricamo
@@ -5053,6 +5057,11 @@ lighting	Light	Luce
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	la lunghezza del taglio è inferiore alla lunghezza del salto, quindi i salti vengono tagliati già dalla lunghezza del salto
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	le impostazioni di ricamo di alcuni oggetti ne contengono alcune che questa versione non legge (da una versione più recente): vengono conservate, e quegli oggetti vengono ricamati senza di esse
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	alcune impostazioni di ricamo degli oggetti sono al di fuori di ciò che questa versione ricama: ciascuna viene ricamata al valore più vicino che accetta
+@msg	none of these objects has a `{_1}`	nessuno di questi oggetti ha `{_1}`
+@msg	none of these objects takes embroidery settings	nessuno di questi oggetti accetta impostazioni di ricamo
+@msg	object {_1} takes no embroidery settings ({_2})	l'oggetto {_1} non accetta impostazioni di ricamo ({_2})
+@msg	object {_1} is a group: give one of its objects	l'oggetto {_1} è un gruppo: indica uno dei suoi oggetti
+@msg	object {_1} has no `{_2}`	l'oggetto {_1} non ha `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	niente da ricamare: il documento non ha tracciati visibili con riempimento o traccia
 @msg	nothing to stitch: {_1}	niente da ricamare: {_1}
 

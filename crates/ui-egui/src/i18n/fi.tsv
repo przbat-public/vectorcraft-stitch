@@ -5379,6 +5379,10 @@ mark-style	Japanese	Japanilainen
 	Select artwork to apply effects	Valitse kuvitus, johon tehosteet lisätään
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	tiedoston muuttujia ja tietojoukkoja ei luettu (muuttujia: {variables}, tietojoukkoja: {data_sets}): Muuttujat-paneeli ei näytä niitä
 	Embroidery Trim After	Kirjonta: katkaise lanka jälkeen
+	Embroidery Object Settings	Objektin kirjonta-asetukset
+	Reset Embroidery Object Settings	Palauta objektin kirjonta-asetukset
+	Embroidery Entry and Exit	Kirjonnan alku- ja loppukohta
+	Copy Embroidery Object Settings	Kopioi objektin kirjonta-asetukset
 	Embroidery Setup	Kirjonnan asetukset
 	Show Embroidery Settings	Näytä kirjonnan asetukset
 	Embroidery Statistics	Kirjonnan tilastot
@@ -5403,6 +5407,11 @@ mark-style	Japanese	Japanilainen
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	leikkauksen pituus on lyhyempi kuin hypyn pituus, joten hypyt leikataan jo hypyn pituudesta alkaen
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	joidenkin objektien kirjonta-asetuksissa on joitakin, joita tämä versio ei lue (uudemmasta versiosta): ne säilytetään, ja objektit kirjotaan ilman niitä
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	osa objektien kirjonta-asetuksista on sen ulkopuolella, mitä tämä versio kirjoo: kukin kirjotaan lähimmällä arvolla, jonka se hyväksyy
+@msg	none of these objects has a `{_1}`	millään näistä objekteista ei ole `{_1}`
+@msg	none of these objects takes embroidery settings	mikään näistä objekteista ei ota kirjonta-asetuksia
+@msg	object {_1} takes no embroidery settings ({_2})	objekti {_1} ei ota kirjonta-asetuksia ({_2})
+@msg	object {_1} is a group: give one of its objects	objekti {_1} on ryhmä: anna jokin sen objekteista
+@msg	object {_1} has no `{_2}`	objektilla {_1} ei ole `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	ei mitään kirjottavaa: asiakirjassa ei ole näkyviä polkuja, joilla on täyttö tai viiva
 @msg	nothing to stitch: {_1}	ei mitään kirjottavaa: {_1}
 

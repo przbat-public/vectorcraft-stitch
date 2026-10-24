@@ -5009,6 +5009,10 @@ theme	Appearance	Giao diện
 	Select artwork to apply effects	Chọn đồ họa để áp dụng hiệu ứng
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	các biến và tập dữ liệu của tệp chưa được đọc (biến: {variables}, tập dữ liệu: {data_sets}): bảng Biến không liệt kê chúng
 	Embroidery Trim After	Thêu: cắt chỉ sau
+	Embroidery Object Settings	Thiết lập thêu của đối tượng
+	Reset Embroidery Object Settings	Đặt lại thiết lập thêu của đối tượng
+	Embroidery Entry and Exit	Điểm vào và ra của đường thêu
+	Copy Embroidery Object Settings	Sao chép thiết lập thêu của đối tượng
 	Embroidery Setup	Thiết lập thêu
 	Show Embroidery Settings	Hiện thiết lập thêu
 	Embroidery Statistics	Thống kê thêu
@@ -5033,6 +5037,11 @@ theme	Appearance	Giao diện
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	độ dài cắt chỉ ngắn hơn độ dài bước nhảy, nên các bước nhảy được cắt chỉ ngay từ độ dài bước nhảy
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	cài đặt thêu của một số đối tượng có các mục mà phiên bản này không đọc được (từ phiên bản mới hơn): chúng được giữ lại, và các đối tượng đó được thêu mà không có chúng
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	một số cài đặt thêu của đối tượng nằm ngoài phạm vi phiên bản này thêu được: mỗi cài đặt được thêu với giá trị gần nhất mà nó nhận
+@msg	none of these objects has a `{_1}`	không đối tượng nào trong số này có `{_1}`
+@msg	none of these objects takes embroidery settings	không đối tượng nào trong số này nhận thiết lập thêu
+@msg	object {_1} takes no embroidery settings ({_2})	đối tượng {_1} không nhận thiết lập thêu ({_2})
+@msg	object {_1} is a group: give one of its objects	đối tượng {_1} là một nhóm: hãy chỉ định một đối tượng trong nhóm
+@msg	object {_1} has no `{_2}`	đối tượng {_1} không có `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	không có gì để thêu: tài liệu không có đường dẫn hiển thị nào có tô hoặc nét
 @msg	nothing to stitch: {_1}	không có gì để thêu: {_1}
 

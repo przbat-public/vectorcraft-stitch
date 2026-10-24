@@ -5415,6 +5415,10 @@ mark-style	Japanese	Japonské
 	Select artwork to apply effects	Vyberte grafiku, na kterou chcete použít efekty
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	proměnné a sady dat souboru nebyly načteny (proměnné: {variables}, sady dat: {data_sets}): panel Proměnné je nezobrazuje
 	Embroidery Trim After	Výšivka: odstřihnout nit po
+	Embroidery Object Settings	Nastavení vyšívání objektu
+	Reset Embroidery Object Settings	Obnovit nastavení vyšívání objektu
+	Embroidery Entry and Exit	Vstup a výstup výšivky
+	Copy Embroidery Object Settings	Kopírovat nastavení vyšívání objektu
 	Embroidery Setup	Nastavení vyšívání
 	Show Embroidery Settings	Zobrazit nastavení vyšívání
 	Embroidery Statistics	Statistika vyšívání
@@ -5439,6 +5443,11 @@ mark-style	Japanese	Japonské
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	délka střihu je kratší než délka skoku, proto se skoky stříhají už od délky skoku
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	nastavení vyšívání některých objektů obsahuje některá, která tato verze nečte (z novější verze): zůstávají zachována a objekty se vyšívají bez nich
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	některá nastavení vyšívání objektů leží mimo to, co tato verze vyšívá: každé se vyšívá s nejbližší hodnotou, kterou přijímá
+@msg	none of these objects has a `{_1}`	žádný z těchto objektů nemá `{_1}`
+@msg	none of these objects takes embroidery settings	žádný z těchto objektů nepřijímá nastavení vyšívání
+@msg	object {_1} takes no embroidery settings ({_2})	objekt {_1} nepřijímá nastavení vyšívání ({_2})
+@msg	object {_1} is a group: give one of its objects	objekt {_1} je skupina: zadejte jeden z jejích objektů
+@msg	object {_1} has no `{_2}`	objekt {_1} nemá `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	není co vyšívat: dokument nemá žádné viditelné cesty s výplní nebo tahem
 @msg	nothing to stitch: {_1}	není co vyšívat: {_1}
 

@@ -117,6 +117,51 @@ fn embroidery_settings_notes_are_translated() {
     assert!(untranslated.is_empty(), "untranslated notes:\n{}", untranslated.join("\n"));
 }
 
+/// What the settings commands on objects say when the objects given take none (a person running
+/// them from the command palette meets it) is translated whole in every language.
+#[test]
+fn embroidery_object_settings_messages_are_translated() {
+    use serde_json::json;
+    use vectorcraft_doc::{AppearanceItem, NodeId};
+    use vectorcraft_engine::{EngineError, Session};
+    let mut s = Session::new();
+    s.execute("file.new", &json!({})).unwrap();
+    let id = |v: serde_json::Value| v["id"].as_u64().unwrap();
+    let text = id(s.execute("text.create", &json!({"x": 10, "y": 300, "text": "Stitch"})).unwrap());
+    let a = id(s.execute("shape.rectangle", &json!({"x": 20, "y": 20, "width": 50, "height": 40})).unwrap());
+    let b = id(s.execute("shape.rectangle", &json!({"x": 90, "y": 20, "width": 50, "height": 40})).unwrap());
+    s.edit("No Stroke", |d, _| {
+        if let Some(n) = d.node_mut(NodeId(b)) {
+            n.appearance.items.retain(|i| matches!(i, AppearanceItem::Fill(_)));
+        }
+        Ok(())
+    })
+    .unwrap();
+    let group = id(s.execute("object.group", &json!({"ids": [a, b]})).unwrap());
+    let error = |r: Result<serde_json::Value, EngineError>| match r {
+        Err(EngineError::Other(m)) => m,
+        r => panic!("{r:?}"),
+    };
+    let messages = [
+        error(s.execute("embroidery.set", &json!({"ids": [text], "part": "fill", "angle": 3}))),
+        error(s.execute("embroidery.reset", &json!({"ids": [text]}))),
+        error(s.execute("embroidery.setEntryExit", &json!({"id": text, "part": "fill", "entry": [0, 0]}))),
+        error(s.execute("embroidery.setEntryExit", &json!({"id": group, "part": "fill", "entry": [0, 0]}))),
+        error(s.execute("embroidery.setEntryExit", &json!({"id": b, "part": "stroke", "entry": [0, 0]}))),
+    ];
+    let mut untranslated = Vec::new();
+    for info in LANGUAGES.iter().filter(|l| l.code != "en") {
+        let lang = Lang::from_code(info.code).unwrap();
+        for m in &messages {
+            let shown = message(lang, m);
+            if shown == *m || ["none of these", "embroidery settings", "is a group", "has no", "takes no"].iter().any(|w| shown.contains(*w)) {
+                untranslated.push(format!("{}: {shown}", info.code));
+            }
+        }
+    }
+    assert!(untranslated.is_empty(), "untranslated messages:\n{}", untranslated.join("\n"));
+}
+
 /// What opening a machine file says it left out (which makes writing over the file ask first) is
 /// translated whole in every language.
 #[test]

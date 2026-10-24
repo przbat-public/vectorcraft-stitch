@@ -5009,6 +5009,10 @@ lighting	Light	Світло
 	Select artwork to apply effects	Виберіть графіку, щоб застосувати ефекти
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	змінні та набори даних файлу не прочитано (змінних: {variables}, наборів даних: {data_sets}): панель «Змінні» їх не показує
 	Embroidery Trim After	Вишивка: обрізати нитку після
+	Embroidery Object Settings	Параметри вишивки об’єкта
+	Reset Embroidery Object Settings	Скинути параметри вишивки об’єкта
+	Embroidery Entry and Exit	Вхід і вихід вишивки
+	Copy Embroidery Object Settings	Копіювати параметри вишивки об’єкта
 	Embroidery Setup	Параметри вишивки
 	Show Embroidery Settings	Показати параметри вишивки
 	Embroidery Statistics	Статистика вишивки
@@ -5033,6 +5037,11 @@ lighting	Light	Світло
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	довжина обрізання коротша за довжину переходу, тому переходи обрізаються вже від довжини переходу
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	налаштування вишивки деяких об’єктів містять такі, які ця версія не читає (з новішої версії): вони зберігаються, а ці об’єкти вишиваються без них
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	деякі налаштування вишивки об’єктів виходять за межі того, що вишиває ця версія: кожне вишивається з найближчим допустимим значенням
+@msg	none of these objects has a `{_1}`	жоден із цих об’єктів не має `{_1}`
+@msg	none of these objects takes embroidery settings	жоден із цих об’єктів не приймає параметрів вишивки
+@msg	object {_1} takes no embroidery settings ({_2})	об’єкт {_1} не приймає параметрів вишивки ({_2})
+@msg	object {_1} is a group: give one of its objects	об’єкт {_1} — група: вкажіть один із її об’єктів
+@msg	object {_1} has no `{_2}`	об’єкт {_1} не має `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	немає чого вишивати: у документі немає видимих контурів із заливкою чи обведенням
 @msg	nothing to stitch: {_1}	немає чого вишивати: {_1}
 

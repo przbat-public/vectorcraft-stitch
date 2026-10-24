@@ -161,6 +161,29 @@ saved in `.vectorcraft` files (`NodeExtras::embroidery`). No menu or panel sets 
 palette runs it on the selection (Embroidery Trim After), and MCP and the control channel with
 ids; an id that names no object is reported as a missing object.
 
+**Settings on objects.** Each object keeps settings for its fills and for its strokes (one set
+for all of its fills, one for all its strokes), which beat an export's options, the document's
+settings and the defaults (Settings and where their values come from, below). Four commands set
+them; no panel does yet (the Object tab comes next), so the command palette runs them on the
+selection, and MCP and the control channel with ids:
+
+- `embroidery.set {ids?, part, …}` sets values of a part (`fill` or `stroke`) under the
+  vocabulary's names (`stitch`, `spacing`, `length`, `angle`, `pull`, `pullPercent`, `push`,
+  `expand`, `narrowAsSatin`, `underlay`, `splitLength`), each checked as the export's option of
+  that name is; `null` unsets one. `stitch` also takes `none`: the part is not sewn. An earlier
+  name (`density`…), a design setting (`trimLength`…) and a point are refused, saying what to use.
+- `embroidery.reset {ids?, part?, keys?}` unsets them (by default every value but the entry and
+  exit points; the cut after the object stays): the Object tab's Restore from Fabric.
+- `embroidery.setEntryExit {id?, part, entry?, exit?}` sets where one object's part starts and
+  ends, in document points (moved and turned with the object).
+- `embroidery.copyFrom {source, ids?, part?, keys?}` gives the objects the source's values, set or
+  unset: the Object tab's Copy and Paste settings.
+
+Each makes one undo step (none when nothing changes). A group or a layer stands for the paths and
+compound paths in it, a compound path's member for its compound path; type, a symbol instance
+(set its art's instead), a run of stitches opened from a file and live objects are skipped and
+listed (`skipped`, at most 1,000), and at most 100,000 ids are taken.
+
 **Threads.** Each colour block is sewn in a thread of the document's thread palette: Janome's 78
 threads, which JEF files number (`jef`), or Brother's 61, which PES files number (`pec`) among 64
 entries: the last three, 62 to 64, are the format's appliqué entries (EduTechWiki names them

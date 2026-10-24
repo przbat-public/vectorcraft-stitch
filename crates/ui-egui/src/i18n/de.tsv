@@ -4995,6 +4995,10 @@ effect	Soft	Weich
 	Select artwork to apply effects	Wählen Sie Grafik aus, um Effekte anzuwenden
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	die Variablen und Datensätze der Datei wurden nicht gelesen (Variablen: {variables}, Datensätze: {data_sets}): Das Bedienfeld „Variablen“ listet sie nicht auf
 	Embroidery Trim After	Stickerei: Faden danach schneiden
+	Embroidery Object Settings	Stickeinstellungen des Objekts
+	Reset Embroidery Object Settings	Stickeinstellungen des Objekts zurücksetzen
+	Embroidery Entry and Exit	Ein- und Ausstich der Stickerei
+	Copy Embroidery Object Settings	Stickeinstellungen des Objekts kopieren
 	Embroidery Setup	Stickerei einrichten
 	Show Embroidery Settings	Stickerei-Einstellungen anzeigen
 	Embroidery Statistics	Stickerei-Statistik
@@ -5019,6 +5023,11 @@ effect	Soft	Weich
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	die Schnittlänge ist kürzer als die Sprunglänge, daher werden Sprünge schon ab der Sprunglänge geschnitten
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	die Stickeinstellungen einiger Objekte enthalten welche, die diese Version nicht liest (aus einer neueren Version): sie bleiben erhalten, und die Objekte werden ohne sie gestickt
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	einige Stickeinstellungen von Objekten liegen außerhalb dessen, was diese Version stickt: jede wird mit dem nächstgelegenen Wert gestickt, den sie annimmt
+@msg	none of these objects has a `{_1}`	keines dieser Objekte hat `{_1}`
+@msg	none of these objects takes embroidery settings	keines dieser Objekte nimmt Stickeinstellungen an
+@msg	object {_1} takes no embroidery settings ({_2})	Objekt {_1} nimmt keine Stickeinstellungen an ({_2})
+@msg	object {_1} is a group: give one of its objects	Objekt {_1} ist eine Gruppe: geben Sie eines ihrer Objekte an
+@msg	object {_1} has no `{_2}`	Objekt {_1} hat kein `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	nichts zu sticken: das Dokument hat keine sichtbaren Pfade mit Fläche oder Kontur
 @msg	nothing to stitch: {_1}	nichts zu sticken: {_1}
 

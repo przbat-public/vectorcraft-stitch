@@ -5267,6 +5267,10 @@ mark-style	Japanese	Japońskie
 	Select artwork to apply effects	Wybierz grafikę, aby zastosować efekty
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	zmienne i zestawy danych pliku nie zostały wczytane (zmienne: {variables}, zestawy danych: {data_sets}): panel Zmienne ich nie wyświetla
 	Embroidery Trim After	Haft: obetnij nić po
+	Embroidery Object Settings	Ustawienia haftu obiektu
+	Reset Embroidery Object Settings	Przywróć ustawienia haftu obiektu
+	Embroidery Entry and Exit	Wejście i wyjście haftu
+	Copy Embroidery Object Settings	Kopiuj ustawienia haftu obiektu
 	Embroidery Setup	Ustawienia haftu
 	Show Embroidery Settings	Pokaż ustawienia haftu
 	Embroidery Statistics	Statystyki haftu
@@ -5291,6 +5295,11 @@ mark-style	Japanese	Japońskie
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	długość cięcia jest krótsza niż długość przeskoku, więc przeskoki są przecinane już od długości przeskoku
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	ustawienia haftu niektórych obiektów zawierają takie, których ta wersja nie odczytuje (z nowszej wersji): są zachowywane, a te obiekty są haftowane bez nich
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	niektóre ustawienia haftu obiektów wykraczają poza to, co haftuje ta wersja: każde jest haftowane z najbliższą wartością, jaką przyjmuje
+@msg	none of these objects has a `{_1}`	żaden z tych obiektów nie ma `{_1}`
+@msg	none of these objects takes embroidery settings	żaden z tych obiektów nie przyjmuje ustawień haftu
+@msg	object {_1} takes no embroidery settings ({_2})	obiekt {_1} nie przyjmuje ustawień haftu ({_2})
+@msg	object {_1} is a group: give one of its objects	obiekt {_1} jest grupą: podaj jeden z jej obiektów
+@msg	object {_1} has no `{_2}`	obiekt {_1} nie ma `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	nic do wyhaftowania: dokument nie ma widocznych ścieżek z wypełnieniem ani obrysem
 @msg	nothing to stitch: {_1}	nic do wyhaftowania: {_1}
 

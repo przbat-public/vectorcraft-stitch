@@ -25,6 +25,7 @@ mod check;
 pub(crate) mod derive;
 pub(crate) mod digitize;
 mod measure;
+mod objects;
 pub(crate) mod options;
 pub mod order;
 pub mod plan;
@@ -49,6 +50,8 @@ mod tests_contract;
 mod tests_derive;
 #[cfg(test)]
 mod tests_object;
+#[cfg(test)]
+mod tests_object_commands;
 #[cfg(test)]
 mod tests_order;
 #[cfg(test)]
@@ -225,6 +228,42 @@ pub fn specs() -> Vec<CommandSpec> {
             "{on?: bool (left out: on, unless every object is marked already, then off), ids?} whether the thread is cut after each object (or group) in ids or the selection when the document is stitched (document.export to dst, tap, t01, exp, pes, pec, jef or vp3), however near the next object starts; off, only a jump longer than the export's trimLength is cut, and a run of stitches opened from a file loses the cut the file had after it. One undo step; saved with the document → {on, changed}",
             has_selection,
             set_trim_after
+        ),
+        cmd!(
+            "embroidery.set",
+            "Embroidery Object Settings",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection; a group or layer stands for the paths and compound paths in it, a compound path's member for its compound path), part: \"fill\"|\"stroke\" (all of the objects' fills, or all their strokes), stitch?: \"auto\"|\"tatami\"|\"fill\"|\"satin\"|\"running\"|\"none\" (auto: chosen by the shape, even where document.export's stitch forces one; fill is tatami, and kept so; satin on a fill fills it as auto does; none: the part is not sewn), spacing?: mm (0.05 to 5), length?: mm (0.2 to 12), angle?: degrees counter-clockwise on the page, pull?: mm (0 to 2; or [left, right] of a satin, [start, end] of a fill's rows), pullPercent?: percent (0 to 50; one or two as pull), push?: mm (0 to 5; one or two: [start, end] of a satin as its path is drawn), expand?: mm (-2 to 2), narrowAsSatin?: mm (0 to 12), underlay?: true|false|\"auto\"|\"none\"|\"center\"|\"edge\"|\"edgeZigzag\"|\"edgeTatami\", splitLength?: mm (2 to 12)} set embroidery settings on the objects' fills or strokes, each as document.formats describes the option of that name: kept with the object (moved and turned with it), they beat document.export's options, the document's settings (embroidery.setup) and the defaults; null unsets one; a value out of its range is refused, not clamped, and so is document.export's earlier name of a setting, naming the one to use. Objects that take none (type, a symbol instance, whose art takes them, a run of stitches opened from a machine file…) and those without the part are skipped and listed. One undo step, none when nothing changes; saved with the document → {part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount, skipped: [{id, reason: \"literal\"|\"guide\"|\"type\"|\"image\"|\"symbolInstance\"|\"live\"|\"placed\"|\"intertwine\"|\"noPart\"}] (at most 1000)}",
+            has_selection,
+            objects::set
+        ),
+        cmd!(
+            "embroidery.reset",
+            "Reset Embroidery Object Settings",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection; groups and compound paths as embroidery.set takes them), part?: \"fill\"|\"stroke\" (default: both), keys?: [key…] (default: every setting embroidery.set takes; entry and exit only when named)} unset the objects' own embroidery settings, so that each comes from document.export's options, the document's settings (embroidery.setup) or the default again, as the Object tab's Restore from Fabric does; the cut after an object, and what a newer version wrote, stay. One undo step, none when nothing changes → {part: \"fill\"|\"stroke\"|null (both), keys, changedCount, unchangedCount, skippedCount, skipped: as embroidery.set lists them}",
+            has_selection,
+            objects::reset
+        ),
+        cmd!(
+            "embroidery.setEntryExit",
+            "Embroidery Entry and Exit",
+            [],
+            None,
+            "{id?: object id (default: the one object selected; a compound path's member stands for its compound path), part: \"fill\"|\"stroke\", entry?: [x, y] (document points, within the coordinates a document holds)|null, exit?: [x, y]|null} where the needle goes in to sew the object's fill or stroke, and where it comes out: kept with the object, moved and turned with it. The part starts at the start its stitches can take nearest to the entry (an end of a line, the corner a fill's rows begin at); the exit is kept, and not yet planned toward. null unsets one (the part then starts nearest where the needle is); a point left out stays. Refused for a group, an object that takes no settings and a part it doesn't have. One undo step, none when nothing changes → {id, part, entry: [x, y] or null, exit: [x, y] or null, changedCount: 0 or 1}",
+            has_doc,
+            objects::set_entry_exit
+        ),
+        cmd!(
+            "embroidery.copyFrom",
+            "Copy Embroidery Object Settings",
+            [],
+            None,
+            "{source: object id (whose settings are copied), ids?: [id…] (default: the selection; groups and compound paths as embroidery.set takes them; the source itself is passed by), part?: \"fill\"|\"stroke\" (default: both), keys?: [key…] (default: every setting embroidery.set takes; entry and exit only when named)} give the objects the source's embroidery settings of those keys, set or unset as the source has them, on each of the parts they have, as the Object tab's Copy and Paste settings do; what a newer version wrote stays. One undo step, none when nothing changes → {source, part: \"fill\"|\"stroke\"|null (both), keys, changedCount, unchangedCount, skippedCount, skipped: as embroidery.set lists them}",
+            has_selection,
+            objects::copy_from
         ),
         cmd!(
             "embroidery.setup",

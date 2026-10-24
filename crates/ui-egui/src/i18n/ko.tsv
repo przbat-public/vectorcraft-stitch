@@ -4992,6 +4992,10 @@ lighting	Light	광원
 	Select artwork to apply effects	효과를 적용할 그래픽을 선택하세요
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	파일의 변수와 데이터 세트를 읽지 않았습니다(변수: {variables}, 데이터 세트: {data_sets}). 변수 패널에 표시되지 않습니다
 	Embroidery Trim After	자수: 이후 실 자르기
+	Embroidery Object Settings	개체 자수 설정
+	Reset Embroidery Object Settings	개체 자수 설정 재설정
+	Embroidery Entry and Exit	자수 시작점과 끝점
+	Copy Embroidery Object Settings	개체 자수 설정 복사
 	Embroidery Setup	자수 설정
 	Show Embroidery Settings	자수 설정 표시
 	Embroidery Statistics	자수 통계
@@ -5016,6 +5020,11 @@ lighting	Light	광원
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	실 자르기 길이가 점프 길이보다 짧으므로 점프는 점프 길이부터 실을 자릅니다
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	일부 개체의 자수 설정에 이 버전이 읽지 못하는 항목(새 버전의 것)이 있습니다: 그대로 보존되며 해당 개체는 그 항목 없이 놓입니다
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	개체의 자수 설정 일부가 이 버전이 놓을 수 있는 범위를 벗어납니다: 각각 허용되는 가장 가까운 값으로 놓입니다
+@msg	none of these objects has a `{_1}`	이 개체 중 `{_1}`이(가) 있는 개체가 없습니다
+@msg	none of these objects takes embroidery settings	이 개체 중 자수 설정을 받는 개체가 없습니다
+@msg	object {_1} takes no embroidery settings ({_2})	개체 {_1}은(는) 자수 설정을 받지 않습니다({_2})
+@msg	object {_1} is a group: give one of its objects	개체 {_1}은(는) 그룹입니다: 그 안의 개체 하나를 지정하세요
+@msg	object {_1} has no `{_2}`	개체 {_1}에 `{_2}`이(가) 없습니다
 @msg	nothing to stitch: the document has no visible filled or stroked paths	자수할 것이 없습니다: 문서에 칠이나 선이 있는 보이는 패스가 없습니다
 @msg	nothing to stitch: {_1}	자수할 것이 없습니다: {_1}
 

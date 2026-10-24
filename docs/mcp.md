@@ -5104,6 +5104,14 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
 - `embroidery.setTrimAfter {on?, ids?}` asks for the thread to be cut after each object (or with `on: false` for no
   cut, a file's own included); left out, `on` toggles. It needs a selection or `ids`, answers `{on, changed}`, and
   reports an id that names no object as a missing object.
+- The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
+  answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
+  skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,
+  keys?}` answer `{part, keys, changedCount, unchangedCount, skippedCount, skipped}` (`copyFrom` also `source`);
+  `embroidery.setEntryExit {id?, part, entry?, exit?}` answers `{id, part, entry, exit, changedCount}`. They take the
+  vocabulary's names only: the session refuses any other key before the command runs, and run in-process the command
+  names the one to use (`density` → `spacing`). `reason` is `literal`, `guide`, `type`, `image`, `symbolInstance`,
+  `live`, `placed`, `intertwine` or `noPart`; a client must accept others later.
 - `embroidery.stats {…embroidery options, speed?, fabricThickness?, offset?, limit?}` gives the design's figures as the
   export sews it, for the design and per block: `stitches` (needle points), `records` (needle points, jumps and cuts),
   `jumps`, `trims`, `colorChanges`, `threadCount`, `blockCount`; `size`, `bounds`, `start` and `end` points, `extents`

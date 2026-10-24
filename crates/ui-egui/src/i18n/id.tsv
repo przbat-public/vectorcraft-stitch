@@ -5356,6 +5356,10 @@ swatch	Bright Violet	Violet cerah
 	Minimum must not exceed Desired, nor Desired Maximum.	Minimum tidak boleh melebihi Diinginkan, dan Diinginkan tidak boleh melebihi Maksimum.
 	Justification	Justifikasi
 	Embroidery Trim After	Bordir: potong benang sesudahnya
+	Embroidery Object Settings	Pengaturan bordir objek
+	Reset Embroidery Object Settings	Setel ulang pengaturan bordir objek
+	Embroidery Entry and Exit	Masuk dan keluar bordir
+	Copy Embroidery Object Settings	Salin pengaturan bordir objek
 	Embroidery Setup	Pengaturan bordir
 	Show Embroidery Settings	Tampilkan pengaturan bordir
 	Embroidery Statistics	Statistik bordir
@@ -5380,6 +5384,11 @@ swatch	Bright Violet	Violet cerah
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	panjang potong lebih pendek dari panjang lompatan, jadi lompatan sudah dipotong mulai dari panjang lompatan
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	pengaturan bordir beberapa objek berisi beberapa yang tidak dibaca versi ini (dari versi yang lebih baru): pengaturan itu disimpan, dan objek tersebut dibordir tanpanya
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	beberapa pengaturan bordir objek berada di luar yang dibordir versi ini: masing-masing dibordir dengan nilai terdekat yang diterimanya
+@msg	none of these objects has a `{_1}`	tidak satu pun objek ini memiliki `{_1}`
+@msg	none of these objects takes embroidery settings	tidak satu pun objek ini menerima pengaturan bordir
+@msg	object {_1} takes no embroidery settings ({_2})	objek {_1} tidak menerima pengaturan bordir ({_2})
+@msg	object {_1} is a group: give one of its objects	objek {_1} adalah grup: berikan salah satu objeknya
+@msg	object {_1} has no `{_2}`	objek {_1} tidak memiliki `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	tidak ada yang dibordir: dokumen tidak memiliki jalur terlihat dengan isian atau stroke
 @msg	nothing to stitch: {_1}	tidak ada yang dibordir: {_1}
 

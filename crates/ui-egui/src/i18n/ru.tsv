@@ -5025,6 +5025,10 @@ lighting	Light	Свет
 	Select artwork to apply effects	Выберите графику, чтобы применить эффекты
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	переменные и наборы данных файла не прочитаны (переменных: {variables}, наборов данных: {data_sets}): панель «Переменные» их не показывает
 	Embroidery Trim After	Вышивка: обрезать нить после
+	Embroidery Object Settings	Параметры вышивки объекта
+	Reset Embroidery Object Settings	Сбросить параметры вышивки объекта
+	Embroidery Entry and Exit	Вход и выход вышивки
+	Copy Embroidery Object Settings	Копировать параметры вышивки объекта
 	Embroidery Setup	Параметры вышивки
 	Show Embroidery Settings	Показать параметры вышивки
 	Embroidery Statistics	Статистика вышивки
@@ -5049,6 +5053,11 @@ lighting	Light	Свет
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	длина обрезки короче длины перехода, поэтому переходы обрезаются уже начиная с длины перехода
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	настройки вышивки некоторых объектов содержат такие, которые эта версия не читает (из более новой версии): они сохраняются, а эти объекты вышиваются без них
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	некоторые настройки вышивки объектов выходят за пределы того, что вышивает эта версия: каждая вышивается с ближайшим допустимым значением
+@msg	none of these objects has a `{_1}`	ни у одного из этих объектов нет `{_1}`
+@msg	none of these objects takes embroidery settings	ни один из этих объектов не принимает параметры вышивки
+@msg	object {_1} takes no embroidery settings ({_2})	объект {_1} не принимает параметры вышивки ({_2})
+@msg	object {_1} is a group: give one of its objects	объект {_1} — группа: укажите один из её объектов
+@msg	object {_1} has no `{_2}`	у объекта {_1} нет `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	нечего вышивать: в документе нет видимых контуров с заливкой или обводкой
 @msg	nothing to stitch: {_1}	нечего вышивать: {_1}
 

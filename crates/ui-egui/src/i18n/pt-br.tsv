@@ -5332,6 +5332,10 @@ mark-style	Japanese	Japonesas
 	Select artwork to apply effects	Selecione a arte para aplicar efeitos
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	as variáveis e os conjuntos de dados do arquivo não foram lidos (variáveis: {variables}, conjuntos de dados: {data_sets}): o painel Variáveis não os lista
 	Embroidery Trim After	Bordado: cortar a linha depois
+	Embroidery Object Settings	Configurações de Bordado do Objeto
+	Reset Embroidery Object Settings	Redefinir Configurações de Bordado do Objeto
+	Embroidery Entry and Exit	Entrada e Saída do Bordado
+	Copy Embroidery Object Settings	Copiar Configurações de Bordado do Objeto
 	Embroidery Setup	Configuração do Bordado
 	Show Embroidery Settings	Mostrar Configuração do Bordado
 	Embroidery Statistics	Estatísticas do Bordado
@@ -5356,6 +5360,11 @@ mark-style	Japanese	Japonesas
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	o comprimento do corte é menor que o comprimento do salto, por isso os saltos são cortados já a partir do comprimento do salto
 @msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	as configurações de bordado de alguns objetos incluem algumas que esta versão não lê (de uma versão mais recente): elas são mantidas, e esses objetos são bordados sem elas
 @msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	algumas configurações de bordado de objetos ficam fora do que esta versão borda: cada uma é bordada com o valor mais próximo que aceita
+@msg	none of these objects has a `{_1}`	nenhum destes objetos tem `{_1}`
+@msg	none of these objects takes embroidery settings	nenhum destes objetos aceita configurações de bordado
+@msg	object {_1} takes no embroidery settings ({_2})	o objeto {_1} não aceita configurações de bordado ({_2})
+@msg	object {_1} is a group: give one of its objects	o objeto {_1} é um grupo: indique um de seus objetos
+@msg	object {_1} has no `{_2}`	o objeto {_1} não tem `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	nada para bordar: o documento não tem caminhos visíveis com preenchimento ou traçado
 @msg	nothing to stitch: {_1}	nada para bordar: {_1}
 

@@ -589,16 +589,9 @@ impl<'a> Digitizer<'a> {
             if !settings.sewn() {
                 continue;
             }
+            let (style, why) = part_rule(item, bp, settings.forced());
             match item {
-                // A fill is filled unless the `stitch` option asks for another way of stitching it.
                 AppearanceItem::Fill(fill) => {
-                    let (style, why) = match settings.forced() {
-                        // A satin needs a width, which a fill doesn't have: it is filled, with a
-                        // fill's settings, `expand` and narrow parts, as without the option.
-                        Some(Style::Satin) => (Style::Fill, Choice::SatinFilled),
-                        Some(style) => (style, Choice::Forced),
-                        None => (Style::Fill, Choice::Fill),
-                    };
                     // Paint that isn't sewn is said so (or passed by) before any path operation
                     // runs on its area.
                     if !matches!(solid(&fill.paint), Colour::Solid(_) | Colour::Approx(_)) {
@@ -624,11 +617,9 @@ impl<'a> Digitizer<'a> {
                 }
                 AppearanceItem::Stroke(stroke) => {
                     let width = pt_to_mm(stroke.width).max(0.0);
-                    // A stroke that paints an area its path doesn't run down the middle of
-                    // (dashed, aligned inside or outside, of varying width, with arrowheads): that
-                    // area, as on the canvas, is filled, its narrow parts satin columns that
-                    // follow it; unless the `stitch` option sews it along its path.
-                    if paints_off_its_path(stroke, bp) && matches!(settings.forced(), None | Some(Style::Fill)) {
+                    // The area it paints off its path, as on the canvas, filled, its narrow parts
+                    // satin columns that follow it.
+                    if why == Choice::StrokeOutlined {
                         let e = settings.expand();
                         // Every setting of the stroke, serialised, goes into the key. Serialising a
                         // stroke doesn't fail; if it ever did, the stroke would be outlined again at
@@ -650,10 +641,10 @@ impl<'a> Digitizer<'a> {
                         self.colour(sewing, &shaped.area, shaped.rule, &stroke.paint);
                         continue;
                     }
-                    match settings.forced() {
+                    match why {
                         // A stroke filled is the area it paints, filled: its outline at its width,
                         // caps and joins (not the inside of the path it follows).
-                        Some(Style::Fill) => {
+                        Choice::StrokeFilled => {
                             let cap = match stroke.cap {
                                 LineCap::Butt => Cap::Butt,
                                 LineCap::Round => Cap::Round,
@@ -679,14 +670,8 @@ impl<'a> Digitizer<'a> {
                                 Sewing { unit, settings, style: Style::Fill, why: Choice::StrokeFilled, width: NO_WIDTH, clip_stitches: false };
                             self.colour(sewing, &shaped.area, shaped.rule, &stroke.paint);
                         }
-                        // A satin column when it is wide enough to have two rails, a running line
-                        // when not, unless the `stitch` option says which.
-                        forced => {
-                            let (style, why) = match forced {
-                                Some(style) => (style, Choice::Forced),
-                                None if width >= SATIN_MIN_WIDTH => (Style::Satin, Choice::WideStroke),
-                                None => (Style::Running, Choice::NarrowStroke),
-                            };
+                        // A satin column or a running line along its path.
+                        _ => {
                             if style == Style::Satin && width > plan::MAX_SATIN_WIDTH {
                                 let widest = plan::MAX_SATIN_WIDTH;
                                 self.warn(&format!(
@@ -886,6 +871,35 @@ fn expanded(area: &BezPath, rule: FillRule, e: f64) -> (BezPath, FillRule, bool)
 
 /// Whether an appearance item is painted at all (not `none`): only painted items are sewn, and
 /// counted as the plan's progress.
+/// How part `item` of an object whose path is `bp` (document points) is sewn, and the rule that
+/// chose it, `forced` being the style its settings force (`None`: the rule): the one place this is
+/// decided, for the walk and for `embroidery.info`.
+///
+/// - A fill is filled, unless a style is forced. A satin needs a width, which a fill doesn't have:
+///   forced on a fill, it is filled, with a fill's settings, `expand` and narrow parts, as without.
+/// - A stroke that paints an area its path doesn't run down the middle of (dashed, aligned inside
+///   or outside, of varying width, with arrowheads) is that area, filled, unless a style other than
+///   tatami is forced. Forced tatami, a stroke is the area it paints at its width, filled. Else it is
+///   a satin column when wide enough to have two rails, a running line when not, unless forced.
+pub(crate) fn part_rule(item: &AppearanceItem, bp: &BezPath, forced: Option<Style>) -> (Style, Choice) {
+    match item {
+        AppearanceItem::Fill(_) => match forced {
+            Some(Style::Satin) => (Style::Fill, Choice::SatinFilled),
+            Some(style) => (style, Choice::Forced),
+            None => (Style::Fill, Choice::Fill),
+        },
+        AppearanceItem::Stroke(stroke) if paints_off_its_path(stroke, bp) && matches!(forced, None | Some(Style::Fill)) => {
+            (Style::Fill, Choice::StrokeOutlined)
+        }
+        AppearanceItem::Stroke(stroke) => match forced {
+            Some(Style::Fill) => (Style::Fill, Choice::StrokeFilled),
+            Some(style) => (style, Choice::Forced),
+            None if pt_to_mm(stroke.width).max(0.0) >= SATIN_MIN_WIDTH => (Style::Satin, Choice::WideStroke),
+            None => (Style::Running, Choice::NarrowStroke),
+        },
+    }
+}
+
 /// Whether stroke `st` of path `bp` paints an area its path doesn't run down the middle of: dashed,
 /// aligned inside or outside a closed path, of varying width, or with arrowheads.
 fn paints_off_its_path(st: &StrokeLayer, bp: &BezPath) -> bool {

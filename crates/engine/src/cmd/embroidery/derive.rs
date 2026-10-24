@@ -6,7 +6,8 @@
 //!   its literal stitches (they are its path's own points): Pathfinder, Offset Path, Shape Builder,
 //!   Divide Objects Below and Split Into Grid (through Pathfinder's style, [`carried`]), and Make
 //!   Compound Path (from the backmost path, [`compound`]); so two touching shapes of one colour
-//!   whose settings differ stay apart under Merge;
+//!   whose settings differ stay apart under Merge; the cut after an object cut into several pieces
+//!   goes to its last ([`cut_once`]);
 //! - one object becoming several gives each the settings of the part it came from and the cut after
 //!   the object to what stands for the object: Release Compound Path ([`released`]), Create
 //!   Outlines ([`outlined_type`]), Outline Stroke and Expand Appearance ([`Expanding`], through
@@ -26,6 +27,25 @@ pub(crate) fn carried(n: &Node) -> Option<Box<Embroidery>> {
     let mut e = n.extras().embroidery.as_deref()?.clone();
     e.stitches = None;
     (!e.is_empty()).then(|| Box::new(e))
+}
+
+/// Pieces cut from objects (Pathfinder's Divide, Trim, Merge, Crop, Outline and mixes, Split Into
+/// Grid's cells, Divide Objects Below's pieces), in sewing order, each with its source's settings
+/// ([`carried`]): of the pieces with the same settings (one object's, or several objects' that were
+/// the same) only the last keeps the cut after the object, so that the thread is cut once, after
+/// the last of them, as it was after the object.
+pub(crate) fn cut_once<'a>(pieces: impl DoubleEndedIterator<Item = &'a mut Node>) {
+    let mut cut: Vec<Embroidery> = Vec::new();
+    for p in pieces.rev() {
+        let Some(e) = p.extras().embroidery.as_deref().filter(|e| e.trim_after) else { continue };
+        if !cut.contains(e) {
+            cut.push(e.clone());
+            continue;
+        }
+        let mut e = e.clone();
+        e.trim_after = false;
+        p.extras_mut().embroidery = (!e.is_empty()).then(|| Box::new(e));
+    }
 }
 
 /// Make Compound Path of `sources` (back to front): the settings of the path whose paint the

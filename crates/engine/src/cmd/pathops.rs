@@ -504,6 +504,8 @@ fn run_pf(s: &mut Session, op: PathfinderOp) -> Result<Value> {
                 }
                 children.push(Arc::new(n));
             }
+            // VectorCraft Stitch: the cut after an object once, after its last piece.
+            super::embroidery::derive::cut_once(children.iter_mut().map(Arc::make_mut));
             let gid = d.alloc_id();
             Node::group(gid, children)
         };
@@ -1031,8 +1033,10 @@ fn split_into_grid(s: &mut Session, p: &Value) -> Result<Value> {
         let layer = d.layer_containing(top.id);
         d.remove(top.id)?;
         let mut out = Vec::with_capacity(cells.len());
-        for (k, c) in cells.into_iter().enumerate() {
-            let node = shape_node(d, c, Some(&top));
+        let mut cells: Vec<Node> = cells.into_iter().map(|c| shape_node(d, c, Some(&top))).collect();
+        // VectorCraft Stitch: the cut after the object once, after its last cell.
+        super::embroidery::derive::cut_once(cells.iter_mut());
+        for (k, node) in cells.into_iter().enumerate() {
             out.push(d.insert(par, idx + k, node)?);
         }
         d.guides.extend(edges.iter().map(|&(vertical, pos)| vectorcraft_doc::Guide { layer, ..vectorcraft_doc::Guide::new(vertical, pos) }));
@@ -1160,7 +1164,9 @@ fn divide_objects_below(s: &mut Session, _: &Value) -> Result<Value> {
             if inside.is_empty() || outside.is_empty() {
                 continue;
             }
-            let pieces: Vec<Node> = [outside, inside].into_iter().map(|piece| shape_node(d, piece, Some(&n))).collect();
+            let mut pieces: Vec<Node> = [outside, inside].into_iter().map(|piece| shape_node(d, piece, Some(&n))).collect();
+            // VectorCraft Stitch: the cut after the object once, after its last piece.
+            super::embroidery::derive::cut_once(pieces.iter_mut());
             out.extend(pieces.iter().map(|p| p.id));
             cut.put(d, t, pieces)?;
         }

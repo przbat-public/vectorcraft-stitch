@@ -86,6 +86,63 @@ fn pathfinder_results_take_their_paint_sources_settings() {
     assert!(angles.contains(&Some(30.0)) && angles.contains(&Some(60.0)), "{angles:?}");
 }
 
+/// An object cut into several pieces keeps the cut after it once, on its last piece (sewn last),
+/// its other settings on every piece: Divide, Split Into Grid and Divide Objects Below.
+#[test]
+fn an_object_cut_into_pieces_is_cut_once_after_them() {
+    let cuts = |s: &Session, ids: &[u64]| ids.iter().filter(|id| embroidery(s, **id).trim_after).count();
+    let angles = |s: &Session, ids: &[u64]| ids.iter().map(|id| angle(&embroidery(s, *id))).collect::<Vec<_>>();
+    // Divide: the object with the cut is cut into two pieces (the overlap and the rest).
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+    let b = rect(&mut s, "#2233cc", 60.0, 30.0, 60.0, 40.0);
+    give(&mut s, a, &settings(30.0, false));
+    give(&mut s, b, &settings(60.0, true));
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    let group = ids(&run(&mut s, "object.pathfinder.divide", json!({})))[0];
+    let pieces = members(&s, group);
+    let of_b: Vec<u64> = pieces.iter().copied().filter(|id| angle(&embroidery(&s, *id)) == Some(60.0)).collect();
+    assert_eq!(of_b.len(), 2, "{:?}", angles(&s, &pieces));
+    assert_eq!(cuts(&s, &pieces), 1);
+    assert!(embroidery(&s, *of_b.last().unwrap()).trim_after, "on its last piece");
+    // Split Into Grid: nine cells, every one with the object's settings, the last with the cut.
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 90.0, 90.0);
+    give(&mut s, a, &settings(30.0, true));
+    run(&mut s, "select.set", json!({"ids": [a]}));
+    let cells = ids(&run(&mut s, "object.path.splitIntoGrid", json!({"rows": 3, "columns": 3})));
+    assert_eq!(cells.len(), 9);
+    assert_eq!(angles(&s, &cells), vec![Some(30.0); 9]);
+    assert_eq!(cuts(&s, &cells), 1);
+    assert!(embroidery(&s, *cells.last().unwrap()).trim_after);
+    // Divide Objects Below: the object below cut in two by the one above.
+    let mut s = blank();
+    let below = rect(&mut s, "#cc2222", 20.0, 20.0, 80.0, 60.0);
+    give(&mut s, below, &settings(30.0, true));
+    let cutter = rect(&mut s, "#2233cc", 60.0, 40.0, 80.0, 60.0);
+    run(&mut s, "select.set", json!({"ids": [cutter]}));
+    let pieces = ids(&run(&mut s, "object.path.divideObjectsBelow", json!({})));
+    assert_eq!(pieces.len(), 2);
+    assert_eq!(angles(&s, &pieces), vec![Some(30.0); 2]);
+    assert_eq!((cuts(&s, &pieces), embroidery(&s, pieces[1]).trim_after), (1, true));
+}
+
+/// Shape Builder's merged shape takes the settings of the object whose look it takes (the
+/// front-most under the drag's first point).
+#[test]
+fn shape_builder_takes_the_settings_of_the_object_it_takes_its_look_from() {
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+    let b = rect(&mut s, "#2233cc", 60.0, 30.0, 60.0, 40.0);
+    give(&mut s, a, &settings(30.0, false));
+    give(&mut s, b, &settings(60.0, false));
+    let r = run(&mut s, "shapeBuilder.merge", json!({"ids": [a, b], "points": [[30, 30], [110, 60]]}));
+    let made = ids(&r);
+    assert!(!made.is_empty(), "{r}");
+    let merged: Vec<Option<f64>> = made.iter().map(|id| angle(&embroidery(&s, *id))).collect();
+    assert!(merged.contains(&Some(30.0)), "the look and settings of the object under the first point: {merged:?}");
+}
+
 /// Merge joins touching shapes of one colour only when their settings are the same too.
 #[test]
 fn merge_keeps_shapes_of_one_colour_apart_when_their_settings_differ() {

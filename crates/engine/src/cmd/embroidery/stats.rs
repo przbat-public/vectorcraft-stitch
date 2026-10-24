@@ -65,8 +65,11 @@ const TRIM_SECONDS: f64 = 3.5;
 /// what is asked, not settings.
 pub(crate) const SPEED_RANGE: (f64, f64) = (60.0, 1500.0);
 
-/// The fabric's thickness when none is given (millimetres): about that of a medium cotton or a
-/// T-shirt jersey. An estimate; Wilcom asks for it and gives no default.
+/// The fabric's thickness when none is given (millimetres): the low end of Melco's broadcloth range
+/// (broadcloth with cut-away, an Acti-feed minimum of 3 points and the 2 it takes off: 0.5 mm,
+/// [Melco OS manual](https://www.melco-service.com/docs/X/melco-os-ai-en.pdf), pp. 182–183), the
+/// thinnest of the fabrics the presets give a thickness for. An estimate for a fabric of no known
+/// kind; Wilcom asks for it and gives no default.
 pub(crate) const FABRIC_THICKNESS: f64 = 0.5;
 /// The thicknesses `fabricThickness` may be given (millimetres): none to 5 mm, past what a home
 /// embroidery machine sews through. Bounds on what is asked.

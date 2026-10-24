@@ -43,6 +43,8 @@ pub enum Family {
     Melco,
     /// Sulky's stabiliser chart.
     Sulky,
+    /// Gunold's needle chart.
+    Gunold,
 }
 
 impl Family {
@@ -52,6 +54,7 @@ impl Family {
             Self::Wilcom => "wilcom",
             Self::Melco => "melco",
             Self::Sulky => "sulky",
+            Self::Gunold => "gunold",
         }
     }
 }
@@ -162,6 +165,13 @@ pub const SULKY_CHART: Publication = Publication {
     family: Family::Sulky,
 };
 
+/// Gunold's needle chart: the needle's point by fabric, for 40 wt thread.
+pub const GUNOLD_NEEDLES: Publication = Publication {
+    name: "Gunold: Wann welche Sticknadel (which needle when)",
+    url: "https://shop.gunold.de/media/66/4a/11/1744012604/Wann%20welche%20Sticknadel.pdf",
+    family: Family::Gunold,
+};
+
 /// Said of every preset (`embroidery.fabrics` gives it with them).
 pub const ONE_FAMILY: &str = "Every per-fabric stitch value comes from one family of software, Wilcom's (BERNINA's embroidery software is Wilcom's): no independent source confirms them, and which of BERNINA's fabric classes a fabric is taken as is ours to say (the classes name no fabrics). Sew a test on the fabric.";
 
@@ -203,8 +213,10 @@ const BERNINA_SATIN_SPACING_LIGHT_WOVEN: f64 = 100.0;
 
 /// Points of 0.1 mm Melco's Acti-feed minimum takes off a material's thickness ([`MELCO_OS`]).
 const MELCO_MINIMUM_UNDER: f64 = 2.0;
-/// Millimetres in one of Melco's points.
-const MELCO_POINT_MM: f64 = 0.1;
+/// Melco's points in a millimetre: "1 millimeter = 10 points" ([`MELCO_OS`], p. 182). Divided by,
+/// so that a thickness of a whole number of tenths is that number exactly (6 points: 0.6 mm, not
+/// 0.6000000000000001).
+const MELCO_POINTS_PER_MM: f64 = 10.0;
 /// Melco's Acti-feed minimum for broadcloth with cut-away, points: 3 to 4.
 const MELCO_BROADCLOTH: (f64, f64) = (3.0, 4.0);
 /// For a T-shirt with two cut-aways, points: 3 to 5.
@@ -217,7 +229,7 @@ const MELCO_STRUCTURED_CAP: (f64, f64) = (8.0, 12.0);
 /// The thickness of a material Melco gives the Acti-feed minimum of as `range` points: its middle,
 /// plus the two points the minimum takes off, in millimetres.
 const fn melco_thickness(range: (f64, f64)) -> f64 {
-    ((range.0 + range.1) / 2.0 + MELCO_MINIMUM_UNDER) * MELCO_POINT_MM
+    ((range.0 + range.1) / 2.0 + MELCO_MINIMUM_UNDER) / MELCO_POINTS_PER_MM
 }
 
 /// The percent of the planner's own satin spacing (by width) that leaves it as it is.
@@ -322,9 +334,18 @@ pub const FABRICS: [Fabric; 8] = [
             length: None,
             underlay: Some(Sourced { value: Underlay::Auto, basis: AUTO_UNDERLAY }),
         },
-        stabilizer: Some(Sourced { value: "tearAway", basis: SULKY }),
+        stabilizer: Some(Sourced {
+            value: "tearAway",
+            basis: &[
+                Basis::Published(&SULKY_CHART),
+                Basis::Derived(&MELCO_OS, "differs: the broadcloth whose thickness the preset takes is sewn with cut-away"),
+            ],
+        }),
         topping: Some(Sourced { value: "none", basis: SULKY }),
-        needle_point: Some(Sourced { value: "universal", basis: &[Basis::Derived(&SULKY_CHART, "universal or sharp")] }),
+        needle_point: Some(Sourced {
+            value: "universal",
+            basis: &[Basis::Derived(&SULKY_CHART, "universal or sharp"), Basis::Derived(&GUNOLD_NEEDLES, "a round point for shirts")],
+        }),
         thickness: Some(Sourced {
             value: melco_thickness(MELCO_BROADCLOTH),
             basis: &[Basis::Derived(&MELCO_OS, "broadcloth with cut-away, 3 to 4 points and the 2 the minimum takes off: 0.5 to 0.6 mm")],
@@ -361,7 +382,13 @@ pub const FABRICS: [Fabric; 8] = [
         },
         stabilizer: Some(Sourced { value: "tearAway", basis: SULKY }),
         topping: Some(Sourced { value: "none", basis: SULKY }),
-        needle_point: Some(Sourced { value: "universal", basis: &[Basis::Derived(&SULKY_CHART, "a 100/16 denim needle, universal or sharp")] }),
+        needle_point: Some(Sourced {
+            value: "universal",
+            basis: &[
+                Basis::Derived(&SULKY_CHART, "a 100/16 denim needle, universal or sharp"),
+                Basis::Derived(&GUNOLD_NEEDLES, "a round point for denim and workwear"),
+            ],
+        }),
         thickness: None,
     },
     // BERNINA's light knit class (F1); Wilcom's T-shirt pull for satins.
@@ -393,7 +420,13 @@ pub const FABRICS: [Fabric; 8] = [
         },
         stabilizer: Some(Sourced { value: "cutAway", basis: SULKY }),
         topping: Some(Sourced { value: "waterSoluble", basis: SULKY }),
-        needle_point: Some(Sourced { value: "ballPoint", basis: &[Basis::Derived(&SULKY_CHART, "universal or ball point")] }),
+        needle_point: Some(Sourced {
+            value: "ballPoint",
+            basis: &[
+                Basis::Derived(&SULKY_CHART, "universal or ball point"),
+                Basis::Derived(&GUNOLD_NEEDLES, "agrees: a fine ball point for T-shirts and jersey"),
+            ],
+        }),
         thickness: Some(Sourced {
             value: melco_thickness(MELCO_T_SHIRT),
             basis: &[Basis::Derived(&MELCO_OS, "a T-shirt with two cut-aways, 3 to 5 points and the 2 the minimum takes off: 0.5 to 0.7 mm")],
@@ -425,7 +458,10 @@ pub const FABRICS: [Fabric; 8] = [
         },
         stabilizer: Some(Sourced { value: "cutAway", basis: SULKY }),
         topping: Some(Sourced { value: "waterSoluble", basis: SULKY }),
-        needle_point: Some(Sourced { value: "ballPoint", basis: SULKY }),
+        needle_point: Some(Sourced {
+            value: "ballPoint",
+            basis: &[Basis::Published(&SULKY_CHART), Basis::Derived(&GUNOLD_NEEDLES, "agrees: a fine ball point for polo shirts")],
+        }),
         thickness: Some(Sourced {
             value: melco_thickness(MELCO_POLO),
             basis: &[Basis::Derived(&MELCO_OS, "a polo shirt with cut-away, 4 to 8 points and the 2 the minimum takes off: 0.6 to 1.0 mm")],
@@ -468,7 +504,10 @@ pub const FABRICS: [Fabric; 8] = [
         },
         stabilizer: Some(Sourced { value: "adhesiveTearAway", basis: SULKY }),
         topping: Some(Sourced { value: "waterSoluble", basis: SULKY }),
-        needle_point: Some(Sourced { value: "universal", basis: &[Basis::Derived(&SULKY_CHART, "universal or sharp")] }),
+        needle_point: Some(Sourced {
+            value: "universal",
+            basis: &[Basis::Derived(&SULKY_CHART, "universal or sharp"), Basis::Derived(&GUNOLD_NEEDLES, "differs: a medium ball point for fleece")],
+        }),
         thickness: Some(Sourced {
             value: FLEECE_THICKNESS,
             basis: &[Basis::Estimate("no published value: between Melco's polo, up to 1.0 mm, and its towel, from 0.8 mm")],
@@ -680,6 +719,9 @@ mod tests {
         assert_eq!(fabric("silk").and_then(|f| f.tatami.spacing).map(|s| (s.value * 1e4).round() / 1e4), Some(0.475));
         assert_eq!(fabric("fleece").and_then(|f| f.tatami.spacing).map(|s| (s.value * 1e4).round() / 1e4), Some(0.3325));
         assert_eq!(fabric("pique").and_then(|f| f.thickness).map(|s| (s.value * 100.0).round() / 100.0), Some(0.8));
+        // Melco's thicknesses are whole tenths, exactly, as files and replies give them.
+        let thickness = |id: &str| fabric(id).and_then(|f| f.thickness).map(|s| s.value);
+        assert_eq!([thickness("cotton"), thickness("stretchKnit"), thickness("cap")], [Some(0.55), Some(0.6), Some(1.2)]);
         assert!(fabric("felt").is_none());
     }
 

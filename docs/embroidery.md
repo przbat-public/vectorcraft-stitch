@@ -1413,7 +1413,10 @@ objects join) is resolved once a plan (`DesignSettings`).
   - points (entry and exit, later satin rails and angle lines) in document coordinates, moved with
     the object, and angles turned with it; a fill angle the object doesn't set turns with the
     object too, by its bounding box's angle (the project owner's choice, 2026-10-23: rows stay
-    the same across a turned shape), which a mirror and Reset Bounding Box leave out;
+    the same across a turned shape); Reset Bounding Box sets it upright, and a mirror maps the
+    box's axis to its image nearest it, so an upright object stays upright but a turned object's
+    unset rows don't mirror with it (a box at 30° goes to −30°: rows at 165° become 105°, where
+    their mirror image is 15°); an angle set on the object mirrors with it;
   - fields a version doesn't know are kept, and a stitch type it doesn't know reads as unset (the
     export's option, else Auto) with a note instead of failing the file (so stitch types are not a
     plain closed list in the file).

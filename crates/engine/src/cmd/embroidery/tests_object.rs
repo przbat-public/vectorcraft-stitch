@@ -233,6 +233,27 @@ fn an_unset_angle_turns_with_its_object() {
     assert_eq!(sewn(&back, Style::Fill).params.unwrap().angle, sewn(&upright, Style::Fill).params.unwrap().angle);
 }
 
+/// A mirror maps an object's box to the image of its axis nearest it: an upright object's unset
+/// rows stay as they were; a turned object's go with its box (a box at 30° goes to −30°, its rows
+/// from 165° to 105°, not to their mirror image, 15°); a set angle mirrors with the object.
+#[test]
+fn a_mirror_turns_unset_rows_with_the_box() {
+    let mut s = blank();
+    let id = shape(&mut s, 20.0, 20.0, 80.0, 40.0, 0.0);
+    let angle = |s: &Session| sewn(&plan_with(s, json!({})), Style::Fill).params.unwrap().angle;
+    let upright = angle(&s);
+    run(&mut s, "object.reflect", json!({"ids": [id], "axis": "vertical"}));
+    assert_eq!(angle(&s), upright, "upright, mirrored: as it was");
+    run(&mut s, "object.rotate", json!({"ids": [id], "angle": 30}));
+    run(&mut s, "object.reflect", json!({"ids": [id], "axis": "vertical"}));
+    assert!((angle(&s) - options::planner_angle(135.0 - 30.0)).abs() < 1e-9, "{}", angle(&s));
+    give(&mut s, id, json!({"fill": {"angle": 165.0}}));
+    run(&mut s, "object.reflect", json!({"ids": [id], "axis": "vertical"}));
+    // Rows are lines: 15° and 195° (the half turn a mirror adds) are the same rows.
+    let rows = (angle(&s) - options::planner_angle(15.0)).rem_euclid(180.0);
+    assert!(rows.min(180.0 - rows) < 1e-9, "a set angle mirrored: {}", angle(&s));
+}
+
 /// The fill angles of every unit the plan sews as a fill area.
 fn fill_angles(plan: &DesignPlan) -> Vec<f64> {
     plan.units.iter().filter(|u| u.sewn() == Some(Style::Fill)).filter_map(|u| u.params).map(|p| p.angle).collect()

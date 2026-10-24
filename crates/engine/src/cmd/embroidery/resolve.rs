@@ -83,8 +83,10 @@ impl<'a> UnitSettings<'a> {
     /// Every layer that doesn't depend on the stitch, the highest first, as one set of options. A
     /// fill angle the object doesn't set turns with the object (the project owner's choice,
     /// 2026-10-23): the export's, else the default rows, turned by the object's own rotation, its
-    /// bounding box's angle (which a mirror leaves as it is). An object set upright is planned as
-    /// before, bit for bit.
+    /// bounding box's angle. A mirror maps that angle to the image of the box's axis nearest it
+    /// (an upright object stays upright; a box turned 30° goes to −30°), so a turned object's unset
+    /// rows don't mirror with it (165° become 105°, not 15°): a set angle does. An object set
+    /// upright is planned as before, bit for bit.
     fn above_the_document(&self) -> Options {
         let mut o = self.object.values.over(self.export);
         if self.object.values.angle.is_none() && self.turn != 0.0 && self.turn.is_finite() {

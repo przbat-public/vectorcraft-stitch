@@ -402,7 +402,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   all move takes its settings along).
 - **One-line hooks the fork keeps in upstream files**, to keep when resolving: `doc/src/node.rs`'s
   `transform_scaled`, after the bounding box's angle (an object's embroidery settings move and turn
-  with it, `Embroidery::transform`), `fileio/load.rs`'s `is_loss` (`super::embroidery::is_loss`), `cmd/swatchlib.rs`'s `libraries` and `library`
+  with it, `Embroidery::transform`), `doc/src/mem.rs`'s document and node estimates (the
+  embroidery settings' memory, `embroidery::setup_bytes` and `object_bytes` in
+  `doc/src/embroidery/mem.rs`; `ALLOC`, `map_bytes` and `json_bytes` made `pub(crate)` for them), `fileio/load.rs`'s `is_loss` (`super::embroidery::is_loss`), `cmd/swatchlib.rs`'s `libraries` and `library`
   (`cmd/embroidery/threadlib.rs`), `i18n/mod.rs`'s `mod tests_embroidery`, `command_sweep.rs`'s
   `mod embroidery_common` and `cases.extend(…)`, and the `pub use` lines in `engine/src/lib.rs`.
 - **The stitch preview's hooks in upstream files**, each marked "VectorCraft Stitch" in a comment

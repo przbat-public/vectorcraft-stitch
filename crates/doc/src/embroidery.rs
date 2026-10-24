@@ -11,9 +11,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use vectorcraft_geom::Point;
 
+mod mem;
 mod part;
 mod setup;
 mod transform;
+
+pub(crate) use mem::{object_bytes, setup_bytes};
 
 pub use part::{PartKey, PartKind, PartPoints, PartSettings, PartValue};
 pub use setup::{FabricPreset, FabricSettings, FabricValues, MachineSettings, StitchValues};

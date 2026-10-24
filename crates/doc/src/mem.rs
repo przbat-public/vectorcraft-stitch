@@ -19,13 +19,12 @@ use serde_json::Value;
 use vectorcraft_color::{Paint, Swatch, SwatchGroup};
 use vectorcraft_geom::{Affine, Anchor, PathData, SubPath};
 
-use crate::embroidery::{Embroidery, EmbroiderySetup, ThreadPalette};
 use crate::live::{BlendSpec, EnvelopeKind};
 use crate::text::{ParaStyle, TextObject, TextRun, TextStyleDef};
 use crate::{Appearance, AppearanceItem, Document, Effect, GraphicStyle, ImageObject, Node, NodeExtras, NodeKind, SavedSelection, Shared};
 
 /// Bookkeeping and rounding a typical allocator adds to each allocation.
-const ALLOC: usize = 16;
+pub(crate) const ALLOC: usize = 16;
 /// An `Arc`'s two reference counts.
 const ARC: usize = 16;
 /// The kinds of node this doesn't break down (meshes, repeats' settings, placed documents…): a
@@ -117,59 +116,10 @@ impl Document {
                 + v.bindings.values().map(|b| entry + 8 + b.iter().map(|s| entry + s.capacity()).sum::<usize>()).sum::<usize>()
         });
         n += shared(&self.unknown, &newer.unknown, map_bytes);
-        n += self.embroidery.as_deref().map_or(0, embroidery_setup_bytes);
+        // VectorCraft Stitch: the document's embroidery settings.
+        n += self.embroidery.as_deref().map_or(0, crate::embroidery::setup_bytes);
         n
     }
-}
-
-/// The document's embroidery settings: their box, and what they keep that a newer version wrote (a
-/// palette, keys and settings this version can't read).
-fn embroidery_setup_bytes(e: &EmbroiderySetup) -> usize {
-    use crate::embroidery::{FabricValues, StitchValues};
-    let palette = match &e.palette {
-        Some(ThreadPalette::Unknown(v)) => json_bytes(v),
-        _ => 0,
-    };
-    let text = |t: &Option<String>| t.as_ref().map_or(0, String::capacity);
-    let stitch = |s: &StitchValues| text(&s.underlay) + map_bytes(&s.extra);
-    let values = |v: &FabricValues| {
-        v.tatami.as_ref().map_or(0, stitch)
-            + v.satin.as_ref().map_or(0, stitch)
-            + text(&v.stabilizer)
-            + text(&v.topping)
-            + text(&v.needle_point)
-            + map_bytes(&v.extra)
-    };
-    let fabric = e.fabric.as_deref().map_or(0, |f| {
-        ALLOC
-            + size_of::<crate::embroidery::FabricSettings>()
-            + values(&f.values)
-            + f.preset.as_ref().map_or(0, |p| p.id.capacity() + values(&p.values) + map_bytes(&p.extra))
-            + map_bytes(&f.extra)
-    });
-    let machine = e.machine.as_deref().map_or(0, |m| ALLOC + size_of::<crate::embroidery::MachineSettings>() + map_bytes(&m.extra));
-    ALLOC + size_of::<EmbroiderySetup>() + palette + fabric + machine + map_bytes(&e.extra) + e.unread.as_ref().map_or(0, json_bytes)
-}
-
-/// What an object's embroidery holds beyond its box: its parts' settings (their boxes, ids and
-/// what a newer version wrote in them), and the keys and values this version can't read.
-fn embroidery_bytes(e: &Embroidery) -> usize {
-    let thread = |t: &crate::embroidery::ThreadRecord| ALLOC + t.catalogue.len() + t.description.len() + t.brand.len() + map_bytes(&t.extra);
-    let run = |r: &crate::embroidery::StitchRun| map_bytes(&r.extra) + r.thread.as_ref().map_or(0, thread);
-    let text = |t: &Option<String>| t.as_ref().map_or(0, String::capacity);
-    let part = |p: &crate::embroidery::PartSettings| {
-        ALLOC
-            + size_of::<crate::embroidery::PartSettings>()
-            + text(&p.stitch)
-            + text(&p.underlay)
-            + map_bytes(&p.extra)
-            + p.points.as_ref().map_or(0, |q| map_bytes(&q.extra))
-    };
-    map_bytes(&e.extra)
-        + e.stitches.as_ref().map_or(0, run)
-        + e.unread.as_ref().map_or(0, json_bytes)
-        + e.fill.as_deref().map_or(0, part)
-        + e.stroke.as_deref().map_or(0, part)
 }
 
 /// One estimate in progress: two documents walked side by side.
@@ -302,8 +252,9 @@ fn node_bytes(n: &Node, other: Option<&Node>) -> usize {
     if let Some(e) = n.extras_box() {
         b += ALLOC + size_of::<NodeExtras>();
         b += boxed(&e.mask) + boxed(&e.graph) + boxed(&e.shaper) + boxed(&e.attrs) + boxed(&e.slice) + boxed(&e.perspective);
-        b += boxed(&e.dimension) + boxed(&e.live_paint_gaps) + boxed(&e.embroidery);
-        b += e.embroidery.as_deref().map_or(0, embroidery_bytes);
+        b += boxed(&e.dimension) + boxed(&e.live_paint_gaps);
+        // VectorCraft Stitch: the object's embroidery settings.
+        b += boxed(&e.embroidery) + e.embroidery.as_deref().map_or(0, crate::embroidery::object_bytes);
         b += e.trace.as_ref().map_or(0, |t| ALLOC + size_of::<Value>() + json_bytes(t));
         b += e.intertwine.as_deref().map_or(0, |a| ALLOC + size_of::<PathData>() + path_bytes(a));
         b += e.objects_on_path.as_deref().map_or(0, |o| {
@@ -375,12 +326,12 @@ fn vec_bytes<T>(v: &Vec<T>) -> usize {
     if v.capacity() == 0 { 0 } else { ALLOC + v.capacity() * size_of::<T>() }
 }
 
-fn map_bytes(m: &serde_json::Map<String, Value>) -> usize {
+pub(crate) fn map_bytes(m: &serde_json::Map<String, Value>) -> usize {
     m.iter().map(|(k, v)| ALLOC + 4 * size_of::<usize>() + k.capacity() + size_of::<Value>() + json_bytes(v)).sum()
 }
 
 /// The heap a JSON value owns.
-fn json_bytes(v: &Value) -> usize {
+pub(crate) fn json_bytes(v: &Value) -> usize {
     match v {
         Value::String(s) => s.capacity(),
         Value::Array(a) => vec_bytes(a) + a.iter().map(json_bytes).sum::<usize>(),
@@ -468,35 +419,6 @@ mod tests {
         // The old layer and its list are the old version's own; the new one holds three new nodes.
         assert!(kept < 4096, "{kept}");
         assert!(added > kept + 3 * 300, "{added} for three new rectangles");
-    }
-
-    /// The document's embroidery settings count, with what a newer version wrote in them.
-    #[test]
-    fn embroidery_settings_count() {
-        let before = doc_with_rects(1);
-        let mut after = before.clone();
-        let same = after.retained_bytes(&before);
-        let mut setup = EmbroiderySetup::default();
-        setup.extra.insert("notes".into(), Value::String("x".repeat(10_000)));
-        after.embroidery = Some(Box::new(setup));
-        assert!(after.retained_bytes(&before) > same + 10_000);
-    }
-
-    /// The settings an object keeps for its parts count, one box each and what is in them.
-    #[test]
-    fn embroidery_part_settings_count() {
-        use crate::embroidery::{Embroidery, PartKey, PartKind, PartValue};
-        let before = doc_with_rects(1);
-        let mut after = before.clone();
-        let same = after.retained_bytes(&before);
-        let id = after.layers[0].children().and_then(|c| c.first()).map(|n| n.id).unwrap();
-        let mut e = Embroidery::default();
-        for kind in PartKind::ALL {
-            e.edit_part(kind, |p| p.set(PartKey::Stitch, Some(PartValue::Id("x".repeat(1000)))));
-        }
-        after.node_mut(id).unwrap().extras_mut().embroidery = Some(Box::new(e));
-        let part = size_of::<crate::embroidery::PartSettings>();
-        assert!(after.retained_bytes(&before) >= same + 2 * (part + 1000), "{} against {same}", after.retained_bytes(&before));
     }
 
     #[test]

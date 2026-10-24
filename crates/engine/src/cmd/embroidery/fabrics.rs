@@ -16,8 +16,20 @@ use crate::{EngineError, Result, Session};
 /// The undo step `embroidery.applyFabric` makes.
 pub(crate) const APPLY: &str = "Apply Embroidery Fabric to Objects";
 
-/// The part keys a fabric sets, which `embroidery.applyFabric` unsets on objects by default.
+/// The part keys a fabric sets, which `embroidery.applyFabric` unsets on objects by default: on a
+/// part, those [`fabric_keys`] gives it.
 pub(crate) const FABRIC_KEYS: [PartKey; 4] = [PartKey::Pull, PartKey::Spacing, PartKey::Length, PartKey::Underlay];
+
+/// The keys a fabric gives part `kind`: a fill is sewn as tatami (the fabric's pull, rows' spacing,
+/// stitch length and underlay); a stroke as a satin column or a running line, which take its satin
+/// pull, spacing and underlay (a running line uses none of them) but no stitch length: no fabric
+/// gives a running line's or a satin's.
+pub(crate) fn fabric_keys(kind: PartKind) -> &'static [PartKey] {
+    match kind {
+        PartKind::Fill => &FABRIC_KEYS,
+        PartKind::Stroke => &[PartKey::Pull, PartKey::Spacing, PartKey::Underlay],
+    }
+}
 
 /// A preset's values for one kind of stitch, as a document keeps them.
 fn stitch_values(p: &StitchPreset) -> StitchValues {
@@ -130,8 +142,9 @@ fn every_object(doc: &Document) -> Vec<NodeId> {
     takers(doc, &layers).0
 }
 
-/// `embroidery.applyFabric`: the objects' own values of the fabric's keys unset, on both parts, on
-/// the objects given, else the selected ones, else every object of the document.
+/// `embroidery.applyFabric`: the objects' own values of the fabric's keys unset, on each part those
+/// the fabric gives it ([`fabric_keys`]), on the objects given, else the selected ones, else every
+/// object of the document.
 pub(super) fn apply_fabric(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.applyFabric";
     let o = object(p, C)?;
@@ -167,7 +180,7 @@ pub(super) fn apply_fabric(s: &mut Session, p: &Value) -> Result<Value> {
             for kind in [PartKind::Fill, PartKind::Stroke] {
                 if e.part(kind).is_some() {
                     e.edit_part(kind, |part| {
-                        for key in &keys {
+                        for key in keys.iter().filter(|k| fabric_keys(kind).contains(k)) {
                             part.set(*key, None);
                         }
                     });
@@ -184,8 +197,9 @@ pub(super) fn apply_fabric(s: &mut Session, p: &Value) -> Result<Value> {
     }))
 }
 
-/// How many objects of `doc` set each fabric key themselves, on either part: what Document Setup's
-/// bar counts (`embroidery.setup`'s and `embroidery.settings`' `overrides`).
+/// How many objects of `doc` set each fabric key themselves, on a part the fabric gives it
+/// ([`fabric_keys`]): what Document Setup's bar counts (`embroidery.setup`'s and
+/// `embroidery.settings`' `overrides`).
 pub(crate) fn overrides(doc: &Document) -> Value {
     let objects = every_object(doc);
     let count = |key: PartKey| {
@@ -193,10 +207,11 @@ pub(crate) fn overrides(doc: &Document) -> Value {
             .iter()
             .filter_map(|id| doc.node(*id))
             .filter(|n| {
-                n.extras()
-                    .embroidery
-                    .as_deref()
-                    .is_some_and(|e| [PartKind::Fill, PartKind::Stroke].iter().any(|k| e.part(*k).is_some_and(|p| p.get(key).is_some())))
+                n.extras().embroidery.as_deref().is_some_and(|e| {
+                    [PartKind::Fill, PartKind::Stroke]
+                        .into_iter()
+                        .any(|k| fabric_keys(k).contains(&key) && e.part(k).is_some_and(|p| p.get(key).is_some()))
+                })
             })
             .count()
     };

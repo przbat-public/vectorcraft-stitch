@@ -156,6 +156,21 @@ fn objects_own_fabric_values_are_counted_and_applied_away() {
     assert!(e.contains("embroidery.reset"), "{e}");
 }
 
+/// A stroke's stitch length is no fabric's value (running lines and satins take none from it): it
+/// is neither counted as overriding the fabric nor unset by applying it; a stroke's pull is.
+#[test]
+fn a_strokes_length_is_no_fabric_value() {
+    let mut s = blank();
+    let a = rect(&mut s, 20.0);
+    run(&mut s, "embroidery.set", json!({"ids": [a], "part": "stroke", "stitch": "running", "length": 1.5, "pull": 0.3}));
+    assert_eq!(run(&mut s, "embroidery.settings", json!({}))["overrides"], json!({"pull": 1, "spacing": 0, "length": 0, "underlay": 0}));
+    run(&mut s, "embroidery.applyFabric", json!({}));
+    let info = run(&mut s, "embroidery.info", json!({"ids": [a]}));
+    let stroke = &info["stroke"]["settings"];
+    // The pull unset: a running line takes none of the fabric's values, so the default.
+    assert_eq!((&stroke["length"]["value"], &stroke["pull"]["source"]), (&json!(1.5), &json!("default")));
+}
+
 /// Applying the fabric to the whole document copies only the object it changes: every other object
 /// stays shared with the step before (so the undo history doesn't hold the document twice), and
 /// when nothing changes no step is taken and nothing is copied.

@@ -209,9 +209,11 @@ Setup › Embroidery comes next).
   against, `changed`, and `null` restores); the colour stays, being no preset's value; the same
   preset again restores all of its values; `{fabric: null}` removes it. `{fabric: {tatami:
   {length: 3.5}}}` changes one value. Objects with values of their own keep them:
-  `embroidery.applyFabric {ids?, keys?}` unsets the objects' own pull, spacing, length and
-  underlay (the selection's, or with nothing selected every object's), so that they follow the
-  fabric again.
+  `embroidery.applyFabric {ids?, keys?}` unsets the objects' own values of the keys a fabric gives
+  each part (a fill's pull, spacing, length and underlay; a stroke's pull, spacing and underlay,
+  never its stitch length, which no fabric gives a satin or a running line) on the selection, or
+  with nothing selected on every object, so that they follow the fabric again; `overrides` counts
+  the same keys.
 - **The presets** are Wilcom's eight auto fabrics, under words of our own (`embroidery.fabrics`
   lists them, each value with the publication it rests on, how it was worked out, or why it is an
   estimate; `crates/stitch/src/fabric.rs` cites every source). A dash leaves the built-in value.

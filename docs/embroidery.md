@@ -234,6 +234,12 @@ Setup › Embroidery comes next).
   from one family of software: Wilcom's own help and BERNINA's presets, and BERNINA's embroidery
   software is Wilcom's. No independent source confirms them: sew a test on the fabric. The rows'
   base spacing (0.38 mm) is the one value two families give (Wilcom and Melco).
+
+  **Silk is an estimate.** Its stitch values are BERNINA's light woven class's (F6), and no source
+  says that silk is that class (the project owner's choice, 2026-10-24: kept, each marked so):
+  every silk stitch value's first basis says so, and `embroidery.fabrics` lists them among its
+  `estimates`. Where the class gives two values by a column's width, the one nearer the medium
+  woven class's (cotton's) is taken: narrow columns' pull, wide columns' spacing.
 - **A fabric's tatami rows are given for 40 wt thread** and scale with the document's thread
   weight as the built-in spacing does (`resolved` reports them for the thread in use); a satin's
   spacing is a percentage of the spacing its width picks. A value typed on an object or given to

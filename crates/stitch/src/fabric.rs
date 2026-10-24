@@ -240,6 +240,9 @@ const TATAMI_LAYER: &[Basis] =
 const SATIN_SAME_SHARE: &[Basis] =
     &[Basis::Derived(&BERNINA_PRESETS, "the class's satin spacing is the medium woven class's (90 % for narrow and wide columns)")];
 const BERNINA_LENGTH: &[Basis] = &[Basis::Published(&BERNINA_PRESETS)];
+/// Why silk is sewn as BERNINA's light woven class: no source says so (the project owner's choice,
+/// 2026-10-24: each silk stitch value says it first).
+const SILK_AS_LIGHT_WOVEN: &str = "silk taken as BERNINA's light woven class (F6); no source maps silk to a class";
 const SULKY: &[Basis] = &[Basis::Published(&SULKY_CHART)];
 
 // ---------------------------------------------------------------- the presets
@@ -251,7 +254,8 @@ pub const DEFAULT_FABRIC: &str = "cotton";
 pub const FABRICS: [Fabric; 8] = [
     // Wilcom's "cotton (light woven)": Wilcom's guidance for cotton and BERNINA's medium woven class
     // give the planner's built-in values. BERNINA's light woven class (F6) is set looser (0.5 mm
-    // rows of 4.2 mm, 0.4 mm of tatami pull): the silk preset takes it.
+    // rows of 4.2 mm, 0.4 mm of tatami pull): the silk preset takes it, as an estimate (no source
+    // maps a fabric to a class; the default must keep the built-in values).
     Fabric {
         id: "cotton",
         label: "Cotton (light woven)",
@@ -418,45 +422,70 @@ pub const FABRICS: [Fabric; 8] = [
             basis: &[Basis::Estimate("no published value: between Melco's polo, up to 1.0 mm, and its towel, from 0.8 mm")],
         }),
     },
-    // Wilcom's "satin / silk": BERNINA's light woven class (F6), set looser.
+    // Wilcom's "satin / silk", taken as BERNINA's light woven class (F6), set looser: an estimate,
+    // since no source maps silk to a class ([`SILK_AS_LIGHT_WOVEN`] first in each stitch value).
     Fabric {
         id: "silk",
         label: "Silk or satin fabric",
         tatami: StitchPreset {
             pull: Some(Sourced {
                 value: PULL,
-                basis: &[Basis::Estimate(
-                    "BERNINA's light woven class gives 0.4, twice its medium woven class's and against the rule its other classes keep (stabler fabrics, less pull); the medium woven class's 0.2 is taken",
-                )],
+                basis: &[
+                    Basis::Estimate(SILK_AS_LIGHT_WOVEN),
+                    Basis::Estimate(
+                        "BERNINA's light woven class gives 0.4, twice its medium woven class's and against the rule its other classes keep (stabler fabrics, less pull); the medium woven class's 0.2 is taken",
+                    ),
+                ],
             }),
             spacing: Some(Sourced {
                 value: FILL_SPACING * (BERNINA_SPACING_LIGHT_WOVEN / BERNINA_SPACING_MEDIUM_WOVEN),
-                basis: &[Basis::Derived(
-                    &BERNINA_PRESETS,
-                    "the light woven class's 0.5 mm rows against the medium woven class's 0.4: 125 % of 0.38 mm",
-                )],
+                basis: &[
+                    Basis::Estimate(SILK_AS_LIGHT_WOVEN),
+                    Basis::Derived(&BERNINA_PRESETS, "the light woven class's 0.5 mm rows against the medium woven class's 0.4: 125 % of 0.38 mm"),
+                ],
             }),
             spacing_percent: None,
-            length: Some(Sourced { value: BERNINA_LENGTH_LIGHT_WOVEN, basis: BERNINA_LENGTH }),
+            length: Some(Sourced {
+                value: BERNINA_LENGTH_LIGHT_WOVEN,
+                basis: &[Basis::Estimate(SILK_AS_LIGHT_WOVEN), Basis::Derived(&BERNINA_PRESETS, "the light woven class's 4.2 mm")],
+            }),
             underlay: Some(Sourced {
                 value: Underlay::Auto,
-                basis: &[Basis::Estimate(
-                    "BERNINA's light woven class sews a sparse tatami layer (rows 5 mm apart) under every fill; the planner's tatami layer is denser, so its own rule is kept",
-                )],
+                basis: &[
+                    Basis::Estimate(SILK_AS_LIGHT_WOVEN),
+                    Basis::Estimate(
+                        "BERNINA's light woven class sews a sparse tatami layer (rows 5 mm apart) under every fill; the planner's tatami layer is denser, so its own rule is kept",
+                    ),
+                ],
             }),
         },
         satin: StitchPreset {
             pull: Some(Sourced {
                 value: BERNINA_SATIN_PULL_LIGHT_WOVEN,
-                basis: &[Basis::Derived(&BERNINA_PRESETS, "narrow columns' 0.2 (wide ones 0.25)")],
+                basis: &[
+                    Basis::Estimate(SILK_AS_LIGHT_WOVEN),
+                    Basis::Derived(
+                        &BERNINA_PRESETS,
+                        "the light woven class's narrow columns' 0.2 (wide ones 0.25): of its two values the one nearer its medium woven class's (0.2), so that one value for every width moves no further from the default than the class asks",
+                    ),
+                ],
             }),
             spacing: None,
             spacing_percent: Some(Sourced {
                 value: AS_PICKED * (BERNINA_SATIN_SPACING_LIGHT_WOVEN / BERNINA_SATIN_SPACING_MEDIUM_WOVEN),
-                basis: &[Basis::Derived(&BERNINA_PRESETS, "wide columns at 100 % against the medium woven class's 90 %: 111 %")],
+                basis: &[
+                    Basis::Estimate(SILK_AS_LIGHT_WOVEN),
+                    Basis::Derived(
+                        &BERNINA_PRESETS,
+                        "the light woven class's wide columns at 100 % (narrow ones 108 %) against its medium woven class's 90 %: 111 %; of its two values the one nearer the medium woven class's, as for the pull",
+                    ),
+                ],
             }),
             length: None,
-            underlay: Some(Sourced { value: Underlay::Auto, basis: AUTO_UNDERLAY }),
+            underlay: Some(Sourced {
+                value: Underlay::Auto,
+                basis: &[Basis::Estimate(SILK_AS_LIGHT_WOVEN), Basis::Estimate("the planner's own rule: under a satin by its width")],
+            }),
         },
         stabilizer: Some(Sourced { value: "adhesiveTearAway", basis: SULKY }),
         topping: Some(Sourced { value: "none", basis: SULKY }),
@@ -589,5 +618,18 @@ mod tests {
         assert_eq!(fabric("fleece").and_then(|f| f.tatami.spacing).map(|s| (s.value * 1e4).round() / 1e4), Some(0.3325));
         assert_eq!(fabric("pique").and_then(|f| f.thickness).map(|s| (s.value * 100.0).round() / 100.0), Some(0.8));
         assert!(fabric("felt").is_none());
+    }
+
+    /// Silk's stitch values are an estimate first: no source maps silk to the class they come from.
+    #[test]
+    fn silks_stitch_values_are_estimates() {
+        let silk = fabric("silk").unwrap();
+        let mut bases: Vec<&[Basis]> = Vec::new();
+        for p in [&silk.tatami, &silk.satin] {
+            bases.extend([p.pull, p.spacing, p.spacing_percent, p.length].into_iter().flatten().map(|v| v.basis));
+            bases.extend(p.underlay.map(|u| u.basis));
+        }
+        assert_eq!(bases.len(), 7);
+        assert!(bases.iter().all(|b| b.first() == Some(&Basis::Estimate(SILK_AS_LIGHT_WOVEN))), "{bases:?}");
     }
 }

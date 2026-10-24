@@ -60,19 +60,16 @@ pub(super) fn export(s: &mut Session, p: &Value) -> Result<Value> {
     let f = writable("document.export", str_param(p, "format"), path)?;
     let expanded = expand_presets(s, "document.export", p)?;
     let p = with_black_output(s, &expanded);
-    let out = {
-        let (doc, display_doc_title) = source(s, f, &p, "document.export")?;
-        let doc = &*doc;
-        let mut q = p.clone();
-        if f.id == "pdf"
-            && let Some(o) = q.as_object_mut()
-        {
-            o.insert("_displayDocTitle".into(), json!(display_doc_title));
-        }
-        let enc = encode_all(doc, f.id, &q)?;
-        write_encoded(path, &default_name(doc, f.extensions[0]), doc, &enc, json!({ "format": f.id, "warnings": enc.warnings }))?
-    };
-    Ok(out)
+    let (doc, display_doc_title) = source(s, f, &p, "document.export")?;
+    let doc = &*doc;
+    let mut q = p.clone();
+    if f.id == "pdf"
+        && let Some(o) = q.as_object_mut()
+    {
+        o.insert("_displayDocTitle".into(), json!(display_doc_title));
+    }
+    let enc = encode_all(doc, f.id, &q)?;
+    write_encoded(path, &default_name(doc, f.extensions[0]), doc, &enc, json!({ "format": f.id, "warnings": enc.warnings }))
 }
 
 /// The document an export of `st` writes: the whole document, or with `selectedOnly` just the

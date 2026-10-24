@@ -87,14 +87,14 @@ a5ff05ef476f74540b5d4696b7dc99189a2aa7fecf745dc6b49f8aaf0e28e0b0  clip-groups.t0
 52f4da01db5bc485a51eccf305638f428c847ba0ed34911a04d0c1a35b4d3083  clip-groups.pec
 36978e02311698098b63d2760f90a7f414d56349a4a54d3cb412a45078e095f1  clip-groups.jef
 cde69313d5b4d2bfa3d96d4a03e174d067e467fd52e5bf29f98f0551814d9cbc  clip-groups.vp3
-f8b68f2f053586b5ba1157d727992e7da6d292fba40a8dc1f16a7c31bd272d53  symbols.dst
-46ac4ca5c04e5ed49f57462bfd4708c747788fc7488988f38554ad93fe4240db  symbols.tap
-46ac4ca5c04e5ed49f57462bfd4708c747788fc7488988f38554ad93fe4240db  symbols.t01
-bbb4059dc3f24cd91aad3a7c836b9da1c5c39c88f761c362cc2f85e0e3eaf723  symbols.exp
-3c44b14027f8903cd455cc0f0ae41a05b0ace683181d5fc3d49b260d3442c3a3  symbols.pes
-0b56837c1cfa6afd0c196bfa2f55371916c2c7c4eb69e98d06b45612137f439d  symbols.pec
-f0613950519a1d81612a27ad31cb9e075d37e38806032c768db650dbeff17b79  symbols.jef
-21f774fa4834cfe69df807dd17dd7950992133aad84cd9a6b6aab97a91aac539  symbols.vp3
+3f3b83a0b1f4193b2199ac29d05ffb1d1ec97564960681dddf6cf4de11fd2179  symbols.dst
+6863972d02507e26c308013c6b569a2269fac6b0efe1ddd7fd37c1d7a30dc706  symbols.tap
+6863972d02507e26c308013c6b569a2269fac6b0efe1ddd7fd37c1d7a30dc706  symbols.t01
+962f2c9cc7dc263b69045f9aeb914ec40db87c85c64151170c8bf42195850564  symbols.exp
+cfe9991453a50c6a15eff454b1ffb3b6bf3fd71cf1a57ddcc5f51f29d4c75bd8  symbols.pes
+81faf61c9dfe758350d4b47c82e2b74e9e5ae8439f0c573a1b823539acf26b57  symbols.pec
+3718226c628e11765fa64f7a5a440c531b63e1ea8088d306a0d5b7c373ae5251  symbols.jef
+c3ef5c2eec96164fec5adba8292acb894213d5d456b27e1476dfa1f31de8a7c0  symbols.vp3
 acc376edb11b4c6fda9bc7a66d9f5364395b3091ba9675c511123d801eb76ace  trim-after.dst
 379c27976c8dd221c00526da6fcb7cefbfb04c74d07bf14be68cab0ee933427e  trim-after.tap
 379c27976c8dd221c00526da6fcb7cefbfb04c74d07bf14be68cab0ee933427e  trim-after.t01
@@ -276,9 +276,9 @@ a5d1469fdd76d6e7bf8fef8639ea3951796726bc0cc0b287a903b98cff897202  compound-path-
 0a272050ed47222857ff8740cc57ec24c6a4fc289ba3ce30d66c25bd109d086d  clip-groups.pes  58 5 21 37 23
 f9a66e5486b9f056151931e79c3c8a86da828c6f00d7fc4064872f8fd2b5d2fb  clip-groups.pec  58 5 21 37 23
 3b5d9ab166760d963e13d8555da6a36b4a2b8c69cc73e7f320bdc65a21b28682  clip-groups.jef  37 33 59 45 1
-a8b7e0c436518aa8abf5e2b4332787ab3400a7d3ace5eaaaac9346c2a441f673  symbols.pes  5 21
-1ca563ba453f1302579577ff09e43898c89b6914fe7ff28d9dd4e39ce5a027dd  symbols.pec  5 21
-05a79caf4eaac28650ba3e3e8db9e64ebf18d3df1e3df1a4777d9c4ae745b1e0  symbols.jef  33 59
+59edd2e156ac66b6a0e5beff6bc98b84bb83ad0b34f11217f4557b82695f9f3f  symbols.pes  5 21
+407df9dda759e2168959193cf472bf17e11d99d7e82c3215f5b5e0ecfb69c7bf  symbols.pec  5 21
+0facfa57dd2b8e5721d9ba1e4e9699a684bf1818f1295f06a51181ba121db107  symbols.jef  33 59
 d4c08aa21a81f129109f3c3fbf56edcd72083dc369a054a70d1430be174b6ea7  trim-after.pes  5
 4fb93b5e7931dedd01907de38feb0e6f4403aa75fd2aa9204360251ce2d6cf40  trim-after.pec  5
 e9facc319b3b2ac109fe165ef49ccea0de647ef84aeda3068d23b921d8b09ecc  trim-after.jef  33
@@ -380,14 +380,14 @@ clip-groups.pes  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 
 clip-groups.pec  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1192
 clip-groups.jef  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1192
 clip-groups.vp3  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1192
-symbols.dst  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.42  cells 558
-symbols.tap  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.42  cells 558
-symbols.t01  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.42  cells 558
-symbols.exp  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.42  cells 558
-symbols.pes  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.36  cells 559
-symbols.pec  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.36  cells 559
-symbols.jef  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.67  shortest 0.42  cells 562
-symbols.vp3  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.67  shortest 0.42  cells 562
+symbols.dst  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.41  cells 560
+symbols.tap  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.41  cells 560
+symbols.t01  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.41  cells 560
+symbols.exp  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.41  cells 560
+symbols.pes  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.42  cells 561
+symbols.pec  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.42  cells 561
+symbols.jef  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.42  cells 562
+symbols.vp3  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.42  cells 562
 trim-after.dst  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.53  shortest 0.50  cells 144
 trim-after.tap  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.53  shortest 0.50  cells 144
 trim-after.t01  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.53  shortest 0.50  cells 144
@@ -1215,7 +1215,7 @@ fn clip_groups() -> Session {
 }
 
 /// A symbol (a square under a satin ring) and three instances of it: where it was made, moved, and
-/// rotated and scaled.
+/// rotated and scaled (its square's rows, at no angle of its own, turned with it).
 fn symbols() -> Session {
     let mut s = blank(300.0, 300.0);
     let square = rect(&mut s, "#cc2222", 20.0, 20.0, 30.0, 30.0);

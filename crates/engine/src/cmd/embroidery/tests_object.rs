@@ -207,3 +207,24 @@ fn an_entry_point_starts_the_part() {
         assert!(close(start, (corner[0], corner[1])), "{corner:?}: {start:?}");
     }
 }
+
+/// A fill angle the object doesn't set turns with the object, from its bounding box's angle: the
+/// default rows and an export's angle alike; a set angle turns as it is stored; turned back
+/// upright, the object is planned as before, bit for bit.
+#[test]
+fn an_unset_angle_turns_with_its_object() {
+    let mut s = blank();
+    let id = shape(&mut s, 20.0, 20.0, 80.0, 40.0, 0.0);
+    let angle = |s: &Session, opts: Value| sewn(&plan_with(s, opts), Style::Fill).params.unwrap().angle;
+    let upright = plan_with(&s, json!({}));
+    run(&mut s, "object.rotate", json!({"ids": [id], "angle": 30}));
+    let close = |a: f64, b: f64| (a - b).abs() < 1e-9;
+    assert!(close(angle(&s, json!({})), options::planner_angle(135.0 + 30.0)), "the default rows turned");
+    assert!(close(angle(&s, json!({"angle": 100})), options::planner_angle(100.0 + 30.0)), "the export's turned");
+    give(&mut s, id, json!({"fill": {"angle": 10.0}}));
+    assert!(close(angle(&s, json!({"angle": 100})), options::planner_angle(10.0)), "a set angle as it is stored");
+    give(&mut s, id, json!({}));
+    run(&mut s, "object.rotate", json!({"ids": [id], "angle": -30}));
+    let back = plan_with(&s, json!({}));
+    assert_eq!(sewn(&back, Style::Fill).params.unwrap().angle, sewn(&upright, Style::Fill).params.unwrap().angle);
+}

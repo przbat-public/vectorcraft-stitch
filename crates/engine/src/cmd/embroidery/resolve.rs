@@ -31,12 +31,12 @@ use vectorcraft_doc::{Document, MAX_COORD};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_stitch::plan::{
-    DENSITY_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PULL_PERCENT_RANGE, PULL_RANGE, PUSH_RANGE, Params,
-    SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay, thread_scale,
+    DENSITY_RANGE, FILL_ANGLE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PULL_PERCENT_RANGE, PULL_RANGE,
+    PUSH_RANGE, Params, SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay, thread_scale,
 };
 
 use super::Options;
-use super::options::MAX_EXPAND;
+use super::options::{MAX_EXPAND, planner_angle};
 use super::stats::{FABRIC_THICKNESS_RANGE, SPEED_RANGE};
 
 /// The column width given for what is not a satin column: fills and running lines have none.
@@ -64,20 +64,32 @@ pub(crate) const OBJECT_SETTINGS_OUT_OF_RANGE: &str =
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct UnitSettings<'a> {
     object: PartLayer,
+    /// How far the object is turned (degrees counter-clockwise: its bounding box's angle).
+    turn: f64,
     export: &'a Options,
     doc: &'a DocLayer,
 }
 
 impl<'a> UnitSettings<'a> {
-    /// The settings of a unit planned with its object's `object` over the call's options `export`
-    /// over the document's `doc`.
-    pub(crate) fn new(object: PartLayer, export: &'a Options, doc: &'a DocLayer) -> Self {
-        Self { object, export, doc }
+    /// The settings of a unit planned with its object's `object` (the object turned by `turn`
+    /// degrees) over the call's options `export` over the document's `doc`.
+    pub(crate) fn new(object: PartLayer, turn: f64, export: &'a Options, doc: &'a DocLayer) -> Self {
+        Self { object, turn, export, doc }
     }
 
-    /// Every layer that doesn't depend on the stitch, the highest first, as one set of options.
+    /// Every layer that doesn't depend on the stitch, the highest first, as one set of options. A
+    /// fill angle the object doesn't set turns with the object (the project owner's choice,
+    /// 2026-10-23): the export's, else the default rows, turned by the object's own rotation, its
+    /// bounding box's angle (which a mirror leaves as it is). An object set upright is planned as
+    /// before, bit for bit.
     fn above_the_document(&self) -> Options {
-        self.object.values.over(self.export)
+        let mut o = self.object.values.over(self.export);
+        if self.object.values.angle.is_none() && self.turn != 0.0 && self.turn.is_finite() {
+            // The default rows, as the commands count angles (135° on the page).
+            let default = planner_angle(FILL_ANGLE);
+            o.angle = Some(o.angle.unwrap_or(default) + self.turn);
+        }
+        o
     }
 
     /// The style the settings force, `None` for the rule (Auto): the object's `stitch`, else the

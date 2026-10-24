@@ -60,7 +60,7 @@ control channel use it). Every writable format's options are listed by `document
 | `stitch` | `stitchStyle` | `auto` | `auto` fills fills (their narrow parts as satin columns, see `narrowAsSatin`), satins strokes 1 mm and wider, runs narrower ones; `tatami` (or `fill`), `satin` and `running` force one style (`tatami` on a stroke fills the area the stroke paints, at its width, caps and joins; on a fill it sews all of it as tatami; `satin` on a fill, which has no width to sew across, fills it as `auto` does, its narrow parts as satin columns; `running` on a fill follows its outline) |
 | `spacing` | `density` | 0.38 mm in fills; satin by width | distance between threads: between a fill's rows; between two penetrations on one rail of a satin column (peak to peak), its crossings lying half that apart. Left out, a satin column picks it by its width (*auto spacing*: 0.5 mm under 2 mm wide, 0.45 under 4, 0.4 under 6, 0.37 wider; estimates), and both follow `threadWeight`; given, it is used as it is. 0.05 to 5 mm |
 | `length` | `stitchLength` | 4 mm in fills, 2.5 mm in running lines | the longest stitch of a running line or a fill row; 0.2 to 12 mm |
-| `angle` | `stitchAngle` | 135° | the direction a fill's rows run, degrees counter-clockwise on the page as every angle in VectorCraft (0: left to right, 90: bottom to top); the default runs from the top left to the bottom right; any angle |
+| `angle` | `stitchAngle` | 135° | the direction a fill's rows run, degrees counter-clockwise on the page as every angle in VectorCraft (0: left to right, 90: bottom to top); the default runs from the top left to the bottom right; on an object turned (its bounding box's angle) the rows turn with it, unless the object sets an angle of its own (which turns as it is stored); any angle |
 | `pull` | `pullCompensation` | 0.2 mm | pull compensation: how much farther the stitches reach at each side so the fabric's pull leaves no gap: each rail of a satin column, each end of a fill's rows. One number for both sides, or two: `[left, right]` of a satin as its path runs, `[start, end]` of a fill's rows along their direction; 0 to 2 mm a side |
 | `pullPercent` | `pullCompensationPercent` | 0 | pull compensation that grows with the stitch, on top of `pull`: percent of a satin column's width, or of a fill row's length, added at each side (at most 2 mm a side with the fixed value). One number or two, as `pull`; 0 to 50 % |
 | `push` | `pushCompensation` | 0 mm | push compensation: how much shorter an open satin column is sewn at each end, since sewing pushes the fabric out there; one number or two (`[start, end]` as the path is drawn). A fill's narrow part sewn as satin is shortened only at an end where the shape ends, not where it meets the rest of the fill. A column keeps at least half its length; 0 to 5 mm an end |
@@ -1326,7 +1326,9 @@ objects join) is resolved once a plan (`DesignSettings`).
   - allowed on type (for lettering), on groups (a trim after them, later branching) and on a live
     trace (digitizing from an image), not only on paths;
   - points (entry and exit, later satin rails and angle lines) in document coordinates, moved with
-    the object, and angles turned with it;
+    the object, and angles turned with it; a fill angle the object doesn't set turns with the
+    object too, by its bounding box's angle (the project owner's choice, 2026-10-23: rows stay
+    the same across a turned shape), which a mirror and Reset Bounding Box leave out;
   - fields a version doesn't know are kept, and a stitch type it doesn't know reads as unset (the
     export's option, else Auto) with a note instead of failing the file (so stitch types are not a
     plain closed list in the file).

@@ -10,10 +10,13 @@ use super::runs::{Runs, Travel};
 use super::{MAX_STITCHES, MIN_PUSHED, Params, UNDERLAY_STITCH, Underlay};
 use crate::{SAME_POINT, Stitch};
 
-/// Satin underlay by column width (millimetres): from this width an edge run instead of a centre
-/// run, from this one an edge run and a zigzag; and the zigzag's spacing. Estimates.
+/// The satin column width (millimetres) from which its automatic underlay is an edge run instead
+/// of a centre run. An estimate.
 pub const SATIN_EDGE_UNDERLAY: f64 = 2.0;
+/// The satin column width (millimetres) from which its automatic underlay is an edge run and a
+/// zigzag. An estimate.
 pub const SATIN_ZIGZAG_UNDERLAY: f64 = 4.5;
+/// The zigzag underlay's spacing (millimetres). An estimate.
 pub(super) const ZIGZAG_UNDERLAY_SPACING: f64 = 2.0;
 /// How far inside the column's sides the edge underlay runs: this share of the column's width, at
 /// most [`UNDERLAY_INSET_MAX`] millimetres, so the underlay doesn't show at the edges. Estimates.

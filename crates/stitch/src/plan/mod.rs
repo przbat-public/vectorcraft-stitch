@@ -157,7 +157,10 @@ const SATIN_WIDTH: f64 = 3.0;
 /// another ([`Params::spacing_scale`]): all of it.
 const SPACING_SCALE: f64 = 1.0;
 /// Percent in a whole: a percentage over this is a share.
-const PERCENT: f64 = 100.0;
+pub const PERCENT: f64 = 100.0;
+/// The share of the spacing picked by a satin column's width that leaves it as picked, in percent:
+/// all of it ([`SPACING_SCALE`]), what a satin spacing percent of no fabric is.
+pub const SPACING_PERCENT_AS_PICKED: f64 = SPACING_SCALE * PERCENT;
 /// The underlay's own stitch length (millimetres): short, to hold the fabric still. An estimate.
 const UNDERLAY_STITCH: f64 = 2.0;
 /// The most runs one shape may produce (a guard against absurd parameters).
@@ -345,7 +348,8 @@ pub const MIN_STITCH_RANGE: (f64, f64) = (0.05, 3.0);
 pub const MAX_SATIN_STITCH_RANGE: (f64, f64) = (2.0, 12.0);
 /// A share of a satin column's spacing picked by its width, percent: from half (twice as dense) to
 /// twice (half as dense), within which every width, at every thread weight, keeps a spacing in
-/// [`DENSITY_RANGE`] (0.19 to 2.0 mm). Bounds on what is asked.
+/// [`DENSITY_RANGE`] (from 0.096 mm, half the narrowest picked spacing at 150 wt, to 2.0 mm). Bounds
+/// on what is asked.
 pub const SPACING_PERCENT_RANGE: (f64, f64) = (50.0, 200.0);
 
 impl Default for Params {

@@ -22,7 +22,7 @@
 //! The default fabric, [`DEFAULT_FABRIC`], equals the planner's built-in values exactly, so that a
 //! document set to it sews what a document without a fabric sews, bit for bit.
 
-use crate::plan::{FILL_SPACING, FILL_STITCH, PULL, Underlay};
+use crate::plan::{FILL_SPACING, FILL_STITCH, PULL, SPACING_PERCENT_AS_PICKED, Underlay};
 
 /// Who publishes a value, and the family of software or the maker it belongs to.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -232,9 +232,6 @@ const fn melco_thickness(range: (f64, f64)) -> f64 {
     ((range.0 + range.1) / 2.0 + MELCO_MINIMUM_UNDER) / MELCO_POINTS_PER_MM
 }
 
-/// The percent of the planner's own satin spacing (by width) that leaves it as it is.
-const AS_PICKED: f64 = 100.0;
-
 /// The thickness of fleece with its stabiliser, millimetres: no published value; between Melco's
 /// polo (up to 1.0 mm) and its towel (from 0.8 mm). An estimate.
 const FLEECE_THICKNESS: f64 = 1.0;
@@ -251,7 +248,7 @@ const AUTO_UNDERLAY: &[Basis] =
 const COTTON_TATAMI_UNDERLAY: &[Basis] = &[Basis::Estimate(
     "the planner's own rule (an edge run and, from 10 mm across, sparse tatami), kept so that the default sews as a document without a fabric; BERNINA's medium woven class (F7) sews an edge run and a tatami layer under every fill",
 )];
-const AS_PICKED_SATIN: &[Basis] =
+const SATIN_AS_PICKED: &[Basis] =
     &[Basis::Estimate("the planner's own spacing by a column's width; the classes' percentages are compared with the medium woven class's 90 %")];
 /// What a fabric taken as one of BERNINA's classes rests on for its tatami rows' spacing and stitch
 /// length and its tatami underlay, each naming the class.
@@ -330,7 +327,7 @@ pub const FABRICS: [Fabric; 8] = [
         satin: StitchPreset {
             pull: Some(Sourced { value: PULL, basis: COTTON_PULL }),
             spacing: None,
-            spacing_percent: Some(Sourced { value: AS_PICKED, basis: AS_PICKED_SATIN }),
+            spacing_percent: Some(Sourced { value: SPACING_PERCENT_AS_PICKED, basis: SATIN_AS_PICKED }),
             length: None,
             underlay: Some(Sourced { value: Underlay::Auto, basis: AUTO_UNDERLAY }),
         },
@@ -372,7 +369,7 @@ pub const FABRICS: [Fabric; 8] = [
             }),
             spacing: None,
             spacing_percent: Some(Sourced {
-                value: AS_PICKED,
+                value: SPACING_PERCENT_AS_PICKED,
                 basis: &[Basis::Estimate(
                     "BERNINA's heavy woven class spaces wide columns 2 % and narrow ones 7 % more than its medium woven class; one share for every width, within the width table's own precision",
                 )],
@@ -414,7 +411,7 @@ pub const FABRICS: [Fabric; 8] = [
                 ],
             }),
             spacing: None,
-            spacing_percent: Some(Sourced { value: AS_PICKED, basis: LIGHT_KNIT_SATIN_SHARE }),
+            spacing_percent: Some(Sourced { value: SPACING_PERCENT_AS_PICKED, basis: LIGHT_KNIT_SATIN_SHARE }),
             length: None,
             underlay: Some(Sourced { value: Underlay::Auto, basis: AUTO_UNDERLAY }),
         },
@@ -452,7 +449,7 @@ pub const FABRICS: [Fabric; 8] = [
                 ],
             }),
             spacing: None,
-            spacing_percent: Some(Sourced { value: AS_PICKED, basis: MEDIUM_KNIT_SATIN_SHARE }),
+            spacing_percent: Some(Sourced { value: SPACING_PERCENT_AS_PICKED, basis: MEDIUM_KNIT_SATIN_SHARE }),
             length: None,
             underlay: Some(Sourced { value: Underlay::Auto, basis: AUTO_UNDERLAY }),
         },
@@ -494,7 +491,7 @@ pub const FABRICS: [Fabric; 8] = [
             }),
             spacing: None,
             spacing_percent: Some(Sourced {
-                value: AS_PICKED,
+                value: SPACING_PERCENT_AS_PICKED,
                 basis: &[Basis::Estimate(
                     "BERNINA's heavy knit class spaces narrow columns as its medium woven class and wide ones 3 % closer; one share for every width",
                 )],
@@ -566,7 +563,7 @@ pub const FABRICS: [Fabric; 8] = [
             }),
             spacing: None,
             spacing_percent: Some(Sourced {
-                value: AS_PICKED * (BERNINA_SATIN_SPACING_LIGHT_WOVEN / BERNINA_SATIN_SPACING_MEDIUM_WOVEN),
+                value: SPACING_PERCENT_AS_PICKED * (BERNINA_SATIN_SPACING_LIGHT_WOVEN / BERNINA_SATIN_SPACING_MEDIUM_WOVEN),
                 basis: &[
                     Basis::Estimate(SILK_AS_LIGHT_WOVEN),
                     Basis::Derived(

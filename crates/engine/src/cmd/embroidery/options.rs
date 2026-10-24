@@ -13,8 +13,8 @@
 
 use serde_json::{Map, Value, json};
 use vectorcraft_stitch::plan::{
-    DENSITY_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PULL_PERCENT_RANGE, PULL_RANGE, PUSH_RANGE, Params,
-    STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay,
+    DENSITY_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PERCENT, PULL_PERCENT_RANGE, PULL_RANGE, PUSH_RANGE,
+    Params, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay,
 };
 
 use super::vocabulary;
@@ -33,8 +33,6 @@ pub(crate) const MAX_EXPAND: f64 = 2.0;
 /// Degrees in a half turn: a fill's rows are lines, the same whichever of a half turn's two
 /// directions they are said to run in.
 const HALF_TURN: f64 = 180.0;
-/// Percent in a whole: a percentage over this is a share.
-const PERCENT: f64 = 100.0;
 
 /// The planner's angle for a fill angle the commands take (degrees counter-clockwise on the page,
 /// as every angle in VectorCraft and the project owner's choice, 2026-10-23): the planner counts

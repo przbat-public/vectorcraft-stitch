@@ -14,8 +14,8 @@ use vectorcraft_doc::Document;
 use vectorcraft_doc::embroidery::{FabricSettings, MachineSettings, StitchValues, ThreadPalette};
 use vectorcraft_stitch::fabric::{FABRICS, fabric};
 use vectorcraft_stitch::plan::{
-    DENSITY_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, PULL_RANGE, Params, SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE,
-    Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay, thread_scale,
+    DENSITY_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, PULL_RANGE, Params, SPACING_PERCENT_AS_PICKED,
+    SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay, thread_scale,
 };
 use vectorcraft_stitch::thread::Palette;
 
@@ -26,10 +26,6 @@ use crate::cmd::bad;
 use crate::{Result, Session};
 
 const C: &str = "embroidery.setup";
-
-/// A satin's spacing as the planner picks it by the column's width, percent: what the fabric's
-/// `spacingPercent` is a share of.
-const AS_PICKED: f64 = 100.0;
 
 /// Where a resolved setting's value comes from: the document sets it, or it is the default.
 fn source(set: bool) -> &'static str {
@@ -123,7 +119,7 @@ fn resolved_fabric(f: Option<&FabricSettings>, weight: f64) -> Value {
         } else {
             json!({
                 "pull": entry(num(now.pull), was(|s| s.pull.map(Value::from)), json!(satin.pull[0])),
-                "spacingPercent": entry(num(now.spacing_percent), was(|s| s.spacing_percent.map(Value::from)), json!(AS_PICKED)),
+                "spacingPercent": entry(num(now.spacing_percent), was(|s| s.spacing_percent.map(Value::from)), json!(SPACING_PERCENT_AS_PICKED)),
                 "underlay": entry(id(&now.underlay), was(|s| s.underlay.clone().map(Value::from)), json!(satin.underlay.id())),
             })
         }

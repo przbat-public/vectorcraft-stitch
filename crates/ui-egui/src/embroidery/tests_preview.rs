@@ -93,7 +93,7 @@ fn random_edits(threaded: bool, seed: u64, plan_ms: f64) {
     let mut app = app();
     app.embroidery.preview.log.pinned_ms = Some(plan_ms);
     if threaded {
-        let Some(worker) = PlanWorker::start(&ctx) else { return };
+        let worker = PlanWorker::start(&ctx).expect("the planning thread starts");
         app.embroidery.preview = StitchPreview::with_runner(Box::new(Driver::Thread(worker)));
     }
     app.run("view.stitchPreview", json!({"on": true})).unwrap();

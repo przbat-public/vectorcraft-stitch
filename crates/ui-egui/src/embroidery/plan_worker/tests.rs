@@ -47,7 +47,7 @@ fn finished(w: &mut PlanWorker, n: usize) -> Vec<Done> {
 #[test]
 fn a_job_hands_over_the_plan_then_the_commands_replies() {
     let mut s = session();
-    let Some(mut w) = PlanWorker::start(&egui::Context::default()) else { return };
+    let mut w = PlanWorker::start(&egui::Context::default()).expect("the planning thread starts");
     let check = Query { cmd: "embroidery.check", params: json!({"format": "dst"}) };
     assert!(w.submit(job(&mut s, 1, vec![stats(), check.clone()])).is_none());
     let got = finished(&mut w, 1);
@@ -81,7 +81,7 @@ fn a_job_hands_over_the_plan_then_the_commands_replies() {
 #[test]
 fn only_the_newest_of_a_burst_is_planned() {
     let mut s = session();
-    let Some(mut w) = PlanWorker::start(&egui::Context::default()) else { return };
+    let mut w = PlanWorker::start(&egui::Context::default()).expect("the planning thread starts");
     // The first job, once started, waits on the thread until the others are sent.
     let (started, has_started) = mpsc::channel::<()>();
     let (go, wait) = mpsc::channel::<()>();
@@ -106,7 +106,7 @@ fn only_the_newest_of_a_burst_is_planned() {
 #[test]
 fn a_cancel_or_a_panic_ends_the_job_and_the_thread_goes_on() {
     let mut s = session();
-    let Some(mut w) = PlanWorker::start(&egui::Context::default()) else { return };
+    let mut w = PlanWorker::start(&egui::Context::default()).expect("the planning thread starts");
     // Cancelled once it has started: the plan stops at its next check.
     let mut cancelled = job(&mut s, 1, vec![stats()]);
     cancelled.hook = Some(Box::new(|job| job.progress.cancel()));
@@ -137,7 +137,7 @@ fn a_design_too_large_fails_with_the_reason() {
     fx::blank(&mut run);
     // Three metres a side: more stitches than one shape may have.
     fx::rect(&mut run, fx::RED, 0.0, 0.0, 8500.0, 8500.0);
-    let Some(mut w) = PlanWorker::start(&egui::Context::default()) else { return };
+    let mut w = PlanWorker::start(&egui::Context::default()).expect("the planning thread starts");
     let expected = s.embroidery_plan(&EmbroideryOptions::default()).unwrap_err().to_string();
     assert!(w.submit(job(&mut s, 1, vec![stats()])).is_none());
     let got = finished(&mut w, 1);
@@ -148,7 +148,7 @@ fn a_design_too_large_fails_with_the_reason() {
 #[test]
 fn dropping_the_worker_ends_the_thread() {
     let mut s = session();
-    let Some(mut w) = PlanWorker::start(&egui::Context::default()) else { return };
+    let mut w = PlanWorker::start(&egui::Context::default()).expect("the planning thread starts");
     assert!(w.submit(job(&mut s, 1, vec![stats()])).is_none());
     let thread = w.thread.take().unwrap();
     drop(w);

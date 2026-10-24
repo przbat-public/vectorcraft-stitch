@@ -34,6 +34,22 @@ const EDITS: usize = 10;
 /// The canvas's window, points.
 const WINDOW: [f32; 2] = [1440.0, 900.0];
 
+#[path = "../../../../xtask/src/sha256.rs"]
+mod sha256;
+
+/// The corpus's folder, every file checked against its manifest, as the engine's corpus tests check
+/// it.
+fn corpus() -> std::path::PathBuf {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/embroidery");
+    for line in include_str!("../../../../xtask/embroidery-corpus.sha256").lines().filter(|l| !l.trim().is_empty()) {
+        let (digest, name) = line.split_once("  ").expect("malformed embroidery corpus manifest");
+        let bytes =
+            std::fs::read(dir.join(name)).unwrap_or_else(|e| panic!("missing corpus file {name}: {e}; run `cargo xtask corpus --embroidery`"));
+        assert_eq!(sha256::hex(&bytes), digest, "{name}: corpus file changed; run `cargo xtask corpus --embroidery`");
+    }
+    dir
+}
+
 /// One frame at `time` with `events`, as the app runs one, tessellated → its wall time, ms.
 fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) -> f64 {
     let raw = egui::RawInput {
@@ -75,7 +91,7 @@ fn drawn_fresh(app: &VectorcraftApp, time: f64) -> bool {
 #[test]
 #[ignore = "a measurement, run by hand on an idle machine"]
 fn stitch_preview_gate() {
-    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/embroidery");
+    let dir = corpus();
     let mut files: Vec<_> = std::fs::read_dir(&dir)
         .map(|d| d.flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|e| e == "svg")).collect())
         .unwrap_or_default();
@@ -88,7 +104,8 @@ fn stitch_preview_gate() {
         let mut session = Session::new();
         session.execute("document.open", &json!({"path": path.to_string_lossy()})).unwrap();
         let mut app = VectorcraftApp::new(session, Services::default());
-        let (Some(plans), Some(lines)) = (PlanWorker::start(&ctx), LineWorker::start(&ctx)) else { return };
+        let plans = PlanWorker::start(&ctx).expect("the planning thread starts");
+        let lines = LineWorker::start(&ctx).expect("the stitch layer's thread starts");
         app.embroidery.preview = StitchPreview::with_runner(Box::new(Driver::Thread(plans)));
         app.embroidery.layer.use_worker(lines);
         app.run("view.stitchPreview", json!({"on": true})).unwrap();
@@ -116,7 +133,7 @@ fn stitch_preview_gate() {
         // Drag the first object sewn from its middle, a pointer move a frame.
         let uid = app.session.active().unwrap().uid;
         let unit = app.embroidery.preview.shown(uid).and_then(|s| s.planned.scene().units().first().and_then(|u| u.bounds));
-        let (Some(b), Some(canvas)) = (unit, app.canvas_rect) else { continue };
+        let (Some(b), Some(canvas)) = (unit, app.canvas_rect) else { panic!("{}: no stitches to drag, or no canvas", path.display()) };
         let view = *app.view().unwrap();
         let xf = crate::canvas::Xf::new(canvas, &view);
         let mut at = xf.to_screen(b.center());

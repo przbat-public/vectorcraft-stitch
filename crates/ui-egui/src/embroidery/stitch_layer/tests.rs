@@ -183,7 +183,7 @@ fn back_to_the_art_never_shows_stale_art() {
 #[test]
 fn a_document_switch_is_drawn_on_the_layers_thread() {
     let ctx = egui::Context::default();
-    let Some(worker) = LineWorker::start(&ctx) else { return };
+    let Some(worker) = LineWorker::start(&ctx) else { panic!("the layer's thread starts") };
     let mut app = app();
     document(&mut app);
     for index in [0, 1] {

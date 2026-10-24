@@ -110,6 +110,8 @@ fn the_stitches_are_drawn_from_their_own_texture_over_the_fabric() {
     let uid = app.session.active().unwrap().uid;
     let key = app.embroidery.layer.key.clone().unwrap();
     assert_eq!(key.generation, app.embroidery.preview.shown(uid).unwrap().planned.generation);
+    // Uploaded once: four bytes a pixel of the canvas.
+    assert_eq!(app.embroidery.layer.uploaded_bytes, u64::from(key.w) * u64::from(key.h) * 4);
     // A selection change, a hover: the texture is drawn again, nothing uploaded, no art rendered.
     let art_key = app.canvas.key.clone();
     app.run("select.all", json!({})).unwrap();

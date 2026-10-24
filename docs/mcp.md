@@ -5153,7 +5153,8 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   area tells), `{id: "spacingByWidth", chose: mm, values: {share}}` for a satin's spacing; `null` for a value set.
   `applies` says whether the planner uses the key for the stitch the part is sewn in: a running line's `pull` or
   `angle` is reported as set but `applies: false` (a fill's `push` applies: it reaches its narrow parts' satin
-  columns); a part not sewn uses none but `stitch`. `entry` and `exit` are in document points, as `embroidery.setEntryExit` takes them (the read commands' positions,
+  columns); a part not sewn uses none but `stitch`. A `pull`, `pullPercent` or `push` is `[left, right]` (a fabric's one value as both sides). `entry` and `exit` are in
+  document points, as `embroidery.setEntryExit` takes them (the read commands' positions,
   such as `embroidery.sequence`'s, are millimetres). `sewing` (`{unitCount, stitches, records, jumps, trims}`, what the
   plan sews of the part) is counted only with `plan: true`. A unit whose style a setting forced says which in
   `embroidery.sequence`'s `ruleValues.source` (`object` or `export`).

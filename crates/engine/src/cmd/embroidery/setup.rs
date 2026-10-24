@@ -516,9 +516,12 @@ fn stitch_param(v: &Value, base: Option<&StitchValues>, current: Option<StitchVa
             ("underlay", _) => {
                 s.underlay = match v {
                     Value::Null => base.underlay.clone(),
+                    // As an object's `underlay` and an export's take them: by the shape, or none.
+                    Value::Bool(true) => Some(Underlay::Auto.id().to_string()),
+                    Value::Bool(false) => Some(Underlay::None.id().to_string()),
                     _ => Some(v.as_str().and_then(Underlay::from_id).map(|u| u.id().to_string()).ok_or_else(|| {
                         let ids: Vec<&str> = Underlay::ALL.iter().map(|u| u.id()).collect();
-                        bad(C, format!("`{key}` {v}: one of {}, or null", ids.join(", ")))
+                        bad(C, format!("`{key}` {v}: true, false, one of {}, or null", ids.join(", ")))
                     })?),
                 }
             }

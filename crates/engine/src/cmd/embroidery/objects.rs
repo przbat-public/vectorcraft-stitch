@@ -39,8 +39,8 @@ pub(crate) const SET: &str = "Embroidery Object Settings";
 pub(crate) const RESET: &str = "Reset Embroidery Object Settings";
 /// The undo step `embroidery.setEntryExit` makes.
 pub(crate) const ENTRY_EXIT: &str = "Embroidery Entry and Exit";
-/// The undo step `embroidery.copyFrom` makes.
-pub(crate) const COPY: &str = "Copy Embroidery Object Settings";
+/// The undo step `embroidery.copyFrom` makes: a paste of another object's settings.
+pub(crate) const PASTE: &str = "Paste Embroidery Object Settings";
 
 /// Why an object given takes no part settings, as the replies name it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -518,7 +518,7 @@ pub(super) fn copy_from(s: &mut Session, p: &Value) -> Result<Value> {
             }
         }
     }
-    let changed = edit_counted(s, COPY, |d| {
+    let changed = edit_counted(s, PASTE, |d| {
         let mut changed = 0;
         for (id, kinds) in &has {
             changed += edit_each(d, &[*id], |e| {

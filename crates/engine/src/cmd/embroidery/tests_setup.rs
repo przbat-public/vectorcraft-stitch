@@ -96,6 +96,8 @@ fn the_thread_joining_and_machine_are_set() {
         (json!({"fabric": {"color": "red"}}), "#rrggbb"),
         (json!({"fabric": {"grain": 45}}), "the fabric's values"),
         (json!({"fabric": {"tatami": {"underlay": "triple"}}}), "one of"),
+        // An underlay is an id, or true or false as an object's and an export's take it.
+        (json!({"fabric": {"tatami": {"underlay": 3}}}), "true, false, one of"),
         // A 40 wt spacing that a thread's weight could scale out of the planner's range.
         (json!({"fabric": {"tatami": {"spacing": 4}}}), "0.1 to 2.5"),
     ] {
@@ -278,4 +280,13 @@ fn the_settings_reply_reads_back_as_the_typed_answer() {
     let typed = s.embroidery_settings().unwrap();
     assert_eq!(read, typed);
     assert_eq!((typed.overrides.object_count, typed.resolved.fabric.preset.map(|p| p.id)), (1, Some("fleece".to_string())));
+}
+
+/// A fabric's underlay takes `true` and `false` as an object's and an export's do: by the shape,
+/// or none.
+#[test]
+fn a_fabrics_underlay_takes_true_and_false() {
+    let mut s = blank();
+    let r = run(&mut s, "embroidery.setup", json!({"fabric": {"tatami": {"underlay": false}, "satin": {"underlay": true}}}));
+    assert_eq!((&r["settings"]["fabric"]["tatami"]["underlay"], &r["settings"]["fabric"]["satin"]["underlay"]), (&json!("none"), &json!("auto")));
 }

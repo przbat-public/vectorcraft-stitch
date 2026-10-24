@@ -372,8 +372,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   take upstream's text and add `|dst|tap|t01|exp|pes|pec|jef|vp3` to its format list again.
 - **The generator string** (`crates/format/src/lib.rs`): the fork's files say `VectorCraft Stitch`
   and the version, so a file from the fork can be told from upstream's in a report.
-- **One-line hooks the fork keeps in upstream files**, to keep when resolving: `fileio/load.rs`'s
-  `is_loss` (`super::embroidery::is_loss`), `cmd/swatchlib.rs`'s `libraries` and `library`
+- **One-line hooks the fork keeps in upstream files**, to keep when resolving: `doc/src/node.rs`'s
+  `transform_scaled`, after the bounding box's angle (an object's embroidery settings move and turn
+  with it, `Embroidery::transform`), `fileio/load.rs`'s `is_loss` (`super::embroidery::is_loss`), `cmd/swatchlib.rs`'s `libraries` and `library`
   (`cmd/embroidery/threadlib.rs`), `i18n/mod.rs`'s `mod tests_embroidery`, `command_sweep.rs`'s
   `mod embroidery_common` and `cases.extend(…)`, and the `pub use` lines in `engine/src/lib.rs`.
 - **The stitch preview's hooks in upstream files**, each marked "VectorCraft Stitch" in a comment

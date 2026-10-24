@@ -56,6 +56,8 @@ mod tests_stats;
 #[cfg(test)]
 mod tests_threadlib;
 #[cfg(test)]
+mod tests_transform;
+#[cfg(test)]
 mod tests_view;
 #[cfg(test)]
 mod tests_walk;

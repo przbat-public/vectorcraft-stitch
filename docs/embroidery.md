@@ -1939,7 +1939,9 @@ Public documentation, cited per claim in the crate:
   `tests.rs` (the plan's, the threads' and the document's settings'), `tests_walk.rs` (the walk's
   branches and the design's size limit), `tests_service.rs`, `tests_stats.rs`, `tests_order.rs`,
   `tests_check.rs`, `tests_contract.rs` (the replies' keys and types), `tests_threadlib.rs`,
-  `tests_scene.rs` (the scene holds the thread the plan sews), `tests_view.rs`, `reorder/tests.rs`.
+  `tests_scene.rs` (the scene holds the thread the plan sews), `tests_view.rs`, `reorder/tests.rs`,
+  `tests_settings.rs` (what each setting does), `tests_transform.rs` (settings under the transform
+  commands).
 - `crates/render/src/lines.rs` — line pictures and their renderer (`render::lines`), which the
   stitch view draws with, knowing nothing about stitches.
 - `crates/ui-egui/src/embroidery/` — the stitch preview in the app: `stitch_preview.rs` (when a
@@ -1964,7 +1966,8 @@ Public documentation, cited per claim in the crate:
 - `crates/engine/src/cmd/swatchlib.rs` — the swatch libraries, the embroidery thread libraries
   among them; `crates/doc/src/embroidery.rs` — what an object and the document keep for embroidery
   (`embroidery/part.rs`: the settings of an object's fills and strokes; `embroidery/setup.rs`: the
-  document's fabric and machine).
+  document's fabric and machine; `embroidery/transform.rs`: the settings moved and turned with
+  their object).
 - `crates/engine/src/cmd/fileio/embroidery/` — the files' side: `mod.rs` (the export's options as
   `document.formats` lists them, and its entry point), `import.rs` (a design opened as art).
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real

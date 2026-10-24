@@ -5148,7 +5148,7 @@ mark-style	Japanese	Japońskie
 	Narrow Parts as Satin:	Wąskie części jako satyna:
 	Thread Weight:	Grubość nici:
 	Underlay:	Podkład:
-	Jump Length:	Długość skoku:
+	Jump Length:	Długość przeskoku:
 	Trim Length:	Długość cięcia:
 	Shortest Stitch:	Najkrótszy ścieg:
 	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Jak są szyte kształty: Automatycznie wypełnia kształty tatami, a kontury szyje jako kolumny satynowe albo ścieg prosty, zależnie od ich szerokości; inny wybór szyje tak każdy kształt
@@ -5163,7 +5163,7 @@ mark-style	Japanese	Japońskie
 	The thread's weight: thinner thread (a higher number) packs the rows closer	Grubość nici: cieńsza nić (wyższy numer) układa rzędy gęściej
 	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Ściegi szyte najpierw, by utrzymać tkaninę: dobrane przez każdy kształt, żadne albo jeden rodzaj dla każdego kształtu
 	A move longer than this lifts the needle instead of being sewn	Dłuższe przejście podnosi igłę zamiast być szyte
-	A jump longer than this cuts the thread first	Dłuższy skok najpierw przecina nić
+	A jump longer than this cuts the thread first	Dłuższy przeskok najpierw przecina nić
 	Shorter stitches are left out	Krótsze ściegi są pomijane
 	Tatami Fill	Wypełnienie tatami
 	Satin	Satyna
@@ -5189,13 +5189,13 @@ embroidery	Exit	Wyjście
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} zaznaczony obiekt nie jest szyty|{count} zaznaczone obiekty nie są szyte|{count} zaznaczonych obiektów nie jest szytych
 	Embroidery	Haft
 	Embroidery Panel	Panel Haft
-embroidery	Sewing Order	Kolejność
+embroidery	Sewing Order	Kolejność szycia
 embroidery	Check	Kontrola
 embroidery	No document	Brak dokumentu
-embroidery	Open or draw a design to see how it will be sewn.	Otwórz lub narysuj projekt, aby zobaczyć, jak zostanie wyszyty.
+embroidery	Open or draw a design to see how it will be sewn.	Otwórz lub narysuj wzór, aby zobaczyć, jak zostanie wyszyty.
 embroidery	Updating…	Aktualizowanie…
 embroidery	These are the stitches before the last change; the new ones are being planned.	To ściegi sprzed ostatniej zmiany; nowe są planowane.
-embroidery	Change the design and the stitches are planned again.	Zmień projekt, a ściegi zostaną zaplanowane od nowa.
+embroidery	Change the design and the stitches are planned again.	Zmień wzór, a ściegi zostaną zaplanowane od nowa.
 embroidery	Nothing to sew	Nie ma czego szyć
 embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Szyte są ścieżki z wypełnieniem lub obrysem; ukryte obiekty, linie pomocnicze i warstwy niedrukowane nie.
 @plural	{count} thread block|{count} thread blocks	{count} blok nici|{count} bloki nici|{count} bloków nici
@@ -5222,7 +5222,7 @@ embroidery	Jumps	Przeskoki
 embroidery	Top thread	Nić górna
 embroidery	Size	Rozmiar
 embroidery	Time	Czas
-embroidery	Design	Projekt
+embroidery	Design	Wzór
 embroidery	The time at {speed} stitches a minute, an estimate.	Czas przy {speed} ściegach na minutę, szacunek.
 	Sew Earlier	Szyj wcześniej
 	Sew Later	Szyj później
@@ -5230,11 +5230,11 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Czas przy {speed}
 	Sew Last	Szyj na końcu
 	Change Sewing Order	Zmień kolejność szycia
 @msg	nothing selected is sewn	nic z zaznaczenia nie jest szyte
-@msg	the selection is sewn first already	zaznaczenie jest już szyte najpierw
-@msg	the selection is sewn last already	zaznaczenie jest już szyte na końcu
+@msg	the selection is sewn first already	zaznaczenie jest już szyte jako pierwsze
+@msg	the selection is sewn last already	zaznaczenie jest już szyte jako ostatnie
 @msg	the sewing order is that already	kolejność szycia już jest taka
 @msg	can't change the sewing order: an object is no longer in the document	nie można zmienić kolejności szycia: obiektu nie ma już w dokumencie
-@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	nie można zmienić kolejności szycia: obiekt albo warstwa lub grupa, w której jest, jest zablokowany
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	nie można zmienić kolejności szycia: obiekt albo warstwa lub grupa, w której jest, jest zablokowana
 @msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	nie można zmienić kolejności szycia: ścieżka przycinająca zostaje na dnie swojej grupy przycinającej
 @msg	can't change the sewing order: it would put an object into a clip group or take it out of one	nie można zmienić kolejności szycia: obiekt trafiłby do grupy przycinającej albo z niej wyszedł
 @msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	nie można zmienić kolejności szycia: odcinek otwartego pliku maszynowego przesuwa się z całym blokiem, więc przesuń jego grupę
@@ -5246,14 +5246,14 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Czas przy {speed}
 embroidery	After {name}	Po {name}
 embroidery	Before {name}	Przed {name}
 embroidery	No stitch moved: objects of one thread still join when nothing between lies under them.	Żaden ścieg się nie przesunął: obiekty jednej nici nadal się łączą, gdy nic pomiędzy nie leży pod nimi.
-embroidery	{name} is sewn in block {block}, joined with its thread	{name} jest szyty w bloku {block}, połączony ze swoją nicią
-embroidery	{name} is sewn in block {block}	{name} jest szyty w bloku {block}
+embroidery	{name} is sewn in block {block}, joined with its thread	Obiekt {name} jest szyty w bloku {block}, razem z innymi obiektami tej nici
+embroidery	{name} is sewn in block {block}	Obiekt {name} jest szyty w bloku {block}
 embroidery	Thread changes: {before} → {after}	Zmiany nici: {before} → {after}
 embroidery	Collapse All	Zwiń wszystko
 embroidery	Expand All	Rozwiń wszystko
 embroidery	Satin columns wider than {value} mm	Kolumny satynowe szersze niż {value} mm
 embroidery	Stitches longer than {value} mm	Ściegi dłuższe niż {value} mm
-embroidery	Stitches longer than one {format} record ({value} mm)	Ściegi dłuższe niż jeden zapis {format} ({value} mm)
+embroidery	Stitches longer than one {format} record ({value} mm)	Ściegi dłuższe niż jeden rekord {format} ({value} mm)
 embroidery	Fill stitch length under {value} mm	Długość ściegu wypełnienia poniżej {value} mm
 embroidery	Satin columns narrower than {value} mm	Kolumny satynowe węższe niż {value} mm
 embroidery	Running stitch length under {value} mm	Długość ściegu prostego poniżej {value} mm
@@ -5280,7 +5280,7 @@ embroidery	Record {record}	Rekord {record}
 embroidery	{name}: {value} mm	{name}: {value} mm
 embroidery	Error	Błąd
 embroidery	Warning	Ostrzeżenie
-embroidery	Note	Uwaga
+embroidery	Note	Informacja
 embroidery	Passed	Spełnione
 embroidery	No problems found	Nie znaleziono problemów
 embroidery	stitch density	gęstość ściegów
@@ -5291,7 +5291,7 @@ embroidery	Can't check the design:	Nie można sprawdzić wzoru:
 embroidery	Checked for	Sprawdzane dla
 embroidery	Source: {name}	Źródło: {name}
 embroidery	Also: {name}	Także: {name}
-embroidery	Not checked: {list}	Nie sprawdza się: {list}
+embroidery	Not checked: {list}	Nie sprawdzono: {list}
 embroidery	No source gives a number to check these against.	Żadne źródło nie podaje liczby, względem której można je sprawdzić.
 @plural	{count} thread change|{count} thread changes	{count} zmiana nici|{count} zmiany nici|{count} zmian nici
 @plural	{count} row|{count} rows	{count} ciąg|{count} ciągi|{count} ciągów
@@ -5299,7 +5299,7 @@ embroidery	No source gives a number to check these against.	Żadne źródło nie
 @plural	{count} thread|{count} threads	{count} nić|{count} nici|{count} nici
 @plural	{count} error|{count} errors	{count} błąd|{count} błędy|{count} błędów
 @plural	{count} warning|{count} warnings	{count} ostrzeżenie|{count} ostrzeżenia|{count} ostrzeżeń
-@plural	{count} note|{count} notes	{count} uwaga|{count} uwagi|{count} uwag
+@plural	{count} note|{count} notes	{count} informacja|{count} informacje|{count} informacji
 @plural	and {count} more|and {count} more	i jeszcze {count}|i jeszcze {count}|i jeszcze {count}
 embroidery	Threads unlike the art's colour (over {value})	Nici niepodobne do koloru grafiki (powyżej {value})
 embroidery	Largest difference: {value}	Największa różnica: {value}
@@ -5308,14 +5308,14 @@ embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 @msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] w punktach dokumentu, każda wartość w granicach ±{max}, przy czym right nie może być przed left, a bottom nad top
 @msg	margin: screen points, 0 or more	margin: punkty ekranu, 0 lub więcej
 @msg	no canvas is shown	nie jest wyświetlany żaden obszar roboczy
-	Next Finding	Następne znalezisko
-	Previous Finding	Poprzednie znalezisko
+	Next Finding	Następne wystąpienie
+	Previous Finding	Poprzednie wystąpienie
 embroidery	Show	Pokaż
 embroidery	{index} of {count}	{index} z {count}
-@msg	no finding is shown: show one in the Embroidery panel's Check tab	nie pokazano żadnego znaleziska: pokaż je na karcie Kontrola panelu Haft
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	nie pokazano żadnego wystąpienia: pokaż je na karcie Kontrola panelu Haft
 @msg	the check is out of date: wait for the stitches to be planned	kontrola jest nieaktualna: poczekaj, aż ściegi zostaną zaplanowane
 @msg	no such rule in the check	nie ma takiej reguły w kontroli
-@msg	no such finding in the check	nie ma takiego znaleziska w kontroli
+@msg	no such finding in the check	nie ma takiego wystąpienia w kontroli
 	Show Check Marks	Pokaż znaczniki kontroli
 embroidery	Stitch lengths	Długości ściegów
 embroidery	Median: {value} mm	Mediana: {value} mm
@@ -5329,9 +5329,9 @@ embroidery	Click to open the Embroidery panel.	Kliknij, aby otworzyć panel Haft
 embroidery	{width} × {height} mm	{width} × {height} mm
 embroidery	about {value} min	ok. {value} min
 embroidery	about {value} m	ok. {value} m
-	Show Finding	Pokaż znalezisko
+	Show Finding	Pokaż wystąpienie
 @msg	`rule` must be a check rule's id	`rule` musi być identyfikatorem reguły kontroli
-@msg	`hit` must be a listed hit's place, from 0	`hit` musi być pozycją znaleziska na liście, licząc od 0
+@msg	`hit` must be a listed hit's place, from 0	`hit` musi być pozycją wystąpienia na liście, licząc od 0
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	brak kontroli dokumentu w obecnym stanie: pokaż kartę Kontrola panelu Haft i poczekaj, aż ściegi zostaną zaplanowane
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	i jeszcze {count} wiersz, którego nie ma na liście (lista pokazuje pierwsze {limit})|i jeszcze {count} wiersze, których nie ma na liście (lista pokazuje pierwsze {limit})|i jeszcze {count} wierszy, których nie ma na liście (lista pokazuje pierwsze {limit})
 @msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	obraz miałby {w} × {h} pikseli, więcej niż {most} na bok: narysuj mniejszy obszar lub w mniejszej skali

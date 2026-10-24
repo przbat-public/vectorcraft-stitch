@@ -378,6 +378,16 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     `vectorcraft-cli`'s `main.rs`: `bench` prints the preview's line;
   - `apps/vectorcraft/src/prefs_dir.rs`: `mod stitch_profile`; `profile.rs`'s `prefs_path`: the
     path passed through `stitch_profile::own` (the fork's settings folder).
+- **The fork's text in upstream's docs**, to put back on upstream's own text when resolving: the
+  pointer to this file at the top of `CLAUDE.md`; in `README.md` the fork's note and "Based on
+  VectorCraft", with ArtCraft's marks and links left out (`docs/brand/LICENSE-brand.txt`); the
+  embroidery rows of `ROADMAP.md`'s progress log and of `docs/file-format-parity.md` (its format
+  counts, the embroidery row, its history), with each one's status line; in
+  `docs/architecture.md` the `stitch` crate in the layer table and the embroidery paragraph under
+  Rendering; in `docs/mcp.md` the thread palettes among the swatch libraries and the Embroidery
+  section at its end; in `docs/control-protocol.md` the "Embroidery (VectorCraft Stitch)"
+  paragraphs after Save PDF's. The fork's text goes in paragraphs of its own, never into upstream's
+  rows (a row both sides extend conflicts on every sync).
 - **The settings folder:** the fork keeps `ui.json` and the folders beside it (Swatches, Fonts,
   Data Recovery, logs and the rest) in `VectorCraft Stitch` (`vectorcraft-stitch` on Linux) beside
   upstream's `VectorCraft`, wherever upstream's docs name VectorCraft's folder; the first start

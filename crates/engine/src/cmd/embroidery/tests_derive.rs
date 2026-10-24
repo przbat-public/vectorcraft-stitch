@@ -333,3 +333,19 @@ fn an_expanded_instance_keeps_the_cut_after_it() {
     assert!(embroidery(&s, instance).trim_after, "on what stands for it");
     assert_eq!(trims(&mut s), 1, "expanded: one cut");
 }
+
+/// Ungroup gives the group's cut to its last member the walk sews: past a label of type on top.
+#[test]
+fn ungroup_gives_the_cut_to_the_last_member_sewn() {
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+    let label = run(&mut s, "text.create", json!({"x": 20, "y": 100, "text": "Hi"}))["id"].as_u64().unwrap();
+    let group = run(&mut s, "object.group", json!({"ids": [a, label]}))["id"].as_u64().unwrap();
+    assert_eq!(*members(&s, group).last().unwrap(), label, "the label on top");
+    let mut cut = Embroidery::default();
+    cut.set_trim_after(true);
+    give(&mut s, group, &cut);
+    run(&mut s, "select.set", json!({"ids": [group]}));
+    run(&mut s, "object.ungroup", json!({}));
+    assert!(embroidery(&s, a).trim_after && !embroidery(&s, label).trim_after);
+}

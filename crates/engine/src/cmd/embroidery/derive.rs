@@ -13,8 +13,9 @@
 //!   the object to what stands for the object: Release Compound Path ([`released`]), Create
 //!   Outlines ([`outlined_type`]), Outline Stroke and Expand Appearance ([`Expanding`], through
 //!   [`expand_leaf`] for every path it expands, also what the walk sews an expanded appearance's
-//!   pieces with; [`outlined`] for what it expands through its outlines), Ungroup ([`ungrouped`]: the group's cut to
-//!   its last member, so the cut stays after the same stitches) and Break Link ([`unlinked`]).
+//!   pieces with; [`outlined`] for what it expands through its outlines), Ungroup ([`ungrouped`]:
+//!   the group's cut to its last member the walk sews, so the cut stays after the same stitches)
+//!   and Break Link ([`unlinked`]).
 
 use std::sync::Arc;
 
@@ -98,11 +99,21 @@ pub(crate) fn released(n: &Node, parts: &mut [Node]) {
     }
 }
 
-/// Ungroup of `group`: the cut after the group goes to its last member (its other settings are
-/// about its own fills and strokes, which ungrouping drops).
+/// Ungroup of `group`: the cut after the group goes to its last member the walk can sew (shown, a
+/// path, compound path, group or symbol instance: not type, an image, a guide or a clipping path),
+/// so that the cut stays after the same stitches (its other settings are about its own fills and
+/// strokes, which ungrouping drops).
 pub(crate) fn ungrouped(group: &Node, members: &mut [Node]) {
     let cut = group.extras().embroidery.as_deref().is_some_and(|e| e.trim_after);
-    if let (true, Some(last)) = (cut, members.last_mut()) {
+    let sewn = |n: &Node| {
+        n.visible
+            && match &n.kind {
+                NodeKind::Path { guide, clipping, .. } => !guide && !clipping,
+                NodeKind::Compound { .. } | NodeKind::Group { .. } | NodeKind::SymbolInstance { .. } => true,
+                _ => false,
+            }
+    };
+    if let (true, Some(last)) = (cut, members.iter_mut().rev().find(|m| sewn(m))) {
         let mut e = last.extras().embroidery.as_deref().cloned().unwrap_or_default();
         e.set_trim_after(true);
         last.extras_mut().embroidery = Some(Box::new(e));

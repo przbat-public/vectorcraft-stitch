@@ -180,7 +180,7 @@ fn an_expanded_object_is_cut_once_and_its_strokes_counted_as_strokes() {
     let last_unit = plan.units.iter().rposition(|u| u.origin.selected() == NodeId(id)).unwrap();
     assert_eq!(plan.unit_stitches(last_unit).last().map(|st| st.command), Some(Command::Trim));
     let info = run(&mut s, "embroidery.info", json!({"ids": [id], "plan": true}));
-    assert_eq!(info["stroke"]["stitches"]["unitCount"], json!(2));
+    assert_eq!(info["stroke"]["sewing"]["unitCount"], json!(2));
 }
 
 /// `two_strokes` at x 20 in a group with a stroke of its own (an appearance the walk expands, and

@@ -347,7 +347,7 @@ fn part_section(
         "settings": settings,
         "entry": point(PartKey::Entry),
         "exit": point(PartKey::Exit),
-        "stitches": plan.map(|p| sewn_of(p, &with, kind)),
+        "sewing": plan.map(|p| sewn_of(p, &with, kind)),
     })
 }
 

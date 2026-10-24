@@ -138,8 +138,8 @@ fn info_says_what_the_walk_sews() {
                 continue;
             };
             assert_eq!((&r[part]["sewn"], &r[part]["rule"]), (&u["sewn"], &u["rule"]), "{id} {part}");
-            assert_eq!(r[part]["stitches"]["unitCount"], json!(of.len()));
-            assert!(r[part]["stitches"]["stitches"].as_u64().unwrap() > 0, "{r}");
+            assert_eq!(r[part]["sewing"]["unitCount"], json!(of.len()));
+            assert!(r[part]["sewing"]["stitches"].as_u64().unwrap() > 0, "{r}");
         }
         assert_eq!(r["planned"], json!(true));
     }

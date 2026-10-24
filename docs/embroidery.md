@@ -247,7 +247,9 @@ Setup › Embroidery comes next).
   `estimates`. Where the class gives two values by a column's width, the one nearer the medium
   woven class's (cotton's) is taken: narrow columns' pull, wide columns' spacing.
 - **A fabric's tatami rows are given for 40 wt thread** and scale with the document's thread
-  weight as the built-in spacing does (`resolved` reports them for the thread in use); a satin's
+  weight as the built-in spacing does (`resolved` reports them for the thread in use), from 0.1 to
+  2.5 mm, the spacings every weight from 10 to 150 wt keeps within the planner's range once scaled
+  (a file's value outside them is brought to the nearest, with a note); a satin's
   spacing is a percentage of the spacing its width picks. A value typed on an object or given to
   an export is used as it is.
 

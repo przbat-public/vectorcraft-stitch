@@ -31,8 +31,9 @@ use vectorcraft_doc::{Document, MAX_COORD};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_stitch::plan::{
-    DENSITY_RANGE, FILL_ANGLE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PULL_PERCENT_RANGE, PULL_RANGE,
-    PUSH_RANGE, Params, SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay, thread_scale,
+    DENSITY_RANGE, FABRIC_SPACING_RANGE, FILL_ANGLE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE,
+    PULL_PERCENT_RANGE, PULL_RANGE, PUSH_RANGE, Params, SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE,
+    Underlay, thread_scale,
 };
 
 use super::Options;
@@ -327,7 +328,8 @@ impl DocLayer {
             unread |= !v.extra.is_empty();
             o.pull = v.pull.map(|p| [within(p, PULL_RANGE, &mut clamped); 2]);
             if tatami {
-                o.spacing = v.spacing.map(|s| within(s, DENSITY_RANGE, &mut clamped));
+                // Given for 40 wt and scaled by the thread: within what every weight keeps in range.
+                o.spacing = v.spacing.map(|s| within(s, FABRIC_SPACING_RANGE, &mut clamped));
                 o.length = v.length.map(|l| within(l, STITCH_LENGTH_RANGE, &mut clamped));
                 // A satin's values that are a tatami's, and the other way round, are not read.
                 unread |= v.spacing_percent.is_some();

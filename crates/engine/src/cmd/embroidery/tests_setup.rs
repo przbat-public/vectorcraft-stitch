@@ -93,6 +93,8 @@ fn the_thread_joining_and_machine_are_set() {
         (json!({"fabric": {"color": "red"}}), "#rrggbb"),
         (json!({"fabric": {"grain": 45}}), "the fabric's values"),
         (json!({"fabric": {"tatami": {"underlay": "triple"}}}), "one of"),
+        // A 40 wt spacing that a thread's weight could scale out of the planner's range.
+        (json!({"fabric": {"tatami": {"spacing": 4}}}), "0.1 to 2.5"),
     ] {
         let e = super::setup::setup(&mut s, &bad).unwrap_err().to_string();
         assert!(e.contains(says), "{bad}: {e}");

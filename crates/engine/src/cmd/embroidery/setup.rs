@@ -14,7 +14,7 @@ use vectorcraft_doc::Document;
 use vectorcraft_doc::embroidery::{FabricSettings, MachineSettings, StitchValues, ThreadPalette};
 use vectorcraft_stitch::fabric::{FABRICS, fabric};
 use vectorcraft_stitch::plan::{
-    DENSITY_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, PULL_RANGE, Params, SPACING_PERCENT_AS_PICKED,
+    FABRIC_SPACING_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, PULL_RANGE, Params, SPACING_PERCENT_AS_PICKED,
     SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay, thread_scale,
 };
 use vectorcraft_stitch::thread::Palette;
@@ -303,7 +303,7 @@ fn stitch_param(v: &Value, base: Option<&StitchValues>, current: Option<StitchVa
         let key = format!("{kind}.{k}");
         match (k.as_str(), tatami) {
             ("pull", _) => s.pull = number(v, &key, PULL_RANGE, "millimetres")?.or(base.pull),
-            ("spacing", true) => s.spacing = number(v, &key, DENSITY_RANGE, "millimetres for 40 wt thread")?.or(base.spacing),
+            ("spacing", true) => s.spacing = number(v, &key, FABRIC_SPACING_RANGE, "millimetres for 40 wt thread")?.or(base.spacing),
             ("length", true) => s.length = number(v, &key, STITCH_LENGTH_RANGE, "millimetres")?.or(base.length),
             ("spacingPercent", false) => s.spacing_percent = number(v, &key, SPACING_PERCENT_RANGE, "percent")?.or(base.spacing_percent),
             ("underlay", _) => {

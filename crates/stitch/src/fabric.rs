@@ -722,6 +722,19 @@ mod tests {
         assert!(fabric("felt").is_none());
     }
 
+    /// A fabric's tatami spacing for 40 wt, anywhere in its range, stays in the planner's range at
+    /// every thread weight once scaled.
+    #[test]
+    fn a_fabric_spacing_scales_within_the_planners_range() {
+        use crate::plan::FABRIC_SPACING_RANGE;
+        for s in [FABRIC_SPACING_RANGE.0, FABRIC_SPACING_RANGE.1] {
+            for weight in [THREAD_WEIGHT_RANGE.0, 40.0, THREAD_WEIGHT_RANGE.1] {
+                let scaled = s * thread_scale(weight);
+                assert!((DENSITY_RANGE.0..=DENSITY_RANGE.1 + 1e-12).contains(&scaled), "{s} mm at {weight} wt: {scaled}");
+            }
+        }
+    }
+
     /// Silk's stitch values are an estimate first: no source maps silk to the class they come from.
     #[test]
     fn silks_stitch_values_are_estimates() {

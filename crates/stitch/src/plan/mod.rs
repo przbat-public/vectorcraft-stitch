@@ -337,6 +337,11 @@ pub const NARROW_RANGE: (f64, f64) = (0.0, 12.0);
 /// The thread's weight: from 10 wt (a heavy decorative thread, thicker than any embroidery
 /// thread) to 150 wt (finer than the finest bobbin and lettering threads).
 pub const THREAD_WEIGHT_RANGE: (f64, f64) = (10.0, 150.0);
+/// The tatami row spacings a fabric may give for 40 wt thread (millimetres): those that every weight
+/// of [`THREAD_WEIGHT_RANGE`] scales ([`thread_scale`], 0.52 at 150 wt to 2.0 at 10 wt) to a
+/// spacing within [`DENSITY_RANGE`], so that no plan has to clamp one silently (0.1 mm at 150 wt is
+/// 0.052, 2.5 mm at 10 wt is 5.0). Bounds on what is asked.
+pub const FABRIC_SPACING_RANGE: (f64, f64) = (0.1, 2.5);
 /// The longest move sewn rather than jumped: from 0.5 mm to 20 mm, past which a sewn move would be
 /// a loose thread across the design.
 pub const JUMP_RANGE: (f64, f64) = (0.5, 20.0);

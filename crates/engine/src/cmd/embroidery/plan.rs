@@ -15,6 +15,7 @@
 //! stitches), so that each shows what will be sewn. `docs/embroidery.md` › Architecture records
 //! the decisions that rest on it.
 
+use std::collections::BTreeMap;
 use std::ops::Range;
 
 use vectorcraft_doc::NodeId;
@@ -64,6 +65,20 @@ impl Origin {
     pub fn selected(&self) -> NodeId {
         self.instance.unwrap_or(self.node)
     }
+}
+
+/// What tells a sewing unit apart, within a plan and from one plan to the next: the object a
+/// person selects ([`Origin::selected`]), the part it sews, and which of that object's units of
+/// that part it is ([`Unit::occurrence`]). It holds while the object's own art (a symbol's paths,
+/// the pieces its appearance expands to) keeps its number and order. A unit's index, its block and
+/// its stitch numbers are positions in one plan only, and [`Origin::node`] is no key: a symbol's
+/// instances share it, and an expanded object's pieces get it anew at every plan. What the
+/// interface keeps between plans (a row of the sewing order, a unit just moved) is kept by this.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct UnitKey {
+    pub object: NodeId,
+    pub part: Part,
+    pub occurrence: usize,
 }
 
 /// Why a sewing unit is sewn the way it is: the rule that chose its stitch.
@@ -222,6 +237,11 @@ pub struct Unit {
 }
 
 impl Unit {
+    /// What tells it apart from the plan's other units, in this plan and the next.
+    pub fn key(&self) -> UnitKey {
+        UnitKey { object: self.origin.selected(), part: self.origin.part, occurrence: self.occurrence }
+    }
+
     /// The style it is sewn in, as the planner sews its parameters ([`plan::sewn_style`]: a satin
     /// without a width, a fill whose `stitch` is satin, is filled); `None` for a literal run,
     /// sewn as its points are.
@@ -255,6 +275,10 @@ impl ThreadBlock {
     }
 }
 
+/// The most objects a plan names for one warning ([`DesignPlan::warned`]): as many as a check lists
+/// for a rule, whatever the design.
+pub const MAX_WARNED_OBJECTS: usize = 1000;
+
 /// A design's stitch plan: its sewing units and thread blocks in sewing order, and what was left
 /// out or approximated.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -269,6 +293,11 @@ pub struct DesignPlan {
     /// What was left out or approximated, once each (type, images, gradients…): the art the
     /// `notSewn` check counts.
     pub warnings: Vec<String>,
+    /// The objects each warning is about, by its words: those a person selects (a symbol's
+    /// instance for art inside the symbol), in the order the walk met them, at most
+    /// [`MAX_WARNED_OBJECTS`] each. A warning about no object in particular (what the document's
+    /// appearances leave out) has none.
+    pub warned: BTreeMap<String, Vec<NodeId>>,
     /// What else the export says that isn't about the art (a thread palette this version doesn't
     /// know): said with the warnings ([`DesignPlan::messages`]), not counted as art left out.
     pub notes: Vec<String>,
@@ -283,6 +312,18 @@ impl DesignPlan {
     /// change between two blocks is not a stitch of its own).
     pub fn len(&self) -> usize {
         self.blocks.iter().map(|b| b.stitches.len()).sum()
+    }
+
+    /// About how many bytes it holds: its units (their runs included) and its blocks' stitches, as
+    /// allocated (the planning service bounds what it remembers by this).
+    pub fn byte_size(&self) -> usize {
+        let units: usize = self.units.iter().map(|u| std::mem::size_of::<Unit>() + u.runs.capacity() * std::mem::size_of::<Range<usize>>()).sum();
+        let blocks: usize =
+            self.blocks.iter().map(|b| std::mem::size_of::<ThreadBlock>() + b.stitches.capacity() * std::mem::size_of::<Stitch>()).sum();
+        let words: usize = self.warnings.iter().chain(&self.notes).map(String::capacity).sum();
+        let warned: usize = self.warned.iter().map(|(w, ids)| w.capacity() + ids.capacity() * std::mem::size_of::<NodeId>()).sum();
+        let words = words + warned;
+        std::mem::size_of::<Self>() + self.units.capacity().saturating_sub(self.units.len()) * std::mem::size_of::<Unit>() + units + blocks + words
     }
 
     /// Everything the export and the read commands say about the plan: its notes, then its
@@ -321,6 +362,11 @@ impl DesignPlan {
         let units = self.units.get(b.units.clone())?;
         let i = units.partition_point(|u| u.stitches.end <= index);
         units.get(i).filter(|u| u.stitches.contains(&index)).map(|_| b.units.start + i)
+    }
+
+    /// The unit whose key is `key` ([`Unit::key`]): an index into [`DesignPlan::units`].
+    pub fn find(&self, key: &UnitKey) -> Option<usize> {
+        self.units.iter().position(|u| u.key() == *key)
     }
 
     /// Unit `unit`'s stitches ([`Unit::stitches`]): empty for a unit that isn't there.

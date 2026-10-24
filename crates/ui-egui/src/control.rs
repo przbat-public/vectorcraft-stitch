@@ -160,6 +160,8 @@ pub fn inspect(app: &VectorcraftApp, ctx: &egui::Context) -> Value {
         "nativeMenuBar": app.services.native_menu.is_some(),
         // Saves and exports still being written in the background (Background Save / Export).
         "background": app.background.jobs.iter().filter(|j| !j.label.is_empty()).map(|j| j.label.as_str()).collect::<Vec<_>>(),
+        // VectorCraft Stitch: the active document's stitch view and how its plan stands.
+        "stitchPreview": crate::embroidery::inspect(app, ctx.input(|i| i.time)),
         // Documents still being read off the UI thread (File › Open, Open Recent): their paths.
         "opening": app.opening.pending.iter().map(|p| p.path.as_str()).collect::<Vec<_>>(),
         // The screen color sampler is shown, waiting for the person at the computer
@@ -376,6 +378,10 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context, req: &ControlReques
             if let Some(v) = p.get("controlBar").and_then(Value::as_bool) {
                 app.ui.control_bar = v;
             }
+            // VectorCraft Stitch: the active document's stitch view.
+            if let Some(on) = p.get("stitchPreview").and_then(Value::as_bool) {
+                r = app.run("view.stitchPreview", json!({"on": on}));
+            }
             if p.get("closePanel").is_some() {
                 app.ui.open_panel = None;
             }
@@ -425,7 +431,16 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context, req: &ControlReques
             if let Err(e) = vectorcraft_render::raster_size(r, scale) {
                 return err(e);
             }
-            let img = app.canvas.renderer.render_region(&doc, r, scale, true);
+            // VectorCraft Stitch: the artboard's stitches, as the stitch preview draws them.
+            let stitches = p.get("stitchPreview").and_then(Value::as_bool) == Some(true);
+            let img = if stitches {
+                match crate::embroidery::render_stitches(app, index.unwrap_or(0), scale) {
+                    Ok(img) => img,
+                    Err(e) => return err(e),
+                }
+            } else {
+                app.canvas.renderer.render_region(&doc, r, scale, true)
+            };
             let png = match img.to_png() {
                 Ok(png) => png,
                 Err(e) => return err(e),

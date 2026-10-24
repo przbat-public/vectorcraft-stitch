@@ -29,7 +29,8 @@ use vectorcraft_tools::{PaintDefaults, Tool};
 pub use cmd::EyedropperOptions;
 pub use cmd::clipboard::Clipboard;
 pub use cmd::distortcmds::perspective_click;
-pub use cmd::embroidery::{Options as EmbroideryOptions, Planner as EmbroideryPlanner};
+// VectorCraft Stitch: `PlanKey` and `Planned`, for the stitch preview.
+pub use cmd::embroidery::{Options as EmbroideryOptions, PlanKey as EmbroideryPlanKey, Planned as EmbroideryPlanned, Planner as EmbroideryPlanner};
 pub use cmd::fileio::embroidery::LOSS_NOTES as EMBROIDERY_LOSS_NOTES;
 pub use cmd::params::{check_keys, check_params};
 pub use cmd::rasterfx::{export_pdf, flatten_raster_effects};
@@ -1537,7 +1538,11 @@ impl Session {
         // Closed (saved or discarded): nothing left to recover.
         let uid = self.docs[index].uid;
         cmd::recovery::forget(self, uid);
-        self.embroidery_plans.forget(uid);
+        // VectorCraft Stitch: its stitch planning, view and export's options go with it; in a
+        // batch, once the batch succeeds (a failed one brings the document back with them).
+        if self.batch_stash.is_none() {
+            self.embroidery_plans.forget(uid);
+        }
         let old = self.docs.remove(index);
         if let Some(stash) = &mut self.batch_stash {
             stash.push(old);

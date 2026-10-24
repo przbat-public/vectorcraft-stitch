@@ -5320,3 +5320,166 @@ theme	Appearance	Apparence
 	Edge Run	Passage en bordure
 	Edge Run and Zigzag	Passage en bordure et zigzag
 	Edge Run and Tatami	Passage en bordure et tatami
+	Embroidery Picture	Image de la broderie
+@msg	nothing to draw: the document sews no stitch	rien à dessiner : le document ne coud aucun point
+	Stitch Preview	Aperçu des points
+	Stitch Preview Options	Options de l’aperçu des points
+	Show Jumps and Cuts	Afficher les sauts et les coupes
+	Show Needle Points	Afficher les points de piqûre
+	Show Artwork Under Stitches	Afficher l’illustration sous les points
+embroidery	Stitches	Points
+embroidery	Art	Illustration
+embroidery	View	Affichage
+embroidery	Planning stitches…	Planification des points…
+embroidery	Can't plan the stitches:	Impossible de planifier les points :
+embroidery	Entry	Entrée
+embroidery	Exit	Sortie
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} objet sélectionné n’est pas brodé|{count} objets sélectionnés ne sont pas brodés
+	Embroidery	Broderie
+	Embroidery Panel	Panneau Broderie
+embroidery	Sewing Order	Ordre de broderie
+embroidery	Check	Vérification
+embroidery	No document	Aucun document
+embroidery	Open or draw a design to see how it will be sewn.	Ouvrez ou dessinez un motif pour voir comment il sera brodé.
+embroidery	Updating…	Mise à jour…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Voici les points d’avant la dernière modification ; les nouveaux sont en cours de planification.
+embroidery	Change the design and the stitches are planned again.	Modifiez le motif et les points seront à nouveau planifiés.
+embroidery	Nothing to sew	Rien à broder
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Les tracés dotés d’un fond ou d’un contour sont brodés ; les objets masqués, les repères et les calques non imprimables ne le sont pas.
+@plural	{count} thread block|{count} thread blocks	{count} bloc de fil|{count} blocs de fil
+@plural	{count} stitch|{count} stitches	{count} point|{count} points
+@msg	tab {tab}: one of {_1}	onglet {tab} : l’un de {_1}
+@msg	unknown key `{k}`: the only one is {only}	clé inconnue `{k}` : la seule est {only}
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Brodé du bas de la pile vers le haut ; les objets d’une même couleur sont réunis lorsque rien ne se trouve entre eux.
+embroidery	Trim and thread change	Coupe et changement de fil
+embroidery	Thread change	Changement de fil
+embroidery	fill	fond
+embroidery	stroke	contour
+embroidery	from the file	du fichier
+embroidery	running stitch	point droit
+embroidery	satin	satin
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	parties étroites en satin
+@plural	{count} object|{count} objects	{count} objet|{count} objets
+@plural	{count} jump|{count} jumps	{count} saut|{count} sauts
+@plural	{count} trim|{count} trims	{count} coupe|{count} coupes
+embroidery	Colours	Couleurs
+embroidery	Thread changes	Changements de fil
+embroidery	Trims	Coupes
+embroidery	Jumps	Sauts
+embroidery	Top thread	Fil supérieur
+embroidery	Size	Taille
+embroidery	Time	Durée
+embroidery	Design	Motif
+embroidery	The time at {speed} stitches a minute, an estimate.	La durée à {speed} points par minute, une estimation.
+	Sew Earlier	Broder plus tôt
+	Sew Later	Broder plus tard
+	Sew First	Broder en premier
+	Sew Last	Broder en dernier
+	Change Sewing Order	Modifier l’ordre de broderie
+@msg	nothing selected is sewn	rien de la sélection n’est brodé
+@msg	the selection is sewn first already	la sélection est déjà brodée en premier
+@msg	the selection is sewn last already	la sélection est déjà brodée en dernier
+@msg	the sewing order is that already	l’ordre de broderie est déjà celui-là
+@msg	can't change the sewing order: an object is no longer in the document	impossible de modifier l’ordre de broderie : un objet n’est plus dans le document
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	impossible de modifier l’ordre de broderie : un objet, ou un calque ou un groupe qui le contient, est verrouillé
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	impossible de modifier l’ordre de broderie : un tracé de détourage reste au bas de son groupe de détourage
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	impossible de modifier l’ordre de broderie : un objet entrerait dans un groupe de détourage ou en sortirait
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	impossible de modifier l’ordre de broderie : un tronçon d’un fichier machine ouvert se déplace avec son bloc : déplacez donc son groupe
+@msg	can't change the sewing order: a layer can't go into a group	impossible de modifier l’ordre de broderie : un calque ne peut pas aller dans un groupe
+@msg	can't change the sewing order: the layer or group it would go into is locked	impossible de modifier l’ordre de broderie : le calque ou le groupe où il irait est verrouillé
+@msg	can't change the sewing order: it would go between two parts of one object	impossible de modifier l’ordre de broderie : il irait entre deux parties d’un même objet
+@msg	can't change the sewing order: there is nothing to sew it beside	impossible de modifier l’ordre de broderie : il n’y a rien à côté de quoi le broder
+@msg	can't change the sewing order: too many objects at once	impossible de modifier l’ordre de broderie : trop d’objets à la fois
+embroidery	After {name}	Après {name}
+embroidery	Before {name}	Avant {name}
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Aucun point n’a bougé : les objets d’une même couleur restent réunis tant que rien entre eux ne se trouve dessous.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} est brodé dans le bloc {block}, réuni avec les autres de sa couleur
+embroidery	{name} is sewn in block {block}	{name} est brodé dans le bloc {block}
+embroidery	Thread changes: {before} → {after}	Changements de fil : {before} → {after}
+embroidery	Collapse All	Tout réduire
+embroidery	Expand All	Tout développer
+embroidery	Satin columns wider than {value} mm	Colonnes satin plus larges que {value} mm
+embroidery	Stitches longer than {value} mm	Points de plus de {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Points plus longs qu’un enregistrement {format} ({value} mm)
+embroidery	Fill stitch length under {value} mm	Longueur de point de fond inférieure à {value} mm
+embroidery	Satin columns narrower than {value} mm	Colonnes satin plus étroites que {value} mm
+embroidery	Running stitch length under {value} mm	Longueur de point droit inférieure à {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Points plus courts que l’épaisseur de l’aiguille ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Points de {value} mm ou moins, que les machines ignorent
+embroidery	More than {value} short stitches in a row	Plus de {value} points courts d’affilée
+embroidery	{value} or more layers of stitches on one spot	{value} couches de points ou plus au même endroit
+embroidery	Everything is sewn	Tout est brodé
+embroidery	Art that isn't sewn	Illustration non brodée
+embroidery	More colour blocks than {format} holds ({value})	Plus de blocs de couleur que {format} n’en contient ({value})
+embroidery	{format} holds any number of colour blocks	{format} contient un nombre quelconque de blocs de couleur
+embroidery	More stitches than a machine shows ({value})	Plus de points qu’une machine n’en affiche ({value})
+embroidery	More thread changes than a machine shows ({value})	Plus de changements de fil qu’une machine n’en affiche ({value})
+embroidery	No findings	Rien à signaler
+embroidery	Longest: {value} mm	Le plus long : {value} mm
+embroidery	Widest: {value} mm	La plus large : {value} mm
+embroidery	Narrowest: {value} mm	La plus étroite : {value} mm
+embroidery	Shortest: {value} mm	Le plus court : {value} mm
+embroidery	At most {value} in a row	Au plus {value} d’affilée
+embroidery	At most {value} on one spot	Au plus {value} au même endroit
+embroidery	Record {record}: {value} mm	Enregistrement {record} : {value} mm
+embroidery	From record {record}: {value} in a row	À partir de l’enregistrement {record} : {value} d’affilée
+embroidery	Record {record}	Enregistrement {record}
+embroidery	{name}: {value} mm	{name} : {value} mm
+embroidery	Error	Erreur
+embroidery	Warning	Avertissement
+embroidery	Note	Remarque
+embroidery	Passed	Réussie
+embroidery	No problems found	Aucun problème détecté
+embroidery	stitch density	densité de points
+embroidery	needle penetrations in an area	piqûres d’aiguille dans une zone
+embroidery	tie stitches	points d’arrêt
+embroidery	Checking…	Vérification…
+embroidery	Can't check the design:	Impossible de vérifier le motif :
+embroidery	Checked for	Vérifié pour
+embroidery	Source: {name}	Source : {name}
+embroidery	Also: {name}	Aussi : {name}
+embroidery	Not checked: {list}	Non vérifié : {list}
+embroidery	No source gives a number to check these against.	Aucune source ne donne de valeur à laquelle les comparer.
+@plural	{count} thread change|{count} thread changes	{count} changement de fil|{count} changements de fil
+@plural	{count} row|{count} rows	{count} série|{count} séries
+@plural	{count} spot|{count} spots	{count} endroit|{count} endroits
+@plural	{count} thread|{count} threads	{count} fil|{count} fils
+@plural	{count} error|{count} errors	{count} erreur|{count} erreurs
+@plural	{count} warning|{count} warnings	{count} avertissement|{count} avertissements
+@plural	{count} note|{count} notes	{count} remarque|{count} remarques
+@plural	and {count} more|and {count} more	et {count} autre|et {count} autres
+embroidery	Threads unlike the art's colour (over {value})	Fils éloignés de la couleur de l’illustration (supérieur à {value})
+embroidery	Largest difference: {value}	Écart maximal : {value}
+embroidery	Block {block}: {thread}, {value}	Bloc {block} : {thread}, {value}
+	Zoom to Box	Zoom sur un cadre
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect : [left, top, right, bottom] en points du document, chacun dans la plage ±{max}, right au moins égal à left et bottom au moins égal à top
+@msg	margin: screen points, 0 or more	margin : points d’écran, 0 ou plus
+@msg	no canvas is shown	aucun canevas n’est affiché
+	Next Finding	Constat suivant
+	Previous Finding	Constat précédent
+embroidery	Show	Afficher
+embroidery	{index} of {count}	{index} sur {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	aucun constat n’est affiché : affichez-en un dans l’onglet Vérification du panneau Broderie
+@msg	the check is out of date: wait for the stitches to be planned	la vérification n’est plus à jour : attendez que les points soient planifiés
+@msg	no such rule in the check	cette règle ne figure pas dans la vérification
+@msg	no such finding in the check	ce constat ne figure pas dans la vérification
+	Show Check Marks	Afficher les repères de vérification
+embroidery	Stitch lengths	Longueurs de point
+embroidery	Median: {value} mm	Médiane : {value} mm
+embroidery	Too long	Trop longs
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm : {stitches}
+embroidery	Over {value} mm: {stitches}	Plus de {value} mm : {stitches}
+@plural	{count} colour|{count} colours	{count} couleur|{count} couleurs
+embroidery	Embroidery: {figures}	Broderie : {figures}
+embroidery	Stitches can't be planned	Impossible de planifier les points
+embroidery	Click to open the Embroidery panel.	Cliquez pour ouvrir le panneau Broderie.
+embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	environ {value} min
+embroidery	about {value} m	environ {value} m
+	Show Finding	Afficher le constat
+@msg	`rule` must be a check rule's id	`rule` doit être l’identifiant d’une règle de la vérification
+@msg	`hit` must be a listed hit's place, from 0	`hit` doit être la place d’un constat listé, à partir de 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	aucune vérification du document tel qu’il est : affichez l’onglet Vérification du panneau Broderie et attendez que les points soient planifiés
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	et {count} ligne de plus n’est pas listée (la liste montre les {limit} premières)|et {count} lignes de plus ne sont pas listées (la liste montre les {limit} premières)
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	l’image ferait {w} × {h} pixels, plus de {most} par côté : dessinez une zone plus petite ou à une échelle plus petite

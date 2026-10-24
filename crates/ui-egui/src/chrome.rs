@@ -385,12 +385,21 @@ pub fn control_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
 
 /// A document tab's title: "Name* @ 66.67 % (RGB/Preview)", or while an opacity mask is edited
 /// "Name* @ 66.67 % (<Opacity Mask>/Opacity Mask)".
-fn tab_title(d: &vectorcraft_engine::DocState, zoom: f64, outline: bool) -> String {
+// VectorCraft Stitch: `pub(crate)`, and `stitches` for the tab's mode in the stitch view.
+pub(crate) fn tab_title(d: &vectorcraft_engine::DocState, zoom: f64, outline: bool, stitches: bool) -> String {
     let mode = if d.doc.mask_edit.is_some() {
         format!("<{0}>/{0}", tl!("Opacity Mask"))
     } else {
         let color = if d.doc.color_mode == vectorcraft_doc::ColorMode::Cmyk { "CMYK" } else { "RGB" };
-        format!("{color}/{}", if outline { tl!("Outline") } else { tl!("Preview") })
+        // VectorCraft Stitch: the stitch view's mode.
+        let shown = if stitches {
+            crate::embroidery::menu::tab_mode()
+        } else if outline {
+            tl!("Outline")
+        } else {
+            tl!("Preview")
+        };
+        format!("{color}/{shown}")
     };
     format!("{}{} @ {} ({mode})", d.title(), if d.is_dirty() { "*" } else { "" }, zoom_label(zoom).replace('%', " %"))
 }
@@ -430,7 +439,8 @@ pub fn doc_tabs(app: &mut VectorcraftApp, ui: &mut Ui) {
         .enumerate()
         .map(|(i, d)| {
             let zoom = app.views.get(i).map(|v| v.zoom).unwrap_or(1.0);
-            let title = tab_title(d, zoom, app.ui.view.outline);
+            // VectorCraft Stitch: whether the document shows its stitches.
+            let title = tab_title(d, zoom, app.ui.view.outline, crate::embroidery::menu::shows_stitches(app, d));
             let color = if Some(i) == active { t.text_strong } else { t.text_dim };
             (title.clone(), ui.painter().layout_no_wrap(title, theme::semibold(title_size), color))
         })
@@ -711,18 +721,22 @@ pub fn status_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
                     .unwrap_or("");
                 ui.label(egui::RichText::new(tool).size(11.5).color(t.text_dim));
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label(
-                        egui::RichText::new(format!(
-                            "{} {:.1} ms · {} {:.1} ms · {:.0} fps",
-                            crate::i18n::tr_ctx(crate::i18n::current(), "diagnostics", "render"),
-                            app.perf.render_ms,
-                            crate::i18n::tr_ctx(crate::i18n::current(), "diagnostics", "ui"),
-                            app.perf.frame_ms,
-                            app.perf.fps
-                        ))
-                        .size(10.5)
-                        .color(t.text_disabled),
-                    );
+                    // VectorCraft Stitch: the timings as a value, drawn after the counters below.
+                    let timings = egui::RichText::new(format!(
+                        "{} {:.1} ms · {} {:.1} ms · {:.0} fps",
+                        crate::i18n::tr_ctx(crate::i18n::current(), "diagnostics", "render"),
+                        app.perf.render_ms,
+                        crate::i18n::tr_ctx(crate::i18n::current(), "diagnostics", "ui"),
+                        app.perf.frame_ms,
+                        app.perf.fps
+                    ))
+                    .size(10.5)
+                    .color(t.text_disabled);
+                    // VectorCraft Stitch: the embroidery counters, rightmost; the timings give way
+                    // to them when the bar is short of room.
+                    if crate::embroidery::counters::show(app, ui, &timings) {
+                        ui.label(timings);
+                    }
                     if let Some(p) = app.hover_doc {
                         let u = app.session.general_unit();
                         ui.label(
@@ -1408,7 +1422,8 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({"width": 100, "height": 100})).unwrap();
         s.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 50, "height": 50})).unwrap();
-        let title = |s: &Session| super::tab_title(s.active().unwrap(), 1.0, false);
+        // VectorCraft Stitch: `tab_title`'s `stitches`.
+        let title = |s: &Session| super::tab_title(s.active().unwrap(), 1.0, false, false);
         assert!(title(&s).ends_with("(RGB/Preview)"), "{}", title(&s));
         s.execute("transparency.makeOpacityMask", &json!({})).unwrap();
         assert!(title(&s).ends_with("(<Opacity Mask>/Opacity Mask)"), "{}", title(&s));

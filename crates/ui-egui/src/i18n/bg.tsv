@@ -5286,3 +5286,166 @@ theme	Appearance	Външен вид
 	Edge Run	Ход по ръба
 	Edge Run and Zigzag	Ход по ръба и зигзаг
 	Edge Run and Tatami	Ход по ръба и татами
+	Embroidery Picture	Изображение на бродерията
+@msg	nothing to draw: the document sews no stitch	няма какво да се изобрази: документът не шие нито един бод
+	Stitch Preview	Преглед на бодовете
+	Stitch Preview Options	Опции за прегледа на бодовете
+	Show Jumps and Cuts	Показване на прескоците и срязванията
+	Show Needle Points	Показване на точките на убождане
+	Show Artwork Under Stitches	Показване на графиката под бодовете
+embroidery	Stitches	Бодове
+embroidery	Art	Графика
+embroidery	View	Изглед
+embroidery	Planning stitches…	Планиране на бодовете…
+embroidery	Can't plan the stitches:	Бодовете не могат да се планират:
+embroidery	Entry	Вход
+embroidery	Exit	Изход
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} избран обект не се шие|{count} избрани обекта не се шият
+	Embroidery	Бродерия
+	Embroidery Panel	Панел „Бродерия“
+embroidery	Sewing Order	Ред на шиене
+embroidery	Check	Проверка
+embroidery	No document	Няма документ
+embroidery	Open or draw a design to see how it will be sewn.	Отворете или нарисувайте дизайн, за да видите как ще бъде ушит.
+embroidery	Updating…	Обновяване…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Това са бодовете преди последната промяна; новите се планират.
+embroidery	Change the design and the stitches are planned again.	Променете дизайна и бодовете ще бъдат планирани отново.
+embroidery	Nothing to sew	Няма какво да се шие
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Шият се контури със запълване или щрих; скритите обекти, водачите и непечатаемите слоеве — не.
+@plural	{count} thread block|{count} thread blocks	{count} блок нишки|{count} блока нишки
+@plural	{count} stitch|{count} stitches	{count} бод|{count} бода
+@msg	tab {tab}: one of {_1}	раздел {tab}: един от {_1}
+@msg	unknown key `{k}`: the only one is {only}	непознат ключ `{k}`: единственият е {only}
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Шие се от дъното на купчината нагоре; обектите с един цвят се обединяват, когато между тях няма нищо.
+embroidery	Trim and thread change	Срязване и смяна на нишката
+embroidery	Thread change	Смяна на нишката
+embroidery	fill	запълване
+embroidery	stroke	щрих
+embroidery	from the file	от файла
+embroidery	running stitch	права бод
+embroidery	satin	сатен
+embroidery	tatami	татами
+embroidery	narrow parts as satin	тесните части като сатен
+@plural	{count} object|{count} objects	{count} обект|{count} обекта
+@plural	{count} jump|{count} jumps	{count} прескок|{count} прескока
+@plural	{count} trim|{count} trims	{count} срязване|{count} срязвания
+embroidery	Colours	Цветове
+embroidery	Thread changes	Смени на нишката
+embroidery	Trims	Срязвания
+embroidery	Jumps	Прескоци
+embroidery	Top thread	Горна нишка
+embroidery	Size	Размер
+embroidery	Time	Време
+embroidery	Design	Дизайн
+embroidery	The time at {speed} stitches a minute, an estimate.	Времето при {speed} бода в минута, приблизително.
+	Sew Earlier	Ший по-рано
+	Sew Later	Ший по-късно
+	Sew First	Ший първо
+	Sew Last	Ший последно
+	Change Sewing Order	Промяна на реда на шиене
+@msg	nothing selected is sewn	нищо от избраното не се шие
+@msg	the selection is sewn first already	избраното вече се шие първо
+@msg	the selection is sewn last already	избраното вече се шие последно
+@msg	the sewing order is that already	редът на шиене вече е такъв
+@msg	can't change the sewing order: an object is no longer in the document	сменяне на реда на шиене не е възможно: обектът вече не е в документа
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	сменяне на реда на шиене не е възможно: обектът или слоят или групата, в които е, е заключен
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	сменяне на реда на шиене не е възможно: изрязващият контур остава в дъното на групата си
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	сменяне на реда на шиене не е възможно: обектът би влязъл в изрязваща група или би излязъл от нея
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	сменяне на реда на шиене не е възможно: участък от отворен машинен файл се мести с блока си, затова преместете групата му
+@msg	can't change the sewing order: a layer can't go into a group	сменяне на реда на шиене не е възможно: слой не може да влезе в група
+@msg	can't change the sewing order: the layer or group it would go into is locked	сменяне на реда на шиене не е възможно: слоят или групата, в които би влязъл, са заключени
+@msg	can't change the sewing order: it would go between two parts of one object	сменяне на реда на шиене не е възможно: би попаднал между две части на един обект
+@msg	can't change the sewing order: there is nothing to sew it beside	сменяне на реда на шиене не е възможно: няма до какво да се шие
+@msg	can't change the sewing order: too many objects at once	сменяне на реда на шиене не е възможно: твърде много обекти наведнъж
+embroidery	After {name}	След {name}
+embroidery	Before {name}	Преди {name}
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Нито един бод не се премести: обектите с един цвят се обединяват, когато нищо между тях не лежи под тях.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} се шие в блок {block}, обединен с другите от своя цвят
+embroidery	{name} is sewn in block {block}	{name} се шие в блок {block}
+embroidery	Thread changes: {before} → {after}	Смени на нишката: {before} → {after}
+embroidery	Collapse All	Свий всички
+embroidery	Expand All	Разгъни всички
+embroidery	Satin columns wider than {value} mm	Сатенени колони, по-широки от {value} мм
+embroidery	Stitches longer than {value} mm	Бодове, по-дълги от {value} мм
+embroidery	Stitches longer than one {format} record ({value} mm)	Бодове, по-дълги от един запис на {format} ({value} мм)
+embroidery	Fill stitch length under {value} mm	Дължина на бода на запълването под {value} мм
+embroidery	Satin columns narrower than {value} mm	Сатенени колони, по-тесни от {value} мм
+embroidery	Running stitch length under {value} mm	Дължина на правия бод под {value} мм
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Бодове, по-къси от дебелината на иглата ({value} мм)
+embroidery	Stitches of {value} mm or less, which machines leave out	Бодове от {value} мм или по-малко, които машините пропускат
+embroidery	More than {value} short stitches in a row	Повече от {value} къси бода подред
+embroidery	{value} or more layers of stitches on one spot	{value} или повече слоя бодове на едно място
+embroidery	Everything is sewn	Всичко се бродира
+embroidery	Art that isn't sewn	Графика, която не се бродира
+embroidery	More colour blocks than {format} holds ({value})	Повече цветни блокове, отколкото побира {format} ({value})
+embroidery	{format} holds any number of colour blocks	{format} побира произволен брой цветни блокове
+embroidery	More stitches than a machine shows ({value})	Повече бодове, отколкото показва машина ({value})
+embroidery	More thread changes than a machine shows ({value})	Повече смени на нишката, отколкото показва машина ({value})
+embroidery	No findings	Няма открити
+embroidery	Longest: {value} mm	Най-дълъг: {value} мм
+embroidery	Widest: {value} mm	Най-широка: {value} мм
+embroidery	Narrowest: {value} mm	Най-тясна: {value} мм
+embroidery	Shortest: {value} mm	Най-къс: {value} мм
+embroidery	At most {value} in a row	Най-много {value} подред
+embroidery	At most {value} on one spot	Най-много {value} на едно място
+embroidery	Record {record}: {value} mm	Запис {record}: {value} мм
+embroidery	From record {record}: {value} in a row	От запис {record}: {value} подред
+embroidery	Record {record}	Запис {record}
+embroidery	{name}: {value} mm	{name}: {value} мм
+embroidery	Error	Грешка
+embroidery	Warning	Предупреждение
+embroidery	Note	Бележка
+embroidery	Passed	Успешно
+embroidery	No problems found	Не са открити проблеми
+embroidery	stitch density	плътност на бодовете
+embroidery	needle penetrations in an area	убождания на иглата в една площ
+embroidery	tie stitches	закрепващи бодове
+embroidery	Checking…	Проверка…
+embroidery	Can't check the design:	Дизайнът не може да се провери:
+embroidery	Checked for	Проверено за
+embroidery	Source: {name}	Източник: {name}
+embroidery	Also: {name}	Също: {name}
+embroidery	Not checked: {list}	Не се проверява: {list}
+embroidery	No source gives a number to check these against.	Нито един източник не дава число, спрямо което да се проверят.
+@plural	{count} thread change|{count} thread changes	{count} смяна на нишката|{count} смени на нишката
+@plural	{count} row|{count} rows	{count} поредица|{count} поредици
+@plural	{count} spot|{count} spots	{count} място|{count} места
+@plural	{count} thread|{count} threads	{count} нишка|{count} нишки
+@plural	{count} error|{count} errors	{count} грешка|{count} грешки
+@plural	{count} warning|{count} warnings	{count} предупреждение|{count} предупреждения
+@plural	{count} note|{count} notes	{count} бележка|{count} бележки
+@plural	and {count} more|and {count} more	и още {count}|и още {count}
+embroidery	Threads unlike the art's colour (over {value})	Нишки, различни от цвета на графиката (над {value})
+embroidery	Largest difference: {value}	Най-голяма разлика: {value}
+embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}
+	Zoom to Box	Мащабиране до рамка
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] в точки на документа, всяка в рамките на ±{max}, като right не е преди left, а bottom не е над top
+@msg	margin: screen points, 0 or more	margin: точки на екрана, 0 или повече
+@msg	no canvas is shown	не е показано платно
+	Next Finding	Следваща находка
+	Previous Finding	Предишна находка
+embroidery	Show	Покажи
+embroidery	{index} of {count}	{index} от {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	не е показана находка: покажете такава в раздела „Проверка“ на панела „Бродерия“
+@msg	the check is out of date: wait for the stitches to be planned	проверката е остаряла: изчакайте бодовете да бъдат планирани
+@msg	no such rule in the check	няма такова правило в проверката
+@msg	no such finding in the check	няма такава находка в проверката
+	Show Check Marks	Показване на отметките от проверката
+embroidery	Stitch lengths	Дължини на бодовете
+embroidery	Median: {value} mm	Медиана: {value} мм
+embroidery	Too long	Твърде дълги
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
+embroidery	Over {value} mm: {stitches}	Над {value} мм: {stitches}
+@plural	{count} colour|{count} colours	{count} цвят|{count} цвята
+embroidery	Embroidery: {figures}	Бродерия: {figures}
+embroidery	Stitches can't be planned	Бодовете не могат да бъдат планирани
+embroidery	Click to open the Embroidery panel.	Щракнете, за да отворите панела „Бродерия“.
+embroidery	{width} × {height} mm	{width} × {height} мм
+embroidery	about {value} min	около {value} мин
+embroidery	about {value} m	около {value} м
+	Show Finding	Покажи находката
+@msg	`rule` must be a check rule's id	`rule` трябва да е идентификатор на правило от проверката
+@msg	`hit` must be a listed hit's place, from 0	`hit` трябва да е мястото на изброена находка, от 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	няма проверка на документа в сегашния му вид: покажете раздела „Проверка“ на панела „Бродерия“ и изчакайте бодовете да бъдат планирани
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	и още {count} ред не е в списъка (списъкът показва първите {limit})|и още {count} реда не са в списъка (списъкът показва първите {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	картината би била {w} × {h} пиксела, повече от {most} на страна: изобразете по-малка област или в по-малък мащаб

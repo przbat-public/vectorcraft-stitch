@@ -4974,3 +4974,166 @@ lighting	Light	ライト
 	Edge Run	エッジラン
 	Edge Run and Zigzag	エッジランとジグザグ
 	Edge Run and Tatami	エッジランとタタミ
+	Embroidery Picture	刺繍の画像
+@msg	nothing to draw: the document sews no stitch	描画するものがありません: ドキュメントには縫うステッチがありません
+	Stitch Preview	ステッチプレビュー
+	Stitch Preview Options	ステッチプレビューのオプション
+	Show Jumps and Cuts	ジャンプとカットを表示
+	Show Needle Points	針落ち点を表示
+	Show Artwork Under Stitches	ステッチの下にアートワークを表示
+embroidery	Stitches	ステッチ
+embroidery	Art	アートワーク
+embroidery	View	表示
+embroidery	Planning stitches…	ステッチを計画中…
+embroidery	Can't plan the stitches:	ステッチを計画できません:
+embroidery	Entry	入口
+embroidery	Exit	出口
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	選択したオブジェクトのうち {count} 個は縫われません
+	Embroidery	刺繍
+	Embroidery Panel	刺繍パネル
+embroidery	Sewing Order	縫い順
+embroidery	Check	チェック
+embroidery	No document	ドキュメントがありません
+embroidery	Open or draw a design to see how it will be sewn.	デザインを開くか描くと、どのように縫われるかがわかります。
+embroidery	Updating…	更新中…
+embroidery	These are the stitches before the last change; the new ones are being planned.	最後の変更前のステッチです。新しいステッチを計画しています。
+embroidery	Change the design and the stitches are planned again.	デザインを変更すると、ステッチがもう一度計画されます。
+embroidery	Nothing to sew	縫うものがありません
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	塗りまたは線のあるパスが縫われます。非表示のオブジェクト、ガイド、印刷しないレイヤーは縫われません。
+@plural	{count} thread block|{count} thread blocks	{count} 個の糸ブロック
+@plural	{count} stitch|{count} stitches	{count} 針
+@msg	tab {tab}: one of {_1}	タブ {tab}: {_1} のいずれか
+@msg	unknown key `{k}`: the only one is {only}	不明なキー `{k}`: 使えるのは {only} だけです
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	重なりの下から順に縫われます。間に何もなければ同じ色のオブジェクトはまとめられます。
+embroidery	Trim and thread change	糸切りと糸替え
+embroidery	Thread change	糸替え
+embroidery	fill	塗り
+embroidery	stroke	線
+embroidery	from the file	ファイルから
+embroidery	running stitch	ランニングステッチ
+embroidery	satin	サテン
+embroidery	tatami	タタミ
+embroidery	narrow parts as satin	細い部分はサテン
+@plural	{count} object|{count} objects	{count} 個のオブジェクト
+@plural	{count} jump|{count} jumps	{count} 回のジャンプ
+@plural	{count} trim|{count} trims	{count} 回の糸切り
+embroidery	Colours	色
+embroidery	Thread changes	糸替え
+embroidery	Trims	糸切り
+embroidery	Jumps	ジャンプ
+embroidery	Top thread	上糸
+embroidery	Size	サイズ
+embroidery	Time	時間
+embroidery	Design	デザイン
+embroidery	The time at {speed} stitches a minute, an estimate.	1 分あたり {speed} 針での時間 (推定)。
+	Sew Earlier	前に縫う
+	Sew Later	後に縫う
+	Sew First	最初に縫う
+	Sew Last	最後に縫う
+	Change Sewing Order	縫い順の変更
+@msg	nothing selected is sewn	選択したものは縫われません
+@msg	the selection is sewn first already	選択範囲はすでに最初に縫われます
+@msg	the selection is sewn last already	選択範囲はすでに最後に縫われます
+@msg	the sewing order is that already	縫い順はすでにそのとおりです
+@msg	can't change the sewing order: an object is no longer in the document	縫い順を変更できません: オブジェクトがドキュメントにもうありません
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	縫い順を変更できません: オブジェクト、またはそれを含むレイヤーかグループがロックされています
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	縫い順を変更できません: クリッピングパスはクリップグループの一番下にとどまります
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	縫い順を変更できません: オブジェクトがクリップグループに入るか、そこから出てしまいます
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	縫い順を変更できません: 開いたミシンファイルの区間はブロックごと移動するので、そのグループを移動してください
+@msg	can't change the sewing order: a layer can't go into a group	縫い順を変更できません: レイヤーはグループに入れられません
+@msg	can't change the sewing order: the layer or group it would go into is locked	縫い順を変更できません: 入る先のレイヤーまたはグループがロックされています
+@msg	can't change the sewing order: it would go between two parts of one object	縫い順を変更できません: 1 つのオブジェクトの 2 つの部分の間に入ってしまいます
+@msg	can't change the sewing order: there is nothing to sew it beside	縫い順を変更できません: 隣に縫うものがありません
+@msg	can't change the sewing order: too many objects at once	縫い順を変更できません: 一度に扱うオブジェクトが多すぎます
+embroidery	After {name}	{name} の後
+embroidery	Before {name}	{name} の前
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	ステッチは移動していません。間にあるものがその下になければ、同じ色のオブジェクトはまとめられたままです。
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} はブロック {block} で、同じ色のほかのオブジェクトとまとめて縫われます
+embroidery	{name} is sewn in block {block}	{name} はブロック {block} で縫われます
+embroidery	Thread changes: {before} → {after}	糸替え: {before} → {after}
+embroidery	Collapse All	すべて折りたたむ
+embroidery	Expand All	すべて展開
+embroidery	Satin columns wider than {value} mm	幅が {value} mm を超えるサテンの列
+embroidery	Stitches longer than {value} mm	{value} mm より長い針目
+embroidery	Stitches longer than one {format} record ({value} mm)	{format} の 1 レコードより長い針目 ({value} mm)
+embroidery	Fill stitch length under {value} mm	塗りの針目の長さが {value} mm 未満
+embroidery	Satin columns narrower than {value} mm	幅が {value} mm 未満のサテンの列
+embroidery	Running stitch length under {value} mm	ランニングステッチの長さが {value} mm 未満
+embroidery	Stitches shorter than the needle is thick ({value} mm)	針の太さより短い針目 ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	ミシンが省く {value} mm 以下の針目
+embroidery	More than {value} short stitches in a row	短い針目が {value} 個を超えて連続
+embroidery	{value} or more layers of stitches on one spot	1 か所に {value} 層以上の針目
+embroidery	Everything is sewn	すべて縫われます
+embroidery	Art that isn't sewn	縫われないアートワーク
+embroidery	More colour blocks than {format} holds ({value})	{format} に収まる数を超える色ブロック ({value})
+embroidery	{format} holds any number of colour blocks	{format} は色ブロックをいくつでも収められます
+embroidery	More stitches than a machine shows ({value})	ミシンが表示できる数を超える針数 ({value})
+embroidery	More thread changes than a machine shows ({value})	ミシンが表示できる数を超える糸替え ({value})
+embroidery	No findings	問題なし
+embroidery	Longest: {value} mm	最長: {value} mm
+embroidery	Widest: {value} mm	最大幅: {value} mm
+embroidery	Narrowest: {value} mm	最小幅: {value} mm
+embroidery	Shortest: {value} mm	最短: {value} mm
+embroidery	At most {value} in a row	連続は最大 {value} 個
+embroidery	At most {value} on one spot	1 か所に最大 {value} 層
+embroidery	Record {record}: {value} mm	レコード {record}: {value} mm
+embroidery	From record {record}: {value} in a row	レコード {record} から: {value} 個連続
+embroidery	Record {record}	レコード {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	エラー
+embroidery	Warning	警告
+embroidery	Note	注記
+embroidery	Passed	合格
+embroidery	No problems found	問題は見つかりませんでした
+embroidery	stitch density	針目の密度
+embroidery	needle penetrations in an area	一定範囲の針落ち数
+embroidery	tie stitches	止め縫い
+embroidery	Checking…	チェック中…
+embroidery	Can't check the design:	デザインをチェックできません:
+embroidery	Checked for	チェック対象
+embroidery	Source: {name}	出典: {name}
+embroidery	Also: {name}	ほかに: {name}
+embroidery	Not checked: {list}	チェックしない項目: {list}
+embroidery	No source gives a number to check these against.	これらを判定する数値を示す出典がありません。
+@plural	{count} thread change|{count} thread changes	{count} 回の糸替え
+@plural	{count} row|{count} rows	{count} か所の連続
+@plural	{count} spot|{count} spots	{count} か所
+@plural	{count} thread|{count} threads	{count} 本の糸
+@plural	{count} error|{count} errors	エラー {count} 件
+@plural	{count} warning|{count} warnings	警告 {count} 件
+@plural	{count} note|{count} notes	注記 {count} 件
+@plural	and {count} more|and {count} more	ほか {count} 件
+embroidery	Threads unlike the art's colour (over {value})	アートワークの色と違う糸 ({value} 超)
+embroidery	Largest difference: {value}	最大差: {value}
+embroidery	Block {block}: {thread}, {value}	ブロック {block}: {thread}、{value}
+	Zoom to Box	ボックスにズーム
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] (ドキュメントのポイント単位。それぞれ ±{max} 以内、right は left 以上、bottom は top 以上)
+@msg	margin: screen points, 0 or more	margin: 画面のポイント単位、0 以上
+@msg	no canvas is shown	キャンバスが表示されていません
+	Next Finding	次の検出箇所
+	Previous Finding	前の検出箇所
+embroidery	Show	表示
+embroidery	{index} of {count}	{index} / {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	検出箇所が表示されていません: 刺繍パネルのチェックタブで表示してください
+@msg	the check is out of date: wait for the stitches to be planned	チェックが古くなっています: 針目の計画が終わるまでお待ちください
+@msg	no such rule in the check	チェックにそのようなルールはありません
+@msg	no such finding in the check	チェックにそのような検出箇所はありません
+	Show Check Marks	チェックの印を表示
+embroidery	Stitch lengths	針目の長さ
+embroidery	Median: {value} mm	中央値: {value} mm
+embroidery	Too long	長すぎ
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	{value} mm 超: {stitches}
+@plural	{count} colour|{count} colours	{count} 色
+embroidery	Embroidery: {figures}	刺繍: {figures}
+embroidery	Stitches can't be planned	針目を計画できません
+embroidery	Click to open the Embroidery panel.	クリックすると刺繍パネルが開きます。
+embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	約 {value} 分
+embroidery	about {value} m	約 {value} m
+	Show Finding	検出箇所を表示
+@msg	`rule` must be a check rule's id	`rule` にはチェックのルールの ID を指定してください
+@msg	`hit` must be a listed hit's place, from 0	`hit` には一覧の検出箇所の位置を 0 から指定してください
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	現在のドキュメントのチェックがありません: 刺繍パネルの「チェック」タブを表示して、針目の計画が終わるまでお待ちください
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	ほか {count} 行は一覧にありません (一覧には最初の {limit} 行を表示)
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	画像が {w} × {h} ピクセルになり、1 辺 {most} を超えます: もっと小さい範囲か小さい倍率で描いてください

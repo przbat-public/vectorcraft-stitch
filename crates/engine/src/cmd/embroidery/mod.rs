@@ -14,16 +14,21 @@
 //! [`plan`] (the plan: sewing units, thread blocks, stitch numbers), [`sequence`] (the order the
 //! blocks are sewn in), [`measure`] (a plan's records walked in sewing order), [`stats`] (a
 //! design's figures: counts, size, thread, time), [`order`] (the sewing order as
-//! `embroidery.sequence` lists it) and [`check`] (the design checks, each rule with its source).
+//! `embroidery.sequence` lists it), [`check`] (the design checks, each rule with its source),
+//! [`scene`] (the plan as the stitch preview draws it) and [`render`] (that drawing as a picture,
+//! `embroidery.render`).
 
 mod cache;
 mod check;
 pub(crate) mod digitize;
 mod measure;
 pub(crate) mod options;
-mod order;
+pub mod order;
 pub mod plan;
 mod printed;
+pub mod render;
+pub mod reorder;
+pub mod scene;
 mod sequence;
 pub(crate) mod service;
 mod stats;
@@ -38,15 +43,20 @@ mod tests_contract;
 #[cfg(test)]
 mod tests_order;
 #[cfg(test)]
+mod tests_scene;
+#[cfg(test)]
 mod tests_service;
 #[cfg(test)]
 mod tests_stats;
 #[cfg(test)]
 mod tests_threadlib;
 #[cfg(test)]
+mod tests_view;
+#[cfg(test)]
 mod tests_walk;
 pub mod threadlib;
 mod unit;
+pub mod view;
 
 use std::sync::Arc;
 
@@ -61,9 +71,21 @@ pub use self::options::{DialogField, dialog_field};
 use self::stats::Page;
 use super::*;
 
+// For the Check tab: the most hits it may ask a rule for, and the plan's millimetres as points; for
+// the Sewing order tab, the most units a list may ask for.
+pub use self::check::MAX_LIMIT;
+pub use self::stats::MAX_LIST_LIMIT;
 pub use options::Options;
+pub use service::Planned;
 pub(crate) use service::Services;
 pub(crate) use unit::PlanError;
+pub use vectorcraft_stitch::mm_to_pt;
+
+/// The machine formats `embroidery.check {format}` checks for, as (id, the name the export lists
+/// it by), in the export's order: the Check tab's choice of format.
+pub fn check_formats() -> Vec<(&'static str, &'static str)> {
+    StitchFormat::ALL.iter().map(|f| (f.id(), f.label())).collect()
+}
 
 /// A document's stitch planning, to hand to another thread: the planning service of the document
 /// it was taken from (its kept units and last plan, shared with the commands), the snapshot it was
@@ -72,17 +94,73 @@ pub(crate) use unit::PlanError;
 /// cancelled as a command is ([`crate::cancel`]).
 #[derive(Clone)]
 pub struct Planner {
+    uid: u64,
     service: Arc<service::PlanService>,
     snapshot: Arc<Document>,
     doc: Arc<Document>,
 }
 
+/// What a plan is of: one open document's snapshot (held weakly, so a key never keeps a document
+/// alive, and its memory can't be reused for another snapshot while the key is held), the options,
+/// and the fonts' generation where the snapshot may outline type (a text clipping path is outlined
+/// with the fonts installed; [`service::fonts_of`]: 0 elsewhere, so a font loaded for something
+/// else never makes the plan shown out of date). Two keys
+/// are equal when a plan of one is a plan of the other. Cheap to make every frame: nothing is
+/// planned or copied.
+#[derive(Clone, Debug)]
+pub struct PlanKey {
+    uid: u64,
+    snapshot: std::sync::Weak<Document>,
+    opts: Options,
+    fonts: u64,
+}
+
+impl PlanKey {
+    fn new(uid: u64, snapshot: &Arc<Document>, opts: &Options) -> Self {
+        Self { uid, snapshot: Arc::downgrade(snapshot), opts: opts.clone(), fonts: service::fonts_of(snapshot) }
+    }
+
+    /// The open document it is of ([`crate::DocState::uid`]).
+    pub fn uid(&self) -> u64 {
+        self.uid
+    }
+
+    /// The options planned with.
+    pub fn options(&self) -> &Options {
+        &self.opts
+    }
+}
+
+impl PartialEq for PlanKey {
+    fn eq(&self, o: &Self) -> bool {
+        self.uid == o.uid && self.snapshot.ptr_eq(&o.snapshot) && self.opts == o.opts && self.fonts == o.fonts
+    }
+}
+
 impl Planner {
-    /// The plan with `opts`: the last plan when it was of this snapshot with these options (the
-    /// commands' too), else planned, each unit's stitches reused where nothing it is planned from
-    /// changed.
+    /// The plan with `opts`: the plan remembered when one was of this snapshot with these options
+    /// (the commands' too), else planned, each unit's stitches reused where nothing it is planned
+    /// from changed.
     pub fn plan(&self, opts: &Options) -> Result<Arc<plan::DesignPlan>> {
-        self.service.plan(service::Of::whole(&self.snapshot), &self.doc, opts).map_err(PlanError::error)
+        self.planned(opts).map(|p| p.plan)
+    }
+
+    /// [`Planner::plan`], with its generation and its stitch scene ([`Planned`]).
+    pub fn planned(&self, opts: &Options) -> Result<Planned> {
+        self.planned_and_walked(opts).0
+    }
+
+    /// [`Planner::planned`], and whether this call walked the document for it (`false`: the plan,
+    /// or the refusal, was remembered, or another caller's was waited for): only a walk's time
+    /// says how long the design takes to plan.
+    pub fn planned_and_walked(&self, opts: &Options) -> (Result<Planned>, bool) {
+        let (planned, walked) = self.service.planned_and_walked(service::Of::whole(&self.snapshot), &self.doc, opts);
+        (planned.map_err(PlanError::error), walked)
+    }
+
+    /// What the planner's plans with `opts` are of ([`PlanKey`]).
+    pub fn key(&self, opts: &Options) -> PlanKey {
+        PlanKey::new(self.uid, &self.snapshot, opts)
     }
 
     /// The document it plans: the snapshot as the export prepares it (without an opacity mask's
@@ -104,7 +182,14 @@ impl Session {
     pub fn embroidery_planner(&mut self) -> Result<Planner> {
         let st = self.doc()?;
         let (uid, snapshot, doc) = (st.uid, st.doc.clone(), to_plan(st, false)?);
-        Ok(Planner { service: self.embroidery_plans.of(uid), snapshot, doc })
+        Ok(Planner { uid, service: self.embroidery_plans.of(uid), snapshot, doc })
+    }
+
+    /// The key of the active document's plan with `opts` as it is now ([`PlanKey`]): cheap, for
+    /// telling every frame whether the plan shown is of the document as it is.
+    pub fn embroidery_plan_key(&self, opts: &Options) -> Option<PlanKey> {
+        let st = self.active()?;
+        Some(PlanKey::new(st.uid, &st.doc, opts))
     }
 
     /// The active document's stitch plan with `opts`, as the read commands plan it (the whole
@@ -117,13 +202,13 @@ impl Session {
 /// The embroidery commands: the settings an object carries and the document's, and the threads,
 /// figures, sewing order and checks of its design.
 pub fn specs() -> Vec<CommandSpec> {
-    vec![
+    let mut specs = vec![
         cmd!(
             "embroidery.setTrimAfter",
             "Embroidery Trim After",
             [],
             None,
-            "{on?: bool (left out: on, unless every object is marked already, then off), ids?|id?} whether the thread is cut after each object (or group) in ids or the selection when the document is stitched (document.export to dst, tap, t01, exp, pes, pec, jef or vp3), however near the next object starts; off, only a jump longer than the export's trimLength is cut, and a run of stitches opened from a file loses the cut the file had after it. One undo step; saved with the document → {on, changed}",
+            "{on?: bool (left out: on, unless every object is marked already, then off), ids?} whether the thread is cut after each object (or group) in ids or the selection when the document is stitched (document.export to dst, tap, t01, exp, pes, pec, jef or vp3), however near the next object starts; off, only a jump longer than the export's trimLength is cut, and a run of stitches opened from a file loses the cut the file had after it. One undo step; saved with the document → {on, changed}",
             has_selection,
             set_trim_after
         ),
@@ -159,7 +244,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Statistics",
             [],
             None,
-            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, speed?: stitches a minute the machine sews at (60 to 1500; default 650, a home machine's default, an estimate), fabricThickness?: millimetres (0 to 5; default 0.5, an estimate: the top thread goes down through it and back up at each needle point), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's figures as the export sews it, totals and per block; lengths, positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {stitches: needle points, records: needle points, jumps and cuts (what record numbers count), jumps, trims, colorChanges, threadCount: distinct threads, blockCount, size: {width, height}, bounds, start, end: [x, y] (the first and last needle points), extents: {left, right, up, down} from the start, shortestStitch, longestStitch, longestJump, threadUsage: {topMetres, bobbinMetres, fabricThickness, estimate: what the estimate rests on}, time: {seconds, minutes, speed, slowSpeed, slowAbove, trimSeconds, includes: what the time counts, estimate: what the estimate rests on} (colour changes are counted, not timed), blocks: [{block: from 1, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches, records, jumps, trims, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), topThreadMetres, bobbinThreadMetres, seconds}], offset, truncated: whether blocks after the listed ones are left out, options: the embroidery options planned with, warnings}",
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, speed?: stitches a minute the machine sews at (60 to 1500; default 650, a home machine's default, an estimate), fabricThickness?: millimetres (0 to 5; default 0.5, an estimate: the top thread goes down through it and back up at each needle point), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's figures as the export sews it, totals and per block; lengths, positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {stitches: needle points, records: needle points, jumps and cuts (what record numbers count), jumps, trims, colorChanges, threadCount: distinct threads, blockCount, size: {width, height}, bounds, start, end: [x, y] (the first and last needle points), extents: {left, right, up, down} from the start, shortestStitch, longestStitch, longestJump, lengths: {bins: [{from, to, count}] (needle-down stitches by length: half a millimetre a bin up to 12.5, then up to 12.7 inclusive, then, to null, every longer one, as stitchTooLong counts them), median: to the tenth (null with no stitch)}, threadUsage: {topMetres, bobbinMetres, fabricThickness, estimate: what the estimate rests on}, time: {seconds, minutes, speed, slowSpeed, slowAbove, trimSeconds, includes: what the time counts, estimate: what the estimate rests on} (colour changes are counted, not timed), blocks: [{block: from 1, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches, records, jumps, trims, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), topThreadMetres, bobbinThreadMetres, seconds}], offset, truncated: whether blocks after the listed ones are left out, options: the embroidery options planned with, warnings}",
             has_doc,
             stats_cmd
         ),
@@ -173,15 +258,27 @@ pub fn specs() -> Vec<CommandSpec> {
             sequence_cmd
         ),
         cmd!(
+            query "embroidery.render",
+            "Embroidery Picture",
+            [],
+            None,
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, region?: \"design\" (default: the design's stitches with a 5 mm margin), artboard?: index from 0, rect?: [left, top, right, bottom] (points; give one of region, artboard and rect), scale?: pixels a point (above 0, at most 64; default 1), jumps?: true (jumps and cuts marked: two-tone dashes where the thread was cut, a thin line in the thread's colour where it lies, a × at each cut), needlePoints?: false (a dot at each needle point, where they stand at least 6 screen points apart), background?: \"#rrggbb\" (default white, the fabric; null: transparent)} the design's stitches as the stitch preview draws them, as a PNG: each block in its palette thread's colour, threads as wide as they lie (0.4 mm for 40 wt), an edge for a thread close to the fabric; planned as the read commands plan → {dataBase64, width, height, region: [left, top, right, bottom] points, generation: the plan's (another plan, another number), options}",
+            has_doc,
+            render::render_cmd
+        ),
+        cmd!(
             query "embroidery.check",
             "Embroidery Check",
             [],
             None,
-            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, format?: \"dst\"|\"tap\"|\"t01\"|\"exp\"|\"pes\"|\"pec\"|\"jef\"|\"vp3\" (the format whose limits apply; default the format of the document's thread palette: pes for pec and jef for jef; with Janome's palette, the default, that is JEF, which holds any number of colour blocks, so formatColors checks PES's or VP3's limit only when that format is asked for), rules?: [id…] (the rules to run; default all of satinTooWide stitchTooLong formatStep fillStitchShort satinStitchShort runStitchShort stitchBelowNeedle stitchTiny shortStitchesInARow layers threadMismatch notSewn formatColors machineStitches machineColorChanges), limit?: the hits each rule lists (0 to 1000; default 20), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} checks the design as the export sews it, each rule with its threshold and where the threshold comes from; positions are millimetres from the document's origin, y down → {format, palette: the palette whose threads threadMismatch judges (the format's own when it numbers its threads, a PES's Brother threads matched to the art as its writer matches them; else the document's), rules: [{id, title, severity: error (the format can't hold it)|warning (quality may suffer)|info, threshold, unit: mm|stitches|units|deltaE|blocks|colorChanges (null: the rule measures nothing), measures: what each value measures, sources: [{name, url, value}] (the first is the one checked; where sources disagree each is listed; a format's limits name each format's own), hits: how many, objectCount: how many objects were hit, objects: [id…] (at most 1000), truncated: whether objects were left out, examples: [{record: record number (from 1, every needle point, jump and cut taking one), at: [x, y], value: the measure compared with the threshold, length: the stitch's own length when the value measures something else (formatStep), pieces: [fewest, most] records it is written as (formatStep), id: the object, note}] (the first limit hits)}], summary: {errors, warnings, info: each {rules: how many rules found something, hits: how many hits they found}}, notChecked: [{what, why}]}",
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, format?: \"dst\"|\"tap\"|\"t01\"|\"exp\"|\"pes\"|\"pec\"|\"jef\"|\"vp3\" (the format whose limits apply; default the format of the document's thread palette: pes for pec and jef for jef; with Janome's palette, the default, that is JEF, which holds any number of colour blocks, so formatColors checks PES's or VP3's limit only when that format is asked for), rules?: [id…] (the rules to run; default all of satinTooWide stitchTooLong formatStep fillStitchShort satinStitchShort runStitchShort stitchBelowNeedle stitchTiny shortStitchesInARow layers threadMismatch notSewn formatColors machineStitches machineColorChanges), limit?: the hits each rule lists (0 to 1000; default 20), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} checks the design as the export sews it, each rule with its threshold and where the threshold comes from; positions are millimetres from the document's origin, y down → {format, palette: the palette whose threads threadMismatch judges (the format's own when it numbers its threads, a PES's Brother threads matched to the art as its writer matches them; else the document's), rules: [{id, title, severity: error (the format can't hold it)|warning (quality may suffer)|info, threshold, unit: mm|stitches|units|deltaE|blocks|colorChanges (null: the rule measures nothing), measures: what each value measures, sources: [{name, url, value}] (the first is the one checked; where sources disagree each is listed; a format's limits name each format's own), hits: how many, objectCount: how many objects were hit, objects: [id…] (at most 1000), truncated: whether objects were left out, examples: [{record: record number (from 1, every needle point, jump and cut taking one), at: [x, y], value: the measure compared with the threshold, length: the stitch's own length when the value measures something else (formatStep), pieces: [fewest, most] records it is written as (formatStep), id: the object, note, from: [x, y] where a stitch hit's stitch starts (at is where it ends), block: the block a threadMismatch hit is about (from 1), thread: its thread as embroidery.threads gives it, objects: [id…] the objects a notSewn hit left art of out (at most 1000; null for other rules)}] (the first limit hits), measured: the extreme of what the rule judged, hit or not (the largest where too much is the fault, the smallest where too little; null when the rule measures nothing or judged nothing)}], summary: {errors, warnings, info: each {rules: how many rules found something, hits: how many hits they found}}, notChecked: [{id: \"density\"|\"penetrations\"|\"ties\", what, why}]}",
             has_doc,
             check_cmd
         ),
-    ]
+    ];
+    specs.extend(view::specs());
+    specs.extend(reorder::specs());
+    specs
 }
 
 fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
@@ -448,32 +545,109 @@ const STATS_KEYS: [&str; 5] = ["speed", "fabricThickness", Page::KEYS[0], Page::
 /// The keys a read command that lists a stretch takes besides the embroidery options.
 const LIST_KEYS: [&str; 3] = [Page::KEYS[0], Page::KEYS[1], SELECTED_ONLY];
 
+/// What a read command asks for besides its options: which reply, and what the reply takes.
+enum Read {
+    Threads(Page),
+    Stats { machine: stats::Machine, thread: stats::Thread, page: Page },
+    Sequence(Page),
+    Check { rules: Vec<&'static check::Rule>, format: Option<StitchFormat>, limit: usize },
+}
+
+/// A read command's params: what it reads, the options it plans with, and whether it plans the
+/// selected objects alone.
+struct ReadParams {
+    read: Read,
+    opts: Options,
+    selected_only: bool,
+}
+
+/// The read commands: `embroidery.threads`, `stats`, `sequence` and `check`.
+const READ_COMMANDS: [&str; 4] = ["embroidery.threads", "embroidery.stats", "embroidery.sequence", "embroidery.check"];
+
+/// Read command `cmd`'s params `p`, checked as the command checks them.
+fn read_params(cmd: &str, p: &Value) -> Result<ReadParams> {
+    let o = object(p, cmd)?;
+    let selected_only = selected_only(&o, cmd)?;
+    let (read, opts) = match cmd {
+        "embroidery.threads" => (Read::Threads(Page::from_params(&o, cmd)?), options_in(&o, &LIST_KEYS, cmd)?),
+        "embroidery.stats" => {
+            let (machine, thread) = stats::model(&o, cmd)?;
+            (Read::Stats { machine, thread, page: Page::from_params(&o, cmd)? }, options_in(&o, &STATS_KEYS, cmd)?)
+        }
+        "embroidery.sequence" => (Read::Sequence(Page::from_params(&o, cmd)?), options_in(&o, &LIST_KEYS, cmd)?),
+        "embroidery.check" => {
+            let opts = options_in(&o, &CHECK_KEYS, cmd)?;
+            (check_params(&o)?, opts)
+        }
+        _ => return Err(bad(cmd, format!("not a read command: one of {}", READ_COMMANDS.join(", ")))),
+    };
+    Ok(ReadParams { read, opts, selected_only })
+}
+
+/// The reply of read `read` from `plan`, the plan of `doc` with `opts`: the read commands' own
+/// replies, made the same way on any thread. Cancelled ([`EngineError::Cancelled`]) when the work
+/// on this thread is: the walks stop early then ([`measure::each_until_cancelled`]), and a reply
+/// cut short is never given.
+fn reply(read: Read, plan: &plan::DesignPlan, doc: &Document, opts: &Options) -> Result<Value> {
+    let v = match read {
+        Read::Threads(page) => threads_reply(plan, doc, page),
+        Read::Stats { machine, thread, page } => stats::stats(plan, machine, thread, page),
+        Read::Sequence(page) => order::sequence(plan, page),
+        Read::Check { rules, format, limit } => {
+            // The format of the document's thread palette, when none is asked for.
+            let format = format.unwrap_or_else(|| thread_palette(doc).format());
+            check::check(plan, &check::Ask { rules, format, limit })
+        }
+    };
+    vectorcraft_doc::cancel::check()?;
+    Ok(with_options(v, opts))
+}
+
+/// A read command run on the active document: its params read, its plan made (or the plan
+/// remembered), its reply.
+fn read_cmd(s: &mut Session, p: &Value, cmd: &str) -> Result<Value> {
+    let r = read_params(cmd, p)?;
+    let (plan, doc) = planned(s, &r.opts, r.selected_only, cmd)?;
+    reply(r.read, &plan, &doc, &r.opts)
+}
+
+impl Planner {
+    /// The reply read command `cmd` (`embroidery.threads`, `stats`, `sequence` or `check`) gives
+    /// with `params` for the planner's snapshot, made by the command's own code on any thread (the
+    /// stitch preview's panel and status bar read the design off the interface thread). The plan
+    /// is the one remembered, or planned. `selectedOnly` is refused: a planner has no selection.
+    pub fn query(&self, cmd: &str, params: &Value) -> Result<Value> {
+        let r = read_params(cmd, params)?;
+        if r.selected_only {
+            return Err(bad(cmd, format!("a planner plans the whole document: leave out `{SELECTED_ONLY}`")));
+        }
+        let planned = self.planned(&r.opts)?;
+        reply(r.read, &planned.plan, &self.doc, &r.opts)
+    }
+}
+
 fn stats_cmd(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.stats";
-    let o = object(p, C)?;
-    let (machine, thread) = stats::model(&o, C)?;
-    let page = Page::from_params(&o, C)?;
-    let opts = options_in(&o, &STATS_KEYS, C)?;
-    let (plan, _) = planned(s, &opts, selected_only(&o, C)?, C)?;
-    Ok(with_options(stats::stats(&plan, machine, thread, page), &opts))
+    read_cmd(s, p, "embroidery.stats")
 }
 
 fn sequence_cmd(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.sequence";
-    let o = object(p, C)?;
-    let page = Page::from_params(&o, C)?;
-    let opts = options_in(&o, &LIST_KEYS, C)?;
-    let (plan, _) = planned(s, &opts, selected_only(&o, C)?, C)?;
-    Ok(with_options(order::sequence(&plan, page), &opts))
+    read_cmd(s, p, "embroidery.sequence")
+}
+
+fn check_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    read_cmd(s, p, "embroidery.check")
+}
+
+fn threads(s: &mut Session, p: &Value) -> Result<Value> {
+    read_cmd(s, p, "embroidery.threads")
 }
 
 /// The keys `embroidery.check` takes besides the embroidery options.
 const CHECK_KEYS: [&str; 4] = ["format", "rules", "limit", SELECTED_ONLY];
 
-fn check_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+/// `embroidery.check`'s own params: the rules, the format and the hits listed.
+fn check_params(o: &Map<String, Value>) -> Result<Read> {
     const C: &str = "embroidery.check";
-    let o = object(p, C)?;
-    let opts = options_in(&o, &CHECK_KEYS, C)?;
     let format = match o.get("format") {
         None | Some(Value::Null) => None,
         Some(v) => Some(v.as_str().and_then(StitchFormat::from_id).ok_or_else(|| {
@@ -506,10 +680,7 @@ fn check_cmd(s: &mut Session, p: &Value) -> Result<Value> {
             .filter(|n| *n <= check::MAX_LIMIT)
             .ok_or_else(|| bad(C, format!("limit {v}: a whole number from 0 to {}", check::MAX_LIMIT)))?,
     };
-    let (plan, doc) = planned(s, &opts, selected_only(&o, C)?, C)?;
-    // The format of the document's thread palette, when none is asked for.
-    let format = format.unwrap_or_else(|| thread_palette(&doc).format());
-    Ok(with_options(check::check(&plan, &check::Ask { rules, format, limit }), &opts))
+    Ok(Read::Check { rules, format, limit })
 }
 
 /// A read command's answer `v` with the options it was planned with, under their names
@@ -526,12 +697,9 @@ pub(crate) fn hex([r, g, b]: [u8; 3]) -> String {
     Color::rgb8(r, g, b).to_hex()
 }
 
-fn threads(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.threads";
-    let o = object(p, C)?;
-    let page = Page::from_params(&o, C)?;
-    let opts = options_in(&o, &LIST_KEYS, C)?;
-    let (plan, d) = planned(s, &opts, selected_only(&o, C)?, C)?;
+/// `embroidery.threads`' reply (its options aside): `plan`'s blocks `page` lists, with the
+/// threads of `d`'s palette.
+fn threads_reply(plan: &plan::DesignPlan, d: &Document, page: Page) -> Value {
     let listed = page.range(plan.blocks.len());
     let blocks: Vec<Value> = listed
         .clone()
@@ -539,16 +707,13 @@ fn threads(s: &mut Session, p: &Value) -> Result<Value> {
         // Numbered from 1, as a list of threads shows them.
         .map(|(k, b)| json!({"block": k + 1, "thread": stats::thread_json(&b.thread), "unitCount": b.units.len()}))
         .collect();
-    Ok(with_options(
-        json!({
-            "palette": thread_palette(&d).id(),
-            "threshold": MISMATCH_DELTA_E,
-            "blockCount": plan.blocks.len(),
-            "offset": listed.start,
-            "truncated": page.truncated(plan.blocks.len()),
-            "blocks": blocks,
-            "warnings": plan.messages(),
-        }),
-        &opts,
-    ))
+    json!({
+        "palette": thread_palette(d).id(),
+        "threshold": MISMATCH_DELTA_E,
+        "blockCount": plan.blocks.len(),
+        "offset": listed.start,
+        "truncated": page.truncated(plan.blocks.len()),
+        "blocks": blocks,
+        "warnings": plan.messages(),
+    })
 }

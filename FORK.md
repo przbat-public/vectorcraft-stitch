@@ -148,13 +148,15 @@ stitches fast, is tried before anything is built on it.
    (Melco's design checker's thresholds and others, each rule with its sources, the format's
    limits; Melco's fill, satin and walk-stitch limits checked on each object's settings, as its
    checker reads them, the owner's choice).
-4. **The stitch preview on the canvas, and the Embroidery panel's Sewing order and Check tabs.** The
-   stitch scene and its renderer (settling the layering, see Architecture), an Art/Stitches switch
-   with planning in the background, the selected object highlighted and the checks marked, counts in
-   the status bar. Dragging in the Sewing order tab moves objects in the stacking order with the
-   existing commands (`node.move`; sewing order is stacking order), in one undo step; objects of one
-   colour still join when nothing lies between them, and the list says so rather than pretend
-   another order. The first change a user sees.
+4. **The stitch preview on the canvas, and the Embroidery panel's Sewing order and Check tabs.**
+   Done: the plan drawn as threads on the canvas (View › Stitch Preview, ⌘E, an Art | Stitches
+   switch), planned on a thread of its own with the units kept between plans and shown as soon as
+   a light design is planned (measured at three gates, `docs/embroidery.md` › Drawing stitches);
+   the selection's entry and exit; Window › Embroidery with a Sewing order tab (rows dragged, or
+   Sew Earlier, Later, First and Last, move objects in the stacking order with `layer.move`, in one
+   undo step, and the list says what the move did) and a Check tab (problems first, Show, the
+   findings ringed on the canvas, the stitch lengths' chart); the counters in the status bar. Every
+   word in the 23 languages, numbers as each writes them. The first change a user sees.
 5. **Embroidery settings on objects and in the document.** Stored as Architecture describes (per
    fill and stroke, allowed on type and groups, points moved with the object, files from newer
    versions still opening); values resolved with their source (the object's, then the export's
@@ -171,7 +173,10 @@ stitches fast, is tried before anything is built on it.
 8. **Manual stitches.** "Convert to manual stitches" and "Restore object" (the original kept in
    the node's extras), editing needle points with the tool above, drawn thin with their needle
    points by the stitch scene; a Stitches tab listing the plan's numbered stitches; stops, trims,
-   and stitches turned into jumps.
+   and stitches turned into jumps. A converted object's run is a literal run, as an opened file's
+   are: the Sewing order's refusal of a lone run (`reorder::Refusal::FromFile`, "a run of an
+   opened machine file moves with its block") then needs to tell the two apart, by a mark the
+   convert or the import leaves.
 9. **Digitizing from an image.** First the engine, through commands: the smallest area in mm²,
    colour overlap in mm, centre lines as running stitch or satin, optionally an angle along the
    shape, colours matched to the format's palette through Image Trace with the thread library.
@@ -266,6 +271,18 @@ without asking the owner. A new decision gets a row here in the PR that makes it
 | 2026-10-22 | Blocks join only on the exact art colour, not on the thread matched to it | the owner's choice: the art's colours are what the person drew | joining on the matched thread | `Sequence::target`; `docs/embroidery.md` › How a shape becomes stitches |
 | 2026-10-22 | One vocabulary for the export's options and the planned settings on objects, before those exist; the options' earlier names stay as aliases; `underlay` takes a kind besides true and false | one name per setting in every place it is set or reported | two vocabularies mapped by hand | `cmd/embroidery/options.rs`; `docs/embroidery.md` › Architecture |
 | 2026-10-22 | Keys are camelCase in commands and replies, snake_case in the `.vectorcraft` file (as every node and document key upstream writes); an object's embroidery reads as the document's settings do: unknown keys and values of another type are kept, nothing in it stops a file from opening | the file's own convention, and a file a newer version saves must open in an older one | camelCase in the file; a closed schema that drops what it doesn't know | `doc::embroidery::Embroidery` (`extra`, `unread`); `prop_format::any_embroidery_an_object_carries_opens_and_saves_back` |
+| 2026-10-22 | The stitch preview's scope is the plan's, less five items: picking by stitch (to the embroidery tool's PR), the shaded thread look (later), planning in slices on the web (it plans in one go), the cached stitch raster (built only if measured needed: it wasn't), a planner for documents that aren't open (to the image window's PR) | the owner's choice of scope ("full, less five") | everything at once | `docs/embroidery.md` › Planning for the stitch preview, Drawing stitches |
+| 2026-10-22 | The stitch view draws each block in its matched palette thread, what the machine gets (a VP3 writes the art's colour instead: said in the docs) | the preview shows what will be sewn | the art's colour | `cmd/embroidery/scene.rs` |
+| 2026-10-22 | A click in the stitch view selects the art, as in the art view | picking by stitch comes with the embroidery tool | picking stitches now | the canvas's hit testing, unchanged; `embroidery/tests.rs` |
+| 2026-10-22 | Threads are drawn flat at their real width (0.40 mm by the thread weight), with a thin contrasting edge for a thread near the fabric's colour; jumps and cuts are drawn (dashes where no thread lies, a thin line where it stays, a × at a cut), on by default with a toggle | white thread on white fabric stays visible; moves show where the thread goes | a shaded look; moves hidden | `render::lines`, `cmd/embroidery/scene.rs`; View › Stitch Preview Options |
+| 2026-10-22 | A selection is never dimmed in the stitch view: its frame and its entry ◆ and exit ⊕ markers only; a moment's emphasis on hovering a Sewing order row or after the Check tab's Show, by a tint of the frame drawn, never drawing the stitches again | dimming hides what the person is looking at | dimming everything unselected | `embroidery::overlay`, `StitchLayer::emphasize` |
+| 2026-10-22 | Read-only embroidery text writes numbers as the interface language does (CLDR's separators and minimum grouping: Polish "0,38 mm", "4752", "10 000"); input fields stay as they are | the person reads their own language's numbers | a point everywhere | `embroidery::numbers` |
+| 2026-10-22 | The stitch preview plans with the options of this document's last embroidery export, else the app's last export's, else the defaults; the panel says which; not saved in the file | the preview shows what the next export writes | the defaults only; options saved in the document (the next PR's settings) | `cmd/embroidery/view.rs` (`note_export`, `stitch_preview_options`) |
+| 2026-10-22 | The status bar shows stitches · colours · thread changes · about the time, only while the stitch view or the Embroidery panel is open; trims go in the Sewing order's footer | the figures a person sews by, at no cost while not wanted | trims in the bar; counters always | `embroidery::counters` |
+| 2026-10-22 | The first Window › Embroidery docks the panel as the last tab beside Properties, Layers and Libraries, turning the dock into the shared layout once | as the mockups draw it | a floating panel | `panels::embroidery::show_panel` |
+| 2026-10-22 | A drag in the Sewing order that would put an object into a clip group or take it out of one is refused, the reason in the drop's hint | a drag changes when something is sewn, never what | moving it in or out | `reorder::Refusal::ChangesClipping` |
+| 2026-10-22 | A drag in the Sewing order moves objects with `layer.move` ("A just above B, in B's parent"), one undo step named Change Sewing Order, locks respected | exactly the stacking change a drop means | `node.move` | `cmd/embroidery/reorder.rs` |
+| 2026-10-22 | The rest of the stitch preview's choices: ⌘E for View › Stitch Preview; Outline draws over the stitches; the art under the stitches hidden by default (a toggle shows it); the fabric white; a passed check a neutral ✓; the panel's Object and Stitches tabs hidden until built; a slow design's stitches refresh about 0.1 s after a drag ends; a design that can't be planned shows its last stitches dimmed, with the reason; the chart's "too long" band from 12.7 mm, as the check's; the web plans in one go; Next and Previous Finding in; the canvas's notice says "planning" or "can't be planned" when the status bar doesn't | the owner accepted them together ("accept all") | each one's alternative in the plan | `embroidery::menu`, `stitch_layer`, `marks`, `stitch_preview`, `panels/embroidery/lengths.rs`, `notice` |
 | 2026-10-22 | The planner sews an object's appearance as it prints (stroke alignment, dashes, width profiles, brushes, arrowheads, live effects, a group's own fills and strokes, a symbol instance's staining); what still can't be sewn gets a warning | sew what prints | sewing the base path and warning | `Digitizer::shape` |
 
 ## Clean-room for embroidery
@@ -327,6 +344,60 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   `is_loss` (`super::embroidery::is_loss`), `cmd/swatchlib.rs`'s `libraries` and `library`
   (`cmd/embroidery/threadlib.rs`), `i18n/mod.rs`'s `mod tests_embroidery`, `command_sweep.rs`'s
   `mod embroidery_common` and `cases.extend(…)`, and the `pub use` lines in `engine/src/lib.rs`.
+- **The stitch preview's hooks in upstream files**, each marked "VectorCraft Stitch" in a comment
+  (the fork's own code is under `crates/ui-egui/src/embroidery/`, `panels/embroidery/` and
+  `cmd/embroidery/`):
+  - `ui-egui/src/lib.rs`: `pub mod embroidery`, the app's `embroidery` field and its init,
+    `stitch_preview::poll` after the background jobs, `canvas_controls` after the canvas,
+    `stitch_preview::schedule` at the frame's end, and the screenshot wait
+    (`holds_screenshots`, `MAX_SCREENSHOT_WAIT_MS`);
+  - `canvas.rs`: `art_pass` before the art, `paint_fabric` instead of the paper and the outline's
+    ground, `templates`/`hidden` in the art's key and options, `&& art.render`, `&& !art.stitches`,
+    `stitch_layer::draw` after the art, `to_screen_path` and `node_outline` made `pub(crate)`, the
+    selection overlay's `frame_only`; `fit_zoom` and `FIT_MARGIN` split out of `fit` for View › Zoom
+    to Box (`embroidery/zoom.rs`);
+  - `chrome.rs`: the tab title's mode (`tab_title`), and in the status bar the counters drawn
+    before the timings, which are drawn only when the counters leave room;
+  - `menus.rs`: View › Stitch Preview and its options after Pixel Preview, the `checked` and
+    `enabled` hooks, Window › Embroidery, the `UI_COMMANDS` rows (`ui.embroideryPanel`,
+    `view.zoomTo`, `view.checkMarks`, `embroidery.showFinding`, `embroidery.nextHit`,
+    `embroidery.previousHit`), the
+    `view.zoomTo` arm (into `embroidery::zoom`), and `panels::embroidery::command` before the dock's
+    commands;
+  - `control.rs`: `ui.set {stitchPreview}`, `ui.render {stitchPreview}`, `ui.inspect`'s
+    `stitchPreview`;
+  - `panels/mod.rs`, `dock.rs`, `state.rs`, `icon_data.rs`: the panel's module, its show and menu
+    arms, its height, its `ICON_PANELS` row and `UiState::embroidery_panel`, its icon
+    (`assets/icons/dc-embroidery.svg`, a row in `ASSETS.md`);
+  - `io.rs` and the engine's `fileio/export.rs`: `view::note_export` (`note_export_of` in the
+    background export's completion) once an export is written;
+  - the engine's `lib.rs`: the `pub use` of `PlanKey` and `Planned`, and in
+    `close_document` the closed document's planning forgotten (in a batch, by `fileio/batch.rs`
+    once the batch holds; its `roll_back` forgets a document the batch opened);
+  - `render/src/lib.rs`: `pub mod lines`; `testkit/src/lib.rs`: `pub mod embroidery`;
+    `vectorcraft-cli`'s `main.rs`: `bench` prints the preview's line;
+  - `apps/vectorcraft/src/prefs_dir.rs`: `mod stitch_profile`; `profile.rs`'s `prefs_path`: the
+    path passed through `stitch_profile::own` (the fork's settings folder).
+- **The fork's text in upstream's docs**, to put back on upstream's own text when resolving: the
+  pointer to this file at the top of `CLAUDE.md`; in `README.md` the fork's note and "Based on
+  VectorCraft", with ArtCraft's marks and links left out (`docs/brand/LICENSE-brand.txt`); the
+  embroidery rows of `ROADMAP.md`'s progress log and of `docs/file-format-parity.md` (its format
+  counts, the embroidery row, its history), with each one's status line; in
+  `docs/architecture.md` the `stitch` crate in the layer table and the embroidery paragraph under
+  Rendering; in `docs/mcp.md` the thread palettes among the swatch libraries and the Embroidery
+  section at its end; in `docs/control-protocol.md` the "Embroidery (VectorCraft Stitch)"
+  paragraphs after Save PDF's. The fork's text goes in paragraphs of its own, never into upstream's
+  rows (a row both sides extend conflicts on every sync).
+- **The settings folder:** the fork keeps `ui.json` and the folders beside it (Swatches, Fonts,
+  Data Recovery, logs and the rest) in `VectorCraft Stitch` (`vectorcraft-stitch` on Linux) beside
+  upstream's `VectorCraft`, wherever upstream's docs name VectorCraft's folder; the first start
+  copies VectorCraft's settings into it, all but its logs and Data Recovery copies
+  (`apps/vectorcraft/src/stitch_profile.rs`, the project owner's choice). Upstream's own
+  `VECTORCRAFT_CONFIG_DIR`, portable and DrawCraft folders are kept as they are. The reason:
+  upstream's `panel_docking::valid` resets a dock layout holding a panel it doesn't know, so a
+  shared `ui.json` would lose the person's layout in both apps once the Embroidery panel is docked.
+  Upstream dropping the unknown ids instead of the layout would let them share it again (a proposal
+  for upstream, not filed).
 - **Files saved by upstream VectorCraft:** upstream keeps the document's `embroidery` settings it
   doesn't know (in `Document::extra`) but drops every object's (`NodeWire` keeps no unknown keys),
   so a design opened from a machine file, saved by upstream and opened here again, is art: its

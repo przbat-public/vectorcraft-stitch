@@ -53,9 +53,15 @@ pub(super) fn export(s: &mut Session, p: &Value) -> Result<Value> {
     let f = writable("document.export", str_param(p, "format"), path)?;
     let expanded = expand_presets(s, "document.export", p)?;
     let p = with_black_output(s, &expanded);
-    let doc = &*source(s, f, &p, "document.export")?;
-    let enc = encode_all(doc, f.id, &p)?;
-    write_encoded(path, &default_name(doc, f.extensions[0]), doc, &enc, json!({ "format": f.id, "warnings": enc.warnings }))
+    let out = {
+        let doc = &*source(s, f, &p, "document.export")?;
+        let enc = encode_all(doc, f.id, &p)?;
+        write_encoded(path, &default_name(doc, f.extensions[0]), doc, &enc, json!({ "format": f.id, "warnings": enc.warnings }))?
+    };
+    // VectorCraft Stitch: an embroidery export's options are the stitch preview's from now on,
+    // once it is written.
+    crate::cmd::embroidery::view::note_export(s, f.id, &p);
+    Ok(out)
 }
 
 /// The document an export of `st` writes: the whole document, or with `selectedOnly` just the

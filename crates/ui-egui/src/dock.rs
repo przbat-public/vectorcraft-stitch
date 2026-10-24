@@ -417,6 +417,11 @@ pub(crate) fn panel_body(app: &mut VectorcraftApp, ui: &mut Ui, id: &str, width:
                 panels::layers::show(app, ui);
             }
             Some(DockTab::Libraries) => panels::libraries(app, ui),
+            // VectorCraft Stitch: the Embroidery panel fills its container's height, as Layers.
+            None if id == panels::embroidery::ID => {
+                ui.set_max_height(tall);
+                panels::embroidery::show(app, ui);
+            }
             None => panels::show_icon_panel(app, ui, id),
         }
     });

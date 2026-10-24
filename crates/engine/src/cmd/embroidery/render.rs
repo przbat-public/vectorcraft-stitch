@@ -1,0 +1,178 @@
+//! The stitch preview as a picture: `embroidery.render`, and the control channel's
+//! `ui.render {stitchPreview}`, draw the active document's stitches through one function
+//! ([`picture`]), the scene the canvas draws, in the same look, so an agent or a test sees what a
+//! person sees (and can look with a locked screen).
+
+use serde_json::{Map, Value, json};
+use vectorcraft_geom::{Affine, Rect};
+use vectorcraft_render::Rendered;
+use vectorcraft_render::lines::LineRenderer;
+use vectorcraft_stitch::mm_to_pt;
+
+use super::scene::FABRIC;
+use super::*;
+
+/// The margin round a design drawn whole, millimetres: as an opened design's artboard has (a little
+/// room to see its edges).
+pub const DESIGN_MARGIN_MM: f64 = 5.0;
+
+/// The most pixels a side of a picture of the stitches may have: a picture to look at (an export
+/// writes a file of any size), whose pixels, their copy and the PNG stay under about a gigabyte. An
+/// estimate.
+pub const MAX_PICTURE_PX: u32 = 8192;
+
+thread_local! {
+    /// The renderer [`picture`] draws with on a thread, kept between calls: a new one would start a
+    /// render context and its worker threads every time.
+    static RENDERER: std::cell::RefCell<LineRenderer> = std::cell::RefCell::new(LineRenderer::new());
+}
+
+/// The part of the document a picture of the stitches shows.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Region {
+    /// The design's stitches, with [`DESIGN_MARGIN_MM`] round them.
+    Design,
+    /// One artboard (0-based).
+    Artboard(usize),
+    /// A box of the document, points.
+    Rect(Rect),
+}
+
+/// What a picture of the stitches marks besides them, as the stitch preview's options do.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Look {
+    /// Jumps and cuts.
+    pub jumps: bool,
+    /// A dot at each needle point, once they stand apart.
+    pub needle_points: bool,
+}
+
+/// The active document's stitches as the stitch preview draws them, planned with `opts`: `region`
+/// at `scale` pixels a point, marked as `look` asks, on `background` (`None`: transparent). The
+/// picture, the region drawn (document points) and the plan's generation.
+pub fn picture(
+    s: &mut Session,
+    region: Region,
+    scale: f64,
+    look: Look,
+    background: Option<[u8; 3]>,
+    opts: &Options,
+) -> Result<(Rendered, Rect, u64)> {
+    let planner = s.embroidery_planner()?;
+    let planned = planner.planned(opts)?;
+    let scene = planned.scene();
+    let doc = planner.document();
+    let r = match region {
+        Region::Design => {
+            let margin = mm_to_pt(DESIGN_MARGIN_MM);
+            let nothing = || EngineError::Other("nothing to draw: the document sews no stitch".into());
+            scene.bounds().map(|b| b.inflate(margin, margin)).ok_or_else(nothing)?
+        }
+        Region::Artboard(i) => doc.artboards.get(i).map(|a| a.rect).ok_or_else(|| EngineError::Other("no such artboard".into()))?,
+        Region::Rect(r) => r,
+    };
+    let (w, h) = vectorcraft_render::raster_size(r, scale).map_err(EngineError::Other)?;
+    if w > MAX_PICTURE_PX || h > MAX_PICTURE_PX {
+        let most = MAX_PICTURE_PX;
+        return Err(EngineError::Other(format!(
+            "the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale"
+        )));
+    }
+    let view = Affine::scale(scale) * Affine::translate((-r.x0, -r.y0));
+    let mut style = scene.style(FABRIC, look.jumps, look.needle_points, scale);
+    style.background = background.map(|[r, g, b]| [r, g, b, 255]);
+    let img = RENDERER.with(|r| match r.try_borrow_mut() {
+        Ok(mut r) => r.render(scene.picture(), w, h, view, &style),
+        // In use already (a picture asked for while one is drawn): one of its own.
+        Err(_) => LineRenderer::new().render(scene.picture(), w, h, view, &style),
+    });
+    Ok((img, r, planned.generation))
+}
+
+/// The keys `embroidery.render` takes besides the embroidery options.
+const KEYS: [&str; 7] = ["artboard", "rect", "region", "scale", "jumps", "needlePoints", "background"];
+
+/// The most pixels a point `embroidery.render` draws at: 6,400 % at a pixel a point, a tenth of the
+/// canvas's closest zoom (64,000 %); a picture of the stitches needs no closer look. An estimate.
+const MAX_SCALE: f64 = 64.0;
+
+pub(super) fn render_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    const C: &str = "embroidery.render";
+    let o = object(p, C)?;
+    let opts = options_in(&o, &KEYS, C)?;
+    let region = region_param(&o)?;
+    let scale = match o.get("scale") {
+        None | Some(Value::Null) => 1.0,
+        Some(v) => v
+            .as_f64()
+            .filter(|k| k.is_finite() && *k > 0.0 && *k <= MAX_SCALE)
+            .ok_or_else(|| bad(C, format!("scale {v}: a number of pixels a point, above 0 and at most {MAX_SCALE}")))?,
+    };
+    let flag = |key: &str, default: bool| match o.get(key) {
+        None | Some(Value::Null) => Ok(default),
+        Some(v) => v.as_bool().ok_or_else(|| bad(C, format!("{key} {v}: true or false"))),
+    };
+    let look = Look { jumps: flag("jumps", true)?, needle_points: flag("needlePoints", false)? };
+    let background = match o.get("background") {
+        None => Some(FABRIC),
+        Some(Value::Null) => None,
+        // Exactly `#rrggbb`: an alpha would be dropped, a short form is no colour of the docs'.
+        Some(v) => Some(
+            v.as_str()
+                .filter(|h| h.len() == 7 && h.starts_with('#') && h.bytes().skip(1).all(|b| b.is_ascii_hexdigit()))
+                .and_then(vectorcraft_color::Color::from_hex)
+                .map(|c| {
+                    let [r, g, b, _] = c.to_rgba8(1.0);
+                    [r, g, b]
+                })
+                .ok_or_else(|| bad(C, format!("background {v}: \"#rrggbb\", or null for none")))?,
+        ),
+    };
+    let (img, r, generation) = picture(s, region, scale, look, background, &opts)?;
+    let png = img.to_png().map_err(EngineError::Other)?;
+    Ok(with_options(
+        json!({
+            "dataBase64": vectorcraft_format::base64_encode(&png),
+            "width": img.width,
+            "height": img.height,
+            "region": [r.x0, r.y0, r.x1, r.y1],
+            // Unlike the read commands' millimetres: the canvas's own document points.
+            "units": "pt",
+            "generation": generation,
+        }),
+        &opts,
+    ))
+}
+
+/// The corners `[left, top, right, bottom]` (document points) that a box param `v` gives: exactly
+/// four numbers, each finite and within ±[`vectorcraft_doc::MAX_COORD`]; `None` for anything
+/// else. Whether the box may be empty is the caller's rule. `embroidery.render` reads its `rect`
+/// this way, and the app's `view.zoomTo` its own.
+pub fn corners(v: &Value) -> Option<[f64; 4]> {
+    let [l, t, r, b] = v.as_array()?.as_slice() else { return None };
+    let c = [l.as_f64()?, t.as_f64()?, r.as_f64()?, b.as_f64()?];
+    c.iter().all(|x| x.is_finite() && x.abs() <= vectorcraft_doc::MAX_COORD).then_some(c)
+}
+
+/// The region `embroidery.render`'s params ask for: `rect`, `artboard` or `region`, at most one.
+fn region_param(o: &Map<String, Value>) -> Result<Region> {
+    const C: &str = "embroidery.render";
+    let given: Vec<&str> = ["rect", "artboard", "region"].into_iter().filter(|k| o.get(*k).is_some_and(|v| !v.is_null())).collect();
+    if given.len() > 1 {
+        return Err(bad(C, format!("give one of {}", given.join(", "))));
+    }
+    if let Some(v) = o.get("rect").filter(|v| !v.is_null()) {
+        let refused = || bad(C, format!("rect {v}: [left, top, right, bottom] in points, each within ±{}", vectorcraft_doc::MAX_COORD));
+        let [l, t, r, b] = corners(v).filter(|[l, t, r, b]| r > l && b > t).ok_or_else(refused)?;
+        return Ok(Region::Rect(Rect::new(l, t, r, b)));
+    }
+    if let Some(v) = o.get("artboard").filter(|v| !v.is_null()) {
+        let i = v.as_u64().and_then(|i| usize::try_from(i).ok()).ok_or_else(|| bad(C, format!("artboard {v}: an artboard's index, from 0")))?;
+        return Ok(Region::Artboard(i));
+    }
+    match o.get("region") {
+        None | Some(Value::Null) => Ok(Region::Design),
+        Some(v) if v.as_str() == Some("design") => Ok(Region::Design),
+        Some(v) => Err(bad(C, format!("region {v}: \"design\" (or give artboard or rect)"))),
+    }
+}

@@ -133,6 +133,13 @@ const PUSH: f64 = 0.0;
 /// standard embroidery thread, the one the default fill spacing (rows 0.38 mm apart) covers
 /// without gaps.
 pub const THREAD_WEIGHT: f64 = 40.0;
+/// How wide thread of [`THREAD_WEIGHT`] lies on the fabric, millimetres: the spacing at which its
+/// rows lie flush, 0.40 mm in David Morrish's *Digital Embroidery* (2025, ch. 2; see
+/// `FILL_SPACING`) and in Madeira's stitch density chart for 40 wt (see [`thread_scale`]). An
+/// opened design's lines and the stitch preview draw thread this wide ([`thread_width`]), so the
+/// default 0.38 mm rows just cover, as sewn thread does. An estimate of a laid thread, which
+/// spreads by fabric and tension.
+pub const THREAD_WIDTH: f64 = 0.4;
 /// Filled parts narrower than this (millimetres) are sewn as satin columns rather than tatami
 /// ([`Params::narrow`]), as auto-digitizers choose satin for narrow parts. One digitizing guide
 /// keeps satin to parts narrower than 8–10 mm, past which its stitches lie loose
@@ -473,6 +480,12 @@ pub fn thread_scale(weight: f64) -> f64 {
     /// The square root: the thread's thickness follows it.
     const SPACING_EXPONENT: f64 = 0.5;
     (THREAD_WEIGHT / sane_weight(weight)).powf(SPACING_EXPONENT)
+}
+
+/// How wide thread of `weight` (wt) lies, millimetres: [`THREAD_WIDTH`] for 40 wt, scaled by the
+/// thread's thickness ([`thread_scale`]), as the planner scales its spacing.
+pub fn thread_width(weight: f64) -> f64 {
+    THREAD_WIDTH * thread_scale(weight)
 }
 
 /// A thread weight within [`THREAD_WEIGHT_RANGE`]; one that isn't finite is [`THREAD_WEIGHT`].

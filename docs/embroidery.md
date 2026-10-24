@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-23 · **Last updated:** 2026-10-23 · **Change:** the fixes from the review of the embroidery work: VP3 trims as long forms, an opened design's start point, name, thread records and losses kept, closed lines locked, fill rows centred, the planner's and the planning service's speed (kept areas, a remembered refusal), the docs' tables regenerated from the tests, a contents list, terms and a revision history. Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-24 · **Change:** the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -11,7 +11,8 @@ Everything is implemented from public format documentation — the formats were 
 publicly long before this project (see [References](#references)); no proprietary software was
 observed, and no GPL implementation was read or copied.
 
-**Contents:** [Terms](#terms) · [Using it](#using-it) · [How a shape becomes stitches](#how-a-shape-becomes-stitches) ·
+**Contents:** [Terms](#terms) · [Using it](#using-it) (writing and reading designs, the read commands, [seeing the
+stitches and the sewing order](#seeing-the-stitches-and-the-sewing-order)) · [How a shape becomes stitches](#how-a-shape-becomes-stitches) ·
 [The formats](#the-formats) · [What is not stitched](#what-is-not-stitched) · [Validation](#validation) ·
 [Architecture](#architecture) · [References](#references) · [Files](#files) ·
 [Revision history](#revision-history). The fork's own instructions and the project owner's
@@ -301,8 +302,14 @@ machine stop between them when they are neighbours (the project owner's choice, 
 hits, the objects hit (`objectCount`, at most 1,000 listed, `truncated` when more) and the first
 `limit` hits (`examples`, 20 by default, at most 1,000) as record numbers and points with the
 measure compared with the threshold (for `formatStep` the stitch's longer extent along x or y,
-with its own length and the records it is written as beside it). The summary gives, for each
-severity, how many rules found something and how many hits they found. `format` (the document's thread palette's
+with its own length and the records it is written as beside it; a stitch's hit also gives where the
+stitch starts, a thread's its block and thread, a `notSewn` hit the objects whose art it left out,
+which the plan keeps for each warning, at most 1,000). Each rule also gives `measured`, the extreme
+of what it judged, hit or not: the longest stitch, the shortest, the widest column, the most layers
+on one spot, the largest colour difference, the design's blocks. The summary gives, for each
+severity, how many rules found something and how many hits they found. `embroidery.stats` gives the
+needle-down stitches by length (`lengths`: half-millimetre bins up to 12.5 mm, one up to 12.7 mm and
+one for every longer stitch, which holds exactly `stitchTooLong`'s hits) and their median. `format` (the document's thread palette's
 format when left out: PES for Brother's, JEF for Janome's; with Janome's, the default, the colour
 limit of `formatColors` never fires, since JEF has none: ask for `format: "pes"` or `"vp3"` to check
 theirs) decides the format limits checked, and the threads judged: those the format writes, matched to
@@ -356,6 +363,32 @@ Measured once on 2026-10-22, before the project owner chose to read Melco's limi
 checked stitch by stitch, Melco's fill limit flagged all 44 of VectorCraft's blocks (7,504
 stitches, about 29 % of the needle points then: the 2 mm underlay and the rows' short ends); read
 as Melco's checker reads it, on each object's settings, it flags none.
+
+### Seeing the stitches and the sewing order
+
+- **The stitches on the canvas.** View › Stitch Preview (⌘E), or the Art | Stitches switch at the
+  canvas's top right, shows the active document's stitches in place of its art, on the fabric,
+  each in its thread's colour; they are planned in the background with the export's options (those
+  of the document's last embroidery export, else the defaults) and follow every edit. View › Stitch
+  Preview Options: Show Jumps and Cuts, Show Needle Points, Show Artwork Under Stitches (faint, or
+  its outlines in Outline) and Show Check Marks. As commands: `view.stitchPreview {on?}` and its
+  options (`view.stitchPreview.jumps`, `needlePoints`, `artwork`); `embroidery.render` draws the
+  same picture headless.
+- **The Embroidery panel** (Window › Embroidery, docked beside Properties, Layers and Libraries) has
+  two tabs. **Sewing Order** lists the thread blocks in the order they are sewn, each object's fill
+  or stroke a row; a row hovered stands its stitches out on the canvas, a click selects its object.
+  Drag a row to sew its object earlier or later (the hint under the list says where it goes, or why
+  it can't), or use a selected row's ↑ and ↓ and the panel's ≡ menu: Sew Earlier, Sew Later, Sew
+  First and Sew Last (also the commands `embroidery.sewEarlier`, `sewLater`, `sewFirst` and
+  `sewLast`, with no default shortcuts). The sewing order follows the stacking order, so each moves
+  the object in the stack, as one undo step. **Check** shows `embroidery.check` for the format chosen ("Checked for"), problems
+  first; Show selects a rule's objects and zooms to its hits, Next and Previous Finding step
+  through them, and rings mark them on the canvas.
+- **The status bar** shows the design's figures (stitches, colours, thread changes, the time) while
+  the stitches or the panel are shown; a click opens the panel.
+
+How it is planned and drawn: [Planning for the stitch preview](#planning-for-the-stitch-preview)
+and [Drawing stitches](#drawing-stitches), under Architecture.
 
 ## How a shape becomes stitches
 
@@ -1376,18 +1409,46 @@ flowchart LR
   documents could keep 50 MB for each. A plan made with kept
   units equals a fresh plan: a property test plans random documents through random edits, and
   `embroidery_planning.rs` nudges every object of the real designs.
-- **The last plan** is kept with the snapshot (held weakly) and options it was made for. A snapshot
-  never changes (it is shared with the undo history), so the same snapshot with the same options
-  returns the same plan without walking again: commands that read a design one after another plan
-  it once. Another snapshot of the same art (an undo) walks again, every unit from the cache.
+- **The last plans** are kept, each with the snapshot (held weakly), the selection, the options and
+  the fonts' generation it was made for, where it counts: only a design that has type and a clip
+  group may outline type (a text clipping path is outlined with the fonts installed; text itself is
+  left out), so a font loaded for something else (a text shaped in another document, a font menu's
+  previews) leaves the plans of every other design as they are. A snapshot never changes (it is shared with the undo
+  history), so the same snapshot with the same options returns the same plan without walking
+  again: commands that read a design one after another plan it once. Up to four plans are kept
+  (`MAX_MEMOS`: the stitch preview's, a read command's with other options or of the selection
+  alone, an agent's, and the snapshot before the last edit, so an undo needs no walk), the least
+  recently used dropped first. The plans of all open documents, with their scenes, hold at most
+  256 MB together (`MAX_MEMO_BYTES`, one bound for all documents; 96 MB on the web; the newest is
+  kept whatever its size): a plan at the 2-million-stitch limit holds about 50 to 90 MB and its
+  scene about 26 MB (`SCENE_BYTES_PER_RECORD`, 14 bytes a record, counted from when the plan is
+  remembered, before the scene is built). A document's plans go when it closes. The plan each open
+  document's stitch preview shows is held by the preview, outside the bound. Another snapshot of
+  the same art walks again, every unit from the cache. A design refused for its size is kept the
+  same way, and refused again at once.
+- **A generation and a scene per plan.** Each plan made gets a number no other plan of the process
+  has (`EmbroideryPlanned::generation`): what is drawn from it is keyed by that number, never by
+  the document's revision, which also moves on selection and view changes. Its stitch scene is
+  built the first time it is asked for, outside the service's locks, and kept with the plan.
+- **One walk for callers asking at once** (native): a caller that asks for a plan another caller is
+  making of the same snapshot, selection, options and fonts waits for it rather than walking too,
+  and plans itself only if it is cancelled or the wait passes 10 s (`MAX_FLIGHT_WAIT_MS`, far longer
+  than any real design plans). The flight ends when the plan does, also when it unwinds. The web
+  build has one thread and plans directly.
+- **The read commands' replies from a planner.** `EmbroideryPlanner::query(cmd, params)` gives the
+  reply `embroidery.threads`, `stats`, `sequence` or `check` gives, made by the command's own code
+  from the planner's snapshot, on any thread: the stitch preview's panel and status bar read the
+  design without planning on the interface thread. `selectedOnly` is refused (a planner has no
+  selection). `Session::embroidery_plan_key` tells cheaply whether a plan is of the document as it
+  is.
 - **Cancelling.** A plan checks `vectorcraft_doc::cancel` before each unit, between the columns a
   fill's narrow parts are cut out by, and within the search for those parts
   (`plan::narrow_columns_until`). A cancelled plan returns `PlanError::Cancelled` (the commands'
   `EngineError::Cancelled`) and leaves no plan; the units it finished stay kept. Each painted fill,
   stroke and literal run is a step of the plan's progress (`cancel::progress`).
-- **Threads.** The service is `Send` and `Sync` (checked when it compiles): the app's worker can plan
-  off the interface thread while commands plan on theirs; commands and the web build plan
-  synchronously. No thread is started yet.
+- **Threads.** The service is `Send` and `Sync` (checked when it compiles): the app's planning
+  thread plans off the interface thread while commands plan on theirs; commands and the web build
+  plan synchronously.
 - **The export plans afresh** (`service::plan_afresh`): the document it writes is the one edited for
   the file, and a file never depends on what was kept. It is cancellable and reports its progress
   like the other plans.
@@ -1400,14 +1461,354 @@ about 1 %), a warm plan (another snapshot, every unit kept) 0.01 to 0.08 ms, and
 those three rows with budgets (400, 100 and 100 ms, estimates), and `vectorcraft-cli bench FILE`
 times the three for any file with art to stitch; perf's other budgets did not move.
 
+### Planning for the stitch preview
+
+The app plans the active document's design only while something shows it: the canvas in the
+stitch view, or a read command's reply the Embroidery panel or the status bar shows
+(`ui-egui/src/embroidery/stitch_preview.rs`). An app that never shows stitches never plans. The
+preview plans with the options of the document's last embroidery export, else those of the last
+embroidery export of any document while the app runs, else the defaults (the project owner's
+choice; `view.stitchPreview` answers which), never saved in the file. An export counts once it is
+written: one refused, failed or cancelled notes nothing.
+
+- **On a thread of its own** (`plan_worker.rs`), newest job first: the plan and its scene are
+  handed over first, then the read commands' replies one by one as each is made (by the commands'
+  own code, `EmbroideryPlanner::query`), so the canvas never waits for the panel nor the figures
+  for a long check. A panic is answered as a
+  failure and the thread goes on. The web build, the unit tests and `VECTORCRAFT_SYNC_RENDER` plan
+  on the interface thread in one go, with the same steps; there a design is planned on every change
+  only when its plan fits a frame (8 ms, `INLINE_PLAN_MS`, the time the canvas lets its art render
+  in line), and the replies wait while a drag goes on.
+- **Light and heavy designs.** A design whose last plan walked took at most 50 ms (`LIVE_PLAN_MS`,
+  half the re-plan budget, an estimate; a remembered plan says nothing of it) is planned on every
+  change, also during a drag, and the plan
+  under way is let finish, so the stitches follow the drag; once that plan is in, a change cancels
+  the replies still to come (their walks stop within a few thousand records, and a reply cut short
+  is never given) and plans at once. Any other is planned once the document has stayed unchanged
+  for 0.1 s (`QUIET_SECS`, the panels' settle time) with no drag or scrubbing, and a new change
+  cancels the plan under way. A document's first plan starts at once; after that every plan waits
+  as above, also while nothing has been shown yet, so a design that can't be planned isn't planned
+  again on every edit.
+- **What is shown meanwhile.** The last plan stays shown while a newer one is made; after 0.4 s
+  (`STALE_NOTICE_SECS`, as long as an export runs before its progress shows) the preview says it is
+  planning, with the plan's progress. A design that can't be planned (too many stitches) keeps its
+  last good stitches with the reason, and isn't planned again until it changes.
+- **For agents and tests.** `ui.inspect` reports the stitch view and how its plan stands
+  (`stitchPreview`), and `ui.screenshot` waits for the stitches of the document as it is (at most
+  5 s more, `MAX_SCREENSHOT_WAIT_MS`, an estimate). The canvas's notice under the switch says
+  "Planning stitches…" with a progress bar after the 0.4 s, or why the design can't be planned.
+- **Never a wrong plan.** Plans are tagged by what they are of (`EmbroideryPlanKey`: the snapshot,
+  the options, the fonts), never by the document's revision. A step is taken in only when it is of
+  the job under way and that job wasn't cancelled, so a cancelled or replaced plan never shows.
+  Each open document keeps its last plan (switching back shows it at once, never another
+  document's), dropped when it closes.
+
+**Measured in the app's frames** (gate 3 of the stitch preview, 2026-10-23: release build, 12-core
+Apple Silicon, load about 2.5, twice; `cargo test --release -p vectorcraft-ui-egui --lib -- --ignored
+--nocapture stitch_preview_gate`). On each of the corpus's eleven SVG designs, with the planning
+thread and the stitch layer's thread running and frames coming at 60 Hz, one object is dragged with
+the Selection tool, a pointer move a frame, and each frame is timed (the app's logic, the canvas,
+the controls over it, the scheduling and egui's tessellation, not the GPU's work); then an object is
+nudged ten times and timed until the stitches drawn are of the document as it is:
+
+| Row | Measured | Budget |
+|---|---:|---:|
+| A frame while dragging, 95th percentile, worst design | 5.9 ms | 16.7 ms (60 Hz) |
+| A frame while dragging, median, per design | 1.4–4.8 ms | |
+| Plans shown while dragging, of about 90 pointer moves | 45–89 | |
+| Edit to the stitches drawn fresh, median per design | 28–48 ms | |
+| Edit to the stitches drawn fresh, worst | 56 ms | 100 ms |
+
+Edit to fresh counts whole frames: the edit's frame schedules the plan, the next takes it in and
+draws it. A selection change uploads no stitches, and renders no art while the art is hidden
+(`stitch_layer` tests); the art shown with them (faint, its outlines, its templates) is the canvas's,
+rendered again on a selection change as the canvas always does.
+
+Measured again with the whole PR in (2026-10-23, load about 3, twice), now that every plan also
+makes `embroidery.stats` for the status bar's counters: a drag's frames at most 5.2 ms at the 95th
+percentile; an edit to its stitches drawn 29 to 34 ms per design (median), 38 ms at worst. Changing
+the sewing order (`perf --embroidery`'s "sewing order: move one object, re-plan": one object of
+1,000 paths moved with `layer.move`, then planned again with the units kept) takes 2.6 to 2.7 ms
+against a 100 ms budget; the other 31 embroidery rows stay within theirs (the 20 rings in one fill
+plan in 584 ms cold against 600).
+
+Measured again after the review (2026-10-24, load about 2, twice), as a laptop's display draws it:
+1440 × 900 points at 2 pixels a point, the status bar and the Embroidery panel drawn in every frame,
+each design once with each tab, and the texture uploads counted:
+
+| Row | Measured | Budget |
+|---|---:|---:|
+| A frame while dragging, 95th percentile, worst design | 7.8 ms | 16.7 ms (60 Hz) |
+| A frame while dragging, median, per design | 1.0–6.6 ms | |
+| Plans shown while dragging, of about 90 pointer moves | 44–88 | |
+| Textures uploaded a frame while dragging | 7.7–15.3 MB | |
+| Edit to the stitches drawn fresh, median per design | 28–52 ms | |
+| Edit to the stitches drawn fresh, worst | 72 ms | 100 ms |
+
+Each frame that shows a newer plan uploads one canvas-sized texture (about 16 MB at this size); the
+layer's thread makes its image, so the interface thread only hands it over.
+On the largest design (22,000 paths, its plan kept), the replies take 21 ms (`embroidery.stats`),
+30 ms (`embroidery.sequence`, the list's 10,000 rows) and 113 ms (`embroidery.check`), on the
+planning thread; a drag of every other object works out its movers and the drop in 10 ms
+(`perf --embroidery`'s "reply" and "sewing order: drag half" rows).
+
 ### Drawing stitches
 
-One stitch scene is built from the plan and drawn by the same renderer in the app and headless (to
-PNG or PDF), in modes: threads, thin lines with their needle points, a range of stitches, one unit
-highlighted, the rest dimmed. Built from the plan, every stitch drawn maps back to its unit and its
-object. The layering is still to settle: `vectorcraft-render` and `vectorcraft-stitch` are both
-layer 3, so either `cargo xtask layers` lets `render` depend on `stitch` (which keeps depending on
-`geom` alone) or the engine builds the scene from the document's own drawing primitives.
+One stitch scene is built from the plan and drawn by the same renderer in the app and headless, in
+looks chosen when it is drawn: thread colours or others, laid widths or hairlines, a range of
+stitch numbers, units hidden or faded, jumps and cuts on or off. Built from the plan, every stitch
+drawn maps back to its unit and its object.
+
+**The layering (settled 2026-10-23).** `vectorcraft-render` draws *line pictures*
+(`render::lines`): polylines in colour slots with opaque tags, links between points and point
+marks, knowing nothing about stitches, so the renderer gains no dependency on `vectorcraft-stitch`
+and `cargo xtask layers` is unchanged. The engine builds the picture from the plan
+(`cmd::embroidery::scene`, below) and keeps beside it what its tags and slots mean.
+
+**The look** (the project owner's choices of 2026-10-22/23):
+- **Flat threads at their laid width:** 0.40 mm for 40 wt (`plan::THREAD_WIDTH`, where 40 wt rows
+  lie flush, the width an opened machine file's lines are drawn too), scaled by the thread's
+  thickness (`plan::thread_width`), never narrower than half a device pixel. In the colour of the
+  block's palette thread, what the machine gets (a VP3 file writes the art's colour instead: the
+  preview shows the palette thread for it too).
+- **An edge for a thread close to the fabric:** a colour within ΔE₀₀ 10 of the backdrop (the line
+  `thread::MISMATCH_DELTA_E` draws between colours that look alike and unlike) is drawn over an edge
+  one device pixel wider each side, mixed toward black or white until it reaches 3:1 against the
+  backdrop (WCAG's non-text contrast), so white thread on white fabric shows. A run's edges are all
+  drawn before its colour, so no edge shows between two pieces of one thread.
+- **Jumps and cuts shown, with a toggle:** a move after a cut as two-tone dashes (no thread lies
+  there), a move the thread lies along as a thin line in its colour with a contrasting halo, a × at
+  each cut and a square at each stop, at a fixed size on screen, in two tones the same in every
+  theme (one of them contrasts with any thread). No move is drawn between blocks: the machine
+  changes thread there.
+- **Needle points, with a toggle** (View › Stitch Preview Options › Show Needle Points, off by
+  default): a 2-point dot at each needle point in the tone that contrasts with its thread, once
+  points stand at least 6 screen points from both their neighbours (closer, the dots would run into a
+  smear), at most 250,000 a frame (`render::lines::NEEDLE_POINT_PT`, `NEEDLE_POINT_GAP_PT`,
+  `MAX_NEEDLE_POINTS`, estimates).
+- Lines are stroked in sewing order with round joins and caps, later stitches over earlier ones.
+
+**How it is drawn** (`render::lines::LineRenderer`): a picture holds `f32` offsets from an `f64`
+origin, each point with its record number, in lines of at most 64 points that never cross units.
+Consecutive lines of one colour are batched into paths of at most 512 segments, each line culled by
+its box against the view; points a line passes straight through (within 2 µm) are left out when the
+whole design is drawn, which changes no pixel, and kept when a range of numbers is, so a range can
+end there. Geometry beyond the renderer's device limit is left out, and a cancelled frame stops
+between batches.
+
+**On the canvas** (`ui-egui/src/embroidery/stitch_layer.rs`). View › Stitch Preview (⌘E), or the
+Art | Stitches switch at the canvas's top right (two radio buttons for screen readers; hidden in
+Presentation Mode, disabled while an opacity mask or a pattern is edited), shows the active
+document as its stitches; the document's tab then says "(RGB/Stitches)". The stitch view draws, bottom to top:
+the fabric (white) on the artboards and under the stitches' box (where they reach past the
+artboards); the art faint under the stitches when Show Artwork
+Under Stitches is on, else the template layers alone (Hide Template hides them); the stitches; and
+with View › Outline on, the art's outlines over them (template layers left out there, so that a
+template image doesn't cover the stitches). Guides, the grid and the selection are drawn as always.
+The stitches are a raster and texture of their own, keyed by the document, the plan's generation,
+the view, the size and the look, never by the document's revision: a selection change or a hover
+uploads no stitches, and the art isn't rendered at all while it is hidden (shown, faint or as
+outlines, it is the canvas's own, rendered again on a selection change). A frame that drew in more
+than 8 ms (the canvas's line for its art) is drawn from then on on a thread of its own, the last
+frame shown meanwhile, moved into the new view; a document switch is always drawn there where the
+thread runs, the fabric shown until it comes, never the other document's stitches. Until the first
+plan comes the art stays shown; a design that fails keeps its last good stitches, faded. In
+isolation mode the stitches of the objects outside the group are faded. Back in the art view, the
+art is rendered before it shows, never the art as it was before the edits made meanwhile.
+
+**The selection in the stitch view** (`ui-egui/src/embroidery/overlay.rs`; the project owner's
+choice: a frame and markers, no dimming). Clicks select the art as in the art view. With the
+Selection tool the canvas draws the selection's frame and the key object's outline but no path
+outlines or anchors over the stitches (other tools, which edit the art, show them). Each selected
+object gets an entry ◆ (the accent colour) where the needle enters it and an exit ⊕ (its layer's
+colour) where it leaves, at most 32 of them (`MARKED_OBJECTS_MAX`, an estimate), labelled "Entry"
+and "Exit" when one of them is marked (an object selected with it that sews nothing takes nothing from it); they come from `StitchScene::ends_of`, as the Sewing order
+list's do. A selected object changed since the plan shown is outlined dashed in its layer's colour
+until its plan comes (past 32 such objects or 20,000 anchors, `PENDING_OUTLINES_MAX` and
+`PENDING_ANCHORS_MAX`, the box they fall in is dashed instead, as the canvas leaves out outlines
+past its own cap; at most 20,000 dashes a frame, `PENDING_DASHES_MAX`, where they cross the canvas;
+estimates), and the canvas's notice counts the selected objects that sew nothing. For a
+moment (a Sewing order row hovered, a check's hits shown) the stitch layer fades the frame it
+already drew with a tint and draws the units concerned over it from a raster of them alone
+(`StitchLayer::emphasize`), never drawing the whole design again. The raster is drawn as the frames
+are: in line for a design light to draw, else on the stitch layer's thread, the rest faded until it
+comes; one texture holds it, dropped when the moment ends.
+
+**The Embroidery panel** (`ui-egui/src/panels/embroidery/`, Window › Embroidery). The first time it
+docks as the last tab beside Properties, Layers and Libraries, as the mockups draw it (the project
+owner's choice), turning the dock into the shared layout once; after that it shows where it was
+left (`ui.embroideryPanel {tab?, format?}` too, the format the Check tab checks for). It is no `DockTab` of its own, so the preferences keep
+upstream's shape. They live in a folder of the fork's own, `VectorCraft Stitch` (`vectorcraft-stitch`
+on Linux), beside VectorCraft's, first made from a copy of VectorCraft's settings (the project
+owner's choice; `apps/vectorcraft/src/stitch_profile.rs`): upstream resets a dock layout that holds
+a panel it doesn't know (its `panel_docking::valid`), so a shared file would lose the person's layout
+in both apps. An upstream `valid()` that dropped the ids it doesn't know, rather than the whole
+layout, would let the two share it again, and would keep an older build's layout when a newer one
+adds a panel (a suggestion for upstream). Its
+tabs are Sewing Order and Check (Object and Stitches come with the PRs that build them), the open
+one kept with the interface's state and read leniently. It never plans: drawing it asks the stitch
+preview for the plan and its tab's replies. Its states: no document; not planned yet (blank for
+0.1 s, so a quick plan never flashes a busy mark); planning; nothing to sew (the plan's own warnings);
+can't be planned (the reason); ready; updating (the last result, and "Updating…" once the newer one
+takes over 0.1 s).
+
+**The Sewing order tab** (`panels/embroidery/order.rs`) reads `embroidery.sequence`'s reply back
+into the typed model (`cmd::embroidery::order::SewingOrder`, which the reply is serialised from),
+once per plan, and builds its words from the model's ids and numbers, never from the reply's English
+sentences. Each block has a header (its number, its thread's chip with the art's colour in a corner
+when they differ, the thread's name and palette number, a ΔE badge for a mismatch, its objects and
+stitches), a row per sewing unit (the object's name as the Layers panel names it, its stitches, and
+under it the part it sews, how, and its jumps and trims) and a row for the trim and thread change
+after it. Rows are 28, 36 and 20 points high (estimates fitted to the mockups) and only those in
+view are laid out. A click selects the row's object (Shift a range, Cmd or Ctrl adds or removes), a
+header its block's objects; rows of the selection are highlighted. Blocks collapse. Under the list,
+the design's figures: stitches, colours, thread changes, trims, jumps, the top thread, the size and
+the time (estimates, said so), with the speed the time is at.
+
+**Changing the sewing order** (`cmd::embroidery::reorder`). The sewing order follows the stacking
+order, so a row dragged in the list moves its object (a lit row, the selection's objects; a header,
+its block's) in the stack: just above the object sewn before the gap, in that object's parent (just
+below the one sewn after it at the very start), the project owner's rule, as one `layer.move` in a
+`command.batch` named "Change Sewing Order" (one undo step). A drag changes when something is sewn,
+never what: a drop that would put an object into a clip group or take it out of one, move a
+clipping path or a locked object, go into a locked layer or group, fall between two parts of one
+object, or move a run of an opened machine file alone is refused, and the hint under the list says
+why before the release (the drop line shows only where a drop goes). A drop where the dragged rows
+already are (on them, or at either edge of them) changes nothing, also when the stack isn't in the
+sewing order there: moved beside the next row's object instead, an object sewn first could go above
+another thread's lower in the stack, and be sewn after it. Near the list's edges a drag
+scrolls it. Drags are off while the list shows an earlier plan, in isolation mode and while a mask or
+a pattern is edited. Once the new plan comes, a note over the list says what the drop did
+(`reorder::explain`): where the object is sewn now, whether it joined others of its colour, the
+thread changes when their number changed, or that no stitch moved (objects of one colour still join
+a block sewn earlier when the objects moved lie apart from what they passed). Without a drag: the
+↑ and ↓ buttons on a lit row and the panel's ≡ menu, which work the move out on the plan the list
+shows, as a drop does, and are off while that plan is out of date (nothing is planned on the
+interface thread); and the commands `embroidery.sewEarlier`, `sewLater`, `sewFirst` and `sewLast`,
+which plan with the stitch preview's options unless given their own (no default shortcuts).
+
+**The Check tab** (`panels/embroidery/check.rs`) shows `embroidery.check`'s reply, asked for only
+while the tab is open, with the first 100 hits of each rule. Rules that found something come first
+(errors, warnings, then notes), then those that passed, each group in the engine's order. Each is
+marked by shape as well as colour (`embroidery::marks`: a filled circle with "!" for an error, a
+triangle with "!" for a warning, a ring with "i" for a note, a neutral tick for a pass, drawn in
+code from the theme's colours, darkened or lightened until they stand out 3:1 from the panel; an
+error's or a warning's words, here, in the panel's states and in the status bar, until they read
+4.5:1, WCAG 2.1's 1.4.3; the canvas's Entry and Exit labels in black or white, whichever reads
+better on their pill). A
+rule's title is the interface's own sentence for its id with its threshold, the format's own for the
+format's limits, written as the language writes numbers; under it, what was found (stitches, spots,
+rows, threads, objects) or, for a rule that passed, the extreme it measured ("Longest: 4.6 mm").
+The art the plan leaves out is listed as the plan says it. Opened, a rule lists its published sources
+(links; the first is the one checked) and its first ten hits. The format whose limits apply is the
+palette's by default; another can be chosen for the document for the session, which checks again
+without planning again. Under the rules, what isn't checked (stitch density, needle penetrations in
+an area, tie stitches: no source gives a number for them).
+
+**Show** (a rule's button, or a hit's line) selects the rule's objects, or the hit's, leaving out any
+deleted since the check, and zooms to its hits (`view.zoomTo`, Zoom to Box: a generic UI command
+that centres a box of document points and fits it in the window), grown by 3 mm and at least 10 mm
+across (estimates, so that one stitch isn't zoomed to the zoom's limit); a rule whose hits point at
+nothing (art left out, a mismatched thread) zooms to its objects. For 1.5 s the objects' stitches
+stand out on the canvas (the stitch layer's emphasis: the project owner's choice, only for a
+moment). What was shown last is the tab's focus: Next and Previous Finding (`embroidery.nextHit`,
+`embroidery.previousHit`, the opened rule's ‹ and › and the panel's ≡ menu) step through its listed
+hits, round from the end. They are off while the check is of an older plan than the document's,
+even in the moment after a change before a frame has drawn.
+
+**The stitch-length chart** (`panels/embroidery/lengths.rs`), under the rules: a bar per bin of
+`embroidery.stats`' `lengths`, as tall as its count against the tallest (at least 2 points for a bin
+with stitches, so that a few long stitches still show), the median in its header, the axis every
+5 mm. The "too long" band starts where the longest-stitch check's threshold is, 12.7 mm (the project
+owner's choice), so its bar counts that rule's hits exactly; hovering a bar says its range and count.
+
+**The status bar's counters** (`embroidery::counters`). At the bar's right end, for the active
+document, while its stitches are wanted (the stitch view or the Embroidery panel showing: the
+project owner's choice): "4,752 stitches · 4 colours · 3 thread changes · about 7 min", with
+"Embroidery:" before them when there is room; trims, jumps, the size and what the time rests on are
+in the tooltip and the Sewing order's footer. The figures are `embroidery.stats`' own: the scheduler
+adds it to every plan wanted, on the planning thread, so the bar never starts a plan and reads its
+figures once per plan. They change at most four times a second (an estimate). Blank for a quick first
+plan; "Planning stitches… 37%" once a plan takes 0.4 s; "Updating…" before dimmed figures once a newer
+plan takes that long; "Nothing to sew"; "⚠ Stitches can't be planned", the reason in the tooltip.
+While the bar says these, the canvas's notice leaves planning and failure to it. They take the longest
+of five wordings that fits, the render and interface timings giving way first, then hide; the X/Y
+readout and 60 points of the last message keep their room, and the slot keeps its widest width while
+its wording stays. A click opens the panel at its Sewing order. `ui.inspect`'s
+`stitchPreview.counters` gives their state, figures and words.
+
+**Check marks on the canvas** (`embroidery::check_marks`). While the Check tab shows, each listed hit
+of a rule that found an error or a warning is ringed on the canvas, in the art view and the stitch
+view alike: round its stitch (a stitch's hit gives where it starts and ends) or round its spot
+(layers). A note's hits are ringed only while its rule is the tab's focus: notes are many (a fill's
+row ends are often shorter than the needle is thick). A ring is black on white, so that it reads on
+any fabric, thread or art, with the severity's mark on a white disc at its upper right; the focus's
+hit is ringed again in the accent colour, and hovering a ring says its rule and hit as the tab words
+them. At most 300 are drawn (an estimate; the focus's first; no clustering), and a ring whose centre
+falls inside a ring already drawn is left out, the focus's hit always kept: hits half a millimetre
+apart (layers along an edge) would otherwise stack into a chain. None are drawn on a
+check of an older plan than the document's (they would point where the stitches no longer are), in
+Presentation Mode, with the edges hidden, or while a tool transforms the selection. View › Stitch
+Preview Options › Show Check Marks (`view.checkMarks {on?}`) turns them off for the session. Rules on
+objects' settings, art left out and threads point at no stitch: Show selects their objects instead.
+
+**Measured first** (gate 1 of the stitch preview: `vectorcraft-cli perf --embroidery`, release
+build, 12-core Apple Silicon, load about 4, the median of five frames, twice; 2026-10-23). The
+pictures are built in code without the planner (`perf_embroidery::stitch_picture`: square tiles of
+fill rows 0.38 mm apart with 4 mm stitches, a 3 mm satin column advancing 0.2 mm and a running
+line, in twelve threads, a move between tiles, cut every fourth), drawn on a 2880 × 1800 canvas:
+
+| Row | Measured | Budget (estimate) |
+|---|---:|---:|
+| 10,000 stitches at fit, one thread (the web build has none) | 7.6 ms | 20 ms |
+| 100,000 at fit | 5.2 ms | 50 ms |
+| 100,000 zoomed in four times | 2.5 ms | 16 ms |
+| 500,000 at fit | 12.9 ms | 100 ms |
+| 2,000,000 at fit | 37 ms | 1 s |
+
+Every row is far within its budget, so the canvas draws the stitches whole, frame by frame; the
+cached stitch raster per zoom step that a slower drawing would have needed is not built. A sweep of
+the batch size (64, 128, 256, 512, 1,024, 4,096 segments and a whole run of one colour) changed no
+row beyond noise, so 512 stays; simplifying the round ends of threads under 1.5 px wide, the other
+lever the research proposed, isn't needed. `VECTORCRAFT_STITCH_SWEEP=1 vectorcraft-cli perf
+--embroidery` runs the sweep again, and `VECTORCRAFT_STITCH_PNG=<folder>` writes the 10,000-stitch
+picture at fit and zoomed in, to look at.
+
+After the review (2026-10-24, load about 2, twice) the rows measure the same (7.5, 5.2, 2.6, 12.8
+and 37 ms), and four more draw what the synthetic picture flattered: 100,000 stitches with the fill
+rows at 45° on a machine file's 0.1 mm grid (none left out as straight) 7.7 ms; with satin columns
+across every tile 11.7 ms; a corpus PES opened as stitches 2.7 ms; one thread's lines alone, as an
+emphasis draws them, of 500,000, 1.9 ms. The stitch preview's rows now have budgets about 2.5 times
+what they measured, so a regression of that size shows (`perf_embroidery::BUDGETS`).
+
+**The scene** (`cmd::embroidery::scene`) is built from the plan as `measure` walks it: a line per run
+of needle points the thread lies along (whether it lies is decided per record, by
+`measure::Record::sewn`), with a lead-in from where the unit before ended when it goes on in the
+same thread; a link for each move with the needle up (`Cut` when the thread was cut since the last
+needle point, else `Thread`); a × at each cut and a square at each stop. Beside the picture it
+keeps each block's thread and each unit's object, key, block, entry, exit and box, so that what is
+drawn maps back to the art. An opened machine file's design is drawn on the same points as its
+imported paths.
+
+**Measured end to end** (gate 2 of the stitch preview, 2026-10-23: release build, 12-core Apple
+Silicon, load about 4 falling to 3, the median of five, twice). The synthetic documents are
+`perf --embroidery`'s (1,000 paths are about 90,000 stitches; 5,000 about 450,000; 22,000 about
+2 million, the most a design may have); the frame is drawn at fit on a 2880 × 1800 canvas:
+
+| Row | Measured | Budget (estimate) |
+|---|---:|---:|
+| Scene built from the plan, 1,000 paths | 0.81 ms | 5 ms |
+| Scene, 5,000 paths | 4.4 ms | 25 ms |
+| Scene, 22,000 paths | 20.4 ms | 50 ms |
+| Move one object 0.5 mm, to its frame (plan with the units kept, scene, frame), 1,000 paths | 8.0 ms | 100 ms |
+| The same with a drop shadow on another object (its appearance expanded on a copy at every plan) | 8.1 ms | 100 ms |
+| A plan of the 20 rings in one fill cancelled midway, until it stops | 0.66–1.04 ms | 100 ms |
+
+On the real designs (`vectorcraft-cli bench FILE`), moving one object to its frame takes 2.9 to
+6.1 ms for the eleven SVGs and 2.7 to 3.6 ms for opened PES files, the scene at most 0.12 ms and a
+frame at fit at most 6.1 ms: within the 50 ms the research set for real designs. Each snapshot is walked once however many callers ask for it (the service's tests count the walks). Cancelling stops within a millisecond, so no further
+cancel checks in the planner's loops are needed. The other embroidery rows didn't move (the 20
+rings in one fill plan in 563 to 572 ms cold against their 600 ms).
 
 ### One embroidery tool
 
@@ -1516,9 +1917,13 @@ Public documentation, cited per claim in the crate:
   thread by CIEDE2000, a design's blocks to threads (`Palette::assign`), and the thread numbers a
   format writes (`Palette::numbers`).
 - `crates/stitch/src/color.rs` — sRGB in CIE L*a*b* (D65), and the CIEDE2000 colour difference.
-- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (the seven commands,
-  `embroidery.setTrimAfter`, `setup`, `settings`, `threads`, `stats`, `sequence` and `check`, and the
-  document's thread palette), `printed.rs` (the document as it prints, appearances expanded),
+- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (eight commands,
+  `embroidery.setTrimAfter`, `setup`, `settings`, `threads`, `stats`, `sequence`, `check` and
+  `render`, and the document's thread palette), `view.rs` (each document's stitch view: View ›
+  Stitch Preview and its options, four commands; the export's options it plans with), `reorder.rs`
+  (changing the sewing order: a drop's move, Sew Earlier, Later, First and Last, four commands,
+  and what a move did), `scene.rs` (the plan as a line picture), `render.rs` (`embroidery.render`),
+  `printed.rs` (the document as it prints, appearances expanded),
   `threadlib.rs` (the thread swatch libraries),
   `options.rs` (the export options, and the planner's parameters they give an object),
   `digitize.rs` (the document's art planned into the stitch plan, unit by unit; a fill's narrow
@@ -1531,7 +1936,27 @@ Public documentation, cited per claim in the crate:
   (`embroidery.sequence`), `check.rs` (`embroidery.check`: its rules and their sources),
   `tests.rs` (the plan's, the threads' and the document's settings'), `tests_walk.rs` (the walk's
   branches and the design's size limit), `tests_service.rs`, `tests_stats.rs`, `tests_order.rs`,
-  `tests_check.rs`, `tests_contract.rs` (the replies' keys and types), `tests_threadlib.rs`.
+  `tests_check.rs`, `tests_contract.rs` (the replies' keys and types), `tests_threadlib.rs`,
+  `tests_scene.rs` (the scene holds the thread the plan sews), `tests_view.rs`, `reorder/tests.rs`.
+- `crates/render/src/lines.rs` — line pictures and their renderer (`render::lines`), which the
+  stitch view draws with, knowing nothing about stitches.
+- `crates/ui-egui/src/embroidery/` — the stitch preview in the app: `stitch_preview.rs` (when a
+  design is planned, and what shows meanwhile), `plan_worker.rs` (the planning thread),
+  `stitch_layer.rs` (the stitches drawn on the canvas, on a thread of their own when a frame is
+  slow), `overlay.rs` (the selection, entry and exit, objects changed since the plan), `switch.rs`
+  (Art | Stitches), `notice.rs`, `counters.rs` (the status bar's), `check_marks.rs` (the check's
+  rings), `menu.rs` (View › Stitch Preview and its options), `zoom.rs` (`view.zoomTo`), `marks.rs`,
+  `numbers.rs` and `text.rs` (severity marks, numbers in the interface language, filled
+  templates); `tests_preview.rs` (the scheduler end to end), `tests_languages.rs` (every language),
+  `tests_gate.rs` (the third gate, by hand).
+- `crates/ui-egui/src/panels/embroidery/` — the Embroidery panel: `mod.rs` (the tabs, states and ≡
+  menu, `ui.embroideryPanel`), `order.rs` (Sewing Order), `check.rs` (Check), `lengths.rs` (the
+  stitch-length chart).
+- `crates/testkit/src/embroidery.rs` — documents for tests, built by commands;
+  `crates/engine/tests/embroidery_fixtures.rs` checks that each plans and holds together, and
+  `crates/engine/tests/embroidery_scene.rs` the scene on the real designs.
+- `apps/vectorcraft-cli/src/perf_embroidery.rs` — the embroidery rows of `vectorcraft-cli perf`
+  and `bench`; `apps/vectorcraft/src/stitch_profile.rs` — VectorCraft Stitch's own settings folder.
 - `crates/engine/src/cmd/swatchlib.rs` — the swatch libraries, the embroidery thread libraries
   among them; `crates/doc/src/embroidery.rs` — what an object and the document keep for embroidery.
 - `crates/engine/src/cmd/fileio/embroidery/` — the files' side: `mod.rs` (the export's options as
@@ -1555,6 +1980,12 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-24 | minor | The stitch preview's review round: the Sewing order list read only from the plan it shows, its steps worked out on it, a drop where its rows already are refused, a block cut by the list's limit without a thread change; Show Needle Points drawn; the plans' memory bounded for all documents together; planning keyed by the fonts a design uses; an export's options noted once written; `embroidery.render`'s points and strict colours, its size capped; VectorCraft Stitch's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. |
+| 2026-10-23 | minor | The stitch preview, done: the Check tab (the check's measured extremes, a hit's start, thread and objects, the stitch lengths in bins ending at 12.7 mm; severity marks; problems first; Show and Next and Previous Finding through `view.zoomTo`; rings on the canvas, thinned; the chart), the status bar's counters, and every language checked at 256 and 300 points. |
+| 2026-10-23 | minor | The stitch preview, in progress: the Embroidery panel (docked beside Properties, Layers and Libraries), its Sewing order tab, changing the sewing order (dragged rows, Sew Earlier, Later, First and Last), the selection's entry and exit, a hovered row's stitches stood out. |
+| 2026-10-23 | minor | The stitch preview, in progress: on the canvas (the stitch layer, View › Stitch Preview, the Art \| Stitches switch), planned on a thread of its own while something shows it; the app's frames measured (gate 3). |
+| 2026-10-23 | minor | The stitch preview, in progress: the planning service remembers several plans with a generation and a scene each, plans once for callers asking at once, and gives the read commands' replies from a planner; the end-to-end rows measured (gate 2). |
+| 2026-10-23 | minor | The stitch preview, in progress: stitches drawn as line pictures by the renderer (flat at the thread's laid width, an edge for threads close to the fabric, jumps and cuts marked), measured first. |
 | 2026-10-23 | minor | The review's fixes: VP3 trims written as long forms and read back as cuts; an opened design's start point, name, thread records and losses kept (overwriting its file asks first); closed lines locked; fill rows centred; the planner's and the planning service's speed (kept path-operation areas, a remembered refusal, a plan's own units kept); bobbin thread after Madeira; the results and check tables regenerated from the tests; contents, terms and this history added. |
 | 2026-10-22 | minor | The planning service (#17): units kept between plans, cancelling and progress; `embroidery.stats`, `sequence` and `check`. One option vocabulary, the expanded appearance sewn, the replies' vocabulary. |
 | 2026-10-22 | minor | New formats (#16): VP3, PEC on its own, TAP and T01. |

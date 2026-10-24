@@ -4914,3 +4914,166 @@ theme	Appearance	Giao diện
 	Edge Run	Đường chạy mép
 	Edge Run and Zigzag	Đường chạy mép và zigzag
 	Edge Run and Tatami	Đường chạy mép và tatami
+	Embroidery Picture	Hình ảnh thêu
+@msg	nothing to draw: the document sews no stitch	không có gì để vẽ: tài liệu không may mũi thêu nào
+	Stitch Preview	Xem trước mũi thêu
+	Stitch Preview Options	Tùy chọn xem trước mũi thêu
+	Show Jumps and Cuts	Hiện mũi nhảy và cắt chỉ
+	Show Needle Points	Hiện điểm đâm kim
+	Show Artwork Under Stitches	Hiện hình vẽ dưới mũi thêu
+embroidery	Stitches	Mũi thêu
+embroidery	Art	Hình vẽ
+embroidery	View	Chế độ xem
+embroidery	Planning stitches…	Đang lên mũi thêu…
+embroidery	Can't plan the stitches:	Không thể lên mũi thêu:
+embroidery	Entry	Điểm vào
+embroidery	Exit	Điểm ra
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} đối tượng được chọn không được thêu
+	Embroidery	Thêu
+	Embroidery Panel	Bảng Thêu
+embroidery	Sewing Order	Thứ tự thêu
+embroidery	Check	Kiểm tra
+embroidery	No document	Không có tài liệu
+embroidery	Open or draw a design to see how it will be sewn.	Mở hoặc vẽ một mẫu để xem nó sẽ được thêu thế nào.
+embroidery	Updating…	Đang cập nhật…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Đây là các mũi thêu trước lần thay đổi gần nhất; các mũi mới đang được lên.
+embroidery	Change the design and the stitches are planned again.	Thay đổi mẫu thì các mũi thêu sẽ được lên lại.
+embroidery	Nothing to sew	Không có gì để thêu
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Các đường có tô hoặc nét được thêu; đối tượng ẩn, đường gióng và lớp không in thì không.
+@plural	{count} thread block|{count} thread blocks	{count} khối chỉ
+@plural	{count} stitch|{count} stitches	{count} mũi
+@msg	tab {tab}: one of {_1}	thẻ {tab}: một trong {_1}
+@msg	unknown key `{k}`: the only one is {only}	khóa không xác định `{k}`: khóa duy nhất là {only}
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Thêu từ dưới lên theo thứ tự xếp chồng; các đối tượng cùng màu được gộp khi không có gì nằm giữa.
+embroidery	Trim and thread change	Cắt chỉ và đổi chỉ
+embroidery	Thread change	Đổi chỉ
+embroidery	fill	tô
+embroidery	stroke	nét
+embroidery	from the file	từ tệp
+embroidery	running stitch	mũi chạy
+embroidery	satin	sa-tanh
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	phần hẹp thêu sa-tanh
+@plural	{count} object|{count} objects	{count} đối tượng
+@plural	{count} jump|{count} jumps	{count} mũi nhảy
+@plural	{count} trim|{count} trims	{count} lần cắt chỉ
+embroidery	Colours	Màu
+embroidery	Thread changes	Đổi chỉ
+embroidery	Trims	Cắt chỉ
+embroidery	Jumps	Mũi nhảy
+embroidery	Top thread	Chỉ trên
+embroidery	Size	Kích thước
+embroidery	Time	Thời gian
+embroidery	Design	Mẫu
+embroidery	The time at {speed} stitches a minute, an estimate.	Thời gian ở tốc độ {speed} mũi mỗi phút, ước tính.
+	Sew Earlier	Thêu sớm hơn
+	Sew Later	Thêu muộn hơn
+	Sew First	Thêu đầu tiên
+	Sew Last	Thêu sau cùng
+	Change Sewing Order	Đổi thứ tự thêu
+@msg	nothing selected is sewn	không có gì trong vùng chọn được thêu
+@msg	the selection is sewn first already	vùng chọn đã được thêu đầu tiên
+@msg	the selection is sewn last already	vùng chọn đã được thêu sau cùng
+@msg	the sewing order is that already	thứ tự thêu đã như vậy
+@msg	can't change the sewing order: an object is no longer in the document	không thể đổi thứ tự thêu: một đối tượng không còn trong tài liệu
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	không thể đổi thứ tự thêu: một đối tượng, hoặc lớp hay nhóm chứa nó, bị khóa
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	không thể đổi thứ tự thêu: đường cắt nằm yên ở đáy nhóm cắt của nó
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	không thể đổi thứ tự thêu: một đối tượng sẽ vào hoặc ra khỏi nhóm cắt
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	không thể đổi thứ tự thêu: một đoạn của tệp máy đã mở di chuyển cùng khối của nó, vì vậy hãy di chuyển nhóm của nó
+@msg	can't change the sewing order: a layer can't go into a group	không thể đổi thứ tự thêu: lớp không thể vào trong nhóm
+@msg	can't change the sewing order: the layer or group it would go into is locked	không thể đổi thứ tự thêu: lớp hoặc nhóm mà nó sẽ vào bị khóa
+@msg	can't change the sewing order: it would go between two parts of one object	không thể đổi thứ tự thêu: nó sẽ nằm giữa hai phần của cùng một đối tượng
+@msg	can't change the sewing order: there is nothing to sew it beside	không thể đổi thứ tự thêu: không có gì để thêu bên cạnh
+@msg	can't change the sewing order: too many objects at once	không thể đổi thứ tự thêu: quá nhiều đối tượng cùng lúc
+embroidery	After {name}	Sau {name}
+embroidery	Before {name}	Trước {name}
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Không mũi nào di chuyển: các đối tượng cùng màu vẫn được gộp khi không có gì ở giữa nằm dưới chúng.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} được thêu trong khối {block}, gộp với các đối tượng khác cùng màu
+embroidery	{name} is sewn in block {block}	{name} được thêu trong khối {block}
+embroidery	Thread changes: {before} → {after}	Đổi chỉ: {before} → {after}
+embroidery	Collapse All	Thu gọn tất cả
+embroidery	Expand All	Mở rộng tất cả
+embroidery	Satin columns wider than {value} mm	Cột sa-tanh rộng hơn {value} mm
+embroidery	Stitches longer than {value} mm	Mũi dài hơn {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Mũi dài hơn một bản ghi {format} ({value} mm)
+embroidery	Fill stitch length under {value} mm	Độ dài mũi tô dưới {value} mm
+embroidery	Satin columns narrower than {value} mm	Cột sa-tanh hẹp hơn {value} mm
+embroidery	Running stitch length under {value} mm	Độ dài mũi chạy dưới {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Mũi ngắn hơn độ dày của kim ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Mũi dài {value} mm trở xuống, mà máy bỏ qua
+embroidery	More than {value} short stitches in a row	Hơn {value} mũi ngắn liên tiếp
+embroidery	{value} or more layers of stitches on one spot	Từ {value} lớp mũi trở lên tại một chỗ
+embroidery	Everything is sewn	Mọi thứ đều được thêu
+embroidery	Art that isn't sewn	Hình vẽ không được thêu
+embroidery	More colour blocks than {format} holds ({value})	Nhiều khối màu hơn mức {format} chứa được ({value})
+embroidery	{format} holds any number of colour blocks	{format} chứa được bao nhiêu khối màu cũng được
+embroidery	More stitches than a machine shows ({value})	Nhiều mũi hơn mức máy hiển thị được ({value})
+embroidery	More thread changes than a machine shows ({value})	Nhiều lần đổi chỉ hơn mức máy hiển thị được ({value})
+embroidery	No findings	Không phát hiện gì
+embroidery	Longest: {value} mm	Dài nhất: {value} mm
+embroidery	Widest: {value} mm	Rộng nhất: {value} mm
+embroidery	Narrowest: {value} mm	Hẹp nhất: {value} mm
+embroidery	Shortest: {value} mm	Ngắn nhất: {value} mm
+embroidery	At most {value} in a row	Tối đa {value} liên tiếp
+embroidery	At most {value} on one spot	Tối đa {value} tại một chỗ
+embroidery	Record {record}: {value} mm	Bản ghi {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Từ bản ghi {record}: {value} liên tiếp
+embroidery	Record {record}	Bản ghi {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Lỗi
+embroidery	Warning	Cảnh báo
+embroidery	Note	Ghi chú
+embroidery	Passed	Đạt
+embroidery	No problems found	Không tìm thấy vấn đề
+embroidery	stitch density	mật độ mũi
+embroidery	needle penetrations in an area	số lần kim đâm trong một vùng
+embroidery	tie stitches	mũi khóa chỉ
+embroidery	Checking…	Đang kiểm tra…
+embroidery	Can't check the design:	Không thể kiểm tra mẫu thêu:
+embroidery	Checked for	Kiểm tra cho
+embroidery	Source: {name}	Nguồn: {name}
+embroidery	Also: {name}	Ngoài ra: {name}
+embroidery	Not checked: {list}	Không kiểm tra: {list}
+embroidery	No source gives a number to check these against.	Không nguồn nào đưa ra con số để đối chiếu.
+@plural	{count} thread change|{count} thread changes	{count} lần đổi chỉ
+@plural	{count} row|{count} rows	{count} chuỗi
+@plural	{count} spot|{count} spots	{count} chỗ
+@plural	{count} thread|{count} threads	{count} chỉ
+@plural	{count} error|{count} errors	{count} lỗi
+@plural	{count} warning|{count} warnings	{count} cảnh báo
+@plural	{count} note|{count} notes	{count} ghi chú
+@plural	and {count} more|and {count} more	và {count} mục khác
+embroidery	Threads unlike the art's colour (over {value})	Chỉ khác màu hình vẽ (trên {value})
+embroidery	Largest difference: {value}	Chênh lệch lớn nhất: {value}
+embroidery	Block {block}: {thread}, {value}	Khối {block}: {thread}, {value}
+	Zoom to Box	Thu phóng vừa khung
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] theo điểm tài liệu, mỗi giá trị trong khoảng ±{max}, với right không trước left và bottom không trên top
+@msg	margin: screen points, 0 or more	margin: điểm màn hình, 0 trở lên
+@msg	no canvas is shown	không có khung vẽ nào được hiển thị
+	Next Finding	Phát hiện tiếp theo
+	Previous Finding	Phát hiện trước
+embroidery	Show	Hiện
+embroidery	{index} of {count}	{index} / {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	không có phát hiện nào được hiển thị: hãy hiện một mục trong thẻ Kiểm tra của bảng Thêu
+@msg	the check is out of date: wait for the stitches to be planned	kết quả kiểm tra đã cũ: hãy chờ các mũi thêu được lên kế hoạch
+@msg	no such rule in the check	không có quy tắc này trong kết quả kiểm tra
+@msg	no such finding in the check	không có phát hiện này trong kết quả kiểm tra
+	Show Check Marks	Hiện dấu kiểm tra
+embroidery	Stitch lengths	Độ dài mũi
+embroidery	Median: {value} mm	Trung vị: {value} mm
+embroidery	Too long	Quá dài
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Trên {value} mm: {stitches}
+@plural	{count} colour|{count} colours	{count} màu
+embroidery	Embroidery: {figures}	Thêu: {figures}
+embroidery	Stitches can't be planned	Không thể lên kế hoạch mũi thêu
+embroidery	Click to open the Embroidery panel.	Bấm để mở bảng Thêu.
+embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	khoảng {value} phút
+embroidery	about {value} m	khoảng {value} m
+	Show Finding	Hiển thị phát hiện
+@msg	`rule` must be a check rule's id	`rule` phải là id của một quy tắc kiểm tra
+@msg	`hit` must be a listed hit's place, from 0	`hit` phải là vị trí của một phát hiện trong danh sách, tính từ 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	chưa có kết quả kiểm tra cho tài liệu hiện tại: hãy hiển thị thẻ Kiểm tra của bảng Thêu và chờ các mũi thêu được lên kế hoạch
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	và còn {count} dòng không có trong danh sách (danh sách hiển thị {limit} dòng đầu tiên)
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	ảnh sẽ có kích thước {w} × {h} điểm ảnh, quá {most} mỗi cạnh: hãy vẽ vùng nhỏ hơn hoặc ở tỉ lệ nhỏ hơn

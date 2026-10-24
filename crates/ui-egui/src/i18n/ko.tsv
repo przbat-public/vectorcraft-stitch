@@ -4897,3 +4897,166 @@ lighting	Light	광원
 	Edge Run	가장자리 러닝
 	Edge Run and Zigzag	가장자리 러닝과 지그재그
 	Edge Run and Tatami	가장자리 러닝과 타타미
+	Embroidery Picture	자수 이미지
+@msg	nothing to draw: the document sews no stitch	그릴 것이 없습니다: 문서에 바느질할 스티치가 없습니다
+	Stitch Preview	스티치 미리 보기
+	Stitch Preview Options	스티치 미리 보기 옵션
+	Show Jumps and Cuts	점프와 컷 표시
+	Show Needle Points	바늘 위치 표시
+	Show Artwork Under Stitches	스티치 아래에 아트워크 표시
+embroidery	Stitches	스티치
+embroidery	Art	아트워크
+embroidery	View	보기
+embroidery	Planning stitches…	스티치 계획 중…
+embroidery	Can't plan the stitches:	스티치를 계획할 수 없습니다:
+embroidery	Entry	진입
+embroidery	Exit	진출
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	선택한 개체 {count}개는 수놓이지 않습니다
+	Embroidery	자수
+	Embroidery Panel	자수 패널
+embroidery	Sewing Order	자수 순서
+embroidery	Check	검사
+embroidery	No document	문서 없음
+embroidery	Open or draw a design to see how it will be sewn.	디자인을 열거나 그리면 어떻게 수놓일지 볼 수 있습니다.
+embroidery	Updating…	업데이트 중…
+embroidery	These are the stitches before the last change; the new ones are being planned.	마지막 변경 전의 스티치입니다. 새 스티치를 계획하고 있습니다.
+embroidery	Change the design and the stitches are planned again.	디자인을 바꾸면 스티치를 다시 계획합니다.
+embroidery	Nothing to sew	수놓을 것이 없습니다
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	칠이나 선이 있는 패스를 수놓습니다. 숨긴 개체, 안내선, 인쇄하지 않는 레이어는 수놓지 않습니다.
+@plural	{count} thread block|{count} thread blocks	실 블록 {count}개
+@plural	{count} stitch|{count} stitches	{count}땀
+@msg	tab {tab}: one of {_1}	탭 {tab}: {_1} 중 하나
+@msg	unknown key `{k}`: the only one is {only}	알 수 없는 키 `{k}`: 사용할 수 있는 키는 {only}뿐입니다
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	쌓인 순서의 아래부터 위로 수놓습니다. 사이에 아무것도 없으면 같은 색의 개체는 합쳐집니다.
+embroidery	Trim and thread change	실 자르기 및 실 교체
+embroidery	Thread change	실 교체
+embroidery	fill	칠
+embroidery	stroke	선
+embroidery	from the file	파일에서
+embroidery	running stitch	러닝 스티치
+embroidery	satin	새틴
+embroidery	tatami	타타미
+embroidery	narrow parts as satin	좁은 부분은 새틴
+@plural	{count} object|{count} objects	개체 {count}개
+@plural	{count} jump|{count} jumps	점프 {count}회
+@plural	{count} trim|{count} trims	실 자르기 {count}회
+embroidery	Colours	색
+embroidery	Thread changes	실 교체
+embroidery	Trims	실 자르기
+embroidery	Jumps	점프
+embroidery	Top thread	윗실
+embroidery	Size	크기
+embroidery	Time	시간
+embroidery	Design	디자인
+embroidery	The time at {speed} stitches a minute, an estimate.	분당 {speed}땀 기준 시간(추정치)입니다.
+	Sew Earlier	먼저 수놓기
+	Sew Later	나중에 수놓기
+	Sew First	맨 먼저 수놓기
+	Sew Last	맨 나중에 수놓기
+	Change Sewing Order	자수 순서 바꾸기
+@msg	nothing selected is sewn	선택한 것 중 수놓이는 것이 없습니다
+@msg	the selection is sewn first already	선택 항목은 이미 맨 먼저 수놓입니다
+@msg	the selection is sewn last already	선택 항목은 이미 맨 나중에 수놓입니다
+@msg	the sewing order is that already	자수 순서가 이미 그렇습니다
+@msg	can't change the sewing order: an object is no longer in the document	자수 순서를 바꿀 수 없습니다: 개체가 더 이상 문서에 없습니다
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	자수 순서를 바꿀 수 없습니다: 개체 또는 개체가 속한 레이어나 그룹이 잠겨 있습니다
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	자수 순서를 바꿀 수 없습니다: 클리핑 패스는 클립 그룹의 맨 아래에 남습니다
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	자수 순서를 바꿀 수 없습니다: 개체가 클립 그룹에 들어가거나 빠져나오게 됩니다
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	자수 순서를 바꿀 수 없습니다: 연 머신 파일의 구간은 블록과 함께 움직이므로 해당 그룹을 옮기세요
+@msg	can't change the sewing order: a layer can't go into a group	자수 순서를 바꿀 수 없습니다: 레이어는 그룹에 들어갈 수 없습니다
+@msg	can't change the sewing order: the layer or group it would go into is locked	자수 순서를 바꿀 수 없습니다: 들어갈 레이어나 그룹이 잠겨 있습니다
+@msg	can't change the sewing order: it would go between two parts of one object	자수 순서를 바꿀 수 없습니다: 한 개체의 두 부분 사이에 들어가게 됩니다
+@msg	can't change the sewing order: there is nothing to sew it beside	자수 순서를 바꿀 수 없습니다: 옆에 수놓을 것이 없습니다
+@msg	can't change the sewing order: too many objects at once	자수 순서를 바꿀 수 없습니다: 한 번에 너무 많은 개체입니다
+embroidery	After {name}	{name} 다음
+embroidery	Before {name}	{name} 앞
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	스티치가 움직이지 않았습니다. 사이에 있는 것이 아래에 놓이지 않으면 같은 색의 개체는 계속 합쳐집니다.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name}은(는) 블록 {block}에서 같은 색의 다른 개체와 합쳐 수놓입니다
+embroidery	{name} is sewn in block {block}	{name}은(는) 블록 {block}에서 수놓입니다
+embroidery	Thread changes: {before} → {after}	실 교체: {before} → {after}
+embroidery	Collapse All	모두 접기
+embroidery	Expand All	모두 펼치기
+embroidery	Satin columns wider than {value} mm	폭이 {value}mm보다 넓은 새틴 기둥
+embroidery	Stitches longer than {value} mm	{value}mm보다 긴 땀
+embroidery	Stitches longer than one {format} record ({value} mm)	{format} 레코드 하나보다 긴 땀({value}mm)
+embroidery	Fill stitch length under {value} mm	칠 땀 길이 {value}mm 미만
+embroidery	Satin columns narrower than {value} mm	폭이 {value}mm보다 좁은 새틴 기둥
+embroidery	Running stitch length under {value} mm	러닝 스티치 길이 {value}mm 미만
+embroidery	Stitches shorter than the needle is thick ({value} mm)	바늘 굵기보다 짧은 땀({value}mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	기계가 건너뛰는 {value}mm 이하의 땀
+embroidery	More than {value} short stitches in a row	짧은 땀이 {value}개를 넘게 연속
+embroidery	{value} or more layers of stitches on one spot	한 곳에 {value}겹 이상 겹친 땀
+embroidery	Everything is sewn	모두 수놓아집니다
+embroidery	Art that isn't sewn	수놓아지지 않는 아트워크
+embroidery	More colour blocks than {format} holds ({value})	{format}에 담을 수 있는 것보다 많은 색 블록({value})
+embroidery	{format} holds any number of colour blocks	{format}은(는) 색 블록을 개수 제한 없이 담습니다
+embroidery	More stitches than a machine shows ({value})	기계가 표시하는 것보다 많은 땀({value})
+embroidery	More thread changes than a machine shows ({value})	기계가 표시하는 것보다 많은 실 교체({value})
+embroidery	No findings	발견된 항목 없음
+embroidery	Longest: {value} mm	최장: {value}mm
+embroidery	Widest: {value} mm	최대 폭: {value}mm
+embroidery	Narrowest: {value} mm	최소 폭: {value}mm
+embroidery	Shortest: {value} mm	최단: {value}mm
+embroidery	At most {value} in a row	최대 {value}개 연속
+embroidery	At most {value} on one spot	한 곳에 최대 {value}겹
+embroidery	Record {record}: {value} mm	{record}번째 레코드: {value}mm
+embroidery	From record {record}: {value} in a row	{record}번째 레코드부터: {value}개 연속
+embroidery	Record {record}	{record}번째 레코드
+embroidery	{name}: {value} mm	{name}: {value}mm
+embroidery	Error	오류
+embroidery	Warning	경고
+embroidery	Note	참고
+embroidery	Passed	통과
+embroidery	No problems found	문제를 찾지 못했습니다
+embroidery	stitch density	땀 밀도
+embroidery	needle penetrations in an area	한 영역의 바늘 땀 수
+embroidery	tie stitches	매듭 땀
+embroidery	Checking…	검사하는 중…
+embroidery	Can't check the design:	디자인을 검사할 수 없습니다:
+embroidery	Checked for	검사 대상
+embroidery	Source: {name}	출처: {name}
+embroidery	Also: {name}	또한: {name}
+embroidery	Not checked: {list}	검사하지 않음: {list}
+embroidery	No source gives a number to check these against.	이 항목을 검사할 기준 수치를 제시한 출처가 없습니다.
+@plural	{count} thread change|{count} thread changes	실 교체 {count}회
+@plural	{count} row|{count} rows	연속 {count}곳
+@plural	{count} spot|{count} spots	{count}곳
+@plural	{count} thread|{count} threads	실 {count}개
+@plural	{count} error|{count} errors	오류 {count}개
+@plural	{count} warning|{count} warnings	경고 {count}개
+@plural	{count} note|{count} notes	참고 {count}개
+@plural	and {count} more|and {count} more	외 {count}개
+embroidery	Threads unlike the art's colour (over {value})	아트워크 색과 다른 실({value} 초과)
+embroidery	Largest difference: {value}	최대 차이: {value}
+embroidery	Block {block}: {thread}, {value}	{block}번 블록: {thread}, {value}
+	Zoom to Box	상자에 맞게 확대/축소
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] (문서 포인트 단위, 각각 ±{max} 이내, right는 left 이상, bottom은 top 이상)
+@msg	margin: screen points, 0 or more	margin: 화면 포인트 단위, 0 이상
+@msg	no canvas is shown	표시된 캔버스가 없습니다
+	Next Finding	다음 발견 항목
+	Previous Finding	이전 발견 항목
+embroidery	Show	보기
+embroidery	{index} of {count}	{index} / {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	표시된 발견 항목이 없습니다: 자수 패널의 검사 탭에서 하나를 표시하세요
+@msg	the check is out of date: wait for the stitches to be planned	검사가 최신이 아닙니다: 땀 계획이 끝날 때까지 기다리세요
+@msg	no such rule in the check	검사에 그런 규칙이 없습니다
+@msg	no such finding in the check	검사에 그런 발견 항목이 없습니다
+	Show Check Marks	검사 표시 보기
+embroidery	Stitch lengths	땀 길이
+embroidery	Median: {value} mm	중앙값: {value}mm
+embroidery	Too long	너무 김
+embroidery	{from}–{to} mm: {stitches}	{from}–{to}mm: {stitches}
+embroidery	Over {value} mm: {stitches}	{value}mm 초과: {stitches}
+@plural	{count} colour|{count} colours	{count}색
+embroidery	Embroidery: {figures}	자수: {figures}
+embroidery	Stitches can't be planned	땀을 계획할 수 없습니다
+embroidery	Click to open the Embroidery panel.	클릭하면 자수 패널이 열립니다.
+embroidery	{width} × {height} mm	{width} × {height}mm
+embroidery	about {value} min	약 {value}분
+embroidery	about {value} m	약 {value}m
+	Show Finding	발견 항목 표시
+@msg	`rule` must be a check rule's id	`rule`은 검사 규칙의 ID여야 합니다
+@msg	`hit` must be a listed hit's place, from 0	`hit`은 나열된 발견 항목의 위치(0부터)여야 합니다
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	현재 문서에 대한 검사가 없습니다: 자수 패널의 검사 탭을 표시하고 땀 계획이 끝날 때까지 기다리세요
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	그 밖에 {count}개 행은 목록에 없습니다 (목록에는 처음 {limit}개 행을 표시)
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	그림이 {w} × {h}픽셀이 되어 한 변이 {most}를 넘습니다: 더 작은 영역이나 더 작은 배율로 그리세요

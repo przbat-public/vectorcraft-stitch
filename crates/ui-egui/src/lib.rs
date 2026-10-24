@@ -25,6 +25,8 @@ pub mod cursors;
 pub mod dialogs;
 pub mod dock;
 mod edit_toolbar;
+/// Machine embroidery: the fork's own interface (VectorCraft Stitch).
+pub mod embroidery;
 pub mod export_progress;
 pub mod find_font;
 pub mod floating;
@@ -487,6 +489,8 @@ pub struct VectorcraftApp {
     /// This frame carries input the control channel injected ([`Self::raw_input_hook`]): it runs
     /// confined to [`Self::automation_roots`].
     synthetic_frame: bool,
+    /// VectorCraft Stitch: the machine-embroidery interface's own state.
+    pub embroidery: embroidery::Embroidery,
 }
 
 /// A window capture asked for through the control channel (`ui.screenshot`), answered once a
@@ -580,6 +584,8 @@ impl VectorcraftApp {
             scrub_group: false,
             automation_roots: None,
             synthetic_frame: false,
+            // VectorCraft Stitch.
+            embroidery: Default::default(),
         }
     }
 
@@ -911,9 +917,12 @@ impl VectorcraftApp {
 
     fn issue_screenshots(&mut self, ctx: &egui::Context) {
         let now = now_ms();
+        // VectorCraft Stitch: a capture waits for the stitch view of the document as it is.
+        let stitches = embroidery::holds_screenshots(self, ctx.input(|i| i.time));
         self.queued_screenshots.retain_mut(|(token, at, frames)| {
             *frames += 1;
-            if now >= *at && *frames >= 3 {
+            // VectorCraft Stitch: `&& !(stitches …)`, the wait for the stitch view, bounded.
+            if now >= *at && *frames >= 3 && !(stitches && now < *at + embroidery::MAX_SCREENSHOT_WAIT_MS) {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(egui::UserData::new(*token)));
                 false
             } else {
@@ -1214,6 +1223,8 @@ impl VectorcraftApp {
         picks::poll(self, ctx);
         self.write_formats_before_text_input(ctx);
         background::poll(self);
+        // VectorCraft Stitch: the stitch preview's plans taken in.
+        embroidery::stitch_preview::poll(self);
         screen_color::poll(self, ctx);
         opening::poll(self);
         #[cfg(not(target_arch = "wasm32"))]
@@ -1456,6 +1467,8 @@ impl VectorcraftApp {
                 chrome::doc_tabs(self, ui);
             }
             canvas::show(self, ui);
+            // VectorCraft Stitch: the Art | Stitches switch over the canvas.
+            embroidery::canvas_controls(self, ui);
         });
         dock::floating_panel(self, &ctx);
         floating::show(self, &ctx);
@@ -1469,6 +1482,8 @@ impl VectorcraftApp {
         scrub::end_frame(self, &ctx);
         native_menu::sync(self, &ctx);
         self.drop_formats_after_egui_copy(&ctx);
+        // VectorCraft Stitch: what the frame asked of the stitch preview, planned.
+        embroidery::stitch_preview::schedule(self, &ctx);
         self.perf.frame_ms = now_ms() - t0;
         let _ = json!(null);
     }

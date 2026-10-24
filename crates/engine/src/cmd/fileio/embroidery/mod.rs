@@ -144,13 +144,13 @@ pub(super) const fn format(f: StitchFormat) -> Format {
 }
 
 /// Whether `id` names an embroidery format: one the stitch crate reads and writes.
-pub(super) fn is_format(id: &str) -> bool {
+pub(crate) fn is_format(id: &str) -> bool {
     StitchFormat::from_id(id).is_some()
 }
 
 /// The embroidery options in the export's params `p`, checked: the export's own keys (and other
 /// formats' options) pass, a key that looks like a misspelt embroidery option is refused.
-fn options(p: &Value) -> Result<Options> {
+pub(crate) fn options(p: &Value) -> Result<Options> {
     match p {
         Value::Object(o) => Options::from_object(o, Others::PassUnlessNear, C),
         Value::Null => Ok(Options::default()),

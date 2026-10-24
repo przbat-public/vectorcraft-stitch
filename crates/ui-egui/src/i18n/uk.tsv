@@ -4914,3 +4914,166 @@ lighting	Light	Світло
 	Edge Run	Прохід по краю
 	Edge Run and Zigzag	Прохід по краю і зигзаг
 	Edge Run and Tatami	Прохід по краю і татамі
+	Embroidery Picture	Зображення вишивки
+@msg	nothing to draw: the document sews no stitch	нічого малювати: документ не шиє жодного стібка
+	Stitch Preview	Перегляд стібків
+	Stitch Preview Options	Параметри перегляду стібків
+	Show Jumps and Cuts	Показати перескоки й обрізання
+	Show Needle Points	Показати проколи голки
+	Show Artwork Under Stitches	Показати графіку під стібками
+embroidery	Stitches	Стібки
+embroidery	Art	Графіка
+embroidery	View	Вигляд
+embroidery	Planning stitches…	Розрахунок стібків…
+embroidery	Can't plan the stitches:	Не вдається розрахувати стібки:
+embroidery	Entry	Вхід
+embroidery	Exit	Вихід
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} виділений об’єкт не вишивається|{count} виділені об’єкти не вишиваються|{count} виділених об’єктів не вишивається
+	Embroidery	Вишивка
+	Embroidery Panel	Панель «Вишивка»
+embroidery	Sewing Order	Порядок вишивання
+embroidery	Check	Перевірка
+embroidery	No document	Немає документа
+embroidery	Open or draw a design to see how it will be sewn.	Відкрийте або намалюйте дизайн, щоб побачити, як його буде вишито.
+embroidery	Updating…	Оновлення…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Це стібки до останньої зміни; нові розраховуються.
+embroidery	Change the design and the stitches are planned again.	Змініть дизайн, і стібки буде розраховано знову.
+embroidery	Nothing to sew	Нічого вишивати
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Вишиваються контури із заливкою або обведенням; приховані об’єкти, напрямні та шари, що не друкуються, — ні.
+@plural	{count} thread block|{count} thread blocks	{count} блок нитки|{count} блоки нитки|{count} блоків нитки
+@plural	{count} stitch|{count} stitches	{count} стібок|{count} стібки|{count} стібків
+@msg	tab {tab}: one of {_1}	вкладка {tab}: одна з {_1}
+@msg	unknown key `{k}`: the only one is {only}	невідомий ключ `{k}`: єдиний — {only}
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Вишивається знизу вгору; об’єкти одного кольору об’єднуються, коли між ними нічого немає.
+embroidery	Trim and thread change	Обрізання й зміна нитки
+embroidery	Thread change	Зміна нитки
+embroidery	fill	заливка
+embroidery	stroke	обведення
+embroidery	from the file	з файлу
+embroidery	running stitch	прямий стібок
+embroidery	satin	гладь
+embroidery	tatami	татамі
+embroidery	narrow parts as satin	вузькі частини гладдю
+@plural	{count} object|{count} objects	{count} об’єкт|{count} об’єкти|{count} об’єктів
+@plural	{count} jump|{count} jumps	{count} перескок|{count} перескоки|{count} перескоків
+@plural	{count} trim|{count} trims	{count} обрізання|{count} обрізання|{count} обрізань
+embroidery	Colours	Кольори
+embroidery	Thread changes	Зміни нитки
+embroidery	Trims	Обрізання
+embroidery	Jumps	Перескоки
+embroidery	Top thread	Верхня нитка
+embroidery	Size	Розмір
+embroidery	Time	Час
+embroidery	Design	Дизайн
+embroidery	The time at {speed} stitches a minute, an estimate.	Час при {speed} стібках за хвилину, оцінка.
+	Sew Earlier	Вишивати раніше
+	Sew Later	Вишивати пізніше
+	Sew First	Вишивати першим
+	Sew Last	Вишивати останнім
+	Change Sewing Order	Змінити порядок вишивання
+@msg	nothing selected is sewn	нічого з виділеного не вишивається
+@msg	the selection is sewn first already	виділене вже вишивається першим
+@msg	the selection is sewn last already	виділене вже вишивається останнім
+@msg	the sewing order is that already	порядок вишивання вже такий
+@msg	can't change the sewing order: an object is no longer in the document	не вдається змінити порядок вишивання: об’єкта більше немає в документі
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	не вдається змінити порядок вишивання: об’єкт або шар чи група, де він є, заблоковані
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	не вдається змінити порядок вишивання: обтравлювальний контур лишається внизу своєї групи
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	не вдається змінити порядок вишивання: об’єкт потрапив би до обтравлювальної групи або вийшов би з неї
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	не вдається змінити порядок вишивання: ділянка відкритого машинного файлу рухається разом із блоком, тож перемістіть його групу
+@msg	can't change the sewing order: a layer can't go into a group	не вдається змінити порядок вишивання: шар не можна помістити в групу
+@msg	can't change the sewing order: the layer or group it would go into is locked	не вдається змінити порядок вишивання: шар або група, куди він потрапив би, заблоковані
+@msg	can't change the sewing order: it would go between two parts of one object	не вдається змінити порядок вишивання: він опинився б між двома частинами одного об’єкта
+@msg	can't change the sewing order: there is nothing to sew it beside	не вдається змінити порядок вишивання: поруч нічого вишивати
+@msg	can't change the sewing order: too many objects at once	не вдається змінити порядок вишивання: забагато об’єктів одночасно
+embroidery	After {name}	Після {name}
+embroidery	Before {name}	Перед {name}
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Жоден стібок не зсунувся: об’єкти одного кольору й далі об’єднуються, коли ніщо між ними не лежить під ними.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} вишивається в блоці {block}, разом з іншими об’єктами свого кольору
+embroidery	{name} is sewn in block {block}	{name} вишивається в блоці {block}
+embroidery	Thread changes: {before} → {after}	Зміни нитки: {before} → {after}
+embroidery	Collapse All	Згорнути все
+embroidery	Expand All	Розгорнути все
+embroidery	Satin columns wider than {value} mm	Колонки гладі, ширші за {value} мм
+embroidery	Stitches longer than {value} mm	Стібки, довші за {value} мм
+embroidery	Stitches longer than one {format} record ({value} mm)	Стібки, довші за один запис {format} ({value} мм)
+embroidery	Fill stitch length under {value} mm	Довжина стібка заливки менша за {value} мм
+embroidery	Satin columns narrower than {value} mm	Колонки гладі, вужчі за {value} мм
+embroidery	Running stitch length under {value} mm	Довжина прямого стібка менша за {value} мм
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Стібки, коротші за товщину голки ({value} мм)
+embroidery	Stitches of {value} mm or less, which machines leave out	Стібки завдовжки {value} мм і менше, які машини пропускають
+embroidery	More than {value} short stitches in a row	Понад {value} коротких стібків поспіль
+embroidery	{value} or more layers of stitches on one spot	{value} або більше шарів стібків в одному місці
+embroidery	Everything is sewn	Вишивається все
+embroidery	Art that isn't sewn	Графіка, яка не вишивається
+embroidery	More colour blocks than {format} holds ({value})	Більше колірних блоків, ніж вміщує {format} ({value})
+embroidery	{format} holds any number of colour blocks	{format} вміщує будь-яку кількість колірних блоків
+embroidery	More stitches than a machine shows ({value})	Більше стібків, ніж показує машина ({value})
+embroidery	More thread changes than a machine shows ({value})	Більше змін нитки, ніж показує машина ({value})
+embroidery	No findings	Нічого не знайдено
+embroidery	Longest: {value} mm	Найдовший: {value} мм
+embroidery	Widest: {value} mm	Найширша: {value} мм
+embroidery	Narrowest: {value} mm	Найвужча: {value} мм
+embroidery	Shortest: {value} mm	Найкоротший: {value} мм
+embroidery	At most {value} in a row	Щонайбільше {value} поспіль
+embroidery	At most {value} on one spot	Щонайбільше {value} в одному місці
+embroidery	Record {record}: {value} mm	Запис {record}: {value} мм
+embroidery	From record {record}: {value} in a row	Від запису {record}: {value} поспіль
+embroidery	Record {record}	Запис {record}
+embroidery	{name}: {value} mm	{name}: {value} мм
+embroidery	Error	Помилка
+embroidery	Warning	Попередження
+embroidery	Note	Примітка
+embroidery	Passed	Пройдено
+embroidery	No problems found	Проблем не знайдено
+embroidery	stitch density	щільність стібків
+embroidery	needle penetrations in an area	проколи голки на одній ділянці
+embroidery	tie stitches	закріпки
+embroidery	Checking…	Перевірка…
+embroidery	Can't check the design:	Не вдається перевірити дизайн:
+embroidery	Checked for	Перевірено для
+embroidery	Source: {name}	Джерело: {name}
+embroidery	Also: {name}	Також: {name}
+embroidery	Not checked: {list}	Не перевіряється: {list}
+embroidery	No source gives a number to check these against.	Жодне джерело не дає числа, з яким їх звірити.
+@plural	{count} thread change|{count} thread changes	{count} зміна нитки|{count} зміни нитки|{count} змін нитки
+@plural	{count} row|{count} rows	{count} серія|{count} серії|{count} серій
+@plural	{count} spot|{count} spots	{count} місце|{count} місця|{count} місць
+@plural	{count} thread|{count} threads	{count} нитка|{count} нитки|{count} ниток
+@plural	{count} error|{count} errors	{count} помилка|{count} помилки|{count} помилок
+@plural	{count} warning|{count} warnings	{count} попередження|{count} попередження|{count} попереджень
+@plural	{count} note|{count} notes	{count} примітка|{count} примітки|{count} приміток
+@plural	and {count} more|and {count} more	і ще {count}|і ще {count}|і ще {count}
+embroidery	Threads unlike the art's colour (over {value})	Нитки, не схожі на колір графіки (понад {value})
+embroidery	Largest difference: {value}	Найбільша різниця: {value}
+embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}
+	Zoom to Box	Масштаб за рамкою
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] у пунктах документа, кожне в межах ±{max}; right не лівіше за left, bottom не вище за top
+@msg	margin: screen points, 0 or more	margin: пункти екрана, 0 або більше
+@msg	no canvas is shown	полотно не показано
+	Next Finding	Наступна знахідка
+	Previous Finding	Попередня знахідка
+embroidery	Show	Показати
+embroidery	{index} of {count}	{index} з {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	знахідку не показано: покажіть її на вкладці «Перевірка» панелі «Вишивка»
+@msg	the check is out of date: wait for the stitches to be planned	перевірка застаріла: дочекайтеся планування стібків
+@msg	no such rule in the check	у перевірці немає такого правила
+@msg	no such finding in the check	у перевірці немає такої знахідки
+	Show Check Marks	Показати позначки перевірки
+embroidery	Stitch lengths	Довжини стібків
+embroidery	Median: {value} mm	Медіана: {value} мм
+embroidery	Too long	Задовгі
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
+embroidery	Over {value} mm: {stitches}	Понад {value} мм: {stitches}
+@plural	{count} colour|{count} colours	{count} колір|{count} кольори|{count} кольорів
+embroidery	Embroidery: {figures}	Вишивка: {figures}
+embroidery	Stitches can't be planned	Не вдається спланувати стібки
+embroidery	Click to open the Embroidery panel.	Клацніть, щоб відкрити панель «Вишивка».
+embroidery	{width} × {height} mm	{width} × {height} мм
+embroidery	about {value} min	близько {value} хв
+embroidery	about {value} m	близько {value} м
+	Show Finding	Показати знахідку
+@msg	`rule` must be a check rule's id	`rule` має бути ідентифікатором правила перевірки
+@msg	`hit` must be a listed hit's place, from 0	`hit` має бути місцем знахідки у списку, починаючи з 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	немає перевірки документа в його поточному вигляді: відкрийте вкладку «Перевірка» панелі «Вишивка» й дочекайтеся планування стібків
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	і ще {count} рядок не показано (у списку перші {limit})|і ще {count} рядки не показано (у списку перші {limit})|і ще {count} рядків не показано (у списку перші {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	зображення мало б {w} × {h} пікселів, більше за {most} на бік: намалюйте меншу область або в меншому масштабі

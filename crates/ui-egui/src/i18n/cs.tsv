@@ -5321,3 +5321,166 @@ mark-style	Japanese	Japonské
 	Edge Run	Okrajový průchod
 	Edge Run and Zigzag	Okrajový průchod a cikcak
 	Edge Run and Tatami	Okrajový průchod a tatami
+	Embroidery Picture	Obrázek výšivky
+@msg	nothing to draw: the document sews no stitch	není co kreslit: dokument nešije žádný steh
+	Stitch Preview	Náhled stehů
+	Stitch Preview Options	Možnosti náhledu stehů
+	Show Jumps and Cuts	Zobrazit přeskoky a střihy
+	Show Needle Points	Zobrazit vpichy jehly
+	Show Artwork Under Stitches	Zobrazit grafiku pod stehy
+embroidery	Stitches	Stehy
+embroidery	Art	Grafika
+embroidery	View	Zobrazení
+embroidery	Planning stitches…	Plánování stehů…
+embroidery	Can't plan the stitches:	Stehy nelze naplánovat:
+embroidery	Entry	Vstup
+embroidery	Exit	Výstup
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} vybraný objekt se nešije|{count} vybrané objekty se nešijí|{count} vybraných objektů se nešije
+	Embroidery	Výšivka
+	Embroidery Panel	Panel Výšivka
+embroidery	Sewing Order	Pořadí šití
+embroidery	Check	Kontrola
+embroidery	No document	Žádný dokument
+embroidery	Open or draw a design to see how it will be sewn.	Otevřete nebo nakreslete návrh a uvidíte, jak se bude šít.
+embroidery	Updating…	Aktualizace…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Toto jsou stehy před poslední změnou; nové se plánují.
+embroidery	Change the design and the stitches are planned again.	Změňte návrh a stehy se naplánují znovu.
+embroidery	Nothing to sew	Není co šít
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Šijí se cesty s výplní nebo tahem; skryté objekty, vodítka a netisknutelné vrstvy ne.
+@plural	{count} thread block|{count} thread blocks	{count} blok nití|{count} bloky nití|{count} bloků nití
+@plural	{count} stitch|{count} stitches	{count} steh|{count} stehy|{count} stehů
+@msg	tab {tab}: one of {_1}	karta {tab}: jedna z {_1}
+@msg	unknown key `{k}`: the only one is {only}	neznámý klíč `{k}`: jediný je {only}
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Šije se odspodu nahoru; objekty jedné barvy se spojí, když mezi nimi nic neleží.
+embroidery	Trim and thread change	Ustřižení a výměna nitě
+embroidery	Thread change	Výměna nitě
+embroidery	fill	výplň
+embroidery	stroke	tah
+embroidery	from the file	ze souboru
+embroidery	running stitch	rovný steh
+embroidery	satin	saténový steh
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	úzké části saténem
+@plural	{count} object|{count} objects	{count} objekt|{count} objekty|{count} objektů
+@plural	{count} jump|{count} jumps	{count} přeskok|{count} přeskoky|{count} přeskoků
+@plural	{count} trim|{count} trims	{count} střih|{count} střihy|{count} střihů
+embroidery	Colours	Barvy
+embroidery	Thread changes	Výměny nitě
+embroidery	Trims	Střihy
+embroidery	Jumps	Přeskoky
+embroidery	Top thread	Vrchní nit
+embroidery	Size	Velikost
+embroidery	Time	Čas
+embroidery	Design	Návrh
+embroidery	The time at {speed} stitches a minute, an estimate.	Čas při {speed} stezích za minutu, odhad.
+	Sew Earlier	Šít dříve
+	Sew Later	Šít později
+	Sew First	Šít jako první
+	Sew Last	Šít jako poslední
+	Change Sewing Order	Změnit pořadí šití
+@msg	nothing selected is sewn	nic z výběru se nešije
+@msg	the selection is sewn first already	výběr se už šije jako první
+@msg	the selection is sewn last already	výběr se už šije jako poslední
+@msg	the sewing order is that already	pořadí šití už takové je
+@msg	can't change the sewing order: an object is no longer in the document	pořadí šití nelze změnit: objekt už v dokumentu není
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	pořadí šití nelze změnit: objekt nebo vrstva či skupina, ve které je, je zamčený
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	pořadí šití nelze změnit: ořezová cesta zůstává na dně své ořezové skupiny
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	pořadí šití nelze změnit: objekt by se dostal do ořezové skupiny nebo z ní
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	pořadí šití nelze změnit: úsek otevřeného strojového souboru se přesouvá se svým blokem, přesuňte tedy jeho skupinu
+@msg	can't change the sewing order: a layer can't go into a group	pořadí šití nelze změnit: vrstva nemůže do skupiny
+@msg	can't change the sewing order: the layer or group it would go into is locked	pořadí šití nelze změnit: vrstva nebo skupina, do které by se dostal, je zamčená
+@msg	can't change the sewing order: it would go between two parts of one object	pořadí šití nelze změnit: dostal by se mezi dvě části jednoho objektu
+@msg	can't change the sewing order: there is nothing to sew it beside	pořadí šití nelze změnit: není nic, vedle čeho by se šil
+@msg	can't change the sewing order: too many objects at once	pořadí šití nelze změnit: příliš mnoho objektů najednou
+embroidery	After {name}	Za {name}
+embroidery	Before {name}	Před {name}
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Žádný steh se nepřesunul: objekty jedné barvy se dál spojují, když nic mezi nimi neleží pod nimi.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} se šije v bloku {block}, spojený s ostatními své barvy
+embroidery	{name} is sewn in block {block}	{name} se šije v bloku {block}
+embroidery	Thread changes: {before} → {after}	Výměny nitě: {before} → {after}
+embroidery	Collapse All	Sbalit vše
+embroidery	Expand All	Rozbalit vše
+embroidery	Satin columns wider than {value} mm	Saténové sloupce širší než {value} mm
+embroidery	Stitches longer than {value} mm	Stehy delší než {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Stehy delší než jeden záznam {format} ({value} mm)
+embroidery	Fill stitch length under {value} mm	Délka stehu výplně pod {value} mm
+embroidery	Satin columns narrower than {value} mm	Saténové sloupce užší než {value} mm
+embroidery	Running stitch length under {value} mm	Délka rovného stehu pod {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Stehy kratší, než je tloušťka jehly ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Stehy {value} mm nebo kratší, které stroje vynechávají
+embroidery	More than {value} short stitches in a row	Více než {value} krátkých stehů za sebou
+embroidery	{value} or more layers of stitches on one spot	{value} nebo více vrstev stehů na jednom místě
+embroidery	Everything is sewn	Vše se vyšije
+embroidery	Art that isn't sewn	Grafika, která se nevyšije
+embroidery	More colour blocks than {format} holds ({value})	Více barevných bloků, než pojme {format} ({value})
+embroidery	{format} holds any number of colour blocks	{format} pojme libovolný počet barevných bloků
+embroidery	More stitches than a machine shows ({value})	Více stehů, než zobrazí stroj ({value})
+embroidery	More thread changes than a machine shows ({value})	Více výměn nitě, než zobrazí stroj ({value})
+embroidery	No findings	Nic nenalezeno
+embroidery	Longest: {value} mm	Nejdelší: {value} mm
+embroidery	Widest: {value} mm	Nejširší: {value} mm
+embroidery	Narrowest: {value} mm	Nejužší: {value} mm
+embroidery	Shortest: {value} mm	Nejkratší: {value} mm
+embroidery	At most {value} in a row	Nejvýše {value} za sebou
+embroidery	At most {value} on one spot	Nejvýše {value} na jednom místě
+embroidery	Record {record}: {value} mm	Záznam {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Od záznamu {record}: {value} za sebou
+embroidery	Record {record}	Záznam {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Chyba
+embroidery	Warning	Upozornění
+embroidery	Note	Poznámka
+embroidery	Passed	V pořádku
+embroidery	No problems found	Nenalezeny žádné problémy
+embroidery	stitch density	hustota stehů
+embroidery	needle penetrations in an area	vpichy jehly v jedné oblasti
+embroidery	tie stitches	zapošívací stehy
+embroidery	Checking…	Kontroluje se…
+embroidery	Can't check the design:	Návrh nelze zkontrolovat:
+embroidery	Checked for	Kontrolováno pro
+embroidery	Source: {name}	Zdroj: {name}
+embroidery	Also: {name}	Také: {name}
+embroidery	Not checked: {list}	Nekontroluje se: {list}
+embroidery	No source gives a number to check these against.	Žádný zdroj neuvádí číslo, podle kterého je kontrolovat.
+@plural	{count} thread change|{count} thread changes	{count} výměna nitě|{count} výměny nitě|{count} výměn nitě
+@plural	{count} row|{count} rows	{count} řada|{count} řady|{count} řad
+@plural	{count} spot|{count} spots	{count} místo|{count} místa|{count} míst
+@plural	{count} thread|{count} threads	{count} nit|{count} nitě|{count} nití
+@plural	{count} error|{count} errors	{count} chyba|{count} chyby|{count} chyb
+@plural	{count} warning|{count} warnings	{count} upozornění|{count} upozornění|{count} upozornění
+@plural	{count} note|{count} notes	{count} poznámka|{count} poznámky|{count} poznámek
+@plural	and {count} more|and {count} more	a ještě {count}|a ještě {count}|a ještě {count}
+embroidery	Threads unlike the art's colour (over {value})	Nitě odlišné od barvy grafiky (nad {value})
+embroidery	Largest difference: {value}	Největší rozdíl: {value}
+embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
+	Zoom to Box	Přiblížit na rámeček
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] v bodech dokumentu, každá v rozsahu ±{max}; right nesmí být před left a bottom nad top
+@msg	margin: screen points, 0 or more	margin: body obrazovky, 0 nebo více
+@msg	no canvas is shown	není zobrazeno žádné plátno
+	Next Finding	Další nález
+	Previous Finding	Předchozí nález
+embroidery	Show	Zobrazit
+embroidery	{index} of {count}	{index} z {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	není zobrazen žádný nález: zobrazte nějaký na kartě Kontrola v panelu Výšivka
+@msg	the check is out of date: wait for the stitches to be planned	kontrola je zastaralá: počkejte, až budou stehy naplánovány
+@msg	no such rule in the check	takové pravidlo v kontrole není
+@msg	no such finding in the check	takový nález v kontrole není
+	Show Check Marks	Zobrazit značky kontroly
+embroidery	Stitch lengths	Délky stehů
+embroidery	Median: {value} mm	Medián: {value} mm
+embroidery	Too long	Příliš dlouhé
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Nad {value} mm: {stitches}
+@plural	{count} colour|{count} colours	{count} barva|{count} barvy|{count} barev
+embroidery	Embroidery: {figures}	Výšivka: {figures}
+embroidery	Stitches can't be planned	Stehy nelze naplánovat
+embroidery	Click to open the Embroidery panel.	Kliknutím otevřete panel Výšivka.
+embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	asi {value} min
+embroidery	about {value} m	asi {value} m
+	Show Finding	Zobrazit nález
+@msg	`rule` must be a check rule's id	`rule` musí být identifikátor pravidla kontroly
+@msg	`hit` must be a listed hit's place, from 0	`hit` musí být pořadí uvedeného nálezu, od 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	kontrola dokumentu v aktuálním stavu není k dispozici: zobrazte kartu Kontrola panelu Výšivka a počkejte, až budou stehy naplánovány
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	a {count} další řádek není v seznamu (seznam ukazuje prvních {limit})|a {count} další řádky nejsou v seznamu (seznam ukazuje prvních {limit})|a {count} dalších řádků není v seznamu (seznam ukazuje prvních {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	obrázek by měl {w} × {h} pixelů, víc než {most} na stranu: vykreslete menší oblast nebo v menším měřítku

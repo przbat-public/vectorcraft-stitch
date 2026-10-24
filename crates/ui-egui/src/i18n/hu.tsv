@@ -5307,3 +5307,166 @@ imageTrace	Outline	Körvonal
 	Edge Run	Szegélymenet
 	Edge Run and Zigzag	Szegélymenet és cikcakk
 	Edge Run and Tatami	Szegélymenet és tatami
+	Embroidery Picture	Hímzés képe
+@msg	nothing to draw: the document sews no stitch	nincs mit rajzolni: a dokumentum egyetlen öltést sem varr
+	Stitch Preview	Öltések előnézete
+	Stitch Preview Options	Öltések előnézetének beállításai
+	Show Jumps and Cuts	Ugrások és vágások megjelenítése
+	Show Needle Points	Tűszúrások megjelenítése
+	Show Artwork Under Stitches	Grafika megjelenítése az öltések alatt
+embroidery	Stitches	Öltések
+embroidery	Art	Grafika
+embroidery	View	Nézet
+embroidery	Planning stitches…	Öltések tervezése…
+embroidery	Can't plan the stitches:	Az öltések nem tervezhetők meg:
+embroidery	Entry	Belépés
+embroidery	Exit	Kilépés
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} kijelölt objektum nem kerül hímzésre
+	Embroidery	Hímzés
+	Embroidery Panel	Hímzés panel
+embroidery	Sewing Order	Varrási sorrend
+embroidery	Check	Ellenőrzés
+embroidery	No document	Nincs dokumentum
+embroidery	Open or draw a design to see how it will be sewn.	Nyisson meg vagy rajzoljon egy mintát, hogy lássa, hogyan lesz kihímezve.
+embroidery	Updating…	Frissítés…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Ezek az utolsó módosítás előtti öltések; az újak tervezése folyamatban van.
+embroidery	Change the design and the stitches are planned again.	Módosítsa a mintát, és az öltések újra megtervezésre kerülnek.
+embroidery	Nothing to sew	Nincs mit hímezni
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	A kitöltéssel vagy körvonallal rendelkező útvonalak hímzésre kerülnek; a rejtett objektumok, segédvonalak és nem nyomtatható rétegek nem.
+@plural	{count} thread block|{count} thread blocks	{count} szálblokk
+@plural	{count} stitch|{count} stitches	{count} öltés
+@msg	tab {tab}: one of {_1}	lap {tab}: ezek egyike: {_1}
+@msg	unknown key `{k}`: the only one is {only}	ismeretlen kulcs `{k}`: az egyetlen a {only}
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Alulról felfelé hímezve; az egy színhez tartozó objektumok összevonódnak, ha semmi sincs közöttük.
+embroidery	Trim and thread change	Vágás és szálcsere
+embroidery	Thread change	Szálcsere
+embroidery	fill	kitöltés
+embroidery	stroke	körvonal
+embroidery	from the file	a fájlból
+embroidery	running stitch	egyenes öltés
+embroidery	satin	szatén
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	keskeny részek szaténnal
+@plural	{count} object|{count} objects	{count} objektum
+@plural	{count} jump|{count} jumps	{count} ugrás
+@plural	{count} trim|{count} trims	{count} vágás
+embroidery	Colours	Színek
+embroidery	Thread changes	Szálcserék
+embroidery	Trims	Vágások
+embroidery	Jumps	Ugrások
+embroidery	Top thread	Felső szál
+embroidery	Size	Méret
+embroidery	Time	Idő
+embroidery	Design	Minta
+embroidery	The time at {speed} stitches a minute, an estimate.	Az idő percenként {speed} öltéssel, becslés.
+	Sew Earlier	Hímezze korábban
+	Sew Later	Hímezze később
+	Sew First	Hímezze elsőként
+	Sew Last	Hímezze utolsóként
+	Change Sewing Order	Varrási sorrend módosítása
+@msg	nothing selected is sewn	a kijelölésből semmi nem kerül hímzésre
+@msg	the selection is sewn first already	a kijelölés már elsőként kerül hímzésre
+@msg	the selection is sewn last already	a kijelölés már utolsóként kerül hímzésre
+@msg	the sewing order is that already	a varrási sorrend már ilyen
+@msg	can't change the sewing order: an object is no longer in the document	a varrási sorrend nem módosítható: egy objektum már nincs a dokumentumban
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	a varrási sorrend nem módosítható: egy objektum vagy az azt tartalmazó réteg vagy csoport zárolva van
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	a varrási sorrend nem módosítható: a vágógörbe a vágócsoportja alján marad
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	a varrási sorrend nem módosítható: egy objektum vágócsoportba kerülne vagy kikerülne belőle
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	a varrási sorrend nem módosítható: egy megnyitott gépfájl szakasza a blokkjával mozog, ezért a csoportját mozgassa
+@msg	can't change the sewing order: a layer can't go into a group	a varrási sorrend nem módosítható: réteg nem kerülhet csoportba
+@msg	can't change the sewing order: the layer or group it would go into is locked	a varrási sorrend nem módosítható: a réteg vagy csoport, ahová kerülne, zárolva van
+@msg	can't change the sewing order: it would go between two parts of one object	a varrási sorrend nem módosítható: egy objektum két része közé kerülne
+@msg	can't change the sewing order: there is nothing to sew it beside	a varrási sorrend nem módosítható: nincs mi mellé hímezni
+@msg	can't change the sewing order: too many objects at once	a varrási sorrend nem módosítható: túl sok objektum egyszerre
+embroidery	After {name}	{name} után
+embroidery	Before {name}	{name} előtt
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Egy öltés sem mozdult: az egy színhez tartozó objektumok továbbra is összevonódnak, ha semmi sincs közöttük alattuk.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} a(z) {block}. blokkban kerül hímzésre, a többi azonos színűvel összevonva
+embroidery	{name} is sewn in block {block}	{name} a(z) {block}. blokkban kerül hímzésre
+embroidery	Thread changes: {before} → {after}	Szálcserék: {before} → {after}
+embroidery	Collapse All	Összes összecsukása
+embroidery	Expand All	Összes kibontása
+embroidery	Satin columns wider than {value} mm	{value} mm-nél szélesebb szaténoszlopok
+embroidery	Stitches longer than {value} mm	{value} mm-nél hosszabb öltések
+embroidery	Stitches longer than one {format} record ({value} mm)	Egy {format}-rekordnál hosszabb öltések ({value} mm)
+embroidery	Fill stitch length under {value} mm	{value} mm alatti kitöltési öltéshossz
+embroidery	Satin columns narrower than {value} mm	{value} mm-nél keskenyebb szaténoszlopok
+embroidery	Running stitch length under {value} mm	{value} mm alatti egyenes öltéshossz
+embroidery	Stitches shorter than the needle is thick ({value} mm)	A tű vastagságánál rövidebb öltések ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	{value} mm-es vagy rövidebb öltések, amelyeket a gépek kihagynak
+embroidery	More than {value} short stitches in a row	Több mint {value} rövid öltés egymás után
+embroidery	{value} or more layers of stitches on one spot	{value} vagy több öltésréteg egy helyen
+embroidery	Everything is sewn	Minden kihímzésre kerül
+embroidery	Art that isn't sewn	Grafika, amely nem kerül kihímzésre
+embroidery	More colour blocks than {format} holds ({value})	Több színblokk, mint amennyit a(z) {format} elbír ({value})
+embroidery	{format} holds any number of colour blocks	A(z) {format} tetszőleges számú színblokkot elbír
+embroidery	More stitches than a machine shows ({value})	Több öltés, mint amennyit egy gép megjelenít ({value})
+embroidery	More thread changes than a machine shows ({value})	Több szálcsere, mint amennyit egy gép megjelenít ({value})
+embroidery	No findings	Nincs találat
+embroidery	Longest: {value} mm	Leghosszabb: {value} mm
+embroidery	Widest: {value} mm	Legszélesebb: {value} mm
+embroidery	Narrowest: {value} mm	Legkeskenyebb: {value} mm
+embroidery	Shortest: {value} mm	Legrövidebb: {value} mm
+embroidery	At most {value} in a row	Legfeljebb {value} egymás után
+embroidery	At most {value} on one spot	Legfeljebb {value} egy helyen
+embroidery	Record {record}: {value} mm	{record}. rekord: {value} mm
+embroidery	From record {record}: {value} in a row	A(z) {record}. rekordtól: {value} egymás után
+embroidery	Record {record}	{record}. rekord
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Hiba
+embroidery	Warning	Figyelmeztetés
+embroidery	Note	Megjegyzés
+embroidery	Passed	Megfelelt
+embroidery	No problems found	Nem található probléma
+embroidery	stitch density	öltéssűrűség
+embroidery	needle penetrations in an area	tűszúrások egy területen
+embroidery	tie stitches	rögzítőöltések
+embroidery	Checking…	Ellenőrzés…
+embroidery	Can't check the design:	A minta nem ellenőrizhető:
+embroidery	Checked for	Ellenőrizve ehhez:
+embroidery	Source: {name}	Forrás: {name}
+embroidery	Also: {name}	Továbbá: {name}
+embroidery	Not checked: {list}	Nincs ellenőrizve: {list}
+embroidery	No source gives a number to check these against.	Egyik forrás sem ad számot, amelyhez ezeket ellenőrizni lehetne.
+@plural	{count} thread change|{count} thread changes	{count} szálcsere
+@plural	{count} row|{count} rows	{count} sorozat
+@plural	{count} spot|{count} spots	{count} hely
+@plural	{count} thread|{count} threads	{count} szál
+@plural	{count} error|{count} errors	{count} hiba
+@plural	{count} warning|{count} warnings	{count} figyelmeztetés
+@plural	{count} note|{count} notes	{count} megjegyzés
+@plural	and {count} more|and {count} more	és még {count}
+embroidery	Threads unlike the art's colour (over {value})	A grafika színétől eltérő szálak ({value} fölött)
+embroidery	Largest difference: {value}	Legnagyobb eltérés: {value}
+embroidery	Block {block}: {thread}, {value}	{block}. blokk: {thread}, {value}
+	Zoom to Box	Nagyítás keretre
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] dokumentumpontban, mindegyik ±{max} tartományon belül; a right nem lehet a left előtt, a bottom pedig nem lehet a top fölött
+@msg	margin: screen points, 0 or more	margin: képernyőpont, 0 vagy több
+@msg	no canvas is shown	nincs megjelenítve rajzvászon
+	Next Finding	Következő találat
+	Previous Finding	Előző találat
+embroidery	Show	Mutasd
+embroidery	{index} of {count}	{index}/{count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	nincs megjelenítve találat: jelenítsen meg egyet a Hímzés panel Ellenőrzés lapján
+@msg	the check is out of date: wait for the stitches to be planned	az ellenőrzés elavult: várja meg, amíg az öltések megtervezése elkészül
+@msg	no such rule in the check	nincs ilyen szabály az ellenőrzésben
+@msg	no such finding in the check	nincs ilyen találat az ellenőrzésben
+	Show Check Marks	Ellenőrzési jelölések megjelenítése
+embroidery	Stitch lengths	Öltéshosszak
+embroidery	Median: {value} mm	Medián: {value} mm
+embroidery	Too long	Túl hosszú
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	{value} mm fölött: {stitches}
+@plural	{count} colour|{count} colours	{count} szín
+embroidery	Embroidery: {figures}	Hímzés: {figures}
+embroidery	Stitches can't be planned	Az öltések nem tervezhetők meg
+embroidery	Click to open the Embroidery panel.	Kattintson a Hímzés panel megnyitásához.
+embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	kb. {value} perc
+embroidery	about {value} m	kb. {value} m
+	Show Finding	Találat megjelenítése
+@msg	`rule` must be a check rule's id	a `rule` értékének egy ellenőrzési szabály azonosítójának kell lennie
+@msg	`hit` must be a listed hit's place, from 0	a `hit` értékének egy felsorolt találat helyének kell lennie, 0-tól
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	a dokumentum jelenlegi állapotáról nincs ellenőrzés: jelenítse meg a Hímzés panel Ellenőrzés lapját, és várja meg, amíg az öltések megtervezése elkészül
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	és további {count} sor nincs a listán (a lista az első {limit} sort mutatja)
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	a kép {w} × {h} képpontos lenne, oldalanként több mint {most}: rajzoljon kisebb területet vagy kisebb léptékben

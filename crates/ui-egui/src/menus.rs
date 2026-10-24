@@ -236,6 +236,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
     ),
     ("view.setZoom", "Set Zoom", "", "{zoom: percent, center?: [x,y]}"),
     (
+        "view.zoomTo",
+        "Zoom to Box",
+        "",
+        "{rect: [left, top, right, bottom] document points, margin?: screen points on each side (default 30, as Fit Artboard in Window leaves)} centre the box in the window and zoom so that it fills it, within 3.13% to 64,000% → {zoom: percent}",
+    ),
+    (
         "view.goToArtboard",
         "Go to Artboard",
         "",
@@ -584,6 +590,36 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "Transparency Flattener Presets…",
         "",
         "{selected?: preset name} open the presets manager (dialog `flattenerPresets`, fields `selected`, then the selected preset's `name` and option keys: setting them on a saved preset saves it, a new `name` renames it; built-in presets don't change). New, Delete, Import… and Export… run flattener.presets.save / delete / import / export",
+    ),
+    (
+        "view.checkMarks",
+        "Show Check Marks",
+        "",
+        "{on?: bool} (VectorCraft Stitch) ring the findings of the Embroidery panel's Check tab on the canvas while the tab shows (the default), or not, for the session; no on: the other way → {on}",
+    ),
+    (
+        "embroidery.nextHit",
+        "Next Finding",
+        "",
+        "{} (VectorCraft Stitch) show the next listed hit of the check rule shown last in the Embroidery panel's Check tab (round from the last to the first): select its object and zoom to it; off while no finding is shown or the check is of an older plan → {rule, hit: from 0}",
+    ),
+    (
+        "embroidery.previousHit",
+        "Previous Finding",
+        "",
+        "{} (VectorCraft Stitch) show the previous listed hit of the check rule shown last (round from the first to the last), as embroidery.nextHit → {rule, hit}",
+    ),
+    (
+        "ui.embroideryPanel",
+        "Embroidery Panel",
+        "",
+        "{tab?: order|check, format?: a format's id (embroidery.check's), or null for the thread palette's} show the Embroidery panel (VectorCraft Stitch), at a tab: the first time docked as the last tab beside Properties, Layers and Libraries; format: the one the active document's Check tab checks for → {tab, format}",
+    ),
+    (
+        "embroidery.showFinding",
+        "Show Finding",
+        "",
+        "{rule: a check rule's id, hit?: a listed hit's place, from 0} (VectorCraft Stitch) Show from the Embroidery panel's Check tab: select the rule's objects (or the hit's) and zoom to its hits, on the check the tab shows for the document as it is; then embroidery.nextHit and embroidery.previousHit step from it → {rule, hit}",
     ),
     (
         "ui.flattenerPreview",
@@ -1057,6 +1093,10 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         }
         return Some(app.run("window.panel.close", json!({"panel": panel})));
     }
+    // VectorCraft Stitch: Window › Embroidery and `ui.embroideryPanel`.
+    if let Some(result) = crate::panels::embroidery::command(app, id, p) {
+        return Some(result);
+    }
     if let Some(result) = crate::panel_docking::command(app, id, p) {
         return Some(result);
     }
@@ -1282,6 +1322,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             crate::canvas::fit(app, id);
             Ok(Value::Null)
         }
+        "view.zoomTo" => crate::embroidery::zoom::zoom_to(app, p),
         "view.goToArtboard" => go_to_artboard(app, p),
         "view.presentation" => {
             app.ui.screen_mode = if app.ui.screen_mode == 3 { 0 } else { 3 };
@@ -1719,6 +1760,9 @@ fn go_to_artboard(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> 
 
 /// Checked state for toggle items.
 pub fn checked(app: &VectorcraftApp, id: &str, p: &Value) -> Option<bool> {
+    if let Some(on) = crate::embroidery::menu::checked(app, id) {
+        return Some(on);
+    }
     if id == "app.language" {
         let lang = p.get("lang").and_then(Value::as_str).unwrap_or("");
         let pref = app.session.prefs.interface_language.as_str();
@@ -2235,6 +2279,10 @@ pub(crate) fn waits_for_ime(app: &VectorcraftApp, id: &str) -> bool {
 pub fn enabled(app: &VectorcraftApp, id: &str) -> bool {
     if waits_for_ime(app, id) {
         return false;
+    }
+    // VectorCraft Stitch: the Embroidery panel's own commands.
+    if let Some(on) = crate::panels::embroidery::enabled(app, id) {
+        return on;
     }
     if let Some(c) = vectorcraft_engine::find_command(id) {
         // The system clipboard's contents can be pasted with an empty internal clipboard.
@@ -2812,6 +2860,9 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Outline", "view.outline"),
                 c("Overprint Preview", "view.overprintPreview"),
                 c("Pixel Preview", "view.pixelPreview"),
+                // VectorCraft Stitch: View › Stitch Preview and its options.
+                crate::embroidery::menu::stitch_preview(),
+                crate::embroidery::menu::stitch_preview_options(),
                 c("Trim View", "view.trimView"),
                 c("Presentation Mode", "view.presentation"),
                 sub(
@@ -2936,6 +2987,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 panel("Color Themes", "colorThemes"),
                 panel("CSS Properties", crate::panels::css_properties::ID),
                 panel("Document Info", "docInfo"),
+                panel("Embroidery", crate::panels::embroidery::ID),
                 panel("Flattener Preview", crate::panels::flattener_preview::ID),
                 panel("Gradient", "gradient"),
                 panel("Graphic Styles", "graphicStyles"),

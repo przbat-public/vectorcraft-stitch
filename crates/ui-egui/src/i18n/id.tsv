@@ -5304,3 +5304,166 @@ swatch	Bright Violet	Violet cerah
 	Edge Run	Jalur tepi
 	Edge Run and Zigzag	Jalur tepi dan zigzag
 	Edge Run and Tatami	Jalur tepi dan tatami
+	Embroidery Picture	Gambar bordir
+@msg	nothing to draw: the document sews no stitch	tidak ada yang digambar: dokumen tidak menjahit satu jahitan pun
+	Stitch Preview	Pratinjau jahitan
+	Stitch Preview Options	Opsi pratinjau jahitan
+	Show Jumps and Cuts	Tampilkan lompatan dan potongan
+	Show Needle Points	Tampilkan titik tusukan jarum
+	Show Artwork Under Stitches	Tampilkan gambar di bawah jahitan
+embroidery	Stitches	Jahitan
+embroidery	Art	Gambar
+embroidery	View	Tampilan
+embroidery	Planning stitches…	Merencanakan jahitan…
+embroidery	Can't plan the stitches:	Jahitan tidak dapat direncanakan:
+embroidery	Entry	Masuk
+embroidery	Exit	Keluar
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} objek terpilih tidak dijahit
+	Embroidery	Bordir
+	Embroidery Panel	Panel Bordir
+embroidery	Sewing Order	Urutan jahit
+embroidery	Check	Pemeriksaan
+embroidery	No document	Tidak ada dokumen
+embroidery	Open or draw a design to see how it will be sewn.	Buka atau gambar desain untuk melihat cara menjahitnya.
+embroidery	Updating…	Memperbarui…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Ini jahitan sebelum perubahan terakhir; jahitan baru sedang direncanakan.
+embroidery	Change the design and the stitches are planned again.	Ubah desain dan jahitan akan direncanakan ulang.
+embroidery	Nothing to sew	Tidak ada yang dijahit
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Jalur dengan isian atau goresan dijahit; objek tersembunyi, panduan, dan lapisan yang tidak dicetak tidak.
+@plural	{count} thread block|{count} thread blocks	{count} blok benang
+@plural	{count} stitch|{count} stitches	{count} jahitan
+@msg	tab {tab}: one of {_1}	tab {tab}: salah satu dari {_1}
+@msg	unknown key `{k}`: the only one is {only}	kunci tidak dikenal `{k}`: satu-satunya adalah {only}
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Dijahit dari bawah tumpukan ke atas; objek satu warna digabung bila tidak ada apa pun di antaranya.
+embroidery	Trim and thread change	Potong dan ganti benang
+embroidery	Thread change	Ganti benang
+embroidery	fill	isian
+embroidery	stroke	goresan
+embroidery	from the file	dari berkas
+embroidery	running stitch	jahitan lurus
+embroidery	satin	satin
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	bagian sempit sebagai satin
+@plural	{count} object|{count} objects	{count} objek
+@plural	{count} jump|{count} jumps	{count} lompatan
+@plural	{count} trim|{count} trims	{count} potongan
+embroidery	Colours	Warna
+embroidery	Thread changes	Ganti benang
+embroidery	Trims	Potongan
+embroidery	Jumps	Lompatan
+embroidery	Top thread	Benang atas
+embroidery	Size	Ukuran
+embroidery	Time	Waktu
+embroidery	Design	Desain
+embroidery	The time at {speed} stitches a minute, an estimate.	Waktu pada {speed} jahitan per menit, perkiraan.
+	Sew Earlier	Jahit lebih awal
+	Sew Later	Jahit lebih akhir
+	Sew First	Jahit pertama
+	Sew Last	Jahit terakhir
+	Change Sewing Order	Ubah urutan jahit
+@msg	nothing selected is sewn	tidak ada pilihan yang dijahit
+@msg	the selection is sewn first already	pilihan sudah dijahit pertama
+@msg	the selection is sewn last already	pilihan sudah dijahit terakhir
+@msg	the sewing order is that already	urutan jahit sudah seperti itu
+@msg	can't change the sewing order: an object is no longer in the document	urutan jahit tidak dapat diubah: sebuah objek tidak lagi ada di dokumen
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	urutan jahit tidak dapat diubah: sebuah objek, atau lapisan atau grup tempatnya, terkunci
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	urutan jahit tidak dapat diubah: jalur kliping tetap di bagian bawah grup klipingnya
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	urutan jahit tidak dapat diubah: sebuah objek akan masuk ke grup kliping atau keluar darinya
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	urutan jahit tidak dapat diubah: satu bagian dari berkas mesin yang dibuka bergerak bersama bloknya, jadi pindahkan grupnya
+@msg	can't change the sewing order: a layer can't go into a group	urutan jahit tidak dapat diubah: lapisan tidak dapat masuk ke grup
+@msg	can't change the sewing order: the layer or group it would go into is locked	urutan jahit tidak dapat diubah: lapisan atau grup tujuannya terkunci
+@msg	can't change the sewing order: it would go between two parts of one object	urutan jahit tidak dapat diubah: akan berada di antara dua bagian satu objek
+@msg	can't change the sewing order: there is nothing to sew it beside	urutan jahit tidak dapat diubah: tidak ada yang bisa dijahit di sebelahnya
+@msg	can't change the sewing order: too many objects at once	urutan jahit tidak dapat diubah: terlalu banyak objek sekaligus
+embroidery	After {name}	Setelah {name}
+embroidery	Before {name}	Sebelum {name}
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Tidak ada jahitan yang berpindah: objek satu warna tetap digabung bila tidak ada apa pun di antaranya di bawahnya.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} dijahit di blok {block}, digabung dengan objek lain berwarna sama
+embroidery	{name} is sewn in block {block}	{name} dijahit di blok {block}
+embroidery	Thread changes: {before} → {after}	Ganti benang: {before} → {after}
+embroidery	Collapse All	Ciutkan semua
+embroidery	Expand All	Bentangkan semua
+embroidery	Satin columns wider than {value} mm	Kolom satin lebih lebar dari {value} mm
+embroidery	Stitches longer than {value} mm	Jahitan lebih panjang dari {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Jahitan lebih panjang dari satu rekaman {format} ({value} mm)
+embroidery	Fill stitch length under {value} mm	Panjang jahitan isian di bawah {value} mm
+embroidery	Satin columns narrower than {value} mm	Kolom satin lebih sempit dari {value} mm
+embroidery	Running stitch length under {value} mm	Panjang jahitan lurus di bawah {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Jahitan lebih pendek dari tebal jarum ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Jahitan {value} mm atau kurang, yang dilewati mesin
+embroidery	More than {value} short stitches in a row	Lebih dari {value} jahitan pendek berturut-turut
+embroidery	{value} or more layers of stitches on one spot	{value} lapisan jahitan atau lebih di satu tempat
+embroidery	Everything is sewn	Semua dijahit
+embroidery	Art that isn't sewn	Gambar yang tidak dijahit
+embroidery	More colour blocks than {format} holds ({value})	Blok warna lebih banyak dari yang dimuat {format} ({value})
+embroidery	{format} holds any number of colour blocks	{format} memuat blok warna berapa pun
+embroidery	More stitches than a machine shows ({value})	Jahitan lebih banyak dari yang ditampilkan mesin ({value})
+embroidery	More thread changes than a machine shows ({value})	Ganti benang lebih banyak dari yang ditampilkan mesin ({value})
+embroidery	No findings	Tidak ada temuan
+embroidery	Longest: {value} mm	Terpanjang: {value} mm
+embroidery	Widest: {value} mm	Terlebar: {value} mm
+embroidery	Narrowest: {value} mm	Tersempit: {value} mm
+embroidery	Shortest: {value} mm	Terpendek: {value} mm
+embroidery	At most {value} in a row	Paling banyak {value} berturut-turut
+embroidery	At most {value} on one spot	Paling banyak {value} di satu tempat
+embroidery	Record {record}: {value} mm	Rekaman {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Dari rekaman {record}: {value} berturut-turut
+embroidery	Record {record}	Rekaman {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Kesalahan
+embroidery	Warning	Peringatan
+embroidery	Note	Catatan
+embroidery	Passed	Lolos
+embroidery	No problems found	Tidak ada masalah
+embroidery	stitch density	kerapatan jahitan
+embroidery	needle penetrations in an area	tusukan jarum di satu area
+embroidery	tie stitches	jahitan pengunci
+embroidery	Checking…	Memeriksa…
+embroidery	Can't check the design:	Desain tidak dapat diperiksa:
+embroidery	Checked for	Diperiksa untuk
+embroidery	Source: {name}	Sumber: {name}
+embroidery	Also: {name}	Juga: {name}
+embroidery	Not checked: {list}	Tidak diperiksa: {list}
+embroidery	No source gives a number to check these against.	Tidak ada sumber yang memberi angka untuk memeriksanya.
+@plural	{count} thread change|{count} thread changes	{count} ganti benang
+@plural	{count} row|{count} rows	{count} rangkaian
+@plural	{count} spot|{count} spots	{count} tempat
+@plural	{count} thread|{count} threads	{count} benang
+@plural	{count} error|{count} errors	{count} kesalahan
+@plural	{count} warning|{count} warnings	{count} peringatan
+@plural	{count} note|{count} notes	{count} catatan
+@plural	and {count} more|and {count} more	dan {count} lagi
+embroidery	Threads unlike the art's colour (over {value})	Benang yang berbeda dari warna gambar (di atas {value})
+embroidery	Largest difference: {value}	Perbedaan terbesar: {value}
+embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
+	Zoom to Box	Perbesar ke kotak
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] dalam poin dokumen, masing-masing dalam ±{max}, dengan right tidak sebelum left dan bottom tidak di atas top
+@msg	margin: screen points, 0 or more	margin: poin layar, 0 atau lebih
+@msg	no canvas is shown	tidak ada kanvas yang ditampilkan
+	Next Finding	Temuan berikutnya
+	Previous Finding	Temuan sebelumnya
+embroidery	Show	Tampilkan
+embroidery	{index} of {count}	{index} dari {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	tidak ada temuan yang ditampilkan: tampilkan satu di tab Pemeriksaan pada panel Bordir
+@msg	the check is out of date: wait for the stitches to be planned	pemeriksaan sudah usang: tunggu hingga jahitan selesai direncanakan
+@msg	no such rule in the check	tidak ada aturan itu dalam pemeriksaan
+@msg	no such finding in the check	tidak ada temuan itu dalam pemeriksaan
+	Show Check Marks	Tampilkan tanda pemeriksaan
+embroidery	Stitch lengths	Panjang jahitan
+embroidery	Median: {value} mm	Median: {value} mm
+embroidery	Too long	Terlalu panjang
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Di atas {value} mm: {stitches}
+@plural	{count} colour|{count} colours	{count} warna
+embroidery	Embroidery: {figures}	Bordir: {figures}
+embroidery	Stitches can't be planned	Jahitan tidak dapat direncanakan
+embroidery	Click to open the Embroidery panel.	Klik untuk membuka panel Bordir.
+embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	sekitar {value} menit
+embroidery	about {value} m	sekitar {value} m
+	Show Finding	Tampilkan temuan
+@msg	`rule` must be a check rule's id	`rule` harus berupa id aturan pemeriksaan
+@msg	`hit` must be a listed hit's place, from 0	`hit` harus berupa urutan temuan yang tercantum, mulai dari 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	tidak ada pemeriksaan untuk dokumen dalam keadaannya sekarang: tampilkan tab Pemeriksaan di panel Bordir dan tunggu hingga jahitan selesai direncanakan
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	dan {count} baris lagi tidak tercantum (daftar menampilkan {limit} baris pertama)
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	gambar akan berukuran {w} × {h} piksel, lebih dari {most} per sisi: gambar wilayah yang lebih kecil atau dengan skala lebih kecil

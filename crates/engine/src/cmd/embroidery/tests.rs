@@ -765,6 +765,20 @@ fn a_newer_versions_object_settings_open_and_are_kept() {
     assert_eq!(saved(&mut s), off, "the box stays: it holds what a newer version wrote");
 }
 
+/// Trim After acts on `ids`, else the selection: given `ids` it runs with nothing selected, given
+/// neither it is off; it takes no `id`.
+#[test]
+fn trim_after_takes_ids_in_place_of_the_selection() {
+    let mut s = blank();
+    let id = rect(&mut s, "#2233cc", 20.0, 20.0, 30.0, 30.0);
+    s.execute("select.none", &json!({})).unwrap();
+    assert_eq!(s.execute("embroidery.setTrimAfter", &json!({"ids": [id]})).unwrap(), json!({"on": true, "changed": 1}));
+    let e = s.execute("embroidery.setTrimAfter", &json!({})).unwrap_err().to_string();
+    assert!(e.contains("not available right now: nothing selected"), "{e}");
+    let e = s.execute("embroidery.setTrimAfter", &json!({"id": id})).unwrap_err().to_string();
+    assert!(e.contains("`ids`"), "{e}");
+}
+
 /// A fill whose paint isn't sewn is passed by before any path operation runs on its area: a
 /// negative `expand` that would leave nothing of it doesn't warn about art that was never to be
 /// sewn.

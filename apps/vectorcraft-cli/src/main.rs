@@ -465,5 +465,9 @@ fn bench(args: &[String]) -> Result<(), String> {
         Ok(None) => {}
         Err(e) => outln!("  embroidery plan: {e}"),
     }
+    // VectorCraft Stitch: the stitch preview's times.
+    if let Some(line) = perf_embroidery::preview_line(&doc, iters as usize) {
+        outln!("{line}");
+    }
     Ok(())
 }

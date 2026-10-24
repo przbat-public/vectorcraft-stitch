@@ -4209,3 +4209,166 @@ lighting	Light	光源
 	Edge Run	邊緣行針
 	Edge Run and Zigzag	邊緣行針加鋸齒
 	Edge Run and Tatami	邊緣行針加榻榻米
+	Embroidery Picture	刺繡影像
+@msg	nothing to draw: the document sews no stitch	無可繪製：文件沒有要縫的針跡
+	Stitch Preview	針跡預視
+	Stitch Preview Options	針跡預視選項
+	Show Jumps and Cuts	顯示跳針和剪線
+	Show Needle Points	顯示落針點
+	Show Artwork Under Stitches	在針跡下顯示圖稿
+embroidery	Stitches	針跡
+embroidery	Art	圖稿
+embroidery	View	檢視
+embroidery	Planning stitches…	正在規劃針跡…
+embroidery	Can't plan the stitches:	無法規劃針跡：
+embroidery	Entry	入針
+embroidery	Exit	出針
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} 個選取的物件不會被繡製
+	Embroidery	刺繡
+	Embroidery Panel	刺繡面板
+embroidery	Sewing Order	刺繡順序
+embroidery	Check	檢查
+embroidery	No document	無文件
+embroidery	Open or draw a design to see how it will be sewn.	開啟或繪製一個設計，查看它將如何繡製。
+embroidery	Updating…	正在更新…
+embroidery	These are the stitches before the last change; the new ones are being planned.	這是上次變更前的針跡；正在規劃新的針跡。
+embroidery	Change the design and the stitches are planned again.	變更設計後會重新規劃針跡。
+embroidery	Nothing to sew	沒有可繡製的內容
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	有填色或筆畫的路徑會被繡製；隱藏的物件、參考線和不列印的圖層不會。
+@plural	{count} thread block|{count} thread blocks	{count} 個線塊
+@plural	{count} stitch|{count} stitches	{count} 針
+@msg	tab {tab}: one of {_1}	標籤 {tab}：{_1} 之一
+@msg	unknown key `{k}`: the only one is {only}	未知的鍵 `{k}`：唯一的鍵是 {only}
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	從堆疊的底部向上繡製；同一顏色的物件在中間沒有其他內容時會合併。
+embroidery	Trim and thread change	剪線並換線
+embroidery	Thread change	換線
+embroidery	fill	填色
+embroidery	stroke	筆畫
+embroidery	from the file	來自檔案
+embroidery	running stitch	平針
+embroidery	satin	緞紋
+embroidery	tatami	榻榻米
+embroidery	narrow parts as satin	窄的部分用緞紋
+@plural	{count} object|{count} objects	{count} 個物件
+@plural	{count} jump|{count} jumps	{count} 次跳針
+@plural	{count} trim|{count} trims	{count} 次剪線
+embroidery	Colours	顏色
+embroidery	Thread changes	換線次數
+embroidery	Trims	剪線
+embroidery	Jumps	跳針
+embroidery	Top thread	面線
+embroidery	Size	尺寸
+embroidery	Time	時間
+embroidery	Design	設計
+embroidery	The time at {speed} stitches a minute, an estimate.	按每分鐘 {speed} 針計算的時間，為估計值。
+	Sew Earlier	提前繡製
+	Sew Later	延後繡製
+	Sew First	最先繡製
+	Sew Last	最後繡製
+	Change Sewing Order	變更刺繡順序
+@msg	nothing selected is sewn	所選內容都不會被繡製
+@msg	the selection is sewn first already	所選內容已經最先繡製
+@msg	the selection is sewn last already	所選內容已經最後繡製
+@msg	the sewing order is that already	刺繡順序已經是這樣
+@msg	can't change the sewing order: an object is no longer in the document	無法變更刺繡順序：物件已不在文件中
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	無法變更刺繡順序：物件或其所在的圖層或群組已鎖定
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	無法變更刺繡順序：剪裁路徑留在其剪裁群組的最底層
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	無法變更刺繡順序：物件會進入或離開剪裁群組
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	無法變更刺繡順序：已開啟的機器檔案中的一段會隨其色塊一起移動，請移動其群組
+@msg	can't change the sewing order: a layer can't go into a group	無法變更刺繡順序：圖層不能放進群組
+@msg	can't change the sewing order: the layer or group it would go into is locked	無法變更刺繡順序：要放入的圖層或群組已鎖定
+@msg	can't change the sewing order: it would go between two parts of one object	無法變更刺繡順序：會落在同一物件的兩個部分之間
+@msg	can't change the sewing order: there is nothing to sew it beside	無法變更刺繡順序：旁邊沒有可繡製的內容
+@msg	can't change the sewing order: too many objects at once	無法變更刺繡順序：一次的物件太多
+embroidery	After {name}	在 {name} 之後
+embroidery	Before {name}	在 {name} 之前
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	沒有針跡移動：只要中間沒有內容在其下方，同一顏色的物件仍會合併。
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} 在第 {block} 塊中與同色的其他物件合併繡製
+embroidery	{name} is sewn in block {block}	{name} 在第 {block} 塊中繡製
+embroidery	Thread changes: {before} → {after}	換線次數：{before} → {after}
+embroidery	Collapse All	全部摺疊
+embroidery	Expand All	全部展開
+embroidery	Satin columns wider than {value} mm	寬於 {value} mm 的緞紋列
+embroidery	Stitches longer than {value} mm	長於 {value} mm 的針跡
+embroidery	Stitches longer than one {format} record ({value} mm)	長於一筆 {format} 記錄的針跡 ({value} mm)
+embroidery	Fill stitch length under {value} mm	填色針距小於 {value} mm
+embroidery	Satin columns narrower than {value} mm	窄於 {value} mm 的緞紋列
+embroidery	Running stitch length under {value} mm	平針針距小於 {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	短於針粗的針跡 ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	繡花機會略去的 {value} mm 及以下的針跡
+embroidery	More than {value} short stitches in a row	連續超過 {value} 個短針跡
+embroidery	{value} or more layers of stitches on one spot	同一處有 {value} 層或更多針跡
+embroidery	Everything is sewn	全部都會繡出
+embroidery	Art that isn't sewn	不會繡出的圖稿
+embroidery	More colour blocks than {format} holds ({value})	色塊數超過 {format} 所能容納的數量 ({value})
+embroidery	{format} holds any number of colour blocks	{format} 可容納任意數量的色塊
+embroidery	More stitches than a machine shows ({value})	針數超過繡花機能顯示的數量 ({value})
+embroidery	More thread changes than a machine shows ({value})	換線次數超過繡花機能顯示的數量 ({value})
+embroidery	No findings	未發現問題
+embroidery	Longest: {value} mm	最長：{value} mm
+embroidery	Widest: {value} mm	最寬：{value} mm
+embroidery	Narrowest: {value} mm	最窄：{value} mm
+embroidery	Shortest: {value} mm	最短：{value} mm
+embroidery	At most {value} in a row	最多連續 {value} 個
+embroidery	At most {value} on one spot	同一處最多 {value} 層
+embroidery	Record {record}: {value} mm	第 {record} 筆記錄：{value} mm
+embroidery	From record {record}: {value} in a row	自第 {record} 筆記錄起：連續 {value} 個
+embroidery	Record {record}	第 {record} 筆記錄
+embroidery	{name}: {value} mm	{name}：{value} mm
+embroidery	Error	錯誤
+embroidery	Warning	警告
+embroidery	Note	提示
+embroidery	Passed	通過
+embroidery	No problems found	未發現問題
+embroidery	stitch density	針跡密度
+embroidery	needle penetrations in an area	同一區域的落針次數
+embroidery	tie stitches	打結針
+embroidery	Checking…	正在檢查…
+embroidery	Can't check the design:	無法檢查設計：
+embroidery	Checked for	檢查依據
+embroidery	Source: {name}	來源：{name}
+embroidery	Also: {name}	另見：{name}
+embroidery	Not checked: {list}	未檢查：{list}
+embroidery	No source gives a number to check these against.	沒有來源給出可據以檢查的數值。
+@plural	{count} thread change|{count} thread changes	{count} 次換線
+@plural	{count} row|{count} rows	{count} 處連續
+@plural	{count} spot|{count} spots	{count} 處
+@plural	{count} thread|{count} threads	{count} 種線
+@plural	{count} error|{count} errors	{count} 個錯誤
+@plural	{count} warning|{count} warnings	{count} 個警告
+@plural	{count} note|{count} notes	{count} 條提示
+@plural	and {count} more|and {count} more	另有 {count} 處
+embroidery	Threads unlike the art's colour (over {value})	與圖稿顏色不符的線 (大於 {value})
+embroidery	Largest difference: {value}	最大差異：{value}
+embroidery	Block {block}: {thread}, {value}	第 {block} 塊：{thread}，{value}
+	Zoom to Box	縮放至框
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect：[left， top， right， bottom](文件點)，每個值在 ±{max} 以內，right 不小於 left，bottom 不小於 top
+@msg	margin: screen points, 0 or more	margin：螢幕點，0 或更大
+@msg	no canvas is shown	未顯示畫布
+	Next Finding	下一個問題
+	Previous Finding	上一個問題
+embroidery	Show	顯示
+embroidery	{index} of {count}	第 {index} 個，共 {count} 個
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	未顯示任何問題：請在「刺繡」面板的「檢查」標籤中顯示一個
+@msg	the check is out of date: wait for the stitches to be planned	檢查結果已過時：請等待針跡規劃完成
+@msg	no such rule in the check	檢查中沒有此規則
+@msg	no such finding in the check	檢查中沒有此問題
+	Show Check Marks	顯示檢查標記
+embroidery	Stitch lengths	針距分布
+embroidery	Median: {value} mm	中位數：{value} mm
+embroidery	Too long	過長
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm：{stitches}
+embroidery	Over {value} mm: {stitches}	超過 {value} mm：{stitches}
+@plural	{count} colour|{count} colours	{count} 種顏色
+embroidery	Embroidery: {figures}	刺繡：{figures}
+embroidery	Stitches can't be planned	無法規劃針跡
+embroidery	Click to open the Embroidery panel.	按一下可開啟「刺繡」面板。
+embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	約 {value} 分鐘
+embroidery	about {value} m	約 {value} 公尺
+	Show Finding	顯示問題
+@msg	`rule` must be a check rule's id	`rule` 必須是檢查規則的 ID
+@msg	`hit` must be a listed hit's place, from 0	`hit` 必須是列出的問題的位置，從 0 開始
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	沒有目前文件的檢查結果：請顯示「刺繡」面板的「檢查」標籤頁，並等待針跡規劃完成
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	另有 {count} 列未列出 (清單顯示前 {limit} 列)
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	圖片將為 {w} × {h} 像素，每邊超過 {most}：請繪製更小的區域或使用更小的比例

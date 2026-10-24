@@ -5285,3 +5285,166 @@ mark-style	Japanese	Japanilainen
 	Edge Run	Reuna-ajo
 	Edge Run and Zigzag	Reuna-ajo ja siksak
 	Edge Run and Tatami	Reuna-ajo ja tatami
+	Embroidery Picture	Kirjonnan kuva
+@msg	nothing to draw: the document sews no stitch	ei piirrettävää: asiakirja ei ompele yhtään pistoa
+	Stitch Preview	Pistojen esikatselu
+	Stitch Preview Options	Pistojen esikatselun asetukset
+	Show Jumps and Cuts	Näytä hypyt ja leikkaukset
+	Show Needle Points	Näytä neulanpistot
+	Show Artwork Under Stitches	Näytä kuvitus pistojen alla
+embroidery	Stitches	Pistot
+embroidery	Art	Kuvitus
+embroidery	View	Näkymä
+embroidery	Planning stitches…	Pistoja suunnitellaan…
+embroidery	Can't plan the stitches:	Pistoja ei voi suunnitella:
+embroidery	Entry	Sisään
+embroidery	Exit	Ulos
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} valittu objekti ei tule kirjontaan|{count} valittua objektia ei tule kirjontaan
+	Embroidery	Kirjonta
+	Embroidery Panel	Kirjonta-paneeli
+embroidery	Sewing Order	Ompelujärjestys
+embroidery	Check	Tarkistus
+embroidery	No document	Ei asiakirjaa
+embroidery	Open or draw a design to see how it will be sewn.	Avaa tai piirrä kuvio nähdäksesi, miten se kirjotaan.
+embroidery	Updating…	Päivitetään…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Nämä ovat pistot ennen viimeisintä muutosta; uusia suunnitellaan.
+embroidery	Change the design and the stitches are planned again.	Muuta kuviota, niin pistot suunnitellaan uudelleen.
+embroidery	Nothing to sew	Ei kirjottavaa
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Polut, joilla on täyttö tai viiva, kirjotaan; piilotettuja objekteja, apuviivoja ja tulostumattomia tasoja ei.
+@plural	{count} thread block|{count} thread blocks	{count} lankalohko|{count} lankalohkoa
+@plural	{count} stitch|{count} stitches	{count} pisto|{count} pistoa
+@msg	tab {tab}: one of {_1}	välilehti {tab}: yksi seuraavista: {_1}
+@msg	unknown key `{k}`: the only one is {only}	tuntematon avain `{k}`: ainoa on {only}
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Kirjotaan pinon alhaalta ylös; saman värin objektit yhdistyvät, kun niiden välissä ei ole mitään.
+embroidery	Trim and thread change	Leikkaus ja langanvaihto
+embroidery	Thread change	Langanvaihto
+embroidery	fill	täyttö
+embroidery	stroke	viiva
+embroidery	from the file	tiedostosta
+embroidery	running stitch	suora pisto
+embroidery	satin	satiini
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	kapeat osat satiinina
+@plural	{count} object|{count} objects	{count} objekti|{count} objektia
+@plural	{count} jump|{count} jumps	{count} hyppy|{count} hyppyä
+@plural	{count} trim|{count} trims	{count} leikkaus|{count} leikkausta
+embroidery	Colours	Värit
+embroidery	Thread changes	Langanvaihdot
+embroidery	Trims	Leikkaukset
+embroidery	Jumps	Hypyt
+embroidery	Top thread	Ylälanka
+embroidery	Size	Koko
+embroidery	Time	Aika
+embroidery	Design	Kuvio
+embroidery	The time at {speed} stitches a minute, an estimate.	Aika nopeudella {speed} pistoa minuutissa, arvio.
+	Sew Earlier	Kirjo aiemmin
+	Sew Later	Kirjo myöhemmin
+	Sew First	Kirjo ensimmäisenä
+	Sew Last	Kirjo viimeisenä
+	Change Sewing Order	Muuta ompelujärjestystä
+@msg	nothing selected is sewn	mitään valituista ei kirjota
+@msg	the selection is sewn first already	valinta kirjotaan jo ensimmäisenä
+@msg	the selection is sewn last already	valinta kirjotaan jo viimeisenä
+@msg	the sewing order is that already	ompelujärjestys on jo tämä
+@msg	can't change the sewing order: an object is no longer in the document	ompelujärjestystä ei voi muuttaa: objektia ei enää ole asiakirjassa
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	ompelujärjestystä ei voi muuttaa: objekti tai taso tai ryhmä, jossa se on, on lukittu
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	ompelujärjestystä ei voi muuttaa: leikkauspolku pysyy leikkausryhmänsä pohjalla
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	ompelujärjestystä ei voi muuttaa: objekti siirtyisi leikkausryhmään tai pois siitä
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	ompelujärjestystä ei voi muuttaa: avatun konetiedoston jakso siirtyy lohkonsa mukana, joten siirrä sen ryhmää
+@msg	can't change the sewing order: a layer can't go into a group	ompelujärjestystä ei voi muuttaa: taso ei voi mennä ryhmään
+@msg	can't change the sewing order: the layer or group it would go into is locked	ompelujärjestystä ei voi muuttaa: taso tai ryhmä, johon se menisi, on lukittu
+@msg	can't change the sewing order: it would go between two parts of one object	ompelujärjestystä ei voi muuttaa: se menisi yhden objektin kahden osan väliin
+@msg	can't change the sewing order: there is nothing to sew it beside	ompelujärjestystä ei voi muuttaa: ei ole mitään, minkä viereen se kirjottaisiin
+@msg	can't change the sewing order: too many objects at once	ompelujärjestystä ei voi muuttaa: liian monta objektia kerralla
+embroidery	After {name}	Kohteen {name} jälkeen
+embroidery	Before {name}	Ennen kohdetta {name}
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Mikään pisto ei siirtynyt: saman värin objektit yhdistyvät yhä, kun mikään välissä ei ole niiden alla.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} kirjotaan lohkossa {block}, yhdistettynä muihin samanvärisiin
+embroidery	{name} is sewn in block {block}	{name} kirjotaan lohkossa {block}
+embroidery	Thread changes: {before} → {after}	Langanvaihdot: {before} → {after}
+embroidery	Collapse All	Kutista kaikki
+embroidery	Expand All	Laajenna kaikki
+embroidery	Satin columns wider than {value} mm	Satiinipylväät, jotka ovat leveämpiä kuin {value} mm
+embroidery	Stitches longer than {value} mm	Pistot, jotka ovat pidempiä kuin {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Pistot, jotka ovat pidempiä kuin yksi {format}-tietue ({value} mm)
+embroidery	Fill stitch length under {value} mm	Täytön pistonpituus alle {value} mm
+embroidery	Satin columns narrower than {value} mm	Satiinipylväät, jotka ovat kapeampia kuin {value} mm
+embroidery	Running stitch length under {value} mm	Suoran piston pituus alle {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Pistot, jotka ovat lyhyempiä kuin neulan paksuus ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Enintään {value} mm:n pistot, jotka koneet jättävät pois
+embroidery	More than {value} short stitches in a row	Yli {value} lyhyttä pistoa peräkkäin
+embroidery	{value} or more layers of stitches on one spot	{value} tai useampia pistokerroksia samassa kohdassa
+embroidery	Everything is sewn	Kaikki kirjotaan
+embroidery	Art that isn't sewn	Kuvitus, jota ei kirjota
+embroidery	More colour blocks than {format} holds ({value})	Enemmän värilohkoja kuin {format} mahduttaa ({value})
+embroidery	{format} holds any number of colour blocks	{format} mahduttaa minkä tahansa määrän värilohkoja
+embroidery	More stitches than a machine shows ({value})	Enemmän pistoja kuin kone näyttää ({value})
+embroidery	More thread changes than a machine shows ({value})	Enemmän langanvaihtoja kuin kone näyttää ({value})
+embroidery	No findings	Ei löydöksiä
+embroidery	Longest: {value} mm	Pisin: {value} mm
+embroidery	Widest: {value} mm	Levein: {value} mm
+embroidery	Narrowest: {value} mm	Kapein: {value} mm
+embroidery	Shortest: {value} mm	Lyhin: {value} mm
+embroidery	At most {value} in a row	Enintään {value} peräkkäin
+embroidery	At most {value} on one spot	Enintään {value} samassa kohdassa
+embroidery	Record {record}: {value} mm	Tietue {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Tietueesta {record} alkaen: {value} peräkkäin
+embroidery	Record {record}	Tietue {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Virhe
+embroidery	Warning	Varoitus
+embroidery	Note	Huomautus
+embroidery	Passed	Läpäisty
+embroidery	No problems found	Ongelmia ei löytynyt
+embroidery	stitch density	pistotiheys
+embroidery	needle penetrations in an area	neulanpistot samalla alueella
+embroidery	tie stitches	päättelypistot
+embroidery	Checking…	Tarkistetaan…
+embroidery	Can't check the design:	Mallia ei voi tarkistaa:
+embroidery	Checked for	Tarkistettu muodolle
+embroidery	Source: {name}	Lähde: {name}
+embroidery	Also: {name}	Myös: {name}
+embroidery	Not checked: {list}	Ei tarkisteta: {list}
+embroidery	No source gives a number to check these against.	Mikään lähde ei anna lukua, johon niitä voisi verrata.
+@plural	{count} thread change|{count} thread changes	{count} langanvaihto|{count} langanvaihtoa
+@plural	{count} row|{count} rows	{count} jakso|{count} jaksoa
+@plural	{count} spot|{count} spots	{count} kohta|{count} kohtaa
+@plural	{count} thread|{count} threads	{count} lanka|{count} lankaa
+@plural	{count} error|{count} errors	{count} virhe|{count} virhettä
+@plural	{count} warning|{count} warnings	{count} varoitus|{count} varoitusta
+@plural	{count} note|{count} notes	{count} huomautus|{count} huomautusta
+@plural	and {count} more|and {count} more	ja {count} muu|ja {count} muuta
+embroidery	Threads unlike the art's colour (over {value})	Langat, jotka eivät vastaa kuvituksen väriä (yli {value})
+embroidery	Largest difference: {value}	Suurin ero: {value}
+embroidery	Block {block}: {thread}, {value}	Lohko {block}: {thread}, {value}
+	Zoom to Box	Zoomaa ruutuun
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] asiakirjan pisteinä, kukin välillä ±{max}; right ei saa olla ennen left-arvoa eikä bottom top-arvon yläpuolella
+@msg	margin: screen points, 0 or more	margin: näytön pisteinä, 0 tai enemmän
+@msg	no canvas is shown	piirtoaluetta ei näytetä
+	Next Finding	Seuraava löydös
+	Previous Finding	Edellinen löydös
+embroidery	Show	Näytä
+embroidery	{index} of {count}	{index}/{count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	löydöstä ei näytetä: näytä jokin Kirjonta-paneelin Tarkistus-välilehdellä
+@msg	the check is out of date: wait for the stitches to be planned	tarkistus on vanhentunut: odota, että pistot suunnitellaan
+@msg	no such rule in the check	tarkistuksessa ei ole tällaista sääntöä
+@msg	no such finding in the check	tarkistuksessa ei ole tällaista löydöstä
+	Show Check Marks	Näytä tarkistusmerkit
+embroidery	Stitch lengths	Pistojen pituudet
+embroidery	Median: {value} mm	Mediaani: {value} mm
+embroidery	Too long	Liian pitkät
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Yli {value} mm: {stitches}
+@plural	{count} colour|{count} colours	{count} väri|{count} väriä
+embroidery	Embroidery: {figures}	Kirjonta: {figures}
+embroidery	Stitches can't be planned	Pistoja ei voi suunnitella
+embroidery	Click to open the Embroidery panel.	Avaa Kirjonta-paneeli napsauttamalla.
+embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	noin {value} min
+embroidery	about {value} m	noin {value} m
+	Show Finding	Näytä löydös
+@msg	`rule` must be a check rule's id	`rule` on oltava tarkistussäännön tunnus
+@msg	`hit` must be a listed hit's place, from 0	`hit` on oltava luetellun löydöksen kohta, alkaen 0:sta
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	asiakirjasta nykyisellään ei ole tarkistusta: näytä Kirjonta-paneelin Tarkistus-välilehti ja odota, että pistot suunnitellaan
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	ja {count} rivi lisää puuttuu (luettelossa ovat ensimmäiset {limit})|ja {count} riviä lisää puuttuu (luettelossa ovat ensimmäiset {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	kuvasta tulisi {w} × {h} pikseliä, yli {most} sivua kohden: piirrä pienempi alue tai pienemmässä mittakaavassa

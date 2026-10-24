@@ -4930,3 +4930,166 @@ lighting	Light	Свет
 	Edge Run	Проход по краю
 	Edge Run and Zigzag	Проход по краю и зигзаг
 	Edge Run and Tatami	Проход по краю и татами
+	Embroidery Picture	Изображение вышивки
+@msg	nothing to draw: the document sews no stitch	нечего рисовать: в документе нет ни одного стежка
+	Stitch Preview	Просмотр стежков
+	Stitch Preview Options	Параметры просмотра стежков
+	Show Jumps and Cuts	Показать перескоки и обрезки
+	Show Needle Points	Показать проколы иглы
+	Show Artwork Under Stitches	Показать графику под стежками
+embroidery	Stitches	Стежки
+embroidery	Art	Графика
+embroidery	View	Вид
+embroidery	Planning stitches…	Расчёт стежков…
+embroidery	Can't plan the stitches:	Не удаётся рассчитать стежки:
+embroidery	Entry	Вход
+embroidery	Exit	Выход
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} выделенный объект не вышивается|{count} выделенных объекта не вышиваются|{count} выделенных объектов не вышиваются
+	Embroidery	Вышивка
+	Embroidery Panel	Панель «Вышивка»
+embroidery	Sewing Order	Порядок вышивки
+embroidery	Check	Проверка
+embroidery	No document	Нет документа
+embroidery	Open or draw a design to see how it will be sewn.	Откройте или нарисуйте дизайн, чтобы увидеть, как он будет вышит.
+embroidery	Updating…	Обновление…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Это стежки до последнего изменения; новые рассчитываются.
+embroidery	Change the design and the stitches are planned again.	Измените дизайн, и стежки будут рассчитаны заново.
+embroidery	Nothing to sew	Нечего вышивать
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Вышиваются контуры с заливкой или обводкой; скрытые объекты, направляющие и непечатаемые слои — нет.
+@plural	{count} thread block|{count} thread blocks	{count} блок нити|{count} блока нити|{count} блоков нити
+@plural	{count} stitch|{count} stitches	{count} стежок|{count} стежка|{count} стежков
+@msg	tab {tab}: one of {_1}	вкладка {tab}: одна из {_1}
+@msg	unknown key `{k}`: the only one is {only}	неизвестный ключ `{k}`: единственный — {only}
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Вышивается снизу вверх по стопке; объекты одного цвета объединяются, если между ними ничего нет.
+embroidery	Trim and thread change	Обрезка и смена нити
+embroidery	Thread change	Смена нити
+embroidery	fill	заливка
+embroidery	stroke	обводка
+embroidery	from the file	из файла
+embroidery	running stitch	прямой стежок
+embroidery	satin	гладь
+embroidery	tatami	татами
+embroidery	narrow parts as satin	узкие части гладью
+@plural	{count} object|{count} objects	{count} объект|{count} объекта|{count} объектов
+@plural	{count} jump|{count} jumps	{count} перескок|{count} перескока|{count} перескоков
+@plural	{count} trim|{count} trims	{count} обрезка|{count} обрезки|{count} обрезок
+embroidery	Colours	Цвета
+embroidery	Thread changes	Смены нити
+embroidery	Trims	Обрезки
+embroidery	Jumps	Перескоки
+embroidery	Top thread	Верхняя нить
+embroidery	Size	Размер
+embroidery	Time	Время
+embroidery	Design	Дизайн
+embroidery	The time at {speed} stitches a minute, an estimate.	Время при {speed} стежках в минуту, оценка.
+	Sew Earlier	Вышивать раньше
+	Sew Later	Вышивать позже
+	Sew First	Вышивать первым
+	Sew Last	Вышивать последним
+	Change Sewing Order	Изменить порядок вышивки
+@msg	nothing selected is sewn	ничего из выделенного не вышивается
+@msg	the selection is sewn first already	выделенное уже вышивается первым
+@msg	the selection is sewn last already	выделенное уже вышивается последним
+@msg	the sewing order is that already	порядок вышивки уже такой
+@msg	can't change the sewing order: an object is no longer in the document	не удаётся изменить порядок вышивки: объекта больше нет в документе
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	не удаётся изменить порядок вышивки: объект или слой либо группа, в которой он находится, заблокированы
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	не удаётся изменить порядок вышивки: обтравочный контур остаётся внизу своей группы
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	не удаётся изменить порядок вышивки: объект попал бы в обтравочную группу или вышел бы из неё
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	не удаётся изменить порядок вышивки: участок открытого машинного файла перемещается вместе с блоком, поэтому переместите его группу
+@msg	can't change the sewing order: a layer can't go into a group	не удаётся изменить порядок вышивки: слой нельзя поместить в группу
+@msg	can't change the sewing order: the layer or group it would go into is locked	не удаётся изменить порядок вышивки: слой или группа, куда он попал бы, заблокированы
+@msg	can't change the sewing order: it would go between two parts of one object	не удаётся изменить порядок вышивки: он оказался бы между двумя частями одного объекта
+@msg	can't change the sewing order: there is nothing to sew it beside	не удаётся изменить порядок вышивки: рядом нечего вышивать
+@msg	can't change the sewing order: too many objects at once	не удаётся изменить порядок вышивки: слишком много объектов сразу
+embroidery	After {name}	После {name}
+embroidery	Before {name}	Перед {name}
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Ни один стежок не сдвинулся: объекты одного цвета по-прежнему объединяются, если ничто между ними не лежит под ними.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} вышивается в блоке {block}, вместе с другими объектами своего цвета
+embroidery	{name} is sewn in block {block}	{name} вышивается в блоке {block}
+embroidery	Thread changes: {before} → {after}	Смены нити: {before} → {after}
+embroidery	Collapse All	Свернуть все
+embroidery	Expand All	Развернуть все
+embroidery	Satin columns wider than {value} mm	Колонны глади шире {value} мм
+embroidery	Stitches longer than {value} mm	Стежки длиннее {value} мм
+embroidery	Stitches longer than one {format} record ({value} mm)	Стежки длиннее одной записи {format} ({value} мм)
+embroidery	Fill stitch length under {value} mm	Длина стежка заливки меньше {value} мм
+embroidery	Satin columns narrower than {value} mm	Колонны глади уже {value} мм
+embroidery	Running stitch length under {value} mm	Длина прямого стежка меньше {value} мм
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Стежки короче толщины иглы ({value} мм)
+embroidery	Stitches of {value} mm or less, which machines leave out	Стежки длиной {value} мм и меньше, которые машины пропускают
+embroidery	More than {value} short stitches in a row	Более {value} коротких стежков подряд
+embroidery	{value} or more layers of stitches on one spot	{value} или больше слоёв стежков в одном месте
+embroidery	Everything is sewn	Вышивается всё
+embroidery	Art that isn't sewn	Графика, которая не вышивается
+embroidery	More colour blocks than {format} holds ({value})	Больше цветовых блоков, чем вмещает {format} ({value})
+embroidery	{format} holds any number of colour blocks	{format} вмещает любое число цветовых блоков
+embroidery	More stitches than a machine shows ({value})	Больше стежков, чем показывает машина ({value})
+embroidery	More thread changes than a machine shows ({value})	Больше смен нити, чем показывает машина ({value})
+embroidery	No findings	Ничего не найдено
+embroidery	Longest: {value} mm	Самый длинный: {value} мм
+embroidery	Widest: {value} mm	Самая широкая: {value} мм
+embroidery	Narrowest: {value} mm	Самая узкая: {value} мм
+embroidery	Shortest: {value} mm	Самый короткий: {value} мм
+embroidery	At most {value} in a row	Не более {value} подряд
+embroidery	At most {value} on one spot	Не более {value} в одном месте
+embroidery	Record {record}: {value} mm	Запись {record}: {value} мм
+embroidery	From record {record}: {value} in a row	С записи {record}: {value} подряд
+embroidery	Record {record}	Запись {record}
+embroidery	{name}: {value} mm	{name}: {value} мм
+embroidery	Error	Ошибка
+embroidery	Warning	Предупреждение
+embroidery	Note	Примечание
+embroidery	Passed	Пройдена
+embroidery	No problems found	Проблем не найдено
+embroidery	stitch density	плотность стежков
+embroidery	needle penetrations in an area	проколы иглы на одном участке
+embroidery	tie stitches	закрепки
+embroidery	Checking…	Проверка…
+embroidery	Can't check the design:	Не удаётся проверить дизайн:
+embroidery	Checked for	Проверено для
+embroidery	Source: {name}	Источник: {name}
+embroidery	Also: {name}	Также: {name}
+embroidery	Not checked: {list}	Не проверяется: {list}
+embroidery	No source gives a number to check these against.	Ни один источник не даёт числа, с которым их сверить.
+@plural	{count} thread change|{count} thread changes	{count} смена нити|{count} смены нити|{count} смен нити
+@plural	{count} row|{count} rows	{count} серия|{count} серии|{count} серий
+@plural	{count} spot|{count} spots	{count} место|{count} места|{count} мест
+@plural	{count} thread|{count} threads	{count} нить|{count} нити|{count} нитей
+@plural	{count} error|{count} errors	{count} ошибка|{count} ошибки|{count} ошибок
+@plural	{count} warning|{count} warnings	{count} предупреждение|{count} предупреждения|{count} предупреждений
+@plural	{count} note|{count} notes	{count} примечание|{count} примечания|{count} примечаний
+@plural	and {count} more|and {count} more	и ещё {count}|и ещё {count}|и ещё {count}
+embroidery	Threads unlike the art's colour (over {value})	Нити, не похожие на цвет графики (больше {value})
+embroidery	Largest difference: {value}	Наибольшая разница: {value}
+embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}
+	Zoom to Box	Масштаб по рамке
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] в пунктах документа, каждое в пределах ±{max}; right не левее left, bottom не выше top
+@msg	margin: screen points, 0 or more	margin: пункты экрана, 0 или больше
+@msg	no canvas is shown	холст не показан
+	Next Finding	Следующая находка
+	Previous Finding	Предыдущая находка
+embroidery	Show	Показать
+embroidery	{index} of {count}	{index} из {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	находка не показана: покажите её на вкладке «Проверка» панели «Вышивка»
+@msg	the check is out of date: wait for the stitches to be planned	проверка устарела: дождитесь планирования стежков
+@msg	no such rule in the check	в проверке нет такого правила
+@msg	no such finding in the check	в проверке нет такой находки
+	Show Check Marks	Показать метки проверки
+embroidery	Stitch lengths	Длины стежков
+embroidery	Median: {value} mm	Медиана: {value} мм
+embroidery	Too long	Слишком длинные
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
+embroidery	Over {value} mm: {stitches}	Больше {value} мм: {stitches}
+@plural	{count} colour|{count} colours	{count} цвет|{count} цвета|{count} цветов
+embroidery	Embroidery: {figures}	Вышивка: {figures}
+embroidery	Stitches can't be planned	Не удаётся спланировать стежки
+embroidery	Click to open the Embroidery panel.	Щёлкните, чтобы открыть панель «Вышивка».
+embroidery	{width} × {height} mm	{width} × {height} мм
+embroidery	about {value} min	около {value} мин
+embroidery	about {value} m	около {value} м
+	Show Finding	Показать находку
+@msg	`rule` must be a check rule's id	`rule` должен быть идентификатором правила проверки
+@msg	`hit` must be a listed hit's place, from 0	`hit` должен быть номером находки в списке, начиная с 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	нет проверки документа в его текущем виде: откройте вкладку «Проверка» панели «Вышивка» и дождитесь планирования стежков
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	и ещё {count} строка не показана (в списке первые {limit})|и ещё {count} строки не показаны (в списке первые {limit})|и ещё {count} строк не показано (в списке первые {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	изображение было бы {w} × {h} пикселей, больше {most} на сторону: нарисуйте меньшую область или в меньшем масштабе

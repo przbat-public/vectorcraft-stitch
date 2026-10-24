@@ -119,6 +119,27 @@ fn a_written_pes_opens_as_art() {
     assert!(board.width() > 0.0 && board.height() > 0.0, "{board:?}");
 }
 
+/// An opened design's lines are drawn as wide as 40 wt thread lies (`plan::THREAD_WIDTH`), the
+/// width the stitch preview draws thread at, so the two views of a file agree.
+#[test]
+fn an_opened_designs_lines_are_as_wide_as_the_thread() {
+    let mut s = art();
+    let bytes = export(&mut s, "dst", json!({}));
+    open(&mut s, "design.dst", &bytes).expect("opens");
+    let st = s.doc().unwrap();
+    let want = vectorcraft_stitch::mm_to_pt(vectorcraft_stitch::plan::THREAD_WIDTH);
+    let mut widths = Vec::new();
+    st.doc.walk(|n| {
+        for item in &n.appearance.items {
+            if let vectorcraft_doc::AppearanceItem::Stroke(stroke) = item {
+                widths.push(stroke.width);
+            }
+        }
+    });
+    assert!(!widths.is_empty());
+    assert!(widths.iter().all(|w| (w - want).abs() < 1e-9), "{widths:?} against {want}");
+}
+
 #[test]
 fn a_pes_opens_by_its_magic_bytes() {
     let mut s = art();

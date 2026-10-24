@@ -5347,3 +5347,166 @@ swatch	Bright Violet	Felviolet
 	Edge Run	Randloop
 	Edge Run and Zigzag	Randloop en zigzag
 	Edge Run and Tatami	Randloop en tatami
+	Embroidery Picture	Borduurafbeelding
+@msg	nothing to draw: the document sews no stitch	niets te tekenen: het document naait geen enkele steek
+	Stitch Preview	Steekvoorbeeld
+	Stitch Preview Options	Opties voor steekvoorbeeld
+	Show Jumps and Cuts	Sprongen en knippen tonen
+	Show Needle Points	Insteekpunten tonen
+	Show Artwork Under Stitches	Illustratie onder steken tonen
+embroidery	Stitches	Steken
+embroidery	Art	Illustratie
+embroidery	View	Weergave
+embroidery	Planning stitches…	Steken plannen…
+embroidery	Can't plan the stitches:	De steken kunnen niet worden gepland:
+embroidery	Entry	Ingang
+embroidery	Exit	Uitgang
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} geselecteerd object wordt niet geborduurd|{count} geselecteerde objecten worden niet geborduurd
+	Embroidery	Borduurwerk
+	Embroidery Panel	Deelvenster Borduurwerk
+embroidery	Sewing Order	Borduurvolgorde
+embroidery	Check	Controle
+embroidery	No document	Geen document
+embroidery	Open or draw a design to see how it will be sewn.	Open of teken een ontwerp om te zien hoe het wordt geborduurd.
+embroidery	Updating…	Bijwerken…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Dit zijn de steken van vóór de laatste wijziging; de nieuwe worden gepland.
+embroidery	Change the design and the stitches are planned again.	Wijzig het ontwerp en de steken worden opnieuw gepland.
+embroidery	Nothing to sew	Niets te borduren
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Paden met een vulling of lijn worden geborduurd; verborgen objecten, hulplijnen en niet-afdrukbare lagen niet.
+@plural	{count} thread block|{count} thread blocks	{count} draadblok|{count} draadblokken
+@plural	{count} stitch|{count} stitches	{count} steek|{count} steken
+@msg	tab {tab}: one of {_1}	tabblad {tab}: een van {_1}
+@msg	unknown key `{k}`: the only one is {only}	onbekende sleutel `{k}`: de enige is {only}
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Geborduurd van onder naar boven; objecten van één kleur worden samengevoegd als er niets tussen ligt.
+embroidery	Trim and thread change	Knippen en draadwissel
+embroidery	Thread change	Draadwissel
+embroidery	fill	vulling
+embroidery	stroke	lijn
+embroidery	from the file	uit het bestand
+embroidery	running stitch	rechte steek
+embroidery	satin	satijnsteek
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	smalle delen als satijnsteek
+@plural	{count} object|{count} objects	{count} object|{count} objecten
+@plural	{count} jump|{count} jumps	{count} sprong|{count} sprongen
+@plural	{count} trim|{count} trims	{count} knip|{count} knippen
+embroidery	Colours	Kleuren
+embroidery	Thread changes	Draadwissels
+embroidery	Trims	Knippen
+embroidery	Jumps	Sprongen
+embroidery	Top thread	Bovendraad
+embroidery	Size	Grootte
+embroidery	Time	Tijd
+embroidery	Design	Ontwerp
+embroidery	The time at {speed} stitches a minute, an estimate.	De tijd bij {speed} steken per minuut, een schatting.
+	Sew Earlier	Eerder borduren
+	Sew Later	Later borduren
+	Sew First	Eerst borduren
+	Sew Last	Laatst borduren
+	Change Sewing Order	Borduurvolgorde wijzigen
+@msg	nothing selected is sewn	niets van de selectie wordt geborduurd
+@msg	the selection is sewn first already	de selectie wordt al als eerste geborduurd
+@msg	the selection is sewn last already	de selectie wordt al als laatste geborduurd
+@msg	the sewing order is that already	de borduurvolgorde is al zo
+@msg	can't change the sewing order: an object is no longer in the document	de borduurvolgorde kan niet worden gewijzigd: een object staat niet meer in het document
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	de borduurvolgorde kan niet worden gewijzigd: een object, of een laag of groep waarin het staat, is vergrendeld
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	de borduurvolgorde kan niet worden gewijzigd: een uitknippad blijft onderaan in zijn uitknipgroep
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	de borduurvolgorde kan niet worden gewijzigd: een object zou in een uitknipgroep komen of eruit gaan
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	de borduurvolgorde kan niet worden gewijzigd: een stuk van een geopend machinebestand beweegt met zijn blok mee, dus verplaats de groep
+@msg	can't change the sewing order: a layer can't go into a group	de borduurvolgorde kan niet worden gewijzigd: een laag kan niet in een groep
+@msg	can't change the sewing order: the layer or group it would go into is locked	de borduurvolgorde kan niet worden gewijzigd: de laag of groep waarin het zou komen is vergrendeld
+@msg	can't change the sewing order: it would go between two parts of one object	de borduurvolgorde kan niet worden gewijzigd: het zou tussen twee delen van één object komen
+@msg	can't change the sewing order: there is nothing to sew it beside	de borduurvolgorde kan niet worden gewijzigd: er is niets om het naast te borduren
+@msg	can't change the sewing order: too many objects at once	de borduurvolgorde kan niet worden gewijzigd: te veel objecten tegelijk
+embroidery	After {name}	Na {name}
+embroidery	Before {name}	Voor {name}
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Er is geen steek verschoven: objecten van één kleur blijven samengevoegd als niets ertussen eronder ligt.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} wordt geborduurd in blok {block}, samengevoegd met de andere van zijn kleur
+embroidery	{name} is sewn in block {block}	{name} wordt geborduurd in blok {block}
+embroidery	Thread changes: {before} → {after}	Draadwissels: {before} → {after}
+embroidery	Collapse All	Alles samenvouwen
+embroidery	Expand All	Alles uitvouwen
+embroidery	Satin columns wider than {value} mm	Satijnkolommen breder dan {value} mm
+embroidery	Stitches longer than {value} mm	Steken langer dan {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Steken langer dan één {format}-record ({value} mm)
+embroidery	Fill stitch length under {value} mm	Vulsteeklengte onder {value} mm
+embroidery	Satin columns narrower than {value} mm	Satijnkolommen smaller dan {value} mm
+embroidery	Running stitch length under {value} mm	Rechte-steeklengte onder {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Steken korter dan de naald dik is ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Steken van {value} mm of minder, die machines overslaan
+embroidery	More than {value} short stitches in a row	Meer dan {value} korte steken achter elkaar
+embroidery	{value} or more layers of stitches on one spot	{value} of meer lagen steken op één plek
+embroidery	Everything is sewn	Alles wordt geborduurd
+embroidery	Art that isn't sewn	Illustratie die niet wordt geborduurd
+embroidery	More colour blocks than {format} holds ({value})	Meer kleurblokken dan {format} bevat ({value})
+embroidery	{format} holds any number of colour blocks	{format} bevat een willekeurig aantal kleurblokken
+embroidery	More stitches than a machine shows ({value})	Meer steken dan een machine toont ({value})
+embroidery	More thread changes than a machine shows ({value})	Meer draadwissels dan een machine toont ({value})
+embroidery	No findings	Niets gevonden
+embroidery	Longest: {value} mm	Langste: {value} mm
+embroidery	Widest: {value} mm	Breedste: {value} mm
+embroidery	Narrowest: {value} mm	Smalste: {value} mm
+embroidery	Shortest: {value} mm	Kortste: {value} mm
+embroidery	At most {value} in a row	Hoogstens {value} achter elkaar
+embroidery	At most {value} on one spot	Hoogstens {value} op één plek
+embroidery	Record {record}: {value} mm	Record {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Vanaf record {record}: {value} achter elkaar
+embroidery	Record {record}	Record {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Fout
+embroidery	Warning	Waarschuwing
+embroidery	Note	Opmerking
+embroidery	Passed	Geslaagd
+embroidery	No problems found	Geen problemen gevonden
+embroidery	stitch density	steekdichtheid
+embroidery	needle penetrations in an area	naaldsteken in een gebied
+embroidery	tie stitches	afhechtsteken
+embroidery	Checking…	Controleren…
+embroidery	Can't check the design:	Het ontwerp kan niet worden gecontroleerd:
+embroidery	Checked for	Gecontroleerd voor
+embroidery	Source: {name}	Bron: {name}
+embroidery	Also: {name}	Ook: {name}
+embroidery	Not checked: {list}	Niet gecontroleerd: {list}
+embroidery	No source gives a number to check these against.	Geen enkele bron geeft een getal om ze aan te toetsen.
+@plural	{count} thread change|{count} thread changes	{count} draadwissel|{count} draadwissels
+@plural	{count} row|{count} rows	{count} reeks|{count} reeksen
+@plural	{count} spot|{count} spots	{count} plek|{count} plekken
+@plural	{count} thread|{count} threads	{count} draad|{count} draden
+@plural	{count} error|{count} errors	{count} fout|{count} fouten
+@plural	{count} warning|{count} warnings	{count} waarschuwing|{count} waarschuwingen
+@plural	{count} note|{count} notes	{count} opmerking|{count} opmerkingen
+@plural	and {count} more|and {count} more	en nog {count}|en nog {count}
+embroidery	Threads unlike the art's colour (over {value})	Draden die afwijken van de kleur van de illustratie (boven {value})
+embroidery	Largest difference: {value}	Grootste verschil: {value}
+embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
+	Zoom to Box	Zoomen naar kader
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] in documentpunten, elk binnen ±{max}, right niet vóór left en bottom niet boven top
+@msg	margin: screen points, 0 or more	margin: schermpunten, 0 of meer
+@msg	no canvas is shown	er wordt geen canvas weergegeven
+	Next Finding	Volgende bevinding
+	Previous Finding	Vorige bevinding
+embroidery	Show	Tonen
+embroidery	{index} of {count}	{index} van {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	er wordt geen bevinding getoond: toon er een op het tabblad Controle van het deelvenster Borduurwerk
+@msg	the check is out of date: wait for the stitches to be planned	de controle is verouderd: wacht tot de steken zijn gepland
+@msg	no such rule in the check	deze regel komt niet voor in de controle
+@msg	no such finding in the check	deze bevinding komt niet voor in de controle
+	Show Check Marks	Controlemarkeringen tonen
+embroidery	Stitch lengths	Steeklengtes
+embroidery	Median: {value} mm	Mediaan: {value} mm
+embroidery	Too long	Te lang
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Boven {value} mm: {stitches}
+@plural	{count} colour|{count} colours	{count} kleur|{count} kleuren
+embroidery	Embroidery: {figures}	Borduurwerk: {figures}
+embroidery	Stitches can't be planned	De steken kunnen niet worden gepland
+embroidery	Click to open the Embroidery panel.	Klik om het deelvenster Borduurwerk te openen.
+embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	ongeveer {value} min
+embroidery	about {value} m	ongeveer {value} m
+	Show Finding	Bevinding tonen
+@msg	`rule` must be a check rule's id	`rule` moet de id van een controleregel zijn
+@msg	`hit` must be a listed hit's place, from 0	`hit` moet de plaats van een vermelde bevinding zijn, vanaf 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	geen controle van het document zoals het nu is: toon het tabblad Controle van het paneel Borduurwerk en wacht tot de steken zijn gepland
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	en {count} rij meer staat niet in de lijst (de lijst toont de eerste {limit})|en {count} rijen meer staan niet in de lijst (de lijst toont de eerste {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	de afbeelding zou {w} × {h} pixels worden, meer dan {most} per zijde: teken een kleiner gebied of op een kleinere schaal

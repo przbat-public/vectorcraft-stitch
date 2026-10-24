@@ -188,3 +188,27 @@ fn threads_are_counted_apart_from_blocks_and_extents_from_the_start() {
     assert_eq!(v["start"], json!([10.0, 5.0]));
     assert_eq!(v["extents"], json!({"left": 0.0, "right": 4.0, "up": 5.0, "down": 5.0}));
 }
+
+/// A reply's walk stops at the first look at the cancel after the work is cancelled, and the
+/// reply cut short is refused; the scene's walk ([`super::measure::each`]) never stops.
+#[test]
+fn a_cancelled_walk_stops_at_its_next_look() {
+    use super::measure::{self, RECORDS_PER_CANCEL_LOOK};
+    use vectorcraft_doc::cancel::{self, CancelToken};
+    let points: Vec<(f64, f64)> = (0..RECORDS_PER_CANCEL_LOOK * 3).map(|i| (i as f64 * 0.1, 0.0)).collect();
+    let long = plan(vec![unit(1, Style::Running, RED, &points)]);
+    let cancelled = CancelToken::new();
+    cancelled.cancel();
+    type Walk = fn(&DesignPlan, &mut dyn FnMut(&measure::Record));
+    let walked = |walk: Walk| {
+        let mut n = 0;
+        cancel::scope(&cancelled, None, || walk(&long, &mut |_| n += 1));
+        n
+    };
+    assert_eq!(walked(|p, f| measure::each_until_cancelled(p, f)), RECORDS_PER_CANCEL_LOOK);
+    assert_eq!(walked(|p, f| measure::each(p, f)), points.len());
+    // Not cancelled: every record.
+    let mut n = 0;
+    cancel::scope(&CancelToken::new(), None, || measure::each_until_cancelled(&long, |_| n += 1));
+    assert_eq!(n, points.len());
+}

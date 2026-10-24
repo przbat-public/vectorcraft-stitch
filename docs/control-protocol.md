@@ -394,6 +394,40 @@ Presets (a new preset can't take a name in use). Delete, Import… and Export…
 imports its presets. In the Save PDF dialog, Save Preset… shows a name field (`__savePresetAs`): while it shows,
 `ui.dialog.confirm` saves the dialog's settings as that preset and selects it instead of writing the PDF.
 
+Embroidery (VectorCraft Stitch): `ui.inspect` also reports `stitchPreview`, the active document's stitch view
+(`null` with no document): `on`, `drawn` (the canvas shows the stitches), `state` (`off`: nothing shows them; `fresh`;
+`pending`: no plan yet; `stale`: an earlier plan shown while a newer one waits or is made; `failed`), `planning`,
+`progress` (0 to 1, when it can say), `error`, `planMs` (how long the last plan walked took; a remembered plan leaves
+it), `generation` (another plan, another number), `notice` (what the canvas's notice says, or `null`) and `counters`
+(the status bar's embroidery counters: `state` `hidden`, `waiting`, `planning`, `figures`, `stale`, `nothing` or
+`failed`; `shown`, the words drawn in the last frame, empty when they found no room; with figures, `stitches`,
+`colors`, `threadChanges`, `trims`, `minutes` and `speed`; when failed, `error`). `ui.set {stitchPreview}` turns the
+active document's stitch view on or off (`view.stitchPreview`). `ui.screenshot` waits, while the stitch view's plan of
+the document as it is is waiting or under way or its stitches are being drawn, for them (at most 5 s more).
+`ui.render {stitchPreview: true}` draws the artboard's embroidery stitches instead of its art, as the stitch preview
+and `embroidery.render` draw them, marked as the document's stitch view marks them (jumps and cuts, needle points).
+
+`window.panel {panel: "embroidery"}` shows the Embroidery panel, the first time docked as the
+last tab beside Properties, Layers and Libraries (the dock turns into the shared layout then), after that where it
+was left; `ui.embroideryPanel {tab?: "order"|"check", format?}` shows it at a tab, `format` (a format's id as
+`embroidery.check` takes it, or `null` for the thread palette's) being the one the active document's Check tab checks
+for, and answers `{tab, format}`. `ui.inspect` reports the open tab as `ui.embroidery_panel`. The panel never plans:
+it asks the stitch preview for the plan and its tab's replies, so it shows what `ui.inspect.stitchPreview` says. In
+the Check tab, Show selects a rule's objects (or one hit's) and zooms to its hits with `view.zoomTo`;
+`embroidery.showFinding {rule, hit?}` does the same as a command, on the check the tab shows for the document as it
+is (refused while there is none), answering `{rule, hit}`; `embroidery.nextHit` and `embroidery.previousHit` then show the next
+or previous listed hit of that rule (round from the end), answering `{rule, hit}` (`hit` from 0: its place among the
+rule's listed `hits`, unlike the replies' block, unit and record numbers, which count from 1). They are refused while no
+finding is shown or while the check is of an older plan than the document's. `view.checkMarks {on?: bool}` turns the
+check's marks on the canvas off or on for the session (no `on`: the other way; no other key), answering `{on}` as the
+other view switches do.
+
+`view.zoomTo {rect: [left, top, right, bottom], margin?}` centres a box of document points in the window and zooms
+so that it fills it less `margin` screen points on each side (default 30, as Fit Artboard in Window leaves), within
+the zoom's range, answering `{zoom}` (percent); `rect` is exactly four numbers, each within ±4,000,000 points (the
+document's range, as `embroidery.render` reads its `rect`), and a box with its right left of its left or its bottom
+above its top is refused, and so is a call before the canvas is first shown.
+
 Flattener Preview: `window.panel {panel: "flattenerPreview"}` shows the panel; `ui.flattenerPreview {highlight?,
 overprints?, preset?, options?, showOptions?}` sets it (a preset loads its options, `options` adjust them), shows it
 and refreshes its snapshot of the document, answering as `flattener.preview` does. `ui.inspect` reports the settings

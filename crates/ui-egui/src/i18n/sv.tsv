@@ -5277,3 +5277,166 @@ theme	Appearance	Utseende
 	Edge Run	Kantlöpning
 	Edge Run and Zigzag	Kantlöpning och sicksack
 	Edge Run and Tatami	Kantlöpning och tatami
+	Embroidery Picture	Bild av broderiet
+@msg	nothing to draw: the document sews no stitch	inget att rita: dokumentet syr inga stygn
+	Stitch Preview	Förhandsgranskning av stygn
+	Stitch Preview Options	Alternativ för förhandsgranskning av stygn
+	Show Jumps and Cuts	Visa hopp och klipp
+	Show Needle Points	Visa nålstick
+	Show Artwork Under Stitches	Visa grafik under stygnen
+embroidery	Stitches	Stygn
+embroidery	Art	Grafik
+embroidery	View	Visning
+embroidery	Planning stitches…	Planerar stygn…
+embroidery	Can't plan the stitches:	Stygnen kan inte planeras:
+embroidery	Entry	Ingång
+embroidery	Exit	Utgång
+@plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} markerat objekt broderas inte|{count} markerade objekt broderas inte
+	Embroidery	Broderi
+	Embroidery Panel	Panelen Broderi
+embroidery	Sewing Order	Sömnadsordning
+embroidery	Check	Kontroll
+embroidery	No document	Inget dokument
+embroidery	Open or draw a design to see how it will be sewn.	Öppna eller rita en design för att se hur den broderas.
+embroidery	Updating…	Uppdaterar…
+embroidery	These are the stitches before the last change; the new ones are being planned.	Det här är stygnen före den senaste ändringen; de nya planeras.
+embroidery	Change the design and the stitches are planned again.	Ändra designen så planeras stygnen om.
+embroidery	Nothing to sew	Inget att brodera
+embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and non-printing layers aren't.	Banor med fyllning eller linje broderas; dolda objekt, stödlinjer och lager som inte skrivs ut gör det inte.
+@plural	{count} thread block|{count} thread blocks	{count} trådblock|{count} trådblock
+@plural	{count} stitch|{count} stitches	{count} stygn|{count} stygn
+@msg	tab {tab}: one of {_1}	flik {tab}: en av {_1}
+@msg	unknown key `{k}`: the only one is {only}	okänd nyckel `{k}`: den enda är {only}
+embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Broderas nerifrån och upp; objekt med samma färg slås ihop när inget ligger mellan dem.
+embroidery	Trim and thread change	Klipp och trådbyte
+embroidery	Thread change	Trådbyte
+embroidery	fill	fyllning
+embroidery	stroke	linje
+embroidery	from the file	från filen
+embroidery	running stitch	rakstygn
+embroidery	satin	satin
+embroidery	tatami	tatami
+embroidery	narrow parts as satin	smala delar som satin
+@plural	{count} object|{count} objects	{count} objekt|{count} objekt
+@plural	{count} jump|{count} jumps	{count} hopp|{count} hopp
+@plural	{count} trim|{count} trims	{count} klipp|{count} klipp
+embroidery	Colours	Färger
+embroidery	Thread changes	Trådbyten
+embroidery	Trims	Klipp
+embroidery	Jumps	Hopp
+embroidery	Top thread	Övertråd
+embroidery	Size	Storlek
+embroidery	Time	Tid
+embroidery	Design	Design
+embroidery	The time at {speed} stitches a minute, an estimate.	Tiden vid {speed} stygn i minuten, en uppskattning.
+	Sew Earlier	Brodera tidigare
+	Sew Later	Brodera senare
+	Sew First	Brodera först
+	Sew Last	Brodera sist
+	Change Sewing Order	Ändra sömnadsordning
+@msg	nothing selected is sewn	inget av det markerade broderas
+@msg	the selection is sewn first already	markeringen broderas redan först
+@msg	the selection is sewn last already	markeringen broderas redan sist
+@msg	the sewing order is that already	sömnadsordningen är redan sådan
+@msg	can't change the sewing order: an object is no longer in the document	sömnadsordningen kan inte ändras: ett objekt finns inte längre i dokumentet
+@msg	can't change the sewing order: an object, or a layer or group it is in, is locked	sömnadsordningen kan inte ändras: ett objekt, eller ett lager eller en grupp det ligger i, är låst
+@msg	can't change the sewing order: a clipping path stays at the bottom of its clip group	sömnadsordningen kan inte ändras: en urklippsbana stannar längst ned i sin urklippsgrupp
+@msg	can't change the sewing order: it would put an object into a clip group or take it out of one	sömnadsordningen kan inte ändras: ett objekt skulle hamna i en urklippsgrupp eller lämna den
+@msg	can't change the sewing order: a run of an opened machine file moves with its block, so move its group	sömnadsordningen kan inte ändras: ett avsnitt ur en öppnad maskinfil flyttas med sitt block, så flytta dess grupp
+@msg	can't change the sewing order: a layer can't go into a group	sömnadsordningen kan inte ändras: ett lager kan inte hamna i en grupp
+@msg	can't change the sewing order: the layer or group it would go into is locked	sömnadsordningen kan inte ändras: lagret eller gruppen det skulle hamna i är låst
+@msg	can't change the sewing order: it would go between two parts of one object	sömnadsordningen kan inte ändras: det skulle hamna mellan två delar av ett objekt
+@msg	can't change the sewing order: there is nothing to sew it beside	sömnadsordningen kan inte ändras: det finns inget att brodera det bredvid
+@msg	can't change the sewing order: too many objects at once	sömnadsordningen kan inte ändras: för många objekt på en gång
+embroidery	After {name}	Efter {name}
+embroidery	Before {name}	Före {name}
+embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Inget stygn flyttades: objekt med samma färg slås fortfarande ihop när inget emellan ligger under dem.
+embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} broderas i block {block}, ihopslaget med de andra i sin färg
+embroidery	{name} is sewn in block {block}	{name} broderas i block {block}
+embroidery	Thread changes: {before} → {after}	Trådbyten: {before} → {after}
+embroidery	Collapse All	Fäll ihop alla
+embroidery	Expand All	Fäll ut alla
+embroidery	Satin columns wider than {value} mm	Satinpelare bredare än {value} mm
+embroidery	Stitches longer than {value} mm	Stygn längre än {value} mm
+embroidery	Stitches longer than one {format} record ({value} mm)	Stygn längre än en {format}-post ({value} mm)
+embroidery	Fill stitch length under {value} mm	Fyllningens stygnlängd under {value} mm
+embroidery	Satin columns narrower than {value} mm	Satinpelare smalare än {value} mm
+embroidery	Running stitch length under {value} mm	Rakstygnets längd under {value} mm
+embroidery	Stitches shorter than the needle is thick ({value} mm)	Stygn kortare än nålens tjocklek ({value} mm)
+embroidery	Stitches of {value} mm or less, which machines leave out	Stygn på {value} mm eller mindre, som maskiner hoppar över
+embroidery	More than {value} short stitches in a row	Fler än {value} korta stygn i följd
+embroidery	{value} or more layers of stitches on one spot	{value} eller fler lager stygn på samma ställe
+embroidery	Everything is sewn	Allt broderas
+embroidery	Art that isn't sewn	Grafik som inte broderas
+embroidery	More colour blocks than {format} holds ({value})	Fler färgblock än {format} rymmer ({value})
+embroidery	{format} holds any number of colour blocks	{format} rymmer hur många färgblock som helst
+embroidery	More stitches than a machine shows ({value})	Fler stygn än en maskin visar ({value})
+embroidery	More thread changes than a machine shows ({value})	Fler trådbyten än en maskin visar ({value})
+embroidery	No findings	Inget hittat
+embroidery	Longest: {value} mm	Längsta: {value} mm
+embroidery	Widest: {value} mm	Bredaste: {value} mm
+embroidery	Narrowest: {value} mm	Smalaste: {value} mm
+embroidery	Shortest: {value} mm	Kortaste: {value} mm
+embroidery	At most {value} in a row	Högst {value} i följd
+embroidery	At most {value} on one spot	Högst {value} på samma ställe
+embroidery	Record {record}: {value} mm	Post {record}: {value} mm
+embroidery	From record {record}: {value} in a row	Från post {record}: {value} i följd
+embroidery	Record {record}	Post {record}
+embroidery	{name}: {value} mm	{name}: {value} mm
+embroidery	Error	Fel
+embroidery	Warning	Varning
+embroidery	Note	Anmärkning
+embroidery	Passed	Godkänd
+embroidery	No problems found	Inga problem hittades
+embroidery	stitch density	stygntäthet
+embroidery	needle penetrations in an area	nålstick inom ett område
+embroidery	tie stitches	fästsömmar
+embroidery	Checking…	Kontrollerar…
+embroidery	Can't check the design:	Det går inte att kontrollera designen:
+embroidery	Checked for	Kontrollerat för
+embroidery	Source: {name}	Källa: {name}
+embroidery	Also: {name}	Även: {name}
+embroidery	Not checked: {list}	Kontrolleras inte: {list}
+embroidery	No source gives a number to check these against.	Ingen källa anger ett tal att kontrollera dem mot.
+@plural	{count} thread change|{count} thread changes	{count} trådbyte|{count} trådbyten
+@plural	{count} row|{count} rows	{count} följd|{count} följder
+@plural	{count} spot|{count} spots	{count} ställe|{count} ställen
+@plural	{count} thread|{count} threads	{count} tråd|{count} trådar
+@plural	{count} error|{count} errors	{count} fel|{count} fel
+@plural	{count} warning|{count} warnings	{count} varning|{count} varningar
+@plural	{count} note|{count} notes	{count} anmärkning|{count} anmärkningar
+@plural	and {count} more|and {count} more	och {count} till|och {count} till
+embroidery	Threads unlike the art's colour (over {value})	Trådar som inte liknar grafikens färg (över {value})
+embroidery	Largest difference: {value}	Största skillnad: {value}
+embroidery	Block {block}: {thread}, {value}	Block {block}: {thread}, {value}
+	Zoom to Box	Zooma till ruta
+@msg	rect: [left, top, right, bottom] in document points, each within ±{max}, right at or past left and bottom at or below top	rect: [left, top, right, bottom] i dokumentpunkter, var och en inom ±{max}, med right inte före left och bottom inte ovanför top
+@msg	margin: screen points, 0 or more	margin: skärmpunkter, 0 eller mer
+@msg	no canvas is shown	ingen arbetsyta visas
+	Next Finding	Nästa fynd
+	Previous Finding	Föregående fynd
+embroidery	Show	Visa
+embroidery	{index} of {count}	{index} av {count}
+@msg	no finding is shown: show one in the Embroidery panel's Check tab	inget fynd visas: visa ett på fliken Kontroll i panelen Broderi
+@msg	the check is out of date: wait for the stitches to be planned	kontrollen är inaktuell: vänta tills stygnen har planerats
+@msg	no such rule in the check	kontrollen har ingen sådan regel
+@msg	no such finding in the check	kontrollen har inget sådant fynd
+	Show Check Marks	Visa kontrollmarkeringar
+embroidery	Stitch lengths	Stygnlängder
+embroidery	Median: {value} mm	Median: {value} mm
+embroidery	Too long	För långa
+embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
+embroidery	Over {value} mm: {stitches}	Över {value} mm: {stitches}
+@plural	{count} colour|{count} colours	{count} färg|{count} färger
+embroidery	Embroidery: {figures}	Broderi: {figures}
+embroidery	Stitches can't be planned	Stygnen kan inte planeras
+embroidery	Click to open the Embroidery panel.	Klicka för att öppna panelen Broderi.
+embroidery	{width} × {height} mm	{width} × {height} mm
+embroidery	about {value} min	cirka {value} min
+embroidery	about {value} m	cirka {value} m
+	Show Finding	Visa fynd
+@msg	`rule` must be a check rule's id	`rule` måste vara id:t för en kontrollregel
+@msg	`hit` must be a listed hit's place, from 0	`hit` måste vara platsen för ett listat fynd, från 0
+@msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	det finns ingen kontroll av dokumentet som det är nu: visa fliken Kontroll i panelen Broderi och vänta tills stygnen har planerats
+@plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	och {count} rad till visas inte (listan visar de första {limit})|och {count} rader till visas inte (listan visar de första {limit})
+@msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	bilden skulle bli {w} × {h} pixlar, mer än {most} per sida: rita ett mindre område eller i mindre skala

@@ -83,6 +83,9 @@ pub(crate) struct Rule {
     pub(crate) unit: Option<&'static str>,
     /// What each hit's value measures, for display.
     pub(crate) measures: &'static str,
+    /// Which extreme of the values it judges it reports as `measured` (`None`: it measures
+    /// nothing): the largest for a limit not to pass, the smallest for one not to fall under.
+    pub(crate) extreme: Option<Extreme>,
     /// Its sources, the one checked first.
     pub(crate) sources: &'static [Source],
 }
@@ -96,7 +99,7 @@ const MELCO_CHECKER: &str = "http://www.melco-service.com/docs/DSv11_Manual.pdf"
 /// The widest satin column Melco's checker lets pass (millimetres).
 const SATIN_WIDEST: f64 = 10.0;
 /// The longest stitch it lets pass (millimetres).
-const LONGEST_STITCH: f64 = 12.7;
+pub(super) const LONGEST_STITCH: f64 = 12.7;
 /// The shortest fill, satin and running (walk) stitches it lets pass (millimetres), checked on
 /// each object's settings: its fill stitch length, its satin columns' width (a satin stitch spans
 /// the column), its running stitch length.
@@ -161,7 +164,7 @@ const GRID: f64 = 1.0 / vectorcraft_stitch::UNITS_PER_MM;
 /// The hits listed per rule when `limit` is left out: enough to show where a rule bites.
 pub(crate) const LIMIT: usize = 20;
 /// The most hits per rule `limit` may ask for: the output is bounded whatever the design.
-pub(crate) const MAX_LIMIT: usize = 1000;
+pub const MAX_LIMIT: usize = 1000;
 /// The most objects a rule lists as hit; `objectCount` counts them all, and the count of hits is
 /// never cut.
 const MAX_OBJECTS: usize = 1000;
@@ -179,6 +182,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(SATIN_WIDEST),
         unit: Some("mm"),
         measures: "the object's widest satin column",
+        extreme: Some(Extreme::Largest),
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "satin stitches wider than 10 mm" },
             Source {
@@ -200,6 +204,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(LONGEST_STITCH),
         unit: Some("mm"),
         measures: "a needle-down stitch's length",
+        extreme: Some(Extreme::Largest),
         sources: &[Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "any stitch over 12.7 mm" }],
     },
     Rule {
@@ -209,6 +214,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: None,
         unit: Some("mm"),
         measures: "a stitch's longer extent along x or y (its length is given apart)",
+        extreme: Some(Extreme::Largest),
         sources: &[Source {
             name: "EduTechWiki's pages on the formats (DST, TAP and T01: 12.1 mm a record; EXP, JEF and VP3: 12.7 mm; PES and PEC: 204.7 mm)",
             url: "https://edutechwiki.unige.ch/en/Embroidery_format_DST",
@@ -222,6 +228,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(FILL_SHORTEST),
         unit: Some("mm"),
         measures: "the object's fill stitch length",
+        extreme: Some(Extreme::Smallest),
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "fill stitches smaller than 2.5 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "fill stitches ideally 2 mm or longer" },
@@ -234,6 +241,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(SATIN_SHORTEST),
         unit: Some("mm"),
         measures: "the object's narrowest satin column",
+        extreme: Some(Extreme::Smallest),
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "satin stitches shorter than 1 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "satin stitches ideally 1 mm or longer" },
@@ -246,6 +254,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(RUN_SHORTEST),
         unit: Some("mm"),
         measures: "the object's running stitch length",
+        extreme: Some(Extreme::Smallest),
         sources: &[
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "walk stitches shorter than 1.5 mm" },
             Source { name: MELCO_MACHINE_NAME, url: MELCO_MACHINE, value: "walk stitches ideally 1.5 mm or longer" },
@@ -261,6 +270,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(NEEDLE_BLADE),
         unit: Some("mm"),
         measures: "a needle-down stitch's length",
+        extreme: Some(Extreme::Smallest),
         sources: &[Source {
             name: MELCO_MACHINE_NAME,
             url: MELCO_MACHINE,
@@ -274,6 +284,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(TINY),
         unit: Some("mm"),
         measures: "a needle-down stitch's length",
+        extreme: Some(Extreme::Smallest),
         sources: &[
             Source {
                 name: "Brother PRT23 manual, printed p. 108 (p. 110 of the PDF)",
@@ -294,6 +305,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(MOST_SHORT_IN_A_ROW as f64),
         unit: Some("stitches"),
         measures: "short stitches in a row",
+        extreme: Some(Extreme::Largest),
         sources: &[
             Source {
                 name: "an estimate; background: Wilcom EmbroideryStudio help, Apply stitch shortening",
@@ -310,6 +322,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(LAYERS as f64),
         unit: Some("units"),
         measures: "sewing units over one 1 mm square",
+        extreme: Some(Extreme::Largest),
         sources: &[
             Source {
                 name: "Brother PRT51 manual (Japanese), data precautions and troubleshooting",
@@ -326,6 +339,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(MISMATCH_DELTA_E),
         unit: Some("deltaE"),
         measures: "the CIEDE2000 difference between the art's colour and its block's thread",
+        extreme: Some(Extreme::Largest),
         sources: &[Source {
             name: "the project owner's choice (docs/embroidery.md › Threads)",
             url: "",
@@ -339,6 +353,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: None,
         unit: None,
         measures: "nothing: each hit is a warning of the stitch plan",
+        extreme: None,
         sources: &[Source {
             name: "the stitch plan's warnings (docs/embroidery.md › What is not stitched)",
             url: "",
@@ -352,6 +367,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: None,
         unit: Some("blocks"),
         measures: "the design's colour blocks",
+        extreme: Some(Extreme::Largest),
         sources: &[
             Source {
                 name: "EduTechWiki, Embroidery format PEC (its header counts the colours in a byte)",
@@ -382,6 +398,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(MACHINE_STITCHES),
         unit: Some("stitches"),
         measures: "the design's needle points",
+        extreme: Some(Extreme::Largest),
         sources: &[Source {
             name: "Brother PR680W manual, specifications",
             url: "https://download.brother.com/welcome/doch102285/884t23_om01en.pdf",
@@ -395,6 +412,7 @@ pub(crate) const RULES: &[Rule] = &[
         threshold: Some(MACHINE_COLOR_CHANGES),
         unit: Some("colorChanges"),
         measures: "the design's colour changes",
+        extreme: Some(Extreme::Largest),
         sources: &[Source {
             name: "Brother PR680W manual, specifications",
             url: "https://download.brother.com/welcome/doch102285/884t23_om01en.pdf",
@@ -485,6 +503,13 @@ pub(super) fn layer_grid_cells(plan: &DesignPlan) -> Option<usize> {
 struct Hit {
     record: Option<usize>,
     at: Option<Point>,
+    /// Where a stitch hit starts (its end is `at`).
+    from: Option<Point>,
+    /// The block a thread hit is about (from 1), and its thread as the check judged it.
+    block: Option<usize>,
+    thread: Option<Value>,
+    /// The objects a hit about no stitch is about (`notSewn`: what the walk left out of them).
+    objects: Option<Vec<u64>>,
     unit: Option<usize>,
     value: Option<f64>,
     /// A stitch's own length, when the value measures something else (`formatStep`).
@@ -497,16 +522,35 @@ struct Hit {
 impl Hit {
     /// A hit at record `r`, measuring `value`.
     fn at(r: &Record, value: f64) -> Self {
-        Self { record: Some(r.number), at: Some(r.stitch.point()), unit: Some(r.unit), value: Some(value), ..Self::default() }
+        Self {
+            record: Some(r.number),
+            at: Some(r.stitch.point()),
+            from: r.before.map(|b| b.point()),
+            unit: Some(r.unit),
+            value: Some(value),
+            ..Self::default()
+        }
     }
 }
 
-/// A rule's findings: how many, every object hit, and the first few hits.
+/// A rule's findings: how many, every object hit, the first few hits, and the extreme measured
+/// over everything it judged (the longest stitch for a rule on long stitches, the shortest for one
+/// on short stitches), hit or not.
 #[derive(Default)]
 struct Found {
     count: usize,
     objects: BTreeSet<u64>,
     listed: Vec<Hit>,
+    measured: Option<f64>,
+    /// Its rule's extreme ([`Rule::extreme`]).
+    extreme: Option<Extreme>,
+}
+
+/// Which extreme of the values a rule judges it reports ([`Rule::extreme`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Extreme {
+    Largest,
+    Smallest,
 }
 
 /// What a check is asked for: the rules to run, the format whose limits apply, and how many hits
@@ -528,13 +572,36 @@ struct Checker<'a> {
     short_run: Option<(usize, Record)>,
     /// The units sewn over each cell so far, and the last of them, when layers are counted.
     layers: Option<Layers>,
+    /// The extremes over every stitch so far, for the rules' `measured`.
+    extremes: Extremes,
+}
+
+/// The extremes measured over a design's stitches, kept apart from the findings (a stitch costs no
+/// lookup), and given to their rules once the stitches are walked ([`Checker::rest`]).
+#[derive(Default)]
+struct Extremes {
+    longest: Option<f64>,
+    shortest: Option<f64>,
+    /// The longest extent along x or y.
+    step: Option<f64>,
+    /// The most short stitches in a row.
+    short_run: Option<f64>,
+    /// The most units over one cell.
+    layers: Option<f64>,
+}
+
+/// `m`, raised to `v` when `v` is larger (`more`) or lowered when smaller.
+fn extreme(m: &mut Option<f64>, v: f64, more: bool) {
+    if v.is_finite() {
+        *m = Some(m.map_or(v, |m| if more { m.max(v) } else { m.min(v) }));
+    }
 }
 
 impl<'a> Checker<'a> {
     fn new(plan: &'a DesignPlan, ask: &'a Ask) -> Self {
-        let found = ask.rules.iter().map(|r| (r.id, Found::default())).collect();
+        let found = ask.rules.iter().map(|r| (r.id, Found { extreme: r.extreme, ..Found::default() })).collect();
         let layers = ask.rules.iter().any(|r| r.id == "layers").then(|| Layers::new(plan));
-        Self { plan, ask, threads: threads_judged(plan, ask.format), found, short_run: None, layers }
+        Self { plan, ask, threads: threads_judged(plan, ask.format), found, short_run: None, layers, extremes: Extremes::default() }
     }
 
     /// Count `hit` for rule `id`, when it was asked for.
@@ -546,6 +613,14 @@ impl<'a> Checker<'a> {
         }
         if f.listed.len() < self.ask.limit {
             f.listed.push(hit);
+        }
+    }
+
+    /// Note value `v` judged by rule `id`, hit or not: the extreme it reports as `measured`.
+    fn judged(&mut self, id: &'static str, v: f64) {
+        let Some(f) = self.found.get_mut(id) else { return };
+        if let Some(e) = f.extreme {
+            extreme(&mut f.measured, v, e == Extreme::Largest);
         }
     }
 
@@ -565,12 +640,15 @@ impl<'a> Checker<'a> {
             self.end_short_run();
             return;
         };
+        extreme(&mut self.extremes.longest, length, true);
+        extreme(&mut self.extremes.shortest, length, false);
         if length > LONGEST_STITCH {
             self.add("stitchTooLong", Hit::at(r, length));
         }
         if let Some(before) = r.before {
             let step = self.ask.format.max_step();
             let longest = (r.stitch.x - before.x).abs().max((r.stitch.y - before.y).abs());
+            extreme(&mut self.extremes.step, longest, true);
             if longest > step {
                 let fewest = ((longest - GRID) / step).ceil().max(1.0);
                 let most = ((longest + GRID) / step).ceil();
@@ -608,10 +686,11 @@ impl<'a> Checker<'a> {
 
     /// The end of a row of short stitches: a hit when it was longer than allowed.
     fn end_short_run(&mut self) {
-        if let Some((n, first)) = self.short_run.take()
-            && n > MOST_SHORT_IN_A_ROW
-        {
-            self.add("shortStitchesInARow", Hit::at(&first, n as f64));
+        if let Some((n, first)) = self.short_run.take() {
+            extreme(&mut self.extremes.short_run, n as f64, true);
+            if n > MOST_SHORT_IN_A_ROW {
+                self.add("shortStitchesInARow", Hit::at(&first, n as f64));
+            }
         }
     }
 
@@ -629,7 +708,9 @@ impl<'a> Checker<'a> {
             let p = a.lerp(b, i as f64 / samples as f64);
             let cell = ((p.x / LAYER_CELL).floor() as i64, (p.y / LAYER_CELL).floor() as i64);
             let Some(layers) = self.layers.as_mut() else { return };
-            if layers.add(cell, unit) == Some(LAYERS) {
+            let Some(count) = layers.add(cell, unit) else { continue };
+            extreme(&mut self.extremes.layers, count as f64, true);
+            if count == LAYERS {
                 let centre = Point::new((cell.0 as f64 + 0.5) * LAYER_CELL, (cell.1 as f64 + 0.5) * LAYER_CELL);
                 self.add(
                     "layers",
@@ -642,6 +723,19 @@ impl<'a> Checker<'a> {
     /// The rules on whole units (their settings), blocks and the design.
     fn rest(&mut self) {
         let plan = self.plan;
+        let e = std::mem::take(&mut self.extremes);
+        for (id, v) in [
+            ("stitchTooLong", e.longest),
+            ("stitchBelowNeedle", e.shortest),
+            ("stitchTiny", e.shortest),
+            ("formatStep", e.step),
+            ("shortStitchesInARow", e.short_run),
+            ("layers", e.layers),
+        ] {
+            if let Some(v) = v {
+                self.judged(id, v);
+            }
+        }
         for (k, u) in plan.units.iter().enumerate() {
             // At the unit: its first stitch and needle point.
             // None for a unit that adds no record (one needle point where the needle already is):
@@ -650,6 +744,8 @@ impl<'a> Checker<'a> {
             let at = plan.unit_stitches(k).iter().find(|s| s.command == Command::Stitch).map(|s| s.point());
             let hit = |value: f64| Hit { record: first, at, unit: Some(k), value: Some(value), ..Hit::default() };
             if let Some([narrowest, widest]) = u.satin_widths {
+                self.judged("satinTooWide", widest);
+                self.judged("satinStitchShort", narrowest);
                 if widest > SATIN_WIDEST {
                     self.add("satinTooWide", hit(widest));
                 }
@@ -660,19 +756,32 @@ impl<'a> Checker<'a> {
             // A literal run has no settings: it is sewn as its points are. A unit is judged by how
             // it is sewn: a fill under `stitchStyle: satin` is filled, with its fill stitch length.
             match (u.sewn(), u.params) {
-                (Some(Style::Fill), Some(p)) if p.stitch_length < FILL_SHORTEST => self.add("fillStitchShort", hit(p.stitch_length)),
-                (Some(Style::Running), Some(p)) if p.stitch_length < RUN_SHORTEST => self.add("runStitchShort", hit(p.stitch_length)),
+                (Some(Style::Fill), Some(p)) => {
+                    self.judged("fillStitchShort", p.stitch_length);
+                    if p.stitch_length < FILL_SHORTEST {
+                        self.add("fillStitchShort", hit(p.stitch_length));
+                    }
+                }
+                (Some(Style::Running), Some(p)) => {
+                    self.judged("runStitchShort", p.stitch_length);
+                    if p.stitch_length < RUN_SHORTEST {
+                        self.add("runStitchShort", hit(p.stitch_length));
+                    }
+                }
                 _ => {}
             }
         }
         let threads = std::mem::take(&mut self.threads);
         for (k, (b, thread)) in plan.blocks.iter().zip(&threads).enumerate() {
+            self.judged("threadMismatch", thread.shown_delta_e());
             if thread.mismatch() {
                 let note = format!("block {}: {} {} for the art's {}", k + 1, thread.palette().id(), thread.index(), hex(thread.art));
                 let hit = Hit {
                     record: Some(b.first_number),
                     unit: Some(b.units.start),
                     value: Some(thread.shown_delta_e()),
+                    block: Some(k + 1),
+                    thread: Some(super::stats::thread_json(thread)),
                     note: Some(note),
                     ..Hit::default()
                 };
@@ -682,20 +791,27 @@ impl<'a> Checker<'a> {
             }
         }
         for w in &plan.warnings {
-            self.add("notSewn", Hit { note: Some(w.clone()), ..Hit::default() });
+            let objects: Vec<u64> = plan.warned.get(w).map(|ids| ids.iter().map(|id| id.0).collect()).unwrap_or_default();
+            if let Some(f) = self.found.get_mut("notSewn") {
+                f.objects.extend(&objects);
+            }
+            self.add("notSewn", Hit { note: Some(w.clone()), objects: Some(objects), ..Hit::default() });
         }
         let blocks = plan.blocks.len();
+        let needle: usize = plan.blocks.iter().map(|b| b.needle_points()).sum();
+        let changes = blocks.saturating_sub(1);
+        for (id, v) in [("formatColors", blocks), ("machineStitches", needle), ("machineColorChanges", changes)] {
+            self.judged(id, v as f64);
+        }
         if let Some(most) = self.ask.format.max_colors()
             && blocks > most
         {
             let note = format!("{} holds {most}", self.ask.format.label());
             self.add("formatColors", Hit { value: Some(blocks as f64), note: Some(note), ..Hit::default() });
         }
-        let needle: usize = plan.blocks.iter().map(|b| b.needle_points()).sum();
         if needle as f64 > MACHINE_STITCHES {
             self.add("machineStitches", Hit { value: Some(needle as f64), ..Hit::default() });
         }
-        let changes = blocks.saturating_sub(1);
         if changes as f64 > MACHINE_COLOR_CHANGES {
             self.add("machineColorChanges", Hit { value: Some(changes as f64), ..Hit::default() });
         }
@@ -743,6 +859,7 @@ impl<'a> Checker<'a> {
                     "objects": objects,
                     "truncated": object_count > MAX_OBJECTS,
                     "examples": f.listed.iter().map(|h| self.hit_json(rule, h)).collect::<Vec<_>>(),
+                    "measured": f.measured.map(|v| rule.value(v)),
                 })
             })
             .collect();
@@ -752,7 +869,7 @@ impl<'a> Checker<'a> {
             "palette": self.ask.format.palette().map_or_else(|| self.plan.blocks.first().map(|b| b.thread.palette().id()), |p| Some(p.id())),
             "rules": rules,
             "summary": {"errors": errors, "warnings": warnings, "info": info},
-            "notChecked": NOT_CHECKED.iter().map(|(what, why)| json!({"what": what, "why": why})).collect::<Vec<_>>(),
+            "notChecked": NOT_CHECKED.iter().map(|(id, what, why)| json!({"id": id, "what": what, "why": why})).collect::<Vec<_>>(),
         })
     }
 
@@ -761,6 +878,10 @@ impl<'a> Checker<'a> {
         json!({
             "record": h.record,
             "at": h.at.map(point),
+            "from": h.from.map(point),
+            "block": h.block,
+            "thread": h.thread,
+            "objects": h.objects,
             "value": h.value.map(|v| rule.value(v)),
             "length": h.length.map(mm),
             "pieces": h.pieces,
@@ -771,10 +892,10 @@ impl<'a> Checker<'a> {
 }
 
 /// What Melco's design checker flags that is not checked here, and why.
-const NOT_CHECKED: [(&str, &str); 3] = [
-    ("density too tight", "Melco's design checker names it without a threshold"),
-    ("too many needle penetrations in an area", "Melco's design checker names it without a threshold"),
-    ("too many or too few tie stitches (missed trims or starts)", "Melco's design checker names it without a threshold"),
+const NOT_CHECKED: [(&str, &str, &str); 3] = [
+    ("density", "density too tight", "Melco's design checker names it without a threshold"),
+    ("penetrations", "too many needle penetrations in an area", "Melco's design checker names it without a threshold"),
+    ("ties", "too many or too few tie stitches (missed trims or starts)", "Melco's design checker names it without a threshold"),
 ];
 
 /// The threads a check judges: those the format writes, matched to its own palette when it numbers
@@ -791,7 +912,7 @@ fn threads_judged(plan: &DesignPlan, format: Format) -> Vec<BlockThread> {
 /// found something, and what is not checked.
 pub(crate) fn check(plan: &DesignPlan, ask: &Ask) -> Value {
     let mut c = Checker::new(plan, ask);
-    measure::each(plan, |r| c.record(r));
+    measure::each_until_cancelled(plan, |r| c.record(r));
     c.end_short_run();
     c.rest();
     c.into_json()

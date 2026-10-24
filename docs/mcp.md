@@ -4306,7 +4306,7 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   deltaE, mismatch}, unitCount}], options, warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour
   and the thread's, to two decimals, and `mismatch` flags one past `threshold` (10). Besides the export's embroidery
   options it takes only the stretch of blocks to list: any other key, such as `format`, is refused.
-- `embroidery.setTrimAfter {on?, ids?|id?}` asks for the thread to be cut after each object (or with `on: false` for no
+- `embroidery.setTrimAfter {on?, ids?}` asks for the thread to be cut after each object (or with `on: false` for no
   cut, a file's own included); left out, `on` toggles. It needs a selection or `ids`, answers `{on, changed}`, and
   reports an id that names no object as a missing object.
 - `embroidery.stats {…embroidery options, speed?, fabricThickness?, offset?, limit?}` gives the design's figures as the
@@ -4316,7 +4316,10 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   fabricThickness, estimate}` and the sewing `time`, both estimates (each says so in `estimate`) whose constants and
   sources `embroidery.md` lists (`speed`, stitches a minute, 60 to 1500, default 650; `fabricThickness`, mm, 0 to 5,
   default 0.5). The time leaves out colour changes, which are counted apart. `blocks` lists each block's thread,
-  counts, `firstRecord`/`lastRecord`, `topThreadMetres`, `bobbinThreadMetres` and `seconds`.
+  counts, `firstRecord`/`lastRecord`, `topThreadMetres`, `bobbinThreadMetres` and `seconds`. `lengths` counts the
+  needle-down stitches by length in `bins` (`{from, to, count}`): half a millimetre each up to 12.5 mm, then one up to
+  12.7 mm (the longest the check lets pass, inclusive) and one, with `to` null, for every longer stitch (the
+  `stitchTooLong` hits); `median` is their middle length to the tenth of a millimetre.
 - `embroidery.sequence {…embroidery options, offset?, limit?}` lists the sewing order, read only: the units from
   `offset` in sewing order within their blocks, each block with its thread, counts, record numbers and what follows it,
   each unit with the object a person selects (`id`), `part` (`fill`, `stroke`, `literal`), `partIndex` and
@@ -4332,12 +4335,50 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   sources (the first is the one checked; where sources disagree each is listed), `hits`, the objects hit
   (`objectCount`, at most 1000 in `objects`, `truncated`) and the first `limit` hits (`examples`, 20 by default, at
   most 1000) as record numbers and points with the measure compared. `summary` gives, per severity, the rules that
-  found something and their hits. `format` (one of the eight embroidery formats; default: the format of the document's
+  found something and their hits. Each rule also gives `measured`, the extreme of what it judged, hit or not (the
+  longest stitch for `stitchTooLong`, the shortest for `stitchTiny`; null for a rule that measures nothing); a
+  stitch's hit gives where the stitch starts (`from`) besides where it ends (`at`), a thread's hit its `block` and
+  `thread`, a `notSewn` hit the `objects` whose art it left out (none for what the appearances leave out); and
+  `notChecked` names each item by `id`. `format` (one of the eight embroidery formats; default: the format of the document's
   thread palette) sets the format limits checked and the threads judged: those the format writes (a PES of a
   document in Janome's palette writes Brother's threads, matched to the art's colours), named in `palette`; `rules`
   picks rules by id.
+- `embroidery.render {…embroidery options, region?, artboard?, rect?, scale?, jumps?, needlePoints?, background?}` draws the
+  design's stitches as the stitch preview draws them, as a PNG (`dataBase64`): each block in its palette thread's
+  colour, threads as wide as they lie (0.4 mm for 40 wt), an edge for a thread close to the fabric, and with `jumps`
+  (default true) the moves marked (two-tone dashes where the thread was cut, a thin line in the thread's colour where
+  it lies, a × at each cut), and with `needlePoints` (default false) a dot at each needle point where they stand at
+  least 6 screen points apart. The region is the design's stitches with a 5 mm margin (`region: "design"`, the default),
+  an artboard (`artboard`, from 0) or a box (`rect`, points); `scale` is pixels a point (default 1, at most 64), the
+  picture at most 8,192 pixels a side; `background` exactly `"#rrggbb"` (default white, the fabric) or null for none.
+  It answers with `width`, `height`, the `region` drawn and `units: "pt"` (unlike the read commands, whose boxes and
+  points are millimetres: multiply those by 72 / 25.4 for a `rect`), and the plan's `generation` (another plan,
+  another number). A design with nothing sewn is an error.
+- `view.stitchPreview {on?}` (⌘E) shows the active document's design on the canvas as its stitches instead of its
+  art; `on` left out or null toggles. Each open document has its own setting, view state like Show Transparency
+  Grid: not saved, not undoable, not journaled, kept through Revert, dropped on close. Its options, kept while the
+  preview is off, are set the same way: `view.stitchPreview.jumps` (jumps and cuts marked, on by default),
+  `view.stitchPreview.needlePoints` (off) and `view.stitchPreview.artwork` (the art faint under the stitches, off).
+  Each answers with the whole setting, `{on, jumps, needlePoints, artwork, shown, pausedBy, options, optionsFrom}`:
+  `shown` is `"stitches"` or `"art"`, and `pausedBy` (`"opacityMask"`, `"pattern"` or null) names the edit mode that
+  shows the art while it lasts. The preview plans with `options`: those of the document's last embroidery export
+  (`optionsFrom: "lastExport"`), else of the last embroidery export of any document while the app runs
+  (`"appLastExport"`), else the defaults (`"default"`); they are never saved in the file. Exports never show the stitches.
 
-The four read commands take `selectedOnly` (the selected objects alone, as `document.export {selectedOnly}` writes them)
+- `embroidery.sewEarlier`, `sewLater`, `sewFirst` and `sewLast {ids?, …embroidery options}` change the sewing order by
+  moving the objects (`ids`: objects of the document, each checked, at most 100,000; default: the selection; a
+  selected group as one; like any command acting on the selection, each is off with nothing selected unless given
+  `ids`) in the stacking order: before the object sewn just before them (just below it, in its parent:
+  beside it, so an object in a group stays in it), after the one sewn just after them (just above it), first or last.
+  One undo step, "Change Sewing Order"; the answer is `layer.move`'s params `{ids, target, place}`. Where a drop in
+  the Sewing order list would be refused, so are they, saying why: into or out of a clip group (what is sewn would
+  change), a locked object or layer, a clipping path, a run of an opened machine file alone, between two parts of one
+  object. Objects of one colour still join a block sewn earlier when nothing between lies under them, so a move may
+  change no stitch. Without embroidery options of their own they plan with the stitch preview's (the document's last
+  embroidery export's), so they move on the plan the Embroidery panel's Sewing order list shows, which the preview has
+  made already.
+
+The four read commands (threads, stats, sequence, check) take `selectedOnly` (the selected objects alone, as `document.export {selectedOnly}` writes them)
 and plan the document as the export does: an opacity mask's editing layer, which no export writes, is left out.
 
 A *record* is every needle point, jump and cut; record numbers count them from 1 in sewing order, and `stitches`
@@ -4354,4 +4395,5 @@ its block). A plan can be cancelled with `notifications/cancelled`.
 {"name":"run_command","arguments":{"command":"embroidery.threads","params":{"stitch":"tatami"}}}
 {"name":"run_command","arguments":{"command":"embroidery.stats","params":{"speed":800}}}
 {"name":"run_command","arguments":{"command":"embroidery.check","params":{"format":"dst","rules":["stitchTooLong","formatStep"]}}}
+{"name":"run_command","arguments":{"command":"embroidery.render","params":{"scale":4,"jumps":false}}}
 ```

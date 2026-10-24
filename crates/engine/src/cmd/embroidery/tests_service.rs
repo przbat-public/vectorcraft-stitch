@@ -55,6 +55,9 @@ enum Edit {
     Options(usize),
     /// The document exported to PES and opened: its runs literal stitches.
     Open,
+    /// An object moved just above (or below) another in the stacking order, into the other's parent,
+    /// as the Sewing order's drops and steps move it (`layer.move`).
+    Reorder(usize, usize, bool),
 }
 
 fn art() -> impl Strategy<Value = Art> {
@@ -84,6 +87,7 @@ fn edit() -> impl Strategy<Value = Edit> {
         1 => (0usize..16, 0.0..220.0f64, 0.0..220.0f64).prop_map(|(i, x, y)| Edit::Symbol(i, x, y)),
         1 => (0..OPTIONS.len()).prop_map(Edit::Options),
         1 => Just(Edit::Open),
+        2 => (0usize..16, 0usize..16, any::<bool>()).prop_map(|(a, b, above)| Edit::Reorder(a, b, above)),
     ]
 }
 
@@ -170,6 +174,14 @@ fn apply(s: &mut Session, ids: &mut Vec<u64>, opts: &mut Options, e: &Edit) {
         Edit::Undo => {
             let _ = s.execute("edit.undo", &json!({}));
             *ids = objects(s);
+        }
+        Edit::Reorder(a, b, above) => {
+            if let (Some(a), Some(b)) = (pick(a), pick(b))
+                && a != b
+            {
+                // Refused at times (into a clip group as its clipping path, say): nothing changes then.
+                let _ = s.execute("layer.move", &json!({"ids": [a], "target": b, "place": if above { "above" } else { "below" }}));
+            }
         }
         Edit::Redo => {
             let _ = s.execute("edit.redo", &json!({}));
@@ -491,8 +503,9 @@ fn a_snapshot_with_the_same_options_is_planned_once() {
     let first = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
     assert!(Arc::ptr_eq(&first, &service.plan(Of::whole(&doc), &doc, &opts).unwrap()), "the same snapshot, the same plan");
     assert_eq!(service.walks(), 1);
-    // Fonts added since (a text clipping path is outlined with them): not the plan remembered.
-    let fonts = vectorcraft_text::FontDb::global().generation();
+    // A plan is remembered with the fonts it depends on ([`super::service::fonts_of`]): with
+    // others, not the plan remembered.
+    let fonts = super::service::fonts_of(&doc);
     assert!(service.remembered(Of::whole(&doc), &opts, fonts).is_some());
     assert!(service.remembered(Of::whole(&doc), &opts, fonts.wrapping_add(1)).is_none());
     // The same art in another snapshot: walked again, every unit from what was kept.
@@ -505,8 +518,8 @@ fn a_snapshot_with_the_same_options_is_planned_once() {
     // Other options: another plan.
     let satin = Options::from_params(&json!({"stitchStyle": "satin"}), "test").unwrap();
     assert_ne!(*service.plan(Of::whole(&doc), &doc, &satin).unwrap(), *first);
-    // Through the commands: three in a row walk the document once; an edit, and its undo (an
-    // earlier snapshot), walk it again.
+    // Through the commands: three in a row walk the document once; an edit walks it again, and
+    // its undo (the earlier snapshot, whose plan is still remembered) doesn't.
     let uid = s.doc().unwrap().uid;
     for _ in 0..3 {
         run(&mut s, "embroidery.threads", json!({}));
@@ -518,7 +531,139 @@ fn a_snapshot_with_the_same_options_is_planned_once() {
     run(&mut s, "edit.undo", json!({}));
     run(&mut s, "embroidery.threads", json!({}));
     run(&mut s, "embroidery.threads", json!({}));
-    assert_eq!(service.walks(), 3);
+    assert_eq!(service.walks(), 2);
+}
+
+/// A service remembers its last few plans: the most recently used are kept, the least recently
+/// used beyond `MAX_MEMOS` go, and so do those of snapshots no longer held.
+#[test]
+fn a_service_remembers_its_last_few_plans() {
+    use super::service::MAX_MEMOS;
+    let (s, _) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: None }]);
+    let doc = s.doc().unwrap().doc.clone();
+    let service = PlanService::default();
+    let options: Vec<Options> = (0..=MAX_MEMOS).map(options_at).collect();
+    for o in &options {
+        service.plan(Of::whole(&doc), &doc, o).unwrap();
+    }
+    assert_eq!((service.walks(), service.memos()), (MAX_MEMOS + 1, MAX_MEMOS));
+    // The newest are still remembered, the oldest is planned again.
+    service.plan(Of::whole(&doc), &doc, &options[MAX_MEMOS]).unwrap();
+    service.plan(Of::whole(&doc), &doc, &options[1]).unwrap();
+    assert_eq!(service.walks(), MAX_MEMOS + 1);
+    service.plan(Of::whole(&doc), &doc, &options[0]).unwrap();
+    assert_eq!(service.walks(), MAX_MEMOS + 2);
+    // A snapshot no longer held: its plans go when the next is remembered.
+    let copy = Arc::new((*doc).clone());
+    service.plan(Of::whole(&copy), &copy, &options[0]).unwrap();
+    drop(copy);
+    let other = Arc::new((*doc).clone());
+    service.plan(Of::whole(&other), &other, &options[0]).unwrap();
+    assert!(service.memos() <= MAX_MEMOS);
+}
+
+/// The plans of all documents' services are held within one bound: a plan in one document drops
+/// another's least recently used past it, never the newest; a plan's scene is counted from when
+/// the plan is remembered (ahead, until it is built); a closed document's plans go.
+#[test]
+fn the_plans_of_all_documents_share_one_bound() {
+    use super::service::{Memos, SCENE_BYTES_PER_RECORD};
+    let art = |x: f64| [Art { kind: 0, x, y: 10.0, w: 120.0, h: 90.0, fill: Some(0), stroke: Some((1, 4.0)) }];
+    let (a, _) = build(&art(10.0));
+    let (b, _) = build(&art(20.0));
+    let (a, b) = (a.doc().unwrap().doc.clone(), b.doc().unwrap().doc.clone());
+    let opts = Options::default();
+    // One plan's bytes, its scene counted ahead, then as built.
+    let alone = Arc::new(Memos::default());
+    let planned = PlanService::sharing(alone.clone(), 1).planned(Of::whole(&a), &a, &opts).unwrap();
+    let records: usize = planned.plan.blocks.iter().map(|k| k.stitches.len()).sum();
+    let ahead = alone.held();
+    assert_eq!(ahead, planned.plan.byte_size() + records * SCENE_BYTES_PER_RECORD);
+    planned.scene();
+    let built = alone.held();
+    assert!(built <= ahead && built > planned.plan.byte_size(), "{built} as built, {ahead} ahead");
+    // Room for one and a half: the second document's plan drops the first's.
+    let memos = Arc::new(Memos::with_budget(ahead + ahead / 2));
+    let (first, second) = (PlanService::sharing(memos.clone(), 1), PlanService::sharing(memos.clone(), 2));
+    first.plan(Of::whole(&a), &a, &opts).unwrap();
+    second.plan(Of::whole(&b), &b, &opts).unwrap();
+    assert_eq!((first.memos(), second.memos()), (0, 1));
+    assert!(first.planned_and_walked(Of::whole(&a), &a, &opts).1, "planned again");
+    // The newest is kept whatever its size.
+    let tight = Arc::new(Memos::with_budget(1));
+    let lone = PlanService::sharing(tight.clone(), 3);
+    lone.plan(Of::whole(&a), &a, &opts).unwrap();
+    assert_eq!(lone.memos(), 1);
+    // A closed document's plans go with it.
+    let (mut s, _) = build(&art(10.0));
+    run(&mut s, "embroidery.stats", json!({}));
+    let uid = s.doc().unwrap().uid;
+    assert_eq!(s.embroidery_plans.of(uid).memos(), 1);
+    let held = s.embroidery_plans.memos_held();
+    s.embroidery_plans.forget(uid);
+    assert!(held > 0 && s.embroidery_plans.memos_held() == 0);
+}
+
+/// Each plan made has a generation of its own; reading a remembered plan gives the same one, and
+/// its scene is built once and shared.
+#[test]
+fn each_plan_has_a_generation_and_its_scene_is_built_once() {
+    let (s, _) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: Some((1, 4.0)) }]);
+    let doc = s.doc().unwrap().doc.clone();
+    let service = PlanService::default();
+    let opts = Options::default();
+    let first = service.planned(Of::whole(&doc), &doc, &opts).unwrap();
+    assert!(first.built_scene().is_none(), "built when asked for");
+    let again = service.planned(Of::whole(&doc), &doc, &opts).unwrap();
+    assert_eq!(first.generation, again.generation);
+    assert!(Arc::ptr_eq(&first.scene(), &again.scene()), "one scene for one plan");
+    assert!(again.built_scene().is_some());
+    let copy = Arc::new((*doc).clone());
+    let other = service.planned(Of::whole(&copy), &copy, &opts).unwrap();
+    assert!(other.generation > first.generation, "another snapshot: another plan, a later generation");
+    assert!(!Arc::ptr_eq(&first.scene(), &other.scene()));
+    assert!(first.plan.byte_size() > 0);
+}
+
+/// A plan says whether the call walked the document for it: a remembered plan or refusal doesn't.
+#[test]
+fn a_plan_says_whether_it_was_walked() {
+    let (s, _) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: Some((1, 4.0)) }]);
+    let doc = s.doc().unwrap().doc.clone();
+    let service = PlanService::default();
+    let opts = Options::default();
+    let walked = |opts: &Options| service.planned_and_walked(Of::whole(&doc), &doc, opts).1;
+    assert!(walked(&opts), "the first plan");
+    assert!(!walked(&opts), "remembered");
+    // A refusal is remembered too: three metres a side, more stitches than one shape may have.
+    let (s, _) = build(&[Art { kind: 0, x: 0.0, y: 0.0, w: 8500.0, h: 8500.0, fill: Some(0), stroke: None }]);
+    let doc = s.doc().unwrap().doc.clone();
+    let service = PlanService::default();
+    let (refused, walked) = service.planned_and_walked(Of::whole(&doc), &doc, &opts);
+    assert!(refused.is_err() && walked);
+    let (refused, walked) = service.planned_and_walked(Of::whole(&doc), &doc, &opts);
+    assert!(refused.is_err() && !walked);
+}
+
+/// A plan key tells whether a plan is of the document as it is: a selection doesn't change it, an
+/// edit and other options do.
+#[test]
+fn a_key_follows_the_document() {
+    let (mut s, ids) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: None }]);
+    let opts = Options::default();
+    let planner = s.embroidery_planner().unwrap();
+    let uid = s.doc().unwrap().uid;
+    assert_eq!(s.embroidery_plans.of(uid).walks(), 0);
+    planner.planned(&opts).unwrap();
+    let key = s.embroidery_plan_key(&opts).unwrap();
+    assert_eq!(key, planner.key(&opts));
+    assert_eq!(key.uid(), uid);
+    run(&mut s, "select.set", json!({"ids": [ids[0]]}));
+    assert_eq!(s.embroidery_plan_key(&opts).unwrap(), key, "a selection plans nothing new");
+    assert_ne!(s.embroidery_plan_key(&options_at(2)).unwrap(), key, "other options");
+    run(&mut s, "object.move", json!({"ids": [ids[0]], "dx": 5, "dy": 0}));
+    assert_ne!(s.embroidery_plan_key(&opts).unwrap(), key, "an edit");
+    assert_eq!(s.embroidery_plans.of(uid).walks(), 1);
 }
 
 /// Five objects of two colours, side by side: seven units (each fill, and two strokes).
@@ -688,6 +833,34 @@ fn a_document_a_failed_batch_opened_leaves_no_planning_behind() {
     assert_eq!(s.embroidery_plans.uids(), before, "the opened document's service is gone");
 }
 
+/// A document a failed batch closed comes back with its stitch view and its export's options; one
+/// a batch that holds closed goes with them.
+#[test]
+fn a_document_a_failed_batch_closed_comes_back_with_its_stitch_view() {
+    let mut s = Session::new();
+    run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
+    run(&mut s, "shape.rectangle", json!({"x": 10, "y": 10, "width": 50, "height": 40}));
+    run(&mut s, "view.stitchPreview", json!({"on": true}));
+    super::view::note_export(&mut s, "dst", &json!({"spacing": 0.5}));
+    let uid = s.doc().unwrap().uid;
+    let view = s.embroidery_plans.view(uid);
+    let exported = s.embroidery_plans.exported(uid).0.cloned();
+    let r = s.execute(
+        "command.batch",
+        &json!({"commands": [
+            {"command": "file.close", "params": {}},
+            {"command": "no.such.command", "params": {}},
+        ]}),
+    );
+    assert!(r.as_ref().is_err_and(|e| e.to_string().contains("no.such.command")), "{r:?}");
+    assert_eq!(s.doc().unwrap().uid, uid, "back");
+    assert!(view.on && s.embroidery_plans.view(uid) == view, "its stitch view");
+    assert_eq!(s.embroidery_plans.exported(uid).0.cloned(), exported, "its export's options");
+    // A batch that holds closes it for good.
+    run(&mut s, "command.batch", json!({"commands": [{"command": "file.close", "params": {}}]}));
+    assert!(!s.embroidery_plans.uids().contains(&uid));
+}
+
 /// A plan cancelled from another thread, as the app cancels its planning worker, stops at the
 /// next unit: a stroke being planned when the cancel comes (a satin has no check of its own) is
 /// finished and kept, and the next plan is the fresh one. An export cancelled part way writes
@@ -761,4 +934,143 @@ fn an_edit_plans_again_only_what_it_changed() {
     assert!(next, "the moved object isn't its block's last: the test needs the unit after it");
     assert_eq!(service.kept(), 7 + moved.len() + 1, "{} moved", moved.len());
     assert_eq!(*after, digitize(&doc, &opts, None).unwrap());
+}
+
+/// Two callers asking for one plan at once walk the document once and get the same plan.
+#[test]
+fn two_callers_at_once_plan_once() {
+    let (s, _) = build(&[
+        Art { kind: 0, x: 10.0, y: 10.0, w: 80.0, h: 60.0, fill: Some(0), stroke: Some((1, 4.0)) },
+        Art { kind: 1, x: 120.0, y: 20.0, w: 60.0, h: 60.0, fill: Some(2), stroke: None },
+    ]);
+    let doc = s.doc().unwrap().doc.clone();
+    let service = Arc::new(PlanService::default());
+    let start = Arc::new(std::sync::Barrier::new(2));
+    let callers: Vec<_> = (0..2)
+        .map(|_| {
+            let (service, doc, start) = (service.clone(), doc.clone(), start.clone());
+            std::thread::spawn(move || {
+                start.wait();
+                service.planned(Of::whole(&doc), &doc, &Options::default()).unwrap().generation
+            })
+        })
+        .collect();
+    let generations: Vec<u64> = callers.into_iter().map(|c| c.join().unwrap()).collect();
+    assert_eq!(generations[0], generations[1], "the same plan");
+    assert_eq!((service.walks(), service.flights()), (1, 0));
+}
+
+/// A caller waiting for a flight that lands without a plan (a cancelled one) plans itself; a
+/// cancelled waiter stops waiting; a wait past its bound plans; a flight ends when its plan panics.
+#[test]
+fn a_wait_for_another_callers_plan_always_ends() {
+    let (s, _) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 80.0, h: 60.0, fill: Some(0), stroke: None }]);
+    let doc = s.doc().unwrap().doc.clone();
+    let opts = Options::default();
+    let service = Arc::new(PlanService::default());
+    // Cancelled while it waits: no plan, no walk.
+    service.in_flight(Of::whole(&doc), &opts, || {
+        let (service, doc) = (service.clone(), doc.clone());
+        let waiter = std::thread::spawn(move || {
+            let token = vectorcraft_doc::cancel::CancelToken::new();
+            token.cancel();
+            vectorcraft_doc::cancel::scope(&token, None, || service.planned(Of::whole(&doc), &doc, &Options::default()).err())
+        });
+        assert_eq!(waiter.join().unwrap(), Some(PlanError::Cancelled));
+    });
+    assert_eq!((service.walks(), service.flights()), (0, 0));
+    // Past its bound: it plans itself.
+    service.in_flight(Of::whole(&doc), &opts, || {
+        let (planned, walked) = service.planned_waiting(Of::whole(&doc), &doc, &opts, std::time::Duration::from_millis(1));
+        assert!(planned.is_ok() && walked);
+    });
+    assert_eq!(service.walks(), 1);
+    // The flight lands without a plan (as a cancelled one does): the waiter plans.
+    let other = Options::from_params(&json!({"stitchStyle": "satin"}), "test").unwrap();
+    let waiter = service.in_flight(Of::whole(&doc), &other, || {
+        let (service, doc, other) = (service.clone(), doc.clone(), other.clone());
+        std::thread::spawn(move || service.planned(Of::whole(&doc), &doc, &other).is_ok())
+    });
+    assert!(waiter.join().unwrap());
+    assert_eq!((service.walks(), service.flights()), (2, 0));
+    // A plan that panics ends its flight.
+    let panicked =
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| service.in_flight(Of::whole(&doc), &opts, || panic!("a fault in planning"))));
+    assert!(panicked.is_err());
+    assert_eq!(service.flights(), 0);
+}
+
+/// A planner's query gives each read command's own reply for its snapshot, on another thread,
+/// reading the plan the commands remember: the same reply, no second walk.
+#[test]
+fn a_planners_query_is_the_commands_reply() {
+    let (mut s, _) = build(&[
+        Art { kind: 0, x: 20.0, y: 20.0, w: 60.0, h: 40.0, fill: Some(0), stroke: Some((1, 6.0)) },
+        Art { kind: 1, x: 120.0, y: 40.0, w: 50.0, h: 50.0, fill: Some(2), stroke: None },
+    ]);
+    let asks = [
+        ("embroidery.threads", json!({"limit": 1})),
+        ("embroidery.stats", json!({"speed": 800, "limit": 0})),
+        ("embroidery.sequence", json!({"offset": 1, "limit": 2})),
+        ("embroidery.check", json!({"format": "dst", "limit": 5})),
+        ("embroidery.check", json!({"spacing": 0.5, "rules": ["layers"]})),
+    ];
+    let planner = s.embroidery_planner().unwrap();
+    let asked: Vec<(&str, Value)> = asks.iter().map(|(c, p)| (*c, p.clone())).collect();
+    let replies = std::thread::spawn(move || asked.iter().map(|(c, p)| planner.query(c, p).unwrap()).collect::<Vec<Value>>()).join().unwrap();
+    let uid = s.doc().unwrap().uid;
+    let walks = s.embroidery_plans.of(uid).walks();
+    for ((cmd, params), reply) in asks.iter().zip(&replies) {
+        assert_eq!(&run(&mut s, cmd, params.clone()), reply, "{cmd} {params}");
+    }
+    assert_eq!(s.embroidery_plans.of(uid).walks(), walks, "the commands read the plans the queries made");
+    let planner = s.embroidery_planner().unwrap();
+    assert!(planner.query("embroidery.stats", &json!({"selectedOnly": true})).is_err(), "a planner has no selection");
+    assert!(planner.query("embroidery.setup", &json!({})).is_err(), "only the read commands");
+    assert!(planner.query("embroidery.stats", &json!({"speed": 1e9})).is_err(), "checked as the command checks");
+}
+
+/// A planner's reply made in work that has been cancelled is refused as cancelled, never given
+/// cut short; the same query outside it gives the reply.
+#[test]
+fn a_cancelled_query_gives_no_reply() {
+    use vectorcraft_doc::cancel::{self, CancelToken};
+    let (mut s, _) = build(&[Art { kind: 0, x: 20.0, y: 20.0, w: 60.0, h: 40.0, fill: Some(0), stroke: Some((1, 6.0)) }]);
+    let planner = s.embroidery_planner().unwrap();
+    let cancelled = CancelToken::new();
+    cancelled.cancel();
+    for cmd in READ_COMMANDS {
+        assert!(planner.query(cmd, &json!({})).is_ok(), "{cmd}");
+        let r = cancel::scope(&cancelled, None, || planner.query(cmd, &json!({})));
+        assert!(matches!(r, Err(EngineError::Cancelled)), "{cmd}: {r:?}");
+    }
+}
+
+/// A plan depends on the fonts installed only where it may outline type (type and a clip group:
+/// a text clipping path is outlined with them): a font loaded for something else makes the plan
+/// of a design without them neither out of date nor planned again; with them, it does.
+#[test]
+fn only_a_design_that_may_outline_type_depends_on_the_fonts() {
+    use super::service::fonts_of;
+    let (mut s, _) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: None }]);
+    let opts = Options::default();
+    run(&mut s, "embroidery.stats", json!({}));
+    let uid = s.doc().unwrap().uid;
+    let (key, walks) = (s.embroidery_plan_key(&opts).unwrap(), s.embroidery_plans.of(uid).walks());
+    assert_eq!(fonts_of(&s.doc().unwrap().doc), 0, "no type");
+    // The fonts scanned again: their generation moves on.
+    run(&mut s, "text.rescanFonts", json!({}));
+    assert_eq!(s.embroidery_plan_key(&opts).unwrap(), key, "the plan shown is still of the document as it is");
+    run(&mut s, "embroidery.stats", json!({}));
+    assert_eq!(s.embroidery_plans.of(uid).walks(), walks, "not planned again");
+    // Type and a clip group (here the rectangle clips the type): the plan depends on the fonts.
+    let text = run(&mut s, "text.create", json!({"x": 10, "y": 30, "text": "Haft"}))["id"].clone();
+    let rect = run(&mut s, "shape.rectangle", json!({"x": 0, "y": 0, "width": 80, "height": 60}))["id"].clone();
+    run(&mut s, "select.set", json!({"ids": [text, rect]}));
+    run(&mut s, "object.clippingMask.make", json!({}));
+    let doc = s.doc().unwrap().doc.clone();
+    assert_eq!(fonts_of(&doc), vectorcraft_text::FontDb::global().generation());
+    let key = s.embroidery_plan_key(&opts).unwrap();
+    run(&mut s, "text.rescanFonts", json!({}));
+    assert_ne!(s.embroidery_plan_key(&opts).unwrap(), key, "with type to outline, the fonts count");
 }

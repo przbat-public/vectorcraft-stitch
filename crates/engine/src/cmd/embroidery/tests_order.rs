@@ -252,3 +252,122 @@ fn an_expanded_objects_pieces_are_told_apart_by_their_occurrence() {
         |keys: &[Key], nodes: &[Value]| -> Vec<Value> { keys.iter().zip(nodes).filter(|(k, _)| k.0 == json!(id)).map(|(_, n)| n.clone()).collect() };
     assert_ne!(pieces(&keys, &nodes), pieces(&keys_after, &nodes_after), "node is no key: the pieces' ids change");
 }
+
+/// `embroidery.sequence`'s answer as it was built before the typed model, by hand: the reference
+/// the typed model's serialisation must equal.
+fn sequence_as_json_was(plan: &super::plan::DesignPlan, page: super::stats::Page) -> Value {
+    let (blocks_counted, units) = super::stats::counts(plan);
+    // Each object (as a person selects it) and the blocks its units are in.
+    let mut blocks_of: std::collections::BTreeMap<u64, Vec<usize>> = std::collections::BTreeMap::new();
+    for u in &plan.units {
+        let blocks = blocks_of.entry(u.origin.selected().0).or_default();
+        if !blocks.contains(&(u.block + 1)) {
+            blocks.push(u.block + 1);
+        }
+    }
+    let listed = page.range(plan.units.len());
+    let blocks: Vec<Value> = plan
+        .blocks
+        .iter()
+        .enumerate()
+        .filter(|(_, b)| b.units.start < listed.end && listed.start < b.units.end)
+        .map(|(k, b)| {
+            let list: Vec<Value> = (b.units.start.max(listed.start)..b.units.end.min(listed.end))
+                .filter_map(|i| Some((i, plan.units.get(i)?)))
+                .map(|(i, u)| {
+                    let t = units.get(i).copied().unwrap_or_default();
+                    let needle = || plan.unit_stitches(i).iter().filter(|s| s.command == Command::Stitch);
+                    // A unit of one needle point where the needle already is adds no record: no numbers.
+                    let numbers = plan.numbers(i).filter(|n| !n.is_empty());
+                    let (part, part_index) = super::order::part_of(u.origin.part);
+                    let (rule, values, why) = super::order::rule_of(u);
+                    json!({
+                        "unit": i + 1,
+                        "id": u.origin.selected().0,
+                        "node": u.origin.node.0,
+                        "instance": u.origin.instance.map(|n| n.0),
+                        "part": part,
+                        "partIndex": part_index,
+                        "occurrence": u.occurrence,
+                        "sewn": super::order::sewn_of(u),
+                        "columns": u.columns.is_some(),
+                        "rule": rule,
+                        "ruleValues": values,
+                        "why": why,
+                        "stitches": t.needle,
+                        "records": u.stitches.len(),
+                        "firstRecord": numbers.as_ref().map(|n| n.start),
+                        "lastRecord": numbers.as_ref().map(|n| n.end.saturating_sub(1)),
+                        "jumps": t.jumps,
+                        "trims": t.trims,
+                        "entry": needle().next().map(|s| super::stats::point(s.point())),
+                        "exit": needle().next_back().map(|s| super::stats::point(s.point())),
+                        "bounds": u.bounds.map(super::stats::rect),
+                    })
+                })
+                .collect();
+            let t = blocks_counted.get(k).copied().unwrap_or_default();
+            json!({
+                "block": k + 1,
+                "thread": super::stats::thread_json(&b.thread),
+                "stitches": t.needle,
+                "records": b.stitches.len(),
+                "firstRecord": b.first_number,
+                "lastRecord": b.last_number(),
+                "jumps": t.jumps,
+                "trims": t.trims,
+                "unitCount": b.units.len(),
+                "units": list,
+                // What the machine does before the next block: a colour change, after a cut when the
+                // block ends with one.
+                "then": (k + 1 < plan.blocks.len()).then(|| json!({
+                    "colorChange": true,
+                    "trim": b.stitches.last().is_some_and(|s| s.command == Command::Trim),
+                })),
+            })
+        })
+        .collect();
+    let split: Vec<Value> = blocks_of.into_iter().filter(|(_, b)| b.len() > 1).map(|(id, blocks)| json!({"id": id, "blocks": blocks})).collect();
+    let split_count = split.len();
+    let split: Vec<Value> = split.into_iter().take(page.limit).collect();
+    json!({
+        "blockCount": plan.blocks.len(),
+        "unitCount": plan.units.len(),
+        "offset": listed.start,
+        "truncated": page.truncated(plan.units.len()),
+        "blocks": blocks,
+        "splitCount": split_count,
+        "split": split,
+        "warnings": plan.messages(),
+    })
+}
+
+/// The typed sewing order serialises to exactly the reply built by hand before it, on documents
+/// of every structure a unit maps back through and on opened designs, page by page.
+#[test]
+fn the_typed_sewing_order_is_the_reply_it_was() {
+    use vectorcraft_testkit::embroidery as fx;
+    let mut docs = vec![];
+    let mut s = Session::new();
+    let mut run = |c: &str, p: Value| s.execute(c, &p).unwrap_or_else(|e| panic!("{c} {p}: {e}"));
+    fx::blank(&mut run);
+    fx::structures(&mut run);
+    fx::letter_t(&mut run, fx::BLUE, 300.0, 300.0);
+    docs.push(s.doc().unwrap().doc.clone());
+    for format in ["pes", "dst"] {
+        let mut s = Session::new();
+        let mut run = |c: &str, p: Value| s.execute(c, &p).unwrap_or_else(|e| panic!("{c} {p}: {e}"));
+        fx::opened_design(&mut run, format);
+        docs.push(s.doc().unwrap().doc.clone());
+    }
+    for doc in docs {
+        let plan = super::service::plan_afresh(&doc, &Options::default()).unwrap();
+        for (offset, limit) in [(0, super::stats::LIST_LIMIT), (1, 2), (3, 1), (0, 0), (plan.units.len(), 5)] {
+            let page = super::stats::Page { offset, limit };
+            assert_eq!(super::order::sequence(&plan, page), sequence_as_json_was(&plan, page), "{offset} {limit}");
+        }
+        let typed: super::order::SewingOrder =
+            serde_json::from_value(super::order::sequence(&plan, super::stats::Page { offset: 0, limit: 10 })).unwrap();
+        assert_eq!(typed.unit_count, plan.units.len(), "reads back");
+    }
+}

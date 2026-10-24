@@ -3,7 +3,7 @@
 //! literal stitches read from a file) and the settings each is planned with, clip groups, the
 //! colour of each block, and the limit on a design's size.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
 use vectorcraft_color::Paint;
@@ -18,7 +18,7 @@ use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
 use super::Options;
 use super::cache::{Shaped, Shared, UnitCache, UnitKey, clip_words, path as path_words, rule_word};
-use super::plan::{Choice, DesignPlan, Origin, Part};
+use super::plan::{Choice, DesignPlan, MAX_WARNED_OBJECTS, Origin, Part};
 use super::sequence::{CLEARANCE, Facts, Planned, Sequence};
 use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
 
@@ -119,6 +119,8 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
         opts,
         seq,
         warnings,
+        warned: BTreeMap::new(),
+        object: None,
         nest: 0,
         placements: 0,
         clip: None,
@@ -137,6 +139,7 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
             // Named as the file it was opened from named it, else after the document.
             let name = doc.embroidery.as_ref().and_then(|e| e.label.clone()).unwrap_or_else(|| doc.title.clone());
             let mut plan = d.seq.plan(name, d.warnings, super::thread_palette(doc));
+            plan.warned = d.warned;
             plan.notes = notes;
             plan.start = doc.embroidery.as_ref().and_then(|e| e.start).map(|p| Point::new(pt_to_mm(p.x), pt_to_mm(p.y)));
             Ok(plan)
@@ -180,6 +183,11 @@ struct Digitizer<'a> {
     /// The blocks planned so far, in sewing order.
     seq: Sequence,
     warnings: Vec<String>,
+    /// The objects each warning is about ([`DesignPlan::warned`]).
+    warned: BTreeMap<String, Vec<NodeId>>,
+    /// The object the walk is in, as a person selects it (a symbol's instance for its art), `None`
+    /// above the objects (in a layer, between its children).
+    object: Option<NodeId>,
     /// Symbol art being stitched inside symbol instances.
     nest: u32,
     /// The symbol instances placed so far, against [`MAX_SYMBOL_PLACEMENTS`].
@@ -308,9 +316,15 @@ impl<'a> Digitizer<'a> {
         true
     }
 
+    /// Say `w` once, about the object the walk is in.
     fn warn(&mut self, w: &str) {
         if !self.warnings.iter().any(|x| x == w) {
             self.warnings.push(w.to_string());
+        }
+        let Some(object) = self.object else { return };
+        let ids = self.warned.entry(w.to_string()).or_default();
+        if ids.len() < MAX_WARNED_OBJECTS && !ids.contains(&object) {
+            ids.push(object);
         }
     }
 
@@ -328,8 +342,14 @@ impl<'a> Digitizer<'a> {
         if outer.is_none() && self.expanded.contains(&n.id) {
             self.instance = Some(n.id);
         }
+        // What it leaves out is about it (or the instance placing it); a layer is no object.
+        let outer_object = self.object;
+        if !matches!(n.kind, NodeKind::Layer { .. }) {
+            self.object = Some(self.instance.unwrap_or(n.id));
+        }
         self.kind(n);
         self.instance = outer;
+        self.object = outer_object;
         // An object (or group) that asks for it: the thread is cut after its last stitch.
         if n.extras().embroidery.as_deref().is_some_and(|e| e.trim_after) && self.seq.added() > added {
             self.seq.trim_after_since(added);

@@ -1,6 +1,6 @@
 # Architecture
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-23 · **Change:** minor (fork: the `stitch` crate, machine embroidery, in the crate list and layers; shared PDF reader and writer; app output policy and editable-import adapter retained; verified PngSuite downloads, #1729; synthetic control-input budgets, #1709; desktop printing uses craft-print; Windows 7 fallback retained) · **Target:** Adobe Illustrator 2026 (30.x)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-23 · **Change:** minor (fork: the stitch preview's drawing under Rendering; the `stitch` crate, machine embroidery, in the crate list and layers; shared PDF reader and writer; app output policy and editable-import adapter retained; verified PngSuite downloads, #1729; synthetic control-input budgets, #1709; desktop printing uses craft-print; Windows 7 fallback retained) · **Target:** Adobe Illustrator 2026 (30.x)
 
 How VectorCraft is built today. The design rationale lives in the local, gitignored `plan/architecture.md`;
 this file describes what is committed. Day-to-day rules (clean-room, never crash, quality gates) are in
@@ -44,6 +44,14 @@ The canvas is rasterized on the CPU by `vello_cpu` on worker threads, off the UI
 and per effect; the GPU (wgpu: Metal, DX12, Vulkan/GL; WebGPU/WebGL2 on the web) only composites the result. Raster
 effects are rendered offscreen per object and cached while panning. See
 [hardware-parity.md](hardware-parity.md).
+
+**Embroidery stitches (fork).** The stitch view draws a design's stitch plan as *line pictures*
+(`render::lines`: polylines in colour slots with opaque tags, links and point marks, knowing nothing
+about stitches, so the renderer gains no dependency on `vectorcraft-stitch`). The engine builds the
+picture from the plan (`cmd::embroidery::scene`); the UI plans on a thread of its own and draws the
+picture on the canvas over the art's pass (`ui-egui/src/embroidery/`), on the stitch layer's thread
+when a frame is slow, with one raster texture uploaded per change. Measured budgets and the
+layering's reasons are in [embroidery.md](embroidery.md) › Drawing stitches.
 
 ## Files
 
@@ -90,6 +98,7 @@ saves copies in the background. See [development.md](development.md#robustness-v
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-23 | minor | Fork: Rendering says how the stitch view draws a stitch plan (line pictures built by the engine, drawn by the UI over the art's pass). |
 | 2026-10-23 | minor | Fork: the `stitch` crate (machine embroidery: stitch planning and the machine formats, layer 3, its only workspace dependency `vectorcraft-geom`) recorded in the crate list and the layers; this row and the status line added for it (the change landed on 2026-10-18 without them). |
 | 2026-10-13 | minor | Pinned PngSuite HTTPS files verified by SHA-256 before publication; bounded downloads replace archive extraction (#1729). Scores and hours unchanged. |
 | 2026-10-13 | minor | Bounded synthetic control input (#1709): counts and queued events validated before mutation; control-channel bursts yield between frames. Scores and hours unchanged. |

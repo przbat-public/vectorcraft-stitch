@@ -11,7 +11,8 @@
 //! - The documents built here, always: fills, wide and narrow strokes, a compound path with a hole,
 //!   clip groups (one inside another), symbols, a group and an object that ask for a trim after
 //!   them, an opened design's literal stitch runs (as they are, clipped, and with cuts at its
-//!   blocks' ends), and the export's options away from their defaults.
+//!   blocks' ends), the export's options away from their defaults, and settings at every level
+//!   (objects', the document's and an export's together).
 //! - A test sheet sewn on each fabric preset (`embroidery.setup {fabric}`), the default fabric's
 //!   checked to be the sheet with no fabric, byte for byte.
 //! - The real designs' artwork (`cargo xtask corpus --embroidery`, checked against its manifest),
@@ -169,6 +170,14 @@ cf022f2b570ef05b9940d64c49219c013c7ee80b5ac0dc33e8b3d84453edd5ad  mixed-shrunk.p
 027cea918ef3dc5b2c52850e8091be257377c075041287de86bed6ebc3b0c629  mixed-shrunk.pec
 e488e732b9fb9f7d1a68872d0bc3d79de3165f50df07bae429220b2761ff57a5  mixed-shrunk.jef
 e8fc1c3736b9371fad3f6b129d07262de075693622014418ac0c7f241480aadb  mixed-shrunk.vp3
+1bd3f25d1e4995051d83082c78bbe69dc4ca8bb93159d22c54cc36ad0d74f9bf  settings.dst
+842c150e4a58e3e06ffaa0cbd5b20ec2f032385f2ca37f809f7fae47b41afe05  settings.tap
+842c150e4a58e3e06ffaa0cbd5b20ec2f032385f2ca37f809f7fae47b41afe05  settings.t01
+85e15123d1acb1b91f0dbd1b48ce514be6067ae766d234e93c2b43395e4d9760  settings.exp
+c1ab511ae50963b1a1abaf4e9f03f405717857ddb5e326a890728b2fc690b34d  settings.pes
+ff3aa3f3751f08eb098e6d461d1d42c4bbcb92df9f373518cd3da3b150ffc101  settings.pec
+a836bbba2d6eadb3676ec3d2fb309cee4891a4eeaac42c928727081fac6fcd98  settings.jef
+078164ecefc70687e15b3a9c7b2030d58e30cc01232a0eb55501ca1617cf5763  settings.vp3
 ";
 
 /// The real designs' artwork at the person's size ([`DESIGNS`]), listed as [`SYNTHETIC`] is.
@@ -308,6 +317,9 @@ e382d7a5b85d40faba1c384b99e425a36268ae2a3d817afa17e5a8bdfb161ac3  mixed-every-op
 647016fa5f050c66e1e2adc4792c1f19c14746f651a2f8f9bf63d997d3cac4d5  mixed-shrunk.pes  5 37 21 7 52 24
 0116275ca20098bbbd7e80e1bbee1bf294f561da86726d9165049395a593c910  mixed-shrunk.pec  5 37 21 7 52 24
 8f233e1387f36b54c8ea167469c09a366cd6696b1db24e49d2594257f074f215  mixed-shrunk.jef  33 45 59 59 71 14
+794b9ad6b0c586fe344d847592096ccb8bebea9c2fbbdec92892f9f81f16c181  settings.pes  5 37 21 7 24
+bb3c475f633cc6a78e9bdf88b9e60fca15a7f9a11c70130774135de754ee70ee  settings.pec  5 37 21 7 24
+d73ebca1b85143a097880fd35c8652ab6f52d4f0f88cc20d759971133fb63473  settings.jef  33 45 59 59 14
 ";
 
 /// The PES, PEC and JEF exports of [`ARTWORK`] apart from their thread numbers, listed as
@@ -462,6 +474,14 @@ mixed-shrunk.pes  blocks 6  needle 375/298/368/37/518/390  jumps 1/1/1/1/1/1  tr
 mixed-shrunk.pec  blocks 6  needle 375/298/368/37/518/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.46  shortest 0.41  cells 1357
 mixed-shrunk.jef  blocks 6  needle 375/298/368/37/518/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.40  cells 1358
 mixed-shrunk.vp3  blocks 6  needle 375/298/368/37/518/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.40  cells 1358
+settings.dst  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1274
+settings.tap  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1274
+settings.t01  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1274
+settings.exp  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1274
+settings.pes  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1305
+settings.pec  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1305
+settings.jef  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.0x79.1  longest 3.83  shortest 0.40  cells 1280
+settings.vp3  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.0x79.1  longest 3.83  shortest 0.40  cells 1280
 ";
 
 /// What each export of [`ARTWORK`] holds, read back, listed as [`SYNTHETIC_SUMMARIES`] is.
@@ -1034,7 +1054,8 @@ fn settings_that_change_nothing_change_no_export() {
     for how in [Unchanging::Kept, Unchanging::SetAndReset, Unchanging::DefaultFabric] {
         let mut now = Vec::new();
         for (name, s, options) in documents() {
-            let mut s = unchanging(s, how);
+            // The document that sets settings on purpose is exported as it is.
+            let mut s = if name == "settings" { s } else { unchanging(s, how) };
             run(&mut s, "file.info", json!({"title": name}));
             for format in Format::ALL {
                 let bytes = export(&mut s, format, &options).unwrap_or_else(|e| panic!("{name} ({how:?}) as {}: {e}", format.id()));
@@ -1288,6 +1309,7 @@ fn documents() -> Vec<(&'static str, Session, Value)> {
         ("mixed-stitch-style-running", mixed(), json!({"stitchStyle": "running"})),
         ("mixed-every-option", mixed(), every_option),
         ("mixed-shrunk", mixed(), json!({"expand": -0.3, "pullCompensation": 0})),
+        ("settings", settings(), json!({"length": 3, "jumpLength": 4})),
     ]
 }
 
@@ -1455,6 +1477,23 @@ fn mixed() -> Session {
     let both = rect(&mut s, "#ff8800", 200.0, 180.0, 60.0, 60.0);
     run(&mut s, "paint.setStroke", json!({"color": "#552200", "ids": [both]}));
     run(&mut s, "stroke.set", json!({"weight": 4.0, "ids": [both]}));
+    s
+}
+
+/// [`mixed`] with settings at every level: on objects (a fill's angle, pull and underlay, a stroke
+/// sewn as a running line, a stroke's split and push, a fill left unsewn, an entry point), in the
+/// document (the fleece fabric, a thread weight, the machine's satin split) and, in the listing,
+/// options given to the export (a stitch length, a jump length).
+fn settings() -> Session {
+    let mut s = mixed();
+    let ids: Vec<u64> = s.doc().unwrap().doc.layers[0].children().unwrap().iter().map(|c| c.id.0).collect();
+    let [rect, letter, satin, zigzag, both] = ids[..] else { panic!("mixed holds five objects: {ids:?}") };
+    run(&mut s, "embroidery.set", json!({"ids": [rect], "part": "fill", "angle": 30, "pull": [0.3, 0.1], "underlay": "edge"}));
+    run(&mut s, "embroidery.set", json!({"ids": [satin], "part": "stroke", "splitLength": 5, "push": 0.4}));
+    run(&mut s, "embroidery.set", json!({"ids": [zigzag], "part": "stroke", "stitch": "satin"}));
+    run(&mut s, "embroidery.set", json!({"ids": [both], "part": "fill", "stitch": "none"}));
+    run(&mut s, "embroidery.setEntryExit", json!({"id": letter, "part": "fill", "entry": [200, 120]}));
+    run(&mut s, "embroidery.setup", json!({"fabric": "fleece", "threadWeight": 60, "machine": {"splitLength": 7}}));
     s
 }
 

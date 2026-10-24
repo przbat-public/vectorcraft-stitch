@@ -1532,6 +1532,26 @@ the sewing order (`perf --embroidery`'s "sewing order: move one object, re-plan"
 against a 100 ms budget; the other 31 embroidery rows stay within theirs (the 20 rings in one fill
 plan in 584 ms cold against 600).
 
+Measured again after the review (2026-10-24, load about 2, twice), as a laptop's display draws it:
+1440 × 900 points at 2 pixels a point, the status bar and the Embroidery panel drawn in every frame,
+each design once with each tab, and the texture uploads counted:
+
+| Row | Measured | Budget |
+|---|---:|---:|
+| A frame while dragging, 95th percentile, worst design | 7.8 ms | 16.7 ms (60 Hz) |
+| A frame while dragging, median, per design | 1.0–6.6 ms | |
+| Plans shown while dragging, of about 90 pointer moves | 44–88 | |
+| Textures uploaded a frame while dragging | 7.7–15.3 MB | |
+| Edit to the stitches drawn fresh, median per design | 28–52 ms | |
+| Edit to the stitches drawn fresh, worst | 72 ms | 100 ms |
+
+Each frame that shows a newer plan uploads one canvas-sized texture (about 16 MB at this size); the
+layer's thread makes its image, so the interface thread only hands it over.
+On the largest design (22,000 paths, its plan kept), the replies take 21 ms (`embroidery.stats`),
+30 ms (`embroidery.sequence`, the list's 10,000 rows) and 113 ms (`embroidery.check`), on the
+planning thread; a drag of every other object works out its movers and the drop in 10 ms
+(`perf --embroidery`'s "reply" and "sewing order: drag half" rows).
+
 ### Drawing stitches
 
 One stitch scene is built from the plan and drawn by the same renderer in the app and headless, in
@@ -1753,6 +1773,13 @@ row beyond noise, so 512 stays; simplifying the round ends of threads under 1.5 
 lever the research proposed, isn't needed. `VECTORCRAFT_STITCH_SWEEP=1 vectorcraft-cli perf
 --embroidery` runs the sweep again, and `VECTORCRAFT_STITCH_PNG=<folder>` writes the 10,000-stitch
 picture at fit and zoomed in, to look at.
+
+After the review (2026-10-24, load about 2, twice) the rows measure the same (7.5, 5.2, 2.6, 12.8
+and 37 ms), and four more draw what the synthetic picture flattered: 100,000 stitches with the fill
+rows at 45° on a machine file's 0.1 mm grid (none left out as straight) 7.7 ms; with satin columns
+across every tile 11.7 ms; a corpus PES opened as stitches 2.7 ms; one thread's lines alone, as an
+emphasis draws them, of 500,000, 1.9 ms. The stitch preview's rows now have budgets about 2.5 times
+what they measured, so a regression of that size shows (`perf_embroidery::BUDGETS`).
 
 **The scene** (`cmd::embroidery::scene`) is built from the plan as `measure` walks it: a line per run
 of needle points the thread lies along (whether it lies is decided per record, by

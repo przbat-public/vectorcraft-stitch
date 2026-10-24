@@ -210,6 +210,40 @@ fn the_first_layer_that_gives_a_value_wins() {
     assert_eq!(cases, 7 * 8 + 5 * 4 + 4 * 4, "every combination");
 }
 
+/// A fill's narrow parts, sewn as satin columns: a spacing set on the fill or given to the export is
+/// one distance for every thread of the part, the columns' too (fixed, no longer picked by width);
+/// the fabric gives tatami and satin values apart, so its tatami spacing is the rows' alone (the
+/// columns keep the satin's spacing, picked by width) and its satin spacing percent is the
+/// columns'.
+#[test]
+fn a_fills_columns_take_the_parts_spacing_and_the_fabrics_satin_values() {
+    let columns = |object: Option<f64>, export: Option<f64>, setup: Option<Value>| -> Params {
+        // A filled band 4 mm wide: narrower than `narrowAsSatin`, so it is sewn as a column.
+        let mut s = blank();
+        run(&mut s, "paint.setStroke", json!({"none": true}));
+        run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+        let id = run(&mut s, "shape.rectangle", json!({"x": 20, "y": 20, "width": 120, "height": 4.0 * PT_PER_MM}))["id"].as_u64().unwrap();
+        if let Some(v) = object {
+            run(&mut s, "embroidery.set", json!({"ids": [id], "part": "fill", "spacing": v}));
+        }
+        if let Some(setup) = setup {
+            run(&mut s, "embroidery.setup", setup);
+        }
+        let opts = export.map_or_else(|| json!({}), |v| json!({"spacing": v}));
+        let plan = digitize(&s.doc().unwrap().doc, &Options::from_json(&opts).unwrap(), None).unwrap();
+        plan.units.iter().find(|u| u.sewn() == Some(Style::Fill)).and_then(|u| u.columns).unwrap()
+    };
+    let by_width = columns(None, None, None);
+    assert!(by_width.auto_spacing);
+    for (what, c) in [("on the fill", columns(Some(0.5), None, None)), ("given to the export", columns(None, Some(0.5), None))] {
+        assert_eq!((c.density, c.auto_spacing), (0.5, false), "a spacing {what}");
+    }
+    let tatami = columns(None, None, Some(json!({"fabric": {"tatami": {"spacing": 0.5}}})));
+    assert_eq!((tatami.density, tatami.auto_spacing), (by_width.density, true), "the fabric's tatami spacing");
+    let satin = columns(None, None, Some(json!({"fabric": {"satin": {"spacingPercent": 80}}})));
+    assert_eq!((satin.auto_spacing, satin.spacing_scale), (true, 0.8), "the fabric's satin spacing percent");
+}
+
 /// The value a row's document setting gives, in the commands' units.
 fn default_of_doc(row: &Row) -> Value {
     let doc = row.doc.as_ref().unwrap();

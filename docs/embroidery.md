@@ -1442,7 +1442,10 @@ objects join) is resolved once a plan (`DesignSettings`).
     does; a spacing given to an export is used as it is.
   - A satin column, a fill's narrow parts among them, takes the fabric's satin pull, spacing
     percent (a share of the spacing the column's width picks; 100 % is the built-in spacing,
-    exactly) and underlay.
+    exactly) and underlay. A spacing set on the object's fill or given to the export is one
+    distance for every thread of the part, as the export's `spacing` always was: it reaches the
+    fill's narrow columns too (fixed, no longer picked by width), where the fabric's tatami
+    spacing, the rows' alone, leaves them at the satin's.
   - A running line takes none of the fabric's values.
   - The thread's weight and the machine's jump, trim, shortest stitch and satin split reach every
     unit and the moves between them.

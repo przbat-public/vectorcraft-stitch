@@ -83,7 +83,38 @@ fn values_are_merged_over_the_objects() {
     assert_eq!((&none["objectCount"], &none["fill"], &none["stroke"]), (&json!(0), &Value::Null, &Value::Null), "nothing selected");
     run(&mut s, "embroidery.set", json!({"ids": [b], "part": "fill", "stitch": "none"}));
     let r = info(&mut s, json!({"ids": [b]}));
-    assert_eq!((&r["fill"]["sewn"], &r["fill"]["rule"]), (&json!("none"), &Value::Null));
+    assert_eq!((&r["fill"]["sewn"], &r["fill"]["rule"], &r["fill"]["reason"]), (&json!("none"), &Value::Null, &json!("off")));
+}
+
+/// A part the walk sews nothing of says so, and why, as the plan has it: a fill that paints nothing
+/// (a line's), a hidden object's parts, an object on a non-printing layer; a brushed stroke says
+/// that the walk sews it as the area its brush paints.
+#[test]
+fn a_part_sewn_as_the_walk_sews_it_or_why_not() {
+    let mut s = blank();
+    let line = shape(&mut s, 20.0, 1.0);
+    run(&mut s, "paint.setFill", json!({"none": true, "ids": [line]}));
+    let r = info(&mut s, json!({"ids": [line]}));
+    assert_eq!((&r["fill"]["sewn"], &r["fill"]["reason"]), (&json!("none"), &json!("unpainted")));
+    assert_eq!((&r["stroke"]["sewn"], &r["stroke"]["reason"]), (&json!("satin"), &Value::Null));
+    let hidden = shape(&mut s, 100.0, 1.0);
+    run(&mut s, "object.hide", json!({"ids": [hidden]}));
+    let r = info(&mut s, json!({"ids": [hidden]}));
+    assert_eq!((&r["fill"]["reason"], &r["stroke"]["reason"]), (&json!("hidden"), &json!("hidden")));
+    // A stroke drawn with a scatter brush, beside a fill: the walk sews its brush's art as areas.
+    let dot = shape(&mut s, 300.0, 0.0);
+    let brush = run(&mut s, "brush.new", json!({"type": "scatter", "ids": [dot]}))["name"].as_str().unwrap().to_string();
+    let brushed = shape(&mut s, 20.0, 1.0);
+    run(&mut s, "brush.apply", json!({"name": brush, "ids": [brushed]}));
+    let r = info(&mut s, json!({"ids": [brushed]}));
+    assert_eq!((&r["stroke"]["sewn"], &r["stroke"]["rule"]), (&json!("tatami"), &json!("strokeOutlined")));
+    run(&mut s, "embroidery.set", json!({"ids": [brushed], "part": "stroke", "stitch": "running"}));
+    let r = info(&mut s, json!({"ids": [brushed]}));
+    assert_eq!((&r["stroke"]["sewn"], &r["stroke"]["rule"]), (&json!("running"), &json!("forced")));
+    let layer = run(&mut s, "layer.new", json!({}))["id"].as_u64().unwrap();
+    let off_print = shape(&mut s, 180.0, 0.0);
+    run(&mut s, "layer.setProps", json!({"ids": [layer], "printable": false}));
+    assert_eq!(info(&mut s, json!({"ids": [off_print]}))["fill"]["reason"], json!("notPrinted"));
 }
 
 /// How each part is sewn is the walk's own rule: for every kind of part, `info` says what the plan
@@ -101,7 +132,11 @@ fn info_says_what_the_walk_sews() {
         let r = info(&mut s, json!({"ids": [id], "plan": true}));
         for part in ["fill", "stroke"] {
             let of: Vec<&&Value> = units.iter().filter(|u| u["id"] == json!(id) && u["part"] == json!(part)).collect();
-            let Some(u) = of.first() else { continue };
+            let Some(u) = of.first() else {
+                // No unit: a part none of its items of is sewn says so.
+                assert!(r[part].is_null() || r[part]["sewn"] == json!("none"), "{id} {part}: {}", r[part]);
+                continue;
+            };
             assert_eq!((&r[part]["sewn"], &r[part]["rule"]), (&u["sewn"], &u["rule"]), "{id} {part}");
             assert_eq!(r[part]["stitches"]["unitCount"], json!(of.len()));
             assert!(r[part]["stitches"]["stitches"].as_u64().unwrap() > 0, "{r}");

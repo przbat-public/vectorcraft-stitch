@@ -897,6 +897,27 @@ pub(crate) fn part_rule(item: &AppearanceItem, bp: &BezPath, forced: Option<(Sty
     }
 }
 
+/// How the walk sews a stroke it outlined first (an expanded object's stroke a brush or an effect
+/// reshapes: a piece filled as the area it paints, with the stroke's settings, `forced` their
+/// style): as a fill is sewn, `StrokeOutlined` where nothing forces a style.
+pub(crate) fn outlined_rule(forced: Option<(Style, ForcedBy)>) -> (Style, Choice) {
+    match forced {
+        Some((Style::Satin, by)) => (Style::Fill, Choice::SatinFilled(by)),
+        Some((style, by)) => (style, Choice::Forced(by)),
+        None => (Style::Fill, Choice::StrokeOutlined),
+    }
+}
+
+/// Whether the walk sews item `item` of an object: shown, and painted with a colour or a gradient
+/// (patterns are not sewn, nor is what paints nothing).
+pub(crate) fn sews(item: &AppearanceItem) -> bool {
+    let paint = match item {
+        AppearanceItem::Fill(f) => &f.paint,
+        AppearanceItem::Stroke(s) => &s.paint,
+    };
+    item.visible() && matches!(solid(paint), Colour::Solid(_) | Colour::Approx(_))
+}
+
 /// Whether stroke `st` of path `bp` paints an area its path doesn't run down the middle of: dashed,
 /// aligned inside or outside a closed path, of varying width, or with arrowheads.
 fn paints_off_its_path(st: &StrokeLayer, bp: &BezPath) -> bool {

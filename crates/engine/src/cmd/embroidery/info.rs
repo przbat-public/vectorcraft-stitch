@@ -18,10 +18,11 @@ use vectorcraft_geom::BezPath;
 use vectorcraft_stitch::plan::{Params, SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, Style, TATAMI_UNDERLAY_MIN, Underlay, satin_auto_underlay};
 use vectorcraft_stitch::{Command, pt_to_mm};
 
-use super::digitize::part_rule;
-use super::objects::{MAX_IDS, has_part, takers, value_json};
+use super::digitize::{outlined_rule, part_rule, sews};
+use super::objects::{MAX_IDS, has_part, part_kind, takers, value_json};
 use super::options::stitch_id;
 use super::plan::{Choice, DesignPlan, Part};
+use super::printed::{keeps_its_path, needs_expanding};
 use super::resolve::report::Resolved;
 use super::resolve::{DocLayer, Found, PartLayer, UnitSettings};
 use super::stats::Page;
@@ -95,7 +96,7 @@ pub(super) fn reply(doc: &Document, ids: &[NodeId], opts: &Options, plan: Option
     let mut found = Found::default();
     let parts: Map<String, Value> = [PartKind::Fill, PartKind::Stroke]
         .into_iter()
-        .map(|kind| (kind.id().to_string(), part_section(&nodes, kind, opts, &layer, plan, &mut found)))
+        .map(|kind| (kind.id().to_string(), part_section(doc, &nodes, kind, opts, &layer, plan, &mut found)))
         .collect();
     let warnings: Vec<Value> = warnings.into_iter().map(Value::from).chain(found.notes().map(Value::from)).collect();
     let mut out = json!({
@@ -134,7 +135,7 @@ fn object_json(n: &Node) -> Value {
         "kind": if matches!(n.kind, NodeKind::Compound { .. }) { "compound" } else { "path" },
         "fills": count(PartKind::Fill),
         "strokes": count(PartKind::Stroke),
-        "expanded": super::printed::needs_expanding(n),
+        "expanded": needs_expanding(n),
         "settings": {"fill": part(PartKind::Fill), "stroke": part(PartKind::Stroke)},
         "kept": kept,
     })
@@ -143,13 +144,6 @@ fn object_json(n: &Node) -> Value {
 /// A part's settings as kept, each set key by its name.
 fn stored(p: &PartSettings) -> Value {
     PartKey::ALL.into_iter().filter_map(|k| p.get(k).map(|v| (k.name().to_string(), value_json(&v)))).collect::<Map<String, Value>>().into()
-}
-
-fn part_kind(item: &AppearanceItem) -> PartKind {
-    match item {
-        AppearanceItem::Fill(_) => PartKind::Fill,
-        AppearanceItem::Stroke(_) => PartKind::Stroke,
-    }
 }
 
 /// The cut after the objects as given (a group as one, as `embroidery.setTrimAfter` marks it; a
@@ -197,11 +191,26 @@ pub(crate) fn rule_id(why: Choice) -> &'static str {
     }
 }
 
-/// One object's part as reported: how it is sewn (`none`: not at all) and the rule that chose it,
-/// every reported key, and its settings as kept.
+/// Why the walk sews nothing of object `n` of `doc`, whatever its parts: `hidden` (it, or a group or
+/// layer it is in, is hidden or has no opacity), `notPrinted` (on a template or non-printing
+/// layer); `None` when it is printed.
+fn unprinted(doc: &Document, n: &Node) -> Option<&'static str> {
+    let above: Vec<&Node> = doc.ancestry(n.id).unwrap_or_default().iter().filter_map(|id| doc.node(*id)).collect();
+    if !n.visible || n.opacity <= 0.0 || above.iter().any(|a| !a.visible || a.opacity <= 0.0) {
+        return Some("hidden");
+    }
+    let unprinted_layer = |a: &&Node| matches!(a.kind, NodeKind::Layer { template: true, .. } | NodeKind::Layer { printable: false, .. });
+    above.iter().any(unprinted_layer).then_some("notPrinted")
+}
+
+/// One object's part as reported: how it is sewn (`none`: not at all, and why) and the rule that
+/// chose it, every reported key, and its settings as kept.
 struct PartRow<'a> {
     sewn: &'static str,
     rule: Option<&'static str>,
+    /// Why nothing of it is sewn: `off` (its object sets it not to be), `unpainted` (nothing of the
+    /// kind is shown painted with a colour or a gradient), `hidden`, `notPrinted`.
+    reason: Option<&'static str>,
     keys: Vec<(&'static str, Resolved, Resolved)>,
     /// What a rule chose for a key whose value is `"auto"`, by the key's name.
     rules: Vec<(&'static str, Value)>,
@@ -234,8 +243,17 @@ fn common<T: PartialEq + Clone>(mut values: impl Iterator<Item = T>) -> Option<T
     values.all(|v| v == first).then_some(first)
 }
 
-/// Part `kind` of `nodes`, merged (`null` when none of them has the part): see the module's doc.
-fn part_section(nodes: &[&Node], kind: PartKind, opts: &Options, layer: &DocLayer, plan: Option<&DesignPlan>, found: &mut Found) -> Value {
+/// Part `kind` of `nodes` of `doc`, merged (`null` when none of them has the part): see the
+/// module's doc.
+fn part_section(
+    doc: &Document,
+    nodes: &[&Node],
+    kind: PartKind,
+    opts: &Options,
+    layer: &DocLayer,
+    plan: Option<&DesignPlan>,
+    found: &mut Found,
+) -> Value {
     let with: Vec<&Node> = nodes.iter().copied().filter(|n| has_part(n, kind)).collect();
     if with.is_empty() {
         return Value::Null;
@@ -246,15 +264,20 @@ fn part_section(nodes: &[&Node], kind: PartKind, opts: &Options, layer: &DocLaye
             let kept = n.extras().embroidery.as_deref().and_then(|e| e.part(kind));
             let object = kept.map_or_else(PartLayer::default, |p| PartLayer::read(p, found));
             let settings = UnitSettings::new(object, n.bbox_angle, opts, layer);
-            // The part's first painted item of the kind, else its first, says how it is sewn.
-            let items: Vec<&AppearanceItem> = n.appearance.items.iter().filter(|i| part_kind(i) == kind).collect();
-            let item = items.iter().find(|i| i.visible()).or(items.first()).copied();
-            let (sewn, rule, style) = match item {
-                Some(item) if settings.sewn() => {
-                    let (style, why) = part_rule(item, &path_of(n), settings.forcing());
-                    (stitch_id(style), Some(rule_id(why)), style)
+            // The part's first item of the kind the walk sews says how it is sewn: as it is, or,
+            // for a stroke the walk outlines first (on an object it expands, reshaped by a brush or
+            // an effect), as the area it paints.
+            let item = n.appearance.items.iter().find(|i| part_kind(i) == kind && sews(i));
+            let outlined = |item: &AppearanceItem| kind == PartKind::Stroke && needs_expanding(n) && !keeps_its_path(&n.appearance, item);
+            let (sewn, rule, reason, style) = match (unprinted(doc, n), item) {
+                (Some(why), _) => ("none", None, Some(why), Style::Fill),
+                (None, _) if !settings.sewn() => ("none", None, Some("off"), Style::Fill),
+                (None, None) => ("none", None, Some("unpainted"), Style::Fill),
+                (None, Some(item)) => {
+                    let (style, why) =
+                        if outlined(item) { outlined_rule(settings.forcing()) } else { part_rule(item, &path_of(n), settings.forcing()) };
+                    (stitch_id(style), Some(rule_id(why)), None, style)
                 }
-                _ => ("none", None, Style::Fill),
             };
             // A satin's width: its stroke's.
             let width = match item {
@@ -262,7 +285,7 @@ fn part_section(nodes: &[&Node], kind: PartKind, opts: &Options, layer: &DocLaye
                 _ => 0.0,
             };
             let rules = if sewn == "none" { Vec::new() } else { rules(style, &settings.params(style, width)) };
-            PartRow { sewn, rule, keys: settings.report(style), rules, kept }
+            PartRow { sewn, rule, reason, keys: settings.report(style), rules, kept }
         })
         .collect();
     let item_count: usize = with.iter().map(|n| n.appearance.items.iter().filter(|i| part_kind(i) == kind).count()).sum();
@@ -300,6 +323,7 @@ fn part_section(nodes: &[&Node], kind: PartKind, opts: &Options, layer: &DocLaye
         "itemCount": item_count,
         "sewn": common(rows.iter().map(|r| r.sewn)),
         "rule": common(rows.iter().map(|r| r.rule)).flatten(),
+        "reason": common(rows.iter().map(|r| r.reason)).flatten(),
         "settings": settings,
         "entry": point(PartKey::Entry),
         "exit": point(PartKey::Exit),

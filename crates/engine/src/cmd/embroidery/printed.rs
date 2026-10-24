@@ -90,7 +90,7 @@ fn targets(n: &Node, out: &mut Vec<NodeId>, raster: &mut bool, masks: &mut bool)
 /// for sewing: nothing it is drawn with reshapes it beyond what the walk draws itself (dashes,
 /// alignment, a width profile, arrowheads: the area they paint, as on a basic object). A brush, or
 /// an effect of its own or of the object's, reshapes it.
-fn keeps_its_path(a: &Appearance, item: &AppearanceItem) -> bool {
+pub(super) fn keeps_its_path(a: &Appearance, item: &AppearanceItem) -> bool {
     a.effects.is_empty()
         && a.contents_index.is_none()
         && item.visible()

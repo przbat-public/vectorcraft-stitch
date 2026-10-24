@@ -5125,8 +5125,13 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   step; nothing selected and no `ids`: an empty answer): `{objectCount, offset, truncated, objects: [{id, kind, fills,
   strokes, expanded, settings: {fill, stroke}, kept}], skippedCount, skipped, trimAfter: {value, setCount, mixed},
   fill, stroke, planned, options, warnings}`, where each part (`null` when no object has it) is `{objectCount,
-  itemCount, sewn, rule, settings: {key: {value, source, section, setCount, mixed, inherited}}, entry, exit,
-  stitches}`. `source` is `object`, `export`, `document` (then `section`: `fabric` or `machine`) or `default`, a list
+  itemCount, sewn, rule, reason, settings: {key: {value, source, section, setCount, mixed, inherited}}, entry, exit,
+  stitches}`. `sewn` and `rule` are the walk's own: a stroke a brush or an effect reshapes, on an object sewn as
+  pieces, is sewn as the area it paints (`strokeOutlined`); a part the walk sews nothing of is `sewn: "none"` with
+  its `reason`: `off` (its object sets it not to be sewn), `unpainted` (nothing of the kind is shown painted with a
+  colour or a gradient), `hidden` (the object or a group or layer it is in), `notPrinted` (a template or
+  non-printing layer), a list that may grow. A part is listed whenever an object has an item of its kind, painted
+  or not: `embroidery.set` keeps settings for it either way. `source` is `object`, `export`, `document` (then `section`: `fabric` or `machine`) or `default`, a list
   that may grow; a value chosen by a rule is `"auto"`, and its `rule` says what the rule chose: `{id: "underlayByWidth",
   chose, values}` for a satin's underlay, `{id: "underlayBySize", chose: null, values}` for a fill's (only its planned
   area tells), `{id: "spacingByWidth", chose: mm, values: {share}}` for a satin's spacing; `null` for a value set.

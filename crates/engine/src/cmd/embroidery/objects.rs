@@ -125,13 +125,18 @@ fn compound_of(d: &Document, id: NodeId) -> NodeId {
     d.parent_of(id).filter(|p| matches!(d.node(*p).map(|n| &n.kind), Some(NodeKind::Compound { .. }))).unwrap_or(id)
 }
 
-/// Whether `n` has a part of kind `kind`: a fill, or a stroke, in its appearance (hidden or not:
-/// settings are kept for it either way).
+/// Whether `n` has a part of kind `kind`: a fill, or a stroke, in its appearance, whether it paints
+/// or not (settings are kept for it either way, and take effect once it paints).
 pub(crate) fn has_part(n: &Node, kind: PartKind) -> bool {
-    n.appearance.items.iter().any(|i| match (i, kind) {
-        (AppearanceItem::Fill(_), PartKind::Fill) | (AppearanceItem::Stroke(_), PartKind::Stroke) => true,
-        (AppearanceItem::Fill(_), PartKind::Stroke) | (AppearanceItem::Stroke(_), PartKind::Fill) => false,
-    })
+    n.appearance.items.iter().any(|i| part_kind(i) == kind)
+}
+
+/// The kind of part item `item` is of.
+pub(crate) fn part_kind(item: &AppearanceItem) -> PartKind {
+    match item {
+        AppearanceItem::Fill(_) => PartKind::Fill,
+        AppearanceItem::Stroke(_) => PartKind::Stroke,
+    }
 }
 
 /// The part `v` names: `fill` or `stroke`.

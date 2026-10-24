@@ -67,7 +67,8 @@ jobs:
     uses: storytold/craft-common-actions/.github/workflows/release.yml@main
     with:
       app-name: vectorcraft
-      app-title: VectorCraft
+      # VectorCraft Stitch: the fork's releases carry its own name (FORK.md).
+      app-title: VectorCraft Stitch
       craft-fonts-ref: a71c20e30af613287c504f7e685ca8fad77752bc
       web-craft-fonts: true
       version: ${{ inputs.version }}

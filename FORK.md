@@ -345,11 +345,16 @@ files, all listed in the merge commit, of which the status bar (upstream's fixed
 `tab_title` (a parameter of upstream's in the fork's place) were re-ported by hand; Turkish rows
 for every fork string; three fixes in upstream's code for the fork's Rust 1.95 gate (below).
 
-**Upstream's CI lints with a newer clippy** than the fork's 1.95 (2026-10-24: upstream runs
-stable 1.96 against `rust-version = "1.95"`). Upstream code can then fail the fork's gate: a lint
-1.95 doesn't know, or one 1.95 flags and the newer one doesn't. Allow it in place, marked
-"VectorCraft Stitch", and list it with the hooks below; drop the allow when the fork's gate moves
-to upstream's clippy.
+**Upstream's CI lints with the stable clippy** (on 2026-10-24, Rust 1.99.1), newer than the fork's
+1.95 gate (`rust-version = "1.95"`), and since that sync the same CI runs on the fork's PRs
+(Practicalities). Code must pass both:
+- Upstream code can fail the fork's 1.95 gate, through a lint 1.95 doesn't know or one 1.95 flags
+  and the newer clippy doesn't. Allow it in place, marked "VectorCraft Stitch", and list it with
+  the hooks below. Drop the allow when the fork's gate moves to upstream's clippy.
+- The fork's code can fail the stable clippy (the DST reader's `chunks_exact`, which 1.99 wants as
+  `as_chunks`). Fix it there, in a way 1.95 accepts too.
+- So before pushing, also run `cargo +stable clippy --workspace --all-targets --keep-going -- -D
+  warnings`.
 
 Where merging `main` (upstream) into the fork conflicts, and how to resolve each so nothing is lost:
 
@@ -423,7 +428,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   document types stay upstream's); `APP_NAME` in `packaging/macos/package.sh`; `APP` in
   `xtask/src/bundle.rs`, with the `bundle` line of `xtask/src/main.rs`'s usage and of the README's
   Quick start; in `packaging/windows/vectorcraft.wxs` the product name, publisher, upgrade code,
-  install folder, registry key, shortcuts, descriptions and the two component GUIDs. Still
+  install folder, registry key, shortcuts, descriptions and the two component GUIDs; in the
+  workflows, `windows-arm64.yml`'s `app-dir` (the install test's folder) and `release.yml`'s
+  `app-title`. Still
   upstream's, and open: Linux's app id (the desktop entry and its file names, the window's
   `with_app_id`, metainfo, MIME, Flatpak, FreeBSD); the DMG's Finder layout
   (`packaging/macos/dmg/DS_Store`, from `dmg/generate.py`), which still places `VectorCraft.app`
@@ -472,8 +479,13 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   fresh checkout, copy a checked `corpus/embroidery` in or let the gate fetch it; offline, it fails
   and says how to fetch them (`EMBROIDERY_CORPUS_REQUIRED=0` runs the gate without them, said out
   loud). A plain `cargo test` skips an absent corpus with a note.
-- **The fork has no CI on GitHub:** say so when you report results, and don't claim checks passed
-  there.
+- **CI on GitHub: upstream's workflows, since the 2026-10-24 sync.** Every PR to the fork runs
+  them: the gate (`cargo xtask ci` on the stable toolchain, with the real designs), Desktop
+  printing, Windows ARM64 (builds the MSI, installs it into `Program Files\VectorCraft Stitch` and
+  uninstalls it), Windows 7, FreeBSD, Nix, Packaging lint, SonarCloud and the Affinity 3 corpus.
+  Read them with `gh pr checks <number> --repo przbat-public/vectorcraft-stitch`, and report what
+  they say. The release workflow is upstream's too, and it needs signing secrets the fork
+  doesn't have.
 - **When a task lands:** update `docs/embroidery.md` (algorithms, limitations, test counts) and the
   PR description, and, in every progress doc the change touches (`ROADMAP.md`,
   `docs/file-format-parity.md`, `docs/architecture.md`, `docs/embroidery.md`…), its status line and

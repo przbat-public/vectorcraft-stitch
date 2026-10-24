@@ -31,4 +31,5 @@ jobs:
     uses: storytold/craft-common-actions/.github/workflows/windows-arm64.yml@main
     with:
       app-name: vectorcraft
-      app-dir: VectorCraft
+      # VectorCraft Stitch: the installer's own folder (packaging/windows/vectorcraft.wxs, FORK.md).
+      app-dir: VectorCraft Stitch

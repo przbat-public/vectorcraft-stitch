@@ -150,15 +150,16 @@ impl Expanding {
     /// `result`, what the object became, with each piece sewn with the settings of the part it
     /// came from and the cut after the object on what stands for it, so that the object is cut
     /// once, after its last piece. A fill's piece is a copy of the object (it holds the object's
-    /// settings as they were); every other piece is a stroke's (its outline, or its brush's art). A
-    /// single piece in the object's place is a fill's when the object has a fill that paints.
+    /// settings as they were); every other piece is a stroke's (its outline, or its brush's art,
+    /// whose paths take the settings: the walk reads them from the paths it sews). A single piece
+    /// in the object's place is a fill's when the object has a fill that paints.
     pub(crate) fn apply(&self, result: &mut Node) {
         let (Some(e), true) = (self.settings.as_deref(), self.leaf) else { return };
         let of = |fill: bool| piece(e.part(if fill { PartKind::Fill } else { PartKind::Stroke }));
         if matches!(result.kind, NodeKind::Group { .. }) {
             for c in result.children_mut().into_iter().flatten() {
                 let came_from_fill = c.extras().embroidery.as_deref() == Some(e);
-                Arc::make_mut(c).extras_mut().embroidery = of(came_from_fill);
+                on_paths(Arc::make_mut(c), &of(came_from_fill));
             }
             result.extras_mut().embroidery = whole(e);
         } else {
@@ -167,5 +168,18 @@ impl Expanding {
             own.extra = e.extra.clone();
             result.extras_mut().embroidery = (!own.is_empty()).then(|| Box::new(own));
         }
+    }
+}
+
+/// `settings` on every path and compound path in `n` (itself, when it is one), none on the groups
+/// between them.
+fn on_paths(n: &mut Node, settings: &Option<Box<Embroidery>>) {
+    if matches!(n.kind, NodeKind::Compound { .. }) || n.children().is_none() {
+        n.extras_mut().embroidery = settings.clone();
+        return;
+    }
+    n.extras_mut().embroidery = None;
+    for c in n.children_mut().into_iter().flatten() {
+        on_paths(Arc::make_mut(c), settings);
     }
 }

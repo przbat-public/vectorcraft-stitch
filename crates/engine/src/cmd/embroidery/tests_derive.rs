@@ -213,3 +213,32 @@ fn an_expanded_appearance_gives_each_piece_its_part_and_cuts_once() {
     assert!(pieces.iter().all(|e| !e.trim_after) && embroidery(&s, a).trim_after);
     assert_eq!(trims(&mut s), 1, "expanded: still one cut");
 }
+
+/// A stroke drawn with a scatter brush (its art a group of copies) takes the stroke's settings on
+/// every path of its art, beside a fill: a stroke set to sew nothing sews nothing, as it prints and
+/// once expanded.
+#[test]
+fn a_brushs_art_takes_the_strokes_settings_on_every_path() {
+    let mut s = blank();
+    let dot = rect(&mut s, "#2233cc", 300.0, 20.0, 6.0, 6.0);
+    let brush = run(&mut s, "brush.new", json!({"type": "scatter", "ids": [dot]}))["name"].as_str().unwrap().to_string();
+    run(&mut s, "select.set", json!({"ids": [dot]}));
+    run(&mut s, "edit.clear", json!({}));
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 120.0, 80.0);
+    run(&mut s, "paint.setStroke", json!({"color": "#2233cc", "ids": [a]}));
+    run(&mut s, "brush.apply", json!({"name": brush, "ids": [a]}));
+    let units = |s: &mut Session| super::digitize::digitize(&s.doc().unwrap().doc, &Options::default(), None).unwrap().units.len();
+    let with_art = units(&mut s);
+    run(&mut s, "embroidery.set", json!({"ids": [a], "part": "stroke", "stitch": "none"}));
+    assert_eq!(units(&mut s), 1, "its fill alone, of {with_art}");
+    run(&mut s, "effect.expandAppearance", json!({"ids": [a]}));
+    assert_eq!(units(&mut s), 1, "expanded: its fill alone");
+    let mut stroke_paths = 0;
+    node(&s, a).walk(&mut |n| {
+        let stitch = n.extras().embroidery.as_deref().and_then(|e| e.part(PartKind::Fill)).and_then(|p| p.stitch.clone());
+        if matches!(n.kind, NodeKind::Path { .. }) && stitch.as_deref() == Some("none") {
+            stroke_paths += 1;
+        }
+    });
+    assert!(stroke_paths >= 2, "every path of the brush's art: {stroke_paths}");
+}

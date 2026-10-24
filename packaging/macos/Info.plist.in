@@ -6,14 +6,17 @@
 <dict>
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
+  <!-- VectorCraft Stitch: the fork's own name and identifier, so that macOS keeps it apart from
+       VectorCraft (FORK.md, Decisions register). The document types below stay VectorCraft's: both
+       apps open the same files. -->
   <key>CFBundleDisplayName</key>
-  <string>VectorCraft</string>
+  <string>VectorCraft Stitch</string>
   <key>CFBundleName</key>
-  <string>VectorCraft</string>
+  <string>VectorCraft Stitch</string>
   <key>CFBundleExecutable</key>
   <string>VectorCraft</string>
   <key>CFBundleIdentifier</key>
-  <string>ai.storyteller.vectorcraft</string>
+  <string>ai.storyteller.vectorcraft.stitch</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundlePackageType</key>

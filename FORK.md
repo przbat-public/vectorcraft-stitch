@@ -284,6 +284,7 @@ without asking the owner. A new decision gets a row here in the PR that makes it
 | 2026-10-22 | A drag in the Sewing order moves objects with `layer.move` ("A just above B, in B's parent"), one undo step named Change Sewing Order, locks respected | exactly the stacking change a drop means | `node.move` | `cmd/embroidery/reorder.rs` |
 | 2026-10-22 | The rest of the stitch preview's choices: ⌘E for View › Stitch Preview; Outline draws over the stitches; the art under the stitches hidden by default (a toggle shows it); the fabric white; a passed check a neutral ✓; the panel's Object and Stitches tabs hidden until built; a slow design's stitches refresh about 0.1 s after a drag ends; a design that can't be planned shows its last stitches dimmed, with the reason; the chart's "too long" band from 12.7 mm, as the check's; the web plans in one go; Next and Previous Finding in; the canvas's notice says "planning" or "can't be planned" when the status bar doesn't | the owner accepted them together ("accept all") | each one's alternative in the plan | `embroidery::menu`, `stitch_layer`, `marks`, `stitch_preview`, `panels/embroidery/lengths.rs`, `notice` |
 | 2026-10-22 | The planner sews an object's appearance as it prints (stroke alignment, dashes, width profiles, brushes, arrowheads, live effects, a group's own fills and strokes, a symbol instance's staining); what still can't be sewn gets a warning | sew what prints | sewing the base path and warning | `Digitizer::shape` |
+| 2026-10-24 | The fork has an app identity of its own on macOS and Windows: the bundle identifier `ai.storyteller.vectorcraft.stitch`, the name "VectorCraft Stitch" on the bundle (`VectorCraft Stitch.app`) and in the Windows installer (product, install folder, registry key, shortcuts, descriptions), its own MSI upgrade code and component GUIDs, and "VectorCraft Stitch contributors" as the installer's publisher. The `.vectorcraft` document types stay VectorCraft's (both apps open the same files), and the executables keep their names. Linux comes later | macOS takes two apps of one identifier for one app, and an installer with VectorCraft's upgrade code would uninstall VectorCraft; with its own name the fork installs beside it; the publisher doesn't credit upstream's company with a version it doesn't make | Linux now (its id is in about fifteen places and file names that upstream changes often, and the fork builds no Linux packages); the identifiers alone (two apps named VectorCraft can't sit side by side); upstream's publisher | `packaging/macos/Info.plist.in`, `packaging/macos/package.sh`, `xtask/src/bundle.rs`, `packaging/windows/vectorcraft.wxs` |
 
 ## Clean-room for embroidery
 
@@ -378,6 +379,18 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     `vectorcraft-cli`'s `main.rs`: `bench` prints the preview's line;
   - `apps/vectorcraft/src/prefs_dir.rs`: `mod stitch_profile`; `profile.rs`'s `prefs_path`: the
     path passed through `stitch_profile::own` (the fork's settings folder).
+- **The fork's app identity in upstream's packaging** (Decisions register, 2026-10-24), to keep
+  when resolving: in `packaging/macos/Info.plist.in` the name, display name and identifier (the
+  document types stay upstream's); `APP_NAME` in `packaging/macos/package.sh`; `APP` in
+  `xtask/src/bundle.rs`, with the `bundle` line of `xtask/src/main.rs`'s usage and of the README's
+  Quick start; in `packaging/windows/vectorcraft.wxs` the product name, publisher, upgrade code,
+  install folder, registry key, shortcuts, descriptions and the two component GUIDs. Still
+  upstream's, and open: Linux's app id (the desktop entry and its file names, the window's
+  `with_app_id`, metainfo, MIME, Flatpak, FreeBSD); the DMG's Finder layout
+  (`packaging/macos/dmg/DS_Store`, from `dmg/generate.py`), which still places `VectorCraft.app`
+  on a volume named VectorCraft, so regenerate it before the fork ships a DMG; and Windows' App
+  Paths entry for `vectorcraft.exe`, which both apps write (the last installed wins, and
+  uninstalling either removes it).
 - **The fork's text in upstream's docs**, to put back on upstream's own text when resolving: the
   pointer to this file at the top of `CLAUDE.md`; in `README.md` the fork's note and "Based on
   VectorCraft", with ArtCraft's marks and links left out (`docs/brand/LICENSE-brand.txt`); the

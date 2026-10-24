@@ -457,22 +457,17 @@ impl EmbroiderySetup {
         self.palette = palette;
     }
 
-    /// Set where the machine starts the needle (document points), or unset it (`None`); like the
-    /// palette, a start set replaces settings this version can't read.
+    /// Set where the machine starts the needle (document points), or unset it (`None`), as
+    /// [`EmbroiderySetup::set_fabric`] sets the fabric: a start set replaces settings this version
+    /// can't read, and a start of another shape kept under its key.
     pub fn set_start(&mut self, start: Option<Point>) {
-        if start.is_some() {
-            self.unread = None;
-        }
-        self.start = start;
+        self.start = self.replacing(START, start);
     }
 
-    /// Set the design's name the export writes, or unset it (`None`: the document's title); like
-    /// the palette, a label set replaces settings this version can't read.
+    /// Set the design's name the export writes, or unset it (`None`: the document's title), as
+    /// [`EmbroiderySetup::set_start`] sets the start.
     pub fn set_label(&mut self, label: Option<String>) {
-        if label.is_some() {
-            self.unread = None;
-        }
-        self.label = label;
+        self.label = self.replacing(LABEL, label);
     }
 }
 
@@ -669,6 +664,14 @@ mod tests {
         let unknown: EmbroiderySetup = serde_json::from_value(json!({"palette": 7})).unwrap();
         assert_eq!(unknown.palette, Some(ThreadPalette::Unknown(json!(7))));
         assert_eq!(unknown.palette.and_then(|p| p.id()), None);
+        // A start or a label set replaces one of another shape kept under its key, so that unsetting
+        // it later doesn't bring the old one back.
+        let mut odd: EmbroiderySetup = serde_json::from_value(json!({"start": "centre", "label": 7})).unwrap();
+        odd.set_start(Some(Point::new(1.0, 2.0)));
+        odd.set_label(Some("ACME".into()));
+        assert!(odd.extra.is_empty(), "{:?}", odd.extra);
+        odd.set_start(None);
+        assert_eq!(serde_json::to_value(&odd).unwrap(), json!({"label": "ACME"}));
     }
 
     /// An object's embroidery round-trips as it was written: its run and cut, keys this version
@@ -887,6 +890,10 @@ mod tests {
             "machine": {"jump_length": 500.0, "model": "pr1050x", "trim_length": "never"},
             "thread_weight": "heavy"
         });
+        // A colour with signs in it is no `#rrggbb` (a hex parser takes a sign): kept as written.
+        let signed: EmbroiderySetup = serde_json::from_value(json!({"fabric": {"color": "#+a+b+c"}})).unwrap();
+        assert_eq!(signed.fabric.as_deref().and_then(|f| f.color), None);
+        assert_eq!(serde_json::to_value(&signed).unwrap(), json!({"fabric": {"color": "#+a+b+c"}}));
         for written in [ours, newer, json!({"fabric": "knit", "machine": [5]}), json!({"fabric": {"preset": {"values": {}}}})] {
             let read: EmbroiderySetup = serde_json::from_value(written.clone()).unwrap();
             assert_eq!(serde_json::to_value(&read).unwrap(), written, "{written}");

@@ -124,10 +124,11 @@ const MIN_STITCH: &str = "min_stitch";
 const SPLIT_LENGTH: &str = "split_length";
 const SPEED: &str = "speed";
 
-/// A colour saved as `#rrggbb`.
+/// A colour saved as `#rrggbb`: six hexadecimal digits, nothing else (a sign, which `from_str_radix`
+/// takes, makes it no colour: kept as it was).
 fn color(v: &Value) -> Option<[u8; 3]> {
     let hex = v.as_str()?.strip_prefix('#')?;
-    if hex.len() != 6 || !hex.is_ascii() {
+    if hex.len() != 6 || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
         return None;
     }
     let byte = |k: usize| hex.get(k..k + 2).and_then(|h| u8::from_str_radix(h, 16).ok());

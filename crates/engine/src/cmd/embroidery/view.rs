@@ -113,7 +113,7 @@ pub(super) fn specs() -> Vec<CommandSpec> {
             "Stitch Preview",
             ["View"],
             Some("Cmd+E"),
-            "{on?: bool (default: toggle)} show the active document's design as the stitches it is sewn with instead of its art (planned as the read commands plan it); each open document has its own setting, view state that is neither saved nor undoable; the canvas, ui.screenshot and ui.render {stitchPreview} show it, exports never do; while an opacity mask or a pattern is edited the art shows (planned with the objects' and the document's embroidery settings, no export's options) → {on, jumps, needlePoints, artwork, shown: \"stitches\"|\"art\", pausedBy: null|\"opacityMask\"|\"pattern\"}",
+            "{on?: bool (default: toggle)} show the active document's design as the stitches it is sewn with instead of its art (planned as the read commands plan it); each open document has its own setting, view state that is neither saved nor undoable; the canvas, ui.screenshot and ui.render {stitchPreview} show it, exports never do; while an opacity mask or a pattern is edited the art shows (planned with the objects' and the document's embroidery settings, no export's options) → {on, jumps, needlePoints, artwork, shown: \"stitches\"|\"art\", pausedBy: null|\"opacityMask\"|\"pattern\", options: {stitch: \"auto\"} (no export's options), optionsFrom: \"default\"}",
             has_doc,
             |s, p| set(s, p, "view.stitchPreview", |v, on| v.on = on, |v| v.on)
         ),
@@ -168,6 +168,12 @@ fn set(s: &mut Session, p: &Value, cmd: &str, put: fn(&mut StitchView, bool), ge
     Ok(view_json(view, paused))
 }
 
+/// The export options the preview plans with, as replies give them: none (the document's own
+/// settings and the defaults), whatever an export was given. Answered still, with its source, so
+/// that a reply only ever gains keys (`optionsFrom` was `"lastExport"` or `"appLastExport"` too,
+/// until 2026-10-24).
+const PREVIEW_OPTIONS_FROM: &str = "default";
+
 /// A stitch view as the commands answer with it.
 pub fn view_json(view: StitchView, paused: Option<Paused>) -> Value {
     let shown = if layers(view, paused, false).stitches { "stitches" } else { "art" };
@@ -178,5 +184,7 @@ pub fn view_json(view: StitchView, paused: Option<Paused>) -> Value {
         "artwork": view.artwork,
         "shown": shown,
         "pausedBy": paused.map(Paused::id),
+        "options": super::Options::default().to_json(),
+        "optionsFrom": PREVIEW_OPTIONS_FROM,
     })
 }

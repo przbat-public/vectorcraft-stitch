@@ -20,7 +20,10 @@ fn the_stitch_view_is_toggled_and_set_per_document() {
     fx::blank(&mut runner(&mut s));
     let first = s.active().unwrap().uid;
     let r = s.execute("view.stitchPreview", &json!({})).unwrap();
-    assert_eq!(r, json!({"on": true, "jumps": true, "needlePoints": false, "artwork": false, "shown": "stitches", "pausedBy": null}));
+    assert_eq!(
+        r,
+        json!({"on": true, "jumps": true, "needlePoints": false, "artwork": false, "shown": "stitches", "pausedBy": null, "options": {"stitch": "auto"}, "optionsFrom": "default"})
+    );
     assert_eq!(s.execute("view.stitchPreview", &json!({"on": true})).unwrap()["on"], true, "idempotent");
     assert_eq!(s.execute("view.stitchPreview", &json!({"on": null})).unwrap()["on"], false, "null toggles");
     // The options are kept, and set, while the preview is off.
@@ -131,9 +134,8 @@ fn an_exports_options_are_not_the_previews() {
     let mut s = Session::new();
     fx::blank(&mut runner(&mut s));
     fx::rect(&mut runner(&mut s), fx::RED, 10.0, 10.0, 50.0, 50.0);
-    let before = s.embroidery_plan(&Options::default()).unwrap();
     s.execute("document.export", &json!({"format": "dst", "spacing": 0.5})).unwrap();
     let r = s.execute("view.stitchPreview", &json!({"on": true})).unwrap();
-    assert!(r.get("options").is_none() && r.get("optionsFrom").is_none(), "{r}");
-    assert_eq!(*s.embroidery_plan(&Options::default()).unwrap(), *before);
+    // The reply keeps the keys it had, with what the preview now plans with: no export's options.
+    assert_eq!((&r["options"], &r["optionsFrom"]), (&json!({"stitch": "auto"}), &json!("default")), "{r}");
 }

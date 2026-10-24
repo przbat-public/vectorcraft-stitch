@@ -5131,7 +5131,10 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   its `reason`: `off` (its object sets it not to be sewn), `unpainted` (nothing of the kind is shown painted with a
   colour or a gradient), `hidden` (the object or a group or layer it is in), `notPrinted` (a template or
   non-printing layer), a list that may grow. A part is listed whenever an object has an item of its kind, painted
-  or not: `embroidery.set` keeps settings for it either way. `source` is `object`, `export`, `document` (then `section`: `fabric` or `machine`) or `default`, a list
+  or not: `embroidery.set` keeps settings for it either way. `setCount` counts the objects that set a value as this
+  version reads it: a stitch or an underlay it doesn't know is kept, listed in the object's `kept` (`fill.stitch`),
+  and not counted. `kept` lists what an object keeps that this version doesn't read, as file keys: a newer version's
+  (`branch`, `fill.grain`, `fill.points.rails`), such ids, and `embroidery` when the settings are no object. `source` is `object`, `export`, `document` (then `section`: `fabric` or `machine`) or `default`, a list
   that may grow; a value chosen by a rule is `"auto"`, and its `rule` says what the rule chose: `{id: "underlayByWidth",
   chose, values}` for a satin's underlay, `{id: "underlayBySize", chose: null, values}` for a fill's (only its planned
   area tells), `{id: "spacingByWidth", chose: mm, values: {share}}` for a satin's spacing; `null` for a value set.

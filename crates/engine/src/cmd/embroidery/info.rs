@@ -12,7 +12,7 @@
 use std::collections::HashSet;
 
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::embroidery::{PartKey, PartKind, PartSettings};
+use vectorcraft_doc::embroidery::{Embroidery, PartKey, PartKind, PartSettings};
 use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind};
 use vectorcraft_geom::BezPath;
 use vectorcraft_stitch::plan::{Params, SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, Style, TATAMI_UNDERLAY_MIN, Underlay, satin_auto_underlay};
@@ -23,8 +23,8 @@ use super::objects::{MAX_IDS, has_part, part_kind, takers, value_json};
 use super::options::stitch_id;
 use super::plan::{Choice, DesignPlan, Part};
 use super::printed::{keeps_its_path, needs_expanding};
-use super::resolve::report::Resolved;
-use super::resolve::{DocLayer, Found, PartLayer, UnitSettings};
+use super::resolve::report::{Resolved, Source};
+use super::resolve::{DocLayer, Found, PartLayer, Stitch, UnitSettings};
 use super::stats::Page;
 use super::{Options, object, options_in, planned, with_options};
 use crate::cmd::bad;
@@ -117,19 +117,13 @@ pub(super) fn reply(doc: &Document, ids: &[NodeId], opts: &Options, plan: Option
 }
 
 /// An object as `objects` lists it: its kind, how many fills and strokes, whether its appearance is
-/// sewn as pieces, its settings as kept (each part's keys by name; `null`: none), and the keys a
-/// newer version wrote (`fill.grain`).
+/// sewn as pieces, its settings as kept (each part's keys by name; `null`: none), and what it keeps
+/// that this version doesn't read ([`kept`]).
 fn object_json(n: &Node) -> Value {
     let count = |kind: PartKind| n.appearance.items.iter().filter(|i| part_kind(i) == kind).count();
     let e = n.extras().embroidery.as_deref();
     let part = |kind: PartKind| e.and_then(|e| e.part(kind)).map_or(Value::Null, stored);
-    let mut kept: Vec<String> = Vec::new();
-    for kind in [PartKind::Fill, PartKind::Stroke] {
-        if let Some(p) = e.and_then(|e| e.part(kind)) {
-            kept.extend(p.extra.keys().map(|k| format!("{}.{k}", kind.id())));
-            kept.extend(p.points.iter().flat_map(|pts| pts.extra.keys()).map(|k| format!("{}.points.{k}", kind.id())));
-        }
-    }
+    let kept = e.map(kept).unwrap_or_default();
     json!({
         "id": n.id.0,
         "kind": if matches!(n.kind, NodeKind::Compound { .. }) { "compound" } else { "path" },
@@ -139,6 +133,28 @@ fn object_json(n: &Node) -> Value {
         "settings": {"fill": part(PartKind::Fill), "stroke": part(PartKind::Stroke)},
         "kept": kept,
     })
+}
+
+/// What settings `e` keep that this version doesn't read, as paths of their file keys: keys a newer
+/// version wrote, of the object (`branch`), of a part (`fill.grain`) or of its points
+/// (`fill.points.rails`); a part's stitch or underlay this version doesn't know (`fill.stitch`); and
+/// `embroidery` when the settings are no object at all.
+fn kept(e: &Embroidery) -> Vec<String> {
+    let mut kept: Vec<String> = e.unread.iter().map(|_| "embroidery".to_string()).collect();
+    kept.extend(e.extra.keys().cloned());
+    for kind in [PartKind::Fill, PartKind::Stroke] {
+        let Some(p) = e.part(kind) else { continue };
+        let k = kind.id();
+        if p.stitch.as_deref().is_some_and(|id| Stitch::from_id(id).is_none()) {
+            kept.push(format!("{k}.stitch"));
+        }
+        if p.underlay.as_deref().is_some_and(|id| Underlay::from_id(id).is_none()) {
+            kept.push(format!("{k}.underlay"));
+        }
+        kept.extend(p.extra.keys().map(|key| format!("{k}.{key}")));
+        kept.extend(p.points.iter().flat_map(|pts| pts.extra.keys()).map(|key| format!("{k}.points.{key}")));
+    }
+    kept
 }
 
 /// A part's settings as kept, each set key by its name.
@@ -294,8 +310,9 @@ fn part_section(
         let at = |r: &PartRow| r.keys.get(k).cloned();
         let now: Vec<Resolved> = rows.iter().filter_map(|r| at(r).map(|(_, a, _)| a)).collect();
         let inherited: Vec<Resolved> = rows.iter().filter_map(|r| at(r).map(|(_, _, b)| b)).collect();
-        let key = PartKey::from_name(name);
-        let set_count = rows.iter().filter(|r| key.is_some_and(|key| r.kept.is_some_and(|p| p.get(key).is_some()))).count();
+        // Set: what the object's own settings give, as this version reads them (a stitch or an
+        // underlay it doesn't know is kept unread, and the layers below give the value).
+        let set_count = now.iter().filter(|r| r.source == Source::Object).count();
         let value = common(now.iter().map(|r| r.value.clone()));
         let source = common(now.iter().map(|r| r.source));
         let inherited = common(inherited.into_iter());

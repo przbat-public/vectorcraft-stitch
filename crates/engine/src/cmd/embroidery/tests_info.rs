@@ -203,3 +203,28 @@ fn the_sewing_order_says_which_setting_forced_a_style() {
     assert_eq!(of(b, "stroke")["source"], json!("export"));
     assert_eq!(of(a, "fill"), json!({"stitch": "running", "source": "export"}));
 }
+
+/// What a newer version wrote that this version doesn't read is listed as kept, and a stitch or an
+/// underlay it doesn't know counts as unset: the layers below give the value, and `setCount` says
+/// none of the objects sets it.
+#[test]
+fn what_this_version_cant_read_is_kept_and_not_counted_as_set() {
+    let mut s = blank();
+    let id = shape(&mut s, 20.0, 0.0);
+    s.edit("Newer Settings", |d, _| {
+        let e = serde_json::from_value(json!({"branch": true, "fill": {"stitch": "motif", "underlay": "doubleZigzag", "grain": 2, "angle": 30}}))
+            .map_err(|e| EngineError::Other(e.to_string()))?;
+        d.node_mut(vectorcraft_doc::NodeId(id)).unwrap().extras_mut().embroidery = Some(Box::new(e));
+        Ok(())
+    })
+    .unwrap();
+    let r = info(&mut s, json!({"ids": [id]}));
+    let mut kept: Vec<String> = serde_json::from_value(r["objects"][0]["kept"].clone()).unwrap();
+    kept.sort();
+    assert_eq!(kept, ["branch", "fill.grain", "fill.stitch", "fill.underlay"]);
+    let settings = &r["fill"]["settings"];
+    for key in ["stitch", "underlay"] {
+        assert_eq!((&settings[key]["setCount"], &settings[key]["source"]), (&json!(0), &json!("default")), "{key}");
+    }
+    assert_eq!((&settings["angle"]["setCount"], &settings["angle"]["source"]), (&json!(1), &json!("object")));
+}

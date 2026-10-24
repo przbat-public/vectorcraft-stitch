@@ -456,7 +456,7 @@ pub(super) fn specs() -> Vec<CommandSpec> {
             [],
             None,
             "{ids?: [id…] (objects of the document, at most 100,000; default: the selection), …the embroidery options (default: the stitch preview's, those of the document's last embroidery export: the plan the Embroidery panel's Sewing order list shows)} move the objects (a selected group as one) in the stacking order so that they are sewn before the object sewn just before them: just below it, in its parent, one undo step \"Change Sewing Order\"; refused, saying why, where a drop in the Embroidery panel's Sewing order list would be (into or out of a clip group, a lock, a clipping path, a run of an opened machine file alone, between two parts of one object) → {ids, target, place} (layer.move's params). Objects of one colour still join a block sewn earlier when nothing between lies under them, so a move may change no stitch",
-            has_doc,
+            has_selection,
             |s, p| sew(s, p, Step::Earlier)
         ),
         cmd!(
@@ -465,7 +465,7 @@ pub(super) fn specs() -> Vec<CommandSpec> {
             [],
             None,
             "{ids?: [id…] (default: the selection), …the embroidery options} as embroidery.sewEarlier, after the object sewn just after them: just above it, in its parent → {ids, target, place}",
-            has_doc,
+            has_selection,
             |s, p| sew(s, p, Step::Later)
         ),
         cmd!(
@@ -474,7 +474,7 @@ pub(super) fn specs() -> Vec<CommandSpec> {
             [],
             None,
             "{ids?: [id…] (default: the selection), …the embroidery options} as embroidery.sewEarlier, before everything: just below the object sewn first, in its parent → {ids, target, place}",
-            has_doc,
+            has_selection,
             |s, p| sew(s, p, Step::First)
         ),
         cmd!(
@@ -483,7 +483,7 @@ pub(super) fn specs() -> Vec<CommandSpec> {
             [],
             None,
             "{ids?: [id…] (default: the selection), …the embroidery options} as embroidery.sewEarlier, after everything: just above the object sewn last, in its parent → {ids, target, place}",
-            has_doc,
+            has_selection,
             |s, p| sew(s, p, Step::Last)
         ),
     ]

@@ -4306,7 +4306,7 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   deltaE, mismatch}, unitCount}], options, warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour
   and the thread's, to two decimals, and `mismatch` flags one past `threshold` (10). Besides the export's embroidery
   options it takes only the stretch of blocks to list: any other key, such as `format`, is refused.
-- `embroidery.setTrimAfter {on?, ids?|id?}` asks for the thread to be cut after each object (or with `on: false` for no
+- `embroidery.setTrimAfter {on?, ids?}` asks for the thread to be cut after each object (or with `on: false` for no
   cut, a file's own included); left out, `on` toggles. It needs a selection or `ids`, answers `{on, changed}`, and
   reports an id that names no object as a missing object.
 - `embroidery.stats {…embroidery options, speed?, fabricThickness?, offset?, limit?}` gives the design's figures as the
@@ -4367,7 +4367,8 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
 
 - `embroidery.sewEarlier`, `sewLater`, `sewFirst` and `sewLast {ids?, …embroidery options}` change the sewing order by
   moving the objects (`ids`: objects of the document, each checked, at most 100,000; default: the selection; a
-  selected group as one) in the stacking order: before the object sewn just before them (just below it, in its parent:
+  selected group as one; like any command acting on the selection, each is off with nothing selected unless given
+  `ids`) in the stacking order: before the object sewn just before them (just below it, in its parent:
   beside it, so an object in a group stays in it), after the one sewn just after them (just above it), first or last.
   One undo step, "Change Sewing Order"; the answer is `layer.move`'s params `{ids, target, place}`. Where a drop in
   the Sewing order list would be refused, so are they, saying why: into or out of a clip group (what is sewn would

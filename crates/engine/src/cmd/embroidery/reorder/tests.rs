@@ -313,9 +313,14 @@ fn the_sew_commands() {
     let r = s.execute("embroidery.sewLater", &json!({})).unwrap();
     assert_eq!((&r["ids"], &r["target"], &r["place"]), (&json!([order[1]]), &json!(next), &json!("above")));
     assert_eq!(sewn(&plan_of(&mut s))[..2], [next, order[1]]);
+    // Nothing selected: off, as a command acting on the selection is, unless given `ids`, which
+    // stand in for it.
     s.execute("select.none", &json!({})).unwrap();
     let e = s.execute("embroidery.sewLater", &json!({})).unwrap_err().to_string();
-    assert!(e.contains("nothing selected is sewn"), "{e}");
+    assert!(e.contains("not available right now: nothing selected"), "{e}");
+    assert!(crate::cmd::find_command("embroidery.sewLater").is_some_and(|c| (c.enabled)(&s).is_err()), "listed as off");
+    let r = s.execute("embroidery.sewLater", &json!({"ids": [order[1]]})).unwrap();
+    assert_eq!(r["ids"], json!([order[1]]));
     // A locked object is refused, saying why.
     s.execute("select.set", &json!({"ids": [order[2]]})).unwrap();
     s.execute("object.lock", &json!({})).unwrap();

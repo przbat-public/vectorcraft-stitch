@@ -9,14 +9,16 @@
 //!   whose settings differ stay apart under Merge;
 //! - one object becoming several gives each the settings of the part it came from and the cut after
 //!   the object to what stands for the object: Release Compound Path ([`released`]), Create
-//!   Outlines ([`outlined_type`]), Outline Stroke and Expand Appearance ([`Expanding`], also what
-//!   the walk sews an expanded appearance's pieces with), Ungroup ([`ungrouped`]: the group's cut to
+//!   Outlines ([`outlined_type`]), Outline Stroke and Expand Appearance ([`Expanding`], through
+//!   [`expand_leaf`] for every path it expands, also what the walk sews an expanded appearance's
+//!   pieces with), Ungroup ([`ungrouped`]: the group's cut to
 //!   its last member, so the cut stays after the same stitches) and Break Link ([`unlinked`]).
 
 use std::sync::Arc;
 
 use vectorcraft_doc::embroidery::{Embroidery, PartKind, PartSettings};
-use vectorcraft_doc::{AppearanceItem, Node, NodeKind};
+use vectorcraft_doc::{AppearanceItem, Document, Node, NodeKind};
+use vectorcraft_render::effects::{self, StrokeArt};
 
 /// The embroidery settings a new object made from `n` takes: `n`'s, less its literal stitches.
 /// `None` when nothing is left.
@@ -97,6 +99,31 @@ pub(crate) fn unlinked(instance: &Node, art: &mut Node) {
         let mut e = art.extras().embroidery.as_deref().cloned().unwrap_or_default();
         e.set_trim_after(true);
         art.extras_mut().embroidery = Some(Box::new(e));
+    }
+}
+
+/// [`effects::expand_leaf`] of path or compound path `n`, its pieces sewn with the settings of the
+/// parts they come from ([`Expanding`]). Every path and compound path Expand Appearance expands goes
+/// through here, at any depth (a group's members, a symbol's art, a path's Transform copies), and
+/// so does the walk's copy of the document as it prints.
+pub(crate) fn expand_leaf(d: &mut Document, n: &Node, stroke_art: StrokeArt) -> Option<Node> {
+    let expanding = Expanding::of(n);
+    let mut m = effects::expand_leaf(d, n, stroke_art)?;
+    expanding.apply(&mut m);
+    Some(m)
+}
+
+/// [`effects::expand_art`] of `n` (art made for Expand Appearance: a group's own fills and strokes,
+/// outlined type, a symbol's art), each path and compound path in it through [`expand_leaf`].
+pub(crate) fn expand_art(d: &mut Document, n: &mut Node, stroke_art: StrokeArt) {
+    if matches!(n.kind, NodeKind::Path { clipping: false, guide: false, .. } | NodeKind::Compound { .. }) {
+        if let Some(m) = expand_leaf(d, n, stroke_art) {
+            *n = m;
+        }
+        return;
+    }
+    for c in n.children_mut().into_iter().flatten() {
+        expand_art(d, Arc::make_mut(c), stroke_art);
     }
 }
 

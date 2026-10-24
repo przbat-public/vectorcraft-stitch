@@ -2,7 +2,9 @@
 //! the strokes nothing reshapes are sewn along their path as a basic object's stroke is, by their
 //! width or their settings, one line where a running stitch is set; a stroke an effect reshapes is
 //! sewn as the area it paints, and a running or satin stitch set on it is said not to follow its
-//! path; turned and mirrored objects alike; the cut after the object once, after its last piece.
+//! path; turned and mirrored objects alike; the cut after the object once, after its last piece;
+//! all of it for an object in a group the walk expands (a group with a stroke of its own), and for
+//! its pieces when Expand Appearance expands that group.
 
 use serde_json::{Value, json};
 use vectorcraft_doc::embroidery::{Embroidery, PartKind};
@@ -179,4 +181,72 @@ fn an_expanded_object_is_cut_once_and_its_strokes_counted_as_strokes() {
     assert_eq!(plan.unit_stitches(last_unit).last().map(|st| st.command), Some(Command::Trim));
     let info = run(&mut s, "embroidery.info", json!({"ids": [id], "plan": true}));
     assert_eq!(info["stroke"]["stitches"]["unitCount"], json!(2));
+}
+
+/// `two_strokes` at x 20 in a group with a stroke of its own (an appearance the walk expands, and
+/// the object with it) → (the object's id, the group's id).
+fn in_a_stroked_group(s: &mut Session) -> (u64, u64) {
+    let id = two_strokes(s, 20.0);
+    let group = run(s, "object.group", json!({"ids": [id]}))["id"].as_u64().unwrap();
+    run(s, "appearance.addStroke", json!({"ids": [group]}));
+    run(s, "select.none", json!({}));
+    (id, group)
+}
+
+/// An object in a group the walk expands is sewn as it is on its own: its strokes along its path,
+/// none of them where its strokes are set to sew nothing, and the cut after it once, after its last
+/// piece.
+#[test]
+fn an_object_in_an_expanded_group_keeps_its_settings() {
+    let mut s = blank();
+    let (id, _) = in_a_stroked_group(&mut s);
+    let path = path_mm(&s, id);
+    let stroke_units = |plan: &DesignPlan| -> Vec<(usize, Option<Style>)> {
+        plan.units.iter().enumerate().filter(|(_, u)| matches!(u.origin.part, Part::Stroke(_))).map(|(k, u)| (k, u.sewn())).collect()
+    };
+    let plan = plan_of(&s, json!({}));
+    let units = stroke_units(&plan);
+    assert_eq!(units.iter().map(|(_, style)| *style).collect::<Vec<_>>(), [Some(Style::Satin), Some(Style::Running)]);
+    assert!(farthest(&plan, units[1].0, &path) < 0.05, "the running line on the path");
+    let all = plan.units.len();
+    // Its strokes set to sew nothing: neither is sewn, as a stroke or as the area it paints.
+    run(&mut s, "embroidery.set", json!({"ids": [id], "part": "stroke", "stitch": "none"}));
+    let plan = plan_of(&s, json!({}));
+    assert!(stroke_units(&plan).is_empty());
+    assert_eq!(plan.units.len(), all - 2, "its fill and the group's stroke alone");
+    // The cut after it: once, after its last piece (its upper stroke).
+    run(&mut s, "embroidery.reset", json!({"ids": [id]}));
+    let cuts = |plan: &DesignPlan| -> Vec<usize> {
+        (0..plan.units.len()).map(|k| plan.unit_stitches(k).iter().filter(|st| st.command == Command::Trim).count()).collect()
+    };
+    let without = cuts(&plan_of(&s, json!({})));
+    run(&mut s, "embroidery.setTrimAfter", json!({"ids": [id], "on": true}));
+    let plan = plan_of(&s, json!({}));
+    let with = cuts(&plan);
+    let changed: Vec<usize> = (0..with.len()).filter(|k| with[*k] != without[*k]).collect();
+    let upper = stroke_units(&plan)[1].0;
+    assert_eq!(changed, [upper], "{without:?} → {with:?}");
+    assert_eq!(plan.unit_stitches(upper).last().map(|st| st.command), Some(Command::Trim));
+}
+
+/// Expand Appearance of a group gives the pieces of an object in it the settings of the parts they
+/// come from, and the cut after the object to what stands for it alone.
+#[test]
+fn expanding_a_group_gives_its_objects_pieces_their_parts() {
+    let mut s = blank();
+    let (id, group) = in_a_stroked_group(&mut s);
+    run(&mut s, "embroidery.set", json!({"ids": [id], "part": "fill", "angle": 10}));
+    run(&mut s, "embroidery.set", json!({"ids": [id], "part": "stroke", "stitch": "none"}));
+    run(&mut s, "embroidery.setTrimAfter", json!({"ids": [id], "on": true}));
+    run(&mut s, "effect.expandAppearance", json!({"ids": [group]}));
+    let d = &s.doc().unwrap().doc;
+    let object = d.node(NodeId(id)).unwrap();
+    let e = |n: &vectorcraft_doc::Node| n.extras().embroidery.as_deref().cloned().unwrap_or_default();
+    assert!(e(object).trim_after && e(object).part(PartKind::Fill).is_none(), "the object's stand-in: the cut alone");
+    let pieces = object.children().unwrap();
+    assert_eq!(pieces.len(), 3, "its fill and its two strokes");
+    let fills: Vec<Option<String>> = pieces.iter().map(|p| e(p).part(PartKind::Fill).and_then(|f| f.stitch.clone())).collect();
+    assert_eq!(fills, [None, Some("none".into()), Some("none".into())], "the fill's copy, then the strokes' outlines");
+    assert_eq!(e(&pieces[0]).part(PartKind::Fill).and_then(|f| f.angle), Some(10.0));
+    assert!(pieces.iter().all(|p| !e(p).trim_after), "no cut between its pieces");
 }

@@ -11,8 +11,8 @@
 //! area they paint by the walk itself (`Choice::StrokeOutlined`), and a stained symbol instance's
 //! art takes its stain there too.
 //!
-//! A stroke of an expanded object that nothing reshapes (no brush, no effect of its own or of the
-//! object's) is not outlined: it becomes an object of its own, the object's path with that stroke
+//! A stroke of an expanded object, or of an object in an expanded group, that nothing reshapes (no
+//! brush, no effect of its own or of the object's) is not outlined: it becomes an object of its own, the object's path with that stroke
 //! alone and the object's stroke settings ([`split_strokes`]), so that the walk sews it as it sews
 //! a basic object's stroke: a satin column or a running line along its path, by its width or as
 //! its settings ask, the area it paints for dashes, alignment, a width profile or arrowheads (the
@@ -113,10 +113,10 @@ fn follows_its_path(n: &Node, forced: Option<Style>) -> bool {
 /// `n` with its strokes that keep their path ([`keeps_its_path`]) made objects of their own: a
 /// group in its place (its id, its cut after it), holding in appearance order a copy of `n` with
 /// each such stroke alone and its stroke settings, and between them copies of `n` with the other
-/// items, each run of them in one, which still expand if they need to (their ids, the second of the
-/// pair). `None` when no stroke of `n` keeps its path, or `n` is no path: it expands whole, as
-/// `effect.expandAppearance` expands it.
-fn split_strokes(d: &mut Document, n: &Node) -> Option<(Node, Vec<NodeId>)> {
+/// items, each run of them in one, which still expand if they need to. `None` when no stroke of
+/// `n` keeps its path, or `n` is no path: it expands whole, as `effect.expandAppearance` expands
+/// it.
+fn split_strokes(d: &mut Document, n: &Node) -> Option<Node> {
     if !matches!(n.kind, NodeKind::Path { .. } | NodeKind::Compound { .. }) || !n.appearance.items.iter().any(|i| keeps_its_path(&n.appearance, i)) {
         return None;
     }
@@ -124,16 +124,11 @@ fn split_strokes(d: &mut Document, n: &Node) -> Option<(Node, Vec<NodeId>)> {
     // The cut after the object goes after its last piece: on the group.
     let rest = e.map(|e| Embroidery { trim_after: false, ..e.clone() }).filter(|e| !e.is_empty()).map(Box::new);
     let stroke = e.and_then(|e| e.stroke.clone()).map(|stroke| Box::new(Embroidery { stroke: Some(stroke), ..Embroidery::default() }));
-    let (mut children, mut expand, mut run) = (Vec::new(), Vec::new(), Vec::new());
-    let mut flush = |d: &mut Document, run: &mut Vec<AppearanceItem>, children: &mut Vec<Arc<Node>>| {
-        if run.is_empty() {
-            return;
+    let (mut children, mut run) = (Vec::new(), Vec::new());
+    let flush = |d: &mut Document, run: &mut Vec<AppearanceItem>, children: &mut Vec<Arc<Node>>| {
+        if !run.is_empty() {
+            children.push(Arc::new(copy_with(d, n, std::mem::take(run), rest.clone())));
         }
-        let c = copy_with(d, n, std::mem::take(run), rest.clone());
-        if needs_expanding(&c) {
-            expand.push(c.id);
-        }
-        children.push(Arc::new(c));
     };
     for item in &n.appearance.items {
         if keeps_its_path(&n.appearance, item) {
@@ -148,7 +143,36 @@ fn split_strokes(d: &mut Document, n: &Node) -> Option<(Node, Vec<NodeId>)> {
     group.kind = NodeKind::Group { children, clip: false };
     *group.appearance = Appearance::default();
     group.extras_mut().embroidery = e.and_then(super::derive::whole);
-    Some((group, expand))
+    Some(group)
+}
+
+/// `n` with [`split_strokes`] done to it and to every path in it (a group's members) that the walk
+/// expands, `None` when none of them changed. Sets `lost` when one of them has a stroke a brush or
+/// an effect of its own reshapes whose stitch would follow its path (`forced`: the export's style).
+/// A group's own effects reshape its members' paths, and their strokes follow the reshaped paths,
+/// as a basic member's do.
+fn split_inside(d: &mut Document, n: &Node, forced: Option<Style>, lost: &mut bool) -> Option<Node> {
+    match &n.kind {
+        NodeKind::Path { .. } | NodeKind::Compound { .. } if needs_expanding(n) => {
+            let reshaped =
+                n.appearance.items.iter().any(|i| matches!(i, AppearanceItem::Stroke(_)) && i.visible() && !keeps_its_path(&n.appearance, i));
+            *lost |= reshaped && follows_its_path(n, forced);
+            split_strokes(d, n)
+        }
+        NodeKind::Group { children, .. } | NodeKind::Layer { children, .. } => {
+            let mut split = None;
+            for (k, c) in children.iter().enumerate() {
+                if let Some(c) = split_inside(d, c, forced, lost) {
+                    let m: &mut Node = split.get_or_insert_with(|| n.clone());
+                    if let Some(slot) = m.children_mut().and_then(|ch| ch.get_mut(k)) {
+                        *slot = Arc::new(c);
+                    }
+                }
+            }
+            split
+        }
+        _ => None,
+    }
 }
 
 /// A copy of `n` with appearance items `items` and embroidery settings `embroidery`, its ids (its
@@ -167,10 +191,11 @@ fn copy_with(d: &mut Document, n: &Node, items: Vec<AppearanceItem>, embroidery:
     c
 }
 
-/// Expand object `id` of `d` for sewing: its strokes that keep their path made objects of their own
-/// ([`split_strokes`]) and the rest expanded as `effect.expandAppearance` expands it. A stroke
-/// reshaped by a brush or an effect whose stitch would follow its path (`forced`: the export's
-/// style) is said, about `object` (the object a person selects, when it is in the document).
+/// Expand object `id` of `d` for sewing: the strokes that keep their path of every path in it made
+/// objects of their own ([`split_inside`]) and the rest expanded as `effect.expandAppearance`
+/// expands it. A stroke reshaped by a brush or an effect whose stitch would follow its path
+/// (`forced`: the export's style) is said, about `object` (the object a person selects, when it is
+/// in the document).
 fn expand_for_sewing(
     d: &mut Document,
     id: NodeId,
@@ -181,8 +206,13 @@ fn expand_for_sewing(
     warnings: &mut Vec<&'static str>,
 ) {
     let Some(n) = d.node(id).cloned() else { return };
-    let reshaped = n.appearance.items.iter().any(|i| matches!(i, AppearanceItem::Stroke(_)) && i.visible() && !keeps_its_path(&n.appearance, i));
-    if reshaped && matches!(n.kind, NodeKind::Path { .. } | NodeKind::Compound { .. }) && follows_its_path(&n, forced) {
+    let mut lost = false;
+    if let Some(split) = split_inside(d, &n, forced, &mut lost)
+        && let Some(slot) = d.node_mut(id)
+    {
+        *slot = split;
+    }
+    if lost {
         if !warnings.contains(&STROKE_LOSES_ITS_PATH) {
             warnings.push(STROKE_LOSES_ITS_PATH);
         }
@@ -190,18 +220,7 @@ fn expand_for_sewing(
             about.push((STROKE_LOSES_ITS_PATH, object));
         }
     }
-    let mut out = Vec::new();
-    match split_strokes(d, &n) {
-        Some((group, expand)) => {
-            if let Some(slot) = d.node_mut(id) {
-                *slot = group;
-            }
-            for c in expand {
-                expand_node(d, c, brushes, &mut out);
-            }
-        }
-        None => expand_node(d, id, brushes, &mut out),
-    }
+    expand_node(d, id, brushes, &mut Vec::new());
 }
 
 /// `doc` as the walk sews it ([`Sewable`]), with `forced` the style the export forces: borrowed as

@@ -503,7 +503,8 @@ fn expand_pieces(
         let c = Arc::make_mut(c);
         let mut listed = None;
         if all || c.id == id {
-            effects::expand_art(d, c, stroke_art);
+            // VectorCraft Stitch: each path's pieces sewn with its embroidery settings.
+            super::embroidery::derive::expand_art(d, c, stroke_art);
         } else if has_seeded(c) && repeats_an_id(c, &seen) {
             listed = Some(expand_in_place(d, c, brushes));
         }
@@ -555,13 +556,10 @@ fn fresh_ids_listed(d: &mut Document, c: &mut Node, seen: &mut std::collections:
 /// are baked, raster effects become an embedded image, and the object keeps its transparency.
 pub(crate) fn expand_node(d: &mut Document, id: NodeId, brushes: &[vectorcraft_brush::Brush], out: &mut Vec<NodeId>) {
     let Some(n) = d.node(id).cloned() else { return };
-    // VectorCraft Stitch: what the object's embroidery settings become on its pieces.
-    let expanding = super::embroidery::derive::Expanding::of(&n);
     let mut listed = vec![];
     let m = expanded_node(d, n, brushes, &mut listed);
     out.extend(listed.into_iter().map(|(id, _)| id));
     if let Some(mut m) = m {
-        expanding.apply(&mut m);
         // Art made from type takes its emoji's pixels into the document.
         d.adopt_pixels(&mut m);
         if let Some(slot) = d.node_mut(id) {
@@ -636,7 +634,8 @@ fn expanded_node(d: &mut Document, mut n: Node, brushes: &[vectorcraft_brush::Br
                     m
                 })
             } else if matches!(n.kind, NodeKind::Path { .. } | NodeKind::Compound { .. }) && !effects::has_transform_art(&v) {
-                effects::expand_leaf(d, &v, &mut stroke_art)
+                // VectorCraft Stitch: its pieces sewn with its embroidery settings.
+                super::embroidery::derive::expand_leaf(d, &v, &mut stroke_art)
             } else {
                 // Type, images, symbol instances, live objects (and paths whose Transform effect copies
                 // them with a gradient or changes their fills and strokes): through their outlines.

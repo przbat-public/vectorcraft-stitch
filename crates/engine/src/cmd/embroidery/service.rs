@@ -397,7 +397,7 @@ impl PlanService {
             }
             under_way.0 += 1;
             let id = under_way.0;
-            let flight = Flight { id, snapshot: Arc::downgrade(of.snapshot), selection: of.selection.to_vec(), opts: opts.clone(), fonts };
+            let flight = Flight { id, snapshot: Arc::downgrade(of.snapshot), selection: of.selection.to_vec(), opts: *opts, fonts };
             under_way.1.push(flight);
             return Ok(Turn::Plan(Landing { flights, id: Some(id) }));
         }
@@ -426,7 +426,7 @@ impl PlanService {
             let bytes = plan.as_ref().map_or(0, |p| p.plan.byte_size());
             let records = plan.as_ref().map_or(0, |p| p.plan.blocks.iter().map(|b| b.stitches.len()).sum());
             let snapshot = Arc::downgrade(of.snapshot);
-            let (selection, opts) = (of.selection.to_vec(), opts.clone());
+            let (selection, opts) = (of.selection.to_vec(), *opts);
             self.remember(Memo { owner: self.owner, snapshot, selection, opts, fonts, plan: plan.clone(), bytes, records });
         }
         plan
@@ -560,7 +560,7 @@ impl Services {
 
     /// Note that document `uid` was exported with embroidery options `opts`.
     pub(crate) fn note_export(&mut self, uid: u64, opts: Options) {
-        self.exports.insert(uid, opts.clone());
+        self.exports.insert(uid, opts);
         self.last_export = Some(opts);
     }
 

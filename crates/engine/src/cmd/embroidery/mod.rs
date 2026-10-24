@@ -31,6 +31,7 @@ pub mod plan;
 mod printed;
 pub mod render;
 pub mod reorder;
+mod resolve;
 pub mod scene;
 mod sequence;
 pub(crate) mod service;
@@ -128,7 +129,7 @@ pub struct PlanKey {
 
 impl PlanKey {
     fn new(uid: u64, snapshot: &Arc<Document>, opts: &Options) -> Self {
-        Self { uid, snapshot: Arc::downgrade(snapshot), opts: opts.clone(), fonts: service::fonts_of(snapshot) }
+        Self { uid, snapshot: Arc::downgrade(snapshot), opts: *opts, fonts: service::fonts_of(snapshot) }
     }
 
     /// The open document it is of ([`crate::DocState::uid`]).

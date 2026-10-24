@@ -1930,6 +1930,7 @@ Public documentation, cited per claim in the crate:
   `threadlib.rs` (the thread swatch libraries),
   `vocabulary.rs` (each setting's name, earlier name, file key and where it can be set),
   `derive.rs` (objects made from others keep the settings of what they come from),
+  `resolve.rs` (where each value a unit is planned with comes from),
   `options.rs` (the export options, and the planner's parameters they give an object),
   `digitize.rs` (the document's art planned into the stitch plan, unit by unit; a fill's narrow
   columns cut out of it with path operations), `plan.rs` (the stitch plan: sewing units, thread

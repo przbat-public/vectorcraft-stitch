@@ -140,8 +140,8 @@ impl Session {
     /// The options document `uid`'s stitch preview plans with, and where they come from.
     pub fn stitch_preview_options(&self, uid: u64) -> (Options, OptionsSource) {
         match self.embroidery_plans.exported(uid) {
-            (Some(own), _) => (own.clone(), OptionsSource::LastExport),
-            (None, Some(last)) => (last.clone(), OptionsSource::AppLastExport),
+            (Some(own), _) => (*own, OptionsSource::LastExport),
+            (None, Some(last)) => (*last, OptionsSource::AppLastExport),
             (None, None) => (Options::default(), OptionsSource::Default),
         }
     }

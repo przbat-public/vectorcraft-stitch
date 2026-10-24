@@ -142,24 +142,24 @@ fn the_preview_plans_with_the_last_embroidery_exports_options() {
     assert_eq!(s.stitch_preview_options(first), defaults, "not an embroidery format");
     s.execute("document.export", &json!({"format": "dst", "spacing": 0.5})).unwrap();
     let ours = Options::from_json(&json!({"spacing": 0.5})).unwrap();
-    assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::LastExport));
+    assert_eq!(s.stitch_preview_options(first), (ours, OptionsSource::LastExport));
     assert!(s.execute("document.export", &json!({"format": "dst", "spacing": "wide"})).is_err());
-    assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::LastExport), "a refused export notes nothing");
+    assert_eq!(s.stitch_preview_options(first), (ours, OptionsSource::LastExport), "a refused export notes nothing");
     // Nor one that can't be written.
     let nowhere = std::env::temp_dir().join("vectorcraft-no-such-folder").join("a.dst");
     let failed = json!({"format": "dst", "spacing": 0.3, "path": nowhere.to_string_lossy()});
     assert!(s.execute("document.export", &failed).is_err());
-    assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::LastExport), "an export not written notes nothing");
+    assert_eq!(s.stitch_preview_options(first), (ours, OptionsSource::LastExport), "an export not written notes nothing");
     let r = s.execute("view.stitchPreview", &json!({})).unwrap();
     assert_eq!((&r["options"], &r["optionsFrom"]), (&json!({"stitch": "auto", "spacing": 0.5}), &json!("lastExport")));
     // Another document plans with the app's last, until it is exported itself.
     fx::blank(&mut runner(&mut s));
     fx::rect(&mut runner(&mut s), fx::BLUE, 10.0, 10.0, 50.0, 50.0);
     let second = s.active().unwrap().uid;
-    assert_eq!(s.stitch_preview_options(second), (ours.clone(), OptionsSource::AppLastExport));
+    assert_eq!(s.stitch_preview_options(second), (ours, OptionsSource::AppLastExport));
     s.execute("document.export", &json!({"format": "pes", "length": 3})).unwrap();
     let theirs = Options::from_json(&json!({"length": 3})).unwrap();
-    assert_eq!(s.stitch_preview_options(second), (theirs.clone(), OptionsSource::LastExport));
+    assert_eq!(s.stitch_preview_options(second), (theirs, OptionsSource::LastExport));
     assert_eq!(s.stitch_preview_options(first), (ours, OptionsSource::LastExport), "the first keeps its own");
     s.execute("file.close", &json!({})).unwrap();
     assert_eq!(s.stitch_preview_options(second), (theirs, OptionsSource::AppLastExport), "closing forgets the document's own");

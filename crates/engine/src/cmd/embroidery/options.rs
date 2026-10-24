@@ -95,7 +95,7 @@ pub fn dialog_field(name: &str) -> Option<DialogField> {
 /// equal when every value is (a plan made with one is the plan made with the other). Made from
 /// the commands' params ([`Options::from_json`]), so that they are checked as the commands check
 /// them.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Options {
     /// The style `stitch` forces; `None` for `auto`.
     pub(crate) stitch: Option<Style>,

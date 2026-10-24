@@ -78,7 +78,7 @@ fn an_export_from_the_app_gives_the_preview_its_options() {
     assert_eq!(app.session.stitch_preview_options(uid).1, OptionsSource::Default);
     crate::io::export(&mut app, Some("dst"), Some("/out/a.dst".into()), &json!({"spacing": 0.5})).unwrap();
     let ours = EmbroideryOptions::from_json(&json!({"spacing": 0.5})).unwrap();
-    assert_eq!(app.session.stitch_preview_options(uid), (ours.clone(), OptionsSource::LastExport));
+    assert_eq!(app.session.stitch_preview_options(uid), (ours, OptionsSource::LastExport));
     // An export that isn't written notes nothing.
     assert!(crate::io::export(&mut app, Some("dst"), Some("/denied/b.dst".into()), &json!({"spacing": 0.3})).is_err());
     assert_eq!(app.session.stitch_preview_options(uid), (ours, OptionsSource::LastExport));

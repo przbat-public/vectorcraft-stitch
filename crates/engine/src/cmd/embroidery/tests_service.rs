@@ -749,7 +749,7 @@ fn the_service_plans_on_another_thread() {
     let opts = Options::default();
     let service = Arc::new(PlanService::default());
     let there = {
-        let (service, doc, opts) = (service.clone(), doc.clone(), opts.clone());
+        let (service, doc, opts) = (service.clone(), doc.clone(), opts);
         std::thread::spawn(move || service.plan(Of::whole(&doc), &doc, &opts).map(|p| (*p).clone())).join().unwrap()
     };
     assert_eq!(there, digitize(&doc, &opts, None));
@@ -881,7 +881,7 @@ fn a_plan_cancelled_from_another_thread_stops_at_the_next_unit() {
     let (reached, at_second) = mpsc::channel::<()>();
     let (go, cancelled) = mpsc::channel::<()>();
     let worker = {
-        let (service, doc, opts, token) = (service.clone(), doc.clone(), opts.clone(), token.clone());
+        let (service, doc, opts, token) = (service.clone(), doc.clone(), opts, token.clone());
         std::thread::spawn(move || {
             // As the second unit (the first object's stroke) is reported, the worker waits for the
             // cancel, then plans it.
@@ -988,7 +988,7 @@ fn a_wait_for_another_callers_plan_always_ends() {
     // The flight lands without a plan (as a cancelled one does): the waiter plans.
     let other = Options::from_params(&json!({"stitchStyle": "satin"}), "test").unwrap();
     let waiter = service.in_flight(Of::whole(&doc), &other, || {
-        let (service, doc, other) = (service.clone(), doc.clone(), other.clone());
+        let (service, doc, other) = (service.clone(), doc.clone(), other);
         std::thread::spawn(move || service.planned(Of::whole(&doc), &doc, &other).is_ok())
     });
     assert!(waiter.join().unwrap());

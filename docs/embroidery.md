@@ -199,7 +199,8 @@ listed (`skipped`, at most 1,000), and at most 100,000 ids are taken.
 the document's fabric (`fabric`), the thread's weight (`threadWeight`), whether one colour's objects
 join (`joinSameColor`) and the machine's values (`machine`: `jumpLength`, `trimLength`, `minStitch`,
 `splitLength`, `speed`), each merged value by value, `null` unsetting one; `embroidery.settings`
-reads them. Each is answered as stored (`settings`, which can be passed back unchanged) and as
+reads them. Each is answered as stored (`settings`, which can be passed back: what equals the
+document's own changes nothing and isn't checked again, so a newer version's value passes back) and as
 the plan uses it with where it comes from (`resolved`: the document's or the default), with how
 many objects set the fabric's values themselves (`overrides`). No panel sets them yet (Document
 Setup › Embroidery comes next).

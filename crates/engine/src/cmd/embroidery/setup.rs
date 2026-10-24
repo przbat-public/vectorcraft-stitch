@@ -182,6 +182,11 @@ pub(super) fn setup(s: &mut Session, p: &Value) -> Result<Value> {
             given.insert(k, v);
         }
     }
+    // What equals the document's own settings as the reply reports them changes nothing, and isn't
+    // checked again: a value a newer version wrote (or one out of this version's range) passes
+    // back, and a null where nothing is set keeps it unset (it doesn't restore a preset's value).
+    let stored = settings_json(d).get("settings").cloned().unwrap_or_default();
+    let given = unchanged_left_out(given, &stored);
     for (k, v) in &given {
         match k.as_str() {
             "palette" => new.set_palette(palette_param(v, new.palette.as_ref())?),
@@ -214,6 +219,22 @@ pub(super) fn setup(s: &mut Session, p: &Value) -> Result<Value> {
         Ok(())
     })?;
     Ok(settings_json(&s.doc()?.doc))
+}
+
+/// `given` less what equals `stored` (the reply's `settings`, as passed back), key by key at any
+/// depth: an object left with nothing is left out too.
+fn unchanged_left_out(given: Map<String, Value>, stored: &Value) -> Map<String, Value> {
+    given
+        .into_iter()
+        .filter_map(|(k, v)| match (v, stored.get(&k)) {
+            (Value::Object(o), Some(s @ Value::Object(_))) => {
+                let left = unchanged_left_out(o, s);
+                (!left.is_empty()).then_some((k, Value::Object(left)))
+            }
+            (v, Some(s)) if v == *s => None,
+            (v, _) => Some((k, v)),
+        })
+        .collect()
 }
 
 /// The number `v` gives `key`, within `range` (in `unit`), or null (`None`).

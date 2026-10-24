@@ -5096,7 +5096,9 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   number) or `"jef"` (Janome's 78, which JEF files number), in one undo step; `null` unsets it, and Janome's is used.
   It answers `{settings: {palette}, resolved: {palette: {value, source}}}`: the palette as the document stores it
   (null when unset, one a newer version wrote as it is), and the one the stitch plan uses with where it comes from
-  (`document`, or `default`). The reply's `settings` can be passed back (`{settings: …}`); `resolved` is only
+  (`document`, or `default`). The reply's `settings` can be passed back (`{settings: …}`): a value equal to what the document stores
+  changes nothing and isn't checked again (a newer version's value passes back), and a value changed beside it is
+  checked; `resolved` is only
   reported and refused as input. `embroidery.settings {}` reads the same without editing anything. A PES, PEC or JEF
   file opens in its own format's palette. It also takes `start`, `label`, `fabric` (a preset's id, an object of values
   merged value by value, or null), `threadWeight`, `joinSameColor` and `machine` (`{jumpLength, trimLength, minStitch,

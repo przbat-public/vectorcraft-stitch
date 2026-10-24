@@ -231,3 +231,37 @@ fn overrides_count_objects_and_symbols_art() {
     assert_eq!(r["changedCount"], json!(1));
     assert_eq!(overrides(&mut s)["objectCount"], json!(0));
 }
+
+/// The reply's `settings` pass back unchanged whatever the document holds: a value this version
+/// would refuse (a newer version's, or out of its range) and an id it doesn't know pass back, and a
+/// null where nothing is set keeps it unset rather than restoring the preset's value; a value
+/// changed beside them is still checked.
+#[test]
+fn settings_pass_back_whatever_the_document_holds() {
+    let mut s = blank();
+    rect(&mut s, 20.0);
+    run(&mut s, "embroidery.setup", json!({"fabric": "stretchKnit"}));
+    s.edit("Newer Settings", |d, _| {
+        let e = d.embroidery.as_deref_mut().unwrap();
+        e.machine = Some(Box::new(vectorcraft_doc::embroidery::MachineSettings { jump_length: Some(25.0), ..Default::default() }));
+        let f = e.fabric.as_deref_mut().unwrap();
+        f.values.tatami.as_mut().unwrap().underlay = Some("doubleZigzag".into());
+        f.values.tatami.as_mut().unwrap().pull = None;
+        Ok(())
+    })
+    .unwrap();
+    let before = s.doc().unwrap().doc.embroidery.clone();
+    let taken = steps(&s);
+    let r = run(&mut s, "embroidery.settings", json!({}));
+    let back = run(&mut s, "embroidery.setup", json!({"settings": r["settings"]}));
+    assert_eq!(steps(&s), taken, "no change, no step");
+    assert_eq!(s.doc().unwrap().doc.embroidery, before, "nothing restored");
+    assert_eq!(back["settings"], r["settings"]);
+    // A value changed beside them is checked, and set.
+    let mut changed = r["settings"].clone();
+    changed["threadWeight"] = json!(60);
+    run(&mut s, "embroidery.setup", json!({"settings": changed.clone()}));
+    assert_eq!(run(&mut s, "embroidery.settings", json!({}))["settings"]["threadWeight"], json!(60.0));
+    changed["threadWeight"] = json!(5);
+    assert!(s.execute("embroidery.setup", &json!({"settings": changed})).is_err());
+}

@@ -381,16 +381,21 @@ fn reorder(doc: &Document) -> Result<f64, String> {
     Ok(middle(samples))
 }
 
-/// The angles the settings row gives the object sewn first in turn, degrees: two that differ from
-/// the default rows and from each other.
-const ANGLES: [f64; 2] = [30.0, 60.0];
+/// The fill angle the settings row gives the object sewn first, degrees, and the step between
+/// runs: each run an angle not planned before, so that its units are planned again, not found
+/// kept.
+const ANGLE_FROM: f64 = 30.0;
+const ANGLE_STEP: f64 = 1.0;
 
-/// The fabrics the settings row chooses in turn: two whose tatami values differ.
-const FABRICS: [&str; 2] = ["fleece", "silk"];
+/// The fabric's tatami pull compensation the settings row sets, millimetres, and the step between
+/// runs: each run a fabric not planned before.
+const PULL_FROM: f64 = 0.21;
+const PULL_STEP: f64 = 0.01;
 
 /// The settings rows on `doc`, milliseconds, each the median of [`DRAW_RUNS`]: one object's fill
-/// angle set and the design planned again (its other units kept); a fabric chosen and the design
-/// planned again; and `embroidery.info` of every object (no plan).
+/// angle set and the design planned again (its other units kept); the fabric's tatami values
+/// changed and the design planned again (its fills planned afresh); and `embroidery.info` of every
+/// object (no plan).
 fn settings(doc: &Document) -> Result<[f64; 3], String> {
     let opts = vectorcraft_engine::EmbroideryOptions::default();
     let mut s = fresh(doc);
@@ -408,8 +413,8 @@ fn settings(doc: &Document) -> Result<[f64; 3], String> {
         }
         Ok(middle(samples))
     };
-    let angle = timed_edits(&mut s, "embroidery.set", &|k| json!({"ids": [first], "part": "fill", "angle": ANGLES[k % ANGLES.len()]}))?;
-    let fabric = timed_edits(&mut s, "embroidery.setup", &|k| json!({"fabric": FABRICS[k % FABRICS.len()]}))?;
+    let angle = timed_edits(&mut s, "embroidery.set", &|k| json!({"ids": [first], "part": "fill", "angle": ANGLE_FROM + ANGLE_STEP * k as f64}))?;
+    let fabric = timed_edits(&mut s, "embroidery.setup", &|k| json!({"fabric": {"tatami": {"pull": PULL_FROM + PULL_STEP * k as f64}}}))?;
     let ids: Vec<u64> = s.doc().map_err(err)?.doc.layers.iter().filter_map(|l| l.children()).flatten().map(|c| c.id.0).collect();
     let mut samples = Vec::with_capacity(DRAW_RUNS);
     for _ in 0..DRAW_RUNS {

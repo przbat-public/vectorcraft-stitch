@@ -221,17 +221,19 @@ pub(super) fn skipped_json(skipped: &[(NodeId, Skip)]) -> Value {
 }
 
 /// Change the embroidery of each object `ids` as `f` does → how many changed: an object left with
-/// none carries none.
+/// none carries none. Only an object whose embroidery changes is copied (with the containers above
+/// it): the others stay shared with the undo history, which counts what each step holds.
 pub(super) fn edit_each(d: &mut Document, ids: &[NodeId], mut f: impl FnMut(&mut Embroidery)) -> Result<usize> {
+    let none = Embroidery::default();
     let mut changed = 0;
     for id in ids {
-        let n = d.node_mut(*id).ok_or(EngineError::NoNode(*id))?;
-        let mut e = n.extras().embroidery.as_deref().cloned().unwrap_or_default();
-        let before = e.clone();
+        let before = d.node(*id).ok_or(EngineError::NoNode(*id))?.extras().embroidery.as_deref();
+        let mut e = before.cloned().unwrap_or_default();
         f(&mut e);
-        if e == before {
+        if e == *before.unwrap_or(&none) {
             continue;
         }
+        let n = d.node_mut(*id).ok_or(EngineError::NoNode(*id))?;
         n.extras_mut().embroidery = (!e.is_empty()).then(|| Box::new(e));
         changed += 1;
     }

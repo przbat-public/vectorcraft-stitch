@@ -391,23 +391,13 @@ fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
     let marked = |e: Option<&Embroidery>| e.is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after));
     let on = on.unwrap_or_else(|| !ids.iter().all(|id| marked(d.node(*id).and_then(|n| n.extras().embroidery.as_deref()))));
     let changed = edit_counted(s, "Embroidery Trim After", |d| {
-        let mut changed = 0;
-        for id in &ids {
-            let n = d.node_mut(*id).ok_or(EngineError::NoNode(*id))?;
-            let mut e = n.extras().embroidery.as_deref().cloned().unwrap_or_default();
-            let before = e.clone();
+        objects::edit_each(d, &ids, |e| {
             e.set_trim_after(on);
             // Off: no cut after it, the one its file had included.
             if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
                 run.trim_after = false;
             }
-            if e == before {
-                continue;
-            }
-            n.extras_mut().embroidery = (e != Embroidery::default()).then(|| Box::new(e));
-            changed += 1;
-        }
-        Ok(changed)
+        })
     })?;
     Ok(json!({ "on": on, "changed": changed }))
 }

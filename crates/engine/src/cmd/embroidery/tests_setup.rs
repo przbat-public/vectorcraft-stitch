@@ -153,3 +153,28 @@ fn objects_own_fabric_values_are_counted_and_applied_away() {
     let e = s.execute("embroidery.applyFabric", &json!({"keys": ["angle"]})).unwrap_err().to_string();
     assert!(e.contains("embroidery.reset"), "{e}");
 }
+
+/// Applying the fabric to the whole document copies only the object it changes: every other object
+/// stays shared with the step before (so the undo history doesn't hold the document twice), and
+/// when nothing changes no step is taken and nothing is copied.
+#[test]
+fn applying_the_fabric_copies_only_the_objects_it_changes() {
+    let mut s = blank();
+    let ids: Vec<u64> = (0..4).map(|i| rect(&mut s, 20.0 + 80.0 * f64::from(i))).collect();
+    run(&mut s, "embroidery.set", json!({"ids": [ids[1]], "part": "fill", "pull": 0.3}));
+    let nodes = |s: &Session| -> Vec<std::sync::Arc<vectorcraft_doc::Node>> {
+        let d = &s.doc().unwrap().doc;
+        let layer = d.layer_of(NodeId(ids[0])).unwrap();
+        ids.iter().map(|id| d.children(Some(layer)).unwrap().iter().find(|n| n.id == NodeId(*id)).unwrap().clone()).collect()
+    };
+    let before = nodes(&s);
+    assert_eq!(run(&mut s, "embroidery.applyFabric", json!({}))["changedCount"], json!(1));
+    let after = nodes(&s);
+    for (i, (a, b)) in before.iter().zip(&after).enumerate() {
+        assert_eq!(std::sync::Arc::ptr_eq(a, b), i != 1, "object {i}");
+    }
+    let steps_before = steps(&s);
+    assert_eq!(run(&mut s, "embroidery.applyFabric", json!({}))["changedCount"], json!(0));
+    assert_eq!(steps(&s), steps_before);
+    assert!(nodes(&s).iter().zip(&after).all(|(a, b)| std::sync::Arc::ptr_eq(a, b)));
+}

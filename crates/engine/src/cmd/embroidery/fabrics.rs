@@ -96,12 +96,17 @@ fn fabric_json(f: &Fabric) -> Value {
             json!(v.value)
         })
     };
+    // Each kind's own keys, as `embroidery.setup {fabric}` takes them back (tatami: pull, spacing,
+    // length, underlay; satin: pull, spacingPercent, underlay).
     let stitch = |kind: &str, p: &StitchPreset, num: &mut dyn FnMut(String, Option<Sourced<f64>>) -> Value| {
         let mut o = Map::new();
         o.insert("pull".into(), num(format!("{kind}.pull"), p.pull));
-        o.insert("spacing".into(), num(format!("{kind}.spacing"), p.spacing));
-        o.insert("spacingPercent".into(), num(format!("{kind}.spacingPercent"), p.spacing_percent));
-        o.insert("length".into(), num(format!("{kind}.length"), p.length));
+        if kind == "tatami" {
+            o.insert("spacing".into(), num(format!("{kind}.spacing"), p.spacing));
+            o.insert("length".into(), num(format!("{kind}.length"), p.length));
+        } else {
+            o.insert("spacingPercent".into(), num(format!("{kind}.spacingPercent"), p.spacing_percent));
+        }
         o.insert("underlay".into(), p.underlay.map_or(Value::Null, |u| json!(u.value.id())));
         Value::Object(o)
     };

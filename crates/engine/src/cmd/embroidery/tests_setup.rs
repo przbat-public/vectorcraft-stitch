@@ -132,6 +132,14 @@ fn the_fabrics_are_listed_with_their_sources() {
         }
     }
     assert!(s.execute("embroidery.fabrics", &json!({"id": "stretchKnit"})).is_err());
+    // A preset's values as listed are what `embroidery.setup` takes back, as a fabric of one's own.
+    let mut s = blank();
+    rect(&mut s, 20.0);
+    let fleece = r["fabrics"].as_array().unwrap().iter().find(|f| f["id"] == json!("fleece")).unwrap()["values"].clone();
+    let mut fabric = fleece.clone();
+    fabric["preset"] = Value::Null;
+    let set = run(&mut s, "embroidery.setup", json!({"fabric": fabric}));
+    assert_eq!((&set["settings"]["fabric"]["tatami"], &set["settings"]["fabric"]["satin"]), (&fleece["tatami"], &fleece["satin"]));
 }
 
 /// Objects setting a fabric's value themselves are counted, by key; `embroidery.applyFabric`

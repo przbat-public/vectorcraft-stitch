@@ -298,7 +298,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Fabrics",
             [],
             None,
-            "{} the fabric presets embroidery.setup {fabric} copies into the document (Wilcom's eight auto fabrics), each value with what it rests on → {default: id, caveat: that every per-fabric stitch value comes from one family of software, and that which of BERNINA's fabric classes a fabric is taken as is ours to say, fabrics: [{id, label, values: {tatami: {pull, spacing, spacingPercent, length, underlay}, satin: as tatami, stabilizer, topping, needlePoint, thickness} (null: none published, the built-in value), sources: [{key, kind: \"published\"|\"derived\"|\"estimate\", name, url, family, how: how it was worked out, why it is an estimate, or the class of BERNINA's a published value is printed for|null}], estimates: [key…]}]}",
+            "{} the fabric presets embroidery.setup {fabric} copies into the document (Wilcom's eight auto fabrics), each value with what it rests on → {default: id, caveat: that every per-fabric stitch value comes from one family of software, and that which of BERNINA's fabric classes a fabric is taken as is ours to say, fabrics: [{id, label, values: {tatami: {pull, spacing, length, underlay}, satin: {pull, spacingPercent, underlay} (as embroidery.setup {fabric} takes them back), stabilizer, topping, needlePoint, thickness} (null: none published, the built-in value), sources: [{key, kind: \"published\"|\"derived\"|\"estimate\", name, url, family, how: how it was worked out, why it is an estimate, or the class of BERNINA's a published value is printed for|null}], estimates: [key…]}]}",
             always,
             fabrics::fabrics
         ),

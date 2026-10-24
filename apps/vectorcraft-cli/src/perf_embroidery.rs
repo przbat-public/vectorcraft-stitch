@@ -110,10 +110,14 @@ pub const ROWS: [&str; 40] = [
     "sewing order: drag half of 22,000 paths",
 ];
 
-/// Each row's budget, milliseconds, in the order of [`ROWS`]: estimates.
+/// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
+/// rows (from the drawing's on) are about 2.5 times what they measured on 2026-10-24 (release,
+/// 12-core Apple Silicon, load about 2, median of five, twice), so that a regression of that size
+/// shows; the cancel's is 5 ms, above the noise of a thread's wake-up. The planning rows keep the
+/// budgets they were given with the planning service.
 const BUDGETS: [f64; 40] = [
     400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 100.0, 400.0, 4000.0, 50.0, 20.0,
-    50.0, 16.0, 100.0, 1000.0, 100.0, 100.0, 50.0, 100.0, 5.0, 25.0, 50.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0,
+    13.0, 7.0, 32.0, 95.0, 20.0, 30.0, 7.0, 5.0, 2.5, 13.0, 60.0, 55.0, 75.0, 280.0, 20.0, 20.0, 5.0, 6.0, 25.0,
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.

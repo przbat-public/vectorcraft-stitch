@@ -389,6 +389,12 @@ impl PlanService {
         let alone = || Ok(Turn::Plan(Landing { flights, id: None }));
         let Ok(mut under_way) = flights.under_way.lock() else { return alone() };
         if !under_way.1.iter().any(|f| f.of(of, opts, fonts)) {
+            // Another's flight may have landed since this caller looked: its plan is remembered
+            // before its flight comes off the list, so look again rather than plan it twice. (The
+            // memos are taken with the flights held, never the other way round.)
+            if self.remembered(of, opts, fonts).is_some() {
+                return Ok(Turn::LookAgain);
+            }
             under_way.0 += 1;
             let id = under_way.0;
             let flight = Flight { id, snapshot: Arc::downgrade(of.snapshot), selection: of.selection.to_vec(), opts: opts.clone(), fonts };

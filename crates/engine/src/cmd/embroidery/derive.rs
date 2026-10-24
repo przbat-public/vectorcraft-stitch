@@ -16,11 +16,17 @@
 //!   pieces with; [`outlined`] for what it expands through its outlines), Ungroup ([`ungrouped`]:
 //!   the group's cut to its last member the walk sews, so the cut stays after the same stitches)
 //!   and Break Link ([`unlinked`]).
+//!
+//! A path whose anchors all move at once (Direct Selection) takes its settings along, as an object
+//! transformed whole does ([`anchors_transformed`]).
 
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use vectorcraft_doc::embroidery::{Embroidery, PartKind, PartSettings};
-use vectorcraft_doc::{AppearanceItem, Document, Node, NodeKind};
+use vectorcraft_doc::selection::AnchorRef;
+use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind};
+use vectorcraft_geom::Affine;
 use vectorcraft_render::effects::{self, StrokeArt};
 
 /// The embroidery settings a new object made from `n` takes: `n`'s, less its literal stitches.
@@ -197,6 +203,21 @@ pub(crate) fn outlined(n: &Node, result: &mut Node) {
         own.extra.entry(k).or_insert(v);
     }
     result.extras_mut().embroidery = Some(Box::new(own));
+}
+
+/// Direct Selection's transform `xf` of anchors `set` of path `id`: when they are every anchor of
+/// it, the object moved (or turned, or scaled) as a whole, and its embroidery settings (its entry
+/// and exit points, a set angle) go with it, as they do when it is transformed as an object.
+pub(crate) fn anchors_transformed(d: &mut Document, id: NodeId, set: &BTreeSet<AnchorRef>, xf: Affine) {
+    let Some(n) = d.node(id) else { return };
+    let (Some(_), Some(path)) = (n.extras().embroidery.as_deref(), n.path_data()) else { return };
+    let every = path.subpaths.iter().enumerate().all(|(si, sp)| (0..sp.anchors.len()).all(|ai| set.contains(&(si, ai))));
+    if every
+        && let Some(n) = d.node_mut(id)
+        && let Some(e) = n.extras_mut().embroidery.as_deref_mut()
+    {
+        e.transform(xf);
+    }
 }
 
 /// An object about to be expanded into pieces (Outline Stroke, Expand Appearance, the walk's copy

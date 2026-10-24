@@ -397,7 +397,8 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   unset rows as the path did); in `cmd/typecmd.rs`'s
   `create_outlines`, `outlined_type`; in `cmd/object.rs`, `ungrouped` in `ungroup`, `compound` in
   `compound_make`, `released` in `compound_release`; in `cmd/brushsym.rs`'s `break_links`,
-  `unlinked`.
+  `unlinked`; in `cmd/path.rs`'s `transform_anchors`, `anchors_transformed` (a path whose anchors
+  all move takes its settings along).
 - **One-line hooks the fork keeps in upstream files**, to keep when resolving: `doc/src/node.rs`'s
   `transform_scaled`, after the bounding box's angle (an object's embroidery settings move and turn
   with it, `Embroidery::transform`), `fileio/load.rs`'s `is_loss` (`super::embroidery::is_loss`), `cmd/swatchlib.rs`'s `libraries` and `library`

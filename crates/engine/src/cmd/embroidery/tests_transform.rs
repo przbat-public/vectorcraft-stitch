@@ -152,3 +152,21 @@ fn a_symbols_art_turns_with_its_instance() {
     let angle = embroidery(&s, art).part(PartKind::Fill).and_then(|p| p.angle).unwrap();
     assert!((angle - 120.0).abs() < 1e-6, "{angle}");
 }
+
+/// Moving every anchor of a path with Direct Selection moves its settings' points, as moving the
+/// object does; moving some of its anchors (a reshape) leaves them.
+#[test]
+fn moving_every_anchor_moves_the_settings() {
+    let mut s = blank();
+    let id = rect(&mut s, 20.0, 20.0, 40.0, 20.0);
+    set_fill(&mut s, id);
+    let before = embroidery(&s, id);
+    let corners = |n: usize| (0..n).map(|k| json!([0, k])).collect::<Vec<_>>();
+    run(&mut s, "select.anchors", json!({"id": id, "anchors": corners(3), "mode": "set"}));
+    run(&mut s, "path.moveAnchors", json!({"dx": 5, "dy": 0}));
+    assert_eq!(embroidery(&s, id), before, "a reshape leaves them");
+    run(&mut s, "edit.undo", json!({}));
+    run(&mut s, "select.anchors", json!({"id": id, "anchors": corners(4), "mode": "set"}));
+    run(&mut s, "path.moveAnchors", json!({"dx": 50, "dy": 10}));
+    moved_as(&s, id, &before, Affine::translate((50.0, 10.0)));
+}

@@ -67,7 +67,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 32] = [
+pub const ROWS: [&str; 40] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -93,19 +93,27 @@ pub const ROWS: [&str; 32] = [
     "stitches: draw 100,000 at 400%",
     "stitches: draw 500,000 at fit",
     "stitches: draw 2,000,000 at fit",
+    "stitches: draw 100,000 at fit, 45° grid",
+    "stitches: draw 100,000 at fit, satin",
+    "stitches: draw a corpus PES at fit",
+    "stitches: emphasis of a block, 500,000",
     "stitch scene: build, 1,000 paths",
     "stitch scene: build, 5,000 paths",
     "stitch scene: build, 22,000 paths",
+    "reply: stats, 22,000 paths (kept)",
+    "reply: sequence, 22,000 paths (kept)",
+    "reply: check, 22,000 paths (kept)",
     "preview: nudge to frame, 1,000 paths",
     "preview: nudge to frame, a drop shadow",
     "preview: cancel, 20 rings in one fill",
     "sewing order: move one object, re-plan",
+    "sewing order: drag half of 22,000 paths",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`]: estimates.
-const BUDGETS: [f64; 32] = [
+const BUDGETS: [f64; 40] = [
     400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 100.0, 400.0, 4000.0, 50.0, 20.0,
-    50.0, 16.0, 100.0, 1000.0, 5.0, 25.0, 50.0, 100.0, 100.0, 100.0, 100.0,
+    50.0, 16.0, 100.0, 1000.0, 100.0, 100.0, 50.0, 100.0, 5.0, 25.0, 50.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0,
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -249,14 +257,25 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.push(draw(&hundred, ZOOMED, None));
     ms.push(draw(&stitch_picture(500_000), FIT, None));
     ms.push(draw(&stitch_picture(2_000_000), FIT, None));
+    ms.push(draw(&stitch_picture_of(100_000, Tiles::Grid45), FIT, None));
+    ms.push(draw(&stitch_picture_of(100_000, Tiles::Satin), FIT, None));
+    ms.push(corpus_frame()?.unwrap_or(f64::NAN));
+    ms.push(emphasis(&stitch_picture(500_000)));
+    let mut largest = None;
     for paths in SCENE_PATHS {
-        ms.push(scene_build(&synthetic(paths)?)?);
+        let doc = synthetic(paths)?;
+        ms.push(scene_build(&doc)?);
+        largest = Some(doc);
     }
+    let largest = largest.ok_or("embroidery: no scene document")?;
+    ms.extend(replies(&largest)?);
     ms.push(nudge_to_frame(&doc, false)?);
     ms.push(nudge_to_frame(&doc, true)?);
     ms.push(cancel_latency(&one_fill(rings(20), FillRule::EvenOdd))?);
     ms.push(reorder(&doc)?);
-    Ok(ROWS.iter().zip(ms).zip(BUDGETS).map(|((name, ms), budget)| (*name, ms, budget)).collect())
+    ms.push(drag_half(&largest)?);
+    // A row with nothing to measure (no corpus) is left out.
+    Ok(ROWS.iter().zip(ms).zip(BUDGETS).filter(|((_, ms), _)| !ms.is_nan()).map(|((name, ms), budget)| (*name, ms, budget)).collect())
 }
 
 /// `vectorcraft-cli perf --embroidery`: only the embroidery rows, each printed by `row` (its name,
@@ -271,6 +290,9 @@ pub fn report(row: fn(&str, f64, f64, bool) -> String) -> Result<(), String> {
         pictures(std::path::Path::new(&dir))?;
     }
     let rows = rows()?;
+    if rows.len() < ROWS.len() {
+        outln!("  (the corpus PES row is left out: no corpus; `cargo xtask corpus --embroidery` fetches it)");
+    }
     outln!("  {:<42} {:>10} {:>10}", "", "measured", "budget");
     let mut over = 0;
     for (name, ms, budget) in rows {
@@ -384,6 +406,52 @@ pub fn preview_line(doc: &Document, runs: usize) -> Option<String> {
     ))
 }
 
+/// Milliseconds each of the read commands the Embroidery panel and the status bar ask for takes on
+/// `doc` once its plan is kept, as they ask (the Sewing order's list at its limit): `embroidery.stats`,
+/// `sequence` and `check`, each the median of [`RUNS`]. One plan for the three.
+fn replies(doc: &Document) -> Result<[f64; 3], String> {
+    let mut s = fresh(doc);
+    s.execute("embroidery.stats", &json!({})).map_err(err)?;
+    let limit = vectorcraft_engine::cmd::embroidery::MAX_LIST_LIMIT;
+    let mut out = [0.0; 3];
+    for (k, (command, params)) in
+        [("embroidery.stats", json!({})), ("embroidery.sequence", json!({ "limit": limit })), ("embroidery.check", json!({}))].into_iter().enumerate()
+    {
+        let mut samples = Vec::with_capacity(RUNS);
+        for _ in 0..RUNS {
+            samples.push(timed(&mut s, command, &params)?.0);
+        }
+        if let Some(slot) = out.get_mut(k) {
+            *slot = middle(samples);
+        }
+    }
+    Ok(out)
+}
+
+/// Milliseconds a drag of every other object of `doc` (which is planned first) takes to start and
+/// to find where it would drop halfway down the Sewing order, as the list works them out on the
+/// plan it shows: the objects' movers and what they cover, then the drop's move; the median of
+/// [`DRAW_RUNS`]. Every other object, so that the rows dragged lie apart and the drop is worked out
+/// in full.
+fn drag_half(doc: &Document) -> Result<f64, String> {
+    use vectorcraft_engine::cmd::embroidery::reorder::{Moving, movers_of, place_moving};
+    let mut s = fresh(doc);
+    let plan = s.embroidery_plan(&vectorcraft_engine::EmbroideryOptions::default()).map_err(err)?;
+    let doc = s.doc().map(|st| st.doc.clone()).map_err(err)?;
+    let ids: Vec<vectorcraft_doc::NodeId> = doc.layers.iter().flat_map(|l| l.children().into_iter().flatten().map(|n| n.id)).step_by(2).collect();
+    let mut samples = Vec::with_capacity(DRAW_RUNS);
+    for _ in 0..DRAW_RUNS {
+        let t = Instant::now();
+        let moving = Moving::new(&doc, movers_of(&doc, &plan, &ids));
+        let placed = place_moving(&doc, &plan, &moving, plan.units.len() / 2);
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
+        if placed.is_err() {
+            return Err(format!("embroidery: the drag of half the objects is refused: {placed:?}"));
+        }
+    }
+    Ok(middle(samples))
+}
+
 /// Milliseconds a plan of `doc` takes to stop once cancelled [`CANCEL_AFTER_MS`] after it started
 /// (on another thread, as the stitch preview's worker plans), the median of [`RUNS`].
 fn cancel_latency(doc: &Document) -> Result<f64, String> {
@@ -447,10 +515,30 @@ const LAID: f32 = 0.4;
 /// Every how many tiles the thread is cut before the next one (the other moves keep it).
 const CUT_EVERY: usize = 4;
 
+/// What a stitch picture's tiles hold besides their satin column and running line: a fill of rows
+/// across (the points as planned, so most of a row's are left out as straight), the same fill's
+/// rows at 45° with their points on a machine file's 0.1 mm grid (as an opened design's are, so
+/// none is straight), or satin columns side by side across the whole tile instead of the fill.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Tiles {
+    Flat,
+    Grid45,
+    Satin,
+}
+
+/// The grid a machine file's points lie on, millimetres: the 0.1 mm its records count in (DST,
+/// PES's PEC section, JEF, EXP).
+const FILE_GRID: f64 = 0.1;
+
 /// A stitch picture of about `n` stitches, as the stitch preview draws a design: square tiles in a
 /// grid, each a fill of rows, a satin column along its side and a running line round it, in a
 /// thread of its own; a move between tiles, cut every few tiles.
 pub fn stitch_picture(n: usize) -> LinePicture {
+    stitch_picture_of(n, Tiles::Flat)
+}
+
+/// [`stitch_picture`] with tiles of `tiles`.
+pub fn stitch_picture_of(n: usize, tiles: Tiles) -> LinePicture {
     let mut b = LinePictureBuilder::new(Point::ZERO, PT_PER_MM).straight_within(0.002);
     let (mut number, mut tag, mut tile) = (1u32, 0u32, 0usize);
     let columns = (n as f64 / 450.0).sqrt().ceil().max(1.0) as usize;
@@ -467,20 +555,44 @@ pub fn stitch_picture(n: usize) -> LinePicture {
             b.link(from, first, if cut { LinkKind::Cut } else { LinkKind::Thread }, group, tag, number);
             number += 1;
         }
-        // The fill: rows across the tile, there and back.
-        b.begin_line(group, tag, LAID);
-        let rows = (TILE / ROW_SPACING) as usize;
-        let per_row = (TILE / FILL_STITCH).ceil() as usize;
-        for r in 0..rows {
-            let y = y0 + r as f64 * ROW_SPACING;
-            for k in 0..=per_row {
-                let t = k as f64 / per_row as f64;
-                let x = if r % 2 == 0 { x0 + t * TILE } else { x0 + (1.0 - t) * TILE };
-                b.point(Point::new(x, y), number);
-                number += 1;
+        // The fill: rows across the tile, there and back (turned 45° about the tile's centre and
+        // put on the file's grid for `Grid45`); or satin columns side by side across it.
+        let centre = (x0 + TILE / 2.0, y0 + TILE / 2.0);
+        let at = |x: f64, y: f64| match tiles {
+            Tiles::Grid45 => {
+                let (dx, dy) = (x - centre.0, y - centre.1);
+                let (x, y) = (centre.0 + (dx - dy) * std::f64::consts::FRAC_1_SQRT_2, centre.1 + (dx + dy) * std::f64::consts::FRAC_1_SQRT_2);
+                Point::new((x / FILE_GRID).round() * FILE_GRID, (y / FILE_GRID).round() * FILE_GRID)
             }
+            Tiles::Flat | Tiles::Satin => Point::new(x, y),
+        };
+        if tiles == Tiles::Satin {
+            let crossings = (TILE / SATIN_ADVANCE) as usize;
+            for column in 0..(TILE / SATIN_WIDTH) as usize {
+                b.begin_line(group, tag, LAID);
+                let left = x0 + column as f64 * SATIN_WIDTH;
+                for k in 0..crossings {
+                    let x = if k % 2 == 0 { left } else { left + SATIN_WIDTH };
+                    b.point(Point::new(x, y0 + k as f64 * SATIN_ADVANCE), number);
+                    number += 1;
+                }
+                tag += 1;
+            }
+        } else {
+            b.begin_line(group, tag, LAID);
+            let rows = (TILE / ROW_SPACING) as usize;
+            let per_row = (TILE / FILL_STITCH).ceil() as usize;
+            for r in 0..rows {
+                let y = y0 + r as f64 * ROW_SPACING;
+                for k in 0..=per_row {
+                    let t = k as f64 / per_row as f64;
+                    let x = if r % 2 == 0 { x0 + t * TILE } else { x0 + (1.0 - t) * TILE };
+                    b.point(at(x, y), number);
+                    number += 1;
+                }
+            }
+            tag += 1;
         }
-        tag += 1;
         // The satin column: a zigzag down the tile's left side.
         b.begin_line(group, tag, LAID);
         let crossings = (TILE / SATIN_ADVANCE) as usize;
@@ -535,6 +647,40 @@ fn draw_with(picture: &LinePicture, zoom: f64, threads: Option<u16>, batch: usiz
         samples.push(t.elapsed().as_secs_f64() * 1000.0);
     }
     middle(samples)
+}
+
+/// Milliseconds a frame of one thread's lines of `picture` alone (the rest hidden) takes at fit, as
+/// a moment's emphasis draws them (a Sewing order header hovered), the median of [`DRAW_RUNS`].
+fn emphasis(picture: &LinePicture) -> f64 {
+    let rest = picture.lines().iter().filter(|l| l.group != 0).map(|l| l.tag);
+    let hidden = vectorcraft_render::lines::TagSet::of(rest);
+    let mut r = LineRenderer::new();
+    let (style, view) = framed(picture, FIT);
+    let style = LineStyle { hidden: Some(hidden), ..style };
+    let (w, h) = CANVAS;
+    drop(r.render(picture, w, h, view, &style));
+    let mut samples = Vec::with_capacity(DRAW_RUNS);
+    for _ in 0..DRAW_RUNS {
+        let t = Instant::now();
+        drop(r.render(picture, w, h, view, &style));
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    middle(samples)
+}
+
+/// The corpus design the drawing's corpus row draws (`cargo xtask corpus --embroidery`): its largest
+/// PES, a person's file, opened as stitches.
+const CORPUS_PES: &str = "zebra-twemoji-inkstitch.pes";
+
+/// Milliseconds a frame of [`CORPUS_PES`] opened as stitches takes at fit, as [`draw`] times it;
+/// `None` without the corpus.
+fn corpus_frame() -> Result<Option<f64>, String> {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/embroidery").join(CORPUS_PES);
+    let Ok(bytes) = std::fs::read(&path) else { return Ok(None) };
+    let mut s = Session::new();
+    s.execute("document.open", &json!({"name": CORPUS_PES, "dataBase64": vectorcraft_format::base64_encode(&bytes)})).map_err(err)?;
+    let planned = s.embroidery_planner().and_then(|p| p.planned(&vectorcraft_engine::EmbroideryOptions::default())).map_err(err)?;
+    Ok(Some(draw(planned.scene().picture(), FIT, None)))
 }
 
 /// The batch sizes [`sweep`] measures: from a few lines a path to a whole run of one colour.
@@ -820,5 +966,25 @@ mod tests {
         assert!((10_000..12_000).contains(&numbers), "{numbers}");
         assert!(p.links().len() > 10 && !p.marks().is_empty());
         assert!(draw(&p, FIT, Some(0)) > 0.0);
+    }
+
+    /// The variants hold about as many stitches, and draw more segments than the flat fill: the
+    /// 45° rows on the file's grid have none left out as straight, the satin tiles are zigzags.
+    #[test]
+    fn the_variants_draw_more_than_the_flat_fill() {
+        // The segments a frame at fit draws.
+        let segments = |p: &LinePicture| {
+            let mut r = LineRenderer::new();
+            let (style, view) = framed(p, FIT);
+            drop(r.render(p, CANVAS.0, CANVAS.1, view, &style));
+            r.stats.segments
+        };
+        let flat = segments(&stitch_picture(10_000));
+        for tiles in [Tiles::Grid45, Tiles::Satin] {
+            let p = stitch_picture_of(10_000, tiles);
+            assert!((10_000..12_000).contains(&p.point_count()), "{tiles:?}: {}", p.point_count());
+            let drawn = segments(&p);
+            assert!(drawn > flat * 3 / 2, "{tiles:?}: {drawn} segments against {flat}");
+        }
     }
 }

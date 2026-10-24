@@ -74,7 +74,7 @@ const ANGLE: FormatOption = FormatOption {
     name: "angle",
     ty: "number",
     default: "135",
-    description: "the direction a fill's rows run, degrees counter-clockwise on the page as every angle in VectorCraft (0: left to right, 90: bottom to top; the default runs from the top left to the bottom right; any angle, taken modulo 360); earlier name stitchAngle",
+    description: "the direction a fill's rows run, degrees counter-clockwise on the page as every angle in VectorCraft (0: left to right, 90: bottom to top; the default runs from the top left to the bottom right; any angle, taken modulo 360); earlier name stitchAngle, which keeps its earlier meaning: degrees clockwise as seen, the same rows at 180 − angle (until 2026-10-24 angle counted so too)",
 };
 const PULL: FormatOption = FormatOption {
     name: "pull",
@@ -350,10 +350,13 @@ mod tests {
     #[test]
     fn earlier_names_and_kinds_are_taken() {
         let old = options(&serde_json::json!({"stitchStyle": "satin", "density": 0.5, "stitchLength": 3, "stitchAngle": 30, "pullCompensation": 0.3, "pullCompensationPercent": 10, "pushCompensation": 0.4})).unwrap();
+        // `stitchAngle` keeps its earlier meaning, clockwise: 30 is `angle` 150.
         let new =
-            options(&serde_json::json!({"stitch": "satin", "spacing": 0.5, "length": 3, "angle": 30, "pull": 0.3, "pullPercent": 10, "push": 0.4}))
+            options(&serde_json::json!({"stitch": "satin", "spacing": 0.5, "length": 3, "angle": 150, "pull": 0.3, "pullPercent": 10, "push": 0.4}))
                 .unwrap();
         assert_eq!(old, new);
+        assert!(options(&serde_json::json!({"angle": 150, "stitchAngle": 30})).is_ok(), "the same rows under both names");
+        assert!(options(&serde_json::json!({"angle": 30, "stitchAngle": 30})).is_err());
         assert_eq!(new.to_json()["stitch"], serde_json::json!("satin"));
         assert!(options(&serde_json::json!({"spacing": 0.5, "density": 0.4})).is_err());
         assert!(options(&serde_json::json!({"spacing": 0.5, "density": 0.5})).is_ok());

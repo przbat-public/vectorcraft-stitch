@@ -6,7 +6,8 @@
 //! `angle`, `pull`, `pullPercent`, `push`, `expand`, `narrowAsSatin`, `threadWeight`, `underlay`,
 //! `jumpLength`, `trimLength`, `minStitch` and `splitLength`. The earlier names (`stitchStyle`, `density`,
 //! `stitchLength`, `stitchAngle`, `pullCompensation`, `pullCompensationPercent`,
-//! `pushCompensation`) are taken as well (the vocabulary's table, `super::vocabulary`). A value
+//! `pushCompensation`) are taken as well (the vocabulary's table, `super::vocabulary`), each as it
+//! was: `stitchAngle` the planner's clockwise angle, `180 − angle`. A value
 //! outside the planner's range is refused, naming the range, rather than clamped; `null` leaves an
 //! option to its default.
 
@@ -43,6 +44,17 @@ const PERCENT: f64 = 100.0;
 /// planner, `plan::FILL_ANGLE`) keep their bits.
 pub(crate) fn planner_angle(angle: f64) -> f64 {
     HALF_TURN - angle
+}
+
+/// Option value `v` given under `given` as option `name` holds it: the earlier name of `angle`,
+/// `stitchAngle`, keeps its earlier meaning, the planner's clockwise angle (the project owner's
+/// choice, 2026-10-24), so that scripts, agents and recorded Actions that give it sew as before;
+/// `angle` is [`planner_angle`] of it. Every other value as it is given.
+fn as_held(name: &str, given: &str, v: &Value) -> Value {
+    match v.as_f64() {
+        Some(a) if name == "angle" => json!(if given == name { a } else { planner_angle(a) }),
+        _ => v.clone(),
+    }
 }
 
 /// The values `stitch` takes, and the style each forces: `auto` (none forced: fills tatami, strokes
@@ -174,10 +186,11 @@ impl Options {
                     },
                 }
             };
-            // The same option under both its names, with different values.
+            // The same option under both its names, with different values (as the option holds
+            // them: `stitchAngle` 30 is `angle` 150).
             if let Some(other) = option.earlier.filter(|e| e != key).or(Some(option.name).filter(|n| n != key))
                 && let Some(w) = o.get(other)
-                && w != v
+                && as_held(option.name, other, w) != as_held(option.name, key, v)
             {
                 return Err(bad(cmd, format!("`{}` and `{}` name the same option: give one", option.name, option.earlier.unwrap_or(other))));
             }
@@ -223,7 +236,10 @@ impl Options {
             }
             "spacing" => self.spacing = Some(number(DENSITY_RANGE, "millimetres")?),
             "length" => self.length = Some(number(STITCH_LENGTH_RANGE, "millimetres")?),
-            "angle" => self.angle = Some(v.as_f64().ok_or_else(|| bad(cmd, format!("`{given}` {v}: a number of degrees")))?),
+            "angle" => {
+                v.as_f64().ok_or_else(|| bad(cmd, format!("`{given}` {v}: a number of degrees")))?;
+                self.angle = as_held(name, given, v).as_f64();
+            }
             "pull" => self.pull = Some(sides(PULL_RANGE)?),
             "pullPercent" => self.pull_percent = Some(sides(PULL_PERCENT_RANGE)?),
             "push" => self.push = Some(sides(PUSH_RANGE)?),

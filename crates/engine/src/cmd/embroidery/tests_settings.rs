@@ -51,7 +51,8 @@ fn a_fill_angle_turns_counter_clockwise_on_the_page() {
     const WITHIN: f64 = 0.5;
     /// Longer than a row's remainder at the edges, shorter than its 4 mm stitches.
     const ROW_STITCH: f64 = 3.0;
-    for (opts, want) in [(json!({"angle": 30}), 30.0), (json!({"stitchAngle": 120}), 120.0), (json!({}), 135.0), (json!({"angle": -45}), 135.0)] {
+    // The earlier name keeps its earlier meaning, clockwise: `stitchAngle` 120 is rows at 60°.
+    for (opts, want) in [(json!({"angle": 30}), 30.0), (json!({"stitchAngle": 120}), 60.0), (json!({}), 135.0), (json!({"angle": -45}), 135.0)] {
         let rows = direction(&square(&opts), ROW_STITCH);
         assert!((rows - want).abs() <= WITHIN, "{opts}: rows at {rows}°, not {want}°");
     }

@@ -5082,7 +5082,10 @@ the entry names and decodes the codes that VectorCraft's default shortcuts agree
 
 The document's art is stitched by `document.export` to `dst`, `tap`, `t01`, `exp`, `pes`, `pec`, `jef` or `vp3`, with the embroidery options
 `document.formats` lists for those formats (`stitch`, `spacing`, `trimLength`…; the earlier names `stitchStyle`, `density`,
-`stitchLength`, `stitchAngle`, `pullCompensation`, `pullCompensationPercent` and `pushCompensation` are taken as aliases),
+`stitchLength`, `stitchAngle`, `pullCompensation`, `pullCompensationPercent` and `pushCompensation` are taken as aliases,
+each with its earlier meaning: `stitchAngle` counts clockwise as seen, the planner's angle, so `stitchAngle` 30 is `angle`
+150. Until 2026-10-24 `angle` counted clockwise too; it now counts counter-clockwise on the page, as every angle in
+VectorCraft: a value recorded before is `180 − old`),
 and `document.open` reads such a file back as art, one group per thread. A value outside an option's range (each
 description gives it) is refused, not clamped, and the read commands below echo the options they planned with under
 `options`. A design that would need too many stitches, one a format can't hold (more colours than it numbers, a size

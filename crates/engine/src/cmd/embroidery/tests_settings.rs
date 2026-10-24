@@ -246,3 +246,35 @@ fn options_lie_over_one_another_option_by_option() {
     let merged = other.over(&all);
     assert_eq!((merged.spacing, merged.jump_length, merged.length, merged.split_length), (Some(0.4), Some(4.0), Some(3.0), Some(8.0)));
 }
+
+/// `embroidery.stats` times the design at the document's machine speed and counts the thread
+/// through its fabric's thickness when not asked for others; asked values beat them, and a value a
+/// newer version wrote out of range is taken at the nearest it may be, said in the warnings.
+#[test]
+fn the_figures_take_the_documents_machine_and_fabric() {
+    let setup = serde_json::from_value(json!({"machine": {"speed": 800.0}, "fabric": {"thickness": 1.5}})).unwrap();
+    let mut s = sewn(setup);
+    let v = run(&mut s, "embroidery.stats", json!({}));
+    assert_eq!((&v["time"]["speed"], &v["threadUsage"]["fabricThickness"]), (&json!(800), &json!(1.5)));
+    let asked = run(&mut s, "embroidery.stats", json!({"speed": 500, "fabricThickness": 0.3}));
+    assert_eq!((&asked["time"]["speed"], &asked["threadUsage"]["fabricThickness"]), (&json!(500), &json!(0.3)));
+    let setup = serde_json::from_value(json!({"machine": {"speed": 5000.0}})).unwrap();
+    let mut s = sewn(setup);
+    let v = run(&mut s, "embroidery.stats", json!({}));
+    assert_eq!(v["time"]["speed"].as_f64(), Some(super::stats::SPEED_RANGE.1));
+    assert_eq!(v["warnings"], json!([super::resolve::DOCUMENT_SETTINGS_OUT_OF_RANGE]));
+}
+
+/// The stitches are drawn on the fabric's colour (the document's embroidery settings), white when
+/// it has none.
+#[test]
+fn the_stitches_are_drawn_on_the_fabrics_colour() {
+    let navy = [20, 45, 90];
+    let mut s = sewn(serde_json::from_value(json!({"fabric": {"color": "#142d5a"}})).unwrap());
+    let r = run(&mut s, "embroidery.render", json!({}));
+    let png = vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap();
+    let img = image::load_from_memory(&png).unwrap().to_rgba8();
+    assert_eq!(img.get_pixel(1, 1).0, [navy[0], navy[1], navy[2], 255]);
+    assert_eq!(super::scene::fabric_color(&s.doc().unwrap().doc), navy);
+    assert_eq!(super::scene::fabric_color(&blank().doc().unwrap().doc), super::scene::FABRIC);
+}

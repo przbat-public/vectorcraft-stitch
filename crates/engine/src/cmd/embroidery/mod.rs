@@ -256,7 +256,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Statistics",
             [],
             None,
-            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, speed?: stitches a minute the machine sews at (60 to 1500; default 650, a home machine's default, an estimate), fabricThickness?: millimetres (0 to 5; default 0.5, an estimate: the top thread goes down through it and back up at each needle point), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's figures as the export sews it, totals and per block; lengths, positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {stitches: needle points, records: needle points, jumps and cuts (what record numbers count), jumps, trims, colorChanges, threadCount: distinct threads, blockCount, size: {width, height}, bounds, start, end: [x, y] (the first and last needle points), extents: {left, right, up, down} from the start, shortestStitch, longestStitch, longestJump, lengths: {bins: [{from, to, count}] (needle-down stitches by length: half a millimetre a bin up to 12.5, then up to 12.7 inclusive, then, to null, every longer one, as stitchTooLong counts them), median: to the tenth (null with no stitch)}, threadUsage: {topMetres, bobbinMetres, fabricThickness, estimate: what the estimate rests on}, time: {seconds, minutes, speed, slowSpeed, slowAbove, trimSeconds, includes: what the time counts, estimate: what the estimate rests on} (colour changes are counted, not timed), blocks: [{block: from 1, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches, records, jumps, trims, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), topThreadMetres, bobbinThreadMetres, seconds}], offset, truncated: whether blocks after the listed ones are left out, options: the embroidery options planned with, warnings}",
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, speed?: stitches a minute the machine sews at (60 to 1500; default: the document's machine's (embroidery.setup), else 650, a home machine's default, an estimate), fabricThickness?: millimetres (0 to 5; default: the document's fabric's, else 0.5, an estimate: the top thread goes down through it and back up at each needle point), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's figures as the export sews it, totals and per block; lengths, positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {stitches: needle points, records: needle points, jumps and cuts (what record numbers count), jumps, trims, colorChanges, threadCount: distinct threads, blockCount, size: {width, height}, bounds, start, end: [x, y] (the first and last needle points), extents: {left, right, up, down} from the start, shortestStitch, longestStitch, longestJump, lengths: {bins: [{from, to, count}] (needle-down stitches by length: half a millimetre a bin up to 12.5, then up to 12.7 inclusive, then, to null, every longer one, as stitchTooLong counts them), median: to the tenth (null with no stitch)}, threadUsage: {topMetres, bobbinMetres, fabricThickness, estimate: what the estimate rests on}, time: {seconds, minutes, speed, slowSpeed, slowAbove, trimSeconds, includes: what the time counts, estimate: what the estimate rests on} (colour changes are counted, not timed), blocks: [{block: from 1, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches, records, jumps, trims, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), topThreadMetres, bobbinThreadMetres, seconds}], offset, truncated: whether blocks after the listed ones are left out, options: the embroidery options planned with, warnings}",
             has_doc,
             stats_cmd
         ),
@@ -274,7 +274,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Picture",
             [],
             None,
-            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, region?: \"design\" (default: the design's stitches with a 5 mm margin), artboard?: index from 0, rect?: [left, top, right, bottom] (points; give one of region, artboard and rect), scale?: pixels a point (above 0, at most 64; default 1), jumps?: true (jumps and cuts marked: two-tone dashes where the thread was cut, a thin line in the thread's colour where it lies, a × at each cut), needlePoints?: false (a dot at each needle point, where they stand at least 6 screen points apart), background?: \"#rrggbb\" (default white, the fabric; null: transparent)} the design's stitches as the stitch preview draws them, as a PNG: each block in its palette thread's colour, threads as wide as they lie (0.4 mm for 40 wt), an edge for a thread close to the fabric; planned as the read commands plan → {dataBase64, width, height, region: [left, top, right, bottom] points, generation: the plan's (another plan, another number), options}",
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, region?: \"design\" (default: the design's stitches with a 5 mm margin), artboard?: index from 0, rect?: [left, top, right, bottom] (points; give one of region, artboard and rect), scale?: pixels a point (above 0, at most 64; default 1), jumps?: true (jumps and cuts marked: two-tone dashes where the thread was cut, a thin line in the thread's colour where it lies, a × at each cut), needlePoints?: false (a dot at each needle point, where they stand at least 6 screen points apart), background?: \"#rrggbb\" (default: the fabric, the colour the document's embroidery settings give it, else white; null: transparent)} the design's stitches as the stitch preview draws them, as a PNG: each block in its palette thread's colour, threads as wide as they lie (0.4 mm for 40 wt), an edge for a thread close to the fabric; planned as the read commands plan → {dataBase64, width, height, region: [left, top, right, bottom] points, generation: the plan's (another plan, another number), options}",
             has_doc,
             render::render_cmd
         ),
@@ -451,7 +451,7 @@ const LIST_KEYS: [&str; 3] = [Page::KEYS[0], Page::KEYS[1], SELECTED_ONLY];
 /// What a read command asks for besides its options: which reply, and what the reply takes.
 enum Read {
     Threads(Page),
-    Stats { machine: stats::Machine, thread: stats::Thread, page: Page },
+    Stats { asked: stats::Asked, page: Page },
     Sequence(Page),
     Check { rules: Vec<&'static check::Rule>, format: Option<StitchFormat>, limit: usize },
 }
@@ -474,8 +474,8 @@ fn read_params(cmd: &str, p: &Value) -> Result<ReadParams> {
     let (read, opts) = match cmd {
         "embroidery.threads" => (Read::Threads(Page::from_params(&o, cmd)?), options_in(&o, &LIST_KEYS, cmd)?),
         "embroidery.stats" => {
-            let (machine, thread) = stats::model(&o, cmd)?;
-            (Read::Stats { machine, thread, page: Page::from_params(&o, cmd)? }, options_in(&o, &STATS_KEYS, cmd)?)
+            let asked = stats::Asked::from_params(&o, cmd)?;
+            (Read::Stats { asked, page: Page::from_params(&o, cmd)? }, options_in(&o, &STATS_KEYS, cmd)?)
         }
         "embroidery.sequence" => (Read::Sequence(Page::from_params(&o, cmd)?), options_in(&o, &LIST_KEYS, cmd)?),
         "embroidery.check" => {
@@ -494,7 +494,10 @@ fn read_params(cmd: &str, p: &Value) -> Result<ReadParams> {
 fn reply(read: Read, plan: &plan::DesignPlan, doc: &Document, opts: &Options) -> Result<Value> {
     let v = match read {
         Read::Threads(page) => threads_reply(plan, doc, page),
-        Read::Stats { machine, thread, page } => stats::stats(plan, machine, thread, page),
+        Read::Stats { asked, page } => {
+            let (machine, thread) = asked.model(&resolve::DocLayer::of(doc));
+            stats::stats(plan, machine, thread, page)
+        }
         Read::Sequence(page) => order::sequence(plan, page),
         Read::Check { rules, format, limit } => {
             // The format of the document's thread palette, when none is asked for.

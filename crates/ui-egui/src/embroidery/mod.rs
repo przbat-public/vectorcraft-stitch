@@ -33,7 +33,7 @@ pub mod text;
 pub mod zoom;
 
 use vectorcraft_engine::cmd::embroidery::render::{Look, Region, picture};
-use vectorcraft_engine::cmd::embroidery::scene::FABRIC;
+use vectorcraft_engine::cmd::embroidery::scene::fabric_color;
 
 use crate::VectorcraftApp;
 
@@ -118,7 +118,8 @@ pub fn render_stitches(app: &mut VectorcraftApp, artboard: usize, scale: f64) ->
     let opts = vectorcraft_engine::EmbroideryOptions::default();
     let view = app.session.stitch_view_of(uid);
     let look = Look { jumps: view.jumps, needle_points: view.needle_points };
-    picture(&mut app.session, Region::Artboard(artboard), scale, look, Some(FABRIC), &opts).map(|(img, _, _)| img).map_err(|e| e.to_string())
+    let fabric = fabric_color(&app.session.doc().map_err(|e| e.to_string())?.doc);
+    picture(&mut app.session, Region::Artboard(artboard), scale, look, Some(fabric), &opts).map(|(img, _, _)| img).map_err(|e| e.to_string())
 }
 
 #[cfg(test)]

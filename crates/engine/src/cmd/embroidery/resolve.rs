@@ -28,6 +28,7 @@ use vectorcraft_stitch::plan::{
 };
 
 use super::Options;
+use super::stats::{FABRIC_THICKNESS_RANGE, SPEED_RANGE};
 
 /// The column width given for what is not a satin column: fills and running lines have none.
 const NO_WIDTH: f64 = 0.0;
@@ -119,13 +120,25 @@ pub(crate) struct DocLayer {
     every: Options,
     /// Objects of one colour join one block where nothing lies between them.
     join: bool,
+    /// The machine's speed, stitches a minute, and the fabric's thickness, millimetres: what
+    /// `embroidery.stats` estimates the time and the thread for when not asked for others.
+    pub(crate) speed: Option<f64>,
+    pub(crate) thickness: Option<f64>,
     /// What the plan says about settings it couldn't take as they are.
     pub(crate) notes: Vec<&'static str>,
 }
 
 impl Default for DocLayer {
     fn default() -> Self {
-        Self { tatami: Options::default(), satin: Options::default(), every: Options::default(), join: true, notes: Vec::new() }
+        Self {
+            tatami: Options::default(),
+            satin: Options::default(),
+            every: Options::default(),
+            join: true,
+            speed: None,
+            thickness: None,
+            notes: Vec::new(),
+        }
     }
 }
 
@@ -174,9 +187,12 @@ impl DocLayer {
         if let Some(f) = fabric {
             unread |= !f.extra.is_empty() || !f.values.extra.is_empty();
         }
+        let thickness = fabric.and_then(|f| f.values.thickness).map(|t| within(t, FABRIC_THICKNESS_RANGE, &mut clamped));
+        let mut speed = None;
         let mut every = Options { thread_weight: e.thread_weight.map(|w| within(w, THREAD_WEIGHT_RANGE, &mut clamped)), ..Options::default() };
-        if let Some(MachineSettings { jump_length, trim_length, min_stitch, split_length, speed: _, extra }) = e.machine.as_deref() {
+        if let Some(MachineSettings { jump_length, trim_length, min_stitch, split_length, speed: spm, extra }) = e.machine.as_deref() {
             unread |= !extra.is_empty();
+            speed = spm.map(|s| within(s, SPEED_RANGE, &mut clamped));
             every.jump_length = jump_length.map(|j| within(j, JUMP_RANGE, &mut clamped));
             every.trim_length = trim_length.map(|t| within(t, (JUMP_RANGE.0, MAX_TRIM), &mut clamped));
             every.min_stitch = min_stitch.map(|m| within(m, MIN_STITCH_RANGE, &mut clamped));
@@ -187,7 +203,7 @@ impl DocLayer {
             .filter(|(on, _)| *on)
             .map(|(_, n)| n)
             .collect();
-        Self { tatami, satin, every, join: e.join_same_color.unwrap_or(true), notes }
+        Self { tatami, satin, every, join: e.join_same_color.unwrap_or(true), speed, thickness, notes }
     }
 
     /// The document's layer for a unit sewn in `style` with thread of `weight` (wt): the fabric's

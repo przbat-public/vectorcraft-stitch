@@ -25,7 +25,7 @@ use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 
 use egui::{Color32, Pos2, Shape, pos2};
 use vectorcraft_doc::{Document, NodeId};
-use vectorcraft_engine::cmd::embroidery::scene::{FABRIC, StitchScene};
+use vectorcraft_engine::cmd::embroidery::scene::{StitchScene, fabric_color};
 use vectorcraft_engine::cmd::embroidery::view::{Layers, layers, paused};
 use vectorcraft_geom::{Affine, Point, Rect};
 use vectorcraft_render::Rendered;
@@ -84,6 +84,8 @@ struct LayerKey {
     /// Isolation mode's group or layer: the stitches of the rest are faded.
     isolated: Option<u64>,
     anti_alias: bool,
+    /// The fabric the stitches are drawn on: the edges of threads close to it follow it.
+    fabric: [u8; 3],
 }
 
 /// A frame of stitches to draw on the thread, numbered in the order frames are made; or, with
@@ -355,7 +357,8 @@ pub fn paint_fabric(app: &VectorcraftApp, painter: &egui::Painter, xf: &Xf, doc:
     if !app.embroidery.layer.shown {
         return false;
     }
-    let fabric = Color32::from_rgb(FABRIC[0], FABRIC[1], FABRIC[2]);
+    let [r, g, b] = fabric_color(doc);
+    let fabric = Color32::from_rgb(r, g, b);
     if app.ui.view.artboards {
         for ab in &doc.artboards {
             painter.add(Shape::convex_polygon(xf.quad(ab.rect), fabric, egui::Stroke::NONE));
@@ -474,6 +477,7 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
         needle_points: view.needle_points,
         isolated: isolated.map(|i| i.0),
         anti_alias,
+        fabric: fabric_color(&doc),
     };
     // A frame the thread finished: shown when it is of this document and newer than the frame shown
     // (one drawn in line since may be). An emphasis it finished: shown when it is of the units
@@ -519,7 +523,7 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
             }
         });
         let style =
-            LineStyle { faded: faded.map(|f| (*f).clone()), anti_alias, ..scene.style(FABRIC, view.jumps, view.needle_points, f64::from(ppp)) };
+            LineStyle { faded: faded.map(|f| (*f).clone()), anti_alias, ..scene.style(key.fabric, view.jumps, view.needle_points, f64::from(ppp)) };
         let affine = Affine::translate((f64::from(w) / 2.0, f64::from(h) / 2.0))
             * Affine::rotate(v.rotation.to_radians())
             * Affine::scale(v.zoom * f64::from(ppp))
@@ -569,7 +573,8 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
         let k = &wanted.0;
         let shown: std::collections::HashSet<u32> = wanted.1.iter().copied().collect();
         let rest = (0..scene.units().len()).filter_map(|i| u32::try_from(i).ok()).filter(|i| !shown.contains(i));
-        let style = LineStyle { hidden: Some(TagSet::of(rest)), anti_alias, ..scene.style(FABRIC, view.jumps, view.needle_points, f64::from(k.ppp)) };
+        let style =
+            LineStyle { hidden: Some(TagSet::of(rest)), anti_alias, ..scene.style(k.fabric, view.jumps, view.needle_points, f64::from(k.ppp)) };
         let affine = Affine::translate((f64::from(k.w) / 2.0, f64::from(k.h) / 2.0))
             * Affine::rotate(k.rot.to_radians())
             * Affine::scale(k.zoom * f64::from(k.ppp))

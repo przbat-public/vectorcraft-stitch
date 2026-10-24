@@ -6,6 +6,7 @@
 
 use serde_json::{Value, json};
 use vectorcraft_engine::Session;
+use vectorcraft_engine::cmd::embroidery::scene::FABRIC;
 
 use super::*;
 use crate::embroidery::stitch_preview;
@@ -157,6 +158,28 @@ fn the_fabric_is_laid_on_the_artboard_and_under_the_stitches() {
     assert!(design.right() > artboard.right() + 10.0, "under the stitches past the artboard: {design:?} {artboard:?}");
     assert!(artboard.contains(design.left_top() + egui::vec2(1.0, 1.0)), "the design starts on the artboard");
     assert!(art.iter().all(|r| r.right() <= artboard.right() + 0.5), "the art view lays nothing past it: {art:?}");
+}
+
+/// The fabric is laid in the colour the document's embroidery settings give it, and the stitches
+/// are drawn for it (the edges of threads close to it follow it).
+#[test]
+fn the_fabric_has_the_documents_colour() {
+    let mut app = app();
+    let navy = [20, 30, 90];
+    app.session
+        .edit("Embroidery Setup", |d, _| {
+            let fabric = vectorcraft_doc::embroidery::FabricSettings { color: Some(navy), ..Default::default() };
+            d.embroidery = Some(Box::new(vectorcraft_doc::embroidery::EmbroiderySetup { fabric: Some(Box::new(fabric)), ..Default::default() }));
+            Ok(())
+        })
+        .unwrap();
+    let ctx = egui::Context::default();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    let time = until_stitches(&mut app, &ctx, 0.0);
+    let shapes = frame(&mut app, &ctx, time + 0.1);
+    let fabric = Color32::from_rgb(navy[0], navy[1], navy[2]);
+    assert!(shapes.iter().any(|s| matches!(s, Shape::Path(p) if p.closed && p.fill == fabric)), "laid in the fabric's colour");
+    assert_eq!(app.embroidery.layer.key.as_ref().map(|k| k.fabric), Some(navy));
 }
 
 /// Back in the art view after an edit made in the stitch view, the art is rendered before it shows:

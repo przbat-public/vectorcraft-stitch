@@ -36,6 +36,7 @@ use vectorcraft_stitch::plan::Style;
 use super::check::LONGEST_STITCH;
 use super::measure::{self, Record};
 use super::plan::{BlockThread, DesignPlan};
+use super::resolve::DocLayer;
 
 /// The speed a design is timed at when none is given, stitches a minute: a home single-needle
 /// machine sewing at its default setting. The default of Janome's Memory Craft 230E's
@@ -62,14 +63,14 @@ const TRIM_SECONDS: f64 = 3.5;
 /// HCU2-1501 single-head industrial machine, a dealer's listing:
 /// <https://shop.coldesi.com/products/happyjapan-hcu2-1501-embroidery-machine-hcu2-1501>). Bounds on
 /// what is asked, not settings.
-const SPEED_RANGE: (f64, f64) = (60.0, 1500.0);
+pub(crate) const SPEED_RANGE: (f64, f64) = (60.0, 1500.0);
 
 /// The fabric's thickness when none is given (millimetres): about that of a medium cotton or a
 /// T-shirt jersey. An estimate; Wilcom asks for it and gives no default.
 pub(crate) const FABRIC_THICKNESS: f64 = 0.5;
 /// The thicknesses `fabricThickness` may be given (millimetres): none to 5 mm, past what a home
 /// embroidery machine sews through. Bounds on what is asked.
-const FABRIC_THICKNESS_RANGE: (f64, f64) = (0.0, 5.0);
+pub(crate) const FABRIC_THICKNESS_RANGE: (f64, f64) = (0.0, 5.0);
 /// How many times the fabric's thickness of top thread each penetration takes: down through the
 /// fabric to the bobbin thread and back up. An estimate.
 const PASSES: f64 = 2.0;
@@ -321,21 +322,43 @@ impl Page {
     }
 }
 
-/// The machine and the fabric `p` asks for (`speed`, `fabricThickness`), or the defaults; an
-/// error naming `cmd` for a value out of its range.
-pub(crate) fn model(p: &Map<String, Value>, cmd: &str) -> crate::Result<(Machine, Thread)> {
-    let number = |key: &str, default: f64, (lo, hi): (f64, f64), unit: &str| -> crate::Result<f64> {
-        match p.get(key) {
-            None | Some(Value::Null) => Ok(default),
-            Some(v) => v
-                .as_f64()
-                .filter(|x| x.is_finite() && (lo..=hi).contains(x))
-                .ok_or_else(|| crate::cmd::bad(cmd, format!("`{key}` {v}: a number of {unit} from {lo} to {hi}"))),
-        }
-    };
-    let speed = number("speed", SPEED, SPEED_RANGE, "stitches a minute")?;
-    let fabric = number("fabricThickness", FABRIC_THICKNESS, FABRIC_THICKNESS_RANGE, "millimetres")?;
-    Ok((Machine { speed }, Thread { fabric }))
+/// The machine and the fabric a read is asked to estimate for, each `None` where it isn't asked:
+/// the document's then, else the default ([`Asked::model`]).
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct Asked {
+    /// Stitches a minute.
+    speed: Option<f64>,
+    /// Millimetres.
+    fabric: Option<f64>,
+}
+
+impl Asked {
+    /// The machine and the fabric `p` asks for (`speed`, `fabricThickness`); an error naming `cmd`
+    /// for a value out of its range.
+    pub(crate) fn from_params(p: &Map<String, Value>, cmd: &str) -> crate::Result<Self> {
+        let number = |key: &str, (lo, hi): (f64, f64), unit: &str| -> crate::Result<Option<f64>> {
+            match p.get(key) {
+                None | Some(Value::Null) => Ok(None),
+                Some(v) => v
+                    .as_f64()
+                    .filter(|x| x.is_finite() && (lo..=hi).contains(x))
+                    .map(Some)
+                    .ok_or_else(|| crate::cmd::bad(cmd, format!("`{key}` {v}: a number of {unit} from {lo} to {hi}"))),
+            }
+        };
+        Ok(Self {
+            speed: number("speed", SPEED_RANGE, "stitches a minute")?,
+            fabric: number("fabricThickness", FABRIC_THICKNESS_RANGE, "millimetres")?,
+        })
+    }
+
+    /// The machine and the fabric: as asked, else as the document's embroidery settings `doc` give
+    /// them, else the defaults ([`SPEED`], [`FABRIC_THICKNESS`]).
+    pub(crate) fn model(self, doc: &DocLayer) -> (Machine, Thread) {
+        let speed = self.speed.or(doc.speed).unwrap_or(SPEED);
+        let fabric = self.fabric.or(doc.thickness).unwrap_or(FABRIC_THICKNESS);
+        (Machine { speed }, Thread { fabric })
+    }
 }
 
 /// The width of the stitch-length chart's bins, millimetres. An estimate: half a millimetre shows

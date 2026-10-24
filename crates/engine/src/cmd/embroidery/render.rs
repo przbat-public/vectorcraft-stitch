@@ -9,7 +9,7 @@ use vectorcraft_render::Rendered;
 use vectorcraft_render::lines::LineRenderer;
 use vectorcraft_stitch::mm_to_pt;
 
-use super::scene::FABRIC;
+use super::scene::fabric_color;
 use super::*;
 
 /// The margin round a design drawn whole, millimetres: as an opened design's artboard has (a little
@@ -48,8 +48,9 @@ pub struct Look {
 }
 
 /// The active document's stitches as the stitch preview draws them, planned with `opts`: `region`
-/// at `scale` pixels a point, marked as `look` asks, on `background` (`None`: transparent). The
-/// picture, the region drawn (document points) and the plan's generation.
+/// at `scale` pixels a point, marked as `look` asks, on `background` (`None`: transparent; the
+/// stitches' edges are always for the document's fabric). The picture, the region drawn (document
+/// points) and the plan's generation.
 pub fn picture(
     s: &mut Session,
     region: Region,
@@ -79,7 +80,7 @@ pub fn picture(
         )));
     }
     let view = Affine::scale(scale) * Affine::translate((-r.x0, -r.y0));
-    let mut style = scene.style(FABRIC, look.jumps, look.needle_points, scale);
+    let mut style = scene.style(fabric_color(doc), look.jumps, look.needle_points, scale);
     style.background = background.map(|[r, g, b]| [r, g, b, 255]);
     let img = RENDERER.with(|r| match r.try_borrow_mut() {
         Ok(mut r) => r.render(scene.picture(), w, h, view, &style),
@@ -114,7 +115,8 @@ pub(super) fn render_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     };
     let look = Look { jumps: flag("jumps", true)?, needle_points: flag("needlePoints", false)? };
     let background = match o.get("background") {
-        None => Some(FABRIC),
+        // The document's fabric (no document: the error is the plan's, which comes next).
+        None => Some(s.doc().map_or(super::scene::FABRIC, |d| fabric_color(&d.doc))),
         Some(Value::Null) => None,
         // Exactly `#rrggbb`: an alpha would be dropped, a short form is no colour of the docs'.
         Some(v) => Some(

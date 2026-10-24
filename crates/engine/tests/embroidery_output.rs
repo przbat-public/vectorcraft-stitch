@@ -11,8 +11,9 @@
 //! - The documents built here, always: fills, wide and narrow strokes, a compound path with a hole,
 //!   clip groups (one inside another), symbols, a group and an object that ask for a trim after
 //!   them, an opened design's literal stitch runs (as they are, clipped, and with cuts at its
-//!   blocks' ends), the export's options away from their defaults, and settings at every level
-//!   (objects', the document's and an export's together).
+//!   blocks' ends), the export's options away from their defaults, settings at every level
+//!   (objects', the document's and an export's together), and objects the walk expands whose
+//!   strokes are sewn along their path or, reshaped by an effect, as the area they paint.
 //! - A test sheet sewn on each fabric preset (`embroidery.setup {fabric}`), the default fabric's
 //!   checked to be the sheet with no fabric, byte for byte.
 //! - The real designs' artwork (`cargo xtask corpus --embroidery`, checked against its manifest),
@@ -178,6 +179,14 @@ c1ab511ae50963b1a1abaf4e9f03f405717857ddb5e326a890728b2fc690b34d  settings.pes
 ff3aa3f3751f08eb098e6d461d1d42c4bbcb92df9f373518cd3da3b150ffc101  settings.pec
 a836bbba2d6eadb3676ec3d2fb309cee4891a4eeaac42c928727081fac6fcd98  settings.jef
 078164ecefc70687e15b3a9c7b2030d58e30cc01232a0eb55501ca1617cf5763  settings.vp3
+ce07fad613e2a3f8a806222450cedb691a99bec2030173039622466e2343865a  expanded-strokes.dst
+6008454538b60b1c84e490a9ecb09fc5ad85332492f253e05481caf83316f9f5  expanded-strokes.tap
+6008454538b60b1c84e490a9ecb09fc5ad85332492f253e05481caf83316f9f5  expanded-strokes.t01
+2e67026cfef17e5f32d2a924af27708f35c2ba31d15be62303ba262545ab0621  expanded-strokes.exp
+acd5f11fec696dd60f1a14ad6be2a8d9b56439f15730fae35511031d7cf01a9a  expanded-strokes.pes
+378726b33be570a973251ac99dd990557811412c9b65db8ceea187b9f0726aac  expanded-strokes.pec
+95ffcaef59cb1059de241988da46245489d28fece34be3d80b9238f65999293c  expanded-strokes.jef
+b76956c76384704f29880fada6abd8874d6eafec02ea692d19ade1fa40f4e523  expanded-strokes.vp3
 ";
 
 /// The real designs' artwork at the person's size ([`DESIGNS`]), listed as [`SYNTHETIC`] is.
@@ -320,6 +329,9 @@ e382d7a5b85d40faba1c384b99e425a36268ae2a3d817afa17e5a8bdfb161ac3  mixed-every-op
 794b9ad6b0c586fe344d847592096ccb8bebea9c2fbbdec92892f9f81f16c181  settings.pes  5 37 21 7 24
 bb3c475f633cc6a78e9bdf88b9e60fca15a7f9a11c70130774135de754ee70ee  settings.pec  5 37 21 7 24
 d73ebca1b85143a097880fd35c8652ab6f52d4f0f88cc20d759971133fb63473  settings.jef  33 45 59 59 14
+79a8a67e308ae3a0cc950bd2cb90fd669a548de59bc4c9517262d9b87bf5c30e  expanded-strokes.pes  5 21 37 7 52
+f7f6a5bd7553ed5bd2d6421442ff0f098edccb715de3b043152c304d7d54c51a  expanded-strokes.pec  5 21 37 7 52
+e62c4e62b875154f17c8a099ba501137c311288778b627dff3e0c152c9274489  expanded-strokes.jef  33 59 45 59 71
 ";
 
 /// The PES, PEC and JEF exports of [`ARTWORK`] apart from their thread numbers, listed as
@@ -482,6 +494,14 @@ settings.pes  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0
 settings.pec  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1305
 settings.jef  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.0x79.1  longest 3.83  shortest 0.40  cells 1280
 settings.vp3  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.0x79.1  longest 3.83  shortest 0.40  cells 1280
+expanded-strokes.dst  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.60  shortest 0.41  cells 1633
+expanded-strokes.tap  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.60  shortest 0.41  cells 1633
+expanded-strokes.t01  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.60  shortest 0.41  cells 1633
+expanded-strokes.exp  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.60  shortest 0.41  cells 1633
+expanded-strokes.pes  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.67  shortest 0.41  cells 1641
+expanded-strokes.pec  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.67  shortest 0.41  cells 1641
+expanded-strokes.jef  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.6  longest 4.60  shortest 0.36  cells 1639
+expanded-strokes.vp3  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.6  longest 4.60  shortest 0.36  cells 1639
 ";
 
 /// What each export of [`ARTWORK`] holds, read back, listed as [`SYNTHETIC_SUMMARIES`] is.
@@ -1054,8 +1074,8 @@ fn settings_that_change_nothing_change_no_export() {
     for how in [Unchanging::Kept, Unchanging::SetAndReset, Unchanging::DefaultFabric] {
         let mut now = Vec::new();
         for (name, s, options) in documents() {
-            // The document that sets settings on purpose is exported as it is.
-            let mut s = if name == "settings" { s } else { unchanging(s, how) };
+            // The documents that set settings on purpose are exported as they are.
+            let mut s = if matches!(name, "settings" | "expanded-strokes") { s } else { unchanging(s, how) };
             run(&mut s, "file.info", json!({"title": name}));
             for format in Format::ALL {
                 let bytes = export(&mut s, format, &options).unwrap_or_else(|e| panic!("{name} ({how:?}) as {}: {e}", format.id()));
@@ -1310,6 +1330,7 @@ fn documents() -> Vec<(&'static str, Session, Value)> {
         ("mixed-every-option", mixed(), every_option),
         ("mixed-shrunk", mixed(), json!({"expand": -0.3, "pullCompensation": 0})),
         ("settings", settings(), json!({"length": 3, "jumpLength": 4})),
+        ("expanded-strokes", expanded_strokes(), json!({})),
     ]
 }
 
@@ -1494,6 +1515,39 @@ fn settings() -> Session {
     run(&mut s, "embroidery.set", json!({"ids": [both], "part": "fill", "stitch": "none"}));
     run(&mut s, "embroidery.setEntryExit", json!({"id": letter, "part": "fill", "entry": [200, 120]}));
     run(&mut s, "embroidery.setup", json!({"fabric": "fleece", "threadWeight": 60, "machine": {"splitLength": 7}}));
+    s
+}
+
+/// Objects whose appearance the walk expands, with strokes: a filled rectangle with a satin stroke
+/// and a running one (each sewn along the path), a rectangle whose upper stroke is roughened (that
+/// one sewn as the area it paints), and a zigzag of two strokes set to running (two lines along it).
+fn expanded_strokes() -> Session {
+    let mut s = blank(300.0, 300.0);
+    let second_stroke = |s: &mut Session, id: u64, weight: f64| {
+        run(s, "appearance.addStroke", json!({"ids": [id]}));
+        s.edit("Second Stroke", |d, _| {
+            if let Some(vectorcraft_doc::AppearanceItem::Stroke(st)) =
+                d.node_mut(vectorcraft_doc::NodeId(id)).and_then(|n| n.appearance.items.last_mut())
+            {
+                st.width = weight;
+            }
+            Ok(())
+        })
+        .unwrap();
+    };
+    let both = rect(&mut s, "#cc2222", 20.0, 20.0, 80.0, 60.0);
+    run(&mut s, "paint.setStroke", json!({"color": "#2233cc", "ids": [both]}));
+    run(&mut s, "stroke.set", json!({"weight": 6.0, "ids": [both]}));
+    second_stroke(&mut s, both, 1.0);
+    let roughened = rect(&mut s, "#22aa44", 140.0, 20.0, 80.0, 60.0);
+    run(&mut s, "paint.setStroke", json!({"color": "#8822aa", "ids": [roughened]}));
+    run(&mut s, "stroke.set", json!({"weight": 4.0, "ids": [roughened]}));
+    second_stroke(&mut s, roughened, 4.0);
+    run(&mut s, "effect.apply", json!({"effect": "distort.roughen", "ids": [roughened], "item": 2}));
+    stroked(&mut s, "#ff8800", 4.0, "M 20 200 L 60 160 L 100 200 L 140 160 L 180 200");
+    let zigzag = s.doc().unwrap().doc.layers[0].children().unwrap().last().unwrap().id.0;
+    second_stroke(&mut s, zigzag, 1.0);
+    run(&mut s, "embroidery.set", json!({"ids": [zigzag], "part": "stroke", "stitch": "running"}));
     s
 }
 

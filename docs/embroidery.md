@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-24 · **Change:** VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-24 · **Change:** embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -1397,8 +1397,8 @@ objects join) is resolved once a plan (`DesignSettings`).
 
 - **Resolved in the decided order** (the object's value, the export's option, the document's, the
   built-in default): an export option applies to the objects that have no value of their own, and
-  every value resolved comes back with where it came from, so that a panel and a read command
-  (neither built yet) can show it.
+  every value resolved comes back with where it came from (`embroidery.info`, from the same
+  layers the walk plans with), so that a panel can show it.
 - **Stored in the `.vectorcraft` file, so that a file saved by a newer version still opens in an
   older one:**
   - per part of an object, its fill and its stroke, each value set or unset;
@@ -2042,10 +2042,13 @@ Public documentation, cited per claim in the crate:
 - `crates/stitch/src/color.rs` — sRGB in CIE L*a*b* (D65), and the CIEDE2000 colour difference.
 - `crates/stitch/src/fabric.rs` — the fabric presets, each value with the publication it comes
   from, how it is worked out, or why it is an estimate.
-- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (six commands,
+- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (the commands' table:
   `embroidery.setTrimAfter`, `threads`, `stats`, `sequence`, `check` and `render`, and the
   document's thread palette), `setup.rs` (the document's embroidery settings,
-  `embroidery.setup` and `embroidery.settings`), `view.rs` (each document's stitch view: View ›
+  `embroidery.setup` and `embroidery.settings`), `objects.rs` (the settings on objects:
+  `embroidery.set`, `reset`, `setEntryExit` and `copyFrom`, and which objects take them),
+  `info.rs` (`embroidery.info`), `fabrics.rs` (the presets as the commands give them:
+  `embroidery.fabrics`, `applyFabric`, a preset copied into a document), `view.rs` (each document's stitch view: View ›
   Stitch Preview and its options, four commands), `reorder.rs`
   (changing the sewing order: a drop's move, Sew Earlier, Later, First and Last, four commands,
   and what a move did), `scene.rs` (the plan as a line picture), `render.rs` (`embroidery.render`),
@@ -2053,7 +2056,9 @@ Public documentation, cited per claim in the crate:
   `threadlib.rs` (the thread swatch libraries),
   `vocabulary.rs` (each setting's name, earlier name, file key and where it can be set),
   `derive.rs` (objects made from others keep the settings of what they come from),
-  `resolve.rs` (where each value a unit is planned with comes from),
+  `resolve.rs` (where each value a unit is planned with comes from: the object's layer, the
+  export's, the document's; `resolve/report.rs`: each value with its source, for
+  `embroidery.info`),
   `options.rs` (the export options, and the planner's parameters they give an object),
   `digitize.rs` (the document's art planned into the stitch plan, unit by unit; a fill's narrow
   columns cut out of it with path operations), `plan.rs` (the stitch plan: sewing units, thread
@@ -2067,8 +2072,11 @@ Public documentation, cited per claim in the crate:
   branches and the design's size limit), `tests_service.rs`, `tests_stats.rs`, `tests_order.rs`,
   `tests_check.rs`, `tests_contract.rs` (the replies' keys and types), `tests_threadlib.rs`,
   `tests_scene.rs` (the scene holds the thread the plan sews), `tests_view.rs`, `reorder/tests.rs`,
-  `tests_settings.rs` (what each setting does), `tests_transform.rs` (settings under the transform
-  commands), `tests_derive.rs` (settings kept by objects made from others).
+  `tests_settings.rs` (what the document's settings do), `tests_object.rs` (what an object's do),
+  `tests_object_commands.rs`, `tests_setup.rs` and `tests_info.rs` (the settings commands),
+  `tests_matrix.rs` (the resolution order, every combination of layers), `tests_transform.rs`
+  (settings under the transform commands), `tests_derive.rs` (settings kept by objects made from
+  others).
 - `crates/render/src/lines.rs` — line pictures and their renderer (`render::lines`), which the
   stitch view draws with, knowing nothing about stitches.
 - `crates/ui-egui/src/embroidery/` — the stitch preview in the app: `stitch_preview.rs` (when a
@@ -2116,6 +2124,7 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-24 | minor | Embroidery settings on objects and in the document: each object's fill and stroke settings and entry and exit points, moved and turned with it and kept by the commands that make objects from others; the document's fabric (eight presets, each value sourced), thread weight, joining and machine; each value from the object, the export's options, the document, the default; the commands (`set`, `reset`, `setEntryExit`, `copyFrom`, `info`, `setup` extended, `fabrics`, `applyFabric`); a fill's angle counter-clockwise, an unset one turning with its object; the preview remembering no export's options. |
 | 2026-10-24 | minor | VectorCraft merged in (upstream to 2026-10-23): the status bar's counters take its right end in the bar's new fixed slots, leaving the room it keeps for its message and X/Y readout; the Art \| Stitches switch sits below the isolation mode's bar, which now lies over the canvas; every embroidery word in Turkish too (AI-drafted), its numbers as CLDR writes them ("4.752", "0,38", "%37"). |
 | 2026-10-24 | minor | The stitch preview's review round: the Sewing order list read only from the plan it shows, its steps worked out on it, a drop where its rows already are refused, a block cut by the list's limit without a thread change; Show Needle Points drawn; the plans' memory bounded for all documents together; planning keyed by the fonts a design uses; an export's options noted once written; `embroidery.render`'s points and strict colours, its size capped; VectorCraft Stitch's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. |
 | 2026-10-23 | minor | The stitch preview, done: the Check tab (the check's measured extremes, a hit's start, thread and objects, the stitch lengths in bins ending at 12.7 mm; severity marks; problems first; Show and Next and Previous Finding through `view.zoomTo`; rings on the canvas, thinned; the chart), the status bar's counters, and every language checked at 256 and 300 points. |

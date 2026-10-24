@@ -105,6 +105,45 @@ fn sewn(plan: &DesignPlan) -> Drawn {
     Drawn { length, segments, needle, links, cuts }
 }
 
+/// What the plan sews, counted from each unit's own stitches in sewing order, without the walk the
+/// scene and the figures share: a stitch is sewn from the stitch before it in its block (the unit
+/// before's last, for a unit's first), a jump links when it isn't its block's first record.
+fn sewn_by_units(plan: &DesignPlan) -> Drawn {
+    let (mut length, mut segments, mut needle, mut links, mut cuts) = (0.0, 0, 0, 0, 0);
+    let mut listed = 0;
+    for (k, block) in plan.blocks.iter().enumerate() {
+        let mut before: Option<vectorcraft_stitch::Stitch> = None;
+        let mut first = true;
+        for unit in block.units.clone() {
+            let stitches = plan.unit_stitches(unit);
+            listed += stitches.len();
+            for st in stitches {
+                match st.command {
+                    vectorcraft_stitch::Command::Stitch => {
+                        needle += 1;
+                        if let Some(b) = before.filter(|b| b.command == vectorcraft_stitch::Command::Stitch) {
+                            length += b.distance(*st);
+                            segments += 1;
+                        }
+                    }
+                    vectorcraft_stitch::Command::Jump => links += usize::from(!first),
+                    vectorcraft_stitch::Command::Trim => cuts += 1,
+                    _ => {}
+                }
+                before = Some(*st);
+                first = false;
+            }
+        }
+        assert_eq!(
+            block.units.clone().map(|u| plan.unit_stitches(u).len()).sum::<usize>(),
+            block.stitches.len(),
+            "block {k}: its units hold its records"
+        );
+    }
+    assert_eq!(listed, plan.blocks.iter().map(|b| b.stitches.len()).sum::<usize>());
+    Drawn { length, segments, needle, links, cuts }
+}
+
 /// The plans of the shared fixtures, and a design opened from each machine format that has jumps
 /// and cuts.
 fn fixture_plans() -> Vec<(String, DesignPlan)> {
@@ -142,6 +181,10 @@ fn fixture_plans() -> Vec<(String, DesignPlan)> {
 fn the_scene_draws_the_thread_the_plan_sews() {
     for (name, plan) in fixture_plans() {
         let (d, w) = (drawn(&scene::scene(&plan)), sewn(&plan));
+        // The figures' walk counts what the units' own stitches hold.
+        let u = sewn_by_units(&plan);
+        assert!((u.length - w.length).abs() <= 1e-9 * w.length.max(1.0), "{name}: the walk {} mm, the units {} mm", w.length, u.length);
+        assert_eq!((u.segments, u.needle, u.links, u.cuts), (w.segments, w.needle, w.links, w.cuts), "{name}: the walk and the units");
         assert!((d.length - w.length).abs() <= 1e-3 * w.length.max(1.0), "{name}: drawn {} mm, sewn {} mm", d.length, w.length);
         assert_eq!(d.segments, w.segments, "{name}: stitches");
         assert_eq!(d.needle, w.needle, "{name}: needle points");

@@ -91,7 +91,9 @@ fn hidden_tags_are_left_out_and_faded_ones_are_mixed_toward_the_backdrop() {
     assert_eq!(rgb(at(&hidden, 20, 30)), RED);
     let faded = draw(&p, 40, 40, &LineStyle { faded: Some(TagSet::of([8])), ..style(&[RED]) });
     assert_eq!(rgb(at(&faded, 20, 10)), RED);
-    assert_eq!(rgb(at(&faded, 20, 30)), mix(RED, WHITE, FADE));
+    // Halfway from the thread to the white backdrop, worked out by hand: (200, 20, 20) and white.
+    assert_eq!(FADE, 0.5);
+    assert_eq!(rgb(at(&faded, 20, 30)), [228, 138, 138]);
 }
 
 #[test]

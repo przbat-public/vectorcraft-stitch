@@ -339,11 +339,30 @@ fn show_selects_the_rules_objects_and_zooms_to_its_hits() {
     show_findings(&mut app, uid, &reply, "stitchBelowNeedle", None).unwrap();
     let objects: Vec<u64> = rule["objects"].as_array().unwrap().iter().map(|o| o.as_u64().unwrap()).collect();
     assert_eq!(selection(&app), objects);
-    // The view is centred inside the hits' box.
+    // The view is centred on the hits' box, zoomed to fit it with 3 mm round it (at least 10 mm a
+    // side) in the canvas less the fit's margin.
+    let canvas = app.canvas_rect.unwrap();
+    let fitted = |app: &VectorcraftApp, points: &[Point]| {
+        let (x0, x1) = points.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.x), b.max(p.x)));
+        let (y0, y1) = points.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.y), b.max(p.y)));
+        let (margin, least) = (mm_to_pt(SHOW_MARGIN_MM), mm_to_pt(SHOW_MIN_BOX_MM));
+        let (w, h) = ((x1 - x0 + 2.0 * margin).max(least), (y1 - y0 + 2.0 * margin).max(least));
+        let room = |side: f32| f64::from(side) - 2.0 * crate::canvas::FIT_MARGIN;
+        let v = app.view().unwrap();
+        assert_eq!(v.rotation, 0.0);
+        assert!((v.center.x - (x0 + x1) / 2.0).abs() < 1e-6 && (v.center.y - (y0 + y1) / 2.0).abs() < 1e-6, "{:?}", v.center);
+        let zoom = (room(canvas.width()) / w).min(room(canvas.height()) / h);
+        assert!((v.zoom - zoom).abs() < 1e-9 * zoom, "zoom {} for {w} × {h} pt, not {zoom}", v.zoom);
+        (w, h)
+    };
     let points: Vec<Point> = listed(&rule).iter().flat_map(hit_points).map(|p| Point::new(mm_to_pt(p.x), mm_to_pt(p.y))).collect();
-    let (x0, x1) = points.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.x), b.max(p.x)));
-    let c = app.view().unwrap().center;
-    assert!(c.x >= x0 && c.x <= x1, "{c:?} in {x0}..{x1}");
+    fitted(&app, &points);
+    // One hit: the 10 mm box round it.
+    show_findings(&mut app, uid, &reply, "stitchBelowNeedle", Some(0)).unwrap();
+    let one: Vec<Point> = hit_points(&listed(&rule)[0]).into_iter().map(|p| Point::new(mm_to_pt(p.x), mm_to_pt(p.y))).collect();
+    let (w, h) = fitted(&app, &one);
+    assert!(w >= mm_to_pt(SHOW_MIN_BOX_MM) && h >= mm_to_pt(SHOW_MIN_BOX_MM));
+    show_findings(&mut app, uid, &reply, "stitchBelowNeedle", None).unwrap();
     // The next frame stands the objects' stitches out, and the row is the focus.
     frame(&mut app, &ctx, 1.0);
     assert!(app.embroidery.layer.emphasis().is_some_and(|u| !u.is_empty()));
@@ -546,7 +565,9 @@ fn the_stitch_length_chart() {
     let warning = crate::embroidery::marks::colour(&t, Mark::Warning);
     assert_eq!(rects.iter().filter(|(c, _)| *c == warning).count(), 1, "the band's bar");
     assert!(words.iter().any(|w| w == "Too long"), "{words:?}");
-    assert!(words.iter().any(|w| w == "· Median: 3.3 mm" || w == "· Median: 3.2 mm"), "{words:?}");
+    // 3.25 is a tie at one decimal: written as `numbers::decimal` writes it, to the even digit.
+    assert_eq!(crate::embroidery::numbers::decimal(crate::i18n::Lang::EN, 3.25, 1), "3.2");
+    assert!(words.iter().any(|w| w == "· Median: 3.2 mm"), "{words:?}");
     for axis in ["0", "5", "10", "12.7"] {
         assert!(words.iter().any(|w| w == axis), "{axis}: {words:?}");
     }

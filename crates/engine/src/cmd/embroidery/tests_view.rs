@@ -22,7 +22,7 @@ fn the_stitch_view_is_toggled_and_set_per_document() {
     let r = s.execute("view.stitchPreview", &json!({})).unwrap();
     assert_eq!(
         r,
-        json!({"on": true, "jumps": true, "needlePoints": false, "artwork": false, "shown": "stitches", "pausedBy": null, "options": {"stitch": "auto"}, "optionsFrom": "defaults"})
+        json!({"on": true, "jumps": true, "needlePoints": false, "artwork": false, "shown": "stitches", "pausedBy": null, "options": {"stitch": "auto"}, "optionsFrom": "default"})
     );
     assert_eq!(s.execute("view.stitchPreview", &json!({"on": true})).unwrap()["on"], true, "idempotent");
     assert_eq!(s.execute("view.stitchPreview", &json!({"on": null})).unwrap()["on"], false, "null toggles");
@@ -136,31 +136,31 @@ fn the_preview_plans_with_the_last_embroidery_exports_options() {
     fx::blank(&mut runner(&mut s));
     fx::rect(&mut runner(&mut s), fx::RED, 10.0, 10.0, 50.0, 50.0);
     let first = s.active().unwrap().uid;
-    let defaults = (Options::default(), OptionsSource::Defaults);
+    let defaults = (Options::default(), OptionsSource::Default);
     assert_eq!(s.stitch_preview_options(first), defaults);
     s.execute("document.export", &json!({"format": "png"})).unwrap();
     assert_eq!(s.stitch_preview_options(first), defaults, "not an embroidery format");
     s.execute("document.export", &json!({"format": "dst", "spacing": 0.5})).unwrap();
     let ours = Options::from_json(&json!({"spacing": 0.5})).unwrap();
-    assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::Document));
+    assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::LastExport));
     assert!(s.execute("document.export", &json!({"format": "dst", "spacing": "wide"})).is_err());
-    assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::Document), "a refused export notes nothing");
+    assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::LastExport), "a refused export notes nothing");
     // Nor one that can't be written.
     let nowhere = std::env::temp_dir().join("vectorcraft-no-such-folder").join("a.dst");
     let failed = json!({"format": "dst", "spacing": 0.3, "path": nowhere.to_string_lossy()});
     assert!(s.execute("document.export", &failed).is_err());
-    assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::Document), "an export not written notes nothing");
+    assert_eq!(s.stitch_preview_options(first), (ours.clone(), OptionsSource::LastExport), "an export not written notes nothing");
     let r = s.execute("view.stitchPreview", &json!({})).unwrap();
-    assert_eq!((&r["options"], &r["optionsFrom"]), (&json!({"stitch": "auto", "spacing": 0.5}), &json!("document")));
+    assert_eq!((&r["options"], &r["optionsFrom"]), (&json!({"stitch": "auto", "spacing": 0.5}), &json!("lastExport")));
     // Another document plans with the app's last, until it is exported itself.
     fx::blank(&mut runner(&mut s));
     fx::rect(&mut runner(&mut s), fx::BLUE, 10.0, 10.0, 50.0, 50.0);
     let second = s.active().unwrap().uid;
-    assert_eq!(s.stitch_preview_options(second), (ours.clone(), OptionsSource::App));
+    assert_eq!(s.stitch_preview_options(second), (ours.clone(), OptionsSource::AppLastExport));
     s.execute("document.export", &json!({"format": "pes", "length": 3})).unwrap();
     let theirs = Options::from_json(&json!({"length": 3})).unwrap();
-    assert_eq!(s.stitch_preview_options(second), (theirs.clone(), OptionsSource::Document));
-    assert_eq!(s.stitch_preview_options(first), (ours, OptionsSource::Document), "the first keeps its own");
+    assert_eq!(s.stitch_preview_options(second), (theirs.clone(), OptionsSource::LastExport));
+    assert_eq!(s.stitch_preview_options(first), (ours, OptionsSource::LastExport), "the first keeps its own");
     s.execute("file.close", &json!({})).unwrap();
-    assert_eq!(s.stitch_preview_options(second), (theirs, OptionsSource::App), "closing forgets the document's own");
+    assert_eq!(s.stitch_preview_options(second), (theirs, OptionsSource::AppLastExport), "closing forgets the document's own");
 }

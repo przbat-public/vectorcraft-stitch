@@ -75,13 +75,13 @@ fn an_export_from_the_app_gives_the_preview_its_options() {
     app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
     app.run("shape.rectangle", json!({"x": 20, "y": 20, "width": 60, "height": 60})).unwrap();
     let uid = app.session.active().unwrap().uid;
-    assert_eq!(app.session.stitch_preview_options(uid).1, OptionsSource::Defaults);
+    assert_eq!(app.session.stitch_preview_options(uid).1, OptionsSource::Default);
     crate::io::export(&mut app, Some("dst"), Some("/out/a.dst".into()), &json!({"spacing": 0.5})).unwrap();
     let ours = EmbroideryOptions::from_json(&json!({"spacing": 0.5})).unwrap();
-    assert_eq!(app.session.stitch_preview_options(uid), (ours.clone(), OptionsSource::Document));
+    assert_eq!(app.session.stitch_preview_options(uid), (ours.clone(), OptionsSource::LastExport));
     // An export that isn't written notes nothing.
     assert!(crate::io::export(&mut app, Some("dst"), Some("/denied/b.dst".into()), &json!({"spacing": 0.3})).is_err());
-    assert_eq!(app.session.stitch_preview_options(uid), (ours, OptionsSource::Document));
+    assert_eq!(app.session.stitch_preview_options(uid), (ours, OptionsSource::LastExport));
 }
 
 /// View › Stitch Preview follows Pixel Preview, with its options in a submenu; their checkmarks

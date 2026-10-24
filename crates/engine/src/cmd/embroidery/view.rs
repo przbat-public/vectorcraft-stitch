@@ -92,24 +92,25 @@ pub fn layers(view: StitchView, paused: Option<Paused>, outline: bool) -> Layers
     Layers { art: false, fabric: true, faint_art: view.artwork && !outline, stitches: true, outlines: outline }
 }
 
-/// Where the options the stitch preview plans with come from.
+/// Where the options the stitch preview plans with come from. (Not "document": the document's
+/// own embroidery settings are another source, `embroidery.setup`'s.)
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OptionsSource {
     /// The document's last embroidery export.
-    Document,
+    LastExport,
     /// The last embroidery export of another document, while the app runs.
-    App,
-    /// No embroidery export yet: the defaults.
-    Defaults,
+    AppLastExport,
+    /// No embroidery export yet: the defaults (the word `embroidery.setup` uses).
+    Default,
 }
 
 impl OptionsSource {
     /// The id the replies give it.
     pub fn id(self) -> &'static str {
         match self {
-            Self::Document => "document",
-            Self::App => "app",
-            Self::Defaults => "defaults",
+            Self::LastExport => "lastExport",
+            Self::AppLastExport => "appLastExport",
+            Self::Default => "default",
         }
     }
 }
@@ -139,9 +140,9 @@ impl Session {
     /// The options document `uid`'s stitch preview plans with, and where they come from.
     pub fn stitch_preview_options(&self, uid: u64) -> (Options, OptionsSource) {
         match self.embroidery_plans.exported(uid) {
-            (Some(own), _) => (own.clone(), OptionsSource::Document),
-            (None, Some(last)) => (last.clone(), OptionsSource::App),
-            (None, None) => (Options::default(), OptionsSource::Defaults),
+            (Some(own), _) => (own.clone(), OptionsSource::LastExport),
+            (None, Some(last)) => (last.clone(), OptionsSource::AppLastExport),
+            (None, None) => (Options::default(), OptionsSource::Default),
         }
     }
 
@@ -164,7 +165,7 @@ pub(super) fn specs() -> Vec<CommandSpec> {
             "Stitch Preview",
             ["View"],
             Some("Cmd+E"),
-            "{on?: bool (default: toggle)} show the active document's design as the stitches it is sewn with instead of its art (planned as the read commands plan it); each open document has its own setting, view state that is neither saved nor undoable; the canvas, ui.screenshot and ui.render {stitchPreview} show it, exports never do; while an opacity mask or a pattern is edited the art shows → {on, jumps, needlePoints, artwork, shown: \"stitches\"|\"art\", pausedBy: null|\"opacityMask\"|\"pattern\", options: {…the embroidery options it plans with}, optionsFrom: \"document\" (this document's last embroidery export)|\"app\" (another document's, while the app runs)|\"defaults\"}",
+            "{on?: bool (default: toggle)} show the active document's design as the stitches it is sewn with instead of its art (planned as the read commands plan it); each open document has its own setting, view state that is neither saved nor undoable; the canvas, ui.screenshot and ui.render {stitchPreview} show it, exports never do; while an opacity mask or a pattern is edited the art shows → {on, jumps, needlePoints, artwork, shown: \"stitches\"|\"art\", pausedBy: null|\"opacityMask\"|\"pattern\", options: {…the embroidery options it plans with}, optionsFrom: \"lastExport\" (this document's last embroidery export)|\"appLastExport\" (another document's, while the app runs)|\"default\" (no embroidery export yet)}",
             has_doc,
             |s, p| set(s, p, "view.stitchPreview", |v, on| v.on = on, |v| v.on)
         ),

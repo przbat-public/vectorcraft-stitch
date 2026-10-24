@@ -4362,8 +4362,8 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   Each answers with the whole setting, `{on, jumps, needlePoints, artwork, shown, pausedBy, options, optionsFrom}`:
   `shown` is `"stitches"` or `"art"`, and `pausedBy` (`"opacityMask"`, `"pattern"` or null) names the edit mode that
   shows the art while it lasts. The preview plans with `options`: those of the document's last embroidery export
-  (`optionsFrom: "document"`), else of the last embroidery export of any document while the app runs (`"app"`),
-  else the defaults (`"defaults"`); they are never saved in the file. Exports never show the stitches.
+  (`optionsFrom: "lastExport"`), else of the last embroidery export of any document while the app runs
+  (`"appLastExport"`), else the defaults (`"default"`); they are never saved in the file. Exports never show the stitches.
 
 - `embroidery.sewEarlier`, `sewLater`, `sewFirst` and `sewLast {ids?, …embroidery options}` change the sewing order by
   moving the objects (`ids`: objects of the document, each checked, at most 100,000; default: the selection; a

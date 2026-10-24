@@ -177,7 +177,8 @@ selection, and MCP and the control channel with ids:
 - `embroidery.setEntryExit {id?, part, entry?, exit?}` sets where one object's part starts and
   ends, in document points (moved and turned with the object).
 - `embroidery.copyFrom {source, ids?, part?, keys?}` gives the objects the source's values, set or
-  unset: the Object tab's Copy and Paste settings.
+  unset, as `embroidery.set` would take them (a newer version's value, or one out of range, is
+  passed over and listed, `passedOver`): the Object tab's Copy and Paste settings.
 
 `embroidery.info {ids?, plan?, …}` reads them, without planning: each object's settings as kept, and
 for each part every value it is planned with, merged over the objects (the value they share, or

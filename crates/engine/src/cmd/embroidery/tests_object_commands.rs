@@ -179,3 +179,23 @@ fn copy_from_copies_set_and_unset_values() {
     assert_eq!((f.angle, f.pull, f.length), (Some(30.0), Some([0.3; 2]), None), "the length the source doesn't set is unset");
     assert!(f.points.as_ref().is_some_and(|p| p.entry.is_some()), "the points stay unless named");
 }
+
+/// `copyFrom` copies only what `set` would take: a newer version's stitch on the source, or a
+/// value out of range, is passed over (the objects keep their own) and listed.
+#[test]
+fn copy_from_passes_over_what_set_would_refuse() {
+    let mut s = blank();
+    let (a, b) = (shape(&mut s, 20.0), shape(&mut s, 120.0));
+    run(&mut s, "embroidery.set", json!({"ids": [b], "part": "fill", "stitch": "satin", "pull": 0.1}));
+    s.edit("Newer Settings", |d, _| {
+        let e = serde_json::from_value(json!({"fill": {"stitch": "motif", "pull": [9.0, 9.0], "angle": 30.0}}))
+            .map_err(|e| EngineError::Other(e.to_string()))?;
+        d.node_mut(NodeId(a)).unwrap().extras_mut().embroidery = Some(Box::new(e));
+        Ok(())
+    })
+    .unwrap();
+    let r = run(&mut s, "embroidery.copyFrom", json!({"source": a, "ids": [b], "part": "fill"}));
+    assert_eq!(r["passedOver"], json!(["fill.stitch", "fill.pull"]));
+    let fill = s.doc().unwrap().doc.node(NodeId(b)).unwrap().extras().embroidery.as_deref().unwrap().part(PartKind::Fill).cloned().unwrap();
+    assert_eq!((fill.stitch.as_deref(), fill.pull, fill.angle), (Some("satin"), Some([0.1, 0.1]), Some(30.0)), "its own kept, the angle copied");
+}

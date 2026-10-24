@@ -5126,7 +5126,9 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,
-  keys?}` answer `{part, keys, changedCount, unchangedCount, skippedCount, skipped}` (`copyFrom` also `source`);
+  keys?}` answer `{part, keys, changedCount, unchangedCount, skippedCount, skipped}` (`copyFrom` also `source`, and
+  `passedOver`: the source's values `embroidery.set` would refuse, a newer version's or out of range, as `fill.stitch`,
+  which the objects keep their own of);
   `embroidery.setEntryExit {id?, part, entry?, exit?}` answers `{id, part, entry, exit, changedCount}`. They take the
   vocabulary's names only: the session refuses any other key before the command runs, and run in-process the command
   names the one to use (`density` → `spacing`). `reason` is `literal`, `guide`, `type`, `image`, `symbolInstance`,

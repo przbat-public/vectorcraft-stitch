@@ -105,7 +105,10 @@ const SETTINGS_SHAPES: [(&str, &str); 8] = [
         "{changedCount: int, part: string, settings: {angle: float, pull: [float]}, skipped: [], skippedCount: int, unchangedCount: int}",
     ),
     ("embroidery.setEntryExit", "{changedCount: int, entry: [float], exit: null, id: int, part: string}"),
-    ("embroidery.copyFrom", "{changedCount: int, keys: [string], part: null, skipped: [], skippedCount: int, source: int, unchangedCount: int}"),
+    (
+        "embroidery.copyFrom",
+        "{changedCount: int, keys: [string], part: null, passedOver: [], skipped: [], skippedCount: int, source: int, unchangedCount: int}",
+    ),
     ("embroidery.reset", "{changedCount: int, keys: [string], part: string, skipped: [], skippedCount: int, unchangedCount: int}"),
 ];
 

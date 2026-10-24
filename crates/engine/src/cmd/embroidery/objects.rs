@@ -447,6 +447,17 @@ pub(super) fn set_entry_exit(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"id": id.0, "part": kind.id(), "entry": stored(PartKey::Entry), "exit": stored(PartKey::Exit), "changedCount": changed}))
 }
 
+/// Value `v` of key `key` as `embroidery.set` (or, for a point, `embroidery.setEntryExit`) would
+/// take it, `None` when it wouldn't: an id this version doesn't know, a value out of its range.
+fn accepted(key: PartKey, v: &PartValue, cmd: &str) -> Option<PartValue> {
+    let given = value_json(v);
+    if key.is_point() {
+        point_param(&given, key.name(), cmd).ok().flatten().map(PartValue::Point)
+    } else {
+        value_param(key, &given, cmd).ok().flatten()
+    }
+}
+
 /// `embroidery.copyFrom`: the values of `keys` of object `source`, set or unset, onto the objects.
 pub(super) fn copy_from(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.copyFrom";
@@ -479,15 +490,29 @@ pub(super) fn copy_from(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let has: Vec<(NodeId, Vec<PartKind>)> =
         take.iter().map(|id| (*id, parts.iter().copied().filter(|k| d.node(*id).is_some_and(|n| has_part(n, *k))).collect())).collect();
+    // What the source holds is copied only as `embroidery.set` would take it: a value a newer
+    // version wrote, or one out of range, is passed over (the objects keep theirs) and listed.
+    let mut copied: Vec<(PartKind, PartKey, Option<PartValue>)> = Vec::new();
+    let mut passed_over: Vec<String> = Vec::new();
+    for kind in &parts {
+        for key in &keys {
+            match from.part(*kind).and_then(|p| p.get(*key)) {
+                None => copied.push((*kind, *key, None)),
+                Some(v) => match accepted(*key, &v, C) {
+                    Some(v) => copied.push((*kind, *key, Some(v))),
+                    None => passed_over.push(format!("{}.{}", kind.id(), key.name())),
+                },
+            }
+        }
+    }
     let changed = edit_counted(s, COPY, |d| {
         let mut changed = 0;
         for (id, kinds) in &has {
             changed += edit_each(d, &[*id], |e| {
                 for kind in kinds {
-                    let source = from.part(*kind);
                     e.edit_part(*kind, |part| {
-                        for key in &keys {
-                            part.set(*key, source.and_then(|p| p.get(*key)));
+                        for (_, key, value) in copied.iter().filter(|(k, ..)| k == kind) {
+                            part.set(*key, value.clone());
                         }
                     });
                 }
@@ -499,6 +524,7 @@ pub(super) fn copy_from(s: &mut Session, p: &Value) -> Result<Value> {
         "source": source.0,
         "part": one_part(&parts),
         "keys": keys.iter().map(|k| k.name()).collect::<Vec<_>>(),
+        "passedOver": passed_over,
         "changedCount": changed,
         "unchangedCount": take.len().saturating_sub(changed),
         "skippedCount": skipped.len(),

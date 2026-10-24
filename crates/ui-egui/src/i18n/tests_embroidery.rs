@@ -189,24 +189,6 @@ fn template(s: &str) -> String {
     out
 }
 
-/// The embroidery rows of the export options dialog (labels, tips and the names in its lists) are
-/// translated in every language.
-#[test]
-fn embroidery_export_dialog_is_translated() {
-    let source = include_str!("../dialogs/embroidery_options.rs");
-    let code = source.find("#[cfg(test)]").map_or(source, |at| &source[..at]);
-    let keys: Vec<String> = code.match_indices("tl!(\"").filter_map(|(at, m)| literal(&code[at + m.len()..])).collect();
-    assert!(keys.len() >= 30, "{keys:?}");
-    // A row each (a translation may be the English word itself: "Satin" in German or French).
-    for info in LANGUAGES.iter().filter(|l| l.code != "en") {
-        let lang = Lang::from_code(info.code).unwrap();
-        let (entries, _) = super::catalog::parse_entries(lang.0.source);
-        let rows: std::collections::HashSet<&str> = entries.iter().filter(|(ctx, _, _)| ctx.is_empty()).map(|(_, src, _)| src.as_str()).collect();
-        let untranslated: Vec<&String> = keys.iter().filter(|k| !rows.contains(k.as_str())).collect();
-        assert!(untranslated.is_empty(), "{}: {untranslated:#?}", info.code);
-    }
-}
-
 /// The strings the embroidery interface shows through `et!("…")` and the counts it shows through
 /// `etn!(n, "…", "…")` in this crate's sources (test files and inline test modules aside): what
 /// [`every_embroidery_string_is_translated`] checks.

@@ -8,9 +8,10 @@
 //! [`layers`] says, as a pure function the canvas and its tests share, what the canvas draws for
 //! a setting: the stitches or the art, the art faint under the stitches, outlines over them.
 //!
-//! The preview plans with the options of the document's last embroidery export, else those of the
-//! last embroidery export of any document, else the defaults ([`OptionsSource`], the project
-//! owner's choice): remembered while the app runs, never saved in the file.
+//! The preview plans the document as it sets itself to be sewn: its objects' embroidery settings,
+//! then its own, then the defaults, with no export's options (the project owner's choice,
+//! 2026-10-23: an export's options are for that export alone, so the preview shows what an export
+//! without them writes).
 
 use serde_json::{Value, json};
 
@@ -92,60 +93,7 @@ pub fn layers(view: StitchView, paused: Option<Paused>, outline: bool) -> Layers
     Layers { art: false, fabric: true, faint_art: view.artwork && !outline, stitches: true, outlines: outline }
 }
 
-/// Where the options the stitch preview plans with come from. (Not "document": the document's
-/// own embroidery settings are another source, `embroidery.setup`'s.)
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum OptionsSource {
-    /// The document's last embroidery export.
-    LastExport,
-    /// The last embroidery export of another document, while the app runs.
-    AppLastExport,
-    /// No embroidery export yet: the defaults (the word `embroidery.setup` uses).
-    Default,
-}
-
-impl OptionsSource {
-    /// The id the replies give it.
-    pub fn id(self) -> &'static str {
-        match self {
-            Self::LastExport => "lastExport",
-            Self::AppLastExport => "appLastExport",
-            Self::Default => "default",
-        }
-    }
-}
-
-/// Note an export of the active document in `format` with `params` (`document.export`'s), once
-/// it is written: when it is an embroidery format, its options are the ones the stitch preview
-/// plans with from now on ([`note_export_of`]).
-pub fn note_export(s: &mut Session, format: &str, params: &Value) {
-    if let Some(uid) = s.active().map(|st| st.uid) {
-        note_export_of(s, uid, format, params);
-    }
-}
-
-/// Note an export of open document `uid` in `format` with `params` (the app's background export's,
-/// once written, whichever document is active then): when it is an embroidery format, its options
-/// are the ones that document's stitch preview plans with from now on. Params the export would
-/// refuse note nothing, nor a document closed meanwhile.
-pub fn note_export_of(s: &mut Session, uid: u64, format: &str, params: &Value) {
-    if !crate::cmd::fileio::embroidery::is_format(format) || !s.documents().iter().any(|d| d.uid == uid) {
-        return;
-    }
-    let Ok(opts) = crate::cmd::fileio::embroidery::options(params) else { return };
-    s.embroidery_plans.note_export(uid, opts);
-}
-
 impl Session {
-    /// The options document `uid`'s stitch preview plans with, and where they come from.
-    pub fn stitch_preview_options(&self, uid: u64) -> (Options, OptionsSource) {
-        match self.embroidery_plans.exported(uid) {
-            (Some(own), _) => (*own, OptionsSource::LastExport),
-            (None, Some(last)) => (*last, OptionsSource::AppLastExport),
-            (None, None) => (Options::default(), OptionsSource::Default),
-        }
-    }
-
     /// The active document's stitch view (the default with no document).
     pub fn stitch_view(&self) -> StitchView {
         self.active().map_or_else(StitchView::default, |st| self.stitch_view_of(st.uid))
@@ -165,7 +113,7 @@ pub(super) fn specs() -> Vec<CommandSpec> {
             "Stitch Preview",
             ["View"],
             Some("Cmd+E"),
-            "{on?: bool (default: toggle)} show the active document's design as the stitches it is sewn with instead of its art (planned as the read commands plan it); each open document has its own setting, view state that is neither saved nor undoable; the canvas, ui.screenshot and ui.render {stitchPreview} show it, exports never do; while an opacity mask or a pattern is edited the art shows → {on, jumps, needlePoints, artwork, shown: \"stitches\"|\"art\", pausedBy: null|\"opacityMask\"|\"pattern\", options: {…the embroidery options it plans with}, optionsFrom: \"lastExport\" (this document's last embroidery export)|\"appLastExport\" (another document's, while the app runs)|\"default\" (no embroidery export yet)}",
+            "{on?: bool (default: toggle)} show the active document's design as the stitches it is sewn with instead of its art (planned as the read commands plan it); each open document has its own setting, view state that is neither saved nor undoable; the canvas, ui.screenshot and ui.render {stitchPreview} show it, exports never do; while an opacity mask or a pattern is edited the art shows (planned with the objects' and the document's embroidery settings, no export's options) → {on, jumps, needlePoints, artwork, shown: \"stitches\"|\"art\", pausedBy: null|\"opacityMask\"|\"pattern\"}",
             has_doc,
             |s, p| set(s, p, "view.stitchPreview", |v, on| v.on = on, |v| v.on)
         ),
@@ -217,12 +165,11 @@ fn set(s: &mut Session, p: &Value, cmd: &str, put: fn(&mut StitchView, bool), ge
     let on = on.unwrap_or(!get(&view));
     put(&mut view, on);
     s.embroidery_plans.set_view(uid, view);
-    Ok(view_json(view, paused, s.stitch_preview_options(uid)))
+    Ok(view_json(view, paused))
 }
 
-/// A stitch view as the commands answer with it, with the options the preview plans with and
-/// where they come from.
-pub fn view_json(view: StitchView, paused: Option<Paused>, (opts, from): (Options, OptionsSource)) -> Value {
+/// A stitch view as the commands answer with it.
+pub fn view_json(view: StitchView, paused: Option<Paused>) -> Value {
     let shown = if layers(view, paused, false).stitches { "stitches" } else { "art" };
     json!({
         "on": view.on,
@@ -231,7 +178,5 @@ pub fn view_json(view: StitchView, paused: Option<Paused>, (opts, from): (Option
         "artwork": view.artwork,
         "shown": shown,
         "pausedBy": paused.map(Paused::id),
-        "options": opts.to_json(),
-        "optionsFrom": from.id(),
     })
 }

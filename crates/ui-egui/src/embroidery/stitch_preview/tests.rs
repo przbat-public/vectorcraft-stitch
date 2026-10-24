@@ -559,14 +559,15 @@ fn in_line_a_design_is_light_when_it_fits_a_frame_and_the_replies_wait_for_the_d
     assert!(p.shown(uid).unwrap().reply(&stats).is_some_and(|r| r.current));
 }
 
-/// The preview plans with its options, the last embroidery export's, and the replies are of them.
+/// The preview plans with no export's options, whatever the last embroidery export gave: the
+/// document as it sets itself to be sewn, and the replies are of that plan.
 #[test]
-fn the_preview_plans_with_its_options() {
+fn the_preview_plans_with_no_exports_options() {
     let (mut p, fake) = preview();
     let mut s = Session::new();
     let uid = document(&mut s);
     exec(&mut s, "document.export", json!({"format": "dst", "spacing": 0.5}));
-    let opts = EmbroideryOptions::from_json(&json!({"spacing": 0.5})).unwrap();
+    let opts = EmbroideryOptions::default();
     p.want(Query { cmd: "embroidery.stats", params: json!({}) });
     p.schedule_at(&mut s, 0.0, false);
     fake.finish(LIGHT_MS);
@@ -575,7 +576,7 @@ fn the_preview_plans_with_its_options() {
     assert_eq!(shown.key, s.embroidery_plan_key(&opts).unwrap());
     assert_eq!(*shown.planned.plan, *s.embroidery_plan(&opts).unwrap());
     let reply = shown.reply(&Query { cmd: "embroidery.stats", params: json!({}) }).unwrap().result;
-    assert_eq!(**reply.as_ref().unwrap(), exec(&mut s, "embroidery.stats", json!({"spacing": 0.5})));
+    assert_eq!(**reply.as_ref().unwrap(), exec(&mut s, "embroidery.stats", json!({})));
 }
 
 #[test]

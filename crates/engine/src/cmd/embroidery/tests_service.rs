@@ -833,18 +833,16 @@ fn a_document_a_failed_batch_opened_leaves_no_planning_behind() {
     assert_eq!(s.embroidery_plans.uids(), before, "the opened document's service is gone");
 }
 
-/// A document a failed batch closed comes back with its stitch view and its export's options; one
-/// a batch that holds closed goes with them.
+/// A document a failed batch closed comes back with its stitch view; one a batch that holds closed
+/// goes with it.
 #[test]
 fn a_document_a_failed_batch_closed_comes_back_with_its_stitch_view() {
     let mut s = Session::new();
     run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
     run(&mut s, "shape.rectangle", json!({"x": 10, "y": 10, "width": 50, "height": 40}));
     run(&mut s, "view.stitchPreview", json!({"on": true}));
-    super::view::note_export(&mut s, "dst", &json!({"spacing": 0.5}));
     let uid = s.doc().unwrap().uid;
     let view = s.embroidery_plans.view(uid);
-    let exported = s.embroidery_plans.exported(uid).0.cloned();
     let r = s.execute(
         "command.batch",
         &json!({"commands": [
@@ -855,7 +853,6 @@ fn a_document_a_failed_batch_closed_comes_back_with_its_stitch_view() {
     assert!(r.as_ref().is_err_and(|e| e.to_string().contains("no.such.command")), "{r:?}");
     assert_eq!(s.doc().unwrap().uid, uid, "back");
     assert!(view.on && s.embroidery_plans.view(uid) == view, "its stitch view");
-    assert_eq!(s.embroidery_plans.exported(uid).0.cloned(), exported, "its export's options");
     // A batch that holds closes it for good.
     run(&mut s, "command.batch", json!({"commands": [{"command": "file.close", "params": {}}]}));
     assert!(!s.embroidery_plans.uids().contains(&uid));

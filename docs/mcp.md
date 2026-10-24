@@ -5154,11 +5154,12 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   Grid: not saved, not undoable, not journaled, kept through Revert, dropped on close. Its options, kept while the
   preview is off, are set the same way: `view.stitchPreview.jumps` (jumps and cuts marked, on by default),
   `view.stitchPreview.needlePoints` (off) and `view.stitchPreview.artwork` (the art faint under the stitches, off).
-  Each answers with the whole setting, `{on, jumps, needlePoints, artwork, shown, pausedBy, options, optionsFrom}`:
+  Each answers with the whole setting, `{on, jumps, needlePoints, artwork, shown, pausedBy}`:
   `shown` is `"stitches"` or `"art"`, and `pausedBy` (`"opacityMask"`, `"pattern"` or null) names the edit mode that
-  shows the art while it lasts. The preview plans with `options`: those of the document's last embroidery export
-  (`optionsFrom: "lastExport"`), else of the last embroidery export of any document while the app runs
-  (`"appLastExport"`), else the defaults (`"default"`); they are never saved in the file. Exports never show the stitches.
+  shows the art while it lasts. The preview plans the document as it sets itself to be sewn (its objects' embroidery
+  settings, then its own, then the defaults), with no export's options: an option given to `document.export` is for
+  that export alone. (Until 2026-10-24 it took the last export's, and answered `options` and `optionsFrom`.) Exports
+  never show the stitches. `file.formatOptions` gives every embroidery option as `null`, unset, for the same reason.
 
 - `embroidery.sewEarlier`, `sewLater`, `sewFirst` and `sewLast {ids?, …embroidery options}` change the sewing order by
   moving the objects (`ids`: objects of the document, each checked, at most 100,000; default: the selection; a

@@ -1,12 +1,12 @@
 //! The stitch preview's view setting: per document, toggled and set by its commands, view state
 //! (not undoable, not journaled, never marking a document modified), dropped on close, kept through
 //! Revert; paused while an opacity mask or a pattern is edited; the layers the canvas draws; and
-//! the options it plans with, from the last embroidery export.
+//! no export's options in what it plans with.
 
 use serde_json::{Value, json};
 use vectorcraft_testkit::embroidery as fx;
 
-use super::view::{Layers, OptionsSource, Paused, StitchView, layers};
+use super::view::{Layers, Paused, StitchView, layers};
 use super::*;
 
 fn runner(s: &mut Session) -> impl FnMut(&str, Value) -> Value + '_ {
@@ -20,10 +20,7 @@ fn the_stitch_view_is_toggled_and_set_per_document() {
     fx::blank(&mut runner(&mut s));
     let first = s.active().unwrap().uid;
     let r = s.execute("view.stitchPreview", &json!({})).unwrap();
-    assert_eq!(
-        r,
-        json!({"on": true, "jumps": true, "needlePoints": false, "artwork": false, "shown": "stitches", "pausedBy": null, "options": {"stitch": "auto"}, "optionsFrom": "default"})
-    );
+    assert_eq!(r, json!({"on": true, "jumps": true, "needlePoints": false, "artwork": false, "shown": "stitches", "pausedBy": null}));
     assert_eq!(s.execute("view.stitchPreview", &json!({"on": true})).unwrap()["on"], true, "idempotent");
     assert_eq!(s.execute("view.stitchPreview", &json!({"on": null})).unwrap()["on"], false, "null toggles");
     // The options are kept, and set, while the preview is off.
@@ -127,40 +124,16 @@ fn the_canvas_layers_follow_the_setting() {
     }
 }
 
-/// The preview plans with the options of the document's last embroidery export, else the last
-/// embroidery export's of any document, else the defaults; another format's export, or one whose
-/// options are refused, changes nothing; closing a document forgets its own.
+/// An embroidery export's options are for that export alone: after an export with options, the
+/// stitch preview still plans the document with none, as an export without them writes it.
 #[test]
-fn the_preview_plans_with_the_last_embroidery_exports_options() {
+fn an_exports_options_are_not_the_previews() {
     let mut s = Session::new();
     fx::blank(&mut runner(&mut s));
     fx::rect(&mut runner(&mut s), fx::RED, 10.0, 10.0, 50.0, 50.0);
-    let first = s.active().unwrap().uid;
-    let defaults = (Options::default(), OptionsSource::Default);
-    assert_eq!(s.stitch_preview_options(first), defaults);
-    s.execute("document.export", &json!({"format": "png"})).unwrap();
-    assert_eq!(s.stitch_preview_options(first), defaults, "not an embroidery format");
+    let before = s.embroidery_plan(&Options::default()).unwrap();
     s.execute("document.export", &json!({"format": "dst", "spacing": 0.5})).unwrap();
-    let ours = Options::from_json(&json!({"spacing": 0.5})).unwrap();
-    assert_eq!(s.stitch_preview_options(first), (ours, OptionsSource::LastExport));
-    assert!(s.execute("document.export", &json!({"format": "dst", "spacing": "wide"})).is_err());
-    assert_eq!(s.stitch_preview_options(first), (ours, OptionsSource::LastExport), "a refused export notes nothing");
-    // Nor one that can't be written.
-    let nowhere = std::env::temp_dir().join("vectorcraft-no-such-folder").join("a.dst");
-    let failed = json!({"format": "dst", "spacing": 0.3, "path": nowhere.to_string_lossy()});
-    assert!(s.execute("document.export", &failed).is_err());
-    assert_eq!(s.stitch_preview_options(first), (ours, OptionsSource::LastExport), "an export not written notes nothing");
-    let r = s.execute("view.stitchPreview", &json!({})).unwrap();
-    assert_eq!((&r["options"], &r["optionsFrom"]), (&json!({"stitch": "auto", "spacing": 0.5}), &json!("lastExport")));
-    // Another document plans with the app's last, until it is exported itself.
-    fx::blank(&mut runner(&mut s));
-    fx::rect(&mut runner(&mut s), fx::BLUE, 10.0, 10.0, 50.0, 50.0);
-    let second = s.active().unwrap().uid;
-    assert_eq!(s.stitch_preview_options(second), (ours, OptionsSource::AppLastExport));
-    s.execute("document.export", &json!({"format": "pes", "length": 3})).unwrap();
-    let theirs = Options::from_json(&json!({"length": 3})).unwrap();
-    assert_eq!(s.stitch_preview_options(second), (theirs, OptionsSource::LastExport));
-    assert_eq!(s.stitch_preview_options(first), (ours, OptionsSource::LastExport), "the first keeps its own");
-    s.execute("file.close", &json!({})).unwrap();
-    assert_eq!(s.stitch_preview_options(second), (theirs, OptionsSource::AppLastExport), "closing forgets the document's own");
+    let r = s.execute("view.stitchPreview", &json!({"on": true})).unwrap();
+    assert!(r.get("options").is_none() && r.get("optionsFrom").is_none(), "{r}");
+    assert_eq!(*s.embroidery_plan(&Options::default()).unwrap(), *before);
 }

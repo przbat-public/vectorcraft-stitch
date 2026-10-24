@@ -368,8 +368,9 @@ as Melco's checker reads it, on each object's settings, it flags none.
 
 - **The stitches on the canvas.** View › Stitch Preview (⌘E), or the Art | Stitches switch at the
   canvas's top right, shows the active document's stitches in place of its art, on the fabric,
-  each in its thread's colour; they are planned in the background with the export's options (those
-  of the document's last embroidery export, else the defaults) and follow every edit. View › Stitch
+  each in its thread's colour; they are planned in the background with the document's own
+  settings (its objects', then its own, then the defaults: no export's options, which are for that
+  export alone) and follow every edit. View › Stitch
   Preview Options: Show Jumps and Cuts, Show Needle Points, Show Artwork Under Stitches (faint, or
   its outlines in Outline) and Show Check Marks. As commands: `view.stitchPreview {on?}` and its
   options (`view.stitchPreview.jumps`, `needlePoints`, `artwork`); `embroidery.render` draws the
@@ -1466,10 +1467,10 @@ times the three for any file with art to stitch; perf's other budgets did not mo
 The app plans the active document's design only while something shows it: the canvas in the
 stitch view, or a read command's reply the Embroidery panel or the status bar shows
 (`ui-egui/src/embroidery/stitch_preview.rs`). An app that never shows stitches never plans. The
-preview plans with the options of the document's last embroidery export, else those of the last
-embroidery export of any document while the app runs, else the defaults (the project owner's
-choice; `view.stitchPreview` answers which), never saved in the file. An export counts once it is
-written: one refused, failed or cancelled notes nothing.
+preview plans the document as it sets itself to be sewn, with no export's options (the project
+owner's choice, 2026-10-23, in place of the last export's options it took until then): an option
+given to one export is for that export alone, so the preview shows what an export without options
+writes.
 
 - **On a thread of its own** (`plan_worker.rs`), newest job first: the plan and its scene are
   handed over first, then the read commands' replies one by one as each is made (by the commands'
@@ -1923,7 +1924,7 @@ Public documentation, cited per claim in the crate:
   `embroidery.setTrimAfter`, `threads`, `stats`, `sequence`, `check` and `render`, and the
   document's thread palette), `setup.rs` (the document's embroidery settings,
   `embroidery.setup` and `embroidery.settings`), `view.rs` (each document's stitch view: View ›
-  Stitch Preview and its options, four commands; the export's options it plans with), `reorder.rs`
+  Stitch Preview and its options, four commands), `reorder.rs`
   (changing the sewing order: a drop's move, Sew Earlier, Later, First and Last, four commands,
   and what a move did), `scene.rs` (the plan as a line picture), `render.rs` (`embroidery.render`),
   `printed.rs` (the document as it prints, appearances expanded),

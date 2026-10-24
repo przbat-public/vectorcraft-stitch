@@ -115,7 +115,7 @@ pub fn inspect(app: &VectorcraftApp, now: f64) -> serde_json::Value {
 /// plans with, as it draws them (`embroidery.render`'s own drawing).
 pub fn render_stitches(app: &mut VectorcraftApp, artboard: usize, scale: f64) -> Result<vectorcraft_render::Rendered, String> {
     let uid = app.session.active().ok_or("no document")?.uid;
-    let (opts, _) = app.session.stitch_preview_options(uid);
+    let opts = vectorcraft_engine::EmbroideryOptions::default();
     let view = app.session.stitch_view_of(uid);
     let look = Look { jumps: view.jumps, needle_points: view.needle_points };
     picture(&mut app.session, Region::Artboard(artboard), scale, look, Some(FABRIC), &opts).map(|(img, _, _)| img).map_err(|e| e.to_string())

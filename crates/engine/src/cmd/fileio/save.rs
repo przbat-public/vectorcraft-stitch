@@ -764,6 +764,8 @@ fn format_options(s: &mut Session, p: &Value) -> Result<Value> {
         for (name, o) in options.iter_mut() {
             let default = prefs.get(name).filter(|_| matches!(f.id, "vectorcraft" | "template")).unwrap_or(&o["default"]);
             o["value"] = saved.and_then(|m| m.get(name)).unwrap_or(default).clone();
+            // VectorCraft Stitch: an embroidery option is unset unless given to one export.
+            super::embroidery::unset_option(f.id, &mut o["value"]);
         }
     }
     v["saveFormats"] =

@@ -148,6 +148,16 @@ pub(crate) fn is_format(id: &str) -> bool {
     StitchFormat::from_id(id).is_some()
 }
 
+/// `file.formatOptions`' value of an option of format `id`: for an embroidery format, unset
+/// (`null`), whatever was saved or is the default. Its stitches take the objects' settings, then
+/// the document's, then the defaults; an option given to one export is for that export alone
+/// (the project owner's choice, 2026-10-23), so no value is offered for every export to copy.
+pub(crate) fn unset_option(id: &str, value: &mut Value) {
+    if is_format(id) {
+        *value = Value::Null;
+    }
+}
+
 /// The embroidery options in the export's params `p`, checked: the export's own keys (and other
 /// formats' options) pass, a key that looks like a misspelt embroidery option is refused.
 pub(crate) fn options(p: &Value) -> Result<Options> {

@@ -24,6 +24,7 @@ mod cache;
 mod check;
 pub(crate) mod derive;
 pub(crate) mod digitize;
+mod fabrics;
 mod info;
 mod measure;
 mod objects;
@@ -63,6 +64,8 @@ mod tests_scene;
 mod tests_service;
 #[cfg(test)]
 mod tests_settings;
+#[cfg(test)]
+mod tests_setup;
 #[cfg(test)]
 mod tests_stats;
 #[cfg(test)]
@@ -273,7 +276,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Setup",
             [],
             None,
-            "{palette?: \"pec\"|\"jef\"|null (the thread palette the design's colours are matched to, the target machine format's: Brother's 61 threads, which PES files number, or Janome's 78, which JEF files number; null unsets it, and JEF is used), start?: [x, y] (where the machine starts the needle, in document points: a design opened from a machine file keeps its file's start point, and the DST, TAP, T01, EXP, PES and PEC exports start there; JEF and VP3, whose machines put the start at the hoop's centre, start at the design's centre whatever it is; null unsets it, and those exports start at the design's corner), label?: string (the design's name the export writes, as DST's and PEC's `LA:` label: a design opened from a machine file keeps its file's; null unsets it, and the export writes the document's title), settings?: {palette?, start?, label?} (the settings of its own reply, passed back)} change the document's embroidery settings in one undo step, saved with the document (resolved, which the reply only reports, is refused); no params → no change → {settings: {palette: as set (null when unset; one a newer version wrote, as it is), start: [x, y] or null, label: string or null}, resolved: {palette: {value: \"pec\"|\"jef\" (the palette the stitch plan matches to), source: \"document\"|\"default\" (set by the document, or the default because it sets none this version knows)}}}",
+            "{palette?: \"pec\"|\"jef\"|null (the thread palette the design's colours are matched to, the target machine format's: Brother's 61 threads, which PES files number, or Janome's 78, which JEF files number; null unsets it, and JEF is used), start?: [x, y] (where the machine starts the needle, in document points: a design opened from a machine file keeps its file's start point, and the DST, TAP, T01, EXP, PES and PEC exports start there; JEF and VP3, whose machines put the start at the hoop's centre, start at the design's centre whatever it is; null unsets it, and those exports start at the design's corner), label?: string (the design's name the export writes, as DST's and PEC's `LA:` label: a design opened from a machine file keeps its file's; null unsets it, and the export writes the document's title), fabric?: id (a preset embroidery.fabrics lists: its values copied in, the colour kept; the same preset again restores them)|{preset?: id|null (as stored, passed back; another preset's id is copied first; null: a fabric of one's own), tatami?: {pull?: mm (0 to 2), spacing?: mm for 40 wt thread (0.05 to 5; another thread scales it), length?: mm (0.2 to 12), underlay?: id}|null, satin?: {pull?, spacingPercent?: percent of the spacing a column's width picks (50 to 200), underlay?}|null, stabilizer?, topping?, needlePoint?: ids for information, thickness?: mm (0 to 5; embroidery.stats counts the thread through it), color?: \"#rrggbb\" (the stitch preview draws on it)|null} (merged value by value; null restores one to the preset's, or unsets it with no preset)|null (no fabric: the built-in values), threadWeight?: wt (10 to 150)|null, joinSameColor?: bool|null (objects of one colour join one block where nothing lies between them; default true), machine?: {jumpLength?, trimLength?, minStitch?, splitLength?: mm as document.export takes them, speed?: stitches a minute (60 to 1500; embroidery.stats times the design at it)}|null (merged value by value; null unsets one), settings?: {…} (the settings of its own reply, passed back)} change the document's embroidery settings in one undo step, saved with the document (resolved and overrides, which the reply only reports, are refused); objects with values of their own keep them; no params → no change → {settings: {palette: as set (null when unset; one a newer version wrote, as it is), start: [x, y] or null, label: string or null, fabric: {preset, tatami, satin, stabilizer, topping, needlePoint, thickness, color} as stored or null, threadWeight, joinSameColor, machine: {jumpLength, trimLength, minStitch, splitLength, speed} or null}, resolved: {palette: {value: \"pec\"|\"jef\" (the palette the stitch plan matches to), source: \"document\"|\"default\" (set by the document, or the default because it sets none this version knows)}, fabric: {preset: {id, known}|null, tatami: {pull, spacing (for the thread in use), length, underlay}, satin: {pull, spacingPercent, underlay}: each {value, source, preset: the preset's value or null, changed}, thickness, color: {value, source}}, threadWeight, joinSameColor: {value, source}, machine: {jumpLength, trimLength, minStitch, splitLength, speed: each {value, source}}}, overrides: {pull, spacing, length, underlay: how many objects set it themselves}}",
             has_doc,
             setup::setup
         ),
@@ -287,11 +290,29 @@ pub fn specs() -> Vec<CommandSpec> {
             info::info
         ),
         cmd!(
+            query "embroidery.fabrics",
+            "Embroidery Fabrics",
+            [],
+            None,
+            "{} the fabric presets embroidery.setup {fabric} copies into the document (Wilcom's eight auto fabrics), each value with what it rests on → {default: id, caveat: that every per-fabric stitch value comes from one family of software, fabrics: [{id, label, values: {tatami: {pull, spacing, spacingPercent, length, underlay}, satin: as tatami, stabilizer, topping, needlePoint, thickness} (null: none published, the built-in value), sources: [{key, kind: \"published\"|\"derived\"|\"estimate\", name, url, family, how}], estimates: [key…]}]}",
+            always,
+            fabrics::fabrics
+        ),
+        cmd!(
+            "embroidery.applyFabric",
+            "Apply Embroidery Fabric to Objects",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection, else every object of the document; groups and compound paths as embroidery.set takes them), keys?: [key…] (default: pull, spacing, length and underlay, the values a fabric sets; no others)} unset those of the objects' own settings, on fills and strokes, so that they follow the document's fabric again (Document Setup's bar). One undo step, none when nothing changes → {keys, changedCount, unchangedCount, skippedCount, skipped: as embroidery.set lists them}",
+            has_doc,
+            fabrics::apply_fabric
+        ),
+        cmd!(
             query "embroidery.settings",
             "Show Embroidery Settings",
             [],
             None,
-            "{} the document's embroidery settings, read only → {settings, resolved} as embroidery.setup answers",
+            "{} the document's embroidery settings, read only → {settings, resolved, overrides} as embroidery.setup answers",
             has_doc,
             setup::settings
         ),

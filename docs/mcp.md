@@ -5095,7 +5095,16 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   (null when unset, one a newer version wrote as it is), and the one the stitch plan uses with where it comes from
   (`document`, or `default`). The reply's `settings` can be passed back (`{settings: …}`); `resolved` is only
   reported and refused as input. `embroidery.settings {}` reads the same without editing anything. A PES, PEC or JEF
-  file opens in its own format's palette.
+  file opens in its own format's palette. It also takes `start`, `label`, `fabric` (a preset's id, an object of values
+  merged value by value, or null), `threadWeight`, `joinSameColor` and `machine` (`{jumpLength, trimLength, minStitch,
+  splitLength, speed}`, merged), all reported in `settings` and `resolved` (each fabric value `{value, source, preset,
+  changed}`), and the reply's `overrides` counts the objects that set the fabric's pull, spacing, length and underlay
+  themselves (read only, as `resolved`).
+- `embroidery.fabrics {}` lists the fabric presets `{default, caveat, fabrics: [{id, label, values: {tatami, satin,
+  stabilizer, topping, needlePoint, thickness}, sources: [{key, kind: "published"|"derived"|"estimate", name, url,
+  family, how}], estimates: [key…]}]}`; it needs no document. `embroidery.applyFabric {ids?, keys?}` unsets the objects'
+  own values of the fabric's keys (the selection's, or with nothing selected every object's) and answers `{keys, changedCount, unchangedCount,
+  skippedCount, skipped}`.
 - `embroidery.threads {…embroidery options, offset?, limit?}` lists the thread each colour block is sewn in, in sewing
   order: `{palette, threshold, blockCount, offset, truncated, blocks: [{block, thread: {palette, index, name, color, art,
   deltaE, mismatch}, unitCount}], options, warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour

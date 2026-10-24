@@ -192,6 +192,50 @@ compound paths in it, a compound path's member for its compound path; type, a sy
 (set its art's instead), a run of stitches opened from a file and live objects are skipped and
 listed (`skipped`, at most 1,000), and at most 100,000 ids are taken.
 
+**Document settings.** `embroidery.setup` sets, besides the palette, the start point and the label,
+the document's fabric (`fabric`), the thread's weight (`threadWeight`), whether one colour's objects
+join (`joinSameColor`) and the machine's values (`machine`: `jumpLength`, `trimLength`, `minStitch`,
+`splitLength`, `speed`), each merged value by value, `null` unsetting one; `embroidery.settings`
+reads them. Each is answered as stored (`settings`, which can be passed back unchanged) and as
+the plan uses it with where it comes from (`resolved`: the document's or the default), with how
+many objects set the fabric's values themselves (`overrides`). No panel sets them yet (Document
+Setup › Embroidery comes next).
+
+- **A fabric is copied, not linked.** `{fabric: "stretchKnit"}` copies a preset's values into the
+  document, as the values in force and as the preset's (the base `resolved` marks a changed value
+  against, `changed`, and `null` restores); the colour stays, being no preset's value; the same
+  preset again restores all of its values; `{fabric: null}` removes it. `{fabric: {tatami:
+  {length: 3.5}}}` changes one value. Objects with values of their own keep them:
+  `embroidery.applyFabric {ids?, keys?}` unsets the objects' own pull, spacing, length and
+  underlay (the selection's, or with nothing selected every object's), so that they follow the
+  fabric again.
+- **The presets** are Wilcom's eight auto fabrics, under words of our own (`embroidery.fabrics`
+  lists them, each value with the publication it rests on, how it was worked out, or why it is an
+  estimate; `crates/stitch/src/fabric.rs` cites every source). A dash leaves the built-in value.
+  The default, `cotton`, sews exactly as a document without a fabric (its thickness, 0.55 mm from
+  Melco's broadcloth figure, only changes `embroidery.stats`' thread estimate from the 0.5 mm
+  default).
+
+| Preset | Tatami pull (mm) | Tatami rows (mm, 40 wt) | Tatami stitch (mm) | Tatami underlay | Satin pull (mm) | Satin spacing | Satin underlay | Stabiliser, topping, needle | Thickness (mm) |
+|---|---|---|---|---|---|---|---|---|---|
+| `cotton` | 0.2 | 0.38 | 4 | auto | 0.2 | 100 % | auto | tearAway, none, universal | 0.55 |
+| `denim` | 0.17 | 0.38 | 4 | edgeTatami | 0.2 | 100 % | auto | tearAway, none, universal | — |
+| `stretchKnit` | 0.2 | 0.38 | 4 | edgeTatami | 0.35 | 100 % | auto | cutAway, waterSoluble, ballPoint | 0.6 |
+| `pique` | 0.2 | 0.38 | 4 | edgeTatami | 0.25 | 100 % | auto | cutAway, waterSoluble, ballPoint | 0.8 |
+| `fleece` | 0.25 | 0.3325 | 3.8 | edgeTatami | 0.4 | 100 % | auto | adhesiveTearAway, waterSoluble, universal | 1 |
+| `silk` | 0.2 | 0.475 | 4.2 | auto | 0.2 | 111.111 % | auto | adhesiveTearAway, none, universal | — |
+| `nylon` | — | — | — | — | — | — | — | tearAway, none, universal | — |
+| `cap` | — | — | — | — | — | — | — | adhesiveTearAway, waterSoluble, universal | 1.2 |
+
+  **One family.** Every value that changes from fabric to fabric in how the stitches are made comes
+  from one family of software: Wilcom's own help and BERNINA's presets, and BERNINA's embroidery
+  software is Wilcom's. No independent source confirms them: sew a test on the fabric. The rows'
+  base spacing (0.38 mm) is the one value two families give (Wilcom and Melco).
+- **A fabric's tatami rows are given for 40 wt thread** and scale with the document's thread
+  weight as the built-in spacing does (`resolved` reports them for the thread in use); a satin's
+  spacing is a percentage of the spacing its width picks. A value typed on an object or given to
+  an export is used as it is.
+
 **Threads.** Each colour block is sewn in a thread of the document's thread palette: Janome's 78
 threads, which JEF files number (`jef`), or Brother's 61, which PES files number (`pec`) among 64
 entries: the last three, 62 to 64, are the format's appliqué entries (EduTechWiki names them
@@ -870,7 +914,8 @@ the object a person selects (`id`).
   each object's start is the nearest one, not chosen with the next object in view.
 - The default spacing and stitch length follow professional software (Wilcom), which is more
   open than Ink/Stitch's (rows 0.25 mm apart, 3 mm stitches): VectorCraft sews about 41–59 % as
-  many stitches for the same artwork (measured below). No fabric presets yet.
+  many stitches for the same artwork (measured below). The fabric presets (Document settings,
+  above) change them only for the fabrics whose published values differ.
 
 ## Validation
 

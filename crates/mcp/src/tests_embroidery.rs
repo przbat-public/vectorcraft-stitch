@@ -20,10 +20,7 @@ fn the_embroidery_commands_are_reachable() {
         assert!(ids.contains(&id), "{id} in {ids:?}");
     }
     let r = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.setup", "params": {"palette": "jef"}})));
-    assert_eq!(
-        r,
-        json!({"settings": {"palette": "jef", "start": null, "label": null}, "resolved": {"palette": {"value": "jef", "source": "document"}}})
-    );
+    assert_eq!((&r["settings"]["palette"], &r["resolved"]["palette"]), (&json!("jef"), &json!({"value": "jef", "source": "document"})));
     assert_eq!(h.session.doc().unwrap().doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(|p| p.id()), Some("jef"));
     // A misspelt key is refused before the command runs.
     let typo = call_tool(&mut h, "run_command", &json!({"command": "embroidery.setup", "params": {"palete": "pec"}}));
@@ -150,4 +147,17 @@ fn the_object_settings_commands_are_reachable() {
     assert_eq!(r["changedCount"], 2);
     let alias = call_tool(&mut h, "run_command", &json!({"command": "embroidery.set", "params": {"ids": [a], "part": "fill", "density": 0.4}}));
     assert!(alias.is_error, "{alias:?}");
+}
+
+/// The fabrics are listed, one chosen for the document and applied to the objects through MCP.
+#[test]
+fn the_fabric_commands_are_reachable() {
+    let mut h = Headless::with_document();
+    let run = |h: &mut Headless, command: &str, params: Value| text(&call_tool(h, "run_command", &json!({"command": command, "params": params})));
+    let fabrics = run(&mut h, "embroidery.fabrics", json!({}));
+    assert_eq!(fabrics["fabrics"].as_array().unwrap().len(), 8);
+    let r = run(&mut h, "embroidery.setup", json!({"fabric": "denim"}));
+    assert_eq!(r["resolved"]["fabric"]["preset"], json!({"id": "denim", "known": true}));
+    let r = run(&mut h, "embroidery.applyFabric", json!({}));
+    assert_eq!(r["changedCount"], 0);
 }

@@ -866,17 +866,17 @@ enum Unchanging {
     /// another type), and a key of its own; in the document, a fabric, a machine and a key holding
     /// only such keys. Written into the file and opened, as another version would leave them.
     Kept,
-    /// Every value of both parts of every object set, and then unset: the document must be the one
-    /// it was, its file the same bytes.
+    /// Every value of both parts of every object set by command (`embroidery.set`, and
+    /// `embroidery.setEntryExit` for the points), and then reset (`embroidery.reset`): the document
+    /// must be the one it was, its file the same bytes.
     SetAndReset,
-    /// The default fabric copied into the document as choosing it copies it, its thread weight 40
-    /// and joining on, and every machine value at the planner's default.
+    /// The default fabric chosen by command (`embroidery.setup {fabric}`), its thread weight 40 and
+    /// joining on, and every machine value at the planner's default.
     DefaultFabric,
 }
 
 /// `s`'s document given `how`'s settings: a session holding it.
 fn unchanging(mut s: Session, how: Unchanging) -> Session {
-    use vectorcraft_doc::embroidery::{EmbroiderySetup, MachineSettings, PartKey, PartKind, PartValue};
     match how {
         Unchanging::Kept => {
             let doc = s.doc().unwrap().doc.clone();
@@ -900,37 +900,30 @@ fn unchanging(mut s: Session, how: Unchanging) -> Session {
         }
         Unchanging::SetAndReset => {
             let before = vectorcraft_format::save(&s.doc().unwrap().doc, false);
-            let ids: Vec<vectorcraft_doc::NodeId> = {
-                let mut ids = Vec::new();
-                for layer in &s.doc().unwrap().doc.layers {
-                    layer.walk(&mut |n| ids.push(n.id));
+            let ids: Vec<u64> = s.doc().unwrap().doc.layers.iter().map(|l| l.id.0).collect();
+            // Every value of both parts set by command on every object that takes them, an entry
+            // and an exit on each, then every one reset.
+            for part in ["fill", "stroke"] {
+                let all = json!({"ids": ids, "part": part, "stitch": "running", "spacing": 0.5, "length": 3, "angle": 30, "pull": [0.3, 0.1],
+                    "pullPercent": 5, "push": 0.2, "expand": 0.3, "narrowAsSatin": 4, "underlay": "edge", "splitLength": 8});
+                match s.execute("embroidery.set", &all) {
+                    Ok(_) | Err(vectorcraft_engine::EngineError::Other(_)) => {}
+                    Err(e) => panic!("{e}"),
                 }
-                ids
-            };
-            let sample = |key: PartKey| match key {
-                PartKey::Stitch => PartValue::Id("running".into()),
-                PartKey::Underlay => PartValue::Id("edge".into()),
-                PartKey::Pull | PartKey::PullPercent | PartKey::Push => PartValue::Sides([0.3, 0.1]),
-                PartKey::Entry | PartKey::Exit => PartValue::Point(vectorcraft_geom::Point::new(10.0, 20.0)),
-                _ => PartValue::Number(3.0),
-            };
-            for set in [true, false] {
-                s.edit("Embroidery Object Settings", |d, _| {
-                    for id in &ids {
-                        let Some(n) = d.node_mut(*id) else { continue };
-                        let mut e = n.extras().embroidery.as_deref().cloned().unwrap_or_default();
-                        for kind in PartKind::ALL {
-                            e.edit_part(kind, |p| {
-                                for key in PartKey::ALL {
-                                    assert!(p.set(key, set.then(|| sample(key))));
-                                }
-                            });
-                        }
-                        n.extras_mut().embroidery = (!e.is_empty()).then(|| Box::new(e));
-                    }
-                    Ok(())
-                })
-                .unwrap();
+            }
+            let mut objects = Vec::new();
+            for layer in &s.doc().unwrap().doc.layers {
+                layer.walk(&mut |n| objects.push(n.id.0));
+            }
+            for id in objects {
+                for part in ["fill", "stroke"] {
+                    let _ = s.execute("embroidery.setEntryExit", &json!({"id": id, "part": part, "entry": [10, 20], "exit": [30, 40]}));
+                }
+            }
+            let keys: Vec<&str> = vectorcraft_doc::embroidery::PartKey::ALL.iter().map(|k| k.name()).collect();
+            match s.execute("embroidery.reset", &json!({"ids": ids, "keys": keys})) {
+                Ok(_) | Err(vectorcraft_engine::EngineError::Other(_)) => {}
+                Err(e) => panic!("{e}"),
             }
             let after = vectorcraft_format::save(&s.doc().unwrap().doc, false);
             assert!(before == after, "set and reset: the file is not the one it was");
@@ -938,53 +931,13 @@ fn unchanging(mut s: Session, how: Unchanging) -> Session {
         }
         Unchanging::DefaultFabric => {
             let fill = vectorcraft_stitch::plan::Params::for_style(vectorcraft_stitch::plan::Style::Fill);
-            s.edit("Embroidery Setup", |d, _| {
-                let mut setup = d.embroidery.as_deref().cloned().unwrap_or_else(EmbroiderySetup::default);
-                setup.set_fabric(Some(default_fabric()));
-                setup.set_thread_weight(Some(vectorcraft_stitch::plan::THREAD_WEIGHT));
-                setup.set_join_same_color(Some(true));
-                setup.set_machine(Some(MachineSettings {
-                    jump_length: Some(fill.jump),
-                    trim_length: Some(fill.trim),
-                    min_stitch: Some(fill.min_stitch),
-                    split_length: Some(fill.max_satin),
-                    ..MachineSettings::default()
-                }));
-                d.embroidery = Some(Box::new(setup));
-                Ok(())
-            })
-            .unwrap();
+            let setup = json!({
+                "fabric": vectorcraft_stitch::fabric::DEFAULT_FABRIC, "threadWeight": vectorcraft_stitch::plan::THREAD_WEIGHT, "joinSameColor": true,
+                "machine": {"jumpLength": fill.jump, "trimLength": fill.trim, "minStitch": fill.min_stitch, "splitLength": fill.max_satin},
+            });
+            run(&mut s, "embroidery.setup", setup);
             s
         }
-    }
-}
-
-/// The default fabric's values as choosing it copies them into a document: in force and as the
-/// preset's.
-fn default_fabric() -> vectorcraft_doc::embroidery::FabricSettings {
-    use vectorcraft_doc::embroidery::{FabricPreset, FabricSettings, FabricValues, StitchValues};
-    let f = vectorcraft_stitch::fabric::fabric(vectorcraft_stitch::fabric::DEFAULT_FABRIC).unwrap();
-    let stitch = |p: &vectorcraft_stitch::fabric::StitchPreset| StitchValues {
-        pull: p.pull.map(|v| v.value),
-        spacing: p.spacing.map(|v| v.value),
-        spacing_percent: p.spacing_percent.map(|v| v.value),
-        length: p.length.map(|v| v.value),
-        underlay: p.underlay.map(|v| v.value.id().to_string()),
-        ..StitchValues::default()
-    };
-    let values = FabricValues {
-        tatami: Some(stitch(&f.tatami)),
-        satin: Some(stitch(&f.satin)),
-        stabilizer: f.stabilizer.map(|v| v.value.to_string()),
-        topping: f.topping.map(|v| v.value.to_string()),
-        needle_point: f.needle_point.map(|v| v.value.to_string()),
-        thickness: f.thickness.map(|v| v.value),
-        ..FabricValues::default()
-    };
-    FabricSettings {
-        preset: Some(FabricPreset { id: f.id.to_string(), values: values.clone(), ..FabricPreset::default() }),
-        values,
-        ..FabricSettings::default()
     }
 }
 

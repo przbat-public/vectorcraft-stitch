@@ -216,13 +216,13 @@ pub(crate) fn value_json(v: &PartValue) -> Value {
 }
 
 /// The skipped objects as replies list them: at most [`MAX_SKIPPED`].
-fn skipped_json(skipped: &[(NodeId, Skip)]) -> Value {
+pub(super) fn skipped_json(skipped: &[(NodeId, Skip)]) -> Value {
     skipped.iter().take(MAX_SKIPPED).map(|(id, why)| json!({"id": id.0, "reason": why.id()})).collect()
 }
 
 /// Change the embroidery of each object `ids` as `f` does → how many changed: an object left with
 /// none carries none.
-fn edit_each(d: &mut Document, ids: &[NodeId], mut f: impl FnMut(&mut Embroidery)) -> Result<usize> {
+pub(super) fn edit_each(d: &mut Document, ids: &[NodeId], mut f: impl FnMut(&mut Embroidery)) -> Result<usize> {
     let mut changed = 0;
     for id in ids {
         let n = d.node_mut(*id).ok_or(EngineError::NoNode(*id))?;
@@ -240,7 +240,7 @@ fn edit_each(d: &mut Document, ids: &[NodeId], mut f: impl FnMut(&mut Embroidery
 
 /// The objects a settings command acts on: `ids` or the selection, each an object of the
 /// document, as [`takers`] takes them; refused, naming `what`, when none is given.
-fn given(s: &Session, p: &Value, what: &str, cmd: &str) -> Result<Takers> {
+pub(super) fn given(s: &Session, p: &Value, what: &str, cmd: &str) -> Result<Takers> {
     if let Some(n) = p.get("ids").and_then(Value::as_array).map(Vec::len).filter(|n| *n > MAX_IDS) {
         return Err(bad(cmd, format!("`ids` lists {n} objects: at most {MAX_IDS}")));
     }

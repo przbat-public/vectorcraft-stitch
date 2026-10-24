@@ -86,7 +86,7 @@ fn a_unit_that_adds_no_record_has_no_numbers() {
     use super::test_support::unit;
 
     let unit = |node: u64, points: &[(f64, f64)]| unit(node, Style::Running, [200, 30, 30], points, None);
-    let mut seq = Sequence::new(Params::for_style(Style::Running));
+    let mut seq = Sequence::new(Params::for_style(Style::Running), true);
     seq.add(unit(1, &[(0.0, 0.0), (2.0, 0.0), (4.0, 0.0)]));
     seq.add(unit(2, &[(4.0, 0.0)]));
     let plan = seq.plan(String::new(), Vec::new(), Palette::Jef);

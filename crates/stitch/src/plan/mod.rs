@@ -152,6 +152,11 @@ pub(crate) const NARROW_SATIN: f64 = 7.0;
 /// A satin column's width when none is given (millimetres). The export always gives one, the
 /// stroke's width; this is for callers of the planner that don't.
 const SATIN_WIDTH: f64 = 3.0;
+/// The share of the spacing picked by a satin column's width it is sewn at when nothing says
+/// another ([`Params::spacing_scale`]): all of it.
+const SPACING_SCALE: f64 = 1.0;
+/// Percent in a whole: a percentage over this is a share.
+const PERCENT: f64 = 100.0;
 /// The underlay's own stitch length (millimetres): short, to hold the fabric still. An estimate.
 const UNDERLAY_STITCH: f64 = 2.0;
 /// The most runs one shape may produce (a guard against absurd parameters).
@@ -288,6 +293,10 @@ pub struct Params {
     /// Satin only: pick [`Params::density`] from the column's width ([`satin_spacing`]) instead of
     /// using it as given. On by default; an explicit density turns it off.
     pub auto_spacing: bool,
+    /// Satin only: the share of the spacing picked by the column's width ([`Params::auto_spacing`])
+    /// it is sewn at, 1 for the spacing as picked (a fabric sets another: the document's satin
+    /// spacing percent). An explicit density, used as given, ignores it.
+    pub spacing_scale: f64,
     /// Fill only: the widest part of a filled shape sewn as a satin column instead of tatami,
     /// millimetres; 0 sews every part as tatami. The planner's [`narrow_columns`] finds such parts,
     /// and [`try_fill_with_columns`] sews them with the rest of the shape, which the caller cuts
@@ -374,6 +383,7 @@ impl Params {
                 width: 0.0,
                 max_satin: MAX_SATIN_STITCH,
                 auto_spacing: false,
+                spacing_scale: SPACING_SCALE,
                 narrow: 0.0,
             },
             // A satin column's stitches cross from rail to rail: it uses no stitch length or angle
@@ -395,6 +405,7 @@ impl Params {
                 width: SATIN_WIDTH,
                 max_satin: MAX_SATIN_STITCH,
                 auto_spacing: true,
+                spacing_scale: SPACING_SCALE,
                 narrow: 0.0,
             },
             // A fill has no ends to push in: its rows run edge to edge.
@@ -415,6 +426,7 @@ impl Params {
                 width: 0.0,
                 max_satin: MAX_SATIN_STITCH,
                 auto_spacing: false,
+                spacing_scale: SPACING_SCALE,
                 narrow: NARROW_SATIN,
             },
         }
@@ -447,15 +459,16 @@ impl Params {
             width: clamp(self.width, d.width, (0.0, MAX_SATIN_WIDTH)),
             max_satin: clamp(self.max_satin, d.max_satin, MAX_SATIN_STITCH_RANGE),
             auto_spacing: self.auto_spacing,
+            spacing_scale: clamp(self.spacing_scale, d.spacing_scale, (SPACING_PERCENT_RANGE.0 / PERCENT, SPACING_PERCENT_RANGE.1 / PERCENT)),
             narrow: clamp(self.narrow, d.narrow, NARROW_RANGE),
         }
     }
 
     /// The spacing of a satin column `width` wide (millimetres, peak to peak on a rail): picked by
     /// its width and the thread with [`Params::auto_spacing`] ([`satin_spacing`], [`thread_scale`]),
-    /// else [`Params::density`].
+    /// the share [`Params::spacing_scale`] of it, else [`Params::density`].
     pub fn column_spacing(&self, width: f64) -> f64 {
-        if self.auto_spacing { satin_spacing(width) * thread_scale(self.thread_weight) } else { self.density }
+        if self.auto_spacing { satin_spacing(width) * thread_scale(self.thread_weight) * self.spacing_scale } else { self.density }
     }
 
     /// How much farther a stitch `length` long reaches at each side for pull compensation
@@ -573,7 +586,7 @@ pub fn try_fill_with_columns(
     let (f, s) = (Params { style: Style::Fill, ..*fill }.sane(), Params { style: Style::Satin, ..*satin }.sane());
     placed(shape)?;
     placed(rest)?;
-    let closest = s.density.min(satin_spacing(f64::INFINITY) * thread_scale(s.thread_weight));
+    let closest = s.density.min(satin_spacing(f64::INFINITY) * thread_scale(s.thread_weight) * s.spacing_scale);
     let column = |c: &Column| {
         // Its widest crossing, with the most pull compensation at both sides, split as satin's are.
         let widest = c.stations.iter().map(|(a, b)| a.distance(*b)).fold(0.0, f64::max);

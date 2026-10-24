@@ -5306,6 +5306,9 @@ imageTrace	Outline	კონტური
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	გრადიენტები და პატერნები მათი პირველი გადასვლის წერტილის ფერით იღებება; ნაქარგი თითო ბლოკს ერთი ძაფით კერავს
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	{widest} მმ-ზე განიერი კონტურები იკერება {widest} მმ სიგანის ატლასის სვეტებად: ამის ნაცვლად შეავსეთ ისინი (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	ეს ვერსია არ იცნობს დოკუმენტის ძაფების პალიტრას {palette}, ამიტომ მისი ძაფები {default} პალიტრიდან შეირჩევა
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	დოკუმენტის ქარგვის პარამეტრები შეიცავს ისეთებს, რომლებსაც ეს ვერსია ვერ კითხულობს (უფრო ახალი ვერსიიდან): ისინი ინახება, ხოლო დიზაინი მათ გარეშე იქარგება
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	დოკუმენტის ქარგვის ზოგიერთი პარამეტრი სცდება იმას, რასაც ეს ვერსია ქარგავს: თითოეული იქარგება უახლოესი მნიშვნელობით, რომელსაც იღებს
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	ჭრის სიგრძე გადასვლის სიგრძეზე მოკლეა, ამიტომ გადასვლები იჭრება უკვე გადასვლის სიგრძიდან
 @msg	nothing to stitch: the document has no visible filled or stroked paths	საქარგავი არაფერია: დოკუმენტს არ აქვს ხილული ტრაექტორიები შევსებით ან კონტურით
 @msg	nothing to stitch: {_1}	საქარგავი არაფერია: {_1}
 

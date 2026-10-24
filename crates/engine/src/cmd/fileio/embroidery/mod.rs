@@ -18,7 +18,8 @@
 //! end of satin columns), `expand` (mm all round a fill), `narrowAsSatin` (mm: a fill's narrower
 //! parts are satin columns), `threadWeight` (wt, the spacing follows it), `underlay` (true, false or
 //! a kind), `jumpLength` (mm before the needle lifts), `trimLength` (mm before a jump cuts the
-//! thread) and `minStitch` (mm). A value outside its range is refused.
+//! thread), `minStitch` (mm) and `splitLength` (mm: a longer satin stitch is split). A value
+//! outside its range is refused.
 //!
 //! The parts: [`import`] (a design read as art, with notes of what reading it left out, which
 //! make writing over the file ask first: [`is_loss`]) and [`encode`] (the export: its options, and
@@ -131,10 +132,16 @@ const TRIM: FormatOption = FormatOption {
 };
 const MIN_STITCH: FormatOption =
     FormatOption { name: "minStitch", ty: "number", default: "0.4", description: "shorter stitches are left out, millimetres; 0.05 to 3" };
+const SPLIT: FormatOption = FormatOption {
+    name: "splitLength",
+    ty: "number",
+    default: "10",
+    description: "a satin stitch longer than this is split into shorter ones, their needle points spread so they don't line up into a seam, millimetres; 2 to 12",
+};
 
 /// The options the embroidery writers read.
 pub const OPTIONS: &[FormatOption] =
-    &[STITCH, SPACING, LENGTH, ANGLE, PULL, PULL_PERCENT, PUSH, EXPAND, NARROW, WEIGHT, UNDERLAY, JUMP, TRIM, MIN_STITCH];
+    &[STITCH, SPACING, LENGTH, ANGLE, PULL, PULL_PERCENT, PUSH, EXPAND, NARROW, WEIGHT, UNDERLAY, JUMP, TRIM, MIN_STITCH, SPLIT];
 
 /// The entry of `f` in the formats `document.open` and `document.export` know: as the stitch crate
 /// describes it ([`StitchFormat::spec`]), read and written, with the embroidery options.
@@ -243,6 +250,7 @@ mod tests {
             assert_eq!(num(&JUMP), p.jump);
             assert_eq!(num(&TRIM), p.trim);
             assert_eq!(num(&MIN_STITCH), p.min_stitch);
+            assert_eq!(num(&SPLIT), p.max_satin);
         }
         assert!(LENGTH.description.contains(&format!("{} in fills", fill.stitch_length)));
         assert!(LENGTH.description.contains(&format!("{} in running lines", running.stitch_length)));
@@ -319,6 +327,7 @@ mod tests {
             (&WEIGHT, THREAD_WEIGHT_RANGE),
             (&JUMP, JUMP_RANGE),
             (&MIN_STITCH, MIN_STITCH_RANGE),
+            (&SPLIT, vectorcraft_stitch::plan::MAX_SATIN_STITCH_RANGE),
         ];
         for (o, (lo, hi)) in ranges {
             assert!(o.description.contains(&format!("{lo} to {hi}")), "{}: {}", o.name, o.description);

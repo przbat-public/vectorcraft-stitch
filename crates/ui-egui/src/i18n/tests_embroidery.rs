@@ -75,6 +75,43 @@ fn embroidery_export_messages_are_translated() {
     assert!(untranslated.is_empty(), "untranslated embroidery messages:\n{}", untranslated.join("\n"));
 }
 
+/// What a plan says of the document's embroidery settings it can't take as they are (some from a
+/// newer version, some out of range, a trim length below the jump length) is translated whole in
+/// every language.
+#[test]
+fn embroidery_document_settings_notes_are_translated() {
+    use serde_json::json;
+    use vectorcraft_doc::embroidery::{EmbroiderySetup, MachineSettings};
+    use vectorcraft_engine::Session;
+    let mut s = Session::new();
+    s.execute("file.new", &json!({})).unwrap();
+    s.execute("paint.setStroke", &json!({"none": true})).unwrap();
+    s.execute("shape.rectangle", &json!({"x": 20, "y": 20, "width": 100, "height": 60})).unwrap();
+    s.edit("Embroidery Setup", |d, _| {
+        let machine = MachineSettings { jump_length: Some(7.0), trim_length: Some(3.0), ..MachineSettings::default() };
+        let mut setup = EmbroiderySetup { thread_weight: Some(1000.0), machine: Some(Box::new(machine)), ..EmbroiderySetup::default() };
+        setup.extra.insert("from_a_newer_version".into(), json!(true));
+        d.embroidery = Some(Box::new(setup));
+        Ok(())
+    })
+    .unwrap();
+    let r = s.execute("document.export", &json!({"format": "dst"})).unwrap();
+    let notes: Vec<&str> = r["warnings"].as_array().unwrap().iter().filter_map(|w| w.as_str()).collect();
+    assert_eq!(notes.len(), 3, "{notes:#?}");
+    let english = ["this version", "embroidery settings", "jump length", "nearest value"];
+    let mut untranslated = Vec::new();
+    for info in LANGUAGES.iter().filter(|l| l.code != "en") {
+        let lang = Lang::from_code(info.code).unwrap();
+        for m in &notes {
+            let shown = message(lang, m);
+            if shown == *m || english.iter().any(|w| shown.contains(*w)) {
+                untranslated.push(format!("{}: {shown}", info.code));
+            }
+        }
+    }
+    assert!(untranslated.is_empty(), "untranslated notes:\n{}", untranslated.join("\n"));
+}
+
 /// What opening a machine file says it left out (which makes writing over the file ask first) is
 /// translated whole in every language.
 #[test]

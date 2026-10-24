@@ -48,7 +48,7 @@ pub(super) fn planned(node: u64, params: Option<Params>, color: [u8; 3], points:
 
 /// The plan of `units`, added in order, in Janome's palette.
 pub(super) fn plan(units: Vec<Planned>) -> DesignPlan {
-    let mut seq = Sequence::new(Params::for_style(Style::Fill));
+    let mut seq = Sequence::new(Params::for_style(Style::Fill), true);
     for u in units {
         seq.add(u);
     }

@@ -5048,6 +5048,9 @@ lighting	Light	Luce
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	sfumature e motivi vengono dipinti con il colore del loro primo cursore colore; un ricamo cuce un filo per blocco
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	le tracce più larghe di {widest} mm vengono cucite come colonne di raso larghe {widest} mm: riempile invece (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	questa versione non conosce la tavolozza di fili {palette} del documento, quindi i suoi fili vengono scelti dalla tavolozza {default}
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	le impostazioni di ricamo del documento ne contengono alcune che questa versione non legge (da una versione più recente): vengono conservate, e il disegno viene ricamato senza di esse
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	alcune impostazioni di ricamo del documento sono al di fuori di ciò che questa versione ricama: ciascuna viene ricamata al valore più vicino che accetta
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	la lunghezza del taglio è inferiore alla lunghezza del salto, quindi i salti vengono tagliati già dalla lunghezza del salto
 @msg	nothing to stitch: the document has no visible filled or stroked paths	niente da ricamare: il documento non ha tracciati visibili con riempimento o traccia
 @msg	nothing to stitch: {_1}	niente da ricamare: {_1}
 

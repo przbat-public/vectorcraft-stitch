@@ -57,7 +57,7 @@ pub(crate) const SETTINGS: [Setting; 33] = [
     Setting { name: "jumpLength", earlier: None, file: "jump_length", places: EXPORT_AND_DOCUMENT },
     Setting { name: "trimLength", earlier: None, file: "trim_length", places: EXPORT_AND_DOCUMENT },
     Setting { name: "minStitch", earlier: None, file: "min_stitch", places: EXPORT_AND_DOCUMENT },
-    Setting { name: "splitLength", earlier: None, file: "split_length", places: &[Place::Part, Place::Document] },
+    Setting { name: "splitLength", earlier: None, file: "split_length", places: EVERYWHERE },
     Setting { name: "entry", earlier: None, file: "entry", places: PART },
     Setting { name: "exit", earlier: None, file: "exit", places: PART },
     Setting { name: "spacingPercent", earlier: None, file: "spacing_percent", places: DOCUMENT },

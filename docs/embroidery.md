@@ -71,6 +71,7 @@ control channel use it). Every writable format's options are listed by `document
 | `jumpLength` | | 5 mm | a longer move lifts the needle (a jump), tied off before and in after so that it can be cut; a shorter move that can't be sewn (between separate pieces) jumps with the thread on; 0.5 to 20 mm |
 | `trimLength` | | 10 mm | a jump longer than this cuts the thread first (a trim); shorter jumps are left for the machine or a person to cut. From `jumpLength` (only a jump is cut) to 1,000 mm |
 | `minStitch` | | 0.4 mm | shorter stitches are left out; 0.05 to 3 mm |
+| `splitLength` | | 10 mm | a satin stitch longer than this is split into shorter ones, their needle points spread so they don't line up into a seam; 2 to 12 mm |
 
 **One vocabulary.** These names are the ones the per-object settings will use, so that a value
 resolved for an object can say which layer it came from (object, export option, document,
@@ -777,11 +778,12 @@ the object a person selects (`id`).
 - Gradients and patterns sew in one colour (a gradient in its first stop's; a pattern is left out).
 - Wide satin columns are split stitch by stitch (auto split), not into several narrower columns,
   and are at most 50 mm wide (wider strokes are warned about).
-- Underlay is chosen by width and size only, not by fabric (no fabric presets yet).
-- Pull and push compensation, `expand` and the thread weight are one value for the whole design,
-  not per object, and not by fabric: 0.2 mm of pull compensation suits stable woven fabric
-  (Wilcom's guide gives 0.35 for T-shirts and 0.4 for fleece). Push compensation is off by
-  default: no starting value is published.
+- Underlay is chosen by width and size, or set for all tatami and all satin by the document's
+  fabric; not yet per object.
+- Pull and push compensation, `expand` and the thread weight are one value for the whole design
+  (the document's fabric sets pull for tatami and satin apart), not per object yet: 0.2 mm of pull
+  compensation, the default, suits stable woven fabric (Wilcom's guide gives 0.35 for T-shirts and
+  0.4 for fleece). Push compensation is off by default: no starting value is published.
 - Fill pull compensation stretches rows along their direction only: across the rows, a fill keeps
   half a row spacing inside its edge, as before. `expand` grows it both ways.
 - A fill's narrow parts become satin by their width alone, not by what a person would choose (a
@@ -822,8 +824,8 @@ the object a person selects (`id`).
   flagged; the nearest thread neither neighbour has, Royal Purple, is 15.5). Eight of the pinned
   JEF exports have such a stop, two of them real designs (the zebra, the joystick); no PES export
   has one. A thread taken instead can also push the next block off its own nearest in turn.
-- The trim length is one number for every machine and fabric: there are no machine or fabric
-  settings yet. Jumps shorter than it are left to a machine with jump trimming, or to a person.
+- The trim length is one number for the whole design (the document's machine settings, or an
+  export's option). Jumps shorter than it are left to a machine with jump trimming, or to a person.
 - A fill whose regions form one piece of more than 200 (a comb of 200 teeth) is sewn nearest
   region next, without comparing orders: with 30 mm teeth that is 100 jumps (a comb of five
   teeth is sewn without one).
@@ -1299,10 +1301,14 @@ worksheet, a stitch player. So each one shows what will be sewn.
 
 ### Settings and where their values come from
 
-Today every unit is planned with the export's options. The digitizer decides a unit's stitch
-style, parameters and `expand` in one place, `Digitizer::settings(origin)`, and that is where
-embroidery settings on objects and in the document will be looked up. (The jump and trim lengths
-between objects belong to the design, or the machine, rather than to a unit.)
+Every unit is planned with the export's options over the document's embroidery settings (the
+objects' own settings come above both, next). The digitizer decides a unit's stitch style,
+parameters and `expand` in one place, `Digitizer::settings`, which asks `resolve.rs`: each layer is
+a set of the embroidery options (`Options`), one value or none for each, laid over the next
+(`Options::over`) and turned into the planner's parameters by the one conversion every unit takes
+(`Options::params`), so a unit with nothing set is planned exactly as before. What belongs to the
+design rather than to a unit (the jump and trim lengths between objects, whether one colour's
+objects join) is resolved once a plan (`DesignSettings`).
 
 - **Resolved in the decided order** (the object's value, the export's option, the document's, the
   built-in default): an export option applies to the objects that have no value of their own, and
@@ -1332,6 +1338,24 @@ between objects belong to the design, or the machine, rather than to a unit.)
   warning in the plan. Settings of another shape than an object (`"embroidery": 5`) don't stop the
   file from opening: they are kept whole (`EmbroiderySetup::unread`) and written back while nothing
   is set, and a palette set replaces them.
+- **How the document's settings reach the stitches** (`DocLayer`, read once a plan): by the stitch
+  a unit is sewn in, as a fabric is described.
+  - A tatami fill takes the fabric's tatami pull, row spacing, stitch length and underlay. The row
+    spacing is given for 40 wt thread and scales with the thread's weight as the built-in spacing
+    does; a spacing given to an export is used as it is.
+  - A satin column, a fill's narrow parts among them, takes the fabric's satin pull, spacing
+    percent (a share of the spacing the column's width picks; 100 % is the built-in spacing,
+    exactly) and underlay.
+  - A running line takes none of the fabric's values.
+  - The thread's weight and the machine's jump, trim, shortest stitch and satin split reach every
+    unit and the moves between them.
+  - Joining off (`join_same_color: false`) lets an object join only the block sewn just before it,
+    when that block is of its colour: the blocks follow the stacking order strictly.
+  - A value a newer version wrote outside this version's range is sewn at the nearest value it
+    takes; an underlay kind or a key this version doesn't read is left out (the built-in value then
+    applies); the plan says each once. So does a trim length shorter than the jump length (the two
+    from different places, the machine and an export's options): jumps are then cut from the jump
+    length on.
 
 ### Threads
 

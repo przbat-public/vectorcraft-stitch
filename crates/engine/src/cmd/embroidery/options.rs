@@ -1,10 +1,10 @@
 //! The embroidery options, as the export and the embroidery commands take them, and the stitch
 //! planner's parameters they give an object ([`Options::params`]).
 //!
-//! One vocabulary for the export's options and the settings objects will carry (the project owner's
+//! One vocabulary for the export's options and the settings objects carry (the project owner's
 //! choice, 2026-10-22; `docs/embroidery.md` › Architecture): `stitch`, `spacing`, `length`,
 //! `angle`, `pull`, `pullPercent`, `push`, `expand`, `narrowAsSatin`, `threadWeight`, `underlay`,
-//! `jumpLength`, `trimLength` and `minStitch`. The earlier names (`stitchStyle`, `density`,
+//! `jumpLength`, `trimLength`, `minStitch` and `splitLength`. The earlier names (`stitchStyle`, `density`,
 //! `stitchLength`, `stitchAngle`, `pullCompensation`, `pullCompensationPercent`,
 //! `pushCompensation`) are taken as well (the vocabulary's table, `super::vocabulary`). A value
 //! outside the planner's range is refused, naming the range, rather than clamped; `null` leaves an
@@ -12,8 +12,8 @@
 
 use serde_json::{Map, Value, json};
 use vectorcraft_stitch::plan::{
-    DENSITY_RANGE, JUMP_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PULL_PERCENT_RANGE, PULL_RANGE, PUSH_RANGE, Params, STITCH_LENGTH_RANGE,
-    Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay,
+    DENSITY_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PULL_PERCENT_RANGE, PULL_RANGE, PUSH_RANGE, Params,
+    STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay,
 };
 
 use super::vocabulary;
@@ -32,6 +32,8 @@ pub(crate) const MAX_EXPAND: f64 = 2.0;
 /// Degrees in a half turn: a fill's rows are lines, the same whichever of a half turn's two
 /// directions they are said to run in.
 const HALF_TURN: f64 = 180.0;
+/// Percent in a whole: a percentage over this is a share.
+const PERCENT: f64 = 100.0;
 
 /// The planner's angle for a fill angle the commands take (degrees counter-clockwise on the page,
 /// as every angle in VectorCraft and the project owner's choice, 2026-10-23): the planner counts
@@ -87,6 +89,7 @@ pub fn dialog_field(name: &str) -> Option<DialogField> {
         "jumpLength" => mm(JUMP_RANGE),
         "trimLength" => mm((JUMP_RANGE.0, MAX_TRIM)),
         "minStitch" => mm(MIN_STITCH_RANGE),
+        "splitLength" => mm(MAX_SATIN_STITCH_RANGE),
         _ => return None,
     })
 }
@@ -94,7 +97,8 @@ pub fn dialog_field(name: &str) -> Option<DialogField> {
 /// The embroidery options, as they come: each one left out keeps the style's own value. Two are
 /// equal when every value is (a plan made with one is the plan made with the other). Made from
 /// the commands' params ([`Options::from_json`]), so that they are checked as the commands check
-/// them.
+/// them; and, laid over one another ([`Options::over`]), a layer of where a unit's settings come
+/// from (`super::resolve`): an object's own, the document's.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Options {
     /// The style `stitch` forces; `None` for `auto`.
@@ -112,6 +116,11 @@ pub struct Options {
     pub(crate) jump_length: Option<f64>,
     pub(crate) trim_length: Option<f64>,
     pub(crate) min_stitch: Option<f64>,
+    /// The longest satin stitch before it is split, millimetres.
+    pub(crate) split_length: Option<f64>,
+    /// A satin's share of the spacing picked by its width, percent: the document's fabric gives
+    /// it (no command option does).
+    pub(crate) spacing_percent: Option<f64>,
 }
 
 /// What to do with a key that is no option.
@@ -234,6 +243,7 @@ impl Options {
             "jumpLength" => self.jump_length = Some(number(JUMP_RANGE, "millimetres")?),
             "trimLength" => self.trim_length = Some(number((JUMP_RANGE.0, MAX_TRIM), "millimetres")?),
             "minStitch" => self.min_stitch = Some(number(MIN_STITCH_RANGE, "millimetres")?),
+            "splitLength" => self.split_length = Some(number(MAX_SATIN_STITCH_RANGE, "millimetres")?),
             _ => {}
         }
         Ok(())
@@ -262,7 +272,68 @@ impl Options {
         put("jumpLength", self.jump_length.map(Value::from));
         put("trimLength", self.trim_length.map(Value::from));
         put("minStitch", self.min_stitch.map(Value::from));
+        put("splitLength", self.split_length.map(Value::from));
         Value::Object(o)
+    }
+
+    /// These options over `lower`: each one given here, else `lower`'s. Both are taken apart field
+    /// by field, so that an option added to [`Options`] fails to compile here until it is laid over
+    /// too.
+    pub(crate) fn over(&self, lower: &Options) -> Options {
+        let Options {
+            stitch,
+            spacing,
+            length,
+            angle,
+            pull,
+            pull_percent,
+            push,
+            expand,
+            narrow_as_satin,
+            thread_weight,
+            underlay,
+            jump_length,
+            trim_length,
+            min_stitch,
+            split_length,
+            spacing_percent,
+        } = *self;
+        let Options {
+            stitch: stitch_below,
+            spacing: spacing_below,
+            length: length_below,
+            angle: angle_below,
+            pull: pull_below,
+            pull_percent: pull_percent_below,
+            push: push_below,
+            expand: expand_below,
+            narrow_as_satin: narrow_below,
+            thread_weight: thread_weight_below,
+            underlay: underlay_below,
+            jump_length: jump_below,
+            trim_length: trim_below,
+            min_stitch: min_stitch_below,
+            split_length: split_below,
+            spacing_percent: spacing_percent_below,
+        } = *lower;
+        Options {
+            stitch: stitch.or(stitch_below),
+            spacing: spacing.or(spacing_below),
+            length: length.or(length_below),
+            angle: angle.or(angle_below),
+            pull: pull.or(pull_below),
+            pull_percent: pull_percent.or(pull_percent_below),
+            push: push.or(push_below),
+            expand: expand.or(expand_below),
+            narrow_as_satin: narrow_as_satin.or(narrow_below),
+            thread_weight: thread_weight.or(thread_weight_below),
+            underlay: underlay.or(underlay_below),
+            jump_length: jump_length.or(jump_below),
+            trim_length: trim_length.or(trim_below),
+            min_stitch: min_stitch.or(min_stitch_below),
+            split_length: split_length.or(split_below),
+            spacing_percent: spacing_percent.or(spacing_percent_below),
+        }
     }
 
     pub(crate) fn params(&self, style: Style, width: f64) -> Params {
@@ -286,6 +357,9 @@ impl Options {
             jump: self.jump_length.unwrap_or(d.jump),
             trim: self.trim_length.unwrap_or(d.trim),
             min_stitch: self.min_stitch.unwrap_or(d.min_stitch),
+            max_satin: self.split_length.unwrap_or(d.max_satin),
+            // A share of the spacing picked by width, in percent (100 is all of it, exactly).
+            spacing_scale: self.spacing_percent.map_or(d.spacing_scale, |p| p / PERCENT),
             width,
             ..d
         }

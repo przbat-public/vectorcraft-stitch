@@ -5272,6 +5272,9 @@ lighting	Light	光源
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	渐变和图案以其第一个色标的颜色上色；刺绣每个色块只用一根线缝制
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	宽于 {widest} mm 的描边会缝成 {widest} mm 宽的缎纹柱：请改为填色 (stitch fill)
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	此版本无法识别文档的刺绣线调色板 {palette}，因此其线从 {default} 调色板中选择
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	文档的刺绣设置中有此版本无法读取的项 (来自较新版本)：它们会被保留，设计刺绣时不使用它们
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	文档的部分刺绣设置超出此版本可刺绣的范围：每项都以其可接受的最接近值刺绣
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	剪线长度短于跳针长度，因此跳针从跳针长度起就会剪线
 @msg	nothing to stitch: the document has no visible filled or stroked paths	没有可刺绣的内容：文档中没有可见的带填色或描边的路径
 @msg	nothing to stitch: {_1}	没有可刺绣的内容：{_1}
 

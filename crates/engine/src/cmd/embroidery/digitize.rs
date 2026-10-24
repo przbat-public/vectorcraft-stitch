@@ -19,7 +19,7 @@ use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 use super::Options;
 use super::cache::{Shaped, Shared, UnitCache, UnitKey, clip_words, path as path_words, rule_word};
 use super::plan::{Choice, DesignPlan, MAX_WARNED_OBJECTS, Origin, Part};
-use super::resolve::{DesignSettings, UnitSettings};
+use super::resolve::{DesignSettings, DocLayer, UnitSettings};
 use super::sequence::{CLEARANCE, Facts, Planned, Sequence};
 use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
 
@@ -93,8 +93,10 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
 /// is planned from, and kept there when it doesn't ([`UnitCache`]); without, every unit is planned
 /// afresh.
 pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>) -> Result<DesignPlan, PlanError> {
-    let design = DesignSettings::new(opts);
-    let seq = Sequence::new(design.connect);
+    // The document's embroidery settings, read once a plan.
+    let doc_layer = DocLayer::of(doc);
+    let (design, trim_note) = DesignSettings::new(opts, &doc_layer);
+    let seq = Sequence::new(design.connect, design.join);
     // The units this plan uses and adds are its own: the cache drops none for another of them.
     if let Some(mut kept) = cache.and_then(|c| c.lock().ok()) {
         kept.begin();
@@ -103,7 +105,7 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
     let sewable = super::printed::sewable(doc);
     // Notes that aren't about the art (a thread palette this version doesn't know): told with the
     // warnings, but not counted as art left out.
-    let mut notes = Vec::new();
+    let mut notes: Vec<String> = doc_layer.notes.iter().chain(trim_note.as_ref()).map(|n| n.to_string()).collect();
     if let Some(ThreadPalette::Unknown(palette)) = doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()) {
         let default = super::DEFAULT_PALETTE.id();
         notes.push(format!(
@@ -119,6 +121,7 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
         doc: printed,
         expanded: &sewable.expanded,
         opts,
+        doc_layer: &doc_layer,
         design,
         seq,
         warnings,
@@ -182,6 +185,8 @@ struct Digitizer<'a> {
     /// The export's options (or a read command's), the layer every unit's settings take after the
     /// object's own ([`Digitizer::settings`]).
     opts: &'a Options,
+    /// The document's embroidery settings, the layer after the export's.
+    doc_layer: &'a DocLayer,
     /// What belongs to the design rather than to a unit: the jump and trim lengths between
     /// objects, and across the cuts in a literal run.
     design: DesignSettings,
@@ -275,7 +280,7 @@ impl<'a> Digitizer<'a> {
     /// own value, then the export's option, then the document's embroidery settings, then the
     /// planner's defaults.
     fn settings(&self, _n: &Node, _unit: &Origin) -> UnitSettings<'a> {
-        UnitSettings::new(self.opts)
+        UnitSettings::new(self.opts, self.doc_layer)
     }
 
     /// What the unit that sews `part` of `n` sews.

@@ -319,6 +319,7 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
         |p| p.width += 0.1,
         |p| p.max_satin += 0.1,
         |p| p.auto_spacing = !p.auto_spacing,
+        |p| p.spacing_scale += 0.1,
         |p| p.narrow += 0.1,
     ];
     for tweak in &tweaks {

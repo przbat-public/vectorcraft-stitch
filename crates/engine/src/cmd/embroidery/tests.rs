@@ -462,7 +462,10 @@ fn the_thread_palette_is_saved_and_a_newer_versions_settings_are_kept() {
     s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
     let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
     assert_eq!(kept["document"]["embroidery"], json!({"palette": "pec", "fabric": newer["fabric"]}));
-    assert!(s.execute("embroidery.threads", &json!({})).unwrap()["warnings"].as_array().unwrap().is_empty());
+    // The palette is known now; what the newer version's fabric says is still not read, and the
+    // plan says so.
+    let warnings = s.execute("embroidery.threads", &json!({})).unwrap()["warnings"].clone();
+    assert_eq!(warnings, json!([super::resolve::DOCUMENT_SETTINGS_UNREAD]));
 }
 
 /// A document that sets no palette is sewn in Janome's threads, the default, and its PES export

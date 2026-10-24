@@ -936,8 +936,10 @@ fn check(listing: &str, threads: &str, summaries: &str, now: &[Pinned]) {
 /// The documents built here: each one's name, a session holding it, and the options it is exported
 /// with.
 fn documents() -> Vec<(&'static str, Session, Value)> {
+    // Its angle, 150° counter-clockwise on the page, is the planner's 30° the listing was recorded
+    // with (the commands took the planner's angle until 2026-10-24).
     let every_option = json!({
-        "density": 0.5, "stitchLength": 3, "stitchAngle": 30, "pullCompensation": [0.3, 0.1], "pullCompensationPercent": 10,
+        "density": 0.5, "stitchLength": 3, "stitchAngle": 150, "pullCompensation": [0.3, 0.1], "pullCompensationPercent": 10,
         "pushCompensation": [0.5, 0.2], "expand": 0.4, "narrowAsSatin": 5, "threadWeight": 60, "underlay": false,
         "jumpLength": 3, "trimLength": 6, "minStitch": 0.3
     });

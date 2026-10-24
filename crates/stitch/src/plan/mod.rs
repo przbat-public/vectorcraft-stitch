@@ -103,10 +103,11 @@ const RUNNING_STITCH: f64 = 2.5;
 /// Shorter stitches are left out (millimetres): a tiny stitch can break the thread or cut the
 /// fabric, and a repeated point is noise. An estimate.
 const MIN_STITCH: f64 = 0.4;
-/// The direction of a fill's rows, degrees (0: left to right). Diagonal, so that rows don't run
-/// along a shape's horizontal and vertical edges, where they would show each step of the edge. By
-/// judgement.
-const FILL_ANGLE: f64 = 45.0;
+/// The direction of a fill's rows, degrees clockwise as seen on the page (0: left to right; the
+/// planner's y axis points down the page, see [`Params::angle`]): from the top left to the bottom
+/// right. Diagonal, so that rows don't run along a shape's horizontal and vertical edges, where
+/// they would show each step of the edge. By judgement.
+pub const FILL_ANGLE: f64 = 45.0;
 /// Pull compensation (millimetres added at each side of a stitch: each rail of a satin column, each
 /// end of a fill row): the fabric draws the thread in, so stitching sewn exactly as drawn comes out
 /// narrower and leaves a gap of background where two shapes meet. Wilcom's automatic pull
@@ -244,7 +245,10 @@ pub struct Params {
     /// The distance between threads, millimetres: row to row for fill; for satin between two
     /// penetrations on the same rail (peak to peak), its crossings lying half that apart.
     pub density: f64,
-    /// The direction the fill's rows run, degrees (0: left to right).
+    /// The direction the fill's rows run, degrees (0: left to right), clockwise as seen on the page:
+    /// the planner's y axis points down the page, as the document's does. People and the engine's
+    /// commands count angles counter-clockwise, as everywhere else in VectorCraft; the engine
+    /// converts them in one place (`cmd::embroidery::options::planner_angle`).
     pub angle: f64,
     /// Pull compensation: how much farther the stitches reach at each side so the fabric's pull
     /// does not leave a gap of background at an edge, millimetres, at two sides: a satin

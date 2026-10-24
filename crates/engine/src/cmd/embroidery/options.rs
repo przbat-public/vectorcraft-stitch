@@ -29,6 +29,20 @@ pub(crate) const EXPAND_DEFAULT: f64 = 0.0;
 /// needs, short of redrawing them.
 pub(crate) const MAX_EXPAND: f64 = 2.0;
 
+/// Degrees in a half turn: a fill's rows are lines, the same whichever of a half turn's two
+/// directions they are said to run in.
+const HALF_TURN: f64 = 180.0;
+
+/// The planner's angle for a fill angle the commands take (degrees counter-clockwise on the page,
+/// as every angle in VectorCraft and the project owner's choice, 2026-10-23): the planner counts
+/// clockwise as seen (its y axis points down the page, as the document's does), so the same rows
+/// are at `180 − angle`. The one place the two are converted, both ways (it is its own inverse). A
+/// half turn rather than a plain change of sign, so that the default rows (135° here, 45° to the
+/// planner, `plan::FILL_ANGLE`) keep their bits.
+pub(crate) fn planner_angle(angle: f64) -> f64 {
+    HALF_TURN - angle
+}
+
 /// The values `stitch` takes, and the style each forces: `auto` (none forced: fills tatami, strokes
 /// satin or running by their width); `tatami` and `fill` (a fill tatami, a stroke the area it
 /// paints, filled); `satin`; `running`.
@@ -260,7 +274,7 @@ impl Options {
             // A spacing given is used as it is; left out, a satin picks it by its width.
             auto_spacing: d.auto_spacing && self.spacing.is_none(),
             stitch_length: self.length.unwrap_or(d.stitch_length),
-            angle: self.angle.unwrap_or(d.angle),
+            angle: self.angle.map(planner_angle).unwrap_or(d.angle),
             // A running line has no compensation, whatever is given.
             pull: if style == Style::Running { d.pull } else { self.pull.unwrap_or(d.pull) },
             pull_percent: if style == Style::Running { d.pull_percent } else { self.pull_percent.unwrap_or(d.pull_percent) },

@@ -72,8 +72,8 @@ const LENGTH: FormatOption = FormatOption {
 const ANGLE: FormatOption = FormatOption {
     name: "angle",
     ty: "number",
-    default: "45",
-    description: "the direction a fill's rows run, degrees (0: left to right; any angle, taken modulo 360); earlier name stitchAngle",
+    default: "135",
+    description: "the direction a fill's rows run, degrees counter-clockwise on the page as every angle in VectorCraft (0: left to right, 90: bottom to top; the default runs from the top left to the bottom right; any angle, taken modulo 360); earlier name stitchAngle",
 };
 const PULL: FormatOption = FormatOption {
     name: "pull",
@@ -205,7 +205,10 @@ mod tests {
         let given = Options { spacing: Some(0.3), ..Options::default() };
         assert!(Options::default().params(Style::Satin, 3.0).auto_spacing);
         assert!(!given.params(Style::Satin, 3.0).auto_spacing);
-        assert_eq!(num(&ANGLE), fill.angle);
+        // Counter-clockwise on the page, the planner's clockwise: the default rows keep their bits.
+        assert_eq!(num(&ANGLE), crate::cmd::embroidery::options::planner_angle(fill.angle));
+        assert_eq!(crate::cmd::embroidery::options::planner_angle(num(&ANGLE)).to_bits(), fill.angle.to_bits());
+        assert_eq!(Options { angle: Some(num(&ANGLE)), ..Options::default() }.params(Style::Fill, 0.0), fill.sane());
         for side in 0..2 {
             assert_eq!(num(&PULL), satin.pull[side]);
             assert_eq!(num(&PULL), fill.pull[side]);

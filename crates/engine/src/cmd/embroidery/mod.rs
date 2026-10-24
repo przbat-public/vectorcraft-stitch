@@ -50,6 +50,8 @@ mod tests_scene;
 #[cfg(test)]
 mod tests_service;
 #[cfg(test)]
+mod tests_settings;
+#[cfg(test)]
 mod tests_stats;
 #[cfg(test)]
 mod tests_threadlib;

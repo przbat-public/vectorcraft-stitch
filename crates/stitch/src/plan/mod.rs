@@ -92,10 +92,10 @@ pub const MAX_SATIN_WIDTH: f64 = 50.0;
 /// and David Morrish's *Digital Embroidery* (2025, ch. 2) gives 0.40 mm as the spacing where 40 wt
 /// threads lie flush and 0.38 mm as the one that leaves no gaps. How much a fabric needs is for
 /// fabric presets.
-const FILL_SPACING: f64 = 0.38;
+pub(crate) const FILL_SPACING: f64 = 0.38;
 /// The longest stitch of a fill row (millimetres). Wilcom's tatami default (same page as
 /// [`FILL_SPACING`]).
-const FILL_STITCH: f64 = 4.0;
+pub(crate) const FILL_STITCH: f64 = 4.0;
 /// The longest stitch of a running line (millimetres): short enough to follow curves and corners
 /// closely, long enough that the thread doesn't pile up. An estimate within the 2–3 mm usual for
 /// outlines.
@@ -117,7 +117,7 @@ pub const FILL_ANGLE: f64 = 45.0;
 /// Satin columns shrink most, and tatami fills less but noticeably over large areas
 /// (<https://wilcom.com/resources/blog/push-and-pull-compensation>): both get the same value (an
 /// estimate; fabric presets may part them).
-const PULL: f64 = 0.2;
+pub(crate) const PULL: f64 = 0.2;
 /// Pull compensation that grows with the stitch (percent of a satin column's width, or of a fill
 /// row's length, added at each side): none by default. Ink/Stitch offers it on top of the fixed
 /// value, so that wide columns get more than narrow ones
@@ -333,6 +333,10 @@ pub const MAX_TRIM: f64 = 1000.0;
 pub const MIN_STITCH_RANGE: (f64, f64) = (0.05, 3.0);
 /// The longest satin stitch before it is split: from 2 mm to the 12 mm of [`STITCH_LENGTH_RANGE`].
 pub const MAX_SATIN_STITCH_RANGE: (f64, f64) = (2.0, 12.0);
+/// A share of a satin column's spacing picked by its width, percent: from half (twice as dense) to
+/// twice (half as dense), within which every width, at every thread weight, keeps a spacing in
+/// [`DENSITY_RANGE`] (0.19 to 2.0 mm). Bounds on what is asked.
+pub const SPACING_PERCENT_RANGE: (f64, f64) = (50.0, 200.0);
 
 impl Default for Params {
     fn default() -> Self {

@@ -1917,6 +1917,8 @@ Public documentation, cited per claim in the crate:
   thread by CIEDE2000, a design's blocks to threads (`Palette::assign`), and the thread numbers a
   format writes (`Palette::numbers`).
 - `crates/stitch/src/color.rs` — sRGB in CIE L*a*b* (D65), and the CIEDE2000 colour difference.
+- `crates/stitch/src/fabric.rs` — the fabric presets, each value with the publication it comes
+  from, how it is worked out, or why it is an estimate.
 - `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (six commands,
   `embroidery.setTrimAfter`, `threads`, `stats`, `sequence`, `check` and `render`, and the
   document's thread palette), `setup.rs` (the document's embroidery settings,

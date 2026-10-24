@@ -125,11 +125,30 @@ impl Document {
 /// The document's embroidery settings: their box, and what they keep that a newer version wrote (a
 /// palette, keys and settings this version can't read).
 fn embroidery_setup_bytes(e: &EmbroiderySetup) -> usize {
+    use crate::embroidery::{FabricValues, StitchValues};
     let palette = match &e.palette {
         Some(ThreadPalette::Unknown(v)) => json_bytes(v),
         _ => 0,
     };
-    ALLOC + size_of::<EmbroiderySetup>() + palette + map_bytes(&e.extra) + e.unread.as_ref().map_or(0, json_bytes)
+    let text = |t: &Option<String>| t.as_ref().map_or(0, String::capacity);
+    let stitch = |s: &StitchValues| text(&s.underlay) + map_bytes(&s.extra);
+    let values = |v: &FabricValues| {
+        v.tatami.as_ref().map_or(0, stitch)
+            + v.satin.as_ref().map_or(0, stitch)
+            + text(&v.stabilizer)
+            + text(&v.topping)
+            + text(&v.needle_point)
+            + map_bytes(&v.extra)
+    };
+    let fabric = e.fabric.as_deref().map_or(0, |f| {
+        ALLOC
+            + size_of::<crate::embroidery::FabricSettings>()
+            + values(&f.values)
+            + f.preset.as_ref().map_or(0, |p| p.id.capacity() + values(&p.values) + map_bytes(&p.extra))
+            + map_bytes(&f.extra)
+    });
+    let machine = e.machine.as_deref().map_or(0, |m| ALLOC + size_of::<crate::embroidery::MachineSettings>() + map_bytes(&m.extra));
+    ALLOC + size_of::<EmbroiderySetup>() + palette + fabric + machine + map_bytes(&e.extra) + e.unread.as_ref().map_or(0, json_bytes)
 }
 
 /// What an object's embroidery holds beyond its box: its parts' settings (their boxes, ids and

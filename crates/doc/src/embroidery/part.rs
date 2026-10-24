@@ -16,7 +16,7 @@
 use serde_json::{Map, Value};
 use vectorcraft_geom::Point;
 
-use super::{point, with_kept};
+use super::{id, number, point, sides, take, with_kept};
 
 /// The parts of an object settings are kept for: its fills and its strokes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -210,40 +210,6 @@ const SPLIT_LENGTH: &str = "split_length";
 pub(super) const POINTS: &str = "points";
 const ENTRY: &str = "entry";
 const EXIT: &str = "exit";
-
-/// Take key `key` out of `map` when `read` reads its value (a null is unset and goes too); a
-/// value it can't read stays in `map`, to be written back as it was.
-fn take<T>(map: &mut Map<String, Value>, key: &str, read: impl Fn(&Value) -> Option<T>) -> Option<T> {
-    let value = map.get(key)?;
-    if value.is_null() {
-        map.remove(key);
-        return None;
-    }
-    let read = read(value)?;
-    map.remove(key);
-    Some(read)
-}
-
-/// A number (JSON's are finite).
-fn number(v: &Value) -> Option<f64> {
-    v.as_f64().filter(|x| x.is_finite())
-}
-
-/// One number for both sides, or two: `[a, b]`.
-fn sides(v: &Value) -> Option<[f64; 2]> {
-    match v {
-        Value::Array(a) => match a.as_slice() {
-            [a, b] => Some([number(a)?, number(b)?]),
-            _ => None,
-        },
-        one => number(one).map(|x| [x; 2]),
-    }
-}
-
-/// An id: a string.
-fn id(v: &Value) -> Option<String> {
-    v.as_str().map(str::to_string)
-}
 
 impl PartPoints {
     /// The points as a file holds them, when they are an object: its entry and exit when each is

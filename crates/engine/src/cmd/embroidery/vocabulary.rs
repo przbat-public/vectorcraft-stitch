@@ -35,33 +35,47 @@ pub(crate) struct Setting {
     pub(crate) places: &'static [Place],
 }
 
-const EXPORT: &[Place] = &[Place::Export];
 const PART_AND_EXPORT: &[Place] = &[Place::Part, Place::Export];
+const EVERYWHERE: &[Place] = &[Place::Part, Place::Export, Place::Document];
+const EXPORT_AND_DOCUMENT: &[Place] = &[Place::Export, Place::Document];
 const PART: &[Place] = &[Place::Part];
+const DOCUMENT: &[Place] = &[Place::Document];
 
 /// Every setting, the export's options first, in the order `document.formats` lists them.
-pub(crate) const SETTINGS: [Setting; 21] = [
+pub(crate) const SETTINGS: [Setting; 33] = [
     Setting { name: "stitch", earlier: Some("stitchStyle"), file: "stitch", places: PART_AND_EXPORT },
-    Setting { name: "spacing", earlier: Some("density"), file: "spacing", places: PART_AND_EXPORT },
-    Setting { name: "length", earlier: Some("stitchLength"), file: "length", places: PART_AND_EXPORT },
+    Setting { name: "spacing", earlier: Some("density"), file: "spacing", places: EVERYWHERE },
+    Setting { name: "length", earlier: Some("stitchLength"), file: "length", places: EVERYWHERE },
     Setting { name: "angle", earlier: Some("stitchAngle"), file: "angle", places: PART_AND_EXPORT },
-    Setting { name: "pull", earlier: Some("pullCompensation"), file: "pull", places: PART_AND_EXPORT },
+    Setting { name: "pull", earlier: Some("pullCompensation"), file: "pull", places: EVERYWHERE },
     Setting { name: "pullPercent", earlier: Some("pullCompensationPercent"), file: "pull_percent", places: PART_AND_EXPORT },
     Setting { name: "push", earlier: Some("pushCompensation"), file: "push", places: PART_AND_EXPORT },
     Setting { name: "expand", earlier: None, file: "expand", places: PART_AND_EXPORT },
     Setting { name: "narrowAsSatin", earlier: None, file: "narrow_as_satin", places: PART_AND_EXPORT },
-    Setting { name: "threadWeight", earlier: None, file: "thread_weight", places: EXPORT },
-    Setting { name: "underlay", earlier: None, file: "underlay", places: PART_AND_EXPORT },
-    Setting { name: "jumpLength", earlier: None, file: "jump_length", places: EXPORT },
-    Setting { name: "trimLength", earlier: None, file: "trim_length", places: EXPORT },
-    Setting { name: "minStitch", earlier: None, file: "min_stitch", places: EXPORT },
-    Setting { name: "splitLength", earlier: None, file: "split_length", places: PART },
+    Setting { name: "threadWeight", earlier: None, file: "thread_weight", places: EXPORT_AND_DOCUMENT },
+    Setting { name: "underlay", earlier: None, file: "underlay", places: EVERYWHERE },
+    Setting { name: "jumpLength", earlier: None, file: "jump_length", places: EXPORT_AND_DOCUMENT },
+    Setting { name: "trimLength", earlier: None, file: "trim_length", places: EXPORT_AND_DOCUMENT },
+    Setting { name: "minStitch", earlier: None, file: "min_stitch", places: EXPORT_AND_DOCUMENT },
+    Setting { name: "splitLength", earlier: None, file: "split_length", places: &[Place::Part, Place::Document] },
     Setting { name: "entry", earlier: None, file: "entry", places: PART },
     Setting { name: "exit", earlier: None, file: "exit", places: PART },
-    Setting { name: "palette", earlier: None, file: "palette", places: &[Place::Document] },
-    Setting { name: "start", earlier: None, file: "start", places: &[Place::Document] },
-    Setting { name: "label", earlier: None, file: "label", places: &[Place::Document] },
+    Setting { name: "spacingPercent", earlier: None, file: "spacing_percent", places: DOCUMENT },
+    Setting { name: "fabric", earlier: None, file: "fabric", places: DOCUMENT },
+    Setting { name: "stabilizer", earlier: None, file: "stabilizer", places: DOCUMENT },
+    Setting { name: "topping", earlier: None, file: "topping", places: DOCUMENT },
+    Setting { name: "needlePoint", earlier: None, file: "needle_point", places: DOCUMENT },
+    Setting { name: "thickness", earlier: None, file: "thickness", places: DOCUMENT },
+    Setting { name: "color", earlier: None, file: "color", places: DOCUMENT },
+    Setting { name: "joinSameColor", earlier: None, file: "join_same_color", places: DOCUMENT },
+    Setting { name: "machine", earlier: None, file: "machine", places: DOCUMENT },
+    Setting { name: "speed", earlier: None, file: "speed", places: DOCUMENT },
+    Setting { name: "palette", earlier: None, file: "palette", places: DOCUMENT },
+    Setting { name: "start", earlier: None, file: "start", places: DOCUMENT },
+    Setting { name: "label", earlier: None, file: "label", places: DOCUMENT },
     Setting { name: "trimAfter", earlier: None, file: "trim_after", places: &[Place::Object] },
+    Setting { name: "fill", earlier: None, file: "fill", places: &[Place::Object] },
+    Setting { name: "stroke", earlier: None, file: "stroke", places: &[Place::Object] },
 ];
 
 impl Setting {
@@ -138,10 +152,33 @@ mod tests {
             assert!(s.at(Place::Part) || s.at(Place::Object), "{name}");
             kept.push(name);
         }
-        let mut on_objects: Vec<&str> = SETTINGS.iter().filter(|s| s.at(Place::Part) || s.at(Place::Object)).map(|s| s.name).collect();
+        // The parts themselves are the groups the part settings are kept in.
+        let mut on_objects: Vec<&str> = SETTINGS
+            .iter()
+            .filter(|s| s.at(Place::Part) || s.at(Place::Object))
+            .map(|s| s.name)
+            .filter(|n| !matches!(*n, "fill" | "stroke"))
+            .collect();
         kept.sort_unstable();
         on_objects.sort_unstable();
         assert_eq!(kept, on_objects, "the vocabulary's settings on objects are those the document keeps");
+    }
+
+    /// The settings the document crate keeps in the document are the vocabulary's, under its file
+    /// keys, and those are all the vocabulary's document settings.
+    #[test]
+    fn the_documents_settings_are_the_vocabularys() {
+        let mut kept: Vec<&str> = Vec::new();
+        for (name, file) in vectorcraft_doc::embroidery::setup_file_keys() {
+            let s = SETTINGS.iter().find(|s| s.name == name).unwrap_or_else(|| panic!("{name}: not in the vocabulary"));
+            assert_eq!(s.file, file, "{name}");
+            assert!(s.at(Place::Document), "{name}");
+            kept.push(name);
+        }
+        let mut in_document: Vec<&str> = SETTINGS.iter().filter(|s| s.at(Place::Document)).map(|s| s.name).collect();
+        kept.sort_unstable();
+        in_document.sort_unstable();
+        assert_eq!(kept, in_document);
     }
 
     /// The export's options are those `document.formats` lists for an embroidery format and the

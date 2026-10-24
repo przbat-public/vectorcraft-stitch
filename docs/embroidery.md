@@ -1963,7 +1963,8 @@ Public documentation, cited per claim in the crate:
   and `bench`; `apps/vectorcraft/src/stitch_profile.rs` — VectorCraft Stitch's own settings folder.
 - `crates/engine/src/cmd/swatchlib.rs` — the swatch libraries, the embroidery thread libraries
   among them; `crates/doc/src/embroidery.rs` — what an object and the document keep for embroidery
-  (`embroidery/part.rs`: the settings of an object's fills and strokes).
+  (`embroidery/part.rs`: the settings of an object's fills and strokes; `embroidery/setup.rs`: the
+  document's fabric and machine).
 - `crates/engine/src/cmd/fileio/embroidery/` — the files' side: `mod.rs` (the export's options as
   `document.formats` lists them, and its entry point), `import.rs` (a design opened as art).
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real

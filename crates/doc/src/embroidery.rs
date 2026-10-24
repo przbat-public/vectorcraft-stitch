@@ -8,11 +8,14 @@
 //! design.
 
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use vectorcraft_geom::Point;
 
 mod part;
+mod setup;
 
 pub use part::{PartKey, PartKind, PartPoints, PartSettings, PartValue};
+pub use setup::{FabricPreset, FabricSettings, FabricValues, MachineSettings, StitchValues};
 
 /// What machine embroidery makes of an object.
 ///
@@ -177,6 +180,21 @@ pub fn file_keys() -> impl Iterator<Item = (&'static str, &'static str)> {
     std::iter::once(("trimAfter", TRIM_AFTER)).chain(PartKey::ALL.into_iter().map(|k| (k.name(), k.file())))
 }
 
+/// The settings the document keeps, each as the commands name it and as the file saves it, for
+/// the engine to hold to its vocabulary: its own keys, then its fabric's and machine's values.
+pub fn setup_file_keys() -> impl Iterator<Item = (&'static str, &'static str)> {
+    let own = [
+        ("palette", PALETTE),
+        ("start", START),
+        ("label", LABEL),
+        ("fabric", FABRIC),
+        ("threadWeight", THREAD_WEIGHT),
+        ("joinSameColor", JOIN_SAME_COLOR),
+        ("machine", MACHINE),
+    ];
+    own.into_iter().chain(setup::FILE_KEYS)
+}
+
 /// The keys an object's embroidery and a run of stitches are saved under.
 const STITCHES: &str = "stitches";
 const TRIM_AFTER: &str = "trim_after";
@@ -325,8 +343,21 @@ pub struct EmbroiderySetup {
     /// The design's name a machine file gave (DST's and PEC's `LA:` label), which the export
     /// writes again. `None`: the export writes the document's title.
     pub label: Option<String>,
-    /// Keys this version doesn't know (written by a newer one), kept so that saving doesn't lose
-    /// them, as [`crate::Document::extra`] keeps the document's.
+    /// The fabric the design is sewn on: its values, copied from a preset or the person's own
+    /// ([`FabricSettings`]). `None`: the built-in defaults.
+    pub fabric: Option<Box<FabricSettings>>,
+    /// The thread's weight (wt): the spacing of fills and satin columns follows its thickness.
+    /// `None`: 40 wt.
+    pub thread_weight: Option<f64>,
+    /// Whether objects of one colour are sewn in one block where nothing lies between them; off,
+    /// only consecutive objects of one colour are. `None`: on.
+    pub join_same_color: Option<bool>,
+    /// The machine's values: jumps, trims, the shortest stitch, the satin split, its speed
+    /// ([`MachineSettings`]). `None`: the built-in defaults.
+    pub machine: Option<Box<MachineSettings>>,
+    /// Keys this version doesn't know (written by a newer one), and known keys whose value this
+    /// version can't read, kept so that saving doesn't lose them, as [`crate::Document::extra`]
+    /// keeps the document's.
     pub extra: serde_json::Map<String, serde_json::Value>,
     /// The settings as a newer version wrote them when they are not an object (`"embroidery": 5`),
     /// which this version can't read: nothing is taken from them, and they are written back as they
@@ -334,16 +365,69 @@ pub struct EmbroiderySetup {
     pub unread: Option<serde_json::Value>,
 }
 
-/// The keys the palette and the start point are saved under.
+/// The keys the document's settings are saved under.
 const PALETTE: &str = "palette";
 const START: &str = "start";
 const LABEL: &str = "label";
+const FABRIC: &str = "fabric";
+const THREAD_WEIGHT: &str = "thread_weight";
+const JOIN_SAME_COLOR: &str = "join_same_color";
+const MACHINE: &str = "machine";
 
 impl EmbroiderySetup {
     /// Whether nothing is set and nothing a newer version wrote is kept: the document then carries
-    /// none.
+    /// none. Every field is named, so that one added and left out here fails to compile.
     pub fn is_empty(&self) -> bool {
-        self.palette.is_none() && self.start.is_none() && self.label.is_none() && self.extra.is_empty() && self.unread.is_none()
+        self.nothing_set() && self.unread.is_none()
+    }
+
+    /// Whether nothing is set, whatever is kept unread: what makes the writer give back a value it
+    /// couldn't read as it was.
+    fn nothing_set(&self) -> bool {
+        let Self { palette, start, label, fabric, thread_weight, join_same_color, machine, extra, unread: _ } = self;
+        palette.is_none()
+            && start.is_none()
+            && label.is_none()
+            && fabric.is_none()
+            && thread_weight.is_none()
+            && join_same_color.is_none()
+            && machine.is_none()
+            && extra.is_empty()
+    }
+
+    /// Set the fabric, or unset it (`None`, or one with nothing in it: the built-in defaults). Like
+    /// the palette, a fabric set replaces settings this version can't read, and a value a newer
+    /// version wrote under its key in a form this version can't read.
+    pub fn set_fabric(&mut self, fabric: Option<FabricSettings>) {
+        self.fabric = self.replacing(FABRIC, fabric.filter(|f| !f.is_empty())).map(Box::new);
+    }
+
+    /// Set the thread's weight (wt), or unset it (`None`: 40 wt), as [`EmbroiderySetup::set_fabric`]
+    /// sets the fabric.
+    pub fn set_thread_weight(&mut self, weight: Option<f64>) {
+        self.thread_weight = self.replacing(THREAD_WEIGHT, weight);
+    }
+
+    /// Set whether objects of one colour join one block where nothing lies between them, or unset
+    /// it (`None`: they do), as [`EmbroiderySetup::set_fabric`] sets the fabric.
+    pub fn set_join_same_color(&mut self, on: Option<bool>) {
+        self.join_same_color = self.replacing(JOIN_SAME_COLOR, on);
+    }
+
+    /// Set the machine's values, or unset them (`None`, or values with nothing in them: the
+    /// built-in defaults), as [`EmbroiderySetup::set_fabric`] sets the fabric.
+    pub fn set_machine(&mut self, machine: Option<MachineSettings>) {
+        self.machine = self.replacing(MACHINE, machine.filter(|m| !m.is_empty())).map(Box::new);
+    }
+
+    /// `value`, about to be set under `key`: when it is set, what this version couldn't read (the
+    /// settings unread, a kept value of the key) goes.
+    fn replacing<T>(&mut self, key: &str, value: Option<T>) -> Option<T> {
+        if value.is_some() {
+            self.unread = None;
+            self.extra.remove(key);
+        }
+        value
     }
 
     /// Set the palette, or unset it (`None`). A palette set replaces settings a newer version wrote
@@ -393,7 +477,11 @@ impl From<serde_json::Value> for EmbroiderySetup {
                 if label.is_some() {
                     map.remove(LABEL);
                 }
-                Self { palette, start, label, extra: map, unread: None }
+                let fabric = setup_object(&mut map, FABRIC, FabricSettings::read).map(Box::new);
+                let thread_weight = take(&mut map, THREAD_WEIGHT, number);
+                let join_same_color = take(&mut map, JOIN_SAME_COLOR, Value::as_bool);
+                let machine = setup_object(&mut map, MACHINE, MachineSettings::read).map(Box::new);
+                Self { palette, start, label, fabric, thread_weight, join_same_color, machine, extra: map, unread: None }
             }
             serde_json::Value::Null => Self::default(),
             other => Self { unread: Some(other), ..Self::default() },
@@ -406,24 +494,69 @@ impl From<EmbroiderySetup> for serde_json::Value {
     /// first, and winning over a kept key of its name), or what a newer version wrote that this one
     /// can't read, as it was, while nothing is set.
     fn from(s: EmbroiderySetup) -> Self {
-        match s.unread {
-            Some(unread) if s.palette.is_none() && s.start.is_none() && s.label.is_none() && s.extra.is_empty() => unread,
-            _ => {
-                let mut map = serde_json::Map::new();
-                if let Some(palette) = s.palette {
-                    map.insert(PALETTE.to_string(), palette.into());
-                }
-                if let Some(start) = s.start {
-                    map.insert(START.to_string(), serde_json::json!([start.x, start.y]));
-                }
-                if let Some(label) = s.label {
-                    map.insert(LABEL.to_string(), serde_json::Value::String(label));
-                }
-                for (k, v) in s.extra {
-                    map.entry(k).or_insert(v);
-                }
-                serde_json::Value::Object(map)
-            }
+        if s.nothing_set()
+            && let Some(unread) = s.unread
+        {
+            return unread;
+        }
+        let EmbroiderySetup { palette, start, label, fabric, thread_weight, join_same_color, machine, extra, unread: _ } = s;
+        let set = [
+            palette.map(|p| (PALETTE, Value::from(p))),
+            start.map(|p| (START, serde_json::json!([p.x, p.y]))),
+            label.map(|l| (LABEL, Value::String(l))),
+            fabric.filter(|f| !f.is_empty()).map(|f| (FABRIC, Value::from(*f))),
+            thread_weight.map(|w| (THREAD_WEIGHT, Value::from(w))),
+            join_same_color.map(|on| (JOIN_SAME_COLOR, Value::Bool(on))),
+            machine.filter(|m| !m.is_empty()).map(|m| (MACHINE, Value::from(*m))),
+        ];
+        with_kept(set.into_iter().flatten(), extra)
+    }
+}
+
+/// Take key `key` out of `map` when `read` reads its value (a null is unset and goes too); a
+/// value it can't read stays in `map`, to be written back as it was.
+fn take<T>(map: &mut Map<String, Value>, key: &str, read: impl Fn(&Value) -> Option<T>) -> Option<T> {
+    let value = map.get(key)?;
+    if value.is_null() {
+        map.remove(key);
+        return None;
+    }
+    let read = read(value)?;
+    map.remove(key);
+    Some(read)
+}
+
+/// A number (JSON's are finite).
+fn number(v: &Value) -> Option<f64> {
+    v.as_f64().filter(|x| x.is_finite())
+}
+
+/// One number for both sides, or two: `[a, b]`.
+fn sides(v: &Value) -> Option<[f64; 2]> {
+    match v {
+        Value::Array(a) => match a.as_slice() {
+            [a, b] => Some([number(a)?, number(b)?]),
+            _ => None,
+        },
+        one => number(one).map(|x| [x; 2]),
+    }
+}
+
+/// An id: a string.
+fn id(v: &Value) -> Option<String> {
+    v.as_str().map(str::to_string)
+}
+
+/// Take key `key`'s object out of the document's settings `map` and read it with `read` (`None`
+/// when nothing is in it); a value that isn't an object stays in `map`, to be written back as it
+/// was.
+fn setup_object<T>(map: &mut Map<String, Value>, key: &str, read: impl FnOnce(Map<String, Value>) -> Option<T>) -> Option<T> {
+    match map.remove(key) {
+        Some(Value::Object(inner)) => read(inner),
+        Some(Value::Null) | None => None,
+        Some(other) => {
+            map.insert(key.to_string(), other);
+            None
         }
     }
 }
@@ -497,7 +630,7 @@ mod tests {
     fn settings_round_trip_with_what_a_newer_version_wrote() {
         for written in [
             json!({"palette": "jef"}),
-            json!({"palette": "pec", "fabric": {"preset": "knit", "pull": 0.35}, "threadWeight": 60}),
+            json!({"palette": "pec", "fabric": {"preset": "knit", "pull": 0.35}, "thread_weight": 60.0, "hoopSize": 100}),
             json!({"palette": "pec", "start": [14.5, -3.0], "label": "ACME_01"}),
             json!({"label": 7}),
             json!({"start": "centre", "hoop": [100, 100]}),
@@ -700,6 +833,106 @@ mod tests {
         }
         assert_eq!(PartKey::ALL.map(PartKey::name).iter().filter_map(|n| PartKey::from_name(n)).count(), PartKey::ALL.len());
         assert_eq!(PartKind::ALL.map(|k| PartKind::from_id(k.id())), [Some(PartKind::Fill), Some(PartKind::Stroke)]);
+    }
+
+    /// The document's fabric, thread weight, joining and machine round-trip as the commands write
+    /// them and as a newer version might: a preset this version doesn't know, an underlay kind it
+    /// doesn't know, numbers out of any range, values of another type and keys it doesn't know,
+    /// each kept where it was.
+    #[test]
+    fn document_settings_round_trip_with_what_a_newer_version_wrote() {
+        let ours = json!({
+            "fabric": {
+                "color": "#f4efe6",
+                "preset": {"id": "knit", "values": {
+                    "needle_point": "ball", "satin": {"pull": 0.35, "spacing_percent": 100.0, "underlay": "auto"},
+                    "stabilizer": "cutAway", "tatami": {"length": 4.0, "pull": 0.2, "spacing": 0.38, "underlay": "edgeTatami"},
+                    "thickness": 0.6, "topping": "waterSoluble"
+                }},
+                "needle_point": "ball", "satin": {"pull": 0.35, "spacing_percent": 100.0, "underlay": "auto"},
+                "stabilizer": "cutAway", "tatami": {"length": 3.5, "pull": 0.2, "spacing": 0.38, "underlay": "edgeTatami"},
+                "thickness": 0.6, "topping": "waterSoluble"
+            },
+            "join_same_color": false,
+            "machine": {"jump_length": 5.0, "min_stitch": 0.4, "speed": 700.0, "split_length": 7.0, "trim_length": 10.0},
+            "palette": "jef",
+            "thread_weight": 60.0
+        });
+        let newer = json!({
+            "fabric": {
+                "color": "white", "grain": 45,
+                "preset": {"id": "cork", "values": {"tatami": {"density_curve": [1, 2]}}, "vendor": "x"},
+                "satin": {"spacing_percent": "auto", "underlay": "doubleZigzag"},
+                "tatami": {"length": -40.0, "pull": [0.2, 0.3]},
+                "thickness": "thick"
+            },
+            "join_same_color": "byThread",
+            "machine": {"jump_length": 500.0, "model": "pr1050x", "trim_length": "never"},
+            "thread_weight": "heavy"
+        });
+        for written in [ours, newer, json!({"fabric": "knit", "machine": [5]}), json!({"fabric": {"preset": {"values": {}}}})] {
+            let read: EmbroiderySetup = serde_json::from_value(written.clone()).unwrap();
+            assert_eq!(serde_json::to_value(&read).unwrap(), written, "{written}");
+        }
+        let read: EmbroiderySetup =
+            serde_json::from_value(json!({"fabric": {"preset": {"id": "cork"}, "tatami": {"length": -40.0}}, "thread_weight": "heavy"})).unwrap();
+        let fabric = read.fabric.as_deref().unwrap();
+        assert_eq!(fabric.preset.as_ref().map(|p| p.id.as_str()), Some("cork"));
+        assert_eq!(fabric.values.tatami.as_ref().and_then(|t| t.length), Some(-40.0), "any number is read; ranges are the commands'");
+        assert_eq!((read.thread_weight, read.extra.get("thread_weight")), (None, Some(&json!("heavy"))));
+    }
+
+    /// The document's settings are written in one form (numbers as floats), and what has nothing in
+    /// it (an empty fabric, machine or stitch's values; nulls) reads as unset and is left out.
+    #[test]
+    fn document_settings_are_written_in_one_form() {
+        for (written, saved) in [
+            (json!({"thread_weight": 40, "machine": {"trim_length": 12}}), json!({"thread_weight": 40.0, "machine": {"trim_length": 12.0}})),
+            (json!({"fabric": {"tatami": {}, "satin": {"pull": null}}, "machine": {}, "join_same_color": null}), json!({})),
+            (json!({"fabric": {"preset": {"id": "woven", "values": {}}}}), json!({"fabric": {"preset": {"id": "woven"}}})),
+        ] {
+            let read: EmbroiderySetup = serde_json::from_value(written.clone()).unwrap();
+            let once = serde_json::to_value(&read).unwrap();
+            assert_eq!(once, saved, "{written}");
+            let again: EmbroiderySetup = serde_json::from_value(once.clone()).unwrap();
+            assert_eq!(serde_json::to_value(&again).unwrap(), once, "{written}: saved twice");
+        }
+        let empty: EmbroiderySetup = serde_json::from_value(json!({"fabric": {}, "machine": {"speed": null}})).unwrap();
+        assert!(empty.is_empty() && empty == EmbroiderySetup::default());
+    }
+
+    /// Setting the fabric, the thread weight, the joining or the machine replaces settings this
+    /// version couldn't read and a value of another type kept under the key; unsetting them leaves
+    /// nothing behind.
+    #[test]
+    fn document_settings_set_replace_what_couldnt_be_read() {
+        let mut s: EmbroiderySetup =
+            serde_json::from_value(json!({"thread_weight": "heavy", "join_same_color": 1, "fabric": "knit", "machine": 5, "hoop": 1})).unwrap();
+        s.set_thread_weight(Some(60.0));
+        s.set_join_same_color(Some(false));
+        s.set_fabric(Some(FabricSettings { color: Some([255, 255, 255]), ..FabricSettings::default() }));
+        s.set_machine(Some(MachineSettings { speed: Some(800.0), ..MachineSettings::default() }));
+        assert_eq!(
+            serde_json::to_value(&s).unwrap(),
+            json!({"fabric": {"color": "#ffffff"}, "hoop": 1, "join_same_color": false, "machine": {"speed": 800.0}, "thread_weight": 60.0})
+        );
+        s.set_thread_weight(None);
+        s.set_join_same_color(None);
+        s.set_fabric(Some(FabricSettings::default()));
+        s.set_machine(None);
+        assert_eq!(serde_json::to_value(&s).unwrap(), json!({"hoop": 1}));
+        let mut unread: EmbroiderySetup = serde_json::from_value(json!(5)).unwrap();
+        unread.set_thread_weight(Some(30.0));
+        assert_eq!(serde_json::to_value(&unread).unwrap(), json!({"thread_weight": 30.0}));
+    }
+
+    /// Each of the document's settings is saved under its name in snake_case.
+    #[test]
+    fn document_keys_are_the_names_in_snake_case() {
+        for (name, file) in setup_file_keys() {
+            let snake: String = name.chars().flat_map(|c| if c.is_ascii_uppercase() { vec!['_', c.to_ascii_lowercase()] } else { vec![c] }).collect();
+            assert_eq!(file, snake, "{name}");
+        }
     }
 
     /// Nothing set reads and writes as an empty object, and a palette of null is none.

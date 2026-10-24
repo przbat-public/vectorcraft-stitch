@@ -53,6 +53,8 @@ mod tests_derive;
 #[cfg(test)]
 mod tests_info;
 #[cfg(test)]
+mod tests_matrix;
+#[cfg(test)]
 mod tests_object;
 #[cfg(test)]
 mod tests_object_commands;

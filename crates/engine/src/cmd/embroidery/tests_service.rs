@@ -58,7 +58,35 @@ enum Edit {
     /// An object moved just above (or below) another in the stacking order, into the other's parent,
     /// as the Sewing order's drops and steps move it (`layer.move`).
     Reorder(usize, usize, bool),
+    /// An object's part given the settings at an index of [`SETTING_EDITS`].
+    Setting(usize, usize),
+    /// An object's fill entered at a point.
+    Entry(usize, f64, f64),
+    /// The document given the settings at an index of [`DOCUMENT_EDITS`].
+    DocumentSetting(usize),
 }
+
+/// Settings an edit gives an object's part: values set, a style, the part not sewn, values unset.
+const SETTING_EDITS: [(&str, &str); 7] = [
+    ("fill", r#"{"angle": 30}"#),
+    ("fill", r#"{"pull": 0.4, "length": 2.5, "underlay": "edge"}"#),
+    ("stroke", r#"{"stitch": "running"}"#),
+    ("fill", r#"{"stitch": "none"}"#),
+    ("stroke", r#"{"splitLength": 6, "pull": [0.3, 0.1]}"#),
+    ("fill", r#"{"expand": 0.3, "narrowAsSatin": 3}"#),
+    ("fill", r#"{"angle": null, "pull": null, "stitch": null, "expand": null}"#),
+];
+
+/// Settings an edit gives the document: a fabric, one of its values, the thread, the joining, the
+/// machine, and none again.
+const DOCUMENT_EDITS: [&str; 6] = [
+    r#"{"fabric": "fleece"}"#,
+    r#"{"fabric": {"tatami": {"pull": 0.3}, "satin": {"spacingPercent": 80}}}"#,
+    r#"{"threadWeight": 60}"#,
+    r#"{"joinSameColor": false}"#,
+    r#"{"machine": {"jumpLength": 3, "trimLength": 6, "splitLength": 7}}"#,
+    r#"{"fabric": null, "threadWeight": null, "joinSameColor": null, "machine": null}"#,
+];
 
 fn art() -> impl Strategy<Value = Art> {
     (
@@ -88,6 +116,9 @@ fn edit() -> impl Strategy<Value = Edit> {
         1 => (0..OPTIONS.len()).prop_map(Edit::Options),
         1 => Just(Edit::Open),
         2 => (0usize..16, 0usize..16, any::<bool>()).prop_map(|(a, b, above)| Edit::Reorder(a, b, above)),
+        2 => (0usize..16, 0..SETTING_EDITS.len()).prop_map(|(i, k)| Edit::Setting(i, k)),
+        1 => (0usize..16, 0.0..220.0f64, 0.0..220.0f64).prop_map(|(i, x, y)| Edit::Entry(i, x, y)),
+        1 => (0..DOCUMENT_EDITS.len()).prop_map(Edit::DocumentSetting),
     ]
 }
 
@@ -225,6 +256,26 @@ fn apply(s: &mut Session, ids: &mut Vec<u64>, opts: &mut Options, e: &Edit) {
             }
         }
         Edit::Options(k) => *opts = options_at(k),
+        // Refused for objects that take none (a run of stitches opened from a file): nothing
+        // changes then.
+        Edit::Setting(i, k) => {
+            if let Some(id) = pick(i) {
+                let (part, values) = SETTING_EDITS[k % SETTING_EDITS.len()];
+                let mut params: Value = serde_json::from_str(values).unwrap();
+                params["ids"] = json!([id]);
+                params["part"] = json!(part);
+                let _ = s.execute("embroidery.set", &params);
+            }
+        }
+        Edit::Entry(i, x, y) => {
+            if let Some(id) = pick(i) {
+                let _ = s.execute("embroidery.setEntryExit", &json!({"id": id, "part": "fill", "entry": [x, y]}));
+            }
+        }
+        Edit::DocumentSetting(k) => {
+            let params: Value = serde_json::from_str(DOCUMENT_EDITS[k % DOCUMENT_EDITS.len()]).unwrap();
+            run(s, "embroidery.setup", params);
+        }
         Edit::Open => {
             if let Ok(r) = s.execute("document.export", &json!({"format": "pes"})) {
                 let data = r["dataBase64"].as_str().unwrap().to_string();
@@ -931,6 +982,46 @@ fn an_edit_plans_again_only_what_it_changed() {
     let next = after.units.get(last + 1).is_some_and(|u| u.block == after.units[last].block);
     assert!(next, "the moved object isn't its block's last: the test needs the unit after it");
     assert_eq!(service.kept(), 7 + moved.len() + 1, "{} moved", moved.len());
+    assert_eq!(*after, digitize(&doc, &opts, None).unwrap());
+}
+
+/// An object's setting plans again only that object's units, and the unit after it in its block,
+/// whose start follows where the object ends, as a move does; an entry point set ends that chain:
+/// the object starts where it is told, so the unit planned again is its own alone.
+#[test]
+fn a_setting_plans_again_only_its_objects_units() {
+    let (mut s, ids) = five();
+    let opts = Options::default();
+    let service = PlanService::default();
+    let doc = s.doc().unwrap().doc.clone();
+    service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    let kept = service.kept();
+    run(&mut s, "embroidery.set", json!({"ids": [ids[1]], "part": "fill", "angle": 30}));
+    let doc = s.doc().unwrap().doc.clone();
+    let after = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    let of_it = after.units.iter().filter(|u| u.origin.selected().0 == ids[1] && matches!(u.origin.part, plan::Part::Fill(_))).count();
+    let planned = service.kept() - kept;
+    assert!(planned >= of_it && planned <= of_it + 1, "{planned} planned again for {of_it} units of the object");
+    assert_eq!(*after, digitize(&doc, &opts, None).unwrap());
+}
+
+/// A change of the fabric's tatami values plans again only what is sewn as tatami: a document of
+/// satin and running strokes alone keeps every unit it had.
+#[test]
+fn a_fabrics_tatami_change_keeps_every_satin_and_running_unit() {
+    let (mut s, _) = build(&[
+        Art { kind: 0, x: 10.0, y: 10.0, w: 80.0, h: 60.0, fill: None, stroke: Some((1, 6.0)) },
+        Art { kind: 1, x: 120.0, y: 20.0, w: 60.0, h: 60.0, fill: None, stroke: Some((2, 1.0)) },
+    ]);
+    let opts = Options::default();
+    let service = PlanService::default();
+    let doc = s.doc().unwrap().doc.clone();
+    service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    let kept = service.kept();
+    run(&mut s, "embroidery.setup", json!({"fabric": {"tatami": {"pull": 0.35, "spacing": 0.3, "length": 3}}}));
+    let doc = s.doc().unwrap().doc.clone();
+    let after = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    assert_eq!(service.kept(), kept, "nothing planned again");
     assert_eq!(*after, digitize(&doc, &opts, None).unwrap());
 }
 

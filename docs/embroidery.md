@@ -1917,9 +1917,10 @@ Public documentation, cited per claim in the crate:
   thread by CIEDE2000, a design's blocks to threads (`Palette::assign`), and the thread numbers a
   format writes (`Palette::numbers`).
 - `crates/stitch/src/color.rs` — sRGB in CIE L*a*b* (D65), and the CIEDE2000 colour difference.
-- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (eight commands,
-  `embroidery.setTrimAfter`, `setup`, `settings`, `threads`, `stats`, `sequence`, `check` and
-  `render`, and the document's thread palette), `view.rs` (each document's stitch view: View ›
+- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (six commands,
+  `embroidery.setTrimAfter`, `threads`, `stats`, `sequence`, `check` and `render`, and the
+  document's thread palette), `setup.rs` (the document's embroidery settings,
+  `embroidery.setup` and `embroidery.settings`), `view.rs` (each document's stitch view: View ›
   Stitch Preview and its options, four commands; the export's options it plans with), `reorder.rs`
   (changing the sewing order: a drop's move, Sew Earlier, Later, First and Last, four commands,
   and what a move did), `scene.rs` (the plan as a line picture), `render.rs` (`embroidery.render`),
@@ -1952,7 +1953,9 @@ Public documentation, cited per claim in the crate:
 - `crates/ui-egui/src/panels/embroidery/` — the Embroidery panel: `mod.rs` (the tabs, states and ≡
   menu, `ui.embroideryPanel`), `order.rs` (Sewing Order), `check.rs` (Check), `lengths.rs` (the
   stitch-length chart).
-- `crates/testkit/src/embroidery.rs` — documents for tests, built by commands;
+- `crates/testkit/src/embroidery.rs` — documents for tests, built by commands, and the JSON a
+  newer version might write (`arb_json`), which `crates/format/tests/prop_embroidery.rs` opens and
+  saves back;
   `crates/engine/tests/embroidery_fixtures.rs` checks that each plans and holds together, and
   `crates/engine/tests/embroidery_scene.rs` the scene on the real designs.
 - `apps/vectorcraft-cli/src/perf_embroidery.rs` — the embroidery rows of `vectorcraft-cli perf`

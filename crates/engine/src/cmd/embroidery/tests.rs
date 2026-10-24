@@ -328,7 +328,7 @@ fn the_document_sets_its_thread_palette() {
     }
     // The params check every frontend runs refuses it first; the command says why.
     assert!(s.execute("embroidery.setup", &r).unwrap_err().to_string().contains("`resolved`"));
-    assert!(super::setup(&mut s, &r).unwrap_err().to_string().contains("`resolved` is read only"));
+    assert!(super::setup::setup(&mut s, &r).unwrap_err().to_string().contains("`resolved` is read only"));
     assert_eq!(steps(&s), before + 1);
     assert_eq!(s.execute("embroidery.setup", &json!({"palette": null})).unwrap(), unset());
     assert!(s.doc().unwrap().doc.embroidery.is_none(), "nothing set, nothing kept");
@@ -399,7 +399,7 @@ fn empty_settings_in_a_file_are_none() {
         assert!(!st.is_dirty(), "{empty}: unchanged");
     }
     // A frontend's params check refuses another key first; the command says it too.
-    let refused = super::setup(&mut blank(), &json!({"fabric": "knit"})).unwrap_err().to_string();
+    let refused = super::setup::setup(&mut blank(), &json!({"fabric": "knit"})).unwrap_err().to_string();
     assert!(refused.contains("unknown setting `fabric`: the settings are palette, start and label"), "{refused}");
 }
 

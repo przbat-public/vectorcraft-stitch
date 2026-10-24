@@ -44,7 +44,10 @@ Illustrator-parity scores (Practicalities, last item).
   trusting a PR number in a brief, check its title and URL.
 - **Never rename a PR's head branch** on GitHub: GitHub closes the PR instead of following the
   rename.
-- **The owner squash-merges.** After a base PR merges, merge `feat/embroidery` into any branch
+- **The owner squash-merges, except an upstream sync.** A PR that merges `main` into
+  `feat/embroidery` is merged with "Create a merge commit": a squash would drop the record that
+  upstream's commits are merged, and the next sync would meet the same conflicts again. After a
+  base PR merges, merge `feat/embroidery` into any branch
   stacked on it (taking the branch's side: the squash equals the base's last commit), so its diff
   shows only its own changes. Never push to a merged PR's deleted branch: that recreates it.
 - **No code names, anywhere.** Never label work with a stage letter, a step number or any other
@@ -156,7 +159,8 @@ stitches fast, is tried before anything is built on it.
    Sew Earlier, Later, First and Last, move objects in the stacking order with `layer.move`, in one
    undo step, and the list says what the move did) and a Check tab (problems first, Show, the
    findings ringed on the canvas, the stitch lengths' chart); the counters in the status bar. Every
-   word in the 23 languages, numbers as each writes them. The first change a user sees.
+   word in the 23 languages, numbers as each writes them (and in Turkish, which upstream added
+   later, since the sync of 2026-10-24: AI-drafted, not yet reviewed). The first change a user sees.
 5. **Embroidery settings on objects and in the document.** Stored as Architecture describes (per
    fill and stroke, allowed on type and groups, points moved with the object, files from newer
    versions still opening); values resolved with their source (the object's, then the export's
@@ -325,6 +329,28 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
 
 ## Keeping up with upstream
 
+**How a sync goes.** `git fetch upstream --prune`; fast-forward `main` to `upstream/main` (never a
+fork commit on it) and push it; on a branch cut from `feat/embroidery`, `git merge main`; resolve
+as below, keeping upstream's changes and putting the fork's hooks back; add the fork's rows to any
+catalogue upstream added (the catalogue tests want every fork row in every language); gate with
+`EMBROIDERY_CORPUS_REQUIRED=1 cargo +1.95.0 xtask ci` in a checkout of its own, with the
+embroidery perf rows (`vectorcraft-cli perf --embroidery`) before and after; open the PR to
+`feat/embroidery`, merged with a merge commit (Branches). The merge commit's message lists every
+conflicted file and how it was resolved.
+
+**Syncs so far.** 2026-10-18, at the fork's start (upstream `904f0fe5`, no conflicts), and again
+the same day (upstream `cdba0aac`, PR #5: the ROADMAP's log and `fileio/mod.rs`'s format lists).
+2026-10-24, after the stitch preview: upstream `cdba0aac..4c82749b`, 1305 commits; 35 conflicting hunks in 14
+files, all listed in the merge commit, of which the status bar (upstream's fixed slots) and
+`tab_title` (a parameter of upstream's in the fork's place) were re-ported by hand; Turkish rows
+for every fork string; three fixes in upstream's code for the fork's Rust 1.95 gate (below).
+
+**Upstream's CI lints with a newer clippy** than the fork's 1.95 (2026-10-24: upstream runs
+stable 1.96 against `rust-version = "1.95"`). Upstream code can then fail the fork's gate: a lint
+1.95 doesn't know, or one 1.95 flags and the newer one doesn't. Allow it in place, marked
+"VectorCraft Stitch", and list it with the hooks below; drop the allow when the fork's gate moves
+to upstream's clippy.
+
 Where merging `main` (upstream) into the fork conflicts, and how to resolve each so nothing is lost:
 
 - **`crates/doc/src/node.rs`, the node's extras:** the fork's `embroidery` sits after `perspective`
@@ -349,16 +375,22 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   (the fork's own code is under `crates/ui-egui/src/embroidery/`, `panels/embroidery/` and
   `cmd/embroidery/`):
   - `ui-egui/src/lib.rs`: `pub mod embroidery`, the app's `embroidery` field and its init,
-    `stitch_preview::poll` after the background jobs, `canvas_controls` after the canvas,
-    `stitch_preview::schedule` at the frame's end, and the screenshot wait
-    (`holds_screenshots`, `MAX_SCREENSHOT_WAIT_MS`);
+    `stitch_preview::poll` after the background jobs, `canvas_controls` after the canvas (before
+    upstream's isolation bar, which lies over the canvas's top: the switch and the notice move
+    below it), `embroidery::end_frame` at the frame's end (a click on the counters, then
+    `stitch_preview::schedule`), and the screenshot wait (`holds_screenshots`,
+    `MAX_SCREENSHOT_WAIT_MS`);
   - `canvas.rs`: `art_pass` before the art, `paint_fabric` instead of the paper and the outline's
     ground, `templates`/`hidden` in the art's key and options, `&& art.render`, `&& !art.stitches`,
     `stitch_layer::draw` after the art, `to_screen_path` and `node_outline` made `pub(crate)`, the
     selection overlay's `frame_only`; `fit_zoom` and `FIT_MARGIN` split out of `fit` for View › Zoom
     to Box (`embroidery/zoom.rs`);
-  - `chrome.rs`: the tab title's mode (`tab_title`), and in the status bar the counters drawn
-    before the timings, which are drawn only when the counters leave room;
+  - `chrome.rs`: the tab title's mode (`tab_title`'s fifth parameter, `stitches`, after upstream's
+    `display_print_size`), and in `status_readouts` the counters (`embroidery::counters::show`)
+    given the bar's area first: they take its right end and return the rest, and `diagnostics`
+    waits on their answer (`timings &&`), so the timings give way to them. The bar is drawn with
+    the app only read: the counters keep their state in cells and act on a click at the frame's
+    end;
   - `menus.rs`: View › Stitch Preview and its options after Pixel Preview, the `checked` and
     `enabled` hooks, Window › Embroidery, the `UI_COMMANDS` rows (`ui.embroideryPanel`,
     `view.zoomTo`, `view.checkMarks`, `embroidery.showFinding`, `embroidery.nextHit`,
@@ -375,6 +407,13 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   - the engine's `lib.rs`: the `pub use` of `PlanKey` and `Planned`, and in
     `close_document` the closed document's planning forgotten (in a batch, by `fileio/batch.rs`
     once the batch holds; its `roll_back` forgets a document the batch opened);
+  - `doc/src/lib.rs`: `Document::same_outside_layers` names the `embroidery` field (upstream's
+    list of every field, for redrawing only what an edit changed);
+  - `xtask/src/main.rs`: the `embroidery-corpus` step before `test`, and `cmd_test`'s `envs`, which
+    the gate's test step passes `EMBROIDERY_CORPUS_REQUIRED` through;
+  - for the fork's Rust 1.95 gate: `#[allow(unknown_lints)]` above `effects/src/group.rs`'s
+    `clippy::manual_isolate_lowest_one`, and `#[allow(clippy::neg_cmp_op_on_partial_ord)]` on
+    `brush/src/track.rs`'s `tracks`;
   - `render/src/lib.rs`: `pub mod lines`; `testkit/src/lib.rs`: `pub mod embroidery`;
     `vectorcraft-cli`'s `main.rs`: `bench` prints the preview's line;
   - `apps/vectorcraft/src/prefs_dir.rs`: `mod stitch_profile`; `profile.rs`'s `prefs_path`: the

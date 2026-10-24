@@ -5031,6 +5031,8 @@ theme	Appearance	Giao diện
 @msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	cài đặt thêu của tài liệu có một số mục mà phiên bản này không đọc được (từ phiên bản mới hơn): chúng được giữ lại, và mẫu được thêu mà không có chúng
 @msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	một số cài đặt thêu của tài liệu nằm ngoài phạm vi phiên bản này thêu được: mỗi cài đặt được thêu với giá trị gần nhất mà nó nhận
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	độ dài cắt chỉ ngắn hơn độ dài bước nhảy, nên các bước nhảy được cắt chỉ ngay từ độ dài bước nhảy
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	cài đặt thêu của một số đối tượng có các mục mà phiên bản này không đọc được (từ phiên bản mới hơn): chúng được giữ lại, và các đối tượng đó được thêu mà không có chúng
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	một số cài đặt thêu của đối tượng nằm ngoài phạm vi phiên bản này thêu được: mỗi cài đặt được thêu với giá trị gần nhất mà nó nhận
 @msg	nothing to stitch: the document has no visible filled or stroked paths	không có gì để thêu: tài liệu không có đường dẫn hiển thị nào có tô hoặc nét
 @msg	nothing to stitch: {_1}	không có gì để thêu: {_1}
 

@@ -5401,6 +5401,8 @@ mark-style	Japanese	Japanilainen
 @msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	asiakirjan kirjonta-asetuksissa on joitakin, joita tämä versio ei lue (uudemmasta versiosta): ne säilytetään, ja malli kirjotaan ilman niitä
 @msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	osa asiakirjan kirjonta-asetuksista on sen ulkopuolella, mitä tämä versio kirjoo: kukin kirjotaan lähimmällä arvolla, jonka se hyväksyy
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	leikkauksen pituus on lyhyempi kuin hypyn pituus, joten hypyt leikataan jo hypyn pituudesta alkaen
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	joidenkin objektien kirjonta-asetuksissa on joitakin, joita tämä versio ei lue (uudemmasta versiosta): ne säilytetään, ja objektit kirjotaan ilman niitä
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	osa objektien kirjonta-asetuksista on sen ulkopuolella, mitä tämä versio kirjoo: kukin kirjotaan lähimmällä arvolla, jonka se hyväksyy
 @msg	nothing to stitch: the document has no visible filled or stroked paths	ei mitään kirjottavaa: asiakirjassa ei ole näkyviä polkuja, joilla on täyttö tai viiva
 @msg	nothing to stitch: {_1}	ei mitään kirjottavaa: {_1}
 

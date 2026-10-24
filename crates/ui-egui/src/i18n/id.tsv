@@ -5378,6 +5378,8 @@ swatch	Bright Violet	Violet cerah
 @msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	pengaturan bordir dokumen berisi beberapa yang tidak dibaca versi ini (dari versi yang lebih baru): pengaturan itu disimpan, dan desain dibordir tanpanya
 @msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	beberapa pengaturan bordir dokumen berada di luar yang dibordir versi ini: masing-masing dibordir dengan nilai terdekat yang diterimanya
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	panjang potong lebih pendek dari panjang lompatan, jadi lompatan sudah dipotong mulai dari panjang lompatan
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	pengaturan bordir beberapa objek berisi beberapa yang tidak dibaca versi ini (dari versi yang lebih baru): pengaturan itu disimpan, dan objek tersebut dibordir tanpanya
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	beberapa pengaturan bordir objek berada di luar yang dibordir versi ini: masing-masing dibordir dengan nilai terdekat yang diterimanya
 @msg	nothing to stitch: the document has no visible filled or stroked paths	tidak ada yang dibordir: dokumen tidak memiliki jalur terlihat dengan isian atau stroke
 @msg	nothing to stitch: {_1}	tidak ada yang dibordir: {_1}
 

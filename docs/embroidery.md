@@ -778,17 +778,23 @@ the object a person selects (`id`).
 - Gradients and patterns sew in one colour (a gradient in its first stop's; a pattern is left out).
 - Wide satin columns are split stitch by stitch (auto split), not into several narrower columns,
   and are at most 50 mm wide (wider strokes are warned about).
-- Underlay is chosen by width and size, or set for all tatami and all satin by the document's
-  fabric; not yet per object.
-- Pull and push compensation, `expand` and the thread weight are one value for the whole design
-  (the document's fabric sets pull for tatami and satin apart), not per object yet: 0.2 mm of pull
-  compensation, the default, suits stable woven fabric (Wilcom's guide gives 0.35 for T-shirts and
-  0.4 for fleece). Push compensation is off by default: no starting value is published.
+- Underlay is chosen by width and size, unless an object's part, or the document's fabric for all
+  tatami and all satin, sets one.
+- Pull and push compensation and `expand` are the object's own, else one value for the whole
+  design (the document's fabric sets pull for tatami and satin apart); the thread weight is the
+  whole design's. 0.2 mm of pull compensation, the default, suits stable woven fabric (Wilcom's
+  guide gives 0.35 for T-shirts and 0.4 for fleece). Push compensation is off by default: no
+  starting value is published.
 - Fill pull compensation stretches rows along their direction only: across the rows, a fill keeps
   half a row spacing inside its edge, as before. `expand` grows it both ways.
 - A fill's narrow parts become satin by their width alone, not by what a person would choose (a
-  wide stem, a stripe the art wants flat). `narrowAsSatin: 0` or `stitch: tatami` keeps all of
-  it tatami; there is no per-object choice until embroidery properties on objects.
+  wide stem, a stripe the art wants flat). `narrowAsSatin: 0` or `stitch: tatami`, on the object's
+  fill or for the export, keeps all of it tatami.
+- A piece of an expanded appearance that was a stroke takes the stroke's settings as a fill: a
+  stroke's `stitch` of `running` sews the outlined piece's outline, not the stroke's path.
+- An entry point starts its part at the start the stitches can take nearest to it (an end of a
+  line, the corner a fill's rows begin at), not at the point itself; an exit point is kept but not
+  yet planned toward (both come with the embroidery tool).
 - A part of a fill narrower than 1 mm is a single running line along its middle, not a bean or
   triple run: on a part 0.6–1 mm wide its edges stay bare.
 - Travel between a fill's parts is weighed by the straight distance between them, and it is not
@@ -1301,8 +1307,8 @@ worksheet, a stitch player. So each one shows what will be sewn.
 
 ### Settings and where their values come from
 
-Every unit is planned with the export's options over the document's embroidery settings (the
-objects' own settings come above both, next). The digitizer decides a unit's stitch style,
+Every unit is planned with its object's own settings for its part, over the export's options,
+over the document's embroidery settings. The digitizer decides a unit's stitch style,
 parameters and `expand` in one place, `Digitizer::settings`, which asks `resolve.rs`: each layer is
 a set of the embroidery options (`Options`), one value or none for each, laid over the next
 (`Options::over`) and turned into the planner's parameters by the one conversion every unit takes
@@ -1321,8 +1327,9 @@ objects join) is resolved once a plan (`DesignSettings`).
     trace (digitizing from an image), not only on paths;
   - points (entry and exit, later satin rails and angle lines) in document coordinates, moved with
     the object, and angles turned with it;
-  - fields a version doesn't know are kept, and a stitch type it doesn't know reads as Auto with a
-    warning instead of failing the file (so stitch types are not a plain closed list in the file).
+  - fields a version doesn't know are kept, and a stitch type it doesn't know reads as unset (the
+    export's option, else Auto) with a note instead of failing the file (so stitch types are not a
+    plain closed list in the file).
     Done for what objects carry today: `Embroidery` (the node's `embroidery` key) keeps keys it
     doesn't read and known keys of another type (`Embroidery::extra`, `StitchRun::extra`, read as
     unset) and a value that isn't an object (`Embroidery::unread`), as `EmbroiderySetup` does; a
@@ -1356,6 +1363,16 @@ objects join) is resolved once a plan (`DesignSettings`).
     applies); the plan says each once. So does a trim length shorter than the jump length (the two
     from different places, the machine and an export's options): jumps are then cut from the jump
     length on.
+
+- **How an object's settings reach the stitches** (`PartLayer`): from the node walked, for the
+  kind of part a unit sews (all its fills, or all its strokes), so a symbol's art keeps its own in
+  every instance, turned with it, and an expanded object's pieces take the settings of the part each
+  came from. Groups and layers pass nothing down. The part's `stitch` decides first: `auto` sews by
+  the rule even where an export forces a style, a style beats the export's, and `none` leaves the
+  part unsewn (no unit, nothing said). Its entry point starts the part where the stitches can start
+  nearest to it. A value a newer version wrote out of its range is sewn at the nearest it takes, and
+  a stitch, an underlay or a key this version doesn't read is left out, so the layers below give it;
+  the plan says each once.
 
 ### Threads
 

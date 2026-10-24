@@ -5437,6 +5437,8 @@ mark-style	Japanese	Japonské
 @msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	nastavení vyšívání dokumentu obsahuje některá, která tato verze nečte (z novější verze): zůstávají zachována a vzor se vyšívá bez nich
 @msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	některá nastavení vyšívání dokumentu leží mimo to, co tato verze vyšívá: každé se vyšívá s nejbližší hodnotou, kterou přijímá
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	délka střihu je kratší než délka skoku, proto se skoky stříhají už od délky skoku
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	nastavení vyšívání některých objektů obsahuje některá, která tato verze nečte (z novější verze): zůstávají zachována a objekty se vyšívají bez nich
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	některá nastavení vyšívání objektů leží mimo to, co tato verze vyšívá: každé se vyšívá s nejbližší hodnotou, kterou přijímá
 @msg	nothing to stitch: the document has no visible filled or stroked paths	není co vyšívat: dokument nemá žádné viditelné cesty s výplní nebo tahem
 @msg	nothing to stitch: {_1}	není co vyšívat: {_1}
 

@@ -5047,6 +5047,8 @@ lighting	Light	Свет
 @msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	настройки вышивки документа содержат такие, которые эта версия не читает (из более новой версии): они сохраняются, а дизайн вышивается без них
 @msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	некоторые настройки вышивки документа выходят за пределы того, что вышивает эта версия: каждая вышивается с ближайшим допустимым значением
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	длина обрезки короче длины перехода, поэтому переходы обрезаются уже начиная с длины перехода
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	настройки вышивки некоторых объектов содержат такие, которые эта версия не читает (из более новой версии): они сохраняются, а эти объекты вышиваются без них
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	некоторые настройки вышивки объектов выходят за пределы того, что вышивает эта версия: каждая вышивается с ближайшим допустимым значением
 @msg	nothing to stitch: the document has no visible filled or stroked paths	нечего вышивать: в документе нет видимых контуров с заливкой или обводкой
 @msg	nothing to stitch: {_1}	нечего вышивать: {_1}
 

@@ -48,6 +48,8 @@ mod tests_contract;
 #[cfg(test)]
 mod tests_derive;
 #[cfg(test)]
+mod tests_object;
+#[cfg(test)]
 mod tests_order;
 #[cfg(test)]
 mod tests_scene;

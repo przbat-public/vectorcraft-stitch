@@ -5389,6 +5389,8 @@ effect	Points	Σημεία
 @msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	οι ρυθμίσεις κεντήματος του εγγράφου περιέχουν κάποιες που αυτή η έκδοση δεν διαβάζει (από νεότερη έκδοση): διατηρούνται, και το σχέδιο κεντιέται χωρίς αυτές
 @msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	ορισμένες ρυθμίσεις κεντήματος του εγγράφου βρίσκονται εκτός όσων κεντά αυτή η έκδοση: η καθεμία κεντιέται με την πλησιέστερη τιμή που δέχεται
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	το μήκος κοπής είναι μικρότερο από το μήκος άλματος, οπότε τα άλματα κόβονται ήδη από το μήκος άλματος
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	οι ρυθμίσεις κεντήματος ορισμένων αντικειμένων περιέχουν κάποιες που αυτή η έκδοση δεν διαβάζει (από νεότερη έκδοση): διατηρούνται, και τα αντικείμενα κεντιούνται χωρίς αυτές
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	ορισμένες ρυθμίσεις κεντήματος αντικειμένων βρίσκονται εκτός όσων κεντά αυτή η έκδοση: η καθεμία κεντιέται με την πλησιέστερη τιμή που δέχεται
 @msg	nothing to stitch: the document has no visible filled or stroked paths	τίποτα για κέντημα: το έγγραφο δεν έχει ορατές διαδρομές με γέμισμα ή περίγραμμα
 @msg	nothing to stitch: {_1}	τίποτα για κέντημα: {_1}
 

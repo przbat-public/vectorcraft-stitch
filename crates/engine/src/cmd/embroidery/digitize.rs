@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 
 use vectorcraft_color::Paint;
 use vectorcraft_doc::cancel;
-use vectorcraft_doc::embroidery::{StitchRun, ThreadPalette};
+use vectorcraft_doc::embroidery::{PartKind, StitchRun, ThreadPalette};
 use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind, StrokeAlign, StrokeLayer};
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Point, Rect, Shape, kurbo};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
@@ -19,7 +19,7 @@ use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 use super::Options;
 use super::cache::{Shaped, Shared, UnitCache, UnitKey, clip_words, path as path_words, rule_word};
 use super::plan::{Choice, DesignPlan, MAX_WARNED_OBJECTS, Origin, Part};
-use super::resolve::{DesignSettings, DocLayer, UnitSettings};
+use super::resolve::{DesignSettings, DocLayer, Found, PartLayer, UnitSettings};
 use super::sequence::{CLEARANCE, Facts, Planned, Sequence};
 use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
 
@@ -137,8 +137,10 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
         cache,
         progress,
         occurrences: HashMap::new(),
+        found: Found::default(),
     };
     d.run();
+    notes.extend(d.found.notes().map(String::from));
     match d.failed {
         Some(e) => Err(e),
         None => {
@@ -223,6 +225,8 @@ struct Digitizer<'a> {
     /// How many units the plan holds so far of each object a person selects and part
     /// ([`Origin::selected`], [`Origin::part`]): the next one's [`Facts::occurrence`] is one more.
     occurrences: HashMap<(NodeId, Part), usize>,
+    /// What reading the objects' settings found that the plan says.
+    found: Found,
 }
 
 /// How far a plan has got: the units come to, of about how many ([`units_under`]).
@@ -278,9 +282,16 @@ impl<'a> Digitizer<'a> {
     /// places it, an expanded object's piece) is planned with: the one place a unit's stitch style,
     /// stitch parameters and `expand` are decided, in the order decided (`resolve`): the object's
     /// own value, then the export's option, then the document's embroidery settings, then the
-    /// planner's defaults.
-    fn settings(&self, _n: &Node, _unit: &Origin) -> UnitSettings<'a> {
-        UnitSettings::new(self.opts, self.doc_layer)
+    /// planner's defaults. The object's are those `n` keeps for the kind of part the unit sews.
+    fn settings(&mut self, n: &Node, unit: &Origin) -> UnitSettings<'a> {
+        let kind = match unit.part {
+            Part::Fill(_) => Some(PartKind::Fill),
+            Part::Stroke(_) => Some(PartKind::Stroke),
+            Part::Literal => None,
+        };
+        let part = kind.and_then(|k| n.extras().embroidery.as_deref()?.part(k));
+        let object = part.map_or_else(PartLayer::default, |p| PartLayer::read(p, &mut self.found));
+        UnitSettings::new(object, self.opts, self.doc_layer)
     }
 
     /// What the unit that sews `part` of `n` sews.
@@ -564,6 +575,10 @@ impl<'a> Digitizer<'a> {
             }
             let unit = self.origin(n, part);
             let settings = self.settings(n, &unit);
+            // A part its object sets not to be sewn: no unit, and nothing to say.
+            if !settings.sewn() {
+                continue;
+            }
             match item {
                 // A fill is filled unless the `stitch` option asks for another way of stitching it.
                 AppearanceItem::Fill(fill) => {
@@ -766,7 +781,8 @@ impl<'a> Digitizer<'a> {
         if let (Some(r), Some(clip)) = (estimate, &self.clip) {
             estimate = Some(r.intersect(clip.bounds));
         }
-        let from = self.seq.needle(self.seq.target(color, estimate));
+        // Where its object sets it to start, else where the needle is.
+        let from = settings.entry().or_else(|| self.seq.needle(self.seq.target(color, estimate)));
         let request = UnitRequest {
             shape: bp,
             rule,

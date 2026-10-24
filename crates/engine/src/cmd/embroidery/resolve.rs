@@ -9,6 +9,12 @@
 //! conversion every unit takes ([`Options::params`]): with nothing set but the export's options,
 //! a unit is planned exactly as before, by construction.
 //!
+//! The object's layer ([`PartLayer`]) is the settings it keeps for the kind of part a unit sews,
+//! its fills or its strokes, read from the node walked: a symbol's art as its instance places it
+//! (turned with it), an expanded object's piece (which takes the settings of the part it came from,
+//! `super::derive`). Nothing comes from the groups and layers around it. Its `stitch` decides first:
+//! `auto` (the rule, even where an export forces a style), a style, or `none` (the part isn't sewn).
+//!
 //! The document's layer ([`DocLayer`]) is read by the kind of stitch a unit is sewn in, as a
 //! fabric is described: a tatami fill (a fill, a stroke sewn as the area it paints) takes the
 //! fabric's tatami values, its row spacing for 40 wt thread scaled to the thread as the built-in
@@ -20,14 +26,17 @@
 //! the cuts across a literal run's clipping, whether objects of one colour join) is resolved once a
 //! plan ([`DesignSettings`]).
 
-use vectorcraft_doc::Document;
-use vectorcraft_doc::embroidery::{EmbroiderySetup, MachineSettings, StitchValues};
+use vectorcraft_doc::embroidery::{EmbroiderySetup, MachineSettings, PartPoints, PartSettings, StitchValues};
+use vectorcraft_doc::{Document, MAX_COORD};
+use vectorcraft_geom::Point;
+use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_stitch::plan::{
-    DENSITY_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, PULL_RANGE, Params, SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE,
-    Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay, thread_scale,
+    DENSITY_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PULL_PERCENT_RANGE, PULL_RANGE, PUSH_RANGE, Params,
+    SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay, thread_scale,
 };
 
 use super::Options;
+use super::options::MAX_EXPAND;
 use super::stats::{FABRIC_THICKNESS_RANGE, SPEED_RANGE};
 
 /// The column width given for what is not a satin column: fills and running lines have none.
@@ -43,28 +52,53 @@ pub(crate) const DOCUMENT_SETTINGS_OUT_OF_RANGE: &str =
 /// places: the document's machine and an export's options).
 pub(crate) const TRIM_BELOW_JUMP: &str = "the trim length is shorter than the jump length, so jumps are cut from the jump length on";
 
-/// One sewing unit's settings: the call's options (the export's, a read command's), then the
-/// document's.
+/// Said once in a plan where objects' embroidery settings hold some this version doesn't read.
+pub(crate) const OBJECT_SETTINGS_UNREAD: &str = "some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them";
+/// Said once in a plan where objects' embroidery settings hold values outside what this version
+/// sews.
+pub(crate) const OBJECT_SETTINGS_OUT_OF_RANGE: &str =
+    "some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes";
+
+/// One sewing unit's settings: its object's own for the part it sews, then the call's options (the
+/// export's, a read command's), then the document's.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct UnitSettings<'a> {
+    object: PartLayer,
     export: &'a Options,
     doc: &'a DocLayer,
 }
 
 impl<'a> UnitSettings<'a> {
-    /// The settings of a unit planned with the call's options `export` over the document's `doc`.
-    pub(crate) fn new(export: &'a Options, doc: &'a DocLayer) -> Self {
-        Self { export, doc }
+    /// The settings of a unit planned with its object's `object` over the call's options `export`
+    /// over the document's `doc`.
+    pub(crate) fn new(object: PartLayer, export: &'a Options, doc: &'a DocLayer) -> Self {
+        Self { object, export, doc }
     }
 
     /// Every layer that doesn't depend on the stitch, the highest first, as one set of options.
     fn above_the_document(&self) -> Options {
-        *self.export
+        self.object.values.over(self.export)
     }
 
-    /// The style the settings force, `None` for the rule (Auto).
+    /// The style the settings force, `None` for the rule (Auto): the object's `stitch`, else the
+    /// call's.
     pub(crate) fn forced(&self) -> Option<Style> {
-        self.above_the_document().forced()
+        match self.object.stitch {
+            Some(Stitch::Style(style)) => Some(style),
+            Some(Stitch::Auto | Stitch::None) => None,
+            None => self.export.forced(),
+        }
+    }
+
+    /// Whether the part is sewn at all: not when its object sets it not to be ("don't sew").
+    pub(crate) fn sewn(&self) -> bool {
+        self.object.stitch != Some(Stitch::None)
+    }
+
+    /// Where its object sets the part to start (millimetres from the document's origin), `None`
+    /// where the needle is.
+    pub(crate) fn entry(&self) -> Option<Point> {
+        self.object.entry
     }
 
     /// How far a filled area grows all round before it is stitched (millimetres).
@@ -79,6 +113,111 @@ impl<'a> UnitSettings<'a> {
         let above = self.above_the_document();
         let weight = above.thread_weight.or(self.doc.every.thread_weight).unwrap_or(THREAD_WEIGHT);
         above.over(&self.doc.for_style(style, weight)).params(style, width)
+    }
+}
+
+/// How an object's part is sewn, as its `stitch` setting says.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Stitch {
+    /// By the rule (the shape, the width): set on an object, it beats a style an export forces.
+    Auto,
+    /// In this style.
+    Style(Style),
+    /// Not at all ("don't sew"): the part has no unit.
+    None,
+}
+
+impl Stitch {
+    /// The ids an object's `stitch` takes, and what each means: `fill` is tatami's earlier name.
+    pub(crate) const IDS: [(&'static str, Stitch); 6] = [
+        ("auto", Stitch::Auto),
+        ("tatami", Stitch::Style(Style::Fill)),
+        ("fill", Stitch::Style(Style::Fill)),
+        ("satin", Stitch::Style(Style::Satin)),
+        ("running", Stitch::Style(Style::Running)),
+        ("none", Stitch::None),
+    ];
+
+    /// The stitch `id` names, `None` for an id this version doesn't know.
+    pub(crate) fn from_id(id: &str) -> Option<Self> {
+        Self::IDS.iter().find(|(i, _)| *i == id).map(|(_, s)| *s)
+    }
+}
+
+/// One part of an object (all its fills, or all its strokes) as a plan reads its settings: each
+/// value checked as the commands check it, one out of its range brought to the nearest it may be,
+/// and one this version can't read (a stitch or an underlay of a newer version among them) left
+/// out, so that the layers below give it.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct PartLayer {
+    stitch: Option<Stitch>,
+    /// Every other value, as the embroidery options hold them (their `stitch` none).
+    values: Options,
+    /// Where the part starts, millimetres from the document's origin.
+    entry: Option<Point>,
+}
+
+/// What reading objects' settings found that the plan says, once each.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct Found {
+    /// Some hold what this version doesn't read.
+    pub(crate) unread: bool,
+    /// Some hold values out of their range.
+    pub(crate) clamped: bool,
+}
+
+impl Found {
+    /// The notes a plan says for what was found.
+    pub(crate) fn notes(self) -> impl Iterator<Item = &'static str> {
+        [(self.unread, OBJECT_SETTINGS_UNREAD), (self.clamped, OBJECT_SETTINGS_OUT_OF_RANGE)].into_iter().filter(|(on, _)| *on).map(|(_, n)| n)
+    }
+}
+
+impl PartLayer {
+    /// The layer part settings `p` give, what reading them found added to `found`.
+    pub(crate) fn read(p: &PartSettings, found: &mut Found) -> Self {
+        let PartSettings { stitch, spacing, length, angle, pull, pull_percent, push, expand, narrow_as_satin, underlay, split_length, points, extra } =
+            p;
+        let (mut unread, mut clamped) = (!extra.is_empty(), false);
+        let stitch = stitch.as_deref().and_then(|id| {
+            let s = Stitch::from_id(id);
+            unread |= s.is_none();
+            s
+        });
+        let underlay = underlay.as_deref().and_then(|id| {
+            let u = Underlay::from_id(id);
+            unread |= u.is_none();
+            u
+        });
+        let sides = |[a, b]: [f64; 2], range: (f64, f64), clamped: &mut bool| [within(a, range, clamped), within(b, range, clamped)];
+        let values = Options {
+            spacing: spacing.map(|v| within(v, DENSITY_RANGE, &mut clamped)),
+            length: length.map(|v| within(v, STITCH_LENGTH_RANGE, &mut clamped)),
+            // Any direction is an angle; a value that is no number of degrees is none.
+            angle: angle.filter(|a| {
+                unread |= !a.is_finite();
+                a.is_finite()
+            }),
+            pull: pull.map(|v| sides(v, PULL_RANGE, &mut clamped)),
+            pull_percent: pull_percent.map(|v| sides(v, PULL_PERCENT_RANGE, &mut clamped)),
+            push: push.map(|v| sides(v, PUSH_RANGE, &mut clamped)),
+            expand: expand.map(|v| within(v, (-MAX_EXPAND, MAX_EXPAND), &mut clamped)),
+            narrow_as_satin: narrow_as_satin.map(|v| within(v, NARROW_RANGE, &mut clamped)),
+            underlay,
+            split_length: split_length.map(|v| within(v, MAX_SATIN_STITCH_RANGE, &mut clamped)),
+            ..Options::default()
+        };
+        // The exit is kept and reported; it is planned toward with the embroidery tool.
+        let entry = points.as_ref().and_then(|PartPoints { entry, exit: _, extra }| {
+            unread |= !extra.is_empty();
+            entry.map(|e| {
+                let mut coord = |c: f64| within(c, (-MAX_COORD, MAX_COORD), &mut clamped) * MM_PER_PT;
+                Point::new(coord(e.x), coord(e.y))
+            })
+        });
+        found.unread |= unread;
+        found.clamped |= clamped;
+        Self { stitch, values, entry }
     }
 }
 

@@ -5423,6 +5423,8 @@ imageTrace	Outline	Körvonal
 @msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	a dokumentum hímzési beállításai között van olyan, amelyet ez a verzió nem olvas (újabb verzióból): megmaradnak, és a minta nélkülük lesz hímezve
 @msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	a dokumentum néhány hímzési beállítása kívül esik azon, amit ez a verzió hímez: mindegyik a legközelebbi elfogadott értékkel lesz hímezve
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	a vágás hossza rövidebb az ugrás hosszánál, ezért az ugrások már az ugrás hosszától kezdve el lesznek vágva
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	egyes objektumok hímzési beállításai között van olyan, amelyet ez a verzió nem olvas (újabb verzióból): megmaradnak, és az objektumok nélkülük lesznek hímezve
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	egyes objektumok néhány hímzési beállítása kívül esik azon, amit ez a verzió hímez: mindegyik a legközelebbi elfogadott értékkel lesz hímezve
 @msg	nothing to stitch: the document has no visible filled or stroked paths	nincs mit kihímezni: a dokumentumban nincs látható, kitöltéssel vagy körvonallal rendelkező útvonal
 @msg	nothing to stitch: {_1}	nincs mit kihímezni: {_1}
 

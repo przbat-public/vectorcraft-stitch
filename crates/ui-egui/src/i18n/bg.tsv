@@ -5391,6 +5391,8 @@ theme	Appearance	Външен вид
 @msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	настройките за бродиране на документа съдържат такива, които тази версия не чете (от по-нова версия): те се запазват, а дизайнът се бродира без тях
 @msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	някои от настройките за бродиране на документа са извън това, което тази версия бродира: всяка се бродира с най-близката стойност, която приема
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	дължината за срязване е по-малка от дължината на прехода, затова преходите се срязват още от дължината на прехода
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	настройките за бродиране на някои обекти съдържат такива, които тази версия не чете (от по-нова версия): те се запазват, а обектите се бродират без тях
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	някои настройки за бродиране на обекти са извън това, което тази версия бродира: всяка се бродира с най-близката стойност, която приема
 @msg	nothing to stitch: the document has no visible filled or stroked paths	няма какво да се бродира: документът няма видими пътища със запълване или щрих
 @msg	nothing to stitch: {_1}	няма какво да се бродира: {_1}
 

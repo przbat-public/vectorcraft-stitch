@@ -5421,6 +5421,8 @@ swatch	Bright Violet	Felviolet
 @msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	de borduurinstellingen van het document bevatten er enkele die deze versie niet leest (uit een nieuwere versie): ze blijven bewaard, en het ontwerp wordt zonder ze geborduurd
 @msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	sommige borduurinstellingen van het document vallen buiten wat deze versie borduurt: elk wordt geborduurd met de dichtstbijzijnde waarde die het aanneemt
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	de kniplengte is korter dan de spronglengte, dus worden sprongen al vanaf de spronglengte geknipt
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	de borduurinstellingen van sommige objecten bevatten er enkele die deze versie niet leest (uit een nieuwere versie): ze blijven bewaard, en die objecten worden zonder ze geborduurd
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	sommige borduurinstellingen van objecten vallen buiten wat deze versie borduurt: elk wordt geborduurd met de dichtstbijzijnde waarde die het aanneemt
 @msg	nothing to stitch: the document has no visible filled or stroked paths	niets te borduren: het document heeft geen zichtbare paden met een vulling of contour
 @msg	nothing to stitch: {_1}	niets te borduren: {_1}
 

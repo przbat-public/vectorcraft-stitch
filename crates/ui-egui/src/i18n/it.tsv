@@ -5051,6 +5051,8 @@ lighting	Light	Luce
 @msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	le impostazioni di ricamo del documento ne contengono alcune che questa versione non legge (da una versione più recente): vengono conservate, e il disegno viene ricamato senza di esse
 @msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	alcune impostazioni di ricamo del documento sono al di fuori di ciò che questa versione ricama: ciascuna viene ricamata al valore più vicino che accetta
 @msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	la lunghezza del taglio è inferiore alla lunghezza del salto, quindi i salti vengono tagliati già dalla lunghezza del salto
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	le impostazioni di ricamo di alcuni oggetti ne contengono alcune che questa versione non legge (da una versione più recente): vengono conservate, e quegli oggetti vengono ricamati senza di esse
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	alcune impostazioni di ricamo degli oggetti sono al di fuori di ciò che questa versione ricama: ciascuna viene ricamata al valore più vicino che accetta
 @msg	nothing to stitch: the document has no visible filled or stroked paths	niente da ricamare: il documento non ha tracciati visibili con riempimento o traccia
 @msg	nothing to stitch: {_1}	niente da ricamare: {_1}
 

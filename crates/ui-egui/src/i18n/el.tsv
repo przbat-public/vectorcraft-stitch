@@ -5887,3 +5887,26 @@ embroidery	edge run + zigzag	πέρασμα στην άκρη + ζιγκ ζαγ�
 embroidery	edge run + tatami	πέρασμα στην άκρη + τατάμι
 embroidery	none	καμία
 embroidery	by size	ανάλογα με το μέγεθος
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Είσοδος και έξοδος
+embroidery	Set	Ορισμένο
+embroidery	nearest	πλησιέστερο
+embroidery	not used yet	δεν χρησιμοποιείται ακόμη
+embroidery	Set on the selected objects.	Ορίστηκε στα επιλεγμένα αντικείμενα.
+embroidery	Nearest to where the needle is.	Το πλησιέστερο στο σημείο όπου βρίσκεται η βελόνα.
+embroidery	Trim the thread after the object	Κόψιμο κλωστής μετά το αντικείμενο
+embroidery	built-in values	ενσωματωμένες τιμές
+embroidery	Fabric: {fabric} · thread {weight} wt	Ύφασμα: {fabric} · κλωστή {weight} wt
+embroidery	Fabric: {fabric}	Ύφασμα: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	Οι αχνές τιμές προέρχονται από το ύφασμα και τους αυτόματους κανόνες.
+embroidery	A bar marks a value set on these objects.	Μια μπάρα σημειώνει μια τιμή που ορίστηκε σε αυτά τα αντικείμενα.
+embroidery	Restore from Fabric	Επαναφορά από το ύφασμα
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Αφαιρεί τις δικές τιμές των επιλεγμένων αντικειμένων, ώστε να ακολουθούν ξανά το ύφασμα· η είσοδος, η έξοδος και το κόψιμο μένουν.
+embroidery	Cotton (light woven)	Βαμβάκι (ελαφρύ υφαντό)
+embroidery	Denim or heavy twill	Τζιν ή βαρύ καμπαρντινέ
+embroidery	Stretch knit	Ελαστικό πλεκτό
+embroidery	Piqué (polo knit)	Πικέ (πλεκτό πόλο)
+embroidery	Fleece	Φλις
+embroidery	Silk or satin fabric	Μετάξι ή σατέν ύφασμα
+embroidery	Nylon or sports fabric	Νάιλον ή αθλητικό ύφασμα
+embroidery	Cap (structured)	Καπέλο (με σχήμα)

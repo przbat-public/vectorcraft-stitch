@@ -5546,3 +5546,26 @@ embroidery	edge run + zigzag	проход по краю + зигзаг
 embroidery	edge run + tatami	проход по краю + татами
 embroidery	none	нет
 embroidery	by size	по размеру
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Вход и выход
+embroidery	Set	Задано
+embroidery	nearest	ближайший
+embroidery	not used yet	пока не используется
+embroidery	Set on the selected objects.	Задано у выделенных объектов.
+embroidery	Nearest to where the needle is.	Ближе всего к тому месту, где игла.
+embroidery	Trim the thread after the object	Обрезать нить после объекта
+embroidery	built-in values	встроенные значения
+embroidery	Fabric: {fabric} · thread {weight} wt	Ткань: {fabric} · нить {weight} wt
+embroidery	Fabric: {fabric}	Ткань: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	Бледные значения берутся из ткани и автоматических правил.
+embroidery	A bar marks a value set on these objects.	Полоса отмечает значение, заданное у этих объектов.
+embroidery	Restore from Fabric	Восстановить из ткани
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Снимает собственные значения выделенных объектов, чтобы они снова следовали ткани; вход, выход и обрезка нити остаются.
+embroidery	Cotton (light woven)	Хлопок (лёгкая ткань)
+embroidery	Denim or heavy twill	Деним или плотная саржа
+embroidery	Stretch knit	Эластичный трикотаж
+embroidery	Piqué (polo knit)	Пике (трикотаж поло)
+embroidery	Fleece	Флис
+embroidery	Silk or satin fabric	Шёлк или атласная ткань
+embroidery	Nylon or sports fabric	Нейлон или спортивная ткань
+embroidery	Cap (structured)	Кепка (жёсткая)

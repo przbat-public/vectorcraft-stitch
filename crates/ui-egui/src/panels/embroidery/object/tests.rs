@@ -304,12 +304,15 @@ fn an_out_of_range_value_is_refused_with_its_range() {
     assert!(steps(&app) <= before + 1);
 }
 
-/// ↺ unsets that one value, in one step.
+/// ↺ unsets that one value, in one step; Restore from Fabric unsets them all but the points and
+/// the cut after them.
 #[test]
-fn restore_clears_one_key() {
+fn restore_clears_one_key_and_restore_from_fabric_the_rest() {
     let ctx = context();
     let (mut app, a, _) = app_with_art();
     app.run("embroidery.set", json!({"ids": [a], "part": "fill", "angle": 30, "pull": 0.3})).unwrap();
+    app.run("embroidery.setEntryExit", json!({"id": a, "part": "fill", "entry": [30, 30]})).unwrap();
+    app.run("embroidery.setTrimAfter", json!({"ids": [a], "on": true})).unwrap();
     select(&mut app, &[a]);
     let mut time = 0.0;
     let drawn = ready(&mut app, &ctx, &mut time);
@@ -319,6 +322,13 @@ fn restore_clears_one_key() {
     ready(&mut app, &ctx, &mut time);
     let fill = info(&mut app, &[a])["objects"][0]["settings"]["fill"].clone();
     assert_eq!((fill["angle"].clone(), fill["pull"].clone(), steps(&app)), (json!(null), json!([0.3, 0.3]), before + 1));
+    let drawn = ready(&mut app, &ctx, &mut time);
+    frame(&mut app, &ctx, time + 0.05, vec![drawn.click("Restore from Fabric")]);
+    time += 0.1;
+    ready(&mut app, &ctx, &mut time);
+    let r = info(&mut app, &[a]);
+    assert_eq!(r["objects"][0]["settings"]["fill"], json!({"entry": [30.0, 30.0]}), "the entry stays");
+    assert_eq!(r["trimAfter"]["value"], json!(true), "the cut stays");
 }
 
 /// The middle of the words `what` drawn.
@@ -394,6 +404,24 @@ fn a_choice_is_one_step_and_choosing_what_they_inherit_unsets_it() {
     assert_eq!(fill_setting(&mut app, a, "underlay"), json!("edgeTatami"));
 }
 
+/// Trim After shows a dash where the objects differ; a click marks them all, one undo step.
+#[test]
+fn trim_after_is_mixed_then_set() {
+    let ctx = context();
+    let (mut app, a, b) = app_with_art();
+    app.run("embroidery.setTrimAfter", json!({"ids": [a], "on": true})).unwrap();
+    select(&mut app, &[a, b]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let name = "Trim the thread after the object";
+    assert_eq!(drawn.node(name).toggled(), Some(egui::accesskit::Toggled::Mixed));
+    let before = steps(&app);
+    frame(&mut app, &ctx, time + 0.05, vec![drawn.click(name)]);
+    time += 0.1;
+    ready(&mut app, &ctx, &mut time);
+    assert_eq!((info(&mut app, &[a, b])["trimAfter"]["value"].clone(), steps(&app)), (json!(true), before + 1));
+}
+
 /// A value typed and committed by a click elsewhere lands on the objects it was typed for, even when
 /// the click then selects another.
 #[test]
@@ -419,4 +447,31 @@ fn the_value_goes_to_the_objects_it_was_typed_for() {
     select(&mut app, &[b]);
     frame(&mut app, &ctx, time + 0.05, vec![button(away, false)]);
     assert_eq!((fill_setting(&mut app, a, "angle"), fill_setting(&mut app, b, "angle")), (json!(12.0), json!(null)));
+}
+
+/// The tab's checkbox draws its words as they are given, wrapping them in the room it has, and a
+/// dash where the objects differ.
+#[test]
+fn a_three_state_box_wraps_its_words() {
+    let ctx = context();
+    let raw = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(120.0, 200.0))), ..Default::default() };
+    let words = "Obetnij nić po obiekcie i jeszcze dłużej";
+    let mut out = ctx.run_ui(raw, |ui| {
+        crate::embroidery::rows::check(ui, words, None);
+    });
+    out.textures_delta.clear();
+    let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
+    let (mut texts, mut dash) = (vec![], false);
+    while let Some(s) = pending.pop() {
+        match s {
+            Shape::Vec(v) => pending.extend(v),
+            Shape::Text(t) => texts.push((t.galley.text().to_string(), t.galley.rows.len(), t.visual_bounding_rect())),
+            Shape::LineSegment { .. } => dash = true,
+            _ => {}
+        }
+    }
+    let (text, rows, rect) = texts.first().cloned().expect("its words");
+    assert_eq!(text, words);
+    assert!(rows > 1 && rect.right() <= 120.0, "wrapped in the room it has: {rows} rows, {rect:?}");
+    assert!(dash, "the dash of objects that differ");
 }

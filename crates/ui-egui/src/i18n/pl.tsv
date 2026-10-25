@@ -5786,3 +5786,26 @@ embroidery	edge run + zigzag	przebieg krawędzią + zygzak
 embroidery	edge run + tatami	przebieg krawędzią + tatami
 embroidery	none	brak
 embroidery	by size	według rozmiaru
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Wejście i wyjście
+embroidery	Set	Ustawione
+embroidery	nearest	najbliżej
+embroidery	not used yet	jeszcze nieużywane
+embroidery	Set on the selected objects.	Ustawione na zaznaczonych obiektach.
+embroidery	Nearest to where the needle is.	Najbliżej miejsca, w którym jest igła.
+embroidery	Trim the thread after the object	Obetnij nić po obiekcie
+embroidery	built-in values	wartości wbudowane
+embroidery	Fabric: {fabric} · thread {weight} wt	Tkanina: {fabric} · nić {weight} wt
+embroidery	Fabric: {fabric}	Tkanina: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	Szare wartości pochodzą z tkaniny i reguł automatycznych.
+embroidery	A bar marks a value set on these objects.	Pasek oznacza wartość ustawioną na tych obiektach.
+embroidery	Restore from Fabric	Przywróć z tkaniny
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Usuwa własne wartości zaznaczonych obiektów, by znów szły za tkaniną; wejście, wyjście i obcięcie nici zostają.
+embroidery	Cotton (light woven)	Bawełna (lekka tkanina)
+embroidery	Denim or heavy twill	Dżins lub gruba diagonal
+embroidery	Stretch knit	Dzianina elastyczna
+embroidery	Piqué (polo knit)	Pika (dzianina polo)
+embroidery	Fleece	Polar
+embroidery	Silk or satin fabric	Jedwab lub tkanina satynowa
+embroidery	Nylon or sports fabric	Nylon lub tkanina sportowa
+embroidery	Cap (structured)	Czapka (usztywniana)

@@ -5774,3 +5774,26 @@ embroidery	edge run + zigzag	边缘行针 + 锯齿
 embroidery	edge run + tatami	边缘行针 + 榻榻米
 embroidery	none	无
 embroidery	by size	按尺寸
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	入针与出针
+embroidery	Set	已设置
+embroidery	nearest	最近
+embroidery	not used yet	尚未使用
+embroidery	Set on the selected objects.	已在所选对象上设置。
+embroidery	Nearest to where the needle is.	离针所在位置最近处。
+embroidery	Trim the thread after the object	对象后剪线
+embroidery	built-in values	内置值
+embroidery	Fabric: {fabric} · thread {weight} wt	面料：{fabric} · 线 {weight} wt
+embroidery	Fabric: {fabric}	面料：{fabric}
+embroidery	Dim values come from the fabric and automatic rules.	浅色的值来自面料和自动规则。
+embroidery	A bar marks a value set on these objects.	竖条标出在这些对象上设置的值。
+embroidery	Restore from Fabric	从面料恢复
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	清除所选对象自己的值，让它们重新跟随面料；入针、出针和剪线保持不变。
+embroidery	Cotton (light woven)	棉（轻薄梭织）
+embroidery	Denim or heavy twill	牛仔布或厚斜纹布
+embroidery	Stretch knit	弹力针织布
+embroidery	Piqué (polo knit)	珠地布（POLO 针织）
+embroidery	Fleece	摇粒绒
+embroidery	Silk or satin fabric	丝绸或缎面面料
+embroidery	Nylon or sports fabric	尼龙或运动面料
+embroidery	Cap (structured)	帽子（有型）

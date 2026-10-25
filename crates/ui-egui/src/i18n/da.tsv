@@ -5890,3 +5890,26 @@ embroidery	edge run + zigzag	kantløb + zigzag
 embroidery	edge run + tatami	kantløb + tatami
 embroidery	none	ingen
 embroidery	by size	efter størrelse
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Indgang og udgang
+embroidery	Set	Angivet
+embroidery	nearest	nærmest
+embroidery	not used yet	bruges ikke endnu
+embroidery	Set on the selected objects.	Angivet på de valgte objekter.
+embroidery	Nearest to where the needle is.	Nærmest der, hvor nålen er.
+embroidery	Trim the thread after the object	Klip tråden efter objektet
+embroidery	built-in values	indbyggede værdier
+embroidery	Fabric: {fabric} · thread {weight} wt	Stof: {fabric} · tråd {weight} wt
+embroidery	Fabric: {fabric}	Stof: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	Dæmpede værdier kommer fra stoffet og de automatiske regler.
+embroidery	A bar marks a value set on these objects.	En bjælke markerer en værdi, der er angivet på disse objekter.
+embroidery	Restore from Fabric	Gendan fra stof
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Fjerner de valgte objekters egne værdier, så de igen følger stoffet; indgang, udgang og klip bliver.
+embroidery	Cotton (light woven)	Bomuld (let vævet)
+embroidery	Denim or heavy twill	Denim eller kraftig twill
+embroidery	Stretch knit	Stræk-strik
+embroidery	Piqué (polo knit)	Piqué (polostrik)
+embroidery	Fleece	Fleece
+embroidery	Silk or satin fabric	Silke eller satinstof
+embroidery	Nylon or sports fabric	Nylon eller sportsstof
+embroidery	Cap (structured)	Kasket (formstøbt)

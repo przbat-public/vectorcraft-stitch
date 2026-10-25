@@ -5513,3 +5513,26 @@ embroidery	edge run + zigzag	가장자리 러닝 + 지그재그
 embroidery	edge run + tatami	가장자리 러닝 + 타타미
 embroidery	none	없음
 embroidery	by size	크기에 따라
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	진입과 진출
+embroidery	Set	설정됨
+embroidery	nearest	가장 가까운
+embroidery	not used yet	아직 쓰이지 않음
+embroidery	Set on the selected objects.	선택한 개체에 설정됨.
+embroidery	Nearest to where the needle is.	바늘이 있는 곳에서 가장 가까운 곳.
+embroidery	Trim the thread after the object	개체 뒤에 실 자르기
+embroidery	built-in values	기본 제공 값
+embroidery	Fabric: {fabric} · thread {weight} wt	원단: {fabric} · 실 {weight} wt
+embroidery	Fabric: {fabric}	원단: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	흐린 값은 원단과 자동 규칙에서 옵니다.
+embroidery	A bar marks a value set on these objects.	막대는 이 개체에 설정한 값을 표시합니다.
+embroidery	Restore from Fabric	원단에서 복원
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	선택한 개체 자체의 값을 지워 다시 원단을 따르게 합니다. 진입, 진출, 실 자르기는 그대로입니다.
+embroidery	Cotton (light woven)	면(가벼운 직물)
+embroidery	Denim or heavy twill	데님 또는 두꺼운 능직
+embroidery	Stretch knit	신축성 니트
+embroidery	Piqué (polo knit)	피케(폴로 니트)
+embroidery	Fleece	플리스
+embroidery	Silk or satin fabric	실크 또는 새틴 원단
+embroidery	Nylon or sports fabric	나일론 또는 스포츠 원단
+embroidery	Cap (structured)	모자(구조형)

@@ -5921,3 +5921,26 @@ embroidery	edge run + zigzag	szegélymenet + cikcakk
 embroidery	edge run + tatami	szegélymenet + tatami
 embroidery	none	nincs
 embroidery	by size	méret szerint
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Belépés és kilépés
+embroidery	Set	Beállítva
+embroidery	nearest	legközelebbi
+embroidery	not used yet	még nincs használatban
+embroidery	Set on the selected objects.	A kijelölt objektumokon beállítva.
+embroidery	Nearest to where the needle is.	A tűhöz legközelebb.
+embroidery	Trim the thread after the object	Cérna elvágása az objektum után
+embroidery	built-in values	beépített értékek
+embroidery	Fabric: {fabric} · thread {weight} wt	Anyag: {fabric} · cérna {weight} wt
+embroidery	Fabric: {fabric}	Anyag: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	A halvány értékek az anyagból és az automatikus szabályokból jönnek.
+embroidery	A bar marks a value set on these objects.	Egy sáv jelöli az ezeken az objektumokon beállított értéket.
+embroidery	Restore from Fabric	Visszaállítás az anyagból
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Törli a kijelölt objektumok saját értékeit, hogy újra az anyagot kövessék; a belépés, a kilépés és a cérnavágás megmarad.
+embroidery	Cotton (light woven)	Pamut (könnyű szövet)
+embroidery	Denim or heavy twill	Farmer vagy vastag sávolykötésű szövet
+embroidery	Stretch knit	Rugalmas kötött anyag
+embroidery	Piqué (polo knit)	Piké (pólókötött)
+embroidery	Fleece	Polár
+embroidery	Silk or satin fabric	Selyem vagy szaténanyag
+embroidery	Nylon or sports fabric	Nejlon vagy sportanyag
+embroidery	Cap (structured)	Sapka (merevített)

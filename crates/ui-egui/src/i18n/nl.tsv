@@ -5933,3 +5933,26 @@ embroidery	edge run + zigzag	randloop + zigzag
 embroidery	edge run + tatami	randloop + tatami
 embroidery	none	geen
 embroidery	by size	naar grootte
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Ingang en uitgang
+embroidery	Set	Ingesteld
+embroidery	nearest	dichtstbij
+embroidery	not used yet	nog niet gebruikt
+embroidery	Set on the selected objects.	Ingesteld op de geselecteerde objecten.
+embroidery	Nearest to where the needle is.	Zo dicht mogelijk bij de naald.
+embroidery	Trim the thread after the object	Draad afknippen na het object
+embroidery	built-in values	ingebouwde waarden
+embroidery	Fabric: {fabric} · thread {weight} wt	Stof: {fabric} · garen {weight} wt
+embroidery	Fabric: {fabric}	Stof: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	Gedimde waarden komen van de stof en de automatische regels.
+embroidery	A bar marks a value set on these objects.	Een balk markeert een waarde die op deze objecten is ingesteld.
+embroidery	Restore from Fabric	Herstellen van stof
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Haalt de eigen waarden van de geselecteerde objecten weg, zodat ze de stof weer volgen; ingang, uitgang en afknippen blijven.
+embroidery	Cotton (light woven)	Katoen (licht geweven)
+embroidery	Denim or heavy twill	Denim of zware keperstof
+embroidery	Stretch knit	Rekbaar tricot
+embroidery	Piqué (polo knit)	Piqué (polotricot)
+embroidery	Fleece	Fleece
+embroidery	Silk or satin fabric	Zijde of satijnstof
+embroidery	Nylon or sports fabric	Nylon of sportstof
+embroidery	Cap (structured)	Pet (gestructureerd)

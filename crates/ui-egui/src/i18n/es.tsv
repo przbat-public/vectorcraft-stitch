@@ -5876,3 +5876,26 @@ embroidery	edge run + zigzag	pasada de borde + zigzag
 embroidery	edge run + tatami	pasada de borde + tatami
 embroidery	none	ninguno
 embroidery	by size	según el tamaño
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Entrada y salida
+embroidery	Set	Definido
+embroidery	nearest	más cercano
+embroidery	not used yet	aún sin uso
+embroidery	Set on the selected objects.	Definido en los objetos seleccionados.
+embroidery	Nearest to where the needle is.	Lo más cerca de donde está la aguja.
+embroidery	Trim the thread after the object	Cortar el hilo tras el objeto
+embroidery	built-in values	valores integrados
+embroidery	Fabric: {fabric} · thread {weight} wt	Tela: {fabric} · hilo {weight} wt
+embroidery	Fabric: {fabric}	Tela: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	Los valores atenuados vienen de la tela y de las reglas automáticas.
+embroidery	A bar marks a value set on these objects.	Una barra marca un valor definido en estos objetos.
+embroidery	Restore from Fabric	Restaurar desde la tela
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Quita los valores propios de los objetos seleccionados para que vuelvan a seguir la tela; la entrada, la salida y el corte se mantienen.
+embroidery	Cotton (light woven)	Algodón (tejido ligero)
+embroidery	Denim or heavy twill	Mezclilla o sarga gruesa
+embroidery	Stretch knit	Punto elástico
+embroidery	Piqué (polo knit)	Piqué (punto de polo)
+embroidery	Fleece	Forro polar
+embroidery	Silk or satin fabric	Seda o tela satinada
+embroidery	Nylon or sports fabric	Nailon o tela deportiva
+embroidery	Cap (structured)	Gorra (estructurada)

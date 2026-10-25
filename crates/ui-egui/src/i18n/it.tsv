@@ -5550,3 +5550,26 @@ embroidery	edge run + zigzag	passata sul bordo + zigzag
 embroidery	edge run + tatami	passata sul bordo + tatami
 embroidery	none	nessuno
 embroidery	by size	in base alle dimensioni
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Entrata e uscita
+embroidery	Set	Impostato
+embroidery	nearest	più vicino
+embroidery	not used yet	non ancora usato
+embroidery	Set on the selected objects.	Impostato sugli oggetti selezionati.
+embroidery	Nearest to where the needle is.	Il più vicino a dove si trova l'ago.
+embroidery	Trim the thread after the object	Taglia il filo dopo l'oggetto
+embroidery	built-in values	valori integrati
+embroidery	Fabric: {fabric} · thread {weight} wt	Tessuto: {fabric} · filo {weight} wt
+embroidery	Fabric: {fabric}	Tessuto: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	I valori attenuati vengono dal tessuto e dalle regole automatiche.
+embroidery	A bar marks a value set on these objects.	Una barra indica un valore impostato su questi oggetti.
+embroidery	Restore from Fabric	Ripristina dal tessuto
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Toglie i valori propri degli oggetti selezionati, così seguono di nuovo il tessuto; entrata, uscita e taglio restano.
+embroidery	Cotton (light woven)	Cotone (tessuto leggero)
+embroidery	Denim or heavy twill	Denim o twill pesante
+embroidery	Stretch knit	Maglia elasticizzata
+embroidery	Piqué (polo knit)	Piquet (maglia polo)
+embroidery	Fleece	Pile
+embroidery	Silk or satin fabric	Seta o tessuto satinato
+embroidery	Nylon or sports fabric	Nylon o tessuto sportivo
+embroidery	Cap (structured)	Cappellino (strutturato)

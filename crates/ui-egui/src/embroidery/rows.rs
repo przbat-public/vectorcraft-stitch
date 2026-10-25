@@ -1,6 +1,6 @@
 //! A row of the embroidery settings, shared by the Embroidery panel's Object tab and Document
-//! Setup's Embroidery tab: a label, a field (a number or a choice), and what says where its value
-//! comes from.
+//! Setup's Embroidery tab: a label, a field (a number, a choice, or words), and what says where its
+//! value comes from.
 //!
 //! - **A value of its own** (set on the objects; in Document Setup, changed from its fabric's
 //!   preset) has a bar in the accent left of its label, its value in strong text, ↺ to restore it,
@@ -59,6 +59,17 @@ const BADGE_RADIUS: u8 = 3;
 /// ↺'s side, and how far its icon sits inside it, points.
 const RESTORE: f32 = 18.0;
 const RESTORE_INSET: f32 = 3.0;
+/// A checkbox's box, the room between it and its words, the least height of its row and its mark's
+/// weight, points: as the app's checkboxes draw them.
+const CHECK_BOX: f32 = 13.0;
+const CHECK_GAP: f32 = 5.0;
+const CHECK_ROW: f32 = 20.0;
+const CHECK_MARK: f32 = 1.6;
+/// A field of words (a read-only value): as tall as the app's fields, its words as far in.
+const WORDS_HEIGHT: f32 = 26.0;
+const WORDS_INSET: f32 = 7.0;
+const WORDS_TEXT: f32 = 12.5;
+const WORDS_RADIUS: u8 = 5;
 
 /// Where a set of rows puts its labels and fields, for the width they are drawn in.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -98,11 +109,13 @@ impl Columns {
     }
 }
 
-/// The width row `r`'s field wants for its words: a choice's whole; a number's are short.
+/// The width row `r`'s field wants for its words: a choice's and read-only words whole; a number's
+/// are short.
 fn field_words(ui: &Ui, r: &Row<'_>) -> f32 {
     let s = ui.spacing();
     match &r.field {
         Field::Choice { shown, .. } => text_width(ui, shown, CHOICE_TEXT) + CHOICE_FRAME + 2.0 * s.button_padding.x + s.icon_spacing + s.icon_width,
+        Field::Words(words) => text_width(ui, words, WORDS_TEXT) + 2.0 * WORDS_INSET,
         Field::Number { .. } => FIELD_MIN,
     }
 }
@@ -124,6 +137,8 @@ pub(crate) enum Field<'a> {
     Number { value: Option<f64>, format: NumberFormat<'a>, bounds: RangeInclusive<f64>, hint: Option<&'a str> },
     /// A choice showing `shown`, from `options` (id, words), `current` marked in the list.
     Choice { shown: &'a str, options: &'a [(String, String)], current: Option<&'a str> },
+    /// Words, read only.
+    Words(&'a str),
 }
 
 /// One row.
@@ -142,8 +157,8 @@ pub(crate) struct Row<'a> {
     /// ↺ shown, named `restore` for screen readers and in its tooltip: a value of its own, or some
     /// of several objects set it.
     pub(crate) restore: Option<&'a str>,
-    /// The words after the field, which keep their room: after ↺, how many of the objects set it;
-    /// with no ↺, the badge's (where the value comes from).
+    /// The words after the field, which keep their room: after ↺, how many of the objects set it
+    /// (or a note); with no ↺, the badge's (where the value comes from).
     pub(crate) aside: Option<String>,
     /// After ↺, what the value would be otherwise ("fabric 0,20"): shown where it fits whole, else
     /// ↺'s tooltip says it.
@@ -255,7 +270,29 @@ fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
             })
             .inner
             .map(Edit::Choice),
+        Field::Words(words) => {
+            words_field(ui, width, row, words, text);
+            None
+        }
     }
+}
+
+/// A value read only, drawn as a field holding it.
+fn words_field(ui: &mut Ui, width: f32, row: &Row<'_>, words: &str, colour: Color32) {
+    let t = Tokens::get(ui.ctx());
+    let (rect, resp) = ui.allocate_exact_size(vec2(width, WORDS_HEIGHT), Sense::hover());
+    ui.painter().rect(rect, CornerRadius::same(WORDS_RADIUS), t.input, egui::Stroke::new(1.0, t.input_border), egui::StrokeKind::Inside);
+    let room = (rect.width() - 2.0 * WORDS_INSET).max(1.0);
+    let galley = egui::WidgetText::from(egui::RichText::new(words).size(WORDS_TEXT).color(colour)).into_galley(
+        ui,
+        Some(egui::TextWrapMode::Truncate),
+        room,
+        egui::TextStyle::Body,
+    );
+    let at = Align2::LEFT_CENTER.align_size_within_rect(galley.size(), rect.shrink2(vec2(WORDS_INSET, 0.0))).min;
+    ui.painter().galley(at, galley, colour);
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, true, format!("{}: {words}", row.name)));
+    ui.ctx().accesskit_node_builder(resp.id, |node| node.set_description(row.description.clone()));
 }
 
 /// After the field: ↺ and the words after it (the hint only where it fits whole, else in ↺'s
@@ -323,6 +360,41 @@ fn restore(ui: &mut Ui, name: &str, tip: &str) -> egui::Response {
     crate::icons::paint(ui, "rotate-ccw", rect.shrink(RESTORE_INSET), t.icon);
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), name));
     resp.on_hover_text(tip)
+}
+
+/// A checkbox of `words` (already in the interface language), `None` a dash where the objects
+/// differ, drawn as the app's are but its words wrapping in the room they have → whether it was
+/// clicked.
+pub(crate) fn check(ui: &mut Ui, words: &str, value: Option<bool>) -> bool {
+    let t = Tokens::get(ui.ctx());
+    let room = (ui.available_width() - CHECK_BOX - CHECK_GAP).max(1.0);
+    let galley = ui.painter().layout(words.to_string(), FontId::proportional(LABEL_TEXT), t.text, room);
+    let size = vec2(CHECK_BOX + CHECK_GAP + galley.size().x, galley.size().y.max(CHECK_ROW));
+    let (rect, resp) = ui.allocate_exact_size(size, Sense::click());
+    let first_line = galley.rows.first().map_or(galley.size().y, |r| r.rect().height());
+    let bx = Rect::from_min_size(egui::pos2(rect.left(), rect.top() + (first_line - CHECK_BOX) / 2.0), vec2(CHECK_BOX, CHECK_BOX));
+    ui.painter().galley(egui::pos2(bx.right() + CHECK_GAP, rect.top()), galley, t.text);
+    let checked = value == Some(true);
+    ui.painter().rect_filled(bx, CornerRadius::same(2), if checked { t.accent_strong } else { t.input });
+    let border = if resp.hovered() { t.text } else { t.button_border };
+    ui.painter().rect_stroke(bx, CornerRadius::same(2), egui::Stroke::new(1.0, border), egui::StrokeKind::Inside);
+    let mark = egui::Stroke::new(CHECK_MARK, if checked { Color32::WHITE } else { t.text });
+    match value {
+        Some(true) => {
+            let (a, b, c) = (bx.left_center() + vec2(3.0, 0.0), bx.center_bottom() + vec2(-1.0, -3.5), bx.right_top() + vec2(-3.0, 3.0));
+            ui.painter().line_segment([a, b], mark);
+            ui.painter().line_segment([b, c], mark);
+        }
+        None => {
+            ui.painter().line_segment([bx.left_center() + vec2(3.0, 0.0), bx.right_center() - vec2(3.0, 0.0)], mark);
+        }
+        Some(false) => {}
+    }
+    resp.widget_info(|| match value {
+        Some(on) => egui::WidgetInfo::selected(egui::WidgetType::Checkbox, ui.is_enabled(), on, words),
+        None => egui::WidgetInfo::labeled(egui::WidgetType::Checkbox, ui.is_enabled(), words),
+    });
+    resp.clicked()
 }
 
 /// The colour of a field's value: strong for a value of its own, else dim, read by 4.5:1 on the

@@ -154,3 +154,18 @@ pub fn takes_none(reason: &str) -> &'static str {
         _ => crate::et!("It takes no embroidery settings."),
     }
 }
+
+/// A fabric preset's name (`embroidery.fabrics`' ids); a preset this version doesn't know by its id.
+pub fn fabric(id: &str) -> String {
+    match id {
+        "cotton" => crate::et!("Cotton (light woven)").to_string(),
+        "denim" => crate::et!("Denim or heavy twill").to_string(),
+        "stretchKnit" => crate::et!("Stretch knit").to_string(),
+        "pique" => crate::et!("Piqué (polo knit)").to_string(),
+        "fleece" => crate::et!("Fleece").to_string(),
+        "silk" => crate::et!("Silk or satin fabric").to_string(),
+        "nylon" => crate::et!("Nylon or sports fabric").to_string(),
+        "cap" => crate::et!("Cap (structured)").to_string(),
+        other => other.to_string(),
+    }
+}

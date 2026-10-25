@@ -5935,3 +5935,26 @@ embroidery	edge run + zigzag	okrajový průchod + cikcak
 embroidery	edge run + tatami	okrajový průchod + tatami
 embroidery	none	žádný
 embroidery	by size	podle velikosti
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Vstup a výstup
+embroidery	Set	Nastaveno
+embroidery	nearest	nejblíže
+embroidery	not used yet	zatím nepoužito
+embroidery	Set on the selected objects.	Nastaveno na vybraných objektech.
+embroidery	Nearest to where the needle is.	Nejblíže místu, kde je jehla.
+embroidery	Trim the thread after the object	Ustřihnout nit po objektu
+embroidery	built-in values	vestavěné hodnoty
+embroidery	Fabric: {fabric} · thread {weight} wt	Látka: {fabric} · nit {weight} wt
+embroidery	Fabric: {fabric}	Látka: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	Tlumené hodnoty pocházejí z látky a z automatických pravidel.
+embroidery	A bar marks a value set on these objects.	Pruh označuje hodnotu nastavenou na těchto objektech.
+embroidery	Restore from Fabric	Obnovit z látky
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Zruší vlastní hodnoty vybraných objektů, aby se znovu řídily látkou; vstup, výstup a ustřižení zůstanou.
+embroidery	Cotton (light woven)	Bavlna (lehká tkanina)
+embroidery	Denim or heavy twill	Džínovina nebo těžký kepr
+embroidery	Stretch knit	Pružný úplet
+embroidery	Piqué (polo knit)	Piké (úplet na pólo)
+embroidery	Fleece	Fleece
+embroidery	Silk or satin fabric	Hedvábí nebo saténová látka
+embroidery	Nylon or sports fabric	Nylon nebo sportovní látka
+embroidery	Cap (structured)	Kšiltovka (tvarovaná)

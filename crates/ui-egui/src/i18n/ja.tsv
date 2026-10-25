@@ -5612,3 +5612,26 @@ embroidery	edge run + zigzag	エッジラン＋ジグザグ
 embroidery	edge run + tatami	エッジラン＋タタミ
 embroidery	none	なし
 embroidery	by size	サイズに応じて
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	入口と出口
+embroidery	Set	設定済み
+embroidery	nearest	最寄り
+embroidery	not used yet	まだ使われません
+embroidery	Set on the selected objects.	選択したオブジェクトに設定済み。
+embroidery	Nearest to where the needle is.	針の位置に最も近い所。
+embroidery	Trim the thread after the object	オブジェクトの後で糸を切る
+embroidery	built-in values	組み込みの値
+embroidery	Fabric: {fabric} · thread {weight} wt	生地：{fabric}・糸 {weight} wt
+embroidery	Fabric: {fabric}	生地：{fabric}
+embroidery	Dim values come from the fabric and automatic rules.	淡い値は生地と自動ルールによるものです。
+embroidery	A bar marks a value set on these objects.	バーは、これらのオブジェクトに設定した値を示します。
+embroidery	Restore from Fabric	生地から復元
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	選択したオブジェクト固有の値を外して、再び生地に従わせます。入口・出口・糸切りはそのままです。
+embroidery	Cotton (light woven)	綿（薄手の織物）
+embroidery	Denim or heavy twill	デニムまたは厚手の綾織
+embroidery	Stretch knit	伸縮性のあるニット
+embroidery	Piqué (polo knit)	ピケ（ポロシャツのニット）
+embroidery	Fleece	フリース
+embroidery	Silk or satin fabric	シルクまたはサテン生地
+embroidery	Nylon or sports fabric	ナイロンまたはスポーツ用生地
+embroidery	Cap (structured)	キャップ（形のあるもの）

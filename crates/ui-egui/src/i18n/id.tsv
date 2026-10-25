@@ -5890,3 +5890,26 @@ embroidery	edge run + zigzag	jalur tepi + zigzag
 embroidery	edge run + tatami	jalur tepi + tatami
 embroidery	none	tidak ada
 embroidery	by size	menurut ukuran
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Masuk dan keluar
+embroidery	Set	Diatur
+embroidery	nearest	terdekat
+embroidery	not used yet	belum dipakai
+embroidery	Set on the selected objects.	Diatur pada objek terpilih.
+embroidery	Nearest to where the needle is.	Paling dekat dengan posisi jarum.
+embroidery	Trim the thread after the object	Potong benang setelah objek
+embroidery	built-in values	nilai bawaan
+embroidery	Fabric: {fabric} · thread {weight} wt	Kain: {fabric} · benang {weight} wt
+embroidery	Fabric: {fabric}	Kain: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	Nilai redup berasal dari kain dan aturan otomatis.
+embroidery	A bar marks a value set on these objects.	Bilah menandai nilai yang diatur pada objek ini.
+embroidery	Restore from Fabric	Pulihkan dari kain
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Menghapus nilai milik objek terpilih agar kembali mengikuti kain; titik masuk, keluar, dan potong benang tetap.
+embroidery	Cotton (light woven)	Katun (tenun ringan)
+embroidery	Denim or heavy twill	Denim atau kepar tebal
+embroidery	Stretch knit	Kain rajut elastis
+embroidery	Piqué (polo knit)	Piqué (rajut polo)
+embroidery	Fleece	Fleece
+embroidery	Silk or satin fabric	Sutra atau kain satin
+embroidery	Nylon or sports fabric	Nilon atau kain olahraga
+embroidery	Cap (structured)	Topi (berstruktur)

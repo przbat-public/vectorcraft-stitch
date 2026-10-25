@@ -5966,3 +5966,26 @@ embroidery	edge run + zigzag	reuna-ajo + siksak
 embroidery	edge run + tatami	reuna-ajo + tatami
 embroidery	none	ei mitään
 embroidery	by size	koon mukaan
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Sisään ja ulos
+embroidery	Set	Asetettu
+embroidery	nearest	lähin
+embroidery	not used yet	ei vielä käytössä
+embroidery	Set on the selected objects.	Asetettu valituille objekteille.
+embroidery	Nearest to where the needle is.	Lähimpänä kohtaa, jossa neula on.
+embroidery	Trim the thread after the object	Katkaise lanka objektin jälkeen
+embroidery	built-in values	sisäiset arvot
+embroidery	Fabric: {fabric} · thread {weight} wt	Kangas: {fabric} · lanka {weight} wt
+embroidery	Fabric: {fabric}	Kangas: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	Himmeät arvot tulevat kankaasta ja automaattisista säännöistä.
+embroidery	A bar marks a value set on these objects.	Palkki merkitsee näille objekteille asetetun arvon.
+embroidery	Restore from Fabric	Palauta kankaasta
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Poistaa valittujen objektien omat arvot, jotta ne seuraavat taas kangasta; sisään- ja uloskohta sekä katkaisu säilyvät.
+embroidery	Cotton (light woven)	Puuvilla (kevyt kudottu)
+embroidery	Denim or heavy twill	Farkku tai paksu toimikas
+embroidery	Stretch knit	Joustava neulos
+embroidery	Piqué (polo knit)	Pikee (pikeeneulos)
+embroidery	Fleece	Fleece
+embroidery	Silk or satin fabric	Silkki tai satiinikangas
+embroidery	Nylon or sports fabric	Nailon tai urheilukangas
+embroidery	Cap (structured)	Lippis (muotoiltu)

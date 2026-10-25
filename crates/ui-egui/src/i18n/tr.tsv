@@ -5896,3 +5896,26 @@ embroidery	edge run + zigzag	kenar hattı + zikzak
 embroidery	edge run + tatami	kenar hattı + tatami
 embroidery	none	yok
 embroidery	by size	boyuta göre
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Giriş ve çıkış
+embroidery	Set	Ayarlı
+embroidery	nearest	en yakın
+embroidery	not used yet	henüz kullanılmıyor
+embroidery	Set on the selected objects.	Seçili nesnelerde ayarlı.
+embroidery	Nearest to where the needle is.	İğnenin bulunduğu yere en yakın.
+embroidery	Trim the thread after the object	Nesneden sonra ipliği kes
+embroidery	built-in values	yerleşik değerler
+embroidery	Fabric: {fabric} · thread {weight} wt	Kumaş: {fabric} · iplik {weight} wt
+embroidery	Fabric: {fabric}	Kumaş: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	Soluk değerler kumaştan ve otomatik kurallardan gelir.
+embroidery	A bar marks a value set on these objects.	Çubuk, bu nesnelerde ayarlanmış bir değeri gösterir.
+embroidery	Restore from Fabric	Kumaştan geri yükle
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Seçili nesnelerin kendi değerlerini kaldırır, böylece yeniden kumaşı izlerler; giriş, çıkış ve iplik kesme kalır.
+embroidery	Cotton (light woven)	Pamuk (hafif dokuma)
+embroidery	Denim or heavy twill	Kot veya kalın dimi
+embroidery	Stretch knit	Esnek örme
+embroidery	Piqué (polo knit)	Pike (polo örme)
+embroidery	Fleece	Polar
+embroidery	Silk or satin fabric	İpek veya saten kumaş
+embroidery	Nylon or sports fabric	Naylon veya spor kumaşı
+embroidery	Cap (structured)	Şapka (yapılandırılmış)

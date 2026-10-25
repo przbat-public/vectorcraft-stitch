@@ -5891,3 +5891,26 @@ embroidery	edge run + zigzag	kantlöpning + sicksack
 embroidery	edge run + tatami	kantlöpning + tatami
 embroidery	none	ingen
 embroidery	by size	efter storlek
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Ingång och utgång
+embroidery	Set	Angivet
+embroidery	nearest	närmast
+embroidery	not used yet	används inte än
+embroidery	Set on the selected objects.	Angivet på de markerade objekten.
+embroidery	Nearest to where the needle is.	Närmast där nålen är.
+embroidery	Trim the thread after the object	Klipp tråden efter objektet
+embroidery	built-in values	inbyggda värden
+embroidery	Fabric: {fabric} · thread {weight} wt	Tyg: {fabric} · tråd {weight} wt
+embroidery	Fabric: {fabric}	Tyg: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	Nedtonade värden kommer från tyget och de automatiska reglerna.
+embroidery	A bar marks a value set on these objects.	En stapel markerar ett värde som angetts på de här objekten.
+embroidery	Restore from Fabric	Återställ från tyg
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Tar bort de markerade objektens egna värden så att de följer tyget igen; ingång, utgång och klipp finns kvar.
+embroidery	Cotton (light woven)	Bomull (lätt vävt)
+embroidery	Denim or heavy twill	Denim eller kraftig kypert
+embroidery	Stretch knit	Stretchtrikå
+embroidery	Piqué (polo knit)	Piké (pikétrikå)
+embroidery	Fleece	Fleece
+embroidery	Silk or satin fabric	Siden eller satintyg
+embroidery	Nylon or sports fabric	Nylon eller sporttyg
+embroidery	Cap (structured)	Keps (formad)

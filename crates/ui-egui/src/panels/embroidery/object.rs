@@ -13,11 +13,12 @@
 //! - **Rows**: the settings a person sets on an object most (the product plan's subset: the stitch,
 //!   its angle, spacing and length, narrow parts as satin; the underlay; the pull compensation and
 //!   the expansion), each where the stitch its part is sewn in uses it; another setting an object
-//!   holds (set by a command) shows too, so that nothing set is hidden.
+//!   holds (set by a command) shows too, so that nothing set is hidden. Then the entry and exit
+//!   points, Trim After, and a footer with the document's fabric and Restore from Fabric.
 //! - **Edits are commands**, one undo step each (a drag on a label one for the whole drag, the
 //!   app's scrub): a value typed or chosen is `embroidery.set` (a choice equal to what the objects
-//!   would inherit unsets theirs), ↺ `embroidery.reset`. They go to the objects the fields were
-//!   drawn for.
+//!   would inherit unsets theirs), ↺ `embroidery.reset`, Trim After `embroidery.setTrimAfter`. They
+//!   go to the objects the fields were drawn for.
 
 use std::sync::{Arc, Weak};
 
@@ -26,6 +27,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId, NodeKind};
 use vectorcraft_engine::cmd::embroidery::info::{KeyInfo, ObjectSettings, PartInfo, SelectionSewing, selection_sewing};
+use vectorcraft_engine::cmd::embroidery::setup::DocumentSettings;
 use vectorcraft_engine::cmd::embroidery::{SettingField, distinct_underlays, part_field};
 
 use super::SHOW_BUSY_AFTER_SECS;
@@ -48,6 +50,13 @@ const SWITCH_HEIGHT: f32 = 22.0;
 const SWITCH_TEXT: f32 = 12.0;
 /// Room between the tab's blocks, points.
 const GAP: f32 = 8.0;
+/// The footer's padding and corners inside its card, and between its buttons, points.
+const FOOTER_PAD: f32 = 8.0;
+const FOOTER_RADIUS: u8 = 6;
+/// The footer's first line, points: a point over the lines under it.
+const FOOTER_LINE_TEXT: f32 = 12.0;
+/// The least room the rows keep above the footer, points: two rows.
+const MIN_ROWS: f32 = 56.0;
 /// Degrees in a half turn: a fill's rows are lines, shown at an angle from 0 to 180°.
 const HALF_TURN: f64 = 180.0;
 /// Decimals of a number written in words (a hint, a description): the fields' millimetres.
@@ -110,6 +119,8 @@ pub(crate) struct ObjectState {
     memo: Option<Memo>,
     /// The selection's stitches in a plan the preview showed.
     sewn: Option<Sewn>,
+    /// The document's settings, read for one snapshot (the footer's fabric and thread).
+    setup: Option<Setup>,
 }
 
 /// The selection's settings as read, shared from frame to frame, or why they can't be read.
@@ -132,6 +143,13 @@ struct Sewn {
     sewing: SelectionSewing,
 }
 
+/// The settings of document `uid`'s snapshot `snapshot`.
+struct Setup {
+    uid: u64,
+    snapshot: Weak<Document>,
+    settings: Option<Arc<DocumentSettings>>,
+}
+
 /// The settings of the active document's selection: the memo's, or read now.
 fn settings_of(app: &mut VectorcraftApp) -> Option<(Vec<NodeId>, Read)> {
     let st = app.session.active()?;
@@ -143,6 +161,18 @@ fn settings_of(app: &mut VectorcraftApp) -> Option<(Vec<NodeId>, Read)> {
     let info = app.session.embroidery_info(&ids, false, &Default::default()).map(Arc::new).map_err(|e| e.to_string());
     app.embroidery.object.memo = Some(Memo { uid, snapshot, ids: ids.clone(), info: info.clone() });
     Some((ids, info))
+}
+
+/// The document's embroidery settings: the memo's, or read now.
+fn document_settings(app: &mut VectorcraftApp) -> Option<Arc<DocumentSettings>> {
+    let st = app.session.active()?;
+    let (uid, snapshot) = (st.uid, Arc::downgrade(&st.doc));
+    if let Some(s) = app.embroidery.object.setup.as_ref().filter(|s| s.uid == uid && Weak::ptr_eq(&s.snapshot, &snapshot)) {
+        return s.settings.clone();
+    }
+    let settings = app.session.embroidery_settings().ok().map(Arc::new);
+    app.embroidery.object.setup = Some(Setup { uid, snapshot, settings: settings.clone() });
+    settings
 }
 
 /// How the stitch count stands: the count of the plan shown (`None` before any), whether that plan
@@ -194,10 +224,14 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             return;
         }
     };
+    let settings = document_settings(app);
+    let footer_words = footer_words(settings.as_deref(), lang);
+    let footer_room = footer_height(ui, &footer_words);
     if ids.is_empty() {
         state_words(ui, crate::et!("Select an object to set how it is sewn."));
     } else if info.object_count == 0 {
         takes_none(ui, &info);
+        trim_after(ui, &info, &ids, &mut commands);
     } else {
         let chosen = app.ui.embroidery_panel.part;
         let shown = Part::shown(chosen, &info);
@@ -205,15 +239,18 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             app.ui.embroidery_panel.part = part;
         }
         if let Some(part) = shown.and_then(|p| p.of(&info).map(|i| (p, i))) {
+            let room = (ui.available_height() - footer_room).max(MIN_ROWS);
             // The panel's width, measured outside the scrolled rows: what they are fitted to, so that
             // nothing wider in them can widen the next frame's.
             let width = ui.available_width();
-            egui::ScrollArea::vertical().id_salt("embroidery-object-rows").auto_shrink([false, true]).show(ui, |ui| {
+            egui::ScrollArea::vertical().id_salt("embroidery-object-rows").max_height(room).auto_shrink([false, true]).show(ui, |ui| {
                 ui.set_max_width(width);
                 part_rows(ui, part.0, part.1, &ids, width, lang, &mut commands);
+                trim_after(ui, &info, &ids, &mut commands);
             });
         }
     }
+    footer(ui, &info, &footer_words, &ids, &mut commands);
     for (cmd, params) in commands {
         if let Err(e) = app.run(cmd, params) {
             app.status(e);
@@ -449,6 +486,7 @@ struct Owned {
 enum OwnedField {
     Number { value: Option<f64>, unit: &'static str, decimals: usize, bounds: (f64, f64), hint: Option<String> },
     Choice { shown: String, options: Vec<(String, String)>, current: Option<String> },
+    Words(String),
 }
 
 impl Owned {
@@ -459,6 +497,7 @@ impl Owned {
                 Field::Number { value: *value, format: fields::format(lang, unit, *decimals), bounds: bounds.0..=bounds.1, hint: hint.as_deref() }
             }
             OwnedField::Choice { shown, options, current } => Field::Choice { shown, options, current: current.as_deref() },
+            OwnedField::Words(w) => Field::Words(w),
         };
         Row {
             key: self.key,
@@ -475,7 +514,8 @@ impl Owned {
     }
 }
 
-/// The rows of part `part` (`p`) of the selection, fitted to `width` points, by section.
+/// The rows of part `part` (`p`) of the selection, fitted to `width` points, by section, then its
+/// entry and exit.
 fn part_rows(ui: &mut Ui, part: Part, p: &PartInfo, ids: &[NodeId], width: f32, lang: Lang, commands: &mut Vec<Command>) {
     if p.sewn.as_deref() == Some("none") {
         let t = Tokens::get(ui.ctx());
@@ -487,7 +527,8 @@ fn part_rows(ui: &mut Ui, part: Part, p: &PartInfo, ids: &[NodeId], width: f32, 
         .map(|(section, keys)| (section, keys.into_iter().filter_map(|k| key_row(p, part, k, lang)).collect::<Vec<_>>()))
         .filter(|(_, rows)| !rows.is_empty())
         .collect();
-    let all: Vec<Row<'_>> = sections.iter().flat_map(|(_, r)| r.iter()).map(|o| o.row(lang)).collect();
+    let points: Vec<Owned> = ["entry", "exit"].into_iter().map(|k| point_row(p, k)).collect();
+    let all: Vec<Row<'_>> = sections.iter().flat_map(|(_, r)| r.iter()).chain(&points).map(|o| o.row(lang)).collect();
     let cols = Columns::fit(ui, width, &all);
     for (section, owned) in &sections {
         rows::heading(ui, section.heading());
@@ -495,6 +536,12 @@ fn part_rows(ui: &mut Ui, part: Part, p: &PartInfo, ids: &[NodeId], width: f32, 
             if let Some(edit) = rows::show(ui, &cols, &o.row(lang)) {
                 commands.extend(edit_command(p, part, o.key, edit, ids));
             }
+        }
+    }
+    rows::heading(ui, crate::et!("Entry and exit"));
+    for o in &points {
+        if rows::show(ui, &cols, &o.row(lang)) == Some(Edit::Restore) {
+            commands.push(("embroidery.reset", json!({"ids": ids_json(ids), "part": part.id(), "keys": [o.key]})));
         }
     }
 }
@@ -670,6 +717,37 @@ fn value_words(v: &Value, key: &str, lang: Lang, part: Part, unit: bool) -> Stri
     }
 }
 
+/// The entry or exit row of part `p`: "Auto" (nearest where the needle is) or set, read only until
+/// the embroidery tool places it.
+fn point_row(p: &PartInfo, key: &'static str) -> Owned {
+    let point = if key == "entry" { &p.entry } else { &p.exit };
+    let label = vocabulary::label(key, None);
+    let every = point.set_count >= p.object_count && point.set_count > 0 && !point.mixed;
+    let (words, own, aside) = if point.mixed {
+        (crate::et!("Mixed"), false, None)
+    } else if every {
+        // Kept and reported; the planner sews toward it once the embroidery tool places it.
+        let note = (key == "exit").then(|| crate::et!("not used yet").to_string());
+        (crate::et!("Set"), true, note)
+    } else {
+        (crate::et!("Auto"), false, Some(crate::et!("nearest").to_string()))
+    };
+    let restore = (point.set_count > 0).then(|| restore_words(label));
+    let description = if every { crate::et!("Set on the selected objects.") } else { crate::et!("Nearest to where the needle is.") };
+    Owned {
+        key,
+        label,
+        name: label.to_string(),
+        tip: vocabulary::tip(key),
+        field: OwnedField::Words(words.to_string()),
+        own,
+        restore,
+        aside,
+        hint: None,
+        description: description.to_string(),
+    }
+}
+
 /// The command for `edit` of key `key` of part `p` (`part`) on objects `ids`: a value set, or
 /// unset when it is what they would inherit; ↺ unsets it.
 fn edit_command(p: &PartInfo, part: Part, key: &str, edit: Edit, ids: &[NodeId]) -> Option<Command> {
@@ -693,6 +771,83 @@ fn edit_command(p: &PartInfo, part: Part, key: &str, edit: Edit, ids: &[NodeId])
 /// Ids as the commands take them.
 fn ids_json(ids: &[NodeId]) -> Value {
     ids.iter().map(|id| id.0).collect()
+}
+
+/// Trim After: whether the thread is cut after the objects, a dash where they differ.
+fn trim_after(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], commands: &mut Vec<Command>) {
+    if ids.is_empty() || !trims(info) {
+        return;
+    }
+    ui.add_space(GAP);
+    let value = if info.trim_after.mixed { None } else { info.trim_after.value };
+    if rows::check(ui, crate::et!("Trim the thread after the object"), value) {
+        commands.push(("embroidery.setTrimAfter", json!({"ids": ids_json(ids), "on": value != Some(true)})));
+    }
+}
+
+/// Whether the cut after the objects means something: objects that are sewn (those that take
+/// settings, stitches from a file, a symbol's instances, groups of them).
+fn trims(info: &ObjectSettings) -> bool {
+    info.object_count > 0 || info.skipped.iter().any(|s| matches!(s.reason.as_str(), "literal" | "symbolInstance"))
+}
+
+/// The footer's words: the document's fabric and thread, then what the rows' looks mean.
+fn footer_words(settings: Option<&DocumentSettings>, lang: Lang) -> [String; 3] {
+    let fabric = settings
+        .and_then(|s| s.resolved.fabric.preset.as_ref())
+        .map_or_else(|| crate::et!("built-in values").to_string(), |p| vocabulary::fabric(&p.id));
+    let line = match settings {
+        Some(s) => text::fill(
+            crate::et!("Fabric: {fabric} · thread {weight} wt"),
+            &[("fabric", &fabric), ("weight", &numbers::decimal(lang, s.resolved.thread_weight.value, 0))],
+        ),
+        None => text::fill(crate::et!("Fabric: {fabric}"), &[("fabric", &fabric)]),
+    };
+    [
+        line,
+        crate::et!("Dim values come from the fabric and automatic rules.").to_string(),
+        crate::et!("A bar marks a value set on these objects.").to_string(),
+    ]
+}
+
+/// The footer's height: its words wrapped in the panel's width as they will be drawn, its button,
+/// and the room around them.
+fn footer_height(ui: &Ui, words: &[String; 3]) -> f32 {
+    let wrap = (ui.available_width() - 2.0 * FOOTER_PAD).max(1.0);
+    let height = |w: &str, size: f32| ui.painter().layout(w.to_string(), FontId::proportional(size), Color32::WHITE, wrap).size().y;
+    let [line, dim @ ..] = words;
+    let text = height(line, FOOTER_LINE_TEXT) + dim.iter().map(|w| height(w, SMALL_TEXT)).sum::<f32>();
+    let s = ui.spacing();
+    let button = s.interact_size.y.max(ui.text_style_height(&egui::TextStyle::Button) + 2.0 * s.button_padding.y);
+    // The room above the card, its padding, the half gap over its button, and the spaces between
+    // the rows above it, its three lines and its button.
+    GAP + 2.0 * FOOTER_PAD + text + GAP / 2.0 + button + 4.0 * s.item_spacing.y
+}
+
+/// The footer: `words` (the document's fabric and thread, what the rows' looks mean), and Restore
+/// from Fabric (the selection's own values unset, both parts, their points and Trim After kept).
+fn footer(ui: &mut Ui, info: &ObjectSettings, words: &[String; 3], ids: &[NodeId], commands: &mut Vec<Command>) {
+    let t = Tokens::get(ui.ctx());
+    let [line, dim @ ..] = words;
+    let any_set = [&info.fill, &info.stroke].into_iter().flatten().any(|p| p.settings.values().any(|k| k.set_count > 0));
+    ui.add_space(GAP);
+    egui::Frame::NONE.fill(t.panel_darker).corner_radius(CornerRadius::same(FOOTER_RADIUS)).inner_margin(egui::Margin::same(FOOTER_PAD as i8)).show(
+        ui,
+        |ui| {
+            ui.set_width(ui.available_width());
+            ui.add(egui::Label::new(egui::RichText::new(line).size(FOOTER_LINE_TEXT).color(t.text_strong)).wrap());
+            let colour = crate::embroidery::marks::readable_text(t.text_dim, &[t.panel_darker], t.dark);
+            for words in dim {
+                ui.add(egui::Label::new(egui::RichText::new(words).size(SMALL_TEXT).color(colour)).wrap());
+            }
+            ui.add_space(GAP / 2.0);
+            let tip = crate::et!("Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.");
+            let restore = ui.add_enabled(any_set && !ids.is_empty(), egui::Button::new(crate::et!("Restore from Fabric")));
+            if restore.on_hover_text(tip).clicked() {
+                commands.push(("embroidery.reset", json!({"ids": ids_json(ids)})));
+            }
+        },
+    );
 }
 
 /// How wide `words` are at `size` points.

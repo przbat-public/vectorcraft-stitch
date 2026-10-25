@@ -5874,3 +5874,26 @@ embroidery	edge run + zigzag	ход по ръба + зигзаг
 embroidery	edge run + tatami	ход по ръба + татами
 embroidery	none	няма
 embroidery	by size	според размера
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Вход и изход
+embroidery	Set	Зададено
+embroidery	nearest	най-близо
+embroidery	not used yet	още не се използва
+embroidery	Set on the selected objects.	Зададено за избраните обекти.
+embroidery	Nearest to where the needle is.	Най-близо до мястото, където е иглата.
+embroidery	Trim the thread after the object	Отрязване на конеца след обекта
+embroidery	built-in values	вградени стойности
+embroidery	Fabric: {fabric} · thread {weight} wt	Плат: {fabric} · конец {weight} wt
+embroidery	Fabric: {fabric}	Плат: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	Бледите стойности идват от плата и от автоматичните правила.
+embroidery	A bar marks a value set on these objects.	Черта отбелязва стойност, зададена за тези обекти.
+embroidery	Restore from Fabric	Възстановяване от плата
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Премахва собствените стойности на избраните обекти, за да следват отново плата; входът, изходът и отрязването остават.
+embroidery	Cotton (light woven)	Памук (лека тъкан)
+embroidery	Denim or heavy twill	Деним или плътен кепер
+embroidery	Stretch knit	Еластично плетиво
+embroidery	Piqué (polo knit)	Пике (плетиво за поло)
+embroidery	Fleece	Полар
+embroidery	Silk or satin fabric	Коприна или сатенен плат
+embroidery	Nylon or sports fabric	Найлон или спортен плат
+embroidery	Cap (structured)	Шапка (с форма)

@@ -5530,3 +5530,26 @@ embroidery	edge run + zigzag	đường chạy mép + zigzag
 embroidery	edge run + tatami	đường chạy mép + tatami
 embroidery	none	không có
 embroidery	by size	theo kích thước
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Điểm vào và điểm ra
+embroidery	Set	Đã đặt
+embroidery	nearest	gần nhất
+embroidery	not used yet	chưa dùng
+embroidery	Set on the selected objects.	Đã đặt trên các đối tượng đã chọn.
+embroidery	Nearest to where the needle is.	Gần nhất với vị trí kim.
+embroidery	Trim the thread after the object	Cắt chỉ sau đối tượng
+embroidery	built-in values	giá trị dựng sẵn
+embroidery	Fabric: {fabric} · thread {weight} wt	Vải: {fabric} · chỉ {weight} wt
+embroidery	Fabric: {fabric}	Vải: {fabric}
+embroidery	Dim values come from the fabric and automatic rules.	Giá trị mờ lấy từ vải và các quy tắc tự động.
+embroidery	A bar marks a value set on these objects.	Vạch đánh dấu giá trị đã đặt trên các đối tượng này.
+embroidery	Restore from Fabric	Khôi phục từ vải
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Bỏ giá trị riêng của các đối tượng đã chọn để chúng theo vải trở lại; điểm vào, điểm ra và cắt chỉ vẫn giữ.
+embroidery	Cotton (light woven)	Cotton (vải dệt mỏng)
+embroidery	Denim or heavy twill	Denim hoặc vải chéo dày
+embroidery	Stretch knit	Vải dệt kim co giãn
+embroidery	Piqué (polo knit)	Piqué (vải dệt kim polo)
+embroidery	Fleece	Vải nỉ lông cừu
+embroidery	Silk or satin fabric	Lụa hoặc vải satin
+embroidery	Nylon or sports fabric	Nylon hoặc vải thể thao
+embroidery	Cap (structured)	Mũ lưỡi trai (định hình)

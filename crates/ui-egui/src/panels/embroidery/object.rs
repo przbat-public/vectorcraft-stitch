@@ -32,7 +32,7 @@ use vectorcraft_engine::cmd::embroidery::{SettingField, distinct_underlays, part
 
 use super::SHOW_BUSY_AFTER_SECS;
 use crate::VectorcraftApp;
-use crate::embroidery::rows::{self, Columns, Edit, Owned, OwnedField, Row};
+use crate::embroidery::rows::{self, Columns, Edit, Owned, OwnedField, Row, WORDS_DECIMALS, restore_words, text_width};
 use crate::embroidery::stitch_preview::Freshness;
 use crate::embroidery::{fields, numbers, text, vocabulary};
 use crate::i18n::Lang;
@@ -59,8 +59,6 @@ const FOOTER_LINE_TEXT: f32 = 12.0;
 const MIN_ROWS: f32 = 56.0;
 /// Degrees in a half turn: a fill's rows are lines, shown at an angle from 0 to 180°.
 const HALF_TURN: f64 = 180.0;
-/// Decimals of a number written in words (a hint, a description): the fields' millimetres.
-const WORDS_DECIMALS: usize = 2;
 /// The command the footer's Embroidery Settings… runs: Document Setup at its Embroidery tab.
 const SETTINGS: &str = "embroidery.documentSetup";
 /// The stitch count before the first plan: an ellipsis, the same in every language.
@@ -598,12 +596,6 @@ fn name_of(key: &str, label: &str) -> String {
     text::fill(crate::et!("{section}: {setting}"), &[("section", section.heading()), ("setting", label)])
 }
 
-/// "Restore {setting}": ↺'s name, by its field's name for screen readers ("Restore Underlay:
-/// Type"), so that two ↺ never read alike.
-fn restore_words(label: &str) -> String {
-    text::fill(crate::et!("Restore {setting}"), &[("setting", label)])
-}
-
 /// A number field's value from `info`'s `value` of key `key` (`None`: blank) and the words shown
 /// in it when blank: a rule's (satin spacing by width), or the two sides of a pull that differ.
 fn number_of(value: &Value, key: &str, unit: &str, decimals: usize, lang: Lang, rule: Option<&Value>) -> (Option<f64>, Option<String>) {
@@ -846,11 +838,6 @@ fn footer(ui: &mut Ui, info: &ObjectSettings, words: &[String; 3], buttons: &[St
             });
         },
     );
-}
-
-/// How wide `words` are at `size` points.
-fn text_width(ui: &Ui, words: &str, size: f32) -> f32 {
-    ui.painter().layout_no_wrap(words.to_string(), FontId::proportional(size), Color32::WHITE).size().x
 }
 
 /// The one object selected when it takes settings itself (a path or a compound path, not a group

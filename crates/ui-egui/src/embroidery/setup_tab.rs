@@ -43,7 +43,7 @@ use vectorcraft_engine::cmd::embroidery::setup::{self, DocumentSettings, Overrid
 use vectorcraft_engine::cmd::embroidery::{SettingField, distinct_underlays, fabric_field, setting_field};
 
 use crate::VectorcraftApp;
-use crate::embroidery::rows::{self, Columns, Edit, Owned, OwnedField, Row};
+use crate::embroidery::rows::{self, Columns, Edit, Owned, OwnedField, Row, WORDS_DECIMALS, restore_words};
 use crate::embroidery::{fields, marks, numbers, text, vocabulary};
 use crate::i18n::Lang;
 use crate::state::Dialog;
@@ -95,8 +95,6 @@ const BAR_RADIUS: u8 = 6;
 const GAP: f32 = 8.0;
 /// The size of the words under a row (a note), points.
 const NOTE_TEXT: f32 = 11.0;
-/// Decimals of a value in words when its field has none to say (a default's machine value).
-const WORDS_DECIMALS: usize = 2;
 /// Points in a millimetre: the design's start point is shown in millimetres.
 const PT_PER_MM: f64 = 72.0 / 25.4;
 /// Two numbers closer than this are the same value (a field's typed number and the opened one).
@@ -834,12 +832,6 @@ fn note(ui: &mut Ui, words: &str) {
     let t = Tokens::get(ui.ctx());
     let colour = marks::readable_text(t.text_dim, &[t.panel], t.dark);
     ui.add(egui::Label::new(egui::RichText::new(words).size(NOTE_TEXT).color(colour)).wrap());
-}
-
-/// "Restore {setting}": ↺'s name, by its field's name for screen readers ("Restore Satin: Pull
-/// compensation"), so that two ↺ never read alike.
-fn restore_words(label: &str) -> String {
-    text::fill(crate::et!("Restore {setting}"), &[("setting", label)])
 }
 
 /// A number in words after ↺ or in a description: as its field writes it, with or without its unit.

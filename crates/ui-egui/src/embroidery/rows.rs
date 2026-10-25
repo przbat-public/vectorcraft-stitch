@@ -597,7 +597,17 @@ pub(crate) fn value_colour(t: &Tokens, own: bool) -> Color32 {
     if own { t.text_strong } else { marks::readable_text(t.text_dim, &[t.input], t.dark) }
 }
 
+/// Decimals of a number written in words (a hint, a description, a note) when its field gives
+/// none: the fields' millimetres.
+pub(crate) const WORDS_DECIMALS: usize = 2;
+
+/// "Restore {setting}": ↺'s name, by its field's name for screen readers ("Restore Underlay:
+/// Type"), so that two ↺ never read alike.
+pub(crate) fn restore_words(name: &str) -> String {
+    crate::embroidery::text::fill(crate::et!("Restore {setting}"), &[("setting", name)])
+}
+
 /// How wide `words` are at `size` points.
-fn text_width(ui: &Ui, words: &str, size: f32) -> f32 {
+pub(crate) fn text_width(ui: &Ui, words: &str, size: f32) -> f32 {
     ui.painter().layout_no_wrap(words.to_string(), FontId::proportional(size), Color32::WHITE).size().x
 }

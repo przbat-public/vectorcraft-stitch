@@ -12,7 +12,8 @@
 //! - **The fabric**: built-in values, one of the presets, or values of the document's own
 //!   (Custom). Choosing a preset copies its values into the fields (the project owner's choice: it
 //!   replaces values changed before in the dialog); changing a value of the built-in ones makes
-//!   them the document's own. A value changed from its preset (or, without one, from its default)
+//!   them the document's own. An agent's fields (`ui.dialog.set`) are taken the same way when the
+//!   tab next looks ([`sync`]): a fabric chosen fills the values the agent didn't set. A value changed from its preset (or, without one, from its default)
 //!   has the bar, strong text and ↺, which restores it; one as its preset gives it names what the
 //!   preset's value rests on (the publications in its tooltip), or that it is an estimate.
 //! - **The thread** (its weight, with the rows' spacing it gives; the palette machine files
@@ -110,6 +111,10 @@ pub(crate) struct Opened {
     defaults: Map<String, Value>,
     presets: Vec<Preset>,
     overrides: Overrides,
+    /// The fabric chosen whose values the fields hold, and those values (by [`FABRIC_VALUES`]' keys)
+    /// as the tab last wrote them: what an agent set since is told from them ([`sync`]).
+    applied: String,
+    synced: Map<String, Value>,
 }
 
 /// A fabric preset as the tab offers it: its id, its values (by [`FABRIC_VALUES`]' keys; null where
@@ -174,6 +179,8 @@ impl Opened {
             o.fields.insert(field(key), value);
         }
         o.fields.insert(field("fabric"), json!(choice));
+        o.synced = FABRIC_VALUES.iter().map(|k| (k.to_string(), o.was(k))).collect();
+        o.applied = choice;
         let r = &s.resolved;
         let values = [
             (THREAD_WEIGHT, json!(r.thread_weight.value)),
@@ -203,6 +210,12 @@ impl Opened {
     /// (no preset, or none published) its default.
     fn base(&self, choice: &str, key: &str) -> Value {
         self.preset(choice).and_then(|p| p.values.get(key)).filter(|v| !v.is_null()).cloned().unwrap_or_else(|| self.default_of(key))
+    }
+
+    /// What choosing fabric `choice` puts in fabric value `key`'s field: its preset's value (the
+    /// built-in values' default), or nothing for values of the document's own (left as they are).
+    fn values_for(&self, choice: &str, key: &str) -> Option<Value> {
+        (choice != CUSTOM).then(|| self.base(choice, key))
     }
 
     /// The value `key` has in a document that sets none.
@@ -281,6 +294,12 @@ fn opened(app: &VectorcraftApp) -> Option<&Opened> {
     app.embroidery.setup.as_ref().filter(|o| o.uid == uid)
 }
 
+/// [`opened`], to change.
+fn opened_mut(app: &mut VectorcraftApp) -> Option<&mut Opened> {
+    let uid = app.session.active()?.uid;
+    app.embroidery.setup.as_mut().filter(|o| o.uid == uid)
+}
+
 /// Document Setup opens: the tab's fields beside `fields` (upstream's `document.setup` reply), and
 /// what it opened with kept in the app's state. With no document, nothing.
 pub(crate) fn open(app: &mut VectorcraftApp, fields: &mut Value) {
@@ -308,7 +327,11 @@ pub(crate) fn run(app: &mut VectorcraftApp, params: Value) -> Result<Value, Stri
         }
         return app.run("document.setup", Value::Object(fields));
     };
-    let changes = changes(&fields, o);
+    // An agent's last fields, taken as the tab takes them (on a copy: a refused OK leaves the
+    // dialog as it was).
+    let (mut fields, mut o) = (fields, o.clone());
+    sync(&mut fields, &mut o);
+    let changes = changes(&fields, &o);
     let apply = chosen(&fields);
     let others: Map<String, Value> = fields.into_iter().filter(|(k, _)| !k.starts_with(PREFIX)).collect();
     let mut commands = vec![json!({"command": "document.setup", "params": others})];
@@ -336,10 +359,10 @@ fn chosen(fields: &Map<String, Value>) -> Vec<String> {
 fn changes(fields: &Map<String, Value>, o: &Opened) -> Map<String, Value> {
     let now = |key: &str| fields.get(&field(key)).cloned().unwrap_or(Value::Null);
     let mut out = Map::new();
-    // The fabric. A preset chosen: the preset, less the values changed after (the dialog copied its
-    // values into the fields; an agent that set the choice alone left them as they opened). The
-    // built-in values chosen: none. Values of the document's own (Custom, or values changed on the
-    // built-in ones): all of them, whatever the fabric held. Else what changed since it opened.
+    // The fabric. A preset chosen: the preset, less the values changed after (the tab copied its
+    // values into the fields). The built-in values chosen: none. Values of the document's own
+    // (Custom, or values changed on the built-in ones): all of them, whatever the fabric held. Else
+    // what changed since it opened.
     let choice = now("fabric").as_str().unwrap_or(BUILT_IN).to_string();
     let chose = choice != o.was("fabric").as_str().unwrap_or(BUILT_IN);
     let unchanged = |against: &dyn Fn(&str) -> Value| FABRIC_VALUES.iter().all(|k| same(&now(k), &against(k)));
@@ -373,7 +396,6 @@ fn changes(fields: &Map<String, Value>, o: &Opened) -> Map<String, Value> {
             f.insert("preset".into(), Value::Null);
             Some(Value::Object(f))
         }
-        _ if chose && untouched => Some(json!(choice)),
         _ if chose => {
             let mut f = values(&|k| Some(o.base(&choice, k)));
             f.insert("preset".into(), json!(choice));
@@ -421,10 +443,12 @@ type Change = (String, Value);
 
 /// The tab's body: its rows in one or two columns, then the bar.
 pub(crate) fn body(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) -> bool {
-    let Some(o) = opened(app) else {
+    let Some(o) = opened_mut(app) else {
         ui.label(crate::et!("No document"));
         return false;
     };
+    sync(&mut d.fields, o);
+    let o = &*o;
     let lang = crate::i18n::current();
     let width = width_for(ui.ctx().content_rect().width());
     let two = width >= TWO_COLUMNS;
@@ -455,8 +479,10 @@ pub(crate) fn body(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) -> boo
             bar(ui, d, o, &mut edits);
         });
     }
-    for (key, value) in edits {
-        apply(d, o, &key, value);
+    if let Some(o) = opened_mut(app) {
+        for (key, value) in edits {
+            apply(&mut d.fields, o, &key, value);
+        }
     }
     false
 }
@@ -468,20 +494,55 @@ pub(crate) fn width_for(window: f32) -> f32 {
     if room >= TWO_COLUMNS { TWO_COLUMNS } else { ONE_COLUMN.min(room) }
 }
 
-/// Field `key` (without the prefix) given `value`: a preset chosen copies its values; a value
-/// changed on the built-in ones makes them the document's own.
-fn apply(d: &mut Dialog, o: &Opened, key: &str, value: Value) {
+/// Field `key` (without the prefix) of the dialog's `fields` given `value`, as the tab's rows give
+/// it: a fabric chosen copies its values into all of them; a value changed on the built-in ones
+/// makes them the document's own.
+fn apply(fields: &mut Map<String, Value>, o: &mut Opened, key: &str, value: Value) {
     if key == "fabric" {
-        let choice = value.as_str().unwrap_or(BUILT_IN).to_string();
-        if choice != CUSTOM {
+        if let Some(choice) = value.as_str() {
             for k in FABRIC_VALUES {
-                d.fields.insert(field(k), o.base(&choice, k));
+                if let Some(v) = o.values_for(choice, k) {
+                    fields.insert(field(k), v);
+                }
+            }
+            o.applied = choice.to_string();
+        }
+    } else if FABRIC_VALUES.contains(&key) && fields.get(&field("fabric")).and_then(Value::as_str) == Some(BUILT_IN) {
+        fields.insert(field("fabric"), json!(CUSTOM));
+        o.applied = CUSTOM.to_string();
+    }
+    fields.insert(field(key), value);
+    o.synced = fabric_values(fields);
+}
+
+/// The dialog's `fields` an agent set with `ui.dialog.set` since the tab last wrote them, taken as
+/// the tab's rows take them: a fabric chosen copies its values into the fields the agent left as
+/// they were (those it set are its own, whichever it set first), and a value changed on the
+/// built-in values makes them the document's own. So an agent's fabric and one value give what the
+/// same choices in the tab give, and the tab shows the preset's values after an agent chose it.
+fn sync(fields: &mut Map<String, Value>, o: &mut Opened) {
+    // A fabric that isn't a choice's id is OK's to refuse.
+    let Some(choice) = fields.get(&field("fabric")).and_then(Value::as_str).map(str::to_string) else { return };
+    let now = |fields: &Map<String, Value>, k: &str| fields.get(&field(k)).cloned().unwrap_or(Value::Null);
+    if choice != o.applied {
+        for k in FABRIC_VALUES {
+            let left = o.synced.get(k).is_some_and(|was| same(&now(fields, k), was));
+            if let Some(v) = o.values_for(&choice, k).filter(|_| left) {
+                fields.insert(field(k), v);
             }
         }
-    } else if FABRIC_VALUES.contains(&key) && d.fields.get(&field("fabric")).and_then(Value::as_str) == Some(BUILT_IN) {
-        d.fields.insert(field("fabric"), json!(CUSTOM));
+        o.applied = choice.clone();
     }
-    d.fields.insert(field(key), value);
+    if choice == BUILT_IN && FABRIC_VALUES.iter().any(|k| !same(&now(fields, k), &o.default_of(k))) {
+        fields.insert(field("fabric"), json!(CUSTOM));
+        o.applied = CUSTOM.to_string();
+    }
+    o.synced = fabric_values(fields);
+}
+
+/// The fabric's values the dialog's `fields` hold, by [`FABRIC_VALUES`]' keys.
+fn fabric_values(fields: &Map<String, Value>) -> Map<String, Value> {
+    FABRIC_VALUES.iter().map(|k| (k.to_string(), fields.get(&field(k)).cloned().unwrap_or(Value::Null))).collect()
 }
 
 /// The left column (or the first part of one): the fabric and the thread.
@@ -890,9 +951,9 @@ pub(crate) fn open_at_tab(app: &mut VectorcraftApp, p: &Value) -> Result<Value, 
 /// Give field `key` `value` in the open dialog's Embroidery tab, as its rows do (the pictures).
 #[cfg(test)]
 pub(crate) fn choose_value(app: &mut VectorcraftApp, key: &str, value: Value) {
-    let Some(o) = opened(app).cloned() else { return };
-    let Some(d) = app.ui.dialog.as_mut() else { return };
-    apply(d, &o, key, value);
+    let uid = app.session.active().map(|st| st.uid);
+    let (Some(d), Some(o)) = (app.ui.dialog.as_mut(), app.embroidery.setup.as_mut().filter(|o| Some(o.uid) == uid)) else { return };
+    apply(&mut d.fields, o, key, value);
 }
 
 #[cfg(test)]

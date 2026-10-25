@@ -244,8 +244,11 @@ tabs on OK, one undo step (`command.batch {label: "Document Setup"}`); Cancel ch
   `embroidery.fabric.satin.spacingPercent`, `embroidery.fabric.stabilizer`,
   `embroidery.threadWeight`, `embroidery.palette`, `embroidery.machine.jumpLength`…,
   `embroidery.joinSameColor`, `embroidery.applyFabricTo: [key…]`; all of them in
-  `docs/control-protocol.md`), then `ui.dialog.confirm`: a preset chosen alone is applied as it
-  is; a value back at its default is unset.
+  `docs/control-protocol.md`), then `ui.dialog.confirm`. They are taken as the tab's own rows take
+  them, when it next looks or at OK: a fabric chosen fills the values the agent didn't set with
+  its own (a fabric and one value give what the same choices in the tab give, and the tab then
+  shows the preset's values); a value set on the built-in values makes them the document's own; a
+  value back at its default is unset.
 
 ![Document Setup's Embroidery tab: the knit chosen, its stitch length changed, one object's own pull counted in the amber bar](images/embroidery-document-setup.png)
 

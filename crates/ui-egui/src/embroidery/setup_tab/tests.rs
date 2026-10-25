@@ -354,3 +354,43 @@ fn ok_is_upstreams_with_the_tabs_command() {
     assert!(app.ui.dialog.is_none(), "closed by upstream's confirm");
     assert_eq!(settings(&mut app)["settings"]["threadWeight"], json!(30.0));
 }
+
+/// An agent choosing a fabric and setting one value (`ui.dialog.set`, then OK) stores what the
+/// same choices in the tab store; after an agent chose a fabric, the tab shows the preset's values;
+/// an agent's value on the built-in values makes them the document's own.
+#[test]
+fn an_agents_fabric_and_value_are_taken_as_the_tabs() {
+    let stored = |agent: bool| {
+        let mut app = app();
+        app.run("embroidery.setup", json!({"fabric": "cotton"})).unwrap();
+        open_tab(&mut app);
+        if agent {
+            let d = dialog(&mut app);
+            d.fields.insert("embroidery.fabric".into(), json!("denim"));
+            d.fields.insert("embroidery.fabric.tatami.pull".into(), json!(0.3));
+        } else {
+            edit(&mut app, "fabric", json!("denim"));
+            edit(&mut app, "tatami.pull", json!(0.3));
+        }
+        crate::dialogs::confirm(&mut app).unwrap();
+        settings(&mut app)["settings"]["fabric"].clone()
+    };
+    let ui = stored(false);
+    assert_eq!(stored(true), ui);
+    assert_eq!((ui["preset"].clone(), ui["tatami"]["pull"].clone()), (json!("denim"), json!(0.3)));
+    // The fabric alone: the preset's values shown, none marked as changed.
+    let ctx = context();
+    let mut app = app();
+    let denim = preset_value(&mut app, "denim", "tatami", "spacing");
+    open_tab(&mut app);
+    dialog(&mut app).fields.insert("embroidery.fabric".into(), json!("denim"));
+    let drawn = ready(&mut app, &ctx, WIDE);
+    assert_eq!(dialog(&mut app).fields[&field("tatami.spacing")], denim);
+    assert!(!drawn.nodes.iter().any(|(_, n)| n.label().is_some_and(|l| l.starts_with("Restore"))), "nothing marked as changed");
+    // A value on the built-in values.
+    crate::dialogs::cancel(&mut app);
+    open_tab(&mut app);
+    dialog(&mut app).fields.insert("embroidery.fabric.tatami.length".into(), json!(3.0));
+    ready(&mut app, &ctx, WIDE);
+    assert_eq!(dialog(&mut app).fields[&field("fabric")], json!(CUSTOM));
+}

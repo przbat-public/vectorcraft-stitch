@@ -385,7 +385,10 @@ impl Options {
             jump: self.jump_length.unwrap_or(d.jump),
             trim: self.trim_length.unwrap_or(d.trim),
             min_stitch: self.min_stitch.unwrap_or(d.min_stitch),
-            max_satin: self.split_length.unwrap_or(d.max_satin),
+            // Only a satin splits its stitches (a fill's narrow parts take a satin's parameters): a
+            // running line's or a fill's own keep the default, so that a split length changed
+            // plans them again for nothing.
+            max_satin: if style == Style::Satin { self.split_length.unwrap_or(d.max_satin) } else { d.max_satin },
             // A share of the spacing picked by width, in percent (100 is all of it, exactly).
             spacing_scale: self.spacing_percent.map_or(d.spacing_scale, |p| p / PERCENT),
             width,

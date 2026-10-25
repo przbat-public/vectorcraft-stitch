@@ -173,7 +173,14 @@ fn the_machine_reaches_every_unit() {
     let plan = digitize(&s.doc().unwrap().doc, &Options::default(), None).unwrap();
     for u in &plan.units {
         let p = u.params.unwrap();
-        assert_eq!((p.jump, p.trim, p.min_stitch, p.max_satin), (3.0, 6.0, 0.3, 7.0));
+        assert_eq!((p.jump, p.trim, p.min_stitch), (3.0, 6.0, 0.3));
+        // The split is a satin's (and a fill's narrow parts'): other units keep the default.
+        let split =
+            if p.style == vectorcraft_stitch::plan::Style::Satin { 7.0 } else { vectorcraft_stitch::plan::Params::for_style(p.style).max_satin };
+        assert_eq!(p.max_satin, split, "{:?}", p.style);
+        if let Some(c) = u.columns {
+            assert_eq!(c.max_satin, 7.0);
+        }
     }
     let wide_unit = plan.units.iter().position(|u| u.params.is_some_and(|p| p.width > 8.0)).unwrap();
     let longest = plan

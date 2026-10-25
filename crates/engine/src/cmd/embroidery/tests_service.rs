@@ -1025,6 +1025,23 @@ fn a_fabrics_tatami_change_keeps_every_satin_and_running_unit() {
     assert_eq!(*after, digitize(&doc, &opts, None).unwrap());
 }
 
+/// A satin split length changed in the machine's settings plans again what splits satin stitches
+/// alone: a running line's unit is kept, and the plan is the same as a fresh one.
+#[test]
+fn a_split_length_change_keeps_every_running_unit() {
+    let (mut s, _) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 80.0, h: 60.0, fill: None, stroke: Some((1, 0.5)) }]);
+    let opts = Options::default();
+    let service = PlanService::default();
+    let doc = s.doc().unwrap().doc.clone();
+    service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    let kept = service.kept();
+    run(&mut s, "embroidery.setup", json!({"machine": {"splitLength": 6}}));
+    let doc = s.doc().unwrap().doc.clone();
+    let after = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+    assert_eq!(service.kept(), kept, "nothing planned again");
+    assert_eq!(*after, digitize(&doc, &opts, None).unwrap());
+}
+
 /// Two callers asking for one plan at once walk the document once and get the same plan.
 #[test]
 fn two_callers_at_once_plan_once() {

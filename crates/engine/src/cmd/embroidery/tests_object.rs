@@ -64,17 +64,19 @@ fn each_part_key_on_an_object_reaches_its_unit() {
         json!({
             "fill": {"spacing": 0.5, "length": 3.0, "angle": 30.0, "pull": [0.3, 0.1], "pull_percent": [5.0, 5.0], "narrow_as_satin": 4.0,
                      "underlay": "edge", "split_length": 8.0},
-            "stroke": {"spacing": 0.45, "push": [0.5, 0.2], "pull": 0.25, "underlay": "center"}
+            "stroke": {"spacing": 0.45, "push": [0.5, 0.2], "pull": 0.25, "underlay": "center", "split_length": 7.0}
         }),
     );
     let plan = plan_with(&s, json!({}));
     let fill = sewn(&plan, Style::Fill).params.unwrap();
     assert_eq!((fill.density, fill.stitch_length, fill.angle), (0.5, 3.0, options::planner_angle(30.0)));
-    assert_eq!((fill.pull, fill.pull_percent, fill.narrow, fill.underlay, fill.max_satin), ([0.3, 0.1], [5.0; 2], 4.0, Underlay::Edge, 8.0));
+    // A split length is a satin's: a fill's narrow parts take it, its rows don't.
+    let rows_split = vectorcraft_stitch::plan::Params::for_style(Style::Fill).max_satin;
+    assert_eq!((fill.pull, fill.pull_percent, fill.narrow, fill.underlay, fill.max_satin), ([0.3, 0.1], [5.0; 2], 4.0, Underlay::Edge, rows_split));
     let stroke = sewn(&plan, Style::Satin).params.unwrap();
     assert_eq!(
-        (stroke.density, stroke.auto_spacing, stroke.push, stroke.pull, stroke.underlay),
-        (0.45, false, [0.5, 0.2], [0.25; 2], Underlay::Center)
+        (stroke.density, stroke.auto_spacing, stroke.push, stroke.pull, stroke.underlay, stroke.max_satin),
+        (0.45, false, [0.5, 0.2], [0.25; 2], Underlay::Center, 7.0)
     );
     // Sewn as the same values given to the export sew the shape without settings of its own.
     let mut bare = blank();

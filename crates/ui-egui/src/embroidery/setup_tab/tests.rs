@@ -49,6 +49,8 @@ fn context() -> egui::Context {
 struct Drawn {
     words: Vec<(String, Rect)>,
     clips: Vec<Rect>,
+    /// The fills of the boxes drawn.
+    fills: Vec<egui::Color32>,
     nodes: Vec<(egui::accesskit::NodeId, egui::accesskit::Node)>,
 }
 
@@ -89,7 +91,7 @@ fn frame_in(app: &mut VectorcraftApp, ctx: &egui::Context, size: egui::Vec2, eve
     let raw = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, size)), events, ..Default::default() };
     let mut out = ctx.run_ui(raw, |ui| crate::dialogs::show(app, ui.ctx()));
     out.textures_delta.clear();
-    let (mut words, mut clips) = (vec![], vec![]);
+    let (mut words, mut clips, mut fills) = (vec![], vec![], vec![]);
     let mut pending: Vec<(Rect, egui::Shape)> = out.shapes.into_iter().map(|c| (c.clip_rect, c.shape)).collect();
     while let Some((clip, s)) = pending.pop() {
         match s {
@@ -98,11 +100,12 @@ fn frame_in(app: &mut VectorcraftApp, ctx: &egui::Context, size: egui::Vec2, eve
                 words.push((t.galley.text().to_string(), t.visual_bounding_rect()));
                 clips.push(clip);
             }
+            egui::Shape::Rect(r) => fills.push(r.fill),
             _ => {}
         }
     }
     let nodes = out.platform_output.accesskit_update.map(|u| u.nodes).unwrap_or_default();
-    Drawn { words, clips, nodes }
+    Drawn { words, clips, fills, nodes }
 }
 
 /// Frames until the dialog has settled (its size, the fonts) → the last.
@@ -780,4 +783,20 @@ fn the_bar_applies_the_fabric_whatever_is_selected() {
         let info = app.run("embroidery.info", json!({"ids": [id]})).unwrap();
         assert_eq!(info["fill"]["settings"]["pull"]["setCount"], json!(0), "{id}: its own pull cleared");
     }
+}
+
+/// The bar turns amber once a value of the fabric changes in the dialog (the project owner's
+/// choice), not before.
+#[test]
+fn the_bar_turns_amber_once_the_fabric_changes() {
+    let ctx = context();
+    let mut app = app();
+    let a = rect(&mut app, 20.0);
+    app.run("embroidery.set", json!({"ids": [a], "part": "fill", "pull": 0.3})).unwrap();
+    open_tab(&mut app);
+    let t = Tokens::get(&ctx);
+    let amber = BarColours::of(&t, true).fill;
+    assert!(!ready(&mut app, &ctx, WIDE).fills.contains(&amber), "not amber yet");
+    edit(&mut app, "tatami.length", json!(3.0));
+    assert!(ready(&mut app, &ctx, WIDE).fills.contains(&amber), "amber once the fabric changed");
 }

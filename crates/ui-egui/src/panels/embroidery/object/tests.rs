@@ -72,10 +72,15 @@ impl Drawn {
 
 /// One frame of the panel at `time` with `events`, then the preview's scheduling.
 fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) -> Drawn {
+    frame_in(app, ctx, time, events, WIDTH)
+}
+
+/// [`frame`] in a panel `width` points wide.
+fn frame_in(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>, width: f32) -> Drawn {
     let raw = egui::RawInput {
         time: Some(time),
         focused: true,
-        screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(WIDTH, 900.0))),
+        screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(width, 900.0))),
         events,
         ..Default::default()
     };
@@ -825,4 +830,48 @@ fn an_unknown_id_is_shown_cut_short() {
         assert!(words.ends_with('…'));
     }
     assert_eq!(vocabulary::stitch("tatamiX", false), "tatamiX", "a short one whole");
+}
+
+/// A symbol's instance takes only Trim After (its art takes the settings, the project owner's
+/// choice): the tab says why and offers the cut alone.
+#[test]
+fn a_symbol_instance_takes_only_trim_after() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    let instance = app.run("symbol.new", json!({"name": "Square"})).unwrap()["id"].as_u64().unwrap();
+    select(&mut app, &[instance]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert!(drawn.has(vocabulary::takes_none("symbolInstance")), "{:?}", drawn.words);
+    let trim = crate::etn!(1, "Trim the thread after the object", "Trim the thread after the objects");
+    assert!(drawn.nodes.iter().any(|(_, n)| n.label() == Some(trim.as_str())), "Trim After offered");
+    assert!(!drawn.has(vocabulary::label("spacing", Some("tatami"))), "no settings rows: {:?}", drawn.words);
+}
+
+/// Where the panel is too narrow for the hint after ↺ ("default 135°"), it moves into ↺'s tooltip
+/// (one of the choices taken under the owner's "accept the rest"), which screen readers hear as
+/// ↺'s description; where there is room it shows after ↺.
+#[test]
+fn the_hint_moves_into_restores_tooltip_where_the_panel_is_narrow() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    app.run("embroidery.set", json!({"ids": [a], "part": "fill", "angle": 30})).unwrap();
+    select(&mut app, &[a]);
+    let restore = text::fill(crate::et!("Restore {setting}"), &[("setting", vocabulary::label("angle", None))]);
+    let at = |app: &mut VectorcraftApp, width: f32, time: &mut f64| {
+        let mut drawn = frame_in(app, &ctx, *time, vec![], width);
+        for _ in 0..4 {
+            *time += 0.05;
+            drawn = frame_in(app, &ctx, *time, vec![], width);
+        }
+        drawn
+    };
+    let mut time = 0.0;
+    let wide = at(&mut app, 480.0, &mut time);
+    let hint = wide.words.iter().find(|(w, _)| w.starts_with("default ")).map(|(w, _)| w.clone()).expect("the hint after ↺ where there is room");
+    assert_eq!(wide.node(&restore).description(), None, "shown, so not in ↺'s description");
+    let narrow = at(&mut app, 240.0, &mut time);
+    assert!(!narrow.words.iter().any(|(w, _)| *w == hint), "not after ↺ where there is no room");
+    assert_eq!(narrow.node(&restore).description(), Some(hint.as_str()), "in ↺'s tooltip and description");
 }

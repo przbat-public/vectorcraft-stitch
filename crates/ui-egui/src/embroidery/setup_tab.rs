@@ -327,6 +327,7 @@ pub(crate) fn run(app: &mut VectorcraftApp, params: Value) -> Result<Value, Stri
         }
         return app.run("document.setup", Value::Object(fields));
     };
+    check(&fields, o)?;
     // An agent's last fields, taken as the tab takes them (on a copy: a refused OK leaves the
     // dialog as it was).
     let (mut fields, mut o) = (fields, o.clone());
@@ -345,6 +346,54 @@ pub(crate) fn run(app: &mut VectorcraftApp, params: Value) -> Result<Value, Stri
         [only] => app.run("document.setup", only["params"].clone()),
         _ => app.run("command.batch", json!({"label": "Document Setup", "commands": commands})),
     }
+}
+
+/// Refuse what the tab can't take among the dialog's `fields` (an agent's, `ui.dialog.set`), as
+/// `document.setup` refuses a setting it doesn't know: a field under the tab's prefix it doesn't
+/// have (a misspelt name would be lost), a fabric it doesn't offer, a start or name other than
+/// null (the tab only unsets them), a bar's list that isn't a list of its values.
+fn check(fields: &Map<String, Value>, o: &Opened) -> Result<(), String> {
+    let names: Vec<String> =
+        ["fabric", THREAD_WEIGHT, PALETTE, JOIN, START, LABEL, APPLY].into_iter().chain(FABRIC_VALUES).chain(MACHINE).map(field).collect();
+    if let Some(k) = fields.keys().find(|k| k.starts_with(PREFIX) && !names.contains(k)) {
+        return Err(format!("`{}`: Document Setup's Embroidery tab has no such field", shortened(k)));
+    }
+    let choices = fabric_choices(o);
+    match fields.get(&field("fabric")) {
+        Some(Value::String(c)) if choices.contains(c) => {}
+        Some(v) => return Err(format!("`{}` {}: one of {}", field("fabric"), shortened(&v.to_string()), choices.join(", "))),
+        None => {}
+    }
+    for key in [START, LABEL] {
+        if fields.get(&field(key)).is_some_and(|v| !v.is_null() && !same(v, &o.was(key))) {
+            return Err(format!("`{}`: only null, which unsets it", field(key)));
+        }
+    }
+    let list_ok = |v: &Value| v.as_array().is_some_and(|l| l.iter().all(|k| k.as_str().is_some_and(|k| OVERRIDES.contains(&k))));
+    if fields.get(&field(APPLY)).is_some_and(|v| !list_ok(v)) {
+        return Err(format!("`{}`: a list of {}", field(APPLY), OVERRIDES.join(", ")));
+    }
+    Ok(())
+}
+
+/// The most characters of a name or value an error repeats: a hostile one can be long. An
+/// estimate.
+const MAX_SHOWN: usize = 64;
+
+/// `words` as an error repeats them: at most [`MAX_SHOWN`] characters, cut with "…".
+fn shortened(words: &str) -> String {
+    if words.chars().count() <= MAX_SHOWN { words.to_string() } else { format!("{}…", words.chars().take(MAX_SHOWN).collect::<String>()) }
+}
+
+/// The fabrics the tab offers: the built-in values, the presets, values of the document's own, and
+/// the one it opened with (a preset this version doesn't know).
+fn fabric_choices(o: &Opened) -> Vec<String> {
+    let mut choices = vec![BUILT_IN.to_string(), CUSTOM.to_string()];
+    choices.extend(o.presets.iter().map(|p| p.id.clone()));
+    if let Some(c) = o.was("fabric").as_str().filter(|c| !choices.iter().any(|x| x == c)) {
+        choices.push(c.to_string());
+    }
+    choices
 }
 
 /// The fabric values chosen in the bar to apply to the objects (`overrides`' keys), of the dialog's

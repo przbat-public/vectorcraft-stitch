@@ -394,3 +394,36 @@ fn an_agents_fabric_and_value_are_taken_as_the_tabs() {
     ready(&mut app, &ctx, WIDE);
     assert_eq!(dialog(&mut app).fields[&field("fabric")], json!(CUSTOM));
 }
+
+/// OK refuses what the tab can't take among an agent's fields, with the reason, as
+/// `document.setup` refuses a setting it doesn't know; the dialog stays and nothing changes.
+#[test]
+fn ok_refuses_fields_the_tab_cant_take() {
+    let mut app = app();
+    app.run("embroidery.setup", json!({"fabric": "denim"})).unwrap();
+    let before = settings(&mut app);
+    for (key, value, words) in [
+        ("embroidery.machine.jumplength", json!(6.0), "no such field"),
+        ("embroidery.tatami.pull", json!(0.3), "no such field"),
+        ("embroidery.fabric", json!(5), "one of builtIn"),
+        ("embroidery.fabric", json!(null), "one of builtIn"),
+        ("embroidery.fabric", json!("velvet"), "one of builtIn"),
+        ("embroidery.label", json!("A name"), "only null"),
+        ("embroidery.start", json!([1, 2]), "only null"),
+        ("embroidery.applyFabricTo", json!("pull"), "a list of pull"),
+        ("embroidery.applyFabricTo", json!(["angle"]), "a list of pull"),
+    ] {
+        open_tab(&mut app);
+        dialog(&mut app).fields.insert(key.into(), value.clone());
+        let e = crate::dialogs::confirm(&mut app).unwrap_err();
+        assert!(e.contains(words), "{key} {value}: {e}");
+        assert!(app.ui.dialog.is_some(), "{key}: the dialog stays");
+        crate::dialogs::cancel(&mut app);
+        assert_eq!(settings(&mut app), before, "{key}: nothing changed");
+    }
+    // A long name is cut in the reason.
+    open_tab(&mut app);
+    dialog(&mut app).fields.insert(format!("embroidery.{}", "x".repeat(10_000)), json!(1));
+    let e = crate::dialogs::confirm(&mut app).unwrap_err();
+    assert!(e.chars().count() < 200, "{} characters", e.chars().count());
+}

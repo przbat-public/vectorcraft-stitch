@@ -444,7 +444,9 @@ remembers the one object selected (a path or a compound path), answering `{sourc
 `embroidery.machine.speed`, `embroidery.start` and `embroidery.label` (shown when the document has them; `null`
 unsets them), and `embroidery.applyFabricTo` (the bar's values to apply the fabric to the objects for: a list of
 `pull`, `spacing`, `length`, `underlay`). Set them with `ui.dialog.set` and apply them with `ui.dialog.confirm`, one
-undo step with the dialog's other fields (`docs/embroidery.md` › Document Setup › Embroidery). The panel never plans:
+undo step with the dialog's other fields (`docs/embroidery.md` › Document Setup › Embroidery). OK refuses, with the
+reason and the dialog left open, a field under `embroidery.` the tab doesn't have, a fabric it doesn't offer, a start
+or name other than `null`, and an `applyFabricTo` that isn't a list of those values. The panel never plans:
 it asks the stitch preview for the plan and its tab's replies, so it shows what `ui.inspect.stitchPreview` says. In
 the Check tab, Show selects a rule's objects (or one hit's) and zooms to its hits with `view.zoomTo`;
 `embroidery.showFinding {rule, hit?}` does the same as a command, on the check the tab shows for the document as it

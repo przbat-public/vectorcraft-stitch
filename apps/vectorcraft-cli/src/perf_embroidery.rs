@@ -118,12 +118,12 @@ pub const ROWS: [&str; 43] = [
 /// 12-core Apple Silicon, load about 2, median of five, twice), so that a regression of that size
 /// shows; the cancel's is 5 ms, above the noise of a thread's wake-up. The planning rows keep the
 /// budgets they were given with the planning service. The settings rows: an object's setting
-/// plans again what a nudge does (the nudge's budget), a fabric change the fills of the document
-/// (the cold plan's), and reading the settings of 1,000 objects plans nothing (half the kept
-/// replies' 50 ms).
+/// plans again its own units (about 2.5 times the 2.4 ms it measured, so that planning every fill
+/// again, about 70 ms, fails it), a fabric change the fills of the document (the cold plan's), and
+/// reading the settings of 1,000 objects plans nothing (half the kept replies' 50 ms).
 const BUDGETS: [f64; 43] = [
     400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 100.0, 400.0, 4000.0, 50.0, 20.0,
-    13.0, 7.0, 32.0, 95.0, 20.0, 30.0, 7.0, 5.0, 2.5, 13.0, 60.0, 55.0, 75.0, 280.0, 20.0, 20.0, 5.0, 6.0, 25.0, 100.0, 400.0, 25.0,
+    13.0, 7.0, 32.0, 95.0, 20.0, 30.0, 7.0, 5.0, 2.5, 13.0, 60.0, 55.0, 75.0, 280.0, 20.0, 20.0, 5.0, 6.0, 25.0, 6.0, 400.0, 25.0,
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -399,9 +399,11 @@ const PULL_STEP: f64 = 0.01;
 fn settings(doc: &Document) -> Result<[f64; 3], String> {
     let opts = vectorcraft_engine::EmbroideryOptions::default();
     let mut s = fresh(doc);
-    let order = s.execute("embroidery.sequence", &json!({"limit": 1})).map_err(err)?;
-    let first = order["blocks"].get(0).and_then(|b| b["units"].get(0)).and_then(|u| u["id"].as_u64());
-    let Some(first) = first else { return Err("embroidery: the document has nothing to set".into()) };
+    // The first unit sewn as a fill: the angle row sets a fill's angle.
+    let order = s.execute("embroidery.sequence", &json!({})).map_err(err)?;
+    let units = order["blocks"].as_array().into_iter().flatten().filter_map(|b| b["units"].as_array()).flatten();
+    let first = units.filter(|u| u["part"] == json!("fill")).find_map(|u| u["id"].as_u64());
+    let Some(first) = first else { return Err("embroidery: the document has no fill to set".into()) };
     s.embroidery_plan(&opts).map_err(err)?;
     let timed_edits = |s: &mut Session, command: &str, params: &dyn Fn(usize) -> Value| -> Result<f64, String> {
         let mut samples = Vec::with_capacity(DRAW_RUNS);

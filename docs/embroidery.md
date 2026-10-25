@@ -1676,14 +1676,16 @@ those three rows with budgets (400, 100 and 100 ms, estimates), and `vectorcraft
 times the three for any file with art to stitch; perf's other budgets did not move.
 
 With embroidery settings (2026-10-24, release, 12 cores, load about 3, two runs each against the
-base without them): the 1,000-path document plans cold in 73 ms (70 before: resolving each unit's
-values from the object, the export and the document costs about 3 %), warm in 2.7 ms (2.6) and
+base without them): the 1,000-path document plans cold in 73 ms (70 before, within the noise of
+two runs at that load: resolving a unit's values is a few field reads, so its cost is at most that
+3 % and likely far less), warm in 2.7 ms (2.6) and
 after a nudge in 5.3 ms (5.0); every other embroidery row moved by less than its runs differ. The
 settings rows: one object's fill angle changed and the design planned again, 2.4 ms (its units and
 the one after it in its block, as `a_setting_plans_again_only_its_objects_units` counts); the
 fabric's tatami values changed and the design planned again, 71 ms (every fill planned afresh,
 about a cold plan; satins and running lines kept); `embroidery.info` of all 1,000 objects, 4.2 ms
-(no plan). All within their budgets (100, 400 and 25 ms, estimates).
+(no plan). All within their budgets (6, 400 and 25 ms, estimates; the first about 2.5 times its
+measure, so that planning every fill again, about 70 ms, would fail it).
 
 ### Planning for the stitch preview
 

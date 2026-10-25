@@ -5511,12 +5511,10 @@ axis	Y Axis	Y ekseni
 	Embroidery Object Settings	Nesne Nakış Ayarları
 	Reset Embroidery Object Settings	Nesne Nakış Ayarlarını Sıfırla
 	Embroidery Entry and Exit	Nakış Giriş ve Çıkışı
-	Paste Embroidery Object Settings	Nesne Nakış Ayarlarını Yapıştır
 	Show Embroidery Object Settings	Nesne Nakış Ayarlarını Göster
 	Embroidery Fabrics	Nakış Kumaşları
 	Apply Embroidery Fabric to Objects	Nakış Kumaşını Nesnelere Uygula
 	Embroidery Setup	Nakış Kurulumu
-	Show Embroidery Settings	Nakış Ayarlarını Göster
 	Embroidery Statistics	Nakış İstatistikleri
 	Embroidery Sewing Order	Nakış Dikiş Sırası
 	Embroidery Check	Nakış Kontrolü
@@ -5870,7 +5868,6 @@ embroidery	nearest	en yakın
 embroidery	not used yet	henüz kullanılmıyor
 embroidery	Set on the selected objects.	Seçili nesnelerde ayarlı.
 embroidery	Nearest to where the needle is.	İğnenin bulunduğu yere en yakın.
-embroidery	Trim the thread after the object	Nesneden sonra ipliği kes
 embroidery	built-in values	yerleşik değerler
 embroidery	Fabric: {fabric} · thread {weight} wt	Kumaş: {fabric} · iplik {weight} wt
 embroidery	Fabric: {fabric}	Kumaş: {fabric}
@@ -5954,3 +5951,7 @@ embroidery	wt	wt
 embroidery	/min	/dk
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	Sayı değil: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Başka Bir Nesnenin Nakış Ayarlarını Uygula
+	Show Document Embroidery Settings	Belge Nakış Ayarlarını Göster
+@plural	Trim the thread after the object|Trim the thread after the objects	Nesneden sonra ipliği kes

@@ -4998,12 +4998,10 @@ effect	Soft	Weich
 	Embroidery Object Settings	Stickeinstellungen des Objekts
 	Reset Embroidery Object Settings	Stickeinstellungen des Objekts zurücksetzen
 	Embroidery Entry and Exit	Ein- und Ausstich der Stickerei
-	Paste Embroidery Object Settings	Stickeinstellungen des Objekts einfügen
 	Show Embroidery Object Settings	Stickeinstellungen des Objekts anzeigen
 	Embroidery Fabrics	Stickstoffe
 	Apply Embroidery Fabric to Objects	Stickstoff auf Objekte anwenden
 	Embroidery Setup	Stickerei einrichten
-	Show Embroidery Settings	Stickerei-Einstellungen anzeigen
 	Embroidery Statistics	Stickerei-Statistik
 	Embroidery Sewing Order	Stickreihenfolge
 	Embroidery Check	Stickerei prüfen
@@ -5490,7 +5488,6 @@ embroidery	nearest	am nächsten
 embroidery	not used yet	noch nicht verwendet
 embroidery	Set on the selected objects.	An den ausgewählten Objekten gesetzt.
 embroidery	Nearest to where the needle is.	Am nächsten zur Nadel.
-embroidery	Trim the thread after the object	Faden nach dem Objekt schneiden
 embroidery	built-in values	eingebaute Werte
 embroidery	Fabric: {fabric} · thread {weight} wt	Stoff: {fabric} · Garn {weight} wt
 embroidery	Fabric: {fabric}	Stoff: {fabric}
@@ -5574,3 +5571,7 @@ embroidery	wt	wt
 embroidery	/min	/min
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	Keine Zahl: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Stickeinstellungen eines anderen Objekts übernehmen
+	Show Document Embroidery Settings	Stickerei-Einstellungen des Dokuments anzeigen
+@plural	Trim the thread after the object|Trim the thread after the objects	Faden nach dem Objekt schneiden|Faden nach den Objekten schneiden

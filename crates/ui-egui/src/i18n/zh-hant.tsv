@@ -5037,12 +5037,10 @@ lighting	Light	光源
 	Embroidery Object Settings	物件刺繡設定
 	Reset Embroidery Object Settings	重設物件刺繡設定
 	Embroidery Entry and Exit	刺繡入針與出針
-	Paste Embroidery Object Settings	貼上物件刺繡設定
 	Show Embroidery Object Settings	顯示物件刺繡設定
 	Embroidery Fabrics	刺繡布料
 	Apply Embroidery Fabric to Objects	將刺繡布料套用至物件
 	Embroidery Setup	刺繡設定
-	Show Embroidery Settings	顯示刺繡設定
 	Embroidery Statistics	刺繡統計
 	Embroidery Sewing Order	刺繡順序
 	Embroidery Check	刺繡檢查
@@ -5543,7 +5541,6 @@ embroidery	nearest	最近
 embroidery	not used yet	尚未使用
 embroidery	Set on the selected objects.	已在選取的物件上設定。
 embroidery	Nearest to where the needle is.	離針所在位置最近處。
-embroidery	Trim the thread after the object	物件後剪線
 embroidery	built-in values	內建值
 embroidery	Fabric: {fabric} · thread {weight} wt	布料：{fabric} · 線 {weight} wt
 embroidery	Fabric: {fabric}	布料：{fabric}
@@ -5627,3 +5624,7 @@ embroidery	wt	wt
 embroidery	/min	/分鐘
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	不是數字：{text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	套用其他物件的刺繡設定
+	Show Document Embroidery Settings	顯示文件刺繡設定
+@plural	Trim the thread after the object|Trim the thread after the objects	物件後剪線

@@ -5370,12 +5370,10 @@ effect	Points	Σημεία
 	Embroidery Object Settings	Ρυθμίσεις κεντήματος αντικειμένου
 	Reset Embroidery Object Settings	Επαναφορά ρυθμίσεων κεντήματος αντικειμένου
 	Embroidery Entry and Exit	Είσοδος και έξοδος κεντήματος
-	Paste Embroidery Object Settings	Επικόλληση ρυθμίσεων κεντήματος αντικειμένου
 	Show Embroidery Object Settings	Εμφάνιση ρυθμίσεων κεντήματος αντικειμένου
 	Embroidery Fabrics	Υφάσματα κεντήματος
 	Apply Embroidery Fabric to Objects	Εφαρμογή υφάσματος κεντήματος σε αντικείμενα
 	Embroidery Setup	Ρύθμιση κεντήματος
-	Show Embroidery Settings	Εμφάνιση ρυθμίσεων κεντήματος
 	Embroidery Statistics	Στατιστικά κεντήματος
 	Embroidery Sewing Order	Σειρά κεντήματος
 	Embroidery Check	Έλεγχος κεντήματος
@@ -5861,7 +5859,6 @@ embroidery	nearest	πλησιέστερο
 embroidery	not used yet	δεν χρησιμοποιείται ακόμη
 embroidery	Set on the selected objects.	Ορίστηκε στα επιλεγμένα αντικείμενα.
 embroidery	Nearest to where the needle is.	Το πλησιέστερο στο σημείο όπου βρίσκεται η βελόνα.
-embroidery	Trim the thread after the object	Κόψιμο κλωστής μετά το αντικείμενο
 embroidery	built-in values	ενσωματωμένες τιμές
 embroidery	Fabric: {fabric} · thread {weight} wt	Ύφασμα: {fabric} · κλωστή {weight} wt
 embroidery	Fabric: {fabric}	Ύφασμα: {fabric}
@@ -5945,3 +5942,7 @@ embroidery	wt	wt
 embroidery	/min	/λεπτό
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	Δεν είναι αριθμός: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Εφαρμογή ρυθμίσεων κεντήματος άλλου αντικειμένου
+	Show Document Embroidery Settings	Εμφάνιση ρυθμίσεων κεντήματος εγγράφου
+@plural	Trim the thread after the object|Trim the thread after the objects	Κόψιμο κλωστής μετά το αντικείμενο|Κόψιμο κλωστής μετά τα αντικείμενα

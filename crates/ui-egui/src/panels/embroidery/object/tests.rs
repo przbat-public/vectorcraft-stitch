@@ -428,7 +428,8 @@ fn trim_after_is_mixed_then_set() {
     select(&mut app, &[a, b]);
     let mut time = 0.0;
     let drawn = ready(&mut app, &ctx, &mut time);
-    let name = "Trim the thread after the object";
+    // Two objects: the plural.
+    let name = "Trim the thread after the objects";
     assert_eq!(drawn.node(name).toggled(), Some(egui::accesskit::Toggled::Mixed));
     let before = steps(&app);
     frame(&mut app, &ctx, time + 0.05, vec![drawn.click(name)]);
@@ -562,7 +563,8 @@ fn the_keyboards_focus_is_drawn_on_restore_and_the_checkbox() {
     let ring = rows::focus_colour(&t, t.panel);
     assert!(!drawn.outlines.iter().any(|(_, c)| *c == ring), "no outline without the focus");
     let restore = text::fill(crate::et!("Restore {setting}"), &[("setting", vocabulary::label("angle", Some("tatami")))]);
-    for name in [restore.as_str(), crate::et!("Trim the thread after the object")] {
+    let trim = crate::etn!(1, "Trim the thread after the object", "Trim the thread after the objects");
+    for name in [restore.as_str(), trim.as_str()] {
         time += 0.05;
         frame(&mut app, &ctx, time, vec![drawn.focus(name)]);
         time += 0.05;

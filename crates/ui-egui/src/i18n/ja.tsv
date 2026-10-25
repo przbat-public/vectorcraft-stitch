@@ -5072,12 +5072,10 @@ lighting	Light	ライト
 	Embroidery Object Settings	オブジェクトの刺繍設定
 	Reset Embroidery Object Settings	オブジェクトの刺繍設定をリセット
 	Embroidery Entry and Exit	刺繍の入口と出口
-	Paste Embroidery Object Settings	オブジェクトの刺繍設定を貼り付け
 	Show Embroidery Object Settings	オブジェクトの刺繍設定を表示
 	Embroidery Fabrics	刺繍の生地
 	Apply Embroidery Fabric to Objects	刺繍の生地をオブジェクトに適用
 	Embroidery Setup	刺繍設定
-	Show Embroidery Settings	刺繍設定を表示
 	Embroidery Statistics	刺繍の統計
 	Embroidery Sewing Order	刺繍の縫い順
 	Embroidery Check	刺繍のチェック
@@ -5586,7 +5584,6 @@ embroidery	nearest	最寄り
 embroidery	not used yet	まだ使われません
 embroidery	Set on the selected objects.	選択したオブジェクトに設定済み。
 embroidery	Nearest to where the needle is.	針の位置に最も近い所。
-embroidery	Trim the thread after the object	オブジェクトの後で糸を切る
 embroidery	built-in values	組み込みの値
 embroidery	Fabric: {fabric} · thread {weight} wt	生地：{fabric}・糸 {weight} wt
 embroidery	Fabric: {fabric}	生地：{fabric}
@@ -5670,3 +5667,7 @@ embroidery	wt	wt
 embroidery	/min	/分
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	数値ではありません：{text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	別のオブジェクトの刺繍設定を適用
+	Show Document Embroidery Settings	ドキュメントの刺繍設定を表示
+@plural	Trim the thread after the object|Trim the thread after the objects	オブジェクトの後で糸を切る

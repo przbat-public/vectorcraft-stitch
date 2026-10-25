@@ -5290,12 +5290,10 @@ imageTrace	Outline	კონტური
 	Embroidery Object Settings	ობიექტის ქარგვის პარამეტრები
 	Reset Embroidery Object Settings	ობიექტის ქარგვის პარამეტრების აღდგენა
 	Embroidery Entry and Exit	ქარგვის შესვლა და გასვლა
-	Paste Embroidery Object Settings	ობიექტის ქარგვის პარამეტრების ჩასმა
 	Show Embroidery Object Settings	ობიექტის ქარგვის პარამეტრების ჩვენება
 	Embroidery Fabrics	ქარგვის ქსოვილები
 	Apply Embroidery Fabric to Objects	ქარგვის ქსოვილის გამოყენება ობიექტებზე
 	Embroidery Setup	ქარგვის პარამეტრები
-	Show Embroidery Settings	ქარგვის პარამეტრების ჩვენება
 	Embroidery Statistics	ქარგვის სტატისტიკა
 	Embroidery Sewing Order	ქარგვის თანმიმდევრობა
 	Embroidery Check	ქარგვის შემოწმება
@@ -5824,7 +5822,6 @@ embroidery	nearest	უახლოესი
 embroidery	not used yet	ჯერ არ გამოიყენება
 embroidery	Set on the selected objects.	დაყენებულია მონიშნულ ობიექტებზე.
 embroidery	Nearest to where the needle is.	ყველაზე ახლოს იქ, სადაც ნემსია.
-embroidery	Trim the thread after the object	ძაფის გაჭრა ობიექტის შემდეგ
 embroidery	built-in values	ჩაშენებული მნიშვნელობები
 embroidery	Fabric: {fabric} · thread {weight} wt	ქსოვილი: {fabric} · ძაფი {weight} wt
 embroidery	Fabric: {fabric}	ქსოვილი: {fabric}
@@ -5908,3 +5905,7 @@ embroidery	wt	wt
 embroidery	/min	/წთ
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	არ არის რიცხვი: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	სხვა ობიექტის ქარგვის პარამეტრების გამოყენება
+	Show Document Embroidery Settings	დოკუმენტის ქარგვის პარამეტრების ჩვენება
+@plural	Trim the thread after the object|Trim the thread after the objects	ძაფის გაჭრა ობიექტის შემდეგ

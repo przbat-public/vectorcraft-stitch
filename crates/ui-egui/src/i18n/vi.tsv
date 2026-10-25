@@ -5012,12 +5012,10 @@ theme	Appearance	Giao diện
 	Embroidery Object Settings	Thiết lập thêu của đối tượng
 	Reset Embroidery Object Settings	Đặt lại thiết lập thêu của đối tượng
 	Embroidery Entry and Exit	Điểm vào và ra của đường thêu
-	Paste Embroidery Object Settings	Dán thiết lập thêu của đối tượng
 	Show Embroidery Object Settings	Hiện thiết lập thêu của đối tượng
 	Embroidery Fabrics	Vải thêu
 	Apply Embroidery Fabric to Objects	Áp dụng vải thêu cho các đối tượng
 	Embroidery Setup	Thiết lập thêu
-	Show Embroidery Settings	Hiện thiết lập thêu
 	Embroidery Statistics	Thống kê thêu
 	Embroidery Sewing Order	Thứ tự thêu
 	Embroidery Check	Kiểm tra thêu
@@ -5504,7 +5502,6 @@ embroidery	nearest	gần nhất
 embroidery	not used yet	chưa dùng
 embroidery	Set on the selected objects.	Đã đặt trên các đối tượng đã chọn.
 embroidery	Nearest to where the needle is.	Gần nhất với vị trí kim.
-embroidery	Trim the thread after the object	Cắt chỉ sau đối tượng
 embroidery	built-in values	giá trị dựng sẵn
 embroidery	Fabric: {fabric} · thread {weight} wt	Vải: {fabric} · chỉ {weight} wt
 embroidery	Fabric: {fabric}	Vải: {fabric}
@@ -5588,3 +5585,7 @@ embroidery	wt	wt
 embroidery	/min	/phút
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	Không phải số: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Áp dụng thiết lập thêu của đối tượng khác
+	Show Document Embroidery Settings	Hiện thiết lập thêu của tài liệu
+@plural	Trim the thread after the object|Trim the thread after the objects	Cắt chỉ sau đối tượng

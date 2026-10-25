@@ -5359,12 +5359,10 @@ swatch	Bright Violet	Violet cerah
 	Embroidery Object Settings	Pengaturan bordir objek
 	Reset Embroidery Object Settings	Setel ulang pengaturan bordir objek
 	Embroidery Entry and Exit	Masuk dan keluar bordir
-	Paste Embroidery Object Settings	Tempel pengaturan bordir objek
 	Show Embroidery Object Settings	Tampilkan pengaturan bordir objek
 	Embroidery Fabrics	Kain bordir
 	Apply Embroidery Fabric to Objects	Terapkan kain bordir ke objek
 	Embroidery Setup	Pengaturan bordir
-	Show Embroidery Settings	Tampilkan pengaturan bordir
 	Embroidery Statistics	Statistik bordir
 	Embroidery Sewing Order	Urutan bordir
 	Embroidery Check	Periksa bordir
@@ -5864,7 +5862,6 @@ embroidery	nearest	terdekat
 embroidery	not used yet	belum dipakai
 embroidery	Set on the selected objects.	Diatur pada objek terpilih.
 embroidery	Nearest to where the needle is.	Paling dekat dengan posisi jarum.
-embroidery	Trim the thread after the object	Potong benang setelah objek
 embroidery	built-in values	nilai bawaan
 embroidery	Fabric: {fabric} · thread {weight} wt	Kain: {fabric} · benang {weight} wt
 embroidery	Fabric: {fabric}	Kain: {fabric}
@@ -5948,3 +5945,7 @@ embroidery	wt	wt
 embroidery	/min	/menit
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	Bukan angka: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Terapkan pengaturan bordir objek lain
+	Show Document Embroidery Settings	Tampilkan pengaturan bordir dokumen
+@plural	Trim the thread after the object|Trim the thread after the objects	Potong benang setelah objek

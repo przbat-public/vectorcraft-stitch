@@ -5372,12 +5372,10 @@ theme	Appearance	Външен вид
 	Embroidery Object Settings	Настройки за бродиране на обекта
 	Reset Embroidery Object Settings	Нулиране на настройките за бродиране на обекта
 	Embroidery Entry and Exit	Вход и изход на бродирането
-	Paste Embroidery Object Settings	Поставяне на настройките за бродиране на обекта
 	Show Embroidery Object Settings	Показване на настройките за бродиране на обекта
 	Embroidery Fabrics	Тъкани за бродиране
 	Apply Embroidery Fabric to Objects	Прилагане на тъканта за бродиране към обектите
 	Embroidery Setup	Настройка на бродирането
-	Show Embroidery Settings	Показване на настройките на бродирането
 	Embroidery Statistics	Статистика на бродирането
 	Embroidery Sewing Order	Ред на бродиране
 	Embroidery Check	Проверка на бродирането
@@ -5848,7 +5846,6 @@ embroidery	nearest	най-близо
 embroidery	not used yet	още не се използва
 embroidery	Set on the selected objects.	Зададено за избраните обекти.
 embroidery	Nearest to where the needle is.	Най-близо до мястото, където е иглата.
-embroidery	Trim the thread after the object	Отрязване на конеца след обекта
 embroidery	built-in values	вградени стойности
 embroidery	Fabric: {fabric} · thread {weight} wt	Плат: {fabric} · конец {weight} wt
 embroidery	Fabric: {fabric}	Плат: {fabric}
@@ -5932,3 +5929,7 @@ embroidery	wt	wt
 embroidery	/min	/мин
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	Не е число: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Прилагане на настройките за бродиране на друг обект
+	Show Document Embroidery Settings	Показване на настройките за бродиране на документа
+@plural	Trim the thread after the object|Trim the thread after the objects	Отрязване на конеца след обекта|Отрязване на конеца след обектите

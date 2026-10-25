@@ -5404,12 +5404,10 @@ imageTrace	Outline	Körvonal
 	Embroidery Object Settings	Objektum hímzési beállításai
 	Reset Embroidery Object Settings	Objektum hímzési beállításainak visszaállítása
 	Embroidery Entry and Exit	Hímzés be- és kiszúrási pontja
-	Paste Embroidery Object Settings	Objektum hímzési beállításainak beillesztése
 	Show Embroidery Object Settings	Objektum hímzési beállításainak megjelenítése
 	Embroidery Fabrics	Hímzőanyagok
 	Apply Embroidery Fabric to Objects	Hímzőanyag alkalmazása az objektumokra
 	Embroidery Setup	Hímzésbeállítás
-	Show Embroidery Settings	Hímzésbeállítások megjelenítése
 	Embroidery Statistics	Hímzésstatisztika
 	Embroidery Sewing Order	Hímzési sorrend
 	Embroidery Check	Hímzés ellenőrzése
@@ -5895,7 +5893,6 @@ embroidery	nearest	legközelebbi
 embroidery	not used yet	még nincs használatban
 embroidery	Set on the selected objects.	A kijelölt objektumokon beállítva.
 embroidery	Nearest to where the needle is.	A tűhöz legközelebb.
-embroidery	Trim the thread after the object	Cérna elvágása az objektum után
 embroidery	built-in values	beépített értékek
 embroidery	Fabric: {fabric} · thread {weight} wt	Anyag: {fabric} · cérna {weight} wt
 embroidery	Fabric: {fabric}	Anyag: {fabric}
@@ -5979,3 +5976,7 @@ embroidery	wt	wt
 embroidery	/min	/perc
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	Nem szám: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Másik objektum hímzési beállításainak alkalmazása
+	Show Document Embroidery Settings	Dokumentum hímzési beállításainak megjelenítése
+@plural	Trim the thread after the object|Trim the thread after the objects	Cérna elvágása az objektum után

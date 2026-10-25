@@ -5418,12 +5418,10 @@ mark-style	Japanese	Japonské
 	Embroidery Object Settings	Nastavení vyšívání objektu
 	Reset Embroidery Object Settings	Obnovit nastavení vyšívání objektu
 	Embroidery Entry and Exit	Vstup a výstup výšivky
-	Paste Embroidery Object Settings	Vložit nastavení vyšívání objektu
 	Show Embroidery Object Settings	Zobrazit nastavení vyšívání objektu
 	Embroidery Fabrics	Látky pro vyšívání
 	Apply Embroidery Fabric to Objects	Použít látku vyšívání na objekty
 	Embroidery Setup	Nastavení vyšívání
-	Show Embroidery Settings	Zobrazit nastavení vyšívání
 	Embroidery Statistics	Statistika vyšívání
 	Embroidery Sewing Order	Pořadí vyšívání
 	Embroidery Check	Kontrola výšivky
@@ -5909,7 +5907,6 @@ embroidery	nearest	nejblíže
 embroidery	not used yet	zatím nepoužito
 embroidery	Set on the selected objects.	Nastaveno na vybraných objektech.
 embroidery	Nearest to where the needle is.	Nejblíže místu, kde je jehla.
-embroidery	Trim the thread after the object	Ustřihnout nit po objektu
 embroidery	built-in values	vestavěné hodnoty
 embroidery	Fabric: {fabric} · thread {weight} wt	Látka: {fabric} · nit {weight} wt
 embroidery	Fabric: {fabric}	Látka: {fabric}
@@ -5993,3 +5990,7 @@ embroidery	wt	wt
 embroidery	/min	/min
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	Není číslo: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Použít nastavení vyšívání jiného objektu
+	Show Document Embroidery Settings	Zobrazit nastavení vyšívání dokumentu
+@plural	Trim the thread after the object|Trim the thread after the objects	Ustřihnout nit po objektu|Ustřihnout nit po objektech|Ustřihnout nit po objektech

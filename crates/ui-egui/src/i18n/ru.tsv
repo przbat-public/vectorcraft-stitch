@@ -5028,12 +5028,10 @@ lighting	Light	Свет
 	Embroidery Object Settings	Параметры вышивки объекта
 	Reset Embroidery Object Settings	Сбросить параметры вышивки объекта
 	Embroidery Entry and Exit	Вход и выход вышивки
-	Paste Embroidery Object Settings	Вставить параметры вышивки объекта
 	Show Embroidery Object Settings	Показать параметры вышивки объекта
 	Embroidery Fabrics	Ткани для вышивки
 	Apply Embroidery Fabric to Objects	Применить ткань вышивки к объектам
 	Embroidery Setup	Параметры вышивки
-	Show Embroidery Settings	Показать параметры вышивки
 	Embroidery Statistics	Статистика вышивки
 	Embroidery Sewing Order	Порядок вышивания
 	Embroidery Check	Проверка вышивки
@@ -5520,7 +5518,6 @@ embroidery	nearest	ближайший
 embroidery	not used yet	пока не используется
 embroidery	Set on the selected objects.	Задано у выделенных объектов.
 embroidery	Nearest to where the needle is.	Ближе всего к тому месту, где игла.
-embroidery	Trim the thread after the object	Обрезать нить после объекта
 embroidery	built-in values	встроенные значения
 embroidery	Fabric: {fabric} · thread {weight} wt	Ткань: {fabric} · нить {weight} wt
 embroidery	Fabric: {fabric}	Ткань: {fabric}
@@ -5604,3 +5601,7 @@ embroidery	wt	wt
 embroidery	/min	/мин
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	Не число: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Применить параметры вышивки другого объекта
+	Show Document Embroidery Settings	Показать параметры вышивки документа
+@plural	Trim the thread after the object|Trim the thread after the objects	Обрезать нить после объекта|Обрезать нить после объектов|Обрезать нить после объектов

@@ -5374,12 +5374,10 @@ theme	Appearance	Utseende
 	Embroidery Object Settings	Objektets broderiinställningar
 	Reset Embroidery Object Settings	Återställ objektets broderiinställningar
 	Embroidery Entry and Exit	Broderiets in- och utgång
-	Paste Embroidery Object Settings	Klistra in objektets broderiinställningar
 	Show Embroidery Object Settings	Visa objektets broderiinställningar
 	Embroidery Fabrics	Broderityger
 	Apply Embroidery Fabric to Objects	Tillämpa broderityget på objekt
 	Embroidery Setup	Broderiinställningar
-	Show Embroidery Settings	Visa broderiinställningar
 	Embroidery Statistics	Broderistatistik
 	Embroidery Sewing Order	Broderiets sömnadsordning
 	Embroidery Check	Kontrollera broderi
@@ -5865,7 +5863,6 @@ embroidery	nearest	närmast
 embroidery	not used yet	används inte än
 embroidery	Set on the selected objects.	Angivet på de markerade objekten.
 embroidery	Nearest to where the needle is.	Närmast där nålen är.
-embroidery	Trim the thread after the object	Klipp tråden efter objektet
 embroidery	built-in values	inbyggda värden
 embroidery	Fabric: {fabric} · thread {weight} wt	Tyg: {fabric} · tråd {weight} wt
 embroidery	Fabric: {fabric}	Tyg: {fabric}
@@ -5949,3 +5946,7 @@ embroidery	wt	wt
 embroidery	/min	/min
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	Inte ett tal: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Använd ett annat objekts broderiinställningar
+	Show Document Embroidery Settings	Visa dokumentets broderiinställningar
+@plural	Trim the thread after the object|Trim the thread after the objects	Klipp tråden efter objektet|Klipp tråden efter objekten

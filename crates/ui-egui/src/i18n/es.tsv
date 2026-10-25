@@ -5360,12 +5360,10 @@ mark-style	Japanese	Japonesas
 	Embroidery Object Settings	Ajustes de bordado del objeto
 	Reset Embroidery Object Settings	Restablecer ajustes de bordado del objeto
 	Embroidery Entry and Exit	Entrada y salida del bordado
-	Paste Embroidery Object Settings	Pegar ajustes de bordado del objeto
 	Show Embroidery Object Settings	Mostrar ajustes de bordado del objeto
 	Embroidery Fabrics	Tejidos de bordado
 	Apply Embroidery Fabric to Objects	Aplicar tejido de bordado a los objetos
 	Embroidery Setup	Ajustar bordado
-	Show Embroidery Settings	Mostrar ajustes de bordado
 	Embroidery Statistics	Estadísticas del bordado
 	Embroidery Sewing Order	Orden de bordado
 	Embroidery Check	Comprobar bordado
@@ -5850,7 +5848,6 @@ embroidery	nearest	más cercano
 embroidery	not used yet	aún sin uso
 embroidery	Set on the selected objects.	Definido en los objetos seleccionados.
 embroidery	Nearest to where the needle is.	Lo más cerca de donde está la aguja.
-embroidery	Trim the thread after the object	Cortar el hilo tras el objeto
 embroidery	built-in values	valores integrados
 embroidery	Fabric: {fabric} · thread {weight} wt	Tela: {fabric} · hilo {weight} wt
 embroidery	Fabric: {fabric}	Tela: {fabric}
@@ -5934,3 +5931,7 @@ embroidery	wt	wt
 embroidery	/min	/min
 # Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
 embroidery	Not a number: {text}	No es un número: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Aplicar los ajustes de bordado de otro objeto
+	Show Document Embroidery Settings	Mostrar ajustes de bordado del documento
+@plural	Trim the thread after the object|Trim the thread after the objects	Cortar el hilo tras el objeto|Cortar el hilo tras los objetos

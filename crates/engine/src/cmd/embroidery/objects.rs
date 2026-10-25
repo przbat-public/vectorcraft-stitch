@@ -41,7 +41,7 @@ pub(crate) const RESET: &str = "Reset Embroidery Object Settings";
 /// The undo step `embroidery.setEntryExit` makes.
 pub(crate) const ENTRY_EXIT: &str = "Embroidery Entry and Exit";
 /// The undo step `embroidery.copyFrom` makes: a paste of another object's settings.
-pub(crate) const PASTE: &str = "Paste Embroidery Object Settings";
+pub(crate) const PASTE: &str = "Apply Another Object's Embroidery Settings";
 
 /// Why an object given takes no part settings, as the replies name it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

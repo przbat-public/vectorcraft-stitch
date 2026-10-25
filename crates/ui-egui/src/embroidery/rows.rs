@@ -410,7 +410,9 @@ fn words_field(ui: &mut Ui, width: f32, row: &Row<'_>, words: &str, colour: Colo
     );
     let at = Align2::LEFT_CENTER.align_size_within_rect(galley.size(), rect.shrink2(vec2(WORDS_INSET, 0.0))).min;
     ui.painter().galley(at, galley, colour);
-    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, true, format!("{}: {words}", row.name)));
+    // The language's own punctuation between a name and its value (French spaces its colon).
+    let said = crate::embroidery::text::fill(crate::et!("{section}: {setting}"), &[("section", row.name), ("setting", words)]);
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, true, said.clone()));
     ui.ctx().accesskit_node_builder(resp.id, |node| node.set_description(row.description.clone()));
 }
 

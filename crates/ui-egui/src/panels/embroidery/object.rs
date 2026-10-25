@@ -577,7 +577,8 @@ fn key_row(p: &PartInfo, part: Part, key: &'static str, lang: Lang) -> Option<Ow
         text::fill(crate::et!("Source: {name}"), &[("name", source_words.as_deref().unwrap_or_default())])
     };
     if k.mixed {
-        description = format!("{description}. {}", crate::et!("The selected objects differ."));
+        // On a line of its own: a sentence joined with ". " reads wrong in Japanese and Chinese.
+        description = format!("{description}\n{}", crate::et!("The selected objects differ."));
     }
     Some(Owned { key, label, name: name_of(key, label), tip: vocabulary::tip(key), field, own, restore, aside, hint, description, problem: None })
 }
@@ -749,7 +750,8 @@ fn trim_after(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], commands: &mut
     }
     ui.add_space(GAP);
     let value = if info.trim_after.mixed { None } else { info.trim_after.value };
-    if rows::check(ui, crate::et!("Trim the thread after the object"), value, Tokens::get(ui.ctx()).panel) {
+    let words = crate::etn!(ids.len() as u64, "Trim the thread after the object", "Trim the thread after the objects");
+    if rows::check(ui, &words, value, Tokens::get(ui.ctx()).panel) {
         commands.push(("embroidery.setTrimAfter", json!({"ids": ids_json(ids), "on": value != Some(true)})));
     }
 }

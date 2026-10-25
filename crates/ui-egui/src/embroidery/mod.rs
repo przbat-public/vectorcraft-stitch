@@ -144,3 +144,5 @@ mod tests_gate;
 mod tests_languages;
 #[cfg(test)]
 mod tests_preview;
+#[cfg(test)]
+mod tests_shots;

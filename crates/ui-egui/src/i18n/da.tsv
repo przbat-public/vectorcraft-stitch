@@ -5952,3 +5952,5 @@ embroidery	Not a number: {text}	Ikke et tal: {text}
 # Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
 embroidery	Not pasted, as this version doesn't take them: {keys}	Ikke indsat, da denne version ikke tager dem: {keys}
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} valgt objekt tager ingen indstillinger og blev sprunget over|{count} valgte objekter tager ingen indstillinger og blev sprunget over
+# Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
+@plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} valgt objekt tager ingen indstillinger|{count} valgte objekter tager ingen indstillinger

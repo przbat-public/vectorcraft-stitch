@@ -5592,3 +5592,5 @@ embroidery	Not a number: {text}	Không phải số: {text}
 # Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
 embroidery	Not pasted, as this version doesn't take them: {keys}	Chưa dán vì phiên bản này không nhận: {keys}
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} đối tượng đã chọn không nhận thiết lập và đã bị bỏ qua
+# Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
+@plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} đối tượng đã chọn không nhận thiết lập

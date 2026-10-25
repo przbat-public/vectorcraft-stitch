@@ -682,3 +682,17 @@ fn trim_after_leaves_out_what_isnt_sewn() {
     let n = app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(t)).unwrap().extras().embroidery.clone();
     assert!(n.is_none(), "nothing set on the type");
 }
+
+/// With objects that take settings and one that takes none selected, the header says how many take
+/// none, not that they "aren't sewn" (a symbol's instance and stitches from a file are sewn).
+#[test]
+fn the_header_counts_the_objects_that_take_no_settings() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    let t = app.run("text.create", json!({"x": 20, "y": 150, "text": "Haft"})).unwrap()["id"].as_u64().unwrap();
+    select(&mut app, &[a, t]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let words = crate::etn!(1, "{count} selected object takes no settings", "{count} selected objects take no settings");
+    assert!(drawn.words.iter().any(|(w, _)| *w == words), "{words}: {:?}", drawn.words);
+}

@@ -289,7 +289,9 @@ fn header(app: &VectorcraftApp, ui: &mut Ui, ids: &[NodeId], info: Option<&Objec
         Some(n) => Some(kind_words(n, info)),
         None => info
             .filter(|i| i.skipped_count > 0 && i.object_count > 0)
-            .map(|i| crate::etn!(i.skipped_count as u64, "{count} selected object isn't sewn", "{count} selected objects aren't sewn")),
+            // Taking none isn't the same as not being sewn: a symbol's instance and stitches from a
+            // file are sewn.
+            .map(|i| crate::etn!(i.skipped_count as u64, "{count} selected object takes no settings", "{count} selected objects take no settings")),
     };
     ui.horizontal(|ui| {
         let pill = (!ids.is_empty()).then(|| pill_words(count));

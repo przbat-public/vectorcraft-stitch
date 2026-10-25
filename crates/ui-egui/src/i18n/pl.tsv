@@ -5848,3 +5848,5 @@ embroidery	Not a number: {text}	To nie liczba: {text}
 # Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
 embroidery	Not pasted, as this version doesn't take them: {keys}	Nie wklejono, bo ta wersja ich nie przyjmuje: {keys}
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} zaznaczony obiekt nie przyjmuje ustawień i został pominięty|{count} zaznaczone obiekty nie przyjmują ustawień i zostały pominięte|{count} zaznaczonych obiektów nie przyjmuje ustawień i zostało pominiętych
+# Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
+@plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} zaznaczony obiekt nie przyjmuje ustawień|{count} zaznaczone obiekty nie przyjmują ustawień|{count} zaznaczonych obiektów nie przyjmuje ustawień

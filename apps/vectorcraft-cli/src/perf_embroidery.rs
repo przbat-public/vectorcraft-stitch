@@ -127,11 +127,13 @@ pub const ROWS: [&str; 45] = [
 /// again, about 70 ms, fails it), a fabric change the fills of the document (the cold plan's), and
 /// reading the settings of 1,000 objects plans nothing (half the kept replies' 50 ms). The Object
 /// tab's rows run on the interface thread on a new snapshot (each frame of a drag or a scrub): its
-/// re-read of 1,000 selected objects within a third of a frame (6 ms of 16.7), its footer within a
-/// hundredth (0.2 ms), whatever the document's size.
+/// re-read of 1,000 selected objects within a third of a frame (6 ms of 16.7; it measured 2.7 ms on
+/// 2026-10-25, the same machine, load about 2.5, twice), its footer within 1 ms whatever the
+/// document's size (it reads two of the document's fields, under 0.01 ms; 1 ms is the least the
+/// report's whole-millisecond budget column shows).
 const BUDGETS: [f64; 45] = [
     400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 100.0, 400.0, 4000.0, 50.0, 20.0,
-    13.0, 7.0, 32.0, 95.0, 20.0, 30.0, 7.0, 5.0, 2.5, 13.0, 60.0, 55.0, 75.0, 280.0, 20.0, 20.0, 5.0, 6.0, 25.0, 6.0, 400.0, 25.0, 6.0, 0.2,
+    13.0, 7.0, 32.0, 95.0, 20.0, 30.0, 7.0, 5.0, 2.5, 13.0, 60.0, 55.0, 75.0, 280.0, 20.0, 20.0, 5.0, 6.0, 25.0, 6.0, 400.0, 25.0, 6.0, 1.0,
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.

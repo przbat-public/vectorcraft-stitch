@@ -506,6 +506,9 @@ fn a_read_commands_plan_keeps_the_scrub_live() {
     use crate::embroidery::stitch_preview::Freshness;
     let ctx = context();
     let (mut app, a, _) = app_with_art();
+    // Each time taken in counts as light, so a busy machine can't make it heavy; a plan taken
+    // with no time at all still counts as heavy, which the test is for.
+    app.embroidery.preview.pin_light();
     select(&mut app, &[a]);
     app.run("embroidery.sequence", json!({})).unwrap();
     let mut time = 0.0;

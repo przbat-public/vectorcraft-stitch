@@ -205,3 +205,23 @@ fn copy_from_passes_over_what_set_would_refuse() {
     let fill = s.doc().unwrap().doc.node(NodeId(b)).unwrap().extras().embroidery.as_deref().unwrap().part(PartKind::Fill).cloned().unwrap();
     assert_eq!((fill.stitch.as_deref(), fill.pull, fill.angle), (Some("satin"), Some([0.1, 0.1]), Some(30.0)), "its own kept, the angle copied");
 }
+
+/// A command given more ids than it takes is refused on the ids, saying how many it takes, before
+/// it looks at them: `set`, `copyFrom`, `info`, `applyFabric` and `reset` alike.
+#[test]
+fn too_many_ids_are_refused() {
+    let mut s = blank();
+    let id = shape(&mut s, 20.0);
+    let ids: Vec<u64> = (0..=super::objects::MAX_IDS as u64).collect();
+    for (command, mut params) in [
+        ("embroidery.set", json!({"part": "fill", "angle": 10})),
+        ("embroidery.copyFrom", json!({"source": id})),
+        ("embroidery.info", json!({})),
+        ("embroidery.applyFabric", json!({})),
+        ("embroidery.reset", json!({})),
+    ] {
+        params["ids"] = json!(ids);
+        let e = s.execute(command, &params).unwrap_err().to_string();
+        assert!(e.contains(&format!("at most {}", super::objects::MAX_IDS)), "{command}: {e}");
+    }
+}

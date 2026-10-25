@@ -1143,11 +1143,17 @@ fn unchanging(mut s: Session, how: Unchanging) -> Session {
             let ids: Vec<u64> = s.doc().unwrap().doc.layers.iter().map(|l| l.id.0).collect();
             // Every value of both parts set by command on every object that takes them, an entry
             // and an exit on each, then every one reset.
+            // Set: on every object that has the part (none, in a design of literal runs alone).
+            let mut set = 0;
             for part in ["fill", "stroke"] {
                 let all = json!({"ids": ids, "part": part, "stitch": "running", "spacing": 0.5, "length": 3, "angle": 30, "pull": [0.3, 0.1],
                     "pullPercent": 5, "push": 0.2, "expand": 0.3, "narrowAsSatin": 4, "underlay": "edge", "splitLength": 8});
                 match s.execute("embroidery.set", &all) {
-                    Ok(_) | Err(vectorcraft_engine::EngineError::Other(_)) => {}
+                    Ok(r) => {
+                        assert!(r["changedCount"].as_u64().unwrap() > 0, "{part}: {r}");
+                        set += 1;
+                    }
+                    Err(vectorcraft_engine::EngineError::Other(e)) => assert!(e.starts_with("none of these objects"), "{e}"),
                     Err(e) => panic!("{e}"),
                 }
             }
@@ -1155,11 +1161,16 @@ fn unchanging(mut s: Session, how: Unchanging) -> Session {
             for layer in &s.doc().unwrap().doc.layers {
                 layer.walk(&mut |n| objects.push(n.id.0));
             }
+            let mut points = 0;
             for id in objects {
                 for part in ["fill", "stroke"] {
-                    let _ = s.execute("embroidery.setEntryExit", &json!({"id": id, "part": part, "entry": [10, 20], "exit": [30, 40]}));
+                    // Refused on what takes no settings or has no such part.
+                    points += usize::from(
+                        s.execute("embroidery.setEntryExit", &json!({"id": id, "part": part, "entry": [10, 20], "exit": [30, 40]})).is_ok(),
+                    );
                 }
             }
+            assert!(set == 0 || points > 0, "entry and exit points set where settings were");
             let keys: Vec<&str> = vectorcraft_doc::embroidery::PartKey::ALL.iter().map(|k| k.name()).collect();
             match s.execute("embroidery.reset", &json!({"ids": ids, "keys": keys})) {
                 Ok(_) | Err(vectorcraft_engine::EngineError::Other(_)) => {}

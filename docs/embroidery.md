@@ -1117,7 +1117,12 @@ the object a person selects (`id`).
   options and `expand` both ways, an opened design), with caches small enough to drop units.
   A design of more than two million stitches is refused (`tests_walk.rs`). Random documents with
   embroidery among their edits save and read back as they were, and their embroidery reads,
-  checks and exports or is refused (`tests/embroidery_random_documents.rs`).
+  checks and exports or is refused (`tests/embroidery_random_documents.rs`). Settings as hostile as
+  a file can hold them (numbers at JSON's edges, long strings, any type under every key, points of
+  any shape), on objects and in the document, are planned to finite needle points, read, edited by
+  the settings commands and every embroidery command's junk, transformed (singular transforms
+  among them) and cut up by the commands that make objects from others without a panic, and the
+  document saves and reads back as it was (`tests/embroidery_hostile_settings.rs`).
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
 - `crates/engine/tests/embroidery_output.rs`: the bytes every export writes, pinned by their sha256
@@ -2226,7 +2231,9 @@ Public documentation, cited per claim in the crate:
   designs and the test that uses them; `crates/engine/tests/embroidery_output.rs` — the sha256 of
   every export; `crates/engine/tests/embroidery_planning.rs` — the statistics, sewing order and
   checks on the real designs, and a plan after an edit against a fresh one;
-  `crates/engine/tests/embroidery_random_documents.rs` — random documents with embroidery edits.
+  `crates/engine/tests/embroidery_random_documents.rs` — random documents with embroidery edits;
+  `crates/engine/tests/embroidery_hostile_settings.rs` — hostile settings planned, edited,
+  transformed and cut up.
 
 Every value these files decide with is a named constant with a description: what it is, its unit,
 and its source (a format's documentation, a cited default) or that it is an estimate. What stays

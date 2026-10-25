@@ -921,3 +921,78 @@ fn a_millimetre_field_steps_in_tenths() {
     ready(&mut app, &ctx, &mut time);
     assert_eq!((fill_setting(&mut app, a, "angle"), steps(&app)), (json!(31.0), before + 1), "a degree up, one undo step");
 }
+
+/// The entry and exit rows: a set entry reads "Set", marked, ↺ unsetting it alone, one undo step;
+/// an exit left to the planner reads "Auto" with "nearest".
+#[test]
+fn the_entry_and_exit_rows_and_their_restore() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    app.run("embroidery.set", json!({"ids": [a], "part": "fill", "angle": 30})).unwrap();
+    app.run("embroidery.setEntryExit", json!({"id": a, "part": "fill", "entry": [30, 30]})).unwrap();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let entry = vocabulary::label("entry", None);
+    let set = text::fill(crate::et!("{section}: {setting}"), &[("section", entry), ("setting", crate::et!("Set"))]);
+    // A read-only field is a label: screen readers hear its words as its value.
+    assert!(drawn.nodes.iter().any(|(_, n)| n.value() == Some(set.as_str())), "{set}");
+    assert!(drawn.has(crate::et!("nearest")), "the exit's Auto: {:?}", drawn.words);
+    let before = steps(&app);
+    let restore = text::fill(crate::et!("Restore {setting}"), &[("setting", entry)]);
+    frame(&mut app, &ctx, time + 0.05, vec![drawn.click(&restore)]);
+    time += 0.1;
+    ready(&mut app, &ctx, &mut time);
+    let fill = info(&mut app, &[a])["objects"][0]["settings"]["fill"].clone();
+    assert_eq!((fill["entry"].clone(), fill["angle"].clone(), steps(&app)), (json!(null), json!(30.0), before + 1), "the entry alone, one step");
+}
+
+/// A pull whose two sides differ shows both in its blank field ("0.2 mm / 0.3 mm"), which screen
+/// readers hear as its placeholder.
+#[test]
+fn a_two_sided_pull_shows_both_sides() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    app.run("embroidery.set", json!({"ids": [a], "part": "fill", "pull": [0.2, 0.3]})).unwrap();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let pull = drawn.node(vocabulary::label("pull", None));
+    assert_eq!(pull.placeholder(), Some("0.2 mm / 0.3 mm"));
+}
+
+/// A click on the part switch shows that part; Restore from Fabric unsets a stroke's own values
+/// too.
+#[test]
+fn the_part_switch_and_restore_from_fabric_on_a_stroke() {
+    let ctx = context();
+    let (mut app, _, b) = app_with_art();
+    app.run("embroidery.set", json!({"ids": [b], "part": "stroke", "stitch": "satin", "pull": 0.3})).unwrap();
+    select(&mut app, &[b]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert_eq!(app.ui.embroidery_panel.part, Part::Fill);
+    frame(&mut app, &ctx, time + 0.05, vec![drawn.click(crate::et!("Stroke"))]);
+    time += 0.1;
+    ready(&mut app, &ctx, &mut time);
+    assert_eq!((app.ui.embroidery_panel.part, inspect(&app)["part"].clone()), (Part::Stroke, json!("stroke")));
+    let drawn = ready(&mut app, &ctx, &mut time);
+    frame(&mut app, &ctx, time + 0.05, vec![drawn.click("Restore from Fabric")]);
+    time += 0.1;
+    ready(&mut app, &ctx, &mut time);
+    let stroke = info(&mut app, &[b])["objects"][0]["settings"]["stroke"].clone();
+    assert_eq!((stroke["stitch"].clone(), stroke["pull"].clone()), (json!(null), json!(null)), "{stroke}");
+}
+
+/// Copy is a snapshot: Paste still gives the settings after the object copied is deleted.
+#[test]
+fn paste_after_the_copied_object_is_deleted() {
+    let (mut app, a, b) = app_with_art();
+    app.run("embroidery.set", json!({"ids": [a], "part": "fill", "angle": 30})).unwrap();
+    select(&mut app, &[a]);
+    app.run("embroidery.copySettings", json!({})).unwrap();
+    app.run("edit.clear", json!({})).unwrap();
+    select(&mut app, &[b]);
+    app.run("embroidery.pasteSettings", json!({})).unwrap();
+    assert_eq!(fill_setting(&mut app, b, "angle"), json!(30.0));
+}

@@ -118,6 +118,8 @@ fn stitch_preview_gate() {
     println!("{:<52} {:<6} {:>9} {:>9} {:>12} {:>11} {:>11}", "design", "tab", "drag p50", "drag p95", "upload/frame", "fresh p50", "fresh max");
     for (path, tab) in files.iter().flat_map(|p| crate::panels::embroidery::Tab::ALL.into_iter().map(move |t| (p, t))) {
         let ctx = egui::Context::default();
+        // The app's fonts: the status bar's readouts draw in its monospaced family.
+        crate::theme::install_fonts(&ctx);
         let mut session = Session::new();
         session.execute("document.open", &json!({"path": path.to_string_lossy()})).unwrap();
         let mut app = VectorcraftApp::new(session, Services::default());

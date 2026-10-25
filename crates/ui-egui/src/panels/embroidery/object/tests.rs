@@ -32,9 +32,11 @@ fn app_with_art() -> (VectorcraftApp, u64, u64) {
     (app, a, b)
 }
 
-/// What a frame drew: its words with their boxes, and the screen readers' nodes with their ids.
+/// What a frame drew: its words with their boxes, its outlined boxes with their outlines' colours,
+/// and the screen readers' nodes with their ids.
 struct Drawn {
     words: Vec<(String, Rect)>,
+    outlines: Vec<(Rect, egui::Color32)>,
     nodes: Vec<(egui::accesskit::NodeId, egui::accesskit::Node)>,
 }
 
@@ -49,9 +51,18 @@ impl Drawn {
 
     /// A click on the node named `name`, as a screen reader asks for one.
     fn click(&self, name: &str) -> Event {
+        self.ask(name, egui::accesskit::Action::Click)
+    }
+
+    /// The keyboard focus moved to the node named `name`, as a screen reader asks for it.
+    fn focus(&self, name: &str) -> Event {
+        self.ask(name, egui::accesskit::Action::Focus)
+    }
+
+    fn ask(&self, name: &str, action: egui::accesskit::Action) -> Event {
         let id = self.nodes.iter().find(|(_, n)| n.label() == Some(name)).map(|(id, _)| *id).unwrap_or_else(|| panic!("nothing is named {name:?}"));
         Event::AccessKitActionRequest(egui::accesskit::ActionRequest {
-            action: egui::accesskit::Action::Click,
+            action,
             target_node: id,
             target_tree: egui::accesskit::TreeId::ROOT,
             data: None,
@@ -75,17 +86,18 @@ fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<E
     });
     crate::scrub::end_frame(app, ctx);
     out.textures_delta.clear();
-    let mut words = vec![];
+    let (mut words, mut outlines) = (vec![], vec![]);
     let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
     while let Some(s) = pending.pop() {
         match s {
             Shape::Vec(v) => pending.extend(v),
             Shape::Text(t) => words.push((t.galley.text().to_string(), t.visual_bounding_rect())),
+            Shape::Rect(r) if r.stroke.width > 0.0 => outlines.push((r.rect, r.stroke.color)),
             _ => {}
         }
     }
     let nodes = out.platform_output.accesskit_update.map(|u| u.nodes).unwrap_or_default();
-    Drawn { words, nodes }
+    Drawn { words, outlines, nodes }
 }
 
 /// A context with the app's fonts, screen readers on.
@@ -534,4 +546,27 @@ fn a_read_commands_plan_keeps_the_scrub_live() {
     }
     step(&mut app, vec![button(at + vec2(40.0, 0.0), false)]);
     assert!(fill_setting(&mut app, a, "angle").is_number(), "the scrub set the angle");
+}
+
+/// ↺ and Trim After show the keyboard's focus with the accent's outline (the coral is the focus
+/// alone), only while they have it.
+#[test]
+fn the_keyboards_focus_is_drawn_on_restore_and_the_checkbox() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    app.run("embroidery.set", json!({"ids": [a], "part": "fill", "angle": 30})).unwrap();
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let t = Tokens::get(&ctx);
+    let ring = rows::focus_colour(&t, t.panel);
+    assert!(!drawn.outlines.iter().any(|(_, c)| *c == ring), "no outline without the focus");
+    let restore = text::fill(crate::et!("Restore {setting}"), &[("setting", vocabulary::label("angle", Some("tatami")))]);
+    for name in [restore.as_str(), crate::et!("Trim the thread after the object")] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![drawn.focus(name)]);
+        time += 0.05;
+        let focused = frame(&mut app, &ctx, time, vec![]);
+        assert!(focused.outlines.iter().any(|(_, c)| *c == ring), "{name}: the focus's outline");
+    }
 }

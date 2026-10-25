@@ -7,8 +7,8 @@
 //!   and after ↺ what it would be otherwise ("fabric 0,20").
 //! - **An inherited value** is dim, with a badge naming where it comes from (auto, fabric, machine,
 //!   default).
-//! - **The accent outline is the focus alone**: the field being edited (the project owner's
-//!   choice, 2026-10-23).
+//! - **The accent outline is the focus alone**: the field being edited, ↺ or a checkbox with the
+//!   keyboard (the project owner's choice, 2026-10-23).
 //! - **Objects that differ**: a blank field (a choice says "Mixed"), ↺ unsetting all of them, and
 //!   after it how many set it.
 //! - **Colours** are the theme's tokens, each moved only as far as it needs to read: the bar by 3:1
@@ -61,6 +61,10 @@ const BADGE_RADIUS: u8 = 3;
 /// ↺'s side, and how far its icon sits inside it, points.
 const RESTORE: f32 = 18.0;
 const RESTORE_INSET: f32 = 3.0;
+/// The keyboard focus's outline on ↺ and a checkbox: its weight and how far it stands off the box,
+/// points (the accent's, as the Art | Stitches switch draws it: the coral is the focus alone).
+const FOCUS_WIDTH: f32 = 1.0;
+const FOCUS_GAP: f32 = 2.0;
 /// A checkbox's box, the room between it and its words, the least height of its row and its mark's
 /// weight, points: as the app's checkboxes draw them.
 const CHECK_BOX: f32 = 13.0;
@@ -436,7 +440,7 @@ fn badge(ui: &mut Ui, words: &str, room: f32, tip: &str) {
     resp.on_hover_text(if tip.is_empty() { words } else { tip });
 }
 
-/// ↺, a button screen readers call `name`, its tooltip `tip`.
+/// ↺, a button screen readers call `name`, its tooltip `tip`; outlined while it has the keyboard.
 fn restore(ui: &mut Ui, name: &str, tip: &str) -> egui::Response {
     let t = Tokens::get(ui.ctx());
     let (rect, resp) = ui.allocate_exact_size(vec2(RESTORE, RESTORE), Sense::click());
@@ -444,6 +448,7 @@ fn restore(ui: &mut Ui, name: &str, tip: &str) -> egui::Response {
         ui.painter().rect_filled(rect, CornerRadius::same(BADGE_RADIUS), t.hover);
     }
     crate::icons::paint(ui, "rotate-ccw", rect.shrink(RESTORE_INSET), t.icon);
+    focus_ring(ui, &resp, rect, t.panel);
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), name));
     resp.on_hover_text(tip)
 }
@@ -464,6 +469,7 @@ pub(crate) fn check(ui: &mut Ui, words: &str, value: Option<bool>) -> bool {
     ui.painter().rect_filled(bx, CornerRadius::same(2), if checked { t.accent_strong } else { t.input });
     let border = if resp.hovered() { t.text } else { t.button_border };
     ui.painter().rect_stroke(bx, CornerRadius::same(2), egui::Stroke::new(1.0, border), egui::StrokeKind::Inside);
+    focus_ring(ui, &resp, bx.expand(FOCUS_GAP), t.panel);
     let mark = egui::Stroke::new(CHECK_MARK, if checked { Color32::WHITE } else { t.text });
     match value {
         Some(true) => {
@@ -481,6 +487,23 @@ pub(crate) fn check(ui: &mut Ui, words: &str, value: Option<bool>) -> bool {
         None => egui::WidgetInfo::labeled(egui::WidgetType::Checkbox, ui.is_enabled(), words),
     });
     resp.clicked()
+}
+
+/// The keyboard focus's outline around `rect` while `resp` has it (the memory's focus, as the
+/// fields take it), in the accent, read by 3:1 on `back`.
+fn focus_ring(ui: &Ui, resp: &egui::Response, rect: Rect, back: Color32) {
+    if !ui.memory(|m| m.has_focus(resp.id)) {
+        return;
+    }
+    let t = Tokens::get(ui.ctx());
+    let colour = marks::readable(t.accent, &[back], t.dark);
+    ui.painter().rect_stroke(rect, CornerRadius::same(BADGE_RADIUS), egui::Stroke::new(FOCUS_WIDTH, colour), egui::StrokeKind::Inside);
+}
+
+/// The colour of the keyboard focus's outline on `back`, as [`focus_ring`] draws it.
+#[cfg(test)]
+pub(crate) fn focus_colour(t: &Tokens, back: Color32) -> Color32 {
+    marks::readable(t.accent, &[back], t.dark)
 }
 
 /// The colour of a field's value: strong for a value of its own, else dim, read by 4.5:1 on the

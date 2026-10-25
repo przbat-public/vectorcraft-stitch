@@ -235,8 +235,9 @@ tabs on OK, one undo step (`command.batch {label: "Document Setup"}`); Cancel ch
   preset this version doesn't know, or gives other values now; ↺ there sends `null`, which restores
   the copy's value.
 - **The thread**: its weight, with the rows' spacing it gives the fabric's tatami (the planner's
-  own formula), and the palette machine files number (Janome's for JEF, Brother's for PES, not in
-  the mockup: note 07's recommendation). **The machine and file**: jumps, cuts, the shortest
+  own formula), and the palette machine files number (Janome's for JEF, Brother's for PES; not in
+  the mockup, shown as it decides how a machine file numbers its threads: a choice taken under the
+  owner's "accept the rest", FORK.md's register). **The machine and file**: jumps, cuts, the shortest
   stitch, satin splits, the speed the time is estimated at. **The sewing order**: one thread's
   objects joined. An opened file's start point and design name show when the document has them,
   with ↺ to unset them. A value set in the document has the bar and ↺ (back to the default); one

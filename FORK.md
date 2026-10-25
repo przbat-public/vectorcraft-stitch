@@ -459,14 +459,19 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     `vectorcraft-cli`'s `main.rs`: `bench` prints the preview's line;
   - `apps/vectorcraft/src/prefs_dir.rs`: `mod stitch_profile`; `profile.rs`'s `prefs_path`: the
     path passed through `stitch_profile::own` (the fork's settings folder).
-- **The embroidery settings' hooks in upstream files** (the Embroidery panel's Object tab; the
-  fork's own code is `panels/embroidery/object.rs` and `embroidery/rows.rs`, `fields.rs`,
-  `vocabulary.rs`), each marked "VectorCraft Stitch":
+- **The embroidery settings' hooks in upstream files** (the Embroidery panel's Object tab and
+  Document Setup's Embroidery tab; the fork's own code is `panels/embroidery/object.rs` and
+  `embroidery/rows.rs`, `fields.rs`, `vocabulary.rs`, `setup_tab.rs`), each marked "VectorCraft
+  Stitch":
   - `ui-egui/src/widgets.rs` and `scrub.rs`: a field's look and number format chosen by its caller
     (`Look`, `NumberFormat`; `number_field`, `recessed_text_look`, `combo_look`, `step_value_by`,
     `scrub::field_stepped`), so that an embroidery field marks a value set on its objects, writes
     the interface language's decimal mark and steps in its unit's size; every other field passes
     the plain look and format, unchanged.
+  - `ui-egui/src/dialogs/document_setup.rs`: the Embroidery tab (`embroidery/setup_tab.rs`): its
+    name in `TABS`, its fields added in `open`, its body as the last arm of `body`'s `match`, and
+    `confirm` handing OK to it first (one `command.batch` with `document.setup`).
+  - `menus.rs`: the `UI_COMMANDS` row `embroidery.documentSetup` (Embroidery Settings…).
 - **The fork's app identity in upstream's packaging** (Decisions register, 2026-10-24), to keep
   when resolving: in `packaging/macos/Info.plist.in` the name, display name and identifier (the
   document types stay upstream's); `APP_NAME` in `packaging/macos/package.sh`; `APP` in

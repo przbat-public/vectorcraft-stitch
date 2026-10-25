@@ -433,7 +433,11 @@ shows as `stitchPreview.object` (`ids`, `part`, and its `rows`: each one's `key`
 it, `source`, whether every object `set` it, and whether they differ, `mixed`). `embroidery.copySettings {}`
 remembers the one object selected (a path or a compound path), answering `{source}`, and
 `embroidery.pasteSettings {part?}` gives the selected objects its settings as they are then, as
-`embroidery.copyFrom` (its reply), in one undo step: the panel's ≡ menu's Copy and Paste Embroidery Settings. The panel never plans:
+`embroidery.copyFrom` (its reply), in one undo step: the panel's ≡ menu's Copy and Paste Embroidery Settings.
+`embroidery.documentSetup {}` opens Document Setup at its Embroidery tab, whose fields are flat (`embroidery.fabric`,
+`embroidery.tatami.pull`, `embroidery.machine.jumpLength`, `embroidery.applyFabric: [key…]`…): set them with
+`ui.dialog.set` and apply them with `ui.dialog.confirm`, one undo step with the dialog's other fields
+(`docs/embroidery.md` › Document Setup › Embroidery). The panel never plans:
 it asks the stitch preview for the plan and its tab's replies, so it shows what `ui.inspect.stitchPreview` says. In
 the Check tab, Show selects a rule's objects (or one hit's) and zooms to its hits with `view.zoomTo`;
 `embroidery.showFinding {rule, hit?}` does the same as a command, on the check the tab shows for the document as it

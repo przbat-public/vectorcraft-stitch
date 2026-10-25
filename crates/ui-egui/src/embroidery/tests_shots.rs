@@ -16,6 +16,8 @@ use crate::{Services, VectorcraftApp};
 
 /// The window, points, and its pixels a point: a laptop's display.
 const WINDOW: [f32; 2] = [1440.0, 900.0];
+/// A small window, points: Document Setup's Embroidery tab in one column.
+const NARROW_WINDOW: [f32; 2] = [800.0, 760.0];
 const PIXELS_PER_POINT: f32 = 2.0;
 /// Frames each picture is given to settle (fonts, the plan, the canvas's tiles), and the pause
 /// between them, milliseconds: the background work they wait for.
@@ -46,10 +48,15 @@ fn badge() -> (VectorcraftApp, u64) {
 
 /// The window drawn after `prepare`, saved as `name`.png in `dir`.
 fn shot(dir: &Path, name: &str, prepare: impl FnOnce(&mut VectorcraftApp, u64)) {
+    shot_sized(dir, name, WINDOW, prepare);
+}
+
+/// [`shot`] in a window of `size` points.
+fn shot_sized(dir: &Path, name: &str, size: [f32; 2], prepare: impl FnOnce(&mut VectorcraftApp, u64)) {
     let (mut app, disc) = badge();
     prepare(&mut app, disc);
     let mut harness =
-        egui_kittest::Harness::builder().with_size(vec2(WINDOW[0], WINDOW[1])).with_pixels_per_point(PIXELS_PER_POINT).wgpu().build_ui_state(
+        egui_kittest::Harness::builder().with_size(vec2(size[0], size[1])).with_pixels_per_point(PIXELS_PER_POINT).wgpu().build_ui_state(
             |ui, app: &mut VectorcraftApp| {
                 app.logic(ui.ctx());
                 app.ui(ui);
@@ -93,5 +100,22 @@ fn embroidery_shots() {
         // The interface's language, for this app alone (as the language tests set it).
         app.session.prefs.interface_language = "pl".into();
         disc(app, id);
+    });
+    // Document Setup's Embroidery tab: the knit chosen, its stitch length changed, the disc's own
+    // pull counted in the bar.
+    let setup = |app: &mut VectorcraftApp, id: u64| {
+        app.run("embroidery.setup", json!({"fabric": "cotton"})).unwrap();
+        app.run("embroidery.set", json!({"ids": [id], "part": "fill", "pull": 0.35})).unwrap();
+        app.run("file.documentSetup", json!({})).unwrap();
+        let d = app.ui.dialog.as_mut().unwrap();
+        d.fields.insert("tab".into(), json!(crate::embroidery::setup_tab::TAB));
+        crate::embroidery::setup_tab::choose_value(app, "fabric", json!("stretchKnit"));
+        crate::embroidery::setup_tab::choose_value(app, "tatami.length", json!(3.5));
+    };
+    shot(&dir, "document-setup-embroidery", setup);
+    shot_sized(&dir, "document-setup-embroidery-narrow", NARROW_WINDOW, setup);
+    shot(&dir, "document-setup-embroidery-polish", |app, id| {
+        app.session.prefs.interface_language = "pl".into();
+        setup(app, id);
     });
 }

@@ -238,3 +238,28 @@ fn a_choice_grows_for_its_words_and_tips_them_when_cut() {
     }
     assert!(tipped, "whole in the tooltip");
 }
+
+/// The wheel turned over a focused field steps it by its format's step: a line's notch up is a
+/// tenth of a millimetre.
+#[test]
+fn the_wheel_steps_a_field_in_its_own_size() {
+    /// One frame of the field showing 0.4 → what it gives, and its centre.
+    fn field(ctx: &egui::Context, time: f64, events: Vec<Event>) -> (Option<f64>, Pos2) {
+        let format = NumberFormat { step: MM_STEP, ..plain("mm", 2) };
+        let mut got = (None, Pos2::ZERO);
+        frame(ctx, time, events, &mut |ui| {
+            got.0 = fields::number_field(ui, "f", Some(0.4), &format, &Look::default(), 90.0, &ANY);
+            got.1 = ui.min_rect().center();
+        });
+        got
+    }
+    let ctx = context();
+    let at = field(&ctx, 0.0, vec![]).1;
+    let button = |pressed| Event::PointerButton { pos: at, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    field(&ctx, 0.1, vec![Event::PointerMoved(at), button(true)]);
+    field(&ctx, 0.2, vec![button(false)]);
+    let wheel =
+        Event::MouseWheel { unit: egui::MouseWheelUnit::Line, delta: vec2(0.0, 1.0), phase: egui::TouchPhase::Move, modifiers: Modifiers::NONE };
+    let got = field(&ctx, 0.3, vec![Event::PointerMoved(at), wheel]).0;
+    assert!(got.is_some_and(|v| (v - 0.5).abs() < 1e-9), "a notch up: {got:?}");
+}

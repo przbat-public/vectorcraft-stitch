@@ -875,3 +875,30 @@ fn the_hint_moves_into_restores_tooltip_where_the_panel_is_narrow() {
     assert!(!narrow.words.iter().any(|(w, _)| *w == hint), "not after ↺ where there is no room");
     assert_eq!(narrow.node(&restore).description(), Some(hint.as_str()), "in ↺'s tooltip and description");
 }
+
+/// A millimetre field scrubs in tenths of a millimetre (two points of drag a step, as the angle's
+/// degrees), and ↑ in a focused field steps it once, one undo step.
+#[test]
+fn a_millimetre_field_steps_in_tenths() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    app.run("embroidery.set", json!({"ids": [a], "part": "fill", "spacing": 0.4, "angle": 30})).unwrap();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let at = words_at(&ready(&mut app, &ctx, &mut time), "Row spacing");
+    // Moves past egui's drag threshold in the first, as the angle's scrub test drags.
+    drag(&mut app, &ctx, &mut time, at, 40.0, false, a);
+    let spacing = fill_setting(&mut app, a, "spacing").as_f64().unwrap();
+    assert!((spacing - 2.4).abs() < 1e-9, "twenty steps of a tenth: {spacing}");
+    let before = steps(&app);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let field = field_beside(&drawn, vocabulary::label("angle", None));
+    let button = |pressed| Event::PointerButton { pos: field, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    let up = Event::Key { key: Key::ArrowUp, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE };
+    for events in [vec![Event::PointerMoved(field), button(true)], vec![button(false)], vec![up]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, events);
+    }
+    ready(&mut app, &ctx, &mut time);
+    assert_eq!((fill_setting(&mut app, a, "angle"), steps(&app)), (json!(31.0), before + 1), "a degree up, one undo step");
+}

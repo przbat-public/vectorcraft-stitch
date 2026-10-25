@@ -5122,7 +5122,8 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   options it takes only the stretch of blocks to list: any other key, such as `format`, is refused.
 - `embroidery.setTrimAfter {on?, ids?}` asks for the thread to be cut after each object (or with `on: false` for no
   cut, a file's own included); left out, `on` toggles. It needs a selection or `ids`, answers `{on, changed}`, and
-  reports an id that names no object as a missing object.
+  reports an id that names no object as a missing object. What isn't sewn (type, images, placed files, guides, live
+  objects) is passed over, and refused alone.
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,

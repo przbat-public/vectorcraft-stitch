@@ -661,3 +661,24 @@ fn a_typed_text_that_is_no_number_is_said() {
     let words = text::fill(crate::et!("Not a number: {text}"), &[("text", "0,35")]);
     assert!(app.ui.status.contains(&words), "{:?}", app.ui.status);
 }
+
+/// Trim After is about what is sewn: a path marked beside type shows ticked, not mixed, and a click
+/// sets nothing on the type.
+#[test]
+fn trim_after_leaves_out_what_isnt_sewn() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    let t = app.run("text.create", json!({"x": 20, "y": 150, "text": "Haft"})).unwrap()["id"].as_u64().unwrap();
+    app.run("embroidery.setTrimAfter", json!({"ids": [a], "on": true})).unwrap();
+    select(&mut app, &[a, t]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let name = crate::etn!(2, "Trim the thread after the object", "Trim the thread after the objects");
+    assert_eq!(drawn.node(&name).toggled(), Some(egui::accesskit::Toggled::True), "the type isn't counted");
+    frame(&mut app, &ctx, time + 0.05, vec![drawn.click(&name)]);
+    time += 0.1;
+    ready(&mut app, &ctx, &mut time);
+    assert_eq!(info(&mut app, &[a])["trimAfter"]["value"], json!(false));
+    let n = app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(t)).unwrap().extras().embroidery.clone();
+    assert!(n.is_none(), "nothing set on the type");
+}

@@ -124,6 +124,20 @@ pub(crate) fn visit_takers<'a>(n: &'a Node, take: &mut Vec<&'a Node>, skip: &mut
     skip.push((n.id, why));
 }
 
+/// Whether the cut after `n` means something: it is sewn, or holds what is (a path or a compound
+/// path, stitches from a file, a symbol's instance, a group or a layer); type, an image, a placed
+/// file, a guide or a live object isn't sewn, so isn't cut after.
+pub(crate) fn cut_after_sewn(n: &Node) -> bool {
+    matches!(
+        n.kind,
+        NodeKind::Path { guide: false, .. }
+            | NodeKind::Compound { .. }
+            | NodeKind::SymbolInstance { .. }
+            | NodeKind::Group { .. }
+            | NodeKind::Layer { .. }
+    )
+}
+
 /// The one object `id` stands for as the settings commands take it (its compound path, for a
 /// member of one); refused when it takes no settings, or is a group of several.
 fn one_taker(d: &Document, id: NodeId) -> Result<NodeId> {

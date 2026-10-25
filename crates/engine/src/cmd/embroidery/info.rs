@@ -305,13 +305,14 @@ fn stored(p: &PartSettings) -> Map<String, Value> {
     PartKey::ALL.into_iter().filter_map(|k| p.get(k).map(|v| (k.name().to_string(), value_json(&v)))).collect()
 }
 
-/// The cut after the objects as given (a group as one, as `embroidery.setTrimAfter` marks it; a
-/// run of stitches opened from a file by its file's cut): whether they ask for it, how many do,
-/// and whether they differ.
+/// The cut after the objects as given that are sewn (a group as one, as `embroidery.setTrimAfter`
+/// marks it; a run of stitches opened from a file by its file's cut; type, images and the like left
+/// out, as the command passes them over): whether they ask for it, how many do, and whether they
+/// differ.
 fn trim_after(doc: &Document, ids: &[NodeId]) -> Merged<bool> {
     let mut seen = HashSet::new();
     let (mut given, mut set) = (0usize, 0usize);
-    for n in ids.iter().filter(|id| seen.insert(**id)).filter_map(|id| doc.node(*id)) {
+    for n in ids.iter().filter(|id| seen.insert(**id)).filter_map(|id| doc.node(*id)).filter(|n| super::objects::cut_after_sewn(n)) {
         given += 1;
         set += usize::from(n.extras().embroidery.as_deref().is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after)));
     }

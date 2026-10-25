@@ -159,7 +159,9 @@ the fox an entry 62 too), the fox's JEF its date; the VP3 files lose nothing.
 by default) marks objects or groups whose thread is cut after their last stitch, however near the
 next object starts, as Ink/Stitch's and Wilcom's "Trim After" do, in every format. Unmarked, only a
 jump longer than `trimLength` is cut; off also takes away the cut a run of stitches opened from a
-file had after it. Left out, `on` toggles: on, unless every object is marked already. The mark is
+file had after it. Left out, `on` toggles: on, unless every object is marked already. Only what is
+sewn is marked (type, images, placed files, guides and live objects are passed over, and refused
+alone), and `embroidery.info`'s `trimAfter` counts those alone. The mark is
 saved in `.vectorcraft` files (`NodeExtras::embroidery`). The Embroidery panel's Object tab sets
 it on the selection (Trim the thread after the object, a dash where the objects differ), the
 command palette too (Embroidery Trim After), and MCP and the control channel with ids; an id that

@@ -816,6 +816,24 @@ fn trim_after_takes_ids_in_place_of_the_selection() {
     assert!(e.contains("`ids`"), "{e}");
 }
 
+/// Trim After is about what is sewn: type given beside a path is passed over, its state
+/// isn't counted in `embroidery.info`'s, and type alone is refused.
+#[test]
+fn trim_after_passes_over_what_isnt_sewn() {
+    let mut s = blank();
+    let id = rect(&mut s, "#2233cc", 20.0, 20.0, 30.0, 30.0);
+    let text = s.execute("text.create", &json!({"x": 20, "y": 150, "text": "Haft"})).unwrap()["id"].as_u64().unwrap();
+    s.execute("embroidery.setTrimAfter", &json!({"ids": [id], "on": true})).unwrap();
+    let info = s.execute("embroidery.info", &json!({"ids": [id, text]})).unwrap();
+    assert_eq!((info["trimAfter"]["value"].clone(), info["trimAfter"]["mixed"].clone()), (json!(true), json!(false)), "the type isn't counted");
+    let r = s.execute("embroidery.setTrimAfter", &json!({"ids": [id, text], "on": true})).unwrap();
+    assert_eq!(r["changed"], json!(0), "the path already asks for it; the type is passed over");
+    let n = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(text)).unwrap().extras().embroidery.clone();
+    assert!(n.is_none(), "nothing set on the type");
+    let e = s.execute("embroidery.setTrimAfter", &json!({"ids": [text], "on": true})).unwrap_err().to_string();
+    assert!(e.contains("none of the objects given is sewn"), "{e}");
+}
+
 /// A fill whose paint isn't sewn is passed by before any path operation runs on its area: a
 /// negative `expand` that would leave nothing of it doesn't warn about art that was never to be
 /// sewn.

@@ -387,6 +387,11 @@ fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
     if let Some(missing) = ids.iter().find(|id| d.node(**id).is_none()) {
         return Err(EngineError::NoNode(*missing));
     }
+    // Only what is sewn is cut after: type, images and the like are passed over.
+    let ids: Vec<NodeId> = ids.into_iter().filter(|id| d.node(*id).is_some_and(objects::cut_after_sewn)).collect();
+    if ids.is_empty() {
+        return Err(bad(C, "none of the objects given is sewn (type, images, placed files and guides aren't), so none is cut after"));
+    }
     // Marked: asked for a cut after it, or a run of stitches whose file had one.
     let marked = |e: Option<&Embroidery>| e.is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after));
     let on = on.unwrap_or_else(|| !ids.iter().all(|id| marked(d.node(*id).and_then(|n| n.extras().embroidery.as_deref()))));

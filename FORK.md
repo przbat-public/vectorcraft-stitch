@@ -434,7 +434,7 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   - `menus.rs`: View › Stitch Preview and its options after Pixel Preview, the `checked` and
     `enabled` hooks, Window › Embroidery, the `UI_COMMANDS` rows (`ui.embroideryPanel`,
     `view.zoomTo`, `view.checkMarks`, `embroidery.showFinding`, `embroidery.nextHit`,
-    `embroidery.previousHit`), the
+    `embroidery.previousHit`, `embroidery.copySettings`, `embroidery.pasteSettings`), the
     `view.zoomTo` arm (into `embroidery::zoom`), and `panels::embroidery::command` before the dock's
     commands;
   - `control.rs`: `ui.set {stitchPreview}`, `ui.render {stitchPreview}`, `ui.inspect`'s
@@ -459,6 +459,14 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     `vectorcraft-cli`'s `main.rs`: `bench` prints the preview's line;
   - `apps/vectorcraft/src/prefs_dir.rs`: `mod stitch_profile`; `profile.rs`'s `prefs_path`: the
     path passed through `stitch_profile::own` (the fork's settings folder).
+- **The embroidery settings' hooks in upstream files** (the Embroidery panel's Object tab; the
+  fork's own code is `panels/embroidery/object.rs` and `embroidery/rows.rs`, `fields.rs`,
+  `vocabulary.rs`), each marked "VectorCraft Stitch":
+  - `ui-egui/src/widgets.rs` and `scrub.rs`: a field's look and number format chosen by its caller
+    (`Look`, `NumberFormat`; `number_field`, `recessed_text_look`, `combo_look`, `step_value_by`,
+    `scrub::field_stepped`), so that an embroidery field marks a value set on its objects, writes
+    the interface language's decimal mark and steps in its unit's size; every other field passes
+    the plain look and format, unchanged.
 - **The fork's app identity in upstream's packaging** (Decisions register, 2026-10-24), to keep
   when resolving: in `packaging/macos/Info.plist.in` the name, display name and identifier (the
   document types stay upstream's); `APP_NAME` in `packaging/macos/package.sh`; `APP` in

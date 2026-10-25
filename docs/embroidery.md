@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-25 · **Change:** the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Architecture › Planning service, measured again; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-25 · **Change:** the Embroidery panel's Object tab: the selected objects' settings by part, where each value comes from, set as commands (Using it › Seeing the stitches and the sewing order, Settings on objects, Cutting the thread after an object; Architecture › Planning for the stitch preview; Files); earlier: the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Architecture › Planning service, measured again; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -160,17 +160,19 @@ by default) marks objects or groups whose thread is cut after their last stitch,
 next object starts, as Ink/Stitch's and Wilcom's "Trim After" do, in every format. Unmarked, only a
 jump longer than `trimLength` is cut; off also takes away the cut a run of stitches opened from a
 file had after it. Left out, `on` toggles: on, unless every object is marked already. The mark is
-saved in `.vectorcraft` files (`NodeExtras::embroidery`). No menu or panel sets it yet: the command
-palette runs it on the selection (Embroidery Trim After), and MCP and the control channel with
-ids; an id that names no object is reported as a missing object.
+saved in `.vectorcraft` files (`NodeExtras::embroidery`). The Embroidery panel's Object tab sets
+it on the selection (Trim the thread after the object, a dash where the objects differ), the
+command palette too (Embroidery Trim After), and MCP and the control channel with ids; an id that
+names no object is reported as a missing object.
 
 **Settings on objects.** Each object keeps settings for its fills and for its strokes (one set
 for all of its fills, one for all its strokes), which beat an export's options, the document's
 settings and the defaults (Settings and where their values come from, below). They are saved in
 the `.vectorcraft` file with the object; upstream VectorCraft drops them when it saves the file
-(Saved by upstream VectorCraft, above). Four commands set
-them; no panel does yet (the Object tab comes next), so the command palette runs them on the
-selection, and MCP and the control channel with ids:
+(Saved by upstream VectorCraft, above). The Embroidery panel's Object tab sets them on the
+selection ([Seeing the stitches and the sewing order](#seeing-the-stitches-and-the-sewing-order),
+below) through four commands, which the command palette also runs on the selection, and MCP and
+the control channel with ids:
 
 - `embroidery.set {ids?, part, …}` sets values of a part (`fill` or `stroke`) under the
   vocabulary's names (`stitch`, `spacing`, `length`, `angle`, `pull`, `pullPercent`, `push`,
@@ -183,7 +185,8 @@ selection, and MCP and the control channel with ids:
   ends, in document points (moved and turned with the object).
 - `embroidery.copyFrom {source, ids?, part?, keys?}` gives the objects the source's values, set or
   unset, as `embroidery.set` would take them (a newer version's value, or one out of range, is
-  passed over and listed, `passedOver`): the Object tab's Copy and Paste settings.
+  passed over and listed, `passedOver`): the Embroidery panel's Copy and Paste Embroidery
+  Settings.
 
 `embroidery.info {ids?, plan?, …}` reads them, without planning: each object's settings as kept, and
 for each part every value it is planned with, merged over the objects (the value they share, or
@@ -480,7 +483,33 @@ as Melco's checker reads it, on each object's settings, it flags none.
   options (`view.stitchPreview.jumps`, `needlePoints`, `artwork`); `embroidery.render` draws the
   same picture headless.
 - **The Embroidery panel** (Window › Embroidery, docked beside Properties, Layers and Libraries) has
-  two tabs. **Sewing Order** lists the thread blocks in the order they are sewn, each object's fill
+  three tabs. **Object**, the first, shows how the selected objects are sewn and sets their
+  settings, their fills' or their strokes' (the Fill | Stroke switch), with their stitches in the
+  plan shown in its header. It never waits for a plan, so a part set not to be sewn, or a design
+  too large to plan, can always be set back. A row for each setting: the stitch, its angle, spacing
+  and length, narrow parts as satin; the underlay; pull compensation and expansion (any other an
+  object holds shows too); then the entry and exit points (Auto, the point nearest the needle, until
+  something sets them), Trim After, and a footer with the document's fabric and thread. A value set
+  on the objects has an accent bar, strong text and ↺, which unsets it (its tooltip, or the words
+  after it where there is room, say what it would be then); an inherited value is dim, with a badge
+  naming where it comes from (auto, fabric, machine, default); where the objects differ the field
+  is blank, and says how many set it. Auto says what it chose ("Auto: tatami"). Type a value (in the
+  interface language's decimal mark; a comma language reads a point too), step it with ↑ and ↓ or
+  the wheel (Shift ten steps, Ctrl or Cmd a tenth), drag its label, or choose one: each edit is one
+  undo step (`embroidery.set`; choosing what the objects would inherit unsets theirs). Restore from
+  Fabric unsets the selection's own values, the points and Trim After kept (`embroidery.reset`).
+  The panel's ≡ menu copies one object's settings and pastes them onto others (Copy and Paste
+  Embroidery Settings, `embroidery.copySettings` and `pasteSettings`, by `embroidery.copyFrom`).
+  Where the panel is narrow, long labels wrap beside their fields and words a field can't hold are
+  cut short; only a very narrow panel puts each label above its field.
+
+  ![The Object tab: a red disc selected, its fill's settings, an angle and a pull compensation of its own](images/embroidery-object-tab.png)
+
+  ![Three objects selected: the angle and the pull blank where they differ, "1 of 3 set"](images/embroidery-object-tab-several.png)
+
+  ![The Object tab in Polish: long labels wrapped beside their fields](images/embroidery-object-tab-polish.png)
+
+  **Sewing Order** lists the thread blocks in the order they are sewn, each object's fill
   or stroke a row; a row hovered stands its stitches out on the canvas, a click selects its object.
   Drag a row to sew its object earlier or later (the hint under the list says where it goes, or why
   it can't), or use a selected row's ↑ and ↓ and the panel's ≡ menu: Sew Earlier, Sew Later, Sew
@@ -1871,7 +1900,7 @@ comes; one texture holds it, dropped when the moment ends.
 **The Embroidery panel** (`ui-egui/src/panels/embroidery/`, Window › Embroidery). The first time it
 docks as the last tab beside Properties, Layers and Libraries, as the mockups draw it (the project
 owner's choice), turning the dock into the shared layout once; after that it shows where it was
-left (`ui.embroideryPanel {tab?, format?}` too, the format the Check tab checks for). It is no `DockTab` of its own, so the preferences keep
+left (`ui.embroideryPanel {tab?, part?, format?}` too, the part the Object tab shows and the format the Check tab checks for). It is no `DockTab` of its own, so the preferences keep
 upstream's shape. They live in a folder of the fork's own, `VectorCraft Stitch` (`vectorcraft-stitch`
 on Linux), beside VectorCraft's, first made from a copy of VectorCraft's settings (the project
 owner's choice; `apps/vectorcraft/src/stitch_profile.rs`): upstream resets a dock layout that holds
@@ -1879,12 +1908,29 @@ a panel it doesn't know (its `panel_docking::valid`), so a shared file would los
 in both apps. An upstream `valid()` that dropped the ids it doesn't know, rather than the whole
 layout, would let the two share it again, and would keep an older build's layout when a newer one
 adds a panel (a suggestion for upstream). Its
-tabs are Sewing Order and Check (Object and Stitches come with the PRs that build them), the open
-one kept with the interface's state and read leniently. It never plans: drawing it asks the stitch
+tabs are Object, Sewing Order and Check (Stitches comes with the PR that builds it), the open one
+kept with the interface's state and read leniently. It never plans: drawing it asks the stitch
 preview for the plan and its tab's replies. Its states: no document; not planned yet (blank for
 0.1 s, so a quick plan never flashes a busy mark); planning; nothing to sew (the plan's own warnings);
 can't be planned (the reason); ready; updating (the last result, and "Updating…" once the newer one
 takes over 0.1 s).
+
+**The Object tab** (`panels/embroidery/object.rs`) reads `embroidery.info` without planning
+(`Session::embroidery_info`), once per document snapshot and selection, held by the snapshot's
+pointer, so its fields change the frame an edit lands; and the document's settings
+(`embroidery.settings`) for its footer. Its stitch count is the selection's stitches in the plan the
+stitch preview shows, counted once per plan (`info::selection_sewing`, a walk of the plan's units).
+Its words come from the engine's ids (`embroidery/vocabulary.rs`), never from its English; each
+field is ranged as the command takes it (`part_field`), its numbers written in the interface
+language's decimal mark (`embroidery/fields.rs`). A row (`embroidery/rows.rs`) is measured on its
+words: the label column, the field and what follows it on one line where they fit; where they don't, the hint after ↺ goes to its tooltip, then
+labels wrap down to their longest word, then fields narrow to 88 points; only then do labels go
+above their fields. Screen readers hear each field by its label (with its section's where two read
+alike, "Underlay: Type") and where its value comes from as its description. Its edits run after it
+is drawn, for the objects its fields were drawn for, so a click elsewhere that commits a typed
+value and selects another object doesn't move the value. A drag on a label is the app's scrub: one
+undo step for the drag, Escape restoring the value. `ui.inspect`'s `stitchPreview.object` reports
+its objects, part and rows.
 
 **The Sewing order tab** (`panels/embroidery/order.rs`) reads `embroidery.sequence`'s reply back
 into the typed model (`cmd::embroidery::order::SewingOrder`, which the reply is serialised from),
@@ -2211,11 +2257,13 @@ Public documentation, cited per claim in the crate:
   (Art | Stitches), `notice.rs`, `counters.rs` (the status bar's), `check_marks.rs` (the check's
   rings), `menu.rs` (View › Stitch Preview and its options), `zoom.rs` (`view.zoomTo`), `marks.rs`,
   `numbers.rs` and `text.rs` (severity marks, numbers in the interface language, filled
-  templates); `tests_preview.rs` (the scheduler end to end), `tests_languages.rs` (every language),
-  `tests_gate.rs` (the third gate, by hand).
+  templates), `rows.rs`, `fields.rs` and `vocabulary.rs` (a settings row, its numbers, the settings'
+  words); `tests_preview.rs` (the scheduler end to end), `tests_languages.rs` (every language),
+  `tests_gate.rs` (the third gate and the Object tab's scrub, by hand), `tests_shots.rs` (the
+  pictures, by hand).
 - `crates/ui-egui/src/panels/embroidery/` — the Embroidery panel: `mod.rs` (the tabs, states and ≡
-  menu, `ui.embroideryPanel`), `order.rs` (Sewing Order), `check.rs` (Check), `lengths.rs` (the
-  stitch-length chart).
+  menu, `ui.embroideryPanel`), `object.rs` (Object), `order.rs` (Sewing Order), `check.rs` (Check),
+  `lengths.rs` (the stitch-length chart).
 - `crates/testkit/src/embroidery.rs` — documents for tests, built by commands, and the JSON a
   newer version might write (`arb_json`), which `crates/format/tests/prop_embroidery.rs` opens and
   saves back;
@@ -2251,6 +2299,7 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-25 | minor | The Embroidery panel's Object tab: the selected objects' settings by part, read without a plan, where each value comes from (a bar for a value of their own, a badge for an inherited one, blank and counted where they differ), Auto's choices in words, entry and exit, Trim After, Restore from Fabric, Copy and Paste Embroidery Settings; each edit one undo step; rows fitted to their words in every language; the scrub measured. |
 | 2026-10-24 | minor | An expanded object's strokes that nothing reshapes are sewn along their path, by their own settings, not outlined; a reshaped stroke's running or satin stitch is said not to follow its path. |
 | 2026-10-25 | minor | The settings PR's review round: what objects nested in an expanded group, cut into pieces or expanded through their outlines keep; unset rows turning with each object's own box (a mirror's effect said exactly); `embroidery.info` reporting each part as the walk sews it, or why not, which keys a stitch uses, and only what this version reads as set; typed replies for `info` and `settings`; `copyFrom` copying only what `set` takes, its undo step a paste; `applyFabric` leaving a stroke's length alone, reaching symbols' art, and `overrides` counting objects; the settings passed back whatever the document holds; the earlier name `stitchAngle` keeping its clockwise meaning; silk's values estimates, each fabric value's BERNINA class named, other sources where they differ; a fabric's spacing within what every thread keeps in range; the forward-compatibility conventions written down (Settings and transforms); upstream's loss of objects' settings said; Validation's counts; the performance rows measured again after the round. |
 | 2026-10-24 | minor | Embroidery settings on objects and in the document: each object's fill and stroke settings and entry and exit points, moved and turned with it and kept by the commands that make objects from others; the document's fabric (eight presets, each value sourced), thread weight, joining and machine; each value from the object, the export's options, the document, the default; the commands (`set`, `reset`, `setEntryExit`, `copyFrom`, `info`, `setup` extended, `fabrics`, `applyFabric`); a fill's angle counter-clockwise, an unset one turning with its object; the preview remembering no export's options. |

@@ -425,9 +425,15 @@ and `embroidery.render` draw them, marked as the document's stitch view marks th
 
 `window.panel {panel: "embroidery"}` shows the Embroidery panel, the first time docked as the
 last tab beside Properties, Layers and Libraries (the dock turns into the shared layout then), after that where it
-was left; `ui.embroideryPanel {tab?: "order"|"check", format?}` shows it at a tab, `format` (a format's id as
-`embroidery.check` takes it, or `null` for the thread palette's) being the one the active document's Check tab checks
-for, and answers `{tab, format}`. `ui.inspect` reports the open tab as `ui.embroidery_panel`. The panel never plans:
+was left; `ui.embroideryPanel {tab?: "object"|"order"|"check", part?: "fill"|"stroke", format?}` shows it at a
+tab, `part` being the part of the selected objects the Object tab shows and `format` (a format's id as
+`embroidery.check` takes it, or `null` for the thread palette's) the one the active document's Check tab checks for,
+and answers `{tab, part, format}`. `ui.inspect` reports the open tab as `ui.embroidery_panel`, and what the Object tab
+shows as `stitchPreview.object` (`ids`, `part`, and its `rows`: each one's `key`, `value` as `embroidery.info` gives
+it, `source`, whether every object `set` it, and whether they differ, `mixed`). `embroidery.copySettings {}`
+remembers the one object selected (a path or a compound path), answering `{source}`, and
+`embroidery.pasteSettings {part?}` gives the selected objects its settings as they are then, as
+`embroidery.copyFrom` (its reply), in one undo step: the panel's ≡ menu's Copy and Paste Embroidery Settings. The panel never plans:
 it asks the stitch preview for the plan and its tab's replies, so it shows what `ui.inspect.stitchPreview` says. In
 the Check tab, Show selects a rule's objects (or one hit's) and zooms to its hits with `view.zoomTo`;
 `embroidery.showFinding {rule, hit?}` does the same as a command, on the check the tab shows for the document as it

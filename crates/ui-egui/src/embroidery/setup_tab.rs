@@ -390,12 +390,12 @@ fn check(fields: &Map<String, Value>, o: &Opened) -> Result<(), String> {
     let names: Vec<String> =
         ["fabric", THREAD_WEIGHT, PALETTE, JOIN, START, LABEL, APPLY].into_iter().chain(FABRIC_VALUES).chain(MACHINE).map(field).collect();
     if let Some(k) = fields.keys().find(|k| k.starts_with(PREFIX) && !names.contains(k)) {
-        return Err(format!("`{}`: Document Setup's Embroidery tab has no such field", shortened(k)));
+        return Err(format!("`{}`: Document Setup's Embroidery tab has no such field", vocabulary::shortened(k)));
     }
     let choices = fabric_choices(o);
     match fields.get(&field("fabric")) {
         Some(Value::String(c)) if choices.contains(c) => {}
-        Some(v) => return Err(format!("`{}` {}: one of {}", field("fabric"), shortened(&v.to_string()), choices.join(", "))),
+        Some(v) => return Err(format!("`{}` {}: one of {}", field("fabric"), vocabulary::shortened(&v.to_string()), choices.join(", "))),
         None => {}
     }
     for key in [START, LABEL] {
@@ -408,15 +408,6 @@ fn check(fields: &Map<String, Value>, o: &Opened) -> Result<(), String> {
         return Err(format!("`{}`: a list of {}", field(APPLY), OVERRIDES.join(", ")));
     }
     Ok(())
-}
-
-/// The most characters of a name or value an error repeats: a hostile one can be long. An
-/// estimate.
-const MAX_SHOWN: usize = 64;
-
-/// `words` as an error repeats them: at most [`MAX_SHOWN`] characters, cut with "…".
-fn shortened(words: &str) -> String {
-    if words.chars().count() <= MAX_SHOWN { words.to_string() } else { format!("{}…", words.chars().take(MAX_SHOWN).collect::<String>()) }
 }
 
 /// The fabrics the tab offers: the built-in values, the presets, values of the document's own, and
@@ -1001,7 +992,7 @@ fn design_row(key: &'static str, value: &Value, lang: Lang) -> Owned {
             // X and Y named: with a decimal comma, "12,5, 3,2" would read alike.
             text::fill(crate::et!("X {x} · Y {y} mm"), &[("x", &mm(xy.first())), ("y", &mm(xy.get(1)))])
         }
-        (_, Value::String(s)) => s.clone(),
+        (_, Value::String(s)) => vocabulary::shortened(s),
         _ => String::new(),
     };
     let marks = if value.is_null() { rows::Marks::inherited(None, None) } else { rows::Marks::own(label, None, String::new()) };

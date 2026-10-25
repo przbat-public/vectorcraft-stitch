@@ -4,6 +4,17 @@
 //! out ([`crate::et!`]): the engine's English is never shown. An id this version doesn't know (a
 //! newer version's) reads as itself, so nothing is hidden.
 
+/// The most characters of an id this version doesn't know (a newer version's), or of a file's
+/// design name, the interface shows: a hostile file can hold any string, which would be laid out
+/// on every frame. An estimate.
+pub const MAX_SHOWN: usize = 64;
+
+/// `words` as the interface shows an id it doesn't know or a file's name: at most [`MAX_SHOWN`]
+/// characters, cut with "…".
+pub fn shortened(words: &str) -> String {
+    if words.chars().count() <= MAX_SHOWN { words.to_string() } else { format!("{}…", words.chars().take(MAX_SHOWN).collect::<String>()) }
+}
+
 /// A part setting's label in the Object tab, by its key as `embroidery.set` names it, for a part
 /// sewn as `sewn` (`tatami`, `satin`, `running`; a fill's spacing is its rows').
 pub fn label(key: &str, sewn: Option<&str>) -> &'static str {
@@ -64,7 +75,7 @@ pub fn stitch(id: &str, stroke: bool) -> String {
         "satin" => crate::et!("Satin").to_string(),
         "running" => crate::et!("Running stitch").to_string(),
         "none" => crate::et!("Don't sew").to_string(),
-        other => other.to_string(),
+        other => shortened(other),
     }
 }
 
@@ -77,7 +88,7 @@ pub fn sewn_as(sewn: &str, rule: Option<&str>) -> String {
         ("tatami", _) => crate::et!("tatami").to_string(),
         ("satin", _) => crate::et!("satin").to_string(),
         ("running", _) => crate::et!("running stitch").to_string(),
-        (other, _) => other.to_string(),
+        (other, _) => shortened(other),
     }
 }
 
@@ -95,7 +106,7 @@ pub fn underlay(id: &str) -> String {
         "edge" => crate::et!("Edge run").to_string(),
         "edgeZigzag" => crate::et!("Edge run + zigzag").to_string(),
         "edgeTatami" => crate::et!("Edge run + tatami").to_string(),
-        other => other.to_string(),
+        other => shortened(other),
     }
 }
 
@@ -108,7 +119,7 @@ pub fn underlay_chosen(chose: Option<&str>) -> String {
         Some("edgeZigzag") => crate::et!("edge run + zigzag").to_string(),
         Some("edgeTatami") => crate::et!("edge run + tatami").to_string(),
         Some("none") => crate::et!("none").to_string(),
-        Some(other) => other.to_string(),
+        Some(other) => shortened(other),
         None => crate::et!("by size").to_string(),
     }
 }
@@ -122,7 +133,7 @@ pub fn source(source: &str, section: Option<&str>) -> String {
         ("export", _) => crate::et!("export").to_string(),
         ("default", _) => crate::et!("default").to_string(),
         ("object", _) => crate::et!("set").to_string(),
-        (other, _) => other.to_string(),
+        (other, _) => shortened(other),
     }
 }
 
@@ -176,7 +187,7 @@ pub fn fabric(id: &str) -> String {
         "silk" => crate::et!("Silk or satin fabric").to_string(),
         "nylon" => crate::et!("Nylon or sports fabric").to_string(),
         "cap" => crate::et!("Cap (structured)").to_string(),
-        other => other.to_string(),
+        other => shortened(other),
     }
 }
 
@@ -235,7 +246,7 @@ pub fn palette(id: &str) -> String {
     match id {
         "jef" => crate::et!("Janome (JEF)").to_string(),
         "pec" => crate::et!("Brother (PES)").to_string(),
-        other => other.to_string(),
+        other => shortened(other),
     }
 }
 
@@ -247,6 +258,6 @@ pub fn information(id: &str) -> String {
         "cutAway" => crate::et!("Cut-away").to_string(),
         "adhesiveTearAway" => crate::et!("Adhesive tear-away").to_string(),
         "none" => crate::et!("None").to_string(),
-        other => other.to_string(),
+        other => shortened(other),
     }
 }

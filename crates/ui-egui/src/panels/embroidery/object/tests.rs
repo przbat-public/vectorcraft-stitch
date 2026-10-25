@@ -793,3 +793,15 @@ fn the_stitch_choices_are_the_engines() {
     assert!(!fill.iter().any(|id| id == "satin"), "satin isn't offered for a fill: {fill:?}");
     assert!(["auto", "tatami", "none"].iter().all(|id| fill.iter().any(|f| f == id)), "{fill:?}");
 }
+
+/// An id this version doesn't know, or a file's design name, is shown cut to a named length with
+/// "…": a hostile file can hold any string, laid out on every frame.
+#[test]
+fn an_unknown_id_is_shown_cut_short() {
+    let long = "x".repeat(10_000);
+    for words in [vocabulary::stitch(&long, false), vocabulary::underlay(&long), vocabulary::fabric(&long), vocabulary::source(&long, None)] {
+        assert_eq!(words.chars().count(), vocabulary::MAX_SHOWN + 1, "cut, with its ellipsis");
+        assert!(words.ends_with('…'));
+    }
+    assert_eq!(vocabulary::stitch("tatamiX", false), "tatamiX", "a short one whole");
+}

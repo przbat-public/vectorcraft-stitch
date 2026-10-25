@@ -337,6 +337,20 @@ fn step_value(
     read: impl Fn(&str) -> Option<f64>,
     show: impl Fn(f64) -> String,
 ) -> Option<f64> {
+    step_value_by(ui, resp, buf, bounds, 1.0, read, show)
+}
+
+/// [`step_value`] whose plain step is `step` instead of one (VectorCraft Stitch: an embroidery
+/// field steps a tenth of a millimetre), Shift ten of them and Ctrl/Cmd a tenth.
+fn step_value_by(
+    ui: &Ui,
+    resp: &Response,
+    buf: &mut String,
+    bounds: &RangeInclusive<f64>,
+    step: f64,
+    read: impl Fn(&str) -> Option<f64>,
+    show: impl Fn(f64) -> String,
+) -> Option<f64> {
     // Memory focus, as the field's highlight and its typing use: `Response::has_focus` also needs the
     // window to report keyboard focus.
     if !ui.memory(|m| m.has_focus(resp.id)) {
@@ -389,6 +403,7 @@ fn step_value(
     }
     let mut v = read(buf)?;
     for (mods, size, n) in steps {
+        let size = size * step;
         v = if mods == egui::Modifiers::SHIFT { v + size * n } else { step_to_multiple(v, size, n) };
         // Each step stops at the bounds, so a step back in the same frame starts from there.
         v = within(v, bounds);
@@ -571,6 +586,49 @@ fn select_all_on_focus(ui: &Ui, resp: &Response, text: &str) {
 /// applies it in this frame (it lost the focus, or a single-line field took Shift+Enter and kept
 /// the focus: [`shift_enter_keeps_focus`]), the text edit's response and the box.
 fn recessed_text(ui: &mut Ui, id: egui::Id, shown: &str, width: f32, rows: usize) -> (String, bool, Response, Rect) {
+    recessed_text_look(ui, id, shown, width, rows, &Look::PLAIN)
+}
+
+/// How a recessed field draws its value and its frame: every field of the app's own panels and
+/// dialogs takes [`Look::PLAIN`]; VectorCraft Stitch's embroidery fields choose them (a value set
+/// on the object in strong text, an inherited one dim, `embroidery::rows`).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) struct Look<'a> {
+    /// The value's colour; `None`: the theme's strong text.
+    pub text: Option<Color32>,
+    /// The frame's colour while the field isn't being edited (while it is, the accent shows the
+    /// focus); `None`: the theme's input border.
+    pub border: Option<Color32>,
+    /// Words shown in the value's colour in an empty field (a rule's "Auto"); `None`: none.
+    pub hint: Option<&'a str>,
+    /// What screen readers call the field, and what they say of its value (where it comes from);
+    /// `None`: what the toolkit gives.
+    pub name: Option<&'a str>,
+    pub description: Option<&'a str>,
+}
+
+impl Look<'_> {
+    /// The app's own look: strong text in the input border.
+    pub(crate) const PLAIN: Look<'static> = Look { text: None, border: None, hint: None, name: None, description: None };
+
+    /// Name the field `id` for screen readers as the look says.
+    fn name(&self, ui: &Ui, id: egui::Id) {
+        if self.name.is_none() && self.description.is_none() {
+            return;
+        }
+        ui.ctx().accesskit_node_builder(id, |node| {
+            if let Some(name) = self.name {
+                node.set_label(name);
+            }
+            if let Some(description) = self.description {
+                node.set_description(description);
+            }
+        });
+    }
+}
+
+/// [`recessed_text`] drawn with `look` (VectorCraft Stitch).
+fn recessed_text_look(ui: &mut Ui, id: egui::Id, shown: &str, width: f32, rows: usize, look: &Look<'_>) -> (String, bool, Response, Rect) {
     let t = Tokens::get(ui.ctx());
     let editing = ui.memory(|m| m.has_focus(id));
     // A press outside the field ends its editing in this frame, so the text typed is committed
@@ -610,27 +668,37 @@ fn recessed_text(ui: &mut Ui, id: egui::Id, shown: &str, width: f32, rows: usize
         .allocate_ui_with_layout(vec2(width, height), layout, |ui| {
             ui.set_min_size(vec2(width, height));
             let rect = ui.max_rect();
-            ui.painter().rect(rect, 5.0, t.input, Stroke::new(1.0, if editing { t.accent } else { t.input_border }), StrokeKind::Inside);
+            let border = if editing { t.accent } else { look.border.unwrap_or(t.input_border) };
+            ui.painter().rect(rect, 5.0, t.input, Stroke::new(1.0, border), StrokeKind::Inside);
             let margin = egui::Margin { left: 7, right: 7, top: if rows > 1 { 4 } else { 0 }, bottom: 0 };
             let resp = egui::Frame::NONE
                 .inner_margin(margin)
                 .show(ui, |ui| {
                     crate::theme::strong_selected_text(ui);
                     let edit = if rows > 1 { egui::TextEdit::multiline(&mut buf).desired_rows(rows) } else { egui::TextEdit::singleline(&mut buf) };
+                    let color = look.text.unwrap_or(t.text_strong);
                     ui.add(
                         edit.id(id)
                             .frame(egui::Frame::NONE)
                             .margin(egui::Margin::ZERO)
                             .desired_width(width - 14.0)
                             .font(egui::FontId::proportional(12.5))
-                            .text_color(t.text_strong),
+                            .text_color(color),
                     )
                 })
                 .inner;
             (rect, resp)
         })
         .inner;
+    look.name(ui, resp.id);
     let focused = ui.memory(|m| m.has_focus(id));
+    // The look's words in an empty field it isn't typing into, in the value's colour (egui's own
+    // hint takes the theme's weak colour).
+    if let Some(hint) = look.hint.filter(|_| buf.is_empty() && !focused) {
+        let at = egui::pos2(rect.left() + 7.0, if rows > 1 { rect.top() + 4.0 } else { rect.center().y });
+        let align = if rows > 1 { egui::Align2::LEFT_TOP } else { egui::Align2::LEFT_CENTER };
+        ui.painter().with_clip_rect(rect.shrink(1.0)).text(at, align, hint, egui::FontId::proportional(12.5), look.text.unwrap_or(t.text_strong));
+    }
     ui.data_mut(|d| {
         d.insert_temp(id, buf.clone());
         d.insert_temp(focus_id, focused);
@@ -713,23 +781,74 @@ fn bounded_field(
     width: f32,
     bounds: &RangeInclusive<f64>,
 ) -> Option<f64> {
+    number_field(ui, id, value, &NumberFormat::plain(suffix, decimals), &Look::PLAIN, width, bounds)
+}
+
+/// How a number field writes its number and reads what is typed: every field of the app's own
+/// panels and dialogs takes [`NumberFormat::plain`]; VectorCraft Stitch's embroidery fields write
+/// the interface language's decimal mark and step in their unit's size.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct NumberFormat<'a> {
+    /// What follows the number (` mm`, `°`, `%`).
+    pub suffix: &'a str,
+    /// The most decimals written, trailing zeros left out.
+    pub decimals: usize,
+    /// The decimal mark written and read; a point is read too.
+    pub mark: char,
+    /// How far a plain step of ↑/↓, the wheel and a scrub goes (Shift ten of them, Ctrl/Cmd a tenth).
+    pub step: f64,
+}
+
+impl<'a> NumberFormat<'a> {
+    /// The app's: a point, and steps of one.
+    pub(crate) const fn plain(suffix: &'a str, decimals: usize) -> Self {
+        Self { suffix, decimals, mark: '.', step: 1.0 }
+    }
+
+    /// `value` as the field shows it: at most `decimals` places, without trailing zeros, in the
+    /// decimal mark, then the suffix.
+    pub(crate) fn show(&self, value: f64) -> String {
+        let number = field_text(value, "", self.decimals);
+        let number = if self.mark == '.' { number } else { number.replace('.', &self.mark.to_string()) };
+        format!("{number}{}", self.suffix)
+    }
+
+    /// The number `text` holds, its decimal mark read as a point; `None` when it holds none. The
+    /// suffix (and %, °) may follow any operand: `45*2°`, `50% / 2`; a no-break space (a language's,
+    /// before its percent sign) reads as a space.
+    pub(crate) fn read(&self, text: &str) -> Option<f64> {
+        let suffix = self.suffix.trim();
+        let bare = if suffix.is_empty() { text.to_string() } else { text.replace(suffix, "") };
+        let bare = if self.mark == '.' { bare } else { bare.replace(self.mark, ".") };
+        vectorcraft_doc::parse_number(&bare.replace(['%', '°'], "").replace(['\u{a0}', '\u{202f}'], " "))
+    }
+}
+
+/// A number field showing `value` (blank when `None`: the selection's values differ) as `format`
+/// writes it, drawn with `look`, whose ↑/↓, wheel and scrub stop at `bounds`: [`mixed_field`] in a
+/// format and a look of its caller's (VectorCraft Stitch's embroidery fields). Returns the value
+/// typed (Enter, Shift+Enter or focus loss), stepped or scrubbed.
+pub(crate) fn number_field(
+    ui: &mut Ui,
+    id: impl std::hash::Hash + std::fmt::Debug,
+    value: Option<f64>,
+    format: &NumberFormat<'_>,
+    look: &Look<'_>,
+    width: f32,
+    bounds: &RangeInclusive<f64>,
+) -> Option<f64> {
     let id = ui.id().with(id);
-    let show = |value: f64| field_text(value, suffix, decimals);
-    // The suffix (and %, °) may follow any operand: `45*2°`, `50% / 2`.
-    let read = |buf: &str| {
-        let suffix = suffix.trim();
-        let bare = if suffix.is_empty() { buf.to_string() } else { buf.replace(suffix, "") };
-        vectorcraft_doc::parse_number(&bare.replace(['%', '°'], ""))
-    };
+    let show = |value: f64| format.show(value);
+    let read = |buf: &str| format.read(buf);
     let shown = value.map(show).unwrap_or_default();
     take_dialog_focus(ui, id, &shown);
-    let (mut buf, commit, resp, rect) = recessed_text(ui, id, &shown, width, 1);
+    let (mut buf, commit, resp, rect) = recessed_text_look(ui, id, &shown, width, 1, look);
     select_all_on_focus(ui, &resp, &buf);
     // ↑/↓ and the wheel step at the field's precision (a count ignores Ctrl/Cmd's tenth); a drag on
     // its label scrubs it.
-    let decimals = decimals.min(6) as i32;
-    let stepped = step_value(ui, &resp, &mut buf, bounds, read, show).map(|v| round_to(v, decimals));
-    let scrubbed = scrub::field(ui, id, rect, &buf, value, decimals, bounds);
+    let decimals = format.decimals.min(6) as i32;
+    let stepped = step_value_by(ui, &resp, &mut buf, bounds, format.step, read, show).map(|v| round_to(v, decimals));
+    let scrubbed = scrub::field_stepped(ui, id, rect, &buf, value, decimals, format.step, bounds);
     if commit && buf != shown { read(&buf) } else { stepped.or(scrubbed).filter(|&v| Some(v) != value) }
 }
 
@@ -1030,10 +1149,24 @@ pub(crate) fn combo<R>(
     searchable: bool,
     list: impl FnOnce(&mut Ui) -> Option<R>,
 ) -> Option<R> {
+    combo_look(ui, id, current, &Look::PLAIN, width, searchable, list)
+}
+
+/// [`combo`] drawn with `look` (VectorCraft Stitch's embroidery fields): its frame's colour, and
+/// the colour of the value it shows.
+pub(crate) fn combo_look<R>(
+    ui: &mut Ui,
+    id: impl std::hash::Hash + std::fmt::Debug,
+    current: &str,
+    look: &Look<'_>,
+    width: f32,
+    searchable: bool,
+    list: impl FnOnce(&mut Ui) -> Option<R>,
+) -> Option<R> {
     let t = Tokens::get(ui.ctx());
     egui::Frame::NONE
         .fill(t.input)
-        .stroke(Stroke::new(1.0, t.input_border))
+        .stroke(Stroke::new(1.0, look.border.unwrap_or(t.input_border)))
         .corner_radius(CornerRadius::same(3))
         .show(ui, |ui| {
             if searchable {
@@ -1042,11 +1175,16 @@ pub(crate) fn combo<R>(
             let id = ui.id().with(id);
             let button_id = ui.make_persistent_id(egui::IdSalt::new(id));
             let enter_for_combo = ui.memory(|m| m.has_focus(button_id)) || egui::ComboBox::is_open(ui.ctx(), button_id);
+            let shown = egui::RichText::new(current).size(12.0);
             let response = egui::ComboBox::from_id_salt(id)
-                .selected_text(egui::RichText::new(current).size(12.0))
+                .selected_text(match look.text {
+                    Some(color) => shown.color(color),
+                    None => shown,
+                })
                 .width(width - 4.0)
                 .height(ui.spacing().combo_height)
                 .show_ui(ui, list);
+            look.name(ui, response.response.id);
             // The button or open list handles Enter before the modal can accept it.
             if enter_for_combo {
                 ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter));

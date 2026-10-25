@@ -138,6 +138,22 @@ fn take_label(ui: &Ui, field: Rect) -> Option<Rect> {
 /// press held without stepping) focuses the field with all of `text` selected. Nothing for a field
 /// without a label, disabled or showing no value (objects that differ).
 pub(crate) fn field(ui: &Ui, field: Id, rect: Rect, text: &str, value: Option<f64>, decimals: i32, bounds: &RangeInclusive<f64>) -> Option<f64> {
+    field_stepped(ui, field, rect, text, value, decimals, 1.0, bounds)
+}
+
+/// [`field`] whose plain step is `step` instead of one (VectorCraft Stitch: an embroidery field
+/// steps a tenth of a millimetre), Shift ten of them and Ctrl/Cmd a tenth.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn field_stepped(
+    ui: &Ui,
+    field: Id,
+    rect: Rect,
+    text: &str,
+    value: Option<f64>,
+    decimals: i32,
+    step: f64,
+    bounds: &RangeInclusive<f64>,
+) -> Option<f64> {
     let label = take_label(ui, rect)?;
     let value = value.filter(|v| v.is_finite())?;
     if !enabled(ui.ctx()) || !ui.is_enabled() {
@@ -145,11 +161,11 @@ pub(crate) fn field(ui: &Ui, field: Id, rect: Rect, text: &str, value: Option<f6
     }
     // On top of the label, which may sense clicks itself (selectable text).
     let resp = ui.interact(label, field.with("scrub-label"), Sense::click_and_drag());
-    drag(ui, &resp, field, text, value, decimals).map(|v| v.max(*bounds.start()).min(*bounds.end()))
+    drag(ui, &resp, field, text, value, decimals, step).map(|v| v.max(*bounds.start()).min(*bounds.end()))
 }
 
 /// What a drag on `resp`, the label of field `field`, does this frame.
-fn drag(ui: &Ui, resp: &Response, field: Id, text: &str, value: f64, decimals: i32) -> Option<f64> {
+fn drag(ui: &Ui, resp: &Response, field: Id, text: &str, value: f64, decimals: i32, unit: f64) -> Option<f64> {
     if resp.hovered() || resp.dragged() {
         ui.ctx().set_cursor_icon(CursorIcon::ResizeHorizontal);
     }
@@ -178,22 +194,24 @@ fn drag(ui: &Ui, resp: &Response, field: Id, text: &str, value: f64, decimals: i
         }
         None
     } else {
-        step(ui, resp, &mut s, value, decimals)
+        step(ui, resp, &mut s, value, decimals, unit)
     };
     ui.data_mut(|d| d.insert_temp(state_id(), s));
     out
 }
 
-/// The value this frame's drag steps `value` to, if it makes a whole step.
-fn step(ui: &Ui, resp: &Response, s: &mut Scrub, value: f64, decimals: i32) -> Option<f64> {
+/// The value this frame's drag steps `value` to, if it makes a whole step of `unit` (one, or a
+/// field's own step).
+fn step(ui: &Ui, resp: &Response, s: &mut Scrub, value: f64, decimals: i32, unit: f64) -> Option<f64> {
     let mods = ui.input(|i| i.modifiers);
-    let size = if mods.command {
-        0.1
-    } else if mods.shift {
-        10.0
-    } else {
-        1.0
-    };
+    let size = unit
+        * if mods.command {
+            0.1
+        } else if mods.shift {
+            10.0
+        } else {
+            1.0
+        };
     // A count steps by whole numbers: Ctrl/Cmd makes it slower instead.
     let step = f64::max(size, 10f64.powi(-decimals));
     if step != s.step {

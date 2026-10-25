@@ -330,3 +330,52 @@ fn the_tabs_are_tabs() {
         assert!(tabs.contains(&(Some(name.into()), Some(open))), "{name}: {tabs:?}");
     }
 }
+
+/// The tab labels the whole window draws along the dock's top, `window` points wide: each one's
+/// words, where they lie, and the box they are clipped to.
+fn dock_tab_labels(app: &mut VectorcraftApp, ctx: &egui::Context, window: egui::Vec2, labels: &[&str]) -> Vec<(String, egui::Rect, egui::Rect)> {
+    let mut found = vec![];
+    for _ in 0..4 {
+        let raw = egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, window)), ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| {
+            app.logic(ui.ctx());
+            app.ui(ui);
+        });
+        out.textures_delta.clear();
+        found.clear();
+        let mut pending: Vec<(egui::Rect, Shape)> = out.shapes.into_iter().map(|c| (c.clip_rect, c.shape)).collect();
+        while let Some((clip, s)) = pending.pop() {
+            match s {
+                Shape::Vec(v) => pending.extend(v.into_iter().map(|s| (clip, s))),
+                Shape::Text(t) if labels.contains(&t.galley.text()) => found.push((t.galley.text().to_string(), t.visual_bounding_rect(), clip)),
+                _ => {}
+            }
+        }
+    }
+    found
+}
+
+/// Docked as the fourth tab beside Properties, Layers and Libraries, at the dock's usual width,
+/// every tab's label is drawn whole (craft-ui squeezes tabs that don't fit and clips their words),
+/// in English and in Polish.
+#[test]
+fn the_docks_four_tabs_show_their_labels_whole() {
+    for lang in ["en", "pl"] {
+        let ctx = egui::Context::default();
+        crate::theme::install_fonts(&ctx);
+        let mut app = blank_app();
+        app.session.prefs.interface_language = lang.into();
+        app.run("window.panel", json!({"panel": ID})).unwrap();
+        crate::i18n::set_current(crate::i18n::Lang::from_code(lang).unwrap());
+        let labels: Vec<&str> = ["Properties", "Layers", "Libraries", "Embroidery"].into_iter().map(crate::i18n::t).collect();
+        crate::i18n::set_current(crate::i18n::Lang::EN);
+        let drawn = dock_tab_labels(&mut app, &ctx, egui::vec2(1440.0, 900.0), &labels);
+        for label in &labels {
+            let (_, words, clip) = drawn.iter().find(|(t, ..)| t == label).unwrap_or_else(|| panic!("{lang}: no tab {label:?} in {drawn:?}"));
+            assert!(
+                words.left() >= clip.left() - 0.5 && words.right() <= clip.right() + 0.5,
+                "{lang}: {label:?} {words:?} is cut by its tab {clip:?}"
+            );
+        }
+    }
+}

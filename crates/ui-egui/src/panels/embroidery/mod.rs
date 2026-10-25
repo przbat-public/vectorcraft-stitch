@@ -280,10 +280,92 @@ fn show_panel(app: &mut VectorcraftApp) -> Result<Value, String> {
         }
     }
     let anchor = ["libraries", "layers", "properties"].into_iter().find(|id| shown(app, id));
-    match anchor {
+    let r = match anchor {
         Some(anchor) => app.run("window.panel.move", json!({ "panel": ID, "anchor": anchor })),
         None => app.run("window.panel.layout", json!({ "action": { "Open": { "panel": ID, "anchor": null } } })),
+    };
+    // Its tab joins the others': room for their labels is made once they are drawn.
+    app.embroidery.fit_dock_tabs = r.is_ok();
+    r
+}
+
+/// The id of the shared dock's tree (upstream's `panel_docking`, its `DockArea`): its tabs' ids
+/// come from it.
+const DOCK_AREA: &str = "vectorcraft-panel-docking";
+/// The room a tab's label keeps inside its tab, points: a little on each side.
+const LABEL_ROOM: f32 = 8.0;
+/// The most of the window the dock may take to show its tabs' labels whole. An estimate: the
+/// canvas keeps the rest.
+const DOCK_SHARE: f32 = 0.4;
+
+/// Once Window › Embroidery has docked the panel beside other tabs: the dock widened, where their
+/// labels don't fit, until each shows whole. The shared dock's strip (craft-ui's) squeezes the
+/// widest tabs first and clips their words, so four tabs at the dock's usual width cut some of
+/// them ("Embroidery", "Properties"). Measured on the tabs as drawn: each one's width against its
+/// label's, the squeezed ones (as wide as the widest) widened together by what the shortest of
+/// room lacks. Within [`DOCK_SHARE`] of the window; the person may narrow the dock again.
+fn fit_dock_tabs(app: &mut VectorcraftApp, ui: &Ui) {
+    if !app.embroidery.fit_dock_tabs {
+        return;
     }
+    let Some(layout) = app.ui.docking.as_ref() else {
+        app.embroidery.fit_dock_tabs = false;
+        return;
+    };
+    let group = tab_group(&layout.root, ID);
+    let area = egui::Id::new(DOCK_AREA);
+    let font = craft_ui::docking::DockStyle::from_ui(ui).font;
+    let tabs: Vec<(f32, f32)> = group
+        .iter()
+        .filter_map(|panel| {
+            let tab = ui.ctx().read_response(area.with(("tab", panel)))?.rect.width();
+            // The label the dock draws: the panel's name as upstream translates it (a plain row).
+            let label = crate::state::all_panels().find(|p| p.0 == panel.as_str()).map_or(panel.as_str(), |p| crate::i18n::t(p.1));
+            let words = ui.painter().layout_no_wrap(label.to_string(), font.clone(), egui::Color32::WHITE).size().x;
+            Some((tab, words))
+        })
+        .collect();
+    // Not drawn yet: the next frame.
+    if tabs.len() != group.len() || tabs.is_empty() {
+        return;
+    }
+    app.embroidery.fit_dock_tabs = false;
+    let lacking = tabs.iter().map(|(tab, words)| words + LABEL_ROOM - tab).fold(0.0, f32::max);
+    if lacking <= 0.0 {
+        return;
+    }
+    let widest = tabs.iter().map(|(tab, _)| *tab).fold(0.0, f32::max);
+    let squeezed = tabs.iter().filter(|(tab, _)| *tab >= widest - 0.5).count() as f32;
+    let window = ui.ctx().content_rect().width();
+    let now = crate::dock::shared_dock_default_width(&app.ui);
+    let wanted = (now + squeezed * lacking).min((window * DOCK_SHARE).max(now));
+    // Given to the dock at the frame's end: the dock notes the width it was drawn at after the
+    // panels draw, over anything set before.
+    app.embroidery.dock_width = Some(crate::dock::clamp_shared_dock_width(wanted));
+}
+
+/// End of a frame: the dock's width [`fit_dock_tabs`] asked for, laid out from the next frame.
+pub(crate) fn widen_dock(app: &mut VectorcraftApp) {
+    if let Some(width) = app.embroidery.dock_width.take() {
+        app.ui.dock_width = Some(width);
+        app.ui.dock_width_pending = true;
+    }
+}
+
+/// The panels of the tabbed group holding `panel` in the dock's tree.
+fn tab_group(root: &Option<craft_ui::docking::Node<String>>, panel: &str) -> Vec<String> {
+    let mut visit: Vec<&craft_ui::docking::Node<String>> = root.iter().collect();
+    while let Some(node) = visit.pop() {
+        match node {
+            craft_ui::docking::Node::Tabs { panels, .. } if panels.iter().any(|p| p == panel) => return panels.clone(),
+            craft_ui::docking::Node::Split { first, second, .. } => {
+                visit.push(second);
+                visit.push(first);
+            }
+            _ => {}
+        }
+    }
+    Vec::new()
 }
 
 /// The panel's ≡ menu: the selected object's embroidery settings copied and pasted; the selection
@@ -337,6 +419,7 @@ pub(crate) fn command_label(app: &VectorcraftApp, id: &str) -> String {
 
 /// The panel.
 pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
+    fit_dock_tabs(app, ui);
     let t = Tokens::get(ui.ctx());
     let Some(uid) = app.session.active().map(|st| st.uid) else {
         empty_state(ui, crate::et!("No document"), crate::et!("Open or draw a design to see how it will be sewn."));

@@ -64,6 +64,11 @@ pub struct Embroidery {
     pub(crate) object: crate::panels::embroidery::object::ObjectState,
     /// The status bar's counters.
     pub(crate) counters: counters::Counters,
+    /// Window › Embroidery has just docked the panel beside other tabs: the dock is widened for
+    /// their labels once they are drawn (`panels::embroidery::fit_dock_tabs`).
+    pub(crate) fit_dock_tabs: bool,
+    /// The dock's width asked for then, given to the dock at the frame's end.
+    pub(crate) dock_width: Option<f32>,
 }
 
 /// The height of the isolation mode's breadcrumb bar, which upstream draws over the canvas's top
@@ -90,6 +95,7 @@ pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
 /// the frame asked of the stitch preview planned.
 pub fn end_frame(app: &mut VectorcraftApp, ctx: &egui::Context) {
     counters::act(app);
+    crate::panels::embroidery::widen_dock(app);
     stitch_preview::schedule(app, ctx);
 }
 

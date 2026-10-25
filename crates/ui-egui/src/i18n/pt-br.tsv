@@ -5458,7 +5458,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} ponto|{count} pontos
 @msg	tab {tab}: one of {_1}	aba {tab}: uma de {_1}
 @msg	unknown key `{k}`: the only one is {only}	chave desconhecida `{k}`: a única é {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Bordado de baixo para cima; objetos da mesma cor se juntam quando nada fica entre eles.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Bordado de baixo para cima; objetos da mesma cor se juntam quando nada fica entre eles.
 embroidery	Trim and thread change	Corte e troca de linha
 embroidery	Thread change	Troca de linha
 embroidery	fill	preenchimento
@@ -5471,7 +5471,7 @@ embroidery	narrow parts as satin	partes estreitas em cetim
 @plural	{count} object|{count} objects	{count} objeto|{count} objetos
 @plural	{count} jump|{count} jumps	{count} salto|{count} saltos
 @plural	{count} trim|{count} trims	{count} corte|{count} cortes
-embroidery	Colours	Cores
+embroidery	Colors	Cores
 embroidery	Thread changes	Trocas de linha
 embroidery	Trims	Cortes
 embroidery	Jumps	Saltos
@@ -5501,8 +5501,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	O tempo a {speed}
 @msg	can't change the sewing order: too many objects at once	não é possível alterar a ordem de bordado: objetos demais de uma vez
 embroidery	After {name}	Depois de {name}
 embroidery	Before {name}	Antes de {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Nenhum ponto mudou: objetos da mesma cor continuam juntos quando nada entre eles fica por baixo.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} é bordado no bloco {block}, junto com os outros da sua cor
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Nenhum ponto mudou: objetos da mesma cor continuam juntos quando nada entre eles fica por baixo.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} é bordado no bloco {block}, junto com os outros da sua cor
 embroidery	{name} is sewn in block {block}	{name} é bordado no bloco {block}
 embroidery	Thread changes: {before} → {after}	Trocas de linha: {before} → {after}
 embroidery	Collapse All	Recolher tudo
@@ -5519,8 +5519,8 @@ embroidery	More than {value} short stitches in a row	Mais de {value} pontos curt
 embroidery	{value} or more layers of stitches on one spot	{value} ou mais camadas de pontos no mesmo local
 embroidery	Everything is sewn	Tudo é bordado
 embroidery	Art that isn't sewn	Arte que não é bordada
-embroidery	More colour blocks than {format} holds ({value})	Mais blocos de cor do que {format} comporta ({value})
-embroidery	{format} holds any number of colour blocks	{format} comporta qualquer número de blocos de cor
+embroidery	More color blocks than {format} holds ({value})	Mais blocos de cor do que {format} comporta ({value})
+embroidery	{format} holds any number of color blocks	{format} comporta qualquer número de blocos de cor
 embroidery	More stitches than a machine shows ({value})	Mais pontos do que uma máquina mostra ({value})
 embroidery	More thread changes than a machine shows ({value})	Mais trocas de linha do que uma máquina mostra ({value})
 embroidery	No findings	Nada encontrado
@@ -5557,7 +5557,7 @@ embroidery	No source gives a number to check these against.	Nenhuma fonte dá um
 @plural	{count} warning|{count} warnings	{count} aviso|{count} avisos
 @plural	{count} note|{count} notes	{count} observação|{count} observações
 @plural	and {count} more|and {count} more	e mais {count}|e mais {count}
-embroidery	Threads unlike the art's colour (over {value})	Linhas diferentes da cor da arte (acima de {value})
+embroidery	Threads unlike the art's color (over {value})	Linhas diferentes da cor da arte (acima de {value})
 embroidery	Largest difference: {value}	Maior diferença: {value}
 embroidery	Block {block}: {thread}, {value}	Bloco {block}: {thread}, {value}
 	Zoom to Box	Zoom na caixa
@@ -5578,7 +5578,7 @@ embroidery	Median: {value} mm	Mediana: {value} mm
 embroidery	Too long	Longos demais
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Acima de {value} mm: {stitches}
-@plural	{count} colour|{count} colours	{count} cor|{count} cores
+@plural	{count} color|{count} colors	{count} cor|{count} cores
 embroidery	Embroidery: {figures}	Bordado: {figures}
 embroidery	Stitches can't be planned	Não é possível planejar os pontos
 embroidery	Click to open the Embroidery panel.	Clique para abrir o painel Bordado.
@@ -5777,7 +5777,7 @@ embroidery	Satin	Cetim
 embroidery	Running stitch	Ponto reto
 embroidery	Don't sew	Não bordar
 embroidery	None	Nenhum
-embroidery	Centre run	Passada central
+embroidery	Center run	Passada central
 embroidery	Edge run	Passada na borda
 embroidery	Edge run + zigzag	Passada na borda + zigue-zague
 embroidery	Edge run + tatami	Passada na borda + tatami
@@ -5812,7 +5812,7 @@ embroidery	Restore {setting}	Restaurar: {setting}
 embroidery	Auto: {choice}	Automático: {choice}
 embroidery	Auto · {value}	Automático · {value}
 embroidery	filled outline	contorno preenchido
-embroidery	centre run	passada central
+embroidery	center run	passada central
 embroidery	edge run	passada na borda
 embroidery	edge run + zigzag	passada na borda + zigue-zague
 embroidery	edge run + tatami	passada na borda + tatami

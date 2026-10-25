@@ -5528,7 +5528,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} öltés
 @msg	tab {tab}: one of {_1}	lap {tab}: ezek egyike: {_1}
 @msg	unknown key `{k}`: the only one is {only}	ismeretlen kulcs `{k}`: az egyetlen a {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Alulról felfelé hímezve; az egy színhez tartozó objektumok összevonódnak, ha semmi sincs közöttük.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Alulról felfelé hímezve; az egy színhez tartozó objektumok összevonódnak, ha semmi sincs közöttük.
 embroidery	Trim and thread change	Vágás és szálcsere
 embroidery	Thread change	Szálcsere
 embroidery	fill	kitöltés
@@ -5541,7 +5541,7 @@ embroidery	narrow parts as satin	keskeny részek szaténnal
 @plural	{count} object|{count} objects	{count} objektum
 @plural	{count} jump|{count} jumps	{count} ugrás
 @plural	{count} trim|{count} trims	{count} vágás
-embroidery	Colours	Színek
+embroidery	Colors	Színek
 embroidery	Thread changes	Szálcserék
 embroidery	Trims	Vágások
 embroidery	Jumps	Ugrások
@@ -5571,8 +5571,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Az idő percenké
 @msg	can't change the sewing order: too many objects at once	a varrási sorrend nem módosítható: túl sok objektum egyszerre
 embroidery	After {name}	{name} után
 embroidery	Before {name}	{name} előtt
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Egy öltés sem mozdult: az egy színhez tartozó objektumok továbbra is összevonódnak, ha semmi sincs közöttük alattuk.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} a(z) {block}. blokkban kerül hímzésre, a többi azonos színűvel összevonva
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Egy öltés sem mozdult: az egy színhez tartozó objektumok továbbra is összevonódnak, ha semmi sincs közöttük alattuk.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} a(z) {block}. blokkban kerül hímzésre, a többi azonos színűvel összevonva
 embroidery	{name} is sewn in block {block}	{name} a(z) {block}. blokkban kerül hímzésre
 embroidery	Thread changes: {before} → {after}	Szálcserék: {before} → {after}
 embroidery	Collapse All	Összes összecsukása
@@ -5589,8 +5589,8 @@ embroidery	More than {value} short stitches in a row	Több mint {value} rövid �
 embroidery	{value} or more layers of stitches on one spot	{value} vagy több öltésréteg egy helyen
 embroidery	Everything is sewn	Minden kihímzésre kerül
 embroidery	Art that isn't sewn	Grafika, amely nem kerül kihímzésre
-embroidery	More colour blocks than {format} holds ({value})	Több színblokk, mint amennyit a(z) {format} elbír ({value})
-embroidery	{format} holds any number of colour blocks	A(z) {format} tetszőleges számú színblokkot elbír
+embroidery	More color blocks than {format} holds ({value})	Több színblokk, mint amennyit a(z) {format} elbír ({value})
+embroidery	{format} holds any number of color blocks	A(z) {format} tetszőleges számú színblokkot elbír
 embroidery	More stitches than a machine shows ({value})	Több öltés, mint amennyit egy gép megjelenít ({value})
 embroidery	More thread changes than a machine shows ({value})	Több szálcsere, mint amennyit egy gép megjelenít ({value})
 embroidery	No findings	Nincs találat
@@ -5627,7 +5627,7 @@ embroidery	No source gives a number to check these against.	Egyik forrás sem ad
 @plural	{count} warning|{count} warnings	{count} figyelmeztetés
 @plural	{count} note|{count} notes	{count} megjegyzés
 @plural	and {count} more|and {count} more	és még {count}
-embroidery	Threads unlike the art's colour (over {value})	A grafika színétől eltérő szálak ({value} fölött)
+embroidery	Threads unlike the art's color (over {value})	A grafika színétől eltérő szálak ({value} fölött)
 embroidery	Largest difference: {value}	Legnagyobb eltérés: {value}
 embroidery	Block {block}: {thread}, {value}	{block}. blokk: {thread}, {value}
 	Zoom to Box	Nagyítás keretre
@@ -5648,7 +5648,7 @@ embroidery	Median: {value} mm	Medián: {value} mm
 embroidery	Too long	Túl hosszú
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} mm fölött: {stitches}
-@plural	{count} colour|{count} colours	{count} szín
+@plural	{count} color|{count} colors	{count} szín
 embroidery	Embroidery: {figures}	Hímzés: {figures}
 embroidery	Stitches can't be planned	Az öltések nem tervezhetők meg
 embroidery	Click to open the Embroidery panel.	Kattintson a Hímzés panel megnyitásához.
@@ -5847,7 +5847,7 @@ embroidery	Satin	Szatén
 embroidery	Running stitch	Egyenes öltés
 embroidery	Don't sew	Ne hímezze
 embroidery	None	Nincs
-embroidery	Centre run	Középső menet
+embroidery	Center run	Középső menet
 embroidery	Edge run	Szegélymenet
 embroidery	Edge run + zigzag	Szegélymenet + cikcakk
 embroidery	Edge run + tatami	Szegélymenet + tatami
@@ -5882,7 +5882,7 @@ embroidery	Restore {setting}	Visszaállítás: {setting}
 embroidery	Auto: {choice}	Automatikus: {choice}
 embroidery	Auto · {value}	Automatikus · {value}
 embroidery	filled outline	kitöltött körvonal
-embroidery	centre run	középső menet
+embroidery	center run	középső menet
 embroidery	edge run	szegélymenet
 embroidery	edge run + zigzag	szegélymenet + cikcakk
 embroidery	edge run + tatami	szegélymenet + tatami

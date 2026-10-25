@@ -5498,7 +5498,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} stygn|{count} stygn
 @msg	tab {tab}: one of {_1}	flik {tab}: en av {_1}
 @msg	unknown key `{k}`: the only one is {only}	okänd nyckel `{k}`: den enda är {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Broderas nerifrån och upp; objekt med samma färg slås ihop när inget ligger mellan dem.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Broderas nerifrån och upp; objekt med samma färg slås ihop när inget ligger mellan dem.
 embroidery	Trim and thread change	Klipp och trådbyte
 embroidery	Thread change	Trådbyte
 embroidery	fill	fyllning
@@ -5511,7 +5511,7 @@ embroidery	narrow parts as satin	smala delar som satin
 @plural	{count} object|{count} objects	{count} objekt|{count} objekt
 @plural	{count} jump|{count} jumps	{count} hopp|{count} hopp
 @plural	{count} trim|{count} trims	{count} klipp|{count} klipp
-embroidery	Colours	Färger
+embroidery	Colors	Färger
 embroidery	Thread changes	Trådbyten
 embroidery	Trims	Klipp
 embroidery	Jumps	Hopp
@@ -5541,8 +5541,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Tiden vid {speed}
 @msg	can't change the sewing order: too many objects at once	sömnadsordningen kan inte ändras: för många objekt på en gång
 embroidery	After {name}	Efter {name}
 embroidery	Before {name}	Före {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Inget stygn flyttades: objekt med samma färg slås fortfarande ihop när inget emellan ligger under dem.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} broderas i block {block}, ihopslaget med de andra i sin färg
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Inget stygn flyttades: objekt med samma färg slås fortfarande ihop när inget emellan ligger under dem.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} broderas i block {block}, ihopslaget med de andra i sin färg
 embroidery	{name} is sewn in block {block}	{name} broderas i block {block}
 embroidery	Thread changes: {before} → {after}	Trådbyten: {before} → {after}
 embroidery	Collapse All	Fäll ihop alla
@@ -5559,8 +5559,8 @@ embroidery	More than {value} short stitches in a row	Fler än {value} korta styg
 embroidery	{value} or more layers of stitches on one spot	{value} eller fler lager stygn på samma ställe
 embroidery	Everything is sewn	Allt broderas
 embroidery	Art that isn't sewn	Grafik som inte broderas
-embroidery	More colour blocks than {format} holds ({value})	Fler färgblock än {format} rymmer ({value})
-embroidery	{format} holds any number of colour blocks	{format} rymmer hur många färgblock som helst
+embroidery	More color blocks than {format} holds ({value})	Fler färgblock än {format} rymmer ({value})
+embroidery	{format} holds any number of color blocks	{format} rymmer hur många färgblock som helst
 embroidery	More stitches than a machine shows ({value})	Fler stygn än en maskin visar ({value})
 embroidery	More thread changes than a machine shows ({value})	Fler trådbyten än en maskin visar ({value})
 embroidery	No findings	Inget hittat
@@ -5597,7 +5597,7 @@ embroidery	No source gives a number to check these against.	Ingen källa anger e
 @plural	{count} warning|{count} warnings	{count} varning|{count} varningar
 @plural	{count} note|{count} notes	{count} anmärkning|{count} anmärkningar
 @plural	and {count} more|and {count} more	och {count} till|och {count} till
-embroidery	Threads unlike the art's colour (over {value})	Trådar som inte liknar grafikens färg (över {value})
+embroidery	Threads unlike the art's color (over {value})	Trådar som inte liknar grafikens färg (över {value})
 embroidery	Largest difference: {value}	Största skillnad: {value}
 embroidery	Block {block}: {thread}, {value}	Block {block}: {thread}, {value}
 	Zoom to Box	Zooma till ruta
@@ -5618,7 +5618,7 @@ embroidery	Median: {value} mm	Median: {value} mm
 embroidery	Too long	För långa
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Över {value} mm: {stitches}
-@plural	{count} colour|{count} colours	{count} färg|{count} färger
+@plural	{count} color|{count} colors	{count} färg|{count} färger
 embroidery	Embroidery: {figures}	Broderi: {figures}
 embroidery	Stitches can't be planned	Stygnen kan inte planeras
 embroidery	Click to open the Embroidery panel.	Klicka för att öppna panelen Broderi.
@@ -5817,7 +5817,7 @@ embroidery	Satin	Satin
 embroidery	Running stitch	Rakstygn
 embroidery	Don't sew	Sy inte
 embroidery	None	Ingen
-embroidery	Centre run	Mittlöpning
+embroidery	Center run	Mittlöpning
 embroidery	Edge run	Kantlöpning
 embroidery	Edge run + zigzag	Kantlöpning + sicksack
 embroidery	Edge run + tatami	Kantlöpning + tatami
@@ -5852,7 +5852,7 @@ embroidery	Restore {setting}	Återställ: {setting}
 embroidery	Auto: {choice}	Auto: {choice}
 embroidery	Auto · {value}	Auto · {value}
 embroidery	filled outline	fylld kontur
-embroidery	centre run	mittlöpning
+embroidery	center run	mittlöpning
 embroidery	edge run	kantlöpning
 embroidery	edge run + zigzag	kantlöpning + sicksack
 embroidery	edge run + tatami	kantlöpning + tatami

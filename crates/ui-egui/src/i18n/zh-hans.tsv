@@ -5380,7 +5380,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} 针
 @msg	tab {tab}: one of {_1}	选项卡 {tab}：{_1} 之一
 @msg	unknown key `{k}`: the only one is {only}	未知的键 `{k}`：唯一的键是 {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	从堆叠的底部向上绣制；同一颜色的对象在中间没有其他内容时会合并。
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	从堆叠的底部向上绣制；同一颜色的对象在中间没有其他内容时会合并。
 embroidery	Trim and thread change	剪线并换线
 embroidery	Thread change	换线
 embroidery	fill	填色
@@ -5393,7 +5393,7 @@ embroidery	narrow parts as satin	窄的部分用缎纹
 @plural	{count} object|{count} objects	{count} 个对象
 @plural	{count} jump|{count} jumps	{count} 次跳针
 @plural	{count} trim|{count} trims	{count} 次剪线
-embroidery	Colours	颜色
+embroidery	Colors	颜色
 embroidery	Thread changes	换线次数
 embroidery	Trims	剪线
 embroidery	Jumps	跳针
@@ -5423,8 +5423,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	按每分钟 {spe
 @msg	can't change the sewing order: too many objects at once	无法更改刺绣顺序：一次的对象太多
 embroidery	After {name}	在 {name} 之后
 embroidery	Before {name}	在 {name} 之前
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	没有针迹移动：只要中间没有内容在其下方，同一颜色的对象仍会合并。
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} 在第 {block} 块中与同色的其他对象合并绣制
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	没有针迹移动：只要中间没有内容在其下方，同一颜色的对象仍会合并。
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} 在第 {block} 块中与同色的其他对象合并绣制
 embroidery	{name} is sewn in block {block}	{name} 在第 {block} 块中绣制
 embroidery	Thread changes: {before} → {after}	换线次数：{before} → {after}
 embroidery	Collapse All	全部折叠
@@ -5441,8 +5441,8 @@ embroidery	More than {value} short stitches in a row	连续超过 {value} 个短
 embroidery	{value} or more layers of stitches on one spot	同一处有 {value} 层或更多针迹
 embroidery	Everything is sewn	全部都会绣出
 embroidery	Art that isn't sewn	不会绣出的图稿
-embroidery	More colour blocks than {format} holds ({value})	色块数超过 {format} 所能容纳的数量 ({value})
-embroidery	{format} holds any number of colour blocks	{format} 可容纳任意数量的色块
+embroidery	More color blocks than {format} holds ({value})	色块数超过 {format} 所能容纳的数量 ({value})
+embroidery	{format} holds any number of color blocks	{format} 可容纳任意数量的色块
 embroidery	More stitches than a machine shows ({value})	针数超过绣花机能显示的数量 ({value})
 embroidery	More thread changes than a machine shows ({value})	换线次数超过绣花机能显示的数量 ({value})
 embroidery	No findings	未发现问题
@@ -5479,7 +5479,7 @@ embroidery	No source gives a number to check these against.	没有来源给出�
 @plural	{count} warning|{count} warnings	{count} 个警告
 @plural	{count} note|{count} notes	{count} 条提示
 @plural	and {count} more|and {count} more	另有 {count} 处
-embroidery	Threads unlike the art's colour (over {value})	与图稿颜色不符的线 (大于 {value})
+embroidery	Threads unlike the art's color (over {value})	与图稿颜色不符的线 (大于 {value})
 embroidery	Largest difference: {value}	最大差异：{value}
 embroidery	Block {block}: {thread}, {value}	第 {block} 块：{thread}，{value}
 	Zoom to Box	缩放到框
@@ -5500,7 +5500,7 @@ embroidery	Median: {value} mm	中位数：{value} mm
 embroidery	Too long	过长
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm：{stitches}
 embroidery	Over {value} mm: {stitches}	超过 {value} mm：{stitches}
-@plural	{count} colour|{count} colours	{count} 种颜色
+@plural	{count} color|{count} colors	{count} 种颜色
 embroidery	Embroidery: {figures}	刺绣：{figures}
 embroidery	Stitches can't be planned	无法规划针迹
 embroidery	Click to open the Embroidery panel.	点按可打开“刺绣”面板。
@@ -5700,7 +5700,7 @@ embroidery	Satin	缎纹
 embroidery	Running stitch	平针
 embroidery	Don't sew	不绣
 embroidery	None	无
-embroidery	Centre run	中线行针
+embroidery	Center run	中线行针
 embroidery	Edge run	边缘行针
 embroidery	Edge run + zigzag	边缘行针 + 锯齿
 embroidery	Edge run + tatami	边缘行针 + 榻榻米
@@ -5735,7 +5735,7 @@ embroidery	Restore {setting}	恢复{setting}
 embroidery	Auto: {choice}	自动：{choice}
 embroidery	Auto · {value}	自动 · {value}
 embroidery	filled outline	填充的轮廓
-embroidery	centre run	中线行针
+embroidery	center run	中线行针
 embroidery	edge run	边缘行针
 embroidery	edge run + zigzag	边缘行针 + 锯齿
 embroidery	edge run + tatami	边缘行针 + 榻榻米

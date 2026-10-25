@@ -5135,7 +5135,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} стібок|{count} стібки|{count} стібків
 @msg	tab {tab}: one of {_1}	вкладка {tab}: одна з {_1}
 @msg	unknown key `{k}`: the only one is {only}	невідомий ключ `{k}`: єдиний — {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Вишивається знизу вгору; об’єкти одного кольору об’єднуються, коли між ними нічого немає.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Вишивається знизу вгору; об’єкти одного кольору об’єднуються, коли між ними нічого немає.
 embroidery	Trim and thread change	Обрізання й зміна нитки
 embroidery	Thread change	Зміна нитки
 embroidery	fill	заливка
@@ -5148,7 +5148,7 @@ embroidery	narrow parts as satin	вузькі частини гладдю
 @plural	{count} object|{count} objects	{count} об’єкт|{count} об’єкти|{count} об’єктів
 @plural	{count} jump|{count} jumps	{count} перескок|{count} перескоки|{count} перескоків
 @plural	{count} trim|{count} trims	{count} обрізання|{count} обрізання|{count} обрізань
-embroidery	Colours	Кольори
+embroidery	Colors	Кольори
 embroidery	Thread changes	Зміни нитки
 embroidery	Trims	Обрізання
 embroidery	Jumps	Перескоки
@@ -5178,8 +5178,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Час при {sp
 @msg	can't change the sewing order: too many objects at once	не вдається змінити порядок вишивання: забагато об’єктів одночасно
 embroidery	After {name}	Після {name}
 embroidery	Before {name}	Перед {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Жоден стібок не зсунувся: об’єкти одного кольору й далі об’єднуються, коли ніщо між ними не лежить під ними.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} вишивається в блоці {block}, разом з іншими об’єктами свого кольору
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Жоден стібок не зсунувся: об’єкти одного кольору й далі об’єднуються, коли ніщо між ними не лежить під ними.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} вишивається в блоці {block}, разом з іншими об’єктами свого кольору
 embroidery	{name} is sewn in block {block}	{name} вишивається в блоці {block}
 embroidery	Thread changes: {before} → {after}	Зміни нитки: {before} → {after}
 embroidery	Collapse All	Згорнути все
@@ -5196,8 +5196,8 @@ embroidery	More than {value} short stitches in a row	Понад {value} коро
 embroidery	{value} or more layers of stitches on one spot	{value} або більше шарів стібків в одному місці
 embroidery	Everything is sewn	Вишивається все
 embroidery	Art that isn't sewn	Графіка, яка не вишивається
-embroidery	More colour blocks than {format} holds ({value})	Більше колірних блоків, ніж вміщує {format} ({value})
-embroidery	{format} holds any number of colour blocks	{format} вміщує будь-яку кількість колірних блоків
+embroidery	More color blocks than {format} holds ({value})	Більше колірних блоків, ніж вміщує {format} ({value})
+embroidery	{format} holds any number of color blocks	{format} вміщує будь-яку кількість колірних блоків
 embroidery	More stitches than a machine shows ({value})	Більше стібків, ніж показує машина ({value})
 embroidery	More thread changes than a machine shows ({value})	Більше змін нитки, ніж показує машина ({value})
 embroidery	No findings	Нічого не знайдено
@@ -5234,7 +5234,7 @@ embroidery	No source gives a number to check these against.	Жодне джер�
 @plural	{count} warning|{count} warnings	{count} попередження|{count} попередження|{count} попереджень
 @plural	{count} note|{count} notes	{count} примітка|{count} примітки|{count} приміток
 @plural	and {count} more|and {count} more	і ще {count}|і ще {count}|і ще {count}
-embroidery	Threads unlike the art's colour (over {value})	Нитки, не схожі на колір графіки (понад {value})
+embroidery	Threads unlike the art's color (over {value})	Нитки, не схожі на колір графіки (понад {value})
 embroidery	Largest difference: {value}	Найбільша різниця: {value}
 embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}
 	Zoom to Box	Масштаб за рамкою
@@ -5255,7 +5255,7 @@ embroidery	Median: {value} mm	Медіана: {value} мм
 embroidery	Too long	Задовгі
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
 embroidery	Over {value} mm: {stitches}	Понад {value} мм: {stitches}
-@plural	{count} colour|{count} colours	{count} колір|{count} кольори|{count} кольорів
+@plural	{count} color|{count} colors	{count} колір|{count} кольори|{count} кольорів
 embroidery	Embroidery: {figures}	Вишивка: {figures}
 embroidery	Stitches can't be planned	Не вдається спланувати стібки
 embroidery	Click to open the Embroidery panel.	Клацніть, щоб відкрити панель «Вишивка».
@@ -5456,7 +5456,7 @@ embroidery	Satin	Гладь
 embroidery	Running stitch	Прямий стібок
 embroidery	Don't sew	Не вишивати
 embroidery	None	Немає
-embroidery	Centre run	Прохід по центру
+embroidery	Center run	Прохід по центру
 embroidery	Edge run	Прохід по краю
 embroidery	Edge run + zigzag	Прохід по краю + зигзаг
 embroidery	Edge run + tatami	Прохід по краю + татамі
@@ -5491,7 +5491,7 @@ embroidery	Restore {setting}	Відновити: {setting}
 embroidery	Auto: {choice}	Авто: {choice}
 embroidery	Auto · {value}	Авто · {value}
 embroidery	filled outline	залитий контур
-embroidery	centre run	прохід по центру
+embroidery	center run	прохід по центру
 embroidery	edge run	прохід по краю
 embroidery	edge run + zigzag	прохід по краю + зигзаг
 embroidery	edge run + tatami	прохід по краю + татамі

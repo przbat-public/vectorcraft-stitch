@@ -5118,7 +5118,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count}땀
 @msg	tab {tab}: one of {_1}	탭 {tab}: {_1} 중 하나
 @msg	unknown key `{k}`: the only one is {only}	알 수 없는 키 `{k}`: 사용할 수 있는 키는 {only}뿐입니다
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	쌓인 순서의 아래부터 위로 수놓습니다. 사이에 아무것도 없으면 같은 색의 개체는 합쳐집니다.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	쌓인 순서의 아래부터 위로 수놓습니다. 사이에 아무것도 없으면 같은 색의 개체는 합쳐집니다.
 embroidery	Trim and thread change	실 자르기 및 실 교체
 embroidery	Thread change	실 교체
 embroidery	fill	칠
@@ -5131,7 +5131,7 @@ embroidery	narrow parts as satin	좁은 부분은 새틴
 @plural	{count} object|{count} objects	개체 {count}개
 @plural	{count} jump|{count} jumps	점프 {count}회
 @plural	{count} trim|{count} trims	실 자르기 {count}회
-embroidery	Colours	색
+embroidery	Colors	색
 embroidery	Thread changes	실 교체
 embroidery	Trims	실 자르기
 embroidery	Jumps	점프
@@ -5161,8 +5161,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	분당 {speed}땀
 @msg	can't change the sewing order: too many objects at once	자수 순서를 바꿀 수 없습니다: 한 번에 너무 많은 개체입니다
 embroidery	After {name}	{name} 다음
 embroidery	Before {name}	{name} 앞
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	스티치가 움직이지 않았습니다. 사이에 있는 것이 아래에 놓이지 않으면 같은 색의 개체는 계속 합쳐집니다.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name}은(는) 블록 {block}에서 같은 색의 다른 개체와 합쳐 수놓입니다
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	스티치가 움직이지 않았습니다. 사이에 있는 것이 아래에 놓이지 않으면 같은 색의 개체는 계속 합쳐집니다.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name}은(는) 블록 {block}에서 같은 색의 다른 개체와 합쳐 수놓입니다
 embroidery	{name} is sewn in block {block}	{name}은(는) 블록 {block}에서 수놓입니다
 embroidery	Thread changes: {before} → {after}	실 교체: {before} → {after}
 embroidery	Collapse All	모두 접기
@@ -5179,8 +5179,8 @@ embroidery	More than {value} short stitches in a row	짧은 땀이 {value}개를
 embroidery	{value} or more layers of stitches on one spot	한 곳에 {value}겹 이상 겹친 땀
 embroidery	Everything is sewn	모두 수놓아집니다
 embroidery	Art that isn't sewn	수놓아지지 않는 아트워크
-embroidery	More colour blocks than {format} holds ({value})	{format}에 담을 수 있는 것보다 많은 색 블록({value})
-embroidery	{format} holds any number of colour blocks	{format}은(는) 색 블록을 개수 제한 없이 담습니다
+embroidery	More color blocks than {format} holds ({value})	{format}에 담을 수 있는 것보다 많은 색 블록({value})
+embroidery	{format} holds any number of color blocks	{format}은(는) 색 블록을 개수 제한 없이 담습니다
 embroidery	More stitches than a machine shows ({value})	기계가 표시하는 것보다 많은 땀({value})
 embroidery	More thread changes than a machine shows ({value})	기계가 표시하는 것보다 많은 실 교체({value})
 embroidery	No findings	발견된 항목 없음
@@ -5217,7 +5217,7 @@ embroidery	No source gives a number to check these against.	이 항목을 검사
 @plural	{count} warning|{count} warnings	경고 {count}개
 @plural	{count} note|{count} notes	참고 {count}개
 @plural	and {count} more|and {count} more	외 {count}개
-embroidery	Threads unlike the art's colour (over {value})	아트워크 색과 다른 실({value} 초과)
+embroidery	Threads unlike the art's color (over {value})	아트워크 색과 다른 실({value} 초과)
 embroidery	Largest difference: {value}	최대 차이: {value}
 embroidery	Block {block}: {thread}, {value}	{block}번 블록: {thread}, {value}
 	Zoom to Box	상자에 맞게 확대/축소
@@ -5238,7 +5238,7 @@ embroidery	Median: {value} mm	중앙값: {value}mm
 embroidery	Too long	너무 김
 embroidery	{from}–{to} mm: {stitches}	{from}–{to}mm: {stitches}
 embroidery	Over {value} mm: {stitches}	{value}mm 초과: {stitches}
-@plural	{count} colour|{count} colours	{count}색
+@plural	{count} color|{count} colors	{count}색
 embroidery	Embroidery: {figures}	자수: {figures}
 embroidery	Stitches can't be planned	땀을 계획할 수 없습니다
 embroidery	Click to open the Embroidery panel.	클릭하면 자수 패널이 열립니다.
@@ -5439,7 +5439,7 @@ embroidery	Satin	새틴
 embroidery	Running stitch	러닝 스티치
 embroidery	Don't sew	수놓지 않음
 embroidery	None	없음
-embroidery	Centre run	가운데 러닝
+embroidery	Center run	가운데 러닝
 embroidery	Edge run	가장자리 러닝
 embroidery	Edge run + zigzag	가장자리 러닝 + 지그재그
 embroidery	Edge run + tatami	가장자리 러닝 + 타타미
@@ -5474,7 +5474,7 @@ embroidery	Restore {setting}	{setting} 되돌리기
 embroidery	Auto: {choice}	자동: {choice}
 embroidery	Auto · {value}	자동 · {value}
 embroidery	filled outline	채운 윤곽
-embroidery	centre run	가운데 러닝
+embroidery	center run	가운데 러닝
 embroidery	edge run	가장자리 러닝
 embroidery	edge run + zigzag	가장자리 러닝 + 지그재그
 embroidery	edge run + tatami	가장자리 러닝 + 타타미

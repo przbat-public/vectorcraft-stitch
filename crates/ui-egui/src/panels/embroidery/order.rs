@@ -354,7 +354,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
     let Some(listed) = read(&mut app.embroidery.order, of, reply) else { return };
     let order = listed.order.clone();
     ui.label(
-        egui::RichText::new(crate::et!("Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them."))
+        egui::RichText::new(crate::et!("Sewn from the bottom of the stack up; objects of one color join when nothing lies between them."))
             .size(SMALL)
             .color(t.text_dim),
     );
@@ -689,10 +689,10 @@ fn note(app: &mut VectorcraftApp, ui: &mut Ui, uid: u64, generation: u64, plan: 
     let name = |id: NodeId| doc.as_ref().and_then(|d| d.node(id)).map_or_else(String::new, |n| crate::panels::layers::shown_name(app, n, lang));
     let mut lines = Vec::new();
     if e.unchanged {
-        lines.push(crate::et!("No stitch moved: objects of one colour still join when nothing between lies under them.").to_string());
+        lines.push(crate::et!("No stitch moved: objects of one color still join when nothing between lies under them.").to_string());
     } else if let Some(m) = e.moved.first() {
         let template = if m.joined {
-            crate::et!("{name} is sewn in block {block}, joined with others of its colour")
+            crate::et!("{name} is sewn in block {block}, joined with others of its color")
         } else {
             crate::et!("{name} is sewn in block {block}")
         };
@@ -932,7 +932,7 @@ fn figures(stats: &Value) -> [(&'static str, String); 8] {
     };
     [
         (crate::et!("Stitches"), count("stitches")),
-        (crate::et!("Colours"), count("threadCount")),
+        (crate::et!("Colors"), count("threadCount")),
         (crate::et!("Thread changes"), count("colorChanges")),
         (crate::et!("Trims"), count("trims")),
         (crate::et!("Jumps"), count("jumps")),

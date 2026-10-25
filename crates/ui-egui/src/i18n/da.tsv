@@ -5483,7 +5483,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} sting|{count} sting
 @msg	tab {tab}: one of {_1}	fane {tab}: en af {_1}
 @msg	unknown key `{k}`: the only one is {only}	ukendt nøgle `{k}`: den eneste er {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Sys nedefra og op; objekter med samme farve samles, når intet ligger imellem dem.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Sys nedefra og op; objekter med samme farve samles, når intet ligger imellem dem.
 embroidery	Trim and thread change	Klip og trådskift
 embroidery	Thread change	Trådskift
 embroidery	fill	udfyldning
@@ -5496,7 +5496,7 @@ embroidery	narrow parts as satin	smalle dele som satin
 @plural	{count} object|{count} objects	{count} objekt|{count} objekter
 @plural	{count} jump|{count} jumps	{count} spring|{count} spring
 @plural	{count} trim|{count} trims	{count} klip|{count} klip
-embroidery	Colours	Farver
+embroidery	Colors	Farver
 embroidery	Thread changes	Trådskift
 embroidery	Trims	Klip
 embroidery	Jumps	Spring
@@ -5526,8 +5526,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Tiden ved {speed}
 @msg	can't change the sewing order: too many objects at once	syrækkefølgen kan ikke ændres: for mange objekter på én gang
 embroidery	After {name}	Efter {name}
 embroidery	Before {name}	Før {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Intet sting flyttede sig: objekter med samme farve samles stadig, når intet imellem ligger under dem.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} sys i blok {block}, samlet med de andre i sin farve
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Intet sting flyttede sig: objekter med samme farve samles stadig, når intet imellem ligger under dem.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} sys i blok {block}, samlet med de andre i sin farve
 embroidery	{name} is sewn in block {block}	{name} sys i blok {block}
 embroidery	Thread changes: {before} → {after}	Trådskift: {before} → {after}
 embroidery	Collapse All	Skjul alle
@@ -5544,8 +5544,8 @@ embroidery	More than {value} short stitches in a row	Mere end {value} korte stin
 embroidery	{value} or more layers of stitches on one spot	{value} eller flere lag sting på ét sted
 embroidery	Everything is sewn	Alt bliver syet
 embroidery	Art that isn't sewn	Grafik, der ikke bliver syet
-embroidery	More colour blocks than {format} holds ({value})	Flere farveblokke, end {format} kan rumme ({value})
-embroidery	{format} holds any number of colour blocks	{format} kan rumme et vilkårligt antal farveblokke
+embroidery	More color blocks than {format} holds ({value})	Flere farveblokke, end {format} kan rumme ({value})
+embroidery	{format} holds any number of color blocks	{format} kan rumme et vilkårligt antal farveblokke
 embroidery	More stitches than a machine shows ({value})	Flere sting, end en maskine viser ({value})
 embroidery	More thread changes than a machine shows ({value})	Flere trådskift, end en maskine viser ({value})
 embroidery	No findings	Intet fundet
@@ -5582,7 +5582,7 @@ embroidery	No source gives a number to check these against.	Ingen kilde giver et
 @plural	{count} warning|{count} warnings	{count} advarsel|{count} advarsler
 @plural	{count} note|{count} notes	{count} bemærkning|{count} bemærkninger
 @plural	and {count} more|and {count} more	og {count} mere|og {count} mere
-embroidery	Threads unlike the art's colour (over {value})	Tråde, der ikke ligner grafikkens farve (over {value})
+embroidery	Threads unlike the art's color (over {value})	Tråde, der ikke ligner grafikkens farve (over {value})
 embroidery	Largest difference: {value}	Største forskel: {value}
 embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 	Zoom to Box	Zoom til felt
@@ -5603,7 +5603,7 @@ embroidery	Median: {value} mm	Median: {value} mm
 embroidery	Too long	For lange
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Over {value} mm: {stitches}
-@plural	{count} colour|{count} colours	{count} farve|{count} farver
+@plural	{count} color|{count} colors	{count} farve|{count} farver
 embroidery	Embroidery: {figures}	Broderi: {figures}
 embroidery	Stitches can't be planned	Stingene kan ikke planlægges
 embroidery	Click to open the Embroidery panel.	Klik for at åbne panelet Broderi.
@@ -5816,7 +5816,7 @@ embroidery	Satin	Satin
 embroidery	Running stitch	Forsting
 embroidery	Don't sew	Sy ikke
 embroidery	None	Ingen
-embroidery	Centre run	Midterløb
+embroidery	Center run	Midterløb
 embroidery	Edge run	Kantløb
 embroidery	Edge run + zigzag	Kantløb + zigzag
 embroidery	Edge run + tatami	Kantløb + tatami
@@ -5851,7 +5851,7 @@ embroidery	Restore {setting}	Gendan: {setting}
 embroidery	Auto: {choice}	Auto: {choice}
 embroidery	Auto · {value}	Auto · {value}
 embroidery	filled outline	udfyldt kontur
-embroidery	centre run	midterløb
+embroidery	center run	midterløb
 embroidery	edge run	kantløb
 embroidery	edge run + zigzag	kantløb + zigzag
 embroidery	edge run + tatami	kantløb + tatami

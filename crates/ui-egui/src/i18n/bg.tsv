@@ -5496,7 +5496,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} бод|{count} бода
 @msg	tab {tab}: one of {_1}	раздел {tab}: един от {_1}
 @msg	unknown key `{k}`: the only one is {only}	непознат ключ `{k}`: единственият е {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Шие се от дъното на купчината нагоре; обектите с един цвят се обединяват, когато между тях няма нищо.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Шие се от дъното на купчината нагоре; обектите с един цвят се обединяват, когато между тях няма нищо.
 embroidery	Trim and thread change	Срязване и смяна на нишката
 embroidery	Thread change	Смяна на нишката
 embroidery	fill	запълване
@@ -5509,7 +5509,7 @@ embroidery	narrow parts as satin	тесните части като сатен
 @plural	{count} object|{count} objects	{count} обект|{count} обекта
 @plural	{count} jump|{count} jumps	{count} прескок|{count} прескока
 @plural	{count} trim|{count} trims	{count} срязване|{count} срязвания
-embroidery	Colours	Цветове
+embroidery	Colors	Цветове
 embroidery	Thread changes	Смени на нишката
 embroidery	Trims	Срязвания
 embroidery	Jumps	Прескоци
@@ -5539,8 +5539,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Времето п
 @msg	can't change the sewing order: too many objects at once	сменяне на реда на шиене не е възможно: твърде много обекти наведнъж
 embroidery	After {name}	След {name}
 embroidery	Before {name}	Преди {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Нито един бод не се премести: обектите с един цвят се обединяват, когато нищо между тях не лежи под тях.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} се шие в блок {block}, обединен с другите от своя цвят
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Нито един бод не се премести: обектите с един цвят се обединяват, когато нищо между тях не лежи под тях.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} се шие в блок {block}, обединен с другите от своя цвят
 embroidery	{name} is sewn in block {block}	{name} се шие в блок {block}
 embroidery	Thread changes: {before} → {after}	Смени на нишката: {before} → {after}
 embroidery	Collapse All	Свий всички
@@ -5557,8 +5557,8 @@ embroidery	More than {value} short stitches in a row	Повече от {value} �
 embroidery	{value} or more layers of stitches on one spot	{value} или повече слоя бодове на едно място
 embroidery	Everything is sewn	Всичко се бродира
 embroidery	Art that isn't sewn	Графика, която не се бродира
-embroidery	More colour blocks than {format} holds ({value})	Повече цветни блокове, отколкото побира {format} ({value})
-embroidery	{format} holds any number of colour blocks	{format} побира произволен брой цветни блокове
+embroidery	More color blocks than {format} holds ({value})	Повече цветни блокове, отколкото побира {format} ({value})
+embroidery	{format} holds any number of color blocks	{format} побира произволен брой цветни блокове
 embroidery	More stitches than a machine shows ({value})	Повече бодове, отколкото показва машина ({value})
 embroidery	More thread changes than a machine shows ({value})	Повече смени на нишката, отколкото показва машина ({value})
 embroidery	No findings	Няма открити
@@ -5595,7 +5595,7 @@ embroidery	No source gives a number to check these against.	Нито един и
 @plural	{count} warning|{count} warnings	{count} предупреждение|{count} предупреждения
 @plural	{count} note|{count} notes	{count} бележка|{count} бележки
 @plural	and {count} more|and {count} more	и още {count}|и още {count}
-embroidery	Threads unlike the art's colour (over {value})	Нишки, различни от цвета на графиката (над {value})
+embroidery	Threads unlike the art's color (over {value})	Нишки, различни от цвета на графиката (над {value})
 embroidery	Largest difference: {value}	Най-голяма разлика: {value}
 embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}
 	Zoom to Box	Мащабиране до рамка
@@ -5616,7 +5616,7 @@ embroidery	Median: {value} mm	Медиана: {value} мм
 embroidery	Too long	Твърде дълги
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
 embroidery	Over {value} mm: {stitches}	Над {value} мм: {stitches}
-@plural	{count} colour|{count} colours	{count} цвят|{count} цвята
+@plural	{count} color|{count} colors	{count} цвят|{count} цвята
 embroidery	Embroidery: {figures}	Бродерия: {figures}
 embroidery	Stitches can't be planned	Бодовете не могат да бъдат планирани
 embroidery	Click to open the Embroidery panel.	Щракнете, за да отворите панела „Бродерия“.
@@ -5800,7 +5800,7 @@ embroidery	Satin	Сатен
 embroidery	Running stitch	Прав бод
 embroidery	Don't sew	Не бродирай
 embroidery	None	Няма
-embroidery	Centre run	Централен ход
+embroidery	Center run	Централен ход
 embroidery	Edge run	Ход по ръба
 embroidery	Edge run + zigzag	Ход по ръба + зигзаг
 embroidery	Edge run + tatami	Ход по ръба + татами
@@ -5835,7 +5835,7 @@ embroidery	Restore {setting}	Възстановяване: {setting}
 embroidery	Auto: {choice}	Автоматично: {choice}
 embroidery	Auto · {value}	Автоматично · {value}
 embroidery	filled outline	запълнен контур
-embroidery	centre run	централен ход
+embroidery	center run	централен ход
 embroidery	edge run	ход по ръба
 embroidery	edge run + zigzag	ход по ръба + зигзаг
 embroidery	edge run + tatami	ход по ръба + татами

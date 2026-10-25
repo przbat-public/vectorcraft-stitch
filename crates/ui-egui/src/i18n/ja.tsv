@@ -5195,7 +5195,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} 針
 @msg	tab {tab}: one of {_1}	タブ {tab}: {_1} のいずれか
 @msg	unknown key `{k}`: the only one is {only}	不明なキー `{k}`: 使えるのは {only} だけです
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	重なりの下から順に縫われます。間に何もなければ同じ色のオブジェクトはまとめられます。
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	重なりの下から順に縫われます。間に何もなければ同じ色のオブジェクトはまとめられます。
 embroidery	Trim and thread change	糸切りと糸替え
 embroidery	Thread change	糸替え
 embroidery	fill	塗り
@@ -5208,7 +5208,7 @@ embroidery	narrow parts as satin	細い部分はサテン
 @plural	{count} object|{count} objects	{count} 個のオブジェクト
 @plural	{count} jump|{count} jumps	{count} 回のジャンプ
 @plural	{count} trim|{count} trims	{count} 回の糸切り
-embroidery	Colours	色
+embroidery	Colors	色
 embroidery	Thread changes	糸替え
 embroidery	Trims	糸切り
 embroidery	Jumps	ジャンプ
@@ -5238,8 +5238,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	1 分あたり {s
 @msg	can't change the sewing order: too many objects at once	縫い順を変更できません: 一度に扱うオブジェクトが多すぎます
 embroidery	After {name}	{name} の後
 embroidery	Before {name}	{name} の前
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	ステッチは移動していません。間にあるものがその下になければ、同じ色のオブジェクトはまとめられたままです。
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} はブロック {block} で、同じ色のほかのオブジェクトとまとめて縫われます
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	ステッチは移動していません。間にあるものがその下になければ、同じ色のオブジェクトはまとめられたままです。
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} はブロック {block} で、同じ色のほかのオブジェクトとまとめて縫われます
 embroidery	{name} is sewn in block {block}	{name} はブロック {block} で縫われます
 embroidery	Thread changes: {before} → {after}	糸替え: {before} → {after}
 embroidery	Collapse All	すべて折りたたむ
@@ -5256,8 +5256,8 @@ embroidery	More than {value} short stitches in a row	短い針目が {value} 個
 embroidery	{value} or more layers of stitches on one spot	1 か所に {value} 層以上の針目
 embroidery	Everything is sewn	すべて縫われます
 embroidery	Art that isn't sewn	縫われないアートワーク
-embroidery	More colour blocks than {format} holds ({value})	{format} に収まる数を超える色ブロック ({value})
-embroidery	{format} holds any number of colour blocks	{format} は色ブロックをいくつでも収められます
+embroidery	More color blocks than {format} holds ({value})	{format} に収まる数を超える色ブロック ({value})
+embroidery	{format} holds any number of color blocks	{format} は色ブロックをいくつでも収められます
 embroidery	More stitches than a machine shows ({value})	ミシンが表示できる数を超える針数 ({value})
 embroidery	More thread changes than a machine shows ({value})	ミシンが表示できる数を超える糸替え ({value})
 embroidery	No findings	問題なし
@@ -5294,7 +5294,7 @@ embroidery	No source gives a number to check these against.	これらを判定�
 @plural	{count} warning|{count} warnings	警告 {count} 件
 @plural	{count} note|{count} notes	注記 {count} 件
 @plural	and {count} more|and {count} more	ほか {count} 件
-embroidery	Threads unlike the art's colour (over {value})	アートワークの色と違う糸 ({value} 超)
+embroidery	Threads unlike the art's color (over {value})	アートワークの色と違う糸 ({value} 超)
 embroidery	Largest difference: {value}	最大差: {value}
 embroidery	Block {block}: {thread}, {value}	ブロック {block}: {thread}、{value}
 	Zoom to Box	ボックスにズーム
@@ -5315,7 +5315,7 @@ embroidery	Median: {value} mm	中央値: {value} mm
 embroidery	Too long	長すぎ
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} mm 超: {stitches}
-@plural	{count} colour|{count} colours	{count} 色
+@plural	{count} color|{count} colors	{count} 色
 embroidery	Embroidery: {figures}	刺繍: {figures}
 embroidery	Stitches can't be planned	針目を計画できません
 embroidery	Click to open the Embroidery panel.	クリックすると刺繍パネルが開きます。
@@ -5538,7 +5538,7 @@ embroidery	Satin	サテン
 embroidery	Running stitch	ランニングステッチ
 embroidery	Don't sew	縫わない
 embroidery	None	なし
-embroidery	Centre run	中央ラン
+embroidery	Center run	中央ラン
 embroidery	Edge run	エッジラン
 embroidery	Edge run + zigzag	エッジラン＋ジグザグ
 embroidery	Edge run + tatami	エッジラン＋タタミ
@@ -5573,7 +5573,7 @@ embroidery	Restore {setting}	{setting}を元に戻す
 embroidery	Auto: {choice}	自動：{choice}
 embroidery	Auto · {value}	自動・{value}
 embroidery	filled outline	塗りつぶしたアウトライン
-embroidery	centre run	中央ラン
+embroidery	center run	中央ラン
 embroidery	edge run	エッジラン
 embroidery	edge run + zigzag	エッジラン＋ジグザグ
 embroidery	edge run + tatami	エッジラン＋タタミ

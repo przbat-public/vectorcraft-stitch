@@ -143,9 +143,9 @@ fn titles_carry_the_formats_threshold_in_the_languages_numbers() {
     assert_eq!(title(&rule(&dst, "formatStep"), format_label("dst"), Lang::EN), "Stitches longer than one Tajima DST record (12.1 mm)");
     let jef = check_reply(&mut app, json!({"format": "jef"}));
     assert_eq!(title(&rule(&jef, "formatStep"), format_label("jef"), Lang::EN), "Stitches longer than one Janome JEF record (12.7 mm)");
-    assert_eq!(title(&rule(&jef, "formatColors"), format_label("jef"), Lang::EN), "Janome JEF holds any number of colour blocks");
+    assert_eq!(title(&rule(&jef, "formatColors"), format_label("jef"), Lang::EN), "Janome JEF holds any number of color blocks");
     let pes = check_reply(&mut app, json!({"format": "pes"}));
-    assert_eq!(title(&rule(&pes, "formatColors"), format_label("pes"), Lang::EN), "More colour blocks than Brother PES holds (255)");
+    assert_eq!(title(&rule(&pes, "formatColors"), format_label("pes"), Lang::EN), "More color blocks than Brother PES holds (255)");
     let pl = Lang::from_code("pl").unwrap();
     crate::i18n::set_current(pl);
     let below = title(&rule(&jef, "stitchBelowNeedle"), "", pl);

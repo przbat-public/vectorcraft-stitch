@@ -5526,7 +5526,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} steek|{count} steken
 @msg	tab {tab}: one of {_1}	tabblad {tab}: een van {_1}
 @msg	unknown key `{k}`: the only one is {only}	onbekende sleutel `{k}`: de enige is {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Geborduurd van onder naar boven; objecten van één kleur worden samengevoegd als er niets tussen ligt.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Geborduurd van onder naar boven; objecten van één kleur worden samengevoegd als er niets tussen ligt.
 embroidery	Trim and thread change	Knippen en draadwissel
 embroidery	Thread change	Draadwissel
 embroidery	fill	vulling
@@ -5539,7 +5539,7 @@ embroidery	narrow parts as satin	smalle delen als satijnsteek
 @plural	{count} object|{count} objects	{count} object|{count} objecten
 @plural	{count} jump|{count} jumps	{count} sprong|{count} sprongen
 @plural	{count} trim|{count} trims	{count} knip|{count} knippen
-embroidery	Colours	Kleuren
+embroidery	Colors	Kleuren
 embroidery	Thread changes	Draadwissels
 embroidery	Trims	Knippen
 embroidery	Jumps	Sprongen
@@ -5569,8 +5569,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	De tijd bij {spee
 @msg	can't change the sewing order: too many objects at once	de borduurvolgorde kan niet worden gewijzigd: te veel objecten tegelijk
 embroidery	After {name}	Na {name}
 embroidery	Before {name}	Voor {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Er is geen steek verschoven: objecten van één kleur blijven samengevoegd als niets ertussen eronder ligt.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} wordt geborduurd in blok {block}, samengevoegd met de andere van zijn kleur
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Er is geen steek verschoven: objecten van één kleur blijven samengevoegd als niets ertussen eronder ligt.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} wordt geborduurd in blok {block}, samengevoegd met de andere van zijn kleur
 embroidery	{name} is sewn in block {block}	{name} wordt geborduurd in blok {block}
 embroidery	Thread changes: {before} → {after}	Draadwissels: {before} → {after}
 embroidery	Collapse All	Alles samenvouwen
@@ -5587,8 +5587,8 @@ embroidery	More than {value} short stitches in a row	Meer dan {value} korte stek
 embroidery	{value} or more layers of stitches on one spot	{value} of meer lagen steken op één plek
 embroidery	Everything is sewn	Alles wordt geborduurd
 embroidery	Art that isn't sewn	Illustratie die niet wordt geborduurd
-embroidery	More colour blocks than {format} holds ({value})	Meer kleurblokken dan {format} bevat ({value})
-embroidery	{format} holds any number of colour blocks	{format} bevat een willekeurig aantal kleurblokken
+embroidery	More color blocks than {format} holds ({value})	Meer kleurblokken dan {format} bevat ({value})
+embroidery	{format} holds any number of color blocks	{format} bevat een willekeurig aantal kleurblokken
 embroidery	More stitches than a machine shows ({value})	Meer steken dan een machine toont ({value})
 embroidery	More thread changes than a machine shows ({value})	Meer draadwissels dan een machine toont ({value})
 embroidery	No findings	Niets gevonden
@@ -5625,7 +5625,7 @@ embroidery	No source gives a number to check these against.	Geen enkele bron gee
 @plural	{count} warning|{count} warnings	{count} waarschuwing|{count} waarschuwingen
 @plural	{count} note|{count} notes	{count} opmerking|{count} opmerkingen
 @plural	and {count} more|and {count} more	en nog {count}|en nog {count}
-embroidery	Threads unlike the art's colour (over {value})	Draden die afwijken van de kleur van de illustratie (boven {value})
+embroidery	Threads unlike the art's color (over {value})	Draden die afwijken van de kleur van de illustratie (boven {value})
 embroidery	Largest difference: {value}	Grootste verschil: {value}
 embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 	Zoom to Box	Zoomen naar kader
@@ -5646,7 +5646,7 @@ embroidery	Median: {value} mm	Mediaan: {value} mm
 embroidery	Too long	Te lang
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Boven {value} mm: {stitches}
-@plural	{count} colour|{count} colours	{count} kleur|{count} kleuren
+@plural	{count} color|{count} colors	{count} kleur|{count} kleuren
 embroidery	Embroidery: {figures}	Borduurwerk: {figures}
 embroidery	Stitches can't be planned	De steken kunnen niet worden gepland
 embroidery	Click to open the Embroidery panel.	Klik om het deelvenster Borduurwerk te openen.
@@ -5859,7 +5859,7 @@ embroidery	Satin	Satijn
 embroidery	Running stitch	Rechte steek
 embroidery	Don't sew	Niet borduren
 embroidery	None	Geen
-embroidery	Centre run	Middenloop
+embroidery	Center run	Middenloop
 embroidery	Edge run	Randloop
 embroidery	Edge run + zigzag	Randloop + zigzag
 embroidery	Edge run + tatami	Randloop + tatami
@@ -5894,7 +5894,7 @@ embroidery	Restore {setting}	{setting} herstellen
 embroidery	Auto: {choice}	Automatisch: {choice}
 embroidery	Auto · {value}	Automatisch · {value}
 embroidery	filled outline	gevulde omtrek
-embroidery	centre run	middenloop
+embroidery	center run	middenloop
 embroidery	edge run	randloop
 embroidery	edge run + zigzag	randloop + zigzag
 embroidery	edge run + tatami	randloop + tatami

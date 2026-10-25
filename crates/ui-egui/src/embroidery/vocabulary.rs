@@ -91,7 +91,7 @@ pub fn underlay(id: &str) -> String {
     match id {
         "auto" => crate::et!("Auto").to_string(),
         "none" => crate::et!("None").to_string(),
-        "center" => crate::et!("Centre run").to_string(),
+        "center" => crate::et!("Center run").to_string(),
         "edge" => crate::et!("Edge run").to_string(),
         "edgeZigzag" => crate::et!("Edge run + zigzag").to_string(),
         "edgeTatami" => crate::et!("Edge run + tatami").to_string(),
@@ -103,7 +103,7 @@ pub fn underlay(id: &str) -> String {
 /// or a fill's by its size (no kind: an edge run, and a tatami layer under a large fill).
 pub fn underlay_chosen(chose: Option<&str>) -> String {
     match chose {
-        Some("center") => crate::et!("centre run").to_string(),
+        Some("center") => crate::et!("center run").to_string(),
         Some("edge") => crate::et!("edge run").to_string(),
         Some("edgeZigzag") => crate::et!("edge run + zigzag").to_string(),
         Some("edgeTatami") => crate::et!("edge run + tatami").to_string(),

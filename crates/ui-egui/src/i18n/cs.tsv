@@ -5542,7 +5542,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} steh|{count} stehy|{count} stehů
 @msg	tab {tab}: one of {_1}	karta {tab}: jedna z {_1}
 @msg	unknown key `{k}`: the only one is {only}	neznámý klíč `{k}`: jediný je {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Šije se odspodu nahoru; objekty jedné barvy se spojí, když mezi nimi nic neleží.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Šije se odspodu nahoru; objekty jedné barvy se spojí, když mezi nimi nic neleží.
 embroidery	Trim and thread change	Ustřižení a výměna nitě
 embroidery	Thread change	Výměna nitě
 embroidery	fill	výplň
@@ -5555,7 +5555,7 @@ embroidery	narrow parts as satin	úzké části saténem
 @plural	{count} object|{count} objects	{count} objekt|{count} objekty|{count} objektů
 @plural	{count} jump|{count} jumps	{count} přeskok|{count} přeskoky|{count} přeskoků
 @plural	{count} trim|{count} trims	{count} střih|{count} střihy|{count} střihů
-embroidery	Colours	Barvy
+embroidery	Colors	Barvy
 embroidery	Thread changes	Výměny nitě
 embroidery	Trims	Střihy
 embroidery	Jumps	Přeskoky
@@ -5585,8 +5585,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Čas při {speed}
 @msg	can't change the sewing order: too many objects at once	pořadí šití nelze změnit: příliš mnoho objektů najednou
 embroidery	After {name}	Za {name}
 embroidery	Before {name}	Před {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Žádný steh se nepřesunul: objekty jedné barvy se dál spojují, když nic mezi nimi neleží pod nimi.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} se šije v bloku {block}, spojený s ostatními své barvy
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Žádný steh se nepřesunul: objekty jedné barvy se dál spojují, když nic mezi nimi neleží pod nimi.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} se šije v bloku {block}, spojený s ostatními své barvy
 embroidery	{name} is sewn in block {block}	{name} se šije v bloku {block}
 embroidery	Thread changes: {before} → {after}	Výměny nitě: {before} → {after}
 embroidery	Collapse All	Sbalit vše
@@ -5603,8 +5603,8 @@ embroidery	More than {value} short stitches in a row	Více než {value} krátký
 embroidery	{value} or more layers of stitches on one spot	{value} nebo více vrstev stehů na jednom místě
 embroidery	Everything is sewn	Vše se vyšije
 embroidery	Art that isn't sewn	Grafika, která se nevyšije
-embroidery	More colour blocks than {format} holds ({value})	Více barevných bloků, než pojme {format} ({value})
-embroidery	{format} holds any number of colour blocks	{format} pojme libovolný počet barevných bloků
+embroidery	More color blocks than {format} holds ({value})	Více barevných bloků, než pojme {format} ({value})
+embroidery	{format} holds any number of color blocks	{format} pojme libovolný počet barevných bloků
 embroidery	More stitches than a machine shows ({value})	Více stehů, než zobrazí stroj ({value})
 embroidery	More thread changes than a machine shows ({value})	Více výměn nitě, než zobrazí stroj ({value})
 embroidery	No findings	Nic nenalezeno
@@ -5641,7 +5641,7 @@ embroidery	No source gives a number to check these against.	Žádný zdroj neuv�
 @plural	{count} warning|{count} warnings	{count} upozornění|{count} upozornění|{count} upozornění
 @plural	{count} note|{count} notes	{count} poznámka|{count} poznámky|{count} poznámek
 @plural	and {count} more|and {count} more	a ještě {count}|a ještě {count}|a ještě {count}
-embroidery	Threads unlike the art's colour (over {value})	Nitě odlišné od barvy grafiky (nad {value})
+embroidery	Threads unlike the art's color (over {value})	Nitě odlišné od barvy grafiky (nad {value})
 embroidery	Largest difference: {value}	Největší rozdíl: {value}
 embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 	Zoom to Box	Přiblížit na rámeček
@@ -5662,7 +5662,7 @@ embroidery	Median: {value} mm	Medián: {value} mm
 embroidery	Too long	Příliš dlouhé
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Nad {value} mm: {stitches}
-@plural	{count} colour|{count} colours	{count} barva|{count} barvy|{count} barev
+@plural	{count} color|{count} colors	{count} barva|{count} barvy|{count} barev
 embroidery	Embroidery: {figures}	Výšivka: {figures}
 embroidery	Stitches can't be planned	Stehy nelze naplánovat
 embroidery	Click to open the Embroidery panel.	Kliknutím otevřete panel Výšivka.
@@ -5861,7 +5861,7 @@ embroidery	Satin	Satén
 embroidery	Running stitch	Rovný steh
 embroidery	Don't sew	Nevyšívat
 embroidery	None	Žádné
-embroidery	Centre run	Středový průchod
+embroidery	Center run	Středový průchod
 embroidery	Edge run	Okrajový průchod
 embroidery	Edge run + zigzag	Okrajový průchod + cikcak
 embroidery	Edge run + tatami	Okrajový průchod + tatami
@@ -5896,7 +5896,7 @@ embroidery	Restore {setting}	Obnovit: {setting}
 embroidery	Auto: {choice}	Automaticky: {choice}
 embroidery	Auto · {value}	Automaticky · {value}
 embroidery	filled outline	vyplněný obrys
-embroidery	centre run	středový průchod
+embroidery	center run	středový průchod
 embroidery	edge run	okrajový průchod
 embroidery	edge run + zigzag	okrajový průchod + cikcak
 embroidery	edge run + tatami	okrajový průchod + tatami

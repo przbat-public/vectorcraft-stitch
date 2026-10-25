@@ -5135,7 +5135,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} mũi
 @msg	tab {tab}: one of {_1}	thẻ {tab}: một trong {_1}
 @msg	unknown key `{k}`: the only one is {only}	khóa không xác định `{k}`: khóa duy nhất là {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Thêu từ dưới lên theo thứ tự xếp chồng; các đối tượng cùng màu được gộp khi không có gì nằm giữa.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Thêu từ dưới lên theo thứ tự xếp chồng; các đối tượng cùng màu được gộp khi không có gì nằm giữa.
 embroidery	Trim and thread change	Cắt chỉ và đổi chỉ
 embroidery	Thread change	Đổi chỉ
 embroidery	fill	tô
@@ -5148,7 +5148,7 @@ embroidery	narrow parts as satin	phần hẹp thêu sa-tanh
 @plural	{count} object|{count} objects	{count} đối tượng
 @plural	{count} jump|{count} jumps	{count} mũi nhảy
 @plural	{count} trim|{count} trims	{count} lần cắt chỉ
-embroidery	Colours	Màu
+embroidery	Colors	Màu
 embroidery	Thread changes	Đổi chỉ
 embroidery	Trims	Cắt chỉ
 embroidery	Jumps	Mũi nhảy
@@ -5178,8 +5178,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Thời gian ở t
 @msg	can't change the sewing order: too many objects at once	không thể đổi thứ tự thêu: quá nhiều đối tượng cùng lúc
 embroidery	After {name}	Sau {name}
 embroidery	Before {name}	Trước {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Không mũi nào di chuyển: các đối tượng cùng màu vẫn được gộp khi không có gì ở giữa nằm dưới chúng.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} được thêu trong khối {block}, gộp với các đối tượng khác cùng màu
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Không mũi nào di chuyển: các đối tượng cùng màu vẫn được gộp khi không có gì ở giữa nằm dưới chúng.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} được thêu trong khối {block}, gộp với các đối tượng khác cùng màu
 embroidery	{name} is sewn in block {block}	{name} được thêu trong khối {block}
 embroidery	Thread changes: {before} → {after}	Đổi chỉ: {before} → {after}
 embroidery	Collapse All	Thu gọn tất cả
@@ -5196,8 +5196,8 @@ embroidery	More than {value} short stitches in a row	Hơn {value} mũi ngắn li
 embroidery	{value} or more layers of stitches on one spot	Từ {value} lớp mũi trở lên tại một chỗ
 embroidery	Everything is sewn	Mọi thứ đều được thêu
 embroidery	Art that isn't sewn	Hình vẽ không được thêu
-embroidery	More colour blocks than {format} holds ({value})	Nhiều khối màu hơn mức {format} chứa được ({value})
-embroidery	{format} holds any number of colour blocks	{format} chứa được bao nhiêu khối màu cũng được
+embroidery	More color blocks than {format} holds ({value})	Nhiều khối màu hơn mức {format} chứa được ({value})
+embroidery	{format} holds any number of color blocks	{format} chứa được bao nhiêu khối màu cũng được
 embroidery	More stitches than a machine shows ({value})	Nhiều mũi hơn mức máy hiển thị được ({value})
 embroidery	More thread changes than a machine shows ({value})	Nhiều lần đổi chỉ hơn mức máy hiển thị được ({value})
 embroidery	No findings	Không phát hiện gì
@@ -5234,7 +5234,7 @@ embroidery	No source gives a number to check these against.	Không nguồn nào 
 @plural	{count} warning|{count} warnings	{count} cảnh báo
 @plural	{count} note|{count} notes	{count} ghi chú
 @plural	and {count} more|and {count} more	và {count} mục khác
-embroidery	Threads unlike the art's colour (over {value})	Chỉ khác màu hình vẽ (trên {value})
+embroidery	Threads unlike the art's color (over {value})	Chỉ khác màu hình vẽ (trên {value})
 embroidery	Largest difference: {value}	Chênh lệch lớn nhất: {value}
 embroidery	Block {block}: {thread}, {value}	Khối {block}: {thread}, {value}
 	Zoom to Box	Thu phóng vừa khung
@@ -5255,7 +5255,7 @@ embroidery	Median: {value} mm	Trung vị: {value} mm
 embroidery	Too long	Quá dài
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Trên {value} mm: {stitches}
-@plural	{count} colour|{count} colours	{count} màu
+@plural	{count} color|{count} colors	{count} màu
 embroidery	Embroidery: {figures}	Thêu: {figures}
 embroidery	Stitches can't be planned	Không thể lên kế hoạch mũi thêu
 embroidery	Click to open the Embroidery panel.	Bấm để mở bảng Thêu.
@@ -5456,7 +5456,7 @@ embroidery	Satin	Satin
 embroidery	Running stitch	Mũi chạy
 embroidery	Don't sew	Không thêu
 embroidery	None	Không có
-embroidery	Centre run	Đường chạy giữa
+embroidery	Center run	Đường chạy giữa
 embroidery	Edge run	Đường chạy mép
 embroidery	Edge run + zigzag	Đường chạy mép + zigzag
 embroidery	Edge run + tatami	Đường chạy mép + tatami
@@ -5491,7 +5491,7 @@ embroidery	Restore {setting}	Khôi phục: {setting}
 embroidery	Auto: {choice}	Tự động: {choice}
 embroidery	Auto · {value}	Tự động · {value}
 embroidery	filled outline	đường bao được tô
-embroidery	centre run	đường chạy giữa
+embroidery	center run	đường chạy giữa
 embroidery	edge run	đường chạy mép
 embroidery	edge run + zigzag	đường chạy mép + zigzag
 embroidery	edge run + tatami	đường chạy mép + tatami

@@ -5413,7 +5413,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	ნაკერები: {count}
 @msg	tab {tab}: one of {_1}	ჩანართი {tab}: ერთ-ერთი: {_1}
 @msg	unknown key `{k}`: the only one is {only}	უცნობი გასაღები `{k}`: ერთადერთია {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	იქარგება დასტის ქვემოდან ზემოთ; ერთი ფერის ობიექტები ერთიანდება, როცა მათ შორის არაფერია.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	იქარგება დასტის ქვემოდან ზემოთ; ერთი ფერის ობიექტები ერთიანდება, როცა მათ შორის არაფერია.
 embroidery	Trim and thread change	ჭრა და ძაფის შეცვლა
 embroidery	Thread change	ძაფის შეცვლა
 embroidery	fill	შევსება
@@ -5426,7 +5426,7 @@ embroidery	narrow parts as satin	ვიწრო ნაწილები ატ
 @plural	{count} object|{count} objects	ობიექტები: {count}
 @plural	{count} jump|{count} jumps	ნახტომები: {count}
 @plural	{count} trim|{count} trims	ჭრები: {count}
-embroidery	Colours	ფერები
+embroidery	Colors	ფერები
 embroidery	Thread changes	ძაფის ცვლა
 embroidery	Trims	ჭრები
 embroidery	Jumps	ნახტომები
@@ -5456,8 +5456,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	დრო წუ�
 @msg	can't change the sewing order: too many objects at once	კერვის რიგის შეცვლა შეუძლებელია: ერთდროულად ზედმეტად ბევრი ობიექტია
 embroidery	After {name}	{name}-ის შემდეგ
 embroidery	Before {name}	{name}-მდე
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	არცერთი ნაკერი არ გადაადგილებულა: ერთი ფერის ობიექტები კვლავ ერთიანდება, როცა შუაში არაფერი დევს მათ ქვეშ.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} იქარგება ბლოკში {block}, თავისი ფერის სხვა ობიექტებთან ერთად
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	არცერთი ნაკერი არ გადაადგილებულა: ერთი ფერის ობიექტები კვლავ ერთიანდება, როცა შუაში არაფერი დევს მათ ქვეშ.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} იქარგება ბლოკში {block}, თავისი ფერის სხვა ობიექტებთან ერთად
 embroidery	{name} is sewn in block {block}	{name} იქარგება ბლოკში {block}
 embroidery	Thread changes: {before} → {after}	ძაფის ცვლა: {before} → {after}
 embroidery	Collapse All	ყველას აკეცვა
@@ -5474,8 +5474,8 @@ embroidery	More than {value} short stitches in a row	{value}-ზე მეტი
 embroidery	{value} or more layers of stitches on one spot	{value} ან მეტი ფენა ნაკერი ერთ ადგილას
 embroidery	Everything is sewn	ყველაფერი იქარგება
 embroidery	Art that isn't sewn	გრაფიკა, რომელიც არ იქარგება
-embroidery	More colour blocks than {format} holds ({value})	მეტი ფერის ბლოკი, ვიდრე {format} იტევს ({value})
-embroidery	{format} holds any number of colour blocks	{format} ნებისმიერი რაოდენობის ფერის ბლოკს იტევს
+embroidery	More color blocks than {format} holds ({value})	მეტი ფერის ბლოკი, ვიდრე {format} იტევს ({value})
+embroidery	{format} holds any number of color blocks	{format} ნებისმიერი რაოდენობის ფერის ბლოკს იტევს
 embroidery	More stitches than a machine shows ({value})	მეტი ნაკერი, ვიდრე მანქანა აჩვენებს ({value})
 embroidery	More thread changes than a machine shows ({value})	მეტი ძაფის შეცვლა, ვიდრე მანქანა აჩვენებს ({value})
 embroidery	No findings	არაფერი მოიძებნა
@@ -5512,7 +5512,7 @@ embroidery	No source gives a number to check these against.	არცერთ�
 @plural	{count} warning|{count} warnings	გაფრთხილებები: {count}
 @plural	{count} note|{count} notes	შენიშვნები: {count}
 @plural	and {count} more|and {count} more	და კიდევ {count}
-embroidery	Threads unlike the art's colour (over {value})	გრაფიკის ფერისგან განსხვავებული ძაფები ({value}-ზე მეტი)
+embroidery	Threads unlike the art's color (over {value})	გრაფიკის ფერისგან განსხვავებული ძაფები ({value}-ზე მეტი)
 embroidery	Largest difference: {value}	უდიდესი სხვაობა: {value}
 embroidery	Block {block}: {thread}, {value}	ბლოკი {block}: {thread}, {value}
 	Zoom to Box	კადრზე გადიდება
@@ -5533,7 +5533,7 @@ embroidery	Median: {value} mm	მედიანა: {value} მმ
 embroidery	Too long	ზედმეტად გრძელი
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} მმ: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} მმ-ზე მეტი: {stitches}
-@plural	{count} colour|{count} colours	ფერები: {count}
+@plural	{count} color|{count} colors	ფერები: {count}
 embroidery	Embroidery: {figures}	ნაქარგობა: {figures}
 embroidery	Stitches can't be planned	ნაკერების დაგეგმვა შეუძლებელია
 embroidery	Click to open the Embroidery panel.	დააწკაპუნეთ პანელის „ნაქარგობა“ გასახსნელად.
@@ -5776,7 +5776,7 @@ embroidery	Satin	ატლასი
 embroidery	Running stitch	სწორი ნაკერი
 embroidery	Don't sew	არ ამოიქარგოს
 embroidery	None	არცერთი
-embroidery	Centre run	ცენტრალური გავლა
+embroidery	Center run	ცენტრალური გავლა
 embroidery	Edge run	კიდის გავლა
 embroidery	Edge run + zigzag	კიდის გავლა + ზიგზაგი
 embroidery	Edge run + tatami	კიდის გავლა + ტატამი
@@ -5811,7 +5811,7 @@ embroidery	Restore {setting}	აღდგენა: {setting}
 embroidery	Auto: {choice}	ავტომატური: {choice}
 embroidery	Auto · {value}	ავტომატური · {value}
 embroidery	filled outline	შევსებული კონტური
-embroidery	centre run	ცენტრალური გავლა
+embroidery	center run	ცენტრალური გავლა
 embroidery	edge run	კიდის გავლა
 embroidery	edge run + zigzag	კიდის გავლა + ზიგზაგი
 embroidery	edge run + tatami	კიდის გავლა + ტატამი

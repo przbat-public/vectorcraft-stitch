@@ -5625,7 +5625,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} dikiş
 @msg	tab {tab}: one of {_1}	sekme {tab}: {_1} değerlerinden biri
 @msg	unknown key `{k}`: the only one is {only}	bilinmeyen anahtar `{k}`: tek anahtar {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Yığının altından yukarı doğru dikilir; aynı renkteki nesneler, aralarında hiçbir şey olmadığında birleşir.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Yığının altından yukarı doğru dikilir; aynı renkteki nesneler, aralarında hiçbir şey olmadığında birleşir.
 embroidery	Trim and thread change	Kesme ve iplik değişimi
 embroidery	Thread change	İplik değişimi
 embroidery	fill	dolgu
@@ -5638,7 +5638,7 @@ embroidery	narrow parts as satin	dar bölümler saten
 @plural	{count} object|{count} objects	{count} nesne
 @plural	{count} jump|{count} jumps	{count} atlama
 @plural	{count} trim|{count} trims	{count} kesme
-embroidery	Colours	Renkler
+embroidery	Colors	Renkler
 embroidery	Thread changes	İplik değişimleri
 embroidery	Trims	Kesmeler
 embroidery	Jumps	Atlamalar
@@ -5668,8 +5668,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Dakikada {speed} 
 @msg	can't change the sewing order: too many objects at once	dikiş sırası değiştirilemiyor: aynı anda çok fazla nesne
 embroidery	After {name}	{name} sonrası
 embroidery	Before {name}	{name} öncesi
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Hiçbir dikiş yer değiştirmedi: aradaki hiçbir şey altlarında değilse aynı renkteki nesneler yine birleşir.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name}, {block} numaralı blokta aynı renkteki diğer nesnelerle birlikte dikilir
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Hiçbir dikiş yer değiştirmedi: aradaki hiçbir şey altlarında değilse aynı renkteki nesneler yine birleşir.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name}, {block} numaralı blokta aynı renkteki diğer nesnelerle birlikte dikilir
 embroidery	{name} is sewn in block {block}	{name}, {block} numaralı blokta dikilir
 embroidery	Thread changes: {before} → {after}	İplik değişimleri: {before} → {after}
 embroidery	Collapse All	Tümünü Daralt
@@ -5686,8 +5686,8 @@ embroidery	More than {value} short stitches in a row	Art arda {value} taneden fa
 embroidery	{value} or more layers of stitches on one spot	Tek bir noktada {value} veya daha fazla dikiş katmanı
 embroidery	Everything is sewn	Her şey dikiliyor
 embroidery	Art that isn't sewn	Dikilmeyen çizim
-embroidery	More colour blocks than {format} holds ({value})	{format} biçiminin alabileceğinden fazla renk bloğu ({value})
-embroidery	{format} holds any number of colour blocks	{format} istenen sayıda renk bloğu alabilir
+embroidery	More color blocks than {format} holds ({value})	{format} biçiminin alabileceğinden fazla renk bloğu ({value})
+embroidery	{format} holds any number of color blocks	{format} istenen sayıda renk bloğu alabilir
 embroidery	More stitches than a machine shows ({value})	Bir makinenin gösterebileceğinden fazla dikiş ({value})
 embroidery	More thread changes than a machine shows ({value})	Bir makinenin gösterebileceğinden fazla iplik değişimi ({value})
 embroidery	No findings	Bulgu yok
@@ -5724,7 +5724,7 @@ embroidery	No source gives a number to check these against.	Hiçbir kaynak bunla
 @plural	{count} warning|{count} warnings	{count} uyarı
 @plural	{count} note|{count} notes	{count} bilgi
 @plural	and {count} more|and {count} more	ve {count} tane daha
-embroidery	Threads unlike the art's colour (over {value})	Çizimin rengine benzemeyen iplikler ({value} üzeri)
+embroidery	Threads unlike the art's color (over {value})	Çizimin rengine benzemeyen iplikler ({value} üzeri)
 embroidery	Largest difference: {value}	En büyük fark: {value}
 embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 	Zoom to Box	Kutuya Yakınlaştır
@@ -5745,7 +5745,7 @@ embroidery	Median: {value} mm	Ortanca: {value} mm
 embroidery	Too long	Çok uzun
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} mm üzeri: {stitches}
-@plural	{count} colour|{count} colours	{count} renk
+@plural	{count} color|{count} colors	{count} renk
 embroidery	Embroidery: {figures}	Nakış: {figures}
 embroidery	Stitches can't be planned	Dikişler planlanamıyor
 embroidery	Click to open the Embroidery panel.	Nakış panelini açmak için tıklayın.
@@ -5822,7 +5822,7 @@ embroidery	Satin	Saten
 embroidery	Running stitch	Düz dikiş
 embroidery	Don't sew	Dikme
 embroidery	None	Yok
-embroidery	Centre run	Orta hat
+embroidery	Center run	Orta hat
 embroidery	Edge run	Kenar hattı
 embroidery	Edge run + zigzag	Kenar hattı + zikzak
 embroidery	Edge run + tatami	Kenar hattı + tatami
@@ -5857,7 +5857,7 @@ embroidery	Restore {setting}	Geri al: {setting}
 embroidery	Auto: {choice}	Otomatik: {choice}
 embroidery	Auto · {value}	Otomatik · {value}
 embroidery	filled outline	dolgulu anahat
-embroidery	centre run	orta hat
+embroidery	center run	orta hat
 embroidery	edge run	kenar hattı
 embroidery	edge run + zigzag	kenar hattı + zikzak
 embroidery	edge run + tatami	kenar hattı + tatami

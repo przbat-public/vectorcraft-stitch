@@ -5393,7 +5393,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} ścieg|{count} ściegi|{count} ściegów
 @msg	tab {tab}: one of {_1}	karta {tab}: jedna z {_1}
 @msg	unknown key `{k}`: the only one is {only}	nieznany klucz `{k}`: jedyny to {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Szyte od dołu stosu; obiekty jednego koloru łączą się, gdy nic nie leży między nimi.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Szyte od dołu stosu; obiekty jednego koloru łączą się, gdy nic nie leży między nimi.
 embroidery	Trim and thread change	Cięcie i zmiana nici
 embroidery	Thread change	Zmiana nici
 embroidery	fill	wypełnienie
@@ -5406,7 +5406,7 @@ embroidery	narrow parts as satin	wąskie części satyną
 @plural	{count} object|{count} objects	{count} obiekt|{count} obiekty|{count} obiektów
 @plural	{count} jump|{count} jumps	{count} przeskok|{count} przeskoki|{count} przeskoków
 @plural	{count} trim|{count} trims	{count} cięcie|{count} cięcia|{count} cięć
-embroidery	Colours	Kolory
+embroidery	Colors	Kolory
 embroidery	Thread changes	Zmiany nici
 embroidery	Trims	Cięcia
 embroidery	Jumps	Przeskoki
@@ -5436,8 +5436,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Czas przy {speed}
 @msg	can't change the sewing order: too many objects at once	nie można zmienić kolejności szycia: zbyt wiele obiektów naraz
 embroidery	After {name}	Po {name}
 embroidery	Before {name}	Przed {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Żaden ścieg się nie przesunął: obiekty jednego koloru nadal się łączą, gdy nic pomiędzy nie leży pod nimi.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	Obiekt {name} jest szyty w bloku {block}, razem z innymi obiektami tego koloru
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Żaden ścieg się nie przesunął: obiekty jednego koloru nadal się łączą, gdy nic pomiędzy nie leży pod nimi.
+embroidery	{name} is sewn in block {block}, joined with others of its color	Obiekt {name} jest szyty w bloku {block}, razem z innymi obiektami tego koloru
 embroidery	{name} is sewn in block {block}	Obiekt {name} jest szyty w bloku {block}
 embroidery	Thread changes: {before} → {after}	Zmiany nici: {before} → {after}
 embroidery	Collapse All	Zwiń wszystko
@@ -5454,8 +5454,8 @@ embroidery	More than {value} short stitches in a row	Więcej niż {value} krótk
 embroidery	{value} or more layers of stitches on one spot	{value} lub więcej warstw ściegów w jednym miejscu
 embroidery	Everything is sewn	Wszystko jest szyte
 embroidery	Art that isn't sewn	Grafika, która nie jest szyta
-embroidery	More colour blocks than {format} holds ({value})	Więcej bloków koloru, niż mieści {format} ({value})
-embroidery	{format} holds any number of colour blocks	{format} mieści dowolną liczbę bloków koloru
+embroidery	More color blocks than {format} holds ({value})	Więcej bloków koloru, niż mieści {format} ({value})
+embroidery	{format} holds any number of color blocks	{format} mieści dowolną liczbę bloków koloru
 embroidery	More stitches than a machine shows ({value})	Więcej ściegów, niż pokazuje maszyna ({value})
 embroidery	More thread changes than a machine shows ({value})	Więcej zmian nici, niż pokazuje maszyna ({value})
 embroidery	No findings	Nic nie znaleziono
@@ -5492,7 +5492,7 @@ embroidery	No source gives a number to check these against.	Żadne źródło nie
 @plural	{count} warning|{count} warnings	{count} ostrzeżenie|{count} ostrzeżenia|{count} ostrzeżeń
 @plural	{count} note|{count} notes	{count} informacja|{count} informacje|{count} informacji
 @plural	and {count} more|and {count} more	i jeszcze {count}|i jeszcze {count}|i jeszcze {count}
-embroidery	Threads unlike the art's colour (over {value})	Nici niepodobne do koloru grafiki (powyżej {value})
+embroidery	Threads unlike the art's color (over {value})	Nici niepodobne do koloru grafiki (powyżej {value})
 embroidery	Largest difference: {value}	Największa różnica: {value}
 embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 	Zoom to Box	Powiększ do ramki
@@ -5513,7 +5513,7 @@ embroidery	Median: {value} mm	Mediana: {value} mm
 embroidery	Too long	Za długie
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Powyżej {value} mm: {stitches}
-@plural	{count} colour|{count} colours	{count} kolor|{count} kolory|{count} kolorów
+@plural	{count} color|{count} colors	{count} kolor|{count} kolory|{count} kolorów
 embroidery	Embroidery: {figures}	Haft: {figures}
 embroidery	Stitches can't be planned	Nie można zaplanować ściegów
 embroidery	Click to open the Embroidery panel.	Kliknij, aby otworzyć panel Haft.
@@ -5712,7 +5712,7 @@ embroidery	Satin	Satyna
 embroidery	Running stitch	Ścieg prosty
 embroidery	Don't sew	Nie szyj
 embroidery	None	Brak
-embroidery	Centre run	Przebieg środkiem
+embroidery	Center run	Przebieg środkiem
 embroidery	Edge run	Przebieg krawędzią
 embroidery	Edge run + zigzag	Przebieg krawędzią + zygzak
 embroidery	Edge run + tatami	Przebieg krawędzią + tatami
@@ -5747,7 +5747,7 @@ embroidery	Restore {setting}	Przywróć: {setting}
 embroidery	Auto: {choice}	Auto: {choice}
 embroidery	Auto · {value}	Auto · {value}
 embroidery	filled outline	wypełniony kontur
-embroidery	centre run	przebieg środkiem
+embroidery	center run	przebieg środkiem
 embroidery	edge run	przebieg krawędzią
 embroidery	edge run + zigzag	przebieg krawędzią + zygzak
 embroidery	edge run + tatami	przebieg krawędzią + tatami

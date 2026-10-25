@@ -58,6 +58,11 @@ const FOOTER_LINE_TEXT: f32 = 12.0;
 const MIN_ROWS: f32 = 56.0;
 /// Degrees in a half turn: a fill's rows are lines, shown at an angle from 0 to 180°.
 const HALF_TURN: f64 = 180.0;
+/// How close to a half turn an angle counts as one, degrees: a millionth of a degree, far finer
+/// than a field shows (the same rows).
+const SAME_ANGLE: f64 = 1e-6;
+/// Decimals of the thread's weight in the footer: whole weights, as thread is sold.
+const WEIGHT_DECIMALS: usize = 0;
 /// The command the footer's Embroidery Settings… runs: Document Setup at its Embroidery tab.
 const SETTINGS: &str = "embroidery.documentSetup";
 /// The stitch count before the first plan: an ellipsis, the same in every language.
@@ -570,7 +575,7 @@ fn number_of(value: &Value, key: &str, unit: &str, decimals: usize, lang: Lang, 
 fn shown_angle(a: f64) -> f64 {
     let a = a.rem_euclid(HALF_TURN);
     // Within a millionth of 180 is 0: the same rows.
-    if HALF_TURN - a < 1e-6 { 0.0 } else { a }
+    if HALF_TURN - a < SAME_ANGLE { 0.0 } else { a }
 }
 
 /// The stitches a fill isn't offered, of those `embroidery.set` takes: satin (a fill has no width
@@ -726,8 +731,10 @@ fn footer_words(fabric: &FabricChoice, weight: f64, lang: Lang) -> [String; 3] {
         FabricChoice::Own => crate::et!("Custom").to_string(),
         FabricChoice::Preset(id) => vocabulary::fabric(id),
     };
-    let line =
-        text::fill(crate::et!("Fabric: {fabric} · thread {weight} wt"), &[("fabric", &fabric), ("weight", &numbers::decimal(lang, weight, 0))]);
+    let line = text::fill(
+        crate::et!("Fabric: {fabric} · thread {weight} wt"),
+        &[("fabric", &fabric), ("weight", &numbers::decimal(lang, weight, WEIGHT_DECIMALS))],
+    );
     [
         line,
         crate::et!("Dim values come from the fabric and automatic rules.").to_string(),
@@ -750,8 +757,8 @@ fn footer_height(ui: &Ui, words: &[String; 3], buttons: &[String; 2]) -> f32 {
         buttons.iter().map(|b| ui.painter().layout_no_wrap(b.clone(), font.clone(), Color32::WHITE).size().x + 2.0 * s.button_padding.x).sum();
     let lines = if widths + s.item_spacing.x <= wrap { 1.0 } else { 2.0 };
     // The room above the card, its padding, the half gap over its buttons, and the spaces between
-    // the rows above it, its three lines and its buttons' lines.
-    GAP + 2.0 * FOOTER_PAD + text + GAP / 2.0 + lines * button + (3.0 + lines) * s.item_spacing.y
+    // the rows above it, its lines of words and its buttons' lines.
+    GAP + 2.0 * FOOTER_PAD + text + GAP / 2.0 + lines * button + (words.len() as f32 + lines) * s.item_spacing.y
 }
 
 /// The footer: `words` (the document's fabric and thread, what the rows' looks mean), and Restore

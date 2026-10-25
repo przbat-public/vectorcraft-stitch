@@ -95,8 +95,10 @@ const BAR_RADIUS: u8 = 6;
 const GAP: f32 = 8.0;
 /// The size of the words under a row (a note), points.
 const NOTE_TEXT: f32 = 11.0;
-/// Points in a millimetre: the design's start point is shown in millimetres.
+/// Points in a millimetre: the design's start point is shown in millimetres, to a tenth (a machine
+/// file's coordinates are tenths of a millimetre).
 const PT_PER_MM: f64 = 72.0 / 25.4;
+const START_DECIMALS: usize = 1;
 /// Two numbers closer than this are the same value (a field's typed number and the opened one).
 const SAME: f64 = 1e-9;
 
@@ -995,7 +997,7 @@ fn design_row(key: &'static str, value: &Value, lang: Lang) -> Owned {
     let label = vocabulary::setup_label(key);
     let words = match (key, value) {
         (START, Value::Array(xy)) => {
-            let mm = |v: Option<&Value>| v.and_then(Value::as_f64).map(|p| numbers::decimal(lang, p / PT_PER_MM, 1)).unwrap_or_default();
+            let mm = |v: Option<&Value>| v.and_then(Value::as_f64).map(|p| numbers::decimal(lang, p / PT_PER_MM, START_DECIMALS)).unwrap_or_default();
             // X and Y named: with a decimal comma, "12,5, 3,2" would read alike.
             text::fill(crate::et!("X {x} · Y {y} mm"), &[("x", &mm(xy.first())), ("y", &mm(xy.get(1)))])
         }

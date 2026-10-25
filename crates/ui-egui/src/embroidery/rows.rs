@@ -67,11 +67,19 @@ const RESTORE_INSET: f32 = 3.0;
 const FOCUS_WIDTH: f32 = 1.0;
 const FOCUS_GAP: f32 = 2.0;
 /// A checkbox's box, the room between it and its words, the least height of its row and its mark's
-/// weight, points: as the app's checkboxes draw them.
+/// weight, points: as the app's checkboxes draw them (upstream's `widgets::check_row_named`, whose
+/// drawing [`check`] follows, its words wrapped and its colours read on what it lies on; keep the
+/// two in step on a sync, FORK.md).
 const CHECK_BOX: f32 = 13.0;
 const CHECK_GAP: f32 = 5.0;
 const CHECK_ROW: f32 = 20.0;
 const CHECK_MARK: f32 = 1.6;
+/// The tick's three points from the box's left centre, bottom centre and top right, and the dash's
+/// inset from the box's sides, points: as upstream's.
+const TICK_START: egui::Vec2 = vec2(3.0, 0.0);
+const TICK_BOTTOM: egui::Vec2 = vec2(-1.0, -3.5);
+const TICK_END: egui::Vec2 = vec2(-3.0, 3.0);
+const DASH_INSET: egui::Vec2 = vec2(3.0, 0.0);
 /// A field of words (a read-only value): as tall as the app's fields, its words as far in.
 const WORDS_HEIGHT: f32 = 26.0;
 const WORDS_INSET: f32 = 7.0;
@@ -575,12 +583,12 @@ pub(crate) fn check(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32
     let mark = egui::Stroke::new(CHECK_MARK, if checked { Color32::WHITE } else { c.words });
     match value {
         Some(true) => {
-            let (a, b, c) = (bx.left_center() + vec2(3.0, 0.0), bx.center_bottom() + vec2(-1.0, -3.5), bx.right_top() + vec2(-3.0, 3.0));
+            let (a, b, c) = (bx.left_center() + TICK_START, bx.center_bottom() + TICK_BOTTOM, bx.right_top() + TICK_END);
             ui.painter().line_segment([a, b], mark);
             ui.painter().line_segment([b, c], mark);
         }
         None => {
-            ui.painter().line_segment([bx.left_center() + vec2(3.0, 0.0), bx.right_center() - vec2(3.0, 0.0)], mark);
+            ui.painter().line_segment([bx.left_center() + DASH_INSET, bx.right_center() - DASH_INSET], mark);
         }
         Some(false) => {}
     }

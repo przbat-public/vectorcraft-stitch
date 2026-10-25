@@ -495,7 +495,10 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   `"vectorcraft-panel-docking"` (`panel_docking.rs`), craft-ui's tab ids under it (`("tab",
   panel)`), `dock::shared_dock_default_width` and `clamp_shared_dock_width`, and sets
   `UiState::dock_width` and `dock_width_pending`. If they change, the fit finds no tabs and does
-  nothing; `the_docks_four_tabs_show_their_labels_whole` then fails.
+  nothing; `the_docks_four_tabs_show_their_labels_whole` then fails. The embroidery checkbox
+  (`embroidery/rows.rs`'s `check`) draws as upstream's `widgets::check_row_named` does (its box,
+  tick and dash), its words wrapped and its colours read on what it lies on: when a sync restyles
+  upstream's checkboxes, restyle it too.
 - **The fork's app identity in upstream's packaging** (Decisions register, 2026-10-24), to keep
   when resolving: in `packaging/macos/Info.plist.in` the name, display name and identifier (the
   document types stay upstream's); `APP_NAME` in `packaging/macos/package.sh`; `APP` in

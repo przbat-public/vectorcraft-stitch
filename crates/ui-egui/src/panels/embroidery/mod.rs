@@ -365,7 +365,7 @@ fn fit_dock_tabs(app: &mut VectorcraftApp, ui: &Ui) {
         return;
     }
     let widest = tabs.iter().map(|(tab, _)| *tab).fold(0.0, f32::max);
-    let squeezed = tabs.iter().filter(|(tab, _)| *tab >= widest - 0.5).count() as f32;
+    let squeezed = tabs.iter().filter(|(tab, _)| *tab >= widest - ELIDED_SLACK).count() as f32;
     let window = ui.ctx().content_rect().width();
     let now = crate::dock::shared_dock_default_width(&app.ui);
     let wanted = (now + squeezed * lacking).min((window * DOCK_SHARE).max(now));

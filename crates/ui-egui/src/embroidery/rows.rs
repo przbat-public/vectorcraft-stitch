@@ -410,6 +410,8 @@ fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
             let id = ui.id().with((row.key, "number"));
             let edit = fields::number_field(ui, (row.key, "number"), *value, format, &Look { hint: *hint, ..look }, width, bounds);
             keyboard_tip(ui, id, row.tip);
+            // Its label, which Tab stops on too (upstream's scrub senses clicks and drags on it).
+            keyboard_tip(ui, id.with("scrub-label"), row.tip);
             edit.map(Edit::Number)
         }
         // In a cell of its own width, its words cut short there (whole in the cell's tooltip): a
@@ -599,16 +601,32 @@ pub(crate) fn check(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32
     resp.clicked()
 }
 
+/// The keys egui moves the keyboard's focus with: Tab and Shift+Tab, and the arrows outside text.
+const FOCUS_KEYS: [egui::Key; 5] = [egui::Key::Tab, egui::Key::ArrowUp, egui::Key::ArrowDown, egui::Key::ArrowLeft, egui::Key::ArrowRight];
+
 /// While widget `id` has the keyboard's focus, taken from the keyboard (Tab, a screen reader), not
-/// a press: `tip` shown as its tooltip, as hovering shows it (egui shows tooltips on hover alone).
+/// a press or a dialog's opening: `tip` shown as its tooltip, as hovering shows it (egui shows
+/// tooltips on hover alone).
 fn keyboard_tip(ui: &Ui, id: egui::Id, tip: &str) {
     let key = id.with("focus-from-keyboard");
+    // The last pass a key that moves the focus was pressed in, as any row saw it: Tab moves it in
+    // that pass, Shift+Tab and the arrows in the next.
+    let keyed = egui::Id::new("embroidery-rows-focus-key-pass");
+    let pass = ui.ctx().cumulative_pass_nr();
+    let (pressed, reader) = ui.input(|i| {
+        let reader = i.events.iter().any(|e| matches!(e, egui::Event::AccessKitActionRequest(r) if r.action == egui::accesskit::Action::Focus));
+        (FOCUS_KEYS.iter().any(|k| i.key_pressed(*k)), reader)
+    });
+    if pressed {
+        ui.data_mut(|d| d.insert_temp(keyed, pass));
+    }
     let focused = ui.memory(|m| m.has_focus(id));
     let from_keyboard = match (focused, ui.data(|d| d.get_temp::<bool>(key))) {
         (false, _) => None,
         (true, Some(k)) => Some(k),
-        // Gained this frame: from the keyboard unless the pointer pressed for it.
-        (true, None) => Some(!ui.input(|i| i.pointer.any_down() || i.pointer.any_released())),
+        // Gained now: from the keyboard when a key that moves the focus was just pressed or a
+        // screen reader asked; a press, or a dialog giving its first field the focus, isn't.
+        (true, None) => Some(reader || ui.data(|d| d.get_temp::<u64>(keyed)).is_some_and(|k| pass.saturating_sub(k) <= 1)),
     };
     ui.data_mut(|d| match from_keyboard {
         Some(k) => {

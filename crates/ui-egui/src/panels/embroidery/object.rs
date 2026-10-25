@@ -511,25 +511,22 @@ fn key_row(p: &PartInfo, part: Part, key: &'static str, lang: Lang) -> Option<Ow
         crate::et!("{count} of {total} set"),
         &[("count", &numbers::count(lang, k.set_count as u64)), ("total", &numbers::count(lang, p.object_count as u64))],
     );
-    let (own, restore, aside, hint) = if every {
-        (true, Some(restore_words(&name_of(key, label))), None, inherited(false))
+    let name = name_of(key, label);
+    let marks = if every {
+        let without =
+            text::fill(crate::et!("Set on the selected objects; without it: {value}"), &[("value", inherited(true).as_deref().unwrap_or_default())]);
+        rows::Marks::own(&name, inherited(false), without)
     } else if some {
-        (false, Some(restore_words(&name_of(key, label))), Some(counted.clone()), None)
+        rows::Marks::some(&name, counted)
     } else {
-        (false, None, source_words.clone(), None)
+        rows::Marks::inherited(source_words, None)
     };
-    let mut description = if every {
-        text::fill(crate::et!("Set on the selected objects; without it: {value}"), &[("value", inherited(true).as_deref().unwrap_or_default())])
-    } else if some {
-        counted
-    } else {
-        text::fill(crate::et!("Source: {name}"), &[("name", source_words.as_deref().unwrap_or_default())])
-    };
+    let mut owned = Owned::new(key, label, name, vocabulary::tip(key), field, marks);
     if k.mixed {
         // On a line of its own: a sentence joined with ". " reads wrong in Japanese and Chinese.
-        description = format!("{description}\n{}", crate::et!("The selected objects differ."));
+        owned.description = format!("{}\n{}", owned.description, crate::et!("The selected objects differ."));
     }
-    Some(Owned { key, label, name: name_of(key, label), tip: vocabulary::tip(key), field, own, restore, aside, hint, description, problem: None })
+    Some(owned)
 }
 
 /// What screen readers call key `key`'s field: its label, its section's with it where two labels

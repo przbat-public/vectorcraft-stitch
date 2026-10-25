@@ -43,7 +43,7 @@ use vectorcraft_engine::cmd::embroidery::setup::{self, DocumentSettings, Overrid
 use vectorcraft_engine::cmd::embroidery::{SettingField, distinct_underlays, fabric_field, setting_field};
 
 use crate::VectorcraftApp;
-use crate::embroidery::rows::{self, Columns, Edit, Owned, OwnedField, Row, WORDS_DECIMALS, restore_words};
+use crate::embroidery::rows::{self, Columns, Edit, Owned, OwnedField, Row, WORDS_DECIMALS};
 use crate::embroidery::{fields, marks, numbers, text, vocabulary};
 use crate::i18n::Lang;
 use crate::state::Dialog;
@@ -858,33 +858,23 @@ fn fabric_choice(o: &Opened, choice: &str) -> Owned {
     }
     let shown = options.iter().find(|(id, _)| id == choice).map(|(_, w)| w.clone()).unwrap_or_default();
     let label = crate::et!("Fabric");
-    Owned {
-        key: "fabric",
-        label,
-        name: label.to_string(),
-        tip: vocabulary::setup_tip("fabric"),
-        field: OwnedField::Choice { shown, options, current: Some(choice.to_string()) },
-        own: false,
-        restore: None,
-        aside: None,
-        hint: None,
-        description: String::new(),
-        problem: None,
-    }
+    let field = OwnedField::Choice { shown, options, current: Some(choice.to_string()) };
+    Owned::new("fabric", label, label.to_string(), vocabulary::setup_tip("fabric"), field, rows::Marks::inherited(None, None))
 }
 
 /// The row of fabric value `key` (`value` in the field) with fabric `choice`: a value changed from
 /// its preset (or its default) marked, ↺ restoring it; else what the preset's value rests on.
 fn fabric_row(o: &Opened, choice: &str, key: &'static str, value: &Value, lang: Lang) -> Owned {
     let label = vocabulary::setup_label(key);
+    let name = label_name(key, label);
     let base = o.base(choice, key);
     let preset = o.preset(choice);
     let own = choice != BUILT_IN && !same(value, &base);
     let base_words = number_words(key, &base, lang, false);
     // A preset's value: one this version has, or the document's copy of one it doesn't know.
     let from_preset = preset.is_some() || o.copied(choice);
-    let (aside, hint, description) = if own {
-        let (hint, description) = match from_preset {
+    let marks = if own {
+        let (hint, said) = match from_preset {
             true => (
                 text::fill(crate::et!("preset {value}"), &[("value", &base_words)]),
                 text::fill(crate::et!("Changed from the preset, which gives {value}"), &[("value", &number_words(key, &base, lang, true))]),
@@ -894,7 +884,7 @@ fn fabric_row(o: &Opened, choice: &str, key: &'static str, value: &Value, lang: 
                 text::fill(crate::et!("Set in the document; without it: {value}"), &[("value", &number_words(key, &base, lang, true))]),
             ),
         };
-        (None, Some(hint), description)
+        rows::Marks::own(&name, Some(hint), said)
     } else {
         let words = match (preset, key) {
             (_, "stabilizer") => crate::et!("information only").to_string(),
@@ -904,26 +894,11 @@ fn fabric_row(o: &Opened, choice: &str, key: &'static str, value: &Value, lang: 
         };
         // The publications the preset's value rests on, each on a line (the badge's tooltip).
         let sources = preset.and_then(|p| p.notes.get(key)).map(|n| n.sources.join("\n")).filter(|s| !s.is_empty());
-        let source = text::fill(crate::et!("Source: {name}"), &[("name", &words)]);
-        let description = match sources {
-            Some(s) => format!("{source}\n{s}"),
-            None => source,
-        };
-        (Some(words), None, description)
+        rows::Marks::inherited(Some(words), sources.as_deref())
     };
-    Owned {
-        key,
-        label,
-        name: label_name(key, label),
-        tip: vocabulary::setup_tip(key),
-        field: field_row(key, value, o),
-        own,
-        restore: own.then(|| restore_words(&label_name(key, label))),
-        aside,
-        hint,
-        description,
-        problem: out_of_range(key, value, lang),
-    }
+    let mut row = Owned::new(key, label, name, vocabulary::setup_tip(key), field_row(key, value, o), marks);
+    row.problem = out_of_range(key, value, lang);
+    row
 }
 
 /// What a screen reader calls a fabric value's field: its label, with its kind of stitch where the
@@ -992,32 +967,15 @@ fn field_row(key: &str, value: &Value, o: &Opened) -> OwnedField {
 fn number_row(o: &Opened, key: &'static str, value: &Value, lang: Lang) -> Owned {
     let label = vocabulary::setup_label(key);
     let default = o.default_of(key);
-    let own = !same(value, &default);
-    let default_words = number_words(key, &default, lang, false);
-    let (aside, hint, description) = if own {
-        (
-            None,
-            Some(vocabulary::inherited("default", None, &default_words)),
-            text::fill(crate::et!("Set in the document; without it: {value}"), &[("value", &number_words(key, &default, lang, true))]),
-        )
+    let marks = if same(value, &default) {
+        rows::Marks::inherited(Some(vocabulary::source("default", None)), None)
     } else {
-        let words = vocabulary::source("default", None);
-        let description = text::fill(crate::et!("Source: {name}"), &[("name", &words)]);
-        (Some(words), None, description)
+        let said = text::fill(crate::et!("Set in the document; without it: {value}"), &[("value", &number_words(key, &default, lang, true))]);
+        rows::Marks::own(label, Some(vocabulary::inherited("default", None, &number_words(key, &default, lang, false))), said)
     };
-    Owned {
-        key,
-        label,
-        name: label.to_string(),
-        tip: vocabulary::setup_tip(key),
-        field: field_row(key, value, o),
-        own,
-        restore: own.then(|| restore_words(label)),
-        aside,
-        hint,
-        description,
-        problem: out_of_range(key, value, lang),
-    }
+    let mut row = Owned::new(key, label, label.to_string(), vocabulary::setup_tip(key), field_row(key, value, o), marks);
+    row.problem = out_of_range(key, value, lang);
+    row
 }
 
 /// What is wrong with number `value` of setting `key` as typed: outside its range, which the
@@ -1044,20 +1002,8 @@ fn design_row(key: &'static str, value: &Value, lang: Lang) -> Owned {
         (_, Value::String(s)) => s.clone(),
         _ => String::new(),
     };
-    let set = !value.is_null();
-    Owned {
-        key,
-        label,
-        name: label.to_string(),
-        tip: vocabulary::setup_tip(key),
-        field: OwnedField::Words(words),
-        own: set,
-        restore: set.then(|| restore_words(label)),
-        aside: None,
-        hint: None,
-        description: String::new(),
-        problem: None,
-    }
+    let marks = if value.is_null() { rows::Marks::inherited(None, None) } else { rows::Marks::own(label, None, String::new()) };
+    Owned::new(key, label, label.to_string(), vocabulary::setup_tip(key), OwnedField::Words(words), marks)
 }
 
 /// The bar, while objects set the fabric's values themselves: how many for each value, and the

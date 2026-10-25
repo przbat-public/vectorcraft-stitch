@@ -218,6 +218,48 @@ pub(crate) struct Owned {
     pub(crate) problem: Option<String>,
 }
 
+/// What marks a row's value, as the module's marks say it: a value of its own (the bar, ↺ named
+/// for its field, what it would be otherwise after ↺), set on some of several objects (↺ and how
+/// many), or inherited (its badge: where it comes from); and what screen readers hear of it.
+pub(crate) struct Marks {
+    own: bool,
+    restore: Option<String>,
+    aside: Option<String>,
+    hint: Option<String>,
+    description: String,
+}
+
+impl Marks {
+    /// A value of its own: ↺ named for field `name`, `otherwise` after it (what it would be
+    /// without it), `said` for screen readers.
+    pub(crate) fn own(name: &str, otherwise: Option<String>, said: String) -> Self {
+        Self { own: true, restore: Some(restore_words(name)), aside: None, hint: otherwise, description: said }
+    }
+
+    /// Set on some of several objects: ↺ named for field `name`, and `count` ("1 of 3 set") after
+    /// it and said.
+    pub(crate) fn some(name: &str, count: String) -> Self {
+        Self { own: false, restore: Some(restore_words(name)), aside: Some(count.clone()), hint: None, description: count }
+    }
+
+    /// Inherited: its badge `source` (where it comes from), said as "Source: {source}" then each
+    /// line of `more`; with no source, no mark.
+    pub(crate) fn inherited(source: Option<String>, more: Option<&str>) -> Self {
+        let said = source.as_deref().map(|s| crate::embroidery::text::fill(crate::et!("Source: {name}"), &[("name", s)]));
+        let description = [said.as_deref(), more].into_iter().flatten().collect::<Vec<_>>().join("\n");
+        Self { own: false, restore: None, aside: source, hint: None, description }
+    }
+}
+
+impl Owned {
+    /// The row of setting `key`, `label`led, called `name` by screen readers, its tooltip `tip`,
+    /// editing `field`, marked as `marks` say.
+    pub(crate) fn new(key: &'static str, label: &'static str, name: String, tip: &'static str, field: OwnedField, marks: Marks) -> Self {
+        let Marks { own, restore, aside, hint, description } = marks;
+        Self { key, label, name, tip, field, own, restore, aside, hint, description, problem: None }
+    }
+}
+
 /// [`Field`] with its words owned; a number in its unit, written as the language writes numbers
 /// when drawn ([`fields::format`]).
 pub(crate) enum OwnedField {

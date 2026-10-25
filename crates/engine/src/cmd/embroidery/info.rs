@@ -605,14 +605,16 @@ impl SelectionSewing {
 /// by the object selected). Read from a plan already made (the Object tab's count, from the plan the
 /// stitch preview shows), never planned: a walk of the selected objects and of the plan's units.
 pub fn selection_sewing(doc: &Document, plan: &DesignPlan, selected: &[NodeId]) -> SelectionSewing {
-    let mut under: HashSet<NodeId> = HashSet::new();
+    // Sorted and searched: on the interface thread, for every plan that lands, a hash set's SipHash
+    // was the cost of a large selection.
+    let mut under: Vec<NodeId> = Vec::new();
     for n in selected.iter().filter_map(|id| doc.node(*id)) {
-        n.walk(&mut |c| {
-            under.insert(c.id);
-        });
+        n.walk(&mut |c| under.push(c.id));
     }
+    under.sort_unstable();
+    under.dedup();
     let mut out = SelectionSewing::default();
-    for (i, u) in plan.units.iter().enumerate().filter(|(_, u)| under.contains(&u.origin.selected())) {
+    for (i, u) in plan.units.iter().enumerate().filter(|(_, u)| under.binary_search(&u.origin.selected()).is_ok()) {
         match u.origin.part {
             Part::Fill(_) => out.fill.add(plan, i),
             Part::Stroke(_) => out.stroke.add(plan, i),

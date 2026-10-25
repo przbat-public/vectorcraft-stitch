@@ -85,6 +85,8 @@ fn states(ctx: &egui::Context, width: f32) -> Vec<(Vec<(String, Rect)>, String)>
     let mut app = app_with_findings();
     let held = Held::default();
     app.embroidery.preview = StitchPreview::with_runner(Box::new(held.clone()));
+    // Each edit's plan sent in the edit's first frame, before the release that runs it.
+    app.embroidery.preview.pin_light();
     app.ui.embroidery_panel.tab = Tab::Order;
     let panel = &mut |app: &mut VectorcraftApp, ui: &mut egui::Ui| crate::panels::embroidery::show(app, ui);
     let counters = |app: &VectorcraftApp| app.embroidery.counters.inspect()["shown"].as_str().unwrap_or_default().to_string();

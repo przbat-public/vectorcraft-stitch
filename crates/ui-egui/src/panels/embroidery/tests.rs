@@ -193,6 +193,8 @@ fn planning_with_its_progress_then_a_failure_over_the_last_stitches() {
     let mut app = with_art();
     let held = Held::default();
     app.embroidery.preview = StitchPreview::with_runner(Box::new(held.clone()));
+    // The big square's plan sent in its first frame, before the release that runs it.
+    app.embroidery.preview.pin_light();
     let words = frame(&mut app, &ctx, 0.0);
     assert!(!has(&words, "Planning"), "no busy mark at once: {words:?}");
     held.progress(2, 5);
@@ -239,6 +241,8 @@ fn the_panels_menu() {
     let ctx = egui::Context::default();
     ctx.enable_accesskit();
     let mut app = blank_app();
+    // Each change planned within the frames `panel` draws after it.
+    app.embroidery.preview.pin_light();
     app.run("file.new", json!({"width": 400, "height": 400, "artboards": 1})).unwrap();
     app.run("paint.setStroke", json!({"none": true})).unwrap();
     let mut ids = vec![];

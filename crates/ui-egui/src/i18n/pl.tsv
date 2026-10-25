@@ -5835,3 +5835,5 @@ embroidery	The document's fabric, thread and machine: Document Setup's Embroider
 # Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
 embroidery	From {min} to {max}	Od {min} do {max}
 embroidery	At least the jump length ({value}): only a jump is cut	Co najmniej długość przeskoku ({value}): nić przecina się tylko przy przeskoku
+# Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
+embroidery	The fabric changed	Tkanina się zmieniła

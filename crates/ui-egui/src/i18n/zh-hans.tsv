@@ -5823,3 +5823,5 @@ embroidery	The document's fabric, thread and machine: Document Setup's Embroider
 # Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
 embroidery	From {min} to {max}	{min}至{max}
 embroidery	At least the jump length ({value}): only a jump is cut	至少为跳针长度（{value}）：只有跳针才会剪线
+# Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
+embroidery	The fabric changed	面料已更改

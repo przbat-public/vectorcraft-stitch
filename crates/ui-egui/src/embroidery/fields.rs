@@ -127,9 +127,10 @@ pub(crate) struct Look<'a> {
 }
 
 impl Look<'_> {
-    /// Name the widget `id` for screen readers as the look says.
+    /// Name the widget `id` for screen readers as the look says, its words in an empty field as its
+    /// placeholder (what Auto chose, a pull's two sides: painted, so said too).
     fn name(&self, ui: &Ui, id: egui::Id) {
-        if self.name.is_none() && self.description.is_none() {
+        if self.name.is_none() && self.description.is_none() && self.hint.is_none() {
             return;
         }
         ui.ctx().accesskit_node_builder(id, |node| {
@@ -138,6 +139,9 @@ impl Look<'_> {
             }
             if let Some(description) = self.description {
                 node.set_description(description);
+            }
+            if let Some(hint) = self.hint {
+                node.set_placeholder(hint);
             }
         });
     }

@@ -560,9 +560,9 @@ fn key_row(p: &PartInfo, part: Part, key: &'static str, lang: Lang) -> Option<Ow
         &[("count", &numbers::count(lang, k.set_count as u64)), ("total", &numbers::count(lang, p.object_count as u64))],
     );
     let (own, restore, aside, hint) = if every {
-        (true, Some(restore_words(label)), None, inherited(false))
+        (true, Some(restore_words(&name_of(key, label))), None, inherited(false))
     } else if some {
-        (false, Some(restore_words(label)), Some(counted.clone()), None)
+        (false, Some(restore_words(&name_of(key, label))), Some(counted.clone()), None)
     } else {
         (false, None, source_words.clone(), None)
     };
@@ -590,7 +590,8 @@ fn name_of(key: &str, label: &str) -> String {
     text::fill(crate::et!("{section}: {setting}"), &[("section", section.heading()), ("setting", label)])
 }
 
-/// "Restore {setting}": ↺'s name.
+/// "Restore {setting}": ↺'s name, by its field's name for screen readers ("Restore Underlay:
+/// Type"), so that two ↺ never read alike.
 fn restore_words(label: &str) -> String {
     text::fill(crate::et!("Restore {setting}"), &[("setting", label)])
 }

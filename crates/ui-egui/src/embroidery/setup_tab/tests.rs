@@ -196,7 +196,7 @@ fn a_changed_value_is_marked_and_restored() {
     open_tab(&mut app);
     edit(&mut app, "tatami.length", json!(3.0));
     let drawn = ready(&mut app, &ctx, WIDE);
-    let restore = text::fill(crate::et!("Restore {setting}"), &[("setting", vocabulary::setup_label("tatami.length"))]);
+    let restore = text::fill(crate::et!("Restore {setting}"), &[("setting", &label_name("tatami.length", vocabulary::setup_label("tatami.length")))]);
     frame(&mut app, &ctx, WIDE, vec![drawn.click(&restore)]);
     ready(&mut app, &ctx, WIDE);
     assert_eq!(dialog(&mut app).fields[&field("tatami.length")], length);
@@ -346,7 +346,7 @@ fn screen_readers_hear_the_tab() {
     assert!(pull.description().is_some_and(|d| d.starts_with("Source: ")), "{:?}", pull.description());
     let length = node("Tatami: Stitch length");
     assert!(length.description().is_some_and(|d| d.starts_with("Changed from the preset, which gives")), "{:?}", length.description());
-    assert_eq!(node("Restore Stitch length").role(), egui::accesskit::Role::Button);
+    assert_eq!(node("Restore Tatami: Stitch length").role(), egui::accesskit::Role::Button);
     let jump = node("Jump (needle up) from");
     assert_eq!(jump.description(), Some("Source: default"));
 }
@@ -481,7 +481,7 @@ fn the_marks_follow_the_documents_copy_of_its_preset() {
             })
             .unwrap();
     }
-    let restore = text::fill(crate::et!("Restore {setting}"), &[("setting", vocabulary::setup_label("tatami.length"))]);
+    let restore = text::fill(crate::et!("Restore {setting}"), &[("setting", &label_name("tatami.length", vocabulary::setup_label("tatami.length")))]);
     for id in ["velvet", "cotton"] {
         let ctx = context();
         let mut app = app();
@@ -619,4 +619,31 @@ fn a_value_ok_would_refuse_is_marked_at_once() {
     let node = drawn.nodes.iter().map(|(_, n)| n).find(|n| n.label() == Some("Cut the thread from")).unwrap();
     assert!(node.description().is_some_and(|d| d.starts_with(&trim)), "{:?}", node.description());
     assert!(crate::dialogs::confirm(&mut app).is_err(), "OK still refuses them");
+}
+
+/// Screen readers hear the bar as a group named by its count, and once the fabric changed, that
+/// it did (as its mark shows); two ↺ of the same label under both kinds of stitch read apart.
+#[test]
+fn screen_readers_hear_the_bar_and_each_restore_apart() {
+    let ctx = context();
+    let mut app = app();
+    let a = rect(&mut app, 20.0);
+    app.run("embroidery.set", json!({"ids": [a], "part": "fill", "pull": 0.3})).unwrap();
+    app.run("embroidery.setup", json!({"fabric": "cotton"})).unwrap();
+    open_tab(&mut app);
+    let group = |drawn: &Drawn| {
+        drawn
+            .nodes
+            .iter()
+            .map(|(_, n)| n.clone())
+            .find(|n| n.role() == egui::accesskit::Role::Group && n.label() == Some("1 object sets its own values for the fabric."))
+            .expect("the bar's group")
+    };
+    assert_eq!(group(&ready(&mut app, &ctx, WIDE)).description(), None, "nothing changed");
+    edit(&mut app, "tatami.pull", json!(0.5));
+    edit(&mut app, "satin.pull", json!(0.5));
+    let drawn = ready(&mut app, &ctx, WIDE);
+    assert_eq!(group(&drawn).description(), Some(crate::et!("The fabric changed")));
+    let names: Vec<&str> = drawn.nodes.iter().filter_map(|(_, n)| n.label()).filter(|l| l.starts_with("Restore ")).collect();
+    assert!(names.contains(&"Restore Tatami: Pull compensation") && names.contains(&"Restore Satin: Pull compensation"), "{names:?}");
 }

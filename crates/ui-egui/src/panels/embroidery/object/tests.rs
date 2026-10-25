@@ -570,3 +570,20 @@ fn the_keyboards_focus_is_drawn_on_restore_and_the_checkbox() {
         assert!(focused.outlines.iter().any(|(_, c)| *c == ring), "{name}: the focus's outline");
     }
 }
+
+/// Screen readers hear what a blank field shows (what Auto chose, as its placeholder), and two ↺
+/// of rows labelled alike by their sections ("Restore Stitch: Type", "Restore Underlay: Type").
+#[test]
+fn screen_readers_hear_the_painted_words_and_each_restore_apart() {
+    let ctx = context();
+    let (mut app, _, b) = app_with_art();
+    select(&mut app, &[b]);
+    app.ui.embroidery_panel.part = Part::Stroke;
+    app.run("embroidery.set", json!({"ids": [b], "part": "stroke", "stitch": "satin", "underlay": "none"})).unwrap();
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let spacing = drawn.node(vocabulary::label("spacing", Some("satin")));
+    assert!(spacing.placeholder().is_some_and(|p| p.starts_with("Auto")), "{:?}", spacing.placeholder());
+    let names: Vec<&str> = drawn.nodes.iter().filter_map(|(_, n)| n.label()).filter(|l| l.starts_with("Restore ")).collect();
+    assert!(names.contains(&"Restore Stitch: Type") && names.contains(&"Restore Underlay: Type"), "{names:?}");
+}

@@ -833,7 +833,8 @@ fn note(ui: &mut Ui, words: &str) {
     ui.add(egui::Label::new(egui::RichText::new(words).size(NOTE_TEXT).color(colour)).wrap());
 }
 
-/// "Restore {setting}": ↺'s name.
+/// "Restore {setting}": ↺'s name, by its field's name for screen readers ("Restore Satin: Pull
+/// compensation"), so that two ↺ never read alike.
 fn restore_words(label: &str) -> String {
     text::fill(crate::et!("Restore {setting}"), &[("setting", label)])
 }
@@ -945,7 +946,7 @@ fn fabric_row(o: &Opened, choice: &str, key: &'static str, value: &Value, lang: 
         tip: vocabulary::setup_tip(key),
         field: field_row(key, value, o),
         own,
-        restore: own.then(|| restore_words(label)),
+        restore: own.then(|| restore_words(&label_name(key, label))),
         aside,
         hint,
         description,
@@ -1098,40 +1099,51 @@ fn bar(ui: &mut Ui, d: &Dialog, o: &Opened, edits: &mut Vec<Change>) {
     let BarColours { fill, words, border } = BarColours::of(&t, changed);
     let chosen = chosen(&d.fields);
     ui.add_space(GAP);
-    let frame = egui::Frame::NONE.fill(fill).stroke(egui::Stroke::new(1.0, border)).corner_radius(CornerRadius::same(BAR_RADIUS));
-    frame.inner_margin(egui::Margin::same(BAR_PAD as i8)).show(ui, |ui| {
-        ui.set_width(ui.available_width());
-        let count = crate::etn!(
-            ov.object_count as u64,
-            "{count} object sets its own values for the fabric.",
-            "{count} objects set their own values for the fabric."
-        );
-        ui.horizontal(|ui| {
+    let count = crate::etn!(
+        ov.object_count as u64,
+        "{count} object sets its own values for the fabric.",
+        "{count} objects set their own values for the fabric."
+    );
+    // A group for screen readers, named by its count; amber, it says the fabric changed, as its
+    // mark does.
+    ui.scope_builder(egui::UiBuilder::new(), |ui| {
+        ui.ctx().accesskit_node_builder(ui.unique_id(), |node| {
+            node.set_role(egui::accesskit::Role::Group);
+            node.set_label(count.as_str());
             if changed {
-                let (rect, _) = ui.allocate_exact_size(egui::vec2(marks::MARK_SIZE, marks::MARK_SIZE), egui::Sense::hover());
-                marks::paint_on(ui.painter(), rect.center(), marks::MARK_SIZE, marks::Mark::Warning, &t, fill);
+                node.set_description(crate::et!("The fabric changed"));
             }
-            ui.add(egui::Label::new(egui::RichText::new(count).color(words)).wrap());
         });
-        ui.add(egui::Label::new(egui::RichText::new(crate::et!("Changing the fabric doesn't change them.")).size(NOTE_TEXT).color(words)).wrap());
-        ui.add_space(GAP / 2.0);
-        ui.add(egui::Label::new(egui::RichText::new(crate::et!("Apply the fabric to them too:")).size(NOTE_TEXT).color(words)).wrap());
-        for (key, n) in OVERRIDES.into_iter().zip([ov.pull, ov.spacing, ov.length, ov.underlay]) {
-            if n == 0 {
-                continue;
-            }
-            let setting = vocabulary::override_label(key);
-            let objects = crate::etn!(n as u64, "{count} object", "{count} objects");
-            let words = text::fill(crate::et!("{setting}: {objects}"), &[("setting", setting), ("objects", &objects)]);
-            let on = chosen.iter().any(|k| k == key);
-            if rows::check(ui, &words, Some(on), fill) {
-                let mut list: Vec<String> = chosen.iter().filter(|k| k.as_str() != key).cloned().collect();
-                if !on {
-                    list.push(key.to_string());
+        let frame = egui::Frame::NONE.fill(fill).stroke(egui::Stroke::new(1.0, border)).corner_radius(CornerRadius::same(BAR_RADIUS));
+        frame.inner_margin(egui::Margin::same(BAR_PAD as i8)).show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            ui.horizontal(|ui| {
+                if changed {
+                    let (rect, _) = ui.allocate_exact_size(egui::vec2(marks::MARK_SIZE, marks::MARK_SIZE), egui::Sense::hover());
+                    marks::paint_on(ui.painter(), rect.center(), marks::MARK_SIZE, marks::Mark::Warning, &t, fill);
                 }
-                edits.push((APPLY.into(), json!(list)));
+                ui.add(egui::Label::new(egui::RichText::new(count).color(words)).wrap());
+            });
+            ui.add(egui::Label::new(egui::RichText::new(crate::et!("Changing the fabric doesn't change them.")).size(NOTE_TEXT).color(words)).wrap());
+            ui.add_space(GAP / 2.0);
+            ui.add(egui::Label::new(egui::RichText::new(crate::et!("Apply the fabric to them too:")).size(NOTE_TEXT).color(words)).wrap());
+            for (key, n) in OVERRIDES.into_iter().zip([ov.pull, ov.spacing, ov.length, ov.underlay]) {
+                if n == 0 {
+                    continue;
+                }
+                let setting = vocabulary::override_label(key);
+                let objects = crate::etn!(n as u64, "{count} object", "{count} objects");
+                let words = text::fill(crate::et!("{setting}: {objects}"), &[("setting", setting), ("objects", &objects)]);
+                let on = chosen.iter().any(|k| k == key);
+                if rows::check(ui, &words, Some(on), fill) {
+                    let mut list: Vec<String> = chosen.iter().filter(|k| k.as_str() != key).cloned().collect();
+                    if !on {
+                        list.push(key.to_string());
+                    }
+                    edits.push((APPLY.into(), json!(list)));
+                }
             }
-        }
+        });
     });
 }
 

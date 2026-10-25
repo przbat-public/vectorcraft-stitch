@@ -5573,3 +5573,9 @@ embroidery	Fleece	Pile
 embroidery	Silk or satin fabric	Seta o tessuto satinato
 embroidery	Nylon or sports fabric	Nylon o tessuto sportivo
 embroidery	Cap (structured)	Cappellino (strutturato)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Copia impostazioni di ricamo
+	Paste Embroidery Settings	Incolla impostazioni di ricamo
+@msg	select one object that takes embroidery settings: a path or a compound path	seleziona un oggetto che accetti impostazioni di ricamo: un tracciato o un tracciato composto
+@msg	copy an object's embroidery settings first	copia prima le impostazioni di ricamo di un oggetto
+@msg	the embroidery settings copied are another document's	le impostazioni di ricamo copiate sono di un altro documento

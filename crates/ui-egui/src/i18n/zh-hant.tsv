@@ -5592,3 +5592,9 @@ embroidery	Fleece	搖粒絨
 embroidery	Silk or satin fabric	絲綢或緞面布料
 embroidery	Nylon or sports fabric	尼龍或運動布料
 embroidery	Cap (structured)	帽子（有型）
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	複製刺繡設定
+	Paste Embroidery Settings	貼上刺繡設定
+@msg	select one object that takes embroidery settings: a path or a compound path	請選取一個可設定刺繡的物件：路徑或複合路徑
+@msg	copy an object's embroidery settings first	請先複製一個物件的刺繡設定
+@msg	the embroidery settings copied are another document's	複製的刺繡設定屬於另一個文件

@@ -166,6 +166,8 @@ pub(crate) fn command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         "embroidery.showFinding" => Some(check::show_finding_command(app, p)),
         "view.checkMarks" => Some(check_marks(app, p)),
         "embroidery.previousHit" => Some(check::step(app, false)),
+        "embroidery.copySettings" => Some(object::copy(app, p)),
+        "embroidery.pasteSettings" => Some(object::paste(app, p)),
         _ => None,
     }
 }
@@ -203,6 +205,8 @@ fn only_key(p: &Value, only: &str) -> Result<(), String> {
 pub(crate) fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
     match id {
         "embroidery.nextHit" | "embroidery.previousHit" => Some(check::can_step(app)),
+        "embroidery.copySettings" => Some(object::can_copy(app)),
+        "embroidery.pasteSettings" => Some(object::can_paste(app)),
         _ => None,
     }
 }
@@ -280,9 +284,16 @@ fn show_panel(app: &mut VectorcraftApp) -> Result<Value, String> {
     }
 }
 
-/// The panel's ≡ menu: the selection sewn earlier, later, first or last; the Sewing order's blocks
-/// collapsed or expanded; the next or previous finding of the check.
+/// The panel's ≡ menu: the selected object's embroidery settings copied and pasted; the selection
+/// sewn earlier, later, first or last; the Sewing order's blocks collapsed or expanded; the next or
+/// previous finding of the check.
 pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
+    for id in ["embroidery.copySettings", "embroidery.pasteSettings"] {
+        if crate::widgets::menu_item_name(ui, &command_label(app, id), crate::menus::enabled(app, id), false) {
+            crate::menus::invoke(app, id, json!({}));
+        }
+    }
+    ui.separator();
     // Worked out on the plan the list shows, as a drop is; off while that plan is out of date.
     let selection = app.session.active().map(|st| st.selection.objects.clone()).unwrap_or_default();
     let enabled = !selection.is_empty() && order::steppable(app).is_some();

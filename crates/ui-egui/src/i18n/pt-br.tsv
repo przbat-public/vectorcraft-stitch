@@ -5874,3 +5874,9 @@ embroidery	Fleece	Fleece
 embroidery	Silk or satin fabric	Seda ou tecido acetinado
 embroidery	Nylon or sports fabric	Náilon ou tecido esportivo
 embroidery	Cap (structured)	Boné (estruturado)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Copiar configurações de bordado
+	Paste Embroidery Settings	Colar configurações de bordado
+@msg	select one object that takes embroidery settings: a path or a compound path	selecione um objeto que aceite configurações de bordado: um caminho ou caminho composto
+@msg	copy an object's embroidery settings first	copie primeiro as configurações de bordado de um objeto
+@msg	the embroidery settings copied are another document's	as configurações de bordado copiadas são de outro documento

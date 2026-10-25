@@ -5873,3 +5873,9 @@ embroidery	Fleece	ფლისი
 embroidery	Silk or satin fabric	აბრეშუმი ან ატლასის ქსოვილი
 embroidery	Nylon or sports fabric	ნეილონი ან სპორტული ქსოვილი
 embroidery	Cap (structured)	კეპი (ფორმიანი)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	ნაქარგობის პარამეტრების კოპირება
+	Paste Embroidery Settings	ნაქარგობის პარამეტრების ჩასმა
+@msg	select one object that takes embroidery settings: a path or a compound path	მონიშნეთ ერთი ობიექტი, რომელიც ნაქარგობის პარამეტრებს იღებს: ტრაექტორია ან შედგენილი ტრაექტორია
+@msg	copy an object's embroidery settings first	ჯერ დააკოპირეთ ობიექტის ნაქარგობის პარამეტრები
+@msg	the embroidery settings copied are another document's	დაკოპირებული ნაქარგობის პარამეტრები სხვა დოკუმენტისაა

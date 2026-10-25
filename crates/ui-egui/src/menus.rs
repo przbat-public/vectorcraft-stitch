@@ -759,6 +759,18 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{tab?: object|order|check, part?: fill|stroke (the part of the selected objects the Object tab shows), format?: a format's id (embroidery.check's), or null for the thread palette's} show the Embroidery panel (VectorCraft Stitch), at a tab: the first time docked as the last tab beside Properties, Layers and Libraries; format: the one the active document's Check tab checks for → {tab, part, format}",
     ),
     (
+        "embroidery.copySettings",
+        "Copy Embroidery Settings",
+        "",
+        "{} (VectorCraft Stitch) remember the selected object's embroidery settings (one object that takes them: a path or a compound path) for embroidery.pasteSettings, as the Embroidery panel's menu does; the object is read when they are pasted, as it is then → {source}",
+    ),
+    (
+        "embroidery.pasteSettings",
+        "Paste Embroidery Settings",
+        "",
+        "{part?: fill|stroke (default: both)} (VectorCraft Stitch) give the selected objects the embroidery settings of the object embroidery.copySettings remembered, as embroidery.copyFrom does (its reply), in one undo step; off while nothing is remembered in the active document or nothing else is selected",
+    ),
+    (
         "embroidery.showFinding",
         "Show Finding",
         "",

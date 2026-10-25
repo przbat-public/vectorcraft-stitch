@@ -5944,3 +5944,9 @@ embroidery	Fleece	Polár
 embroidery	Silk or satin fabric	Selyem vagy szaténanyag
 embroidery	Nylon or sports fabric	Nejlon vagy sportanyag
 embroidery	Cap (structured)	Sapka (merevített)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Hímzésbeállítások másolása
+	Paste Embroidery Settings	Hímzésbeállítások beillesztése
+@msg	select one object that takes embroidery settings: a path or a compound path	jelöljön ki egy hímzésbeállításokat fogadó objektumot: útvonalat vagy összetett útvonalat
+@msg	copy an object's embroidery settings first	előbb másolja egy objektum hímzésbeállításait
+@msg	the embroidery settings copied are another document's	a másolt hímzésbeállítások egy másik dokumentumhoz tartoznak

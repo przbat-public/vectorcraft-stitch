@@ -5553,3 +5553,9 @@ embroidery	Fleece	Фліс
 embroidery	Silk or satin fabric	Шовк або атласна тканина
 embroidery	Nylon or sports fabric	Нейлон або спортивна тканина
 embroidery	Cap (structured)	Кепка (жорстка)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Копіювати налаштування вишивки
+	Paste Embroidery Settings	Вставити налаштування вишивки
+@msg	select one object that takes embroidery settings: a path or a compound path	виділіть один об’єкт, що приймає налаштування вишивки: контур або складений контур
+@msg	copy an object's embroidery settings first	спершу скопіюйте налаштування вишивки об’єкта
+@msg	the embroidery settings copied are another document's	скопійовані налаштування вишивки належать іншому документу

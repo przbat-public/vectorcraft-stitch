@@ -5797,3 +5797,9 @@ embroidery	Fleece	摇粒绒
 embroidery	Silk or satin fabric	丝绸或缎面面料
 embroidery	Nylon or sports fabric	尼龙或运动面料
 embroidery	Cap (structured)	帽子（有型）
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	复制刺绣设置
+	Paste Embroidery Settings	粘贴刺绣设置
+@msg	select one object that takes embroidery settings: a path or a compound path	请选择一个可设置刺绣的对象：路径或复合路径
+@msg	copy an object's embroidery settings first	请先复制一个对象的刺绣设置
+@msg	the embroidery settings copied are another document's	复制的刺绣设置属于另一个文档

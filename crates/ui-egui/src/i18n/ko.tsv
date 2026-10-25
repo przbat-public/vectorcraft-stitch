@@ -5536,3 +5536,9 @@ embroidery	Fleece	플리스
 embroidery	Silk or satin fabric	실크 또는 새틴 원단
 embroidery	Nylon or sports fabric	나일론 또는 스포츠 원단
 embroidery	Cap (structured)	모자(구조형)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	자수 설정 복사
+	Paste Embroidery Settings	자수 설정 붙여넣기
+@msg	select one object that takes embroidery settings: a path or a compound path	자수 설정을 받는 개체(패스 또는 컴파운드 패스)를 하나 선택하세요
+@msg	copy an object's embroidery settings first	먼저 개체의 자수 설정을 복사하세요
+@msg	the embroidery settings copied are another document's	복사한 자수 설정은 다른 문서의 것입니다

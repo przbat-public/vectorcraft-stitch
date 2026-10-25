@@ -5989,3 +5989,9 @@ embroidery	Fleece	Fleece
 embroidery	Silk or satin fabric	Silkki tai satiinikangas
 embroidery	Nylon or sports fabric	Nailon tai urheilukangas
 embroidery	Cap (structured)	Lippis (muotoiltu)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Kopioi kirjonta-asetukset
+	Paste Embroidery Settings	Liitä kirjonta-asetukset
+@msg	select one object that takes embroidery settings: a path or a compound path	valitse yksi objekti, jolle voi tehdä kirjonta-asetuksia: polku tai yhdistelmäpolku
+@msg	copy an object's embroidery settings first	kopioi ensin objektin kirjonta-asetukset
+@msg	the embroidery settings copied are another document's	kopioidut kirjonta-asetukset ovat toisen asiakirjan

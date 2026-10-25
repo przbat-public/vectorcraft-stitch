@@ -5919,3 +5919,9 @@ embroidery	Fleece	Polar
 embroidery	Silk or satin fabric	İpek veya saten kumaş
 embroidery	Nylon or sports fabric	Naylon veya spor kumaşı
 embroidery	Cap (structured)	Şapka (yapılandırılmış)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Nakış ayarlarını kopyala
+	Paste Embroidery Settings	Nakış ayarlarını yapıştır
+@msg	select one object that takes embroidery settings: a path or a compound path	nakış ayarı alan bir nesne seçin: bir yol veya bileşik yol
+@msg	copy an object's embroidery settings first	önce bir nesnenin nakış ayarlarını kopyalayın
+@msg	the embroidery settings copied are another document's	kopyalanan nakış ayarları başka bir belgeye ait

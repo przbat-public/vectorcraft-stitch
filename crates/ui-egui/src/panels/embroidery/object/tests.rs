@@ -422,6 +422,28 @@ fn trim_after_is_mixed_then_set() {
     assert_eq!((info(&mut app, &[a, b])["trimAfter"]["value"].clone(), steps(&app)), (json!(true), before + 1));
 }
 
+/// Copy remembers the one object selected, Paste gives the selection its settings in one undo step;
+/// both off when they can't run.
+#[test]
+fn copy_and_paste_settings() {
+    let (mut app, a, b) = app_with_art();
+    app.run("embroidery.set", json!({"ids": [a], "part": "fill", "angle": 30, "spacing": 0.5})).unwrap();
+    assert!(!crate::menus::enabled(&app, "embroidery.copySettings"), "nothing selected");
+    select(&mut app, &[a, b]);
+    assert!(!crate::menus::enabled(&app, "embroidery.copySettings"), "two selected");
+    select(&mut app, &[a]);
+    assert_eq!(app.run("embroidery.copySettings", json!({})).unwrap(), json!({"source": a}));
+    assert!(!crate::menus::enabled(&app, "embroidery.pasteSettings"), "only the source selected");
+    select(&mut app, &[b]);
+    assert!(crate::menus::enabled(&app, "embroidery.pasteSettings"));
+    let before = steps(&app);
+    app.run("embroidery.pasteSettings", json!({})).unwrap();
+    assert_eq!((fill_setting(&mut app, b, "angle"), fill_setting(&mut app, b, "spacing"), steps(&app)), (json!(30.0), json!(0.5), before + 1));
+    let group = app.run("object.group", json!({"ids": [a, b]})).unwrap()["id"].as_u64().unwrap();
+    select(&mut app, &[group]);
+    assert!(app.run("embroidery.copySettings", json!({})).is_err(), "a group isn't one object");
+}
+
 /// A value typed and committed by a click elsewhere lands on the objects it was typed for, even when
 /// the click then selects another.
 #[test]

@@ -5914,3 +5914,9 @@ embroidery	Fleece	Fleece
 embroidery	Silk or satin fabric	Siden eller satintyg
 embroidery	Nylon or sports fabric	Nylon eller sporttyg
 embroidery	Cap (structured)	Keps (formad)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Kopiera broderiinställningar
+	Paste Embroidery Settings	Klistra in broderiinställningar
+@msg	select one object that takes embroidery settings: a path or a compound path	markera ett objekt som tar broderiinställningar: en bana eller en sammansatt bana
+@msg	copy an object's embroidery settings first	kopiera först ett objekts broderiinställningar
+@msg	the embroidery settings copied are another document's	de kopierade broderiinställningarna hör till ett annat dokument

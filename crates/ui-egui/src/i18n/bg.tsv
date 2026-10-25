@@ -5897,3 +5897,9 @@ embroidery	Fleece	Полар
 embroidery	Silk or satin fabric	Коприна или сатенен плат
 embroidery	Nylon or sports fabric	Найлон или спортен плат
 embroidery	Cap (structured)	Шапка (с форма)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Копиране на настройките за бродиране
+	Paste Embroidery Settings	Поставяне на настройките за бродиране
+@msg	select one object that takes embroidery settings: a path or a compound path	изберете един обект, който приема настройки за бродиране: път или съставен път
+@msg	copy an object's embroidery settings first	първо копирайте настройките за бродиране на обект
+@msg	the embroidery settings copied are another document's	копираните настройки за бродиране са на друг документ

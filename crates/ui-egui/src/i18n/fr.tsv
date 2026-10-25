@@ -5957,3 +5957,9 @@ embroidery	Fleece	Polaire
 embroidery	Silk or satin fabric	Soie ou tissu satiné
 embroidery	Nylon or sports fabric	Nylon ou tissu de sport
 embroidery	Cap (structured)	Casquette (structurée)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Copier les réglages de broderie
+	Paste Embroidery Settings	Coller les réglages de broderie
+@msg	select one object that takes embroidery settings: a path or a compound path	sélectionnez un objet qui prend des réglages de broderie : un tracé ou un tracé transparent
+@msg	copy an object's embroidery settings first	copiez d’abord les réglages de broderie d’un objet
+@msg	the embroidery settings copied are another document's	les réglages de broderie copiés sont ceux d’un autre document

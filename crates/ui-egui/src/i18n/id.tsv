@@ -5913,3 +5913,9 @@ embroidery	Fleece	Fleece
 embroidery	Silk or satin fabric	Sutra atau kain satin
 embroidery	Nylon or sports fabric	Nilon atau kain olahraga
 embroidery	Cap (structured)	Topi (berstruktur)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Salin pengaturan bordir
+	Paste Embroidery Settings	Tempel pengaturan bordir
+@msg	select one object that takes embroidery settings: a path or a compound path	pilih satu objek yang menerima pengaturan bordir: jalur atau jalur majemuk
+@msg	copy an object's embroidery settings first	salin dulu pengaturan bordir sebuah objek
+@msg	the embroidery settings copied are another document's	pengaturan bordir yang disalin milik dokumen lain

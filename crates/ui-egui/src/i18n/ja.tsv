@@ -5635,3 +5635,9 @@ embroidery	Fleece	フリース
 embroidery	Silk or satin fabric	シルクまたはサテン生地
 embroidery	Nylon or sports fabric	ナイロンまたはスポーツ用生地
 embroidery	Cap (structured)	キャップ（形のあるもの）
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	刺繍の設定をコピー
+	Paste Embroidery Settings	刺繍の設定をペースト
+@msg	select one object that takes embroidery settings: a path or a compound path	刺繍の設定ができるオブジェクト（パスまたは複合パス）を 1 つ選択してください
+@msg	copy an object's embroidery settings first	先にオブジェクトの刺繍の設定をコピーしてください
+@msg	the embroidery settings copied are another document's	コピーした刺繍の設定は別のドキュメントのものです

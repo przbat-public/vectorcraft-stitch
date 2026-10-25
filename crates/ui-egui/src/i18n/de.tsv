@@ -5539,3 +5539,9 @@ embroidery	Fleece	Fleece
 embroidery	Silk or satin fabric	Seide oder Satinstoff
 embroidery	Nylon or sports fabric	Nylon oder Sportstoff
 embroidery	Cap (structured)	Kappe (strukturiert)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Stickeinstellungen kopieren
+	Paste Embroidery Settings	Stickeinstellungen einfügen
+@msg	select one object that takes embroidery settings: a path or a compound path	wählen Sie ein Objekt aus, das Stickeinstellungen annimmt: einen Pfad oder zusammengesetzten Pfad
+@msg	copy an object's embroidery settings first	kopieren Sie zuerst die Stickeinstellungen eines Objekts
+@msg	the embroidery settings copied are another document's	die kopierten Stickeinstellungen gehören zu einem anderen Dokument

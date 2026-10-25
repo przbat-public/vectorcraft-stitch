@@ -121,6 +121,8 @@ pub(crate) struct ObjectState {
     sewn: Option<Sewn>,
     /// The document's settings, read for one snapshot (the footer's fabric and thread).
     setup: Option<Setup>,
+    /// The object Copy remembered: its document and its id (read when pasted, as it is then).
+    copied: Option<(u64, NodeId)>,
 }
 
 /// The selection's settings as read, shared from frame to frame, or why they can't be read.
@@ -853,6 +855,53 @@ fn footer(ui: &mut Ui, info: &ObjectSettings, words: &[String; 3], ids: &[NodeId
 /// How wide `words` are at `size` points.
 fn text_width(ui: &Ui, words: &str, size: f32) -> f32 {
     ui.painter().layout_no_wrap(words.to_string(), FontId::proportional(size), Color32::WHITE).size().x
+}
+
+/// The one object selected when it takes settings itself (a path or a compound path, not a group
+/// of them): what Copy takes.
+fn copyable(app: &VectorcraftApp) -> Option<(u64, NodeId)> {
+    let st = app.session.active()?;
+    let [id] = st.selection.objects.as_slice() else { return None };
+    let n = st.doc.node(*id)?;
+    let literal = n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some());
+    matches!(n.kind, NodeKind::Path { guide: false, .. } | NodeKind::Compound { .. }).then_some((st.uid, *id)).filter(|_| !literal)
+}
+
+/// Whether Copy Embroidery Settings can run: one object that takes settings selected.
+pub(crate) fn can_copy(app: &VectorcraftApp) -> bool {
+    copyable(app).is_some()
+}
+
+/// Whether Paste Embroidery Settings can run: an object remembered in the active document, still
+/// there, and something else selected.
+pub(crate) fn can_paste(app: &VectorcraftApp) -> bool {
+    let Some(st) = app.session.active() else { return false };
+    app.embroidery.object.copied.is_some_and(|(uid, id)| uid == st.uid && st.doc.node(id).is_some() && st.selection.objects.iter().any(|s| *s != id))
+}
+
+/// `embroidery.copySettings {}`: remember the selected object for Paste → `{source}`.
+pub(crate) fn copy(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
+    super::only_keys(p, &[])?;
+    let (uid, id) = copyable(app).ok_or("select one object that takes embroidery settings: a path or a compound path")?;
+    app.embroidery.object.copied = Some((uid, id));
+    Ok(json!({ "source": id.0 }))
+}
+
+/// `embroidery.pasteSettings {part?}`: the remembered object's settings onto the selection, by
+/// `embroidery.copyFrom` (one undo step, its reply).
+pub(crate) fn paste(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
+    super::only_keys(p, &["part"])?;
+    let uid = app.session.active().map(|st| st.uid).ok_or("no document")?;
+    let (from, source) = app.embroidery.object.copied.ok_or("copy an object's embroidery settings first")?;
+    if from != uid {
+        return Err("the embroidery settings copied are another document's".into());
+    }
+    let mut params = json!({ "source": source.0 });
+    if let Some(part) = p.get("part").filter(|v| !v.is_null()) {
+        let part = part.as_str().and_then(Part::from_id).ok_or_else(|| format!("part {part}: fill or stroke"))?;
+        params["part"] = json!(part.id());
+    }
+    app.run("embroidery.copyFrom", params)
 }
 
 /// What `ui.inspect` reports of the tab (`stitchPreview.object`): the objects its fields are of,

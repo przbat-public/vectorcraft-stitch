@@ -5958,3 +5958,9 @@ embroidery	Fleece	Fleece
 embroidery	Silk or satin fabric	Hedvábí nebo saténová látka
 embroidery	Nylon or sports fabric	Nylon nebo sportovní látka
 embroidery	Cap (structured)	Kšiltovka (tvarovaná)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Kopírovat nastavení výšivky
+	Paste Embroidery Settings	Vložit nastavení výšivky
+@msg	select one object that takes embroidery settings: a path or a compound path	vyberte jeden objekt, který přijímá nastavení výšivky: cestu nebo složenou cestu
+@msg	copy an object's embroidery settings first	nejprve zkopírujte nastavení výšivky objektu
+@msg	the embroidery settings copied are another document's	zkopírovaná nastavení výšivky patří jinému dokumentu

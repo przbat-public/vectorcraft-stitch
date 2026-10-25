@@ -5913,3 +5913,9 @@ embroidery	Fleece	Fleece
 embroidery	Silk or satin fabric	Silke eller satinstof
 embroidery	Nylon or sports fabric	Nylon eller sportsstof
 embroidery	Cap (structured)	Kasket (formstøbt)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Kopiér broderiindstillinger
+	Paste Embroidery Settings	Indsæt broderiindstillinger
+@msg	select one object that takes embroidery settings: a path or a compound path	vælg ét objekt, der kan have broderiindstillinger: en kurve eller en sammensat kurve
+@msg	copy an object's embroidery settings first	kopiér først et objekts broderiindstillinger
+@msg	the embroidery settings copied are another document's	de kopierede broderiindstillinger hører til et andet dokument

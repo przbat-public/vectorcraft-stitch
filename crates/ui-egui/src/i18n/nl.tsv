@@ -5956,3 +5956,9 @@ embroidery	Fleece	Fleece
 embroidery	Silk or satin fabric	Zijde of satijnstof
 embroidery	Nylon or sports fabric	Nylon of sportstof
 embroidery	Cap (structured)	Pet (gestructureerd)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Borduurinstellingen kopiëren
+	Paste Embroidery Settings	Borduurinstellingen plakken
+@msg	select one object that takes embroidery settings: a path or a compound path	selecteer één object dat borduurinstellingen aanneemt: een pad of samengesteld pad
+@msg	copy an object's embroidery settings first	kopieer eerst de borduurinstellingen van een object
+@msg	the embroidery settings copied are another document's	de gekopieerde borduurinstellingen horen bij een ander document

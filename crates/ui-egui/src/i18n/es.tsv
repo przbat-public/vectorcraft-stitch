@@ -5899,3 +5899,9 @@ embroidery	Fleece	Forro polar
 embroidery	Silk or satin fabric	Seda o tela satinada
 embroidery	Nylon or sports fabric	Nailon o tela deportiva
 embroidery	Cap (structured)	Gorra (estructurada)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Copiar ajustes de bordado
+	Paste Embroidery Settings	Pegar ajustes de bordado
+@msg	select one object that takes embroidery settings: a path or a compound path	selecciona un objeto que admita ajustes de bordado: un trazado o un trazado compuesto
+@msg	copy an object's embroidery settings first	copia primero los ajustes de bordado de un objeto
+@msg	the embroidery settings copied are another document's	los ajustes de bordado copiados son de otro documento

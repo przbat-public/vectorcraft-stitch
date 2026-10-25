@@ -5910,3 +5910,9 @@ embroidery	Fleece	Φλις
 embroidery	Silk or satin fabric	Μετάξι ή σατέν ύφασμα
 embroidery	Nylon or sports fabric	Νάιλον ή αθλητικό ύφασμα
 embroidery	Cap (structured)	Καπέλο (με σχήμα)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Αντιγραφή ρυθμίσεων κεντήματος
+	Paste Embroidery Settings	Επικόλληση ρυθμίσεων κεντήματος
+@msg	select one object that takes embroidery settings: a path or a compound path	επιλέξτε ένα αντικείμενο που δέχεται ρυθμίσεις κεντήματος: μια διαδρομή ή σύνθετη διαδρομή
+@msg	copy an object's embroidery settings first	αντιγράψτε πρώτα τις ρυθμίσεις κεντήματος ενός αντικειμένου
+@msg	the embroidery settings copied are another document's	οι ρυθμίσεις κεντήματος που αντιγράφηκαν ανήκουν σε άλλο έγγραφο

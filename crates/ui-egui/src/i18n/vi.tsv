@@ -5553,3 +5553,9 @@ embroidery	Fleece	Vải nỉ lông cừu
 embroidery	Silk or satin fabric	Lụa hoặc vải satin
 embroidery	Nylon or sports fabric	Nylon hoặc vải thể thao
 embroidery	Cap (structured)	Mũ lưỡi trai (định hình)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Sao chép thiết lập thêu
+	Paste Embroidery Settings	Dán thiết lập thêu
+@msg	select one object that takes embroidery settings: a path or a compound path	hãy chọn một đối tượng nhận thiết lập thêu: một đường dẫn hoặc đường dẫn phức
+@msg	copy an object's embroidery settings first	hãy sao chép thiết lập thêu của một đối tượng trước
+@msg	the embroidery settings copied are another document's	thiết lập thêu đã sao chép thuộc về tài liệu khác

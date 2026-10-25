@@ -5809,3 +5809,9 @@ embroidery	Fleece	Polar
 embroidery	Silk or satin fabric	Jedwab lub tkanina satynowa
 embroidery	Nylon or sports fabric	Nylon lub tkanina sportowa
 embroidery	Cap (structured)	Czapka (usztywniana)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Kopiuj ustawienia haftu
+	Paste Embroidery Settings	Wklej ustawienia haftu
+@msg	select one object that takes embroidery settings: a path or a compound path	zaznacz jeden obiekt, który przyjmuje ustawienia haftu: ścieżkę lub ścieżkę złożoną
+@msg	copy an object's embroidery settings first	najpierw skopiuj ustawienia haftu obiektu
+@msg	the embroidery settings copied are another document's	skopiowane ustawienia haftu należą do innego dokumentu

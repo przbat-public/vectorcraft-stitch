@@ -678,3 +678,26 @@ fn the_start_point_names_x_and_y_and_restore_unsets_it() {
     let s = settings(&mut app)["settings"].clone();
     assert_eq!((s["start"].clone(), s["label"].clone()), (json!(null), json!(null)));
 }
+
+/// The tab's fields open with the document's settings, each read by its key from the settings as
+/// `embroidery.settings` gives them: a fabric value as stored, the thread's and the machine's as in
+/// force; the defaults are a blank document's.
+#[test]
+fn the_fields_open_with_the_documents_settings() {
+    let mut app = app();
+    app.run("embroidery.setup", json!({"fabric": "cotton", "threadWeight": 60, "joinSameColor": false, "machine": {"jumpLength": 6}})).unwrap();
+    app.run("embroidery.setup", json!({"fabric": {"tatami": {"length": 3.3}, "stabilizer": "cutAway"}})).unwrap();
+    open_tab(&mut app);
+    let s = settings(&mut app);
+    let d = dialog(&mut app).fields.clone();
+    assert_eq!(d["embroidery.fabric.tatami.length"], json!(3.3));
+    assert_eq!(d["embroidery.fabric.stabilizer"], s["settings"]["fabric"]["stabilizer"]);
+    assert_eq!(d["embroidery.fabric.satin.pull"], s["settings"]["fabric"]["satin"]["pull"]);
+    assert_eq!((d["embroidery.threadWeight"].clone(), d["embroidery.joinSameColor"].clone()), (json!(60.0), json!(false)));
+    assert_eq!(d["embroidery.machine.jumpLength"], json!(6.0));
+    assert_eq!(d["embroidery.machine.speed"], s["resolved"]["machine"]["speed"]["value"]);
+    let o = opened(&app).unwrap();
+    let blank = setup::default_settings();
+    assert_eq!(o.default_of("threadWeight"), json!(blank.resolved.thread_weight.value));
+    assert_eq!(o.default_of("tatami.pull"), json!(blank.resolved.fabric.tatami.pull.value));
+}

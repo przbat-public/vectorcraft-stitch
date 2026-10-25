@@ -39,7 +39,7 @@ use std::collections::BTreeMap;
 use egui::{CornerRadius, Ui};
 use serde_json::{Map, Value, json};
 use vectorcraft_doc::embroidery::ThreadPalette;
-use vectorcraft_engine::cmd::embroidery::setup::{self, DocumentSettings, Overrides, StoredFabric};
+use vectorcraft_engine::cmd::embroidery::setup::{self, DocumentSettings, Overrides};
 use vectorcraft_engine::cmd::embroidery::{SettingField, distinct_underlays, fabric_field, setting_field};
 
 use crate::VectorcraftApp;
@@ -152,61 +152,32 @@ fn field(key: &str) -> String {
 
 impl Opened {
     /// The tab as it opens on document `uid`'s settings `s`, the presets `fabrics`
-    /// (`embroidery.fabrics`' reply) and the settings of a document that sets none (`d`).
+    /// (`embroidery.fabrics`' reply) and the settings of a document that sets none (`d`): each
+    /// field read by its key from the settings as the reply gives them ([`at`]).
     fn read(uid: u64, s: &DocumentSettings, fabrics: &Value, d: &DocumentSettings) -> Self {
-        let mut defaults = Map::new();
-        let df = &d.resolved.fabric;
-        let pairs = [
-            ("tatami.pull", json!(df.tatami.pull.value)),
-            ("tatami.spacing", json!(df.tatami.spacing.value)),
-            ("tatami.length", json!(df.tatami.length.value)),
-            ("tatami.underlay", json!(df.tatami.underlay.value)),
-            ("satin.pull", json!(df.satin.pull.value)),
-            ("satin.spacingPercent", json!(df.satin.spacing_percent.value)),
-            ("satin.underlay", json!(df.satin.underlay.value)),
-            ("stabilizer", json!(df.stabilizer.value)),
-            (THREAD_WEIGHT, json!(d.resolved.thread_weight.value)),
-            (PALETTE, json!(d.resolved.palette.value)),
-            (JOIN, json!(d.resolved.join_same_color.value)),
-            ("machine.jumpLength", json!(d.resolved.machine.jump_length.value)),
-            ("machine.trimLength", json!(d.resolved.machine.trim_length.value)),
-            ("machine.minStitch", json!(d.resolved.machine.min_stitch.value)),
-            ("machine.splitLength", json!(d.resolved.machine.split_length.value)),
-            ("machine.speed", json!(d.resolved.machine.speed.value)),
-        ];
-        for (k, v) in pairs {
-            defaults.insert(k.to_string(), v);
-        }
+        let (now, blank) = (json_of(s), json_of(d));
+        let documents = [THREAD_WEIGHT, PALETTE, JOIN].into_iter().chain(MACHINE);
+        let defaults = FABRIC_VALUES.into_iter().chain(documents.clone()).map(|k| (k.to_string(), at(&blank["resolved"], k, "value"))).collect();
         let mut o = Opened { uid, defaults, presets: presets(fabrics), overrides: s.overrides.clone(), ..Opened::default() };
         let stored = s.settings.fabric.as_ref();
         let choice = match stored {
             None => BUILT_IN.to_string(),
             Some(f) => f.preset.clone().unwrap_or_else(|| CUSTOM.to_string()),
         };
+        // The document's copy of its preset first: the base its values are told from.
+        o.copy = copy_of(s, &now);
         for key in FABRIC_VALUES {
-            let value = stored.and_then(|f| stored_value(f, key)).unwrap_or_else(|| o.base(&choice, key));
+            let value = Some(at(&now["settings"], key, "")).filter(|v| !v.is_null()).unwrap_or_else(|| o.base(&choice, key));
             o.fields.insert(field(key), value);
         }
         o.fields.insert(field("fabric"), json!(choice));
         o.synced = FABRIC_VALUES.iter().map(|k| (k.to_string(), o.was(k))).collect();
         o.applied = choice;
-        o.copy = copy_of(s);
         o.colour = stored.is_some_and(|f| f.color.is_some());
-        let r = &s.resolved;
-        let values = [
-            (THREAD_WEIGHT, json!(r.thread_weight.value)),
-            (PALETTE, json!(r.palette.value)),
-            (JOIN, json!(r.join_same_color.value)),
-            ("machine.jumpLength", json!(r.machine.jump_length.value)),
-            ("machine.trimLength", json!(r.machine.trim_length.value)),
-            ("machine.minStitch", json!(r.machine.min_stitch.value)),
-            ("machine.splitLength", json!(r.machine.split_length.value)),
-            ("machine.speed", json!(r.machine.speed.value)),
-            (START, json!(s.settings.start)),
-            (LABEL, json!(s.settings.label)),
-            (APPLY, json!([])),
-        ];
-        for (k, v) in values {
+        for key in documents {
+            o.fields.insert(field(key), at(&now["resolved"], key, "value"));
+        }
+        for (k, v) in [(START, json!(s.settings.start)), (LABEL, json!(s.settings.label)), (APPLY, json!([]))] {
             o.fields.insert(field(k), v);
         }
         o
@@ -262,41 +233,47 @@ impl Opened {
     }
 }
 
-/// The document's own copy of its fabric's preset in settings `s`, by [`FABRIC_VALUES`]' keys: the
-/// values `embroidery.settings` reports as the preset's (none without a preset). The tatami spacing
-/// is reported for the thread in use, and taken back to 40 wt thread, as the fields hold it.
-fn copy_of(s: &DocumentSettings) -> Map<String, Value> {
-    let f = &s.resolved.fabric;
-    if f.preset.is_none() {
+/// The document's own copy of its fabric's preset in settings `s` (`json`, as the reply gives
+/// them), by [`FABRIC_VALUES`]' keys: the values `embroidery.settings` reports as the preset's
+/// (none without a preset). The tatami spacing is reported for the thread in use, and taken back to
+/// 40 wt thread, as the fields hold it.
+fn copy_of(s: &DocumentSettings, json: &Value) -> Map<String, Value> {
+    if s.resolved.fabric.preset.is_none() {
         return Map::new();
     }
     let at_40wt = |v: f64| v / setup::spacing_for_thread(1.0, s.resolved.thread_weight.value);
-    let pairs = [
-        ("tatami.pull", json!(f.tatami.pull.preset)),
-        ("tatami.spacing", json!(f.tatami.spacing.preset.map(at_40wt))),
-        ("tatami.length", json!(f.tatami.length.preset)),
-        ("tatami.underlay", json!(f.tatami.underlay.preset)),
-        ("satin.pull", json!(f.satin.pull.preset)),
-        ("satin.spacingPercent", json!(f.satin.spacing_percent.preset)),
-        ("satin.underlay", json!(f.satin.underlay.preset)),
-        ("stabilizer", json!(f.stabilizer.preset)),
-    ];
-    pairs.into_iter().map(|(k, v)| (k.to_string(), v)).collect()
+    FABRIC_VALUES
+        .iter()
+        .map(|k| {
+            let v = at(&json["resolved"], k, "preset");
+            let v = match (*k, v.as_f64()) {
+                ("tatami.spacing", Some(x)) => json!(at_40wt(x)),
+                _ => v,
+            };
+            (k.to_string(), v)
+        })
+        .collect()
 }
 
-/// Fabric value `key` (`kind.name`) as fabric `f` stores it, when set.
-fn stored_value(f: &StoredFabric, key: &str) -> Option<Value> {
-    match key {
-        "tatami.pull" => f.tatami.pull.map(Value::from),
-        "tatami.spacing" => f.tatami.spacing.map(Value::from),
-        "tatami.length" => f.tatami.length.map(Value::from),
-        "tatami.underlay" => f.tatami.underlay.clone().map(Value::from),
-        "satin.pull" => f.satin.pull.map(Value::from),
-        "satin.spacingPercent" => f.satin.spacing_percent.map(Value::from),
-        "satin.underlay" => f.satin.underlay.clone().map(Value::from),
-        "stabilizer" => f.stabilizer.clone().map(Value::from),
-        _ => None,
-    }
+/// Settings `s` as `embroidery.settings` answers them (null should they fail to serialize, as no
+/// typed struct does).
+fn json_of(s: &DocumentSettings) -> Value {
+    serde_json::to_value(s).unwrap_or(Value::Null)
+}
+
+/// What the settings `v` (their `settings` or `resolved` half, as the reply gives them) hold for the
+/// tab's key `key` (`tatami.pull`, `stabilizer`, `machine.jumpLength`, `threadWeight`), its `part`
+/// (`value`, `preset`; `""`: the value itself, as `settings` holds it) → null where there is none.
+fn at(v: &Value, key: &str, part: &str) -> Value {
+    let path: Vec<&str> = match key.split_once('.') {
+        Some(("machine", name)) => vec!["machine", name],
+        Some((kind, name)) => vec!["fabric", kind, name],
+        None if FABRIC_VALUES.contains(&key) => vec!["fabric", key],
+        None => vec![key],
+    };
+    let found = path.into_iter().try_fold(v, |v, step| v.get(step));
+    let found = if part.is_empty() { found } else { found.and_then(|v| v.get(part)) };
+    found.cloned().unwrap_or(Value::Null)
 }
 
 /// The presets `embroidery.fabrics` lists, with what the tab shows of each.

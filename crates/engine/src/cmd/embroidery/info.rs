@@ -585,7 +585,9 @@ impl Sewing {
 }
 
 /// What a plan sews of the objects selected, by part: their fills, their strokes, and the runs of
-/// stitches opened from a machine file among them.
+/// stitches opened from a machine file among them. Kept by part, as `embroidery.info` reports each
+/// part's sewing, which its test checks it against; the Object tab counts all of it
+/// ([`SelectionSewing::stitches`]).
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SelectionSewing {
     pub fill: Sewing,

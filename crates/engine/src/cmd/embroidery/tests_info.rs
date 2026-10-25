@@ -299,3 +299,40 @@ fn the_reply_reads_back_as_the_typed_answer() {
     let fill = typed.fill.unwrap();
     assert_eq!((fill.settings["angle"].value.clone(), fill.sewing.unwrap().unit_count), (json!(30.0), 1));
 }
+
+/// The underlays a panel offers under a fill and under a satin (`distinct_underlays`) are the kinds
+/// the planner sews apart: each kind left out sews exactly as one offered does, and the kinds
+/// offered (but Auto, a rule by size that may pick one of them) sew differently from each other.
+#[test]
+fn the_underlays_offered_are_those_the_planner_sews_apart() {
+    use super::plan::Part;
+    use vectorcraft_stitch::plan::Underlay;
+    for (stroke, part, sewn) in [(0.0, "fill", "tatami"), (3.0, "stroke", "satin")] {
+        let sewn_with = |underlay: &str| {
+            let mut s = blank();
+            let id = shape(&mut s, 20.0, stroke);
+            if part == "stroke" {
+                run(&mut s, "embroidery.set", json!({"ids": [id], "part": "stroke", "stitch": "satin"}));
+            }
+            run(&mut s, "embroidery.set", json!({"ids": [id], "part": part, "underlay": underlay}));
+            let plan = s.embroidery_plan(&Options::default()).unwrap();
+            plan.units
+                .iter()
+                .filter(|u| matches!((u.origin.part, part), (Part::Fill(_), "fill") | (Part::Stroke(_), "stroke")))
+                .map(|u| format!("{:?}", plan.blocks.get(u.block).and_then(|b| b.stitches.get(u.stitches.clone()))))
+                .collect::<String>()
+        };
+        let all: Vec<(&str, String)> = Underlay::ALL.iter().map(|u| (u.id(), sewn_with(u.id()))).collect();
+        let of = |id: &str| all.iter().find(|(k, _)| *k == id).map(|(_, v)| v.clone()).unwrap();
+        let offered = distinct_underlays(sewn);
+        let ruled: Vec<&str> = offered.iter().copied().filter(|id| *id != "auto").collect();
+        for (i, a) in ruled.iter().enumerate() {
+            for b in &ruled[i + 1..] {
+                assert_ne!(of(a), of(b), "{sewn}: {a} and {b} sew alike, but both are offered");
+            }
+        }
+        for (id, stitches) in all.iter().filter(|(id, _)| !offered.contains(id)) {
+            assert!(ruled.iter().any(|o| of(o) == *stitches), "{sewn}: {id} sews as none offered");
+        }
+    }
+}

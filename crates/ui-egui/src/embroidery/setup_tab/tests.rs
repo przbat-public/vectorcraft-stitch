@@ -109,9 +109,7 @@ fn dialog(app: &mut VectorcraftApp) -> &mut Dialog {
 
 /// An edit made in the tab, as its rows make them.
 fn edit(app: &mut VectorcraftApp, key: &str, value: Value) {
-    let d = dialog(app);
-    let o = opened(d).unwrap();
-    apply(d, &o, key, value);
+    choose_value(app, key, value);
 }
 
 fn settings(app: &mut VectorcraftApp) -> Value {
@@ -246,11 +244,11 @@ fn agents_set_flat_fields() {
     let mut app = app();
     app.run("embroidery.setup", json!({"threadWeight": 30, "machine": {"speed": 900}})).unwrap();
     open_tab(&mut app);
+    let speed = opened(&app).unwrap().default_of("machine.speed");
     let d = dialog(&mut app);
     d.fields.insert("embroidery.machine.trimLength".into(), json!(12.0));
     d.fields.insert("embroidery.palette".into(), json!("pec"));
     d.fields.insert("embroidery.fabric.tatami.length".into(), json!(3.0));
-    let speed = opened(d).unwrap().default_of("machine.speed");
     d.fields.insert("embroidery.machine.speed".into(), speed);
     crate::dialogs::confirm(&mut app).unwrap();
     let s = settings(&mut app);
@@ -320,4 +318,20 @@ fn screen_readers_hear_the_tab() {
     assert_eq!(node("Restore Stitch length").role(), egui::accesskit::Role::Button);
     let jump = node("Jump (needle up) from");
     assert_eq!(jump.description(), Some("Source: default"));
+}
+
+/// What the tab opened with stays beside the dialog: its fields are the settings alone, so an agent
+/// reading them (`ui.dialog.set`'s reply) sees no presets or defaults, and can't make the tab
+/// unreadable by writing to them.
+#[test]
+fn the_tabs_state_is_not_among_the_dialogs_fields() {
+    let mut app = app();
+    open_tab(&mut app);
+    let fields = &dialog(&mut app).fields;
+    assert!(fields.keys().all(|k| !k.starts_with("__")), "{:?}", fields.keys().collect::<Vec<_>>());
+    assert!(fields.keys().filter(|k| k.starts_with(PREFIX)).all(|k| !k.contains("presets") && !k.contains("defaults")));
+    assert!(opened(&app).is_some(), "kept in the app's state");
+    crate::dialogs::cancel(&mut app);
+    app.session.execute("file.close", &json!({})).unwrap();
+    assert!(opened(&app).is_none(), "with no document, none");
 }

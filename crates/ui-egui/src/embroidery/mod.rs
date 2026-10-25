@@ -62,6 +62,8 @@ pub struct Embroidery {
     pub(crate) check: crate::panels::embroidery::check::CheckState,
     /// The Embroidery panel's Object tab.
     pub(crate) object: crate::panels::embroidery::object::ObjectState,
+    /// Document Setup's Embroidery tab, while the dialog is open: what it opened with.
+    pub(crate) setup: Option<setup_tab::Opened>,
     /// The status bar's counters.
     pub(crate) counters: counters::Counters,
     /// Window › Embroidery has just docked the panel beside other tabs: the dock is widened for

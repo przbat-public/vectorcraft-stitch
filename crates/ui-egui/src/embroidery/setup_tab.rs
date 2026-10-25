@@ -7,8 +7,8 @@
 //!   (`embroidery.fabric` the fabric chosen, `embroidery.fabric.tatami.pull`,
 //!   `embroidery.machine.jumpLength`, `embroidery.threadWeight`…; `embroidery.applyFabricTo` the
 //!   bar's values), so agents set them with `ui.dialog.set` as any dialog's. What the tab opened
-//!   with, the presets and the defaults wait beside them in a hidden field ([`OPENED`]), never
-//!   sent.
+//!   with, the presets and the defaults are kept beside the dialog, in the app's state
+//!   (`app.embroidery.setup`, [`Opened`]), never among its fields.
 //! - **The fabric**: built-in values, one of the presets, or values of the document's own
 //!   (Custom). Choosing a preset copies its values into the fields (the project owner's choice: it
 //!   replaces values changed before in the dialog); changing a value of the built-in ones makes
@@ -33,7 +33,6 @@
 use std::collections::BTreeMap;
 
 use egui::{CornerRadius, Ui};
-use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 use vectorcraft_doc::embroidery::ThreadPalette;
 use vectorcraft_engine::cmd::embroidery::setup::{self, DocumentSettings, Overrides, StoredFabric};
@@ -50,8 +49,6 @@ use crate::theme::Tokens;
 pub(crate) const TAB: &str = "Embroidery";
 /// What the tab's fields start with.
 const PREFIX: &str = "embroidery.";
-/// The hidden field holding what the tab opened with ([`Opened`]).
-pub(crate) const OPENED: &str = "__embroidery";
 
 /// The fabric choices besides the presets: no fabric (the built-in values), and values of the
 /// document's own, from no preset.
@@ -103,10 +100,12 @@ const PT_PER_MM: f64 = 72.0 / 25.4;
 /// Two numbers closer than this are the same value (a field's typed number and the opened one).
 const SAME: f64 = 1e-9;
 
-/// What the tab opened with, kept in the dialog's hidden field: its fields as they were, the values
-/// of a document that sets none, the presets, and how many objects set the fabric's values.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-struct Opened {
+/// What the tab opened with, kept beside the dialog while it is open (`app.embroidery.setup`): the
+/// document it is of (`uid`), its fields as they were, the values of a document that sets none, the
+/// presets, and how many objects set the fabric's values.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct Opened {
+    uid: u64,
     fields: Map<String, Value>,
     defaults: Map<String, Value>,
     presets: Vec<Preset>,
@@ -115,7 +114,7 @@ struct Opened {
 
 /// A fabric preset as the tab offers it: its id, its values (by [`FABRIC_VALUES`]' keys; null where
 /// it publishes none) and what each rests on.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default)]
 struct Preset {
     id: String,
     values: Map<String, Value>,
@@ -124,7 +123,7 @@ struct Preset {
 
 /// What a preset's value rests on: an estimate, or the families of the publications it comes from
 /// (their names and addresses for the tooltip, data from `embroidery.fabrics`).
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default)]
 struct Note {
     estimate: bool,
     families: Vec<String>,
@@ -138,9 +137,9 @@ fn field(key: &str) -> String {
 }
 
 impl Opened {
-    /// The tab as it opens on settings `s`, the presets `fabrics` (`embroidery.fabrics`' reply) and
-    /// the settings of a document that sets none (`d`).
-    fn read(s: &DocumentSettings, fabrics: &Value, d: &DocumentSettings) -> Self {
+    /// The tab as it opens on document `uid`'s settings `s`, the presets `fabrics`
+    /// (`embroidery.fabrics`' reply) and the settings of a document that sets none (`d`).
+    fn read(uid: u64, s: &DocumentSettings, fabrics: &Value, d: &DocumentSettings) -> Self {
         let mut defaults = Map::new();
         let df = &d.resolved.fabric;
         let pairs = [
@@ -164,7 +163,7 @@ impl Opened {
         for (k, v) in pairs {
             defaults.insert(k.to_string(), v);
         }
-        let mut o = Opened { defaults, presets: presets(fabrics), overrides: s.overrides.clone(), ..Opened::default() };
+        let mut o = Opened { uid, defaults, presets: presets(fabrics), overrides: s.overrides.clone(), ..Opened::default() };
         let stored = s.settings.fabric.as_ref();
         let choice = match stored {
             None => BUILT_IN.to_string(),
@@ -275,22 +274,25 @@ fn same(a: &Value, b: &Value) -> bool {
     }
 }
 
-/// What the tab opened with, when the dialog has it (no document: none, and no tab fields).
-fn opened(d: &Dialog) -> Option<Opened> {
-    d.fields.get(OPENED).and_then(|v| serde_json::from_value(v.clone()).ok())
+/// What the tab opened with, when Document Setup opened it for the active document (with no
+/// document, none: the dialog has no tab fields).
+fn opened(app: &VectorcraftApp) -> Option<&Opened> {
+    let uid = app.session.active()?.uid;
+    app.embroidery.setup.as_ref().filter(|o| o.uid == uid)
 }
 
-/// Document Setup opens: the tab's fields and what it opened with, beside `fields` (upstream's
-/// `document.setup` reply). With no document, nothing.
+/// Document Setup opens: the tab's fields beside `fields` (upstream's `document.setup` reply), and
+/// what it opened with kept in the app's state. With no document, nothing.
 pub(crate) fn open(app: &mut VectorcraftApp, fields: &mut Value) {
+    app.embroidery.setup = None;
+    let Some(uid) = app.session.active().map(|st| st.uid) else { return };
     let Ok(settings) = app.session.embroidery_settings() else { return };
+    // With no presets listed (the command failing), the tab offers the built-in values alone.
     let fabrics = app.session.execute("embroidery.fabrics", &json!({})).unwrap_or(Value::Null);
-    let opened = Opened::read(&settings, &fabrics, &setup::default_settings());
+    let opened = Opened::read(uid, &settings, &fabrics, &setup::default_settings());
     let Some(o) = fields.as_object_mut() else { return };
     o.extend(opened.fields.clone());
-    if let Ok(v) = serde_json::to_value(&opened) {
-        o.insert(OPENED.into(), v);
-    }
+    app.embroidery.setup = Some(opened);
 }
 
 /// OK: the dialog's other fields (less `ui_only`) by `document.setup`, and with them, in one
@@ -298,15 +300,10 @@ pub(crate) fn open(app: &mut VectorcraftApp, fields: &mut Value) {
 /// in the bar (`embroidery.applyFabric`). Closes the dialog when done. `None` without the tab's
 /// fields: upstream's OK then runs as it is.
 pub(crate) fn confirm(app: &mut VectorcraftApp, d: &Dialog, ui_only: &[&str]) -> Option<Result<Value, String>> {
-    let opened = opened(d)?;
-    let others: Map<String, Value> = d
-        .fields
-        .iter()
-        .filter(|(k, _)| !ui_only.contains(&k.as_str()) && !k.starts_with(PREFIX) && k.as_str() != OPENED)
-        .map(|(k, v)| (k.clone(), v.clone()))
-        .collect();
+    let changes = changes(d, opened(app)?);
+    let others: Map<String, Value> =
+        d.fields.iter().filter(|(k, _)| !ui_only.contains(&k.as_str()) && !k.starts_with(PREFIX)).map(|(k, v)| (k.clone(), v.clone())).collect();
     let mut commands = vec![json!({"command": "document.setup", "params": others})];
-    let changes = changes(d, &opened);
     if !changes.is_empty() {
         commands.push(json!({"command": "embroidery.setup", "params": changes}));
     }
@@ -419,8 +416,8 @@ fn fabric_changed(d: &Dialog, o: &Opened) -> bool {
 type Change = (String, Value);
 
 /// The tab's body: its rows in one or two columns, then the bar.
-pub(crate) fn body(_app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) -> bool {
-    let Some(o) = opened(d) else {
+pub(crate) fn body(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) -> bool {
+    let Some(o) = opened(app) else {
         ui.label(crate::et!("No document"));
         return false;
     };
@@ -436,26 +433,26 @@ pub(crate) fn body(_app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) -> bo
         ui.horizontal_top(|ui| {
             ui.vertical(|ui| {
                 ui.set_width(column);
-                left(ui, d, &o, column, lang, &mut edits);
+                left(ui, d, o, column, lang, &mut edits);
             });
             ui.add_space(COLUMN_GAP);
             ui.vertical(|ui| {
                 ui.set_width(column);
-                right(ui, d, &o, column, lang, &mut edits);
+                right(ui, d, o, column, lang, &mut edits);
             });
         });
-        bar(ui, d, &o, &mut edits);
+        bar(ui, d, o, &mut edits);
     } else {
         let max = ui.ctx().content_rect().height() * SCROLL_SHARE;
         egui::ScrollArea::vertical().id_salt("embroidery-setup").max_height(max).auto_shrink([false, true]).show(ui, |ui| {
             ui.set_max_width(width);
-            left(ui, d, &o, width, lang, &mut edits);
-            right(ui, d, &o, width, lang, &mut edits);
-            bar(ui, d, &o, &mut edits);
+            left(ui, d, o, width, lang, &mut edits);
+            right(ui, d, o, width, lang, &mut edits);
+            bar(ui, d, o, &mut edits);
         });
     }
     for (key, value) in edits {
-        apply(d, &o, &key, value);
+        apply(d, o, &key, value);
     }
     false
 }
@@ -877,8 +874,10 @@ fn mix(a: egui::Color32, b: egui::Color32, t: f32) -> egui::Color32 {
 pub(crate) fn open_at_tab(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
     crate::panels::embroidery::only_keys(p, &[])?;
     let r = app.run("file.documentSetup", json!({}))?;
-    // The tab's hidden field marks Document Setup's dialog (a document is open).
-    if let Some(d) = app.ui.dialog.as_mut().filter(|d| d.fields.contains_key(OPENED)) {
+    // The tab is there when Document Setup opened it (a document is open).
+    if app.embroidery.setup.is_some()
+        && let Some(d) = app.ui.dialog.as_mut()
+    {
         d.fields.insert("tab".into(), json!(TAB));
     }
     Ok(r)
@@ -887,8 +886,8 @@ pub(crate) fn open_at_tab(app: &mut VectorcraftApp, p: &Value) -> Result<Value, 
 /// Give field `key` `value` in the open dialog's Embroidery tab, as its rows do (the pictures).
 #[cfg(test)]
 pub(crate) fn choose_value(app: &mut VectorcraftApp, key: &str, value: Value) {
+    let Some(o) = opened(app).cloned() else { return };
     let Some(d) = app.ui.dialog.as_mut() else { return };
-    let Some(o) = opened(d) else { return };
     apply(d, &o, key, value);
 }
 

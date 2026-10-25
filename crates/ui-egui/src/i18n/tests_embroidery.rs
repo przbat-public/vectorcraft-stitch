@@ -316,12 +316,14 @@ fn starts_a_name(code: &str, at: usize) -> bool {
 }
 
 /// [`EmbroideryText`] of `source`, its comment lines left out (a doc comment may show the macros).
+/// A macro's string may follow it on the next line, where rustfmt puts a long one.
 fn embroidery_text_in(source: &str, out: &mut EmbroideryText) {
     let code: String = source.lines().filter(|l| !l.trim_start().starts_with("//")).collect::<Vec<_>>().join("\n");
     let code = code.as_str();
-    for (at, m) in code.match_indices("et!(\"") {
+    for (at, m) in code.match_indices("et!(") {
+        let rest = code[at + m.len()..].trim_start();
         if starts_a_name(code, at)
-            && let Some(lit) = literal(&code[at + m.len()..])
+            && let Some(lit) = rest.strip_prefix('"').and_then(literal)
         {
             out.strings.insert(lit);
         }
@@ -423,13 +425,14 @@ fn the_embroidery_interface_never_uses_plain_rows() {
     }
 }
 
-/// The scan finds what the macros are given, and nothing inside longer names.
+/// The scan finds what the macros are given, a string on the line after its macro too, and nothing
+/// inside longer names.
 #[test]
 fn the_embroidery_text_scan_reads_both_macros() {
     let mut out = EmbroideryText::default();
-    let code = "/// crate::et!(\"Comment\")\nlet a = crate::et!(\"Stitches\"); set!(\"no\");\ncrate::etn!(\n    n as u64,\n    \"{count} stitch\",\n    \"{count} stitches\"\n);";
+    let code = "/// crate::et!(\"Comment\")\nlet a = crate::et!(\"Stitches\"); set!(\"no\");\nlet b = crate::et!(\n    \"Long\"\n);\ncrate::etn!(\n    n as u64,\n    \"{count} stitch\",\n    \"{count} stitches\"\n);";
     embroidery_text_in(code, &mut out);
-    assert_eq!(out.strings.iter().collect::<Vec<_>>(), ["Stitches"]);
+    assert_eq!(out.strings.iter().collect::<Vec<_>>(), ["Long", "Stitches"]);
     assert_eq!(out.plurals.iter().collect::<Vec<_>>(), [&("{count} stitch".to_string(), "{count} stitches".to_string())]);
 }
 

@@ -1780,17 +1780,19 @@ writes.
   only when its plan fits a frame (8 ms, `INLINE_PLAN_MS`, the time the canvas lets its art render
   in line), and the replies wait while a drag goes on.
 - **Light and heavy designs.** A design whose last plan walked took at most 50 ms (`LIVE_PLAN_MS`,
-  half the re-plan budget, an estimate; a plan taken remembered, such as one a read command made
-  first, brings the time of the walk that made it, `Planned::walk_ms`, which the service keeps
-  with the plan) is planned on every
-  change, also during a drag, and the plan
-  under way is let finish, so the stitches follow the drag; once that plan is in, a change cancels
-  the replies still to come (their walks stop within a few thousand records, and a reply cut short
-  is never given) and plans at once. Any other is planned once the document has stayed unchanged
-  for 0.1 s (`QUIET_SECS`, the panels' settle time) with no drag or scrubbing, and a new change
-  cancels the plan under way. A document's first plan starts at once; after that every plan waits
-  as above, also while nothing has been shown yet, so a design that can't be planned isn't planned
-  again on every edit.
+  half the re-plan budget, an estimate) is planned on every change, also during a drag, and the plan
+  under way is let finish, so the stitches follow the drag. The time is the preview's own walk's:
+  its job's, the scene built for it included. Before the preview has timed one, a plan taken
+  remembered (one a read command made first) brings the time of the walk that made it
+  (`Planned::walk_ms`, which the service keeps with the plan) with the time its own job took to
+  build the scene; a later remembered plan (an undo back to an earlier state) leaves the preview's
+  latest time as it is, as the walk it brings may be an old, cold one. Once the plan under way is
+  in, a change cancels the replies still to come (their walks stop within a few thousand records, and a
+  reply cut short is never given) and plans at once. Any other is planned once the document has
+  stayed unchanged for 0.1 s (`QUIET_SECS`, the panels' settle time) with no drag or scrubbing, and
+  a new change cancels the plan under way. A document's first plan starts at once; after that every
+  plan waits as above, also while nothing has been shown yet, so a design that can't be planned
+  isn't planned again on every edit.
 - **What is shown meanwhile.** The last plan stays shown while a newer one is made; after 0.4 s
   (`STALE_NOTICE_SECS`, as long as an export runs before its progress shows) the preview says it is
   planning, with the plan's progress. A design that can't be planned (too many stitches) keeps its

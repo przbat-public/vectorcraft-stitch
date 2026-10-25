@@ -698,7 +698,9 @@ fn a_plan_says_whether_it_was_walked() {
 }
 
 /// A plan keeps how long the walk that made it took, so a caller that takes it remembered (the
-/// stitch preview after a read command planned first) knows how heavy the design is.
+/// stitch preview after a read command planned first) knows how heavy the design is. Timed where
+/// there is a clock (not on the web), as its neighbours.
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn a_remembered_plan_keeps_how_long_its_walk_took() {
     let (s, _) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: Some((1, 4.0)) }]);

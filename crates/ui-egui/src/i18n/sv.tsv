@@ -5865,7 +5865,6 @@ embroidery	Set on the selected objects.	Angivet på de markerade objekten.
 embroidery	Nearest to where the needle is.	Närmast där nålen är.
 embroidery	built-in values	inbyggda värden
 embroidery	Fabric: {fabric} · thread {weight} wt	Tyg: {fabric} · tråd {weight} wt
-embroidery	Fabric: {fabric}	Tyg: {fabric}
 embroidery	Dim values come from the fabric and automatic rules.	Nedtonade värden kommer från tyget och de automatiska reglerna.
 embroidery	A bar marks a value set on these objects.	En stapel markerar ett värde som angetts på de här objekten.
 embroidery	Restore from Fabric	Återställ från tyg

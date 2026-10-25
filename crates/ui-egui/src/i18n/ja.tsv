@@ -5586,7 +5586,6 @@ embroidery	Set on the selected objects.	選択したオブジェクトに設定�
 embroidery	Nearest to where the needle is.	針の位置に最も近い所。
 embroidery	built-in values	組み込みの値
 embroidery	Fabric: {fabric} · thread {weight} wt	生地：{fabric}・糸 {weight} wt
-embroidery	Fabric: {fabric}	生地：{fabric}
 embroidery	Dim values come from the fabric and automatic rules.	淡い値は生地と自動ルールによるものです。
 embroidery	A bar marks a value set on these objects.	バーは、これらのオブジェクトに設定した値を示します。
 embroidery	Restore from Fabric	生地から復元

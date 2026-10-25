@@ -5748,7 +5748,6 @@ embroidery	Set on the selected objects.	已在所选对象上设置。
 embroidery	Nearest to where the needle is.	离针所在位置最近处。
 embroidery	built-in values	内置值
 embroidery	Fabric: {fabric} · thread {weight} wt	面料：{fabric} · 线 {weight} wt
-embroidery	Fabric: {fabric}	面料：{fabric}
 embroidery	Dim values come from the fabric and automatic rules.	浅色的值来自面料和自动规则。
 embroidery	A bar marks a value set on these objects.	竖条标出在这些对象上设置的值。
 embroidery	Restore from Fabric	从面料恢复

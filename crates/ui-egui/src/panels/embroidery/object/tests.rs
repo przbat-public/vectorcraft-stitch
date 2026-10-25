@@ -731,3 +731,17 @@ fn the_selection_goes_without_its_ids() {
     for_selection(&mut p, &[a, b], &[a]);
     assert_eq!(p["ids"], json!([1, 2]), "not the selection: kept");
 }
+
+/// The footer names the document's fabric and its thread from the document alone: its preset, or
+/// "Custom" for values of its own.
+#[test]
+fn the_footer_names_the_fabric_and_the_thread() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    app.run("embroidery.setup", json!({"fabric": {"tatami": {"pull": 0.3}}, "threadWeight": 60})).unwrap();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let line = text::fill(crate::et!("Fabric: {fabric} · thread {weight} wt"), &[("fabric", crate::et!("Custom")), ("weight", "60")]);
+    assert!(drawn.words.iter().any(|(w, _)| *w == line), "{line}: {:?}", drawn.words);
+}

@@ -5940,7 +5940,6 @@ embroidery	Set on the selected objects.	Asetettu valituille objekteille.
 embroidery	Nearest to where the needle is.	Lähimpänä kohtaa, jossa neula on.
 embroidery	built-in values	sisäiset arvot
 embroidery	Fabric: {fabric} · thread {weight} wt	Kangas: {fabric} · lanka {weight} wt
-embroidery	Fabric: {fabric}	Kangas: {fabric}
 embroidery	Dim values come from the fabric and automatic rules.	Himmeät arvot tulevat kankaasta ja automaattisista säännöistä.
 embroidery	A bar marks a value set on these objects.	Palkki merkitsee näille objekteille asetetun arvon.
 embroidery	Restore from Fabric	Palauta kankaasta

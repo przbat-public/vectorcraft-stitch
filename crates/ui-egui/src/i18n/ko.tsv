@@ -5487,7 +5487,6 @@ embroidery	Set on the selected objects.	선택한 개체에 설정됨.
 embroidery	Nearest to where the needle is.	바늘이 있는 곳에서 가장 가까운 곳.
 embroidery	built-in values	기본 제공 값
 embroidery	Fabric: {fabric} · thread {weight} wt	원단: {fabric} · 실 {weight} wt
-embroidery	Fabric: {fabric}	원단: {fabric}
 embroidery	Dim values come from the fabric and automatic rules.	흐린 값은 원단과 자동 규칙에서 옵니다.
 embroidery	A bar marks a value set on these objects.	막대는 이 개체에 설정한 값을 표시합니다.
 embroidery	Restore from Fabric	원단에서 복원

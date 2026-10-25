@@ -5895,7 +5895,6 @@ embroidery	Set on the selected objects.	A kijelölt objektumokon beállítva.
 embroidery	Nearest to where the needle is.	A tűhöz legközelebb.
 embroidery	built-in values	beépített értékek
 embroidery	Fabric: {fabric} · thread {weight} wt	Anyag: {fabric} · cérna {weight} wt
-embroidery	Fabric: {fabric}	Anyag: {fabric}
 embroidery	Dim values come from the fabric and automatic rules.	A halvány értékek az anyagból és az automatikus szabályokból jönnek.
 embroidery	A bar marks a value set on these objects.	Egy sáv jelöli az ezeken az objektumokon beállított értéket.
 embroidery	Restore from Fabric	Visszaállítás az anyagból

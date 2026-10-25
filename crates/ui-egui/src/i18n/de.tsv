@@ -5490,7 +5490,6 @@ embroidery	Set on the selected objects.	An den ausgewählten Objekten gesetzt.
 embroidery	Nearest to where the needle is.	Am nächsten zur Nadel.
 embroidery	built-in values	eingebaute Werte
 embroidery	Fabric: {fabric} · thread {weight} wt	Stoff: {fabric} · Garn {weight} wt
-embroidery	Fabric: {fabric}	Stoff: {fabric}
 embroidery	Dim values come from the fabric and automatic rules.	Blasse Werte kommen vom Stoff und von automatischen Regeln.
 embroidery	A bar marks a value set on these objects.	Ein Balken markiert einen an diesen Objekten gesetzten Wert.
 embroidery	Restore from Fabric	Aus Stoff wiederherstellen

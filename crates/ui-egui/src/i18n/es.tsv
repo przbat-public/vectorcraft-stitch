@@ -5850,7 +5850,6 @@ embroidery	Set on the selected objects.	Definido en los objetos seleccionados.
 embroidery	Nearest to where the needle is.	Lo más cerca de donde está la aguja.
 embroidery	built-in values	valores integrados
 embroidery	Fabric: {fabric} · thread {weight} wt	Tela: {fabric} · hilo {weight} wt
-embroidery	Fabric: {fabric}	Tela: {fabric}
 embroidery	Dim values come from the fabric and automatic rules.	Los valores atenuados vienen de la tela y de las reglas automáticas.
 embroidery	A bar marks a value set on these objects.	Una barra marca un valor definido en estos objetos.
 embroidery	Restore from Fabric	Restaurar desde la tela

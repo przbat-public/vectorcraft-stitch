@@ -5504,7 +5504,6 @@ embroidery	Set on the selected objects.	Задано у виділених об�
 embroidery	Nearest to where the needle is.	Найближче до місця, де голка.
 embroidery	built-in values	вбудовані значення
 embroidery	Fabric: {fabric} · thread {weight} wt	Тканина: {fabric} · нитка {weight} wt
-embroidery	Fabric: {fabric}	Тканина: {fabric}
 embroidery	Dim values come from the fabric and automatic rules.	Бліді значення беруться з тканини й автоматичних правил.
 embroidery	A bar marks a value set on these objects.	Смуга позначає значення, задане для цих об’єктів.
 embroidery	Restore from Fabric	Відновити з тканини

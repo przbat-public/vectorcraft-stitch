@@ -330,3 +330,16 @@ fn a_fabrics_underlay_takes_true_and_false() {
     let r = run(&mut s, "embroidery.setup", json!({"fabric": {"tatami": {"underlay": false}, "satin": {"underlay": true}}}));
     assert_eq!((&r["settings"]["fabric"]["tatami"]["underlay"], &r["settings"]["fabric"]["satin"]["underlay"]), (&json!("none"), &json!("auto")));
 }
+
+/// The footer's read of the fabric and the thread is the settings reply's, from the document alone.
+#[test]
+fn the_fabric_and_the_thread_read_as_the_settings_give_them() {
+    use super::setup::{FabricChoice, fabric_and_thread};
+    let mut s = blank();
+    let read = |s: &Session| fabric_and_thread(&s.doc().unwrap().doc);
+    assert_eq!(read(&s), (FabricChoice::BuiltIn, s.embroidery_settings().unwrap().resolved.thread_weight.value));
+    run(&mut s, "embroidery.setup", json!({"fabric": "denim", "threadWeight": 60}));
+    assert_eq!(read(&s), (FabricChoice::Preset("denim".into()), 60.0));
+    run(&mut s, "embroidery.setup", json!({"fabric": {"preset": null}}));
+    assert_eq!(read(&s).0, FabricChoice::Own);
+}

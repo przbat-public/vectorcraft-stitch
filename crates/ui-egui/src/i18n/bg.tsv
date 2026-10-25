@@ -5848,7 +5848,6 @@ embroidery	Set on the selected objects.	Зададено за избраните
 embroidery	Nearest to where the needle is.	Най-близо до мястото, където е иглата.
 embroidery	built-in values	вградени стойности
 embroidery	Fabric: {fabric} · thread {weight} wt	Плат: {fabric} · конец {weight} wt
-embroidery	Fabric: {fabric}	Плат: {fabric}
 embroidery	Dim values come from the fabric and automatic rules.	Бледите стойности идват от плата и от автоматичните правила.
 embroidery	A bar marks a value set on these objects.	Черта отбелязва стойност, зададена за тези обекти.
 embroidery	Restore from Fabric	Възстановяване от плата

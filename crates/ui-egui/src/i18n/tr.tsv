@@ -5870,7 +5870,6 @@ embroidery	Set on the selected objects.	Seçili nesnelerde ayarlı.
 embroidery	Nearest to where the needle is.	İğnenin bulunduğu yere en yakın.
 embroidery	built-in values	yerleşik değerler
 embroidery	Fabric: {fabric} · thread {weight} wt	Kumaş: {fabric} · iplik {weight} wt
-embroidery	Fabric: {fabric}	Kumaş: {fabric}
 embroidery	Dim values come from the fabric and automatic rules.	Soluk değerler kumaştan ve otomatik kurallardan gelir.
 embroidery	A bar marks a value set on these objects.	Çubuk, bu nesnelerde ayarlanmış bir değeri gösterir.
 embroidery	Restore from Fabric	Kumaştan geri yükle

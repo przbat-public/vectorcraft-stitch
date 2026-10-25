@@ -27,7 +27,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId, NodeKind};
 use vectorcraft_engine::cmd::embroidery::info::{KeyInfo, ObjectSettings, PartInfo, SelectionSewing, selection_sewing};
-use vectorcraft_engine::cmd::embroidery::setup::DocumentSettings;
+use vectorcraft_engine::cmd::embroidery::setup::{FabricChoice, fabric_and_thread};
 use vectorcraft_engine::cmd::embroidery::{SettingField, distinct_underlays, part_field};
 
 use super::SHOW_BUSY_AFTER_SECS;
@@ -121,8 +121,6 @@ pub(crate) struct ObjectState {
     memo: Option<Memo>,
     /// The selection's stitches in a plan the preview showed.
     sewn: Option<Sewn>,
-    /// The document's settings, read for one snapshot (the footer's fabric and thread).
-    setup: Option<Setup>,
     /// What Copy took (a snapshot, pasted as it was then, into any document).
     copied: Option<Copied>,
 }
@@ -156,13 +154,6 @@ struct Sewn {
     sewing: SelectionSewing,
 }
 
-/// The settings of document `uid`'s snapshot `snapshot`.
-struct Setup {
-    uid: u64,
-    snapshot: Weak<Document>,
-    settings: Option<Arc<DocumentSettings>>,
-}
-
 /// The settings of the active document's selection: the memo's, or read now.
 fn settings_of(app: &mut VectorcraftApp) -> Option<(Vec<NodeId>, Read)> {
     let st = app.session.active()?;
@@ -174,18 +165,6 @@ fn settings_of(app: &mut VectorcraftApp) -> Option<(Vec<NodeId>, Read)> {
     let info = app.session.embroidery_info(&ids, false, &Default::default()).map(Arc::new).map_err(|e| e.to_string());
     app.embroidery.object.memo = Some(Memo { uid, snapshot, ids: ids.clone(), info: info.clone() });
     Some((ids, info))
-}
-
-/// The document's embroidery settings: the memo's, or read now.
-fn document_settings(app: &mut VectorcraftApp) -> Option<Arc<DocumentSettings>> {
-    let st = app.session.active()?;
-    let (uid, snapshot) = (st.uid, Arc::downgrade(&st.doc));
-    if let Some(s) = app.embroidery.object.setup.as_ref().filter(|s| s.uid == uid && Weak::ptr_eq(&s.snapshot, &snapshot)) {
-        return s.settings.clone();
-    }
-    let settings = app.session.embroidery_settings().ok().map(Arc::new);
-    app.embroidery.object.setup = Some(Setup { uid, snapshot, settings: settings.clone() });
-    settings
 }
 
 /// How the stitch count stands: the count of the plan shown (`None` before any), whether that plan
@@ -237,8 +216,9 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             return;
         }
     };
-    let settings = document_settings(app);
-    let footer_words = footer_words(settings.as_deref(), lang);
+    // Read from the document alone, on every frame: the fabric's name and the thread's weight.
+    let (fabric, weight) = app.session.active().map(|st| fabric_and_thread(&st.doc)).unwrap_or((FabricChoice::BuiltIn, 0.0));
+    let footer_words = footer_words(&fabric, weight, lang);
     let buttons = [super::command_label(app, SETTINGS), crate::et!("Restore from Fabric").to_string()];
     let footer_room = footer_height(ui, &footer_words, &buttons);
     if ids.is_empty() {
@@ -786,18 +766,16 @@ fn trims(info: &ObjectSettings) -> bool {
     info.object_count > 0 || info.skipped.iter().any(|s| matches!(s.reason.as_str(), "literal" | "symbolInstance"))
 }
 
-/// The footer's words: the document's fabric and thread, then what the rows' looks mean.
-fn footer_words(settings: Option<&DocumentSettings>, lang: Lang) -> [String; 3] {
-    let fabric = settings
-        .and_then(|s| s.resolved.fabric.preset.as_ref())
-        .map_or_else(|| crate::et!("built-in values").to_string(), |p| vocabulary::fabric(&p.id));
-    let line = match settings {
-        Some(s) => text::fill(
-            crate::et!("Fabric: {fabric} · thread {weight} wt"),
-            &[("fabric", &fabric), ("weight", &numbers::decimal(lang, s.resolved.thread_weight.value, 0))],
-        ),
-        None => text::fill(crate::et!("Fabric: {fabric}"), &[("fabric", &fabric)]),
+/// The footer's words: the document's fabric (`fabric`) and thread (`weight`), then what the rows'
+/// looks mean.
+fn footer_words(fabric: &FabricChoice, weight: f64, lang: Lang) -> [String; 3] {
+    let fabric = match fabric {
+        FabricChoice::BuiltIn => crate::et!("built-in values").to_string(),
+        FabricChoice::Own => crate::et!("Custom").to_string(),
+        FabricChoice::Preset(id) => vocabulary::fabric(id),
     };
+    let line =
+        text::fill(crate::et!("Fabric: {fabric} · thread {weight} wt"), &[("fabric", &fabric), ("weight", &numbers::decimal(lang, weight, 0))]);
     [
         line,
         crate::et!("Dim values come from the fabric and automatic rules.").to_string(),

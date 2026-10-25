@@ -292,6 +292,8 @@ fn a_dragged_row_says_where_it_lands_and_drops_on_release() {
 fn a_lit_rows_buttons_sew_it_earlier_and_later() {
     use vectorcraft_engine::cmd::embroidery::reorder::{Step, step_move};
     let mut app = app_with(6);
+    // Each step's plan made within the frames after it.
+    app.embroidery.preview.pin_light();
     let ctx = egui::Context::default();
     ready(&mut app, &ctx);
     let mut time = 0.2;

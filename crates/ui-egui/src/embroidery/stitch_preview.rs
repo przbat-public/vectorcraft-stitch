@@ -424,6 +424,16 @@ impl StitchPreview {
         }
     }
 
+    /// Count every design as light from now on, whatever the machine measures: each change is
+    /// planned at once, as on an idle machine (a busy one can take a plan past [`LIVE_PLAN_MS`],
+    /// in line [`INLINE_PLAN_MS`], and the next change then waits for the document to rest, past
+    /// the frames or the release a test expects it in).
+    #[cfg(test)]
+    pub(crate) fn pin_light(&mut self) {
+        // Half the lower limit: light on every runner.
+        self.log.pinned_ms = Some(INLINE_PLAN_MS.min(LIVE_PLAN_MS) / 2.0);
+    }
+
     /// Use `runner` for the jobs from now on (the tests' own).
     #[cfg(test)]
     pub(crate) fn with_runner(runner: Box<dyn Runner>) -> Self {

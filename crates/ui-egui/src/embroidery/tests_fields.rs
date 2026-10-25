@@ -183,3 +183,58 @@ fn a_field_steps_in_its_own_size() {
         assert!((stepped - command_up).abs() < 1e-9, "step {step}: Ctrl/Cmd up to {stepped}");
     }
 }
+
+/// A row of a choice whose words are `shown`.
+fn choice_row<'a>(shown: &'a str, options: &'a [(String, String)]) -> crate::embroidery::rows::Row<'a> {
+    use crate::embroidery::rows::{Field, Row};
+    Row {
+        key: "stitch",
+        label: "Type",
+        name: "Stitch: Type",
+        tip: "",
+        field: Field::Choice { shown, options, current: None },
+        own: false,
+        restore: None,
+        aside: Some("fabric".into()),
+        hint: None,
+        description: String::new(),
+        problem: None,
+    }
+}
+
+/// A choice grows into the room its row has for its words (Document Setup's wide columns); where
+/// they are cut, the cell's tooltip holds them whole.
+#[test]
+fn a_choice_grows_for_its_words_and_tips_them_when_cut() {
+    use crate::embroidery::rows::{self, Columns};
+    const WORDS: &str = "Edge run and tatami under the long rows of the fill";
+    let options = vec![("a".to_string(), WORDS.to_string())];
+    let ctx = context();
+    // The words drawn whole (a cut galley keeps its whole text, marked elided).
+    let whole = |shapes: &[Shape]| shapes.iter().any(|s| matches!(s, Shape::Text(t) if t.galley.text() == WORDS && !t.galley.elided));
+    let drawn_in = |width: f32, time: f64, events: Vec<Event>| {
+        frame(&ctx, time, events, &mut |ui| {
+            ui.set_width(width);
+            let row = choice_row(WORDS, &options);
+            let cols = Columns::fit(ui, width, std::slice::from_ref(&row));
+            rows::show(ui, &cols, &row);
+        })
+        .0
+    };
+    assert!(whole(&drawn_in(390.0, 0.0, vec![])), "whole where there is room");
+    let narrow = drawn_in(220.0, 1.0, vec![]);
+    assert!(!whole(&narrow), "cut in a narrow column");
+    let at = narrow
+        .iter()
+        .find_map(|s| match s {
+            Shape::Text(t) if t.galley.text() == WORDS => Some(t.visual_bounding_rect().center()),
+            _ => None,
+        })
+        .expect("its words");
+    let mut tipped = false;
+    for k in 0..30 {
+        let events = if k == 0 { vec![Event::PointerMoved(at)] } else { vec![] };
+        tipped |= whole(&drawn_in(220.0, 1.1 + 0.1 * f64::from(k), events));
+    }
+    assert!(tipped, "whole in the tooltip");
+}

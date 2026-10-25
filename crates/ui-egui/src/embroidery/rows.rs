@@ -19,10 +19,11 @@
 //!   decoration, its words being in the description. Ids come from the settings' keys, never from
 //!   translated words.
 //! - **Room** ([`Columns::fit`]): one line a row, the label column scrubbing its field as the app's
-//!   labels do, a field as wide as its words want. Where the panel is too narrow for all of it, the
-//!   hint after ↺ gives way first (↺'s tooltip then says it), then long labels wrap beside their
-//!   fields, then fields cut their words short; only then does each label go above its field. A
-//!   badge, and the count after ↺, keep their room.
+//!   labels do, a field as wide as its words want (a choice wider than the others where its row
+//!   has room for its words: Document Setup's wide columns). Where the panel is too narrow for all
+//!   of it, the hint after ↺ gives way first (↺'s tooltip then says it), then long labels wrap
+//!   beside their fields, then fields cut their words short (a choice's whole in its tooltip); only
+//!   then does each label go above its field. A badge, and the count after ↺, keep their room.
 
 use std::ops::RangeInclusive;
 
@@ -84,6 +85,9 @@ pub(crate) struct Columns {
     label: Option<f32>,
     /// A field's width.
     field: f32,
+    /// A choice's width: a field's, or more where its words are longer and the row has room for
+    /// them (Document Setup's wide columns).
+    choice: f32,
 }
 
 impl Columns {
@@ -100,18 +104,24 @@ impl Columns {
         let aside = most(&|r| aside_width(ui, r, false));
         let hinted = most(&|r| aside_width(ui, r, true));
         let fits = |label: f32, field: f32, aside: f32| label + GAP + field + GAP + aside <= room;
-        let (label, field) = if fits(label, field, hinted) {
-            (Some(label), (room - label - 2.0 * GAP - hinted).min(FIELD_MAX))
+        let (label, field, after) = if fits(label, field, hinted) {
+            (Some(label), (room - label - 2.0 * GAP - hinted).min(FIELD_MAX), hinted)
         } else if fits(label, field, aside) {
-            (Some(label), (room - label - 2.0 * GAP - aside).min(FIELD_MAX))
+            (Some(label), (room - label - 2.0 * GAP - aside).min(FIELD_MAX), aside)
         } else if fits(word, field, aside) {
-            (Some(room - field - 2.0 * GAP - aside), field)
+            (Some(room - field - 2.0 * GAP - aside), field, aside)
         } else if fits(word, FIELD_MIN, aside) {
-            (Some(word), room - word - 2.0 * GAP - aside)
+            (Some(word), room - word - 2.0 * GAP - aside, aside)
         } else {
-            (None, (room * FIELD_UNDER).max(FIELD_MIN.min(room)))
+            (None, (room * FIELD_UNDER).max(FIELD_MIN.min(room)), 0.0)
         };
-        Self { label, field }
+        // A choice as wide as its words where the row has room beside its label for them.
+        let words = most(&|r| if matches!(r.field, Field::Choice { .. }) { field_words(ui, r) } else { 0.0 });
+        let choice = match label {
+            Some(l) => words.min(room - l - 2.0 * GAP - after).max(field),
+            None => field,
+        };
+        Self { label, field, choice }
     }
 
     /// These columns with a field of at least `field` points, as far as rows `width` points wide
@@ -119,7 +129,15 @@ impl Columns {
     /// (Document Setup's fabric).
     pub(crate) fn wide(self, field: f32, width: f32) -> Self {
         let room = width - GUTTER - self.label.map_or(0.0, |l| l + GAP);
-        Self { field: self.field.max(field.min(room)), ..self }
+        let field = self.field.max(field.min(room));
+        Self { field, choice: self.choice.max(field), ..self }
+    }
+}
+
+impl Columns {
+    /// The width row `r`'s field is drawn: a choice's, or a field's.
+    fn width_of(&self, r: &Row<'_>) -> f32 {
+        if matches!(r.field, Field::Choice { .. }) { self.choice } else { self.field }
     }
 }
 
@@ -260,7 +278,7 @@ pub(crate) fn show(ui: &mut Ui, cols: &Columns, row: &Row<'_>) -> Option<Edit> {
                 bar(ui, row.own);
                 label_cell(ui, row, label, true);
                 ui.add_space(GAP);
-                edit = field(ui, cols.field, row);
+                edit = field(ui, cols.width_of(row), row);
                 ui.add_space(GAP);
                 edit = aside(ui, row).or(edit.take());
             });
@@ -275,7 +293,7 @@ pub(crate) fn show(ui: &mut Ui, cols: &Columns, row: &Row<'_>) -> Option<Edit> {
                 ui.spacing_mut().item_spacing.x = 0.0;
                 ui.set_min_height(ROW);
                 ui.add_space(GUTTER);
-                edit = field(ui, cols.field.min(ui.available_width()), row);
+                edit = field(ui, cols.width_of(row).min(ui.available_width()), row);
                 ui.add_space(GAP);
                 edit = aside(ui, row).or(edit.take());
             });
@@ -341,10 +359,12 @@ fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
         Field::Number { value, format, bounds, hint } => {
             fields::number_field(ui, (row.key, "number"), *value, format, &Look { hint: *hint, ..look }, width, bounds).map(Edit::Number)
         }
-        // In a cell of its own width, its words cut short there: a combo lays its words out in the
-        // room its row has left, so a long one would push the rest of the row out.
-        Field::Choice { shown, options, current } => ui
-            .allocate_ui_with_layout(vec2(width, ROW), egui::Layout::left_to_right(egui::Align::Center), |ui| {
+        // In a cell of its own width, its words cut short there (whole in the cell's tooltip): a
+        // combo lays its words out in the room its row has left, so a long one would push the rest
+        // of the row out.
+        Field::Choice { shown, options, current } => {
+            let cut = field_words(ui, row) > width;
+            let cell = ui.allocate_ui_with_layout(vec2(width, ROW), egui::Layout::left_to_right(egui::Align::Center), |ui| {
                 ui.set_max_width(width);
                 ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
                 fields::choice(ui, (row.key, "choice"), shown, &look, width, |ui| {
@@ -356,9 +376,14 @@ fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
                     }
                     chosen
                 })
-            })
-            .inner
-            .map(Edit::Choice),
+            });
+            if cut {
+                // Over the combo, sensing hover alone (egui marks a hover-only widget hovered only
+                // when it lies on top), so the combo still takes the clicks.
+                ui.interact(cell.response.rect, ui.id().with((row.key, "cut")), Sense::hover()).on_hover_text(*shown);
+            }
+            cell.inner.map(Edit::Choice)
+        }
         Field::Words(words) => {
             words_field(ui, width, row, words, text);
             None

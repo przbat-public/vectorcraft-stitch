@@ -17,7 +17,7 @@ const RED: Color32 = Color32::from_rgb(200, 0, 0);
 
 /// A format with a point: the app's fields', stepping by one; `unit` after a space.
 fn plain(unit: &str, decimals: usize) -> NumberFormat<'_> {
-    NumberFormat { unit, space: " ", latin: unit, decimals, mark: '.', group: ',', step: UNIT_STEP }
+    NumberFormat { unit, space: " ", latin: unit, unit_first: false, decimals, mark: '.', group: ',', step: UNIT_STEP }
 }
 
 /// A context with the app's fonts and theme, screen readers on.

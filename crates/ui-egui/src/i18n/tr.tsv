@@ -5785,7 +5785,7 @@ embroidery	Stitch	Dikiş
 embroidery	Underlay	Alt dikiş
 embroidery	Compensation	Telafi
 embroidery	auto	otomatik
-embroidery	{count} of {total} set	{total} nesnenin {count} tanesinde ayarlı
+embroidery	{count} of {total} set	{count}/{total} ayarlı
 embroidery	Set on the selected objects; without it: {value}	Seçili nesnelerde ayarlı; ayarlanmazsa: {value}
 embroidery	The selected objects differ.	Seçili nesneler farklı.
 embroidery	{section}: {setting}	{section}: {setting}

@@ -61,6 +61,8 @@ pub(crate) struct NumberFormat<'a> {
     pub unit: &'a str,
     pub space: &'a str,
     pub latin: &'a str,
+    /// The unit before the number, as Turkish writes a percent ("%100", [`numbers::PERCENT_FIRST`]).
+    pub unit_first: bool,
     /// The most decimals written, trailing zeros left out.
     pub decimals: usize,
     /// The decimal mark written and read; a point is read too.
@@ -82,7 +84,11 @@ impl NumberFormat<'_> {
         let number = format!("{:.*}", self.decimals, value);
         let number = if number.contains('.') { number.trim_end_matches('0').trim_end_matches('.').to_string() } else { number };
         let number = if self.mark == '.' { number } else { number.replace('.', &self.mark.to_string()) };
-        if self.unit.is_empty() { number } else { format!("{number}{}{}", self.space, self.unit) }
+        match (self.unit.is_empty(), self.unit_first) {
+            (true, _) => number,
+            (false, true) => format!("{}{}{number}", self.unit, self.space),
+            (false, false) => format!("{number}{}{}", self.space, self.unit),
+        }
     }
 
     /// The number `text` holds, its decimal mark read as a point; `None` when it holds none. The
@@ -144,8 +150,9 @@ pub(crate) fn format(lang: Lang, unit: &str, decimals: usize) -> NumberFormat<'s
         _ => ("", "", UNIT_STEP),
     };
     let unit = if latin.is_empty() { latin } else { unit_word(lang, latin) };
+    let unit_first = latin == PERCENT && numbers::PERCENT_FIRST.contains(&lang.code());
     let symbols = numbers::symbols(lang);
-    NumberFormat { unit, space, latin, decimals, mark: symbols.decimal, group: symbols.group, step }
+    NumberFormat { unit, space: if unit_first { "" } else { space }, latin, unit_first, decimals, mark: symbols.decimal, group: symbols.group, step }
 }
 
 /// Unit `latin` as `lang` writes it after a number: its catalogue row in the embroidery context,
@@ -318,6 +325,8 @@ mod tests {
         assert_eq!(format(lang("fr"), "%", 0).show(100.0), "100\u{202f}%");
         assert_eq!(format(lang("de"), "%", 0).read("120 %"), Some(120.0));
         assert_eq!(format(Lang::EN, "°", 1).show(135.0), "135°");
+        assert_eq!(format(lang("tr"), "%", 0).show(100.0), "%100", "Turkish writes the sign first");
+        assert_eq!(format(lang("tr"), "%", 0).read("%120"), Some(120.0));
         assert_eq!(format(Lang::EN, "/min", 0).show(700.0), "700 /min");
     }
 

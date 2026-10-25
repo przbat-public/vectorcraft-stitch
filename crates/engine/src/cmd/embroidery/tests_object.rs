@@ -89,6 +89,27 @@ fn each_part_key_on_an_object_reaches_its_unit() {
     assert_eq!(plan.unit_stitches(0), exported.unit_stitches(0), "the fill sewn as the export sews it");
 }
 
+/// An object's own `expand` grows the area its fill sews all round, and beats the export's: the
+/// rows reach 1 mm farther at each side with the object's 1 mm, whatever the export gives, and
+/// 0.5 mm with the export's 0.5 mm alone.
+#[test]
+fn an_objects_expand_grows_its_fill_and_beats_the_exports() {
+    let mut s = blank();
+    let id = shape(&mut s, 20.0, 20.0, 20.0 * PT_PER_MM, 20.0 * PT_PER_MM, 0.0);
+    let width = |s: &Session, opts: Value| {
+        let plan = plan_with(s, opts);
+        let k = plan.units.iter().position(|u| u.sewn() == Some(Style::Fill)).unwrap();
+        let xs: Vec<f64> = plan.unit_stitches(k).iter().filter(|st| st.command == Command::Stitch).map(|st| st.x).collect();
+        xs.iter().copied().fold(f64::NEG_INFINITY, f64::max) - xs.iter().copied().fold(f64::INFINITY, f64::min)
+    };
+    let near = |a: f64, b: f64| (a - b).abs() < 0.15;
+    let bare = width(&s, json!({}));
+    assert!(near(width(&s, json!({"expand": 0.5})), bare + 1.0), "the export's 0.5 mm");
+    give(&mut s, id, json!({"fill": {"expand": 1.0}}));
+    assert!(near(width(&s, json!({})), bare + 2.0), "the object's 1 mm: {} against {bare}", width(&s, json!({})));
+    assert!(near(width(&s, json!({"expand": 0.5})), bare + 2.0), "the object's beats the export's");
+}
+
 /// The object's value beats the export's, which beats the document's, which beats the default.
 #[test]
 fn the_object_beats_the_export_and_the_document() {

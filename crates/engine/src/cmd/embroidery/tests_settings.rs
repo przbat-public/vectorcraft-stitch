@@ -192,6 +192,68 @@ fn the_machine_reaches_every_unit() {
     assert!(longest <= 7.0 + 1e-6, "a {longest} mm satin stitch");
 }
 
+/// The machine's trim length decides which moves between objects are cut, under an export's own:
+/// two shapes of one thread 8 mm apart are joined by a jump left uncut by default (trim 10 mm), a
+/// cut with the document's trim at 6 mm, and uncut again with the export's at 12 mm. The same for
+/// a run of literal stitches cut in two by a clip group.
+#[test]
+fn the_machines_trim_length_decides_the_cuts_between_objects() {
+    let trims = |s: &Session, opts: Value| -> usize {
+        let plan = digitize(&s.doc().unwrap().doc, &Options::from_json(&opts).unwrap(), None).unwrap();
+        (0..plan.units.len()).map(|k| plan.unit_stitches(k).iter().filter(|st| st.command == Command::Trim).count()).sum()
+    };
+    let gap = 8.0;
+    let mut s = blank();
+    run(&mut s, "paint.setStroke", json!({"none": true}));
+    run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+    let side = 10.0 * PT_PER_MM;
+    run(&mut s, "shape.rectangle", json!({"x": 20, "y": 20, "width": side, "height": side}));
+    run(&mut s, "shape.rectangle", json!({"x": 20.0 + side + gap * PT_PER_MM, "y": 20, "width": side, "height": side}));
+    run(&mut s, "select.none", json!({}));
+    let by_default = trims(&s, json!({}));
+    run(&mut s, "embroidery.setup", json!({"machine": {"trimLength": 6}}));
+    assert_eq!(trims(&s, json!({})), by_default + 1, "the document's trim length cuts the 8 mm move");
+    assert_eq!(trims(&s, json!({"trimLength": 12})), by_default, "the export's own beats it");
+    // A run of literal stitches (as a design opened from a machine file holds it) in a clip group
+    // whose clipping path leaves an 8 mm gap across it: the run is cut in two, and the move across
+    // the gap is cut by the same lengths.
+    let mut runs = blank();
+    {
+        use std::sync::Arc;
+
+        use vectorcraft_color::Paint;
+        use vectorcraft_doc::embroidery::{Embroidery, StitchRun};
+        use vectorcraft_doc::{Appearance, Node, NodeKind};
+        use vectorcraft_geom::{BezPath, PathData, Point, Rect, shapes};
+        let doc = Arc::make_mut(&mut runs.doc_mut().unwrap().doc);
+        let (left, right) = (20.0 + side, 20.0 + side + gap * PT_PER_MM);
+        let mut clip = shapes::rectangle(Rect::new(10.0, 10.0, left, 30.0));
+        clip.subpaths.extend(shapes::rectangle(Rect::new(right, 10.0, right + side, 30.0)).subpaths);
+        let mut clip = Node::path(doc.alloc_id(), clip, Appearance::default());
+        if let NodeKind::Path { clipping, .. } = &mut clip.kind {
+            *clipping = true;
+        }
+        let mut bp = BezPath::new();
+        let step = PT_PER_MM;
+        let mut x = 15.0;
+        bp.move_to(Point::new(x, 20.0));
+        while x < right + side - step {
+            x += step;
+            bp.line_to(Point::new(x, 20.0));
+        }
+        let paint = Paint::solid(vectorcraft_color::Color::rgb(0.8, 0.1, 0.1));
+        let mut line = Node::path(doc.alloc_id(), PathData::from_bezpath(&bp), Appearance::basic(Paint::None, paint, 1.0));
+        line.extras_mut().embroidery = Some(Box::new(Embroidery { stitches: Some(StitchRun::default()), ..Embroidery::default() }));
+        let group = Node::new(doc.alloc_id(), NodeKind::Group { children: vec![Arc::new(clip), Arc::new(line)], clip: true });
+        let layer = doc.layers.first().map(|l| l.id);
+        doc.insert(layer, usize::MAX, group).unwrap();
+    }
+    let runs_by_default = trims(&runs, json!({}));
+    run(&mut runs, "embroidery.setup", json!({"machine": {"trimLength": 6}}));
+    assert_eq!(trims(&runs, json!({})), runs_by_default + 1, "the clipped run's move cut at 6 mm");
+    assert_eq!(trims(&runs, json!({"trimLength": 12})), runs_by_default);
+}
+
 /// Joining off sews objects of one colour in one block only when one follows the other: red, blue
 /// apart, red make two blocks with joining on (the reds together) and three with it off.
 #[test]

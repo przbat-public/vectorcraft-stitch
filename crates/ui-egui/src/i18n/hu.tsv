@@ -5942,7 +5942,6 @@ embroidery	Join one thread's objects when nothing lies between them	Egy cérna o
 embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Kevesebb cérnacsere és vágás: ami felül van, amúgy is később varródik.
 embroidery	Design name	Minta neve
 embroidery	Start point	Kezdőpont
-embroidery	{x}, {y} mm	{x}, {y} mm
 embroidery	estimate	becslés
 embroidery	information only	csak tájékoztatás
 embroidery	preset {value}	előbeállítás {value}
@@ -5972,3 +5971,5 @@ embroidery	From {min} to {max}	{min} és {max} között
 embroidery	At least the jump length ({value}): only a jump is cut	Legalább az ugrás hossza ({value}): csak ugrásnál vág
 # Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
 embroidery	The fabric changed	Az anyag megváltozott
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm

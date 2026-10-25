@@ -1066,7 +1066,8 @@ fn design_row(key: &'static str, value: &Value, lang: Lang) -> Owned {
     let words = match (key, value) {
         (START, Value::Array(xy)) => {
             let mm = |v: Option<&Value>| v.and_then(Value::as_f64).map(|p| numbers::decimal(lang, p / PT_PER_MM, 1)).unwrap_or_default();
-            text::fill(crate::et!("{x}, {y} mm"), &[("x", &mm(xy.first())), ("y", &mm(xy.get(1)))])
+            // X and Y named: with a decimal comma, "12,5, 3,2" would read alike.
+            text::fill(crate::et!("X {x} · Y {y} mm"), &[("x", &mm(xy.first())), ("y", &mm(xy.get(1)))])
         }
         (_, Value::String(s)) => s.clone(),
         _ => String::new(),

@@ -5895,7 +5895,6 @@ embroidery	Join one thread's objects when nothing lies between them	Свързв
 embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	По-малко смени на конеца и отрязвания: каквото е отгоре, се шие и без това по-късно.
 embroidery	Design name	Име на мотива
 embroidery	Start point	Начална точка
-embroidery	{x}, {y} mm	{x}, {y} mm
 embroidery	estimate	оценка
 embroidery	information only	само за информация
 embroidery	preset {value}	шаблон {value}
@@ -5925,3 +5924,5 @@ embroidery	From {min} to {max}	От {min} до {max}
 embroidery	At least the jump length ({value}): only a jump is cut	Поне дължината на прескока ({value}): отрязва се само при прескок
 # Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
 embroidery	The fabric changed	Платът е променен
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm

@@ -5872,7 +5872,6 @@ embroidery	Join one thread's objects when nothing lies between them	Unir objetos
 embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Menos trocas de linha e cortes: o que fica acima é bordado depois de qualquer forma.
 embroidery	Design name	Nome do desenho
 embroidery	Start point	Ponto inicial
-embroidery	{x}, {y} mm	{x}, {y} mm
 embroidery	estimate	estimativa
 embroidery	information only	apenas informativo
 embroidery	preset {value}	predefinição {value}
@@ -5902,3 +5901,5 @@ embroidery	From {min} to {max}	De {min} a {max}
 embroidery	At least the jump length ({value}): only a jump is cut	No mínimo o comprimento do salto ({value}): só um salto é cortado
 # Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
 embroidery	The fabric changed	O tecido mudou
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm

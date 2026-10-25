@@ -5551,7 +5551,6 @@ embroidery	Join one thread's objects when nothing lies between them	Nối các �
 embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Ít lần thay chỉ và cắt hơn: phần nằm trên vẫn được thêu sau.
 embroidery	Design name	Tên mẫu thêu
 embroidery	Start point	Điểm bắt đầu
-embroidery	{x}, {y} mm	{x}, {y} mm
 embroidery	estimate	ước tính
 embroidery	information only	chỉ để tham khảo
 embroidery	preset {value}	cài sẵn {value}
@@ -5581,3 +5580,5 @@ embroidery	From {min} to {max}	Từ {min} đến {max}
 embroidery	At least the jump length ({value}): only a jump is cut	Ít nhất bằng độ dài bước nhảy ({value}): chỉ cắt khi nhảy
 # Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
 embroidery	The fabric changed	Vải đã thay đổi
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm

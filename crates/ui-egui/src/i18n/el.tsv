@@ -5908,7 +5908,6 @@ embroidery	Join one thread's objects when nothing lies between them	Ένωση �
 embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Λιγότερες αλλαγές κλωστής και κοψίματα: ό,τι είναι από πάνω ράβεται ούτως ή άλλως αργότερα.
 embroidery	Design name	Όνομα σχεδίου
 embroidery	Start point	Σημείο έναρξης
-embroidery	{x}, {y} mm	{x}, {y} mm
 embroidery	estimate	εκτίμηση
 embroidery	information only	μόνο για πληροφόρηση
 embroidery	preset {value}	προεπιλογή υφάσματος {value}
@@ -5938,3 +5937,5 @@ embroidery	From {min} to {max}	Από {min} έως {max}
 embroidery	At least the jump length ({value}): only a jump is cut	Τουλάχιστον το μήκος άλματος ({value}): κόβεται μόνο σε άλμα
 # Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
 embroidery	The fabric changed	Το ύφασμα άλλαξε
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm

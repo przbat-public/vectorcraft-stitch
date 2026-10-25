@@ -647,3 +647,30 @@ fn screen_readers_hear_the_bar_and_each_restore_apart() {
     let names: Vec<&str> = drawn.nodes.iter().filter_map(|(_, n)| n.label()).filter(|l| l.starts_with("Restore ")).collect();
     assert!(names.contains(&"Restore Tatami: Pull compensation") && names.contains(&"Restore Satin: Pull compensation"), "{names:?}");
 }
+
+/// An opened file's start point names X and Y, so that a language's decimal comma can't run the
+/// two numbers together ("12,5, 3,2"); ↺ on the start and the name unsets them on OK.
+#[test]
+fn the_start_point_names_x_and_y_and_restore_unsets_it() {
+    let ctx = context();
+    let mut app = app();
+    let pt = |mm: f64| mm * 72.0 / 25.4;
+    app.run("embroidery.setup", json!({"start": [pt(12.5), pt(3.2)], "label": "Rose"})).unwrap();
+    crate::i18n::set_current(crate::i18n::Lang::from_code("pl").unwrap());
+    open_tab(&mut app);
+    let drawn = ready(&mut app, &ctx, WIDE);
+    let start = text::fill(crate::et!("X {x} · Y {y} mm"), &[("x", "12,5"), ("y", "3,2")]);
+    crate::i18n::set_current(crate::i18n::Lang::EN);
+    assert!(drawn.words.iter().any(|(w, _)| *w == start), "{start}: {:?}", drawn.words);
+    crate::dialogs::cancel(&mut app);
+    open_tab(&mut app);
+    let drawn = ready(&mut app, &ctx, WIDE);
+    for key in ["start", "label"] {
+        let name = text::fill(crate::et!("Restore {setting}"), &[("setting", vocabulary::setup_label(key))]);
+        frame(&mut app, &ctx, WIDE, vec![drawn.click(&name)]);
+    }
+    ready(&mut app, &ctx, WIDE);
+    crate::dialogs::confirm(&mut app).unwrap();
+    let s = settings(&mut app)["settings"].clone();
+    assert_eq!((s["start"].clone(), s["label"].clone()), (json!(null), json!(null)));
+}

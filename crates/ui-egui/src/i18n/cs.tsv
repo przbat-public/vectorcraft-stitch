@@ -5956,7 +5956,6 @@ embroidery	Join one thread's objects when nothing lies between them	Spojit objek
 embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Méně výměn nití a střihů: co leží výš, se stejně šije později.
 embroidery	Design name	Název vzoru
 embroidery	Start point	Počáteční bod
-embroidery	{x}, {y} mm	{x}, {y} mm
 embroidery	estimate	odhad
 embroidery	information only	jen pro informaci
 embroidery	preset {value}	předvolba {value}
@@ -5986,3 +5985,5 @@ embroidery	From {min} to {max}	Od {min} do {max}
 embroidery	At least the jump length ({value}): only a jump is cut	Alespoň délka přeskoku ({value}): stříhá se jen při přeskoku
 # Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
 embroidery	The fabric changed	Látka se změnila
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm

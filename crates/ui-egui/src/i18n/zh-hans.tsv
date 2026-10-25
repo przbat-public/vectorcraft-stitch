@@ -5795,7 +5795,6 @@ embroidery	Join one thread's objects when nothing lies between them	中间无其
 embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	换线和剪线更少：上层的对象反正也会稍后刺绣。
 embroidery	Design name	图案名称
 embroidery	Start point	起点
-embroidery	{x}, {y} mm	{x}, {y} 毫米
 embroidery	estimate	估计
 embroidery	information only	仅供参考
 embroidery	preset {value}	预设 {value}
@@ -5825,3 +5824,5 @@ embroidery	From {min} to {max}	{min}至{max}
 embroidery	At least the jump length ({value}): only a jump is cut	至少为跳针长度（{value}）：只有跳针才会剪线
 # Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
 embroidery	The fabric changed	面料已更改
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} 毫米

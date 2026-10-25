@@ -5987,7 +5987,6 @@ embroidery	Join one thread's objects when nothing lies between them	Yhdistä sam
 embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Vähemmän langanvaihtoja ja katkaisuja: päällä oleva ommellaan joka tapauksessa myöhemmin.
 embroidery	Design name	Kuvion nimi
 embroidery	Start point	Aloituskohta
-embroidery	{x}, {y} mm	{x}, {y} mm
 embroidery	estimate	arvio
 embroidery	information only	vain tiedoksi
 embroidery	preset {value}	esiasetus {value}
@@ -6017,3 +6016,5 @@ embroidery	From {min} to {max}	Välillä {min}–{max}
 embroidery	At least the jump length ({value}): only a jump is cut	Vähintään hypyn pituus ({value}): vain hyppy katkaistaan
 # Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
 embroidery	The fabric changed	Kangas muuttui
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm

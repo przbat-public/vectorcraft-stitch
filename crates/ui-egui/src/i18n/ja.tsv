@@ -5633,7 +5633,6 @@ embroidery	Join one thread's objects when nothing lies between them	間に何も
 embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	糸替えと糸切りが減ります。上にあるものはどのみち後で縫われます。
 embroidery	Design name	デザイン名
 embroidery	Start point	開始点
-embroidery	{x}, {y} mm	{x}, {y} mm
 embroidery	estimate	推定
 embroidery	information only	情報のみ
 embroidery	preset {value}	プリセット {value}
@@ -5663,3 +5662,5 @@ embroidery	From {min} to {max}	{min}～{max}
 embroidery	At least the jump length ({value}): only a jump is cut	ジャンプの長さ（{value}）以上：糸を切るのはジャンプのときだけです
 # Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
 embroidery	The fabric changed	生地が変更されました
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm

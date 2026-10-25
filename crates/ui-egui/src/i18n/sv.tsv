@@ -5912,7 +5912,6 @@ embroidery	Join one thread's objects when nothing lies between them	Slå ihop ob
 embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Färre trådbyten och klipp: det som ligger ovanpå sys ändå senare.
 embroidery	Design name	Mönstrets namn
 embroidery	Start point	Startpunkt
-embroidery	{x}, {y} mm	{x}, {y} mm
 embroidery	estimate	uppskattning
 embroidery	information only	endast information
 embroidery	preset {value}	förinställning {value}
@@ -5942,3 +5941,5 @@ embroidery	From {min} to {max}	Från {min} till {max}
 embroidery	At least the jump length ({value}): only a jump is cut	Minst hopplängden ({value}): bara ett hopp klipps
 # Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
 embroidery	The fabric changed	Tyget har ändrats
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm

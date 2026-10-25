@@ -5917,7 +5917,6 @@ embroidery	Join one thread's objects when nothing lies between them	Arada bir ş
 embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Daha az iplik değişimi ve kesim: üstte olan zaten daha sonra dikilir.
 embroidery	Design name	Desen adı
 embroidery	Start point	Başlangıç noktası
-embroidery	{x}, {y} mm	{x}, {y} mm
 embroidery	estimate	tahmin
 embroidery	information only	yalnızca bilgi
 embroidery	preset {value}	ön ayar {value}
@@ -5947,3 +5946,5 @@ embroidery	From {min} to {max}	{min} ile {max} arası
 embroidery	At least the jump length ({value}): only a jump is cut	En az atlama uzunluğu ({value}): yalnızca atlamada kesilir
 # Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
 embroidery	The fabric changed	Kumaş değişti
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm

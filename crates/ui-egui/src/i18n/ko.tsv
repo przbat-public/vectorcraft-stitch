@@ -5534,7 +5534,6 @@ embroidery	Join one thread's objects when nothing lies between them	사이에 �
 embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	실 교체와 자르기가 줄어듭니다. 위에 있는 것은 어차피 나중에 수놓아집니다.
 embroidery	Design name	디자인 이름
 embroidery	Start point	시작점
-embroidery	{x}, {y} mm	{x}, {y} mm
 embroidery	estimate	추정
 embroidery	information only	참고용
 embroidery	preset {value}	프리셋 {value}
@@ -5564,3 +5563,5 @@ embroidery	From {min} to {max}	{min}~{max}
 embroidery	At least the jump length ({value}): only a jump is cut	점프 길이({value}) 이상: 점프할 때만 실을 자릅니다
 # Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
 embroidery	The fabric changed	원단이 바뀌었습니다
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm

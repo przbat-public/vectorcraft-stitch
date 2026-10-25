@@ -5426,41 +5426,8 @@ mark-style	Japanese	Japonesas
 @msg	too many stitches for a VP3 file	pontos demais para um arquivo VP3
 @msg	{_1} is not an embroidery format	{_1} não é um formato de bordado
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Ponto:
-	Stitch Length:	Comprimento do ponto:
-	Fill Angle:	Ângulo do preenchimento:
-	Pull Compensation:	Compensação de tração:
-	Pull Compensation (%):	Compensação de tração (%):
-	Push Compensation:	Compensação de empurrão:
-	Expand Fills:	Expandir preenchimentos:
-	Narrow Parts as Satin:	Partes estreitas em cetim:
-	Thread Weight:	Espessura da linha:
-	Underlay:	Base:
-	Jump Length:	Comprimento do salto:
-	Trim Length:	Comprimento do corte:
-	Shortest Stitch:	Ponto mais curto:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Como as formas são bordadas: Automático preenche as formas com tatami e borda os traços como colunas de cetim ou pontos retos conforme a largura; outra escolha borda assim todas as formas
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	A distância entre as fileiras de preenchimento e entre os pontos de cetim; deixada como está, uma coluna de cetim a escolhe pela largura
-	The length of the stitches along fill rows and running lines	O comprimento dos pontos ao longo das fileiras de preenchimento e dos pontos retos
-	The direction of the fill rows	A direção das fileiras de preenchimento
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Alarga as colunas de cetim e as fileiras de preenchimento em cada lado, para compensar o tecido que se contrai
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Alarga as colunas de cetim e as fileiras de preenchimento em uma parte da largura, para compensar o tecido que se contrai
-	Shortens satin columns at their ends, where the thread pushes outward	Encurta as colunas de cetim nas pontas, onde a linha empurra para fora
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Aumenta cada forma preenchida em toda a volta para fechar vãos entre formas; um valor negativo a reduz
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Partes de um preenchimento mais estreitas são bordadas como colunas de cetim; 0 não borda nenhuma
-	The thread's weight: thinner thread (a higher number) packs the rows closer	A espessura da linha: uma linha mais fina (um número maior) aproxima as fileiras
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Os pontos bordados primeiro para segurar o tecido: escolhidos por cada forma, nenhum ou um tipo para todas as formas
-	A move longer than this lifts the needle instead of being sewn	Um deslocamento mais longo levanta a agulha em vez de ser bordado
-	A jump longer than this cuts the thread first	Um salto mais longo corta a linha primeiro
-	Shorter stitches are left out	Pontos mais curtos são omitidos
-	Tatami Fill	Preenchimento tatami
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Cetim
-	Running Stitch	Ponto reto
-	Centre Run	Passada central
-	Edge Run	Passada na borda
-	Edge Run and Zigzag	Passada na borda e zigue-zague
-	Edge Run and Tatami	Passada na borda e tatami
 	Embroidery Picture	Imagem do Bordado
 @msg	nothing to draw: the document sews no stitch	nada para desenhar: o documento não costura nenhum ponto
 	Stitch Preview	Visualização de Pontos

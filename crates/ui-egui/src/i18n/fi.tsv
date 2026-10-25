@@ -5474,41 +5474,8 @@ mark-style	Japanese	Japanilainen
 @msg	too many stitches for a VP3 file	liian monta pistoa VP3-tiedostoon
 @msg	{_1} is not an embroidery format	{_1} ei ole kirjontamuoto
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Pisto:
-	Stitch Length:	Piston pituus:
-	Fill Angle:	Täytön kulma:
-	Pull Compensation:	Kiristymän korjaus:
-	Pull Compensation (%):	Kiristymän korjaus (%):
-	Push Compensation:	Työntymän korjaus:
-	Expand Fills:	Laajenna täyttöjä:
-	Narrow Parts as Satin:	Kapeat osat satiinina:
-	Thread Weight:	Langan vahvuus:
-	Underlay:	Alusompelu:
-	Jump Length:	Hypyn pituus:
-	Trim Length:	Leikkauksen pituus:
-	Shortest Stitch:	Lyhin pisto:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Miten muodot ommellaan: Automaattinen täyttää muodot tatamilla ja ompelee viivat leveyden mukaan satiinipylväinä tai suorina pistoina; muu valinta ompelee kaikki muodot niin
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Täyttörivien ja satiinipistojen väli; muuttamattomana satiinipylväs valitsee sen leveytensä mukaan
-	The length of the stitches along fill rows and running lines	Pistojen pituus täyttörivien ja suorien pistojen varrella
-	The direction of the fill rows	Täyttörivien suunta
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Leventää satiinipylväitä ja täyttörivejä kummaltakin puolelta korjaamaan kankaan kiristymistä
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Leventää satiinipylväitä ja täyttörivejä osalla niiden leveydestä korjaamaan kankaan kiristymistä
-	Shortens satin columns at their ends, where the thread pushes outward	Lyhentää satiinipylväitä päistä, joissa lanka työntää ulospäin
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Laajentaa jokaista täytettyä muotoa joka puolelta sulkemaan muotojen välisiä rakoja; negatiivinen arvo pienentää sitä
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Tätä kapeammat täytön osat ommellaan satiinipylväinä; 0 ei ompele yhtään
-	The thread's weight: thinner thread (a higher number) packs the rows closer	Langan vahvuus: ohuempi lanka (suurempi numero) asettaa rivit tiheämmin
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Ensin ommeltavat pistot, jotka pitävät kankaan paikallaan: kunkin muodon valitsemat, ei mitään tai yksi laji kaikille muodoille
-	A move longer than this lifts the needle instead of being sewn	Tätä pidempi siirto nostaa neulan sen sijaan, että se ommeltaisiin
-	A jump longer than this cuts the thread first	Tätä pidempi hyppy leikkaa ensin langan
-	Shorter stitches are left out	Lyhyemmät pistot jätetään pois
-	Tatami Fill	Tatamitäyttö
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Satiini
-	Running Stitch	Suora pisto
-	Centre Run	Keskiajo
-	Edge Run	Reuna-ajo
-	Edge Run and Zigzag	Reuna-ajo ja siksak
-	Edge Run and Tatami	Reuna-ajo ja tatami
 	Embroidery Picture	Kirjonnan kuva
 @msg	nothing to draw: the document sews no stitch	ei piirrettävää: asiakirja ei ompele yhtään pistoa
 	Stitch Preview	Pistojen esikatselu

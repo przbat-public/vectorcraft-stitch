@@ -5462,41 +5462,8 @@ effect	Points	Σημεία
 @msg	too many stitches for a VP3 file	πάρα πολλές βελονιές για αρχείο VP3
 @msg	{_1} is not an embroidery format	το {_1} δεν είναι μορφή κεντήματος
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Βελονιά:
-	Stitch Length:	Μήκος βελονιάς:
-	Fill Angle:	Γωνία γεμίσματος:
-	Pull Compensation:	Αντιστάθμιση έλξης:
-	Pull Compensation (%):	Αντιστάθμιση έλξης (%):
-	Push Compensation:	Αντιστάθμιση ώθησης:
-	Expand Fills:	Επέκταση γεμισμάτων:
-	Narrow Parts as Satin:	Στενά τμήματα ως σατέν:
-	Thread Weight:	Πάχος κλωστής:
-	Underlay:	Υπόστρωμα:
-	Jump Length:	Μήκος άλματος:
-	Trim Length:	Μήκος κοπής:
-	Shortest Stitch:	Μικρότερη βελονιά:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Πώς ράβονται τα σχήματα: το Αυτόματο γεμίζει τα σχήματα με τατάμι και ράβει τις πινελιές ως στήλες σατέν ή ευθείες βελονιές ανάλογα με το πλάτος τους· άλλη επιλογή ράβει έτσι κάθε σχήμα
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Η απόσταση ανάμεσα στις σειρές γεμίσματος και στις βελονιές σατέν· αν μείνει ως έχει, μια στήλη σατέν την επιλέγει ανάλογα με το πλάτος της
-	The length of the stitches along fill rows and running lines	Το μήκος των βελονιών κατά μήκος των σειρών γεμίσματος και των ευθειών βελονιών
-	The direction of the fill rows	Η κατεύθυνση των σειρών γεμίσματος
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Φαρδαίνει τις στήλες σατέν και τις σειρές γεμίσματος σε κάθε πλευρά, για να αντισταθμίσει το μάζεμα του υφάσματος
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Φαρδαίνει τις στήλες σατέν και τις σειρές γεμίσματος κατά ένα μέρος του πλάτους τους, για να αντισταθμίσει το μάζεμα του υφάσματος
-	Shortens satin columns at their ends, where the thread pushes outward	Κονταίνει τις στήλες σατέν στις άκρες τους, όπου η κλωστή σπρώχνει προς τα έξω
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Μεγαλώνει κάθε γεμάτο σχήμα γύρω γύρω για να κλείσει κενά ανάμεσα στα σχήματα· αρνητική τιμή το μικραίνει
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Τα τμήματα ενός γεμίσματος που είναι στενότερα ράβονται ως στήλες σατέν· το 0 δεν ράβει κανένα
-	The thread's weight: thinner thread (a higher number) packs the rows closer	Το πάχος της κλωστής: λεπτότερη κλωστή (μεγαλύτερος αριθμός) πυκνώνει τις σειρές
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Οι βελονιές που ράβονται πρώτες για να κρατούν το ύφασμα: επιλεγμένες από κάθε σχήμα, καμία ή ένα είδος για κάθε σχήμα
-	A move longer than this lifts the needle instead of being sewn	Μια μεγαλύτερη μετακίνηση σηκώνει τη βελόνα αντί να ραφτεί
-	A jump longer than this cuts the thread first	Ένα μεγαλύτερο άλμα κόβει πρώτα την κλωστή
-	Shorter stitches are left out	Οι μικρότερες βελονιές παραλείπονται
-	Tatami Fill	Γέμισμα τατάμι
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Σατέν
-	Running Stitch	Ευθεία βελονιά
-	Centre Run	Κεντρικό πέρασμα
-	Edge Run	Πέρασμα στην άκρη
-	Edge Run and Zigzag	Πέρασμα στην άκρη και ζιγκ ζαγκ
-	Edge Run and Tatami	Πέρασμα στην άκρη και τατάμι
 	Embroidery Picture	Εικόνα κεντήματος
 @msg	nothing to draw: the document sews no stitch	τίποτα για σχεδίαση: το έγγραφο δεν ράβει καμία βελονιά
 	Stitch Preview	Προεπισκόπηση βελονιών

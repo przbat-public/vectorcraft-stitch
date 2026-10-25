@@ -5163,41 +5163,8 @@ lighting	Light	ライト
 @msg	too many stitches for a VP3 file	VP3 ファイルには針目が多すぎます
 @msg	{_1} is not an embroidery format	{_1} は刺繍フォーマットではありません
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	ステッチ:
-	Stitch Length:	針目の長さ:
-	Fill Angle:	フィルの角度:
-	Pull Compensation:	引き込みの補正:
-	Pull Compensation (%):	引き込みの補正 (%):
-	Push Compensation:	押し出しの補正:
-	Expand Fills:	フィルを広げる:
-	Narrow Parts as Satin:	細い部分をサテンに:
-	Thread Weight:	糸の太さ:
-	Underlay:	下縫い:
-	Jump Length:	ジャンプの長さ:
-	Trim Length:	糸切りの長さ:
-	Shortest Stitch:	最短の針目:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	図形の縫い方: 自動では図形をタタミで埋め、線は幅に応じてサテンの柱かランニングステッチで縫います。ほかを選ぶと、すべての図形をその方法で縫います
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	フィルの列の間隔とサテンの針目の間隔。そのままにすると、サテンの柱が幅に応じて選びます
-	The length of the stitches along fill rows and running lines	フィルの列とランニングステッチに沿った針目の長さ
-	The direction of the fill rows	フィルの列の向き
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	布が引き込まれる分を補うため、サテンの柱とフィルの列を両側で広げます
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	布が引き込まれる分を補うため、サテンの柱とフィルの列を幅の割合で広げます
-	Shortens satin columns at their ends, where the thread pushes outward	糸が外へ押し出す端で、サテンの柱を短くします
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	図形の間のすき間を埋めるため、塗りのある図形を周囲に広げます。負の値では縮めます
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	この幅より細いフィルの部分はサテンの柱で縫います。0 ではどれも縫いません
-	The thread's weight: thinner thread (a higher number) packs the rows closer	糸の太さ: 細い糸 (大きい番手) ほど列を密にします
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	布を押さえるために最初に縫う針目: 図形ごとに選ぶ、なし、またはすべての図形に 1 種類
-	A move longer than this lifts the needle instead of being sewn	これより長い移動は、縫わずに針を上げます
-	A jump longer than this cuts the thread first	これより長いジャンプでは、先に糸を切ります
-	Shorter stitches are left out	これより短い針目は省きます
-	Tatami Fill	タタミフィル
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	サテン
-	Running Stitch	ランニングステッチ
-	Centre Run	中央ラン
-	Edge Run	エッジラン
-	Edge Run and Zigzag	エッジランとジグザグ
-	Edge Run and Tatami	エッジランとタタミ
 	Embroidery Picture	刺繍の画像
 @msg	nothing to draw: the document sews no stitch	描画するものがありません: ドキュメントには縫うステッチがありません
 	Stitch Preview	ステッチプレビュー

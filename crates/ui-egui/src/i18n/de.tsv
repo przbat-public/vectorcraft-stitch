@@ -5089,41 +5089,8 @@ effect	Soft	Weich
 @msg	too many stitches for a VP3 file	zu viele Stiche für eine VP3-Datei
 @msg	{_1} is not an embroidery format	{_1} ist kein Stickformat
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Stich:
-	Stitch Length:	Stichlänge:
-	Fill Angle:	Füllwinkel:
-	Pull Compensation:	Zugausgleich:
-	Pull Compensation (%):	Zugausgleich (%):
-	Push Compensation:	Schubausgleich:
-	Expand Fills:	Füllungen erweitern:
-	Narrow Parts as Satin:	Schmale Teile als Satin:
-	Thread Weight:	Garnstärke:
-	Underlay:	Unterlage:
-	Jump Length:	Sprunglänge:
-	Trim Length:	Schnittlänge:
-	Shortest Stitch:	Kürzester Stich:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Wie Formen genäht werden: Automatisch füllt Formen mit Tatami und näht Konturen je nach Breite als Satinsäulen oder Steppstiche; eine andere Wahl näht jede Form so
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Der Abstand zwischen Füllreihen und zwischen Satinstichen; unverändert wählt eine Satinsäule ihn nach ihrer Breite
-	The length of the stitches along fill rows and running lines	Die Länge der Stiche entlang der Füllreihen und Steppstiche
-	The direction of the fill rows	Die Richtung der Füllreihen
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Verbreitert Satinsäulen und Füllreihen auf jeder Seite, um das Einziehen des Stoffes auszugleichen
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Verbreitert Satinsäulen und Füllreihen um einen Anteil ihrer Breite, um das Einziehen des Stoffes auszugleichen
-	Shortens satin columns at their ends, where the thread pushes outward	Verkürzt Satinsäulen an ihren Enden, wo das Garn nach außen drückt
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Vergrößert jede gefüllte Form ringsum, um Lücken zwischen Formen zu schließen; ein negativer Wert verkleinert sie
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Teile einer Füllung, die schmaler sind, werden als Satinsäulen genäht; 0 näht keine
-	The thread's weight: thinner thread (a higher number) packs the rows closer	Die Garnstärke: dünneres Garn (eine höhere Zahl) legt die Reihen enger
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Die zuerst genähten Stiche, die den Stoff halten: von jeder Form gewählt, keine oder eine Art für jede Form
-	A move longer than this lifts the needle instead of being sewn	Ein längerer Weg hebt die Nadel, statt genäht zu werden
-	A jump longer than this cuts the thread first	Ein längerer Sprung schneidet zuerst den Faden
-	Shorter stitches are left out	Kürzere Stiche werden ausgelassen
-	Tatami Fill	Tatami-Füllung
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Satin
-	Running Stitch	Steppstich
-	Centre Run	Mittellauf
-	Edge Run	Kantenlauf
-	Edge Run and Zigzag	Kantenlauf und Zickzack
-	Edge Run and Tatami	Kantenlauf und Tatami
 	Embroidery Picture	Stickereibild
 @msg	nothing to draw: the document sews no stitch	nichts zu zeichnen: das Dokument näht keinen Stich
 	Stitch Preview	Stichvorschau

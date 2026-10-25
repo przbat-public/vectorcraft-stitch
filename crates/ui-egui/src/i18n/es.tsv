@@ -5451,41 +5451,8 @@ mark-style	Japanese	Japonesas
 @msg	too many stitches for a VP3 file	demasiadas puntadas para un archivo VP3
 @msg	{_1} is not an embroidery format	{_1} no es un formato de bordado
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Puntada:
-	Stitch Length:	Longitud de puntada:
-	Fill Angle:	Ángulo de relleno:
-	Pull Compensation:	Compensación de tracción:
-	Pull Compensation (%):	Compensación de tracción (%):
-	Push Compensation:	Compensación de empuje:
-	Expand Fills:	Expandir rellenos:
-	Narrow Parts as Satin:	Partes estrechas en satén:
-	Thread Weight:	Grosor del hilo:
-	Underlay:	Base:
-	Jump Length:	Longitud de salto:
-	Trim Length:	Longitud de corte:
-	Shortest Stitch:	Puntada más corta:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Cómo se cosen las formas: Automático rellena las formas con tatami y cose los trazos como columnas de satén o puntadas rectas según su anchura; otra opción cose así todas las formas
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	La distancia entre las filas de relleno y entre las puntadas de satén; si se deja tal cual, una columna de satén la elige según su anchura
-	The length of the stitches along fill rows and running lines	La longitud de las puntadas a lo largo de las filas de relleno y de las puntadas rectas
-	The direction of the fill rows	La dirección de las filas de relleno
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Ensancha las columnas de satén y las filas de relleno por cada lado, para compensar el tejido que se encoge
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Ensancha las columnas de satén y las filas de relleno en una parte de su anchura, para compensar el tejido que se encoge
-	Shortens satin columns at their ends, where the thread pushes outward	Acorta las columnas de satén en sus extremos, donde el hilo empuja hacia fuera
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Agranda cada forma rellena por todo su contorno para cerrar huecos entre formas; un valor negativo la encoge
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Las partes de un relleno más estrechas se cosen como columnas de satén; 0 no cose ninguna
-	The thread's weight: thinner thread (a higher number) packs the rows closer	El grosor del hilo: un hilo más fino (un número mayor) junta más las filas
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Las puntadas cosidas primero para sujetar el tejido: elegidas por cada forma, ninguna o un tipo para todas las formas
-	A move longer than this lifts the needle instead of being sewn	Un desplazamiento más largo levanta la aguja en lugar de coserse
-	A jump longer than this cuts the thread first	Un salto más largo corta primero el hilo
-	Shorter stitches are left out	Las puntadas más cortas se omiten
-	Tatami Fill	Relleno tatami
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Satén
-	Running Stitch	Puntada recta
-	Centre Run	Pasada central
-	Edge Run	Pasada de borde
-	Edge Run and Zigzag	Pasada de borde y zigzag
-	Edge Run and Tatami	Pasada de borde y tatami
 	Embroidery Picture	Imagen del bordado
 @msg	nothing to draw: the document sews no stitch	nada que dibujar: el documento no cose ninguna puntada
 	Stitch Preview	Vista previa de puntadas

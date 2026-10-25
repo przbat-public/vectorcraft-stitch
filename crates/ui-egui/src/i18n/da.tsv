@@ -5451,41 +5451,8 @@ swatch	Bright Violet	Kraftig violet
 @msg	too many stitches for a VP3 file	for mange sting til en VP3-fil
 @msg	{_1} is not an embroidery format	{_1} er ikke et broderiformat
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Sting:
-	Stitch Length:	Stinglængde:
-	Fill Angle:	Fyldvinkel:
-	Pull Compensation:	Trækkompensation:
-	Pull Compensation (%):	Trækkompensation (%):
-	Push Compensation:	Trykkompensation:
-	Expand Fills:	Udvid fyld:
-	Narrow Parts as Satin:	Smalle dele som satin:
-	Thread Weight:	Trådtykkelse:
-	Underlay:	Underlag:
-	Jump Length:	Springlængde:
-	Trim Length:	Klippelængde:
-	Shortest Stitch:	Korteste sting:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Hvordan figurer sys: Automatisk fylder figurer med tatami og syr streger som satinsøjler eller ligesting efter deres bredde; et andet valg syr alle figurer sådan
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Afstanden mellem fyldrækker og mellem satinsting; uændret vælger en satinsøjle den efter sin bredde
-	The length of the stitches along fill rows and running lines	Længden af stingene langs fyldrækker og ligesting
-	The direction of the fill rows	Fyldrækkernes retning
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Gør satinsøjler og fyldrækker bredere på hver side for at udligne, at stoffet trækker sig sammen
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Gør satinsøjler og fyldrækker bredere med en andel af deres bredde for at udligne, at stoffet trækker sig sammen
-	Shortens satin columns at their ends, where the thread pushes outward	Gør satinsøjler kortere i enderne, hvor tråden presser udad
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Gør hver fyldt figur større hele vejen rundt for at lukke huller mellem figurer; en negativ værdi gør den mindre
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Dele af et fyld, der er smallere, sys som satinsøjler; 0 syr ingen
-	The thread's weight: thinner thread (a higher number) packs the rows closer	Trådens tykkelse: tyndere tråd (et højere nummer) lægger rækkerne tættere
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Stingene, der sys først for at holde stoffet: valgt af hver figur, ingen eller én slags for alle figurer
-	A move longer than this lifts the needle instead of being sewn	En længere flytning løfter nålen i stedet for at blive syet
-	A jump longer than this cuts the thread first	Et længere spring klipper først tråden
-	Shorter stitches are left out	Kortere sting udelades
-	Tatami Fill	Tatamifyld
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Satin
-	Running Stitch	Ligesting
-	Centre Run	Midterløb
-	Edge Run	Kantløb
-	Edge Run and Zigzag	Kantløb og zigzag
-	Edge Run and Tatami	Kantløb og tatami
 	Embroidery Picture	Billede af broderiet
 @msg	nothing to draw: the document sews no stitch	intet at tegne: dokumentet syr ingen sting
 	Stitch Preview	Sting-forhåndsvisning

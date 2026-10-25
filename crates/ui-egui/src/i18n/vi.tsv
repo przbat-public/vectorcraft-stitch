@@ -5103,41 +5103,8 @@ theme	Appearance	Giao diện
 @msg	too many stitches for a VP3 file	quá nhiều mũi thêu cho tệp VP3
 @msg	{_1} is not an embroidery format	{_1} không phải định dạng thêu
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Mũi thêu:
-	Stitch Length:	Độ dài mũi:
-	Fill Angle:	Góc phủ:
-	Pull Compensation:	Bù co kéo:
-	Pull Compensation (%):	Bù co kéo (%):
-	Push Compensation:	Bù đẩy:
-	Expand Fills:	Mở rộng vùng phủ:
-	Narrow Parts as Satin:	Phần hẹp thành satin:
-	Thread Weight:	Độ dày chỉ:
-	Underlay:	Lớp lót:
-	Jump Length:	Độ dài bước nhảy:
-	Trim Length:	Độ dài cắt chỉ:
-	Shortest Stitch:	Mũi ngắn nhất:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Cách thêu các hình: Tự động phủ các hình bằng tatami và thêu nét thành cột satin hoặc mũi chạy theo độ rộng; lựa chọn khác thêu mọi hình theo cách đó
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Khoảng cách giữa các hàng phủ và giữa các mũi satin; để nguyên thì cột satin tự chọn theo độ rộng của nó
-	The length of the stitches along fill rows and running lines	Độ dài các mũi dọc theo hàng phủ và mũi chạy
-	The direction of the fill rows	Hướng của các hàng phủ
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Nới rộng cột satin và hàng phủ ở mỗi bên để bù cho vải bị co kéo
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Nới rộng cột satin và hàng phủ theo một phần độ rộng của chúng để bù cho vải bị co kéo
-	Shortens satin columns at their ends, where the thread pushes outward	Rút ngắn cột satin ở hai đầu, nơi chỉ đẩy ra ngoài
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Phóng to mỗi hình được phủ ra xung quanh để lấp khe hở giữa các hình; giá trị âm sẽ thu nhỏ nó
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Các phần của vùng phủ hẹp hơn giá trị này được thêu thành cột satin; 0 không thêu phần nào
-	The thread's weight: thinner thread (a higher number) packs the rows closer	Độ dày chỉ: chỉ mảnh hơn (số cao hơn) xếp các hàng sát hơn
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Các mũi thêu trước để giữ vải: do từng hình chọn, không có, hoặc một loại cho mọi hình
-	A move longer than this lifts the needle instead of being sewn	Di chuyển dài hơn sẽ nhấc kim thay vì được thêu
-	A jump longer than this cuts the thread first	Bước nhảy dài hơn sẽ cắt chỉ trước
-	Shorter stitches are left out	Các mũi ngắn hơn bị bỏ qua
-	Tatami Fill	Phủ tatami
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Satin
-	Running Stitch	Mũi chạy
-	Centre Run	Đường chạy giữa
-	Edge Run	Đường chạy mép
-	Edge Run and Zigzag	Đường chạy mép và zigzag
-	Edge Run and Tatami	Đường chạy mép và tatami
 	Embroidery Picture	Hình ảnh thêu
 @msg	nothing to draw: the document sews no stitch	không có gì để vẽ: tài liệu không may mũi thêu nào
 	Stitch Preview	Xem trước mũi thêu

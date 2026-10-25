@@ -5494,41 +5494,8 @@ swatch	Bright Violet	Felviolet
 @msg	too many stitches for a VP3 file	te veel steken voor een VP3-bestand
 @msg	{_1} is not an embroidery format	{_1} is geen borduurformaat
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Steek:
-	Stitch Length:	Steeklengte:
-	Fill Angle:	Vulhoek:
-	Pull Compensation:	Trekcompensatie:
-	Pull Compensation (%):	Trekcompensatie (%):
-	Push Compensation:	Duwcompensatie:
-	Expand Fills:	Vullingen vergroten:
-	Narrow Parts as Satin:	Smalle delen als satijn:
-	Thread Weight:	Garendikte:
-	Underlay:	Onderlaag:
-	Jump Length:	Spronglengte:
-	Trim Length:	Kniplengte:
-	Shortest Stitch:	Kortste steek:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Hoe vormen worden genaaid: Automatisch vult vormen met tatami en naait lijnen naar hun breedte als satijnkolommen of rechte steken; een andere keuze naait zo elke vorm
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	De afstand tussen vulrijen en tussen satijnsteken; ongewijzigd kiest een satijnkolom die naar zijn breedte
-	The length of the stitches along fill rows and running lines	De lengte van de steken langs vulrijen en rechte steken
-	The direction of the fill rows	De richting van de vulrijen
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Verbreedt satijnkolommen en vulrijen aan elke kant, om het samentrekken van de stof te compenseren
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Verbreedt satijnkolommen en vulrijen met een deel van hun breedte, om het samentrekken van de stof te compenseren
-	Shortens satin columns at their ends, where the thread pushes outward	Verkort satijnkolommen aan hun uiteinden, waar het garen naar buiten duwt
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Vergroot elke gevulde vorm rondom om openingen tussen vormen te dichten; een negatieve waarde verkleint hem
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Delen van een vulling die smaller zijn, worden als satijnkolommen genaaid; 0 naait er geen
-	The thread's weight: thinner thread (a higher number) packs the rows closer	De garendikte: dunner garen (een hoger nummer) legt de rijen dichter
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	De steken die eerst worden genaaid om de stof vast te houden: per vorm gekozen, geen, of één soort voor elke vorm
-	A move longer than this lifts the needle instead of being sewn	Een langere verplaatsing tilt de naald op in plaats van genaaid te worden
-	A jump longer than this cuts the thread first	Een langere sprong knipt eerst de draad
-	Shorter stitches are left out	Kortere steken worden weggelaten
-	Tatami Fill	Tatamivulling
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Satijn
-	Running Stitch	Rechte steek
-	Centre Run	Middenloop
-	Edge Run	Randloop
-	Edge Run and Zigzag	Randloop en zigzag
-	Edge Run and Tatami	Randloop en tatami
 	Embroidery Picture	Borduurafbeelding
 @msg	nothing to draw: the document sews no stitch	niets te tekenen: het document naait geen enkele steek
 	Stitch Preview	Steekvoorbeeld

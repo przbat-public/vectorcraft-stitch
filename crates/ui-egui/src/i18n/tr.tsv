@@ -5593,41 +5593,8 @@ axis	Y Axis	Y ekseni
 @msg	thread number {index} doesn't fit a PEC header	{index} numaralı iplik bir PEC başlığına sığmıyor
 @msg	too many stitches for a VP3 file	bir VP3 dosyası için çok fazla dikiş
 @msg	{_1} is not an embroidery format	{_1} bir nakış biçimi değil
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Dikiş:
-	Stitch Length:	Dikiş Uzunluğu:
-	Fill Angle:	Dolgu Açısı:
-	Pull Compensation:	Çekme Telafisi:
-	Pull Compensation (%):	Çekme Telafisi (%):
-	Push Compensation:	İtme Telafisi:
-	Expand Fills:	Dolguları Genişlet:
-	Narrow Parts as Satin:	Dar Bölümler Saten:
-	Thread Weight:	İplik Kalınlığı:
-	Underlay:	Alt Dikiş:
-	Jump Length:	Atlama Uzunluğu:
-	Trim Length:	Kesme Uzunluğu:
-	Shortest Stitch:	En Kısa Dikiş:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Şekillerin nasıl dikileceği: Otomatik, şekilleri tatami ile doldurur ve konturları genişliklerine göre saten sütunlar veya düz dikiş olarak diker; başka bir seçim her şekli o biçimde diker
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Dolgu sıraları ve saten dikişleri arasındaki mesafe; olduğu gibi bırakılırsa saten sütunu bunu genişliğine göre seçer
-	The length of the stitches along fill rows and running lines	Dolgu sıraları ve düz dikiş hatları boyunca dikişlerin uzunluğu
-	The direction of the fill rows	Dolgu sıralarının yönü
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Kumaşın içe çekmesini telafi etmek için saten sütunları ve dolgu sıralarını her iki yandan genişletir
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Kumaşın içe çekmesini telafi etmek için saten sütunları ve dolgu sıralarını genişliklerinin bir payı kadar genişletir
-	Shortens satin columns at their ends, where the thread pushes outward	Saten sütunları, ipliğin dışarı ittiği uçlarında kısaltır
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Şekiller arasındaki boşlukları kapatmak için her dolgulu şekli her yönden büyütür; negatif bir değer onu küçültür
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Bir dolgunun bundan dar bölümleri saten sütunlar olarak dikilir; 0 hiçbirini saten dikmez
-	The thread's weight: thinner thread (a higher number) packs the rows closer	İpliğin kalınlığı: daha ince iplik (daha yüksek numara) sıraları daha sık dizer
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Kumaşı tutmak için önce dikilen dikişler: her şekle göre seçilir, hiç yok ya da her şekil için tek bir tür
-	A move longer than this lifts the needle instead of being sewn	Bundan uzun bir geçiş dikilmek yerine iğneyi kaldırır
-	A jump longer than this cuts the thread first	Bundan uzun bir atlama önce ipliği keser
-	Shorter stitches are left out	Daha kısa dikişler dışarıda bırakılır
-	Tatami Fill	Tatami Dolgu
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Saten
-	Running Stitch	Düz Dikiş
-	Centre Run	Orta Hat
-	Edge Run	Kenar Hattı
-	Edge Run and Zigzag	Kenar Hattı ve Zikzak
-	Edge Run and Tatami	Kenar Hattı ve Tatami
 	Embroidery Picture	Nakış Resmi
 @msg	nothing to draw: the document sews no stitch	çizilecek bir şey yok: belge hiç dikiş dikmiyor
 	Stitch Preview	Dikiş Önizlemesi

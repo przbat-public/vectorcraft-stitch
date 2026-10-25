@@ -5509,41 +5509,8 @@ theme	Appearance	Apparence
 @msg	too many stitches for a VP3 file	trop de points pour un fichier VP3
 @msg	{_1} is not an embroidery format	{_1} n’est pas un format de broderie
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Point :
-	Stitch Length:	Longueur de point :
-	Fill Angle:	Angle de remplissage :
-	Pull Compensation:	Compensation de traction :
-	Pull Compensation (%):	Compensation de traction (%) :
-	Push Compensation:	Compensation de poussée :
-	Expand Fills:	Agrandir les remplissages :
-	Narrow Parts as Satin:	Parties étroites en satin :
-	Thread Weight:	Grosseur du fil :
-	Underlay:	Sous-couche :
-	Jump Length:	Longueur de saut :
-	Trim Length:	Longueur de coupe :
-	Shortest Stitch:	Point le plus court :
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Comment les formes sont brodées : Automatique remplit les formes en tatami et brode les contours en colonnes de satin ou en points droits selon leur largeur ; un autre choix brode ainsi chaque forme
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	La distance entre les rangées de remplissage et entre les points de satin ; laissée telle quelle, une colonne de satin la choisit selon sa largeur
-	The length of the stitches along fill rows and running lines	La longueur des points le long des rangées de remplissage et des points droits
-	The direction of the fill rows	La direction des rangées de remplissage
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Élargit les colonnes de satin et les rangées de remplissage de chaque côté, pour compenser le tissu qui se resserre
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Élargit les colonnes de satin et les rangées de remplissage d’une part de leur largeur, pour compenser le tissu qui se resserre
-	Shortens satin columns at their ends, where the thread pushes outward	Raccourcit les colonnes de satin à leurs extrémités, où le fil pousse vers l’extérieur
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Agrandit chaque forme remplie tout autour pour combler les écarts entre les formes ; une valeur négative la réduit
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Les parties d’un remplissage plus étroites sont brodées en colonnes de satin ; 0 n’en brode aucune
-	The thread's weight: thinner thread (a higher number) packs the rows closer	La grosseur du fil : un fil plus fin (un numéro plus élevé) resserre les rangées
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Les points brodés en premier pour tenir le tissu : choisis par chaque forme, aucun, ou un type pour chaque forme
-	A move longer than this lifts the needle instead of being sewn	Un déplacement plus long lève l’aiguille au lieu d’être brodé
-	A jump longer than this cuts the thread first	Un saut plus long coupe d’abord le fil
-	Shorter stitches are left out	Les points plus courts sont omis
-	Tatami Fill	Remplissage tatami
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Satin
-	Running Stitch	Point droit
-	Centre Run	Passage central
-	Edge Run	Passage en bordure
-	Edge Run and Zigzag	Passage en bordure et zigzag
-	Edge Run and Tatami	Passage en bordure et tatami
 	Embroidery Picture	Image de la broderie
 @msg	nothing to draw: the document sews no stitch	rien à dessiner : le document ne coud aucun point
 	Stitch Preview	Aperçu des points

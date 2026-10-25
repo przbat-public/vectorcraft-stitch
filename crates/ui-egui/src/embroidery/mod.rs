@@ -115,9 +115,9 @@ pub fn holds_screenshots(app: &VectorcraftApp, now: f64) -> bool {
 
 /// `ui.inspect`'s `stitchPreview`: the active document's stitch view, how its plan stands
 /// (`state`: off, fresh, pending, stale or failed; `planning`, `progress`, `error`, `planMs`,
-/// `generation`), whether the canvas draws it (`drawn`), the notice shown (`notice`), and what the
-/// Embroidery panel's Object tab shows (`object`: its objects, part and rows). Null with no
-/// document.
+/// `generation`), whether the canvas draws it (`drawn`), the notice shown (`notice`), and the
+/// status bar's counters (`counters`). Null with no document. The Embroidery panel's Object tab is
+/// `ui.inspect`'s `embroideryPanel` (`panels::embroidery::inspect`).
 pub fn inspect(app: &VectorcraftApp, now: f64) -> serde_json::Value {
     let Some(st) = app.session.active() else { return serde_json::Value::Null };
     let mut v = app.embroidery.preview.inspect(st.uid, now);
@@ -126,7 +126,6 @@ pub fn inspect(app: &VectorcraftApp, now: f64) -> serde_json::Value {
         o.insert("drawn".into(), app.embroidery.layer.drawn().into());
         o.insert("notice".into(), notice::text(app, now).map(|(t, _)| t).into());
         o.insert("counters".into(), app.embroidery.counters.inspect());
-        o.insert("object".into(), crate::panels::embroidery::object::inspect(app));
     }
     v
 }

@@ -253,7 +253,15 @@ fn panel_command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
     }
     show_panel(app)?;
     let format = app.session.active().and_then(|st| app.embroidery.check.format.get(&st.uid).copied());
-    Ok(json!({ "tab": app.ui.embroidery_panel.tab.id(), "part": app.ui.embroidery_panel.part.id(), "format": format }))
+    // The part the Object tab shows: the one chosen, or the other where the objects don't paint it.
+    let part = object::shown_part(app);
+    Ok(json!({ "tab": app.ui.embroidery_panel.tab.id(), "part": part.id(), "format": format }))
+}
+
+/// `ui.inspect`'s `embroideryPanel` (VectorCraft Stitch): what the panel's Object tab shows
+/// (`object`, [`object::inspect`]). Its open tab and the part chosen are in `ui.embroidery_panel`.
+pub fn inspect(app: &VectorcraftApp) -> Value {
+    json!({ "object": object::inspect(app) })
 }
 
 /// Show the panel: brought forward where it is; else where it was closed from, by the dock's own

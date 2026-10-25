@@ -696,3 +696,24 @@ fn the_header_counts_the_objects_that_take_no_settings() {
     let words = crate::etn!(1, "{count} selected object takes no settings", "{count} selected objects take no settings");
     assert!(drawn.words.iter().any(|(w, _)| *w == words), "{words}: {:?}", drawn.words);
 }
+
+/// `ui.inspect`'s report of the tab is of the active document's selection as it is: null once the
+/// selection changed until the tab is drawn again; a value the objects differ in isn't `set`; and
+/// `ui.embroideryPanel` answers the part the tab shows.
+#[test]
+fn the_inspected_tab_is_of_the_selection_as_it_is() {
+    let ctx = context();
+    let (mut app, a, b) = app_with_art();
+    app.run("embroidery.set", json!({"ids": [a, b], "part": "fill", "angle": 30})).unwrap();
+    app.run("embroidery.set", json!({"ids": [b], "part": "fill", "angle": 60})).unwrap();
+    select(&mut app, &[a, b]);
+    let mut time = 0.0;
+    ready(&mut app, &ctx, &mut time);
+    assert_eq!((row(&app, "angle")["set"].clone(), row(&app, "angle")["mixed"].clone()), (json!(false), json!(true)));
+    select(&mut app, &[a]);
+    assert_eq!(inspect(&app), serde_json::Value::Null, "not drawn for this selection yet");
+    ready(&mut app, &ctx, &mut time);
+    assert_eq!(inspect(&app)["ids"], json!([a]));
+    let r = app.run("ui.embroideryPanel", json!({"part": "stroke"})).unwrap();
+    assert_eq!(r["part"], json!("fill"), "the red rectangle paints no stroke: the fill shown");
+}

@@ -428,9 +428,11 @@ last tab beside Properties, Layers and Libraries (the dock turns into the shared
 was left; `ui.embroideryPanel {tab?: "object"|"order"|"check", part?: "fill"|"stroke", format?}` shows it at a
 tab, `part` being the part of the selected objects the Object tab shows and `format` (a format's id as
 `embroidery.check` takes it, or `null` for the thread palette's) the one the active document's Check tab checks for,
-and answers `{tab, part, format}`. `ui.inspect` reports the open tab as `ui.embroidery_panel`, and what the Object tab
-shows as `stitchPreview.object` (`ids`, `part`, and its `rows`: each one's `key`, `value` as `embroidery.info` gives
-it, `source`, whether every object `set` it, and whether they differ, `mixed`). `embroidery.copySettings {}`
+and answers `{tab, part, format}` (`part`: the part the Object tab shows, the one chosen or, where the objects don't
+paint it, the other). `ui.inspect` reports the open tab and the part chosen as `ui.embroidery_panel`, and what the
+Object tab shows as `embroideryPanel.object` (`ids`, `part`, and its `rows`: each one's `key`, `value` as
+`embroidery.info` gives it, `source`, whether every object `set` it, and whether they differ, `mixed`); `object` is
+null until the tab has been drawn for the active document's selection as it is. `embroidery.copySettings {}`
 takes the settings of the one object selected (a path or a compound path) as they are now, both parts, answering
 `{source, passedOver}` (values this version doesn't take, left out), and `embroidery.pasteSettings {part?}` gives
 the selected objects, in any document, those settings as one `embroidery.set` a part in one `command.batch`, one undo

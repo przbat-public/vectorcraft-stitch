@@ -964,11 +964,27 @@ pub(crate) fn paste(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String
     Ok(json!({ "passedOver": copied.left_out, "skippedCount": info.skipped_count, "skipped": skipped }))
 }
 
-/// What `ui.inspect` reports of the tab (`stitchPreview.object`): the objects its fields are of,
+/// The part the tab shows of the active document's selection: the one chosen when the objects
+/// paint it, else the other ([`Part::shown`]); the one chosen with nothing to read.
+pub(crate) fn shown_part(app: &mut VectorcraftApp) -> Part {
+    let chosen = app.ui.embroidery_panel.part;
+    match settings_of(app) {
+        Some((_, Ok(info))) => Part::shown(chosen, &info).unwrap_or(chosen),
+        _ => chosen,
+    }
+}
+
+/// What `ui.inspect` reports of the tab (`embroideryPanel.object`): the objects its fields are of,
 /// the part shown, and each row of it: its key, value (as `embroidery.info` gives it), source,
-/// whether it is set on every object, and whether the objects differ. Null with nothing read yet.
+/// whether it is set on every object (as the tab marks it: not where they differ), and whether the
+/// objects differ. Null with nothing read yet, or when what it read isn't of the active document,
+/// its snapshot and its selection as they are (the tab hasn't been drawn since).
 pub(crate) fn inspect(app: &VectorcraftApp) -> Value {
     let Some(memo) = app.embroidery.object.memo.as_ref() else { return Value::Null };
+    let Some(st) = app.session.active() else { return Value::Null };
+    if memo.uid != st.uid || memo.ids != st.selection.objects || !Weak::ptr_eq(&memo.snapshot, &Arc::downgrade(&st.doc)) {
+        return Value::Null;
+    }
     let Ok(info) = &memo.info else { return Value::Null };
     let part = Part::shown(app.ui.embroidery_panel.part, info);
     let rows: Vec<Value> = part
@@ -976,7 +992,10 @@ pub(crate) fn inspect(app: &VectorcraftApp) -> Value {
         .map(|p| {
             let keys = shown_keys(p).into_iter().flat_map(|(_, keys)| keys);
             keys.filter_map(|key| p.settings.get(key).map(|k| (key, k)))
-                .map(|(key, k)| json!({"key": key, "value": k.value, "source": k.source, "set": k.set_count >= p.object_count && k.set_count > 0, "mixed": k.mixed}))
+                .map(|(key, k)| {
+                    let set = k.set_count >= p.object_count && k.set_count > 0 && !k.mixed;
+                    json!({"key": key, "value": k.value, "source": k.source, "set": set, "mixed": k.mixed})
+                })
                 .collect()
         })
         .unwrap_or_default();

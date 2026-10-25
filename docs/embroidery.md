@@ -1994,8 +1994,8 @@ above their fields. Screen readers hear each field by its label (with its sectio
 alike, "Underlay: Type") and where its value comes from as its description. Its edits run after it
 is drawn, for the objects its fields were drawn for, so a click elsewhere that commits a typed
 value and selects another object doesn't move the value. A drag on a label is the app's scrub: one
-undo step for the drag, Escape restoring the value. `ui.inspect`'s `stitchPreview.object` reports
-its objects, part and rows.
+undo step for the drag, Escape restoring the value. `ui.inspect`'s `embroideryPanel.object`
+reports its objects, part and rows, once the tab is drawn for the selection as it is.
 
 **The Sewing order tab** (`panels/embroidery/order.rs`) reads `embroidery.sequence`'s reply back
 into the typed model (`cmd::embroidery::order::SewingOrder`, which the reply is serialised from),

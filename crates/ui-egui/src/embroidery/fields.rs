@@ -374,6 +374,54 @@ mod tests {
         }
     }
 
+    /// A seeded sweep, as a property test would (this crate has no proptest): in every language and
+    /// unit, what a field shows of a number reads back within half its last decimal, written again
+    /// the same, and
+    /// reading any text (multibyte marks, no-break spaces, operators, units, digits mixed) never
+    /// panics.
+    #[test]
+    fn a_fields_format_reads_back_and_never_panics() {
+        /// A small linear congruential generator: the same numbers every run.
+        struct Seeded(u64);
+        impl Seeded {
+            fn next(&mut self) -> u64 {
+                self.0 = self.0.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1_442_695_040_888_963_407);
+                self.0 >> 33
+            }
+        }
+        const NUMBERS: usize = 300;
+        const TEXTS: usize = 300;
+        let pieces =
+            ["0", "1", "9", ",", ".", "-", "−", "–", " ", "\u{a0}", "\u{202f}", "%", "°", "mm", "мм", "*", "/", "(", "e", "ż", "毫米", "1.000"];
+        let mut rng = Seeded(7);
+        for info in &crate::i18n::LANGUAGES {
+            let Some(l) = Lang::from_code(info.code) else { continue };
+            for unit in ["mm", "°", "%", "wt", "/min"] {
+                for decimals in [0usize, 1, 2] {
+                    let f = format(l, unit, decimals);
+                    for _ in 0..NUMBERS {
+                        let magnitude = 10f64.powi((rng.next() % 7) as i32 - 2);
+                        let sign = if rng.next().is_multiple_of(2) { 1.0 } else { -1.0 };
+                        let x = sign * (rng.next() % 10_000) as f64 / 10_000.0 * magnitude;
+                        // Read back within half its last decimal, and written again the same.
+                        let half = 0.5 * 10f64.powi(-(decimals as i32)) + 1e-9 * x.abs().max(1.0);
+                        let shown = f.show(x);
+                        let back = f.read(&shown);
+                        assert!(
+                            back.is_some_and(|b| (b - x).abs() <= half && f.show(b) == shown),
+                            "{} {unit} {decimals}: {x} → {shown:?} → {back:?}",
+                            info.code
+                        );
+                    }
+                    for _ in 0..TEXTS {
+                        let text: String = (0..rng.next() % 8).map(|_| pieces[(rng.next() as usize) % pieces.len()]).collect();
+                        let _ = f.read(&text);
+                    }
+                }
+            }
+        }
+    }
+
     /// Millimetres step a tenth, speeds ten, the rest one.
     #[test]
     fn each_unit_steps_in_its_own_size() {

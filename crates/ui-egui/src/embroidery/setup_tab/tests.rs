@@ -826,3 +826,16 @@ fn junk_in_the_tabs_fields_draws_and_confirms_without_a_panic() {
         }
     }
 }
+
+/// `embroidery.documentSetup` (the Object tab's Embroidery Settings…, and agents) opens Document
+/// Setup at its Embroidery tab; an agent then sets a flat field with `ui.dialog.set` and confirms.
+#[test]
+fn document_setup_opens_at_the_embroidery_tab_for_an_agent() {
+    let mut app = app();
+    app.run("embroidery.documentSetup", json!({})).unwrap();
+    assert_eq!(dialog(&mut app).fields["tab"], json!(TAB));
+    dialog(&mut app).fields.insert("embroidery.threadWeight".into(), json!(30));
+    crate::dialogs::confirm(&mut app).unwrap();
+    assert_eq!(settings(&mut app)["settings"]["threadWeight"], json!(30.0));
+    assert!(app.run("embroidery.documentSetup", json!({"tab": "x"})).is_err(), "it takes no parameters");
+}

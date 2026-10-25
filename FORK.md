@@ -480,7 +480,8 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     (`embroidery/tests_fields.rs`) compare it with upstream's field and fail on such a change.
   - `ui-egui/src/dialogs/document_setup.rs`: the Embroidery tab (`embroidery/setup_tab.rs`): its
     name in `TABS`, its fields added in `open`, its body as the last arm of `body`'s `match`, and
-    `confirm` handing OK to it first (one `command.batch` with `document.setup`).
+    in `confirm` the `document.setup` call alone replaced by `setup_tab::run` (which runs it, with
+    the tab's changes in one `command.batch`), so upstream's own steps around it still run.
   - `menus.rs`: the `UI_COMMANDS` row `embroidery.documentSetup` (Embroidery Settings…).
 - **Upstream's internals the fork reads without a hook** (nothing to resolve, but a sync that
   changes them breaks a feature quietly): Window › Embroidery's dock-width fit

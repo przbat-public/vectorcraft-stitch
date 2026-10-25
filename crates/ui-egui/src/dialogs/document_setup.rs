@@ -37,12 +37,9 @@ pub fn open(app: &mut VectorcraftApp) -> Result<Value, String> {
 }
 
 fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
-    // VectorCraft Stitch: the Embroidery tab's changes go with these, in one undo step.
-    if let Some(r) = crate::embroidery::setup_tab::confirm(app, d, &UI_ONLY) {
-        return r;
-    }
     let params = d.fields.iter().filter(|(k, _)| !UI_ONLY.contains(&k.as_str())).map(|(k, v)| (k.clone(), v.clone())).collect();
-    let r = app.run("document.setup", Value::Object(params));
+    // VectorCraft Stitch: `document.setup`, with the Embroidery tab's changes in one undo step.
+    let r = crate::embroidery::setup_tab::run(app, Value::Object(params));
     if r.is_ok() {
         app.ui.dialog = None;
     }

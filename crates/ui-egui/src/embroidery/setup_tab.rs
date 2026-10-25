@@ -1,7 +1,7 @@
 //! Document Setup's Embroidery tab (VectorCraft Stitch): the document's embroidery settings, edited
 //! in the dialog and applied with its other changes on OK, one undo step ("Document Setup");
 //! Cancel applies nothing. Upstream's `dialogs/document_setup.rs` reaches it through four marked
-//! hooks: its tab ([`TAB`]), [`open`], [`body`] and [`confirm`].
+//! hooks: its tab ([`TAB`]), [`open`], [`body`] and OK's command ([`run`]).
 //!
 //! - **Fields** are flat keys in the dialog's fields, named by `embroidery.setup`'s paths
 //!   (`embroidery.fabric` the fabric chosen, `embroidery.fabric.tatami.pull`,
@@ -295,42 +295,46 @@ pub(crate) fn open(app: &mut VectorcraftApp, fields: &mut Value) {
     app.embroidery.setup = Some(opened);
 }
 
-/// OK: the dialog's other fields (less `ui_only`) by `document.setup`, and with them, in one
-/// undo step, what changed here (`embroidery.setup`) and the fabric applied to the objects chosen
-/// in the bar (`embroidery.applyFabric`). Closes the dialog when done. `None` without the tab's
-/// fields: upstream's OK then runs as it is.
-pub(crate) fn confirm(app: &mut VectorcraftApp, d: &Dialog, ui_only: &[&str]) -> Option<Result<Value, String>> {
-    let changes = changes(d, opened(app)?);
-    let others: Map<String, Value> =
-        d.fields.iter().filter(|(k, _)| !ui_only.contains(&k.as_str()) && !k.starts_with(PREFIX)).map(|(k, v)| (k.clone(), v.clone())).collect();
+/// OK's command, run by upstream's `confirm` with `params` (the dialog's fields less its own):
+/// `document.setup` with the other tabs' fields, and with it, in one undo step, what changed here
+/// (`embroidery.setup`) and the fabric applied to the objects chosen in the bar
+/// (`embroidery.applyFabric`); `document.setup` alone when nothing here changed, and as upstream
+/// runs it without the tab (no document). Upstream's `confirm` closes the dialog when it is done.
+pub(crate) fn run(app: &mut VectorcraftApp, params: Value) -> Result<Value, String> {
+    let Value::Object(fields) = params else { return app.run("document.setup", params) };
+    let Some(o) = opened(app) else {
+        if app.embroidery.setup.is_some() && fields.keys().any(|k| k.starts_with(PREFIX)) {
+            return Err("Document Setup's Embroidery tab is another document's: open Document Setup again".into());
+        }
+        return app.run("document.setup", Value::Object(fields));
+    };
+    let changes = changes(&fields, o);
+    let apply = chosen(&fields);
+    let others: Map<String, Value> = fields.into_iter().filter(|(k, _)| !k.starts_with(PREFIX)).collect();
     let mut commands = vec![json!({"command": "document.setup", "params": others})];
     if !changes.is_empty() {
         commands.push(json!({"command": "embroidery.setup", "params": changes}));
     }
-    let apply = chosen(d);
     if !apply.is_empty() {
         commands.push(json!({"command": "embroidery.applyFabric", "params": {"all": true, "keys": apply}}));
     }
-    let r = match commands.as_slice() {
+    match commands.as_slice() {
         [only] => app.run("document.setup", only["params"].clone()),
         _ => app.run("command.batch", json!({"label": "Document Setup", "commands": commands})),
-    };
-    if r.is_ok() {
-        app.ui.dialog = None;
     }
-    Some(r)
 }
 
-/// The fabric values chosen in the bar to apply to the objects (`overrides`' keys).
-fn chosen(d: &Dialog) -> Vec<String> {
-    let list = d.fields.get(&field(APPLY)).and_then(Value::as_array).cloned().unwrap_or_default();
+/// The fabric values chosen in the bar to apply to the objects (`overrides`' keys), of the dialog's
+/// `fields`.
+fn chosen(fields: &Map<String, Value>) -> Vec<String> {
+    let list = fields.get(&field(APPLY)).and_then(Value::as_array).cloned().unwrap_or_default();
     OVERRIDES.iter().filter(|k| list.iter().any(|v| v.as_str() == Some(k))).map(|k| k.to_string()).collect()
 }
 
-/// `embroidery.setup`'s params for what changed in the dialog since it opened: each value as the
-/// field holds it, or null where it went back to its default (unset).
-fn changes(d: &Dialog, o: &Opened) -> Map<String, Value> {
-    let now = |key: &str| d.fields.get(&field(key)).cloned().unwrap_or(Value::Null);
+/// `embroidery.setup`'s params for what changed in the dialog's `fields` since it opened: each
+/// value as the field holds it, or null where it went back to its default (unset).
+fn changes(fields: &Map<String, Value>, o: &Opened) -> Map<String, Value> {
+    let now = |key: &str| fields.get(&field(key)).cloned().unwrap_or(Value::Null);
     let mut out = Map::new();
     // The fabric. A preset chosen: the preset, less the values changed after (the dialog copied its
     // values into the fields; an agent that set the choice alone left them as they opened). The
@@ -819,7 +823,7 @@ fn bar(ui: &mut Ui, d: &Dialog, o: &Opened, edits: &mut Vec<Change>) {
     let changed = fabric_changed(d, o);
     let fill = if changed { mix(t.panel, t.warning, BAR_TINT) } else { t.panel_darker };
     let words = marks::readable_text(t.text, &[fill, t.panel], t.dark);
-    let chosen = chosen(d);
+    let chosen = chosen(&d.fields);
     let border = if changed { marks::readable(t.warning, &[t.panel], t.dark) } else { egui::Color32::TRANSPARENT };
     ui.add_space(GAP);
     let frame = egui::Frame::NONE.fill(fill).stroke(egui::Stroke::new(1.0, border)).corner_radius(CornerRadius::same(BAR_RADIUS));

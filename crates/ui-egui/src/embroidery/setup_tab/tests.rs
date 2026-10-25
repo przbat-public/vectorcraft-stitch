@@ -335,3 +335,22 @@ fn the_tabs_state_is_not_among_the_dialogs_fields() {
     app.session.execute("file.close", &json!({})).unwrap();
     assert!(opened(&app).is_none(), "with no document, none");
 }
+
+/// OK runs upstream's own steps around the tab's command: the dialog closes once it is done. A tab
+/// opened for another document than the one active is refused, and the dialog stays.
+#[test]
+fn ok_is_upstreams_with_the_tabs_command() {
+    let mut app = app();
+    open_tab(&mut app);
+    edit(&mut app, "threadWeight", json!(30.0));
+    app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
+    let e = crate::dialogs::confirm(&mut app).unwrap_err();
+    assert!(e.contains("another document"), "{e}");
+    assert!(app.ui.dialog.is_some(), "the dialog stays");
+    crate::dialogs::cancel(&mut app);
+    open_tab(&mut app);
+    edit(&mut app, "threadWeight", json!(30.0));
+    crate::dialogs::confirm(&mut app).unwrap();
+    assert!(app.ui.dialog.is_none(), "closed by upstream's confirm");
+    assert_eq!(settings(&mut app)["settings"]["threadWeight"], json!(30.0));
+}

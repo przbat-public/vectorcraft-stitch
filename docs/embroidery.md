@@ -239,11 +239,13 @@ tabs on OK, one undo step (`command.batch {label: "Document Setup"}`); Cancel ch
 - **Room**: two columns where the window has room for the mockup's 970-point dialog (the fabric
   and the thread; the machine, the sewing order and the design), one scrolling column else; the
   other tabs keep their 540 points.
-- **Agents** set the tab's fields with `ui.dialog.set`, flat (`embroidery.fabric`,
-  `embroidery.tatami.pull`, `embroidery.satin.spacingPercent`, `embroidery.stabilizer`,
+- **Agents** set the tab's fields with `ui.dialog.set`, flat and named by `embroidery.setup`'s
+  paths (`embroidery.fabric` the fabric chosen, `embroidery.fabric.tatami.pull`,
+  `embroidery.fabric.satin.spacingPercent`, `embroidery.fabric.stabilizer`,
   `embroidery.threadWeight`, `embroidery.palette`, `embroidery.machine.jumpLength`…,
-  `embroidery.joinSameColor`, `embroidery.applyFabric: [key…]`), then `ui.dialog.confirm`: a
-  preset chosen alone is applied as it is; a value back at its default is unset.
+  `embroidery.joinSameColor`, `embroidery.applyFabricTo: [key…]`; all of them in
+  `docs/control-protocol.md`), then `ui.dialog.confirm`: a preset chosen alone is applied as it
+  is; a value back at its default is unset.
 
 ![Document Setup's Embroidery tab: the knit chosen, its stitch length changed, one object's own pull counted in the amber bar](images/embroidery-document-setup.png)
 

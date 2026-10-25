@@ -239,22 +239,24 @@ fn cancel_changes_nothing() {
     assert_eq!((settings(&mut app), steps(&app)), (before, 0));
 }
 
-/// Agents set the flat fields with `ui.dialog.set` and confirm; a value back at its default unsets
-/// it.
+/// Agents set the flat fields, named by `embroidery.setup`'s paths, with `ui.dialog.set` and
+/// confirm; a value back at its default unsets it.
 #[test]
 fn agents_set_flat_fields() {
     let mut app = app();
     app.run("embroidery.setup", json!({"threadWeight": 30, "machine": {"speed": 900}})).unwrap();
     open_tab(&mut app);
     let d = dialog(&mut app);
-    d.fields.insert(field("machine.trimLength"), json!(12.0));
-    d.fields.insert(field("palette"), json!("pec"));
+    d.fields.insert("embroidery.machine.trimLength".into(), json!(12.0));
+    d.fields.insert("embroidery.palette".into(), json!("pec"));
+    d.fields.insert("embroidery.fabric.tatami.length".into(), json!(3.0));
     let speed = opened(d).unwrap().default_of("machine.speed");
-    d.fields.insert(field("machine.speed"), speed);
+    d.fields.insert("embroidery.machine.speed".into(), speed);
     crate::dialogs::confirm(&mut app).unwrap();
     let s = settings(&mut app);
     let m = &s["settings"]["machine"];
     assert_eq!((m["trimLength"].clone(), m["speed"].clone(), s["settings"]["palette"].clone()), (json!(12.0), json!(null), json!("pec")));
+    assert_eq!(s["settings"]["fabric"]["tatami"]["length"], json!(3.0));
     assert_eq!(s["settings"]["threadWeight"], json!(30.0), "left as it was");
 }
 

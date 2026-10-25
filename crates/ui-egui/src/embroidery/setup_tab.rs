@@ -3,10 +3,12 @@
 //! Cancel applies nothing. Upstream's `dialogs/document_setup.rs` reaches it through four marked
 //! hooks: its tab ([`TAB`]), [`open`], [`body`] and [`confirm`].
 //!
-//! - **Fields** are flat keys in the dialog's fields (`embroidery.fabric`,
-//!   `embroidery.tatami.pull`, `embroidery.machine.jumpLength`…), so agents set them with
-//!   `ui.dialog.set` as any dialog's. What the tab opened with, the presets and the defaults wait
-//!   beside them in a hidden field ([`OPENED`]), never sent.
+//! - **Fields** are flat keys in the dialog's fields, named by `embroidery.setup`'s paths
+//!   (`embroidery.fabric` the fabric chosen, `embroidery.fabric.tatami.pull`,
+//!   `embroidery.machine.jumpLength`, `embroidery.threadWeight`…; `embroidery.applyFabricTo` the
+//!   bar's values), so agents set them with `ui.dialog.set` as any dialog's. What the tab opened
+//!   with, the presets and the defaults wait beside them in a hidden field ([`OPENED`]), never
+//!   sent.
 //! - **The fabric**: built-in values, one of the presets, or values of the document's own
 //!   (Custom). Choosing a preset copies its values into the fields (the project owner's choice: it
 //!   replaces values changed before in the dialog); changing a value of the built-in ones makes
@@ -68,9 +70,10 @@ const JOIN: &str = "joinSameColor";
 const START: &str = "start";
 const LABEL: &str = "label";
 /// The fabric values objects can set themselves, as `overrides` counts them and
-/// `embroidery.applyFabric` unsets them; and the field holding those chosen in the bar.
+/// `embroidery.applyFabric` unsets them; and the field holding those chosen in the bar (named
+/// apart from the command).
 const OVERRIDES: [&str; 4] = ["pull", "spacing", "length", "underlay"];
-const APPLY: &str = "applyFabric";
+const APPLY: &str = "applyFabricTo";
 
 /// The dialog's width with two columns, points: the mockup's dialog, about 970 points (an estimate
 /// from the drawing). The window must have that much room.
@@ -128,9 +131,10 @@ struct Note {
     sources: Vec<String>,
 }
 
-/// A field's name in the dialog: the tab's prefix and `key`.
+/// A field's name in the dialog: the tab's prefix and `key`, a fabric's value under `fabric.` as
+/// `embroidery.setup` nests it (`embroidery.fabric.tatami.pull`).
 fn field(key: &str) -> String {
-    format!("{PREFIX}{key}")
+    if FABRIC_VALUES.contains(&key) { format!("{PREFIX}fabric.{key}") } else { format!("{PREFIX}{key}") }
 }
 
 impl Opened {

@@ -84,9 +84,13 @@ impl PartSettings {
             }
         }
         if let Some(points) = &mut self.points {
-            // A point the transform sends off to no finite place is unset: Auto, nearest.
-            for p in [&mut points.entry, &mut points.exit] {
-                *p = p.map(|q| a * q).filter(|q| q.x.is_finite() && q.y.is_finite());
+            // A point the transform sends off to no finite place stays where it was, as a kept
+            // position does: nothing set is lost to a degenerate transform.
+            for p in [&mut points.entry, &mut points.exit].into_iter().flatten() {
+                let q = a * *p;
+                if q.x.is_finite() && q.y.is_finite() {
+                    *p = q;
+                }
             }
             if !points.extra.is_empty() {
                 move_positions_in_map(std::sync::Arc::make_mut(&mut points.extra), a, 0);
@@ -309,15 +313,17 @@ mod tests {
         assert_eq!((stroke.angle, stroke.pull, stroke.length), (None, None, Some(2.0)));
     }
 
-    /// A transform that sends a point off to no finite place unsets it; nothing a transform writes
-    /// is anything but finite.
+    /// A transform that sends a point off to no finite place leaves it where it was, as a kept
+    /// position is left; nothing a transform writes is anything but finite.
     #[test]
     fn a_degenerate_transform_writes_nothing_infinite() {
         for a in [Affine::scale(f64::MAX), Affine::new([f64::INFINITY, 0.0, 0.0, 1.0, 0.0, 0.0])] {
             let mut e = settings();
+            let entry = e.part(PartKind::Fill).and_then(|p| p.get(PartKey::Entry));
             e.transform(a);
             let saved = serde_json::to_string(&e).unwrap();
             assert!(!saved.contains("null") && !saved.contains("inf"), "{a:?}: {saved}");
+            assert_eq!(e.part(PartKind::Fill).and_then(|p| p.get(PartKey::Entry)), entry, "{a:?}: the entry where it was");
         }
         let mut collapsed = settings();
         collapsed.transform(Affine::scale(0.0));

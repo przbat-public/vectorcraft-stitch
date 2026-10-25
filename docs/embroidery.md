@@ -1521,7 +1521,7 @@ Direct Selection moving every anchor of a path). Each rule is a group action: tw
 after the other do what their product does, and a transform and its inverse give the settings back.
 
 - **Points** (entry, exit) map by the whole transform; one the transform sends to no finite place
-  is unset (Auto, nearest).
+  stays where it was, as a kept position does.
 - **A set angle** goes where the transform takes its direction, turned half round under a mirror
   (rows are lines: θ and θ + 180° are the same rows), normalised to (−180°, 180°]; a move, a uniform
   scale or a turn by whole circles keeps its bits. Angles are taken and reported as any number of

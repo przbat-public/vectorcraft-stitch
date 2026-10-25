@@ -148,7 +148,9 @@ fn the_object_tab_draws_without_a_plan() {
     assert!(drawn.has("Select an object to set how it is sewn."), "{:?}", drawn.words);
     select(&mut app, &[a]);
     let drawn = frame(&mut app, &ctx, 0.1, vec![]);
-    assert!(drawn.has("…") && drawn.has("Row spacing") && drawn.has("Auto: tatami"), "no plan yet: {:?}", drawn.words);
+    let pill = |drawn: &Drawn, w: &str| drawn.words.iter().any(|(word, _)| word == w);
+    assert!(pill(&drawn, "…") && drawn.has("Row spacing") && drawn.has("Auto: tatami"), "no plan yet: {:?}", drawn.words);
+    assert!(!drawn.has(" stitches"), "no count before the first plan: {:?}", drawn.words);
     held.release();
     let mut time = 0.2;
     let drawn = ready(&mut app, &ctx, &mut time);
@@ -167,13 +169,24 @@ fn the_object_tab_draws_without_a_plan() {
 fn its_header_counts_the_objects_stitches() {
     let ctx = context();
     let (mut app, a, b) = app_with_art();
-    select(&mut app, &[a, b]);
     let mut time = 0.0;
-    let drawn = ready(&mut app, &ctx, &mut time);
     let sequence = app.run("embroidery.sequence", json!({})).unwrap();
-    let stitches: u64 =
-        sequence["blocks"].as_array().unwrap().iter().flat_map(|b| b["units"].as_array().unwrap()).map(|u| u["stitches"].as_u64().unwrap()).sum();
-    let words = crate::etn!(stitches, "{count} stitch", "{count} stitches");
+    let units: Vec<(u64, u64)> = sequence["blocks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|b| b["units"].as_array().unwrap())
+        .map(|u| (u["id"].as_u64().unwrap(), u["stitches"].as_u64().unwrap()))
+        .collect();
+    let of = |ids: &[u64]| units.iter().filter(|(id, _)| ids.contains(id)).map(|(_, n)| n).sum::<u64>();
+    // One of the two: its own stitches, not the design's.
+    select(&mut app, &[a]);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let words = crate::etn!(of(&[a]), "{count} stitch", "{count} stitches");
+    assert!(of(&[a]) < of(&[a, b]) && drawn.has(&words), "{words}: {:?}", drawn.words);
+    select(&mut app, &[a, b]);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let words = crate::etn!(of(&[a, b]), "{count} stitch", "{count} stitches");
     assert!(drawn.has(&words), "{words}: {:?}", drawn.words);
     assert!(drawn.has("2 objects"), "{:?}", drawn.words);
 }
@@ -195,7 +208,8 @@ fn a_set_value_is_marked_and_an_inherited_one_says_where_it_comes_from() {
     assert!(drawn.nodes.iter().any(|(_, n)| n.label() == Some("Restore Angle")), "↺ for the angle");
     let pull = knit_pull(&mut app);
     assert!(drawn.has(&format!("fabric {pull}")), "the pull's hint, the knit's {pull}: {:?}", drawn.words);
-    assert!(drawn.has("fabric") && drawn.has("default"), "badges: {:?}", drawn.words);
+    let badge = |w: &str| drawn.words.iter().any(|(word, _)| word == w);
+    assert!(badge("fabric") && badge("default"), "badges: {:?}", drawn.words);
     let field = drawn.node("Row spacing");
     assert_eq!(field.description(), Some(format!("Source: fabric\n{}", vocabulary::tip("spacing")).as_str()), "its source, then its help");
     let field = drawn.node("Angle");
@@ -312,11 +326,13 @@ fn an_out_of_range_value_is_refused_with_its_range() {
     select(&mut app, &[a]);
     let mut time = 0.0;
     let before = steps(&app);
-    // A range of the field's own: what is typed past it is held at its end, as the app's fields do.
+    // A value typed is taken as typed: the engine refuses one past the field's range, and the status
+    // bar says the range.
     type_into(&mut app, &ctx, &mut time, "Narrow parts as satin", "50");
     let set = info(&mut app, &[a])["objects"][0]["settings"]["fill"]["narrowAsSatin"].clone();
-    assert!(set.is_null() || set.as_f64().is_some_and(|v| v <= 12.0), "{set}");
-    assert!(steps(&app) <= before + 1);
+    assert!(set.is_null(), "not set: {set}");
+    assert_eq!(steps(&app), before, "no undo step");
+    assert!(app.ui.status.contains("12"), "the range said: {:?}", app.ui.status);
 }
 
 /// ↺ unsets that one value, in one step; Restore from Fabric unsets them all but the points and
@@ -352,7 +368,9 @@ fn words_at(drawn: &Drawn, what: &str) -> Pos2 {
 }
 
 /// A drag of `dx` points from `at` (Escape before the release when `escape`), a move a frame.
-fn drag(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, at: Pos2, dx: f32, escape: bool) {
+/// A drag of `dx` points from `at` (Escape before the release when `escape`) → object `watch`'s fill
+/// angle as the drag stood just before its end.
+fn drag(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, at: Pos2, dx: f32, escape: bool, watch: u64) -> serde_json::Value {
     let button = |pos, pressed| Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
     let mut step = |app: &mut VectorcraftApp, events| {
         *time += 0.05;
@@ -363,11 +381,13 @@ fn drag(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, at: Pos2,
     for i in 1..=4 {
         step(app, vec![Event::PointerMoved(at + vec2(dx * i as f32 / 4.0, 0.0))]);
     }
+    let during = fill_setting(app, watch, "angle");
     if escape {
         step(app, vec![Event::Key { key: Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE }]);
     }
     step(app, vec![button(at + vec2(dx, 0.0), false)]);
     step(app, vec![]);
+    during
 }
 
 fn fill_setting(app: &mut VectorcraftApp, id: u64, key: &str) -> serde_json::Value {
@@ -386,10 +406,11 @@ fn a_scrub_is_one_undo_step_and_escape_restores() {
     let mut time = 0.0;
     let at = words_at(&ready(&mut app, &ctx, &mut time), "Angle");
     let before = steps(&app);
-    drag(&mut app, &ctx, &mut time, at, 40.0, false);
+    drag(&mut app, &ctx, &mut time, at, 40.0, false, a);
     assert_eq!((fill_setting(&mut app, a, "angle"), steps(&app)), (json!(50.0), before + 1), "twenty steps of a degree, one undo step");
     let at = words_at(&ready(&mut app, &ctx, &mut time), "Angle");
-    drag(&mut app, &ctx, &mut time, at, 40.0, true);
+    let during = drag(&mut app, &ctx, &mut time, at, 40.0, true, a);
+    assert_eq!(during, json!(70.0), "the second drag scrubbed before Escape");
     assert_eq!((fill_setting(&mut app, a, "angle"), steps(&app)), (json!(50.0), before + 1), "Escape takes the drag back");
 }
 

@@ -5936,3 +5936,6 @@ embroidery	The design's name, as the file it was opened from gave it.	Mønsteret
 embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Dokumentets stof, tråd og maskine: fanen Broderi i dokumentopsætningen.
 @plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} objekt har sine egne værdier for stoffet.|{count} objekter har deres egne værdier for stoffet.
 	Embroidery Settings…	Broderiindstillinger…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	Fra {min} til {max}
+embroidery	At least the jump length ({value}): only a jump is cut	Mindst springlængden ({value}): kun et spring klippes

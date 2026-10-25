@@ -5576,3 +5576,6 @@ embroidery	The design's name, as the file it was opened from gave it.	Назва
 embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Тканина, нитка й машина документа: вкладка «Вишивка» в параметрах документа.
 @plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} об’єкт задає власні значення для тканини.|{count} об’єкти задають власні значення для тканини.|{count} об’єктів задають власні значення для тканини.
 	Embroidery Settings…	Параметри вишивки…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	Від {min} до {max}
+embroidery	At least the jump length ({value}): only a jump is cut	Щонайменше довжина стрибка ({value}): обрізається лише стрибок

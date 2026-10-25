@@ -743,7 +743,16 @@ fn left_rows(d: &Dialog, o: &Opened, lang: Lang) -> Left {
 
 /// The right column's rows for dialog `d`.
 fn right_rows(d: &Dialog, o: &Opened, lang: Lang) -> Right {
-    let machine = MACHINE.iter().map(|key| number_row(o, key, &now(d, key), lang)).collect();
+    let mut machine: Vec<Owned> = MACHINE.iter().map(|key| number_row(o, key, &now(d, key), lang)).collect();
+    // Only a jump is cut: a cut length shorter than the jump length is refused on OK.
+    let (jump, trim) = (now(d, "machine.jumpLength").as_f64(), now(d, "machine.trimLength").as_f64());
+    if let (Some(jump), Some(trim)) = (jump, trim)
+        && trim < jump
+        && let Some(row) = machine.iter_mut().find(|r| r.key == "machine.trimLength" && r.problem.is_none())
+    {
+        let value = fields::format(lang, "mm", WORDS_DECIMALS).show(jump);
+        row.problem = Some(text::fill(crate::et!("At least the jump length ({value}): only a jump is cut"), &[("value", &value)]));
+    }
     let design = [START, LABEL].into_iter().filter(|k| !o.was(k).is_null()).map(|k| design_row(k, &now(d, k), lang)).collect();
     Right { machine, design }
 }
@@ -886,6 +895,7 @@ fn fabric_choice(o: &Opened, choice: &str) -> Owned {
         aside: None,
         hint: None,
         description: String::new(),
+        problem: None,
     }
 }
 
@@ -938,6 +948,7 @@ fn fabric_row(o: &Opened, choice: &str, key: &'static str, value: &Value, lang: 
         aside,
         hint,
         description,
+        problem: out_of_range(key, value, lang),
     }
 }
 
@@ -1031,7 +1042,20 @@ fn number_row(o: &Opened, key: &'static str, value: &Value, lang: Lang) -> Owned
         aside,
         hint,
         description,
+        problem: out_of_range(key, value, lang),
     }
+}
+
+/// What is wrong with number `value` of setting `key` as typed: outside its range, which the
+/// setting refuses on OK ("From 0 mm to 12 mm").
+fn out_of_range(key: &str, value: &Value, lang: Lang) -> Option<String> {
+    let Some(SettingField::Number { min, max, unit, decimals }) = field_of(key) else { return None };
+    let v = value.as_f64()?;
+    if (min..=max).contains(&v) {
+        return None;
+    }
+    let f = fields::format(lang, unit, decimals);
+    Some(text::fill(crate::et!("From {min} to {max}"), &[("min", &f.show(min)), ("max", &f.show(max))]))
 }
 
 /// The row of the design's start or name, read only, ↺ unsetting it (blank once unset).
@@ -1057,6 +1081,7 @@ fn design_row(key: &'static str, value: &Value, lang: Lang) -> Owned {
         aside: None,
         hint: None,
         description: String::new(),
+        problem: None,
     }
 }
 

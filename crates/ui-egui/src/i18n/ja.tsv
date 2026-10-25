@@ -5658,3 +5658,6 @@ embroidery	The design's name, as the file it was opened from gave it.	デザイ�
 embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	ドキュメントの生地・糸・ミシン：ドキュメント設定の「刺繍」タブ。
 @plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} 個のオブジェクトが生地の値を独自に設定しています。
 	Embroidery Settings…	刺繍の設定…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	{min}～{max}
+embroidery	At least the jump length ({value}): only a jump is cut	ジャンプの長さ（{value}）以上：糸を切るのはジャンプのときだけです

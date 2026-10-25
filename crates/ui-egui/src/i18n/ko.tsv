@@ -5559,3 +5559,6 @@ embroidery	The design's name, as the file it was opened from gave it.	열었던 
 embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	문서의 원단, 실, 기계: 문서 설정의 자수 탭.
 @plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	개체 {count}개가 원단 값을 자체 설정합니다.
 	Embroidery Settings…	자수 설정…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	{min}~{max}
+embroidery	At least the jump length ({value}): only a jump is cut	점프 길이({value}) 이상: 점프할 때만 실을 자릅니다

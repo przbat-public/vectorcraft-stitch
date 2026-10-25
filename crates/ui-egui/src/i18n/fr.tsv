@@ -5980,3 +5980,6 @@ embroidery	The design's name, as the file it was opened from gave it.	Le nom du 
 embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Le tissu, le fil et la machine du document : onglet Broderie du format de document.
 @plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} objet définit ses propres valeurs de tissu.|{count} objets définissent leurs propres valeurs de tissu.
 	Embroidery Settings…	Réglages de broderie…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	De {min} à {max}
+embroidery	At least the jump length ({value}): only a jump is cut	Au moins la longueur du saut ({value}) : seul un saut est coupé

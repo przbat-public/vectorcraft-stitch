@@ -142,8 +142,9 @@ fn aside_width(ui: &Ui, r: &Row<'_>, hinted: bool) -> f32 {
 
 /// What a row edits.
 pub(crate) enum Field<'a> {
-    /// A number in `format`, kept within `bounds`; `None`: blank (objects that differ, a rule's
-    /// value), `hint` shown in it then.
+    /// A number in `format`, stepped and scrubbed within `bounds` (a value typed is taken as typed:
+    /// the setting refuses one outside them, and Document Setup marks it); `None`: blank (objects
+    /// that differ, a rule's value), `hint` shown in it then.
     Number { value: Option<f64>, format: NumberFormat<'a>, bounds: RangeInclusive<f64>, hint: Option<&'a str> },
     /// A choice showing `shown`, from `options` (id, words), `current` marked in the list.
     Choice { shown: &'a str, options: &'a [(String, String)], current: Option<&'a str> },
@@ -175,6 +176,9 @@ pub(crate) struct Row<'a> {
     pub(crate) hint: Option<String>,
     /// Where its value comes from, for screen readers.
     pub(crate) description: String,
+    /// What is wrong with its value (out of its range, against another setting): said under the
+    /// row with a warning mark, and to screen readers.
+    pub(crate) problem: Option<&'a str>,
 }
 
 /// A row with its words owned for the frame, as a tab builds it ([`Row`] borrows them to draw).
@@ -189,6 +193,7 @@ pub(crate) struct Owned {
     pub(crate) aside: Option<String>,
     pub(crate) hint: Option<String>,
     pub(crate) description: String,
+    pub(crate) problem: Option<String>,
 }
 
 /// [`Field`] with its words owned; a number in its unit, written as the language writes numbers
@@ -220,6 +225,7 @@ impl Owned {
             aside: self.aside.clone(),
             hint: self.hint.clone(),
             description: self.description.clone(),
+            problem: self.problem.as_deref(),
         }
     }
 }
@@ -271,7 +277,24 @@ pub(crate) fn show(ui: &mut Ui, cols: &Columns, row: &Row<'_>) -> Option<Edit> {
             });
         }
     }
+    if let Some(words) = row.problem {
+        problem(ui, words);
+    }
     edit
+}
+
+/// Under a row: what is wrong with its value, a warning mark before it.
+fn problem(ui: &mut Ui, words: &str) {
+    let t = Tokens::get(ui.ctx());
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = 0.0;
+        ui.add_space(GUTTER);
+        let (rect, _) = ui.allocate_exact_size(vec2(marks::MARK_SIZE, marks::MARK_SIZE), Sense::hover());
+        marks::paint_on(ui.painter(), rect.center(), marks::MARK_SIZE, marks::Mark::Warning, &t, t.panel);
+        ui.add_space(GAP / 2.0);
+        let colour = marks::readable_text(t.text, &[t.panel], t.dark);
+        ui.add(egui::Label::new(egui::RichText::new(words).size(SMALL_TEXT).color(colour)).wrap());
+    });
 }
 
 /// The gutter left of a label, with the bar in it for a value of its own.
@@ -304,7 +327,12 @@ fn label_cell(ui: &mut Ui, row: &Row<'_>, width: f32, scrubs: bool) {
 fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
     let t = Tokens::get(ui.ctx());
     let text = value_colour(&t, row.own);
-    let look = Look { text: Some(text), hint: None, name: Some(row.name), description: Some(&row.description) };
+    // What is wrong with the value first, on a line of its own.
+    let description = match row.problem {
+        Some(p) => format!("{p}\n{}", row.description),
+        None => row.description.clone(),
+    };
+    let look = Look { text: Some(text), hint: None, name: Some(row.name), description: Some(&description) };
     match &row.field {
         Field::Number { value, format, bounds, hint } => {
             fields::number_field(ui, (row.key, "number"), *value, format, &Look { hint: *hint, ..look }, width, bounds).map(Edit::Number)

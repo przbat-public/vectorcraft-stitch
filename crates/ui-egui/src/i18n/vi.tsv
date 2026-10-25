@@ -5576,3 +5576,6 @@ embroidery	The design's name, as the file it was opened from gave it.	Tên mẫu
 embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Vải, chỉ và máy của tài liệu: thẻ Thêu trong Thiết lập tài liệu.
 @plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} đối tượng có giá trị riêng cho vải.
 	Embroidery Settings…	Cài đặt thêu…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	Từ {min} đến {max}
+embroidery	At least the jump length ({value}): only a jump is cut	Ít nhất bằng độ dài bước nhảy ({value}): chỉ cắt khi nhảy

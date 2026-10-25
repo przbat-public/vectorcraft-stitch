@@ -5981,3 +5981,6 @@ embroidery	The design's name, as the file it was opened from gave it.	Název vzo
 embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Látka, nit a stroj dokumentu: karta Výšivka v nastavení dokumentu.
 @plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} objekt má vlastní hodnoty pro látku.|{count} objekty mají vlastní hodnoty pro látku.|{count} objektů má vlastní hodnoty pro látku.
 	Embroidery Settings…	Nastavení výšivky…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	Od {min} do {max}
+embroidery	At least the jump length ({value}): only a jump is cut	Alespoň délka přeskoku ({value}): stříhá se jen při přeskoku

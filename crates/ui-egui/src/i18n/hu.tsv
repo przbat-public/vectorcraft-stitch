@@ -5967,3 +5967,6 @@ embroidery	The design's name, as the file it was opened from gave it.	A minta ne
 embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	A dokumentum anyaga, cérnája és gépe: a Dokumentumbeállítás Hímzés lapja.
 @plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} objektum saját értékeket ad meg az anyaghoz.
 	Embroidery Settings…	Hímzés beállításai…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	{min} és {max} között
+embroidery	At least the jump length ({value}): only a jump is cut	Legalább az ugrás hossza ({value}): csak ugrásnál vág

@@ -5562,3 +5562,6 @@ embroidery	The design's name, as the file it was opened from gave it.	Der Name d
 embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Stoff, Garn und Maschine des Dokuments: Registerkarte „Stickerei“ unter „Dokument einrichten“.
 @plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} Objekt hat eigene Werte für den Stoff.|{count} Objekte haben eigene Werte für den Stoff.
 	Embroidery Settings…	Stickerei-Einstellungen…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	Von {min} bis {max}
+embroidery	At least the jump length ({value}): only a jump is cut	Mindestens die Sprunglänge ({value}): nur ein Sprung wird geschnitten

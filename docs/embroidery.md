@@ -244,6 +244,9 @@ tabs on OK, one undo step (`command.batch {label: "Document Setup"}`); Cancel ch
   says how many, for each value, and lets the fabric be applied to them for the values chosen, on
   OK in the same undo step (`embroidery.applyFabric {all, keys}`; the project owner's choice); it
   turns amber once a value of the fabric changed in the dialog.
+- **A value OK would refuse** (typed outside its range, or a cut length shorter than the jump
+  length, as only a jump is cut) is said under its field at once, with a warning mark and what it
+  may be, and screen readers hear it with the field; OK still refuses it.
 - **Room**: two columns where the window has room for the mockup's 970-point dialog (the fabric
   and the thread; the machine, the sewing order and the design), one column else, its two halves'
   fields lined up; the other tabs keep their 540 points. Either layout scrolls in the dialog's own

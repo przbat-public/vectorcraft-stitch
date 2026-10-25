@@ -578,3 +578,24 @@ fn a_short_window_keeps_ok_on_screen_and_the_rows_scroll() {
         assert!(clip.contains_rect(last) && last.bottom() <= SHORT, "{width}: the bar's last box scrolled into view: {last:?} in {clip:?}");
     }
 }
+
+/// A value typed outside its range, and a cut length shorter than the jump length, are marked under
+/// their field at once, with what they may be, and screen readers hear it with the field: before
+/// OK refuses them.
+#[test]
+fn a_value_ok_would_refuse_is_marked_at_once() {
+    let ctx = context();
+    let mut app = app();
+    open_tab(&mut app);
+    edit(&mut app, "tatami.pull", json!(99.0));
+    edit(&mut app, "machine.jumpLength", json!(8.0));
+    edit(&mut app, "machine.trimLength", json!(6.0));
+    let drawn = ready(&mut app, &ctx, WIDE);
+    let range = text::fill(crate::et!("From {min} to {max}"), &[("min", "0 mm"), ("max", "2 mm")]);
+    assert!(drawn.has(&range), "{range}: {:?}", drawn.words);
+    let trim = text::fill(crate::et!("At least the jump length ({value}): only a jump is cut"), &[("value", "8 mm")]);
+    assert!(drawn.has(&trim), "{trim}: {:?}", drawn.words);
+    let node = drawn.nodes.iter().map(|(_, n)| n).find(|n| n.label() == Some("Cut the thread from")).unwrap();
+    assert!(node.description().is_some_and(|d| d.starts_with(&trim)), "{:?}", node.description());
+    assert!(crate::dialogs::confirm(&mut app).is_err(), "OK still refuses them");
+}

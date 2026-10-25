@@ -572,7 +572,7 @@ fn key_row(p: &PartInfo, part: Part, key: &'static str, lang: Lang) -> Option<Ow
     if k.mixed {
         description = format!("{description}. {}", crate::et!("The selected objects differ."));
     }
-    Some(Owned { key, label, name: name_of(key, label), tip: vocabulary::tip(key), field, own, restore, aside, hint, description })
+    Some(Owned { key, label, name: name_of(key, label), tip: vocabulary::tip(key), field, own, restore, aside, hint, description, problem: None })
 }
 
 /// What screen readers call key `key`'s field: its label, its section's with it where two labels
@@ -705,6 +705,7 @@ fn point_row(p: &PartInfo, key: &'static str) -> Owned {
         aside,
         hint: None,
         description: description.to_string(),
+        problem: None,
     }
 }
 

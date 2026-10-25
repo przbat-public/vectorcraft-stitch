@@ -268,7 +268,9 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     if let Some(words) = fields::take_unreadable(ui) {
         app.status(words);
     }
-    for (cmd, params) in commands {
+    let selected = app.session.active().map(|st| st.selection.objects.clone()).unwrap_or_default();
+    for (cmd, mut params) in commands {
+        for_selection(&mut params, &ids, &selected);
         if let Err(e) = app.run(cmd, params) {
             app.status(e);
         }
@@ -746,6 +748,17 @@ fn edit_command(p: &PartInfo, part: Part, key: &str, edit: Edit, ids: &[NodeId])
             if inherited.and_then(Value::as_str) == Some(id.as_str()) { set(Value::Null) } else { set(json!(id)) }
         }
         Edit::Restore => Some(("embroidery.reset", json!({"ids": ids, "part": part.id(), "keys": [key]}))),
+    }
+}
+
+/// Command params for objects `ids` made the selection's when `ids` are the objects `selected`:
+/// their `ids` left out, as each of the tab's commands defaults to the selection, so that a
+/// selection larger than the commands' list of ids takes the edits too.
+fn for_selection(params: &mut Value, ids: &[NodeId], selected: &[NodeId]) {
+    if ids == selected
+        && let Some(o) = params.as_object_mut()
+    {
+        o.remove("ids");
     }
 }
 

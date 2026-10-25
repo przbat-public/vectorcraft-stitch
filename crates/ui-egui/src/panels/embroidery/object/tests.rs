@@ -717,3 +717,17 @@ fn the_inspected_tab_is_of_the_selection_as_it_is() {
     let r = app.run("ui.embroideryPanel", json!({"part": "stroke"})).unwrap();
     assert_eq!(r["part"], json!("fill"), "the red rectangle paints no stroke: the fill shown");
 }
+
+/// The tab's commands leave out `ids` when they are the selection (each defaults to it), so that a
+/// selection larger than the commands' list of ids (100,000) takes edits too; for objects other
+/// than the selection (it changed since the fields were drawn) they keep them.
+#[test]
+fn the_selection_goes_without_its_ids() {
+    let (a, b) = (vectorcraft_doc::NodeId(1), vectorcraft_doc::NodeId(2));
+    let mut p = json!({"ids": [1, 2], "part": "fill", "angle": 30});
+    for_selection(&mut p, &[a, b], &[a, b]);
+    assert_eq!(p, json!({"part": "fill", "angle": 30}));
+    let mut p = json!({"ids": [1, 2], "part": "fill"});
+    for_selection(&mut p, &[a, b], &[a]);
+    assert_eq!(p["ids"], json!([1, 2]), "not the selection: kept");
+}

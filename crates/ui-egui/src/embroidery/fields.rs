@@ -5,7 +5,9 @@
 //! - **Their numbers** write the interface language's decimal mark and read both marks (the
 //!   project owner's choice, 2026-10-23): a comma language writes "0,38 mm" and reads "0,38" and
 //!   "0.38"; a point language writes "0.38 mm" and reads the point alone, since "1,000" would
-//!   otherwise read as one. Every other field of the app keeps its point.
+//!   otherwise read as one; text that holds no number is said in the status bar ("Not a number:
+//!   0,35"). A whole-number field in a language that groups thousands with a point reads "1.000"
+//!   as a thousand; the minus sign reads as a hyphen. Every other field of the app keeps its point.
 //! - **Each unit steps in a size of its own** (↑/↓, the wheel, a drag on the field's label; Shift
 //!   ten steps, Ctrl/Cmd a tenth): a tenth of a millimetre, a degree, a percent, a thread weight,
 //!   ten stitches a minute. Upstream's stepping counts in whole numbers, so the field hands it its
@@ -63,6 +65,9 @@ pub(crate) struct NumberFormat<'a> {
     pub decimals: usize,
     /// The decimal mark written and read; a point is read too.
     pub mark: char,
+    /// The mark the language groups thousands with: a point reads as it in a whole-number field
+    /// ("1.000" is a thousand in German), else as a decimal mark.
+    pub group: char,
     /// How far a plain step goes, as a power of ten ([`MM_STEP`], [`UNIT_STEP`], [`SPEED_STEP`]).
     pub step: i32,
 }
@@ -88,6 +93,9 @@ impl NumberFormat<'_> {
         for unit in [self.unit, self.latin].into_iter().filter(|u| !u.is_empty()) {
             bare = bare.replace(unit, "");
         }
+        // The minus sign (CLDR's for Swedish and Finnish) and an en dash read as a hyphen.
+        let bare = bare.replace(['\u{2212}', '\u{2013}'], "-");
+        let bare = if self.decimals == 0 && self.group == '.' && grouped(&bare) { bare.replace('.', "") } else { bare };
         let bare = if self.mark == '.' { bare } else { bare.replace(self.mark, ".") };
         vectorcraft_doc::parse_number(&bare.replace(['%', '°'], "").replace(['\u{a0}', '\u{202f}'], " "))
     }
@@ -97,6 +105,32 @@ impl NumberFormat<'_> {
         10f64.powi(self.step)
     }
 }
+
+/// Whether `text` is a whole number grouped in thousands by points ("1.000", "-12.500").
+fn grouped(text: &str) -> bool {
+    let t = text.trim();
+    let t = t.strip_prefix('-').unwrap_or(t);
+    let mut groups = t.split('.');
+    let first = groups.next().unwrap_or_default();
+    let rest: Vec<&str> = groups.collect();
+    let digits = |g: &str| g.chars().all(|c| c.is_ascii_digit());
+    (1..=3).contains(&first.len()) && digits(first) && !rest.is_empty() && rest.iter().all(|g| g.len() == 3 && digits(g))
+}
+
+/// Under egui's memory: the words for the status bar when a field's typed text held no number
+/// ([`take_unreadable`]).
+fn unreadable_id() -> egui::Id {
+    egui::Id::new("embroidery-field-unreadable")
+}
+
+/// The words a field left this frame for the status bar, when its typed text held no number: the
+/// tab drawing it says them (`app.status`), so that the field doesn't go back silently.
+pub(crate) fn take_unreadable(ui: &Ui) -> Option<String> {
+    ui.data_mut(|d| d.remove_temp::<String>(unreadable_id()))
+}
+
+/// The most characters of typed text the status bar repeats. An estimate.
+const MAX_REPEATED: usize = 32;
 
 /// The format of an embroidery field in `unit` (the engine's: `mm`, `°`, `wt`, `/min`, `%`) to
 /// `decimals` places, as `lang` writes numbers and the unit.
@@ -110,7 +144,8 @@ pub(crate) fn format(lang: Lang, unit: &str, decimals: usize) -> NumberFormat<'s
         _ => ("", "", UNIT_STEP),
     };
     let unit = if latin.is_empty() { latin } else { unit_word(lang, latin) };
-    NumberFormat { unit, space, latin, decimals, mark: numbers::symbols(lang).decimal, step }
+    let symbols = numbers::symbols(lang);
+    NumberFormat { unit, space, latin, decimals, mark: symbols.decimal, group: symbols.group, step }
 }
 
 /// Unit `latin` as `lang` writes it after a number: its catalogue row in the embroidery context,
@@ -195,7 +230,17 @@ pub(crate) fn number_field(
     let stepped = widgets::step_value(ui, &resp, &mut buf, &steps_bounds, read, show).map(|n| widgets::round_to(n * size, decimals));
     let scrubbed = crate::scrub::field(ui, id, rect, &buf, value.map(in_steps), (decimals + format.step).max(0), &steps_bounds)
         .map(|n| widgets::round_to(n * size, decimals));
-    if commit && buf != shown { format.read(&buf) } else { stepped.or(scrubbed).filter(|&v| Some(v) != value) }
+    if commit && buf != shown {
+        let read = format.read(&buf);
+        if read.is_none() && !buf.trim().is_empty() {
+            let text: String = buf.chars().take(MAX_REPEATED).collect();
+            let words = crate::embroidery::text::fill(crate::et!("Not a number: {text}"), &[("text", &text)]);
+            ui.data_mut(|d| d.insert_temp(unreadable_id(), words));
+        }
+        read
+    } else {
+        stepped.or(scrubbed).filter(|&v| Some(v) != value)
+    }
 }
 
 /// The look over a field drawn by upstream's `recessed_text` (its text edit's response `resp`, its
@@ -298,6 +343,18 @@ mod tests {
         assert_eq!(format(lang("uk"), "/min", 0).show(650.0), "650 /хв");
         assert_eq!(format(lang("ka"), "mm", 1).show(2.5), "2,5 მმ");
         assert_eq!(format(Lang::EN, "wt", 0).show(40.0), "40 wt");
+    }
+
+    /// A whole-number field in a language that groups thousands with a point reads "1.000" as a
+    /// thousand; a field with decimals still reads the point as a decimal mark; the minus sign and
+    /// an en dash read as a hyphen.
+    #[test]
+    fn grouped_thousands_and_minus_signs_read_as_written() {
+        let de = |unit, decimals| format(lang("de"), unit, decimals);
+        assert_eq!((de("/min", 0).read("1.000"), de("/min", 0).read("1.200 /min")), (Some(1000.0), Some(1200.0)));
+        assert_eq!(de("mm", 2).read("1.000"), Some(1.0));
+        assert_eq!(format(Lang::EN, "/min", 0).read("1.000"), Some(1.0), "a point language's point is its decimal mark");
+        assert_eq!((format(lang("sv"), "mm", 2).read("\u{2212}1,5"), format(Lang::EN, "mm", 2).read("\u{2013}2")), (Some(-1.5), Some(-2.0)));
     }
 
     /// A number that isn't finite is written as nothing, never "inf" or "NaN".

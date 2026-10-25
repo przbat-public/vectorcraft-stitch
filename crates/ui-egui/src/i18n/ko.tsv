@@ -5569,3 +5569,5 @@ embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm
 embroidery	mm	mm
 embroidery	wt	wt
 embroidery	/min	/분
+# Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
+embroidery	Not a number: {text}	숫자가 아닙니다: {text}

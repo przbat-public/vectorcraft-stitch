@@ -610,3 +610,30 @@ fn a_settings_help_shows_on_the_keyboards_focus() {
     }
     assert!(shown, "the help as its tooltip");
 }
+
+/// Text a field can't read as a number (a comma in a point language: "1,000" would read as one)
+/// isn't taken, and the status bar says so instead of the field going back silently.
+#[test]
+fn a_typed_text_that_is_no_number_is_said() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let at = drawn.words.iter().find(|(w, _)| w == "Pull compensation").map(|(_, r)| r.center()).unwrap();
+    let field = at + vec2(130.0, 0.0);
+    let steps_before = steps(&app);
+    let click = |pressed| Event::PointerButton { pos: field, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    for events in [
+        vec![Event::PointerMoved(field), click(true)],
+        vec![click(false)],
+        vec![Event::Text("0,35".into())],
+        vec![Event::Key { key: Key::Enter, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE }],
+    ] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, events);
+    }
+    assert_eq!(steps(&app), steps_before, "nothing taken");
+    let words = text::fill(crate::et!("Not a number: {text}"), &[("text", "0,35")]);
+    assert!(app.ui.status.contains(&words), "{:?}", app.ui.status);
+}

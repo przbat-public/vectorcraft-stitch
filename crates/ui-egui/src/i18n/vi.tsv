@@ -5586,3 +5586,5 @@ embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm
 embroidery	mm	mm
 embroidery	wt	wt
 embroidery	/min	/phút
+# Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
+embroidery	Not a number: {text}	Không phải số: {text}

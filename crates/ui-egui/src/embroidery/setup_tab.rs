@@ -623,6 +623,9 @@ pub(crate) fn body(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) -> boo
             apply(&mut d.fields, o, &key, value);
         }
     }
+    if let Some(words) = fields::take_unreadable(ui) {
+        app.status(words);
+    }
     false
 }
 

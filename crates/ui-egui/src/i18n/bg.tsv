@@ -5930,3 +5930,5 @@ embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm
 embroidery	mm	мм
 embroidery	wt	wt
 embroidery	/min	/мин
+# Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
+embroidery	Not a number: {text}	Не е число: {text}

@@ -256,6 +256,9 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         }
     }
     footer(ui, &info, &footer_words, &buttons, &ids, &mut commands);
+    if let Some(words) = fields::take_unreadable(ui) {
+        app.status(words);
+    }
     for (cmd, params) in commands {
         if let Err(e) = app.run(cmd, params) {
             app.status(e);

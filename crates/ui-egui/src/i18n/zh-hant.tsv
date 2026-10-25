@@ -5625,3 +5625,5 @@ embroidery	X {x} · Y {y} mm	X {x} · Y {y} 公釐
 embroidery	mm	mm
 embroidery	wt	wt
 embroidery	/min	/分鐘
+# Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
+embroidery	Not a number: {text}	不是數字：{text}

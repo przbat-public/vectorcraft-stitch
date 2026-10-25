@@ -1121,7 +1121,7 @@ fn bar(ui: &mut Ui, d: &Dialog, o: &Opened, edits: &mut Vec<Change>) {
             if n == 0 {
                 continue;
             }
-            let setting = vocabulary::label(key, Some("tatami"));
+            let setting = vocabulary::override_label(key);
             let objects = crate::etn!(n as u64, "{count} object", "{count} objects");
             let words = text::fill(crate::et!("{setting}: {objects}"), &[("setting", setting), ("objects", &objects)]);
             let on = chosen.iter().any(|k| k == key);

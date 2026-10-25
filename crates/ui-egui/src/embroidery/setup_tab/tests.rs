@@ -277,10 +277,18 @@ fn the_bar_counts_objects_and_applies_the_fabric_on_ok() {
     let (a, b) = (rect(&mut app, 20.0), rect(&mut app, 100.0));
     app.run("embroidery.set", json!({"ids": [a, b], "part": "fill", "pull": 0.3})).unwrap();
     app.run("embroidery.set", json!({"ids": [a], "part": "fill", "length": 3})).unwrap();
+    app.run("embroidery.set", json!({"ids": [b], "part": "fill", "underlay": "none", "spacing": 0.5})).unwrap();
     let before = steps(&app);
     open_tab(&mut app);
     let drawn = ready(&mut app, &ctx, WIDE);
     assert!(drawn.has("2 objects set their own values for the fabric."), "{:?}", drawn.words);
+    // Each value by its own name: the underlay never as the stitch's "Type"; the spacing counts a
+    // satin's too.
+    for (key, objects) in [("underlay", "1 object"), ("spacing", "1 object"), ("length", "1 object")] {
+        let words = text::fill(crate::et!("{setting}: {objects}"), &[("setting", vocabulary::override_label(key)), ("objects", objects)]);
+        assert!(drawn.words.iter().any(|(w, _)| *w == words), "{words}: {:?}", drawn.words);
+    }
+    assert_eq!((vocabulary::override_label("underlay"), vocabulary::override_label("spacing")), ("Underlay", "Spacing"));
     let pull = text::fill(crate::et!("{setting}: {objects}"), &[("setting", vocabulary::label("pull", None)), ("objects", "2 objects")]);
     assert!(drawn.has(&pull), "{pull}: {:?}", drawn.words);
     frame(&mut app, &ctx, WIDE, vec![drawn.click(&pull)]);
@@ -289,7 +297,10 @@ fn the_bar_counts_objects_and_applies_the_fabric_on_ok() {
     edit(&mut app, "fabric", json!("denim"));
     crate::dialogs::confirm(&mut app).unwrap();
     let s = settings(&mut app);
-    assert_eq!((s["overrides"]["pull"].clone(), s["overrides"]["length"].clone()), (json!(0), json!(1)));
+    assert_eq!(
+        (s["overrides"]["pull"].clone(), s["overrides"]["length"].clone(), s["overrides"]["underlay"].clone()),
+        (json!(0), json!(1), json!(1))
+    );
     assert_eq!(steps(&app), before + 1);
 }
 

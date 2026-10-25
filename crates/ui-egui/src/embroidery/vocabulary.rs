@@ -25,6 +25,16 @@ pub fn label(key: &str, sewn: Option<&str>) -> &'static str {
     }
 }
 
+/// A fabric value objects set themselves, as Document Setup's bar counts them by `overrides`' keys:
+/// a fill's or a stroke's, so by its plain name ("Spacing" counts a fill's rows' and a satin's;
+/// "Underlay", never the stitch's "Type").
+pub fn override_label(key: &str) -> &'static str {
+    match key {
+        "underlay" => crate::et!("Underlay"),
+        other => label(other, None),
+    }
+}
+
 /// What a part setting does, as its tooltip says it.
 pub fn tip(key: &str) -> &'static str {
     match key {

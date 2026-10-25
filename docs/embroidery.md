@@ -245,8 +245,10 @@ tabs on OK, one undo step (`command.batch {label: "Document Setup"}`); Cancel ch
   OK in the same undo step (`embroidery.applyFabric {all, keys}`; the project owner's choice); it
   turns amber once a value of the fabric changed in the dialog.
 - **Room**: two columns where the window has room for the mockup's 970-point dialog (the fabric
-  and the thread; the machine, the sewing order and the design), one scrolling column else; the
-  other tabs keep their 540 points.
+  and the thread; the machine, the sewing order and the design), one column else, its two halves'
+  fields lined up; the other tabs keep their 540 points. Either layout scrolls in the dialog's own
+  way where the window is too short for it (a 15-inch laptop at 150 %, 1280 × 650 points of
+  room), the dialog's heading, tabs and buttons kept in view.
 - **Agents** set the tab's fields with `ui.dialog.set`, flat and named by `embroidery.setup`'s
   paths (`embroidery.fabric` the fabric chosen, `embroidery.fabric.tatami.pull`,
   `embroidery.fabric.satin.spacingPercent`, `embroidery.fabric.stabilizer`,

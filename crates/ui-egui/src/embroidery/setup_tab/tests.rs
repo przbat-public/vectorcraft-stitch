@@ -44,9 +44,11 @@ fn context() -> egui::Context {
     ctx
 }
 
-/// What a frame drew: its words with their boxes, and the screen readers' nodes with their ids.
+/// What a frame drew: its words with their boxes (and the boxes they are clipped to), and the
+/// screen readers' nodes with their ids.
 struct Drawn {
     words: Vec<(String, Rect)>,
+    clips: Vec<Rect>,
     nodes: Vec<(egui::accesskit::NodeId, egui::accesskit::Node)>,
 }
 
@@ -79,20 +81,28 @@ impl Drawn {
 
 /// One frame of the dialog in a window `width` points wide, with `events`.
 fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32, events: Vec<Event>) -> Drawn {
-    let raw = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(width, HEIGHT))), events, ..Default::default() };
+    frame_in(app, ctx, vec2(width, HEIGHT), events)
+}
+
+/// One frame of the dialog in a window of `size` points, with `events`.
+fn frame_in(app: &mut VectorcraftApp, ctx: &egui::Context, size: egui::Vec2, events: Vec<Event>) -> Drawn {
+    let raw = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, size)), events, ..Default::default() };
     let mut out = ctx.run_ui(raw, |ui| crate::dialogs::show(app, ui.ctx()));
     out.textures_delta.clear();
-    let mut words = vec![];
-    let mut pending: Vec<egui::Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
-    while let Some(s) = pending.pop() {
+    let (mut words, mut clips) = (vec![], vec![]);
+    let mut pending: Vec<(Rect, egui::Shape)> = out.shapes.into_iter().map(|c| (c.clip_rect, c.shape)).collect();
+    while let Some((clip, s)) = pending.pop() {
         match s {
-            egui::Shape::Vec(v) => pending.extend(v),
-            egui::Shape::Text(t) => words.push((t.galley.text().to_string(), t.visual_bounding_rect())),
+            egui::Shape::Vec(v) => pending.extend(v.into_iter().map(|s| (clip, s))),
+            egui::Shape::Text(t) => {
+                words.push((t.galley.text().to_string(), t.visual_bounding_rect()));
+                clips.push(clip);
+            }
             _ => {}
         }
     }
     let nodes = out.platform_output.accesskit_update.map(|u| u.nodes).unwrap_or_default();
-    Drawn { words, nodes }
+    Drawn { words, clips, nodes }
 }
 
 /// Frames until the dialog has settled (its size, the fonts) → the last.
@@ -530,4 +540,41 @@ fn custom_stays_in_the_menu_and_puts_its_values_back() {
     assert_eq!(dialog(&mut app).fields[&field("tatami.pull")], json!(0.3));
     crate::dialogs::confirm(&mut app).unwrap();
     assert_eq!(settings(&mut app), before, "as it was");
+}
+
+/// In a short window (a 15-inch laptop's at 150 %, 1280 × 650 points), both layouts keep the
+/// dialog's OK on the screen, and their rows scroll: the bar's last box can be brought into view.
+#[test]
+fn a_short_window_keeps_ok_on_screen_and_the_rows_scroll() {
+    const SHORT: f32 = 650.0;
+    for width in [1280.0, NARROW] {
+        let ctx = context();
+        let mut app = app();
+        let (a, b) = (rect(&mut app, 20.0), rect(&mut app, 100.0));
+        app.run("embroidery.set", json!({"ids": [a, b], "part": "fill", "pull": 0.3, "spacing": 0.5, "length": 3})).unwrap();
+        open_tab(&mut app);
+        let size = vec2(width, SHORT);
+        for _ in 0..4 {
+            frame_in(&mut app, &ctx, size, vec![]);
+        }
+        let drawn = frame_in(&mut app, &ctx, size, vec![]);
+        let ok = drawn.at("OK");
+        assert!(ok.bottom() <= SHORT, "{width}: OK on the screen: {ok:?}");
+        let middle = Pos2::new(width / 2.0, SHORT / 2.0);
+        let wheel = Event::MouseWheel {
+            unit: egui::MouseWheelUnit::Point,
+            delta: vec2(0.0, -400.0),
+            phase: egui::TouchPhase::Move,
+            modifiers: Default::default(),
+        };
+        frame_in(&mut app, &ctx, size, vec![Event::PointerMoved(middle)]);
+        for _ in 0..10 {
+            frame_in(&mut app, &ctx, size, vec![wheel.clone()]);
+        }
+        let drawn = frame_in(&mut app, &ctx, size, vec![]);
+        let boxes: Vec<(Rect, Rect)> =
+            drawn.words.iter().zip(&drawn.clips).filter(|((w, _), _)| w.ends_with(": 2 objects")).map(|((_, r), c)| (*r, *c)).collect();
+        let (last, clip) = boxes.iter().max_by(|a, b| a.0.top().total_cmp(&b.0.top())).copied().expect("the bar's boxes");
+        assert!(clip.contains_rect(last) && last.bottom() <= SHORT, "{width}: the bar's last box scrolled into view: {last:?} in {clip:?}");
+    }
 }

@@ -27,8 +27,9 @@
 //!   choice to apply the fabric to them too, on OK in the same undo step (the owner's choice); amber
 //!   once a value of the fabric changed here.
 //! - **Room**: two columns where the window has room for the mockup's dialog (the fabric and the
-//!   thread; the machine, the sewing order and the design), one scrolling column else; the other
-//!   tabs keep their 540 points.
+//!   thread; the machine, the sewing order and the design), one column else, its two halves'
+//!   fields lined up; the other tabs keep their 540 points. Either scrolls in the dialog's own way
+//!   (`dialogs::modal::scrolled_rows`) where the window is too short, its buttons in view.
 //! - **OK** runs one `command.batch {label: "Document Setup"}`: `document.setup` with the other
 //!   tabs' fields, `embroidery.setup` with what changed here, then `embroidery.applyFabric {all,
 //!   keys}` when chosen; only `document.setup` when nothing here changed.
@@ -75,8 +76,9 @@ const LABEL: &str = "label";
 const OVERRIDES: [&str; 4] = ["pull", "spacing", "length", "underlay"];
 const APPLY: &str = "applyFabricTo";
 
-/// The dialog's width with two columns, points: the mockup's dialog, about 970 points (an estimate
-/// from the drawing). The window must have that much room.
+/// The tab's width with two columns, points: about the mockup's dialog, 970 points (an estimate
+/// from the drawing); the dialog's frame adds its margins. The window must have that much room
+/// beside them ([`DIALOG_EDGES`]).
 const TWO_COLUMNS: f32 = 970.0;
 /// The one column's width, points: upstream's Document Setup width, its other tabs'.
 const ONE_COLUMN: f32 = 540.0;
@@ -85,9 +87,6 @@ const COLUMN_GAP: f32 = 24.0;
 /// What the window keeps around a dialog, points: the dialog frame's margin and its gap to the
 /// window's edge, on both sides (upstream's `dialogs::MARGIN`, 22, and `EDGE_GAP`, 8).
 const DIALOG_EDGES: f32 = 60.0;
-/// The share of the window's height the one column takes before it scrolls. An estimate: the rest
-/// is the dialog's heading, tabs and buttons.
-const SCROLL_SHARE: f32 = 0.6;
 /// The fabric choice's field, points: the presets' names are longer than a value's field.
 const FABRIC_FIELD: f32 = 220.0;
 /// The bar's padding, corners and the room between its lines, points.
@@ -577,7 +576,8 @@ fn fabric_changed(d: &Dialog, o: &Opened) -> bool {
 /// An edit of the tab: a field's new value.
 type Change = (String, Value);
 
-/// The tab's body: its rows in one or two columns, then the bar.
+/// The tab's body: its rows in one or two columns, then the bar, scrolling in the dialog's own way
+/// where the window is too short for them (its heading, tabs and buttons stay in view).
 pub(crate) fn body(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) -> bool {
     let Some(o) = opened_mut(app) else {
         ui.label(crate::et!("No document"));
@@ -591,30 +591,33 @@ pub(crate) fn body(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) -> boo
     ui.set_min_width(width);
     ui.set_max_width(width);
     let mut edits: Vec<Change> = Vec::new();
-    if two {
-        // The layout puts its item spacing on both sides of the gap too.
-        let column = (width - COLUMN_GAP - 2.0 * ui.spacing().item_spacing.x) / 2.0;
-        ui.horizontal_top(|ui| {
-            ui.vertical(|ui| {
-                ui.set_width(column);
-                left(ui, d, o, column, lang, &mut edits);
+    let (l, r) = (left_rows(d, o, lang), right_rows(d, o, lang));
+    crate::dialogs::modal::scrolled_rows(ui, "embroidery-setup", |ui| {
+        ui.set_max_width(width);
+        if two {
+            // The layout puts its item spacing on both sides of the gap too.
+            let column = (width - COLUMN_GAP - 2.0 * ui.spacing().item_spacing.x) / 2.0;
+            let (lc, rc) = (Columns::fit(ui, column, &l.rows(lang)), Columns::fit(ui, column, &r.rows(lang)));
+            ui.horizontal_top(|ui| {
+                ui.vertical(|ui| {
+                    ui.set_width(column);
+                    left(ui, d, o, &l, lc, column, lang, &mut edits);
+                });
+                ui.add_space(COLUMN_GAP);
+                ui.vertical(|ui| {
+                    ui.set_width(column);
+                    right(ui, d, o, &r, rc, lang, &mut edits);
+                });
             });
-            ui.add_space(COLUMN_GAP);
-            ui.vertical(|ui| {
-                ui.set_width(column);
-                right(ui, d, o, column, lang, &mut edits);
-            });
-        });
+        } else {
+            // One column: both halves' fields line up.
+            let all: Vec<Row<'_>> = l.rows(lang).into_iter().chain(r.rows(lang)).collect();
+            let cols = Columns::fit(ui, width, &all);
+            left(ui, d, o, &l, cols, width, lang, &mut edits);
+            right(ui, d, o, &r, cols, lang, &mut edits);
+        }
         bar(ui, d, o, &mut edits);
-    } else {
-        let max = ui.ctx().content_rect().height() * SCROLL_SHARE;
-        egui::ScrollArea::vertical().id_salt("embroidery-setup").max_height(max).auto_shrink([false, true]).show(ui, |ui| {
-            ui.set_max_width(width);
-            left(ui, d, o, width, lang, &mut edits);
-            right(ui, d, o, width, lang, &mut edits);
-            bar(ui, d, o, &mut edits);
-        });
-    }
+    });
     if let Some(o) = opened_mut(app) {
         for (key, value) in edits {
             apply(&mut d.fields, o, &key, value);
@@ -682,11 +685,46 @@ fn fabric_values(fields: &Map<String, Value>) -> Map<String, Value> {
     FABRIC_VALUES.iter().map(|k| (k.to_string(), fields.get(&field(k)).cloned().unwrap_or(Value::Null))).collect()
 }
 
-/// The left column (or the first part of one): the fabric and the thread.
-fn left(ui: &mut Ui, d: &Dialog, o: &Opened, width: f32, lang: Lang, edits: &mut Vec<Change>) {
-    let now = |key: &str| d.fields.get(&field(key)).cloned().unwrap_or(Value::Null);
-    let choice = now("fabric").as_str().unwrap_or(BUILT_IN).to_string();
-    let fabric_rows: Vec<(Option<&'static str>, Owned)> = FABRIC_VALUES
+/// The left column's rows (or the first part of one's): the fabric's choice, its values with the
+/// headings over them, the thread's weight and palette.
+struct Left {
+    choice: String,
+    choice_row: Owned,
+    fabric: Vec<(Option<&'static str>, Owned)>,
+    weight: Owned,
+    palette: Owned,
+}
+
+impl Left {
+    /// The rows to fit the columns to.
+    fn rows(&self, lang: Lang) -> Vec<Row<'_>> {
+        self.fabric.iter().map(|(_, r)| r).chain([&self.weight, &self.palette, &self.choice_row]).map(|r| r.row(lang)).collect()
+    }
+}
+
+/// The right column's rows (or the rest of one's): the machine, and the design's start and name
+/// when the document has them.
+struct Right {
+    machine: Vec<Owned>,
+    design: Vec<Owned>,
+}
+
+impl Right {
+    /// The rows to fit the columns to.
+    fn rows(&self, lang: Lang) -> Vec<Row<'_>> {
+        self.machine.iter().chain(&self.design).map(|r| r.row(lang)).collect()
+    }
+}
+
+/// The value of field `key` in dialog `d`.
+fn now(d: &Dialog, key: &str) -> Value {
+    d.fields.get(&field(key)).cloned().unwrap_or(Value::Null)
+}
+
+/// The left column's rows for dialog `d`.
+fn left_rows(d: &Dialog, o: &Opened, lang: Lang) -> Left {
+    let choice = now(d, "fabric").as_str().unwrap_or(BUILT_IN).to_string();
+    let fabric = FABRIC_VALUES
         .iter()
         .map(|key| {
             let heading = match *key {
@@ -694,65 +732,71 @@ fn left(ui: &mut Ui, d: &Dialog, o: &Opened, width: f32, lang: Lang, edits: &mut
                 "satin.pull" => Some(crate::et!("Satin")),
                 _ => None,
             };
-            (heading, fabric_row(o, &choice, key, &now(key), lang))
+            (heading, fabric_row(o, &choice, key, &now(d, key), lang))
         })
         .collect();
-    let weight = number_row(o, THREAD_WEIGHT, &now(THREAD_WEIGHT), lang);
-    let palette = number_row(o, PALETTE, &now(PALETTE), lang);
+    let weight = number_row(o, THREAD_WEIGHT, &now(d, THREAD_WEIGHT), lang);
+    let palette = number_row(o, PALETTE, &now(d, PALETTE), lang);
     let choice_row = fabric_choice(o, &choice);
-    let all: Vec<Row<'_>> = fabric_rows.iter().map(|(_, r)| r).chain([&weight, &palette, &choice_row]).map(|r| r.row(lang)).collect();
-    let cols = Columns::fit(ui, width, &all);
-    if let Some(edit) = rows::show(ui, &cols.wide(FABRIC_FIELD, width), &choice_row.row(lang)) {
-        edits.push(edit_of("fabric", edit, o, &choice));
+    Left { choice, choice_row, fabric, weight, palette }
+}
+
+/// The right column's rows for dialog `d`.
+fn right_rows(d: &Dialog, o: &Opened, lang: Lang) -> Right {
+    let machine = MACHINE.iter().map(|key| number_row(o, key, &now(d, key), lang)).collect();
+    let design = [START, LABEL].into_iter().filter(|k| !o.was(k).is_null()).map(|k| design_row(k, &now(d, k), lang)).collect();
+    Right { machine, design }
+}
+
+/// The left column (or the first part of one), `width` points wide: the fabric and the thread.
+#[allow(clippy::too_many_arguments)]
+fn left(ui: &mut Ui, d: &Dialog, o: &Opened, l: &Left, cols: Columns, width: f32, lang: Lang, edits: &mut Vec<Change>) {
+    let choice = l.choice.as_str();
+    if let Some(edit) = rows::show(ui, &cols.wide(FABRIC_FIELD, width), &l.choice_row.row(lang)) {
+        edits.push(edit_of("fabric", edit, o, choice));
     }
     note(ui, crate::et!("The values objects use where they set none of their own."));
-    for (heading, row) in &fabric_rows {
+    for (heading, row) in &l.fabric {
         if let Some(h) = heading {
             rows::heading(ui, h);
         }
         if let Some(edit) = rows::show(ui, &cols, &row.row(lang)) {
-            edits.push(edit_of(row.key, edit, o, &choice));
+            edits.push(edit_of(row.key, edit, o, choice));
         }
     }
     rows::heading(ui, crate::et!("Thread"));
-    if let Some(edit) = rows::show(ui, &cols, &weight.row(lang)) {
-        edits.push(edit_of(THREAD_WEIGHT, edit, o, &choice));
+    if let Some(edit) = rows::show(ui, &cols, &l.weight.row(lang)) {
+        edits.push(edit_of(THREAD_WEIGHT, edit, o, choice));
     }
-    let spacing = now("tatami.spacing").as_f64().zip(now(THREAD_WEIGHT).as_f64()).map(|(s, w)| setup::spacing_for_thread(s, w));
-    if let Some(s) = spacing {
-        let value = fields::format(lang, "mm", WORDS_DECIMALS).show(s);
+    let spacing = now(d, "tatami.spacing").as_f64().zip(now(d, THREAD_WEIGHT).as_f64()).map(|(s, w)| setup::spacing_for_thread(s, w));
+    if let Some(value) = spacing.map(|s| fields::format(lang, "mm", WORDS_DECIMALS).show(s)).filter(|v| !v.is_empty()) {
         note(ui, &text::fill(crate::et!("Rows' spacing for this thread: {value}"), &[("value", &value)]));
     }
-    if let Some(edit) = rows::show(ui, &cols, &palette.row(lang)) {
-        edits.push(edit_of(PALETTE, edit, o, &choice));
+    if let Some(edit) = rows::show(ui, &cols, &l.palette.row(lang)) {
+        edits.push(edit_of(PALETTE, edit, o, choice));
     }
 }
 
 /// The right column (or the rest of one): the machine, the sewing order, and the design's start and
 /// name when the document has them.
-fn right(ui: &mut Ui, d: &Dialog, o: &Opened, width: f32, lang: Lang, edits: &mut Vec<Change>) {
-    let now = |key: &str| d.fields.get(&field(key)).cloned().unwrap_or(Value::Null);
-    let machine: Vec<Owned> = MACHINE.iter().map(|key| number_row(o, key, &now(key), lang)).collect();
-    let design: Vec<Owned> = [START, LABEL].into_iter().filter(|k| !o.was(k).is_null()).map(|k| design_row(k, &now(k), lang)).collect();
-    let all: Vec<Row<'_>> = machine.iter().chain(&design).map(|r| r.row(lang)).collect();
-    let cols = Columns::fit(ui, width, &all);
+fn right(ui: &mut Ui, d: &Dialog, o: &Opened, r: &Right, cols: Columns, lang: Lang, edits: &mut Vec<Change>) {
     rows::heading(ui, crate::et!("Machine and file"));
-    for row in &machine {
+    for row in &r.machine {
         if let Some(edit) = rows::show(ui, &cols, &row.row(lang)) {
             edits.push(edit_of(row.key, edit, o, ""));
         }
     }
     rows::heading(ui, crate::et!("Sewing order"));
-    let join = now(JOIN).as_bool();
+    let join = now(d, JOIN).as_bool();
     let check = ui.scope(|ui| rows::check(ui, crate::et!("Join one thread's objects when nothing lies between them"), join));
     if check.inner {
         edits.push((JOIN.into(), json!(join != Some(true))));
     }
     check.response.on_hover_text(vocabulary::setup_tip(JOIN));
     note(ui, crate::et!("Fewer thread changes and cuts: what lies above is sewn later anyway."));
-    if !design.is_empty() {
+    if !r.design.is_empty() {
         rows::heading(ui, crate::et!("Design"));
-        for row in &design {
+        for row in &r.design {
             if rows::show(ui, &cols, &row.row(lang)) == Some(Edit::Restore) {
                 edits.push((row.key.into(), Value::Null));
             }

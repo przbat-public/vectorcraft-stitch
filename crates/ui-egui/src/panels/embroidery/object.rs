@@ -22,7 +22,7 @@
 
 use std::sync::{Arc, Weak};
 
-use egui::{Align2, Color32, CornerRadius, FontId, Rect, Sense, Ui, vec2};
+use egui::{Color32, CornerRadius, FontId, Sense, Ui, vec2};
 use serde::Serialize;
 use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId, NodeKind};
@@ -387,16 +387,9 @@ fn takes_none(ui: &mut Ui, info: &ObjectSettings) {
     }
 }
 
-/// The part switch: the selection's fill and stroke, a part none of them paints dimmed → the part
-/// chosen this frame. Each segment as wide as its words, the room shared out, as the tab strip's
-/// (`super::strip_widths`); words their segment can't hold are elided, whole in their tooltip and for
-/// screen readers.
+/// The part switch: the selection's fill and stroke as the panel's [`super::segments`], a part
+/// none of them paints greyed ("Stroke: none") → the part chosen this frame.
 fn part_switch(ui: &mut Ui, info: &ObjectSettings, shown: Option<Part>) -> Option<Part> {
-    let t = Tokens::get(ui.ctx());
-    let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), SWITCH_HEIGHT), Sense::hover());
-    let radius = CornerRadius::same(t.radius);
-    ui.painter().rect(rect, radius, t.input, egui::Stroke::new(1.0, t.input_border), egui::StrokeKind::Inside);
-    let font = FontId::proportional(SWITCH_TEXT);
     let labels = Part::ALL.map(|part| {
         let has = part.painted(info) || shown == Some(part);
         let label = match (part, has) {
@@ -407,48 +400,16 @@ fn part_switch(ui: &mut Ui, info: &ObjectSettings, shown: Option<Part>) -> Optio
         };
         (part, has, label)
     });
-    let natural: Vec<f32> = labels.iter().map(|(.., l)| text_width(ui, l, SWITCH_TEXT) + 2.0 * super::TAB_PAD).collect();
-    let selected = Part::ALL.iter().position(|p| shown == Some(*p)).unwrap_or(0);
-    let mut chosen = None;
-    let mut left = rect.left();
-    for (i, width) in super::strip_widths(&natural, selected, rect.width()) {
-        let Some(&(part, has, label)) = labels.get(i) else { continue };
-        let segment = Rect::from_min_size(egui::pos2(left, rect.top()), vec2(width, SWITCH_HEIGHT));
-        left += width;
-        let selected = shown == Some(part);
-        let id = ui.id().with(("embroidery-part", part.id()));
-        let resp = ui.add_enabled_ui(has, |ui| {
-            craft_ui::tabs::Tab::new(id, label, selected).show_at(ui, segment, |ui, resp| {
-                let fill = if selected {
-                    t.button
-                } else if resp.hovered() {
-                    t.hover
-                } else {
-                    Color32::TRANSPARENT
-                };
-                ui.painter().rect_filled(segment.shrink(super::SEGMENT_INSET), radius, fill);
-                let colour = match (selected, has) {
-                    (true, _) => t.text_strong,
-                    // Read by 4.5:1 on the switch's ground.
-                    (false, true) => crate::embroidery::marks::readable_text(t.text_dim, &[t.input], t.dark),
-                    (false, false) => t.text_disabled,
-                };
-                let room = (segment.width() - 2.0 * super::SEGMENT_INSET).max(1.0);
-                let galley = egui::WidgetText::from(egui::RichText::new(label).font(font.clone()).color(colour)).into_galley(
-                    ui,
-                    Some(egui::TextWrapMode::Truncate),
-                    room,
-                    egui::TextStyle::Body,
-                );
-                ui.painter().galley(Align2::CENTER_CENTER.align_size_within_rect(galley.size(), segment).min, galley, colour);
-            })
-        });
-        let elided = natural.get(i).is_some_and(|n| *n > width + 0.5);
-        let resp = if elided { resp.inner.on_hover_text(label) } else { resp.inner };
-        if resp.clicked() && has {
-            chosen = Some(part);
-        }
-    }
+    let items: Vec<super::Segment<'_>> = labels
+        .iter()
+        .map(|(part, has, label)| super::Segment {
+            id: ui.id().with(("embroidery-part", part.id())),
+            label,
+            selected: shown == Some(*part),
+            enabled: *has,
+        })
+        .collect();
+    let chosen = super::segments(ui, SWITCH_HEIGHT, SWITCH_TEXT, &items).and_then(|i| labels.get(i)).map(|(part, ..)| *part);
     ui.add_space(GAP);
     chosen
 }

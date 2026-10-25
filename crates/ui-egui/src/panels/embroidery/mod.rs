@@ -535,50 +535,88 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     }
 }
 
-/// The tab strip: a segment per tab, accessible as tabs, each as wide as its name and the strip's
-/// room shared out ([`strip_widths`]); a name its segment can't hold is elided, whole in its
-/// tooltip and for screen readers.
+/// The tab strip: the panel's tabs as [`segments`].
 fn strip(app: &mut VectorcraftApp, ui: &mut Ui) {
+    let items: Vec<Segment<'_>> = Tab::ALL
+        .iter()
+        .map(|tab| Segment {
+            id: ui.id().with(("embroidery-tab", tab.id())),
+            label: tab.label(),
+            selected: app.ui.embroidery_panel.tab == *tab,
+            enabled: true,
+        })
+        .collect();
+    if let Some(tab) = segments(ui, STRIP_HEIGHT, STRIP_TEXT, &items).and_then(|i| Tab::ALL.get(i)) {
+        app.ui.embroidery_panel.tab = *tab;
+    }
+}
+
+/// How far a segment may be narrower than its words before they count as elided, points: the
+/// layout's rounding.
+const ELIDED_SLACK: f32 = 0.5;
+
+/// One segment of a strip ([`segments`]): its id, its words, whether it is the one selected, and
+/// whether it can be chosen.
+pub(super) struct Segment<'a> {
+    pub(super) id: egui::Id,
+    pub(super) label: &'a str,
+    pub(super) selected: bool,
+    pub(super) enabled: bool,
+}
+
+/// A strip of segments (the panel's tabs, the Object tab's parts), `height` points tall, its words
+/// `size` points, accessible as tabs: each as wide as its words and the strip's room shared out
+/// ([`strip_widths`]); words a segment can't hold are elided, whole in its tooltip and for screen
+/// readers; one that can't be chosen is greyed → the segment clicked.
+pub(super) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>]) -> Option<usize> {
     let t = Tokens::get(ui.ctx());
-    let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), STRIP_HEIGHT), Sense::hover());
+    let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), height), Sense::hover());
     let radius = CornerRadius::same(t.radius);
     ui.painter().rect(rect, radius, t.input, Stroke::new(1.0, t.input_border), StrokeKind::Inside);
-    let font = egui::FontId::proportional(STRIP_TEXT);
+    let font = egui::FontId::proportional(size);
     let natural: Vec<f32> =
-        Tab::ALL.iter().map(|tab| ui.painter().layout_no_wrap(tab.label().to_string(), font.clone(), t.text).size().x + 2.0 * TAB_PAD).collect();
-    let selected = Tab::ALL.iter().position(|tab| *tab == app.ui.embroidery_panel.tab).unwrap_or(0);
+        items.iter().map(|s| ui.painter().layout_no_wrap(s.label.to_string(), font.clone(), t.text).size().x + 2.0 * TAB_PAD).collect();
+    let selected = items.iter().position(|s| s.selected).unwrap_or(0);
+    // An unselected segment's words, read by 4.5:1 on the strip.
+    let dim = crate::embroidery::marks::readable_text(t.text_dim, &[t.input], t.dark);
     let mut left = rect.left();
+    let mut clicked = None;
     for (i, width) in strip_widths(&natural, selected, rect.width()) {
-        let Some(tab) = Tab::ALL.get(i).copied() else { continue };
-        let segment = Rect::from_min_size(egui::pos2(left, rect.top()), vec2(width, STRIP_HEIGHT));
+        let Some(s) = items.get(i) else { continue };
+        let segment = Rect::from_min_size(egui::pos2(left, rect.top()), vec2(width, height));
         left += width;
-        let selected = app.ui.embroidery_panel.tab == tab;
-        let label = tab.label();
-        let resp = craft_ui::tabs::Tab::new(ui.id().with(("embroidery-tab", tab.id())), label, selected).show_at(ui, segment, |ui, resp| {
-            let fill = if selected {
-                t.button
-            } else if resp.hovered() {
-                t.hover
-            } else {
-                Color32::TRANSPARENT
-            };
-            ui.painter().rect_filled(segment.shrink(SEGMENT_INSET), radius, fill);
-            let color = if selected { t.text_strong } else { t.text_dim };
-            let room = (segment.width() - 2.0 * SEGMENT_INSET).max(1.0);
-            let galley = egui::WidgetText::from(egui::RichText::new(label).font(font.clone()).color(color)).into_galley(
-                ui,
-                Some(egui::TextWrapMode::Truncate),
-                room,
-                egui::TextStyle::Body,
-            );
-            ui.painter().galley(egui::Align2::CENTER_CENTER.align_size_within_rect(galley.size(), segment).min, galley, color);
+        let resp = ui.add_enabled_ui(s.enabled, |ui| {
+            craft_ui::tabs::Tab::new(s.id, s.label, s.selected).show_at(ui, segment, |ui, resp| {
+                let fill = if s.selected {
+                    t.button
+                } else if resp.hovered() {
+                    t.hover
+                } else {
+                    Color32::TRANSPARENT
+                };
+                ui.painter().rect_filled(segment.shrink(SEGMENT_INSET), radius, fill);
+                let color = match (s.selected, s.enabled) {
+                    (true, _) => t.text_strong,
+                    (false, true) => dim,
+                    (false, false) => t.text_disabled,
+                };
+                let room = (segment.width() - 2.0 * SEGMENT_INSET).max(1.0);
+                let galley = egui::WidgetText::from(egui::RichText::new(s.label).font(font.clone()).color(color)).into_galley(
+                    ui,
+                    Some(egui::TextWrapMode::Truncate),
+                    room,
+                    egui::TextStyle::Body,
+                );
+                ui.painter().galley(egui::Align2::CENTER_CENTER.align_size_within_rect(galley.size(), segment).min, galley, color);
+            })
         });
-        let elided = natural.get(i).is_some_and(|n| *n > width + 0.5);
-        let resp = if elided { resp.on_hover_text(label) } else { resp };
-        if resp.clicked() {
-            app.ui.embroidery_panel.tab = tab;
+        let elided = natural.get(i).is_some_and(|n| *n > width + ELIDED_SLACK);
+        let resp = if elided { resp.inner.on_hover_text(s.label) } else { resp.inner };
+        if resp.clicked() && s.enabled {
+            clicked = Some(i);
         }
     }
+    clicked
 }
 
 /// Each tab's segment in a strip `room` points wide, its tabs' names `natural` points wide with

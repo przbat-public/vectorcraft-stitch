@@ -2,7 +2,8 @@
 //! the tools, the dock with the Embroidery panel, the canvas and the status bar) drawn offscreen on
 //! the GPU at 2 pixels a point (egui_kittest on wgpu: no window is presented, so a locked screen
 //! doesn't stop them), of art the test draws itself (the corpus's designs are never committed, so
-//! no picture of them is either). Run by hand:
+//! no picture of them is either). It makes the five pictures `docs/images` holds, by their names
+//! there (`embroidery-object-tab.png`…): copy them over the committed ones. Run by hand:
 //!
 //! `VECTORCRAFT_STITCH_SHOTS=<folder> cargo test --release -p vectorcraft-ui-egui --lib -- --ignored embroidery_shots`
 
@@ -16,8 +17,6 @@ use crate::{Services, VectorcraftApp};
 
 /// The window, points, and its pixels a point: a laptop's display.
 const WINDOW: [f32; 2] = [1440.0, 900.0];
-/// A small window, points: Document Setup's Embroidery tab in one column.
-const NARROW_WINDOW: [f32; 2] = [800.0, 760.0];
 const PIXELS_PER_POINT: f32 = 2.0;
 /// Frames each picture is given to settle (fonts, the plan, the canvas's tiles), and the pause
 /// between them, milliseconds: the background work they wait for.
@@ -82,21 +81,13 @@ fn embroidery_shots() {
         app.run("embroidery.set", json!({"part": "fill", "angle": 30, "pull": 0.35})).unwrap();
         app.run("ui.embroideryPanel", json!({"tab": "object"})).unwrap();
     };
-    shot(&dir, "object-tab", disc);
-    shot(&dir, "object-tab-stitches", |app, id| {
-        disc(app, id);
-        app.run("view.stitchPreview", json!({"on": true})).unwrap();
-    });
-    shot(&dir, "object-tab-stroke", |app, id| {
-        disc(app, id);
-        app.run("ui.embroideryPanel", json!({"part": "stroke"})).unwrap();
-    });
+    shot(&dir, "embroidery-object-tab", disc);
     // Every object selected: values they differ in are blank, counted.
-    shot(&dir, "object-tab-several", |app, id| {
+    shot(&dir, "embroidery-object-tab-several", |app, id| {
         disc(app, id);
         app.run("select.all", json!({})).unwrap();
     });
-    shot(&dir, "object-tab-polish", |app, id| {
+    shot(&dir, "embroidery-object-tab-polish", |app, id| {
         // The interface's language, for this app alone (as the language tests set it).
         app.session.prefs.interface_language = "pl".into();
         disc(app, id);
@@ -112,9 +103,8 @@ fn embroidery_shots() {
         crate::embroidery::setup_tab::choose_value(app, "fabric", json!("stretchKnit"));
         crate::embroidery::setup_tab::choose_value(app, "tatami.length", json!(3.5));
     };
-    shot(&dir, "document-setup-embroidery", setup);
-    shot_sized(&dir, "document-setup-embroidery-narrow", NARROW_WINDOW, setup);
-    shot(&dir, "document-setup-embroidery-polish", |app, id| {
+    shot(&dir, "embroidery-document-setup", setup);
+    shot(&dir, "embroidery-document-setup-polish", |app, id| {
         app.session.prefs.interface_language = "pl".into();
         setup(app, id);
     });

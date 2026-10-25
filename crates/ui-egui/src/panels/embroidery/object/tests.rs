@@ -497,3 +497,35 @@ fn a_three_state_box_wraps_its_words() {
     assert!(rows > 1 && rect.right() <= 120.0, "wrapped in the room it has: {rows} rows, {rect:?}");
     assert!(dash, "the dash of objects that differ");
 }
+
+/// A plan a read command made first (an agent's, a script's) is taken from memory by the stitch
+/// preview with how long its walk took, so a light design stays light: a scrub on a label gets the
+/// stitches of each step while the drag goes on, as when the preview planned it itself.
+#[test]
+fn a_read_commands_plan_keeps_the_scrub_live() {
+    use crate::embroidery::stitch_preview::Freshness;
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    app.run("embroidery.sequence", json!({})).unwrap();
+    let mut time = 0.0;
+    let at = words_at(&ready(&mut app, &ctx, &mut time), "Angle");
+    let uid = app.session.active().unwrap().uid;
+    assert!(app.embroidery.preview.inspect(uid, time)["planMs"].is_number(), "the remembered plan's time");
+    let button = |pos, pressed| Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    let mut step = |app: &mut VectorcraftApp, events| {
+        time += 0.05;
+        frame(app, &ctx, time, events);
+        time
+    };
+    step(&mut app, vec![Event::PointerMoved(at)]);
+    step(&mut app, vec![button(at, true)]);
+    for i in 1..=4 {
+        step(&mut app, vec![Event::PointerMoved(at + vec2(10.0 * i as f32, 0.0))]);
+        // Planned in line at the frame's end: shown from the next.
+        let now = step(&mut app, vec![]);
+        assert_eq!(app.embroidery.preview.freshness(uid, now), Freshness::Fresh, "step {i}: the stitches of the drag as it is");
+    }
+    step(&mut app, vec![button(at + vec2(40.0, 0.0), false)]);
+    assert!(fill_setting(&mut app, a, "angle").is_number(), "the scrub set the angle");
+}

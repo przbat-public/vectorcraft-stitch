@@ -697,6 +697,22 @@ fn a_plan_says_whether_it_was_walked() {
     assert!(refused.is_err() && !walked);
 }
 
+/// A plan keeps how long the walk that made it took, so a caller that takes it remembered (the
+/// stitch preview after a read command planned first) knows how heavy the design is.
+#[test]
+fn a_remembered_plan_keeps_how_long_its_walk_took() {
+    let (s, _) = build(&[Art { kind: 0, x: 10.0, y: 10.0, w: 40.0, h: 30.0, fill: Some(0), stroke: Some((1, 4.0)) }]);
+    let doc = s.doc().unwrap().doc.clone();
+    let service = PlanService::default();
+    let opts = Options::default();
+    let (first, walked) = service.planned_and_walked(Of::whole(&doc), &doc, &opts);
+    let first = first.unwrap();
+    assert!(walked && first.walk_ms.is_some_and(|ms| ms.is_finite() && ms >= 0.0), "{:?}", first.walk_ms);
+    let (again, walked) = service.planned_and_walked(Of::whole(&doc), &doc, &opts);
+    assert!(!walked, "remembered");
+    assert_eq!(again.unwrap().walk_ms, first.walk_ms, "the first walk's time");
+}
+
 /// A plan key tells whether a plan is of the document as it is: a selection doesn't change it, an
 /// edit and other options do.
 #[test]

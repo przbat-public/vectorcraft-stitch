@@ -302,8 +302,7 @@ fn object_tab_scrub_gate() {
             std::thread::sleep(next.saturating_duration_since(Instant::now()));
             (ms, found, time)
         };
-        // Settle: the preview's first plan and its frame. Its own: a plan a command made first would
-        // be taken remembered, its time unknown, and the preview would wait for the scrub's end.
+        // Settle: the preview's first plan and its frame.
         let t0 = Instant::now();
         loop {
             let now = tick(&mut app, vec![]).2;

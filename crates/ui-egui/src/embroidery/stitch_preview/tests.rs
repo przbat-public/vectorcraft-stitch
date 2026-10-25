@@ -341,10 +341,11 @@ fn only_the_first_plan_skips_the_quiet_time() {
     assert_eq!(fake.waiting(), [3]);
 }
 
-/// How long a plan took is kept only from plans walked: a remembered plan (an undo back to a state
-/// planned before) says nothing of how long the design takes to plan.
+/// How long a plan took comes from the walk that made it: this preview's own (the time its step
+/// took), or, for a plan taken remembered (an undo back to a state planned before, or a plan a
+/// read command made first), the time the service kept with it.
 #[test]
-fn only_a_walked_plan_says_how_long_the_design_takes() {
+fn a_plan_says_how_long_its_walk_took() {
     let (mut p, fake) = preview();
     let mut s = Session::new();
     let uid = document(&mut s);
@@ -367,7 +368,9 @@ fn only_a_walked_plan_says_how_long_the_design_takes() {
     fake.finish(LIGHT_MS);
     frame(&mut p, &mut s, 2.2, false, true);
     assert_eq!(p.freshness(uid, 2.2), Freshness::Fresh);
-    assert_eq!(p.docs[&uid].plan_ms, Some(HEAVY_MS), "the plan was remembered: still a heavy design");
+    let kept = p.shown(uid).and_then(|s| s.planned.walk_ms);
+    assert!(kept.is_some(), "the service kept the walk's time");
+    assert_eq!(p.docs[&uid].plan_ms, kept, "the plan was remembered: the time its walk took");
 }
 
 #[test]
@@ -466,7 +469,7 @@ fn the_replies_are_the_commands_and_a_new_one_reuses_the_plan() {
     p.take_in();
     let shown = p.shown(uid).unwrap();
     assert!(Arc::ptr_eq(&shown.planned.plan, &plan), "the plan remembered");
-    assert_eq!(p.docs[&uid].plan_ms, Some(LIGHT_MS), "a job that only made replies says nothing of the design's weight");
+    assert_eq!(p.docs[&uid].plan_ms, shown.planned.walk_ms, "a job that only made replies takes the plan remembered, and the time its walk took");
     assert_eq!(**shown.reply(&check("pes")).unwrap().result.as_ref().unwrap(), exec(&mut s, "embroidery.check", json!({"format": "pes"})));
     assert!(shown.reply(&check("dst")).is_some_and(|r| r.current), "the plan's own replies are kept");
     // Asked again as it is: nothing to do; nor for the other format checked on this plan.

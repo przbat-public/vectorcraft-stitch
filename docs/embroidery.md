@@ -1780,7 +1780,9 @@ writes.
   only when its plan fits a frame (8 ms, `INLINE_PLAN_MS`, the time the canvas lets its art render
   in line), and the replies wait while a drag goes on.
 - **Light and heavy designs.** A design whose last plan walked took at most 50 ms (`LIVE_PLAN_MS`,
-  half the re-plan budget, an estimate; a remembered plan says nothing of it) is planned on every
+  half the re-plan budget, an estimate; a plan taken remembered, such as one a read command made
+  first, brings the time of the walk that made it, `Planned::walk_ms`, which the service keeps
+  with the plan) is planned on every
   change, also during a drag, and the plan
   under way is let finish, so the stitches follow the drag; once that plan is in, a change cancels
   the replies still to come (their walks stop within a few thousand records, and a reply cut short

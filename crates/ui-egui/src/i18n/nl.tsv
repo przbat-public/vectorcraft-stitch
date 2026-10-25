@@ -5992,3 +5992,6 @@ embroidery	Not a number: {text}	Geen getal: {text}
 	Apply Another Object's Embroidery Settings	Borduurinstellingen van een ander object toepassen
 	Show Document Embroidery Settings	Borduurinstellingen van document tonen
 @plural	Trim the thread after the object|Trim the thread after the objects	Draad afknippen na het object|Draad afknippen na de objecten
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Niet geplakt, omdat deze versie ze niet aanneemt: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} geselecteerd object neemt geen instellingen aan en is overgeslagen|{count} geselecteerde objecten nemen geen instellingen aan en zijn overgeslagen

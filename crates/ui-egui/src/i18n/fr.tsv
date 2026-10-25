@@ -5993,3 +5993,6 @@ embroidery	Not a number: {text}	Pas un nombre : {text}
 	Apply Another Object's Embroidery Settings	Appliquer les paramètres de broderie d’un autre objet
 	Show Document Embroidery Settings	Afficher les paramètres de broderie du document
 @plural	Trim the thread after the object|Trim the thread after the objects	Couper le fil après l’objet|Couper le fil après les objets
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Non collés, car cette version ne les prend pas : {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} objet sélectionné ne prend pas de réglages et a été ignoré|{count} objets sélectionnés ne prennent pas de réglages et ont été ignorés

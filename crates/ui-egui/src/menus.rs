@@ -762,13 +762,13 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "embroidery.copySettings",
         "Copy Embroidery Settings",
         "",
-        "{} (VectorCraft Stitch) remember the selected object's embroidery settings (one object that takes them: a path or a compound path) for embroidery.pasteSettings, as the Embroidery panel's menu does; the object is read when they are pasted, as it is then → {source}",
+        "{} (VectorCraft Stitch) take the selected object's embroidery settings as they are now (one object that takes them: a path or a compound path), both parts, for embroidery.pasteSettings, as the Embroidery panel's menu does; values this version doesn't take are left out → {source, passedOver}",
     ),
     (
         "embroidery.pasteSettings",
         "Paste Embroidery Settings",
         "",
-        "{part?: fill|stroke (default: both)} (VectorCraft Stitch) give the selected objects the embroidery settings of the object embroidery.copySettings remembered, as embroidery.copyFrom does (its reply), in one undo step; off while nothing is remembered in the active document or nothing else is selected",
+        "{part?: fill|stroke (default: both)} (VectorCraft Stitch) give the selected objects, in any document, the embroidery settings embroidery.copySettings took, as one embroidery.set a part in one command.batch, one undo step; what it passed over is said in the status bar; off while nothing is copied or nothing is selected → {passedOver, skippedCount, skipped}",
     ),
     (
         "embroidery.documentSetup",

@@ -123,8 +123,17 @@ pub(crate) struct ObjectState {
     sewn: Option<Sewn>,
     /// The document's settings, read for one snapshot (the footer's fabric and thread).
     setup: Option<Setup>,
-    /// The object Copy remembered: its document and its id (read when pasted, as it is then).
-    copied: Option<(u64, NodeId)>,
+    /// What Copy took (a snapshot, pasted as it was then, into any document).
+    copied: Option<Copied>,
+}
+
+/// What Copy Embroidery Settings took: each part's settings of the object copied, as they were
+/// then, by key (null: unset), as `embroidery.set` takes them; and the values this version
+/// doesn't take (a newer version's), left out (`part.key`).
+#[derive(Clone, Debug, PartialEq)]
+struct Copied {
+    parts: Vec<(Part, serde_json::Map<String, Value>)>,
+    left_out: Vec<String>,
 }
 
 /// The selection's settings as read, shared from frame to frame, or why they can't be read.
@@ -842,12 +851,12 @@ fn text_width(ui: &Ui, words: &str, size: f32) -> f32 {
 
 /// The one object selected when it takes settings itself (a path or a compound path, not a group
 /// of them): what Copy takes.
-fn copyable(app: &VectorcraftApp) -> Option<(u64, NodeId)> {
+fn copyable(app: &VectorcraftApp) -> Option<NodeId> {
     let st = app.session.active()?;
     let [id] = st.selection.objects.as_slice() else { return None };
     let n = st.doc.node(*id)?;
     let literal = n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some());
-    matches!(n.kind, NodeKind::Path { guide: false, .. } | NodeKind::Compound { .. }).then_some((st.uid, *id)).filter(|_| !literal)
+    matches!(n.kind, NodeKind::Path { guide: false, .. } | NodeKind::Compound { .. }).then_some(*id).filter(|_| !literal)
 }
 
 /// Whether Copy Embroidery Settings can run: one object that takes settings selected.
@@ -855,36 +864,102 @@ pub(crate) fn can_copy(app: &VectorcraftApp) -> bool {
     copyable(app).is_some()
 }
 
-/// Whether Paste Embroidery Settings can run: an object remembered in the active document, still
-/// there, and something else selected.
+/// Whether Paste Embroidery Settings can run: something copied, and objects selected.
 pub(crate) fn can_paste(app: &VectorcraftApp) -> bool {
-    let Some(st) = app.session.active() else { return false };
-    app.embroidery.object.copied.is_some_and(|(uid, id)| uid == st.uid && st.doc.node(id).is_some() && st.selection.objects.iter().any(|s| *s != id))
+    app.embroidery.object.copied.is_some() && app.session.active().is_some_and(|st| !st.selection.objects.is_empty())
 }
 
-/// `embroidery.copySettings {}`: remember the selected object for Paste → `{source}`.
+/// Whether `embroidery.set` takes `value` for part setting `key`: a number within its range (a
+/// pull's two sides each), `auto`, or one of its choices. A value a newer version wrote fails it.
+fn takes(key: &str, value: &Value) -> bool {
+    match (part_field(key), value) {
+        (_, Value::Null) => true,
+        (_, Value::String(s)) if s == "auto" => true,
+        (Some(SettingField::Number { min, max, .. }), Value::Number(_)) => value.as_f64().is_some_and(|v| (min..=max).contains(&v)),
+        (Some(SettingField::Number { min, max, .. }), Value::Array(sides)) => {
+            !sides.is_empty() && sides.iter().all(|v| v.as_f64().is_some_and(|v| (min..=max).contains(&v)))
+        }
+        (Some(SettingField::Choice(ids)), Value::String(id)) => ids.contains(&id.as_str()),
+        // Trim After and the like aren't copied; anything else as the engine would judge it.
+        (Some(_), _) => false,
+        (None, _) => false,
+    }
+}
+
+/// `embroidery.copySettings {}`: take the selected object's settings, both parts, as they are now
+/// (its entry and exit points and Trim After stay with it, as `embroidery.copyFrom` copies) →
+/// `{source, passedOver}`.
 pub(crate) fn copy(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
     super::only_keys(p, &[])?;
-    let (uid, id) = copyable(app).ok_or("select one object that takes embroidery settings: a path or a compound path")?;
-    app.embroidery.object.copied = Some((uid, id));
-    Ok(json!({ "source": id.0 }))
+    let id = copyable(app).ok_or("select one object that takes embroidery settings: a path or a compound path")?;
+    let info = app.session.embroidery_info(&[id], false, &Default::default()).map_err(|e| e.to_string())?;
+    let mut copied = Copied { parts: Vec::new(), left_out: Vec::new() };
+    for part in Part::ALL {
+        let Some(p) = part.of(&info) else { continue };
+        let mut values = serde_json::Map::new();
+        for (key, k) in &p.settings {
+            let value = if k.set_count > 0 { k.value.clone() } else { Value::Null };
+            if takes(key, &value) {
+                values.insert(key.clone(), value);
+            } else {
+                copied.left_out.push(format!("{}.{key}", part.id()));
+            }
+        }
+        copied.parts.push((part, values));
+    }
+    let left_out = copied.left_out.clone();
+    app.embroidery.object.copied = Some(copied);
+    Ok(json!({ "source": id.0, "passedOver": left_out }))
 }
 
-/// `embroidery.pasteSettings {part?}`: the remembered object's settings onto the selection, by
-/// `embroidery.copyFrom` (one undo step, its reply).
+/// `embroidery.pasteSettings {part?}`: what Copy took, given to the selected objects (in any
+/// document) as one `embroidery.set` a part in one `command.batch`, one undo step; a part none of
+/// them has left out. What it passed over (values this version doesn't take, objects that take no
+/// settings) is said in the status bar → `{passedOver, skippedCount, skipped}`.
 pub(crate) fn paste(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
     super::only_keys(p, &["part"])?;
-    let uid = app.session.active().map(|st| st.uid).ok_or("no document")?;
-    let (from, source) = app.embroidery.object.copied.ok_or("copy an object's embroidery settings first")?;
-    if from != uid {
-        return Err("the embroidery settings copied are another document's".into());
+    let copied = app.embroidery.object.copied.clone().ok_or("copy an object's embroidery settings first")?;
+    let only = match p.get("part").filter(|v| !v.is_null()) {
+        Some(part) => Some(part.as_str().and_then(Part::from_id).ok_or_else(|| format!("part {part}: fill or stroke"))?),
+        None => None,
+    };
+    let ids = app.session.active().map(|st| st.selection.objects.clone()).ok_or("no document")?;
+    if ids.is_empty() {
+        return Err("select the objects to paste the embroidery settings onto".into());
     }
-    let mut params = json!({ "source": source.0 });
-    if let Some(part) = p.get("part").filter(|v| !v.is_null()) {
-        let part = part.as_str().and_then(Part::from_id).ok_or_else(|| format!("part {part}: fill or stroke"))?;
-        params["part"] = json!(part.id());
+    // The parts some selected object has: `embroidery.set` refuses a part none of them has.
+    let info = app.session.embroidery_info(&ids, false, &Default::default()).map_err(|e| e.to_string())?;
+    let commands: Vec<Value> = copied
+        .parts
+        .iter()
+        .filter(|(part, _)| only.is_none_or(|o| o == *part) && part.of(&info).is_some())
+        .map(|(part, values)| {
+            let mut params = values.clone();
+            params.insert("part".into(), json!(part.id()));
+            json!({"command": "embroidery.set", "params": params})
+        })
+        .collect();
+    if commands.is_empty() {
+        return Err("the selected objects take none of the embroidery settings copied".into());
     }
-    app.run("embroidery.copyFrom", params)
+    app.run("command.batch", json!({"label": crate::i18n::t("Paste Embroidery Settings"), "commands": commands}))?;
+    // The selected objects that take no settings (type, images…), passed over.
+    let skipped: Vec<Value> = info.skipped.iter().map(|k| json!({"id": k.id, "reason": k.reason})).collect();
+    let mut said: Vec<String> = Vec::new();
+    if !copied.left_out.is_empty() {
+        said.push(text::fill(crate::et!("Not pasted, as this version doesn't take them: {keys}"), &[("keys", &copied.left_out.join(", "))]));
+    }
+    if info.skipped_count > 0 {
+        said.push(crate::etn!(
+            info.skipped_count as u64,
+            "{count} selected object takes no settings and was passed over",
+            "{count} selected objects take no settings and were passed over"
+        ));
+    }
+    if !said.is_empty() {
+        app.status(said.join(" · "));
+    }
+    Ok(json!({ "passedOver": copied.left_out, "skippedCount": info.skipped_count, "skipped": skipped }))
 }
 
 /// What `ui.inspect` reports of the tab (`stitchPreview.object`): the objects its fields are of,

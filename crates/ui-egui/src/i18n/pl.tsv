@@ -5845,3 +5845,6 @@ embroidery	Not a number: {text}	To nie liczba: {text}
 	Apply Another Object's Embroidery Settings	Zastosuj ustawienia haftu innego obiektu
 	Show Document Embroidery Settings	Pokaż ustawienia haftu dokumentu
 @plural	Trim the thread after the object|Trim the thread after the objects	Obetnij nić po obiekcie|Obetnij nić po obiektach|Obetnij nić po obiektach
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Nie wklejono, bo ta wersja ich nie przyjmuje: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} zaznaczony obiekt nie przyjmuje ustawień i został pominięty|{count} zaznaczone obiekty nie przyjmują ustawień i zostały pominięte|{count} zaznaczonych obiektów nie przyjmuje ustawień i zostało pominiętych

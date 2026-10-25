@@ -5955,3 +5955,6 @@ embroidery	Not a number: {text}	Sayı değil: {text}
 	Apply Another Object's Embroidery Settings	Başka Bir Nesnenin Nakış Ayarlarını Uygula
 	Show Document Embroidery Settings	Belge Nakış Ayarlarını Göster
 @plural	Trim the thread after the object|Trim the thread after the objects	Nesneden sonra ipliği kes
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Bu sürüm kabul etmediği için yapıştırılmadı: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	Seçili {count} nesne ayar almıyor ve atlandı

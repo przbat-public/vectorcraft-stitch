@@ -5994,3 +5994,6 @@ embroidery	Not a number: {text}	Není číslo: {text}
 	Apply Another Object's Embroidery Settings	Použít nastavení vyšívání jiného objektu
 	Show Document Embroidery Settings	Zobrazit nastavení vyšívání dokumentu
 @plural	Trim the thread after the object|Trim the thread after the objects	Ustřihnout nit po objektu|Ustřihnout nit po objektech|Ustřihnout nit po objektech
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Nevloženo, protože je tato verze nepřijímá: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} vybraný objekt nepřijímá nastavení a byl vynechán|{count} vybrané objekty nepřijímají nastavení a byly vynechány|{count} vybraných objektů nepřijímá nastavení a bylo vynecháno

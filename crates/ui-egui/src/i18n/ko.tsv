@@ -5572,3 +5572,6 @@ embroidery	Not a number: {text}	숫자가 아닙니다: {text}
 	Apply Another Object's Embroidery Settings	다른 개체의 자수 설정 적용
 	Show Document Embroidery Settings	문서 자수 설정 표시
 @plural	Trim the thread after the object|Trim the thread after the objects	개체 뒤에 실 자르기
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	이 버전에서 받지 않아 붙여넣지 않았습니다: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	선택한 개체 {count}개는 설정을 받지 않아 건너뛰었습니다

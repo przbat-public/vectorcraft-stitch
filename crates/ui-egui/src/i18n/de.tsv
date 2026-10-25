@@ -5575,3 +5575,6 @@ embroidery	Not a number: {text}	Keine Zahl: {text}
 	Apply Another Object's Embroidery Settings	Stickeinstellungen eines anderen Objekts übernehmen
 	Show Document Embroidery Settings	Stickerei-Einstellungen des Dokuments anzeigen
 @plural	Trim the thread after the object|Trim the thread after the objects	Faden nach dem Objekt schneiden|Faden nach den Objekten schneiden
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Nicht eingefügt, da diese Version sie nicht annimmt: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} ausgewähltes Objekt nimmt keine Einstellungen an und wurde übergangen|{count} ausgewählte Objekte nehmen keine Einstellungen an und wurden übergangen

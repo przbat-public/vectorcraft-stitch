@@ -5833,3 +5833,6 @@ embroidery	Not a number: {text}	不是数字：{text}
 	Apply Another Object's Embroidery Settings	应用其他对象的刺绣设置
 	Show Document Embroidery Settings	显示文档刺绣设置
 @plural	Trim the thread after the object|Trim the thread after the objects	对象后剪线
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	未粘贴，因为此版本不接受：{keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} 个所选对象不接受设置，已跳过

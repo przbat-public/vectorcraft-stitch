@@ -6025,3 +6025,6 @@ embroidery	Not a number: {text}	Ei luku: {text}
 	Apply Another Object's Embroidery Settings	Käytä toisen objektin kirjonta-asetuksia
 	Show Document Embroidery Settings	Näytä asiakirjan kirjonta-asetukset
 @plural	Trim the thread after the object|Trim the thread after the objects	Katkaise lanka objektin jälkeen|Katkaise lanka objektien jälkeen
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Ei liitetty, koska tämä versio ei hyväksy niitä: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} valittu objekti ei ota asetuksia ja ohitettiin|{count} valittua objektia ei ota asetuksia ja ne ohitettiin

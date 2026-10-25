@@ -5909,3 +5909,6 @@ embroidery	Not a number: {text}	არ არის რიცხვი: {text}
 	Apply Another Object's Embroidery Settings	სხვა ობიექტის ქარგვის პარამეტრების გამოყენება
 	Show Document Embroidery Settings	დოკუმენტის ქარგვის პარამეტრების ჩვენება
 @plural	Trim the thread after the object|Trim the thread after the objects	ძაფის გაჭრა ობიექტის შემდეგ
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	არ ჩაისვა, რადგან ეს ვერსია მათ არ იღებს: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} მონიშნული ობიექტი პარამეტრებს არ იღებს და გამოტოვებულია

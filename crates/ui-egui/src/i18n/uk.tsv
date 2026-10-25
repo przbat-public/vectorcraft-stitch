@@ -5589,3 +5589,6 @@ embroidery	Not a number: {text}	Не число: {text}
 	Apply Another Object's Embroidery Settings	Застосувати параметри вишивки іншого об’єкта
 	Show Document Embroidery Settings	Показати параметри вишивки документа
 @plural	Trim the thread after the object|Trim the thread after the objects	Обрізати нитку після об’єкта|Обрізати нитку після об’єктів|Обрізати нитку після об’єктів
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Не вставлено, бо ця версія їх не приймає: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} вибраний об’єкт не приймає параметри й пропущений|{count} вибрані об’єкти не приймають параметри й пропущені|{count} вибраних об’єктів не приймають параметри й пропущені

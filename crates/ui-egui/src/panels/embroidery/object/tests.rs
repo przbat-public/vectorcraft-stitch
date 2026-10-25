@@ -438,8 +438,10 @@ fn trim_after_is_mixed_then_set() {
     assert_eq!((info(&mut app, &[a, b])["trimAfter"]["value"].clone(), steps(&app)), (json!(true), before + 1));
 }
 
-/// Copy remembers the one object selected, Paste gives the selection its settings in one undo step;
-/// both off when they can't run.
+/// Copy takes the one object selected's settings as they are then (a snapshot: a later change to
+/// it, or its undo, changes nothing pasted); Paste gives the selection them in one undo step, also
+/// in another document, a part alone with `part`, and says what it passed over; both off when they
+/// can't run.
 #[test]
 fn copy_and_paste_settings() {
     let (mut app, a, b) = app_with_art();
@@ -447,15 +449,35 @@ fn copy_and_paste_settings() {
     assert!(!crate::menus::enabled(&app, "embroidery.copySettings"), "nothing selected");
     select(&mut app, &[a, b]);
     assert!(!crate::menus::enabled(&app, "embroidery.copySettings"), "two selected");
+    assert!(!crate::menus::enabled(&app, "embroidery.pasteSettings"), "nothing copied");
     select(&mut app, &[a]);
-    assert_eq!(app.run("embroidery.copySettings", json!({})).unwrap(), json!({"source": a}));
-    assert!(!crate::menus::enabled(&app, "embroidery.pasteSettings"), "only the source selected");
+    assert_eq!(app.run("embroidery.copySettings", json!({})).unwrap(), json!({"source": a, "passedOver": []}));
+    // Changed after Copy: the copy keeps what it took.
+    app.run("embroidery.set", json!({"ids": [a], "part": "fill", "angle": 60})).unwrap();
     select(&mut app, &[b]);
     assert!(crate::menus::enabled(&app, "embroidery.pasteSettings"));
     let before = steps(&app);
     app.run("embroidery.pasteSettings", json!({})).unwrap();
     assert_eq!((fill_setting(&mut app, b, "angle"), fill_setting(&mut app, b, "spacing"), steps(&app)), (json!(30.0), json!(0.5), before + 1));
-    let group = app.run("object.group", json!({"ids": [a, b]})).unwrap()["id"].as_u64().unwrap();
+    // A part alone.
+    app.run("embroidery.set", json!({"ids": [b], "part": "fill", "angle": null, "spacing": null})).unwrap();
+    app.run("embroidery.pasteSettings", json!({"part": "stroke"})).unwrap();
+    assert_eq!(fill_setting(&mut app, b, "angle"), json!(null), "the fill left as it was");
+    // Into another document, with type selected beside a path: the type passed over, and said.
+    app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
+    app.run("paint.setStroke", json!({"none": true})).unwrap();
+    let c = app.run("shape.rectangle", json!({"x": 20, "y": 20, "width": 40, "height": 30})).unwrap()["id"].as_u64().unwrap();
+    let t = app.run("text.create", json!({"x": 20, "y": 150, "text": "Haft"})).unwrap()["id"].as_u64().unwrap();
+    select(&mut app, &[c, t]);
+    let r = app.run("embroidery.pasteSettings", json!({})).unwrap();
+    assert_eq!((fill_setting(&mut app, c, "angle"), r["skippedCount"].clone()), (json!(30.0), json!(1)));
+    let said = crate::etn!(
+        1,
+        "{count} selected object takes no settings and was passed over",
+        "{count} selected objects take no settings and were passed over"
+    );
+    assert!(app.ui.status.contains(&said), "{:?}", app.ui.status);
+    let group = app.run("object.group", json!({"ids": [c, t]})).unwrap()["id"].as_u64().unwrap();
     select(&mut app, &[group]);
     assert!(app.run("embroidery.copySettings", json!({})).is_err(), "a group isn't one object");
 }

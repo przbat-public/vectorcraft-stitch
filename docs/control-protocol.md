@@ -431,9 +431,11 @@ tab, `part` being the part of the selected objects the Object tab shows and `for
 and answers `{tab, part, format}`. `ui.inspect` reports the open tab as `ui.embroidery_panel`, and what the Object tab
 shows as `stitchPreview.object` (`ids`, `part`, and its `rows`: each one's `key`, `value` as `embroidery.info` gives
 it, `source`, whether every object `set` it, and whether they differ, `mixed`). `embroidery.copySettings {}`
-remembers the one object selected (a path or a compound path), answering `{source}`, and
-`embroidery.pasteSettings {part?}` gives the selected objects its settings as they are then, as
-`embroidery.copyFrom` (its reply), in one undo step: the panel's ≡ menu's Copy and Paste Embroidery Settings.
+takes the settings of the one object selected (a path or a compound path) as they are now, both parts, answering
+`{source, passedOver}` (values this version doesn't take, left out), and `embroidery.pasteSettings {part?}` gives
+the selected objects, in any document, those settings as one `embroidery.set` a part in one `command.batch`, one undo
+step, answering `{passedOver, skippedCount, skipped}` (the selected objects that take no settings): the panel's ≡
+menu's Copy and Paste Embroidery Settings.
 `embroidery.documentSetup {}` opens Document Setup at its Embroidery tab, whose fields are flat, named by
 `embroidery.setup`'s paths: `embroidery.fabric` (the fabric chosen: `builtIn`, `custom`, or a preset's id from
 `embroidery.fabrics`), `embroidery.fabric.tatami.pull`, `embroidery.fabric.tatami.spacing`,

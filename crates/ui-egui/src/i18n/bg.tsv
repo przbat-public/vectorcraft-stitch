@@ -5933,3 +5933,6 @@ embroidery	Not a number: {text}	Не е число: {text}
 	Apply Another Object's Embroidery Settings	Прилагане на настройките за бродиране на друг обект
 	Show Document Embroidery Settings	Показване на настройките за бродиране на документа
 @plural	Trim the thread after the object|Trim the thread after the objects	Отрязване на конеца след обекта|Отрязване на конеца след обектите
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Не са поставени, тъй като тази версия не ги приема: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} избран обект не приема настройки и е пропуснат|{count} избрани обекта не приемат настройки и са пропуснати

@@ -5589,3 +5589,6 @@ embroidery	Not a number: {text}	Không phải số: {text}
 	Apply Another Object's Embroidery Settings	Áp dụng thiết lập thêu của đối tượng khác
 	Show Document Embroidery Settings	Hiện thiết lập thêu của tài liệu
 @plural	Trim the thread after the object|Trim the thread after the objects	Cắt chỉ sau đối tượng
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Chưa dán vì phiên bản này không nhận: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} đối tượng đã chọn không nhận thiết lập và đã bị bỏ qua

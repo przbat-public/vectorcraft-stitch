@@ -185,8 +185,7 @@ the control channel with ids:
   ends, in document points (moved and turned with the object).
 - `embroidery.copyFrom {source, ids?, part?, keys?}` gives the objects the source's values, set or
   unset, as `embroidery.set` would take them (a newer version's value, or one out of range, is
-  passed over and listed, `passedOver`): the Embroidery panel's Copy and Paste Embroidery
-  Settings.
+  passed over and listed, `passedOver`), the source read as it is then.
 
 `embroidery.info {ids?, plan?, …}` reads them, without planning: each object's settings as kept, and
 for each part every value it is planned with, merged over the objects (the value they share, or
@@ -554,7 +553,12 @@ as Melco's checker reads it, on each object's settings, it flags none.
   undo step (`embroidery.set`; choosing what the objects would inherit unsets theirs). Restore from
   Fabric unsets the selection's own values, the points and Trim After kept (`embroidery.reset`).
   The panel's ≡ menu copies one object's settings and pastes them onto others (Copy and Paste
-  Embroidery Settings, `embroidery.copySettings` and `pasteSettings`, by `embroidery.copyFrom`).
+  Embroidery Settings, `embroidery.copySettings` and `pasteSettings`). Copy takes the settings as
+  they are then, like any Copy (the project owner's choice, 2026-10-25): a later change to the
+  object, or an undo that gives its id to another, changes nothing pasted, and Paste works in
+  another document too. Paste gives them as one `embroidery.set` a part in one `command.batch`,
+  one undo step, and says in the status bar what it passed over: values this version doesn't take
+  (a newer version's), and selected objects that take no settings.
   Where the panel is narrow, long labels wrap beside their fields and words a field can't hold are
   cut short; only a very narrow panel puts each label above its field.
 

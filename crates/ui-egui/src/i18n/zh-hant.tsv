@@ -5628,3 +5628,6 @@ embroidery	Not a number: {text}	不是數字：{text}
 	Apply Another Object's Embroidery Settings	套用其他物件的刺繡設定
 	Show Document Embroidery Settings	顯示文件刺繡設定
 @plural	Trim the thread after the object|Trim the thread after the objects	物件後剪線
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	未貼上，因為此版本不接受：{keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} 個所選物件不接受設定，已略過

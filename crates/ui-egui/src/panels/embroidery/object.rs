@@ -271,14 +271,14 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
 /// The header: the selection's name and kind, and its stitches in the plan shown.
 fn header(app: &VectorcraftApp, ui: &mut Ui, ids: &[NodeId], info: Option<&ObjectSettings>, count: &Count, lang: Lang) {
     let t = Tokens::get(ui.ctx());
-    let doc = app.session.active().map(|st| st.doc.clone());
-    let one = ids.first().filter(|_| ids.len() == 1).and_then(|id| doc.as_ref()?.node(*id).cloned());
-    let title = match (&one, ids.len()) {
+    // Borrowed: a traced path's anchors would be copied on every repaint.
+    let one = ids.first().filter(|_| ids.len() == 1).and_then(|id| app.session.active()?.doc.node(*id));
+    let title = match (one, ids.len()) {
         (_, 0) => crate::et!("Nothing selected").to_string(),
         (Some(n), _) => crate::panels::layers::shown_name(app, n, lang),
         (None, n) => crate::etn!(n as u64, "{count} object", "{count} objects"),
     };
-    let subtitle = match &one {
+    let subtitle = match one {
         Some(n) => Some(kind_words(n, info)),
         None => info
             .filter(|i| i.skipped_count > 0 && i.object_count > 0)

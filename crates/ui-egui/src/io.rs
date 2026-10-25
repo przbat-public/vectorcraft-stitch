@@ -625,7 +625,9 @@ fn ask_before_losing(app: &mut VectorcraftApp, path: &str, command: &str, params
 /// so the copy is not written in the version last saved whatever the panel's `.ai` type says
 /// (#3141); Save and templates reuse the remembered options or Use Compression.
 fn asks_options(mode: SaveMode, f: &Format) -> bool {
+    // VectorCraft Stitch: an embroidery format's options are for commands, never asked for.
     !f.options.is_empty()
+        && !vectorcraft_engine::cmd::embroidery::check_formats().iter().any(|(id, _)| *id == f.id)
         && match f.id {
             "vectorcraft" => mode == SaveMode::SaveAs,
             "ai" => matches!(mode, SaveMode::SaveAs | SaveMode::Copy),
@@ -819,9 +821,6 @@ pub fn export(app: &mut VectorcraftApp, format: Option<&str>, path: Option<Strin
     if let Some(r) = ask_before_losing(app, &path, "file.exportAs", &again) {
         return Ok(r);
     }
-    // VectorCraft Stitch: an embroidery export's options are the stitch preview's once it is
-    // written (below), for the document exported.
-    let noted = (app.session.active().map(|st| st.uid), f.id, params.clone());
     // An SVG given a .svgz name is written compressed.
     let f = match fileio::format_for_name(&path) {
         Some(z) if f.id == "svg" && z.id == "svgz" => z,
@@ -860,10 +859,6 @@ pub fn export(app: &mut VectorcraftApp, format: Option<&str>, path: Option<Strin
             return Ok(json!({ "cancelled": true }));
         }
         let r = r.inspect_err(|e| report_write_error(app, true, &failed, e))?;
-        // VectorCraft Stitch: noted once written.
-        if let (Some(uid), format, params) = &noted {
-            vectorcraft_engine::cmd::embroidery::view::note_export_of(&mut app.session, *uid, format, params);
-        }
         let what = match r["files"].as_array() {
             Some(files) => format!("{} files", files.len()),
             None => r["path"].as_str().unwrap_or_default().to_string(),

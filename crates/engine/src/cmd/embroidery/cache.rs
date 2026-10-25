@@ -193,6 +193,7 @@ fn params_words(k: &mut Vec<u64>, p: &Params) {
         width,
         max_satin,
         auto_spacing,
+        spacing_scale,
         narrow,
     } = *p;
     k.push(match style {
@@ -219,6 +220,7 @@ fn params_words(k: &mut Vec<u64>, p: &Params) {
         min_stitch,
         width,
         max_satin,
+        spacing_scale,
         narrow,
     ] {
         k.push(v.to_bits());

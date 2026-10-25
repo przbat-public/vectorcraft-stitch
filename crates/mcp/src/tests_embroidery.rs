@@ -20,10 +20,7 @@ fn the_embroidery_commands_are_reachable() {
         assert!(ids.contains(&id), "{id} in {ids:?}");
     }
     let r = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.setup", "params": {"palette": "jef"}})));
-    assert_eq!(
-        r,
-        json!({"settings": {"palette": "jef", "start": null, "label": null}, "resolved": {"palette": {"value": "jef", "source": "document"}}})
-    );
+    assert_eq!((&r["settings"]["palette"], &r["resolved"]["palette"]), (&json!("jef"), &json!({"value": "jef", "source": "document"})));
     assert_eq!(h.session.doc().unwrap().doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(|p| p.id()), Some("jef"));
     // A misspelt key is refused before the command runs.
     let typo = call_tool(&mut h, "run_command", &json!({"command": "embroidery.setup", "params": {"palete": "pec"}}));
@@ -122,4 +119,45 @@ fn the_picture_and_the_sew_commands_are_reachable() {
         let refused = call_tool(&mut h, "run_command", &json!({"command": "embroidery.sewLast", "params": given}));
         assert!(refused.is_error, "{given}: {refused:?}");
     }
+}
+
+/// The settings commands on objects are listed and run through MCP: a part's values set, copied,
+/// pointed and reset; an earlier name refused before the command runs.
+#[test]
+fn the_object_settings_commands_are_reachable() {
+    let mut h = Headless::with_document();
+    let listed = text(&call_tool(&mut h, "list_commands", &json!({"filter": "embroidery."})));
+    let ids: Vec<&str> = listed["commands"].as_array().unwrap().iter().filter_map(|c| c["id"].as_str()).collect();
+    for id in ["embroidery.set", "embroidery.reset", "embroidery.setEntryExit", "embroidery.copyFrom", "embroidery.info"] {
+        assert!(ids.contains(&id), "{id} in {ids:?}");
+    }
+    let rect = |x: u64| json!({"command": "shape.rectangle", "params": {"x": x, "y": 10, "width": 50, "height": 40}});
+    let a = text(&call_tool(&mut h, "run_command", &rect(10)))["id"].clone();
+    let b = text(&call_tool(&mut h, "run_command", &rect(100)))["id"].clone();
+    let run = |h: &mut Headless, command: &str, params: Value| text(&call_tool(h, "run_command", &json!({"command": command, "params": params})));
+    let r = run(&mut h, "embroidery.set", json!({"ids": [a], "part": "fill", "angle": 30, "pull": 0.3}));
+    assert_eq!((&r["changedCount"], &r["settings"]["pull"]), (&json!(1), &json!([0.3, 0.3])));
+    let r = run(&mut h, "embroidery.copyFrom", json!({"source": a, "ids": [b]}));
+    assert_eq!(r["changedCount"], 1);
+    let r = run(&mut h, "embroidery.setEntryExit", json!({"id": b, "part": "fill", "entry": [100, 10]}));
+    assert_eq!(r["entry"], json!([100.0, 10.0]));
+    let r = run(&mut h, "embroidery.info", json!({"ids": [a, b], "plan": true}));
+    assert_eq!((&r["objectCount"], &r["fill"]["settings"]["angle"]["value"]), (&json!(2), &json!(30.0)));
+    let r = run(&mut h, "embroidery.reset", json!({"ids": [a, b]}));
+    assert_eq!(r["changedCount"], 2);
+    let alias = call_tool(&mut h, "run_command", &json!({"command": "embroidery.set", "params": {"ids": [a], "part": "fill", "density": 0.4}}));
+    assert!(alias.is_error, "{alias:?}");
+}
+
+/// The fabrics are listed, one chosen for the document and applied to the objects through MCP.
+#[test]
+fn the_fabric_commands_are_reachable() {
+    let mut h = Headless::with_document();
+    let run = |h: &mut Headless, command: &str, params: Value| text(&call_tool(h, "run_command", &json!({"command": command, "params": params})));
+    let fabrics = run(&mut h, "embroidery.fabrics", json!({}));
+    assert_eq!(fabrics["fabrics"].as_array().unwrap().len(), 8);
+    let r = run(&mut h, "embroidery.setup", json!({"fabric": "denim"}));
+    assert_eq!(r["resolved"]["fabric"]["preset"], json!({"id": "denim", "known": true}));
+    let r = run(&mut h, "embroidery.applyFabric", json!({}));
+    assert_eq!(r["changedCount"], 0);
 }

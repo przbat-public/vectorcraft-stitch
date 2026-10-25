@@ -1,20 +1,24 @@
 //! The embroidery options, as the export and the embroidery commands take them, and the stitch
 //! planner's parameters they give an object ([`Options::params`]).
 //!
-//! One vocabulary for the export's options and the settings objects will carry (the project owner's
+//! One vocabulary for the export's options and the settings objects carry (the project owner's
 //! choice, 2026-10-22; `docs/embroidery.md` › Architecture): `stitch`, `spacing`, `length`,
 //! `angle`, `pull`, `pullPercent`, `push`, `expand`, `narrowAsSatin`, `threadWeight`, `underlay`,
-//! `jumpLength`, `trimLength` and `minStitch`. The earlier names (`stitchStyle`, `density`,
+//! `jumpLength`, `trimLength`, `minStitch` and `splitLength`. The earlier names (`stitchStyle`, `density`,
 //! `stitchLength`, `stitchAngle`, `pullCompensation`, `pullCompensationPercent`,
-//! `pushCompensation`) are taken as well ([`OPTIONS`]). A value outside the planner's range is
-//! refused, naming the range, rather than clamped; `null` leaves an option to its default.
+//! `pushCompensation`) are taken as well (the vocabulary's table, `super::vocabulary`), each as it
+//! was: `stitchAngle` the planner's clockwise angle, `180 − angle`. A value
+//! outside the planner's range is refused, naming the range, rather than clamped; `null` leaves an
+//! option to its default.
 
 use serde_json::{Map, Value, json};
 use vectorcraft_stitch::plan::{
-    DENSITY_RANGE, JUMP_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PULL_PERCENT_RANGE, PULL_RANGE, PUSH_RANGE, Params, STITCH_LENGTH_RANGE,
-    Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay,
+    DENSITY_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PERCENT, PULL_PERCENT_RANGE, PULL_RANGE, PUSH_RANGE,
+    Params, SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay,
 };
 
+use super::resolve::Stitch;
+use super::vocabulary;
 use crate::Result;
 use crate::cmd::bad;
 
@@ -27,75 +31,85 @@ pub(crate) const EXPAND_DEFAULT: f64 = 0.0;
 /// needs, short of redrawing them.
 pub(crate) const MAX_EXPAND: f64 = 2.0;
 
-/// One option's names: the one it has, and the earlier one it is also taken under.
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct Name {
-    pub(crate) name: &'static str,
-    pub(crate) earlier: Option<&'static str>,
+/// Degrees in a half turn: a fill's rows are lines, the same whichever of a half turn's two
+/// directions they are said to run in.
+const HALF_TURN: f64 = 180.0;
+
+/// The planner's angle for a fill angle the commands take (degrees counter-clockwise on the page,
+/// as every angle in VectorCraft and the project owner's choice, 2026-10-23): the planner counts
+/// clockwise as seen (its y axis points down the page, as the document's does), so the same rows
+/// are at `180 − angle`. The one place the two are converted, both ways (it is its own inverse). A
+/// half turn rather than a plain change of sign, so that the default rows (135° here, 45° to the
+/// planner, `plan::FILL_ANGLE`) keep their bits.
+pub(crate) fn planner_angle(angle: f64) -> f64 {
+    HALF_TURN - angle
 }
 
-/// Every option, by its name and its earlier name, in the order `document.formats` lists them.
-pub(crate) const OPTIONS: [Name; 14] = [
-    Name { name: "stitch", earlier: Some("stitchStyle") },
-    Name { name: "spacing", earlier: Some("density") },
-    Name { name: "length", earlier: Some("stitchLength") },
-    Name { name: "angle", earlier: Some("stitchAngle") },
-    Name { name: "pull", earlier: Some("pullCompensation") },
-    Name { name: "pullPercent", earlier: Some("pullCompensationPercent") },
-    Name { name: "push", earlier: Some("pushCompensation") },
-    Name { name: "expand", earlier: None },
-    Name { name: "narrowAsSatin", earlier: None },
-    Name { name: "threadWeight", earlier: None },
-    Name { name: "underlay", earlier: None },
-    Name { name: "jumpLength", earlier: None },
-    Name { name: "trimLength", earlier: None },
-    Name { name: "minStitch", earlier: None },
-];
+/// Option value `v` given under `given` as option `name` holds it: the earlier name of `angle`,
+/// `stitchAngle`, keeps its earlier meaning, the planner's clockwise angle (the project owner's
+/// choice, 2026-10-24), so that scripts, agents and recorded Actions that give it sew as before;
+/// `angle` is [`planner_angle`] of it. Every other value as it is given.
+fn as_held(name: &str, given: &str, v: &Value) -> Value {
+    match v.as_f64() {
+        Some(a) if name == "angle" => json!(if given == name { a } else { planner_angle(a) }),
+        _ => v.clone(),
+    }
+}
 
-/// The values `stitch` takes, and the style each forces: `auto` (none forced: fills tatami, strokes
-/// satin or running by their width); `tatami` and `fill` (a fill tatami, a stroke the area it
-/// paints, filled); `satin`; `running`.
-const STITCHES: [(&str, Option<Style>); 5] =
-    [("auto", None), ("tatami", Some(Style::Fill)), ("fill", Some(Style::Fill)), ("satin", Some(Style::Satin)), ("running", Some(Style::Running))];
+/// The values the export's `stitch` takes: those an object's takes but `none` (an export sews every
+/// part), each forcing its style: `auto` (none forced: fills tatami, strokes satin or running by
+/// their width); `tatami` and `fill` (a fill tatami, a stroke the area it paints, filled); `satin`;
+/// `running`.
+fn export_stitches() -> impl Iterator<Item = (&'static str, Stitch)> {
+    Stitch::IDS.into_iter().filter(|(_, s)| *s != Stitch::None)
+}
 
-/// The word the `stitch` option takes for `style` (the first of [`STITCHES`] that forces it):
-/// `tatami`, `satin`, `running`.
+/// The word the `stitch` option takes for `style` (the first id that forces it): `tatami`, `satin`,
+/// `running`.
 pub(crate) fn stitch_id(style: Style) -> &'static str {
-    STITCHES.iter().find(|(_, s)| *s == Some(style)).map_or("auto", |(id, _)| id)
+    Stitch::IDS.iter().find(|(_, s)| *s == Stitch::Style(style)).map_or("auto", |(id, _)| id)
 }
 
-/// How the export options dialog edits an embroidery option, so that what it writes is never
-/// refused: a choice from the values the option takes, or a number within the range the planner
-/// takes, in `unit`, to `decimals` places.
+/// How a panel edits an embroidery setting, so that what it writes is never refused: a choice from
+/// the values the setting takes, or a number within the range the planner takes, in `unit`, to
+/// `decimals` places. (The export options dialog once used it; the Object tab and Document Setup
+/// come next.)
 #[derive(Clone, Debug, PartialEq)]
-pub enum DialogField {
+pub enum SettingField {
     Choice(Vec<&'static str>),
     Number { min: f64, max: f64, unit: &'static str, decimals: usize },
 }
 
-/// The number of degrees `angle` turns at most each way in the dialog: a full turn (the planner
-/// takes any angle; a full turn either way is every direction).
+/// The number of degrees `angle` turns at most each way in a field: a full turn (the planner takes
+/// any angle; a full turn either way is every direction).
 const FULL_TURN: f64 = 360.0;
 
-/// [`DialogField`] of option `name` (as `document.formats` lists it); `None` for a name that is no
-/// embroidery option.
-pub fn dialog_field(name: &str) -> Option<DialogField> {
-    let mm = |(min, max): (f64, f64)| DialogField::Number { min, max, unit: "mm", decimals: 2 };
+/// [`SettingField`] of setting `name`: the export's options as `document.formats` lists them, and
+/// the document's own (`spacingPercent`, `speed`, `thickness`); `None` for a name that is neither.
+/// As an export takes them: an object's `stitch` also takes `none`, and a fabric's tatami
+/// `spacing` is within `plan::FABRIC_SPACING_RANGE`.
+pub fn setting_field(name: &str) -> Option<SettingField> {
+    let mm = |(min, max): (f64, f64)| SettingField::Number { min, max, unit: "mm", decimals: 2 };
     Some(match name {
-        "stitch" => DialogField::Choice(["auto", "tatami", "satin", "running"].to_vec()),
-        "underlay" => DialogField::Choice(Underlay::ALL.iter().map(|u| u.id()).collect()),
+        // The export's, but `fill`, tatami's earlier name.
+        "stitch" => SettingField::Choice(export_stitches().map(|(id, _)| id).filter(|id| *id != "fill").collect()),
+        "underlay" => SettingField::Choice(Underlay::ALL.iter().map(|u| u.id()).collect()),
         "spacing" => mm(DENSITY_RANGE),
         "length" => mm(STITCH_LENGTH_RANGE),
-        "angle" => DialogField::Number { min: -FULL_TURN, max: FULL_TURN, unit: "°", decimals: 1 },
+        "angle" => SettingField::Number { min: -FULL_TURN, max: FULL_TURN, unit: "°", decimals: 1 },
         "pull" => mm(PULL_RANGE),
-        "pullPercent" => DialogField::Number { min: PULL_PERCENT_RANGE.0, max: PULL_PERCENT_RANGE.1, unit: "%", decimals: 1 },
+        "pullPercent" => SettingField::Number { min: PULL_PERCENT_RANGE.0, max: PULL_PERCENT_RANGE.1, unit: "%", decimals: 1 },
         "push" => mm(PUSH_RANGE),
         "expand" => mm((-MAX_EXPAND, MAX_EXPAND)),
         "narrowAsSatin" => mm(NARROW_RANGE),
-        "threadWeight" => DialogField::Number { min: THREAD_WEIGHT_RANGE.0, max: THREAD_WEIGHT_RANGE.1, unit: "wt", decimals: 0 },
+        "threadWeight" => SettingField::Number { min: THREAD_WEIGHT_RANGE.0, max: THREAD_WEIGHT_RANGE.1, unit: "wt", decimals: 0 },
         "jumpLength" => mm(JUMP_RANGE),
         "trimLength" => mm((JUMP_RANGE.0, MAX_TRIM)),
         "minStitch" => mm(MIN_STITCH_RANGE),
+        "splitLength" => mm(MAX_SATIN_STITCH_RANGE),
+        "spacingPercent" => SettingField::Number { min: SPACING_PERCENT_RANGE.0, max: SPACING_PERCENT_RANGE.1, unit: "%", decimals: 0 },
+        "speed" => SettingField::Number { min: super::stats::SPEED_RANGE.0, max: super::stats::SPEED_RANGE.1, unit: "/min", decimals: 0 },
+        "thickness" => mm(super::stats::FABRIC_THICKNESS_RANGE),
         _ => return None,
     })
 }
@@ -103,8 +117,9 @@ pub fn dialog_field(name: &str) -> Option<DialogField> {
 /// The embroidery options, as they come: each one left out keeps the style's own value. Two are
 /// equal when every value is (a plan made with one is the plan made with the other). Made from
 /// the commands' params ([`Options::from_json`]), so that they are checked as the commands check
-/// them.
-#[derive(Clone, Debug, Default, PartialEq)]
+/// them; and, laid over one another ([`Options::over`]), a layer of where a unit's settings come
+/// from (`super::resolve`): an object's own, the document's.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Options {
     /// The style `stitch` forces; `None` for `auto`.
     pub(crate) stitch: Option<Style>,
@@ -121,6 +136,11 @@ pub struct Options {
     pub(crate) jump_length: Option<f64>,
     pub(crate) trim_length: Option<f64>,
     pub(crate) min_stitch: Option<f64>,
+    /// The longest satin stitch before it is split, millimetres.
+    pub(crate) split_length: Option<f64>,
+    /// A satin's share of the spacing picked by its width, percent: the document's fabric gives
+    /// it (no command option does).
+    pub(crate) spacing_percent: Option<f64>,
 }
 
 /// What to do with a key that is no option.
@@ -155,8 +175,8 @@ impl Options {
     pub(crate) fn from_object(o: &Map<String, Value>, others: Others<'_>, cmd: &str) -> Result<Self> {
         let mut out = Self::default();
         for (key, v) in o {
-            let Some(option) = OPTIONS.iter().find(|n| n.name == key || n.earlier == Some(key.as_str())) else {
-                let names: Vec<&str> = OPTIONS.iter().flat_map(|n| std::iter::once(n.name).chain(n.earlier)).collect();
+            let Some(option) = vocabulary::options().find(|n| n.name == key || n.earlier == Some(key.as_str())) else {
+                let names: Vec<&str> = vocabulary::options().flat_map(|n| std::iter::once(n.name).chain(n.earlier)).collect();
                 match others {
                     Others::Refuse(own) if own.contains(&key.as_str()) => continue,
                     Others::Refuse(_) => {
@@ -174,10 +194,11 @@ impl Options {
                     },
                 }
             };
-            // The same option under both its names, with different values.
+            // The same option under both its names, with different values (as the option holds
+            // them: `stitchAngle` 30 is `angle` 150).
             if let Some(other) = option.earlier.filter(|e| e != key).or(Some(option.name).filter(|n| n != key))
                 && let Some(w) = o.get(other)
-                && w != v
+                && as_held(option.name, other, w) != as_held(option.name, key, v)
             {
                 return Err(bad(cmd, format!("`{}` and `{}` name the same option: give one", option.name, option.earlier.unwrap_or(other))));
             }
@@ -216,14 +237,21 @@ impl Options {
         match name {
             "stitch" => {
                 let id = v.as_str().unwrap_or_default();
-                self.stitch = STITCHES.iter().find(|(s, _)| *s == id).map(|(_, style)| *style).ok_or_else(|| {
-                    let ids: Vec<&str> = STITCHES.iter().map(|(s, _)| *s).collect();
-                    bad(cmd, format!("`{given}` {v}: one of {}", ids.join(", ")))
-                })?;
+                self.stitch = match export_stitches().find(|(s, _)| *s == id).map(|(_, stitch)| stitch) {
+                    Some(Stitch::Style(style)) => Some(style),
+                    Some(Stitch::Auto | Stitch::None) => None,
+                    None => {
+                        let ids: Vec<&str> = export_stitches().map(|(s, _)| s).collect();
+                        return Err(bad(cmd, format!("`{given}` {v}: one of {}", ids.join(", "))));
+                    }
+                };
             }
             "spacing" => self.spacing = Some(number(DENSITY_RANGE, "millimetres")?),
             "length" => self.length = Some(number(STITCH_LENGTH_RANGE, "millimetres")?),
-            "angle" => self.angle = Some(v.as_f64().ok_or_else(|| bad(cmd, format!("`{given}` {v}: a number of degrees")))?),
+            "angle" => {
+                v.as_f64().ok_or_else(|| bad(cmd, format!("`{given}` {v}: a number of degrees")))?;
+                self.angle = as_held(name, given, v).as_f64();
+            }
             "pull" => self.pull = Some(sides(PULL_RANGE)?),
             "pullPercent" => self.pull_percent = Some(sides(PULL_PERCENT_RANGE)?),
             "push" => self.push = Some(sides(PUSH_RANGE)?),
@@ -243,6 +271,7 @@ impl Options {
             "jumpLength" => self.jump_length = Some(number(JUMP_RANGE, "millimetres")?),
             "trimLength" => self.trim_length = Some(number((JUMP_RANGE.0, MAX_TRIM), "millimetres")?),
             "minStitch" => self.min_stitch = Some(number(MIN_STITCH_RANGE, "millimetres")?),
+            "splitLength" => self.split_length = Some(number(MAX_SATIN_STITCH_RANGE, "millimetres")?),
             _ => {}
         }
         Ok(())
@@ -271,7 +300,68 @@ impl Options {
         put("jumpLength", self.jump_length.map(Value::from));
         put("trimLength", self.trim_length.map(Value::from));
         put("minStitch", self.min_stitch.map(Value::from));
+        put("splitLength", self.split_length.map(Value::from));
         Value::Object(o)
+    }
+
+    /// These options over `lower`: each one given here, else `lower`'s. Both are taken apart field
+    /// by field, so that an option added to [`Options`] fails to compile here until it is laid over
+    /// too.
+    pub(crate) fn over(&self, lower: &Options) -> Options {
+        let Options {
+            stitch,
+            spacing,
+            length,
+            angle,
+            pull,
+            pull_percent,
+            push,
+            expand,
+            narrow_as_satin,
+            thread_weight,
+            underlay,
+            jump_length,
+            trim_length,
+            min_stitch,
+            split_length,
+            spacing_percent,
+        } = *self;
+        let Options {
+            stitch: stitch_below,
+            spacing: spacing_below,
+            length: length_below,
+            angle: angle_below,
+            pull: pull_below,
+            pull_percent: pull_percent_below,
+            push: push_below,
+            expand: expand_below,
+            narrow_as_satin: narrow_below,
+            thread_weight: thread_weight_below,
+            underlay: underlay_below,
+            jump_length: jump_below,
+            trim_length: trim_below,
+            min_stitch: min_stitch_below,
+            split_length: split_below,
+            spacing_percent: spacing_percent_below,
+        } = *lower;
+        Options {
+            stitch: stitch.or(stitch_below),
+            spacing: spacing.or(spacing_below),
+            length: length.or(length_below),
+            angle: angle.or(angle_below),
+            pull: pull.or(pull_below),
+            pull_percent: pull_percent.or(pull_percent_below),
+            push: push.or(push_below),
+            expand: expand.or(expand_below),
+            narrow_as_satin: narrow_as_satin.or(narrow_below),
+            thread_weight: thread_weight.or(thread_weight_below),
+            underlay: underlay.or(underlay_below),
+            jump_length: jump_length.or(jump_below),
+            trim_length: trim_length.or(trim_below),
+            min_stitch: min_stitch.or(min_stitch_below),
+            split_length: split_length.or(split_below),
+            spacing_percent: spacing_percent.or(spacing_percent_below),
+        }
     }
 
     pub(crate) fn params(&self, style: Style, width: f64) -> Params {
@@ -283,7 +373,7 @@ impl Options {
             // A spacing given is used as it is; left out, a satin picks it by its width.
             auto_spacing: d.auto_spacing && self.spacing.is_none(),
             stitch_length: self.length.unwrap_or(d.stitch_length),
-            angle: self.angle.unwrap_or(d.angle),
+            angle: self.angle.map(planner_angle).unwrap_or(d.angle),
             // A running line has no compensation, whatever is given.
             pull: if style == Style::Running { d.pull } else { self.pull.unwrap_or(d.pull) },
             pull_percent: if style == Style::Running { d.pull_percent } else { self.pull_percent.unwrap_or(d.pull_percent) },
@@ -295,6 +385,12 @@ impl Options {
             jump: self.jump_length.unwrap_or(d.jump),
             trim: self.trim_length.unwrap_or(d.trim),
             min_stitch: self.min_stitch.unwrap_or(d.min_stitch),
+            // Only a satin splits its stitches (a fill's narrow parts take a satin's parameters): a
+            // running line's or a fill's own keep the default, so that a split length changed
+            // plans them again for nothing.
+            max_satin: if style == Style::Satin { self.split_length.unwrap_or(d.max_satin) } else { d.max_satin },
+            // A share of the spacing picked by width, in percent (100 is all of it, exactly).
+            spacing_scale: self.spacing_percent.map_or(d.spacing_scale, |p| p / PERCENT),
             width,
             ..d
         }

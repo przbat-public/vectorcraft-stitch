@@ -5287,6 +5287,13 @@ imageTrace	Outline	კონტური
 @msg	its Zstandard compression is damaged	მისი Zstandard შეკუმშვა დაზიანებულია
 @msg	it decompresses to more than {_1} MB	გაშლისას {_1} MB-ს აღემატება
 	Embroidery Trim After	ქარგვა: ძაფის მოჭრა შემდეგ
+	Embroidery Object Settings	ობიექტის ქარგვის პარამეტრები
+	Reset Embroidery Object Settings	ობიექტის ქარგვის პარამეტრების აღდგენა
+	Embroidery Entry and Exit	ქარგვის შესვლა და გასვლა
+	Paste Embroidery Object Settings	ობიექტის ქარგვის პარამეტრების ჩასმა
+	Show Embroidery Object Settings	ობიექტის ქარგვის პარამეტრების ჩვენება
+	Embroidery Fabrics	ქარგვის ქსოვილები
+	Apply Embroidery Fabric to Objects	ქარგვის ქსოვილის გამოყენება ობიექტებზე
 	Embroidery Setup	ქარგვის პარამეტრები
 	Show Embroidery Settings	ქარგვის პარამეტრების ჩვენება
 	Embroidery Statistics	ქარგვის სტატისტიკა
@@ -5305,7 +5312,18 @@ imageTrace	Outline	კონტური
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	expand-ის უარყოფითმა მნიშვნელობამ ზოგიერთი შევსებული ფიგურისგან არაფერი დატოვა, ამიტომ ისინი არ იქარგება: ნაკლებად შეამცირეთ ისინი
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	გრადიენტები და პატერნები მათი პირველი გადასვლის წერტილის ფერით იღებება; ნაქარგი თითო ბლოკს ერთი ძაფით კერავს
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	{widest} მმ-ზე განიერი კონტურები იკერება {widest} მმ სიგანის ატლასის სვეტებად: ამის ნაცვლად შეავსეთ ისინი (stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	ფუნჯით დახატული ან ეფექტით შეცვლილი კონტურები იკერება იმ არედ, რომელსაც ხატავენ: მათზე დაყენებული სწორი ნაკერი ან ატლასი ვერ გაჰყვება მათ გზას
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	ეს ვერსია არ იცნობს დოკუმენტის ძაფების პალიტრას {palette}, ამიტომ მისი ძაფები {default} პალიტრიდან შეირჩევა
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	დოკუმენტის ქარგვის პარამეტრები შეიცავს ისეთებს, რომლებსაც ეს ვერსია ვერ კითხულობს (უფრო ახალი ვერსიიდან): ისინი ინახება, ხოლო დიზაინი მათ გარეშე იქარგება
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	დოკუმენტის ქარგვის ზოგიერთი პარამეტრი სცდება იმას, რასაც ეს ვერსია ქარგავს: თითოეული იქარგება უახლოესი მნიშვნელობით, რომელსაც იღებს
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	ჭრის სიგრძე გადასვლის სიგრძეზე მოკლეა, ამიტომ გადასვლები იჭრება უკვე გადასვლის სიგრძიდან
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	ზოგიერთი ობიექტის ქარგვის პარამეტრები შეიცავს ისეთებს, რომლებსაც ეს ვერსია ვერ კითხულობს (უფრო ახალი ვერსიიდან): ისინი ინახება, ხოლო ეს ობიექტები მათ გარეშე იქარგება
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	ობიექტების ქარგვის ზოგიერთი პარამეტრი სცდება იმას, რასაც ეს ვერსია ქარგავს: თითოეული იქარგება უახლოესი მნიშვნელობით, რომელსაც იღებს
+@msg	none of these objects takes settings for its `{_1}`: {_2}	ამ ობიექტებიდან არცერთი არ იღებს პარამეტრებს თავისი `{_1}`-სთვის: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	ამ ობიექტებიდან არცერთი არ იღებს ქარგვის პარამეტრებს: {_1}
+@msg	object {_1} takes no embroidery settings ({_2})	ობიექტი {_1} არ იღებს ქარგვის პარამეტრებს ({_2})
+@msg	object {_1} is a group: give one of its objects	ობიექტი {_1} ჯგუფია: მიუთითეთ მისი ერთ-ერთი ობიექტი
+@msg	object {_1} has no `{_2}`	ობიექტს {_1} არ აქვს `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	საქარგავი არაფერია: დოკუმენტს არ აქვს ხილული ტრაექტორიები შევსებით ან კონტურით
 @msg	nothing to stitch: {_1}	საქარგავი არაფერია: {_1}
 
@@ -5363,7 +5381,7 @@ imageTrace	Outline	კონტური
 @msg	too many stitches for a VP3 file	ზედმეტად ბევრი ნაკერი VP3 ფაილისთვის
 @msg	{_1} is not an embroidery format	{_1} არ არის ქარგვის ფორმატი
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	ნაკერი:
 	Stitch Length:	ნაკერის სიგრძე:
 	Fill Angle:	შევსების კუთხე:

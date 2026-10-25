@@ -61,27 +61,19 @@ fn ui_render_draws_the_stitches_when_asked() {
     assert_eq!(marked, image::load_from_memory(&png).unwrap().to_rgba8(), "the view's own marks");
 }
 
-/// An embroidery export from the app (File › Export) gives the stitch preview its options.
+/// An embroidery export from the app (File › Export) writes with its options alone: the stitch
+/// preview still plans with none, so it shows what an export without them writes.
 #[test]
-fn an_export_from_the_app_gives_the_preview_its_options() {
+fn an_export_from_the_app_leaves_the_preview_as_it_was() {
     use vectorcraft_engine::EmbroideryOptions;
-    use vectorcraft_engine::cmd::embroidery::view::OptionsSource;
-    let services = Services {
-        write: Some(Box::new(|path: &str, _: &[u8]| if path.contains("denied") { Err("permission denied".into()) } else { Ok(()) })),
-        ..Default::default()
-    };
+    let services = Services { write: Some(Box::new(|_: &str, _: &[u8]| Ok(()))), ..Default::default() };
     let mut app = VectorcraftApp::new(Session::new(), services);
     app.session.execute("prefs.set", &json!({"values": {"backgroundExport": false}})).unwrap();
     app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
     app.run("shape.rectangle", json!({"x": 20, "y": 20, "width": 60, "height": 60})).unwrap();
-    let uid = app.session.active().unwrap().uid;
-    assert_eq!(app.session.stitch_preview_options(uid).1, OptionsSource::Default);
+    let before = app.session.embroidery_plan_key(&EmbroideryOptions::default());
     crate::io::export(&mut app, Some("dst"), Some("/out/a.dst".into()), &json!({"spacing": 0.5})).unwrap();
-    let ours = EmbroideryOptions::from_json(&json!({"spacing": 0.5})).unwrap();
-    assert_eq!(app.session.stitch_preview_options(uid), (ours.clone(), OptionsSource::LastExport));
-    // An export that isn't written notes nothing.
-    assert!(crate::io::export(&mut app, Some("dst"), Some("/denied/b.dst".into()), &json!({"spacing": 0.3})).is_err());
-    assert_eq!(app.session.stitch_preview_options(uid), (ours, OptionsSource::LastExport));
+    assert_eq!(app.session.embroidery_plan_key(&EmbroideryOptions::default()), before, "the same plan: the document is as it was");
 }
 
 /// View › Stitch Preview follows Pixel Preview, with its options in a submenu; their checkmarks

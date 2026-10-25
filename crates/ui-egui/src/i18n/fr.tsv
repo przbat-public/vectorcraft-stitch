@@ -5414,6 +5414,13 @@ theme	Appearance	Apparence
 	Select artwork to apply effects	Sélectionnez des éléments graphiques pour appliquer des effets
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	les variables et jeux de données du fichier n’ont pas été lus (variables : {variables}, jeux de données : {data_sets}) : le panneau Variables ne les affiche pas
 	Embroidery Trim After	Broderie : couper le fil après
+	Embroidery Object Settings	Paramètres de broderie de l’objet
+	Reset Embroidery Object Settings	Réinitialiser les paramètres de broderie de l’objet
+	Embroidery Entry and Exit	Entrée et sortie de la broderie
+	Paste Embroidery Object Settings	Coller les paramètres de broderie de l’objet
+	Show Embroidery Object Settings	Afficher les paramètres de broderie de l’objet
+	Embroidery Fabrics	Tissus de broderie
+	Apply Embroidery Fabric to Objects	Appliquer le tissu de broderie aux objets
 	Embroidery Setup	Paramètres de broderie
 	Show Embroidery Settings	Afficher les paramètres de broderie
 	Embroidery Statistics	Statistiques de broderie
@@ -5432,7 +5439,18 @@ theme	Appearance	Apparence
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	une valeur expand négative n’a rien laissé de certaines formes remplies, elles ne sont donc pas brodées : réduisez-les moins
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	les dégradés et les motifs sont peints de la couleur de leur première étape ; une broderie coud un seul fil par bloc
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	les contours plus larges que {widest} mm sont cousus en colonnes de satin de {widest} mm de large : remplissez-les plutôt (stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	les contours tracés avec un pinceau ou remodelés par un effet sont cousus comme la zone qu’ils peignent : un point droit ou un satin réglé sur eux ne peut pas suivre leur tracé
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	cette version ne connaît pas la palette de fils {palette} du document, ses fils sont donc choisis dans la palette {default}
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	les réglages de broderie du document en contiennent que cette version ne lit pas (d’une version plus récente) : ils sont conservés, et le motif est brodé sans eux
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	certains réglages de broderie du document sortent de ce que cette version brode : chacun est brodé à la valeur la plus proche qu’il accepte
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	la longueur de coupe est plus courte que la longueur de saut, donc les sauts sont coupés dès la longueur de saut
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	les réglages de broderie de certains objets en contiennent que cette version ne lit pas (d’une version plus récente) : ils sont conservés, et ces objets sont brodés sans eux
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	certains réglages de broderie d’objets sortent de ce que cette version brode : chacun est brodé à la valeur la plus proche qu’il accepte
+@msg	none of these objects takes settings for its `{_1}`: {_2}	aucun de ces objets n’accepte de paramètres pour son `{_1}` : {_2}
+@msg	none of these objects takes embroidery settings: {_1}	aucun de ces objets n’accepte de paramètres de broderie : {_1}
+@msg	object {_1} takes no embroidery settings ({_2})	l’objet {_1} n’accepte pas de paramètres de broderie ({_2})
+@msg	object {_1} is a group: give one of its objects	l’objet {_1} est un groupe : indiquez l’un de ses objets
+@msg	object {_1} has no `{_2}`	l’objet {_1} n’a pas de `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	rien à broder : le document n’a aucun tracé visible avec un fond ou un contour
 @msg	nothing to stitch: {_1}	rien à broder : {_1}
 
@@ -5491,7 +5509,7 @@ theme	Appearance	Apparence
 @msg	too many stitches for a VP3 file	trop de points pour un fichier VP3
 @msg	{_1} is not an embroidery format	{_1} n’est pas un format de broderie
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Point :
 	Stitch Length:	Longueur de point :
 	Fill Angle:	Angle de remplissage :

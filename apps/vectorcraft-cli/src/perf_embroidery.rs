@@ -67,7 +67,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 40] = [
+pub const ROWS: [&str; 43] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -108,16 +108,22 @@ pub const ROWS: [&str; 40] = [
     "preview: cancel, 20 rings in one fill",
     "sewing order: move one object, re-plan",
     "sewing order: drag half of 22,000 paths",
+    "settings: re-plan after one object's angle",
+    "settings: re-plan after a fabric change",
+    "settings: info of 1,000 objects",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
 /// rows (from the drawing's on) are about 2.5 times what they measured on 2026-10-24 (release,
 /// 12-core Apple Silicon, load about 2, median of five, twice), so that a regression of that size
 /// shows; the cancel's is 5 ms, above the noise of a thread's wake-up. The planning rows keep the
-/// budgets they were given with the planning service.
-const BUDGETS: [f64; 40] = [
+/// budgets they were given with the planning service. The settings rows: an object's setting
+/// plans again its own units (about 2.5 times the 2.4 ms it measured, so that planning every fill
+/// again, about 70 ms, fails it), a fabric change the fills of the document (the cold plan's), and
+/// reading the settings of 1,000 objects plans nothing (half the kept replies' 50 ms).
+const BUDGETS: [f64; 43] = [
     400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 100.0, 400.0, 4000.0, 50.0, 20.0,
-    13.0, 7.0, 32.0, 95.0, 20.0, 30.0, 7.0, 5.0, 2.5, 13.0, 60.0, 55.0, 75.0, 280.0, 20.0, 20.0, 5.0, 6.0, 25.0,
+    13.0, 7.0, 32.0, 95.0, 20.0, 30.0, 7.0, 5.0, 2.5, 13.0, 60.0, 55.0, 75.0, 280.0, 20.0, 20.0, 5.0, 6.0, 25.0, 6.0, 400.0, 25.0,
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -278,6 +284,7 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.push(cancel_latency(&one_fill(rings(20), FillRule::EvenOdd))?);
     ms.push(reorder(&doc)?);
     ms.push(drag_half(&largest)?);
+    ms.extend(settings(&doc)?);
     // A row with nothing to measure (no corpus) is left out.
     Ok(ROWS.iter().zip(ms).zip(BUDGETS).filter(|((_, ms), _)| !ms.is_nan()).map(|((name, ms), budget)| (*name, ms, budget)).collect())
 }
@@ -372,6 +379,50 @@ fn reorder(doc: &Document) -> Result<f64, String> {
         samples.push(t.elapsed().as_secs_f64() * 1000.0);
     }
     Ok(middle(samples))
+}
+
+/// The fill angle the settings row gives the object sewn first, degrees, and the step between
+/// runs: each run an angle not planned before, so that its units are planned again, not found
+/// kept.
+const ANGLE_FROM: f64 = 30.0;
+const ANGLE_STEP: f64 = 1.0;
+
+/// The fabric's tatami pull compensation the settings row sets, millimetres, and the step between
+/// runs: each run a fabric not planned before.
+const PULL_FROM: f64 = 0.21;
+const PULL_STEP: f64 = 0.01;
+
+/// The settings rows on `doc`, milliseconds, each the median of [`DRAW_RUNS`]: one object's fill
+/// angle set and the design planned again (its other units kept); the fabric's tatami values
+/// changed and the design planned again (its fills planned afresh); and `embroidery.info` of every
+/// object (no plan).
+fn settings(doc: &Document) -> Result<[f64; 3], String> {
+    let opts = vectorcraft_engine::EmbroideryOptions::default();
+    let mut s = fresh(doc);
+    // The first unit sewn as a fill: the angle row sets a fill's angle.
+    let order = s.execute("embroidery.sequence", &json!({})).map_err(err)?;
+    let units = order["blocks"].as_array().into_iter().flatten().filter_map(|b| b["units"].as_array()).flatten();
+    let first = units.filter(|u| u["part"] == json!("fill")).find_map(|u| u["id"].as_u64());
+    let Some(first) = first else { return Err("embroidery: the document has no fill to set".into()) };
+    s.embroidery_plan(&opts).map_err(err)?;
+    let timed_edits = |s: &mut Session, command: &str, params: &dyn Fn(usize) -> Value| -> Result<f64, String> {
+        let mut samples = Vec::with_capacity(DRAW_RUNS);
+        for k in 0..DRAW_RUNS {
+            let t = Instant::now();
+            s.execute(command, &params(k)).map_err(err)?;
+            s.embroidery_plan(&opts).map_err(err)?;
+            samples.push(t.elapsed().as_secs_f64() * 1000.0);
+        }
+        Ok(middle(samples))
+    };
+    let angle = timed_edits(&mut s, "embroidery.set", &|k| json!({"ids": [first], "part": "fill", "angle": ANGLE_FROM + ANGLE_STEP * k as f64}))?;
+    let fabric = timed_edits(&mut s, "embroidery.setup", &|k| json!({"fabric": {"tatami": {"pull": PULL_FROM + PULL_STEP * k as f64}}}))?;
+    let ids: Vec<u64> = s.doc().map_err(err)?.doc.layers.iter().filter_map(|l| l.children()).flatten().map(|c| c.id.0).collect();
+    let mut samples = Vec::with_capacity(DRAW_RUNS);
+    for _ in 0..DRAW_RUNS {
+        samples.push(timed(&mut s, "embroidery.info", &json!({"ids": ids}))?.0);
+    }
+    Ok([angle, fabric, middle(samples)])
 }
 
 /// `vectorcraft-cli bench FILE`'s stitch preview line for a design to stitch: its scene's build

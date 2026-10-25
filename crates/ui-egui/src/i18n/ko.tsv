@@ -4992,6 +4992,13 @@ lighting	Light	광원
 	Select artwork to apply effects	효과를 적용할 그래픽을 선택하세요
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	파일의 변수와 데이터 세트를 읽지 않았습니다(변수: {variables}, 데이터 세트: {data_sets}). 변수 패널에 표시되지 않습니다
 	Embroidery Trim After	자수: 이후 실 자르기
+	Embroidery Object Settings	개체 자수 설정
+	Reset Embroidery Object Settings	개체 자수 설정 재설정
+	Embroidery Entry and Exit	자수 시작점과 끝점
+	Paste Embroidery Object Settings	개체 자수 설정 붙여넣기
+	Show Embroidery Object Settings	개체 자수 설정 표시
+	Embroidery Fabrics	자수 원단
+	Apply Embroidery Fabric to Objects	자수 원단을 개체에 적용
 	Embroidery Setup	자수 설정
 	Show Embroidery Settings	자수 설정 표시
 	Embroidery Statistics	자수 통계
@@ -5010,7 +5017,18 @@ lighting	Light	광원
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	음수 expand 값 때문에 일부 칠한 모양이 하나도 남지 않아 자수로 놓이지 않습니다: 덜 축소하세요
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	그레이디언트와 패턴은 첫 번째 정지점의 색으로 칠해집니다. 자수는 블록마다 실 하나로 박습니다
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	{widest} mm보다 넓은 선은 너비 {widest} mm의 새틴 기둥으로 박힙니다: 대신 칠로 채우세요(stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	브러시로 그리거나 효과로 모양이 바뀐 선은 칠하는 영역으로 박힙니다: 그 선에 설정한 러닝 스티치나 새틴은 선의 경로를 따를 수 없습니다
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	이 버전은 문서의 실 팔레트 {palette}을(를) 알지 못하므로 실을 {default} 팔레트에서 고릅니다
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	문서의 자수 설정에 이 버전이 읽지 못하는 항목(새 버전의 것)이 있습니다: 그대로 보존되며 디자인은 그 항목 없이 놓입니다
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	문서의 자수 설정 일부가 이 버전이 놓을 수 있는 범위를 벗어납니다: 각각 허용되는 가장 가까운 값으로 놓입니다
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	실 자르기 길이가 점프 길이보다 짧으므로 점프는 점프 길이부터 실을 자릅니다
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	일부 개체의 자수 설정에 이 버전이 읽지 못하는 항목(새 버전의 것)이 있습니다: 그대로 보존되며 해당 개체는 그 항목 없이 놓입니다
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	개체의 자수 설정 일부가 이 버전이 놓을 수 있는 범위를 벗어납니다: 각각 허용되는 가장 가까운 값으로 놓입니다
+@msg	none of these objects takes settings for its `{_1}`: {_2}	이 개체 중 `{_1}` 설정을 받는 개체가 없습니다: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	이 개체 중 자수 설정을 받는 개체가 없습니다: {_1}
+@msg	object {_1} takes no embroidery settings ({_2})	개체 {_1}은(는) 자수 설정을 받지 않습니다({_2})
+@msg	object {_1} is a group: give one of its objects	개체 {_1}은(는) 그룹입니다: 그 안의 개체 하나를 지정하세요
+@msg	object {_1} has no `{_2}`	개체 {_1}에 `{_2}`이(가) 없습니다
 @msg	nothing to stitch: the document has no visible filled or stroked paths	자수할 것이 없습니다: 문서에 칠이나 선이 있는 보이는 패스가 없습니다
 @msg	nothing to stitch: {_1}	자수할 것이 없습니다: {_1}
 
@@ -5068,7 +5086,7 @@ lighting	Light	광원
 @msg	too many stitches for a VP3 file	VP3 파일에 비해 땀이 너무 많습니다
 @msg	{_1} is not an embroidery format	{_1}은(는) 자수 형식이 아닙니다
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	땀:
 	Stitch Length:	땀 길이:
 	Fill Angle:	채우기 각도:

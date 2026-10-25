@@ -5508,6 +5508,13 @@ axis	Y Axis	Y ekseni
 	Brother Threads (PEC)	Brother İplikleri (PEC)
 	Janome Threads (JEF)	Janome İplikleri (JEF)
 	Embroidery Trim After	Nakış: Sonrasında İpliği Kes
+	Embroidery Object Settings	Nesne Nakış Ayarları
+	Reset Embroidery Object Settings	Nesne Nakış Ayarlarını Sıfırla
+	Embroidery Entry and Exit	Nakış Giriş ve Çıkışı
+	Paste Embroidery Object Settings	Nesne Nakış Ayarlarını Yapıştır
+	Show Embroidery Object Settings	Nesne Nakış Ayarlarını Göster
+	Embroidery Fabrics	Nakış Kumaşları
+	Apply Embroidery Fabric to Objects	Nakış Kumaşını Nesnelere Uygula
 	Embroidery Setup	Nakış Kurulumu
 	Show Embroidery Settings	Nakış Ayarlarını Göster
 	Embroidery Statistics	Nakış İstatistikleri
@@ -5524,7 +5531,18 @@ axis	Y Axis	Y ekseni
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	negatif bir expand değeri bazı dolgulu şekillerden hiçbir şey bırakmadı, bu yüzden dikilmezler: onları daha az küçültün
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	degradeler ve desenler ilk renk duraklarının rengiyle boyanır; bir tasarım her blokta tek bir iplikle dikilir
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	{widest} mm'den geniş konturlar {widest} mm genişliğinde saten sütunlar olarak dikilir: bunun yerine onları doldurun (stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	fırçayla çizilen ya da bir efektle yeniden şekillenen konturlar boyadıkları alan olarak dikilir: onlara ayarlanan düz dikiş ya da saten yollarını izleyemez
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	belgenin {palette} iplik paleti bu sürümün tanıdığı bir palet değil, bu yüzden iplikleri {default} paletinden eşleştirilir
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	belgenin nakış ayarları bu sürümün okumadığı bazı ayarlar içeriyor (daha yeni bir sürümden): bunlar korunur ve tasarım onlarsız işlenir
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	belgenin bazı nakış ayarları bu sürümün işleyebildiği aralığın dışında: her biri kabul ettiği en yakın değerle işlenir
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	kesme uzunluğu atlama uzunluğundan kısa, bu yüzden atlamalar daha atlama uzunluğundan itibaren kesilir
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	bazı nesnelerin nakış ayarları bu sürümün okumadığı ayarlar içeriyor (daha yeni bir sürümden): bunlar korunur ve bu nesneler onlarsız işlenir
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	nesnelerin bazı nakış ayarları bu sürümün işleyebildiği aralığın dışında: her biri kabul ettiği en yakın değerle işlenir
+@msg	none of these objects takes settings for its `{_1}`: {_2}	bu nesnelerin hiçbiri `{_1}` için ayar almıyor: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	bu nesnelerin hiçbiri nakış ayarı almıyor: {_1}
+@msg	object {_1} takes no embroidery settings ({_2})	{_1} nesnesi nakış ayarı almıyor ({_2})
+@msg	object {_1} is a group: give one of its objects	{_1} nesnesi bir grup: nesnelerinden birini verin
+@msg	object {_1} has no `{_2}`	{_1} nesnesinde `{_2}` yok
 @msg	nothing to stitch: the document has no visible filled or stroked paths	dikilecek bir şey yok: belgede görünür dolgulu veya konturlu yol yok
 @msg	nothing to stitch: {_1}	dikilecek bir şey yok: {_1}
 @msg	the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone	PES dosyasının PE-Design'ın düzenlediği kendi bölümü korunmaz: bu belgeden yazılan bir PES yalnızca dikişlerini içerir
@@ -5575,6 +5593,7 @@ axis	Y Axis	Y ekseni
 @msg	thread number {index} doesn't fit a PEC header	{index} numaralı iplik bir PEC başlığına sığmıyor
 @msg	too many stitches for a VP3 file	bir VP3 dosyası için çok fazla dikiş
 @msg	{_1} is not an embroidery format	{_1} bir nakış biçimi değil
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Dikiş:
 	Stitch Length:	Dikiş Uzunluğu:
 	Fill Angle:	Dolgu Açısı:

@@ -7,8 +7,10 @@
 //! themselves are read and written in `cmd::fileio::embroidery` (`document.open`,
 //! `document.export`).
 //!
-//! The parts: [`options`] (the export's options, and the stitch planner's parameters they give an
-//! object), [`digitize`] (the document's art planned as a design: its [`plan::DesignPlan`]),
+//! The parts: `vocabulary` (each setting's name, earlier name, file key and where it can be set),
+//! [`options`] (the export's options, and the stitch planner's parameters they give an object),
+//! `setup` (the document's embroidery settings: `embroidery.setup` and
+//! `embroidery.settings`), [`digitize`] (the document's art planned as a design: its [`plan::DesignPlan`]),
 //! [`unit`] (one sewing unit's stitches from what it is planned from), [`cache`] (each unit's
 //! stitches kept between plans), [`service`] (each open document's planning, with what it keeps),
 //! [`plan`] (the plan: sewing units, thread blocks, stitch numbers), [`sequence`] (the order the
@@ -20,17 +22,23 @@
 
 mod cache;
 mod check;
+pub(crate) mod derive;
 pub(crate) mod digitize;
+mod fabrics;
+pub mod info;
 mod measure;
+mod objects;
 pub(crate) mod options;
 pub mod order;
 pub mod plan;
 mod printed;
 pub mod render;
 pub mod reorder;
+mod resolve;
 pub mod scene;
 mod sequence;
 pub(crate) mod service;
+pub mod setup;
 mod stats;
 #[cfg(test)]
 mod test_support;
@@ -41,15 +49,33 @@ mod tests_check;
 #[cfg(test)]
 mod tests_contract;
 #[cfg(test)]
+mod tests_derive;
+#[cfg(test)]
+mod tests_expanded;
+#[cfg(test)]
+mod tests_info;
+#[cfg(test)]
+mod tests_matrix;
+#[cfg(test)]
+mod tests_object;
+#[cfg(test)]
+mod tests_object_commands;
+#[cfg(test)]
 mod tests_order;
 #[cfg(test)]
 mod tests_scene;
 #[cfg(test)]
 mod tests_service;
 #[cfg(test)]
+mod tests_settings;
+#[cfg(test)]
+mod tests_setup;
+#[cfg(test)]
 mod tests_stats;
 #[cfg(test)]
 mod tests_threadlib;
+#[cfg(test)]
+mod tests_transform;
 #[cfg(test)]
 mod tests_view;
 #[cfg(test)]
@@ -57,6 +83,7 @@ mod tests_walk;
 pub mod threadlib;
 mod unit;
 pub mod view;
+mod vocabulary;
 
 use std::sync::Arc;
 
@@ -67,7 +94,7 @@ use vectorcraft_doc::embroidery::{Embroidery, ThreadPalette};
 use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 
-pub use self::options::{DialogField, dialog_field};
+pub use self::options::{SettingField, setting_field};
 use self::stats::Page;
 use super::*;
 
@@ -117,7 +144,7 @@ pub struct PlanKey {
 
 impl PlanKey {
     fn new(uid: u64, snapshot: &Arc<Document>, opts: &Options) -> Self {
-        Self { uid, snapshot: Arc::downgrade(snapshot), opts: opts.clone(), fonts: service::fonts_of(snapshot) }
+        Self { uid, snapshot: Arc::downgrade(snapshot), opts: *opts, fonts: service::fonts_of(snapshot) }
     }
 
     /// The open document it is of ([`crate::DocState::uid`]).
@@ -213,29 +240,92 @@ pub fn specs() -> Vec<CommandSpec> {
             set_trim_after
         ),
         cmd!(
+            "embroidery.set",
+            "Embroidery Object Settings",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection; a group or layer stands for the paths and compound paths in it, a compound path's member for its compound path), part: \"fill\"|\"stroke\" (all of the objects' fills, or all their strokes), stitch?: \"auto\"|\"tatami\"|\"fill\"|\"satin\"|\"running\"|\"none\" (auto: chosen by the shape, even where document.export's stitch forces one; fill is tatami, and kept so; satin on a fill fills it as auto does; none: the part is not sewn), spacing?: mm (0.05 to 5), length?: mm (0.2 to 12), angle?: degrees counter-clockwise on the page, pull?: mm (0 to 2; or [left, right] of a satin, [start, end] of a fill's rows), pullPercent?: percent (0 to 50; one or two as pull), push?: mm (0 to 5; one or two: [start, end] of a satin as its path is drawn), expand?: mm (-2 to 2), narrowAsSatin?: mm (0 to 12), underlay?: true|false|\"auto\"|\"none\"|\"center\"|\"edge\"|\"edgeZigzag\"|\"edgeTatami\", splitLength?: mm (2 to 12)} set embroidery settings on the objects' fills or strokes, each as document.formats describes the option of that name: kept with the object (moved and turned with it), they beat document.export's options, the document's settings (embroidery.setup) and the defaults; null unsets one; a value out of its range is refused, not clamped, and so is document.export's earlier name of a setting, naming the one to use. Objects that take none (type, a symbol instance, whose art takes them, a run of stitches opened from a machine file…) and those without the part are skipped and listed. One undo step, none when nothing changes; saved with the document → {part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount, skipped: [{id, reason: \"literal\"|\"guide\"|\"type\"|\"image\"|\"symbolInstance\"|\"live\"|\"placed\"|\"intertwine\"|\"noPart\"}] (at most 1000)}",
+            has_selection,
+            objects::set
+        ),
+        cmd!(
+            "embroidery.reset",
+            "Reset Embroidery Object Settings",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection; groups and compound paths as embroidery.set takes them), part?: \"fill\"|\"stroke\" (default: both), keys?: [key…] (default: every setting embroidery.set takes; entry and exit only when named)} unset the objects' own embroidery settings, so that each comes from document.export's options, the document's settings (embroidery.setup) or the default again, as the Object tab's Restore from Fabric does; the cut after an object, and what a newer version wrote, stay. One undo step, none when nothing changes → {part: \"fill\"|\"stroke\"|null (both), keys, changedCount, unchangedCount, skippedCount, skipped: as embroidery.set lists them}",
+            has_selection,
+            objects::reset
+        ),
+        cmd!(
+            "embroidery.setEntryExit",
+            "Embroidery Entry and Exit",
+            [],
+            None,
+            "{id?: object id (default: the one object selected; a compound path's member stands for its compound path), part: \"fill\"|\"stroke\", entry?: [x, y] (document points, within the coordinates a document holds)|null, exit?: [x, y]|null} where the needle goes in to sew the object's fill or stroke, and where it comes out: kept with the object, moved and turned with it. The part starts at the start its stitches can take nearest to the entry (an end of a line, the corner a fill's rows begin at); the exit is kept, and not yet planned toward. null unsets one (the part then starts nearest where the needle is); a point left out stays. Refused for a group, an object that takes no settings and a part it doesn't have. One undo step, none when nothing changes → {id, part, entry: [x, y] or null, exit: [x, y] or null, changedCount: 0 or 1}",
+            has_doc,
+            objects::set_entry_exit
+        ),
+        cmd!(
+            "embroidery.copyFrom",
+            "Paste Embroidery Object Settings",
+            [],
+            None,
+            "{source: object id (whose settings are copied), ids?: [id…] (default: the selection; groups and compound paths as embroidery.set takes them; the source itself is passed by), part?: \"fill\"|\"stroke\" (default: both), keys?: [key…] (default: every setting embroidery.set takes; entry and exit only when named)} give the objects the source's embroidery settings of those keys, set or unset as the source has them, on each of the parts they have, as the Object tab's Copy and Paste settings do (a paste: the source is read when this runs, as it is then); what a newer version wrote stays; a source value embroidery.set would refuse (a newer version's, out of range) is passed over, the objects keeping theirs. One undo step, none when nothing changes → {source, part: \"fill\"|\"stroke\"|null (both), keys, passedOver: [\"fill.stitch\"…] the values passed over, changedCount, unchangedCount, skippedCount, skipped: as embroidery.set lists them}",
+            has_selection,
+            objects::copy_from
+        ),
+        cmd!(
             "embroidery.setup",
             "Embroidery Setup",
             [],
             None,
-            "{palette?: \"pec\"|\"jef\"|null (the thread palette the design's colours are matched to, the target machine format's: Brother's 61 threads, which PES files number, or Janome's 78, which JEF files number; null unsets it, and JEF is used), start?: [x, y] (where the machine starts the needle, in document points: a design opened from a machine file keeps its file's start point, and the DST, TAP, T01, EXP, PES and PEC exports start there; JEF and VP3, whose machines put the start at the hoop's centre, start at the design's centre whatever it is; null unsets it, and those exports start at the design's corner), label?: string (the design's name the export writes, as DST's and PEC's `LA:` label: a design opened from a machine file keeps its file's; null unsets it, and the export writes the document's title), settings?: {palette?, start?, label?} (the settings of its own reply, passed back)} change the document's embroidery settings in one undo step, saved with the document (resolved, which the reply only reports, is refused); no params → no change → {settings: {palette: as set (null when unset; one a newer version wrote, as it is), start: [x, y] or null, label: string or null}, resolved: {palette: {value: \"pec\"|\"jef\" (the palette the stitch plan matches to), source: \"document\"|\"default\" (set by the document, or the default because it sets none this version knows)}}}",
+            "{palette?: \"pec\"|\"jef\"|null (the thread palette the design's colours are matched to, the target machine format's: Brother's 61 threads, which PES files number, or Janome's 78, which JEF files number; null unsets it, and JEF is used), start?: [x, y] (where the machine starts the needle, in document points: a design opened from a machine file keeps its file's start point, and the DST, TAP, T01, EXP, PES and PEC exports start there; JEF and VP3, whose machines put the start at the hoop's centre, start at the design's centre whatever it is; null unsets it, and those exports start at the design's corner), label?: string (the design's name the export writes, as DST's and PEC's `LA:` label: a design opened from a machine file keeps its file's; null unsets it, and the export writes the document's title), fabric?: id (a preset embroidery.fabrics lists: its values copied in, the colour kept; the same preset again restores them)|{preset?: id|null (as stored, passed back; another preset's id is copied first; null: a fabric of one's own), tatami?: {pull?: mm (0 to 2), spacing?: mm for 40 wt thread (0.05 to 5; another thread scales it), length?: mm (0.2 to 12), underlay?: id}|null, satin?: {pull?, spacingPercent?: percent of the spacing a column's width picks (50 to 200), underlay?}|null, stabilizer?, topping?, needlePoint?: ids for information, thickness?: mm (0 to 5; embroidery.stats counts the thread through it), color?: \"#rrggbb\" (the stitch preview draws on it)|null} (merged value by value; null restores one to the preset's, or unsets it with no preset)|null (no fabric: the built-in values), threadWeight?: wt (10 to 150)|null, joinSameColor?: bool|null (objects of one colour join one block where nothing lies between them; default true), machine?: {jumpLength?, trimLength?, minStitch?, splitLength?: mm as document.export takes them, speed?: stitches a minute (60 to 1500; embroidery.stats times the design at it)}|null (merged value by value; null unsets one), settings?: {…} (the settings of its own reply, passed back)} change the document's embroidery settings in one undo step, saved with the document (resolved and overrides, which the reply only reports, are refused); objects with values of their own keep them; no params → no change → {settings: {palette: as set (null when unset; one a newer version wrote, as it is), start: [x, y] or null, label: string or null, fabric: {preset, tatami, satin, stabilizer, topping, needlePoint, thickness, color} as stored or null, threadWeight, joinSameColor, machine: {jumpLength, trimLength, minStitch, splitLength, speed} or null}, resolved: {palette: {value: \"pec\"|\"jef\" (the palette the stitch plan matches to), source: \"document\"|\"default\" (set by the document, or the default because it sets none this version knows)}, fabric: {preset: {id, known}|null, tatami: {pull, spacing (for the thread in use), length, underlay}, satin: {pull, spacingPercent, underlay}, thickness, stabilizer, topping, needlePoint: each {value, source, preset: the preset's value or null, changed}, color: {value, source}}, threadWeight, joinSameColor: {value, source}, machine: {jumpLength, trimLength, minStitch, splitLength, speed: each {value, source}}}, overrides: {pull, spacing, length, underlay: how many objects set it themselves (on a part the fabric gives it; symbols' art included), objectCount: how many set any of them}}",
             has_doc,
-            setup
+            setup::setup
+        ),
+        cmd!(
+            query "embroidery.info",
+            "Show Embroidery Object Settings",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection; groups and compound paths as embroidery.set takes them; none: an empty answer), plan?: false (true: also what the stitch plan sews of each part, planned as the read commands plan the whole document), offset?: the first object listed (default 0), limit?: the most objects listed (0 to 10000; default 1000), …the embroidery options that decide what is sewn as embroidery.threads takes them (document.export's place in where a value comes from; default none)} the objects' embroidery settings as kept, and for each part every value it is planned with, merged over the objects, without planning → {objectCount, offset, truncated, objects: [{id, kind: \"path\"|\"compound\", fills, strokes, expanded: sewn as pieces, settings: {fill, stroke: each key set, by name, or null}, kept: what it keeps that this version doesn't read, as file keys (a newer version's: branch, fill.grain, fill.points.rails; a stitch or underlay this version doesn't know: fill.stitch; embroidery: settings that are no object)}], skippedCount, skipped: [{id, reason}] as embroidery.set lists them, trimAfter: {value, setCount, mixed}, fill: {objectCount, itemCount, sewn: \"tatami\"|\"satin\"|\"running\"|\"none\"|null (when they differ), rule: the rule id embroidery.sequence names (\"strokeOutlined\" also for a stroke a brush or an effect reshapes on an object sewn as pieces)|null, reason: why nothing of it is sewn, \"off\" (set not to be)|\"unpainted\"|\"hidden\"|\"notPrinted\" (a template or non-printing layer)|null, settings: {stitch, spacing, length, angle, pull, pullPercent, push, expand, narrowAsSatin, underlay, splitLength: each {value (null when they differ; \"auto\" for a rule), source: \"object\"|\"export\"|\"document\"|\"default\"|null, section: \"fabric\"|\"machine\"|null (of the document's settings), setCount (how many objects set it, as this version reads their settings), mixed, inherited: {value, source, section} (what unsetting the objects' own gives)|null, rule: what a rule chose where value is \"auto\"|null, applies: whether the planner uses it for the stitch the part is sewn in (a running line's pull: false)|null when they differ}}, entry, exit: {value: [x, y] (document points, as embroidery.setEntryExit takes them)|null, setCount, mixed}, sewing: {unitCount, stitches, records, jumps, trims} (with plan)|null} or null (none has a fill), stroke: as fill, planned, options, warnings}",
+            has_doc,
+            info::info
+        ),
+        cmd!(
+            query "embroidery.fabrics",
+            "Embroidery Fabrics",
+            [],
+            None,
+            "{} the fabric presets embroidery.setup {fabric} copies into the document (Wilcom's eight auto fabrics), each value with what it rests on → {default: id, caveat: that every per-fabric stitch value comes from one family of software, and that which of BERNINA's fabric classes a fabric is taken as is ours to say, fabrics: [{id, label, values: {tatami: {pull, spacing, length, underlay}, satin: {pull, spacingPercent, underlay} (as embroidery.setup {fabric} takes them back), stabilizer, topping, needlePoint, thickness} (null: none published, the built-in value), sources: [{key, kind: \"published\"|\"derived\"|\"estimate\", name, url, family, how: how it was worked out, why it is an estimate, or the class of BERNINA's a published value is printed for|null}], estimates: [key…]}]}",
+            always,
+            fabrics::fabrics
+        ),
+        cmd!(
+            "embroidery.applyFabric",
+            "Apply Embroidery Fabric to Objects",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection, else every object of the document; groups and compound paths as embroidery.set takes them), keys?: [key…] (default: pull, spacing, length and underlay, the values a fabric sets; no others)} unset those of the objects' own settings, on fills and strokes, so that they follow the document's fabric again (Document Setup's bar). One undo step, none when nothing changes → {keys, changedCount, unchangedCount, skippedCount, skipped: as embroidery.set lists them}",
+            has_doc,
+            fabrics::apply_fabric
         ),
         cmd!(
             query "embroidery.settings",
             "Show Embroidery Settings",
             [],
             None,
-            "{} the document's embroidery settings, read only → {settings, resolved} as embroidery.setup answers",
+            "{} the document's embroidery settings, read only → {settings, resolved, overrides} as embroidery.setup answers",
             has_doc,
-            settings
+            setup::settings
         ),
         cmd!(
             query "embroidery.threads",
             "Embroidery Threads",
             [],
             None,
-            "{stitch?|stitchStyle?, spacing?|density?, length?|stitchLength?, angle?|stitchAngle?, pull?|pullCompensation?, pullPercent?|pullCompensationPercent?, push?|pushCompensation?, expand?, narrowAsSatin?, threadWeight?, underlay?, jumpLength?, trimLength?, minStitch? (the embroidery options of document.export, as document.formats describes them, each also under its earlier name: they decide which objects share a colour block; a value out of its range is refused; null leaves one to its default), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the thread each colour block of the design is sewn in, as the PES or JEF export of the document's palette writes it (embroidery.setup): the palette's thread nearest the colour the block's art is painted with, in sewing order, or, when a neighbouring block has that one, the nearest other thread within threshold → {palette: \"pec\"|\"jef\" (the palette in use), threshold: the colour difference past which a thread is flagged, blockCount, offset, truncated: whether blocks after the listed ones are left out, blocks: [{block: from 1 in sewing order, thread: {palette, index: from 1 as the format numbers it, name, color: \"#rrggbb\", art: \"#rrggbb\" (the colour the art is painted with), deltaE: the CIEDE2000 difference between the two, to two decimals (0: painted with the thread's own colour, a swatch of its thread library), mismatch: deltaE past threshold}, unitCount: the fills, strokes and stitch runs sewn in it}], options: the embroidery options planned with, warnings}",
+            "{stitch?|stitchStyle?, spacing?|density?, length?|stitchLength?, angle?|stitchAngle?, pull?|pullCompensation?, pullPercent?|pullCompensationPercent?, push?|pushCompensation?, expand?, narrowAsSatin?, threadWeight?, underlay?, jumpLength?, trimLength?, minStitch?, splitLength? (the embroidery options of document.export, as document.formats describes them, each also under its earlier name: they decide which objects share a colour block; a value out of its range is refused; null leaves one to its default), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the thread each colour block of the design is sewn in, as the PES or JEF export of the document's palette writes it (embroidery.setup): the palette's thread nearest the colour the block's art is painted with, in sewing order, or, when a neighbouring block has that one, the nearest other thread within threshold → {palette: \"pec\"|\"jef\" (the palette in use), threshold: the colour difference past which a thread is flagged, blockCount, offset, truncated: whether blocks after the listed ones are left out, blocks: [{block: from 1 in sewing order, thread: {palette, index: from 1 as the format numbers it, name, color: \"#rrggbb\", art: \"#rrggbb\" (the colour the art is painted with), deltaE: the CIEDE2000 difference between the two, to two decimals (0: painted with the thread's own colour, a swatch of its thread library), mismatch: deltaE past threshold}, unitCount: the fills, strokes and stitch runs sewn in it}], options: the embroidery options planned with, warnings}",
             has_doc,
             threads
         ),
@@ -244,7 +334,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Statistics",
             [],
             None,
-            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, speed?: stitches a minute the machine sews at (60 to 1500; default 650, a home machine's default, an estimate), fabricThickness?: millimetres (0 to 5; default 0.5, an estimate: the top thread goes down through it and back up at each needle point), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's figures as the export sews it, totals and per block; lengths, positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {stitches: needle points, records: needle points, jumps and cuts (what record numbers count), jumps, trims, colorChanges, threadCount: distinct threads, blockCount, size: {width, height}, bounds, start, end: [x, y] (the first and last needle points), extents: {left, right, up, down} from the start, shortestStitch, longestStitch, longestJump, lengths: {bins: [{from, to, count}] (needle-down stitches by length: half a millimetre a bin up to 12.5, then up to 12.7 inclusive, then, to null, every longer one, as stitchTooLong counts them), median: to the tenth (null with no stitch)}, threadUsage: {topMetres, bobbinMetres, fabricThickness, estimate: what the estimate rests on}, time: {seconds, minutes, speed, slowSpeed, slowAbove, trimSeconds, includes: what the time counts, estimate: what the estimate rests on} (colour changes are counted, not timed), blocks: [{block: from 1, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches, records, jumps, trims, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), topThreadMetres, bobbinThreadMetres, seconds}], offset, truncated: whether blocks after the listed ones are left out, options: the embroidery options planned with, warnings}",
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, speed?: stitches a minute the machine sews at (60 to 1500; default: the document's machine's (embroidery.setup), else 650, a home machine's default, an estimate), fabricThickness?: millimetres (0 to 5; default: the document's fabric's, else 0.5, an estimate: the top thread goes down through it and back up at each needle point), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's figures as the export sews it, totals and per block; lengths, positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {stitches: needle points, records: needle points, jumps and cuts (what record numbers count), jumps, trims, colorChanges, threadCount: distinct threads, blockCount, size: {width, height}, bounds, start, end: [x, y] (the first and last needle points), extents: {left, right, up, down} from the start, shortestStitch, longestStitch, longestJump, lengths: {bins: [{from, to, count}] (needle-down stitches by length: half a millimetre a bin up to 12.5, then up to 12.7 inclusive, then, to null, every longer one, as stitchTooLong counts them), median: to the tenth (null with no stitch)}, threadUsage: {topMetres, bobbinMetres, fabricThickness, estimate: what the estimate rests on}, time: {seconds, minutes, speed, slowSpeed, slowAbove, trimSeconds, includes: what the time counts, estimate: what the estimate rests on} (colour changes are counted, not timed), blocks: [{block: from 1, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches, records, jumps, trims, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), topThreadMetres, bobbinThreadMetres, seconds}], offset, truncated: whether blocks after the listed ones are left out, options: the embroidery options planned with, warnings}",
             has_doc,
             stats_cmd
         ),
@@ -262,7 +352,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Picture",
             [],
             None,
-            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, region?: \"design\" (default: the design's stitches with a 5 mm margin), artboard?: index from 0, rect?: [left, top, right, bottom] (points; give one of region, artboard and rect), scale?: pixels a point (above 0, at most 64; default 1), jumps?: true (jumps and cuts marked: two-tone dashes where the thread was cut, a thin line in the thread's colour where it lies, a × at each cut), needlePoints?: false (a dot at each needle point, where they stand at least 6 screen points apart), background?: \"#rrggbb\" (default white, the fabric; null: transparent)} the design's stitches as the stitch preview draws them, as a PNG: each block in its palette thread's colour, threads as wide as they lie (0.4 mm for 40 wt), an edge for a thread close to the fabric; planned as the read commands plan → {dataBase64, width, height, region: [left, top, right, bottom] points, generation: the plan's (another plan, another number), options}",
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, region?: \"design\" (default: the design's stitches with a 5 mm margin), artboard?: index from 0, rect?: [left, top, right, bottom] (points; give one of region, artboard and rect), scale?: pixels a point (above 0, at most 64; default 1), jumps?: true (jumps and cuts marked: two-tone dashes where the thread was cut, a thin line in the thread's colour where it lies, a × at each cut), needlePoints?: false (a dot at each needle point, where they stand at least 6 screen points apart), background?: \"#rrggbb\" (default: the fabric, the colour the document's embroidery settings give it, else white; null: transparent)} the design's stitches as the stitch preview draws them, as a PNG: each block in its palette thread's colour, threads as wide as they lie (0.4 mm for 40 wt), an edge for a thread close to the fabric; planned as the read commands plan → {dataBase64, width, height, region: [left, top, right, bottom] points, generation: the plan's (another plan, another number), options}",
             has_doc,
             render::render_cmd
         ),
@@ -301,25 +391,28 @@ fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
     let marked = |e: Option<&Embroidery>| e.is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after));
     let on = on.unwrap_or_else(|| !ids.iter().all(|id| marked(d.node(*id).and_then(|n| n.extras().embroidery.as_deref()))));
     let changed = edit_counted(s, "Embroidery Trim After", |d| {
-        let mut changed = 0;
-        for id in &ids {
-            let n = d.node_mut(*id).ok_or(EngineError::NoNode(*id))?;
-            let mut e = n.extras().embroidery.as_deref().cloned().unwrap_or_default();
-            let before = e.clone();
+        objects::edit_each(d, &ids, |e| {
             e.set_trim_after(on);
             // Off: no cut after it, the one its file had included.
             if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
                 run.trim_after = false;
             }
-            if e == before {
-                continue;
-            }
-            n.extras_mut().embroidery = (e != Embroidery::default()).then(|| Box::new(e));
-            changed += 1;
-        }
-        Ok(changed)
+        })
     })?;
     Ok(json!({ "on": on, "changed": changed }))
+}
+
+/// The keys of command `cmd`'s params `o` other than `own`, refused, naming the nearest of `own`.
+pub(super) fn only(o: &Map<String, Value>, own: &[&str], cmd: &str) -> Result<()> {
+    let Some(k) = o.keys().find(|k| !own.contains(&k.as_str())) else { return Ok(()) };
+    Err(bad(
+        cmd,
+        match crate::cmd::params::nearest(k, own) {
+            Some(near) => format!("unknown parameter `{k}`; did you mean `{near}`?"),
+            None if own.is_empty() => format!("unknown parameter `{k}`: {cmd} takes no parameters"),
+            None => format!("unknown parameter `{k}`: {cmd} takes {}", own.join(", ")),
+        },
+    ))
 }
 
 /// Edit the active document as `f` says, on a copy, in one undo step labelled `label` when `f`
@@ -348,115 +441,6 @@ pub(crate) fn thread_palette(d: &Document) -> Palette {
     d.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(ThreadPalette::id).and_then(Palette::from_id).unwrap_or(DEFAULT_PALETTE)
 }
 
-/// Where a resolved setting's value comes from: the document sets it, or it is the default.
-fn source(set: bool) -> &'static str {
-    if set { "document" } else { "default" }
-}
-
-/// The document's embroidery settings as `embroidery.setup` and `embroidery.settings` report them:
-/// each as the document stores it (`settings`, which can be passed back to `embroidery.setup`), and
-/// the value the stitch plan uses with where it comes from (`resolved`).
-fn settings_json(d: &Document) -> Value {
-    let stored = d.embroidery.as_deref().and_then(|e| e.palette.as_ref());
-    let known = stored.and_then(ThreadPalette::id).and_then(Palette::from_id).is_some();
-    let start = d.embroidery.as_deref().and_then(|e| e.start).map(|p| json!([p.x, p.y]));
-    let label = d.embroidery.as_deref().and_then(|e| e.label.clone());
-    json!({
-        "settings": {"palette": stored.cloned().map(Value::from), "start": start, "label": label},
-        "resolved": {"palette": {"value": thread_palette(d).id(), "source": source(known)}},
-    })
-}
-
-fn settings(s: &mut Session, _: &Value) -> Result<Value> {
-    Ok(settings_json(&s.doc()?.doc))
-}
-
-fn setup(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.setup";
-    let o = object(p, C)?;
-    let d = &s.doc()?.doc;
-    let mut new = d.embroidery.as_deref().cloned().unwrap_or_default();
-    // The settings given, at the top or under `settings` (the reply's, passed back), each once.
-    let mut given: Map<String, Value> = Map::new();
-    for (k, v) in o.iter() {
-        let more = match (k.as_str(), v) {
-            ("settings", Value::Object(inner)) => inner.clone(),
-            ("settings", _) => return Err(bad(C, format!("`settings` {v}: an object of settings, as the reply gives it"))),
-            ("resolved", _) => return Err(bad(C, "`resolved` is read only: pass back `settings`")),
-            _ => Map::from_iter([(k.clone(), v.clone())]),
-        };
-        for (k, v) in more {
-            if given.get(&k).is_some_and(|w| *w != v) {
-                return Err(bad(C, format!("`{k}` given twice, with different values")));
-            }
-            given.insert(k, v);
-        }
-    }
-    for (k, v) in &given {
-        match k.as_str() {
-            "palette" => new.set_palette(palette_param(v, new.palette.as_ref())?),
-            "start" => new.set_start(start_param(v)?),
-            "label" => new.set_label(label_param(v)?),
-            _ => return Err(bad(C, format!("unknown setting `{k}`: the settings are palette, start and label"))),
-        }
-    }
-    let new = (!new.is_empty()).then(|| Box::new(new));
-    // A file may hold settings with nothing in them (`"embroidery": {}`): as good as none, so
-    // asking for the settings doesn't edit the document.
-    if new.as_deref() == d.embroidery.as_deref().filter(|e| !e.is_empty()) {
-        return Ok(settings_json(d));
-    }
-    s.edit("Embroidery Setup", |d, _| {
-        d.embroidery = new;
-        Ok(())
-    })?;
-    Ok(settings_json(&s.doc()?.doc))
-}
-
-/// The palette `v` names: `pec`, `jef`, or null to unset it. The palette already set stays as it
-/// is when it is passed back, even one a newer version wrote.
-fn palette_param(v: &Value, current: Option<&ThreadPalette>) -> Result<Option<ThreadPalette>> {
-    if v.is_null() {
-        return Ok(None);
-    }
-    let p = ThreadPalette::from(v.clone());
-    if p.id().is_none() && current != Some(&p) {
-        let known: Vec<&str> = ThreadPalette::KNOWN.iter().filter_map(ThreadPalette::id).collect();
-        return Err(bad("embroidery.setup", format!("palette {v}: one of {} (or null to unset it)", known.join(", "))));
-    }
-    Ok(Some(p))
-}
-
-/// The start point `v` gives: `[x, y]` in document points, within the coordinates a document
-/// holds, or null to unset it.
-fn start_param(v: &Value) -> Result<Option<vectorcraft_geom::Point>> {
-    if v.is_null() {
-        return Ok(None);
-    }
-    let refused =
-        || bad("embroidery.setup", format!("start {v}: [x, y] in points, each within ±{}, or null to unset it", vectorcraft_doc::MAX_COORD));
-    let [x, y] = v.as_array().map(Vec::as_slice).ok_or_else(refused)? else { return Err(refused()) };
-    let (x, y) = (x.as_f64().ok_or_else(refused)?, y.as_f64().ok_or_else(refused)?);
-    let within = |c: f64| c.is_finite() && c.abs() <= vectorcraft_doc::MAX_COORD;
-    if !(within(x) && within(y)) {
-        return Err(refused());
-    }
-    Ok(Some(vectorcraft_geom::Point::new(x, y)))
-}
-
-/// The most characters a design's name set by `embroidery.setup` may have: far more than any
-/// format writes (DST and PEC labels hold 16), a bound on what a document keeps.
-const MAX_LABEL: usize = 1000;
-
-/// The design's name `v` gives: a string of at most [`MAX_LABEL`] characters, or null to unset it.
-fn label_param(v: &Value) -> Result<Option<String>> {
-    match v {
-        Value::Null => Ok(None),
-        Value::String(s) if s.chars().count() <= MAX_LABEL => Ok(Some(s.clone())),
-        _ => Err(bad("embroidery.setup", format!("label {v}: a name of at most {MAX_LABEL} characters, or null to unset it"))),
-    }
-}
-
 /// A thread record the document keeps on an opened run ([`vectorcraft_doc::embroidery::StitchRun::thread`])
 /// as the machine formats take it.
 pub(crate) fn file_thread(r: &vectorcraft_doc::embroidery::ThreadRecord) -> vectorcraft_stitch::ThreadRecord {
@@ -477,7 +461,7 @@ pub(crate) fn kept_thread(r: &vectorcraft_stitch::ThreadRecord) -> vectorcraft_d
         brand: r.brand.clone(),
         material: r.material,
         weight: r.weight,
-        extra: Map::new(),
+        extra: Default::default(),
     }
 }
 
@@ -548,9 +532,22 @@ const LIST_KEYS: [&str; 3] = [Page::KEYS[0], Page::KEYS[1], SELECTED_ONLY];
 /// What a read command asks for besides its options: which reply, and what the reply takes.
 enum Read {
     Threads(Page),
-    Stats { machine: stats::Machine, thread: stats::Thread, page: Page },
+    Stats {
+        asked: stats::Asked,
+        page: Page,
+    },
     Sequence(Page),
-    Check { rules: Vec<&'static check::Rule>, format: Option<StitchFormat>, limit: usize },
+    Check {
+        rules: Vec<&'static check::Rule>,
+        format: Option<StitchFormat>,
+        limit: usize,
+    },
+    /// `embroidery.info` of the objects `ids`, planning the design only when `plan` asks.
+    Info {
+        ids: Vec<vectorcraft_doc::NodeId>,
+        page: Page,
+        plan: bool,
+    },
 }
 
 /// A read command's params: what it reads, the options it plans with, and whether it plans the
@@ -561,8 +558,8 @@ struct ReadParams {
     selected_only: bool,
 }
 
-/// The read commands: `embroidery.threads`, `stats`, `sequence` and `check`.
-const READ_COMMANDS: [&str; 4] = ["embroidery.threads", "embroidery.stats", "embroidery.sequence", "embroidery.check"];
+/// The read commands: `embroidery.threads`, `stats`, `sequence`, `check` and `info`.
+const READ_COMMANDS: [&str; 5] = ["embroidery.threads", "embroidery.stats", "embroidery.sequence", "embroidery.check", "embroidery.info"];
 
 /// Read command `cmd`'s params `p`, checked as the command checks them.
 fn read_params(cmd: &str, p: &Value) -> Result<ReadParams> {
@@ -571,13 +568,18 @@ fn read_params(cmd: &str, p: &Value) -> Result<ReadParams> {
     let (read, opts) = match cmd {
         "embroidery.threads" => (Read::Threads(Page::from_params(&o, cmd)?), options_in(&o, &LIST_KEYS, cmd)?),
         "embroidery.stats" => {
-            let (machine, thread) = stats::model(&o, cmd)?;
-            (Read::Stats { machine, thread, page: Page::from_params(&o, cmd)? }, options_in(&o, &STATS_KEYS, cmd)?)
+            let asked = stats::Asked::from_params(&o, cmd)?;
+            (Read::Stats { asked, page: Page::from_params(&o, cmd)? }, options_in(&o, &STATS_KEYS, cmd)?)
         }
         "embroidery.sequence" => (Read::Sequence(Page::from_params(&o, cmd)?), options_in(&o, &LIST_KEYS, cmd)?),
         "embroidery.check" => {
             let opts = options_in(&o, &CHECK_KEYS, cmd)?;
             (check_params(&o)?, opts)
+        }
+        // A planner has no selection: the objects are given.
+        "embroidery.info" => {
+            let ask = info::Ask::from_params(&o, cmd)?;
+            (Read::Info { ids: ask.ids.unwrap_or_default(), page: ask.page, plan: ask.plan }, ask.opts)
         }
         _ => return Err(bad(cmd, format!("not a read command: one of {}", READ_COMMANDS.join(", ")))),
     };
@@ -591,8 +593,12 @@ fn read_params(cmd: &str, p: &Value) -> Result<ReadParams> {
 fn reply(read: Read, plan: &plan::DesignPlan, doc: &Document, opts: &Options) -> Result<Value> {
     let v = match read {
         Read::Threads(page) => threads_reply(plan, doc, page),
-        Read::Stats { machine, thread, page } => stats::stats(plan, machine, thread, page),
+        Read::Stats { asked, page } => {
+            let (machine, thread) = asked.model(&resolve::DocLayer::of(doc));
+            stats::stats(plan, machine, thread, page)
+        }
         Read::Sequence(page) => order::sequence(plan, page),
+        Read::Info { ids, page, .. } => info::to_json(&info::reply(doc, &ids, opts, Some(plan), page, Vec::new()))?,
         Read::Check { rules, format, limit } => {
             // The format of the document's thread palette, when none is asked for.
             let format = format.unwrap_or_else(|| thread_palette(doc).format());
@@ -612,14 +618,31 @@ fn read_cmd(s: &mut Session, p: &Value, cmd: &str) -> Result<Value> {
 }
 
 impl Planner {
-    /// The reply read command `cmd` (`embroidery.threads`, `stats`, `sequence` or `check`) gives
-    /// with `params` for the planner's snapshot, made by the command's own code on any thread (the
-    /// stitch preview's panel and status bar read the design off the interface thread). The plan
-    /// is the one remembered, or planned. `selectedOnly` is refused: a planner has no selection.
+    /// The reply read command `cmd` (`embroidery.threads`, `stats`, `sequence`, `check` or `info`)
+    /// gives with `params` for the planner's snapshot, made by the command's own code on any thread
+    /// (the stitch preview's panel and status bar, and the Object tab, read the design off the
+    /// interface thread). The plan is the one remembered, or planned. `selectedOnly` is refused: a
+    /// planner has no selection. `info` plans only with `plan`, and answers the settings with the
+    /// reason in `warnings` when the design can't be planned, as the command does.
     pub fn query(&self, cmd: &str, params: &Value) -> Result<Value> {
         let r = read_params(cmd, params)?;
         if r.selected_only {
             return Err(bad(cmd, format!("a planner plans the whole document: leave out `{SELECTED_ONLY}`")));
+        }
+        if let Read::Info { ids, page, plan } = &r.read {
+            let (planned, mut warnings) = (if *plan { Some(self.planned(&r.opts)) } else { None }, Vec::new());
+            let plan = match planned {
+                Some(Ok(p)) => Some(p.plan),
+                Some(Err(EngineError::Cancelled)) => return Err(EngineError::Cancelled),
+                Some(Err(e)) => {
+                    warnings.push(e.to_string());
+                    None
+                }
+                None => None,
+            };
+            let v = info::to_json(&info::reply(&self.doc, ids, &r.opts, plan.as_deref(), *page, warnings))?;
+            vectorcraft_doc::cancel::check()?;
+            return Ok(with_options(v, &r.opts));
         }
         let planned = self.planned(&r.opts)?;
         reply(r.read, &planned.plan, &self.doc, &r.opts)

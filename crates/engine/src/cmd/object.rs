@@ -801,6 +801,8 @@ fn ungroup(s: &mut Session, _: &Value) -> Result<Value> {
                 new_sel.push(c.id);
                 out.push(c);
             }
+            // VectorCraft Stitch: the cut after the group goes to its last member.
+            super::embroidery::derive::ungrouped(n, &mut out);
             ungrouped.push((*id, out));
         }
         d.insert_beside(ungrouped, true)?;
@@ -915,6 +917,8 @@ fn compound_make(s: &mut Session, _: &Value) -> Result<Value> {
         let cid = d.alloc_id();
         let mut c = Node::new(cid, NodeKind::Compound { children: vec![], rule: FillRule::NonZero });
         c.appearance = appearance.unwrap_or_default();
+        // VectorCraft Stitch: the embroidery settings of the path whose paint it takes.
+        c.extras_mut().embroidery = super::embroidery::derive::compound(ids.iter().filter_map(|id| d.node(*id)));
         let ch = c.children_mut().ok_or(EngineError::NoNode(cid))?;
         // The paths in front run against the backmost one, so where they overlap it they cut holes
         // under the non-zero fill rule (#1197). A compound path's paths turn together, by its
@@ -1004,6 +1008,8 @@ fn compound_release(s: &mut Session, _: &Value) -> Result<Value> {
                 }
                 _ => {}
             }
+            // VectorCraft Stitch: each part takes the compound path's embroidery settings.
+            super::embroidery::derive::released(&n, &mut parts);
             released.push((*id, parts));
         }
         d.insert_beside(released, true)?;

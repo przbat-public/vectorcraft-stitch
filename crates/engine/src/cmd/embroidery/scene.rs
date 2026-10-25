@@ -41,9 +41,15 @@ use super::plan::{DesignPlan, UnitKey};
 /// point is drawn ([`vectorcraft_render::lines::STRAIGHT_SKIP_PX`]). An estimate.
 pub const STRAIGHT_TOLERANCE_MM: f64 = 0.002;
 
-/// The fabric the stitches are drawn on (sRGB): white in this version, the colour an artboard is
-/// drawn in. A fabric colour comes with the fabric presets of the document's embroidery settings.
+/// The fabric the stitches are drawn on when the document's fabric has no colour (sRGB): white, the
+/// colour an artboard is drawn in.
 pub const FABRIC: [u8; 3] = [255, 255, 255];
+
+/// The fabric the stitches of `doc` are drawn on (sRGB): its fabric's colour (the document's
+/// embroidery settings), else [`FABRIC`].
+pub fn fabric_color(doc: &Document) -> [u8; 3] {
+    doc.embroidery.as_deref().and_then(|e| e.fabric.as_deref()).and_then(|f| f.color).unwrap_or(FABRIC)
+}
 
 /// The two tones jumps and cuts are drawn in: near-black and near-white, so one of them contrasts
 /// with any thread, the same in every theme (they lie on thread and fabric, not on the interface).

@@ -5369,6 +5369,13 @@ theme	Appearance	Външен вид
 	Select artwork to apply effects	Изберете графика, за да приложите ефекти
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	променливите и наборите от данни на файла не бяха прочетени (променливи: {variables}, набори от данни: {data_sets}): панелът „Променливи“ не ги показва
 	Embroidery Trim After	Бродиране: отрязване на конеца след
+	Embroidery Object Settings	Настройки за бродиране на обекта
+	Reset Embroidery Object Settings	Нулиране на настройките за бродиране на обекта
+	Embroidery Entry and Exit	Вход и изход на бродирането
+	Paste Embroidery Object Settings	Поставяне на настройките за бродиране на обекта
+	Show Embroidery Object Settings	Показване на настройките за бродиране на обекта
+	Embroidery Fabrics	Тъкани за бродиране
+	Apply Embroidery Fabric to Objects	Прилагане на тъканта за бродиране към обектите
 	Embroidery Setup	Настройка на бродирането
 	Show Embroidery Settings	Показване на настройките на бродирането
 	Embroidery Statistics	Статистика на бродирането
@@ -5387,7 +5394,18 @@ theme	Appearance	Външен вид
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	отрицателна стойност на expand не остави нищо от някои запълнени форми, затова те не се бродират: смалявайте ги по-малко
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	градиентите и мострите се оцветяват в цвета на първия си репер; бродерията шие с един конец на блок
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	щрихи, по-широки от {widest} мм, се шият като сатенени колони с ширина {widest} мм: вместо това ги запълнете (stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	щрихите, рисувани с четка или променени от ефект, се шият като областта, която рисуват: зададен им прав бод или сатен не може да следва пътя им
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	тази версия не познава палитрата конци {palette} на документа, затова конците му се избират от палитрата {default}
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	настройките за бродиране на документа съдържат такива, които тази версия не чете (от по-нова версия): те се запазват, а дизайнът се бродира без тях
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	някои от настройките за бродиране на документа са извън това, което тази версия бродира: всяка се бродира с най-близката стойност, която приема
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	дължината за срязване е по-малка от дължината на прехода, затова преходите се срязват още от дължината на прехода
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	настройките за бродиране на някои обекти съдържат такива, които тази версия не чете (от по-нова версия): те се запазват, а обектите се бродират без тях
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	някои настройки за бродиране на обекти са извън това, което тази версия бродира: всяка се бродира с най-близката стойност, която приема
+@msg	none of these objects takes settings for its `{_1}`: {_2}	нито един от тези обекти не приема настройки за своя `{_1}`: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	нито един от тези обекти не приема настройки за бродиране: {_1}
+@msg	object {_1} takes no embroidery settings ({_2})	обект {_1} не приема настройки за бродиране ({_2})
+@msg	object {_1} is a group: give one of its objects	обект {_1} е група: посочете един от обектите в нея
+@msg	object {_1} has no `{_2}`	обект {_1} няма `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	няма какво да се бродира: документът няма видими пътища със запълване или щрих
 @msg	nothing to stitch: {_1}	няма какво да се бродира: {_1}
 
@@ -5446,7 +5464,7 @@ theme	Appearance	Външен вид
 @msg	too many stitches for a VP3 file	твърде много бодове за VP3 файл
 @msg	{_1} is not an embroidery format	{_1} не е формат за бродерия
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Бод:
 	Stitch Length:	Дължина на бода:
 	Fill Angle:	Ъгъл на запълването:

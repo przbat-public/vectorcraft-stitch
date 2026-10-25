@@ -81,6 +81,25 @@ pub struct UnitKey {
     pub occurrence: usize,
 }
 
+/// Which setting forced a unit's style ([`Choice::Forced`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ForcedBy {
+    /// The object's own `stitch` (`embroidery.set`).
+    Object,
+    /// The `stitch` option given to the call (an export's, a read command's).
+    Export,
+}
+
+impl ForcedBy {
+    /// Its id in replies: the layer it is (`embroidery.info`'s sources).
+    pub fn id(self) -> &'static str {
+        match self {
+            ForcedBy::Object => "object",
+            ForcedBy::Export => "export",
+        }
+    }
+}
+
 /// Why a sewing unit is sewn the way it is: the rule that chose its stitch.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Choice {
@@ -93,14 +112,15 @@ pub enum Choice {
     NarrowStroke,
     /// `stitch: fill` on a stroke: the area the stroke paints, filled.
     StrokeFilled,
-    /// The `stitch` option forced the style.
-    Forced,
+    /// A `stitch` setting forced the style: the object's own, or the option given to the call.
+    Forced(ForcedBy),
     /// A stroke that paints an area its path doesn't run down the middle of (dashed, aligned,
     /// of varying width, with arrowheads): that area, as on the canvas, filled.
     StrokeOutlined,
-    /// `stitch: satin` on a fill: a satin needs a width a fill doesn't have, so the fill is
-    /// filled as a fill is without the option (its narrow parts as satin columns).
-    SatinFilled,
+    /// `stitch: satin` on a fill (the object's own, or the call's): a satin needs a width a fill
+    /// doesn't have, so the fill is filled as a fill is without the option (its narrow parts as
+    /// satin columns).
+    SatinFilled(ForcedBy),
     /// Stitches read from a machine file, sewn as they are.
     Literal,
 }

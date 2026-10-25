@@ -42,13 +42,13 @@ pub(super) fn planned(node: u64, params: Option<Params>, color: [u8; 3], points:
     let mut block = Block::new(Thread::rgb(color));
     block.stitches = points.iter().map(|&(x, y)| Stitch::sew(Point::new(x, y))).collect();
     let origin = Origin { node: NodeId(node), part: Part::Fill(0), instance: None };
-    let why = if params.is_some() { Choice::Forced } else { Choice::Literal };
+    let why = if params.is_some() { Choice::Forced(super::plan::ForcedBy::Export) } else { Choice::Literal };
     Planned { facts: Facts { origin, occurrence: 1, params, columns: None, satin_widths, why }, block, literal: None }
 }
 
 /// The plan of `units`, added in order, in Janome's palette.
 pub(super) fn plan(units: Vec<Planned>) -> DesignPlan {
-    let mut seq = Sequence::new(Params::for_style(Style::Fill));
+    let mut seq = Sequence::new(Params::for_style(Style::Fill), true);
     for u in units {
         seq.add(u);
     }

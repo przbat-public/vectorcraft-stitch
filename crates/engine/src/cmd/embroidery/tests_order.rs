@@ -86,7 +86,7 @@ fn a_unit_that_adds_no_record_has_no_numbers() {
     use super::test_support::unit;
 
     let unit = |node: u64, points: &[(f64, f64)]| unit(node, Style::Running, [200, 30, 30], points, None);
-    let mut seq = Sequence::new(Params::for_style(Style::Running));
+    let mut seq = Sequence::new(Params::for_style(Style::Running), true);
     seq.add(unit(1, &[(0.0, 0.0), (2.0, 0.0), (4.0, 0.0)]));
     seq.add(unit(2, &[(4.0, 0.0)]));
     let plan = seq.plan(String::new(), Vec::new(), Palette::Jef);
@@ -150,7 +150,7 @@ fn each_unit_says_how_it_is_sewn_and_why() {
     let fill = sewn(&mut s, json!({"stitchStyle": "fill"}));
     assert_eq!(fill[1].1, "stitch fill: the area the stroke paints is filled");
     let forced = units(&run(&mut s, "embroidery.sequence", json!({"stitch": "satin"})));
-    assert_eq!((&forced[1]["rule"], &forced[1]["ruleValues"]), (&json!("forced"), &json!({"stitch": "satin"})));
+    assert_eq!((&forced[1]["rule"], &forced[1]["ruleValues"]), (&json!("forced"), &json!({"stitch": "satin", "source": "export"})));
 }
 
 /// Art inside a symbol is listed under the instance a person selects, with the object sewn; a

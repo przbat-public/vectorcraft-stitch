@@ -208,6 +208,8 @@ pub(crate) fn transform_anchors(s: &mut Session, label: &str, xf: vectorcraft_ge
                             *a = a.transform(xf);
                         }
                     }
+                    // VectorCraft Stitch: every anchor moved, the embroidery settings go along.
+                    super::embroidery::derive::anchors_transformed(doc, *id, set, xf);
                 }
                 None => {
                     if let Some(n) = doc.node_mut(*id) {

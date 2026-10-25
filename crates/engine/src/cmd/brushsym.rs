@@ -1010,7 +1010,9 @@ fn break_links(d: &mut Document, ids: &[NodeId]) -> Result<Vec<NodeId>> {
     let mut out = vec![];
     for id in ids {
         let Some(inst) = d.node(*id).cloned() else { continue };
-        let Some(art) = expanded_instance(d, &inst) else { continue };
+        let Some(mut art) = expanded_instance(d, &inst) else { continue };
+        // VectorCraft Stitch: the instance's cut goes to its art.
+        super::embroidery::derive::unlinked(&inst, &mut art);
         let (par, idx, _) = d.position(*id).ok_or(EngineError::NoNode(*id))?;
         let aid = art.id;
         d.remove(*id)?;

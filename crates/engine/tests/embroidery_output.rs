@@ -1,6 +1,6 @@
 //! What the embroidery export writes, pinned byte for byte: the sha256 of every export, in every
-//! format (DST, TAP, T01, EXP, PES, PEC, JEF, VP3), of documents built here and of the real
-//! designs' artwork.
+//! format (DST, TAP, T01, EXP, PES, PEC, JEF, VP3), of documents built here, of a test sheet on each
+//! fabric preset and of the real designs' artwork.
 //!
 //! A design's bytes come from the stitch planner (`vectorcraft_stitch::plan`), the order the engine
 //! sews the objects in, and the format writers. A change to any of them changes these bytes, so it
@@ -11,7 +11,11 @@
 //! - The documents built here, always: fills, wide and narrow strokes, a compound path with a hole,
 //!   clip groups (one inside another), symbols, a group and an object that ask for a trim after
 //!   them, an opened design's literal stitch runs (as they are, clipped, and with cuts at its
-//!   blocks' ends), and the export's options away from their defaults.
+//!   blocks' ends), the export's options away from their defaults, settings at every level
+//!   (objects', the document's and an export's together), and objects the walk expands whose
+//!   strokes are sewn along their path or, reshaped by an effect, as the area they paint.
+//! - A test sheet sewn on each fabric preset (`embroidery.setup {fabric}`), the default fabric's
+//!   checked to be the sheet with no fabric, byte for byte.
 //! - The real designs' artwork (`cargo xtask corpus --embroidery`, checked against its manifest),
 //!   digitized at the size of the person's design as `embroidery_corpus.rs` does. Local runs skip an
 //!   absent corpus; `EMBROIDERY_CORPUS_REQUIRED=1` requires it.
@@ -28,6 +32,10 @@
 //! another before a new listing is recorded. Each export's needle points read back are also checked
 //! against the plan's (`embroidery.stats`), block by block, wherever no planned stitch is longer
 //! than one of the format's records.
+//!
+//! Settings that set nothing a plan reads (what a newer version wrote, values set and then reset,
+//! the default fabric) are pinned to change none of these exports
+//! (`settings_that_change_nothing_change_no_export`).
 //!
 //! Only the hashes and summaries are kept here, never the files. They were recorded on macOS
 //! (aarch64). The planner calls the platform's sine, cosine and power functions, whose last bit may
@@ -83,14 +91,14 @@ a5ff05ef476f74540b5d4696b7dc99189a2aa7fecf745dc6b49f8aaf0e28e0b0  clip-groups.t0
 52f4da01db5bc485a51eccf305638f428c847ba0ed34911a04d0c1a35b4d3083  clip-groups.pec
 36978e02311698098b63d2760f90a7f414d56349a4a54d3cb412a45078e095f1  clip-groups.jef
 cde69313d5b4d2bfa3d96d4a03e174d067e467fd52e5bf29f98f0551814d9cbc  clip-groups.vp3
-f8b68f2f053586b5ba1157d727992e7da6d292fba40a8dc1f16a7c31bd272d53  symbols.dst
-46ac4ca5c04e5ed49f57462bfd4708c747788fc7488988f38554ad93fe4240db  symbols.tap
-46ac4ca5c04e5ed49f57462bfd4708c747788fc7488988f38554ad93fe4240db  symbols.t01
-bbb4059dc3f24cd91aad3a7c836b9da1c5c39c88f761c362cc2f85e0e3eaf723  symbols.exp
-3c44b14027f8903cd455cc0f0ae41a05b0ace683181d5fc3d49b260d3442c3a3  symbols.pes
-0b56837c1cfa6afd0c196bfa2f55371916c2c7c4eb69e98d06b45612137f439d  symbols.pec
-f0613950519a1d81612a27ad31cb9e075d37e38806032c768db650dbeff17b79  symbols.jef
-21f774fa4834cfe69df807dd17dd7950992133aad84cd9a6b6aab97a91aac539  symbols.vp3
+3f3b83a0b1f4193b2199ac29d05ffb1d1ec97564960681dddf6cf4de11fd2179  symbols.dst
+6863972d02507e26c308013c6b569a2269fac6b0efe1ddd7fd37c1d7a30dc706  symbols.tap
+6863972d02507e26c308013c6b569a2269fac6b0efe1ddd7fd37c1d7a30dc706  symbols.t01
+962f2c9cc7dc263b69045f9aeb914ec40db87c85c64151170c8bf42195850564  symbols.exp
+cfe9991453a50c6a15eff454b1ffb3b6bf3fd71cf1a57ddcc5f51f29d4c75bd8  symbols.pes
+81faf61c9dfe758350d4b47c82e2b74e9e5ae8439f0c573a1b823539acf26b57  symbols.pec
+3718226c628e11765fa64f7a5a440c531b63e1ea8088d306a0d5b7c373ae5251  symbols.jef
+c3ef5c2eec96164fec5adba8292acb894213d5d456b27e1476dfa1f31de8a7c0  symbols.vp3
 acc376edb11b4c6fda9bc7a66d9f5364395b3091ba9675c511123d801eb76ace  trim-after.dst
 379c27976c8dd221c00526da6fcb7cefbfb04c74d07bf14be68cab0ee933427e  trim-after.tap
 379c27976c8dd221c00526da6fcb7cefbfb04c74d07bf14be68cab0ee933427e  trim-after.t01
@@ -163,6 +171,22 @@ cf022f2b570ef05b9940d64c49219c013c7ee80b5ac0dc33e8b3d84453edd5ad  mixed-shrunk.p
 027cea918ef3dc5b2c52850e8091be257377c075041287de86bed6ebc3b0c629  mixed-shrunk.pec
 e488e732b9fb9f7d1a68872d0bc3d79de3165f50df07bae429220b2761ff57a5  mixed-shrunk.jef
 e8fc1c3736b9371fad3f6b129d07262de075693622014418ac0c7f241480aadb  mixed-shrunk.vp3
+1bd3f25d1e4995051d83082c78bbe69dc4ca8bb93159d22c54cc36ad0d74f9bf  settings.dst
+842c150e4a58e3e06ffaa0cbd5b20ec2f032385f2ca37f809f7fae47b41afe05  settings.tap
+842c150e4a58e3e06ffaa0cbd5b20ec2f032385f2ca37f809f7fae47b41afe05  settings.t01
+85e15123d1acb1b91f0dbd1b48ce514be6067ae766d234e93c2b43395e4d9760  settings.exp
+c1ab511ae50963b1a1abaf4e9f03f405717857ddb5e326a890728b2fc690b34d  settings.pes
+ff3aa3f3751f08eb098e6d461d1d42c4bbcb92df9f373518cd3da3b150ffc101  settings.pec
+a836bbba2d6eadb3676ec3d2fb309cee4891a4eeaac42c928727081fac6fcd98  settings.jef
+078164ecefc70687e15b3a9c7b2030d58e30cc01232a0eb55501ca1617cf5763  settings.vp3
+ce07fad613e2a3f8a806222450cedb691a99bec2030173039622466e2343865a  expanded-strokes.dst
+6008454538b60b1c84e490a9ecb09fc5ad85332492f253e05481caf83316f9f5  expanded-strokes.tap
+6008454538b60b1c84e490a9ecb09fc5ad85332492f253e05481caf83316f9f5  expanded-strokes.t01
+2e67026cfef17e5f32d2a924af27708f35c2ba31d15be62303ba262545ab0621  expanded-strokes.exp
+acd5f11fec696dd60f1a14ad6be2a8d9b56439f15730fae35511031d7cf01a9a  expanded-strokes.pes
+378726b33be570a973251ac99dd990557811412c9b65db8ceea187b9f0726aac  expanded-strokes.pec
+95ffcaef59cb1059de241988da46245489d28fece34be3d80b9238f65999293c  expanded-strokes.jef
+b76956c76384704f29880fada6abd8874d6eafec02ea692d19ade1fa40f4e523  expanded-strokes.vp3
 ";
 
 /// The real designs' artwork at the person's size ([`DESIGNS`]), listed as [`SYNTHETIC`] is.
@@ -272,9 +296,9 @@ a5d1469fdd76d6e7bf8fef8639ea3951796726bc0cc0b287a903b98cff897202  compound-path-
 0a272050ed47222857ff8740cc57ec24c6a4fc289ba3ce30d66c25bd109d086d  clip-groups.pes  58 5 21 37 23
 f9a66e5486b9f056151931e79c3c8a86da828c6f00d7fc4064872f8fd2b5d2fb  clip-groups.pec  58 5 21 37 23
 3b5d9ab166760d963e13d8555da6a36b4a2b8c69cc73e7f320bdc65a21b28682  clip-groups.jef  37 33 59 45 1
-a8b7e0c436518aa8abf5e2b4332787ab3400a7d3ace5eaaaac9346c2a441f673  symbols.pes  5 21
-1ca563ba453f1302579577ff09e43898c89b6914fe7ff28d9dd4e39ce5a027dd  symbols.pec  5 21
-05a79caf4eaac28650ba3e3e8db9e64ebf18d3df1e3df1a4777d9c4ae745b1e0  symbols.jef  33 59
+59edd2e156ac66b6a0e5beff6bc98b84bb83ad0b34f11217f4557b82695f9f3f  symbols.pes  5 21
+407df9dda759e2168959193cf472bf17e11d99d7e82c3215f5b5e0ecfb69c7bf  symbols.pec  5 21
+0facfa57dd2b8e5721d9ba1e4e9699a684bf1818f1295f06a51181ba121db107  symbols.jef  33 59
 d4c08aa21a81f129109f3c3fbf56edcd72083dc369a054a70d1430be174b6ea7  trim-after.pes  5
 4fb93b5e7931dedd01907de38feb0e6f4403aa75fd2aa9204360251ce2d6cf40  trim-after.pec  5
 e9facc319b3b2ac109fe165ef49ccea0de647ef84aeda3068d23b921d8b09ecc  trim-after.jef  33
@@ -302,6 +326,12 @@ e382d7a5b85d40faba1c384b99e425a36268ae2a3d817afa17e5a8bdfb161ac3  mixed-every-op
 647016fa5f050c66e1e2adc4792c1f19c14746f651a2f8f9bf63d997d3cac4d5  mixed-shrunk.pes  5 37 21 7 52 24
 0116275ca20098bbbd7e80e1bbee1bf294f561da86726d9165049395a593c910  mixed-shrunk.pec  5 37 21 7 52 24
 8f233e1387f36b54c8ea167469c09a366cd6696b1db24e49d2594257f074f215  mixed-shrunk.jef  33 45 59 59 71 14
+794b9ad6b0c586fe344d847592096ccb8bebea9c2fbbdec92892f9f81f16c181  settings.pes  5 37 21 7 24
+bb3c475f633cc6a78e9bdf88b9e60fca15a7f9a11c70130774135de754ee70ee  settings.pec  5 37 21 7 24
+d73ebca1b85143a097880fd35c8652ab6f52d4f0f88cc20d759971133fb63473  settings.jef  33 45 59 59 14
+79a8a67e308ae3a0cc950bd2cb90fd669a548de59bc4c9517262d9b87bf5c30e  expanded-strokes.pes  5 21 37 7 52
+f7f6a5bd7553ed5bd2d6421442ff0f098edccb715de3b043152c304d7d54c51a  expanded-strokes.pec  5 21 37 7 52
+e62c4e62b875154f17c8a099ba501137c311288778b627dff3e0c152c9274489  expanded-strokes.jef  33 59 45 59 71
 ";
 
 /// The PES, PEC and JEF exports of [`ARTWORK`] apart from their thread numbers, listed as
@@ -376,14 +406,14 @@ clip-groups.pes  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 
 clip-groups.pec  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1192
 clip-groups.jef  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1192
 clip-groups.vp3  blocks 5  needle 1167/1166/13/190/315  jumps 1/1/1/4/50  trims 0/0/0/0/2  size 36.1x36.1  longest 4.60  shortest 0.36  cells 1192
-symbols.dst  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.42  cells 558
-symbols.tap  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.42  cells 558
-symbols.t01  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.42  cells 558
-symbols.exp  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.42  cells 558
-symbols.pes  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.36  cells 559
-symbols.pec  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.53  shortest 0.36  cells 559
-symbols.jef  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.67  shortest 0.42  cells 562
-symbols.vp3  blocks 2  needle 661/437  jumps 3/3  trims 2/2  size 51.4x74.3  longest 4.67  shortest 0.42  cells 562
+symbols.dst  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.41  cells 560
+symbols.tap  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.41  cells 560
+symbols.t01  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.41  cells 560
+symbols.exp  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.41  cells 560
+symbols.pes  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.42  cells 561
+symbols.pec  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.42  cells 561
+symbols.jef  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.42  cells 562
+symbols.vp3  blocks 2  needle 698/437  jumps 3/3  trims 2/2  size 51.4x74.2  longest 4.56  shortest 0.42  cells 562
 trim-after.dst  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.53  shortest 0.50  cells 144
 trim-after.tap  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.53  shortest 0.50  cells 144
 trim-after.t01  blocks 1  needle 242  jumps 4  trims 2  size 26.7x5.6  longest 4.53  shortest 0.50  cells 144
@@ -456,6 +486,22 @@ mixed-shrunk.pes  blocks 6  needle 375/298/368/37/518/390  jumps 1/1/1/1/1/1  tr
 mixed-shrunk.pec  blocks 6  needle 375/298/368/37/518/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.46  shortest 0.41  cells 1357
 mixed-shrunk.jef  blocks 6  needle 375/298/368/37/518/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.40  cells 1358
 mixed-shrunk.vp3  blocks 6  needle 375/298/368/37/518/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.40  cells 1358
+settings.dst  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1274
+settings.tap  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1274
+settings.t01  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1274
+settings.exp  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1274
+settings.pes  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1305
+settings.pec  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1305
+settings.jef  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.0x79.1  longest 3.83  shortest 0.40  cells 1280
+settings.vp3  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.0x79.1  longest 3.83  shortest 0.40  cells 1280
+expanded-strokes.dst  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.60  shortest 0.41  cells 1633
+expanded-strokes.tap  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.60  shortest 0.41  cells 1633
+expanded-strokes.t01  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.60  shortest 0.41  cells 1633
+expanded-strokes.exp  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.60  shortest 0.41  cells 1633
+expanded-strokes.pes  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.67  shortest 0.41  cells 1641
+expanded-strokes.pec  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.67  shortest 0.41  cells 1641
+expanded-strokes.jef  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.6  longest 4.60  shortest 0.36  cells 1639
+expanded-strokes.vp3  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.6  longest 4.60  shortest 0.36  cells 1639
 ";
 
 /// What each export of [`ARTWORK`] holds, read back, listed as [`SYNTHETIC_SUMMARIES`] is.
@@ -550,6 +596,171 @@ zebra-twemoji.clipart.jef  blocks 8  needle 1604/322/270/42/25/563/46/768  jumps
 zebra-twemoji.clipart.vp3  blocks 8  needle 1604/322/270/42/25/563/46/768  jumps 2/2/2/1/1/3/1/9  trims 1/0/1/0/0/1/0/3  size 45.3x45.9  longest 6.98  shortest 0.32  cells 1570
 ";
 
+/// The test sheet sewn on each fabric preset ([`the_test_sheet_on_each_fabric_exports_unchanged`]),
+/// as [`SYNTHETIC`] lists the documents built here.
+const FABRIC_SHEETS: &str = "
+a991f50b7314b2631ee13bebb4f89b261e3eddb843546f740ea5b833be85f57e  sheet-cotton.dst
+f74c5629d3cca24494764158f9935d0cc44fa895477e03e2c75b94796fd880ec  sheet-cotton.tap
+f74c5629d3cca24494764158f9935d0cc44fa895477e03e2c75b94796fd880ec  sheet-cotton.t01
+833ce5ab7414076da3263c5fb739d656efea1e4df1febe1b7f68aeb952822c78  sheet-cotton.exp
+af073a1a68badb85ab23494eeb4b7acbfc6dc71270e5e18a1119c58a049023c6  sheet-cotton.pes
+27a3f46f0a3636fb4d70e1ba584ae9a999bde621e535e315fdcc8f192e1fb790  sheet-cotton.pec
+403216eb1c38a0ca5943710710171a16368a5ce53dcb3d902e3004985fb3ec1a  sheet-cotton.jef
+5378f6e1032e8cca52754d2d0c2b5813a0727c8f26f0940c65553e847075de44  sheet-cotton.vp3
+441eef9c83d6601b7e889d82d7285046221da22a76940bf5bb76b1a64fddb429  sheet-denim.dst
+d5e3aa5a253271e4ae962fe23214ed1b0024584640f775a4e2027135851e9936  sheet-denim.tap
+d5e3aa5a253271e4ae962fe23214ed1b0024584640f775a4e2027135851e9936  sheet-denim.t01
+2c7158917d0ddc7ac78b2cfc0e36dde943cd296124ac3a2dfafce18d1636a53b  sheet-denim.exp
+1039d9d8c75a38fcb4f8eb23ab1944121cafb8325044092915171cbe90624a38  sheet-denim.pes
+c2fba2a8ba71129e59edf9b6d24933ff9f5d0020b08c16d08c097dc0a1a84259  sheet-denim.pec
+a8945d8f134294bc361f0a82ff431b45c4a47d9a5f0736a1002ef78c3a088bd1  sheet-denim.jef
+2c79437162e80abc4ed14b9dcb6f1965b262fd53aa1bfb3c9b76257df867c45f  sheet-denim.vp3
+673ebb544f74802bf555aaf4bcd66199b13f762ebbf8da2c01ef95c3c60a34ef  sheet-stretchKnit.dst
+2b92922cd3040ef312891c4ca5b887d72575e3c6ecbe45924273c048e57214a8  sheet-stretchKnit.tap
+2b92922cd3040ef312891c4ca5b887d72575e3c6ecbe45924273c048e57214a8  sheet-stretchKnit.t01
+8910f82fec9dc33a7b43a41c6128c77c82753850be542d4d4127cbf58f696ab7  sheet-stretchKnit.exp
+7816e6b124f130e77d68d874cda3c069fc2a550d728fedfe6c33c2bd0f8ef1b9  sheet-stretchKnit.pes
+e821e315aaf19639a34908829b8f225fef89466e746417687017200fd7d445ac  sheet-stretchKnit.pec
+e3a9043758e46376306cb097a7972be4d255033d7c386e0ff804e1522f4a2e8e  sheet-stretchKnit.jef
+64c70ce91572bd3de67ad2a5946c09c64f084a954f51fea699ff3398ce58a8aa  sheet-stretchKnit.vp3
+d7c4dfe108047f2da70a4dcfa090d8c732ba546d4ce707a6473c2151fe58e310  sheet-pique.dst
+e231766ced5b2cafb22dceb6331b6502b986b91ae1e8b7e147c788be46506a8a  sheet-pique.tap
+e231766ced5b2cafb22dceb6331b6502b986b91ae1e8b7e147c788be46506a8a  sheet-pique.t01
+216388f01115b658d356ffadef4df0b7253693177ba57880c1c9260d662e5b82  sheet-pique.exp
+3875297c323ac8d0dffad5b9e9aeaf9923a6c64a0a92e74062aadd91ca6d977f  sheet-pique.pes
+92696a67fba84a44c4f134036c577f21aab3f5b49ff547893385a85958b14810  sheet-pique.pec
+0c4bf99a0e1ee83b0b66746fe37944fc4645f9fcc009f17be78bea8b3a0fd6a5  sheet-pique.jef
+abb183de20bb07592978212a2426f911454398c5fe1668e6803a56afe0647713  sheet-pique.vp3
+b57cd24b1b58cafd0026561fab4b1419c38c262cc648a0d116cfb0f730aa9278  sheet-fleece.dst
+7dcf0dbdd4416e8a0c081d4018e36489c45c6f4b210488df0867866b055be5d3  sheet-fleece.tap
+7dcf0dbdd4416e8a0c081d4018e36489c45c6f4b210488df0867866b055be5d3  sheet-fleece.t01
+8437323bdd4951d3812e37b1dbc721f229fe70761bf36aac39d80f7f35f14923  sheet-fleece.exp
+239857dcab9d3abfa29d91d281c6816c8b0acca295630e55a54191c9f7850485  sheet-fleece.pes
+d1e269f4617f869666d10d9aebbff0e918fc7028c5c054dcbc598d66acd4d02a  sheet-fleece.pec
+6838e047e77158d7015724a5cb8c8f1cf5bdfe781e74f2b6e7db45fd1f2dd302  sheet-fleece.jef
+68eb1f06606fbb1a71a95ee04df6079cc5ca4795e2207c1aecff68d83760c59d  sheet-fleece.vp3
+f55c329fc9b7f24769c39b2be46b0970aabaf45f2996c662b08485518f492eb3  sheet-silk.dst
+60a77025e335dc85808188b0dd1cb30af12323c7a8e84b928688530fc5eb7839  sheet-silk.tap
+60a77025e335dc85808188b0dd1cb30af12323c7a8e84b928688530fc5eb7839  sheet-silk.t01
+fec0b38fdbdc6e90ba76e62f79708d4ec50ccf5649f319a27886e8fe5203a517  sheet-silk.exp
+026d65cf957dc4d7bf1d1e2e33bc03aa28964854fb1f22c77bcab61f1c838c3c  sheet-silk.pes
+79fd485a00f4560589261d8c084c2b5dd10ddc102ff159a4a164002fb3b3df6c  sheet-silk.pec
+e85a84dc23989fe2e2269a22d4faa1c3a299324abfd7980a6928cb4933c8e1ee  sheet-silk.jef
+7d7ab0a07bbfe15b4fb09c2b2adccbc2a95aa80e703684ebe0e05021f71a5f1f  sheet-silk.vp3
+83d956c2fd1e0fa9cd864b8ea21aa723d58c8ab5ca146cf2f64fc5ca4d69db08  sheet-nylon.dst
+f74c5629d3cca24494764158f9935d0cc44fa895477e03e2c75b94796fd880ec  sheet-nylon.tap
+f74c5629d3cca24494764158f9935d0cc44fa895477e03e2c75b94796fd880ec  sheet-nylon.t01
+833ce5ab7414076da3263c5fb739d656efea1e4df1febe1b7f68aeb952822c78  sheet-nylon.exp
+87dba21f2812009fb4a3b836f9645a37f90dd31c7343a140b8073bff9a4afed9  sheet-nylon.pes
+cd5c9a88fdc1f66b1fbd9f17c63143cbda511e9d1d7d4e4d236e18db4a002c85  sheet-nylon.pec
+403216eb1c38a0ca5943710710171a16368a5ce53dcb3d902e3004985fb3ec1a  sheet-nylon.jef
+5378f6e1032e8cca52754d2d0c2b5813a0727c8f26f0940c65553e847075de44  sheet-nylon.vp3
+e9bf8909430934d066fdba487b99a3c38ad45c1cefdf7341749559e5416c3062  sheet-cap.dst
+f74c5629d3cca24494764158f9935d0cc44fa895477e03e2c75b94796fd880ec  sheet-cap.tap
+f74c5629d3cca24494764158f9935d0cc44fa895477e03e2c75b94796fd880ec  sheet-cap.t01
+833ce5ab7414076da3263c5fb739d656efea1e4df1febe1b7f68aeb952822c78  sheet-cap.exp
+0424de880240b02dc04158c8cdc9164283b8b1eb1a1fe75e425cc25910c4ecba  sheet-cap.pes
+2123e340f2c555f2c66b53a47ee528c0b5dbdf08d4346b7fc851a161ad7f9095  sheet-cap.pec
+403216eb1c38a0ca5943710710171a16368a5ce53dcb3d902e3004985fb3ec1a  sheet-cap.jef
+5378f6e1032e8cca52754d2d0c2b5813a0727c8f26f0940c65553e847075de44  sheet-cap.vp3
+";
+
+/// Its PES, PEC and JEF exports apart from their thread numbers, as [`SYNTHETIC_THREADS`].
+const FABRIC_SHEETS_THREADS: &str = "
+bed7d27ea80d0efd53731a624210cb72fb9f7cd1109108e1d0f81d25239be555  sheet-cotton.pes  5 37 21 7 52 24
+d8e4d5a8613859df8c591368e1619e2f421254f11f51acca6fcffc5d31847d37  sheet-cotton.pec  5 37 21 7 52 24
+50dca9460abded6947ba795d812c40192a242d3c302a075a7e6832a6362a6b54  sheet-cotton.jef  33 45 59 59 71 14
+4500f7e60144985fc3f58562f3577f319b51171b774ab114491267b7133ead82  sheet-denim.pes  5 37 21 7 52 24
+d8f58ecbdb7b5c2eca4832bab395197768d7826f75c48a40cbd6e3d282d7e676  sheet-denim.pec  5 37 21 7 52 24
+c4907ff9a77bd7c9f0eab96ae309582cf8dd62f8dac2dffd36c5cca74f02b353  sheet-denim.jef  33 45 59 59 71 14
+3342333c76994a8203745947360920a8cee471e2b29b6a6611e3a69c0b85f763  sheet-stretchKnit.pes  5 37 21 7 52 24
+d1e7b563e2d378d394227189a74ebed7a53d13ae7c31a6fd35893ffbca18b2ad  sheet-stretchKnit.pec  5 37 21 7 52 24
+a5b21b214b37257dcb71be4c8e3de955dcfc9b3acea7c1f0728c0e64dac7ecfe  sheet-stretchKnit.jef  33 45 59 59 71 14
+22c1694414ccf28bf0c18c232e5a4c0e74e198153e9cb2b2ca47416442dea9ee  sheet-pique.pes  5 37 21 7 52 24
+0f266630d588abaa7117f2cbd31265bdcc31015a523c17ad34226ff7103a22e4  sheet-pique.pec  5 37 21 7 52 24
+6b3547e20f613be36296d2eddf5dccb049e9fa2dccd02f8afa9ab1b9d9cfd8b4  sheet-pique.jef  33 45 59 59 71 14
+4e0f855520efd553e53da003c46f8e6bd0f7eb7292076b852acd845db57f7ecc  sheet-fleece.pes  5 37 21 7 52 24
+d22e05c82a18bc18e8893ebe45439d542aff15941595ac2d690feacf29ac7f03  sheet-fleece.pec  5 37 21 7 52 24
+c53f78f7e16306a8558f23287c087d617277bd2cc212c6e1bcf693d014641f94  sheet-fleece.jef  33 45 59 59 71 14
+9557ef149c229e4107dca2fcd486207436ed0db556776d00ee193a8be0d1e6fe  sheet-silk.pes  5 37 21 7 52 24
+a66b7cb637bab83225c2f64f16ae3008a1a04f4193f15ed9b991eef710a7282f  sheet-silk.pec  5 37 21 7 52 24
+5266e97b6e43321dad48e17b12e912944fa1eb8fe303aef35f1a1a331deca68d  sheet-silk.jef  33 45 59 59 71 14
+a95e1df837efef6acc69edc6477e274f3cb522eb7a2dcdf64161b5f24838784a  sheet-nylon.pes  5 37 21 7 52 24
+adddabb24d44530e158d951b5ec85e95c51fbef8e1f0f3836c04aa22bc9998a7  sheet-nylon.pec  5 37 21 7 52 24
+50dca9460abded6947ba795d812c40192a242d3c302a075a7e6832a6362a6b54  sheet-nylon.jef  33 45 59 59 71 14
+ce6a3d82a3db520cafc8407b20774489ca4a07969d3e029e4280a45e08c54ed5  sheet-cap.pes  5 37 21 7 52 24
+8674acaad2746c990288f64d3aa4d1b150131510d52ec3bc83140adff2e3f318  sheet-cap.pec  5 37 21 7 52 24
+50dca9460abded6947ba795d812c40192a242d3c302a075a7e6832a6362a6b54  sheet-cap.jef  33 45 59 59 71 14
+";
+
+/// What each holds, as [`SYNTHETIC_SUMMARIES`].
+const FABRIC_SHEETS_SUMMARIES: &str = "
+sheet-cotton.dst  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1440
+sheet-cotton.tap  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1440
+sheet-cotton.t01  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1440
+sheet-cotton.exp  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1440
+sheet-cotton.pes  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.60  shortest 0.40  cells 1436
+sheet-cotton.pec  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.60  shortest 0.40  cells 1436
+sheet-cotton.jef  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.67  shortest 0.36  cells 1433
+sheet-cotton.vp3  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.67  shortest 0.36  cells 1433
+sheet-denim.dst  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.41  cells 1440
+sheet-denim.tap  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.41  cells 1440
+sheet-denim.t01  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.41  cells 1440
+sheet-denim.exp  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.41  cells 1440
+sheet-denim.pes  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1436
+sheet-denim.pec  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1436
+sheet-denim.jef  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.60  shortest 0.36  cells 1433
+sheet-denim.vp3  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.60  shortest 0.36  cells 1433
+sheet-stretchKnit.dst  blocks 6  needle 393/300/370/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.0  longest 4.60  shortest 0.40  cells 1521
+sheet-stretchKnit.tap  blocks 6  needle 393/300/370/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.0  longest 4.60  shortest 0.40  cells 1521
+sheet-stretchKnit.t01  blocks 6  needle 393/300/370/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.0  longest 4.60  shortest 0.40  cells 1521
+sheet-stretchKnit.exp  blocks 6  needle 393/300/370/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.0  longest 4.60  shortest 0.40  cells 1521
+sheet-stretchKnit.pes  blocks 6  needle 393/300/370/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.0  longest 4.60  shortest 0.41  cells 1521
+sheet-stretchKnit.pec  blocks 6  needle 393/300/370/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.0  longest 4.60  shortest 0.41  cells 1521
+sheet-stretchKnit.jef  blocks 6  needle 393/300/370/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.0  longest 4.67  shortest 0.50  cells 1525
+sheet-stretchKnit.vp3  blocks 6  needle 393/300/370/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.0  longest 4.67  shortest 0.50  cells 1525
+sheet-pique.dst  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.8  longest 4.60  shortest 0.45  cells 1466
+sheet-pique.tap  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.8  longest 4.60  shortest 0.45  cells 1466
+sheet-pique.t01  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.8  longest 4.60  shortest 0.45  cells 1466
+sheet-pique.exp  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.8  longest 4.60  shortest 0.45  cells 1466
+sheet-pique.pes  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.8  longest 4.60  shortest 0.45  cells 1464
+sheet-pique.pec  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.8  longest 4.60  shortest 0.45  cells 1464
+sheet-pique.jef  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.2x78.8  longest 4.67  shortest 0.45  cells 1468
+sheet-pique.vp3  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.2x78.8  longest 4.67  shortest 0.45  cells 1468
+sheet-fleece.dst  blocks 6  needle 449/303/370/37/621/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.1  longest 4.46  shortest 0.40  cells 1531
+sheet-fleece.tap  blocks 6  needle 449/303/370/37/621/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.1  longest 4.46  shortest 0.40  cells 1531
+sheet-fleece.t01  blocks 6  needle 449/303/370/37/621/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.1  longest 4.46  shortest 0.40  cells 1531
+sheet-fleece.exp  blocks 6  needle 449/303/370/37/621/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.1  longest 4.46  shortest 0.40  cells 1531
+sheet-fleece.pes  blocks 6  needle 449/303/370/37/621/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.1  longest 4.46  shortest 0.40  cells 1537
+sheet-fleece.pec  blocks 6  needle 449/303/370/37/621/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.1  longest 4.46  shortest 0.40  cells 1537
+sheet-fleece.jef  blocks 6  needle 449/303/370/37/621/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.1  longest 4.46  shortest 0.40  cells 1532
+sheet-fleece.vp3  blocks 6  needle 449/303/370/37/621/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x79.1  longest 4.46  shortest 0.40  cells 1532
+sheet-silk.dst  blocks 6  needle 326/276/340/37/455/355  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.81  shortest 0.50  cells 1431
+sheet-silk.tap  blocks 6  needle 326/276/340/37/455/355  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.81  shortest 0.50  cells 1431
+sheet-silk.t01  blocks 6  needle 326/276/340/37/455/355  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.81  shortest 0.50  cells 1431
+sheet-silk.exp  blocks 6  needle 326/276/340/37/455/355  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.81  shortest 0.50  cells 1431
+sheet-silk.pes  blocks 6  needle 326/276/340/37/455/355  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.81  shortest 0.50  cells 1438
+sheet-silk.pec  blocks 6  needle 326/276/340/37/455/355  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.81  shortest 0.50  cells 1438
+sheet-silk.jef  blocks 6  needle 326/276/340/37/455/355  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.81  shortest 0.45  cells 1429
+sheet-silk.vp3  blocks 6  needle 326/276/340/37/455/355  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.81  shortest 0.45  cells 1429
+sheet-nylon.dst  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1440
+sheet-nylon.tap  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1440
+sheet-nylon.t01  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1440
+sheet-nylon.exp  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1440
+sheet-nylon.pes  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.60  shortest 0.40  cells 1436
+sheet-nylon.pec  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.60  shortest 0.40  cells 1436
+sheet-nylon.jef  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.67  shortest 0.36  cells 1433
+sheet-nylon.vp3  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.67  shortest 0.36  cells 1433
+sheet-cap.dst  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1440
+sheet-cap.tap  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1440
+sheet-cap.t01  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1440
+sheet-cap.exp  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.53  shortest 0.40  cells 1440
+sheet-cap.pes  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.60  shortest 0.40  cells 1436
+sheet-cap.pec  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.1x78.7  longest 4.60  shortest 0.40  cells 1436
+sheet-cap.jef  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.67  shortest 0.36  cells 1433
+sheet-cap.vp3  blocks 6  needle 393/300/369/37/546/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 86.0x78.7  longest 4.67  shortest 0.36  cells 1433
+";
+
 /// Points per millimetre: the documents count points, the designs millimetres.
 const PT_PER_MM: f64 = 72.0 / 25.4;
 
@@ -597,6 +808,38 @@ fn the_documents_built_here_export_unchanged() {
         }
     }
     check(SYNTHETIC, SYNTHETIC_THREADS, SYNTHETIC_SUMMARIES, &now);
+}
+
+/// The test sheet (fills, a letter whose stem is sewn as satin, a satin line, a running zigzag, a
+/// filled and stroked square: [`mixed`]) sewn on each fabric preset, chosen with
+/// `embroidery.setup {fabric}`, writes in every format what it wrote when the listing was recorded;
+/// on the default fabric it writes, byte for byte, what it writes with no fabric.
+#[test]
+fn the_test_sheet_on_each_fabric_exports_unchanged() {
+    let mut now = Vec::new();
+    for f in vectorcraft_stitch::fabric::FABRICS {
+        let mut s = mixed();
+        run(&mut s, "embroidery.setup", json!({"fabric": f.id}));
+        let name = format!("sheet-{}", f.id);
+        run(&mut s, "file.info", json!({"title": name}));
+        let plan = planned(&mut s, &json!({}));
+        for format in Format::ALL {
+            let bytes = export(&mut s, format, &json!({})).unwrap_or_else(|e| panic!("{name} as {}: {e}", format.id()));
+            let pinned = Pinned::new(format!("{name}.{}", format.extension()), format, &bytes);
+            plan.holds(&pinned, format);
+            now.push(pinned);
+        }
+    }
+    let default = format!("sheet-{}", vectorcraft_stitch::fabric::DEFAULT_FABRIC);
+    let mut bare = mixed();
+    run(&mut bare, "file.info", json!({"title": default}));
+    for format in Format::ALL {
+        let bytes = export(&mut bare, format, &json!({})).unwrap();
+        let name = format!("{default}.{}", format.extension());
+        let on_default = now.iter().find(|p| p.name == name).unwrap();
+        assert_eq!(sha256::hex(&bytes), on_default.hash, "{name}: the default fabric sews as no fabric");
+    }
+    check(FABRIC_SHEETS, FABRIC_SHEETS_THREADS, FABRIC_SHEETS_SUMMARIES, &now);
 }
 
 /// What a session's design plans (`embroidery.stats`): each block's needle points, and its longest
@@ -822,6 +1065,145 @@ fn the_real_designs_artwork_exports_unchanged() {
     check(ARTWORK, ARTWORK_THREADS, ARTWORK_SUMMARIES, &now);
 }
 
+/// Embroidery settings that set nothing a plan reads change no export, of the documents built here
+/// or of the real designs' artwork ([`Unchanging`]): what a newer version wrote at every level,
+/// every value of every part set and then reset, and the default fabric copied into the document
+/// with every machine value at its default.
+#[test]
+fn settings_that_change_nothing_change_no_export() {
+    for how in [Unchanging::Kept, Unchanging::SetAndReset, Unchanging::DefaultFabric] {
+        let mut now = Vec::new();
+        for (name, s, options) in documents() {
+            // The documents that set settings on purpose are exported as they are.
+            let mut s = if matches!(name, "settings" | "expanded-strokes") { s } else { unchanging(s, how) };
+            run(&mut s, "file.info", json!({"title": name}));
+            for format in Format::ALL {
+                let bytes = export(&mut s, format, &options).unwrap_or_else(|e| panic!("{name} ({how:?}) as {}: {e}", format.id()));
+                now.push(Pinned::new(format!("{name}.{}", format.extension()), format, &bytes));
+            }
+        }
+        check(SYNTHETIC, SYNTHETIC_THREADS, SYNTHETIC_SUMMARIES, &now);
+        let Some(dir) = corpus() else { continue };
+        let mut now = Vec::new();
+        for &(art, theirs) in DESIGNS {
+            let mut s = unchanging(artwork(&dir, art, theirs), how);
+            let stem = art.trim_end_matches(".svg");
+            run(&mut s, "file.info", json!({"title": stem}));
+            for format in Format::ALL {
+                let bytes = export(&mut s, format, &json!({})).unwrap_or_else(|e| panic!("{art} ({how:?}) as {}: {e}", format.id()));
+                now.push(Pinned::new(format!("{stem}.{}", format.extension()), format, &bytes));
+            }
+        }
+        check(ARTWORK, ARTWORK_THREADS, ARTWORK_SUMMARIES, &now);
+    }
+}
+
+/// Settings that set nothing a plan reads ([`settings_that_change_nothing_change_no_export`]).
+#[derive(Clone, Copy, Debug)]
+enum Unchanging {
+    /// What a newer version wrote that this one doesn't read, at every level: on every object, a
+    /// fill part and a stroke part holding only keys this version doesn't know (and a value of
+    /// another type), and a key of its own; in the document, a fabric, a machine and a key holding
+    /// only such keys. Written into the file and opened, as another version would leave them.
+    Kept,
+    /// Every value of both parts of every object set by command (`embroidery.set`, and
+    /// `embroidery.setEntryExit` for the points), and then reset (`embroidery.reset`): the document
+    /// must be the one it was, its file the same bytes.
+    SetAndReset,
+    /// The default fabric chosen by command (`embroidery.setup {fabric}`), its thread weight 40 and
+    /// joining on, and every machine value at the planner's default.
+    DefaultFabric,
+}
+
+/// `s`'s document given `how`'s settings: a session holding it.
+fn unchanging(mut s: Session, how: Unchanging) -> Session {
+    match how {
+        Unchanging::Kept => {
+            let doc = s.doc().unwrap().doc.clone();
+            let mut file: Value = serde_json::from_slice(&vectorcraft_format::save(&doc, false)).unwrap();
+            let kept = json!({"fill": {"motif": {"name": "wave"}, "spacing": "auto"}, "stroke": {"points": {"rails": [[0.0, 0.0], [5.0, 5.0]]}}, "branch": true});
+            each_node(&mut file["document"], &mut |node| {
+                let e = node.as_object_mut().unwrap().entry("embroidery").or_insert_with(|| json!({}));
+                if let Value::Object(e) = e {
+                    for (k, v) in kept.as_object().unwrap() {
+                        e.entry(k.clone()).or_insert_with(|| v.clone());
+                    }
+                }
+            });
+            let setup = file["document"].as_object_mut().unwrap().entry("embroidery").or_insert_with(|| json!({}));
+            for (k, v) in [("fabric", json!({"grain": 45, "tatami": {"curve": [1, 2]}})), ("machine", json!({"model": "x"})), ("hoop", json!(1))] {
+                setup.as_object_mut().unwrap().insert(k.to_string(), v);
+            }
+            let mut opened = Session::new();
+            open(&mut opened, "kept.vectorcraft", &serde_json::to_vec(&file).unwrap());
+            opened
+        }
+        Unchanging::SetAndReset => {
+            let before = vectorcraft_format::save(&s.doc().unwrap().doc, false);
+            let ids: Vec<u64> = s.doc().unwrap().doc.layers.iter().map(|l| l.id.0).collect();
+            // Every value of both parts set by command on every object that takes them, an entry
+            // and an exit on each, then every one reset.
+            // Set: on every object that has the part (none, in a design of literal runs alone).
+            let mut set = 0;
+            for part in ["fill", "stroke"] {
+                let all = json!({"ids": ids, "part": part, "stitch": "running", "spacing": 0.5, "length": 3, "angle": 30, "pull": [0.3, 0.1],
+                    "pullPercent": 5, "push": 0.2, "expand": 0.3, "narrowAsSatin": 4, "underlay": "edge", "splitLength": 8});
+                match s.execute("embroidery.set", &all) {
+                    Ok(r) => {
+                        assert!(r["changedCount"].as_u64().unwrap() > 0, "{part}: {r}");
+                        set += 1;
+                    }
+                    Err(vectorcraft_engine::EngineError::Other(e)) => assert!(e.starts_with("none of these objects"), "{e}"),
+                    Err(e) => panic!("{e}"),
+                }
+            }
+            let mut objects = Vec::new();
+            for layer in &s.doc().unwrap().doc.layers {
+                layer.walk(&mut |n| objects.push(n.id.0));
+            }
+            let mut points = 0;
+            for id in objects {
+                for part in ["fill", "stroke"] {
+                    // Refused on what takes no settings or has no such part.
+                    points += usize::from(
+                        s.execute("embroidery.setEntryExit", &json!({"id": id, "part": part, "entry": [10, 20], "exit": [30, 40]})).is_ok(),
+                    );
+                }
+            }
+            assert!(set == 0 || points > 0, "entry and exit points set where settings were");
+            let keys: Vec<&str> = vectorcraft_doc::embroidery::PartKey::ALL.iter().map(|k| k.name()).collect();
+            match s.execute("embroidery.reset", &json!({"ids": ids, "keys": keys})) {
+                Ok(_) | Err(vectorcraft_engine::EngineError::Other(_)) => {}
+                Err(e) => panic!("{e}"),
+            }
+            let after = vectorcraft_format::save(&s.doc().unwrap().doc, false);
+            assert!(before == after, "set and reset: the file is not the one it was");
+            s
+        }
+        Unchanging::DefaultFabric => {
+            let fill = vectorcraft_stitch::plan::Params::for_style(vectorcraft_stitch::plan::Style::Fill);
+            let setup = json!({
+                "fabric": vectorcraft_stitch::fabric::DEFAULT_FABRIC, "threadWeight": vectorcraft_stitch::plan::THREAD_WEIGHT, "joinSameColor": true,
+                "machine": {"jumpLength": fill.jump, "trimLength": fill.trim, "minStitch": fill.min_stitch, "splitLength": fill.max_satin},
+            });
+            run(&mut s, "embroidery.setup", setup);
+            s
+        }
+    }
+}
+
+/// Call `f` on every node of a saved document's JSON (an object with an `id` and a `kind`).
+fn each_node(v: &mut Value, f: &mut impl FnMut(&mut Value)) {
+    if v.get("id").is_some_and(Value::is_u64) && v.get("kind").is_some() {
+        f(v);
+    }
+    match v {
+        Value::Object(m) => m.values_mut().for_each(|c| each_node(c, f)),
+        Value::Array(a) => a.iter_mut().for_each(|c| each_node(c, f)),
+        _ => {}
+    }
+}
+
 /// One design written with two sets of threads gives two files that are the same apart from their
 /// thread numbers ([`threads_apart`]), which read back as the threads the blocks are painted with.
 #[test]
@@ -936,6 +1318,8 @@ fn check(listing: &str, threads: &str, summaries: &str, now: &[Pinned]) {
 /// The documents built here: each one's name, a session holding it, and the options it is exported
 /// with.
 fn documents() -> Vec<(&'static str, Session, Value)> {
+    // Every option under its earlier name, each keeping its earlier meaning: `stitchAngle` 30 is
+    // the planner's clockwise 30°, `angle` 150 on the page, as the listing was recorded with.
     let every_option = json!({
         "density": 0.5, "stitchLength": 3, "stitchAngle": 30, "pullCompensation": [0.3, 0.1], "pullCompensationPercent": 10,
         "pushCompensation": [0.5, 0.2], "expand": 0.4, "narrowAsSatin": 5, "threadWeight": 60, "underlay": false,
@@ -956,6 +1340,8 @@ fn documents() -> Vec<(&'static str, Session, Value)> {
         ("mixed-stitch-style-running", mixed(), json!({"stitchStyle": "running"})),
         ("mixed-every-option", mixed(), every_option),
         ("mixed-shrunk", mixed(), json!({"expand": -0.3, "pullCompensation": 0})),
+        ("settings", settings(), json!({"length": 3, "jumpLength": 4})),
+        ("expanded-strokes", expanded_strokes(), json!({})),
     ]
 }
 
@@ -1035,7 +1421,7 @@ fn clip_groups() -> Session {
 }
 
 /// A symbol (a square under a satin ring) and three instances of it: where it was made, moved, and
-/// rotated and scaled.
+/// rotated and scaled (its square's rows, at no angle of its own, turned with it).
 fn symbols() -> Session {
     let mut s = blank(300.0, 300.0);
     let square = rect(&mut s, "#cc2222", 20.0, 20.0, 30.0, 30.0);
@@ -1123,6 +1509,56 @@ fn mixed() -> Session {
     let both = rect(&mut s, "#ff8800", 200.0, 180.0, 60.0, 60.0);
     run(&mut s, "paint.setStroke", json!({"color": "#552200", "ids": [both]}));
     run(&mut s, "stroke.set", json!({"weight": 4.0, "ids": [both]}));
+    s
+}
+
+/// [`mixed`] with settings at every level: on objects (a fill's angle, pull and underlay, a stroke
+/// sewn as a running line, a stroke's split and push, a fill left unsewn, an entry point), in the
+/// document (the fleece fabric, a thread weight, the machine's satin split) and, in the listing,
+/// options given to the export (a stitch length, a jump length).
+fn settings() -> Session {
+    let mut s = mixed();
+    let ids: Vec<u64> = s.doc().unwrap().doc.layers[0].children().unwrap().iter().map(|c| c.id.0).collect();
+    let [rect, letter, satin, zigzag, both] = ids[..] else { panic!("mixed holds five objects: {ids:?}") };
+    run(&mut s, "embroidery.set", json!({"ids": [rect], "part": "fill", "angle": 30, "pull": [0.3, 0.1], "underlay": "edge"}));
+    run(&mut s, "embroidery.set", json!({"ids": [satin], "part": "stroke", "splitLength": 5, "push": 0.4}));
+    run(&mut s, "embroidery.set", json!({"ids": [zigzag], "part": "stroke", "stitch": "satin"}));
+    run(&mut s, "embroidery.set", json!({"ids": [both], "part": "fill", "stitch": "none"}));
+    run(&mut s, "embroidery.setEntryExit", json!({"id": letter, "part": "fill", "entry": [200, 120]}));
+    run(&mut s, "embroidery.setup", json!({"fabric": "fleece", "threadWeight": 60, "machine": {"splitLength": 7}}));
+    s
+}
+
+/// Objects whose appearance the walk expands, with strokes: a filled rectangle with a satin stroke
+/// and a running one (each sewn along the path), a rectangle whose upper stroke is roughened (that
+/// one sewn as the area it paints), and a zigzag of two strokes set to running (two lines along it).
+fn expanded_strokes() -> Session {
+    let mut s = blank(300.0, 300.0);
+    let second_stroke = |s: &mut Session, id: u64, weight: f64| {
+        run(s, "appearance.addStroke", json!({"ids": [id]}));
+        s.edit("Second Stroke", |d, _| {
+            if let Some(vectorcraft_doc::AppearanceItem::Stroke(st)) =
+                d.node_mut(vectorcraft_doc::NodeId(id)).and_then(|n| n.appearance.items.last_mut())
+            {
+                st.width = weight;
+            }
+            Ok(())
+        })
+        .unwrap();
+    };
+    let both = rect(&mut s, "#cc2222", 20.0, 20.0, 80.0, 60.0);
+    run(&mut s, "paint.setStroke", json!({"color": "#2233cc", "ids": [both]}));
+    run(&mut s, "stroke.set", json!({"weight": 6.0, "ids": [both]}));
+    second_stroke(&mut s, both, 1.0);
+    let roughened = rect(&mut s, "#22aa44", 140.0, 20.0, 80.0, 60.0);
+    run(&mut s, "paint.setStroke", json!({"color": "#8822aa", "ids": [roughened]}));
+    run(&mut s, "stroke.set", json!({"weight": 4.0, "ids": [roughened]}));
+    second_stroke(&mut s, roughened, 4.0);
+    run(&mut s, "effect.apply", json!({"effect": "distort.roughen", "ids": [roughened], "item": 2}));
+    stroked(&mut s, "#ff8800", 4.0, "M 20 200 L 60 160 L 100 200 L 140 160 L 180 200");
+    let zigzag = s.doc().unwrap().doc.layers[0].children().unwrap().last().unwrap().id.0;
+    second_stroke(&mut s, zigzag, 1.0);
+    run(&mut s, "embroidery.set", json!({"ids": [zigzag], "part": "stroke", "stitch": "running"}));
     s
 }
 

@@ -1,6 +1,7 @@
 //! Embroidery documents for tests, built by commands: shapes in thread colours, the structures a
 //! stitch plan maps back to objects (groups, clip groups, symbols placed twice, an object both
-//! filled and stroked, locked and hidden art, type), and a design opened from a machine file.
+//! filled and stroked, locked and hidden art, type), and a design opened from a machine file; and
+//! the JSON a newer version might write under an embroidery key ([`arb_json`]).
 //!
 //! Every builder takes the command runner as a closure (`run(command, params) → reply`, panicking
 //! on an error) rather than a session, so that the same fixtures serve the engine's own unit tests
@@ -11,6 +12,7 @@
 //! stitch length), so that a last-bit difference in a maths library can't flip how a shape is
 //! sewn: tests assert relations (the counts the commands give), never the planner's numbers.
 
+use proptest::prelude::*;
 use serde_json::{Value, json};
 
 /// Runs one command with its params and gives its reply (panicking on an error).
@@ -181,4 +183,71 @@ pub fn opened_design(run: Run, format: &str) {
     let data = run("document.export", json!({"format": format}))["dataBase64"].as_str().map(str::to_string);
     let data = data.unwrap_or_else(|| panic!("no dataBase64 exporting {format}"));
     run("document.open", json!({"name": format!("design.{format}"), "dataBase64": data}));
+}
+
+/// The keys an object's embroidery and the document's are read by: those this version reads, so
+/// that random JSON holds them, with any value, often enough to test what they read as.
+const EMBROIDERY_KEYS: [&str; 40] = [
+    "stitches",
+    "trim_after",
+    "trim_before",
+    "fill",
+    "stroke",
+    "points",
+    "entry",
+    "exit",
+    "stitch",
+    "spacing",
+    "length",
+    "angle",
+    "pull",
+    "pull_percent",
+    "push",
+    "expand",
+    "narrow_as_satin",
+    "underlay",
+    "split_length",
+    "palette",
+    "start",
+    "label",
+    "fabric",
+    "thread_weight",
+    "join_same_color",
+    "machine",
+    "preset",
+    "id",
+    "values",
+    "tatami",
+    "satin",
+    "spacing_percent",
+    "stabilizer",
+    "topping",
+    "needle_point",
+    "thickness",
+    "color",
+    "jump_length",
+    "trim_length",
+    "speed",
+];
+
+/// Any JSON value a few levels deep, as a newer version might write under a key this one reads:
+/// every type, numbers finite (JSON has no other), keys that include the embroidery keys this
+/// version reads (`stitches`, `trim_after`, `fill`, `angle`…), so that they come with any value.
+pub fn arb_json() -> impl Strategy<Value = Value> {
+    /// Quarter steps: floats JSON writes and reads back exactly.
+    const QUARTERS: i32 = 4;
+    let leaf = prop_oneof![
+        Just(Value::Null),
+        any::<bool>().prop_map(Value::Bool),
+        any::<i64>().prop_map(Value::from),
+        (-4000i32..4000).prop_map(|n| Value::from(f64::from(n) / f64::from(QUARTERS))),
+        "[a-z_]{0,8}".prop_map(Value::from),
+    ];
+    let key = prop_oneof!["[a-z_]{1,8}", prop::sample::select(EMBROIDERY_KEYS.to_vec()).prop_map(str::to_string)];
+    leaf.prop_recursive(3, 24, 4, move |inner| {
+        prop_oneof![
+            prop::collection::vec(inner.clone(), 0..4).prop_map(Value::Array),
+            prop::collection::btree_map(key.clone(), inner, 0..4).prop_map(|m| Value::Object(m.into_iter().collect())),
+        ]
+    })
 }

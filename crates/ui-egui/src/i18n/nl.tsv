@@ -5399,6 +5399,13 @@ swatch	Bright Violet	Felviolet
 	Minimum must not exceed Desired, nor Desired Maximum.	Minimum mag niet groter zijn dan Gewenst, en Gewenst niet groter dan Maximum.
 	Justification	Uitvullen
 	Embroidery Trim After	Borduren: draad knippen na
+	Embroidery Object Settings	Borduurinstellingen van object
+	Reset Embroidery Object Settings	Borduurinstellingen van object herstellen
+	Embroidery Entry and Exit	In- en uitsteek van het borduurwerk
+	Paste Embroidery Object Settings	Borduurinstellingen van object plakken
+	Show Embroidery Object Settings	Borduurinstellingen van object tonen
+	Embroidery Fabrics	Borduurstoffen
+	Apply Embroidery Fabric to Objects	Borduurstof op objecten toepassen
 	Embroidery Setup	Borduurinstellingen
 	Show Embroidery Settings	Borduurinstellingen tonen
 	Embroidery Statistics	Borduurstatistieken
@@ -5417,7 +5424,18 @@ swatch	Bright Violet	Felviolet
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	een negatieve expand-waarde liet van sommige gevulde vormen niets over, dus worden ze niet geborduurd: verklein ze minder
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	verlopen en patronen worden geschilderd in de kleur van hun eerste stoppunt; een borduurwerk naait één garen per blok
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	contouren breder dan {widest} mm worden genaaid als satijnkolommen van {widest} mm breed: vul ze in plaats daarvan (stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	contouren die met een penseel zijn getekend of door een effect zijn vervormd, worden genaaid als het gebied dat ze schilderen: een rechte steek of satijn die erop is ingesteld, kan hun pad niet volgen
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	deze versie kent het garenpalet {palette} van het document niet, dus worden de garens gekozen uit het palet {default}
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	de borduurinstellingen van het document bevatten er enkele die deze versie niet leest (uit een nieuwere versie): ze blijven bewaard, en het ontwerp wordt zonder ze geborduurd
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	sommige borduurinstellingen van het document vallen buiten wat deze versie borduurt: elk wordt geborduurd met de dichtstbijzijnde waarde die het aanneemt
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	de kniplengte is korter dan de spronglengte, dus worden sprongen al vanaf de spronglengte geknipt
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	de borduurinstellingen van sommige objecten bevatten er enkele die deze versie niet leest (uit een nieuwere versie): ze blijven bewaard, en die objecten worden zonder ze geborduurd
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	sommige borduurinstellingen van objecten vallen buiten wat deze versie borduurt: elk wordt geborduurd met de dichtstbijzijnde waarde die het aanneemt
+@msg	none of these objects takes settings for its `{_1}`: {_2}	geen van deze objecten neemt instellingen voor zijn `{_1}` aan: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	geen van deze objecten neemt borduurinstellingen aan: {_1}
+@msg	object {_1} takes no embroidery settings ({_2})	object {_1} neemt geen borduurinstellingen aan ({_2})
+@msg	object {_1} is a group: give one of its objects	object {_1} is een groep: geef een van zijn objecten op
+@msg	object {_1} has no `{_2}`	object {_1} heeft geen `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	niets te borduren: het document heeft geen zichtbare paden met een vulling of contour
 @msg	nothing to stitch: {_1}	niets te borduren: {_1}
 
@@ -5476,7 +5494,7 @@ swatch	Bright Violet	Felviolet
 @msg	too many stitches for a VP3 file	te veel steken voor een VP3-bestand
 @msg	{_1} is not an embroidery format	{_1} is geen borduurformaat
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Steek:
 	Stitch Length:	Steeklengte:
 	Fill Angle:	Vulhoek:

@@ -209,16 +209,21 @@ struct Style {
     appearance: Appearance,
     opacity: f32,
     blend: BlendMode,
+    /// VectorCraft Stitch: the embroidery settings, carried with the paint.
+    embroidery: Option<Box<vectorcraft_doc::embroidery::Embroidery>>,
 }
 
 impl Style {
     fn of(n: &Node) -> Self {
-        Style { appearance: (*n.appearance).clone(), opacity: n.opacity, blend: n.blend }
+        // VectorCraft Stitch: the embroidery settings, carried with the paint.
+        Style { appearance: (*n.appearance).clone(), opacity: n.opacity, blend: n.blend, embroidery: super::embroidery::derive::carried(n) }
     }
     fn apply(&self, n: &mut Node) {
         n.appearance = self.appearance.clone().into();
         n.opacity = self.opacity;
         n.blend = self.blend;
+        // VectorCraft Stitch: the embroidery settings, given with the paint.
+        n.extras_mut().embroidery = self.embroidery.clone();
     }
 }
 
@@ -248,7 +253,10 @@ pub(crate) fn text_outline(t: &TextObject) -> PathData {
 
 fn style_of(n: &Node) -> Style {
     match &n.kind {
-        NodeKind::Text(t) => Style { appearance: t.first_style().appearance(), opacity: n.opacity, blend: n.blend },
+        NodeKind::Text(t) => {
+            // VectorCraft Stitch: the embroidery settings, carried with the paint.
+            Style { appearance: t.first_style().appearance(), opacity: n.opacity, blend: n.blend, embroidery: super::embroidery::derive::carried(n) }
+        }
         _ => Style::of(n),
     }
 }
@@ -417,6 +425,8 @@ fn run_pf(s: &mut Session, op: PathfinderOp) -> Result<Value> {
             // public Pathfinder documentation describes.
             if matches!(op, PathfinderOp::Trim | PathfinderOp::Merge | PathfinderOp::Crop) {
                 st.appearance.items.retain(|i| !matches!(i, AppearanceItem::Stroke(_)));
+                // VectorCraft Stitch: the stroke settings go with the strokes.
+                super::embroidery::derive::strokes_removed(&mut st.embroidery);
             }
             if op == PathfinderOp::Divide && st.appearance.items.iter().any(|i| matches!(i, AppearanceItem::Fill(f) if !f.paint.is_none())) {
                 // Filled open contours keep their implicit closing edge. A zero-area line
@@ -499,6 +509,8 @@ fn run_pf(s: &mut Session, op: PathfinderOp) -> Result<Value> {
                 }
                 children.push(Arc::new(n));
             }
+            // VectorCraft Stitch: the cut after an object once, after its last piece.
+            super::embroidery::derive::cut_once(children.iter_mut().map(Arc::make_mut));
             let gid = d.alloc_id();
             Node::group(gid, children)
         };
@@ -738,7 +750,12 @@ pub(crate) fn outline_strokes(d: &mut Document, brushes: &[vectorcraft_brush::Br
     if !fills.is_empty() {
         parts.push(styled_copy(d, l, fills));
     }
-    assemble(d, l, parts)
+    // VectorCraft Stitch: each part sewn with its fill's or stroke's embroidery settings.
+    let expanding = super::embroidery::derive::Expanding::of(l);
+    assemble(d, l, parts).map(|mut root| {
+        expanding.apply(&mut root);
+        root
+    })
 }
 
 /// A plain copy of path `l` (new ids, no transparency, name or mask) painted with `items`.
@@ -1021,8 +1038,10 @@ fn split_into_grid(s: &mut Session, p: &Value) -> Result<Value> {
         let layer = d.layer_containing(top.id);
         d.remove(top.id)?;
         let mut out = Vec::with_capacity(cells.len());
-        for (k, c) in cells.into_iter().enumerate() {
-            let node = shape_node(d, c, Some(&top));
+        let mut cells: Vec<Node> = cells.into_iter().map(|c| shape_node(d, c, Some(&top))).collect();
+        // VectorCraft Stitch: the cut after the object once, after its last cell.
+        super::embroidery::derive::cut_once(cells.iter_mut());
+        for (k, node) in cells.into_iter().enumerate() {
             out.push(d.insert(par, idx + k, node)?);
         }
         d.guides.extend(edges.iter().map(|&(vertical, pos)| vectorcraft_doc::Guide { layer, ..vectorcraft_doc::Guide::new(vertical, pos) }));
@@ -1150,7 +1169,9 @@ fn divide_objects_below(s: &mut Session, _: &Value) -> Result<Value> {
             if inside.is_empty() || outside.is_empty() {
                 continue;
             }
-            let pieces: Vec<Node> = [outside, inside].into_iter().map(|piece| shape_node(d, piece, Some(&n))).collect();
+            let mut pieces: Vec<Node> = [outside, inside].into_iter().map(|piece| shape_node(d, piece, Some(&n))).collect();
+            // VectorCraft Stitch: the cut after the object once, after its last piece.
+            super::embroidery::derive::cut_once(pieces.iter_mut());
             out.extend(pieces.iter().map(|p| p.id));
             cut.put(d, t, pieces)?;
         }

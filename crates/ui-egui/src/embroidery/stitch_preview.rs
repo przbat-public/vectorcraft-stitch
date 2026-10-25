@@ -25,8 +25,8 @@
 //!
 //! The plan is made on the planning thread ([`super::plan_worker`]), or in line where there is
 //! none: there a design is light only when its plan fits a frame ([`INLINE_PLAN_MS`]), and the
-//! replies wait while a drag goes on. The options are the preview's
-//! ([`Session::stitch_preview_options`]).
+//! replies wait while a drag goes on. It plans with no export's options: the objects' and the
+//! document's embroidery settings, then the defaults.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -514,7 +514,7 @@ impl StitchPreview {
             self.cancel();
             return None;
         };
-        let (opts, _) = s.stitch_preview_options(uid);
+        let opts = EmbroideryOptions::default();
         let key = s.embroidery_plan_key(&opts)?;
         // Made in the frame: the replies wait for the drag's end, which draws a frame anyway.
         let in_line = self.runner.as_ref().is_some_and(|r| r.in_line());

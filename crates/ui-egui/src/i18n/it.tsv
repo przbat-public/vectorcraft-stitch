@@ -5029,6 +5029,13 @@ lighting	Light	Luce
 	Select artwork to apply effects	Seleziona la grafica a cui applicare gli effetti
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	le variabili e i set di dati del file non sono stati letti (variabili: {variables}, set di dati: {data_sets}): il pannello Variabili non li elenca
 	Embroidery Trim After	Ricamo: taglia il filo dopo
+	Embroidery Object Settings	Impostazioni di ricamo dell'oggetto
+	Reset Embroidery Object Settings	Ripristina impostazioni di ricamo dell'oggetto
+	Embroidery Entry and Exit	Entrata e uscita del ricamo
+	Paste Embroidery Object Settings	Incolla impostazioni di ricamo dell'oggetto
+	Show Embroidery Object Settings	Mostra impostazioni di ricamo dell'oggetto
+	Embroidery Fabrics	Tessuti per ricamo
+	Apply Embroidery Fabric to Objects	Applica il tessuto del ricamo agli oggetti
 	Embroidery Setup	Imposta ricamo
 	Show Embroidery Settings	Mostra impostazioni ricamo
 	Embroidery Statistics	Statistiche del ricamo
@@ -5047,7 +5054,18 @@ lighting	Light	Luce
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	un valore negativo di expand non ha lasciato nulla di alcune forme riempite, quindi non vengono ricamate: riducile di meno
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	sfumature e motivi vengono dipinti con il colore del loro primo cursore colore; un ricamo cuce un filo per blocco
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	le tracce più larghe di {widest} mm vengono cucite come colonne di raso larghe {widest} mm: riempile invece (stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	le tracce disegnate con un pennello o rimodellate da un effetto vengono cucite come l'area che dipingono: un punto dritto o un raso impostati su di esse non possono seguirne il tracciato
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	questa versione non conosce la tavolozza di fili {palette} del documento, quindi i suoi fili vengono scelti dalla tavolozza {default}
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	le impostazioni di ricamo del documento ne contengono alcune che questa versione non legge (da una versione più recente): vengono conservate, e il disegno viene ricamato senza di esse
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	alcune impostazioni di ricamo del documento sono al di fuori di ciò che questa versione ricama: ciascuna viene ricamata al valore più vicino che accetta
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	la lunghezza del taglio è inferiore alla lunghezza del salto, quindi i salti vengono tagliati già dalla lunghezza del salto
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	le impostazioni di ricamo di alcuni oggetti ne contengono alcune che questa versione non legge (da una versione più recente): vengono conservate, e quegli oggetti vengono ricamati senza di esse
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	alcune impostazioni di ricamo degli oggetti sono al di fuori di ciò che questa versione ricama: ciascuna viene ricamata al valore più vicino che accetta
+@msg	none of these objects takes settings for its `{_1}`: {_2}	nessuno di questi oggetti accetta impostazioni per il suo `{_1}`: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	nessuno di questi oggetti accetta impostazioni di ricamo: {_1}
+@msg	object {_1} takes no embroidery settings ({_2})	l'oggetto {_1} non accetta impostazioni di ricamo ({_2})
+@msg	object {_1} is a group: give one of its objects	l'oggetto {_1} è un gruppo: indica uno dei suoi oggetti
+@msg	object {_1} has no `{_2}`	l'oggetto {_1} non ha `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	niente da ricamare: il documento non ha tracciati visibili con riempimento o traccia
 @msg	nothing to stitch: {_1}	niente da ricamare: {_1}
 
@@ -5105,7 +5123,7 @@ lighting	Light	Luce
 @msg	too many stitches for a VP3 file	troppi punti per un file VP3
 @msg	{_1} is not an embroidery format	{_1} non è un formato di ricamo
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Punto:
 	Stitch Length:	Lunghezza del punto:
 	Fill Angle:	Angolo di riempimento:

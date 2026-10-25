@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-24 · **Change:** VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-25 · **Change:** the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Architecture › Planning service, measured again; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -48,7 +48,7 @@ decisions are in [FORK.md](../FORK.md).
 or with `selectedOnly` the selected art alone):
 
 ```json
-{"id": 1, "method": "engine.execute", "params": {"command": "document.export", "params": {"format": "pes", "spacing": 0.4, "angle": 45}}}
+{"id": 1, "method": "engine.execute", "params": {"command": "document.export", "params": {"format": "pes", "spacing": 0.4, "angle": 30}}}
 ```
 
 `document.export` writes the whole document's visible art unless `selectedOnly` is given. The file
@@ -60,7 +60,7 @@ control channel use it). Every writable format's options are listed by `document
 | `stitch` | `stitchStyle` | `auto` | `auto` fills fills (their narrow parts as satin columns, see `narrowAsSatin`), satins strokes 1 mm and wider, runs narrower ones; `tatami` (or `fill`), `satin` and `running` force one style (`tatami` on a stroke fills the area the stroke paints, at its width, caps and joins; on a fill it sews all of it as tatami; `satin` on a fill, which has no width to sew across, fills it as `auto` does, its narrow parts as satin columns; `running` on a fill follows its outline) |
 | `spacing` | `density` | 0.38 mm in fills; satin by width | distance between threads: between a fill's rows; between two penetrations on one rail of a satin column (peak to peak), its crossings lying half that apart. Left out, a satin column picks it by its width (*auto spacing*: 0.5 mm under 2 mm wide, 0.45 under 4, 0.4 under 6, 0.37 wider; estimates), and both follow `threadWeight`; given, it is used as it is. 0.05 to 5 mm |
 | `length` | `stitchLength` | 4 mm in fills, 2.5 mm in running lines | the longest stitch of a running line or a fill row; 0.2 to 12 mm |
-| `angle` | `stitchAngle` | 45° | the direction a fill's rows run; any angle |
+| `angle` | `stitchAngle` | 135° | the direction a fill's rows run, degrees counter-clockwise on the page as every angle in VectorCraft (0: left to right, 90: bottom to top); the default runs from the top left to the bottom right; on an object turned (its bounding box's angle) the rows turn with it, unless the object sets an angle of its own (which turns as it is stored); any angle. Until 2026-10-24 `angle` counted clockwise as seen (the planner's angle): a value recorded before is `180 − old`. The earlier name `stitchAngle` keeps that meaning (the project owner's choice, 2026-10-24), so that scripts and recorded Actions giving it sew as before: `stitchAngle` 30 is `angle` 150 |
 | `pull` | `pullCompensation` | 0.2 mm | pull compensation: how much farther the stitches reach at each side so the fabric's pull leaves no gap: each rail of a satin column, each end of a fill's rows. One number for both sides, or two: `[left, right]` of a satin as its path runs, `[start, end]` of a fill's rows along their direction; 0 to 2 mm a side |
 | `pullPercent` | `pullCompensationPercent` | 0 | pull compensation that grows with the stitch, on top of `pull`: percent of a satin column's width, or of a fill row's length, added at each side (at most 2 mm a side with the fixed value). One number or two, as `pull`; 0 to 50 % |
 | `push` | `pushCompensation` | 0 mm | push compensation: how much shorter an open satin column is sewn at each end, since sewing pushes the fabric out there; one number or two (`[start, end]` as the path is drawn). A fill's narrow part sewn as satin is shortened only at an end where the shape ends, not where it meets the rest of the fill. A column keeps at least half its length; 0 to 5 mm an end |
@@ -71,6 +71,7 @@ control channel use it). Every writable format's options are listed by `document
 | `jumpLength` | | 5 mm | a longer move lifts the needle (a jump), tied off before and in after so that it can be cut; a shorter move that can't be sewn (between separate pieces) jumps with the thread on; 0.5 to 20 mm |
 | `trimLength` | | 10 mm | a jump longer than this cuts the thread first (a trim); shorter jumps are left for the machine or a person to cut. From `jumpLength` (only a jump is cut) to 1,000 mm |
 | `minStitch` | | 0.4 mm | shorter stitches are left out; 0.05 to 3 mm |
+| `splitLength` | | 10 mm | a satin stitch longer than this is split into shorter ones, their needle points spread so they don't line up into a seam; 2 to 12 mm |
 
 **One vocabulary.** These names are the ones the per-object settings will use, so that a value
 resolved for an object can say which layer it came from (object, export option, document,
@@ -135,7 +136,10 @@ software calls recognising objects) is not done yet.
 **Saved by upstream VectorCraft.** Upstream keeps the document's embroidery settings it doesn't
 know but drops every object's (its node format keeps no unknown keys): a design opened from a
 machine file, saved by upstream VectorCraft and opened here again is art, its lines stitched as
-thin strokes and its Trim After marks gone, with no warning (FORK.md › Keeping up with upstream).
+thin strokes and its Trim After marks gone, and every object's fill and stroke settings and entry
+and exit points are gone too, with no warning (FORK.md › Keeping up with upstream). Both apps
+open `.vectorcraft` files, so a double-click may open one in upstream VectorCraft: save designs
+with object settings in this app.
 
 **What opening leaves out.** Opening a machine file says, one note each, what the file holds that
 reading it leaves out, and so a file written from the document lacks (`Format::losses`): a PES's
@@ -159,6 +163,106 @@ file had after it. Left out, `on` toggles: on, unless every object is marked alr
 saved in `.vectorcraft` files (`NodeExtras::embroidery`). No menu or panel sets it yet: the command
 palette runs it on the selection (Embroidery Trim After), and MCP and the control channel with
 ids; an id that names no object is reported as a missing object.
+
+**Settings on objects.** Each object keeps settings for its fills and for its strokes (one set
+for all of its fills, one for all its strokes), which beat an export's options, the document's
+settings and the defaults (Settings and where their values come from, below). They are saved in
+the `.vectorcraft` file with the object; upstream VectorCraft drops them when it saves the file
+(Saved by upstream VectorCraft, above). Four commands set
+them; no panel does yet (the Object tab comes next), so the command palette runs them on the
+selection, and MCP and the control channel with ids:
+
+- `embroidery.set {ids?, part, …}` sets values of a part (`fill` or `stroke`) under the
+  vocabulary's names (`stitch`, `spacing`, `length`, `angle`, `pull`, `pullPercent`, `push`,
+  `expand`, `narrowAsSatin`, `underlay`, `splitLength`), each checked as the export's option of
+  that name is; `null` unsets one. `stitch` also takes `none`: the part is not sewn. An earlier
+  name (`density`…), a design setting (`trimLength`…) and a point are refused, saying what to use.
+- `embroidery.reset {ids?, part?, keys?}` unsets them (by default every value but the entry and
+  exit points; the cut after the object stays): the Object tab's Restore from Fabric.
+- `embroidery.setEntryExit {id?, part, entry?, exit?}` sets where one object's part starts and
+  ends, in document points (moved and turned with the object).
+- `embroidery.copyFrom {source, ids?, part?, keys?}` gives the objects the source's values, set or
+  unset, as `embroidery.set` would take them (a newer version's value, or one out of range, is
+  passed over and listed, `passedOver`): the Object tab's Copy and Paste settings.
+
+`embroidery.info {ids?, plan?, …}` reads them, without planning: each object's settings as kept, and
+for each part every value it is planned with, merged over the objects (the value they share, or
+none and `mixed`), with where it comes from (`object`, `export`, `document` with the part of its
+settings, `default`; a rule's value is `"auto"`, never a source), how many objects set it, what
+unsetting gives (`inherited`), how the part is sewn by the walk's own rule, and what a rule chose
+where the value is `"auto"` (a satin's underlay and spacing by its width, from the planner's own
+functions, `plan::satin_auto_underlay` and `Params::column_spacing`; a fill's underlay by its size,
+which only the planned area tells); with `plan`, what the design's plan sews of each part. The
+sewing order says which setting forced a unit's style (`ruleValues.source`: `object` or `export`). The stitch preview's planning thread answers it as the other
+read commands, the objects given.
+
+Each command that changes them makes one undo step (none when nothing changes). A group or a layer stands for the paths and
+compound paths in it, a compound path's member for its compound path; type, a symbol instance
+(set its art's instead), a run of stitches opened from a file and live objects are skipped and
+listed (`skipped`, at most 1,000), and at most 100,000 ids are taken.
+
+**Document settings.** `embroidery.setup` sets, besides the palette, the start point and the label,
+the document's fabric (`fabric`), the thread's weight (`threadWeight`), whether one colour's objects
+join (`joinSameColor`) and the machine's values (`machine`: `jumpLength`, `trimLength`, `minStitch`,
+`splitLength`, `speed`), each merged value by value, `null` unsetting one; `embroidery.settings`
+reads them. Each is answered as stored (`settings`, which can be passed back: what equals the
+document's own changes nothing and isn't checked again, so a newer version's value passes back) and as
+the plan uses it with where it comes from (`resolved`: the document's or the default), with how
+many objects set the fabric's values themselves (`overrides`). No panel sets them yet (Document
+Setup › Embroidery comes next).
+
+- **A fabric is copied, not linked.** `{fabric: "stretchKnit"}` copies a preset's values into the
+  document, as the values in force and as the preset's (the base `resolved` marks a changed value
+  against, `changed`, and `null` restores); the colour stays, being no preset's value; the same
+  preset again restores all of its values; `{fabric: null}` removes it. `{fabric: {tatami:
+  {length: 3.5}}}` changes one value. Objects with values of their own keep them:
+  `embroidery.applyFabric {ids?, keys?}` unsets the objects' own values of the keys a fabric gives
+  each part (a fill's pull, spacing, length and underlay; a stroke's pull, spacing and underlay,
+  never its stitch length, which no fabric gives a satin or a running line) on the selection, or
+  with nothing selected on every object and the symbols' art (which their instances sew), so that
+  they follow the fabric again; `overrides` counts the same keys, by key and the objects that set
+  any (`objectCount`), the symbols' art included. To act on the whole document whatever is selected
+  (Document Setup's bar), pass the layers' ids.
+- **The presets** are Wilcom's eight auto fabrics, under Wilcom's fabric names (generic words)
+  without its trademarks (`embroidery.fabrics` lists them, each value with the publication it rests on, how it was worked out, or why it is an
+  estimate; `crates/stitch/src/fabric.rs` cites every source). A dash leaves the built-in value.
+  The default, `cotton`, sews exactly as a document without a fabric (its thickness, 0.55 mm from
+  Melco's broadcloth figure, only changes `embroidery.stats`' thread estimate from the 0.5 mm
+  default).
+
+| Preset | Tatami pull (mm) | Tatami rows (mm, 40 wt) | Tatami stitch (mm) | Tatami underlay | Satin pull (mm) | Satin spacing | Satin underlay | Stabiliser, topping, needle | Thickness (mm) |
+|---|---|---|---|---|---|---|---|---|---|
+| `cotton` | 0.2 | 0.38 | 4 | auto | 0.2 | 100 % | auto | tearAway, none, universal | 0.55 |
+| `denim` | 0.17 | 0.38 | 4 | edgeTatami | 0.2 | 100 % | auto | tearAway, none, universal | — |
+| `stretchKnit` | 0.2 | 0.38 | 4 | edgeTatami | 0.35 | 100 % | auto | cutAway, waterSoluble, ballPoint | 0.6 |
+| `pique` | 0.2 | 0.38 | 4 | edgeTatami | 0.25 | 100 % | auto | cutAway, waterSoluble, ballPoint | 0.8 |
+| `fleece` | 0.25 | 0.3325 | 3.8 | edgeTatami | 0.4 | 100 % | auto | adhesiveTearAway, waterSoluble, universal | 1 |
+| `silk` | 0.2 | 0.475 | 4.2 | auto | 0.2 | 111.111 % | auto | adhesiveTearAway, none, universal | — |
+| `nylon` | — | — | — | — | — | — | — | tearAway, none, universal | — |
+| `cap` | — | — | — | — | — | — | — | adhesiveTearAway, waterSoluble, universal | 1.2 |
+
+  **One family.** Every value that changes from fabric to fabric in how the stitches are made comes
+  from one family of software: Wilcom's own help and BERNINA's presets, and BERNINA's embroidery
+  software is Wilcom's. No independent source confirms them: sew a test on the fabric. The rows'
+  base spacing (0.38 mm) is the one value two families give (Wilcom and Melco). BERNINA gives its
+  values for eight classes of fabric (F1 light knit to F8 heavy woven) that name no fabrics: which
+  class each preset is taken as is ours to say, and each value says which (`embroidery.fabrics`'
+  `how`): cotton the medium woven class (F7), denim the heavy woven (F8), stretch knit the light
+  knit (F1), piqué the medium knit (F2), fleece the heavy knit (F3), silk the light woven (F6).
+  Cotton keeps the planner's own underlay rule, though its class sews an edge run and a tatami
+  layer under every fill, so that the default sews as a document without a fabric does.
+
+  **Silk is an estimate.** Its stitch values are BERNINA's light woven class's (F6), and no source
+  says that silk is that class (the project owner's choice, 2026-10-24: kept, each marked so):
+  every silk stitch value's first basis says so, and `embroidery.fabrics` lists them among its
+  `estimates`. Where the class gives two values by a column's width, the one nearer the medium
+  woven class's (cotton's) is taken: narrow columns' pull, wide columns' spacing.
+- **A fabric's tatami rows are given for 40 wt thread** and scale with the document's thread
+  weight as the built-in spacing does (`resolved` reports them for the thread in use), from 0.1 to
+  2.5 mm, the spacings every weight from 10 to 150 wt keeps within the planner's range once scaled
+  (a file's value outside them is brought to the nearest, with a note); a satin's
+  spacing is a percentage of the spacing its width picks. A value typed on an object or given to
+  an export is used as it is.
 
 **Threads.** Each colour block is sewn in a thread of the document's thread palette: Janome's 78
 threads, which JEF files number (`jef`), or Brother's 61, which PES files number (`pec`) among 64
@@ -248,8 +352,8 @@ marked as an estimate (`cmd/embroidery/stats.rs`):
 | bobbin's share of the back (for the top thread) | ⅓ under a satin, ⅓ × 125 / 65 under running and tatami, ⅓ × 100 / 65 for stitches read from a file | Wilcom's bobbin factors: 100 % for a mixed design, about 125 % for one all of run or tatami, about 65 % for one all of satin ([thread usage](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Basics/threads/threads-5.htm)); anchoring satin at ⅓ is ours, an estimate |
 | bobbin thread | 3/5 of the top thread | Madeira's rule of thumb for standard-length stitches, about 3 m of bobbin to 5 m of top thread a 1,000 stitches ([density sheet](https://www.madeirausa.com/_resources/common/userfiles/file/Resources/TH.Reads/Density.pdf)); the project owner's choice of calibration (2026-10-22), an estimate. Scaled by Wilcom's factors instead, the real designs' plans came to 4 m a 1,000 needle points |
 | top thread through the fabric | twice `fabricThickness` per needle point (down and back up) | an estimate; Wilcom takes the fabric's thickness as an input |
-| `fabricThickness` | 0.5 mm (0 to 5) | an estimate (a medium cotton, a T-shirt jersey) |
-| `speed` | 650 stitches a minute (60 to 1500) | the default of Janome's Memory Craft 230E's maximum-speed setting, which runs from 400 to 650 ([MC230E manual](https://www.janome.ca/wp-content/uploads/2025/02/inst-manual-mc230e.pdf), which also advises slowing down for small designs); commercial machines usually run at 700 to 800 (Wilcom's blog, below); an estimate for home machines. The bounds: Janome's [Memory Craft 9850](https://www.janome.com/product/memory-craft-9850/) embroiders from 60, Happy's HCU2-1501 at 1,500 ([a dealer's listing](https://shop.coldesi.com/products/happyjapan-hcu2-1501-embroidery-machine-hcu2-1501)) |
+| `fabricThickness` | the document's fabric's thickness, else 0.5 mm (0 to 5) | an estimate (a medium cotton, a T-shirt jersey) |
+| `speed` | the document's machine's speed, else 650 stitches a minute (60 to 1500) | the default of Janome's Memory Craft 230E's maximum-speed setting, which runs from 400 to 650 ([MC230E manual](https://www.janome.ca/wp-content/uploads/2025/02/inst-manual-mc230e.pdf), which also advises slowing down for small designs); commercial machines usually run at 700 to 800 (Wilcom's blog, below); an estimate for home machines. The bounds: Janome's [Memory Craft 9850](https://www.janome.com/product/memory-craft-9850/) embroiders from 60, Happy's HCU2-1501 at 1,500 ([a dealer's listing](https://shop.coldesi.com/products/happyjapan-hcu2-1501-embroidery-machine-hcu2-1501)) |
 | slow speed | 400 stitches a minute, for stitches and jumps longer than 4 mm | the lowest Janome's home machines can be set to (same manual); Tajima's TMEZ-SC keeps its top speed up to 4 mm ([product page](https://www.tajima.com/product/tmez-sc/)): both estimates for home machines, after Wilcom's "slow above" ([runtime settings](https://docs.wilcom.com/embroiderystudio/e4/en/MainHelp/Setup/hardware/Configure_machine_runtime_settings.htm)) |
 | trim | 3.5 s | 3 to 4 s by machine, Wilcom's blog ([high-impact, low stitch-count designs](https://wilcom.com/resources/blog/high-impact-low-stitch-count-designs)); another Wilcom post was reported to give about 8 s, but no longer opens |
 | thread change | not timed: counted apart | a person rethreads a single-needle machine; Brother's machines leave thread changes out of their own estimate, and trims too ([Brother](https://support.brother.com/g/s/hf/htmldoc/hsm/om/888p5x/en/06_08_01.html)), so a Brother machine's display differs from this one by the trims |
@@ -368,8 +472,9 @@ as Melco's checker reads it, on each object's settings, it flags none.
 
 - **The stitches on the canvas.** View › Stitch Preview (⌘E), or the Art | Stitches switch at the
   canvas's top right, shows the active document's stitches in place of its art, on the fabric,
-  each in its thread's colour; they are planned in the background with the export's options (those
-  of the document's last embroidery export, else the defaults) and follow every edit. View › Stitch
+  each in its thread's colour; they are planned in the background with the document's own
+  settings (its objects', then its own, then the defaults: no export's options, which are for that
+  export alone) and follow every edit. View › Stitch
   Preview Options: Show Jumps and Cuts, Show Needle Points, Show Artwork Under Stitches (faint, or
   its outlines in Outline) and Show Check Marks. As commands: `view.stitchPreview {on?}` and its
   options (`view.stitchPreview.jumps`, `needlePoints`, `artwork`); `embroidery.render` draws the
@@ -761,7 +866,13 @@ the document is made as it prints (`cmd/embroidery/printed.rs`): an object whose
 than one fill and one stroke (several, or any of their own opacity, blend mode or effects, live
 effects, a brush, a group's own fills and strokes) is expanded as `effect.expandAppearance` expands
 it (each fill and stroke an object, strokes outlined, brushed strokes their brush art, geometry
-effects baked), symbols' art too. A stroke dashed, aligned inside or outside a closed path, of
+effects baked), symbols' art too, but for its strokes that nothing reshapes (no brush, no effect
+of their own or of the object's): each becomes an object of its own, the object's path with that
+stroke alone and the object's stroke settings, sewn as a basic object's stroke is, a satin column
+or a running line along its path (the project owner's choice, 2026-10-24: a stroke set to running
+sews one line, not two round its outline). A stroke a brush or an effect reshapes is outlined, and
+when a running or satin stitch is set on it or given to the export, the plan says that the stitch
+can't follow its path, naming the object. A stroke dashed, aligned inside or outside a closed path, of
 varying width or with arrowheads is sewn as the area it paints, as on the canvas, its narrow parts
 satin columns that follow it (`rule: strokeOutlined`). A symbol instance's art is stained as the
 instance shows it. Art at no opacity isn't sewn. The pieces an expanded object becomes are still
@@ -776,16 +887,23 @@ the object a person selects (`id`).
 - Gradients and patterns sew in one colour (a gradient in its first stop's; a pattern is left out).
 - Wide satin columns are split stitch by stitch (auto split), not into several narrower columns,
   and are at most 50 mm wide (wider strokes are warned about).
-- Underlay is chosen by width and size only, not by fabric (no fabric presets yet).
-- Pull and push compensation, `expand` and the thread weight are one value for the whole design,
-  not per object, and not by fabric: 0.2 mm of pull compensation suits stable woven fabric
-  (Wilcom's guide gives 0.35 for T-shirts and 0.4 for fleece). Push compensation is off by
-  default: no starting value is published.
+- Underlay is chosen by width and size, unless an object's part, or the document's fabric for all
+  tatami and all satin, sets one.
+- Pull and push compensation and `expand` are the object's own, else one value for the whole
+  design (the document's fabric sets pull for tatami and satin apart); the thread weight is the
+  whole design's. 0.2 mm of pull compensation, the default, suits stable woven fabric (Wilcom's
+  guide gives 0.35 for T-shirts and 0.4 for fleece). Push compensation is off by default: no
+  starting value is published.
 - Fill pull compensation stretches rows along their direction only: across the rows, a fill keeps
   half a row spacing inside its edge, as before. `expand` grows it both ways.
 - A fill's narrow parts become satin by their width alone, not by what a person would choose (a
-  wide stem, a stripe the art wants flat). `narrowAsSatin: 0` or `stitch: tatami` keeps all of
-  it tatami; there is no per-object choice until embroidery properties on objects.
+  wide stem, a stripe the art wants flat). `narrowAsSatin: 0` or `stitch: tatami`, on the object's
+  fill or for the export, keeps all of it tatami.
+- A stroke a brush or an effect reshapes is sewn as the area it paints, whatever stitch is set on
+  it (said in the plan's warnings when a running or satin stitch is).
+- An entry point starts its part at the start the stitches can take nearest to it (an end of a
+  line, the corner a fill's rows begin at), not at the point itself; an exit point is kept but not
+  yet planned toward (both come with the embroidery tool).
 - A part of a fill narrower than 1 mm is a single running line along its middle, not a bean or
   triple run: on a part 0.6–1 mm wide its edges stay bare.
 - Travel between a fill's parts is weighed by the straight distance between them, and it is not
@@ -821,8 +939,8 @@ the object a person selects (`id`).
   flagged; the nearest thread neither neighbour has, Royal Purple, is 15.5). Eight of the pinned
   JEF exports have such a stop, two of them real designs (the zebra, the joystick); no PES export
   has one. A thread taken instead can also push the next block off its own nearest in turn.
-- The trim length is one number for every machine and fabric: there are no machine or fabric
-  settings yet. Jumps shorter than it are left to a machine with jump trimming, or to a person.
+- The trim length is one number for the whole design (the document's machine settings, or an
+  export's option). Jumps shorter than it are left to a machine with jump trimming, or to a person.
 - A fill whose regions form one piece of more than 200 (a comb of 200 teeth) is sewn nearest
   region next, without comparing orders: with 30 mm teeth that is 100 jumps (a comb of five
   teeth is sewn without one).
@@ -830,7 +948,8 @@ the object a person selects (`id`).
   each object's start is the nearest one, not chosen with the next object in view.
 - The default spacing and stitch length follow professional software (Wilcom), which is more
   open than Ink/Stitch's (rows 0.25 mm apart, 3 mm stitches): VectorCraft sews about 41–59 % as
-  many stitches for the same artwork (measured below). No fabric presets yet.
+  many stitches for the same artwork (measured below). The fabric presets (Document settings,
+  above) change them only for the fabrics whose published values differ.
 
 ## Validation
 
@@ -998,15 +1117,22 @@ the object a person selects (`id`).
   options and `expand` both ways, an opened design), with caches small enough to drop units.
   A design of more than two million stitches is refused (`tests_walk.rs`). Random documents with
   embroidery among their edits save and read back as they were, and their embroidery reads,
-  checks and exports or is refused (`tests/embroidery_random_documents.rs`).
+  checks and exports or is refused (`tests/embroidery_random_documents.rs`). Settings as hostile as
+  a file can hold them (numbers at JSON's edges, long strings, any type under every key, points of
+  any shape), on objects and in the document, are planned to finite needle points, read, edited by
+  the settings commands and every embroidery command's junk, transformed (singular transforms
+  among them) and cut up by the commands that make objects from others without a panic, and the
+  document saves and reads back as it was (`tests/embroidery_hostile_settings.rs`).
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
 - `crates/engine/tests/embroidery_output.rs`: the bytes every export writes, pinned by their sha256
-  in DST, TAP, T01, EXP, PES, PEC, JEF and VP3: 14 documents built in code (fills, strokes, a
+  in DST, TAP, T01, EXP, PES, PEC, JEF and VP3: 16 documents built in code (fills, strokes, a
   compound path with a hole,
   clip groups, symbols, trims asked for, opened designs as they are, clipped and cut at their
-  blocks' ends, and the options away from their defaults; always run) and the eleven real
-  designs' artwork at the person's size (when the corpus is present). A change to what is sewn
+  blocks' ends, the options away from their defaults, settings on objects and in the document,
+  and an expanded object's strokes; always run), the test sheet on each of the 8 fabric presets
+  (64 exports), and the eleven real designs' artwork at the person's size (when the corpus is
+  present): 280 exports in all. A change to what is sewn
   fails it, listing the exports that changed and printing the listing as it now stands: such a
   change is made on purpose, with the listing updated in the same commit. Each PES, PEC and JEF export
   is also pinned apart from its thread numbers (the hash of its bytes with them blanked, and the
@@ -1026,7 +1152,13 @@ the object a person selects (`id`).
   eight JEF exports (the zebra's stripes Black, the joystick's grey Dark Gray, the test drawings'
   purple Violet Blue), checked the same way; Janome's palette as the default changed
   none. Against the exports before this work, 38 files and 69 of their 198 blocks have another
-  thread, and no block is farther from its art than it was.
+  thread, and no block is farther from its art than it was. The settings on objects (2026-10-24)
+  changed the 8 `symbols` exports alone: an unset fill angle now turns with its object, and the
+  instance turned 30° sews its square's rows at 165° (the first block, the red squares: needle
+  points 661 → 698), the other instance and the satin ring as before; the 80 exports they added
+  (16 of the two new documents, 64 of the fabric sheets) were pinned as recorded. A document saved
+  before then exports otherwise where an object is turned (its unset rows turn with it) or where
+  an expanded object's strokes are plain (sewn along their path).
 - Elsewhere: the thread libraries are listed, read, added and traced with
   (`tests_swatchlib.rs`, `tests_build.rs`), the window menu lists them, the document's settings
   round-trip with what a newer version wrote, whatever its shape, and the undo history's memory
@@ -1298,28 +1430,40 @@ worksheet, a stitch player. So each one shows what will be sewn.
 
 ### Settings and where their values come from
 
-Today every unit is planned with the export's options. The digitizer decides a unit's stitch
-style, parameters and `expand` in one place, `Digitizer::settings(origin)`, and that is where
-embroidery settings on objects and in the document will be looked up. (The jump and trim lengths
-between objects belong to the design, or the machine, rather than to a unit.)
+Every unit is planned with its object's own settings for its part, over the export's options,
+over the document's embroidery settings. The digitizer decides a unit's stitch style,
+parameters and `expand` in one place, `Digitizer::settings`, which asks `resolve.rs`: each layer is
+a set of the embroidery options (`Options`), one value or none for each, laid over the next
+(`Options::over`) and turned into the planner's parameters by the one conversion every unit takes
+(`Options::params`), so a unit with nothing set is planned exactly as before. What belongs to the
+design rather than to a unit (the jump and trim lengths between objects, whether one colour's
+objects join) is resolved once a plan (`DesignSettings`).
 
 - **Resolved in the decided order** (the object's value, the export's option, the document's, the
   built-in default): an export option applies to the objects that have no value of their own, and
-  every value resolved comes back with where it came from, so that a panel and a read command
-  (neither built yet) can show it.
+  every value resolved comes back with where it came from (`embroidery.info`, from the same
+  layers the walk plans with), so that a panel can show it.
 - **Stored in the `.vectorcraft` file, so that a file saved by a newer version still opens in an
   older one:**
   - per part of an object, its fill and its stroke, each value set or unset;
   - allowed on type (for lettering), on groups (a trim after them, later branching) and on a live
     trace (digitizing from an image), not only on paths;
   - points (entry and exit, later satin rails and angle lines) in document coordinates, moved with
-    the object, and angles turned with it;
-  - fields a version doesn't know are kept, and a stitch type it doesn't know reads as Auto with a
-    warning instead of failing the file (so stitch types are not a plain closed list in the file).
+    the object, and angles turned with it; a fill angle the object doesn't set turns with the
+    object too, by its bounding box's angle (the project owner's choice, 2026-10-23: rows stay
+    the same across a turned shape); Reset Bounding Box sets it upright, and a mirror maps the
+    box's axis to its image nearest it, so an upright object stays upright but a turned object's
+    unset rows don't mirror with it (a box at 30° goes to −30°: rows at 165° become 105°, where
+    their mirror image is 15°); an angle set on the object mirrors with it;
+  - fields a version doesn't know are kept, and a stitch type it doesn't know reads as unset (the
+    export's option, else Auto) with a note instead of failing the file (so stitch types are not a
+    plain closed list in the file).
     Done for what objects carry today: `Embroidery` (the node's `embroidery` key) keeps keys it
     doesn't read and known keys of another type (`Embroidery::extra`, `StitchRun::extra`, read as
     unset) and a value that isn't an object (`Embroidery::unread`), as `EmbroiderySetup` does; a
-    property test opens and saves any JSON under that key;
+    property test opens and saves any JSON under that key. An object's kept keys are shared
+    (`Kept`, an `Arc`), so that settings copied onto many objects (the pieces cut from one, the
+    objects pasted onto) share them rather than each holding a copy;
   - keys are snake_case in the file, as every key the file format writes (`trim_after`), and
     camelCase in commands and replies (`trimAfter` would be the parameter's name).
 - **Document settings:** the thread palette (done: `embroidery.setup`, below), the fabric (its
@@ -1331,6 +1475,81 @@ between objects belong to the design, or the machine, rather than to a unit.)
   warning in the plan. Settings of another shape than an object (`"embroidery": 5`) don't stop the
   file from opening: they are kept whole (`EmbroiderySetup::unread`) and written back while nothing
   is set, and a palette set replaces them.
+- **How the document's settings reach the stitches** (`DocLayer`, read once a plan): by the stitch
+  a unit is sewn in, as a fabric is described.
+  - A tatami fill takes the fabric's tatami pull, row spacing, stitch length and underlay. The row
+    spacing is given for 40 wt thread and scales with the thread's weight as the built-in spacing
+    does; a spacing given to an export is used as it is.
+  - A satin column, a fill's narrow parts among them, takes the fabric's satin pull, spacing
+    percent (a share of the spacing the column's width picks; 100 % is the built-in spacing,
+    exactly) and underlay. A spacing set on the object's fill or given to the export is one
+    distance for every thread of the part, as the export's `spacing` always was: it reaches the
+    fill's narrow columns too (fixed, no longer picked by width), where the fabric's tatami
+    spacing, the rows' alone, leaves them at the satin's.
+  - A running line takes none of the fabric's values.
+  - The thread's weight and the machine's jump, trim, shortest stitch and satin split reach every
+    unit and the moves between them.
+  - Joining off (`join_same_color: false`) lets an object join only the block sewn just before it,
+    when that block is of its colour: the blocks follow the stacking order strictly.
+  - A value a newer version wrote outside this version's range is sewn at the nearest value it
+    takes; an underlay kind or a key this version doesn't read is left out (the built-in value then
+    applies); the plan says each once. So does a trim length shorter than the jump length (the two
+    from different places, the machine and an export's options): jumps are then cut from the jump
+    length on.
+
+- **Objects made from others** keep the settings of what they come from (`cmd/embroidery/derive.rs`:
+  Pathfinder, Offset Path, Shape Builder, Divide Objects Below and Split Into Grid take their
+  paint source's, the cut after an object cut into pieces going to its last; Make and Release
+  Compound Path, Outline Stroke, Expand Appearance, Create Outlines, Ungroup and Break Link give
+  each piece the settings of the part it came from and the cut to what stands for the object).
+  A new object gets the bounding box upstream gives it: the pieces of one object expanded or
+  outlined take its box's angle, so their unset rows don't move, but an object Pathfinder, Offset
+  Path or Split Into Grid makes is upright, so its unset rows follow 135° (set an angle on the
+  source to keep them), a consequence of turning unset rows with the box.
+- **How an object's settings reach the stitches** (`PartLayer`): from the node walked, for the
+  kind of part a unit sews (all its fills, or all its strokes), so a symbol's art keeps its own in
+  every instance, turned with it, and an expanded object's pieces take the settings of the part each
+  came from. Groups and layers pass nothing down. The part's `stitch` decides first: `auto` sews by
+  the rule even where an export forces a style, a style beats the export's, and `none` leaves the
+  part unsewn (no unit, nothing said). Its entry point starts the part where the stitches can start
+  nearest to it. A value a newer version wrote out of its range is sewn at the nearest it takes, and
+  a stitch, an underlay or a key this version doesn't read is left out, so the layers below give it;
+  the plan says each once.
+
+### Settings and transforms
+
+An object's settings move and turn with it (`Embroidery::transform` in
+`crates/doc/src/embroidery/transform.rs`, called from `Node::transform`, the one path every
+transform of an object takes: Transform, Move, Rotate, Reflect, Scale, Shear, Transform Each,
+nudges, Align, paste and duplicate offsets, a symbol's art placed by its instance, Break Link; and
+Direct Selection moving every anchor of a path). Each rule is a group action: two transforms one
+after the other do what their product does, and a transform and its inverse give the settings back.
+
+- **Points** (entry, exit) map by the whole transform; one the transform sends to no finite place
+  stays where it was, as a kept position does.
+- **A set angle** goes where the transform takes its direction, turned half round under a mirror
+  (rows are lines: θ and θ + 180° are the same rows), normalised to (−180°, 180°]; a move, a uniform
+  scale or a turn by whole circles keeps its bits. Angles are taken and reported as any number of
+  degrees counter-clockwise, not brought into 0° to 180°: a mirrored 30° is stored as −30°, and an
+  unset angle turned with its object is reported as the default plus the turn (135° + 90° = 225°).
+- **Per-side values** (`pull`, `pullPercent`) swap under a mirror, so that a mirrored object sews
+  the mirror image; a column's ends (`push`), counted as its path is drawn, never swap.
+- **No length scales:** spacing, stitch length, compensation and the rest describe thread and
+  fabric, which don't change with the art's size.
+- **An unset angle** turns with the object's bounding box's angle (Settings and where their values
+  come from, above).
+- **What a newer version keeps** that this version doesn't read moves by two conventions that every
+  later version keeps to, since a file's kept data is moved by older versions too:
+  - `points` is reserved: every array of exactly two numbers inside a part's `points` object, at
+    any depth up to 16, is a position `[x, y]` in document points, moved by the transform (this
+    version's entry and exit are two of them). A pair of numbers that isn't a position must not
+    be kept under `points`.
+  - `frame` is reserved: an object holding a `frame` of six numbers (its own coordinates to the
+    document's, `[a, b, c, d, e, f]` as `Affine::new` takes them: x′ = a·x + c·y + e,
+    y′ = b·x + d·y + f) has its frame composed with the transform, and nothing inside it moves
+    otherwise.
+  - Every other kept value is left as it is; a kept position or frame that the transform would send
+    to no finite place is left as it was.
 
 ### Threads
 
@@ -1461,15 +1680,30 @@ about 1 %), a warm plan (another snapshot, every unit kept) 0.01 to 0.08 ms, and
 those three rows with budgets (400, 100 and 100 ms, estimates), and `vectorcraft-cli bench FILE`
 times the three for any file with art to stitch; perf's other budgets did not move.
 
+With embroidery settings (2026-10-24, release, 12 cores, load about 3, two runs each against the
+base without them): the 1,000-path document plans cold in 73 ms (70 before, within the noise of
+two runs at that load: resolving a unit's values is a few field reads, so its cost is at most that
+3 % and likely far less), warm in 2.7 ms (2.6) and
+after a nudge in 5.3 ms (5.0); every other embroidery row moved by less than its runs differ. The
+settings rows: one object's fill angle changed and the design planned again, 2.4 ms (its units and
+the one after it in its block, as `a_setting_plans_again_only_its_objects_units` counts); the
+fabric's tatami values changed and the design planned again, 71 ms (every fill planned afresh,
+about a cold plan; satins and running lines kept); `embroidery.info` of all 1,000 objects, 4.2 ms
+(no plan). All within their budgets (6, 400 and 25 ms, estimates; the first about 2.5 times its
+measure, so that planning every fill again, about 70 ms, would fail it). After the settings PR's
+review round (2026-10-25, the same machine, load about 3.5, two runs) every embroidery row is
+within its runs' noise of these, except `embroidery.info` of all 1,000 objects, now 3.0 ms: each
+object's values are merged as it is read.
+
 ### Planning for the stitch preview
 
 The app plans the active document's design only while something shows it: the canvas in the
 stitch view, or a read command's reply the Embroidery panel or the status bar shows
 (`ui-egui/src/embroidery/stitch_preview.rs`). An app that never shows stitches never plans. The
-preview plans with the options of the document's last embroidery export, else those of the last
-embroidery export of any document while the app runs, else the defaults (the project owner's
-choice; `view.stitchPreview` answers which), never saved in the file. An export counts once it is
-written: one refused, failed or cancelled notes nothing.
+preview plans the document as it sets itself to be sewn, with no export's options (the project
+owner's choice, 2026-10-23, in place of the last export's options it took until then): an option
+given to one export is for that export alone, so the preview shows what an export without options
+writes.
 
 - **On a thread of its own** (`plan_worker.rs`), newest job first: the plan and its scene are
   handed over first, then the read commands' replies one by one as each is made (by the commands'
@@ -1600,7 +1834,7 @@ between batches.
 Art | Stitches switch at the canvas's top right (two radio buttons for screen readers; hidden in
 Presentation Mode, disabled while an opacity mask or a pattern is edited), shows the active
 document as its stitches; the document's tab then says "(RGB/Stitches)". The stitch view draws, bottom to top:
-the fabric (white) on the artboards and under the stitches' box (where they reach past the
+the fabric (in the colour the document's embroidery settings give it, white when they give none) on the artboards and under the stitches' box (where they reach past the
 artboards); the art faint under the stitches when Show Artwork
 Under Stitches is on, else the template layers alone (Hide Template hides them); the stitches; and
 with View › Outline on, the art's outlines over them (template layers left out there, so that a
@@ -1901,6 +2135,19 @@ Public documentation, cited per claim in the crate:
   Vision* 20, 2011 (the bands of noticed difference behind the mismatch threshold); Björn Ottosson,
   ["A perceptual color space for image processing"](https://bottosson.github.io/posts/oklab/),
   2020 (OKLab, weighed against CIEDE2000 for matching threads).
+- Fabric presets (`crates/stitch/src/fabric.rs`, every value cited there): Wilcom EmbroideryStudio
+  28 help, [About auto fabrics](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/properties/properties-9.htm)
+  (the eight fabrics) and [Apply automatic pull compensation](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/stabilizing/stabilizing-17.htm);
+  Wilcom, [Mastering basic stitch types](https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch)
+  (tatami spacing and length); BERNINA Embroidery Software V9 help,
+  [Sticheinstellungen](https://softwarehelp.bernina.com/de/MainHelp/PART_Digitizing/properties/Sticheinstellungen.htm)
+  (eight fabric classes' stitch values) and its [release notes](https://softwarehelp.bernina.com/en/downloads/ReleaseNotes.pdf)
+  (BERNINA's software is Wilcom's); the [Melco OS manual](https://www.melco-service.com/docs/X/melco-os-ai-en.pdf),
+  pp. 182–183 (Acti-feed minimums: the thicknesses) and its standard fill density; Sulky,
+  [Stabilizing-at-a-Glance](https://www.sulky.com/fullpanel/uploads/files/stabilizer-at-a-glance-2017.pdf)
+  (stabiliser, topping and needle by fabric); Gunold,
+  [Wann welche Sticknadel](https://shop.gunold.de/media/66/4a/11/1744012604/Wann%20welche%20Sticknadel.pdf)
+  (the needle's point by fabric, where it agrees with Sulky and where it differs).
 
 ## Files
 
@@ -1917,14 +2164,25 @@ Public documentation, cited per claim in the crate:
   thread by CIEDE2000, a design's blocks to threads (`Palette::assign`), and the thread numbers a
   format writes (`Palette::numbers`).
 - `crates/stitch/src/color.rs` — sRGB in CIE L*a*b* (D65), and the CIEDE2000 colour difference.
-- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (eight commands,
-  `embroidery.setTrimAfter`, `setup`, `settings`, `threads`, `stats`, `sequence`, `check` and
-  `render`, and the document's thread palette), `view.rs` (each document's stitch view: View ›
-  Stitch Preview and its options, four commands; the export's options it plans with), `reorder.rs`
+- `crates/stitch/src/fabric.rs` — the fabric presets, each value with the publication it comes
+  from, how it is worked out, or why it is an estimate.
+- `crates/engine/src/cmd/embroidery/` — the engine's side: `mod.rs` (the commands' table:
+  `embroidery.setTrimAfter`, `threads`, `stats`, `sequence`, `check` and `render`, and the
+  document's thread palette), `setup.rs` (the document's embroidery settings,
+  `embroidery.setup` and `embroidery.settings`), `objects.rs` (the settings on objects:
+  `embroidery.set`, `reset`, `setEntryExit` and `copyFrom`, and which objects take them),
+  `info.rs` (`embroidery.info`), `fabrics.rs` (the presets as the commands give them:
+  `embroidery.fabrics`, `applyFabric`, a preset copied into a document), `view.rs` (each document's stitch view: View ›
+  Stitch Preview and its options, four commands), `reorder.rs`
   (changing the sewing order: a drop's move, Sew Earlier, Later, First and Last, four commands,
   and what a move did), `scene.rs` (the plan as a line picture), `render.rs` (`embroidery.render`),
   `printed.rs` (the document as it prints, appearances expanded),
   `threadlib.rs` (the thread swatch libraries),
+  `vocabulary.rs` (each setting's name, earlier name, file key and where it can be set),
+  `derive.rs` (objects made from others keep the settings of what they come from),
+  `resolve.rs` (where each value a unit is planned with comes from: the object's layer, the
+  export's, the document's; `resolve/report.rs`: each value with its source, for
+  `embroidery.info`),
   `options.rs` (the export options, and the planner's parameters they give an object),
   `digitize.rs` (the document's art planned into the stitch plan, unit by unit; a fill's narrow
   columns cut out of it with path operations), `plan.rs` (the stitch plan: sewing units, thread
@@ -1937,7 +2195,13 @@ Public documentation, cited per claim in the crate:
   `tests.rs` (the plan's, the threads' and the document's settings'), `tests_walk.rs` (the walk's
   branches and the design's size limit), `tests_service.rs`, `tests_stats.rs`, `tests_order.rs`,
   `tests_check.rs`, `tests_contract.rs` (the replies' keys and types), `tests_threadlib.rs`,
-  `tests_scene.rs` (the scene holds the thread the plan sews), `tests_view.rs`, `reorder/tests.rs`.
+  `tests_scene.rs` (the scene holds the thread the plan sews), `tests_view.rs`, `reorder/tests.rs`,
+  `tests_settings.rs` (what the document's settings do), `tests_object.rs` (what an object's do),
+  `tests_object_commands.rs`, `tests_setup.rs` and `tests_info.rs` (the settings commands),
+  `tests_matrix.rs` (the resolution order, every combination of layers), `tests_transform.rs`
+  (settings under the transform commands), `tests_derive.rs` (settings kept by objects made from
+  others), `tests_expanded.rs` (an expanded object's strokes, sewn along their path, nested in a
+  group too).
 - `crates/render/src/lines.rs` — line pictures and their renderer (`render::lines`), which the
   stitch view draws with, knowing nothing about stitches.
 - `crates/ui-egui/src/embroidery/` — the stitch preview in the app: `stitch_preview.rs` (when a
@@ -1952,20 +2216,27 @@ Public documentation, cited per claim in the crate:
 - `crates/ui-egui/src/panels/embroidery/` — the Embroidery panel: `mod.rs` (the tabs, states and ≡
   menu, `ui.embroideryPanel`), `order.rs` (Sewing Order), `check.rs` (Check), `lengths.rs` (the
   stitch-length chart).
-- `crates/testkit/src/embroidery.rs` — documents for tests, built by commands;
+- `crates/testkit/src/embroidery.rs` — documents for tests, built by commands, and the JSON a
+  newer version might write (`arb_json`), which `crates/format/tests/prop_embroidery.rs` opens and
+  saves back;
   `crates/engine/tests/embroidery_fixtures.rs` checks that each plans and holds together, and
   `crates/engine/tests/embroidery_scene.rs` the scene on the real designs.
 - `apps/vectorcraft-cli/src/perf_embroidery.rs` — the embroidery rows of `vectorcraft-cli perf`
   and `bench`; `apps/vectorcraft/src/stitch_profile.rs` — VectorCraft Stitch's own settings folder.
 - `crates/engine/src/cmd/swatchlib.rs` — the swatch libraries, the embroidery thread libraries
-  among them; `crates/doc/src/embroidery.rs` — what an object and the document keep for embroidery.
+  among them; `crates/doc/src/embroidery.rs` — what an object and the document keep for embroidery
+  (`embroidery/part.rs`: the settings of an object's fills and strokes; `embroidery/setup.rs`: the
+  document's fabric and machine; `embroidery/transform.rs`: the settings moved and turned with
+  their object; `embroidery/mem.rs`: the memory they hold, for the undo history's budget).
 - `crates/engine/src/cmd/fileio/embroidery/` — the files' side: `mod.rs` (the export's options as
   `document.formats` lists them, and its entry point), `import.rs` (a design opened as art).
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real
   designs and the test that uses them; `crates/engine/tests/embroidery_output.rs` — the sha256 of
   every export; `crates/engine/tests/embroidery_planning.rs` — the statistics, sewing order and
   checks on the real designs, and a plan after an edit against a fresh one;
-  `crates/engine/tests/embroidery_random_documents.rs` — random documents with embroidery edits.
+  `crates/engine/tests/embroidery_random_documents.rs` — random documents with embroidery edits;
+  `crates/engine/tests/embroidery_hostile_settings.rs` — hostile settings planned, edited,
+  transformed and cut up.
 
 Every value these files decide with is a named constant with a description: what it is, its unit,
 and its source (a format's documentation, a cited default) or that it is an estimate. What stays
@@ -1980,6 +2251,9 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-24 | minor | An expanded object's strokes that nothing reshapes are sewn along their path, by their own settings, not outlined; a reshaped stroke's running or satin stitch is said not to follow its path. |
+| 2026-10-25 | minor | The settings PR's review round: what objects nested in an expanded group, cut into pieces or expanded through their outlines keep; unset rows turning with each object's own box (a mirror's effect said exactly); `embroidery.info` reporting each part as the walk sews it, or why not, which keys a stitch uses, and only what this version reads as set; typed replies for `info` and `settings`; `copyFrom` copying only what `set` takes, its undo step a paste; `applyFabric` leaving a stroke's length alone, reaching symbols' art, and `overrides` counting objects; the settings passed back whatever the document holds; the earlier name `stitchAngle` keeping its clockwise meaning; silk's values estimates, each fabric value's BERNINA class named, other sources where they differ; a fabric's spacing within what every thread keeps in range; the forward-compatibility conventions written down (Settings and transforms); upstream's loss of objects' settings said; Validation's counts; the performance rows measured again after the round. |
+| 2026-10-24 | minor | Embroidery settings on objects and in the document: each object's fill and stroke settings and entry and exit points, moved and turned with it and kept by the commands that make objects from others; the document's fabric (eight presets, each value sourced), thread weight, joining and machine; each value from the object, the export's options, the document, the default; the commands (`set`, `reset`, `setEntryExit`, `copyFrom`, `info`, `setup` extended, `fabrics`, `applyFabric`); a fill's angle counter-clockwise, an unset one turning with its object; the preview remembering no export's options. |
 | 2026-10-24 | minor | VectorCraft merged in (upstream to 2026-10-23): the status bar's counters take its right end in the bar's new fixed slots, leaving the room it keeps for its message and X/Y readout; the Art \| Stitches switch sits below the isolation mode's bar, which now lies over the canvas; every embroidery word in Turkish too (AI-drafted), its numbers as CLDR writes them ("4.752", "0,38", "%37"). |
 | 2026-10-24 | minor | The stitch preview's review round: the Sewing order list read only from the plan it shows, its steps worked out on it, a drop where its rows already are refused, a block cut by the list's limit without a thread change; Show Needle Points drawn; the plans' memory bounded for all documents together; planning keyed by the fonts a design uses; an export's options noted once written; `embroidery.render`'s points and strict colours, its size capped; VectorCraft Stitch's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. |
 | 2026-10-23 | minor | The stitch preview, done: the Check tab (the check's measured extremes, a hit's start, thread and objects, the stitch lengths in bins ending at 12.7 mm; severity marks; problems first; Show and Next and Previous Finding through `view.zoomTo`; rings on the canvas, thinned; the chart), the status bar's counters, and every language checked at 256 and 300 points. |

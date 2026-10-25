@@ -5034,6 +5034,13 @@ lighting	Light	光源
 	Minimum	最小值
 	Justification	對齊設定
 	Embroidery Trim After	刺繡：之後剪線
+	Embroidery Object Settings	物件刺繡設定
+	Reset Embroidery Object Settings	重設物件刺繡設定
+	Embroidery Entry and Exit	刺繡入針與出針
+	Paste Embroidery Object Settings	貼上物件刺繡設定
+	Show Embroidery Object Settings	顯示物件刺繡設定
+	Embroidery Fabrics	刺繡布料
+	Apply Embroidery Fabric to Objects	將刺繡布料套用至物件
 	Embroidery Setup	刺繡設定
 	Show Embroidery Settings	顯示刺繡設定
 	Embroidery Statistics	刺繡統計
@@ -5052,7 +5059,18 @@ lighting	Light	光源
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	負的 expand 值使部分填色形狀什麼也不剩，因此不會被刺繡：請少縮一些
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	漸層與圖樣以其第一個色標的顏色上色；刺繡每個色塊只用一條線縫製
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	寬於 {widest} mm 的筆畫會縫成 {widest} mm 寬的緞面柱：請改為填色 (stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	以筆刷繪製或被效果改變形狀的筆畫會縫成其所繪的區域：為其設定的平針或緞紋無法沿其路徑
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	此版本無法辨識文件的刺繡線色盤 {palette}，因此其繡線會從 {default} 色盤中選取
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	文件的刺繡設定中有此版本無法讀取的項目 (來自較新版本)：它們會被保留，設計刺繡時不使用它們
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	文件的部分刺繡設定超出此版本可刺繡的範圍：每項都以其可接受的最接近值刺繡
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	剪線長度短於跳針長度，因此跳針從跳針長度起就會剪線
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	部分物件的刺繡設定中有此版本無法讀取的項目 (來自較新版本)：它們會被保留，這些物件刺繡時不使用它們
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	部分物件的刺繡設定超出此版本可刺繡的範圍：每項都以其可接受的最接近值刺繡
+@msg	none of these objects takes settings for its `{_1}`: {_2}	這些物件都不接受其 `{_1}` 的設定：{_2}
+@msg	none of these objects takes embroidery settings: {_1}	這些物件都不接受刺繡設定：{_1}
+@msg	object {_1} takes no embroidery settings ({_2})	物件 {_1} 不接受刺繡設定 ({_2})
+@msg	object {_1} is a group: give one of its objects	物件 {_1} 是群組：請指定其中的一個物件
+@msg	object {_1} has no `{_2}`	物件 {_1} 沒有 `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	沒有可刺繡的內容：文件中沒有可見的含填色或筆畫的路徑
 @msg	nothing to stitch: {_1}	沒有可刺繡的內容：{_1}
 
@@ -5110,7 +5128,7 @@ lighting	Light	光源
 @msg	too many stitches for a VP3 file	VP3 檔案的針數過多
 @msg	{_1} is not an embroidery format	{_1} 不是刺繡格式
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	針法：
 	Stitch Length:	針跡長度：
 	Fill Angle:	填充角度：

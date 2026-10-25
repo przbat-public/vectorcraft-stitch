@@ -5356,6 +5356,13 @@ swatch	Bright Violet	Violet cerah
 	Minimum must not exceed Desired, nor Desired Maximum.	Minimum tidak boleh melebihi Diinginkan, dan Diinginkan tidak boleh melebihi Maksimum.
 	Justification	Justifikasi
 	Embroidery Trim After	Bordir: potong benang sesudahnya
+	Embroidery Object Settings	Pengaturan bordir objek
+	Reset Embroidery Object Settings	Setel ulang pengaturan bordir objek
+	Embroidery Entry and Exit	Masuk dan keluar bordir
+	Paste Embroidery Object Settings	Tempel pengaturan bordir objek
+	Show Embroidery Object Settings	Tampilkan pengaturan bordir objek
+	Embroidery Fabrics	Kain bordir
+	Apply Embroidery Fabric to Objects	Terapkan kain bordir ke objek
 	Embroidery Setup	Pengaturan bordir
 	Show Embroidery Settings	Tampilkan pengaturan bordir
 	Embroidery Statistics	Statistik bordir
@@ -5374,7 +5381,18 @@ swatch	Bright Violet	Violet cerah
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	nilai expand negatif tidak menyisakan apa pun dari beberapa bentuk berisi, jadi bentuk itu tidak dibordir: perkecil lebih sedikit
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	gradien dan pola diwarnai dengan warna stop pertamanya; bordir menjahit satu benang per blok
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	stroke yang lebih lebar dari {widest} mm dijahit sebagai kolom satin selebar {widest} mm: isi saja bentuknya (stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	stroke yang digambar dengan kuas atau dibentuk ulang oleh efek dijahit sebagai area yang dilukisnya: jahitan lurus atau satin yang diatur padanya tidak dapat mengikuti jalurnya
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	versi ini tidak mengenal palet benang {palette} dokumen, jadi benangnya dipilih dari palet {default}
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	pengaturan bordir dokumen berisi beberapa yang tidak dibaca versi ini (dari versi yang lebih baru): pengaturan itu disimpan, dan desain dibordir tanpanya
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	beberapa pengaturan bordir dokumen berada di luar yang dibordir versi ini: masing-masing dibordir dengan nilai terdekat yang diterimanya
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	panjang potong lebih pendek dari panjang lompatan, jadi lompatan sudah dipotong mulai dari panjang lompatan
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	pengaturan bordir beberapa objek berisi beberapa yang tidak dibaca versi ini (dari versi yang lebih baru): pengaturan itu disimpan, dan objek tersebut dibordir tanpanya
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	beberapa pengaturan bordir objek berada di luar yang dibordir versi ini: masing-masing dibordir dengan nilai terdekat yang diterimanya
+@msg	none of these objects takes settings for its `{_1}`: {_2}	tidak satu pun objek ini menerima pengaturan untuk `{_1}`-nya: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	tidak satu pun objek ini menerima pengaturan bordir: {_1}
+@msg	object {_1} takes no embroidery settings ({_2})	objek {_1} tidak menerima pengaturan bordir ({_2})
+@msg	object {_1} is a group: give one of its objects	objek {_1} adalah grup: berikan salah satu objeknya
+@msg	object {_1} has no `{_2}`	objek {_1} tidak memiliki `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	tidak ada yang dibordir: dokumen tidak memiliki jalur terlihat dengan isian atau stroke
 @msg	nothing to stitch: {_1}	tidak ada yang dibordir: {_1}
 
@@ -5433,7 +5451,7 @@ swatch	Bright Violet	Violet cerah
 @msg	too many stitches for a VP3 file	terlalu banyak jahitan untuk file VP3
 @msg	{_1} is not an embroidery format	{_1} bukan format bordir
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Jahitan:
 	Stitch Length:	Panjang jahitan:
 	Fill Angle:	Sudut isian:

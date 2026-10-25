@@ -82,7 +82,9 @@ struct Sewn {
 /// Blocks of one thread are sewn in one pass where the stacking allows it: an object joins an
 /// earlier block of its thread only when it overlaps none of the blocks sewn between the two, so
 /// art that lies on top is still sewn last (thread sewn later covers thread sewn earlier, as paint
-/// does). The machine changes colour as few times as that allows, not once per object.
+/// does). The machine changes colour as few times as that allows, not once per object. A document
+/// may switch that off (`join_same_color`): an object then joins only the block sewn just before
+/// it, when that one is of its colour, and the blocks follow the stacking order strictly.
 ///
 /// Literal runs (a design read from a file) are left as the file had them: the runs of one group
 /// make one block, joined by the jumps (and trims) between them, and never merge with anything
@@ -94,20 +96,26 @@ pub(super) struct Sequence {
     last_of: HashMap<[u8; 3], usize>,
     /// The jump and trim lengths between objects.
     connect: Params,
+    /// Objects of one colour join an earlier block of it where nothing between lies under them;
+    /// off, only the block sewn just before.
+    join: bool,
     /// The block each unit added went into, in the order they were added.
     adds: Vec<usize>,
 }
 
 impl Sequence {
-    pub(super) fn new(connect: Params) -> Self {
-        Self { blocks: Vec::new(), last_of: HashMap::new(), connect: connect.sane(), adds: Vec::new() }
+    pub(super) fn new(connect: Params, join: bool) -> Self {
+        Self { blocks: Vec::new(), last_of: HashMap::new(), connect: connect.sane(), join, adds: Vec::new() }
     }
 
     /// The block an object of `color` that covers `bounds` (grown by [`CLEARANCE`]) joins: the
-    /// last of its thread, when none sewn after that one overlaps it. `None`: it starts a block of
-    /// its own.
+    /// last of its thread, when none sewn after that one overlaps it (with joining off, only when
+    /// it is the block sewn last). `None`: it starts a block of its own.
     pub(super) fn target(&self, color: [u8; 3], bounds: Option<Rect>) -> Option<usize> {
         let j = *self.last_of.get(&color)?;
+        if !self.join {
+            return (j + 1 == self.blocks.len()).then_some(j);
+        }
         self.blocks
             .iter()
             .skip(j + 1)
@@ -300,7 +308,7 @@ mod tests {
     /// The trims and jumps between two objects of one thread, the second starting `gap` mm from
     /// where the first ends.
     fn between(gap: f64) -> (usize, usize) {
-        let mut seq = Sequence::new(Params::for_style(Style::Fill));
+        let mut seq = Sequence::new(Params::for_style(Style::Fill), true);
         seq.add(block(0.0, 10.0));
         seq.add(block(10.0 + gap, 20.0 + gap));
         let plan = seq.plan(String::new(), Vec::new(), Palette::Pec);
@@ -313,7 +321,7 @@ mod tests {
     /// the palette's thread nearest the art's colour.
     #[test]
     fn a_unit_joining_a_block_has_the_blocks_thread() {
-        let mut seq = Sequence::new(Params::for_style(Style::Fill));
+        let mut seq = Sequence::new(Params::for_style(Style::Fill), true);
         let (mut first, mut second) = (block(0.0, 10.0), block(12.0, 20.0));
         first.block.thread.name = "first".into();
         second.block.thread.name = "second".into();
@@ -330,7 +338,7 @@ mod tests {
     /// The plan of two blocks of `first` and `second` on top of each other, in `palette`: each
     /// block's thread and whether it is the art's own colour.
     fn two_blocks(palette: Palette, first: [u8; 3], second: [u8; 3]) -> Vec<(usize, bool)> {
-        let mut seq = Sequence::new(Params::for_style(Style::Fill));
+        let mut seq = Sequence::new(Params::for_style(Style::Fill), true);
         let (mut a, mut b) = (block(0.0, 10.0), block(0.0, 10.0));
         a.block.thread = Thread::rgb(first);
         b.block.thread = Thread::rgb(second);

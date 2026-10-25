@@ -5082,7 +5082,10 @@ the entry names and decodes the codes that VectorCraft's default shortcuts agree
 
 The document's art is stitched by `document.export` to `dst`, `tap`, `t01`, `exp`, `pes`, `pec`, `jef` or `vp3`, with the embroidery options
 `document.formats` lists for those formats (`stitch`, `spacing`, `trimLength`…; the earlier names `stitchStyle`, `density`,
-`stitchLength`, `stitchAngle`, `pullCompensation`, `pullCompensationPercent` and `pushCompensation` are taken as aliases),
+`stitchLength`, `stitchAngle`, `pullCompensation`, `pullCompensationPercent` and `pushCompensation` are taken as aliases,
+each with its earlier meaning: `stitchAngle` counts clockwise as seen, the planner's angle, so `stitchAngle` 30 is `angle`
+150. Until 2026-10-24 `angle` counted clockwise too; it now counts counter-clockwise on the page, as every angle in
+VectorCraft: a value recorded before is `180 − old`),
 and `document.open` reads such a file back as art, one group per thread. A value outside an option's range (each
 description gives it) is refused, not clamped, and the read commands below echo the options they planned with under
 `options`. A design that would need too many stitches, one a format can't hold (more colours than it numbers, a size
@@ -5093,9 +5096,25 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   number) or `"jef"` (Janome's 78, which JEF files number), in one undo step; `null` unsets it, and Janome's is used.
   It answers `{settings: {palette}, resolved: {palette: {value, source}}}`: the palette as the document stores it
   (null when unset, one a newer version wrote as it is), and the one the stitch plan uses with where it comes from
-  (`document`, or `default`). The reply's `settings` can be passed back (`{settings: …}`); `resolved` is only
+  (`document`, or `default`). The reply's `settings` can be passed back (`{settings: …}`): a value equal to what the document stores
+  changes nothing and isn't checked again (a newer version's value passes back), and a value changed beside it is
+  checked; `resolved` is only
   reported and refused as input. `embroidery.settings {}` reads the same without editing anything. A PES, PEC or JEF
-  file opens in its own format's palette.
+  file opens in its own format's palette. It also takes `start`, `label`, `fabric` (a preset's id, an object of values
+  merged value by value, or null), `threadWeight`, `joinSameColor` and `machine` (`{jumpLength, trimLength, minStitch,
+  splitLength, speed}`, merged), all reported in `settings` and `resolved` (each fabric value, the information values `thickness`,
+  `stabilizer`, `topping` and `needlePoint` included, `{value, source, preset, changed}`; the colour `{value, source}`), and the reply's `overrides` counts the objects that set the fabric's pull, spacing, length and underlay
+  themselves, by key, and how many set any (`objectCount`), symbols' art included (read only, as `resolved`).
+  `embroidery.applyFabric` without `ids` acts on the selection, else on every object, symbols' art included: to act
+  on the whole document whatever is selected, pass the layers' ids (symbols' art is reached only with nothing given).
+- `embroidery.fabrics {}` lists the fabric presets `{default, caveat, fabrics: [{id, label, values: {tatami, satin,
+  stabilizer, topping, needlePoint, thickness}, sources: [{key, kind: "published"|"derived"|"estimate", name, url,
+  family, how}], estimates: [key…]}]}`; it needs no document. `how` says how a derived value was worked out, why an
+  estimate is one, and, for a value published as one of BERNINA's fabric classes, which class (`the heavy woven class
+  (F8)`): which class a fabric is taken as is ours to say, as `caveat` also says. `embroidery.applyFabric {ids?, keys?}` unsets the objects'
+  own values of the fabric's keys, on each part those a fabric gives it (a fill's pull, spacing, length and underlay; a
+  stroke's pull, spacing and underlay, never its stitch length) (the selection's, or with nothing selected every object's) and answers `{keys, changedCount, unchangedCount,
+  skippedCount, skipped}`.
 - `embroidery.threads {…embroidery options, offset?, limit?}` lists the thread each colour block is sewn in, in sewing
   order: `{palette, threshold, blockCount, offset, truncated, blocks: [{block, thread: {palette, index, name, color, art,
   deltaE, mismatch}, unitCount}], options, warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour
@@ -5104,6 +5123,41 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
 - `embroidery.setTrimAfter {on?, ids?}` asks for the thread to be cut after each object (or with `on: false` for no
   cut, a file's own included); left out, `on` toggles. It needs a selection or `ids`, answers `{on, changed}`, and
   reports an id that names no object as a missing object.
+- The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
+  answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
+  skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,
+  keys?}` answer `{part, keys, changedCount, unchangedCount, skippedCount, skipped}` (`copyFrom` also `source`, and
+  `passedOver`: the source's values `embroidery.set` would refuse, a newer version's or out of range, as `fill.stitch`,
+  which the objects keep their own of);
+  `embroidery.setEntryExit {id?, part, entry?, exit?}` answers `{id, part, entry, exit, changedCount}`. They take the
+  vocabulary's names only: the session refuses any other key before the command runs, and run in-process the command
+  names the one to use (`density` → `spacing`). `reason` is `literal`, `guide`, `type`, `image`, `symbolInstance`,
+  `live`, `placed`, `intertwine` or `noPart`; a client must accept others later.
+- `embroidery.info {ids?, plan?, offset?, limit?, …embroidery options}` reads the objects' settings (a query, no undo
+  step; nothing selected and no `ids`: an empty answer): `{objectCount, offset, truncated, objects: [{id, kind, fills,
+  strokes, expanded, settings: {fill, stroke}, kept}], skippedCount, skipped, trimAfter: {value, setCount, mixed},
+  fill, stroke, planned, options, warnings}`, where each part (`null` when no object has it) is `{objectCount,
+  itemCount, sewn, rule, reason, settings: {key: {value, source, section, setCount, mixed, inherited, rule, applies}},
+  entry, exit,
+  sewing}`. `sewn` and `rule` are the walk's own: a stroke a brush or an effect reshapes, on an object sewn as
+  pieces, is sewn as the area it paints (`strokeOutlined`); a part the walk sews nothing of is `sewn: "none"` with
+  its `reason`: `off` (its object sets it not to be sewn), `unpainted` (nothing of the kind is shown painted with a
+  colour or a gradient), `hidden` (the object or a group or layer it is in), `notPrinted` (a template or
+  non-printing layer), a list that may grow. A part is listed whenever an object has an item of its kind, painted
+  or not: `embroidery.set` keeps settings for it either way. `setCount` counts the objects that set a value as this
+  version reads it: a stitch or an underlay it doesn't know is kept, listed in the object's `kept` (`fill.stitch`),
+  and not counted. `kept` lists what an object keeps that this version doesn't read, as file keys: a newer version's
+  (`branch`, `fill.grain`, `fill.points.rails`), such ids, and `embroidery` when the settings are no object. `source` is `object`, `export`, `document` (then `section`: `fabric` or `machine`) or `default`, a list
+  that may grow; a value chosen by a rule is `"auto"`, and its `rule` says what the rule chose: `{id: "underlayByWidth",
+  chose, values}` for a satin's underlay, `{id: "underlayBySize", chose: null, values}` for a fill's (only its planned
+  area tells), `{id: "spacingByWidth", chose: mm, values: {share}}` for a satin's spacing; `null` for a value set.
+  `applies` says whether the planner uses the key for the stitch the part is sewn in: a running line's `pull` or
+  `angle` is reported as set but `applies: false` (a fill's `push` applies: it reaches its narrow parts' satin
+  columns); a part not sewn uses none but `stitch`. A `pull`, `pullPercent` or `push` is `[left, right]` (a fabric's one value as both sides). `entry` and `exit` are in
+  document points, as `embroidery.setEntryExit` takes them (the read commands' positions,
+  such as `embroidery.sequence`'s, are millimetres). `sewing` (`{unitCount, stitches, records, jumps, trims}`, what the
+  plan sews of the part) is counted only with `plan: true`. A unit whose style a setting forced says which in
+  `embroidery.sequence`'s `ruleValues.source` (`object` or `export`).
 - `embroidery.stats {…embroidery options, speed?, fabricThickness?, offset?, limit?}` gives the design's figures as the
   export sews it, for the design and per block: `stitches` (needle points), `records` (needle points, jumps and cuts),
   `jumps`, `trims`, `colorChanges`, `threadCount`, `blockCount`; `size`, `bounds`, `start` and `end` points, `extents`
@@ -5156,9 +5210,11 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   `view.stitchPreview.needlePoints` (off) and `view.stitchPreview.artwork` (the art faint under the stitches, off).
   Each answers with the whole setting, `{on, jumps, needlePoints, artwork, shown, pausedBy, options, optionsFrom}`:
   `shown` is `"stitches"` or `"art"`, and `pausedBy` (`"opacityMask"`, `"pattern"` or null) names the edit mode that
-  shows the art while it lasts. The preview plans with `options`: those of the document's last embroidery export
-  (`optionsFrom: "lastExport"`), else of the last embroidery export of any document while the app runs
-  (`"appLastExport"`), else the defaults (`"default"`); they are never saved in the file. Exports never show the stitches.
+  shows the art while it lasts. The preview plans the document as it sets itself to be sewn (its objects' embroidery
+  settings, then its own, then the defaults), with no export's options: an option given to `document.export` is for
+  that export alone, so `options` is `{"stitch": "auto"}` and `optionsFrom` is `"default"`. (Until 2026-10-24 it took the last
+  export's: `optionsFrom` was `"lastExport"` or `"appLastExport"` then.) Exports
+  never show the stitches. `file.formatOptions` gives every embroidery option as `null`, unset, for the same reason.
 
 - `embroidery.sewEarlier`, `sewLater`, `sewFirst` and `sewLast {ids?, …embroidery options}` change the sewing order by
   moving the objects (`ids`: objects of the document, each checked, at most 100,000; default: the selection; a

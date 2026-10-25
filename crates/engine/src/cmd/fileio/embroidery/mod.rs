@@ -18,7 +18,8 @@
 //! end of satin columns), `expand` (mm all round a fill), `narrowAsSatin` (mm: a fill's narrower
 //! parts are satin columns), `threadWeight` (wt, the spacing follows it), `underlay` (true, false or
 //! a kind), `jumpLength` (mm before the needle lifts), `trimLength` (mm before a jump cuts the
-//! thread) and `minStitch` (mm). A value outside its range is refused.
+//! thread), `minStitch` (mm) and `splitLength` (mm: a longer satin stitch is split). A value
+//! outside its range is refused.
 //!
 //! The parts: [`import`] (a design read as art, with notes of what reading it left out, which
 //! make writing over the file ask first: [`is_loss`]) and [`encode`] (the export: its options, and
@@ -72,8 +73,8 @@ const LENGTH: FormatOption = FormatOption {
 const ANGLE: FormatOption = FormatOption {
     name: "angle",
     ty: "number",
-    default: "45",
-    description: "the direction a fill's rows run, degrees (0: left to right; any angle, taken modulo 360); earlier name stitchAngle",
+    default: "135",
+    description: "the direction a fill's rows run, degrees counter-clockwise on the page as every angle in VectorCraft (0: left to right, 90: bottom to top; the default runs from the top left to the bottom right; any angle, taken modulo 360); earlier name stitchAngle, which keeps its earlier meaning: degrees clockwise as seen, the same rows at 180 − angle (until 2026-10-24 angle counted so too)",
 };
 const PULL: FormatOption = FormatOption {
     name: "pull",
@@ -131,10 +132,16 @@ const TRIM: FormatOption = FormatOption {
 };
 const MIN_STITCH: FormatOption =
     FormatOption { name: "minStitch", ty: "number", default: "0.4", description: "shorter stitches are left out, millimetres; 0.05 to 3" };
+const SPLIT: FormatOption = FormatOption {
+    name: "splitLength",
+    ty: "number",
+    default: "10",
+    description: "a satin stitch longer than this is split into shorter ones, their needle points spread so they don't line up into a seam, millimetres; 2 to 12",
+};
 
 /// The options the embroidery writers read.
 pub const OPTIONS: &[FormatOption] =
-    &[STITCH, SPACING, LENGTH, ANGLE, PULL, PULL_PERCENT, PUSH, EXPAND, NARROW, WEIGHT, UNDERLAY, JUMP, TRIM, MIN_STITCH];
+    &[STITCH, SPACING, LENGTH, ANGLE, PULL, PULL_PERCENT, PUSH, EXPAND, NARROW, WEIGHT, UNDERLAY, JUMP, TRIM, MIN_STITCH, SPLIT];
 
 /// The entry of `f` in the formats `document.open` and `document.export` know: as the stitch crate
 /// describes it ([`StitchFormat::spec`]), read and written, with the embroidery options.
@@ -146,6 +153,16 @@ pub(super) const fn format(f: StitchFormat) -> Format {
 /// Whether `id` names an embroidery format: one the stitch crate reads and writes.
 pub(crate) fn is_format(id: &str) -> bool {
     StitchFormat::from_id(id).is_some()
+}
+
+/// `file.formatOptions`' value of an option of format `id`: for an embroidery format, unset
+/// (`null`), whatever was saved or is the default. Its stitches take the objects' settings, then
+/// the document's, then the defaults; an option given to one export is for that export alone
+/// (the project owner's choice, 2026-10-23), so no value is offered for every export to copy.
+pub(crate) fn unset_option(id: &str, value: &mut Value) {
+    if is_format(id) {
+        *value = Value::Null;
+    }
 }
 
 /// The embroidery options in the export's params `p`, checked: the export's own keys (and other
@@ -205,7 +222,10 @@ mod tests {
         let given = Options { spacing: Some(0.3), ..Options::default() };
         assert!(Options::default().params(Style::Satin, 3.0).auto_spacing);
         assert!(!given.params(Style::Satin, 3.0).auto_spacing);
-        assert_eq!(num(&ANGLE), fill.angle);
+        // Counter-clockwise on the page, the planner's clockwise: the default rows keep their bits.
+        assert_eq!(num(&ANGLE), crate::cmd::embroidery::options::planner_angle(fill.angle));
+        assert_eq!(crate::cmd::embroidery::options::planner_angle(num(&ANGLE)).to_bits(), fill.angle.to_bits());
+        assert_eq!(Options { angle: Some(num(&ANGLE)), ..Options::default() }.params(Style::Fill, 0.0), fill.sane());
         for side in 0..2 {
             assert_eq!(num(&PULL), satin.pull[side]);
             assert_eq!(num(&PULL), fill.pull[side]);
@@ -230,6 +250,7 @@ mod tests {
             assert_eq!(num(&JUMP), p.jump);
             assert_eq!(num(&TRIM), p.trim);
             assert_eq!(num(&MIN_STITCH), p.min_stitch);
+            assert_eq!(num(&SPLIT), p.max_satin);
         }
         assert!(LENGTH.description.contains(&format!("{} in fills", fill.stitch_length)));
         assert!(LENGTH.description.contains(&format!("{} in running lines", running.stitch_length)));
@@ -239,16 +260,16 @@ mod tests {
         assert_eq!(o.params(Style::Running, 0.0), running.sane());
     }
 
-    /// The export dialog edits every option, and whatever it can write is taken: each choice, and
-    /// each number at both ends of its range (a negative `expand` among them).
+    /// A field edits every option, and whatever it can write is taken: each choice, and each number
+    /// at both ends of its range (a negative `expand` among them).
     #[test]
-    fn the_dialog_writes_only_what_the_options_take() {
-        use crate::cmd::embroidery::{DialogField, dialog_field};
+    fn a_field_writes_only_what_the_options_take() {
+        use crate::cmd::embroidery::{SettingField, setting_field};
         for o in OPTIONS {
-            let field = dialog_field(o.name).unwrap_or_else(|| panic!("{}", o.name));
+            let field = setting_field(o.name).unwrap_or_else(|| panic!("{}", o.name));
             let values: Vec<Value> = match field {
-                DialogField::Choice(ids) => ids.iter().map(|id| serde_json::json!(id)).collect(),
-                DialogField::Number { min, max, .. } => vec![serde_json::json!(min), serde_json::json!(max)],
+                SettingField::Choice(ids) => ids.iter().map(|id| serde_json::json!(id)).collect(),
+                SettingField::Number { min, max, .. } => vec![serde_json::json!(min), serde_json::json!(max)],
             };
             for v in values {
                 let mut p = serde_json::Map::new();
@@ -260,8 +281,12 @@ mod tests {
                 assert!(options(&Value::Object(p)).is_ok(), "{} {v}", o.name);
             }
         }
-        assert!(matches!(dialog_field("expand"), Some(DialogField::Number { min, .. }) if min < 0.0));
-        assert_eq!(dialog_field("format"), None);
+        assert!(matches!(setting_field("expand"), Some(SettingField::Number { min, .. }) if min < 0.0));
+        assert_eq!(setting_field("format"), None);
+        // The document's own: Document Setup writes them, and they are taken.
+        for name in ["spacingPercent", "speed", "thickness"] {
+            assert!(matches!(setting_field(name), Some(SettingField::Number { .. })), "{name}");
+        }
     }
 
     /// Compensation takes one value for both sides or one per side, applies to the styles that
@@ -306,6 +331,7 @@ mod tests {
             (&WEIGHT, THREAD_WEIGHT_RANGE),
             (&JUMP, JUMP_RANGE),
             (&MIN_STITCH, MIN_STITCH_RANGE),
+            (&SPLIT, vectorcraft_stitch::plan::MAX_SATIN_STITCH_RANGE),
         ];
         for (o, (lo, hi)) in ranges {
             assert!(o.description.contains(&format!("{lo} to {hi}")), "{}: {}", o.name, o.description);
@@ -328,10 +354,13 @@ mod tests {
     #[test]
     fn earlier_names_and_kinds_are_taken() {
         let old = options(&serde_json::json!({"stitchStyle": "satin", "density": 0.5, "stitchLength": 3, "stitchAngle": 30, "pullCompensation": 0.3, "pullCompensationPercent": 10, "pushCompensation": 0.4})).unwrap();
+        // `stitchAngle` keeps its earlier meaning, clockwise: 30 is `angle` 150.
         let new =
-            options(&serde_json::json!({"stitch": "satin", "spacing": 0.5, "length": 3, "angle": 30, "pull": 0.3, "pullPercent": 10, "push": 0.4}))
+            options(&serde_json::json!({"stitch": "satin", "spacing": 0.5, "length": 3, "angle": 150, "pull": 0.3, "pullPercent": 10, "push": 0.4}))
                 .unwrap();
         assert_eq!(old, new);
+        assert!(options(&serde_json::json!({"angle": 150, "stitchAngle": 30})).is_ok(), "the same rows under both names");
+        assert!(options(&serde_json::json!({"angle": 30, "stitchAngle": 30})).is_err());
         assert_eq!(new.to_json()["stitch"], serde_json::json!("satin"));
         assert!(options(&serde_json::json!({"spacing": 0.5, "density": 0.4})).is_err());
         assert!(options(&serde_json::json!({"spacing": 0.5, "density": 0.5})).is_ok());

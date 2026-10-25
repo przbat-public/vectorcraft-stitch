@@ -5415,6 +5415,13 @@ mark-style	Japanese	Japonské
 	Select artwork to apply effects	Vyberte grafiku, na kterou chcete použít efekty
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	proměnné a sady dat souboru nebyly načteny (proměnné: {variables}, sady dat: {data_sets}): panel Proměnné je nezobrazuje
 	Embroidery Trim After	Výšivka: odstřihnout nit po
+	Embroidery Object Settings	Nastavení vyšívání objektu
+	Reset Embroidery Object Settings	Obnovit nastavení vyšívání objektu
+	Embroidery Entry and Exit	Vstup a výstup výšivky
+	Paste Embroidery Object Settings	Vložit nastavení vyšívání objektu
+	Show Embroidery Object Settings	Zobrazit nastavení vyšívání objektu
+	Embroidery Fabrics	Látky pro vyšívání
+	Apply Embroidery Fabric to Objects	Použít látku vyšívání na objekty
 	Embroidery Setup	Nastavení vyšívání
 	Show Embroidery Settings	Zobrazit nastavení vyšívání
 	Embroidery Statistics	Statistika vyšívání
@@ -5433,7 +5440,18 @@ mark-style	Japanese	Japonské
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	záporná hodnota expand z některých vyplněných tvarů nic nenechala, proto se nevyšívají: zmenšete je méně
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	přechody a vzorky se malují barvou své první zarážky; výšivka šije jednou nití na blok
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	tahy širší než {widest} mm se šijí jako saténové sloupce široké {widest} mm: místo toho je vyplňte (stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	tahy kreslené štětcem nebo přetvořené efektem se šijí jako plocha, kterou malují: rovný steh ani satén, které jsou na nich nastaveny, nemohou sledovat jejich cestu
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	tato verze nezná paletu nití {palette} dokumentu, proto se jeho nitě vybírají z palety {default}
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	nastavení vyšívání dokumentu obsahuje některá, která tato verze nečte (z novější verze): zůstávají zachována a vzor se vyšívá bez nich
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	některá nastavení vyšívání dokumentu leží mimo to, co tato verze vyšívá: každé se vyšívá s nejbližší hodnotou, kterou přijímá
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	délka střihu je kratší než délka skoku, proto se skoky stříhají už od délky skoku
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	nastavení vyšívání některých objektů obsahuje některá, která tato verze nečte (z novější verze): zůstávají zachována a objekty se vyšívají bez nich
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	některá nastavení vyšívání objektů leží mimo to, co tato verze vyšívá: každé se vyšívá s nejbližší hodnotou, kterou přijímá
+@msg	none of these objects takes settings for its `{_1}`: {_2}	žádný z těchto objektů nepřijímá nastavení pro svůj `{_1}`: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	žádný z těchto objektů nepřijímá nastavení vyšívání: {_1}
+@msg	object {_1} takes no embroidery settings ({_2})	objekt {_1} nepřijímá nastavení vyšívání ({_2})
+@msg	object {_1} is a group: give one of its objects	objekt {_1} je skupina: zadejte jeden z jejích objektů
+@msg	object {_1} has no `{_2}`	objekt {_1} nemá `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	není co vyšívat: dokument nemá žádné viditelné cesty s výplní nebo tahem
 @msg	nothing to stitch: {_1}	není co vyšívat: {_1}
 
@@ -5492,7 +5510,7 @@ mark-style	Japanese	Japonské
 @msg	too many stitches for a VP3 file	příliš mnoho stehů pro soubor VP3
 @msg	{_1} is not an embroidery format	{_1} není formát pro vyšívání
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Steh:
 	Stitch Length:	Délka stehu:
 	Fill Angle:	Úhel výplně:

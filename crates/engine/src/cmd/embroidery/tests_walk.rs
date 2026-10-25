@@ -140,7 +140,7 @@ fn art_never_joins_an_opened_runs_block() {
 #[test]
 fn a_unit_without_bounds_joins_only_the_last_block() {
     const RED: [u8; 3] = [200, 30, 30];
-    let mut seq = Sequence::new(Params::for_style(Style::Running));
+    let mut seq = Sequence::new(Params::for_style(Style::Running), true);
     seq.add(unit(1, Style::Running, RED, &[(0.0, 0.0), (2.0, 0.0)], None));
     assert_eq!(seq.target(RED, None), Some(0));
     seq.add(unit(2, Style::Running, [30, 30, 200], &[(50.0, 0.0), (52.0, 0.0)], None));

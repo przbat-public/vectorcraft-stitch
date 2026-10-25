@@ -5069,6 +5069,13 @@ lighting	Light	ライト
 	Select artwork to apply effects	効果を適用するグラフィックを選択してください
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	ファイルの変数とデータセットは読み込まれませんでした (変数: {variables}、データセット: {data_sets})。変数パネルには表示されません
 	Embroidery Trim After	刺繍: 後で糸切り
+	Embroidery Object Settings	オブジェクトの刺繍設定
+	Reset Embroidery Object Settings	オブジェクトの刺繍設定をリセット
+	Embroidery Entry and Exit	刺繍の入口と出口
+	Paste Embroidery Object Settings	オブジェクトの刺繍設定を貼り付け
+	Show Embroidery Object Settings	オブジェクトの刺繍設定を表示
+	Embroidery Fabrics	刺繍の生地
+	Apply Embroidery Fabric to Objects	刺繍の生地をオブジェクトに適用
 	Embroidery Setup	刺繍設定
 	Show Embroidery Settings	刺繍設定を表示
 	Embroidery Statistics	刺繍の統計
@@ -5087,7 +5094,18 @@ lighting	Light	ライト
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	expand の負の値で一部の塗りのシェイプが何も残らなかったため、刺繍されません: 縮小量を減らしてください
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	グラデーションとパターンは最初の分岐点の色で塗られます。刺繍はブロックごとに 1 本の糸で縫います
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	{widest} mm より太い線は幅 {widest} mm のサテン縫いの柱として縫われます: 代わりに塗りにしてください (stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	ブラシで描かれた線や効果で形が変わった線は、塗る範囲として縫われます: その線に設定したランニングステッチやサテンは線の経路に沿えません
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	このバージョンはドキュメントの糸パレット {palette} を認識できないため、糸は {default} パレットから選ばれます
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	ドキュメントの刺繍設定に、このバージョンが読み取れないもの (新しいバージョンのもの) があります: 保持され、デザインはそれらなしで刺繍されます
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	ドキュメントの刺繍設定の一部が、このバージョンで刺繍できる範囲の外にあります: それぞれ受け付ける最も近い値で刺繍されます
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	糸切りの長さがジャンプの長さより短いため、ジャンプはジャンプの長さから糸切りされます
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	一部のオブジェクトの刺繍設定に、このバージョンが読み取れないもの (新しいバージョンのもの) があります: 保持され、それらのオブジェクトはそれらなしで刺繍されます
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	オブジェクトの刺繍設定の一部が、このバージョンで刺繍できる範囲の外にあります: それぞれ受け付ける最も近い値で刺繍されます
+@msg	none of these objects takes settings for its `{_1}`: {_2}	これらのオブジェクトはどれも `{_1}` の設定を受け付けません: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	これらのオブジェクトはどれも刺繍設定を受け付けません: {_1}
+@msg	object {_1} takes no embroidery settings ({_2})	オブジェクト {_1} は刺繍設定を受け付けません ({_2})
+@msg	object {_1} is a group: give one of its objects	オブジェクト {_1} はグループです: その中のオブジェクトを指定してください
+@msg	object {_1} has no `{_2}`	オブジェクト {_1} には `{_2}` がありません
 @msg	nothing to stitch: the document has no visible filled or stroked paths	刺繍するものがありません: ドキュメントに塗りまたは線のある表示されたパスがありません
 @msg	nothing to stitch: {_1}	刺繍するものがありません: {_1}
 
@@ -5145,7 +5163,7 @@ lighting	Light	ライト
 @msg	too many stitches for a VP3 file	VP3 ファイルには針目が多すぎます
 @msg	{_1} is not an embroidery format	{_1} は刺繍フォーマットではありません
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	ステッチ:
 	Stitch Length:	針目の長さ:
 	Fill Angle:	フィルの角度:

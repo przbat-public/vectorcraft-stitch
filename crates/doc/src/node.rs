@@ -1350,6 +1350,10 @@ impl Node {
         if !self.is_layer() {
             self.bbox_angle = crate::orient::transformed_angle(self.bbox_angle, a);
         }
+        // VectorCraft Stitch: the object's embroidery settings move and turn with it.
+        if let Some(e) = self.extras_if_any().and_then(|e| e.embroidery.as_deref_mut()) {
+            e.transform(a);
+        }
         // Type and symbols in perspective keep looking the same, moved by `a`.
         self.transform_projection(a);
         // Refitting an unplaced gradient only reproduces moves and uniform scales.

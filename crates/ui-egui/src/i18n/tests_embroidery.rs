@@ -75,6 +75,118 @@ fn embroidery_export_messages_are_translated() {
     assert!(untranslated.is_empty(), "untranslated embroidery messages:\n{}", untranslated.join("\n"));
 }
 
+/// What a plan says of the document's and the objects' embroidery settings it can't take as they
+/// are (some from a newer version, some out of range, a trim length below the jump length) is
+/// translated whole in every language.
+#[test]
+fn embroidery_settings_notes_are_translated() {
+    use serde_json::json;
+    use vectorcraft_doc::NodeId;
+    use vectorcraft_doc::embroidery::{Embroidery, EmbroiderySetup, MachineSettings};
+    use vectorcraft_engine::Session;
+    let mut s = Session::new();
+    s.execute("file.new", &json!({})).unwrap();
+    s.execute("paint.setStroke", &json!({"none": true})).unwrap();
+    let id = s.execute("shape.rectangle", &json!({"x": 20, "y": 20, "width": 100, "height": 60})).unwrap()["id"].as_u64().unwrap();
+    s.edit("Embroidery Setup", |d, _| {
+        let e: Embroidery = serde_json::from_value(json!({"fill": {"pull": 5.0, "grain": 45}})).unwrap();
+        if let Some(n) = d.node_mut(NodeId(id)) {
+            n.extras_mut().embroidery = Some(Box::new(e));
+        }
+        let machine = MachineSettings { jump_length: Some(7.0), trim_length: Some(3.0), ..MachineSettings::default() };
+        let mut setup = EmbroiderySetup { thread_weight: Some(1000.0), machine: Some(Box::new(machine)), ..EmbroiderySetup::default() };
+        setup.extra.insert("from_a_newer_version".into(), json!(true));
+        d.embroidery = Some(Box::new(setup));
+        Ok(())
+    })
+    .unwrap();
+    let r = s.execute("document.export", &json!({"format": "dst"})).unwrap();
+    let notes: Vec<&str> = r["warnings"].as_array().unwrap().iter().filter_map(|w| w.as_str()).collect();
+    assert_eq!(notes.len(), 5, "{notes:#?}");
+    let english = ["this version", "embroidery settings", "jump length", "nearest value", "objects"];
+    let mut untranslated = Vec::new();
+    for info in LANGUAGES.iter().filter(|l| l.code != "en") {
+        let lang = Lang::from_code(info.code).unwrap();
+        for m in &notes {
+            let shown = message(lang, m);
+            if shown == *m || english.iter().any(|w| shown.contains(*w)) {
+                untranslated.push(format!("{}: {shown}", info.code));
+            }
+        }
+    }
+    assert!(untranslated.is_empty(), "untranslated notes:\n{}", untranslated.join("\n"));
+}
+
+/// What the settings commands on objects say when the objects given take none (a person running
+/// them from the command palette meets it) is translated whole in every language.
+#[test]
+fn embroidery_object_settings_messages_are_translated() {
+    use serde_json::json;
+    use vectorcraft_doc::{AppearanceItem, NodeId};
+    use vectorcraft_engine::{EngineError, Session};
+    let mut s = Session::new();
+    s.execute("file.new", &json!({})).unwrap();
+    let id = |v: serde_json::Value| v["id"].as_u64().unwrap();
+    let text = id(s.execute("text.create", &json!({"x": 10, "y": 300, "text": "Stitch"})).unwrap());
+    let a = id(s.execute("shape.rectangle", &json!({"x": 20, "y": 20, "width": 50, "height": 40})).unwrap());
+    let b = id(s.execute("shape.rectangle", &json!({"x": 90, "y": 20, "width": 50, "height": 40})).unwrap());
+    s.edit("No Stroke", |d, _| {
+        if let Some(n) = d.node_mut(NodeId(b)) {
+            n.appearance.items.retain(|i| matches!(i, AppearanceItem::Fill(_)));
+        }
+        Ok(())
+    })
+    .unwrap();
+    let group = id(s.execute("object.group", &json!({"ids": [a, b]})).unwrap());
+    let error = |r: Result<serde_json::Value, EngineError>| match r {
+        Err(EngineError::Other(m)) => m,
+        r => panic!("{r:?}"),
+    };
+    let messages = [
+        error(s.execute("embroidery.set", &json!({"ids": [text], "part": "fill", "angle": 3}))),
+        error(s.execute("embroidery.reset", &json!({"ids": [text]}))),
+        error(s.execute("embroidery.setEntryExit", &json!({"id": text, "part": "fill", "entry": [0, 0]}))),
+        error(s.execute("embroidery.setEntryExit", &json!({"id": group, "part": "fill", "entry": [0, 0]}))),
+        error(s.execute("embroidery.setEntryExit", &json!({"id": b, "part": "stroke", "entry": [0, 0]}))),
+    ];
+    let mut untranslated = Vec::new();
+    for info in LANGUAGES.iter().filter(|l| l.code != "en") {
+        let lang = Lang::from_code(info.code).unwrap();
+        for m in &messages {
+            let shown = message(lang, m);
+            if shown == *m || ["none of these", "embroidery settings", "is a group", "has no", "takes no"].iter().any(|w| shown.contains(*w)) {
+                untranslated.push(format!("{}: {shown}", info.code));
+            }
+        }
+    }
+    assert!(untranslated.is_empty(), "untranslated messages:\n{}", untranslated.join("\n"));
+}
+
+/// What a plan says of a stroke an effect reshapes whose running or satin stitch can't follow its
+/// path is translated whole in every language.
+#[test]
+fn embroidery_stroke_path_warning_is_translated() {
+    use serde_json::json;
+    use vectorcraft_engine::Session;
+    let mut s = Session::new();
+    s.execute("file.new", &json!({})).unwrap();
+    let id = s.execute("shape.rectangle", &json!({"x": 20, "y": 20, "width": 100, "height": 60})).unwrap()["id"].clone();
+    s.execute("appearance.addStroke", &json!({"ids": [id]})).unwrap();
+    s.execute("effect.apply", &json!({"effect": "distort.roughen", "ids": [id], "item": 1})).unwrap();
+    s.execute("embroidery.set", &json!({"ids": [id], "part": "stroke", "stitch": "running"})).unwrap();
+    let r = s.execute("document.export", &json!({"format": "dst"})).unwrap();
+    let warning =
+        r["warnings"].as_array().unwrap().iter().filter_map(|w| w.as_str()).find(|w| w.contains("reshaped by an effect")).unwrap().to_string();
+    let mut untranslated = Vec::new();
+    for info in LANGUAGES.iter().filter(|l| l.code != "en") {
+        let shown = message(Lang::from_code(info.code).unwrap(), &warning);
+        if shown == warning || ["brush", "reshaped", "can't follow", "stitch"].iter().any(|w| shown.contains(*w)) {
+            untranslated.push(format!("{}: {shown}", info.code));
+        }
+    }
+    assert!(untranslated.is_empty(), "untranslated:\n{}", untranslated.join("\n"));
+}
+
 /// What opening a machine file says it left out (which makes writing over the file ask first) is
 /// translated whole in every language.
 #[test]
@@ -187,24 +299,6 @@ fn template(s: &str) -> String {
     }
     out.push_str(rest);
     out
-}
-
-/// The embroidery rows of the export options dialog (labels, tips and the names in its lists) are
-/// translated in every language.
-#[test]
-fn embroidery_export_dialog_is_translated() {
-    let source = include_str!("../dialogs/embroidery_options.rs");
-    let code = source.find("#[cfg(test)]").map_or(source, |at| &source[..at]);
-    let keys: Vec<String> = code.match_indices("tl!(\"").filter_map(|(at, m)| literal(&code[at + m.len()..])).collect();
-    assert!(keys.len() >= 30, "{keys:?}");
-    // A row each (a translation may be the English word itself: "Satin" in German or French).
-    for info in LANGUAGES.iter().filter(|l| l.code != "en") {
-        let lang = Lang::from_code(info.code).unwrap();
-        let (entries, _) = super::catalog::parse_entries(lang.0.source);
-        let rows: std::collections::HashSet<&str> = entries.iter().filter(|(ctx, _, _)| ctx.is_empty()).map(|(_, src, _)| src.as_str()).collect();
-        let untranslated: Vec<&String> = keys.iter().filter(|k| !rows.contains(k.as_str())).collect();
-        assert!(untranslated.is_empty(), "{}: {untranslated:#?}", info.code);
-    }
 }
 
 /// The strings the embroidery interface shows through `et!("…")` and the counts it shows through

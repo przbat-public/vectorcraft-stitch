@@ -5357,6 +5357,13 @@ mark-style	Japanese	Japonesas
 	Select artwork to apply effects	Seleccione gráficos para aplicar efectos
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	no se leyeron las variables ni los conjuntos de datos del archivo (variables: {variables}, conjuntos de datos: {data_sets}): el panel Variables no los muestra
 	Embroidery Trim After	Bordado: cortar el hilo después
+	Embroidery Object Settings	Ajustes de bordado del objeto
+	Reset Embroidery Object Settings	Restablecer ajustes de bordado del objeto
+	Embroidery Entry and Exit	Entrada y salida del bordado
+	Paste Embroidery Object Settings	Pegar ajustes de bordado del objeto
+	Show Embroidery Object Settings	Mostrar ajustes de bordado del objeto
+	Embroidery Fabrics	Tejidos de bordado
+	Apply Embroidery Fabric to Objects	Aplicar tejido de bordado a los objetos
 	Embroidery Setup	Ajustar bordado
 	Show Embroidery Settings	Mostrar ajustes de bordado
 	Embroidery Statistics	Estadísticas del bordado
@@ -5375,7 +5382,18 @@ mark-style	Japanese	Japonesas
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	un valor negativo de expand no dejó nada de algunas formas rellenas, así que no se bordan: redúcelas menos
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	los degradados y motivos se pintan con el color de su primera parada; un bordado cose un hilo por bloque
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	los trazos de más de {widest} mm de ancho se cosen como columnas de satén de {widest} mm: rellénalos en su lugar (stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	los trazos dibujados con un pincel o transformados por un efecto se cosen como el área que pintan: una puntada recta o un satén ajustados en ellos no pueden seguir su trazado
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	esta versión no conoce la paleta de hilos {palette} del documento, así que sus hilos se eligen de la paleta {default}
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	los ajustes de bordado del documento incluyen algunos que esta versión no lee (de una versión más reciente): se conservan, y el diseño se borda sin ellos
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	algunos ajustes de bordado del documento quedan fuera de lo que esta versión borda: cada uno se borda con el valor más cercano que admite
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	la longitud de corte es menor que la longitud de salto, así que los saltos se cortan ya desde la longitud de salto
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	los ajustes de bordado de algunos objetos incluyen algunos que esta versión no lee (de una versión más reciente): se conservan, y esos objetos se bordan sin ellos
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	algunos ajustes de bordado de objetos quedan fuera de lo que esta versión borda: cada uno se borda con el valor más cercano que admite
+@msg	none of these objects takes settings for its `{_1}`: {_2}	ninguno de estos objetos admite ajustes para su `{_1}`: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	ninguno de estos objetos admite ajustes de bordado: {_1}
+@msg	object {_1} takes no embroidery settings ({_2})	el objeto {_1} no admite ajustes de bordado ({_2})
+@msg	object {_1} is a group: give one of its objects	el objeto {_1} es un grupo: indica uno de sus objetos
+@msg	object {_1} has no `{_2}`	el objeto {_1} no tiene `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	nada que bordar: el documento no tiene trazados visibles con relleno o trazo
 @msg	nothing to stitch: {_1}	nada que bordar: {_1}
 
@@ -5433,7 +5451,7 @@ mark-style	Japanese	Japonesas
 @msg	too many stitches for a VP3 file	demasiadas puntadas para un archivo VP3
 @msg	{_1} is not an embroidery format	{_1} no es un formato de bordado
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Puntada:
 	Stitch Length:	Longitud de puntada:
 	Fill Angle:	Ángulo de relleno:

@@ -5379,6 +5379,13 @@ mark-style	Japanese	Japanilainen
 	Select artwork to apply effects	Valitse kuvitus, johon tehosteet lisätään
 @msg	the file's variables and data sets weren't read (variables: {variables}, data sets: {data_sets}): the Variables panel doesn't list them	tiedoston muuttujia ja tietojoukkoja ei luettu (muuttujia: {variables}, tietojoukkoja: {data_sets}): Muuttujat-paneeli ei näytä niitä
 	Embroidery Trim After	Kirjonta: katkaise lanka jälkeen
+	Embroidery Object Settings	Objektin kirjonta-asetukset
+	Reset Embroidery Object Settings	Palauta objektin kirjonta-asetukset
+	Embroidery Entry and Exit	Kirjonnan alku- ja loppukohta
+	Paste Embroidery Object Settings	Liitä objektin kirjonta-asetukset
+	Show Embroidery Object Settings	Näytä objektin kirjonta-asetukset
+	Embroidery Fabrics	Kirjontakankaat
+	Apply Embroidery Fabric to Objects	Käytä kirjontakangasta objekteihin
 	Embroidery Setup	Kirjonnan asetukset
 	Show Embroidery Settings	Näytä kirjonnan asetukset
 	Embroidery Statistics	Kirjonnan tilastot
@@ -5397,7 +5404,18 @@ mark-style	Japanese	Japanilainen
 @msg	a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less	negatiivinen expand-arvo ei jättänyt mitään joistakin täytetyistä muodoista, joten niitä ei kirjota: pienennä niitä vähemmän
 @msg	gradients and patterns are painted in the colour of their first stop; a design sews one thread per block	liukuvärit ja kuviot maalataan ensimmäisen väripisteensä värillä; kirjonta ompelee yhdellä langalla lohkoa kohden
 @msg	strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)	yli {widest} mm leveät viivat ommellaan {widest} mm levyisinä satiinipylväinä: täytä ne mieluummin (stitch fill)
+@msg	strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path	siveltimellä piirretyt tai efektin muotoilemat viivat ommellaan alueena, jonka ne maalaavat: niihin asetettu suora pisto tai satiini ei voi seurata niiden polkua
 @msg	the document's thread palette {palette} is not one this version knows, so its threads are matched to the {default} palette	tämä versio ei tunne asiakirjan lankapalettia {palette}, joten sen langat valitaan paletista {default}
+@msg	the document's embroidery settings hold some this version doesn't read (from a newer version): they are kept, and the design is sewn without them	asiakirjan kirjonta-asetuksissa on joitakin, joita tämä versio ei lue (uudemmasta versiosta): ne säilytetään, ja malli kirjotaan ilman niitä
+@msg	some of the document's embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	osa asiakirjan kirjonta-asetuksista on sen ulkopuolella, mitä tämä versio kirjoo: kukin kirjotaan lähimmällä arvolla, jonka se hyväksyy
+@msg	the trim length is shorter than the jump length, so jumps are cut from the jump length on	leikkauksen pituus on lyhyempi kuin hypyn pituus, joten hypyt leikataan jo hypyn pituudesta alkaen
+@msg	some objects' embroidery settings hold some this version doesn't read (from a newer version): they are kept, and those objects are sewn without them	joidenkin objektien kirjonta-asetuksissa on joitakin, joita tämä versio ei lue (uudemmasta versiosta): ne säilytetään, ja objektit kirjotaan ilman niitä
+@msg	some objects' embroidery settings lie outside what this version sews: each is sewn at the nearest value it takes	osa objektien kirjonta-asetuksista on sen ulkopuolella, mitä tämä versio kirjoo: kukin kirjotaan lähimmällä arvolla, jonka se hyväksyy
+@msg	none of these objects takes settings for its `{_1}`: {_2}	mikään näistä objekteista ei ota asetuksia osalle `{_1}`: {_2}
+@msg	none of these objects takes embroidery settings: {_1}	mikään näistä objekteista ei ota kirjonta-asetuksia: {_1}
+@msg	object {_1} takes no embroidery settings ({_2})	objekti {_1} ei ota kirjonta-asetuksia ({_2})
+@msg	object {_1} is a group: give one of its objects	objekti {_1} on ryhmä: anna jokin sen objekteista
+@msg	object {_1} has no `{_2}`	objektilla {_1} ei ole `{_2}`
 @msg	nothing to stitch: the document has no visible filled or stroked paths	ei mitään kirjottavaa: asiakirjassa ei ole näkyviä polkuja, joilla on täyttö tai viiva
 @msg	nothing to stitch: {_1}	ei mitään kirjottavaa: {_1}
 
@@ -5456,7 +5474,7 @@ mark-style	Japanese	Japanilainen
 @msg	too many stitches for a VP3 file	liian monta pistoa VP3-tiedostoon
 @msg	{_1} is not an embroidery format	{_1} ei ole kirjontamuoto
 
-# Machine embroidery: the export options dialog (labels, tips and lists).
+# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
 	Stitch:	Pisto:
 	Stitch Length:	Piston pituus:
 	Fill Angle:	Täytön kulma:

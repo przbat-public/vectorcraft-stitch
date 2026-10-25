@@ -503,7 +503,8 @@ fn expand_pieces(
         let c = Arc::make_mut(c);
         let mut listed = None;
         if all || c.id == id {
-            effects::expand_art(d, c, stroke_art);
+            // VectorCraft Stitch: each path's pieces sewn with its embroidery settings.
+            super::embroidery::derive::expand_art(d, c, stroke_art);
         } else if has_seeded(c) && repeats_an_id(c, &seen) {
             listed = Some(expand_in_place(d, c, brushes));
         }
@@ -633,7 +634,8 @@ fn expanded_node(d: &mut Document, mut n: Node, brushes: &[vectorcraft_brush::Br
                     m
                 })
             } else if matches!(n.kind, NodeKind::Path { .. } | NodeKind::Compound { .. }) && !effects::has_transform_art(&v) {
-                effects::expand_leaf(d, &v, &mut stroke_art)
+                // VectorCraft Stitch: its pieces sewn with its embroidery settings.
+                super::embroidery::derive::expand_leaf(d, &v, &mut stroke_art)
             } else {
                 // Type, images, symbol instances, live objects (and paths whose Transform effect copies
                 // them with a gradient or changes their fills and strokes): through their outlines.
@@ -643,6 +645,8 @@ fn expanded_node(d: &mut Document, mut n: Node, brushes: &[vectorcraft_brush::Br
                 };
                 effects::expand_outlined(Some(&*d), &v, symbol.as_deref()).map(|mut m| {
                     expand_pieces(d, &mut m, true, brushes, &mut stroke_art);
+                    // VectorCraft Stitch: the cut after the object on what stands for it.
+                    super::embroidery::derive::outlined(&v, &mut m);
                     m
                 })
             };

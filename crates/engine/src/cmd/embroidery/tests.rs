@@ -287,9 +287,44 @@ fn native(s: &mut Session) -> Vec<u8> {
     }
 }
 
-/// The settings of a document that sets none: the palette unset, Janome's by default.
+/// The settings of a document that sets none: the palette unset, Janome's by default, the fabric,
+/// the thread and the machine the built-in values, no object setting a fabric's value itself.
 fn unset() -> Value {
-    json!({"settings": {"palette": null, "start": null, "label": null}, "resolved": {"palette": {"value": "jef", "source": "default"}}})
+    let default = |value: Value| json!({"value": value, "source": "default", "preset": null, "changed": false});
+    json!({
+        "settings": {"palette": null, "start": null, "label": null, "fabric": null, "threadWeight": null, "joinSameColor": null, "machine": null},
+        "resolved": {
+            "palette": {"value": "jef", "source": "default"},
+            "fabric": {
+                "preset": null,
+                "tatami": {"pull": default(json!(0.2)), "spacing": default(json!(0.38)), "length": default(json!(4.0)), "underlay": default(json!("auto"))},
+                "satin": {"pull": default(json!(0.2)), "spacingPercent": default(json!(100.0)), "underlay": default(json!("auto"))},
+                "thickness": default(json!(0.5)),
+                "stabilizer": default(Value::Null),
+                "topping": default(Value::Null),
+                "needlePoint": default(Value::Null),
+                "color": {"value": "#ffffff", "source": "default"},
+            },
+            "threadWeight": {"value": 40.0, "source": "default"},
+            "joinSameColor": {"value": true, "source": "default"},
+            "machine": {
+                "jumpLength": {"value": 5.0, "source": "default"},
+                "trimLength": {"value": 10.0, "source": "default"},
+                "minStitch": {"value": 0.4, "source": "default"},
+                "splitLength": {"value": 10.0, "source": "default"},
+                "speed": {"value": 650.0, "source": "default"},
+            },
+        },
+        "overrides": {"pull": 0, "spacing": 0, "length": 0, "underlay": 0, "objectCount": 0},
+    })
+}
+
+/// [`unset`] with the thread palette `id` set by the document.
+fn with_palette(id: &str) -> Value {
+    let mut v = unset();
+    v["settings"]["palette"] = json!(id);
+    v["resolved"]["palette"] = json!({"value": id, "source": "document"});
+    v
 }
 
 /// `embroidery.setup` sets the document's thread palette in one undo step and unsets it with null;
@@ -304,10 +339,7 @@ fn the_document_sets_its_thread_palette() {
     assert_eq!(s.execute("embroidery.settings", &json!({})).unwrap(), unset());
     assert_eq!(s.execute("embroidery.setup", &json!({})).unwrap(), unset());
     let r = s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
-    assert_eq!(
-        r,
-        json!({"settings": {"palette": "pec", "start": null, "label": null}, "resolved": {"palette": {"value": "pec", "source": "document"}}})
-    );
+    assert_eq!(r, with_palette("pec"));
     assert_eq!(steps(&s), before + 1);
     assert_eq!(s.execute("embroidery.setup", &json!({"settings": r["settings"]})).unwrap(), r);
     assert_eq!(s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap(), r);
@@ -327,8 +359,10 @@ fn the_document_sets_its_thread_palette() {
         assert!(s.execute("embroidery.setup", &bad).is_err(), "{bad}");
     }
     // The params check every frontend runs refuses it first; the command says why.
-    assert!(s.execute("embroidery.setup", &r).unwrap_err().to_string().contains("`resolved`"));
-    assert!(super::setup(&mut s, &r).unwrap_err().to_string().contains("`resolved` is read only"));
+    assert!(s.execute("embroidery.setup", &r).unwrap_err().to_string().contains("`overrides`"));
+    assert!(super::setup::setup(&mut s, &r).unwrap_err().to_string().contains("is read only: pass back `settings`"));
+    let resolved = json!({"resolved": r["resolved"]});
+    assert!(super::setup::setup(&mut s, &resolved).unwrap_err().to_string().contains("`resolved` is read only"));
     assert_eq!(steps(&s), before + 1);
     assert_eq!(s.execute("embroidery.setup", &json!({"palette": null})).unwrap(), unset());
     assert!(s.doc().unwrap().doc.embroidery.is_none(), "nothing set, nothing kept");
@@ -399,8 +433,11 @@ fn empty_settings_in_a_file_are_none() {
         assert!(!st.is_dirty(), "{empty}: unchanged");
     }
     // A frontend's params check refuses another key first; the command says it too.
-    let refused = super::setup(&mut blank(), &json!({"fabric": "knit"})).unwrap_err().to_string();
-    assert!(refused.contains("unknown setting `fabric`: the settings are palette, start and label"), "{refused}");
+    let refused = super::setup::setup(&mut blank(), &json!({"hoop": "large"})).unwrap_err().to_string();
+    assert!(
+        refused.contains("unknown setting `hoop`: the settings are palette, start, label, fabric, threadWeight, joinSameColor and machine"),
+        "{refused}"
+    );
 }
 
 /// A file whose embroidery settings a newer version wrote in another shape than an object opens:
@@ -444,10 +481,7 @@ fn the_thread_palette_is_saved_and_a_newer_versions_settings_are_kept() {
     let mut s = Session::new();
     s.execute("document.open", &json!({"name": "newer.vectorcraft", "dataBase64": vectorcraft_format::base64_encode(&bytes)})).unwrap();
     let r = s.execute("embroidery.settings", &json!({})).unwrap();
-    assert_eq!(
-        r,
-        json!({"settings": {"palette": newer["palette"], "start": null, "label": null}, "resolved": {"palette": {"value": "jef", "source": "default"}}})
-    );
+    assert_eq!((&r["settings"]["palette"], &r["resolved"]["palette"]), (&newer["palette"], &json!({"value": "jef", "source": "default"})));
     // Its own settings passed back change nothing; another palette replaces it, keeping the fabric.
     s.execute("embroidery.setup", &json!({"settings": r["settings"]})).unwrap();
     let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
@@ -462,7 +496,10 @@ fn the_thread_palette_is_saved_and_a_newer_versions_settings_are_kept() {
     s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
     let kept: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
     assert_eq!(kept["document"]["embroidery"], json!({"palette": "pec", "fabric": newer["fabric"]}));
-    assert!(s.execute("embroidery.threads", &json!({})).unwrap()["warnings"].as_array().unwrap().is_empty());
+    // The palette is known now; what the newer version's fabric says is still not read, and the
+    // plan says so.
+    let warnings = s.execute("embroidery.threads", &json!({})).unwrap()["warnings"].clone();
+    assert_eq!(warnings, json!([super::resolve::DOCUMENT_SETTINGS_UNREAD]));
 }
 
 /// A document that sets no palette is sewn in Janome's threads, the default, and its PES export
@@ -623,11 +660,11 @@ fn the_threads_command_takes_only_the_embroidery_options() {
     let spec = crate::cmd::find_command("embroidery.threads").unwrap();
     let named = crate::cmd::params::doc_keys(spec.params).unwrap();
     let options: Vec<&str> = crate::cmd::fileio::embroidery::OPTIONS.iter().map(|o| o.name).collect();
-    let mut names: Vec<&str> = super::options::OPTIONS.iter().flat_map(|n| std::iter::once(n.name).chain(n.earlier)).collect();
+    let mut names: Vec<&str> = super::vocabulary::options().flat_map(|n| std::iter::once(n.name).chain(n.earlier)).collect();
     // And the stretch of blocks it lists, and whether the selection alone.
     names.extend(["offset", "limit", "selectedOnly"]);
     // The export's options, under the names the options take (each earlier name after its own).
-    assert_eq!(super::options::OPTIONS.iter().map(|n| n.name).collect::<Vec<_>>(), options);
+    assert_eq!(super::vocabulary::options().map(|n| n.name).collect::<Vec<_>>(), options);
     assert_eq!((named.keys, named.more.len()), (names, 0));
     for (given, why) in [
         (json!({"densitty": 0.4}), "did you mean `density`?"),
@@ -733,7 +770,7 @@ fn a_newer_versions_object_settings_open_and_are_kept() {
     let mut s = blank();
     let id = rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 30.0);
     let plain = s.execute("embroidery.stats", &json!({})).unwrap()["stitches"].clone();
-    let newer = json!({"fill": {"angle": 30, "spacing": 0.4}, "trim_after": "auto", "stitches": "later"});
+    let newer = json!({"motif": {"name": "wave", "scale": 1.5}, "trim_after": "auto", "stitches": "later"});
     let mut file: serde_json::Value = serde_json::from_slice(&native(&mut s)).unwrap();
     fn node(v: &mut serde_json::Value, id: u64) -> Option<&mut serde_json::Value> {
         if v.get("id").and_then(serde_json::Value::as_u64) == Some(id) && v.get("kind").is_some() {

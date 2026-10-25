@@ -46,10 +46,11 @@ mod tests_narrow;
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
 pub use fill::MIN_AREA;
+pub use fill::TATAMI_UNDERLAY_MIN;
 pub(crate) use fill::fill_with_columns;
 pub use narrow::{Column, columns as narrow_columns, columns_until as narrow_columns_until};
 pub use runs::join_cut;
-pub use satin::satin_spacing;
+pub use satin::{SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, satin_auto_underlay, satin_spacing};
 
 use crate::{Error, Stitch};
 pub use geometry::MAX_COORD_MM;
@@ -92,10 +93,10 @@ pub const MAX_SATIN_WIDTH: f64 = 50.0;
 /// and David Morrish's *Digital Embroidery* (2025, ch. 2) gives 0.40 mm as the spacing where 40 wt
 /// threads lie flush and 0.38 mm as the one that leaves no gaps. How much a fabric needs is for
 /// fabric presets.
-const FILL_SPACING: f64 = 0.38;
+pub(crate) const FILL_SPACING: f64 = 0.38;
 /// The longest stitch of a fill row (millimetres). Wilcom's tatami default (same page as
 /// [`FILL_SPACING`]).
-const FILL_STITCH: f64 = 4.0;
+pub(crate) const FILL_STITCH: f64 = 4.0;
 /// The longest stitch of a running line (millimetres): short enough to follow curves and corners
 /// closely, long enough that the thread doesn't pile up. An estimate within the 2–3 mm usual for
 /// outlines.
@@ -103,10 +104,11 @@ const RUNNING_STITCH: f64 = 2.5;
 /// Shorter stitches are left out (millimetres): a tiny stitch can break the thread or cut the
 /// fabric, and a repeated point is noise. An estimate.
 const MIN_STITCH: f64 = 0.4;
-/// The direction of a fill's rows, degrees (0: left to right). Diagonal, so that rows don't run
-/// along a shape's horizontal and vertical edges, where they would show each step of the edge. By
-/// judgement.
-const FILL_ANGLE: f64 = 45.0;
+/// The direction of a fill's rows, degrees clockwise as seen on the page (0: left to right; the
+/// planner's y axis points down the page, see [`Params::angle`]): from the top left to the bottom
+/// right. Diagonal, so that rows don't run along a shape's horizontal and vertical edges, where
+/// they would show each step of the edge. By judgement.
+pub const FILL_ANGLE: f64 = 45.0;
 /// Pull compensation (millimetres added at each side of a stitch: each rail of a satin column, each
 /// end of a fill row): the fabric draws the thread in, so stitching sewn exactly as drawn comes out
 /// narrower and leaves a gap of background where two shapes meet. Wilcom's automatic pull
@@ -116,7 +118,7 @@ const FILL_ANGLE: f64 = 45.0;
 /// Satin columns shrink most, and tatami fills less but noticeably over large areas
 /// (<https://wilcom.com/resources/blog/push-and-pull-compensation>): both get the same value (an
 /// estimate; fabric presets may part them).
-const PULL: f64 = 0.2;
+pub(crate) const PULL: f64 = 0.2;
 /// Pull compensation that grows with the stitch (percent of a satin column's width, or of a fill
 /// row's length, added at each side): none by default. Ink/Stitch offers it on top of the fixed
 /// value, so that wide columns get more than narrow ones
@@ -151,6 +153,14 @@ pub(crate) const NARROW_SATIN: f64 = 7.0;
 /// A satin column's width when none is given (millimetres). The export always gives one, the
 /// stroke's width; this is for callers of the planner that don't.
 const SATIN_WIDTH: f64 = 3.0;
+/// The share of the spacing picked by a satin column's width it is sewn at when nothing says
+/// another ([`Params::spacing_scale`]): all of it.
+const SPACING_SCALE: f64 = 1.0;
+/// Percent in a whole: a percentage over this is a share.
+pub const PERCENT: f64 = 100.0;
+/// The share of the spacing picked by a satin column's width that leaves it as picked, in percent:
+/// all of it ([`SPACING_SCALE`]), what a satin spacing percent of no fabric is.
+pub const SPACING_PERCENT_AS_PICKED: f64 = SPACING_SCALE * PERCENT;
 /// The underlay's own stitch length (millimetres): short, to hold the fabric still. An estimate.
 const UNDERLAY_STITCH: f64 = 2.0;
 /// The most runs one shape may produce (a guard against absurd parameters).
@@ -244,7 +254,10 @@ pub struct Params {
     /// The distance between threads, millimetres: row to row for fill; for satin between two
     /// penetrations on the same rail (peak to peak), its crossings lying half that apart.
     pub density: f64,
-    /// The direction the fill's rows run, degrees (0: left to right).
+    /// The direction the fill's rows run, degrees (0: left to right), clockwise as seen on the page:
+    /// the planner's y axis points down the page, as the document's does. People and the engine's
+    /// commands count angles counter-clockwise, as everywhere else in VectorCraft; the engine
+    /// converts them in one place (`cmd::embroidery::options::planner_angle`).
     pub angle: f64,
     /// Pull compensation: how much farther the stitches reach at each side so the fabric's pull
     /// does not leave a gap of background at an edge, millimetres, at two sides: a satin
@@ -284,6 +297,10 @@ pub struct Params {
     /// Satin only: pick [`Params::density`] from the column's width ([`satin_spacing`]) instead of
     /// using it as given. On by default; an explicit density turns it off.
     pub auto_spacing: bool,
+    /// Satin only: the share of the spacing picked by the column's width ([`Params::auto_spacing`])
+    /// it is sewn at, 1 for the spacing as picked (a fabric sets another: the document's satin
+    /// spacing percent). An explicit density, used as given, ignores it.
+    pub spacing_scale: f64,
     /// Fill only: the widest part of a filled shape sewn as a satin column instead of tatami,
     /// millimetres; 0 sews every part as tatami. The planner's [`narrow_columns`] finds such parts,
     /// and [`try_fill_with_columns`] sews them with the rest of the shape, which the caller cuts
@@ -320,6 +337,11 @@ pub const NARROW_RANGE: (f64, f64) = (0.0, 12.0);
 /// The thread's weight: from 10 wt (a heavy decorative thread, thicker than any embroidery
 /// thread) to 150 wt (finer than the finest bobbin and lettering threads).
 pub const THREAD_WEIGHT_RANGE: (f64, f64) = (10.0, 150.0);
+/// The tatami row spacings a fabric may give for 40 wt thread (millimetres): those that every weight
+/// of [`THREAD_WEIGHT_RANGE`] scales ([`thread_scale`], 0.52 at 150 wt to 2.0 at 10 wt) to a
+/// spacing within [`DENSITY_RANGE`], so that no plan has to clamp one silently (0.1 mm at 150 wt is
+/// 0.052, 2.5 mm at 10 wt is 5.0). Bounds on what is asked.
+pub const FABRIC_SPACING_RANGE: (f64, f64) = (0.1, 2.5);
 /// The longest move sewn rather than jumped: from 0.5 mm to 20 mm, past which a sewn move would be
 /// a loose thread across the design.
 pub const JUMP_RANGE: (f64, f64) = (0.5, 20.0);
@@ -329,6 +351,11 @@ pub const MAX_TRIM: f64 = 1000.0;
 pub const MIN_STITCH_RANGE: (f64, f64) = (0.05, 3.0);
 /// The longest satin stitch before it is split: from 2 mm to the 12 mm of [`STITCH_LENGTH_RANGE`].
 pub const MAX_SATIN_STITCH_RANGE: (f64, f64) = (2.0, 12.0);
+/// A share of a satin column's spacing picked by its width, percent: from half (twice as dense) to
+/// twice (half as dense), within which every width, at every thread weight, keeps a spacing in
+/// [`DENSITY_RANGE`] (from 0.096 mm, half the narrowest picked spacing at 150 wt, to 2.0 mm). Bounds
+/// on what is asked.
+pub const SPACING_PERCENT_RANGE: (f64, f64) = (50.0, 200.0);
 
 impl Default for Params {
     fn default() -> Self {
@@ -366,6 +393,7 @@ impl Params {
                 width: 0.0,
                 max_satin: MAX_SATIN_STITCH,
                 auto_spacing: false,
+                spacing_scale: SPACING_SCALE,
                 narrow: 0.0,
             },
             // A satin column's stitches cross from rail to rail: it uses no stitch length or angle
@@ -387,6 +415,7 @@ impl Params {
                 width: SATIN_WIDTH,
                 max_satin: MAX_SATIN_STITCH,
                 auto_spacing: true,
+                spacing_scale: SPACING_SCALE,
                 narrow: 0.0,
             },
             // A fill has no ends to push in: its rows run edge to edge.
@@ -407,6 +436,7 @@ impl Params {
                 width: 0.0,
                 max_satin: MAX_SATIN_STITCH,
                 auto_spacing: false,
+                spacing_scale: SPACING_SCALE,
                 narrow: NARROW_SATIN,
             },
         }
@@ -439,15 +469,16 @@ impl Params {
             width: clamp(self.width, d.width, (0.0, MAX_SATIN_WIDTH)),
             max_satin: clamp(self.max_satin, d.max_satin, MAX_SATIN_STITCH_RANGE),
             auto_spacing: self.auto_spacing,
+            spacing_scale: clamp(self.spacing_scale, d.spacing_scale, (SPACING_PERCENT_RANGE.0 / PERCENT, SPACING_PERCENT_RANGE.1 / PERCENT)),
             narrow: clamp(self.narrow, d.narrow, NARROW_RANGE),
         }
     }
 
     /// The spacing of a satin column `width` wide (millimetres, peak to peak on a rail): picked by
     /// its width and the thread with [`Params::auto_spacing`] ([`satin_spacing`], [`thread_scale`]),
-    /// else [`Params::density`].
+    /// the share [`Params::spacing_scale`] of it, else [`Params::density`].
     pub fn column_spacing(&self, width: f64) -> f64 {
-        if self.auto_spacing { satin_spacing(width) * thread_scale(self.thread_weight) } else { self.density }
+        if self.auto_spacing { satin_spacing(width) * thread_scale(self.thread_weight) * self.spacing_scale } else { self.density }
     }
 
     /// How much farther a stitch `length` long reaches at each side for pull compensation
@@ -565,7 +596,7 @@ pub fn try_fill_with_columns(
     let (f, s) = (Params { style: Style::Fill, ..*fill }.sane(), Params { style: Style::Satin, ..*satin }.sane());
     placed(shape)?;
     placed(rest)?;
-    let closest = s.density.min(satin_spacing(f64::INFINITY) * thread_scale(s.thread_weight));
+    let closest = s.density.min(satin_spacing(f64::INFINITY) * thread_scale(s.thread_weight) * s.spacing_scale);
     let column = |c: &Column| {
         // Its widest crossing, with the most pull compensation at both sides, split as satin's are.
         let widest = c.stations.iter().map(|(a, b)| a.distance(*b)).fold(0.0, f64::max);

@@ -121,12 +121,24 @@ impl<'de> Deserialize<'de> for Tab {
 }
 
 /// The panel's settings, kept with the interface's state (`ui.inspect` → `ui.embroidery_panel`):
-/// the open tab, and the part the Object tab shows.
-#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+/// the open tab, and the part the Object tab shows (saved by its id).
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub tab: Tab,
+    #[serde(serialize_with = "part_id")]
     pub part: object::Part,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self { tab: Tab::default(), part: object::Part::Fill }
+    }
+}
+
+/// A part as the settings are saved: its id.
+fn part_id<S: serde::Serializer>(part: &object::Part, s: S) -> Result<S::Ok, S::Error> {
+    s.serialize_str(part.id())
 }
 
 /// Settings as saved, read as leniently as the tab: anything but an object (null, a word, a number:
@@ -138,7 +150,7 @@ impl<'de> Deserialize<'de> for Settings {
         let read = |key: &str| v.get(key).and_then(Value::as_str);
         Ok(Self {
             tab: read("tab").and_then(Tab::from_id).unwrap_or_default(),
-            part: read("part").and_then(object::Part::from_id).unwrap_or_default(),
+            part: read("part").and_then(object::Part::from_id).unwrap_or(object::Part::Fill),
         })
     }
 }

@@ -773,3 +773,23 @@ fn the_settings_are_read_once_a_snapshot_and_not_during_a_drag() {
     frame(&mut app, &ctx, time, vec![]);
     assert_eq!(app.embroidery.object.reads, reads + 1, "read again once committed");
 }
+
+/// The stitch choices are `embroidery.set`'s own: a stroke is offered each, a fill each but satin
+/// and a running line (the project owner's choice: a fill has no width to sew across).
+#[test]
+fn the_stitch_choices_are_the_engines() {
+    let Some(SettingField::Choice(all)) = part_field("stitch") else { panic!("a choice") };
+    let (mut app, _, b) = app_with_art();
+    let info = app.session.embroidery_merged(&[vectorcraft_doc::NodeId(b)]).unwrap();
+    let ids = |part: Part| {
+        let p = part.of(&info).unwrap();
+        match choice_of(p, part, "stitch", &p.settings["stitch"]) {
+            OwnedField::Choice { options, .. } => options.into_iter().map(|(id, _)| id).collect::<Vec<_>>(),
+            _ => panic!("a choice"),
+        }
+    };
+    assert_eq!(ids(Part::Stroke), all.iter().map(|s| s.to_string()).collect::<Vec<_>>());
+    let fill = ids(Part::Fill);
+    assert!(!fill.iter().any(|id| id == "satin"), "satin isn't offered for a fill: {fill:?}");
+    assert!(["auto", "tatami", "none"].iter().all(|id| fill.iter().any(|f| f == id)), "{fill:?}");
+}

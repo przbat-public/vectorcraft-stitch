@@ -23,7 +23,6 @@
 use std::sync::{Arc, Weak};
 
 use egui::{Color32, CornerRadius, FontId, Sense, Ui, vec2};
-use serde::Serialize;
 use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId, NodeKind};
 use vectorcraft_engine::cmd::embroidery::info::{KeyInfo, ObjectSettings, PartInfo, SelectionSewing, selection_sewing};
@@ -64,31 +63,21 @@ const SETTINGS: &str = "embroidery.documentSetup";
 /// The stitch count before the first plan: an ellipsis, the same in every language.
 const PENDING: &str = "…";
 
-/// The part of the selected objects the tab shows. Its id is stable (`ui.embroideryPanel`, the
-/// saved interface state).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub enum Part {
-    #[default]
-    Fill,
-    Stroke,
+/// The part of the selected objects the tab shows: the document's kind of part (its id stable:
+/// `ui.embroideryPanel`, the saved interface state).
+pub use vectorcraft_doc::embroidery::PartKind as Part;
+
+/// What the tab reads of a part of the selection.
+trait PartOf {
+    /// The selection's part of this kind, when one of the objects has it.
+    fn of(self, info: &ObjectSettings) -> Option<&PartInfo>;
+    /// Whether some of the objects paint this part: a path keeps a fill and a stroke in its
+    /// appearance even when one paints nothing ("Stroke: none"), and settings kept for it take
+    /// effect once it paints.
+    fn painted(self, info: &ObjectSettings) -> bool;
 }
 
-impl Part {
-    pub const ALL: [Part; 2] = [Part::Fill, Part::Stroke];
-
-    pub fn id(self) -> &'static str {
-        match self {
-            Part::Fill => "fill",
-            Part::Stroke => "stroke",
-        }
-    }
-
-    pub fn from_id(id: &str) -> Option<Part> {
-        Part::ALL.into_iter().find(|p| p.id() == id)
-    }
-
-    /// The selection's part of this kind, when one of the objects has it.
+impl PartOf for Part {
     fn of(self, info: &ObjectSettings) -> Option<&PartInfo> {
         match self {
             Part::Fill => info.fill.as_ref(),
@@ -96,20 +85,17 @@ impl Part {
         }
     }
 
-    /// Whether some of the objects paint this part: a path keeps a fill and a stroke in its
-    /// appearance even when one paints nothing ("Stroke: none"), and settings kept for it take
-    /// effect once it paints.
     fn painted(self, info: &ObjectSettings) -> bool {
         self.of(info).is_some_and(|p| p.reason.as_deref() != Some("unpainted"))
     }
+}
 
-    /// The part shown: `chosen` when the objects paint it, else the other when they paint that,
-    /// else whichever they have.
-    fn shown(chosen: Part, info: &ObjectSettings) -> Option<Part> {
-        let other = if chosen == Part::Fill { Part::Stroke } else { Part::Fill };
-        let order = [chosen, other];
-        order.into_iter().find(|p| p.painted(info)).or_else(|| order.into_iter().find(|p| p.of(info).is_some()))
-    }
+/// The part shown: `chosen` when the objects paint it, else the other when they paint that, else
+/// whichever they have.
+fn shown(chosen: Part, info: &ObjectSettings) -> Option<Part> {
+    let other = if chosen == Part::Fill { Part::Stroke } else { Part::Fill };
+    let order = [chosen, other];
+    order.into_iter().find(|p| p.painted(info)).or_else(|| order.into_iter().find(|p| p.of(info).is_some()))
 }
 
 /// The tab's state between frames.
@@ -237,7 +223,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         trim_after(ui, &info, &ids, &mut commands);
     } else {
         let chosen = app.ui.embroidery_panel.part;
-        let shown = Part::shown(chosen, &info);
+        let shown = shown(chosen, &info);
         if let Some(part) = part_switch(ui, &info, shown) {
             app.ui.embroidery_panel.part = part;
         }
@@ -590,12 +576,17 @@ fn shown_angle(a: f64) -> f64 {
     if HALF_TURN - a < 1e-6 { 0.0 } else { a }
 }
 
-/// A choice row of key `key` (`stitch`, `underlay`) of part `p`.
+/// The stitches a fill isn't offered, of those `embroidery.set` takes: satin (a fill has no width
+/// to sew across, the project owner's choice) and a running line.
+const NOT_FOR_A_FILL: [&str; 2] = ["satin", "running"];
+
+/// A choice row of key `key` (`stitch`, `underlay`) of part `p`: the stitches as `embroidery.set`
+/// lists them (a fill's without [`NOT_FOR_A_FILL`]), the underlays the planner sews apart.
 fn choice_of(p: &PartInfo, part: Part, key: &str, k: &KeyInfo) -> OwnedField {
     let stroke = part == Part::Stroke;
-    let mut ids: Vec<&str> = match key {
-        "stitch" if stroke => vec!["auto", "satin", "running", "tatami", "none"],
-        "stitch" => vec!["auto", "tatami", "none"],
+    let mut ids: Vec<&str> = match (key, part_field(key)) {
+        ("stitch", Some(SettingField::Choice(ids))) => ids.into_iter().filter(|id| stroke || !NOT_FOR_A_FILL.contains(id)).collect(),
+        ("stitch", _) => vec!["auto"],
         _ => match p.sewn.as_deref() {
             Some(sewn @ ("tatami" | "satin")) => distinct_underlays(sewn),
             _ => distinct_underlays(""),
@@ -915,11 +906,11 @@ pub(crate) fn paste(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String
 }
 
 /// The part the tab shows of the active document's selection: the one chosen when the objects
-/// paint it, else the other ([`Part::shown`]); the one chosen with nothing to read.
+/// paint it, else the other ([`shown`]); the one chosen with nothing to read.
 pub(crate) fn shown_part(app: &mut VectorcraftApp) -> Part {
     let chosen = app.ui.embroidery_panel.part;
     match settings_of(app) {
-        Some((_, Ok(info))) => Part::shown(chosen, &info).unwrap_or(chosen),
+        Some((_, Ok(info))) => shown(chosen, &info).unwrap_or(chosen),
         _ => chosen,
     }
 }
@@ -936,7 +927,7 @@ pub(crate) fn inspect(app: &VectorcraftApp) -> Value {
         return Value::Null;
     }
     let Ok(info) = &memo.info else { return Value::Null };
-    let part = Part::shown(app.ui.embroidery_panel.part, info);
+    let part = shown(app.ui.embroidery_panel.part, info);
     let rows: Vec<Value> = part
         .and_then(|p| p.of(info))
         .map(|p| {

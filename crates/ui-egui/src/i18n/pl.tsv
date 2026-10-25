@@ -5769,7 +5769,7 @@ embroidery	A bar marks a value set on these objects.	Pasek oznacza wartość ust
 embroidery	Restore from Fabric	Przywróć z tkaniny
 embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Usuwa własne wartości zaznaczonych obiektów, by znów szły za tkaniną; wejście, wyjście i obcięcie nici zostają.
 embroidery	Cotton (light woven)	Bawełna (lekka tkanina)
-embroidery	Denim or heavy twill	Dżins lub gruba diagonal
+embroidery	Denim or heavy twill	Dżins lub gruby diagonal
 embroidery	Stretch knit	Dzianina elastyczna
 embroidery	Piqué (polo knit)	Pika (dzianina polo)
 embroidery	Fleece	Polar
@@ -5790,7 +5790,7 @@ embroidery	Custom	Własne
 embroidery	Stabilizer	Stabilizator
 embroidery	Tear-away	Do wyrywania
 embroidery	Cut-away	Do wycinania
-embroidery	Adhesive tear-away	Samoprzylepna do wyrywania
+embroidery	Adhesive tear-away	Samoprzylepny do wyrywania
 embroidery	Thread	Nić
 embroidery	Thread weight	Grubość nici
 embroidery	Rows' spacing for this thread: {value}	Odstęp rzędów dla tej nici: {value}
@@ -5809,8 +5809,8 @@ embroidery	Design name	Nazwa wzoru
 embroidery	Start point	Punkt startowy
 embroidery	estimate	szacunek
 embroidery	information only	tylko informacja
-embroidery	preset {value}	preset {value}
-embroidery	Changed from the preset, which gives {value}	Zmienione względem presetu, który daje {value}
+embroidery	preset {value}	ustawienie {value}
+embroidery	Changed from the preset, which gives {value}	Zmienione względem ustawienia, które daje {value}
 embroidery	Set in the document; without it: {value}	Ustawione w dokumencie; bez tego: {value}
 embroidery	Changing the fabric doesn't change them.	Zmiana tkaniny ich nie zmieni.
 embroidery	Apply the fabric to them too:	Zastosuj tkaninę także do nich:
@@ -5821,11 +5821,11 @@ embroidery	A satin column's spacing as a share of the spacing its width picks.	O
 embroidery	What to hoop under the fabric: for information, it changes no stitch.	Co włożyć do tamborka pod tkaninę: tylko informacja, nie zmienia żadnego ściegu.
 embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	Grubość nici: cieńsza nić (wyższy numer) szyje rzędy gęściej.
 embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Nici, które numeruje plik maszyny: Janome w plikach JEF, Brother w plikach PES.
-embroidery	A move longer than this lifts the needle instead of sewing it.	Dłuższe przejście podnosi igłę zamiast być szyte.
-embroidery	A jump longer than this cuts the thread first.	Dłuższy przeskok najpierw przecina nić.
-embroidery	Stitches shorter than this are left out.	Krótsze ściegi są pomijane.
-embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Ściegi na minutę: według niej szacuje się czas szycia wzoru.
-embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Obiekty w tym samym kolorze szyje się jeden po drugim, gdy nic pomiędzy ich nie zasłania: mniej zmian nici i cięć.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Przejście dłuższe niż ta wartość podnosi igłę, zamiast być szyte.
+embroidery	A jump longer than this cuts the thread first.	Przeskok dłuższy niż ta wartość najpierw przecina nić.
+embroidery	Stitches shorter than this are left out.	Ściegi krótsze niż ta wartość są pomijane.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Ściegi na minutę: według tej prędkości szacuje się czas szycia wzoru.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Obiekty w tym samym kolorze szyje się jeden po drugim, gdy nic między nimi ich nie zasłania: mniej zmian nici i cięć.
 embroidery	Where the machine starts the design, as the file it was opened from gave it.	Gdzie maszyna zaczyna wzór, jak podał go plik, z którego go otwarto.
 embroidery	The design's name, as the file it was opened from gave it.	Nazwa wzoru, jak podał ją plik, z którego go otwarto.
 embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Tkanina, nić i maszyna dokumentu: karta Haft w ustawieniach dokumentu.

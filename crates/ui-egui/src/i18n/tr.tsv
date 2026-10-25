@@ -5791,3 +5791,98 @@ embroidery	about {value} m	yaklaşık {value} m
 @msg	no check of the document as it is: show the Embroidery panel's Check tab and wait for the stitches to be planned	belgenin şimdiki hâli için kontrol yok: Nakış panelinin Kontrol sekmesini gösterin ve dikişlerin planlanmasını bekleyin
 @plural	and {count} more row isn't listed (the list shows the first {limit})|and {count} more rows aren't listed (the list shows the first {limit})	ve listelenmeyen {count} satır daha (liste ilk {limit} satırı gösterir)
 @msg	the picture would be {w} × {h} pixels, more than {most} a side: draw a smaller region or at a smaller scale	resim {w} × {h} piksel olurdu, kenar başına {most} pikselden fazla: daha küçük bir bölge veya daha küçük bir ölçekte çizin
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Nesne
+embroidery	Select an object to set how it is sewn.	Nasıl dikileceğini ayarlamak için bir nesne seçin.
+embroidery	Nothing selected	Hiçbir şey seçili değil
+embroidery	Guide	Rehber
+embroidery	Stitches from a file	Dosyadan dikişler
+embroidery	Path	Yol
+embroidery	Compound path	Bileşik yol
+embroidery	Group	Grup
+embroidery	Layer	Katman
+embroidery	Text object	Metin nesnesi
+embroidery	Image	Resim
+embroidery	Symbol instance	Sembol örneği
+embroidery	Placed file	Yerleştirilmiş dosya
+embroidery	Live object	Dinamik nesne
+embroidery	fill and stroke	dolgu ve kontur
+embroidery	fill, no stroke	dolgu, kontur yok
+embroidery	stroke, no fill	kontur, dolgu yok
+embroidery	no fill or stroke	dolgu ya da kontur yok
+embroidery	Fill	Dolgu
+embroidery	Fill: none	Dolgu: yok
+embroidery	Stroke	Kontur
+embroidery	Stroke: none	Kontur: yok
+embroidery	Stitch	Dikiş
+embroidery	Underlay	Alt dikiş
+embroidery	Compensation	Telafi
+embroidery	auto	otomatik
+embroidery	{count} of {total} set	{total} nesnenin {count} tanesinde ayarlı
+embroidery	Set on the selected objects; without it: {value}	Seçili nesnelerde ayarlı; ayarlanmazsa: {value}
+embroidery	The selected objects differ.	Seçili nesneler farklı.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Otomatik
+embroidery	Mixed	Karışık
+embroidery	Type	Tür
+embroidery	Angle	Açı
+embroidery	Row spacing	Sıra aralığı
+embroidery	Spacing	Aralık
+embroidery	Stitch length	Dikiş uzunluğu
+embroidery	Narrow parts as satin	Dar bölümler saten
+embroidery	Pull compensation	Çekme telafisi
+embroidery	Pull compensation (%)	Çekme telafisi (%)
+embroidery	Push compensation	İtme telafisi
+embroidery	Expand fills	Dolgu genişletme
+embroidery	Split satin stitches from	Saten dikişleri böl, şu uzunluktan
+embroidery	Setting	Ayar
+embroidery	How the part is sewn: Auto picks by its shape and width.	Bölümün nasıl dikileceği: Otomatik, şekline ve genişliğine göre seçer.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	Dolgu sıralarının yönü, saat yönünün tersine; nesneyle birlikte döner.
+embroidery	The distance between rows, or between a satin's stitches.	Sıralar arasındaki veya bir satenin dikişleri arasındaki mesafe.
+embroidery	The longest stitch along a row or a running line.	Bir sıradaki veya düz dikiş çizgisindeki en uzun dikiş.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Dolgunun bundan dar bölümleri saten sütunlar olarak dikilir; 0 hiçbirini dikmez.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	Kumaşı tutmak için üst dikişlerin altına ilk önce dikilen dikişler.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	İpliğin kumaşı çektiği uçlarda her sırayı veya sütunu genişletir.
+embroidery	Widens each column by a share of its width.	Her sütunu genişliğinin bir payı kadar genişletir.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	İpliğin dışarı ittiği uçlarda açık bir saten sütunu kısaltır.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Ayrı çizilmiş şekillerin birleşmesi için dolgulu alanı her yönden büyütür.
+embroidery	Satin stitches longer than this are split in two.	Bundan uzun saten dikişler ikiye bölünür.
+embroidery	Where the needle goes in to sew the part.	İğnenin bölümü dikmek için girdiği yer.
+embroidery	Where the needle comes out after the part.	İğnenin bölümden sonra çıktığı yer.
+embroidery	Tatami fill	Tatami dolgu
+embroidery	Tatami	Tatami
+embroidery	Satin	Saten
+embroidery	Running stitch	Düz dikiş
+embroidery	Don't sew	Dikme
+embroidery	None	Yok
+embroidery	Centre run	Orta hat
+embroidery	Edge run	Kenar hattı
+embroidery	Edge run + zigzag	Kenar hattı + zikzak
+embroidery	Edge run + tatami	Kenar hattı + tatami
+embroidery	fabric	kumaş
+embroidery	machine	makine
+embroidery	document	belge
+embroidery	export	dışa aktarma
+embroidery	default	varsayılan
+embroidery	set	ayarlı
+embroidery	fabric {value}	kumaş {value}
+embroidery	machine {value}	makine {value}
+embroidery	document {value}	belge {value}
+embroidery	export {value}	dışa aktarma {value}
+embroidery	default {value}	varsayılan {value}
+embroidery	Not sewn: set to Don't sew.	Dikilmez: Dikme olarak ayarlı.
+embroidery	Not sewn: it has no paint.	Dikilmez: rengi yok.
+embroidery	Not sewn: it is hidden.	Dikilmez: gizli.
+embroidery	Not sewn: it is on a template or non-printing layer.	Dikilmez: şablon veya yazdırılmayan bir katmanda.
+embroidery	Not sewn.	Dikilmez.
+embroidery	Stitches from a file are sewn as the file has them.	Dosyadan gelen dikişler dosyadaki gibi dikilir.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Metin henüz dikilmez: dikmek için anahatlar oluşturun.
+embroidery	Images aren't sewn.	Resimler dikilmez.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	Ayarları sembolün nesneleri alır: ayarlamak için sembolü düzenleyin.
+embroidery	Guides aren't sewn.	Rehberler dikilmez.
+embroidery	Placed files aren't sewn.	Yerleştirilmiş dosyalar dikilmez.
+embroidery	Not sewn as it is: expand it to sew it.	Bu hâliyle dikilmez: dikmek için genişletin.
+embroidery	It takes no embroidery settings.	Nakış ayarı almaz.
+@plural	{count} object takes settings|{count} objects take settings	{count} nesne ayar alır
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Geri al: {setting}

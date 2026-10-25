@@ -5669,3 +5669,98 @@ axis	Y Axis	Y 轴
 	Rectangular Grid Tool Options	矩形网格工具选项
 	Polar Grid Tool Options	极坐标网格工具选项
 	Fill Line	填充线段
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	对象
+embroidery	Select an object to set how it is sewn.	选择一个对象以设置它的绣法。
+embroidery	Nothing selected	未选择任何内容
+embroidery	Guide	参考线
+embroidery	Stitches from a file	文件中的针迹
+embroidery	Path	路径
+embroidery	Compound path	复合路径
+embroidery	Group	编组
+embroidery	Layer	图层
+embroidery	Text object	文本对象
+embroidery	Image	图像
+embroidery	Symbol instance	符号实例
+embroidery	Placed file	置入的文件
+embroidery	Live object	实时对象
+embroidery	fill and stroke	填色和描边
+embroidery	fill, no stroke	填色，无描边
+embroidery	stroke, no fill	描边，无填色
+embroidery	no fill or stroke	无填色和描边
+embroidery	Fill	填色
+embroidery	Fill: none	填色：无
+embroidery	Stroke	描边
+embroidery	Stroke: none	描边：无
+embroidery	Stitch	针迹
+embroidery	Underlay	底衬
+embroidery	Compensation	补偿
+embroidery	auto	自动
+embroidery	{count} of {total} set	{total} 个中 {count} 个已设置
+embroidery	Set on the selected objects; without it: {value}	已在所选对象上设置；否则：{value}
+embroidery	The selected objects differ.	所选对象各不相同。
+embroidery	{section}: {setting}	{section}：{setting}
+embroidery	Auto	自动
+embroidery	Mixed	混合
+embroidery	Type	类型
+embroidery	Angle	角度
+embroidery	Row spacing	行距
+embroidery	Spacing	间距
+embroidery	Stitch length	针迹长度
+embroidery	Narrow parts as satin	窄处用缎纹
+embroidery	Pull compensation	拉缩补偿
+embroidery	Pull compensation (%)	拉缩补偿（%）
+embroidery	Push compensation	推挤补偿
+embroidery	Expand fills	扩展填充
+embroidery	Split satin stitches from	缎纹针迹分割长度
+embroidery	Setting	设置
+embroidery	How the part is sewn: Auto picks by its shape and width.	此部分的绣法：自动会按形状和宽度选择。
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	填色行的方向（逆时针）；随对象旋转。
+embroidery	The distance between rows, or between a satin's stitches.	行与行之间，或缎纹针迹之间的距离。
+embroidery	The longest stitch along a row or a running line.	一行或一条平针线上的最长针迹。
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	比此值更窄的填色部分以缎纹柱绣出；0 表示一律不用。
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	先在面层针迹下方绣的针迹，用来固定面料。
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	在线把面料拉紧的两端加宽每一行或每一柱。
+embroidery	Widens each column by a share of its width.	按宽度的一定比例加宽每一柱。
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	在线向外推挤的两端缩短开放的缎纹柱。
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	将填色区域向四周扩大，让分开绘制的形状相接。
+embroidery	Satin stitches longer than this are split in two.	长于此值的缎纹针迹会一分为二。
+embroidery	Where the needle goes in to sew the part.	绣此部分时针刺入的位置。
+embroidery	Where the needle comes out after the part.	绣完此部分后针穿出的位置。
+embroidery	Tatami fill	榻榻米填充
+embroidery	Tatami	榻榻米
+embroidery	Satin	缎纹
+embroidery	Running stitch	平针
+embroidery	Don't sew	不绣
+embroidery	None	无
+embroidery	Centre run	中线行针
+embroidery	Edge run	边缘行针
+embroidery	Edge run + zigzag	边缘行针 + 锯齿
+embroidery	Edge run + tatami	边缘行针 + 榻榻米
+embroidery	fabric	面料
+embroidery	machine	机器
+embroidery	document	文档
+embroidery	export	导出
+embroidery	default	默认
+embroidery	set	已设置
+embroidery	fabric {value}	面料 {value}
+embroidery	machine {value}	机器 {value}
+embroidery	document {value}	文档 {value}
+embroidery	export {value}	导出 {value}
+embroidery	default {value}	默认 {value}
+embroidery	Not sewn: set to Don't sew.	不绣：已设为“不绣”。
+embroidery	Not sewn: it has no paint.	不绣：没有颜色。
+embroidery	Not sewn: it is hidden.	不绣：已隐藏。
+embroidery	Not sewn: it is on a template or non-printing layer.	不绣：位于模板图层或不打印的图层上。
+embroidery	Not sewn.	不绣。
+embroidery	Stitches from a file are sewn as the file has them.	文件中的针迹按文件原样绣出。
+embroidery	Type isn't sewn yet: create outlines to sew it.	文本暂不刺绣：创建轮廓后即可刺绣。
+embroidery	Images aren't sewn.	图像不刺绣。
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	设置属于符号内的对象：请编辑符号来设置。
+embroidery	Guides aren't sewn.	参考线不刺绣。
+embroidery	Placed files aren't sewn.	置入的文件不刺绣。
+embroidery	Not sewn as it is: expand it to sew it.	此状态下不刺绣：扩展后即可刺绣。
+embroidery	It takes no embroidery settings.	不接受刺绣设置。
+@plural	{count} object takes settings|{count} objects take settings	{count} 个对象可设置
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	恢复{setting}

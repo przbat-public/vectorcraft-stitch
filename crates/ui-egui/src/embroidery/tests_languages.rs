@@ -1,8 +1,8 @@
-//! The embroidery interface drawn in every language: the Embroidery panel's tabs (a check's rule
-//! opened and shown, its chart), its states (planning, failed over the last stitches, checking,
-//! a check that failed) and the status bar's counters draw no English the language's catalogue
-//! doesn't give, and the panel's words stay inside it at 256 and 300 points; and what screen
-//! readers are told.
+//! The embroidery interface drawn in every language: the Embroidery panel's tabs (the Object tab
+//! with a value set on an object and with objects that differ, a check's rule opened and shown, its
+//! chart), its states (planning, failed over the last stitches, checking, a check that failed) and
+//! the status bar's counters draw no English the language's catalogue doesn't give, and the panel's
+//! words stay inside it at 256 and 300 points; and what screen readers are told.
 
 use egui::accesskit::{Node, Role};
 use egui::{Pos2, Rect, Shape, vec2};
@@ -127,6 +127,22 @@ fn states(ctx: &egui::Context, width: f32) -> Vec<(Vec<(String, Rect)>, String)>
     out
 }
 
+/// The Object tab: the first square, with an angle and a pull of its own, then all three squares,
+/// one of them setting its pull (their values differ) → each one's texts.
+fn object_tab(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> Vec<Vec<(String, Rect)>> {
+    let order = app.run("embroidery.sequence", json!({})).unwrap();
+    let ids: Vec<u64> =
+        order["blocks"].as_array().unwrap().iter().flat_map(|b| b["units"].as_array().unwrap()).filter_map(|u| u["id"].as_u64()).collect();
+    let first = ids.first().copied().unwrap();
+    app.run("embroidery.set", json!({"ids": [first], "part": "fill", "angle": 30, "pull": 0.35})).unwrap();
+    app.run("select.set", json!({ "ids": [first] })).unwrap();
+    let one = frames(app, ctx, Tab::Object, width).0;
+    app.run("select.set", json!({ "ids": ids })).unwrap();
+    let several = frames(app, ctx, Tab::Object, width).0;
+    app.run("select.set", json!({"ids": []})).unwrap();
+    vec![one, several]
+}
+
 /// The Check tab with its layers rule shown (selected, zoomed to, focused) and opened.
 fn check_tab(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> (Vec<(String, Rect)>, Vec<Node>) {
     frames(app, ctx, Tab::Check, width);
@@ -242,6 +258,7 @@ fn the_embroidery_interface_in_every_language() {
         let mut app = app_with_findings();
         let (mut texts, _) = frames(&mut app, &ctx, Tab::Order, 300.0);
         texts.extend(check_tab(&mut app, &ctx, 300.0).0);
+        texts.extend(object_tab(&mut app, &ctx, 300.0).into_iter().flatten());
         texts.extend(states(&ctx, 300.0).into_iter().flat_map(|(t, _)| t));
         texts.into_iter().map(|(t, _)| numbers_blanked(&t)).collect()
     };
@@ -255,9 +272,11 @@ fn the_embroidery_interface_in_every_language() {
             let mut app = app_with_findings();
             let order = frames(&mut app, &ctx, Tab::Order, width).0;
             let checked = check_tab(&mut app, &ctx, width).0;
+            let object = object_tab(&mut app, &ctx, width);
             let names = names(&app, lang);
             let counters = app.embroidery.counters.inspect()["shown"].as_str().unwrap_or_default().to_string();
-            let mut drawn = vec![(order, counters.clone()), (checked, counters)];
+            let mut drawn = vec![(order, counters.clone()), (checked, counters.clone())];
+            drawn.extend(object.into_iter().map(|texts| (texts, counters.clone())));
             drawn.extend(states(&ctx, width));
             crate::i18n::set_current(Lang::EN);
             let panel = Rect::from_min_max(Pos2::new(WINDOW - width, 0.0), Pos2::new(WINDOW, HEIGHT - 24.0));

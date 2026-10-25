@@ -5829,3 +5829,98 @@ axis	Y Axis	Axe Y
 	Rectangular Grid Tool Options	Options de l’outil Grille rectangulaire
 	Polar Grid Tool Options	Options de l’outil Grille à coordonnées polaires
 	Fill Line	Remplir le trait
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Objet
+embroidery	Select an object to set how it is sewn.	Sélectionnez un objet pour définir comment il est brodé.
+embroidery	Nothing selected	Aucune sélection
+embroidery	Guide	Repère
+embroidery	Stitches from a file	Points d’un fichier
+embroidery	Path	Tracé
+embroidery	Compound path	Tracé transparent
+embroidery	Group	Groupe
+embroidery	Layer	Calque
+embroidery	Text object	Objet texte
+embroidery	Image	Image
+embroidery	Symbol instance	Instance de symbole
+embroidery	Placed file	Fichier importé
+embroidery	Live object	Objet dynamique
+embroidery	fill and stroke	fond et contour
+embroidery	fill, no stroke	fond, sans contour
+embroidery	stroke, no fill	contour, sans fond
+embroidery	no fill or stroke	ni fond ni contour
+embroidery	Fill	Fond
+embroidery	Fill: none	Fond : aucun
+embroidery	Stroke	Contour
+embroidery	Stroke: none	Contour : aucun
+embroidery	Stitch	Point
+embroidery	Underlay	Sous-couche
+embroidery	Compensation	Compensation
+embroidery	auto	auto
+embroidery	{count} of {total} set	défini dans {count} sur {total}
+embroidery	Set on the selected objects; without it: {value}	Défini sur les objets sélectionnés ; sinon : {value}
+embroidery	The selected objects differ.	Les objets sélectionnés diffèrent.
+embroidery	{section}: {setting}	{section} : {setting}
+embroidery	Auto	Auto
+embroidery	Mixed	Mixte
+embroidery	Type	Type
+embroidery	Angle	Angle
+embroidery	Row spacing	Espacement des rangs
+embroidery	Spacing	Espacement
+embroidery	Stitch length	Longueur de point
+embroidery	Narrow parts as satin	Parties étroites en satin
+embroidery	Pull compensation	Compensation de traction
+embroidery	Pull compensation (%)	Compensation de traction (%)
+embroidery	Push compensation	Compensation de poussée
+embroidery	Expand fills	Agrandissement des remplissages
+embroidery	Split satin stitches from	Diviser les points satin à partir de
+embroidery	Setting	Réglage
+embroidery	How the part is sewn: Auto picks by its shape and width.	Comment la partie est brodée : Auto choisit selon sa forme et sa largeur.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	La direction des rangs du remplissage, dans le sens antihoraire ; elle tourne avec l’objet.
+embroidery	The distance between rows, or between a satin's stitches.	La distance entre les rangs, ou entre les points d’un satin.
+embroidery	The longest stitch along a row or a running line.	Le point le plus long d’un rang ou d’une ligne en point droit.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Les parties d’un remplissage plus étroites que cela sont brodées en colonnes satin ; 0 n’en brode aucune.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	Les points brodés d’abord, sous les points du dessus, pour maintenir le tissu.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Élargit chaque rang ou colonne à ses extrémités, là où le fil tire le tissu.
+embroidery	Widens each column by a share of its width.	Élargit chaque colonne d’une part de sa largeur.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Raccourcit une colonne satin ouverte à ses extrémités, là où le fil pousse vers l’extérieur.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Agrandit la zone remplie tout autour, pour que des formes dessinées séparément se rejoignent.
+embroidery	Satin stitches longer than this are split in two.	Les points satin plus longs que cela sont divisés en deux.
+embroidery	Where the needle goes in to sew the part.	Où l’aiguille entre pour broder la partie.
+embroidery	Where the needle comes out after the part.	Où l’aiguille ressort après la partie.
+embroidery	Tatami fill	Remplissage tatami
+embroidery	Tatami	Tatami
+embroidery	Satin	Satin
+embroidery	Running stitch	Point droit
+embroidery	Don't sew	Ne pas broder
+embroidery	None	Aucun
+embroidery	Centre run	Passage central
+embroidery	Edge run	Passage en bordure
+embroidery	Edge run + zigzag	Passage en bordure + zigzag
+embroidery	Edge run + tatami	Passage en bordure + tatami
+embroidery	fabric	tissu
+embroidery	machine	machine
+embroidery	document	document
+embroidery	export	export
+embroidery	default	par défaut
+embroidery	set	défini
+embroidery	fabric {value}	tissu {value}
+embroidery	machine {value}	machine {value}
+embroidery	document {value}	document {value}
+embroidery	export {value}	export {value}
+embroidery	default {value}	par défaut {value}
+embroidery	Not sewn: set to Don't sew.	Non brodé : réglé sur Ne pas broder.
+embroidery	Not sewn: it has no paint.	Non brodé : sans couleur.
+embroidery	Not sewn: it is hidden.	Non brodé : il est masqué.
+embroidery	Not sewn: it is on a template or non-printing layer.	Non brodé : il est sur un calque modèle ou non imprimable.
+embroidery	Not sewn.	Non brodé.
+embroidery	Stitches from a file are sewn as the file has them.	Les points d’un fichier sont brodés tels que le fichier les donne.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Le texte n’est pas encore brodé : vectorisez-le pour le broder.
+embroidery	Images aren't sewn.	Les images ne sont pas brodées.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	Les réglages se font sur les objets du symbole : modifiez le symbole pour les définir.
+embroidery	Guides aren't sewn.	Les repères ne sont pas brodés.
+embroidery	Placed files aren't sewn.	Les fichiers importés ne sont pas brodés.
+embroidery	Not sewn as it is: expand it to sew it.	Non brodé tel quel : décomposez-le pour le broder.
+embroidery	It takes no embroidery settings.	Il ne prend aucun réglage de broderie.
+@plural	{count} object takes settings|{count} objects take settings	{count} objet prend des réglages|{count} objets prennent des réglages
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Rétablir : {setting}

@@ -5782,3 +5782,98 @@ axis	Y Axis	Άξονας Y
 	Rectangular Grid Tool Options	Επιλογές εργαλείου ορθογώνιου πλέγματος
 	Polar Grid Tool Options	Επιλογές εργαλείου πολικού πλέγματος
 	Fill Line	Γέμισμα γραμμής
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Αντικείμενο
+embroidery	Select an object to set how it is sewn.	Επιλέξτε ένα αντικείμενο για να ορίσετε πώς θα κεντηθεί.
+embroidery	Nothing selected	Δεν έχει επιλεγεί τίποτα
+embroidery	Guide	Οδηγός
+embroidery	Stitches from a file	Βελονιές από αρχείο
+embroidery	Path	Διαδρομή
+embroidery	Compound path	Σύνθετη διαδρομή
+embroidery	Group	Ομάδα
+embroidery	Layer	Επίπεδο
+embroidery	Text object	Αντικείμενο κειμένου
+embroidery	Image	Εικόνα
+embroidery	Symbol instance	Στιγμιότυπο συμβόλου
+embroidery	Placed file	Τοποθετημένο αρχείο
+embroidery	Live object	Δυναμικό αντικείμενο
+embroidery	fill and stroke	γέμισμα και πινελιά
+embroidery	fill, no stroke	γέμισμα, χωρίς πινελιά
+embroidery	stroke, no fill	πινελιά, χωρίς γέμισμα
+embroidery	no fill or stroke	χωρίς γέμισμα ή πινελιά
+embroidery	Fill	Γέμισμα
+embroidery	Fill: none	Γέμισμα: κανένα
+embroidery	Stroke	Πινελιά
+embroidery	Stroke: none	Πινελιά: καμία
+embroidery	Stitch	Βελονιά
+embroidery	Underlay	Υπόστρωμα
+embroidery	Compensation	Αντιστάθμιση
+embroidery	auto	αυτόματο
+embroidery	{count} of {total} set	ορίστηκε σε {count} από {total}
+embroidery	Set on the selected objects; without it: {value}	Ορίστηκε στα επιλεγμένα αντικείμενα· αλλιώς: {value}
+embroidery	The selected objects differ.	Τα επιλεγμένα αντικείμενα διαφέρουν.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Αυτόματα
+embroidery	Mixed	Μικτά
+embroidery	Type	Είδος
+embroidery	Angle	Γωνία
+embroidery	Row spacing	Απόσταση σειρών
+embroidery	Spacing	Απόσταση
+embroidery	Stitch length	Μήκος βελονιάς
+embroidery	Narrow parts as satin	Στενά τμήματα ως σατέν
+embroidery	Pull compensation	Αντιστάθμιση έλξης
+embroidery	Pull compensation (%)	Αντιστάθμιση έλξης (%)
+embroidery	Push compensation	Αντιστάθμιση ώθησης
+embroidery	Expand fills	Επέκταση γεμισμάτων
+embroidery	Split satin stitches from	Διαίρεση βελονιών σατέν από
+embroidery	Setting	Ρύθμιση
+embroidery	How the part is sewn: Auto picks by its shape and width.	Πώς κεντιέται το τμήμα: το Αυτόματα επιλέγει με βάση το σχήμα και το πλάτος του.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	Η κατεύθυνση των σειρών του γεμίσματος, αριστερόστροφα· περιστρέφεται μαζί με το αντικείμενο.
+embroidery	The distance between rows, or between a satin's stitches.	Η απόσταση μεταξύ των σειρών ή μεταξύ των βελονιών ενός σατέν.
+embroidery	The longest stitch along a row or a running line.	Η μεγαλύτερη βελονιά σε μια σειρά ή σε μια ευθεία βελονιά.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Τα τμήματα ενός γεμίσματος στενότερα από αυτό κεντιούνται ως στήλες σατέν· το 0 δεν κεντά κανένα.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	Οι βελονιές που κεντιούνται πρώτες, κάτω από τις επάνω βελονιές, για να συγκρατούν το ύφασμα.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Πλαταίνει κάθε σειρά ή στήλη στα άκρα της, όπου η κλωστή τραβά το ύφασμα προς τα μέσα.
+embroidery	Widens each column by a share of its width.	Πλαταίνει κάθε στήλη κατά ένα μέρος του πλάτους της.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Κονταίνει μια ανοιχτή στήλη σατέν στα άκρα της, όπου η κλωστή σπρώχνει προς τα έξω.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Μεγαλώνει τη γεμάτη περιοχή γύρω-γύρω, ώστε να ενώνονται σχήματα που σχεδιάστηκαν χωριστά.
+embroidery	Satin stitches longer than this are split in two.	Οι βελονιές σατέν μεγαλύτερες από αυτό χωρίζονται στα δύο.
+embroidery	Where the needle goes in to sew the part.	Πού μπαίνει η βελόνα για να κεντήσει το τμήμα.
+embroidery	Where the needle comes out after the part.	Πού βγαίνει η βελόνα μετά το τμήμα.
+embroidery	Tatami fill	Γέμισμα τατάμι
+embroidery	Tatami	Τατάμι
+embroidery	Satin	Σατέν
+embroidery	Running stitch	Ευθεία βελονιά
+embroidery	Don't sew	Να μην κεντηθεί
+embroidery	None	Κανένα
+embroidery	Centre run	Κεντρικό πέρασμα
+embroidery	Edge run	Πέρασμα στην άκρη
+embroidery	Edge run + zigzag	Πέρασμα στην άκρη + ζιγκ ζαγκ
+embroidery	Edge run + tatami	Πέρασμα στην άκρη + τατάμι
+embroidery	fabric	ύφασμα
+embroidery	machine	μηχανή
+embroidery	document	έγγραφο
+embroidery	export	εξαγωγή
+embroidery	default	προεπιλογή
+embroidery	set	ορίστηκε
+embroidery	fabric {value}	ύφασμα {value}
+embroidery	machine {value}	μηχανή {value}
+embroidery	document {value}	έγγραφο {value}
+embroidery	export {value}	εξαγωγή {value}
+embroidery	default {value}	προεπιλογή {value}
+embroidery	Not sewn: set to Don't sew.	Δεν κεντιέται: έχει οριστεί «Να μην κεντηθεί».
+embroidery	Not sewn: it has no paint.	Δεν κεντιέται: δεν έχει χρώμα.
+embroidery	Not sewn: it is hidden.	Δεν κεντιέται: είναι κρυφό.
+embroidery	Not sewn: it is on a template or non-printing layer.	Δεν κεντιέται: βρίσκεται σε επίπεδο προτύπου ή μη εκτυπώσιμο επίπεδο.
+embroidery	Not sewn.	Δεν κεντιέται.
+embroidery	Stitches from a file are sewn as the file has them.	Οι βελονιές από αρχείο κεντιούνται όπως είναι στο αρχείο.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Το κείμενο δεν κεντιέται ακόμη: δημιουργήστε περιγράμματα για να κεντηθεί.
+embroidery	Images aren't sewn.	Οι εικόνες δεν κεντιούνται.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	Τα αντικείμενα ενός συμβόλου παίρνουν τις ρυθμίσεις: επεξεργαστείτε το σύμβολο για να τις ορίσετε.
+embroidery	Guides aren't sewn.	Οι οδηγοί δεν κεντιούνται.
+embroidery	Placed files aren't sewn.	Τα τοποθετημένα αρχεία δεν κεντιούνται.
+embroidery	Not sewn as it is: expand it to sew it.	Δεν κεντιέται όπως είναι: επεκτείνετέ το για να κεντηθεί.
+embroidery	It takes no embroidery settings.	Δεν δέχεται ρυθμίσεις κεντήματος.
+@plural	{count} object takes settings|{count} objects take settings	{count} αντικείμενο δέχεται ρυθμίσεις|{count} αντικείμενα δέχονται ρυθμίσεις
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Επαναφορά: {setting}

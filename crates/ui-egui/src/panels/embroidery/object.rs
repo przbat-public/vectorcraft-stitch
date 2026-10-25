@@ -1,0 +1,708 @@
+//! The Embroidery panel's Object tab: how the selected objects are sewn, and their embroidery
+//! settings, part by part (all their fills, all their strokes).
+//!
+//! - **It never needs a plan.** Its settings come from `embroidery.info` read without planning
+//!   (`Session::embroidery_info`), once per document snapshot and selection, so the fields change
+//!   at once. Only the stitch count in its header comes from a plan, the one the stitch preview
+//!   shows (counted, never planned, on the interface thread): "…" before the first, dimmed while a
+//!   newer one is made, the last count kept when the design can't be planned. So a part set not to
+//!   be sewn, or a design too large to plan, can always be set back.
+//! - **States**: nothing selected; objects that take no settings (type, an image, a symbol
+//!   instance, stitches from a file…, each saying why); one object or several, their values merged
+//!   (those they share; else blank, and how many set it).
+//! - **Rows**: the settings a person sets on an object most (the product plan's subset: the stitch,
+//!   its angle, spacing and length, narrow parts as satin; the underlay; the pull compensation and
+//!   the expansion), each where the stitch its part is sewn in uses it; another setting an object
+//!   holds (set by a command) shows too, so that nothing set is hidden.
+//! - **Edits are commands**, one undo step each (a drag on a label one for the whole drag, the
+//!   app's scrub): a value typed or chosen is `embroidery.set` (a choice equal to what the objects
+//!   would inherit unsets theirs), ↺ `embroidery.reset`. They go to the objects the fields were
+//!   drawn for.
+
+use std::sync::{Arc, Weak};
+
+use egui::{Align2, Color32, CornerRadius, FontId, Rect, Sense, Ui, vec2};
+use serde::Serialize;
+use serde_json::{Value, json};
+use vectorcraft_doc::{Document, NodeId, NodeKind};
+use vectorcraft_engine::cmd::embroidery::info::{KeyInfo, ObjectSettings, PartInfo, SelectionSewing, selection_sewing};
+use vectorcraft_engine::cmd::embroidery::{SettingField, distinct_underlays, part_field};
+
+use super::SHOW_BUSY_AFTER_SECS;
+use crate::VectorcraftApp;
+use crate::embroidery::rows::{self, Columns, Edit, Field, Row};
+use crate::embroidery::stitch_preview::Freshness;
+use crate::embroidery::{fields, numbers, text, vocabulary};
+use crate::i18n::Lang;
+use crate::theme::Tokens;
+
+/// The words of the header's title and the tab's states, points: the panel's sizes.
+const TITLE_TEXT: f32 = 13.0;
+const SMALL_TEXT: f32 = 11.0;
+/// The stitch count's pill: its words, its padding and corners, points.
+const PILL_TEXT: f32 = 11.0;
+const PILL_PAD: egui::Vec2 = vec2(7.0, 2.0);
+const PILL_RADIUS: u8 = 9;
+/// The part switch's height and the size of its words, points: as the tab strip's.
+const SWITCH_HEIGHT: f32 = 22.0;
+const SWITCH_TEXT: f32 = 12.0;
+/// Room between the tab's blocks, points.
+const GAP: f32 = 8.0;
+/// Degrees in a half turn: a fill's rows are lines, shown at an angle from 0 to 180°.
+const HALF_TURN: f64 = 180.0;
+/// Decimals of a number written in words (a hint, a description): the fields' millimetres.
+const WORDS_DECIMALS: usize = 2;
+/// The stitch count before the first plan: an ellipsis, the same in every language.
+const PENDING: &str = "…";
+
+/// The part of the selected objects the tab shows. Its id is stable (`ui.embroideryPanel`, the
+/// saved interface state).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Part {
+    #[default]
+    Fill,
+    Stroke,
+}
+
+impl Part {
+    pub const ALL: [Part; 2] = [Part::Fill, Part::Stroke];
+
+    pub fn id(self) -> &'static str {
+        match self {
+            Part::Fill => "fill",
+            Part::Stroke => "stroke",
+        }
+    }
+
+    pub fn from_id(id: &str) -> Option<Part> {
+        Part::ALL.into_iter().find(|p| p.id() == id)
+    }
+
+    /// The selection's part of this kind, when one of the objects has it.
+    fn of(self, info: &ObjectSettings) -> Option<&PartInfo> {
+        match self {
+            Part::Fill => info.fill.as_ref(),
+            Part::Stroke => info.stroke.as_ref(),
+        }
+    }
+
+    /// Whether some of the objects paint this part: a path keeps a fill and a stroke in its
+    /// appearance even when one paints nothing ("Stroke: none"), and settings kept for it take
+    /// effect once it paints.
+    fn painted(self, info: &ObjectSettings) -> bool {
+        self.of(info).is_some_and(|p| p.reason.as_deref() != Some("unpainted"))
+    }
+
+    /// The part shown: `chosen` when the objects paint it, else the other when they paint that,
+    /// else whichever they have.
+    fn shown(chosen: Part, info: &ObjectSettings) -> Option<Part> {
+        let other = if chosen == Part::Fill { Part::Stroke } else { Part::Fill };
+        let order = [chosen, other];
+        order.into_iter().find(|p| p.painted(info)).or_else(|| order.into_iter().find(|p| p.of(info).is_some()))
+    }
+}
+
+/// The tab's state between frames.
+#[derive(Default)]
+pub(crate) struct ObjectState {
+    /// The selection's settings, read for one document snapshot and selection.
+    memo: Option<Memo>,
+    /// The selection's stitches in a plan the preview showed.
+    sewn: Option<Sewn>,
+}
+
+/// The selection's settings as read, shared from frame to frame, or why they can't be read.
+type Read = Result<Arc<ObjectSettings>, String>;
+
+/// The settings of objects `ids` of document `uid`'s snapshot `snapshot` (held weakly: a memo never
+/// keeps a document alive, and its memory can't be reused for another snapshot while it is held).
+struct Memo {
+    uid: u64,
+    snapshot: Weak<Document>,
+    ids: Vec<NodeId>,
+    info: Read,
+}
+
+/// What a plan of document `uid` (its `generation`) sews of objects `ids`.
+struct Sewn {
+    uid: u64,
+    generation: u64,
+    ids: Vec<NodeId>,
+    sewing: SelectionSewing,
+}
+
+/// The settings of the active document's selection: the memo's, or read now.
+fn settings_of(app: &mut VectorcraftApp) -> Option<(Vec<NodeId>, Read)> {
+    let st = app.session.active()?;
+    let (uid, snapshot, ids) = (st.uid, Arc::downgrade(&st.doc), st.selection.objects.clone());
+    let memo = &app.embroidery.object.memo;
+    if let Some(m) = memo.as_ref().filter(|m| m.uid == uid && m.ids == ids && Weak::ptr_eq(&m.snapshot, &snapshot)) {
+        return Some((ids, m.info.clone()));
+    }
+    let info = app.session.embroidery_info(&ids, false, &Default::default()).map(Arc::new).map_err(|e| e.to_string());
+    app.embroidery.object.memo = Some(Memo { uid, snapshot, ids: ids.clone(), info: info.clone() });
+    Some((ids, info))
+}
+
+/// How the stitch count stands: the count of the plan shown (`None` before any), whether that plan
+/// is of the document as it is, and whether the preview has said for a while that it plans.
+struct Count {
+    stitches: Option<usize>,
+    fresh: bool,
+    updating: bool,
+    failed: Option<String>,
+}
+
+/// The selection's stitches in the plan the preview shows, counted once per plan and selection.
+fn count(app: &mut VectorcraftApp, uid: u64, ids: &[NodeId], now: f64) -> Count {
+    let preview = &app.embroidery.preview;
+    let freshness = preview.freshness(uid, now);
+    let updating = preview.out_of_date_for(uid, now).is_some_and(|s| s >= SHOW_BUSY_AFTER_SECS);
+    let fresh = matches!(freshness, Freshness::Fresh);
+    let failed = match freshness {
+        Freshness::Failed { error } => Some(error),
+        _ => None,
+    };
+    let Some(shown) = preview.shown(uid) else { return Count { stitches: None, fresh, updating, failed } };
+    let generation = shown.planned.generation;
+    let state = &mut app.embroidery.object;
+    if !state.sewn.as_ref().is_some_and(|s| s.uid == uid && s.generation == generation && s.ids == ids) {
+        let sewing = selection_sewing(&shown.document, &shown.planned.plan, ids);
+        state.sewn = Some(Sewn { uid, generation, ids: ids.to_vec(), sewing });
+    }
+    Count { stitches: state.sewn.as_ref().map(|s| s.sewing.stitches()), fresh, updating, failed }
+}
+
+/// A command the tab runs after it is drawn.
+type Command = (&'static str, Value);
+
+/// The Object tab.
+pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
+    let Some(uid) = app.session.active().map(|st| st.uid) else { return };
+    let Some((ids, info)) = settings_of(app) else { return };
+    let now = ui.input(|i| i.time);
+    let count = count(app, uid, &ids, now);
+    let lang = crate::i18n::current();
+    let mut commands: Vec<Command> = Vec::new();
+    header(app, ui, &ids, info.as_ref().ok().map(|i| i.as_ref()), &count, lang);
+    ui.add_space(GAP);
+    let info = match info {
+        Ok(info) => info,
+        Err(e) => {
+            ui.label(egui::RichText::new(crate::i18n::msg(&e)).size(SMALL_TEXT).color(Tokens::get(ui.ctx()).text));
+            return;
+        }
+    };
+    if ids.is_empty() {
+        state_words(ui, crate::et!("Select an object to set how it is sewn."));
+    } else if info.object_count == 0 {
+        takes_none(ui, &info);
+    } else {
+        let chosen = app.ui.embroidery_panel.part;
+        let shown = Part::shown(chosen, &info);
+        if let Some(part) = part_switch(ui, &info, shown) {
+            app.ui.embroidery_panel.part = part;
+        }
+        if let Some(part) = shown.and_then(|p| p.of(&info).map(|i| (p, i))) {
+            // The panel's width, measured outside the scrolled rows: what they are fitted to, so that
+            // nothing wider in them can widen the next frame's.
+            let width = ui.available_width();
+            egui::ScrollArea::vertical().id_salt("embroidery-object-rows").auto_shrink([false, true]).show(ui, |ui| {
+                ui.set_max_width(width);
+                part_rows(ui, part.0, part.1, &ids, width, lang, &mut commands);
+            });
+        }
+    }
+    for (cmd, params) in commands {
+        if let Err(e) = app.run(cmd, params) {
+            app.status(e);
+        }
+    }
+}
+
+/// The header: the selection's name and kind, and its stitches in the plan shown.
+fn header(app: &VectorcraftApp, ui: &mut Ui, ids: &[NodeId], info: Option<&ObjectSettings>, count: &Count, lang: Lang) {
+    let t = Tokens::get(ui.ctx());
+    let doc = app.session.active().map(|st| st.doc.clone());
+    let one = ids.first().filter(|_| ids.len() == 1).and_then(|id| doc.as_ref()?.node(*id).cloned());
+    let title = match (&one, ids.len()) {
+        (_, 0) => crate::et!("Nothing selected").to_string(),
+        (Some(n), _) => crate::panels::layers::shown_name(app, n, lang),
+        (None, n) => crate::etn!(n as u64, "{count} object", "{count} objects"),
+    };
+    let subtitle = match &one {
+        Some(n) => Some(kind_words(n, info)),
+        None => info
+            .filter(|i| i.skipped_count > 0 && i.object_count > 0)
+            .map(|i| crate::etn!(i.skipped_count as u64, "{count} selected object isn't sewn", "{count} selected objects aren't sewn")),
+    };
+    ui.horizontal(|ui| {
+        let pill = (!ids.is_empty()).then(|| pill_words(count));
+        let room = pill.as_ref().map_or(0.0, |w| text_width(ui, w, PILL_TEXT) + 2.0 * PILL_PAD.x + GAP);
+        ui.scope(|ui| {
+            ui.set_max_width((ui.available_width() - room).max(0.0));
+            ui.add(egui::Label::new(egui::RichText::new(&title).size(TITLE_TEXT).strong().color(t.text_strong)).truncate());
+        });
+        if let Some(words) = pill {
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                pill_shape(ui, &words, !count.fresh);
+            });
+        }
+    });
+    if let Some(words) = subtitle {
+        ui.add(egui::Label::new(egui::RichText::new(words).size(SMALL_TEXT).color(t.text_dim)).wrap());
+    }
+    if count.updating && !count.fresh {
+        ui.label(egui::RichText::new(crate::et!("Updating…")).size(SMALL_TEXT).color(t.text_dim))
+            .on_hover_text(crate::et!("These are the stitches before the last change; the new ones are being planned."));
+    }
+    if let Some(error) = &count.failed {
+        super::failed(ui, error);
+    }
+}
+
+/// The pill's words: the stitches, or [`PENDING`] before the first plan.
+fn pill_words(count: &Count) -> String {
+    match count.stitches {
+        Some(n) => crate::etn!(n as u64, "{count} stitch", "{count} stitches"),
+        None => PENDING.to_string(),
+    }
+}
+
+/// The stitch count's pill, dimmed while the plan it counts is of an earlier state.
+fn pill_shape(ui: &mut Ui, words: &str, stale: bool) {
+    let t = Tokens::get(ui.ctx());
+    let colour = if stale { t.text_dim } else { t.text };
+    let colour = crate::embroidery::marks::readable_text(colour, &[t.divider], t.dark);
+    let galley = ui.painter().layout_no_wrap(words.to_string(), FontId::proportional(PILL_TEXT), colour);
+    let (rect, resp) = ui.allocate_exact_size(galley.size() + 2.0 * PILL_PAD, Sense::hover());
+    ui.painter().rect_filled(rect, CornerRadius::same(PILL_RADIUS), t.divider);
+    ui.painter().galley(rect.min + PILL_PAD, galley, colour);
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, true, words));
+}
+
+/// What a selected object is, in words: its kind, and for a path its parts ("Path · fill, no stroke").
+fn kind_words(n: &vectorcraft_doc::Node, info: Option<&ObjectSettings>) -> String {
+    let literal = n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some());
+    let kind = match &n.kind {
+        NodeKind::Path { guide: true, .. } => crate::et!("Guide"),
+        NodeKind::Path { .. } if literal => crate::et!("Stitches from a file"),
+        NodeKind::Path { .. } => crate::et!("Path"),
+        NodeKind::Compound { .. } => crate::et!("Compound path"),
+        NodeKind::Group { .. } => crate::et!("Group"),
+        NodeKind::Layer { .. } => crate::et!("Layer"),
+        NodeKind::Text(_) => crate::et!("Text object"),
+        NodeKind::Image(_) => crate::et!("Image"),
+        NodeKind::SymbolInstance { .. } => crate::et!("Symbol instance"),
+        NodeKind::PlacedDocument(_) => crate::et!("Placed file"),
+        NodeKind::Blend { .. } | NodeKind::Envelope { .. } | NodeKind::Mesh(_) | NodeKind::Repeat(_) | NodeKind::Intertwine { .. } => {
+            crate::et!("Live object")
+        }
+    };
+    let parts = match (&n.kind, info) {
+        (NodeKind::Path { guide: false, .. } | NodeKind::Compound { .. }, Some(i)) if !literal => {
+            Some(match (Part::Fill.painted(i), Part::Stroke.painted(i)) {
+                (true, true) => crate::et!("fill and stroke"),
+                (true, false) => crate::et!("fill, no stroke"),
+                (false, true) => crate::et!("stroke, no fill"),
+                (false, false) => crate::et!("no fill or stroke"),
+            })
+        }
+        (NodeKind::Group { .. } | NodeKind::Layer { .. }, Some(i)) => {
+            return format!("{kind} · {}", crate::etn!(i.object_count as u64, "{count} object takes settings", "{count} objects take settings"));
+        }
+        _ => None,
+    };
+    match parts {
+        Some(p) => format!("{kind} · {p}"),
+        None => kind.to_string(),
+    }
+}
+
+/// A state's words, under the header.
+fn state_words(ui: &mut Ui, words: &str) {
+    let t = Tokens::get(ui.ctx());
+    ui.add(egui::Label::new(egui::RichText::new(words).size(SMALL_TEXT).color(t.text)).wrap());
+}
+
+/// Why the selected objects take no settings: each reason once.
+fn takes_none(ui: &mut Ui, info: &ObjectSettings) {
+    let mut said: Vec<&str> = Vec::new();
+    for s in &info.skipped {
+        let words = vocabulary::takes_none(&s.reason);
+        if !said.contains(&words) {
+            said.push(words);
+            state_words(ui, words);
+        }
+    }
+}
+
+/// The part switch: the selection's fill and stroke, a part none of them paints dimmed → the part
+/// chosen this frame. Each segment as wide as its words, the room shared out, as the tab strip's
+/// (`super::strip_widths`); words their segment can't hold are elided, whole in their tooltip and for
+/// screen readers.
+fn part_switch(ui: &mut Ui, info: &ObjectSettings, shown: Option<Part>) -> Option<Part> {
+    let t = Tokens::get(ui.ctx());
+    let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), SWITCH_HEIGHT), Sense::hover());
+    let radius = CornerRadius::same(t.radius);
+    ui.painter().rect(rect, radius, t.input, egui::Stroke::new(1.0, t.input_border), egui::StrokeKind::Inside);
+    let font = FontId::proportional(SWITCH_TEXT);
+    let labels = Part::ALL.map(|part| {
+        let has = part.painted(info) || shown == Some(part);
+        let label = match (part, has) {
+            (Part::Fill, true) => crate::et!("Fill"),
+            (Part::Fill, false) => crate::et!("Fill: none"),
+            (Part::Stroke, true) => crate::et!("Stroke"),
+            (Part::Stroke, false) => crate::et!("Stroke: none"),
+        };
+        (part, has, label)
+    });
+    let natural: Vec<f32> = labels.iter().map(|(.., l)| text_width(ui, l, SWITCH_TEXT) + 2.0 * super::TAB_PAD).collect();
+    let selected = Part::ALL.iter().position(|p| shown == Some(*p)).unwrap_or(0);
+    let mut chosen = None;
+    let mut left = rect.left();
+    for (i, width) in super::strip_widths(&natural, selected, rect.width()) {
+        let Some(&(part, has, label)) = labels.get(i) else { continue };
+        let segment = Rect::from_min_size(egui::pos2(left, rect.top()), vec2(width, SWITCH_HEIGHT));
+        left += width;
+        let selected = shown == Some(part);
+        let id = ui.id().with(("embroidery-part", part.id()));
+        let resp = ui.add_enabled_ui(has, |ui| {
+            craft_ui::tabs::Tab::new(id, label, selected).show_at(ui, segment, |ui, resp| {
+                let fill = if selected {
+                    t.button
+                } else if resp.hovered() {
+                    t.hover
+                } else {
+                    Color32::TRANSPARENT
+                };
+                ui.painter().rect_filled(segment.shrink(super::SEGMENT_INSET), radius, fill);
+                let colour = match (selected, has) {
+                    (true, _) => t.text_strong,
+                    (false, true) => t.text_dim,
+                    (false, false) => t.text_disabled,
+                };
+                let room = (segment.width() - 2.0 * super::SEGMENT_INSET).max(1.0);
+                let galley = egui::WidgetText::from(egui::RichText::new(label).font(font.clone()).color(colour)).into_galley(
+                    ui,
+                    Some(egui::TextWrapMode::Truncate),
+                    room,
+                    egui::TextStyle::Body,
+                );
+                ui.painter().galley(Align2::CENTER_CENTER.align_size_within_rect(galley.size(), segment).min, galley, colour);
+            })
+        });
+        let elided = natural.get(i).is_some_and(|n| *n > width + 0.5);
+        let resp = if elided { resp.inner.on_hover_text(label) } else { resp.inner };
+        if resp.clicked() && has {
+            chosen = Some(part);
+        }
+    }
+    ui.add_space(GAP);
+    chosen
+}
+
+/// The settings the tab offers, by section: the product plan's subset (what a person sets on an
+/// object most), in the order the mockups draw them. Any other part setting one of the objects sets
+/// shows after its section's ([`MORE`]).
+const SECTIONS: [(Section, &[&str]); 3] = [
+    (Section::Stitch, &["stitch", "angle", "spacing", "length", "narrowAsSatin"]),
+    (Section::Underlay, &["underlay"]),
+    (Section::Compensation, &["pull", "expand"]),
+];
+
+/// The part settings outside the tab's subset, and the section each shows in when an object sets it.
+const MORE: [(&str, Section); 3] = [("splitLength", Section::Stitch), ("pullPercent", Section::Compensation), ("push", Section::Compensation)];
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Section {
+    Stitch,
+    Underlay,
+    Compensation,
+}
+
+impl Section {
+    fn heading(self) -> &'static str {
+        match self {
+            Section::Stitch => crate::et!("Stitch"),
+            Section::Underlay => crate::et!("Underlay"),
+            Section::Compensation => crate::et!("Compensation"),
+        }
+    }
+}
+
+/// One row as the tab draws it, its words owned for the frame.
+struct Owned {
+    key: &'static str,
+    label: &'static str,
+    name: String,
+    tip: &'static str,
+    field: OwnedField,
+    own: bool,
+    restore: Option<String>,
+    aside: Option<String>,
+    hint: Option<String>,
+    description: String,
+}
+
+enum OwnedField {
+    Number { value: Option<f64>, unit: &'static str, decimals: usize, bounds: (f64, f64), hint: Option<String> },
+    Choice { shown: String, options: Vec<(String, String)>, current: Option<String> },
+}
+
+impl Owned {
+    /// The row to draw, borrowing its words; numbers as `lang` writes them.
+    fn row(&self, lang: Lang) -> Row<'_> {
+        let field = match &self.field {
+            OwnedField::Number { value, unit, decimals, bounds, hint } => {
+                Field::Number { value: *value, format: fields::format(lang, unit, *decimals), bounds: bounds.0..=bounds.1, hint: hint.as_deref() }
+            }
+            OwnedField::Choice { shown, options, current } => Field::Choice { shown, options, current: current.as_deref() },
+        };
+        Row {
+            key: self.key,
+            label: self.label,
+            name: &self.name,
+            tip: self.tip,
+            field,
+            own: self.own,
+            restore: self.restore.as_deref(),
+            aside: self.aside.clone(),
+            hint: self.hint.clone(),
+            description: self.description.clone(),
+        }
+    }
+}
+
+/// The rows of part `part` (`p`) of the selection, fitted to `width` points, by section.
+fn part_rows(ui: &mut Ui, part: Part, p: &PartInfo, ids: &[NodeId], width: f32, lang: Lang, commands: &mut Vec<Command>) {
+    if p.sewn.as_deref() == Some("none") {
+        let t = Tokens::get(ui.ctx());
+        let words = vocabulary::not_sewn(p.reason.as_deref());
+        ui.add(egui::Label::new(egui::RichText::new(words).size(SMALL_TEXT).color(t.text_dim)).wrap());
+    }
+    let sections: Vec<(Section, Vec<Owned>)> = shown_keys(p)
+        .into_iter()
+        .map(|(section, keys)| (section, keys.into_iter().filter_map(|k| key_row(p, part, k, lang)).collect::<Vec<_>>()))
+        .filter(|(_, rows)| !rows.is_empty())
+        .collect();
+    let all: Vec<Row<'_>> = sections.iter().flat_map(|(_, r)| r.iter()).map(|o| o.row(lang)).collect();
+    let cols = Columns::fit(ui, width, &all);
+    for (section, owned) in &sections {
+        rows::heading(ui, section.heading());
+        for o in owned {
+            if let Some(edit) = rows::show(ui, &cols, &o.row(lang)) {
+                commands.extend(edit_command(p, part, o.key, edit, ids));
+            }
+        }
+    }
+}
+
+/// The keys of part `p` that have rows, by section: the tab's subset, then any other key of the
+/// section one of the objects sets ([`MORE`]).
+fn shown_keys(p: &PartInfo) -> Vec<(Section, Vec<&'static str>)> {
+    SECTIONS
+        .into_iter()
+        .map(|(section, keys)| {
+            let more = MORE.iter().filter(|(_, s)| *s == section).map(|(k, _)| *k);
+            (section, keys.iter().copied().filter(|k| shows(p, k, true)).chain(more.filter(|k| shows(p, k, false))).collect())
+        })
+        .collect()
+}
+
+/// Whether part `p`'s key `key` has a row: a key of the tab's subset where the stitch its objects
+/// are sewn in uses it (any where they differ), another where one of the objects sets it.
+fn shows(p: &PartInfo, key: &str, offered: bool) -> bool {
+    let Some(k) = p.settings.get(key) else { return false };
+    if key == "stitch" {
+        return true;
+    }
+    (offered && k.applies != Some(false)) || k.set_count > 0
+}
+
+/// The row of key `key` of part `p` (`part`).
+fn key_row(p: &PartInfo, part: Part, key: &'static str, lang: Lang) -> Option<Owned> {
+    let k = p.settings.get(key)?;
+    let label = vocabulary::label(key, p.sewn.as_deref());
+    let every = k.set_count >= p.object_count && k.set_count > 0 && !k.mixed;
+    let some = k.set_count > 0 && !every;
+    let field = match part_field(key)? {
+        SettingField::Number { min, max, unit, decimals } => {
+            let (value, hint) = number_of(&k.value, key, unit, decimals, lang);
+            OwnedField::Number { value, unit, decimals, bounds: (min, max), hint }
+        }
+        SettingField::Choice(_) => choice_of(p, part, key, k),
+    };
+    // What the value would be unset: with its unit for screen readers, without it after ↺ (the
+    // field beside it shows the unit), "fabric 0,20".
+    let inherited = |unit: bool| {
+        k.inherited.as_ref().map(|i| vocabulary::inherited(&i.source, i.section.as_deref(), &value_words(&i.value, key, lang, part, unit)))
+    };
+    let source_words = match (k.value.as_str(), k.source.as_deref()) {
+        (Some("auto"), _) => Some(crate::et!("auto").to_string()),
+        (_, Some(s)) => Some(vocabulary::source(s, k.section.as_deref())),
+        (_, None) => None,
+    };
+    let counted = text::fill(
+        crate::et!("{count} of {total} set"),
+        &[("count", &numbers::count(lang, k.set_count as u64)), ("total", &numbers::count(lang, p.object_count as u64))],
+    );
+    let (own, restore, aside, hint) = if every {
+        (true, Some(restore_words(label)), None, inherited(false))
+    } else if some {
+        (false, Some(restore_words(label)), Some(counted.clone()), None)
+    } else {
+        (false, None, source_words.clone(), None)
+    };
+    let mut description = if every {
+        text::fill(crate::et!("Set on the selected objects; without it: {value}"), &[("value", inherited(true).as_deref().unwrap_or_default())])
+    } else if some {
+        counted
+    } else {
+        text::fill(crate::et!("Source: {name}"), &[("name", source_words.as_deref().unwrap_or_default())])
+    };
+    if k.mixed {
+        description = format!("{description}. {}", crate::et!("The selected objects differ."));
+    }
+    Some(Owned { key, label, name: name_of(key, label), tip: vocabulary::tip(key), field, own, restore, aside, hint, description })
+}
+
+/// What screen readers call key `key`'s field: its label, its section's with it where two labels
+/// read alike ("Underlay: Type").
+fn name_of(key: &str, label: &str) -> String {
+    let section = match key {
+        "stitch" => Section::Stitch,
+        "underlay" => Section::Underlay,
+        _ => return label.to_string(),
+    };
+    text::fill(crate::et!("{section}: {setting}"), &[("section", section.heading()), ("setting", label)])
+}
+
+/// "Restore {setting}": ↺'s name.
+fn restore_words(label: &str) -> String {
+    text::fill(crate::et!("Restore {setting}"), &[("setting", label)])
+}
+
+/// A number field's value from `info`'s `value` of key `key` (`None`: blank) and the words shown
+/// in it when blank: Auto (a rule's), or the two sides of a pull that differ.
+fn number_of(value: &Value, key: &str, unit: &str, decimals: usize, lang: Lang) -> (Option<f64>, Option<String>) {
+    let format = fields::format(lang, unit, decimals);
+    match value {
+        Value::Number(_) => (value.as_f64().map(|v| if key == "angle" { shown_angle(v) } else { v }), None),
+        Value::Array(sides) => match sides.as_slice() {
+            [a, b] if a == b => (a.as_f64(), None),
+            [a, b] => {
+                let words = |v: &Value| v.as_f64().map(|x| format.show(x)).unwrap_or_default();
+                (None, Some(format!("{} / {}", words(a), words(b))))
+            }
+            _ => (None, None),
+        },
+        Value::String(s) if s == "auto" => (None, Some(crate::et!("Auto").to_string())),
+        _ => (None, None),
+    }
+}
+
+/// An angle as the tab shows it: from 0 to 180° (a fill's rows are lines, the same either way).
+fn shown_angle(a: f64) -> f64 {
+    let a = a.rem_euclid(HALF_TURN);
+    // Within a millionth of 180 is 0: the same rows.
+    if HALF_TURN - a < 1e-6 { 0.0 } else { a }
+}
+
+/// A choice row of key `key` (`stitch`, `underlay`) of part `p`.
+fn choice_of(p: &PartInfo, part: Part, key: &str, k: &KeyInfo) -> OwnedField {
+    let stroke = part == Part::Stroke;
+    let mut ids: Vec<&str> = match key {
+        "stitch" if stroke => vec!["auto", "satin", "running", "tatami", "none"],
+        "stitch" => vec!["auto", "tatami", "none"],
+        _ => match p.sewn.as_deref() {
+            Some(sewn @ ("tatami" | "satin")) => distinct_underlays(sewn),
+            _ => distinct_underlays(""),
+        },
+    };
+    let current = k.value.as_str();
+    if let Some(c) = current.filter(|c| !ids.contains(c)) {
+        ids.push(c);
+    }
+    let words = |id: &str| if key == "stitch" { vocabulary::stitch(id, stroke) } else { vocabulary::underlay(id) };
+    let options = ids.iter().map(|id| (id.to_string(), words(id))).collect();
+    let shown = match current {
+        None => crate::et!("Mixed").to_string(),
+        Some(id) => words(id),
+    };
+    OwnedField::Choice { shown, options, current: current.map(str::to_string) }
+}
+
+/// A value in words, as a hint or a description says it: a number as its field writes it (its unit
+/// with it when `unit`), a choice by its name.
+fn value_words(v: &Value, key: &str, lang: Lang, part: Part, unit: bool) -> String {
+    match (part_field(key), v) {
+        (_, Value::String(id)) if key == "stitch" => vocabulary::stitch(id, part == Part::Stroke),
+        (_, Value::String(id)) if key == "underlay" => vocabulary::underlay(id),
+        (_, Value::String(id)) if id == "auto" => crate::et!("auto").to_string(),
+        (Some(SettingField::Number { unit: name, decimals, .. }), _) => {
+            let format = fields::format(lang, if unit { name } else { "" }, decimals);
+            match v {
+                Value::Array(sides) => match sides.as_slice() {
+                    [a, b] if a == b => a.as_f64().map(|x| format.show(x)).unwrap_or_default(),
+                    _ => sides.iter().filter_map(Value::as_f64).map(|x| format.show(x)).collect::<Vec<_>>().join(" / "),
+                },
+                _ => v.as_f64().map(|x| format.show(if key == "angle" { shown_angle(x) } else { x })).unwrap_or_default(),
+            }
+        }
+        _ => numbers::decimal(lang, v.as_f64().unwrap_or_default(), WORDS_DECIMALS),
+    }
+}
+
+/// The command for `edit` of key `key` of part `p` (`part`) on objects `ids`: a value set, or
+/// unset when it is what they would inherit; ↺ unsets it.
+fn edit_command(p: &PartInfo, part: Part, key: &str, edit: Edit, ids: &[NodeId]) -> Option<Command> {
+    let ids = ids_json(ids);
+    let set = |v: Value| Some(("embroidery.set", json!({"ids": ids, "part": part.id(), key: v})));
+    match edit {
+        Edit::Number(v) => set(json!(v)),
+        Edit::Choice(id) => {
+            let k = p.settings.get(key)?;
+            let inherited = k.inherited.as_ref().map(|i| &i.value);
+            if k.set_count == 0 && k.value.as_str() == Some(id.as_str()) {
+                // Already what they inherit.
+                return None;
+            }
+            if inherited.and_then(Value::as_str) == Some(id.as_str()) { set(Value::Null) } else { set(json!(id)) }
+        }
+        Edit::Restore => Some(("embroidery.reset", json!({"ids": ids, "part": part.id(), "keys": [key]}))),
+    }
+}
+
+/// Ids as the commands take them.
+fn ids_json(ids: &[NodeId]) -> Value {
+    ids.iter().map(|id| id.0).collect()
+}
+
+/// How wide `words` are at `size` points.
+fn text_width(ui: &Ui, words: &str, size: f32) -> f32 {
+    ui.painter().layout_no_wrap(words.to_string(), FontId::proportional(size), Color32::WHITE).size().x
+}
+
+/// What `ui.inspect` reports of the tab (`stitchPreview.object`): the objects its fields are of,
+/// the part shown, and each row of it: its key, value (as `embroidery.info` gives it), source,
+/// whether it is set on every object, and whether the objects differ. Null with nothing read yet.
+pub(crate) fn inspect(app: &VectorcraftApp) -> Value {
+    let Some(memo) = app.embroidery.object.memo.as_ref() else { return Value::Null };
+    let Ok(info) = &memo.info else { return Value::Null };
+    let part = Part::shown(app.ui.embroidery_panel.part, info);
+    let rows: Vec<Value> = part
+        .and_then(|p| p.of(info))
+        .map(|p| {
+            let keys = shown_keys(p).into_iter().flat_map(|(_, keys)| keys);
+            keys.filter_map(|key| p.settings.get(key).map(|k| (key, k)))
+                .map(|(key, k)| json!({"key": key, "value": k.value, "source": k.source, "set": k.set_count >= p.object_count && k.set_count > 0, "mixed": k.mixed}))
+                .collect()
+        })
+        .unwrap_or_default();
+    json!({"ids": ids_json(&memo.ids), "part": part.map(Part::id), "rows": rows})
+}
+
+#[cfg(test)]
+mod tests;

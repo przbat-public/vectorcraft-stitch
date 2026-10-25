@@ -155,6 +155,12 @@ pub fn readable(c: Color32, backs: &[Color32], dark: bool) -> Color32 {
     towards(c, backs, dark, NON_TEXT_CONTRAST)
 }
 
+/// [`readable`] for words: `c` moved only as far as it takes to read by [`TEXT_CONTRAST`] on each
+/// of `backs` (a dim value on a field, a badge's words on the badge).
+pub fn readable_text(c: Color32, backs: &[Color32], dark: bool) -> Color32 {
+    towards(c, backs, dark, TEXT_CONTRAST)
+}
+
 /// `c`, moved towards white (`dark` backgrounds) or black only as far as it takes to stand out by
 /// `ratio` from each of `backs`; all the way when even that falls short.
 fn towards(c: Color32, backs: &[Color32], dark: bool, ratio: f32) -> Color32 {

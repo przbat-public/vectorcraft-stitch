@@ -5785,3 +5785,98 @@ axis	Y Axis	Y-akse
 	Rectangular Grid Tool Options	Indstillinger for rektangulært gitterværktøj
 	Polar Grid Tool Options	Indstillinger for polært gitterværktøj
 	Fill Line	Udfyld linje
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Objekt
+embroidery	Select an object to set how it is sewn.	Vælg et objekt for at angive, hvordan det sys.
+embroidery	Nothing selected	Intet er valgt
+embroidery	Guide	Hjælpelinje
+embroidery	Stitches from a file	Sting fra en fil
+embroidery	Path	Kurve
+embroidery	Compound path	Sammensat kurve
+embroidery	Group	Gruppe
+embroidery	Layer	Lag
+embroidery	Text object	Tekstobjekt
+embroidery	Image	Billede
+embroidery	Symbol instance	Symbolforekomst
+embroidery	Placed file	Indsat fil
+embroidery	Live object	Dynamisk objekt
+embroidery	fill and stroke	udfyldning og streg
+embroidery	fill, no stroke	udfyldning, ingen streg
+embroidery	stroke, no fill	streg, ingen udfyldning
+embroidery	no fill or stroke	ingen udfyldning eller streg
+embroidery	Fill	Udfyldning
+embroidery	Fill: none	Udfyldning: ingen
+embroidery	Stroke	Streg
+embroidery	Stroke: none	Streg: ingen
+embroidery	Stitch	Sting
+embroidery	Underlay	Underlag
+embroidery	Compensation	Kompensation
+embroidery	auto	auto
+embroidery	{count} of {total} set	angivet i {count} af {total}
+embroidery	Set on the selected objects; without it: {value}	Angivet på de valgte objekter; ellers: {value}
+embroidery	The selected objects differ.	De valgte objekter er forskellige.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Auto
+embroidery	Mixed	Blandet
+embroidery	Type	Type
+embroidery	Angle	Vinkel
+embroidery	Row spacing	Rækkeafstand
+embroidery	Spacing	Afstand
+embroidery	Stitch length	Stinglængde
+embroidery	Narrow parts as satin	Smalle dele som satin
+embroidery	Pull compensation	Trækkompensation
+embroidery	Pull compensation (%)	Trækkompensation (%)
+embroidery	Push compensation	Trykkompensation
+embroidery	Expand fills	Udvidelse af fyld
+embroidery	Split satin stitches from	Del satinsting fra
+embroidery	Setting	Indstilling
+embroidery	How the part is sewn: Auto picks by its shape and width.	Hvordan delen sys: Auto vælger efter form og bredde.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	Retningen af fyldets rækker, mod uret; den drejer med objektet.
+embroidery	The distance between rows, or between a satin's stitches.	Afstanden mellem rækkerne eller mellem et satins sting.
+embroidery	The longest stitch along a row or a running line.	Det længste sting langs en række eller en forstingslinje.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Dele af et fyld, der er smallere end dette, sys som satinsøjler; 0 syr ingen.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	Stingene, der sys først under de øverste sting, for at holde stoffet.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Udvider hver række eller søjle i enderne, hvor tråden trækker stoffet ind.
+embroidery	Widens each column by a share of its width.	Udvider hver søjle med en andel af dens bredde.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Forkorter en åben satinsøjle i enderne, hvor tråden skubber ud.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Udvider det fyldte område hele vejen rundt, så figurer tegnet hver for sig mødes.
+embroidery	Satin stitches longer than this are split in two.	Satinsting, der er længere end dette, deles i to.
+embroidery	Where the needle goes in to sew the part.	Hvor nålen går ind for at sy delen.
+embroidery	Where the needle comes out after the part.	Hvor nålen kommer ud efter delen.
+embroidery	Tatami fill	Tatamifyld
+embroidery	Tatami	Tatami
+embroidery	Satin	Satin
+embroidery	Running stitch	Forsting
+embroidery	Don't sew	Sy ikke
+embroidery	None	Ingen
+embroidery	Centre run	Midterløb
+embroidery	Edge run	Kantløb
+embroidery	Edge run + zigzag	Kantløb + zigzag
+embroidery	Edge run + tatami	Kantløb + tatami
+embroidery	fabric	stof
+embroidery	machine	maskine
+embroidery	document	dokument
+embroidery	export	eksport
+embroidery	default	standard
+embroidery	set	angivet
+embroidery	fabric {value}	stof {value}
+embroidery	machine {value}	maskine {value}
+embroidery	document {value}	dokument {value}
+embroidery	export {value}	eksport {value}
+embroidery	default {value}	standard {value}
+embroidery	Not sewn: set to Don't sew.	Sys ikke: sat til Sy ikke.
+embroidery	Not sewn: it has no paint.	Sys ikke: den har ingen farve.
+embroidery	Not sewn: it is hidden.	Sys ikke: den er skjult.
+embroidery	Not sewn: it is on a template or non-printing layer.	Sys ikke: den ligger på et skabelonlag eller et lag, der ikke udskrives.
+embroidery	Not sewn.	Sys ikke.
+embroidery	Stitches from a file are sewn as the file has them.	Sting fra en fil sys, som filen har dem.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Tekst sys endnu ikke: brug Opret konturer for at sy den.
+embroidery	Images aren't sewn.	Billeder sys ikke.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	Et symbols objekter har indstillingerne: rediger symbolet for at angive dem.
+embroidery	Guides aren't sewn.	Hjælpelinjer sys ikke.
+embroidery	Placed files aren't sewn.	Indsatte filer sys ikke.
+embroidery	Not sewn as it is: expand it to sew it.	Sys ikke, som den er: udvid den for at sy den.
+embroidery	It takes no embroidery settings.	Den har ingen broderiindstillinger.
+@plural	{count} object takes settings|{count} objects take settings	{count} objekt har indstillinger|{count} objekter har indstillinger
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Gendan: {setting}

@@ -5816,3 +5816,98 @@ axis	Y Axis	Y tengely
 	Rectangular Grid Tool Options	Téglalaprács beállításai
 	Polar Grid Tool Options	Polárrács beállításai
 	Fill Line	Szakasz kitöltése
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Objektum
+embroidery	Select an object to set how it is sewn.	Jelöljön ki egy objektumot, hogy beállítsa, hogyan hímezze a gép.
+embroidery	Nothing selected	Nincs kijelölés
+embroidery	Guide	Segédvonal
+embroidery	Stitches from a file	Öltések fájlból
+embroidery	Path	Útvonal
+embroidery	Compound path	Összetett útvonal
+embroidery	Group	Csoport
+embroidery	Layer	Réteg
+embroidery	Text object	Szövegobjektum
+embroidery	Image	Kép
+embroidery	Symbol instance	Szimbólumpéldány
+embroidery	Placed file	Beillesztett fájl
+embroidery	Live object	Dinamikus objektum
+embroidery	fill and stroke	kitöltés és körvonal
+embroidery	fill, no stroke	kitöltés, körvonal nélkül
+embroidery	stroke, no fill	körvonal, kitöltés nélkül
+embroidery	no fill or stroke	nincs kitöltés vagy körvonal
+embroidery	Fill	Kitöltés
+embroidery	Fill: none	Kitöltés: nincs
+embroidery	Stroke	Körvonal
+embroidery	Stroke: none	Körvonal: nincs
+embroidery	Stitch	Öltés
+embroidery	Underlay	Alátét
+embroidery	Compensation	Kompenzáció
+embroidery	auto	auto
+embroidery	{count} of {total} set	beállítva: {count}/{total}
+embroidery	Set on the selected objects; without it: {value}	A kijelölt objektumokon beállítva; nélküle: {value}
+embroidery	The selected objects differ.	A kijelölt objektumok eltérnek.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Automatikus
+embroidery	Mixed	Vegyes
+embroidery	Type	Típus
+embroidery	Angle	Szög
+embroidery	Row spacing	Sortávolság
+embroidery	Spacing	Térköz
+embroidery	Stitch length	Öltéshossz
+embroidery	Narrow parts as satin	Keskeny részek szaténként
+embroidery	Pull compensation	Húzáskompenzáció
+embroidery	Pull compensation (%)	Húzáskompenzáció (%)
+embroidery	Push compensation	Nyomáskompenzáció
+embroidery	Expand fills	Kitöltések bővítése
+embroidery	Split satin stitches from	Szaténöltések felezése innen
+embroidery	Setting	Beállítás
+embroidery	How the part is sewn: Auto picks by its shape and width.	Hogyan készül a rész: az Automatikus az alakja és a szélessége szerint választ.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	A kitöltés sorainak iránya, az óramutatóval ellentétesen; az objektummal együtt fordul.
+embroidery	The distance between rows, or between a satin's stitches.	A sorok közötti vagy a szatén öltései közötti távolság.
+embroidery	The longest stitch along a row or a running line.	A leghosszabb öltés egy sorban vagy egyenes öltésű vonalon.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	A kitöltés ennél keskenyebb részei szaténoszlopként készülnek; a 0 egyiket sem.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	Az elsőként, a felső öltések alá varrt öltések, amelyek az anyagot tartják.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Kiszélesíti a sorokat és oszlopokat a végükön, ahol a cérna behúzza az anyagot.
+embroidery	Widens each column by a share of its width.	Minden oszlopot a szélessége egy részével szélesít.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Megrövidíti a nyitott szaténoszlopot a végein, ahol a cérna kifelé nyom.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Körben megnöveli a kitöltött területet, hogy a külön rajzolt alakzatok összeérjenek.
+embroidery	Satin stitches longer than this are split in two.	Az ennél hosszabb szaténöltéseket kettéosztja.
+embroidery	Where the needle goes in to sew the part.	Ahol a tű belép, hogy kihímezze a részt.
+embroidery	Where the needle comes out after the part.	Ahol a tű kilép a rész után.
+embroidery	Tatami fill	Tatami kitöltés
+embroidery	Tatami	Tatami
+embroidery	Satin	Szatén
+embroidery	Running stitch	Egyenes öltés
+embroidery	Don't sew	Ne hímezze
+embroidery	None	Nincs
+embroidery	Centre run	Középső menet
+embroidery	Edge run	Szegélymenet
+embroidery	Edge run + zigzag	Szegélymenet + cikcakk
+embroidery	Edge run + tatami	Szegélymenet + tatami
+embroidery	fabric	anyag
+embroidery	machine	gép
+embroidery	document	dokumentum
+embroidery	export	exportálás
+embroidery	default	alapértelmezett
+embroidery	set	beállítva
+embroidery	fabric {value}	anyag {value}
+embroidery	machine {value}	gép {value}
+embroidery	document {value}	dokumentum {value}
+embroidery	export {value}	exportálás {value}
+embroidery	default {value}	alapértelmezett {value}
+embroidery	Not sewn: set to Don't sew.	Nem készül: a Ne hímezze van beállítva.
+embroidery	Not sewn: it has no paint.	Nem készül: nincs színe.
+embroidery	Not sewn: it is hidden.	Nem készül: rejtett.
+embroidery	Not sewn: it is on a template or non-printing layer.	Nem készül: sablon- vagy nem nyomtatandó rétegen van.
+embroidery	Not sewn.	Nem készül.
+embroidery	Stitches from a file are sewn as the file has them.	A fájlból származó öltések úgy készülnek, ahogy a fájlban vannak.
+embroidery	Type isn't sewn yet: create outlines to sew it.	A szöveg még nem készül: alakítsa útvonallá, hogy kihímezhesse.
+embroidery	Images aren't sewn.	Képek nem készülnek hímzésként.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	A beállításokat a szimbólum objektumai kapják: szerkessze a szimbólumot a beállításhoz.
+embroidery	Guides aren't sewn.	Segédvonalak nem készülnek.
+embroidery	Placed files aren't sewn.	A beillesztett fájlok nem készülnek.
+embroidery	Not sewn as it is: expand it to sew it.	Így nem készül: bontsa ki, hogy kihímezhesse.
+embroidery	It takes no embroidery settings.	Nem fogad hímzésbeállításokat.
+@plural	{count} object takes settings|{count} objects take settings	{count} objektum fogad beállításokat
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Visszaállítás: {setting}

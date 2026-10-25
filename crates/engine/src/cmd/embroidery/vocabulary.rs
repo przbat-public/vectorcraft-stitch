@@ -188,6 +188,30 @@ mod tests {
         assert_eq!(kept, in_document);
     }
 
+    /// Every setting an object's part takes but its points has a field the Object tab edits it
+    /// with, ranged as `embroidery.set` takes it (an object's `stitch` with `none`, never `fill`);
+    /// every fabric value one as `embroidery.setup {fabric}` takes it; and the underlays offered
+    /// under a stitch are the kinds it sews apart.
+    #[test]
+    fn every_part_and_fabric_setting_has_a_field() {
+        use super::super::{SettingField, distinct_underlays, fabric_field, part_field};
+        for s in SETTINGS.iter().filter(|s| s.at(Place::Part)) {
+            let field = part_field(s.name);
+            assert_eq!(field.is_none(), matches!(s.name, "entry" | "exit"), "{}", s.name);
+        }
+        assert_eq!(part_field("stitch"), Some(SettingField::Choice(vec!["auto", "tatami", "satin", "running", "none"])));
+        assert_eq!((part_field("threadWeight"), part_field("nope")), (None, None), "not a part's");
+        let Some(SettingField::Number { min, max, .. }) = fabric_field("tatami", "spacing") else { panic!("a number") };
+        assert_eq!((min, max), vectorcraft_stitch::plan::FABRIC_SPACING_RANGE);
+        for (kind, name) in [("tatami", "pull"), ("tatami", "length"), ("tatami", "underlay"), ("satin", "pull"), ("satin", "spacingPercent")] {
+            assert!(fabric_field(kind, name).is_some(), "{kind}.{name}");
+        }
+        assert_eq!((fabric_field("satin", "length"), fabric_field("tatami", "spacingPercent")), (None, None));
+        assert_eq!(distinct_underlays("tatami"), ["auto", "none", "edge", "edgeTatami"]);
+        assert_eq!(distinct_underlays("satin"), ["auto", "none", "center", "edge", "edgeZigzag"]);
+        assert_eq!(distinct_underlays("running").len(), vectorcraft_stitch::plan::Underlay::ALL.len());
+    }
+
     /// The export's options are those `document.formats` lists for an embroidery format, in that
     /// order, each with a field to edit it.
     #[test]

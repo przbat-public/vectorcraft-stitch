@@ -145,6 +145,33 @@ fn info_says_what_the_walk_sews() {
     }
 }
 
+/// What a plan already made sews of a selection (the Object tab's count): each part as `info`
+/// counts it with `plan`, a group for what it holds, nothing for an object the plan sews nothing
+/// of.
+#[test]
+fn a_selections_stitches_are_read_from_the_plan() {
+    let mut s = blank();
+    let fill = shape(&mut s, 20.0, 0.0);
+    let both = shape(&mut s, 100.0, 3.0);
+    let off = shape(&mut s, 180.0, 0.0);
+    run(&mut s, "embroidery.set", json!({"ids": [off], "part": "fill", "stitch": "none"}));
+    let plan = s.embroidery_plan(&Options::default()).unwrap();
+    let doc = s.doc().unwrap().doc.clone();
+    let ids = |v: &[u64]| v.iter().map(|id| vectorcraft_doc::NodeId(*id)).collect::<Vec<_>>();
+    for id in [fill, both] {
+        let r = info(&mut s, json!({"ids": [id], "plan": true}));
+        let sewn = info::selection_sewing(&doc, &plan, &ids(&[id]));
+        let counted = |part: &str| r[part]["sewing"]["stitches"].as_u64().unwrap_or(0) as usize;
+        assert_eq!((sewn.fill.stitches, sewn.stroke.stitches), (counted("fill"), counted("stroke")), "{id}");
+        assert_eq!(sewn.stitches(), counted("fill") + counted("stroke"));
+    }
+    assert_eq!(info::selection_sewing(&doc, &plan, &ids(&[off])), info::SelectionSewing::default(), "not sewn");
+    let parts = |v: &[u64]| info::selection_sewing(&doc, &plan, &ids(v)).stitches();
+    let group = run(&mut s, "object.group", json!({"ids": [fill, both]}))["id"].as_u64().unwrap();
+    let (plan, doc) = (s.embroidery_plan(&Options::default()).unwrap(), s.doc().unwrap().doc.clone());
+    assert_eq!(info::selection_sewing(&doc, &plan, &ids(&[group])).stitches(), parts(&[fill, both]), "a group for what it holds");
+}
+
 /// The stitch preview's planning thread answers `embroidery.info` (objects given) as the command
 /// does, planning only with `plan`; a design too large to plan still has its settings answered,
 /// the reason in `warnings`.

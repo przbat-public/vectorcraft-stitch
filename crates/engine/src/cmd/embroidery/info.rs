@@ -549,18 +549,62 @@ fn sewn_of(plan: &DesignPlan, ids: &[NodeId], kind: PartKind) -> Sewing {
             (Part::Fill(_), PartKind::Fill) | (Part::Stroke(_), PartKind::Stroke) => true,
             (Part::Fill(_) | Part::Stroke(_) | Part::Literal, _) => false,
         };
-        if !of_kind || !ids.contains(&u.origin.selected()) {
-            continue;
+        if of_kind && ids.contains(&u.origin.selected()) {
+            out.add(plan, i);
         }
-        out.unit_count += 1;
-        for s in plan.unit_stitches(i) {
-            out.records += 1;
+    }
+    out
+}
+
+impl Sewing {
+    /// Unit `unit` of `plan` counted in.
+    fn add(&mut self, plan: &DesignPlan, unit: usize) {
+        self.unit_count += 1;
+        for s in plan.unit_stitches(unit) {
+            self.records += 1;
             match s.command {
-                Command::Stitch => out.stitches += 1,
-                Command::Jump => out.jumps += 1,
-                Command::Trim => out.trims += 1,
+                Command::Stitch => self.stitches += 1,
+                Command::Jump => self.jumps += 1,
+                Command::Trim => self.trims += 1,
                 _ => {}
             }
+        }
+    }
+}
+
+/// What a plan sews of the objects selected, by part: their fills, their strokes, and the runs of
+/// stitches opened from a machine file among them.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SelectionSewing {
+    pub fill: Sewing,
+    pub stroke: Sewing,
+    pub literal: Sewing,
+}
+
+impl SelectionSewing {
+    /// The needle-down stitches of all of it.
+    pub fn stitches(&self) -> usize {
+        self.fill.stitches + self.stroke.stitches + self.literal.stitches
+    }
+}
+
+/// What `plan`, the plan of `doc`, sews of objects `selected` as a person selects them: each one, or
+/// what a group or a layer among them holds (a symbol instance's art, an expanded object's pieces
+/// by the object selected). Read from a plan already made (the Object tab's count, from the plan the
+/// stitch preview shows), never planned: a walk of the selected objects and of the plan's units.
+pub fn selection_sewing(doc: &Document, plan: &DesignPlan, selected: &[NodeId]) -> SelectionSewing {
+    let mut under: HashSet<NodeId> = HashSet::new();
+    for n in selected.iter().filter_map(|id| doc.node(*id)) {
+        n.walk(&mut |c| {
+            under.insert(c.id);
+        });
+    }
+    let mut out = SelectionSewing::default();
+    for (i, u) in plan.units.iter().enumerate().filter(|(_, u)| under.contains(&u.origin.selected())) {
+        match u.origin.part {
+            Part::Fill(_) => out.fill.add(plan, i),
+            Part::Stroke(_) => out.stroke.add(plan, i),
+            Part::Literal => out.literal.add(plan, i),
         }
     }
     out

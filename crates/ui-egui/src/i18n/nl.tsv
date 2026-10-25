@@ -5828,3 +5828,98 @@ axis	Y Axis	Y-as
 	Rectangular Grid Tool Options	Opties rechthoekig-rastergereedschap
 	Polar Grid Tool Options	Opties polair-rastergereedschap
 	Fill Line	Lijn vullen
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Object
+embroidery	Select an object to set how it is sewn.	Selecteer een object om in te stellen hoe het wordt geborduurd.
+embroidery	Nothing selected	Niets geselecteerd
+embroidery	Guide	Hulplijn
+embroidery	Stitches from a file	Steken uit een bestand
+embroidery	Path	Pad
+embroidery	Compound path	Samengesteld pad
+embroidery	Group	Groep
+embroidery	Layer	Laag
+embroidery	Text object	Tekstobject
+embroidery	Image	Afbeelding
+embroidery	Symbol instance	Symboolinstantie
+embroidery	Placed file	Geplaatst bestand
+embroidery	Live object	Dynamisch object
+embroidery	fill and stroke	vulling en lijn
+embroidery	fill, no stroke	vulling, geen lijn
+embroidery	stroke, no fill	lijn, geen vulling
+embroidery	no fill or stroke	geen vulling of lijn
+embroidery	Fill	Vulling
+embroidery	Fill: none	Vulling: geen
+embroidery	Stroke	Lijn
+embroidery	Stroke: none	Lijn: geen
+embroidery	Stitch	Steek
+embroidery	Underlay	Onderlaag
+embroidery	Compensation	Compensatie
+embroidery	auto	auto
+embroidery	{count} of {total} set	ingesteld bij {count} van {total}
+embroidery	Set on the selected objects; without it: {value}	Ingesteld op de geselecteerde objecten; anders: {value}
+embroidery	The selected objects differ.	De geselecteerde objecten verschillen.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Automatisch
+embroidery	Mixed	Gemengd
+embroidery	Type	Soort
+embroidery	Angle	Hoek
+embroidery	Row spacing	Rijafstand
+embroidery	Spacing	Afstand
+embroidery	Stitch length	Steeklengte
+embroidery	Narrow parts as satin	Smalle delen als satijn
+embroidery	Pull compensation	Trekcompensatie
+embroidery	Pull compensation (%)	Trekcompensatie (%)
+embroidery	Push compensation	Duwcompensatie
+embroidery	Expand fills	Vullingen vergroten
+embroidery	Split satin stitches from	Satijnsteken splitsen vanaf
+embroidery	Setting	Instelling
+embroidery	How the part is sewn: Auto picks by its shape and width.	Hoe het deel wordt geborduurd: Automatisch kiest op vorm en breedte.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	De richting van de rijen van de vulling, tegen de klok in; draait mee met het object.
+embroidery	The distance between rows, or between a satin's stitches.	De afstand tussen rijen, of tussen de steken van een satijnsteek.
+embroidery	The longest stitch along a row or a running line.	De langste steek langs een rij of een rechte steeklijn.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Delen van een vulling smaller dan dit worden als satijnkolommen geborduurd; 0 borduurt er geen.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	De steken die eerst worden geborduurd, onder de bovensteken, om de stof vast te houden.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Verbreedt elke rij of kolom aan de uiteinden, waar de draad de stof intrekt.
+embroidery	Widens each column by a share of its width.	Verbreedt elke kolom met een deel van zijn breedte.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Verkort een open satijnkolom aan de uiteinden, waar de draad naar buiten duwt.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Vergroot het gevulde gebied rondom, zodat los getekende vormen aansluiten.
+embroidery	Satin stitches longer than this are split in two.	Satijnsteken die langer zijn, worden in tweeën gesplitst.
+embroidery	Where the needle goes in to sew the part.	Waar de naald insteekt om het deel te borduren.
+embroidery	Where the needle comes out after the part.	Waar de naald na het deel uitsteekt.
+embroidery	Tatami fill	Tatamivulling
+embroidery	Tatami	Tatami
+embroidery	Satin	Satijn
+embroidery	Running stitch	Rechte steek
+embroidery	Don't sew	Niet borduren
+embroidery	None	Geen
+embroidery	Centre run	Middenloop
+embroidery	Edge run	Randloop
+embroidery	Edge run + zigzag	Randloop + zigzag
+embroidery	Edge run + tatami	Randloop + tatami
+embroidery	fabric	stof
+embroidery	machine	machine
+embroidery	document	document
+embroidery	export	export
+embroidery	default	standaard
+embroidery	set	ingesteld
+embroidery	fabric {value}	stof {value}
+embroidery	machine {value}	machine {value}
+embroidery	document {value}	document {value}
+embroidery	export {value}	export {value}
+embroidery	default {value}	standaard {value}
+embroidery	Not sewn: set to Don't sew.	Wordt niet geborduurd: ingesteld op Niet borduren.
+embroidery	Not sewn: it has no paint.	Wordt niet geborduurd: het heeft geen kleur.
+embroidery	Not sewn: it is hidden.	Wordt niet geborduurd: het is verborgen.
+embroidery	Not sewn: it is on a template or non-printing layer.	Wordt niet geborduurd: het staat op een sjabloonlaag of een laag die niet wordt afgedrukt.
+embroidery	Not sewn.	Wordt niet geborduurd.
+embroidery	Stitches from a file are sewn as the file has them.	Steken uit een bestand worden geborduurd zoals het bestand ze bevat.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Tekst wordt nog niet geborduurd: zet hem om in curven om hem te borduren.
+embroidery	Images aren't sewn.	Afbeeldingen worden niet geborduurd.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	De instellingen horen bij de objecten van het symbool: bewerk het symbool om ze in te stellen.
+embroidery	Guides aren't sewn.	Hulplijnen worden niet geborduurd.
+embroidery	Placed files aren't sewn.	Geplaatste bestanden worden niet geborduurd.
+embroidery	Not sewn as it is: expand it to sew it.	Wordt zo niet geborduurd: breid het uit om het te borduren.
+embroidery	It takes no embroidery settings.	Het neemt geen borduurinstellingen aan.
+@plural	{count} object takes settings|{count} objects take settings	{count} object neemt instellingen aan|{count} objecten nemen instellingen aan
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	{setting} herstellen

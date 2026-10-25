@@ -5830,3 +5830,98 @@ axis	Y Axis	osa Y
 	Rectangular Grid Tool Options	Možnosti nástroje Obdélníková mřížka
 	Polar Grid Tool Options	Možnosti nástroje Polární mřížka
 	Fill Line	Výplň úsečky
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Objekt
+embroidery	Select an object to set how it is sewn.	Vyberte objekt a nastavte, jak se má vyšít.
+embroidery	Nothing selected	Nic není vybráno
+embroidery	Guide	Vodítko
+embroidery	Stitches from a file	Stehy ze souboru
+embroidery	Path	Cesta
+embroidery	Compound path	Složená cesta
+embroidery	Group	Skupina
+embroidery	Layer	Vrstva
+embroidery	Text object	Textový objekt
+embroidery	Image	Obraz
+embroidery	Symbol instance	Instance symbolu
+embroidery	Placed file	Umístěný soubor
+embroidery	Live object	Živý objekt
+embroidery	fill and stroke	výplň a tah
+embroidery	fill, no stroke	výplň, bez tahu
+embroidery	stroke, no fill	tah, bez výplně
+embroidery	no fill or stroke	bez výplně a tahu
+embroidery	Fill	Výplň
+embroidery	Fill: none	Výplň: žádná
+embroidery	Stroke	Tah
+embroidery	Stroke: none	Tah: žádný
+embroidery	Stitch	Steh
+embroidery	Underlay	Podklad
+embroidery	Compensation	Kompenzace
+embroidery	auto	auto
+embroidery	{count} of {total} set	nastaveno v {count} z {total}
+embroidery	Set on the selected objects; without it: {value}	Nastaveno na vybraných objektech; jinak: {value}
+embroidery	The selected objects differ.	Vybrané objekty se liší.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Automaticky
+embroidery	Mixed	Různé
+embroidery	Type	Druh
+embroidery	Angle	Úhel
+embroidery	Row spacing	Rozestup řad
+embroidery	Spacing	Rozestup
+embroidery	Stitch length	Délka stehu
+embroidery	Narrow parts as satin	Úzké části jako satén
+embroidery	Pull compensation	Kompenzace stažení
+embroidery	Pull compensation (%)	Kompenzace stažení (%)
+embroidery	Push compensation	Kompenzace vytlačení
+embroidery	Expand fills	Rozšíření výplní
+embroidery	Split satin stitches from	Dělit saténové stehy od
+embroidery	Setting	Nastavení
+embroidery	How the part is sewn: Auto picks by its shape and width.	Jak se část vyšívá: Automaticky volí podle jejího tvaru a šířky.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	Směr řad výplně, proti směru hodinových ručiček; otáčí se s objektem.
+embroidery	The distance between rows, or between a satin's stitches.	Vzdálenost mezi řadami nebo mezi stehy saténu.
+embroidery	The longest stitch along a row or a running line.	Nejdelší steh v řadě nebo v rovném stehu.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Části výplně užší než tato hodnota se vyšijí jako saténové sloupky; 0 nevyšije žádné.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	Stehy vyšité jako první pod horními stehy, aby držely látku.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Rozšíří každou řadu nebo sloupek na koncích, kde nit stahuje látku.
+embroidery	Widens each column by a share of its width.	Rozšíří každý sloupek o podíl jeho šířky.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Zkrátí otevřený saténový sloupek na koncích, kde nit tlačí ven.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Zvětší vyplněnou plochu dokola, aby se tvary nakreslené od sebe setkaly.
+embroidery	Satin stitches longer than this are split in two.	Saténové stehy delší než tato hodnota se rozdělí na dva.
+embroidery	Where the needle goes in to sew the part.	Kde jehla vstoupí, aby vyšila tuto část.
+embroidery	Where the needle comes out after the part.	Kde jehla vyjde po této části.
+embroidery	Tatami fill	Výplň tatami
+embroidery	Tatami	Tatami
+embroidery	Satin	Satén
+embroidery	Running stitch	Rovný steh
+embroidery	Don't sew	Nevyšívat
+embroidery	None	Žádné
+embroidery	Centre run	Středový průchod
+embroidery	Edge run	Okrajový průchod
+embroidery	Edge run + zigzag	Okrajový průchod + cikcak
+embroidery	Edge run + tatami	Okrajový průchod + tatami
+embroidery	fabric	látka
+embroidery	machine	stroj
+embroidery	document	dokument
+embroidery	export	export
+embroidery	default	výchozí
+embroidery	set	nastaveno
+embroidery	fabric {value}	látka {value}
+embroidery	machine {value}	stroj {value}
+embroidery	document {value}	dokument {value}
+embroidery	export {value}	export {value}
+embroidery	default {value}	výchozí {value}
+embroidery	Not sewn: set to Don't sew.	Nevyšívá se: nastaveno Nevyšívat.
+embroidery	Not sewn: it has no paint.	Nevyšívá se: nemá barvu.
+embroidery	Not sewn: it is hidden.	Nevyšívá se: je skrytý.
+embroidery	Not sewn: it is on a template or non-printing layer.	Nevyšívá se: je ve vrstvě šablony nebo v netisknuté vrstvě.
+embroidery	Not sewn.	Nevyšívá se.
+embroidery	Stitches from a file are sewn as the file has them.	Stehy ze souboru se vyšijí tak, jak jsou v souboru.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Text se zatím nevyšívá: převeďte ho na křivky (Převést na křivky).
+embroidery	Images aren't sewn.	Obrazy se nevyšívají.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	Nastavení se zadávají objektům symbolu: upravte symbol a nastavte je tam.
+embroidery	Guides aren't sewn.	Vodítka se nevyšívají.
+embroidery	Placed files aren't sewn.	Umístěné soubory se nevyšívají.
+embroidery	Not sewn as it is: expand it to sew it.	V této podobě se nevyšívá: rozložte ho, aby se vyšil.
+embroidery	It takes no embroidery settings.	Nepřijímá nastavení výšivky.
+@plural	{count} object takes settings|{count} objects take settings	{count} objekt přijímá nastavení|{count} objekty přijímají nastavení|{count} objektů přijímá nastavení
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Obnovit: {setting}

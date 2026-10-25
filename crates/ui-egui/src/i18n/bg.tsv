@@ -5769,3 +5769,98 @@ axis	Y Axis	Y ос
 	Rectangular Grid Tool Options	Опции на инструмента „Правоъгълна мрежа“
 	Polar Grid Tool Options	Опции на инструмента „Полярна мрежа“
 	Fill Line	Запълване на линия
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Обект
+embroidery	Select an object to set how it is sewn.	Изберете обект, за да зададете как да се бродира.
+embroidery	Nothing selected	Нищо не е избрано
+embroidery	Guide	Водач
+embroidery	Stitches from a file	Бодове от файл
+embroidery	Path	Път
+embroidery	Compound path	Съставен път
+embroidery	Group	Група
+embroidery	Layer	Слой
+embroidery	Text object	Текстов обект
+embroidery	Image	Изображение
+embroidery	Symbol instance	Екземпляр на символ
+embroidery	Placed file	Поставен файл
+embroidery	Live object	Динамичен обект
+embroidery	fill and stroke	запълване и щрих
+embroidery	fill, no stroke	запълване, без щрих
+embroidery	stroke, no fill	щрих, без запълване
+embroidery	no fill or stroke	без запълване и щрих
+embroidery	Fill	Запълване
+embroidery	Fill: none	Запълване: няма
+embroidery	Stroke	Щрих
+embroidery	Stroke: none	Щрих: няма
+embroidery	Stitch	Бод
+embroidery	Underlay	Подложка
+embroidery	Compensation	Компенсация
+embroidery	auto	авто
+embroidery	{count} of {total} set	зададено в {count} от {total}
+embroidery	Set on the selected objects; without it: {value}	Зададено за избраните обекти; без него: {value}
+embroidery	The selected objects differ.	Избраните обекти се различават.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Автоматично
+embroidery	Mixed	Различни
+embroidery	Type	Вид
+embroidery	Angle	Ъгъл
+embroidery	Row spacing	Разстояние между редовете
+embroidery	Spacing	Разстояние
+embroidery	Stitch length	Дължина на бода
+embroidery	Narrow parts as satin	Тесни части като сатен
+embroidery	Pull compensation	Компенсация на свиване
+embroidery	Pull compensation (%)	Компенсация на свиване (%)
+embroidery	Push compensation	Компенсация на избутване
+embroidery	Expand fills	Разширяване на запълванията
+embroidery	Split satin stitches from	Разделяне на сатенените бодове от
+embroidery	Setting	Настройка
+embroidery	How the part is sewn: Auto picks by its shape and width.	Как се бродира частта: „Автоматично“ избира според формата и ширината ѝ.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	Посоката на редовете на запълването, обратно на часовниковата стрелка; завърта се с обекта.
+embroidery	The distance between rows, or between a satin's stitches.	Разстоянието между редовете или между бодовете на сатена.
+embroidery	The longest stitch along a row or a running line.	Най-дългият бод по ред или по права линия.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Частите на запълването, по-тесни от това, се бродират като сатенени колони; 0 не бродира никоя.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	Бодовете, бродирани първи, под горните бодове, за да задържат плата.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Разширява всеки ред или колона в краищата, където конецът свива плата.
+embroidery	Widens each column by a share of its width.	Разширява всяка колона с част от ширината ѝ.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Скъсява отворена сатенена колона в краищата, където конецът избутва навън.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Разширява запълнената площ от всички страни, за да се допрат фигури, начертани разделено.
+embroidery	Satin stitches longer than this are split in two.	Сатенените бодове, по-дълги от това, се разделят на две.
+embroidery	Where the needle goes in to sew the part.	Къде иглата влиза, за да бродира частта.
+embroidery	Where the needle comes out after the part.	Къде иглата излиза след частта.
+embroidery	Tatami fill	Запълване татами
+embroidery	Tatami	Татами
+embroidery	Satin	Сатен
+embroidery	Running stitch	Прав бод
+embroidery	Don't sew	Не бродирай
+embroidery	None	Няма
+embroidery	Centre run	Централен ход
+embroidery	Edge run	Ход по ръба
+embroidery	Edge run + zigzag	Ход по ръба + зигзаг
+embroidery	Edge run + tatami	Ход по ръба + татами
+embroidery	fabric	плат
+embroidery	machine	машина
+embroidery	document	документ
+embroidery	export	експорт
+embroidery	default	по подразбиране
+embroidery	set	зададено
+embroidery	fabric {value}	плат {value}
+embroidery	machine {value}	машина {value}
+embroidery	document {value}	документ {value}
+embroidery	export {value}	експорт {value}
+embroidery	default {value}	по подразбиране {value}
+embroidery	Not sewn: set to Don't sew.	Не се бродира: зададено е „Не бродирай“.
+embroidery	Not sewn: it has no paint.	Не се бродира: няма цвят.
+embroidery	Not sewn: it is hidden.	Не се бродира: скрито е.
+embroidery	Not sewn: it is on a template or non-printing layer.	Не се бродира: в шаблонен или непечатаем слой е.
+embroidery	Not sewn.	Не се бродира.
+embroidery	Stitches from a file are sewn as the file has them.	Бодовете от файл се бродират така, както са във файла.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Текстът още не се бродира: използвайте „Създаване на контур“, за да го бродирате.
+embroidery	Images aren't sewn.	Изображенията не се бродират.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	Обектите на символа приемат настройките: редактирайте символа, за да ги зададете.
+embroidery	Guides aren't sewn.	Водачите не се бродират.
+embroidery	Placed files aren't sewn.	Поставените файлове не се бродират.
+embroidery	Not sewn as it is: expand it to sew it.	Не се бродира в този вид: разширете го, за да се бродира.
+embroidery	It takes no embroidery settings.	Не приема настройки за бродиране.
+@plural	{count} object takes settings|{count} objects take settings	{count} обект приема настройки|{count} обекта приемат настройки
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Възстановяване: {setting}

@@ -94,7 +94,7 @@ use vectorcraft_doc::embroidery::{Embroidery, ThreadPalette};
 use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 
-pub use self::options::{SettingField, setting_field};
+pub use self::options::{SettingField, distinct_underlays, fabric_field, part_field, setting_field};
 use self::stats::Page;
 use super::*;
 

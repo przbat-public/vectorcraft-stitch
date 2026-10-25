@@ -5507,3 +5507,98 @@ axis	Y Axis	Y 軸
 	Rectangular Grid Tool Options	長方形グリッドツールオプション
 	Polar Grid Tool Options	同心円グリッドツールオプション
 	Fill Line	線を塗りつぶす
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	オブジェクト
+embroidery	Select an object to set how it is sewn.	オブジェクトを選択して、縫い方を設定します。
+embroidery	Nothing selected	何も選択されていません
+embroidery	Guide	ガイド
+embroidery	Stitches from a file	ファイルのステッチ
+embroidery	Path	パス
+embroidery	Compound path	複合パス
+embroidery	Group	グループ
+embroidery	Layer	レイヤー
+embroidery	Text object	テキストオブジェクト
+embroidery	Image	画像
+embroidery	Symbol instance	シンボルインスタンス
+embroidery	Placed file	配置ファイル
+embroidery	Live object	ライブオブジェクト
+embroidery	fill and stroke	塗りと線
+embroidery	fill, no stroke	塗り、線なし
+embroidery	stroke, no fill	線、塗りなし
+embroidery	no fill or stroke	塗りも線もなし
+embroidery	Fill	塗り
+embroidery	Fill: none	塗り：なし
+embroidery	Stroke	線
+embroidery	Stroke: none	線：なし
+embroidery	Stitch	ステッチ
+embroidery	Underlay	下縫い
+embroidery	Compensation	補正
+embroidery	auto	自動
+embroidery	{count} of {total} set	{total} 個中 {count} 個で設定
+embroidery	Set on the selected objects; without it: {value}	選択したオブジェクトに設定済み。設定しない場合: {value}
+embroidery	The selected objects differ.	選択したオブジェクトで値が異なります。
+embroidery	{section}: {setting}	{section}：{setting}
+embroidery	Auto	自動
+embroidery	Mixed	混在
+embroidery	Type	種類
+embroidery	Angle	角度
+embroidery	Row spacing	列の間隔
+embroidery	Spacing	間隔
+embroidery	Stitch length	針目の長さ
+embroidery	Narrow parts as satin	細い部分をサテンに
+embroidery	Pull compensation	引き込みの補正
+embroidery	Pull compensation (%)	引き込みの補正 (%)
+embroidery	Push compensation	押し出しの補正
+embroidery	Expand fills	フィルの拡張
+embroidery	Split satin stitches from	サテンの針目を分割する長さ
+embroidery	Setting	設定
+embroidery	How the part is sewn: Auto picks by its shape and width.	この部分の縫い方。自動では形と幅で選びます。
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	フィルの列の向き（反時計回り）。オブジェクトと一緒に回転します。
+embroidery	The distance between rows, or between a satin's stitches.	列の間隔、またはサテンの針目の間隔。
+embroidery	The longest stitch along a row or a running line.	列またはランニングステッチの最長の針目。
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	これより細いフィルの部分はサテンの柱で縫います。0 ではどれも縫いません。
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	上の針目の下に先に縫い、生地を押さえる針目。
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	糸が生地を引き込む端で、各列や柱を広げます。
+embroidery	Widens each column by a share of its width.	各柱を幅の一定割合だけ広げます。
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	糸が外へ押し出す端で、開いたサテンの柱を短くします。
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	塗りの範囲を周囲に広げ、離して描いた図形が接するようにします。
+embroidery	Satin stitches longer than this are split in two.	これより長いサテンの針目は 2 つに分けます。
+embroidery	Where the needle goes in to sew the part.	この部分を縫い始めるとき針が入る位置。
+embroidery	Where the needle comes out after the part.	この部分の後で針が出る位置。
+embroidery	Tatami fill	タタミフィル
+embroidery	Tatami	タタミ
+embroidery	Satin	サテン
+embroidery	Running stitch	ランニングステッチ
+embroidery	Don't sew	縫わない
+embroidery	None	なし
+embroidery	Centre run	中央ラン
+embroidery	Edge run	エッジラン
+embroidery	Edge run + zigzag	エッジラン＋ジグザグ
+embroidery	Edge run + tatami	エッジラン＋タタミ
+embroidery	fabric	生地
+embroidery	machine	ミシン
+embroidery	document	ドキュメント
+embroidery	export	書き出し
+embroidery	default	既定
+embroidery	set	設定済み
+embroidery	fabric {value}	生地 {value}
+embroidery	machine {value}	ミシン {value}
+embroidery	document {value}	ドキュメント {value}
+embroidery	export {value}	書き出し {value}
+embroidery	default {value}	既定 {value}
+embroidery	Not sewn: set to Don't sew.	縫いません：「縫わない」に設定されています。
+embroidery	Not sewn: it has no paint.	縫いません：色がありません。
+embroidery	Not sewn: it is hidden.	縫いません：非表示です。
+embroidery	Not sewn: it is on a template or non-printing layer.	縫いません：テンプレートレイヤーか印刷しないレイヤーにあります。
+embroidery	Not sewn.	縫いません。
+embroidery	Stitches from a file are sewn as the file has them.	ファイルのステッチは、ファイルのとおりに縫います。
+embroidery	Type isn't sewn yet: create outlines to sew it.	テキストはまだ縫えません。アウトラインを作成すると縫えます。
+embroidery	Images aren't sewn.	画像は縫いません。
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	設定はシンボル内のオブジェクトに付けます。シンボルを編集して設定してください。
+embroidery	Guides aren't sewn.	ガイドは縫いません。
+embroidery	Placed files aren't sewn.	配置ファイルは縫いません。
+embroidery	Not sewn as it is: expand it to sew it.	このままでは縫いません。分割・拡張すると縫えます。
+embroidery	It takes no embroidery settings.	刺繍の設定はできません。
+@plural	{count} object takes settings|{count} objects take settings	設定できるオブジェクト: {count} 個
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	{setting}を元に戻す

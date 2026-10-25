@@ -5425,3 +5425,98 @@ axis	Y Axis	Trục Y
 	Rectangular Grid Tool Options	Tùy chọn công cụ Lưới chữ nhật
 	Polar Grid Tool Options	Tùy chọn công cụ Lưới cực
 	Fill Line	Tô đoạn thẳng
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Đối tượng
+embroidery	Select an object to set how it is sewn.	Chọn một đối tượng để đặt cách thêu nó.
+embroidery	Nothing selected	Chưa chọn gì
+embroidery	Guide	Đường gióng
+embroidery	Stitches from a file	Mũi thêu từ tệp
+embroidery	Path	Đường dẫn
+embroidery	Compound path	Đường dẫn phức
+embroidery	Group	Nhóm
+embroidery	Layer	Lớp
+embroidery	Text object	Đối tượng văn bản
+embroidery	Image	Hình ảnh
+embroidery	Symbol instance	Thực thể ký hiệu
+embroidery	Placed file	Tệp đã đặt
+embroidery	Live object	Đối tượng động
+embroidery	fill and stroke	tô và nét
+embroidery	fill, no stroke	tô, không nét
+embroidery	stroke, no fill	nét, không tô
+embroidery	no fill or stroke	không tô, không nét
+embroidery	Fill	Tô
+embroidery	Fill: none	Tô: không có
+embroidery	Stroke	Nét
+embroidery	Stroke: none	Nét: không có
+embroidery	Stitch	Mũi thêu
+embroidery	Underlay	Lớp lót
+embroidery	Compensation	Bù trừ
+embroidery	auto	tự động
+embroidery	{count} of {total} set	đã đặt ở {count}/{total}
+embroidery	Set on the selected objects; without it: {value}	Đã đặt trên các đối tượng đã chọn; nếu không: {value}
+embroidery	The selected objects differ.	Các đối tượng đã chọn khác nhau.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Tự động
+embroidery	Mixed	Hỗn hợp
+embroidery	Type	Kiểu
+embroidery	Angle	Góc
+embroidery	Row spacing	Khoảng cách hàng
+embroidery	Spacing	Khoảng cách
+embroidery	Stitch length	Độ dài mũi
+embroidery	Narrow parts as satin	Phần hẹp thành satin
+embroidery	Pull compensation	Bù co kéo
+embroidery	Pull compensation (%)	Bù co kéo (%)
+embroidery	Push compensation	Bù đẩy
+embroidery	Expand fills	Mở rộng vùng phủ
+embroidery	Split satin stitches from	Chia mũi satin từ
+embroidery	Setting	Thiết lập
+embroidery	How the part is sewn: Auto picks by its shape and width.	Cách thêu phần này: Tự động chọn theo hình dạng và độ rộng.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	Hướng các hàng của vùng tô, ngược chiều kim đồng hồ; xoay cùng đối tượng.
+embroidery	The distance between rows, or between a satin's stitches.	Khoảng cách giữa các hàng, hoặc giữa các mũi của satin.
+embroidery	The longest stitch along a row or a running line.	Mũi dài nhất dọc một hàng hoặc một đường mũi chạy.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Các phần của vùng tô hẹp hơn giá trị này được thêu thành cột satin; 0 thì không phần nào.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	Các mũi thêu trước, nằm dưới các mũi trên, để giữ vải.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Nới rộng mỗi hàng hoặc cột ở hai đầu, nơi chỉ kéo co vải.
+embroidery	Widens each column by a share of its width.	Nới rộng mỗi cột thêm một phần độ rộng của nó.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Rút ngắn cột satin hở ở hai đầu, nơi chỉ đẩy ra ngoài.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Mở rộng vùng tô ra mọi phía để các hình vẽ tách rời chạm nhau.
+embroidery	Satin stitches longer than this are split in two.	Mũi satin dài hơn giá trị này được chia đôi.
+embroidery	Where the needle goes in to sew the part.	Nơi kim đâm vào để thêu phần này.
+embroidery	Where the needle comes out after the part.	Nơi kim ra sau khi thêu phần này.
+embroidery	Tatami fill	Phủ tatami
+embroidery	Tatami	Tatami
+embroidery	Satin	Satin
+embroidery	Running stitch	Mũi chạy
+embroidery	Don't sew	Không thêu
+embroidery	None	Không có
+embroidery	Centre run	Đường chạy giữa
+embroidery	Edge run	Đường chạy mép
+embroidery	Edge run + zigzag	Đường chạy mép + zigzag
+embroidery	Edge run + tatami	Đường chạy mép + tatami
+embroidery	fabric	vải
+embroidery	machine	máy
+embroidery	document	tài liệu
+embroidery	export	xuất
+embroidery	default	mặc định
+embroidery	set	đã đặt
+embroidery	fabric {value}	vải {value}
+embroidery	machine {value}	máy {value}
+embroidery	document {value}	tài liệu {value}
+embroidery	export {value}	xuất {value}
+embroidery	default {value}	mặc định {value}
+embroidery	Not sewn: set to Don't sew.	Không thêu: đã đặt Không thêu.
+embroidery	Not sewn: it has no paint.	Không thêu: không có màu.
+embroidery	Not sewn: it is hidden.	Không thêu: đang bị ẩn.
+embroidery	Not sewn: it is on a template or non-printing layer.	Không thêu: nằm trên lớp mẫu hoặc lớp không in.
+embroidery	Not sewn.	Không thêu.
+embroidery	Stitches from a file are sewn as the file has them.	Mũi thêu từ tệp được thêu đúng như trong tệp.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Văn bản chưa được thêu: tạo đường bao để thêu.
+embroidery	Images aren't sewn.	Hình ảnh không được thêu.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	Thiết lập nằm trên các đối tượng của ký hiệu: hãy sửa ký hiệu để đặt chúng.
+embroidery	Guides aren't sewn.	Đường gióng không được thêu.
+embroidery	Placed files aren't sewn.	Tệp đã đặt không được thêu.
+embroidery	Not sewn as it is: expand it to sew it.	Không thêu được như hiện tại: hãy mở rộng để thêu.
+embroidery	It takes no embroidery settings.	Không nhận thiết lập thêu.
+@plural	{count} object takes settings|{count} objects take settings	{count} đối tượng nhận thiết lập
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Khôi phục: {setting}

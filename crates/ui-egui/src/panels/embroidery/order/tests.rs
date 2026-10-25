@@ -23,6 +23,7 @@ fn app_with(squares: usize) -> VectorcraftApp {
         app.run("shape.rectangle", json!({"x": x, "y": y, "width": 25, "height": 25})).unwrap();
     }
     app.run("select.set", json!({"ids": []})).unwrap();
+    app.ui.embroidery_panel.tab = crate::panels::embroidery::Tab::Order;
     app
 }
 

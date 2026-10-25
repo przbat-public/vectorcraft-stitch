@@ -1141,10 +1141,10 @@ the object a person selects (`id`).
   parameters allow (this found the zigzag fault fixed above: a 50 mm zigzag with corners 0.5 mm
   apart was one 50 mm stitch): without pull compensation to the bound it always had, and with it
   longer by its reach at most.
-- `crates/engine`: 144 tests (55 through the files' commands and the export's options,
-  `cmd/fileio/tests_embroidery.rs` and `cmd/fileio/embroidery/mod.rs`; 89 on the stitch plan, the
+- `crates/engine`: 287 tests (56 through the files' commands and the export's options,
+  `cmd/fileio/tests_embroidery.rs` and `cmd/fileio/embroidery/mod.rs`; 231 on the stitch plan, the
   walk, threads, settings, statistics, sewing order, checks and the planning service,
-  `cmd/embroidery/tests*.rs`) and 19 more beside them (`tests/embroidery_*.rs`) —
+  `cmd/embroidery/`) and 27 more beside them (`tests/embroidery_*.rs`; counted 2026-10-25) —
   `embroidery.setup` sets and unsets the palette in one undo step (none for no change, its reply's
   settings passed back change nothing, the resolved values refused, other palettes and settings refused; settings with nothing in them,
   as a file may hold them, are none, so asking for them is no edit), the palette is saved in

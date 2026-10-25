@@ -15,9 +15,9 @@ use crate::widgets;
 const ANY: RangeInclusive<f64> = f64::NEG_INFINITY..=f64::INFINITY;
 const RED: Color32 = Color32::from_rgb(200, 0, 0);
 
-/// A format with a point: the app's fields', stepping by one.
-fn plain(suffix: &str, decimals: usize) -> NumberFormat<'_> {
-    NumberFormat { suffix, decimals, mark: '.', step: UNIT_STEP }
+/// A format with a point: the app's fields', stepping by one; `unit` after a space.
+fn plain(unit: &str, decimals: usize) -> NumberFormat<'_> {
+    NumberFormat { unit, space: " ", latin: unit, decimals, mark: '.', step: UNIT_STEP }
 }
 
 /// A context with the app's fonts and theme, screen readers on.
@@ -74,7 +74,7 @@ fn a_field_in_no_look_draws_as_the_apps_own() {
         widgets::mixed_field(ui, "f", Some(0.38), " mm", 2, 90.0);
     });
     let embroidery = frame(&context(), 0.0, vec![], &mut |ui| {
-        fields::number_field(ui, "f", Some(0.38), &plain(" mm", 2), &Look::default(), 90.0, &ANY);
+        fields::number_field(ui, "f", Some(0.38), &plain("mm", 2), &Look::default(), 90.0, &ANY);
     });
     assert_eq!(format!("{:?}", own.0), format!("{:?}", embroidery.0));
     let t = crate::theme::Tokens::get(&ctx);
@@ -87,7 +87,7 @@ fn a_field_in_no_look_draws_as_the_apps_own() {
 #[test]
 fn a_look_colours_the_value_and_names_the_field() {
     let look = Look { text: Some(RED), hint: Some("Auto"), name: Some("Row spacing"), description: Some("from the fabric") };
-    let comma = NumberFormat { mark: ',', ..plain(" mm", 2) };
+    let comma = NumberFormat { mark: ',', ..plain("mm", 2) };
     let ctx = context();
     let t = crate::theme::Tokens::get(&ctx);
     let mut at = Pos2::ZERO;
@@ -143,12 +143,12 @@ fn a_choice_in_a_look() {
 /// is never one.
 #[test]
 fn a_format_writes_its_mark_and_reads_both() {
-    let comma = NumberFormat { mark: ',', ..plain(" mm", 2) };
+    let comma = NumberFormat { mark: ',', ..plain("mm", 2) };
     assert_eq!(comma.show(0.35), "0,35 mm");
     assert_eq!((comma.read("0,35"), comma.read("0.35 mm"), comma.read("1,5*2")), (Some(0.35), Some(0.35), Some(3.0)));
-    let point = plain(" mm", 2);
+    let point = plain("mm", 2);
     assert_eq!((point.show(0.35), point.read("0.35"), point.read("1,000")), ("0.35 mm".to_string(), Some(0.35), None));
-    let percent = NumberFormat { mark: ',', ..plain("\u{a0}%", 0) };
+    let percent = NumberFormat { mark: ',', space: "\u{a0}", ..plain("%", 0) };
     assert_eq!(percent.read(&percent.show(120.0)), Some(120.0), "a no-break space reads as a space");
 }
 
@@ -169,7 +169,7 @@ fn a_field_steps_in_its_own_size() {
     // of a step.
     for (step, up, shift_up, command_up) in [(MM_STEP, 0.4, 1.4, 1.41), (UNIT_STEP, 1.0, 11.0, 11.1)] {
         let ctx = context();
-        let format = NumberFormat { step, ..plain(" mm", 2) };
+        let format = NumberFormat { step, ..plain("mm", 2) };
         let at = field(&ctx, &format, 0.0, vec![], 0.38).1;
         let button = |pressed| Event::PointerButton { pos: at, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
         let key = |modifiers| Event::Key { key: Key::ArrowUp, physical_key: None, pressed: true, repeat: false, modifiers };

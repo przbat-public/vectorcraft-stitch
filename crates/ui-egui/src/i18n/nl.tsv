@@ -5985,3 +5985,7 @@ embroidery	At least the jump length ({value}): only a jump is cut	Minstens de sp
 embroidery	The fabric changed	De stof is gewijzigd
 # Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
 embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm
+# Machine embroidery: the units the embroidery fields write after their numbers (millimetres, thread weight, stitches a minute), as the Check tab writes them.
+embroidery	mm	mm
+embroidery	wt	wt
+embroidery	/min	/min

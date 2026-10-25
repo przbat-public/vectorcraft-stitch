@@ -34,15 +34,19 @@ pub const SPEED_STEP: i32 = 1;
 /// The step of a field in degrees, percent or thread weight, as a power of ten: one.
 pub const UNIT_STEP: i32 = 0;
 
-/// What follows a number in each unit, as the fields show it: a space before a unit's name, none
-/// before a degree sign, and a percent as the language spaces it ([`numbers::PERCENT_SPACES`]).
-const MM: &str = " mm";
+/// The units a field writes after its number, by their Latin names: each written as the
+/// interface language's catalogue gives it in the embroidery context (Russian "мм", as the Check
+/// tab writes it), the Latin name read too.
+const MM: &str = "mm";
+const WEIGHT: &str = "wt";
+const SPEED: &str = "/min";
 const DEGREES: &str = "°";
-const WEIGHT: &str = " wt";
-const SPEED: &str = " /min";
 const PERCENT: &str = "%";
-const PERCENT_SPACED: &str = "\u{a0}%";
-const PERCENT_NARROW: &str = "\u{202f}%";
+/// What stands between a number and its unit: a space before a unit's name, none before a degree
+/// sign, and before a percent sign as the language spaces it ([`numbers::PERCENT_SPACES`]).
+const SPACE: &str = " ";
+const NO_BREAK_SPACE: &str = "\u{a0}";
+const NARROW_NO_BREAK_SPACE: &str = "\u{202f}";
 
 /// The size of a field's words, points: as upstream's `recessed_text` writes them.
 const FIELD_TEXT: f32 = 12.5;
@@ -50,8 +54,11 @@ const FIELD_TEXT: f32 = 12.5;
 /// How a field writes its number and reads what is typed.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct NumberFormat<'a> {
-    /// What follows the number (` mm`, `°`, `%`).
-    pub suffix: &'a str,
+    /// The unit after the number (`mm`, `°`, `%`) as the language writes it, what stands between
+    /// them, and the unit's Latin name, read too.
+    pub unit: &'a str,
+    pub space: &'a str,
+    pub latin: &'a str,
     /// The most decimals written, trailing zeros left out.
     pub decimals: usize,
     /// The decimal mark written and read; a point is read too.
@@ -62,7 +69,7 @@ pub(crate) struct NumberFormat<'a> {
 
 impl NumberFormat<'_> {
     /// `value` as the field shows it: at most `decimals` places, without trailing zeros, in the
-    /// decimal mark, then the suffix; nothing for a number that isn't finite.
+    /// decimal mark, then the unit; nothing for a number that isn't finite.
     pub(crate) fn show(&self, value: f64) -> String {
         if !value.is_finite() {
             return String::new();
@@ -70,15 +77,17 @@ impl NumberFormat<'_> {
         let number = format!("{:.*}", self.decimals, value);
         let number = if number.contains('.') { number.trim_end_matches('0').trim_end_matches('.').to_string() } else { number };
         let number = if self.mark == '.' { number } else { number.replace('.', &self.mark.to_string()) };
-        format!("{number}{}", self.suffix)
+        if self.unit.is_empty() { number } else { format!("{number}{}{}", self.space, self.unit) }
     }
 
     /// The number `text` holds, its decimal mark read as a point; `None` when it holds none. The
-    /// suffix (and %, °) may follow any operand: `45*2°`, `50% / 2`; a no-break space (a language's,
-    /// before its percent sign) reads as a space.
+    /// unit, as the language writes it or by its Latin name (and %, °), may follow any operand:
+    /// `45*2°`, `50% / 2`; a no-break space (a language's, before its percent sign) reads as a space.
     pub(crate) fn read(&self, text: &str) -> Option<f64> {
-        let suffix = self.suffix.trim();
-        let bare = if suffix.is_empty() { text.to_string() } else { text.replace(suffix, "") };
+        let mut bare = text.to_string();
+        for unit in [self.unit, self.latin].into_iter().filter(|u| !u.is_empty()) {
+            bare = bare.replace(unit, "");
+        }
         let bare = if self.mark == '.' { bare } else { bare.replace(self.mark, ".") };
         vectorcraft_doc::parse_number(&bare.replace(['%', '°'], "").replace(['\u{a0}', '\u{202f}'], " "))
     }
@@ -89,25 +98,33 @@ impl NumberFormat<'_> {
     }
 }
 
-/// The format of an embroidery field in `unit` to `decimals` places, as `lang` writes numbers.
+/// The format of an embroidery field in `unit` (the engine's: `mm`, `°`, `wt`, `/min`, `%`) to
+/// `decimals` places, as `lang` writes numbers and the unit.
 pub(crate) fn format(lang: Lang, unit: &str, decimals: usize) -> NumberFormat<'static> {
-    let (suffix, step) = match unit {
-        "mm" => (MM, MM_STEP),
-        "°" => (DEGREES, UNIT_STEP),
-        "wt" => (WEIGHT, UNIT_STEP),
-        "/min" => (SPEED, SPEED_STEP),
-        "%" => (percent(lang), UNIT_STEP),
-        _ => ("", UNIT_STEP),
+    let (latin, space, step) = match unit {
+        "mm" => (MM, SPACE, MM_STEP),
+        "°" => (DEGREES, "", UNIT_STEP),
+        "wt" => (WEIGHT, SPACE, UNIT_STEP),
+        "/min" => (SPEED, SPACE, SPEED_STEP),
+        "%" => (PERCENT, percent_space(lang), UNIT_STEP),
+        _ => ("", "", UNIT_STEP),
     };
-    NumberFormat { suffix, decimals, mark: numbers::symbols(lang).decimal, step }
+    let unit = if latin.is_empty() { latin } else { unit_word(lang, latin) };
+    NumberFormat { unit, space, latin, decimals, mark: numbers::symbols(lang).decimal, step }
 }
 
-/// A percent sign after a number, spaced as `lang` spaces it.
-fn percent(lang: Lang) -> &'static str {
+/// Unit `latin` as `lang` writes it after a number: its catalogue row in the embroidery context,
+/// else as it is (a degree sign, a percent sign).
+fn unit_word(lang: Lang, latin: &'static str) -> &'static str {
+    crate::i18n::tr_ctx(lang, crate::embroidery::text::CONTEXT, latin)
+}
+
+/// What stands between a number and a percent sign, as `lang` spaces it.
+fn percent_space(lang: Lang) -> &'static str {
     match numbers::PERCENT_SPACES.iter().find(|(code, _)| *code == lang.code()).map(|(_, c)| *c) {
-        Some('\u{a0}') => PERCENT_SPACED,
-        Some(_) => PERCENT_NARROW,
-        None => PERCENT,
+        Some('\u{a0}') => NO_BREAK_SPACE,
+        Some(_) => NARROW_NO_BREAK_SPACE,
+        None => "",
     }
 }
 
@@ -269,6 +286,18 @@ mod tests {
                 assert_eq!(f.read(&f.show(value)), Some(value), "{} {unit}: {:?}", info.code, f.show(value));
             }
         }
+    }
+
+    /// A field writes its unit as the language's catalogue does (Russian "мм", as the Check tab
+    /// does) and reads it typed either way.
+    #[test]
+    fn a_field_writes_the_languages_unit_and_reads_both() {
+        let ru = format(lang("ru"), "mm", 2);
+        assert_eq!(ru.show(0.38), "0,38 мм");
+        assert_eq!((ru.read("0,4 мм"), ru.read("0,4 mm"), ru.read("0,4")), (Some(0.4), Some(0.4), Some(0.4)));
+        assert_eq!(format(lang("uk"), "/min", 0).show(650.0), "650 /хв");
+        assert_eq!(format(lang("ka"), "mm", 1).show(2.5), "2,5 მმ");
+        assert_eq!(format(Lang::EN, "wt", 0).show(40.0), "40 wt");
     }
 
     /// A number that isn't finite is written as nothing, never "inf" or "NaN".

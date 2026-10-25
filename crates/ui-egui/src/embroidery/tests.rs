@@ -192,7 +192,17 @@ fn inspect_screenshots_and_the_notice_follow_the_plan() {
 #[test]
 fn the_embroidery_ui_commands_and_control_keys_answer_junk_without_a_panic() {
     use vectorcraft_testkit::strategies::{junk_params, junk_values};
-    let ids = ["ui.embroideryPanel", "view.zoomTo", "view.checkMarks", "embroidery.nextHit", "embroidery.previousHit", "embroidery.showFinding"];
+    let ids = [
+        "ui.embroideryPanel",
+        "view.zoomTo",
+        "view.checkMarks",
+        "embroidery.nextHit",
+        "embroidery.previousHit",
+        "embroidery.showFinding",
+        "embroidery.copySettings",
+        "embroidery.pasteSettings",
+        "embroidery.documentSetup",
+    ];
     for with_document in [false, true] {
         let (mut app, tx) = controlled();
         if with_document {
@@ -204,7 +214,8 @@ fn the_embroidery_ui_commands_and_control_keys_answer_junk_without_a_panic() {
         for id in ids {
             let doc = crate::menus::UI_COMMANDS.iter().find(|c| c.0 == id).unwrap_or_else(|| panic!("{id} is a UI command")).3;
             let params = junk_params(doc, "/nonexistent");
-            assert!(params.len() >= 5, "{id}");
+            // A command that takes no parameters gets junk values alone.
+            assert!(params.len() >= 5 || doc.starts_with("{}"), "{id}");
             for p in params.into_iter().chain(junk_values()) {
                 let _ = app.run(id, p);
             }

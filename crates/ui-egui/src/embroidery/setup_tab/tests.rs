@@ -800,3 +800,29 @@ fn the_bar_turns_amber_once_the_fabric_changes() {
     edit(&mut app, "tatami.length", json!(3.0));
     assert!(ready(&mut app, &ctx, WIDE).fills.contains(&amber), "amber once the fabric changed");
 }
+
+/// Junk in any of the tab's fields (an agent's `ui.dialog.set`: wrong types, huge numbers, long
+/// strings, lists where numbers go) draws and confirms without a panic: OK refuses what it can't
+/// take, with the reason.
+#[test]
+fn junk_in_the_tabs_fields_draws_and_confirms_without_a_panic() {
+    use vectorcraft_testkit::strategies::junk_values;
+    let ctx = context();
+    let mut app = app();
+    rect(&mut app, 20.0);
+    open_tab(&mut app);
+    let keys: Vec<String> = dialog(&mut app).fields.keys().filter(|k| k.starts_with(PREFIX)).cloned().collect();
+    assert!(keys.len() >= 15, "{keys:?}");
+    crate::dialogs::cancel(&mut app);
+    for key in &keys {
+        for junk in junk_values().into_iter().chain([json!(1e308), json!("x".repeat(10_000)), json!([1, 2, 3])]) {
+            open_tab(&mut app);
+            dialog(&mut app).fields.insert(key.clone(), junk.clone());
+            frame(&mut app, &ctx, WIDE, vec![]);
+            let _ = crate::dialogs::confirm(&mut app);
+            if app.ui.dialog.is_some() {
+                crate::dialogs::cancel(&mut app);
+            }
+        }
+    }
+}

@@ -123,6 +123,9 @@ pub(crate) struct ObjectState {
     sewn: Option<Sewn>,
     /// What Copy took (a snapshot, pasted as it was then, into any document).
     copied: Option<Copied>,
+    /// How many times the selection's settings were read (the memo missed).
+    #[cfg(test)]
+    reads: usize,
 }
 
 /// What Copy Embroidery Settings took: each part's settings of the object copied, as they were
@@ -154,15 +157,23 @@ struct Sewn {
     sewing: SelectionSewing,
 }
 
-/// The settings of the active document's selection: the memo's, or read now.
+/// The settings of the active document's selection: the memo's, or read now. While a gesture is
+/// under way (a drag on the canvas, a tool's preview: each frame a new snapshot whose settings it
+/// doesn't change), the memo of the same objects is kept, and read again once it is committed or
+/// cancelled; the tab's own scrub, an undo group, isn't one, so its fields follow each step.
 fn settings_of(app: &mut VectorcraftApp) -> Option<(Vec<NodeId>, Read)> {
     let st = app.session.active()?;
     let (uid, snapshot, ids) = (st.uid, Arc::downgrade(&st.doc), st.selection.objects.clone());
+    let gesture = st.interaction.is_some();
     let memo = &app.embroidery.object.memo;
-    if let Some(m) = memo.as_ref().filter(|m| m.uid == uid && m.ids == ids && Weak::ptr_eq(&m.snapshot, &snapshot)) {
+    if let Some(m) = memo.as_ref().filter(|m| m.uid == uid && m.ids == ids && (gesture || Weak::ptr_eq(&m.snapshot, &snapshot))) {
         return Some((ids, m.info.clone()));
     }
-    let info = app.session.embroidery_info(&ids, false, &Default::default()).map(Arc::new).map_err(|e| e.to_string());
+    #[cfg(test)]
+    {
+        app.embroidery.object.reads += 1;
+    }
+    let info = app.session.embroidery_merged(&ids).map(Arc::new).map_err(|e| e.to_string());
     app.embroidery.object.memo = Some(Memo { uid, snapshot, ids: ids.clone(), info: info.clone() });
     Some((ids, info))
 }
@@ -885,7 +896,7 @@ fn takes(key: &str, value: &Value) -> bool {
 pub(crate) fn copy(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
     super::only_keys(p, &[])?;
     let id = copyable(app).ok_or("select one object that takes embroidery settings: a path or a compound path")?;
-    let info = app.session.embroidery_info(&[id], false, &Default::default()).map_err(|e| e.to_string())?;
+    let info = app.session.embroidery_merged(&[id]).map_err(|e| e.to_string())?;
     let mut copied = Copied { parts: Vec::new(), left_out: Vec::new() };
     for part in Part::ALL {
         let Some(p) = part.of(&info) else { continue };
@@ -921,7 +932,7 @@ pub(crate) fn paste(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String
         return Err("select the objects to paste the embroidery settings onto".into());
     }
     // The parts some selected object has: `embroidery.set` refuses a part none of them has.
-    let info = app.session.embroidery_info(&ids, false, &Default::default()).map_err(|e| e.to_string())?;
+    let info = app.session.embroidery_merged(&ids).map_err(|e| e.to_string())?;
     let commands: Vec<Value> = copied
         .parts
         .iter()

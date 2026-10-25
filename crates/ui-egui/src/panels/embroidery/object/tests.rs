@@ -745,3 +745,31 @@ fn the_footer_names_the_fabric_and_the_thread() {
     let line = text::fill(crate::et!("Fabric: {fabric} · thread {weight} wt"), &[("fabric", crate::et!("Custom")), ("weight", "60")]);
     assert!(drawn.words.iter().any(|(w, _)| *w == line), "{line}: {:?}", drawn.words);
 }
+
+/// The selection's settings are read once a snapshot: not again on idle frames, nor on the preview
+/// frames of a drag on the canvas (their settings don't change), but once the drag is committed.
+#[test]
+fn the_settings_are_read_once_a_snapshot_and_not_during_a_drag() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    ready(&mut app, &ctx, &mut time);
+    let reads = app.embroidery.object.reads;
+    for _ in 0..5 {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![]);
+    }
+    assert_eq!(app.embroidery.object.reads, reads, "idle frames read nothing");
+    app.session.begin_interaction("Move").unwrap();
+    for k in 1..=5 {
+        app.session.preview("object.move", &json!({"dx": k, "dy": 0})).unwrap();
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![]);
+    }
+    assert_eq!(app.embroidery.object.reads, reads, "a drag's frames read nothing");
+    app.session.commit_interaction().unwrap();
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    assert_eq!(app.embroidery.object.reads, reads + 1, "read again once committed");
+}

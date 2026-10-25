@@ -116,6 +116,17 @@ impl Session {
         }
         Ok(reply(&doc, ids, opts, planned_with.as_deref(), Page { offset: 0, limit: LIST_LIMIT }, warnings))
     }
+
+    /// The settings of objects `ids` merged, as [`Session::embroidery_info`] gives them without
+    /// planning, but with no object listed (`objects` empty; the skipped ones still are): what the
+    /// Object tab reads, which merges and never lists.
+    pub fn embroidery_merged(&mut self, ids: &[NodeId]) -> Result<ObjectSettings> {
+        let d = &self.doc()?.doc;
+        if let Some(missing) = ids.iter().find(|id| d.node(**id).is_none()) {
+            return Err(EngineError::NoNode(*missing));
+        }
+        Ok(reply(d, ids, &Options::default(), None, Page { offset: 0, limit: 0 }, Vec::new()))
+    }
 }
 
 /// `embroidery.info`'s reply, its options aside: the objects it takes, listed from `offset`, those

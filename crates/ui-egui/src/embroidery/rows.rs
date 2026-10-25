@@ -349,15 +349,18 @@ fn label_cell(ui: &mut Ui, row: &Row<'_>, width: f32, scrubs: bool) {
 fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
     let t = Tokens::get(ui.ctx());
     let text = value_colour(&t, row.own);
-    // What is wrong with the value first, on a line of its own.
-    let description = match row.problem {
-        Some(p) => format!("{p}\n{}", row.description),
-        None => row.description.clone(),
-    };
+    // What is wrong with the value first, then where it comes from, then what the setting does (its
+    // label's tooltip), each on a line of its own.
+    let description =
+        [row.problem, Some(row.description.as_str()), Some(row.tip)].into_iter().flatten().filter(|w| !w.is_empty()).collect::<Vec<_>>().join("\n");
     let look = Look { text: Some(text), hint: None, name: Some(row.name), description: Some(&description) };
     match &row.field {
         Field::Number { value, format, bounds, hint } => {
-            fields::number_field(ui, (row.key, "number"), *value, format, &Look { hint: *hint, ..look }, width, bounds).map(Edit::Number)
+            // The id `number_field` gives its text box.
+            let id = ui.id().with((row.key, "number"));
+            let edit = fields::number_field(ui, (row.key, "number"), *value, format, &Look { hint: *hint, ..look }, width, bounds);
+            keyboard_tip(ui, id, row.tip);
+            edit.map(Edit::Number)
         }
         // In a cell of its own width, its words cut short there (whole in the cell's tooltip): a
         // combo lays its words out in the room its row has left, so a long one would push the rest
@@ -367,7 +370,7 @@ fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
             let cell = ui.allocate_ui_with_layout(vec2(width, ROW), egui::Layout::left_to_right(egui::Align::Center), |ui| {
                 ui.set_max_width(width);
                 ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
-                fields::choice(ui, (row.key, "choice"), shown, &look, width, |ui| {
+                let chosen = fields::choice(ui, (row.key, "choice"), shown, &look, width, |ui| {
                     let mut chosen = None;
                     for (id, words) in options.iter() {
                         if ui.add(egui::Button::selectable(*current == Some(id.as_str()), words.as_str())).clicked() {
@@ -375,7 +378,9 @@ fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
                         }
                     }
                     chosen
-                })
+                });
+                keyboard_tip(ui, fields::combo_button(ui, (row.key, "choice")), row.tip);
+                chosen
             });
             if cut {
                 // Over the combo, sensing hover alone (egui marks a hover-only widget hovered only
@@ -419,11 +424,18 @@ fn aside(ui: &mut Ui, row: &Row<'_>) -> Option<Edit> {
         let room = ui.available_width() - RESTORE - GAP / 2.0;
         let hint = row.hint.as_deref().filter(|h| !h.is_empty());
         let shown = hint.filter(|h| after.is_none() && text_width(ui, h, SMALL_TEXT) <= room);
-        let tip = match hint.filter(|_| shown.is_none()) {
+        let hidden = hint.filter(|_| shown.is_none());
+        let tip = match hidden {
             Some(h) => format!("{name} · {h}"),
             None => name.to_string(),
         };
-        if restore(ui, name, &tip).clicked() {
+        let resp = restore(ui, name, &tip);
+        // The hint it holds, for screen readers too.
+        if let Some(h) = hidden {
+            ui.ctx().accesskit_node_builder(resp.id, |node| node.set_description(h));
+        }
+        keyboard_tip(ui, resp.id, &tip);
+        if resp.clicked() {
             edit = Some(Edit::Restore);
         }
         ui.add_space(GAP / 2.0);
@@ -533,6 +545,31 @@ pub(crate) fn check(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32
         None => egui::WidgetInfo::labeled(egui::WidgetType::Checkbox, ui.is_enabled(), words),
     });
     resp.clicked()
+}
+
+/// While widget `id` has the keyboard's focus, taken from the keyboard (Tab, a screen reader), not
+/// a press: `tip` shown as its tooltip, as hovering shows it (egui shows tooltips on hover alone).
+fn keyboard_tip(ui: &Ui, id: egui::Id, tip: &str) {
+    let key = id.with("focus-from-keyboard");
+    let focused = ui.memory(|m| m.has_focus(id));
+    let from_keyboard = match (focused, ui.data(|d| d.get_temp::<bool>(key))) {
+        (false, _) => None,
+        (true, Some(k)) => Some(k),
+        // Gained this frame: from the keyboard unless the pointer pressed for it.
+        (true, None) => Some(!ui.input(|i| i.pointer.any_down() || i.pointer.any_released())),
+    };
+    ui.data_mut(|d| match from_keyboard {
+        Some(k) => {
+            d.insert_temp(key, k);
+        }
+        None => d.remove::<bool>(key),
+    });
+    if from_keyboard == Some(true)
+        && !tip.is_empty()
+        && let Some(resp) = ui.ctx().read_response(id)
+    {
+        resp.show_tooltip_text(tip);
+    }
 }
 
 /// The keyboard focus's outline around `rect` while `resp` has it (the memory's focus, as the

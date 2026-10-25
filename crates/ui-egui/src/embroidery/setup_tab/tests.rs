@@ -348,7 +348,11 @@ fn screen_readers_hear_the_tab() {
     assert!(length.description().is_some_and(|d| d.starts_with("Changed from the preset, which gives")), "{:?}", length.description());
     assert_eq!(node("Restore Tatami: Stitch length").role(), egui::accesskit::Role::Button);
     let jump = node("Jump (needle up) from");
-    assert_eq!(jump.description(), Some("Source: default"));
+    assert_eq!(
+        jump.description(),
+        Some(format!("Source: default\n{}", vocabulary::setup_tip("machine.jumpLength")).as_str()),
+        "its source, then its help"
+    );
 }
 
 /// What the tab opened with stays beside the dialog: its fields are the settings alone, so an agent

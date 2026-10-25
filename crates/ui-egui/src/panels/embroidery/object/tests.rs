@@ -197,7 +197,7 @@ fn a_set_value_is_marked_and_an_inherited_one_says_where_it_comes_from() {
     assert!(drawn.has(&format!("fabric {pull}")), "the pull's hint, the knit's {pull}: {:?}", drawn.words);
     assert!(drawn.has("fabric") && drawn.has("default"), "badges: {:?}", drawn.words);
     let field = drawn.node("Row spacing");
-    assert_eq!(field.description(), Some("Source: fabric"));
+    assert_eq!(field.description(), Some(format!("Source: fabric\n{}", vocabulary::tip("spacing")).as_str()), "its source, then its help");
     let field = drawn.node("Angle");
     assert!(field.description().is_some_and(|d| d.starts_with("Set on the selected objects")), "{:?}", field.description());
 }
@@ -586,4 +586,27 @@ fn screen_readers_hear_the_painted_words_and_each_restore_apart() {
     assert!(spacing.placeholder().is_some_and(|p| p.starts_with("Auto")), "{:?}", spacing.placeholder());
     let names: Vec<&str> = drawn.nodes.iter().filter_map(|(_, n)| n.label()).filter(|l| l.starts_with("Restore ")).collect();
     assert!(names.contains(&"Restore Stitch: Type") && names.contains(&"Restore Underlay: Type"), "{names:?}");
+}
+
+/// A setting's help, its label's tooltip, shows too while its field has the keyboard's focus
+/// (taken by the keyboard, not a press), and screen readers hear it with the field.
+#[test]
+fn a_settings_help_shows_on_the_keyboards_focus() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let tip = vocabulary::tip("angle");
+    let angle = drawn.node(vocabulary::label("angle", None));
+    assert!(angle.description().is_some_and(|d| d.ends_with(tip)), "{:?}", angle.description());
+    assert!(!drawn.has(tip), "no tooltip yet");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![drawn.focus(vocabulary::label("angle", None))]);
+    let mut shown = false;
+    for _ in 0..4 {
+        time += 0.05;
+        shown |= frame(&mut app, &ctx, time, vec![]).has(tip);
+    }
+    assert!(shown, "the help as its tooltip");
 }

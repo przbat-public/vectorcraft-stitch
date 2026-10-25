@@ -246,7 +246,7 @@ pub(crate) fn choice<R>(
 /// The id of the button `widgets::combo` draws for `id` in `ui`: egui's combo box's, in the frame
 /// it is drawn in (egui gives a frame's contents the id of its ui with "child"), as `combo` itself
 /// finds it to tell whether it has the keyboard.
-fn combo_button(ui: &Ui, id: impl Hash + std::fmt::Debug) -> egui::Id {
+pub(crate) fn combo_button(ui: &Ui, id: impl Hash + std::fmt::Debug) -> egui::Id {
     let frame = ui.id().with(egui::IdSalt::new("child"));
     frame.with(egui::IdSalt::new(frame.with(id)))
 }

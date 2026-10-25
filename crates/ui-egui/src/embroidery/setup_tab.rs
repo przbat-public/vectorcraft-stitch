@@ -797,7 +797,8 @@ fn right(ui: &mut Ui, d: &Dialog, o: &Opened, r: &Right, cols: Columns, lang: La
     }
     rows::heading(ui, crate::et!("Sewing order"));
     let join = now(d, JOIN).as_bool();
-    let check = ui.scope(|ui| rows::check(ui, crate::et!("Join one thread's objects when nothing lies between them"), join));
+    let back = Tokens::get(ui.ctx()).panel;
+    let check = ui.scope(|ui| rows::check(ui, crate::et!("Join one thread's objects when nothing lies between them"), join, back));
     if check.inner {
         edits.push((JOIN.into(), json!(join != Some(true))));
     }
@@ -1094,10 +1095,8 @@ fn bar(ui: &mut Ui, d: &Dialog, o: &Opened, edits: &mut Vec<Change>) {
     }
     let t = Tokens::get(ui.ctx());
     let changed = fabric_changed(d, o);
-    let fill = if changed { mix(t.panel, t.warning, BAR_TINT) } else { t.panel_darker };
-    let words = marks::readable_text(t.text, &[fill, t.panel], t.dark);
+    let BarColours { fill, words, border } = BarColours::of(&t, changed);
     let chosen = chosen(&d.fields);
-    let border = if changed { marks::readable(t.warning, &[t.panel], t.dark) } else { egui::Color32::TRANSPARENT };
     ui.add_space(GAP);
     let frame = egui::Frame::NONE.fill(fill).stroke(egui::Stroke::new(1.0, border)).corner_radius(CornerRadius::same(BAR_RADIUS));
     frame.inner_margin(egui::Margin::same(BAR_PAD as i8)).show(ui, |ui| {
@@ -1125,7 +1124,7 @@ fn bar(ui: &mut Ui, d: &Dialog, o: &Opened, edits: &mut Vec<Change>) {
             let objects = crate::etn!(n as u64, "{count} object", "{count} objects");
             let words = text::fill(crate::et!("{setting}: {objects}"), &[("setting", setting), ("objects", &objects)]);
             let on = chosen.iter().any(|k| k == key);
-            if rows::check(ui, &words, Some(on)) {
+            if rows::check(ui, &words, Some(on), fill) {
                 let mut list: Vec<String> = chosen.iter().filter(|k| k.as_str() != key).cloned().collect();
                 if !on {
                     list.push(key.to_string());
@@ -1139,6 +1138,23 @@ fn bar(ui: &mut Ui, d: &Dialog, o: &Opened, edits: &mut Vec<Change>) {
 /// How strongly the bar's amber shows over the panel: a share of the warning colour. An estimate,
 /// the words on it moved to read by 4.5:1 ([`marks::readable_text`]).
 const BAR_TINT: f32 = 0.35;
+
+/// The bar's colours, amber once a value of the fabric changed: its fill, its words (read by 4.5:1
+/// on it), its border (the warning colour read by 3:1 on the panel; none while it isn't amber).
+struct BarColours {
+    fill: egui::Color32,
+    words: egui::Color32,
+    border: egui::Color32,
+}
+
+impl BarColours {
+    fn of(t: &Tokens, changed: bool) -> Self {
+        let fill = if changed { mix(t.panel, t.warning, BAR_TINT) } else { t.panel_darker };
+        let words = marks::readable_text(t.text, &[fill, t.panel], t.dark);
+        let border = if changed { marks::readable(t.warning, &[t.panel], t.dark) } else { egui::Color32::TRANSPARENT };
+        Self { fill, words, border }
+    }
+}
 
 /// `a` moved a share `t` of the way to `b`, channel by channel, opaque.
 fn mix(a: egui::Color32, b: egui::Color32, t: f32) -> egui::Color32 {

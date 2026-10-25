@@ -304,16 +304,26 @@ fn the_bar_counts_objects_and_applies_the_fabric_on_ok() {
     assert_eq!(steps(&app), before + 1);
 }
 
-/// The bar's words read by 4.5:1 on it, amber or not, in every theme.
+/// The bar, amber or not, reads in every theme: its words by 4.5:1 on it, its amber border by 3:1
+/// on the panel, and its checkboxes' words by 4.5:1, their boxes' borders and a ticked box by 3:1,
+/// on the bar.
 #[test]
 fn the_bar_reads_in_every_theme() {
     for scheme in Scheme::ALL {
         for b in Brightness::ALL {
             for accent in Accent::ALL {
                 let t = Tokens::for_scheme(scheme, b, accent);
-                for fill in [mix(t.panel, t.warning, BAR_TINT), t.panel_darker] {
-                    let words = marks::readable_text(t.text, &[fill, t.panel], t.dark);
-                    assert!(marks::contrast(words, fill) >= marks::TEXT_CONTRAST - 0.01, "{scheme:?} {b:?} {accent:?}");
+                for changed in [true, false] {
+                    let at = format!("{scheme:?} {b:?} {accent:?} changed {changed}");
+                    let bar = BarColours::of(&t, changed);
+                    assert!(marks::contrast(bar.words, bar.fill) >= marks::TEXT_CONTRAST - 0.01, "{at}: words");
+                    if changed {
+                        assert!(marks::contrast(bar.border, t.panel) >= marks::NON_TEXT_CONTRAST - 0.01, "{at}: border");
+                    }
+                    let check = rows::CheckColours::on(&t, bar.fill);
+                    assert!(marks::contrast(check.words, bar.fill) >= marks::TEXT_CONTRAST - 0.01, "{at}: a box's words");
+                    assert!(marks::contrast(check.border, bar.fill) >= marks::NON_TEXT_CONTRAST - 0.01, "{at}: a box's border");
+                    assert!(marks::contrast(check.ticked, bar.fill) >= marks::NON_TEXT_CONTRAST - 0.01, "{at}: a ticked box");
                 }
             }
         }

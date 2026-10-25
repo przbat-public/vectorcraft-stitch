@@ -453,24 +453,45 @@ fn restore(ui: &mut Ui, name: &str, tip: &str) -> egui::Response {
     resp.on_hover_text(tip)
 }
 
-/// A checkbox of `words` (already in the interface language), `None` a dash where the objects
-/// differ, drawn as the app's are but its words wrapping in the room they have → whether it was
-/// clicked.
-pub(crate) fn check(ui: &mut Ui, words: &str, value: Option<bool>) -> bool {
+/// A checkbox's colours on `back` (what it lies on): its words read by 4.5:1, its box's border and
+/// a ticked box's fill by 3:1 ([`marks::TEXT_CONTRAST`], [`marks::NON_TEXT_CONTRAST`]); hovered,
+/// its border in the words' colour.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct CheckColours {
+    pub(crate) words: Color32,
+    pub(crate) border: Color32,
+    pub(crate) ticked: Color32,
+}
+
+impl CheckColours {
+    pub(crate) fn on(t: &Tokens, back: Color32) -> Self {
+        Self {
+            words: marks::readable_text(t.text, &[back], t.dark),
+            border: marks::readable(t.button_border, &[back], t.dark),
+            ticked: marks::readable(t.accent_strong, &[back], t.dark),
+        }
+    }
+}
+
+/// A checkbox of `words` (already in the interface language) lying on `back`, `None` a dash where
+/// the objects differ, drawn as the app's are but its words wrapping in the room they have and its
+/// colours read on what it lies on ([`CheckColours`]) → whether it was clicked.
+pub(crate) fn check(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32) -> bool {
     let t = Tokens::get(ui.ctx());
+    let c = CheckColours::on(&t, back);
     let room = (ui.available_width() - CHECK_BOX - CHECK_GAP).max(1.0);
-    let galley = ui.painter().layout(words.to_string(), FontId::proportional(LABEL_TEXT), t.text, room);
+    let galley = ui.painter().layout(words.to_string(), FontId::proportional(LABEL_TEXT), c.words, room);
     let size = vec2(CHECK_BOX + CHECK_GAP + galley.size().x, galley.size().y.max(CHECK_ROW));
     let (rect, resp) = ui.allocate_exact_size(size, Sense::click());
     let first_line = galley.rows.first().map_or(galley.size().y, |r| r.rect().height());
     let bx = Rect::from_min_size(egui::pos2(rect.left(), rect.top() + (first_line - CHECK_BOX) / 2.0), vec2(CHECK_BOX, CHECK_BOX));
-    ui.painter().galley(egui::pos2(bx.right() + CHECK_GAP, rect.top()), galley, t.text);
+    ui.painter().galley(egui::pos2(bx.right() + CHECK_GAP, rect.top()), galley, c.words);
     let checked = value == Some(true);
-    ui.painter().rect_filled(bx, CornerRadius::same(2), if checked { t.accent_strong } else { t.input });
-    let border = if resp.hovered() { t.text } else { t.button_border };
+    ui.painter().rect_filled(bx, CornerRadius::same(2), if checked { c.ticked } else { t.input });
+    let border = if resp.hovered() { c.words } else { c.border };
     ui.painter().rect_stroke(bx, CornerRadius::same(2), egui::Stroke::new(1.0, border), egui::StrokeKind::Inside);
-    focus_ring(ui, &resp, bx.expand(FOCUS_GAP), t.panel);
-    let mark = egui::Stroke::new(CHECK_MARK, if checked { Color32::WHITE } else { t.text });
+    focus_ring(ui, &resp, bx.expand(FOCUS_GAP), back);
+    let mark = egui::Stroke::new(CHECK_MARK, if checked { Color32::WHITE } else { c.words });
     match value {
         Some(true) => {
             let (a, b, c) = (bx.left_center() + vec2(3.0, 0.0), bx.center_bottom() + vec2(-1.0, -3.5), bx.right_top() + vec2(-3.0, 3.0));

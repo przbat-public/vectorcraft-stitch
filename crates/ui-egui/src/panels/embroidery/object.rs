@@ -292,11 +292,13 @@ fn header(app: &VectorcraftApp, ui: &mut Ui, ids: &[NodeId], info: Option<&Objec
             });
         }
     });
+    // Dim words, moved as far as they need to read by 4.5:1 on the panel.
+    let dim = crate::embroidery::marks::readable_text(t.text_dim, &[t.panel], t.dark);
     if let Some(words) = subtitle {
-        ui.add(egui::Label::new(egui::RichText::new(words).size(SMALL_TEXT).color(t.text_dim)).wrap());
+        ui.add(egui::Label::new(egui::RichText::new(words).size(SMALL_TEXT).color(dim)).wrap());
     }
     if count.updating && !count.fresh {
-        ui.label(egui::RichText::new(crate::et!("Updating…")).size(SMALL_TEXT).color(t.text_dim))
+        ui.label(egui::RichText::new(crate::et!("Updating…")).size(SMALL_TEXT).color(dim))
             .on_hover_text(crate::et!("These are the stitches before the last change; the new ones are being planned."));
     }
     if let Some(error) = &count.failed {
@@ -422,7 +424,8 @@ fn part_switch(ui: &mut Ui, info: &ObjectSettings, shown: Option<Part>) -> Optio
                 ui.painter().rect_filled(segment.shrink(super::SEGMENT_INSET), radius, fill);
                 let colour = match (selected, has) {
                     (true, _) => t.text_strong,
-                    (false, true) => t.text_dim,
+                    // Read by 4.5:1 on the switch's ground.
+                    (false, true) => crate::embroidery::marks::readable_text(t.text_dim, &[t.input], t.dark),
                     (false, false) => t.text_disabled,
                 };
                 let room = (segment.width() - 2.0 * super::SEGMENT_INSET).max(1.0);
@@ -480,7 +483,8 @@ fn part_rows(ui: &mut Ui, part: Part, p: &PartInfo, ids: &[NodeId], width: f32, 
     if p.sewn.as_deref() == Some("none") {
         let t = Tokens::get(ui.ctx());
         let words = vocabulary::not_sewn(p.reason.as_deref());
-        ui.add(egui::Label::new(egui::RichText::new(words).size(SMALL_TEXT).color(t.text_dim)).wrap());
+        let dim = crate::embroidery::marks::readable_text(t.text_dim, &[t.panel], t.dark);
+        ui.add(egui::Label::new(egui::RichText::new(words).size(SMALL_TEXT).color(dim)).wrap());
     }
     let sections: Vec<(Section, Vec<Owned>)> = shown_keys(p)
         .into_iter()
@@ -741,7 +745,7 @@ fn trim_after(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], commands: &mut
     }
     ui.add_space(GAP);
     let value = if info.trim_after.mixed { None } else { info.trim_after.value };
-    if rows::check(ui, crate::et!("Trim the thread after the object"), value) {
+    if rows::check(ui, crate::et!("Trim the thread after the object"), value, Tokens::get(ui.ctx()).panel) {
         commands.push(("embroidery.setTrimAfter", json!({"ids": ids_json(ids), "on": value != Some(true)})));
     }
 }

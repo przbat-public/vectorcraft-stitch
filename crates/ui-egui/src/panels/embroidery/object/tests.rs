@@ -494,7 +494,7 @@ fn a_three_state_box_wraps_its_words() {
     let raw = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(120.0, 200.0))), ..Default::default() };
     let words = "Obetnij nić po obiekcie i jeszcze dłużej";
     let mut out = ctx.run_ui(raw, |ui| {
-        crate::embroidery::rows::check(ui, words, None);
+        crate::embroidery::rows::check(ui, words, None, Tokens::get(ui.ctx()).panel);
     });
     out.textures_delta.clear();
     let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();

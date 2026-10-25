@@ -64,6 +64,10 @@ pub(crate) enum Skip {
 }
 
 impl Skip {
+    /// Every reason, as `embroidery.info` and the settings commands' replies give them.
+    pub(crate) const ALL: [Skip; 9] =
+        [Skip::Literal, Skip::Guide, Skip::Type, Skip::Image, Skip::SymbolInstance, Skip::Live, Skip::Placed, Skip::Intertwine, Skip::NoPart];
+
     /// Its id in replies.
     pub(crate) fn id(self) -> &'static str {
         match self {
@@ -122,6 +126,12 @@ pub(crate) fn visit_takers<'a>(n: &'a Node, take: &mut Vec<&'a Node>, skip: &mut
         NodeKind::Blend { .. } | NodeKind::Envelope { .. } | NodeKind::Mesh(_) | NodeKind::Repeat(_) => Skip::Live,
     };
     skip.push((n.id, why));
+}
+
+/// The ids of every reason an object is skipped by the settings commands (`skipped[].reason`): an
+/// interface's words for them are tied to this list.
+pub fn skip_reasons() -> Vec<&'static str> {
+    Skip::ALL.iter().map(|s| s.id()).collect()
 }
 
 /// Whether the cut after `n` means something: it is sewn, or holds what is (a path or a compound

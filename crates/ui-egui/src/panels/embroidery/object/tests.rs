@@ -243,16 +243,35 @@ fn mixed_values_are_blank_and_counted() {
     assert!(drawn.has("1 of 2 set"), "{:?}", drawn.words);
 }
 
-/// Every setting an object's part takes has a label, and a tip.
+/// Every setting an object's part takes has a label and a tip, and every reason, fabric, stabiliser
+/// and palette the engine lists has words of its own: tied to the engine's lists, not to a list of
+/// the test's.
 #[test]
 fn every_part_setting_has_words() {
-    for key in
-        ["stitch", "angle", "spacing", "length", "narrowAsSatin", "underlay", "pull", "pullPercent", "push", "expand", "splitLength", "entry", "exit"]
-    {
+    // The engine's lists: every part key, every reason an object is skipped, every fabric preset and
+    // its stabiliser, every palette.
+    for key in vectorcraft_doc::embroidery::PartKey::ALL.iter().map(|k| k.name()) {
         assert_ne!(vocabulary::label(key, None), crate::et!("Setting"), "{key}");
         assert!(!vocabulary::tip(key).is_empty(), "{key}");
     }
     assert_eq!(vocabulary::label("spacing", Some("tatami")), crate::et!("Row spacing"));
+    for reason in vectorcraft_engine::cmd::embroidery::skip_reasons() {
+        // A part a command was given that the object hasn't: no object-wide reason of its own.
+        if reason != "noPart" {
+            assert_ne!(vocabulary::takes_none(reason), crate::et!("It takes no embroidery settings."), "{reason}");
+        }
+    }
+    let fabrics = Session::new().execute("embroidery.fabrics", &json!({})).unwrap();
+    for f in fabrics["fabrics"].as_array().unwrap() {
+        let id = f["id"].as_str().unwrap();
+        assert_ne!(vocabulary::fabric(id), id, "{id}");
+        if let Some(s) = f["values"]["stabilizer"].as_str() {
+            assert_ne!(vocabulary::information(s), s, "{s}");
+        }
+    }
+    for id in vectorcraft_doc::embroidery::ThreadPalette::KNOWN.iter().filter_map(vectorcraft_doc::embroidery::ThreadPalette::id) {
+        assert_ne!(vocabulary::palette(id), id, "{id}");
+    }
 }
 
 /// Auto's choices in words: a fill's tatami, a wide stroke's satin and its underlay by its width.

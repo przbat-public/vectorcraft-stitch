@@ -500,7 +500,7 @@ fn left(ui: &mut Ui, d: &Dialog, o: &Opened, width: f32, lang: Lang, edits: &mut
     let all: Vec<Row<'_>> = fabric_rows.iter().map(|(_, r)| r).chain([&weight, &palette, &choice_row]).map(|r| r.row(lang)).collect();
     let cols = Columns::fit(ui, width, &all);
     if let Some(edit) = rows::show(ui, &cols.wide(FABRIC_FIELD, width), &choice_row.row(lang)) {
-        edits.extend(edit_of("fabric", edit, o, &choice));
+        edits.push(edit_of("fabric", edit, o, &choice));
     }
     note(ui, crate::et!("The values objects use where they set none of their own."));
     for (heading, row) in &fabric_rows {
@@ -508,12 +508,12 @@ fn left(ui: &mut Ui, d: &Dialog, o: &Opened, width: f32, lang: Lang, edits: &mut
             rows::heading(ui, h);
         }
         if let Some(edit) = rows::show(ui, &cols, &row.row(lang)) {
-            edits.extend(edit_of(row.key, edit, o, &choice));
+            edits.push(edit_of(row.key, edit, o, &choice));
         }
     }
     rows::heading(ui, crate::et!("Thread"));
     if let Some(edit) = rows::show(ui, &cols, &weight.row(lang)) {
-        edits.extend(edit_of(THREAD_WEIGHT, edit, o, &choice));
+        edits.push(edit_of(THREAD_WEIGHT, edit, o, &choice));
     }
     let spacing = now("tatami.spacing").as_f64().zip(now(THREAD_WEIGHT).as_f64()).map(|(s, w)| setup::spacing_for_thread(s, w));
     if let Some(s) = spacing {
@@ -521,7 +521,7 @@ fn left(ui: &mut Ui, d: &Dialog, o: &Opened, width: f32, lang: Lang, edits: &mut
         note(ui, &text::fill(crate::et!("Rows' spacing for this thread: {value}"), &[("value", &value)]));
     }
     if let Some(edit) = rows::show(ui, &cols, &palette.row(lang)) {
-        edits.extend(edit_of(PALETTE, edit, o, &choice));
+        edits.push(edit_of(PALETTE, edit, o, &choice));
     }
 }
 
@@ -536,7 +536,7 @@ fn right(ui: &mut Ui, d: &Dialog, o: &Opened, width: f32, lang: Lang, edits: &mu
     rows::heading(ui, crate::et!("Machine and file"));
     for row in &machine {
         if let Some(edit) = rows::show(ui, &cols, &row.row(lang)) {
-            edits.extend(edit_of(row.key, edit, o, ""));
+            edits.push(edit_of(row.key, edit, o, ""));
         }
     }
     rows::heading(ui, crate::et!("Sewing order"));
@@ -559,14 +559,14 @@ fn right(ui: &mut Ui, d: &Dialog, o: &Opened, width: f32, lang: Lang, edits: &mu
 
 /// The change `edit` of field `key` makes: a number or a choice as given, ↺ the value back at its
 /// base (the preset's or the default).
-fn edit_of(key: &str, edit: Edit, o: &Opened, choice: &str) -> Option<Change> {
+fn edit_of(key: &str, edit: Edit, o: &Opened, choice: &str) -> Change {
     let value = match edit {
         Edit::Number(v) => json!(v),
         Edit::Choice(id) => json!(id),
         Edit::Restore if FABRIC_VALUES.contains(&key) => o.base(choice, key),
         Edit::Restore => o.default_of(key),
     };
-    Some((key.to_string(), value))
+    (key.to_string(), value)
 }
 
 /// A note under a row: dim words, wrapped.
@@ -665,7 +665,13 @@ fn fabric_row(o: &Opened, choice: &str, key: &'static str, value: &Value, lang: 
             (Some(p), _) => note_words(p.notes.get(key)),
             (None, _) => vocabulary::source("default", None),
         };
-        let description = text::fill(crate::et!("Source: {name}"), &[("name", &words)]);
+        // The publications the preset's value rests on, each on a line (the badge's tooltip).
+        let sources = preset.and_then(|p| p.notes.get(key)).map(|n| n.sources.join("\n")).filter(|s| !s.is_empty());
+        let source = text::fill(crate::et!("Source: {name}"), &[("name", &words)]);
+        let description = match sources {
+            Some(s) => format!("{source}\n{s}"),
+            None => source,
+        };
         (Some(words), None, description)
     };
     Owned {

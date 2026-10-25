@@ -223,8 +223,8 @@ tabs on OK, one undo step (`command.batch {label: "Document Setup"}`); Cancel ch
   before in the dialog (the project owner's choice); changing a built-in value makes the values
   the document's own. A value changed from its preset has the Object tab's marks (a bar, strong
   text, ↺ restoring the preset's value, "preset 4" after it); one as its preset gives it says what
-  it rests on ("Wilcom", or "estimate"; the publications in the field's description and the
-  preset's sources in `embroidery.fabrics`). The stabiliser is for information only.
+  it rests on ("Wilcom", or "estimate"), the publications in its badge's tooltip and the field's
+  description (as `embroidery.fabrics` lists them). The stabiliser is for information only.
 - **The thread**: its weight, with the rows' spacing it gives the fabric's tatami (the planner's
   own formula), and the palette machine files number (Janome's for JEF, Brother's for PES, not in
   the mockup: note 07's recommendation). **The machine and file**: jumps, cuts, the shortest

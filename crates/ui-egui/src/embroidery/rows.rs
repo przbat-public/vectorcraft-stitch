@@ -385,13 +385,14 @@ fn aside(ui: &mut Ui, row: &Row<'_>) -> Option<Edit> {
         ui.painter().galley(rect.min, galley, colour);
         resp.on_hover_text(words);
     } else {
-        badge(ui, words, room);
+        badge(ui, words, room, &row.description);
     }
     edit
 }
 
-/// A badge holding `words`, at most `room` points wide.
-fn badge(ui: &mut Ui, words: &str, room: f32) {
+/// A badge holding `words`, at most `room` points wide, its tooltip `tip` (where the value comes
+/// from, said in full: a preset's publications), else its words.
+fn badge(ui: &mut Ui, words: &str, room: f32, tip: &str) {
     let t = Tokens::get(ui.ctx());
     let colour = marks::readable_text(t.text, &[t.divider], t.dark);
     let galley = egui::WidgetText::from(egui::RichText::new(words).size(SMALL_TEXT).color(colour)).into_galley(
@@ -403,7 +404,7 @@ fn badge(ui: &mut Ui, words: &str, room: f32) {
     let (rect, resp) = ui.allocate_exact_size(galley.size() + 2.0 * BADGE_PAD, Sense::hover());
     ui.painter().rect_filled(rect, CornerRadius::same(BADGE_RADIUS), t.divider);
     ui.painter().galley(rect.min + BADGE_PAD, galley, colour);
-    resp.on_hover_text(words);
+    resp.on_hover_text(if tip.is_empty() { words } else { tip });
 }
 
 /// ↺, a button screen readers call `name`, its tooltip `tip`.

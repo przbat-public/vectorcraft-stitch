@@ -65,8 +65,8 @@ pub struct Embroidery {
     /// The status bar's counters.
     pub(crate) counters: counters::Counters,
     /// Window › Embroidery has just docked the panel beside other tabs: the dock is widened for
-    /// their labels once they are drawn (`panels::embroidery::fit_dock_tabs`).
-    pub(crate) fit_dock_tabs: bool,
+    /// their labels once they are drawn, within this many frames (`panels::embroidery::fit_dock_tabs`).
+    pub(crate) fit_dock_frames: u8,
     /// The dock's width asked for then, given to the dock at the frame's end.
     pub(crate) dock_width: Option<f32>,
 }

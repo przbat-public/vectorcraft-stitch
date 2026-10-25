@@ -379,3 +379,26 @@ fn the_docks_four_tabs_show_their_labels_whole() {
         }
     }
 }
+
+/// The dock is widened only in the frames just after Window › Embroidery: a dock that doesn't draw
+/// the panel's tab by then (collapsed, or the panel elsewhere) isn't widened later when it does,
+/// at a moment that has nothing to do with the command; its tabs are then as the dock lays them
+/// out (at its usual width, one is cut).
+#[test]
+fn the_dock_is_widened_only_just_after_window_embroidery() {
+    let ctx = egui::Context::default();
+    crate::theme::install_fonts(&ctx);
+    let mut app = blank_app();
+    app.run("window.panel", json!({"panel": ID})).unwrap();
+    assert!(app.embroidery.fit_dock_frames > 0, "armed by the command");
+    for _ in 0..super::FIT_DOCK_FRAMES {
+        super::widen_dock(&mut app);
+    }
+    assert_eq!(app.embroidery.fit_dock_frames, 0, "the command's frames gone");
+    let labels = ["Properties", "Layers", "Libraries", "Embroidery"];
+    let drawn = dock_tab_labels(&mut app, &ctx, egui::vec2(1440.0, 900.0), &labels);
+    assert!(
+        drawn.iter().any(|(_, words, clip)| words.left() < clip.left() - 0.5 || words.right() > clip.right() + 0.5),
+        "not widened later: {drawn:?}"
+    );
+}

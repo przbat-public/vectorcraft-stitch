@@ -285,12 +285,21 @@ fn show_panel(app: &mut VectorcraftApp) -> Result<Value, String> {
         None => app.run("window.panel.layout", json!({ "action": { "Open": { "panel": ID, "anchor": null } } })),
     };
     // Its tab joins the others': room for their labels is made once they are drawn.
-    app.embroidery.fit_dock_tabs = r.is_ok();
+    if r.is_ok() {
+        app.embroidery.fit_dock_frames = FIT_DOCK_FRAMES;
+    }
     r
 }
 
+/// How many frames after Window › Embroidery the dock may be widened for its tabs' labels: the
+/// dock draws the panel's new tab within a frame or two. A dock not drawn by then (collapsed, or
+/// the panel floating) isn't widened later, at a moment that has nothing to do with the command.
+/// An estimate.
+const FIT_DOCK_FRAMES: u8 = 3;
+
 /// The id of the shared dock's tree (upstream's `panel_docking`, its `DockArea`): its tabs' ids
-/// come from it.
+/// come from it (craft-ui's `("tab", panel)` under it). Both are upstream's internals, listed in
+/// FORK.md: if they change, the fit finds no tabs and does nothing.
 const DOCK_AREA: &str = "vectorcraft-panel-docking";
 /// The room a tab's label keeps inside its tab, points: a little on each side.
 const LABEL_ROOM: f32 = 8.0;
@@ -305,14 +314,15 @@ const DOCK_SHARE: f32 = 0.4;
 /// label's, the squeezed ones (as wide as the widest) widened together by what the shortest of
 /// room lacks. Within [`DOCK_SHARE`] of the window; the person may narrow the dock again.
 fn fit_dock_tabs(app: &mut VectorcraftApp, ui: &Ui) {
-    if !app.embroidery.fit_dock_tabs {
+    if app.embroidery.fit_dock_frames == 0 {
         return;
     }
-    let Some(layout) = app.ui.docking.as_ref() else {
-        app.embroidery.fit_dock_tabs = false;
+    let group = app.ui.docking.as_ref().map(|layout| tab_group(&layout.root, ID)).unwrap_or_default();
+    // Not in the dock's tabs (floating, or no dock): nothing to fit.
+    if group.is_empty() {
+        app.embroidery.fit_dock_frames = 0;
         return;
-    };
-    let group = tab_group(&layout.root, ID);
+    }
     let area = egui::Id::new(DOCK_AREA);
     let font = craft_ui::docking::DockStyle::from_ui(ui).font;
     let tabs: Vec<(f32, f32)> = group
@@ -325,11 +335,11 @@ fn fit_dock_tabs(app: &mut VectorcraftApp, ui: &Ui) {
             Some((tab, words))
         })
         .collect();
-    // Not drawn yet: the next frame.
-    if tabs.len() != group.len() || tabs.is_empty() {
+    // Not drawn yet: the next frame, while the command's frames last ([`widen_dock`] counts them).
+    if tabs.len() != group.len() {
         return;
     }
-    app.embroidery.fit_dock_tabs = false;
+    app.embroidery.fit_dock_frames = 0;
     let lacking = tabs.iter().map(|(tab, words)| words + LABEL_ROOM - tab).fold(0.0, f32::max);
     if lacking <= 0.0 {
         return;
@@ -344,8 +354,10 @@ fn fit_dock_tabs(app: &mut VectorcraftApp, ui: &Ui) {
     app.embroidery.dock_width = Some(crate::dock::clamp_shared_dock_width(wanted));
 }
 
-/// End of a frame: the dock's width [`fit_dock_tabs`] asked for, laid out from the next frame.
+/// End of a frame: the dock's width [`fit_dock_tabs`] asked for, laid out from the next frame; one
+/// of the frames it may ask in ([`FIT_DOCK_FRAMES`]) gone.
 pub(crate) fn widen_dock(app: &mut VectorcraftApp) {
+    app.embroidery.fit_dock_frames = app.embroidery.fit_dock_frames.saturating_sub(1);
     if let Some(width) = app.embroidery.dock_width.take() {
         app.ui.dock_width = Some(width);
         app.ui.dock_width_pending = true;

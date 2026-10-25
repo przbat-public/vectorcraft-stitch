@@ -478,6 +478,13 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     name in `TABS`, its fields added in `open`, its body as the last arm of `body`'s `match`, and
     `confirm` handing OK to it first (one `command.batch` with `document.setup`).
   - `menus.rs`: the `UI_COMMANDS` row `embroidery.documentSetup` (Embroidery Settings…).
+- **Upstream's internals the fork reads without a hook** (nothing to resolve, but a sync that
+  changes them breaks a feature quietly): Window › Embroidery's dock-width fit
+  (`panels::embroidery::fit_dock_tabs`) reads the shared dock's area id
+  `"vectorcraft-panel-docking"` (`panel_docking.rs`), craft-ui's tab ids under it (`("tab",
+  panel)`), `dock::shared_dock_default_width` and `clamp_shared_dock_width`, and sets
+  `UiState::dock_width` and `dock_width_pending`. If they change, the fit finds no tabs and does
+  nothing; `the_docks_four_tabs_show_their_labels_whole` then fails.
 - **The fork's app identity in upstream's packaging** (Decisions register, 2026-10-24), to keep
   when resolving: in `packaging/macos/Info.plist.in` the name, display name and identifier (the
   document types stay upstream's); `APP_NAME` in `packaging/macos/package.sh`; `APP` in

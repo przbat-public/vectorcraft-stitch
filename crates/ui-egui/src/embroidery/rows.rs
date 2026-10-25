@@ -28,10 +28,10 @@ use std::ops::RangeInclusive;
 
 use egui::{Align2, Color32, CornerRadius, FontId, Rect, Sense, Ui, vec2};
 
-use crate::embroidery::{fields, marks};
+use crate::embroidery::fields::{self, Look, NumberFormat};
+use crate::embroidery::marks;
 use crate::i18n::Lang;
 use crate::theme::Tokens;
-use crate::widgets::{self, Look, NumberFormat};
 
 /// The room left of the labels for the bar of a value of its own, points: the bar and a gap.
 const GUTTER: f32 = 8.0;
@@ -51,7 +51,8 @@ const FIELD_UNDER: f32 = 0.6;
 /// The words' sizes, points: a label as the panels' labels, a badge's and a hint's a size smaller.
 const LABEL_TEXT: f32 = 12.5;
 const SMALL_TEXT: f32 = 10.5;
-/// A choice's words and the frame around its button, points: as [`widgets::combo_look`] draws them.
+/// A choice's words and the frame around its button, points: as upstream's `widgets::combo` draws
+/// them.
 const CHOICE_TEXT: f32 = 12.0;
 const CHOICE_FRAME: f32 = 4.0;
 /// A badge's padding and corners, points.
@@ -303,10 +304,10 @@ fn label_cell(ui: &mut Ui, row: &Row<'_>, width: f32, scrubs: bool) {
 fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
     let t = Tokens::get(ui.ctx());
     let text = value_colour(&t, row.own);
-    let look = Look { text: Some(text), border: None, hint: None, name: Some(row.name), description: Some(&row.description) };
+    let look = Look { text: Some(text), hint: None, name: Some(row.name), description: Some(&row.description) };
     match &row.field {
         Field::Number { value, format, bounds, hint } => {
-            widgets::number_field(ui, (row.key, "number"), *value, format, &Look { hint: *hint, ..look }, width, bounds).map(Edit::Number)
+            fields::number_field(ui, (row.key, "number"), *value, format, &Look { hint: *hint, ..look }, width, bounds).map(Edit::Number)
         }
         // In a cell of its own width, its words cut short there: a combo lays its words out in the
         // room its row has left, so a long one would push the rest of the row out.
@@ -314,7 +315,7 @@ fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
             .allocate_ui_with_layout(vec2(width, ROW), egui::Layout::left_to_right(egui::Align::Center), |ui| {
                 ui.set_max_width(width);
                 ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
-                widgets::combo_look(ui, (row.key, "choice"), shown, &look, width, false, |ui| {
+                fields::choice(ui, (row.key, "choice"), shown, &look, width, |ui| {
                     let mut chosen = None;
                     for (id, words) in options.iter() {
                         if ui.add(egui::Button::selectable(*current == Some(id.as_str()), words.as_str())).clicked() {

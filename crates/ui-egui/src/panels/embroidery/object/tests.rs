@@ -193,7 +193,10 @@ fn a_set_value_is_marked_and_an_inherited_one_says_where_it_comes_from() {
 /// The knit's tatami pull as Document Setup's reply gives it, written as the fields write it.
 fn knit_pull(app: &mut VectorcraftApp) -> String {
     let settings = app.run("embroidery.settings", json!({})).unwrap();
-    settings["resolved"]["fabric"]["tatami"]["pull"]["value"].as_f64().map(|v| crate::widgets::NumberFormat::plain("", 2).show(v)).unwrap()
+    settings["resolved"]["fabric"]["tatami"]["pull"]["value"]
+        .as_f64()
+        .map(|v| crate::embroidery::fields::format(crate::i18n::Lang::EN, "", 2).show(v))
+        .unwrap()
 }
 
 /// Values the objects differ in are blank, the badge counting how many set them.

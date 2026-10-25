@@ -469,11 +469,15 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   Document Setup's Embroidery tab; the fork's own code is `panels/embroidery/object.rs` and
   `embroidery/rows.rs`, `fields.rs`, `vocabulary.rs`, `setup_tab.rs`), each marked "VectorCraft
   Stitch":
-  - `ui-egui/src/widgets.rs` and `scrub.rs`: a field's look and number format chosen by its caller
-    (`Look`, `NumberFormat`; `number_field`, `recessed_text_look`, `combo_look`, `step_value_by`,
-    `scrub::field_stepped`), so that an embroidery field marks a value set on its objects, writes
-    the interface language's decimal mark and steps in its unit's size; every other field passes
-    the plain look and format, unchanged.
+  - `ui-egui/src/widgets.rs`: `recessed_text`, `step_value` and `select_all_on_focus` made
+    `pub(crate)` (their bodies as upstream has them), so that the embroidery fields
+    (`embroidery/fields.rs`: `number_field`, `choice`, `Look`, `NumberFormat`) are drawn by
+    upstream's own text box, stepping, scrub (`scrub::field`) and combo (`combo`). The fork's code
+    relies on how they behave: on a sync, a change to `recessed_text`'s text placement (the look
+    paints the value over it, in its place), to `combo`'s frame (`fields::combo_button` finds its
+    button's id as `combo` does) or to how `step_value` and `scrub::field` count steps (the field
+    hands them its value counted in its unit's steps) wants a look at `fields.rs`; its tests
+    (`embroidery/tests_fields.rs`) compare it with upstream's field and fail on such a change.
   - `ui-egui/src/dialogs/document_setup.rs`: the Embroidery tab (`embroidery/setup_tab.rs`): its
     name in `TABS`, its fields added in `open`, its body as the last arm of `body`'s `match`, and
     `confirm` handing OK to it first (one `command.batch` with `document.setup`).

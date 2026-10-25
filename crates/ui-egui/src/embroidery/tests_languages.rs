@@ -289,6 +289,11 @@ fn the_embroidery_interface_in_every_language() {
                 let panel_texts: Vec<&(String, Rect)> = texts.iter().filter(|(t, r)| panel.intersects(*r) && t != "⚠").collect();
                 for (k, (a, ra)) in panel_texts.iter().enumerate() {
                     for (b, rb) in &panel_texts[k + 1..] {
+                        // A field's value in its look's colour, painted over the app's own words
+                        // in their place (`fields::number_field`), is one text.
+                        if a == b && ra == rb {
+                            continue;
+                        }
                         assert!(!ra.shrink(0.5).intersects(rb.shrink(0.5)), "{} at {width}: {a:?} overlaps {b:?}", info.code);
                     }
                 }
@@ -367,6 +372,10 @@ fn document_setups_embroidery_tab_in_every_language() {
             let (texts, left, width) = setup_tab(lang, window);
             for (k, (a, ra)) in texts.iter().enumerate() {
                 for (b, rb) in &texts[k + 1..] {
+                    // A field's value painted over the app's own words in their place: one text.
+                    if a == b && ra == rb {
+                        continue;
+                    }
                     assert!(!ra.shrink(0.5).intersects(rb.shrink(0.5)), "{} at {window}: {a:?} overlaps {b:?}", info.code);
                 }
             }

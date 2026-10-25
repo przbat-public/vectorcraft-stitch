@@ -5964,3 +5964,53 @@ embroidery	Cap (structured)	Kšiltovka (tvarovaná)
 @msg	select one object that takes embroidery settings: a path or a compound path	vyberte jeden objekt, který přijímá nastavení výšivky: cestu nebo složenou cestu
 @msg	copy an object's embroidery settings first	nejprve zkopírujte nastavení výšivky objektu
 @msg	the embroidery settings copied are another document's	zkopírovaná nastavení výšivky patří jinému dokumentu
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Látka
+embroidery	The values objects use where they set none of their own.	Hodnoty, které objekty použijí, když nemají vlastní.
+embroidery	Built-in values	Vestavěné hodnoty
+embroidery	Custom	Vlastní
+embroidery	Stabilizer	Stabilizátor
+embroidery	Tear-away	Odtrhávací
+embroidery	Cut-away	Odstřihávací
+embroidery	Adhesive tear-away	Lepicí odtrhávací
+embroidery	Thread	Nit
+embroidery	Thread weight	Síla nitě
+embroidery	Rows' spacing for this thread: {value}	Rozestup řad pro tuto nit: {value}
+embroidery	Thread palette	Paleta nití
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Stroj a soubor
+embroidery	Jump (needle up) from	Přeskok (jehla nahoře) od
+embroidery	Cut the thread from	Ustřihnout nit od
+embroidery	Shortest stitch	Nejkratší steh
+embroidery	Speed for the time estimate	Rychlost pro odhad času
+embroidery	Sewing order	Pořadí šití
+embroidery	Join one thread's objects when nothing lies between them	Spojit objekty jedné nitě, když mezi nimi nic neleží
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Méně výměn nití a střihů: co leží výš, se stejně šije později.
+embroidery	Design name	Název vzoru
+embroidery	Start point	Počáteční bod
+embroidery	{x}, {y} mm	{x}, {y} mm
+embroidery	estimate	odhad
+embroidery	information only	jen pro informaci
+embroidery	preset {value}	předvolba {value}
+embroidery	Changed from the preset, which gives {value}	Změněno oproti předvolbě, která dává {value}
+embroidery	Set in the document; without it: {value}	Nastaveno v dokumentu; jinak: {value}
+embroidery	Changing the fabric doesn't change them.	Změna látky je nezmění.
+embroidery	Apply the fabric to them too:	Použít látku i na ně:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Látka, na kterou se vzor šije: její hodnoty použijí objekty bez vlastních.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	Vzdálenost řad výplně pro nit 40 wt: jiná nit ji upraví v poměru.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	Rozestup saténového sloupce jako podíl rozestupu, který určuje jeho šířka.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Co vložit do rámečku pod látku: jen pro informaci, nemění žádný steh.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	Síla nitě: tenčí nit (vyšší číslo) šije řady hustěji.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Nitě, které strojový soubor čísluje: Janome v souborech JEF, Brother v souborech PES.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Delší přesun zvedne jehlu, místo aby se šil.
+embroidery	A jump longer than this cuts the thread first.	Delší přeskok nejprve ustřihne nit.
+embroidery	Stitches shorter than this are left out.	Kratší stehy se vynechají.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Stehy za minutu: podle ní se odhaduje doba šití vzoru.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Objekty jedné nitě se šijí za sebou, když je nic mezi nimi nepřekrývá: méně výměn nití a střihů.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Kde stroj začíná vzor, jak to udává soubor, ze kterého byl otevřen.
+embroidery	The design's name, as the file it was opened from gave it.	Název vzoru, jak ho udává soubor, ze kterého byl otevřen.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Látka, nit a stroj dokumentu: karta Výšivka v nastavení dokumentu.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} objekt má vlastní hodnoty pro látku.|{count} objekty mají vlastní hodnoty pro látku.|{count} objektů má vlastní hodnoty pro látku.
+	Embroidery Settings…	Nastavení výšivky…

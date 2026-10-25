@@ -5575,3 +5575,53 @@ embroidery	Cap (structured)	Кепка (жёсткая)
 @msg	select one object that takes embroidery settings: a path or a compound path	выделите один объект, принимающий настройки вышивки: контур или составной контур
 @msg	copy an object's embroidery settings first	сначала скопируйте настройки вышивки объекта
 @msg	the embroidery settings copied are another document's	скопированные настройки вышивки принадлежат другому документу
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Ткань
+embroidery	The values objects use where they set none of their own.	Значения, которые используют объекты без собственных.
+embroidery	Built-in values	Встроенные значения
+embroidery	Custom	Свои
+embroidery	Stabilizer	Стабилизатор
+embroidery	Tear-away	Отрывной
+embroidery	Cut-away	Вырезной
+embroidery	Adhesive tear-away	Клеевой отрывной
+embroidery	Thread	Нить
+embroidery	Thread weight	Толщина нити
+embroidery	Rows' spacing for this thread: {value}	Шаг рядов для этой нити: {value}
+embroidery	Thread palette	Палитра нитей
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Машина и файл
+embroidery	Jump (needle up) from	Прыжок (игла поднята) от
+embroidery	Cut the thread from	Обрезать нить от
+embroidery	Shortest stitch	Кратчайший стежок
+embroidery	Speed for the time estimate	Скорость для оценки времени
+embroidery	Sewing order	Порядок вышивки
+embroidery	Join one thread's objects when nothing lies between them	Объединять объекты одной нити, когда между ними ничего нет
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Меньше смен нити и обрезок: то, что лежит выше, всё равно вышивается позже.
+embroidery	Design name	Имя дизайна
+embroidery	Start point	Начальная точка
+embroidery	{x}, {y} mm	{x}, {y} мм
+embroidery	estimate	оценка
+embroidery	information only	только для сведения
+embroidery	preset {value}	пресет {value}
+embroidery	Changed from the preset, which gives {value}	Изменено относительно пресета, который даёт {value}
+embroidery	Set in the document; without it: {value}	Задано в документе; без этого: {value}
+embroidery	Changing the fabric doesn't change them.	Смена ткани их не меняет.
+embroidery	Apply the fabric to them too:	Применить ткань и к ним:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Ткань, на которой вышивается дизайн: её значения используют объекты без собственных.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	Расстояние между рядами заливки для нити 40 wt: другая нить его масштабирует.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	Шаг колонны глади как доля шага, который выбирает её ширина.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Что заправить в пяльцы под ткань: для сведения, ни один стежок не меняется.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	Толщина нити: более тонкая нить (больший номер) вышивает ряды плотнее.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Нити, которые нумерует файл машины: Janome в файлах JEF, Brother в файлах PES.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Более длинное перемещение поднимает иглу вместо вышивания.
+embroidery	A jump longer than this cuts the thread first.	Более длинный прыжок сначала обрезает нить.
+embroidery	Stitches shorter than this are left out.	Более короткие стежки пропускаются.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Стежков в минуту: по ней оценивается время вышивки дизайна.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Объекты одной нити вышиваются подряд, если между ними ничего их не перекрывает: меньше смен нити и обрезок.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Где машина начинает дизайн, как указал файл, из которого он открыт.
+embroidery	The design's name, as the file it was opened from gave it.	Имя дизайна, как указал файл, из которого он открыт.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Ткань, нить и машина документа: вкладка «Вышивка» в параметрах документа.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} объект задаёт свои значения для ткани.|{count} объекта задают свои значения для ткани.|{count} объектов задают свои значения для ткани.
+	Embroidery Settings…	Параметры вышивки…

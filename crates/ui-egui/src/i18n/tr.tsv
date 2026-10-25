@@ -5925,3 +5925,53 @@ embroidery	Cap (structured)	Şapka (yapılandırılmış)
 @msg	select one object that takes embroidery settings: a path or a compound path	nakış ayarı alan bir nesne seçin: bir yol veya bileşik yol
 @msg	copy an object's embroidery settings first	önce bir nesnenin nakış ayarlarını kopyalayın
 @msg	the embroidery settings copied are another document's	kopyalanan nakış ayarları başka bir belgeye ait
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Kumaş
+embroidery	The values objects use where they set none of their own.	Kendi değeri olmayan nesnelerin kullandığı değerler.
+embroidery	Built-in values	Yerleşik değerler
+embroidery	Custom	Özel
+embroidery	Stabilizer	Tela
+embroidery	Tear-away	Yırtılabilir
+embroidery	Cut-away	Kesilebilir
+embroidery	Adhesive tear-away	Yapışkanlı yırtılabilir
+embroidery	Thread	İplik
+embroidery	Thread weight	İplik kalınlığı
+embroidery	Rows' spacing for this thread: {value}	Bu iplik için sıra aralığı: {value}
+embroidery	Thread palette	İplik paleti
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Makine ve dosya
+embroidery	Jump (needle up) from	Atlama (iğne yukarıda) başlangıcı
+embroidery	Cut the thread from	İpliği kesme başlangıcı
+embroidery	Shortest stitch	En kısa dikiş
+embroidery	Speed for the time estimate	Süre tahmini için hız
+embroidery	Sewing order	Dikiş sırası
+embroidery	Join one thread's objects when nothing lies between them	Arada bir şey yoksa aynı ipliğin nesnelerini birleştir
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Daha az iplik değişimi ve kesim: üstte olan zaten daha sonra dikilir.
+embroidery	Design name	Desen adı
+embroidery	Start point	Başlangıç noktası
+embroidery	{x}, {y} mm	{x}, {y} mm
+embroidery	estimate	tahmin
+embroidery	information only	yalnızca bilgi
+embroidery	preset {value}	ön ayar {value}
+embroidery	Changed from the preset, which gives {value}	Ön ayardan değiştirildi; ön ayar {value} verir
+embroidery	Set in the document; without it: {value}	Belgede ayarlı; ayarlanmazsa: {value}
+embroidery	Changing the fabric doesn't change them.	Kumaşı değiştirmek bunları değiştirmez.
+embroidery	Apply the fabric to them too:	Kumaşı bunlara da uygula:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Desenin dikildiği kumaş: kendi değeri olmayan nesneler onun değerlerini kullanır.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	40 wt iplik için dolgu sıraları arasındaki mesafe: başka iplik onu ölçekler.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	Bir saten sütunun aralığı, genişliğinin seçtiği aralığın payı olarak.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Kumaşın altına kasnağa ne konacağı: bilgi amaçlı, hiçbir dikişi değiştirmez.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	İplik kalınlığı: daha ince iplik (daha yüksek numara) sıraları daha sık diker.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Makine dosyasının numaralandırdığı iplikler: JEF dosyalarında Janome'unkiler, PES dosyalarında Brother'ınkiler.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Daha uzun bir hareket dikilmek yerine iğneyi kaldırır.
+embroidery	A jump longer than this cuts the thread first.	Daha uzun bir atlama önce ipliği keser.
+embroidery	Stitches shorter than this are left out.	Daha kısa dikişler atlanır.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Dakikada dikiş: bir desenin dikiş süresi buna göre tahmin edilir.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Aradaki hiçbir şey üstlerini örtmüyorsa aynı ipliğin nesneleri art arda dikilir: daha az iplik değişimi ve kesim.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Makinenin desene başladığı yer, açıldığı dosyanın verdiği gibi.
+embroidery	The design's name, as the file it was opened from gave it.	Desenin adı, açıldığı dosyanın verdiği gibi.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Belgenin kumaşı, ipliği ve makinesi: Belge Kurulumu'nun Nakış sekmesi.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} nesne kumaş için kendi değerlerini kullanıyor.
+	Embroidery Settings…	Nakış ayarları…

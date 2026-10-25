@@ -15,7 +15,8 @@ use crate::theme::Tokens;
 use crate::{VectorcraftApp, widgets};
 
 pub(super) const KIND: &str = "documentSetup";
-const TABS: [&str; 3] = ["General", "Transparency", "Type"];
+// VectorCraft Stitch: the Embroidery tab (`embroidery/setup_tab.rs`).
+const TABS: [&str; 4] = ["General", "Transparency", "Type", crate::embroidery::setup_tab::TAB];
 /// Dialog-only fields `document.setup` doesn't take.
 const UI_ONLY: [&str; 2] = ["tab", "bleedLinked"];
 pub(super) const LABEL: f32 = 130.0;
@@ -29,11 +30,17 @@ pub fn open(app: &mut VectorcraftApp) -> Result<Value, String> {
     let linked = fields["bleed"].as_array().is_some_and(|b| b.windows(2).all(|w| w[0] == w[1]));
     fields["bleedLinked"] = json!(linked);
     fields["tab"] = json!(TABS[0]);
+    // VectorCraft Stitch: the Embroidery tab's fields.
+    crate::embroidery::setup_tab::open(app, &mut fields);
     app.ui.dialog = Some(Dialog::new(KIND, fields));
     Ok(Value::Null)
 }
 
 fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
+    // VectorCraft Stitch: the Embroidery tab's changes go with these, in one undo step.
+    if let Some(r) = crate::embroidery::setup_tab::confirm(app, d, &UI_ONLY) {
+        return r;
+    }
     let params = d.fields.iter().filter(|(k, _)| !UI_ONLY.contains(&k.as_str())).map(|(k, v)| (k.clone(), v.clone())).collect();
     let r = app.run("document.setup", Value::Object(params));
     if r.is_ok() {
@@ -54,7 +61,9 @@ fn body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
         match tab {
             0 => close = general(app, ui, d),
             1 => transparency(app, ui, d),
-            _ => typography(ui, d),
+            2 => typography(ui, d),
+            // VectorCraft Stitch: the Embroidery tab.
+            _ => close = crate::embroidery::setup_tab::body(app, ui, d),
         }
     });
     close

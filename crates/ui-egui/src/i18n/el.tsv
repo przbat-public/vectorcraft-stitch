@@ -5916,3 +5916,53 @@ embroidery	Cap (structured)	Καπέλο (με σχήμα)
 @msg	select one object that takes embroidery settings: a path or a compound path	επιλέξτε ένα αντικείμενο που δέχεται ρυθμίσεις κεντήματος: μια διαδρομή ή σύνθετη διαδρομή
 @msg	copy an object's embroidery settings first	αντιγράψτε πρώτα τις ρυθμίσεις κεντήματος ενός αντικειμένου
 @msg	the embroidery settings copied are another document's	οι ρυθμίσεις κεντήματος που αντιγράφηκαν ανήκουν σε άλλο έγγραφο
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Ύφασμα
+embroidery	The values objects use where they set none of their own.	Οι τιμές που χρησιμοποιούν τα αντικείμενα όπου δεν έχουν δικές τους.
+embroidery	Built-in values	Ενσωματωμένες τιμές
+embroidery	Custom	Προσαρμοσμένο
+embroidery	Stabilizer	Σταθεροποιητής
+embroidery	Tear-away	Αποσπώμενο
+embroidery	Cut-away	Κοπτόμενο
+embroidery	Adhesive tear-away	Αυτοκόλλητο αποσπώμενο
+embroidery	Thread	Κλωστή
+embroidery	Thread weight	Πάχος κλωστής
+embroidery	Rows' spacing for this thread: {value}	Απόσταση σειρών για αυτή την κλωστή: {value}
+embroidery	Thread palette	Παλέτα κλωστών
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Μηχανή και αρχείο
+embroidery	Jump (needle up) from	Άλμα (βελόνα πάνω) από
+embroidery	Cut the thread from	Κόψιμο κλωστής από
+embroidery	Shortest stitch	Μικρότερη βελονιά
+embroidery	Speed for the time estimate	Ταχύτητα για την εκτίμηση χρόνου
+embroidery	Sewing order	Σειρά ραφής
+embroidery	Join one thread's objects when nothing lies between them	Ένωση αντικειμένων ίδιας κλωστής όταν δεν υπάρχει τίποτα ανάμεσα
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Λιγότερες αλλαγές κλωστής και κοψίματα: ό,τι είναι από πάνω ράβεται ούτως ή άλλως αργότερα.
+embroidery	Design name	Όνομα σχεδίου
+embroidery	Start point	Σημείο έναρξης
+embroidery	{x}, {y} mm	{x}, {y} mm
+embroidery	estimate	εκτίμηση
+embroidery	information only	μόνο για πληροφόρηση
+embroidery	preset {value}	προεπιλογή υφάσματος {value}
+embroidery	Changed from the preset, which gives {value}	Αλλαγμένο από την προεπιλογή υφάσματος, που δίνει {value}
+embroidery	Set in the document; without it: {value}	Ορίστηκε στο έγγραφο· αλλιώς: {value}
+embroidery	Changing the fabric doesn't change them.	Η αλλαγή υφάσματος δεν τα αλλάζει.
+embroidery	Apply the fabric to them too:	Εφαρμογή του υφάσματος και σε αυτά:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Το ύφασμα όπου ράβεται το σχέδιο: τις τιμές του χρησιμοποιούν τα αντικείμενα χωρίς δικές τους.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	Η απόσταση των σειρών του γεμίσματος για κλωστή 40 wt: άλλη κλωστή την κλιμακώνει.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	Η απόσταση μιας σατέν στήλης ως ποσοστό της απόστασης που επιλέγει το πλάτος της.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Τι μπαίνει στο τελάρο κάτω από το ύφασμα: για πληροφόρηση, δεν αλλάζει καμία βελονιά.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	Το πάχος της κλωστής: λεπτότερη κλωστή (μεγαλύτερος αριθμός) ράβει τις σειρές πιο πυκνά.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Οι κλωστές που αριθμεί ένα αρχείο μηχανής: της Janome στα αρχεία JEF, της Brother στα αρχεία PES.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Μεγαλύτερη μετακίνηση σηκώνει τη βελόνα αντί να ραφτεί.
+embroidery	A jump longer than this cuts the thread first.	Μεγαλύτερο άλμα κόβει πρώτα την κλωστή.
+embroidery	Stitches shorter than this are left out.	Πιο κοντές βελονιές παραλείπονται.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Βελονιές ανά λεπτό: με αυτή εκτιμάται ο χρόνος ραφής ενός σχεδίου.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Τα αντικείμενα ίδιας κλωστής ράβονται το ένα μετά το άλλο όταν τίποτα ανάμεσα δεν τα επικαλύπτει: λιγότερες αλλαγές κλωστής και κοψίματα.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Πού ξεκινά η μηχανή το σχέδιο, όπως το έδινε το αρχείο από το οποίο άνοιξε.
+embroidery	The design's name, as the file it was opened from gave it.	Το όνομα του σχεδίου, όπως το έδινε το αρχείο από το οποίο άνοιξε.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Το ύφασμα, η κλωστή και η μηχανή του εγγράφου: καρτέλα «Κέντημα» της ρύθμισης εγγράφου.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} αντικείμενο έχει δικές του τιμές για το ύφασμα.|{count} αντικείμενα έχουν δικές τους τιμές για το ύφασμα.
+	Embroidery Settings…	Ρυθμίσεις κεντήματος…

@@ -5879,3 +5879,53 @@ embroidery	Cap (structured)	კეპი (ფორმიანი)
 @msg	select one object that takes embroidery settings: a path or a compound path	მონიშნეთ ერთი ობიექტი, რომელიც ნაქარგობის პარამეტრებს იღებს: ტრაექტორია ან შედგენილი ტრაექტორია
 @msg	copy an object's embroidery settings first	ჯერ დააკოპირეთ ობიექტის ნაქარგობის პარამეტრები
 @msg	the embroidery settings copied are another document's	დაკოპირებული ნაქარგობის პარამეტრები სხვა დოკუმენტისაა
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	ქსოვილი
+embroidery	The values objects use where they set none of their own.	მნიშვნელობები, რომლებსაც საკუთარი მნიშვნელობის არმქონე ობიექტები იყენებენ.
+embroidery	Built-in values	ჩაშენებული მნიშვნელობები
+embroidery	Custom	მორგებული
+embroidery	Stabilizer	სტაბილიზატორი
+embroidery	Tear-away	მოსაგლეჯი
+embroidery	Cut-away	მოსაჭრელი
+embroidery	Adhesive tear-away	წებოვანი მოსაგლეჯი
+embroidery	Thread	ძაფი
+embroidery	Thread weight	ძაფის სისქე
+embroidery	Rows' spacing for this thread: {value}	რიგებს შორის მანძილი ამ ძაფისთვის: {value}
+embroidery	Thread palette	ძაფების პალიტრა
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	მანქანა და ფაილი
+embroidery	Jump (needle up) from	ნახტომი (ნემსი ზემოთ)-დან
+embroidery	Cut the thread from	ძაფის გაჭრა-დან
+embroidery	Shortest stitch	უმოკლესი ნაკერი
+embroidery	Speed for the time estimate	სიჩქარე დროის შეფასებისთვის
+embroidery	Sewing order	კერვის რიგი
+embroidery	Join one thread's objects when nothing lies between them	ერთი ძაფის ობიექტების შეერთება, როცა მათ შორის არაფერია
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	ნაკლები ძაფის ცვლა და გაჭრა: ზემოთ მყოფი მაინც მოგვიანებით იკერება.
+embroidery	Design name	დიზაინის სახელი
+embroidery	Start point	საწყისი წერტილი
+embroidery	{x}, {y} mm	{x}, {y} მმ
+embroidery	estimate	შეფასება
+embroidery	information only	მხოლოდ ინფორმაციისთვის
+embroidery	preset {value}	შაბლონი {value}
+embroidery	Changed from the preset, which gives {value}	შეცვლილია შაბლონთან შედარებით, რომელიც იძლევა {value}
+embroidery	Set in the document; without it: {value}	დაყენებულია დოკუმენტში; მის გარეშე: {value}
+embroidery	Changing the fabric doesn't change them.	ქსოვილის შეცვლა მათ არ ცვლის.
+embroidery	Apply the fabric to them too:	ქსოვილის გამოყენება მათზეც:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	ქსოვილი, რომელზეც დიზაინი იკერება: მის მნიშვნელობებს საკუთარის არმქონე ობიექტები იყენებენ.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	შევსების რიგებს შორის მანძილი 40 wt ძაფისთვის: სხვა ძაფი მას მასშტაბს უცვლის.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	ატლასის სვეტის მანძილი მისი სიგანით არჩეული მანძილის წილად.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	რა მოთავსდეს ქსოვილის ქვეშ ჩარჩოში: ინფორმაციისთვის, ნაკერს არ ცვლის.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	ძაფის სისქე: უფრო თხელი ძაფი (უფრო დიდი რიცხვი) რიგებს უფრო ხშირად კერავს.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	ძაფები, რომლებსაც მანქანის ფაილი ნომრავს: Janome-ს JEF ფაილებში, Brother-ის PES ფაილებში.
+embroidery	A move longer than this lifts the needle instead of sewing it.	ამაზე გრძელი გადაადგილება ნემსს აწევს, კერვის ნაცვლად.
+embroidery	A jump longer than this cuts the thread first.	ამაზე გრძელი ნახტომი ჯერ ძაფს ჭრის.
+embroidery	Stitches shorter than this are left out.	ამაზე მოკლე ნაკერები გამოიტოვება.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	ნაკერი წუთში: დიზაინის კერვის დრო მით ფასდება.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	ერთი ძაფის ობიექტები ერთმანეთის მიყოლებით იკერება, როცა შუაში არაფერი ფარავს მათ: ნაკლები ძაფის ცვლა და გაჭრა.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	სადაც მანქანა იწყებს დიზაინს, როგორც ის ფაილი აძლევდა, საიდანაც გაიხსნა.
+embroidery	The design's name, as the file it was opened from gave it.	დიზაინის სახელი, როგორც ის ფაილი აძლევდა, საიდანაც გაიხსნა.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	დოკუმენტის ქსოვილი, ძაფი და მანქანა: დოკუმენტის პარამეტრების „ნაქარგობის“ ჩანართი.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} ობიექტს ქსოვილისთვის საკუთარი მნიშვნელობები აქვს.
+	Embroidery Settings…	ნაქარგობის პარამეტრები…

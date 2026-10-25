@@ -5641,3 +5641,53 @@ embroidery	Cap (structured)	キャップ（形のあるもの）
 @msg	select one object that takes embroidery settings: a path or a compound path	刺繍の設定ができるオブジェクト（パスまたは複合パス）を 1 つ選択してください
 @msg	copy an object's embroidery settings first	先にオブジェクトの刺繍の設定をコピーしてください
 @msg	the embroidery settings copied are another document's	コピーした刺繍の設定は別のドキュメントのものです
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	生地
+embroidery	The values objects use where they set none of their own.	独自の値を持たないオブジェクトが使う値です。
+embroidery	Built-in values	組み込みの値
+embroidery	Custom	カスタム
+embroidery	Stabilizer	スタビライザー
+embroidery	Tear-away	ティアウェイ
+embroidery	Cut-away	カットアウェイ
+embroidery	Adhesive tear-away	粘着ティアウェイ
+embroidery	Thread	糸
+embroidery	Thread weight	糸の太さ
+embroidery	Rows' spacing for this thread: {value}	この糸での列の間隔: {value}
+embroidery	Thread palette	糸のパレット
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	ミシンとファイル
+embroidery	Jump (needle up) from	ジャンプ（針を上げる）の長さ
+embroidery	Cut the thread from	糸を切る長さ
+embroidery	Shortest stitch	最短の針目
+embroidery	Speed for the time estimate	時間の見積もりに使う速度
+embroidery	Sewing order	縫い順
+embroidery	Join one thread's objects when nothing lies between them	間に何もないとき、同じ糸のオブジェクトをまとめる
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	糸替えと糸切りが減ります。上にあるものはどのみち後で縫われます。
+embroidery	Design name	デザイン名
+embroidery	Start point	開始点
+embroidery	{x}, {y} mm	{x}, {y} mm
+embroidery	estimate	推定
+embroidery	information only	情報のみ
+embroidery	preset {value}	プリセット {value}
+embroidery	Changed from the preset, which gives {value}	プリセットから変更済み（プリセットの値: {value}）
+embroidery	Set in the document; without it: {value}	ドキュメントで設定済み。設定しない場合: {value}
+embroidery	Changing the fabric doesn't change them.	生地を変えても、これらは変わりません。
+embroidery	Apply the fabric to them too:	これらにも生地を適用:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	デザインを縫う生地です。独自の値を持たないオブジェクトはその値を使います。
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	40 wt の糸での塗りの列の間隔です。ほかの糸ではそれに合わせて変わります。
+embroidery	A satin column's spacing as a share of the spacing its width picks.	サテンの列の間隔を、その幅で選ばれる間隔に対する割合で表します。
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	生地の下に枠張りするもの。情報のみで、針目は変わりません。
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	糸の太さです。細い糸（大きい数字）ほど列を詰めて縫います。
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	ミシンファイルが番号で指す糸です。JEF ファイルはジャノメ、PES ファイルはブラザーの糸です。
+embroidery	A move longer than this lifts the needle instead of sewing it.	これより長い移動は縫わずに針を上げます。
+embroidery	A jump longer than this cuts the thread first.	これより長いジャンプは先に糸を切ります。
+embroidery	Stitches shorter than this are left out.	これより短い針目は省きます。
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	1 分あたりの針数です。デザインを縫う時間はこれで見積もります。
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	間に重なるものがなければ、同じ糸のオブジェクトを続けて縫います。糸替えと糸切りが減ります。
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	ミシンがデザインを縫い始める位置。開いたファイルが示したとおりです。
+embroidery	The design's name, as the file it was opened from gave it.	デザインの名前。開いたファイルが示したとおりです。
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	ドキュメントの生地・糸・ミシン：ドキュメント設定の「刺繍」タブ。
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} 個のオブジェクトが生地の値を独自に設定しています。
+	Embroidery Settings…	刺繍の設定…

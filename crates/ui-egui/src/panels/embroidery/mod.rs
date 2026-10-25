@@ -168,6 +168,7 @@ pub(crate) fn command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         "embroidery.previousHit" => Some(check::step(app, false)),
         "embroidery.copySettings" => Some(object::copy(app, p)),
         "embroidery.pasteSettings" => Some(object::paste(app, p)),
+        "embroidery.documentSetup" => Some(crate::embroidery::setup_tab::open_at_tab(app, p)),
         _ => None,
     }
 }
@@ -207,6 +208,7 @@ pub(crate) fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
         "embroidery.nextHit" | "embroidery.previousHit" => Some(check::can_step(app)),
         "embroidery.copySettings" => Some(object::can_copy(app)),
         "embroidery.pasteSettings" => Some(object::can_paste(app)),
+        "embroidery.documentSetup" => Some(app.session.active().is_some()),
         _ => None,
     }
 }

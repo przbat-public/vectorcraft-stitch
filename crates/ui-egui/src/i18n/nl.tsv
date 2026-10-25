@@ -5962,3 +5962,53 @@ embroidery	Cap (structured)	Pet (gestructureerd)
 @msg	select one object that takes embroidery settings: a path or a compound path	selecteer één object dat borduurinstellingen aanneemt: een pad of samengesteld pad
 @msg	copy an object's embroidery settings first	kopieer eerst de borduurinstellingen van een object
 @msg	the embroidery settings copied are another document's	de gekopieerde borduurinstellingen horen bij een ander document
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Stof
+embroidery	The values objects use where they set none of their own.	De waarden die objecten zonder eigen waarden gebruiken.
+embroidery	Built-in values	Ingebouwde waarden
+embroidery	Custom	Aangepast
+embroidery	Stabilizer	Versteviging
+embroidery	Tear-away	Scheurbaar
+embroidery	Cut-away	Knipbaar
+embroidery	Adhesive tear-away	Klevend scheurbaar
+embroidery	Thread	Draad
+embroidery	Thread weight	Garendikte
+embroidery	Rows' spacing for this thread: {value}	Rijafstand voor dit garen: {value}
+embroidery	Thread palette	Garenpalet
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Machine en bestand
+embroidery	Jump (needle up) from	Sprong (naald omhoog) vanaf
+embroidery	Cut the thread from	Draad afknippen vanaf
+embroidery	Shortest stitch	Kortste steek
+embroidery	Speed for the time estimate	Snelheid voor de tijdsschatting
+embroidery	Sewing order	Borduurvolgorde
+embroidery	Join one thread's objects when nothing lies between them	Objecten van één garen samenvoegen als er niets tussen ligt
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Minder garenwissels en knippen: wat erboven ligt, wordt toch later geborduurd.
+embroidery	Design name	Naam van het ontwerp
+embroidery	Start point	Startpunt
+embroidery	{x}, {y} mm	{x}, {y} mm
+embroidery	estimate	schatting
+embroidery	information only	alleen ter informatie
+embroidery	preset {value}	voorinstelling {value}
+embroidery	Changed from the preset, which gives {value}	Gewijzigd ten opzichte van de voorinstelling, die {value} geeft
+embroidery	Set in the document; without it: {value}	Ingesteld in het document; anders: {value}
+embroidery	Changing the fabric doesn't change them.	Een andere stof verandert ze niet.
+embroidery	Apply the fabric to them too:	De stof ook op deze objecten toepassen:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	De stof waarop het ontwerp wordt geborduurd: objecten zonder eigen waarden gebruiken de zijne.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	De afstand tussen de rijen van een vulling, voor 40 wt garen: ander garen schaalt hem.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	De afstand van een satijnkolom als deel van de afstand die zijn breedte kiest.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Wat onder de stof in de ring komt: ter informatie, het verandert geen steek.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	De garendikte: dunner garen (een hoger getal) borduurt de rijen dichter.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Het garen dat een machinebestand nummert: dat van Janome in JEF-bestanden, dat van Brother in PES-bestanden.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Een langere verplaatsing tilt de naald op in plaats van te borduren.
+embroidery	A jump longer than this cuts the thread first.	Een langere sprong knipt eerst de draad af.
+embroidery	Stitches shorter than this are left out.	Kortere steken worden weggelaten.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Steken per minuut: de borduurtijd van een ontwerp wordt hiermee geschat.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Objecten van één garen worden na elkaar geborduurd als niets ertussen ze overlapt: minder garenwissels en knippen.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Waar de machine het ontwerp begint, zoals het bestand waaruit het geopend werd het aangaf.
+embroidery	The design's name, as the file it was opened from gave it.	De naam van het ontwerp, zoals het bestand waaruit het geopend werd die aangaf.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Stof, garen en machine van het document: tabblad Borduurwerk in Documentinstellingen.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} object heeft eigen waarden voor de stof.|{count} objecten hebben eigen waarden voor de stof.
+	Embroidery Settings…	Borduurinstellingen…

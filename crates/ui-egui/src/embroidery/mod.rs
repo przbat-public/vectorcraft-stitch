@@ -9,6 +9,7 @@
 //! - [`rows`]: a row of the embroidery settings (the Object tab's): a label, a field, where its
 //!   value comes from.
 //! - [`vocabulary`]: the settings' words (labels, choices, sources, what Auto chose).
+//! - [`setup_tab`]: Document Setup's Embroidery tab (the document's fabric, thread and machine).
 //! - [`numbers`]: numbers as the interface language writes them, in the embroidery interface's
 //!   read-only text.
 //! - [`plan_worker`]: the stitch preview's planning thread.
@@ -33,6 +34,7 @@ pub mod numbers;
 pub mod overlay;
 pub mod plan_worker;
 pub mod rows;
+pub mod setup_tab;
 pub mod stitch_layer;
 pub mod stitch_preview;
 pub mod switch;

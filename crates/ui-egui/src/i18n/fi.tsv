@@ -5995,3 +5995,53 @@ embroidery	Cap (structured)	Lippis (muotoiltu)
 @msg	select one object that takes embroidery settings: a path or a compound path	valitse yksi objekti, jolle voi tehdä kirjonta-asetuksia: polku tai yhdistelmäpolku
 @msg	copy an object's embroidery settings first	kopioi ensin objektin kirjonta-asetukset
 @msg	the embroidery settings copied are another document's	kopioidut kirjonta-asetukset ovat toisen asiakirjan
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Kangas
+embroidery	The values objects use where they set none of their own.	Arvot, joita objektit käyttävät, kun niillä ei ole omia.
+embroidery	Built-in values	Sisäiset arvot
+embroidery	Custom	Mukautettu
+embroidery	Stabilizer	Tukikangas
+embroidery	Tear-away	Repäistävä
+embroidery	Cut-away	Leikattava
+embroidery	Adhesive tear-away	Liimautuva repäistävä
+embroidery	Thread	Lanka
+embroidery	Thread weight	Langan vahvuus
+embroidery	Rows' spacing for this thread: {value}	Rivien väli tällä langalla: {value}
+embroidery	Thread palette	Lankapaletti
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Kone ja tiedosto
+embroidery	Jump (needle up) from	Hyppy (neula ylhäällä) alkaen
+embroidery	Cut the thread from	Katkaise lanka alkaen
+embroidery	Shortest stitch	Lyhin pisto
+embroidery	Speed for the time estimate	Nopeus ajan arviota varten
+embroidery	Sewing order	Ompelujärjestys
+embroidery	Join one thread's objects when nothing lies between them	Yhdistä saman langan objektit, kun niiden välissä ei ole mitään
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Vähemmän langanvaihtoja ja katkaisuja: päällä oleva ommellaan joka tapauksessa myöhemmin.
+embroidery	Design name	Kuvion nimi
+embroidery	Start point	Aloituskohta
+embroidery	{x}, {y} mm	{x}, {y} mm
+embroidery	estimate	arvio
+embroidery	information only	vain tiedoksi
+embroidery	preset {value}	esiasetus {value}
+embroidery	Changed from the preset, which gives {value}	Muutettu esiasetuksesta, joka antaa {value}
+embroidery	Set in the document; without it: {value}	Asetettu asiakirjassa; muuten: {value}
+embroidery	Changing the fabric doesn't change them.	Kankaan vaihto ei muuta niitä.
+embroidery	Apply the fabric to them too:	Käytä kangasta myös niihin:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Kangas, jolle kuvio ommellaan: sen arvoja käyttävät objektit, joilla ei ole omia.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	Täytön rivien väli 40 wt langalle: muu lanka skaalaa sitä.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	Satiinipylvään väli osuutena siitä välistä, jonka sen leveys valitsee.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Mitä kehystetään kankaan alle: tiedoksi, se ei muuta yhtään pistoa.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	Langan vahvuus: ohuempi lanka (suurempi luku) ompelee rivit tiheämmin.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Langat, jotka konetiedosto numeroi: Janomen JEF-tiedostoissa, Brotherin PES-tiedostoissa.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Pidempi siirto nostaa neulan sen sijaan, että se ommeltaisiin.
+embroidery	A jump longer than this cuts the thread first.	Pidempi hyppy katkaisee ensin langan.
+embroidery	Stitches shorter than this are left out.	Lyhyemmät pistot jätetään pois.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Pistoja minuutissa: kuvion ompeluaika arvioidaan sillä.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Saman langan objektit ommellaan peräkkäin, kun mikään niiden välissä ei peitä niitä: vähemmän langanvaihtoja ja katkaisuja.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Mistä kone aloittaa kuvion, kuten tiedosto, josta se avattiin, sen antoi.
+embroidery	The design's name, as the file it was opened from gave it.	Kuvion nimi, kuten tiedosto, josta se avattiin, sen antoi.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Asiakirjan kangas, lanka ja kone: asiakirjan asetusten Kirjonta-välilehti.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} objektilla on omat arvot kankaalle.|{count} objektilla on omat arvot kankaalle.
+	Embroidery Settings…	Kirjonnan asetukset…

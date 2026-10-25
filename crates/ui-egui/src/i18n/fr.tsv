@@ -5963,3 +5963,53 @@ embroidery	Cap (structured)	Casquette (structurée)
 @msg	select one object that takes embroidery settings: a path or a compound path	sélectionnez un objet qui prend des réglages de broderie : un tracé ou un tracé transparent
 @msg	copy an object's embroidery settings first	copiez d’abord les réglages de broderie d’un objet
 @msg	the embroidery settings copied are another document's	les réglages de broderie copiés sont ceux d’un autre document
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Tissu
+embroidery	The values objects use where they set none of their own.	Les valeurs utilisées par les objets qui n’en définissent pas.
+embroidery	Built-in values	Valeurs intégrées
+embroidery	Custom	Personnalisé
+embroidery	Stabilizer	Entoilage
+embroidery	Tear-away	Déchirable
+embroidery	Cut-away	Découpable
+embroidery	Adhesive tear-away	Déchirable adhésif
+embroidery	Thread	Fil
+embroidery	Thread weight	Grosseur du fil
+embroidery	Rows' spacing for this thread: {value}	Espacement des rangs avec ce fil : {value}
+embroidery	Thread palette	Palette de fils
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Machine et fichier
+embroidery	Jump (needle up) from	Saut (aiguille levée) à partir de
+embroidery	Cut the thread from	Couper le fil à partir de
+embroidery	Shortest stitch	Point le plus court
+embroidery	Speed for the time estimate	Vitesse pour l’estimation du temps
+embroidery	Sewing order	Ordre de broderie
+embroidery	Join one thread's objects when nothing lies between them	Joindre les objets d’un même fil quand rien n’est entre eux
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Moins de changements de fil et de coupes : ce qui est au-dessus est brodé plus tard de toute façon.
+embroidery	Design name	Nom du motif
+embroidery	Start point	Point de départ
+embroidery	{x}, {y} mm	{x}, {y} mm
+embroidery	estimate	estimation
+embroidery	information only	pour information
+embroidery	preset {value}	préréglage {value}
+embroidery	Changed from the preset, which gives {value}	Modifié par rapport au préréglage, qui donne {value}
+embroidery	Set in the document; without it: {value}	Défini dans le document ; sinon : {value}
+embroidery	Changing the fabric doesn't change them.	Changer de tissu ne les modifie pas.
+embroidery	Apply the fabric to them too:	Appliquer aussi le tissu à ces objets :
+embroidery	{setting}: {objects}	{setting} : {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Le tissu sur lequel le motif est brodé : ses valeurs servent aux objets qui n’en définissent pas.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	L’écart entre les rangs d’un remplissage, pour du fil 40 wt : un autre fil le met à l’échelle.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	L’espacement d’une colonne de satin, en part de celui que choisit sa largeur.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Ce qu’il faut tendre sous le tissu dans le cadre : pour information, cela ne change aucun point.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	La grosseur du fil : un fil plus fin (un numéro plus élevé) brode ses rangs plus serrés.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Les fils qu’un fichier machine numérote : ceux de Janome dans les fichiers JEF, ceux de Brother dans les fichiers PES.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Un déplacement plus long lève l’aiguille au lieu d’être brodé.
+embroidery	A jump longer than this cuts the thread first.	Un saut plus long coupe d’abord le fil.
+embroidery	Stitches shorter than this are left out.	Les points plus courts sont omis.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Points par minute : le temps de broderie d’un motif est estimé à cette vitesse.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Les objets d’un même fil sont brodés à la suite quand rien entre eux ne les chevauche : moins de changements de fil et de coupes.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Où la machine commence le motif, tel que l’indiquait le fichier dont il est ouvert.
+embroidery	The design's name, as the file it was opened from gave it.	Le nom du motif, tel que l’indiquait le fichier dont il est ouvert.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Le tissu, le fil et la machine du document : onglet Broderie du format de document.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} objet définit ses propres valeurs de tissu.|{count} objets définissent leurs propres valeurs de tissu.
+	Embroidery Settings…	Réglages de broderie…

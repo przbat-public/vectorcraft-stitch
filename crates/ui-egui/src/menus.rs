@@ -771,6 +771,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{part?: fill|stroke (default: both)} (VectorCraft Stitch) give the selected objects the embroidery settings of the object embroidery.copySettings remembered, as embroidery.copyFrom does (its reply), in one undo step; off while nothing is remembered in the active document or nothing else is selected",
     ),
     (
+        "embroidery.documentSetup",
+        "Embroidery Settings…",
+        "",
+        "{} (VectorCraft Stitch) open Document Setup at its Embroidery tab (the document's fabric, thread, machine and sewing order), as the Embroidery panel's Object tab does; off with no document → null",
+    ),
+    (
         "embroidery.showFinding",
         "Show Finding",
         "",

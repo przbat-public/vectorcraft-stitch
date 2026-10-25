@@ -32,7 +32,7 @@ use vectorcraft_engine::cmd::embroidery::{SettingField, distinct_underlays, part
 
 use super::SHOW_BUSY_AFTER_SECS;
 use crate::VectorcraftApp;
-use crate::embroidery::rows::{self, Columns, Edit, Field, Row};
+use crate::embroidery::rows::{self, Columns, Edit, Owned, OwnedField, Row};
 use crate::embroidery::stitch_preview::Freshness;
 use crate::embroidery::{fields, numbers, text, vocabulary};
 use crate::i18n::Lang;
@@ -61,6 +61,8 @@ const MIN_ROWS: f32 = 56.0;
 const HALF_TURN: f64 = 180.0;
 /// Decimals of a number written in words (a hint, a description): the fields' millimetres.
 const WORDS_DECIMALS: usize = 2;
+/// The command the footer's Embroidery Settings… runs: Document Setup at its Embroidery tab.
+const SETTINGS: &str = "embroidery.documentSetup";
 /// The stitch count before the first plan: an ellipsis, the same in every language.
 const PENDING: &str = "…";
 
@@ -228,7 +230,8 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     };
     let settings = document_settings(app);
     let footer_words = footer_words(settings.as_deref(), lang);
-    let footer_room = footer_height(ui, &footer_words);
+    let buttons = [super::command_label(app, SETTINGS), crate::et!("Restore from Fabric").to_string()];
+    let footer_room = footer_height(ui, &footer_words, &buttons);
     if ids.is_empty() {
         state_words(ui, crate::et!("Select an object to set how it is sewn."));
     } else if info.object_count == 0 {
@@ -252,7 +255,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             });
         }
     }
-    footer(ui, &info, &footer_words, &ids, &mut commands);
+    footer(ui, &info, &footer_words, &buttons, &ids, &mut commands);
     for (cmd, params) in commands {
         if let Err(e) = app.run(cmd, params) {
             app.status(e);
@@ -467,51 +470,6 @@ impl Section {
             Section::Stitch => crate::et!("Stitch"),
             Section::Underlay => crate::et!("Underlay"),
             Section::Compensation => crate::et!("Compensation"),
-        }
-    }
-}
-
-/// One row as the tab draws it, its words owned for the frame.
-struct Owned {
-    key: &'static str,
-    label: &'static str,
-    name: String,
-    tip: &'static str,
-    field: OwnedField,
-    own: bool,
-    restore: Option<String>,
-    aside: Option<String>,
-    hint: Option<String>,
-    description: String,
-}
-
-enum OwnedField {
-    Number { value: Option<f64>, unit: &'static str, decimals: usize, bounds: (f64, f64), hint: Option<String> },
-    Choice { shown: String, options: Vec<(String, String)>, current: Option<String> },
-    Words(String),
-}
-
-impl Owned {
-    /// The row to draw, borrowing its words; numbers as `lang` writes them.
-    fn row(&self, lang: Lang) -> Row<'_> {
-        let field = match &self.field {
-            OwnedField::Number { value, unit, decimals, bounds, hint } => {
-                Field::Number { value: *value, format: fields::format(lang, unit, *decimals), bounds: bounds.0..=bounds.1, hint: hint.as_deref() }
-            }
-            OwnedField::Choice { shown, options, current } => Field::Choice { shown, options, current: current.as_deref() },
-            OwnedField::Words(w) => Field::Words(w),
-        };
-        Row {
-            key: self.key,
-            label: self.label,
-            name: &self.name,
-            tip: self.tip,
-            field,
-            own: self.own,
-            restore: self.restore.as_deref(),
-            aside: self.aside.clone(),
-            hint: self.hint.clone(),
-            description: self.description.clone(),
         }
     }
 }
@@ -814,21 +772,26 @@ fn footer_words(settings: Option<&DocumentSettings>, lang: Lang) -> [String; 3] 
 
 /// The footer's height: its words wrapped in the panel's width as they will be drawn, its button,
 /// and the room around them.
-fn footer_height(ui: &Ui, words: &[String; 3]) -> f32 {
+fn footer_height(ui: &Ui, words: &[String; 3], buttons: &[String; 2]) -> f32 {
     let wrap = (ui.available_width() - 2.0 * FOOTER_PAD).max(1.0);
     let height = |w: &str, size: f32| ui.painter().layout(w.to_string(), FontId::proportional(size), Color32::WHITE, wrap).size().y;
     let [line, dim @ ..] = words;
     let text = height(line, FOOTER_LINE_TEXT) + dim.iter().map(|w| height(w, SMALL_TEXT)).sum::<f32>();
     let s = ui.spacing();
     let button = s.interact_size.y.max(ui.text_style_height(&egui::TextStyle::Button) + 2.0 * s.button_padding.y);
-    // The room above the card, its padding, the half gap over its button, and the spaces between
-    // the rows above it, its three lines and its button.
-    GAP + 2.0 * FOOTER_PAD + text + GAP / 2.0 + button + 4.0 * s.item_spacing.y
+    // The buttons side by side where they fit, else one under the other.
+    let font = egui::TextStyle::Button.resolve(ui.style());
+    let widths: f32 =
+        buttons.iter().map(|b| ui.painter().layout_no_wrap(b.clone(), font.clone(), Color32::WHITE).size().x + 2.0 * s.button_padding.x).sum();
+    let lines = if widths + s.item_spacing.x <= wrap { 1.0 } else { 2.0 };
+    // The room above the card, its padding, the half gap over its buttons, and the spaces between
+    // the rows above it, its three lines and its buttons' lines.
+    GAP + 2.0 * FOOTER_PAD + text + GAP / 2.0 + lines * button + (3.0 + lines) * s.item_spacing.y
 }
 
 /// The footer: `words` (the document's fabric and thread, what the rows' looks mean), and Restore
 /// from Fabric (the selection's own values unset, both parts, their points and Trim After kept).
-fn footer(ui: &mut Ui, info: &ObjectSettings, words: &[String; 3], ids: &[NodeId], commands: &mut Vec<Command>) {
+fn footer(ui: &mut Ui, info: &ObjectSettings, words: &[String; 3], buttons: &[String; 2], ids: &[NodeId], commands: &mut Vec<Command>) {
     let t = Tokens::get(ui.ctx());
     let [line, dim @ ..] = words;
     let any_set = [&info.fill, &info.stroke].into_iter().flatten().any(|p| p.settings.values().any(|k| k.set_count > 0));
@@ -843,11 +806,20 @@ fn footer(ui: &mut Ui, info: &ObjectSettings, words: &[String; 3], ids: &[NodeId
                 ui.add(egui::Label::new(egui::RichText::new(words).size(SMALL_TEXT).color(colour)).wrap());
             }
             ui.add_space(GAP / 2.0);
-            let tip = crate::et!("Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.");
-            let restore = ui.add_enabled(any_set && !ids.is_empty(), egui::Button::new(crate::et!("Restore from Fabric")));
-            if restore.on_hover_text(tip).clicked() {
-                commands.push(("embroidery.reset", json!({"ids": ids_json(ids)})));
-            }
+            let [settings, restore] = buttons;
+            ui.horizontal_wrapped(|ui| {
+                let open = ui
+                    .button(settings.as_str())
+                    .on_hover_text(crate::et!("The document's fabric, thread and machine: Document Setup's Embroidery tab."));
+                if open.clicked() {
+                    commands.push((SETTINGS, json!({})));
+                }
+                let tip = crate::et!("Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.");
+                let restore = ui.add_enabled(any_set && !ids.is_empty(), egui::Button::new(restore.as_str()));
+                if restore.on_hover_text(tip).clicked() {
+                    commands.push(("embroidery.reset", json!({"ids": ids_json(ids)})));
+                }
+            });
         },
     );
 }

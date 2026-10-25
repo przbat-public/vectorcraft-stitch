@@ -5545,3 +5545,53 @@ embroidery	Cap (structured)	Kappe (strukturiert)
 @msg	select one object that takes embroidery settings: a path or a compound path	wählen Sie ein Objekt aus, das Stickeinstellungen annimmt: einen Pfad oder zusammengesetzten Pfad
 @msg	copy an object's embroidery settings first	kopieren Sie zuerst die Stickeinstellungen eines Objekts
 @msg	the embroidery settings copied are another document's	die kopierten Stickeinstellungen gehören zu einem anderen Dokument
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Stoff
+embroidery	The values objects use where they set none of their own.	Die Werte, die Objekte ohne eigene Werte verwenden.
+embroidery	Built-in values	Eingebaute Werte
+embroidery	Custom	Eigene
+embroidery	Stabilizer	Stickvlies
+embroidery	Tear-away	Reißvlies
+embroidery	Cut-away	Schneidvlies
+embroidery	Adhesive tear-away	Klebendes Reißvlies
+embroidery	Thread	Faden
+embroidery	Thread weight	Garnstärke
+embroidery	Rows' spacing for this thread: {value}	Reihenabstand für dieses Garn: {value}
+embroidery	Thread palette	Garnpalette
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Maschine und Datei
+embroidery	Jump (needle up) from	Sprung (Nadel oben) ab
+embroidery	Cut the thread from	Faden schneiden ab
+embroidery	Shortest stitch	Kürzester Stich
+embroidery	Speed for the time estimate	Tempo für die Zeitschätzung
+embroidery	Sewing order	Stickreihenfolge
+embroidery	Join one thread's objects when nothing lies between them	Objekte eines Garns verbinden, wenn nichts dazwischen liegt
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Weniger Garnwechsel und Schnitte: Was darüber liegt, wird ohnehin später gestickt.
+embroidery	Design name	Name des Motivs
+embroidery	Start point	Startpunkt
+embroidery	{x}, {y} mm	{x}, {y} mm
+embroidery	estimate	Schätzung
+embroidery	information only	nur zur Information
+embroidery	preset {value}	Vorgabe {value}
+embroidery	Changed from the preset, which gives {value}	Gegenüber der Vorgabe geändert, die {value} vorsieht
+embroidery	Set in the document; without it: {value}	Im Dokument gesetzt; sonst: {value}
+embroidery	Changing the fabric doesn't change them.	Ein anderer Stoff ändert sie nicht.
+embroidery	Apply the fabric to them too:	Den Stoff auch auf sie anwenden:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Der Stoff, auf den das Motiv gestickt wird: seine Werte gelten für Objekte ohne eigene.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	Der Abstand der Füllreihen für 40er Garn: ein anderes Garn skaliert ihn.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	Der Abstand einer Satinsäule als Anteil des Abstands, den ihre Breite wählt.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Was unter den Stoff in den Rahmen kommt: zur Information, es ändert keinen Stich.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	Die Garnstärke: dünneres Garn (höhere Zahl) stickt die Reihen dichter.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Die Garne, die eine Maschinendatei nummeriert: Janome in JEF-Dateien, Brother in PES-Dateien.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Eine längere Bewegung hebt die Nadel, statt genäht zu werden.
+embroidery	A jump longer than this cuts the thread first.	Ein längerer Sprung schneidet zuerst den Faden.
+embroidery	Stitches shorter than this are left out.	Kürzere Stiche werden weggelassen.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Stiche pro Minute: daran wird die Stickzeit eines Motivs geschätzt.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Objekte eines Garns werden nacheinander gestickt, wenn nichts dazwischen sie überdeckt: weniger Garnwechsel und Schnitte.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Wo die Maschine das Motiv beginnt, wie die Datei es angab, aus der es geöffnet wurde.
+embroidery	The design's name, as the file it was opened from gave it.	Der Name des Motivs, wie die Datei ihn angab, aus der es geöffnet wurde.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Stoff, Garn und Maschine des Dokuments: Registerkarte „Stickerei“ unter „Dokument einrichten“.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} Objekt hat eigene Werte für den Stoff.|{count} Objekte haben eigene Werte für den Stoff.
+	Embroidery Settings…	Stickerei-Einstellungen…

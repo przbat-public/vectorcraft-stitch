@@ -5950,3 +5950,53 @@ embroidery	Cap (structured)	Sapka (merevített)
 @msg	select one object that takes embroidery settings: a path or a compound path	jelöljön ki egy hímzésbeállításokat fogadó objektumot: útvonalat vagy összetett útvonalat
 @msg	copy an object's embroidery settings first	előbb másolja egy objektum hímzésbeállításait
 @msg	the embroidery settings copied are another document's	a másolt hímzésbeállítások egy másik dokumentumhoz tartoznak
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Anyag
+embroidery	The values objects use where they set none of their own.	Az értékek, amelyeket a saját érték nélküli objektumok használnak.
+embroidery	Built-in values	Beépített értékek
+embroidery	Custom	Egyéni
+embroidery	Stabilizer	Merevítő
+embroidery	Tear-away	Kitéphető
+embroidery	Cut-away	Kivágható
+embroidery	Adhesive tear-away	Öntapadó kitéphető
+embroidery	Thread	Cérna
+embroidery	Thread weight	Cérnavastagság
+embroidery	Rows' spacing for this thread: {value}	Sortávolság ezzel a cérnával: {value}
+embroidery	Thread palette	Cérnapaletta
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Gép és fájl
+embroidery	Jump (needle up) from	Ugrás (tű fent) ettől
+embroidery	Cut the thread from	Cérnavágás ettől
+embroidery	Shortest stitch	Legrövidebb öltés
+embroidery	Speed for the time estimate	Sebesség az időbecsléshez
+embroidery	Sewing order	Varrási sorrend
+embroidery	Join one thread's objects when nothing lies between them	Egy cérna objektumainak összevonása, ha nincs köztük semmi
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Kevesebb cérnacsere és vágás: ami felül van, amúgy is később varródik.
+embroidery	Design name	Minta neve
+embroidery	Start point	Kezdőpont
+embroidery	{x}, {y} mm	{x}, {y} mm
+embroidery	estimate	becslés
+embroidery	information only	csak tájékoztatás
+embroidery	preset {value}	előbeállítás {value}
+embroidery	Changed from the preset, which gives {value}	Az előbeállítástól eltér, amely {value} értéket ad
+embroidery	Set in the document; without it: {value}	A dokumentumban beállítva; nélküle: {value}
+embroidery	Changing the fabric doesn't change them.	Az anyag cseréje nem változtat rajtuk.
+embroidery	Apply the fabric to them too:	Az anyag alkalmazása rájuk is:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Az anyag, amelyre a minta készül: értékeit a saját érték nélküli objektumok használják.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	A kitöltés sorainak távolsága 40 wt cérnához: más cérna arányosan módosítja.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	A szaténoszlop sűrűsége annak arányában, amelyet a szélessége választ.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Mi kerüljön a rámába az anyag alá: tájékoztatás, egy öltést sem változtat.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	A cérna vastagsága: vékonyabb cérna (nagyobb szám) sűrűbben varrja a sorokat.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	A gépfájl által számozott cérnák: a Janome-é a JEF-fájlokban, a Brother-é a PES-fájlokban.
+embroidery	A move longer than this lifts the needle instead of sewing it.	A hosszabb mozgás felemeli a tűt ahelyett, hogy varrná.
+embroidery	A jump longer than this cuts the thread first.	A hosszabb ugrás előbb elvágja a cérnát.
+embroidery	Stitches shorter than this are left out.	A rövidebb öltések kimaradnak.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Öltés percenként: ezzel becsüljük a minta varrási idejét.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Egy cérna objektumai egymás után varródnak, ha semmi sem fedi őket köztük: kevesebb cérnacsere és vágás.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Ahol a gép elkezdi a mintát, ahogy a megnyitott fájl megadta.
+embroidery	The design's name, as the file it was opened from gave it.	A minta neve, ahogy a megnyitott fájl megadta.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	A dokumentum anyaga, cérnája és gépe: a Dokumentumbeállítás Hímzés lapja.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} objektum saját értékeket ad meg az anyaghoz.
+	Embroidery Settings…	Hímzés beállításai…

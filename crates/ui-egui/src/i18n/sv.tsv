@@ -5920,3 +5920,53 @@ embroidery	Cap (structured)	Keps (formad)
 @msg	select one object that takes embroidery settings: a path or a compound path	markera ett objekt som tar broderiinställningar: en bana eller en sammansatt bana
 @msg	copy an object's embroidery settings first	kopiera först ett objekts broderiinställningar
 @msg	the embroidery settings copied are another document's	de kopierade broderiinställningarna hör till ett annat dokument
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Tyg
+embroidery	The values objects use where they set none of their own.	Värdena som objekt utan egna värden använder.
+embroidery	Built-in values	Inbyggda värden
+embroidery	Custom	Anpassat
+embroidery	Stabilizer	Mellanlägg
+embroidery	Tear-away	Rivbart
+embroidery	Cut-away	Klippbart
+embroidery	Adhesive tear-away	Självhäftande rivbart
+embroidery	Thread	Tråd
+embroidery	Thread weight	Trådtjocklek
+embroidery	Rows' spacing for this thread: {value}	Radavstånd för den här tråden: {value}
+embroidery	Thread palette	Trådpalett
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Maskin och fil
+embroidery	Jump (needle up) from	Hopp (nålen uppe) från
+embroidery	Cut the thread from	Klipp tråden från
+embroidery	Shortest stitch	Kortaste stygn
+embroidery	Speed for the time estimate	Hastighet för tidsuppskattningen
+embroidery	Sewing order	Sömnadsordning
+embroidery	Join one thread's objects when nothing lies between them	Slå ihop objekt med samma tråd när inget ligger emellan
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Färre trådbyten och klipp: det som ligger ovanpå sys ändå senare.
+embroidery	Design name	Mönstrets namn
+embroidery	Start point	Startpunkt
+embroidery	{x}, {y} mm	{x}, {y} mm
+embroidery	estimate	uppskattning
+embroidery	information only	endast information
+embroidery	preset {value}	förinställning {value}
+embroidery	Changed from the preset, which gives {value}	Ändrat från förinställningen, som ger {value}
+embroidery	Set in the document; without it: {value}	Angivet i dokumentet; annars: {value}
+embroidery	Changing the fabric doesn't change them.	Att byta tyg ändrar dem inte.
+embroidery	Apply the fabric to them too:	Använd tyget på dem också:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Tyget som mönstret sys på: objekt utan egna värden använder dess värden.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	Avståndet mellan fyllningens rader för 40 wt tråd: annan tråd skalar det.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	En satinkolumns avstånd som andel av det avstånd dess bredd väljer.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Vad som spänns i båge under tyget: endast information, ändrar inget stygn.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	Trådens tjocklek: tunnare tråd (högre tal) syr raderna tätare.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Trådarna som en maskinfil numrerar: Janomes i JEF-filer, Brothers i PES-filer.
+embroidery	A move longer than this lifts the needle instead of sewing it.	En längre förflyttning lyfter nålen i stället för att sys.
+embroidery	A jump longer than this cuts the thread first.	Ett längre hopp klipper tråden först.
+embroidery	Stitches shorter than this are left out.	Kortare stygn utelämnas.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Stygn per minut: tiden ett mönster tar att sy uppskattas med den.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Objekt med samma tråd sys efter varandra när inget emellan överlappar dem: färre trådbyten och klipp.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Var maskinen börjar mönstret, som filen det öppnades från angav.
+embroidery	The design's name, as the file it was opened from gave it.	Mönstrets namn, som filen det öppnades från angav.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Dokumentets tyg, tråd och maskin: fliken Broderi i dokumentinställningarna.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} objekt har egna värden för tyget.|{count} objekt har egna värden för tyget.
+	Embroidery Settings…	Broderiinställningar…

@@ -5598,3 +5598,53 @@ embroidery	Cap (structured)	帽子（有型）
 @msg	select one object that takes embroidery settings: a path or a compound path	請選取一個可設定刺繡的物件：路徑或複合路徑
 @msg	copy an object's embroidery settings first	請先複製一個物件的刺繡設定
 @msg	the embroidery settings copied are another document's	複製的刺繡設定屬於另一個文件
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	布料
+embroidery	The values objects use where they set none of their own.	未設定自身值的物件所使用的值。
+embroidery	Built-in values	內建值
+embroidery	Custom	自訂
+embroidery	Stabilizer	襯布
+embroidery	Tear-away	撕除型
+embroidery	Cut-away	剪除型
+embroidery	Adhesive tear-away	黏合撕除型
+embroidery	Thread	線
+embroidery	Thread weight	線的粗細
+embroidery	Rows' spacing for this thread: {value}	此線的行距：{value}
+embroidery	Thread palette	線色盤
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	機器與檔案
+embroidery	Jump (needle up) from	跳針（抬針）起點
+embroidery	Cut the thread from	剪線起點
+embroidery	Shortest stitch	最短針跡
+embroidery	Speed for the time estimate	用於估算時間的速度
+embroidery	Sewing order	刺繡順序
+embroidery	Join one thread's objects when nothing lies between them	中間無其他物件時，合併同一線色的物件
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	換線和剪線更少：上層的物件反正也會稍後刺繡。
+embroidery	Design name	圖案名稱
+embroidery	Start point	起點
+embroidery	{x}, {y} mm	{x}, {y} 公釐
+embroidery	estimate	估計
+embroidery	information only	僅供參考
+embroidery	preset {value}	預設組 {value}
+embroidery	Changed from the preset, which gives {value}	已不同於預設組，預設組為 {value}
+embroidery	Set in the document; without it: {value}	已在文件中設定；否則：{value}
+embroidery	Changing the fabric doesn't change them.	更換布料不會改變它們。
+embroidery	Apply the fabric to them too:	也將布料套用至它們：
+embroidery	{setting}: {objects}	{setting}：{objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	刺繡圖案所用的布料：未設定自身值的物件使用它的值。
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	40 wt 線時填充行之間的距離：換用其他線時按比例縮放。
+embroidery	A satin column's spacing as a share of the spacing its width picks.	緞紋柱的間距，以其寬度所選間距的比例表示。
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	繃在布料下面的襯布：僅供參考，不改變任何針跡。
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	線的粗細：線越細（數字越大），行越密。
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	機器檔案編號的線：JEF 檔案用 Janome 的線，PES 檔案用 Brother 的線。
+embroidery	A move longer than this lifts the needle instead of sewing it.	比這更長的移動會抬針，而不是縫出來。
+embroidery	A jump longer than this cuts the thread first.	比這更長的跳針會先剪線。
+embroidery	Stitches shorter than this are left out.	比這更短的針跡會被略過。
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	每分鐘針數：據此估算圖案的刺繡時間。
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	中間無物件遮擋時，同一線色的物件連續刺繡：換線和剪線更少。
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	機器開始刺繡圖案的位置，依開啟時的檔案所給。
+embroidery	The design's name, as the file it was opened from gave it.	圖案的名稱，依開啟時的檔案所給。
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	文件的布料、線和機器：文件設定的「刺繡」分頁。
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} 個物件自行設定了布料的值。
+	Embroidery Settings…	刺繡設定…

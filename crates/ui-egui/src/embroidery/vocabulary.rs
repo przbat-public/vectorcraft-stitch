@@ -169,3 +169,74 @@ pub fn fabric(id: &str) -> String {
         other => other.to_string(),
     }
 }
+
+/// A document setting's label in Document Setup's Embroidery tab, by its field there without the
+/// `embroidery.` prefix: a fabric value by its kind of stitch and name (`tatami.pull`), the thread,
+/// the machine's values (`machine.jumpLength`), the design's start and name.
+pub fn setup_label(key: &str) -> &'static str {
+    match key {
+        "tatami.pull" | "satin.pull" => label("pull", None),
+        "tatami.spacing" => label("spacing", Some("tatami")),
+        "satin.spacingPercent" => label("spacing", Some("satin")),
+        "tatami.length" => label("length", None),
+        "tatami.underlay" | "satin.underlay" => crate::et!("Underlay"),
+        "stabilizer" => crate::et!("Stabilizer"),
+        "threadWeight" => crate::et!("Thread weight"),
+        "palette" => crate::et!("Thread palette"),
+        "machine.jumpLength" => crate::et!("Jump (needle up) from"),
+        "machine.trimLength" => crate::et!("Cut the thread from"),
+        "machine.minStitch" => crate::et!("Shortest stitch"),
+        "machine.splitLength" => label("splitLength", None),
+        "machine.speed" => crate::et!("Speed for the time estimate"),
+        "start" => crate::et!("Start point"),
+        "label" => crate::et!("Design name"),
+        _ => crate::et!("Setting"),
+    }
+}
+
+/// What a document setting does, as its tooltip in Document Setup says it ([`setup_label`]'s keys).
+pub fn setup_tip(key: &str) -> &'static str {
+    match key {
+        "fabric" => crate::et!("The fabric the design is sewn on: its values are what objects use where they set none of their own."),
+        "tatami.pull" | "satin.pull" => tip("pull"),
+        "tatami.spacing" => crate::et!("The distance between a fill's rows, for 40 wt thread: another thread scales it."),
+        "satin.spacingPercent" => crate::et!("A satin column's spacing as a share of the spacing its width picks."),
+        "tatami.length" => tip("length"),
+        "tatami.underlay" | "satin.underlay" => tip("underlay"),
+        "stabilizer" => crate::et!("What to hoop under the fabric: for information, it changes no stitch."),
+        "threadWeight" => crate::et!("The thread's weight: a thinner thread (a higher number) sews its rows closer."),
+        "palette" => crate::et!("The threads a machine file numbers: Janome's in JEF files, Brother's in PES files."),
+        "machine.jumpLength" => crate::et!("A move longer than this lifts the needle instead of sewing it."),
+        "machine.trimLength" => crate::et!("A jump longer than this cuts the thread first."),
+        "machine.minStitch" => crate::et!("Stitches shorter than this are left out."),
+        "machine.splitLength" => tip("splitLength"),
+        "machine.speed" => crate::et!("Stitches a minute: the time a design takes to sew is estimated at it."),
+        "joinSameColor" => {
+            crate::et!("Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.")
+        }
+        "start" => crate::et!("Where the machine starts the design, as the file it was opened from gave it."),
+        "label" => crate::et!("The design's name, as the file it was opened from gave it."),
+        _ => "",
+    }
+}
+
+/// A thread palette's name (`embroidery.setup {palette}`'s ids).
+pub fn palette(id: &str) -> String {
+    match id {
+        "jef" => crate::et!("Janome (JEF)").to_string(),
+        "pec" => crate::et!("Brother (PES)").to_string(),
+        other => other.to_string(),
+    }
+}
+
+/// A fabric's stabiliser in words (`embroidery.fabrics`' ids); one this version doesn't know by its
+/// id.
+pub fn information(id: &str) -> String {
+    match id {
+        "tearAway" => crate::et!("Tear-away").to_string(),
+        "cutAway" => crate::et!("Cut-away").to_string(),
+        "adhesiveTearAway" => crate::et!("Adhesive tear-away").to_string(),
+        "none" => crate::et!("None").to_string(),
+        other => other.to_string(),
+    }
+}

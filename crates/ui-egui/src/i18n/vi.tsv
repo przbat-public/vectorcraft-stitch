@@ -5559,3 +5559,53 @@ embroidery	Cap (structured)	Mũ lưỡi trai (định hình)
 @msg	select one object that takes embroidery settings: a path or a compound path	hãy chọn một đối tượng nhận thiết lập thêu: một đường dẫn hoặc đường dẫn phức
 @msg	copy an object's embroidery settings first	hãy sao chép thiết lập thêu của một đối tượng trước
 @msg	the embroidery settings copied are another document's	thiết lập thêu đã sao chép thuộc về tài liệu khác
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Vải
+embroidery	The values objects use where they set none of their own.	Các giá trị mà đối tượng dùng khi không có giá trị riêng.
+embroidery	Built-in values	Giá trị dựng sẵn
+embroidery	Custom	Tùy chỉnh
+embroidery	Stabilizer	Vải lót dựng
+embroidery	Tear-away	Loại xé
+embroidery	Cut-away	Loại cắt
+embroidery	Adhesive tear-away	Loại xé có keo
+embroidery	Thread	Chỉ
+embroidery	Thread weight	Độ dày chỉ
+embroidery	Rows' spacing for this thread: {value}	Khoảng cách hàng với chỉ này: {value}
+embroidery	Thread palette	Bảng màu chỉ
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Máy và tệp
+embroidery	Jump (needle up) from	Nhảy (kim nâng) từ
+embroidery	Cut the thread from	Cắt chỉ từ
+embroidery	Shortest stitch	Mũi ngắn nhất
+embroidery	Speed for the time estimate	Tốc độ để ước tính thời gian
+embroidery	Sewing order	Thứ tự thêu
+embroidery	Join one thread's objects when nothing lies between them	Nối các đối tượng cùng chỉ khi không có gì nằm giữa
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Ít lần thay chỉ và cắt hơn: phần nằm trên vẫn được thêu sau.
+embroidery	Design name	Tên mẫu thêu
+embroidery	Start point	Điểm bắt đầu
+embroidery	{x}, {y} mm	{x}, {y} mm
+embroidery	estimate	ước tính
+embroidery	information only	chỉ để tham khảo
+embroidery	preset {value}	cài sẵn {value}
+embroidery	Changed from the preset, which gives {value}	Đã đổi so với cài sẵn, vốn cho {value}
+embroidery	Set in the document; without it: {value}	Đã đặt trong tài liệu; nếu không: {value}
+embroidery	Changing the fabric doesn't change them.	Đổi vải không làm thay đổi chúng.
+embroidery	Apply the fabric to them too:	Áp dụng vải cho cả chúng:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Loại vải để thêu mẫu: đối tượng không có giá trị riêng dùng giá trị của vải.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	Khoảng cách giữa các hàng tô cho chỉ 40 wt: chỉ khác sẽ co giãn theo.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	Khoảng cách của cột satin theo tỉ lệ khoảng cách do độ rộng của nó chọn.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Thứ lót dưới vải khi căng khung: chỉ để tham khảo, không đổi mũi nào.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	Độ dày chỉ: chỉ mảnh hơn (số lớn hơn) thêu các hàng sít hơn.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Các chỉ mà tệp máy đánh số: của Janome trong tệp JEF, của Brother trong tệp PES.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Đường di chuyển dài hơn sẽ nâng kim thay vì thêu.
+embroidery	A jump longer than this cuts the thread first.	Bước nhảy dài hơn sẽ cắt chỉ trước.
+embroidery	Stitches shorter than this are left out.	Các mũi ngắn hơn sẽ bị bỏ qua.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Số mũi mỗi phút: thời gian thêu một mẫu được ước tính theo đó.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Các đối tượng cùng chỉ được thêu liền nhau khi không có gì ở giữa che chúng: ít lần thay chỉ và cắt hơn.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Nơi máy bắt đầu mẫu thêu, như tệp nguồn khi mở đã cho.
+embroidery	The design's name, as the file it was opened from gave it.	Tên mẫu thêu, như tệp nguồn khi mở đã cho.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Vải, chỉ và máy của tài liệu: thẻ Thêu trong Thiết lập tài liệu.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} đối tượng có giá trị riêng cho vải.
+	Embroidery Settings…	Cài đặt thêu…

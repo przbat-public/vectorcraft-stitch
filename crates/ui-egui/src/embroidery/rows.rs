@@ -28,7 +28,8 @@ use std::ops::RangeInclusive;
 
 use egui::{Align2, Color32, CornerRadius, FontId, Rect, Sense, Ui, vec2};
 
-use crate::embroidery::marks;
+use crate::embroidery::{fields, marks};
+use crate::i18n::Lang;
 use crate::theme::Tokens;
 use crate::widgets::{self, Look, NumberFormat};
 
@@ -107,6 +108,14 @@ impl Columns {
         };
         Self { label, field }
     }
+
+    /// These columns with a field of at least `field` points, as far as rows `width` points wide
+    /// have room beside their labels: a row with no badge whose words are longer than a value's
+    /// (Document Setup's fabric).
+    pub(crate) fn wide(self, field: f32, width: f32) -> Self {
+        let room = width - GUTTER - self.label.map_or(0.0, |l| l + GAP);
+        Self { field: self.field.max(field.min(room)), ..self }
+    }
 }
 
 /// The width row `r`'s field wants for its words: a choice's and read-only words whole; a number's
@@ -165,6 +174,53 @@ pub(crate) struct Row<'a> {
     pub(crate) hint: Option<String>,
     /// Where its value comes from, for screen readers.
     pub(crate) description: String,
+}
+
+/// A row with its words owned for the frame, as a tab builds it ([`Row`] borrows them to draw).
+pub(crate) struct Owned {
+    pub(crate) key: &'static str,
+    pub(crate) label: &'static str,
+    pub(crate) name: String,
+    pub(crate) tip: &'static str,
+    pub(crate) field: OwnedField,
+    pub(crate) own: bool,
+    pub(crate) restore: Option<String>,
+    pub(crate) aside: Option<String>,
+    pub(crate) hint: Option<String>,
+    pub(crate) description: String,
+}
+
+/// [`Field`] with its words owned; a number in its unit, written as the language writes numbers
+/// when drawn ([`fields::format`]).
+pub(crate) enum OwnedField {
+    Number { value: Option<f64>, unit: &'static str, decimals: usize, bounds: (f64, f64), hint: Option<String> },
+    Choice { shown: String, options: Vec<(String, String)>, current: Option<String> },
+    Words(String),
+}
+
+impl Owned {
+    /// The row to draw, borrowing its words; numbers as `lang` writes them.
+    pub(crate) fn row(&self, lang: Lang) -> Row<'_> {
+        let field = match &self.field {
+            OwnedField::Number { value, unit, decimals, bounds, hint } => {
+                Field::Number { value: *value, format: fields::format(lang, unit, *decimals), bounds: bounds.0..=bounds.1, hint: hint.as_deref() }
+            }
+            OwnedField::Choice { shown, options, current } => Field::Choice { shown, options, current: current.as_deref() },
+            OwnedField::Words(w) => Field::Words(w),
+        };
+        Row {
+            key: self.key,
+            label: self.label,
+            name: &self.name,
+            tip: self.tip,
+            field,
+            own: self.own,
+            restore: self.restore.as_deref(),
+            aside: self.aside.clone(),
+            hint: self.hint.clone(),
+            description: self.description.clone(),
+        }
+    }
 }
 
 /// What a row's person did.

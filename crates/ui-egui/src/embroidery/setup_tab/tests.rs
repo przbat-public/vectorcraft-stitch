@@ -701,3 +701,83 @@ fn the_fields_open_with_the_documents_settings() {
     assert_eq!(o.default_of("threadWeight"), json!(blank.resolved.thread_weight.value));
     assert_eq!(o.default_of("tatami.pull"), json!(blank.resolved.fabric.tatami.pull.value));
 }
+
+/// OK's other branches: a preset chosen over another then a value changed stores the last preset
+/// with that value; a value of the document's own edited is stored, no preset; Join and the thread
+/// weight are stored, the weight's spacing said under it.
+#[test]
+fn ok_stores_each_kind_of_change() {
+    let ctx = context();
+    // Preset → preset → a value.
+    let new = app;
+    let mut app = new();
+    app.run("embroidery.setup", json!({"fabric": "cotton"})).unwrap();
+    open_tab(&mut app);
+    edit(&mut app, "fabric", json!("denim"));
+    edit(&mut app, "fabric", json!("fleece"));
+    edit(&mut app, "tatami.pull", json!(0.4));
+    crate::dialogs::confirm(&mut app).unwrap();
+    let f = settings(&mut app)["settings"]["fabric"].clone();
+    assert_eq!((f["preset"].clone(), f["tatami"]["pull"].clone()), (json!("fleece"), json!(0.4)));
+    // A value of the document's own edited.
+    let mut app = new();
+    app.run("embroidery.setup", json!({"fabric": {"tatami": {"pull": 0.3}}})).unwrap();
+    open_tab(&mut app);
+    edit(&mut app, "tatami.length", json!(3.2));
+    crate::dialogs::confirm(&mut app).unwrap();
+    let f = settings(&mut app)["settings"]["fabric"].clone();
+    assert_eq!((f["preset"].clone(), f["tatami"]["pull"].clone(), f["tatami"]["length"].clone()), (json!(null), json!(0.3), json!(3.2)));
+    // Join and the thread weight, its spacing said under it.
+    let mut app = new();
+    open_tab(&mut app);
+    edit(&mut app, "threadWeight", json!(60.0));
+    let drawn = ready(&mut app, &ctx, WIDE);
+    let spacing = setup::spacing_for_thread(dialog(&mut app).fields[&field("tatami.spacing")].as_f64().unwrap(), 60.0);
+    let note = text::fill(
+        crate::et!("Rows' spacing for this thread: {value}"),
+        &[("value", &fields::format(crate::i18n::Lang::EN, "mm", WORDS_DECIMALS).show(spacing))],
+    );
+    assert!(drawn.has(&note), "{note}: {:?}", drawn.words);
+    let join = crate::et!("Join one thread's objects when nothing lies between them");
+    frame(&mut app, &ctx, WIDE, vec![drawn.click(join)]);
+    ready(&mut app, &ctx, WIDE);
+    crate::dialogs::confirm(&mut app).unwrap();
+    let s = settings(&mut app)["settings"].clone();
+    assert_eq!((s["threadWeight"].clone(), s["joinSameColor"].clone()), (json!(60.0), json!(false)));
+}
+
+/// A batch that fails partway (the cut shorter than the jump, refused by `embroidery.setup` after
+/// `document.setup` ran) is rolled back whole: the other tab's change too; the dialog stays.
+#[test]
+fn a_batch_that_fails_partway_is_rolled_back() {
+    let mut app = app();
+    let before = steps(&app);
+    open_tab(&mut app);
+    dialog(&mut app).fields.insert("units".into(), json!("Millimeters"));
+    edit(&mut app, "machine.jumpLength", json!(8.0));
+    edit(&mut app, "machine.trimLength", json!(6.0));
+    assert!(crate::dialogs::confirm(&mut app).is_err());
+    assert!(app.ui.dialog.is_some(), "the dialog stays");
+    assert_eq!((app.session.active().unwrap().doc.units, steps(&app)), (vectorcraft_doc::Unit::Points, before), "nothing applied");
+}
+
+/// The bar applies the fabric to every object that sets its values, whatever is selected
+/// (`applyFabric {all: true}`): with one of two selected, the other is cleared too.
+#[test]
+fn the_bar_applies_the_fabric_whatever_is_selected() {
+    let ctx = context();
+    let mut app = app();
+    let (a, b) = (rect(&mut app, 20.0), rect(&mut app, 100.0));
+    app.run("embroidery.set", json!({"ids": [a, b], "part": "fill", "pull": 0.3})).unwrap();
+    app.run("select.set", json!({"ids": [a]})).unwrap();
+    open_tab(&mut app);
+    let drawn = ready(&mut app, &ctx, WIDE);
+    let pull = text::fill(crate::et!("{setting}: {objects}"), &[("setting", vocabulary::override_label("pull")), ("objects", "2 objects")]);
+    frame(&mut app, &ctx, WIDE, vec![drawn.click(&pull)]);
+    ready(&mut app, &ctx, WIDE);
+    crate::dialogs::confirm(&mut app).unwrap();
+    for id in [a, b] {
+        let info = app.run("embroidery.info", json!({"ids": [id]})).unwrap();
+        assert_eq!(info["fill"]["settings"]["pull"]["setCount"], json!(0), "{id}: its own pull cleared");
+    }
+}

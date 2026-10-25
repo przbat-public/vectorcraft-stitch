@@ -5540,3 +5540,13 @@ embroidery	It takes no embroidery settings.	Non accetta impostazioni di ricamo.
 @plural	{count} object takes settings|{count} objects take settings	{count} oggetto accetta impostazioni|{count} oggetti accettano impostazioni
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	Ripristina: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Auto: {choice}
+embroidery	Auto · {value}	Auto · {value}
+embroidery	filled outline	contorno riempito
+embroidery	centre run	passata centrale
+embroidery	edge run	passata sul bordo
+embroidery	edge run + zigzag	passata sul bordo + zigzag
+embroidery	edge run + tatami	passata sul bordo + tatami
+embroidery	none	nessuno
+embroidery	by size	in base alle dimensioni

@@ -5923,3 +5923,13 @@ embroidery	It takes no embroidery settings.	Het neemt geen borduurinstellingen a
 @plural	{count} object takes settings|{count} objects take settings	{count} object neemt instellingen aan|{count} objecten nemen instellingen aan
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	{setting} herstellen
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Automatisch: {choice}
+embroidery	Auto · {value}	Automatisch · {value}
+embroidery	filled outline	gevulde omtrek
+embroidery	centre run	middenloop
+embroidery	edge run	randloop
+embroidery	edge run + zigzag	randloop + zigzag
+embroidery	edge run + tatami	randloop + tatami
+embroidery	none	geen
+embroidery	by size	naar grootte

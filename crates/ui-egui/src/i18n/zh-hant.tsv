@@ -5559,3 +5559,13 @@ embroidery	It takes no embroidery settings.	不接受刺繡設定。
 @plural	{count} object takes settings|{count} objects take settings	{count} 個物件可設定
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	還原{setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	自動：{choice}
+embroidery	Auto · {value}	自動 · {value}
+embroidery	filled outline	填充的外框
+embroidery	centre run	中線行針
+embroidery	edge run	邊緣行針
+embroidery	edge run + zigzag	邊緣行針 + 鋸齒
+embroidery	edge run + tatami	邊緣行針 + 榻榻米
+embroidery	none	無
+embroidery	by size	依尺寸

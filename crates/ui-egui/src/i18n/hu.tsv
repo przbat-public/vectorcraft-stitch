@@ -5911,3 +5911,13 @@ embroidery	It takes no embroidery settings.	Nem fogad hímzésbeállításokat.
 @plural	{count} object takes settings|{count} objects take settings	{count} objektum fogad beállításokat
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	Visszaállítás: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Automatikus: {choice}
+embroidery	Auto · {value}	Automatikus · {value}
+embroidery	filled outline	kitöltött körvonal
+embroidery	centre run	középső menet
+embroidery	edge run	szegélymenet
+embroidery	edge run + zigzag	szegélymenet + cikcakk
+embroidery	edge run + tatami	szegélymenet + tatami
+embroidery	none	nincs
+embroidery	by size	méret szerint

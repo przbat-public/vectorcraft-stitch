@@ -5956,3 +5956,13 @@ embroidery	It takes no embroidery settings.	Sille ei voi tehdä kirjonta-asetuks
 @plural	{count} object takes settings|{count} objects take settings	{count} objektille voi tehdä asetuksia|{count} objektille voi tehdä asetuksia
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	Palauta: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Automaattinen: {choice}
+embroidery	Auto · {value}	Automaattinen · {value}
+embroidery	filled outline	täytetty ääriviiva
+embroidery	centre run	keskiajo
+embroidery	edge run	reuna-ajo
+embroidery	edge run + zigzag	reuna-ajo + siksak
+embroidery	edge run + tatami	reuna-ajo + tatami
+embroidery	none	ei mitään
+embroidery	by size	koon mukaan

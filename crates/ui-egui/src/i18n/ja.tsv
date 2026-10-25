@@ -5602,3 +5602,13 @@ embroidery	It takes no embroidery settings.	刺繍の設定はできません。
 @plural	{count} object takes settings|{count} objects take settings	設定できるオブジェクト: {count} 個
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	{setting}を元に戻す
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	自動：{choice}
+embroidery	Auto · {value}	自動・{value}
+embroidery	filled outline	塗りつぶしたアウトライン
+embroidery	centre run	中央ラン
+embroidery	edge run	エッジラン
+embroidery	edge run + zigzag	エッジラン＋ジグザグ
+embroidery	edge run + tatami	エッジラン＋タタミ
+embroidery	none	なし
+embroidery	by size	サイズに応じて

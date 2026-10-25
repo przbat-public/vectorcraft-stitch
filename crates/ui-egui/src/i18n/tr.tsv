@@ -5886,3 +5886,13 @@ embroidery	It takes no embroidery settings.	Nakış ayarı almaz.
 @plural	{count} object takes settings|{count} objects take settings	{count} nesne ayar alır
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	Geri al: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Otomatik: {choice}
+embroidery	Auto · {value}	Otomatik · {value}
+embroidery	filled outline	dolgulu anahat
+embroidery	centre run	orta hat
+embroidery	edge run	kenar hattı
+embroidery	edge run + zigzag	kenar hattı + zikzak
+embroidery	edge run + tatami	kenar hattı + tatami
+embroidery	none	yok
+embroidery	by size	boyuta göre

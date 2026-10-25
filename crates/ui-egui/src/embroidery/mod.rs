@@ -8,7 +8,7 @@
 //!   unit's step).
 //! - [`rows`]: a row of the embroidery settings (the Object tab's): a label, a field, where its
 //!   value comes from.
-//! - [`vocabulary`]: the settings' words (labels, choices, sources).
+//! - [`vocabulary`]: the settings' words (labels, choices, sources, what Auto chose).
 //! - [`numbers`]: numbers as the interface language writes them, in the embroidery interface's
 //!   read-only text.
 //! - [`plan_worker`]: the stitch preview's planning thread.

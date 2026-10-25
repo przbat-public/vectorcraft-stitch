@@ -529,7 +529,7 @@ fn key_row(p: &PartInfo, part: Part, key: &'static str, lang: Lang) -> Option<Ow
     let some = k.set_count > 0 && !every;
     let field = match part_field(key)? {
         SettingField::Number { min, max, unit, decimals } => {
-            let (value, hint) = number_of(&k.value, key, unit, decimals, lang);
+            let (value, hint) = number_of(&k.value, key, unit, decimals, lang, k.rule.as_ref());
             OwnedField::Number { value, unit, decimals, bounds: (min, max), hint }
         }
         SettingField::Choice(_) => choice_of(p, part, key, k),
@@ -585,8 +585,8 @@ fn restore_words(label: &str) -> String {
 }
 
 /// A number field's value from `info`'s `value` of key `key` (`None`: blank) and the words shown
-/// in it when blank: Auto (a rule's), or the two sides of a pull that differ.
-fn number_of(value: &Value, key: &str, unit: &str, decimals: usize, lang: Lang) -> (Option<f64>, Option<String>) {
+/// in it when blank: a rule's (satin spacing by width), or the two sides of a pull that differ.
+fn number_of(value: &Value, key: &str, unit: &str, decimals: usize, lang: Lang, rule: Option<&Value>) -> (Option<f64>, Option<String>) {
     let format = fields::format(lang, unit, decimals);
     match value {
         Value::Number(_) => (value.as_f64().map(|v| if key == "angle" { shown_angle(v) } else { v }), None),
@@ -598,7 +598,14 @@ fn number_of(value: &Value, key: &str, unit: &str, decimals: usize, lang: Lang) 
             }
             _ => (None, None),
         },
-        Value::String(s) if s == "auto" => (None, Some(crate::et!("Auto").to_string())),
+        Value::String(s) if s == "auto" => {
+            let chose = rule.and_then(|r| r.get("chose")).and_then(Value::as_f64);
+            let hint = match chose {
+                Some(v) => text::fill(crate::et!("Auto · {value}"), &[("value", &format.show(v))]),
+                None => crate::et!("Auto").to_string(),
+            };
+            (None, Some(hint))
+        }
         _ => (None, None),
     }
 }
@@ -629,6 +636,14 @@ fn choice_of(p: &PartInfo, part: Part, key: &str, k: &KeyInfo) -> OwnedField {
     let options = ids.iter().map(|id| (id.to_string(), words(id))).collect();
     let shown = match current {
         None => crate::et!("Mixed").to_string(),
+        Some("auto") if key == "stitch" => match p.sewn.as_deref() {
+            Some(sewn) if sewn != "none" => vocabulary::auto(&vocabulary::sewn_as(sewn, p.rule.as_deref())),
+            _ => words("auto"),
+        },
+        Some("auto") => match k.rule.as_ref() {
+            Some(rule) => vocabulary::auto(&vocabulary::underlay_chosen(rule.get("chose").and_then(Value::as_str))),
+            None => words("auto"),
+        },
         Some(id) => words(id),
     };
     OwnedField::Choice { shown, options, current: current.map(str::to_string) }

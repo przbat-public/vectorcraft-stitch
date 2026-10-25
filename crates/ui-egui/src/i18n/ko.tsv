@@ -5503,3 +5503,13 @@ embroidery	It takes no embroidery settings.	자수 설정을 받지 않습니다
 @plural	{count} object takes settings|{count} objects take settings	설정을 받는 개체 {count}개
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	{setting} 되돌리기
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	자동: {choice}
+embroidery	Auto · {value}	자동 · {value}
+embroidery	filled outline	채운 윤곽
+embroidery	centre run	가운데 러닝
+embroidery	edge run	가장자리 러닝
+embroidery	edge run + zigzag	가장자리 러닝 + 지그재그
+embroidery	edge run + tatami	가장자리 러닝 + 타타미
+embroidery	none	없음
+embroidery	by size	크기에 따라

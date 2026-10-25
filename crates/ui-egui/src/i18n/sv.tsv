@@ -5881,3 +5881,13 @@ embroidery	It takes no embroidery settings.	Den tar inga broderiinställningar.
 @plural	{count} object takes settings|{count} objects take settings	{count} objekt tar inställningar|{count} objekt tar inställningar
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	Återställ: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Auto: {choice}
+embroidery	Auto · {value}	Auto · {value}
+embroidery	filled outline	fylld kontur
+embroidery	centre run	mittlöpning
+embroidery	edge run	kantlöpning
+embroidery	edge run + zigzag	kantlöpning + sicksack
+embroidery	edge run + tatami	kantlöpning + tatami
+embroidery	none	ingen
+embroidery	by size	efter storlek

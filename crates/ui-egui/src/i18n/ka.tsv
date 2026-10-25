@@ -5840,3 +5840,13 @@ embroidery	It takes no embroidery settings.	ნაქარგობის პ�
 @plural	{count} object takes settings|{count} objects take settings	პარამეტრებს იღებს {count} ობიექტი
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	აღდგენა: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	ავტომატური: {choice}
+embroidery	Auto · {value}	ავტომატური · {value}
+embroidery	filled outline	შევსებული კონტური
+embroidery	centre run	ცენტრალური გავლა
+embroidery	edge run	კიდის გავლა
+embroidery	edge run + zigzag	კიდის გავლა + ზიგზაგი
+embroidery	edge run + tatami	კიდის გავლა + ტატამი
+embroidery	none	არცერთი
+embroidery	by size	ზომის მიხედვით

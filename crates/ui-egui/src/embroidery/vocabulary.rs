@@ -1,7 +1,7 @@
 //! The words of the embroidery settings in the interface language: each setting's label, each
-//! choice's name, where a value comes from, and why a part or an object isn't sewn. The engine's
-//! ids in (`embroidery.info`'s, `embroidery.settings`'), the catalogues' words out
-//! ([`crate::et!`]): the engine's English is never shown. An id this version doesn't know (a
+//! choice's name, where a value comes from, what Auto chose, and why a part or an object isn't
+//! sewn. The engine's ids in (`embroidery.info`'s, `embroidery.settings`'), the catalogues' words
+//! out ([`crate::et!`]): the engine's English is never shown. An id this version doesn't know (a
 //! newer version's) reads as itself, so nothing is hidden.
 
 /// A part setting's label in the Object tab, by its key as `embroidery.set` names it, for a part
@@ -58,6 +58,24 @@ pub fn stitch(id: &str, stroke: bool) -> String {
     }
 }
 
+/// What a part sewn by the rule (Auto) is sewn as, in words after "Auto:": `sewn` as
+/// `embroidery.info` reports it, by `rule` (a stroke a brush or an effect reshapes is its outline,
+/// filled).
+pub fn sewn_as(sewn: &str, rule: Option<&str>) -> String {
+    match (sewn, rule) {
+        (_, Some("strokeOutlined")) => crate::et!("filled outline").to_string(),
+        ("tatami", _) => crate::et!("tatami").to_string(),
+        ("satin", _) => crate::et!("satin").to_string(),
+        ("running", _) => crate::et!("running stitch").to_string(),
+        (other, _) => other.to_string(),
+    }
+}
+
+/// "Auto: {choice}": what Auto chose.
+pub fn auto(choice: &str) -> String {
+    crate::embroidery::text::fill(crate::et!("Auto: {choice}"), &[("choice", choice)])
+}
+
 /// An underlay's name in a list (`underlay`'s ids).
 pub fn underlay(id: &str) -> String {
     match id {
@@ -68,6 +86,20 @@ pub fn underlay(id: &str) -> String {
         "edgeZigzag" => crate::et!("Edge run + zigzag").to_string(),
         "edgeTatami" => crate::et!("Edge run + tatami").to_string(),
         other => other.to_string(),
+    }
+}
+
+/// What Auto chose for an underlay, in words after "Auto:": a satin's kind by its width (`chose`),
+/// or a fill's by its size (no kind: an edge run, and a tatami layer under a large fill).
+pub fn underlay_chosen(chose: Option<&str>) -> String {
+    match chose {
+        Some("center") => crate::et!("centre run").to_string(),
+        Some("edge") => crate::et!("edge run").to_string(),
+        Some("edgeZigzag") => crate::et!("edge run + zigzag").to_string(),
+        Some("edgeTatami") => crate::et!("edge run + tatami").to_string(),
+        Some("none") => crate::et!("none").to_string(),
+        Some(other) => other.to_string(),
+        None => crate::et!("by size").to_string(),
     }
 }
 

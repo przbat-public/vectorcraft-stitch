@@ -136,7 +136,7 @@ fn the_object_tab_draws_without_a_plan() {
     assert!(drawn.has("Select an object to set how it is sewn."), "{:?}", drawn.words);
     select(&mut app, &[a]);
     let drawn = frame(&mut app, &ctx, 0.1, vec![]);
-    assert!(drawn.has("…") && drawn.has("Row spacing") && drawn.has("Auto"), "no plan yet: {:?}", drawn.words);
+    assert!(drawn.has("…") && drawn.has("Row spacing") && drawn.has("Auto: tatami"), "no plan yet: {:?}", drawn.words);
     held.release();
     let mut time = 0.2;
     let drawn = ready(&mut app, &ctx, &mut time);
@@ -219,6 +219,20 @@ fn every_part_setting_has_words() {
         assert!(!vocabulary::tip(key).is_empty(), "{key}");
     }
     assert_eq!(vocabulary::label("spacing", Some("tatami")), crate::et!("Row spacing"));
+}
+
+/// Auto's choices in words: a fill's tatami, a wide stroke's satin and its underlay by its width.
+#[test]
+fn auto_shows_what_it_chose() {
+    let ctx = context();
+    let (mut app, a, b) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    assert!(ready(&mut app, &ctx, &mut time).has("Auto: tatami"));
+    select(&mut app, &[b]);
+    app.run("ui.embroideryPanel", json!({"part": "stroke"})).unwrap();
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert!(drawn.has("Auto: satin") && drawn.has("Auto: edge run"), "{:?}", drawn.words);
 }
 
 /// Type `text` into the field of the row labelled `label` and press Enter → the frames' last.

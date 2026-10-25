@@ -5925,3 +5925,13 @@ embroidery	It takes no embroidery settings.	Nepřijímá nastavení výšivky.
 @plural	{count} object takes settings|{count} objects take settings	{count} objekt přijímá nastavení|{count} objekty přijímají nastavení|{count} objektů přijímá nastavení
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	Obnovit: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Automaticky: {choice}
+embroidery	Auto · {value}	Automaticky · {value}
+embroidery	filled outline	vyplněný obrys
+embroidery	centre run	středový průchod
+embroidery	edge run	okrajový průchod
+embroidery	edge run + zigzag	okrajový průchod + cikcak
+embroidery	edge run + tatami	okrajový průchod + tatami
+embroidery	none	žádný
+embroidery	by size	podle velikosti

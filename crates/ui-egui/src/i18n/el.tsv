@@ -5877,3 +5877,13 @@ embroidery	It takes no embroidery settings.	Δεν δέχεται ρυθμίσε
 @plural	{count} object takes settings|{count} objects take settings	{count} αντικείμενο δέχεται ρυθμίσεις|{count} αντικείμενα δέχονται ρυθμίσεις
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	Επαναφορά: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Αυτόματα: {choice}
+embroidery	Auto · {value}	Αυτόματα · {value}
+embroidery	filled outline	γεμάτο περίγραμμα
+embroidery	centre run	κεντρικό πέρασμα
+embroidery	edge run	πέρασμα στην άκρη
+embroidery	edge run + zigzag	πέρασμα στην άκρη + ζιγκ ζαγκ
+embroidery	edge run + tatami	πέρασμα στην άκρη + τατάμι
+embroidery	none	καμία
+embroidery	by size	ανάλογα με το μέγεθος

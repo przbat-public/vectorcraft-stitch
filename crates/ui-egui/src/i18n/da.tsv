@@ -5880,3 +5880,13 @@ embroidery	It takes no embroidery settings.	Den har ingen broderiindstillinger.
 @plural	{count} object takes settings|{count} objects take settings	{count} objekt har indstillinger|{count} objekter har indstillinger
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	Gendan: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Auto: {choice}
+embroidery	Auto · {value}	Auto · {value}
+embroidery	filled outline	udfyldt kontur
+embroidery	centre run	midterløb
+embroidery	edge run	kantløb
+embroidery	edge run + zigzag	kantløb + zigzag
+embroidery	edge run + tatami	kantløb + tatami
+embroidery	none	ingen
+embroidery	by size	efter størrelse

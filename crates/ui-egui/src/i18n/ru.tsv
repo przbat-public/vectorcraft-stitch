@@ -5536,3 +5536,13 @@ embroidery	It takes no embroidery settings.	Не принимает настро
 @plural	{count} object takes settings|{count} objects take settings	{count} объект принимает настройки|{count} объекта принимают настройки|{count} объектов принимают настройки
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	Восстановить: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Авто: {choice}
+embroidery	Auto · {value}	Авто · {value}
+embroidery	filled outline	залитый контур
+embroidery	centre run	проход по центру
+embroidery	edge run	проход по краю
+embroidery	edge run + zigzag	проход по краю + зигзаг
+embroidery	edge run + tatami	проход по краю + татами
+embroidery	none	нет
+embroidery	by size	по размеру

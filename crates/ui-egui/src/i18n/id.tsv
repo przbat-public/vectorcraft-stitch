@@ -5880,3 +5880,13 @@ embroidery	It takes no embroidery settings.	Tidak menerima pengaturan bordir.
 @plural	{count} object takes settings|{count} objects take settings	{count} objek menerima pengaturan
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	Pulihkan: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Otomatis: {choice}
+embroidery	Auto · {value}	Otomatis · {value}
+embroidery	filled outline	garis luar terisi
+embroidery	centre run	jalur tengah
+embroidery	edge run	jalur tepi
+embroidery	edge run + zigzag	jalur tepi + zigzag
+embroidery	edge run + tatami	jalur tepi + tatami
+embroidery	none	tidak ada
+embroidery	by size	menurut ukuran

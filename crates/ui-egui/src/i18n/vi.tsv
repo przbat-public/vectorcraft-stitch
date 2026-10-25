@@ -5520,3 +5520,13 @@ embroidery	It takes no embroidery settings.	Không nhận thiết lập thêu.
 @plural	{count} object takes settings|{count} objects take settings	{count} đối tượng nhận thiết lập
 # Machine embroidery: the Object tab's restore button (↺), named by its setting.
 embroidery	Restore {setting}	Khôi phục: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Tự động: {choice}
+embroidery	Auto · {value}	Tự động · {value}
+embroidery	filled outline	đường bao được tô
+embroidery	centre run	đường chạy giữa
+embroidery	edge run	đường chạy mép
+embroidery	edge run + zigzag	đường chạy mép + zigzag
+embroidery	edge run + tatami	đường chạy mép + tatami
+embroidery	none	không có
+embroidery	by size	theo kích thước

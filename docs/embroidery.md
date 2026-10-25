@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-25 · **Change:** Document Setup's Embroidery tab: the document's fabric, thread, machine and sewing order, objects with their own values applied on OK (Using it › Document Setup › Embroidery); earlier: the Embroidery panel's Object tab: the selected objects' settings by part, where each value comes from, set as commands (Using it › Seeing the stitches and the sewing order, Settings on objects, Cutting the thread after an object; Architecture › Planning for the stitch preview; Files); earlier: the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Architecture › Planning service, measured again; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-25 · **Change:** the settings interface's review round: Document Setup's Embroidery tab named and checked by `embroidery.setup`'s paths, Copy and Paste of settings, Trim After on what is sewn alone, the Object tab's reads, the keyboard's focus, measured again (Using it › Document Setup › Embroidery, Settings on objects; Architecture › Planning for the stitch preview); earlier: Document Setup's Embroidery tab: the document's fabric, thread, machine and sewing order, objects with their own values applied on OK (Using it › Document Setup › Embroidery); earlier: the Embroidery panel's Object tab: the selected objects' settings by part, where each value comes from, set as commands (Using it › Seeing the stitches and the sewing order, Settings on objects, Cutting the thread after an object; Architecture › Planning for the stitch preview; Files); earlier: the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Architecture › Planning service, measured again; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -1881,6 +1881,31 @@ On the largest design (22,000 paths, its plan kept), the replies take 21 ms (`em
 planning thread; a drag of every other object works out its movers and the drop in 10 ms
 (`perf --embroidery`'s "reply" and "sewing order: drag half" rows).
 
+Measured again with the Object tab, after the settings interface's review (2026-10-25, release, the
+same machine and window, load about 2 to 3, each gate run alone, twice; a range covers both runs,
+a worst is the worse run's):
+
+| Row | Measured | Budget |
+|---|---:|---:|
+| A frame while dragging, 95th percentile, worst design | 7.7 ms | 16.7 ms (60 Hz) |
+| A frame while dragging, median, per design | 3.2–6.5 ms | |
+| Plans shown while dragging, of about 90 pointer moves | 46–88 | |
+| Textures uploaded a frame while dragging | 8.0–15.3 MB | |
+| Edit to the stitches drawn fresh, median per design | 28–52 ms | |
+| Edit to the stitches drawn fresh, worst | 72 ms | 100 ms |
+| Object tab scrub: a step to its stitches drawn fresh, 95th percentile, worst design | 71 ms | 100 ms |
+| Object tab scrub: a step to fresh, median per design | 33–52 ms | |
+| Object tab scrub: a frame, 95th percentile, worst design | 7.6 ms | 16.7 ms (60 Hz) |
+| Object tab: its read of 1,000 selected objects after a nudge (`perf`) | 2.7 ms | 6 ms |
+| Object tab: its footer after a nudge, 22,000 paths (`perf`) | under 0.01 ms | 1 ms |
+
+The scrub drags the Angle label of each design's largest fill: ten steps timed one at a time until
+their stitches are drawn fresh, then sixty steps a frame; each drag is one undo step. Frames come
+at 60 Hz, so a step's time falls on whole frames (two to four, 33 to 67 ms, and a few milliseconds
+over): the 95th percentile of ten steps is their slowest, and the worst design moved between 66 and
+71 ms from run to run. The canvas drag and the edit are where they were before the Object tab
+(7.8 and 72 ms above).
+
 ### Drawing stitches
 
 One stitch scene is built from the plan and drawn by the same renderer in the app and headless, in
@@ -2369,6 +2394,7 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-25 | minor | The settings interface's review round: Document Setup's Embroidery tab's fields named by `embroidery.setup`'s paths, an agent's fabric choice taken as the tab's menu takes it and a field it can't take refused with the reason, changes marked against the document's copy of its preset, the built-in values keeping the fabric's colour, both layouts scrolling, a value OK would refuse said under its field; Copy taking a snapshot and Paste one batch in any document; Trim After marking and counting only what is sewn; the Object tab read without a listing and kept through a canvas drag, its footer from the document alone; the keyboard's focus drawn and a setting's help shown on it; the measurements taken again. |
 | 2026-10-25 | minor | Document Setup's Embroidery tab: the fabric (built-in, a preset copied in, or the document's own; values changed from the preset marked and restored), the thread and its palette, the machine, the sewing order's joining, an opened file's start and name; the bar applying the fabric to objects with their own values on OK, one undo step; two columns where there is room; `embroidery.applyFabric {all}`. |
 | 2026-10-25 | minor | The Embroidery panel's Object tab: the selected objects' settings by part, read without a plan, where each value comes from (a bar for a value of their own, a badge for an inherited one, blank and counted where they differ), Auto's choices in words, entry and exit, Trim After, Restore from Fabric, Copy and Paste Embroidery Settings; each edit one undo step; rows fitted to their words in every language; the scrub measured. |
 | 2026-10-24 | minor | An expanded object's strokes that nothing reshapes are sewn along their path, by their own settings, not outlined; a reshaped stroke's running or satin stitch is said not to follow its path. |

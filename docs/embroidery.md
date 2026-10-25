@@ -1981,14 +1981,18 @@ preview for the plan and its tab's replies. Its states: no document; not planned
 can't be planned (the reason); ready; updating (the last result, and "Updating…" once the newer one
 takes over 0.1 s).
 
-**The Object tab** (`panels/embroidery/object.rs`) reads `embroidery.info` without planning
-(`Session::embroidery_info`), once per document snapshot and selection, held by the snapshot's
-pointer, so its fields change the frame an edit lands; and the document's settings
-(`embroidery.settings`) for its footer. Its stitch count is the selection's stitches in the plan the
-stitch preview shows, counted once per plan (`info::selection_sewing`, a walk of the plan's units).
-Its words come from the engine's ids (`embroidery/vocabulary.rs`), never from its English; each
-field is ranged as the command takes it (`part_field`), its numbers written in the interface
-language's decimal mark (`embroidery/fields.rs`). A row (`embroidery/rows.rs`) is measured on its
+**The Object tab** (`panels/embroidery/object.rs`) reads the selection's settings merged, without
+planning or listing objects (`Session::embroidery_merged`), once per document snapshot and
+selection, held by the snapshot's pointer, so its fields change the frame an edit lands; while a
+gesture is under way on the canvas (a session interaction, whose preview frames change no setting)
+it keeps what it read until the gesture ends. Its footer reads the fabric and the thread from the
+document alone (`setup::fabric_and_thread`). Its stitch count is the selection's stitches in the
+plan the stitch preview shows, counted once per plan (`info::selection_sewing`, a walk of the plan's
+units). Its words come from the engine's ids (`embroidery/vocabulary.rs`), never from its English,
+an id it doesn't know cut to 64 characters; each field is ranged as the command takes it
+(`part_field`), its numbers and units written as the interface language writes them
+(`embroidery/fields.rs`: the fork's own number field and choice, drawn by upstream's text box,
+stepping, scrub and combo as they are). A row (`embroidery/rows.rs`) is measured on its
 words: the label column, the field and what follows it on one line where they fit; where they don't, the hint after ↺ goes to its tooltip, then
 labels wrap down to their longest word, then fields narrow to 88 points; only then do labels go
 above their fields. Screen readers hear each field by its label (with its section's where two read

@@ -121,6 +121,12 @@ pub(crate) struct Opened {
     /// as `embroidery.settings` reports it): what that preset's values are in this document, also
     /// where this version doesn't know the preset or gives it other values now.
     copy: Map<String, Value>,
+    /// The document's fabric has a colour (the stitch preview's cloth): the built-in values keep it.
+    colour: bool,
+    /// The built-in values were chosen in the dialog since a preset was: values of the document's
+    /// own made from them leave out the preset's values the tab doesn't show (thickness, topping,
+    /// needle point).
+    from_built_in: bool,
 }
 
 /// A fabric preset as the tab offers it: its id, its values (by [`FABRIC_VALUES`]' keys; null where
@@ -188,6 +194,7 @@ impl Opened {
         o.synced = FABRIC_VALUES.iter().map(|k| (k.to_string(), o.was(k))).collect();
         o.applied = choice;
         o.copy = copy_of(s);
+        o.colour = stored.is_some_and(|f| f.color.is_some());
         let r = &s.resolved;
         let values = [
             (THREAD_WEIGHT, json!(r.thread_weight.value)),
@@ -231,9 +238,20 @@ impl Opened {
     }
 
     /// What choosing fabric `choice` puts in fabric value `key`'s field: its preset's value (the
-    /// built-in values' default), or nothing for values of the document's own (left as they are).
+    /// built-in values' default); for values of the document's own, those it opened with when it
+    /// opened with them, else nothing (left as they are).
     fn values_for(&self, choice: &str, key: &str) -> Option<Value> {
-        (choice != CUSTOM).then(|| self.base(choice, key))
+        match choice {
+            CUSTOM if self.was("fabric").as_str() == Some(CUSTOM) => Some(self.was(key)),
+            CUSTOM => None,
+            _ => Some(self.base(choice, key)),
+        }
+    }
+
+    /// The fabric's choice is now `choice`, chosen as such.
+    fn chose(&mut self, choice: &str) {
+        self.applied = choice.to_string();
+        self.from_built_in = choice == BUILT_IN;
     }
 
     /// The value `key` has in a document that sets none.
@@ -477,12 +495,27 @@ fn changes(fields: &Map<String, Value>, o: &Opened) -> Map<String, Value> {
         }
         fabric
     };
+    // The preset's values the tab doesn't show, which go with it when the built-in values are
+    // chosen (the project owner's choice): the colour, no preset's value, stays.
+    let hidden = |f: &mut Map<String, Value>| {
+        for key in ["topping", "needlePoint", "thickness"] {
+            f.insert(key.into(), Value::Null);
+        }
+    };
     let fabric = match choice.as_str() {
         _ if !chose && untouched => None,
-        BUILT_IN if untouched || builtin => Some(Value::Null),
+        BUILT_IN if (untouched || builtin) && !o.colour => Some(Value::Null),
+        BUILT_IN if untouched || builtin => {
+            let mut f: Map<String, Value> = ["preset", "tatami", "satin", "stabilizer"].into_iter().map(|k| (k.to_string(), Value::Null)).collect();
+            hidden(&mut f);
+            Some(Value::Object(f))
+        }
         BUILT_IN | CUSTOM if chose || choice == BUILT_IN => {
             let mut f = values(&|_| None);
             f.insert("preset".into(), Value::Null);
+            if o.from_built_in {
+                hidden(&mut f);
+            }
             Some(Value::Object(f))
         }
         _ if chose => {
@@ -608,9 +641,10 @@ fn apply(fields: &mut Map<String, Value>, o: &mut Opened, key: &str, value: Valu
                     fields.insert(field(k), v);
                 }
             }
-            o.applied = choice.to_string();
+            o.chose(choice);
         }
     } else if FABRIC_VALUES.contains(&key) && fields.get(&field("fabric")).and_then(Value::as_str) == Some(BUILT_IN) {
+        // Made the document's own from the built-in values: still from them.
         fields.insert(field("fabric"), json!(CUSTOM));
         o.applied = CUSTOM.to_string();
     }
@@ -634,7 +668,7 @@ fn sync(fields: &mut Map<String, Value>, o: &mut Opened) {
                 fields.insert(field(k), v);
             }
         }
-        o.applied = choice.clone();
+        o.chose(&choice);
     }
     if choice == BUILT_IN && FABRIC_VALUES.iter().any(|k| !same(&now(fields, k), &o.default_of(k))) {
         fields.insert(field("fabric"), json!(CUSTOM));
@@ -786,9 +820,12 @@ fn field_of(key: &str) -> Option<SettingField> {
 fn fabric_choice(o: &Opened, choice: &str) -> Owned {
     let mut options = vec![(BUILT_IN.to_string(), crate::et!("Built-in values").to_string())];
     options.extend(o.presets.iter().map(|p| (p.id.clone(), vocabulary::fabric(&p.id))));
-    if choice == CUSTOM {
+    // Values of the document's own, while chosen or when the dialog opened with them (choosing them
+    // again puts back the values it opened with).
+    if choice == CUSTOM || o.was("fabric").as_str() == Some(CUSTOM) {
         options.push((CUSTOM.to_string(), crate::et!("Custom").to_string()));
-    } else if !options.iter().any(|(id, _)| id == choice) {
+    }
+    if !options.iter().any(|(id, _)| id == choice) {
         // A preset this version doesn't know (a newer version's), kept as it is.
         options.push((choice.to_string(), vocabulary::fabric(choice)));
     }

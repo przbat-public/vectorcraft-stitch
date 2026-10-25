@@ -218,10 +218,14 @@ them (below).
 `embroidery.documentSetup`) shows the document's settings and changes them with the dialog's other
 tabs on OK, one undo step (`command.batch {label: "Document Setup"}`); Cancel changes nothing.
 
-- **The fabric**: Built-in values (none), one of the presets, or Custom (values of the
+- **The fabric**: Built-in values (no preset), one of the presets, or Custom (values of the
   document's own). Choosing a preset copies its values into the fields, replacing values changed
   before in the dialog (the project owner's choice); changing a built-in value makes the values
-  the document's own. A value changed from its preset has the Object tab's marks (a bar, strong
+  the document's own. The built-in values keep the fabric's colour (the stitch preview's cloth),
+  as a preset chosen does, and drop the preset's values the tab doesn't show (thickness, topping,
+  needle point), also once a value changed makes them the document's own (the owner's choice,
+  2026-10-25). Custom stays in the menu once another fabric is tried, and puts back the values the
+  dialog opened with. A value changed from its preset has the Object tab's marks (a bar, strong
   text, ↺ restoring the preset's value, "preset 4" after it); one as its preset gives it says what
   it rests on ("Wilcom", or "estimate"), the publications in its badge's tooltip and the field's
   description (as `embroidery.fabrics` lists them). The stabiliser is for information only. For the

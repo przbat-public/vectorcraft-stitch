@@ -485,3 +485,49 @@ fn the_marks_follow_the_documents_copy_of_its_preset() {
         );
     }
 }
+
+/// Choosing the built-in values keeps the fabric's colour (the stitch preview's cloth), as choosing
+/// a preset does, and the preset's values the tab doesn't show go with the rest (the project
+/// owner's choice): also when a value is then changed, making them the document's own.
+#[test]
+fn the_built_in_values_keep_the_fabrics_colour() {
+    for changed in [false, true] {
+        let mut app = app();
+        app.run("embroidery.setup", json!({"fabric": "cotton"})).unwrap();
+        app.run("embroidery.setup", json!({"fabric": {"color": "#102030"}})).unwrap();
+        assert!(settings(&mut app)["settings"]["fabric"]["thickness"].is_number(), "cotton's thickness");
+        open_tab(&mut app);
+        edit(&mut app, "fabric", json!(BUILT_IN));
+        if changed {
+            edit(&mut app, "tatami.pull", json!(0.3));
+        }
+        crate::dialogs::confirm(&mut app).unwrap();
+        let f = settings(&mut app)["settings"]["fabric"].clone();
+        assert_eq!(f["color"], json!("#102030"), "changed {changed}: the colour kept");
+        assert_eq!(f["preset"], json!(null), "changed {changed}");
+        for key in ["thickness", "topping", "needlePoint", "stabilizer"] {
+            assert_eq!(f[key], json!(null), "changed {changed}: {key} gone with the preset");
+        }
+        assert_eq!(f["tatami"]["pull"], if changed { json!(0.3) } else { json!(null) }, "changed {changed}");
+    }
+}
+
+/// A document's own values stay in the fabric's menu after another fabric is tried: choosing them
+/// again puts back the values the dialog opened with.
+#[test]
+fn custom_stays_in_the_menu_and_puts_its_values_back() {
+    let mut app = app();
+    app.run("embroidery.setup", json!({"fabric": {"tatami": {"pull": 0.3}}})).unwrap();
+    let before = settings(&mut app);
+    open_tab(&mut app);
+    assert_eq!(dialog(&mut app).fields[&field("fabric")], json!(CUSTOM));
+    edit(&mut app, "fabric", json!("denim"));
+    let o = opened(&app).unwrap().clone();
+    let row = fabric_choice(&o, "denim");
+    let OwnedField::Choice { options, .. } = &row.field else { panic!("a choice") };
+    assert!(options.iter().any(|(id, _)| id == CUSTOM), "{options:?}");
+    edit(&mut app, "fabric", json!(CUSTOM));
+    assert_eq!(dialog(&mut app).fields[&field("tatami.pull")], json!(0.3));
+    crate::dialogs::confirm(&mut app).unwrap();
+    assert_eq!(settings(&mut app), before, "as it was");
+}

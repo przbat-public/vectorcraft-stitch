@@ -197,11 +197,20 @@ fn unset_in_art(n: &mut Arc<Node>, keys: &[PartKey]) -> usize {
 
 /// `embroidery.applyFabric`: the objects' own values of the fabric's keys unset, on each part those
 /// the fabric gives it ([`fabric_keys`]), on the objects given, else the selected ones, else every
-/// object of the document, its symbols' art included.
+/// object of the document, its symbols' art included; with `all`, on every object whatever is
+/// selected (what Document Setup's bar counts, [`overrides`]).
 pub(super) fn apply_fabric(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "embroidery.applyFabric";
     let o = object(p, C)?;
-    only(&o, &["ids", "keys"], C)?;
+    only(&o, &["ids", "keys", "all"], C)?;
+    let all = match o.get("all") {
+        None | Some(Value::Null) => false,
+        Some(v) => v.as_bool().ok_or_else(|| bad(C, format!("`all` {v}: true or false")))?,
+    };
+    let ids_given = o.get("ids").is_some_and(|v| !v.is_null());
+    if all && ids_given {
+        return Err(bad(C, "give `ids` or `all`, not both"));
+    }
     let keys = match o.get("keys").filter(|v| !v.is_null()) {
         None => FABRIC_KEYS.to_vec(),
         Some(v) => {
@@ -220,8 +229,8 @@ pub(super) fn apply_fabric(s: &mut Session, p: &Value) -> Result<Value> {
         }
     };
     // The objects given, else the selection (as every command's ids stand in for it), else every
-    // object of the document: Document Setup's bar, with nothing selected.
-    let chosen = o.get("ids").is_some_and(|v| !v.is_null()) || !s.doc()?.selection.objects.is_empty();
+    // object of the document; with `all`, every object whatever is selected (Document Setup's bar).
+    let chosen = !all && (ids_given || !s.doc()?.selection.objects.is_empty());
     let (take, skipped) = if chosen { given(s, p, "to apply the fabric to", C)? } else { (every_object(&s.doc()?.doc), Vec::new()) };
     if take.is_empty() && !skipped.is_empty() {
         return Err(super::objects::none_taken(&skipped, None));

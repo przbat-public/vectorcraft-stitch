@@ -307,7 +307,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Apply Embroidery Fabric to Objects",
             [],
             None,
-            "{ids?: [id…] (default: the selection, else every object of the document; groups and compound paths as embroidery.set takes them), keys?: [key…] (default: pull, spacing, length and underlay, the values a fabric sets; no others)} unset those of the objects' own settings, on fills and strokes, so that they follow the document's fabric again (Document Setup's bar). One undo step, none when nothing changes → {keys, changedCount, unchangedCount, skippedCount, skipped: as embroidery.set lists them}",
+            "{ids?: [id…] (default: the selection, else every object of the document; groups and compound paths as embroidery.set takes them), all?: true (every object of the document and its symbols' art, whatever is selected: what embroidery.settings' overrides count, Document Setup's bar; not with ids), keys?: [key…] (default: pull, spacing, length and underlay, the values a fabric sets; no others)} unset those of the objects' own settings, on fills and strokes, so that they follow the document's fabric again (Document Setup's bar). One undo step, none when nothing changes → {keys, changedCount, unchangedCount, skippedCount, skipped: as embroidery.set lists them}",
             has_doc,
             fabrics::apply_fabric
         ),

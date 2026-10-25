@@ -224,8 +224,9 @@ Setup › Embroidery comes next).
   never its stitch length, which no fabric gives a satin or a running line) on the selection, or
   with nothing selected on every object and the symbols' art (which their instances sew), so that
   they follow the fabric again; `overrides` counts the same keys, by key and the objects that set
-  any (`objectCount`), the symbols' art included. To act on the whole document whatever is selected
-  (Document Setup's bar), pass the layers' ids.
+  any (`objectCount`), the symbols' art included. `{all: true}` acts on every object and the
+  symbols' art whatever is selected, the objects `overrides` counts (Document Setup's bar); it
+  doesn't go with `ids`.
 - **The presets** are Wilcom's eight auto fabrics, under Wilcom's fabric names (generic words)
   without its trademarks (`embroidery.fabrics` lists them, each value with the publication it rests on, how it was worked out, or why it is an
   estimate; `crates/stitch/src/fabric.rs` cites every source). A dash leaves the built-in value.

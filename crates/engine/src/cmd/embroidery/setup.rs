@@ -259,6 +259,21 @@ impl Session {
     }
 }
 
+/// The settings of a document that sets none ([`DocumentSettings`]): each value its built-in
+/// default, what Document Setup says a value would be unset.
+pub fn default_settings() -> DocumentSettings {
+    /// The blank document's side, points: any, the settings don't depend on it.
+    const SIDE: f64 = 1.0;
+    document_settings(&Document::new(SIDE, SIDE))
+}
+
+/// A fabric's tatami spacing `spacing`, millimetres for 40 wt thread (as `embroidery.setup
+/// {fabric}` takes it), as the plan uses it for thread of `weight` (wt): Document Setup's note
+/// under the thread.
+pub fn spacing_for_thread(spacing: f64, weight: f64) -> f64 {
+    spacing * thread_scale(weight)
+}
+
 /// The document's fabric as stored ([`StoredFabric`]).
 fn stored_fabric(f: &FabricSettings) -> StoredFabric {
     let v = &f.values;

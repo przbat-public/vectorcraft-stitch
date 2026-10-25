@@ -22,6 +22,22 @@ fn rect(s: &mut Session, x: f64) -> u64 {
     id
 }
 
+/// The defaults are what a document that sets nothing is planned with, each from `default`, and the
+/// tatami spacing for another thread scales as the plan scales it.
+#[test]
+fn the_defaults_are_a_blank_documents() {
+    let mut s = blank();
+    let d = setup::default_settings();
+    assert_eq!(serde_json::to_value(&d).unwrap(), run(&mut s, "embroidery.settings", json!({})));
+    assert_eq!((d.resolved.thread_weight.source.as_str(), d.resolved.machine.jump_length.source.as_str()), ("default", "default"));
+    assert_eq!(setup::spacing_for_thread(0.4, 40.0), 0.4);
+    run(&mut s, "embroidery.setup", json!({"fabric": DEFAULT_FABRIC, "threadWeight": 30}));
+    let r = run(&mut s, "embroidery.settings", json!({}));
+    let stored = r["settings"]["fabric"]["tatami"]["spacing"].as_f64().unwrap();
+    let used = r["resolved"]["fabric"]["tatami"]["spacing"]["value"].as_f64().unwrap();
+    assert!((setup::spacing_for_thread(stored, 30.0) - used).abs() < 1e-12, "{stored} → {used}");
+}
+
 /// Choosing a preset copies its values into the document (in force and as the preset's), keeps the
 /// colour, and the plan sews with them; a value changed is marked against the preset's and restored
 /// with null; the same preset again restores them all; null removes the fabric.
@@ -232,6 +248,30 @@ fn overrides_count_objects_and_symbols_art() {
     let r = run(&mut s, "embroidery.applyFabric", json!({}));
     assert_eq!(r["changedCount"], json!(1));
     assert_eq!(overrides(&mut s)["objectCount"], json!(0));
+}
+
+/// With something selected, `all` applies the fabric to every object the bar counts, the symbols'
+/// art and the objects not selected included, in one step; `all` beside `ids` is refused.
+#[test]
+fn all_applies_the_fabric_to_what_the_bar_counts_whatever_is_selected() {
+    let mut s = blank();
+    let (a, b) = (rect(&mut s, 20.0), rect(&mut s, 100.0));
+    run(&mut s, "embroidery.set", json!({"ids": [a, b], "part": "fill", "pull": 0.3}));
+    run(&mut s, "select.set", json!({"ids": [a]}));
+    run(&mut s, "symbol.new", json!({"name": "Badge"}));
+    let c = rect(&mut s, 180.0);
+    run(&mut s, "embroidery.set", json!({"ids": [c], "part": "fill", "length": 3}));
+    run(&mut s, "select.set", json!({"ids": [c]}));
+    let overrides = |s: &mut Session| run(s, "embroidery.settings", json!({}))["overrides"]["objectCount"].clone();
+    assert_eq!(overrides(&mut s), json!(3), "the symbol's art, the other object and the one selected");
+    let before = steps(&s);
+    let r = run(&mut s, "embroidery.applyFabric", json!({"all": true}));
+    assert_eq!((&r["changedCount"], &r["skippedCount"]), (&json!(3), &json!(0)));
+    assert_eq!((overrides(&mut s), steps(&s)), (json!(0), before + 1));
+    let e = s.execute("embroidery.applyFabric", &json!({"all": true, "ids": [c]})).unwrap_err().to_string();
+    assert!(e.contains("not both"), "{e}");
+    let e = s.execute("embroidery.applyFabric", &json!({"all": "yes"})).unwrap_err().to_string();
+    assert!(e.contains("true or false"), "{e}");
 }
 
 /// The reply's `settings` pass back unchanged whatever the document holds: a value this version

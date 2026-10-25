@@ -13,9 +13,11 @@
 //!   (Custom). Choosing a preset copies its values into the fields (the project owner's choice: it
 //!   replaces values changed before in the dialog); changing a value of the built-in ones makes
 //!   them the document's own. An agent's fields (`ui.dialog.set`) are taken the same way when the
-//!   tab next looks ([`sync`]): a fabric chosen fills the values the agent didn't set. A value changed from its preset (or, without one, from its default)
-//!   has the bar, strong text and ↺, which restores it; one as its preset gives it names what the
-//!   preset's value rests on (the publications in its tooltip), or that it is an estimate.
+//!   tab next looks ([`sync`]): a fabric chosen fills the values the agent didn't set. A value
+//!   changed from its preset (the document's own copy of it, for the preset it opened with: a
+//!   fabric is copied, not linked; or, without one, from its default) has the bar, strong text and
+//!   ↺, which restores it; one as its preset gives it names what the preset's value rests on (the
+//!   publications in its tooltip), or that it is an estimate.
 //! - **The thread** (its weight, with the rows' spacing it gives; the palette machine files
 //!   number), **the machine** (jumps, cuts, the shortest stitch, satin splits, the speed the time is
 //!   estimated at), **the sewing order** (one thread's objects joined) and, when the document has
@@ -115,6 +117,10 @@ pub(crate) struct Opened {
     /// as the tab last wrote them: what an agent set since is told from them ([`sync`]).
     applied: String,
     synced: Map<String, Value>,
+    /// The document's own copy of the preset its fabric was copied from (by [`FABRIC_VALUES`]' keys,
+    /// as `embroidery.settings` reports it): what that preset's values are in this document, also
+    /// where this version doesn't know the preset or gives it other values now.
+    copy: Map<String, Value>,
 }
 
 /// A fabric preset as the tab offers it: its id, its values (by [`FABRIC_VALUES`]' keys; null where
@@ -181,6 +187,7 @@ impl Opened {
         o.fields.insert(field("fabric"), json!(choice));
         o.synced = FABRIC_VALUES.iter().map(|k| (k.to_string(), o.was(k))).collect();
         o.applied = choice;
+        o.copy = copy_of(s);
         let r = &s.resolved;
         let values = [
             (THREAD_WEIGHT, json!(r.thread_weight.value)),
@@ -206,10 +213,21 @@ impl Opened {
         self.presets.iter().find(|p| p.id == id)
     }
 
-    /// What fabric value `key` is with fabric `choice` and nothing changed: its preset's value, else
-    /// (no preset, or none published) its default.
+    /// What fabric value `key` is with fabric `choice` and nothing changed: its preset's value (the
+    /// document's copy for the preset it opened with), else (no preset, or none published) its
+    /// default.
     fn base(&self, choice: &str, key: &str) -> Value {
-        self.preset(choice).and_then(|p| p.values.get(key)).filter(|v| !v.is_null()).cloned().unwrap_or_else(|| self.default_of(key))
+        let copied = self.copy.get(key).filter(|v| !v.is_null() && self.copied(choice));
+        copied
+            .or_else(|| self.preset(choice).and_then(|p| p.values.get(key)).filter(|v| !v.is_null()))
+            .cloned()
+            .unwrap_or_else(|| self.default_of(key))
+    }
+
+    /// Whether `choice` is the preset the document's fabric was copied from, with a copy to restore
+    /// to (`embroidery.setup`'s null restores a value to it).
+    fn copied(&self, choice: &str) -> bool {
+        !self.copy.is_empty() && self.was("fabric").as_str() == Some(choice)
     }
 
     /// What choosing fabric `choice` puts in fabric value `key`'s field: its preset's value (the
@@ -227,6 +245,28 @@ impl Opened {
     fn was(&self, key: &str) -> Value {
         self.fields.get(&field(key)).cloned().unwrap_or(Value::Null)
     }
+}
+
+/// The document's own copy of its fabric's preset in settings `s`, by [`FABRIC_VALUES`]' keys: the
+/// values `embroidery.settings` reports as the preset's (none without a preset). The tatami spacing
+/// is reported for the thread in use, and taken back to 40 wt thread, as the fields hold it.
+fn copy_of(s: &DocumentSettings) -> Map<String, Value> {
+    let f = &s.resolved.fabric;
+    if f.preset.is_none() {
+        return Map::new();
+    }
+    let at_40wt = |v: f64| v / setup::spacing_for_thread(1.0, s.resolved.thread_weight.value);
+    let pairs = [
+        ("tatami.pull", json!(f.tatami.pull.preset)),
+        ("tatami.spacing", json!(f.tatami.spacing.preset.map(at_40wt))),
+        ("tatami.length", json!(f.tatami.length.preset)),
+        ("tatami.underlay", json!(f.tatami.underlay.preset)),
+        ("satin.pull", json!(f.satin.pull.preset)),
+        ("satin.spacingPercent", json!(f.satin.spacing_percent.preset)),
+        ("satin.underlay", json!(f.satin.underlay.preset)),
+        ("stabilizer", json!(f.stabilizer.preset)),
+    ];
+    pairs.into_iter().map(|(k, v)| (k.to_string(), v)).collect()
 }
 
 /// Fabric value `key` (`kind.name`) as fabric `f` stores it, when set.
@@ -450,7 +490,21 @@ fn changes(fields: &Map<String, Value>, o: &Opened) -> Map<String, Value> {
             f.insert("preset".into(), json!(choice));
             Some(Value::Object(f))
         }
-        _ => Some(Value::Object(values(&|k| Some(o.was(k))))),
+        // What changed since it opened; a value back at the preset's (the document's copy, as ↺
+        // puts it back) restored with null, as `embroidery.setup` restores it.
+        _ => {
+            let mut f = values(&|k| Some(o.was(k)));
+            for key in FABRIC_VALUES.iter().filter(|k| o.copied(&choice) && same(&now(k), &o.base(&choice, k))) {
+                let slot = match key.split_once('.') {
+                    Some((kind, name)) => f.get_mut(kind).and_then(Value::as_object_mut).and_then(|m| m.get_mut(name)),
+                    None => f.get_mut(*key),
+                };
+                if let Some(v) = slot {
+                    *v = Value::Null;
+                }
+            }
+            Some(Value::Object(f))
+        }
     };
     if let Some(f) = fabric {
         out.insert("fabric".into(), f);
@@ -762,13 +816,15 @@ fn fabric_row(o: &Opened, choice: &str, key: &'static str, value: &Value, lang: 
     let preset = o.preset(choice);
     let own = choice != BUILT_IN && !same(value, &base);
     let base_words = number_words(key, &base, lang, false);
+    // A preset's value: one this version has, or the document's copy of one it doesn't know.
+    let from_preset = preset.is_some() || o.copied(choice);
     let (aside, hint, description) = if own {
-        let (hint, description) = match preset {
-            Some(_) => (
+        let (hint, description) = match from_preset {
+            true => (
                 text::fill(crate::et!("preset {value}"), &[("value", &base_words)]),
                 text::fill(crate::et!("Changed from the preset, which gives {value}"), &[("value", &number_words(key, &base, lang, true))]),
             ),
-            None => (
+            false => (
                 vocabulary::inherited("default", None, &base_words),
                 text::fill(crate::et!("Set in the document; without it: {value}"), &[("value", &number_words(key, &base, lang, true))]),
             ),
@@ -778,6 +834,7 @@ fn fabric_row(o: &Opened, choice: &str, key: &'static str, value: &Value, lang: 
         let words = match (preset, key) {
             (_, "stabilizer") => crate::et!("information only").to_string(),
             (Some(p), _) => note_words(p.notes.get(key)),
+            (None, _) if from_preset => vocabulary::source("document", Some("fabric")),
             (None, _) => vocabulary::source("default", None),
         };
         // The publications the preset's value rests on, each on a line (the badge's tooltip).

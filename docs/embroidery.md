@@ -224,7 +224,11 @@ tabs on OK, one undo step (`command.batch {label: "Document Setup"}`); Cancel ch
   the document's own. A value changed from its preset has the Object tab's marks (a bar, strong
   text, ↺ restoring the preset's value, "preset 4" after it); one as its preset gives it says what
   it rests on ("Wilcom", or "estimate"), the publications in its badge's tooltip and the field's
-  description (as `embroidery.fabrics` lists them). The stabiliser is for information only.
+  description (as `embroidery.fabrics` lists them). The stabiliser is for information only. For the
+  preset the document's fabric was copied from, "its preset's value" is the document's own copy
+  (`embroidery.settings`' `preset` of each value), as a fabric is copied, not linked: also for a
+  preset this version doesn't know, or gives other values now; ↺ there sends `null`, which restores
+  the copy's value.
 - **The thread**: its weight, with the rows' spacing it gives the fabric's tatami (the planner's
   own formula), and the palette machine files number (Janome's for JEF, Brother's for PES, not in
   the mockup: note 07's recommendation). **The machine and file**: jumps, cuts, the shortest

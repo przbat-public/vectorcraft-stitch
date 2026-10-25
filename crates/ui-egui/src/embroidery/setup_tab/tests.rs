@@ -427,3 +427,61 @@ fn ok_refuses_fields_the_tab_cant_take() {
     let e = crate::dialogs::confirm(&mut app).unwrap_err();
     assert!(e.chars().count() < 200, "{} characters", e.chars().count());
 }
+
+/// A document's fabric is copied from its preset, not linked: its values are marked as changed,
+/// and ↺ restores them, against the document's own copy. A preset this version doesn't know (a
+/// newer version's) and one whose values this version has changed (an older copy) both show their
+/// copy's values unmarked; ↺ on one changed in the dialog puts the copy's value back, and OK then
+/// restores it (null), the preset kept.
+#[test]
+fn the_marks_follow_the_documents_copy_of_its_preset() {
+    /// The document's copy of cotton's tatami length and its value in force made `length`, its
+    /// preset's id `id`.
+    fn copied(app: &mut VectorcraftApp, id: &str, length: f64) {
+        app.run("embroidery.setup", json!({"fabric": "cotton"})).unwrap();
+        app.session
+            .edit("Older copy", |d, _| {
+                let f = d.embroidery.as_deref_mut().unwrap().fabric.as_deref_mut().unwrap();
+                f.values.tatami.as_mut().unwrap().length = Some(length);
+                let p = f.preset.as_mut().unwrap();
+                p.id = id.to_string();
+                p.values.tatami.as_mut().unwrap().length = Some(length);
+                Ok(())
+            })
+            .unwrap();
+    }
+    let restore = text::fill(crate::et!("Restore {setting}"), &[("setting", vocabulary::setup_label("tatami.length"))]);
+    for id in ["velvet", "cotton"] {
+        let ctx = context();
+        let mut app = app();
+        copied(&mut app, id, 3.3);
+        open_tab(&mut app);
+        let drawn = ready(&mut app, &ctx, WIDE);
+        assert!(!drawn.nodes.iter().any(|(_, n)| n.label() == Some(restore.as_str())), "{id}: as its copy gives it, unmarked");
+        edit(&mut app, "tatami.length", json!(4.0));
+        let drawn = ready(&mut app, &ctx, WIDE);
+        frame(&mut app, &ctx, WIDE, vec![drawn.click(&restore)]);
+        ready(&mut app, &ctx, WIDE);
+        assert_eq!(dialog(&mut app).fields[&field("tatami.length")], json!(3.3), "{id}: ↺ puts the copy's value back");
+        crate::dialogs::confirm(&mut app).unwrap();
+        let s = settings(&mut app);
+        assert_eq!(
+            (s["settings"]["fabric"]["preset"].clone(), s["settings"]["fabric"]["tatami"]["length"].clone()),
+            (json!(id), json!(3.3)),
+            "{id}: nothing changed"
+        );
+        // Changed in the document, restored in the dialog: OK restores the copy's value.
+        app.run("embroidery.setup", json!({"fabric": {"tatami": {"length": 4.0}}})).unwrap();
+        open_tab(&mut app);
+        let drawn = ready(&mut app, &ctx, WIDE);
+        frame(&mut app, &ctx, WIDE, vec![drawn.click(&restore)]);
+        ready(&mut app, &ctx, WIDE);
+        crate::dialogs::confirm(&mut app).unwrap();
+        let s = settings(&mut app);
+        let length = &s["resolved"]["fabric"]["tatami"]["length"];
+        assert_eq!(
+            (length["value"].clone(), length["changed"].clone(), s["settings"]["fabric"]["preset"].clone()),
+            (json!(3.3), json!(false), json!(id))
+        );
+    }
+}

@@ -15,6 +15,9 @@
 //! - the embroidery export, which plans its document afresh rather than from what was kept;
 //! - the 50,000-path document, which needs more stitches than a design may have: how long it takes
 //!   to be refused, the first time and again;
+//! - the Embroidery panel's Object tab's work on a new snapshot (each frame of a drag or a scrub):
+//!   its read of 1,000 selected objects' settings, and its footer's fabric and thread on the
+//!   22,000-path document;
 //! - stitch pictures of 10,000 to 2,000,000 stitches ([`stitch_picture`]: fill rows, satin columns
 //!   and running lines in twelve threads, built in code, no planner), drawn by the stitch preview's
 //!   renderer at fit and zoomed in, on the default threads and on one (as the web build draws).
@@ -67,7 +70,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 43] = [
+pub const ROWS: [&str; 45] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -111,6 +114,8 @@ pub const ROWS: [&str; 43] = [
     "settings: re-plan after one object's angle",
     "settings: re-plan after a fabric change",
     "settings: info of 1,000 objects",
+    "object tab: re-read after a nudge, 1,000",
+    "object tab: footer after a nudge, 22,000",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
@@ -120,10 +125,13 @@ pub const ROWS: [&str; 43] = [
 /// budgets they were given with the planning service. The settings rows: an object's setting
 /// plans again its own units (about 2.5 times the 2.4 ms it measured, so that planning every fill
 /// again, about 70 ms, fails it), a fabric change the fills of the document (the cold plan's), and
-/// reading the settings of 1,000 objects plans nothing (half the kept replies' 50 ms).
-const BUDGETS: [f64; 43] = [
+/// reading the settings of 1,000 objects plans nothing (half the kept replies' 50 ms). The Object
+/// tab's rows run on the interface thread on a new snapshot (each frame of a drag or a scrub): its
+/// re-read of 1,000 selected objects within a third of a frame (6 ms of 16.7), its footer within a
+/// hundredth (0.2 ms), whatever the document's size.
+const BUDGETS: [f64; 45] = [
     400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 100.0, 400.0, 4000.0, 50.0, 20.0,
-    13.0, 7.0, 32.0, 95.0, 20.0, 30.0, 7.0, 5.0, 2.5, 13.0, 60.0, 55.0, 75.0, 280.0, 20.0, 20.0, 5.0, 6.0, 25.0, 6.0, 400.0, 25.0,
+    13.0, 7.0, 32.0, 95.0, 20.0, 30.0, 7.0, 5.0, 2.5, 13.0, 60.0, 55.0, 75.0, 280.0, 20.0, 20.0, 5.0, 6.0, 25.0, 6.0, 400.0, 25.0, 6.0, 0.2,
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -285,6 +293,7 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.push(reorder(&doc)?);
     ms.push(drag_half(&largest)?);
     ms.extend(settings(&doc)?);
+    ms.extend(object_tab(&doc, &largest)?);
     // A row with nothing to measure (no corpus) is left out.
     Ok(ROWS.iter().zip(ms).zip(BUDGETS).filter(|((_, ms), _)| !ms.is_nan()).map(|((name, ms), budget)| (*name, ms, budget)).collect())
 }
@@ -423,6 +432,37 @@ fn settings(doc: &Document) -> Result<[f64; 3], String> {
         samples.push(timed(&mut s, "embroidery.info", &json!({"ids": ids}))?.0);
     }
     Ok([angle, fabric, middle(samples)])
+}
+
+/// The Object tab's rows, milliseconds, each the median of [`DRAW_RUNS`] after a nudge (a new
+/// snapshot, as each frame of a drag or a scrub makes): its read of the settings of `doc`'s 1,000
+/// objects selected (merged, none listed: `Session::embroidery_merged`), and its footer's fabric
+/// and thread on `largest`, the 22,000-path document (`setup::fabric_and_thread`).
+fn object_tab(doc: &Document, largest: &Document) -> Result<[f64; 2], String> {
+    let ids_of = |s: &Session| -> Result<Vec<vectorcraft_doc::NodeId>, String> {
+        Ok(s.doc().map_err(err)?.doc.layers.iter().filter_map(|l| l.children()).flatten().map(|c| c.id).collect())
+    };
+    let nudge = |s: &mut Session, id: vectorcraft_doc::NodeId| s.execute("object.move", &json!({"ids": [id.0], "dx": NUDGE_MM * PT_PER_MM, "dy": 0}));
+    let mut s = fresh(doc);
+    let ids = ids_of(&s)?;
+    let first = *ids.first().ok_or("embroidery: the document has no object")?;
+    let mut reads = Vec::with_capacity(DRAW_RUNS);
+    for _ in 0..DRAW_RUNS {
+        nudge(&mut s, first).map_err(err)?;
+        let t = Instant::now();
+        s.embroidery_merged(&ids).map_err(err)?;
+        reads.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    let mut s = fresh(largest);
+    let first = *ids_of(&s)?.first().ok_or("embroidery: the document has no object")?;
+    let mut footers = Vec::with_capacity(DRAW_RUNS);
+    for _ in 0..DRAW_RUNS {
+        nudge(&mut s, first).map_err(err)?;
+        let t = Instant::now();
+        std::hint::black_box(vectorcraft_engine::cmd::embroidery::setup::fabric_and_thread(&s.doc().map_err(err)?.doc));
+        footers.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    Ok([middle(reads), middle(footers)])
 }
 
 /// `vectorcraft-cli bench FILE`'s stitch preview line for a design to stitch: its scene's build

@@ -1239,13 +1239,15 @@ the object a person selects (`id`).
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
 - `crates/engine/tests/embroidery_output.rs`: the bytes every export writes, pinned by their sha256
-  in DST, TAP, T01, EXP, PES, PEC, JEF and VP3: 16 documents built in code (fills, strokes, a
+  in DST, TAP, T01, EXP, PES, PEC, JEF and VP3: 17 documents built in code (fills, strokes, a
   compound path with a hole,
   clip groups, symbols, trims asked for, opened designs as they are, clipped and cut at their
   blocks' ends, the options away from their defaults, settings on objects and in the document,
-  and an expanded object's strokes; always run), the test sheet on each of the 8 fabric presets
-  (64 exports), and the eleven real designs' artwork at the person's size (when the corpus is
-  present): 280 exports in all. A change to what is sewn
+  an expanded object's strokes, and entry and exit points sewn toward: a fill ending at its exit,
+  a running line turned round for its exit, a satin entered at one end and leaving at the other, a
+  loop carried on round, each checked met within 1 mm; always run), the test sheet on each of the
+  8 fabric presets (64 exports), and the eleven real designs' artwork at the person's size (when
+  the corpus is present): 288 exports in all. A change to what is sewn
   fails it, listing the exports that changed and printing the listing as it now stands: such a
   change is made on purpose, with the listing updated in the same commit. Each PES, PEC and JEF export
   is also pinned apart from its thread numbers (the hash of its bytes with them blanked, and the
@@ -1271,7 +1273,10 @@ the object a person selects (`id`).
   points 661 → 698), the other instance and the satin ring as before; the 80 exports they added
   (16 of the two new documents, 64 of the fabric sheets) were pinned as recorded. A document saved
   before then exports otherwise where an object is turned (its unset rows turn with it) or where
-  an expanded object's strokes are plain (sewn along their path).
+  an expanded object's strokes are plain (sewn along their path). Sewing toward entry and exit
+  points (2026-10-26) changed none of the 280: none of them sets an exit, and an entry is met only
+  where it was before (the letter T's is at an end of its satin columns); the `exits` document
+  added 8.
 - Elsewhere: the thread libraries are listed, read, added and traced with
   (`tests_swatchlib.rs`, `tests_build.rs`), the window menu lists them, the document's settings
   round-trip with what a newer version wrote, whatever its shape, and the undo history's memory

@@ -12,8 +12,9 @@
 //!   clip groups (one inside another), symbols, a group and an object that ask for a trim after
 //!   them, an opened design's literal stitch runs (as they are, clipped, and with cuts at its
 //!   blocks' ends), the export's options away from their defaults, settings at every level
-//!   (objects', the document's and an export's together), and objects the walk expands whose
-//!   strokes are sewn along their path or, reshaped by an effect, as the area they paint.
+//!   (objects', the document's and an export's together), objects the walk expands whose
+//!   strokes are sewn along their path or, reshaped by an effect, as the area they paint, and
+//!   entry and exit points the planner sews toward (checked met within the Check tab's 1 mm too).
 //! - A test sheet sewn on each fabric preset (`embroidery.setup {fabric}`), the default fabric's
 //!   checked to be the sheet with no fabric, byte for byte.
 //! - The real designs' artwork (`cargo xtask corpus --embroidery`, checked against its manifest),
@@ -187,6 +188,14 @@ acd5f11fec696dd60f1a14ad6be2a8d9b56439f15730fae35511031d7cf01a9a  expanded-strok
 378726b33be570a973251ac99dd990557811412c9b65db8ceea187b9f0726aac  expanded-strokes.pec
 95ffcaef59cb1059de241988da46245489d28fece34be3d80b9238f65999293c  expanded-strokes.jef
 b76956c76384704f29880fada6abd8874d6eafec02ea692d19ade1fa40f4e523  expanded-strokes.vp3
+8400c8bc58a8189d8006be89eff200106da342b6c9be28dae1c15a3e038c2b28  exits.dst
+39c5ac7d691d12852bad33ed523c8245a9a88084a8c39e3ba11326c4f95296c7  exits.tap
+39c5ac7d691d12852bad33ed523c8245a9a88084a8c39e3ba11326c4f95296c7  exits.t01
+702d4940797237e3f4528395214489d8a87d4ae8ec7d1181fbc943c7bc4e1f93  exits.exp
+eb78fbfdb085610d54d2c51f4aee09ee142913a7946dab505be9853c941a3592  exits.pes
+3b73808ced14e87afd1c2260c232cdcef0c3e73b8b5fd699bd3f0843644c3ed1  exits.pec
+697f8629e8cc46ab9dfa5c12dcddfe099217ea3b5c8b1bc555b7acfa65364ff0  exits.jef
+e2c066f6fac0bf3d122047f47e0ca1529360af6f3090da7c6a85a76aa81921de  exits.vp3
 ";
 
 /// The real designs' artwork at the person's size ([`DESIGNS`]), listed as [`SYNTHETIC`] is.
@@ -332,6 +341,9 @@ d73ebca1b85143a097880fd35c8652ab6f52d4f0f88cc20d759971133fb63473  settings.jef  
 79a8a67e308ae3a0cc950bd2cb90fd669a548de59bc4c9517262d9b87bf5c30e  expanded-strokes.pes  5 21 37 7 52
 f7f6a5bd7553ed5bd2d6421442ff0f098edccb715de3b043152c304d7d54c51a  expanded-strokes.pec  5 21 37 7 52
 e62c4e62b875154f17c8a099ba501137c311288778b627dff3e0c152c9274489  expanded-strokes.jef  33 59 45 59 71
+8f30149c5c0edf9812530325735564b20bacfc0b2d8e2aa02f192f3278450947  exits.pes  5 37 21 7
+c8646ee6b4567ed3ecaae4145e691b48ce21d1b4687780e8116af7467ca4d8d1  exits.pec  5 37 21 7
+9583975b81b5be04649b119ebca54136e0b3c9688fb8cf39482d0d82e23703aa  exits.jef  33 45 59 59
 ";
 
 /// The PES, PEC and JEF exports of [`ARTWORK`] apart from their thread numbers, listed as
@@ -502,6 +514,14 @@ expanded-strokes.pes  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  tri
 expanded-strokes.pec  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.67  shortest 0.41  cells 1641
 expanded-strokes.jef  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.6  longest 4.60  shortest 0.36  cells 1639
 expanded-strokes.vp3  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.6  longest 4.60  shortest 0.36  cells 1639
+exits.dst  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.60  shortest 0.41  cells 883
+exits.tap  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.60  shortest 0.41  cells 883
+exits.t01  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.60  shortest 0.41  cells 883
+exits.exp  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.60  shortest 0.41  cells 883
+exits.pes  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.60  shortest 0.41  cells 882
+exits.pec  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.60  shortest 0.41  cells 882
+exits.jef  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.53  shortest 0.41  cells 884
+exits.vp3  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.53  shortest 0.41  cells 884
 ";
 
 /// What each export of [`ARTWORK`] holds, read back, listed as [`SYNTHETIC_SUMMARIES`] is.
@@ -1074,8 +1094,8 @@ fn settings_that_change_nothing_change_no_export() {
     for how in [Unchanging::Kept, Unchanging::SetAndReset, Unchanging::DefaultFabric] {
         let mut now = Vec::new();
         for (name, s, options) in documents() {
-            // The documents that set settings on purpose are exported as they are.
-            let mut s = if matches!(name, "settings" | "expanded-strokes") { s } else { unchanging(s, how) };
+            // The documents that set settings (or points) on purpose are exported as they are.
+            let mut s = if matches!(name, "settings" | "expanded-strokes" | "exits") { s } else { unchanging(s, how) };
             run(&mut s, "file.info", json!({"title": name}));
             for format in Format::ALL {
                 let bytes = export(&mut s, format, &options).unwrap_or_else(|e| panic!("{name} ({how:?}) as {}: {e}", format.id()));
@@ -1342,6 +1362,7 @@ fn documents() -> Vec<(&'static str, Session, Value)> {
         ("mixed-shrunk", mixed(), json!({"expand": -0.3, "pullCompensation": 0})),
         ("settings", settings(), json!({"length": 3, "jumpLength": 4})),
         ("expanded-strokes", expanded_strokes(), json!({})),
+        ("exits", exits(), json!({})),
     ]
 }
 
@@ -1562,6 +1583,44 @@ fn expanded_strokes() -> Session {
     s
 }
 
+/// Entry and exit points the planner sews toward: a rectangle that ends at an exit on its right
+/// side, a running line whose exit lies at its start (sewn from its end, reversed), a satin line
+/// entered at its left end and leaving at its right (a pass along its middle turning it round), and
+/// a running loop carried on round to its exit.
+fn exits() -> Session {
+    let mut s = blank(300.0, 300.0);
+    let fill = rect(&mut s, "#cc2222", 20.0, 20.0, 80.0, 50.0);
+    run(&mut s, "embroidery.setEntryExit", json!({"id": fill, "part": "fill", "exit": [100, 45]}));
+    let line = stroked(&mut s, "#22aa44", 1.0, "M 130 30 L 270 30");
+    run(&mut s, "embroidery.setEntryExit", json!({"id": line, "part": "stroke", "exit": [130, 30]}));
+    let satin = stroked(&mut s, "#2233cc", 6.0, "M 20 120 L 200 120");
+    run(&mut s, "embroidery.setEntryExit", json!({"id": satin, "part": "stroke", "entry": [20, 120], "exit": [200, 120]}));
+    let ring = ellipse(&mut s, "#8822aa", 40.0, 170.0, 120.0, 60.0);
+    run(&mut s, "paint.setFill", json!({"none": true, "ids": [ring]}));
+    run(&mut s, "paint.setStroke", json!({"color": "#8822aa", "ids": [ring]}));
+    run(&mut s, "stroke.set", json!({"weight": 1.0, "ids": [ring]}));
+    run(&mut s, "embroidery.setEntryExit", json!({"id": ring, "part": "stroke", "exit": [160, 200]}));
+    s
+}
+
+/// The exits document's units meet the points they were planned toward, within the Check tab's
+/// 1 mm (`POINT_MISS_MM`): each part sewn as it is asked to, not only as it was recorded.
+#[test]
+fn the_exits_document_meets_its_points() {
+    let mut s = exits();
+    let order = run(&mut s, "embroidery.sequence", json!({}));
+    let units: Vec<&Value> = order["blocks"].as_array().unwrap().iter().flat_map(|b| b["units"].as_array().unwrap()).collect();
+    assert_eq!(units.len(), 4, "{order}");
+    for u in units {
+        for point in ["entry", "exit"] {
+            if let Some(missed) = u["missedBy"][point].as_f64() {
+                assert!(missed <= vectorcraft_engine::cmd::embroidery::POINT_MISS_MM, "unit {}'s {point} missed by {missed} mm", u["unit"]);
+            }
+        }
+        assert!(u["missedBy"]["exit"].is_number(), "unit {} was planned toward an exit", u["unit"]);
+    }
+}
+
 fn blank(width: f64, height: f64) -> Session {
     let mut s = Session::new();
     run(&mut s, "file.new", json!({"width": width, "height": height, "artboards": 1}));
@@ -1591,13 +1650,14 @@ fn ellipse(s: &mut Session, color: &str, x: f64, y: f64, width: f64, height: f64
 }
 
 /// An unfilled path stroked in `color`, `weight` points wide, from SVG path data in points, left
-/// unselected.
-fn stroked(s: &mut Session, color: &str, weight: f64, d: &str) {
+/// unselected → its id.
+fn stroked(s: &mut Session, color: &str, weight: f64, d: &str) -> u64 {
     run(s, "paint.setFill", json!({"none": true}));
     run(s, "paint.setStroke", json!({"color": color}));
     let id = id(&run(s, "path.create", json!({"d": d})));
     run(s, "stroke.set", json!({"weight": weight, "ids": [id]}));
     run(s, "select.none", json!({}));
+    id
 }
 
 /// A filled, unstroked path in `color` of closed polygons with corners in millimetres, placed at

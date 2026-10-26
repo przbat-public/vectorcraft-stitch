@@ -144,16 +144,22 @@ fn aimed(path: &BezPath, p: &Params, start: Start, exit: Option<(f64, f64)>) -> 
 }
 
 /// An open running line whose start is free ends at its end nearest its exit, even when the needle
-/// comes from the other side (a set exit beats where the needle happens to be); entered at a set
-/// point it ends where its stitches take it (a set entry beats a set exit: a running line is never
-/// sewn back over itself); an exit as near both ends changes nothing.
+/// comes from the other side (a set exit beats where the needle happens to be), as long as turning
+/// it adds no lift or cut on the move in from the needle (the guard counts that move); entered at a
+/// set point it ends where its stitches take it (a set entry beats a set exit: a running line is
+/// never sewn back over itself); an exit as near both ends changes nothing.
 #[test]
 fn an_open_line_ends_at_its_end_nearest_its_exit_unless_its_entry_is_set() {
     let p = Params::for_style(Style::Running).sane();
     let open = line((0.0, 0.0), (60.0, 0.0));
+    // 25.5 mm from the right end, 35.4 from the left: both moves in are cut, so turning adds none.
+    let between = Start::Needle(Point::new(35.0, 5.0));
+    assert!(last_point(&aimed(&open, &p, between, None)).x < 1.0, "from the needle's nearer end, the right one, to the left");
+    assert!(last_point(&aimed(&open, &p, between, Some((56.0, 2.0)))).x > 59.0, "turned to end at the exit's end");
+    // 3 mm from the left end: turning it would make the move in 63 mm, a cut more.
     let needle = Start::Needle(Point::new(-3.0, 0.0));
     assert!(last_point(&aimed(&open, &p, needle, None)).x > 59.0, "from the needle's end to the far one");
-    assert!(last_point(&aimed(&open, &p, needle, Some((4.0, 2.0)))).x < 1.0, "turned to end at the exit's end");
+    assert_eq!(aimed(&open, &p, needle, Some((4.0, 2.0))), aimed(&open, &p, needle, None), "not turned at the cost of a cut");
     let entered = Start::Entry(Point::new(60.0, 0.0));
     assert!(last_point(&aimed(&open, &p, entered, Some((55.0, 1.0)))).x < 1.0, "the entry's end starts it: it ends at the other");
     assert_eq!(aimed(&open, &p, needle, Some((30.0, 5.0))), aimed(&open, &p, needle, None), "an exit as near both ends");
@@ -186,22 +192,32 @@ fn points_of(v: &[Stitch]) -> Vec<Point> {
 }
 
 /// Of a line's subpaths, the last is chosen and turned to end nearest the exit, the first staying
-/// the one nearest the needle; an order that would need a jump or a cut to reach the exit is not
-/// taken: the line is sewn as without the exit.
+/// the one nearest the needle; an order that would need a jump, a cut or a longer connecting stitch
+/// to reach the exit is not taken: the line is sewn as without the exit.
 #[test]
 fn a_lines_last_subpath_ends_nearest_its_exit_without_a_jump_more() {
     let p = Params::for_style(Style::Running).sane();
+    // The second and third lines start as near the first one's end (√5 mm), 2 mm apart.
     let mut three = line((0.0, 0.0), (10.0, 0.0));
-    three.extend(line((12.0, 0.0), (22.0, 0.0)));
-    three.extend(line((12.0, 3.0), (22.0, 3.0)));
+    three.extend(line((12.0, 1.0), (22.0, 1.0)));
+    three.extend(line((12.0, -1.0), (22.0, -1.0)));
     let needle = Start::Needle(Point::new(0.0, 0.0));
     let plain = aimed(&three, &p, needle, None);
-    assert!(last_point(&plain).distance(Point::new(12.0, 3.0)) < 1e-9, "nearest next ends on the third line's left end");
-    let toward = aimed(&three, &p, needle, Some((12.0, 0.0)));
-    assert!(last_point(&toward).distance(Point::new(12.0, 0.0)) < 1e-9, "the second line sewn last, ending at the exit");
+    assert!(last_point(&plain).distance(Point::new(12.0, -1.0)) < 1e-9, "nearest next ends on the third line's left end");
+    let toward = aimed(&three, &p, needle, Some((12.0, 1.0)));
+    assert!(last_point(&toward).distance(Point::new(12.0, 1.0)) < 1e-9, "the second line sewn last, ending at the exit");
     assert!(points_of(&toward).first().unwrap().distance(Point::new(0.0, 0.0)) < 1e-9, "the first line stays first");
     let jumps = |v: &[Stitch]| v.iter().filter(|s| s.command != Command::Stitch).count();
     assert_eq!(jumps(&toward), jumps(&plain));
+    // An exit 0.6 mm from where the second line would end and 1.4 mm from the plain end: a gain
+    // under the miss the Check tab lets pass, so the line is sewn as without it.
+    assert_eq!(aimed(&three, &p, needle, Some((12.0, 0.4))), plain, "a gain under a millimetre");
+    // The second and third lines 0 and 3 mm off the first's line: sewing the second last takes
+    // √13 + 3 mm of connecting stitches against 2 + 3 plain, so it is not taken.
+    let mut offset = line((0.0, 0.0), (10.0, 0.0));
+    offset.extend(line((12.0, 0.0), (22.0, 0.0)));
+    offset.extend(line((12.0, 3.0), (22.0, 3.0)));
+    assert_eq!(aimed(&offset, &p, needle, Some((12.0, 0.0))), aimed(&offset, &p, needle, None), "more connecting stitches");
     // Two lines 10 mm apart: the second can end at its left end only after a jump past the trim.
     let mut two = line((0.0, 0.0), (20.0, 0.0));
     two.extend(line((30.0, 0.0), (50.0, 0.0)));
@@ -396,4 +412,25 @@ fn a_fill_with_narrow_parts_ends_at_its_exit() {
     let exit = Point::new(0.0, 1.5);
     let out = sewn(Some((exit.x, exit.y)));
     assert!(last_point(&out).distance(exit) <= last_point(&plain).distance(exit) + 1e-9);
+}
+
+/// A fill's rows aimed at an exit may travel over rows already sewn up to the miss the Check tab
+/// lets pass (1 mm), and no more (the project owner's choice, 2026-10-26): a 60 × 20 mm bar entered
+/// and aimed at the middle of its right side turns round a row's end there (0.50 mm over sewn rows)
+/// and ends 0.20 mm from the exit, not 9.88 mm; an 80 × 25 mm fill at 45° aimed near its bottom right
+/// corner would show 1.28 mm, so it ends where it would without the exit (a 2 mm allowance let it
+/// through).
+#[test]
+fn a_fill_shows_at_most_a_millimetre_more_travel_toward_its_exit() {
+    let bar = rect(0.0, 0.0, 60.0, 20.0);
+    let p = Params { angle: 0.0, ..Params::for_style(Style::Fill) }.sane();
+    let entered = Start::Entry(Point::new(60.0, 10.0));
+    let plain = aimed(&bar, &p, entered, None);
+    assert!(last_point(&plain).distance(Point::new(60.0, 10.0)) > 9.0, "the plain rows end at a corner");
+    let toward = aimed(&bar, &p, entered, Some((60.0, 10.0)));
+    assert!(last_point(&toward).distance(Point::new(60.0, 10.0)) < 0.3, "half a millimetre over sewn rows: kept");
+    let wide = rect(0.0, 0.0, 80.0, 25.0);
+    let p = Params { angle: 45.0, ..Params::for_style(Style::Fill) }.sane();
+    let entered = Start::Entry(Point::new(0.0, 0.0));
+    assert_eq!(aimed(&wide, &p, entered, Some((78.75, 0.0))), aimed(&wide, &p, entered, None), "1.28 mm over sewn rows: refused");
 }

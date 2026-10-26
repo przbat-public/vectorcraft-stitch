@@ -20,8 +20,9 @@ const RUNNING: Finish = Finish { returns: false, flip: None, reach: COST_HIDDEN 
 /// after it can't pull it out), sewn from `aim`'s start: each line from its end nearest the needle,
 /// the nearest first; from an entry point, the line it lies nearest first, a closed one starting
 /// exactly there. Toward an exit point, its lines are ordered and turned to end nearest it, and a
-/// closed one sewn last goes on round to it ([`ordered_toward`], [`lapped`]).
-pub(super) fn running(path: &BezPath, p: &Params, aim: Aim) -> Vec<Stitch> {
+/// closed one sewn last goes on round to it ([`ordered_toward`], [`lapped`]). With the stitches, the
+/// connecting stitches sewn between its lines (millimetres, [`Runs::connectors`]).
+pub(super) fn running(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) {
     let p = p.sane();
     let mut runs = Runs::from(aim.start.point());
     for Line { pts, closed, toward, .. } in ordered_toward(subpaths(path), aim, &RUNNING, &p) {
@@ -37,7 +38,8 @@ pub(super) fn running(path: &BezPath, p: &Params, aim: Aim) -> Vec<Stitch> {
         }
         runs.push(run, Travel::Auto);
     }
-    runs.join(&p)
+    let connectors = runs.connectors(&p);
+    (runs.join(&p), connectors)
 }
 
 /// A run with a lock stitch at each end: a short stitch back along the run and forward again, so

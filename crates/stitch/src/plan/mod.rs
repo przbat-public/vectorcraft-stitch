@@ -75,6 +75,14 @@ const JUMP: f64 = 5.0;
 /// for one. Longer ones are cut in the file, so they don't lie loose on a machine that can't cut
 /// jumps itself. A choice within those bounds, not a published value.
 pub(crate) const TRIM: f64 = 10.0;
+
+/// How far a shape's stitches may start or end from the point its object asks for (an entry or an
+/// exit) and still meet it (millimetres): about two thread widths and the formats' 0.1 mm grid,
+/// past which a person sees the needle go in or out elsewhere than where they put it. An estimate.
+/// A plan aimed at an exit is kept only when it ends at least this much nearer the exit than the
+/// plan without it (the project owner's choice, 2026-10-26: a smaller gain would buy extra
+/// stitches for a miss nobody is told of), and the Check tab points out a miss past it.
+pub const POINT_MISS_MM: f64 = 1.0;
 /// The longest satin stitch before it is split (millimetres): longer stitches snag and sag.
 /// Professional software makes it a setting, bounded by the machine format (12.1 mm per record in
 /// DST). Wilcom recommends an Auto Split of 7 mm and satin widths within 10 mm (the article cited
@@ -549,8 +557,8 @@ pub(crate) fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Op
 pub(crate) fn stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> Vec<Stitch> {
     let p = p.sane();
     match sewn_style(&p) {
-        Style::Running => toward::nearer(aim, |aim| running::running(path, &p, aim)),
-        Style::Satin => toward::nearer(aim, |aim| satin::satin(path, &p, aim)),
+        Style::Running => toward::nearer(aim, &p, |aim| running::running(path, &p, aim)),
+        Style::Satin => toward::nearer(aim, &p, |aim| satin::satin(path, &p, aim)),
         // Weighs its rows toward the exit itself, by their moves before they are joined.
         Style::Fill => fill::fill(path, rule, &p, aim),
     }

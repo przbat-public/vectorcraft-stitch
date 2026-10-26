@@ -128,9 +128,9 @@ const TINY: f64 = 0.3;
 /// setting of that effect, not a quality limit: background for the estimate.
 const MOST_SHORT_IN_A_ROW: usize = 5;
 /// How far a unit's stitches may miss the entry or exit point it was planned toward before the
-/// miss is pointed out (millimetres): about two thread widths and the formats' 0.1 mm grid, past
-/// which a person sees the needle go in or out elsewhere than where they put it. An estimate.
-pub const POINT_MISS_MM: f64 = 1.0;
+/// miss is pointed out (millimetres): the planner's own threshold, which it also keeps an aimed
+/// plan by (at least this much nearer the exit).
+pub use vectorcraft_stitch::plan::POINT_MISS_MM;
 /// Brother's PRT51 manual warns that stitching sewn over three times or more may break the thread
 /// or the needle (<https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf>, data
 /// precautions and troubleshooting).

@@ -6,7 +6,7 @@ use vectorcraft_geom::{BezPath, FillRule, Point, Vec2};
 use super::area::{Area, Grid, TRAVEL_STITCH, Travels};
 use super::geometry::{Axes, SubPath, area, length, nearest_on, resample, subpaths, unit};
 use super::narrow::Column;
-use super::runs::{COST_EXIT, COST_HIDDEN, COST_SEEN, Runs, Travel};
+use super::runs::{COST_EXIT, COST_HIDDEN, COST_SEEN, FILL_SEEN_SLACK, Runs, Travel, gains};
 use super::satin::{column_returns, sew_column};
 use super::{Aim, MAX_STITCHES, Params, Start, Style, UNDERLAY_STITCH, Underlay};
 use crate::{SAME_POINT, Stitch};
@@ -180,15 +180,12 @@ fn sew_area(
     }
 }
 
-/// How much more a fill's top rows aimed at an exit may travel over stitching already sewn than
-/// without the exit, millimetres: one travel stitch, by judgement (a way that only bends round a
-/// row's end differently).
-const SEEN_SLACK: f64 = TRAVEL_STITCH;
-
 /// The top rows of `rows` sewn after `runs` to end as near `exit` as they can: planned without the
 /// exit and aimed at it ([`Layer::regions`] cut at the row end nearest it, [`sew`] sewing the piece
 /// holding it last, its last region's sweep chosen to end there), and the aimed rows kept only when
-/// they lift, cut and show no more than the plain ones ([`SEEN_SLACK`]) and end nearer the exit.
+/// they lift, cut and show no more than the plain ones, travel over finished rows within
+/// [`FILL_SEEN_SLACK`] ([`super::runs::Moves::within`]), and end at least
+/// [`super::POINT_MISS_MM`] nearer the exit ([`gains`]).
 /// When nothing of the shape is sewn before them (no underlay, no entry point), the aimed rows start
 /// where the plain ones do and travel from there, under the rows still to come.
 #[allow(clippy::too_many_arguments)]
@@ -215,7 +212,7 @@ fn sew_toward(
     }
     sew(&aimed_regions, travels, MAX_SEEN, true, p, &[], Some(exit), &mut aimed, finished);
     let from_exit = |r: &Runs| r.here().map_or(f64::INFINITY, |h| h.distance(exit));
-    let keep = if aimed.moves.within(&plain.moves, SEEN_SLACK) && from_exit(&aimed) < from_exit(&plain) { aimed } else { plain };
+    let keep = if aimed.moves.within(&plain.moves, FILL_SEEN_SLACK) && gains(from_exit(&aimed), from_exit(&plain)) { aimed } else { plain };
     runs.append(keep);
 }
 
@@ -314,7 +311,7 @@ pub(crate) fn fill_with_columns(
     let aimed_order = Order { contacts: &contacts, through: &through, exit: Some(exit), first: order.first().copied() }.best(here);
     let aimed = sew_parts(&aimed_order, Some(exit));
     let from_exit = |r: &Runs| r.here().map_or(f64::INFINITY, |h| h.distance(exit));
-    let keep = if aimed.moves.within(&plain.moves, SEEN_SLACK) && from_exit(&aimed) < from_exit(&plain) { aimed } else { plain };
+    let keep = if aimed.moves.within(&plain.moves, FILL_SEEN_SLACK) && gains(from_exit(&aimed), from_exit(&plain)) { aimed } else { plain };
     keep.join(&fill)
 }
 

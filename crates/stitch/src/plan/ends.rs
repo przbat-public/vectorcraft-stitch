@@ -403,11 +403,16 @@ mod tests {
                         continue;
                     }
                     let aim = super::super::Aim { start: super::super::Start::Entry(start), exit: Some(end) };
-                    let out = needle(&super::super::stitches_aimed(shape, vectorcraft_geom::FillRule::NonZero, &p, aim));
+                    let sew = |aim| super::super::stitches_aimed(shape, vectorcraft_geom::FillRule::NonZero, &p, aim);
+                    let (aimed, plain) = (sew(aim), sew(super::super::Aim { exit: None, ..aim }));
+                    let out = needle(&aimed);
                     let (first, last) = (out.first().copied().unwrap(), out.last().copied().unwrap());
                     assert!(first.distance(start) <= near_start, "{name}, start {start:?}: first needle point {first:?}");
+                    // Where reaching the end would show travel over finished stitching or lift the
+                    // needle more, or gain under the miss the Check tab lets pass, the planner's
+                    // guard keeps the stitches as without it.
                     assert!(
-                        last.distance(end) <= near_end,
+                        last.distance(end) <= near_end.max(super::super::POINT_MISS_MM) || aimed == plain,
                         "{name}, {start:?} to {end:?}: last needle point {last:?}, {:.3} mm off",
                         last.distance(end)
                     );

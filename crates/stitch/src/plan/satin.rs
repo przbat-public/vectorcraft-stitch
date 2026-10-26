@@ -65,11 +65,12 @@ const GOLDEN: f64 = 0.618_033_988_75;
 /// needle is: each column starts at its end nearest the needle (a closed one at its point
 /// nearest), the nearest first, as Ink/Stitch starts satins; from an entry point, the column it
 /// lies nearest first, a ring starting exactly there ([`ordered`]). `p`'s style is satin (the
-/// caller, [`super::stitches_aimed`], sews a satin only then).
-pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> Vec<Stitch> {
+/// caller, [`super::stitches_aimed`], sews a satin only then). With the stitches, the connecting
+/// stitches sewn between its columns (millimetres, [`Runs::connectors`]).
+pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) {
     let p = p.sane();
     if p.width <= 0.0 {
-        return Vec::new();
+        return (Vec::new(), 0.0);
     }
     // Pull compensation widens the column at each rail ([`Params::compensation`]): the left one as
     // the path is drawn, then the right one.
@@ -193,7 +194,8 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> Vec<Stitch> {
             break;
         }
     }
-    runs.join(&p)
+    let connectors = runs.connectors(&p);
+    (runs.join(&p), connectors)
 }
 
 /// A pass's or a travel's points beyond its stitches ([`TRAVEL_STITCH`] apart along it), at most:

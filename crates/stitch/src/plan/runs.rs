@@ -6,7 +6,7 @@ use vectorcraft_geom::Point;
 
 use super::area::{TRAVEL_STITCH, Travels};
 use super::geometry::{length, resample, unit};
-use super::{MAX_RUNS, MAX_STITCHES, Params, Style};
+use super::{MAX_RUNS, MAX_STITCHES, POINT_MISS_MM, Params, Style};
 use crate::{Command, SAME_POINT, Stitch};
 
 /// The reach of a lock stitch, tie-in or tie-off (millimetres): how far the needle steps along the
@@ -97,10 +97,24 @@ pub(super) struct Moves {
 
 impl Moves {
     /// Whether these are no more than `other`'s: no more lifts, no more cuts, and no more travel
-    /// over stitching already sewn than `slack` millimetres beyond `other`'s.
+    /// over stitching already sewn than `slack` millimetres beyond `other`'s (float noise aside,
+    /// [`SAME_POINT`]): [`FILL_SEEN_SLACK`] for a fill's rows, none for a line.
     pub(super) fn within(&self, other: &Moves, slack: f64) -> bool {
-        self.lifts <= other.lifts && self.trims <= other.trims && self.seen <= other.seen + slack
+        self.lifts <= other.lifts && self.trims <= other.trims && self.seen <= other.seen + slack + SAME_POINT
     }
+}
+
+/// How much more travel over stitching already sewn a fill's rows aimed at an exit may show than
+/// without it, millimetres: the miss the Check tab lets pass ([`POINT_MISS_MM`]), and no more (the
+/// project owner's choice, 2026-10-26). The turn round a row's end at the cut an exit makes shows
+/// about half a millimetre: measured on a rectangle with its exit mid-side, 0.47 mm of travel ends it
+/// 0.30 mm from its exit, against 29.4 mm with none allowed. Lines and satins may show none more.
+pub(super) const FILL_SEEN_SLACK: f64 = POINT_MISS_MM;
+
+/// Whether a plan aimed at an exit, ending `aimed` millimetres from it, gains enough over the plan
+/// without it, ending `plain` from it, to be kept: at least [`POINT_MISS_MM`] nearer.
+pub(super) fn gains(aimed: f64, plain: f64) -> bool {
+    aimed + POINT_MISS_MM <= plain
 }
 
 impl Runs {
@@ -263,6 +277,20 @@ impl Runs {
             self.push(vec![here], Travel::Auto);
         }
         Travel::Lift
+    }
+
+    /// How far the needle is sewn between runs reached as any move is ([`Travel::Auto`]) and no
+    /// longer than [`Params::jump`] (millimetres): a line's connecting stitches between its
+    /// subpaths, which [`Runs::join`] sews straight across, on top of what is sewn.
+    pub(super) fn connectors(&self, p: &Params) -> f64 {
+        self.runs
+            .windows(2)
+            .filter_map(|w| {
+                let [(before, _), (run, Travel::Auto)] = w else { return None };
+                let d = before.last()?.distance(*run.first()?);
+                (d > SAME_POINT && d <= p.jump).then_some(d)
+            })
+            .sum()
     }
 
     /// `other`'s runs (planned from where these end, [`Runs::continuing`]) after these.

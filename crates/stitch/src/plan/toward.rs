@@ -18,15 +18,15 @@
 //!   one of the tries, and no try is kept that jumps, cuts or connects more than it does. Past
 //!   [`MAX_REORDERED`] subpaths, the one ending nearest the exit is moved last, the rest as without.
 //!
-//! The stitches sewn so are kept only when they lift the needle and cut the thread no more often
-//! than without the exit and end nearer it ([`nearer`]): an exit changes a plan only to bring its
-//! end nearer, as it does a fill's rows.
+//! The stitches sewn so are kept only when, counting the move in from where the needle is, they
+//! lift the needle and cut the thread no more often than without the exit, sew no more connecting
+//! stitches, and end at least [`super::POINT_MISS_MM`] nearer it ([`nearer`]): an exit changes a plan only
+//! to bring its end nearer, as it does a fill's rows.
 
 use vectorcraft_geom::Point;
 
-use super::area::TRAVEL_STITCH;
 use super::geometry::{Line, MAX_REORDERED, SubPath, length, nearest_on, nearest_order, ordered};
-use super::runs::{COST_EXIT, COST_LIFT, COST_SEEN, COST_TRIM};
+use super::runs::{COST_EXIT, COST_LIFT, COST_SEEN, COST_TRIM, Moves, gains};
 use super::{Aim, Params, Start};
 use crate::{Command, SAME_POINT, Stitch};
 
@@ -45,11 +45,6 @@ pub(super) struct Finish {
     pub(super) reach: f64,
 }
 
-/// How much more of a line's moves between subpaths may be sewn as connecting stitches than
-/// without the exit, millimetres: one travel stitch, by judgement (a move that only shifts a
-/// stitch's length between two subpaths).
-const SEEN_SLACK: f64 = TRAVEL_STITCH;
-
 /// `subs` in the order and directions a line sewn from `aim`'s start toward its exit takes them
 /// (the module's rules), each line's own end left as `finish` says and its last one marked with
 /// the exit when it is to be carried on toward it ([`Line::toward`]). Without an exit (or one that
@@ -64,34 +59,48 @@ pub(super) fn ordered_toward(subs: Vec<SubPath>, aim: Aim, finish: &Finish, p: &
     }
 }
 
-/// The stitches `sew` sews toward `aim`'s exit, kept only when they lift the needle and cut the
-/// thread no more often than those it sews without the exit and end nearer the exit; else those.
-/// Without an exit (or one that isn't a number), those alone, planned once.
-pub(super) fn nearer(aim: Aim, sew: impl Fn(Aim) -> Vec<Stitch>) -> Vec<Stitch> {
-    let plain = sew(Aim { exit: None, ..aim });
+/// The stitches `sew` sews toward `aim`'s exit, kept only when they are no worse than those it sews
+/// without the exit ([`Moves::within`]: no more lifts of the needle or cuts of the thread, the move
+/// in from where the needle starts among them, and no more connecting stitches between subpaths,
+/// which `sew` gives beside its stitches) and end at least [`super::POINT_MISS_MM`] nearer the exit
+/// ([`gains`]); else those. Without an exit (or one that isn't a number), those alone, planned once.
+pub(super) fn nearer(aim: Aim, p: &Params, sew: impl Fn(Aim) -> (Vec<Stitch>, f64)) -> Vec<Stitch> {
+    let (plain, plain_connectors) = sew(Aim { exit: None, ..aim });
     let Some(exit) = aim.exit.filter(|x| finite(*x)) else { return plain };
-    let aimed = sew(aim);
-    let ((plain_lifts, plain_cuts, plain_end), (lifts, cuts, end)) = (breaks(&plain), breaks(&aimed));
+    let (aimed, connectors) = sew(aim);
+    let from = aim.start.point();
+    let ((plain_moves, plain_end), (moves, end)) = (breaks(&plain, from, plain_connectors, p), breaks(&aimed, from, connectors, p));
     let from_exit = |end: Option<Point>| end.map_or(f64::INFINITY, |q| q.distance(exit));
-    if lifts <= plain_lifts && cuts <= plain_cuts && from_exit(end) < from_exit(plain_end) { aimed } else { plain }
+    // No connecting stitch more at all (the project owner's choice, 2026-10-26: a fill's rows may
+    // turn round a row's end, a line has no such turn to spare).
+    if moves.within(&plain_moves, 0.0) && gains(from_exit(end), from_exit(plain_end)) { aimed } else { plain }
 }
 
-/// How often `stitches` lift the needle between two needle points (a jump, however many records it
-/// takes) and cut the thread, and their last needle point.
-fn breaks(stitches: &[Stitch]) -> (usize, usize, Option<Point>) {
-    let (mut lifts, mut cuts, mut up) = (0, 0, false);
-    let mut end = None;
+/// How `stitches` move the needle, and their last needle point: how often they lift it between two
+/// needle points (a jump, however many records it takes) and cut the thread, and the `connectors`
+/// sewn between their subpaths (millimetres) as what shows; with the move in from `from`, where the
+/// needle starts, as the sequence joins objects: a lift past [`Params::jump`], a cut past
+/// [`Params::trim`].
+fn breaks(stitches: &[Stitch], from: Option<Point>, connectors: f64, p: &Params) -> (Moves, Option<Point>) {
+    let mut moves = Moves { seen: connectors, ..Moves::default() };
+    let (mut up, mut end) = (false, None);
     for s in stitches {
         match s.command {
             Command::Stitch => {
-                lifts += usize::from(up && end.is_some());
+                if end.is_none()
+                    && let Some(d) = from.map(|q| q.distance(s.point())).filter(|d| d.is_finite())
+                {
+                    moves.lifts += usize::from(d > p.jump);
+                    moves.trims += usize::from(d > p.trim);
+                }
+                moves.lifts += usize::from(up && end.is_some());
                 (up, end) = (false, Some(s.point()));
             }
-            Command::Trim => cuts += 1,
+            Command::Trim => moves.trims += 1,
             _ => up = true,
         }
     }
-    (lifts, cuts, end)
+    (moves, end)
 }
 
 /// Whether `q` is a number on both axes.
@@ -162,10 +171,10 @@ impl Hops {
         }
     }
 
-    /// Whether these are no more than `plain`'s: no more lifts or cuts, and connecting stitches at
-    /// most [`SEEN_SLACK`] longer in all.
+    /// Whether these are no more than `plain`'s: no more lifts or cuts, and no more connecting
+    /// stitches (float noise aside, [`SAME_POINT`]).
     fn within(&self, plain: &Hops) -> bool {
-        self.lifts <= plain.lifts && self.trims <= plain.trims && self.seen <= plain.seen + SEEN_SLACK
+        self.lifts <= plain.lifts && self.trims <= plain.trims && self.seen <= plain.seen + SAME_POINT
     }
 }
 

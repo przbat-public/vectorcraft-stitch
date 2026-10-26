@@ -1061,15 +1061,19 @@ the object a person selects (`id`).
   a satin ring travels along its middle to the exit before its top stitching. A fill ends at the
   row end nearest its exit: its rows are cut along that row (as at a branch), the strip beyond it
   sewn first, its piece last, and the region sewn last takes the sweep that ends it there; aimed
-  this way, it is kept only when it lifts, cuts and shows no more than without the exit (within a
-  travel stitch) and ends nearer it. A side the rows run along has no row ends: an exit there is
+  this way, it is kept only when it lifts and cuts no more than without the exit, travels over rows
+  already sewn at most 1 mm more (`FILL_SEEN_SLACK`: the miss the Check tab lets pass, enough for the
+  turn round a row's end at the cut) and ends at least 1 mm nearer it (`POINT_MISS_MM`: a smaller
+  gain buys extra stitches for a miss nobody is told of). A side the rows run along has no row ends: an exit there is
   reached at that side's nearer corner. A fill whose narrow parts are sewn as satin orders its
   parts to end nearest the exit (the part it starts with kept first, so an exit on that part is out
   of reach) and sews the last one toward it (a piece as a fill, a column as a stroke's column, a
   ring of a column from its point nearest the exit), kept by the same rule. A running line or a
-  satin sewn toward its exit is kept the same way, by its stitches: when it lifts the needle and
-  cuts the thread no more often and ends nearer the exit; so an exit where a part ends anyway
-  changes nothing, and none makes a plan worse (`prop_plan`'s exit properties).
+  satin sewn toward its exit is kept the same way, by its stitches: when, counting the move in from
+  where the needle starts (a lift past the jump length, a cut past the trim length), it lifts the
+  needle and cuts the thread no more often, sews no connecting stitch more between its subpaths,
+  and ends at least 1 mm nearer the exit; so an exit where a part ends anyway changes nothing, and
+  none makes a plan worse (`prop_plan`'s exit properties).
 - A part of a fill narrower than 1 mm is a single running line along its middle, not a bean or
   triple run: on a part 0.6–1 mm wide its edges stay bare.
 - Travel between a fill's parts is weighed by the straight distance between them, and it is not

@@ -117,6 +117,14 @@ pub(super) fn gains(aimed: f64, plain: f64) -> bool {
     aimed + POINT_MISS_MM <= plain
 }
 
+/// Whether a plan aimed at an exit could gain enough ([`gains`]) on the plan without it, ending
+/// `plain` millimetres from the exit: not when that ends within [`POINT_MISS_MM`] of it, and then
+/// the aimed plan isn't sewn at all (a part given the points it starts and ends at now, as
+/// Nearest Connection gives every part it joins, plans once).
+pub(super) fn can_gain(plain: f64) -> bool {
+    gains(0.0, plain)
+}
+
 impl Runs {
     /// No runs yet, the needle at `start` (the end of the object sewn before), if known: the shape
     /// starts as near it as it can.

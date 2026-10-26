@@ -6,7 +6,7 @@ use vectorcraft_geom::{BezPath, FillRule, Point, Vec2};
 use super::area::{Area, Grid, TRAVEL_STITCH, Travels};
 use super::geometry::{Axes, SubPath, area, length, nearest_on, resample, subpaths, unit};
 use super::narrow::Column;
-use super::runs::{COST_EXIT, COST_HIDDEN, COST_SEEN, FILL_SEEN_SLACK, Runs, Travel, gains};
+use super::runs::{COST_EXIT, COST_HIDDEN, COST_SEEN, FILL_SEEN_SLACK, Runs, Travel, can_gain, gains};
 use super::satin::{column_returns, sew_column};
 use super::{Aim, MAX_STITCHES, Params, Start, Style, UNDERLAY_STITCH, Underlay};
 use crate::{SAME_POINT, Stitch};
@@ -202,6 +202,11 @@ fn sew_toward(
     let plain_regions = layer.regions(rows, lo, hi, p, None);
     let mut plain = Runs::continuing(runs);
     sew(&plain_regions, travels, MAX_SEEN, true, p, &[], None, &mut plain, finished);
+    let from_exit = |r: &Runs| r.here().map_or(f64::INFINITY, |h| h.distance(exit));
+    if !can_gain(from_exit(&plain)) {
+        runs.append(plain);
+        return;
+    }
     let aimed_regions = layer.regions(rows, lo, hi, p, Some(exit));
     let mut aimed = Runs::continuing(runs);
     if runs.is_empty()
@@ -211,7 +216,6 @@ fn sew_toward(
         aimed.lead_from(first, plain.opened());
     }
     sew(&aimed_regions, travels, MAX_SEEN, true, p, &[], Some(exit), &mut aimed, finished);
-    let from_exit = |r: &Runs| r.here().map_or(f64::INFINITY, |h| h.distance(exit));
     let keep = if aimed.moves.within(&plain.moves, FILL_SEEN_SLACK) && gains(from_exit(&aimed), from_exit(&plain)) { aimed } else { plain };
     runs.append(keep);
 }
@@ -306,11 +310,14 @@ pub(crate) fn fill_with_columns(
     };
     let plain = sew_parts(&order, None);
     let Some(exit) = aim.exit.filter(|x| x.x.is_finite() && x.y.is_finite()) else { return plain.join(&fill) };
+    let from_exit = |r: &Runs| r.here().map_or(f64::INFINITY, |h| h.distance(exit));
+    if !can_gain(from_exit(&plain)) {
+        return plain.join(&fill);
+    }
     // Toward an exit: the parts ordered to end nearest it, the first kept first, the last aimed at it;
     // kept only when no worse than the plain parts and nearer the exit.
     let aimed_order = Order { contacts: &contacts, through: &through, exit: Some(exit), first: order.first().copied() }.best(here);
     let aimed = sew_parts(&aimed_order, Some(exit));
-    let from_exit = |r: &Runs| r.here().map_or(f64::INFINITY, |h| h.distance(exit));
     let keep = if aimed.moves.within(&plain.moves, FILL_SEEN_SLACK) && gains(from_exit(&aimed), from_exit(&plain)) { aimed } else { plain };
     keep.join(&fill)
 }

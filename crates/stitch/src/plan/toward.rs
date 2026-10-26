@@ -26,7 +26,7 @@
 use vectorcraft_geom::Point;
 
 use super::geometry::{Line, MAX_REORDERED, SubPath, length, nearest_on, nearest_order, ordered};
-use super::runs::{COST_EXIT, COST_LIFT, COST_SEEN, COST_TRIM, Moves, gains};
+use super::runs::{COST_EXIT, COST_LIFT, COST_SEEN, COST_TRIM, Moves, can_gain, gains};
 use super::{Aim, Params, Start};
 use crate::{Command, SAME_POINT, Stitch};
 
@@ -67,10 +67,14 @@ pub(super) fn ordered_toward(subs: Vec<SubPath>, aim: Aim, finish: &Finish, p: &
 pub(super) fn nearer(aim: Aim, p: &Params, sew: impl Fn(Aim) -> (Vec<Stitch>, f64)) -> Vec<Stitch> {
     let (plain, plain_connectors) = sew(Aim { exit: None, ..aim });
     let Some(exit) = aim.exit.filter(|x| finite(*x)) else { return plain };
-    let (aimed, connectors) = sew(aim);
     let from = aim.start.point();
-    let ((plain_moves, plain_end), (moves, end)) = (breaks(&plain, from, plain_connectors, p), breaks(&aimed, from, connectors, p));
     let from_exit = |end: Option<Point>| end.map_or(f64::INFINITY, |q| q.distance(exit));
+    let (plain_moves, plain_end) = breaks(&plain, from, plain_connectors, p);
+    if !can_gain(from_exit(plain_end)) {
+        return plain;
+    }
+    let (aimed, connectors) = sew(aim);
+    let (moves, end) = breaks(&aimed, from, connectors, p);
     // No connecting stitch more at all (the project owner's choice, 2026-10-26: a fill's rows may
     // turn round a row's end, a line has no such turn to spare).
     if moves.within(&plain_moves, 0.0) && gains(from_exit(end), from_exit(plain_end)) { aimed } else { plain }

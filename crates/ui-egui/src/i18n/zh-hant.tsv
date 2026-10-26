@@ -5538,7 +5538,6 @@ embroidery	by size	依尺寸
 embroidery	Entry and exit	入針與出針
 embroidery	Set	已設定
 embroidery	nearest	最近
-embroidery	not used yet	尚未使用
 embroidery	Set on the selected objects.	已在選取的物件上設定。
 embroidery	Nearest to where the needle is.	離針所在位置最近處。
 embroidery	built-in values	內建值
@@ -5637,3 +5636,5 @@ embroidery	Entry or exit points missed by more than {value} mm	偏離超過 {val
 embroidery	Largest miss: {value} mm	最大偏離：{value} mm
 @plural	{count} point|{count} points	{count} 個點
 embroidery	{name}, {point}: {value} mm	{name}，{point}：{value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	偏離 {value} mm

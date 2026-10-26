@@ -5859,7 +5859,6 @@ embroidery	by size	menurut ukuran
 embroidery	Entry and exit	Masuk dan keluar
 embroidery	Set	Diatur
 embroidery	nearest	terdekat
-embroidery	not used yet	belum dipakai
 embroidery	Set on the selected objects.	Diatur pada objek terpilih.
 embroidery	Nearest to where the needle is.	Paling dekat dengan posisi jarum.
 embroidery	built-in values	nilai bawaan
@@ -5958,3 +5957,5 @@ embroidery	Entry or exit points missed by more than {value} mm	Titik masuk atau 
 embroidery	Largest miss: {value} mm	Meleset terjauh: {value} mm
 @plural	{count} point|{count} points	{count} titik
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	meleset {value} mm

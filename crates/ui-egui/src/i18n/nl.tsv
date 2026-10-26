@@ -5902,7 +5902,6 @@ embroidery	by size	naar grootte
 embroidery	Entry and exit	Ingang en uitgang
 embroidery	Set	Ingesteld
 embroidery	nearest	dichtstbij
-embroidery	not used yet	nog niet gebruikt
 embroidery	Set on the selected objects.	Ingesteld op de geselecteerde objecten.
 embroidery	Nearest to where the needle is.	Zo dicht mogelijk bij de naald.
 embroidery	built-in values	ingebouwde waarden
@@ -6001,3 +6000,5 @@ embroidery	Entry or exit points missed by more than {value} mm	In- of uitgangspu
 embroidery	Largest miss: {value} mm	Grootste afwijking: {value} mm
 @plural	{count} point|{count} points	{count} punt|{count} punten
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	{value} mm gemist

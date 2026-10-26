@@ -5856,7 +5856,6 @@ embroidery	by size	ανάλογα με το μέγεθος
 embroidery	Entry and exit	Είσοδος και έξοδος
 embroidery	Set	Ορισμένο
 embroidery	nearest	πλησιέστερο
-embroidery	not used yet	δεν χρησιμοποιείται ακόμη
 embroidery	Set on the selected objects.	Ορίστηκε στα επιλεγμένα αντικείμενα.
 embroidery	Nearest to where the needle is.	Το πλησιέστερο στο σημείο όπου βρίσκεται η βελόνα.
 embroidery	built-in values	ενσωματωμένες τιμές
@@ -5955,3 +5954,5 @@ embroidery	Entry or exit points missed by more than {value} mm	Σημεία ει
 embroidery	Largest miss: {value} mm	Μέγιστη απόκλιση: {value} mm
 @plural	{count} point|{count} points	{count} σημείο|{count} σημεία
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	αστοχία {value} mm

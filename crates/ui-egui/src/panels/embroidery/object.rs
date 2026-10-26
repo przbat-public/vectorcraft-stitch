@@ -25,7 +25,9 @@ use std::sync::{Arc, Weak};
 use egui::{Color32, CornerRadius, FontId, Sense, Ui, vec2};
 use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId, NodeKind};
+use vectorcraft_engine::cmd::embroidery::POINT_MISS_MM;
 use vectorcraft_engine::cmd::embroidery::info::{KeyInfo, ObjectSettings, PartInfo, SelectionSewing, selection_sewing};
+use vectorcraft_engine::cmd::embroidery::order::EntryExit;
 use vectorcraft_engine::cmd::embroidery::setup::{FabricChoice, fabric_and_thread};
 use vectorcraft_engine::cmd::embroidery::{SettingField, distinct_underlays, part_field};
 
@@ -63,6 +65,8 @@ const HALF_TURN: f64 = 180.0;
 const SAME_ANGLE: f64 = 1e-6;
 /// Decimals of the thread's weight in the footer: whole weights, as thread is sold.
 const WEIGHT_DECIMALS: usize = 0;
+/// The places a point's miss is written to: a tenth of a millimetre, the formats' grid.
+const MISS_DECIMALS: usize = 1;
 /// The command the footer's Embroidery Settings… runs: Document Setup at its Embroidery tab.
 const SETTINGS: &str = "embroidery.documentSetup";
 /// The stitch count before the first plan: an ellipsis, the same in every language.
@@ -233,13 +237,20 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             app.ui.embroidery_panel.part = part;
         }
         if let Some(part) = shown.and_then(|p| p.of(&info).map(|i| (p, i))) {
+            // How far the stitches miss the part's entry and exit, from the plan shown when it is of
+            // the document as it is.
+            let sewn = app.embroidery.object.sewn.as_ref().filter(|s| count.fresh && s.uid == uid && s.ids == ids);
+            let missed = sewn.map(|s| match part.0 {
+                Part::Fill => s.sewing.fill.missed_by,
+                Part::Stroke => s.sewing.stroke.missed_by,
+            });
             let room = (ui.available_height() - footer_room).max(MIN_ROWS);
             // The panel's width, measured outside the scrolled rows: what they are fitted to, so that
             // nothing wider in them can widen the next frame's.
             let width = ui.available_width();
             egui::ScrollArea::vertical().id_salt("embroidery-object-rows").max_height(room).auto_shrink([false, true]).show(ui, |ui| {
                 ui.set_max_width(width);
-                part_rows(ui, part.0, part.1, &ids, width, lang, &mut commands);
+                part_rows(ui, part.0, part.1, &ids, width, lang, missed, &mut commands);
                 trim_after(ui, &info, &ids, &mut commands);
             });
         }
@@ -435,8 +446,18 @@ impl Section {
 }
 
 /// The rows of part `part` (`p`) of the selection, fitted to `width` points, by section, then its
-/// entry and exit.
-fn part_rows(ui: &mut Ui, part: Part, p: &PartInfo, ids: &[NodeId], width: f32, lang: Lang, commands: &mut Vec<Command>) {
+/// entry and exit, with how far the stitches miss them (`missed`, millimetres, from the plan shown).
+#[allow(clippy::too_many_arguments)]
+fn part_rows(
+    ui: &mut Ui,
+    part: Part,
+    p: &PartInfo,
+    ids: &[NodeId],
+    width: f32,
+    lang: Lang,
+    missed: Option<EntryExit<f64>>,
+    commands: &mut Vec<Command>,
+) {
     if p.sewn.as_deref() == Some("none") {
         let t = Tokens::get(ui.ctx());
         let words = vocabulary::not_sewn(p.reason.as_deref());
@@ -448,7 +469,8 @@ fn part_rows(ui: &mut Ui, part: Part, p: &PartInfo, ids: &[NodeId], width: f32, 
         .map(|(section, keys)| (section, keys.into_iter().filter_map(|k| key_row(p, part, k, lang)).collect::<Vec<_>>()))
         .filter(|(_, rows)| !rows.is_empty())
         .collect();
-    let points: Vec<Owned> = ["entry", "exit"].into_iter().map(|k| point_row(p, k)).collect();
+    let points: Vec<Owned> =
+        ["entry", "exit"].into_iter().map(|k| point_row(p, k, missed.and_then(|m| if k == "entry" { m.entry } else { m.exit }), lang)).collect();
     let all: Vec<Row<'_>> = sections.iter().flat_map(|(_, r)| r.iter()).chain(&points).map(|o| o.row(lang)).collect();
     let cols = Columns::fit(ui, width, &all);
     for (section, owned) in &sections {
@@ -637,16 +659,18 @@ fn value_words(v: &Value, key: &str, lang: Lang, part: Part, unit: bool) -> Stri
 }
 
 /// The entry or exit row of part `p`: "Auto" (nearest where the needle is) or set, read only until
-/// the embroidery tool places it.
-fn point_row(p: &PartInfo, key: &'static str) -> Owned {
+/// the embroidery tool places it; set, with how far its stitches miss it when that is more than the
+/// Check tab lets pass (`missed`, millimetres: the most of the selected objects').
+fn point_row(p: &PartInfo, key: &'static str, missed: Option<f64>, lang: Lang) -> Owned {
     let point = if key == "entry" { &p.entry } else { &p.exit };
     let label = vocabulary::label(key, None);
     let every = point.set_count >= p.object_count && point.set_count > 0 && !point.mixed;
     let (words, own, aside) = if point.mixed {
         (crate::et!("Mixed"), false, None)
     } else if every {
-        // Kept and reported; the planner sews toward it once the embroidery tool places it.
-        let note = (key == "exit").then(|| crate::et!("not used yet").to_string());
+        let note = missed
+            .filter(|m| *m > POINT_MISS_MM)
+            .map(|m| text::fill(crate::et!("missed by {value} mm"), &[("value", &numbers::decimal(lang, m, MISS_DECIMALS))]));
         (crate::et!("Set"), true, note)
     } else {
         (crate::et!("Auto"), false, Some(crate::et!("nearest").to_string()))

@@ -5499,7 +5499,6 @@ embroidery	by size	theo kích thước
 embroidery	Entry and exit	Điểm vào và điểm ra
 embroidery	Set	Đã đặt
 embroidery	nearest	gần nhất
-embroidery	not used yet	chưa dùng
 embroidery	Set on the selected objects.	Đã đặt trên các đối tượng đã chọn.
 embroidery	Nearest to where the needle is.	Gần nhất với vị trí kim.
 embroidery	built-in values	giá trị dựng sẵn
@@ -5598,3 +5597,5 @@ embroidery	Entry or exit points missed by more than {value} mm	Điểm vào ho�
 embroidery	Largest miss: {value} mm	Lệch nhiều nhất: {value} mm
 @plural	{count} point|{count} points	{count} điểm
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	lệch {value} mm

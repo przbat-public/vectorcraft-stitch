@@ -5890,7 +5890,6 @@ embroidery	by size	méret szerint
 embroidery	Entry and exit	Belépés és kilépés
 embroidery	Set	Beállítva
 embroidery	nearest	legközelebbi
-embroidery	not used yet	még nincs használatban
 embroidery	Set on the selected objects.	A kijelölt objektumokon beállítva.
 embroidery	Nearest to where the needle is.	A tűhöz legközelebb.
 embroidery	built-in values	beépített értékek
@@ -5989,3 +5988,5 @@ embroidery	Entry or exit points missed by more than {value} mm	Több mint {value
 embroidery	Largest miss: {value} mm	Legnagyobb eltérés: {value} mm
 @plural	{count} point|{count} points	{count} pont
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	{value} mm-rel elvétve

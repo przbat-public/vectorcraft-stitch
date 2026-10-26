@@ -5515,7 +5515,6 @@ embroidery	by size	по размеру
 embroidery	Entry and exit	Вход и выход
 embroidery	Set	Задано
 embroidery	nearest	ближайший
-embroidery	not used yet	пока не используется
 embroidery	Set on the selected objects.	Задано у выделенных объектов.
 embroidery	Nearest to where the needle is.	Ближе всего к тому месту, где игла.
 embroidery	built-in values	встроенные значения
@@ -5614,3 +5613,5 @@ embroidery	Entry or exit points missed by more than {value} mm	Точки вхо
 embroidery	Largest miss: {value} mm	Наибольший промах: {value} мм
 @plural	{count} point|{count} points	{count} точка|{count} точки|{count} точек
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} мм
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	промах {value} мм

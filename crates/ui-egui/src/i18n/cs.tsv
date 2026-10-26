@@ -5904,7 +5904,6 @@ embroidery	by size	podle velikosti
 embroidery	Entry and exit	Vstup a výstup
 embroidery	Set	Nastaveno
 embroidery	nearest	nejblíže
-embroidery	not used yet	zatím nepoužito
 embroidery	Set on the selected objects.	Nastaveno na vybraných objektech.
 embroidery	Nearest to where the needle is.	Nejblíže místu, kde je jehla.
 embroidery	built-in values	vestavěné hodnoty
@@ -6003,3 +6002,5 @@ embroidery	Entry or exit points missed by more than {value} mm	Vstupní nebo vý
 embroidery	Largest miss: {value} mm	Největší odchylka: {value} mm
 @plural	{count} point|{count} points	{count} bod|{count} body|{count} bodů
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	minuto o {value} mm

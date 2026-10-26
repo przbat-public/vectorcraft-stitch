@@ -5581,7 +5581,6 @@ embroidery	by size	サイズに応じて
 embroidery	Entry and exit	入口と出口
 embroidery	Set	設定済み
 embroidery	nearest	最寄り
-embroidery	not used yet	まだ使われません
 embroidery	Set on the selected objects.	選択したオブジェクトに設定済み。
 embroidery	Nearest to where the needle is.	針の位置に最も近い所。
 embroidery	built-in values	組み込みの値
@@ -5680,3 +5679,5 @@ embroidery	Entry or exit points missed by more than {value} mm	{value} mm を超
 embroidery	Largest miss: {value} mm	最大のずれ: {value} mm
 @plural	{count} point|{count} points	{count} 点
 embroidery	{name}, {point}: {value} mm	{name}、{point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	{value} mm ずれ

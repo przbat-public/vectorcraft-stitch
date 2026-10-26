@@ -947,6 +947,23 @@ fn the_entry_and_exit_rows_and_their_restore() {
     assert_eq!((fill["entry"].clone(), fill["angle"].clone(), steps(&app)), (json!(null), json!(30.0), before + 1), "the entry alone, one step");
 }
 
+/// A point the stitches miss by more than the Check tab lets pass says by how much, from the plan
+/// shown; one they meet says nothing: an exit far off the rectangle, an entry on its side.
+#[test]
+fn a_missed_point_says_by_how_much() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    // The rectangle's corner nearest the exit, (100, 70), lies 304.8 pt (107.5 mm) from it.
+    app.run("embroidery.setEntryExit", json!({"id": a, "part": "fill", "entry": [20, 45], "exit": [300, 300]})).unwrap();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let (before, after) = crate::et!("missed by {value} mm").split_once("{value}").unwrap();
+    let misses: Vec<f64> = drawn.words.iter().filter_map(|(w, _)| w.strip_prefix(before)?.strip_suffix(after)?.parse().ok()).collect();
+    assert_eq!(misses.len(), 1, "the exit alone: {:?}", drawn.words);
+    assert!((misses[0] - 107.5).abs() < 1.0, "{misses:?}");
+}
+
 /// A pull whose two sides differ shows both in its blank field ("0.2 mm / 0.3 mm"), which screen
 /// readers hear as its placeholder.
 #[test]

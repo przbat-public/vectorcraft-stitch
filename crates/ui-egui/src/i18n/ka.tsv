@@ -5819,7 +5819,6 @@ embroidery	by size	ზომის მიხედვით
 embroidery	Entry and exit	შესვლა და გამოსვლა
 embroidery	Set	დაყენებული
 embroidery	nearest	უახლოესი
-embroidery	not used yet	ჯერ არ გამოიყენება
 embroidery	Set on the selected objects.	დაყენებულია მონიშნულ ობიექტებზე.
 embroidery	Nearest to where the needle is.	ყველაზე ახლოს იქ, სადაც ნემსია.
 embroidery	built-in values	ჩაშენებული მნიშვნელობები
@@ -5918,3 +5917,5 @@ embroidery	Entry or exit points missed by more than {value} mm	შესვლ�
 embroidery	Largest miss: {value} mm	უდიდესი აცდენა: {value} მმ
 @plural	{count} point|{count} points	წერტილები: {count}
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} მმ
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	აცდენილია {value} მმ-ით

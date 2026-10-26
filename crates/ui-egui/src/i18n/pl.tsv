@@ -5755,7 +5755,6 @@ embroidery	by size	według rozmiaru
 embroidery	Entry and exit	Wejście i wyjście
 embroidery	Set	Ustawione
 embroidery	nearest	najbliżej
-embroidery	not used yet	jeszcze nieużywane
 embroidery	Set on the selected objects.	Ustawione na zaznaczonych obiektach.
 embroidery	Nearest to where the needle is.	Najbliżej miejsca, w którym jest igła.
 embroidery	built-in values	wartości wbudowane
@@ -5854,3 +5853,5 @@ embroidery	Entry or exit points missed by more than {value} mm	Punkty wejścia l
 embroidery	Largest miss: {value} mm	Największe chybienie: {value} mm
 @plural	{count} point|{count} points	{count} punkt|{count} punkty|{count} punktów
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	chybione o {value} mm

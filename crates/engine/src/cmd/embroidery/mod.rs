@@ -101,7 +101,7 @@ use super::*;
 
 // For the Check tab: the most hits it may ask a rule for, and the plan's millimetres as points; for
 // the Sewing order tab, the most units a list may ask for.
-pub use self::check::MAX_LIMIT;
+pub use self::check::{MAX_LIMIT, POINT_MISS_MM};
 pub use self::stats::MAX_LIST_LIMIT;
 pub use options::Options;
 pub use service::Planned;

@@ -5935,7 +5935,6 @@ embroidery	by size	koon mukaan
 embroidery	Entry and exit	Sisään ja ulos
 embroidery	Set	Asetettu
 embroidery	nearest	lähin
-embroidery	not used yet	ei vielä käytössä
 embroidery	Set on the selected objects.	Asetettu valituille objekteille.
 embroidery	Nearest to where the needle is.	Lähimpänä kohtaa, jossa neula on.
 embroidery	built-in values	sisäiset arvot
@@ -6034,3 +6033,5 @@ embroidery	Entry or exit points missed by more than {value} mm	Alku- tai loppuko
 embroidery	Largest miss: {value} mm	Suurin poikkeama: {value} mm
 @plural	{count} point|{count} points	{count} kohta|{count} kohtaa
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	ohi {value} mm

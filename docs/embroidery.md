@@ -1090,7 +1090,10 @@ the object a person selects (`id`).
   where the needle starts (a lift past the jump length, a cut past the trim length), it lifts the
   needle and cuts the thread no more often, sews no connecting stitch more between its subpaths,
   and ends at least 1 mm nearer the exit; so an exit where a part ends anyway changes nothing, and
-  none makes a plan worse (`prop_plan`'s exit properties).
+  none makes a plan worse (`prop_plan`'s exit properties). Of a line's subpaths each is weighed as
+  the last up to 64 of them and a bound on the work (`MAX_REORDER_WORK`: the subpaths squared times
+  their points, 4 million); past either only the one that can end nearest the exit moves last, kept
+  when the moves between them lift, cut and connect no more.
 - A part of a fill narrower than 1 mm is a single running line along its middle, not a bean or
   triple run: on a part 0.6–1 mm wide its edges stay bare.
 - Travel between a fill's parts is weighed by the straight distance between them, and it is not

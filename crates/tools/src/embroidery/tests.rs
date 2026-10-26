@@ -380,6 +380,30 @@ fn a_press_elsewhere_selects() {
     );
 }
 
+/// A press on stitches picks only what the art's hit test would pick: not an object locked or hidden
+/// since the plan drawn was made, nor one outside the object isolated (the stitches drawn can be of
+/// a plan made before); nothing is under the press then, and the selection empties.
+#[test]
+fn a_press_on_stitches_picks_only_what_the_art_would() {
+    let (d, ids) = doc();
+    let [square, line, _] = ids;
+    let (s, p) = (select(&[square]), PaintDefaults::default());
+    let f = Fake { under: Some((line, Some(PartKind::Stroke))), ..Fake::default() };
+    let press = |d: &Document, isolation: Option<NodeId>| {
+        let c = ToolContext { embroidery: Some(&f), isolation, ..cx(d, &s, &p) };
+        EmbroideryTool::default().pointer(&c, &ev(PointerKind::Down, 550.0, 50.0))
+    };
+    let picked = vec![Action::Exec("select.set".into(), json!({"ids": [line.0]}))];
+    let nothing = vec![Action::Exec("select.set".into(), json!({"ids": []}))];
+    assert_eq!(press(&d, None), picked, "as it is");
+    assert_eq!(press(&d, Some(square)), nothing, "outside the object isolated");
+    for edit in [|n: &mut Node| n.locked = true, |n: &mut Node| n.visible = false] {
+        let mut d = d.clone();
+        edit(d.node_mut(line).unwrap());
+        assert_eq!(press(&d, None), nothing, "locked or hidden since the plan was made");
+    }
+}
+
 /// A point dragged past the coordinates a document holds is kept within them.
 #[test]
 fn a_point_past_the_document_is_kept_within_it() {

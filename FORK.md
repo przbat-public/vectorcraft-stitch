@@ -528,8 +528,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     embroidery tool in `create`'s chain after `touchtype`; the `Cursor` variants `Embroidery` and
     `EmbroideryPoint` after `WidthPoint`, and their stand-ins (`Arrow`, `Move`) in `stand_in()`;
   - `engine/src/tooling.rs`: in `with_tool_cx`, the stitch plan's and the settings' answers for
-    the embroidery tool (`Services::tool_facts`, `cmd/embroidery/tool.rs`'s `FactsNow`), only while
-    that tool is active, and the context's `embroidery` field set from them;
+    the embroidery tool (`Services::tool_facts`, `cmd/embroidery/tool.rs`'s `FactsNow`, told whether
+    the canvas draws the stitches), only while that tool is active, and the context's `embroidery`
+    field set from them;
   - `tools/src/cursors.toml`: the Embroidery section before Blend;
   - `ui-egui/src/canvas.rs`: the two in `cursor_icon`'s list of cursors not drawn yet;
   - `ui-egui/src/cursors.rs`: the two in the tests' `GLYPHS`;

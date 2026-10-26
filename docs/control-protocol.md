@@ -452,7 +452,7 @@ fill sewn as tatami also has its rows' angle, an arrow through the fill's centre
 the angle (counter-clockwise on the page): a drag of the head previews `embroidery.set {ids, part: "fill", angle}`
 (Shift: 45° steps from the Constrain Angle), Alt with a press or Delete sends `embroidery.reset {keys: ["angle"]}`,
 and the arrows turn it a degree (Shift ten). A press away from every handle selects the object under it, by its
-stitches where the plan shown has them, else by its art (Shift toggles it), and picks the part pressed: its fill or
+stitches where the stitch view shows them, else by its art, as the Selection tool picks (Shift toggles it), and picks the part pressed: its fill or
 its stroke (the Object tab follows). `ui.inspect`'s `toolOptions` give `{part,
 hover, hoverObject, focus, drag}`, each handle as `{kind: "entry"|"exit"|"angle", id, part, index}` (`drag` also
 `at`, document points, and for an angle its `angle`); `hoverObject` is the id a press would select.

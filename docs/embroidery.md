@@ -639,7 +639,8 @@ as Melco's checker reads it, on each object's settings, it flags none.
   dashed arrow through its centre with the angle beside its head: drag the head to turn it (Shift:
   45° steps from the Constrain Angle), Alt-click or Delete for Auto again, the arrow keys turn it
   a degree (Shift ten); angles count counter-clockwise, as everywhere in the app. A click on an
-  object's art or its stitches selects it and picks the part clicked, its fill or its stroke (the
+  object's art, or in the stitch view its stitches, selects it (as the Selection tool would: never
+  an object locked, hidden or outside the group isolated) and picks the part clicked, its fill or its stroke (the
   Object tab follows), Shift-click adds it or takes it away; the object a click would select is
   outlined. Nearest Connection (the panel's ≡ menu) sets every point at once for the
   shortest jumps.
@@ -2405,7 +2406,7 @@ position. Not one tool per kind, which would have to be merged later. The rules 
   to Auto, and later Alt adds (an angle line or a rung by an Alt-drag); Delete does what Alt-click
   does to the focused handle; the arrow keys nudge or turn it, Shift ten times; `[` and `]` step
   through the handles; a press away from them selects the object under it, by its stitches where
-  the plan shows them; Escape cancels a drag, then lets the focus go.
+  the stitch view shows them, else by its art, as the Selection tool picks; Escape cancels a drag, then lets the focus go.
 - **Few cursors:** one at rest and one over a point; a kind whose gesture is an existing one reuses
   its cursor (the arrow's head shows Rotate).
 - **Hit order:** the nearest handle within its own reach (half its size and 2 px, or the selection

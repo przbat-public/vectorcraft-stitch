@@ -123,14 +123,17 @@ impl crate::Session {
 pub(crate) struct FactsNow<'a> {
     facts: Option<&'a ToolFacts>,
     doc: &'a Document,
+    /// Whether the canvas draws the stitches (the stitch view): only then does a press pick by them.
+    drawn: bool,
     /// The document's settings layer, read when an angle is first asked for.
     layer: OnceCell<super::resolve::DocLayer>,
 }
 
 impl<'a> FactsNow<'a> {
-    /// The answers of `facts` (none before a first plan) and of the document `doc`.
-    pub(crate) fn new(facts: Option<&'a ToolFacts>, doc: &'a Document) -> Self {
-        Self { facts, doc, layer: OnceCell::new() }
+    /// The answers of `facts` (none before a first plan) and of the document `doc`, whose stitches
+    /// the canvas draws or not (`drawn`).
+    pub(crate) fn new(facts: Option<&'a ToolFacts>, doc: &'a Document, drawn: bool) -> Self {
+        Self { facts, doc, drawn, layer: OnceCell::new() }
     }
 }
 
@@ -150,6 +153,10 @@ impl PlanFacts for FactsNow<'_> {
     }
 
     fn part_at(&self, at: Point, tol: f64) -> Option<(NodeId, Option<PartKind>)> {
+        // In the art view a press picks by the art alone: the stitches aren't drawn.
+        if !self.drawn {
+            return None;
+        }
         self.facts?.planned.scene().pick(at, tol)
     }
 
@@ -184,7 +191,7 @@ mod tests {
         let uid = s.doc().unwrap().uid;
         let facts = s.embroidery_plans.tool_facts(uid, &opts).expect("the plan the sequence made");
         let doc = s.doc().unwrap().doc.clone();
-        let now = FactsNow::new(Some(&facts), &doc);
+        let now = FactsNow::new(Some(&facts), &doc, true);
         let e = now.ends(NodeId(id), PartKind::Fill).unwrap();
         let mm = |v: f64| v / PT_PER_MM;
         assert!(
@@ -196,7 +203,7 @@ mod tests {
         run(&mut s, "object.move", json!({"ids": [id], "dx": 10, "dy": 0}));
         let doc = s.doc().unwrap().doc.clone();
         let facts = s.embroidery_plans.tool_facts(uid, &opts).expect("the plan before, still remembered");
-        let now = FactsNow::new(Some(&facts), &doc);
+        let now = FactsNow::new(Some(&facts), &doc, true);
         assert!(!now.ends(NodeId(id), PartKind::Fill).unwrap().current, "of the object as it was");
     }
 
@@ -244,7 +251,7 @@ mod tests {
         let uid = s.doc().unwrap().uid;
         let facts = s.embroidery_plans.tool_facts(uid, &super::super::Options::default()).unwrap();
         let doc = s.doc().unwrap().doc.clone();
-        let now = FactsNow::new(Some(&facts), &doc);
+        let now = FactsNow::new(Some(&facts), &doc, true);
         let ends = |id: u64| now.ends(NodeId(id), PartKind::Fill).unwrap();
         let (ea, eb, ec) = (ends(a), ends(b), ends(c));
         assert_eq!((ea.before, ea.after, eb.before), (None, Some(eb.first), Some(ea.last)));
@@ -253,7 +260,8 @@ mod tests {
     }
 
     /// A press on the stitches picks the object sewn on top there: of two overlapping squares, the
-    /// later where they overlap, the earlier beside it, none off the stitches.
+    /// later where they overlap, the earlier beside it, none off the stitches, and none in the art
+    /// view (the stitches aren't drawn).
     #[test]
     fn a_press_on_the_stitches_picks_the_object_on_top() {
         let mut s = blank();
@@ -267,13 +275,15 @@ mod tests {
         let uid = s.doc().unwrap().uid;
         let facts = s.embroidery_plans.tool_facts(uid, &super::super::Options::default()).unwrap();
         let doc = s.doc().unwrap().doc.clone();
-        let now = FactsNow::new(Some(&facts), &doc);
+        let now = FactsNow::new(Some(&facts), &doc, true);
         // Rows lie 0.38 mm apart: a point's tolerance is wider than the gaps between them.
         let tol = 1.0;
         let fill = Some(PartKind::Fill);
         assert_eq!(now.part_at(Point::new(80.0, 80.0), tol), Some((NodeId(b), fill)), "where they overlap");
         assert_eq!(now.part_at(Point::new(35.0, 35.0), tol), Some((NodeId(a), fill)));
         assert_eq!(now.part_at(Point::new(200.0, 200.0), tol), None);
+        let art = FactsNow::new(Some(&facts), &doc, false);
+        assert_eq!(art.part_at(Point::new(80.0, 80.0), tol), None, "in the art view, by the art alone");
     }
 
     /// No plan remembered, no answers: nothing plans to answer.

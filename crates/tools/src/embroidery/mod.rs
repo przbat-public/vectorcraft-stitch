@@ -161,10 +161,12 @@ impl EmbroideryTool {
     }
 
     /// The object a press at `p` would select, and the part pressed: the single object under it,
-    /// even inside a group, by its stitches where the plan answers for them, else by its art (its
-    /// fill or its stroke; an outline or a bounding box says no part); only one that takes settings.
+    /// even inside a group, by its stitches where the plan answers for them (in the stitch view; an
+    /// object the art's hit test would pass over, [`pickable`], isn't picked by them), else by its
+    /// art (its fill or its stroke; an outline or a bounding box says no part); only one that takes
+    /// settings.
     fn under(cx: &ToolContext, p: Point) -> Option<(vectorcraft_doc::NodeId, Option<PartKind>)> {
-        let by_stitch = cx.embroidery.and_then(|f| f.part_at(p, cx.pick_tol()));
+        let by_stitch = cx.embroidery.and_then(|f| f.part_at(p, cx.pick_tol())).filter(|(id, _)| pickable(cx, *id));
         let by_art = || {
             hit_test(cx.doc, p, cx.hit_options()).map(|h| {
                 let part = match h.kind {
@@ -227,6 +229,17 @@ impl EmbroideryTool {
             }
         }
     }
+}
+
+/// Whether object `id`, found by its stitches, may be picked, as the art's hit test picks: visible
+/// and unlocked with every group and layer it is in, off the locked artboards, on no template layer,
+/// and inside the group or object isolated (isolation mode). The stitches drawn can be of a plan
+/// made before the object was hidden or locked.
+fn pickable(cx: &ToolContext, id: vectorcraft_doc::NodeId) -> bool {
+    let Some(ancestry) = cx.doc.ancestry(id) else { return false };
+    cx.doc.is_editable(id)
+        && !ancestry.iter().any(|a| cx.doc.node(*a).is_some_and(vectorcraft_doc::Node::is_template))
+        && cx.isolation.is_none_or(|scope| ancestry.contains(&scope))
 }
 
 impl Tool for EmbroideryTool {

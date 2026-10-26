@@ -1336,9 +1336,12 @@ the object a person selects (`id`).
   where it was before (the letter T's is at an end of its satin columns); the `exits` document
   added 8.
 - The embroidery tool and what it plans toward (2026-10-26): the planner meeting an entry and
-  sewing toward an exit (`plan/tests_aim.rs`, 16 tests; four properties in `tests/prop_plan.rs`: no
-  exit sews what it sewed before, bit for bit; an exit never makes a plan worse; an exit at the
-  plan's own end changes nothing; a fill with narrow parts is no worse toward one); where shapes
+  sewing toward an exit (`plan/tests_aim.rs`, 16 tests; four properties in `tests/prop_plan.rs`: an
+  exit that isn't a number is no exit; an exit never makes a plan worse; an exit at the plan's own
+  end changes nothing; a fill with narrow parts is no worse toward one; and
+  `tests/golden_no_exit.rs`: with no exit, 220 seeded random paths in every style and fills with
+  narrow parts sew bit for bit what they sewed before exits were planned toward, against hashes
+  recorded with the planner as it was); where shapes
   can start and end and their shortest joins (`plan/ends.rs`, `plan/joins.rs`, and
   `tests/prop_joins.rs`: equal to trying every choice, never worse than the points they start
   from), Nearest Connection on documents (`tests_nearest.rs`, 8 tests, a second run among them

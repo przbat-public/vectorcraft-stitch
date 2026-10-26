@@ -3,8 +3,8 @@
 //! allows, and cuts the thread exactly on the jumps longer than the trim length; for any path (open
 //! and closed subpaths, curves, crossings), rings and shapes apart, in every style from any start,
 //! every point is a point and every stitch lies on the art; toward an exit point, any path in any
-//! style from any start sews what it sews without one when the exit is none (or isn't a number),
-//! never lifts the needle or cuts the thread more and never ends farther from the exit, and sews
+//! style from any start sews what it sews with none when the exit isn't a number, never lifts the
+//! needle or cuts the thread more and never ends farther from the exit, and sews
 //! nothing new when the exit lies where it ends anyway; so does a fill with narrow parts.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
@@ -356,10 +356,12 @@ fn no_worse(plain: &[Stitch], aimed: &[Stitch], exit: Point) -> Result<(), Strin
 proptest! {
     #![proptest_config(ProptestConfig { cases: 64, failure_persistence: None, ..ProptestConfig::default() })]
 
-    /// With no exit, or one that isn't a number, a shape is sewn bit for bit as it is without one,
-    /// from any start: as the pinned exports say of today's documents.
+    /// An exit that isn't a number is no exit: a shape is sewn bit for bit as with none, from any
+    /// start, and the entry points `try_stitches_from` and `try_stitches_aimed` agree. (That no
+    /// exit sews what the planner sewed before exits were planned toward is `golden_no_exit.rs`'s
+    /// check, against hashes recorded with the planner as it was.)
     #[test]
-    fn no_exit_sews_what_it_sews_without_one(
+    fn an_exit_that_isnt_a_number_is_no_exit(
         path in arb_path_data(),
         (style, width) in arb_style(),
         start in arb_start(),

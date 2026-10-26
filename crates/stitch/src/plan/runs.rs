@@ -102,6 +102,14 @@ impl Moves {
     pub(super) fn within(&self, other: &Moves, slack: f64) -> bool {
         self.lifts <= other.lifts && self.trims <= other.trims && self.seen <= other.seen + slack + SAME_POINT
     }
+
+    /// These with the move in from `from` (where the needle is before the shape, if known) to
+    /// `first` (its first needle point) counted, as the sequence joins objects: a lift past
+    /// [`Params::jump`], a cut past [`Params::trim`].
+    pub(super) fn moved_in(self, from: Option<Point>, first: Option<Point>, p: &Params) -> Self {
+        let Some(d) = from.zip(first).map(|(a, b)| a.distance(b)).filter(|d| d.is_finite()) else { return self };
+        Self { lifts: self.lifts + usize::from(d > p.jump), trims: self.trims + usize::from(d > p.trim), ..self }
+    }
 }
 
 /// How much more travel over stitching already sewn a fill's rows aimed at an exit may show than

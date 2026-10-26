@@ -405,8 +405,8 @@ fn an_exit_out_of_reach_or_already_reached_changes_nothing() {
 /// A T 3 mm wide sewn as satin columns (its stem and its bar's two arms) round the square of tatami
 /// where they meet: an exit at the stem's foot or at the far arm's end ends it there, the part
 /// order and the last column's direction (a pass along its middle where its underlay would end it at
-/// the other end) chosen for it, with no more moves than without the exit. The part sewn first
-/// stays first, so an exit on it is out of reach.
+/// the other end) chosen for it, with no more moves than without the exit. An exit on the arm the
+/// needle lies beside is out of reach, never worse: the move to any other part first is cut.
 #[test]
 fn a_fill_with_narrow_parts_ends_at_its_exit() {
     use vectorcraft_geom::FillRule;
@@ -429,10 +429,12 @@ fn a_fill_with_narrow_parts_ends_at_its_exit() {
         assert!(miss <= reach, "exit {exit:?}: missed by {miss:.2} mm");
         assert!(jumps(&out) <= jumps(&plain), "exit {exit:?}");
     }
-    // On the arm sewn first (the needle beside it), which stays first: out of reach, never worse.
+    // On the arm the needle lies beside: the move to any other part is cut (past the 10 mm trim
+    // length), so the arm stays first and the exit out of reach, never worse.
     let exit = Point::new(0.0, 1.5);
     let out = sewn(Some((exit.x, exit.y)));
     assert!(last_point(&out).distance(exit) <= last_point(&plain).distance(exit) + 1e-9);
+    assert!(points_of(&out)[0].x < 10.0, "the arm beside the needle first: {:?}", points_of(&out)[0]);
 }
 
 /// A fill's rows aimed at an exit may travel over rows already sewn up to the miss the Check tab

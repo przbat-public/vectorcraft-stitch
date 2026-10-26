@@ -314,11 +314,16 @@ pub(crate) fn fill_with_columns(
     if !can_gain(from_exit(&plain)) {
         return plain.join(&fill);
     }
-    // Toward an exit: the parts ordered to end nearest it, the first kept first, the last aimed at it;
-    // kept only when no worse than the plain parts and nearer the exit.
-    let aimed_order = Order { contacts: &contacts, through: &through, exit: Some(exit), first: order.first().copied() }.best(here);
+    // Toward an exit: the parts ordered to end nearest it, the last aimed at it; the part a set entry
+    // starts kept first, any part first otherwise (a set entry beats a set exit, which beats where
+    // the needle happens to be: the project owner's choice, 2026-10-26). Kept only when no worse than
+    // the plain parts, the move in from the needle counted (a part far from it can come first now),
+    // and nearer the exit.
+    let first = entry.and(order.first().copied());
+    let aimed_order = Order { contacts: &contacts, through: &through, exit: Some(exit), first }.best(here);
     let aimed = sew_parts(&aimed_order, Some(exit));
-    let keep = if aimed.moves.within(&plain.moves, FILL_SEEN_SLACK) && gains(from_exit(&aimed), from_exit(&plain)) { aimed } else { plain };
+    let moves = |r: &Runs| r.moves.moved_in(aim.start.point(), r.first(), &fill);
+    let keep = if moves(&aimed).within(&moves(&plain), FILL_SEEN_SLACK) && gains(from_exit(&aimed), from_exit(&plain)) { aimed } else { plain };
     keep.join(&fill)
 }
 

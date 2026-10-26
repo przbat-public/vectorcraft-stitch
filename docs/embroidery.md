@@ -1081,9 +1081,11 @@ the object a person selects (`id`).
   turn round a row's end at the cut) and ends at least 1 mm nearer it (`POINT_MISS_MM`: a smaller
   gain buys extra stitches for a miss nobody is told of). A side the rows run along has no row ends: an exit there is
   reached at that side's nearer corner. A fill whose narrow parts are sewn as satin orders its
-  parts to end nearest the exit (the part it starts with kept first, so an exit on that part is out
-  of reach) and sews the last one toward it (a piece as a fill, a column as a stroke's column, a
-  ring of a column from its point nearest the exit), kept by the same rule. A running line or a
+  parts to end nearest the exit (the part a set entry starts kept first; with none, any part may
+  come first, a set exit beating where the needle happens to be) and sews the last one toward it (a
+  piece as a fill, a column as a stroke's column, a ring of a column from its point nearest the
+  exit), kept by the same rule with the move in from the needle counted: it may start farther away
+  only where it lifts and cuts no more often in all. A running line or a
   satin sewn toward its exit is kept the same way, by its stitches: when, counting the move in from
   where the needle starts (a lift past the jump length, a cut past the trim length), it lifts the
   needle and cuts the thread no more often, sews no connecting stitch more between its subpaths,

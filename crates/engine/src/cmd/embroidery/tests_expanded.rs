@@ -250,3 +250,18 @@ fn expanding_a_group_gives_its_objects_pieces_their_parts() {
     assert_eq!(e(&pieces[0]).part(PartKind::Fill).and_then(|f| f.angle), Some(10.0));
     assert!(pieces.iter().all(|p| !e(p).trim_after), "no cut between its pieces");
 }
+
+/// The walk splits an object's two strokes into a copy each, both on its path: the stroke's entry
+/// goes on the first copy and its exit on the last (they lie on one another), so the stroke is
+/// started at its entry and ended at its exit once. Mutation caught: `split_strokes` losing its
+/// `points_on_nearest`, which would plan each stroke from the entry toward the exit.
+#[test]
+fn an_expanded_objects_stroke_points_go_on_its_first_and_last_strokes() {
+    let mut s = blank();
+    let id = two_strokes(&mut s, 20.0);
+    run(&mut s, "embroidery.setEntryExit", json!({"id": id, "part": "stroke", "entry": [20, 20], "exit": [100, 80]}));
+    let plan = plan_of(&s, json!({}));
+    let asked: Vec<(bool, bool)> =
+        strokes(&plan, id).iter().filter_map(|(k, ..)| plan.units.get(*k)).map(|u| (u.asked.entry.is_some(), u.asked.exit.is_some())).collect();
+    assert_eq!(asked, vec![(true, false), (false, true)], "the first stroke from the entry, the last toward the exit");
+}

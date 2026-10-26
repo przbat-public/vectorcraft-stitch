@@ -451,6 +451,10 @@ fn a_part_sewn_as_several_units_takes_its_entry_on_the_first_and_its_exit_on_the
     let (first, last) = (index(units[0]), index(units[2]));
     assert!(off(ends(first).0, mm(entry)) < 0.3, "the first unit starts at the entry: {:?}", ends(first));
     assert!(off(ends(last).1, mm(exit)) < 1.0, "the last unit ends at the exit: {:?}", ends(last));
+    // Asked only there: the unit between follows the needle (a walk keeping the points on every
+    // unit would start and end each at them).
+    let asked: Vec<_> = units.iter().map(|u| (u.asked.entry.is_some(), u.asked.exit.is_some())).collect();
+    assert_eq!(asked, vec![(true, false), (false, false), (false, true)], "the unit between is free");
     run(&mut s, "effect.expandAppearance", json!({"ids": [a]}));
     let pieces: Vec<_> = members(&s, a).into_iter().map(|id| fill_points(&embroidery(&s, id))).collect();
     assert_eq!(pieces, vec![(Some(entry), None), (None, None), (None, Some(exit))], "expanded: the first the entry, the last the exit");
@@ -555,4 +559,56 @@ fn a_transform_effects_copies_keep_each_point_on_the_nearest_piece() {
     assert_eq!(points.iter().filter(|(_, p)| p.0 == Some(entry)).count(), 1, "{points:?}");
     assert_eq!(points.iter().filter(|(_, p)| p.1 == Some(exit)).count(), 1, "{points:?}");
     assert!(points.iter().all(|(x0, p)| *p == (None, None) || x0.is_some_and(|x| x < 100.0)), "only the original's piece: {points:?}");
+}
+
+/// A fill's entry and exit points, as `fill_points` gives them.
+type Points = (Option<[f64; 2]>, Option<[f64; 2]>);
+
+/// Pathfinder's Divide and Divide Objects Below keep each point on the piece nearest it: a square
+/// with both points divided by another over its right half (Divide's pieces of the square and of
+/// the overlap take their paint sources' settings), and cut by a rectangle above it (Divide
+/// Objects Below). Mutation caught: `cut_once` copying the points onto every piece.
+#[test]
+fn divide_and_divide_objects_below_keep_each_point_on_the_nearest_piece() {
+    let (entry, exit) = ([22.0, 22.0], [108.0, 108.0]);
+    let with_points_of = |s: &Session| -> Vec<Points> {
+        s.doc().unwrap().doc.layers[0]
+            .children()
+            .unwrap()
+            .iter()
+            .flat_map(|n| std::iter::once((**n).clone()).chain(n.children().into_iter().flatten().map(|c| (**c).clone())))
+            .map(|n| fill_points(n.extras().embroidery.as_deref().unwrap_or(&Embroidery::default())))
+            .filter(|p| *p != (None, None))
+            .collect()
+    };
+    for (command, cutter_on_top) in [("object.pathfinder.divide", false), ("object.path.divideObjectsBelow", true)] {
+        let mut s = blank();
+        let a = rect(&mut s, "#cc2222", 20.0, 20.0, 90.0, 90.0);
+        give(&mut s, a, &with_points(entry, exit));
+        let b = rect(&mut s, "#2233cc", 65.0, 0.0, 90.0, 130.0);
+        run(&mut s, "select.set", json!({"ids": if cutter_on_top { vec![b] } else { vec![a, b] }}));
+        run(&mut s, command, json!({}));
+        let held = with_points_of(&s);
+        assert_eq!(held.iter().filter(|p| p.0 == Some(entry)).count(), 1, "{command}: {held:?}");
+        assert_eq!(held.iter().filter(|p| p.1 == Some(exit)).count(), 1, "{command}: {held:?}");
+    }
+}
+
+/// An object's exit turns and mirrors with it, and the plan follows: a filled rectangle with its
+/// exit on its right side, turned a quarter and mirrored, ends at its exit where the turn and the
+/// mirror took it (within the Check tab's 1 mm).
+#[test]
+fn the_plan_follows_a_turned_and_mirrored_exit() {
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 80.0, 50.0);
+    run(&mut s, "embroidery.setEntryExit", json!({"id": a, "part": "fill", "exit": [100, 45]}));
+    for (command, params) in [("object.rotate", json!({"ids": [a], "angle": 90})), ("object.reflect", json!({"ids": [a], "axis": "vertical"}))] {
+        run(&mut s, command, params);
+        let exit = fill_points(&embroidery(&s, a)).1.expect("the exit moved with the object");
+        let unit = run(&mut s, "embroidery.sequence", json!({}))["blocks"][0]["units"][0].clone();
+        let asked = unit["asked"]["exit"].as_array().map(|q| [q[0].as_f64().unwrap(), q[1].as_f64().unwrap()]).unwrap();
+        let mm = |v: f64| v * 25.4 / 72.0;
+        assert!((asked[0] - mm(exit[0])).abs() < 0.01 && (asked[1] - mm(exit[1])).abs() < 0.01, "{command}: asked {asked:?} for {exit:?}");
+        assert!(unit["missedBy"]["exit"].as_f64().unwrap() <= POINT_MISS_MM, "{command}: {unit}");
+    }
 }

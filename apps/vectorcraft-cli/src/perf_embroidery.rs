@@ -75,7 +75,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 50] = [
+pub const ROWS: [&str; 51] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -126,6 +126,7 @@ pub const ROWS: [&str; 50] = [
     "points: entry moved, 1,000 paths",
     "nearest connection: 1,000 paths",
     "nearest connection: 22,000 paths",
+    "picking: a press on stitches, 22,000 paths",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
@@ -145,7 +146,7 @@ pub const ROWS: [&str; 50] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 50] = [
+const BUDGETS: [f64; 51] = [
     400.0,
     100.0,
     100.0,
@@ -196,6 +197,7 @@ const BUDGETS: [f64; 50] = [
     POINT_MOVED_BUDGET,
     NEAREST_BUDGETS[0],
     NEAREST_BUDGETS[1],
+    PICK_BUDGET,
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -362,6 +364,7 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.extend(points_moved(&doc)?);
     ms.push(nearest(&doc, RUNS)?);
     ms.push(nearest(&largest, 1)?);
+    ms.push(pick(&largest)?);
     // A row with nothing to measure (no corpus) is left out.
     Ok(ROWS.iter().zip(ms).zip(BUDGETS).filter(|((_, ms), _)| !ms.is_nan()).map(|((name, ms), budget)| (*name, ms, budget)).collect())
 }
@@ -523,6 +526,34 @@ fn points_moved(doc: &Document) -> Result<[f64; 2], String> {
         Ok(middle(samples))
     };
     Ok([moved("exit")?, moved("entry")?])
+}
+
+/// How many presses the picking row times across the design, and the tolerance each is given,
+/// document points (the selection tolerance's default, 3 px at 100 %).
+const PICKS: usize = 1000;
+const PICK_TOL_PT: f64 = 3.0;
+
+/// The budget of a press on the stitches, milliseconds: well under the art's 2 ms hit test, which a
+/// press with the selection tools makes (an estimate, to be set from what it measures).
+const PICK_BUDGET: f64 = 1.0;
+
+/// Milliseconds a press on the stitches takes to find the object on top (`StitchScene::pick`), on
+/// `doc`'s scene, the median of [`PICKS`] presses spread over the design in a grid.
+fn pick(doc: &Document) -> Result<f64, String> {
+    let mut s = fresh(doc);
+    let planned = s.embroidery_planner().map_err(err)?.planned(&vectorcraft_engine::EmbroideryOptions::default()).map_err(err)?;
+    let scene = planned.scene();
+    let Some(b) = scene.picture().bounds() else { return Err("embroidery: the picking document has no stitches".into()) };
+    let side = (PICKS as f64).sqrt().ceil() as usize;
+    let mut samples = Vec::with_capacity(PICKS);
+    for k in 0..PICKS {
+        let (i, j) = (k % side, k / side);
+        let at = vectorcraft_geom::Point::new(b.x0 + b.width() * (i as f64 + 0.5) / side as f64, b.y0 + b.height() * (j as f64 + 0.5) / side as f64);
+        let t = Instant::now();
+        std::hint::black_box(scene.pick(at, PICK_TOL_PT));
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    Ok(middle(samples))
 }
 
 /// Milliseconds Nearest Connection takes on `doc` once its plan is kept (planned once before, in a

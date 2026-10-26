@@ -334,6 +334,8 @@ fn a_press_elsewhere_selects() {
     assert_eq!(t.pointer(&c, &ev(PointerKind::Down, 550.0, 50.0)), vec![Action::Exec("select.set".into(), json!({"ids": []}))]);
     let f = Fake { under: Some(line), ..Fake::default() };
     let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    t.pointer(&c, &ev(PointerKind::Move, 550.0, 50.0));
+    assert_eq!(t.options()["hoverObject"], json!(line.0), "hovering its stitches");
     assert_eq!(
         t.pointer(&c, &ev(PointerKind::Down, 550.0, 50.0)),
         vec![Action::Exec("select.set".into(), json!({"ids": [line.0]}))],

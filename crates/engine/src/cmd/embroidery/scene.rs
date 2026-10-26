@@ -122,6 +122,14 @@ impl StitchScene {
         &self.blocks
     }
 
+    /// The object a person selects whose stitches lie on top under `at` (document points), within
+    /// `tol` (document points) past a thread's laid half width: the embroidery tool's press on the
+    /// stitches ([`LinePicture::hit`]). `None` where no stitch lies.
+    pub fn pick(&self, at: Point, tol: f64) -> Option<NodeId> {
+        let tag = self.picture.hit(at, tol)?;
+        self.units.get(usize::try_from(tag).ok()?).map(|u| u.object)
+    }
+
     /// Each unit, by tag (the plan's unit index).
     pub fn units(&self) -> &[SceneUnit] {
         &self.units

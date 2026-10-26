@@ -45,6 +45,9 @@ const STALE_ALPHA: f32 = 0.45;
 pub const LEADER_MIN_PT: f32 = 8.0;
 /// The dot where the stitches start, at the leader's end: its radius, points.
 const PLANNED_DOT_PT: f32 = 2.5;
+/// The outline of the object a press would select, points wide (the selection tools' hover outline).
+const HOVER_OUTLINE_PT: f32 = 1.5;
+
 /// The ghost's dashes and the gaps between them, points.
 const GHOST_DASH: f32 = 5.0;
 const GHOST_GAP: f32 = 3.0;
@@ -125,6 +128,15 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
             && a["id"].as_u64() == Some(h.id.owner.part().0.0)
             && a["part"].as_str() == Some(h.id.owner.part().1.id())
     };
+    // The object a press would select: outlined in its layer's colour.
+    if let Some(object) = options["hoverObject"].as_u64().map(vectorcraft_doc::NodeId).filter(|_| !options["drag"].is_object())
+        && let Some(outline) = outline_of(&st.doc, object)
+    {
+        let [r, g, b] = st.doc.layer_color(object);
+        for line in crate::canvas::to_screen_path(&outline, xf) {
+            painter.add(Shape::line(line, Stroke::new(HOVER_OUTLINE_PT, Color32::from_rgb(r, g, b))));
+        }
+    }
     let drag = &options["drag"];
     let dragged_at = drag["at"].as_array().and_then(|a| Some(vectorcraft_geom::Point::new(a.first()?.as_f64()?, a.get(1)?.as_f64()?)));
     let objects = handles.iter().map(|h| h.id.owner.part().0).collect::<std::collections::BTreeSet<_>>().len();
@@ -190,6 +202,24 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
             label(painter, at + offset * scale, align, words, color);
         }
     }
+}
+
+/// `object`'s outline, document points: a path's, or a compound path's members'.
+fn outline_of(doc: &vectorcraft_doc::Document, object: vectorcraft_doc::NodeId) -> Option<vectorcraft_geom::BezPath> {
+    let n = doc.node(object)?;
+    let mut path = vectorcraft_geom::BezPath::new();
+    match &n.kind {
+        vectorcraft_doc::NodeKind::Path { path: p, .. } => path.extend(p.to_bezpath()),
+        vectorcraft_doc::NodeKind::Compound { children, .. } => {
+            for c in children {
+                if let Some(p) = c.path_data() {
+                    path.extend(p.to_bezpath());
+                }
+            }
+        }
+        _ => return None,
+    }
+    Some(path)
 }
 
 fn dark() -> Color32 {

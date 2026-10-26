@@ -25,6 +25,9 @@ pub(crate) struct ToolFacts {
     snapshot: Arc<Document>,
     ends: HashMap<(NodeId, PartKind), Sewn>,
     trim: f64,
+    /// The plan, for its stitch scene: built when a press first asks what lies under it (in the
+    /// app the planning thread has built it already).
+    planned: Planned,
 }
 
 /// Where one object's part is sewn, and its neighbours along the thread.
@@ -80,7 +83,7 @@ impl ToolFacts {
         }
         let doc_layer = super::resolve::DocLayer::of(&snapshot);
         let trim = mm_to_pt(super::resolve::DesignSettings::new(&super::Options::default(), &doc_layer).0.connect.trim);
-        Self { generation: planned.generation, snapshot, ends, trim }
+        Self { generation: planned.generation, snapshot, ends, trim, planned: planned.clone() }
     }
 }
 
@@ -119,6 +122,10 @@ impl PlanFacts for FactsNow<'_> {
         };
         let trim = self.facts.trim.is_finite().then_some(self.facts.trim);
         Some(PlannedEnds { first: sewn.first, last: sewn.last, current, before: sewn.before, after: sewn.after, trim })
+    }
+
+    fn object_at(&self, at: Point, tol: f64) -> Option<NodeId> {
+        self.facts.planned.scene().pick(at, tol)
     }
 }
 
@@ -211,6 +218,29 @@ mod tests {
         assert_eq!((ea.before, ea.after, eb.before), (None, Some(eb.first), Some(ea.last)));
         assert_eq!((eb.after, ec.before), (None, None), "a colour change between");
         assert!((ea.trim.unwrap() - 10.0 * PT_PER_MM).abs() < 1e-9, "the default 10 mm: {:?}", ea.trim);
+    }
+
+    /// A press on the stitches picks the object sewn on top there: of two overlapping squares, the
+    /// later where they overlap, the earlier beside it, none off the stitches.
+    #[test]
+    fn a_press_on_the_stitches_picks_the_object_on_top() {
+        let mut s = blank();
+        run(&mut s, "paint.setStroke", json!({"none": true}));
+        run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+        let a = run(&mut s, "shape.rectangle", json!({"x": 20, "y": 20, "width": 80, "height": 80}))["id"].as_u64().unwrap();
+        run(&mut s, "select.set", json!({"ids": []}));
+        run(&mut s, "paint.setFill", json!({"color": "#2233cc"}));
+        let b = run(&mut s, "shape.rectangle", json!({"x": 60, "y": 60, "width": 80, "height": 80}))["id"].as_u64().unwrap();
+        run(&mut s, "embroidery.sequence", json!({}));
+        let uid = s.doc().unwrap().uid;
+        let facts = s.embroidery_plans.tool_facts(uid, &super::super::Options::default()).unwrap();
+        let doc = s.doc().unwrap().doc.clone();
+        let now = FactsNow { facts: &facts, doc: &doc };
+        // Rows lie 0.38 mm apart: a point's tolerance is wider than the gaps between them.
+        let tol = 1.0;
+        assert_eq!(now.object_at(Point::new(80.0, 80.0), tol), Some(NodeId(b)), "where they overlap");
+        assert_eq!(now.object_at(Point::new(35.0, 35.0), tol), Some(NodeId(a)));
+        assert_eq!(now.object_at(Point::new(200.0, 200.0), tol), None);
     }
 
     /// No plan remembered, no answers: nothing plans to answer.

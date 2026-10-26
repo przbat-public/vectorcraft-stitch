@@ -65,6 +65,8 @@ pub struct EmbroideryTool {
     part: Option<PartKind>,
     /// The handle under the pointer.
     hover: Option<HandleId>,
+    /// Away from every handle, the object a press would select (the canvas outlines it).
+    hover_object: Option<vectorcraft_doc::NodeId>,
     /// The handle keys act on: the one last pressed or stepped to.
     focus: Option<HandleId>,
     grab: Option<Grab>,
@@ -100,14 +102,20 @@ impl EmbroideryTool {
         self.now(cx).into_iter().find(|h| h.id == id)
     }
 
-    /// A press away from every handle: the object under the pointer selected (the single object,
-    /// even inside a group; by its stitches where the plan answers for them), added or taken away
-    /// with Shift; nothing under it, the selection emptied (unless Shift is held).
+    /// The object a press at `p` would select: the single object under it, even inside a group, by
+    /// its stitches where the plan answers for them, else by its art; only one that takes settings.
+    fn under(cx: &ToolContext, p: Point) -> Option<vectorcraft_doc::NodeId> {
+        let by_stitch = cx.embroidery.and_then(|f| f.object_at(p, cx.pick_tol()));
+        let by_art = || hit_test(cx.doc, p, cx.hit_options()).map(|h| compound_of(cx.doc, h.leaf));
+        by_stitch.or_else(by_art).filter(|id| takers(cx.doc, &[*id]).0 == [*id])
+    }
+
+    /// A press away from every handle: the object under the pointer selected ([`Self::under`]),
+    /// added or taken away with Shift; nothing under it, the selection emptied (unless Shift is
+    /// held).
     fn select_at(&mut self, cx: &ToolContext, ev: &PointerEvent) -> Vec<Action> {
         self.focus = None;
-        let by_stitch = cx.embroidery.and_then(|f| f.object_at(ev.pos, cx.pick_tol()));
-        let by_art = || hit_test(cx.doc, ev.pos, cx.hit_options()).map(|h| compound_of(cx.doc, h.leaf));
-        let under = by_stitch.or_else(by_art).filter(|id| takers(cx.doc, &[*id]).0 == [*id]);
+        let under = Self::under(cx, ev.pos);
         match (under, ev.mods.shift) {
             (Some(id), false) => vec![Action::Exec("select.set".into(), json!({"ids": [id.0]}))],
             (Some(id), true) => vec![Action::Exec("select.toggle".into(), json!({"ids": [id.0]}))],
@@ -132,6 +140,7 @@ impl Tool for EmbroideryTool {
         match ev.kind {
             PointerKind::Move => {
                 self.hover = hit(cx, &self.now(cx), ev.pos).map(|h| h.id);
+                self.hover_object = if self.hover.is_some() { None } else { Self::under(cx, ev.pos) };
                 vec![]
             }
             PointerKind::Down => {
@@ -227,7 +236,8 @@ impl Tool for EmbroideryTool {
             v
         });
         let id = |h: Option<HandleId>| h.map_or(Value::Null, HandleId::json);
-        json!({"part": part, "hover": id(self.hover), "focus": id(self.focus), "drag": drag})
+        let hover_object = self.hover_object.map_or(Value::Null, |o| json!(o.0));
+        json!({"part": part, "hover": id(self.hover), "hoverObject": hover_object, "focus": id(self.focus), "drag": drag})
     }
 
     fn set_option(&mut self, key: &str, value: &Value) {
@@ -251,10 +261,12 @@ impl Tool for EmbroideryTool {
 
     fn hover_ended(&mut self, _cx: &ToolContext) {
         self.hover = None;
+        self.hover_object = None;
     }
 
     fn deactivate(&mut self, _cx: &ToolContext) -> Vec<Action> {
         self.hover = None;
+        self.hover_object = None;
         self.focus = None;
         match self.grab.take() {
             Some(Grab { begun: true, previewed: Some(_), .. }) => vec![Action::Commit],

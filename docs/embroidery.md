@@ -1062,8 +1062,10 @@ the object a person selects (`id`).
   it (said in the plan's warnings when a running or satin stitch is).
 - An entry point starts its part exactly there only where the stitches can start anywhere: on a
   fill's outline, half a row spacing inside it (where the edge run runs), and anywhere on a closed
-  running line or satin ring. An open line or satin column, a fill's narrow parts sewn as satin
-  among them, can start only at an end: its nearer one.
+  running line or satin ring. An open line or satin column can start only at an end: its nearer
+  one. A fill's narrow part sewn as satin starts there too, but the needle goes in at the entry
+  and travels inside to that end, hidden under the column's stitches still to come, so it goes in
+  where the point is set.
 - An exit point ends a running line as near it as its stitches can reach, never sewn back over an
   open line: an open line whose start is free (no entry set) ends at its end nearest the exit; one
   entered at a set point ends at its other end, however far that is from the exit; a closed line

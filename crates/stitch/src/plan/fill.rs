@@ -246,7 +246,8 @@ pub(crate) fn fill_with_columns(
 ) -> Vec<Stitch> {
     let fill = Params { style: Style::Fill, ..*fill }.sane();
     let satin = Params { style: Style::Satin, ..*satin }.sane();
-    // An entry point starts the first part, when it is a piece of the rest.
+    // An entry point starts the first part: a piece of the rest there, a column from its nearer end
+    // after a travel from there.
     let entry = entered(aim.start);
     let subs = closed_subpaths(shape);
     let outlines = outlines(&subs);
@@ -300,6 +301,14 @@ pub(crate) fn fill_with_columns(
                     let seen = |route: &[Point]| areas.iter().zip(&sewn).filter(|(_, s)| **s).map(|(a, _)| inside(*a, route)).sum::<f64>();
                     let mut reach = |runs: &mut Runs, to: Point, to_inside: Point| runs.approach(&mut travels, to, to_inside, MAX_SEEN, &seen, &fill);
                     if let Some(column) = columns.get(i) {
+                        // An entry point by a column sewn first: the needle goes in there and travels
+                        // inside to the column's nearer end, hidden under its stitches still to come,
+                        // so that it goes in where the point is set (a column starts only at an end).
+                        if step == 0
+                            && let Some(e) = entry
+                        {
+                            runs.lead_from(e, nearest_on(&column.middles(), column.closed, e).map(|(_, q, _)| q));
+                        }
                         sew_column(column, &satin, &mut runs, &mut reach, last);
                     }
                 }

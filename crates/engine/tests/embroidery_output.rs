@@ -172,14 +172,14 @@ cf022f2b570ef05b9940d64c49219c013c7ee80b5ac0dc33e8b3d84453edd5ad  mixed-shrunk.p
 027cea918ef3dc5b2c52850e8091be257377c075041287de86bed6ebc3b0c629  mixed-shrunk.pec
 e488e732b9fb9f7d1a68872d0bc3d79de3165f50df07bae429220b2761ff57a5  mixed-shrunk.jef
 e8fc1c3736b9371fad3f6b129d07262de075693622014418ac0c7f241480aadb  mixed-shrunk.vp3
-1bd3f25d1e4995051d83082c78bbe69dc4ca8bb93159d22c54cc36ad0d74f9bf  settings.dst
-842c150e4a58e3e06ffaa0cbd5b20ec2f032385f2ca37f809f7fae47b41afe05  settings.tap
-842c150e4a58e3e06ffaa0cbd5b20ec2f032385f2ca37f809f7fae47b41afe05  settings.t01
-85e15123d1acb1b91f0dbd1b48ce514be6067ae766d234e93c2b43395e4d9760  settings.exp
-c1ab511ae50963b1a1abaf4e9f03f405717857ddb5e326a890728b2fc690b34d  settings.pes
-ff3aa3f3751f08eb098e6d461d1d42c4bbcb92df9f373518cd3da3b150ffc101  settings.pec
-a836bbba2d6eadb3676ec3d2fb309cee4891a4eeaac42c928727081fac6fcd98  settings.jef
-078164ecefc70687e15b3a9c7b2030d58e30cc01232a0eb55501ca1617cf5763  settings.vp3
+9db9c9c152b572bf397e8ec7bf1576f713cebdf60d4cd2283d4708c2ecff4b4b  settings.dst
+4993252c176089215ee27210b261bc504e45b5eea2d3ea5e27bac0e4f972c736  settings.tap
+4993252c176089215ee27210b261bc504e45b5eea2d3ea5e27bac0e4f972c736  settings.t01
+df798e90614e4d247039ce5967e2f2384130e53933122b62f6c0363ba87aee56  settings.exp
+e024a1a1d642bb6cb10d9b55645c08205d29c8a6f42e9b41b3fddd89aaac4fde  settings.pes
+361aae69b0dba6f3eb86321afc565cb33d4ad9628cab47c6e6e9be0bec6b984d  settings.pec
+3e8a4a3f88d237eda6f371d07a9789f98400395b122cb36964b6e42369cd6c49  settings.jef
+b8022f384e48a7ece91e836e7b061f0576fe816d1126ba16e7b3619a4f94d07c  settings.vp3
 ce07fad613e2a3f8a806222450cedb691a99bec2030173039622466e2343865a  expanded-strokes.dst
 6008454538b60b1c84e490a9ecb09fc5ad85332492f253e05481caf83316f9f5  expanded-strokes.tap
 6008454538b60b1c84e490a9ecb09fc5ad85332492f253e05481caf83316f9f5  expanded-strokes.t01
@@ -335,9 +335,9 @@ e382d7a5b85d40faba1c384b99e425a36268ae2a3d817afa17e5a8bdfb161ac3  mixed-every-op
 647016fa5f050c66e1e2adc4792c1f19c14746f651a2f8f9bf63d997d3cac4d5  mixed-shrunk.pes  5 37 21 7 52 24
 0116275ca20098bbbd7e80e1bbee1bf294f561da86726d9165049395a593c910  mixed-shrunk.pec  5 37 21 7 52 24
 8f233e1387f36b54c8ea167469c09a366cd6696b1db24e49d2594257f074f215  mixed-shrunk.jef  33 45 59 59 71 14
-794b9ad6b0c586fe344d847592096ccb8bebea9c2fbbdec92892f9f81f16c181  settings.pes  5 37 21 7 24
-bb3c475f633cc6a78e9bdf88b9e60fca15a7f9a11c70130774135de754ee70ee  settings.pec  5 37 21 7 24
-d73ebca1b85143a097880fd35c8652ab6f52d4f0f88cc20d759971133fb63473  settings.jef  33 45 59 59 14
+e15fbf33613337a75f68fa1eeb54c8193b08a4fef0ce5bb44a5103c2bfc80363  settings.pes  5 37 21 7 24
+f9d076f966da6c047c90c544ccfd4d86f3ccee1795f03d8de522e50fdbe21263  settings.pec  5 37 21 7 24
+9cd0b7e6d155312133f35f61ed5ff678676100821ae8214db88d12cbac822148  settings.jef  33 45 59 59 14
 79a8a67e308ae3a0cc950bd2cb90fd669a548de59bc4c9517262d9b87bf5c30e  expanded-strokes.pes  5 21 37 7 52
 f7f6a5bd7553ed5bd2d6421442ff0f098edccb715de3b043152c304d7d54c51a  expanded-strokes.pec  5 21 37 7 52
 e62c4e62b875154f17c8a099ba501137c311288778b627dff3e0c152c9274489  expanded-strokes.jef  33 59 45 59 71
@@ -498,14 +498,14 @@ mixed-shrunk.pes  blocks 6  needle 375/298/368/37/518/390  jumps 1/1/1/1/1/1  tr
 mixed-shrunk.pec  blocks 6  needle 375/298/368/37/518/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.46  shortest 0.41  cells 1357
 mixed-shrunk.jef  blocks 6  needle 375/298/368/37/518/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.40  cells 1358
 mixed-shrunk.vp3  blocks 6  needle 375/298/368/37/518/390  jumps 1/1/1/1/1/1  trims 0/0/0/0/0/0  size 85.6x78.0  longest 4.38  shortest 0.40  cells 1358
-settings.dst  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1274
-settings.tap  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1274
-settings.t01  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1274
-settings.exp  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1274
-settings.pes  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1305
-settings.pec  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1305
-settings.jef  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.0x79.1  longest 3.83  shortest 0.40  cells 1280
-settings.vp3  blocks 5  needle 490/351/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.0x79.1  longest 3.83  shortest 0.40  cells 1280
+settings.dst  blocks 5  needle 490/361/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1295
+settings.tap  blocks 5  needle 490/361/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1295
+settings.t01  blocks 5  needle 490/361/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1295
+settings.exp  blocks 5  needle 490/361/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1295
+settings.pes  blocks 5  needle 490/361/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1326
+settings.pec  blocks 5  needle 490/361/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.1x79.1  longest 3.83  shortest 0.41  cells 1326
+settings.jef  blocks 5  needle 490/361/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.0x79.1  longest 3.83  shortest 0.40  cells 1302
+settings.vp3  blocks 5  needle 490/361/431/438/467  jumps 1/1/1/1/1  trims 0/0/0/0/0  size 86.0x79.1  longest 3.83  shortest 0.40  cells 1302
 expanded-strokes.dst  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.60  shortest 0.41  cells 1633
 expanded-strokes.tap  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.60  shortest 0.41  cells 1633
 expanded-strokes.t01  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.60  shortest 0.41  cells 1633

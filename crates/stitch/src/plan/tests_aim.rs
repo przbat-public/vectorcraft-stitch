@@ -437,6 +437,27 @@ fn a_fill_with_narrow_parts_ends_at_its_exit() {
     assert!(points_of(&out)[0].x < 10.0, "the arm beside the needle first: {:?}", points_of(&out)[0]);
 }
 
+/// An entry set by a fill's narrow part, sewn as a satin column, is where the needle goes in: it
+/// travels from there inside to the column's nearer end, hidden under the column's stitches still
+/// to come (a column starts only at an end), rather than going in at that end. The T's left arm,
+/// entered on its lower side 8 mm from its tip.
+#[test]
+fn an_entry_by_a_narrow_part_is_where_the_needle_goes_in() {
+    use vectorcraft_geom::FillRule;
+    /// The widest part sewn as satin, millimetres: the default `narrowAsSatin`.
+    const NARROW: f64 = 7.0;
+    let t = polygon(&[(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 3.0), (16.5, 23.0), (13.5, 23.0), (13.5, 3.0), (0.0, 3.0)]);
+    let found = narrow_columns(&t, FillRule::NonZero, NARROW);
+    let rest = polygon(&[(13.5, 0.0), (16.5, 0.0), (16.5, 3.0), (13.5, 3.0)]);
+    let (fill, satin) = (Params::for_style(Style::Fill), Params::for_style(Style::Satin));
+    let entry = Point::new(8.0, 0.0);
+    let out =
+        try_fill_with_columns_aimed(&t, FillRule::NonZero, &rest, &found, &fill, &satin, Aim { start: Start::Entry(entry), exit: None }).unwrap();
+    let first = points_of(&out)[0];
+    assert!(first.distance(entry) < 1e-9, "goes in at {first:?}");
+    assert!(jumps(&out) == 0, "travels on inside, with no jump");
+}
+
 /// A fill's rows aimed at an exit may travel over rows already sewn up to the miss the Check tab
 /// lets pass (1 mm), and no more (the project owner's choice, 2026-10-26): a 60 × 20 mm bar entered
 /// and aimed at the middle of its right side turns round a row's end there (0.50 mm over sewn rows)

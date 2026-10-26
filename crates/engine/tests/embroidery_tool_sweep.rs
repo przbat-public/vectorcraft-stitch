@@ -8,6 +8,9 @@
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+use std::sync::Once;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 use proptest::prelude::*;
 use serde_json::{Value, json};
 use vectorcraft_engine::{Session, ViewInfo};
@@ -15,6 +18,31 @@ use vectorcraft_testkit::embroidery as fx;
 use vectorcraft_testkit::invariants::check_session;
 use vectorcraft_tools::embroidery::Kind;
 use vectorcraft_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+
+/// The panics the engine caught since the sweep began. A tool's Preview that fails is only logged
+/// (the drag goes on), so a panic in the command it previews never reaches the caller: the sweep
+/// counts every panic through the panic hook, which still runs when the engine catches one.
+static CAUGHT: AtomicUsize = AtomicUsize::new(0);
+
+/// Count panics in [`CAUGHT`] from now on (once for the whole run), still printing each as before.
+fn count_panics() {
+    static HOOK: Once = Once::new();
+    HOOK.call_once(|| {
+        let printed = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |info| {
+            CAUGHT.fetch_add(1, Ordering::SeqCst);
+            printed(info);
+        }));
+    });
+}
+
+/// `r`, failing the case when it is a panic the engine caught (`EngineError::Internal`).
+fn no_panic<T>(r: vectorcraft_engine::Result<T>) -> Result<(), TestCaseError> {
+    match r {
+        Err(vectorcraft_engine::EngineError::Internal { cmd, msg }) => Err(TestCaseError::fail(format!("{cmd} panicked: {msg}"))),
+        _ => Ok(()),
+    }
+}
 
 /// One step of the sweep.
 #[derive(Clone, Debug)]
@@ -86,6 +114,8 @@ proptest! {
         picked in prop::collection::vec(any::<bool>(), 16),
         steps in prop::collection::vec(arb_step(), 1..40),
     ) {
+        count_panics();
+        let caught = CAUGHT.load(Ordering::SeqCst);
         let (mut s, p, ids) = fixture();
         let selected: Vec<u64> = ids.iter().zip(picked.iter().cycle()).filter(|(_, on)| **on).map(|(id, _)| *id).collect();
         s.execute("select.set", &json!({"ids": selected})).unwrap();
@@ -107,10 +137,10 @@ proptest! {
                         }
                         Spot::At(x, y) => (x, y),
                     };
-                    let _ = s.pointer(&PointerEvent::new(kind, x, y).with_mods(mods), view);
+                    no_panic(s.pointer(&PointerEvent::new(kind, x, y).with_mods(mods), view))?;
                 }
                 Step::Key(key, mods) => {
-                    let _ = s.tool_key(key, mods, view);
+                    no_panic(s.tool_key(key, mods, view))?;
                 }
                 Step::Part(part) => s.set_tool_option("part", &part.map_or(Value::Null, |p| json!(p))),
             }
@@ -119,8 +149,9 @@ proptest! {
                 prop_assert!(check_session(&s).is_ok(), "{:?} after {step:?}", check_session(&s));
             }
         }
-        let _ = s.pointer(&PointerEvent::new(PointerKind::Up, 0.0, 0.0), view);
-        let _ = s.tool_key(ToolKey::Escape, Mods::default(), view);
+        no_panic(s.pointer(&PointerEvent::new(PointerKind::Up, 0.0, 0.0), view))?;
+        no_panic(s.tool_key(ToolKey::Escape, Mods::default(), view))?;
+        prop_assert_eq!(CAUGHT.load(Ordering::SeqCst), caught, "a panic was caught (a Preview's, say) after {:?}", steps);
         prop_assert!(!s.in_interaction(), "a drag left open after {steps:?}");
         prop_assert!(check_session(&s).is_ok());
     }

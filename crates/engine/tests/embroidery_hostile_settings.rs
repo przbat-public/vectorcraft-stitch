@@ -175,7 +175,8 @@ proptest! {
     #![proptest_config(ProptestConfig { cases: 24, failure_persistence: None, ..ProptestConfig::default() })]
 
     /// Hostile settings never panic anything that plans, reads, edits, transforms or derives from
-    /// them, and the document still saves and reads back as it was.
+    /// them (a panic the engine catches fails the case), and the document still saves and reads
+    /// back as it was.
     #[test]
     fn hostile_settings_never_panic(
         on_objects in prop::collection::vec(object_settings(), 5),
@@ -195,17 +196,17 @@ proptest! {
         .unwrap();
         plan_is_finite(&mut s);
         let ask = json!({"ids": ids});
-        let _ = s.execute("embroidery.info", &json!({"ids": ids, "plan": true}));
-        let _ = s.execute("embroidery.settings", &json!({}));
-        let r = s.execute("embroidery.settings", &json!({})).unwrap();
-        let _ = s.execute("embroidery.setup", &json!({"settings": r["settings"]}));
-        let _ = s.execute("embroidery.copyFrom", &json!({"source": ids[0], "ids": ids}));
-        let _ = s.execute("embroidery.set", &json!({"ids": ids, "part": "fill", "angle": 30}));
-        let _ = s.execute("embroidery.applyFabric", &ask);
+        let _ = no_panic(s.execute("embroidery.info", &json!({"ids": ids, "plan": true})));
+        let _ = no_panic(s.execute("embroidery.settings", &json!({})));
+        let r = no_panic(s.execute("embroidery.settings", &json!({}))).unwrap();
+        let _ = no_panic(s.execute("embroidery.setup", &json!({"settings": r["settings"]})));
+        let _ = no_panic(s.execute("embroidery.copyFrom", &json!({"source": ids[0], "ids": ids})));
+        let _ = no_panic(s.execute("embroidery.set", &json!({"ids": ids, "part": "fill", "angle": 30})));
+        let _ = no_panic(s.execute("embroidery.applyFabric", &ask));
         // Transformed, by command and by a transform no command makes (the edit refuses one that
         // takes the art off the canvas, which is the right answer to it).
-        let _ = s.execute("object.rotate", &json!({"ids": ids, "angle": 33}));
-        let _ = s.execute("object.reflect", &json!({"ids": ids, "axis": "vertical"}));
+        let _ = no_panic(s.execute("object.rotate", &json!({"ids": ids, "angle": 33})));
+        let _ = no_panic(s.execute("object.reflect", &json!({"ids": ids, "axis": "vertical"})));
         let _ = s.edit("Transform", |d, _| {
             for id in &ids {
                 if let Some(n) = d.node_mut(NodeId(*id)) {
@@ -216,16 +217,16 @@ proptest! {
         });
         plan_is_finite(&mut s);
         // Objects made from others.
-        let _ = s.execute("object.compoundPath.release", &json!({"ids": [ids[1]]}));
-        let _ = s.execute("effect.expandAppearance", &json!({"ids": [ids[2]]}));
-        let _ = s.execute("object.path.outlineStroke", &json!({"ids": [ids[0]]}));
-        let _ = s.execute("select.set", &json!({"ids": [ids[3], ids[4]]}));
-        let _ = s.execute("object.pathfinder.divide", &json!({}));
-        let _ = s.execute("embroidery.reset", &ask);
+        let _ = no_panic(s.execute("object.compoundPath.release", &json!({"ids": [ids[1]]})));
+        let _ = no_panic(s.execute("effect.expandAppearance", &json!({"ids": [ids[2]]})));
+        let _ = no_panic(s.execute("object.path.outlineStroke", &json!({"ids": [ids[0]]})));
+        let _ = no_panic(s.execute("select.set", &json!({"ids": [ids[3], ids[4]]})));
+        let _ = no_panic(s.execute("object.pathfinder.divide", &json!({})));
+        let _ = no_panic(s.execute("embroidery.reset", &ask));
         plan_is_finite(&mut s);
         // Every embroidery command's junk on it.
         for (command, params) in embroidery_common::junk::structured() {
-            let _ = s.execute(command, &params);
+            let _ = no_panic(s.execute(command, &params));
         }
         let doc = Arc::clone(&s.doc().unwrap().doc);
         check_native_roundtrip(&doc).map_err(TestCaseError::fail)?;

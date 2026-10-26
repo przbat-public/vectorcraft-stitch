@@ -530,15 +530,67 @@ pub(crate) fn stitches(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch
     stitches_from(path, rule, p, None)
 }
 
-/// [`try_stitches_from`] without its checks: what the planners build. Unchecked, a shape far out
+/// [`try_stitches_from`] without its checks, for this crate's tests.
+#[cfg(test)]
+pub(crate) fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Vec<Stitch> {
+    stitches_aimed(path, rule, p, Aim::from_needle(from))
+}
+
+/// [`try_stitches_aimed`] without its checks: what the planners build. Unchecked, a shape far out
 /// of range or a tiny stitch length builds without bound, so only the checked entry points are
 /// public.
-pub(crate) fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Vec<Stitch> {
+pub(crate) fn stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> Vec<Stitch> {
     let p = p.sane();
+    let from = aim.start.point();
     match sewn_style(&p) {
         Style::Running => running::running_from(path, &p, from),
         Style::Satin => satin::satin_from(path, &p, from),
         Style::Fill => fill::fill_from(path, rule, &p, from),
+    }
+}
+
+/// Where a shape's stitches start from: the point its object asks it to start at (an entry point
+/// a person set), where the needle is when it starts (the end of the object sewn before it), or
+/// nowhere yet (the design's first). Each is a point in millimetres; a point that isn't finite is
+/// none.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Start {
+    /// The object's entry point: the shape starts there, as near as its stitches can start.
+    Entry(Point),
+    /// Where the needle is: the shape starts as near it as it can, which saves jumps and trims.
+    Needle(Point),
+    /// Nowhere yet: the shape starts where it is drawn to.
+    Nowhere,
+}
+
+impl Start {
+    /// Where the needle is, `None` when nowhere yet.
+    pub fn needle(at: Option<Point>) -> Self {
+        at.map_or(Self::Nowhere, Self::Needle)
+    }
+
+    /// Its point, whichever kind it is; `None` for nowhere.
+    pub fn point(self) -> Option<Point> {
+        match self {
+            Self::Entry(p) | Self::Needle(p) => Some(p),
+            Self::Nowhere => None,
+        }
+    }
+}
+
+/// Where a shape is sewn from and toward: its [`Start`], and the point its object asks it to end
+/// at (an exit point a person set), `None` when it asks for none.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Aim {
+    pub start: Start,
+    pub exit: Option<Point>,
+}
+
+impl Aim {
+    /// From where the needle is (`None`: nowhere yet), toward nothing: what [`try_stitches_from`]
+    /// sews with.
+    pub fn from_needle(at: Option<Point>) -> Self {
+        Self { start: Start::needle(at), exit: None }
     }
 }
 
@@ -568,10 +620,15 @@ pub fn try_stitches(path: &BezPath, rule: FillRule, p: &Params) -> crate::Result
 /// ended): the shape starts as near it as it can, which saves jumps and trims. `None`: the shape
 /// starts where it is drawn to.
 pub fn try_stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> crate::Result<Vec<Stitch>> {
+    try_stitches_aimed(path, rule, p, Aim::from_needle(from))
+}
+
+/// [`try_stitches`], sewn from and toward what `aim` says ([`Aim`]).
+pub fn try_stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> crate::Result<Vec<Stitch>> {
     let p = p.sane();
     placed(path)?;
     within_limit(estimate(&subpaths(path), &p))?;
-    Ok(stitches_from(path, rule, &p, from))
+    Ok(stitches_aimed(path, rule, &p, aim))
 }
 
 /// A filled shape sewn in parts: `rest`, the shape without its narrow `columns` (cut out by the
@@ -590,6 +647,19 @@ pub fn try_fill_with_columns(
     satin: &Params,
     from: Option<Point>,
 ) -> crate::Result<Vec<Stitch>> {
+    try_fill_with_columns_aimed(shape, rule, rest, columns, fill, satin, Aim::from_needle(from))
+}
+
+/// [`try_fill_with_columns`], sewn from and toward what `aim` says ([`Aim`]).
+pub fn try_fill_with_columns_aimed(
+    shape: &BezPath,
+    rule: FillRule,
+    rest: &BezPath,
+    columns: &[Column],
+    fill: &Params,
+    satin: &Params,
+    aim: Aim,
+) -> crate::Result<Vec<Stitch>> {
     /// More than a column's points per millimetre of its middle beyond its crossings: its
     /// underlay's (up to three runs at [`UNDERLAY_STITCH`]) and its splits.
     const UNDERLAYS: f64 = 3.0;
@@ -605,7 +675,7 @@ pub fn try_fill_with_columns(
         (crossings + 1.0) * split + c.length() * (UNDERLAYS / UNDERLAY_STITCH + split / satin::ZIGZAG_UNDERLAY_SPACING)
     };
     within_limit(estimate(&subpaths(shape), &f) + columns.iter().map(column).sum::<f64>())?;
-    Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, from))
+    Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, aim.start.point()))
 }
 
 /// Refused with [`Error::TooLarge`] when `path` lies beyond [`MAX_COORD_MM`] or has a coordinate

@@ -9,7 +9,7 @@ use vectorcraft_doc::cancel;
 use vectorcraft_geom::kurbo::ParamCurveExtrema;
 use vectorcraft_geom::{BezPath, FillRule, PathData, PathSeg, Point, Rect, Shape};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke, unite_all};
-use vectorcraft_stitch::plan::{self, Params};
+use vectorcraft_stitch::plan::{self, Aim, Params, Start};
 use vectorcraft_stitch::{Command, Stitch};
 
 /// The miter limit given for a band grown along an outline (a fill's `expand`, a narrow column's
@@ -69,9 +69,12 @@ pub(crate) struct UnitRequest<'a> {
     /// A fill whose narrow parts may be sewn as satin columns: the parameters those columns are
     /// sewn with. `None` for everything else (strokes, and fills the `stitch` option forces to tatami).
     pub(crate) columns: Option<Params>,
-    /// Where the needle is when the unit starts (`None`: nowhere yet, the design's first unit), so
-    /// that it starts as near there as it can.
-    pub(crate) from: Option<Point>,
+    /// Where the unit starts from: its part's entry point when the object sets one, else where the
+    /// needle is when it starts (the end of the unit sewn before), else nowhere yet (the design's
+    /// first unit).
+    pub(crate) start: Start,
+    /// Where the unit should end: its part's exit point, when the object sets one.
+    pub(crate) exit: Option<Point>,
     /// For a stroke inside clip groups: the region they leave visible (millimetres), to which its
     /// stitches are cut. `None` for fills, whose shape is cut before it is planned.
     pub(crate) clip: Option<&'a (BezPath, FillRule)>,
@@ -92,7 +95,8 @@ pub(crate) struct UnitStitches {
 /// them; an error when the shape would need too many stitches, or when the plan is cancelled
 /// while its narrow parts are looked for or cut out.
 pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError> {
-    let UnitRequest { shape, rule, params, columns, from, clip } = *req;
+    let UnitRequest { shape, rule, params, columns, start, exit, clip } = *req;
+    let aim = Aim { start, exit };
     let found = match columns {
         Some(_) => plan::narrow_columns_until(shape, rule, params.narrow, &cancel::is_cancelled).ok_or(PlanError::Cancelled)?,
         None => Vec::new(),
@@ -103,10 +107,10 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError
         None => Some([w, w]),
     });
     let (planned, columns) = match columns.filter(|_| !found.is_empty()) {
-        None => (plan::try_stitches_from(shape, rule, &params, from), None),
+        None => (plan::try_stitches_aimed(shape, rule, &params, aim), None),
         Some(satin) => {
             let (rest, whole) = rest_of(shape, rule, &found)?;
-            (plan::try_fill_with_columns(&whole, FillRule::NonZero, &rest, &found, &params, &satin, from), Some(satin))
+            (plan::try_fill_with_columns_aimed(&whole, FillRule::NonZero, &rest, &found, &params, &satin, aim), Some(satin))
         }
     };
     let mut stitches = planned?;

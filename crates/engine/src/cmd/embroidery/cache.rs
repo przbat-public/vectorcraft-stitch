@@ -7,7 +7,9 @@
 //! A unit's stitches depend on where the needle comes from (each object starts near where the one
 //! before it ended), so that is part of the key, to the bit: an edit that moves where an object
 //! ends plans again the object after it in its block, and the change runs on only as far as the
-//! ends move. Nothing is rounded, so a kept unit is always the unit a fresh plan would make.
+//! ends move. So are whether the start is an entry point the object sets (met as exactly as the
+//! stitches can) or only where the needle is, and the exit point it sets. Nothing is rounded, so a
+//! kept unit is always the unit a fresh plan would make.
 //!
 //! The memory is bounded ([`MAX_CACHED_STITCHES`], [`MAX_KEPT_SHAPE_WORDS`]): past it, what was
 //! used least recently is dropped first, but never something the plan under way used for something
@@ -20,7 +22,7 @@ use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use vectorcraft_geom::{BezPath, FillRule, PathEl, Point};
-use vectorcraft_stitch::plan::{Params, Style, Underlay};
+use vectorcraft_stitch::plan::{Params, Start, Style, Underlay};
 
 use super::unit::{UnitRequest, UnitStitches};
 
@@ -94,7 +96,7 @@ impl UnitKey {
     /// A clipping path that cuts its stitches is the shared part (`clip`, its words as
     /// [`clip_words`] gives them; worked out here when not given).
     pub(crate) fn of(req: &UnitRequest<'_>, clip: Option<&Arc<Shared>>) -> Self {
-        let UnitRequest { shape, rule, params, columns, from, clip: region } = *req;
+        let UnitRequest { shape, rule, params, columns, start, exit, clip: region } = *req;
         let mut k: Vec<u64> = Vec::new();
         path(&mut k, shape);
         k.push(rule_word(rule));
@@ -106,7 +108,19 @@ impl UnitKey {
                 params_words(&mut k, &p);
             }
         }
-        match from {
+        // Where it starts from, the kind and the point, and where it should end.
+        match start {
+            Start::Nowhere => k.push(0),
+            Start::Needle(p) => {
+                k.push(1);
+                point(&mut k, p);
+            }
+            Start::Entry(p) => {
+                k.push(2);
+                point(&mut k, p);
+            }
+        }
+        match exit {
             None => k.push(0),
             Some(p) => {
                 k.push(1);

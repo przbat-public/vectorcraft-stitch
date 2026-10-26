@@ -60,8 +60,8 @@ enum Edit {
     Reorder(usize, usize, bool),
     /// An object's part given the settings at an index of [`SETTING_EDITS`].
     Setting(usize, usize),
-    /// An object's fill entered at a point.
-    Entry(usize, f64, f64),
+    /// An object's fill (or, `true`, its stroke) given an entry point (or, `true`, an exit point).
+    Point(usize, bool, bool, f64, f64),
     /// The document given the settings at an index of [`DOCUMENT_EDITS`].
     DocumentSetting(usize),
 }
@@ -117,7 +117,7 @@ fn edit() -> impl Strategy<Value = Edit> {
         1 => Just(Edit::Open),
         2 => (0usize..16, 0usize..16, any::<bool>()).prop_map(|(a, b, above)| Edit::Reorder(a, b, above)),
         2 => (0usize..16, 0..SETTING_EDITS.len()).prop_map(|(i, k)| Edit::Setting(i, k)),
-        1 => (0usize..16, 0.0..220.0f64, 0.0..220.0f64).prop_map(|(i, x, y)| Edit::Entry(i, x, y)),
+        2 => (0usize..16, any::<bool>(), any::<bool>(), 0.0..220.0f64, 0.0..220.0f64).prop_map(|(i, stroke, exit, x, y)| Edit::Point(i, stroke, exit, x, y)),
         1 => (0..DOCUMENT_EDITS.len()).prop_map(Edit::DocumentSetting),
     ]
 }
@@ -267,9 +267,10 @@ fn apply(s: &mut Session, ids: &mut Vec<u64>, opts: &mut Options, e: &Edit) {
                 let _ = s.execute("embroidery.set", &params);
             }
         }
-        Edit::Entry(i, x, y) => {
+        Edit::Point(i, stroke, exit, x, y) => {
             if let Some(id) = pick(i) {
-                let _ = s.execute("embroidery.setEntryExit", &json!({"id": id, "part": "fill", "entry": [x, y]}));
+                let (part, key) = (if stroke { "stroke" } else { "fill" }, if exit { "exit" } else { "entry" });
+                let _ = s.execute("embroidery.setEntryExit", &json!({"id": id, "part": part, key: [x, y]}));
             }
         }
         Edit::DocumentSetting(k) => {
@@ -315,11 +316,12 @@ proptest! {
 }
 
 /// A key holds every value a unit's stitches depend on: changing any one of them, the needle's
-/// start point by the smallest step a float takes, changes the key.
+/// start point or the exit by the smallest step a float takes, or the start's kind (an entry point
+/// set, or only where the needle is), changes the key.
 #[test]
 fn a_key_changes_with_every_value_a_unit_depends_on() {
     use vectorcraft_geom::{BezPath, FillRule, Point, Rect, Shape};
-    use vectorcraft_stitch::plan::{Params, Style, Underlay};
+    use vectorcraft_stitch::plan::{Params, Start, Style, Underlay};
     let shape = Rect::new(0.0, 0.0, 20.0, 10.0).to_path(0.1);
     let clip = (Rect::new(0.0, 0.0, 15.0, 15.0).to_path(0.1), FillRule::NonZero);
     let base = UnitRequest {
@@ -327,7 +329,8 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
         rule: FillRule::NonZero,
         params: Params::for_style(Style::Fill),
         columns: Some(Params::for_style(Style::Satin)),
-        from: Some(Point::new(3.0, 4.0)),
+        start: Start::Needle(Point::new(3.0, 4.0)),
+        exit: Some(Point::new(7.0, 8.0)),
         clip: Some(&clip),
     };
     let key = UnitKey::of(&base, None);
@@ -343,9 +346,13 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
         UnitRequest { shape: &moved, ..base },
         UnitRequest { rule: FillRule::EvenOdd, ..base },
         UnitRequest { columns: None, ..base },
-        UnitRequest { from: None, ..base },
-        UnitRequest { from: Some(Point::new(next(3.0), 4.0)), ..base },
-        UnitRequest { from: Some(Point::new(3.0, next(4.0))), ..base },
+        UnitRequest { start: Start::Nowhere, ..base },
+        UnitRequest { start: Start::Needle(Point::new(next(3.0), 4.0)), ..base },
+        UnitRequest { start: Start::Needle(Point::new(3.0, next(4.0))), ..base },
+        UnitRequest { start: Start::Entry(Point::new(3.0, 4.0)), ..base },
+        UnitRequest { exit: None, ..base },
+        UnitRequest { exit: Some(Point::new(next(7.0), 8.0)), ..base },
+        UnitRequest { exit: Some(Point::new(7.0, next(8.0))), ..base },
         UnitRequest { clip: None, ..base },
         UnitRequest { clip: Some(&other_clip), ..base },
     ];
@@ -392,7 +399,7 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
 fn the_units_used_least_recently_are_dropped_first() {
     use vectorcraft_geom::{BezPath, FillRule, Point};
     use vectorcraft_stitch::Stitch;
-    use vectorcraft_stitch::plan::{Params, Style};
+    use vectorcraft_stitch::plan::{Params, Start, Style};
     let shapes: Vec<BezPath> = (0..4)
         .map(|k| {
             let mut p = BezPath::new();
@@ -403,7 +410,15 @@ fn the_units_used_least_recently_are_dropped_first() {
         .collect();
     let key = |shape: &BezPath| {
         UnitKey::of(
-            &UnitRequest { shape, rule: FillRule::NonZero, params: Params::for_style(Style::Running), columns: None, from: None, clip: None },
+            &UnitRequest {
+                shape,
+                rule: FillRule::NonZero,
+                params: Params::for_style(Style::Running),
+                columns: None,
+                start: Start::Nowhere,
+                exit: None,
+                clip: None,
+            },
             None,
         )
     };
@@ -439,7 +454,7 @@ fn the_units_used_least_recently_are_dropped_first() {
 fn a_plan_keeps_its_first_units_when_not_all_fit() {
     use vectorcraft_geom::{BezPath, FillRule, Point};
     use vectorcraft_stitch::Stitch;
-    use vectorcraft_stitch::plan::{Params, Style};
+    use vectorcraft_stitch::plan::{Params, Start, Style};
     let shapes: Vec<BezPath> = (0..3)
         .map(|k| {
             let mut p = BezPath::new();
@@ -450,7 +465,15 @@ fn a_plan_keeps_its_first_units_when_not_all_fit() {
         .collect();
     let key = |shape: &BezPath| {
         UnitKey::of(
-            &UnitRequest { shape, rule: FillRule::NonZero, params: Params::for_style(Style::Running), columns: None, from: None, clip: None },
+            &UnitRequest {
+                shape,
+                rule: FillRule::NonZero,
+                params: Params::for_style(Style::Running),
+                columns: None,
+                start: Start::Nowhere,
+                exit: None,
+                clip: None,
+            },
             None,
         )
     };

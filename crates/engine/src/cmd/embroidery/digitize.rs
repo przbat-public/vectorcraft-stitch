@@ -13,7 +13,7 @@ use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId,
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Point, Rect, Shape, kurbo};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
 use vectorcraft_render::effects::stroke::outline_region;
-use vectorcraft_stitch::plan::{self, Style};
+use vectorcraft_stitch::plan::{self, Start, Style};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
 use super::Options;
@@ -775,8 +775,11 @@ impl<'a> Digitizer<'a> {
         if let (Some(r), Some(clip)) = (estimate, &self.clip) {
             estimate = Some(r.intersect(clip.bounds));
         }
-        // Where its object sets it to start, else where the needle is.
-        let from = settings.entry().or_else(|| self.seq.needle(self.seq.target(color, estimate)));
+        // Where its object sets it to start, else where the needle is; and where it sets it to end.
+        let start = match settings.entry() {
+            Some(entry) => Start::Entry(entry),
+            None => Start::needle(self.seq.needle(self.seq.target(color, estimate))),
+        };
         let request = UnitRequest {
             shape: bp,
             rule,
@@ -784,7 +787,8 @@ impl<'a> Digitizer<'a> {
             // A fill's narrow parts are satin columns, unless the `stitch` option forces tatami
             // (on a fill, or on a stroke filled).
             columns: (style == Style::Fill && settings.forced() != Some(Style::Fill)).then(|| settings.params(Style::Satin, NO_WIDTH)),
-            from,
+            start,
+            exit: settings.exit(),
             clip: if clip_stitches { self.clip.as_ref().map(|c| &c.region) } else { None },
         };
         let planned = match self.planned(&request) {

@@ -120,6 +120,12 @@ impl<'a> UnitSettings<'a> {
         self.object.entry
     }
 
+    /// Where its object sets the part to end (millimetres from the document's origin), `None` when
+    /// it sets none.
+    pub(crate) fn exit(&self) -> Option<Point> {
+        self.object.exit
+    }
+
     /// How far a filled area grows all round before it is stitched (millimetres).
     pub(crate) fn expand(&self) -> f64 {
         self.above_the_document().expand()
@@ -184,8 +190,9 @@ pub(crate) struct PartLayer {
     stitch: Option<Stitch>,
     /// Every other value, as the embroidery options hold them (their `stitch` none).
     values: Options,
-    /// Where the part starts, millimetres from the document's origin.
+    /// Where the part starts and ends, millimetres from the document's origin.
     entry: Option<Point>,
+    exit: Option<Point>,
 }
 
 /// What reading objects' settings found that the plan says, once each.
@@ -238,17 +245,21 @@ impl PartLayer {
             split_length: split_length.map(|v| within(v, MAX_SATIN_STITCH_RANGE, &mut clamped)),
             ..Options::default()
         };
-        // The exit is kept and reported; it is planned toward with the embroidery tool.
-        let entry = points.as_ref().and_then(|PartPoints { entry, exit: _, extra }| {
-            unread |= !extra.is_empty();
-            entry.map(|e| {
-                let mut coord = |c: f64| within(c, (-MAX_COORD, MAX_COORD), &mut clamped) * MM_PER_PT;
-                Point::new(coord(e.x), coord(e.y))
-            })
-        });
+        // Each point in millimetres, within the document's range.
+        let mut mm = |q: Point| {
+            let mut coord = |c: f64| within(c, (-MAX_COORD, MAX_COORD), &mut clamped) * MM_PER_PT;
+            Point::new(coord(q.x), coord(q.y))
+        };
+        let (entry, exit) = match points.as_ref() {
+            Some(PartPoints { entry, exit, extra }) => {
+                unread |= !extra.is_empty();
+                (entry.map(&mut mm), exit.map(&mut mm))
+            }
+            None => (None, None),
+        };
         found.unread |= unread;
         found.clamped |= clamped;
-        Self { stitch, values, entry }
+        Self { stitch, values, entry, exit }
     }
 }
 

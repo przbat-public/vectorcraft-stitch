@@ -9,7 +9,11 @@
 //!   labelled; the one the keys act on has a ring ([`FOCUS_RING_PT`]).
 //! - **A point set where the stitches can't start** (a fill's entry on its outline, the stitches half a
 //!   row spacing inside it) is joined by a hairline to a dot where they do, past [`LEADER_MIN_PT`].
-//! - **While dragging,** the handle follows the pointer in the frame it moves.
+//! - **While dragging,** the handle follows the pointer in the frame it moves, and a dashed ghost
+//!   joins it to where the needle comes from (an entry) or goes next (an exit), with the jump's length
+//!   and whether the thread will be cut; on a design slow to plan, the status bar says when the
+//!   stitches will catch up (on a pause, [`super::stitch_preview::PAUSE_TO_PLAN_SECS`], or the
+//!   release).
 //! - **One part at a time,** the one the Embroidery panel's Object tab shows (the tool's `part`).
 //! - **A plan is asked for** while the tool is active ([`super::stitch_preview::StitchPreview::want_plan`]),
 //!   so Auto points show in the art view too, without turning the status bar's counters on.
@@ -41,6 +45,12 @@ const STALE_ALPHA: f32 = 0.45;
 pub const LEADER_MIN_PT: f32 = 8.0;
 /// The dot where the stitches start, at the leader's end: its radius, points.
 const PLANNED_DOT_PT: f32 = 2.5;
+/// The ghost's dashes and the gaps between them, points.
+const GHOST_DASH: f32 = 5.0;
+const GHOST_GAP: f32 = 3.0;
+/// The decimals the ghost's jump is said with: a tenth of a millimetre, the formats' grid.
+const JUMP_DECIMALS: usize = 1;
+
 /// The labels' size, their room either side, and how far they sit from their handle, points (the
 /// passive markers' labels').
 const LABEL_SIZE: f32 = 11.0;
@@ -97,6 +107,17 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         return;
     }
     let Some((handles, options)) = current(app) else { return };
+    // A drag on a design slow to plan: when the stitches will catch up.
+    if options["drag"].is_object()
+        && let Some(uid) = app.session.active().map(|st| st.uid)
+        && !app.embroidery.preview.live(uid)
+    {
+        app.status(if cfg!(target_arch = "wasm32") {
+            crate::et!("Stitches update when you let go.")
+        } else {
+            crate::et!("Stitches update when you pause or let go.")
+        });
+    }
     let Some(st) = app.session.active() else { return };
     let t = Tokens::get(painter.ctx());
     let same = |a: &Value, h: &Handle| {
@@ -135,6 +156,17 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         // An exit moved apart from the entry it lies under: a hairline back to its point.
         if h.at != h.point && !dragged {
             painter.line_segment([at, xf.to_screen(h.point)], Stroke::new(1.0, dark().gamma_multiply(alpha)));
+        }
+        // While dragging: the jump to or from the neighbour along the thread, dashed, and how long.
+        if let (true, Some(neighbour)) = (dragged, h.neighbour) {
+            let from = xf.to_screen(neighbour);
+            painter.extend(Shape::dashed_line(&[from, at], Stroke::new(1.5, dark()), GHOST_DASH, GHOST_GAP));
+            painter.extend(Shape::dashed_line(&[from, at], Stroke::new(0.75, light()), GHOST_DASH, GHOST_GAP));
+            let mm = neighbour.distance(point) / vectorcraft_engine::cmd::embroidery::mm_to_pt(1.0);
+            let value = super::numbers::decimal(crate::i18n::current(), mm, JUMP_DECIMALS);
+            let cut = h.trim.is_some_and(|trim| neighbour.distance(point) > trim);
+            let words = super::text::fill(if cut { crate::et!("jump {value} mm, cut") } else { crate::et!("jump {value} mm") }, &[("value", &value)]);
+            label(painter, from + (at - from) / 2.0, Align2::CENTER_BOTTOM, &words, if cut { t.warning } else { dark() });
         }
         let scale = if hovered { HOVER_SCALE } else { 1.0 };
         let size = h.id.kind.size_px() as f32 * scale;

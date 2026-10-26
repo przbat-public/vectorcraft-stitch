@@ -5855,3 +5855,8 @@ embroidery	The entry and exit points are already the nearest.	入针点和出针
 	 an entry or exit point to move it  |  	入针点或出针点可移动  |  
 	 a point to put it back to Auto  |  	点可恢复为自动  |  
 	 an object to show its points	对象可显示其点
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	跳针 {value} mm
+embroidery	jump {value} mm, cut	跳针 {value} mm，剪线
+embroidery	Stitches update when you pause or let go.	停下或松开时针迹会更新。
+embroidery	Stitches update when you let go.	松开时针迹会更新。

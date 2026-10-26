@@ -5971,3 +5971,8 @@ embroidery	The entry and exit points are already the nearest.	Ind- og udgangspun
 	 an entry or exit point to move it  |  	 på et ind- eller udgangspunkt for at flytte det  |  
 	 a point to put it back to Auto  |  	 på et punkt for at sætte det tilbage til Auto  |  
 	 an object to show its points	 på et objekt for at vise dets punkter
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	spring {value} mm
+embroidery	jump {value} mm, cut	spring {value} mm, klip
+embroidery	Stitches update when you pause or let go.	Stingene opdateres, når du holder pause eller slipper.
+embroidery	Stitches update when you let go.	Stingene opdateres, når du slipper.

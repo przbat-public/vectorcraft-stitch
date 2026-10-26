@@ -5594,3 +5594,8 @@ embroidery	The entry and exit points are already the nearest.	시작점과 끝�
 	 an entry or exit point to move it  |  	 진입점이나 출구점을 이동  |  
 	 a point to put it back to Auto  |  	 점을 자동으로 되돌리기  |  
 	 an object to show its points	 개체의 점 표시
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	점프 {value}mm
+embroidery	jump {value} mm, cut	점프 {value}mm, 실 자르기
+embroidery	Stitches update when you pause or let go.	멈추거나 놓으면 스티치가 업데이트됩니다.
+embroidery	Stitches update when you let go.	놓으면 스티치가 업데이트됩니다.

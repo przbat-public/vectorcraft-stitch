@@ -6047,3 +6047,8 @@ embroidery	The entry and exit points are already the nearest.	Aloitus- ja lopetu
 	 an entry or exit point to move it  |  	 aloitus- tai lopetuspistettä siirtääksesi sen  |  
 	 a point to put it back to Auto  |  	 pistettä palauttaaksesi sen automaattiseksi  |  
 	 an object to show its points	 objektia näyttääksesi sen pisteet
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	hyppy {value} mm
+embroidery	jump {value} mm, cut	hyppy {value} mm, leikkaus
+embroidery	Stitches update when you pause or let go.	Pistot päivittyvät, kun pysähdyt tai päästät irti.
+embroidery	Stitches update when you let go.	Pistot päivittyvät, kun päästät irti.

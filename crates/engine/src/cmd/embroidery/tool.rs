@@ -17,12 +17,23 @@ use vectorcraft_tools::embroidery::{PlanFacts, PlannedEnds};
 use super::plan::Part;
 use super::service::Planned;
 
-/// One plan's answers: where each object's part is sewn (document points), and the snapshot the
-/// plan is of.
+/// One plan's answers: where each object's part is sewn (document points: its first and last
+/// needle points, where the needle comes from before it and goes to after it along the thread), the
+/// design's trim length (document points), and the snapshot the plan is of.
 pub(crate) struct ToolFacts {
     pub(crate) generation: u64,
     snapshot: Arc<Document>,
-    ends: HashMap<(NodeId, PartKind), (Point, Point)>,
+    ends: HashMap<(NodeId, PartKind), Sewn>,
+    trim: f64,
+}
+
+/// Where one object's part is sewn, and its neighbours along the thread.
+#[derive(Clone, Copy)]
+struct Sewn {
+    first: Point,
+    last: Point,
+    before: Option<Point>,
+    after: Option<Point>,
 }
 
 impl ToolFacts {
@@ -31,19 +42,45 @@ impl ToolFacts {
     pub(crate) fn of(snapshot: Arc<Document>, planned: &Planned) -> Self {
         let plan = &planned.plan;
         let in_points = |p: Point| Point::new(mm_to_pt(p.x), mm_to_pt(p.y));
-        let mut ends: HashMap<(NodeId, PartKind), (Point, Point)> = HashMap::new();
+        // Each unit's first and last needle points, its block, and whether it ends with a cut.
+        let units: Vec<Option<(Point, Point, usize, bool)>> = (0..plan.units.len())
+            .map(|i| {
+                let stitches = plan.unit_stitches(i);
+                let mut needle = stitches.iter().filter(|s| s.command == Command::Stitch).map(|s| in_points(s.point()));
+                let first = needle.next()?;
+                let cut = stitches.last().is_some_and(|s| s.command == Command::Trim);
+                Some((first, needle.next_back().unwrap_or(first), plan.units.get(i)?.block, cut))
+            })
+            .collect();
+        // Along the thread: the unit before in the same block, with no cut after it.
+        let before = |i: usize| {
+            let (_, _, block, _) = (*units.get(i)?)?;
+            let (_, last, b, cut) = (*units.get(i.checked_sub(1)?)?)?;
+            (b == block && !cut).then_some(last)
+        };
+        let after = |i: usize| {
+            let (_, _, block, cut) = (*units.get(i)?)?;
+            let (first, _, b, _) = (*units.get(i + 1)?)?;
+            (b == block && !cut).then_some(first)
+        };
+        let mut ends: HashMap<(NodeId, PartKind), Sewn> = HashMap::new();
         for (i, u) in plan.units.iter().enumerate() {
             let kind = match u.origin.part {
                 Part::Fill(_) => PartKind::Fill,
                 Part::Stroke(_) => PartKind::Stroke,
                 Part::Literal => continue,
             };
-            let mut needle = plan.unit_stitches(i).iter().filter(|s| s.command == Command::Stitch).map(|s| in_points(s.point()));
-            let Some(first) = needle.next() else { continue };
-            let last = needle.next_back().unwrap_or(first);
-            ends.entry((u.origin.selected(), kind)).and_modify(|e| e.1 = last).or_insert((first, last));
+            let Some(Some((first, last, _, _))) = units.get(i).copied() else { continue };
+            ends.entry((u.origin.selected(), kind))
+                .and_modify(|e| {
+                    e.last = last;
+                    e.after = after(i);
+                })
+                .or_insert(Sewn { first, last, before: before(i), after: after(i) });
         }
-        Self { generation: planned.generation, snapshot, ends }
+        let doc_layer = super::resolve::DocLayer::of(&snapshot);
+        let trim = mm_to_pt(super::resolve::DesignSettings::new(&super::Options::default(), &doc_layer).0.connect.trim);
+        Self { generation: planned.generation, snapshot, ends, trim }
     }
 }
 
@@ -75,12 +112,13 @@ impl PlanFacts for FactsNow<'_> {
     }
 
     fn ends(&self, object: NodeId, part: PartKind) -> Option<PlannedEnds> {
-        let &(first, last) = self.facts.ends.get(&(object, part))?;
+        let sewn = self.facts.ends.get(&(object, part))?;
         let current = match (self.doc.node(object), self.facts.snapshot.node(object)) {
             (Some(a), Some(b)) => std::ptr::eq(a, b),
             _ => false,
         };
-        Some(PlannedEnds { first, last, current })
+        let trim = self.facts.trim.is_finite().then_some(self.facts.trim);
+        Some(PlannedEnds { first: sewn.first, last: sewn.last, current, before: sewn.before, after: sewn.after, trim })
     }
 }
 
@@ -148,6 +186,31 @@ mod tests {
         let fill = run(&mut s, "embroidery.info", json!({"ids": [id]}))["objects"][0]["settings"]["fill"].clone();
         assert_eq!(fill["entry"], json!([60.0, 20.0]), "snapped onto the top side: {fill}");
         assert_eq!(s.doc().unwrap().history.undo.len(), undo + 1);
+    }
+
+    /// Along the thread: the second square's part comes from where the first ends, and the first
+    /// goes on to where the second starts; across a colour change, from nowhere; the design's trim
+    /// length comes with them.
+    #[test]
+    fn a_parts_neighbours_along_the_thread() {
+        let mut s = blank();
+        run(&mut s, "paint.setStroke", json!({"none": true}));
+        run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+        let a = run(&mut s, "shape.rectangle", json!({"x": 20, "y": 20, "width": 60, "height": 40}))["id"].as_u64().unwrap();
+        let b = run(&mut s, "shape.rectangle", json!({"x": 100, "y": 20, "width": 60, "height": 40}))["id"].as_u64().unwrap();
+        run(&mut s, "select.set", json!({"ids": []}));
+        run(&mut s, "paint.setFill", json!({"color": "#2233cc"}));
+        let c = run(&mut s, "shape.rectangle", json!({"x": 180, "y": 20, "width": 60, "height": 40}))["id"].as_u64().unwrap();
+        run(&mut s, "embroidery.sequence", json!({}));
+        let uid = s.doc().unwrap().uid;
+        let facts = s.embroidery_plans.tool_facts(uid, &super::super::Options::default()).unwrap();
+        let doc = s.doc().unwrap().doc.clone();
+        let now = FactsNow { facts: &facts, doc: &doc };
+        let ends = |id: u64| now.ends(NodeId(id), PartKind::Fill).unwrap();
+        let (ea, eb, ec) = (ends(a), ends(b), ends(c));
+        assert_eq!((ea.before, ea.after, eb.before), (None, Some(eb.first), Some(ea.last)));
+        assert_eq!((eb.after, ec.before), (None, None), "a colour change between");
+        assert!((ea.trim.unwrap() - 10.0 * PT_PER_MM).abs() < 1e-9, "the default 10 mm: {:?}", ea.trim);
     }
 
     /// No plan remembered, no answers: nothing plans to answer.

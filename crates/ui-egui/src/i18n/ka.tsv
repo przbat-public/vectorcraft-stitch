@@ -5931,3 +5931,8 @@ embroidery	The entry and exit points are already the nearest.	შესვლი
 	 an entry or exit point to move it  |  	 შესვლის ან გასვლის წერტილზე — მის გადასაადგილებლად  |  
 	 a point to put it back to Auto  |  	 წერტილზე — ავტომატურზე დასაბრუნებლად  |  
 	 an object to show its points	 ობიექტზე — მისი წერტილების საჩვენებლად
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	ნახტომი {value} მმ
+embroidery	jump {value} mm, cut	ნახტომი {value} მმ, ჭრა
+embroidery	Stitches update when you pause or let go.	ნაკერები განახლდება, როცა შეჩერდებით ან გაუშვებთ.
+embroidery	Stitches update when you let go.	ნაკერები განახლდება, როცა გაუშვებთ.

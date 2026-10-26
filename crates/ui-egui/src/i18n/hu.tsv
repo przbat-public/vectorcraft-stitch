@@ -6002,3 +6002,8 @@ embroidery	The entry and exit points are already the nearest.	A belépési és k
 	 an entry or exit point to move it  |  	 egy belépési vagy kilépési ponton – áthelyezés  |  
 	 a point to put it back to Auto  |  	 egy pontra – vissza Automatikusra  |  
 	 an object to show its points	 egy objektumra – pontjainak megjelenítése
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	ugrás {value} mm
+embroidery	jump {value} mm, cut	ugrás {value} mm, vágás
+embroidery	Stitches update when you pause or let go.	Az öltések megállásnál vagy elengedéskor frissülnek.
+embroidery	Stitches update when you let go.	Az öltések elengedéskor frissülnek.

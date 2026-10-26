@@ -6015,3 +6015,8 @@ embroidery	The entry and exit points are already the nearest.	Les points d’ent
 	 an entry or exit point to move it  |  	 un point d’entrée ou de sortie pour le déplacer  |  
 	 a point to put it back to Auto  |  	 sur un point pour le remettre en Auto  |  
 	 an object to show its points	 sur un objet pour afficher ses points
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	saut {value} mm
+embroidery	jump {value} mm, cut	saut {value} mm, coupe
+embroidery	Stitches update when you pause or let go.	Les points se mettent à jour quand vous marquez une pause ou relâchez.
+embroidery	Stitches update when you let go.	Les points se mettent à jour quand vous relâchez.

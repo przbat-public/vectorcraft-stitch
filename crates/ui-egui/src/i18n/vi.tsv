@@ -5611,3 +5611,8 @@ embroidery	The entry and exit points are already the nearest.	Các điểm vào 
 	 an entry or exit point to move it  |  	 một điểm vào hoặc ra để di chuyển  |  
 	 a point to put it back to Auto  |  	 một điểm để đưa về Tự động  |  
 	 an object to show its points	 một đối tượng để hiện các điểm của nó
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	mũi nhảy {value} mm
+embroidery	jump {value} mm, cut	mũi nhảy {value} mm, cắt chỉ
+embroidery	Stitches update when you pause or let go.	Mũi khâu cập nhật khi bạn dừng lại hoặc thả ra.
+embroidery	Stitches update when you let go.	Mũi khâu cập nhật khi bạn thả ra.

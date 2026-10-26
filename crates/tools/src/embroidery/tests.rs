@@ -62,7 +62,14 @@ fn doc() -> (Document, [NodeId; 3]) {
 /// The plan of [`doc`]: the square's fill sewn from (100, 100) to (200, 200), its stroke from
 /// (100, 100) round to it, the line from (200, 300) to (400, 300).
 fn plan([square, line, _]: [NodeId; 3]) -> Fake {
-    let e = |a: (f64, f64), b: (f64, f64)| PlannedEnds { first: Point::new(a.0, a.1), last: Point::new(b.0, b.1), current: true };
+    let e = |a: (f64, f64), b: (f64, f64)| PlannedEnds {
+        first: Point::new(a.0, a.1),
+        last: Point::new(b.0, b.1),
+        current: true,
+        before: None,
+        after: None,
+        trim: None,
+    };
     let mut f = Fake::default();
     f.ends.insert((square, PartKind::Fill), e((100.0, 100.0), (200.0, 200.0)));
     f.ends.insert((square, PartKind::Stroke), e((100.0, 100.0), (100.0, 100.0)));
@@ -142,7 +149,8 @@ fn groups_compounds_and_the_cap() {
         let x = 10.0 + 40.0 * k as f64;
         let path = PathData::single(SubPath::polyline(&[Point::new(x, 10.0), Point::new(x + 20.0, 10.0), Point::new(x + 20.0, 30.0)], true));
         squares.push(std::sync::Arc::new(Node::path(id, path, Appearance::default_art())));
-        f.ends.insert((id, PartKind::Fill), PlannedEnds { first: Point::new(x, 10.0), last: Point::new(x + 20.0, 30.0), current: true });
+        let ends = PlannedEnds { first: Point::new(x, 10.0), last: Point::new(x + 20.0, 30.0), current: true, before: None, after: None, trim: None };
+        f.ends.insert((id, PartKind::Fill), ends);
     }
     let group = d.alloc_id();
     d.insert(Some(l), 0, Node::group(group, squares)).unwrap();
@@ -158,7 +166,8 @@ fn groups_compounds_and_the_cap() {
     let mut node = Node::new(compound, kind);
     node.appearance = Appearance::default_art().into();
     d.insert(Some(l), 1, node).unwrap();
-    f.ends.insert((compound, PartKind::Fill), PlannedEnds { first: Point::new(10.0, 100.0), last: Point::new(30.0, 120.0), current: true });
+    let ends = PlannedEnds { first: Point::new(10.0, 100.0), last: Point::new(30.0, 120.0), current: true, before: None, after: None, trim: None };
+    f.ends.insert((compound, PartKind::Fill), ends);
     let s = select(&[member]);
     let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
     assert_eq!(handles(&c, None).iter().map(|h| h.id.owner.part().0).collect::<Vec<_>>(), vec![compound, compound]);

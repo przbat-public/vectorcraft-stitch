@@ -132,6 +132,10 @@ pub struct Handle {
     /// Where the plan shown starts or ends the part, when it says (for a point set, where the
     /// stitches really start or end: the canvas joins the two when they lie apart).
     pub planned: Option<Point>,
+    /// Where the needle comes from before an entry, or goes to after an exit, along the thread: the
+    /// jump a drag shows. And the trim length a jump longer than is cut (document points).
+    pub neighbour: Option<Point>,
+    pub trim: Option<f64>,
 }
 
 /// The part of `n` whose points show: `part` (else its fill) when `n` has it, else its other part,
@@ -175,7 +179,8 @@ pub fn handles(cx: &ToolContext, part: Option<PartKind>) -> Vec<Handle> {
                 _ => continue,
             };
             let id = HandleId { kind: k, owner: Owner::Part { object, part: kind }, index: 0 };
-            pair.push(Handle { id, at: point, point, state, planned: sewn });
+            let neighbour = planned.and_then(|e| if k == Kind::Entry { e.before } else { e.after });
+            pair.push(Handle { id, at: point, point, state, planned: sewn, neighbour, trim: planned.and_then(|e| e.trim) });
         }
         if let [entry, exit] = pair.as_mut_slice()
             && entry.at.distance(exit.at) < cx.tol(APART_PX)

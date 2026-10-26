@@ -6016,3 +6016,8 @@ embroidery	The entry and exit points are already the nearest.	Vstupní a výstup
 	 an entry or exit point to move it  |  	 vstupního nebo výstupního bodu jej přesune  |  
 	 a point to put it back to Auto  |  	 na bod jej vrátí na Automaticky  |  
 	 an object to show its points	 na objekt ukáže jeho body
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	přeskok {value} mm
+embroidery	jump {value} mm, cut	přeskok {value} mm, střih
+embroidery	Stitches update when you pause or let go.	Stehy se obnoví, když se zastavíte nebo pustíte.
+embroidery	Stitches update when you let go.	Stehy se obnoví, když pustíte.

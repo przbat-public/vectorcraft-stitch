@@ -187,3 +187,73 @@ fn the_handles_are_found_again_only_when_something_changed() {
     assert!(app.embroidery.handles.found > found);
     assert_eq!(diamonds(&frame(&mut app, &ctx, time + 0.05, vec![]), light()).len(), 1);
 }
+
+/// The drawn words.
+fn words(shapes: &[Shape]) -> Vec<String> {
+    shapes
+        .iter()
+        .filter_map(|s| match s {
+            Shape::Text(t) => Some(t.galley.text().to_string()),
+            _ => None,
+        })
+        .collect()
+}
+
+/// Press the second square's entry and drag it by `by` in `steps` → the shapes of the last frame.
+fn drag_second_entry(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, by: egui::Vec2, steps: usize) -> Vec<Shape> {
+    let [_, b] = [0, 1];
+    let entries: Vec<Pos2> = on_screen(app).iter().filter(|(k, _)| *k == Kind::Entry).map(|(_, at)| *at).collect();
+    let at = entries[b];
+    let button = |pos: Pos2, pressed| Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    *time += 0.05;
+    frame(app, ctx, *time, vec![Event::PointerMoved(at), button(at, true)]);
+    let mut shapes = vec![];
+    for k in 1..=steps {
+        *time += 0.02;
+        shapes = frame(app, ctx, *time, vec![Event::PointerMoved(at + by * (k as f32 / steps as f32))]);
+    }
+    shapes
+}
+
+/// While a point is dragged, a ghost joins it to where the needle comes from (the first square's
+/// end, along the thread), saying how long the jump is.
+#[test]
+fn a_drag_shows_the_jump_from_the_part_before() {
+    let (mut app, _) = app();
+    let ctx = egui::Context::default();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let shapes = drag_second_entry(&mut app, &ctx, &mut time, egui::vec2(10.0, 20.0), 3);
+    let said = words(&shapes);
+    // The squares lie 21 mm apart, past the 10 mm trim length: the jump is cut.
+    assert!(said.iter().any(|w| w.starts_with("jump ") && w.ends_with(" mm, cut")), "{said:?}");
+    assert!(shapes.iter().filter(|s| matches!(s, Shape::LineSegment { .. })).count() > 4, "dashes");
+}
+
+/// On a design slow to plan, the status bar says when the stitches catch up while a point is
+/// dragged, and a pause in the drag plans (on the desktop: a runner off the frame, as the planning
+/// thread is), the button still held.
+#[test]
+fn a_pause_in_a_drag_plans_a_design_slow_to_plan() {
+    let (mut app, _) = app();
+    app.embroidery.preview = stitch_preview::StitchPreview::with_runner(Box::new(stitch_preview::OneStepAPoll::default()));
+    let ctx = egui::Context::default();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    app.embroidery.preview.log.pinned_ms = Some(stitch_preview::LIVE_PLAN_MS * 4.0);
+    app.embroidery.preview.set_plan_ms(uid, stitch_preview::LIVE_PLAN_MS * 4.0);
+    assert!(!app.embroidery.preview.live(uid));
+    drag_second_entry(&mut app, &ctx, &mut time, egui::vec2(15.0, 5.0), 3);
+    assert_eq!(app.ui.status, "Stitches update when you pause or let go.");
+    let sent = app.embroidery.preview.log.sent.len();
+    // Moving on: nothing planned.
+    time += 0.02;
+    frame(&mut app, &ctx, time, vec![]);
+    assert_eq!(app.embroidery.preview.log.sent.len(), sent, "on the move");
+    // Holding still past the pause: planned.
+    time += stitch_preview::PAUSE_TO_PLAN_SECS + 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    assert!(app.embroidery.preview.log.sent.len() > sent, "planned on the pause");
+    assert!(app.session.tool_busy(), "the button still held");
+}

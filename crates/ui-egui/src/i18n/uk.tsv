@@ -5611,3 +5611,8 @@ embroidery	The entry and exit points are already the nearest.	Точки вхо�
 	 an entry or exit point to move it  |  	 точку входу чи виходу, щоб перемістити її  |  
 	 a point to put it back to Auto  |  	 точку, щоб повернути її до «Авто»  |  
 	 an object to show its points	 об’єкт, щоб показати його точки
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	перескок {value} мм
+embroidery	jump {value} mm, cut	перескок {value} мм, обрізання
+embroidery	Stitches update when you pause or let go.	Стібки оновляться, коли ви зупинитеся або відпустите.
+embroidery	Stitches update when you let go.	Стібки оновляться, коли ви відпустите.

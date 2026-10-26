@@ -5693,3 +5693,8 @@ embroidery	The entry and exit points are already the nearest.	入口と出口の
 	 an entry or exit point to move it  |  	：入口または出口の点を移動  |  
 	 a point to put it back to Auto  |  	：点を自動に戻す  |  
 	 an object to show its points	：オブジェクトの点を表示
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	ジャンプ {value} mm
+embroidery	jump {value} mm, cut	ジャンプ {value} mm・糸切り
+embroidery	Stitches update when you pause or let go.	止めるか離すとステッチが更新されます。
+embroidery	Stitches update when you let go.	離すとステッチが更新されます。

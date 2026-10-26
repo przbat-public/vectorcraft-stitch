@@ -6014,3 +6014,8 @@ embroidery	The entry and exit points are already the nearest.	De in- en uitsteek
 	 an entry or exit point to move it  |  	 aan een in- of uitsteekpunt om het te verplaatsen  |  
 	 a point to put it back to Auto  |  	 op een punt om het terug op Automatisch te zetten  |  
 	 an object to show its points	 op een object om zijn punten te tonen
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	sprong {value} mm
+embroidery	jump {value} mm, cut	sprong {value} mm, knip
+embroidery	Stitches update when you pause or let go.	De steken worden bijgewerkt als je pauzeert of loslaat.
+embroidery	Stitches update when you let go.	De steken worden bijgewerkt als je loslaat.

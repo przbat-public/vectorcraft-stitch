@@ -5971,3 +5971,8 @@ embroidery	The entry and exit points are already the nearest.	Titik masuk dan ke
 	 an entry or exit point to move it  |  	 titik masuk atau keluar untuk memindahkannya  |  
 	 a point to put it back to Auto  |  	 titik untuk mengembalikannya ke Otomatis  |  
 	 an object to show its points	 objek untuk menampilkan titiknya
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	lompatan {value} mm
+embroidery	jump {value} mm, cut	lompatan {value} mm, potong
+embroidery	Stitches update when you pause or let go.	Jahitan diperbarui saat Anda berhenti atau melepas.
+embroidery	Stitches update when you let go.	Jahitan diperbarui saat Anda melepas.

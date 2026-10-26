@@ -5972,3 +5972,8 @@ embroidery	The entry and exit points are already the nearest.	In- och utgångspu
 	 an entry or exit point to move it  |  	 en in- eller utgångspunkt för att flytta den  |  
 	 a point to put it back to Auto  |  	 på en punkt för att återställa den till Auto  |  
 	 an object to show its points	 på ett objekt för att visa dess punkter
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	hopp {value} mm
+embroidery	jump {value} mm, cut	hopp {value} mm, klipp
+embroidery	Stitches update when you pause or let go.	Stygnen uppdateras när du pausar eller släpper.
+embroidery	Stitches update when you let go.	Stygnen uppdateras när du släpper.

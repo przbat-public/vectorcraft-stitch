@@ -5968,3 +5968,8 @@ embroidery	The entry and exit points are already the nearest.	Τα σημεία 
 	 an entry or exit point to move it  |  	 σημείο εισόδου ή εξόδου για μετακίνηση  |  
 	 a point to put it back to Auto  |  	 σημείο για επιστροφή στο Αυτόματα  |  
 	 an object to show its points	 ένα αντικείμενο για εμφάνιση των σημείων του
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	άλμα {value} mm
+embroidery	jump {value} mm, cut	άλμα {value} mm, κόψιμο
+embroidery	Stitches update when you pause or let go.	Οι βελονιές ενημερώνονται όταν σταματήσετε ή αφήσετε.
+embroidery	Stitches update when you let go.	Οι βελονιές ενημερώνονται όταν αφήσετε.

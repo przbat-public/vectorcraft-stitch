@@ -75,6 +75,12 @@ pub(super) const UNDERLAY_TURN: f64 = 90.0;
 /// region the one nearest), as Ink/Stitch starts fills.
 pub(super) fn fill_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Vec<Stitch> {
     let p = p.sane();
+    fill_runs(path, rule, &p, from).join(&p)
+}
+
+/// [`fill_from`]'s runs before they are joined into stitches: what the moves between them are
+/// ([`Runs::moves`]) is known then. `p` is sane.
+pub(super) fn fill_runs(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Runs {
     let subs = closed_subpaths(path);
     let mut runs = Runs::from(from);
     for sub in subs.iter().filter(|s| !s.closed) {
@@ -85,13 +91,13 @@ pub(super) fn fill_from(path: &BezPath, rule: FillRule, p: &Params, from: Option
     }
     let outlines = outlines(&subs);
     if outlines.is_empty() {
-        return runs.join(&p);
+        return runs;
     }
     let grid = Grid::new(&outlines);
     let shape = Area { outlines: &outlines, rule, grid: grid.as_ref() };
     let mut travels = Travels::new(shape);
-    sew_area(shape, &mut travels, &p, &[], &mut runs, &|_| 0.0);
-    runs.join(&p)
+    sew_area(shape, &mut travels, p, &[], &mut runs, &|_| 0.0);
+    runs
 }
 
 /// The closed outlines of `subs` (at least three points each): what a fill fills.

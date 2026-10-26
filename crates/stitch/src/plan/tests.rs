@@ -967,6 +967,34 @@ fn comb(n: usize, long: f64, wide: f64, gap: f64, bar: f64) -> BezPath {
     polygon(pts)
 }
 
+/// What a fill's moves are, counted beside their cost, is what its stitches do: as many jumps and
+/// cuts as the planner decided to lift the needle and cut the thread (a lift caught as a travel, or
+/// a cut not counted, would make an aimed plan look as good as the plain one). On shapes that lift
+/// (two pieces far apart), cut (farther than the trim length) and travel (a comb, a ring) alike.
+#[test]
+fn the_moves_counted_are_the_moves_sewn() {
+    let mut apart = rect(0.0, 0.0, 20.0, 10.0);
+    apart.extend(rect(45.0, 0.0, 20.0, 10.0));
+    let mut near = rect(0.0, 0.0, 20.0, 10.0);
+    near.extend(rect(23.0, 0.0, 20.0, 10.0));
+    let mut ring = rect(0.0, 0.0, 40.0, 30.0);
+    ring.extend(polygon([(13.0, 13.0), (13.0, 17.0), (17.0, 17.0), (17.0, 13.0)]));
+    let shapes = [("apart", apart, true), ("near", near, true), ("comb", comb(5, 35.0, 4.0, 4.0, 6.0), false), ("ring", ring, false)];
+    for (name, shape, lifts) in &shapes {
+        for underlay in [Underlay::None, Underlay::Auto] {
+            let p = Params { underlay, ..Params::for_style(Style::Fill) }.sane();
+            let runs = fill::fill_runs(shape, FillRule::NonZero, &p, None);
+            let moves = runs.moves;
+            let out = runs.join(&p);
+            let count = |c: Command| out.iter().filter(|s| s.command == c).count();
+            assert_eq!(moves.lifts, count(Command::Jump), "{name}, underlay {underlay:?}: lifts");
+            assert_eq!(moves.trims, count(Command::Trim), "{name}, underlay {underlay:?}: cuts");
+            assert!(moves.seen.is_finite() && moves.seen >= 0.0, "{name}: {} mm seen", moves.seen);
+            assert_eq!(moves.lifts > 0, *lifts, "{name}, underlay {underlay:?}: {} lifts", moves.lifts);
+        }
+    }
+}
+
 /// Shapes whose regions branch (a U, combs, rings, an H) are sewn in one go at any angle, underlay
 /// or not: of the ways to order their regions, one that travels under stitching still to come (or
 /// shows a little) is kept over one that jumps, and a jump that would need a cut costs more still.

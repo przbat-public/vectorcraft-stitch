@@ -67,6 +67,22 @@ pub(super) struct Runs {
     inner: Option<Point>,
     /// What the moves between runs cost so far ([`COST_HIDDEN`] and the rest).
     pub(super) cost: f64,
+    /// What those moves are, counted beside their cost (which they leave as it is): the lifts of
+    /// the needle, those of them that cut the thread, and how far travels run over stitching
+    /// already sewn (millimetres). A plan aimed at an exit is kept only when it has no more of each
+    /// than the plan without it.
+    pub(super) moves: Moves,
+}
+
+/// The moves between a shape's runs that show, counted ([`Runs::moves`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(super) struct Moves {
+    /// Lifts of the needle inside the shape (jumps).
+    pub(super) lifts: usize,
+    /// Of those, the ones longer than [`Params::trim`]: the thread is cut first.
+    pub(super) trims: usize,
+    /// Millimetres of travel over stitching already sewn: it shows on top.
+    pub(super) seen: f64,
 }
 
 impl Runs {
@@ -159,12 +175,14 @@ impl Runs {
         if d <= p.jump && travels.area.contains_segment(from, to_inside) {
             let shows = seen(&[from, to_inside]);
             self.cost += COST_HIDDEN * (inside - shows) + COST_SEEN * shows;
+            self.moves.seen += shows;
             return Travel::Auto;
         }
         if let Some(mut route) = travels.way(from, to_inside) {
             let shows = seen(&route);
             if shows <= max_seen {
                 self.cost += COST_HIDDEN * (length(&route, false) - shows) + COST_SEEN * shows;
+                self.moves.seen += shows;
                 // The way runs between the two places inside; the needle is at, and goes to, the
                 // ends pull compensation stretched.
                 if let Some(first) = route.first_mut() {
@@ -178,6 +196,8 @@ impl Runs {
             }
         }
         self.cost += COST_LIFT + inside + if d > p.trim { COST_TRIM } else { 0.0 };
+        self.moves.lifts += 1;
+        self.moves.trims += usize::from(d > p.trim);
         Travel::Lift
     }
 
@@ -191,6 +211,9 @@ impl Runs {
             self.inner = other.inner;
         }
         self.cost += other.cost;
+        self.moves.lifts += other.moves.lifts;
+        self.moves.trims += other.moves.trims;
+        self.moves.seen += other.moves.seen;
     }
 
     /// The runs as one block of stitches. Satin and fill tie the thread in after every jump longer

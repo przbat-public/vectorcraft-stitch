@@ -8,7 +8,7 @@
 //!   After), where only the frame's travel counts.
 //! - **What it may choose.** A part in scope that can take points of its own (one unit for its kind
 //!   of part, not a symbol's art, not a stroke a clip group cuts, not of a shape the planner's rules
-//!   there don't say) is free: any of its starts and ends. A part with no points set outside the scope
+//!   there don't say, not locked) is free: any of its starts and ends. A part with no points set outside the scope
 //!   follows (it starts nearest the end before it); the rest are sewn as they are.
 //! - **The search.** [`plan::joins`]: exact over the points offered, each part's own start and end
 //!   first, so that ties keep them.
@@ -44,6 +44,7 @@ use super::plan::{DesignPlan, Origin, Part};
 use super::unit::PlanError;
 use super::{object, options_in};
 use crate::cmd::bad;
+use crate::cmd::layer::locked_within;
 use crate::{Result, Session};
 
 /// The command's id.
@@ -106,10 +107,10 @@ fn links(plan: &DesignPlan) -> Vec<Option<Link>> {
     out
 }
 
-/// The chain of `walked`'s plan: each unit with needle points of its own, by its index, as a
-/// [`Joint`]; the objects in `scope` (`None`: every object) that it can't join, with why, into
-/// `skipped`.
-fn chain(walked: &Walked, scope: Option<&HashSet<NodeId>>, skipped: &mut Vec<(NodeId, &'static str)>) -> Vec<(usize, Joint)> {
+/// The chain of `walked`'s plan (of `doc`): each unit with needle points of its own, by its index,
+/// as a [`Joint`]; the objects in `scope` (`None`: every object) that it can't join, with why, into
+/// `skipped`. A locked object is sewn as it is, as the sewing order's moves leave it (`locked`).
+fn chain(doc: &Document, walked: &Walked, scope: Option<&HashSet<NodeId>>, skipped: &mut Vec<(NodeId, &'static str)>) -> Vec<(usize, Joint)> {
     let plan = &walked.plan;
     let recorded: HashMap<(Origin, usize), &UnitEnds> = walked.ends.iter().map(|e| ((e.origin, e.occurrence), e)).collect();
     // How many units each object's kind of part is sewn as: one pair of points can serve one.
@@ -127,6 +128,7 @@ fn chain(walked: &Walked, scope: Option<&HashSet<NodeId>>, skipped: &mut Vec<(No
         let kind = kind_of(u.origin.part);
         let record = recorded.get(&(u.origin, u.occurrence)).copied();
         let why = match (kind, record) {
+            _ if locked_within(doc, id) => Some("locked"),
             (None, _) => Some("literal"),
             (Some(_), None) => Some("unmodelled"),
             (Some(k), Some(r)) => r
@@ -303,7 +305,7 @@ fn round(
     skipped: &mut Vec<(NodeId, &'static str)>,
 ) -> Result<Round> {
     let trim = walked.trim;
-    let joints = chain(walked, scope, skipped);
+    let joints = chain(doc, walked, scope, skipped);
     let was = measured(&walked.plan, trim);
     // The search, over points thinned where the chain is too long to weigh them all.
     let mut shapes: Vec<JoinShape> = joints.iter().map(|(_, j)| j.shape.clone()).collect();

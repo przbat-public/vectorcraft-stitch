@@ -201,7 +201,8 @@ the control channel with ids:
   between two cuts that saves less than 0.1 mm as planned (`MIN_JOIN_GAIN`), or comes out longer,
   keeps its old points, a part that had none set where it started and ended. The search then runs
   again on its own result until a round changes nothing (at most three, `MAX_ROUNDS`), so a second
-  Nearest Connection changes nothing. Points set in scope are replaced. One undo step "Nearest
+  Nearest Connection changes nothing. Points set in scope are replaced; a locked object is sewn as
+  it is and listed as skipped (`locked`), as the sewing order's moves leave it. One undo step "Nearest
   Connection", none when nothing changes; `dryRun` answers without writing. Its reply says what it
   saved (`before`, `after`, `saved`: moves, jumps, cuts, length) and lists the points written.
 - `embroidery.copyFrom {source, ids?, part?, keys?}` gives the objects the source's values, set or

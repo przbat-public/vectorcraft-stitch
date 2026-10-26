@@ -256,3 +256,18 @@ fn its_trials_keep_none_of_their_units() {
     run(&mut s, "embroidery.nearestConnection", json!({}));
     assert_eq!(kept(&mut s), before, "a run");
 }
+
+/// A locked object is sewn as it is: Nearest Connection sets no points on it and lists it as
+/// skipped (`locked`), as the sewing order's moves leave it; the others are joined.
+#[test]
+fn a_locked_object_keeps_its_points() {
+    let mut s = blank();
+    let [a, b, c] = three_lines(&mut s, "#2233cc");
+    run(&mut s, "object.lock", json!({"ids": [b]}));
+    let r = run(&mut s, "embroidery.nearestConnection", json!({}));
+    assert!(r["skipped"].as_array().unwrap().contains(&json!({"id": b, "reason": "locked"})), "{r}");
+    let info = run(&mut s, "embroidery.info", json!({"ids": [a, b, c]}));
+    let entry = |k: usize| info["objects"][k]["settings"]["stroke"]["entry"].clone();
+    assert_eq!(entry(1), json!(null), "the locked line: {info}");
+    assert!(entry(0).is_array() && entry(2).is_array(), "the others: {info}");
+}

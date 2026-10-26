@@ -254,6 +254,7 @@ fn params_words(k: &mut Vec<u64>, p: &Params) {
 
 /// One kept value: what it costs ([`Lru`]'s measure), when it was last used ([`Lru::tick`]), and
 /// by which plan ([`Lru::walk`]).
+#[derive(Clone)]
 struct Kept<V> {
     value: V,
     cost: usize,
@@ -263,6 +264,7 @@ struct Kept<V> {
 
 /// Values by their keys, at most `limit` of them by their costs, those used least recently dropped
 /// first, but never one the plan under way used ([`Lru::begin`]) for another it uses.
+#[derive(Clone)]
 struct Lru<V> {
     kept: HashMap<Arc<UnitKey>, Kept<V>>,
     /// The keys by when they were last used, oldest first.
@@ -343,7 +345,8 @@ pub(crate) struct Shaped {
 
 /// What one document's plans keep: each unit's stitches (at most [`MAX_CACHED_STITCHES`]), the
 /// areas the path operations made (at most [`MAX_KEPT_SHAPE_WORDS`]), and the key parts shared
-/// between keys ([`Shared`]).
+/// between keys ([`Shared`]). A clone shares the values kept (their keys and stitches are shared).
+#[derive(Clone)]
 pub(crate) struct UnitCache {
     units: Lru<Arc<UnitStitches>>,
     shapes: Lru<Arc<Shaped>>,

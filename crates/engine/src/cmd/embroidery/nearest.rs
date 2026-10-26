@@ -18,8 +18,15 @@
 //!   and ended). The search then runs again on its own result until a round changes nothing (at most
 //!   [`MAX_ROUNDS`]), so a second run changes nothing. One undo step, none when nothing changes;
 //!   `dryRun` answers without writing.
+//! - **Planning little.** A round writes points only on the parts the search moves, and on each part
+//!   right after one (else it would follow the moved end); the others stay as they are, so their
+//!   units are the ones kept, and get their own points (where they start and end) once the rounds
+//!   are over: there they sew as they did. Every plan it makes uses a copy of the units kept
+//!   ([`super::service::PlanService::scratch`]), so trials and dry runs never push the document's own
+//!   units out.
 
 use std::collections::{HashMap, HashSet};
+use std::sync::Mutex;
 
 use serde_json::{Value, json};
 use vectorcraft_doc::embroidery::{PartKey, PartKind, PartValue};
@@ -28,6 +35,7 @@ use vectorcraft_geom::Point;
 use vectorcraft_stitch::plan::{self, Ends, JoinShape, Link, Role, Through};
 use vectorcraft_stitch::{Command, SAME_POINT, mm_to_pt};
 
+use super::cache::UnitCache;
 use super::digitize::{UnitEnds, Walked};
 use super::objects::{edit_each, given};
 use super::plan::{DesignPlan, Origin, Part};
@@ -262,13 +270,15 @@ fn write(d: &mut Document, id: NodeId, kind: PartKind, entry: Option<PartValue>,
     Ok(changed > 0)
 }
 
-/// What one round of the search did to a copy of the document: the copy with its parts' new points
-/// (each stretch that saved too little as planned given its old points back), the parts written
-/// (each its unit's index in the plan before, its object, its kind of part), the moves before and
-/// after, and how many stretches came out longer and were restored.
+/// What one round of the search did to a copy of the document: the copy with the new points of the
+/// parts it moved and of those right after them (each stretch that saved too little as planned
+/// given its old points back), its free parts (each its unit's index in the plan before, its
+/// object, its kind of part, and its own start and end: where it starts and ends now, in
+/// millimetres), the moves before and after, and how many stretches came out longer and were
+/// restored.
 struct Round {
     doc: Document,
-    parts: Vec<(usize, NodeId, PartKind)>,
+    parts: Vec<(usize, NodeId, PartKind, (Point, Point))>,
     before: Vec<Stretch>,
     after: Vec<Stretch>,
     restored: usize,
@@ -280,10 +290,10 @@ struct Round {
 const MAX_ROUNDS: usize = 3;
 
 /// One round of the search on `doc` (planned as `walked`), its parts in `scope` (`None`: every
-/// object), with `service`'s kept units and the export's `opts`; what it can't join, with why, into
+/// object), with the `units` kept and the export's `opts`; what it can't join, with why, into
 /// `skipped` when asked.
 fn round(
-    service: &super::service::PlanService,
+    units: &Mutex<UnitCache>,
     doc: &Document,
     walked: &Walked,
     scope: Option<&HashSet<NodeId>>,
@@ -313,12 +323,22 @@ fn round(
             c.iter_mut().for_each(|x| *x = (0, 0));
         }
     }
-    // Written on a copy: each free part's chosen points, in document points.
+    // Written on a copy, in document points: each free part the search moved, and each free part
+    // right after a moved one (left as it is, it would follow the moved end); the others are left as
+    // they are, their units kept.
+    let moved: Vec<bool> = joints.iter().zip(&chosen_points).map(|((_, j), c)| j.part.is_some() && *c != (0, 0)).collect();
     let mut d = doc.clone();
-    let mut parts: Vec<(usize, NodeId, PartKind)> = Vec::new();
+    let mut parts: Vec<(usize, NodeId, PartKind, (Point, Point))> = Vec::new();
+    let mut written: HashSet<usize> = HashSet::new();
     for (k, ((i, j), shape)) in joints.iter().zip(&shapes).enumerate() {
         let Some((id, kind)) = j.part else { continue };
         let Some(&(s_, e_)) = chosen_points.get(k) else { continue };
+        parts.push((*i, id, kind, j.own));
+        let after_moved = k.checked_sub(1).and_then(|b| moved.get(b)).copied().unwrap_or(false);
+        if (s_, e_) == (0, 0) && !after_moved {
+            continue;
+        }
+        written.insert(*i);
         let (entry, exit) = if (s_, e_) == (0, 0) {
             // Its own points: those it holds kept as they are (not taken through millimetres and
             // back), where it starts and ends now for those it doesn't.
@@ -329,13 +349,13 @@ fn round(
             (PartValue::Point(in_points(entry)), PartValue::Point(in_points(exit)))
         };
         write(&mut d, id, kind, Some(entry), Some(exit))?;
-        parts.push((*i, id, kind));
     }
     // Checked by planning the copy: a stretch that saves less than MIN_JOIN_GAIN as planned (or
     // comes out longer) keeps its points. Where the points offered only stand near where a part
     // starts now, that also keeps a later run from moving it for nothing. Those that came out longer
     // are counted as restored.
-    let plan_of = |d: &Document| -> Result<Walked> { service.walk_kept(&d.without_edit_modes(), opts, false).map_err(PlanError::error) };
+    let plan_of =
+        |d: &Document| -> Result<Walked> { super::digitize::walked(&d.without_edit_modes(), opts, Some(units), false).map_err(PlanError::error) };
     let mut now = measured(&plan_of(&d)?.plan, trim);
     let same_shape = was.len() == now.len() && was.iter().zip(&now).all(|(a, b)| a.0 == b.0);
     let saves = |a: &Moves, b: &Moves| a.cost - b.cost >= MIN_JOIN_GAIN;
@@ -349,9 +369,9 @@ fn round(
         (HashSet::new(), false, 0)
     };
     if all_back || !back.is_empty() {
-        for (i, id, kind) in &parts {
+        for (i, id, kind, _) in &parts {
             let key = walked.plan.units.get(*i).map(|u| (u.origin, u.occurrence));
-            if all_back || key.is_some_and(|k| back.contains(&k)) {
+            if written.contains(i) && (all_back || key.is_some_and(|k| back.contains(&k))) {
                 // The points it held; one it didn't hold is set where it started or ended before:
                 // left to Auto, it would start nearest wherever the needle now is (across a colour
                 // change, the end of the object drawn before it, which may have moved).
@@ -398,13 +418,14 @@ pub(super) fn nearest_connection(s: &mut Session, p: &Value) -> Result<Value> {
         (st.uid, st.doc.clone())
     };
     let service = s.embroidery_plans.of(uid);
+    let units = service.scratch();
     // Rounds on the search's own result, until one changes nothing.
     let mut d: Document = (*original).clone();
     let mut first: Option<Vec<Stretch>> = None;
     let mut last: Option<Round> = None;
     let mut restored = 0usize;
     for k in 0..MAX_ROUNDS {
-        let walked = service.walk_kept(&d.without_edit_modes(), &opts, true).map_err(PlanError::error)?;
+        let walked = super::digitize::walked(&d.without_edit_modes(), &opts, Some(&units), true).map_err(PlanError::error)?;
         if k == 0
             && let Some(sc) = &scope
         {
@@ -415,9 +436,9 @@ pub(super) fn nearest_connection(s: &mut Session, p: &Value) -> Result<Value> {
             skipped.extend(not_sewn.into_iter().map(|id| (id, "notSewn")));
         }
         let mut why = Vec::new();
-        let r = round(&service, &d, &walked, scope.as_ref(), &opts, if k == 0 { &mut skipped } else { &mut why })?;
+        let r = round(&units, &d, &walked, scope.as_ref(), &opts, if k == 0 { &mut skipped } else { &mut why })?;
         restored += r.restored;
-        let moved = r.parts.iter().any(|(_, id, kind)| held(&d, *id, *kind) != held(&r.doc, *id, *kind));
+        let moved = r.parts.iter().any(|(_, id, kind, _)| held(&d, *id, *kind) != held(&r.doc, *id, *kind));
         first.get_or_insert_with(|| r.before.clone());
         d = r.doc.clone();
         last = Some(r);
@@ -428,7 +449,17 @@ pub(super) fn nearest_connection(s: &mut Session, p: &Value) -> Result<Value> {
     let mut seen = HashSet::new();
     skipped.retain(|(id, _)| seen.insert(*id));
     let (was, now) = (first.unwrap_or_default(), last.as_ref().map(|r| r.after.clone()).unwrap_or_default());
-    let parts: Vec<(NodeId, PartKind)> = last.as_ref().map(|r| r.parts.iter().map(|(_, id, kind)| (*id, *kind)).collect()).unwrap_or_default();
+    let parts: Vec<(NodeId, PartKind)> = last.as_ref().map(|r| r.parts.iter().map(|(_, id, kind, _)| (*id, *kind)).collect()).unwrap_or_default();
+    // Every part it joins gets points (the project owner's choice, 2026-10-25): those left as they
+    // are, where they start and end, which is where they sew again.
+    for (_, id, kind, (first, last)) in last.as_ref().map(|r| r.parts.as_slice()).unwrap_or_default() {
+        let (entry, exit) = held(&d, *id, *kind);
+        if entry.is_none() || exit.is_none() {
+            let entry = entry.unwrap_or(PartValue::Point(in_points(*first)));
+            let exit = exit.unwrap_or(PartValue::Point(in_points(*last)));
+            write(&mut d, *id, *kind, Some(entry), Some(exit))?;
+        }
+    }
 
     // What changed against the document as it was.
     let mut changed = 0usize;

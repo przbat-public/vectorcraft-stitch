@@ -444,12 +444,11 @@ impl PlanService {
         plan
     }
 
-    /// `doc`'s plan with `opts`, walked now with the units this service keeps (none remembered:
-    /// `doc` may be a copy no snapshot holds), with each unit's ends when `collect`
-    /// ([`super::digitize::walked`]): `embroidery.nearestConnection`'s plans before and after it
-    /// sets its points.
-    pub(crate) fn walk_kept(&self, doc: &Document, opts: &Options, collect: bool) -> Result<super::digitize::Walked, PlanError> {
-        super::digitize::walked(doc, opts, Some(&self.units), collect)
+    /// A copy of the units this service keeps, for planning documents never kept (a dry run, or a
+    /// command's trial of a change): it plans with the units kept so far, and what it adds is its
+    /// own, so the trials never push the real document's units out.
+    pub(crate) fn scratch(&self) -> std::sync::Mutex<UnitCache> {
+        std::sync::Mutex::new(self.units.lock().map(|u| u.clone()).unwrap_or_default())
     }
 
     /// Keep `memo` as the most recent, dropping the plans of snapshots gone (no plan of theirs can

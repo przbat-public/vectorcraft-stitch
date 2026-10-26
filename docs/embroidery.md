@@ -2043,9 +2043,12 @@ whole design once its plan is kept):
 | 22,000 paths | 6.1–7.6 s | 5.9 s | 15 s |
 | A press on stitches picking the object, 22,000 paths | 0.01 ms | 0.01 ms | 1 ms |
 
-Every part it joins gets points, so the plan of its result plans nearly every unit afresh, and a
-second round plans what the first moved: on the largest design that is seconds, run on the
-interface thread as every command is (a limit, below).
+Its rounds write points only on the parts the search moves and on the part right after each, so
+their trial plans take every other unit as kept; every part gets its own points (where it starts and
+ends, where it sews again) once the rounds are over. The trials plan on a copy of the units kept,
+so neither they nor a dry run push the document's own units out. Measured again (2026-10-26,
+release, under a load of about 20 while other work built, once): 16.5 ms on 1,000 paths (from
+117–123 ms) and 4.0 s on 22,000 (from 5.9 s).
 
 The embroidery tool's in-app gate (2026-10-26, release, the same machine, load about 4 to 6,
 twice, and twice again with the angle arrow at the end, load 3 to 4: 7.9–8.4 ms and 35.7–36.5 ms; `embroidery_tool_gate`, as the first gate: 60 Hz, 1440 × 900 points at 2 pixels a point,

@@ -237,3 +237,22 @@ fn a_closed_line_left_as_it_is_keeps_its_start() {
     let after = start(&mut s);
     assert!((after.0 - before.0).abs() < 1e-6 && (after.1 - before.1).abs() < 1e-6, "{before:?} → {after:?}");
 }
+
+/// Nearest Connection plans its trials on a copy of the units kept: a dry run, and a run, add none
+/// of their own to the document's, so they never push its own units out (a dry run on the largest
+/// design would have filled the cache with units of a document never kept, and the next edit would
+/// have planned the whole design cold).
+#[test]
+fn its_trials_keep_none_of_their_units() {
+    let mut s = blank();
+    three_lines(&mut s, "#2233cc");
+    run(&mut s, "embroidery.sequence", json!({}));
+    let uid = s.doc().unwrap().uid;
+    let kept = |s: &mut Session| s.embroidery_plans.of(uid).kept();
+    let before = kept(&mut s);
+    assert!(before > 0, "the plan's units kept");
+    run(&mut s, "embroidery.nearestConnection", json!({"dryRun": true}));
+    assert_eq!(kept(&mut s), before, "a dry run");
+    run(&mut s, "embroidery.nearestConnection", json!({}));
+    assert_eq!(kept(&mut s), before, "a run");
+}

@@ -88,6 +88,9 @@ pub(crate) struct UnitStitches {
     pub(crate) stitches: Vec<Stitch>,
     pub(crate) columns: Option<Params>,
     pub(crate) widths: Option<[f64; 2]>,
+    /// How far from its entry and its exit point its first and last needle points can lie at best,
+    /// millimetres ([`ends_reach`]): 0 where none is asked.
+    pub(crate) reach: [f64; 2],
 }
 
 /// The stitches `req` asks for: the shape planned in its style from where the needle is, a fill's
@@ -123,7 +126,69 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError
     // Shrunk to its length before it is kept between plans: the planner grows the vector by
     // doubling, so it could hold up to twice the memory the cache counts.
     stitches.shrink_to_fit();
-    Ok(UnitStitches { stitches, columns, widths })
+    let asked = [matches!(start, Start::Entry(_)), exit.is_some()];
+    let reach = ends_reach(shape, &params, columns.as_ref(), &found, &stitches, asked);
+    Ok(UnitStitches { stitches, columns, widths, reach })
+}
+
+/// How near a needle point must lie to a narrow part's middle, beyond its half width there and its
+/// pull compensation, to lie in it, millimetres: a hair, for rounding.
+const IN_COLUMN: f64 = 0.05;
+
+/// How far from the entry and the exit point it was planned toward (`asked`: whether each was) a
+/// unit's first and last needle points can lie at best, millimetres: a satin column's crossings
+/// end on a rail, half its width and its pull compensation aside, an open column's ends pushed in
+/// by its push compensation (a ring has none); a fill's narrow part sewn as satin the same where
+/// the needle point lies in it, at its width there (`satin` its parameters, `found` the parts); a
+/// fill's rows, a running line and a part not asked for, nothing.
+fn ends_reach(shape: &BezPath, params: &Params, satin: Option<&Params>, found: &[plan::Column], stitches: &[Stitch], asked: [bool; 2]) -> [f64; 2] {
+    let mut needle = stitches.iter().filter(|s| s.command == Command::Stitch).map(|s| s.point());
+    let first = needle.next();
+    let ends = [first, needle.next_back().or(first)];
+    let column = |p: &Params, width: f64, open: bool| {
+        let [left, right] = p.compensation(width);
+        width / 2.0 + left.max(right) + if open { p.push[0].max(p.push[1]) } else { 0.0 }
+    };
+    let reach = |q: Point| match (plan::sewn_style(params), satin) {
+        (plan::Style::Satin, _) => {
+            // A ring has no ends to push in: every subpath closed.
+            let open = shape.elements().iter().filter(|e| matches!(e, vectorcraft_geom::PathEl::MoveTo(_))).count()
+                > shape.elements().iter().filter(|e| matches!(e, vectorcraft_geom::PathEl::ClosePath)).count();
+            column(params, params.width.min(plan::MAX_SATIN_WIDTH), open)
+        }
+        (_, Some(p)) => found
+            .iter()
+            .filter(|c| c.is_satin())
+            .filter_map(|c| {
+                let (a, b) = c.stations.iter().min_by(|x, y| x.0.midpoint(x.1).distance(q).total_cmp(&y.0.midpoint(y.1).distance(q)))?;
+                let width = a.distance(*b);
+                let [left, right] = p.compensation(width);
+                let inside = if c.closed {
+                    // A ring of a column: as near its middle as its rails, pulled out.
+                    vectorcraft_doc::embroidery::outline::distance_to(&c.middles(), q) <= width / 2.0 + left.max(right) + IN_COLUMN
+                } else {
+                    // An open one: between its rails (its ends pushed in, never out), pulled out.
+                    let rails: Vec<Point> = c.stations.iter().map(|s| s.0).chain(c.stations.iter().rev().map(|s| s.1)).collect();
+                    let mut outline = rails.clone();
+                    outline.extend(rails.first().copied());
+                    let mut band = BezPath::new();
+                    for (k, r) in rails.iter().enumerate() {
+                        if k == 0 { band.move_to(*r) } else { band.line_to(*r) }
+                    }
+                    band.close_path();
+                    band.winding(q) != 0 || vectorcraft_doc::embroidery::outline::distance_to(&outline, q) <= left.max(right) + IN_COLUMN
+                };
+                inside.then(|| column(p, width, !c.closed))
+            })
+            .fold(0.0, f64::max),
+        _ => 0.0,
+    };
+    let at = |k: usize| match (asked.get(k), ends.get(k)) {
+        (Some(true), Some(Some(q))) => reach(*q),
+        _ => 0.0,
+    };
+    let fine = |r: f64| if r.is_finite() { r.max(0.0) } else { 0.0 };
+    [fine(at(0)), fine(at(1))]
 }
 
 /// `area` without its narrow `columns` ([`plan::narrow_columns`]): what is left to fill, each
@@ -300,5 +365,52 @@ mod tests {
             assert_eq!(banded.winding(q), path.winding(q), "at {q:?}");
             assert_eq!(one.winding(q), path.winding(q), "at {q:?}, every segment");
         }
+    }
+
+    fn polygon(pts: &[(f64, f64)], closed: bool) -> BezPath {
+        let mut p = BezPath::new();
+        p.move_to(pts[0]);
+        for q in &pts[1..] {
+            p.line_to(*q);
+        }
+        if closed {
+            p.close_path();
+        }
+        p
+    }
+
+    fn stitches(pts: &[(f64, f64)]) -> Vec<Stitch> {
+        pts.iter().map(|&(x, y)| Stitch::new(x, y, Command::Stitch)).collect()
+    }
+
+    /// A fill's narrow part's reach counts where the needle point lies in it, at its width there; on
+    /// the fill's rows it is nothing, so a miss there is told: a T, its bar's arms 3 mm wide, ending
+    /// in an arm and in the square where they meet.
+    #[test]
+    fn a_columns_reach_counts_only_where_the_needle_point_lies_in_it() {
+        let t = polygon(&[(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 3.0), (16.5, 23.0), (13.5, 23.0), (13.5, 3.0), (0.0, 3.0)], true);
+        let found = plan::narrow_columns(&t, FillRule::NonZero, 7.0);
+        let (fill, satin) = (Params::for_style(plan::Style::Fill), Params::for_style(plan::Style::Satin));
+        let [left, right] = satin.compensation(3.0);
+        let arm = 1.5 + left.max(right) + satin.push[0].max(satin.push[1]);
+        let reach = |end: (f64, f64)| ends_reach(&t, &fill, Some(&satin), &found, &stitches(&[(5.0, 1.5), end]), [true, true]);
+        let [_, in_arm] = reach((25.0, 1.5));
+        assert!((in_arm - arm).abs() < 0.2, "in an arm, {in_arm} mm, about {arm}");
+        assert_eq!(reach((15.0, 1.5))[1], 0.0, "in the square of rows");
+        assert_eq!(ends_reach(&t, &fill, Some(&satin), &found, &stitches(&[(5.0, 1.5), (25.0, 1.5)]), [true, false])[1], 0.0, "no exit asked");
+    }
+
+    /// A satin ring has no ends to push in: its reach is half its width and its pull compensation,
+    /// an open column's its push compensation more.
+    #[test]
+    fn a_rings_reach_has_no_push() {
+        let satin = Params { width: 4.0, push: [0.5, 0.5], ..Params::for_style(plan::Style::Satin) };
+        let [left, right] = satin.compensation(4.0);
+        let side = 2.0 + left.max(right);
+        let ring = polygon(&[(0.0, 0.0), (40.0, 0.0), (40.0, 40.0), (0.0, 40.0)], true);
+        let line = polygon(&[(0.0, 0.0), (40.0, 0.0)], false);
+        let done = stitches(&[(0.0, 2.0), (40.0, 2.0)]);
+        assert!((ends_reach(&ring, &satin, None, &[], &done, [true, true])[0] - side).abs() < 1e-9);
+        assert!((ends_reach(&line, &satin, None, &[], &done, [true, true])[0] - (side + 0.5)).abs() < 1e-9);
     }
 }

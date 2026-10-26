@@ -833,9 +833,9 @@ impl<'a> Digitizer<'a> {
             }
         };
         // Kept in the cache too, the stitches are copied into the block.
-        let (stitches, columns, widths) = match Arc::try_unwrap(planned) {
-            Ok(UnitStitches { stitches, columns, widths }) => (stitches, columns, widths),
-            Err(kept) => (kept.stitches.clone(), kept.columns, kept.widths),
+        let (stitches, columns, widths, reach) = match Arc::try_unwrap(planned) {
+            Ok(UnitStitches { stitches, columns, widths, reach }) => (stitches, columns, widths, reach),
+            Err(kept) => (kept.stitches.clone(), kept.columns, kept.widths, kept.reach),
         };
         let satin_widths = match plan::sewn_style(&params) {
             Style::Satin => Some([params.width; 2]),
@@ -864,7 +864,7 @@ impl<'a> Digitizer<'a> {
         if let (Some(record), Some(collected)) = (record, self.collected.as_mut()) {
             collected.push(record);
         }
-        let asked = Asked { entry: settings.entry(), exit: settings.exit() };
+        let asked = Asked { entry: settings.entry(), exit: settings.exit(), reach };
         let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, why, asked };
         self.seq.add(Planned { facts, block, literal: None });
     }

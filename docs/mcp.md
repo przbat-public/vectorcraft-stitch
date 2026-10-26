@@ -5199,8 +5199,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   exactly where the needle already is starts at that point, which the unit before sewed) and bounds, the
   entry and exit points it was planned toward (`asked: {entry, exit}`, millimetres, its part's when its object sets
   them, each `null` otherwise) and how far its first and last needle points miss them (`missedBy: {entry, exit}`,
-  millimetres, beyond a satin column's reach: half its width, its pull and its push compensation, as
-  its crossings end on a rail; a part ends as near its exit as its stitches reach without a jump, a cut or a visible travel, and the
+  millimetres, beyond a satin column's reach: half its width, its pull and, at an open column's end,
+  its push compensation, as its crossings end on a rail; a fill's narrow part's where the needle
+  point lies in it, at its width there, none on a fill's rows; a part ends as near its exit as its stitches reach without a jump, a cut or a visible travel, and the
   miss says how near that is); `blockCount`, `unitCount` and `truncated`
   say what was left out, and `split` names the objects sewn in more than one block. Sewing order follows stacking
   order: `node.move` changes it.

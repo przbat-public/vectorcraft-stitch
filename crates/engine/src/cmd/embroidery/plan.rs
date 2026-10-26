@@ -271,26 +271,6 @@ pub struct Unit {
     pub asked: Asked,
 }
 
-impl Unit {
-    /// How far from a point on its middle line its stitches can start or end at best, millimetres:
-    /// a satin column's crossings end on a rail, half its width (and its pull compensation) aside,
-    /// its ends pushed in by its push compensation; a fill's narrow parts sewn as satin the same at
-    /// their widest. None for a running line, a fill's rows (they end on the line or the outline) and
-    /// a literal run.
-    pub fn reach(&self) -> f64 {
-        let column = |p: &Params, width: f64| {
-            let [left, right] = p.compensation(width);
-            width / 2.0 + left.max(right) + p.push[0].max(p.push[1])
-        };
-        let reach = match (&self.params, &self.columns) {
-            (Some(p), _) if plan::sewn_style(p) == Style::Satin => column(p, p.width.min(plan::MAX_SATIN_WIDTH)),
-            (Some(_), Some(c)) => self.satin_widths.map_or(0.0, |[_, widest]| column(c, widest)),
-            _ => 0.0,
-        };
-        if reach.is_finite() { reach.max(0.0) } else { 0.0 }
-    }
-}
-
 /// The entry and exit points a unit was planned toward (millimetres from the document's origin),
 /// each `None` when its object sets none: how far its stitches miss them is
 /// [`DesignPlan::missed`].
@@ -298,6 +278,10 @@ impl Unit {
 pub struct Asked {
     pub entry: Option<Point>,
     pub exit: Option<Point>,
+    /// How far from each its first and last needle points can lie at best, millimetres, as its
+    /// planning found them: a satin column's half width and pull compensation (a fill's narrow part
+    /// where the needle point lies in it, at its width there), an open column's push compensation.
+    pub reach: [f64; 2],
 }
 
 impl Unit {
@@ -457,15 +441,15 @@ impl DesignPlan {
 
     /// How far unit `unit`'s first and last needle points ([`DesignPlan::needle_ends`]) lie from the
     /// entry and the exit point it was planned toward ([`Unit::asked`]), beyond the reach of its
-    /// satin columns ([`Unit::reach`]), millimetres: each `None` when it asked for none, or has no
-    /// needle point of its own.
+    /// satin columns there ([`Asked::reach`]), millimetres: each `None` when it asked for none, or
+    /// has no needle point of its own.
     pub fn missed(&self, unit: usize) -> [Option<f64>; 2] {
         let Some(u) = self.units.get(unit) else { return [None, None] };
         let ends = self.needle_ends(unit);
         let (first, last) = (ends.map(|e| e.0), ends.map(|e| e.1));
-        let reach = u.reach();
-        let miss = |a: Point, q: Point| (a.distance(q) - reach).max(0.0);
-        [u.asked.entry.zip(first).map(|(a, q)| miss(a, q)), u.asked.exit.zip(last).map(|(a, q)| miss(a, q))]
+        let miss = |a: Point, q: Point, reach: f64| (a.distance(q) - reach).max(0.0);
+        let [entry_reach, exit_reach] = u.asked.reach;
+        [u.asked.entry.zip(first).map(|(a, q)| miss(a, q, entry_reach)), u.asked.exit.zip(last).map(|(a, q)| miss(a, q, exit_reach))]
     }
 
     /// The numbers of unit `unit`'s stitches ([`Unit::stitches`], numbered as

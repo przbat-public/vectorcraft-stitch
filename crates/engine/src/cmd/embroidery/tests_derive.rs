@@ -455,3 +455,72 @@ fn a_part_sewn_as_several_units_takes_its_entry_on_the_first_and_its_exit_on_the
     let pieces: Vec<_> = members(&s, a).into_iter().map(|id| fill_points(&embroidery(&s, id))).collect();
     assert_eq!(pieces, vec![(Some(entry), None), (None, None), (None, Some(exit))], "expanded: the first the entry, the last the exit");
 }
+
+/// The tools that cut one object into several keep its points only on the piece nearest each, and
+/// the cut after it on the last piece: the Knife and the Eraser through a filled square, Cut Path at
+/// two of its anchors, Shape Builder's merge of the square's overlap with another (the merged shape
+/// takes the square's look, so its points too, and the square's remnant keeps them). Mutation
+/// caught: a tool copying the source onto every piece gives each one both points and the cut.
+#[test]
+fn the_cutting_tools_keep_each_point_on_the_nearest_piece() {
+    let (entry, exit) = ([22.0, 22.0], [108.0, 108.0]);
+    let mut source = with_points(entry, exit);
+    source.set_trim_after(true);
+    let square = |s: &mut Session| {
+        let a = rect(s, "#cc2222", 20.0, 20.0, 90.0, 90.0);
+        give(s, a, &source);
+        a
+    };
+    let check = |s: &Session, pieces: &[u64], what: &str| {
+        assert!(pieces.len() >= 2, "{what}: {pieces:?}");
+        let points: Vec<_> = pieces.iter().map(|id| fill_points(&embroidery(s, *id))).collect();
+        assert_eq!(points.iter().filter(|p| p.0 == Some(entry)).count(), 1, "{what}: {points:?}");
+        assert_eq!(points.iter().filter(|p| p.1 == Some(exit)).count(), 1, "{what}: {points:?}");
+        assert_eq!(pieces.iter().filter(|id| embroidery(s, **id).trim_after).count(), 1, "{what}: cut once");
+        assert!(pieces.iter().all(|id| angle(&embroidery(s, *id)) == Some(30.0)), "{what}: the other settings on every piece");
+    };
+    for (command, params) in [
+        ("path.knife", json!({"points": [[65.0, 0.0], [65.0, 130.0]]})),
+        ("path.eraseRegion", json!({"points": [[65.0, 0.0], [65.0, 130.0]], "size": 10.0})),
+    ] {
+        let mut s = blank();
+        let a = square(&mut s);
+        run(&mut s, "select.set", json!({"ids": [a]}));
+        let pieces = ids(&run(&mut s, command, params));
+        check(&s, &pieces, command);
+    }
+    let mut s = blank();
+    let a = square(&mut s);
+    run(&mut s, "select.anchors", json!({"id": a, "anchors": [[0, 1], [0, 3]], "mode": "set"}));
+    let pieces = ids(&run(&mut s, "path.cutAtAnchors", json!({})));
+    check(&s, &pieces, "path.cutAtAnchors");
+    // Shape Builder: another square under this one's right part; a click on their overlap merges it
+    // with the look of the front one, the square.
+    let mut s = blank();
+    let under = rect(&mut s, "#2233cc", 80.0, 20.0, 90.0, 90.0);
+    let a = square(&mut s);
+    run(&mut s, "select.set", json!({"ids": [under, a]}));
+    run(&mut s, "shapeBuilder.merge", json!({"points": [[95.0, 60.0]]}));
+    // The square's pieces: those with its settings (the other square has none).
+    let squares: Vec<u64> =
+        s.doc().unwrap().doc.layers[0].children().unwrap().iter().map(|n| n.id.0).filter(|id| angle(&embroidery(&s, *id)) == Some(30.0)).collect();
+    check(&s, &squares, "shapeBuilder.merge");
+    // Scissors on an open line: its stroke's points on the halves nearest them.
+    let mut s = blank();
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#113311"}));
+    let line = run(&mut s, "path.create", json!({"d": "M 20 20 L 120 20"}))["id"].as_u64().unwrap();
+    let mut e = settings(30.0, true);
+    e.edit_part(PartKind::Stroke, |p| {
+        p.set(PartKey::Entry, Some(PartValue::Point(vectorcraft_geom::Point::new(22.0, 20.0))));
+        p.set(PartKey::Exit, Some(PartValue::Point(vectorcraft_geom::Point::new(118.0, 20.0))));
+    });
+    give(&mut s, line, &e);
+    let halves = ids(&run(&mut s, "path.split", json!({"id": line, "segment": 0, "t": 0.5})));
+    let points: Vec<_> = halves
+        .iter()
+        .map(|id| embroidery(&s, *id).part(PartKind::Stroke).and_then(|p| p.points.as_ref()).map(|p| (p.entry.is_some(), p.exit.is_some())))
+        .collect();
+    assert_eq!(points, vec![Some((true, false)), Some((false, true))], "path.split");
+    assert_eq!(halves.iter().filter(|id| embroidery(&s, **id).trim_after).count(), 1, "path.split: cut once");
+}

@@ -1692,7 +1692,8 @@ objects join) is resolved once a plan (`DesignSettings`).
 
 - **Objects made from others** keep the settings of what they come from (`cmd/embroidery/derive.rs`:
   Pathfinder, Offset Path, Shape Builder, Divide Objects Below and Split Into Grid take their
-  paint source's, the cut after an object cut into pieces going to its last; Make and Release
+  paint source's, the cut after an object cut into pieces going to its last, as do the pieces the
+  Knife, the Eraser, Scissors and Cut Path at Anchors cut from one object; Make and Release
   Compound Path, Outline Stroke, Expand Appearance, Create Outlines, Ungroup and Break Link give
   each piece the settings of the part it came from and the cut to what stands for the object).
   Each entry and exit point stays only on the piece nearest it, the other pieces' back to Auto

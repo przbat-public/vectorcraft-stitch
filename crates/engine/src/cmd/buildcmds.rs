@@ -356,6 +356,9 @@ fn sb_merge(s: &mut Session, p: &Value) -> Result<Value> {
         let mut new_nodes: Vec<Node> = vec![];
         let mut merged_id = None;
         for (i, (sh, leaf)) in map.shapes.iter().zip(&leaves).enumerate() {
+            // VectorCraft Stitch: where the objects this one made start (cut once, each embroidery
+            // point on the nearest, below).
+            let made = new_nodes.len();
             let pieces: Vec<usize> = map.lines.iter().enumerate().filter(|(_, (l, _))| l.key == i as u64).map(|(k, _)| k).collect();
             if !pieces.is_empty() {
                 // An open path loses the pieces deleted and those between merged (or deleted) regions.
@@ -415,6 +418,7 @@ fn sb_merge(s: &mut Session, p: &Value) -> Result<Value> {
                 merged_id = Some(m.id);
                 new_nodes.push(m);
             }
+            super::embroidery::derive::cut_once(new_nodes.get_mut(made..).unwrap_or_default().iter_mut());
         }
         let new_ids = replace_roots(d, &roots, new_nodes)?;
         sel.set(new_ids.iter().copied());

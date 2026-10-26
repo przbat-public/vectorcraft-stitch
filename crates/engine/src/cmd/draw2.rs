@@ -367,7 +367,10 @@ pub(super) fn replace_with_pieces(d: &mut Document, cut: &mut Beside, id: NodeId
     set_geometry(d, id, first)?;
     if !above.is_empty() {
         let n = d.node(id).cloned().ok_or(EngineError::NoNode(id))?;
-        cut.put(d, id, [n].into_iter().chain(above).collect())?;
+        let mut pieces: Vec<Node> = [n].into_iter().chain(above).collect();
+        // VectorCraft Stitch: the object's embroidery cut once, each point on the nearest piece.
+        super::embroidery::derive::cut_once(pieces.iter_mut());
+        cut.put(d, id, pieces)?;
     }
     Ok(ids)
 }
@@ -1085,7 +1088,11 @@ fn split(s: &mut Session, p: &Value) -> Result<Value> {
         let [left, right] = <[SubPath; 2]>::try_from(pieces).map_err(|_| EngineError::Other("cannot split an open path at its end point".into()))?;
         if path.subpaths.len() == 1 {
             path.subpaths[0] = left;
-            let node = sibling_with(d, id, PathData::single(right))?;
+            let mut node = sibling_with(d, id, PathData::single(right))?;
+            // VectorCraft Stitch: the object's embroidery cut once, each point on the nearer piece.
+            if let Some(n) = d.node_mut(id) {
+                super::embroidery::derive::cut_once([n, &mut node].into_iter());
+            }
             let (parent, idx, _) = d.position(id).ok_or(EngineError::NoNode(id))?;
             let nid = d.insert(parent, idx + 1, node)?;
             sel.set([id, nid]);

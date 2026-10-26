@@ -244,6 +244,37 @@ fn an_entry_point_starts_the_part() {
     assert!(off(start, (60.0, 80.0)) < 1e-6, "a closed running line: {start:?}");
 }
 
+/// A part ends at its exit point as near as its stitches can reach it, without a jump, a cut or a
+/// stitch that shows more: an open running line whose start is free ends at its end nearest the
+/// exit, from wherever the needle comes; entered at a set point it ends where its stitches take it;
+/// a closed one goes on round to the exit in its own holes. Mutation caught: the exit read and not
+/// planned toward leaves the line ending at its far end.
+#[test]
+fn an_exit_point_ends_the_part() {
+    let last_point = |plan: &DesignPlan, unit: usize| {
+        let st = plan.unit_stitches(unit).iter().rev().find(|s| s.command == Command::Stitch).copied().unwrap();
+        (st.x, st.y)
+    };
+    let off = |(x, y): (f64, f64), (px, py): (f64, f64)| (x - px / PT_PER_MM).hypot(y - py / PT_PER_MM);
+    let mut s = blank();
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#2233cc"}));
+    let line = run(&mut s, "path.create", json!({"d": "M 20 100 L 200 100"}))["id"].as_u64().unwrap();
+    run(&mut s, "select.none", json!({}));
+    assert!(off(last_point(&plan_with(&s, json!({})), 0), (200.0, 100.0)) < 1e-6, "drawn to its right end");
+    give(&mut s, line, json!({"stroke": {"points": {"exit": [30.0, 104.0]}}}));
+    assert!(off(last_point(&plan_with(&s, json!({})), 0), (20.0, 100.0)) < 1e-6, "turned to end at its left end, by the exit");
+    give(&mut s, line, json!({"stroke": {"points": {"entry": [20.0, 100.0], "exit": [30.0, 104.0]}}}));
+    assert!(off(last_point(&plan_with(&s, json!({})), 0), (200.0, 100.0)) < 1e-6, "its entry set: it ends at its other end");
+    // A rectangle's outline sewn as a running line goes on round to its exit, in its own holes.
+    let mut s = blank();
+    let id = shape(&mut s, 20.0, 20.0, 80.0, 60.0, 0.0);
+    give(&mut s, id, json!({"fill": {"stitch": "running", "points": {"entry": [20.0, 20.0], "exit": [100.0, 50.0]}}}));
+    let plan = plan_with(&s, json!({}));
+    let stitch = plan.units[0].params.unwrap().stitch_length;
+    assert!(off(last_point(&plan, 0), (100.0, 50.0)) <= 0.65 * stitch, "ends at its exit: {:?}", last_point(&plan, 0));
+}
+
 /// A fill angle the object doesn't set turns with the object, from its bounding box's angle: the
 /// default rows and an export's angle alike; a set angle turns as it is stored; turned back
 /// upright, the object is planned as before, bit for bit.

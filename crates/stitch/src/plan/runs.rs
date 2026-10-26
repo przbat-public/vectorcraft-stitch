@@ -50,6 +50,10 @@ pub(super) const COST_TRIM: f64 = 50.0;
 /// Per millimetre from where the needle came from outside the shape (the object sewn before): a
 /// little, so that of two orders the one starting nearer wins.
 pub(super) const COST_ENTRY: f64 = 0.1;
+/// Per millimetre a shape's end lies from the exit point its object sets, when ways of sewing it
+/// are weighed: as much as a travel that shows, since the person asked for that end (twelve
+/// millimetres of travel hidden under stitching still to come are worth one millimetre nearer).
+pub(super) const COST_EXIT: f64 = COST_SEEN;
 
 /// A shape's runs in sewing order, each with how the needle gets to it.
 #[derive(Default)]

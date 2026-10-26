@@ -44,6 +44,7 @@ mod tests;
 mod tests_aim;
 #[cfg(test)]
 mod tests_narrow;
+mod toward;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
@@ -628,8 +629,22 @@ pub fn try_stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Optio
 pub fn try_stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> crate::Result<Vec<Stitch>> {
     let p = p.sane();
     placed(path)?;
-    within_limit(estimate(&subpaths(path), &p))?;
+    let subs = subpaths(path);
+    within_limit(estimate(&subs, &p) + aimed_extra(&subs, &p, &aim))?;
     Ok(stitches_aimed(path, rule, &p, aim))
+}
+
+/// How many more points than [`estimate`] counts `subs` may plan into in style `p` when sewn
+/// toward an exit point (`aim`): a running line's closed subpaths carried on round, up to half
+/// their length again ([`running::lapped`]). None without an exit.
+fn aimed_extra(subs: &[SubPath], p: &Params, aim: &Aim) -> f64 {
+    if aim.exit.is_none() {
+        return 0.0;
+    }
+    match sewn_style(p) {
+        Style::Running => subs.iter().filter(|s| s.closed).map(|s| length(&s.points(), true) / 2.0 / p.stitch_length + 1.0).sum(),
+        Style::Satin | Style::Fill => 0.0,
+    }
 }
 
 /// A filled shape sewn in parts: `rest`, the shape without its narrow `columns` (cut out by the

@@ -134,3 +134,77 @@ fn an_entry_that_isnt_a_number_is_none() {
         assert_eq!(odd, stitches_aimed(&shape, rule, &p, Aim::from_needle(None)), "{style:?}");
     }
 }
+
+fn last_point(v: &[Stitch]) -> Point {
+    v.iter().rev().find(|s| s.command == Command::Stitch).map(|s| s.point()).expect("a needle point")
+}
+
+fn aimed(path: &BezPath, p: &Params, start: Start, exit: Option<(f64, f64)>) -> Vec<Stitch> {
+    stitches_aimed(path, vectorcraft_geom::FillRule::NonZero, p, Aim { start, exit: exit.map(|(x, y)| Point::new(x, y)) })
+}
+
+/// An open running line whose start is free ends at its end nearest its exit, even when the needle
+/// comes from the other side (a set exit beats where the needle happens to be); entered at a set
+/// point it ends where its stitches take it (a set entry beats a set exit: a running line is never
+/// sewn back over itself); an exit as near both ends changes nothing.
+#[test]
+fn an_open_line_ends_at_its_end_nearest_its_exit_unless_its_entry_is_set() {
+    let p = Params::for_style(Style::Running).sane();
+    let open = line((0.0, 0.0), (60.0, 0.0));
+    let needle = Start::Needle(Point::new(-3.0, 0.0));
+    assert!(last_point(&aimed(&open, &p, needle, None)).x > 59.0, "from the needle's end to the far one");
+    assert!(last_point(&aimed(&open, &p, needle, Some((4.0, 2.0)))).x < 1.0, "turned to end at the exit's end");
+    let entered = Start::Entry(Point::new(60.0, 0.0));
+    assert!(last_point(&aimed(&open, &p, entered, Some((55.0, 1.0)))).x < 1.0, "the entry's end starts it: it ends at the other");
+    assert_eq!(aimed(&open, &p, needle, Some((30.0, 5.0))), aimed(&open, &p, needle, None), "an exit as near both ends");
+}
+
+/// A closed running line goes on past its start to its needle point nearest the exit, the shorter
+/// way, in its own holes: every point after the lap is one of the lap's, at most half of them; with
+/// the exit at its start it is sewn as without it.
+#[test]
+fn a_closed_line_goes_on_round_to_its_exit_in_its_own_holes() {
+    let p = Params { lock: false, ..Params::for_style(Style::Running) }.sane();
+    let square = rect(0.0, 0.0, 40.0, 40.0);
+    let entered = Start::Entry(Point::new(0.0, 0.0));
+    let plain = points_of(&aimed(&square, &p, entered, None));
+    for exit in [(40.0, 20.0), (5.0, 40.0), (0.0, 12.0)] {
+        let out = points_of(&aimed(&square, &p, entered, Some(exit)));
+        let end = *out.last().unwrap();
+        assert!(end.distance(Point::new(exit.0, exit.1)) <= 0.65 * p.stitch_length, "{exit:?}: ends at {end:?}");
+        let lap = plain.len();
+        assert!(out.len() > lap && out.len() - lap <= lap / 2 + 1, "{exit:?}: {} points after a lap of {lap}", out.len() - lap);
+        for q in &out[lap..] {
+            assert!(plain.iter().any(|h| h.distance(*q) < 1e-9), "{exit:?}: {q:?} is a hole of the lap");
+        }
+    }
+    assert_eq!(aimed(&square, &p, entered, Some((0.0, 0.0))), aimed(&square, &p, entered, None), "an exit at its start");
+}
+
+fn points_of(v: &[Stitch]) -> Vec<Point> {
+    v.iter().filter(|s| s.command == Command::Stitch).map(|s| s.point()).collect()
+}
+
+/// Of a line's subpaths, the last is chosen and turned to end nearest the exit, the first staying
+/// the one nearest the needle; an order that would need a jump or a cut to reach the exit is not
+/// taken: the line is sewn as without the exit.
+#[test]
+fn a_lines_last_subpath_ends_nearest_its_exit_without_a_jump_more() {
+    let p = Params::for_style(Style::Running).sane();
+    let mut three = line((0.0, 0.0), (10.0, 0.0));
+    three.extend(line((12.0, 0.0), (22.0, 0.0)));
+    three.extend(line((12.0, 3.0), (22.0, 3.0)));
+    let needle = Start::Needle(Point::new(0.0, 0.0));
+    let plain = aimed(&three, &p, needle, None);
+    assert!(last_point(&plain).distance(Point::new(12.0, 3.0)) < 1e-9, "nearest next ends on the third line's left end");
+    let toward = aimed(&three, &p, needle, Some((12.0, 0.0)));
+    assert!(last_point(&toward).distance(Point::new(12.0, 0.0)) < 1e-9, "the second line sewn last, ending at the exit");
+    assert!(points_of(&toward).first().unwrap().distance(Point::new(0.0, 0.0)) < 1e-9, "the first line stays first");
+    let jumps = |v: &[Stitch]| v.iter().filter(|s| s.command != Command::Stitch).count();
+    assert_eq!(jumps(&toward), jumps(&plain));
+    // Two lines 10 mm apart: the second can end at its left end only after a jump past the trim.
+    let mut two = line((0.0, 0.0), (20.0, 0.0));
+    two.extend(line((30.0, 0.0), (50.0, 0.0)));
+    let needle = Start::Needle(Point::new(-5.0, 0.0));
+    assert_eq!(aimed(&two, &p, needle, Some((30.0, 5.0))), aimed(&two, &p, needle, None));
+}

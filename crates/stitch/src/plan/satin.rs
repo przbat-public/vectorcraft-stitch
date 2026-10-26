@@ -77,7 +77,7 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> Vec<Stitch> {
     // The crossings go to one rail and the other in turn: half the spacing apart.
     let pitch = spacing / CROSSINGS_PER_SPACING;
     let mut runs = Runs::from(aim.start.point());
-    for Line { pts, closed, reversed } in ordered(subpaths(path), aim.start) {
+    for Line { pts, closed, reversed, .. } in ordered(subpaths(path), aim.start) {
         // Push compensation: an open column is sewn shorter at its ends, the underlay with it.
         let shortest = spacing * MIN_CROSSINGS;
         let pts = if closed { pts } else { pushed(&pts, if reversed { [p.push[1], p.push[0]] } else { p.push }, shortest) };

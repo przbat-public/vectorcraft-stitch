@@ -995,8 +995,12 @@ the object a person selects (`id`).
 - An entry point starts its part exactly there only where the stitches can start anywhere: on a
   fill's outline, half a row spacing inside it (where the edge run runs), and anywhere on a closed
   running line or satin ring. An open line or satin column, a fill's narrow parts sewn as satin
-  among them, can start only at an end: its nearer one. An exit point is kept but not yet planned
-  toward.
+  among them, can start only at an end: its nearer one.
+- An exit point ends a running line as near it as its stitches can reach, never sewn back over an
+  open line: an open line whose start is free (no entry set) ends at its end nearest the exit; one
+  entered at a set point ends at its other end, however far that is from the exit; a closed line
+  goes on round past its start to the exit (up to half its length again, in its own holes). A
+  satin's and a fill's exit points are kept but not yet planned toward.
 - A part of a fill narrower than 1 mm is a single running line along its middle, not a bean or
   triple run: on a part 0.6–1 mm wide its edges stay bare.
 - Travel between a fill's parts is weighed by the straight distance between them, and it is not

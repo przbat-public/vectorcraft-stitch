@@ -8,8 +8,12 @@
 //!   After), where only the frame's travel counts.
 //! - **What it may choose.** A part in scope that can take points of its own (one unit for its kind
 //!   of part, not a symbol's art, not a stroke a clip group cuts, not of a shape the planner's rules
-//!   there don't say, not locked) is free: any of its starts and ends. A part with no points set outside the scope
-//!   follows (it starts nearest the end before it); the rest are sewn as they are.
+//!   there don't say, not locked) is free: any of its starts and ends. A part outside the scope with
+//!   no points set follows, as it is sewn: it starts nearest the end before it, so its stitches
+//!   change when that end moves (the search weighs where a line, a column or a ring then ends; a
+//!   fill is taken where it starts and ends now, as where its rows end isn't known before it is
+//!   planned, and the plan checks what it sews). One outside the scope that holds points sews as it
+//!   did; the rest are sewn as they are.
 //! - **The search.** [`plan::joins`]: exact over the points offered, each part's own start and end
 //!   first, so that ties keep them. The moves are measured as it measures them ([`plan::apart`]).
 //!   The design's first part, planned from nowhere (as it is drawn), and a stroke a clip group cuts

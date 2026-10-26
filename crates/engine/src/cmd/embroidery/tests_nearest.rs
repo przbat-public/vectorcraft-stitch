@@ -1,6 +1,6 @@
 //! `embroidery.nearestConnection`: a line turned round for the part after it, a fill's exit chosen
 //! for the next, one undo step that Undo takes back, a second run that changes nothing, the scope
-//! (objects outside keep their points), what it can't join and why, a colour change breaking the
+//! (objects outside keep their points, and those with points their stitches), what it can't join and why, a colour change breaking the
 //! chain, strict params, and a dry run that answers as the run would.
 
 use serde_json::{Value, json};
@@ -109,6 +109,27 @@ fn the_selection_alone_is_joined() {
     // `all` joins every object, whatever is selected.
     let r = run(&mut s, "embroidery.nearestConnection", json!({"all": true}));
     assert_eq!(r["changedCount"], json!(2), "{r}");
+}
+
+/// Outside the selection, an object with points of its own sews as it did, needle point for needle
+/// point (only the cut before it goes), while the one selected is turned round to end nearer it.
+#[test]
+fn outside_the_selection_points_set_sew_as_they_did() {
+    let mut s = blank();
+    let [_, b, c] = three_lines(&mut s, "#2233cc");
+    let pt = |v: f64| (AT + v) * PT_PER_MM;
+    run(&mut s, "embroidery.setEntryExit", json!({"id": c, "part": "stroke", "entry": [pt(7.0), pt(0.0)], "exit": [pt(27.0), pt(0.0)]}));
+    let sewn = |s: &Session| -> Vec<(f64, f64)> {
+        let plan = super::digitize::digitize(&s.doc().unwrap().doc, &Options::default(), None).unwrap();
+        let k = plan.units.iter().position(|u| u.origin.selected().0 == c).unwrap();
+        plan.unit_stitches(k).iter().filter(|st| st.command == vectorcraft_stitch::Command::Stitch).map(|st| (st.x, st.y)).collect()
+    };
+    let before = sewn(&s);
+    run(&mut s, "select.set", json!({"ids": [b]}));
+    let r = run(&mut s, "embroidery.nearestConnection", json!({}));
+    assert_eq!(r["changedCount"], json!(1), "{r}");
+    assert!((first_x(&mut s, b) + 6.0).abs() < 0.1, "turned round");
+    assert_eq!(sewn(&s), before, "needle point for needle point");
 }
 
 /// Across a colour change no thread lies: the second line is left as Auto sews it, started at its

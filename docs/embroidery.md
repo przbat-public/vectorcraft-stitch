@@ -197,7 +197,10 @@ the control channel with ids:
   (`plan::joins`) picks the ones whose moves cost the least by the planner's weights: a millimetre
   of move, 20 for a jump, 50 more for a cut; across a colour change or a Trim After only the frame's
   travel counts, lightly. A part outside the scope with no points set starts nearest the end before
-  it, as it is sewn. Every part it joins first gets points where it starts and ends now, so the
+  it, as it is sewn, so its stitches change when that end moves (the search weighs where a line, a
+  column or a ring then ends; a fill is taken where it starts and ends now, as where its rows end
+  isn't known before it is planned, and the plan checks what it sews); one with points set sews as
+  it did. Every part it joins first gets points where it starts and ends now, so the
   search weighs the design as it is kept (a part that started where the needle was then starts at a
   point taken through document points and back, which can tip a tie in its plan; one that holds its
   points can open a join that one following the needle didn't). The points are written on a copy and
@@ -1359,7 +1362,7 @@ the object a person selects (`id`).
   recorded with the planner as it was); where shapes
   can start and end and their shortest joins (`plan/ends.rs`, `plan/joins.rs`, and
   `tests/prop_joins.rs`: equal to trying every choice, never worse than the points they start
-  from), Nearest Connection on documents (`tests_nearest.rs`, 12 tests, a second run among them
+  from), Nearest Connection on documents (`tests_nearest.rs`, 13 tests, a second run among them
   changing nothing, and `tests/embroidery_joins.rs`: never worse on random designs, its needle points
   weighed in, answering what the design then sews, and a second run changing nothing); the tool with a made-up
   plan (`tools/src/embroidery/tests.rs`, 16 tests: where handles stand, catching them at any

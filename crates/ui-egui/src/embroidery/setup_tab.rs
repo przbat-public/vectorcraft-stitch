@@ -733,7 +733,7 @@ fn right_rows(d: &Dialog, o: &Opened, lang: Lang) -> Right {
 fn left(ui: &mut Ui, d: &Dialog, o: &Opened, l: &Left, cols: Columns, width: f32, lang: Lang, edits: &mut Vec<Change>) {
     let choice = l.choice.as_str();
     if let Some(edit) = rows::show(ui, &cols.wide(FABRIC_FIELD, width), &l.choice_row.row(lang)) {
-        edits.push(edit_of("fabric", edit, o, choice));
+        edits.extend(edit_of("fabric", edit, o, choice));
     }
     note(ui, crate::et!("The values objects use where they set none of their own."));
     for (heading, row) in &l.fabric {
@@ -741,19 +741,19 @@ fn left(ui: &mut Ui, d: &Dialog, o: &Opened, l: &Left, cols: Columns, width: f32
             rows::heading(ui, h);
         }
         if let Some(edit) = rows::show(ui, &cols, &row.row(lang)) {
-            edits.push(edit_of(row.key, edit, o, choice));
+            edits.extend(edit_of(row.key, edit, o, choice));
         }
     }
     rows::heading(ui, crate::et!("Thread"));
     if let Some(edit) = rows::show(ui, &cols, &l.weight.row(lang)) {
-        edits.push(edit_of(THREAD_WEIGHT, edit, o, choice));
+        edits.extend(edit_of(THREAD_WEIGHT, edit, o, choice));
     }
     let spacing = now(d, "tatami.spacing").as_f64().zip(now(d, THREAD_WEIGHT).as_f64()).map(|(s, w)| setup::spacing_for_thread(s, w));
     if let Some(value) = spacing.map(|s| fields::format(lang, "mm", WORDS_DECIMALS).show(s)).filter(|v| !v.is_empty()) {
         note(ui, &text::fill(crate::et!("Rows' spacing for this thread: {value}"), &[("value", &value)]));
     }
     if let Some(edit) = rows::show(ui, &cols, &l.palette.row(lang)) {
-        edits.push(edit_of(PALETTE, edit, o, choice));
+        edits.extend(edit_of(PALETTE, edit, o, choice));
     }
 }
 
@@ -763,7 +763,7 @@ fn right(ui: &mut Ui, d: &Dialog, o: &Opened, r: &Right, cols: Columns, lang: La
     rows::heading(ui, crate::et!("Machine and file"));
     for row in &r.machine {
         if let Some(edit) = rows::show(ui, &cols, &row.row(lang)) {
-            edits.push(edit_of(row.key, edit, o, ""));
+            edits.extend(edit_of(row.key, edit, o, ""));
         }
     }
     rows::heading(ui, crate::et!("Sewing order"));
@@ -786,15 +786,17 @@ fn right(ui: &mut Ui, d: &Dialog, o: &Opened, r: &Right, cols: Columns, lang: La
 }
 
 /// The change `edit` of field `key` makes: a number or a choice as given, ↺ the value back at its
-/// base (the preset's or the default).
-fn edit_of(key: &str, edit: Edit, o: &Opened, choice: &str) -> Change {
+/// base (the preset's or the default); nothing for a press of a button.
+fn edit_of(key: &str, edit: Edit, o: &Opened, choice: &str) -> Option<Change> {
     let value = match edit {
+        // No field here opens anything: a press changes nothing.
+        Edit::Open => return None,
         Edit::Number(v) => json!(v),
         Edit::Choice(id) => json!(id),
         Edit::Restore if FABRIC_VALUES.contains(&key) => o.base(choice, key),
         Edit::Restore => o.default_of(key),
     };
-    (key.to_string(), value)
+    Some((key.to_string(), value))
 }
 
 /// A note under a row: dim words, wrapped.

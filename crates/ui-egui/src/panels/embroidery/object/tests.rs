@@ -923,7 +923,8 @@ fn a_millimetre_field_steps_in_tenths() {
 }
 
 /// The entry and exit rows: a set entry reads "Set", marked, ↺ unsetting it alone, one undo step;
-/// an exit left to the planner reads "Auto" with "nearest".
+/// an exit left to the planner reads "Auto" with "nearest". One object's rows are buttons, opening
+/// the point's dialog (`entry_and_exit_rows_open_the_points_dialog`).
 #[test]
 fn the_entry_and_exit_rows_and_their_restore() {
     let ctx = context();
@@ -935,8 +936,8 @@ fn the_entry_and_exit_rows_and_their_restore() {
     let drawn = ready(&mut app, &ctx, &mut time);
     let entry = vocabulary::label("entry", None);
     let set = text::fill(crate::et!("{section}: {setting}"), &[("section", entry), ("setting", crate::et!("Set"))]);
-    // A read-only field is a label: screen readers hear its words as its value.
-    assert!(drawn.nodes.iter().any(|(_, n)| n.value() == Some(set.as_str())), "{set}");
+    // One object's row opens the point's dialog: screen readers hear a button named with its words.
+    assert_eq!(drawn.node(&set).role(), egui::accesskit::Role::Button, "{set}");
     assert!(drawn.has(crate::et!("nearest")), "the exit's Auto: {:?}", drawn.words);
     let before = steps(&app);
     let restore = text::fill(crate::et!("Restore {setting}"), &[("setting", entry)]);
@@ -945,6 +946,54 @@ fn the_entry_and_exit_rows_and_their_restore() {
     ready(&mut app, &ctx, &mut time);
     let fill = info(&mut app, &[a])["objects"][0]["settings"]["fill"].clone();
     assert_eq!((fill["entry"].clone(), fill["angle"].clone(), steps(&app)), (json!(null), json!(30.0), before + 1), "the entry alone, one step");
+}
+
+/// One object's entry and exit rows open the point's dialog: a set entry at its point, ticked set;
+/// an exit left to the planner where the plan shown ends the part, Auto. Several objects' rows are
+/// read only (a label, its words its value). Set on Canvas picks the embroidery tool.
+#[test]
+fn entry_and_exit_rows_open_the_points_dialog() {
+    let ctx = context();
+    let (mut app, a, b) = app_with_art();
+    app.run("embroidery.setEntryExit", json!({"id": a, "part": "fill", "entry": [30, 30]})).unwrap();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let entry = vocabulary::label("entry", None);
+    let exit = vocabulary::label("exit", None);
+    let named = |section: &str, setting: &str| text::fill(crate::et!("{section}: {setting}"), &[("section", section), ("setting", setting)]);
+    let set = named(entry, crate::et!("Set"));
+    frame(&mut app, &ctx, time + 0.05, vec![drawn.click(&set)]);
+    time += 0.1;
+    let d = app.embroidery.point_dialog.clone().expect("the entry's dialog");
+    let opened = crate::embroidery::point_dialog::PointDialog::new("entry", a, "fill", 30.0, 30.0, false);
+    assert_eq!(d, opened, "on the entry, set");
+    app.embroidery.point_dialog = None;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let auto = drawn.nodes.iter().filter_map(|(_, n)| n.label()).find(|l| l.starts_with(&named(exit, ""))).expect("the exit's row").to_string();
+    frame(&mut app, &ctx, time + 0.05, vec![drawn.click(&auto)]);
+    time += 0.1;
+    let d = app.embroidery.point_dialog.clone().expect("the exit's dialog");
+    let scene = app.embroidery.preview.shown(app.session.active().unwrap().uid).unwrap().planned.built_scene().unwrap();
+    let last = scene.units().iter().rfind(|u| u.object == vectorcraft_doc::NodeId(a)).and_then(|u| u.exit).unwrap();
+    assert_eq!(d, crate::embroidery::point_dialog::PointDialog::new("exit", a, "fill", last.x, last.y, true), "where the plan ends it, Auto");
+    app.embroidery.point_dialog = None;
+    // Set on Canvas: the embroidery tool.
+    let drawn = ready(&mut app, &ctx, &mut time);
+    frame(&mut app, &ctx, time + 0.05, vec![drawn.click(crate::et!("Set on Canvas"))]);
+    time += 0.1;
+    assert_eq!(app.session.tool_id(), vectorcraft_tools::embroidery::ID);
+    // Several objects: read only, nothing opens.
+    app.run("embroidery.setEntryExit", json!({"id": b, "part": "fill", "entry": [160, 30]})).unwrap();
+    select(&mut app, &[a, b]);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let of_entry = named(entry, "");
+    let read_only = |n: &egui::accesskit::Node| n.role() == egui::accesskit::Role::Label && n.value().is_some_and(|v| v.starts_with(&of_entry));
+    assert!(drawn.nodes.iter().any(|(_, n)| read_only(n)), "the entry's words as a label's value");
+    assert!(
+        !drawn.nodes.iter().any(|(_, n)| n.role() == egui::accesskit::Role::Button && n.label().is_some_and(|l| l.starts_with(&of_entry))),
+        "no button"
+    );
 }
 
 /// A point the stitches miss by more than the Check tab lets pass says by how much, from the plan

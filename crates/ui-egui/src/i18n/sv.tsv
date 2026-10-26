@@ -5985,3 +5985,6 @@ embroidery	The point is taken to the nearest place the stitches can start or end
 # VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
 embroidery	OK	OK
 embroidery	Cancel	Avbryt
+# VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
+embroidery	Set on Canvas	Ange på arbetsytan
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Dra den här delens in- och utgångspunkt på arbetsytan med broderiverktyget.

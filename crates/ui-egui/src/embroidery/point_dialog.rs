@@ -26,6 +26,13 @@ pub struct PointDialog {
 }
 
 impl PointDialog {
+    /// The dialog on point `kind` of part `part` of object `id`, at (`x`, `y`), Auto or not (the
+    /// tests' expectations).
+    #[cfg(test)]
+    pub(crate) fn new(kind: &str, id: u64, part: &str, x: f64, y: f64, auto: bool) -> Self {
+        Self { kind: kind.into(), id, part: part.into(), x, y, auto }
+    }
+
     /// The dialog with Auto ticked or not (the tests tick it as a click would).
     #[cfg(test)]
     pub(crate) fn set_auto(self, auto: bool) -> Self {

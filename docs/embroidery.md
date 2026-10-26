@@ -567,7 +567,9 @@ as Melco's checker reads it, on each object's settings, it flags none.
   and length, narrow parts as satin; the underlay; pull compensation and expansion (any other an
   object holds shows too); then the entry and exit points (Auto, the point nearest the needle, until
   something sets them; one set that the plan shown misses by more than the Check tab's 1 mm says by
-  how much, "missed by 3.2 mm"), Trim After, and a footer with the document's fabric and thread. A value set
+  how much, "missed by 3.2 mm"; for one object, a click on either, or Enter or Space on it, opens
+  its Entry Point or Exit Point dialog, and Set on Canvas by their heading picks the Embroidery Tool
+  at the part shown), Trim After, and a footer with the document's fabric and thread. A value set
   on the objects has an accent bar, strong text and ↺, which unsets it (its tooltip, or the words
   after it where there is room, say what it would be then); an inherited value is dim, with a badge
   naming where it comes from (auto, fabric, machine, default); where the objects differ the field

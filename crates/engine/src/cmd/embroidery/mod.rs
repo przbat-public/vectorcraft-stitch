@@ -85,6 +85,7 @@ mod tests_view;
 #[cfg(test)]
 mod tests_walk;
 pub mod threadlib;
+pub(crate) mod tool;
 mod unit;
 pub mod view;
 mod vocabulary;

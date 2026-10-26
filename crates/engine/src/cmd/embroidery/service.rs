@@ -472,6 +472,18 @@ impl PlanService {
         }
     }
 
+    /// The newest plan it remembers of a whole document with `opts` (of the newest snapshot it was
+    /// asked for, used most recently), with that snapshot while it is still held: what the
+    /// embroidery tool's handles read.
+    pub(crate) fn newest(&self, opts: &Options) -> Option<(Arc<Document>, Planned)> {
+        let memos = self.memos.list.lock().ok()?;
+        memos
+            .iter()
+            .rev()
+            .filter(|m| m.owner == self.owner && m.selection.is_empty() && m.opts == *opts)
+            .find_map(|m| Some((m.snapshot.upgrade()?, m.plan.as_ref().ok()?.clone())))
+    }
+
     /// The plan remembered (or why there is none) of snapshot `of` with `opts` and the fonts of
     /// generation `fonts`, made the most recently used. A snapshot held only weakly can't be
     /// mistaken for another made since: its memory isn't reused while a weak reference is held.
@@ -556,6 +568,8 @@ pub(crate) struct Services {
     /// The plans the services remember, within one bound for all.
     memos: Arc<Memos>,
     views: HashMap<u64, super::view::StitchView>,
+    /// The embroidery tool's answers of each document's newest plan, built once a plan.
+    facts: HashMap<u64, Arc<super::tool::ToolFacts>>,
 }
 
 impl Services {
@@ -579,6 +593,20 @@ impl Services {
         self.plans.remove(&uid);
         self.memos.forget(uid);
         self.views.remove(&uid);
+        self.facts.remove(&uid);
+    }
+
+    /// The embroidery tool's answers for document `uid`: of the newest plan its service remembers
+    /// of the whole document with `opts` (the stitch preview's), built once that plan; `None` when
+    /// it remembers none. Never plans.
+    pub(crate) fn tool_facts(&mut self, uid: u64, opts: &Options) -> Option<Arc<super::tool::ToolFacts>> {
+        let (snapshot, planned) = self.plans.get(&uid)?.newest(opts)?;
+        if let Some(kept) = self.facts.get(&uid).filter(|f| f.generation == planned.generation) {
+            return Some(kept.clone());
+        }
+        let facts = Arc::new(super::tool::ToolFacts::of(snapshot, &planned));
+        self.facts.insert(uid, facts.clone());
+        Some(facts)
     }
 
     /// The bytes the plans remembered hold.

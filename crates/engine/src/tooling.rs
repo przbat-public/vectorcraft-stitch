@@ -226,6 +226,12 @@ impl Session {
     {
         let Some(st) = self.active.and_then(|i| self.docs.get(i)) else { return R::default() };
         let (unit, stroke_unit) = (self.general_unit(), self.stroke_unit());
+        // VectorCraft Stitch: the stitch plan's answers for the embroidery tool, only while it is
+        // active, from a plan already made with the stitch preview's options.
+        let facts = (self.tool.id() == vectorcraft_tools::embroidery::ID)
+            .then(|| self.embroidery_plans.tool_facts(st.uid, &crate::cmd::embroidery::Options::default()))
+            .flatten();
+        let facts_now = facts.as_deref().map(|facts| crate::cmd::embroidery::tool::FactsNow { facts, doc: &st.doc });
         let cx = ToolContext {
             doc: &st.doc,
             ruler_origin: st.doc.ruler_origin_for(view.artboard),
@@ -256,8 +262,8 @@ impl Session {
             raster_sample: self.prefs.eyedropper.sample_size,
             preview_bounds: self.prefs.use_preview_bounds,
             preview_memo: Some(&self.preview_memo),
-            // VectorCraft Stitch: the stitch plan's answers for the embroidery tool, none yet.
-            embroidery: None,
+            // VectorCraft Stitch: the stitch plan's answers for the embroidery tool.
+            embroidery: facts_now.as_ref().map(|f| f as &dyn vectorcraft_tools::embroidery::PlanFacts),
             unit,
             stroke_unit,
             paste_plain_text: self.prefs.paste_text_formatting == "plain",

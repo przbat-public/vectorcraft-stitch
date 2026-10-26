@@ -6,7 +6,7 @@ use vectorcraft_geom::{BezPath, FillRule, Point, Vec2};
 use super::area::{Area, Grid, TRAVEL_STITCH, Travels};
 use super::geometry::{Axes, SubPath, area, length, nearest_on, resample, subpaths, unit};
 use super::narrow::Column;
-use super::runs::{COST_EXIT, COST_HIDDEN, COST_SEEN, FILL_SEEN_SLACK, Runs, Travel, can_gain, gains};
+use super::runs::{COST_EXIT, COST_HIDDEN, COST_SEEN, FILL_SEEN_SLACK, Moves, Runs, Travel, can_gain, gains};
 use super::satin::{column_returns, sew_column};
 use super::{Aim, MAX_STITCHES, Params, Start, Style, UNDERLAY_STITCH, Underlay};
 use crate::{SAME_POINT, Stitch};
@@ -1041,7 +1041,8 @@ const MAX_SEARCHED: usize = 200;
 /// Toward an `exit` point (the layer's regions cut at the row end nearest it, [`ExitRow`]), the
 /// piece holding that row is sewn last; in it the regions next to the cut are tried as the one sewn
 /// last too, the region sewn last takes the sweep that ends it nearest the exit ([`toward_start`]),
-/// and its orders are weighed with [`COST_EXIT`] for each millimetre their end lies from the exit.
+/// and its orders are weighed with [`COST_EXIT`] for each millimetre their end lies from the exit,
+/// of those that lift, cut and show no more than the cheapest without that weight ([`kept_order`]).
 #[allow(clippy::too_many_arguments)]
 fn sew(
     regions: &Regions,
@@ -1099,6 +1100,11 @@ fn sew(
             }
         }
         let mut best: Option<(Runs, Vec<bool>, f64)> = None;
+        // Toward an exit, every order of the piece holding its row, with what it costs without the
+        // exit's weight: the cheapest is kept of those that lift, cut and show no more than the
+        // cheapest without the exit ([`Moves::within`]), so that an order the guard would refuse
+        // never hides one it would keep.
+        let mut tried: Vec<(Runs, Vec<bool>, f64, f64)> = Vec::new();
         for root in orders {
             let mut local = Runs::continuing(runs);
             let mut done = sewn.clone();
@@ -1130,19 +1136,37 @@ fn sew(
                 (true, Some(h)) if !toward.is_empty() => COST_SEEN * toward.iter().map(|t| t.distance(h)).fold(f64::INFINITY, f64::min),
                 _ => 0.0,
             };
-            let mut total = local.cost + exit;
-            if let (Some((x, _)), Some(h)) = (aimed, local.here()) {
-                total += COST_EXIT * h.distance(x);
+            let plain = local.cost + exit;
+            match (aimed, local.here()) {
+                (Some((x, _)), Some(h)) => {
+                    let total = plain + COST_EXIT * h.distance(x);
+                    tried.push((local, done, total, plain));
+                }
+                _ => {
+                    if best.as_ref().is_none_or(|(_, _, b)| plain < *b) {
+                        best = Some((local, done, plain));
+                    }
+                }
             }
-            if best.as_ref().is_none_or(|(_, _, b)| total < *b) {
-                best = Some((local, done, total));
-            }
+        }
+        let weighed: Vec<(Moves, f64, f64)> = tried.iter().map(|t| (t.0.moves, t.2, t.3)).collect();
+        if let Some(k) = kept_order(&weighed) {
+            best = tried.into_iter().nth(k).map(|(local, done, total, _)| (local, done, total));
         }
         if let Some((local, done, _)) = best {
             runs.append(local);
             sewn = done;
         }
     }
+}
+
+/// Of the orders of a piece tried toward an exit (each its moves, what it costs with the exit's
+/// weight, and without), the one kept: the cheapest with the exit's weight of those whose moves are
+/// within the cheapest without it ([`Moves::within`], [`FILL_SEEN_SLACK`]); `None` when none was
+/// tried.
+fn kept_order(tried: &[(Moves, f64, f64)]) -> Option<usize> {
+    let (cheapest, ..) = tried.iter().min_by(|a, b| a.2.total_cmp(&b.2))?;
+    tried.iter().enumerate().filter(|(_, t)| t.0.within(cheapest, FILL_SEEN_SLACK)).min_by(|a, b| a.1.1.total_cmp(&b.1.1)).map(|(k, _)| k)
 }
 
 /// Where the needle can start sewing `region` nearest `here`: whether descending (when not
@@ -1417,5 +1441,23 @@ mod tests_finished {
         };
         assert_eq!(lifts(&|_| 0.0), 0, "across nothing sewn, a hidden travel");
         assert!(lifts(&|route| length(route, false)) > 0, "across 48 mm already sewn, a lift");
+    }
+
+    /// Of a piece's orders toward an exit, the cheapest by the exit's weight is kept only when it
+    /// lifts, cuts and shows no more than the cheapest without it; else the cheapest of those that
+    /// don't: an order the guard would refuse (one lift more for 2 mm nearer) never hides one it
+    /// would keep (4 mm off, no lift more), so the exit isn't missed for nothing.
+    #[test]
+    fn an_order_the_guard_would_refuse_never_hides_one_it_would_keep() {
+        let moves = |lifts: usize, seen: f64| Moves { lifts, trims: 0, seen };
+        // (moves, cost with the exit's weight, without): the plain order first, 30 mm off.
+        let plain = (moves(0, 0.0), 100.0 + COST_EXIT * 30.0, 100.0);
+        let lifted = (moves(1, 0.0), 120.0 + COST_EXIT * 2.0, 120.0);
+        let kept = (moves(0, 0.5), 110.0 + COST_EXIT * 4.0, 110.0);
+        assert_eq!(kept_order(&[plain, lifted, kept]), Some(2));
+        let shows = (moves(0, FILL_SEEN_SLACK + 0.5), 105.0 + COST_EXIT * 4.0, 105.0);
+        assert_eq!(kept_order(&[plain, shows]), Some(0), "showing more than the slack");
+        assert_eq!(kept_order(&[plain, lifted]), Some(0));
+        assert_eq!(kept_order(&[]), None);
     }
 }

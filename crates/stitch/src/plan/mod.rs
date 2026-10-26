@@ -32,6 +32,7 @@
 //! and `narrow` (a fill's narrow parts, sewn as satin columns).
 
 mod area;
+mod ends;
 mod fill;
 mod geometry;
 mod narrow;
@@ -48,6 +49,7 @@ mod toward;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
+pub use ends::{Ends, MAX_JOIN_EXITS, MAX_JOIN_STARTS, Through, ends};
 pub use fill::MIN_AREA;
 pub use fill::TATAMI_UNDERLAY_MIN;
 pub(crate) use fill::fill_with_columns;

@@ -83,8 +83,7 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> Vec<Stitch> {
     // where it starts. Toward an exit, a pass along its middle under the top stitching ends it at its
     // other end, and a ring travels along its middle to the exit before its top stitching; both are
     // weighed as travel hidden under stitching still to come.
-    let returns = matches!(satin_kind(p.underlay, p.width), Some(SatinUnderlay::Center | SatinUnderlay::EdgeZigzag));
-    let finish = Finish { returns, flip: Some(COST_HIDDEN), reach: COST_HIDDEN };
+    let finish = Finish { returns: line_returns(&p), flip: Some(COST_HIDDEN), reach: COST_HIDDEN };
     for Line { pts, closed, reversed, toward } in ordered_toward(subpaths(path), aim, &finish, &p) {
         // Push compensation: an open column is sewn shorter at its ends, the underlay with it.
         let shortest = spacing * MIN_CROSSINGS;
@@ -465,6 +464,13 @@ pub fn satin_auto_underlay(width: f64) -> Underlay {
 
 /// The underlay `u` asks of a satin column `width` wide: by its width with [`Underlay::Auto`]
 /// ([`satin_auto_underlay`]); `None` for none.
+/// Whether an open satin line sewn with `p` ends where it starts: its top stitching comes back over
+/// an underlay that went to its far end (a centre run; an edge run and zigzag), as a fill's narrow
+/// part does ([`column_returns`]).
+pub(super) fn line_returns(p: &Params) -> bool {
+    matches!(satin_kind(p.underlay, p.width), Some(SatinUnderlay::Center | SatinUnderlay::EdgeZigzag))
+}
+
 fn satin_kind(u: Underlay, width: f64) -> Option<SatinUnderlay> {
     match u {
         Underlay::None => None,

@@ -161,10 +161,7 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         let alpha = if h.state == State::Stale { STALE_ALPHA } else { 1.0 };
         let color = match h.id.kind {
             Kind::Entry | Kind::Angle => t.accent,
-            Kind::Exit => {
-                let [r, g, b] = st.doc.layer_color(h.id.owner.part().0);
-                super::marks::readable(Color32::from_rgb(r, g, b), &[Color32::from_rgb(MARK_LIGHT[0], MARK_LIGHT[1], MARK_LIGHT[2])], false)
-            }
+            Kind::Exit => exit_color(st.doc.layer_color(h.id.owner.part().0)),
         };
         // A point set where the stitches can't start: joined to where they do.
         if let (State::Set, Some(planned), false) = (h.state, h.planned, dragged) {
@@ -262,11 +259,17 @@ pub(crate) fn tests_outline(doc: &vectorcraft_doc::Document, object: vectorcraft
     pts
 }
 
-fn dark() -> Color32 {
+/// An exit's colour: its layer's `rgb`, darkened only as far as it takes to stand out from the
+/// handles' light inner edge.
+pub(super) fn exit_color([r, g, b]: [u8; 3]) -> Color32 {
+    super::marks::readable(Color32::from_rgb(r, g, b), &[light()], false)
+}
+
+pub(super) fn dark() -> Color32 {
     Color32::from_rgb(MARK_DARK[0], MARK_DARK[1], MARK_DARK[2])
 }
 
-fn light() -> Color32 {
+pub(super) fn light() -> Color32 {
     Color32::from_rgb(MARK_LIGHT[0], MARK_LIGHT[1], MARK_LIGHT[2])
 }
 

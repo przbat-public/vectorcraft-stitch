@@ -375,3 +375,33 @@ fn the_rows_arrow_is_drawn_and_its_head_turns_them() {
     let angle = app.run("embroidery.info", json!({"ids": [a]})).unwrap()["fill"]["settings"]["angle"]["value"].clone();
     assert_eq!((angle, app.session.doc().unwrap().history.undo.len()), (json!(90.0), undo + 1));
 }
+
+/// The handles read on white fabric and on dark fabric in every theme (both schemes, every
+/// brightness and accent): the two-tone edge's dark line stands out from white and its light line
+/// from black and from the dark line, by WCAG's non-text 3:1 (1.4.11); an exit's face from the
+/// light line, whatever its layer's colour; each label's words from its pill by WCAG's 4.5:1
+/// (1.4.3), the entry's and the arrow's in the accent, the exit's in its layer's colour.
+#[test]
+fn handles_and_labels_read_on_any_fabric_in_every_theme() {
+    use super::handles::{dark, exit_color, light};
+    use super::marks::{NON_TEXT_CONTRAST, TEXT_CONTRAST, contrast, text_on};
+    use crate::theme::{Accent, Brightness, Scheme, Tokens};
+    for fabric in [Color32::WHITE, Color32::BLACK] {
+        let edge = if fabric == Color32::WHITE { dark() } else { light() };
+        assert!(contrast(edge, fabric) >= NON_TEXT_CONTRAST, "the edge on {fabric:?}");
+    }
+    assert!(contrast(light(), dark()) >= NON_TEXT_CONTRAST, "the two lines of the edge");
+    for (name, [r, g, b]) in vectorcraft_doc::LAYER_COLORS {
+        let exit = exit_color([r, g, b]);
+        assert!(contrast(exit, light()) >= NON_TEXT_CONTRAST, "{name}'s exit on the light line");
+        assert!(contrast(text_on(exit), exit) >= TEXT_CONTRAST, "{name}'s exit label");
+    }
+    for scheme in Scheme::ALL {
+        for brightness in Brightness::ALL {
+            for accent in Accent::ALL {
+                let t = Tokens::for_scheme(scheme, brightness, accent);
+                assert!(contrast(text_on(t.accent), t.accent) >= TEXT_CONTRAST, "{scheme:?} {brightness:?} {accent:?}");
+            }
+        }
+    }
+}

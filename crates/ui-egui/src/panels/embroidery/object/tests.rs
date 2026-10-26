@@ -1062,3 +1062,29 @@ fn paste_after_the_copied_object_is_deleted() {
     app.run("embroidery.pasteSettings", json!({})).unwrap();
     assert_eq!(fill_setting(&mut app, b, "angle"), json!(30.0));
 }
+
+/// With the keyboard and a screen reader: Set on Canvas and one object's entry row are named
+/// buttons ("Set on Canvas", "Entry: Set"); focused, Space presses each as a click does (the
+/// embroidery tool picked; the Entry Point dialog opened).
+#[test]
+fn set_on_canvas_and_the_entry_row_work_from_the_keyboard() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    app.run("embroidery.setEntryExit", json!({"id": a, "part": "fill", "entry": [30, 30]})).unwrap();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let space = |pressed| Event::Key { key: Key::Space, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE };
+    let press = |app: &mut VectorcraftApp, time: &mut f64, name: &str| {
+        let drawn = ready(app, &ctx, time);
+        assert_eq!(drawn.node(name).role(), egui::accesskit::Role::Button, "{name}");
+        for events in [vec![drawn.focus(name)], vec![space(true)], vec![space(false)]] {
+            *time += 0.05;
+            frame(app, &ctx, *time, events);
+        }
+    };
+    press(&mut app, &mut time, crate::et!("Set on Canvas"));
+    assert_eq!(app.session.tool_id(), vectorcraft_tools::embroidery::ID);
+    let entry = text::fill(crate::et!("{section}: {setting}"), &[("section", vocabulary::label("entry", None)), ("setting", crate::et!("Set"))]);
+    press(&mut app, &mut time, &entry);
+    assert!(app.embroidery.point_dialog.is_some(), "the Entry Point dialog");
+}

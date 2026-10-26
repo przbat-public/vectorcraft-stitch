@@ -197,16 +197,23 @@ the control channel with ids:
   (`plan::joins`) picks the ones whose moves cost the least by the planner's weights: a millimetre
   of move, 20 for a jump, 50 more for a cut; across a colour change or a Trim After only the frame's
   travel counts, lightly. A part outside the scope with no points set starts nearest the end before
-  it, as it is sewn. The points are written on a copy and planned (the units kept); a stretch
-  between two cuts that saves less than 0.1 mm as planned (`MIN_JOIN_GAIN`), or comes out longer,
-  keeps its old points, a part that had none set where it started and ended. The search then runs
-  again on its own result until a round changes nothing, at most three times (`MAX_ROUNDS`): a
-  second Nearest Connection then changes nothing, unless the third round still moved something
-  (each round keeps only a stretch that saves at least 0.1 mm, so the rounds settle; three bounds
-  the work). Points set in scope are replaced; a locked object is sewn as
+  it, as it is sewn. Every part it joins first gets points where it starts and ends now, so the
+  search weighs the design as it is kept (a part that started where the needle was then starts at a
+  point taken through document points and back, which can tip a tie in its plan; one that holds its
+  points can open a join that one following the needle didn't). The points are written on a copy and
+  planned (the units kept); a stretch between two cuts that saves less than 0.1 mm as planned
+  (`MIN_JOIN_GAIN`), or comes out longer, keeps its old points; a run whose result comes out costlier
+  than the design was changes nothing. The search then runs again on its own result until a round
+  changes nothing, at most three times (`MAX_ROUNDS`): a second Nearest Connection then changes
+  nothing, unless the third round still moved something (each round keeps only a stretch that saves
+  at least 0.1 mm, so the rounds settle; three bounds the work). Points set in scope are replaced; a locked object is sewn as
   it is and listed as skipped (`locked`), as the sewing order's moves leave it. One undo step "Nearest
   Connection", none when nothing changes; `dryRun` answers without writing. Its reply says what it
-  saved (`before`, `after`, `saved`: moves, jumps, cuts, length) and lists the points written.
+  saved (`before`, `after`, `saved`: moves, jumps, cuts, length, needle points), which is what the
+  design then sews, and lists the points written. The search takes a fill's way through at no cost (its rows travel hidden from where it is
+  entered to where they must start to end there); the check weighs each stretch's needle points
+  with its moves, each as a hidden travel stitch, so a stretch that saves a few millimetres of
+  jumping by travelling far through a fill is restored.
 - `embroidery.copyFrom {source, ids?, part?, keys?}` gives the objects the source's values, set or
   unset, as `embroidery.set` would take them (a newer version's value, or one out of range, is
   passed over and listed, `passedOver`), the source read as it is then.
@@ -1352,8 +1359,9 @@ the object a person selects (`id`).
   recorded with the planner as it was); where shapes
   can start and end and their shortest joins (`plan/ends.rs`, `plan/joins.rs`, and
   `tests/prop_joins.rs`: equal to trying every choice, never worse than the points they start
-  from), Nearest Connection on documents (`tests_nearest.rs`, 8 tests, a second run among them
-  changing nothing, and `tests/embroidery_joins.rs`: never worse on random designs); the tool with a made-up
+  from), Nearest Connection on documents (`tests_nearest.rs`, 12 tests, a second run among them
+  changing nothing, and `tests/embroidery_joins.rs`: never worse on random designs, its needle points
+  weighed in, answering what the design then sews, and a second run changing nothing); the tool with a made-up
   plan (`tools/src/embroidery/tests.rs`, 16 tests: where handles stand, catching them at any
   zoom, the drag, the keys, the cursor, picking, the angle arrow), through the session
   (`cmd/embroidery/tool.rs`, 6), on the canvas with real pointer events and in every theme's
@@ -2050,9 +2058,9 @@ whole design once its plan is kept):
 | 22,000 paths | 6.1–7.6 s | 5.9 s | 15 s |
 | A press on stitches picking the object, 22,000 paths | 0.01 ms | 0.01 ms | 1 ms |
 
-Its rounds write points only on the parts the search moves and on the part right after each, so
-their trial plans take every other unit as kept; every part gets its own points (where it starts and
-ends, where it sews again) once the rounds are over. The trials plan on a copy of the units kept,
+Its rounds write points only on the parts the search moves, so their trial plans take every other
+unit as kept; every part gets its own points (where it starts and ends) before the rounds, which
+plans each part that had none once more. The trials plan on a copy of the units kept,
 so neither they nor a dry run push the document's own units out. Measured again (2026-10-26,
 release, under a load of about 20 while other work built, once): 16.5 ms on 1,000 paths (from
 117–123 ms) and 4.0 s on 22,000 (from 5.9 s).

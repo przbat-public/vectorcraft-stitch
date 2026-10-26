@@ -107,7 +107,7 @@ const SETTINGS_SHAPES: [(&str, &str); 9] = [
     ("embroidery.setEntryExit", "{changedCount: int, entry: [float], exit: null, id: int, part: string}"),
     (
         "embroidery.nearestConnection",
-        "{after: {connections: int, jumps: int, length: float, longest: float, trims: int}, applied: bool, before: {connections: int, jumps: int, length: float, longest: float, trims: int}, changedCount: int, parts: [{entry: [float], exit: [float], id: int, part: string}], restoredCount: int, saved: {jumps: int, length: float, trims: int}, skipped: [], skippedCount: int, unchangedCount: int}",
+        "{after: {connections: int, jumps: int, length: float, longest: float, stitches: int, trims: int}, applied: bool, before: {connections: int, jumps: int, length: float, longest: float, stitches: int, trims: int}, changedCount: int, parts: [{entry: [float], exit: [float], id: int, part: string}], restoredCount: int, saved: {jumps: int, length: float, stitches: int, trims: int}, skipped: [], skippedCount: int, unchangedCount: int}",
     ),
     (
         "embroidery.copyFrom",

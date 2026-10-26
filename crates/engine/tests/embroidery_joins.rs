@@ -1,7 +1,7 @@
 //! `embroidery.nearestConnection` on random designs of running lines, loops, satin lines and filled
 //! rectangles, in one or two colours, some cut after: the moves between parts never cost more after
-//! it than before (by the planner's weights: a millimetre of move, a jump 20, a cut 50 more), what
-//! it answers is what the design then sews, and run again it changes nothing.
+//! it than before (by the planner's weights: a millimetre of move, a jump 20, a cut 50 more, a needle
+//! point a half), what it answers is what the design then sews, and run again it changes nothing.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -14,6 +14,9 @@ const PT_PER_MM: f64 = 72.0 / 25.4;
 /// The planner's weights of a jump and of a cut, in millimetres of move (`plan::runs`).
 const JUMP: f64 = 20.0;
 const CUT: f64 = 50.0;
+/// The weight of a needle point, in millimetres of move: a 2 mm travel stitch hidden under stitching
+/// still to come, weighed a quarter (`plan::stitches_cost`).
+const NEEDLE_POINT: f64 = 0.5;
 
 /// One object: what it is, where (millimetres), its colour (of two), and whether its thread is cut
 /// after it.
@@ -79,9 +82,12 @@ fn design(objects: &[Object]) -> Session {
     s
 }
 
-/// What moves of `m` (`before` or `after`) cost by the planner's weights.
+/// What moves of `m` (`before` or `after`), and its needle points, cost by the planner's weights.
 fn cost(m: &Value) -> f64 {
-    m["length"].as_f64().unwrap() + JUMP * m["jumps"].as_f64().unwrap() + CUT * m["trims"].as_f64().unwrap()
+    m["length"].as_f64().unwrap()
+        + JUMP * m["jumps"].as_f64().unwrap()
+        + CUT * m["trims"].as_f64().unwrap()
+        + NEEDLE_POINT * m["stitches"].as_f64().unwrap()
 }
 
 proptest! {
@@ -98,4 +104,36 @@ proptest! {
         let second = run(&mut s, "embroidery.nearestConnection", json!({}));
         prop_assert_eq!(second["changedCount"].clone(), json!(0), "run again: {}", second);
     }
+}
+
+/// A square in a second colour starts where the needle is; given that point as its entry (in document
+/// points, a float's width off once back in millimetres), its underlay's first row ties with
+/// another and sews five needle points more. What the command answers is what the design sews after
+/// it, those five included.
+#[test]
+fn it_answers_what_the_points_it_sets_sew() {
+    let mut s = design(&[
+        (Kind::Line, (114.33416647484525, 16.38172117414631), (8.0, 0.0), false, false),
+        (Kind::Square, (97.85766699578129, 6.52305527944707), (17.7168502205124, 0.0), true, false),
+    ]);
+    let r = run(&mut s, "embroidery.nearestConnection", json!({}));
+    let again = run(&mut s, "embroidery.nearestConnection", json!({"dryRun": true}));
+    assert_eq!(again["before"], r["after"], "what it answers is what the design sews");
+}
+
+/// A square sewn from the needle can't be given the exit that saves 6 mm of the move after it; once
+/// it holds its own entry it can. The points are set first, so the run finds that join, and a second
+/// run changes nothing.
+#[test]
+fn a_second_run_starts_where_the_first_ended() {
+    let mut s = design(&[
+        (Kind::Square, (11.776786608248061, 5.0), (18.98142599316573, 0.0), false, false),
+        (Kind::Line, (5.0, 5.0), (8.0, -4.857692351538571), true, false),
+        (Kind::Line, (113.64832025413213, 5.0), (8.0, 0.0), true, false),
+        (Kind::Line, (20.896811924697563, 80.75385473297587), (17.47295709499661, -5.20580310791632), false, false),
+    ]);
+    let r = run(&mut s, "embroidery.nearestConnection", json!({}));
+    assert!(cost(&r["after"]) < cost(&r["before"]), "{r}");
+    let second = run(&mut s, "embroidery.nearestConnection", json!({}));
+    assert_eq!(second["changedCount"], json!(0), "run again: {second}");
 }

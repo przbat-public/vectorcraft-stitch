@@ -5144,7 +5144,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `snap: true`, the points as taken to where the part's stitches can start or end);
   `embroidery.nearestConnection {ids?, all?, dryRun?, …embroidery options}` answers `{applied, changedCount,
   unchangedCount, skippedCount, skipped: [{id, reason}], restoredCount, before, after: {connections, jumps, trims,
-  length, longest}, saved: {jumps, trims, length}, parts: [{id, part, entry, exit}]}` (lengths in millimetres, the
+  length, longest, stitches}, saved: {jumps, trims, length, stitches}, parts: [{id, part, entry, exit}]}` (`stitches`:
+  the needle points of the parts joined, which a fill aimed at an exit far from where its rows end adds to; `after` is
+  what the design then sews) (lengths in millimetres, the
   points in document points; `reason` also `notSewn`, `pieces`, `symbolInstance`, `clipped`, `unmodelled` or `locked`). They take the
   vocabulary's names only: the session refuses any other key before the command runs, and run in-process the command
   names the one to use (`density` → `spacing`). `reason` is `literal`, `guide`, `type`, `image`, `symbolInstance`,

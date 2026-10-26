@@ -20,7 +20,8 @@
 use vectorcraft_geom::Point;
 
 use super::Ends;
-use super::runs::{COST_ENTRY, COST_LIFT, COST_TRIM};
+use super::area::TRAVEL_STITCH;
+use super::runs::{COST_ENTRY, COST_HIDDEN, COST_LIFT, COST_TRIM};
 use crate::SAME_POINT;
 
 /// The most moves the programme weighs in all (each a previous end against a start, or a start
@@ -63,6 +64,14 @@ pub struct JoinShape {
 pub struct Joined {
     pub chosen: Vec<(usize, usize)>,
     pub cost: f64,
+}
+
+/// What `n` needle points cost, in the same units as the moves ([`move_cost`]): each as a travel
+/// stitch hidden under stitching still to come. A plan's way through a shape (a fill's rows aimed at
+/// an exit travelling hidden to the strip they must start with) is weighed by the needle points it
+/// adds, as the search takes a fill's way through at no cost.
+pub fn stitches_cost(n: usize) -> f64 {
+    n as f64 * COST_HIDDEN * TRAVEL_STITCH
 }
 
 /// What a move of `d` millimetres into a shape costs, by `link` and the design's `trim` length.

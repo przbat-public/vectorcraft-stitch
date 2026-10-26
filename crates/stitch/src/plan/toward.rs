@@ -17,6 +17,10 @@
 //!   [`COST_EXIT`] for each millimetre its end lies from the exit. The order without the exit is
 //!   one of the tries, and no try is kept that jumps, cuts or connects more than it does. Past
 //!   [`MAX_REORDERED`] subpaths, the one ending nearest the exit is moved last, the rest as without.
+//!
+//! The stitches sewn so are kept only when they lift the needle and cut the thread no more often
+//! than without the exit and end nearer it ([`nearer`]): an exit changes a plan only to bring its
+//! end nearer, as it does a fill's rows.
 
 use vectorcraft_geom::Point;
 
@@ -24,7 +28,7 @@ use super::area::TRAVEL_STITCH;
 use super::geometry::{Line, MAX_REORDERED, SubPath, length, nearest_on, nearest_order, ordered};
 use super::runs::{COST_EXIT, COST_LIFT, COST_SEEN, COST_TRIM};
 use super::{Aim, Params, Start};
-use crate::SAME_POINT;
+use crate::{Command, SAME_POINT, Stitch};
 
 /// How a style can end a line's subpath where it is asked to.
 #[derive(Clone, Copy, Debug)]
@@ -58,6 +62,36 @@ pub(super) fn ordered_toward(subs: Vec<SubPath>, aim: Aim, finish: &Finish, p: &
         n if n > MAX_REORDERED => many(subs, aim.start, exit, finish),
         _ => several(subs, aim.start, exit, finish, p),
     }
+}
+
+/// The stitches `sew` sews toward `aim`'s exit, kept only when they lift the needle and cut the
+/// thread no more often than those it sews without the exit and end nearer the exit; else those.
+/// Without an exit (or one that isn't a number), those alone, planned once.
+pub(super) fn nearer(aim: Aim, sew: impl Fn(Aim) -> Vec<Stitch>) -> Vec<Stitch> {
+    let plain = sew(Aim { exit: None, ..aim });
+    let Some(exit) = aim.exit.filter(|x| finite(*x)) else { return plain };
+    let aimed = sew(aim);
+    let ((plain_lifts, plain_cuts, plain_end), (lifts, cuts, end)) = (breaks(&plain), breaks(&aimed));
+    let from_exit = |end: Option<Point>| end.map_or(f64::INFINITY, |q| q.distance(exit));
+    if lifts <= plain_lifts && cuts <= plain_cuts && from_exit(end) < from_exit(plain_end) { aimed } else { plain }
+}
+
+/// How often `stitches` lift the needle between two needle points (a jump, however many records it
+/// takes) and cut the thread, and their last needle point.
+fn breaks(stitches: &[Stitch]) -> (usize, usize, Option<Point>) {
+    let (mut lifts, mut cuts, mut up) = (0, 0, false);
+    let mut end = None;
+    for s in stitches {
+        match s.command {
+            Command::Stitch => {
+                lifts += usize::from(up && end.is_some());
+                (up, end) = (false, Some(s.point()));
+            }
+            Command::Trim => cuts += 1,
+            _ => up = true,
+        }
+    }
+    (lifts, cuts, end)
 }
 
 /// Whether `q` is a number on both axes.

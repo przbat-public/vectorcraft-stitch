@@ -545,8 +545,9 @@ pub(crate) fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Op
 pub(crate) fn stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> Vec<Stitch> {
     let p = p.sane();
     match sewn_style(&p) {
-        Style::Running => running::running(path, &p, aim),
-        Style::Satin => satin::satin(path, &p, aim),
+        Style::Running => toward::nearer(aim, |aim| running::running(path, &p, aim)),
+        Style::Satin => toward::nearer(aim, |aim| satin::satin(path, &p, aim)),
+        // Weighs its rows toward the exit itself, by their moves before they are joined.
         Style::Fill => fill::fill(path, rule, &p, aim),
     }
 }

@@ -255,7 +255,8 @@ impl Runs {
             }
         }
         self.cost += COST_LIFT + inside + if d > p.trim { COST_TRIM } else { 0.0 };
-        self.moves.lifts += 1;
+        // Counted as [`Runs::join`] sews it: a lift shorter than the shortest stitch is none there.
+        self.moves.lifts += usize::from(d >= p.min_stitch);
         self.moves.trims += usize::from(d > p.trim);
         if lead {
             // No way inside from where the needle goes in: it goes in there all the same.

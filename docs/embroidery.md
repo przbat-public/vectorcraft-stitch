@@ -1013,7 +1013,10 @@ the object a person selects (`id`).
   reached at that side's nearer corner. A fill whose narrow parts are sewn as satin orders its
   parts to end nearest the exit (the part it starts with kept first, so an exit on that part is out
   of reach) and sews the last one toward it (a piece as a fill, a column as a stroke's column, a
-  ring of a column from its point nearest the exit), kept by the same rule.
+  ring of a column from its point nearest the exit), kept by the same rule. A running line or a
+  satin sewn toward its exit is kept the same way, by its stitches: when it lifts the needle and
+  cuts the thread no more often and ends nearer the exit; so an exit where a part ends anyway
+  changes nothing, and none makes a plan worse (`prop_plan`'s exit properties).
 - A part of a fill narrower than 1 mm is a single running line along its middle, not a bean or
   triple run: on a part 0.6–1 mm wide its edges stay bare.
 - Travel between a fill's parts is weighed by the straight distance between them, and it is not

@@ -2369,7 +2369,12 @@ position. Not one tool per kind, which would have to be merged later. The rules 
   active (`PlanFacts`: where the plan shown sews each part, its neighbours along the thread, the
   object under a press, a fill's angle); the canvas draws the list the tool catches. A kind that
   needs more asks through a new `PlanFacts` method with a default body; the engine answers from
-  what it has and never plans to answer.
+  what it has and never plans to answer. "The plan shown" is the one the canvas draws: the
+  interface hands it to the session once a plan (`Session::show_embroidery_plan`), so what is drawn
+  is what is caught; without an interface (agents, tests) the newest plan the planning service
+  remembers stands in. An Auto point from a plan of an earlier snapshot than the document's is stale
+  (drawn dim) whatever changed: an edit of a neighbour or of the document's settings moves Auto
+  points too. The answers the tool kept are dropped when it is put away.
 - **Values on the part.** Points are kept on the object's part in document points, moved and
   turned with the object (`PartSettings::points`); a kind with several points (rails, angle lines)
   keeps them there as a list.

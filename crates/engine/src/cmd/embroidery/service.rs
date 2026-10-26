@@ -567,7 +567,10 @@ pub(crate) struct Services {
     /// The plans the services remember, within one bound for all.
     memos: Arc<Memos>,
     views: HashMap<u64, super::view::StitchView>,
-    /// The embroidery tool's answers of each document's newest plan, built once a plan.
+    /// The plan the interface draws of each document, with the snapshot it was planned from: what
+    /// the embroidery tool's answers are of ([`Services::tool_facts`]).
+    shown: HashMap<u64, (Arc<Document>, Planned)>,
+    /// The embroidery tool's answers of each document's plan, built once a plan.
     facts: HashMap<u64, Arc<super::tool::ToolFacts>>,
 }
 
@@ -592,14 +595,32 @@ impl Services {
         self.plans.remove(&uid);
         self.memos.forget(uid);
         self.views.remove(&uid);
+        self.shown.remove(&uid);
         self.facts.remove(&uid);
     }
 
-    /// The embroidery tool's answers for document `uid`: of the newest plan its service remembers
-    /// of the whole document with `opts` (the stitch preview's), built once that plan; `None` when
-    /// it remembers none. Never plans.
+    /// The interface draws `planned`, the plan of `snapshot`, for document `uid`.
+    pub(crate) fn show(&mut self, uid: u64, snapshot: Arc<Document>, planned: Planned) {
+        if self.shown.get(&uid).is_none_or(|(_, p)| p.generation != planned.generation) {
+            self.shown.insert(uid, (snapshot, planned));
+        }
+    }
+
+    /// The embroidery tool's answers kept, dropped (the tool put away): they hold a plan's ends and
+    /// its scene, built again when the tool is chosen again.
+    pub(crate) fn drop_facts(&mut self) {
+        self.facts.clear();
+    }
+
+    /// The embroidery tool's answers for document `uid`: of the plan the interface draws of it
+    /// ([`Services::show`]: what is drawn is what is caught), else, with no interface (an agent, a
+    /// test), of the newest plan its service remembers of the whole document with `opts` (the stitch
+    /// preview's); built once a plan; `None` when there is neither. Never plans.
     pub(crate) fn tool_facts(&mut self, uid: u64, opts: &Options) -> Option<Arc<super::tool::ToolFacts>> {
-        let (snapshot, planned) = self.plans.get(&uid)?.newest(opts)?;
+        let (snapshot, planned) = match self.shown.get(&uid) {
+            Some((snapshot, planned)) => (snapshot.clone(), planned.clone()),
+            None => self.plans.get(&uid)?.newest(opts)?,
+        };
         if let Some(kept) = self.facts.get(&uid).filter(|f| f.generation == planned.generation) {
             return Some(kept.clone());
         }

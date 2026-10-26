@@ -1,9 +1,10 @@
 //! What the embroidery tool reads of the stitch plan ([`vectorcraft_tools::embroidery::PlanFacts`]):
-//! the engine answers from the newest plan it remembers of the whole document with the stitch
-//! preview's options (the plan the canvas shows), built once a plan ([`ToolFacts`]) and never
-//! planning to answer. Each answer says whether the plan is of the object as it is now, by node
-//! identity against the snapshot planned (an edit replaces the node), as the canvas's markers judge
-//! it. A fill's angle needs no plan: it is read from the document as it is, as
+//! the engine answers from the plan the interface draws ([`crate::Session::show_embroidery_plan`]),
+//! else, with no interface, from the newest plan it remembers of the whole document with the stitch
+//! preview's options; built once a plan ([`ToolFacts`]), never planning to answer. An answer is of
+//! the document as it is when the plan is of the snapshot the document is now, else stale (drawn
+//! dim until the next plan): any edit moves Auto points, a neighbour's or the document's settings
+//! too. A fill's angle needs no plan: it is read from the document as it is, as
 //! `embroidery.info {plan: false}` reports it.
 
 use std::cell::OnceCell;
@@ -89,6 +90,20 @@ impl ToolFacts {
 }
 
 impl crate::Session {
+    /// The interface draws `planned`, the plan of `snapshot`, for document `uid` (its stitch view,
+    /// or the embroidery tool's handles in the art view): the embroidery tool's Auto points and its
+    /// picking by stitch read that plan, so what is drawn is what is caught (the project's settled
+    /// choice). Called once a plan the interface takes in; without it (agents, tests) the tool reads
+    /// the newest plan remembered.
+    pub fn show_embroidery_plan(&mut self, uid: u64, snapshot: Arc<Document>, planned: super::Planned) {
+        self.embroidery_plans.show(uid, snapshot, planned);
+    }
+
+    /// The embroidery tool's kept answers dropped (the tool was put away).
+    pub fn drop_embroidery_tool_facts(&mut self) {
+        self.embroidery_plans.drop_facts();
+    }
+
     /// The embroidery tool's handles as the canvas draws them, while it is the active tool (else
     /// none), in `view`: the list the tool catches ([`vectorcraft_tools::embroidery::handles`]), of
     /// the part its options show, and its options (`hover`, `focus`, `drag`). Never plans.
@@ -127,10 +142,9 @@ impl PlanFacts for FactsNow<'_> {
     fn ends(&self, object: NodeId, part: PartKind) -> Option<PlannedEnds> {
         let facts = self.facts?;
         let sewn = facts.ends.get(&(object, part))?;
-        let current = match (self.doc.node(object), facts.snapshot.node(object)) {
-            (Some(a), Some(b)) => std::ptr::eq(a, b),
-            _ => false,
-        };
+        // Of the document as it is: a plan of an earlier snapshot is stale for every object (an
+        // edit of a neighbour, or of the document's settings, moves Auto points too).
+        let current = std::ptr::eq(&*facts.snapshot, self.doc);
         let trim = facts.trim.is_finite().then_some(facts.trim);
         Some(PlannedEnds { first: sewn.first, last: sewn.last, current, before: sewn.before, after: sewn.after, trim })
     }

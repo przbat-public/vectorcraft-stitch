@@ -405,3 +405,42 @@ fn handles_and_labels_read_on_any_fabric_in_every_theme() {
         }
     }
 }
+
+/// The tool's Auto handles come from the plan the canvas draws, handed to the session: an agent
+/// planning the document with five other option sets pushes the preview's plan out of the planning
+/// service's memory (four a document), and the handles stay; and they are judged stale by plan:
+/// an edit (the first square's entry set) dims every Auto handle, the other square's too, until the
+/// plan of the document as it is is drawn (a runner that lands the plan a poll after it is sent),
+/// then they are Auto again.
+#[test]
+fn auto_handles_come_from_the_plan_drawn_and_go_stale_with_it() {
+    use vectorcraft_tools::embroidery::State;
+    let (mut app, [a, b]) = app();
+    app.embroidery.preview = stitch_preview::StitchPreview::with_runner(Box::new(stitch_preview::OneStepAPoll::default()));
+    let ctx = egui::Context::default();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let states = |app: &mut VectorcraftApp| {
+        let view = app.view_info();
+        // The points (an arrow's angle is read from the document as it is, never stale).
+        let points = app.session.embroidery_handles(view).0.into_iter().filter(|h| h.id.kind != Kind::Angle);
+        points.map(|h| (h.id.owner.part().0.0, h.id.kind, h.state)).collect::<Vec<_>>()
+    };
+    let auto = states(&mut app);
+    assert!(auto.len() == 4 && auto.iter().all(|h| h.2 == State::Auto), "{auto:?}");
+    for spacing in [0.3, 0.31, 0.32, 0.33, 0.34] {
+        app.run("embroidery.sequence", json!({"spacing": spacing})).unwrap();
+    }
+    assert_eq!(states(&mut app), auto, "the plan drawn, not the newest remembered");
+    app.run("embroidery.setEntryExit", json!({"id": a, "part": "fill", "entry": [45, 65]})).unwrap();
+    time += 0.02;
+    frame(&mut app, &ctx, time, vec![]);
+    let edited = states(&mut app);
+    assert!(edited.iter().any(|h| h.0 == a && h.1 == Kind::Entry && h.2 == State::Set), "{edited:?}");
+    assert!(edited.iter().filter(|h| h.2 != State::Set).all(|h| h.2 == State::Stale), "every Auto handle stale: {edited:?}");
+    assert!(edited.iter().any(|h| h.0 == b && h.2 == State::Stale), "the other square's too");
+    settle(&mut app, &ctx, &mut time);
+    settle(&mut app, &ctx, &mut time);
+    let caught_up = states(&mut app);
+    assert!(caught_up.iter().all(|h| h.2 != State::Stale), "the plan drawn caught up: {caught_up:?}");
+}

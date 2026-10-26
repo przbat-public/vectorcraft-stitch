@@ -73,6 +73,22 @@ pub struct Cache {
     options: Value,
     /// How many times the handles were found (the tests count them).
     pub(crate) found: usize,
+    /// The document and the generation of the plan last handed to the session as the one drawn
+    /// ([`hand_shown`]); `None` while the tool is put away.
+    handed: Option<(u64, u64)>,
+}
+
+/// The plan the stitch preview shows of the active document handed to the session, when it is new:
+/// the tool's Auto points and its picking read it, so what is drawn is what is caught.
+fn hand_shown(app: &mut VectorcraftApp) {
+    let Some(uid) = app.session.active().map(|st| st.uid) else { return };
+    let Some(shown) = app.embroidery.preview.shown(uid) else { return };
+    let now = (uid, shown.planned.generation);
+    if app.embroidery.handles.handed != Some(now) {
+        let (document, planned) = (shown.document.clone(), shown.planned.clone());
+        app.session.show_embroidery_plan(uid, document, planned);
+        app.embroidery.handles.handed = Some(now);
+    }
 }
 
 /// The handles and the tool's options, found again only when what they are found for changed.
@@ -101,8 +117,13 @@ pub fn active(app: &VectorcraftApp) -> bool {
 /// Draw the tool's handles over the canvas (both views), and ask for a plan while it is active.
 pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
     if !active(app) {
+        // The tool put away: the answers it kept go.
+        if app.embroidery.handles.handed.take().is_some() {
+            app.session.drop_embroidery_tool_facts();
+        }
         return;
     }
+    hand_shown(app);
     // Auto points need a plan: asked for whatever the view.
     app.embroidery.preview.want_plan();
     // One part at a time, the Object tab's.

@@ -12,8 +12,9 @@
 //!   run along the rows), its rows travelling hidden from where it is entered to where they must
 //!   start to end there.
 //!
-//! The points are spread evenly by length along the shape (at most [`MAX_JOIN_STARTS`] starts and
-//! [`MAX_JOIN_EXITS`] ends a shape), in the order the shape is drawn, so the same shape gives the
+//! The points are spread evenly by length along the shape (about [`MAX_JOIN_STARTS`] starts and
+//! [`MAX_JOIN_EXITS`] ends a shape: a fill's every outline at least one, and a shape's own start and
+//! end besides, [`Ends::own_first`]), in the order the shape is drawn, so the same shape gives the
 //! same points. A line of several subpaths and a fill whose narrow parts are sewn as satin have no
 //! ends here: their order is the planner's search, which these points don't model.
 
@@ -56,10 +57,10 @@ pub enum Through {
     /// For each start, each end's cost, `None` where that start can't end there: an open line or
     /// column, two by two.
     Table(Vec<Vec<Option<f64>>>),
-    /// Any end from any start, round a closed line `length` long, at `per_mm` a millimetre of the
-    /// shorter way round from the start to the end; `starts` and `ends` are how far along the line
-    /// each lies.
-    Round { length: f64, starts: Vec<f64>, ends: Vec<f64>, per_mm: f64 },
+    /// Any end from any start, round a closed line `length` long (`line`, its first point repeated
+    /// at its end), at `per_mm` a millimetre of the shorter way round from the start to the end;
+    /// `starts` and `ends` are how far along the line each lies.
+    Round { line: Vec<Point>, length: f64, starts: Vec<f64>, ends: Vec<f64>, per_mm: f64 },
     /// Any end from any start, at no cost of its own: a fill's rows travel hidden from where it is
     /// entered to where they must start to end there.
     Free,
@@ -73,7 +74,7 @@ impl Ends {
         }
         match &self.through {
             Through::Table(rows) => rows.get(s).and_then(|r| r.get(e).copied().flatten()),
-            Through::Round { length, starts, ends, per_mm } => {
+            Through::Round { length, starts, ends, per_mm, .. } => {
                 let (a, b) = (starts.get(s)?, ends.get(e)?);
                 let way = (a - b).abs();
                 Some(per_mm * way.min(length - way).max(0.0))
@@ -95,13 +96,22 @@ impl Ends {
         Self { starts: self.starts.clone(), ends: self.ends.clone(), through: Through::Table(table) }
     }
 
-    /// The start nearest `first` put first, and the end nearest `last`: a shape's own start and end
-    /// (where it starts and ends now) as its first choices, which ties keep. A fill takes them as
-    /// they are, before its other points.
+    /// A shape's own start and end (where it starts and ends now) put first, as its first choices,
+    /// which ties keep. A fill takes them as they are, before its other points, and so does a closed
+    /// line or a ring, each at its place along the line (so that a shape left as it is keeps its
+    /// stitches); an open line or column puts first the end nearest each.
     pub fn own_first(&mut self, first: Point, last: Point) {
         if self.through == Through::Free {
             self.starts.insert(0, first);
             self.ends.insert(0, last);
+            return;
+        }
+        if let Through::Round { line, starts, ends, .. } = &mut self.through {
+            let (Some(a), Some(b)) = (along(line, first), along(line, last)) else { return };
+            self.starts.insert(0, first);
+            starts.insert(0, a);
+            self.ends.insert(0, last);
+            ends.insert(0, b);
             return;
         }
         let nearest = |pts: &[Point], q: Point| pts.iter().enumerate().min_by(|a, b| a.1.distance(q).total_cmp(&b.1.distance(q))).map(|(i, _)| i);
@@ -136,7 +146,8 @@ impl Ends {
         let pick = |pts: &[Point], idx: &[usize]| idx.iter().filter_map(|&i| pts.get(i).copied()).collect::<Vec<_>>();
         let through = match &self.through {
             Through::Table(_) => return self.clone(),
-            Through::Round { length, starts, ends, per_mm } => Through::Round {
+            Through::Round { line, length, starts, ends, per_mm } => Through::Round {
+                line: line.clone(),
                 length: *length,
                 starts: s.iter().filter_map(|&i| starts.get(i).copied()).collect(),
                 ends: e.iter().filter_map(|&i| ends.get(i).copied()).collect(),
@@ -191,7 +202,35 @@ fn round(pts: &[Point], n: usize) -> Option<Ends> {
     let spread = spread(pts, n);
     let at: Vec<Point> = spread.iter().map(|(q, _)| *q).collect();
     let along: Vec<f64> = spread.iter().map(|(_, s)| *s).collect();
-    Some(Ends { starts: at.clone(), ends: at, through: Through::Round { length: total, starts: along.clone(), ends: along, per_mm: COST_HIDDEN } })
+    let line = pts.to_vec();
+    Some(Ends {
+        starts: at.clone(),
+        ends: at,
+        through: Through::Round { line, length: total, starts: along.clone(), ends: along, per_mm: COST_HIDDEN },
+    })
+}
+
+/// How far along polyline `pts` its point nearest `q` lies, `None` for no polyline or a `q` that
+/// isn't a number.
+fn along(pts: &[Point], q: Point) -> Option<f64> {
+    if !(q.x.is_finite() && q.y.is_finite()) {
+        return None;
+    }
+    let mut best: Option<(f64, f64)> = None;
+    let mut walked = 0.0;
+    for w in pts.windows(2) {
+        let [a, b] = w else { continue };
+        let ab = *b - *a;
+        let len2 = ab.hypot2();
+        let t = if len2 > 0.0 { ((q - *a).dot(ab) / len2).clamp(0.0, 1.0) } else { 0.0 };
+        let d = (*a + ab * t).distance(q);
+        let seg = len2.sqrt();
+        if d.is_finite() && best.is_none_or(|(b, _)| d < b) {
+            best = Some((d, walked + seg * t));
+        }
+        walked += if seg.is_finite() { seg } else { 0.0 };
+    }
+    best.map(|(_, s)| s)
 }
 
 /// A fill's starts (points spread along all its outlines) and ends (those of them where its rows
@@ -390,6 +429,13 @@ mod tests {
         assert_eq!((e.starts[0], e.ends[0]), (first, last));
         let way = e.cost(0, 0).unwrap();
         assert!(way > 0.0, "start 5 to end 9 is still four points round: {way}");
+        // A start and end between the spread points are taken as they are, at their place along it:
+        // started and ended there, it costs nothing.
+        let mut r = ends(&square, &Params::for_style(Style::Running), false).unwrap();
+        let own = Point::new(13.7, 0.0);
+        r.own_first(own, own);
+        assert_eq!((r.starts[0], r.ends[0], r.cost(0, 0)), (own, own, Some(0.0)), "its own start, exactly");
+        assert!(r.cost(0, 1).unwrap() > 0.0, "to another point round it");
         let t = e.thinned(4);
         assert_eq!((t.starts.len(), t.ends.len(), t.starts[0], t.ends[0]), (4, 4, first, last));
         assert_eq!(t.cost(0, 0), Some(way));

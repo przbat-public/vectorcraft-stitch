@@ -207,3 +207,33 @@ fn exact_meets_are_no_jump() {
     assert_eq!(jumps(&mut s), 0, "none added: {r}");
     assert!((first_x(&mut s, ring) - 40.0).abs() < 0.1, "the closed line still starts on its corner");
 }
+
+/// A closed line left where it starts, in a stretch Nearest Connection keeps (the second line
+/// turned round before it), gets its own start written as its entry exactly, so it starts where it
+/// did: a diamond whose corner pointing at the third line's end is where Auto starts it and the
+/// nearest it can start, 23.1 mm along its 30.3 mm outline, between the points spread along it
+/// 0.95 mm apart; a spread point written instead would move it 0.36 mm.
+#[test]
+fn a_closed_line_left_as_it_is_keeps_its_start() {
+    let mut s = blank();
+    three_lines(&mut s, "#2233cc");
+    let pt = |v: f64| (AT + v) * PT_PER_MM;
+    run(&mut s, "paint.setStroke", json!({"color": "#2233cc"}));
+    let d = format!("M {} {} L {} {} L {} {} L {} {} Z", pt(35.0), pt(-5.2), pt(41.0), pt(0.0), pt(35.0), pt(5.2), pt(30.0), pt(0.0));
+    let ring = run(&mut s, "path.create", json!({ "d": d }))["id"].as_u64().unwrap();
+    run(&mut s, "stroke.set", json!({"weight": 1.0, "ids": [ring]}));
+    run(&mut s, "select.none", json!({}));
+    let start = |s: &mut Session| {
+        let u = units(s).into_iter().find(|u| u["id"] == json!(ring)).unwrap();
+        (u["entry"][0].as_f64().unwrap() - AT, u["entry"][1].as_f64().unwrap() - AT)
+    };
+    let before = start(&mut s);
+    assert!((before.0 - 30.0).abs() < 0.01 && before.1.abs() < 0.01, "Auto starts it at the corner nearest the third line's end: {before:?}");
+    let r = run(&mut s, "embroidery.nearestConnection", json!({}));
+    assert_eq!(r["applied"], json!(true), "the second line turned round: {r}");
+    let entry = run(&mut s, "embroidery.info", json!({"ids": [ring]}))["objects"][0]["settings"]["stroke"]["entry"].clone();
+    let (x, y) = (entry[0].as_f64().unwrap(), entry[1].as_f64().unwrap());
+    assert!((x - pt(30.0)).abs() < 1e-6 && (y - pt(0.0)).abs() < 1e-6, "its own start, exactly: {entry}");
+    let after = start(&mut s);
+    assert!((after.0 - before.0).abs() < 1e-6 && (after.1 - before.1).abs() < 1e-6, "{before:?} → {after:?}");
+}

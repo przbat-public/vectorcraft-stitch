@@ -129,6 +129,15 @@ impl EmbroideryTool {
         }
     }
 
+    /// The drag under way ended, kept (as a release keeps it); nothing when none has begun.
+    fn finish_drag(&mut self) -> Vec<Action> {
+        match self.grab.take() {
+            Some(Grab { begun: true, previewed: Some(_), .. }) => vec![Action::Commit],
+            Some(Grab { begun: true, previewed: None, .. }) => vec![Action::Cancel],
+            _ => vec![],
+        }
+    }
+
     /// The point dialog for handle `h` ([`POINT_DIALOG`]).
     fn dialog(&mut self, h: &Handle) -> Vec<Action> {
         self.focus = Some(h.id);
@@ -158,13 +167,17 @@ impl Tool for EmbroideryTool {
                 vec![]
             }
             PointerKind::Down => {
-                let Some(h) = hit(cx, &self.now(cx), ev.pos) else { return self.select_at(cx, ev) };
-                if ev.mods.alt {
-                    return self.back_to_auto(h.id);
+                // A press with a drag still under way (no release came between): that drag ends first.
+                let mut out = self.finish_drag();
+                match hit(cx, &self.now(cx), ev.pos) {
+                    None => out.extend(self.select_at(cx, ev)),
+                    Some(h) if ev.mods.alt => out.extend(self.back_to_auto(h.id)),
+                    Some(h) => {
+                        self.focus = Some(h.id);
+                        self.grab = Some(Grab { id: h.id, from: ev.pos, begun: false, previewed: None, at: h.point });
+                    }
                 }
-                self.focus = Some(h.id);
-                self.grab = Some(Grab { id: h.id, from: ev.pos, begun: false, previewed: None, at: h.point });
-                vec![]
+                out
             }
             PointerKind::Drag => {
                 let Some(grab) = self.grab.as_mut() else { return vec![] };
@@ -185,11 +198,9 @@ impl Tool for EmbroideryTool {
                 }
                 out
             }
-            PointerKind::Up => match self.grab.take() {
-                Some(Grab { begun: true, previewed: Some(_), .. }) => vec![Action::Commit],
-                Some(Grab { begun: true, previewed: None, .. }) => vec![Action::Cancel],
-                _ => vec![],
-            },
+            PointerKind::Up => self.finish_drag(),
+            // Ignored during a drag: the drag is the gesture under way, ended by its release.
+            PointerKind::DoubleClick if self.busy() => vec![],
             PointerKind::DoubleClick => match hit(cx, &self.now(cx), ev.pos) {
                 Some(h) => {
                     self.grab = None;
@@ -291,10 +302,6 @@ impl Tool for EmbroideryTool {
         self.hover = None;
         self.hover_object = None;
         self.focus = None;
-        match self.grab.take() {
-            Some(Grab { begun: true, previewed: Some(_), .. }) => vec![Action::Commit],
-            Some(Grab { begun: true, previewed: None, .. }) => vec![Action::Cancel],
-            _ => vec![],
-        }
+        self.finish_drag()
     }
 }

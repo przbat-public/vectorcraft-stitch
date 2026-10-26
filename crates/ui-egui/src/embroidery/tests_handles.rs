@@ -292,3 +292,50 @@ fn a_double_click_opens_the_point_dialog() {
     assert!(entry.is_array(), "set: {entry}");
     assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
 }
+
+/// An agent's drag (`ui.pointer` in document points), the interface's drag (the mouse) and the
+/// command itself (`embroidery.setEntryExit {snap: true}` at the point dropped) set the same entry.
+#[test]
+fn agents_and_the_interface_drag_a_point_alike() {
+    use crate::control::{ControlRequest, Outcome, handle};
+    let ctx = egui::Context::default();
+    let entry_of = |app: &mut VectorcraftApp, id: u64| {
+        app.run("embroidery.info", json!({"ids": [id]})).unwrap()["objects"][0]["settings"]["fill"]["entry"].clone()
+    };
+    // The interface: the mouse.
+    let (mut ui_app, [a, _]) = app();
+    let mut time = 0.0;
+    settle(&mut ui_app, &ctx, &mut time);
+    let Some(&(_, at)) = on_screen(&mut ui_app).iter().find(|(k, _)| *k == Kind::Entry) else { panic!("an entry") };
+    let to = at + egui::vec2(25.0, 40.0);
+    let xf = canvas::Xf::new(ui_app.canvas_rect.unwrap(), ui_app.view().unwrap());
+    let (from_doc, to_doc) = (xf.to_doc(at), xf.to_doc(to));
+    let button = |pos: Pos2, pressed| Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    time += 0.05;
+    frame(&mut ui_app, &ctx, time, vec![Event::PointerMoved(at), button(at, true)]);
+    for k in 1..=4 {
+        time += 0.02;
+        frame(&mut ui_app, &ctx, time, vec![Event::PointerMoved(at + (to - at) * (k as f32 / 4.0))]);
+    }
+    time += 0.02;
+    frame(&mut ui_app, &ctx, time, vec![button(to, false)]);
+    let by_mouse = entry_of(&mut ui_app, a);
+    // An agent: `ui.pointer`, in document points.
+    let (mut agent, [b, _]) = app();
+    let ctx = egui::Context::default();
+    let mut time = 0.0;
+    settle(&mut agent, &ctx, &mut time);
+    let ev = |kind: &str, p: vectorcraft_geom::Point| json!({"kind": kind, "x": p.x, "y": p.y});
+    let mid = from_doc.midpoint(to_doc);
+    let events = json!([ev("down", from_doc), ev("drag", mid), ev("drag", to_doc), ev("up", to_doc)]);
+    let (req, _) = ControlRequest::new("ui.pointer", json!({ "events": events }));
+    let Outcome::Done(r) = handle(&mut agent, &ctx, &req) else { panic!("not done") };
+    assert_eq!(r["ok"], true, "{r}");
+    let by_agent = entry_of(&mut agent, b);
+    // The command, at the point dropped.
+    let (mut by_command, [c, _]) = app();
+    by_command.run("embroidery.setEntryExit", json!({"id": c, "part": "fill", "entry": [to_doc.x, to_doc.y], "snap": true})).unwrap();
+    let by_command = entry_of(&mut by_command, c);
+    assert!(by_mouse.is_array(), "{by_mouse}");
+    assert_eq!((&by_mouse, &by_agent), (&by_command, &by_command));
+}

@@ -264,6 +264,13 @@ fn a_click_escape_and_switching_away() {
     t.pointer(&c, &ev(PointerKind::Down, 200.0, 200.0));
     t.pointer(&c, &ev(PointerKind::Drag, 220.0, 220.0));
     assert_eq!(t.deactivate(&c), vec![Action::Commit], "switching away keeps the drag");
+    // A press with a drag under way (no release between, as a script may send) ends that drag
+    // first; a double-click during a drag changes nothing.
+    t.pointer(&c, &ev(PointerKind::Down, 200.0, 200.0));
+    t.pointer(&c, &ev(PointerKind::Drag, 220.0, 220.0));
+    assert!(t.pointer(&c, &ev(PointerKind::DoubleClick, 220.0, 220.0)).is_empty() && t.busy());
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Down, 100.0, 100.0)), vec![Action::Commit]);
+    assert!(!t.busy());
 }
 
 /// Alt-click or Delete puts a point back to Auto; the arrows nudge the focused one by the

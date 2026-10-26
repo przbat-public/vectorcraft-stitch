@@ -1,0 +1,196 @@
+//! The embroidery tool's handles ([`handles`]): one list the tool catches and the canvas draws, so
+//! that what is drawn is what is caught. Each handle is named by its kind, its owner and an index,
+//! never kept by position: positions come from the document and the plan on every call, so a new
+//! plan, an undo or a transform never leaves a handle behind.
+
+use serde_json::{Value, json};
+use vectorcraft_doc::NodeId;
+use vectorcraft_doc::embroidery::takers::{has_part, takers};
+use vectorcraft_doc::embroidery::{PartKey, PartKind, PartValue};
+use vectorcraft_geom::{Point, Vec2};
+
+use crate::ToolContext;
+
+/// The most objects whose points show at once (the stitch preview's markers' bound, an estimate:
+/// as many as a person can still tell apart).
+pub const HANDLED_OBJECTS_MAX: usize = 32;
+
+/// The entry handle's size on screen, pixels (the stitch preview's entry marker's).
+pub const ENTRY_MARKER_PX: f64 = 12.0;
+
+/// The exit handle's size on screen, pixels (the stitch preview's exit marker's).
+pub const EXIT_MARKER_PX: f64 = 14.0;
+
+/// How much farther than half its size a handle is caught, screen pixels: as an anchor is, 2 px
+/// past its drawn edge ([`ToolContext::point_tol`]).
+pub const CATCH_PAST_PX: f64 = 2.0;
+
+/// How far apart on screen an exit lying under its entry is drawn and caught, pixels: the exit
+/// marker's size, so both can be caught.
+pub const APART_PX: f64 = EXIT_MARKER_PX;
+
+/// A kind of handle. Closed on purpose: every place kinds differ matches on it, so a kind added
+/// later can't leave out its handles, its drag's command or its cursor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Kind {
+    /// Where the needle goes in to sew a part.
+    Entry,
+    /// Where it comes out after it.
+    Exit,
+}
+
+impl Kind {
+    /// Its id, as the tool's options and `embroidery.setEntryExit`'s keys name it.
+    pub fn id(self) -> &'static str {
+        match self {
+            Kind::Entry => "entry",
+            Kind::Exit => "exit",
+        }
+    }
+
+    /// The part key its point is kept under.
+    fn key(self) -> PartKey {
+        match self {
+            Kind::Entry => PartKey::Entry,
+            Kind::Exit => PartKey::Exit,
+        }
+    }
+
+    /// The handle's size on screen, pixels.
+    pub fn size_px(self) -> f64 {
+        match self {
+            Kind::Entry => ENTRY_MARKER_PX,
+            Kind::Exit => EXIT_MARKER_PX,
+        }
+    }
+}
+
+/// What a handle belongs to.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Owner {
+    /// A part of an object: its fill or its stroke.
+    Part { object: NodeId, part: PartKind },
+}
+
+impl Owner {
+    /// The object and its part.
+    pub fn part(self) -> (NodeId, PartKind) {
+        match self {
+            Owner::Part { object, part } => (object, part),
+        }
+    }
+}
+
+/// What a handle's point is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum State {
+    /// Set on the object.
+    Set,
+    /// Auto: where the plan shown sews it, the plan of the object as it is.
+    Auto,
+    /// Auto, from a plan of the object as it was: drawn dim until the plan catches up.
+    Stale,
+}
+
+impl State {
+    pub fn id(self) -> &'static str {
+        match self {
+            State::Set => "set",
+            State::Auto => "auto",
+            State::Stale => "stale",
+        }
+    }
+}
+
+/// What names a handle from one call to the next: its kind, its owner, and which of the owner's
+/// handles of that kind (0 for an entry or an exit).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct HandleId {
+    pub kind: Kind,
+    pub owner: Owner,
+    pub index: usize,
+}
+
+impl HandleId {
+    /// As the tool's options give it: `{kind, id, part, index}`.
+    pub fn json(self) -> Value {
+        let (object, part) = self.owner.part();
+        json!({"kind": self.kind.id(), "id": object.0, "part": part.id(), "index": self.index})
+    }
+}
+
+/// One handle as the tool catches it and the canvas draws it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Handle {
+    pub id: HandleId,
+    /// Where it is drawn and caught, document points: its point, but an exit lying under its entry
+    /// is moved apart on screen ([`APART_PX`]).
+    pub at: Point,
+    /// The point it stands for: the one set, or where the plan sews it.
+    pub point: Point,
+    pub state: State,
+}
+
+/// The part of `n` whose points show: `part` when given and `n` has it, else its fill when it has
+/// one, else its stroke; `None` when it has neither.
+fn shown_part(n: &vectorcraft_doc::Node, part: Option<PartKind>) -> Option<PartKind> {
+    match part {
+        Some(k) => has_part(n, k).then_some(k),
+        None => [PartKind::Fill, PartKind::Stroke].into_iter().find(|k| has_part(n, *k)),
+    }
+}
+
+/// The selection's handles: of the objects it stands for that take settings (groups expanded, a
+/// compound path's member standing for its compound path; type, symbol instances and stitches from
+/// files take none), at most [`HANDLED_OBJECTS_MAX`], each object's entry then its exit, of the
+/// part `part` (one part at a time, as the Object tab shows it; `None`: each object's fill, else
+/// its stroke). A point set stands where it is; one left to the planner where the plan shown sews it
+/// (stale when that plan is of the object as it was); without either, no handle.
+pub fn handles(cx: &ToolContext, part: Option<PartKind>) -> Vec<Handle> {
+    let (take, _) = takers(cx.doc, &cx.selection.objects);
+    // One screen pixel to the right, in document points, whatever way the view is turned.
+    let right = cx.screen.map_or(Vec2::new(cx.tol(1.0), 0.0), |s| s.right);
+    let mut out = Vec::new();
+    for object in take.into_iter().take(HANDLED_OBJECTS_MAX) {
+        let Some(n) = cx.doc.node(object) else { continue };
+        let Some(kind) = shown_part(n, part) else { continue };
+        let held = n.extras().embroidery.as_deref().and_then(|e| e.part(kind));
+        let stored = |key: PartKey| match held.and_then(|p| p.get(key)) {
+            Some(PartValue::Point(p)) if p.x.is_finite() && p.y.is_finite() => Some(p),
+            _ => None,
+        };
+        let planned = cx.embroidery.and_then(|f| f.ends(object, kind));
+        let mut pair: Vec<Handle> = Vec::with_capacity(2);
+        for k in [Kind::Entry, Kind::Exit] {
+            let (point, state) = match (stored(k.key()), planned) {
+                (Some(p), _) => (p, State::Set),
+                (None, Some(e)) => (if k == Kind::Entry { e.first } else { e.last }, if e.current { State::Auto } else { State::Stale }),
+                (None, None) => continue,
+            };
+            let id = HandleId { kind: k, owner: Owner::Part { object, part: kind }, index: 0 };
+            pair.push(Handle { id, at: point, point, state });
+        }
+        if let [entry, exit] = pair.as_mut_slice()
+            && entry.at.distance(exit.at) < cx.tol(APART_PX)
+        {
+            exit.at = entry.at + right * APART_PX;
+        }
+        out.extend(pair);
+    }
+    out
+}
+
+/// The handle of `all` under `p` (document points): the nearest within half its size and
+/// [`CATCH_PAST_PX`] on screen, or the selection tolerance where that is wider; of equally near
+/// ones, the first (an entry before its exit).
+pub fn hit(cx: &ToolContext, all: &[Handle], p: Point) -> Option<Handle> {
+    let mut best: Option<(f64, Handle)> = None;
+    for h in all {
+        let reach = cx.tol(cx.selection_tolerance.max(h.id.kind.size_px() / 2.0 + CATCH_PAST_PX));
+        let d = h.at.distance(p);
+        if d <= reach && best.is_none_or(|(b, _)| d < b) {
+            best = Some((d, *h));
+        }
+    }
+    best.map(|(_, h)| h)
+}

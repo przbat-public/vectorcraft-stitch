@@ -256,6 +256,8 @@ impl Session {
             raster_sample: self.prefs.eyedropper.sample_size,
             preview_bounds: self.prefs.use_preview_bounds,
             preview_memo: Some(&self.preview_memo),
+            // VectorCraft Stitch: the stitch plan's answers for the embroidery tool, none yet.
+            embroidery: None,
             unit,
             stroke_unit,
             paste_plain_text: self.prefs.paste_text_formatting == "plain",

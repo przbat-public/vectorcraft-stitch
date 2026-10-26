@@ -185,6 +185,166 @@ pub fn opened_design(run: Run, format: &str) {
     run("document.open", json!({"name": format!("design.{format}"), "dataBase64": data}));
 }
 
+/// The objects of [`points`], by what each is, and the entry and exit points set on them (document
+/// points).
+#[derive(Clone, Copy, Debug)]
+pub struct Points {
+    /// A square filled red, its fill's entry and exit set.
+    pub fill: u64,
+    pub fill_entry: [f64; 2],
+    pub fill_exit: [f64; 2],
+    /// An open line stroked blue as a satin column, its stroke's entry and exit set at its two
+    /// ends.
+    pub stroke: u64,
+    pub stroke_entry: [f64; 2],
+    pub stroke_exit: [f64; 2],
+    /// A square filled blue and stroked red as a satin column, both parts' points set.
+    pub both: u64,
+    pub both_fill_entry: [f64; 2],
+    pub both_stroke_exit: [f64; 2],
+    /// A compound path (a green square with a square hole), its fill's entry set.
+    pub compound: u64,
+    pub compound_entry: [f64; 2],
+    /// A group of two squares (red and blue), and the squares: no points set.
+    pub group: u64,
+    pub grouped: [u64; 2],
+    /// A clip group (a circle clipping a red square) and the square it clips.
+    pub clip_group: u64,
+    pub clipped: u64,
+    /// A symbol (a green square) placed once: the instance, which takes no points.
+    pub instance: u64,
+    /// A run of stitches opened from a machine file (a DST's), pasted in: the path (in the group
+    /// the file's colour block made).
+    pub run: u64,
+    /// A red square on a locked layer.
+    pub locked: u64,
+    /// A hidden red square.
+    pub hidden: u64,
+    /// A line of type, which takes no settings.
+    pub text: u64,
+}
+
+/// One document holding each kind of object the embroidery tool meets, with entry and exit points
+/// set by `embroidery.setEntryExit` where an object takes them: a fill, a satin stroke, an object
+/// filled and stroked (both parts set), a compound path, a group, a clip group, a symbol
+/// instance, a run of stitches from a machine file, a locked object, a hidden one and type. Starts
+/// a new document (a second one, for the machine file, is opened and closed on the way) and leaves
+/// nothing selected.
+pub fn points(run: Run) -> Points {
+    // The run from a file first: a DST of one red line, opened, its run copied.
+    blank(run);
+    let line = stroke(run, RED, RUNNING_WEIGHT, &[(40.0, 40.0), (120.0, 40.0), (120.0, 80.0)]);
+    let data = run("document.export", json!({"format": "dst"}))["dataBase64"].as_str().map(str::to_string);
+    let data = data.unwrap_or_else(|| panic!("no dataBase64 exporting the line {line} as dst"));
+    run("document.open", json!({"name": "line.dst", "dataBase64": data}));
+    run("select.all", json!({}));
+    run("edit.copy", json!({}));
+    run("file.close", json!({}));
+    run("file.close", json!({}));
+
+    blank(run);
+    let side = 20.0 * PT_PER_MM;
+    /// The entry and the exit of `part` of object `id` set, each one given.
+    fn set(run: Run, id: u64, part: &str, entry: Option<[f64; 2]>, exit: Option<[f64; 2]>) {
+        let mut p = json!({"id": id, "part": part});
+        if let Some(e) = entry {
+            p["entry"] = json!(e);
+        }
+        if let Some(e) = exit {
+            p["exit"] = json!(e);
+        }
+        run("embroidery.setEntryExit", p);
+    }
+
+    let fill = rect(run, RED, 20.0, 20.0, side, side);
+    let (fill_entry, fill_exit) = ([20.0, 20.0 + side / 2.0], [20.0 + side, 20.0 + side / 2.0]);
+    set(run, fill, "fill", Some(fill_entry), Some(fill_exit));
+
+    let (a, b) = ((120.0, 30.0), (120.0 + 2.0 * side, 30.0));
+    let line = stroke(run, BLUE, SATIN_WEIGHT, &[a, b]);
+    let (stroke_entry, stroke_exit) = ([a.0, a.1], [b.0, b.1]);
+    set(run, line, "stroke", Some(stroke_entry), Some(stroke_exit));
+
+    let both = rect(run, BLUE, 280.0, 20.0, side, side);
+    run("paint.setStroke", json!({"color": RED, "ids": [both]}));
+    run("stroke.set", json!({"weight": SATIN_WEIGHT, "ids": [both]}));
+    run("select.none", json!({}));
+    let (both_fill_entry, both_stroke_exit) = ([280.0, 20.0], [280.0 + side, 20.0 + side]);
+    set(run, both, "fill", Some(both_fill_entry), None);
+    set(run, both, "stroke", None, Some(both_stroke_exit));
+
+    let outer = rect(run, GREEN, 20.0, 120.0, side, side);
+    let hole = rect(run, GREEN, 20.0 + side / 4.0, 120.0 + side / 4.0, side / 2.0, side / 2.0);
+    run("select.set", json!({"ids": [outer, hole]}));
+    let compound = id(&run("object.compoundPath.make", json!({})));
+    run("select.none", json!({}));
+    let compound_entry = [20.0 + side, 120.0 + side];
+    set(run, compound, "fill", Some(compound_entry), None);
+
+    let g1 = rect(run, RED, 120.0, 120.0, side / 2.0, side / 2.0);
+    let g2 = rect(run, BLUE, 120.0 + side, 120.0, side / 2.0, side / 2.0);
+    run("select.set", json!({"ids": [g1, g2]}));
+    let group = id(&run("object.group", json!({})));
+    run("select.none", json!({}));
+
+    let clipped = rect(run, RED, 280.0, 120.0, side, side);
+    run("paint.setFill", json!({"none": true}));
+    run("paint.setStroke", json!({"none": true}));
+    let circle = id(&run("shape.ellipse", json!({"x": 280.0 + side / 4.0, "y": 120.0, "width": side, "height": side})));
+    run("select.set", json!({"ids": [clipped, circle]}));
+    let clip_group = id(&run("object.clippingMask.make", json!({})));
+    run("select.none", json!({}));
+
+    let art = rect(run, GREEN, 20.0, 220.0, side, side);
+    run("select.set", json!({"ids": [art]}));
+    let instance = id(&run("symbol.new", json!({"name": "Points square"})));
+    run("select.none", json!({}));
+
+    let pasted = run("edit.paste", json!({}));
+    let top = pasted["ids"].get(0).and_then(Value::as_u64).unwrap_or_else(|| panic!("nothing pasted: {pasted}"));
+    run("object.move", json!({"ids": [top], "dx": 100.0, "dy": 180.0}));
+    run("select.none", json!({}));
+    // The file's colour block is a group: its path is the run.
+    let mut run_id = top;
+    while let Some(child) = run("document.node", json!({"id": run_id, "summary": true}))["children"].get(0).and_then(|c| c["id"].as_u64()) {
+        run_id = child;
+    }
+
+    let hidden = rect(run, RED, 280.0, 220.0, side, side);
+    run("select.set", json!({"ids": [hidden]}));
+    run("object.hide", json!({}));
+    run("select.none", json!({}));
+
+    let text = id(&run("text.create", json!({"x": 20.0, "y": 330.0, "text": "Type"})));
+    run("select.none", json!({}));
+
+    let locked_layer = id(&run("layer.new", json!({})));
+    let locked = rect(run, RED, 280.0, 300.0, side / 2.0, side / 2.0);
+    run("layer.setProps", json!({"id": locked_layer, "locked": true}));
+    Points {
+        fill,
+        fill_entry,
+        fill_exit,
+        stroke: line,
+        stroke_entry,
+        stroke_exit,
+        both,
+        both_fill_entry,
+        both_stroke_exit,
+        compound,
+        compound_entry,
+        group,
+        grouped: [g1, g2],
+        clip_group,
+        clipped,
+        instance,
+        run: run_id,
+        locked,
+        hidden,
+        text,
+    }
+}
+
 /// The keys an object's embroidery and the document's are read by: those this version reads, so
 /// that random JSON holds them, with any value, often enough to test what they read as.
 const EMBROIDERY_KEYS: [&str; 40] = [

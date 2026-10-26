@@ -286,6 +286,17 @@ fn an_exit_point_ends_the_part() {
     let plan = plan_with(&s, json!({}));
     let stitch = plan.units[0].params.unwrap().stitch_length;
     assert!(off(last_point(&plan, 0), (100.0, 50.0)) <= 0.65 * stitch, "ends at its exit: {:?}", last_point(&plan, 0));
+    // The same rectangle filled ends at an exit in the middle of a side (cut along the row there),
+    // with and without underlay, and lifts the needle no more than without it.
+    for underlay in ["none", "auto"] {
+        give(&mut s, id, json!({"fill": {"underlay": underlay}}));
+        let plain = plan_with(&s, json!({}));
+        give(&mut s, id, json!({"fill": {"underlay": underlay, "points": {"exit": [60.0, 80.0]}}}));
+        let plan = plan_with(&s, json!({}));
+        assert!(off(last_point(&plan, 0), (60.0, 80.0)) < 1.0, "underlay {underlay}: {:?}", last_point(&plan, 0));
+        let moves = |plan: &DesignPlan| plan.unit_stitches(0).iter().filter(|s| s.command != Command::Stitch).count();
+        assert!(moves(&plan) <= moves(&plain), "underlay {underlay}");
+    }
 }
 
 /// A fill angle the object doesn't set turns with the object, from its bounding box's angle: the

@@ -637,17 +637,33 @@ pub fn try_stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) 
 /// How many more points than [`estimate`] counts `subs` may plan into in style `p` when sewn
 /// toward an exit point (`aim`): a running line's closed subpaths carried on round, up to half
 /// their length again ([`running::lapped`]); a satin's pass or travel along its middle, up to its
-/// length in travel stitches. None without an exit.
+/// length in travel stitches; a fill's travels across it from where its plain rows would start
+/// and to the far strip of the row it is cut at (each at most its extent, in travel stitches), and
+/// the rows either side of the cut sewn twice (each at most its extent, in stitches). None without
+/// an exit.
 fn aimed_extra(subs: &[SubPath], p: &Params, aim: &Aim) -> f64 {
-    /// A pass's ends beyond its stitches: both of its ends, and the one its rounding may add.
+    /// A pass's or a travel's ends beyond its stitches: both of its ends, and the one its rounding
+    /// may add.
     const PASS_ENDS: f64 = 3.0;
+    /// A fill aimed at an exit travels across it at most twice more, and sews two rows more.
+    const FILL_TRAVELS: f64 = 2.0;
+    const FILL_ROWS: f64 = 2.0;
     if aim.exit.is_none() {
         return 0.0;
     }
     match sewn_style(p) {
         Style::Running => subs.iter().filter(|s| s.closed).map(|s| length(&s.points(), true) / 2.0 / p.stitch_length + 1.0).sum(),
         Style::Satin => subs.iter().map(|s| length(&s.points(), s.closed) / area::TRAVEL_STITCH + PASS_ENDS).sum(),
-        Style::Fill => 0.0,
+        Style::Fill => {
+            let (lo, hi) = subs
+                .iter()
+                .flat_map(|s| s.pts.iter())
+                .fold((Point::new(f64::INFINITY, f64::INFINITY), Point::new(f64::NEG_INFINITY, f64::NEG_INFINITY)), |(lo, hi), q| {
+                    (Point::new(lo.x.min(q.x), lo.y.min(q.y)), Point::new(hi.x.max(q.x), hi.y.max(q.y)))
+                });
+            let extent = if hi.x >= lo.x { lo.distance(hi) } else { 0.0 };
+            FILL_TRAVELS * (extent / area::TRAVEL_STITCH + PASS_ENDS) + FILL_ROWS * (extent / p.stitch_length + PASS_ENDS)
+        }
     }
 }
 

@@ -6,7 +6,7 @@ use vectorcraft_geom::{BezPath, FillRule, Point, Vec2};
 use super::area::{Area, Grid, TRAVEL_STITCH, Travels};
 use super::geometry::{Axes, SubPath, area, length, nearest_on, resample, subpaths, unit};
 use super::narrow::Column;
-use super::runs::{COST_SEEN, Runs, Travel};
+use super::runs::{COST_EXIT, COST_HIDDEN, COST_SEEN, Runs, Travel};
 use super::satin::{column_returns, sew_column};
 use super::{Aim, MAX_STITCHES, Params, Start, Style, UNDERLAY_STITCH, Underlay};
 use crate::{SAME_POINT, Stitch};
@@ -96,7 +96,7 @@ pub(super) fn fill_runs(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) ->
     let grid = Grid::new(&outlines);
     let shape = Area { outlines: &outlines, rule, grid: grid.as_ref() };
     let mut travels = Travels::new(shape);
-    sew_area(shape, &mut travels, p, entered(aim.start), &[], &mut runs, &|_| 0.0);
+    sew_area(shape, &mut travels, p, entered(aim.start), aim.exit, &[], &mut runs, &|_| 0.0);
     runs
 }
 
@@ -138,11 +138,13 @@ pub(super) fn closed_subpaths(path: &BezPath) -> Vec<SubPath> {
 /// `finished` measures how much of a way lies over other parts of the shape already sewn (a fill with
 /// narrow columns sews its pieces one after another): what a travel shows there counts against
 /// [`MAX_SEEN`], in the underlay's approach and the top rows' alike.
+#[allow(clippy::too_many_arguments)]
 fn sew_area(
     rows: Area<'_>,
     travels: &mut Travels<'_>,
     p: &Params,
     entry: Option<Point>,
+    exit: Option<Point>,
     toward: &[Point],
     runs: &mut Runs,
     finished: &dyn Fn(&[Point]) -> f64,
@@ -161,16 +163,60 @@ fn sew_area(
         }
     } else if let Some((_, _, _, at)) = entry.and_then(|e| entered_outline(rows, p.density * EDGE_RUN_INSET, e)) {
         // No underlay: the needle goes in at the entry and travels to the first row.
-        runs.lead_from(at);
+        runs.lead_from(at, None);
     }
     let axes = Axes::new(p.angle);
     if let Some((lo, hi)) = rows.extent(axes.across)
         && hi - lo >= p.density * FIRST_ROW
     {
         let layer = Layer { axes, spacing: p.density, inset: 0.0 };
-        let regions = layer.regions(rows, lo, hi, p);
-        sew(&regions, travels, MAX_SEEN, true, p, toward, runs, finished);
+        match exit.filter(|x| x.x.is_finite() && x.y.is_finite()) {
+            None => {
+                let regions = layer.regions(rows, lo, hi, p, None);
+                sew(&regions, travels, MAX_SEEN, true, p, toward, None, runs, finished);
+            }
+            Some(exit) => sew_toward(rows, &layer, (lo, hi), travels, p, exit, runs, finished),
+        }
     }
+}
+
+/// How much more a fill's top rows aimed at an exit may travel over stitching already sewn than
+/// without the exit, millimetres: one travel stitch, by judgement (a way that only bends round a
+/// row's end differently).
+const SEEN_SLACK: f64 = TRAVEL_STITCH;
+
+/// The top rows of `rows` sewn after `runs` to end as near `exit` as they can: planned without the
+/// exit and aimed at it ([`Layer::regions`] cut at the row end nearest it, [`sew`] sewing the piece
+/// holding it last, its last region's sweep chosen to end there), and the aimed rows kept only when
+/// they lift, cut and show no more than the plain ones ([`SEEN_SLACK`]) and end nearer the exit.
+/// When nothing of the shape is sewn before them (no underlay, no entry point), the aimed rows start
+/// where the plain ones do and travel from there, under the rows still to come.
+#[allow(clippy::too_many_arguments)]
+fn sew_toward(
+    rows: Area<'_>,
+    layer: &Layer,
+    (lo, hi): (f64, f64),
+    travels: &mut Travels<'_>,
+    p: &Params,
+    exit: Point,
+    runs: &mut Runs,
+    finished: &dyn Fn(&[Point]) -> f64,
+) {
+    let plain_regions = layer.regions(rows, lo, hi, p, None);
+    let mut plain = Runs::continuing(runs);
+    sew(&plain_regions, travels, MAX_SEEN, true, p, &[], None, &mut plain, finished);
+    let aimed_regions = layer.regions(rows, lo, hi, p, Some(exit));
+    let mut aimed = Runs::continuing(runs);
+    if runs.is_empty()
+        && !runs.inside()
+        && let Some(first) = plain.first()
+    {
+        aimed.lead_from(first, plain.opened());
+    }
+    sew(&aimed_regions, travels, MAX_SEEN, true, p, &[], Some(exit), &mut aimed, finished);
+    let from_exit = |r: &Runs| r.here().map_or(f64::INFINITY, |h| h.distance(exit));
+    let keep = if aimed.moves.within(&plain.moves, SEEN_SLACK) && from_exit(&aimed) < from_exit(&plain) { aimed } else { plain };
+    runs.append(keep);
 }
 
 /// The smallest piece of a shape's rest that is filled once its narrow columns are cut out (square
@@ -238,7 +284,7 @@ pub(crate) fn fill_with_columns(
                 // Its travels show where they cross a piece already sewn, as a column's do.
                 let finished = |route: &[Point]| areas.iter().zip(&sewn).filter(|(_, s)| **s).map(|(a, _)| inside(*a, route)).sum::<f64>();
                 if let Some(&area) = areas.get(i) {
-                    sew_area(area, &mut travels, &fill, entry.filter(|_| step == 0), &toward, &mut runs, &finished);
+                    sew_area(area, &mut travels, &fill, entry.filter(|_| step == 0), None, &toward, &mut runs, &finished);
                 }
                 if let Some(s) = sewn.get_mut(i) {
                     *s = true;
@@ -565,10 +611,10 @@ fn tatami_underlay(shape: Area<'_>, travels: &mut Travels<'_>, p: &Params, alway
         return;
     }
     let layer = Layer { axes, spacing: under.density, inset: TATAMI_UNDERLAY_INSET };
-    let regions = layer.regions(shape, h.0, h.1, &under);
+    let regions = layer.regions(shape, h.0, h.1, &under, None);
     // Under the top stitching, a travel of any length is hidden: the nearest region next will do.
     // (What it crosses of other parts already sewn, `finished`, weighs against a way, unlimited.)
-    sew(&regions, travels, f64::INFINITY, false, &under, &[], runs, finished);
+    sew(&regions, travels, f64::INFINITY, false, &under, &[], None, runs, finished);
 }
 
 /// One layer of rows: their direction, the distance between them, and how far they stay inside
@@ -591,7 +637,12 @@ impl Layer {
     /// ([`Params::compensation`] of its length: the fabric draws a row in along its length), at
     /// most half way to the next stretch of the same row, so that rows either side of a narrow gap
     /// or hole never meet across it.
-    fn regions(&self, shape: Area<'_>, lo: f64, hi: f64, p: &Params) -> Regions {
+    ///
+    /// Toward an `exit` point, the region holding the row end nearest it ([`ExitRow`]) is cut along
+    /// that row when the row lies inside it, as the shape branches: the strip from that row on is a
+    /// region of its own, which can end on that row, and the strip before it takes one more row of
+    /// it at the seam, as at any seam (the strip from the row takes none: it ends on its own row).
+    fn regions(&self, shape: Area<'_>, lo: f64, hi: f64, p: &Params, exit: Option<Point>) -> Regions {
         // As many rows as the spacing fits, rounded, centred: the same margin at both sides.
         let rows = (((hi - lo) / self.spacing).round().max(1.0) as usize).min(MAX_ROWS);
         let first = lo + ((hi - lo) - self.spacing * (rows as f64 - 1.0)) / 2.0;
@@ -633,6 +684,7 @@ impl Layer {
             }
             open = next;
         }
+        let toward = exit.and_then(|x| split_at_exit(&mut out, &mut links, self.axes, x));
         // The rows each region sews, for telling which region a point lies under (before the
         // overlaps below, which belong to both).
         let mut cover: Vec<Vec<(usize, f64, f64)>> = vec![Vec::new(); all.len()];
@@ -646,8 +698,12 @@ impl Layer {
         // Where a region meets another (round a hole, at a branch), it takes one more row of its
         // neighbour's, cut to the stretch the two share: the fabric's pull would otherwise open a
         // gap along the seam.
-        for region in &mut out {
+        for (r, region) in out.iter_mut().enumerate() {
             for after in [false, true] {
+                // The strip cut from the exit's row ends on that row: no row of the strip before it.
+                if !after && toward.as_ref().is_some_and(|t| t.cut && t.region == r) {
+                    continue;
+                }
                 let end = if after { region.rows.last() } else { region.rows.first() };
                 let Some(&Row { index, a, b, .. }) = end else { continue };
                 let Some(next) = (if after { index.checked_add(1) } else { index.checked_sub(1) }) else { continue };
@@ -671,8 +727,51 @@ impl Layer {
                 }
             }
         }
-        Regions { list: out, links, cover: Cover { axes: self.axes, lo, spacing: self.spacing, rows: cover } }
+        Regions { list: out, links, cover: Cover { axes: self.axes, lo, spacing: self.spacing, rows: cover }, exit: toward }
     }
+}
+
+/// The row end of a layer's regions nearest an exit point, and what was done to reach it: the
+/// region whose sweep can end there (sewn last, it ends there), whether a region was cut along that
+/// row to make it (then `before`, the strip the row's region kept, lies next to it), and the
+/// regions to try sewing last.
+#[derive(Clone, Debug)]
+struct ExitRow {
+    region: usize,
+    cut: bool,
+    roots: Vec<usize>,
+}
+
+/// Toward `exit`: in `regions` (their own rows, before the seams' overlaps), the row end nearest
+/// it (the first of equally near ones, by region, row and side); a region it lies inside of cut
+/// along that row, as the shape branches there: the rows from it on a region of its own, which
+/// meets the regions the cut region met at its last row, and is met by the strip left. `None` for
+/// no rows.
+fn split_at_exit(regions: &mut Vec<Region>, links: &mut Vec<(usize, usize)>, axes: Axes, exit: Point) -> Option<ExitRow> {
+    let mut nearest: Option<(f64, usize, usize)> = None;
+    for (r, region) in regions.iter().enumerate() {
+        for (j, row) in region.rows.iter().enumerate() {
+            for along in [row.a, row.b] {
+                let d = axes.point(along, row.t).distance(exit);
+                if d.is_finite() && nearest.is_none_or(|(best, ..)| d < best) {
+                    nearest = Some((d, r, j));
+                }
+            }
+        }
+    }
+    let (_, r, j) = nearest?;
+    let len = regions.get(r)?.rows.len();
+    if j == 0 || j + 1 >= len {
+        return Some(ExitRow { region: r, cut: false, roots: vec![r] });
+    }
+    let high = regions.get_mut(r)?.rows.split_off(j);
+    regions.push(Region { rows: high });
+    let strip = regions.len() - 1;
+    for link in links.iter_mut().filter(|l| l.0 == r) {
+        link.0 = strip;
+    }
+    links.push((r, strip));
+    Some(ExitRow { region: strip, cut: true, roots: vec![strip, r] })
 }
 
 /// One row across a layer's shape: where it lies across the rows, its stretches inside the shape
@@ -728,6 +827,19 @@ impl Region {
     fn start(&self, descending: bool, forward: bool, axes: Axes) -> Option<Point> {
         let row = if descending { self.rows.last()? } else { self.rows.first()? };
         Some(axes.point(if forward { row.a } else { row.b }, row.t))
+    }
+
+    /// Where the region's sweep from its start (`descending`, `forward`) ends, on the edge (before
+    /// pull compensation): its last row sewn, at the side the rows' turns leave it ([`Region::runs`]:
+    /// the rows alternate, a row too short for stitches is left out without turning).
+    fn end(&self, descending: bool, forward: bool, axes: Axes, p: &Params) -> Option<Point> {
+        let shortest = (MIN_ROW_SPACINGS * p.density).max(MIN_ROW).max(p.min_stitch);
+        let sewn = |row: &&Row| (row.b - row.a).is_finite() && row.b - row.a >= shortest;
+        let order: Vec<&Row> = if descending { self.rows.iter().rev().filter(sewn).collect() } else { self.rows.iter().filter(sewn).collect() };
+        let last = order.last()?;
+        // Each row sewn turns the way the next one goes.
+        let last_forward = forward == (order.len() % 2 == 1);
+        Some(axes.point(if last_forward { last.b } else { last.a }, last.t))
     }
 
     /// The region's rows as runs: alternating direction, the first `forward`, last row first when
@@ -804,6 +916,8 @@ struct Regions {
     /// Region `a`'s last row meets region `b`'s first row.
     links: Vec<(usize, usize)>,
     cover: Cover,
+    /// Toward an exit point: the row end nearest it, and the regions next to it.
+    exit: Option<ExitRow>,
 }
 
 /// Which regions' rows lie where: the stretches of each row, by row number.
@@ -863,6 +977,11 @@ const MAX_SEARCHED: usize = 200;
 /// which orders a fill's fragments by a recursive walk from the one where sewing ends, so that
 /// travels between fragments run where the stitching still to come covers them: in a letter E
 /// with vertical rows, the arms are sewn first, each towards the spine, and the spine last.
+///
+/// Toward an `exit` point (the layer's regions cut at the row end nearest it, [`ExitRow`]), the
+/// piece holding that row is sewn last; in it the regions next to the cut are tried as the one sewn
+/// last too, the region sewn last takes the sweep that ends it nearest the exit ([`toward_start`]),
+/// and its orders are weighed with [`COST_EXIT`] for each millimetre their end lies from the exit.
 #[allow(clippy::too_many_arguments)]
 fn sew(
     regions: &Regions,
@@ -871,6 +990,7 @@ fn sew(
     search: bool,
     p: &Params,
     toward: &[Point],
+    exit: Option<Point>,
     runs: &mut Runs,
     finished: &dyn Fn(&[Point]) -> f64,
 ) {
@@ -887,14 +1007,19 @@ fn sew(
         }
     }
     let mut pieces = connected(&neighbours);
+    // Toward an exit: the row end nearest it, and its region.
+    let aim = exit.zip(regions.exit.as_ref());
     while !pieces.is_empty() && !runs.full() {
         // The piece with a region that starts nearest the needle. (Where the needle is, here and
         // below, is taken inside the shape, where pull compensation stretched the last row from:
-        // the compensation changes no sewing order.)
+        // the compensation changes no sewing order.) Toward an exit, the piece holding its row is
+        // left for last.
         let here = runs.here_inside();
+        let last = pieces.len() == 1;
         let Some(i) = pieces
             .iter()
             .enumerate()
+            .filter(|(_, piece)| last || aim.is_none_or(|(_, e)| !piece.contains(&e.region)))
             .map(|(i, piece)| (i, piece.iter().map(|&r| near_from(regions, r, here)).fold(f64::INFINITY, f64::min)))
             .min_by(|a, b| a.1.total_cmp(&b.1))
             .map(|(i, _)| i)
@@ -902,15 +1027,22 @@ fn sew(
             break;
         };
         let piece = pieces.swap_remove(i);
+        // The exit, when this piece holds its row.
+        let aimed = aim.filter(|(_, e)| piece.contains(&e.region));
         let mut orders: Vec<Option<usize>> = vec![None];
         if search && piece.len() > 1 && piece.len() <= MAX_SEARCHED {
             orders.extend(roots(&piece, regions).into_iter().map(Some));
+            for &r in aimed.iter().flat_map(|(_, e)| e.roots.iter()) {
+                if !orders.contains(&Some(r)) {
+                    orders.push(Some(r));
+                }
+            }
         }
         let mut best: Option<(Runs, Vec<bool>, f64)> = None;
         for root in orders {
             let mut local = Runs::continuing(runs);
             let mut done = sewn.clone();
-            let mut ctx = Sewing { regions, travels: &mut *travels, max_seen, p, finished };
+            let mut ctx = Sewing { regions, travels: &mut *travels, max_seen, p, finished, exit: aimed.map(|(x, _)| x) };
             match root {
                 None => {
                     let mut left: Vec<usize> = piece.clone();
@@ -926,7 +1058,8 @@ fn sew(
                             break;
                         };
                         let r = left.swap_remove(k);
-                        ctx.region(r, None, &mut local, &mut done);
+                        // The piece's last region ends as near the exit as its sweep can.
+                        ctx.region(r, None, left.is_empty(), &mut local, &mut done);
                     }
                 }
                 Some(root) => ctx.tree(&neighbours, root, &mut local, &mut done),
@@ -937,7 +1070,10 @@ fn sew(
                 (true, Some(h)) if !toward.is_empty() => COST_SEEN * toward.iter().map(|t| t.distance(h)).fold(f64::INFINITY, f64::min),
                 _ => 0.0,
             };
-            let total = local.cost + exit;
+            let mut total = local.cost + exit;
+            if let (Some((x, _)), Some(h)) = (aimed, local.here()) {
+                total += COST_EXIT * h.distance(x);
+            }
             if best.as_ref().is_none_or(|(_, _, b)| total < *b) {
                 best = Some((local, done, total));
             }
@@ -963,6 +1099,24 @@ fn nearest_start(region: &Region, descending: Option<bool>, here: Option<Point>,
         }
     }
     best
+}
+
+/// Where the needle starts sewing `region` (descending, when not given; forward) so that it ends
+/// nearest `exit`: of its sweeps, the one with the least of [`COST_HIDDEN`] for each millimetre to
+/// its start from `here` and [`COST_EXIT`] for each millimetre its end lies from the exit (the
+/// first of equal ones).
+fn toward_start(region: &Region, descending: Option<bool>, here: Option<Point>, exit: Point, axes: Axes, p: &Params) -> (bool, bool) {
+    let mut best = (descending.unwrap_or(false), true, f64::INFINITY);
+    for desc in descending.map_or(vec![false, true], |d| vec![d]) {
+        for forward in [true, false] {
+            let (Some(start), Some(end)) = (region.start(desc, forward, axes), region.end(desc, forward, axes, p)) else { continue };
+            let cost = COST_HIDDEN * here.map_or(0.0, |h| h.distance(start)) + COST_EXIT * end.distance(exit);
+            if cost < best.2 {
+                best = (desc, forward, cost);
+            }
+        }
+    }
+    (best.0, best.1)
 }
 
 /// How far from `here` region `r` can start.
@@ -1032,6 +1186,8 @@ struct Sewing<'r, 't, 'a> {
     p: &'r Params,
     /// How much of a way lies over other parts of the shape already sewn ([`sew_area`]).
     finished: &'r dyn Fn(&[Point]) -> f64,
+    /// The exit point the piece's last region ends nearest, when it is aimed at one.
+    exit: Option<Point>,
 }
 
 impl Sewing<'_, '_, '_> {
@@ -1074,19 +1230,27 @@ impl Sewing<'_, '_, '_> {
                 }
                 None => {
                     stack.pop();
-                    self.region(r, descending, local, done);
+                    // The root, sewn last, ends as near the exit as its sweep can.
+                    self.region(r, descending, r == root, local, done);
                 }
             }
         }
     }
 
     /// Region `r` sewn after `runs`, from the start nearest the needle (descending as given, or
-    /// whichever is nearer), and marked sewn in `sewn`.
-    fn region(&mut self, r: usize, descending: Option<bool>, runs: &mut Runs, sewn: &mut [bool]) {
+    /// whichever is nearer), and marked sewn in `sewn`. When it is the `last` of a piece aimed at an
+    /// exit, from the start whose sweep ends it nearest the exit ([`toward_start`]).
+    fn region(&mut self, r: usize, descending: Option<bool>, last: bool, runs: &mut Runs, sewn: &mut [bool]) {
         let (regions, p, max_seen) = (self.regions, self.p, self.max_seen);
         let Some(region) = regions.list.get(r) else { return };
         let axes = regions.cover.axes;
-        let (descending, forward, _) = nearest_start(region, descending, runs.here_inside(), axes);
+        let (descending, forward) = match self.exit.filter(|_| last) {
+            Some(exit) => toward_start(region, descending, runs.here_inside(), exit, axes, p),
+            None => {
+                let (descending, forward, _) = nearest_start(region, descending, runs.here_inside(), axes);
+                (descending, forward)
+            }
+        };
         let rows = region.runs(descending, forward, axes, p);
         if let Some((first, first_inside)) = rows.first().and_then(|run| Some((*run.pts.first()?, run.first_inside))) {
             let finished = self.finished;
@@ -1188,7 +1352,7 @@ mod tests_finished {
             let mut runs = Runs::from(Some(Point::new(2.0, 5.0)));
             runs.push(vec![Point::new(1.0, 5.0), Point::new(2.0, 5.0)], Travel::Auto);
             let mut travels = Travels::new(whole);
-            sew_area(piece, &mut travels, &p, None, &[], &mut runs, finished);
+            sew_area(piece, &mut travels, &p, None, None, &[], &mut runs, finished);
             runs.join(&p).iter().filter(|s| s.command == Command::Jump).count()
         };
         assert_eq!(lifts(&|_| 0.0), 0, "across nothing sewn, a hidden travel");

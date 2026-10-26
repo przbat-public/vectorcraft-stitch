@@ -254,3 +254,113 @@ fn a_satin_ring_ends_at_its_exit() {
         assert!(last.distance(on_ring) <= reach, "exit {exit:?}: ends at {last:?}, its point on the ring {on_ring:?}");
     }
 }
+
+fn polygon(pts: &[(f64, f64)]) -> BezPath {
+    let mut g = BezPath::new();
+    for (k, q) in pts.iter().enumerate() {
+        if k == 0 { g.move_to(*q) } else { g.line_to(*q) }
+    }
+    g.close_path();
+    g
+}
+
+/// How far a fill's last needle point may lie from an exit on a side its rows cross, millimetres:
+/// two row spacings (the row ends along the side lie a spacing or so apart, and the row a seam
+/// takes of its neighbour's may end a little inside) and the row's pull compensation past the edge.
+fn fill_reach(p: &Params) -> f64 {
+    let [a, b] = p.compensation(100.0);
+    2.0 * p.density + a.max(b)
+}
+
+fn jumps(v: &[Stitch]) -> usize {
+    v.iter().filter(|s| s.command != Command::Stitch).count()
+}
+
+/// A rectangle with the default rows (45°) ends at an exit anywhere on its outline (its corners and
+/// the middle of its sides), with and without underlay: cut along the row nearest the exit, the far
+/// strip sewn first. It lifts and cuts no more than without the exit and starts where it did.
+/// Mutation caught: without the cut, an exit in the middle of a side is missed by tens of
+/// millimetres (only the extreme rows' ends can end a single region).
+#[test]
+fn a_fill_ends_at_its_exit_on_any_side_its_rows_cross() {
+    let shape = rect(0.0, 0.0, 80.0, 60.0);
+    let needle = Start::Needle(Point::new(-5.0, -5.0));
+    for underlay in [Underlay::None, Underlay::Auto] {
+        let p = Params { underlay, ..Params::for_style(Style::Fill) }.sane();
+        let plain = aimed(&shape, &p, needle, None);
+        for exit in [(0.0, 0.0), (80.0, 0.0), (80.0, 60.0), (0.0, 60.0), (40.0, 0.0), (80.0, 30.0), (40.0, 60.0), (0.0, 30.0)] {
+            let out = aimed(&shape, &p, needle, Some(exit));
+            let miss = last_point(&out).distance(Point::new(exit.0, exit.1));
+            assert!(miss <= fill_reach(&p), "underlay {underlay:?}, exit {exit:?}: missed by {miss:.2} mm");
+            assert!(jumps(&out) <= jumps(&plain), "underlay {underlay:?}, exit {exit:?}: {} moves against {}", jumps(&out), jumps(&plain));
+            assert!(first_point(&out).distance(first_point(&plain)) < 1e-9, "underlay {underlay:?}, exit {exit:?}: started elsewhere");
+        }
+    }
+}
+
+/// An exit on a side the rows run along can only be reached at that side's ends: the fill ends at
+/// the corner nearer it.
+#[test]
+fn an_exit_on_a_side_the_rows_run_along_ends_at_its_nearer_corner() {
+    let p = Params { angle: 0.0, underlay: Underlay::None, ..Params::for_style(Style::Fill) }.sane();
+    let out = aimed(&rect(0.0, 0.0, 80.0, 60.0), &p, Start::Needle(Point::new(40.0, -5.0)), Some((20.0, 60.0)));
+    let end = last_point(&out);
+    assert!(end.distance(Point::new(0.0, 60.0)) <= fill_reach(&p), "ends at {end:?}");
+}
+
+/// Entered and left at one end of a bar (its rows across it), a fill goes to the far end under its
+/// rows still to come and sews back toward the exit: it ends there, starts at the entry, and never
+/// lifts the needle.
+#[test]
+fn a_fill_entered_and_left_at_one_end_ends_there_without_a_jump() {
+    for underlay in [Underlay::None, Underlay::Auto] {
+        let p = Params { angle: 90.0, underlay, ..Params::for_style(Style::Fill) }.sane();
+        let bar = rect(0.0, 0.0, 100.0, 20.0);
+        // The bar's end runs along its rows: an exit there is reached at its corner.
+        let out = aimed(&bar, &p, Start::Entry(Point::new(100.0, 10.0)), Some((100.0, 20.0)));
+        assert_eq!(jumps(&out), 0, "underlay {underlay:?}");
+        assert!(last_point(&out).distance(Point::new(100.0, 20.0)) <= fill_reach(&p), "underlay {underlay:?}: ends at {:?}", last_point(&out));
+        assert!(first_point(&out).distance(Point::new(100.0, 10.0)) <= p.density, "underlay {underlay:?}: starts at its entry");
+    }
+}
+
+/// Shapes of several regions (a U, a ring) end at an exit at the tip of an arm or by the hole, with
+/// no more moves than without the exit.
+#[test]
+fn a_fill_of_several_regions_ends_at_its_exit() {
+    let u = polygon(&[(0.0, 0.0), (14.0, 0.0), (14.0, 30.0), (9.0, 30.0), (9.0, 8.0), (5.0, 8.0), (5.0, 30.0), (0.0, 30.0)]);
+    let mut ring = rect(0.0, 0.0, 40.0, 30.0);
+    ring.extend(polygon(&[(13.0, 13.0), (13.0, 17.0), (17.0, 17.0), (17.0, 13.0)]));
+    for (name, shape, exits) in [("U", u, vec![(2.5, 30.0), (11.5, 30.0), (7.0, 0.0)]), ("ring", ring, vec![(15.0, 13.0), (40.0, 15.0)])] {
+        for angle in [0.0, 45.0, 90.0] {
+            let p = Params { angle, ..Params::for_style(Style::Fill) }.sane();
+            let needle = Start::Needle(Point::new(-3.0, -3.0));
+            let plain = aimed(&shape, &p, needle, None);
+            for exit in &exits {
+                let out = aimed(&shape, &p, needle, Some(*exit));
+                let miss = last_point(&out).distance(Point::new(exit.0, exit.1));
+                let plain_miss = last_point(&plain).distance(Point::new(exit.0, exit.1));
+                assert!(miss <= plain_miss + 1e-9, "{name} at {angle}°, exit {exit:?}: worse than without it");
+                assert!(jumps(&out) <= jumps(&plain), "{name} at {angle}°, exit {exit:?}");
+            }
+        }
+    }
+}
+
+/// An exit the fill could reach only by lifting the needle once more (in the first of two pieces,
+/// the needle beside it) leaves the fill as it is without the exit; so does an exit where the fill
+/// ends anyway, and one that isn't a number. One a kilometre away gives finite stitches.
+#[test]
+fn an_exit_out_of_reach_or_already_reached_changes_nothing() {
+    let p = Params { underlay: Underlay::None, ..Params::for_style(Style::Fill) }.sane();
+    let mut two = rect(0.0, 0.0, 20.0, 20.0);
+    two.extend(rect(50.0, 0.0, 20.0, 20.0));
+    let needle = Start::Needle(Point::new(-2.0, 10.0));
+    let plain = aimed(&two, &p, needle, None);
+    assert_eq!(aimed(&two, &p, needle, Some((20.0, 20.0))), plain, "reached only by a second lift");
+    let end = last_point(&plain);
+    assert_eq!(aimed(&two, &p, needle, Some((end.x, end.y))), plain, "where it ends anyway");
+    assert_eq!(aimed(&two, &p, needle, Some((f64::NAN, 3.0))), plain, "an exit that isn't a number");
+    let far = aimed(&two, &p, needle, Some((1.0e6, 0.0)));
+    assert!(!far.is_empty() && far.iter().all(|s| s.x.is_finite() && s.y.is_finite()));
+}

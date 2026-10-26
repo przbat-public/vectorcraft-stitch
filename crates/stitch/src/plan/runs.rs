@@ -68,6 +68,9 @@ pub(super) struct Runs {
     /// The needle goes in where it starts (an entry point, [`Runs::lead_from`]): the way to the
     /// first run is sewn from there, however short.
     lead: bool,
+    /// Where the first run reached by a move of this shape's starts inside the shape (before pull
+    /// compensation stretched it past the edge), when one was.
+    opened: Option<Point>,
     /// Where the last run ends before pull compensation stretched it past the shape's edge (a fill
     /// row's end on the outline), `None` when it ends where it is: the travels inside the shape
     /// start there.
@@ -92,6 +95,14 @@ pub(super) struct Moves {
     pub(super) seen: f64,
 }
 
+impl Moves {
+    /// Whether these are no more than `other`'s: no more lifts, no more cuts, and no more travel
+    /// over stitching already sewn than `slack` millimetres beyond `other`'s.
+    pub(super) fn within(&self, other: &Moves, slack: f64) -> bool {
+        self.lifts <= other.lifts && self.trims <= other.trims && self.seen <= other.seen + slack
+    }
+}
+
 impl Runs {
     /// No runs yet, the needle at `start` (the end of the object sewn before), if known: the shape
     /// starts as near it as it can.
@@ -99,13 +110,19 @@ impl Runs {
         Self { start: start.filter(|q| q.x.is_finite() && q.y.is_finite()), ..Self::default() }
     }
 
-    /// No runs yet: the needle goes in at `at`, a point inside the shape (where a fill is entered,
-    /// [`super::fill`]), and its first stitches travel from there to the first run, hidden under
-    /// the stitching to come. A shape that has runs already is left as it is.
-    pub(super) fn lead_from(&mut self, at: Point) {
+    /// No runs yet: the needle goes in at `at` (where a fill is entered, [`super::fill`]; `inside`,
+    /// where that is inside the shape when pull compensation stretched it past the edge), and its
+    /// first stitches travel from there to the first run, hidden under the stitching to come. A
+    /// shape that has runs already is left as it is.
+    pub(super) fn lead_from(&mut self, at: Point, inside: Option<Point>) {
         if self.runs.is_empty() && at.x.is_finite() && at.y.is_finite() {
-            (self.start, self.inside, self.lead, self.inner) = (Some(at), true, true, None);
+            (self.start, self.inside, self.lead, self.inner) = (Some(at), true, true, inside);
         }
+    }
+
+    /// Where the first run starts inside the shape, when a move of this shape reached it.
+    pub(super) fn opened(&self) -> Option<Point> {
+        self.opened
     }
 
     /// No runs yet, to follow `before`'s runs: from where they end, inside the shape when they
@@ -113,6 +130,22 @@ impl Runs {
     pub(super) fn continuing(before: &Runs) -> Self {
         let lead = before.lead && before.runs.is_empty();
         Self { start: before.here(), inside: !before.runs.is_empty() || before.inside, lead, inner: before.inner, ..Self::default() }
+    }
+
+    /// Whether no run is sewn yet.
+    pub(super) fn is_empty(&self) -> bool {
+        self.runs.is_empty()
+    }
+
+    /// Whether the needle starts inside the shape (its runs so far end there, or it goes in at an
+    /// entry point), not reached from the object sewn before.
+    pub(super) fn inside(&self) -> bool {
+        self.inside
+    }
+
+    /// The first needle point of the runs, if any.
+    pub(super) fn first(&self) -> Option<Point> {
+        self.runs.first().and_then(|(run, _)| run.first().copied())
     }
 
     /// Where the needle is after the last run (before the first: where it starts from).
@@ -180,6 +213,9 @@ impl Runs {
         seen: &dyn Fn(&[Point]) -> f64,
         p: &Params,
     ) -> Travel {
+        if self.runs.is_empty() {
+            self.opened = Some(to_inside);
+        }
         let (Some(here), Some(from)) = (self.here(), self.here_inside()) else { return Travel::Auto };
         // The first way from where the needle goes in is sewn, so that it goes in there.
         let lead = std::mem::take(&mut self.lead) && self.runs.is_empty();
@@ -230,6 +266,9 @@ impl Runs {
 
     /// `other`'s runs (planned from where these end, [`Runs::continuing`]) after these.
     pub(super) fn append(&mut self, other: Runs) {
+        if self.runs.is_empty() && self.opened.is_none() {
+            self.opened = other.opened;
+        }
         let stretched = !other.runs.is_empty();
         for (run, travel) in other.runs {
             self.push(run, travel);

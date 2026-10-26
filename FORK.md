@@ -494,6 +494,14 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     in `confirm` the `document.setup` call alone replaced by `setup_tab::run` (which runs it, with
     the tab's changes in one `command.batch`), so upstream's own steps around it still run.
   - `menus.rs`: the `UI_COMMANDS` row `embroidery.documentSetup` (Embroidery Settings…).
+- **The embroidery tool's hooks in upstream files** (the tool's own code is
+  `tools/src/embroidery/`; the rule for which objects take settings is the fork's
+  `doc/src/embroidery/takers.rs`), each marked "VectorCraft Stitch":
+  - `tools/src/lib.rs`: the `Cursor` variants `Embroidery` and `EmbroideryPoint` after
+    `WidthPoint`, and their stand-ins (`Arrow`, `Move`) in `stand_in()`;
+  - `tools/src/cursors.toml`: the Embroidery section before Blend;
+  - `ui-egui/src/canvas.rs`: the two in `cursor_icon`'s list of cursors not drawn yet;
+  - `ui-egui/src/cursors.rs`: the two in the tests' `GLYPHS`.
 - **Upstream's internals the fork reads without a hook** (nothing to resolve, but a sync that
   changes them breaks a feature quietly): Window › Embroidery's dock-width fit
   (`panels::embroidery::fit_dock_tabs`) reads the shared dock's area id

@@ -547,6 +547,13 @@ pub enum Cursor {
     WidthAdd,
     /// The Width tool over a width point or a handle end: a drag moves or widens it.
     WidthPoint,
+    // VectorCraft Stitch: the embroidery tool's cursors.
+    /// The embroidery tool away from every entry and exit point: a click selects the object under
+    /// the pointer.
+    Embroidery,
+    /// The embroidery tool over an entry or exit point and while dragging one (a drag moves it),
+    /// and while it waits for the click that places one (Set on Canvas).
+    EmbroideryPoint,
     /// The Blend tool away from art: a crosshair with a hollow square.
     Blend,
     /// The Blend tool over an object it can blend: a crosshair with a filled square.
@@ -753,6 +760,9 @@ impl Cursor {
             Cursor::TypeVertical | Cursor::LoadedText => Some(Cursor::Text),
             Cursor::MeshAdd | Cursor::PuppetPin => Some(Cursor::PenAdd),
             Cursor::ScissorsNotAllowed => Some(Cursor::NotAllowed),
+            // VectorCraft Stitch: the embroidery tool's, until they are drawn.
+            Cursor::Embroidery => Some(Cursor::Arrow),
+            Cursor::EmbroideryPoint => Some(Cursor::Move),
             _ => None,
         }
     }

@@ -947,6 +947,9 @@ fn cursor_icon(c: Cursor) -> egui::CursorIcon {
         | Cursor::ScissorsNotAllowed
         | Cursor::MeshAdd
         | Cursor::PuppetPin
+        // VectorCraft Stitch: the embroidery tool's.
+        | Cursor::Embroidery
+        | Cursor::EmbroideryPoint
         | Cursor::LoadedText => cursor_icon(c.stand_in().unwrap_or(Cursor::Crosshair)),
     }
 }

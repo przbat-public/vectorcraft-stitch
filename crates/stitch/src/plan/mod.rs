@@ -642,9 +642,7 @@ pub fn try_stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) 
 /// the rows either side of the cut sewn twice (each at most its extent, in stitches). None without
 /// an exit.
 fn aimed_extra(subs: &[SubPath], p: &Params, aim: &Aim) -> f64 {
-    /// A pass's or a travel's ends beyond its stitches: both of its ends, and the one its rounding
-    /// may add.
-    const PASS_ENDS: f64 = 3.0;
+    use satin::PASS_ENDS;
     /// A fill aimed at an exit travels across it at most twice more, and sews two rows more.
     const FILL_TRAVELS: f64 = 2.0;
     const FILL_ROWS: f64 = 2.0;
@@ -710,7 +708,10 @@ pub fn try_fill_with_columns_aimed(
         let crossings = c.length() * satin::CROSSINGS_PER_SPACING / closest * satin::MAX_RAIL_STRETCH;
         (crossings + 1.0) * split + c.length() * (UNDERLAYS / UNDERLAY_STITCH + split / satin::ZIGZAG_UNDERLAY_SPACING)
     };
-    within_limit(estimate(&subpaths(shape), &f) + columns.iter().map(column).sum::<f64>())?;
+    // Toward an exit, a column sewn last may take a pass along its middle.
+    let passes = if aim.exit.is_some() { columns.iter().map(|c| c.length() / area::TRAVEL_STITCH + satin::PASS_ENDS).sum::<f64>() } else { 0.0 };
+    let subs = subpaths(shape);
+    within_limit(estimate(&subs, &f) + aimed_extra(&subs, &f, &aim) + columns.iter().map(column).sum::<f64>() + passes)?;
     Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, aim))
 }
 

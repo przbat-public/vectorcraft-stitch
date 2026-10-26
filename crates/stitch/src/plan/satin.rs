@@ -197,6 +197,10 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> Vec<Stitch> {
     runs.join(&p)
 }
 
+/// A pass's or a travel's points beyond its stitches ([`TRAVEL_STITCH`] apart along it), at most:
+/// both of its ends, and the one its rounding may add.
+pub(super) const PASS_ENDS: f64 = 3.0;
+
 /// A ring's centreline `pts` (closed, its first point repeated at its end) started instead at its
 /// point nearest `exit`, and the way along it there from its start, the shorter way round, in
 /// travel stitches ([`TRAVEL_STITCH`]): the needle goes there under the top stitching still to come.
@@ -557,15 +561,30 @@ pub(super) const MAX_RAIL_STRETCH: f64 = 2.0;
 /// `reach` says how the needle gets from where it is to the column's first stitch (given that
 /// stitch and where it would be without pull compensation, on the shape's outline). A column
 /// narrower than [`MIN_COLUMN_WIDTH`] is a running line along its middle.
-pub(super) fn sew_column(column: &Column, p: &Params, runs: &mut Runs, reach: &mut dyn FnMut(&mut Runs, Point, Point) -> Travel) {
+///
+/// Sewn last `toward` an exit point, it ends at its end nearest the exit, as a stroke's column does
+/// (a pass along its middle under its top stitching where its underlay would end it at the other
+/// end; a running line from its end farther from the exit), and a ring starts at its station
+/// nearest the exit.
+pub(super) fn sew_column(
+    column: &Column,
+    p: &Params,
+    runs: &mut Runs,
+    reach: &mut dyn FnMut(&mut Runs, Point, Point) -> Travel,
+    toward: Option<Point>,
+) {
     let closed = column.closed;
     let mut stations = column.stations.clone();
     let mut tips = column.tips;
     if stations.len() < 2 {
         return;
     }
-    // Start nearest the needle.
-    if let Some(here) = runs.here() {
+    // Start nearest the needle (a ring sewn toward an exit: nearest the exit).
+    if let (true, Some(exit)) = (closed, toward) {
+        let from = |s: Option<&(Point, Point)>| s.map_or(f64::INFINITY, |(a, b)| a.midpoint(*b).distance(exit));
+        let nearest = (0..stations.len()).min_by(|&i, &j| from(stations.get(i)).total_cmp(&from(stations.get(j))));
+        stations.rotate_left(nearest.unwrap_or(0));
+    } else if let Some(here) = runs.here() {
         let from = |s: Option<&(Point, Point)>| s.map_or(f64::INFINITY, |(a, b)| a.midpoint(*b).distance(here));
         if closed {
             let nearest = (0..stations.len()).min_by(|&i, &j| from(stations.get(i)).total_cmp(&from(stations.get(j))));
@@ -578,7 +597,13 @@ pub(super) fn sew_column(column: &Column, p: &Params, runs: &mut Runs, reach: &m
     let width = Column { stations: stations.clone(), closed, ..Column::default() }.width();
     let along = Along::new(&stations, closed);
     if width < MIN_COLUMN_WIDTH {
-        let line = resample(&along.middles, p.stitch_length, closed);
+        let mut line = resample(&along.middles, p.stitch_length, closed);
+        // Toward an exit, an open line from its end farther from it.
+        if let (false, Some(exit), Some(&a), Some(&b)) = (closed, toward, line.first(), line.last())
+            && a.distance(exit) < b.distance(exit)
+        {
+            line.reverse();
+        }
         if line.len() >= 2
             && let Some(&first) = line.first()
         {
@@ -613,6 +638,29 @@ pub(super) fn sew_column(column: &Column, p: &Params, runs: &mut Runs, reach: &m
                 first = false;
             }
             back = ends_far;
+        }
+    }
+    // Toward an exit: where the top stitching would end at the end farther from it, a pass along the
+    // middle turns it round.
+    if let (false, Some(exit), Some(&a), Some(&b)) = (closed, toward, along.middles.first(), along.middles.last()) {
+        let ends_at = if back { a } else { b };
+        let nearer = match a.distance(exit).total_cmp(&b.distance(exit)) {
+            std::cmp::Ordering::Less => Some(a),
+            std::cmp::Ordering::Greater => Some(b),
+            std::cmp::Ordering::Equal => None,
+        };
+        if nearer.is_some_and(|q| q != ends_at) {
+            let mut middle = along.middles.clone();
+            if back {
+                middle.reverse();
+            }
+            let pass = resample(&middle, TRAVEL_STITCH, false);
+            if let Some(&start) = pass.first() {
+                let travel = if first { reach(runs, start, start) } else { Travel::Sew };
+                runs.push(pass, travel);
+                first = false;
+                back = !back;
+            }
         }
     }
     let (mut crossings, mut inner, spacing, reach_width) = along.crossings(p);

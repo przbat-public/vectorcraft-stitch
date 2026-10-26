@@ -1008,8 +1008,10 @@ the object a person selects (`id`).
   sewn first, its piece last, and the region sewn last takes the sweep that ends it there; aimed
   this way, it is kept only when it lifts, cuts and shows no more than without the exit (within a
   travel stitch) and ends nearer it. A side the rows run along has no row ends: an exit there is
-  reached at that side's nearer corner. A fill's narrow parts sewn as satin don't aim at the exit
-  yet.
+  reached at that side's nearer corner. A fill whose narrow parts are sewn as satin orders its
+  parts to end nearest the exit (the part it starts with kept first, so an exit on that part is out
+  of reach) and sews the last one toward it (a piece as a fill, a column as a stroke's column, a
+  ring of a column from its point nearest the exit), kept by the same rule.
 - A part of a fill narrower than 1 mm is a single running line along its middle, not a bean or
   triple run: on a part 0.6–1 mm wide its edges stay bare.
 - Travel between a fill's parts is weighed by the straight distance between them, and it is not

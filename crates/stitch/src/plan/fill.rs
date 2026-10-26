@@ -245,13 +245,12 @@ pub(crate) fn fill_with_columns(
 ) -> Vec<Stitch> {
     let fill = Params { style: Style::Fill, ..*fill }.sane();
     let satin = Params { style: Style::Satin, ..*satin }.sane();
-    let mut runs = Runs::from(aim.start.point());
     // An entry point starts the first part, when it is a piece of the rest.
     let entry = entered(aim.start);
     let subs = closed_subpaths(shape);
     let outlines = outlines(&subs);
     if outlines.is_empty() {
-        return runs.join(&fill);
+        return Runs::from(aim.start.point()).join(&fill);
     }
     let grid = Grid::new(&outlines);
     let whole = Area { outlines: &outlines, rule, grid: grid.as_ref() };
@@ -271,37 +270,52 @@ pub(crate) fn fill_with_columns(
     // An open column that does not come back is left at its other end.
     let through =
         |k: usize| matches!(parts.get(k), Some(Part::Column(i)) if columns.get(*i).is_some_and(|c| !c.closed && !column_returns(c, &satin)));
-    let order = Order { contacts: &contacts, through: &through }.best(runs.here_inside());
-    let mut sewn: Vec<bool> = vec![false; areas.len()];
-    for (step, &k) in order.iter().enumerate() {
-        if runs.full() {
-            break;
-        }
-        match parts.get(k) {
-            Some(&Part::Piece(i)) => {
-                // It ends as near the part sewn next as it can.
-                let toward = order.get(step + 1).and_then(|&next| contacts.get(next)).cloned().unwrap_or_default();
-                // Its travels show where they cross a piece already sewn, as a column's do.
-                let finished = |route: &[Point]| areas.iter().zip(&sewn).filter(|(_, s)| **s).map(|(a, _)| inside(*a, route)).sum::<f64>();
-                if let Some(&area) = areas.get(i) {
-                    sew_area(area, &mut travels, &fill, entry.filter(|_| step == 0), None, &toward, &mut runs, &finished);
-                }
-                if let Some(s) = sewn.get_mut(i) {
-                    *s = true;
-                }
+    let here = Runs::from(aim.start.point()).here_inside();
+    let order = Order { contacts: &contacts, through: &through, exit: None, first: None }.best(here);
+    // The parts sewn in `order`, the last one toward `exit` when given.
+    let mut sew_parts = |order: &[usize], exit: Option<Point>| -> Runs {
+        let mut runs = Runs::from(aim.start.point());
+        let mut sewn: Vec<bool> = vec![false; areas.len()];
+        for (step, &k) in order.iter().enumerate() {
+            if runs.full() {
+                break;
             }
-            Some(&Part::Column(i)) => {
-                // A travel shows where it crosses a piece of the rest already sewn.
-                let seen = |route: &[Point]| areas.iter().zip(&sewn).filter(|(_, s)| **s).map(|(a, _)| inside(*a, route)).sum::<f64>();
-                let mut reach = |runs: &mut Runs, to: Point, to_inside: Point| runs.approach(&mut travels, to, to_inside, MAX_SEEN, &seen, &fill);
-                if let Some(column) = columns.get(i) {
-                    sew_column(column, &satin, &mut runs, &mut reach);
+            let last = exit.filter(|_| step + 1 == order.len());
+            match parts.get(k) {
+                Some(&Part::Piece(i)) => {
+                    // It ends as near the part sewn next as it can.
+                    let toward = order.get(step + 1).and_then(|&next| contacts.get(next)).cloned().unwrap_or_default();
+                    // Its travels show where they cross a piece already sewn, as a column's do.
+                    let finished = |route: &[Point]| areas.iter().zip(&sewn).filter(|(_, s)| **s).map(|(a, _)| inside(*a, route)).sum::<f64>();
+                    if let Some(&area) = areas.get(i) {
+                        sew_area(area, &mut travels, &fill, entry.filter(|_| step == 0), last, &toward, &mut runs, &finished);
+                    }
+                    if let Some(s) = sewn.get_mut(i) {
+                        *s = true;
+                    }
                 }
+                Some(&Part::Column(i)) => {
+                    // A travel shows where it crosses a piece of the rest already sewn.
+                    let seen = |route: &[Point]| areas.iter().zip(&sewn).filter(|(_, s)| **s).map(|(a, _)| inside(*a, route)).sum::<f64>();
+                    let mut reach = |runs: &mut Runs, to: Point, to_inside: Point| runs.approach(&mut travels, to, to_inside, MAX_SEEN, &seen, &fill);
+                    if let Some(column) = columns.get(i) {
+                        sew_column(column, &satin, &mut runs, &mut reach, last);
+                    }
+                }
+                None => {}
             }
-            None => {}
         }
-    }
-    runs.join(&fill)
+        runs
+    };
+    let plain = sew_parts(&order, None);
+    let Some(exit) = aim.exit.filter(|x| x.x.is_finite() && x.y.is_finite()) else { return plain.join(&fill) };
+    // Toward an exit: the parts ordered to end nearest it, the first kept first, the last aimed at it;
+    // kept only when no worse than the plain parts and nearer the exit.
+    let aimed_order = Order { contacts: &contacts, through: &through, exit: Some(exit), first: order.first().copied() }.best(here);
+    let aimed = sew_parts(&aimed_order, Some(exit));
+    let from_exit = |r: &Runs| r.here().map_or(f64::INFINITY, |h| h.distance(exit));
+    let keep = if aimed.moves.within(&plain.moves, SEEN_SLACK) && from_exit(&aimed) < from_exit(&plain) { aimed } else { plain };
+    keep.join(&fill)
 }
 
 /// The pieces of a shape's rest (`subs`, from path operations): each outline wound as the largest
@@ -362,7 +376,18 @@ fn ends(column: &Column) -> Vec<Point> {
 struct Order<'a> {
     contacts: &'a [Vec<Point>],
     through: &'a dyn Fn(usize) -> bool,
+    /// Toward an exit point: every order weighed by how far its last part can end from it too
+    /// ([`EXIT_PER_MOVE`] for each millimetre), or, past [`MAX_ORDERED`] parts, the part that can
+    /// end nearest it sewn last.
+    exit: Option<Point>,
+    /// A part sewn first, whatever the rest (the order without the exit's first).
+    first: Option<usize>,
 }
+
+/// How much a millimetre between a fill's last part and its exit weighs against a millimetre of
+/// the moves between its parts ([`Order`]): as the fill's own regions weigh an exit against travel
+/// hidden under stitching still to come ([`COST_EXIT`] over [`COST_HIDDEN`]: twelve).
+const EXIT_PER_MOVE: f64 = COST_EXIT / COST_HIDDEN;
 
 /// Where the needle is between parts: at a point, anywhere on a part, or nowhere yet.
 #[derive(Clone, Copy)]
@@ -376,24 +401,44 @@ impl Order<'_> {
     /// The parts' order, from `here`.
     fn best(&self, here: Option<Point>) -> Vec<usize> {
         let n = self.contacts.len();
-        let start = here.map_or(At::Nowhere, At::Point);
+        let mut start = here.map_or(At::Nowhere, At::Point);
+        let mut path: Vec<usize> = Vec::with_capacity(n);
+        let mut cost = 0.0;
+        if let Some(first) = self.first.filter(|&f| f < n) {
+            let (d, next) = self.step(start, Some(first));
+            path.push(first);
+            (start, cost) = (next, d);
+        }
         if n > MAX_ORDERED {
-            // The nearest part next.
-            let mut left: Vec<usize> = (0..n).collect();
+            // The nearest part next; toward an exit, the part that can end nearest it left for last.
+            let last = self
+                .exit
+                .and_then(|x| (0..n).filter(|k| !path.contains(k)).min_by(|&a, &b| self.away(At::Part(a), x).total_cmp(&self.away(At::Part(b), x))));
+            let mut left: Vec<usize> = (0..n).filter(|k| !path.contains(k) && Some(*k) != last).collect();
             let mut at = start;
-            let mut out = Vec::with_capacity(n);
+            let mut out = path;
             // Each part's step worked out once a round; of equally near ones, the first.
             while let Some((k, (_, next))) = left.iter().map(|&part| self.step(at, Some(part))).enumerate().min_by(|a, b| a.1.0.total_cmp(&b.1.0)) {
                 let part = left.swap_remove(k);
                 at = next;
                 out.push(part);
             }
+            out.extend(last);
             return out;
         }
         let mut best: (f64, Vec<usize>) = (f64::INFINITY, (0..n).collect());
-        let mut path: Vec<usize> = Vec::with_capacity(n);
-        self.search(start, 0.0, &mut path, &mut best);
+        self.search(start, cost, &mut path, &mut best);
         best.1
+    }
+
+    /// How far from `exit` the needle can be at `at`: a point's distance, a part's (left anywhere
+    /// on it: a piece ends as near as it can) its nearest contact's.
+    fn away(&self, at: At, exit: Point) -> f64 {
+        match at {
+            At::Point(p) => p.distance(exit),
+            At::Part(k) => self.contacts.get(k).into_iter().flatten().map(|c| c.distance(exit)).fold(f64::INFINITY, f64::min),
+            At::Nowhere => 0.0,
+        }
     }
 
     /// Every order that goes on from `path` (reached at `at`, `cost` so far), the cheapest kept in
@@ -403,7 +448,13 @@ impl Order<'_> {
             return;
         }
         if path.len() == self.contacts.len() {
-            *best = (cost, path.clone());
+            let total = match self.exit {
+                Some(x) => cost + EXIT_PER_MOVE * self.away(at, x),
+                None => cost,
+            };
+            if total < best.0 {
+                *best = (total, path.clone());
+            }
             return;
         }
         for k in 0..self.contacts.len() {

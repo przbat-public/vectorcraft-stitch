@@ -364,3 +364,36 @@ fn an_exit_out_of_reach_or_already_reached_changes_nothing() {
     let far = aimed(&two, &p, needle, Some((1.0e6, 0.0)));
     assert!(!far.is_empty() && far.iter().all(|s| s.x.is_finite() && s.y.is_finite()));
 }
+
+/// A T 3 mm wide sewn as satin columns (its stem and its bar's two arms) round the square of tatami
+/// where they meet: an exit at the stem's foot or at the far arm's end ends it there, the part
+/// order and the last column's direction (a pass along its middle where its underlay would end it at
+/// the other end) chosen for it, with no more moves than without the exit. The part sewn first
+/// stays first, so an exit on it is out of reach.
+#[test]
+fn a_fill_with_narrow_parts_ends_at_its_exit() {
+    use vectorcraft_geom::FillRule;
+    /// The widest part sewn as satin, millimetres: the default `narrowAsSatin`.
+    const NARROW: f64 = 7.0;
+    let t = polygon(&[(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 3.0), (16.5, 23.0), (13.5, 23.0), (13.5, 3.0), (0.0, 3.0)]);
+    let found = narrow_columns(&t, FillRule::NonZero, NARROW);
+    let rest = polygon(&[(13.5, 0.0), (16.5, 0.0), (16.5, 3.0), (13.5, 3.0)]);
+    let (fill, satin) = (Params::for_style(Style::Fill), Params::for_style(Style::Satin));
+    let sewn = |exit: Option<(f64, f64)>| {
+        let aim = Aim { start: Start::Needle(Point::new(-5.0, 1.5)), exit: exit.map(|(x, y)| Point::new(x, y)) };
+        try_fill_with_columns_aimed(&t, FillRule::NonZero, &rest, &found, &fill, &satin, aim).unwrap()
+    };
+    let plain = sewn(None);
+    // Half the column's width and its pull, and a crossing's pitch along it.
+    let reach = 1.5 + satin.pull[0].max(satin.pull[1]) + satin.column_spacing(3.0);
+    for exit in [(15.0, 23.0), (30.0, 1.5)] {
+        let out = sewn(Some(exit));
+        let miss = last_point(&out).distance(Point::new(exit.0, exit.1));
+        assert!(miss <= reach, "exit {exit:?}: missed by {miss:.2} mm");
+        assert!(jumps(&out) <= jumps(&plain), "exit {exit:?}");
+    }
+    // On the arm sewn first (the needle beside it), which stays first: out of reach, never worse.
+    let exit = Point::new(0.0, 1.5);
+    let out = sewn(Some((exit.x, exit.y)));
+    assert!(last_point(&out).distance(exit) <= last_point(&plain).distance(exit) + 1e-9);
+}

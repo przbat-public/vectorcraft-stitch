@@ -18,7 +18,7 @@ use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
 use super::Options;
 use super::cache::{Shaped, Shared, UnitCache, UnitKey, clip_words, path as path_words, rule_word};
-use super::plan::{Choice, DesignPlan, ForcedBy, MAX_WARNED_OBJECTS, Origin, Part};
+use super::plan::{Asked, Choice, DesignPlan, ForcedBy, MAX_WARNED_OBJECTS, Origin, Part};
 use super::resolve::{DesignSettings, DocLayer, Found, PartLayer, UnitSettings};
 use super::sequence::{CLEARANCE, Facts, Planned, Sequence};
 use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
@@ -497,7 +497,7 @@ impl<'a> Digitizer<'a> {
         let origin = self.origin(n, Part::Literal);
         let literal = self.owner.map(|g| (g, run.trim_before));
         let occurrence = self.occurrence(&origin);
-        let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, why: Choice::Literal };
+        let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, why: Choice::Literal, asked: Asked::default() };
         self.seq.add(Planned { facts, block, literal });
     }
 
@@ -814,7 +814,8 @@ impl<'a> Digitizer<'a> {
         let mut block = Block::new(Thread::rgb(color));
         block.stitches = stitches;
         let occurrence = self.occurrence(&unit);
-        let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, why };
+        let asked = Asked { entry: settings.entry(), exit: settings.exit() };
+        let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, why, asked };
         self.seq.add(Planned { facts, block, literal: None });
     }
 

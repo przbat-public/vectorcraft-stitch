@@ -5913,3 +5913,8 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	არ ჩა�
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} მონიშნული ობიექტი პარამეტრებს არ იღებს და გამოტოვებულია
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} მონიშნული ობიექტი პარამეტრებს არ იღებს
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	შესვლის ან გამოსვლის წერტილები, აცდენილი {value} მმ-ზე მეტით
+embroidery	Largest miss: {value} mm	უდიდესი აცდენა: {value} მმ
+@plural	{count} point|{count} points	წერტილები: {count}
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} მმ

@@ -127,6 +127,10 @@ const TINY: f64 = 0.3;
 /// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm>), a
 /// setting of that effect, not a quality limit: background for the estimate.
 const MOST_SHORT_IN_A_ROW: usize = 5;
+/// How far a unit's stitches may miss the entry or exit point it was planned toward before the
+/// miss is pointed out (millimetres): about two thread widths and the formats' 0.1 mm grid, past
+/// which a person sees the needle go in or out elsewhere than where they put it. An estimate.
+pub const POINT_MISS_MM: f64 = 1.0;
 /// Brother's PRT51 manual warns that stitching sewn over three times or more may break the thread
 /// or the needle (<https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf>, data
 /// precautions and troubleshooting).
@@ -331,6 +335,20 @@ pub(crate) const RULES: &[Rule] = &[
             },
             Source { name: MELCO_CHECKER_NAME, url: MELCO_CHECKER, value: "too many layers, without a number" },
         ],
+    },
+    Rule {
+        id: "pointMissed",
+        title: "Entry or exit point the stitches miss",
+        severity: Severity::Info,
+        threshold: Some(POINT_MISS_MM),
+        unit: Some("mm"),
+        measures: "how far a unit's first or last needle point lies from the entry or exit point it was planned toward",
+        extreme: Some(Extreme::Largest),
+        sources: &[Source {
+            name: "the project owner's choice (docs/embroidery.md › What is not stitched): a part ends as near its exit as its stitches reach",
+            url: "",
+            value: "missed by more than 1 mm (an estimate)",
+        }],
     },
     Rule {
         id: "threadMismatch",
@@ -755,6 +773,18 @@ impl<'a> Checker<'a> {
             }
             // A literal run has no settings: it is sewn as its points are. A unit is judged by how
             // it is sewn: a fill under `stitchStyle: satin` is filled, with its fill stitch length.
+            // A point set where the stitches can't meet it: where it is, and where the needle goes
+            // in or out instead.
+            let [entry, exit] = plan.missed(k);
+            let needle = || plan.unit_stitches(k).iter().filter(|s| s.command == Command::Stitch).map(|s| s.point());
+            for (asked, missed, from, note) in [(u.asked.entry, entry, needle().next(), "entry"), (u.asked.exit, exit, needle().next_back(), "exit")]
+            {
+                let Some(missed) = missed else { continue };
+                self.judged("pointMissed", missed);
+                if missed > POINT_MISS_MM {
+                    self.add("pointMissed", Hit { at: asked, from, note: Some(note.to_string()), ..hit(missed) });
+                }
+            }
             match (u.sewn(), u.params) {
                 (Some(Style::Fill), Some(p)) => {
                     self.judged("fillStitchShort", p.stitch_length);

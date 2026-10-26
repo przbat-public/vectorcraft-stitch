@@ -15,7 +15,7 @@ use vectorcraft_stitch::plan::Params;
 use vectorcraft_stitch::thread::{Palette, PaletteThread};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch};
 
-use super::plan::{BlockThread, Choice, DesignPlan, FIRST_NUMBER, Origin, ThreadBlock, Unit, runs};
+use super::plan::{Asked, BlockThread, Choice, DesignPlan, FIRST_NUMBER, Origin, ThreadBlock, Unit, runs};
 
 /// How far apart two blocks' stitches must be not to touch: a thread's width and a satin's pull.
 /// An estimate.
@@ -38,6 +38,8 @@ pub(super) struct Facts {
     pub(super) satin_widths: Option<[f64; 2]>,
     /// Why it is sewn the way it is.
     pub(super) why: Choice,
+    /// The entry and exit points it was planned toward.
+    pub(super) asked: Asked,
 }
 
 /// One sewing unit's stitches as planned, in document order.
@@ -250,7 +252,7 @@ impl Sequence {
             for (m, end) in members.into_iter().zip(ends) {
                 let range = m.start..end;
                 let runs = runs(&stitches, range.clone());
-                let Member { facts: Facts { origin, occurrence, params, columns, satin_widths, why }, bounds, .. } = m;
+                let Member { facts: Facts { origin, occurrence, params, columns, satin_widths, why, asked }, bounds, .. } = m;
                 plan.units.push(Unit {
                     origin,
                     occurrence,
@@ -263,6 +265,7 @@ impl Sequence {
                     block: k,
                     stitches: range,
                     runs,
+                    asked,
                 });
             }
             let first_number = number;
@@ -300,8 +303,15 @@ mod tests {
         let n = ((x1 - x0) / 2.0).round() as usize;
         b.stitches = (0..=n).map(|k| Stitch::sew(Point::new(x0 + 2.0 * k as f64, 0.0))).collect();
         let origin = Origin { node: NodeId(0), part: Part::Fill(0), instance: None };
-        let facts =
-            Facts { origin, occurrence: 1, params: Some(Params::for_style(Style::Fill)), columns: None, satin_widths: None, why: Choice::Fill };
+        let facts = Facts {
+            origin,
+            occurrence: 1,
+            params: Some(Params::for_style(Style::Fill)),
+            columns: None,
+            satin_widths: None,
+            why: Choice::Fill,
+            asked: Asked::default(),
+        };
         Planned { facts, block: b, literal: None }
     }
 

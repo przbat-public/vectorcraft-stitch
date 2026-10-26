@@ -5609,3 +5609,8 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Не встав
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} выбранный объект не принимает параметры и пропущен|{count} выбранных объекта не принимают параметры и пропущены|{count} выбранных объектов не принимают параметры и пропущены
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} выбранный объект не принимает параметры|{count} выбранных объекта не принимают параметры|{count} выбранных объектов не принимают параметры
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	Точки входа или выхода с промахом больше {value} мм
+embroidery	Largest miss: {value} mm	Наибольший промах: {value} мм
+@plural	{count} point|{count} points	{count} точка|{count} точки|{count} точек
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} мм

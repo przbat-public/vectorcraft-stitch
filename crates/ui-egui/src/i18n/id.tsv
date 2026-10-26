@@ -5953,3 +5953,8 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Tidak ditempel,
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} objek terpilih tidak menerima pengaturan dan dilewati
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} objek terpilih tidak menerima pengaturan
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	Titik masuk atau keluar yang meleset lebih dari {value} mm
+embroidery	Largest miss: {value} mm	Meleset terjauh: {value} mm
+@plural	{count} point|{count} points	{count} titik
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm

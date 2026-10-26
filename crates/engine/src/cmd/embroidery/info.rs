@@ -238,7 +238,9 @@ pub struct Inherited {
     pub section: Option<String>,
 }
 
-/// What the plan sews of a part: its units and their needle-down stitches, records, jumps and cuts.
+/// What the plan sews of a part: its units and their needle-down stitches, records, jumps and cuts,
+/// and how far their stitches miss the entry and exit points they were planned toward (the largest
+/// miss of its units, millimetres; `null` each where none was set).
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Sewing {
@@ -247,6 +249,7 @@ pub struct Sewing {
     pub records: usize,
     pub jumps: usize,
     pub trims: usize,
+    pub missed_by: super::order::EntryExit<f64>,
 }
 
 /// The reply for objects `ids` of `doc` with the call's options `opts`, with what `plan` (the
@@ -572,6 +575,13 @@ impl Sewing {
     /// Unit `unit` of `plan` counted in.
     fn add(&mut self, plan: &DesignPlan, unit: usize) {
         self.unit_count += 1;
+        let [entry, exit] = plan.missed(unit);
+        let larger = |kept: Option<f64>, new: Option<f64>| match (kept, new) {
+            (Some(a), Some(b)) => Some(a.max(b)),
+            (a, b) => a.or(b),
+        };
+        self.missed_by.entry = larger(self.missed_by.entry, entry.map(super::stats::mm));
+        self.missed_by.exit = larger(self.missed_by.exit, exit.map(super::stats::mm));
         for s in plan.unit_stitches(unit) {
             self.records += 1;
             match s.command {

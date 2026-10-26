@@ -22,7 +22,7 @@ use vectorcraft_doc::NodeId;
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_stitch::plan::{self, Params, Style};
 use vectorcraft_stitch::thread::{Match, Palette, PaletteThread};
-use vectorcraft_stitch::{Block, Pattern, Stitch, Thread, ThreadRecord};
+use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread, ThreadRecord};
 
 /// The number of a design's first record (needle point, jump or cut): records are numbered from 1,
 /// as a stitch list shows them. The commands call these record numbers (`firstRecord`, `record`),
@@ -254,6 +254,17 @@ pub struct Unit {
     /// Its runs: each stretch of needle-down stitches one after another, sewn without lifting the
     /// needle, as a range of its block's stitches (within [`Unit::stitches`]).
     pub runs: Vec<Range<usize>>,
+    /// The entry and exit points it was planned toward: its part's, when its object sets them.
+    pub asked: Asked,
+}
+
+/// The entry and exit points a unit was planned toward (millimetres from the document's origin),
+/// each `None` when its object sets none: how far its stitches miss them is
+/// [`DesignPlan::missed`].
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Asked {
+    pub entry: Option<Point>,
+    pub exit: Option<Point>,
 }
 
 impl Unit {
@@ -392,6 +403,17 @@ impl DesignPlan {
     /// Unit `unit`'s stitches ([`Unit::stitches`]): empty for a unit that isn't there.
     pub fn unit_stitches(&self, unit: usize) -> &[Stitch] {
         self.units.get(unit).and_then(|u| self.blocks.get(u.block)?.stitches.get(u.stitches.clone())).unwrap_or_default()
+    }
+
+    /// How far unit `unit`'s first and last needle points lie from the entry and the exit point it
+    /// was planned toward ([`Unit::asked`]), millimetres: each `None` when it asked for none, or has
+    /// no needle point of its own.
+    pub fn missed(&self, unit: usize) -> [Option<f64>; 2] {
+        let Some(u) = self.units.get(unit) else { return [None, None] };
+        let mut needle = self.unit_stitches(unit).iter().filter(|s| s.command == Command::Stitch).map(|s| s.point());
+        let first = needle.next();
+        let last = needle.next_back().or(first);
+        [u.asked.entry.zip(first).map(|(a, q)| a.distance(q)), u.asked.exit.zip(last).map(|(a, q)| a.distance(q))]
     }
 
     /// The numbers of unit `unit`'s stitches ([`Unit::stitches`], numbered as

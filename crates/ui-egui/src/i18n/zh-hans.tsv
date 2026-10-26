@@ -5837,3 +5837,8 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	未粘贴，因
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} 个所选对象不接受设置，已跳过
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} 个所选对象不接受设置
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	偏离超过 {value} mm 的入针点或出针点
+embroidery	Largest miss: {value} mm	最大偏离：{value} mm
+@plural	{count} point|{count} points	{count} 个点
+embroidery	{name}, {point}: {value} mm	{name}，{point}：{value} mm

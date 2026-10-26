@@ -299,6 +299,40 @@ fn an_exit_point_ends_the_part() {
     }
 }
 
+/// A point the stitches can't meet is reported, never silently: an open running line entered at
+/// its left end, its exit by that end too, ends at its right end; `embroidery.sequence` gives the
+/// points its unit was planned toward and how far it misses them, `embroidery.info` (planned) the
+/// largest miss of the part, and `embroidery.check` a note (`pointMissed`) at the point set, from
+/// where the needle comes out instead. A point it meets is no note.
+#[test]
+fn a_point_the_stitches_miss_is_reported() {
+    let mut s = blank();
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#2233cc"}));
+    let line = run(&mut s, "path.create", json!({"d": "M 20 100 L 200 100"}))["id"].as_u64().unwrap();
+    run(&mut s, "select.none", json!({}));
+    run(&mut s, "embroidery.setEntryExit", json!({"id": line, "part": "stroke", "entry": [20.0, 100.0], "exit": [20.0, 100.0]}));
+    let length = 180.0 / PT_PER_MM;
+    let unit = run(&mut s, "embroidery.sequence", json!({}))["blocks"][0]["units"][0].clone();
+    let mm = |v: f64| (v / PT_PER_MM * 100.0).round() / 100.0;
+    assert_eq!(unit["asked"], json!({"entry": [mm(20.0), mm(100.0)], "exit": [mm(20.0), mm(100.0)]}));
+    assert!(unit["missedBy"]["entry"].as_f64().unwrap() < 0.01, "met at its entry: {unit}");
+    let exit = unit["missedBy"]["exit"].as_f64().unwrap();
+    assert!((exit - length).abs() < 0.1, "missed by the line's length: {unit}");
+    let info = run(&mut s, "embroidery.info", json!({"ids": [line], "plan": true}));
+    assert_eq!(info["stroke"]["sewing"]["missedBy"]["exit"], unit["missedBy"]["exit"]);
+    let check = run(&mut s, "embroidery.check", json!({"rules": ["pointMissed"]}));
+    let rule = &check["rules"][0];
+    assert_eq!((rule["id"].as_str(), rule["severity"].as_str(), rule["hits"].as_u64()), (Some("pointMissed"), Some("info"), Some(1)), "{rule}");
+    let hit = &rule["examples"][0];
+    assert_eq!((hit["note"].as_str(), hit["id"].as_u64()), (Some("exit"), Some(line)), "{hit}");
+    assert_eq!(hit["at"], json!([mm(20.0), mm(100.0)]), "at the point set");
+    // Met: no note.
+    run(&mut s, "embroidery.setEntryExit", json!({"id": line, "part": "stroke", "exit": [200.0, 100.0]}));
+    let check = run(&mut s, "embroidery.check", json!({"rules": ["pointMissed"]}));
+    assert_eq!(check["rules"][0]["hits"], json!(0));
+}
+
 /// A fill angle the object doesn't set turns with the object, from its bounding box's angle: the
 /// default rows and an export's angle alike; a set angle turns as it is stored; turned back
 /// upright, the object is planned as before, bit for bit.

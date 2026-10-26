@@ -5593,3 +5593,8 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Chưa dán vì 
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} đối tượng đã chọn không nhận thiết lập và đã bị bỏ qua
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} đối tượng đã chọn không nhận thiết lập
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	Điểm vào hoặc ra bị lệch hơn {value} mm
+embroidery	Largest miss: {value} mm	Lệch nhiều nhất: {value} mm
+@plural	{count} point|{count} points	{count} điểm
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm

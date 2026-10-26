@@ -76,6 +76,11 @@ pub struct SceneUnit {
     pub entry: Option<Point>,
     pub exit: Option<Point>,
     pub bounds: Option<Rect>,
+    /// The entry and exit points it was planned toward (its part's, when its object sets them),
+    /// and how far its first and last needle points miss them, millimetres
+    /// ([`DesignPlan::missed`]).
+    pub asked: [Option<Point>; 2],
+    pub missed: [Option<f64>; 2],
 }
 
 /// Where a selected object is sewn ([`StitchScene::ends_of`]): its units by tag, in sewing order,
@@ -258,7 +263,8 @@ pub fn scene(plan: &DesignPlan) -> StitchScene {
             let entry = needle.next();
             let exit = needle.next_back().or(entry);
             let bounds = u.bounds.map(|r| Rect::from_points(to_pt(Point::new(r.x0, r.y0)), to_pt(Point::new(r.x1, r.y1))));
-            SceneUnit { object: u.origin.selected(), key: u.key(), block: u.block, entry, exit, bounds }
+            let asked = [u.asked.entry.map(to_pt), u.asked.exit.map(to_pt)];
+            SceneUnit { object: u.origin.selected(), key: u.key(), block: u.block, entry, exit, bounds, asked, missed: plan.missed(i) }
         })
         .collect();
     let picture = b.build();

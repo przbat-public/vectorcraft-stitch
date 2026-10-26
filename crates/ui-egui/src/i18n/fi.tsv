@@ -6029,3 +6029,8 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Ei liitetty, ko
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} valittu objekti ei ota asetuksia ja ohitettiin|{count} valittua objektia ei ota asetuksia ja ne ohitettiin
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} valittu objekti ei ota asetuksia|{count} valittua objektia ei ota asetuksia
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	Alku- tai loppukohdat, jotka ohitetaan yli {value} mm:llä
+embroidery	Largest miss: {value} mm	Suurin poikkeama: {value} mm
+@plural	{count} point|{count} points	{count} kohta|{count} kohtaa
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm

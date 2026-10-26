@@ -70,7 +70,7 @@ pub const SHOW_MIN_BOX_MM: f64 = 10.0;
 
 /// The rules this version words itself, in the engine's order: any other the engine lists shows
 /// its own English title.
-pub const WORDED: [&str; 15] = [
+pub const WORDED: [&str; 16] = [
     "satinTooWide",
     "stitchTooLong",
     "formatStep",
@@ -81,6 +81,7 @@ pub const WORDED: [&str; 15] = [
     "stitchTiny",
     "shortStitchesInARow",
     "layers",
+    "pointMissed",
     "threadMismatch",
     "notSewn",
     "formatColors",
@@ -180,6 +181,7 @@ pub fn title(rule: &Value, format: &str, lang: Lang) -> String {
         ("stitchTiny", true) => crate::et!("Stitches of {value} mm or less, which machines leave out"),
         ("shortStitchesInARow", true) => crate::et!("More than {value} short stitches in a row"),
         ("layers", true) => crate::et!("{value} or more layers of stitches on one spot"),
+        ("pointMissed", true) => crate::et!("Entry or exit points missed by more than {value} mm"),
         ("threadMismatch", true) => crate::et!("Threads unlike the art's color (over {value})"),
         ("notSewn", _) if hits == 0 => crate::et!("Everything is sewn"),
         ("notSewn", _) => crate::et!("Art that isn't sewn"),
@@ -228,6 +230,7 @@ pub fn found(rule: &Value, lang: Lang) -> String {
             "shortStitchesInARow" => crate::et!("At most {value} in a row"),
             "layers" => crate::et!("At most {value} on one spot"),
             "threadMismatch" => crate::et!("Largest difference: {value}"),
+            "pointMissed" => crate::et!("Largest miss: {value} mm"),
             _ => crate::et!("No findings"),
         };
         let value = if id == "threadMismatch" { delta_e(&value) } else { value };
@@ -238,6 +241,7 @@ pub fn found(rule: &Value, lang: Lang) -> String {
         "shortStitchesInARow" => crate::etn!(hits, "{count} row", "{count} rows"),
         "layers" => crate::etn!(hits, "{count} spot", "{count} spots"),
         "threadMismatch" => crate::etn!(hits, "{count} thread", "{count} threads"),
+        "pointMissed" => crate::etn!(hits, "{count} point", "{count} points"),
         // Rules on objects' settings, and art left out: the objects are what was found.
         _ => return objects,
     };
@@ -261,6 +265,10 @@ pub(crate) fn hit_line(app: &VectorcraftApp, doc: Option<&Document>, id: &str, h
         "layers" => fill(crate::et!("Record {record}"), &[("record", &record)]),
         "satinTooWide" | "fillStitchShort" | "satinStitchShort" | "runStitchShort" => {
             fill(crate::et!("{name}: {value} mm"), &[("name", &name()?), ("value", &value)])
+        }
+        "pointMissed" => {
+            let point = if hit["note"] == "exit" { crate::et!("Exit") } else { crate::et!("Entry") };
+            fill(crate::et!("{name}, {point}: {value} mm"), &[("name", &name()?), ("point", point), ("value", &value)])
         }
         "threadMismatch" => {
             let thread = &hit["thread"];

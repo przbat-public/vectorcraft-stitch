@@ -149,7 +149,7 @@ impl PlanFacts for FactsNow<'_> {
         Some(PlannedEnds { first: sewn.first, last: sewn.last, current, before: sewn.before, after: sewn.after, trim })
     }
 
-    fn object_at(&self, at: Point, tol: f64) -> Option<NodeId> {
+    fn part_at(&self, at: Point, tol: f64) -> Option<(NodeId, Option<PartKind>)> {
         self.facts?.planned.scene().pick(at, tol)
     }
 
@@ -270,9 +270,10 @@ mod tests {
         let now = FactsNow::new(Some(&facts), &doc);
         // Rows lie 0.38 mm apart: a point's tolerance is wider than the gaps between them.
         let tol = 1.0;
-        assert_eq!(now.object_at(Point::new(80.0, 80.0), tol), Some(NodeId(b)), "where they overlap");
-        assert_eq!(now.object_at(Point::new(35.0, 35.0), tol), Some(NodeId(a)));
-        assert_eq!(now.object_at(Point::new(200.0, 200.0), tol), None);
+        let fill = Some(PartKind::Fill);
+        assert_eq!(now.part_at(Point::new(80.0, 80.0), tol), Some((NodeId(b), fill)), "where they overlap");
+        assert_eq!(now.part_at(Point::new(35.0, 35.0), tol), Some((NodeId(a), fill)));
+        assert_eq!(now.part_at(Point::new(200.0, 200.0), tol), None);
     }
 
     /// No plan remembered, no answers: nothing plans to answer.

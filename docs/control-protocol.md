@@ -440,8 +440,9 @@ step, answering `{passedOver, skippedCount, skipped}` (the selected objects that
 menu's Copy and Paste Embroidery Settings.
 
 The embroidery tool (`tool.select {tool: "embroidery"}`, the Embroidery Tool at the end of both toolbars) shows the
-selected objects' entry and exit points, one part at a time (`tool.setOption {key: "part", value: "fill"|"stroke"|null}`;
-`null`: each object's fill, else its stroke), each where it is set or, left to the planner, where the plan the stitch
+selected objects' entry and exit points, one part at a time (`tool.setOption {key: "part", value: "fill"|"stroke"|null}`,
+kept in step with the Object tab's Fill | Stroke switch: either one changed sets the other, the tab's when the tool is
+taken up; `null`: each object's fill, else its stroke, the tab left as it is), each where it is set or, left to the planner, where the plan the stitch
 preview has made sews it (the tool never plans; with no plan made, only the points set show). `pointer` events drag
 one: past 3 px a drag previews `embroidery.setEntryExit {…, snap: true}` and the release keeps it, one undo step;
 `ui.key` Escape cancels it. Alt with a press puts a point back to Auto, as Delete does for the point last pressed; the
@@ -451,7 +452,8 @@ fill sewn as tatami also has its rows' angle, an arrow through the fill's centre
 the angle (counter-clockwise on the page): a drag of the head previews `embroidery.set {ids, part: "fill", angle}`
 (Shift: 45° steps from the Constrain Angle), Alt with a press or Delete sends `embroidery.reset {keys: ["angle"]}`,
 and the arrows turn it a degree (Shift ten). A press away from every handle selects the object under it, by its
-stitches where the plan shown has them, else by its art (Shift toggles it). `ui.inspect`'s `toolOptions` give `{part,
+stitches where the plan shown has them, else by its art (Shift toggles it), and picks the part pressed: its fill or
+its stroke (the Object tab follows). `ui.inspect`'s `toolOptions` give `{part,
 hover, hoverObject, focus, drag}`, each handle as `{kind: "entry"|"exit"|"angle", id, part, index}` (`drag` also
 `at`, document points, and for an angle its `angle`); `hoverObject` is the id a press would select.
 `embroidery.documentSetup {}` opens Document Setup at its Embroidery tab, whose fields are flat, named by

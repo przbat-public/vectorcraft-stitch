@@ -24,7 +24,7 @@ use serde_json::{Value, json};
 use vectorcraft_doc::MAX_COORD;
 use vectorcraft_doc::embroidery::PartKind;
 use vectorcraft_doc::embroidery::takers::{compound_of, takers};
-use vectorcraft_doc::hit::hit_test;
+use vectorcraft_doc::hit::{HitKind, hit_test};
 use vectorcraft_geom::{Point, Vec2, constrain_angle_from, normalize_deg};
 
 pub use facts::{FillAngle, PlanFacts, PlannedEnds};
@@ -160,23 +160,39 @@ impl EmbroideryTool {
         self.now(cx).into_iter().find(|h| h.id == id)
     }
 
-    /// The object a press at `p` would select: the single object under it, even inside a group, by
-    /// its stitches where the plan answers for them, else by its art; only one that takes settings.
-    fn under(cx: &ToolContext, p: Point) -> Option<vectorcraft_doc::NodeId> {
-        let by_stitch = cx.embroidery.and_then(|f| f.object_at(p, cx.pick_tol()));
-        let by_art = || hit_test(cx.doc, p, cx.hit_options()).map(|h| compound_of(cx.doc, h.leaf));
-        by_stitch.or_else(by_art).filter(|id| takers(cx.doc, &[*id]).0 == [*id])
+    /// The object a press at `p` would select, and the part pressed: the single object under it,
+    /// even inside a group, by its stitches where the plan answers for them, else by its art (its
+    /// fill or its stroke; an outline or a bounding box says no part); only one that takes settings.
+    fn under(cx: &ToolContext, p: Point) -> Option<(vectorcraft_doc::NodeId, Option<PartKind>)> {
+        let by_stitch = cx.embroidery.and_then(|f| f.part_at(p, cx.pick_tol()));
+        let by_art = || {
+            hit_test(cx.doc, p, cx.hit_options()).map(|h| {
+                let part = match h.kind {
+                    HitKind::Fill => Some(PartKind::Fill),
+                    HitKind::Stroke => Some(PartKind::Stroke),
+                    HitKind::Outline | HitKind::Bounds => None,
+                };
+                (compound_of(cx.doc, h.leaf), part)
+            })
+        };
+        by_stitch.or_else(by_art).filter(|(id, _)| takers(cx.doc, &[*id]).0 == [*id])
     }
 
-    /// A press away from every handle: the object under the pointer selected ([`Self::under`]),
-    /// added or taken away with Shift; nothing under it, the selection emptied (unless Shift is
-    /// held).
+    /// A press away from every handle: the object under the pointer selected ([`Self::under`]) and
+    /// the part pressed shown (the project owner's choice, 2026-10-25: a part is picked by pressing
+    /// it on the canvas, and the Object tab follows), added or taken away with Shift; nothing under
+    /// it, the selection emptied (unless Shift is held).
     fn select_at(&mut self, cx: &ToolContext, ev: &PointerEvent) -> Vec<Action> {
         self.focus = None;
         let under = Self::under(cx, ev.pos);
         match (under, ev.mods.shift) {
-            (Some(id), false) => vec![Action::Exec("select.set".into(), json!({"ids": [id.0]}))],
-            (Some(id), true) => vec![Action::Exec("select.toggle".into(), json!({"ids": [id.0]}))],
+            (Some((id, part)), false) => {
+                if part.is_some() {
+                    self.part = part;
+                }
+                vec![Action::Exec("select.set".into(), json!({"ids": [id.0]}))]
+            }
+            (Some((id, _)), true) => vec![Action::Exec("select.toggle".into(), json!({"ids": [id.0]}))],
             (None, false) if !cx.selection.objects.is_empty() => vec![Action::Exec("select.set".into(), json!({"ids": []}))],
             (None, _) => vec![],
         }
@@ -222,7 +238,7 @@ impl Tool for EmbroideryTool {
         match ev.kind {
             PointerKind::Move => {
                 self.hover = hit(cx, &self.now(cx), ev.pos).map(|h| h.id);
-                self.hover_object = if self.hover.is_some() { None } else { Self::under(cx, ev.pos) };
+                self.hover_object = if self.hover.is_some() { None } else { Self::under(cx, ev.pos).map(|(id, _)| id) };
                 vec![]
             }
             PointerKind::Down => {

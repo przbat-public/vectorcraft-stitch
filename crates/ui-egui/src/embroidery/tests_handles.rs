@@ -465,3 +465,26 @@ fn the_arrows_head_is_drawn_where_it_is_caught_after_a_zoom() {
     let triangle = |s: &Shape, near: Pos2| matches!(s, Shape::Path(p) if p.points.len() == 3 && p.points.iter().all(|q| q.distance(near) < 10.0));
     assert!(shapes.iter().any(|s| triangle(s, caught)), "drawn where it is caught: {caught:?} (was {before:?})");
 }
+
+/// The tool's part and the Object tab's stay in step both ways: the tab leads when the tool is taken
+/// up, an agent's `tool.setOption {part}` sticks and the tab follows, the tab's switch sets the
+/// tool's, and the tool's `null` leaves the tab as it is.
+#[test]
+fn the_tools_part_and_the_tabs_stay_in_step() {
+    use crate::panels::embroidery::object::Part;
+    let (mut app, _) = app();
+    let ctx = egui::Context::default();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let parts = |app: &VectorcraftApp| (app.session.tool_options()["part"].clone(), app.ui.embroidery_panel.part);
+    assert_eq!(parts(&app), (json!("fill"), Part::Fill), "the tab's at first");
+    app.run("tool.setOption", json!({"key": "part", "value": "stroke"})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    assert_eq!(parts(&app), (json!("stroke"), Part::Stroke), "an agent's part sticks, and the tab follows");
+    app.ui.embroidery_panel.part = Part::Fill;
+    settle(&mut app, &ctx, &mut time);
+    assert_eq!(parts(&app), (json!("fill"), Part::Fill), "the tab's switch sets the tool's");
+    app.run("tool.setOption", json!({"key": "part", "value": null})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    assert_eq!(parts(&app), (json!(null), Part::Fill), "null leaves the tab as it is");
+}

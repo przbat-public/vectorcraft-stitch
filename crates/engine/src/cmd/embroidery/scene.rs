@@ -26,6 +26,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use vectorcraft_doc::embroidery::PartKind;
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_render::lines::{LinePicture, LinePictureBuilder, LineStyle, LinkKind, MarkKind, edge_against};
@@ -123,11 +124,12 @@ impl StitchScene {
     }
 
     /// The object a person selects whose stitches lie on top under `at` (document points), within
-    /// `tol` (document points) past a thread's laid half width: the embroidery tool's press on the
-    /// stitches ([`LinePicture::hit`]). `None` where no stitch lies.
-    pub fn pick(&self, at: Point, tol: f64) -> Option<NodeId> {
+    /// `tol` (document points) past a thread's laid half width, and the part they are of (`None`:
+    /// stitches read from a machine file): the embroidery tool's press on the stitches
+    /// ([`LinePicture::hit`]). `None` where no stitch lies.
+    pub fn pick(&self, at: Point, tol: f64) -> Option<(NodeId, Option<PartKind>)> {
         let tag = self.picture.hit(at, tol)?;
-        self.units.get(usize::try_from(tag).ok()?).map(|u| u.object)
+        self.units.get(usize::try_from(tag).ok()?).map(|u| (u.object, u.key.part.kind()))
     }
 
     /// Each unit, by tag (the plan's unit index).

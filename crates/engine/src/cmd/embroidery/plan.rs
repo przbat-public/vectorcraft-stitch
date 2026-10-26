@@ -19,6 +19,7 @@ use std::collections::BTreeMap;
 use std::ops::Range;
 
 use vectorcraft_doc::NodeId;
+use vectorcraft_doc::embroidery::PartKind;
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_stitch::plan::{self, Params, Style};
 use vectorcraft_stitch::thread::{Match, Palette, PaletteThread};
@@ -79,6 +80,18 @@ pub struct UnitKey {
     pub object: NodeId,
     pub part: Part,
     pub occurrence: usize,
+}
+
+impl Part {
+    /// The kind of part it is of an object: its fill or its stroke (`None`: stitches read from a
+    /// machine file).
+    pub fn kind(self) -> Option<PartKind> {
+        match self {
+            Part::Fill(_) => Some(PartKind::Fill),
+            Part::Stroke(_) => Some(PartKind::Stroke),
+            Part::Literal => None,
+        }
+    }
 }
 
 /// Which setting forced a unit's style ([`Choice::Forced`]).

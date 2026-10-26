@@ -16,7 +16,9 @@
 //!   and whether the thread will be cut; on a design slow to plan, the status bar says when the
 //!   stitches will catch up (on a pause, [`super::stitch_preview::PAUSE_TO_PLAN_SECS`], or the
 //!   release).
-//! - **One part at a time,** the one the Embroidery panel's Object tab shows (the tool's `part`).
+//! - **One part at a time,** the tool's `part`, kept in step with the Embroidery panel's Object tab
+//!   ([`sync_part`]): the tab's Fill | Stroke switch sets it, and so does a press on a part on the
+//!   canvas or an agent's `tool.setOption {part}`, which the tab then follows.
 //! - **A plan is asked for** while the tool is active ([`super::stitch_preview::StitchPreview::want_plan_alone`]),
 //!   so Auto points show in the art view too, without turning the status bar's counters on.
 //!
@@ -30,6 +32,7 @@ use vectorcraft_tools::embroidery::{Handle, Kind, State};
 
 use crate::VectorcraftApp;
 use crate::canvas::Xf;
+use crate::panels::embroidery::object::Part;
 use crate::theme::Tokens;
 
 /// How much larger the handle under the pointer is drawn.
@@ -81,6 +84,31 @@ pub struct Cache {
     /// The document and the generation of the plan last handed to the session as the one drawn
     /// ([`hand_shown`]); `None` while the tool is put away.
     handed: Option<(u64, u64)>,
+    /// The tool's part and the Object tab's as last kept in step ([`sync_part`]); `None` while the
+    /// tool is put away.
+    parts: Option<(Option<Part>, Part)>,
+}
+
+/// The tool's part and the Object tab's kept in step (the project owner's choice, 2026-10-25: the
+/// part is picked with the tab's Fill | Stroke switch or by pressing it on the canvas, and the two
+/// stay in step): whichever changed since the frame before sets the other, the tab's when the
+/// tool is taken up. The tool's `null` (an agent's: each object's fill, else its stroke) leaves the
+/// tab as it is.
+fn sync_part(app: &mut VectorcraftApp) {
+    fn tool(app: &VectorcraftApp) -> Option<Part> {
+        app.session.tool_options()["part"].as_str().and_then(Part::from_id)
+    }
+    let (now, tab) = (tool(app), app.ui.embroidery_panel.part);
+    match app.embroidery.handles.parts {
+        Some((was, _)) if now != was => {
+            if let Some(part) = now {
+                app.ui.embroidery_panel.part = part;
+            }
+        }
+        Some((_, was)) if tab == was => {}
+        _ => app.session.set_tool_option("part", &serde_json::json!(tab.id())),
+    }
+    app.embroidery.handles.parts = Some((tool(app), app.ui.embroidery_panel.part));
 }
 
 /// The plan the stitch preview shows of the active document handed to the session, when it is new:
@@ -124,20 +152,17 @@ pub fn active(app: &VectorcraftApp) -> bool {
 /// Draw the tool's handles over the canvas (both views), and ask for a plan while it is active.
 pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
     if !active(app) {
-        // The tool put away: the answers it kept go.
+        // The tool put away: the answers it kept go, and the tab's part leads when it is taken up.
         if app.embroidery.handles.handed.take().is_some() {
             app.session.drop_embroidery_tool_facts();
         }
+        app.embroidery.handles.parts = None;
         return;
     }
     hand_shown(app);
     // Auto points need a plan: asked for whatever the view, the counters left as they are.
     app.embroidery.preview.want_plan_alone();
-    // One part at a time, the Object tab's.
-    let part = app.ui.embroidery_panel.part.id();
-    if app.session.tool_options()["part"].as_str() != Some(part) {
-        app.session.set_tool_option("part", &serde_json::json!(part));
-    }
+    sync_part(app);
     if !app.ui.view.edges || app.ui.screen_mode >= 3 {
         return;
     }

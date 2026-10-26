@@ -1,6 +1,7 @@
 //! The embroidery tool with a fake plan: its handles (where they stand, which objects and parts
 //! have them), catching them at any zoom, dragging one (the threshold, the previews, one undo step,
-//! Escape), the keys, the cursor, its options, selecting by a press elsewhere, and a tatami fill's
+//! Escape), the keys, the cursor, its options, selecting by a press elsewhere (and picking the part
+//! pressed), and a tatami fill's
 //! angle arrow (where it points, turning it, Shift's steps, resetting it, its keys).
 
 use std::collections::HashMap;
@@ -19,7 +20,7 @@ use crate::{Action, Cursor, Mods, PaintDefaults, PointerEvent, PointerKind, Tool
 #[derive(Default)]
 struct Fake {
     ends: HashMap<(NodeId, PartKind), PlannedEnds>,
-    under: Option<NodeId>,
+    under: Option<(NodeId, Option<PartKind>)>,
     rows: HashMap<NodeId, FillAngle>,
 }
 
@@ -30,7 +31,7 @@ impl PlanFacts for Fake {
     fn ends(&self, object: NodeId, part: PartKind) -> Option<PlannedEnds> {
         self.ends.get(&(object, part)).copied()
     }
-    fn object_at(&self, _at: Point, _tol: f64) -> Option<NodeId> {
+    fn part_at(&self, _at: Point, _tol: f64) -> Option<(NodeId, Option<PartKind>)> {
         self.under
     }
     fn fill_angle(&self, object: NodeId) -> Option<FillAngle> {
@@ -334,8 +335,9 @@ fn the_cursor() {
 }
 
 /// A press away from the handles selects the object under it (the plan's answer first, the art
-/// otherwise), Shift adds it or takes it away, and a press on nothing empties the selection; what
-/// takes no settings isn't picked.
+/// otherwise) and shows the part pressed, its fill or its stroke; Shift adds it or takes it away,
+/// the part left as it is, and a press on nothing empties the selection; what takes no settings
+/// isn't picked.
 #[test]
 fn a_press_elsewhere_selects() {
     let (d, ids) = doc();
@@ -344,15 +346,19 @@ fn a_press_elsewhere_selects() {
     let c = cx(&d, &s, &p);
     let mut t = EmbroideryTool::default();
     assert_eq!(t.pointer(&c, &ev(PointerKind::Down, 150.0, 150.0)), vec![Action::Exec("select.set".into(), json!({"ids": [square.0]}))]);
+    assert_eq!(t.options()["part"], json!("fill"), "its fill pressed, its fill shown");
     let shift = Mods { shift: true, ..Mods::default() };
     assert_eq!(
         t.pointer(&c, &ev(PointerKind::Down, 300.0, 300.0).with_mods(shift)),
         vec![Action::Exec("select.toggle".into(), json!({"ids": [line.0]}))]
     );
+    assert_eq!(t.options()["part"], json!("fill"), "Shift adds the object, the part stays");
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Down, 300.0, 300.0)), vec![Action::Exec("select.set".into(), json!({"ids": [line.0]}))]);
+    assert_eq!(t.options()["part"], json!("stroke"), "its stroke pressed, its stroke shown");
     let s = select(&[square]);
     let c = cx(&d, &s, &p);
     assert_eq!(t.pointer(&c, &ev(PointerKind::Down, 550.0, 50.0)), vec![Action::Exec("select.set".into(), json!({"ids": []}))]);
-    let f = Fake { under: Some(line), ..Fake::default() };
+    let f = Fake { under: Some((line, Some(PartKind::Stroke))), ..Fake::default() };
     let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
     t.pointer(&c, &ev(PointerKind::Move, 550.0, 50.0));
     assert_eq!(t.options()["hoverObject"], json!(line.0), "hovering its stitches");
@@ -361,7 +367,11 @@ fn a_press_elsewhere_selects() {
         vec![Action::Exec("select.set".into(), json!({"ids": [line.0]}))],
         "by its stitches"
     );
-    let f = Fake { under: Some(guide), ..Fake::default() };
+    let f = Fake { under: Some((square, Some(PartKind::Fill))), ..Fake::default() };
+    let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    t.pointer(&c, &ev(PointerKind::Down, 550.0, 50.0));
+    assert_eq!(t.options()["part"], json!("fill"), "the part whose stitches are pressed shown");
+    let f = Fake { under: Some((guide, Some(PartKind::Fill))), ..Fake::default() };
     let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
     assert_eq!(
         t.pointer(&c, &ev(PointerKind::Down, 550.0, 50.0)),

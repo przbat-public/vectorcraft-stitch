@@ -40,8 +40,9 @@ pub trait PlanFacts {
     /// plan sews it nowhere.
     fn ends(&self, object: NodeId, part: PartKind) -> Option<PlannedEnds>;
     /// The object a person selects whose stitches lie under `at` (document points) within `tol`,
-    /// the one sewn on top; `None` when no stitch lies there, or nothing answers.
-    fn object_at(&self, _at: Point, _tol: f64) -> Option<NodeId> {
+    /// the one sewn on top, and the part they are of (`None`: stitches read from a machine file);
+    /// `None` when no stitch lies there, or nothing answers.
+    fn part_at(&self, _at: Point, _tol: f64) -> Option<(NodeId, Option<PartKind>)> {
         None
     }
     /// The angle of object `object`'s fill rows, when its fill is sewn as tatami, from the document

@@ -624,7 +624,8 @@ as Melco's checker reads it, on each object's settings, it flags none.
   the stitches or the panel are shown; a click opens the panel.
 - **The Embroidery Tool** („Narzędzie Haft”, in the toolbars' Embroidery group, no default
   shortcut; also the Object tab's Set on Canvas) shows the selected objects' entry ◆ and exit ⊕
-  points on the canvas, in the art view and the stitch view, of the part the Object tab shows (at
+  points on the canvas, in the art view and the stitch view, of one part at a time, the one the
+  Object tab's Fill | Stroke switch picks or a click on the canvas picks (the two stay in step; at
   most 32 objects): solid where set, hollow where left to the planner (where the plan shown sews
   them), dim while the plan catches up with an edit; a point set where the stitches can't start
   has a hairline to where they do. Drag a point to move it: it is taken to the nearest place the
@@ -638,8 +639,9 @@ as Melco's checker reads it, on each object's settings, it flags none.
   dashed arrow through its centre with the angle beside its head: drag the head to turn it (Shift:
   45° steps from the Constrain Angle), Alt-click or Delete for Auto again, the arrow keys turn it
   a degree (Shift ten); angles count counter-clockwise, as everywhere in the app. A click on an
-  object's art or its stitches selects it, Shift-click adds it or takes it away; the object a click
-  would select is outlined. Nearest Connection (the panel's ≡ menu) sets every point at once for the
+  object's art or its stitches selects it and picks the part clicked, its fill or its stroke (the
+  Object tab follows), Shift-click adds it or takes it away; the object a click would select is
+  outlined. Nearest Connection (the panel's ≡ menu) sets every point at once for the
   shortest jumps.
 
   ![The Embroidery Tool in the stitch view: a red disc's fill with its entry set and its exit left to the planner](images/embroidery-tool-stitches.png)
@@ -2416,7 +2418,8 @@ Limits:
   paths, seconds on the largest designs (6 to 8 s on 22,000 paths, measured under load).
 - On the web there is no planning thread: a design slow to plan is planned only when a drag ends
   (the ghost is the feedback meanwhile), and each drop plans in the frame.
-- At most 32 objects show their handles at once, one part at a time (the Object tab's).
+- At most 32 objects show their handles at once, one part at a time (the Object tab's, which a
+  click on the canvas picks too).
 - Points left to the planner show once a plan is made (the tool asks for one and never plans); a
   design too heavy to plan shows only the points set. The arrow needs no plan.
 - The arrow is a fill's one angle; several directions in one fill (angle lines) come later.

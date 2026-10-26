@@ -55,7 +55,7 @@ use vectorcraft_stitch::{Command, SAME_POINT, mm_to_pt};
 use super::cache::UnitCache;
 use super::digitize::{UnitEnds, Walked};
 use super::objects::{edit_each, given};
-use super::plan::{DesignPlan, Origin, Part};
+use super::plan::{DesignPlan, Origin};
 use super::unit::PlanError;
 use super::{object, options_in};
 use crate::cmd::bad;
@@ -83,15 +83,6 @@ struct Joint {
     shape: JoinShape,
     part: Option<(NodeId, PartKind)>,
     own: (Point, Point),
-}
-
-/// The kind of part a unit sews, `None` for a literal run.
-fn kind_of(part: Part) -> Option<PartKind> {
-    match part {
-        Part::Fill(_) => Some(PartKind::Fill),
-        Part::Stroke(_) => Some(PartKind::Stroke),
-        Part::Literal => None,
-    }
 }
 
 /// Unit `i`'s first and last needle points (millimetres, [`DesignPlan::needle_ends`]: where it
@@ -131,7 +122,7 @@ fn chain(doc: &Document, walked: &Walked, scope: Option<&HashSet<NodeId>>, skipp
     // How many units each object's kind of part is sewn as: one pair of points can serve one.
     let mut units_of: HashMap<(NodeId, PartKind), usize> = HashMap::new();
     for u in &plan.units {
-        if let Some(kind) = kind_of(u.origin.part) {
+        if let Some(kind) = u.origin.part.kind() {
             *units_of.entry((u.origin.selected(), kind)).or_default() += 1;
         }
     }
@@ -140,7 +131,7 @@ fn chain(doc: &Document, walked: &Walked, scope: Option<&HashSet<NodeId>>, skipp
         let (Some(link), Some((first, last))) = (link, needle_ends(plan, i)) else { continue };
         let id = u.origin.selected();
         let in_scope = scope.is_none_or(|sc| sc.contains(&id));
-        let kind = kind_of(u.origin.part);
+        let kind = u.origin.part.kind();
         let record = recorded.get(&(u.origin, u.occurrence)).copied();
         let why = match (kind, record) {
             _ if locked_within(doc, id) => Some("locked"),

@@ -294,8 +294,16 @@ fn the_keys() {
     assert_eq!(t.options()["focus"], json!({"kind": "entry", "id": square.0, "part": "fill", "index": 0}));
     t.key(&c, ToolKey::BracketLeft, Mods::default());
     assert_eq!(t.options()["focus"]["id"], json!(line.0));
-    assert!(t.claims_key(&c, ToolKey::Left) && t.claims_key(&c, ToolKey::BracketRight));
-    assert!(!t.claims_key(&c, ToolKey::Enter));
+    assert!(t.claims_key(&c, ToolKey::Left) && t.claims_key(&c, ToolKey::BracketRight) && t.claims_key(&c, ToolKey::Enter));
+    // Enter asks for the focused point's X and Y; so does a double-click on a point.
+    let dialog = |kind: &str, id: NodeId, part: &str, at: [f64; 2], set: bool| {
+        vec![Action::Dialog("embroideryPoint".into(), json!({"kind": kind, "id": id.0, "part": part, "index": 0, "at": at, "set": set}))]
+    };
+    assert_eq!(t.key(&c, ToolKey::Enter, Mods::default()), dialog("exit", line, "stroke", [400.0, 300.0], false));
+    assert_eq!(t.pointer(&c, &ev(PointerKind::DoubleClick, 100.0, 100.0)), dialog("entry", square, "fill", [100.0, 100.0], false));
+    assert!(t.pointer(&c, &ev(PointerKind::DoubleClick, 300.0, 200.0)).is_empty(), "away from the points");
+    t.key(&c, ToolKey::Escape, Mods::default());
+    assert!(!t.claims_key(&c, ToolKey::Enter), "no point focused");
 }
 
 /// The cursor: over a handle and while dragging, the point's; elsewhere, the tool's.

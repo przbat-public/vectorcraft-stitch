@@ -5973,3 +5973,11 @@ embroidery	jump {value} mm	άλμα {value} mm
 embroidery	jump {value} mm, cut	άλμα {value} mm, κόψιμο
 embroidery	Stitches update when you pause or let go.	Οι βελονιές ενημερώνονται όταν σταματήσετε ή αφήσετε.
 embroidery	Stitches update when you let go.	Οι βελονιές ενημερώνονται όταν αφήσετε.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Σημείο εισόδου
+embroidery	Exit Point	Σημείο εξόδου
+embroidery	Auto (nearest where the needle is)	Αυτόματα (πλησιέστερα στη βελόνα)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Το σημείο μεταφέρεται στην πλησιέστερη θέση όπου μπορούν να αρχίσουν ή να τελειώσουν οι βελονιές.
+# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
+embroidery	OK	Εντάξει
+embroidery	Cancel	Ακύρωση

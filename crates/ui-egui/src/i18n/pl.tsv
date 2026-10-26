@@ -5872,3 +5872,11 @@ embroidery	jump {value} mm	przeskok {value} mm
 embroidery	jump {value} mm, cut	przeskok {value} mm, cięcie
 embroidery	Stitches update when you pause or let go.	Ściegi odświeżą się, gdy się zatrzymasz lub puścisz.
 embroidery	Stitches update when you let go.	Ściegi odświeżą się, gdy puścisz.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Punkt wejścia
+embroidery	Exit Point	Punkt wyjścia
+embroidery	Auto (nearest where the needle is)	Auto (najbliżej miejsca, w którym jest igła)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Punkt trafia w najbliższe miejsce, w którym ściegi mogą się zacząć lub skończyć.
+# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
+embroidery	OK	OK
+embroidery	Cancel	Anuluj

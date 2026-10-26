@@ -5599,3 +5599,11 @@ embroidery	jump {value} mm	점프 {value}mm
 embroidery	jump {value} mm, cut	점프 {value}mm, 실 자르기
 embroidery	Stitches update when you pause or let go.	멈추거나 놓으면 스티치가 업데이트됩니다.
 embroidery	Stitches update when you let go.	놓으면 스티치가 업데이트됩니다.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	진입점
+embroidery	Exit Point	출구점
+embroidery	Auto (nearest where the needle is)	자동 (바늘에서 가장 가까운 곳)
+embroidery	The point is taken to the nearest place the stitches can start or end.	점은 스티치가 시작하거나 끝날 수 있는 가장 가까운 곳으로 옮겨집니다.
+# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
+embroidery	OK	확인
+embroidery	Cancel	취소

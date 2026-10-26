@@ -10,7 +10,8 @@
 //!   Escape cancels it. A press elsewhere selects the object under the pointer.
 //! - **Keys** act on the handle last pressed (or stepped to with `[` and `]`): Delete puts it back
 //!   to Auto (as an Alt-click does), the arrows nudge it by the keyboard increment (Shift ten times
-//!   that), Escape lets it go.
+//!   that), Enter asks for the point's X and Y (as a double-click on it does, [`POINT_DIALOG`]),
+//!   Escape lets it go.
 
 mod facts;
 mod handles;
@@ -39,6 +40,10 @@ const SET_ENTRY_EXIT: &str = "embroidery.setEntryExit";
 
 /// The undo step a drag makes: the command's own label, as the History panel names it.
 const LABEL: &str = "Embroidery Entry and Exit";
+
+/// The dialog Enter or a double-click on a handle asks for: its point's X and Y, or Auto. Its params:
+/// `{kind, id, part, at: [x, y], set}` (document points; whether the point is set).
+pub const POINT_DIALOG: &str = "embroideryPoint";
 
 /// How far the pointer moves after a press on a handle before it drags, screen pixels (the
 /// Gradient tool's).
@@ -124,6 +129,15 @@ impl EmbroideryTool {
         }
     }
 
+    /// The point dialog for handle `h` ([`POINT_DIALOG`]).
+    fn dialog(&mut self, h: &Handle) -> Vec<Action> {
+        self.focus = Some(h.id);
+        let mut p = h.id.json();
+        p["at"] = json!([h.point.x, h.point.y]);
+        p["set"] = json!(h.state == State::Set);
+        vec![Action::Dialog(POINT_DIALOG.into(), p)]
+    }
+
     /// Handle `id` back to Auto: its point unset.
     fn back_to_auto(&mut self, id: HandleId) -> Vec<Action> {
         self.focus = Some(id);
@@ -176,7 +190,13 @@ impl Tool for EmbroideryTool {
                 Some(Grab { begun: true, previewed: None, .. }) => vec![Action::Cancel],
                 _ => vec![],
             },
-            PointerKind::DoubleClick => vec![],
+            PointerKind::DoubleClick => match hit(cx, &self.now(cx), ev.pos) {
+                Some(h) => {
+                    self.grab = None;
+                    self.dialog(&h)
+                }
+                None => vec![],
+            },
         }
     }
 
@@ -212,6 +232,7 @@ impl Tool for EmbroideryTool {
         let step = cx.keyboard_increment * if mods.shift { SHIFT_NUDGE } else { 1.0 };
         let by = match key {
             ToolKey::Delete | ToolKey::Backspace => return self.back_to_auto(h.id),
+            ToolKey::Enter => return self.dialog(&h),
             ToolKey::Left => Vec2::new(-step, 0.0),
             ToolKey::Right => Vec2::new(step, 0.0),
             ToolKey::Up => Vec2::new(0.0, -step),
@@ -254,7 +275,9 @@ impl Tool for EmbroideryTool {
         match key {
             ToolKey::Escape => self.grab.is_some() || self.focus.is_some(),
             ToolKey::BracketLeft | ToolKey::BracketRight => !self.now(cx).is_empty(),
-            ToolKey::Delete | ToolKey::Backspace | ToolKey::Left | ToolKey::Right | ToolKey::Up | ToolKey::Down => self.focused(cx).is_some(),
+            ToolKey::Delete | ToolKey::Backspace | ToolKey::Enter | ToolKey::Left | ToolKey::Right | ToolKey::Up | ToolKey::Down => {
+                self.focused(cx).is_some()
+            }
             _ => false,
         }
     }

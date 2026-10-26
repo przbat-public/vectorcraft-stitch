@@ -20,6 +20,7 @@
 //! - [`notice`]: the canvas's notice while the stitches are planned, or can't be.
 //! - [`overlay`]: the selection in the stitch view: entry and exit markers, changed objects.
 //! - [`handles`]: the embroidery tool's entry and exit points, in both views.
+//! - [`point_dialog`]: the Entry Point and Exit Point dialog (X and Y typed, or Auto).
 //! - [`text`]: the embroidery interface's words, in the catalogues' `embroidery` context
 //!   ([`crate::et!`], [`crate::etn!`]).
 //! - [`zoom`]: View › Zoom to Box (`view.zoomTo`).
@@ -35,6 +36,7 @@ pub mod notice;
 pub mod numbers;
 pub mod overlay;
 pub mod plan_worker;
+pub mod point_dialog;
 pub mod rows;
 pub mod setup_tab;
 pub mod stitch_layer;
@@ -63,6 +65,8 @@ pub struct Embroidery {
     pub(crate) ends: overlay::Ends,
     /// The embroidery tool's handles, as last found ([`handles`]).
     pub(crate) handles: handles::Cache,
+    /// The Entry Point or Exit Point dialog, while it is open ([`point_dialog`]).
+    pub(crate) point_dialog: Option<point_dialog::PointDialog>,
     /// The Embroidery panel's Sewing order tab.
     pub(crate) order: crate::panels::embroidery::order::OrderState,
     /// The Embroidery panel's Check tab.
@@ -94,6 +98,7 @@ pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
         overlay::draw(app, &ui.painter_at(canvas), &xf);
         check_marks::draw(app, ui.ctx(), &ui.painter_at(canvas), &xf);
         handles::draw(app, &ui.painter_at(canvas), &xf);
+        point_dialog::show(app, ui.ctx());
     }
     let isolated = app.ui.screen_mode < 3 && app.session.active().is_some_and(|st| st.isolation.is_some());
     let below = if isolated { egui::Rect::from_min_max(canvas.min + egui::vec2(0.0, ISOLATION_BAR), canvas.max) } else { canvas };

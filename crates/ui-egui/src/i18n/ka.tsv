@@ -5936,3 +5936,11 @@ embroidery	jump {value} mm	ნახტომი {value} მმ
 embroidery	jump {value} mm, cut	ნახტომი {value} მმ, ჭრა
 embroidery	Stitches update when you pause or let go.	ნაკერები განახლდება, როცა შეჩერდებით ან გაუშვებთ.
 embroidery	Stitches update when you let go.	ნაკერები განახლდება, როცა გაუშვებთ.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	შესვლის წერტილი
+embroidery	Exit Point	გასვლის წერტილი
+embroidery	Auto (nearest where the needle is)	ავტომატური (ნემსთან უახლოესი)
+embroidery	The point is taken to the nearest place the stitches can start or end.	წერტილი გადადის უახლოეს ადგილას, სადაც ნაკერები შეიძლება დაიწყოს ან დასრულდეს.
+# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
+embroidery	OK	OK
+embroidery	Cancel	გაუქმება

@@ -5976,3 +5976,11 @@ embroidery	jump {value} mm	spring {value} mm
 embroidery	jump {value} mm, cut	spring {value} mm, klip
 embroidery	Stitches update when you pause or let go.	Stingene opdateres, når du holder pause eller slipper.
 embroidery	Stitches update when you let go.	Stingene opdateres, når du slipper.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Indgangspunkt
+embroidery	Exit Point	Udgangspunkt
+embroidery	Auto (nearest where the needle is)	Auto (nærmest nålen)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Punktet flyttes til det nærmeste sted, hvor stingene kan begynde eller slutte.
+# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
+embroidery	OK	OK
+embroidery	Cancel	Annullér

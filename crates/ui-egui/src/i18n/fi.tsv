@@ -6052,3 +6052,11 @@ embroidery	jump {value} mm	hyppy {value} mm
 embroidery	jump {value} mm, cut	hyppy {value} mm, leikkaus
 embroidery	Stitches update when you pause or let go.	Pistot päivittyvät, kun pysähdyt tai päästät irti.
 embroidery	Stitches update when you let go.	Pistot päivittyvät, kun päästät irti.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Aloituspiste
+embroidery	Exit Point	Lopetuspiste
+embroidery	Auto (nearest where the needle is)	Automaattinen (lähimpänä neulaa)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Piste siirtyy lähimpään kohtaan, josta pistot voivat alkaa tai jossa ne voivat päättyä.
+# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
+embroidery	OK	OK
+embroidery	Cancel	Peruuta

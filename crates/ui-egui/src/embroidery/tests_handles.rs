@@ -257,3 +257,38 @@ fn a_pause_in_a_drag_plans_a_design_slow_to_plan() {
     assert!(app.embroidery.preview.log.sent.len() > sent, "planned on the pause");
     assert!(app.session.tool_busy(), "the button still held");
 }
+
+/// A double-click on an entry opens the Entry Point dialog on it; Enter sets the point there (taken
+/// onto the outline), one undo step; Escape closes it changing nothing.
+#[test]
+fn a_double_click_opens_the_point_dialog() {
+    let (mut app, [a, _]) = app();
+    let ctx = egui::Context::default();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let Some(&(_, at)) = on_screen(&mut app).iter().find(|(k, _)| *k == Kind::Entry) else { panic!("an entry") };
+    let b = |pressed| Event::PointerButton { pos: at, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    let key = |key| Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE };
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(at), b(true), b(false), b(true), b(false)]);
+    time += 0.05;
+    let shapes = frame(&mut app, &ctx, time, vec![]);
+    assert!(app.embroidery.point_dialog.is_some(), "open");
+    assert!(words(&shapes).iter().any(|w| w == "Entry Point"), "{:?}", words(&shapes));
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(egui::Key::Escape)]);
+    assert!(app.embroidery.point_dialog.is_none(), "Escape closes it");
+    let undo = app.session.doc().unwrap().history.undo.len();
+    // A second double-click, a second later (egui counts clicks within its double-click time).
+    time += 1.0;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(at), b(true), b(false), b(true), b(false)]);
+    assert!(app.embroidery.point_dialog.is_some(), "open again");
+    // The dialog opens on an Auto point: Auto is ticked; untick it, then Enter.
+    app.embroidery.point_dialog = app.embroidery.point_dialog.take().map(|d| crate::embroidery::point_dialog::PointDialog::set_auto(d, false));
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(egui::Key::Enter)]);
+    assert!(app.embroidery.point_dialog.is_none());
+    let entry = app.run("embroidery.info", json!({"ids": [a]})).unwrap()["objects"][0]["settings"]["fill"]["entry"].clone();
+    assert!(entry.is_array(), "set: {entry}");
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
+}

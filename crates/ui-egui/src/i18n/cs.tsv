@@ -6021,3 +6021,11 @@ embroidery	jump {value} mm	přeskok {value} mm
 embroidery	jump {value} mm, cut	přeskok {value} mm, střih
 embroidery	Stitches update when you pause or let go.	Stehy se obnoví, když se zastavíte nebo pustíte.
 embroidery	Stitches update when you let go.	Stehy se obnoví, když pustíte.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Vstupní bod
+embroidery	Exit Point	Výstupní bod
+embroidery	Auto (nearest where the needle is)	Automaticky (nejblíže jehle)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Bod se přesune na nejbližší místo, kde mohou stehy začít nebo skončit.
+# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
+embroidery	OK	OK
+embroidery	Cancel	Zrušit

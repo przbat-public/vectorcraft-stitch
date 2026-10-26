@@ -5602,3 +5602,11 @@ embroidery	jump {value} mm	Sprung {value} mm
 embroidery	jump {value} mm, cut	Sprung {value} mm, Schnitt
 embroidery	Stitches update when you pause or let go.	Die Stiche werden aktualisiert, wenn Sie innehalten oder loslassen.
 embroidery	Stitches update when you let go.	Die Stiche werden aktualisiert, wenn Sie loslassen.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Einstichpunkt
+embroidery	Exit Point	Ausstichpunkt
+embroidery	Auto (nearest where the needle is)	Auto (nächste zur Nadel)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Der Punkt wird an die nächste Stelle gesetzt, an der die Stiche beginnen oder enden können.
+# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
+embroidery	OK	OK
+embroidery	Cancel	Abbrechen

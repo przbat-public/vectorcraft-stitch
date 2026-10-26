@@ -5960,3 +5960,11 @@ embroidery	jump {value} mm	прескок {value} мм
 embroidery	jump {value} mm, cut	прескок {value} мм, срязване
 embroidery	Stitches update when you pause or let go.	Бодовете се обновяват, когато спрете или пуснете.
 embroidery	Stitches update when you let go.	Бодовете се обновяват, когато пуснете.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Входна точка
+embroidery	Exit Point	Изходна точка
+embroidery	Auto (nearest where the needle is)	Автоматично (най-близо до иглата)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Точката се премества до най-близкото място, където бодовете могат да започнат или завършат.
+# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
+embroidery	OK	ОК
+embroidery	Cancel	Отказ

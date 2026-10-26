@@ -5982,3 +5982,11 @@ embroidery	jump {value} mm	atlama {value} mm
 embroidery	jump {value} mm, cut	atlama {value} mm, kesme
 embroidery	Stitches update when you pause or let go.	Duraklattığınızda veya bıraktığınızda dikişler güncellenir.
 embroidery	Stitches update when you let go.	Bıraktığınızda dikişler güncellenir.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Giriş noktası
+embroidery	Exit Point	Çıkış noktası
+embroidery	Auto (nearest where the needle is)	Otomatik (iğneye en yakın)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Nokta, dikişlerin başlayabileceği veya bitebileceği en yakın yere taşınır.
+# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
+embroidery	OK	Tamam
+embroidery	Cancel	İptal

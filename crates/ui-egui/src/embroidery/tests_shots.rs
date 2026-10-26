@@ -122,6 +122,11 @@ fn embroidery_shots() {
         tool(app, id);
         app.run("view.stitchPreview", json!({"on": true})).unwrap();
     });
+    shot(&dir, "embroidery-tool-point-dialog", |app, id| {
+        tool(app, id);
+        let entry = app.run("embroidery.info", json!({"ids": [id]})).unwrap()["objects"][0]["settings"]["fill"]["entry"].clone();
+        crate::embroidery::point_dialog::open(app, &json!({"kind": "entry", "id": id, "part": "fill", "at": entry, "set": true}));
+    });
     shot(&dir, "embroidery-tool-polish", |app, id| {
         app.session.prefs.interface_language = "pl".into();
         tool(app, id);

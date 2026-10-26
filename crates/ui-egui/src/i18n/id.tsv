@@ -5976,3 +5976,11 @@ embroidery	jump {value} mm	lompatan {value} mm
 embroidery	jump {value} mm, cut	lompatan {value} mm, potong
 embroidery	Stitches update when you pause or let go.	Jahitan diperbarui saat Anda berhenti atau melepas.
 embroidery	Stitches update when you let go.	Jahitan diperbarui saat Anda melepas.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Titik masuk
+embroidery	Exit Point	Titik keluar
+embroidery	Auto (nearest where the needle is)	Otomatis (terdekat dengan jarum)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Titik dipindahkan ke tempat terdekat tempat jahitan dapat dimulai atau berakhir.
+# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
+embroidery	OK	OK
+embroidery	Cancel	Batal

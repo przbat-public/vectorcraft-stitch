@@ -5698,3 +5698,11 @@ embroidery	jump {value} mm	ジャンプ {value} mm
 embroidery	jump {value} mm, cut	ジャンプ {value} mm・糸切り
 embroidery	Stitches update when you pause or let go.	止めるか離すとステッチが更新されます。
 embroidery	Stitches update when you let go.	離すとステッチが更新されます。
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	入口の点
+embroidery	Exit Point	出口の点
+embroidery	Auto (nearest where the needle is)	自動（針に最も近い位置）
+embroidery	The point is taken to the nearest place the stitches can start or end.	点はステッチが始まる、または終わることのできる最も近い位置に移されます。
+# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
+embroidery	OK	OK
+embroidery	Cancel	キャンセル

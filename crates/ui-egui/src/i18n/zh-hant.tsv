@@ -5655,3 +5655,11 @@ embroidery	jump {value} mm	跳針 {value} mm
 embroidery	jump {value} mm, cut	跳針 {value} mm，剪線
 embroidery	Stitches update when you pause or let go.	停下或放開時針跡會更新。
 embroidery	Stitches update when you let go.	放開時針跡會更新。
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	入針點
+embroidery	Exit Point	出針點
+embroidery	Auto (nearest where the needle is)	自動（離針最近處）
+embroidery	The point is taken to the nearest place the stitches can start or end.	該點會移到針跡可以開始或結束的最近位置。
+# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
+embroidery	OK	確定
+embroidery	Cancel	取消

@@ -5920,3 +5920,10 @@ embroidery	Largest miss: {value} mm	Maior desvio: {value} mm
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
 # VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
 embroidery	missed by {value} mm	errado por {value} mm
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Conexão mais próxima
+@plural	{count} part set|{count} parts set	{count} parte definida|{count} partes definidas
+embroidery	jumps {value} mm shorter	saltos {value} mm mais curtos
+embroidery	jumps no shorter	saltos não mais curtos
+embroidery	trims {before} → {after}	cortes {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Os pontos de entrada e saída já são os mais próximos.

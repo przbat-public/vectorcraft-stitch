@@ -5943,3 +5943,10 @@ embroidery	Largest miss: {value} mm	Най-голям пропуск: {value} м
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} мм
 # VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
 embroidery	missed by {value} mm	пропуснато с {value} мм
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Най-близко свързване
+@plural	{count} part set|{count} parts set	{count} част зададена|{count} части зададени
+embroidery	jumps {value} mm shorter	прескоците са по-къси с {value} мм
+embroidery	jumps no shorter	прескоците не са по-къси
+embroidery	trims {before} → {after}	срязвания {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Входните и изходните точки вече са най-близките.

@@ -5965,3 +5965,10 @@ embroidery	Largest miss: {value} mm	En büyük sapma: {value} mm
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
 # VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
 embroidery	missed by {value} mm	{value} mm ıskalandı
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	En Yakın Bağlantı
+@plural	{count} part set|{count} parts set	{count} parça ayarlandı
+embroidery	jumps {value} mm shorter	atlamalar {value} mm daha kısa
+embroidery	jumps no shorter	atlamalar kısalmadı
+embroidery	trims {before} → {after}	kesmeler {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Giriş ve çıkış noktaları zaten en yakın olanlar.

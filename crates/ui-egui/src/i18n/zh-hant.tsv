@@ -5638,3 +5638,10 @@ embroidery	Largest miss: {value} mm	最大偏離：{value} mm
 embroidery	{name}, {point}: {value} mm	{name}，{point}：{value} mm
 # VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
 embroidery	missed by {value} mm	偏離 {value} mm
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	最近連接
+@plural	{count} part set|{count} parts set	已設定 {count} 個部分
+embroidery	jumps {value} mm shorter	跳針縮短 {value} mm
+embroidery	jumps no shorter	跳針沒有縮短
+embroidery	trims {before} → {after}	剪線 {before} → {after}
+embroidery	The entry and exit points are already the nearest.	入針點和出針點已經是最近的。

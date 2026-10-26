@@ -595,7 +595,10 @@ as Melco's checker reads it, on each object's settings, it flags none.
   it can't), or use a selected row's ↑ and ↓ and the panel's ≡ menu: Sew Earlier, Sew Later, Sew
   First and Sew Last (also the commands `embroidery.sewEarlier`, `sewLater`, `sewFirst` and
   `sewLast`, with no default shortcuts). The sewing order follows the stacking order, so each moves
-  the object in the stack, as one undo step. **Check** shows `embroidery.check` for the format chosen ("Checked for"), problems
+  the object in the stack, as one undo step. The ≡ menu's Nearest Connection sets the entry and
+  exit points of the selection, else of the whole design, for the shortest jumps between parts
+  (`embroidery.nearestConnection`, below), and says in a line on the status bar how many parts it
+  set and what it saved ("3 parts set · jumps 12.5 mm shorter · trims 1 → 0"). **Check** shows `embroidery.check` for the format chosen ("Checked for"), problems
   first; Show selects a rule's objects and zooms to its hits, Next and Previous Finding step
   through them, and rings mark them on the canvas.
 - **The status bar** shows the design's figures (stitches, colours, thread changes, the time) while

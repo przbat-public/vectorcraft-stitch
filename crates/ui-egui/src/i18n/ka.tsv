@@ -5919,3 +5919,10 @@ embroidery	Largest miss: {value} mm	უდიდესი აცდენა: {v
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} მმ
 # VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
 embroidery	missed by {value} mm	აცდენილია {value} მმ-ით
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	უახლოესი შეერთება
+@plural	{count} part set|{count} parts set	დაყენებული ნაწილები: {count}
+embroidery	jumps {value} mm shorter	ნახტომები {value} მმ-ით მოკლეა
+embroidery	jumps no shorter	ნახტომები არ შემოკლდა
+embroidery	trims {before} → {after}	ჭრები {before} → {after}
+embroidery	The entry and exit points are already the nearest.	შესვლისა და გასვლის წერტილები უკვე უახლოესია.

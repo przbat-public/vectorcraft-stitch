@@ -5956,3 +5956,10 @@ embroidery	Largest miss: {value} mm	Μέγιστη απόκλιση: {value} mm
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
 # VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
 embroidery	missed by {value} mm	αστοχία {value} mm
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Πλησιέστερη σύνδεση
+@plural	{count} part set|{count} parts set	{count} τμήμα ορίστηκε|{count} τμήματα ορίστηκαν
+embroidery	jumps {value} mm shorter	άλματα κατά {value} mm συντομότερα
+embroidery	jumps no shorter	τα άλματα δεν είναι συντομότερα
+embroidery	trims {before} → {after}	κοψίματα {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Τα σημεία εισόδου και εξόδου είναι ήδη τα πλησιέστερα.

@@ -6035,3 +6035,10 @@ embroidery	Largest miss: {value} mm	Suurin poikkeama: {value} mm
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
 # VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
 embroidery	missed by {value} mm	ohi {value} mm
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Lähin yhteys
+@plural	{count} part set|{count} parts set	{count} osa asetettu|{count} osaa asetettu
+embroidery	jumps {value} mm shorter	hypyt {value} mm lyhyempiä
+embroidery	jumps no shorter	hypyt eivät lyhentyneet
+embroidery	trims {before} → {after}	leikkaukset {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Aloitus- ja lopetuspisteet ovat jo lähimmät.

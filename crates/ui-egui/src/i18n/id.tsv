@@ -5959,3 +5959,10 @@ embroidery	Largest miss: {value} mm	Meleset terjauh: {value} mm
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
 # VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
 embroidery	missed by {value} mm	meleset {value} mm
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Sambungan Terdekat
+@plural	{count} part set|{count} parts set	{count} bagian diatur
+embroidery	jumps {value} mm shorter	lompatan {value} mm lebih pendek
+embroidery	jumps no shorter	lompatan tidak lebih pendek
+embroidery	trims {before} → {after}	potongan {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Titik masuk dan keluar sudah yang terdekat.

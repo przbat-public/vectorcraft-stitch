@@ -5990,3 +5990,10 @@ embroidery	Largest miss: {value} mm	Legnagyobb eltérés: {value} mm
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
 # VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
 embroidery	missed by {value} mm	{value} mm-rel elvétve
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Legközelebbi kapcsolódás
+@plural	{count} part set|{count} parts set	{count} rész beállítva
+embroidery	jumps {value} mm shorter	az ugrások {value} mm-rel rövidebbek
+embroidery	jumps no shorter	az ugrások nem rövidebbek
+embroidery	trims {before} → {after}	vágások {before} → {after}
+embroidery	The entry and exit points are already the nearest.	A belépési és kilépési pontok már a legközelebbiek.

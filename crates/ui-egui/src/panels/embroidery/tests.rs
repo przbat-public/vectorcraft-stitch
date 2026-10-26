@@ -402,3 +402,41 @@ fn the_dock_is_widened_only_just_after_window_embroidery() {
         "not widened later: {drawn:?}"
     );
 }
+
+/// Nearest Connection from the ≡ menu, on the whole design with nothing selected: one undo step,
+/// and a line on the status bar saying how many parts it set and what it saved; run again, that the
+/// points are the nearest already.
+#[test]
+fn nearest_connection_from_the_menu_says_what_it_saved() {
+    use egui::accesskit::{Action, ActionRequest, TreeId};
+    let ctx = egui::Context::default();
+    ctx.enable_accesskit();
+    let mut app = blank_app();
+    app.run("file.new", json!({"width": 400, "height": 400, "artboards": 1})).unwrap();
+    app.run("paint.setFill", json!({"none": true})).unwrap();
+    app.run("paint.setStroke", json!({"color": "#2233cc"})).unwrap();
+    // Three running lines (millimetres from 30 mm): the second, started at its end nearer the first,
+    // would end 13 mm from the third, past the 10 mm trim length.
+    let pt = |v: f64| (30.0 + v) * 72.0 / 25.4;
+    for ((ax, ay), (bx, by)) in [((-20.0, 10.0), (0.0, 0.0)), ((1.0, 0.0), (-6.0, 0.0)), ((7.0, 0.0), (27.0, 0.0))] {
+        let d = format!("M {} {} L {} {}", pt(ax), pt(ay), pt(bx), pt(by));
+        let id = app.run("path.create", json!({ "d": d })).unwrap()["id"].clone();
+        app.run("stroke.set", json!({"weight": 1.0, "ids": [id]})).unwrap();
+    }
+    app.run("select.set", json!({"ids": []})).unwrap();
+    let click =
+        |id| egui::Event::AccessKitActionRequest(ActionRequest { action: Action::Click, target_node: id, target_tree: TreeId::ROOT, data: None });
+    let nearest = |items: &[(egui::accesskit::NodeId, String, bool)]| {
+        items.iter().find(|(_, w, _)| w == "Nearest Connection").map(|(id, _, on)| (*id, *on)).unwrap_or_else(|| panic!("{items:?}"))
+    };
+    let (id, on) = nearest(&menu_items(&mut app, &ctx, 0.0, vec![]));
+    assert!(on, "on with a document, nothing selected: the whole design");
+    let undo = app.session.doc().unwrap().history.undo.len();
+    menu_items(&mut app, &ctx, 0.01, vec![click(id)]);
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
+    assert!(app.ui.status.starts_with("Nearest Connection · 3 parts set · jumps ") && app.ui.status.ends_with(" · trims 1 → 0"), "{}", app.ui.status);
+    let (id, _) = nearest(&menu_items(&mut app, &ctx, 0.02, vec![]));
+    menu_items(&mut app, &ctx, 0.03, vec![click(id)]);
+    assert_eq!(app.ui.status, "Nearest Connection · The entry and exit points are already the nearest.");
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1, "no step the second time");
+}

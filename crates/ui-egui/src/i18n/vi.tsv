@@ -5599,3 +5599,10 @@ embroidery	Largest miss: {value} mm	Lệch nhiều nhất: {value} mm
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
 # VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
 embroidery	missed by {value} mm	lệch {value} mm
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Kết nối gần nhất
+@plural	{count} part set|{count} parts set	Đã đặt {count} phần
+embroidery	jumps {value} mm shorter	mũi nhảy ngắn hơn {value} mm
+embroidery	jumps no shorter	mũi nhảy không ngắn hơn
+embroidery	trims {before} → {after}	cắt chỉ {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Các điểm vào và ra đã là gần nhất.

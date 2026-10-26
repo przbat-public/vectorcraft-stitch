@@ -44,12 +44,20 @@ Illustrator-parity scores (Practicalities, last item).
   trusting a PR number in a brief, check its title and URL.
 - **Never rename a PR's head branch** on GitHub: GitHub closes the PR instead of following the
   rename.
-- **The owner squash-merges, except an upstream sync.** A PR that merges `main` into
-  `feat/embroidery` is merged with "Create a merge commit": a squash would drop the record that
-  upstream's commits are merged, and the next sync would meet the same conflicts again. After a
-  base PR merges, merge `feat/embroidery` into any branch
-  stacked on it (taking the branch's side: the squash equals the base's last commit), so its diff
-  shows only its own changes. Never push to a merged PR's deleted branch: that recreates it.
+- **Every PR is merged with "Create a merge commit"**, an upstream sync included: since
+  2026-10-26 it is the only method the repository allows (squash and rebase are off). Every
+  commit is gated on its own, so `git bisect` lands on one task; each commit's message keeps its
+  why; `git log --first-parent feat/embroidery` gives one entry per PR; upstream merges the same
+  way; and a squash would drop an upstream sync's second parent, the record that upstream's
+  commits are merged, so the next sync would meet the same conflicts again. After a base PR
+  merges, merge `feat/embroidery` into any branch stacked on it, so its diff shows only its own
+  changes. A PR's head branch is deleted when it merges: never push to a merged PR's deleted
+  branch, which recreates it.
+- **`main` and `feat/embroidery` are protected by rulesets.** Neither can be deleted or
+  force-pushed. `feat/embroidery` changes only through a PR whose required check "gate / gate
+  (ubuntu-24.04)" passes: never push to it directly (GitHub refuses it). The fast-forward push of
+  `main` in a sync still works. `feat/embroidery` is the repository's default branch, so `gh pr
+  create` targets it without `--base`.
 - **No code names, anywhere.** Never label work with a stage letter, a step number or any other
   internal tag in branch names, commit messages, PR titles and descriptions, docs or code. Say what
   the change does ("an opened design is written back unchanged"). Every description must make sense
@@ -336,6 +344,7 @@ without asking the owner. A new decision gets a row here in the PR that makes it
 | 2026-10-26 | A point's X and Y can be typed: the Entry Point or Exit Point dialog, in the rulers' unit and from their origin as the Transform panel shows positions, with Auto (the point left to the planner); it opens with Enter on the point last pressed or a double-click on a point, and sets it with `embroidery.setEntryExit {snap: true}`, taken to where the stitches can start or end as a drag places it. It is the fork's own window, which has the keyboard while open | the plan's settled choice (a small dialog, X and Y in the rulers' unit and origin, Auto) | typing into the Object tab's row; upstream's dialog registry (several hooks in upstream's dialog code) | `embroidery/point_dialog.rs`; `a_double_click_opens_the_point_dialog`, `the_dialog_opens_on_the_tools_point_and_sets_it` |
 | 2026-10-26 | In the Object tab, one object's Entry and Exit rows are buttons opening that point's dialog, at the point set, else where the plan shown starts or ends the part (Auto ticked); several objects' rows stay read only, since the command sets one object's points. Set on Canvas, at the right of the rows' heading (under it where the panel is too narrow for both), picks the Embroidery Tool, which shows the part the tab does | the plan's settled choice (the rows open the dialog; a button picks the tool) | typing X and Y into the row itself (two fields where one row is, in 24 languages); one dialog for several objects' points | `panels/embroidery/object.rs`, `embroidery/rows.rs` (`Field::Button`, `heading_with_button`); `entry_and_exit_rows_open_the_points_dialog` |
 | 2026-10-26 | A fill sewn as tatami shows its rows' angle as the embroidery tool's second kind of handle (`Kind::Angle`): a dashed arrow through the fill's centre (its bounds'), its head 40 screen px out at the angle it is sewn at (set, else the export's or the default rows turned with the object, as `embroidery.info {plan: false}` reports it), which the engine reads from the document for the tool (`PlanFacts::fill_angle`, no plan needed, so the facts are handed in whenever the tool is active). Dragging the head previews `embroidery.set {ids, part: "fill", angle}` under that command's undo label, one step; Shift takes 45° steps from the Constrain Angle; Alt-click or Delete resets it (`embroidery.reset {keys: ["angle"]}`); → and ↑ turn it a degree counter-clockwise, ← and ↓ clockwise, Shift ten; an angle dragged or turned is kept to a tenth of a degree in (−180, 180]; Enter and a double-click open nothing (the Object tab's field types an angle); the head shows the Rotate cursor | the owner's choice (2026-10-25: the arrow in this PR, as a second kind of handle); the app's angles count counter-clockwise (2026-10-23) | a dialog of its own for the angle; the arrow read through the Object tab's memo (the engine answers the tool, as it does for the points) | `tools/src/embroidery/`, `cmd/embroidery/tool.rs`, `cmd/embroidery/info.rs` (`fill_rows`), `ui-egui/src/embroidery/handles.rs`; `a_tatami_fills_rows_are_an_arrow_through_its_centre`, `dragging_the_arrows_head_turns_the_rows`, `the_arrows_keys_and_its_reset`, `an_object_turned_turns_its_auto_arrow` |
+| 2026-10-26 | Every PR, an upstream sync included, is merged with "Create a merge commit", the only method the repository allows (squash and rebase are off); `feat/embroidery` is the default branch and changes only through a PR whose check "gate / gate (ubuntu-24.04)" passes; neither it nor `main` can be deleted or force-pushed (rulesets); a PR's head branch is deleted when it merges | the project owner's choice: every commit is gated, so `git bisect` lands on one task; each commit's message keeps its why; `git log --first-parent` gives one entry per PR; upstream merges the same way; a squash would drop an upstream sync's second parent | squash merges (the rule before, upstream syncs apart), rebase merges | the repository's settings and rulesets on GitHub; FORK.md › Branches |
 
 ## Clean-room for embroidery
 

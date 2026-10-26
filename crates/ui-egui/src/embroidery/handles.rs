@@ -64,11 +64,16 @@ const LABEL_SIZE: f32 = 11.0;
 const LABEL_PAD: f32 = 5.0;
 const LABEL_OFFSET: f32 = 10.0;
 
+/// What the handles are found for ([`Cache`]).
+type Key = (u64, u64, Option<u64>, [u64; 3], String);
+
 /// What the handles are found for, and what was found: the document's uid and revision, the
-/// generation of the plan shown, and the tool's options (its part, hover, focus and drag).
+/// generation of the plan shown, the view's zoom and turn (an arrow's head and an exit moved apart
+/// from its entry are placed in screen pixels), and the tool's options (its part, hover, focus and
+/// drag).
 #[derive(Default)]
 pub struct Cache {
-    key: Option<(u64, u64, Option<u64>, String)>,
+    key: Option<Key>,
     handles: Vec<Handle>,
     options: Value,
     /// How many times the handles were found (the tests count them).
@@ -96,9 +101,11 @@ fn current(app: &mut VectorcraftApp) -> Option<(Vec<Handle>, Value)> {
     let st = app.session.active()?;
     let (uid, revision) = (st.uid, st.revision);
     let generation = app.embroidery.preview.shown(uid).map(|s| s.planned.generation);
-    let key = (uid, revision, generation, app.session.tool_options().to_string());
+    let view = app.view_info();
+    let right = view.screen.map_or(vectorcraft_geom::Vec2::ZERO, |s| s.right);
+    let frame = [view.zoom.to_bits(), right.x.to_bits(), right.y.to_bits()];
+    let key = (uid, revision, generation, frame, app.session.tool_options().to_string());
     if app.embroidery.handles.key.as_ref() != Some(&key) {
-        let view = app.view_info();
         let (handles, options) = app.session.embroidery_handles(view);
         let cache = &mut app.embroidery.handles;
         (cache.key, cache.handles, cache.options) = (Some(key), handles, options);

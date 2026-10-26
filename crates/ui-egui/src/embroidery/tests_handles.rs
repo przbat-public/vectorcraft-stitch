@@ -444,3 +444,22 @@ fn auto_handles_come_from_the_plan_drawn_and_go_stale_with_it() {
     let caught_up = states(&mut app);
     assert!(caught_up.iter().all(|h| h.2 != State::Stale), "the plan drawn caught up: {caught_up:?}");
 }
+
+/// What is drawn is what is caught at any zoom: an arrow's head lies 40 screen pixels from the
+/// fill's centre, so zooming in moves it in the document; the canvas draws it where the tool then
+/// catches it, without the pointer moving (before, the drawing kept the head found at the old zoom).
+#[test]
+fn the_arrows_head_is_drawn_where_it_is_caught_after_a_zoom() {
+    let (mut app, [a, _]) = app();
+    app.run("select.set", json!({"ids": [a]})).unwrap();
+    let ctx = egui::Context::default();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let head = |app: &mut VectorcraftApp| on_screen(app).into_iter().find(|(k, _)| *k == Kind::Angle).map(|(_, at)| at).unwrap();
+    let before = head(&mut app);
+    app.run("view.zoomIn", json!({})).unwrap();
+    let shapes = settle(&mut app, &ctx, &mut time);
+    let caught = head(&mut app);
+    let triangle = |s: &Shape, near: Pos2| matches!(s, Shape::Path(p) if p.points.len() == 3 && p.points.iter().all(|q| q.distance(near) < 10.0));
+    assert!(shapes.iter().any(|s| triangle(s, caught)), "drawn where it is caught: {caught:?} (was {before:?})");
+}

@@ -608,6 +608,28 @@ as Melco's checker reads it, on each object's settings, it flags none.
   through them, and rings mark them on the canvas.
 - **The status bar** shows the design's figures (stitches, colours, thread changes, the time) while
   the stitches or the panel are shown; a click opens the panel.
+- **The Embroidery Tool** („Narzędzie Haft”, in the toolbars' Embroidery group, no default
+  shortcut; also the Object tab's Set on Canvas) shows the selected objects' entry ◆ and exit ⊕
+  points on the canvas, in the art view and the stitch view, of the part the Object tab shows (at
+  most 32 objects): solid where set, hollow where left to the planner (where the plan shown sews
+  them), dim while the plan catches up with an edit; a point set where the stitches can't start
+  has a hairline to where they do. Drag a point to move it: it is taken to the nearest place the
+  stitches can start or end, a dashed line joins it to where the needle comes from or goes next
+  with the jump's length ("jump 12.5 mm, cut" past the trim length), and letting go keeps it, one
+  undo step; Escape cancels. A design slow to plan is planned when the drag pauses (0.3 s) or ends,
+  and the status bar says so. Alt-click, or Delete, puts a point back to Auto; the arrow keys nudge
+  the point last pressed by the keyboard increment (Shift ten times), `[` and `]` step from point
+  to point, and Enter or a double-click opens its Entry Point or Exit Point dialog (X and Y in the
+  rulers' unit, from their origin, or Auto). A click on an
+  object's art or its stitches selects it, Shift-click adds it or takes it away; the object a click
+  would select is outlined. Nearest Connection (the panel's ≡ menu) sets every point at once for the
+  shortest jumps.
+
+  ![The Embroidery Tool in the stitch view: a red disc's fill with its entry set and its exit left to the planner](images/embroidery-tool-stitches.png)
+
+  ![The Entry Point dialog: X and Y in the rulers' unit, or Auto](images/embroidery-tool-point-dialog.png)
+
+  ![The Embroidery Tool in Polish, the Object tab's Set on Canvas by Entry and exit](images/embroidery-tool-polish.png)
 
 How it is planned and drawn: [Planning for the stitch preview](#planning-for-the-stitch-preview)
 and [Drawing stitches](#drawing-stitches), under Architecture.
@@ -1994,6 +2016,23 @@ built, twice; `perf --embroidery`, a dry run on the whole design once its plan i
 Every part it joins gets points, so the plan of its result plans nearly every unit afresh, and a
 second round plans what the first moved: on the largest design that is seconds, run on the
 interface thread as every command is (a limit, below).
+
+The embroidery tool's in-app gate (2026-10-26, release, the same machine, load about 4 to 6,
+twice; `embroidery_tool_gate`, as the first gate: 60 Hz, 1440 × 900 points at 2 pixels a point,
+the status bar and the Object tab drawn): on each of the corpus's eleven SVG designs, the largest
+fill's entry pressed with the mouse and dragged along its outline a move a frame, then a step let
+go and timed until the stitches drawn are of the document as it is:
+
+| Row | Measured | Budget |
+|---|---:|---:|
+| A frame of the drag, 95th percentile, worst design | 7.8–8.1 ms | 16.7 ms (60 Hz) |
+| A step to its stitches drawn fresh, worst design | 35.7–35.8 ms | 100 ms |
+| A step to fresh, median per design | 16.5–18.6 ms | |
+| The slowest single frame of a drag (a plan taken in) | 19.2–20.4 ms | |
+
+All eleven plan within `LIVE_PLAN_MS`, so each followed the drag (7 to 45 plans taken in during
+it); none is slow enough to wait for a pause, which the tests cover on a design pinned heavy
+(`a_pause_in_a_drag_plans_a_design_slow_to_plan`). A step's time falls on whole frames (one or two).
 
 ### Drawing stitches
 

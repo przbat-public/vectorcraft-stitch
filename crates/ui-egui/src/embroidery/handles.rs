@@ -222,6 +222,19 @@ fn outline_of(doc: &vectorcraft_doc::Document, object: vectorcraft_doc::NodeId) 
     Some(path)
 }
 
+/// [`outline_of`] flattened, for the hand-run gate's drag along an object's outline.
+#[cfg(test)]
+pub(crate) fn tests_outline(doc: &vectorcraft_doc::Document, object: vectorcraft_doc::NodeId) -> Vec<vectorcraft_geom::Point> {
+    let mut pts = Vec::new();
+    if let Some(bp) = outline_of(doc, object) {
+        vectorcraft_geom::kurbo::flatten(bp.iter(), 0.5, |el| match el {
+            vectorcraft_geom::PathEl::MoveTo(p) | vectorcraft_geom::PathEl::LineTo(p) => pts.push(p),
+            _ => {}
+        });
+    }
+    pts
+}
+
 fn dark() -> Color32 {
     Color32::from_rgb(MARK_DARK[0], MARK_DARK[1], MARK_DARK[2])
 }

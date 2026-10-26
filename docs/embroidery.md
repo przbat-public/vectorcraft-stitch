@@ -2008,34 +2008,37 @@ over): the 95th percentile of ten steps is their slowest, and the worst design m
 71 ms from run to run. The canvas drag and the edit are where they were before the Object tab
 (7.8 and 72 ms above).
 
-Sewing toward entry and exit points (2026-10-26, release, the same machine, load about 25 while
-other work built, twice; `perf --embroidery`):
+Sewing toward entry and exit points (2026-10-26, release, the same machine, twice; `perf
+--embroidery`; first under a load of about 25 while other work built, then again at the end of
+the work at a load of 3 to 4):
 
-| Row | Measured | Budget |
-|---|---:|---:|
-| The 20 rings in one fill toward an exit on their outermost, cold | 475–507 ms | 1,200 ms |
-| The same 20 rings with no exit, beside it | 467–469 ms | 600 ms |
-| An exit moved a nudge, 1,000 paths, planned again | 2.7–2.8 ms | 7 ms |
-| An entry moved a nudge, 1,000 paths, planned again | 2.6 ms | 7 ms |
+| Row | Measured | Again, load 3–4 | Budget |
+|---|---:|---:|---:|
+| The 20 rings in one fill toward an exit on their outermost, cold | 475–507 ms | 478–508 ms | 1,200 ms |
+| The same 20 rings with no exit, beside it | 467–469 ms | 453–462 ms | 600 ms |
+| An exit moved a nudge, 1,000 paths, planned again | 2.7–2.8 ms | 2.7 ms | 7 ms |
+| An entry moved a nudge, 1,000 paths, planned again | 2.6 ms | 2.6 ms | 7 ms |
 
 A fill with narrow parts toward an exit plans its parts twice (with and without the exit) and
 keeps the better: about 8 % more than without on the rings. A point moved plans again only its own
 unit.
 
-Nearest Connection (2026-10-26, release, the same machine, under load 28 to 41 while other work
-built, twice; `perf --embroidery`, a dry run on the whole design once its plan is kept):
+Nearest Connection (2026-10-26, release, the same machine, twice under load 28 to 41 while other
+work built, and twice again at the end at a load of 3 to 4; `perf --embroidery`, a dry run on the
+whole design once its plan is kept):
 
-| Row | Measured | Budget |
-|---|---:|---:|
-| 1,000 paths | 120–123 ms | 300 ms |
-| 22,000 paths | 6.1–7.6 s | 15 s |
+| Row | Measured | Again, load 3–4 | Budget |
+|---|---:|---:|---:|
+| 1,000 paths | 120–123 ms | 117–123 ms | 300 ms |
+| 22,000 paths | 6.1–7.6 s | 5.9 s | 15 s |
+| A press on stitches picking the object, 22,000 paths | 0.01 ms | 0.01 ms | 1 ms |
 
 Every part it joins gets points, so the plan of its result plans nearly every unit afresh, and a
 second round plans what the first moved: on the largest design that is seconds, run on the
 interface thread as every command is (a limit, below).
 
 The embroidery tool's in-app gate (2026-10-26, release, the same machine, load about 4 to 6,
-twice; `embroidery_tool_gate`, as the first gate: 60 Hz, 1440 × 900 points at 2 pixels a point,
+twice, and twice again with the angle arrow at the end, load 3 to 4: 7.9–8.4 ms and 35.7–36.5 ms; `embroidery_tool_gate`, as the first gate: 60 Hz, 1440 × 900 points at 2 pixels a point,
 the status bar and the Object tab drawn): on each of the corpus's eleven SVG designs, the largest
 fill's entry pressed with the mouse and dragged along its outline a move a frame, then a step let
 go and timed until the stitches drawn are of the document as it is:

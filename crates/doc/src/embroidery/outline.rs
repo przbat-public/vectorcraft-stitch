@@ -1,18 +1,27 @@
 //! An object's outline as the embroidery code measures points against it: where a point snaps to
 //! (`embroidery.setEntryExit {snap}`), which of an object's pieces lies nearest a point (objects
 //! made from others), and what the embroidery tool outlines on the canvas. A path's own outline, or
-//! a compound path's members'; nothing for anything else.
+//! a compound path's members'; nothing for anything else, or for a path a file holds out of range,
+//! which would flatten to a number of points without bound.
 
+use vectorcraft_geom::kurbo::Shape;
 use vectorcraft_geom::{BezPath, PathEl, Point};
 
-use crate::{Node, NodeKind};
+use crate::{MAX_COORD, Node, NodeKind};
 
 /// How finely an outline is flattened to measure how far a point lies from it, document points: a
 /// hundredth of a point, far below a needle's width.
 pub const OUTLINE_FLATTEN: f64 = 0.01;
 
+/// The most steps an outline's size is flattened in: an outline up to 1,000 pt across (35 cm) is
+/// flattened at [`OUTLINE_FLATTEN`], a larger one more coarsely, so that no outline flattens to
+/// more than a few hundred points a segment however large it is (an estimate: art is sewn in hoops
+/// of at most about 40 cm).
+pub const OUTLINE_SPAN_STEPS: f64 = 1e5;
+
 /// `n`'s outline (a path's, or a compound path's members'), document points; empty for an object
-/// that is neither.
+/// that is neither, or one with a point that isn't a number within [`MAX_COORD`] (a hostile
+/// file's: the commands keep art within it).
 pub fn outline(n: &Node) -> BezPath {
     let mut path = BezPath::new();
     match &n.kind {
@@ -26,14 +35,30 @@ pub fn outline(n: &Node) -> BezPath {
         }
         _ => {}
     }
-    path
+    if path.elements().iter().all(in_range) { path } else { BezPath::new() }
 }
 
-/// `n`'s outline flattened ([`OUTLINE_FLATTEN`]), document points: each subpath's points, with
+/// Whether each point of `el` is a number within [`MAX_COORD`].
+fn in_range(el: &PathEl) -> bool {
+    let ok = |p: &Point| p.x.is_finite() && p.y.is_finite() && p.x.abs() <= MAX_COORD && p.y.abs() <= MAX_COORD;
+    match el {
+        PathEl::MoveTo(p) | PathEl::LineTo(p) => ok(p),
+        PathEl::QuadTo(a, b) => ok(a) && ok(b),
+        PathEl::CurveTo(a, b, c) => ok(a) && ok(b) && ok(c),
+        PathEl::ClosePath => true,
+    }
+}
+
+/// `n`'s outline flattened ([`OUTLINE_FLATTEN`], or a step of its size over
+/// [`OUTLINE_SPAN_STEPS`] where that is coarser), document points: each subpath's points, with
 /// whether it is closed (its first point isn't repeated at its end).
 pub fn subpaths(n: &Node) -> Vec<(Vec<Point>, bool)> {
+    let path = outline(n);
+    let bounds = path.bounding_box();
+    let size = bounds.width().max(bounds.height());
+    let tolerance = if size.is_finite() { OUTLINE_FLATTEN.max(size / OUTLINE_SPAN_STEPS) } else { OUTLINE_FLATTEN };
     let mut out: Vec<(Vec<Point>, bool)> = Vec::new();
-    vectorcraft_geom::kurbo::flatten(outline(n).iter(), OUTLINE_FLATTEN, |el| match el {
+    vectorcraft_geom::kurbo::flatten(path.iter(), tolerance, |el| match el {
         PathEl::MoveTo(p) => out.push((vec![p], false)),
         PathEl::LineTo(p) => {
             if let Some((line, _)) = out.last_mut() {

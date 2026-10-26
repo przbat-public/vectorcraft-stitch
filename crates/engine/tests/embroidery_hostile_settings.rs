@@ -131,6 +131,46 @@ fn plan_is_finite(s: &mut Session) {
     }
 }
 
+/// A path a hostile file holds out of range (control points at 1e15, 1e100 and the largest float,
+/// past anything the commands make), with two strokes and both of a stroke's points set: planning
+/// it (which splits the strokes and keeps each point on the copy nearest it), snapping a point to
+/// it and reading it never flatten it to points without bound (1e15 would make some 7·10⁸ points),
+/// nor panic; the walk refuses the shape.
+#[test]
+fn a_path_out_of_range_is_never_flattened() {
+    use vectorcraft_doc::NodeKind;
+    use vectorcraft_geom::{BezPath, PathData};
+    for far in [1e15, 1e100, f64::MAX] {
+        let (mut s, ids) = document();
+        let two = NodeId(ids[2]);
+        s.edit("Hostile Geometry", |d, _| {
+            let n = d.node_mut(two).unwrap();
+            let mut bp = BezPath::new();
+            bp.move_to((20.0, 120.0));
+            bp.curve_to((far, -far), (-far, far), (100.0, 170.0));
+            bp.close_path();
+            if let NodeKind::Path { path, .. } = &mut n.kind {
+                *path = PathData::from_bezpath(&bp);
+            }
+            n.extras_mut().embroidery = Some(Box::new(Embroidery::from(json!({"stroke": {"points": {"entry": [20, 120], "exit": [100, 170]}}}))));
+            Ok(())
+        })
+        .unwrap();
+        plan_is_finite(&mut s);
+        let snapped = no_panic(s.execute("embroidery.setEntryExit", &json!({"id": two.0, "part": "stroke", "entry": [30, 130], "snap": true})));
+        assert_eq!(snapped.unwrap()["entry"], json!([30.0, 130.0]), "{far}: nothing to snap to, kept where given");
+        no_panic(s.execute("embroidery.info", &json!({"ids": [two.0], "plan": true}))).unwrap();
+    }
+}
+
+/// `r`, failing the test when it is a panic the engine caught (`EngineError::Internal`).
+fn no_panic(r: Result<Value, vectorcraft_engine::EngineError>) -> Result<Value, vectorcraft_engine::EngineError> {
+    if let Err(vectorcraft_engine::EngineError::Internal { cmd, msg }) = &r {
+        panic!("{cmd} panicked: {msg}");
+    }
+    r
+}
+
 proptest! {
     #![proptest_config(ProptestConfig { cases: 24, failure_persistence: None, ..ProptestConfig::default() })]
 

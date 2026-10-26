@@ -1290,7 +1290,10 @@ the object a person selects (`id`).
   any shape), on objects and in the document, are planned to finite needle points, read, edited by
   the settings commands and every embroidery command's junk, transformed (singular transforms
   among them) and cut up by the commands that make objects from others without a panic, and the
-  document saves and reads back as it was (`tests/embroidery_hostile_settings.rs`).
+  document saves and reads back as it was (`tests/embroidery_hostile_settings.rs`). A path a file
+  holds out of range (control points at 1e15 and beyond, past what any command makes) is never
+  flattened to measure points against it (`embroidery::outline` gives it no outline): planning it,
+  snapping a point to it and reading it neither run out of memory nor panic.
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
 - `crates/engine/tests/embroidery_output.rs`: the bytes every export writes, pinned by their sha256

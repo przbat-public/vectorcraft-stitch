@@ -161,3 +161,31 @@ fn the_fabric_commands_are_reachable() {
     let r = run(&mut h, "embroidery.applyFabric", json!({}));
     assert_eq!(r["changedCount"], 0);
 }
+
+/// The embroidery tool headless: listed by `ui.tool.list`'s catalogue, chosen with `tool.select`,
+/// and a `pointer_gesture` from a fill's planned entry to its top side sets the entry there
+/// (snapped onto the outline), one undo step that `edit.undo` takes back.
+#[test]
+fn the_embroidery_tool_drags_an_entry_headless() {
+    let mut h = Headless::with_document();
+    let run = |h: &mut Headless, command: &str, params: Value| text(&call_tool(h, "run_command", &json!({"command": command, "params": params})));
+    run(&mut h, "paint.setStroke", json!({"none": true}));
+    let id = run(&mut h, "shape.rectangle", json!({"x": 20, "y": 20, "width": 80, "height": 50}))["id"].clone();
+    run(&mut h, "select.set", json!({"ids": [id]}));
+    let unit = run(&mut h, "embroidery.sequence", json!({}))["blocks"][0]["units"][0].clone();
+    let pt = 72.0 / 25.4;
+    let (x, y) = (unit["entry"][0].as_f64().unwrap() * pt, unit["entry"][1].as_f64().unwrap() * pt);
+    run(&mut h, "tool.select", json!({"tool": "embroidery"}));
+    let undo = h.session.doc().unwrap().history.undo.len();
+    let ev = |kind: &str, x: f64, y: f64| json!({"kind": kind, "x": x, "y": y});
+    text(&call_tool(
+        &mut h,
+        "pointer_gesture",
+        &json!({"events": [ev("down", x, y), ev("drag", 55.0, 25.0), ev("drag", 60.0, 23.0), ev("up", 60.0, 23.0)]}),
+    ));
+    let entry = |h: &mut Headless| run(h, "embroidery.info", json!({"ids": [id]}))["objects"][0]["settings"]["fill"]["entry"].clone();
+    assert_eq!(entry(&mut h), json!([60.0, 20.0]));
+    assert_eq!(h.session.doc().unwrap().history.undo.len(), undo + 1);
+    run(&mut h, "edit.undo", json!({}));
+    assert_eq!(entry(&mut h), Value::Null);
+}

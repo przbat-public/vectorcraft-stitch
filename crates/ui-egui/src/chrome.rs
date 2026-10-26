@@ -1020,6 +1020,15 @@ fn hint_for(tool: &str) -> Option<&'static [(&'static str, bool)]> {
             (" to sample a color", false),
         ],
         "gradient" => &[("Drag", true), (" across a selected object to set the gradient direction", false)],
+        // VectorCraft Stitch: the embroidery tool.
+        "embroidery" => &[
+            ("Drag", true),
+            (" an entry or exit point to move it  |  ", false),
+            ("Alt+Click", true),
+            (" a point to put it back to Auto  |  ", false),
+            ("Click", true),
+            (" an object to show its points", false),
+        ],
         "artboard" => &[
             ("Click", true),
             (" to select an artboard  |  ", false),

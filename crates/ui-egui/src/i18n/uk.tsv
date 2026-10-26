@@ -5606,3 +5606,8 @@ embroidery	jumps {value} mm shorter	перескоки коротші на {valu
 embroidery	jumps no shorter	перескоки не коротші
 embroidery	trims {before} → {after}	обрізання {before} → {after}
 embroidery	The entry and exit points are already the nearest.	Точки входу й виходу вже найближчі.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Інструмент «Вишивка»
+	 an entry or exit point to move it  |  	 точку входу чи виходу, щоб перемістити її  |  
+	 a point to put it back to Auto  |  	 точку, щоб повернути її до «Авто»  |  
+	 an object to show its points	 об’єкт, щоб показати його точки

@@ -5963,3 +5963,8 @@ embroidery	jumps {value} mm shorter	άλματα κατά {value} mm συντο�
 embroidery	jumps no shorter	τα άλματα δεν είναι συντομότερα
 embroidery	trims {before} → {after}	κοψίματα {before} → {after}
 embroidery	The entry and exit points are already the nearest.	Τα σημεία εισόδου και εξόδου είναι ήδη τα πλησιέστερα.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Εργαλείο κεντήματος
+	 an entry or exit point to move it  |  	 σημείο εισόδου ή εξόδου για μετακίνηση  |  
+	 a point to put it back to Auto  |  	 σημείο για επιστροφή στο Αυτόματα  |  
+	 an object to show its points	 ένα αντικείμενο για εμφάνιση των σημείων του

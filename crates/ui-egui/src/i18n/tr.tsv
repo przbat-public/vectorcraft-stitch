@@ -5972,3 +5972,8 @@ embroidery	jumps {value} mm shorter	atlamalar {value} mm daha kısa
 embroidery	jumps no shorter	atlamalar kısalmadı
 embroidery	trims {before} → {after}	kesmeler {before} → {after}
 embroidery	The entry and exit points are already the nearest.	Giriş ve çıkış noktaları zaten en yakın olanlar.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Nakış Aracı
+	 an entry or exit point to move it  |  	 taşımak için bir giriş veya çıkış noktası  |  
+	 a point to put it back to Auto  |  	 Otomatik'e döndürmek için bir nokta  |  
+	 an object to show its points	 noktalarını göstermek için bir nesne

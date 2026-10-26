@@ -5997,3 +5997,8 @@ embroidery	jumps {value} mm shorter	az ugrások {value} mm-rel rövidebbek
 embroidery	jumps no shorter	az ugrások nem rövidebbek
 embroidery	trims {before} → {after}	vágások {before} → {after}
 embroidery	The entry and exit points are already the nearest.	A belépési és kilépési pontok már a legközelebbiek.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Hímzés eszköz
+	 an entry or exit point to move it  |  	 egy belépési vagy kilépési ponton – áthelyezés  |  
+	 a point to put it back to Auto  |  	 egy pontra – vissza Automatikusra  |  
+	 an object to show its points	 egy objektumra – pontjainak megjelenítése

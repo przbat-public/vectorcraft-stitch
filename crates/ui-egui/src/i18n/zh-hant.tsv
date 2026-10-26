@@ -5645,3 +5645,8 @@ embroidery	jumps {value} mm shorter	跳針縮短 {value} mm
 embroidery	jumps no shorter	跳針沒有縮短
 embroidery	trims {before} → {after}	剪線 {before} → {after}
 embroidery	The entry and exit points are already the nearest.	入針點和出針點已經是最近的。
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	刺繡工具
+	 an entry or exit point to move it  |  	入針點或出針點可移動  |  
+	 a point to put it back to Auto  |  	點可恢復為自動  |  
+	 an object to show its points	物件可顯示其點

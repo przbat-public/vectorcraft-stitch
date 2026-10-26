@@ -5966,3 +5966,8 @@ embroidery	jumps {value} mm shorter	lompatan {value} mm lebih pendek
 embroidery	jumps no shorter	lompatan tidak lebih pendek
 embroidery	trims {before} → {after}	potongan {before} → {after}
 embroidery	The entry and exit points are already the nearest.	Titik masuk dan keluar sudah yang terdekat.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Alat bordir
+	 an entry or exit point to move it  |  	 titik masuk atau keluar untuk memindahkannya  |  
+	 a point to put it back to Auto  |  	 titik untuk mengembalikannya ke Otomatis  |  
+	 an object to show its points	 objek untuk menampilkan titiknya

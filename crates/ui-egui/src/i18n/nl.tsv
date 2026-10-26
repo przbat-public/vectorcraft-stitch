@@ -6009,3 +6009,8 @@ embroidery	jumps {value} mm shorter	sprongen {value} mm korter
 embroidery	jumps no shorter	sprongen niet korter
 embroidery	trims {before} → {after}	knippen {before} → {after}
 embroidery	The entry and exit points are already the nearest.	De in- en uitsteekpunten zijn al de dichtstbijzijnde.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Borduur-gereedschap
+	 an entry or exit point to move it  |  	 aan een in- of uitsteekpunt om het te verplaatsen  |  
+	 a point to put it back to Auto  |  	 op een punt om het terug op Automatisch te zetten  |  
+	 an object to show its points	 op een object om zijn punten te tonen

@@ -5606,3 +5606,8 @@ embroidery	jumps {value} mm shorter	mũi nhảy ngắn hơn {value} mm
 embroidery	jumps no shorter	mũi nhảy không ngắn hơn
 embroidery	trims {before} → {after}	cắt chỉ {before} → {after}
 embroidery	The entry and exit points are already the nearest.	Các điểm vào và ra đã là gần nhất.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Công cụ Thêu
+	 an entry or exit point to move it  |  	 một điểm vào hoặc ra để di chuyển  |  
+	 a point to put it back to Auto  |  	 một điểm để đưa về Tự động  |  
+	 an object to show its points	 một đối tượng để hiện các điểm của nó

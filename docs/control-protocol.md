@@ -438,6 +438,15 @@ takes the settings of the one object selected (a path or a compound path) as the
 the selected objects, in any document, those settings as one `embroidery.set` a part in one `command.batch`, one undo
 step, answering `{passedOver, skippedCount, skipped}` (the selected objects that take no settings): the panel's ≡
 menu's Copy and Paste Embroidery Settings.
+
+The embroidery tool (`tool.select {tool: "embroidery"}`, the Embroidery Tool at the end of both toolbars) shows the
+selected objects' entry and exit points, one part at a time (`tool.setOption {key: "part", value: "fill"|"stroke"|null}`;
+`null`: each object's fill, else its stroke), each where it is set or, left to the planner, where the plan the stitch
+preview has made sews it (the tool never plans; with no plan made, only the points set show). `pointer` events drag
+one: past 3 px a drag previews `embroidery.setEntryExit {…, snap: true}` and the release keeps it, one undo step;
+`ui.key` Escape cancels it. Alt with a press puts a point back to Auto, as Delete does for the point last pressed; the
+arrows nudge that point, `[` and `]` step between points. `ui.inspect`'s `toolOptions` give `{part, hover, focus,
+drag}`, each point as `{kind: "entry"|"exit", id, part, index}` (`drag` also `at`, document points).
 `embroidery.documentSetup {}` opens Document Setup at its Embroidery tab, whose fields are flat, named by
 `embroidery.setup`'s paths: `embroidery.fabric` (the fabric chosen: `builtIn`, `custom`, or a preset's id from
 `embroidery.fabrics`), `embroidery.fabric.tatami.pull`, `embroidery.fabric.tatami.spacing`,

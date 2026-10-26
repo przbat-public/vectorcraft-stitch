@@ -5927,3 +5927,8 @@ embroidery	jumps {value} mm shorter	saltos {value} mm mais curtos
 embroidery	jumps no shorter	saltos não mais curtos
 embroidery	trims {before} → {after}	cortes {before} → {after}
 embroidery	The entry and exit points are already the nearest.	Os pontos de entrada e saída já são os mais próximos.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Ferramenta Bordado
+	 an entry or exit point to move it  |  	 um ponto de entrada ou saída para movê-lo  |  
+	 a point to put it back to Auto  |  	 um ponto para voltá-lo a Automático  |  
+	 an object to show its points	 um objeto para mostrar seus pontos

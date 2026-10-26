@@ -5862,3 +5862,8 @@ embroidery	jumps {value} mm shorter	przeskoki krótsze o {value} mm
 embroidery	jumps no shorter	przeskoki nie są krótsze
 embroidery	trims {before} → {after}	cięcia {before} → {after}
 embroidery	The entry and exit points are already the nearest.	Punkty wejścia i wyjścia są już najbliższe.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Narzędzie Haft
+	 an entry or exit point to move it  |  	 punkt wejścia lub wyjścia, aby go przesunąć  |  
+	 a point to put it back to Auto  |  	 punkt, aby przywrócić go do Auto  |  
+	 an object to show its points	 obiekt, aby pokazać jego punkty

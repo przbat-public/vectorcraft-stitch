@@ -6011,3 +6011,8 @@ embroidery	jumps {value} mm shorter	přeskoky kratší o {value} mm
 embroidery	jumps no shorter	přeskoky nejsou kratší
 embroidery	trims {before} → {after}	střihy {before} → {after}
 embroidery	The entry and exit points are already the nearest.	Vstupní a výstupní body jsou už nejbližší.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Nástroj Výšivka
+	 an entry or exit point to move it  |  	 vstupního nebo výstupního bodu jej přesune  |  
+	 a point to put it back to Auto  |  	 na bod jej vrátí na Automaticky  |  
+	 an object to show its points	 na objekt ukáže jeho body

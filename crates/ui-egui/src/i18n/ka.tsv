@@ -5926,3 +5926,8 @@ embroidery	jumps {value} mm shorter	ნახტომები {value} მმ-�
 embroidery	jumps no shorter	ნახტომები არ შემოკლდა
 embroidery	trims {before} → {after}	ჭრები {before} → {after}
 embroidery	The entry and exit points are already the nearest.	შესვლისა და გასვლის წერტილები უკვე უახლოესია.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	ნაქარგობის ხელსაწყო
+	 an entry or exit point to move it  |  	 შესვლის ან გასვლის წერტილზე — მის გადასაადგილებლად  |  
+	 a point to put it back to Auto  |  	 წერტილზე — ავტომატურზე დასაბრუნებლად  |  
+	 an object to show its points	 ობიექტზე — მისი წერტილების საჩვენებლად

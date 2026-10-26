@@ -135,6 +135,8 @@ pub const TOOL_GROUPS: &[&[ToolInfo]] = &[
         t("printTiling", "Print Tiling Tool", None, "tool-print-tiling"),
     ],
     &[t("zoom", "Zoom Tool", Some("Z"), "tool-zoom")],
+    // VectorCraft Stitch: the embroidery tool, its own group at the end, with no default shortcut.
+    &[t("embroidery", "Embroidery Tool", None, "dc-embroidery-tool")],
 ];
 
 pub fn all_tools() -> impl Iterator<Item = &'static ToolInfo> {

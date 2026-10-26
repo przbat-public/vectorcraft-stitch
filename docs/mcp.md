@@ -5092,6 +5092,12 @@ description gives it) is refused, not clamped, and the read commands below echo 
 past its header) and a document with nothing to stitch are errors of the design, not "invalid parameters": changing the
 request's keys won't fix them. The whole feature is described in [embroidery.md](embroidery.md).
 
+The embroidery tool is reached as every tool is: `tool.select {tool: "embroidery"}`, then `pointer_gesture` events in
+document points drag a selected object's entry or exit point (each drag one `embroidery.setEntryExit {…, snap: true}`,
+one undo step), `tool.setOption {key: "part", value: "fill"|"stroke"|null}` chooses the part whose points show.
+Points left to the planner show where a plan already made sews them: plan first (`embroidery.sequence`, say) to drag
+those.
+
 - `embroidery.setup {palette?}` sets the document's thread palette, `"pec"` (Brother's 61 threads, which PES files
   number) or `"jef"` (Janome's 78, which JEF files number), in one undo step; `null` unsets it, and Janome's is used.
   It answers `{settings: {palette}, resolved: {palette: {value, source}}}`: the palette as the document stores it

@@ -183,8 +183,11 @@ the control channel with ids:
   name (`density`…), a design setting (`trimLength`…) and a point are refused, saying what to use.
 - `embroidery.reset {ids?, part?, keys?}` unsets them (by default every value but the entry and
   exit points; the cut after the object stays): the Object tab's Restore from Fabric.
-- `embroidery.setEntryExit {id?, part, entry?, exit?}` sets where one object's part starts and
-  ends, in document points (moved and turned with the object).
+- `embroidery.setEntryExit {id?, part, entry?, exit?, snap?}` sets where one object's part starts
+  and ends, in document points (moved and turned with the object); with `snap`, each point is taken
+  to where the part's stitches can start or end (the nearest point of a fill's outlines, a hole's
+  edge too, or of a closed stroke; the nearer end of an open one), as the embroidery tool places
+  it.
 - `embroidery.nearestConnection {ids?, all?, dryRun?}` (Nearest Connection) sets the entry and exit
   of every part in scope (the objects given, else the selected ones, else every object; `all`:
   every object) for the shortest moves between parts, in the sewing order as it is. Of the points

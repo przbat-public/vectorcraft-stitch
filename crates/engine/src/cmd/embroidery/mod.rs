@@ -32,6 +32,7 @@ mod objects;
 pub(crate) mod options;
 pub mod order;
 pub mod plan;
+mod points;
 mod printed;
 pub mod render;
 pub mod reorder;
@@ -266,9 +267,9 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Entry and Exit",
             [],
             None,
-            "{id?: object id (default: the one object selected; a compound path's member stands for its compound path), part: \"fill\"|\"stroke\", entry?: [x, y] (document points, within the coordinates a document holds)|null, exit?: [x, y]|null} where the needle goes in to sew the object's fill or stroke, and where it comes out: kept with the object, moved and turned with it. The part starts at the entry: exactly there where its stitches can start anywhere (on a fill's outline, half a row spacing inside it, where its edge run runs; anywhere on a closed line or satin ring), else at the nearer end of an open line or satin column (a fill's narrow parts sewn as satin too); the part ends at the exit as near as its stitches can reach it (a running line: an open one whose start is free at its end nearest the exit, one entered at a set point at its other end, a closed one carried on round to the exit in its own holes; a satin column turned round by a pass along its middle under its top stitching, a ring's top started at the exit; a fill at the row end nearest the exit, its rows cut along that row and the far strip sewn first, kept only when it lifts, cuts and shows no more than without the exit; a side the rows run along reached at its nearer corner). null unsets one (the part then starts nearest where the needle is); a point left out stays. Refused for a group, an object that takes no settings and a part it doesn't have. One undo step, none when nothing changes → {id, part, entry: [x, y] or null, exit: [x, y] or null, changedCount: 0 or 1}",
+            "{id?: object id (default: the one object selected; a compound path's member stands for its compound path), part: \"fill\"|\"stroke\", entry?: [x, y] (document points, within the coordinates a document holds)|null, exit?: [x, y]|null, snap?: false (true: each point given is taken to where the part's stitches can start or end: the nearest point of a fill's outlines, a hole's edge too, or of a closed stroke, the nearer end of an open one; the embroidery tool passes it)} where the needle goes in to sew the object's fill or stroke, and where it comes out: kept with the object, moved and turned with it. The part starts at the entry: exactly there where its stitches can start anywhere (on a fill's outline, half a row spacing inside it, where its edge run runs; anywhere on a closed line or satin ring), else at the nearer end of an open line or satin column (a fill's narrow parts sewn as satin too); the part ends at the exit as near as its stitches can reach it (a running line: an open one whose start is free at its end nearest the exit, one entered at a set point at its other end, a closed one carried on round to the exit in its own holes; a satin column turned round by a pass along its middle under its top stitching, a ring's top started at the exit; a fill at the row end nearest the exit, its rows cut along that row and the far strip sewn first, kept only when it lifts, cuts and shows no more than without the exit; a side the rows run along reached at its nearer corner). null unsets one (the part then starts nearest where the needle is); a point left out stays. Refused for a group, an object that takes no settings and a part it doesn't have. One undo step, none when nothing changes → {id, part, entry: [x, y] or null, exit: [x, y] or null, changedCount: 0 or 1}",
             has_doc,
-            objects::set_entry_exit
+            points::set_entry_exit
         ),
         cmd!(
             "embroidery.nearestConnection",

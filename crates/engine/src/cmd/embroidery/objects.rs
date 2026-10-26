@@ -67,7 +67,7 @@ pub(crate) fn cut_after_sewn(n: &Node) -> bool {
 
 /// The one object `id` stands for as the settings commands take it (its compound path, for a
 /// member of one); refused when it takes no settings, or is a group of several.
-fn one_taker(d: &Document, id: NodeId) -> Result<NodeId> {
+pub(super) fn one_taker(d: &Document, id: NodeId) -> Result<NodeId> {
     let given = d.node(id).ok_or(EngineError::NoNode(id))?.id;
     let id = compound_of(d, given);
     let (take, skipped) = takers(d, &[id]);
@@ -81,7 +81,7 @@ fn one_taker(d: &Document, id: NodeId) -> Result<NodeId> {
 }
 
 /// The part `v` names: `fill` or `stroke`.
-fn part_param(v: &Value, cmd: &str) -> Result<PartKind> {
+pub(super) fn part_param(v: &Value, cmd: &str) -> Result<PartKind> {
     v.as_str().and_then(PartKind::from_id).ok_or_else(|| bad(cmd, format!("`part` {v}: fill or stroke")))
 }
 
@@ -343,48 +343,6 @@ pub(super) fn point_param(v: &Value, what: &str, cmd: &str) -> Result<Option<Poi
         return Err(refused());
     }
     Ok(Some(Point::new(canonical(x), canonical(y))))
-}
-
-/// `embroidery.setEntryExit`: where one object's part starts and ends.
-pub(super) fn set_entry_exit(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.setEntryExit";
-    let o = object(p, C)?;
-    only(&o, &["id", "part", "entry", "exit"], C)?;
-    let kind = part_param(o.get("part").unwrap_or(&Value::Null), C)?;
-    let mut points = Vec::new();
-    for (key, name) in [(PartKey::Entry, "entry"), (PartKey::Exit, "exit")] {
-        if let Some(v) = o.get(name) {
-            points.push((key, point_param(v, name, C)?.map(PartValue::Point)));
-        }
-    }
-    if points.is_empty() {
-        return Err(bad(C, "give entry, exit or both: [x, y] in points, or null to unset one"));
-    }
-    let d = &s.doc()?.doc;
-    let id = match o.get("id").filter(|v| !v.is_null()) {
-        Some(v) => NodeId(v.as_u64().ok_or_else(|| bad(C, format!("`id` {v}: an object id")))?),
-        None => match s.doc()?.selection.objects.as_slice() {
-            [one] => *one,
-            _ => return Err(bad(C, "select one object, or give its id")),
-        },
-    };
-    let id = one_taker(d, id)?;
-    if !d.node(id).is_some_and(|n| has_part(n, kind)) {
-        return Err(EngineError::Other(format!("object {} has no `{}`", id.0, kind.id())));
-    }
-    let changed = edit_counted(s, ENTRY_EXIT, |d| {
-        edit_each(d, &[id], |e| {
-            e.edit_part(kind, |part| {
-                for (key, value) in &points {
-                    part.set(*key, value.clone());
-                }
-            })
-        })
-    })?;
-    let d = &s.doc()?.doc;
-    let stored =
-        |key: PartKey| d.node(id).and_then(|n| n.extras().embroidery.as_deref()?.part(kind)?.get(key)).as_ref().map_or(Value::Null, value_json);
-    Ok(json!({"id": id.0, "part": kind.id(), "entry": stored(PartKey::Entry), "exit": stored(PartKey::Exit), "changedCount": changed}))
 }
 
 /// Value `v` of key `key` as `embroidery.set` (or, for a point, `embroidery.setEntryExit`) would

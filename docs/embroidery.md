@@ -1939,6 +1939,20 @@ over): the 95th percentile of ten steps is their slowest, and the worst design m
 71 ms from run to run. The canvas drag and the edit are where they were before the Object tab
 (7.8 and 72 ms above).
 
+Sewing toward entry and exit points (2026-10-26, release, the same machine, load about 25 while
+other work built, twice; `perf --embroidery`):
+
+| Row | Measured | Budget |
+|---|---:|---:|
+| The 20 rings in one fill toward an exit on their outermost, cold | 475–507 ms | 1,200 ms |
+| The same 20 rings with no exit, beside it | 467–469 ms | 600 ms |
+| An exit moved a nudge, 1,000 paths, planned again | 2.7–2.8 ms | 7 ms |
+| An entry moved a nudge, 1,000 paths, planned again | 2.6 ms | 7 ms |
+
+A fill with narrow parts toward an exit plans its parts twice (with and without the exit) and
+keeps the better: about 8 % more than without on the rings. A point moved plans again only its own
+unit.
+
 ### Drawing stitches
 
 One stitch scene is built from the plan and drawn by the same renderer in the app and headless, in

@@ -15,6 +15,9 @@
 //! - the embroidery export, which plans its document afresh rather than from what was kept;
 //! - the 50,000-path document, which needs more stitches than a design may have: how long it takes
 //!   to be refused, the first time and again;
+//! - entry and exit points: the 20 rings sewn toward an exit on their outermost ring, and a fill's
+//!   exit and entry on the 1,000-path document moved a nudge at a time, the design planned again
+//!   after each move;
 //! - the Embroidery panel's Object tab's work on a new snapshot (each frame of a drag or a scrub):
 //!   its read of 1,000 selected objects' settings, and its footer's fabric and thread on the
 //!   22,000-path document;
@@ -70,7 +73,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 45] = [
+pub const ROWS: [&str; 48] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -116,6 +119,9 @@ pub const ROWS: [&str; 45] = [
     "settings: info of 1,000 objects",
     "object tab: re-read after a nudge, 1,000",
     "object tab: footer after a nudge, 22,000",
+    "embroidery: 20 rings toward an exit, cold",
+    "points: exit moved, 1,000 paths",
+    "points: entry moved, 1,000 paths",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
@@ -130,10 +136,60 @@ pub const ROWS: [&str; 45] = [
 /// re-read of 1,000 selected objects within a third of a frame (6 ms of 16.7; it measured 2.7 ms on
 /// 2026-10-25, the same machine, load about 2.5, twice), its footer within 1 ms whatever the
 /// document's size (it reads two of the document's fields, under 0.01 ms; 1 ms is the least the
-/// report's whole-millisecond budget column shows).
-const BUDGETS: [f64; 45] = [
-    400.0, 100.0, 100.0, 100.0, 100.0, 50.0, 50.0, 300.0, 600.0, 300.0, 300.0, 600.0, 400.0, 1000.0, 100.0, 100.0, 100.0, 400.0, 4000.0, 50.0, 20.0,
-    13.0, 7.0, 32.0, 95.0, 20.0, 30.0, 7.0, 5.0, 2.5, 13.0, 60.0, 55.0, 75.0, 280.0, 20.0, 20.0, 5.0, 6.0, 25.0, 6.0, 400.0, 25.0, 6.0, 1.0,
+/// report's whole-millisecond budget column shows). The points rows are about 2.5 times what they
+/// measured on 2026-10-26 (release, the same machine, load about 25, twice): the rings toward an
+/// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
+/// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
+/// it plans again its own unit).
+const BUDGETS: [f64; 48] = [
+    400.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    50.0,
+    50.0,
+    300.0,
+    600.0,
+    300.0,
+    300.0,
+    600.0,
+    400.0,
+    1000.0,
+    100.0,
+    100.0,
+    100.0,
+    400.0,
+    4000.0,
+    50.0,
+    20.0,
+    13.0,
+    7.0,
+    32.0,
+    95.0,
+    20.0,
+    30.0,
+    7.0,
+    5.0,
+    2.5,
+    13.0,
+    60.0,
+    55.0,
+    75.0,
+    280.0,
+    20.0,
+    20.0,
+    5.0,
+    6.0,
+    25.0,
+    6.0,
+    400.0,
+    25.0,
+    6.0,
+    1.0,
+    RINGS_TOWARD_EXIT_BUDGET,
+    POINT_MOVED_BUDGET,
+    POINT_MOVED_BUDGET,
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -296,6 +352,8 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.push(drag_half(&largest)?);
     ms.extend(settings(&doc)?);
     ms.extend(object_tab(&doc, &largest)?);
+    ms.push(cold(&rings_toward_an_exit()?)?);
+    ms.extend(points_moved(&doc)?);
     // A row with nothing to measure (no corpus) is left out.
     Ok(ROWS.iter().zip(ms).zip(BUDGETS).filter(|((_, ms), _)| !ms.is_nan()).map(|((name, ms), budget)| (*name, ms, budget)).collect())
 }
@@ -392,6 +450,11 @@ fn reorder(doc: &Document) -> Result<f64, String> {
     Ok(middle(samples))
 }
 
+/// The points rows' budgets, milliseconds (estimates, [`BUDGETS`]): the rings toward an exit, and a
+/// point moved.
+const RINGS_TOWARD_EXIT_BUDGET: f64 = 1200.0;
+const POINT_MOVED_BUDGET: f64 = 7.0;
+
 /// The fill angle the settings row gives the object sewn first, degrees, and the step between
 /// runs: each run an angle not planned before, so that its units are planned again, not found
 /// kept.
@@ -402,6 +465,52 @@ const ANGLE_STEP: f64 = 1.0;
 /// runs: each run a fabric not planned before.
 const PULL_FROM: f64 = 0.21;
 const PULL_STEP: f64 = 0.01;
+
+/// Where the rings row's exit lies, millimetres: on the outer edge of the 20 rings' outermost, east
+/// of their centre (150 mm, 150 mm), 83 mm out (5 mm, then 19 rings and gaps of 4 mm, then its 2 mm).
+const RINGS_EXIT_MM: (f64, f64) = (233.0, 150.0);
+
+/// The 20 rings ([`rings`]) with an exit point on their outermost ring ([`RINGS_EXIT_MM`]).
+fn rings_toward_an_exit() -> Result<Document, String> {
+    let mut s = fresh(&one_fill(rings(20), FillRule::EvenOdd));
+    let id = s.doc().map_err(err)?.doc.layers.first().and_then(|l| l.children()).and_then(|c| c.first()).map(|n| n.id.0);
+    let id = id.ok_or("embroidery: the rings document holds no fill")?;
+    let exit = [RINGS_EXIT_MM.0 * PT_PER_MM, RINGS_EXIT_MM.1 * PT_PER_MM];
+    s.execute("embroidery.setEntryExit", &json!({"id": id, "part": "fill", "exit": exit})).map_err(err)?;
+    Ok((*s.doc().map_err(err)?.doc).clone())
+}
+
+/// The points rows on `doc`, milliseconds, each the median of [`DRAW_RUNS`]: the exit point of the
+/// fill sewn first, then its entry, set where its stitches start and moved a nudge ([`NUDGE_MM`])
+/// at a time, the design planned again after each move (that object's unit planned afresh, the
+/// rest kept).
+fn points_moved(doc: &Document) -> Result<[f64; 2], String> {
+    let opts = vectorcraft_engine::EmbroideryOptions::default();
+    let mut s = fresh(doc);
+    let order = s.execute("embroidery.sequence", &json!({})).map_err(err)?;
+    let units = order["blocks"].as_array().into_iter().flatten().filter_map(|b| b["units"].as_array()).flatten();
+    let first =
+        units.filter(|u| u["part"] == json!("fill")).find_map(|u| Some((u["id"].as_u64()?, u["entry"][0].as_f64()?, u["entry"][1].as_f64()?)));
+    let Some((id, x, y)) = first else { return Err("embroidery: the document has no fill to set points on".into()) };
+    s.embroidery_plan(&opts).map_err(err)?;
+    let mut moved = |key: &str| -> Result<f64, String> {
+        let mut samples = Vec::with_capacity(DRAW_RUNS);
+        for k in 0..=DRAW_RUNS {
+            let mut params = json!({"id": id, "part": "fill"});
+            // Read positions are millimetres; the command takes document points.
+            params[key] = json!([(x + NUDGE_MM * k as f64) * PT_PER_MM, y * PT_PER_MM]);
+            let t = Instant::now();
+            s.execute("embroidery.setEntryExit", &params).map_err(err)?;
+            s.embroidery_plan(&opts).map_err(err)?;
+            // The first sets the point; the rest move it.
+            if k > 0 {
+                samples.push(t.elapsed().as_secs_f64() * 1000.0);
+            }
+        }
+        Ok(middle(samples))
+    };
+    Ok([moved("exit")?, moved("entry")?])
+}
 
 /// The settings rows on `doc`, milliseconds, each the median of [`DRAW_RUNS`]: one object's fill
 /// angle set and the design planned again (its other units kept); the fabric's tatami values

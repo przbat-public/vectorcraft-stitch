@@ -15,9 +15,11 @@
 //! - **Checked by planning.** The points are written on a copy, the copy planned (the units kept from
 //!   earlier plans), and a stretch between two cuts that saves less than [`MIN_JOIN_GAIN`] as
 //!   planned, or comes out longer, gets its old points back (a part that had none, where it started
-//!   and ended). The search then runs again on its own result until a round changes nothing (at most
-//!   [`MAX_ROUNDS`]), so a second run changes nothing. One undo step, none when nothing changes;
-//!   `dryRun` answers without writing.
+//!   and ended). The plan is checked again after that: a round whose plan comes out costlier than
+//!   before in all, or sews its units in other blocks (the sewing order changed, which this command
+//!   never does), changes nothing. The search then runs again on its own result until a round
+//!   changes nothing (at most [`MAX_ROUNDS`]), so a second run changes nothing. One undo step, none
+//!   when nothing changes; `dryRun` answers without writing.
 //! - **Planning little.** A round writes points only on the parts the search moves, and on each part
 //!   right after one (else it would follow the moved end); the others stay as they are, so their
 //!   units are the ones kept, and get their own points (where they start and end) once the rounds
@@ -357,21 +359,19 @@ fn round(
     let plan_of =
         |d: &Document| -> Result<Walked> { super::digitize::walked(&d.without_edit_modes(), opts, Some(units), false).map_err(PlanError::error) };
     let mut now = measured(&plan_of(&d)?.plan, trim);
-    let same_shape = was.len() == now.len() && was.iter().zip(&now).all(|(a, b)| a.0 == b.0);
+    // Units sewn in other blocks: the sewing order changed, which this command never does (the
+    // project owner's choice, 2026-10-25). The round changes nothing.
+    let unchanged = |parts, restored| Round { doc: doc.clone(), parts, before: was.clone(), after: was.clone(), restored };
+    if !(was.len() == now.len() && was.iter().zip(&now).all(|(a, b)| a.0 == b.0)) {
+        return Ok(unchanged(parts, 0));
+    }
     let saves = |a: &Moves, b: &Moves| a.cost - b.cost >= MIN_JOIN_GAIN;
-    let longer = |a: &Moves, b: &Moves| b.cost > a.cost + 1e-9;
-    let (back, all_back, restored): (HashSet<(Origin, usize)>, bool, usize) = if same_shape {
-        let keys = was.iter().zip(&now).filter(|(a, b)| !saves(&a.1, &b.1)).flat_map(|(a, _)| a.0.iter().copied()).collect();
-        (keys, false, was.iter().zip(&now).filter(|(a, b)| longer(&a.1, &b.1)).count())
-    } else if !saves(&total(&was), &total(&now)) {
-        (HashSet::new(), true, if longer(&total(&was), &total(&now)) { was.len() } else { 0 })
-    } else {
-        (HashSet::new(), false, 0)
-    };
-    if all_back || !back.is_empty() {
+    let back: HashSet<(Origin, usize)> = was.iter().zip(&now).filter(|(a, b)| !saves(&a.1, &b.1)).flat_map(|(a, _)| a.0.iter().copied()).collect();
+    let restored = was.iter().zip(&now).filter(|(a, b)| longer(&a.1, &b.1)).count();
+    if !back.is_empty() {
         for (i, id, kind, _) in &parts {
             let key = walked.plan.units.get(*i).map(|u| (u.origin, u.occurrence));
-            if written.contains(i) && (all_back || key.is_some_and(|k| back.contains(&k))) {
+            if written.contains(i) && key.is_some_and(|k| back.contains(&k)) {
                 // The points it held; one it didn't hold is set where it started or ended before:
                 // left to Auto, it would start nearest wherever the needle now is (across a colour
                 // change, the end of the object drawn before it, which may have moved).
@@ -384,8 +384,29 @@ fn round(
         }
         now = measured(&plan_of(&d)?.plan, trim);
     }
+    // Checked again after the restore: a round whose plan comes out costlier than before, in all,
+    // or with its units in other blocks, changes nothing.
+    if worse(&was, &now) {
+        return Ok(unchanged(parts, restored));
+    }
     Ok(Round { doc: d, parts, before: was, after: now, restored })
 }
+
+/// Whether moves `now` are worse than `was`: their units sewn in other blocks, or costlier in all
+/// (past float noise).
+fn worse(was: &[Stretch], now: &[Stretch]) -> bool {
+    let same_shape = was.len() == now.len() && was.iter().zip(now).all(|(a, b)| a.0 == b.0);
+    !same_shape || longer(&total(was), &total(now))
+}
+
+/// Whether moves `b` cost more than `a` (past float noise).
+fn longer(a: &Moves, b: &Moves) -> bool {
+    b.cost > a.cost + COST_NOISE
+}
+
+/// How much more a plan's moves may cost than another's and still cost the same: float noise,
+/// summing the same moves in another order.
+const COST_NOISE: f64 = 1e-9;
 
 /// `embroidery.nearestConnection`.
 pub(super) fn nearest_connection(s: &mut Session, p: &Value) -> Result<Value> {
@@ -497,4 +518,23 @@ pub(super) fn nearest_connection(s: &mut Session, p: &Value) -> Result<Value> {
         "saved": {"jumps": b.jumps as i64 - a.jumps as i64, "trims": b.trims as i64 - a.trims as i64, "length": round_mm(b.length - a.length)},
         "parts": listed,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A round is undone when its plan is worse after its restore: costlier in all (past float
+    /// noise), or with its units in other stretches (the sewing order changed, which the command
+    /// never does); a plan that costs the same or less, in the same stretches, stands.
+    #[test]
+    fn a_worse_or_reordered_round_is_undone() {
+        let stretch = |n: usize, cost: f64| -> Stretch { (Vec::new(), Moves { connections: n, cost, ..Moves::default() }) };
+        let was = vec![stretch(1, 10.0), stretch(2, 5.0)];
+        assert!(!worse(&was, &was), "the same");
+        assert!(!worse(&was, &[stretch(1, 9.0), stretch(2, 5.0)]), "cheaper");
+        assert!(!worse(&was, &[stretch(1, 10.0 + COST_NOISE / 2.0), stretch(2, 5.0)]), "noise");
+        assert!(worse(&was, &[stretch(1, 10.0), stretch(2, 5.5)]), "costlier");
+        assert!(worse(&was, &[stretch(3, 14.0)]), "its units in other stretches");
+    }
 }

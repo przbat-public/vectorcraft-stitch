@@ -93,6 +93,34 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
 /// is planned from, and kept there when it doesn't ([`UnitCache`]); without, every unit is planned
 /// afresh.
 pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>) -> Result<DesignPlan, PlanError> {
+    walked(doc, opts, cache, false).map(|w| w.plan)
+}
+
+/// What the walk records of each unit it plans when asked ([`walked`]), for
+/// `embroidery.nearestConnection`: the unit's key (as [`DesignPlan::units`] holds it), where its
+/// shape can start and end ([`plan::ends`], millimetres; `None` where the planner's rules there
+/// don't say), and why its part can't take points of its own, if it can't.
+#[derive(Clone, Debug)]
+pub(crate) struct UnitEnds {
+    pub(crate) origin: Origin,
+    pub(crate) occurrence: usize,
+    pub(crate) ends: Option<plan::Ends>,
+    /// `pieces` (a piece of an expanded appearance, or a fill or stroke after an object's first),
+    /// `symbolInstance` (a symbol's art), `clipped` (a stroke a clip group cuts), else `None`.
+    pub(crate) fixed: Option<&'static str>,
+}
+
+/// A walk's plan, what it recorded of each unit ([`UnitEnds`], empty unless asked), and the
+/// design's trim length (millimetres: a move between units longer than it is cut before).
+pub(crate) struct Walked {
+    pub(crate) plan: DesignPlan,
+    pub(crate) ends: Vec<UnitEnds>,
+    pub(crate) trim: f64,
+}
+
+/// [`digitize`], recording each unit's ends ([`UnitEnds`]) as it plans it when `collect`: the
+/// plan is the same either way.
+pub(crate) fn walked(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>, collect: bool) -> Result<Walked, PlanError> {
     // The document's embroidery settings, read once a plan.
     let doc_layer = DocLayer::of(doc);
     let (design, trim_note) = DesignSettings::new(opts, &doc_layer);
@@ -146,6 +174,7 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
         progress,
         occurrences: HashMap::new(),
         found: Found::default(),
+        collected: collect.then(Vec::new),
     };
     d.run();
     notes.extend(d.found.notes().map(String::from));
@@ -158,7 +187,7 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
             plan.warned = d.warned;
             plan.notes = notes;
             plan.start = doc.embroidery.as_ref().and_then(|e| e.start).map(|p| Point::new(pt_to_mm(p.x), pt_to_mm(p.y)));
-            Ok(plan)
+            Ok(Walked { plan, ends: d.collected.unwrap_or_default(), trim: d.design.connect.trim })
         }
     }
 }
@@ -235,6 +264,8 @@ struct Digitizer<'a> {
     occurrences: HashMap<(NodeId, Part), usize>,
     /// What reading the objects' settings found that the plan says.
     found: Found,
+    /// Each unit's ends, recorded when asked ([`walked`]).
+    collected: Option<Vec<UnitEnds>>,
 }
 
 /// How far a plan has got: the units come to, of about how many ([`units_under`]).
@@ -791,6 +822,9 @@ impl<'a> Digitizer<'a> {
             exit: settings.exit(),
             clip: if clip_stitches { self.clip.as_ref().map(|c| &c.region) } else { None },
         };
+        // Whether a clip group cuts its stitches, for what the walk records of the unit when asked:
+        // taken before the request is let go.
+        let clipped = request.clip.is_some();
         let planned = match self.planned(&request) {
             Ok(planned) => planned,
             Err(e) => {
@@ -814,6 +848,22 @@ impl<'a> Digitizer<'a> {
         let mut block = Block::new(Thread::rgb(color));
         block.stitches = stitches;
         let occurrence = self.occurrence(&unit);
+        let record = self.collected.is_some().then(|| {
+            // One pair of points a kind of part: a piece, or a part after its object's first of
+            // its kind, can't have its own; nor a symbol's art (one point for every instance), nor a
+            // stroke a clip group cuts (the cut decides where it starts).
+            let fixed = match unit.instance {
+                Some(i) if self.expanded.contains(&i) => Some("pieces"),
+                Some(_) => Some("symbolInstance"),
+                None if !matches!(unit.part, Part::Fill(0) | Part::Stroke(0)) => Some("pieces"),
+                None if clipped => Some("clipped"),
+                None => None,
+            };
+            UnitEnds { origin: unit, occurrence, ends: plan::ends(bp, &params, columns.is_some()), fixed }
+        });
+        if let (Some(record), Some(collected)) = (record, self.collected.as_mut()) {
+            collected.push(record);
+        }
         let asked = Asked { entry: settings.entry(), exit: settings.exit() };
         let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, why, asked };
         self.seq.add(Planned { facts, block, literal: None });

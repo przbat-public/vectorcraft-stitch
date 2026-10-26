@@ -185,6 +185,22 @@ the control channel with ids:
   exit points; the cut after the object stays): the Object tab's Restore from Fabric.
 - `embroidery.setEntryExit {id?, part, entry?, exit?}` sets where one object's part starts and
   ends, in document points (moved and turned with the object).
+- `embroidery.nearestConnection {ids?, all?, dryRun?}` (Nearest Connection) sets the entry and exit
+  of every part in scope (the objects given, else the selected ones, else every object; `all`:
+  every object) for the shortest moves between parts, in the sewing order as it is. Of the points
+  each part can start and end at by the planner's own rules (`plan::ends`: an open line at either
+  end and on to the other, a satin column also back to the same end along its middle, a closed line
+  or ring anywhere round, a fill anywhere on its outline and out at a row end), a dynamic programme
+  (`plan::joins`) picks the ones whose moves cost the least by the planner's weights: a millimetre
+  of move, 20 for a jump, 50 more for a cut; across a colour change or a Trim After only the frame's
+  travel counts, lightly. A part outside the scope with no points set starts nearest the end before
+  it, as it is sewn. The points are written on a copy and planned (the units kept); a stretch
+  between two cuts that saves less than 0.1 mm as planned (`MIN_JOIN_GAIN`), or comes out longer,
+  keeps its old points, a part that had none set where it started and ended. The search then runs
+  again on its own result until a round changes nothing (at most three, `MAX_ROUNDS`), so a second
+  Nearest Connection changes nothing. Points set in scope are replaced. One undo step "Nearest
+  Connection", none when nothing changes; `dryRun` answers without writing. Its reply says what it
+  saved (`before`, `after`, `saved`: moves, jumps, cuts, length) and lists the points written.
 - `embroidery.copyFrom {source, ids?, part?, keys?}` gives the objects the source's values, set or
   unset, as `embroidery.set` would take them (a newer version's value, or one out of range, is
   passed over and listed, `passedOver`), the source read as it is then.
@@ -1058,7 +1074,13 @@ the object a person selects (`id`).
   region next, without comparing orders: with 30 mm teeth that is 100 jumps (a comb of five
   teeth is sewn without one).
 - Only the order of a fill's regions is searched; the order of objects follows the stacking, and
-  each object's start is the nearest one, not chosen with the next object in view.
+  each object's start is the nearest one, not chosen with the next object in view, until Nearest
+  Connection (`embroidery.nearestConnection`) sets the points: then every part it joins starts and
+  ends where the moves between parts cost the least, and stays there (it is not kept up as objects
+  move; run it again). It chooses among points spread along each part (32 a closed line or fill
+  outline, 16 row ends a fill), not every point; a line of several subpaths, a fill with narrow
+  parts sewn as satin, a symbol's art, an expanded appearance's pieces and a stroke a clip group
+  cuts are joined to as they are sewn.
 - The default spacing and stitch length follow professional software (Wilcom), which is more
   open than Ink/Stitch's (rows 0.25 mm apart, 3 mm stitches): VectorCraft sews about 41–59 % as
   many stitches for the same artwork (measured below). The fabric presets (Document settings,

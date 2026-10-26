@@ -444,6 +444,14 @@ impl PlanService {
         plan
     }
 
+    /// `doc`'s plan with `opts`, walked now with the units this service keeps (none remembered:
+    /// `doc` may be a copy no snapshot holds), with each unit's ends when `collect`
+    /// ([`super::digitize::walked`]): `embroidery.nearestConnection`'s plans before and after it
+    /// sets its points.
+    pub(crate) fn walk_kept(&self, doc: &Document, opts: &Options, collect: bool) -> Result<super::digitize::Walked, PlanError> {
+        super::digitize::walked(doc, opts, Some(&self.units), collect)
+    }
+
     /// Keep `memo` as the most recent, dropping the plans of snapshots gone (no plan of theirs can
     /// be asked for again), the service's own least recently used beyond [`MAX_MEMOS`], and the
     /// least recently used of any document while they hold more than the budget

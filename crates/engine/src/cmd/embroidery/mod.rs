@@ -27,6 +27,7 @@ pub(crate) mod digitize;
 mod fabrics;
 pub mod info;
 mod measure;
+mod nearest;
 mod objects;
 pub(crate) mod options;
 pub mod order;
@@ -56,6 +57,8 @@ mod tests_expanded;
 mod tests_info;
 #[cfg(test)]
 mod tests_matrix;
+#[cfg(test)]
+mod tests_nearest;
 #[cfg(test)]
 mod tests_object;
 #[cfg(test)]
@@ -266,6 +269,15 @@ pub fn specs() -> Vec<CommandSpec> {
             "{id?: object id (default: the one object selected; a compound path's member stands for its compound path), part: \"fill\"|\"stroke\", entry?: [x, y] (document points, within the coordinates a document holds)|null, exit?: [x, y]|null} where the needle goes in to sew the object's fill or stroke, and where it comes out: kept with the object, moved and turned with it. The part starts at the entry: exactly there where its stitches can start anywhere (on a fill's outline, half a row spacing inside it, where its edge run runs; anywhere on a closed line or satin ring), else at the nearer end of an open line or satin column (a fill's narrow parts sewn as satin too); the part ends at the exit as near as its stitches can reach it (a running line: an open one whose start is free at its end nearest the exit, one entered at a set point at its other end, a closed one carried on round to the exit in its own holes; a satin column turned round by a pass along its middle under its top stitching, a ring's top started at the exit; a fill at the row end nearest the exit, its rows cut along that row and the far strip sewn first, kept only when it lifts, cuts and shows no more than without the exit; a side the rows run along reached at its nearer corner). null unsets one (the part then starts nearest where the needle is); a point left out stays. Refused for a group, an object that takes no settings and a part it doesn't have. One undo step, none when nothing changes → {id, part, entry: [x, y] or null, exit: [x, y] or null, changedCount: 0 or 1}",
             has_doc,
             objects::set_entry_exit
+        ),
+        cmd!(
+            "embroidery.nearestConnection",
+            "Nearest Connection",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection, else every object; groups and compound paths as embroidery.set takes them; at most 100,000), all?: false (true: every object, whatever is selected; not with ids), dryRun?: false (true: plan and answer, change nothing), …the embroidery options (default: none, as the stitch preview plans)} sets the entry and exit points of the parts in scope for the shortest moves between parts, in the sewing order as it is: of the points each part can start and end at by the planner's rules, the ones whose moves cost the least by the planner's weights (a jump 20 mm of move, a cut 50 more; across a colour change or a Trim After only the frame's travel, lightly); a part that can't take points of its own (a symbol's art, a piece of an expanded appearance, a stroke a clip group cuts, a line of several subpaths, a fill with narrow parts sewn as satin) is joined to as it is sewn, and a part outside the scope with no points set as it starts nearest the end before it. Points already set in scope are replaced. The points are written on a copy and planned; a stretch between two cuts that saves less than 0.1 mm as planned, or comes out longer, keeps its old points (a part that had none set where it started and ended), and the search runs again on its own result until a round changes nothing (at most 3 rounds), so a second run changes nothing. One undo step \"Nearest Connection\", none when nothing changes → {applied, changedCount, unchangedCount, skippedCount, skipped: [{id, reason: a settings command's reason, or notSewn|literal|pieces|symbolInstance|clipped|unmodelled}] (at most 1000), restoredCount: stretches that came out longer and were given their old points back, before and after: {connections: moves between parts inside blocks, jumps, trims, length, longest (mm)}, saved: {jumps, trims, length}, parts: [{id, part, entry: [x, y], exit: [x, y]}] (document points, as embroidery.info gives them; at most 1000)}",
+            has_doc,
+            nearest::nearest_connection
         ),
         cmd!(
             "embroidery.copyFrom",

@@ -5132,7 +5132,11 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   keys?}` answer `{part, keys, changedCount, unchangedCount, skippedCount, skipped}` (`copyFrom` also `source`, and
   `passedOver`: the source's values `embroidery.set` would refuse, a newer version's or out of range, as `fill.stitch`,
   which the objects keep their own of);
-  `embroidery.setEntryExit {id?, part, entry?, exit?}` answers `{id, part, entry, exit, changedCount}`. They take the
+  `embroidery.setEntryExit {id?, part, entry?, exit?}` answers `{id, part, entry, exit, changedCount}`;
+  `embroidery.nearestConnection {ids?, all?, dryRun?, …embroidery options}` answers `{applied, changedCount,
+  unchangedCount, skippedCount, skipped: [{id, reason}], restoredCount, before, after: {connections, jumps, trims,
+  length, longest}, saved: {jumps, trims, length}, parts: [{id, part, entry, exit}]}` (lengths in millimetres, the
+  points in document points; `reason` also `notSewn`, `pieces`, `symbolInstance`, `clipped` or `unmodelled`). They take the
   vocabulary's names only: the session refuses any other key before the command runs, and run in-process the command
   names the one to use (`density` → `spacing`). `reason` is `literal`, `guide`, `type`, `image`, `symbolInstance`,
   `live`, `placed`, `intertwine` or `noPart`; a client must accept others later.

@@ -86,7 +86,7 @@ fn the_read_commands_replies_keep_their_shape() {
 
 /// The settings commands' replies on objects, pinned as the read commands' are, after these calls
 /// on [`document`]'s objects, in this order.
-const SETTINGS_SHAPES: [(&str, &str); 8] = [
+const SETTINGS_SHAPES: [(&str, &str); 9] = [
     (
         "embroidery.fabrics",
         "{caveat: string, default: string, fabrics: [{estimates: [], id: string, label: string, sources: [{family: string, how: null, key: string, kind: string, name: string, url: string} | {family: string, how: string, key: string, kind: string, name: string, url: string}], values: {needlePoint: string, satin: {pull: null, spacingPercent: null, underlay: null}, stabilizer: string, tatami: {length: null, pull: null, spacing: null, underlay: null}, thickness: null, topping: string}} | {estimates: [], id: string, label: string, sources: [{family: string, how: string, key: string, kind: string, name: string, url: string}], values: {needlePoint: string, satin: {pull: null, spacingPercent: null, underlay: null}, stabilizer: string, tatami: {length: null, pull: null, spacing: null, underlay: null}, thickness: float, topping: string}} | {estimates: [string], id: string, label: string, sources: [{family: null, how: string, key: string, kind: string, name: null, url: null} | {family: string, how: null, key: string, kind: string, name: string, url: string} | {family: string, how: string, key: string, kind: string, name: string, url: string}], values: {needlePoint: string, satin: {pull: float, spacingPercent: float, underlay: string}, stabilizer: string, tatami: {length: float, pull: float, spacing: float, underlay: string}, thickness: float, topping: string}} | {estimates: [string], id: string, label: string, sources: [{family: null, how: string, key: string, kind: string, name: null, url: null} | {family: string, how: null, key: string, kind: string, name: string, url: string} | {family: string, how: string, key: string, kind: string, name: string, url: string}], values: {needlePoint: string, satin: {pull: float, spacingPercent: float, underlay: string}, stabilizer: string, tatami: {length: float, pull: float, spacing: float, underlay: string}, thickness: null, topping: string}}]}",
@@ -106,6 +106,10 @@ const SETTINGS_SHAPES: [(&str, &str); 8] = [
     ),
     ("embroidery.setEntryExit", "{changedCount: int, entry: [float], exit: null, id: int, part: string}"),
     (
+        "embroidery.nearestConnection",
+        "{after: {connections: int, jumps: int, length: float, longest: float, trims: int}, applied: bool, before: {connections: int, jumps: int, length: float, longest: float, trims: int}, changedCount: int, parts: [{entry: [float], exit: [float], id: int, part: string}], restoredCount: int, saved: {jumps: int, length: float, trims: int}, skipped: [], skippedCount: int, unchangedCount: int}",
+    ),
+    (
         "embroidery.copyFrom",
         "{changedCount: int, keys: [string], part: null, passedOver: [], skipped: [], skippedCount: int, source: int, unchangedCount: int}",
     ),
@@ -121,7 +125,7 @@ fn the_settings_commands_replies_keep_their_shape() {
         "embroidery.setEntryExit" => json!({"id": ids[0], "part": "fill", "entry": [20, 20]}),
         "embroidery.copyFrom" => json!({"source": ids[0], "ids": ids}),
         "embroidery.info" => json!({"ids": ids, "plan": true}),
-        "embroidery.fabrics" | "embroidery.settings" => json!({}),
+        "embroidery.fabrics" | "embroidery.settings" | "embroidery.nearestConnection" => json!({}),
         "embroidery.applyFabric" => json!({"ids": ids}),
         _ => json!({"ids": ids, "part": "fill"}),
     };

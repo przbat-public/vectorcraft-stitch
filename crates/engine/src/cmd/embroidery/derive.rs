@@ -214,8 +214,10 @@ pub(crate) fn expand_art(d: &mut Document, n: &mut Node, stroke_art: StrokeArt) 
 /// What Expand Appearance made of `n` through its outlines (a symbol instance with an effect, type,
 /// a live object, a path whose Transform effect copies it): `result` stands for `n` and takes the
 /// cut after it (and what a newer version kept), so that the thread is cut once, after all of it.
-/// A path's copies each held its settings, the cut too: it goes from them to `result`. A symbol's
-/// art keeps the settings it has in the symbol.
+/// A path's copies each held its settings, the cut too: it goes from them to `result`; and each held
+/// its points moved with it, so that every copy would start and end at its own: they go back to
+/// where the path holds them, kept only on the piece of any copy nearest each ([`copies_points`]).
+/// A symbol's art keeps the settings it has in the symbol.
 pub(crate) fn outlined(n: &Node, result: &mut Node) {
     fn uncut(n: &mut Node) {
         if let Some(e) = n.extras().embroidery.as_deref().filter(|e| e.trim_after) {
@@ -230,6 +232,7 @@ pub(crate) fn outlined(n: &Node, result: &mut Node) {
     let Some(e) = n.extras().embroidery.as_deref() else { return };
     if matches!(n.kind, NodeKind::Path { .. } | NodeKind::Compound { .. }) {
         uncut(result);
+        copies_points(e, result);
     }
     let Some(stand_in) = whole(e) else { return };
     let mut own = result.extras().embroidery.as_deref().cloned().unwrap_or_default();
@@ -322,6 +325,40 @@ impl Expanding {
             own.extra = e.extra.clone();
             result.extras_mut().embroidery = (!own.is_empty()).then(|| Box::new(own));
         }
+    }
+}
+
+/// The pieces of a path's copies in `result` (each sewn with the settings of the part it came from,
+/// [`Expanding`], its points moved with its copy), the points of each of `e`'s parts back where the
+/// path holds them, kept only on the piece nearest each ([`points_on_nearest`]). A piece is taken
+/// for a part when its settings are the part's but for its points and its angle (which turn with
+/// a copy); a piece that could be either part's (the fill and the stroke set alike) keeps its own.
+fn copies_points(e: &Embroidery, result: &mut Node) {
+    let held = |p: &PartSettings| p.points.as_ref().is_some_and(|q| q.entry.is_some() || q.exit.is_some());
+    let parts: Vec<&PartSettings> = [PartKind::Fill, PartKind::Stroke].into_iter().filter_map(|k| e.part(k)).filter(|p| held(p)).collect();
+    let alike = |a: &PartSettings, b: &PartSettings| {
+        PartSettings { points: None, angle: None, ..a.clone() } == PartSettings { points: None, angle: None, ..b.clone() }
+    };
+    for source in &parts {
+        let mut pieces: Vec<&mut Node> = Vec::new();
+        leaves(result, &mut pieces);
+        let mut of_it: Vec<&mut Node> = pieces
+            .into_iter()
+            .filter(|n| {
+                n.extras().embroidery.as_deref().and_then(|e| e.part(PartKind::Fill)).is_some_and(|f| held(f) && alike(f, source))
+                    && parts
+                        .iter()
+                        .filter(|p| n.extras().embroidery.as_deref().and_then(|e| e.part(PartKind::Fill)).is_some_and(|f| alike(f, p)))
+                        .count()
+                        == 1
+            })
+            .collect();
+        for piece in of_it.iter_mut() {
+            let Some(mut own) = piece.extras().embroidery.as_deref().cloned() else { continue };
+            own.edit_part(PartKind::Fill, |p| p.points = source.points.clone());
+            piece.extras_mut().embroidery = Some(Box::new(own));
+        }
+        points_on_nearest(&mut of_it, PartKind::Fill);
     }
 }
 

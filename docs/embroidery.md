@@ -1700,7 +1700,9 @@ objects join) is resolved once a plan (`DesignSettings`).
   (`derive::points_on_nearest`): pieces cut apart keep a point on the piece it lies by; pieces
   that lie on one another (an appearance of several fills expanded, as the walk sews it too) give
   the entry to the first and the exit to the last, so a part sewn as several units starts at its
-  entry and ends at its exit once. A new object gets the bounding box upstream gives it: the pieces of one object expanded or
+  entry and ends at its exit once. A Transform effect's copies (expanded, or as the walk sews
+  them) hold the points moved with each copy: they go back where the object holds them, on the
+  piece of any copy nearest each. A new object gets the bounding box upstream gives it: the pieces of one object expanded or
   outlined take its box's angle, so their unset rows don't move, but an object Pathfinder, Offset
   Path or Split Into Grid makes is upright, so its unset rows follow 135° (set an angle on the
   source to keep them), a consequence of turning unset rows with the box.

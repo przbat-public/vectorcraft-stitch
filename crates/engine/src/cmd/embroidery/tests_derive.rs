@@ -524,3 +524,35 @@ fn the_cutting_tools_keep_each_point_on_the_nearest_piece() {
     assert_eq!(points, vec![Some((true, false)), Some((false, true))], "path.split");
     assert_eq!(halves.iter().filter(|id| embroidery(&s, **id).trim_after).count(), 1, "path.split: cut once");
 }
+
+/// Expand Appearance of a path whose Transform effect copies it (with Scale Strokes & Effects on,
+/// so each copy is an object of its own): each point back where the path holds it, on the piece
+/// nearest it only, the copy's points back to Auto. Mutation caught: each copy keeping the points
+/// moved with it starts and ends at its own.
+#[test]
+fn a_transform_effects_copies_keep_each_point_on_the_nearest_piece() {
+    let (entry, exit) = ([22.0, 22.0], [108.0, 108.0]);
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 90.0, 90.0);
+    give(&mut s, a, &with_points(entry, exit));
+    run(&mut s, "effect.apply", json!({"ids": [a], "effect": "distort.transform", "params": {"moveH": 200, "copies": 1, "strokes": true}}));
+    run(&mut s, "effect.expandAppearance", json!({"ids": [a]}));
+    let mut pieces = Vec::new();
+    fn paths(n: &Node, out: &mut Vec<Node>) {
+        match &n.kind {
+            NodeKind::Path { .. } | NodeKind::Compound { .. } => out.push(n.clone()),
+            _ => n.children().into_iter().flatten().for_each(|c| paths(c, out)),
+        }
+    }
+    for n in s.doc().unwrap().doc.layers[0].children().unwrap() {
+        paths(n, &mut pieces);
+    }
+    let points: Vec<_> = pieces
+        .iter()
+        .map(|n| (n.geometric_bounds().map(|b| b.x0), fill_points(n.extras().embroidery.as_deref().unwrap_or(&Embroidery::default()))))
+        .collect();
+    assert!(pieces.len() >= 2, "{points:?}");
+    assert_eq!(points.iter().filter(|(_, p)| p.0 == Some(entry)).count(), 1, "{points:?}");
+    assert_eq!(points.iter().filter(|(_, p)| p.1 == Some(exit)).count(), 1, "{points:?}");
+    assert!(points.iter().all(|(x0, p)| *p == (None, None) || x0.is_some_and(|x| x < 100.0)), "only the original's piece: {points:?}");
+}

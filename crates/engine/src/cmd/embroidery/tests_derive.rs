@@ -371,3 +371,87 @@ fn pieces_share_what_their_source_keeps() {
     }
     assert_eq!(angle(first), Some(30.0));
 }
+
+/// The entry and exit points `e`'s fill part sets, document points.
+fn fill_points(e: &Embroidery) -> (Option<[f64; 2]>, Option<[f64; 2]>) {
+    let p = e.part(PartKind::Fill).and_then(|p| p.points.as_ref());
+    (p.and_then(|p| p.entry).map(|q| [q.x, q.y]), p.and_then(|p| p.exit).map(|q| [q.x, q.y]))
+}
+
+/// Settings whose fill sets an entry and an exit point.
+fn with_points(entry: [f64; 2], exit: [f64; 2]) -> Embroidery {
+    let mut e = settings(30.0, false);
+    e.edit_part(PartKind::Fill, |p| {
+        p.set(PartKey::Entry, Some(PartValue::Point(vectorcraft_geom::Point::new(entry[0], entry[1]))));
+        p.set(PartKey::Exit, Some(PartValue::Point(vectorcraft_geom::Point::new(exit[0], exit[1]))));
+    });
+    e
+}
+
+/// An object cut into pieces keeps each of its points only on the piece nearest it, the others'
+/// back to Auto, their other settings the same: Split Into Grid's cells, Release Compound Path's
+/// parts. Mutation caught: every piece keeping the points starts and ends each at the same place.
+#[test]
+fn an_objects_points_stay_on_the_pieces_nearest_them() {
+    let (entry, exit) = ([22.0, 22.0], [108.0, 108.0]);
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 90.0, 90.0);
+    give(&mut s, a, &with_points(entry, exit));
+    run(&mut s, "select.set", json!({"ids": [a]}));
+    let cells = ids(&run(&mut s, "object.path.splitIntoGrid", json!({"rows": 3, "columns": 3})));
+    let points: Vec<_> = cells.iter().map(|id| fill_points(&embroidery(&s, *id))).collect();
+    assert_eq!(points.iter().filter(|p| p.0 == Some(entry)).count(), 1, "{points:?}");
+    assert_eq!(points.iter().filter(|p| p.1 == Some(exit)).count(), 1, "{points:?}");
+    assert_eq!(points.first().map(|p| p.0), Some(Some(entry)), "the entry on the cell it lies in (the first)");
+    assert_eq!(points.last().map(|p| p.1), Some(Some(exit)), "the exit on the cell it lies in (the last)");
+    assert!(cells.iter().all(|id| angle(&embroidery(&s, *id)) == Some(30.0)), "the other settings on every cell");
+    // A compound path of two squares, its points by the second: both on the second part.
+    let mut s = blank();
+    let back = rect(&mut s, "#cc2222", 20.0, 20.0, 40.0, 40.0);
+    let front = rect(&mut s, "#cc2222", 100.0, 20.0, 40.0, 40.0);
+    run(&mut s, "select.set", json!({"ids": [back, front]}));
+    let compound = run(&mut s, "object.compoundPath.make", json!({}))["id"].as_u64().unwrap();
+    give(&mut s, compound, &with_points([140.0, 30.0], [100.0, 60.0]));
+    run(&mut s, "select.set", json!({"ids": [compound]}));
+    run(&mut s, "object.compoundPath.release", json!({}));
+    let parts: Vec<u64> = s.doc().unwrap().selection.objects.iter().map(|id| id.0).collect();
+    let points: Vec<_> = parts.iter().map(|id| fill_points(&embroidery(&s, *id))).collect();
+    let near_second: Vec<_> = parts
+        .iter()
+        .zip(&points)
+        .filter(|(id, _)| s.doc().unwrap().doc.bounds_of(&[NodeId(**id)], false).is_some_and(|b| b.x0 > 90.0))
+        .map(|(_, p)| *p)
+        .collect();
+    assert_eq!(near_second, vec![(Some([140.0, 30.0]), Some([100.0, 60.0]))], "{points:?}");
+    assert_eq!(points.iter().filter(|p| **p == (None, None)).count(), 1, "the other part Auto");
+}
+
+/// An object with two fills expanded (its pieces lie on one another): the first piece takes the
+/// entry and the last the exit, as the walk sews it without expanding it first: its first unit starts
+/// at the entry and its last ends at the exit, the one between follows the needle.
+#[test]
+fn a_part_sewn_as_several_units_takes_its_entry_on_the_first_and_its_exit_on_the_last() {
+    let (entry, exit) = ([20.0, 40.0], [80.0, 40.0]);
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+    run(&mut s, "appearance.addFill", json!({"ids": [a]}));
+    run(&mut s, "appearance.addFill", json!({"ids": [a]}));
+    give(&mut s, a, &with_points(entry, exit));
+    let plan = |s: &Session| super::digitize::digitize(&s.doc().unwrap().doc, &Options::default(), None).unwrap();
+    let sewn = plan(&s);
+    let units: Vec<&super::plan::Unit> = sewn.units.iter().filter(|u| u.origin.selected().0 == a).collect();
+    assert_eq!(units.len(), 3, "three fills, three units");
+    let ends = |k: usize| {
+        let pts: Vec<_> = sewn.unit_stitches(k).iter().filter(|s| s.command == vectorcraft_stitch::Command::Stitch).map(|s| (s.x, s.y)).collect();
+        (*pts.first().unwrap(), *pts.last().unwrap())
+    };
+    let mm = |q: [f64; 2]| (q[0] * 25.4 / 72.0, q[1] * 25.4 / 72.0);
+    let off = |a: (f64, f64), b: (f64, f64)| (a.0 - b.0).hypot(a.1 - b.1);
+    let index = |u: &super::plan::Unit| sewn.units.iter().position(|v| std::ptr::eq(v, u)).unwrap();
+    let (first, last) = (index(units[0]), index(units[2]));
+    assert!(off(ends(first).0, mm(entry)) < 0.3, "the first unit starts at the entry: {:?}", ends(first));
+    assert!(off(ends(last).1, mm(exit)) < 1.0, "the last unit ends at the exit: {:?}", ends(last));
+    run(&mut s, "effect.expandAppearance", json!({"ids": [a]}));
+    let pieces: Vec<_> = members(&s, a).into_iter().map(|id| fill_points(&embroidery(&s, id))).collect();
+    assert_eq!(pieces, vec![(Some(entry), None), (None, None), (None, Some(exit))], "expanded: the first the entry, the last the exit");
+}

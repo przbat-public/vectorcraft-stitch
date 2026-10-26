@@ -1610,7 +1610,11 @@ objects join) is resolved once a plan (`DesignSettings`).
   paint source's, the cut after an object cut into pieces going to its last; Make and Release
   Compound Path, Outline Stroke, Expand Appearance, Create Outlines, Ungroup and Break Link give
   each piece the settings of the part it came from and the cut to what stands for the object).
-  A new object gets the bounding box upstream gives it: the pieces of one object expanded or
+  Each entry and exit point stays only on the piece nearest it, the other pieces' back to Auto
+  (`derive::points_on_nearest`): pieces cut apart keep a point on the piece it lies by; pieces
+  that lie on one another (an appearance of several fills expanded, as the walk sews it too) give
+  the entry to the first and the exit to the last, so a part sewn as several units starts at its
+  entry and ends at its exit once. A new object gets the bounding box upstream gives it: the pieces of one object expanded or
   outlined take its box's angle, so their unset rows don't move, but an object Pathfinder, Offset
   Path or Split Into Grid makes is upright, so its unset rows follow 135° (set an angle on the
   source to keep them), a consequence of turning unset rows with the box.

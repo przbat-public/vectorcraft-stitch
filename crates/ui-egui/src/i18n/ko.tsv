@@ -5591,8 +5591,8 @@ embroidery	trims {before} → {after}	실 자르기 {before} → {after}
 embroidery	The entry and exit points are already the nearest.	시작점과 끝점이 이미 가장 가깝습니다.
 # VectorCraft Stitch: the embroidery tool's name and its status bar hint
 	Embroidery Tool	자수 도구
-	 an entry or exit point to move it  |  	 진입점이나 출구점을 이동  |  
-	 a point to put it back to Auto  |  	 점을 자동으로 되돌리기  |  
+	 a point to move it, or an arrow's head to turn the rows  |  	 점을 이동하거나 화살표 끝으로 줄을 회전  |  
+	 a point or an arrow to put it back to Auto  |  	 점이나 화살표를 자동으로 되돌리기  |  
 	 an object to show its points	 개체의 점 표시
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	점프 {value}mm

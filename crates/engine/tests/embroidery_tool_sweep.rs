@@ -1,7 +1,8 @@
 //! The embroidery tool swept: on the fixture of every kind of object it meets (`points`: fills,
 //! strokes, both, a compound path, a group, a clip group, a symbol instance, a run opened from a
 //! file, a locked and a hidden object, type), planned, with any selection, any part shown, and any
-//! run of pointer events (on its points and off them, hostile coordinates among them) and keys:
+//! run of pointer events (on its points, on its angle arrows' heads and off them, hostile
+//! coordinates among them) and keys:
 //! nothing panics, the session holds together, and once the button is let go and Escape pressed no
 //! drag is left open.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
@@ -12,6 +13,7 @@ use serde_json::{Value, json};
 use vectorcraft_engine::{Session, ViewInfo};
 use vectorcraft_testkit::embroidery as fx;
 use vectorcraft_testkit::invariants::check_session;
+use vectorcraft_tools::embroidery::Kind;
 use vectorcraft_tools::{Mods, PointerEvent, PointerKind, ToolKey};
 
 /// One step of the sweep.
@@ -29,6 +31,8 @@ enum Step {
 enum Spot {
     /// Within a few points of one of the fixture's set points.
     Near(usize, f64, f64),
+    /// Within a few points of the head of one of the angle arrows shown (by index, among them).
+    Head(usize, f64, f64),
     At(f64, f64),
 }
 
@@ -41,6 +45,7 @@ fn arb_spot() -> impl Strategy<Value = Spot> {
     let coord = prop_oneof![8 => -50.0..450.0f64, 1 => Just(f64::NAN), 1 => Just(1e300), 1 => Just(-1e300)];
     prop_oneof![
         3 => (0usize..8, -6.0..6.0f64, -6.0..6.0f64).prop_map(|(i, dx, dy)| Spot::Near(i, dx, dy)),
+        2 => (0usize..8, -6.0..6.0f64, -6.0..6.0f64).prop_map(|(i, dx, dy)| Spot::Head(i, dx, dy)),
         2 => (coord.clone(), coord).prop_map(|(x, y)| Spot::At(x, y)),
     ]
 }
@@ -94,6 +99,11 @@ proptest! {
                         Spot::Near(i, dx, dy) => {
                             let [x, y] = spots[i % spots.len()];
                             (x + dx, y + dy)
+                        }
+                        Spot::Head(i, dx, dy) => {
+                            let (handles, _) = s.embroidery_handles(view);
+                            let heads: Vec<_> = handles.iter().filter(|h| h.id.kind == Kind::Angle).map(|h| h.point).collect();
+                            heads.get(i % heads.len().max(1)).map_or((dx, dy), |p| (p.x + dx, p.y + dy))
                         }
                         Spot::At(x, y) => (x, y),
                     };

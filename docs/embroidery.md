@@ -620,7 +620,10 @@ as Melco's checker reads it, on each object's settings, it flags none.
   and the status bar says so. Alt-click, or Delete, puts a point back to Auto; the arrow keys nudge
   the point last pressed by the keyboard increment (Shift ten times), `[` and `]` step from point
   to point, and Enter or a double-click opens its Entry Point or Exit Point dialog (X and Y in the
-  rulers' unit, from their origin, or Auto). A click on an
+  rulers' unit, from their origin, or Auto). A fill sewn as tatami shows its rows' angle as a
+  dashed arrow through its centre with the angle beside its head: drag the head to turn it (Shift:
+  45° steps from the Constrain Angle), Alt-click or Delete for Auto again, the arrow keys turn it
+  a degree (Shift ten); angles count counter-clockwise, as everywhere in the app. A click on an
   object's art or its stitches selects it, Shift-click adds it or takes it away; the object a click
   would select is outlined. Nearest Connection (the panel's ≡ menu) sets every point at once for the
   shortest jumps.

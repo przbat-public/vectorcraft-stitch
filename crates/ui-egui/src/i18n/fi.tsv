@@ -6044,8 +6044,8 @@ embroidery	trims {before} → {after}	leikkaukset {before} → {after}
 embroidery	The entry and exit points are already the nearest.	Aloitus- ja lopetuspisteet ovat jo lähimmät.
 # VectorCraft Stitch: the embroidery tool's name and its status bar hint
 	Embroidery Tool	Kirjontatyökalu
-	 an entry or exit point to move it  |  	 aloitus- tai lopetuspistettä siirtääksesi sen  |  
-	 a point to put it back to Auto  |  	 pistettä palauttaaksesi sen automaattiseksi  |  
+	 a point to move it, or an arrow's head to turn the rows  |  	 pistettä siirtääksesi sen tai nuolen kärkeä kääntääksesi rivejä  |  
+	 a point or an arrow to put it back to Auto  |  	 pistettä tai nuolta palauttaaksesi sen automaattiseksi  |  
 	 an object to show its points	 objektia näyttääksesi sen pisteet
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	hyppy {value} mm

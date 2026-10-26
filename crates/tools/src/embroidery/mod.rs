@@ -1,17 +1,19 @@
 //! The embroidery tool (VectorCraft Stitch): one tool with kinds of handles. Today the kinds are a
-//! part's entry and exit points ([`Kind`]); later kinds (angle lines, satin rails, needle points)
-//! plug into the same gesture core.
+//! part's entry and exit points and a fill's rows' angle ([`Kind`]); later kinds (angle lines,
+//! satin rails, needle points) plug into the same gesture core.
 //!
 //! - **Handles** come from [`handles`] on every call: the selection's objects that take settings,
-//!   one part at a time, each point set where it is, else where the plan shown sews it (the engine
-//!   hands that in, [`PlanFacts`]).
-//! - **A drag** on a handle, past [`DRAG_START_PX`], previews `embroidery.setEntryExit` with
-//!   `snap` (the point taken to where the stitches can start or end), one undo step on release;
-//!   Escape cancels it. A press elsewhere selects the object under the pointer.
+//!   one part at a time, each point set where it is, else where the plan shown sews it, and a
+//!   tatami fill's angle as an arrow through its centre (the engine hands both in, [`PlanFacts`]).
+//! - **A drag** on a handle, past [`DRAG_START_PX`], previews its kind's command, one undo step on
+//!   release; Escape cancels it. A point previews `embroidery.setEntryExit` with `snap` (taken to
+//!   where the stitches can start or end); the arrow's head turns it about the fill's centre,
+//!   previewing `embroidery.set {angle}`, in [`SHIFT_ANGLE_STEP`]s from Constrain Angle with Shift.
+//!   A press elsewhere selects the object under the pointer.
 //! - **Keys** act on the handle last pressed (or stepped to with `[` and `]`): Delete puts it back
-//!   to Auto (as an Alt-click does), the arrows nudge it by the keyboard increment (Shift ten times
-//!   that), Enter asks for the point's X and Y (as a double-click on it does, [`POINT_DIALOG`]),
-//!   Escape lets it go.
+//!   to Auto (as an Alt-click does); the arrows nudge a point by the keyboard increment, and turn an
+//!   angle by [`ANGLE_KEY_STEP`] (→ and ↑ counter-clockwise), Shift ten times that; Enter asks for a
+//!   point's X and Y (as a double-click on it does, [`POINT_DIALOG`]); Escape lets it go.
 
 mod facts;
 mod handles;
@@ -23,11 +25,12 @@ use vectorcraft_doc::MAX_COORD;
 use vectorcraft_doc::embroidery::PartKind;
 use vectorcraft_doc::embroidery::takers::{compound_of, takers};
 use vectorcraft_doc::hit::hit_test;
-use vectorcraft_geom::{Point, Vec2};
+use vectorcraft_geom::{Point, Vec2, constrain_angle_from, normalize_deg};
 
-pub use facts::{PlanFacts, PlannedEnds};
+pub use facts::{FillAngle, PlanFacts, PlannedEnds};
 pub use handles::{
-    APART_PX, CATCH_PAST_PX, ENTRY_MARKER_PX, EXIT_MARKER_PX, HANDLED_OBJECTS_MAX, Handle, HandleId, Kind, Owner, State, handles, hit,
+    APART_PX, ARROW_HEAD_PX, ARROW_REACH_PX, Arrow, CATCH_PAST_PX, ENTRY_MARKER_PX, EXIT_MARKER_PX, HANDLED_OBJECTS_MAX, Handle, HandleId, Kind,
+    Owner, State, direction, handles, hit,
 };
 
 use crate::{Action, Cursor, Mods, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};
@@ -35,11 +38,29 @@ use crate::{Action, Cursor, Mods, PointerEvent, PointerKind, Tool, ToolContext, 
 /// The tool's id.
 pub const ID: &str = "embroidery";
 
-/// The command a handle's drag, nudge or reset runs.
+/// The command a point's drag, nudge or reset runs.
 const SET_ENTRY_EXIT: &str = "embroidery.setEntryExit";
 
-/// The undo step a drag makes: the command's own label, as the History panel names it.
+/// The undo step a point's drag makes: the command's own label, as the History panel names it.
 const LABEL: &str = "Embroidery Entry and Exit";
+
+/// The command an angle's drag or turn runs, and the undo step its drag makes (its own label).
+const SET_SETTINGS: &str = "embroidery.set";
+const SETTINGS_LABEL: &str = "Embroidery Object Settings";
+
+/// The command an angle's reset runs.
+const RESET_SETTINGS: &str = "embroidery.reset";
+
+/// The steps Shift turns an angle in, degrees from Constrain Angle: as every Shift-constrained drag
+/// in the app.
+pub const SHIFT_ANGLE_STEP: f64 = 45.0;
+
+/// How far an arrow key turns an angle, degrees (Shift ten times that): the Object tab's angle
+/// field's step.
+pub const ANGLE_KEY_STEP: f64 = 1.0;
+
+/// A turned angle's places, a tenth of a degree: what the Object tab's angle field shows.
+const ANGLE_PLACES: f64 = 10.0;
 
 /// The dialog Enter or a double-click on a handle asks for: its point's X and Y, or Auto. Its params:
 /// `{kind, id, part, at: [x, y], set}` (document points; whether the point is set).
@@ -52,15 +73,16 @@ pub const DRAG_START_PX: f64 = 3.0;
 /// How many keyboard increments an arrow with Shift nudges a point.
 const SHIFT_NUDGE: f64 = 10.0;
 
-/// A handle held by a press: which, where the press began, whether it is dragging, the last point
-/// previewed and where the handle now is (document points).
-#[derive(Clone, Copy, Debug)]
+/// A handle held by a press: which, where the press began, whether it is dragging, the params last
+/// previewed, where the handle now is (document points) and, for an angle, its arrow now.
+#[derive(Clone, Debug)]
 struct Grab {
     id: HandleId,
     from: Point,
     begun: bool,
-    previewed: Option<Point>,
+    previewed: Option<Value>,
     at: Point,
+    arrow: Option<Arrow>,
 }
 
 /// The embroidery tool.
@@ -75,6 +97,14 @@ pub struct EmbroideryTool {
     /// The handle keys act on: the one last pressed or stepped to.
     focus: Option<HandleId>,
     grab: Option<Grab>,
+}
+
+/// The command a drag of a handle of `kind` previews, and the undo step it makes.
+fn command_of(kind: Kind) -> (&'static str, &'static str) {
+    match kind {
+        Kind::Entry | Kind::Exit => (SET_ENTRY_EXIT, LABEL),
+        Kind::Angle => (SET_SETTINGS, SETTINGS_LABEL),
+    }
 }
 
 /// The tool for `id`, when it is this one.
@@ -93,6 +123,29 @@ fn set_point(id: HandleId, at: Option<Point>) -> Value {
     let mut p = json!({"id": object.0, "part": part.id(), "snap": true});
     p[id.kind.id()] = at.map_or(Value::Null, |q| json!([q.x, q.y]));
     p
+}
+
+/// `embroidery.set`'s params setting angle handle `id`'s rows to `degrees`.
+fn set_angle(id: HandleId, degrees: f64) -> Value {
+    let (object, part) = id.owner.part();
+    json!({"ids": [object.0], "part": part.id(), "angle": degrees})
+}
+
+/// `degrees` as an angle is set: to a tenth of a degree, in (−180, 180].
+fn angle_of(degrees: f64) -> Option<f64> {
+    let a = normalize_deg((degrees * ANGLE_PLACES).round() / ANGLE_PLACES) + 0.0;
+    a.is_finite().then_some(a)
+}
+
+/// The angle the arrow about `centre` points at `p` with (degrees counter-clockwise on the page);
+/// with `shift`, in [`SHIFT_ANGLE_STEP`]s from Constrain Angle `base`. `None` at the centre.
+fn aimed(centre: Point, p: Point, shift: bool, base: f64) -> Option<f64> {
+    let v = p - centre;
+    if v.hypot() <= vectorcraft_geom::EPS {
+        return None;
+    }
+    let v = if shift { constrain_angle_from(v, SHIFT_ANGLE_STEP, base) } else { v };
+    angle_of(-v.y.atan2(v.x).to_degrees())
 }
 
 impl EmbroideryTool {
@@ -147,10 +200,16 @@ impl EmbroideryTool {
         vec![Action::Dialog(POINT_DIALOG.into(), p)]
     }
 
-    /// Handle `id` back to Auto: its point unset.
+    /// Handle `id` back to Auto: its point or its angle unset.
     fn back_to_auto(&mut self, id: HandleId) -> Vec<Action> {
         self.focus = Some(id);
-        vec![Action::Exec(SET_ENTRY_EXIT.into(), set_point(id, None))]
+        match id.kind {
+            Kind::Entry | Kind::Exit => vec![Action::Exec(SET_ENTRY_EXIT.into(), set_point(id, None))],
+            Kind::Angle => {
+                let (object, part) = id.owner.part();
+                vec![Action::Exec(RESET_SETTINGS.into(), json!({"ids": [object.0], "part": part.id(), "keys": ["angle"]}))]
+            }
+        }
     }
 }
 
@@ -174,7 +233,7 @@ impl Tool for EmbroideryTool {
                     Some(h) if ev.mods.alt => out.extend(self.back_to_auto(h.id)),
                     Some(h) => {
                         self.focus = Some(h.id);
-                        self.grab = Some(Grab { id: h.id, from: ev.pos, begun: false, previewed: None, at: h.point });
+                        self.grab = Some(Grab { id: h.id, from: ev.pos, begun: false, previewed: None, at: h.point, arrow: h.arrow });
                     }
                 }
                 out
@@ -183,18 +242,31 @@ impl Tool for EmbroideryTool {
                 let Some(grab) = self.grab.as_mut() else { return vec![] };
                 let Some(at) = within(ev.pos) else { return vec![] };
                 let mut out = Vec::new();
+                let (command, label) = command_of(grab.id.kind);
                 if !grab.begun {
                     if ev.pos.distance(grab.from) <= cx.tol(DRAG_START_PX) {
                         return out;
                     }
                     grab.begun = true;
-                    out.push(Action::Begin(LABEL.into()));
+                    out.push(Action::Begin(label.into()));
                 }
-                grab.at = at;
-                // No preview where the point wouldn't change.
-                if grab.previewed != Some(at) {
-                    grab.previewed = Some(at);
-                    out.push(Action::Preview(SET_ENTRY_EXIT.into(), set_point(grab.id, Some(at))));
+                let params = match grab.arrow {
+                    // The head turns about the centre, staying as far out.
+                    Some(arrow) => {
+                        let Some(degrees) = aimed(arrow.centre, at, ev.mods.shift, cx.constrain_angle) else { return out };
+                        grab.at = arrow.centre + direction(degrees) * cx.tol(ARROW_REACH_PX);
+                        grab.arrow = Some(Arrow { degrees, ..arrow });
+                        set_angle(grab.id, degrees)
+                    }
+                    None => {
+                        grab.at = at;
+                        set_point(grab.id, Some(at))
+                    }
+                };
+                // No preview where nothing would change.
+                if grab.previewed.as_ref() != Some(&params) {
+                    grab.previewed = Some(params.clone());
+                    out.push(Action::Preview(command.into(), params));
                 }
                 out
             }
@@ -202,6 +274,8 @@ impl Tool for EmbroideryTool {
             // Ignored during a drag: the drag is the gesture under way, ended by its release.
             PointerKind::DoubleClick if self.busy() => vec![],
             PointerKind::DoubleClick => match hit(cx, &self.now(cx), ev.pos) {
+                // An angle is typed in the Object tab's angle row.
+                Some(h) if h.arrow.is_some() => vec![],
                 Some(h) => {
                     self.grab = None;
                     self.dialog(&h)
@@ -240,6 +314,16 @@ impl Tool for EmbroideryTool {
             return vec![];
         }
         let Some(h) = self.focus.and_then(|id| all.into_iter().find(|h| h.id == id)) else { return vec![] };
+        if let Some(arrow) = h.arrow {
+            let step = ANGLE_KEY_STEP * if mods.shift { SHIFT_NUDGE } else { 1.0 };
+            let by = match key {
+                ToolKey::Delete | ToolKey::Backspace => return self.back_to_auto(h.id),
+                ToolKey::Right | ToolKey::Up => step,
+                ToolKey::Left | ToolKey::Down => -step,
+                _ => return vec![],
+            };
+            return angle_of(arrow.degrees + by).map_or_else(Vec::new, |a| vec![Action::Exec(SET_SETTINGS.into(), set_angle(h.id, a))]);
+        }
         let step = cx.keyboard_increment * if mods.shift { SHIFT_NUDGE } else { 1.0 };
         let by = match key {
             ToolKey::Delete | ToolKey::Backspace => return self.back_to_auto(h.id),
@@ -257,14 +341,22 @@ impl Tool for EmbroideryTool {
     }
 
     fn cursor(&self, cx: &ToolContext, p: Point, _mods: Mods) -> Cursor {
-        if self.grab.is_some() || hit(cx, &self.now(cx), p).is_some() { Cursor::EmbroideryPoint } else { Cursor::Embroidery }
+        let held = self.grab.as_ref().map(|g| g.id.kind).or_else(|| hit(cx, &self.now(cx), p).map(|h| h.id.kind));
+        match held {
+            Some(Kind::Entry | Kind::Exit) => Cursor::EmbroideryPoint,
+            Some(Kind::Angle) => Cursor::Rotate,
+            None => Cursor::Embroidery,
+        }
     }
 
     fn options(&self) -> Value {
         let part = self.part.map_or(Value::Null, |k| json!(k.id()));
-        let drag = self.grab.filter(|g| g.begun).map_or(Value::Null, |g| {
+        let drag = self.grab.as_ref().filter(|g| g.begun).map_or(Value::Null, |g| {
             let mut v = g.id.json();
             v["at"] = json!([g.at.x, g.at.y]);
+            if let Some(arrow) = g.arrow {
+                v["angle"] = json!(arrow.degrees);
+            }
             v
         });
         let id = |h: Option<HandleId>| h.map_or(Value::Null, HandleId::json);
@@ -279,16 +371,16 @@ impl Tool for EmbroideryTool {
     }
 
     fn busy(&self) -> bool {
-        self.grab.is_some_and(|g| g.begun)
+        self.grab.as_ref().is_some_and(|g| g.begun)
     }
 
     fn claims_key(&self, cx: &ToolContext, key: ToolKey) -> bool {
         match key {
             ToolKey::Escape => self.grab.is_some() || self.focus.is_some(),
             ToolKey::BracketLeft | ToolKey::BracketRight => !self.now(cx).is_empty(),
-            ToolKey::Delete | ToolKey::Backspace | ToolKey::Enter | ToolKey::Left | ToolKey::Right | ToolKey::Up | ToolKey::Down => {
-                self.focused(cx).is_some()
-            }
+            // Enter asks for a point's X and Y: an angle has none.
+            ToolKey::Enter => self.focused(cx).is_some_and(|h| h.arrow.is_none()),
+            ToolKey::Delete | ToolKey::Backspace | ToolKey::Left | ToolKey::Right | ToolKey::Up | ToolKey::Down => self.focused(cx).is_some(),
             _ => false,
         }
     }

@@ -226,12 +226,11 @@ impl Session {
     {
         let Some(st) = self.active.and_then(|i| self.docs.get(i)) else { return R::default() };
         let (unit, stroke_unit) = (self.general_unit(), self.stroke_unit());
-        // VectorCraft Stitch: the stitch plan's answers for the embroidery tool, only while it is
-        // active, from a plan already made with the stitch preview's options.
-        let facts = (self.tool.id() == vectorcraft_tools::embroidery::ID)
-            .then(|| self.embroidery_plans.tool_facts(st.uid, &crate::cmd::embroidery::Options::default()))
-            .flatten();
-        let facts_now = facts.as_deref().map(|facts| crate::cmd::embroidery::tool::FactsNow { facts, doc: &st.doc });
+        // VectorCraft Stitch: the stitch plan's and the settings' answers for the embroidery tool,
+        // only while it is active, from a plan already made with the stitch preview's options.
+        let tool = self.tool.id() == vectorcraft_tools::embroidery::ID;
+        let facts = tool.then(|| self.embroidery_plans.tool_facts(st.uid, &crate::cmd::embroidery::Options::default())).flatten();
+        let facts_now = tool.then(|| crate::cmd::embroidery::tool::FactsNow::new(facts.as_deref(), &st.doc));
         let cx = ToolContext {
             doc: &st.doc,
             ruler_origin: st.doc.ruler_origin_for(view.artboard),

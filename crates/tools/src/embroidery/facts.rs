@@ -1,7 +1,8 @@
-//! What only the engine knows about the stitch plan, handed to the embroidery tool through
-//! [`crate::ToolContext::embroidery`]: the tools crate can't reach the plan (the engine's), and no
-//! view plans stitches of its own, so the engine answers from the plan the canvas shows, and never
-//! plans to answer. A new question is a new method with a default body.
+//! What only the engine knows about the stitch plan and the settings, handed to the embroidery tool
+//! through [`crate::ToolContext::embroidery`]: the tools crate can't reach the plan or the settings'
+//! layers (the engine's), and no view plans stitches of its own, so the engine answers from the
+//! plan the canvas shows, and from the document, and never plans to answer. A new question is a
+//! new method with a default body.
 
 use vectorcraft_doc::NodeId;
 use vectorcraft_doc::embroidery::PartKind;
@@ -22,6 +23,15 @@ pub struct PlannedEnds {
     pub trim: Option<f64>,
 }
 
+/// The angle of a fill's tatami rows: degrees counter-clockwise on the page (as the commands take
+/// it), and whether the object sets it (else Auto: the export's or the default rows, turned with
+/// the object).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct FillAngle {
+    pub degrees: f64,
+    pub set: bool,
+}
+
 /// What the embroidery tool asks of the plan the canvas shows.
 pub trait PlanFacts {
     /// The plan's generation: what the answers are of.
@@ -32,6 +42,11 @@ pub trait PlanFacts {
     /// The object a person selects whose stitches lie under `at` (document points) within `tol`,
     /// the one sewn on top; `None` when no stitch lies there, or nothing answers.
     fn object_at(&self, _at: Point, _tol: f64) -> Option<NodeId> {
+        None
+    }
+    /// The angle of object `object`'s fill rows, when its fill is sewn as tatami, from the document
+    /// as it is (no plan needed); `None` for a fill sewn otherwise or not at all.
+    fn fill_angle(&self, _object: NodeId) -> Option<FillAngle> {
         None
     }
 }

@@ -501,20 +501,8 @@ fn part_section(
         let kept = n.extras().embroidery.as_deref().and_then(|e| e.part(kind));
         let object = kept.map_or_else(PartLayer::default, |p| PartLayer::read(p, found));
         let settings = UnitSettings::new(object, n.bbox_angle, opts, layer);
-        // The part's first item of the kind the walk sews says how it is sewn: as it is, or, for a
-        // stroke the walk outlines first (on an object it expands, reshaped by a brush or an
-        // effect), as the area it paints.
         let item = n.appearance.items.iter().find(|i| part_kind(i) == kind && sews(i));
-        let outlined = |item: &AppearanceItem| kind == PartKind::Stroke && needs_expanding(n) && !keeps_its_path(&n.appearance, item);
-        let (sewn_as, chose, why_not, style) = match (unprinted(doc, n), item) {
-            (Some(why), _) => ("none", None, Some(why), Style::Fill),
-            (None, _) if !settings.sewn() => ("none", None, Some("off"), Style::Fill),
-            (None, None) => ("none", None, Some("unpainted"), Style::Fill),
-            (None, Some(item)) => {
-                let (style, why) = if outlined(item) { outlined_rule(settings.forcing()) } else { part_rule(item, &path_of(n), settings.forcing()) };
-                (stitch_id(style), Some(rule_id(why)), None, style)
-            }
-        };
+        let (sewn_as, chose, why_not, style) = sewn_as(doc, n, kind, &settings);
         sewn.add(sewn_as);
         rule.add(chose);
         reason.add(why_not);
@@ -553,6 +541,46 @@ fn part_section(
         exit: exit.merged(),
         sewing: plan.map(|p| sewn_of(p, &with, kind)),
     })
+}
+
+/// How part `kind` of `n` is sewn with `settings`, without a plan: the stitch's id (`none` when it
+/// isn't), the rule that chose it, why it isn't sewn, and its style. The part's first item of the
+/// kind the walk sews says how: as it is, or, for a stroke the walk outlines first (on an object it
+/// expands, reshaped by a brush or an effect), as the area it paints.
+fn sewn_as(doc: &Document, n: &Node, kind: PartKind, settings: &UnitSettings) -> (&'static str, Option<&'static str>, Option<&'static str>, Style) {
+    let item = n.appearance.items.iter().find(|i| part_kind(i) == kind && sews(i));
+    let outlined = |item: &AppearanceItem| kind == PartKind::Stroke && needs_expanding(n) && !keeps_its_path(&n.appearance, item);
+    match (unprinted(doc, n), item) {
+        (Some(why), _) => ("none", None, Some(why), Style::Fill),
+        (None, _) if !settings.sewn() => ("none", None, Some("off"), Style::Fill),
+        (None, None) => ("none", None, Some("unpainted"), Style::Fill),
+        (None, Some(item)) => {
+            let (style, why) = if outlined(item) { outlined_rule(settings.forcing()) } else { part_rule(item, &path_of(n), settings.forcing()) };
+            (stitch_id(style), Some(rule_id(why)), None, style)
+        }
+    }
+}
+
+/// The rows of `n`'s fill, when it is sewn as tatami (rows at an angle): their angle (degrees
+/// counter-clockwise on the page, as the commands take it: the object's own, else the export's or
+/// the default rows, turned with the object) and whether the object sets it. Read from the document
+/// alone with options `opts` over the document's `layer`, as `embroidery.info {plan: false}`
+/// reports the fill's `angle`; `None` for a fill sewn otherwise, or not at all.
+pub(crate) fn fill_rows(doc: &Document, n: &Node, opts: &Options, layer: &DocLayer) -> Option<(f64, bool)> {
+    if !has_part(n, PartKind::Fill) {
+        return None;
+    }
+    let mut found = Found::default();
+    let kept = n.extras().embroidery.as_deref().and_then(|e| e.part(PartKind::Fill));
+    let object = kept.map_or_else(PartLayer::default, |p| PartLayer::read(p, &mut found));
+    let settings = UnitSettings::new(object, n.bbox_angle, opts, layer);
+    let (sewn, _, _, style) = sewn_as(doc, n, PartKind::Fill, &settings);
+    if sewn == "none" || style != Style::Fill {
+        return None;
+    }
+    let angle = settings.report(style).into_iter().find(|r| r.name == "angle")?;
+    let degrees = angle.now.value.as_f64().filter(|a| a.is_finite())?;
+    Some((degrees, angle.now.source == Source::Object))
 }
 
 /// What `plan` sews of part `kind` of objects `ids` (as a person selects them).

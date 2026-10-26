@@ -5690,8 +5690,8 @@ embroidery	trims {before} → {after}	糸切り {before} → {after}
 embroidery	The entry and exit points are already the nearest.	入口と出口の点はすでに最も近い位置です。
 # VectorCraft Stitch: the embroidery tool's name and its status bar hint
 	Embroidery Tool	刺繍ツール
-	 an entry or exit point to move it  |  	：入口または出口の点を移動  |  
-	 a point to put it back to Auto  |  	：点を自動に戻す  |  
+	 a point to move it, or an arrow's head to turn the rows  |  	：点を移動、矢印の先で列を回転  |  
+	 a point or an arrow to put it back to Auto  |  	：点または矢印を自動に戻す  |  
 	 an object to show its points	：オブジェクトの点を表示
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	ジャンプ {value} mm

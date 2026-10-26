@@ -5852,8 +5852,8 @@ embroidery	trims {before} → {after}	剪线 {before} → {after}
 embroidery	The entry and exit points are already the nearest.	入针点和出针点已经是最近的。
 # VectorCraft Stitch: the embroidery tool's name and its status bar hint
 	Embroidery Tool	刺绣工具
-	 an entry or exit point to move it  |  	入针点或出针点可移动  |  
-	 a point to put it back to Auto  |  	点可恢复为自动  |  
+	 a point to move it, or an arrow's head to turn the rows  |  	点可移动，箭头尖端可旋转行  |  
+	 a point or an arrow to put it back to Auto  |  	点或箭头可恢复为自动  |  
 	 an object to show its points	对象可显示其点
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	跳针 {value} mm

@@ -5594,8 +5594,8 @@ embroidery	trims {before} → {after}	Schnitte {before} → {after}
 embroidery	The entry and exit points are already the nearest.	Die Ein- und Ausstichpunkte sind schon die nächsten.
 # VectorCraft Stitch: the embroidery tool's name and its status bar hint
 	Embroidery Tool	Stickwerkzeug
-	 an entry or exit point to move it  |  	 an einem Ein- oder Ausstichpunkt verschiebt ihn  |  
-	 a point to put it back to Auto  |  	 auf einen Punkt setzt ihn auf Auto zurück  |  
+	 a point to move it, or an arrow's head to turn the rows  |  	 an einem Punkt verschiebt ihn, an einer Pfeilspitze dreht die Reihen  |  
+	 a point or an arrow to put it back to Auto  |  	 auf einen Punkt oder Pfeil setzt ihn auf Auto zurück  |  
 	 an object to show its points	 auf ein Objekt zeigt seine Punkte
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	Sprung {value} mm

@@ -3,8 +3,10 @@
 //! preview's options (the plan the canvas shows), built once a plan ([`ToolFacts`]) and never
 //! planning to answer. Each answer says whether the plan is of the object as it is now, by node
 //! identity against the snapshot planned (an edit replaces the node), as the canvas's markers judge
-//! it.
+//! it. A fill's angle needs no plan: it is read from the document as it is, as
+//! `embroidery.info {plan: false}` reports it.
 
+use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -12,7 +14,7 @@ use vectorcraft_doc::embroidery::PartKind;
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::{Command, mm_to_pt};
-use vectorcraft_tools::embroidery::{PlanFacts, PlannedEnds};
+use vectorcraft_tools::embroidery::{FillAngle, PlanFacts, PlannedEnds};
 
 use super::plan::Part;
 use super::service::Planned;
@@ -103,29 +105,46 @@ impl crate::Session {
     }
 }
 
-/// [`ToolFacts`] read against the document as it is now.
+/// [`ToolFacts`] (when a plan is remembered) read against the document as it is now.
 pub(crate) struct FactsNow<'a> {
-    pub(crate) facts: &'a ToolFacts,
-    pub(crate) doc: &'a Document,
+    facts: Option<&'a ToolFacts>,
+    doc: &'a Document,
+    /// The document's settings layer, read when an angle is first asked for.
+    layer: OnceCell<super::resolve::DocLayer>,
+}
+
+impl<'a> FactsNow<'a> {
+    /// The answers of `facts` (none before a first plan) and of the document `doc`.
+    pub(crate) fn new(facts: Option<&'a ToolFacts>, doc: &'a Document) -> Self {
+        Self { facts, doc, layer: OnceCell::new() }
+    }
 }
 
 impl PlanFacts for FactsNow<'_> {
     fn generation(&self) -> u64 {
-        self.facts.generation
+        self.facts.map_or(0, |f| f.generation)
     }
 
     fn ends(&self, object: NodeId, part: PartKind) -> Option<PlannedEnds> {
-        let sewn = self.facts.ends.get(&(object, part))?;
-        let current = match (self.doc.node(object), self.facts.snapshot.node(object)) {
+        let facts = self.facts?;
+        let sewn = facts.ends.get(&(object, part))?;
+        let current = match (self.doc.node(object), facts.snapshot.node(object)) {
             (Some(a), Some(b)) => std::ptr::eq(a, b),
             _ => false,
         };
-        let trim = self.facts.trim.is_finite().then_some(self.facts.trim);
+        let trim = facts.trim.is_finite().then_some(facts.trim);
         Some(PlannedEnds { first: sewn.first, last: sewn.last, current, before: sewn.before, after: sewn.after, trim })
     }
 
     fn object_at(&self, at: Point, tol: f64) -> Option<NodeId> {
-        self.facts.planned.scene().pick(at, tol)
+        self.facts?.planned.scene().pick(at, tol)
+    }
+
+    fn fill_angle(&self, object: NodeId) -> Option<FillAngle> {
+        let n = self.doc.node(object)?;
+        let layer = self.layer.get_or_init(|| super::resolve::DocLayer::of(self.doc));
+        let (degrees, set) = super::info::fill_rows(self.doc, n, &super::Options::default(), layer)?;
+        Some(FillAngle { degrees, set })
     }
 }
 
@@ -152,7 +171,7 @@ mod tests {
         let uid = s.doc().unwrap().uid;
         let facts = s.embroidery_plans.tool_facts(uid, &opts).expect("the plan the sequence made");
         let doc = s.doc().unwrap().doc.clone();
-        let now = FactsNow { facts: &facts, doc: &doc };
+        let now = FactsNow::new(Some(&facts), &doc);
         let e = now.ends(NodeId(id), PartKind::Fill).unwrap();
         let mm = |v: f64| v / PT_PER_MM;
         assert!(
@@ -164,7 +183,7 @@ mod tests {
         run(&mut s, "object.move", json!({"ids": [id], "dx": 10, "dy": 0}));
         let doc = s.doc().unwrap().doc.clone();
         let facts = s.embroidery_plans.tool_facts(uid, &opts).expect("the plan before, still remembered");
-        let now = FactsNow { facts: &facts, doc: &doc };
+        let now = FactsNow::new(Some(&facts), &doc);
         assert!(!now.ends(NodeId(id), PartKind::Fill).unwrap().current, "of the object as it was");
     }
 
@@ -212,7 +231,7 @@ mod tests {
         let uid = s.doc().unwrap().uid;
         let facts = s.embroidery_plans.tool_facts(uid, &super::super::Options::default()).unwrap();
         let doc = s.doc().unwrap().doc.clone();
-        let now = FactsNow { facts: &facts, doc: &doc };
+        let now = FactsNow::new(Some(&facts), &doc);
         let ends = |id: u64| now.ends(NodeId(id), PartKind::Fill).unwrap();
         let (ea, eb, ec) = (ends(a), ends(b), ends(c));
         assert_eq!((ea.before, ea.after, eb.before), (None, Some(eb.first), Some(ea.last)));
@@ -235,7 +254,7 @@ mod tests {
         let uid = s.doc().unwrap().uid;
         let facts = s.embroidery_plans.tool_facts(uid, &super::super::Options::default()).unwrap();
         let doc = s.doc().unwrap().doc.clone();
-        let now = FactsNow { facts: &facts, doc: &doc };
+        let now = FactsNow::new(Some(&facts), &doc);
         // Rows lie 0.38 mm apart: a point's tolerance is wider than the gaps between them.
         let tol = 1.0;
         assert_eq!(now.object_at(Point::new(80.0, 80.0), tol), Some(NodeId(b)), "where they overlap");
@@ -250,5 +269,51 @@ mod tests {
         run(&mut s, "shape.rectangle", json!({"x": 20, "y": 20, "width": 80, "height": 50}));
         let uid = s.doc().unwrap().uid;
         assert!(s.embroidery_plans.tool_facts(uid, &super::super::Options::default()).is_none());
+    }
+
+    /// Through the session, with no plan made: a filled rectangle's rows show as an Auto arrow at
+    /// the default 135°; turned 30° (counter-clockwise), its Auto arrow turns with it to 165°, as
+    /// `embroidery.info {plan: false}` reports the angle; an angle set is the arrow's, set; a
+    /// dragged head sets the angle it points at, one undo step.
+    #[test]
+    fn an_object_turned_turns_its_auto_arrow() {
+        use crate::ViewInfo;
+        use vectorcraft_tools::embroidery::{Kind, State};
+        use vectorcraft_tools::{PointerEvent, PointerKind};
+        let mut s = blank();
+        run(&mut s, "paint.setStroke", json!({"none": true}));
+        run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+        let id = run(&mut s, "shape.rectangle", json!({"x": 20, "y": 20, "width": 80, "height": 50}))["id"].as_u64().unwrap();
+        run(&mut s, "select.set", json!({"ids": [id]}));
+        let v = ViewInfo::default();
+        s.select_tool("embroidery", v).unwrap();
+        let arrow = |s: &mut crate::Session| {
+            let (hs, _) = s.embroidery_handles(v);
+            let h = hs.into_iter().find(|h| h.id.kind == Kind::Angle).expect("the fill's arrow");
+            (h.state, h.arrow.unwrap().degrees, h.point)
+        };
+        let reported = |s: &mut crate::Session| run(s, "embroidery.info", json!({"ids": [id]}))["fill"]["settings"]["angle"]["value"].clone();
+        assert_eq!(arrow(&mut s).0, State::Auto);
+        assert!((arrow(&mut s).1 - 135.0).abs() < 1e-9, "{:?}", arrow(&mut s));
+        run(&mut s, "object.rotate", json!({"ids": [id], "angle": 30}));
+        let (state, degrees, _) = arrow(&mut s);
+        assert_eq!(state, State::Auto);
+        assert!((degrees - 165.0).abs() < 1e-9, "turned with the object: {degrees}");
+        assert!((reported(&mut s).as_f64().unwrap() - degrees).abs() < 1e-9, "as info reports it");
+        run(&mut s, "embroidery.set", json!({"ids": [id], "part": "fill", "angle": 20}));
+        assert_eq!((arrow(&mut s).0, arrow(&mut s).1), (State::Set, 20.0));
+        // The head dragged to straight above the centre: 90°, one undo step.
+        let (_, _, head) = arrow(&mut s);
+        let centre = s.doc().unwrap().doc.bounds_of(&[NodeId(id)], false).unwrap().center();
+        let undo = s.doc().unwrap().history.undo.len();
+        for (kind, at) in [
+            (PointerKind::Down, head),
+            (PointerKind::Drag, Point::new(centre.x, centre.y - 60.0)),
+            (PointerKind::Up, Point::new(centre.x, centre.y - 60.0)),
+        ] {
+            s.pointer(&PointerEvent::new(kind, at.x, at.y), v).unwrap();
+        }
+        assert_eq!(reported(&mut s), json!(90.0));
+        assert_eq!(s.doc().unwrap().history.undo.len(), undo + 1);
     }
 }

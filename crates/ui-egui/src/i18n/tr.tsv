@@ -5974,8 +5974,8 @@ embroidery	trims {before} → {after}	kesmeler {before} → {after}
 embroidery	The entry and exit points are already the nearest.	Giriş ve çıkış noktaları zaten en yakın olanlar.
 # VectorCraft Stitch: the embroidery tool's name and its status bar hint
 	Embroidery Tool	Nakış Aracı
-	 an entry or exit point to move it  |  	 taşımak için bir giriş veya çıkış noktası  |  
-	 a point to put it back to Auto  |  	 Otomatik'e döndürmek için bir nokta  |  
+	 a point to move it, or an arrow's head to turn the rows  |  	 taşımak için bir nokta, sıraları döndürmek için bir ok ucu  |  
+	 a point or an arrow to put it back to Auto  |  	 Otomatik'e döndürmek için bir nokta veya ok  |  
 	 an object to show its points	 noktalarını göstermek için bir nesne
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	atlama {value} mm

@@ -5969,8 +5969,8 @@ embroidery	trims {before} → {after}	klipp {before} → {after}
 embroidery	The entry and exit points are already the nearest.	In- och utgångspunkterna är redan de närmaste.
 # VectorCraft Stitch: the embroidery tool's name and its status bar hint
 	Embroidery Tool	Broderiverktyg
-	 an entry or exit point to move it  |  	 en in- eller utgångspunkt för att flytta den  |  
-	 a point to put it back to Auto  |  	 på en punkt för att återställa den till Auto  |  
+	 a point to move it, or an arrow's head to turn the rows  |  	 en punkt för att flytta den, eller en pilspets för att vrida raderna  |  
+	 a point or an arrow to put it back to Auto  |  	 på en punkt eller pil för att återställa den till Auto  |  
 	 an object to show its points	 på ett objekt för att visa dess punkter
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	hopp {value} mm

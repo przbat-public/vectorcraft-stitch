@@ -1,7 +1,8 @@
 //! The embroidery tool's handles on the canvas, headless with real pointer events: drawn where the
 //! tool catches them, in the art view too (a plan asked for), in place of the passive markers in the
 //! stitch view; a drag that follows the pointer and Escape that takes it back; nothing with Hide
-//! Edges or in Presentation Mode; found again only when something changed.
+//! Edges or in Presentation Mode; found again only when something changed; a tatami fill's rows'
+//! arrow, drawn and turned with the mouse.
 
 use egui::{Color32, Event, Modifiers, PointerButton, Pos2, Shape};
 use serde_json::json;
@@ -338,4 +339,39 @@ fn agents_and_the_interface_drag_a_point_alike() {
     let by_command = entry_of(&mut by_command, c);
     assert!(by_mouse.is_array(), "{by_mouse}");
     assert_eq!((&by_mouse, &by_agent), (&by_command, &by_command));
+}
+
+/// A tatami fill's rows: an arrow through the square's centre, its head ▲ drawn where the tool
+/// catches it, its angle beside it for the one object selected (135°, as the Object tab's angle
+/// field writes it); the head dragged with the mouse to straight above the centre turns the rows
+/// to 90° (counter-clockwise), the label following the drag, one undo step.
+#[test]
+fn the_rows_arrow_is_drawn_and_its_head_turns_them() {
+    let (mut app, [a, _]) = app();
+    app.run("select.set", json!({"ids": [a]})).unwrap();
+    let ctx = egui::Context::default();
+    let mut time = 0.0;
+    let shapes = settle(&mut app, &ctx, &mut time);
+    let Some(&(_, head)) = on_screen(&mut app).iter().find(|(k, _)| *k == Kind::Angle) else { panic!("the square's arrow") };
+    let degrees = |d: f64| super::fields::format(crate::i18n::current(), "°", 1).show(d);
+    assert!(words(&shapes).contains(&degrees(135.0)), "{:?}", words(&shapes));
+    let triangle = |s: &Shape, near: Pos2| matches!(s, Shape::Path(p) if p.points.len() == 3 && p.points.iter().all(|q| q.distance(near) < 10.0));
+    assert!(shapes.iter().any(|s| triangle(s, head)), "its head where it is caught");
+    // The square spans 40 to 120 across and 60 to 140 down: its centre is (80, 100).
+    let xf = canvas::Xf::new(app.canvas_rect.unwrap(), app.view().unwrap());
+    let up = xf.to_screen(vectorcraft_geom::Point::new(80.0, 100.0)) - egui::vec2(0.0, 60.0);
+    let undo = app.session.doc().unwrap().history.undo.len();
+    let button = |pos: Pos2, pressed| Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(head), button(head, true)]);
+    let mut shapes = vec![];
+    for k in 1..=3 {
+        time += 0.05;
+        shapes = frame(&mut app, &ctx, time, vec![Event::PointerMoved(head + (up - head) * (k as f32 / 3.0))]);
+    }
+    assert!(words(&shapes).contains(&degrees(90.0)), "the label follows the drag: {:?}", words(&shapes));
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![button(up, false)]);
+    let angle = app.run("embroidery.info", json!({"ids": [a]})).unwrap()["fill"]["settings"]["angle"]["value"].clone();
+    assert_eq!((angle, app.session.doc().unwrap().history.undo.len()), (json!(90.0), undo + 1));
 }

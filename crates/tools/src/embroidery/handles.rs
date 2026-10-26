@@ -29,6 +29,15 @@ pub const CATCH_PAST_PX: f64 = 2.0;
 /// marker's size, so both can be caught.
 pub const APART_PX: f64 = EXIT_MARKER_PX;
 
+/// The angle arrow's head, its size on screen, pixels (an estimate: the entry marker's, as easy to
+/// catch as the points beside it).
+pub const ARROW_HEAD_PX: f64 = 12.0;
+
+/// How far from the fill's centre the angle arrow's head is drawn and caught, screen pixels; the
+/// arrow runs as far the other way (an estimate: far enough out to aim the rows by a degree, near
+/// enough to stay over most fills at the zoom a design is digitized at).
+pub const ARROW_REACH_PX: f64 = 40.0;
+
 /// A kind of handle. Closed on purpose: every place kinds differ matches on it, so a kind added
 /// later can't leave out its handles, its drag's command or its cursor.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -37,6 +46,8 @@ pub enum Kind {
     Entry,
     /// Where it comes out after it.
     Exit,
+    /// The direction a fill's tatami rows run: the head of an arrow through the fill's centre.
+    Angle,
 }
 
 impl Kind {
@@ -45,14 +56,16 @@ impl Kind {
         match self {
             Kind::Entry => "entry",
             Kind::Exit => "exit",
+            Kind::Angle => "angle",
         }
     }
 
-    /// The part key its point is kept under.
+    /// The part key its value is kept under.
     fn key(self) -> PartKey {
         match self {
             Kind::Entry => PartKey::Entry,
             Kind::Exit => PartKey::Exit,
+            Kind::Angle => PartKey::Angle,
         }
     }
 
@@ -61,6 +74,7 @@ impl Kind {
         match self {
             Kind::Entry => ENTRY_MARKER_PX,
             Kind::Exit => EXIT_MARKER_PX,
+            Kind::Angle => ARROW_HEAD_PX,
         }
     }
 }
@@ -81,12 +95,13 @@ impl Owner {
     }
 }
 
-/// What a handle's point is.
+/// What a handle's value is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum State {
     /// Set on the object.
     Set,
-    /// Auto: where the plan shown sews it, the plan of the object as it is.
+    /// Auto: a point where the plan shown sews it, the plan of the object as it is; an angle the
+    /// export's or the default rows, turned with the object.
     Auto,
     /// Auto, from a plan of the object as it was: drawn dim until the plan catches up.
     Stale,
@@ -103,7 +118,7 @@ impl State {
 }
 
 /// What names a handle from one call to the next: its kind, its owner, and which of the owner's
-/// handles of that kind (0 for an entry or an exit).
+/// handles of that kind (0 for an entry, an exit or an angle).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct HandleId {
     pub kind: Kind,
@@ -136,6 +151,23 @@ pub struct Handle {
     /// jump a drag shows. And the trim length a jump longer than is cut (document points).
     pub neighbour: Option<Point>,
     pub trim: Option<f64>,
+    /// An angle handle's arrow (its head is the handle's point); `None` for a point.
+    pub arrow: Option<Arrow>,
+}
+
+/// An angle arrow: the fill's centre it turns about, document points, and the angle it points at,
+/// degrees counter-clockwise on the page.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Arrow {
+    pub centre: Point,
+    pub degrees: f64,
+}
+
+/// The direction `degrees` counter-clockwise on the page points, a unit vector in document
+/// coordinates (whose y axis points down the page).
+pub fn direction(degrees: f64) -> Vec2 {
+    let (s, c) = degrees.to_radians().sin_cos();
+    Vec2::new(c, -s)
 }
 
 /// The part of `n` whose points show: `part` (else its fill) when `n` has it, else its other part,
@@ -152,10 +184,12 @@ fn shown_part(n: &vectorcraft_doc::Node, part: Option<PartKind>) -> Option<PartK
 
 /// The selection's handles: of the objects it stands for that take settings (groups expanded, a
 /// compound path's member standing for its compound path; type, symbol instances and stitches from
-/// files take none), at most [`HANDLED_OBJECTS_MAX`], each object's entry then its exit, of the
-/// part `part` (one part at a time, as the Object tab shows it: an object without that part shows
-/// its other; `None`: the fill). A point set stands where it is; one left to the planner where the plan shown sews it
-/// (stale when that plan is of the object as it was); without either, no handle.
+/// files take none), at most [`HANDLED_OBJECTS_MAX`], each object's entry, its exit and, for a fill
+/// sewn as tatami, its rows' angle, of the part `part` (one part at a time, as the Object tab shows
+/// it: an object without that part shows its other; `None`: the fill). A point set stands where it
+/// is; one left to the planner where the plan shown sews it (stale when that plan is of the object
+/// as it was); without either, no handle. The angle arrow runs through the fill's centre (its
+/// bounds'), its head [`ARROW_REACH_PX`] out on screen.
 pub fn handles(cx: &ToolContext, part: Option<PartKind>) -> Vec<Handle> {
     let (take, _) = takers(cx.doc, &cx.selection.objects);
     // One screen pixel to the right, in document points, whatever way the view is turned.
@@ -180,7 +214,7 @@ pub fn handles(cx: &ToolContext, part: Option<PartKind>) -> Vec<Handle> {
             };
             let id = HandleId { kind: k, owner: Owner::Part { object, part: kind }, index: 0 };
             let neighbour = planned.and_then(|e| if k == Kind::Entry { e.before } else { e.after });
-            pair.push(Handle { id, at: point, point, state, planned: sewn, neighbour, trim: planned.and_then(|e| e.trim) });
+            pair.push(Handle { id, at: point, point, state, planned: sewn, neighbour, trim: planned.and_then(|e| e.trim), arrow: None });
         }
         if let [entry, exit] = pair.as_mut_slice()
             && entry.at.distance(exit.at) < cx.tol(APART_PX)
@@ -188,6 +222,16 @@ pub fn handles(cx: &ToolContext, part: Option<PartKind>) -> Vec<Handle> {
             exit.at = entry.at + right * APART_PX;
         }
         out.extend(pair);
+        if kind == PartKind::Fill
+            && let Some(rows) = cx.embroidery.and_then(|f| f.fill_angle(object))
+            && let Some(centre) = cx.doc.bounds_of(&[object], false).map(|r| r.center())
+        {
+            let head = centre + direction(rows.degrees) * cx.tol(ARROW_REACH_PX);
+            let id = HandleId { kind: Kind::Angle, owner: Owner::Part { object, part: kind }, index: 0 };
+            let state = if rows.set { State::Set } else { State::Auto };
+            let arrow = Some(Arrow { centre, degrees: rows.degrees });
+            out.push(Handle { id, at: head, point: head, state, planned: None, neighbour: None, trim: None, arrow });
+        }
     }
     out
 }

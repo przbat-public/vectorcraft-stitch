@@ -1,6 +1,7 @@
 //! The embroidery tool with a fake plan: its handles (where they stand, which objects and parts
 //! have them), catching them at any zoom, dragging one (the threshold, the previews, one undo step,
-//! Escape), the keys, the cursor, its options, and selecting by a press elsewhere.
+//! Escape), the keys, the cursor, its options, selecting by a press elsewhere, and a tatami fill's
+//! angle arrow (where it points, turning it, Shift's steps, resetting it, its keys).
 
 use std::collections::HashMap;
 
@@ -14,11 +15,12 @@ use crate::testutil::cx;
 use crate::{Action, Cursor, Mods, PaintDefaults, PointerEvent, PointerKind, Tool, ToolKey};
 
 /// A plan the tests make up: each part's first and last needle points, and whether it is of the
-/// object as it is.
+/// object as it is; and the fills sewn as tatami, with their rows' angles.
 #[derive(Default)]
 struct Fake {
     ends: HashMap<(NodeId, PartKind), PlannedEnds>,
     under: Option<NodeId>,
+    rows: HashMap<NodeId, FillAngle>,
 }
 
 impl PlanFacts for Fake {
@@ -30,6 +32,9 @@ impl PlanFacts for Fake {
     }
     fn object_at(&self, _at: Point, _tol: f64) -> Option<NodeId> {
         self.under
+    }
+    fn fill_angle(&self, object: NodeId) -> Option<FillAngle> {
+        self.rows.get(&object).copied()
     }
 }
 
@@ -421,4 +426,101 @@ fn hostile_options_and_points_never_panic() {
         }
         let _ = (t.options(), t.cursor(&c, Point::new(x, x), Mods::default()));
     }
+}
+
+/// [`plan`] with the square's fill sewn as tatami, its rows at `degrees`, set or Auto.
+fn with_rows(ids: [NodeId; 3], degrees: f64, set: bool) -> Fake {
+    let mut f = plan(ids);
+    f.rows.insert(ids[0], FillAngle { degrees, set });
+    f
+}
+
+/// The square's angle handle.
+fn arrow_of(c: &ToolContext) -> Handle {
+    handles(c, None).into_iter().find(|h| h.id.kind == Kind::Angle).expect("the square's arrow")
+}
+
+/// A tatami fill's rows show as an arrow through its centre (150, 150), its head 40 px out on
+/// screen at its angle, counter-clockwise on the page (135°: up and to the left), at any zoom; set
+/// or Auto as the engine says; after the fill's entry and exit; none for its stroke, nor for a
+/// fill sewn otherwise.
+#[test]
+fn a_tatami_fills_rows_are_an_arrow_through_its_centre() {
+    let (d, ids) = doc();
+    let [square, ..] = ids;
+    let (s, p) = (select(&[square]), PaintDefaults::default());
+    let f = with_rows(ids, 135.0, false);
+    for zoom in [1.0, 2.0] {
+        let c = ToolContext { embroidery: Some(&f), zoom, ..cx(&d, &s, &p) };
+        let hs = handles(&c, None);
+        assert_eq!(hs.iter().map(|h| h.id.kind).collect::<Vec<_>>(), vec![Kind::Entry, Kind::Exit, Kind::Angle]);
+        let a = arrow_of(&c);
+        let out = ARROW_REACH_PX / zoom / std::f64::consts::SQRT_2;
+        assert!(a.point.distance(Point::new(150.0 - out, 150.0 - out)) < 1e-9, "{zoom}: {:?}", a.point);
+        assert_eq!((a.state, a.arrow.map(|r| (r.centre, r.degrees))), (State::Auto, Some((Point::new(150.0, 150.0), 135.0))));
+    }
+    let f = with_rows(ids, 30.0, true);
+    let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    assert_eq!(arrow_of(&c).state, State::Set);
+    assert!(handles(&c, Some(PartKind::Stroke)).iter().all(|h| h.id.kind != Kind::Angle), "the stroke has no rows");
+    let plain = plan(ids);
+    let c = ToolContext { embroidery: Some(&plain), ..cx(&d, &s, &p) };
+    assert!(handles(&c, None).iter().all(|h| h.id.kind != Kind::Angle), "a fill sewn otherwise");
+}
+
+/// Dragging the head turns the rows about the centre, counter-clockwise: straight up is 90°, to
+/// the right 0°, each move previewing `embroidery.set {ids, part, angle}` under the command's own
+/// undo label, the head kept 40 px out, the angle in the options; Shift steps 45° from the
+/// Constrain Angle; the release keeps it.
+#[test]
+fn dragging_the_arrows_head_turns_the_rows() {
+    let (d, ids) = doc();
+    let [square, ..] = ids;
+    let (s, p, f) = (select(&[square]), PaintDefaults::default(), with_rows(ids, 135.0, false));
+    let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    let head = arrow_of(&c).point;
+    let mut t = EmbroideryTool::default();
+    assert_eq!(t.cursor(&c, head, Mods::default()), Cursor::Rotate, "over the head");
+    t.pointer(&c, &ev(PointerKind::Down, head.x, head.y));
+    let set = |angle: f64| Action::Preview("embroidery.set".into(), json!({"ids": [square.0], "part": "fill", "angle": angle}));
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Drag, 150.0, 60.0)), vec![Action::Begin("Embroidery Object Settings".into()), set(90.0)]);
+    assert!((t.options()["drag"]["at"][1].as_f64().unwrap() - (150.0 - ARROW_REACH_PX)).abs() < 1e-9, "the head 40 px out");
+    assert_eq!(t.options()["drag"]["angle"], json!(90.0));
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Drag, 250.0, 150.0)), vec![set(0.0)]);
+    let shift = |x: f64, y: f64| ev(PointerKind::Drag, x, y).with_mods(Mods { shift: true, ..Mods::default() });
+    assert_eq!(t.pointer(&c, &shift(200.0, 110.0)), vec![set(45.0)], "Shift: 45° steps");
+    let turned = ToolContext { embroidery: Some(&f), constrain_angle: 30.0, ..cx(&d, &s, &p) };
+    assert_eq!(t.pointer(&turned, &shift(250.0, 130.0)), vec![set(30.0)], "from the Constrain Angle");
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Up, 250.0, 130.0)), vec![Action::Commit]);
+}
+
+/// The arrow's keys: Alt-click or Delete puts the rows back to Auto (`embroidery.reset {keys:
+/// [angle]}`); → and ↑ turn it a degree counter-clockwise, ← and ↓ clockwise, Shift ten; Enter
+/// and a double-click ask for no dialog (an angle is typed in the Object tab).
+#[test]
+fn the_arrows_keys_and_its_reset() {
+    let (d, ids) = doc();
+    let [square, ..] = ids;
+    let (s, p, f) = (select(&[square]), PaintDefaults::default(), with_rows(ids, 135.0, true));
+    let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    let head = arrow_of(&c).point;
+    let reset = Action::Exec("embroidery.reset".into(), json!({"ids": [square.0], "part": "fill", "keys": ["angle"]}));
+    let mut t = EmbroideryTool::default();
+    let alt = ev(PointerKind::Down, head.x, head.y).with_mods(Mods { alt: true, ..Mods::default() });
+    assert_eq!(t.pointer(&c, &alt), vec![reset.clone()]);
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Up, head.x, head.y)), vec![]);
+    let set = |angle: f64| vec![Action::Exec("embroidery.set".into(), json!({"ids": [square.0], "part": "fill", "angle": angle}))];
+    let shift = Mods { shift: true, ..Mods::default() };
+    assert_eq!(t.key(&c, ToolKey::Right, Mods::default()), set(136.0));
+    assert_eq!(t.key(&c, ToolKey::Up, Mods::default()), set(136.0));
+    assert_eq!(t.key(&c, ToolKey::Down, shift), set(125.0));
+    assert_eq!(t.key(&c, ToolKey::Left, Mods::default()), set(134.0));
+    assert_eq!(t.key(&c, ToolKey::Delete, Mods::default()), vec![reset]);
+    assert!(!t.claims_key(&c, ToolKey::Enter), "Enter is left to the window");
+    assert_eq!(t.key(&c, ToolKey::Enter, Mods::default()), vec![]);
+    assert_eq!(t.pointer(&c, &ev(PointerKind::DoubleClick, head.x, head.y)), vec![]);
+    // Across the half turn: 180° and −180° are the same rows, written (−180, 180].
+    let f = with_rows(ids, 179.5, true);
+    let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    assert_eq!(t.key(&c, ToolKey::Right, Mods::default()), set(-179.5));
 }

@@ -1023,9 +1023,9 @@ fn hint_for(tool: &str) -> Option<&'static [(&'static str, bool)]> {
         // VectorCraft Stitch: the embroidery tool.
         "embroidery" => &[
             ("Drag", true),
-            (" an entry or exit point to move it  |  ", false),
+            (" a point to move it, or an arrow's head to turn the rows  |  ", false),
             ("Alt+Click", true),
-            (" a point to put it back to Auto  |  ", false),
+            (" a point or an arrow to put it back to Auto  |  ", false),
             ("Click", true),
             (" an object to show its points", false),
         ],

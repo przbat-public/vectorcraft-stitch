@@ -5096,7 +5096,9 @@ The embroidery tool is reached as every tool is: `tool.select {tool: "embroidery
 document points drag a selected object's entry or exit point (each drag one `embroidery.setEntryExit {…, snap: true}`,
 one undo step), `tool.setOption {key: "part", value: "fill"|"stroke"|null}` chooses the part whose points show.
 Points left to the planner show where a plan already made sews them: plan first (`embroidery.sequence`, say) to drag
-those.
+those. A fill sewn as tatami also shows its rows' angle, an arrow through its centre, needing no plan: a drag of its
+head (40 screen px from the centre, at the angle, counter-clockwise on the page) is one `embroidery.set {ids, part:
+"fill", angle}`, one undo step; setting the angle directly does the same.
 
 - `embroidery.setup {palette?}` sets the document's thread palette, `"pec"` (Brother's 61 threads, which PES files
   number) or `"jef"` (Janome's 78, which JEF files number), in one undo step; `null` unsets it, and Janome's is used.

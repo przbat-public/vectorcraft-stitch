@@ -5624,8 +5624,8 @@ embroidery	trims {before} → {after}	обрезки {before} → {after}
 embroidery	The entry and exit points are already the nearest.	Точки входа и выхода уже ближайшие.
 # VectorCraft Stitch: the embroidery tool's name and its status bar hint
 	Embroidery Tool	Инструмент «Вышивка»
-	 an entry or exit point to move it  |  	 точку входа или выхода, чтобы переместить её  |  
-	 a point to put it back to Auto  |  	 на точку, чтобы вернуть её в «Авто»  |  
+	 a point to move it, or an arrow's head to turn the rows  |  	 точку, чтобы переместить её, или острие стрелки, чтобы повернуть ряды  |  
+	 a point or an arrow to put it back to Auto  |  	 на точку или стрелку, чтобы вернуть «Авто»  |  
 	 an object to show its points	 на объект, чтобы показать его точки
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	перескок {value} мм

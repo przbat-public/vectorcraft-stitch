@@ -5628,8 +5628,8 @@ embroidery	trims {before} → {after}	tagli {before} → {after}
 embroidery	The entry and exit points are already the nearest.	I punti di entrata e di uscita sono già i più vicini.
 # VectorCraft Stitch: the embroidery tool's name and its status bar hint
 	Embroidery Tool	Strumento Ricamo
-	 an entry or exit point to move it  |  	 un punto di entrata o di uscita per spostarlo  |  
-	 a point to put it back to Auto  |  	 su un punto per riportarlo ad Auto  |  
+	 a point to move it, or an arrow's head to turn the rows  |  	 un punto per spostarlo, o la punta di una freccia per ruotare le file  |  
+	 a point or an arrow to put it back to Auto  |  	 su un punto o una freccia per riportarlo ad Auto  |  
 	 an object to show its points	 su un oggetto per mostrarne i punti
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	salto {value} mm

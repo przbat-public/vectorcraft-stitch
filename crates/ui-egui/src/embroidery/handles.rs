@@ -4,7 +4,9 @@
 //!
 //! - **Look:** an entry ◆ in the theme's accent, an exit ⊕ in its layer's colour; solid for a point
 //!   set, hollow for one left to the planner, dimmed while the plan shown is of the object as it was;
-//!   each with a two-tone edge (dark outside, light inside), which reads on any fabric.
+//!   each with a two-tone edge (dark outside, light inside), which reads on any fabric. A tatami
+//!   fill's rows' angle is a dashed two-tone arrow through its centre, its head ▲ in the accent
+//!   (solid set, hollow Auto) with its degrees, as the interface language writes numbers.
 //! - **Hover and focus:** the handle under the pointer is drawn larger ([`HOVER_SCALE`]) and
 //!   labelled; the one the keys act on has a ring ([`FOCUS_RING_PT`]).
 //! - **A point set where the stitches can't start** (a fill's entry on its outline, the stitches half a
@@ -53,6 +55,8 @@ const GHOST_DASH: f32 = 5.0;
 const GHOST_GAP: f32 = 3.0;
 /// The decimals the ghost's jump is said with: a tenth of a millimetre, the formats' grid.
 const JUMP_DECIMALS: usize = 1;
+/// The decimals an angle is said with: a tenth of a degree, as the Object tab's angle field.
+const ANGLE_DECIMALS: usize = 1;
 
 /// The labels' size, their room either side, and how far they sit from their handle, points (the
 /// passive markers' labels').
@@ -140,9 +144,14 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
     let drag = &options["drag"];
     let dragged_at = drag["at"].as_array().and_then(|a| Some(vectorcraft_geom::Point::new(a.first()?.as_f64()?, a.get(1)?.as_f64()?)));
     let objects = handles.iter().map(|h| h.id.owner.part().0).collect::<std::collections::BTreeSet<_>>().len();
-    // Exits first, then entries: an entry over its exit, as the passive markers draw them.
+    // Arrows first, then exits, then entries: an entry over its exit, as the passive markers draw
+    // them, and the points over an arrow.
     let mut order: Vec<&Handle> = handles.iter().collect();
-    order.sort_by_key(|h| h.id.kind == Kind::Entry);
+    order.sort_by_key(|h| match h.id.kind {
+        Kind::Angle => 0,
+        Kind::Exit => 1,
+        Kind::Entry => 2,
+    });
     for h in order {
         let dragged = same(drag, h);
         let point = if dragged { dragged_at.unwrap_or(h.at) } else { h.at };
@@ -151,7 +160,7 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         let focused = same(&options["focus"], h);
         let alpha = if h.state == State::Stale { STALE_ALPHA } else { 1.0 };
         let color = match h.id.kind {
-            Kind::Entry => t.accent,
+            Kind::Entry | Kind::Angle => t.accent,
             Kind::Exit => {
                 let [r, g, b] = st.doc.layer_color(h.id.owner.part().0);
                 super::marks::readable(Color32::from_rgb(r, g, b), &[Color32::from_rgb(MARK_LIGHT[0], MARK_LIGHT[1], MARK_LIGHT[2])], false)
@@ -186,20 +195,38 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
             painter.circle_stroke(at, size / 2.0 + FOCUS_RING_PT, Stroke::new(FOCUS_RING_WIDTH, t.accent));
         }
         let solid = h.state == State::Set;
-        match h.id.kind {
-            Kind::Entry => entry(painter, at, size, color, solid, alpha),
-            Kind::Exit => exit(painter, at, size, color, solid, alpha),
+        match (h.id.kind, h.arrow) {
+            (Kind::Entry, _) => entry(painter, at, size, color, solid, alpha),
+            (Kind::Exit, _) => exit(painter, at, size, color, solid, alpha),
+            (Kind::Angle, Some(arrow)) => {
+                // While dragging, the head where the drag has turned it, the tail opposite.
+                let centre = xf.to_screen(arrow.centre);
+                head(painter, centre, at, size, color, solid);
+            }
+            (Kind::Angle, None) => {}
         }
         if hovered || focused || objects == 1 {
+            let lang = crate::i18n::current();
+            let degrees = drag["angle"].as_f64().filter(|_| dragged).or(h.arrow.map(|a| a.degrees));
+            // As the Object tab's angle field writes it.
+            let angle = degrees.map(|d| super::fields::format(lang, "°", ANGLE_DECIMALS).show(d));
             let words = match h.id.kind {
                 Kind::Entry => crate::et!("Entry"),
                 Kind::Exit => crate::et!("Exit"),
+                Kind::Angle => angle.as_deref().unwrap_or_default(),
             };
             let (offset, align) = match h.id.kind {
                 Kind::Entry => (vec2(LABEL_OFFSET, -LABEL_OFFSET), Align2::LEFT_BOTTOM),
                 Kind::Exit => (vec2(-LABEL_OFFSET, LABEL_OFFSET), Align2::RIGHT_TOP),
+                // Beyond the head, along the arrow.
+                Kind::Angle => {
+                    let out = h.arrow.map_or(vec2(1.0, 0.0), |a| (at - xf.to_screen(a.centre)).normalized());
+                    (out * (LABEL_OFFSET + size / 2.0), if out.x < 0.0 { Align2::RIGHT_CENTER } else { Align2::LEFT_CENTER })
+                }
             };
-            label(painter, at + offset * scale, align, words, color);
+            if !words.is_empty() {
+                label(painter, at + offset * scale, align, words, color);
+            }
         }
     }
 }
@@ -270,6 +297,31 @@ fn exit(p: &egui::Painter, at: Pos2, size: f32, color: Color32, solid: bool, alp
     let stroke = Stroke::new(EDGE_LIGHT, ink.gamma_multiply(alpha));
     p.line_segment([at - vec2(arm, 0.0), at + vec2(arm, 0.0)], stroke);
     p.line_segment([at - vec2(0.0, arm), at + vec2(0.0, arm)], stroke);
+}
+
+/// An angle arrow through `centre` (screen), its head ▲ `size` points across at `at` pointing away
+/// from the centre: the shaft dashed in the two tones, the tail as far the other way; the head
+/// filled with `color` when `solid`, else a light face with a `color` outline.
+fn head(p: &egui::Painter, centre: Pos2, at: Pos2, size: f32, color: Color32, solid: bool) {
+    let out = at - centre;
+    if out.length() <= f32::EPSILON {
+        return;
+    }
+    let d = out.normalized();
+    let tail = centre - out;
+    let r = size / 2.0;
+    let base = at - d * r;
+    for (width, ink) in [(EDGE_DARK, dark()), (EDGE_LIGHT, light())] {
+        p.extend(Shape::dashed_line(&[tail, base], Stroke::new(width, ink), GHOST_DASH, GHOST_GAP));
+    }
+    let across = vec2(-d.y, d.x) * r;
+    let triangle = vec![at + d * r, base + across, base - across];
+    p.add(Shape::convex_polygon(triangle.clone(), Color32::TRANSPARENT, Stroke::new(EDGE_DARK, dark())));
+    let face = if solid { color } else { light() };
+    p.add(Shape::convex_polygon(triangle.clone(), face, Stroke::new(EDGE_LIGHT, light())));
+    if !solid {
+        p.add(Shape::closed_line(triangle, Stroke::new(1.0, color)));
+    }
 }
 
 /// A pill reading `text` on `color`, anchored at `at` by `align`, in black or white, whichever

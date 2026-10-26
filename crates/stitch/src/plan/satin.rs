@@ -4,10 +4,10 @@
 
 use vectorcraft_geom::{BezPath, Point, Vec2};
 
-use super::geometry::{CORNER, Line, NO_LENGTH, length, nearest_order, resample, resample_by, subpaths, tangent, trimmed, turn, unit};
+use super::geometry::{CORNER, Line, NO_LENGTH, length, ordered, resample, resample_by, subpaths, tangent, trimmed, turn, unit};
 use super::narrow::Column;
 use super::runs::{Runs, Travel};
-use super::{MAX_STITCHES, MIN_PUSHED, Params, UNDERLAY_STITCH, Underlay};
+use super::{Aim, MAX_STITCHES, MIN_PUSHED, Params, UNDERLAY_STITCH, Underlay};
 use crate::{SAME_POINT, Stitch};
 
 /// The satin column width (millimetres) from which its automatic underlay is an edge run instead
@@ -59,11 +59,12 @@ const GOLDEN: f64 = 0.618_033_988_75;
 /// penetrations on each rail are [`satin_spacing`] apart for 40 wt thread, closer for finer thread
 /// ([`thread_scale`]), or [`Params::density`] when auto spacing is off; the crossings, rail to rail
 /// in turn, lie half that apart ([`CROSSINGS_PER_SPACING`]). Round a bend the spacing is kept on
-/// the outer rail, and the crossings turn with the path ([`Centre`]). The needle is at `from`
-/// before it starts: each column starts at its end nearest the needle (a closed one at its point
-/// nearest), the nearest first, as Ink/Stitch starts satins. `p`'s style is satin (the caller,
-/// [`super::stitches_from`], sews a satin only then).
-pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec<Stitch> {
+/// the outer rail, and the crossings turn with the path ([`Centre`]). From `aim`'s start, where the
+/// needle is: each column starts at its end nearest the needle (a closed one at its point
+/// nearest), the nearest first, as Ink/Stitch starts satins; from an entry point, the column it
+/// lies nearest first, a ring starting exactly there ([`ordered`]). `p`'s style is satin (the
+/// caller, [`super::stitches_aimed`], sews a satin only then).
+pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> Vec<Stitch> {
     let p = p.sane();
     if p.width <= 0.0 {
         return Vec::new();
@@ -75,8 +76,8 @@ pub(super) fn satin_from(path: &BezPath, p: &Params, from: Option<Point>) -> Vec
     let spacing = p.column_spacing(p.width);
     // The crossings go to one rail and the other in turn: half the spacing apart.
     let pitch = spacing / CROSSINGS_PER_SPACING;
-    let mut runs = Runs::from(from);
-    for Line { pts, closed, reversed } in nearest_order(subpaths(path), from) {
+    let mut runs = Runs::from(aim.start.point());
+    for Line { pts, closed, reversed } in ordered(subpaths(path), aim.start) {
         // Push compensation: an open column is sewn shorter at its ends, the underlay with it.
         let shortest = spacing * MIN_CROSSINGS;
         let pts = if closed { pts } else { pushed(&pts, if reversed { [p.push[1], p.push[0]] } else { p.push }, shortest) };

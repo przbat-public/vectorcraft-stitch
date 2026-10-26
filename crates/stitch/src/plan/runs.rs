@@ -61,6 +61,9 @@ pub(super) struct Runs {
     /// The needle starts inside the shape (its runs so far end there), so the first run is
     /// reached by travelling too.
     inside: bool,
+    /// The needle goes in where it starts (an entry point, [`Runs::lead_from`]): the way to the
+    /// first run is sewn from there, however short.
+    lead: bool,
     /// Where the last run ends before pull compensation stretched it past the shape's edge (a fill
     /// row's end on the outline), `None` when it ends where it is: the travels inside the shape
     /// start there.
@@ -92,10 +95,20 @@ impl Runs {
         Self { start: start.filter(|q| q.x.is_finite() && q.y.is_finite()), ..Self::default() }
     }
 
+    /// No runs yet: the needle goes in at `at`, a point inside the shape (where a fill is entered,
+    /// [`super::fill`]), and its first stitches travel from there to the first run, hidden under
+    /// the stitching to come. A shape that has runs already is left as it is.
+    pub(super) fn lead_from(&mut self, at: Point) {
+        if self.runs.is_empty() && at.x.is_finite() && at.y.is_finite() {
+            (self.start, self.inside, self.lead, self.inner) = (Some(at), true, true, None);
+        }
+    }
+
     /// No runs yet, to follow `before`'s runs: from where they end, inside the shape when they
     /// have any.
     pub(super) fn continuing(before: &Runs) -> Self {
-        Self { start: before.here(), inside: !before.runs.is_empty() || before.inside, inner: before.inner, ..Self::default() }
+        let lead = before.lead && before.runs.is_empty();
+        Self { start: before.here(), inside: !before.runs.is_empty() || before.inside, lead, inner: before.inner, ..Self::default() }
     }
 
     /// Where the needle is after the last run (before the first: where it starts from).
@@ -164,6 +177,8 @@ impl Runs {
         p: &Params,
     ) -> Travel {
         let (Some(here), Some(from)) = (self.here(), self.here_inside()) else { return Travel::Auto };
+        // The first way from where the needle goes in is sewn, so that it goes in there.
+        let lead = std::mem::take(&mut self.lead) && self.runs.is_empty();
         let d = here.distance(to);
         // What the move costs is judged inside the shape, between the places pull compensation
         // stretched the ends from: the compensation changes no sewing order.
@@ -176,6 +191,10 @@ impl Runs {
             let shows = seen(&[from, to_inside]);
             self.cost += COST_HIDDEN * (inside - shows) + COST_SEEN * shows;
             self.moves.seen += shows;
+            if lead {
+                self.push(vec![here, to], Travel::Sew);
+                return Travel::Sew;
+            }
             return Travel::Auto;
         }
         if let Some(mut route) = travels.way(from, to_inside) {
@@ -198,6 +217,10 @@ impl Runs {
         self.cost += COST_LIFT + inside + if d > p.trim { COST_TRIM } else { 0.0 };
         self.moves.lifts += 1;
         self.moves.trims += usize::from(d > p.trim);
+        if lead {
+            // No way inside from where the needle goes in: it goes in there all the same.
+            self.push(vec![here], Travel::Auto);
+        }
         Travel::Lift
     }
 

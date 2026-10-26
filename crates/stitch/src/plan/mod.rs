@@ -41,6 +41,8 @@ mod satin;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
+mod tests_aim;
+#[cfg(test)]
 mod tests_narrow;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
@@ -541,11 +543,10 @@ pub(crate) fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Op
 /// public.
 pub(crate) fn stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> Vec<Stitch> {
     let p = p.sane();
-    let from = aim.start.point();
     match sewn_style(&p) {
-        Style::Running => running::running_from(path, &p, from),
-        Style::Satin => satin::satin_from(path, &p, from),
-        Style::Fill => fill::fill_from(path, rule, &p, from),
+        Style::Running => running::running(path, &p, aim),
+        Style::Satin => satin::satin(path, &p, aim),
+        Style::Fill => fill::fill(path, rule, &p, aim),
     }
 }
 
@@ -675,7 +676,7 @@ pub fn try_fill_with_columns_aimed(
         (crossings + 1.0) * split + c.length() * (UNDERLAYS / UNDERLAY_STITCH + split / satin::ZIGZAG_UNDERLAY_SPACING)
     };
     within_limit(estimate(&subpaths(shape), &f) + columns.iter().map(column).sum::<f64>())?;
-    Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, aim.start.point()))
+    Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, aim))
 }
 
 /// Refused with [`Error::TooLarge`] when `path` lies beyond [`MAX_COORD_MM`] or has a coordinate

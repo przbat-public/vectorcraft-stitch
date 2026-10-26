@@ -206,33 +206,42 @@ fn a_symbols_art_keeps_its_settings_in_every_instance() {
     assert!((b.angle - options::planner_angle(120.0)).abs() < 1e-6, "turned with its instance: {}", b.angle);
 }
 
-/// A part starts at the entry point its object sets: its first needle point is the start it can
-/// take nearest to it (an end of a line, the corner a fill's rows begin at), whatever came before.
+/// A part starts at the entry point its object sets, whatever came before: exactly there where its
+/// stitches can start anywhere (a fill, a little inside its outline, where its edge run runs; a
+/// closed line), at the nearer end of an open line. Mutation caught: the entry taken as where the
+/// needle is starts the fill at the corner nearest, millimetres off.
 #[test]
 fn an_entry_point_starts_the_part() {
     let first_point = |plan: &DesignPlan, unit: usize| {
         let st = plan.unit_stitches(unit).iter().find(|s| s.command == Command::Stitch).copied().unwrap();
         (st.x, st.y)
     };
-    let close = |(x, y): (f64, f64), (px, py): (f64, f64)| (x - px / PT_PER_MM).hypot(y - py / PT_PER_MM) < 1.5;
-    // A line drawn left to right, entered from its right end.
+    let off = |(x, y): (f64, f64), (px, py): (f64, f64)| (x - px / PT_PER_MM).hypot(y - py / PT_PER_MM);
+    // An open line drawn left to right, entered near its right end: it starts at that end.
     let mut s = blank();
     run(&mut s, "paint.setFill", json!({"none": true}));
     run(&mut s, "paint.setStroke", json!({"color": "#2233cc"}));
     let line = run(&mut s, "path.create", json!({"d": "M 20 100 L 200 100"}))["id"].as_u64().unwrap();
     run(&mut s, "select.none", json!({}));
-    assert!(close(first_point(&plan_with(&s, json!({})), 0), (20.0, 100.0)), "drawn from its left end");
-    give(&mut s, line, json!({"stroke": {"points": {"entry": [200.0, 100.0]}}}));
-    assert!(close(first_point(&plan_with(&s, json!({})), 0), (200.0, 100.0)), "entered from its right end");
-    // A rectangle, whose rows (135°) can start at its upper right or lower left corner: entered at
-    // either.
+    assert!(off(first_point(&plan_with(&s, json!({})), 0), (20.0, 100.0)) < 1e-6, "drawn from its left end");
+    give(&mut s, line, json!({"stroke": {"points": {"entry": [150.0, 100.0]}}}));
+    assert!(off(first_point(&plan_with(&s, json!({})), 0), (200.0, 100.0)) < 1e-6, "entered from its right end");
+    // A rectangle, filled with and without underlay, entered in the middle of its sides and near a
+    // corner: it starts there, within half a row spacing (0.19 mm) inside.
     let mut s = blank();
     let id = shape(&mut s, 20.0, 20.0, 80.0, 60.0, 0.0);
-    for corner in [[100.0, 20.0], [20.0, 80.0]] {
-        give(&mut s, id, json!({"fill": {"points": {"entry": corner}, "underlay": "none"}}));
-        let start = first_point(&plan_with(&s, json!({})), 0);
-        assert!(close(start, (corner[0], corner[1])), "{corner:?}: {start:?}");
+    for underlay in ["none", "auto"] {
+        for at in [[60.0, 20.0], [100.0, 50.0], [25.0, 80.0], [20.0, 30.0]] {
+            give(&mut s, id, json!({"fill": {"points": {"entry": at}, "underlay": underlay}}));
+            let start = first_point(&plan_with(&s, json!({})), 0);
+            assert!(off(start, (at[0], at[1])) < 0.2, "underlay {underlay}, {at:?}: {start:?}");
+        }
     }
+    // The same rectangle's outline sewn as a running line: it starts exactly at the entry, between
+    // two corners.
+    give(&mut s, id, json!({"fill": {"stitch": "running", "points": {"entry": [60.0, 80.0]}}}));
+    let start = first_point(&plan_with(&s, json!({})), 0);
+    assert!(off(start, (60.0, 80.0)) < 1e-6, "a closed running line: {start:?}");
 }
 
 /// A fill angle the object doesn't set turns with the object, from its bounding box's angle: the

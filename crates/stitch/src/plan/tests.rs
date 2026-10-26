@@ -983,7 +983,7 @@ fn the_moves_counted_are_the_moves_sewn() {
     for (name, shape, lifts) in &shapes {
         for underlay in [Underlay::None, Underlay::Auto] {
             let p = Params { underlay, ..Params::for_style(Style::Fill) }.sane();
-            let runs = fill::fill_runs(shape, FillRule::NonZero, &p, None);
+            let runs = fill::fill_runs(shape, FillRule::NonZero, &p, Aim::from_needle(None));
             let moves = runs.moves;
             let out = runs.join(&p);
             let count = |c: Command| out.iter().filter(|s| s.command == c).count();

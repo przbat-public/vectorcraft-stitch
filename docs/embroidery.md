@@ -992,9 +992,11 @@ the object a person selects (`id`).
   fill or for the export, keeps all of it tatami.
 - A stroke a brush or an effect reshapes is sewn as the area it paints, whatever stitch is set on
   it (said in the plan's warnings when a running or satin stitch is).
-- An entry point starts its part at the start the stitches can take nearest to it (an end of a
-  line, the corner a fill's rows begin at), not at the point itself; an exit point is kept but not
-  yet planned toward (both come with the embroidery tool).
+- An entry point starts its part exactly there only where the stitches can start anywhere: on a
+  fill's outline, half a row spacing inside it (where the edge run runs), and anywhere on a closed
+  running line or satin ring. An open line or satin column, a fill's narrow parts sewn as satin
+  among them, can start only at an end: its nearer one. An exit point is kept but not yet planned
+  toward.
 - A part of a fill narrower than 1 mm is a single running line along its middle, not a bean or
   triple run: on a part 0.6–1 mm wide its edges stay bare.
 - Travel between a fill's parts is weighed by the straight distance between them, and it is not
@@ -1602,8 +1604,10 @@ objects join) is resolved once a plan (`DesignSettings`).
   every instance, turned with it, and an expanded object's pieces take the settings of the part each
   came from. Groups and layers pass nothing down. The part's `stitch` decides first: `auto` sews by
   the rule even where an export forces a style, a style beats the export's, and `none` leaves the
-  part unsewn (no unit, nothing said). Its entry point starts the part where the stitches can start
-  nearest to it. A value a newer version wrote out of its range is sewn at the nearest it takes, and
+  part unsewn (no unit, nothing said). Its entry point starts the part exactly there where the
+  stitches can start anywhere (a fill's inset outline, a closed line or ring), else at the nearer
+  end of an open line or column (`plan::Start::Entry`, apart from where the needle only happens to
+  be, `Start::Needle`, which the part starts as near as it can). A value a newer version wrote out of its range is sewn at the nearest it takes, and
   a stitch, an underlay or a key this version doesn't read is left out, so the layers below give it;
   the plan says each once.
 

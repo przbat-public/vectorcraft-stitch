@@ -2278,7 +2278,8 @@ owner's choice), so its bar counts that rule's hits exactly; hovering a bar says
 
 **The status bar's counters** (`embroidery::counters`). At the bar's right end, for the active
 document, while its stitches are wanted (the stitch view or the Embroidery panel showing: the
-project owner's choice): "4,752 stitches · 4 colours · 3 thread changes · about 7 min", with
+project owner's choice; the Embroidery Tool's plan for its Auto points alone doesn't show them, nor
+asks for their figures): "4,752 stitches · 4 colours · 3 thread changes · about 7 min", with
 "Embroidery:" before them when there is room; trims, jumps, the size and what the time rests on are
 in the tooltip and the Sewing order's footer. The figures are `embroidery.stats`' own: the scheduler
 adds it to every plan wanted, on the planning thread, so the bar never starts a plan and reads its

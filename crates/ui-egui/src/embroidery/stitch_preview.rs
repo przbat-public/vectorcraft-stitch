@@ -290,6 +290,8 @@ struct InFlight {
 #[derive(Default)]
 struct Interest {
     plan: bool,
+    /// The plan wanted for the embroidery tool's Auto points alone: no figures, no counters.
+    plan_alone: bool,
     queries: Vec<Query>,
 }
 
@@ -337,6 +339,13 @@ impl StitchPreview {
     /// The canvas shows stitches this frame: the active document's design is wanted.
     pub fn want_plan(&mut self) {
         self.interest.plan = true;
+    }
+
+    /// The embroidery tool shows Auto points this frame: the active document's design is wanted,
+    /// planned as for the canvas, without its figures or the status bar's counters (the project
+    /// owner's choice, 2026-10-25: the tool plans without turning them on).
+    pub fn want_plan_alone(&mut self) {
+        self.interest.plan_alone = true;
     }
 
     /// Whether the last frame wanted the active document's plan (the stitch view or the
@@ -535,7 +544,7 @@ impl StitchPreview {
         if interest.plan && !interest.queries.contains(&figures_query()) {
             interest.queries.push(figures_query());
         }
-        self.asked = interest.plan || !interest.queries.is_empty();
+        self.asked = interest.plan || interest.plan_alone || !interest.queries.is_empty();
         self.plan_asked = interest.plan;
         let open: HashSet<u64> = s.documents().iter().map(|d| d.uid).collect();
         self.docs.retain(|uid, _| open.contains(uid));
@@ -660,7 +669,7 @@ pub fn schedule(app: &mut crate::VectorcraftApp, ctx: &egui::Context) {
     let pausing = super::handles::active(app) && app.session.tool_busy();
     let preview = &mut app.embroidery.preview;
     preview.pausing = pausing;
-    if preview.runner.is_none() && (preview.interest.plan || !preview.interest.queries.is_empty()) {
+    if preview.runner.is_none() && (preview.interest.plan || preview.interest.plan_alone || !preview.interest.queries.is_empty()) {
         preview.runner = Some(Box::new(Driver::new(ctx)));
     }
     let wait = preview.schedule_at(&mut app.session, now, busy);

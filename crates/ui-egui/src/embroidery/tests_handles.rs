@@ -87,8 +87,9 @@ fn light() -> Color32 {
     Color32::from_rgb(r, g, b)
 }
 
-/// In the art view the tool asks for a plan, and each selected square's Auto entry is drawn hollow
-/// where the tool catches it (two squares, two entries, two exits).
+/// In the art view the tool asks for a plan (without turning the status bar's counters on), and each
+/// selected square's Auto entry is drawn hollow where the tool catches it (two squares, two
+/// entries, two exits).
 #[test]
 fn handles_are_drawn_where_the_tool_catches_them_in_the_art_view() {
     let (mut app, _) = app();
@@ -98,6 +99,7 @@ fn handles_are_drawn_where_the_tool_catches_them_in_the_art_view() {
     assert!(!app.embroidery.layer.drawn(), "the art view");
     let caught = on_screen(&mut app);
     assert_eq!(caught.iter().filter(|(k, _)| *k == Kind::Entry).count(), 2, "{caught:?}");
+    assert!(!app.embroidery.preview.plan_wanted(), "planned without turning the status bar's counters on");
     let drawn = diamonds(&shapes, light());
     for (kind, at) in &caught {
         if *kind == Kind::Entry {

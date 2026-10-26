@@ -17,7 +17,7 @@
 //!   stitches will catch up (on a pause, [`super::stitch_preview::PAUSE_TO_PLAN_SECS`], or the
 //!   release).
 //! - **One part at a time,** the one the Embroidery panel's Object tab shows (the tool's `part`).
-//! - **A plan is asked for** while the tool is active ([`super::stitch_preview::StitchPreview::want_plan`]),
+//! - **A plan is asked for** while the tool is active ([`super::stitch_preview::StitchPreview::want_plan_alone`]),
 //!   so Auto points show in the art view too, without turning the status bar's counters on.
 //!
 //! The handles are found again only when the document, the selection, the plan shown or the tool's
@@ -131,8 +131,8 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         return;
     }
     hand_shown(app);
-    // Auto points need a plan: asked for whatever the view.
-    app.embroidery.preview.want_plan();
+    // Auto points need a plan: asked for whatever the view, the counters left as they are.
+    app.embroidery.preview.want_plan_alone();
     // One part at a time, the Object tab's.
     let part = app.ui.embroidery_panel.part.id();
     if app.session.tool_options()["part"].as_str() != Some(part) {

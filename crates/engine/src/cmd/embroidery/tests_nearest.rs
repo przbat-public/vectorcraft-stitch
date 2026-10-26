@@ -183,3 +183,27 @@ fn its_params_are_strict() {
         assert!(e.contains(says), "{p}: {e}");
     }
 }
+
+/// Parts that meet exactly are no jump: a line ending where the next starts, and that one ending on
+/// a closed line's corner, where Auto starts it. Nearest Connection counts no jump before or after,
+/// the design's jumps stay none, and the closed line still starts on its corner. Before, the first
+/// needle point of a part met exactly read as its tie-in's step, 1 mm in: a phantom 1 mm jump to
+/// the command, and a pin there that made a real one.
+#[test]
+fn exact_meets_are_no_jump() {
+    let mut s = blank();
+    line(&mut s, "#2233cc", (0.0, 0.0), (20.0, 0.0));
+    line(&mut s, "#2233cc", (20.0, 0.0), (40.0, 0.0));
+    let pt = |v: f64| (AT + v) * PT_PER_MM;
+    run(&mut s, "paint.setStroke", json!({"color": "#2233cc"}));
+    let d = format!("M {} {} L {} {} L {} {} L {} {} Z", pt(40.0), pt(0.0), pt(60.0), pt(0.0), pt(60.0), pt(20.0), pt(40.0), pt(20.0));
+    let ring = run(&mut s, "path.create", json!({ "d": d }))["id"].as_u64().unwrap();
+    run(&mut s, "stroke.set", json!({"weight": 1.0, "ids": [ring]}));
+    run(&mut s, "select.none", json!({}));
+    let jumps = |s: &mut Session| run(s, "embroidery.stats", json!({}))["jumps"].as_u64().unwrap();
+    assert_eq!(jumps(&mut s), 0, "drawn end to end");
+    let r = run(&mut s, "embroidery.nearestConnection", json!({}));
+    assert_eq!((r["before"]["jumps"].clone(), r["after"]["jumps"].clone()), (json!(0), json!(0)), "{r}");
+    assert_eq!(jumps(&mut s), 0, "none added: {r}");
+    assert!((first_x(&mut s, ring) - 40.0).abs() < 0.1, "the closed line still starts on its corner");
+}

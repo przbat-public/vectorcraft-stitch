@@ -47,14 +47,13 @@ impl ToolFacts {
     pub(crate) fn of(snapshot: Arc<Document>, planned: &Planned) -> Self {
         let plan = &planned.plan;
         let in_points = |p: Point| Point::new(mm_to_pt(p.x), mm_to_pt(p.y));
-        // Each unit's first and last needle points, its block, and whether it ends with a cut.
+        // Each unit's first and last needle points (where it really starts after an exact meet,
+        // [`super::plan::DesignPlan::needle_ends`]), its block, and whether it ends with a cut.
         let units: Vec<Option<(Point, Point, usize, bool)>> = (0..plan.units.len())
             .map(|i| {
-                let stitches = plan.unit_stitches(i);
-                let mut needle = stitches.iter().filter(|s| s.command == Command::Stitch).map(|s| in_points(s.point()));
-                let first = needle.next()?;
-                let cut = stitches.last().is_some_and(|s| s.command == Command::Trim);
-                Some((first, needle.next_back().unwrap_or(first), plan.units.get(i)?.block, cut))
+                let (first, last) = plan.needle_ends(i)?;
+                let cut = plan.unit_stitches(i).last().is_some_and(|s| s.command == Command::Trim);
+                Some((in_points(first), in_points(last), plan.units.get(i)?.block, cut))
             })
             .collect();
         // Along the thread: the unit before in the same block, with no cut after it.

@@ -68,11 +68,10 @@ fn kind_of(part: Part) -> Option<PartKind> {
     }
 }
 
-/// Unit `i`'s first and last needle points (millimetres), `None` when it has none.
+/// Unit `i`'s first and last needle points (millimetres, [`DesignPlan::needle_ends`]: where it
+/// really starts after an exact meet), `None` when it has none.
 fn needle_ends(plan: &DesignPlan, i: usize) -> Option<(Point, Point)> {
-    let mut needle = plan.unit_stitches(i).iter().filter(|s| s.command == Command::Stitch).map(|s| s.point());
-    let first = needle.next()?;
-    Some((first, needle.next_back().unwrap_or(first)))
+    plan.needle_ends(i)
 }
 
 /// How the needle comes to each unit of `plan` that has needle points of its own: `None` for a unit

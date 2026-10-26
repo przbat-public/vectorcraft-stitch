@@ -461,8 +461,9 @@ parts are satin columns; as the planner sews it: a fill under `stitch: satin` ha
 a satin across and is filled, so it is listed as tatami) and why: the rule that chose it as an id
 with the values it turned on (`rule: "wideStroke"`, `ruleValues: {width: 2.12, satinFrom: 1,
 widest: 10}`) and as a sentence (`why`: "a stroke at least 1 mm wide is a satin column, here 2.12
-mm"); and its needle points, records and record numbers, jumps, trims, entry and exit points and
-box. What tells a unit apart is `id` (the object a person selects: the object itself, the symbol
+mm"); and its needle points, records and record numbers, jumps, trims, entry and exit points (a
+unit that starts exactly where the needle already is starts at that needle point, which the unit
+before sewed: its own first record is its tie-in's step) and box. What tells a unit apart is `id` (the object a person selects: the object itself, the symbol
 instance that places a symbol's art, or the object an expanded appearance's pieces come from),
 `part`, `partIndex` and `occurrence` (which unit of that object and part it is, from 1 in walk
 order: one instance's symbol paths, or an expanded object's pieces, often share a part, "fill 1").

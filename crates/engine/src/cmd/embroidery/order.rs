@@ -245,7 +245,8 @@ impl SewingOrder {
                     .filter_map(|i| Some((i, plan.units.get(i)?)))
                     .map(|(i, u)| {
                         let t = units.get(i).copied().unwrap_or_default();
-                        let needle = || plan.unit_stitches(i).iter().filter(|s| s.command == Command::Stitch);
+                        // Where it starts and ends: after an exact meet, where the needle already was.
+                        let ends = plan.needle_ends(i);
                         // A unit of one needle point where the needle already is adds no record: no numbers.
                         let numbers = plan.numbers(i).filter(|n| !n.is_empty());
                         let (part, part_index) = part_of(u.origin.part);
@@ -269,8 +270,8 @@ impl SewingOrder {
                             last_record: numbers.as_ref().map(|n| n.end.saturating_sub(1)),
                             jumps: t.jumps,
                             trims: t.trims,
-                            entry: needle().next().map(|s| at(s.point())),
-                            exit: needle().next_back().map(|s| at(s.point())),
+                            entry: ends.map(|e| at(e.0)),
+                            exit: ends.map(|e| at(e.1)),
                             bounds: u.bounds.map(|r| [mm(r.x0), mm(r.y0), mm(r.x1), mm(r.y1)]),
                             asked: EntryExit { entry: u.asked.entry.map(at), exit: u.asked.exit.map(at) },
                             missed_by: {

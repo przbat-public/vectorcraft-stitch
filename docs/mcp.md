@@ -5193,7 +5193,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   from one plan to the next while the object's own art keeps its number and order; `node`, the object sewn, is no key,
   as an expanded object's pieces get new ids at every plan), how it is
   sewn (`sewn`: `running`, `satin`, `tatami`, `literal`; `columns`) and why (`rule` id, `ruleValues`, and `why` as a
-  sentence), its counts, record numbers, entry and exit points (its first and last needle points) and bounds, the
+  sentence), its counts, record numbers, entry and exit points (its first and last needle points; a unit that starts
+  exactly where the needle already is starts at that point, which the unit before sewed) and bounds, the
   entry and exit points it was planned toward (`asked: {entry, exit}`, millimetres, its part's when its object sets
   them, each `null` otherwise) and how far its first and last needle points miss them (`missedBy: {entry, exit}`,
   millimetres, beyond a satin column's reach: half its width, its pull and its push compensation, as

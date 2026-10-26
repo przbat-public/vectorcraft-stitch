@@ -425,14 +425,31 @@ impl DesignPlan {
         self.units.get(unit).and_then(|u| self.blocks.get(u.block)?.stitches.get(u.stitches.clone())).unwrap_or_default()
     }
 
-    /// How far unit `unit`'s first and last needle points lie from the entry and the exit point it
-    /// was planned toward ([`Unit::asked`]), beyond the reach of its satin columns ([`Unit::reach`]),
-    /// millimetres: each `None` when it asked for none, or has no needle point of its own.
+    /// Unit `unit`'s first and last needle points (millimetres), `None` when it has none of its
+    /// own. A unit that starts exactly where the needle already is leaves that needle point to the
+    /// unit before ([`Unit::stitches`]): its range then starts with a needle point (its tie-in's
+    /// step) rather than the move that reaches it, and it starts at the needle point before its
+    /// range, not at the first of its own.
+    pub fn needle_ends(&self, unit: usize) -> Option<(Point, Point)> {
+        let u = self.units.get(unit)?;
+        let block = self.blocks.get(u.block)?;
+        let own = block.stitches.get(u.stitches.clone())?;
+        let mut needle = own.iter().filter(|s| s.command == Command::Stitch).map(|s| s.point());
+        let first = needle.next()?;
+        let last = needle.next_back().unwrap_or(first);
+        let met = own.first().is_some_and(|s| s.command == Command::Stitch);
+        let before = u.stitches.start.checked_sub(1).and_then(|k| block.stitches.get(k)).filter(|s| met && s.command == Command::Stitch);
+        Some((before.map_or(first, |s| s.point()), last))
+    }
+
+    /// How far unit `unit`'s first and last needle points ([`DesignPlan::needle_ends`]) lie from the
+    /// entry and the exit point it was planned toward ([`Unit::asked`]), beyond the reach of its
+    /// satin columns ([`Unit::reach`]), millimetres: each `None` when it asked for none, or has no
+    /// needle point of its own.
     pub fn missed(&self, unit: usize) -> [Option<f64>; 2] {
         let Some(u) = self.units.get(unit) else { return [None, None] };
-        let mut needle = self.unit_stitches(unit).iter().filter(|s| s.command == Command::Stitch).map(|s| s.point());
-        let first = needle.next();
-        let last = needle.next_back().or(first);
+        let ends = self.needle_ends(unit);
+        let (first, last) = (ends.map(|e| e.0), ends.map(|e| e.1));
         let reach = u.reach();
         let miss = |a: Point, q: Point| (a.distance(q) - reach).max(0.0);
         [u.asked.entry.zip(first).map(|(a, q)| miss(a, q)), u.asked.exit.zip(last).map(|(a, q)| miss(a, q))]

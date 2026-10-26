@@ -12,6 +12,7 @@ use serde_json::{Map, Value};
 use vectorcraft_geom::Point;
 
 mod mem;
+pub mod outline;
 mod part;
 mod setup;
 pub mod takers;

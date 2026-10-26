@@ -230,20 +230,8 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
 
 /// `object`'s outline, document points: a path's, or a compound path's members'.
 fn outline_of(doc: &vectorcraft_doc::Document, object: vectorcraft_doc::NodeId) -> Option<vectorcraft_geom::BezPath> {
-    let n = doc.node(object)?;
-    let mut path = vectorcraft_geom::BezPath::new();
-    match &n.kind {
-        vectorcraft_doc::NodeKind::Path { path: p, .. } => path.extend(p.to_bezpath()),
-        vectorcraft_doc::NodeKind::Compound { children, .. } => {
-            for c in children {
-                if let Some(p) = c.path_data() {
-                    path.extend(p.to_bezpath());
-                }
-            }
-        }
-        _ => return None,
-    }
-    Some(path)
+    let path = vectorcraft_doc::embroidery::outline::outline(doc.node(object)?);
+    (!path.elements().is_empty()).then_some(path)
 }
 
 /// [`outline_of`] flattened, for the hand-run gate's drag along an object's outline.

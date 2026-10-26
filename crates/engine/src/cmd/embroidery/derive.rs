@@ -28,7 +28,7 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use vectorcraft_doc::embroidery::{Embroidery, PartKey, PartKind, PartSettings};
+use vectorcraft_doc::embroidery::{Embroidery, PartKey, PartKind, PartSettings, outline};
 use vectorcraft_doc::selection::AnchorRef;
 use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind};
 use vectorcraft_geom::{Affine, Point};
@@ -359,7 +359,7 @@ pub(crate) fn points_on_nearest(pieces: &mut [&mut Node], kind: PartKind) {
     let nearest = |q: Point, last: bool| -> Option<usize> {
         let mut best: Option<(usize, f64)> = None;
         for (i, lines) in outlines.iter().enumerate() {
-            let d = lines.iter().map(|l| distance_to(l, q)).fold(f64::INFINITY, f64::min);
+            let d = lines.iter().map(|l| outline::distance_to(l, q)).fold(f64::INFINITY, f64::min);
             if best.is_none_or(|(_, b)| d < b || (last && d <= b)) {
                 best = Some((i, d));
             }
@@ -382,60 +382,17 @@ pub(crate) fn points_on_nearest(pieces: &mut [&mut Node], kind: PartKind) {
     }
 }
 
-/// How finely a piece's outline is flattened to measure how far a point lies from it, document
-/// points: a hundredth of a point, far below a needle's width.
-const NEAREST_FLATTEN: f64 = 0.01;
-
-/// `n`'s outline (a path's, or a compound path's members'), flattened, document points.
+/// `n`'s outline flattened, each closed subpath closed again at its first point, document points.
 fn polylines(n: &Node) -> Vec<Vec<Point>> {
-    let mut path = vectorcraft_geom::BezPath::new();
-    match &n.kind {
-        NodeKind::Path { path: p, .. } => path.extend(p.to_bezpath()),
-        NodeKind::Compound { children, .. } => {
-            for c in children {
-                if let Some(p) = c.path_data() {
-                    path.extend(p.to_bezpath());
-                }
-            }
-        }
-        _ => {}
-    }
-    let mut out: Vec<Vec<Point>> = Vec::new();
-    vectorcraft_geom::kurbo::flatten(path.iter(), NEAREST_FLATTEN, |el| match el {
-        vectorcraft_geom::PathEl::MoveTo(p) => out.push(vec![p]),
-        vectorcraft_geom::PathEl::LineTo(p) => {
-            if let Some(line) = out.last_mut() {
-                line.push(p);
-            }
-        }
-        vectorcraft_geom::PathEl::ClosePath => {
-            if let Some(first) = out.last().and_then(|l| l.first().copied())
-                && let Some(line) = out.last_mut()
-            {
+    outline::subpaths(n)
+        .into_iter()
+        .map(|(mut line, closed)| {
+            if let (true, Some(&first)) = (closed, line.first()) {
                 line.push(first);
             }
-        }
-        _ => {}
-    });
-    out
-}
-
-/// How far `q` lies from polyline `line` (infinitely far from none).
-fn distance_to(line: &[Point], q: Point) -> f64 {
-    match line {
-        [] => f64::INFINITY,
-        [only] => only.distance(q),
-        _ => line
-            .windows(2)
-            .filter_map(|w| {
-                let [a, b] = w else { return None };
-                let ab = *b - *a;
-                let len2 = ab.hypot2();
-                let t = if len2 > 0.0 { ((q - *a).dot(ab) / len2).clamp(0.0, 1.0) } else { 0.0 };
-                Some((*a + ab * t).distance(q))
-            })
-            .fold(f64::INFINITY, f64::min),
-    }
+            line
+        })
+        .collect()
 }
 
 /// `n` and everything in it turned to `angle` (the bounding box's), and `settings`, when given, on

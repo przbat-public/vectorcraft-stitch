@@ -129,22 +129,28 @@ pub struct Handle {
     /// The point it stands for: the one set, or where the plan sews it.
     pub point: Point,
     pub state: State,
+    /// Where the plan shown starts or ends the part, when it says (for a point set, where the
+    /// stitches really start or end: the canvas joins the two when they lie apart).
+    pub planned: Option<Point>,
 }
 
-/// The part of `n` whose points show: `part` when given and `n` has it, else its fill when it has
-/// one, else its stroke; `None` when it has neither.
+/// The part of `n` whose points show: `part` (else its fill) when `n` has it, else its other part,
+/// as the Object tab shows the other part of objects that don't paint the one chosen; `None` when it
+/// has neither.
 fn shown_part(n: &vectorcraft_doc::Node, part: Option<PartKind>) -> Option<PartKind> {
-    match part {
-        Some(k) => has_part(n, k).then_some(k),
-        None => [PartKind::Fill, PartKind::Stroke].into_iter().find(|k| has_part(n, *k)),
-    }
+    let first = part.unwrap_or(PartKind::Fill);
+    let other = match first {
+        PartKind::Fill => PartKind::Stroke,
+        PartKind::Stroke => PartKind::Fill,
+    };
+    [first, other].into_iter().find(|k| has_part(n, *k))
 }
 
 /// The selection's handles: of the objects it stands for that take settings (groups expanded, a
 /// compound path's member standing for its compound path; type, symbol instances and stitches from
 /// files take none), at most [`HANDLED_OBJECTS_MAX`], each object's entry then its exit, of the
-/// part `part` (one part at a time, as the Object tab shows it; `None`: each object's fill, else
-/// its stroke). A point set stands where it is; one left to the planner where the plan shown sews it
+/// part `part` (one part at a time, as the Object tab shows it: an object without that part shows
+/// its other; `None`: the fill). A point set stands where it is; one left to the planner where the plan shown sews it
 /// (stale when that plan is of the object as it was); without either, no handle.
 pub fn handles(cx: &ToolContext, part: Option<PartKind>) -> Vec<Handle> {
     let (take, _) = takers(cx.doc, &cx.selection.objects);
@@ -162,13 +168,14 @@ pub fn handles(cx: &ToolContext, part: Option<PartKind>) -> Vec<Handle> {
         let planned = cx.embroidery.and_then(|f| f.ends(object, kind));
         let mut pair: Vec<Handle> = Vec::with_capacity(2);
         for k in [Kind::Entry, Kind::Exit] {
-            let (point, state) = match (stored(k.key()), planned) {
-                (Some(p), _) => (p, State::Set),
-                (None, Some(e)) => (if k == Kind::Entry { e.first } else { e.last }, if e.current { State::Auto } else { State::Stale }),
-                (None, None) => continue,
+            let sewn = planned.map(|e| if k == Kind::Entry { e.first } else { e.last });
+            let (point, state) = match (stored(k.key()), planned, sewn) {
+                (Some(p), _, _) => (p, State::Set),
+                (None, Some(e), Some(at)) => (at, if e.current { State::Auto } else { State::Stale }),
+                _ => continue,
             };
             let id = HandleId { kind: k, owner: Owner::Part { object, part: kind }, index: 0 };
-            pair.push(Handle { id, at: point, point, state });
+            pair.push(Handle { id, at: point, point, state, planned: sewn });
         }
         if let [entry, exit] = pair.as_mut_slice()
             && entry.at.distance(exit.at) < cx.tol(APART_PX)

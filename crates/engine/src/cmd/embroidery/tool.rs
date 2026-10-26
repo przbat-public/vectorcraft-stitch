@@ -47,6 +47,22 @@ impl ToolFacts {
     }
 }
 
+impl crate::Session {
+    /// The embroidery tool's handles as the canvas draws them, while it is the active tool (else
+    /// none), in `view`: the list the tool catches ([`vectorcraft_tools::embroidery::handles`]), of
+    /// the part its options show, and its options (`hover`, `focus`, `drag`). Never plans.
+    pub fn embroidery_handles(&mut self, view: crate::ViewInfo) -> (Vec<vectorcraft_tools::embroidery::Handle>, serde_json::Value) {
+        if self.tool_id() != vectorcraft_tools::embroidery::ID {
+            return (Vec::new(), serde_json::Value::Null);
+        }
+        self.with_tool_cx(view, |tool, cx| {
+            let opts = tool.options();
+            let part = opts["part"].as_str().and_then(PartKind::from_id);
+            (vectorcraft_tools::embroidery::handles(cx, part), opts)
+        })
+    }
+}
+
 /// [`ToolFacts`] read against the document as it is now.
 pub(crate) struct FactsNow<'a> {
     pub(crate) facts: &'a ToolFacts,

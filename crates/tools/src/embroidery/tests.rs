@@ -112,8 +112,8 @@ fn handles_stand_at_the_point_set_else_where_the_plan_sews_it() {
     assert_eq!(handles(&c, None)[1].state, State::Stale);
 }
 
-/// One part at a time: the one asked for, else each object's fill, else its stroke; an object
-/// without the part asked for, and a guide, have none.
+/// One part at a time: the one asked for (else the fill), an object without it showing its other
+/// part, as the Object tab does; a guide has none.
 #[test]
 fn one_part_at_a_time() {
     let (d, ids) = doc();
@@ -122,8 +122,11 @@ fn one_part_at_a_time() {
     let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
     let parts = |part| handles(&c, part).iter().map(|h| h.id.owner.part()).collect::<Vec<_>>();
     assert_eq!(parts(None), vec![(square, PartKind::Fill), (square, PartKind::Fill), (line, PartKind::Stroke), (line, PartKind::Stroke)]);
-    assert_eq!(parts(Some(PartKind::Fill)), vec![(square, PartKind::Fill), (square, PartKind::Fill)], "the line has no fill");
-    assert_eq!(parts(Some(PartKind::Stroke)).len(), 4);
+    assert_eq!(parts(Some(PartKind::Fill)), parts(None));
+    assert_eq!(
+        parts(Some(PartKind::Stroke)),
+        vec![(square, PartKind::Stroke), (square, PartKind::Stroke), (line, PartKind::Stroke), (line, PartKind::Stroke)]
+    );
 }
 
 /// A group stands for its objects, a compound path's member for the compound path, and at most

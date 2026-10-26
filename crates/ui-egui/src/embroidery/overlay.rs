@@ -1,11 +1,12 @@
 //! The stitch view's overlays for the selection (the project owner's choice: a frame and markers,
 //! no dimming):
 //!
-//! - with the Selection tool the canvas draws only the selection's frame and the key object's
-//!   outline ([`frame_only`]), no path outlines or anchors over the stitches;
+//! - with the Selection tool (and the embroidery tool) the canvas draws only the selection's frame
+//!   and the key object's outline ([`frame_only`]), no path outlines or anchors over the stitches;
 //! - each selected object gets an entry ◆ where the needle enters it and an exit ⊕ where it leaves
 //!   it, at most [`MARKED_OBJECTS_MAX`] of them, labelled when one of them is marked; they come from
-//!   the scene's ends ([`StitchScene::ends_of`]), as the Sewing order list's do;
+//!   the scene's ends ([`StitchScene::ends_of`]), as the Sewing order list's do; with the embroidery
+//!   tool its handles take their place ([`super::handles`]);
 //! - a selected object the stitches shown aren't of yet (it changed since the plan shown) is outlined
 //!   dashed in its layer's colour until the new plan comes; past [`PENDING_OUTLINES_MAX`] objects or
 //!   [`PENDING_ANCHORS_MAX`] anchors the box they fall in is dashed instead, and a frame draws at
@@ -67,9 +68,9 @@ enum Pending {
 type EndsKey = (u64, u64, u64);
 
 /// Whether the canvas draws only the selection's frame and the key object's outline: the Selection
-/// tool in the stitch view.
+/// tool, or the embroidery tool (its handles over the stitches, no anchors), in the stitch view.
 pub fn frame_only(app: &VectorcraftApp) -> bool {
-    app.embroidery.layer.drawn() && app.session.tool_id() == "selection"
+    app.embroidery.layer.drawn() && (app.session.tool_id() == "selection" || super::handles::active(app))
 }
 
 /// The active document's selected objects' ends in the plan shown, found again only when the
@@ -256,6 +257,10 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
             dash(painter, &corners, *color, clip, &mut budget);
         }
         None => {}
+    }
+    // The embroidery tool draws its own handles in their place.
+    if super::handles::active(app) {
+        return;
     }
     let marked: Vec<&ObjectEnds> = ends.iter().filter(|e| !e.units.is_empty()).take(MARKED_OBJECTS_MAX).collect();
     // Labelled when one object is marked: an object selected with it that sews nothing (a text

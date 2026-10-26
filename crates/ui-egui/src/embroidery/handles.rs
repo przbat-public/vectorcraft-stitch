@@ -1,0 +1,209 @@
+//! The embroidery tool's handles on the canvas, in the art view and the stitch view alike: the list
+//! the tool catches ([`vectorcraft_engine::Session::embroidery_handles`]), drawn where it catches
+//! them, so that what is drawn is what is caught.
+//!
+//! - **Look:** an entry ◆ in the theme's accent, an exit ⊕ in its layer's colour; solid for a point
+//!   set, hollow for one left to the planner, dimmed while the plan shown is of the object as it was;
+//!   each with a two-tone edge (dark outside, light inside), which reads on any fabric.
+//! - **Hover and focus:** the handle under the pointer is drawn larger ([`HOVER_SCALE`]) and
+//!   labelled; the one the keys act on has a ring ([`FOCUS_RING_PT`]).
+//! - **A point set where the stitches can't start** (a fill's entry on its outline, the stitches half a
+//!   row spacing inside it) is joined by a hairline to a dot where they do, past [`LEADER_MIN_PT`].
+//! - **While dragging,** the handle follows the pointer in the frame it moves.
+//! - **One part at a time,** the one the Embroidery panel's Object tab shows (the tool's `part`).
+//! - **A plan is asked for** while the tool is active ([`super::stitch_preview::StitchPreview::want_plan`]),
+//!   so Auto points show in the art view too, without turning the status bar's counters on.
+//!
+//! The handles are found again only when the document, the selection, the plan shown or the tool's
+//! state changes ([`Cache`]), never on an idle frame.
+
+use egui::{Align2, Color32, CornerRadius, FontId, Pos2, Shape, Stroke, StrokeKind, pos2, vec2};
+use serde_json::Value;
+use vectorcraft_engine::cmd::embroidery::scene::{MARK_DARK, MARK_LIGHT};
+use vectorcraft_tools::embroidery::{Handle, Kind, State};
+
+use crate::VectorcraftApp;
+use crate::canvas::Xf;
+use crate::theme::Tokens;
+
+/// How much larger the handle under the pointer is drawn.
+pub const HOVER_SCALE: f32 = 1.25;
+/// How far out from a focused handle its ring is drawn, points, and the ring's width.
+pub const FOCUS_RING_PT: f32 = 4.0;
+const FOCUS_RING_WIDTH: f32 = 1.5;
+/// The two-tone edge: the dark outer line's width and the light inner one's, points.
+const EDGE_DARK: f32 = 3.0;
+const EDGE_LIGHT: f32 = 1.5;
+/// How faint a handle from a plan of the object as it was is drawn.
+const STALE_ALPHA: f32 = 0.45;
+/// How far apart on screen a point set and where its stitches start must lie to be joined,
+/// points: farther than a handle's half size, so the line shows past it.
+pub const LEADER_MIN_PT: f32 = 8.0;
+/// The dot where the stitches start, at the leader's end: its radius, points.
+const PLANNED_DOT_PT: f32 = 2.5;
+/// The labels' size, their room either side, and how far they sit from their handle, points (the
+/// passive markers' labels').
+const LABEL_SIZE: f32 = 11.0;
+const LABEL_PAD: f32 = 5.0;
+const LABEL_OFFSET: f32 = 10.0;
+
+/// What the handles are found for, and what was found: the document's uid and revision, the
+/// generation of the plan shown, and the tool's options (its part, hover, focus and drag).
+#[derive(Default)]
+pub struct Cache {
+    key: Option<(u64, u64, Option<u64>, String)>,
+    handles: Vec<Handle>,
+    options: Value,
+    /// How many times the handles were found (the tests count them).
+    pub(crate) found: usize,
+}
+
+/// The handles and the tool's options, found again only when what they are found for changed.
+fn current(app: &mut VectorcraftApp) -> Option<(Vec<Handle>, Value)> {
+    let st = app.session.active()?;
+    let (uid, revision) = (st.uid, st.revision);
+    let generation = app.embroidery.preview.shown(uid).map(|s| s.planned.generation);
+    let key = (uid, revision, generation, app.session.tool_options().to_string());
+    if app.embroidery.handles.key.as_ref() != Some(&key) {
+        let view = app.view_info();
+        let (handles, options) = app.session.embroidery_handles(view);
+        let cache = &mut app.embroidery.handles;
+        (cache.key, cache.handles, cache.options) = (Some(key), handles, options);
+        cache.found += 1;
+    }
+    let cache = &app.embroidery.handles;
+    Some((cache.handles.clone(), cache.options.clone()))
+}
+
+/// Whether the embroidery tool is the active tool: its handles show, and the passive markers give
+/// way to them.
+pub fn active(app: &VectorcraftApp) -> bool {
+    app.session.tool_id() == vectorcraft_tools::embroidery::ID
+}
+
+/// Draw the tool's handles over the canvas (both views), and ask for a plan while it is active.
+pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
+    if !active(app) {
+        return;
+    }
+    // Auto points need a plan: asked for whatever the view.
+    app.embroidery.preview.want_plan();
+    // One part at a time, the Object tab's.
+    let part = app.ui.embroidery_panel.part.id();
+    if app.session.tool_options()["part"].as_str() != Some(part) {
+        app.session.set_tool_option("part", &serde_json::json!(part));
+    }
+    if !app.ui.view.edges || app.ui.screen_mode >= 3 {
+        return;
+    }
+    let Some((handles, options)) = current(app) else { return };
+    let Some(st) = app.session.active() else { return };
+    let t = Tokens::get(painter.ctx());
+    let same = |a: &Value, h: &Handle| {
+        a["kind"].as_str() == Some(h.id.kind.id())
+            && a["id"].as_u64() == Some(h.id.owner.part().0.0)
+            && a["part"].as_str() == Some(h.id.owner.part().1.id())
+    };
+    let drag = &options["drag"];
+    let dragged_at = drag["at"].as_array().and_then(|a| Some(vectorcraft_geom::Point::new(a.first()?.as_f64()?, a.get(1)?.as_f64()?)));
+    let objects = handles.iter().map(|h| h.id.owner.part().0).collect::<std::collections::BTreeSet<_>>().len();
+    // Exits first, then entries: an entry over its exit, as the passive markers draw them.
+    let mut order: Vec<&Handle> = handles.iter().collect();
+    order.sort_by_key(|h| h.id.kind == Kind::Entry);
+    for h in order {
+        let dragged = same(drag, h);
+        let point = if dragged { dragged_at.unwrap_or(h.at) } else { h.at };
+        let at = xf.to_screen(point);
+        let hovered = same(&options["hover"], h) || dragged;
+        let focused = same(&options["focus"], h);
+        let alpha = if h.state == State::Stale { STALE_ALPHA } else { 1.0 };
+        let color = match h.id.kind {
+            Kind::Entry => t.accent,
+            Kind::Exit => {
+                let [r, g, b] = st.doc.layer_color(h.id.owner.part().0);
+                super::marks::readable(Color32::from_rgb(r, g, b), &[Color32::from_rgb(MARK_LIGHT[0], MARK_LIGHT[1], MARK_LIGHT[2])], false)
+            }
+        };
+        // A point set where the stitches can't start: joined to where they do.
+        if let (State::Set, Some(planned), false) = (h.state, h.planned, dragged) {
+            let to = xf.to_screen(planned);
+            if to.distance(at) > LEADER_MIN_PT {
+                painter.line_segment([at, to], Stroke::new(1.0, color.gamma_multiply(alpha)));
+                painter.circle(to, PLANNED_DOT_PT, color.gamma_multiply(alpha), Stroke::new(1.0, dark()));
+            }
+        }
+        // An exit moved apart from the entry it lies under: a hairline back to its point.
+        if h.at != h.point && !dragged {
+            painter.line_segment([at, xf.to_screen(h.point)], Stroke::new(1.0, dark().gamma_multiply(alpha)));
+        }
+        let scale = if hovered { HOVER_SCALE } else { 1.0 };
+        let size = h.id.kind.size_px() as f32 * scale;
+        if focused {
+            painter.circle_stroke(at, size / 2.0 + FOCUS_RING_PT, Stroke::new(FOCUS_RING_WIDTH, t.accent));
+        }
+        let solid = h.state == State::Set;
+        match h.id.kind {
+            Kind::Entry => entry(painter, at, size, color, solid, alpha),
+            Kind::Exit => exit(painter, at, size, color, solid, alpha),
+        }
+        if hovered || focused || objects == 1 {
+            let words = match h.id.kind {
+                Kind::Entry => crate::et!("Entry"),
+                Kind::Exit => crate::et!("Exit"),
+            };
+            let (offset, align) = match h.id.kind {
+                Kind::Entry => (vec2(LABEL_OFFSET, -LABEL_OFFSET), Align2::LEFT_BOTTOM),
+                Kind::Exit => (vec2(-LABEL_OFFSET, LABEL_OFFSET), Align2::RIGHT_TOP),
+            };
+            label(painter, at + offset * scale, align, words, color);
+        }
+    }
+}
+
+fn dark() -> Color32 {
+    Color32::from_rgb(MARK_DARK[0], MARK_DARK[1], MARK_DARK[2])
+}
+
+fn light() -> Color32 {
+    Color32::from_rgb(MARK_LIGHT[0], MARK_LIGHT[1], MARK_LIGHT[2])
+}
+
+/// An entry ◆ `size` points across at `at`: filled with `color` when `solid`, else a light face with
+/// a `color` outline; a two-tone edge either way.
+fn entry(p: &egui::Painter, at: Pos2, size: f32, color: Color32, solid: bool, alpha: f32) {
+    let diamond = |r: f32| vec![pos2(at.x, at.y - r), pos2(at.x + r, at.y), pos2(at.x, at.y + r), pos2(at.x - r, at.y)];
+    let r = size / 2.0;
+    p.add(Shape::convex_polygon(diamond(r), Color32::TRANSPARENT, Stroke::new(EDGE_DARK, dark().gamma_multiply(alpha))));
+    let face = if solid { color } else { light() };
+    p.add(Shape::convex_polygon(diamond(r), face.gamma_multiply(alpha), Stroke::new(EDGE_LIGHT, light().gamma_multiply(alpha))));
+    if !solid {
+        p.add(Shape::closed_line(diamond(r - EDGE_LIGHT * 1.5), Stroke::new(EDGE_LIGHT, color.gamma_multiply(alpha))));
+    }
+}
+
+/// An exit ⊕ `size` points across at `at`: a `color` face with a light plus when `solid`, else a
+/// light face with a `color` ring and plus; a two-tone edge either way.
+fn exit(p: &egui::Painter, at: Pos2, size: f32, color: Color32, solid: bool, alpha: f32) {
+    let r = size / 2.0;
+    p.circle_stroke(at, r, Stroke::new(EDGE_DARK, dark().gamma_multiply(alpha)));
+    let (face, ink) = if solid { (color, light()) } else { (light(), color) };
+    p.circle(at, r, face.gamma_multiply(alpha), Stroke::new(EDGE_LIGHT, light().gamma_multiply(alpha)));
+    if !solid {
+        p.circle_stroke(at, r - EDGE_LIGHT * 1.5, Stroke::new(EDGE_LIGHT, color.gamma_multiply(alpha)));
+    }
+    let arm = r * 0.55;
+    let stroke = Stroke::new(EDGE_LIGHT, ink.gamma_multiply(alpha));
+    p.line_segment([at - vec2(arm, 0.0), at + vec2(arm, 0.0)], stroke);
+    p.line_segment([at - vec2(0.0, arm), at + vec2(0.0, arm)], stroke);
+}
+
+/// A pill reading `text` on `color`, anchored at `at` by `align`, in black or white, whichever
+/// reads better on it.
+fn label(p: &egui::Painter, at: Pos2, align: Align2, text: &str, color: Color32) {
+    let ink = super::marks::text_on(color);
+    let galley = p.layout_no_wrap(text.to_string(), FontId::proportional(LABEL_SIZE), ink);
+    let size = galley.size() + vec2(2.0 * LABEL_PAD, LABEL_PAD);
+    let rect = align.anchor_size(at, size);
+    p.rect(rect, CornerRadius::same(u8::MAX), color, Stroke::new(1.0, dark()), StrokeKind::Outside);
+    p.galley(rect.center() - galley.size() / 2.0, galley, ink);
+}

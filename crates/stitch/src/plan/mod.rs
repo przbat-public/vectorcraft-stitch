@@ -636,14 +636,18 @@ pub fn try_stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) 
 
 /// How many more points than [`estimate`] counts `subs` may plan into in style `p` when sewn
 /// toward an exit point (`aim`): a running line's closed subpaths carried on round, up to half
-/// their length again ([`running::lapped`]). None without an exit.
+/// their length again ([`running::lapped`]); a satin's pass or travel along its middle, up to its
+/// length in travel stitches. None without an exit.
 fn aimed_extra(subs: &[SubPath], p: &Params, aim: &Aim) -> f64 {
+    /// A pass's ends beyond its stitches: both of its ends, and the one its rounding may add.
+    const PASS_ENDS: f64 = 3.0;
     if aim.exit.is_none() {
         return 0.0;
     }
     match sewn_style(p) {
         Style::Running => subs.iter().filter(|s| s.closed).map(|s| length(&s.points(), true) / 2.0 / p.stitch_length + 1.0).sum(),
-        Style::Satin | Style::Fill => 0.0,
+        Style::Satin => subs.iter().map(|s| length(&s.points(), s.closed) / area::TRAVEL_STITCH + PASS_ENDS).sum(),
+        Style::Fill => 0.0,
     }
 }
 

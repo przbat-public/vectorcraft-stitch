@@ -1000,7 +1000,11 @@ the object a person selects (`id`).
   open line: an open line whose start is free (no entry set) ends at its end nearest the exit; one
   entered at a set point ends at its other end, however far that is from the exit; a closed line
   goes on round past its start to the exit (up to half its length again, in its own holes). A
-  satin's and a fill's exit points are kept but not yet planned toward.
+  satin column whose start is free starts at the end that ends it nearest the exit; entered at a
+  set point, where its underlay would leave its top stitching ending at the end farther from the
+  exit, a pass along its middle (under the top stitching, also with no underlay) turns it round;
+  a satin ring travels along its middle to the exit before its top stitching. A fill's exit point
+  is kept but not yet planned toward.
 - A part of a fill narrower than 1 mm is a single running line along its middle, not a bean or
   triple run: on a part 0.6–1 mm wide its edges stay bare.
 - Travel between a fill's parts is weighed by the straight distance between them, and it is not

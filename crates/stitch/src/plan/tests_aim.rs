@@ -208,3 +208,49 @@ fn a_lines_last_subpath_ends_nearest_its_exit_without_a_jump_more() {
     let needle = Start::Needle(Point::new(-5.0, 0.0));
     assert_eq!(aimed(&two, &p, needle, Some((30.0, 5.0))), aimed(&two, &p, needle, None));
 }
+
+/// An open satin column entered at one end ends at its end nearest its exit with every underlay,
+/// none included: where the underlay would leave its top stitching ending at the other end, one
+/// pass along its middle, before any top crossing, turns it round. Started free (no entry), it is
+/// started at the end that ends it there, with no pass. An exit at its own end changes nothing.
+#[test]
+fn a_satin_column_ends_at_its_end_nearest_its_exit() {
+    let column = line((0.0, 0.0), (60.0, 0.0));
+    for underlay in [Underlay::None, Underlay::Center, Underlay::Edge, Underlay::EdgeZigzag] {
+        let p = Params { width: 3.0, underlay, ..Params::for_style(Style::Satin) }.sane();
+        let [left, right] = p.compensation(p.width);
+        let reach = p.width / 2.0 + left.max(right) + 0.01;
+        let entered = Start::Entry(Point::new(0.0, 0.0));
+        let plain = aimed(&column, &p, entered, None);
+        for end in [0.0, 60.0] {
+            let out = aimed(&column, &p, entered, Some((end, 2.0)));
+            let last = last_point(&out);
+            assert!((last.x - end).abs() <= p.column_spacing(p.width) && last.y.abs() <= reach, "{underlay:?}, exit at {end}: ends at {last:?}");
+            // Its own end already: the same stitches; else at most a travel stitch every 2 mm more.
+            let extra = points_of(&out).len().saturating_sub(points_of(&plain).len());
+            assert!(extra as f64 <= 60.0 * 1.3 / 2.0 + 3.0, "{underlay:?}, exit at {end}: {extra} points more");
+            if (last_point(&plain).x - end).abs() <= p.column_spacing(p.width) {
+                assert_eq!(out, plain, "{underlay:?}: an exit at its own end");
+            }
+            let free = aimed(&column, &p, Start::Needle(Point::new(30.0, -10.0)), Some((end, 2.0)));
+            assert!((last_point(&free).x - end).abs() <= p.column_spacing(p.width), "{underlay:?}, free, exit at {end}");
+            assert!(points_of(&free).len() <= points_of(&plain).len(), "{underlay:?}, free: no pass");
+        }
+    }
+}
+
+/// A satin ring ends at its exit: its underlay from its entry, then a travel along its middle the
+/// shorter way, its top stitching from there round to there.
+#[test]
+fn a_satin_ring_ends_at_its_exit() {
+    let p = Params { width: 3.0, ..Params::for_style(Style::Satin) }.sane();
+    let [left, right] = p.compensation(p.width);
+    let reach = p.width / 2.0 + left.max(right) + p.column_spacing(p.width);
+    let ring = circle((50.0, 50.0), 20.0);
+    let entered = Start::Entry(Point::new(70.0, 50.0));
+    for exit in [(30.0, 50.0), (50.0, 30.0), (64.0, 64.0)] {
+        let last = last_point(&aimed(&ring, &p, entered, Some(exit)));
+        let on_ring = Point::new(50.0, 50.0) + (Point::new(exit.0, exit.1) - Point::new(50.0, 50.0)).normalize() * 20.0;
+        assert!(last.distance(on_ring) <= reach, "exit {exit:?}: ends at {last:?}, its point on the ring {on_ring:?}");
+    }
+}

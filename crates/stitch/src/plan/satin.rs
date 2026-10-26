@@ -4,9 +4,11 @@
 
 use vectorcraft_geom::{BezPath, Point, Vec2};
 
-use super::geometry::{CORNER, Line, NO_LENGTH, length, ordered, resample, resample_by, subpaths, tangent, trimmed, turn, unit};
+use super::area::TRAVEL_STITCH;
+use super::geometry::{CORNER, Line, NO_LENGTH, SubPath, length, nearest_on, resample, resample_by, subpaths, tangent, trimmed, turn, unit};
 use super::narrow::Column;
-use super::runs::{Runs, Travel};
+use super::runs::{COST_HIDDEN, Runs, Travel};
+use super::toward::{Finish, ordered_toward};
 use super::{Aim, MAX_STITCHES, MIN_PUSHED, Params, UNDERLAY_STITCH, Underlay};
 use crate::{SAME_POINT, Stitch};
 
@@ -77,7 +79,13 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> Vec<Stitch> {
     // The crossings go to one rail and the other in turn: half the spacing apart.
     let pitch = spacing / CROSSINGS_PER_SPACING;
     let mut runs = Runs::from(aim.start.point());
-    for Line { pts, closed, reversed, .. } in ordered(subpaths(path), aim.start) {
+    // An open column whose underlay goes to its far end comes back with its top stitching: it ends
+    // where it starts. Toward an exit, a pass along its middle under the top stitching ends it at its
+    // other end, and a ring travels along its middle to the exit before its top stitching; both are
+    // weighed as travel hidden under stitching still to come.
+    let returns = matches!(satin_kind(p.underlay, p.width), Some(SatinUnderlay::Center | SatinUnderlay::EdgeZigzag));
+    let finish = Finish { returns, flip: Some(COST_HIDDEN), reach: COST_HIDDEN };
+    for Line { pts, closed, reversed, toward } in ordered_toward(subpaths(path), aim, &finish, &p) {
         // Push compensation: an open column is sewn shorter at its ends, the underlay with it.
         let shortest = spacing * MIN_CROSSINGS;
         let pts = if closed { pts } else { pushed(&pts, if reversed { [p.push[1], p.push[0]] } else { p.push }, shortest) };
@@ -99,6 +107,40 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> Vec<Stitch> {
                 back = ends_far;
             }
         }
+        // Toward an exit: an open column whose top stitching would end at its end farther from the
+        // exit first runs along its middle to its other end; a ring's top stitching starts at its
+        // point nearest the exit, the needle travelling there along its middle.
+        let pts = match toward {
+            Some(exit) if closed => {
+                let (from_exit, way) = ring_toward(&pts, exit);
+                if way.len() >= 2 {
+                    runs.push(way, travel);
+                    travel = Travel::Sew;
+                }
+                from_exit
+            }
+            Some(exit) => {
+                if let (Some(&a), Some(&b)) = (pts.first(), pts.last()) {
+                    let ends_at = if back { a } else { b };
+                    let nearer = match a.distance(exit).total_cmp(&b.distance(exit)) {
+                        std::cmp::Ordering::Less => Some(a),
+                        std::cmp::Ordering::Greater => Some(b),
+                        std::cmp::Ordering::Equal => None,
+                    };
+                    if nearer.is_some_and(|q| q != ends_at) {
+                        let mut middle = pts.clone();
+                        if back {
+                            middle.reverse();
+                        }
+                        runs.push(resample(&middle, TRAVEL_STITCH, false), travel);
+                        travel = Travel::Sew;
+                        back = !back;
+                    }
+                }
+                pts
+            }
+            None => pts,
+        };
         // The crossings lie `pitch` apart on the farther rail: round a bend the outer one, as for a
         // fill's columns ([`Along::crossings`]). Along `pts` the rail on the right (y runs down the
         // page) reaches `plus`, the one on the left `minus`: the drawing's right and left, or its
@@ -153,6 +195,32 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> Vec<Stitch> {
         }
     }
     runs.join(&p)
+}
+
+/// A ring's centreline `pts` (closed, its first point repeated at its end) started instead at its
+/// point nearest `exit`, and the way along it there from its start, the shorter way round, in
+/// travel stitches ([`TRAVEL_STITCH`]): the needle goes there under the top stitching still to come.
+/// The way is empty when the start is that point already.
+fn ring_toward(pts: &[Point], exit: Point) -> (Vec<Point>, Vec<Point>) {
+    let ring: Vec<Point> = match pts.split_last() {
+        Some((last, rest)) if rest.first().is_some_and(|f| f.distance(*last) <= SAME_POINT) => rest.to_vec(),
+        _ => pts.to_vec(),
+    };
+    let sub = SubPath { pts: ring.clone(), closed: true };
+    let Some((seg, q, _)) = nearest_on(&ring, true, exit) else { return (pts.to_vec(), Vec::new()) };
+    let Some(&start) = ring.first() else { return (pts.to_vec(), Vec::new()) };
+    if q.distance(start) <= SAME_POINT {
+        return (pts.to_vec(), Vec::new());
+    }
+    let (from_exit, _) = sub.starting_at(exit);
+    // Forward: the start, the points up to the segment, the exit's point; back: the other way round.
+    let mut ahead: Vec<Point> = ring.get(..=seg).map(<[Point]>::to_vec).unwrap_or_default();
+    ahead.push(q);
+    let mut behind: Vec<Point> = vec![start];
+    behind.extend(ring.iter().skip(seg + 1).rev().copied());
+    behind.push(q);
+    let way = if length(&ahead, false) <= length(&behind, false) { ahead } else { behind };
+    (from_exit, resample(&way, TRAVEL_STITCH, false))
 }
 
 /// An open column's centreline `pts` with push compensation: `push` millimetres cut off its start

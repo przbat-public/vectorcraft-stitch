@@ -266,6 +266,19 @@ fn an_exit_point_ends_the_part() {
     assert!(off(last_point(&plan_with(&s, json!({})), 0), (20.0, 100.0)) < 1e-6, "turned to end at its left end, by the exit");
     give(&mut s, line, json!({"stroke": {"points": {"entry": [20.0, 100.0], "exit": [30.0, 104.0]}}}));
     assert!(off(last_point(&plan_with(&s, json!({})), 0), (200.0, 100.0)) < 1e-6, "its entry set: it ends at its other end");
+    // A satin column 6 mm wide (its underlay an edge run and a zigzag, which bring its top
+    // stitching back to where it starts), entered at its left end: a pass along its middle ends it
+    // at its right end, by the exit.
+    let mut s = blank();
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#2233cc"}));
+    let satin = run(&mut s, "path.create", json!({"d": "M 20 100 L 200 100"}))["id"].as_u64().unwrap();
+    run(&mut s, "stroke.set", json!({"weight": 6.0 * PT_PER_MM, "ids": [satin]}));
+    run(&mut s, "select.none", json!({}));
+    give(&mut s, satin, json!({"stroke": {"points": {"entry": [20.0, 100.0]}}}));
+    assert!(off(last_point(&plan_with(&s, json!({})), 0), (20.0, 100.0)) < 4.0, "its top stitching comes back to its left end");
+    give(&mut s, satin, json!({"stroke": {"points": {"entry": [20.0, 100.0], "exit": [200.0, 100.0]}}}));
+    assert!(off(last_point(&plan_with(&s, json!({})), 0), (200.0, 100.0)) < 4.0, "turned round by a pass along its middle");
     // A rectangle's outline sewn as a running line goes on round to its exit, in its own holes.
     let mut s = blank();
     let id = shape(&mut s, 20.0, 20.0, 80.0, 60.0, 0.0);

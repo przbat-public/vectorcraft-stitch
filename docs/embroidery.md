@@ -1978,6 +1978,18 @@ A fill with narrow parts toward an exit plans its parts twice (with and without 
 keeps the better: about 8 % more than without on the rings. A point moved plans again only its own
 unit.
 
+Nearest Connection (2026-10-26, release, the same machine, under load 28 to 41 while other work
+built, twice; `perf --embroidery`, a dry run on the whole design once its plan is kept):
+
+| Row | Measured | Budget |
+|---|---:|---:|
+| 1,000 paths | 120–123 ms | 300 ms |
+| 22,000 paths | 6.1–7.6 s | 15 s |
+
+Every part it joins gets points, so the plan of its result plans nearly every unit afresh, and a
+second round plans what the first moved: on the largest design that is seconds, run on the
+interface thread as every command is (a limit, below).
+
 ### Drawing stitches
 
 One stitch scene is built from the plan and drawn by the same renderer in the app and headless, in

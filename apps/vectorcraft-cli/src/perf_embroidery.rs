@@ -18,6 +18,8 @@
 //! - entry and exit points: the 20 rings sewn toward an exit on their outermost ring, and a fill's
 //!   exit and entry on the 1,000-path document moved a nudge at a time, the design planned again
 //!   after each move;
+//! - Nearest Connection on the 1,000- and 22,000-path documents: the design planned, then the
+//!   command's search and the plan of its result (a dry run, so each run starts from the same);
 //! - the Embroidery panel's Object tab's work on a new snapshot (each frame of a drag or a scrub):
 //!   its read of 1,000 selected objects' settings, and its footer's fabric and thread on the
 //!   22,000-path document;
@@ -73,7 +75,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 48] = [
+pub const ROWS: [&str; 50] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -122,6 +124,8 @@ pub const ROWS: [&str; 48] = [
     "embroidery: 20 rings toward an exit, cold",
     "points: exit moved, 1,000 paths",
     "points: entry moved, 1,000 paths",
+    "nearest connection: 1,000 paths",
+    "nearest connection: 22,000 paths",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
@@ -141,7 +145,7 @@ pub const ROWS: [&str; 48] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 48] = [
+const BUDGETS: [f64; 50] = [
     400.0,
     100.0,
     100.0,
@@ -190,6 +194,8 @@ const BUDGETS: [f64; 48] = [
     RINGS_TOWARD_EXIT_BUDGET,
     POINT_MOVED_BUDGET,
     POINT_MOVED_BUDGET,
+    NEAREST_BUDGETS[0],
+    NEAREST_BUDGETS[1],
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -354,6 +360,8 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.extend(object_tab(&doc, &largest)?);
     ms.push(cold(&rings_toward_an_exit()?)?);
     ms.extend(points_moved(&doc)?);
+    ms.push(nearest(&doc, RUNS)?);
+    ms.push(nearest(&largest, 1)?);
     // A row with nothing to measure (no corpus) is left out.
     Ok(ROWS.iter().zip(ms).zip(BUDGETS).filter(|((_, ms), _)| !ms.is_nan()).map(|((name, ms), budget)| (*name, ms, budget)).collect())
 }
@@ -454,6 +462,11 @@ fn reorder(doc: &Document) -> Result<f64, String> {
 /// point moved.
 const RINGS_TOWARD_EXIT_BUDGET: f64 = 1200.0;
 const POINT_MOVED_BUDGET: f64 = 7.0;
+/// Nearest Connection's budgets on 1,000 and on 22,000 paths, milliseconds: about 2.5 times what they
+/// measured on 2026-10-26 (release, the same machine, under load 28 to 41 while other work built:
+/// 120 and 123 ms, 6.1 and 7.6 s). Every part it joins gets points, so the plan of its result plans
+/// nearly every unit afresh: on the largest design, about a cold plan's time or two.
+const NEAREST_BUDGETS: [f64; 2] = [300.0, 15000.0];
 
 /// The fill angle the settings row gives the object sewn first, degrees, and the step between
 /// runs: each run an angle not planned before, so that its units are planned again, not found
@@ -510,6 +523,20 @@ fn points_moved(doc: &Document) -> Result<[f64; 2], String> {
         Ok(middle(samples))
     };
     Ok([moved("exit")?, moved("entry")?])
+}
+
+/// Milliseconds Nearest Connection takes on `doc` once its plan is kept (planned once before, in a
+/// fresh session each run, so each starts from the same units kept), the median of `runs`: its
+/// walk recording each unit's ends, the search, and the plan of its result (`dryRun`, which plans it
+/// all the same).
+fn nearest(doc: &Document, runs: usize) -> Result<f64, String> {
+    let mut samples = Vec::with_capacity(runs);
+    for _ in 0..runs.max(1) {
+        let mut s = fresh(doc);
+        s.execute("embroidery.stats", &json!({})).map_err(err)?;
+        samples.push(timed(&mut s, "embroidery.nearestConnection", &json!({"all": true, "dryRun": true}))?.0);
+    }
+    Ok(middle(samples))
 }
 
 /// The settings rows on `doc`, milliseconds, each the median of [`DRAW_RUNS`]: one object's fill

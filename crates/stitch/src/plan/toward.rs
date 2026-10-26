@@ -4,9 +4,12 @@
 //! exit ([`ordered_toward`]).
 //!
 //! - **One open subpath** whose start is free (no entry point set) starts at whichever end leaves it
-//!   nearer the exit: the exit beats where the needle happens to be. Started at a set entry, it ends
-//!   where its stitches take it (a running line is never sewn back over itself), unless its style can
-//!   end it at either end ([`Finish::flip`]: a satin column's pass along its middle).
+//!   nearer the exit: the exit beats where the needle happens to be. Where its style can also end it
+//!   at its other end ([`Finish::flip`]: a satin column's pass along its middle), it is turned round
+//!   only when that costs less than the pass, the move in from the needle weighed, and lifts and
+//!   cuts no more often ([`turned_or_passed`]). Started at a set entry, it ends where its stitches
+//!   take it (a running line is never sewn back over itself), unless its style can end it at either
+//!   end.
 //! - **A closed subpath** starts where it would without the exit, and goes on past its start to its
 //!   point nearest the exit ([`Finish::reach`]: a running line's stitches again in its own holes, the
 //!   shorter way round; a satin ring's travel along its middle under its top stitching).
@@ -53,7 +56,7 @@ pub(super) fn ordered_toward(subs: Vec<SubPath>, aim: Aim, finish: &Finish, p: &
     let Some(exit) = aim.exit.filter(|x| x.x.is_finite() && x.y.is_finite()) else { return ordered(subs, aim.start) };
     match subs.len() {
         0 => Vec::new(),
-        1 => one(subs, aim.start, exit, finish),
+        1 => one(subs, aim.start, exit, finish, p),
         n if n > MAX_REORDERED => many(subs, aim.start, exit, finish),
         _ => several(subs, aim.start, exit, finish, p),
     }
@@ -118,23 +121,28 @@ fn natural_end(a: Point, b: Point, from_a: bool, finish: &Finish) -> Point {
 }
 
 /// The line of one subpath.
-fn one(subs: Vec<SubPath>, start: Start, exit: Point, finish: &Finish) -> Vec<Line> {
+fn one(subs: Vec<SubPath>, start: Start, exit: Point, finish: &Finish, p: &Params) -> Vec<Line> {
     let entered = matches!(start, Start::Entry(e) if finite(e));
     let open = subs.first().is_some_and(|s| !s.closed);
     if open && !entered {
         let Some(sub) = subs.into_iter().next() else { return Vec::new() };
         let (Some(&a), Some(&b)) = (sub.pts.first(), sub.pts.last()) else { return Vec::new() };
         let (from_a, from_b) = (natural_end(a, b, true, finish).distance(exit), natural_end(a, b, false, finish).distance(exit));
-        if from_a < from_b {
-            return vec![Line { pts: sub.points(), closed: false, reversed: false, toward: None }];
+        if from_a == from_b {
+            // Both ends as near: as without the exit.
+            return ordered(vec![sub], start);
         }
-        if from_b < from_a {
-            let mut pts = sub.pts;
+        let turned = if from_a < from_b {
+            Line { pts: sub.points(), closed: false, reversed: false, toward: None }
+        } else {
+            let mut pts = sub.pts.clone();
             pts.reverse();
-            return vec![Line { pts, closed: false, reversed: true, toward: None }];
-        }
-        // Both ends as near: as without the exit.
-        return ordered(vec![sub], start);
+            Line { pts, closed: false, reversed: true, toward: None }
+        };
+        return match (finish.flip, start) {
+            (Some(flip), Start::Needle(h)) if finite(h) => turned_or_passed(sub, h, exit, flip, turned, p),
+            _ => vec![turned],
+        };
     }
     let mut lines = ordered(subs, start);
     if let Some(line) = lines.first_mut()
@@ -143,6 +151,32 @@ fn one(subs: Vec<SubPath>, start: Start, exit: Point, finish: &Finish) -> Vec<Li
         line.toward = Some(exit);
     }
     lines
+}
+
+/// A free open subpath whose style can also end it at its other end (`flip`, a millimetre of its
+/// length: a satin column's pass along its middle), the needle at `here`: `turned` (started at the
+/// end that ends it nearer `exit`), or started at its end nearest the needle and carried on toward
+/// the exit, whichever costs less by the planner's weights with the move in from the needle (the
+/// project owner's choice, 2026-10-26); turned only when that move lifts the needle and cuts the
+/// thread no more often.
+fn turned_or_passed(sub: SubPath, here: Point, exit: Point, flip: f64, turned: Line, p: &Params) -> Vec<Line> {
+    let mut passed = ordered(vec![sub], Start::Needle(here));
+    let (Some(&from), Some(&turned_from)) = (passed.first().and_then(|l| l.pts.first()), turned.pts.first()) else { return vec![turned] };
+    if from == turned_from {
+        // Started nearest the needle, it ends nearer the exit already.
+        return vec![turned];
+    }
+    let (mut turn, mut pass) = (Hops::default(), Hops::default());
+    turn.add(here.distance(turned_from), p);
+    pass.add(here.distance(from), p);
+    let way = length(&turned.pts, false) * flip;
+    if turn.lifts <= pass.lifts && turn.trims <= pass.trims && turn.cost <= pass.cost + way {
+        return vec![turned];
+    }
+    if let Some(line) = passed.first_mut() {
+        line.toward = Some(exit);
+    }
+    passed
 }
 
 /// The moves between a line's subpaths, as the planner weighs them: their cost, the lifts and cuts

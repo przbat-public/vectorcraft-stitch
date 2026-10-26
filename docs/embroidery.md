@@ -1068,8 +1068,10 @@ the object a person selects (`id`).
   open line: an open line whose start is free (no entry set) ends at its end nearest the exit; one
   entered at a set point ends at its other end, however far that is from the exit; a closed line
   goes on round past its start to the exit (up to half its length again, in its own holes). A
-  satin column whose start is free starts at the end that ends it nearest the exit; entered at a
-  set point, where its underlay would leave its top stitching ending at the end farther from the
+  satin column whose start is free takes the cheaper, by the planner's weights with the move in
+  from the needle, of starting at the end that ends it nearest the exit and starting nearest the
+  needle with a pass along its middle, and starts at the far end only when that lifts the needle
+  and cuts the thread no more often; entered at a set point, where its underlay would leave its top stitching ending at the end farther from the
   exit, a pass along its middle (under the top stitching, also with no underlay) turns it round;
   a satin ring travels along its middle to the exit before its top stitching. A fill ends at the
   row end nearest its exit: its rows are cut along that row (as at a branch), the strip beyond it

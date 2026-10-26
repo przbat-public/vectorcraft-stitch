@@ -227,8 +227,9 @@ fn a_lines_last_subpath_ends_nearest_its_exit_without_a_jump_more() {
 
 /// An open satin column entered at one end ends at its end nearest its exit with every underlay,
 /// none included: where the underlay would leave its top stitching ending at the other end, one
-/// pass along its middle, before any top crossing, turns it round. Started free (no entry), it is
-/// started at the end that ends it there, with no pass. An exit at its own end changes nothing.
+/// pass along its middle, before any top crossing, turns it round. Started free (no entry), the
+/// needle as far from both ends, it is started at the end that ends it there, with no pass. An exit
+/// at its own end changes nothing.
 #[test]
 fn a_satin_column_ends_at_its_end_nearest_its_exit() {
     let column = line((0.0, 0.0), (60.0, 0.0));
@@ -252,6 +253,26 @@ fn a_satin_column_ends_at_its_end_nearest_its_exit() {
             assert!((last_point(&free).x - end).abs() <= p.column_spacing(p.width), "{underlay:?}, free, exit at {end}");
             assert!(points_of(&free).len() <= points_of(&plain).len(), "{underlay:?}, free: no pass");
         }
+    }
+}
+
+/// A free open satin column (no entry) whose exit lies at the end it doesn't end at: turned round,
+/// its move in from the needle would jump and cut, so it starts nearest the needle and a pass along
+/// its middle ends it at the exit (the project owner's choice, 2026-10-26: the cheaper of the two by
+/// the planner's weights, turned only when that adds no jump or cut), with every underlay.
+#[test]
+fn a_free_satin_is_turned_round_only_when_that_adds_no_jump_or_cut() {
+    let column = line((0.0, 0.0), (60.0, 0.0));
+    let needle = Start::Needle(Point::new(-2.0, 0.0));
+    for underlay in [Underlay::None, Underlay::Center, Underlay::Edge, Underlay::EdgeZigzag] {
+        let p = Params { width: 3.0, underlay, ..Params::for_style(Style::Satin) }.sane();
+        let plain = aimed(&column, &p, needle, None);
+        let exit = if last_point(&plain).x < 30.0 { 60.0 } else { 0.0 };
+        let out = aimed(&column, &p, needle, Some((exit, 2.0)));
+        let first = points_of(&out)[0];
+        assert!(first.x < 30.0, "{underlay:?}: started nearest the needle, at {first:?}");
+        assert!((last_point(&out).x - exit).abs() <= p.column_spacing(p.width), "{underlay:?}: ends at its exit, {:?}", last_point(&out));
+        assert!(points_of(&out).len() > points_of(&plain).len(), "{underlay:?}: with a pass");
     }
 }
 

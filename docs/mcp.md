@@ -5183,7 +5183,8 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   sentence), its counts, record numbers, entry and exit points (its first and last needle points) and bounds, the
   entry and exit points it was planned toward (`asked: {entry, exit}`, millimetres, its part's when its object sets
   them, each `null` otherwise) and how far its first and last needle points miss them (`missedBy: {entry, exit}`,
-  millimetres; a part ends as near its exit as its stitches reach without a jump, a cut or a visible travel, and the
+  millimetres, beyond a satin column's reach: half its width, its pull and its push compensation, as
+  its crossings end on a rail; a part ends as near its exit as its stitches reach without a jump, a cut or a visible travel, and the
   miss says how near that is); `blockCount`, `unitCount` and `truncated`
   say what was left out, and `split` names the objects sewn in more than one block. Sewing order follows stacking
   order: `node.move` changes it.

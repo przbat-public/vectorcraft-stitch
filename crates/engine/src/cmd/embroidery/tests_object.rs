@@ -331,6 +331,12 @@ fn a_point_the_stitches_miss_is_reported() {
     run(&mut s, "embroidery.setEntryExit", json!({"id": line, "part": "stroke", "exit": [200.0, 100.0]}));
     let check = run(&mut s, "embroidery.check", json!({"rules": ["pointMissed"]}));
     assert_eq!(check["rules"][0]["hits"], json!(0));
+    // A satin column ends on a rail, half its width off its middle line: met there too.
+    run(&mut s, "stroke.set", json!({"weight": 8.0, "ids": [line]}));
+    let unit = run(&mut s, "embroidery.sequence", json!({}))["blocks"][0]["units"][0].clone();
+    assert_eq!((unit["sewn"].as_str(), unit["missedBy"]["exit"].as_f64()), (Some("satin"), Some(0.0)), "{unit}");
+    let check = run(&mut s, "embroidery.check", json!({"rules": ["pointMissed"]}));
+    assert_eq!(check["rules"][0]["hits"], json!(0));
 }
 
 /// A fill angle the object doesn't set turns with the object, from its bounding box's angle: the

@@ -454,3 +454,17 @@ fn preferences_from_before_the_embroidery_tool_keep_their_flyout_choices() {
     assert_eq!(loaded.group_tool[lasso], "groupSelection");
     assert_eq!(loaded.group_tool.last().map(String::as_str), Some(vectorcraft_tools::embroidery::ID));
 }
+
+/// Nearest Connection's line says what it did: parts set, or already the nearest when it joined
+/// parts and moved none, or that nothing in scope can take points when it joined none (lettering
+/// converted to outlines, symbol instances…), with how many objects it passed over. Before, a scope
+/// of nothing it could set read "already the nearest", which is false.
+#[test]
+fn nearest_connection_says_when_nothing_can_take_points() {
+    let lang = crate::i18n::Lang::from_code("en").unwrap();
+    let reply = |changed: u64, unchanged: u64, skipped: u64| json!({"changedCount": changed, "unchangedCount": unchanged, "skippedCount": skipped});
+    assert_eq!(nearest_words(&reply(0, 3, 0), lang), "The entry and exit points are already the nearest.");
+    assert_eq!(nearest_words(&reply(0, 0, 2), lang), "Nothing here can take entry and exit points · 2 objects skipped");
+    assert_eq!(nearest_words(&reply(0, 0, 1), lang), "Nothing here can take entry and exit points · 1 object skipped");
+    assert_eq!(nearest_words(&reply(0, 0, 0), lang), "Nothing here can take entry and exit points");
+}

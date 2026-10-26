@@ -5709,3 +5709,6 @@ embroidery	Cancel	キャンセル
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	カンバス上で設定
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	刺繍ツールで、この部分の入口の点と出口の点をカンバス上でドラッグします。
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	ここには入口と出口の点を設定できるものがありません
+@plural	{count} object skipped|{count} objects skipped	{count} 個のオブジェクトをスキップ

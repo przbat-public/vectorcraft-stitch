@@ -74,8 +74,9 @@ pub fn move_cost(d: f64, link: Link, trim: f64) -> f64 {
     }
 }
 
-/// The distance from `a` to `b`, rounded the same on every platform.
-fn apart(a: Point, b: Point) -> f64 {
+/// The distance from `a` to `b`, rounded the same on every platform: what the search measures moves
+/// with, and what whatever weighs its result against it must measure them with.
+pub fn apart(a: Point, b: Point) -> f64 {
     let (dx, dy) = (b.x - a.x, b.y - a.y);
     (dx * dx + dy * dy).sqrt()
 }

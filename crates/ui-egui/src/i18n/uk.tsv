@@ -5627,3 +5627,6 @@ embroidery	Cancel	Скасувати
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Задати на полотні
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Перетягніть точки входу й виходу цієї частини на полотні інструментом «Вишивка».
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Тут нічому не можна задати точки входу й виходу
+@plural	{count} object skipped|{count} objects skipped	пропущено {count} об’єкт|пропущено {count} об’єкти|пропущено {count} об’єктів

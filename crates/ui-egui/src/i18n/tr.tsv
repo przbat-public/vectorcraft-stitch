@@ -5993,3 +5993,6 @@ embroidery	Cancel	İptal
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Tuvalde ayarla
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Bu parçanın giriş ve çıkış noktalarını Nakış Aracı ile tuvalde sürükleyin.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Burada hiçbir şeye giriş ve çıkış noktası verilemez
+@plural	{count} object skipped|{count} objects skipped	{count} nesne atlandı

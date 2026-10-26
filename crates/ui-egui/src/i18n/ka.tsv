@@ -5947,3 +5947,6 @@ embroidery	Cancel	გაუქმება
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	ტილოზე დაყენება
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	ამ ნაწილის შესვლისა და გამოსვლის წერტილები ტილოზე ნაქარგობის ხელსაწყოთი გადაათრიეთ.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	აქ ვერაფერი მიიღებს შესვლისა და გასვლის წერტილებს
+@plural	{count} object skipped|{count} objects skipped	{count} ობიექტი გამოტოვებულია

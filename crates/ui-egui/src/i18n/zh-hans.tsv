@@ -5871,3 +5871,6 @@ embroidery	Cancel	取消
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	在画布上设置
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	用刺绣工具在画布上拖动此部分的入针点和出针点。
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	这里没有对象可以设置入针点和出针点
+@plural	{count} object skipped|{count} objects skipped	已跳过 {count} 个对象

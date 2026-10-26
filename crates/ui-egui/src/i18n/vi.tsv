@@ -5627,3 +5627,6 @@ embroidery	Cancel	Hủy
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Đặt trên khung vẽ
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Kéo điểm vào và điểm ra của phần này trên khung vẽ bằng công cụ Thêu.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Không có gì ở đây nhận được điểm vào và điểm ra
+@plural	{count} object skipped|{count} objects skipped	Đã bỏ qua {count} đối tượng

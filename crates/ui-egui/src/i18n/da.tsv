@@ -5987,3 +5987,6 @@ embroidery	Cancel	Annullér
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Angiv på lærredet
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Træk denne dels ind- og udgangspunkt på lærredet med broderiværktøjet.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Intet her kan få ind- og udgangspunkter
+@plural	{count} object skipped|{count} objects skipped	{count} objekt sprunget over|{count} objekter sprunget over

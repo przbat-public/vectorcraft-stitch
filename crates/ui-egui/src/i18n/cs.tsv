@@ -6032,3 +6032,6 @@ embroidery	Cancel	Zrušit
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Nastavit na plátně
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Přetáhněte vstupní a výstupní bod této části na plátně nástrojem Výšivka.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Nic zde nemůže mít vstupní a výstupní body
+@plural	{count} object skipped|{count} objects skipped	{count} objekt přeskočen|{count} objekty přeskočeny|{count} objektů přeskočeno

@@ -11,15 +11,19 @@
 //!   there don't say, not locked) is free: any of its starts and ends. A part with no points set outside the scope
 //!   follows (it starts nearest the end before it); the rest are sewn as they are.
 //! - **The search.** [`plan::joins`]: exact over the points offered, each part's own start and end
-//!   first, so that ties keep them.
+//!   first, so that ties keep them. The moves are measured as it measures them ([`plan::apart`]).
+//!   The design's first part, planned from nowhere (as it is drawn), and a stroke a clip group cuts
+//!   (its ends aren't its stitches') never follow: they are sewn as they are.
 //! - **Checked by planning.** The points are written on a copy, the copy planned (the units kept from
 //!   earlier plans), and a stretch between two cuts that saves less than [`MIN_JOIN_GAIN`] as
 //!   planned, or comes out longer, gets its old points back (a part that had none, where it started
 //!   and ended). The plan is checked again after that: a round whose plan comes out costlier than
 //!   before in all, or sews its units in other blocks (the sewing order changed, which this command
 //!   never does), changes nothing. The search then runs again on its own result until a round
-//!   changes nothing (at most [`MAX_ROUNDS`]), so a second run changes nothing. One undo step, none
-//!   when nothing changes; `dryRun` answers without writing.
+//!   changes nothing, at most [`MAX_ROUNDS`] times: a second run then changes nothing, unless the
+//!   last round still moved something (each round only keeps a stretch that saves at least
+//!   [`MIN_JOIN_GAIN`], so the rounds settle; three is a bound on the work, not a proof). One undo
+//!   step, none when nothing changes; `dryRun` answers without writing.
 //! - **Planning little.** A round writes points only on the parts the search moves, and on each part
 //!   right after one (else it would follow the moved end); the others stay as they are, so their
 //!   units are the ones kept, and get their own points (where they start and end) once the rounds
@@ -146,8 +150,16 @@ fn chain(doc: &Document, walked: &Walked, scope: Option<&HashSet<NodeId>>, skipp
                 (JoinShape { ends: e, link, role: Role::Free }, Some((id, k)))
             }
             // A line or a column with no points set follows the end before it; a fill's end, and
-            // the rest, as they are now.
-            (_, _, Some(e)) if u.asked.entry.is_none() && u.asked.exit.is_none() && e.through != Through::Free && why != Some("literal") => {
+            // the rest, as they are now. The design's first part follows nothing (it is planned
+            // from nowhere: as it is drawn), and a stroke a clip group cuts ends where the clip
+            // leaves it, not where its path does.
+            (_, _, Some(e))
+                if u.asked.entry.is_none()
+                    && u.asked.exit.is_none()
+                    && e.through != Through::Free
+                    && link != Link::First
+                    && !matches!(why, Some("literal" | "clipped")) =>
+            {
                 let mut e = e.natural();
                 e.own_first(first, last);
                 (JoinShape { ends: e, link, role: Role::Follows }, None)
@@ -231,7 +243,7 @@ fn measured(plan: &DesignPlan, trim: f64) -> Vec<Stretch> {
         let Some((keys, moves)) = out.last_mut() else { continue };
         keys.push((u.origin, u.occurrence));
         if let (Link::Thread, Some(b)) = (link, before) {
-            moves.add(b.distance(first), trim);
+            moves.add(plan::apart(b, first), trim);
         }
         before = Some(last);
     }
@@ -279,13 +291,13 @@ fn write(d: &mut Document, id: NodeId, kind: PartKind, entry: Option<PartValue>,
 /// given its old points back), its free parts (each its unit's index in the plan before, its
 /// object, its kind of part, and its own start and end: where it starts and ends now, in
 /// millimetres), the moves before and after, and how many stretches came out longer and were
-/// restored.
+/// restored (each by its first unit's key, so that a stretch restored in two rounds counts once).
 struct Round {
     doc: Document,
     parts: Vec<(usize, NodeId, PartKind, (Point, Point))>,
     before: Vec<Stretch>,
     after: Vec<Stretch>,
-    restored: usize,
+    restored: Vec<(Origin, usize)>,
 }
 
 /// How many rounds the search runs on its own result at most, until one changes nothing: each
@@ -365,11 +377,11 @@ fn round(
     // project owner's choice, 2026-10-25). The round changes nothing.
     let unchanged = |parts, restored| Round { doc: doc.clone(), parts, before: was.clone(), after: was.clone(), restored };
     if !(was.len() == now.len() && was.iter().zip(&now).all(|(a, b)| a.0 == b.0)) {
-        return Ok(unchanged(parts, 0));
+        return Ok(unchanged(parts, Vec::new()));
     }
     let saves = |a: &Moves, b: &Moves| a.cost - b.cost >= MIN_JOIN_GAIN;
     let back: HashSet<(Origin, usize)> = was.iter().zip(&now).filter(|(a, b)| !saves(&a.1, &b.1)).flat_map(|(a, _)| a.0.iter().copied()).collect();
-    let restored = was.iter().zip(&now).filter(|(a, b)| longer(&a.1, &b.1)).count();
+    let restored: Vec<(Origin, usize)> = was.iter().zip(&now).filter(|(a, b)| longer(&a.1, &b.1)).filter_map(|(a, _)| a.0.first().copied()).collect();
     if !back.is_empty() {
         for (i, id, kind, _) in &parts {
             let key = walked.plan.units.get(*i).map(|u| (u.origin, u.occurrence));
@@ -446,7 +458,7 @@ pub(super) fn nearest_connection(s: &mut Session, p: &Value) -> Result<Value> {
     let mut d: Document = (*original).clone();
     let mut first: Option<Vec<Stretch>> = None;
     let mut last: Option<Round> = None;
-    let mut restored = 0usize;
+    let mut restored: HashSet<(Origin, usize)> = HashSet::new();
     for k in 0..MAX_ROUNDS {
         let walked = super::digitize::walked(&d.without_edit_modes(), &opts, Some(&units), true).map_err(PlanError::error)?;
         if k == 0
@@ -460,7 +472,7 @@ pub(super) fn nearest_connection(s: &mut Session, p: &Value) -> Result<Value> {
         }
         let mut why = Vec::new();
         let r = round(&units, &d, &walked, scope.as_ref(), &opts, if k == 0 { &mut skipped } else { &mut why })?;
-        restored += r.restored;
+        restored.extend(r.restored.iter().copied());
         let moved = r.parts.iter().any(|(_, id, kind, _)| held(&d, *id, *kind) != held(&r.doc, *id, *kind));
         first.get_or_insert_with(|| r.before.clone());
         d = r.doc.clone();
@@ -514,7 +526,7 @@ pub(super) fn nearest_connection(s: &mut Session, p: &Value) -> Result<Value> {
         "unchangedCount": parts.len() - changed,
         "skippedCount": skipped.len(),
         "skipped": skipped.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect::<Vec<_>>(),
-        "restoredCount": restored,
+        "restoredCount": restored.len(),
         "before": b.json(),
         "after": a.json(),
         "saved": {"jumps": b.jumps as i64 - a.jumps as i64, "trims": b.trims as i64 - a.trims as i64, "length": round_mm(b.length - a.length)},
@@ -538,5 +550,30 @@ mod tests {
         assert!(!worse(&was, &[stretch(1, 10.0 + COST_NOISE / 2.0), stretch(2, 5.0)]), "noise");
         assert!(worse(&was, &[stretch(1, 10.0), stretch(2, 5.5)]), "costlier");
         assert!(worse(&was, &[stretch(3, 14.0)]), "its units in other stretches");
+    }
+
+    /// Out of the scope and with no points set, the design's first part is sewn as it is drawn (it
+    /// is planned from nowhere), so the search never takes it for one it may turn round; the part
+    /// after it, out of scope too, follows the end before it.
+    #[test]
+    fn the_designs_first_part_never_follows() {
+        use serde_json::json;
+        let mut s = super::super::test_support::blank();
+        let mut line = |d: &str| {
+            super::super::test_support::run(&mut s, "paint.setFill", json!({"none": true}));
+            super::super::test_support::run(&mut s, "paint.setStroke", json!({"color": "#2233cc"}));
+            let id = super::super::test_support::run(&mut s, "path.create", json!({ "d": d }))["id"].as_u64().unwrap();
+            super::super::test_support::run(&mut s, "stroke.set", json!({"weight": 1.0, "ids": [id]}));
+            NodeId(id)
+        };
+        line("M 20 20 L 120 20");
+        line("M 120 40 L 20 40");
+        let third = line("M 20 60 L 120 60");
+        let doc = s.doc().unwrap().doc.clone();
+        let walked = super::super::digitize::walked(&doc, &super::super::Options::default(), None, true).unwrap();
+        let scope: HashSet<NodeId> = [third].into_iter().collect();
+        let joints = chain(&doc, &walked, Some(&scope), &mut Vec::new());
+        let roles: Vec<(Role, usize)> = joints.iter().map(|(_, j)| (j.shape.role, j.shape.ends.starts.len())).collect();
+        assert_eq!(roles, vec![(Role::Free, 1), (Role::Follows, 2), (Role::Free, 2)], "as drawn, following, free");
     }
 }

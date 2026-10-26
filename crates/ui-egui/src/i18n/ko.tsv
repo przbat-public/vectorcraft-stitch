@@ -5610,3 +5610,6 @@ embroidery	Cancel	취소
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	캔버스에서 설정
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	자수 도구로 캔버스에서 이 부분의 진입점과 출구점을 드래그합니다.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	여기에는 진입점과 출구점을 설정할 수 있는 것이 없습니다
+@plural	{count} object skipped|{count} objects skipped	{count}개 개체 건너뜀

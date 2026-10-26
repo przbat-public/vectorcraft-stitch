@@ -462,10 +462,20 @@ pub(crate) fn nearest_connection(app: &mut VectorcraftApp) {
 }
 
 /// What Nearest Connection's reply `r` says, in `lang`: the parts it set, how much shorter the jumps
-/// between them are, and the cuts before and after when they differ.
-fn nearest_words(r: &Value, lang: crate::i18n::Lang) -> String {
+/// between them are, and the cuts before and after when they differ; that the points are already
+/// the nearest when it joined parts and changed none; and that nothing in scope can take points
+/// (with how many objects it passed over) when it joined none.
+pub(crate) fn nearest_words(r: &Value, lang: crate::i18n::Lang) -> String {
     use crate::embroidery::{numbers, text};
     let changed = r["changedCount"].as_u64().unwrap_or(0);
+    let unchanged = r["unchangedCount"].as_u64().unwrap_or(0);
+    if changed == 0 && unchanged == 0 {
+        let none = crate::et!("Nothing here can take entry and exit points").to_string();
+        return match r["skippedCount"].as_u64().unwrap_or(0) {
+            0 => none,
+            n => format!("{none} · {}", crate::etn!(n, "{count} object skipped", "{count} objects skipped")),
+        };
+    }
     if changed == 0 {
         return crate::et!("The entry and exit points are already the nearest.").to_string();
     }

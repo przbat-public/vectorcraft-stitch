@@ -5984,3 +5984,6 @@ embroidery	Cancel	Ακύρωση
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Ορισμός στον καμβά
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Σύρετε τα σημεία εισόδου και εξόδου αυτού του τμήματος στον καμβά με το εργαλείο κεντήματος.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Τίποτα εδώ δεν μπορεί να πάρει σημεία εισόδου και εξόδου
+@plural	{count} object skipped|{count} objects skipped	{count} αντικείμενο παραλείφθηκε|{count} αντικείμενα παραλείφθηκαν

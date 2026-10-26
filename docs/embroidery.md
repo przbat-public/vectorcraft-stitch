@@ -200,8 +200,10 @@ the control channel with ids:
   it, as it is sewn. The points are written on a copy and planned (the units kept); a stretch
   between two cuts that saves less than 0.1 mm as planned (`MIN_JOIN_GAIN`), or comes out longer,
   keeps its old points, a part that had none set where it started and ended. The search then runs
-  again on its own result until a round changes nothing (at most three, `MAX_ROUNDS`), so a second
-  Nearest Connection changes nothing. Points set in scope are replaced; a locked object is sewn as
+  again on its own result until a round changes nothing, at most three times (`MAX_ROUNDS`): a
+  second Nearest Connection then changes nothing, unless the third round still moved something
+  (each round keeps only a stretch that saves at least 0.1 mm, so the rounds settle; three bounds
+  the work). Points set in scope are replaced; a locked object is sewn as
   it is and listed as skipped (`locked`), as the sewing order's moves leave it. One undo step "Nearest
   Connection", none when nothing changes; `dryRun` answers without writing. Its reply says what it
   saved (`before`, `after`, `saved`: moves, jumps, cuts, length) and lists the points written.

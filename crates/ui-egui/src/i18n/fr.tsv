@@ -6031,3 +6031,6 @@ embroidery	Cancel	Annuler
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Définir sur le plan de travail
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Faites glisser les points d’entrée et de sortie de cette partie sur le plan de travail avec l’outil Broderie.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Rien ici ne peut recevoir de points d’entrée et de sortie
+@plural	{count} object skipped|{count} objects skipped	{count} objet ignoré|{count} objets ignorés

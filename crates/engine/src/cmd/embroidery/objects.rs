@@ -41,7 +41,7 @@ pub(crate) const RESET: &str = "Reset Embroidery Object Settings";
 /// The undo step `embroidery.setEntryExit` makes.
 pub(crate) const ENTRY_EXIT: &str = "Embroidery Entry and Exit";
 /// The undo step `embroidery.copyFrom` makes: a paste of another object's settings.
-pub(crate) const PASTE: &str = "Paste Embroidery Object Settings";
+pub(crate) const PASTE: &str = "Apply Another Object's Embroidery Settings";
 
 /// Why an object given takes no part settings, as the replies name it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -64,6 +64,10 @@ pub(crate) enum Skip {
 }
 
 impl Skip {
+    /// Every reason, as `embroidery.info` and the settings commands' replies give them.
+    pub(crate) const ALL: [Skip; 9] =
+        [Skip::Literal, Skip::Guide, Skip::Type, Skip::Image, Skip::SymbolInstance, Skip::Live, Skip::Placed, Skip::Intertwine, Skip::NoPart];
+
     /// Its id in replies.
     pub(crate) fn id(self) -> &'static str {
         match self {
@@ -122,6 +126,26 @@ pub(crate) fn visit_takers<'a>(n: &'a Node, take: &mut Vec<&'a Node>, skip: &mut
         NodeKind::Blend { .. } | NodeKind::Envelope { .. } | NodeKind::Mesh(_) | NodeKind::Repeat(_) => Skip::Live,
     };
     skip.push((n.id, why));
+}
+
+/// The ids of every reason an object is skipped by the settings commands (`skipped[].reason`): an
+/// interface's words for them are tied to this list.
+pub fn skip_reasons() -> Vec<&'static str> {
+    Skip::ALL.iter().map(|s| s.id()).collect()
+}
+
+/// Whether the cut after `n` means something: it is sewn, or holds what is (a path or a compound
+/// path, stitches from a file, a symbol's instance, a group or a layer); type, an image, a placed
+/// file, a guide or a live object isn't sewn, so isn't cut after.
+pub(crate) fn cut_after_sewn(n: &Node) -> bool {
+    matches!(
+        n.kind,
+        NodeKind::Path { guide: false, .. }
+            | NodeKind::Compound { .. }
+            | NodeKind::SymbolInstance { .. }
+            | NodeKind::Group { .. }
+            | NodeKind::Layer { .. }
+    )
 }
 
 /// The one object `id` stands for as the settings commands take it (its compound path, for a

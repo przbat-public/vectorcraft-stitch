@@ -23,6 +23,7 @@ fn app_with(squares: usize) -> VectorcraftApp {
         app.run("shape.rectangle", json!({"x": x, "y": y, "width": 25, "height": 25})).unwrap();
     }
     app.run("select.set", json!({"ids": []})).unwrap();
+    app.ui.embroidery_panel.tab = crate::panels::embroidery::Tab::Order;
     app
 }
 
@@ -92,7 +93,7 @@ fn the_list_and_its_figures() {
     assert!(words.iter().any(|w| w == "Thread change"), "{words:?}");
     assert!(words.iter().any(|w| w.starts_with("fill · tatami")), "{words:?}");
     assert!(words.iter().filter(|w| w.starts_with("<Rectangle>")).count() == 4, "{words:?}");
-    for figure in ["Design", "Stitches", "Colours", "Thread changes", "Size", "Time"] {
+    for figure in ["Design", "Stitches", "Colors", "Thread changes", "Size", "Time"] {
         assert!(words.iter().any(|w| w == figure), "{figure}: {words:?}");
     }
     assert!(words.iter().any(|w| w.starts_with("The time at 650 stitches a minute")), "{words:?}");
@@ -588,7 +589,7 @@ fn a_drop_and_its_note() {
         words = frame(&mut app, &ctx, t, vec![]);
     }
     // The blue moved first: the other blue joins it, ahead of the reds; still one thread change.
-    assert!(words.iter().any(|w| w == "<Rectangle> is sewn in block 1, joined with others of its colour"), "{words:?}");
+    assert!(words.iter().any(|w| w == "<Rectangle> is sewn in block 1, joined with others of its color"), "{words:?}");
     assert!(!words.iter().any(|w| w.starts_with("Thread changes:")), "{words:?}");
     // Another change drops the note.
     app.run("object.move", json!({"dx": 1, "dy": 0})).unwrap();

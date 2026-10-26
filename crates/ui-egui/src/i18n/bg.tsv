@@ -5372,12 +5372,10 @@ theme	Appearance	Външен вид
 	Embroidery Object Settings	Настройки за бродиране на обекта
 	Reset Embroidery Object Settings	Нулиране на настройките за бродиране на обекта
 	Embroidery Entry and Exit	Вход и изход на бродирането
-	Paste Embroidery Object Settings	Поставяне на настройките за бродиране на обекта
 	Show Embroidery Object Settings	Показване на настройките за бродиране на обекта
 	Embroidery Fabrics	Тъкани за бродиране
 	Apply Embroidery Fabric to Objects	Прилагане на тъканта за бродиране към обектите
 	Embroidery Setup	Настройка на бродирането
-	Show Embroidery Settings	Показване на настройките на бродирането
 	Embroidery Statistics	Статистика на бродирането
 	Embroidery Sewing Order	Ред на бродиране
 	Embroidery Check	Проверка на бродирането
@@ -5464,41 +5462,8 @@ theme	Appearance	Външен вид
 @msg	too many stitches for a VP3 file	твърде много бодове за VP3 файл
 @msg	{_1} is not an embroidery format	{_1} не е формат за бродерия
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Бод:
-	Stitch Length:	Дължина на бода:
-	Fill Angle:	Ъгъл на запълването:
-	Pull Compensation:	Компенсация на свиване:
-	Pull Compensation (%):	Компенсация на свиване (%):
-	Push Compensation:	Компенсация на избутване:
-	Expand Fills:	Разширяване на запълванията:
-	Narrow Parts as Satin:	Тесни части като сатен:
-	Thread Weight:	Дебелина на конеца:
-	Underlay:	Подложка:
-	Jump Length:	Дължина на прехода:
-	Trim Length:	Дължина за срязване:
-	Shortest Stitch:	Най-къс бод:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Как се шият формите: Автоматично запълва формите с татами и шие контурите като сатенени колони или прав бод според ширината им; друг избор шие така всяка форма
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Разстоянието между редовете на запълването и между сатенените бодове; ако се остави, сатенената колона го избира според ширината си
-	The length of the stitches along fill rows and running lines	Дължината на бодовете по редовете на запълването и правия бод
-	The direction of the fill rows	Посоката на редовете на запълването
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Разширява сатенените колони и редовете на запълването от всяка страна, за да компенсира свиването на плата
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Разширява сатенените колони и редовете на запълването с част от ширината им, за да компенсира свиването на плата
-	Shortens satin columns at their ends, where the thread pushes outward	Скъсява сатенените колони в краищата им, където конецът избутва навън
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Уголемява всяка запълнена форма отвсякъде, за да затвори пролуките между формите; отрицателна стойност я смалява
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Частите на запълване, по-тесни от това, се шият като сатенени колони; 0 не шие никакви
-	The thread's weight: thinner thread (a higher number) packs the rows closer	Дебелината на конеца: по-тънък конец (по-голям номер) нарежда редовете по-плътно
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Бодовете, които се шият първи, за да държат плата: избрани от всяка форма, никакви или един вид за всяка форма
-	A move longer than this lifts the needle instead of being sewn	По-дълъг преход вдига иглата, вместо да се шие
-	A jump longer than this cuts the thread first	По-дълъг скок първо срязва конеца
-	Shorter stitches are left out	По-късите бодове се пропускат
-	Tatami Fill	Запълване татами
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Сатен
-	Running Stitch	Прав бод
-	Centre Run	Централен ход
-	Edge Run	Ход по ръба
-	Edge Run and Zigzag	Ход по ръба и зигзаг
-	Edge Run and Tatami	Ход по ръба и татами
 	Embroidery Picture	Изображение на бродерията
 @msg	nothing to draw: the document sews no stitch	няма какво да се изобрази: документът не шие нито един бод
 	Stitch Preview	Преглед на бодовете
@@ -5529,7 +5494,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} бод|{count} бода
 @msg	tab {tab}: one of {_1}	раздел {tab}: един от {_1}
 @msg	unknown key `{k}`: the only one is {only}	непознат ключ `{k}`: единственият е {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Шие се от дъното на купчината нагоре; обектите с един цвят се обединяват, когато между тях няма нищо.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Шие се от дъното на купчината нагоре; обектите с един цвят се обединяват, когато между тях няма нищо.
 embroidery	Trim and thread change	Срязване и смяна на нишката
 embroidery	Thread change	Смяна на нишката
 embroidery	fill	запълване
@@ -5542,7 +5507,7 @@ embroidery	narrow parts as satin	тесните части като сатен
 @plural	{count} object|{count} objects	{count} обект|{count} обекта
 @plural	{count} jump|{count} jumps	{count} прескок|{count} прескока
 @plural	{count} trim|{count} trims	{count} срязване|{count} срязвания
-embroidery	Colours	Цветове
+embroidery	Colors	Цветове
 embroidery	Thread changes	Смени на нишката
 embroidery	Trims	Срязвания
 embroidery	Jumps	Прескоци
@@ -5572,8 +5537,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Времето п
 @msg	can't change the sewing order: too many objects at once	сменяне на реда на шиене не е възможно: твърде много обекти наведнъж
 embroidery	After {name}	След {name}
 embroidery	Before {name}	Преди {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Нито един бод не се премести: обектите с един цвят се обединяват, когато нищо между тях не лежи под тях.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} се шие в блок {block}, обединен с другите от своя цвят
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Нито един бод не се премести: обектите с един цвят се обединяват, когато нищо между тях не лежи под тях.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} се шие в блок {block}, обединен с другите от своя цвят
 embroidery	{name} is sewn in block {block}	{name} се шие в блок {block}
 embroidery	Thread changes: {before} → {after}	Смени на нишката: {before} → {after}
 embroidery	Collapse All	Свий всички
@@ -5590,8 +5555,8 @@ embroidery	More than {value} short stitches in a row	Повече от {value} �
 embroidery	{value} or more layers of stitches on one spot	{value} или повече слоя бодове на едно място
 embroidery	Everything is sewn	Всичко се бродира
 embroidery	Art that isn't sewn	Графика, която не се бродира
-embroidery	More colour blocks than {format} holds ({value})	Повече цветни блокове, отколкото побира {format} ({value})
-embroidery	{format} holds any number of colour blocks	{format} побира произволен брой цветни блокове
+embroidery	More color blocks than {format} holds ({value})	Повече цветни блокове, отколкото побира {format} ({value})
+embroidery	{format} holds any number of color blocks	{format} побира произволен брой цветни блокове
 embroidery	More stitches than a machine shows ({value})	Повече бодове, отколкото показва машина ({value})
 embroidery	More thread changes than a machine shows ({value})	Повече смени на нишката, отколкото показва машина ({value})
 embroidery	No findings	Няма открити
@@ -5628,7 +5593,7 @@ embroidery	No source gives a number to check these against.	Нито един и
 @plural	{count} warning|{count} warnings	{count} предупреждение|{count} предупреждения
 @plural	{count} note|{count} notes	{count} бележка|{count} бележки
 @plural	and {count} more|and {count} more	и още {count}|и още {count}
-embroidery	Threads unlike the art's colour (over {value})	Нишки, различни от цвета на графиката (над {value})
+embroidery	Threads unlike the art's color (over {value})	Нишки, различни от цвета на графиката (над {value})
 embroidery	Largest difference: {value}	Най-голяма разлика: {value}
 embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}
 	Zoom to Box	Мащабиране до рамка
@@ -5649,7 +5614,7 @@ embroidery	Median: {value} mm	Медиана: {value} мм
 embroidery	Too long	Твърде дълги
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
 embroidery	Over {value} mm: {stitches}	Над {value} мм: {stitches}
-@plural	{count} colour|{count} colours	{count} цвят|{count} цвята
+@plural	{count} color|{count} colors	{count} цвят|{count} цвята
 embroidery	Embroidery: {figures}	Бродерия: {figures}
 embroidery	Stitches can't be planned	Бодовете не могат да бъдат планирани
 embroidery	Click to open the Embroidery panel.	Щракнете, за да отворите панела „Бродерия“.
@@ -5769,3 +5734,206 @@ axis	Y Axis	Y ос
 	Rectangular Grid Tool Options	Опции на инструмента „Правоъгълна мрежа“
 	Polar Grid Tool Options	Опции на инструмента „Полярна мрежа“
 	Fill Line	Запълване на линия
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Обект
+embroidery	Select an object to set how it is sewn.	Изберете обект, за да зададете как да се бродира.
+embroidery	Nothing selected	Нищо не е избрано
+embroidery	Guide	Водач
+embroidery	Stitches from a file	Бодове от файл
+embroidery	Path	Път
+embroidery	Compound path	Съставен път
+embroidery	Group	Група
+embroidery	Layer	Слой
+embroidery	Text object	Текстов обект
+embroidery	Image	Изображение
+embroidery	Symbol instance	Екземпляр на символ
+embroidery	Placed file	Поставен файл
+embroidery	Live object	Динамичен обект
+embroidery	fill and stroke	запълване и щрих
+embroidery	fill, no stroke	запълване, без щрих
+embroidery	stroke, no fill	щрих, без запълване
+embroidery	no fill or stroke	без запълване и щрих
+embroidery	Fill	Запълване
+embroidery	Fill: none	Запълване: няма
+embroidery	Stroke	Щрих
+embroidery	Stroke: none	Щрих: няма
+embroidery	Stitch	Бод
+embroidery	Underlay	Подложка
+embroidery	Compensation	Компенсация
+embroidery	auto	авто
+embroidery	{count} of {total} set	зададено в {count} от {total}
+embroidery	Set on the selected objects; without it: {value}	Зададено за избраните обекти; без него: {value}
+embroidery	The selected objects differ.	Избраните обекти се различават.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Автоматично
+embroidery	Mixed	Различни
+embroidery	Type	Вид
+embroidery	Angle	Ъгъл
+embroidery	Row spacing	Разстояние между редовете
+embroidery	Spacing	Разстояние
+embroidery	Stitch length	Дължина на бода
+embroidery	Narrow parts as satin	Тесни части като сатен
+embroidery	Pull compensation	Компенсация на свиване
+embroidery	Pull compensation (%)	Компенсация на свиване (%)
+embroidery	Push compensation	Компенсация на избутване
+embroidery	Expand fills	Разширяване на запълванията
+embroidery	Split satin stitches from	Разделяне на сатенените бодове от
+embroidery	Setting	Настройка
+embroidery	How the part is sewn: Auto picks by its shape and width.	Как се бродира частта: „Автоматично“ избира според формата и ширината ѝ.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	Посоката на редовете на запълването, обратно на часовниковата стрелка; завърта се с обекта.
+embroidery	The distance between rows, or between a satin's stitches.	Разстоянието между редовете или между бодовете на сатена.
+embroidery	The longest stitch along a row or a running line.	Най-дългият бод по ред или по права линия.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Частите на запълването, по-тесни от това, се бродират като сатенени колони; 0 не бродира никоя.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	Бодовете, бродирани първи, под горните бодове, за да задържат плата.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Разширява всеки ред или колона в краищата, където конецът свива плата.
+embroidery	Widens each column by a share of its width.	Разширява всяка колона с част от ширината ѝ.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Скъсява отворена сатенена колона в краищата, където конецът избутва навън.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Разширява запълнената площ от всички страни, за да се допрат фигури, начертани разделено.
+embroidery	Satin stitches longer than this are split in two.	Сатенените бодове, по-дълги от това, се разделят на две.
+embroidery	Where the needle goes in to sew the part.	Къде иглата влиза, за да бродира частта.
+embroidery	Where the needle comes out after the part.	Къде иглата излиза след частта.
+embroidery	Tatami fill	Запълване татами
+embroidery	Tatami	Татами
+embroidery	Satin	Сатен
+embroidery	Running stitch	Прав бод
+embroidery	Don't sew	Не бродирай
+embroidery	None	Няма
+embroidery	Center run	Централен ход
+embroidery	Edge run	Ход по ръба
+embroidery	Edge run + zigzag	Ход по ръба + зигзаг
+embroidery	Edge run + tatami	Ход по ръба + татами
+embroidery	fabric	плат
+embroidery	machine	машина
+embroidery	document	документ
+embroidery	export	експорт
+embroidery	default	по подразбиране
+embroidery	set	зададено
+embroidery	fabric {value}	плат {value}
+embroidery	machine {value}	машина {value}
+embroidery	document {value}	документ {value}
+embroidery	export {value}	експорт {value}
+embroidery	default {value}	по подразбиране {value}
+embroidery	Not sewn: set to Don't sew.	Не се бродира: зададено е „Не бродирай“.
+embroidery	Not sewn: it has no paint.	Не се бродира: няма цвят.
+embroidery	Not sewn: it is hidden.	Не се бродира: скрито е.
+embroidery	Not sewn: it is on a template or non-printing layer.	Не се бродира: в шаблонен или непечатаем слой е.
+embroidery	Not sewn.	Не се бродира.
+embroidery	Stitches from a file are sewn as the file has them.	Бодовете от файл се бродират така, както са във файла.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Текстът още не се бродира: използвайте „Създаване на контур“, за да го бродирате.
+embroidery	Images aren't sewn.	Изображенията не се бродират.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	Обектите на символа приемат настройките: редактирайте символа, за да ги зададете.
+embroidery	Guides aren't sewn.	Водачите не се бродират.
+embroidery	Placed files aren't sewn.	Поставените файлове не се бродират.
+embroidery	Not sewn as it is: expand it to sew it.	Не се бродира в този вид: разширете го, за да се бродира.
+embroidery	It takes no embroidery settings.	Не приема настройки за бродиране.
+@plural	{count} object takes settings|{count} objects take settings	{count} обект приема настройки|{count} обекта приемат настройки
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Възстановяване: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Автоматично: {choice}
+embroidery	Auto · {value}	Автоматично · {value}
+embroidery	filled outline	запълнен контур
+embroidery	center run	централен ход
+embroidery	edge run	ход по ръба
+embroidery	edge run + zigzag	ход по ръба + зигзаг
+embroidery	edge run + tatami	ход по ръба + татами
+embroidery	none	няма
+embroidery	by size	според размера
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Вход и изход
+embroidery	Set	Зададено
+embroidery	nearest	най-близо
+embroidery	not used yet	още не се използва
+embroidery	Set on the selected objects.	Зададено за избраните обекти.
+embroidery	Nearest to where the needle is.	Най-близо до мястото, където е иглата.
+embroidery	built-in values	вградени стойности
+embroidery	Fabric: {fabric} · thread {weight} wt	Плат: {fabric} · конец {weight} wt
+embroidery	Dim values come from the fabric and automatic rules.	Бледите стойности идват от плата и от автоматичните правила.
+embroidery	A bar marks a value set on these objects.	Черта отбелязва стойност, зададена за тези обекти.
+embroidery	Restore from Fabric	Възстановяване от плата
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Премахва собствените стойности на избраните обекти, за да следват отново плата; входът, изходът и отрязването остават.
+embroidery	Cotton (light woven)	Памук (лека тъкан)
+embroidery	Denim or heavy twill	Деним или плътен кепер
+embroidery	Stretch knit	Еластично плетиво
+embroidery	Piqué (polo knit)	Пике (плетиво за поло)
+embroidery	Fleece	Полар
+embroidery	Silk or satin fabric	Коприна или сатенен плат
+embroidery	Nylon or sports fabric	Найлон или спортен плат
+embroidery	Cap (structured)	Шапка (с форма)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Копиране на настройките за бродиране
+	Paste Embroidery Settings	Поставяне на настройките за бродиране
+@msg	select one object that takes embroidery settings: a path or a compound path	изберете един обект, който приема настройки за бродиране: път или съставен път
+@msg	copy an object's embroidery settings first	първо копирайте настройките за бродиране на обект
+@msg	the embroidery settings copied are another document's	копираните настройки за бродиране са на друг документ
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Плат
+embroidery	The values objects use where they set none of their own.	Стойностите, които обектите използват, когато нямат свои.
+embroidery	Built-in values	Вградени стойности
+embroidery	Custom	Собствени
+embroidery	Stabilizer	Стабилизатор
+embroidery	Tear-away	Откъсваем
+embroidery	Cut-away	Изрязваем
+embroidery	Adhesive tear-away	Залепващ откъсваем
+embroidery	Thread	Конец
+embroidery	Thread weight	Дебелина на конеца
+embroidery	Rows' spacing for this thread: {value}	Разстояние между редовете за този конец: {value}
+embroidery	Thread palette	Палитра конци
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Машина и файл
+embroidery	Jump (needle up) from	Прескок (игла горе) от
+embroidery	Cut the thread from	Отрязване на конеца от
+embroidery	Shortest stitch	Най-къс бод
+embroidery	Speed for the time estimate	Скорост за оценката на времето
+embroidery	Sewing order	Ред на шиене
+embroidery	Join one thread's objects when nothing lies between them	Свързване на обектите с един конец, когато между тях няма нищо
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	По-малко смени на конеца и отрязвания: каквото е отгоре, се шие и без това по-късно.
+embroidery	Design name	Име на мотива
+embroidery	Start point	Начална точка
+embroidery	estimate	оценка
+embroidery	information only	само за информация
+embroidery	preset {value}	шаблон {value}
+embroidery	Changed from the preset, which gives {value}	Променено спрямо шаблона, който дава {value}
+embroidery	Set in the document; without it: {value}	Зададено в документа; без него: {value}
+embroidery	Changing the fabric doesn't change them.	Смяната на плата не ги променя.
+embroidery	Apply the fabric to them too:	Приложи плата и към тях:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Платът, върху който се шие мотивът: стойностите му използват обектите, които нямат свои.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	Разстоянието между редовете на запълването за конец 40 wt: друг конец го мащабира.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	Разстоянието на сатенената колона като дял от разстоянието, което избира ширината ѝ.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Какво да се постави в гергефа под плата: за информация, не променя нито един бод.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	Дебелината на конеца: по-тънък конец (по-голямо число) шие редовете по-плътно.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Конците, които машинният файл номерира: на Janome във файловете JEF, на Brother във файловете PES.
+embroidery	A move longer than this lifts the needle instead of sewing it.	По-дълго преместване вдига иглата, вместо да се шие.
+embroidery	A jump longer than this cuts the thread first.	По-дълъг прескок първо отрязва конеца.
+embroidery	Stitches shorter than this are left out.	По-късите бодове се пропускат.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Бодове в минута: времето за шиене на мотива се оценява с нея.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Обектите с един конец се шият един след друг, когато нищо между тях не ги застъпва: по-малко смени на конеца и отрязвания.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Къде машината започва мотива, както го дава файлът, от който е отворен.
+embroidery	The design's name, as the file it was opened from gave it.	Името на мотива, както го дава файлът, от който е отворен.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Платът, конецът и машината на документа: разделът „Бродерия“ в настройката на документа.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} обект има свои стойности за плата.|{count} обекта имат свои стойности за плата.
+	Embroidery Settings…	Настройки на бродерията…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	От {min} до {max}
+embroidery	At least the jump length ({value}): only a jump is cut	Поне дължината на прескока ({value}): отрязва се само при прескок
+# Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
+embroidery	The fabric changed	Платът е променен
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm
+# Machine embroidery: the units the embroidery fields write after their numbers (millimetres, thread weight, stitches a minute), as the Check tab writes them.
+embroidery	mm	мм
+embroidery	wt	wt
+embroidery	/min	/мин
+# Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
+embroidery	Not a number: {text}	Не е число: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Прилагане на настройките за бродиране на друг обект
+	Show Document Embroidery Settings	Показване на настройките за бродиране на документа
+@plural	Trim the thread after the object|Trim the thread after the objects	Отрязване на конеца след обекта|Отрязване на конеца след обектите
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Не са поставени, тъй като тази версия не ги приема: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} избран обект не приема настройки и е пропуснат|{count} избрани обекта не приемат настройки и са пропуснати
+# Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
+@plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} избран обект не приема настройки|{count} избрани обекта не приемат настройки

@@ -5105,16 +5105,18 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   splitLength, speed}`, merged), all reported in `settings` and `resolved` (each fabric value, the information values `thickness`,
   `stabilizer`, `topping` and `needlePoint` included, `{value, source, preset, changed}`; the colour `{value, source}`), and the reply's `overrides` counts the objects that set the fabric's pull, spacing, length and underlay
   themselves, by key, and how many set any (`objectCount`), symbols' art included (read only, as `resolved`).
-  `embroidery.applyFabric` without `ids` acts on the selection, else on every object, symbols' art included: to act
-  on the whole document whatever is selected, pass the layers' ids (symbols' art is reached only with nothing given).
+  `embroidery.applyFabric` without `ids` acts on the selection, else on every object, symbols' art included; with
+  `all: true` (refused beside `ids`) it acts on every object and the symbols' art whatever is selected, the objects
+  `overrides` counts.
 - `embroidery.fabrics {}` lists the fabric presets `{default, caveat, fabrics: [{id, label, values: {tatami, satin,
   stabilizer, topping, needlePoint, thickness}, sources: [{key, kind: "published"|"derived"|"estimate", name, url,
   family, how}], estimates: [key…]}]}`; it needs no document. `how` says how a derived value was worked out, why an
   estimate is one, and, for a value published as one of BERNINA's fabric classes, which class (`the heavy woven class
-  (F8)`): which class a fabric is taken as is ours to say, as `caveat` also says. `embroidery.applyFabric {ids?, keys?}` unsets the objects'
+  (F8)`): which class a fabric is taken as is ours to say, as `caveat` also says. `embroidery.applyFabric {ids?, keys?, all?}` unsets the objects'
   own values of the fabric's keys, on each part those a fabric gives it (a fill's pull, spacing, length and underlay; a
-  stroke's pull, spacing and underlay, never its stitch length) (the selection's, or with nothing selected every object's) and answers `{keys, changedCount, unchangedCount,
-  skippedCount, skipped}`.
+  stroke's pull, spacing and underlay, never its stitch length) (the selection's, or with nothing selected every object's;
+  with `all: true` every object's and the symbols' art's, whatever is selected) and answers `{keys, changedCount,
+  unchangedCount, skippedCount, skipped}`.
 - `embroidery.threads {…embroidery options, offset?, limit?}` lists the thread each colour block is sewn in, in sewing
   order: `{palette, threshold, blockCount, offset, truncated, blocks: [{block, thread: {palette, index, name, color, art,
   deltaE, mismatch}, unitCount}], options, warnings}`. `deltaE` is the CIEDE2000 difference between the art's colour
@@ -5122,7 +5124,8 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   options it takes only the stretch of blocks to list: any other key, such as `format`, is refused.
 - `embroidery.setTrimAfter {on?, ids?}` asks for the thread to be cut after each object (or with `on: false` for no
   cut, a file's own included); left out, `on` toggles. It needs a selection or `ids`, answers `{on, changed}`, and
-  reports an id that names no object as a missing object.
+  reports an id that names no object as a missing object. What isn't sewn (type, images, placed files, guides, live
+  objects) is passed over, and refused alone.
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,

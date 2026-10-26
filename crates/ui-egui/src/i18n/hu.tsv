@@ -5404,12 +5404,10 @@ imageTrace	Outline	Körvonal
 	Embroidery Object Settings	Objektum hímzési beállításai
 	Reset Embroidery Object Settings	Objektum hímzési beállításainak visszaállítása
 	Embroidery Entry and Exit	Hímzés be- és kiszúrási pontja
-	Paste Embroidery Object Settings	Objektum hímzési beállításainak beillesztése
 	Show Embroidery Object Settings	Objektum hímzési beállításainak megjelenítése
 	Embroidery Fabrics	Hímzőanyagok
 	Apply Embroidery Fabric to Objects	Hímzőanyag alkalmazása az objektumokra
 	Embroidery Setup	Hímzésbeállítás
-	Show Embroidery Settings	Hímzésbeállítások megjelenítése
 	Embroidery Statistics	Hímzésstatisztika
 	Embroidery Sewing Order	Hímzési sorrend
 	Embroidery Check	Hímzés ellenőrzése
@@ -5496,41 +5494,8 @@ imageTrace	Outline	Körvonal
 @msg	too many stitches for a VP3 file	túl sok öltés egy VP3-fájlhoz
 @msg	{_1} is not an embroidery format	a(z) {_1} nem hímzésformátum
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Öltés:
-	Stitch Length:	Öltéshossz:
-	Fill Angle:	Kitöltés szöge:
-	Pull Compensation:	Húzáskompenzáció:
-	Pull Compensation (%):	Húzáskompenzáció (%):
-	Push Compensation:	Nyomáskompenzáció:
-	Expand Fills:	Kitöltések bővítése:
-	Narrow Parts as Satin:	Keskeny részek szaténként:
-	Thread Weight:	Szálvastagság:
-	Underlay:	Alátét:
-	Jump Length:	Ugrás hossza:
-	Trim Length:	Vágás hossza:
-	Shortest Stitch:	Legrövidebb öltés:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Hogyan készülnek az alakzatok: az Automatikus tatamival tölti ki az alakzatokat, a vonalakat pedig szélességük szerint szaténoszlopként vagy egyenes öltéssel varrja; más választás minden alakzatot így varr
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	A kitöltési sorok és a szaténöltések közti távolság; változatlanul hagyva a szaténoszlop a szélessége szerint választja
-	The length of the stitches along fill rows and running lines	Az öltések hossza a kitöltési sorok és az egyenes öltések mentén
-	The direction of the fill rows	A kitöltési sorok iránya
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Mindkét oldalon szélesíti a szaténoszlopokat és a kitöltési sorokat, hogy ellensúlyozza az anyag összehúzódását
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Szélességük egy részével szélesíti a szaténoszlopokat és a kitöltési sorokat, hogy ellensúlyozza az anyag összehúzódását
-	Shortens satin columns at their ends, where the thread pushes outward	Rövidíti a szaténoszlopokat a végeiken, ahol a szál kifelé nyom
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Körben megnöveli minden kitöltött alakzatot, hogy bezárja az alakzatok közti réseket; negatív érték kisebbíti
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	A kitöltésnek az ennél keskenyebb részei szaténoszlopként készülnek; a 0 egyiket sem
-	The thread's weight: thinner thread (a higher number) packs the rows closer	A szál vastagsága: a vékonyabb szál (nagyobb szám) sűrűbben rakja a sorokat
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Az elsőként varrt öltések, amelyek tartják az anyagot: alakzatonként választva, semmi, vagy egyfajta minden alakzathoz
-	A move longer than this lifts the needle instead of being sewn	Az ennél hosszabb mozgás felemeli a tűt, ahelyett hogy varrná
-	A jump longer than this cuts the thread first	Az ennél hosszabb ugrás előbb elvágja a szálat
-	Shorter stitches are left out	A rövidebb öltések kimaradnak
-	Tatami Fill	Tatami kitöltés
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Szatén
-	Running Stitch	Egyenes öltés
-	Centre Run	Középső menet
-	Edge Run	Szegélymenet
-	Edge Run and Zigzag	Szegélymenet és cikcakk
-	Edge Run and Tatami	Szegélymenet és tatami
 	Embroidery Picture	Hímzés képe
 @msg	nothing to draw: the document sews no stitch	nincs mit rajzolni: a dokumentum egyetlen öltést sem varr
 	Stitch Preview	Öltések előnézete
@@ -5561,7 +5526,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} öltés
 @msg	tab {tab}: one of {_1}	lap {tab}: ezek egyike: {_1}
 @msg	unknown key `{k}`: the only one is {only}	ismeretlen kulcs `{k}`: az egyetlen a {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Alulról felfelé hímezve; az egy színhez tartozó objektumok összevonódnak, ha semmi sincs közöttük.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Alulról felfelé hímezve; az egy színhez tartozó objektumok összevonódnak, ha semmi sincs közöttük.
 embroidery	Trim and thread change	Vágás és szálcsere
 embroidery	Thread change	Szálcsere
 embroidery	fill	kitöltés
@@ -5574,7 +5539,7 @@ embroidery	narrow parts as satin	keskeny részek szaténnal
 @plural	{count} object|{count} objects	{count} objektum
 @plural	{count} jump|{count} jumps	{count} ugrás
 @plural	{count} trim|{count} trims	{count} vágás
-embroidery	Colours	Színek
+embroidery	Colors	Színek
 embroidery	Thread changes	Szálcserék
 embroidery	Trims	Vágások
 embroidery	Jumps	Ugrások
@@ -5604,8 +5569,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Az idő percenké
 @msg	can't change the sewing order: too many objects at once	a varrási sorrend nem módosítható: túl sok objektum egyszerre
 embroidery	After {name}	{name} után
 embroidery	Before {name}	{name} előtt
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Egy öltés sem mozdult: az egy színhez tartozó objektumok továbbra is összevonódnak, ha semmi sincs közöttük alattuk.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} a(z) {block}. blokkban kerül hímzésre, a többi azonos színűvel összevonva
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Egy öltés sem mozdult: az egy színhez tartozó objektumok továbbra is összevonódnak, ha semmi sincs közöttük alattuk.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} a(z) {block}. blokkban kerül hímzésre, a többi azonos színűvel összevonva
 embroidery	{name} is sewn in block {block}	{name} a(z) {block}. blokkban kerül hímzésre
 embroidery	Thread changes: {before} → {after}	Szálcserék: {before} → {after}
 embroidery	Collapse All	Összes összecsukása
@@ -5622,8 +5587,8 @@ embroidery	More than {value} short stitches in a row	Több mint {value} rövid �
 embroidery	{value} or more layers of stitches on one spot	{value} vagy több öltésréteg egy helyen
 embroidery	Everything is sewn	Minden kihímzésre kerül
 embroidery	Art that isn't sewn	Grafika, amely nem kerül kihímzésre
-embroidery	More colour blocks than {format} holds ({value})	Több színblokk, mint amennyit a(z) {format} elbír ({value})
-embroidery	{format} holds any number of colour blocks	A(z) {format} tetszőleges számú színblokkot elbír
+embroidery	More color blocks than {format} holds ({value})	Több színblokk, mint amennyit a(z) {format} elbír ({value})
+embroidery	{format} holds any number of color blocks	A(z) {format} tetszőleges számú színblokkot elbír
 embroidery	More stitches than a machine shows ({value})	Több öltés, mint amennyit egy gép megjelenít ({value})
 embroidery	More thread changes than a machine shows ({value})	Több szálcsere, mint amennyit egy gép megjelenít ({value})
 embroidery	No findings	Nincs találat
@@ -5660,7 +5625,7 @@ embroidery	No source gives a number to check these against.	Egyik forrás sem ad
 @plural	{count} warning|{count} warnings	{count} figyelmeztetés
 @plural	{count} note|{count} notes	{count} megjegyzés
 @plural	and {count} more|and {count} more	és még {count}
-embroidery	Threads unlike the art's colour (over {value})	A grafika színétől eltérő szálak ({value} fölött)
+embroidery	Threads unlike the art's color (over {value})	A grafika színétől eltérő szálak ({value} fölött)
 embroidery	Largest difference: {value}	Legnagyobb eltérés: {value}
 embroidery	Block {block}: {thread}, {value}	{block}. blokk: {thread}, {value}
 	Zoom to Box	Nagyítás keretre
@@ -5681,7 +5646,7 @@ embroidery	Median: {value} mm	Medián: {value} mm
 embroidery	Too long	Túl hosszú
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} mm fölött: {stitches}
-@plural	{count} colour|{count} colours	{count} szín
+@plural	{count} color|{count} colors	{count} szín
 embroidery	Embroidery: {figures}	Hímzés: {figures}
 embroidery	Stitches can't be planned	Az öltések nem tervezhetők meg
 embroidery	Click to open the Embroidery panel.	Kattintson a Hímzés panel megnyitásához.
@@ -5816,3 +5781,206 @@ axis	Y Axis	Y tengely
 	Rectangular Grid Tool Options	Téglalaprács beállításai
 	Polar Grid Tool Options	Polárrács beállításai
 	Fill Line	Szakasz kitöltése
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Objektum
+embroidery	Select an object to set how it is sewn.	Jelöljön ki egy objektumot, hogy beállítsa, hogyan hímezze a gép.
+embroidery	Nothing selected	Nincs kijelölés
+embroidery	Guide	Segédvonal
+embroidery	Stitches from a file	Öltések fájlból
+embroidery	Path	Útvonal
+embroidery	Compound path	Összetett útvonal
+embroidery	Group	Csoport
+embroidery	Layer	Réteg
+embroidery	Text object	Szövegobjektum
+embroidery	Image	Kép
+embroidery	Symbol instance	Szimbólumpéldány
+embroidery	Placed file	Beillesztett fájl
+embroidery	Live object	Dinamikus objektum
+embroidery	fill and stroke	kitöltés és körvonal
+embroidery	fill, no stroke	kitöltés, körvonal nélkül
+embroidery	stroke, no fill	körvonal, kitöltés nélkül
+embroidery	no fill or stroke	nincs kitöltés vagy körvonal
+embroidery	Fill	Kitöltés
+embroidery	Fill: none	Kitöltés: nincs
+embroidery	Stroke	Körvonal
+embroidery	Stroke: none	Körvonal: nincs
+embroidery	Stitch	Öltés
+embroidery	Underlay	Alátét
+embroidery	Compensation	Kompenzáció
+embroidery	auto	auto
+embroidery	{count} of {total} set	beállítva: {count}/{total}
+embroidery	Set on the selected objects; without it: {value}	A kijelölt objektumokon beállítva; nélküle: {value}
+embroidery	The selected objects differ.	A kijelölt objektumok eltérnek.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Automatikus
+embroidery	Mixed	Vegyes
+embroidery	Type	Típus
+embroidery	Angle	Szög
+embroidery	Row spacing	Sortávolság
+embroidery	Spacing	Térköz
+embroidery	Stitch length	Öltéshossz
+embroidery	Narrow parts as satin	Keskeny részek szaténként
+embroidery	Pull compensation	Húzáskompenzáció
+embroidery	Pull compensation (%)	Húzáskompenzáció (%)
+embroidery	Push compensation	Nyomáskompenzáció
+embroidery	Expand fills	Kitöltések bővítése
+embroidery	Split satin stitches from	Szaténöltések felezése innen
+embroidery	Setting	Beállítás
+embroidery	How the part is sewn: Auto picks by its shape and width.	Hogyan készül a rész: az Automatikus az alakja és a szélessége szerint választ.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	A kitöltés sorainak iránya, az óramutatóval ellentétesen; az objektummal együtt fordul.
+embroidery	The distance between rows, or between a satin's stitches.	A sorok közötti vagy a szatén öltései közötti távolság.
+embroidery	The longest stitch along a row or a running line.	A leghosszabb öltés egy sorban vagy egyenes öltésű vonalon.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	A kitöltés ennél keskenyebb részei szaténoszlopként készülnek; a 0 egyiket sem.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	Az elsőként, a felső öltések alá varrt öltések, amelyek az anyagot tartják.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Kiszélesíti a sorokat és oszlopokat a végükön, ahol a cérna behúzza az anyagot.
+embroidery	Widens each column by a share of its width.	Minden oszlopot a szélessége egy részével szélesít.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Megrövidíti a nyitott szaténoszlopot a végein, ahol a cérna kifelé nyom.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Körben megnöveli a kitöltött területet, hogy a külön rajzolt alakzatok összeérjenek.
+embroidery	Satin stitches longer than this are split in two.	Az ennél hosszabb szaténöltéseket kettéosztja.
+embroidery	Where the needle goes in to sew the part.	Ahol a tű belép, hogy kihímezze a részt.
+embroidery	Where the needle comes out after the part.	Ahol a tű kilép a rész után.
+embroidery	Tatami fill	Tatami kitöltés
+embroidery	Tatami	Tatami
+embroidery	Satin	Szatén
+embroidery	Running stitch	Egyenes öltés
+embroidery	Don't sew	Ne hímezze
+embroidery	None	Nincs
+embroidery	Center run	Középső menet
+embroidery	Edge run	Szegélymenet
+embroidery	Edge run + zigzag	Szegélymenet + cikcakk
+embroidery	Edge run + tatami	Szegélymenet + tatami
+embroidery	fabric	anyag
+embroidery	machine	gép
+embroidery	document	dokumentum
+embroidery	export	exportálás
+embroidery	default	alapértelmezett
+embroidery	set	beállítva
+embroidery	fabric {value}	anyag {value}
+embroidery	machine {value}	gép {value}
+embroidery	document {value}	dokumentum {value}
+embroidery	export {value}	exportálás {value}
+embroidery	default {value}	alapértelmezett {value}
+embroidery	Not sewn: set to Don't sew.	Nem készül: a Ne hímezze van beállítva.
+embroidery	Not sewn: it has no paint.	Nem készül: nincs színe.
+embroidery	Not sewn: it is hidden.	Nem készül: rejtett.
+embroidery	Not sewn: it is on a template or non-printing layer.	Nem készül: sablon- vagy nem nyomtatandó rétegen van.
+embroidery	Not sewn.	Nem készül.
+embroidery	Stitches from a file are sewn as the file has them.	A fájlból származó öltések úgy készülnek, ahogy a fájlban vannak.
+embroidery	Type isn't sewn yet: create outlines to sew it.	A szöveg még nem készül: alakítsa útvonallá, hogy kihímezhesse.
+embroidery	Images aren't sewn.	Képek nem készülnek hímzésként.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	A beállításokat a szimbólum objektumai kapják: szerkessze a szimbólumot a beállításhoz.
+embroidery	Guides aren't sewn.	Segédvonalak nem készülnek.
+embroidery	Placed files aren't sewn.	A beillesztett fájlok nem készülnek.
+embroidery	Not sewn as it is: expand it to sew it.	Így nem készül: bontsa ki, hogy kihímezhesse.
+embroidery	It takes no embroidery settings.	Nem fogad hímzésbeállításokat.
+@plural	{count} object takes settings|{count} objects take settings	{count} objektum fogad beállításokat
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Visszaállítás: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Automatikus: {choice}
+embroidery	Auto · {value}	Automatikus · {value}
+embroidery	filled outline	kitöltött körvonal
+embroidery	center run	középső menet
+embroidery	edge run	szegélymenet
+embroidery	edge run + zigzag	szegélymenet + cikcakk
+embroidery	edge run + tatami	szegélymenet + tatami
+embroidery	none	nincs
+embroidery	by size	méret szerint
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Belépés és kilépés
+embroidery	Set	Beállítva
+embroidery	nearest	legközelebbi
+embroidery	not used yet	még nincs használatban
+embroidery	Set on the selected objects.	A kijelölt objektumokon beállítva.
+embroidery	Nearest to where the needle is.	A tűhöz legközelebb.
+embroidery	built-in values	beépített értékek
+embroidery	Fabric: {fabric} · thread {weight} wt	Anyag: {fabric} · cérna {weight} wt
+embroidery	Dim values come from the fabric and automatic rules.	A halvány értékek az anyagból és az automatikus szabályokból jönnek.
+embroidery	A bar marks a value set on these objects.	Egy sáv jelöli az ezeken az objektumokon beállított értéket.
+embroidery	Restore from Fabric	Visszaállítás az anyagból
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Törli a kijelölt objektumok saját értékeit, hogy újra az anyagot kövessék; a belépés, a kilépés és a cérnavágás megmarad.
+embroidery	Cotton (light woven)	Pamut (könnyű szövet)
+embroidery	Denim or heavy twill	Farmer vagy vastag sávolykötésű szövet
+embroidery	Stretch knit	Rugalmas kötött anyag
+embroidery	Piqué (polo knit)	Piké (pólókötött)
+embroidery	Fleece	Polár
+embroidery	Silk or satin fabric	Selyem vagy szaténanyag
+embroidery	Nylon or sports fabric	Nejlon vagy sportanyag
+embroidery	Cap (structured)	Sapka (merevített)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Hímzésbeállítások másolása
+	Paste Embroidery Settings	Hímzésbeállítások beillesztése
+@msg	select one object that takes embroidery settings: a path or a compound path	jelöljön ki egy hímzésbeállításokat fogadó objektumot: útvonalat vagy összetett útvonalat
+@msg	copy an object's embroidery settings first	előbb másolja egy objektum hímzésbeállításait
+@msg	the embroidery settings copied are another document's	a másolt hímzésbeállítások egy másik dokumentumhoz tartoznak
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Anyag
+embroidery	The values objects use where they set none of their own.	Az értékek, amelyeket a saját érték nélküli objektumok használnak.
+embroidery	Built-in values	Beépített értékek
+embroidery	Custom	Egyéni
+embroidery	Stabilizer	Merevítő
+embroidery	Tear-away	Kitéphető
+embroidery	Cut-away	Kivágható
+embroidery	Adhesive tear-away	Öntapadó kitéphető
+embroidery	Thread	Cérna
+embroidery	Thread weight	Cérnavastagság
+embroidery	Rows' spacing for this thread: {value}	Sortávolság ezzel a cérnával: {value}
+embroidery	Thread palette	Cérnapaletta
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Gép és fájl
+embroidery	Jump (needle up) from	Ugrás (tű fent) ettől
+embroidery	Cut the thread from	Cérnavágás ettől
+embroidery	Shortest stitch	Legrövidebb öltés
+embroidery	Speed for the time estimate	Sebesség az időbecsléshez
+embroidery	Sewing order	Varrási sorrend
+embroidery	Join one thread's objects when nothing lies between them	Egy cérna objektumainak összevonása, ha nincs köztük semmi
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Kevesebb cérnacsere és vágás: ami felül van, amúgy is később varródik.
+embroidery	Design name	Minta neve
+embroidery	Start point	Kezdőpont
+embroidery	estimate	becslés
+embroidery	information only	csak tájékoztatás
+embroidery	preset {value}	előbeállítás {value}
+embroidery	Changed from the preset, which gives {value}	Az előbeállítástól eltér, amely {value} értéket ad
+embroidery	Set in the document; without it: {value}	A dokumentumban beállítva; nélküle: {value}
+embroidery	Changing the fabric doesn't change them.	Az anyag cseréje nem változtat rajtuk.
+embroidery	Apply the fabric to them too:	Az anyag alkalmazása rájuk is:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Az anyag, amelyre a minta készül: értékeit a saját érték nélküli objektumok használják.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	A kitöltés sorainak távolsága 40 wt cérnához: más cérna arányosan módosítja.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	A szaténoszlop sűrűsége annak arányában, amelyet a szélessége választ.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Mi kerüljön a rámába az anyag alá: tájékoztatás, egy öltést sem változtat.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	A cérna vastagsága: vékonyabb cérna (nagyobb szám) sűrűbben varrja a sorokat.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	A gépfájl által számozott cérnák: a Janome-é a JEF-fájlokban, a Brother-é a PES-fájlokban.
+embroidery	A move longer than this lifts the needle instead of sewing it.	A hosszabb mozgás felemeli a tűt ahelyett, hogy varrná.
+embroidery	A jump longer than this cuts the thread first.	A hosszabb ugrás előbb elvágja a cérnát.
+embroidery	Stitches shorter than this are left out.	A rövidebb öltések kimaradnak.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Öltés percenként: ezzel becsüljük a minta varrási idejét.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Egy cérna objektumai egymás után varródnak, ha semmi sem fedi őket köztük: kevesebb cérnacsere és vágás.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Ahol a gép elkezdi a mintát, ahogy a megnyitott fájl megadta.
+embroidery	The design's name, as the file it was opened from gave it.	A minta neve, ahogy a megnyitott fájl megadta.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	A dokumentum anyaga, cérnája és gépe: a Dokumentumbeállítás Hímzés lapja.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} objektum saját értékeket ad meg az anyaghoz.
+	Embroidery Settings…	Hímzés beállításai…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	{min} és {max} között
+embroidery	At least the jump length ({value}): only a jump is cut	Legalább az ugrás hossza ({value}): csak ugrásnál vág
+# Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
+embroidery	The fabric changed	Az anyag megváltozott
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm
+# Machine embroidery: the units the embroidery fields write after their numbers (millimetres, thread weight, stitches a minute), as the Check tab writes them.
+embroidery	mm	mm
+embroidery	wt	wt
+embroidery	/min	/perc
+# Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
+embroidery	Not a number: {text}	Nem szám: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Másik objektum hímzési beállításainak alkalmazása
+	Show Document Embroidery Settings	Dokumentum hímzési beállításainak megjelenítése
+@plural	Trim the thread after the object|Trim the thread after the objects	Cérna elvágása az objektum után
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Nincs beillesztve, mert ez a verzió nem fogadja el: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} kijelölt objektum nem fogad beállításokat, kihagyva
+# Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
+@plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} kijelölt objektum nem fogad beállításokat

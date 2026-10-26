@@ -264,19 +264,27 @@ impl Memo {
     }
 }
 
+/// Milliseconds in a second: a walk's time is kept in milliseconds.
+#[cfg(not(target_arch = "wasm32"))]
+const MS_PER_SEC: f64 = 1000.0;
+
 /// A plan as the service remembers it: the plan, its generation (a number no other plan of the
-/// process has, which what is drawn from it is keyed by), and its stitch scene, built once on
-/// first request ([`Planned::scene`]).
+/// process has, which what is drawn from it is keyed by), how long the walk that made it took, and
+/// its stitch scene, built once on first request ([`Planned::scene`]).
 #[derive(Clone, Debug)]
 pub struct Planned {
     pub plan: Arc<DesignPlan>,
     pub generation: u64,
+    /// How long the walk that made the plan took, milliseconds, whoever asked for it first: a
+    /// caller that takes it remembered (the stitch preview after a read command) knows how heavy
+    /// the design is to plan. `None` where the walk isn't timed (the web, which has no clock here).
+    pub walk_ms: Option<f64>,
     scene: Arc<OnceLock<Arc<StitchScene>>>,
 }
 
 impl Planned {
     fn new(plan: Arc<DesignPlan>) -> Self {
-        Self { plan, generation: NEXT_GENERATION.fetch_add(1, Ordering::Relaxed), scene: Arc::default() }
+        Self { plan, generation: NEXT_GENERATION.fetch_add(1, Ordering::Relaxed), walk_ms: None, scene: Arc::default() }
     }
 
     /// The plan's stitch scene, built the first time it is asked for (on the asking thread, outside
@@ -421,7 +429,11 @@ impl PlanService {
     fn walk(&self, of: Of<'_>, doc: &Document, opts: &Options, fonts: u64) -> Result<Planned, PlanError> {
         #[cfg(test)]
         self.walks.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        #[cfg(not(target_arch = "wasm32"))]
+        let started = std::time::Instant::now();
         let plan = digitize(doc, opts, Some(&self.units)).map(|p| Planned::new(Arc::new(p)));
+        #[cfg(not(target_arch = "wasm32"))]
+        let plan = plan.map(|p| Planned { walk_ms: Some(started.elapsed().as_secs_f64() * MS_PER_SEC), ..p });
         if plan.as_ref().err() != Some(&PlanError::Cancelled) {
             let bytes = plan.as_ref().map_or(0, |p| p.plan.byte_size());
             let records = plan.as_ref().map_or(0, |p| p.plan.blocks.iter().map(|b| b.stitches.len()).sum());

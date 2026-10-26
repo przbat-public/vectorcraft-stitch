@@ -94,7 +94,8 @@ use vectorcraft_doc::embroidery::{Embroidery, ThreadPalette};
 use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 
-pub use self::options::{SettingField, setting_field};
+pub use self::objects::skip_reasons;
+pub use self::options::{SettingField, distinct_underlays, fabric_field, part_field, setting_field};
 use self::stats::Page;
 use super::*;
 
@@ -268,7 +269,7 @@ pub fn specs() -> Vec<CommandSpec> {
         ),
         cmd!(
             "embroidery.copyFrom",
-            "Paste Embroidery Object Settings",
+            "Apply Another Object's Embroidery Settings",
             [],
             None,
             "{source: object id (whose settings are copied), ids?: [id…] (default: the selection; groups and compound paths as embroidery.set takes them; the source itself is passed by), part?: \"fill\"|\"stroke\" (default: both), keys?: [key…] (default: every setting embroidery.set takes; entry and exit only when named)} give the objects the source's embroidery settings of those keys, set or unset as the source has them, on each of the parts they have, as the Object tab's Copy and Paste settings do (a paste: the source is read when this runs, as it is then); what a newer version wrote stays; a source value embroidery.set would refuse (a newer version's, out of range) is passed over, the objects keeping theirs. One undo step, none when nothing changes → {source, part: \"fill\"|\"stroke\"|null (both), keys, passedOver: [\"fill.stitch\"…] the values passed over, changedCount, unchangedCount, skippedCount, skipped: as embroidery.set lists them}",
@@ -307,13 +308,13 @@ pub fn specs() -> Vec<CommandSpec> {
             "Apply Embroidery Fabric to Objects",
             [],
             None,
-            "{ids?: [id…] (default: the selection, else every object of the document; groups and compound paths as embroidery.set takes them), keys?: [key…] (default: pull, spacing, length and underlay, the values a fabric sets; no others)} unset those of the objects' own settings, on fills and strokes, so that they follow the document's fabric again (Document Setup's bar). One undo step, none when nothing changes → {keys, changedCount, unchangedCount, skippedCount, skipped: as embroidery.set lists them}",
+            "{ids?: [id…] (default: the selection, else every object of the document; groups and compound paths as embroidery.set takes them), all?: true (every object of the document and its symbols' art, whatever is selected: what embroidery.settings' overrides count, Document Setup's bar; not with ids), keys?: [key…] (default: pull, spacing, length and underlay, the values a fabric sets; no others)} unset those of the objects' own settings, on fills and strokes, so that they follow the document's fabric again (Document Setup's bar). One undo step, none when nothing changes → {keys, changedCount, unchangedCount, skippedCount, skipped: as embroidery.set lists them}",
             has_doc,
             fabrics::apply_fabric
         ),
         cmd!(
             query "embroidery.settings",
-            "Show Embroidery Settings",
+            "Show Document Embroidery Settings",
             [],
             None,
             "{} the document's embroidery settings, read only → {settings, resolved, overrides} as embroidery.setup answers",
@@ -386,6 +387,11 @@ fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
     let d = &s.doc()?.doc;
     if let Some(missing) = ids.iter().find(|id| d.node(**id).is_none()) {
         return Err(EngineError::NoNode(*missing));
+    }
+    // Only what is sewn is cut after: type, images and the like are passed over.
+    let ids: Vec<NodeId> = ids.into_iter().filter(|id| d.node(*id).is_some_and(objects::cut_after_sewn)).collect();
+    if ids.is_empty() {
+        return Err(bad(C, "none of the objects given is sewn (type, images, placed files and guides aren't), so none is cut after"));
     }
     // Marked: asked for a cut after it, or a run of stitches whose file had one.
     let marked = |e: Option<&Embroidery>| e.is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after));

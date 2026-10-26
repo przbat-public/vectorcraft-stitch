@@ -162,6 +162,8 @@ pub fn inspect(app: &VectorcraftApp, ctx: &egui::Context) -> Value {
         "background": app.background.jobs.iter().filter(|j| !j.label.is_empty()).map(|j| j.label.as_str()).collect::<Vec<_>>(),
         // VectorCraft Stitch: the active document's stitch view and how its plan stands.
         "stitchPreview": crate::embroidery::inspect(app, ctx.input(|i| i.time)),
+        // VectorCraft Stitch: what the Embroidery panel's Object tab shows.
+        "embroideryPanel": crate::panels::embroidery::inspect(app),
         // Documents still being read off the UI thread (File › Open, Open Recent): their paths.
         "opening": app.opening.pending.iter().map(|p| p.path.as_str()).collect::<Vec<_>>(),
         // Files still being read off the UI thread for Place (the Place dialog's OK, drops): their

@@ -1,8 +1,9 @@
-//! The embroidery interface drawn in every language: the Embroidery panel's tabs (a check's rule
-//! opened and shown, its chart), its states (planning, failed over the last stitches, checking,
-//! a check that failed) and the status bar's counters draw no English the language's catalogue
-//! doesn't give, and the panel's words stay inside it at 256 and 300 points; and what screen
-//! readers are told.
+//! The embroidery interface drawn in every language: the Embroidery panel's tabs (the Object tab
+//! with a value set on an object and with objects that differ, a check's rule opened and shown, its
+//! chart), its states (planning, failed over the last stitches, checking, a check that failed) and
+//! the status bar's counters draw no English the language's catalogue doesn't give, and the panel's
+//! words stay inside it at 256 and 300 points; Document Setup's Embroidery tab likewise, in its two
+//! layouts; and what screen readers are told.
 
 use egui::accesskit::{Node, Role};
 use egui::{Pos2, Rect, Shape, vec2};
@@ -129,6 +130,22 @@ fn states(ctx: &egui::Context, width: f32) -> Vec<(Vec<(String, Rect)>, String)>
     out
 }
 
+/// The Object tab: the first square, with an angle and a pull of its own, then all three squares,
+/// one of them setting its pull (their values differ) → each one's texts.
+fn object_tab(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> Vec<Vec<(String, Rect)>> {
+    let order = app.run("embroidery.sequence", json!({})).unwrap();
+    let ids: Vec<u64> =
+        order["blocks"].as_array().unwrap().iter().flat_map(|b| b["units"].as_array().unwrap()).filter_map(|u| u["id"].as_u64()).collect();
+    let first = ids.first().copied().unwrap();
+    app.run("embroidery.set", json!({"ids": [first], "part": "fill", "angle": 30, "pull": 0.35})).unwrap();
+    app.run("select.set", json!({ "ids": [first] })).unwrap();
+    let one = frames(app, ctx, Tab::Object, width).0;
+    app.run("select.set", json!({ "ids": ids })).unwrap();
+    let several = frames(app, ctx, Tab::Object, width).0;
+    app.run("select.set", json!({"ids": []})).unwrap();
+    vec![one, several]
+}
+
 /// The Check tab with its layers rule shown (selected, zoomed to, focused) and opened.
 fn check_tab(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> (Vec<(String, Rect)>, Vec<Node>) {
     frames(app, ctx, Tab::Check, width);
@@ -244,6 +261,7 @@ fn the_embroidery_interface_in_every_language() {
         let mut app = app_with_findings();
         let (mut texts, _) = frames(&mut app, &ctx, Tab::Order, 300.0);
         texts.extend(check_tab(&mut app, &ctx, 300.0).0);
+        texts.extend(object_tab(&mut app, &ctx, 300.0).into_iter().flatten());
         texts.extend(states(&ctx, 300.0).into_iter().flat_map(|(t, _)| t));
         texts.into_iter().map(|(t, _)| numbers_blanked(&t)).collect()
     };
@@ -257,9 +275,11 @@ fn the_embroidery_interface_in_every_language() {
             let mut app = app_with_findings();
             let order = frames(&mut app, &ctx, Tab::Order, width).0;
             let checked = check_tab(&mut app, &ctx, width).0;
+            let object = object_tab(&mut app, &ctx, width);
             let names = names(&app, lang);
             let counters = app.embroidery.counters.inspect()["shown"].as_str().unwrap_or_default().to_string();
-            let mut drawn = vec![(order, counters.clone()), (checked, counters)];
+            let mut drawn = vec![(order, counters.clone()), (checked, counters.clone())];
+            drawn.extend(object.into_iter().map(|texts| (texts, counters.clone())));
             drawn.extend(states(&ctx, width));
             crate::i18n::set_current(Lang::EN);
             let panel = Rect::from_min_max(Pos2::new(WINDOW - width, 0.0), Pos2::new(WINDOW, HEIGHT - 24.0));
@@ -269,6 +289,11 @@ fn the_embroidery_interface_in_every_language() {
                 let panel_texts: Vec<&(String, Rect)> = texts.iter().filter(|(t, r)| panel.intersects(*r) && t != "⚠").collect();
                 for (k, (a, ra)) in panel_texts.iter().enumerate() {
                     for (b, rb) in &panel_texts[k + 1..] {
+                        // A field's value in its look's colour, painted over the app's own words
+                        // in their place (`fields::number_field`), is one text.
+                        if a == b && ra == rb {
+                            continue;
+                        }
                         assert!(!ra.shrink(0.5).intersects(rb.shrink(0.5)), "{} at {width}: {a:?} overlaps {b:?}", info.code);
                     }
                 }
@@ -285,6 +310,80 @@ fn the_embroidery_interface_in_every_language() {
                         );
                     }
                 }
+            }
+        }
+    }
+}
+
+/// Document Setup's Embroidery tab, its fabric changed with objects of their own values (the
+/// bar amber), drawn in a window `window` points wide → its texts with their boxes, and the left
+/// of the tab and the width it takes (two columns in a wide window, one in a narrow one).
+fn setup_tab(lang: Lang, window: f32) -> (Vec<(String, Rect)>, f32, f32) {
+    crate::i18n::set_current(lang);
+    let ctx = egui::Context::default();
+    theme::install_fonts(&ctx);
+    let mut app = app_with_findings();
+    app.run("embroidery.setup", json!({"fabric": "cotton"})).unwrap();
+    app.run("select.all", json!({})).unwrap();
+    app.run("embroidery.set", json!({"part": "fill", "pull": 0.3})).unwrap();
+    app.run("select.set", json!({"ids": []})).unwrap();
+    app.run("file.documentSetup", json!({})).unwrap();
+    crate::embroidery::setup_tab::choose_value(&mut app, "fabric", json!("stretchKnit"));
+    crate::embroidery::setup_tab::choose_value(&mut app, "tatami.length", json!(3.5));
+    let (mut texts, mut left) = (vec![], 0.0);
+    for _ in 0..3 {
+        let raw = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(window, HEIGHT))), ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| {
+            egui::CentralPanel::default().show(ui, |ui| {
+                left = ui.max_rect().left();
+                let Some(mut d) = app.ui.dialog.clone() else { return };
+                crate::embroidery::setup_tab::body(&mut app, ui, &mut d);
+                app.ui.dialog = Some(d);
+            });
+        });
+        out.textures_delta.clear();
+        texts.clear();
+        let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
+        while let Some(s) = pending.pop() {
+            match s {
+                Shape::Vec(v) => pending.extend(v),
+                Shape::Text(t) => texts.push((t.galley.text().to_string(), t.visual_bounding_rect())),
+                _ => {}
+            }
+        }
+    }
+    crate::i18n::set_current(Lang::EN);
+    let width = crate::embroidery::setup_tab::width_for(window);
+    (texts, left, width)
+}
+
+/// In every complete language, Document Setup's Embroidery tab, in two columns and in one, draws
+/// no English its catalogue doesn't give, no words over others, and nothing wider than the tab.
+#[test]
+fn document_setups_embroidery_tab_in_every_language() {
+    /// A wide window (two columns) and a narrow one (one), points.
+    const WINDOWS: [f32; 2] = [1440.0, 800.0];
+    // The makers the presets' values come from, and a unit, are the same in every language.
+    let names: Vec<String> = ["Wilcom", "Melco", "Sulky", "Gunold", "/min"].map(str::to_string).to_vec();
+    let english: Vec<String> = WINDOWS.iter().flat_map(|w| setup_tab(Lang::EN, *w).0).map(|(t, _)| numbers_blanked(&t)).collect();
+    for info in LANGUAGES.iter().filter(|l| l.complete_menus) {
+        let lang = Lang::from_code(info.code).unwrap();
+        for window in WINDOWS {
+            let (texts, left, width) = setup_tab(lang, window);
+            for (k, (a, ra)) in texts.iter().enumerate() {
+                for (b, rb) in &texts[k + 1..] {
+                    // A field's value painted over the app's own words in their place: one text.
+                    if a == b && ra == rb {
+                        continue;
+                    }
+                    assert!(!ra.shrink(0.5).intersects(rb.shrink(0.5)), "{} at {window}: {a:?} overlaps {b:?}", info.code);
+                }
+            }
+            for (text, rect) in &texts {
+                if english.contains(&numbers_blanked(text)) {
+                    assert!(may_be_english(info.source, text, &names), "{}: {text:?} is drawn in English", info.code);
+                }
+                assert!(rect.right() <= left + width + 0.5, "{} at {window}: {text:?} {rect:?} leaves the tab ({width} wide)", info.code);
             }
         }
     }

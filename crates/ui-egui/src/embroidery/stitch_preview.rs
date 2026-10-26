@@ -6,13 +6,14 @@
 //!   shows stitches never plans.
 //! - **Tagged by what it is the plan of** ([`EmbroideryPlanKey`]: the snapshot, the options, the
 //!   fonts), never by the document's revision, which also moves on selection and view changes.
-//! - **Light and heavy designs.** A design whose last plan walked took at most [`LIVE_PLAN_MS`] is
-//!   planned on every change, also during a drag, and the plan under way is let finish, so the
-//!   stitches follow the drag; once it is in, a change cancels the replies still to come and plans
-//!   at once. Any other is planned once the document has stayed unchanged for [`QUIET_SECS`] with
-//!   no drag, and a new change cancels the plan under way. Only the first plan of a document
-//!   starts at once whatever goes on, so a design that can't be planned isn't planned on every
-//!   edit.
+//! - **Light and heavy designs.** A design whose last plan walked took at most [`LIVE_PLAN_MS`]
+//!   (the preview's own walk; before its first, the walk of a plan a read command made first, which
+//!   is remembered with its time) is planned on every change, also during a drag, and the plan
+//!   under way is let finish, so the stitches follow the drag; once it is in, a change cancels the
+//!   replies still to come and plans at once. Any other is planned once the document has stayed
+//!   unchanged for [`QUIET_SECS`] with no drag, and a new change cancels the plan under way. Only
+//!   the first plan of a document starts at once whatever goes on, so a design that can't be
+//!   planned isn't planned on every edit.
 //! - **The last plan stays shown** while a newer one is made ([`Freshness::Stale`]); after
 //!   [`STALE_NOTICE_SECS`] the preview says it is planning. A design that can't be planned keeps
 //!   its last good stitches with the reason ([`Freshness::Failed`]), and isn't planned again until
@@ -221,8 +222,9 @@ struct DocPreview {
     shown: Option<Shown>,
     /// The key that failed, and why: not planned again until the document changes.
     failed: Option<(EmbroideryPlanKey, String)>,
-    /// How long the last plan walked took, milliseconds (a remembered plan, or one waited for, says
-    /// nothing of how long the design takes to plan).
+    /// How long the last plan walked took, milliseconds: this preview's walk, or, for a plan taken
+    /// remembered (another caller's, a read command's), the walk that made it (one waited for that
+    /// says nothing leaves it as it was).
     plan_ms: Option<f64>,
     /// A job planning it has been sent: only the first plan starts at once whatever goes on, so a
     /// design that fails or plans slowly isn't planned again on every change.
@@ -463,11 +465,17 @@ impl StitchPreview {
                         #[cfg(test)]
                         self.log.taken.push((d.ticket, f.ticket, f.progress.cancelled()));
                         plan_in = true;
+                        // A plan another caller made first (a read command's) is taken remembered:
+                        // until the preview has timed a walk of its own, the time the service kept
+                        // for the walk, with this step's (the scene built for it), says how heavy
+                        // the design is, as a walked step's time would. A later remembered plan (an
+                        // undo) keeps the preview's latest time: its walk may be an old cold one.
+                        let walked_ms = if d.walked { Some(d.ms) } else { planned.walk_ms.filter(|_| doc.plan_ms.is_none()).map(|w| w + d.ms) };
                         let replies = doc.shown.take().map(|s| s.replies).unwrap_or_default();
                         doc.shown = Some(Shown { key: f.key.clone(), planned, document: f.document.clone(), replies });
                         doc.failed = None;
-                        if d.walked {
-                            doc.plan_ms = Some(d.ms);
+                        if let Some(ms) = walked_ms {
+                            doc.plan_ms = Some(ms);
                             #[cfg(test)]
                             if let Some(ms) = self.log.pinned_ms {
                                 doc.plan_ms = Some(ms);

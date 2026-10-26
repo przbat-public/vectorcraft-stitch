@@ -5402,12 +5402,10 @@ swatch	Bright Violet	Felviolet
 	Embroidery Object Settings	Borduurinstellingen van object
 	Reset Embroidery Object Settings	Borduurinstellingen van object herstellen
 	Embroidery Entry and Exit	In- en uitsteek van het borduurwerk
-	Paste Embroidery Object Settings	Borduurinstellingen van object plakken
 	Show Embroidery Object Settings	Borduurinstellingen van object tonen
 	Embroidery Fabrics	Borduurstoffen
 	Apply Embroidery Fabric to Objects	Borduurstof op objecten toepassen
 	Embroidery Setup	Borduurinstellingen
-	Show Embroidery Settings	Borduurinstellingen tonen
 	Embroidery Statistics	Borduurstatistieken
 	Embroidery Sewing Order	Borduurvolgorde
 	Embroidery Check	Borduurwerk controleren
@@ -5494,41 +5492,8 @@ swatch	Bright Violet	Felviolet
 @msg	too many stitches for a VP3 file	te veel steken voor een VP3-bestand
 @msg	{_1} is not an embroidery format	{_1} is geen borduurformaat
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Steek:
-	Stitch Length:	Steeklengte:
-	Fill Angle:	Vulhoek:
-	Pull Compensation:	Trekcompensatie:
-	Pull Compensation (%):	Trekcompensatie (%):
-	Push Compensation:	Duwcompensatie:
-	Expand Fills:	Vullingen vergroten:
-	Narrow Parts as Satin:	Smalle delen als satijn:
-	Thread Weight:	Garendikte:
-	Underlay:	Onderlaag:
-	Jump Length:	Spronglengte:
-	Trim Length:	Kniplengte:
-	Shortest Stitch:	Kortste steek:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Hoe vormen worden genaaid: Automatisch vult vormen met tatami en naait lijnen naar hun breedte als satijnkolommen of rechte steken; een andere keuze naait zo elke vorm
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	De afstand tussen vulrijen en tussen satijnsteken; ongewijzigd kiest een satijnkolom die naar zijn breedte
-	The length of the stitches along fill rows and running lines	De lengte van de steken langs vulrijen en rechte steken
-	The direction of the fill rows	De richting van de vulrijen
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Verbreedt satijnkolommen en vulrijen aan elke kant, om het samentrekken van de stof te compenseren
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Verbreedt satijnkolommen en vulrijen met een deel van hun breedte, om het samentrekken van de stof te compenseren
-	Shortens satin columns at their ends, where the thread pushes outward	Verkort satijnkolommen aan hun uiteinden, waar het garen naar buiten duwt
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Vergroot elke gevulde vorm rondom om openingen tussen vormen te dichten; een negatieve waarde verkleint hem
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Delen van een vulling die smaller zijn, worden als satijnkolommen genaaid; 0 naait er geen
-	The thread's weight: thinner thread (a higher number) packs the rows closer	De garendikte: dunner garen (een hoger nummer) legt de rijen dichter
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	De steken die eerst worden genaaid om de stof vast te houden: per vorm gekozen, geen, of één soort voor elke vorm
-	A move longer than this lifts the needle instead of being sewn	Een langere verplaatsing tilt de naald op in plaats van genaaid te worden
-	A jump longer than this cuts the thread first	Een langere sprong knipt eerst de draad
-	Shorter stitches are left out	Kortere steken worden weggelaten
-	Tatami Fill	Tatamivulling
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Satijn
-	Running Stitch	Rechte steek
-	Centre Run	Middenloop
-	Edge Run	Randloop
-	Edge Run and Zigzag	Randloop en zigzag
-	Edge Run and Tatami	Randloop en tatami
 	Embroidery Picture	Borduurafbeelding
 @msg	nothing to draw: the document sews no stitch	niets te tekenen: het document naait geen enkele steek
 	Stitch Preview	Steekvoorbeeld
@@ -5559,7 +5524,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} steek|{count} steken
 @msg	tab {tab}: one of {_1}	tabblad {tab}: een van {_1}
 @msg	unknown key `{k}`: the only one is {only}	onbekende sleutel `{k}`: de enige is {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Geborduurd van onder naar boven; objecten van één kleur worden samengevoegd als er niets tussen ligt.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Geborduurd van onder naar boven; objecten van één kleur worden samengevoegd als er niets tussen ligt.
 embroidery	Trim and thread change	Knippen en draadwissel
 embroidery	Thread change	Draadwissel
 embroidery	fill	vulling
@@ -5572,7 +5537,7 @@ embroidery	narrow parts as satin	smalle delen als satijnsteek
 @plural	{count} object|{count} objects	{count} object|{count} objecten
 @plural	{count} jump|{count} jumps	{count} sprong|{count} sprongen
 @plural	{count} trim|{count} trims	{count} knip|{count} knippen
-embroidery	Colours	Kleuren
+embroidery	Colors	Kleuren
 embroidery	Thread changes	Draadwissels
 embroidery	Trims	Knippen
 embroidery	Jumps	Sprongen
@@ -5602,8 +5567,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	De tijd bij {spee
 @msg	can't change the sewing order: too many objects at once	de borduurvolgorde kan niet worden gewijzigd: te veel objecten tegelijk
 embroidery	After {name}	Na {name}
 embroidery	Before {name}	Voor {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Er is geen steek verschoven: objecten van één kleur blijven samengevoegd als niets ertussen eronder ligt.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} wordt geborduurd in blok {block}, samengevoegd met de andere van zijn kleur
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Er is geen steek verschoven: objecten van één kleur blijven samengevoegd als niets ertussen eronder ligt.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} wordt geborduurd in blok {block}, samengevoegd met de andere van zijn kleur
 embroidery	{name} is sewn in block {block}	{name} wordt geborduurd in blok {block}
 embroidery	Thread changes: {before} → {after}	Draadwissels: {before} → {after}
 embroidery	Collapse All	Alles samenvouwen
@@ -5620,8 +5585,8 @@ embroidery	More than {value} short stitches in a row	Meer dan {value} korte stek
 embroidery	{value} or more layers of stitches on one spot	{value} of meer lagen steken op één plek
 embroidery	Everything is sewn	Alles wordt geborduurd
 embroidery	Art that isn't sewn	Illustratie die niet wordt geborduurd
-embroidery	More colour blocks than {format} holds ({value})	Meer kleurblokken dan {format} bevat ({value})
-embroidery	{format} holds any number of colour blocks	{format} bevat een willekeurig aantal kleurblokken
+embroidery	More color blocks than {format} holds ({value})	Meer kleurblokken dan {format} bevat ({value})
+embroidery	{format} holds any number of color blocks	{format} bevat een willekeurig aantal kleurblokken
 embroidery	More stitches than a machine shows ({value})	Meer steken dan een machine toont ({value})
 embroidery	More thread changes than a machine shows ({value})	Meer draadwissels dan een machine toont ({value})
 embroidery	No findings	Niets gevonden
@@ -5658,7 +5623,7 @@ embroidery	No source gives a number to check these against.	Geen enkele bron gee
 @plural	{count} warning|{count} warnings	{count} waarschuwing|{count} waarschuwingen
 @plural	{count} note|{count} notes	{count} opmerking|{count} opmerkingen
 @plural	and {count} more|and {count} more	en nog {count}|en nog {count}
-embroidery	Threads unlike the art's colour (over {value})	Draden die afwijken van de kleur van de illustratie (boven {value})
+embroidery	Threads unlike the art's color (over {value})	Draden die afwijken van de kleur van de illustratie (boven {value})
 embroidery	Largest difference: {value}	Grootste verschil: {value}
 embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 	Zoom to Box	Zoomen naar kader
@@ -5679,7 +5644,7 @@ embroidery	Median: {value} mm	Mediaan: {value} mm
 embroidery	Too long	Te lang
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Boven {value} mm: {stitches}
-@plural	{count} colour|{count} colours	{count} kleur|{count} kleuren
+@plural	{count} color|{count} colors	{count} kleur|{count} kleuren
 embroidery	Embroidery: {figures}	Borduurwerk: {figures}
 embroidery	Stitches can't be planned	De steken kunnen niet worden gepland
 embroidery	Click to open the Embroidery panel.	Klik om het deelvenster Borduurwerk te openen.
@@ -5828,3 +5793,206 @@ axis	Y Axis	Y-as
 	Rectangular Grid Tool Options	Opties rechthoekig-rastergereedschap
 	Polar Grid Tool Options	Opties polair-rastergereedschap
 	Fill Line	Lijn vullen
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Object
+embroidery	Select an object to set how it is sewn.	Selecteer een object om in te stellen hoe het wordt geborduurd.
+embroidery	Nothing selected	Niets geselecteerd
+embroidery	Guide	Hulplijn
+embroidery	Stitches from a file	Steken uit een bestand
+embroidery	Path	Pad
+embroidery	Compound path	Samengesteld pad
+embroidery	Group	Groep
+embroidery	Layer	Laag
+embroidery	Text object	Tekstobject
+embroidery	Image	Afbeelding
+embroidery	Symbol instance	Symboolinstantie
+embroidery	Placed file	Geplaatst bestand
+embroidery	Live object	Dynamisch object
+embroidery	fill and stroke	vulling en lijn
+embroidery	fill, no stroke	vulling, geen lijn
+embroidery	stroke, no fill	lijn, geen vulling
+embroidery	no fill or stroke	geen vulling of lijn
+embroidery	Fill	Vulling
+embroidery	Fill: none	Vulling: geen
+embroidery	Stroke	Lijn
+embroidery	Stroke: none	Lijn: geen
+embroidery	Stitch	Steek
+embroidery	Underlay	Onderlaag
+embroidery	Compensation	Compensatie
+embroidery	auto	auto
+embroidery	{count} of {total} set	ingesteld bij {count} van {total}
+embroidery	Set on the selected objects; without it: {value}	Ingesteld op de geselecteerde objecten; anders: {value}
+embroidery	The selected objects differ.	De geselecteerde objecten verschillen.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Automatisch
+embroidery	Mixed	Gemengd
+embroidery	Type	Soort
+embroidery	Angle	Hoek
+embroidery	Row spacing	Rijafstand
+embroidery	Spacing	Afstand
+embroidery	Stitch length	Steeklengte
+embroidery	Narrow parts as satin	Smalle delen als satijn
+embroidery	Pull compensation	Trekcompensatie
+embroidery	Pull compensation (%)	Trekcompensatie (%)
+embroidery	Push compensation	Duwcompensatie
+embroidery	Expand fills	Vullingen vergroten
+embroidery	Split satin stitches from	Satijnsteken splitsen vanaf
+embroidery	Setting	Instelling
+embroidery	How the part is sewn: Auto picks by its shape and width.	Hoe het deel wordt geborduurd: Automatisch kiest op vorm en breedte.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	De richting van de rijen van de vulling, tegen de klok in; draait mee met het object.
+embroidery	The distance between rows, or between a satin's stitches.	De afstand tussen rijen, of tussen de steken van een satijnsteek.
+embroidery	The longest stitch along a row or a running line.	De langste steek langs een rij of een rechte steeklijn.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Delen van een vulling smaller dan dit worden als satijnkolommen geborduurd; 0 borduurt er geen.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	De steken die eerst worden geborduurd, onder de bovensteken, om de stof vast te houden.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Verbreedt elke rij of kolom aan de uiteinden, waar de draad de stof intrekt.
+embroidery	Widens each column by a share of its width.	Verbreedt elke kolom met een deel van zijn breedte.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Verkort een open satijnkolom aan de uiteinden, waar de draad naar buiten duwt.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Vergroot het gevulde gebied rondom, zodat los getekende vormen aansluiten.
+embroidery	Satin stitches longer than this are split in two.	Satijnsteken die langer zijn, worden in tweeën gesplitst.
+embroidery	Where the needle goes in to sew the part.	Waar de naald insteekt om het deel te borduren.
+embroidery	Where the needle comes out after the part.	Waar de naald na het deel uitsteekt.
+embroidery	Tatami fill	Tatamivulling
+embroidery	Tatami	Tatami
+embroidery	Satin	Satijn
+embroidery	Running stitch	Rechte steek
+embroidery	Don't sew	Niet borduren
+embroidery	None	Geen
+embroidery	Center run	Middenloop
+embroidery	Edge run	Randloop
+embroidery	Edge run + zigzag	Randloop + zigzag
+embroidery	Edge run + tatami	Randloop + tatami
+embroidery	fabric	stof
+embroidery	machine	machine
+embroidery	document	document
+embroidery	export	export
+embroidery	default	standaard
+embroidery	set	ingesteld
+embroidery	fabric {value}	stof {value}
+embroidery	machine {value}	machine {value}
+embroidery	document {value}	document {value}
+embroidery	export {value}	export {value}
+embroidery	default {value}	standaard {value}
+embroidery	Not sewn: set to Don't sew.	Wordt niet geborduurd: ingesteld op Niet borduren.
+embroidery	Not sewn: it has no paint.	Wordt niet geborduurd: het heeft geen kleur.
+embroidery	Not sewn: it is hidden.	Wordt niet geborduurd: het is verborgen.
+embroidery	Not sewn: it is on a template or non-printing layer.	Wordt niet geborduurd: het staat op een sjabloonlaag of een laag die niet wordt afgedrukt.
+embroidery	Not sewn.	Wordt niet geborduurd.
+embroidery	Stitches from a file are sewn as the file has them.	Steken uit een bestand worden geborduurd zoals het bestand ze bevat.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Tekst wordt nog niet geborduurd: zet hem om in curven om hem te borduren.
+embroidery	Images aren't sewn.	Afbeeldingen worden niet geborduurd.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	De instellingen horen bij de objecten van het symbool: bewerk het symbool om ze in te stellen.
+embroidery	Guides aren't sewn.	Hulplijnen worden niet geborduurd.
+embroidery	Placed files aren't sewn.	Geplaatste bestanden worden niet geborduurd.
+embroidery	Not sewn as it is: expand it to sew it.	Wordt zo niet geborduurd: breid het uit om het te borduren.
+embroidery	It takes no embroidery settings.	Het neemt geen borduurinstellingen aan.
+@plural	{count} object takes settings|{count} objects take settings	{count} object neemt instellingen aan|{count} objecten nemen instellingen aan
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	{setting} herstellen
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Automatisch: {choice}
+embroidery	Auto · {value}	Automatisch · {value}
+embroidery	filled outline	gevulde omtrek
+embroidery	center run	middenloop
+embroidery	edge run	randloop
+embroidery	edge run + zigzag	randloop + zigzag
+embroidery	edge run + tatami	randloop + tatami
+embroidery	none	geen
+embroidery	by size	naar grootte
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Ingang en uitgang
+embroidery	Set	Ingesteld
+embroidery	nearest	dichtstbij
+embroidery	not used yet	nog niet gebruikt
+embroidery	Set on the selected objects.	Ingesteld op de geselecteerde objecten.
+embroidery	Nearest to where the needle is.	Zo dicht mogelijk bij de naald.
+embroidery	built-in values	ingebouwde waarden
+embroidery	Fabric: {fabric} · thread {weight} wt	Stof: {fabric} · garen {weight} wt
+embroidery	Dim values come from the fabric and automatic rules.	Gedimde waarden komen van de stof en de automatische regels.
+embroidery	A bar marks a value set on these objects.	Een balk markeert een waarde die op deze objecten is ingesteld.
+embroidery	Restore from Fabric	Herstellen van stof
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Haalt de eigen waarden van de geselecteerde objecten weg, zodat ze de stof weer volgen; ingang, uitgang en afknippen blijven.
+embroidery	Cotton (light woven)	Katoen (licht geweven)
+embroidery	Denim or heavy twill	Denim of zware keperstof
+embroidery	Stretch knit	Rekbaar tricot
+embroidery	Piqué (polo knit)	Piqué (polotricot)
+embroidery	Fleece	Fleece
+embroidery	Silk or satin fabric	Zijde of satijnstof
+embroidery	Nylon or sports fabric	Nylon of sportstof
+embroidery	Cap (structured)	Pet (gestructureerd)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Borduurinstellingen kopiëren
+	Paste Embroidery Settings	Borduurinstellingen plakken
+@msg	select one object that takes embroidery settings: a path or a compound path	selecteer één object dat borduurinstellingen aanneemt: een pad of samengesteld pad
+@msg	copy an object's embroidery settings first	kopieer eerst de borduurinstellingen van een object
+@msg	the embroidery settings copied are another document's	de gekopieerde borduurinstellingen horen bij een ander document
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Stof
+embroidery	The values objects use where they set none of their own.	De waarden die objecten zonder eigen waarden gebruiken.
+embroidery	Built-in values	Ingebouwde waarden
+embroidery	Custom	Aangepast
+embroidery	Stabilizer	Versteviging
+embroidery	Tear-away	Scheurbaar
+embroidery	Cut-away	Knipbaar
+embroidery	Adhesive tear-away	Klevend scheurbaar
+embroidery	Thread	Draad
+embroidery	Thread weight	Garendikte
+embroidery	Rows' spacing for this thread: {value}	Rijafstand voor dit garen: {value}
+embroidery	Thread palette	Garenpalet
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Machine en bestand
+embroidery	Jump (needle up) from	Sprong (naald omhoog) vanaf
+embroidery	Cut the thread from	Draad afknippen vanaf
+embroidery	Shortest stitch	Kortste steek
+embroidery	Speed for the time estimate	Snelheid voor de tijdsschatting
+embroidery	Sewing order	Borduurvolgorde
+embroidery	Join one thread's objects when nothing lies between them	Objecten van één garen samenvoegen als er niets tussen ligt
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Minder garenwissels en knippen: wat erboven ligt, wordt toch later geborduurd.
+embroidery	Design name	Naam van het ontwerp
+embroidery	Start point	Startpunt
+embroidery	estimate	schatting
+embroidery	information only	alleen ter informatie
+embroidery	preset {value}	voorinstelling {value}
+embroidery	Changed from the preset, which gives {value}	Gewijzigd ten opzichte van de voorinstelling, die {value} geeft
+embroidery	Set in the document; without it: {value}	Ingesteld in het document; anders: {value}
+embroidery	Changing the fabric doesn't change them.	Een andere stof verandert ze niet.
+embroidery	Apply the fabric to them too:	De stof ook op deze objecten toepassen:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	De stof waarop het ontwerp wordt geborduurd: objecten zonder eigen waarden gebruiken de zijne.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	De afstand tussen de rijen van een vulling, voor 40 wt garen: ander garen schaalt hem.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	De afstand van een satijnkolom als deel van de afstand die zijn breedte kiest.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Wat onder de stof in de ring komt: ter informatie, het verandert geen steek.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	De garendikte: dunner garen (een hoger getal) borduurt de rijen dichter.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Het garen dat een machinebestand nummert: dat van Janome in JEF-bestanden, dat van Brother in PES-bestanden.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Een langere verplaatsing tilt de naald op in plaats van te borduren.
+embroidery	A jump longer than this cuts the thread first.	Een langere sprong knipt eerst de draad af.
+embroidery	Stitches shorter than this are left out.	Kortere steken worden weggelaten.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Steken per minuut: de borduurtijd van een ontwerp wordt hiermee geschat.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Objecten van één garen worden na elkaar geborduurd als niets ertussen ze overlapt: minder garenwissels en knippen.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Waar de machine het ontwerp begint, zoals het bestand waaruit het geopend werd het aangaf.
+embroidery	The design's name, as the file it was opened from gave it.	De naam van het ontwerp, zoals het bestand waaruit het geopend werd die aangaf.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Stof, garen en machine van het document: tabblad Borduurwerk in Documentinstellingen.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} object heeft eigen waarden voor de stof.|{count} objecten hebben eigen waarden voor de stof.
+	Embroidery Settings…	Borduurinstellingen…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	Van {min} tot {max}
+embroidery	At least the jump length ({value}): only a jump is cut	Minstens de spronglengte ({value}): alleen een sprong wordt geknipt
+# Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
+embroidery	The fabric changed	De stof is gewijzigd
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm
+# Machine embroidery: the units the embroidery fields write after their numbers (millimetres, thread weight, stitches a minute), as the Check tab writes them.
+embroidery	mm	mm
+embroidery	wt	wt
+embroidery	/min	/min
+# Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
+embroidery	Not a number: {text}	Geen getal: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Borduurinstellingen van een ander object toepassen
+	Show Document Embroidery Settings	Borduurinstellingen van document tonen
+@plural	Trim the thread after the object|Trim the thread after the objects	Draad afknippen na het object|Draad afknippen na de objecten
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Niet geplakt, omdat deze versie ze niet aanneemt: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} geselecteerd object neemt geen instellingen aan en is overgeslagen|{count} geselecteerde objecten nemen geen instellingen aan en zijn overgeslagen
+# Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
+@plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} geselecteerd object neemt geen instellingen aan|{count} geselecteerde objecten nemen geen instellingen aan

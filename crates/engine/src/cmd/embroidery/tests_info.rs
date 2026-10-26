@@ -145,6 +145,33 @@ fn info_says_what_the_walk_sews() {
     }
 }
 
+/// What a plan already made sews of a selection (the Object tab's count): each part as `info`
+/// counts it with `plan`, a group for what it holds, nothing for an object the plan sews nothing
+/// of.
+#[test]
+fn a_selections_stitches_are_read_from_the_plan() {
+    let mut s = blank();
+    let fill = shape(&mut s, 20.0, 0.0);
+    let both = shape(&mut s, 100.0, 3.0);
+    let off = shape(&mut s, 180.0, 0.0);
+    run(&mut s, "embroidery.set", json!({"ids": [off], "part": "fill", "stitch": "none"}));
+    let plan = s.embroidery_plan(&Options::default()).unwrap();
+    let doc = s.doc().unwrap().doc.clone();
+    let ids = |v: &[u64]| v.iter().map(|id| vectorcraft_doc::NodeId(*id)).collect::<Vec<_>>();
+    for id in [fill, both] {
+        let r = info(&mut s, json!({"ids": [id], "plan": true}));
+        let sewn = info::selection_sewing(&doc, &plan, &ids(&[id]));
+        let counted = |part: &str| r[part]["sewing"]["stitches"].as_u64().unwrap_or(0) as usize;
+        assert_eq!((sewn.fill.stitches, sewn.stroke.stitches), (counted("fill"), counted("stroke")), "{id}");
+        assert_eq!(sewn.stitches(), counted("fill") + counted("stroke"));
+    }
+    assert_eq!(info::selection_sewing(&doc, &plan, &ids(&[off])), info::SelectionSewing::default(), "not sewn");
+    let parts = |v: &[u64]| info::selection_sewing(&doc, &plan, &ids(v)).stitches();
+    let group = run(&mut s, "object.group", json!({"ids": [fill, both]}))["id"].as_u64().unwrap();
+    let (plan, doc) = (s.embroidery_plan(&Options::default()).unwrap(), s.doc().unwrap().doc.clone());
+    assert_eq!(info::selection_sewing(&doc, &plan, &ids(&[group])).stitches(), parts(&[fill, both]), "a group for what it holds");
+}
+
 /// The stitch preview's planning thread answers `embroidery.info` (objects given) as the command
 /// does, planning only with `plan`; a design too large to plan still has its settings answered,
 /// the reason in `warnings`.
@@ -271,4 +298,41 @@ fn the_reply_reads_back_as_the_typed_answer() {
     assert_eq!(read, typed);
     let fill = typed.fill.unwrap();
     assert_eq!((fill.settings["angle"].value.clone(), fill.sewing.unwrap().unit_count), (json!(30.0), 1));
+}
+
+/// The underlays a panel offers under a fill and under a satin (`distinct_underlays`) are the kinds
+/// the planner sews apart: each kind left out sews exactly as one offered does, and the kinds
+/// offered (but Auto, a rule by size that may pick one of them) sew differently from each other.
+#[test]
+fn the_underlays_offered_are_those_the_planner_sews_apart() {
+    use super::plan::Part;
+    use vectorcraft_stitch::plan::Underlay;
+    for (stroke, part, sewn) in [(0.0, "fill", "tatami"), (3.0, "stroke", "satin")] {
+        let sewn_with = |underlay: &str| {
+            let mut s = blank();
+            let id = shape(&mut s, 20.0, stroke);
+            if part == "stroke" {
+                run(&mut s, "embroidery.set", json!({"ids": [id], "part": "stroke", "stitch": "satin"}));
+            }
+            run(&mut s, "embroidery.set", json!({"ids": [id], "part": part, "underlay": underlay}));
+            let plan = s.embroidery_plan(&Options::default()).unwrap();
+            plan.units
+                .iter()
+                .filter(|u| matches!((u.origin.part, part), (Part::Fill(_), "fill") | (Part::Stroke(_), "stroke")))
+                .map(|u| format!("{:?}", plan.blocks.get(u.block).and_then(|b| b.stitches.get(u.stitches.clone()))))
+                .collect::<String>()
+        };
+        let all: Vec<(&str, String)> = Underlay::ALL.iter().map(|u| (u.id(), sewn_with(u.id()))).collect();
+        let of = |id: &str| all.iter().find(|(k, _)| *k == id).map(|(_, v)| v.clone()).unwrap();
+        let offered = distinct_underlays(sewn);
+        let ruled: Vec<&str> = offered.iter().copied().filter(|id| *id != "auto").collect();
+        for (i, a) in ruled.iter().enumerate() {
+            for b in &ruled[i + 1..] {
+                assert_ne!(of(a), of(b), "{sewn}: {a} and {b} sew alike, but both are offered");
+            }
+        }
+        for (id, stitches) in all.iter().filter(|(id, _)| !offered.contains(id)) {
+            assert!(ruled.iter().any(|o| of(o) == *stitches), "{sewn}: {id} sews as none offered");
+        }
+    }
 }

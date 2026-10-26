@@ -5359,12 +5359,10 @@ swatch	Bright Violet	Violet cerah
 	Embroidery Object Settings	Pengaturan bordir objek
 	Reset Embroidery Object Settings	Setel ulang pengaturan bordir objek
 	Embroidery Entry and Exit	Masuk dan keluar bordir
-	Paste Embroidery Object Settings	Tempel pengaturan bordir objek
 	Show Embroidery Object Settings	Tampilkan pengaturan bordir objek
 	Embroidery Fabrics	Kain bordir
 	Apply Embroidery Fabric to Objects	Terapkan kain bordir ke objek
 	Embroidery Setup	Pengaturan bordir
-	Show Embroidery Settings	Tampilkan pengaturan bordir
 	Embroidery Statistics	Statistik bordir
 	Embroidery Sewing Order	Urutan bordir
 	Embroidery Check	Periksa bordir
@@ -5451,41 +5449,8 @@ swatch	Bright Violet	Violet cerah
 @msg	too many stitches for a VP3 file	terlalu banyak jahitan untuk file VP3
 @msg	{_1} is not an embroidery format	{_1} bukan format bordir
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Jahitan:
-	Stitch Length:	Panjang jahitan:
-	Fill Angle:	Sudut isian:
-	Pull Compensation:	Kompensasi tarikan:
-	Pull Compensation (%):	Kompensasi tarikan (%):
-	Push Compensation:	Kompensasi dorongan:
-	Expand Fills:	Perluas isian:
-	Narrow Parts as Satin:	Bagian sempit sebagai satin:
-	Thread Weight:	Ketebalan benang:
-	Underlay:	Lapisan dasar:
-	Jump Length:	Panjang lompatan:
-	Trim Length:	Panjang potong:
-	Shortest Stitch:	Jahitan terpendek:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Cara bentuk dijahit: Otomatis mengisi bentuk dengan tatami dan menjahit garis sebagai kolom satin atau jahitan lurus menurut lebarnya; pilihan lain menjahit setiap bentuk dengan cara itu
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Jarak antara baris isian dan antara jahitan satin; jika dibiarkan, kolom satin memilihnya menurut lebarnya
-	The length of the stitches along fill rows and running lines	Panjang jahitan di sepanjang baris isian dan jahitan lurus
-	The direction of the fill rows	Arah baris isian
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Melebarkan kolom satin dan baris isian di tiap sisi, untuk mengimbangi kain yang tertarik
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Melebarkan kolom satin dan baris isian sebesar sebagian lebarnya, untuk mengimbangi kain yang tertarik
-	Shortens satin columns at their ends, where the thread pushes outward	Memendekkan kolom satin di ujungnya, tempat benang mendorong ke luar
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Membesarkan setiap bentuk berisi di sekelilingnya untuk menutup celah antarbentuk; nilai negatif mengecilkannya
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Bagian isian yang lebih sempit dijahit sebagai kolom satin; 0 tidak menjahit satu pun
-	The thread's weight: thinner thread (a higher number) packs the rows closer	Ketebalan benang: benang yang lebih tipis (nomor lebih tinggi) merapatkan baris
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Jahitan yang dijahit lebih dulu untuk menahan kain: dipilih oleh tiap bentuk, tidak ada, atau satu jenis untuk semua bentuk
-	A move longer than this lifts the needle instead of being sewn	Perpindahan yang lebih panjang mengangkat jarum alih-alih dijahit
-	A jump longer than this cuts the thread first	Lompatan yang lebih panjang memotong benang lebih dulu
-	Shorter stitches are left out	Jahitan yang lebih pendek dihilangkan
-	Tatami Fill	Isian tatami
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Satin
-	Running Stitch	Jahitan lurus
-	Centre Run	Jalur tengah
-	Edge Run	Jalur tepi
-	Edge Run and Zigzag	Jalur tepi dan zigzag
-	Edge Run and Tatami	Jalur tepi dan tatami
 	Embroidery Picture	Gambar bordir
 @msg	nothing to draw: the document sews no stitch	tidak ada yang digambar: dokumen tidak menjahit satu jahitan pun
 	Stitch Preview	Pratinjau jahitan
@@ -5516,7 +5481,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} jahitan
 @msg	tab {tab}: one of {_1}	tab {tab}: salah satu dari {_1}
 @msg	unknown key `{k}`: the only one is {only}	kunci tidak dikenal `{k}`: satu-satunya adalah {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Dijahit dari bawah tumpukan ke atas; objek satu warna digabung bila tidak ada apa pun di antaranya.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Dijahit dari bawah tumpukan ke atas; objek satu warna digabung bila tidak ada apa pun di antaranya.
 embroidery	Trim and thread change	Potong dan ganti benang
 embroidery	Thread change	Ganti benang
 embroidery	fill	isian
@@ -5529,7 +5494,7 @@ embroidery	narrow parts as satin	bagian sempit sebagai satin
 @plural	{count} object|{count} objects	{count} objek
 @plural	{count} jump|{count} jumps	{count} lompatan
 @plural	{count} trim|{count} trims	{count} potongan
-embroidery	Colours	Warna
+embroidery	Colors	Warna
 embroidery	Thread changes	Ganti benang
 embroidery	Trims	Potongan
 embroidery	Jumps	Lompatan
@@ -5559,8 +5524,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Waktu pada {speed
 @msg	can't change the sewing order: too many objects at once	urutan jahit tidak dapat diubah: terlalu banyak objek sekaligus
 embroidery	After {name}	Setelah {name}
 embroidery	Before {name}	Sebelum {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Tidak ada jahitan yang berpindah: objek satu warna tetap digabung bila tidak ada apa pun di antaranya di bawahnya.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} dijahit di blok {block}, digabung dengan objek lain berwarna sama
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Tidak ada jahitan yang berpindah: objek satu warna tetap digabung bila tidak ada apa pun di antaranya di bawahnya.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} dijahit di blok {block}, digabung dengan objek lain berwarna sama
 embroidery	{name} is sewn in block {block}	{name} dijahit di blok {block}
 embroidery	Thread changes: {before} → {after}	Ganti benang: {before} → {after}
 embroidery	Collapse All	Ciutkan semua
@@ -5577,8 +5542,8 @@ embroidery	More than {value} short stitches in a row	Lebih dari {value} jahitan 
 embroidery	{value} or more layers of stitches on one spot	{value} lapisan jahitan atau lebih di satu tempat
 embroidery	Everything is sewn	Semua dijahit
 embroidery	Art that isn't sewn	Gambar yang tidak dijahit
-embroidery	More colour blocks than {format} holds ({value})	Blok warna lebih banyak dari yang dimuat {format} ({value})
-embroidery	{format} holds any number of colour blocks	{format} memuat blok warna berapa pun
+embroidery	More color blocks than {format} holds ({value})	Blok warna lebih banyak dari yang dimuat {format} ({value})
+embroidery	{format} holds any number of color blocks	{format} memuat blok warna berapa pun
 embroidery	More stitches than a machine shows ({value})	Jahitan lebih banyak dari yang ditampilkan mesin ({value})
 embroidery	More thread changes than a machine shows ({value})	Ganti benang lebih banyak dari yang ditampilkan mesin ({value})
 embroidery	No findings	Tidak ada temuan
@@ -5615,7 +5580,7 @@ embroidery	No source gives a number to check these against.	Tidak ada sumber yan
 @plural	{count} warning|{count} warnings	{count} peringatan
 @plural	{count} note|{count} notes	{count} catatan
 @plural	and {count} more|and {count} more	dan {count} lagi
-embroidery	Threads unlike the art's colour (over {value})	Benang yang berbeda dari warna gambar (di atas {value})
+embroidery	Threads unlike the art's color (over {value})	Benang yang berbeda dari warna gambar (di atas {value})
 embroidery	Largest difference: {value}	Perbedaan terbesar: {value}
 embroidery	Block {block}: {thread}, {value}	Blok {block}: {thread}, {value}
 	Zoom to Box	Perbesar ke kotak
@@ -5636,7 +5601,7 @@ embroidery	Median: {value} mm	Median: {value} mm
 embroidery	Too long	Terlalu panjang
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Di atas {value} mm: {stitches}
-@plural	{count} colour|{count} colours	{count} warna
+@plural	{count} color|{count} colors	{count} warna
 embroidery	Embroidery: {figures}	Bordir: {figures}
 embroidery	Stitches can't be planned	Jahitan tidak dapat direncanakan
 embroidery	Click to open the Embroidery panel.	Klik untuk membuka panel Bordir.
@@ -5785,3 +5750,206 @@ axis	Y Axis	Sumbu Y
 	Rectangular Grid Tool Options	Opsi alat kisi persegi panjang
 	Polar Grid Tool Options	Opsi alat kisi polar
 	Fill Line	Isi garis
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Objek
+embroidery	Select an object to set how it is sewn.	Pilih objek untuk mengatur cara menjahitnya.
+embroidery	Nothing selected	Tidak ada yang dipilih
+embroidery	Guide	Panduan
+embroidery	Stitches from a file	Jahitan dari berkas
+embroidery	Path	Jalur
+embroidery	Compound path	Jalur majemuk
+embroidery	Group	Grup
+embroidery	Layer	Lapisan
+embroidery	Text object	Objek teks
+embroidery	Image	Gambar
+embroidery	Symbol instance	Instans simbol
+embroidery	Placed file	Berkas yang ditempatkan
+embroidery	Live object	Objek dinamis
+embroidery	fill and stroke	isian dan goresan
+embroidery	fill, no stroke	isian, tanpa goresan
+embroidery	stroke, no fill	goresan, tanpa isian
+embroidery	no fill or stroke	tanpa isian atau goresan
+embroidery	Fill	Isian
+embroidery	Fill: none	Isian: tidak ada
+embroidery	Stroke	Goresan
+embroidery	Stroke: none	Goresan: tidak ada
+embroidery	Stitch	Jahitan
+embroidery	Underlay	Lapisan dasar
+embroidery	Compensation	Kompensasi
+embroidery	auto	otomatis
+embroidery	{count} of {total} set	diatur di {count} dari {total}
+embroidery	Set on the selected objects; without it: {value}	Diatur pada objek terpilih; tanpanya: {value}
+embroidery	The selected objects differ.	Objek yang dipilih berbeda.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Otomatis
+embroidery	Mixed	Campuran
+embroidery	Type	Jenis
+embroidery	Angle	Sudut
+embroidery	Row spacing	Jarak baris
+embroidery	Spacing	Jarak
+embroidery	Stitch length	Panjang jahitan
+embroidery	Narrow parts as satin	Bagian sempit sebagai satin
+embroidery	Pull compensation	Kompensasi tarikan
+embroidery	Pull compensation (%)	Kompensasi tarikan (%)
+embroidery	Push compensation	Kompensasi dorongan
+embroidery	Expand fills	Perluasan isian
+embroidery	Split satin stitches from	Pisah jahitan satin mulai
+embroidery	Setting	Pengaturan
+embroidery	How the part is sewn: Auto picks by its shape and width.	Cara bagian ini dijahit: Otomatis memilih menurut bentuk dan lebarnya.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	Arah baris isian, berlawanan arah jarum jam; ikut berputar dengan objek.
+embroidery	The distance between rows, or between a satin's stitches.	Jarak antarbaris, atau antarjahitan satin.
+embroidery	The longest stitch along a row or a running line.	Jahitan terpanjang pada satu baris atau garis jahitan lurus.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Bagian isian yang lebih sempit dari ini dijahit sebagai kolom satin; 0 tidak menjahit satu pun.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	Jahitan yang dijahit lebih dulu, di bawah jahitan atas, untuk menahan kain.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Melebarkan tiap baris atau kolom di ujungnya, tempat benang menarik kain.
+embroidery	Widens each column by a share of its width.	Melebarkan tiap kolom sebesar sebagian dari lebarnya.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Memendekkan kolom satin terbuka di ujungnya, tempat benang mendorong keluar.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Memperbesar area isian ke segala arah, agar bentuk yang digambar terpisah bertemu.
+embroidery	Satin stitches longer than this are split in two.	Jahitan satin yang lebih panjang dari ini dibagi dua.
+embroidery	Where the needle goes in to sew the part.	Tempat jarum masuk untuk menjahit bagian ini.
+embroidery	Where the needle comes out after the part.	Tempat jarum keluar setelah bagian ini.
+embroidery	Tatami fill	Isian tatami
+embroidery	Tatami	Tatami
+embroidery	Satin	Satin
+embroidery	Running stitch	Jahitan lurus
+embroidery	Don't sew	Jangan dijahit
+embroidery	None	Tidak ada
+embroidery	Center run	Jalur tengah
+embroidery	Edge run	Jalur tepi
+embroidery	Edge run + zigzag	Jalur tepi + zigzag
+embroidery	Edge run + tatami	Jalur tepi + tatami
+embroidery	fabric	kain
+embroidery	machine	mesin
+embroidery	document	dokumen
+embroidery	export	ekspor
+embroidery	default	bawaan
+embroidery	set	diatur
+embroidery	fabric {value}	kain {value}
+embroidery	machine {value}	mesin {value}
+embroidery	document {value}	dokumen {value}
+embroidery	export {value}	ekspor {value}
+embroidery	default {value}	bawaan {value}
+embroidery	Not sewn: set to Don't sew.	Tidak dijahit: diatur ke Jangan dijahit.
+embroidery	Not sewn: it has no paint.	Tidak dijahit: tidak berwarna.
+embroidery	Not sewn: it is hidden.	Tidak dijahit: tersembunyi.
+embroidery	Not sewn: it is on a template or non-printing layer.	Tidak dijahit: berada di lapisan templat atau lapisan yang tidak dicetak.
+embroidery	Not sewn.	Tidak dijahit.
+embroidery	Stitches from a file are sewn as the file has them.	Jahitan dari berkas dijahit seperti adanya di berkas.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Teks belum dijahit: buat garis luar untuk menjahitnya.
+embroidery	Images aren't sewn.	Gambar tidak dijahit.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	Pengaturan ada pada objek simbol: edit simbol untuk mengaturnya.
+embroidery	Guides aren't sewn.	Panduan tidak dijahit.
+embroidery	Placed files aren't sewn.	Berkas yang ditempatkan tidak dijahit.
+embroidery	Not sewn as it is: expand it to sew it.	Tidak dijahit apa adanya: perluas untuk menjahitnya.
+embroidery	It takes no embroidery settings.	Tidak menerima pengaturan bordir.
+@plural	{count} object takes settings|{count} objects take settings	{count} objek menerima pengaturan
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Pulihkan: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Otomatis: {choice}
+embroidery	Auto · {value}	Otomatis · {value}
+embroidery	filled outline	garis luar terisi
+embroidery	center run	jalur tengah
+embroidery	edge run	jalur tepi
+embroidery	edge run + zigzag	jalur tepi + zigzag
+embroidery	edge run + tatami	jalur tepi + tatami
+embroidery	none	tidak ada
+embroidery	by size	menurut ukuran
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Masuk dan keluar
+embroidery	Set	Diatur
+embroidery	nearest	terdekat
+embroidery	not used yet	belum dipakai
+embroidery	Set on the selected objects.	Diatur pada objek terpilih.
+embroidery	Nearest to where the needle is.	Paling dekat dengan posisi jarum.
+embroidery	built-in values	nilai bawaan
+embroidery	Fabric: {fabric} · thread {weight} wt	Kain: {fabric} · benang {weight} wt
+embroidery	Dim values come from the fabric and automatic rules.	Nilai redup berasal dari kain dan aturan otomatis.
+embroidery	A bar marks a value set on these objects.	Bilah menandai nilai yang diatur pada objek ini.
+embroidery	Restore from Fabric	Pulihkan dari kain
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Menghapus nilai milik objek terpilih agar kembali mengikuti kain; titik masuk, keluar, dan potong benang tetap.
+embroidery	Cotton (light woven)	Katun (tenun ringan)
+embroidery	Denim or heavy twill	Denim atau kepar tebal
+embroidery	Stretch knit	Kain rajut elastis
+embroidery	Piqué (polo knit)	Piqué (rajut polo)
+embroidery	Fleece	Fleece
+embroidery	Silk or satin fabric	Sutra atau kain satin
+embroidery	Nylon or sports fabric	Nilon atau kain olahraga
+embroidery	Cap (structured)	Topi (berstruktur)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Salin pengaturan bordir
+	Paste Embroidery Settings	Tempel pengaturan bordir
+@msg	select one object that takes embroidery settings: a path or a compound path	pilih satu objek yang menerima pengaturan bordir: jalur atau jalur majemuk
+@msg	copy an object's embroidery settings first	salin dulu pengaturan bordir sebuah objek
+@msg	the embroidery settings copied are another document's	pengaturan bordir yang disalin milik dokumen lain
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Kain
+embroidery	The values objects use where they set none of their own.	Nilai yang dipakai objek yang tidak punya nilai sendiri.
+embroidery	Built-in values	Nilai bawaan
+embroidery	Custom	Kustom
+embroidery	Stabilizer	Stabilizer
+embroidery	Tear-away	Sobek
+embroidery	Cut-away	Gunting
+embroidery	Adhesive tear-away	Sobek berperekat
+embroidery	Thread	Benang
+embroidery	Thread weight	Ketebalan benang
+embroidery	Rows' spacing for this thread: {value}	Jarak baris untuk benang ini: {value}
+embroidery	Thread palette	Palet benang
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Mesin dan berkas
+embroidery	Jump (needle up) from	Lompatan (jarum naik) mulai
+embroidery	Cut the thread from	Potong benang mulai
+embroidery	Shortest stitch	Jahitan terpendek
+embroidery	Speed for the time estimate	Kecepatan untuk perkiraan waktu
+embroidery	Sewing order	Urutan jahit
+embroidery	Join one thread's objects when nothing lies between them	Gabungkan objek satu benang bila tak ada yang di antaranya
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Lebih sedikit ganti benang dan potongan: yang di atas tetap dijahit belakangan.
+embroidery	Design name	Nama desain
+embroidery	Start point	Titik awal
+embroidery	estimate	perkiraan
+embroidery	information only	hanya informasi
+embroidery	preset {value}	preset {value}
+embroidery	Changed from the preset, which gives {value}	Diubah dari preset, yang memberi {value}
+embroidery	Set in the document; without it: {value}	Diatur di dokumen; tanpanya: {value}
+embroidery	Changing the fabric doesn't change them.	Mengganti kain tidak mengubahnya.
+embroidery	Apply the fabric to them too:	Terapkan kain juga pada objek ini:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Kain tempat desain dijahit: nilainya dipakai objek yang tak punya nilai sendiri.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	Jarak antarbaris isian untuk benang 40 wt: benang lain menskalakannya.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	Jarak kolom satin sebagai bagian dari jarak yang dipilih lebarnya.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Yang dipasang di bawah kain dalam ram: hanya informasi, tak mengubah jahitan.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	Ketebalan benang: benang lebih tipis (angka lebih tinggi) menjahit baris lebih rapat.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Benang yang dinomori berkas mesin: milik Janome di berkas JEF, milik Brother di berkas PES.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Gerakan lebih panjang mengangkat jarum alih-alih dijahit.
+embroidery	A jump longer than this cuts the thread first.	Lompatan lebih panjang memotong benang dulu.
+embroidery	Stitches shorter than this are left out.	Jahitan yang lebih pendek dihilangkan.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Jahitan per menit: waktu jahit desain diperkirakan dengan ini.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Objek satu benang dijahit berurutan bila tak ada yang menutupi di antaranya: lebih sedikit ganti benang dan potongan.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Tempat mesin memulai desain, sesuai berkas asal desain dibuka.
+embroidery	The design's name, as the file it was opened from gave it.	Nama desain, sesuai berkas asal desain dibuka.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Kain, benang, dan mesin dokumen: tab Bordir di Pengaturan dokumen.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} objek punya nilai kain sendiri.
+	Embroidery Settings…	Pengaturan bordir…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	Dari {min} sampai {max}
+embroidery	At least the jump length ({value}): only a jump is cut	Minimal panjang lompatan ({value}): hanya lompatan yang dipotong
+# Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
+embroidery	The fabric changed	Kain telah berubah
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm
+# Machine embroidery: the units the embroidery fields write after their numbers (millimetres, thread weight, stitches a minute), as the Check tab writes them.
+embroidery	mm	mm
+embroidery	wt	wt
+embroidery	/min	/menit
+# Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
+embroidery	Not a number: {text}	Bukan angka: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Terapkan pengaturan bordir objek lain
+	Show Document Embroidery Settings	Tampilkan pengaturan bordir dokumen
+@plural	Trim the thread after the object|Trim the thread after the objects	Potong benang setelah objek
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Tidak ditempel, karena versi ini tidak menerimanya: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} objek terpilih tidak menerima pengaturan dan dilewati
+# Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
+@plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} objek terpilih tidak menerima pengaturan

@@ -1,9 +1,10 @@
 //! Random documents with embroidery among their edits: the generated editing of the other
 //! property tests (`vectorcraft_testkit::strategies::arb_ops`) with embroidery steps between its
 //! steps (a cut after random objects, the document's thread palette, start point and label, a
-//! machine file placed). Every embroidery step is done, the document saves and reads back as it
-//! was (its embroidery included), and its embroidery is read, checked and exported, or refused,
-//! without a panic.
+//! machine file placed). Every embroidery step is done (a cut after an object that isn't sewn
+//! refused, as the command refuses it), the document saves and reads back as it was (its
+//! embroidery included), and its embroidery is read, checked and exported, or refused, without a
+//! panic.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -17,7 +18,8 @@ use vectorcraft_testkit::strategies::arb_ops;
 /// One embroidery step.
 #[derive(Clone, Debug)]
 enum Step {
-    /// A cut after the object at an index of the document's objects, on or off.
+    /// A cut after the object at an index of the document's objects, on or off (refused for one
+    /// that isn't sewn).
     TrimAfter(usize, bool),
     /// The thread palette: Brother's, Janome's or unset.
     Palette(Option<bool>),
@@ -56,6 +58,21 @@ fn objects(s: &Session) -> Vec<u64> {
     out
 }
 
+/// Whether a cut after `n` means something, as `embroidery.setTrimAfter` takes it: paths and
+/// compound paths, stitches from a file, a symbol's instances, groups and layers are sewn; type,
+/// images, placed files, guides and live objects aren't.
+fn sewn(n: &vectorcraft_doc::Node) -> bool {
+    use vectorcraft_doc::NodeKind;
+    matches!(
+        n.kind,
+        NodeKind::Path { guide: false, .. }
+            | NodeKind::Compound { .. }
+            | NodeKind::SymbolInstance { .. }
+            | NodeKind::Group { .. }
+            | NodeKind::Layer { .. }
+    )
+}
+
 /// A DST of a few stitches in two runs with a cut between them, written here.
 fn small_dst() -> String {
     use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
@@ -78,8 +95,13 @@ impl Step {
         match self {
             Step::TrimAfter(i, on) => {
                 let ids = objects(s);
-                let Some(id) = ids.get(i % ids.len().max(1)) else { return Ok(Value::Null) };
-                s.execute("embroidery.setTrimAfter", &json!({"on": on, "ids": [id]}))
+                let Some(&id) = ids.get(i % ids.len().max(1)) else { return Ok(Value::Null) };
+                let sewn = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(id)).is_some_and(sewn);
+                match s.execute("embroidery.setTrimAfter", &json!({"on": on, "ids": [id]})) {
+                    // Nothing it was given is sewn: refused, with the reason, and nothing changed.
+                    Err(vectorcraft_engine::EngineError::BadParams { .. }) if !sewn => Ok(Value::Null),
+                    done => done,
+                }
             }
             Step::Palette(p) => s.execute("embroidery.setup", &json!({"palette": p.map(|pec| if pec { "pec" } else { "jef" })})),
             Step::Start(p) => s.execute("embroidery.setup", &json!({"start": p.map(|(x, y)| json!([x, y]))})),

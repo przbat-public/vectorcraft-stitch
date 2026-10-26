@@ -116,6 +116,17 @@ impl Session {
         }
         Ok(reply(&doc, ids, opts, planned_with.as_deref(), Page { offset: 0, limit: LIST_LIMIT }, warnings))
     }
+
+    /// The settings of objects `ids` merged, as [`Session::embroidery_info`] gives them without
+    /// planning, but with no object listed (`objects` empty; the skipped ones still are): what the
+    /// Object tab reads, which merges and never lists.
+    pub fn embroidery_merged(&mut self, ids: &[NodeId]) -> Result<ObjectSettings> {
+        let d = &self.doc()?.doc;
+        if let Some(missing) = ids.iter().find(|id| d.node(**id).is_none()) {
+            return Err(EngineError::NoNode(*missing));
+        }
+        Ok(reply(d, ids, &Options::default(), None, Page { offset: 0, limit: 0 }, Vec::new()))
+    }
 }
 
 /// `embroidery.info`'s reply, its options aside: the objects it takes, listed from `offset`, those
@@ -305,13 +316,14 @@ fn stored(p: &PartSettings) -> Map<String, Value> {
     PartKey::ALL.into_iter().filter_map(|k| p.get(k).map(|v| (k.name().to_string(), value_json(&v)))).collect()
 }
 
-/// The cut after the objects as given (a group as one, as `embroidery.setTrimAfter` marks it; a
-/// run of stitches opened from a file by its file's cut): whether they ask for it, how many do,
-/// and whether they differ.
+/// The cut after the objects as given that are sewn (a group as one, as `embroidery.setTrimAfter`
+/// marks it; a run of stitches opened from a file by its file's cut; type, images and the like left
+/// out, as the command passes them over): whether they ask for it, how many do, and whether they
+/// differ.
 fn trim_after(doc: &Document, ids: &[NodeId]) -> Merged<bool> {
     let mut seen = HashSet::new();
     let (mut given, mut set) = (0usize, 0usize);
-    for n in ids.iter().filter(|id| seen.insert(**id)).filter_map(|id| doc.node(*id)) {
+    for n in ids.iter().filter(|id| seen.insert(**id)).filter_map(|id| doc.node(*id)).filter(|n| super::objects::cut_after_sewn(n)) {
         given += 1;
         set += usize::from(n.extras().embroidery.as_deref().is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after)));
     }
@@ -549,18 +561,66 @@ fn sewn_of(plan: &DesignPlan, ids: &[NodeId], kind: PartKind) -> Sewing {
             (Part::Fill(_), PartKind::Fill) | (Part::Stroke(_), PartKind::Stroke) => true,
             (Part::Fill(_) | Part::Stroke(_) | Part::Literal, _) => false,
         };
-        if !of_kind || !ids.contains(&u.origin.selected()) {
-            continue;
+        if of_kind && ids.contains(&u.origin.selected()) {
+            out.add(plan, i);
         }
-        out.unit_count += 1;
-        for s in plan.unit_stitches(i) {
-            out.records += 1;
+    }
+    out
+}
+
+impl Sewing {
+    /// Unit `unit` of `plan` counted in.
+    fn add(&mut self, plan: &DesignPlan, unit: usize) {
+        self.unit_count += 1;
+        for s in plan.unit_stitches(unit) {
+            self.records += 1;
             match s.command {
-                Command::Stitch => out.stitches += 1,
-                Command::Jump => out.jumps += 1,
-                Command::Trim => out.trims += 1,
+                Command::Stitch => self.stitches += 1,
+                Command::Jump => self.jumps += 1,
+                Command::Trim => self.trims += 1,
                 _ => {}
             }
+        }
+    }
+}
+
+/// What a plan sews of the objects selected, by part: their fills, their strokes, and the runs of
+/// stitches opened from a machine file among them. Kept by part, as `embroidery.info` reports each
+/// part's sewing, which its test checks it against; the Object tab counts all of it
+/// ([`SelectionSewing::stitches`]).
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SelectionSewing {
+    pub fill: Sewing,
+    pub stroke: Sewing,
+    pub literal: Sewing,
+}
+
+impl SelectionSewing {
+    /// The needle-down stitches of all of it.
+    pub fn stitches(&self) -> usize {
+        self.fill.stitches + self.stroke.stitches + self.literal.stitches
+    }
+}
+
+/// What `plan`, the plan of `doc`, sews of objects `selected` as a person selects them: each one, or
+/// what a group or a layer among them holds (a symbol instance's art, an expanded object's pieces
+/// by the object selected). Read from a plan already made (the Object tab's count, from the plan the
+/// stitch preview shows), never planned: a walk of the selected objects and of the plan's units.
+pub fn selection_sewing(doc: &Document, plan: &DesignPlan, selected: &[NodeId]) -> SelectionSewing {
+    // Sorted and searched: on the interface thread, for every plan that lands, a hash set's SipHash
+    // was the cost of a large selection.
+    let mut under: Vec<NodeId> = Vec::new();
+    for n in selected.iter().filter_map(|id| doc.node(*id)) {
+        n.walk(&mut |c| under.push(c.id));
+    }
+    under.sort_unstable();
+    under.dedup();
+    let mut out = SelectionSewing::default();
+    for (i, u) in plan.units.iter().enumerate().filter(|(_, u)| under.binary_search(&u.origin.selected()).is_ok()) {
+        match u.origin.part {
+            Part::Fill(_) => out.fill.add(plan, i),
+            Part::Stroke(_) => out.stroke.add(plan, i),
+            Part::Literal => out.literal.add(plan, i),
         }
     }
     out

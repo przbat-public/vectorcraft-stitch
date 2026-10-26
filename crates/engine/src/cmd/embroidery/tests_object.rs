@@ -370,3 +370,17 @@ fn a_symbols_art_turns_its_unset_rows_with_its_instance() {
     let angles = of(&plan_with(&s, json!({})), second);
     assert!(!angles.is_empty() && angles.iter().all(|a| (a - both).abs() < 1e-6), "{angles:?}");
 }
+
+/// The skip reasons listed for interfaces are every one, each once: a variant left out of the list
+/// would have no words in a panel.
+#[test]
+fn every_skip_reason_is_listed_once() {
+    let ids = super::skip_reasons();
+    let mut unique = ids.clone();
+    unique.sort_unstable();
+    unique.dedup();
+    assert_eq!(unique.len(), ids.len(), "{ids:?}");
+    for id in ["literal", "guide", "type", "image", "symbolInstance", "live", "placed", "intertwine", "noPart"] {
+        assert!(ids.contains(&id), "{id}");
+    }
+}

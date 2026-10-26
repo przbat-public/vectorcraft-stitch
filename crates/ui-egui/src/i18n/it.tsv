@@ -5032,12 +5032,10 @@ lighting	Light	Luce
 	Embroidery Object Settings	Impostazioni di ricamo dell'oggetto
 	Reset Embroidery Object Settings	Ripristina impostazioni di ricamo dell'oggetto
 	Embroidery Entry and Exit	Entrata e uscita del ricamo
-	Paste Embroidery Object Settings	Incolla impostazioni di ricamo dell'oggetto
 	Show Embroidery Object Settings	Mostra impostazioni di ricamo dell'oggetto
 	Embroidery Fabrics	Tessuti per ricamo
 	Apply Embroidery Fabric to Objects	Applica il tessuto del ricamo agli oggetti
 	Embroidery Setup	Imposta ricamo
-	Show Embroidery Settings	Mostra impostazioni ricamo
 	Embroidery Statistics	Statistiche del ricamo
 	Embroidery Sewing Order	Ordine del ricamo
 	Embroidery Check	Controlla il ricamo
@@ -5123,41 +5121,8 @@ lighting	Light	Luce
 @msg	too many stitches for a VP3 file	troppi punti per un file VP3
 @msg	{_1} is not an embroidery format	{_1} non è un formato di ricamo
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Punto:
-	Stitch Length:	Lunghezza del punto:
-	Fill Angle:	Angolo di riempimento:
-	Pull Compensation:	Compensazione della trazione:
-	Pull Compensation (%):	Compensazione della trazione (%):
-	Push Compensation:	Compensazione della spinta:
-	Expand Fills:	Espandi i riempimenti:
-	Narrow Parts as Satin:	Parti strette in raso:
-	Thread Weight:	Spessore del filo:
-	Underlay:	Sottofondo:
-	Jump Length:	Lunghezza del salto:
-	Trim Length:	Lunghezza del taglio:
-	Shortest Stitch:	Punto più corto:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Come vengono cucite le forme: Automatico riempie le forme in tatami e cuce i tratti come colonne di raso o punti dritti secondo la loro larghezza; un’altra scelta cuce così ogni forma
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	La distanza tra le file di riempimento e tra i punti raso; lasciata così, una colonna di raso la sceglie secondo la sua larghezza
-	The length of the stitches along fill rows and running lines	La lunghezza dei punti lungo le file di riempimento e i punti dritti
-	The direction of the fill rows	La direzione delle file di riempimento
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Allarga le colonne di raso e le file di riempimento su ogni lato, per compensare il tessuto che si stringe
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Allarga le colonne di raso e le file di riempimento di una parte della loro larghezza, per compensare il tessuto che si stringe
-	Shortens satin columns at their ends, where the thread pushes outward	Accorcia le colonne di raso alle estremità, dove il filo spinge verso l’esterno
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Ingrandisce tutt’intorno ogni forma riempita per chiudere gli spazi tra le forme; un valore negativo la riduce
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Le parti di un riempimento più strette vengono cucite come colonne di raso; 0 non ne cuce nessuna
-	The thread's weight: thinner thread (a higher number) packs the rows closer	Lo spessore del filo: un filo più sottile (un numero più alto) avvicina le file
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	I punti cuciti per primi per tenere il tessuto: scelti da ogni forma, nessuno o un tipo per ogni forma
-	A move longer than this lifts the needle instead of being sewn	Uno spostamento più lungo solleva l’ago invece di essere cucito
-	A jump longer than this cuts the thread first	Un salto più lungo taglia prima il filo
-	Shorter stitches are left out	I punti più corti vengono omessi
-	Tatami Fill	Riempimento tatami
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Raso
-	Running Stitch	Punto dritto
-	Centre Run	Passata centrale
-	Edge Run	Passata sul bordo
-	Edge Run and Zigzag	Passata sul bordo e zigzag
-	Edge Run and Tatami	Passata sul bordo e tatami
 	Embroidery Picture	Immagine del ricamo
 @msg	nothing to draw: the document sews no stitch	niente da disegnare: il documento non cuce alcun punto
 	Stitch Preview	Anteprima punti
@@ -5188,7 +5153,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} punto|{count} punti
 @msg	tab {tab}: one of {_1}	scheda {tab}: una tra {_1}
 @msg	unknown key `{k}`: the only one is {only}	chiave sconosciuta `{k}`: l’unica è {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Si ricama dal fondo della pila verso l’alto; gli oggetti di uno stesso colore si uniscono quando nulla sta tra loro.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Si ricama dal fondo della pila verso l’alto; gli oggetti di uno stesso colore si uniscono quando nulla sta tra loro.
 embroidery	Trim and thread change	Taglio e cambio filo
 embroidery	Thread change	Cambio filo
 embroidery	fill	riempimento
@@ -5201,7 +5166,7 @@ embroidery	narrow parts as satin	parti strette a raso
 @plural	{count} object|{count} objects	{count} oggetto|{count} oggetti
 @plural	{count} jump|{count} jumps	{count} salto|{count} salti
 @plural	{count} trim|{count} trims	{count} taglio|{count} tagli
-embroidery	Colours	Colori
+embroidery	Colors	Colori
 embroidery	Thread changes	Cambi filo
 embroidery	Trims	Tagli
 embroidery	Jumps	Salti
@@ -5231,8 +5196,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Il tempo a {speed
 @msg	can't change the sewing order: too many objects at once	impossibile cambiare l’ordine di cucitura: troppi oggetti insieme
 embroidery	After {name}	Dopo {name}
 embroidery	Before {name}	Prima di {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Nessun punto si è spostato: gli oggetti di uno stesso colore restano uniti quando nulla in mezzo sta sotto di loro.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} è ricamato nel blocco {block}, unito agli altri del suo colore
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Nessun punto si è spostato: gli oggetti di uno stesso colore restano uniti quando nulla in mezzo sta sotto di loro.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} è ricamato nel blocco {block}, unito agli altri del suo colore
 embroidery	{name} is sewn in block {block}	{name} è ricamato nel blocco {block}
 embroidery	Thread changes: {before} → {after}	Cambi filo: {before} → {after}
 embroidery	Collapse All	Comprimi tutto
@@ -5249,8 +5214,8 @@ embroidery	More than {value} short stitches in a row	Più di {value} punti corti
 embroidery	{value} or more layers of stitches on one spot	{value} o più strati di punti nello stesso punto
 embroidery	Everything is sewn	Tutto viene ricamato
 embroidery	Art that isn't sewn	Grafica che non viene ricamata
-embroidery	More colour blocks than {format} holds ({value})	Più blocchi di colore di quanti ne contenga {format} ({value})
-embroidery	{format} holds any number of colour blocks	{format} contiene un numero qualsiasi di blocchi di colore
+embroidery	More color blocks than {format} holds ({value})	Più blocchi di colore di quanti ne contenga {format} ({value})
+embroidery	{format} holds any number of color blocks	{format} contiene un numero qualsiasi di blocchi di colore
 embroidery	More stitches than a machine shows ({value})	Più punti di quanti ne mostri una macchina ({value})
 embroidery	More thread changes than a machine shows ({value})	Più cambi filo di quanti ne mostri una macchina ({value})
 embroidery	No findings	Nessun rilievo
@@ -5287,7 +5252,7 @@ embroidery	No source gives a number to check these against.	Nessuna fonte indica
 @plural	{count} warning|{count} warnings	{count} avviso|{count} avvisi
 @plural	{count} note|{count} notes	{count} nota|{count} note
 @plural	and {count} more|and {count} more	e altri {count}|e altri {count}
-embroidery	Threads unlike the art's colour (over {value})	Fili diversi dal colore della grafica (oltre {value})
+embroidery	Threads unlike the art's color (over {value})	Fili diversi dal colore della grafica (oltre {value})
 embroidery	Largest difference: {value}	Differenza massima: {value}
 embroidery	Block {block}: {thread}, {value}	Blocco {block}: {thread}, {value}
 	Zoom to Box	Zoom su riquadro
@@ -5308,7 +5273,7 @@ embroidery	Median: {value} mm	Mediana: {value} mm
 embroidery	Too long	Troppo lunghi
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Oltre {value} mm: {stitches}
-@plural	{count} colour|{count} colours	{count} colore|{count} colori
+@plural	{count} color|{count} colors	{count} colore|{count} colori
 embroidery	Embroidery: {figures}	Ricamo: {figures}
 embroidery	Stitches can't be planned	Impossibile pianificare i punti
 embroidery	Click to open the Embroidery panel.	Fai clic per aprire il pannello Ricamo.
@@ -5445,3 +5410,206 @@ axis	Y Axis	Asse Y
 	Rectangular Grid Tool Options	Opzioni strumento Griglia rettangolare
 	Polar Grid Tool Options	Opzioni strumento Griglia polare
 	Fill Line	Riempi linea
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Oggetto
+embroidery	Select an object to set how it is sewn.	Seleziona un oggetto per impostare come viene ricamato.
+embroidery	Nothing selected	Nessuna selezione
+embroidery	Guide	Guida
+embroidery	Stitches from a file	Punti da un file
+embroidery	Path	Tracciato
+embroidery	Compound path	Tracciato composto
+embroidery	Group	Gruppo
+embroidery	Layer	Livello
+embroidery	Text object	Oggetto di testo
+embroidery	Image	Immagine
+embroidery	Symbol instance	Istanza di simbolo
+embroidery	Placed file	File inserito
+embroidery	Live object	Oggetto dinamico
+embroidery	fill and stroke	riempimento e traccia
+embroidery	fill, no stroke	riempimento, senza traccia
+embroidery	stroke, no fill	traccia, senza riempimento
+embroidery	no fill or stroke	senza riempimento né traccia
+embroidery	Fill	Riempimento
+embroidery	Fill: none	Riempimento: nessuno
+embroidery	Stroke	Traccia
+embroidery	Stroke: none	Traccia: nessuna
+embroidery	Stitch	Punto
+embroidery	Underlay	Sottofondo
+embroidery	Compensation	Compensazione
+embroidery	auto	auto
+embroidery	{count} of {total} set	impostato in {count} su {total}
+embroidery	Set on the selected objects; without it: {value}	Impostato sugli oggetti selezionati; altrimenti: {value}
+embroidery	The selected objects differ.	Gli oggetti selezionati sono diversi.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Auto
+embroidery	Mixed	Misto
+embroidery	Type	Tipo
+embroidery	Angle	Angolo
+embroidery	Row spacing	Spaziatura delle file
+embroidery	Spacing	Spaziatura
+embroidery	Stitch length	Lunghezza del punto
+embroidery	Narrow parts as satin	Parti strette in raso
+embroidery	Pull compensation	Compensazione della trazione
+embroidery	Pull compensation (%)	Compensazione della trazione (%)
+embroidery	Push compensation	Compensazione della spinta
+embroidery	Expand fills	Espansione dei riempimenti
+embroidery	Split satin stitches from	Dividi i punti raso da
+embroidery	Setting	Impostazione
+embroidery	How the part is sewn: Auto picks by its shape and width.	Come viene ricamata la parte: Auto sceglie in base a forma e larghezza.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	La direzione delle file del riempimento, in senso antiorario; ruota con l'oggetto.
+embroidery	The distance between rows, or between a satin's stitches.	La distanza tra le file, o tra i punti di un raso.
+embroidery	The longest stitch along a row or a running line.	Il punto più lungo di una fila o di una linea a punto dritto.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Le parti di un riempimento più strette di così sono ricamate come colonne di raso; 0 non ne ricama nessuna.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	I punti ricamati per primi, sotto i punti superiori, per tenere fermo il tessuto.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Allarga ogni fila o colonna alle estremità, dove il filo tira il tessuto.
+embroidery	Widens each column by a share of its width.	Allarga ogni colonna di una parte della sua larghezza.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Accorcia una colonna di raso aperta alle estremità, dove il filo spinge verso l'esterno.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Ingrandisce l'area riempita tutt'intorno, così che forme disegnate separate si tocchino.
+embroidery	Satin stitches longer than this are split in two.	I punti raso più lunghi di così vengono divisi in due.
+embroidery	Where the needle goes in to sew the part.	Dove entra l'ago per ricamare la parte.
+embroidery	Where the needle comes out after the part.	Dove esce l'ago dopo la parte.
+embroidery	Tatami fill	Riempimento tatami
+embroidery	Tatami	Tatami
+embroidery	Satin	Raso
+embroidery	Running stitch	Punto dritto
+embroidery	Don't sew	Non ricamare
+embroidery	None	Nessuno
+embroidery	Center run	Passata centrale
+embroidery	Edge run	Passata sul bordo
+embroidery	Edge run + zigzag	Passata sul bordo + zigzag
+embroidery	Edge run + tatami	Passata sul bordo + tatami
+embroidery	fabric	tessuto
+embroidery	machine	macchina
+embroidery	document	documento
+embroidery	export	esportazione
+embroidery	default	predefinito
+embroidery	set	impostato
+embroidery	fabric {value}	tessuto {value}
+embroidery	machine {value}	macchina {value}
+embroidery	document {value}	documento {value}
+embroidery	export {value}	esportazione {value}
+embroidery	default {value}	predefinito {value}
+embroidery	Not sewn: set to Don't sew.	Non ricamato: impostato su Non ricamare.
+embroidery	Not sewn: it has no paint.	Non ricamato: non ha colore.
+embroidery	Not sewn: it is hidden.	Non ricamato: è nascosto.
+embroidery	Not sewn: it is on a template or non-printing layer.	Non ricamato: è su un livello modello o non stampabile.
+embroidery	Not sewn.	Non ricamato.
+embroidery	Stitches from a file are sewn as the file has them.	I punti di un file vengono ricamati così come sono nel file.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Il testo non viene ancora ricamato: crea i contorni per ricamarlo.
+embroidery	Images aren't sewn.	Le immagini non vengono ricamate.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	Le impostazioni vanno sugli oggetti del simbolo: modifica il simbolo per impostarle.
+embroidery	Guides aren't sewn.	Le guide non vengono ricamate.
+embroidery	Placed files aren't sewn.	I file inseriti non vengono ricamati.
+embroidery	Not sewn as it is: expand it to sew it.	Non ricamato così com'è: espandilo per ricamarlo.
+embroidery	It takes no embroidery settings.	Non accetta impostazioni di ricamo.
+@plural	{count} object takes settings|{count} objects take settings	{count} oggetto accetta impostazioni|{count} oggetti accettano impostazioni
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Ripristina: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Auto: {choice}
+embroidery	Auto · {value}	Auto · {value}
+embroidery	filled outline	contorno riempito
+embroidery	center run	passata centrale
+embroidery	edge run	passata sul bordo
+embroidery	edge run + zigzag	passata sul bordo + zigzag
+embroidery	edge run + tatami	passata sul bordo + tatami
+embroidery	none	nessuno
+embroidery	by size	in base alle dimensioni
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Entrata e uscita
+embroidery	Set	Impostato
+embroidery	nearest	più vicino
+embroidery	not used yet	non ancora usato
+embroidery	Set on the selected objects.	Impostato sugli oggetti selezionati.
+embroidery	Nearest to where the needle is.	Il più vicino a dove si trova l'ago.
+embroidery	built-in values	valori integrati
+embroidery	Fabric: {fabric} · thread {weight} wt	Tessuto: {fabric} · filo {weight} wt
+embroidery	Dim values come from the fabric and automatic rules.	I valori attenuati vengono dal tessuto e dalle regole automatiche.
+embroidery	A bar marks a value set on these objects.	Una barra indica un valore impostato su questi oggetti.
+embroidery	Restore from Fabric	Ripristina dal tessuto
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Toglie i valori propri degli oggetti selezionati, così seguono di nuovo il tessuto; entrata, uscita e taglio restano.
+embroidery	Cotton (light woven)	Cotone (tessuto leggero)
+embroidery	Denim or heavy twill	Denim o twill pesante
+embroidery	Stretch knit	Maglia elasticizzata
+embroidery	Piqué (polo knit)	Piquet (maglia polo)
+embroidery	Fleece	Pile
+embroidery	Silk or satin fabric	Seta o tessuto satinato
+embroidery	Nylon or sports fabric	Nylon o tessuto sportivo
+embroidery	Cap (structured)	Cappellino (strutturato)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Copia impostazioni di ricamo
+	Paste Embroidery Settings	Incolla impostazioni di ricamo
+@msg	select one object that takes embroidery settings: a path or a compound path	seleziona un oggetto che accetti impostazioni di ricamo: un tracciato o un tracciato composto
+@msg	copy an object's embroidery settings first	copia prima le impostazioni di ricamo di un oggetto
+@msg	the embroidery settings copied are another document's	le impostazioni di ricamo copiate sono di un altro documento
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Tessuto
+embroidery	The values objects use where they set none of their own.	I valori usati dagli oggetti che non ne impostano di propri.
+embroidery	Built-in values	Valori integrati
+embroidery	Custom	Personalizzato
+embroidery	Stabilizer	Stabilizzatore
+embroidery	Tear-away	A strappo
+embroidery	Cut-away	A taglio
+embroidery	Adhesive tear-away	A strappo adesivo
+embroidery	Thread	Filo
+embroidery	Thread weight	Titolo del filo
+embroidery	Rows' spacing for this thread: {value}	Spaziatura delle file con questo filo: {value}
+embroidery	Thread palette	Palette dei fili
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Macchina e file
+embroidery	Jump (needle up) from	Salto (ago sollevato) da
+embroidery	Cut the thread from	Taglia il filo da
+embroidery	Shortest stitch	Punto più corto
+embroidery	Speed for the time estimate	Velocità per la stima del tempo
+embroidery	Sewing order	Ordine di cucitura
+embroidery	Join one thread's objects when nothing lies between them	Unisci gli oggetti di uno stesso filo quando niente sta in mezzo
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Meno cambi di filo e tagli: ciò che sta sopra viene comunque cucito dopo.
+embroidery	Design name	Nome del disegno
+embroidery	Start point	Punto di partenza
+embroidery	estimate	stima
+embroidery	information only	solo informativo
+embroidery	preset {value}	preimpostazione {value}
+embroidery	Changed from the preset, which gives {value}	Modificato rispetto alla preimpostazione, che dà {value}
+embroidery	Set in the document; without it: {value}	Impostato nel documento; altrimenti: {value}
+embroidery	Changing the fabric doesn't change them.	Cambiare tessuto non li modifica.
+embroidery	Apply the fabric to them too:	Applica il tessuto anche a loro:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Il tessuto su cui si ricama il disegno: i suoi valori valgono per gli oggetti senza valori propri.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	La distanza tra le file del riempimento, per filo 40 wt: un altro filo la riscala.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	La spaziatura di una colonna a raso come quota di quella scelta dalla sua larghezza.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Cosa mettere nel telaio sotto il tessuto: informativo, non cambia alcun punto.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	Il titolo del filo: un filo più sottile (numero più alto) cuce le file più fitte.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	I fili che un file macchina numera: quelli Janome nei file JEF, quelli Brother nei file PES.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Uno spostamento più lungo solleva l'ago invece di essere cucito.
+embroidery	A jump longer than this cuts the thread first.	Un salto più lungo taglia prima il filo.
+embroidery	Stitches shorter than this are left out.	I punti più corti vengono omessi.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Punti al minuto: il tempo di cucitura di un disegno è stimato su questo.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Gli oggetti di uno stesso filo si cuciono uno dopo l'altro quando niente in mezzo li copre: meno cambi di filo e tagli.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Dove la macchina inizia il disegno, come indicato dal file da cui è stato aperto.
+embroidery	The design's name, as the file it was opened from gave it.	Il nome del disegno, come indicato dal file da cui è stato aperto.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Tessuto, filo e macchina del documento: scheda Ricamo di Imposta documento.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} oggetto ha valori propri per il tessuto.|{count} oggetti hanno valori propri per il tessuto.
+	Embroidery Settings…	Impostazioni ricamo…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	Da {min} a {max}
+embroidery	At least the jump length ({value}): only a jump is cut	Almeno la lunghezza del salto ({value}): si taglia solo a un salto
+# Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
+embroidery	The fabric changed	Il tessuto è cambiato
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm
+# Machine embroidery: the units the embroidery fields write after their numbers (millimetres, thread weight, stitches a minute), as the Check tab writes them.
+embroidery	mm	mm
+embroidery	wt	wt
+embroidery	/min	/min
+# Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
+embroidery	Not a number: {text}	Non è un numero: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Applica le impostazioni di ricamo di un altro oggetto
+	Show Document Embroidery Settings	Mostra impostazioni di ricamo del documento
+@plural	Trim the thread after the object|Trim the thread after the objects	Taglia il filo dopo l'oggetto|Taglia il filo dopo gli oggetti
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Non incollati, perché questa versione non li accetta: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} oggetto selezionato non accetta impostazioni ed è stato saltato|{count} oggetti selezionati non accettano impostazioni e sono stati saltati
+# Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
+@plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} oggetto selezionato non accetta impostazioni|{count} oggetti selezionati non accettano impostazioni

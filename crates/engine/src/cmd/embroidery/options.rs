@@ -13,8 +13,8 @@
 
 use serde_json::{Map, Value, json};
 use vectorcraft_stitch::plan::{
-    DENSITY_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PERCENT, PULL_PERCENT_RANGE, PULL_RANGE, PUSH_RANGE,
-    Params, SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay,
+    DENSITY_RANGE, FABRIC_SPACING_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, NARROW_RANGE, PERCENT, PULL_PERCENT_RANGE,
+    PULL_RANGE, PUSH_RANGE, Params, SPACING_PERCENT_RANGE, STITCH_LENGTH_RANGE, Style, THREAD_WEIGHT, THREAD_WEIGHT_RANGE, Underlay,
 };
 
 use super::resolve::Stitch;
@@ -72,12 +72,51 @@ pub(crate) fn stitch_id(style: Style) -> &'static str {
 
 /// How a panel edits an embroidery setting, so that what it writes is never refused: a choice from
 /// the values the setting takes, or a number within the range the planner takes, in `unit`, to
-/// `decimals` places. (The export options dialog once used it; the Object tab and Document Setup
-/// come next.)
+/// `decimals` places. The Embroidery panel's Object tab edits an object's settings by
+/// [`part_field`], Document Setup the document's by [`setting_field`] and [`fabric_field`].
 #[derive(Clone, Debug, PartialEq)]
 pub enum SettingField {
     Choice(Vec<&'static str>),
     Number { min: f64, max: f64, unit: &'static str, decimals: usize },
+}
+
+/// [`SettingField`] of an object's part setting `name`, as `embroidery.set` takes it: the export's
+/// field, but `stitch`, whose choices are an object's (`auto`, `tatami`, `satin`, `running`, and
+/// `none`, not sewn; `fill`, tatami's earlier name, aside). `None` for a name that is no part
+/// setting (the points are set with `embroidery.setEntryExit`).
+pub fn part_field(name: &str) -> Option<SettingField> {
+    let key = vocabulary::SETTINGS.iter().find(|s| s.name == name && s.at(vocabulary::Place::Part))?;
+    match key.name {
+        "stitch" => Some(SettingField::Choice(Stitch::IDS.iter().map(|(id, _)| *id).filter(|id| *id != "fill").collect())),
+        "entry" | "exit" => None,
+        other => setting_field(other),
+    }
+}
+
+/// [`SettingField`] of the document's fabric value `name` for `kind` of stitch (`tatami` or
+/// `satin`), as `embroidery.setup {fabric}` takes it: a tatami spacing for 40 wt thread, within
+/// what every thread weight keeps in the planner's range (`plan::FABRIC_SPACING_RANGE`); a satin's
+/// spacing as a share of the spacing its width picks (`spacingPercent`); the export's field for the
+/// others. `None` for a value `kind` doesn't take.
+pub fn fabric_field(kind: &str, name: &str) -> Option<SettingField> {
+    match (kind, name) {
+        ("tatami", "spacing") => Some(SettingField::Number { min: FABRIC_SPACING_RANGE.0, max: FABRIC_SPACING_RANGE.1, unit: "mm", decimals: 2 }),
+        ("tatami", "pull" | "length" | "underlay") | ("satin", "pull" | "spacingPercent" | "underlay") => setting_field(name),
+        _ => None,
+    }
+}
+
+/// The underlay kinds that sew differently under a part sewn as `sewn` (`tatami`, `satin`; the
+/// stitch ids `embroidery.info` reports), as a panel offers them: each kind the planner sews as
+/// another's left out (a fill sews a centre run as an edge run and a zigzag as a tatami layer; a
+/// satin sews a tatami layer as a zigzag). Every kind for anything else.
+pub fn distinct_underlays(sewn: &str) -> Vec<&'static str> {
+    let kinds: &[Underlay] = match sewn {
+        "tatami" => &[Underlay::Auto, Underlay::None, Underlay::Edge, Underlay::EdgeTatami],
+        "satin" => &[Underlay::Auto, Underlay::None, Underlay::Center, Underlay::Edge, Underlay::EdgeZigzag],
+        _ => &Underlay::ALL,
+    };
+    kinds.iter().map(|u| u.id()).collect()
 }
 
 /// The number of degrees `angle` turns at most each way in a field: a full turn (the planner takes
@@ -86,8 +125,8 @@ const FULL_TURN: f64 = 360.0;
 
 /// [`SettingField`] of setting `name`: the export's options as `document.formats` lists them, and
 /// the document's own (`spacingPercent`, `speed`, `thickness`); `None` for a name that is neither.
-/// As an export takes them: an object's `stitch` also takes `none`, and a fabric's tatami
-/// `spacing` is within `plan::FABRIC_SPACING_RANGE`.
+/// As an export takes them: an object's `stitch` also takes `none` ([`part_field`]), and a fabric's
+/// tatami `spacing` is within `plan::FABRIC_SPACING_RANGE` ([`fabric_field`]).
 pub fn setting_field(name: &str) -> Option<SettingField> {
     let mm = |(min, max): (f64, f64)| SettingField::Number { min, max, unit: "mm", decimals: 2 };
     Some(match name {

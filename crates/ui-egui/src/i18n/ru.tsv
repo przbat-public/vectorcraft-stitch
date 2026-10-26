@@ -5028,12 +5028,10 @@ lighting	Light	Свет
 	Embroidery Object Settings	Параметры вышивки объекта
 	Reset Embroidery Object Settings	Сбросить параметры вышивки объекта
 	Embroidery Entry and Exit	Вход и выход вышивки
-	Paste Embroidery Object Settings	Вставить параметры вышивки объекта
 	Show Embroidery Object Settings	Показать параметры вышивки объекта
 	Embroidery Fabrics	Ткани для вышивки
 	Apply Embroidery Fabric to Objects	Применить ткань вышивки к объектам
 	Embroidery Setup	Параметры вышивки
-	Show Embroidery Settings	Показать параметры вышивки
 	Embroidery Statistics	Статистика вышивки
 	Embroidery Sewing Order	Порядок вышивания
 	Embroidery Check	Проверка вышивки
@@ -5119,41 +5117,8 @@ lighting	Light	Свет
 @msg	too many stitches for a VP3 file	слишком много стежков для файла VP3
 @msg	{_1} is not an embroidery format	{_1} — не формат вышивки
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Стежок:
-	Stitch Length:	Длина стежка:
-	Fill Angle:	Угол заливки:
-	Pull Compensation:	Компенсация стягивания:
-	Pull Compensation (%):	Компенсация стягивания (%):
-	Push Compensation:	Компенсация выталкивания:
-	Expand Fills:	Расширить заливки:
-	Narrow Parts as Satin:	Узкие части гладью:
-	Thread Weight:	Толщина нити:
-	Underlay:	Подложка:
-	Jump Length:	Длина перехода:
-	Trim Length:	Длина обрезки:
-	Shortest Stitch:	Самый короткий стежок:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Как вышиваются фигуры: «Автоматически» заливает фигуры татами, а контуры шьёт столбиками глади или прямым стежком в зависимости от ширины; другой вариант шьёт так каждую фигуру
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Расстояние между рядами заливки и между стежками глади; если оставить как есть, столбик глади выбирает его по своей ширине
-	The length of the stitches along fill rows and running lines	Длина стежков вдоль рядов заливки и прямого стежка
-	The direction of the fill rows	Направление рядов заливки
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Расширяет столбики глади и ряды заливки с каждой стороны, чтобы возместить стягивание ткани
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Расширяет столбики глади и ряды заливки на долю их ширины, чтобы возместить стягивание ткани
-	Shortens satin columns at their ends, where the thread pushes outward	Укорачивает столбики глади на концах, где нить выталкивает наружу
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Увеличивает каждую залитую фигуру по контуру, чтобы закрыть зазоры между фигурами; отрицательное значение её уменьшает
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Части заливки уже этого значения вышиваются столбиками глади; 0 — ни одной
-	The thread's weight: thinner thread (a higher number) packs the rows closer	Толщина нити: более тонкая нить (больший номер) кладёт ряды плотнее
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Стежки, которые шьются первыми, чтобы держать ткань: выбираются каждой фигурой, никаких или один вид для всех фигур
-	A move longer than this lifts the needle instead of being sewn	Более длинное перемещение поднимает иглу вместо того, чтобы быть прошитым
-	A jump longer than this cuts the thread first	Более длинный переход сначала обрезает нить
-	Shorter stitches are left out	Более короткие стежки пропускаются
-	Tatami Fill	Заливка татами
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Гладь
-	Running Stitch	Прямой стежок
-	Centre Run	Проход по центру
-	Edge Run	Проход по краю
-	Edge Run and Zigzag	Проход по краю и зигзаг
-	Edge Run and Tatami	Проход по краю и татами
 	Embroidery Picture	Изображение вышивки
 @msg	nothing to draw: the document sews no stitch	нечего рисовать: в документе нет ни одного стежка
 	Stitch Preview	Просмотр стежков
@@ -5184,7 +5149,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} стежок|{count} стежка|{count} стежков
 @msg	tab {tab}: one of {_1}	вкладка {tab}: одна из {_1}
 @msg	unknown key `{k}`: the only one is {only}	неизвестный ключ `{k}`: единственный — {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Вышивается снизу вверх по стопке; объекты одного цвета объединяются, если между ними ничего нет.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Вышивается снизу вверх по стопке; объекты одного цвета объединяются, если между ними ничего нет.
 embroidery	Trim and thread change	Обрезка и смена нити
 embroidery	Thread change	Смена нити
 embroidery	fill	заливка
@@ -5197,7 +5162,7 @@ embroidery	narrow parts as satin	узкие части гладью
 @plural	{count} object|{count} objects	{count} объект|{count} объекта|{count} объектов
 @plural	{count} jump|{count} jumps	{count} перескок|{count} перескока|{count} перескоков
 @plural	{count} trim|{count} trims	{count} обрезка|{count} обрезки|{count} обрезок
-embroidery	Colours	Цвета
+embroidery	Colors	Цвета
 embroidery	Thread changes	Смены нити
 embroidery	Trims	Обрезки
 embroidery	Jumps	Перескоки
@@ -5227,8 +5192,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Время при
 @msg	can't change the sewing order: too many objects at once	не удаётся изменить порядок вышивки: слишком много объектов сразу
 embroidery	After {name}	После {name}
 embroidery	Before {name}	Перед {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Ни один стежок не сдвинулся: объекты одного цвета по-прежнему объединяются, если ничто между ними не лежит под ними.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} вышивается в блоке {block}, вместе с другими объектами своего цвета
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Ни один стежок не сдвинулся: объекты одного цвета по-прежнему объединяются, если ничто между ними не лежит под ними.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} вышивается в блоке {block}, вместе с другими объектами своего цвета
 embroidery	{name} is sewn in block {block}	{name} вышивается в блоке {block}
 embroidery	Thread changes: {before} → {after}	Смены нити: {before} → {after}
 embroidery	Collapse All	Свернуть все
@@ -5245,8 +5210,8 @@ embroidery	More than {value} short stitches in a row	Более {value} коро
 embroidery	{value} or more layers of stitches on one spot	{value} или больше слоёв стежков в одном месте
 embroidery	Everything is sewn	Вышивается всё
 embroidery	Art that isn't sewn	Графика, которая не вышивается
-embroidery	More colour blocks than {format} holds ({value})	Больше цветовых блоков, чем вмещает {format} ({value})
-embroidery	{format} holds any number of colour blocks	{format} вмещает любое число цветовых блоков
+embroidery	More color blocks than {format} holds ({value})	Больше цветовых блоков, чем вмещает {format} ({value})
+embroidery	{format} holds any number of color blocks	{format} вмещает любое число цветовых блоков
 embroidery	More stitches than a machine shows ({value})	Больше стежков, чем показывает машина ({value})
 embroidery	More thread changes than a machine shows ({value})	Больше смен нити, чем показывает машина ({value})
 embroidery	No findings	Ничего не найдено
@@ -5283,7 +5248,7 @@ embroidery	No source gives a number to check these against.	Ни один ист
 @plural	{count} warning|{count} warnings	{count} предупреждение|{count} предупреждения|{count} предупреждений
 @plural	{count} note|{count} notes	{count} примечание|{count} примечания|{count} примечаний
 @plural	and {count} more|and {count} more	и ещё {count}|и ещё {count}|и ещё {count}
-embroidery	Threads unlike the art's colour (over {value})	Нити, не похожие на цвет графики (больше {value})
+embroidery	Threads unlike the art's color (over {value})	Нити, не похожие на цвет графики (больше {value})
 embroidery	Largest difference: {value}	Наибольшая разница: {value}
 embroidery	Block {block}: {thread}, {value}	Блок {block}: {thread}, {value}
 	Zoom to Box	Масштаб по рамке
@@ -5304,7 +5269,7 @@ embroidery	Median: {value} mm	Медиана: {value} мм
 embroidery	Too long	Слишком длинные
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
 embroidery	Over {value} mm: {stitches}	Больше {value} мм: {stitches}
-@plural	{count} colour|{count} colours	{count} цвет|{count} цвета|{count} цветов
+@plural	{count} color|{count} colors	{count} цвет|{count} цвета|{count} цветов
 embroidery	Embroidery: {figures}	Вышивка: {figures}
 embroidery	Stitches can't be planned	Не удаётся спланировать стежки
 embroidery	Click to open the Embroidery panel.	Щёлкните, чтобы открыть панель «Вышивка».
@@ -5441,3 +5406,206 @@ axis	Y Axis	Ось Y
 	Rectangular Grid Tool Options	Параметры инструмента «Прямоугольная сетка»
 	Polar Grid Tool Options	Параметры инструмента «Полярная сетка»
 	Fill Line	Заливка отрезка
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Объект
+embroidery	Select an object to set how it is sewn.	Выделите объект, чтобы задать, как его вышивать.
+embroidery	Nothing selected	Ничего не выделено
+embroidery	Guide	Направляющая
+embroidery	Stitches from a file	Стежки из файла
+embroidery	Path	Контур
+embroidery	Compound path	Составной контур
+embroidery	Group	Группа
+embroidery	Layer	Слой
+embroidery	Text object	Текстовый объект
+embroidery	Image	Изображение
+embroidery	Symbol instance	Экземпляр символа
+embroidery	Placed file	Помещённый файл
+embroidery	Live object	Динамический объект
+embroidery	fill and stroke	заливка и обводка
+embroidery	fill, no stroke	заливка, без обводки
+embroidery	stroke, no fill	обводка, без заливки
+embroidery	no fill or stroke	без заливки и обводки
+embroidery	Fill	Заливка
+embroidery	Fill: none	Заливка: нет
+embroidery	Stroke	Обводка
+embroidery	Stroke: none	Обводка: нет
+embroidery	Stitch	Стежок
+embroidery	Underlay	Подложка
+embroidery	Compensation	Компенсация
+embroidery	auto	авто
+embroidery	{count} of {total} set	задано у {count} из {total}
+embroidery	Set on the selected objects; without it: {value}	Задано у выделенных объектов; без этого: {value}
+embroidery	The selected objects differ.	У выделенных объектов значения разные.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Авто
+embroidery	Mixed	Разные
+embroidery	Type	Тип
+embroidery	Angle	Угол
+embroidery	Row spacing	Шаг рядов
+embroidery	Spacing	Шаг
+embroidery	Stitch length	Длина стежка
+embroidery	Narrow parts as satin	Узкие части гладью
+embroidery	Pull compensation	Компенсация стягивания
+embroidery	Pull compensation (%)	Компенсация стягивания (%)
+embroidery	Push compensation	Компенсация выталкивания
+embroidery	Expand fills	Расширение заливок
+embroidery	Split satin stitches from	Делить стежки глади от
+embroidery	Setting	Параметр
+embroidery	How the part is sewn: Auto picks by its shape and width.	Как вышивается часть: «Авто» выбирает по форме и ширине.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	Направление рядов заливки, против часовой стрелки; поворачивается вместе с объектом.
+embroidery	The distance between rows, or between a satin's stitches.	Расстояние между рядами или между стежками глади.
+embroidery	The longest stitch along a row or a running line.	Самый длинный стежок ряда или линии прямого стежка.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Части заливки уже этого значения вышиваются колонками глади; 0 — ни одной.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	Стежки, вышиваемые первыми, под верхними стежками, чтобы удерживать ткань.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Расширяет каждый ряд или колонку на концах, где нить стягивает ткань.
+embroidery	Widens each column by a share of its width.	Расширяет каждую колонку на долю её ширины.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Укорачивает открытую колонку глади на концах, где нить выталкивает наружу.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Увеличивает заливаемую область со всех сторон, чтобы нарисованные раздельно фигуры сомкнулись.
+embroidery	Satin stitches longer than this are split in two.	Стежки глади длиннее этого значения делятся надвое.
+embroidery	Where the needle goes in to sew the part.	Где игла входит, чтобы вышить часть.
+embroidery	Where the needle comes out after the part.	Где игла выходит после части.
+embroidery	Tatami fill	Заливка татами
+embroidery	Tatami	Татами
+embroidery	Satin	Гладь
+embroidery	Running stitch	Прямой стежок
+embroidery	Don't sew	Не вышивать
+embroidery	None	Нет
+embroidery	Center run	Проход по центру
+embroidery	Edge run	Проход по краю
+embroidery	Edge run + zigzag	Проход по краю + зигзаг
+embroidery	Edge run + tatami	Проход по краю + татами
+embroidery	fabric	ткань
+embroidery	machine	машина
+embroidery	document	документ
+embroidery	export	экспорт
+embroidery	default	по умолчанию
+embroidery	set	задано
+embroidery	fabric {value}	ткань {value}
+embroidery	machine {value}	машина {value}
+embroidery	document {value}	документ {value}
+embroidery	export {value}	экспорт {value}
+embroidery	default {value}	по умолчанию {value}
+embroidery	Not sewn: set to Don't sew.	Не вышивается: задано «Не вышивать».
+embroidery	Not sewn: it has no paint.	Не вышивается: у него нет цвета.
+embroidery	Not sewn: it is hidden.	Не вышивается: он скрыт.
+embroidery	Not sewn: it is on a template or non-printing layer.	Не вышивается: он на слое-шаблоне или непечатаемом слое.
+embroidery	Not sewn.	Не вышивается.
+embroidery	Stitches from a file are sewn as the file has them.	Стежки из файла вышиваются так, как они записаны в файле.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Текст пока не вышивается: создайте контуры, чтобы вышить его.
+embroidery	Images aren't sewn.	Изображения не вышиваются.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	Настройки задаются объектам символа: отредактируйте символ, чтобы задать их.
+embroidery	Guides aren't sewn.	Направляющие не вышиваются.
+embroidery	Placed files aren't sewn.	Помещённые файлы не вышиваются.
+embroidery	Not sewn as it is: expand it to sew it.	В таком виде не вышивается: разберите его, чтобы вышить.
+embroidery	It takes no embroidery settings.	Не принимает настроек вышивки.
+@plural	{count} object takes settings|{count} objects take settings	{count} объект принимает настройки|{count} объекта принимают настройки|{count} объектов принимают настройки
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Восстановить: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Авто: {choice}
+embroidery	Auto · {value}	Авто · {value}
+embroidery	filled outline	залитый контур
+embroidery	center run	проход по центру
+embroidery	edge run	проход по краю
+embroidery	edge run + zigzag	проход по краю + зигзаг
+embroidery	edge run + tatami	проход по краю + татами
+embroidery	none	нет
+embroidery	by size	по размеру
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Вход и выход
+embroidery	Set	Задано
+embroidery	nearest	ближайший
+embroidery	not used yet	пока не используется
+embroidery	Set on the selected objects.	Задано у выделенных объектов.
+embroidery	Nearest to where the needle is.	Ближе всего к тому месту, где игла.
+embroidery	built-in values	встроенные значения
+embroidery	Fabric: {fabric} · thread {weight} wt	Ткань: {fabric} · нить {weight} wt
+embroidery	Dim values come from the fabric and automatic rules.	Бледные значения берутся из ткани и автоматических правил.
+embroidery	A bar marks a value set on these objects.	Полоса отмечает значение, заданное у этих объектов.
+embroidery	Restore from Fabric	Восстановить из ткани
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Снимает собственные значения выделенных объектов, чтобы они снова следовали ткани; вход, выход и обрезка нити остаются.
+embroidery	Cotton (light woven)	Хлопок (лёгкая ткань)
+embroidery	Denim or heavy twill	Деним или плотная саржа
+embroidery	Stretch knit	Эластичный трикотаж
+embroidery	Piqué (polo knit)	Пике (трикотаж поло)
+embroidery	Fleece	Флис
+embroidery	Silk or satin fabric	Шёлк или атласная ткань
+embroidery	Nylon or sports fabric	Нейлон или спортивная ткань
+embroidery	Cap (structured)	Кепка (жёсткая)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Копировать настройки вышивки
+	Paste Embroidery Settings	Вставить настройки вышивки
+@msg	select one object that takes embroidery settings: a path or a compound path	выделите один объект, принимающий настройки вышивки: контур или составной контур
+@msg	copy an object's embroidery settings first	сначала скопируйте настройки вышивки объекта
+@msg	the embroidery settings copied are another document's	скопированные настройки вышивки принадлежат другому документу
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Ткань
+embroidery	The values objects use where they set none of their own.	Значения, которые используют объекты без собственных.
+embroidery	Built-in values	Встроенные значения
+embroidery	Custom	Свои
+embroidery	Stabilizer	Стабилизатор
+embroidery	Tear-away	Отрывной
+embroidery	Cut-away	Вырезной
+embroidery	Adhesive tear-away	Клеевой отрывной
+embroidery	Thread	Нить
+embroidery	Thread weight	Толщина нити
+embroidery	Rows' spacing for this thread: {value}	Шаг рядов для этой нити: {value}
+embroidery	Thread palette	Палитра нитей
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Машина и файл
+embroidery	Jump (needle up) from	Прыжок (игла поднята) от
+embroidery	Cut the thread from	Обрезать нить от
+embroidery	Shortest stitch	Кратчайший стежок
+embroidery	Speed for the time estimate	Скорость для оценки времени
+embroidery	Sewing order	Порядок вышивки
+embroidery	Join one thread's objects when nothing lies between them	Объединять объекты одной нити, когда между ними ничего нет
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Меньше смен нити и обрезок: то, что лежит выше, всё равно вышивается позже.
+embroidery	Design name	Имя дизайна
+embroidery	Start point	Начальная точка
+embroidery	estimate	оценка
+embroidery	information only	только для сведения
+embroidery	preset {value}	пресет {value}
+embroidery	Changed from the preset, which gives {value}	Изменено относительно пресета, который даёт {value}
+embroidery	Set in the document; without it: {value}	Задано в документе; без этого: {value}
+embroidery	Changing the fabric doesn't change them.	Смена ткани их не меняет.
+embroidery	Apply the fabric to them too:	Применить ткань и к ним:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Ткань, на которой вышивается дизайн: её значения используют объекты без собственных.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	Расстояние между рядами заливки для нити 40 wt: другая нить его масштабирует.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	Шаг колонны глади как доля шага, который выбирает её ширина.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Что заправить в пяльцы под ткань: для сведения, ни один стежок не меняется.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	Толщина нити: более тонкая нить (больший номер) вышивает ряды плотнее.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Нити, которые нумерует файл машины: Janome в файлах JEF, Brother в файлах PES.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Более длинное перемещение поднимает иглу вместо вышивания.
+embroidery	A jump longer than this cuts the thread first.	Более длинный прыжок сначала обрезает нить.
+embroidery	Stitches shorter than this are left out.	Более короткие стежки пропускаются.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Стежков в минуту: по ней оценивается время вышивки дизайна.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Объекты одной нити вышиваются подряд, если между ними ничего их не перекрывает: меньше смен нити и обрезок.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Где машина начинает дизайн, как указал файл, из которого он открыт.
+embroidery	The design's name, as the file it was opened from gave it.	Имя дизайна, как указал файл, из которого он открыт.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Ткань, нить и машина документа: вкладка «Вышивка» в параметрах документа.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} объект задаёт свои значения для ткани.|{count} объекта задают свои значения для ткани.|{count} объектов задают свои значения для ткани.
+	Embroidery Settings…	Параметры вышивки…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	От {min} до {max}
+embroidery	At least the jump length ({value}): only a jump is cut	Не меньше длины прыжка ({value}): обрезается только прыжок
+# Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
+embroidery	The fabric changed	Ткань изменена
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} мм
+# Machine embroidery: the units the embroidery fields write after their numbers (millimetres, thread weight, stitches a minute), as the Check tab writes them.
+embroidery	mm	мм
+embroidery	wt	wt
+embroidery	/min	/мин
+# Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
+embroidery	Not a number: {text}	Не число: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Применить параметры вышивки другого объекта
+	Show Document Embroidery Settings	Показать параметры вышивки документа
+@plural	Trim the thread after the object|Trim the thread after the objects	Обрезать нить после объекта|Обрезать нить после объектов|Обрезать нить после объектов
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Не вставлено, так как эта версия их не принимает: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} выбранный объект не принимает параметры и пропущен|{count} выбранных объекта не принимают параметры и пропущены|{count} выбранных объектов не принимают параметры и пропущены
+# Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
+@plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} выбранный объект не принимает параметры|{count} выбранных объекта не принимают параметры|{count} выбранных объектов не принимают параметры

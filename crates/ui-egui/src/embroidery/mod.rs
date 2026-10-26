@@ -4,6 +4,12 @@
 //! - [`marks`]: severity marks, drawn in code: error, warning, note, passed.
 //! - [`check_marks`]: the Check tab's findings ringed on the canvas.
 //! - [`counters`]: the status bar's stitches, colours, thread changes and time.
+//! - [`fields`]: the numbers of the embroidery fields (the interface language's decimal mark, each
+//!   unit's step).
+//! - [`rows`]: a row of the embroidery settings (the Object tab's): a label, a field, where its
+//!   value comes from.
+//! - [`vocabulary`]: the settings' words (labels, choices, sources, what Auto chose).
+//! - [`setup_tab`]: Document Setup's Embroidery tab (the document's fabric, thread and machine).
 //! - [`numbers`]: numbers as the interface language writes them, in the embroidery interface's
 //!   read-only text.
 //! - [`plan_worker`]: the stitch preview's planning thread.
@@ -20,16 +26,20 @@
 
 pub mod check_marks;
 pub mod counters;
+pub mod fields;
 pub mod marks;
 pub mod menu;
 pub mod notice;
 pub mod numbers;
 pub mod overlay;
 pub mod plan_worker;
+pub mod rows;
+pub mod setup_tab;
 pub mod stitch_layer;
 pub mod stitch_preview;
 pub mod switch;
 pub mod text;
+pub mod vocabulary;
 pub mod zoom;
 
 use vectorcraft_engine::cmd::embroidery::render::{Look, Region, picture};
@@ -50,8 +60,17 @@ pub struct Embroidery {
     pub(crate) order: crate::panels::embroidery::order::OrderState,
     /// The Embroidery panel's Check tab.
     pub(crate) check: crate::panels::embroidery::check::CheckState,
+    /// The Embroidery panel's Object tab.
+    pub(crate) object: crate::panels::embroidery::object::ObjectState,
+    /// Document Setup's Embroidery tab, while the dialog is open: what it opened with.
+    pub(crate) setup: Option<setup_tab::Opened>,
     /// The status bar's counters.
     pub(crate) counters: counters::Counters,
+    /// Window › Embroidery has just docked the panel beside other tabs: the dock is widened for
+    /// their labels once they are drawn, within this many frames (`panels::embroidery::fit_dock_tabs`).
+    pub(crate) fit_dock_frames: u8,
+    /// The dock's width asked for then, given to the dock at the frame's end.
+    pub(crate) dock_width: Option<f32>,
 }
 
 /// The height of the isolation mode's breadcrumb bar, which upstream draws over the canvas's top
@@ -78,6 +97,7 @@ pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
 /// the frame asked of the stitch preview planned.
 pub fn end_frame(app: &mut VectorcraftApp, ctx: &egui::Context) {
     counters::act(app);
+    crate::panels::embroidery::widen_dock(app);
     stitch_preview::schedule(app, ctx);
 }
 
@@ -95,8 +115,9 @@ pub fn holds_screenshots(app: &VectorcraftApp, now: f64) -> bool {
 
 /// `ui.inspect`'s `stitchPreview`: the active document's stitch view, how its plan stands
 /// (`state`: off, fresh, pending, stale or failed; `planning`, `progress`, `error`, `planMs`,
-/// `generation`), whether the canvas draws it (`drawn`), and the notice shown (`notice`). Null with
-/// no document.
+/// `generation`), whether the canvas draws it (`drawn`), the notice shown (`notice`), and the
+/// status bar's counters (`counters`). Null with no document. The Embroidery panel's Object tab is
+/// `ui.inspect`'s `embroideryPanel` (`panels::embroidery::inspect`).
 pub fn inspect(app: &VectorcraftApp, now: f64) -> serde_json::Value {
     let Some(st) = app.session.active() else { return serde_json::Value::Null };
     let mut v = app.embroidery.preview.inspect(st.uid, now);
@@ -125,8 +146,12 @@ pub fn render_stitches(app: &mut VectorcraftApp, artboard: usize, scale: f64) ->
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
+mod tests_fields;
+#[cfg(test)]
 mod tests_gate;
 #[cfg(test)]
 mod tests_languages;
 #[cfg(test)]
 mod tests_preview;
+#[cfg(test)]
+mod tests_shots;

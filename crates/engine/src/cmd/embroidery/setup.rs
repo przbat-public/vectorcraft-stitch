@@ -259,6 +259,42 @@ impl Session {
     }
 }
 
+/// What the document's fabric is: none (the built-in values), values of its own (no preset), or
+/// copied from the preset of this id.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum FabricChoice {
+    BuiltIn,
+    Own,
+    Preset(String),
+}
+
+/// The document's fabric and the thread weight the plan uses, read from the document alone: what
+/// the Object tab's footer shows on every frame. [`Session::embroidery_settings`] also counts the
+/// objects that set the fabric's values themselves, a walk of the whole document.
+pub fn fabric_and_thread(d: &Document) -> (FabricChoice, f64) {
+    let e = d.embroidery.as_deref();
+    let fabric = match e.and_then(|e| e.fabric.as_deref()) {
+        None => FabricChoice::BuiltIn,
+        Some(f) => f.preset.as_ref().map_or(FabricChoice::Own, |p| FabricChoice::Preset(p.id.clone())),
+    };
+    (fabric, e.and_then(|e| e.thread_weight).unwrap_or(THREAD_WEIGHT))
+}
+
+/// The settings of a document that sets none ([`DocumentSettings`]): each value its built-in
+/// default, what Document Setup says a value would be unset.
+pub fn default_settings() -> DocumentSettings {
+    /// The blank document's side, points: any, the settings don't depend on it.
+    const SIDE: f64 = 1.0;
+    document_settings(&Document::new(SIDE, SIDE))
+}
+
+/// A fabric's tatami spacing `spacing`, millimetres for 40 wt thread (as `embroidery.setup
+/// {fabric}` takes it), as the plan uses it for thread of `weight` (wt): Document Setup's note
+/// under the thread.
+pub fn spacing_for_thread(spacing: f64, weight: f64) -> f64 {
+    spacing * thread_scale(weight)
+}
+
 /// The document's fabric as stored ([`StoredFabric`]).
 fn stored_fabric(f: &FabricSettings) -> StoredFabric {
     let v = &f.values;

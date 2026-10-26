@@ -756,7 +756,25 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "ui.embroideryPanel",
         "Embroidery Panel",
         "",
-        "{tab?: order|check, format?: a format's id (embroidery.check's), or null for the thread palette's} show the Embroidery panel (VectorCraft Stitch), at a tab: the first time docked as the last tab beside Properties, Layers and Libraries; format: the one the active document's Check tab checks for → {tab, format}",
+        "{tab?: object|order|check, part?: fill|stroke (the part of the selected objects the Object tab shows), format?: a format's id (embroidery.check's), or null for the thread palette's} show the Embroidery panel (VectorCraft Stitch), at a tab: the first time docked as the last tab beside Properties, Layers and Libraries; format: the one the active document's Check tab checks for → {tab, part, format}",
+    ),
+    (
+        "embroidery.copySettings",
+        "Copy Embroidery Settings",
+        "",
+        "{} (VectorCraft Stitch) take the selected object's embroidery settings as they are now (one object that takes them: a path or a compound path), both parts, for embroidery.pasteSettings, as the Embroidery panel's menu does; values this version doesn't take are left out → {source, passedOver}",
+    ),
+    (
+        "embroidery.pasteSettings",
+        "Paste Embroidery Settings",
+        "",
+        "{part?: fill|stroke (default: both)} (VectorCraft Stitch) give the selected objects, in any document, the embroidery settings embroidery.copySettings took, as one embroidery.set a part in one command.batch, one undo step; what it passed over is said in the status bar; off while nothing is copied or nothing is selected → {passedOver, skippedCount, skipped}",
+    ),
+    (
+        "embroidery.documentSetup",
+        "Embroidery Settings…",
+        "",
+        "{} (VectorCraft Stitch) open Document Setup at its Embroidery tab (the document's fabric, thread, machine and sewing order), as the Embroidery panel's Object tab does; off with no document → null",
     ),
     (
         "embroidery.showFinding",

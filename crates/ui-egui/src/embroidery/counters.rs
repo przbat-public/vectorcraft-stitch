@@ -113,7 +113,7 @@ impl Variant {
 /// The figures in `variant`'s words.
 pub fn words(f: &Figures, variant: Variant) -> String {
     let stitches = crate::etn!(f.stitches, "{count} stitch", "{count} stitches");
-    let colors = crate::etn!(f.colors, "{count} colour", "{count} colours");
+    let colors = crate::etn!(f.colors, "{count} color", "{count} colors");
     let changes = crate::etn!(f.thread_changes, "{count} thread change", "{count} thread changes");
     let time = minutes_words(f.minutes);
     match variant {
@@ -266,7 +266,7 @@ fn tooltip(state: &State) -> String {
                 ]
                 .join(" · "),
                 [
-                    crate::etn!(f.colors, "{count} colour", "{count} colours"),
+                    crate::etn!(f.colors, "{count} color", "{count} colors"),
                     crate::etn!(f.thread_changes, "{count} thread change", "{count} thread changes"),
                 ]
                 .join(" · "),

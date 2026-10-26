@@ -1,5 +1,6 @@
-//! Window › Embroidery (VectorCraft Stitch): how the active document's design is sewn, in two
-//! tabs, Sewing Order and Check (Object and Stitches come with the PRs that build them).
+//! Window › Embroidery (VectorCraft Stitch): how the active document's design is sewn, in three
+//! tabs: Object (the selected objects' embroidery settings), Sewing Order and Check (Stitches comes
+//! with the PR that builds it).
 //!
 //! - **It never plans.** Drawing it asks the stitch preview's scheduler for the plan and for its
 //!   tab's read command replies ([`crate::embroidery::stitch_preview`]), which the planning thread
@@ -10,11 +11,17 @@
 //!   `DockTab`, so the preferences keep upstream's shape; they live in the fork's own folder, since
 //!   upstream resets a layout holding a panel it doesn't know (`apps/vectorcraft/src/stitch_profile.rs`).
 //!   It has no icon in the collapsed icon column (its icon shows on its collapsed tab).
-//! - **States**: no document; not planned yet (blank for [`SHOW_BUSY_AFTER_SECS`]); planning;
-//!   nothing to sew; can't be planned (the reason; the last good result stays when there is one);
-//!   ready; updating (the last result, and "Updating…" once the newer one takes a while).
-//! - The open tab is kept with the interface's state, read leniently (an unknown tab reads as the
-//!   first), and `ui.embroideryPanel {tab?}` shows the panel at a tab.
+//! - **States** of Sewing Order and Check: no document; not planned yet (blank for
+//!   [`SHOW_BUSY_AFTER_SECS`]); planning; nothing to sew; can't be planned (the reason; the last
+//!   good result stays when there is one); ready; updating (the last result, and "Updating…" once
+//!   the newer one takes a while). The Object tab draws in every one of them ([`object`]): only its
+//!   stitch count waits for a plan.
+//! - **The tab strip** fits every language: each tab as wide as its name, the widest shrunk first
+//!   when they don't fit (`craft_ui::tabs::fit`), a shrunk name elided with the whole of it in its
+//!   tooltip and for screen readers.
+//! - The open tab and the Object tab's part are kept with the interface's state, read leniently (an
+//!   unknown tab reads as the first), and `ui.embroideryPanel {tab?, part?}` shows the panel at a
+//!   tab.
 
 use egui::{Color32, CornerRadius, Rect, Sense, Stroke, StrokeKind, Ui, vec2};
 use serde::{Deserialize, Serialize};
@@ -26,6 +33,7 @@ use crate::embroidery::plan_worker::Query;
 
 pub mod check;
 pub mod lengths;
+pub mod object;
 pub mod order;
 use crate::embroidery::stitch_preview::Freshness;
 use crate::theme::Tokens;
@@ -40,6 +48,10 @@ pub const SHOW_BUSY_AFTER_SECS: f64 = 0.1;
 
 /// The tab strip's height, points (measured on the mockups at 2 px a point: an estimate).
 const STRIP_HEIGHT: f32 = 22.0;
+/// The room round a tab's name in the strip, each side, and the narrowest a tab is shrunk to before
+/// the strip would hide one, points: estimates (a tab of three letters stays readable).
+pub(super) const TAB_PAD: f32 = 8.0;
+const TAB_MIN: f32 = 36.0;
 /// Room under the strip and between the header's lines, points.
 const GAP: f32 = 8.0;
 /// How much of a stale result's colour the panel keeps: its words and marks dimmed while a newer
@@ -61,7 +73,7 @@ const STATE_PROGRESS: f32 = 160.0;
 const STATE_TOP: f32 = 12.0;
 const STATE_GAP: f32 = 4.0;
 /// How far a tab's highlight sits inside its segment, points.
-const SEGMENT_INSET: f32 = 2.0;
+pub(super) const SEGMENT_INSET: f32 = 2.0;
 
 /// The panel's tabs, in the order they show. Their ids are stable (`ui.embroideryPanel`, the saved
 /// interface state).
@@ -69,15 +81,17 @@ const SEGMENT_INSET: f32 = 2.0;
 #[serde(rename_all = "camelCase")]
 pub enum Tab {
     #[default]
+    Object,
     Order,
     Check,
 }
 
 impl Tab {
-    pub const ALL: [Tab; 2] = [Tab::Order, Tab::Check];
+    pub const ALL: [Tab; 3] = [Tab::Object, Tab::Order, Tab::Check];
 
     pub fn id(self) -> &'static str {
         match self {
+            Tab::Object => "object",
             Tab::Order => "order",
             Tab::Check => "check",
         }
@@ -90,6 +104,7 @@ impl Tab {
     /// The tab's name in the interface language.
     pub fn label(self) -> &'static str {
         match self {
+            Tab::Object => crate::et!("Object"),
             Tab::Order => crate::et!("Sewing Order"),
             Tab::Check => crate::et!("Check"),
         }
@@ -105,11 +120,25 @@ impl<'de> Deserialize<'de> for Tab {
     }
 }
 
-/// The panel's settings, kept with the interface's state (`ui.inspect` → `ui.embroidery_panel`).
-#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+/// The panel's settings, kept with the interface's state (`ui.inspect` → `ui.embroidery_panel`):
+/// the open tab, and the part the Object tab shows (saved by its id).
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub tab: Tab,
+    #[serde(serialize_with = "part_id")]
+    pub part: object::Part,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self { tab: Tab::default(), part: object::Part::Fill }
+    }
+}
+
+/// A part as the settings are saved: its id.
+fn part_id<S: serde::Serializer>(part: &object::Part, s: S) -> Result<S::Ok, S::Error> {
+    s.serialize_str(part.id())
 }
 
 /// Settings as saved, read as leniently as the tab: anything but an object (null, a word, a number:
@@ -118,7 +147,11 @@ pub struct Settings {
 impl<'de> Deserialize<'de> for Settings {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let v = Value::deserialize(d)?;
-        Ok(Self { tab: v.get("tab").and_then(Value::as_str).and_then(Tab::from_id).unwrap_or_default() })
+        let read = |key: &str| v.get(key).and_then(Value::as_str);
+        Ok(Self {
+            tab: read("tab").and_then(Tab::from_id).unwrap_or_default(),
+            part: read("part").and_then(object::Part::from_id).unwrap_or(object::Part::Fill),
+        })
     }
 }
 
@@ -127,6 +160,8 @@ impl<'de> Deserialize<'de> for Settings {
 fn queries(app: &VectorcraftApp, uid: u64, tab: Tab) -> Vec<Query> {
     let stats = crate::embroidery::stitch_preview::figures_query();
     match tab {
+        // Its count is read from the plan itself.
+        Tab::Object => vec![stats],
         Tab::Order => vec![stats, order::query()],
         Tab::Check => vec![stats, check::query(&app.embroidery.check, uid)],
     }
@@ -143,6 +178,9 @@ pub(crate) fn command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         "embroidery.showFinding" => Some(check::show_finding_command(app, p)),
         "view.checkMarks" => Some(check_marks(app, p)),
         "embroidery.previousHit" => Some(check::step(app, false)),
+        "embroidery.copySettings" => Some(object::copy(app, p)),
+        "embroidery.pasteSettings" => Some(object::paste(app, p)),
+        "embroidery.documentSetup" => Some(crate::embroidery::setup_tab::open_at_tab(app, p)),
         _ => None,
     }
 }
@@ -180,18 +218,36 @@ fn only_key(p: &Value, only: &str) -> Result<(), String> {
 pub(crate) fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
     match id {
         "embroidery.nextHit" | "embroidery.previousHit" => Some(check::can_step(app)),
+        "embroidery.copySettings" => Some(object::can_copy(app)),
+        "embroidery.pasteSettings" => Some(object::can_paste(app)),
+        "embroidery.documentSetup" => Some(app.session.active().is_some()),
         _ => None,
     }
 }
 
-/// `ui.embroideryPanel {tab?: "order"|"check", format?: a format's id, or null}`: show the panel,
-/// at `tab`; `format` the one the active document's check is for (null: its thread palette's, as
-/// the Check tab's "Checked for" chooses) → `{tab, format}` (`format` null when none is chosen).
+/// `ui.embroideryPanel {tab?: "object"|"order"|"check", part?: "fill"|"stroke", format?: a
+/// format's id, or null}`: show the panel, at `tab`; `part` the one the Object tab shows; `format`
+/// the one the active document's check is for (null: its thread palette's, as the Check tab's
+/// "Checked for" chooses) → `{tab, part, format}` (`format` null when none is chosen).
 fn panel_command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
-    only_keys(p, &["tab", "format"])?;
-    if let Some(tab) = p.get("tab").filter(|v| !v.is_null()) {
-        let ids: Vec<&str> = Tab::ALL.iter().map(|t| t.id()).collect();
-        app.ui.embroidery_panel.tab = tab.as_str().and_then(Tab::from_id).ok_or_else(|| format!("tab {tab}: one of {}", ids.join(", ")))?;
+    only_keys(p, &["tab", "part", "format"])?;
+    // Both checked before either changes.
+    let tab = match p.get("tab").filter(|v| !v.is_null()) {
+        Some(tab) => {
+            let ids: Vec<&str> = Tab::ALL.iter().map(|t| t.id()).collect();
+            Some(tab.as_str().and_then(Tab::from_id).ok_or_else(|| format!("tab {tab}: one of {}", ids.join(", ")))?)
+        }
+        None => None,
+    };
+    let part = match p.get("part").filter(|v| !v.is_null()) {
+        Some(part) => Some(part.as_str().and_then(object::Part::from_id).ok_or_else(|| format!("part {part}: fill or stroke"))?),
+        None => None,
+    };
+    if let Some(tab) = tab {
+        app.ui.embroidery_panel.tab = tab;
+    }
+    if let Some(part) = part {
+        app.ui.embroidery_panel.part = part;
     }
     if let Some(format) = p.get("format") {
         let uid = app.session.active().map(|st| st.uid).ok_or("no document")?;
@@ -209,7 +265,15 @@ fn panel_command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
     }
     show_panel(app)?;
     let format = app.session.active().and_then(|st| app.embroidery.check.format.get(&st.uid).copied());
-    Ok(json!({ "tab": app.ui.embroidery_panel.tab.id(), "format": format }))
+    // The part the Object tab shows: the one chosen, or the other where the objects don't paint it.
+    let part = object::shown_part(app);
+    Ok(json!({ "tab": app.ui.embroidery_panel.tab.id(), "part": part.id(), "format": format }))
+}
+
+/// `ui.inspect`'s `embroideryPanel` (VectorCraft Stitch): what the panel's Object tab shows
+/// (`object`, [`object::inspect`]). Its open tab and the part chosen are in `ui.embroidery_panel`.
+pub fn inspect(app: &VectorcraftApp) -> Value {
+    json!({ "object": object::inspect(app) })
 }
 
 /// Show the panel: brought forward where it is; else where it was closed from, by the dock's own
@@ -236,15 +300,116 @@ fn show_panel(app: &mut VectorcraftApp) -> Result<Value, String> {
         }
     }
     let anchor = ["libraries", "layers", "properties"].into_iter().find(|id| shown(app, id));
-    match anchor {
+    let r = match anchor {
         Some(anchor) => app.run("window.panel.move", json!({ "panel": ID, "anchor": anchor })),
         None => app.run("window.panel.layout", json!({ "action": { "Open": { "panel": ID, "anchor": null } } })),
+    };
+    // Its tab joins the others': room for their labels is made once they are drawn.
+    if r.is_ok() {
+        app.embroidery.fit_dock_frames = FIT_DOCK_FRAMES;
+    }
+    r
+}
+
+/// How many frames after Window › Embroidery the dock may be widened for its tabs' labels: the
+/// dock draws the panel's new tab within a frame or two. A dock not drawn by then (collapsed, or
+/// the panel floating) isn't widened later, at a moment that has nothing to do with the command.
+/// An estimate.
+const FIT_DOCK_FRAMES: u8 = 3;
+
+/// The id of the shared dock's tree (upstream's `panel_docking`, its `DockArea`): its tabs' ids
+/// come from it (craft-ui's `("tab", panel)` under it). Both are upstream's internals, listed in
+/// FORK.md: if they change, the fit finds no tabs and does nothing.
+const DOCK_AREA: &str = "vectorcraft-panel-docking";
+/// The room a tab's label keeps inside its tab, points: a little on each side.
+const LABEL_ROOM: f32 = 8.0;
+/// The most of the window the dock may take to show its tabs' labels whole. An estimate: the
+/// canvas keeps the rest.
+const DOCK_SHARE: f32 = 0.4;
+
+/// Once Window › Embroidery has docked the panel beside other tabs: the dock widened, where their
+/// labels don't fit, until each shows whole. The shared dock's strip (craft-ui's) squeezes the
+/// widest tabs first and clips their words, so four tabs at the dock's usual width cut some of
+/// them ("Embroidery", "Properties"). Measured on the tabs as drawn: each one's width against its
+/// label's, the squeezed ones (as wide as the widest) widened together by what the shortest of
+/// room lacks. Within [`DOCK_SHARE`] of the window; the person may narrow the dock again.
+fn fit_dock_tabs(app: &mut VectorcraftApp, ui: &Ui) {
+    if app.embroidery.fit_dock_frames == 0 {
+        return;
+    }
+    let group = app.ui.docking.as_ref().map(|layout| tab_group(&layout.root, ID)).unwrap_or_default();
+    // Not in the dock's tabs (floating, or no dock): nothing to fit.
+    if group.is_empty() {
+        app.embroidery.fit_dock_frames = 0;
+        return;
+    }
+    let area = egui::Id::new(DOCK_AREA);
+    let font = craft_ui::docking::DockStyle::from_ui(ui).font;
+    let tabs: Vec<(f32, f32)> = group
+        .iter()
+        .filter_map(|panel| {
+            let tab = ui.ctx().read_response(area.with(("tab", panel)))?.rect.width();
+            // The label the dock draws: the panel's name as upstream translates it (a plain row).
+            let label = crate::state::all_panels().find(|p| p.0 == panel.as_str()).map_or(panel.as_str(), |p| crate::i18n::t(p.1));
+            let words = ui.painter().layout_no_wrap(label.to_string(), font.clone(), egui::Color32::WHITE).size().x;
+            Some((tab, words))
+        })
+        .collect();
+    // Not drawn yet: the next frame, while the command's frames last ([`widen_dock`] counts them).
+    if tabs.len() != group.len() {
+        return;
+    }
+    app.embroidery.fit_dock_frames = 0;
+    let lacking = tabs.iter().map(|(tab, words)| words + LABEL_ROOM - tab).fold(0.0, f32::max);
+    if lacking <= 0.0 {
+        return;
+    }
+    let widest = tabs.iter().map(|(tab, _)| *tab).fold(0.0, f32::max);
+    let squeezed = tabs.iter().filter(|(tab, _)| *tab >= widest - ELIDED_SLACK).count() as f32;
+    let window = ui.ctx().content_rect().width();
+    let now = crate::dock::shared_dock_default_width(&app.ui);
+    let wanted = (now + squeezed * lacking).min((window * DOCK_SHARE).max(now));
+    // Given to the dock at the frame's end: the dock notes the width it was drawn at after the
+    // panels draw, over anything set before.
+    app.embroidery.dock_width = Some(crate::dock::clamp_shared_dock_width(wanted));
+}
+
+/// End of a frame: the dock's width [`fit_dock_tabs`] asked for, laid out from the next frame; one
+/// of the frames it may ask in ([`FIT_DOCK_FRAMES`]) gone.
+pub(crate) fn widen_dock(app: &mut VectorcraftApp) {
+    app.embroidery.fit_dock_frames = app.embroidery.fit_dock_frames.saturating_sub(1);
+    if let Some(width) = app.embroidery.dock_width.take() {
+        app.ui.dock_width = Some(width);
+        app.ui.dock_width_pending = true;
     }
 }
 
-/// The panel's ≡ menu: the selection sewn earlier, later, first or last; the Sewing order's blocks
-/// collapsed or expanded; the next or previous finding of the check.
+/// The panels of the tabbed group holding `panel` in the dock's tree.
+fn tab_group(root: &Option<craft_ui::docking::Node<String>>, panel: &str) -> Vec<String> {
+    let mut visit: Vec<&craft_ui::docking::Node<String>> = root.iter().collect();
+    while let Some(node) = visit.pop() {
+        match node {
+            craft_ui::docking::Node::Tabs { panels, .. } if panels.iter().any(|p| p == panel) => return panels.clone(),
+            craft_ui::docking::Node::Split { first, second, .. } => {
+                visit.push(second);
+                visit.push(first);
+            }
+            _ => {}
+        }
+    }
+    Vec::new()
+}
+
+/// The panel's ≡ menu: the selected object's embroidery settings copied and pasted; the selection
+/// sewn earlier, later, first or last; the Sewing order's blocks collapsed or expanded; the next or
+/// previous finding of the check.
 pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
+    for id in ["embroidery.copySettings", "embroidery.pasteSettings"] {
+        if crate::widgets::menu_item_name(ui, &command_label(app, id), crate::menus::enabled(app, id), false) {
+            crate::menus::invoke(app, id, json!({}));
+        }
+    }
+    ui.separator();
     // Worked out on the plan the list shows, as a drop is; off while that plan is out of date.
     let selection = app.session.active().map(|st| st.selection.objects.clone()).unwrap_or_default();
     let enabled = !selection.is_empty() && order::steppable(app).is_some();
@@ -286,6 +451,7 @@ pub(crate) fn command_label(app: &VectorcraftApp, id: &str) -> String {
 
 /// The panel.
 pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
+    fit_dock_tabs(app, ui);
     let t = Tokens::get(ui.ctx());
     let Some(uid) = app.session.active().map(|st| st.uid) else {
         empty_state(ui, crate::et!("No document"), crate::et!("Open or draw a design to see how it will be sewn."));
@@ -295,6 +461,16 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     ui.add_space(GAP);
     let tab = app.ui.embroidery_panel.tab;
     let asked = queries(app, uid, tab);
+    // The Object tab draws whatever the plan's state: only its count needs one.
+    if tab == Tab::Object {
+        let preview = &mut app.embroidery.preview;
+        preview.want_plan();
+        for q in asked {
+            preview.want(q);
+        }
+        object::show(app, ui);
+        return;
+    }
     let preview = &mut app.embroidery.preview;
     preview.want_plan();
     for q in &asked {
@@ -366,37 +542,104 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             let reply = own.as_ref().map(|(r, _, current)| (r, *current));
             check::show(app, ui, check::Shown { uid, reply, stats: stats.as_deref(), stale });
         }
-        (Tab::Order, _) => {}
+        // Drawn above, before the plan's states.
+        (Tab::Order | Tab::Object, _) => {}
     }
 }
 
-/// The tab strip: a segment per tab, accessible as tabs.
+/// The tab strip: the panel's tabs as [`segments`].
 fn strip(app: &mut VectorcraftApp, ui: &mut Ui) {
+    let items: Vec<Segment<'_>> = Tab::ALL
+        .iter()
+        .map(|tab| Segment {
+            id: ui.id().with(("embroidery-tab", tab.id())),
+            label: tab.label(),
+            selected: app.ui.embroidery_panel.tab == *tab,
+            enabled: true,
+        })
+        .collect();
+    if let Some(tab) = segments(ui, STRIP_HEIGHT, STRIP_TEXT, &items).and_then(|i| Tab::ALL.get(i)) {
+        app.ui.embroidery_panel.tab = *tab;
+    }
+}
+
+/// How far a segment may be narrower than its words before they count as elided, points: the
+/// layout's rounding.
+const ELIDED_SLACK: f32 = 0.5;
+
+/// One segment of a strip ([`segments`]): its id, its words, whether it is the one selected, and
+/// whether it can be chosen.
+pub(super) struct Segment<'a> {
+    pub(super) id: egui::Id,
+    pub(super) label: &'a str,
+    pub(super) selected: bool,
+    pub(super) enabled: bool,
+}
+
+/// A strip of segments (the panel's tabs, the Object tab's parts), `height` points tall, its words
+/// `size` points, accessible as tabs: each as wide as its words and the strip's room shared out
+/// ([`strip_widths`]); words a segment can't hold are elided, whole in its tooltip and for screen
+/// readers; one that can't be chosen is greyed → the segment clicked.
+pub(super) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>]) -> Option<usize> {
     let t = Tokens::get(ui.ctx());
-    let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), STRIP_HEIGHT), Sense::hover());
+    let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), height), Sense::hover());
     let radius = CornerRadius::same(t.radius);
     ui.painter().rect(rect, radius, t.input, Stroke::new(1.0, t.input_border), StrokeKind::Inside);
-    let width = rect.width() / Tab::ALL.len() as f32;
-    for (i, tab) in Tab::ALL.into_iter().enumerate() {
-        let segment = Rect::from_min_size(rect.min + vec2(width * i as f32, 0.0), vec2(width, STRIP_HEIGHT));
-        let selected = app.ui.embroidery_panel.tab == tab;
-        let label = tab.label();
-        let resp = craft_ui::tabs::Tab::new(ui.id().with(("embroidery-tab", tab.id())), label, selected).show_at(ui, segment, |ui, resp| {
-            let fill = if selected {
-                t.button
-            } else if resp.hovered() {
-                t.hover
-            } else {
-                Color32::TRANSPARENT
-            };
-            ui.painter().rect_filled(segment.shrink(SEGMENT_INSET), radius, fill);
-            let color = if selected { t.text_strong } else { t.text_dim };
-            ui.painter().text(segment.center(), egui::Align2::CENTER_CENTER, label, egui::FontId::proportional(STRIP_TEXT), color);
+    let font = egui::FontId::proportional(size);
+    let natural: Vec<f32> =
+        items.iter().map(|s| ui.painter().layout_no_wrap(s.label.to_string(), font.clone(), t.text).size().x + 2.0 * TAB_PAD).collect();
+    let selected = items.iter().position(|s| s.selected).unwrap_or(0);
+    // An unselected segment's words, read by 4.5:1 on the strip.
+    let dim = crate::embroidery::marks::readable_text(t.text_dim, &[t.input], t.dark);
+    let mut left = rect.left();
+    let mut clicked = None;
+    for (i, width) in strip_widths(&natural, selected, rect.width()) {
+        let Some(s) = items.get(i) else { continue };
+        let segment = Rect::from_min_size(egui::pos2(left, rect.top()), vec2(width, height));
+        left += width;
+        let resp = ui.add_enabled_ui(s.enabled, |ui| {
+            craft_ui::tabs::Tab::new(s.id, s.label, s.selected).show_at(ui, segment, |ui, resp| {
+                let fill = if s.selected {
+                    t.button
+                } else if resp.hovered() {
+                    t.hover
+                } else {
+                    Color32::TRANSPARENT
+                };
+                ui.painter().rect_filled(segment.shrink(SEGMENT_INSET), radius, fill);
+                let color = match (s.selected, s.enabled) {
+                    (true, _) => t.text_strong,
+                    (false, true) => dim,
+                    (false, false) => t.text_disabled,
+                };
+                let room = (segment.width() - 2.0 * SEGMENT_INSET).max(1.0);
+                let galley = egui::WidgetText::from(egui::RichText::new(s.label).font(font.clone()).color(color)).into_galley(
+                    ui,
+                    Some(egui::TextWrapMode::Truncate),
+                    room,
+                    egui::TextStyle::Body,
+                );
+                ui.painter().galley(egui::Align2::CENTER_CENTER.align_size_within_rect(galley.size(), segment).min, galley, color);
+            })
         });
-        if resp.clicked() {
-            app.ui.embroidery_panel.tab = tab;
+        let elided = natural.get(i).is_some_and(|n| *n > width + ELIDED_SLACK);
+        let resp = if elided { resp.inner.on_hover_text(s.label) } else { resp.inner };
+        if resp.clicked() && s.enabled {
+            clicked = Some(i);
         }
     }
+    clicked
+}
+
+/// Each tab's segment in a strip `room` points wide, its tabs' names `natural` points wide with
+/// their room, `selected` the open one → (tab, width), in order: each as wide as its name when they
+/// fit, the widest shrunk first when they don't (`craft_ui::tabs::fit`), and the room left shared
+/// out evenly, so the strip is filled.
+pub(super) fn strip_widths(natural: &[f32], selected: usize, room: f32) -> Vec<(usize, f32)> {
+    let fit = craft_ui::tabs::fit(natural, selected, room, TAB_MIN, 0.0);
+    let used: f32 = fit.shown.iter().map(|(_, w)| w).sum();
+    let extra = if fit.shown.is_empty() { 0.0 } else { (room - used).max(0.0) / fit.shown.len() as f32 };
+    fit.shown.into_iter().map(|(i, w)| (i, w + extra)).collect()
 }
 
 /// A state with no content: a title and a line under it.
@@ -426,7 +669,7 @@ fn planning(ui: &mut Ui, progress: Option<f64>) {
 }
 
 /// The design can't be planned: why, and what makes it plan again.
-fn failed(ui: &mut Ui, error: &str) {
+pub(super) fn failed(ui: &mut Ui, error: &str) {
     let t = Tokens::get(ui.ctx());
     ui.label(
         egui::RichText::new(crate::et!("Can't plan the stitches:"))

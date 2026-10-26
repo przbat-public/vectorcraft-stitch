@@ -9,8 +9,12 @@ use super::*;
 use crate::Services;
 use crate::embroidery::stitch_preview;
 
+/// An app showing the panel's Sewing Order tab, whose states these tests draw (the Object tab draws
+/// in all of them: `object/tests.rs`).
 fn blank_app() -> VectorcraftApp {
-    VectorcraftApp::new(Session::new(), Services::default())
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    app.ui.embroidery_panel.tab = Tab::Order;
+    app
 }
 
 fn with_art() -> VectorcraftApp {
@@ -80,14 +84,19 @@ fn window_embroidery_docks_it_beside_the_three_tabs() {
 fn ui_embroidery_panel_shows_it_at_a_tab() {
     let mut app = blank_app();
     let none = Value::Null;
-    assert_eq!(app.run("ui.embroideryPanel", json!({"tab": "check"})).unwrap(), json!({"tab": "check", "format": none}));
+    assert_eq!(app.run("ui.embroideryPanel", json!({"tab": "check"})).unwrap(), json!({"tab": "check", "part": "fill", "format": none}));
     assert_eq!(app.ui.embroidery_panel.tab, Tab::Check);
     assert!(app.ui.docking.as_ref().is_some_and(|l| l.contains(&ID.to_string())));
-    assert_eq!(app.run("ui.embroideryPanel", json!({})).unwrap(), json!({"tab": "check", "format": none}), "the tab stays");
+    assert_eq!(app.run("ui.embroideryPanel", json!({})).unwrap(), json!({"tab": "check", "part": "fill", "format": none}), "the tab stays");
     assert!(app.run("ui.embroideryPanel", json!({"tab": "stitches"})).is_err(), "not shown yet");
     assert!(app.run("ui.embroideryPanel", json!({"tab": 1})).is_err());
     assert!(app.run("ui.embroideryPanel", json!({"tabs": "order"})).is_err());
     assert_eq!(app.ui.embroidery_panel.tab, Tab::Check);
+    // The Object tab, at its stroke; a part refused changes neither.
+    let r = app.run("ui.embroideryPanel", json!({"tab": "object", "part": "stroke"})).unwrap();
+    assert_eq!((&r["tab"], &r["part"]), (&json!("object"), &json!("stroke")));
+    assert!(app.run("ui.embroideryPanel", json!({"tab": "check", "part": "both"})).is_err());
+    assert_eq!((app.ui.embroidery_panel.tab, app.ui.embroidery_panel.part), (Tab::Object, object::Part::Stroke));
     // The format the check is for: no document, none to set.
     assert!(app.run("ui.embroideryPanel", json!({"format": "dst"})).is_err());
     app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
@@ -102,15 +111,20 @@ fn ui_embroidery_panel_shows_it_at_a_tab() {
     assert!(!app.embroidery.check.format.contains_key(&uid));
 }
 
-/// A tab this version doesn't show, or anything else, reads as the first; the interface's state
-/// still loads.
+/// A tab this version doesn't show, or anything else, reads as the first, the Object tab, and a
+/// part it doesn't know as the fill; the interface's state still loads.
 #[test]
 fn the_open_tab_is_read_leniently() {
-    for (saved, tab) in
-        [(json!({"tab": "check"}), Tab::Check), (json!({"tab": "object"}), Tab::Order), (json!({"tab": 7}), Tab::Order), (json!({}), Tab::Order)]
-    {
+    use object::Part;
+    for (saved, tab, part) in [
+        (json!({"tab": "check"}), Tab::Check, Part::Fill),
+        (json!({"tab": "object", "part": "stroke"}), Tab::Object, Part::Stroke),
+        (json!({"tab": "stitches", "part": 3}), Tab::Object, Part::Fill),
+        (json!({"tab": 7}), Tab::Object, Part::Fill),
+        (json!({}), Tab::Object, Part::Fill),
+    ] {
         let s: Settings = serde_json::from_value(saved.clone()).unwrap();
-        assert_eq!(s.tab, tab, "{saved}");
+        assert_eq!((s.tab, s.part), (tab, part), "{saved}");
     }
     // Whatever is saved for the panel, the rest of the interface's state loads.
     let mut ui = serde_json::to_value(crate::state::UiState::default()).unwrap();
@@ -119,7 +133,7 @@ fn the_open_tab_is_read_leniently() {
         ui["embroidery_panel"] = saved.clone();
         let read = serde_json::from_value::<crate::state::UiState>(ui.clone()).unwrap_or_else(|e| panic!("{saved}: {e}"));
         assert_eq!(read.recent_files, ["kept.svg"], "{saved}");
-        let tab = if saved == json!({"tab": "check"}) { Tab::Check } else { Tab::Order };
+        let tab = if saved == json!({"tab": "check"}) { Tab::Check } else { Tab::Object };
         assert_eq!(read.embroidery_panel.tab, tab, "{saved}");
     }
 }
@@ -311,6 +325,80 @@ fn the_tabs_are_tabs() {
         .filter(|(_, n)| n.role() == egui::accesskit::Role::Tab)
         .map(|(_, n)| (n.label().map(str::to_string), n.is_selected()))
         .collect();
-    assert_eq!(tabs.len(), 2, "{tabs:?}");
-    assert!(tabs.contains(&(Some("Sewing Order".into()), Some(true))) && tabs.contains(&(Some("Check".into()), Some(false))), "{tabs:?}");
+    assert_eq!(tabs.len(), 3, "{tabs:?}");
+    for (name, open) in [("Object", false), ("Sewing Order", true), ("Check", false)] {
+        assert!(tabs.contains(&(Some(name.into()), Some(open))), "{name}: {tabs:?}");
+    }
+}
+
+/// The tab labels the whole window draws along the dock's top, `window` points wide: each one's
+/// words, where they lie, and the box they are clipped to.
+fn dock_tab_labels(app: &mut VectorcraftApp, ctx: &egui::Context, window: egui::Vec2, labels: &[&str]) -> Vec<(String, egui::Rect, egui::Rect)> {
+    let mut found = vec![];
+    for _ in 0..4 {
+        let raw = egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, window)), ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| {
+            app.logic(ui.ctx());
+            app.ui(ui);
+        });
+        out.textures_delta.clear();
+        found.clear();
+        let mut pending: Vec<(egui::Rect, Shape)> = out.shapes.into_iter().map(|c| (c.clip_rect, c.shape)).collect();
+        while let Some((clip, s)) = pending.pop() {
+            match s {
+                Shape::Vec(v) => pending.extend(v.into_iter().map(|s| (clip, s))),
+                Shape::Text(t) if labels.contains(&t.galley.text()) => found.push((t.galley.text().to_string(), t.visual_bounding_rect(), clip)),
+                _ => {}
+            }
+        }
+    }
+    found
+}
+
+/// Docked as the fourth tab beside Properties, Layers and Libraries, at the dock's usual width,
+/// every tab's label is drawn whole (craft-ui squeezes tabs that don't fit and clips their words),
+/// in English and in Polish.
+#[test]
+fn the_docks_four_tabs_show_their_labels_whole() {
+    for lang in ["en", "pl"] {
+        let ctx = egui::Context::default();
+        crate::theme::install_fonts(&ctx);
+        let mut app = blank_app();
+        app.session.prefs.interface_language = lang.into();
+        app.run("window.panel", json!({"panel": ID})).unwrap();
+        crate::i18n::set_current(crate::i18n::Lang::from_code(lang).unwrap());
+        let labels: Vec<&str> = ["Properties", "Layers", "Libraries", "Embroidery"].into_iter().map(crate::i18n::t).collect();
+        crate::i18n::set_current(crate::i18n::Lang::EN);
+        let drawn = dock_tab_labels(&mut app, &ctx, egui::vec2(1440.0, 900.0), &labels);
+        for label in &labels {
+            let (_, words, clip) = drawn.iter().find(|(t, ..)| t == label).unwrap_or_else(|| panic!("{lang}: no tab {label:?} in {drawn:?}"));
+            assert!(
+                words.left() >= clip.left() - 0.5 && words.right() <= clip.right() + 0.5,
+                "{lang}: {label:?} {words:?} is cut by its tab {clip:?}"
+            );
+        }
+    }
+}
+
+/// The dock is widened only in the frames just after Window › Embroidery: a dock that doesn't draw
+/// the panel's tab by then (collapsed, or the panel elsewhere) isn't widened later when it does,
+/// at a moment that has nothing to do with the command; its tabs are then as the dock lays them
+/// out (at its usual width, one is cut).
+#[test]
+fn the_dock_is_widened_only_just_after_window_embroidery() {
+    let ctx = egui::Context::default();
+    crate::theme::install_fonts(&ctx);
+    let mut app = blank_app();
+    app.run("window.panel", json!({"panel": ID})).unwrap();
+    assert!(app.embroidery.fit_dock_frames > 0, "armed by the command");
+    for _ in 0..super::FIT_DOCK_FRAMES {
+        super::widen_dock(&mut app);
+    }
+    assert_eq!(app.embroidery.fit_dock_frames, 0, "the command's frames gone");
+    let labels = ["Properties", "Layers", "Libraries", "Embroidery"];
+    let drawn = dock_tab_labels(&mut app, &ctx, egui::vec2(1440.0, 900.0), &labels);
+    assert!(
+        drawn.iter().any(|(_, words, clip)| words.left() < clip.left() - 0.5 || words.right() > clip.right() + 0.5),
+        "not widened later: {drawn:?}"
+    );
 }

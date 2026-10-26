@@ -329,7 +329,8 @@ fn step_to_multiple(v: f64, size: f64, n: f64) -> f64 {
 /// replaces it. Returns the new number when a step was taken. While the pointer is over the focused
 /// field the wheel is the field's (the panel under it doesn't scroll); an unfocused field leaves the
 /// wheel to the panel and the canvas.
-fn step_value(
+// VectorCraft Stitch: pub(crate), for the embroidery fields (`embroidery/fields.rs`).
+pub(crate) fn step_value(
     ui: &Ui,
     resp: &Response,
     buf: &mut String,
@@ -520,7 +521,8 @@ pub(crate) fn own_field_shift_enter(ui: &Ui, id: egui::Id, buf: &mut String, sho
 /// double-click. A pointer press keeps its caret so dragging selects from the pressed position,
 /// and a short drag the toolkit still counts as a click keeps it too (#1326): only a tap
 /// releases into select-all.
-fn select_all_on_focus(ui: &Ui, resp: &Response, text: &str) {
+// VectorCraft Stitch: pub(crate), for the embroidery fields (`embroidery/fields.rs`).
+pub(crate) fn select_all_on_focus(ui: &Ui, resp: &Response, text: &str) {
     let pending = resp.id.with("select-all-on-focus-click");
     let press_pos = resp.id.with("select-all-on-focus-press");
     let (pressed, released, at_press) = ui.input(|i| {
@@ -570,7 +572,8 @@ fn select_all_on_focus(ui: &Ui, resp: &Response, text: &str) {
 /// its text kept under `id` while it has focus. Returns the text (as edited), whether the field
 /// applies it in this frame (it lost the focus, or a single-line field took Shift+Enter and kept
 /// the focus: [`shift_enter_keeps_focus`]), the text edit's response and the box.
-fn recessed_text(ui: &mut Ui, id: egui::Id, shown: &str, width: f32, rows: usize) -> (String, bool, Response, Rect) {
+// VectorCraft Stitch: pub(crate), for the embroidery fields (`embroidery/fields.rs`).
+pub(crate) fn recessed_text(ui: &mut Ui, id: egui::Id, shown: &str, width: f32, rows: usize) -> (String, bool, Response, Rect) {
     let t = Tokens::get(ui.ctx());
     let editing = ui.memory(|m| m.has_focus(id));
     // A press outside the field ends its editing in this frame, so the text typed is committed

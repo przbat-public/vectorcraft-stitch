@@ -1,5 +1,6 @@
-//! The stitch preview's third measurement gate, run by hand on an idle machine (left out of the
-//! usual test run: it times frames):
+//! The stitch preview's measurement gates, run by hand on an idle machine (left out of the usual
+//! test run: they time frames). The third gate, a drag on the canvas and an edit, then the Object
+//! tab's scrub ([`object_tab_scrub_gate`]):
 //!
 //! `cargo test --release -p vectorcraft-ui-egui --lib -- --ignored --nocapture stitch_preview_gate`
 //!
@@ -21,7 +22,7 @@ use vectorcraft_engine::Session;
 
 use super::plan_worker::{Driver, PlanWorker};
 use super::stitch_layer::LineWorker;
-use super::stitch_preview::{Freshness, StitchPreview};
+use super::stitch_preview::{Freshness, LIVE_PLAN_MS, StitchPreview};
 use crate::{Services, VectorcraftApp};
 
 /// A frame at 60 Hz, milliseconds: the 95th percentile of the frames while dragging stays within it.
@@ -118,6 +119,8 @@ fn stitch_preview_gate() {
     println!("{:<52} {:<6} {:>9} {:>9} {:>12} {:>11} {:>11}", "design", "tab", "drag p50", "drag p95", "upload/frame", "fresh p50", "fresh max");
     for (path, tab) in files.iter().flat_map(|p| crate::panels::embroidery::Tab::ALL.into_iter().map(move |t| (p, t))) {
         let ctx = egui::Context::default();
+        // The app's fonts: the status bar's readouts draw in its monospaced family.
+        crate::theme::install_fonts(&ctx);
         let mut session = Session::new();
         session.execute("document.open", &json!({"path": path.to_string_lossy()})).unwrap();
         let mut app = VectorcraftApp::new(session, Services::default());
@@ -209,4 +212,166 @@ fn stitch_preview_gate() {
     }
     println!("worst: drag p95 {worst_p95:.2} ms (budget {FRAME_BUDGET_MS:.1}), edit to fresh {worst_fresh:.2} ms (budget {EDIT_TO_FRESH_BUDGET_MS})");
     assert!(worst_p95 <= FRAME_BUDGET_MS && worst_fresh <= EDIT_TO_FRESH_BUDGET_MS);
+}
+
+/// Steps of a scrub timed one at a time, and frames of a scrub timed while it goes on.
+const SCRUB_STEPS: usize = 10;
+const SCRUB_FRAMES: usize = 60;
+/// How far the pointer moves for one step of a scrub, points: one degree of the angle
+/// (`crate::scrub::PX_PER_STEP`), and the first move, past egui's drag threshold.
+const SCRUB_STEP: f32 = crate::scrub::PX_PER_STEP;
+const SCRUB_START: f32 = 10.0;
+
+/// One frame as [`frame`] draws it → its wall time, and the box of the words `find` among what it
+/// drew (the Embroidery panel's label to scrub).
+fn frame_finding(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>, find: &str) -> (f64, Option<egui::Rect>) {
+    let raw = egui::RawInput {
+        time: Some(time),
+        screen_rect: Some(egui::Rect::from_min_size(Pos2::ZERO, egui::vec2(WINDOW[0], WINDOW[1]))),
+        viewports: std::iter::once((
+            egui::ViewportId::ROOT,
+            egui::ViewportInfo { native_pixels_per_point: Some(PIXELS_PER_POINT), ..Default::default() },
+        ))
+        .collect(),
+        events,
+        ..Default::default()
+    };
+    let t0 = Instant::now();
+    crate::scrub::begin_frame(app, ctx);
+    let mut out = ctx.run_ui(raw, |ui| {
+        app.logic(ui.ctx());
+        crate::chrome::status_bar(app, ui);
+        egui::Panel::right("embroidery-gate").exact_size(PANEL_WIDTH).resizable(false).show(ui, |ui| crate::panels::embroidery::show(app, ui));
+        crate::canvas::show(app, ui);
+        crate::embroidery::canvas_controls(app, ui);
+        super::stitch_preview::schedule(app, ui.ctx());
+    });
+    crate::scrub::end_frame(app, ctx);
+    let shapes = std::mem::take(&mut out.shapes);
+    let found = shapes.iter().find_map(|s| match &s.shape {
+        egui::Shape::Text(t) if t.galley.text() == find => Some(t.visual_bounding_rect()),
+        _ => None,
+    });
+    drop(ctx.tessellate(shapes, out.pixels_per_point));
+    out.textures_delta.clear();
+    (t0.elapsed().as_secs_f64() * 1000.0, found)
+}
+
+/// The Object tab's scrub, the slider of a setting: on each of the corpus's SVG designs, with the
+/// planning thread and the stitch layer's thread running, frames at 60 Hz, 2 pixels a point, the
+/// status bar and the Embroidery panel at its Object tab drawn, the largest fill selected, it drags
+/// the Angle label: a step at a time, each timed until the stitches drawn are of the document as it
+/// is ("step to fresh", within the 100 ms of an edit), and then on, a step a frame, each frame
+/// timed (within a 60 Hz frame). It reports each design's plan time: the preview plans during a scrub
+/// only a design planned within [`LIVE_PLAN_MS`] (else when the scrub ends). Run by hand on an idle
+/// machine, alone (another test running beside it slows the plans it times):
+///
+/// `cargo test --release -p vectorcraft-ui-egui --lib -- --ignored --nocapture object_tab_scrub_gate`
+#[test]
+#[ignore = "a measurement, run by hand on an idle machine"]
+fn object_tab_scrub_gate() {
+    let dir = corpus();
+    let mut files: Vec<_> = std::fs::read_dir(&dir)
+        .map(|d| d.flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|e| e == "svg")).collect())
+        .unwrap_or_default();
+    files.sort();
+    assert!(!files.is_empty(), "no corpus at {}", dir.display());
+    let (mut worst_step, mut worst_frame) = (0.0_f64, 0.0_f64);
+    println!("{:<52} {:>8} {:>10} {:>10} {:>10} {:>11} {:>11}", "design", "plan", "step p50", "step p95", "step max", "frame p50", "frame p95");
+    for path in &files {
+        let ctx = egui::Context::default();
+        crate::theme::install_fonts(&ctx);
+        let mut session = Session::new();
+        session.execute("document.open", &json!({"path": path.to_string_lossy()})).unwrap();
+        let mut app = VectorcraftApp::new(session, Services::default());
+        let plans = PlanWorker::start(&ctx).expect("the planning thread starts");
+        let lines = LineWorker::start(&ctx).expect("the stitch layer's thread starts");
+        app.embroidery.preview = StitchPreview::with_runner(Box::new(Driver::Thread(plans)));
+        app.embroidery.layer.use_worker(lines);
+        app.run("view.stitchPreview", json!({"on": true})).unwrap();
+        app.ui.embroidery_panel.tab = crate::panels::embroidery::Tab::Object;
+        let uid = app.session.active().unwrap().uid;
+        let plan_ms = |app: &VectorcraftApp, now: f64| app.embroidery.preview.inspect(uid, now)["planMs"].as_f64().unwrap_or(f64::NAN);
+        let label = crate::et!("Angle");
+        let mut time = 0.0;
+        let mut next = Instant::now();
+        let mut tick = |app: &mut VectorcraftApp, events: Vec<Event>| {
+            time += 1.0 / 60.0;
+            next += std::time::Duration::from_secs_f64(FRAME_BUDGET_MS / 1000.0);
+            let (ms, found) = frame_finding(app, &ctx, time, events, label);
+            std::thread::sleep(next.saturating_duration_since(Instant::now()));
+            (ms, found, time)
+        };
+        // Settle: the preview's first plan and its frame.
+        let t0 = Instant::now();
+        loop {
+            let now = tick(&mut app, vec![]).2;
+            if drawn_fresh(&app, now) {
+                break;
+            }
+            assert!(t0.elapsed().as_secs() < 30, "{}: never drawn", path.display());
+        }
+        // The largest fill sewn: its object selected, and the tab drawn with its Angle row.
+        let order = app.run("embroidery.sequence", json!({})).unwrap();
+        let largest = order["blocks"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .flat_map(|b| b["units"].as_array().cloned().unwrap_or_default())
+            .filter(|u| u["part"] == json!("fill"))
+            .max_by_key(|u| u["stitches"].as_u64().unwrap_or(0))
+            .and_then(|u| u["id"].as_u64())
+            .unwrap_or_else(|| panic!("{}: no fill", path.display()));
+        app.run("select.set", json!({ "ids": [largest] })).unwrap();
+        let at = loop {
+            let (_, found, now) = tick(&mut app, vec![]);
+            if let Some(r) = found.filter(|_| drawn_fresh(&app, now)) {
+                break r.center();
+            }
+            assert!(t0.elapsed().as_secs() < 30, "{}: never drawn", path.display());
+        };
+        let button = |pos, pressed| Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Default::default() };
+        tick(&mut app, vec![Event::PointerMoved(at)]);
+        tick(&mut app, vec![button(at, true)]);
+        let mut x = at + egui::vec2(SCRUB_START, 0.0);
+        tick(&mut app, vec![Event::PointerMoved(x)]);
+        // Step to fresh: a step, then frames until the stitches drawn are of the document as it is.
+        let mut steps = vec![];
+        for _ in 0..SCRUB_STEPS {
+            let revision = app.session.active().unwrap().revision;
+            x += egui::vec2(SCRUB_STEP, 0.0);
+            let t0 = Instant::now();
+            let (_, _, mut now) = tick(&mut app, vec![Event::PointerMoved(x)]);
+            assert!(app.session.active().unwrap().revision > revision, "{}: the scrub changed nothing", path.display());
+            while !drawn_fresh(&app, now) {
+                let ms = plan_ms(&app, now);
+                assert!(
+                    t0.elapsed().as_secs() < 30,
+                    "{}: never fresh (its plans take {ms:.1} ms, planned live within {LIVE_PLAN_MS})",
+                    path.display()
+                );
+                now = tick(&mut app, vec![]).2;
+            }
+            steps.push(t0.elapsed().as_secs_f64() * 1000.0);
+        }
+        // A step a frame: each frame timed.
+        let mut frames = vec![];
+        for _ in 0..SCRUB_FRAMES {
+            x += egui::vec2(SCRUB_STEP, 0.0);
+            frames.push(tick(&mut app, vec![Event::PointerMoved(x)]).0);
+        }
+        let now = tick(&mut app, vec![button(x, false)]).2;
+        let plan = plan_ms(&app, now);
+        let undo = app.session.active().unwrap().history.undo.len();
+        let (s50, s95, smax) = (percentile(steps.clone(), 0.5), percentile(steps.clone(), 0.95), percentile(steps, 1.0));
+        let (f50, f95) = (percentile(frames.clone(), 0.5), percentile(frames, 0.95));
+        let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        println!("{name:<52} {plan:>5.1} ms {s50:>7.2} ms {s95:>7.2} ms {smax:>7.2} ms {f50:>8.2} ms {f95:>8.2} ms   {undo} undo steps");
+        worst_step = worst_step.max(s95);
+        worst_frame = worst_frame.max(f95);
+    }
+    println!(
+        "worst: step to fresh p95 {worst_step:.2} ms (budget {EDIT_TO_FRESH_BUDGET_MS}), frame p95 {worst_frame:.2} ms (budget {FRAME_BUDGET_MS:.1})"
+    );
+    assert!(worst_step <= EDIT_TO_FRESH_BUDGET_MS && worst_frame <= FRAME_BUDGET_MS);
 }

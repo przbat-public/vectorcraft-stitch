@@ -5290,12 +5290,10 @@ imageTrace	Outline	კონტური
 	Embroidery Object Settings	ობიექტის ქარგვის პარამეტრები
 	Reset Embroidery Object Settings	ობიექტის ქარგვის პარამეტრების აღდგენა
 	Embroidery Entry and Exit	ქარგვის შესვლა და გასვლა
-	Paste Embroidery Object Settings	ობიექტის ქარგვის პარამეტრების ჩასმა
 	Show Embroidery Object Settings	ობიექტის ქარგვის პარამეტრების ჩვენება
 	Embroidery Fabrics	ქარგვის ქსოვილები
 	Apply Embroidery Fabric to Objects	ქარგვის ქსოვილის გამოყენება ობიექტებზე
 	Embroidery Setup	ქარგვის პარამეტრები
-	Show Embroidery Settings	ქარგვის პარამეტრების ჩვენება
 	Embroidery Statistics	ქარგვის სტატისტიკა
 	Embroidery Sewing Order	ქარგვის თანმიმდევრობა
 	Embroidery Check	ქარგვის შემოწმება
@@ -5381,41 +5379,8 @@ imageTrace	Outline	კონტური
 @msg	too many stitches for a VP3 file	ზედმეტად ბევრი ნაკერი VP3 ფაილისთვის
 @msg	{_1} is not an embroidery format	{_1} არ არის ქარგვის ფორმატი
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	ნაკერი:
-	Stitch Length:	ნაკერის სიგრძე:
-	Fill Angle:	შევსების კუთხე:
-	Pull Compensation:	შეკუმშვის კომპენსაცია:
-	Pull Compensation (%):	შეკუმშვის კომპენსაცია (%):
-	Push Compensation:	გამოწევის კომპენსაცია:
-	Expand Fills:	შევსებების გაფართოება:
-	Narrow Parts as Satin:	ვიწრო ნაწილები ატლასად:
-	Thread Weight:	ძაფის სისქე:
-	Underlay:	საფენი:
-	Jump Length:	გადასვლის სიგრძე:
-	Trim Length:	ჭრის სიგრძე:
-	Shortest Stitch:	უმოკლესი ნაკერი:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	როგორ იკერება ფიგურები: „ავტომატური“ ფიგურებს ტატამით ავსებს, ხაზებს კი სიგანის მიხედვით ატლასის სვეტებით ან სწორი ნაკერით კერავს; სხვა არჩევანი ყველა ფიგურას ასე კერავს
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	მანძილი შევსების რიგებსა და ატლასის ნაკერებს შორის; თუ უცვლელად დარჩება, ატლასის სვეტი მას თავისი სიგანით ირჩევს
-	The length of the stitches along fill rows and running lines	ნაკერების სიგრძე შევსების რიგებისა და სწორი ნაკერის გასწვრივ
-	The direction of the fill rows	შევსების რიგების მიმართულება
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	აფართოებს ატლასის სვეტებსა და შევსების რიგებს თითოეულ მხარეს, ქსოვილის შეკუმშვის საკომპენსაციოდ
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	აფართოებს ატლასის სვეტებსა და შევსების რიგებს მათი სიგანის ნაწილით, ქსოვილის შეკუმშვის საკომპენსაციოდ
-	Shortens satin columns at their ends, where the thread pushes outward	ამოკლებს ატლასის სვეტებს ბოლოებში, სადაც ძაფი გარეთ აწვება
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	ადიდებს თითოეულ შევსებულ ფიგურას ირგვლივ, ფიგურებს შორის ღრეჩოების დასახურად; უარყოფითი მნიშვნელობა მას ამცირებს
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	შევსების ამაზე ვიწრო ნაწილები ატლასის სვეტებით იკერება; 0 არცერთს არ კერავს
-	The thread's weight: thinner thread (a higher number) packs the rows closer	ძაფის სისქე: უფრო წვრილი ძაფი (უფრო მაღალი ნომერი) რიგებს უფრო მჭიდროდ აწყობს
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	პირველად ნაკერი ნაკერები, რომლებიც ქსოვილს იჭერს: თითოეული ფიგურის მიერ არჩეული, არცერთი ან ერთი სახე ყველა ფიგურისთვის
-	A move longer than this lifts the needle instead of being sewn	ამაზე გრძელი გადაადგილება ნემსს აწევს, ნაცვლად იმისა, რომ დაიკეროს
-	A jump longer than this cuts the thread first	ამაზე გრძელი გადასვლა ჯერ ძაფს ჭრის
-	Shorter stitches are left out	უფრო მოკლე ნაკერები გამოტოვებულია
-	Tatami Fill	ტატამის შევსება
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	ატლასი
-	Running Stitch	სწორი ნაკერი
-	Centre Run	ცენტრალური გავლა
-	Edge Run	კიდის გავლა
-	Edge Run and Zigzag	კიდის გავლა და ზიგზაგი
-	Edge Run and Tatami	კიდის გავლა და ტატამი
 	Embroidery Picture	ქარგვის სურათი
 @msg	nothing to draw: the document sews no stitch	დასახატი არაფერია: დოკუმენტი არც ერთ ნაკერს არ კერავს
 	Stitch Preview	ნაკერების წინასწარი ნახვა
@@ -5446,7 +5411,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	ნაკერები: {count}
 @msg	tab {tab}: one of {_1}	ჩანართი {tab}: ერთ-ერთი: {_1}
 @msg	unknown key `{k}`: the only one is {only}	უცნობი გასაღები `{k}`: ერთადერთია {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	იქარგება დასტის ქვემოდან ზემოთ; ერთი ფერის ობიექტები ერთიანდება, როცა მათ შორის არაფერია.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	იქარგება დასტის ქვემოდან ზემოთ; ერთი ფერის ობიექტები ერთიანდება, როცა მათ შორის არაფერია.
 embroidery	Trim and thread change	ჭრა და ძაფის შეცვლა
 embroidery	Thread change	ძაფის შეცვლა
 embroidery	fill	შევსება
@@ -5459,7 +5424,7 @@ embroidery	narrow parts as satin	ვიწრო ნაწილები ატ
 @plural	{count} object|{count} objects	ობიექტები: {count}
 @plural	{count} jump|{count} jumps	ნახტომები: {count}
 @plural	{count} trim|{count} trims	ჭრები: {count}
-embroidery	Colours	ფერები
+embroidery	Colors	ფერები
 embroidery	Thread changes	ძაფის ცვლა
 embroidery	Trims	ჭრები
 embroidery	Jumps	ნახტომები
@@ -5489,8 +5454,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	დრო წუ�
 @msg	can't change the sewing order: too many objects at once	კერვის რიგის შეცვლა შეუძლებელია: ერთდროულად ზედმეტად ბევრი ობიექტია
 embroidery	After {name}	{name}-ის შემდეგ
 embroidery	Before {name}	{name}-მდე
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	არცერთი ნაკერი არ გადაადგილებულა: ერთი ფერის ობიექტები კვლავ ერთიანდება, როცა შუაში არაფერი დევს მათ ქვეშ.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} იქარგება ბლოკში {block}, თავისი ფერის სხვა ობიექტებთან ერთად
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	არცერთი ნაკერი არ გადაადგილებულა: ერთი ფერის ობიექტები კვლავ ერთიანდება, როცა შუაში არაფერი დევს მათ ქვეშ.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} იქარგება ბლოკში {block}, თავისი ფერის სხვა ობიექტებთან ერთად
 embroidery	{name} is sewn in block {block}	{name} იქარგება ბლოკში {block}
 embroidery	Thread changes: {before} → {after}	ძაფის ცვლა: {before} → {after}
 embroidery	Collapse All	ყველას აკეცვა
@@ -5507,8 +5472,8 @@ embroidery	More than {value} short stitches in a row	{value}-ზე მეტი
 embroidery	{value} or more layers of stitches on one spot	{value} ან მეტი ფენა ნაკერი ერთ ადგილას
 embroidery	Everything is sewn	ყველაფერი იქარგება
 embroidery	Art that isn't sewn	გრაფიკა, რომელიც არ იქარგება
-embroidery	More colour blocks than {format} holds ({value})	მეტი ფერის ბლოკი, ვიდრე {format} იტევს ({value})
-embroidery	{format} holds any number of colour blocks	{format} ნებისმიერი რაოდენობის ფერის ბლოკს იტევს
+embroidery	More color blocks than {format} holds ({value})	მეტი ფერის ბლოკი, ვიდრე {format} იტევს ({value})
+embroidery	{format} holds any number of color blocks	{format} ნებისმიერი რაოდენობის ფერის ბლოკს იტევს
 embroidery	More stitches than a machine shows ({value})	მეტი ნაკერი, ვიდრე მანქანა აჩვენებს ({value})
 embroidery	More thread changes than a machine shows ({value})	მეტი ძაფის შეცვლა, ვიდრე მანქანა აჩვენებს ({value})
 embroidery	No findings	არაფერი მოიძებნა
@@ -5545,7 +5510,7 @@ embroidery	No source gives a number to check these against.	არცერთ�
 @plural	{count} warning|{count} warnings	გაფრთხილებები: {count}
 @plural	{count} note|{count} notes	შენიშვნები: {count}
 @plural	and {count} more|and {count} more	და კიდევ {count}
-embroidery	Threads unlike the art's colour (over {value})	გრაფიკის ფერისგან განსხვავებული ძაფები ({value}-ზე მეტი)
+embroidery	Threads unlike the art's color (over {value})	გრაფიკის ფერისგან განსხვავებული ძაფები ({value}-ზე მეტი)
 embroidery	Largest difference: {value}	უდიდესი სხვაობა: {value}
 embroidery	Block {block}: {thread}, {value}	ბლოკი {block}: {thread}, {value}
 	Zoom to Box	კადრზე გადიდება
@@ -5566,7 +5531,7 @@ embroidery	Median: {value} mm	მედიანა: {value} მმ
 embroidery	Too long	ზედმეტად გრძელი
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} მმ: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} მმ-ზე მეტი: {stitches}
-@plural	{count} colour|{count} colours	ფერები: {count}
+@plural	{count} color|{count} colors	ფერები: {count}
 embroidery	Embroidery: {figures}	ნაქარგობა: {figures}
 embroidery	Stitches can't be planned	ნაკერების დაგეგმვა შეუძლებელია
 embroidery	Click to open the Embroidery panel.	დააწკაპუნეთ პანელის „ნაქარგობა“ გასახსნელად.
@@ -5745,3 +5710,206 @@ axis	Y Axis	Y ღერძი
 	Rectangular Grid Tool Options	მართკუთხა ბადის ხელსაწყოს პარამეტრები
 	Polar Grid Tool Options	პოლარული ბადის ხელსაწყოს პარამეტრები
 	Fill Line	ხაზის შევსება
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	ობიექტი
+embroidery	Select an object to set how it is sewn.	მონიშნეთ ობიექტი, რომ დააყენოთ, როგორ ამოიქარგოს.
+embroidery	Nothing selected	არაფერია მონიშნული
+embroidery	Guide	დამხმარე ხაზი
+embroidery	Stitches from a file	ნაკერები ფაილიდან
+embroidery	Path	ტრაექტორია
+embroidery	Compound path	შედგენილი ტრაექტორია
+embroidery	Group	ჯგუფი
+embroidery	Layer	შრე
+embroidery	Text object	ტექსტური ობიექტი
+embroidery	Image	გამოსახულება
+embroidery	Symbol instance	სიმბოლოს ეგზემპლარი
+embroidery	Placed file	განთავსებული ფაილი
+embroidery	Live object	დინამიკური ობიექტი
+embroidery	fill and stroke	შევსება და ხაზი
+embroidery	fill, no stroke	შევსება, ხაზის გარეშე
+embroidery	stroke, no fill	ხაზი, შევსების გარეშე
+embroidery	no fill or stroke	შევსებისა და ხაზის გარეშე
+embroidery	Fill	შევსება
+embroidery	Fill: none	შევსება: არცერთი
+embroidery	Stroke	ხაზი
+embroidery	Stroke: none	ხაზი: არცერთი
+embroidery	Stitch	ნაკერი
+embroidery	Underlay	საფენი
+embroidery	Compensation	კომპენსაცია
+embroidery	auto	ავტო
+embroidery	{count} of {total} set	დაყენებულია: {count} / {total}
+embroidery	Set on the selected objects; without it: {value}	დაყენებულია მონიშნულ ობიექტებზე; მის გარეშე: {value}
+embroidery	The selected objects differ.	მონიშნული ობიექტები განსხვავდება.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	ავტომატური
+embroidery	Mixed	შერეული
+embroidery	Type	სახეობა
+embroidery	Angle	კუთხე
+embroidery	Row spacing	რიგებს შორის მანძილი
+embroidery	Spacing	მანძილი
+embroidery	Stitch length	ნაკერის სიგრძე
+embroidery	Narrow parts as satin	ვიწრო ნაწილები ატლასად
+embroidery	Pull compensation	შეკუმშვის კომპენსაცია
+embroidery	Pull compensation (%)	შეკუმშვის კომპენსაცია (%)
+embroidery	Push compensation	გამოწევის კომპენსაცია
+embroidery	Expand fills	შევსებების გაფართოება
+embroidery	Split satin stitches from	ატლასის ნაკერების გაყოფა
+embroidery	Setting	პარამეტრი
+embroidery	How the part is sewn: Auto picks by its shape and width.	როგორ ამოიქარგება ნაწილი: ავტომატური ირჩევს ფორმისა და სიგანის მიხედვით.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	შევსების რიგების მიმართულება, საათის ისრის საწინააღმდეგოდ; ობიექტთან ერთად ბრუნავს.
+embroidery	The distance between rows, or between a satin's stitches.	მანძილი რიგებს შორის ან ატლასის ნაკერებს შორის.
+embroidery	The longest stitch along a row or a running line.	ყველაზე გრძელი ნაკერი რიგზე ან სწორ ხაზზე.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	შევსების ამაზე ვიწრო ნაწილები ატლასის სვეტებად იქარგება; 0 არცერთს.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	პირველად დაქარგული ნაკერები ზედა ნაკერების ქვეშ, ქსოვილის დასაჭერად.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	აფართოებს თითოეულ რიგს ან სვეტს ბოლოებში, სადაც ძაფი ქსოვილს ექაჩება.
+embroidery	Widens each column by a share of its width.	აფართოებს თითოეულ სვეტს მისი სიგანის ნაწილით.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	ამოკლებს ღია ატლასის სვეტს ბოლოებში, სადაც ძაფი გარეთ აწვება.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	აფართოებს შევსებულ არეს ყველა მხრიდან, რომ ცალ-ცალკე დახატული ფიგურები ერთმანეთს შეხვდეს.
+embroidery	Satin stitches longer than this are split in two.	ამაზე გრძელი ატლასის ნაკერები ორად იყოფა.
+embroidery	Where the needle goes in to sew the part.	სად შედის ნემსი ნაწილის ამოსაქარგად.
+embroidery	Where the needle comes out after the part.	სად გამოდის ნემსი ნაწილის შემდეგ.
+embroidery	Tatami fill	ტატამის შევსება
+embroidery	Tatami	ტატამი
+embroidery	Satin	ატლასი
+embroidery	Running stitch	სწორი ნაკერი
+embroidery	Don't sew	არ ამოიქარგოს
+embroidery	None	არცერთი
+embroidery	Center run	ცენტრალური გავლა
+embroidery	Edge run	კიდის გავლა
+embroidery	Edge run + zigzag	კიდის გავლა + ზიგზაგი
+embroidery	Edge run + tatami	კიდის გავლა + ტატამი
+embroidery	fabric	ქსოვილი
+embroidery	machine	მანქანა
+embroidery	document	დოკუმენტი
+embroidery	export	ექსპორტი
+embroidery	default	ნაგულისხმევი
+embroidery	set	დაყენებული
+embroidery	fabric {value}	ქსოვილი {value}
+embroidery	machine {value}	მანქანა {value}
+embroidery	document {value}	დოკუმენტი {value}
+embroidery	export {value}	ექსპორტი {value}
+embroidery	default {value}	ნაგულისხმევი {value}
+embroidery	Not sewn: set to Don't sew.	არ იქარგება: დაყენებულია „არ ამოიქარგოს“.
+embroidery	Not sewn: it has no paint.	არ იქარგება: ფერი არ აქვს.
+embroidery	Not sewn: it is hidden.	არ იქარგება: დამალულია.
+embroidery	Not sewn: it is on a template or non-printing layer.	არ იქარგება: შაბლონის ან დაუბეჭდავ შრეზეა.
+embroidery	Not sewn.	არ იქარგება.
+embroidery	Stitches from a file are sewn as the file has them.	ფაილის ნაკერები იქარგება ისე, როგორც ფაილშია.
+embroidery	Type isn't sewn yet: create outlines to sew it.	ტექსტი ჯერ არ იქარგება: გარდაქმენით კონტურებად, რომ ამოიქარგოს.
+embroidery	Images aren't sewn.	გამოსახულებები არ იქარგება.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	პარამეტრებს სიმბოლოს ობიექტები იღებს: დასაყენებლად შეცვალეთ სიმბოლო.
+embroidery	Guides aren't sewn.	დამხმარე ხაზები არ იქარგება.
+embroidery	Placed files aren't sewn.	განთავსებული ფაილები არ იქარგება.
+embroidery	Not sewn as it is: expand it to sew it.	ასე არ იქარგება: გაშალეთ, რომ ამოიქარგოს.
+embroidery	It takes no embroidery settings.	ნაქარგობის პარამეტრებს არ იღებს.
+@plural	{count} object takes settings|{count} objects take settings	პარამეტრებს იღებს {count} ობიექტი
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	აღდგენა: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	ავტომატური: {choice}
+embroidery	Auto · {value}	ავტომატური · {value}
+embroidery	filled outline	შევსებული კონტური
+embroidery	center run	ცენტრალური გავლა
+embroidery	edge run	კიდის გავლა
+embroidery	edge run + zigzag	კიდის გავლა + ზიგზაგი
+embroidery	edge run + tatami	კიდის გავლა + ტატამი
+embroidery	none	არცერთი
+embroidery	by size	ზომის მიხედვით
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	შესვლა და გამოსვლა
+embroidery	Set	დაყენებული
+embroidery	nearest	უახლოესი
+embroidery	not used yet	ჯერ არ გამოიყენება
+embroidery	Set on the selected objects.	დაყენებულია მონიშნულ ობიექტებზე.
+embroidery	Nearest to where the needle is.	ყველაზე ახლოს იქ, სადაც ნემსია.
+embroidery	built-in values	ჩაშენებული მნიშვნელობები
+embroidery	Fabric: {fabric} · thread {weight} wt	ქსოვილი: {fabric} · ძაფი {weight} wt
+embroidery	Dim values come from the fabric and automatic rules.	მკრთალი მნიშვნელობები ქსოვილიდან და ავტომატური წესებიდან მოდის.
+embroidery	A bar marks a value set on these objects.	ზოლი აღნიშნავს ამ ობიექტებზე დაყენებულ მნიშვნელობას.
+embroidery	Restore from Fabric	ქსოვილიდან აღდგენა
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	შლის მონიშნული ობიექტების საკუთარ მნიშვნელობებს, რომ ისევ ქსოვილს მიჰყვნენ; შესვლა, გამოსვლა და ძაფის გაჭრა რჩება.
+embroidery	Cotton (light woven)	ბამბა (მსუბუქი ნაქსოვი)
+embroidery	Denim or heavy twill	ჯინსი ან სქელი ტვილი
+embroidery	Stretch knit	ელასტიური ნაქსოვი
+embroidery	Piqué (polo knit)	პიკე (პოლოს ნაქსოვი)
+embroidery	Fleece	ფლისი
+embroidery	Silk or satin fabric	აბრეშუმი ან ატლასის ქსოვილი
+embroidery	Nylon or sports fabric	ნეილონი ან სპორტული ქსოვილი
+embroidery	Cap (structured)	კეპი (ფორმიანი)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	ნაქარგობის პარამეტრების კოპირება
+	Paste Embroidery Settings	ნაქარგობის პარამეტრების ჩასმა
+@msg	select one object that takes embroidery settings: a path or a compound path	მონიშნეთ ერთი ობიექტი, რომელიც ნაქარგობის პარამეტრებს იღებს: ტრაექტორია ან შედგენილი ტრაექტორია
+@msg	copy an object's embroidery settings first	ჯერ დააკოპირეთ ობიექტის ნაქარგობის პარამეტრები
+@msg	the embroidery settings copied are another document's	დაკოპირებული ნაქარგობის პარამეტრები სხვა დოკუმენტისაა
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	ქსოვილი
+embroidery	The values objects use where they set none of their own.	მნიშვნელობები, რომლებსაც საკუთარი მნიშვნელობის არმქონე ობიექტები იყენებენ.
+embroidery	Built-in values	ჩაშენებული მნიშვნელობები
+embroidery	Custom	მორგებული
+embroidery	Stabilizer	სტაბილიზატორი
+embroidery	Tear-away	მოსაგლეჯი
+embroidery	Cut-away	მოსაჭრელი
+embroidery	Adhesive tear-away	წებოვანი მოსაგლეჯი
+embroidery	Thread	ძაფი
+embroidery	Thread weight	ძაფის სისქე
+embroidery	Rows' spacing for this thread: {value}	რიგებს შორის მანძილი ამ ძაფისთვის: {value}
+embroidery	Thread palette	ძაფების პალიტრა
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	მანქანა და ფაილი
+embroidery	Jump (needle up) from	ნახტომი (ნემსი ზემოთ)-დან
+embroidery	Cut the thread from	ძაფის გაჭრა-დან
+embroidery	Shortest stitch	უმოკლესი ნაკერი
+embroidery	Speed for the time estimate	სიჩქარე დროის შეფასებისთვის
+embroidery	Sewing order	კერვის რიგი
+embroidery	Join one thread's objects when nothing lies between them	ერთი ძაფის ობიექტების შეერთება, როცა მათ შორის არაფერია
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	ნაკლები ძაფის ცვლა და გაჭრა: ზემოთ მყოფი მაინც მოგვიანებით იკერება.
+embroidery	Design name	დიზაინის სახელი
+embroidery	Start point	საწყისი წერტილი
+embroidery	estimate	შეფასება
+embroidery	information only	მხოლოდ ინფორმაციისთვის
+embroidery	preset {value}	შაბლონი {value}
+embroidery	Changed from the preset, which gives {value}	შეცვლილია შაბლონთან შედარებით, რომელიც იძლევა {value}
+embroidery	Set in the document; without it: {value}	დაყენებულია დოკუმენტში; მის გარეშე: {value}
+embroidery	Changing the fabric doesn't change them.	ქსოვილის შეცვლა მათ არ ცვლის.
+embroidery	Apply the fabric to them too:	ქსოვილის გამოყენება მათზეც:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	ქსოვილი, რომელზეც დიზაინი იკერება: მის მნიშვნელობებს საკუთარის არმქონე ობიექტები იყენებენ.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	შევსების რიგებს შორის მანძილი 40 wt ძაფისთვის: სხვა ძაფი მას მასშტაბს უცვლის.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	ატლასის სვეტის მანძილი მისი სიგანით არჩეული მანძილის წილად.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	რა მოთავსდეს ქსოვილის ქვეშ ჩარჩოში: ინფორმაციისთვის, ნაკერს არ ცვლის.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	ძაფის სისქე: უფრო თხელი ძაფი (უფრო დიდი რიცხვი) რიგებს უფრო ხშირად კერავს.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	ძაფები, რომლებსაც მანქანის ფაილი ნომრავს: Janome-ს JEF ფაილებში, Brother-ის PES ფაილებში.
+embroidery	A move longer than this lifts the needle instead of sewing it.	ამაზე გრძელი გადაადგილება ნემსს აწევს, კერვის ნაცვლად.
+embroidery	A jump longer than this cuts the thread first.	ამაზე გრძელი ნახტომი ჯერ ძაფს ჭრის.
+embroidery	Stitches shorter than this are left out.	ამაზე მოკლე ნაკერები გამოიტოვება.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	ნაკერი წუთში: დიზაინის კერვის დრო მით ფასდება.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	ერთი ძაფის ობიექტები ერთმანეთის მიყოლებით იკერება, როცა შუაში არაფერი ფარავს მათ: ნაკლები ძაფის ცვლა და გაჭრა.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	სადაც მანქანა იწყებს დიზაინს, როგორც ის ფაილი აძლევდა, საიდანაც გაიხსნა.
+embroidery	The design's name, as the file it was opened from gave it.	დიზაინის სახელი, როგორც ის ფაილი აძლევდა, საიდანაც გაიხსნა.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	დოკუმენტის ქსოვილი, ძაფი და მანქანა: დოკუმენტის პარამეტრების „ნაქარგობის“ ჩანართი.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} ობიექტს ქსოვილისთვის საკუთარი მნიშვნელობები აქვს.
+	Embroidery Settings…	ნაქარგობის პარამეტრები…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	{min}-დან {max}-მდე
+embroidery	At least the jump length ({value}): only a jump is cut	მინიმუმ ნახტომის სიგრძე ({value}): ძაფი მხოლოდ ნახტომისას იჭრება
+# Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
+embroidery	The fabric changed	ქსოვილი შეიცვალა
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} მმ
+# Machine embroidery: the units the embroidery fields write after their numbers (millimetres, thread weight, stitches a minute), as the Check tab writes them.
+embroidery	mm	მმ
+embroidery	wt	wt
+embroidery	/min	/წთ
+# Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
+embroidery	Not a number: {text}	არ არის რიცხვი: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	სხვა ობიექტის ქარგვის პარამეტრების გამოყენება
+	Show Document Embroidery Settings	დოკუმენტის ქარგვის პარამეტრების ჩვენება
+@plural	Trim the thread after the object|Trim the thread after the objects	ძაფის გაჭრა ობიექტის შემდეგ
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	არ ჩაისვა, რადგან ეს ვერსია მათ არ იღებს: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} მონიშნული ობიექტი პარამეტრებს არ იღებს და გამოტოვებულია
+# Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
+@plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} მონიშნული ობიექტი პარამეტრებს არ იღებს

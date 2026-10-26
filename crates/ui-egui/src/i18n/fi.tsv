@@ -5382,12 +5382,10 @@ mark-style	Japanese	Japanilainen
 	Embroidery Object Settings	Objektin kirjonta-asetukset
 	Reset Embroidery Object Settings	Palauta objektin kirjonta-asetukset
 	Embroidery Entry and Exit	Kirjonnan alku- ja loppukohta
-	Paste Embroidery Object Settings	Liitä objektin kirjonta-asetukset
 	Show Embroidery Object Settings	Näytä objektin kirjonta-asetukset
 	Embroidery Fabrics	Kirjontakankaat
 	Apply Embroidery Fabric to Objects	Käytä kirjontakangasta objekteihin
 	Embroidery Setup	Kirjonnan asetukset
-	Show Embroidery Settings	Näytä kirjonnan asetukset
 	Embroidery Statistics	Kirjonnan tilastot
 	Embroidery Sewing Order	Kirjontajärjestys
 	Embroidery Check	Kirjonnan tarkistus
@@ -5474,41 +5472,8 @@ mark-style	Japanese	Japanilainen
 @msg	too many stitches for a VP3 file	liian monta pistoa VP3-tiedostoon
 @msg	{_1} is not an embroidery format	{_1} ei ole kirjontamuoto
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	Pisto:
-	Stitch Length:	Piston pituus:
-	Fill Angle:	Täytön kulma:
-	Pull Compensation:	Kiristymän korjaus:
-	Pull Compensation (%):	Kiristymän korjaus (%):
-	Push Compensation:	Työntymän korjaus:
-	Expand Fills:	Laajenna täyttöjä:
-	Narrow Parts as Satin:	Kapeat osat satiinina:
-	Thread Weight:	Langan vahvuus:
-	Underlay:	Alusompelu:
-	Jump Length:	Hypyn pituus:
-	Trim Length:	Leikkauksen pituus:
-	Shortest Stitch:	Lyhin pisto:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	Miten muodot ommellaan: Automaattinen täyttää muodot tatamilla ja ompelee viivat leveyden mukaan satiinipylväinä tai suorina pistoina; muu valinta ompelee kaikki muodot niin
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	Täyttörivien ja satiinipistojen väli; muuttamattomana satiinipylväs valitsee sen leveytensä mukaan
-	The length of the stitches along fill rows and running lines	Pistojen pituus täyttörivien ja suorien pistojen varrella
-	The direction of the fill rows	Täyttörivien suunta
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	Leventää satiinipylväitä ja täyttörivejä kummaltakin puolelta korjaamaan kankaan kiristymistä
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	Leventää satiinipylväitä ja täyttörivejä osalla niiden leveydestä korjaamaan kankaan kiristymistä
-	Shortens satin columns at their ends, where the thread pushes outward	Lyhentää satiinipylväitä päistä, joissa lanka työntää ulospäin
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	Laajentaa jokaista täytettyä muotoa joka puolelta sulkemaan muotojen välisiä rakoja; negatiivinen arvo pienentää sitä
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	Tätä kapeammat täytön osat ommellaan satiinipylväinä; 0 ei ompele yhtään
-	The thread's weight: thinner thread (a higher number) packs the rows closer	Langan vahvuus: ohuempi lanka (suurempi numero) asettaa rivit tiheämmin
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	Ensin ommeltavat pistot, jotka pitävät kankaan paikallaan: kunkin muodon valitsemat, ei mitään tai yksi laji kaikille muodoille
-	A move longer than this lifts the needle instead of being sewn	Tätä pidempi siirto nostaa neulan sen sijaan, että se ommeltaisiin
-	A jump longer than this cuts the thread first	Tätä pidempi hyppy leikkaa ensin langan
-	Shorter stitches are left out	Lyhyemmät pistot jätetään pois
-	Tatami Fill	Tatamitäyttö
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	Satiini
-	Running Stitch	Suora pisto
-	Centre Run	Keskiajo
-	Edge Run	Reuna-ajo
-	Edge Run and Zigzag	Reuna-ajo ja siksak
-	Edge Run and Tatami	Reuna-ajo ja tatami
 	Embroidery Picture	Kirjonnan kuva
 @msg	nothing to draw: the document sews no stitch	ei piirrettävää: asiakirja ei ompele yhtään pistoa
 	Stitch Preview	Pistojen esikatselu
@@ -5539,7 +5504,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count} pisto|{count} pistoa
 @msg	tab {tab}: one of {_1}	välilehti {tab}: yksi seuraavista: {_1}
 @msg	unknown key `{k}`: the only one is {only}	tuntematon avain `{k}`: ainoa on {only}
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	Kirjotaan pinon alhaalta ylös; saman värin objektit yhdistyvät, kun niiden välissä ei ole mitään.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	Kirjotaan pinon alhaalta ylös; saman värin objektit yhdistyvät, kun niiden välissä ei ole mitään.
 embroidery	Trim and thread change	Leikkaus ja langanvaihto
 embroidery	Thread change	Langanvaihto
 embroidery	fill	täyttö
@@ -5552,7 +5517,7 @@ embroidery	narrow parts as satin	kapeat osat satiinina
 @plural	{count} object|{count} objects	{count} objekti|{count} objektia
 @plural	{count} jump|{count} jumps	{count} hyppy|{count} hyppyä
 @plural	{count} trim|{count} trims	{count} leikkaus|{count} leikkausta
-embroidery	Colours	Värit
+embroidery	Colors	Värit
 embroidery	Thread changes	Langanvaihdot
 embroidery	Trims	Leikkaukset
 embroidery	Jumps	Hypyt
@@ -5582,8 +5547,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	Aika nopeudella {
 @msg	can't change the sewing order: too many objects at once	ompelujärjestystä ei voi muuttaa: liian monta objektia kerralla
 embroidery	After {name}	Kohteen {name} jälkeen
 embroidery	Before {name}	Ennen kohdetta {name}
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	Mikään pisto ei siirtynyt: saman värin objektit yhdistyvät yhä, kun mikään välissä ei ole niiden alla.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name} kirjotaan lohkossa {block}, yhdistettynä muihin samanvärisiin
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	Mikään pisto ei siirtynyt: saman värin objektit yhdistyvät yhä, kun mikään välissä ei ole niiden alla.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name} kirjotaan lohkossa {block}, yhdistettynä muihin samanvärisiin
 embroidery	{name} is sewn in block {block}	{name} kirjotaan lohkossa {block}
 embroidery	Thread changes: {before} → {after}	Langanvaihdot: {before} → {after}
 embroidery	Collapse All	Kutista kaikki
@@ -5600,8 +5565,8 @@ embroidery	More than {value} short stitches in a row	Yli {value} lyhyttä pistoa
 embroidery	{value} or more layers of stitches on one spot	{value} tai useampia pistokerroksia samassa kohdassa
 embroidery	Everything is sewn	Kaikki kirjotaan
 embroidery	Art that isn't sewn	Kuvitus, jota ei kirjota
-embroidery	More colour blocks than {format} holds ({value})	Enemmän värilohkoja kuin {format} mahduttaa ({value})
-embroidery	{format} holds any number of colour blocks	{format} mahduttaa minkä tahansa määrän värilohkoja
+embroidery	More color blocks than {format} holds ({value})	Enemmän värilohkoja kuin {format} mahduttaa ({value})
+embroidery	{format} holds any number of color blocks	{format} mahduttaa minkä tahansa määrän värilohkoja
 embroidery	More stitches than a machine shows ({value})	Enemmän pistoja kuin kone näyttää ({value})
 embroidery	More thread changes than a machine shows ({value})	Enemmän langanvaihtoja kuin kone näyttää ({value})
 embroidery	No findings	Ei löydöksiä
@@ -5638,7 +5603,7 @@ embroidery	No source gives a number to check these against.	Mikään lähde ei a
 @plural	{count} warning|{count} warnings	{count} varoitus|{count} varoitusta
 @plural	{count} note|{count} notes	{count} huomautus|{count} huomautusta
 @plural	and {count} more|and {count} more	ja {count} muu|ja {count} muuta
-embroidery	Threads unlike the art's colour (over {value})	Langat, jotka eivät vastaa kuvituksen väriä (yli {value})
+embroidery	Threads unlike the art's color (over {value})	Langat, jotka eivät vastaa kuvituksen väriä (yli {value})
 embroidery	Largest difference: {value}	Suurin ero: {value}
 embroidery	Block {block}: {thread}, {value}	Lohko {block}: {thread}, {value}
 	Zoom to Box	Zoomaa ruutuun
@@ -5659,7 +5624,7 @@ embroidery	Median: {value} mm	Mediaani: {value} mm
 embroidery	Too long	Liian pitkät
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Yli {value} mm: {stitches}
-@plural	{count} colour|{count} colours	{count} väri|{count} väriä
+@plural	{count} color|{count} colors	{count} väri|{count} väriä
 embroidery	Embroidery: {figures}	Kirjonta: {figures}
 embroidery	Stitches can't be planned	Pistoja ei voi suunnitella
 embroidery	Click to open the Embroidery panel.	Avaa Kirjonta-paneeli napsauttamalla.
@@ -5861,3 +5826,206 @@ axis	Y Axis	Y-akseli
 	Rectangular Grid Tool Options	Suorakulmaisen ruudukon työkalun asetukset
 	Polar Grid Tool Options	Napakoordinaattiruudukon työkalun asetukset
 	Fill Line	Täytä viiva
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	Objekti
+embroidery	Select an object to set how it is sewn.	Valitse objekti ja määritä, miten se kirjotaan.
+embroidery	Nothing selected	Mitään ei ole valittu
+embroidery	Guide	Apuviiva
+embroidery	Stitches from a file	Pistot tiedostosta
+embroidery	Path	Polku
+embroidery	Compound path	Yhdistelmäpolku
+embroidery	Group	Ryhmä
+embroidery	Layer	Taso
+embroidery	Text object	Tekstiobjekti
+embroidery	Image	Kuva
+embroidery	Symbol instance	Symbolin ilmentymä
+embroidery	Placed file	Sijoitettu tiedosto
+embroidery	Live object	Dynaaminen objekti
+embroidery	fill and stroke	täyttö ja viiva
+embroidery	fill, no stroke	täyttö, ei viivaa
+embroidery	stroke, no fill	viiva, ei täyttöä
+embroidery	no fill or stroke	ei täyttöä eikä viivaa
+embroidery	Fill	Täyttö
+embroidery	Fill: none	Täyttö: ei mitään
+embroidery	Stroke	Viiva
+embroidery	Stroke: none	Viiva: ei mitään
+embroidery	Stitch	Pisto
+embroidery	Underlay	Alusompelu
+embroidery	Compensation	Korjaus
+embroidery	auto	auto
+embroidery	{count} of {total} set	asetettu {count}/{total}
+embroidery	Set on the selected objects; without it: {value}	Asetettu valituille objekteille; muuten: {value}
+embroidery	The selected objects differ.	Valitut objektit eroavat toisistaan.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	Automaattinen
+embroidery	Mixed	Vaihtelee
+embroidery	Type	Tyyppi
+embroidery	Angle	Kulma
+embroidery	Row spacing	Rivien väli
+embroidery	Spacing	Väli
+embroidery	Stitch length	Piston pituus
+embroidery	Narrow parts as satin	Kapeat osat satiinina
+embroidery	Pull compensation	Kiristymän korjaus
+embroidery	Pull compensation (%)	Kiristymän korjaus (%)
+embroidery	Push compensation	Työntymän korjaus
+embroidery	Expand fills	Täyttöjen laajennus
+embroidery	Split satin stitches from	Jaa satiinipistot alkaen
+embroidery	Setting	Asetus
+embroidery	How the part is sewn: Auto picks by its shape and width.	Miten osa kirjotaan: Automaattinen valitsee muodon ja leveyden mukaan.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	Täytön rivien suunta vastapäivään; kääntyy objektin mukana.
+embroidery	The distance between rows, or between a satin's stitches.	Rivien välinen etäisyys tai satiinin pistojen väli.
+embroidery	The longest stitch along a row or a running line.	Pisin pisto rivillä tai suoralla pistolla.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	Tätä kapeammat täytön osat kirjotaan satiinipylväinä; 0 ei kirjo yhtään.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	Ensin kirjottavat pistot päällyspistojen alla kankaan pitämiseksi.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	Leventää jokaista riviä tai pylvästä päistä, joissa lanka kiristää kangasta.
+embroidery	Widens each column by a share of its width.	Leventää jokaista pylvästä osuudella sen leveydestä.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	Lyhentää avointa satiinipylvästä päistä, joissa lanka työntyy ulos.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	Kasvattaa täytettyä aluetta joka puolelta, jotta erilleen piirretyt muodot kohtaavat.
+embroidery	Satin stitches longer than this are split in two.	Tätä pidemmät satiinipistot jaetaan kahtia.
+embroidery	Where the needle goes in to sew the part.	Kohta, josta neula menee sisään kirjomaan osan.
+embroidery	Where the needle comes out after the part.	Kohta, josta neula tulee ulos osan jälkeen.
+embroidery	Tatami fill	Tatamitäyttö
+embroidery	Tatami	Tatami
+embroidery	Satin	Satiini
+embroidery	Running stitch	Suora pisto
+embroidery	Don't sew	Älä kirjo
+embroidery	None	Ei mitään
+embroidery	Center run	Keskiajo
+embroidery	Edge run	Reuna-ajo
+embroidery	Edge run + zigzag	Reuna-ajo + siksak
+embroidery	Edge run + tatami	Reuna-ajo + tatami
+embroidery	fabric	kangas
+embroidery	machine	kone
+embroidery	document	asiakirja
+embroidery	export	vienti
+embroidery	default	oletus
+embroidery	set	asetettu
+embroidery	fabric {value}	kangas {value}
+embroidery	machine {value}	kone {value}
+embroidery	document {value}	asiakirja {value}
+embroidery	export {value}	vienti {value}
+embroidery	default {value}	oletus {value}
+embroidery	Not sewn: set to Don't sew.	Ei kirjota: asetettu Älä kirjo.
+embroidery	Not sewn: it has no paint.	Ei kirjota: sillä ei ole väriä.
+embroidery	Not sewn: it is hidden.	Ei kirjota: se on piilotettu.
+embroidery	Not sewn: it is on a template or non-printing layer.	Ei kirjota: se on mallipohjatasolla tai tasolla, jota ei tulosteta.
+embroidery	Not sewn.	Ei kirjota.
+embroidery	Stitches from a file are sewn as the file has them.	Tiedoston pistot kirjotaan sellaisinaan.
+embroidery	Type isn't sewn yet: create outlines to sew it.	Tekstiä ei vielä kirjota: muunna se ääriviivoiksi, jotta se kirjotaan.
+embroidery	Images aren't sewn.	Kuvia ei kirjota.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	Asetukset tehdään symbolin objekteille: muokkaa symbolia asettaaksesi ne.
+embroidery	Guides aren't sewn.	Apuviivoja ei kirjota.
+embroidery	Placed files aren't sewn.	Sijoitettuja tiedostoja ei kirjota.
+embroidery	Not sewn as it is: expand it to sew it.	Ei kirjota sellaisenaan: laajenna se, jotta se kirjotaan.
+embroidery	It takes no embroidery settings.	Sille ei voi tehdä kirjonta-asetuksia.
+@plural	{count} object takes settings|{count} objects take settings	{count} objektille voi tehdä asetuksia|{count} objektille voi tehdä asetuksia
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	Palauta: {setting}
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	Automaattinen: {choice}
+embroidery	Auto · {value}	Automaattinen · {value}
+embroidery	filled outline	täytetty ääriviiva
+embroidery	center run	keskiajo
+embroidery	edge run	reuna-ajo
+embroidery	edge run + zigzag	reuna-ajo + siksak
+embroidery	edge run + tatami	reuna-ajo + tatami
+embroidery	none	ei mitään
+embroidery	by size	koon mukaan
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	Sisään ja ulos
+embroidery	Set	Asetettu
+embroidery	nearest	lähin
+embroidery	not used yet	ei vielä käytössä
+embroidery	Set on the selected objects.	Asetettu valituille objekteille.
+embroidery	Nearest to where the needle is.	Lähimpänä kohtaa, jossa neula on.
+embroidery	built-in values	sisäiset arvot
+embroidery	Fabric: {fabric} · thread {weight} wt	Kangas: {fabric} · lanka {weight} wt
+embroidery	Dim values come from the fabric and automatic rules.	Himmeät arvot tulevat kankaasta ja automaattisista säännöistä.
+embroidery	A bar marks a value set on these objects.	Palkki merkitsee näille objekteille asetetun arvon.
+embroidery	Restore from Fabric	Palauta kankaasta
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Poistaa valittujen objektien omat arvot, jotta ne seuraavat taas kangasta; sisään- ja uloskohta sekä katkaisu säilyvät.
+embroidery	Cotton (light woven)	Puuvilla (kevyt kudottu)
+embroidery	Denim or heavy twill	Farkku tai paksu toimikas
+embroidery	Stretch knit	Joustava neulos
+embroidery	Piqué (polo knit)	Pikee (pikeeneulos)
+embroidery	Fleece	Fleece
+embroidery	Silk or satin fabric	Silkki tai satiinikangas
+embroidery	Nylon or sports fabric	Nailon tai urheilukangas
+embroidery	Cap (structured)	Lippis (muotoiltu)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	Kopioi kirjonta-asetukset
+	Paste Embroidery Settings	Liitä kirjonta-asetukset
+@msg	select one object that takes embroidery settings: a path or a compound path	valitse yksi objekti, jolle voi tehdä kirjonta-asetuksia: polku tai yhdistelmäpolku
+@msg	copy an object's embroidery settings first	kopioi ensin objektin kirjonta-asetukset
+@msg	the embroidery settings copied are another document's	kopioidut kirjonta-asetukset ovat toisen asiakirjan
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	Kangas
+embroidery	The values objects use where they set none of their own.	Arvot, joita objektit käyttävät, kun niillä ei ole omia.
+embroidery	Built-in values	Sisäiset arvot
+embroidery	Custom	Mukautettu
+embroidery	Stabilizer	Tukikangas
+embroidery	Tear-away	Repäistävä
+embroidery	Cut-away	Leikattava
+embroidery	Adhesive tear-away	Liimautuva repäistävä
+embroidery	Thread	Lanka
+embroidery	Thread weight	Langan vahvuus
+embroidery	Rows' spacing for this thread: {value}	Rivien väli tällä langalla: {value}
+embroidery	Thread palette	Lankapaletti
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	Kone ja tiedosto
+embroidery	Jump (needle up) from	Hyppy (neula ylhäällä) alkaen
+embroidery	Cut the thread from	Katkaise lanka alkaen
+embroidery	Shortest stitch	Lyhin pisto
+embroidery	Speed for the time estimate	Nopeus ajan arviota varten
+embroidery	Sewing order	Ompelujärjestys
+embroidery	Join one thread's objects when nothing lies between them	Yhdistä saman langan objektit, kun niiden välissä ei ole mitään
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	Vähemmän langanvaihtoja ja katkaisuja: päällä oleva ommellaan joka tapauksessa myöhemmin.
+embroidery	Design name	Kuvion nimi
+embroidery	Start point	Aloituskohta
+embroidery	estimate	arvio
+embroidery	information only	vain tiedoksi
+embroidery	preset {value}	esiasetus {value}
+embroidery	Changed from the preset, which gives {value}	Muutettu esiasetuksesta, joka antaa {value}
+embroidery	Set in the document; without it: {value}	Asetettu asiakirjassa; muuten: {value}
+embroidery	Changing the fabric doesn't change them.	Kankaan vaihto ei muuta niitä.
+embroidery	Apply the fabric to them too:	Käytä kangasta myös niihin:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	Kangas, jolle kuvio ommellaan: sen arvoja käyttävät objektit, joilla ei ole omia.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	Täytön rivien väli 40 wt langalle: muu lanka skaalaa sitä.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	Satiinipylvään väli osuutena siitä välistä, jonka sen leveys valitsee.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	Mitä kehystetään kankaan alle: tiedoksi, se ei muuta yhtään pistoa.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	Langan vahvuus: ohuempi lanka (suurempi luku) ompelee rivit tiheämmin.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	Langat, jotka konetiedosto numeroi: Janomen JEF-tiedostoissa, Brotherin PES-tiedostoissa.
+embroidery	A move longer than this lifts the needle instead of sewing it.	Pidempi siirto nostaa neulan sen sijaan, että se ommeltaisiin.
+embroidery	A jump longer than this cuts the thread first.	Pidempi hyppy katkaisee ensin langan.
+embroidery	Stitches shorter than this are left out.	Lyhyemmät pistot jätetään pois.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	Pistoja minuutissa: kuvion ompeluaika arvioidaan sillä.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	Saman langan objektit ommellaan peräkkäin, kun mikään niiden välissä ei peitä niitä: vähemmän langanvaihtoja ja katkaisuja.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	Mistä kone aloittaa kuvion, kuten tiedosto, josta se avattiin, sen antoi.
+embroidery	The design's name, as the file it was opened from gave it.	Kuvion nimi, kuten tiedosto, josta se avattiin, sen antoi.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	Asiakirjan kangas, lanka ja kone: asiakirjan asetusten Kirjonta-välilehti.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	{count} objektilla on omat arvot kankaalle.|{count} objektilla on omat arvot kankaalle.
+	Embroidery Settings…	Kirjonnan asetukset…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	Välillä {min}–{max}
+embroidery	At least the jump length ({value}): only a jump is cut	Vähintään hypyn pituus ({value}): vain hyppy katkaistaan
+# Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
+embroidery	The fabric changed	Kangas muuttui
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm
+# Machine embroidery: the units the embroidery fields write after their numbers (millimetres, thread weight, stitches a minute), as the Check tab writes them.
+embroidery	mm	mm
+embroidery	wt	wt
+embroidery	/min	/min
+# Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
+embroidery	Not a number: {text}	Ei luku: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	Käytä toisen objektin kirjonta-asetuksia
+	Show Document Embroidery Settings	Näytä asiakirjan kirjonta-asetukset
+@plural	Trim the thread after the object|Trim the thread after the objects	Katkaise lanka objektin jälkeen|Katkaise lanka objektien jälkeen
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	Ei liitetty, koska tämä versio ei hyväksy niitä: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} valittu objekti ei ota asetuksia ja ohitettiin|{count} valittua objektia ei ota asetuksia ja ne ohitettiin
+# Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
+@plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} valittu objekti ei ota asetuksia|{count} valittua objektia ei ota asetuksia

@@ -4995,12 +4995,10 @@ lighting	Light	광원
 	Embroidery Object Settings	개체 자수 설정
 	Reset Embroidery Object Settings	개체 자수 설정 재설정
 	Embroidery Entry and Exit	자수 시작점과 끝점
-	Paste Embroidery Object Settings	개체 자수 설정 붙여넣기
 	Show Embroidery Object Settings	개체 자수 설정 표시
 	Embroidery Fabrics	자수 원단
 	Apply Embroidery Fabric to Objects	자수 원단을 개체에 적용
 	Embroidery Setup	자수 설정
-	Show Embroidery Settings	자수 설정 표시
 	Embroidery Statistics	자수 통계
 	Embroidery Sewing Order	자수 순서
 	Embroidery Check	자수 검사
@@ -5086,41 +5084,8 @@ lighting	Light	광원
 @msg	too many stitches for a VP3 file	VP3 파일에 비해 땀이 너무 많습니다
 @msg	{_1} is not an embroidery format	{_1}은(는) 자수 형식이 아닙니다
 
-# Machine embroidery: the settings' labels, tips and lists, kept for the Object tab and Document Setup (next PR): the export options dialog that used them is gone.
-	Stitch:	땀:
-	Stitch Length:	땀 길이:
-	Fill Angle:	채우기 각도:
-	Pull Compensation:	당김 보정:
-	Pull Compensation (%):	당김 보정(%):
-	Push Compensation:	밀림 보정:
-	Expand Fills:	채우기 확장:
-	Narrow Parts as Satin:	좁은 부분은 새틴으로:
-	Thread Weight:	실 굵기:
-	Underlay:	밑땀:
-	Jump Length:	점프 길이:
-	Trim Length:	실 자르기 길이:
-	Shortest Stitch:	가장 짧은 땀:
-	How shapes are sewn: Automatic fills shapes with tatami and sews strokes as satin columns or running lines by their width; another choice sews every shape that way	도형을 수놓는 방식: 자동은 도형을 타타미로 채우고, 선은 폭에 따라 새틴 기둥이나 러닝 스티치로 수놓습니다. 다른 선택은 모든 도형을 그 방식으로 수놓습니다
-	The distance between fill rows and between satin stitches; left as it is, a satin column picks it by its width	채우기 줄 사이와 새틴 땀 사이의 간격. 그대로 두면 새틴 기둥이 폭에 맞게 고릅니다
-	The length of the stitches along fill rows and running lines	채우기 줄과 러닝 스티치를 따라가는 땀의 길이
-	The direction of the fill rows	채우기 줄의 방향
-	Widens satin columns and fill rows on each side, to make up for the fabric pulling in	천이 당겨지는 만큼을 보정하도록 새틴 기둥과 채우기 줄을 양쪽으로 넓힙니다
-	Widens satin columns and fill rows by a share of their width, to make up for the fabric pulling in	천이 당겨지는 만큼을 보정하도록 새틴 기둥과 채우기 줄을 폭의 일정 비율만큼 넓힙니다
-	Shortens satin columns at their ends, where the thread pushes outward	실이 바깥으로 밀어내는 끝에서 새틴 기둥을 짧게 합니다
-	Grows each filled shape all round to close gaps between shapes; a negative value shrinks it	도형 사이의 틈을 메우도록 채워진 도형을 둘레로 넓힙니다. 음수 값은 줄입니다
-	Parts of a fill narrower than this are sewn as satin columns; 0 sews none	이보다 좁은 채우기 부분은 새틴 기둥으로 수놓습니다. 0이면 하나도 수놓지 않습니다
-	The thread's weight: thinner thread (a higher number) packs the rows closer	실 굵기: 가는 실(높은 번호)일수록 줄을 촘촘하게 놓습니다
-	The stitches sewn first to hold the fabric: chosen by each shape, none, or one kind for every shape	천을 잡아 주려고 먼저 수놓는 땀: 도형마다 고름, 없음, 또는 모든 도형에 한 종류
-	A move longer than this lifts the needle instead of being sewn	이보다 긴 이동은 수놓지 않고 바늘을 듭니다
-	A jump longer than this cuts the thread first	이보다 긴 점프는 먼저 실을 자릅니다
-	Shorter stitches are left out	이보다 짧은 땀은 뺍니다
-	Tatami Fill	타타미 채우기
+# Machine embroidery: the stitch preview, the Embroidery panel and the check (the settings' rows are in the `embroidery` context, with the Object tab).
 	Satin	새틴
-	Running Stitch	러닝 스티치
-	Centre Run	가운데 러닝
-	Edge Run	가장자리 러닝
-	Edge Run and Zigzag	가장자리 러닝과 지그재그
-	Edge Run and Tatami	가장자리 러닝과 타타미
 	Embroidery Picture	자수 이미지
 @msg	nothing to draw: the document sews no stitch	그릴 것이 없습니다: 문서에 바느질할 스티치가 없습니다
 	Stitch Preview	스티치 미리 보기
@@ -5151,7 +5116,7 @@ embroidery	Paths with a fill or a stroke are sewn; hidden objects, guides and no
 @plural	{count} stitch|{count} stitches	{count}땀
 @msg	tab {tab}: one of {_1}	탭 {tab}: {_1} 중 하나
 @msg	unknown key `{k}`: the only one is {only}	알 수 없는 키 `{k}`: 사용할 수 있는 키는 {only}뿐입니다
-embroidery	Sewn from the bottom of the stack up; objects of one colour join when nothing lies between them.	쌓인 순서의 아래부터 위로 수놓습니다. 사이에 아무것도 없으면 같은 색의 개체는 합쳐집니다.
+embroidery	Sewn from the bottom of the stack up; objects of one color join when nothing lies between them.	쌓인 순서의 아래부터 위로 수놓습니다. 사이에 아무것도 없으면 같은 색의 개체는 합쳐집니다.
 embroidery	Trim and thread change	실 자르기 및 실 교체
 embroidery	Thread change	실 교체
 embroidery	fill	칠
@@ -5164,7 +5129,7 @@ embroidery	narrow parts as satin	좁은 부분은 새틴
 @plural	{count} object|{count} objects	개체 {count}개
 @plural	{count} jump|{count} jumps	점프 {count}회
 @plural	{count} trim|{count} trims	실 자르기 {count}회
-embroidery	Colours	색
+embroidery	Colors	색
 embroidery	Thread changes	실 교체
 embroidery	Trims	실 자르기
 embroidery	Jumps	점프
@@ -5194,8 +5159,8 @@ embroidery	The time at {speed} stitches a minute, an estimate.	분당 {speed}땀
 @msg	can't change the sewing order: too many objects at once	자수 순서를 바꿀 수 없습니다: 한 번에 너무 많은 개체입니다
 embroidery	After {name}	{name} 다음
 embroidery	Before {name}	{name} 앞
-embroidery	No stitch moved: objects of one colour still join when nothing between lies under them.	스티치가 움직이지 않았습니다. 사이에 있는 것이 아래에 놓이지 않으면 같은 색의 개체는 계속 합쳐집니다.
-embroidery	{name} is sewn in block {block}, joined with others of its colour	{name}은(는) 블록 {block}에서 같은 색의 다른 개체와 합쳐 수놓입니다
+embroidery	No stitch moved: objects of one color still join when nothing between lies under them.	스티치가 움직이지 않았습니다. 사이에 있는 것이 아래에 놓이지 않으면 같은 색의 개체는 계속 합쳐집니다.
+embroidery	{name} is sewn in block {block}, joined with others of its color	{name}은(는) 블록 {block}에서 같은 색의 다른 개체와 합쳐 수놓입니다
 embroidery	{name} is sewn in block {block}	{name}은(는) 블록 {block}에서 수놓입니다
 embroidery	Thread changes: {before} → {after}	실 교체: {before} → {after}
 embroidery	Collapse All	모두 접기
@@ -5212,8 +5177,8 @@ embroidery	More than {value} short stitches in a row	짧은 땀이 {value}개를
 embroidery	{value} or more layers of stitches on one spot	한 곳에 {value}겹 이상 겹친 땀
 embroidery	Everything is sewn	모두 수놓아집니다
 embroidery	Art that isn't sewn	수놓아지지 않는 아트워크
-embroidery	More colour blocks than {format} holds ({value})	{format}에 담을 수 있는 것보다 많은 색 블록({value})
-embroidery	{format} holds any number of colour blocks	{format}은(는) 색 블록을 개수 제한 없이 담습니다
+embroidery	More color blocks than {format} holds ({value})	{format}에 담을 수 있는 것보다 많은 색 블록({value})
+embroidery	{format} holds any number of color blocks	{format}은(는) 색 블록을 개수 제한 없이 담습니다
 embroidery	More stitches than a machine shows ({value})	기계가 표시하는 것보다 많은 땀({value})
 embroidery	More thread changes than a machine shows ({value})	기계가 표시하는 것보다 많은 실 교체({value})
 embroidery	No findings	발견된 항목 없음
@@ -5250,7 +5215,7 @@ embroidery	No source gives a number to check these against.	이 항목을 검사
 @plural	{count} warning|{count} warnings	경고 {count}개
 @plural	{count} note|{count} notes	참고 {count}개
 @plural	and {count} more|and {count} more	외 {count}개
-embroidery	Threads unlike the art's colour (over {value})	아트워크 색과 다른 실({value} 초과)
+embroidery	Threads unlike the art's color (over {value})	아트워크 색과 다른 실({value} 초과)
 embroidery	Largest difference: {value}	최대 차이: {value}
 embroidery	Block {block}: {thread}, {value}	{block}번 블록: {thread}, {value}
 	Zoom to Box	상자에 맞게 확대/축소
@@ -5271,7 +5236,7 @@ embroidery	Median: {value} mm	중앙값: {value}mm
 embroidery	Too long	너무 김
 embroidery	{from}–{to} mm: {stitches}	{from}–{to}mm: {stitches}
 embroidery	Over {value} mm: {stitches}	{value}mm 초과: {stitches}
-@plural	{count} colour|{count} colours	{count}색
+@plural	{count} color|{count} colors	{count}색
 embroidery	Embroidery: {figures}	자수: {figures}
 embroidery	Stitches can't be planned	땀을 계획할 수 없습니다
 embroidery	Click to open the Embroidery panel.	클릭하면 자수 패널이 열립니다.
@@ -5408,3 +5373,206 @@ axis	Y Axis	Y축
 	Rectangular Grid Tool Options	사각형 격자 도구 옵션
 	Polar Grid Tool Options	극좌표 격자 도구 옵션
 	Fill Line	선 채우기
+# Machine embroidery: the Embroidery panel's Object tab (its strip, states and header, and each setting with where its value comes from).
+embroidery	Object	개체
+embroidery	Select an object to set how it is sewn.	개체를 선택해 수놓는 방법을 설정하세요.
+embroidery	Nothing selected	선택한 항목 없음
+embroidery	Guide	안내선
+embroidery	Stitches from a file	파일의 스티치
+embroidery	Path	패스
+embroidery	Compound path	컴파운드 패스
+embroidery	Group	그룹
+embroidery	Layer	레이어
+embroidery	Text object	텍스트 개체
+embroidery	Image	이미지
+embroidery	Symbol instance	심볼 인스턴스
+embroidery	Placed file	가져온 파일
+embroidery	Live object	라이브 개체
+embroidery	fill and stroke	칠과 선
+embroidery	fill, no stroke	칠, 선 없음
+embroidery	stroke, no fill	선, 칠 없음
+embroidery	no fill or stroke	칠과 선 없음
+embroidery	Fill	칠
+embroidery	Fill: none	칠: 없음
+embroidery	Stroke	선
+embroidery	Stroke: none	선: 없음
+embroidery	Stitch	스티치
+embroidery	Underlay	밑땀
+embroidery	Compensation	보정
+embroidery	auto	자동
+embroidery	{count} of {total} set	{total}개 중 {count}개에 설정됨
+embroidery	Set on the selected objects; without it: {value}	선택한 개체에 설정됨. 없으면: {value}
+embroidery	The selected objects differ.	선택한 개체마다 다릅니다.
+embroidery	{section}: {setting}	{section}: {setting}
+embroidery	Auto	자동
+embroidery	Mixed	혼합
+embroidery	Type	종류
+embroidery	Angle	각도
+embroidery	Row spacing	줄 간격
+embroidery	Spacing	간격
+embroidery	Stitch length	땀 길이
+embroidery	Narrow parts as satin	좁은 부분은 새틴으로
+embroidery	Pull compensation	당김 보정
+embroidery	Pull compensation (%)	당김 보정(%)
+embroidery	Push compensation	밀림 보정
+embroidery	Expand fills	채우기 확장
+embroidery	Split satin stitches from	새틴 땀 분할 기준
+embroidery	Setting	설정
+embroidery	How the part is sewn: Auto picks by its shape and width.	이 부분을 수놓는 방법입니다. 자동은 모양과 너비로 고릅니다.
+embroidery	The direction of the fill's rows, counter-clockwise; it turns with the object.	채우기 줄의 방향(반시계 방향)입니다. 개체와 함께 회전합니다.
+embroidery	The distance between rows, or between a satin's stitches.	줄 사이, 또는 새틴 땀 사이의 거리입니다.
+embroidery	The longest stitch along a row or a running line.	줄이나 러닝 스티치 선의 가장 긴 땀입니다.
+embroidery	Parts of a fill narrower than this are sewn as satin columns; 0 sews none.	이보다 좁은 채우기 부분은 새틴 기둥으로 수놓습니다. 0이면 하나도 그렇게 하지 않습니다.
+embroidery	The stitches sewn first, under the top stitching, to hold the fabric.	윗땀 아래에 먼저 수놓아 원단을 잡아 주는 땀입니다.
+embroidery	Widens each row or column at its ends, where the thread pulls the fabric in.	실이 원단을 당기는 끝에서 각 줄이나 기둥을 넓힙니다.
+embroidery	Widens each column by a share of its width.	각 기둥을 너비의 일정 비율만큼 넓힙니다.
+embroidery	Shortens an open satin column at its ends, where the thread pushes out.	실이 밖으로 미는 끝에서 열린 새틴 기둥을 줄입니다.
+embroidery	Grows the filled area all round, so that shapes drawn apart meet.	채운 영역을 사방으로 키워 떨어져 그린 도형이 맞닿게 합니다.
+embroidery	Satin stitches longer than this are split in two.	이보다 긴 새틴 땀은 둘로 나눕니다.
+embroidery	Where the needle goes in to sew the part.	이 부분을 수놓으려고 바늘이 들어가는 곳입니다.
+embroidery	Where the needle comes out after the part.	이 부분을 마치고 바늘이 나오는 곳입니다.
+embroidery	Tatami fill	타타미 채우기
+embroidery	Tatami	타타미
+embroidery	Satin	새틴
+embroidery	Running stitch	러닝 스티치
+embroidery	Don't sew	수놓지 않음
+embroidery	None	없음
+embroidery	Center run	가운데 러닝
+embroidery	Edge run	가장자리 러닝
+embroidery	Edge run + zigzag	가장자리 러닝 + 지그재그
+embroidery	Edge run + tatami	가장자리 러닝 + 타타미
+embroidery	fabric	원단
+embroidery	machine	기계
+embroidery	document	문서
+embroidery	export	내보내기
+embroidery	default	기본값
+embroidery	set	설정됨
+embroidery	fabric {value}	원단 {value}
+embroidery	machine {value}	기계 {value}
+embroidery	document {value}	문서 {value}
+embroidery	export {value}	내보내기 {value}
+embroidery	default {value}	기본값 {value}
+embroidery	Not sewn: set to Don't sew.	수놓지 않음: ‘수놓지 않음’으로 설정됨.
+embroidery	Not sewn: it has no paint.	수놓지 않음: 색이 없습니다.
+embroidery	Not sewn: it is hidden.	수놓지 않음: 숨겨져 있습니다.
+embroidery	Not sewn: it is on a template or non-printing layer.	수놓지 않음: 템플릿 레이어나 인쇄하지 않는 레이어에 있습니다.
+embroidery	Not sewn.	수놓지 않음.
+embroidery	Stitches from a file are sewn as the file has them.	파일의 스티치는 파일에 있는 그대로 수놓습니다.
+embroidery	Type isn't sewn yet: create outlines to sew it.	텍스트는 아직 수놓을 수 없습니다. 윤곽선을 만들면 수놓을 수 있습니다.
+embroidery	Images aren't sewn.	이미지는 수놓지 않습니다.
+embroidery	A symbol's objects take its settings: edit the symbol to set them.	설정은 심볼 안의 개체에 붙습니다. 심볼을 편집해 설정하세요.
+embroidery	Guides aren't sewn.	안내선은 수놓지 않습니다.
+embroidery	Placed files aren't sewn.	가져온 파일은 수놓지 않습니다.
+embroidery	Not sewn as it is: expand it to sew it.	이대로는 수놓지 않습니다. 확장하면 수놓을 수 있습니다.
+embroidery	It takes no embroidery settings.	자수 설정을 받지 않습니다.
+@plural	{count} object takes settings|{count} objects take settings	설정을 받는 개체 {count}개
+# Machine embroidery: the Object tab's restore button (↺), named by its setting.
+embroidery	Restore {setting}	{setting} 되돌리기
+# Machine embroidery: what the Object tab says Auto chose (a stitch by the shape, an underlay by the size or the width).
+embroidery	Auto: {choice}	자동: {choice}
+embroidery	Auto · {value}	자동 · {value}
+embroidery	filled outline	채운 윤곽
+embroidery	center run	가운데 러닝
+embroidery	edge run	가장자리 러닝
+embroidery	edge run + zigzag	가장자리 러닝 + 지그재그
+embroidery	edge run + tatami	가장자리 러닝 + 타타미
+embroidery	none	없음
+embroidery	by size	크기에 따라
+# Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
+embroidery	Entry and exit	진입과 진출
+embroidery	Set	설정됨
+embroidery	nearest	가장 가까운
+embroidery	not used yet	아직 쓰이지 않음
+embroidery	Set on the selected objects.	선택한 개체에 설정됨.
+embroidery	Nearest to where the needle is.	바늘이 있는 곳에서 가장 가까운 곳.
+embroidery	built-in values	기본 제공 값
+embroidery	Fabric: {fabric} · thread {weight} wt	원단: {fabric} · 실 {weight} wt
+embroidery	Dim values come from the fabric and automatic rules.	흐린 값은 원단과 자동 규칙에서 옵니다.
+embroidery	A bar marks a value set on these objects.	막대는 이 개체에 설정한 값을 표시합니다.
+embroidery	Restore from Fabric	원단에서 복원
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	선택한 개체 자체의 값을 지워 다시 원단을 따르게 합니다. 진입, 진출, 실 자르기는 그대로입니다.
+embroidery	Cotton (light woven)	면(가벼운 직물)
+embroidery	Denim or heavy twill	데님 또는 두꺼운 능직
+embroidery	Stretch knit	신축성 니트
+embroidery	Piqué (polo knit)	피케(폴로 니트)
+embroidery	Fleece	플리스
+embroidery	Silk or satin fabric	실크 또는 새틴 원단
+embroidery	Nylon or sports fabric	나일론 또는 스포츠 원단
+embroidery	Cap (structured)	모자(구조형)
+# Machine embroidery: Copy and Paste of an object's embroidery settings (the Embroidery panel's menu).
+	Copy Embroidery Settings	자수 설정 복사
+	Paste Embroidery Settings	자수 설정 붙여넣기
+@msg	select one object that takes embroidery settings: a path or a compound path	자수 설정을 받는 개체(패스 또는 컴파운드 패스)를 하나 선택하세요
+@msg	copy an object's embroidery settings first	먼저 개체의 자수 설정을 복사하세요
+@msg	the embroidery settings copied are another document's	복사한 자수 설정은 다른 문서의 것입니다
+# Machine embroidery: Document Setup's Embroidery tab (the fabric, the thread, the machine, the sewing order, objects with their own values) and the Object tab's Embroidery Settings… button.
+embroidery	Fabric	원단
+embroidery	The values objects use where they set none of their own.	자체 값이 없는 개체가 사용하는 값입니다.
+embroidery	Built-in values	기본 제공 값
+embroidery	Custom	사용자 지정
+embroidery	Stabilizer	심지
+embroidery	Tear-away	찢는 심지
+embroidery	Cut-away	자르는 심지
+embroidery	Adhesive tear-away	접착식 찢는 심지
+embroidery	Thread	실
+embroidery	Thread weight	실 굵기
+embroidery	Rows' spacing for this thread: {value}	이 실의 줄 간격: {value}
+embroidery	Thread palette	실 팔레트
+embroidery	Janome (JEF)	Janome (JEF)
+embroidery	Brother (PES)	Brother (PES)
+embroidery	Machine and file	기계와 파일
+embroidery	Jump (needle up) from	점프(바늘 올림) 기준
+embroidery	Cut the thread from	실 자르기 기준
+embroidery	Shortest stitch	최단 땀
+embroidery	Speed for the time estimate	시간 추정용 속도
+embroidery	Sewing order	자수 순서
+embroidery	Join one thread's objects when nothing lies between them	사이에 아무것도 없으면 같은 실의 개체를 잇기
+embroidery	Fewer thread changes and cuts: what lies above is sewn later anyway.	실 교체와 자르기가 줄어듭니다. 위에 있는 것은 어차피 나중에 수놓아집니다.
+embroidery	Design name	디자인 이름
+embroidery	Start point	시작점
+embroidery	estimate	추정
+embroidery	information only	참고용
+embroidery	preset {value}	프리셋 {value}
+embroidery	Changed from the preset, which gives {value}	프리셋에서 바뀜(프리셋 값: {value})
+embroidery	Set in the document; without it: {value}	문서에 설정됨. 없으면: {value}
+embroidery	Changing the fabric doesn't change them.	원단을 바꿔도 이 값은 바뀌지 않습니다.
+embroidery	Apply the fabric to them too:	이 개체에도 원단 적용:
+embroidery	{setting}: {objects}	{setting}: {objects}
+embroidery	The fabric the design is sewn on: its values are what objects use where they set none of their own.	디자인을 수놓을 원단입니다. 자체 값이 없는 개체가 이 값을 사용합니다.
+embroidery	The distance between a fill's rows, for 40 wt thread: another thread scales it.	40 wt 실 기준 채우기 줄 간격입니다. 다른 실은 비율에 맞춰 바뀝니다.
+embroidery	A satin column's spacing as a share of the spacing its width picks.	새틴 기둥의 간격을 너비로 정해지는 간격에 대한 비율로 나타냅니다.
+embroidery	What to hoop under the fabric: for information, it changes no stitch.	원단 아래에 수틀로 고정할 것입니다. 참고용이며 땀은 바뀌지 않습니다.
+embroidery	The thread's weight: a thinner thread (a higher number) sews its rows closer.	실의 굵기입니다. 가는 실(높은 숫자)일수록 줄을 촘촘히 수놓습니다.
+embroidery	The threads a machine file numbers: Janome's in JEF files, Brother's in PES files.	기계 파일이 번호로 가리키는 실입니다. JEF 파일은 Janome, PES 파일은 Brother 실입니다.
+embroidery	A move longer than this lifts the needle instead of sewing it.	이보다 긴 이동은 수놓지 않고 바늘을 들어 올립니다.
+embroidery	A jump longer than this cuts the thread first.	이보다 긴 점프는 먼저 실을 자릅니다.
+embroidery	Stitches shorter than this are left out.	이보다 짧은 땀은 생략됩니다.
+embroidery	Stitches a minute: the time a design takes to sew is estimated at it.	분당 땀 수입니다. 디자인을 수놓는 시간을 이 값으로 추정합니다.
+embroidery	Objects of one thread are sewn one after another when nothing between them overlaps them: fewer thread changes and cuts.	사이에 겹치는 것이 없으면 같은 실의 개체를 이어서 수놓습니다. 실 교체와 자르기가 줄어듭니다.
+embroidery	Where the machine starts the design, as the file it was opened from gave it.	기계가 디자인을 시작하는 위치로, 열었던 파일이 지정한 대로입니다.
+embroidery	The design's name, as the file it was opened from gave it.	열었던 파일이 지정한 디자인 이름입니다.
+embroidery	The document's fabric, thread and machine: Document Setup's Embroidery tab.	문서의 원단, 실, 기계: 문서 설정의 자수 탭.
+@plural	{count} object sets its own values for the fabric.|{count} objects set their own values for the fabric.	개체 {count}개가 원단 값을 자체 설정합니다.
+	Embroidery Settings…	자수 설정…
+# Machine embroidery: Document Setup's Embroidery tab, a value it would refuse on OK (out of its range, a cut shorter than a jump), said under its field.
+embroidery	From {min} to {max}	{min}~{max}
+embroidery	At least the jump length ({value}): only a jump is cut	점프 길이({value}) 이상: 점프할 때만 실을 자릅니다
+# Machine embroidery: Document Setup's Embroidery tab, what screen readers hear of the amber bar.
+embroidery	The fabric changed	원단이 바뀌었습니다
+# Machine embroidery: Document Setup's Embroidery tab, an opened file's start point (X and Y named, as a decimal comma would read alike).
+embroidery	X {x} · Y {y} mm	X {x} · Y {y} mm
+# Machine embroidery: the units the embroidery fields write after their numbers (millimetres, thread weight, stitches a minute), as the Check tab writes them.
+embroidery	mm	mm
+embroidery	wt	wt
+embroidery	/min	/분
+# Machine embroidery: the status bar's words when an embroidery field's typed text holds no number.
+embroidery	Not a number: {text}	숫자가 아닙니다: {text}
+# Machine embroidery: the Object tab's Trim After for several objects, and two command labels that read apart from the interface's Paste and Embroidery Settings….
+	Apply Another Object's Embroidery Settings	다른 개체의 자수 설정 적용
+	Show Document Embroidery Settings	문서 자수 설정 표시
+@plural	Trim the thread after the object|Trim the thread after the objects	개체 뒤에 실 자르기
+# Machine embroidery: what Paste Embroidery Settings passed over (values this version doesn't take, objects that take no settings).
+embroidery	Not pasted, as this version doesn't take them: {keys}	이 버전에서 받지 않아 붙여넣지 않았습니다: {keys}
+@plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	선택한 개체 {count}개는 설정을 받지 않아 건너뛰었습니다
+# Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
+@plural	{count} selected object takes no settings|{count} selected objects take no settings	선택한 개체 {count}개는 설정을 받지 않습니다

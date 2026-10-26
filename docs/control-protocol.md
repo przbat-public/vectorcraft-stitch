@@ -425,9 +425,32 @@ and `embroidery.render` draw them, marked as the document's stitch view marks th
 
 `window.panel {panel: "embroidery"}` shows the Embroidery panel, the first time docked as the
 last tab beside Properties, Layers and Libraries (the dock turns into the shared layout then), after that where it
-was left; `ui.embroideryPanel {tab?: "order"|"check", format?}` shows it at a tab, `format` (a format's id as
-`embroidery.check` takes it, or `null` for the thread palette's) being the one the active document's Check tab checks
-for, and answers `{tab, format}`. `ui.inspect` reports the open tab as `ui.embroidery_panel`. The panel never plans:
+was left; `ui.embroideryPanel {tab?: "object"|"order"|"check", part?: "fill"|"stroke", format?}` shows it at a
+tab, `part` being the part of the selected objects the Object tab shows and `format` (a format's id as
+`embroidery.check` takes it, or `null` for the thread palette's) the one the active document's Check tab checks for,
+and answers `{tab, part, format}` (`part`: the part the Object tab shows, the one chosen or, where the objects don't
+paint it, the other). `ui.inspect` reports the open tab and the part chosen as `ui.embroidery_panel`, and what the
+Object tab shows as `embroideryPanel.object` (`ids`, `part`, and its `rows`: each one's `key`, `value` as
+`embroidery.info` gives it, `source`, whether every object `set` it, and whether they differ, `mixed`); `object` is
+null until the tab has been drawn for the active document's selection as it is. `embroidery.copySettings {}`
+takes the settings of the one object selected (a path or a compound path) as they are now, both parts, answering
+`{source, passedOver}` (values this version doesn't take, left out), and `embroidery.pasteSettings {part?}` gives
+the selected objects, in any document, those settings as one `embroidery.set` a part in one `command.batch`, one undo
+step, answering `{passedOver, skippedCount, skipped}` (the selected objects that take no settings): the panel's ≡
+menu's Copy and Paste Embroidery Settings.
+`embroidery.documentSetup {}` opens Document Setup at its Embroidery tab, whose fields are flat, named by
+`embroidery.setup`'s paths: `embroidery.fabric` (the fabric chosen: `builtIn`, `custom`, or a preset's id from
+`embroidery.fabrics`), `embroidery.fabric.tatami.pull`, `embroidery.fabric.tatami.spacing`,
+`embroidery.fabric.tatami.length`, `embroidery.fabric.tatami.underlay`, `embroidery.fabric.satin.pull`,
+`embroidery.fabric.satin.spacingPercent`, `embroidery.fabric.satin.underlay`, `embroidery.fabric.stabilizer`,
+`embroidery.threadWeight`, `embroidery.palette`, `embroidery.joinSameColor`, `embroidery.machine.jumpLength`,
+`embroidery.machine.trimLength`, `embroidery.machine.minStitch`, `embroidery.machine.splitLength`,
+`embroidery.machine.speed`, `embroidery.start` and `embroidery.label` (shown when the document has them; `null`
+unsets them), and `embroidery.applyFabricTo` (the bar's values to apply the fabric to the objects for: a list of
+`pull`, `spacing`, `length`, `underlay`). Set them with `ui.dialog.set` and apply them with `ui.dialog.confirm`, one
+undo step with the dialog's other fields (`docs/embroidery.md` › Document Setup › Embroidery). OK refuses, with the
+reason and the dialog left open, a field under `embroidery.` the tab doesn't have, a fabric it doesn't offer, a start
+or name other than `null`, and an `applyFabricTo` that isn't a list of those values. The panel never plans:
 it asks the stitch preview for the plan and its tab's replies, so it shows what `ui.inspect.stitchPreview` says. In
 the Check tab, Show selects a rule's objects (or one hit's) and zooms to its hits with `view.zoomTo`;
 `embroidery.showFinding {rule, hit?}` does the same as a command, on the check the tab shows for the document as it

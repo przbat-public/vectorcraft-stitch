@@ -6012,3 +6012,6 @@ embroidery	Manual stitches or stitches from a file scaled by more than {value}%	
 embroidery	{name}: {value}% larger	{name}: förstorad {value} %
 embroidery	{name}: {value}% smaller	{name}: förminskad {value} %
 embroidery	Largest change: {value}%	Största ändring: {value} %
+# VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
+embroidery	manual stitches	manuella stygn
+@plural	{count} stop|{count} stops	{count} stopp|{count} stopp

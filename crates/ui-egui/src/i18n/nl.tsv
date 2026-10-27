@@ -6054,3 +6054,6 @@ embroidery	Manual stitches or stitches from a file scaled by more than {value}%	
 embroidery	{name}: {value}% larger	{name}: {value}% vergroot
 embroidery	{name}: {value}% smaller	{name}: {value}% verkleind
 embroidery	Largest change: {value}%	Grootste verandering: {value}%
+# VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
+embroidery	manual stitches	handmatige steken
+@plural	{count} stop|{count} stops	{count} stop|{count} stops

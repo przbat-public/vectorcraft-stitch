@@ -5895,3 +5895,6 @@ embroidery	Manual stitches or stitches from a file scaled by more than {value}%	
 embroidery	{name}: {value}% larger	{name}：放大 {value}%
 embroidery	{name}: {value}% smaller	{name}：缩小 {value}%
 embroidery	Largest change: {value}%	最大变化：{value}%
+# VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
+embroidery	manual stitches	手动针迹
+@plural	{count} stop|{count} stops	{count} 次停机

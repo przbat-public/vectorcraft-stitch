@@ -74,6 +74,13 @@ Restore asks only when the stitches were edited since converting.
 | Its finding, shrunk | {name}: {value}% smaller | {name}: pomniejszenie o {value}% |
 | What it measured when nothing was found | Largest change: {value}% | Największa zmiana: {value}% |
 
+## The Embroidery panel's Sewing order
+
+| Where | English | Polish |
+|---|---|---|
+| What a unit of manual stitches sews, in its row | manual stitches | ściegi ręczne |
+| A unit's stops, beside its jumps and trims (plural) | {count} stop / {count} stops | {count} stop / {count} stopy / {count} stopów |
+
 ## What the commands say when they can't (translated; "invalid parameters" errors stay English)
 
 | Where | English | Polish |

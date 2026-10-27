@@ -5972,3 +5972,6 @@ embroidery	Manual stitches or stitches from a file scaled by more than {value}%	
 embroidery	{name}: {value}% larger	{name}: ampliado em {value}%
 embroidery	{name}: {value}% smaller	{name}: reduzido em {value}%
 embroidery	Largest change: {value}%	Maior mudança: {value}%
+# VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
+embroidery	manual stitches	pontos manuais
+@plural	{count} stop|{count} stops	{count} parada|{count} paradas

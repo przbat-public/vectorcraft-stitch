@@ -6042,3 +6042,6 @@ embroidery	Manual stitches or stitches from a file scaled by more than {value}%	
 embroidery	{name}: {value}% larger	{name}: {value}%-kal nagyobb
 embroidery	{name}: {value}% smaller	{name}: {value}%-kal kisebb
 embroidery	Largest change: {value}%	Legnagyobb változás: {value}%
+# VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
+embroidery	manual stitches	kézi öltések
+@plural	{count} stop|{count} stops	{count} megállás

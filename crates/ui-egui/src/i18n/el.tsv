@@ -6031,3 +6031,17 @@ embroidery	manual stitches	χειροκίνητες βελονιές
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	Λίστα βελονιών
 	Select Needle Points	Επιλογή σημείων βελόνας
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Χειροκίνητες βελονιές
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Ράβονται όπως είναι τοποθετημένες: δεν αλλάζουν πια με το ύφασμα ή τις ρυθμίσεις του αντικειμένου.
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} σειρά · σημεία βελόνας: {needle}|{count} σειρές · σημεία βελόνας: {needle}
+embroidery	Scaled to {value}% since converting	Κλιμακώθηκε στο {value}% από τη μετατροπή
+embroidery	Restore Object…	Επαναφορά αντικειμένου…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Επαναφέρει το αντικείμενο στη θέση των χειροκίνητων βελονιών του, σχεδιασμένο ξανά στο τωρινό του μέγεθος.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Παγώνει τις βελονιές που σχεδιάστηκαν τώρα, ώστε να μετακινείται κάθε σημείο βελόνας· η Επαναφορά αντικειμένου επαναφέρει το αντικείμενο.
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Η μηχανή σταματά μετά τις βελονιές του αντικειμένου, π.χ. για απλικέ· μια στάση σε αλλαγή κλωστής ή στο τέλος είναι η ίδια.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Οι αλλαγές στις βελονιές από τη μετατροπή θα χαθούν· η Αναίρεση τις επαναφέρει.
+@plural	Stop the machine after the object|Stop the machine after the objects	Διακοπή μηχανής μετά το αντικείμενο|Διακοπή μηχανής μετά τα αντικείμενα
+@plural	Restore {count} object?|Restore {count} objects?	Επαναφορά {count} αντικειμένου;|Επαναφορά {count} αντικειμένων;
+@plural	{count} object restored|{count} objects restored	Επαναφέρθηκε {count} αντικείμενο|Επαναφέρθηκαν {count} αντικείμενα
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} αντικείμενο μετατράπηκε σε χειροκίνητες βελονιές: η Επαναφορά αντικειμένου το επαναφέρει|{count} αντικείμενα μετατράπηκαν σε χειροκίνητες βελονιές: η Επαναφορά αντικειμένου τα επαναφέρει

@@ -359,6 +359,8 @@ registry! {
     ShortcutImport: [shortcut_import::KIND] => DialogSpec::window(shortcut_import::show, shortcut_import::confirm),
     // VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog.
     EmbroideryPoint: [crate::embroidery::point_dialog::KIND] => crate::embroidery::point_dialog::SPEC,
+    // VectorCraft Stitch: Restore Object's question when the stitches were edited since converting.
+    EmbroideryRestore: [crate::embroidery::restore_dialog::KIND] => crate::embroidery::restore_dialog::SPEC,
 }
 
 /// The button labels the shared dialog frame can show (OK, discard and the fixed Cancel/Close),

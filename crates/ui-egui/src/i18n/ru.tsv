@@ -5690,3 +5690,17 @@ embroidery	manual stitches	ручные стежки
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	Список стежков
 	Select Needle Points	Выбрать проколы
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Ручные стежки
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Вышиваются так, как расположены: больше не меняются вместе с тканью или настройками объекта.
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} ряд · проколов: {needle}|{count} ряда · проколов: {needle}|{count} рядов · проколов: {needle}
+embroidery	Scaled to {value}% since converting	С момента преобразования масштабировано до {value} %
+embroidery	Restore Object…	Восстановить объект…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Возвращает объект на место его ручных стежков, заново спланированный в текущем размере.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Замораживает спланированные сейчас стежки, чтобы каждый прокол можно было двигать; «Восстановить объект» возвращает объект.
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Машина останавливается после стежков объекта, например для аппликации; остановка при смене нити или в конце — это она и есть.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Изменения стежков после преобразования будут потеряны; «Отменить» их вернёт.
+@plural	Stop the machine after the object|Stop the machine after the objects	Остановить машину после объекта|Остановить машину после объектов|Остановить машину после объектов
+@plural	Restore {count} object?|Restore {count} objects?	Восстановить {count} объект?|Восстановить {count} объекта?|Восстановить {count} объектов?
+@plural	{count} object restored|{count} objects restored	Восстановлен {count} объект|Восстановлено {count} объекта|Восстановлено {count} объектов
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} объект преобразован в ручные стежки: «Восстановить объект» вернёт его|{count} объекта преобразованы в ручные стежки: «Восстановить объект» вернёт их|{count} объектов преобразовано в ручные стежки: «Восстановить объект» вернёт их

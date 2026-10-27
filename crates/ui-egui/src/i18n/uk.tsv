@@ -5674,3 +5674,17 @@ embroidery	manual stitches	ручні стібки
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	Список стібків
 	Select Needle Points	Вибрати проколи
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Ручні стібки
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Вишиваються так, як їх розміщено: більше не змінюються разом із тканиною чи налаштуваннями об’єкта.
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} ряд · проколів: {needle}|{count} ряди · проколів: {needle}|{count} рядів · проколів: {needle}
+embroidery	Scaled to {value}% since converting	Від перетворення масштабовано до {value} %
+embroidery	Restore Object…	Відновити об’єкт…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Повертає об’єкт на місце його ручних стібків, заново спланований у теперішньому розмірі.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Заморожує щойно сплановані стібки, щоб кожен прокол можна було пересунути; «Відновити об’єкт» повертає об’єкт.
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Машина зупиняється після стібків об’єкта, наприклад для аплікації; зупинка під час зміни нитки чи наприкінці — це вона ж.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Зміни стібків від перетворення буде втрачено; «Скасувати» їх поверне.
+@plural	Stop the machine after the object|Stop the machine after the objects	Зупинити машину після об’єкта|Зупинити машину після об’єктів|Зупинити машину після об’єктів
+@plural	Restore {count} object?|Restore {count} objects?	Відновити {count} об’єкт?|Відновити {count} об’єкти?|Відновити {count} об’єктів?
+@plural	{count} object restored|{count} objects restored	Відновлено {count} об’єкт|Відновлено {count} об’єкти|Відновлено {count} об’єктів
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} об’єкт перетворено на ручні стібки: «Відновити об’єкт» поверне його|{count} об’єкти перетворено на ручні стібки: «Відновити об’єкт» поверне їх|{count} об’єктів перетворено на ручні стібки: «Відновити об’єкт» поверне їх

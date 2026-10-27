@@ -6077,3 +6077,17 @@ embroidery	manual stitches	handmatige steken
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	Steeklijst
 	Select Needle Points	Insteekpunten selecteren
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Handmatige steken
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Genaaid zoals ze liggen: ze veranderen niet meer met de stof of de instellingen van het object.
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} reeks · {needle} insteekpunten|{count} reeksen · {needle} insteekpunten
+embroidery	Scaled to {value}% since converting	Sinds het omzetten geschaald naar {value}%
+embroidery	Restore Object…	Object herstellen…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Zet het object terug op de plaats van zijn handmatige steken, opnieuw gepland op zijn huidige grootte.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Bevriest de nu geplande steken, zodat elk insteekpunt te verplaatsen is; Object herstellen brengt het object terug.
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	De machine stopt na de steken van het object, zoals voor applicatie; een stop bij een draadwissel of aan het eind is die stop.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Wijzigingen in de steken sinds het omzetten gaan verloren; Ongedaan maken brengt ze terug.
+@plural	Stop the machine after the object|Stop the machine after the objects	Machine stoppen na het object|Machine stoppen na de objecten
+@plural	Restore {count} object?|Restore {count} objects?	{count} object herstellen?|{count} objecten herstellen?
+@plural	{count} object restored|{count} objects restored	{count} object hersteld|{count} objecten hersteld
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} object omgezet naar handmatige steken: Object herstellen brengt het terug|{count} objecten omgezet naar handmatige steken: Object herstellen brengt ze terug

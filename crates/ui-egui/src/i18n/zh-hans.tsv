@@ -5918,3 +5918,17 @@ embroidery	manual stitches	手动针迹
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	针迹列表
 	Select Needle Points	选择落针点
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	手动针迹
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	按放置的样子缝制：不再随面料或对象设置而改变。
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} 个针段 · {needle} 个落针点
+embroidery	Scaled to {value}% since converting	转换后已缩放到 {value}%
+embroidery	Restore Object…	恢复对象…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	用对象替换其手动针迹，并按当前尺寸重新规划。
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	冻结当前规划的针迹，以便移动每个落针点；恢复对象可找回对象。
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	机器在对象的针迹之后停止（例如贴布绣）；换线时或结尾处的停止即为此停止。
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	转换后对针迹所做的更改将丢失；撤销可将其找回。
+@plural	Stop the machine after the object|Stop the machine after the objects	对象后停机
+@plural	Restore {count} object?|Restore {count} objects?	恢复 {count} 个对象？
+@plural	{count} object restored|{count} objects restored	已恢复 {count} 个对象
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	已将 {count} 个对象转换为手动针迹：恢复对象可将其找回

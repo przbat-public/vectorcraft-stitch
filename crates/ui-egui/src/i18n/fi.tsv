@@ -6110,3 +6110,17 @@ embroidery	manual stitches	manuaaliset pistot
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	Pistoluettelo
 	Select Needle Points	Valitse neulanpistot
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Manuaaliset pistot
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Ommellaan niin kuin ne on sijoitettu: ne eivät enää muutu kankaan tai objektin asetusten mukana.
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} pistosarja · neulanpistoja: {needle}|{count} pistosarjaa · neulanpistoja: {needle}
+embroidery	Scaled to {value}% since converting	Skaalattu {value} %:iin muuntamisen jälkeen
+embroidery	Restore Object…	Palauta objekti…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Palauttaa objektin sen manuaalisten pistojen tilalle, suunniteltuna uudelleen sen nykyisessä koossa.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Jäädyttää nyt suunnitellut pistot, jotta jokaista neulanpistoa voi siirtää; Palauta objekti tuo objektin takaisin.
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Kone pysähtyy objektin pistojen jälkeen, esimerkiksi applikointia varten; pysähdys langanvaihdossa tai lopussa on se sama.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Pistoihin muuntamisen jälkeen tehdyt muutokset menetetään; Kumoa tuo ne takaisin.
+@plural	Stop the machine after the object|Stop the machine after the objects	Pysäytä kone objektin jälkeen|Pysäytä kone objektien jälkeen
+@plural	Restore {count} object?|Restore {count} objects?	Palautetaanko {count} objekti?|Palautetaanko {count} objektia?
+@plural	{count} object restored|{count} objects restored	{count} objekti palautettu|{count} objektia palautettu
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekti muunnettu manuaalisiksi pistoiksi: Palauta objekti tuo sen takaisin|{count} objektia muunnettu manuaalisiksi pistoiksi: Palauta objekti tuo ne takaisin

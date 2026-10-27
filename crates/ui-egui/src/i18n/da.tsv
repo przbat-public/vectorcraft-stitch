@@ -6034,3 +6034,17 @@ embroidery	manual stitches	manuelle sting
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	Stingliste
 	Select Needle Points	Vælg nålestik
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Manuelle sting
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Sys, som de er placeret: de ændrer sig ikke længere med stoffet eller objektets indstillinger.
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} række · {needle} nålestik|{count} rækker · {needle} nålestik
+embroidery	Scaled to {value}% since converting	Skaleret til {value} % siden konverteringen
+embroidery	Restore Object…	Gendan objekt…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Sætter objektet tilbage i stedet for dets manuelle sting, planlagt igen i sin nuværende størrelse.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Fastfryser de sting, der er planlagt nu, så hvert nålestik kan flyttes; Gendan objekt bringer objektet tilbage.
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Maskinen stopper efter objektets sting, som til applikation; et stop ved et trådskift eller til sidst er det samme.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Ændringer af stingene siden konverteringen går tabt; Fortryd bringer dem tilbage.
+@plural	Stop the machine after the object|Stop the machine after the objects	Stop maskinen efter objektet|Stop maskinen efter objekterne
+@plural	Restore {count} object?|Restore {count} objects?	Gendan {count} objekt?|Gendan {count} objekter?
+@plural	{count} object restored|{count} objects restored	{count} objekt gendannet|{count} objekter gendannet
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekt konverteret til manuelle sting: Gendan objekt bringer det tilbage|{count} objekter konverteret til manuelle sting: Gendan objekt bringer dem tilbage

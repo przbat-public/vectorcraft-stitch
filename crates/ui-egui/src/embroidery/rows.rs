@@ -637,6 +637,18 @@ impl CheckColours {
 /// the objects differ, drawn as the app's are but its words wrapping in the room they have and its
 /// colours read on what it lies on ([`CheckColours`]) → whether it was clicked.
 pub(crate) fn check(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32) -> bool {
+    check_response(ui, words, value, back).clicked()
+}
+
+/// [`check`] with `tip`, shown on hover and while the keyboard's focus is on it.
+pub(crate) fn check_with_tip(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32, tip: &str) -> bool {
+    let resp = check_response(ui, words, value, back);
+    keyboard_tip(ui, resp.id, tip);
+    resp.on_hover_text(tip).clicked()
+}
+
+/// [`check`]'s box drawn, and its response.
+fn check_response(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32) -> egui::Response {
     let t = Tokens::get(ui.ctx());
     let c = CheckColours::on(&t, back);
     let room = (ui.available_width() - CHECK_BOX - CHECK_GAP).max(1.0);
@@ -667,7 +679,7 @@ pub(crate) fn check(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32
         Some(on) => egui::WidgetInfo::selected(egui::WidgetType::Checkbox, ui.is_enabled(), on, words),
         None => egui::WidgetInfo::labeled(egui::WidgetType::Checkbox, ui.is_enabled(), words),
     });
-    resp.clicked()
+    resp
 }
 
 /// The keys egui moves the keyboard's focus with: Tab and Shift+Tab, and the arrows outside text.
@@ -676,7 +688,7 @@ const FOCUS_KEYS: [egui::Key; 5] = [egui::Key::Tab, egui::Key::ArrowUp, egui::Ke
 /// While widget `id` has the keyboard's focus, taken from the keyboard (Tab, a screen reader), not
 /// a press or a dialog's opening: `tip` shown as its tooltip, as hovering shows it (egui shows
 /// tooltips on hover alone).
-fn keyboard_tip(ui: &Ui, id: egui::Id, tip: &str) {
+pub(crate) fn keyboard_tip(ui: &Ui, id: egui::Id, tip: &str) {
     let key = id.with("focus-from-keyboard");
     // The last pass a key that moves the focus was pressed in, as any row saw it: Tab moves it in
     // that pass, Shift+Tab and the arrows in the next.

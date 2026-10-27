@@ -5660,3 +5660,17 @@ embroidery	manual stitches	manuelle Stiche
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	Stichliste
 	Select Needle Points	Einstichpunkte auswählen
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Manuelle Stiche
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	So genäht, wie sie liegen: Sie ändern sich nicht mehr mit dem Stoff oder den Einstellungen des Objekts.
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} Stichfolge · {needle} Einstichpunkte|{count} Stichfolgen · {needle} Einstichpunkte
+embroidery	Scaled to {value}% since converting	Seit dem Umwandeln auf {value} % skaliert
+embroidery	Restore Object…	Objekt wiederherstellen…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Setzt das Objekt anstelle seiner manuellen Stiche zurück, in seiner jetzigen Größe neu geplant.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Friert die jetzt geplanten Stiche ein, damit sich jeder Einstichpunkt verschieben lässt; „Objekt wiederherstellen“ holt das Objekt zurück.
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Die Maschine hält nach den Stichen des Objekts an, etwa für eine Applikation; ein Halt bei einem Fadenwechsel oder am Ende ist eben dieser.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Änderungen an den Stichen seit dem Umwandeln gehen verloren; „Rückgängig“ holt sie zurück.
+@plural	Stop the machine after the object|Stop the machine after the objects	Maschine nach dem Objekt anhalten|Maschine nach den Objekten anhalten
+@plural	Restore {count} object?|Restore {count} objects?	{count} Objekt wiederherstellen?|{count} Objekte wiederherstellen?
+@plural	{count} object restored|{count} objects restored	{count} Objekt wiederhergestellt|{count} Objekte wiederhergestellt
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} Objekt in manuelle Stiche umgewandelt: „Objekt wiederherstellen“ holt es zurück|{count} Objekte in manuelle Stiche umgewandelt: „Objekt wiederherstellen“ holt sie zurück

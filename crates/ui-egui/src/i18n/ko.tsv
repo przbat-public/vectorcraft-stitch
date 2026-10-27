@@ -5657,3 +5657,17 @@ embroidery	manual stitches	수동 스티치
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	스티치 목록
 	Select Needle Points	바늘 위치 선택
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	수동 스티치
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	놓인 그대로 수놓아집니다. 이제 원단이나 개체 설정에 따라 바뀌지 않습니다.
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	구간 {count}개 · 바늘 위치 {needle}개
+embroidery	Scaled to {value}% since converting	변환 후 {value}%로 크기 조정됨
+embroidery	Restore Object…	개체 복원…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	수동 스티치 자리에 개체를 되돌리고, 지금 크기로 다시 계획합니다.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	지금 계획된 스티치를 고정해 바늘 위치를 하나씩 옮길 수 있게 합니다. 개체 복원으로 개체를 되돌립니다.
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	개체의 스티치 뒤에 기계가 멈춥니다(아플리케 등). 실 바꿈이나 끝에서의 정지는 그 정지입니다.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	변환 후 스티치에 한 변경은 사라집니다. 실행 취소로 되돌릴 수 있습니다.
+@plural	Stop the machine after the object|Stop the machine after the objects	개체 뒤에 기계 멈추기
+@plural	Restore {count} object?|Restore {count} objects?	개체 {count}개를 복원할까요?
+@plural	{count} object restored|{count} objects restored	개체 {count}개를 복원했습니다
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	개체 {count}개를 수동 스티치로 변환했습니다. 개체 복원으로 되돌릴 수 있습니다

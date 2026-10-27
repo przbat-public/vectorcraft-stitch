@@ -5694,3 +5694,17 @@ embroidery	manual stitches	punti manuali
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	Elenco punti
 	Select Needle Points	Seleziona punti dell’ago
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Punti manuali
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Cuciti come sono disposti: non cambiano più con il tessuto o con le impostazioni dell’oggetto.
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} serie · {needle} punti dell’ago|{count} serie · {needle} punti dell’ago
+embroidery	Scaled to {value}% since converting	Scalato al {value}% dalla conversione
+embroidery	Restore Object…	Ripristina oggetto…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Rimette l’oggetto al posto dei suoi punti manuali, ripianificato alla sua dimensione attuale.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Blocca i punti pianificati ora, così ogni punto dell’ago si può spostare; Ripristina oggetto riporta l’oggetto.
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	La macchina si ferma dopo i punti dell’oggetto, come per un’applicazione; una fermata a un cambio di filo o alla fine è quella stessa.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Le modifiche ai punti fatte dalla conversione andranno perse; Annulla le riporta.
+@plural	Stop the machine after the object|Stop the machine after the objects	Ferma la macchina dopo l'oggetto|Ferma la macchina dopo gli oggetti
+@plural	Restore {count} object?|Restore {count} objects?	Ripristinare {count} oggetto?|Ripristinare {count} oggetti?
+@plural	{count} object restored|{count} objects restored	{count} oggetto ripristinato|{count} oggetti ripristinati
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} oggetto convertito in punti manuali: Ripristina oggetto lo riporta|{count} oggetti convertiti in punti manuali: Ripristina oggetto li riporta

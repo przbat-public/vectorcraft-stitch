@@ -38,6 +38,7 @@ pub mod numbers;
 pub mod overlay;
 pub mod plan_worker;
 pub mod point_dialog;
+pub mod restore_dialog;
 pub mod rows;
 pub mod setup_tab;
 pub mod stitch_layer;

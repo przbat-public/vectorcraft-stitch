@@ -5756,3 +5756,17 @@ embroidery	manual stitches	手動ステッチ
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	ステッチリスト
 	Select Needle Points	針落ち点を選択
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	手動ステッチ
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	配置されたとおりに縫われます。生地やオブジェクトの設定では変わらなくなります。
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} 区間 · 針落ち点 {needle}
+embroidery	Scaled to {value}% since converting	変換後に {value}% に拡大縮小
+embroidery	Restore Object…	オブジェクトを復元…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	オブジェクトを手動ステッチの代わりに戻し、現在のサイズで計画し直します。
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	現在計画されているステッチを固定し、針落ち点を 1 つずつ動かせるようにします。オブジェクトを復元すると元に戻ります。
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	オブジェクトのステッチの後で機械が止まります（アップリケなど）。糸替えや最後での停止はそれと同じです。
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	変換後にステッチへ加えた変更は失われます。取り消しで元に戻せます。
+@plural	Stop the machine after the object|Stop the machine after the objects	オブジェクトの後で機械を止める
+@plural	Restore {count} object?|Restore {count} objects?	{count} 個のオブジェクトを復元しますか?
+@plural	{count} object restored|{count} objects restored	{count} 個のオブジェクトを復元しました
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} 個のオブジェクトを手動ステッチに変換しました。オブジェクトを復元で元に戻せます

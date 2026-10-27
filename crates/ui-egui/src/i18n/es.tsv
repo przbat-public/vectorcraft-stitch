@@ -6020,3 +6020,17 @@ embroidery	manual stitches	puntadas manuales
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	Lista de puntadas
 	Select Needle Points	Seleccionar puntos de aguja
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Puntadas manuales
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Se cosen tal como están colocadas: ya no cambian con la tela ni con los ajustes del objeto.
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} serie · {needle} puntos de aguja|{count} series · {needle} puntos de aguja
+embroidery	Scaled to {value}% since converting	Escalado al {value} % desde la conversión
+embroidery	Restore Object…	Restaurar objeto…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Devuelve el objeto en lugar de sus puntadas manuales, planificado de nuevo a su tamaño actual.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Congela las puntadas planificadas ahora para poder mover cada punto de aguja; Restaurar objeto devuelve el objeto.
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	La máquina se detiene tras las puntadas del objeto, como para un aplique; una parada en un cambio de hilo o al final es esa misma.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Se perderán los cambios hechos a las puntadas desde la conversión; Deshacer los recupera.
+@plural	Stop the machine after the object|Stop the machine after the objects	Detener la máquina tras el objeto|Detener la máquina tras los objetos
+@plural	Restore {count} object?|Restore {count} objects?	¿Restaurar {count} objeto?|¿Restaurar {count} objetos?
+@plural	{count} object restored|{count} objects restored	{count} objeto restaurado|{count} objetos restaurados
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objeto convertido en puntadas manuales: Restaurar objeto lo devuelve|{count} objetos convertidos en puntadas manuales: Restaurar objeto los devuelve

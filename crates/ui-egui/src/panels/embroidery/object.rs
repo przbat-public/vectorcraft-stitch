@@ -14,11 +14,18 @@
 //!   its angle, spacing and length, narrow parts as satin; the underlay; the pull compensation and
 //!   the expansion), each where the stitch its part is sewn in uses it; another setting an object
 //!   holds (set by a command) shows too, so that nothing set is hidden. Then the entry and exit
-//!   points, Trim After, and a footer with the document's fabric and Restore from Fabric.
+//!   points, Trim After and Stop After, Convert to Manual Stitches, and a footer with the
+//!   document's fabric and Restore from Fabric.
+//! - **Manual stitches** (objects converted to them, or a run of one): what they are in words,
+//!   their runs and needle points, how much they were scaled since converting, and Restore Object
+//!   (asking first only when their stitches were edited since converting, the project owner's
+//!   choice), then Trim After and Stop After.
 //! - **Edits are commands**, one undo step each (a drag on a label one for the whole drag, the
 //!   app's scrub): a value typed or chosen is `embroidery.set` (a choice equal to what the objects
-//!   would inherit unsets theirs), ↺ `embroidery.reset`, Trim After `embroidery.setTrimAfter`. They
-//!   go to the objects the fields were drawn for.
+//!   would inherit unsets theirs), ↺ `embroidery.reset`, Trim After `embroidery.setTrimAfter`,
+//!   Stop After `embroidery.setStopAfter`, Convert `embroidery.convertToManual`, Restore
+//!   `embroidery.restoreObject`. They go to the objects the fields were drawn for; converting and
+//!   restoring say in the status bar what they did.
 
 use std::sync::{Arc, Weak};
 
@@ -232,8 +239,11 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         state_words(ui, crate::et!("Select an object to set how it is sewn."));
     } else if info.object_count == 0 {
         takes_none(ui, &info);
+        manual(ui, &info, &ids, lang, &mut commands);
         trim_after(ui, &info, &ids, &mut commands);
+        stop_after(ui, &info, &ids, &mut commands);
     } else {
+        manual(ui, &info, &ids, lang, &mut commands);
         let chosen = app.ui.embroidery_panel.part;
         let shown = shown(chosen, &info);
         if let Some(part) = part_switch(ui, &info, shown) {
@@ -258,6 +268,8 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 ui.set_max_width(width);
                 part_rows(ui, part.0, part.1, &ids, width, lang, missed, planned, &mut commands);
                 trim_after(ui, &info, &ids, &mut commands);
+                stop_after(ui, &info, &ids, &mut commands);
+                convert(ui, app_label_convert(app), &ids, &mut commands);
             });
         }
     }
@@ -271,9 +283,17 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             crate::embroidery::point_dialog::open(app, &params);
             continue;
         }
+        if cmd == RESTORE_DIALOG {
+            let count = params["count"].as_u64().unwrap_or(1) as usize;
+            crate::embroidery::restore_dialog::open(app, params["ids"].take(), count);
+            continue;
+        }
         for_selection(&mut params, &ids, &selected);
-        if let Err(e) = app.run(cmd, params) {
-            app.status(e);
+        match app.run(cmd, params) {
+            Ok(v) if cmd == CONVERT => app.status(converted(&v)),
+            Ok(v) if cmd == RESTORE => app.status(crate::embroidery::restore_dialog::restored(&v)),
+            Ok(_) => {}
+            Err(e) => app.status(e),
         }
     }
 }
@@ -345,7 +365,13 @@ fn pill_shape(ui: &mut Ui, words: &str, stale: bool) {
 
 /// What a selected object is, in words: its kind, and for a path its parts ("Path · fill, no stroke").
 fn kind_words(n: &vectorcraft_doc::Node, info: Option<&ObjectSettings>) -> String {
-    let literal = n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some());
+    let e = n.extras().embroidery.as_deref();
+    let literal = e.is_some_and(|e| e.stitches.is_some());
+    // An object converted to manual stitches, or one of its runs.
+    let manual = e.is_some_and(|e| e.original.is_some() || e.stitches.as_ref().is_some_and(|r| r.manual));
+    if manual {
+        return crate::et!("Manual stitches").to_string();
+    }
     let kind = match &n.kind {
         NodeKind::Path { guide: true, .. } => crate::et!("Guide"),
         NodeKind::Path { .. } if literal => crate::et!("Stitches from a file"),
@@ -387,10 +413,11 @@ fn state_words(ui: &mut Ui, words: &str) {
     ui.add(egui::Label::new(egui::RichText::new(words).size(SMALL_TEXT).color(t.text)).wrap());
 }
 
-/// Why the selected objects take no settings: each reason once.
+/// Why the selected objects take no settings: each reason once (manual stitches said by
+/// [`manual`] instead, when the selection holds converted objects).
 fn takes_none(ui: &mut Ui, info: &ObjectSettings) {
     let mut said: Vec<&str> = Vec::new();
-    for s in &info.skipped {
+    for s in info.skipped.iter().filter(|s| info.manual.is_none() || s.reason != "manual") {
         let words = vocabulary::takes_none(&s.reason);
         if !said.contains(&words) {
             said.push(words);
@@ -791,9 +818,92 @@ fn trim_after(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], commands: &mut
 }
 
 /// Whether the cut after the objects means something: objects that are sewn (those that take
-/// settings, stitches from a file, a symbol's instances, groups of them).
+/// settings, stitches from a file or manual ones, a symbol's instances, groups of them).
 fn trims(info: &ObjectSettings) -> bool {
-    info.object_count > 0 || info.skipped.iter().any(|s| matches!(s.reason.as_str(), "literal" | "symbolInstance"))
+    info.object_count > 0
+        || info.manual.is_some()
+        || info.skipped.iter().any(|s| matches!(s.reason.as_str(), "literal" | "manual" | "symbolInstance"))
+}
+
+/// Stop After: whether the machine stops after the objects, a dash where they differ, beside Trim
+/// After.
+fn stop_after(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], commands: &mut Vec<Command>) {
+    if ids.is_empty() || !trims(info) {
+        return;
+    }
+    let value = if info.stop_after.mixed { None } else { info.stop_after.value };
+    let words = crate::etn!(ids.len() as u64, "Stop the machine after the object", "Stop the machine after the objects");
+    let tip = crate::et!("The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.");
+    if rows::check_with_tip(ui, &words, value, Tokens::get(ui.ctx()).panel, tip) {
+        commands.push(("embroidery.setStopAfter", json!({"ids": ids_json(ids), "on": value != Some(true)})));
+    }
+}
+
+/// The commands the tab runs that it says more of, and the Restore question's own.
+const CONVERT: &str = "embroidery.convertToManual";
+const RESTORE: &str = "embroidery.restoreObject";
+const RESTORE_DIALOG: &str = "embroidery-restore-dialog";
+/// How far from 100 % a scale since converting must be for the tab to say it, percent: what its
+/// words round to (a whole percent), so that a scale undone by rounding isn't said.
+const SCALE_SAID: f64 = 0.5;
+
+/// Convert to Manual Stitches, the command's label (`label`), for the objects that take settings.
+fn convert(ui: &mut Ui, label: String, ids: &[NodeId], commands: &mut Vec<Command>) {
+    ui.add_space(GAP);
+    let tip = crate::et!("Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.");
+    let resp = ui.button(label);
+    rows::keyboard_tip(ui, resp.id, tip);
+    if resp.on_hover_text(tip).clicked() {
+        commands.push((CONVERT, json!({"ids": ids_json(ids)})));
+    }
+}
+
+/// Convert to Manual Stitches' label, in the interface's language.
+fn app_label_convert(app: &VectorcraftApp) -> String {
+    super::command_label(app, CONVERT)
+}
+
+/// The status bar's words after converting, from the command's reply.
+fn converted(reply: &Value) -> String {
+    let count = reply["convertedCount"].as_u64().unwrap_or(0);
+    crate::etn!(
+        count,
+        "{count} object converted to manual stitches: Restore Object brings it back",
+        "{count} objects converted to manual stitches: Restore Object brings them back"
+    )
+}
+
+/// The manual stitches among the selection ([`ObjectSettings::manual`]): what they are, their runs
+/// and needle points, the scale since converting when there is one, and Restore Object (asking first
+/// when their stitches were edited since converting).
+fn manual(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], lang: Lang, commands: &mut Vec<Command>) {
+    let Some(m) = &info.manual else { return };
+    state_words(ui, crate::et!("Sewn as they are placed: they no longer change with the fabric or the object's settings."));
+    let t = Tokens::get(ui.ctx());
+    let dim = crate::embroidery::marks::readable_text(t.text_dim, &[t.panel], t.dark);
+    let runs = crate::etn!(m.runs as u64, "{count} run · {needle} needle points", "{count} runs · {needle} needle points");
+    let counts = text::fill(&runs, &[("needle", &numbers::count(lang, m.needle_points as u64))]);
+    ui.add(egui::Label::new(egui::RichText::new(counts).size(SMALL_TEXT).color(dim)).wrap());
+    // The axis scaled most, as a percent of the size converted at.
+    if let Some([least, most]) = m.scale {
+        let farthest = if most - 1.0 >= 1.0 - least { most } else { least };
+        let percent = farthest * 100.0;
+        if (percent - 100.0).abs() >= SCALE_SAID && percent.is_finite() {
+            let words = text::fill(crate::et!("Scaled to {value}% since converting"), &[("value", &numbers::decimal(lang, percent, 0))]);
+            ui.add(egui::Label::new(egui::RichText::new(words).size(SMALL_TEXT).color(dim)).wrap());
+        }
+    }
+    ui.add_space(GAP / 2.0);
+    let tip = crate::et!("Puts the object back in place of its manual stitches, planned again at its size now.");
+    let resp = ui.add_enabled(m.restorable > 0, egui::Button::new(crate::et!("Restore Object…")));
+    rows::keyboard_tip(ui, resp.id, tip);
+    if resp.on_hover_text(tip).clicked() {
+        // The question only when their stitches were edited since converting.
+        commands.push(match m.edited {
+            0 => (RESTORE, json!({"ids": ids_json(ids)})),
+            _ => (RESTORE_DIALOG, json!({"ids": ids_json(ids), "count": m.objects})),
+        });
+    }
 }
 
 /// The footer's words: the document's fabric (`fabric`) and thread (`weight`), then what the rows'

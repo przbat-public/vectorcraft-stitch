@@ -6065,3 +6065,17 @@ embroidery	manual stitches	kézi öltések
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	Öltéslista
 	Select Needle Points	Tűszúrások kijelölése
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Kézi öltések
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Úgy varródnak, ahogy el vannak helyezve: már nem változnak az anyaggal vagy az objektum beállításaival.
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} öltéssor · tűszúrások: {needle}
+embroidery	Scaled to {value}% since converting	Az átalakítás óta {value}%-ra átméretezve
+embroidery	Restore Object…	Objektum visszaállítása…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Visszahelyezi az objektumot a kézi öltései helyére, jelenlegi méretében újratervezve.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Rögzíti a most tervezett öltéseket, hogy minden tűszúrás mozgatható legyen; az Objektum visszaállítása visszahozza az objektumot.
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	A gép megáll az objektum öltései után, például applikációhoz; a cérnacserénél vagy a végén lévő megállás ugyanaz.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Az átalakítás óta az öltéseken végzett módosítások elvesznek; a Visszavonás visszahozza őket.
+@plural	Stop the machine after the object|Stop the machine after the objects	Gép megállítása az objektum után
+@plural	Restore {count} object?|Restore {count} objects?	Visszaállít {count} objektumot?
+@plural	{count} object restored|{count} objects restored	{count} objektum visszaállítva
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objektum kézi öltésekké alakítva: az Objektum visszaállítása visszahozza

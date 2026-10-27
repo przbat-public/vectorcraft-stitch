@@ -6040,3 +6040,17 @@ embroidery	manual stitches	manuel dikişler
 # VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
 	Stitch List	Dikiş Listesi
 	Select Needle Points	İğne Noktalarını Seç
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Manuel dikişler
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Yerleştirildikleri gibi dikilir: artık kumaşla veya nesnenin ayarlarıyla değişmez.
+@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} dizi · {needle} iğne noktası
+embroidery	Scaled to {value}% since converting	Dönüştürmeden bu yana %{value} ölçeğinde
+embroidery	Restore Object…	Nesneyi Geri Yükle…
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Nesneyi manuel dikişlerinin yerine geri koyar; şimdiki boyutunda yeniden planlanır.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Şimdi planlanan dikişleri dondurur, böylece her iğne noktası taşınabilir; Nesneyi Geri Yükle nesneyi geri getirir.
+embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Makine nesnenin dikişlerinden sonra durur, örneğin aplike için; iplik değişiminde ya da sonda durmak bu duruştur.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Dönüştürmeden bu yana dikişlerde yapılan değişiklikler kaybolacak; Geri Al onları geri getirir.
+@plural	Stop the machine after the object|Stop the machine after the objects	Nesneden sonra makineyi durdur
+@plural	Restore {count} object?|Restore {count} objects?	{count} nesne geri yüklensin mi?
+@plural	{count} object restored|{count} objects restored	{count} nesne geri yüklendi
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} nesne manuel dikişlere dönüştürüldü: Nesneyi Geri Yükle onu geri getirir

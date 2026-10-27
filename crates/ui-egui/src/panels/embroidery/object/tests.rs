@@ -1128,3 +1128,91 @@ fn set_on_canvas_and_the_entry_row_work_from_the_keyboard() {
     press(&mut app, &mut time, &entry);
     assert!(app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::point_dialog::KIND), "the Entry Point dialog");
 }
+
+/// A pointer click in the middle of the node screen readers call `name`.
+fn click_on(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str) {
+    let drawn = ready(app, ctx, time);
+    let at = field_beside(&drawn, name);
+    let button = |pressed| Event::PointerButton { pos: at, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    for events in [vec![Event::PointerMoved(at), button(true)], vec![button(false)]] {
+        *time += 0.05;
+        frame(app, ctx, *time, events);
+    }
+}
+
+/// Converting and restoring from the tab, with real clicks: Convert to Manual Stitches (one undo
+/// step) says in the status bar how to go back; the object then reads as manual stitches, what they
+/// are, their runs and needle points, with Trim After and Stop After; Restore Object puts it back
+/// at once (its stitches unedited), saying so; Stop After's row sets the stop.
+#[test]
+fn manual_stitches_convert_and_restore_from_the_tab() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let convert = super::super::command_label(&app, CONVERT);
+    let steps_before = steps(&app);
+    click_on(&mut app, &ctx, &mut time, &convert);
+    assert_eq!(steps(&app), steps_before + 1, "one undo step");
+    let said = crate::etn!(
+        1,
+        "{count} object converted to manual stitches: Restore Object brings it back",
+        "{count} objects converted to manual stitches: Restore Object brings them back"
+    );
+    assert_eq!(app.ui.status, said);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert!(drawn.has(crate::et!("Manual stitches")), "the kind in the header");
+    assert!(drawn.has(crate::et!("Sewn as they are placed: they no longer change with the fabric or the object's settings.")));
+    assert!(drawn.has("needle points"), "its runs and needle points");
+    let stop = crate::etn!(1, "Stop the machine after the object", "Stop the machine after the objects");
+    assert!(
+        drawn.has(&crate::etn!(1, "Trim the thread after the object", "Trim the thread after the objects")) && drawn.has(&stop),
+        "Trim After beside Stop After"
+    );
+    click_on(&mut app, &ctx, &mut time, &stop);
+    assert_eq!(info(&mut app, &[a])["stopAfter"]["value"], json!(true));
+    click_on(&mut app, &ctx, &mut time, crate::et!("Restore Object…"));
+    assert!(app.ui.dialog.is_none(), "not edited: no question");
+    assert_eq!(app.ui.status, crate::etn!(1, "{count} object restored", "{count} objects restored"));
+    assert_eq!(info(&mut app, &[a])["manual"], json!(null), "the object is back");
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert!(!drawn.has(crate::et!("Manual stitches")));
+}
+
+/// Restore Object asks first only when the stitches were edited since converting; Restore (OK)
+/// puts the object back; the scale since converting is said; Enter on the focused Convert button
+/// converts, and focusing it from the keyboard shows its help.
+#[test]
+fn restore_asks_after_edits_and_the_buttons_work_from_the_keyboard() {
+    let ctx = context();
+    let (mut app, a, b) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let convert = super::super::command_label(&app, CONVERT);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert_eq!(drawn.node(&convert).role(), egui::accesskit::Role::Button);
+    let enter = |pressed| Event::Key { key: Key::Enter, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE };
+    let mut shown = false;
+    for events in [vec![drawn.focus(&convert)], vec![], vec![enter(true)], vec![enter(false)]] {
+        time += 0.05;
+        let d = frame(&mut app, &ctx, time, events);
+        shown |= d.has("Freezes the stitches planned now");
+    }
+    assert!(shown, "the help shown on keyboard focus");
+    assert!(info(&mut app, &[a])["manual"].is_object(), "Enter converted it");
+    // Scaled, and edited.
+    app.run("object.scale", json!({"ids": [a], "sx": 120, "sy": 100})).unwrap();
+    let run = app.session.doc().unwrap().doc.node(NodeId(a)).unwrap().children().unwrap()[0].id.0;
+    app.run("embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": run, "index": 1}], "dx": 1})).unwrap();
+    select(&mut app, &[a]);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let scaled = text::fill(crate::et!("Scaled to {value}% since converting"), &[("value", "120")]);
+    assert!(drawn.has(&scaled), "{scaled}");
+    click_on(&mut app, &ctx, &mut time, crate::et!("Restore Object…"));
+    assert!(app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::restore_dialog::KIND), "edited: asked first");
+    assert!(info(&mut app, &[a])["manual"].is_object(), "nothing restored yet");
+    crate::dialogs::confirm(&mut app).unwrap();
+    assert!(app.ui.dialog.is_none());
+    assert_eq!(info(&mut app, &[a])["manual"], json!(null), "Restore put it back");
+    let _ = b;
+}

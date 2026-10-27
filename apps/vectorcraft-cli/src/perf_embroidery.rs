@@ -530,10 +530,10 @@ const LATTICE_TOWARD_EXIT_BUDGET: f64 = 250.0;
 /// parts and its rest are kept, its stitches planned again.
 const RINGS_POINT_MOVED_BUDGET: f64 = 50.0;
 /// Nearest Connection's budgets on 1,000 and on 22,000 paths, milliseconds: about 2.5 times what they
-/// measured on 2026-10-26 (release, the same machine, under load 28 to 41 while other work built:
-/// 120 and 123 ms, 6.1 and 7.6 s). Every part it joins gets points, so the plan of its result plans
-/// nearly every unit afresh: on the largest design, about a cold plan's time or two.
-const NEAREST_BUDGETS: [f64; 2] = [300.0, 15000.0];
+/// measured on 2026-10-27 (release, the same machine, load 2 to 3, twice: 32 ms and 1.8 s; 120 ms
+/// and 6.1 s on 2026-10-26, before the review's fixes). Every part it joins gets points, so the plan
+/// of its result plans nearly every unit afresh: on the largest design, about a cold plan's time.
+const NEAREST_BUDGETS: [f64; 2] = [80.0, 4500.0];
 
 /// The fill angle the settings row gives the object sewn first, degrees, and the step between
 /// runs: each run an angle not planned before, so that its units are planned again, not found

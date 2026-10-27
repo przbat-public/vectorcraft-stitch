@@ -5654,3 +5654,6 @@ embroidery	manual stitches	수동 스티치
 	Machine Function	기계 기능
 # VectorCraft Stitch: Split Long Stitches
 	Split Long Stitches	긴 스티치 나누기
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	스티치 목록
+	Select Needle Points	바늘 위치 선택

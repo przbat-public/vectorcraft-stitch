@@ -5671,3 +5671,6 @@ embroidery	manual stitches	mũi thêu thủ công
 	Machine Function	Chức năng máy
 # VectorCraft Stitch: Split Long Stitches
 	Split Long Stitches	Tách mũi thêu dài
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Danh sách mũi thêu
+	Select Needle Points	Chọn điểm đâm kim

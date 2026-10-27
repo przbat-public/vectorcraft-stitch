@@ -38,6 +38,7 @@ pub mod order;
 pub mod plan;
 mod points;
 mod printed;
+mod records;
 pub mod render;
 pub mod reorder;
 mod resolve;
@@ -463,6 +464,24 @@ pub fn specs() -> Vec<CommandSpec> {
             sequence_cmd
         ),
         cmd!(
+            query "embroidery.stitches",
+            "Stitch List",
+            [],
+            None,
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, from?, to? (record numbers, from 1, inclusive), ids?: [id…] (the records of these objects: the object a person selects, or the path sewn; at most 100,000), kinds?: [\"stitch\"|\"jump\"|\"trim\"|\"stop\"…], shorterThan?, longerThan? (millimetres: the records whose length is under or over it; those with none are passed by), offset?: the first matching record listed (default 0), limit?: the most listed (0 to 10000; default 1000)} the design's records, read only, numbered as the Sewing order and the Check tab number them (every needle point, jump, cut and stop, from 1); positions and lengths are millimetres from the document's origin, y down → {recordCount, matchedCount, offset, truncated, records: [{record, kind: \"stitch\"|\"jump\"|\"trim\"|\"stop\", at: [x, y], length: a needle-down stitch's length from the needle point before it, a jump's move, null for the needle point a jump or a cut lands on, a block's first, a cut, a stop, id: the object a person selects, node: the object sewn, block, unit (from 1, as embroidery.sequence numbers them), index: where the stitch commands can edit it, the needle point of node it is (a jump: the one it lands on; a cut or a stop: the one before it), else null (planned art, a symbol's art, a run cut by a clip group, a locked one), editable: index is a number}], options: the embroidery options planned with}",
+            has_doc,
+            stitches_cmd
+        ),
+        cmd!(
+            "embroidery.selectNeedlePoints",
+            "Select Needle Points",
+            [],
+            None,
+            "{records?: [from, to] (record numbers, from 1, inclusive), ids?, kinds?, shorterThan?, longerThan? (as embroidery.stitches filters them), …the embroidery options | needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them), mode?: \"set\"|\"add\"|\"toggle\"|\"subtract\" (default set)} selects needle points (their anchors, as Direct Selection selects them), by the records that sew them (planning the design as embroidery.stitches lists it: a needle point, or the one a jump lands on; a record the stitch commands can't edit is passed over and counted; cuts and stops select nothing), or by their addresses (planning nothing). A selection, not an undo step → {selectedCount: the needle points selected in the paths it touched, pathCount, passedOver}",
+            has_doc,
+            records::select
+        ),
+        cmd!(
             query "embroidery.render",
             "Embroidery Picture",
             [],
@@ -704,6 +723,8 @@ enum Read {
         page: Page,
         plan: bool,
     },
+    /// `embroidery.stitches`: the records asked for.
+    Stitches(records::Ask),
 }
 
 /// A read command's params: what it reads, the options it plans with, and whether it plans the
@@ -714,8 +735,9 @@ struct ReadParams {
     selected_only: bool,
 }
 
-/// The read commands: `embroidery.threads`, `stats`, `sequence`, `check` and `info`.
-const READ_COMMANDS: [&str; 5] = ["embroidery.threads", "embroidery.stats", "embroidery.sequence", "embroidery.check", "embroidery.info"];
+/// The read commands: `embroidery.threads`, `stats`, `sequence`, `check`, `info` and `stitches`.
+const READ_COMMANDS: [&str; 6] =
+    ["embroidery.threads", "embroidery.stats", "embroidery.sequence", "embroidery.check", "embroidery.info", "embroidery.stitches"];
 
 /// Read command `cmd`'s params `p`, checked as the command checks them.
 fn read_params(cmd: &str, p: &Value) -> Result<ReadParams> {
@@ -737,6 +759,8 @@ fn read_params(cmd: &str, p: &Value) -> Result<ReadParams> {
             let ask = info::Ask::from_params(&o, cmd)?;
             (Read::Info { ids: ask.ids.unwrap_or_default(), page: ask.page, plan: ask.plan }, ask.opts)
         }
+        // No `selectedOnly`: a plan of the selection alone numbers its records otherwise.
+        "embroidery.stitches" => (Read::Stitches(records::Ask::from_params(&o, cmd)?), options_in(&o, &records::KEYS, cmd)?),
         _ => return Err(bad(cmd, format!("not a read command: one of {}", READ_COMMANDS.join(", ")))),
     };
     Ok(ReadParams { read, opts, selected_only })
@@ -754,6 +778,7 @@ fn reply(read: Read, plan: &plan::DesignPlan, doc: &Document, opts: &Options) ->
             stats::stats(plan, machine, thread, page)
         }
         Read::Sequence(page) => order::sequence(plan, page),
+        Read::Stitches(ask) => records::list(plan, doc, &ask),
         Read::Info { ids, page, .. } => info::to_json(&info::reply(doc, &ids, opts, Some(plan), page, Vec::new()))?,
         Read::Check { rules, format, limit } => {
             // The format of the document's thread palette, when none is asked for.
@@ -811,6 +836,10 @@ fn stats_cmd(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn sequence_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     read_cmd(s, p, "embroidery.sequence")
+}
+
+fn stitches_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    read_cmd(s, p, "embroidery.stitches")
 }
 
 fn check_cmd(s: &mut Session, p: &Value) -> Result<Value> {

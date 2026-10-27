@@ -5992,3 +5992,6 @@ embroidery	manual stitches	pontos manuais
 	Machine Function	Função da máquina
 # VectorCraft Stitch: Split Long Stitches
 	Split Long Stitches	Dividir pontos longos
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Lista de pontos
+	Select Needle Points	Selecionar pontos de agulha

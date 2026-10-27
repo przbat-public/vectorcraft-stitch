@@ -5991,3 +5991,6 @@ embroidery	manual stitches	ხელით ნაკერები
 	Machine Function	მანქანის ფუნქცია
 # VectorCraft Stitch: Split Long Stitches
 	Split Long Stitches	გრძელი ნაკერების გაყოფა
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	ნაკერების სია
+	Select Needle Points	ნემსის ჩხვლეტების არჩევა

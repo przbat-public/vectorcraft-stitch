@@ -6031,3 +6031,6 @@ embroidery	manual stitches	jahitan manual
 	Machine Function	Fungsi mesin
 # VectorCraft Stitch: Split Long Stitches
 	Split Long Stitches	Pisahkan jahitan panjang
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Daftar jahitan
+	Select Needle Points	Pilih titik tusukan

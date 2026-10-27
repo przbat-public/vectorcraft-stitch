@@ -5687,3 +5687,6 @@ embroidery	manual stitches	ручные стежки
 	Machine Function	Функция машины
 # VectorCraft Stitch: Split Long Stitches
 	Split Long Stitches	Разделить длинные стежки
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Список стежков
+	Select Needle Points	Выбрать проколы

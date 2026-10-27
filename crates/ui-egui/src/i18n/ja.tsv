@@ -5753,3 +5753,6 @@ embroidery	manual stitches	手動ステッチ
 	Machine Function	マシン機能
 # VectorCraft Stitch: Split Long Stitches
 	Split Long Stitches	長いステッチを分割
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	ステッチリスト
+	Select Needle Points	針落ち点を選択

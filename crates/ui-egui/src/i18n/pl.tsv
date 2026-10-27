@@ -5927,3 +5927,6 @@ embroidery	manual stitches	ściegi ręczne
 	Machine Function	Funkcja maszyny
 # VectorCraft Stitch: Split Long Stitches
 	Split Long Stitches	Podziel długie ściegi
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Lista ściegów
+	Select Needle Points	Zaznacz nakłucia

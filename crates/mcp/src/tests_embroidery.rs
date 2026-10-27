@@ -27,6 +27,8 @@ fn the_embroidery_commands_are_reachable() {
         "embroidery.joinRuns",
         "embroidery.setMachineFunction",
         "embroidery.splitLongStitches",
+        "embroidery.stitches",
+        "embroidery.selectNeedlePoints",
         "embroidery.setup",
         "embroidery.settings",
         "embroidery.threads",

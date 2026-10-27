@@ -6062,3 +6062,6 @@ embroidery	manual stitches	kézi öltések
 	Machine Function	Gépfunkció
 # VectorCraft Stitch: Split Long Stitches
 	Split Long Stitches	Hosszú öltések felosztása
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Öltéslista
+	Select Needle Points	Tűszúrások kijelölése

@@ -6074,3 +6074,6 @@ embroidery	manual stitches	handmatige steken
 	Machine Function	Machinefunctie
 # VectorCraft Stitch: Split Long Stitches
 	Split Long Stitches	Lange steken splitsen
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Steeklijst
+	Select Needle Points	Insteekpunten selecteren

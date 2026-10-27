@@ -6028,3 +6028,6 @@ embroidery	manual stitches	χειροκίνητες βελονιές
 	Machine Function	Λειτουργία μηχανής
 # VectorCraft Stitch: Split Long Stitches
 	Split Long Stitches	Διαίρεση μακριών βελονιών
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Λίστα βελονιών
+	Select Needle Points	Επιλογή σημείων βελόνας

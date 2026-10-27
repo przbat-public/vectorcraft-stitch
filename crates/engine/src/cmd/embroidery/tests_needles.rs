@@ -528,3 +528,117 @@ fn long_stitches_split_as_the_writer_would() {
         assert_eq!(export(&mut s), before, "{}: the same file", f.id());
     }
 }
+
+/// Every record `embroidery.stitches` lists of `s`'s design, page by page.
+fn all_records(s: &mut Session, params: Value) -> Vec<Value> {
+    let mut out = Vec::new();
+    loop {
+        let mut p = params.clone();
+        p["offset"] = json!(out.len());
+        p["limit"] = json!(10_000);
+        let r = run(s, "embroidery.stitches", p);
+        let page = r["records"].as_array().unwrap().clone();
+        out.extend(page);
+        if r["truncated"] == json!(false) {
+            return out;
+        }
+    }
+}
+
+/// `embroidery.stitches` numbers every record from 1, and where the stitch commands can edit one
+/// its `{id, index}` is the needle point the record sews (a jump: the one it lands on; a cut or a
+/// stop: the one before), in every path of the manual fixture that can be edited (opened designs,
+/// the fixture's own runs, converted objects); planned art, a symbol's art and a locked run have
+/// none. Its filters and pages.
+#[test]
+fn the_records_name_the_needle_points_they_sew() {
+    let mut s = Session::new();
+    let m = fx::manual(&mut runner(&mut s));
+    run(&mut s, "paint.setStroke", json!({"none": true}));
+    run(&mut s, "paint.setFill", json!({"color": "#2080d0"}));
+    let art = run(&mut s, "shape.rectangle", json!({"x": 20, "y": 700, "width": 40, "height": 40}))["id"].as_u64().unwrap();
+    run(&mut s, "select.none", json!({}));
+    let rows = all_records(&mut s, json!({}));
+    let total = run(&mut s, "embroidery.stitches", json!({"limit": 0}))["recordCount"].as_u64().unwrap() as usize;
+    assert_eq!(rows.len(), total);
+    assert!(rows.iter().enumerate().all(|(k, r)| r["record"] == json!(k + 1)), "numbered from 1");
+    let doc = s.doc().unwrap().doc.clone();
+    let mut paths: std::collections::HashMap<u64, needles::Stitches> = Default::default();
+    let mut editable = std::collections::HashSet::new();
+    for r in &rows {
+        let Some(k) = r["index"].as_u64() else { continue };
+        let node = r["node"].as_u64().unwrap();
+        editable.insert(node);
+        let st = paths.entry(node).or_insert_with(|| needles::read(doc.node(NodeId(node)).unwrap()).unwrap());
+        let (ri, i) = st.locate(k as usize).unwrap_or_else(|| panic!("{r}: no needle point {k}"));
+        if r["kind"] == "stitch" || r["kind"] == "jump" {
+            let p = st.runs[ri].needles[i].p;
+            let at = (r["at"][0].as_f64().unwrap(), r["at"][1].as_f64().unwrap());
+            assert!((p.x / PT_PER_MM - at.0).abs() < 1e-6 && (p.y / PT_PER_MM - at.1).abs() < 1e-6, "{r}: {p:?}");
+        }
+    }
+    let c = m.converted;
+    for id in [m.opened[0].runs[0], m.one_point, m.double_point, m.stopped, m.trim_after] {
+        assert!(editable.contains(&id), "{id} is editable");
+    }
+    let converted_runs = doc.node(NodeId(c.fill)).unwrap().children().unwrap().iter().map(|n| n.id.0).collect::<Vec<_>>();
+    assert!(converted_runs.iter().all(|r| editable.contains(r)), "a converted object's runs");
+    for r in rows.iter().filter(|r| [art, m.instance, m.locked].contains(&r["id"].as_u64().unwrap())) {
+        assert_eq!((r["index"].clone(), r["editable"].clone()), (Value::Null, json!(false)), "{r}");
+    }
+    // Filters and pages.
+    let jumps = all_records(&mut s, json!({"kinds": ["jump"]}));
+    assert!(!jumps.is_empty() && jumps.iter().all(|r| r["kind"] == "jump"));
+    let short = all_records(&mut s, json!({"shorterThan": 1.0, "kinds": ["stitch"]}));
+    assert!(short.iter().all(|r| r["length"].as_f64().unwrap() < 1.0));
+    let some = run(&mut s, "embroidery.stitches", json!({"from": 10, "to": 19, "limit": 4}));
+    assert_eq!((some["matchedCount"].clone(), some["truncated"].clone(), some["records"][0]["record"].clone()), (json!(10), json!(true), json!(10)));
+    let of_art = all_records(&mut s, json!({"ids": [art]}));
+    assert!(!of_art.is_empty() && of_art.iter().all(|r| r["id"] == json!(art)));
+    for p in [
+        json!({"from": 0}),
+        json!({"from": 5, "to": 2}),
+        json!({"kinds": ["needle"]}),
+        json!({"shorterThan": -1}),
+        json!({"selectedOnly": true}),
+        json!({"limit": 10_001}),
+    ] {
+        assert!(s.execute("embroidery.stitches", &p).is_err(), "{p}");
+    }
+}
+
+/// Select Needle Points selects needle points by the records that sew them (passing over what the
+/// stitch commands can't edit) or by their addresses, in four modes, and changes no undo history:
+/// every needle point ending a stitch shorter than a length selected, then deleted.
+#[test]
+fn needle_points_are_selected_by_record_or_address() {
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (10.2, 10.0), (14.0, 10.0), (14.3, 10.0), (20.0, 10.0)], StitchRun::default());
+    run(&mut s, "paint.setFill", json!({"color": "#2080d0"}));
+    run(&mut s, "shape.rectangle", json!({"x": 100, "y": 100, "width": 40, "height": 40}));
+    run(&mut s, "select.none", json!({}));
+    let steps = s.doc().unwrap().history.undo.len();
+    let r = run(&mut s, "embroidery.selectNeedlePoints", json!({"records": [1, 3]}));
+    assert_eq!((r["selectedCount"].clone(), r["pathCount"].clone()), (json!(3), json!(1)), "{r}");
+    assert_eq!(s.doc().unwrap().selection.anchors[&NodeId(id)], [(0, 0), (0, 1), (0, 2)].into_iter().collect());
+    let all = run(&mut s, "embroidery.selectNeedlePoints", json!({"records": [1, 100000]}));
+    assert!(all["passedOver"].as_u64().unwrap() > 0, "the rectangle's records: {all}");
+    run(&mut s, "embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": id, "index": 4}], "mode": "toggle"}));
+    assert!(!s.doc().unwrap().selection.anchors[&NodeId(id)].contains(&(0, 4)));
+    run(&mut s, "embroidery.selectNeedlePoints", json!({"ranges": [{"id": id, "from": 0, "to": 3}], "mode": "subtract"}));
+    assert!(!s.doc().unwrap().selection.contains(NodeId(id)), "nothing of it left");
+    // The needle points ending stitches shorter than 0.5 mm, then deleted.
+    let r = run(&mut s, "embroidery.selectNeedlePoints", json!({"shorterThan": 0.5, "kinds": ["stitch"]}));
+    assert_eq!(r["selectedCount"], json!(2), "{r}");
+    assert_eq!(s.doc().unwrap().history.undo.len(), steps, "selections take no undo step");
+    run(&mut s, "embroidery.deleteNeedlePoints", json!({}));
+    assert_eq!(needles::read(&node(&s, id)).unwrap().len(), 3);
+    for p in [
+        json!({}),
+        json!({"records": [1, 2], "needlePoints": [{"id": id, "index": 0}]}),
+        json!({"records": [3]}),
+        json!({"records": [1, 2], "mode": "xor"}),
+    ] {
+        assert!(s.execute("embroidery.selectNeedlePoints", &p).is_err(), "{p}");
+    }
+}

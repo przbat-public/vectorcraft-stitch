@@ -5222,6 +5222,23 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     each end on the 0.1 mm grid, the fewest equal steps (`vectorcraft_stitch::format::steps`), so that format's export
     is the same bytes. More needle points, never jumps; the move between runs is never split. At most 100,000 added.
     It answers `{changedCount, addedCount, limit: {length} | {format, step}, paths, pathCount, lengths, passedOver}`.
+  - `embroidery.stitches {…embroidery options, from?, to?, ids?, kinds?, shorterThan?, longerThan?, offset?, limit?}`
+    (a read command, also served off the interface thread) lists the design's records, numbered as the Sewing order
+    and the Check tab number them: `{recordCount, matchedCount, offset, truncated, records: [{record, kind:
+    "stitch"|"jump"|"trim"|"stop", at, length, id, node, block, unit, index, editable}], options}`. `length` is a
+    needle-down stitch's from the needle point before it, or a jump's move (null for the needle point a jump or a cut
+    lands on, a cut, a stop). Where the stitch commands can edit a record, `index` is the needle point of `node` it is
+    (a jump: the one it lands on; a cut or a stop: the one before it): a run of literal stitches in the document's
+    layers that can be edited, not cut by a clip group, whose needle-down records are as many as its needle points;
+    else `null` (planned art, a symbol's art, a run cut by a clip group, a locked one). `from`/`to` pick record
+    numbers, `ids` objects (the one a person selects, or the path sewn), `kinds` kinds, `shorterThan`/`longerThan` a
+    length in millimetres; at most 10,000 listed a call. No `selectedOnly`: the numbers are the whole design's.
+  - `embroidery.selectNeedlePoints {records?: [from, to], ids?, kinds?, shorterThan?, longerThan? | needlePoints?,
+    ranges?, mode?: "set"|"add"|"toggle"|"subtract", …embroidery options}` selects needle points (their anchors, as
+    Direct Selection does) by the records that sew them, planning the design (a record that can't be edited is
+    passed over and counted; cuts and stops select nothing), or by their addresses, planning nothing. A selection,
+    not an undo step: `{selectedCount, pathCount, passedOver}`. Selecting the needle points that end stitches
+    shorter than a length, then `embroidery.deleteNeedlePoints {}`, deletes them.
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,

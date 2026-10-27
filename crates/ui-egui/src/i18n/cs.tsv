@@ -6076,3 +6076,6 @@ embroidery	manual stitches	ruční stehy
 	Machine Function	Funkce stroje
 # VectorCraft Stitch: Split Long Stitches
 	Split Long Stitches	Rozdělit dlouhé stehy
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Seznam stehů
+	Select Needle Points	Vybrat vpichy

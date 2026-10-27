@@ -25,13 +25,17 @@ pub(crate) fn part_of(p: Part) -> (&'static str, Option<usize>) {
         Part::Fill(k) => ("fill", Some(k + 1)),
         Part::Stroke(k) => ("stroke", Some(k + 1)),
         Part::Literal => ("literal", None),
+        Part::Manual => ("manual", None),
     }
 }
 
 /// How a unit is sewn, in the words the `stitch` option takes (`running`, `satin`, `tatami`), or
-/// `literal` for points sewn as they are.
+/// `literal` (from a file) or `manual` (converted) for points sewn as they are.
 pub(crate) fn sewn_of(u: &Unit) -> &'static str {
-    u.sewn().map_or("literal", stitch_id)
+    match u.origin.part {
+        Part::Manual => "manual",
+        _ => u.sewn().map_or("literal", stitch_id),
+    }
 }
 
 /// The rule that chose how a unit is sewn: its id, the values it turned on, and the same as a
@@ -83,6 +87,7 @@ pub(crate) fn rule_of(u: &Unit) -> (&'static str, Value, String) {
             ("forced", json!({"stitch": stitch_id(Style::Satin), "source": by.id()}), why.into())
         }
         Choice::Literal => ("literal", json!({}), "stitches read from a machine file, sewn as they are".into()),
+        Choice::Manual => ("manual", json!({}), "manual stitches converted from an object, sewn as they are".into()),
     }
 }
 

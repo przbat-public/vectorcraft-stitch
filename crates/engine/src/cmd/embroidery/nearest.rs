@@ -56,7 +56,7 @@ use vectorcraft_stitch::{Command, SAME_POINT, mm_to_pt};
 use super::cache::UnitCache;
 use super::digitize::{UnitEnds, Walked};
 use super::objects::{edit_each, given};
-use super::plan::{DesignPlan, Origin};
+use super::plan::{DesignPlan, Origin, Part};
 use super::unit::PlanError;
 use super::{object, options_in};
 use crate::cmd::bad;
@@ -136,6 +136,7 @@ fn chain(doc: &Document, walked: &Walked, scope: Option<&HashSet<NodeId>>, skipp
         let record = recorded.get(&(u.origin, u.occurrence)).copied();
         let why = match (kind, record) {
             _ if locked_within(doc, id) => Some("locked"),
+            (None, _) if u.origin.part == Part::Manual => Some("manual"),
             (None, _) => Some("literal"),
             (Some(_), None) => Some("unmodelled"),
             (Some(k), Some(r)) => r

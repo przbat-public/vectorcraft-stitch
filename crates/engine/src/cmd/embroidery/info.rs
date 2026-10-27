@@ -360,6 +360,7 @@ pub(crate) fn rule_id(why: Choice) -> &'static str {
         Choice::StrokeOutlined => "strokeOutlined",
         Choice::Forced(_) | Choice::SatinFilled(_) => "forced",
         Choice::Literal => "literal",
+        Choice::Manual => "manual",
     }
 }
 
@@ -590,7 +591,7 @@ fn sewn_of(plan: &DesignPlan, ids: &[NodeId], kind: PartKind) -> Sewing {
     for (i, u) in plan.units.iter().enumerate() {
         let of_kind = match (u.origin.part, kind) {
             (Part::Fill(_), PartKind::Fill) | (Part::Stroke(_), PartKind::Stroke) => true,
-            (Part::Fill(_) | Part::Stroke(_) | Part::Literal, _) => false,
+            (Part::Fill(_) | Part::Stroke(_) | Part::Literal | Part::Manual, _) => false,
         };
         if of_kind && ids.contains(&u.origin.selected()) {
             out.add(plan, i);
@@ -622,21 +623,22 @@ impl Sewing {
     }
 }
 
-/// What a plan sews of the objects selected, by part: their fills, their strokes, and the runs of
-/// stitches opened from a machine file among them. Kept by part, as `embroidery.info` reports each
-/// part's sewing, which its test checks it against; the Object tab counts all of it
-/// ([`SelectionSewing::stitches`]).
+/// What a plan sews of the objects selected, by part: their fills, their strokes, the runs of
+/// stitches opened from a machine file among them, and their manual stitches. Kept by part, as
+/// `embroidery.info` reports each part's sewing, which its test checks it against; the Object tab
+/// counts all of it ([`SelectionSewing::stitches`]).
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SelectionSewing {
     pub fill: Sewing,
     pub stroke: Sewing,
     pub literal: Sewing,
+    pub manual: Sewing,
 }
 
 impl SelectionSewing {
     /// The needle-down stitches of all of it.
     pub fn stitches(&self) -> usize {
-        self.fill.stitches + self.stroke.stitches + self.literal.stitches
+        self.fill.stitches + self.stroke.stitches + self.literal.stitches + self.manual.stitches
     }
 }
 
@@ -659,6 +661,7 @@ pub fn selection_sewing(doc: &Document, plan: &DesignPlan, selected: &[NodeId]) 
             Part::Fill(_) => out.fill.add(plan, i),
             Part::Stroke(_) => out.stroke.add(plan, i),
             Part::Literal => out.literal.add(plan, i),
+            Part::Manual => out.manual.add(plan, i),
         }
     }
     out

@@ -107,11 +107,47 @@ pub struct StitchRun {
     pub stops: Vec<(usize, usize)>,
     /// The machine stops after the run's last needle point (and after its cut, when it has one).
     pub stop_after: bool,
+    /// The exact millimetres of needle points that the document points they are stored in can't give
+    /// back (a manual run's, as the plan it was frozen from sewed them): a point stored in document
+    /// points and read in millimetres may come back a unit in the last place off, and one exactly
+    /// halfway between two tenths of a millimetre would then be written a tenth off. Each applies
+    /// while its needle point lies where it was stored (within a nanometre); a transform of the
+    /// object, which moves every point, drops them.
+    pub exact: Vec<Exact>,
     /// The thread the file recorded for the run's colour block beside its colour (a VP3 thread
     /// record), written back by a format that has one. `None`: the file recorded none.
     pub thread: Option<ThreadRecord>,
     /// Keys this version doesn't read, kept as they are.
     pub extra: Kept,
+}
+
+/// A needle point's exact millimetres ([`StitchRun::exact`]): the anchor (subpath, anchor, from 0)
+/// and the coordinates its document points can't give back, saved as `[subpath, anchor, x, y]`, a
+/// coordinate that comes back as it was `null`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Exact {
+    pub subpath: usize,
+    pub anchor: usize,
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+}
+
+impl Exact {
+    /// An entry a file holds, when it is one this version reads: two indices, then each coordinate
+    /// a finite number or null, not both null.
+    fn read(v: &serde_json::Value) -> Option<Self> {
+        let coordinate = |v: &serde_json::Value| match v {
+            serde_json::Value::Null => Some(None),
+            v => v.as_f64().filter(|x| x.is_finite()).map(Some),
+        };
+        match v.as_array()?.as_slice() {
+            [s, a, x, y] => {
+                let (x, y) = (coordinate(x)?, coordinate(y)?);
+                (x.is_some() || y.is_some()).then_some(Self { subpath: index(s)?, anchor: index(a)?, x, y })
+            }
+            _ => None,
+        }
+    }
 }
 
 /// The object a manual object was converted from ([`Embroidery::original`]), saved as
@@ -317,6 +353,7 @@ const DOUBLE_POINT: &str = "double_point";
 const MANUAL: &str = "manual";
 const TRIMS: &str = "trims";
 const STOPS: &str = "stops";
+const EXACT: &str = "exact";
 const THREAD: &str = "thread";
 /// The keys of an original ([`Original`]).
 const FRAME: &str = "frame";
@@ -414,12 +451,13 @@ impl From<serde_json::Map<String, serde_json::Value>> for StitchRun {
             [subpath, anchor] => Some((index(subpath)?, index(anchor)?)),
             _ => None,
         });
+        let exact = take_list(&mut map, EXACT, Exact::read);
         // A record of another shape is kept as it is, unread.
         let thread = map.get(THREAD).and_then(ThreadRecord::read);
         if thread.is_some() {
             map.remove(THREAD);
         }
-        Self { trim_before, trim_after, double_point, manual, trims, stops, stop_after, thread, extra: map.into() }
+        Self { trim_before, trim_after, double_point, manual, trims, stops, stop_after, exact, thread, extra: map.into() }
     }
 }
 
@@ -435,8 +473,10 @@ impl From<StitchRun> for serde_json::Value {
             .chain(flag(STOP_AFTER, r.stop_after));
         let trims = (!r.trims.is_empty()).then(|| (TRIMS, serde_json::json!(r.trims)));
         let stops = (!r.stops.is_empty()).then(|| (STOPS, serde_json::json!(r.stops.iter().map(|&(s, a)| [s, a]).collect::<Vec<_>>())));
+        let exact = (!r.exact.is_empty())
+            .then(|| (EXACT, serde_json::Value::Array(r.exact.iter().map(|e| serde_json::json!([e.subpath, e.anchor, e.x, e.y])).collect())));
         let thread = r.thread.map(|t| (THREAD, serde_json::Value::from(t)));
-        with_kept(flags.chain(trims).chain(stops).chain(thread), std::sync::Arc::unwrap_or_clone(r.extra))
+        with_kept(flags.chain(trims).chain(stops).chain(exact).chain(thread), std::sync::Arc::unwrap_or_clone(r.extra))
     }
 }
 
@@ -886,6 +926,8 @@ mod tests {
             json!({"original": {"frame": [1, 2], "node": {}}}),
             json!({"original": {"frame": [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], "node": [1]}}),
             json!({"original": {"frame": [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], "node": {}, "fingerprint": "beef"}}),
+            json!({"stitches": {"manual": true, "exact": [[0, 1, 51.75, null], [2, 0, null, 3.5]]}}),
+            json!({"stitches": {"exact": [[0, 1, null, null]]}}),
         ] {
             let read: Embroidery = serde_json::from_value(written.clone()).unwrap();
             assert_eq!(serde_json::to_value(&read).unwrap(), written, "{written}");
@@ -907,6 +949,15 @@ mod tests {
         );
         let odd: Embroidery = serde_json::from_value(json!({"original": {"frame": [1, 2], "node": {}}})).unwrap();
         assert!(odd.original.is_none() && odd.extra.contains_key("original"), "kept, nothing to restore");
+        let exact: Embroidery =
+            serde_json::from_value(json!({"stitches": {"manual": true, "exact": [[0, 1, 51.75, null], [2, 0, null, 3.5]]}})).unwrap();
+        let e = exact.stitches.unwrap().exact;
+        assert_eq!(e, [Exact { subpath: 0, anchor: 1, x: Some(51.75), y: None }, Exact { subpath: 2, anchor: 0, x: None, y: Some(3.5) }]);
+        for junk in [json!([[0, 1, null, null]]), json!([[0, 1, "x", 2.0]]), json!([[0, 1, 2.0]]), json!("all")] {
+            let read: Embroidery = serde_json::from_value(json!({ "stitches": { "exact": junk.clone() } })).unwrap();
+            let run = read.stitches.unwrap();
+            assert!(run.exact.is_empty() && run.extra.get("exact") == Some(&junk), "{junk}: kept unread");
+        }
         let short: Embroidery =
             serde_json::from_value(json!({"original": {"frame": [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], "node": {}, "fingerprint": "beef"}})).unwrap();
         let o = short.original.unwrap();

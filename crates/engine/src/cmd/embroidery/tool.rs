@@ -73,7 +73,7 @@ impl ToolFacts {
             let kind = match u.origin.part {
                 Part::Fill(_) => PartKind::Fill,
                 Part::Stroke(_) => PartKind::Stroke,
-                Part::Literal => continue,
+                Part::Literal | Part::Manual => continue,
             };
             let Some(Some((first, last, _, _))) = units.get(i).copied() else { continue };
             ends.entry((u.origin.selected(), kind))

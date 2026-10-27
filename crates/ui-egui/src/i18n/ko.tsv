@@ -5458,6 +5458,7 @@ embroidery	Not sewn: it is hidden.	수놓지 않음: 숨겨져 있습니다.
 embroidery	Not sewn: it is on a template or non-printing layer.	수놓지 않음: 템플릿 레이어나 인쇄하지 않는 레이어에 있습니다.
 embroidery	Not sewn.	수놓지 않음.
 embroidery	Stitches from a file are sewn as the file has them.	파일의 스티치는 파일에 있는 그대로 수놓습니다.
+embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	수동 스티치는 놓인 그대로 수놓아집니다. 개체 복원으로 개체와 설정을 되돌릴 수 있습니다.
 embroidery	Type isn't sewn yet: create outlines to sew it.	텍스트는 아직 수놓을 수 없습니다. 윤곽선을 만들면 수놓을 수 있습니다.
 embroidery	Images aren't sewn.	이미지는 수놓지 않습니다.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	설정은 심볼 안의 개체에 붙습니다. 심볼을 편집해 설정하세요.

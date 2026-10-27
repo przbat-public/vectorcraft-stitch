@@ -5514,6 +5514,7 @@ embroidery	Not sewn: it is hidden.	不繡：已隱藏。
 embroidery	Not sewn: it is on a template or non-printing layer.	不繡：位於範本圖層或不列印的圖層上。
 embroidery	Not sewn.	不繡。
 embroidery	Stitches from a file are sewn as the file has them.	檔案中的針跡按檔案原樣繡出。
+embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	手動針跡依放置的樣子縫製：還原物件可找回物件及其設定。
 embroidery	Type isn't sewn yet: create outlines to sew it.	文字暫不刺繡：建立外框後即可刺繡。
 embroidery	Images aren't sewn.	影像不刺繡。
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	設定屬於符號內的物件：請編輯符號來設定。

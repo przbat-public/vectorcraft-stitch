@@ -5475,6 +5475,7 @@ embroidery	Not sewn: it is hidden.	Не вишивається: прихован
 embroidery	Not sewn: it is on a template or non-printing layer.	Не вишивається: розташований на шарі-шаблоні або шарі, що не друкується.
 embroidery	Not sewn.	Не вишивається.
 embroidery	Stitches from a file are sewn as the file has them.	Стібки з файлу вишиваються так, як їх записано у файлі.
+embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Ручні стібки вишиваються так, як їх розміщено: «Відновити об’єкт» повертає об’єкт і його налаштування.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Текст поки не вишивається: створіть контури, щоб вишити його.
 embroidery	Images aren't sewn.	Зображення не вишиваються.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Налаштування задаються об’єктам символу: відредагуйте символ, щоб задати їх.

@@ -42,6 +42,7 @@ Each command's label is also its undo step's name in Edit › Undo and in Histor
 |---|---|---|
 | A converted object's kind, in the header | Manual stitches | Ściegi ręczne |
 | Its line under the header | Sewn as they are placed: they no longer change with the fabric or the object's settings. | Szyte tak, jak są ułożone: nie zmieniają się już z tkaniną ani ustawieniami obiektu. |
+| Why a manual run takes no settings (the tab's note, and the settings commands' reason `manual`) | Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings. | Ściegi ręczne są szyte tak, jak są ułożone: Przywróć obiekt przywraca obiekt i jego ustawienia. |
 | Its runs and needle points | {count} run · {needle} needle points (plural) | {count} odcinek · nakłucia: {needle} / {count} odcinki · … / {count} odcinków · … |
 | Its scale since it was converted | Scaled to {value} % since converting | Przeskalowano do {value} % od zamiany |
 | The button on a planned object | Convert to Manual Stitches | Zamień na ściegi ręczne |

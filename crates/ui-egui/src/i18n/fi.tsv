@@ -5911,6 +5911,7 @@ embroidery	Not sewn: it is hidden.	Ei kirjota: se on piilotettu.
 embroidery	Not sewn: it is on a template or non-printing layer.	Ei kirjota: se on mallipohjatasolla tai tasolla, jota ei tulosteta.
 embroidery	Not sewn.	Ei kirjota.
 embroidery	Stitches from a file are sewn as the file has them.	Tiedoston pistot kirjotaan sellaisinaan.
+embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Manuaaliset pistot ommellaan niin kuin ne on sijoitettu: Palauta objekti tuo objektin ja sen asetukset takaisin.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Tekstiä ei vielä kirjota: muunna se ääriviivoiksi, jotta se kirjotaan.
 embroidery	Images aren't sewn.	Kuvia ei kirjota.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Asetukset tehdään symbolin objekteille: muokkaa symbolia asettaaksesi ne.

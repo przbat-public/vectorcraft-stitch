@@ -68,6 +68,9 @@ impl Embroidery {
         }
         move_shared(extra, a);
         if let Some(run) = stitches {
+            // Every needle point moves: the exact millimetres kept for where they were no longer
+            // apply.
+            run.exact.clear();
             move_shared(&mut run.extra, a);
         }
     }

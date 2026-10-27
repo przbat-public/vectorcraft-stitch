@@ -24,6 +24,9 @@ pub enum Skip {
     SymbolInstance,
     /// A blend, an envelope, a mesh or a repeat: not sewn as it is.
     Live,
+    /// Manual stitches (an object converted to them): sewn as they are placed, so they take no
+    /// settings.
+    Manual,
     Placed,
     Intertwine,
     /// It has no part of the kind asked for (no fill, or no stroke).
@@ -32,13 +35,24 @@ pub enum Skip {
 
 impl Skip {
     /// Every reason, as `embroidery.info` and the settings commands' replies give them.
-    pub const ALL: [Skip; 9] =
-        [Skip::Literal, Skip::Guide, Skip::Type, Skip::Image, Skip::SymbolInstance, Skip::Live, Skip::Placed, Skip::Intertwine, Skip::NoPart];
+    pub const ALL: [Skip; 10] = [
+        Skip::Literal,
+        Skip::Manual,
+        Skip::Guide,
+        Skip::Type,
+        Skip::Image,
+        Skip::SymbolInstance,
+        Skip::Live,
+        Skip::Placed,
+        Skip::Intertwine,
+        Skip::NoPart,
+    ];
 
     /// Its id in replies.
     pub fn id(self) -> &'static str {
         match self {
             Skip::Literal => "literal",
+            Skip::Manual => "manual",
             Skip::Guide => "guide",
             Skip::Type => "type",
             Skip::Image => "image",
@@ -102,6 +116,7 @@ fn visit_takers_until<'a>(n: &'a Node, take: &mut Vec<&'a Node>, skip: &mut Vec<
             return;
         }
         NodeKind::Path { guide: true, .. } => Skip::Guide,
+        NodeKind::Path { .. } if n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|r| r.manual) => Skip::Manual,
         NodeKind::Path { .. } if n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some()) => Skip::Literal,
         NodeKind::Path { .. } | NodeKind::Compound { .. } => {
             take.push(n);

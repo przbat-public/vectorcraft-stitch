@@ -83,6 +83,28 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
     out
 }
 
+/// A run's needle points (`subpaths`, millimetres, read from `path`'s anchors) with the exact
+/// millimetres the run keeps where its document points can't give them back
+/// ([`StitchRun::exact`]): each where its anchor still lies where it was stored, within
+/// [`SAME_POINT`]. Only a run whose needle points are its anchors (straight, as a convert writes it)
+/// takes them: a curve flattened into more points has no anchor to match.
+fn exact(subpaths: &mut [Vec<Point>], path: &PathData, run: &StitchRun) {
+    let straight = subpaths.len() == path.subpaths.len() && subpaths.iter().zip(&path.subpaths).all(|(sub, sp)| sub.len() == sp.anchors.len());
+    if !straight {
+        return;
+    }
+    for e in &run.exact {
+        let Some(p) = subpaths.get_mut(e.subpath).and_then(|sub| sub.get_mut(e.anchor)) else { continue };
+        let near = |stored: f64, now: f64| (stored - now).abs() <= SAME_POINT;
+        if let (Some(x), Some(y)) = (e.x.or(Some(p.x)), e.y.or(Some(p.y)))
+            && near(x, p.x)
+            && near(y, p.y)
+        {
+            *p = Point::new(x, y);
+        }
+    }
+}
+
 /// A run of literal stitches' records from its subpaths' needle points (millimetres): each
 /// subpath's needle points sewn, the needle lifted to the next subpath's first (a jump, after a cut
 /// when `run.trims` names that subpath), a stop after each needle point `run.stops` names (the
@@ -375,7 +397,7 @@ impl<'a> Digitizer<'a> {
         let kind = match unit.part {
             Part::Fill(_) => Some(PartKind::Fill),
             Part::Stroke(_) => Some(PartKind::Stroke),
-            Part::Literal => None,
+            Part::Literal | Part::Manual => None,
         };
         let part = kind.and_then(|k| n.extras().embroidery.as_deref()?.part(k));
         let object = part.map_or_else(PartLayer::default, |p| PartLayer::read(p, &mut self.found));
@@ -447,9 +469,10 @@ impl<'a> Digitizer<'a> {
         }
         let added = self.seq.added();
         // The pieces an expanded object became are placed by it, as a symbol's art is by its
-        // instance.
+        // instance; so are the manual runs an object converted to manual stitches became, by the
+        // group standing for it.
         let outer = self.instance;
-        if outer.is_none() && self.expanded.contains(&n.id) {
+        if outer.is_none() && (self.expanded.contains(&n.id) || converted(n)) {
             self.instance = Some(n.id);
         }
         // What it leaves out is about it (or the instance placing it); a layer is no object.
@@ -534,8 +557,9 @@ impl<'a> Digitizer<'a> {
         }
     }
 
-    /// A run of literal stitches (read from a machine file): the path's points sewn as they are,
-    /// in the colour of its stroke, one block with the other runs of its group.
+    /// A run of literal stitches: the path's points sewn as they are, in the colour of its stroke.
+    /// A machine file's run is one block with the other runs of its group (that file's colour
+    /// block); a run of manual stitches (`StitchRun::manual`) is placed as art is.
     fn literal(&mut self, n: &Node, bp: &BezPath, run: &StitchRun) {
         if !self.step() {
             return;
@@ -564,8 +588,15 @@ impl<'a> Digitizer<'a> {
             },
             _ => {}
         });
+        if !run.exact.is_empty()
+            && let Some(path) = n.path_data()
+        {
+            exact(&mut subpaths, path, run);
+        }
         let (mut points, stop_at_end) = literal_stitches(&subpaths, run);
-        if let Some(clip) = &self.clip {
+        // Manual stitches are frozen as sewn: a clip group already cut them (a fill's edge run lies
+        // on the cut, which a second cut would chop). A file's runs are cut, as its lines are drawn.
+        if let Some(clip) = self.clip.as_ref().filter(|_| !run.manual) {
             points = cut_to(points, &clip.region, &self.design.connect);
         }
         // The cut and the stop after the run's last needle point, in that order.
@@ -583,10 +614,15 @@ impl<'a> Digitizer<'a> {
         // The file's thread record for the run's block, written back by a format that has one.
         let mut block = Block::new(Thread { record: run.thread.as_ref().map(super::file_thread), ..Thread::rgb(color) });
         block.stitches = points;
-        let origin = self.origin(n, Part::Literal);
-        let literal = self.owner.map(|g| (g, run.trim_before));
+        // A file's run joins only its group's block (that file's colour block); manual stitches are
+        // placed as art is, so that converting an object changes nothing it sews.
+        let (part, why, literal) = match run.manual {
+            true => (Part::Manual, Choice::Manual, None),
+            false => (Part::Literal, Choice::Literal, self.owner.map(|g| (g, run.trim_before))),
+        };
+        let origin = self.origin(n, part);
         let occurrence = self.occurrence(&origin);
-        let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, why: Choice::Literal, asked: Asked::default() };
+        let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, why, asked: Asked::default() };
         self.seq.add(Planned { facts, block, literal });
     }
 
@@ -1058,6 +1094,13 @@ fn paints_off_its_path(st: &StrokeLayer, bp: &BezPath) -> bool {
         || st.start_arrow.is_some()
         || st.end_arrow.is_some()
         || (closed && st.align != StrokeAlign::Center)
+}
+
+/// Whether `n` stands for an object converted to manual stitches: a group keeping the object it was
+/// converted from ([`vectorcraft_doc::embroidery::Original`]). Its runs are placed by it, the object
+/// a person selects.
+pub(crate) fn converted(n: &Node) -> bool {
+    matches!(n.kind, NodeKind::Group { clip: false, .. }) && n.extras().embroidery.as_deref().is_some_and(|e| e.original.is_some())
 }
 
 /// Whether an appearance item is painted at all (not `none`): only painted items are sewn, and

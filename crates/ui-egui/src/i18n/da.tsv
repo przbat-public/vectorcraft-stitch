@@ -5835,6 +5835,7 @@ embroidery	Not sewn: it is hidden.	Sys ikke: den er skjult.
 embroidery	Not sewn: it is on a template or non-printing layer.	Sys ikke: den ligger på et skabelonlag eller et lag, der ikke udskrives.
 embroidery	Not sewn.	Sys ikke.
 embroidery	Stitches from a file are sewn as the file has them.	Sting fra en fil sys, som filen har dem.
+embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Manuelle sting sys, som de er placeret: Gendan objekt bringer objektet og dets indstillinger tilbage.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Tekst sys endnu ikke: brug Opret konturer for at sy den.
 embroidery	Images aren't sewn.	Billeder sys ikke.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Et symbols objekter har indstillingerne: rediger symbolet for at angive dem.

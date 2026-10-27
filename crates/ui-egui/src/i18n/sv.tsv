@@ -5836,6 +5836,7 @@ embroidery	Not sewn: it is hidden.	Sys inte: den är dold.
 embroidery	Not sewn: it is on a template or non-printing layer.	Sys inte: den ligger på ett mallager eller ett lager som inte skrivs ut.
 embroidery	Not sewn.	Sys inte.
 embroidery	Stitches from a file are sewn as the file has them.	Stygn från en fil sys som filen har dem.
+embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Manuella stygn sys som de är placerade: Återställ objekt tar tillbaka objektet och dess inställningar.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Text sys inte än: skapa konturbanor för att sy den.
 embroidery	Images aren't sewn.	Bilder sys inte.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Inställningarna hör till symbolens objekt: redigera symbolen för att ställa in dem.

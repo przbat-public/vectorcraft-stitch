@@ -5841,6 +5841,7 @@ embroidery	Not sewn: it is hidden.	Dikilmez: gizli.
 embroidery	Not sewn: it is on a template or non-printing layer.	Dikilmez: şablon veya yazdırılmayan bir katmanda.
 embroidery	Not sewn.	Dikilmez.
 embroidery	Stitches from a file are sewn as the file has them.	Dosyadan gelen dikişler dosyadaki gibi dikilir.
+embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Manuel dikişler yerleştirildikleri gibi dikilir: Nesneyi Geri Yükle nesneyi ve ayarlarını geri getirir.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Metin henüz dikilmez: dikmek için anahatlar oluşturun.
 embroidery	Images aren't sewn.	Resimler dikilmez.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Ayarları sembolün nesneleri alır: ayarlamak için sembolü düzenleyin.

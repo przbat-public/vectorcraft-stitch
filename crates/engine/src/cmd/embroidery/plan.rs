@@ -42,6 +42,9 @@ pub enum Part {
     Stroke(usize),
     /// Its points, sewn as they are: a run of stitches read from a machine file.
     Literal,
+    /// Its points, sewn as they are, placed in the sewing order as art is: a run of manual stitches
+    /// (an object converted to them, Convert to Manual Stitches).
+    Manual,
 }
 
 /// What a sewing unit sews: an object, and which part of it.
@@ -89,7 +92,7 @@ impl Part {
         match self {
             Part::Fill(_) => Some(PartKind::Fill),
             Part::Stroke(_) => Some(PartKind::Stroke),
-            Part::Literal => None,
+            Part::Literal | Part::Manual => None,
         }
     }
 }
@@ -136,6 +139,8 @@ pub enum Choice {
     SatinFilled(ForcedBy),
     /// Stitches read from a machine file, sewn as they are.
     Literal,
+    /// Manual stitches (an object converted to them), sewn as they are.
+    Manual,
 }
 
 pub use vectorcraft_stitch::thread::DELTA_E_HUNDREDTHS;

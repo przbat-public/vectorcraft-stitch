@@ -702,8 +702,10 @@ impl<'a> Reader<'a> {
 
 /// The delta steps of at most `max` tenths a move is written as: `n` steps whose sum is exactly
 /// (dx, dy), each rounded to whole tenths. Worked out as they are taken (a design's moves are
-/// written by the million, most of them one step).
-pub(crate) fn steps(dx: i32, dy: i32, max: i32) -> impl Iterator<Item = (i32, i32)> {
+/// written by the million, most of them one step). Public so that a stitch split before it is
+/// written (`embroidery.splitLongStitches {format}`) is cut where the writer would cut it, and the
+/// file is the same.
+pub fn steps(dx: i32, dy: i32, max: i32) -> impl Iterator<Item = (i32, i32)> {
     let max = i64::from(max.max(1));
     let span = i64::from(dx.unsigned_abs().max(dy.unsigned_abs()));
     let n = i64::from(i32::try_from((span + max - 1) / max).unwrap_or(1).max(1));

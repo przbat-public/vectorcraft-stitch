@@ -9,7 +9,8 @@
 //!   fill's rows' angle is a dashed two-tone arrow through its centre, its head ▲ in the accent
 //!   (solid set, hollow Auto) with its degrees, as the interface language writes numbers.
 //! - **Hover and focus:** the handle under the pointer is drawn larger ([`HOVER_SCALE`]) and
-//!   labelled; the one the keys act on has a ring ([`FOCUS_RING_PT`]).
+//!   labelled; the one the keys act on has a ring ([`FOCUS_RING_PT`]), its accent line between a
+//!   light and a dark one as the edges are, so it reads on any fabric or thread.
 //! - **A point set where the stitches can't start** (a fill's entry on its outline, the stitches half a
 //!   row spacing inside it) is joined by a hairline to a dot where they do, past [`LEADER_MIN_PT`].
 //! - **While dragging,** the handle follows the pointer in the frame it moves (moved by the drag, not
@@ -39,9 +40,13 @@ use crate::theme::Tokens;
 
 /// How much larger the handle under the pointer is drawn.
 pub const HOVER_SCALE: f32 = 1.25;
-/// How far out from a focused handle its ring is drawn, points, and the ring's width.
-pub const FOCUS_RING_PT: f32 = 4.0;
+/// How far out from a focused handle its ring is drawn, points (clear of the handle's own edge),
+/// and the width of the ring's accent line.
+pub const FOCUS_RING_PT: f32 = 5.0;
 const FOCUS_RING_WIDTH: f32 = 1.5;
+/// How far the ring's light line shows either side of its accent line, and its dark line either
+/// side of the light one, points (the handles' edges show half their light line's width).
+const FOCUS_RING_TONE: f32 = 0.75;
 /// The two-tone edge: the dark outer line's width and the light inner one's, points.
 const EDGE_DARK: f32 = 3.0;
 const EDGE_LIGHT: f32 = 1.5;
@@ -268,7 +273,14 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         let scale = if hovered { HOVER_SCALE } else { 1.0 };
         let size = h.id.kind.size_px() as f32 * scale;
         if focused {
-            painter.circle_stroke(at, size / 2.0 + FOCUS_RING_PT, Stroke::new(FOCUS_RING_WIDTH, t.accent));
+            let tones = [
+                (FOCUS_RING_WIDTH + 4.0 * FOCUS_RING_TONE, dark()),
+                (FOCUS_RING_WIDTH + 2.0 * FOCUS_RING_TONE, light()),
+                (FOCUS_RING_WIDTH, entry_color(&t)),
+            ];
+            for (width, ink) in tones {
+                painter.circle_stroke(at, size / 2.0 + FOCUS_RING_PT, Stroke::new(width, ink));
+            }
         }
         let solid = h.state == State::Set;
         match (h.id.kind, h.arrow) {

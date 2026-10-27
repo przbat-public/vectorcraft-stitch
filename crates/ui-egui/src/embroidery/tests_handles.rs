@@ -83,6 +83,20 @@ fn diamonds(shapes: &[Shape], face: Color32) -> Vec<Pos2> {
         .collect()
 }
 
+/// The rings drawn round `at` (circles with no face), by their radius: their widths and colours,
+/// widest first.
+fn rings(shapes: &[Shape], at: Pos2) -> Vec<(f32, Color32)> {
+    let mut found: Vec<(f32, Color32)> = shapes
+        .iter()
+        .filter_map(|s| match s {
+            Shape::Circle(c) if c.fill == Color32::TRANSPARENT && c.center.distance(at) < 0.5 => Some((c.stroke.width, c.stroke.color)),
+            _ => None,
+        })
+        .collect();
+    found.sort_by(|a, b| b.0.total_cmp(&a.0));
+    found
+}
+
 fn light() -> Color32 {
     let [r, g, b] = vectorcraft_engine::cmd::embroidery::scene::MARK_LIGHT;
     Color32::from_rgb(r, g, b)
@@ -402,6 +416,35 @@ fn the_rows_arrow_is_drawn_and_its_head_turns_them() {
     frame(&mut app, &ctx, time, vec![button(up, false)]);
     let angle = app.run("embroidery.info", json!({"ids": [a]})).unwrap()["fill"]["settings"]["angle"]["value"].clone();
     assert_eq!((angle, app.session.doc().unwrap().history.undo.len()), (json!(90.0), undo + 1));
+}
+
+/// The handle the keys act on is ringed as the handles are edged: a dark line, a light one over it
+/// and the accent inside that, so the ring reads on white or black fabric and on a saturated thread
+/// alike; no other handle is ringed.
+#[test]
+fn the_focused_handle_is_ringed_in_the_two_tones_and_the_accent() {
+    let (mut app, [a, _]) = app();
+    let ctx = egui::Context::default();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    app.run("tool.setOption", json!({"key": "focus", "value": {"kind": "entry", "id": a, "part": "fill"}})).unwrap();
+    let shapes = settle(&mut app, &ctx, &mut time);
+    let view = app.view_info();
+    let xf = canvas::Xf::new(app.canvas_rect.unwrap(), app.view().unwrap());
+    let handles = app.session.embroidery_handles(view).0;
+    let focused = |h: &vectorcraft_tools::embroidery::Handle| h.id.kind == Kind::Entry && h.id.owner.part().0.0 == a;
+    let at = xf.to_screen(handles.iter().find(|h| focused(h)).unwrap().at);
+    let entry = super::handles::entry_color(&crate::theme::Tokens::get(&ctx));
+    let tones: Vec<Color32> = rings(&shapes, at).into_iter().map(|(_, c)| c).collect();
+    assert_eq!(tones, [super::handles::dark(), light(), entry], "dark, light, the accent");
+    use super::marks::{NON_TEXT_CONTRAST, contrast};
+    for thread in [Color32::WHITE, Color32::BLACK, Color32::from_rgb(0xc8, 0x10, 0x2e)] {
+        let best = tones.iter().map(|c| contrast(*c, thread)).fold(0.0, f32::max);
+        assert!(best >= NON_TEXT_CONTRAST, "a line of the ring stands out from {thread:?}");
+    }
+    for h in handles.iter().filter(|h| !focused(h)) {
+        assert!(rings(&shapes, xf.to_screen(h.at)).len() < 3, "{:?} isn't ringed", h.id);
+    }
 }
 
 /// The handles read on white fabric and on dark fabric in every theme (both schemes, every

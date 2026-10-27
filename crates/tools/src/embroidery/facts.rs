@@ -45,6 +45,12 @@ pub trait PlanFacts {
     fn part_at(&self, _at: Point, _tol: f64) -> Option<(NodeId, Option<PartKind>)> {
         None
     }
+    /// Where a point given at `at` (document points) for part `part` of object `object` is stored:
+    /// taken to where its stitches can start or end, as `embroidery.setEntryExit {snap: true}`
+    /// takes it; `None` when nothing answers.
+    fn snap(&self, _object: NodeId, _part: PartKind, _at: Point) -> Option<Point> {
+        None
+    }
     /// The angle of object `object`'s fill rows, when its fill is sewn as tatami, from the document
     /// as it is (no plan needed); `None` for a fill sewn otherwise or not at all.
     fn fill_angle(&self, _object: NodeId) -> Option<FillAngle> {

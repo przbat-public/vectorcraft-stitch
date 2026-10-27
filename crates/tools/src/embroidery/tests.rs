@@ -23,12 +23,20 @@ struct Fake {
     under: Option<(NodeId, Option<PartKind>)>,
     rows: HashMap<NodeId, FillAngle>,
     generation: u64,
+    /// Where every point given is stored (an open line's nearer end), when set; else as given.
+    stored: Option<Point>,
 }
 
 impl Default for Fake {
     fn default() -> Self {
         static MADE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
-        Self { ends: HashMap::new(), under: None, rows: HashMap::new(), generation: MADE.fetch_add(1, std::sync::atomic::Ordering::Relaxed) }
+        Self {
+            ends: HashMap::new(),
+            under: None,
+            rows: HashMap::new(),
+            generation: MADE.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+            stored: None,
+        }
     }
 }
 
@@ -44,6 +52,9 @@ impl PlanFacts for Fake {
     }
     fn fill_angle(&self, object: NodeId) -> Option<FillAngle> {
         self.rows.get(&object).copied()
+    }
+    fn snap(&self, _object: NodeId, _part: PartKind, at: Point) -> Option<Point> {
+        Some(self.stored.unwrap_or(at))
     }
 }
 
@@ -228,6 +239,26 @@ fn handles_are_caught_in_screen_pixels_and_apart_when_coincident() {
         assert_eq!(hit(&c, &hs, entry.at).map(|h| h.id.kind), Some(Kind::Entry));
         assert_eq!(hit(&c, &hs, exit.at).map(|h| h.id.kind), Some(Kind::Exit));
     }
+}
+
+/// A drag previews only where the point stored would change: along an open line it stays at the
+/// line's nearer end, so moves that keep it there send nothing more, and the release keeps the one
+/// previewed.
+#[test]
+fn a_drag_previews_only_where_the_point_stored_moves() {
+    let (d, ids) = doc();
+    let [_, line, _] = ids;
+    let (s, p) = (select(&[line]), PaintDefaults::default());
+    let f = Fake { stored: Some(Point::new(200.0, 300.0)), ..plan(ids) };
+    let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    let mut t = EmbroideryTool::default();
+    assert!(t.pointer(&c, &ev(PointerKind::Down, 200.0, 300.0)).is_empty());
+    let first = t.pointer(&c, &ev(PointerKind::Drag, 230.0, 300.0));
+    assert!(matches!(first.as_slice(), [Action::Begin(_), Action::Preview(..)]), "{first:?}");
+    for x in [260.0, 290.0, 320.0] {
+        assert!(t.pointer(&c, &ev(PointerKind::Drag, x, 300.0)).is_empty(), "stored where it was: {x}");
+    }
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Up, 320.0, 300.0)), vec![Action::Commit]);
 }
 
 /// A press on a handle and a drag past 3 px begin one undo step; each move previews the point

@@ -160,6 +160,10 @@ impl PlanFacts for FactsNow<'_> {
         self.facts?.planned.scene().pick(at, tol)
     }
 
+    fn snap(&self, object: NodeId, part: PartKind, at: Point) -> Option<Point> {
+        Some(super::points::snapped(self.doc.node(object)?, part, at))
+    }
+
     fn fill_angle(&self, object: NodeId) -> Option<FillAngle> {
         let n = self.doc.node(object)?;
         let layer = self.layer.get_or_init(|| super::resolve::DocLayer::of(self.doc));

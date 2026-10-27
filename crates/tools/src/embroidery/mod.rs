@@ -74,13 +74,15 @@ pub const DRAG_START_PX: f64 = 3.0;
 const SHIFT_NUDGE: f64 = 10.0;
 
 /// A handle held by a press: which, where the press began, whether it is dragging, the params last
-/// previewed, where the handle now is (document points) and, for an angle, its arrow now.
+/// previewed and the point they store (taken where the stitches can start or end), where the handle
+/// now is (document points) and, for an angle, its arrow now.
 #[derive(Clone, Debug)]
 struct Grab {
     id: HandleId,
     from: Point,
     begun: bool,
     previewed: Option<Value>,
+    stored: Option<Point>,
     at: Point,
     arrow: Option<Arrow>,
 }
@@ -298,7 +300,7 @@ impl Tool for EmbroideryTool {
                     Some(h) if ev.mods.alt => out.extend(self.back_to_auto(h.id)),
                     Some(h) => {
                         self.focus = Some(h.id);
-                        self.grab = Some(Grab { id: h.id, from: ev.pos, begun: false, previewed: None, at: h.point, arrow: h.arrow });
+                        self.grab = Some(Grab { id: h.id, from: ev.pos, begun: false, previewed: None, stored: None, at: h.point, arrow: h.arrow });
                     }
                 }
                 out
@@ -325,6 +327,14 @@ impl Tool for EmbroideryTool {
                     }
                     None => {
                         grab.at = at;
+                        // No preview where the point stored wouldn't change (an open line's point
+                        // stays at its nearer end while the pointer moves along it).
+                        let (object, part) = grab.id.owner.part();
+                        let stored = cx.embroidery.and_then(|f| f.snap(object, part, at));
+                        if stored.is_some() && stored == grab.stored {
+                            return out;
+                        }
+                        grab.stored = stored;
                         set_point(grab.id, Some(at))
                     }
                 };

@@ -90,13 +90,47 @@ Restore asks only when the stitches were edited since converting.
 | No run to edit | select needle points of a run of stitches, or give needlePoints | zaznacz nakłucia odcinka ściegów lub podaj needlePoints |
 | A join of runs not sewn one after another | these runs aren't sewn one right after another in one colour block | te odcinki nie są szyte jeden zaraz po drugim w jednym bloku koloru |
 
+## The stitch plan's warning
+
+| Where | English | Polish |
+|---|---|---|
+| The plan's warning when a run's look isn't sewn (the export's and the Check tab's notes) | effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are | efekty, pędzle oraz dodatkowe wypełnienia lub obrysy na ściegach ręcznych lub z pliku (albo na grupie, która je zawiera) nie są haftowane: ściegi są szyte tak, jak są |
+
 ## Terms in every language
 
-To be filled in when the 24 catalogues get their rows: the word each language chose for a needle
-point, a run and manual stitches, and where it differs from upstream VectorCraft's.
+The word each catalogue uses for a needle point (the same as its View › Show Needle Points), a run
+and manual stitches; Polish's are the project owner's. Upstream VectorCraft has none of them.
+
+| Language | Needle point | Run | Manual stitches |
+|---|---|---|---|
+| bg | точка на убождане | редица | ръчни бодове |
+| cs | vpich | řada | ruční stehy |
+| da | nålestik | række | manuelle sting |
+| de | Einstichpunkt | Stichfolge | manuelle Stiche |
+| el | σημείο βελόνας | σειρά | χειροκίνητες βελονιές |
+| es | punto de aguja | serie | puntadas manuales |
+| fi | neulanpisto | pistosarja | manuaaliset pistot |
+| fr | point de piqûre | suite | points manuels |
+| hu | tűszúrás | öltéssor | kézi öltések |
+| id | titik tusukan | rangkaian | jahitan manual |
+| it | punto dell’ago | serie | punti manuali |
+| ja | 針落ち点 | 区間 | 手動ステッチ |
+| ka | ნემსის ჩხვლეტა | მწკრივი | ხელით ნაკერები |
+| ko | 바늘 위치 | 구간 | 수동 스티치 |
+| nl | insteekpunt | reeks | handmatige steken |
+| pl | nakłucie | odcinek | ściegi ręczne |
+| pt-br | ponto de agulha | sequência | pontos manuais |
+| ru | прокол | ряд | ручные стежки |
+| sv | nålstick | rad | manuella stygn |
+| tr | iğne noktası | dizi | manuel dikişler |
+| uk | прокол | ряд | ручні стібки |
+| vi | điểm đâm kim | đoạn | mũi thêu thủ công |
+| zh-hans | 落针点 | 针段 | 手动针迹 |
+| zh-hant | 落針點 | 針段 | 手動針跡 |
 
 ## Revision history
 
 | Date | Change |
 |---|---|
+| 2026-10-27 | Brought in step with what landed: the Check tab's, the Sewing order's and the plan's words, the scale with the catalogues' percent sign, the terms each language chose. |
 | 2026-10-27 | Written for the manual stitches' first pull request: the planned strings, in English and Polish. |

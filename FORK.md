@@ -196,13 +196,20 @@ stitches fast, is tried before anything is built on it.
    exactly and ending fills, running lines and satins at their exit where no worse; Nearest
    Connection; the Object tab's rows and Set on Canvas. Every word in the 24 catalogues
    (AI-drafted, not yet reviewed).
-8. **Manual stitches.** "Convert to manual stitches" and "Restore object" (the original kept in
-   the node's extras), editing needle points with the tool above, drawn thin with their needle
-   points by the stitch scene; a Stitches tab listing the plan's numbered stitches; stops, trims,
-   and stitches turned into jumps. A converted object's run is a literal run, as an opened file's
-   are: the Sewing order's refusal of a lone run (`reorder::Refusal::FromFile`, "a run of an
-   opened machine file moves with its block") then needs to tell the two apart, by a mark the
-   convert or the import leaves.
+8. **Manual stitches.** Two PRs, one after the other (the project owner's choice).
+   The first, done (in review): Convert to Manual Stitches and Restore Object (the object kept on
+   its group, the export right after converting the same bytes, restoring at the size now and
+   asking first only after edits); stops (Stop After on any object, a stop written as a change to
+   the same thread, read back from PES, PEC, JEF and VP3); a run's needle points its anchors,
+   handles ignored; editing by command for agents and MCP (move, insert, delete, split and join
+   runs, a cut or a stop after a needle point with ties, split long stitches as the writers would,
+   the stitch list and selecting needle points by record), Delete, the cutting tools and Join acting
+   on runs as stitch edits; the Check tab's warning for stitches scaled past ±10 %; the Sewing
+   order moving a converted object whole; the Object tab's words and buttons. Every word in the 24
+   catalogues (AI-drafted, not yet reviewed; English and Polish in `docs/manual-stitches-words.md`
+   for review).
+   The second: editing needle points with the tool above, in isolation, drawn thin with their
+   needle points by the stitch scene; a Stitches tab listing the plan's numbered stitches.
 9. **Digitizing from an image.** First the engine, through commands: the smallest area in mm²,
    colour overlap in mm, centre lines as running stitch or satin, optionally an angle along the
    shape, colours matched to the format's palette through Image Trace with the thread library.

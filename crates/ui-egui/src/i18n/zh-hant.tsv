@@ -5685,3 +5685,8 @@ embroidery	Auto (where the plan ends the part)	自動（計畫結束該部分處
 # VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
 	Restore Object	還原物件
 @msg	nothing selected was converted to manual stitches: {_1}	所選內容皆未轉換為手動針跡：{_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	縮放超過 {value}% 的手動針跡或檔案中的針跡
+embroidery	{name}: {value}% larger	{name}：放大 {value}%
+embroidery	{name}: {value}% smaller	{name}：縮小 {value}%
+embroidery	Largest change: {value}%	最大變化：{value}%

@@ -6006,3 +6006,8 @@ embroidery	Auto (where the plan ends the part)	Auto (hvor planen afslutter delen
 # VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
 	Restore Object	Gendan objekt
 @msg	nothing selected was converted to manual stitches: {_1}	intet af det valgte er konverteret til manuelle sting: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Manuelle sting eller sting fra en fil skaleret med mere end {value} %
+embroidery	{name}: {value}% larger	{name}: forstørret {value} %
+embroidery	{name}: {value}% smaller	{name}: formindsket {value} %
+embroidery	Largest change: {value}%	Største ændring: {value} %

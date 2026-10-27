@@ -5646,3 +5646,8 @@ embroidery	Auto (where the plan ends the part)	Авто (там, де план �
 # VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
 	Restore Object	Відновити об’єкт
 @msg	nothing selected was converted to manual stitches: {_1}	нічого з виділеного не перетворено на ручні стібки: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Ручні стібки або стібки з файлу, масштабовані більш ніж на {value} %
+embroidery	{name}: {value}% larger	{name}: збільшення на {value} %
+embroidery	{name}: {value}% smaller	{name}: зменшення на {value} %
+embroidery	Largest change: {value}%	Найбільша зміна: {value} %

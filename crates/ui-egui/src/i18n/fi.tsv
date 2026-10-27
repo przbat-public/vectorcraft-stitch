@@ -6082,3 +6082,8 @@ embroidery	Auto (where the plan ends the part)	Automaattinen (missä suunnitelma
 # VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
 	Restore Object	Palauta objekti
 @msg	nothing selected was converted to manual stitches: {_1}	mitään valituista ei ole muunnettu manuaalisiksi pistoiksi: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Manuaaliset pistot tai pistot tiedostosta, skaalattu yli {value} %
+embroidery	{name}: {value}% larger	{name}: suurennettu {value} %
+embroidery	{name}: {value}% smaller	{name}: pienennetty {value} %
+embroidery	Largest change: {value}%	Suurin muutos: {value} %

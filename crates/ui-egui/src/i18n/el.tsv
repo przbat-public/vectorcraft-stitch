@@ -6003,3 +6003,8 @@ embroidery	Auto (where the plan ends the part)	Αυτόματα (όπου το �
 # VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
 	Restore Object	Επαναφορά αντικειμένου
 @msg	nothing selected was converted to manual stitches: {_1}	τίποτα από την επιλογή δεν έχει μετατραπεί σε χειροκίνητες βελονιές: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Χειροκίνητες βελονιές ή βελονιές από αρχείο με κλιμάκωση πάνω από {value}%
+embroidery	{name}: {value}% larger	{name}: μεγέθυνση κατά {value}%
+embroidery	{name}: {value}% smaller	{name}: σμίκρυνση κατά {value}%
+embroidery	Largest change: {value}%	Μέγιστη αλλαγή: {value}%

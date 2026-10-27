@@ -5239,7 +5239,7 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   say what was left out, and `split` names the objects sewn in more than one block. Sewing order follows stacking
   order: `node.move` changes it.
 - `embroidery.check {…embroidery options, format?, rules?, limit?}` runs the design checks: each rule with its
-  severity, threshold, `unit` (a token: `mm`, `stitches`, `units`, `deltaE`, `blocks`, `colorChanges`), `measures`,
+  severity, threshold, `unit` (a token: `mm`, `stitches`, `units`, `percent`, `deltaE`, `blocks`, `colorChanges`), `measures`,
   sources (the first is the one checked; where sources disagree each is listed), `hits`, the objects hit
   (`objectCount`, at most 1000 in `objects`, `truncated`) and the first `limit` hits (`examples`, 20 by default, at
   most 1000) as record numbers and points with the measure compared. `summary` gives, per severity, the rules that
@@ -5249,7 +5249,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `thread`, a `notSewn` hit the `objects` whose art it left out (none for what the appearances leave out), a
   `pointMissed` hit (information: an entry or exit point its unit's stitches miss by more than 1 mm, an estimate) the
   point set (`at`), where the needle goes in or comes out instead (`from`), the miss (`value`) and which (`note`:
-  `entry` or `exit`); and
+  `entry` or `exit`); a `stitchesScaled` hit (a warning: a run sewn as its points are, manual or a file's, scaled
+  since it was converted or opened by more than 10 % either way) the change in percent along the direction it changed
+  most (`value`) and which way (`note`: `larger` or `smaller`); and
   `notChecked` names each item by `id`. `format` (one of the eight embroidery formats; default: the format of the document's
   thread palette) sets the format limits checked and the threads judged: those the format writes (a PES of a
   document in Janome's palette writes Brother's threads, matched to the art's colours), named in `palette`; `rules`

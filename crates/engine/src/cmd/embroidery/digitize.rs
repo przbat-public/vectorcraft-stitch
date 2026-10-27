@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 
 use vectorcraft_color::Paint;
 use vectorcraft_doc::cancel;
-use vectorcraft_doc::embroidery::{PartKind, StitchRun, ThreadPalette};
+use vectorcraft_doc::embroidery::{PartKind, StitchRun, ThreadPalette, scale_factors};
 use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind, StrokeAlign, StrokeLayer};
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Point, Rect, Shape, kurbo};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
@@ -622,7 +622,10 @@ impl<'a> Digitizer<'a> {
         };
         let origin = self.origin(n, part);
         let occurrence = self.occurrence(&origin);
-        let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, why, asked: Asked::default() };
+        // How much its stitches were scaled since they were made, as walked: a symbol's art carries
+        // its instance's transform too.
+        let scale = run.transformed.and_then(scale_factors);
+        let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, scale, why, asked: Asked::default() };
         self.seq.add(Planned { facts, block, literal });
     }
 
@@ -959,7 +962,7 @@ impl<'a> Digitizer<'a> {
             collected.push(record);
         }
         let asked = Asked { entry: settings.entry(), exit: settings.exit(), reach };
-        let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, why, asked };
+        let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, scale: None, why, asked };
         self.seq.add(Planned { facts, block, literal: None });
     }
 

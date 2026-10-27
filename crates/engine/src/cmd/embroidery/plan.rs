@@ -255,6 +255,11 @@ pub struct Unit {
     /// The narrowest and the widest satin column it sews, millimetres: a satin's width (both), the
     /// typical widths of a fill's narrowest and widest narrow parts; `None` when it sews none.
     pub satin_widths: Option<[f64; 2]>,
+    /// For a run sewn as its points are, the least and the most its stitches were stretched by
+    /// since they were made (read from a machine file, or converted): the singular values of its
+    /// transforms since (`StitchRun::transformed`), the walk's included (a symbol instance's).
+    /// `None` for planned art, and for a run only moved since.
+    pub scale: Option<[f64; 2]>,
     /// Why it is sewn the way it is.
     pub why: Choice,
     /// The box its stitches fall in as planned, millimetres (`None`: no finite point).

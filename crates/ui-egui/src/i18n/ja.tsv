@@ -5728,3 +5728,8 @@ embroidery	Auto (where the plan ends the part)	自動（計画がパーツを終
 # VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
 	Restore Object	オブジェクトを復元
 @msg	nothing selected was converted to manual stitches: {_1}	選択したものは手動ステッチに変換されていません: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	{value}% を超えて拡大縮小された手動ステッチまたはファイルのステッチ
+embroidery	{name}: {value}% larger	{name}: {value}% 拡大
+embroidery	{name}: {value}% smaller	{name}: {value}% 縮小
+embroidery	Largest change: {value}%	最大の変化: {value}%

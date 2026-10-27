@@ -69,8 +69,10 @@ Restore asks only when the stitches were edited since converting.
 
 | Where | English | Polish |
 |---|---|---|
-| The rule on scaled manual stitches | Manual stitches scaled more than {value} % | Ściegi ręczne przeskalowane o więcej niż {value} % |
-| Its finding | {name}: {value} % | {name}: {value} % |
+| The rule on scaled stitches (manual, or a machine file's) | Manual stitches or stitches from a file scaled by more than {value}% | Ściegi ręczne lub z pliku przeskalowane o więcej niż {value}% |
+| Its finding, grown | {name}: {value}% larger | {name}: powiększenie o {value}% |
+| Its finding, shrunk | {name}: {value}% smaller | {name}: pomniejszenie o {value}% |
+| What it measured when nothing was found | Largest change: {value}% | Największa zmiana: {value}% |
 
 ## What the commands say when they can't (translated; "invalid parameters" errors stay English)
 

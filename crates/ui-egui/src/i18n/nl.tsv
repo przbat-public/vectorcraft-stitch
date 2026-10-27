@@ -6049,3 +6049,8 @@ embroidery	Auto (where the plan ends the part)	Automatisch (waar het plan het de
 # VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
 	Restore Object	Object herstellen
 @msg	nothing selected was converted to manual stitches: {_1}	niets van de selectie is omgezet naar handmatige steken: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Handmatige steken of steken uit een bestand die meer dan {value}% geschaald zijn
+embroidery	{name}: {value}% larger	{name}: {value}% vergroot
+embroidery	{name}: {value}% smaller	{name}: {value}% verkleind
+embroidery	Largest change: {value}%	Grootste verandering: {value}%

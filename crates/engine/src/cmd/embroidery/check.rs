@@ -131,6 +131,19 @@ const MOST_SHORT_IN_A_ROW: usize = 5;
 /// miss is pointed out (millimetres): the planner's own threshold, which it also keeps an aimed
 /// plan by (at least this much nearer the exit).
 pub use vectorcraft_stitch::plan::POINT_MISS_MM;
+/// How much a run sewn as its points are may be scaled since its stitches were made (read from a
+/// machine file, or converted) before it is warned about, percent either way: its stitches keep
+/// their count, so their density follows the size. Wilcom's help on scaling, BERNINA's on opening
+/// machine files and Hatch's on manual objects all say no more than ±10 %
+/// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Modifying/transform/transform-8.htm>,
+/// <https://softwarehelp.bernina.com/en/MainHelp/PART_Basics/manage_designs/manage_designs-5.htm>,
+/// <https://hatch.embroideryhelp.net/v3/en/OnlineHelp/Setup/assets/Machine_file_recognition.htm>);
+/// Wilcom's warning options give about ±5 %, listed second.
+const SCALED_PERCENT: f64 = 10.0;
+/// The steps a percent of scaling is rounded to before it is judged: hundredths, so that a scale
+/// of exactly 90 % or 110 % passes whatever the arithmetic's last bit, far finer than anyone
+/// scales by. An estimate.
+const SCALED_STEPS: f64 = 100.0;
 /// Brother's PRT51 manual warns that stitching sewn over three times or more may break the thread
 /// or the needle (<https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf>, data
 /// precautions and troubleshooting).
@@ -349,6 +362,37 @@ pub(crate) const RULES: &[Rule] = &[
             url: "",
             value: "missed by more than 1 mm (an estimate)",
         }],
+    },
+    Rule {
+        id: "stitchesScaled",
+        title: "Stitches sewn as they are, scaled since they were opened or converted: they keep their count, not their density",
+        severity: Severity::Warning,
+        threshold: Some(SCALED_PERCENT),
+        unit: Some("percent"),
+        measures: "how much a run sewn as its points are was enlarged or reduced since it was opened or converted, along the direction it changed most",
+        extreme: Some(Extreme::Largest),
+        sources: &[
+            Source {
+                name: "Wilcom EmbroideryStudio 28 help, Scale objects numerically",
+                url: "https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Modifying/transform/transform-8.htm",
+                value: "machine files scaled more than ±10 % change density, and quality with it",
+            },
+            Source {
+                name: "BERNINA embroidery software help, Open machine files",
+                url: "https://softwarehelp.bernina.com/en/MainHelp/PART_Basics/manage_designs/manage_designs-5.htm",
+                value: "no more than ±10 %: the stitch count stays, so the density follows the size",
+            },
+            Source {
+                name: "Hatch help, Machine file recognition",
+                url: "https://hatch.embroideryhelp.net/v3/en/OnlineHelp/Setup/assets/Machine_file_recognition.htm",
+                value: "designs holding manual objects: no more than ±10 %",
+            },
+            Source {
+                name: "Wilcom EmbroideryStudio 28 help, Warning message options",
+                url: "https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Setup/settings/settings-25.htm",
+                value: "machine files: about ±5 %",
+            },
+        ],
     },
     Rule {
         id: "threadMismatch",
@@ -608,6 +652,15 @@ struct Extremes {
     layers: Option<f64>,
 }
 
+/// How much a run stretched by `least` to `most` since it was made changed in size, percent, along
+/// the direction it changed most, rounded to [`SCALED_STEPS`]: the largest number for a change past
+/// what a number holds.
+fn scale_change([least, most]: [f64; 2]) -> f64 {
+    let percent = (most - 1.0).max(1.0 - least) * 100.0;
+    let rounded = (percent * SCALED_STEPS).round() / SCALED_STEPS;
+    if rounded.is_finite() { rounded } else { f64::MAX }
+}
+
 /// `m`, raised to `v` when `v` is larger (`more`) or lowered when smaller.
 fn extreme(m: &mut Option<f64>, v: f64, more: bool) {
     if v.is_finite() {
@@ -783,6 +836,16 @@ impl<'a> Checker<'a> {
                 self.judged("pointMissed", missed);
                 if missed > POINT_MISS_MM {
                     self.add("pointMissed", Hit { at: asked, from, note: Some(note.to_string()), ..hit(missed) });
+                }
+            }
+            // A run sewn as its points are, scaled since it was made: its stitches spread or crowd.
+            if let Some(scale) = u.scale {
+                let change = scale_change(scale);
+                self.judged("stitchesScaled", change);
+                if change > SCALED_PERCENT {
+                    let [least, most] = scale;
+                    let note = if most - 1.0 >= 1.0 - least { "larger" } else { "smaller" };
+                    self.add("stitchesScaled", Hit { note: Some(note.to_string()), ..hit(change) });
                 }
             }
             match (u.sewn(), u.params) {

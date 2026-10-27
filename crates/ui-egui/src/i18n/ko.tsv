@@ -5629,3 +5629,8 @@ embroidery	Auto (where the plan ends the part)	자동 (계획이 부분을 끝�
 # VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
 	Restore Object	개체 복원
 @msg	nothing selected was converted to manual stitches: {_1}	선택한 항목 중 수동 스티치로 변환된 것이 없습니다: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	{value}% 넘게 크기가 조정된 수동 스티치 또는 파일의 스티치
+embroidery	{name}: {value}% larger	{name}: {value}% 확대
+embroidery	{name}: {value}% smaller	{name}: {value}% 축소
+embroidery	Largest change: {value}%	최대 변화: {value}%

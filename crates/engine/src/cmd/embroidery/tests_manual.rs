@@ -381,3 +381,84 @@ fn restoring_passes_over_what_it_cant_restore() {
     run(&mut s, "select.all", json!({}));
     assert!(s.execute("embroidery.restoreObject", &json!({})).unwrap_err().to_string().contains("notConverted"));
 }
+
+/// The scale check on `s`: its one rule's reply.
+fn scale_rule(s: &mut Session) -> serde_json::Value {
+    run(s, "embroidery.check", json!({"rules": ["stitchesScaled"]}))["rules"][0].clone()
+}
+
+/// Manual stitches scaled past ±10 % since they were converted are warned about, saying how much
+/// and which way they changed most; exactly 90 % or 110 % passes (a hundredth of a percent decides,
+/// not the arithmetic's last bit), and so do a turn and a mirror. A run only moved since it was made
+/// was never scaled: the rule judges nothing.
+#[test]
+fn manual_stitches_scaled_past_ten_percent_are_warned_about() {
+    let scaled = |steps: &[(&str, serde_json::Value)]| {
+        let mut s = blank();
+        let square = red_square(&mut s, 5.0, 5.0, 10.0);
+        run(&mut s, "embroidery.convertToManual", json!({"ids": [square]}));
+        for (command, params) in steps {
+            let mut params = params.clone();
+            params["ids"] = json!([square]);
+            run(&mut s, command, params);
+        }
+        (square, scale_rule(&mut s))
+    };
+    let scale = |sx: f64, sy: f64| ("object.scale", json!({"sx": sx, "sy": sy}));
+    for (sx, sy, measured) in [(105.0, 105.0, 5.0), (110.0, 100.0, 10.0), (90.0, 90.0, 10.0), (100.0, 109.99, 9.99)] {
+        let (_, rule) = scaled(&[scale(sx, sy)]);
+        assert_eq!((rule["hits"].clone(), rule["measured"].clone()), (json!(0), json!(measured)), "{sx} × {sy} %: {rule}");
+    }
+    for (sx, sy, measured, note) in
+        [(111.0, 100.0, 11.0, "larger"), (100.0, 89.0, 11.0, "smaller"), (120.0, 95.0, 20.0, "larger"), (85.0, 105.0, 15.0, "smaller")]
+    {
+        let (square, rule) = scaled(&[scale(sx, sy)]);
+        assert_eq!((rule["severity"].as_str(), rule["objects"].clone()), (Some("warning"), json!([square])), "{rule}");
+        assert!(rule["hits"].as_u64().unwrap() >= 1, "{rule}");
+        let hit = &rule["examples"][0];
+        assert_eq!(
+            (hit["value"].clone(), hit["note"].as_str(), hit["id"].as_u64()),
+            (json!(measured), Some(note), Some(square)),
+            "{sx} × {sy} %: {hit}"
+        );
+        assert_eq!(rule["measured"], json!(measured));
+    }
+    // Scaled up and back down: the record composes, so the stitches are their size again.
+    let (_, rule) = scaled(&[scale(150.0, 150.0), scale(100.0 / 1.5, 100.0 / 1.5)]);
+    assert_eq!((rule["hits"].clone(), rule["measured"].clone()), (json!(0), json!(0.0)), "{rule}");
+    let turned = [("object.rotate", json!({"angle": 30})), ("object.reflect", json!({"axis": "vertical"}))];
+    let (_, rule) = scaled(&turned);
+    assert_eq!((rule["hits"].clone(), rule["measured"].clone()), (json!(0), json!(0.0)), "turned and mirrored: {rule}");
+    let (_, rule) = scaled(&[("object.move", json!({"dx": 30, "dy": -4}))]);
+    assert_eq!((rule["hits"].clone(), rule["measured"].clone()), (json!(0), json!(null)), "only moved: {rule}");
+}
+
+/// The same holds for a machine file's runs (the owner's decision: opened files too), and for runs
+/// a symbol instance places: the instance's scale counts, as the walk places its art.
+#[test]
+fn a_files_runs_scaled_or_placed_scaled_are_warned_about() {
+    use vectorcraft_doc::embroidery::StitchRun;
+    let points = [(10.0, 10.0), (12.0, 10.0), (14.0, 10.0), (14.0, 12.0)];
+    let mut s = blank();
+    let line = literal_path(&mut s, None, [200, 30, 30], &points, StitchRun::default());
+    assert_eq!(scale_rule(&mut s)["measured"], json!(null), "as opened");
+    run(&mut s, "object.scale", json!({"ids": [line], "sx": 125, "sy": 125}));
+    let rule = scale_rule(&mut s);
+    assert_eq!(
+        (rule["hits"].clone(), rule["examples"][0]["value"].clone(), rule["objects"].clone()),
+        (json!(1), json!(25.0), json!([line])),
+        "{rule}"
+    );
+    let mut s = blank();
+    let line = literal_path(&mut s, None, [200, 30, 30], &points, StitchRun::default());
+    run(&mut s, "select.set", json!({"ids": [line]}));
+    let instance = run(&mut s, "symbol.new", json!({"name": "Run"}))["id"].as_u64().unwrap();
+    assert_eq!(scale_rule(&mut s)["hits"], json!(0), "placed at its size");
+    run(&mut s, "object.scale", json!({"ids": [instance], "sx": 150, "sy": 150}));
+    let rule = scale_rule(&mut s);
+    assert_eq!(
+        (rule["hits"].clone(), rule["examples"][0]["value"].clone(), rule["objects"].clone()),
+        (json!(1), json!(50.0), json!([instance])),
+        "{rule}"
+    );
+}

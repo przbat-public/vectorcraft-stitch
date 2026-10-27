@@ -5646,3 +5646,8 @@ embroidery	Auto (where the plan ends the part)	Tự động (nơi kế hoạch k
 # VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
 	Restore Object	Khôi phục đối tượng
 @msg	nothing selected was converted to manual stitches: {_1}	không gì trong vùng chọn đã được chuyển thành mũi thêu thủ công: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Mũi thêu thủ công hoặc mũi thêu từ tệp bị đổi tỷ lệ hơn {value}%
+embroidery	{name}: {value}% larger	{name}: phóng to {value}%
+embroidery	{name}: {value}% smaller	{name}: thu nhỏ {value}%
+embroidery	Largest change: {value}%	Thay đổi nhiều nhất: {value}%

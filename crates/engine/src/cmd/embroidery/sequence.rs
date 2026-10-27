@@ -38,6 +38,9 @@ pub(super) struct Facts {
     pub(super) columns: Option<Params>,
     /// The narrowest and widest satin columns it sews (`Unit::satin_widths`).
     pub(super) satin_widths: Option<[f64; 2]>,
+    /// How much a run sewn as its points are was scaled since its stitches were made
+    /// (`Unit::scale`).
+    pub(super) scale: Option<[f64; 2]>,
     /// Why it is sewn the way it is.
     pub(super) why: Choice,
     /// The entry and exit points it was planned toward.
@@ -298,7 +301,9 @@ impl Sequence {
             for (m, end) in members.into_iter().zip(ends) {
                 let range = m.start..end;
                 let runs = runs(&stitches, range.clone());
-                let Member { facts: Facts { origin, occurrence, params, columns, satin_widths, why, asked }, bounds, own, met, walked, .. } = m;
+                let Member {
+                    facts: Facts { origin, occurrence, params, columns, satin_widths, scale, why, asked }, bounds, own, met, walked, ..
+                } = m;
                 plan.units.push(Unit {
                     own,
                     met,
@@ -309,6 +314,7 @@ impl Sequence {
                     params,
                     columns,
                     satin_widths,
+                    scale,
                     why,
                     bounds,
                     block: k,
@@ -384,6 +390,7 @@ mod tests {
             params: Some(Params::for_style(Style::Fill)),
             columns: None,
             satin_widths: None,
+            scale: None,
             why: Choice::Fill,
             asked: Asked::default(),
         };

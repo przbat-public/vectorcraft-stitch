@@ -647,7 +647,8 @@ as Melco's checker reads it, on each object's settings, it flags none.
   Object tab follows), Shift-click adds it or takes it away; the object a click would select is
   outlined. The Control bar shows the tool's Fill | Stroke switch (the Object tab's, in step) and
   Nearest Connection (also in the panel's ≡ menu), which sets every point at once for the
-  shortest jumps.
+  shortest jumps. Its words, in English and Polish and the terms every language chose:
+  [The Embroidery Tool's words](embroidery-tool-words.md).
 
   ![The Embroidery Tool in the stitch view: a red disc's fill with its entry set and its exit left to the planner](images/embroidery-tool-stitches.png)
 

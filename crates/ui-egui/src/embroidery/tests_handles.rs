@@ -484,6 +484,45 @@ fn a_stale_handle_dims_its_face_and_keeps_its_edge() {
     }
 }
 
+/// At the closest zoom, a drag's ghost to a neighbour far off the canvas is drawn only where it
+/// crosses the canvas, a budget of dashes at most: the frame stays as light as at any zoom.
+#[test]
+fn the_ghost_is_clipped_to_the_canvas_at_the_closest_zoom() {
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    app.embroidery.preview.pin_light();
+    app.run("file.new", json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    app.run("paint.setStroke", json!({"none": true})).unwrap();
+    // Two squares 10 pt apart (3.5 mm, under the trim length): the thread runs from one to the next.
+    let ids: Vec<u64> = [40, 110]
+        .into_iter()
+        .map(|x| app.run("shape.rectangle", json!({"x": x, "y": 60, "width": 60, "height": 60})).unwrap()["id"].as_u64().unwrap())
+        .collect();
+    app.run("select.set", json!({"ids": [ids[1]]})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = egui::Context::default();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let view = app.view_info();
+    let handles = app.session.embroidery_handles(view).0;
+    let entry = handles.iter().find(|h| h.id.kind == Kind::Entry).expect("the second square's entry");
+    assert!(entry.neighbour.is_some_and(|n| n.distance(entry.point) > 5.0), "a neighbour along the thread: {entry:?}");
+    app.run("view.setZoom", json!({"zoom": 64000, "center": [entry.at.x, entry.at.y]})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let Some(&(_, at)) = on_screen(&mut app).iter().find(|(k, _)| *k == Kind::Entry) else { panic!("the entry on screen") };
+    let button = |pos: Pos2, pressed| Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(at), button(at, true)]);
+    let mut shapes = vec![];
+    for k in 1..=3 {
+        time += 0.05;
+        shapes = frame(&mut app, &ctx, time, vec![Event::PointerMoved(at + egui::vec2(8.0 * k as f32, 0.0))]);
+    }
+    assert!(app.session.tool_options()["drag"].is_object(), "dragging");
+    let segments = shapes.iter().filter(|s| matches!(s, Shape::LineSegment { .. })).count();
+    // Unclipped, the jump of a few millimetres at 640× would be thousands of dashes a tone.
+    assert!((1..1_000).contains(&segments), "{segments} line segments drawn");
+}
+
 /// The handles read on white fabric and on dark fabric in every theme (both schemes, every
 /// brightness and accent): the two-tone edge's dark line stands out from white and its light line
 /// from black and from the dark line, by WCAG's non-text 3:1 (1.4.11); an exit's face from the

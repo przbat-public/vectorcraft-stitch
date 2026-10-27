@@ -204,11 +204,11 @@ fn dashes_are_drawn_on_the_canvas_only_and_capped() {
         let clip = p.clip_rect();
         let mut budget = usize::MAX;
         // Across the canvas, from far past it either side: the 100 points inside only.
-        dash(&p, &[egui::pos2(-1e9, 50.0), egui::pos2(1e9, 50.0)], red, clip, &mut budget);
+        dash(&p, &[egui::pos2(-1e9, 50.0), egui::pos2(1e9, 50.0)], Stroke::new(1.0, red), (DASH, GAP), clip, &mut budget);
         // Outside it: nothing.
-        dash(&p, &[egui::pos2(-50.0, -50.0), egui::pos2(500.0, -50.0)], green, clip, &mut budget);
+        dash(&p, &[egui::pos2(-50.0, -50.0), egui::pos2(500.0, -50.0)], Stroke::new(1.0, green), (DASH, GAP), clip, &mut budget);
         let mut budget = 3;
-        dash(&p, &[egui::pos2(0.0, 20.0), egui::pos2(100.0, 20.0)], blue, clip, &mut budget);
+        dash(&p, &[egui::pos2(0.0, 20.0), egui::pos2(100.0, 20.0)], Stroke::new(1.0, blue), (DASH, GAP), clip, &mut budget);
         assert_eq!(budget, 0);
     });
     out.textures_delta.clear();

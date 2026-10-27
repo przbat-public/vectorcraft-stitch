@@ -29,8 +29,8 @@ use vectorcraft_geom::{Point, Vec2, constrain_angle_from, normalize_deg};
 
 pub use facts::{FillAngle, PlanFacts, PlannedEnds};
 pub use handles::{
-    APART_PX, ARROW_HEAD_PX, ARROW_REACH_PX, Arrow, CATCH_PAST_PX, ENTRY_MARKER_PX, EXIT_MARKER_PX, HANDLED_OBJECTS_MAX, Handle, HandleId, Kind,
-    Owner, State, direction, handle_walks, handles, hit, hit_after,
+    APART_PX, ARROW_HEAD_PX, ARROW_REACH_PX, Arrow, CATCH_MIN_PX, CATCH_PAST_PX, ENTRY_MARKER_PX, EXIT_MARKER_PX, HANDLED_OBJECTS_MAX, Handle,
+    HandleId, Kind, Owner, State, direction, handle_walks, handles, hit, hit_after,
 };
 
 use crate::{Action, Cursor, Mods, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};

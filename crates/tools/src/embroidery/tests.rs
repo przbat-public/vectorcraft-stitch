@@ -218,8 +218,9 @@ fn a_turned_view() {
     assert_eq!(hit(&c, &hs, hs[1].at).map(|h| h.id.kind), Some(Kind::Exit));
 }
 
-/// A handle is caught within half its size and 2 px on screen, whatever the zoom; an exit lying
-/// under its entry is moved apart, and both are caught.
+/// A handle is caught within half its size and 2 px on screen, and at least 12 px from its centre
+/// (a 24 px target), whatever the zoom; an exit lying under its entry is moved apart, and both are
+/// caught.
 #[test]
 fn handles_are_caught_in_screen_pixels_and_apart_when_coincident() {
     let (d, ids) = doc();
@@ -228,7 +229,8 @@ fn handles_are_caught_in_screen_pixels_and_apart_when_coincident() {
     for zoom in [0.25, 1.0, 8.0] {
         let c = ToolContext { embroidery: Some(&f), zoom, ..cx(&d, &s, &p) };
         let hs = handles(&c, Some(PartKind::Fill));
-        let reach = (ENTRY_MARKER_PX / 2.0 + CATCH_PAST_PX - 0.5) / zoom;
+        let reach = ((ENTRY_MARKER_PX / 2.0 + CATCH_PAST_PX).max(CATCH_MIN_PX) - 0.5) / zoom;
+        assert!(reach * zoom >= CATCH_MIN_PX - 0.5, "a 24 px target at least");
         assert_eq!(hit(&c, &hs, Point::new(100.0 + reach, 100.0)).map(|h| h.id.kind), Some(Kind::Entry), "{zoom}×");
         assert_eq!(hit(&c, &hs, Point::new(100.0 + 3.0 * reach, 100.0)), None, "{zoom}×");
         // The stroke's ends lie on one another: its exit is moved apart.

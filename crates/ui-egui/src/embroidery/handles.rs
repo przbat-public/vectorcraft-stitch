@@ -58,12 +58,24 @@ pub(super) const STALE_ALPHA: f32 = 0.45;
 pub const LEADER_MIN_PT: f32 = 8.0;
 /// The dot where the stitches start, at the leader's end: its radius, points.
 const PLANNED_DOT_PT: f32 = 2.5;
-/// The outline of the object a press would select, points wide (the selection tools' hover outline).
+/// The outline of the object a press would select, points wide (the selection tools' hover outline),
+/// over a dark line as much wider either side, so that it reads on fabric of its own colour.
 const HOVER_OUTLINE_PT: f32 = 1.5;
+const HOVER_OUTLINE_UNDER_PT: f32 = 0.75;
+/// A hairline's width (a leader to where the stitches start, an exit's line back to its point),
+/// points, and how much wider either side the line of the other tone under it is.
+const HAIRLINE_PT: f32 = 1.0;
+const HAIRLINE_UNDER_PT: f32 = 0.75;
 
-/// The ghost's dashes and the gaps between them, points.
+/// The ghost's dashes and the gaps between them, points; its dark line's width and its light one's.
 const GHOST_DASH: f32 = 5.0;
 const GHOST_GAP: f32 = 3.0;
+const GHOST_DARK_PT: f32 = 1.5;
+const GHOST_LIGHT_PT: f32 = 0.75;
+/// The most dashes a frame draws of each of the ghost's lines: one across a 4K screen's diagonal
+/// (about 5,000 px, 625 dashes) with room to spare, an estimate. The ghost is clipped to the canvas,
+/// so a jump far off it at a close zoom costs no more.
+const GHOST_DASHES_MAX: usize = 1_000;
 /// The decimals the ghost's jump is said with: a tenth of a millimetre, the formats' grid.
 const JUMP_DECIMALS: usize = 1;
 /// The decimals an angle is said with: a tenth of a degree, as the Object tab's angle field.
@@ -213,6 +225,7 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
     {
         let [r, g, b] = st.doc.layer_color(object);
         for line in crate::canvas::to_screen_path(&outline, xf) {
+            painter.add(Shape::line(line.clone(), Stroke::new(HOVER_OUTLINE_PT + 2.0 * HOVER_OUTLINE_UNDER_PT, dark())));
             painter.add(Shape::line(line, Stroke::new(HOVER_OUTLINE_PT, Color32::from_rgb(r, g, b))));
         }
     }
@@ -242,13 +255,13 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         if let (State::Set, Some(planned), false) = (h.state, h.planned, dragged) {
             let to = xf.to_screen(planned);
             if to.distance(at) > LEADER_MIN_PT {
-                painter.line_segment([at, to], Stroke::new(1.0, color.gamma_multiply(alpha)));
+                hairline(painter, [at, to], color, alpha);
                 painter.circle(to, PLANNED_DOT_PT, color.gamma_multiply(alpha), Stroke::new(1.0, dark()));
             }
         }
         // An exit moved apart from the entry it lies under: a hairline back to its point.
         if h.at != h.point && !dragged {
-            painter.line_segment([at, xf.to_screen(h.point)], Stroke::new(1.0, dark().gamma_multiply(alpha)));
+            hairline(painter, [at, xf.to_screen(h.point)], dark(), alpha);
         }
         // While dragging, where the point is stored (taken where the stitches can start or end, as
         // the last preview took it): a dot there, joined to the handle that follows the pointer when
@@ -256,15 +269,19 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         // and how long.
         let stored = xf.to_screen(h.point);
         if dragged && h.id.kind != Kind::Angle && stored.distance(at) > LEADER_MIN_PT {
-            painter.line_segment([at, stored], Stroke::new(1.0, color.gamma_multiply(alpha)));
+            hairline(painter, [at, stored], color, alpha);
             painter.circle(stored, PLANNED_DOT_PT, color.gamma_multiply(alpha), Stroke::new(1.0, dark()));
         }
         // The point the keys last stepped to or nudged shows its jump too.
         let keyed = focused && options["keyed"].as_bool() == Some(true) && h.id.kind != Kind::Angle;
         if let (true, Some(neighbour)) = (dragged || keyed, h.neighbour) {
             let from = xf.to_screen(neighbour);
-            painter.extend(Shape::dashed_line(&[from, stored], Stroke::new(1.5, dark()), GHOST_DASH, GHOST_GAP));
-            painter.extend(Shape::dashed_line(&[from, stored], Stroke::new(0.75, light()), GHOST_DASH, GHOST_GAP));
+            // Clipped to the canvas, a dash's width past it so that one on its edge isn't cut.
+            let clip = painter.clip_rect().expand(GHOST_DARK_PT);
+            for (width, ink) in [(GHOST_DARK_PT, dark()), (GHOST_LIGHT_PT, light())] {
+                let mut budget = GHOST_DASHES_MAX;
+                super::overlay::dash(painter, &[from, stored], Stroke::new(width, ink), (GHOST_DASH, GHOST_GAP), clip, &mut budget);
+            }
             let mm = neighbour.distance(h.point) / vectorcraft_engine::cmd::embroidery::mm_to_pt(1.0);
             let value = super::numbers::decimal(crate::i18n::current(), mm, JUMP_DECIMALS);
             let cut = h.trim.is_some_and(|trim| neighbour.distance(h.point) > trim);
@@ -343,6 +360,14 @@ pub(crate) fn tests_outline(doc: &vectorcraft_doc::Document, object: vectorcraft
 /// stand out from the handles' light inner edge (a set point's face against an Auto one's).
 pub(super) fn entry_color(t: &Tokens) -> Color32 {
     super::marks::readable(t.accent, &[light()], false)
+}
+
+/// A hairline from `ends[0]` to `ends[1]` in `ink` faded by `alpha`, over a line of the other tone
+/// a little wider, so that it reads on fabric of its own colour.
+fn hairline(p: &egui::Painter, ends: [Pos2; 2], ink: Color32, alpha: f32) {
+    let under = if ink == dark() { light() } else { dark() };
+    p.line_segment(ends, Stroke::new(HAIRLINE_PT + 2.0 * HAIRLINE_UNDER_PT, under.gamma_multiply(alpha)));
+    p.line_segment(ends, Stroke::new(HAIRLINE_PT, ink.gamma_multiply(alpha)));
 }
 
 /// An exit's colour: its layer's `rgb`, darkened only as far as it takes to stand out from the

@@ -36,6 +36,10 @@ pub const EXIT_MARKER_PX: f64 = 14.0;
 /// past its drawn edge ([`ToolContext::point_tol`]).
 pub const CATCH_PAST_PX: f64 = 2.0;
 
+/// The least distance from its centre a handle is caught within, screen pixels: a target 24 px
+/// across, WCAG 2.2's minimum target size (2.5.8, <https://www.w3.org/TR/WCAG22/#target-size-minimum>).
+pub const CATCH_MIN_PX: f64 = 12.0;
+
 /// How far apart on screen an exit lying under its entry is drawn and caught, pixels: the exit
 /// marker's size, so both can be caught.
 pub const APART_PX: f64 = EXIT_MARKER_PX;
@@ -262,8 +266,8 @@ pub fn handles(cx: &ToolContext, part: Option<PartKind>) -> Vec<Handle> {
 }
 
 /// The handle of `all` under `p` (document points): the nearest within half its size and
-/// [`CATCH_PAST_PX`] on screen, or the selection tolerance where that is wider; of equally near
-/// ones, the first (an entry before its exit).
+/// [`CATCH_PAST_PX`] on screen, at least [`CATCH_MIN_PX`] from its centre, or the selection
+/// tolerance where that is wider; of equally near ones, the first (an entry before its exit).
 pub fn hit(cx: &ToolContext, all: &[Handle], p: Point) -> Option<Handle> {
     hit_after(cx, all, p, None)
 }
@@ -275,7 +279,7 @@ pub fn hit_after(cx: &ToolContext, all: &[Handle], p: Point, after: Option<Handl
     let mut best: Option<(f64, Handle)> = None;
     let mut near: Vec<(f64, Handle)> = Vec::new();
     for h in all {
-        let reach = cx.tol(cx.selection_tolerance.max(h.id.kind.size_px() / 2.0 + CATCH_PAST_PX));
+        let reach = cx.tol(cx.selection_tolerance.max(h.id.kind.size_px() / 2.0 + CATCH_PAST_PX).max(CATCH_MIN_PX));
         let d = h.at.distance(p);
         if d <= reach {
             near.push((d, *h));

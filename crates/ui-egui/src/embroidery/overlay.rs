@@ -168,11 +168,11 @@ fn anchors_within(nodes: &[&Node], max: usize) -> bool {
     true
 }
 
-/// Dash `line` (screen points) in `color` where it crosses `clip`, at most `budget` dashes, taken
-/// from it: a long line far outside the canvas costs nothing.
-fn dash(p: &egui::Painter, line: &[Pos2], color: Color32, clip: egui::Rect, budget: &mut usize) {
-    let stroke = Stroke::new(1.0, color);
-    let (dash, period) = (f64::from(DASH), f64::from(DASH + GAP));
+/// Dash `line` (screen points) with `stroke`, `pattern` its dashes' and gaps' lengths, where it
+/// crosses `clip`, at most `budget` dashes, taken from it: a long line far outside the canvas costs
+/// nothing.
+pub(super) fn dash(p: &egui::Painter, line: &[Pos2], stroke: Stroke, pattern: (f32, f32), clip: egui::Rect, budget: &mut usize) {
+    let (dash, period) = (f64::from(pattern.0), f64::from(pattern.0 + pattern.1));
     // How far along the line this segment starts, folded into one period (the dashes go on from one
     // segment into the next).
     let mut phase = 0.0_f64;
@@ -253,14 +253,14 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         Some(Pending::Outlines(outlines)) => {
             for (color, outline) in outlines {
                 for line in crate::canvas::to_screen_path(outline, xf) {
-                    dash(painter, &line, *color, clip, &mut budget);
+                    dash(painter, &line, Stroke::new(1.0, *color), (DASH, GAP), clip, &mut budget);
                 }
             }
         }
         Some(Pending::Bounds(color, b)) => {
             let mut corners = xf.quad(*b);
             corners.extend(corners.first().copied());
-            dash(painter, &corners, *color, clip, &mut budget);
+            dash(painter, &corners, Stroke::new(1.0, *color), (DASH, GAP), clip, &mut budget);
         }
         None => {}
     }

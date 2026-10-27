@@ -679,3 +679,44 @@ fn put_away_it_keeps_no_handles() {
     t.pointer(&c, &ev(PointerKind::Move, 14.0, 10.0));
     assert_eq!(handle_walks(), walks + 1, "found afresh");
 }
+
+/// While a point is dragged the keys are not the tool's: Delete, the arrows, `[` `]` and Enter do
+/// nothing (the drag is the gesture under way) and leave it and the point the keys act on as they
+/// are; the release keeps what the drag previewed.
+#[test]
+fn keys_do_nothing_while_a_point_is_dragged() {
+    let (d, ids) = doc();
+    let [square, ..] = ids;
+    let (s, p, f) = (select(&[square]), PaintDefaults::default(), plan(ids));
+    let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    let mut t = EmbroideryTool::default();
+    assert!(t.pointer(&c, &ev(PointerKind::Down, 100.0, 100.0)).is_empty());
+    let first = t.pointer(&c, &ev(PointerKind::Drag, 130.0, 100.0));
+    assert!(matches!(first.as_slice(), [Action::Begin(_), Action::Preview(..)]), "{first:?}");
+    let focus = t.options()["focus"].clone();
+    for key in [ToolKey::Delete, ToolKey::Backspace, ToolKey::Left, ToolKey::Down, ToolKey::BracketLeft, ToolKey::BracketRight, ToolKey::Enter] {
+        assert_eq!(t.key(&c, key, Mods::default()), vec![], "{key:?} mid-drag");
+    }
+    assert_eq!(t.options()["focus"], focus, "the point the keys act on");
+    assert!(t.busy(), "still dragging");
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Up, 130.0, 100.0)), vec![Action::Commit]);
+}
+
+/// A drag that began but previewed nothing (the arrow's head drawn onto the fill's centre, where it
+/// points nowhere) is cancelled by its release, not committed: there is nothing to keep.
+#[test]
+fn a_drag_that_previewed_nothing_is_cancelled_by_its_release() {
+    let (d, ids) = doc();
+    let [square, ..] = ids;
+    let (s, p) = (select(&[square]), PaintDefaults::default());
+    let mut f = plan(ids);
+    f.rows.insert(square, FillAngle { degrees: 0.0, set: false });
+    let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    let arrow = handles(&c, Some(PartKind::Fill)).into_iter().find(|h| h.id.kind == Kind::Angle).expect("the rows' arrow");
+    let centre = arrow.arrow.unwrap().centre;
+    let mut t = EmbroideryTool::default();
+    assert!(t.pointer(&c, &ev(PointerKind::Down, arrow.at.x, arrow.at.y)).is_empty());
+    let drag = t.pointer(&c, &ev(PointerKind::Drag, centre.x, centre.y));
+    assert!(matches!(drag.as_slice(), [Action::Begin(_)]), "begun, nothing previewed: {drag:?}");
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Up, centre.x, centre.y)), vec![Action::Cancel]);
+}

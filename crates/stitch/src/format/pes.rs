@@ -31,7 +31,7 @@
 //! References: EduTechWiki, *Embroidery format PES* and *Embroidery format PEC*
 //! (edutechwiki.unige.ch/en/Embroidery_format_PES, …/Embroidery_format_PEC).
 
-use super::{Emitter, Frame, LABEL_LEN, PAD, Reader, add, finish, label, mm, steps, walk};
+use super::{Emitter, Frame, LABEL_LEN, PAD, Reader, add, finish, label, mm, steps, walk, written_blocks, written_numbers};
 use crate::thread::{self, Palette};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
@@ -139,7 +139,8 @@ fn after(head: &[u8], p: &Pattern) -> Result<Vec<u8>> {
 /// The PEC section: the PEC header, the stitch block and the previews.
 fn pec_section(p: &Pattern) -> Result<Vec<u8>> {
     let frame = Frame::of(p, false)?;
-    let colors = p.blocks.iter().filter(|b| !b.stitches.is_empty()).count();
+    // A stop is written as a change to the same thread: a colour of its own in the header.
+    let colors = written_blocks(p).count();
     if colors == 0 {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
@@ -199,8 +200,8 @@ fn header(p: &Pattern, colors: usize) -> Result<Vec<u8>> {
     h.push(ICON_LINES as u8);
     h.extend_from_slice(&[PAD; HEADER_GAP]);
     h.push(u8::try_from(colors.saturating_sub(1)).unwrap_or(NO_COLORS));
-    let threads = p.blocks.iter().filter(|b| !b.stitches.is_empty()).map(|b| &b.thread);
-    for index in Palette::Pec.numbers(threads) {
+    // One number a block as written: a stop repeats its block's thread.
+    for index in written_numbers(p, Palette::Pec) {
         // A thread's number is at most the palette's length, which a byte holds.
         h.push(u8::try_from(index).map_err(|_| Error::Format(format!("thread number {index} doesn't fit a PEC header")))?);
     }

@@ -262,17 +262,11 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
     Ok(out)
 }
 
-/// The design's colour blocks as VP3 writes them: a block's stitches, cut where it stops or changes
-/// colour (each piece a colour block in its thread); empty pieces left out.
+/// The design's colour blocks as VP3 writes them: each block as the stretches it is written as
+/// ([`super::written_blocks`]: a stop is a colour block in the same thread, the rule every format
+/// writes a stop by), borrowed, not copied; a block that sews nothing left out.
 fn segments(p: &Pattern) -> Vec<(&Thread, &[Stitch])> {
-    let mut out: Vec<(&Thread, &[Stitch])> = Vec::new();
-    for block in &p.blocks {
-        // The stretches between its colour changes and stops (which aren't written), each a
-        // colour block when it sews anything; borrowed, not copied.
-        let pieces = block.stitches.split(|s| matches!(s.command, Command::ColorChange | Command::Stop));
-        out.extend(pieces.filter(|piece| piece.iter().any(|s| s.command == Command::Stitch)).map(|piece| (&block.thread, piece)));
-    }
-    out
+    super::written_blocks(p).filter(|(_, piece)| piece.iter().any(|s| s.command == Command::Stitch)).collect()
 }
 
 /// One colour block's stitch bytes, written from where the needle is.

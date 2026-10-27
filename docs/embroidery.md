@@ -942,6 +942,21 @@ when it is of their palette, and otherwise match the blocks' art colours to thei
 rule the plan follows (`Palette::assign`, through `Palette::numbers`), so the PES, PEC and JEF
 exports of one document follow one rule.
 
+Stops: no format has a stop of its own. EduTechWiki gives the stop and the colour change the same
+bytes in DST, EXP and JEF, and PEC and VP3 document none. So a stop (the machine stops, the needle
+up and the thread kept, as for an appliqué piece to be laid down) is written as a change to the
+same thread: a colour-change record in DST, TAP, T01 and EXP; in PES, PEC and JEF a colour-change
+record and the block's thread number listed again in the header, so the header names as many
+colours as the body sews; in VP3 a colour block in the same thread. A stop is written only between
+two needle points of one block (`format::stretches`): one at a block's start or end, at the
+design's end or right after another is written as nothing, since the thread change or the end
+already stops a machine there (the project owner's choice, 2026-10-27). Machines differ in what
+they do at it: a single-needle machine stops at every thread change (Brother's also cut the thread
+there); a multi-needle machine changes needle and stops only where its operator sets a stop on
+that change. Before this, a stop in a PES, PEC or JEF export left the header one colour short:
+pyembroidery 1.5.1, run as an outside reader, read the block after the stop in the next block's
+thread and could not read the JEF at all. Nothing planned a stop then, so no export was wrong.
+
 Trims in JEF: the format has no trim record. EduTechWiki calls a jump of zero length the trim
 command (Janome machines set to cut at cutting commands obey it, and set to cut automatically they
 also cut before any jump longer than 3 mm). We write three zero-length jumps per trim and read each

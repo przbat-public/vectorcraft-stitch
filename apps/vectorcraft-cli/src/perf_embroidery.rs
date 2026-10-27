@@ -92,7 +92,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 70] = [
+pub const ROWS: [&str; 74] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -163,6 +163,10 @@ pub const ROWS: [&str; 70] = [
     "stitch commands: move one of 2,000,000",
     "stitch commands: page 1,000 of 2,000,000",
     "stitch commands: select 100,000 points",
+    "needle points: index of 2,000,000 built",
+    "needle points: 95th percentile, 2,000,000",
+    "needle points: slowest press, 2,000,000",
+    "needle points: a marquee over 2,000,000",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
@@ -182,7 +186,7 @@ pub const ROWS: [&str; 70] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 70] = [
+const BUDGETS: [f64; 74] = [
     400.0,
     100.0,
     100.0,
@@ -253,6 +257,10 @@ const BUDGETS: [f64; 70] = [
     STITCH_COMMAND_BUDGETS[0],
     STITCH_COMMAND_BUDGETS[1],
     STITCH_COMMAND_BUDGETS[2],
+    NEEDLE_INDEX_BUDGETS[0],
+    NEEDLE_INDEX_BUDGETS[1],
+    NEEDLE_INDEX_BUDGETS[2],
+    NEEDLE_INDEX_BUDGETS[3],
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -430,7 +438,9 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.extend(needle_point_moved(&doc, &largest)?);
     ms.extend(convert_and_restore(&doc, RUNS)?);
     ms.extend(convert_and_restore(&largest, 1)?);
-    ms.extend(stitch_commands(&literal_runs(&largest)?)?);
+    let runs = literal_runs(&largest)?;
+    ms.extend(stitch_commands(&runs)?);
+    ms.extend(needle_index(&runs)?);
     // The rings toward an exit plan their parts with and without it: within a share of the plain
     // rings' time in the same run, whatever the machine's load, and the absolute budget.
     let mut budgets = BUDGETS;
@@ -709,6 +719,75 @@ fn stitch_commands(doc: &Document) -> Result<[f64; 3], String> {
         selected.push(timed(&mut s, "embroidery.selectNeedlePoints", &json!({"records": [1, SELECTED_POINTS]}))?.0);
     }
     Ok([middle(moved), middle(paged), middle(selected)])
+}
+
+/// The needle-point index's rows' budgets, milliseconds (estimates): the index of 2 million needle
+/// points built (once, when stitch editing starts on them) and a marquee over half the design
+/// selecting its needle points, about 2.5 times what they measured ([`NEEDLE_INDEX_MS`]); the
+/// nearest needle point to a press, its 95th percentile within a quarter of the 1 ms a press on the
+/// stitches may take (a hover asks for it twice a frame), its slowest of [`NEEDLE_QUERIES`] presses
+/// anywhere over the design (misses included) within that 1 ms.
+const NEEDLE_INDEX_BUDGETS: [f64; 4] = [NEEDLE_INDEX_MS[0] * 2.5, NEEDLE_PRESS_P95_MS, NEEDLE_PRESS_MS, NEEDLE_INDEX_MS[3] * 2.5];
+/// A press's nearest needle point: its 95th percentile's budget and its slowest's, milliseconds
+/// (see [`NEEDLE_INDEX_BUDGETS`]).
+const NEEDLE_PRESS_P95_MS: f64 = 0.25;
+const NEEDLE_PRESS_MS: f64 = 1.0;
+/// What the needle-point index's rows measured on 2026-10-27 (release, 12-core Apple Silicon, load
+/// about 4 to 8), milliseconds: built 16.3, the nearest needle point 0.04 at the 95th percentile and
+/// 0.15 at worst, the marquee 156 (it writes a million needle points into the selection).
+const NEEDLE_INDEX_MS: [f64; 4] = [16.3, 0.04, 0.15, 156.0];
+/// How many presses the nearest needle point's rows time, at points spread over the design's box
+/// and as far again round it (misses included).
+const NEEDLE_QUERIES: usize = 1000;
+/// How far a press reaches, points: the selection tolerance's default at 100 %.
+const NEEDLE_REACH_PT: f64 = 3.0;
+
+/// The needle-point index's rows on `doc` (literal runs, [`literal_runs`]): the index of every path
+/// of stitches in its layers built; the nearest needle point to [`NEEDLE_QUERIES`] presses (the
+/// 95th percentile and the slowest); `embroidery.selectNeedlePoints {rect}` over the left half of
+/// the design, its layer isolated, the median of [`DRAW_RUNS`].
+fn needle_index(doc: &Document) -> Result<[f64; 4], String> {
+    use vectorcraft_engine::cmd::embroidery::needle_index::NeedleIndex;
+    let roots: Vec<_> = doc.layers.iter().map(|l| l.id).collect();
+    let mut built = Vec::with_capacity(DRAW_RUNS);
+    let mut index = None;
+    for _ in 0..DRAW_RUNS {
+        let t = Instant::now();
+        index = NeedleIndex::of(doc, &roots, None);
+        built.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    let index = index.ok_or("needle points: the design holds no path of stitches")?;
+    let b = index.scope().bounds.ok_or("needle points: none")?;
+    // Spread over the design's box and as far again round it: a fixed sequence, the same each run.
+    let mut times = Vec::with_capacity(NEEDLE_QUERIES);
+    let mut hits = 0usize;
+    for k in 0..NEEDLE_QUERIES {
+        let (u, v) = ((k * 7919 % NEEDLE_QUERIES) as f64 / NEEDLE_QUERIES as f64, (k * 104_729 % NEEDLE_QUERIES) as f64 / NEEDLE_QUERIES as f64);
+        let at = Point::new(b.x0 - b.width() / 2.0 + 2.0 * b.width() * u, b.y0 - b.height() / 2.0 + 2.0 * b.height() * v);
+        let t = Instant::now();
+        hits += usize::from(index.needle_at(at, NEEDLE_REACH_PT).is_some());
+        times.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    if hits == 0 || hits == NEEDLE_QUERIES {
+        return Err(format!("needle points: {hits} of {NEEDLE_QUERIES} presses found one; the row needs hits and misses"));
+    }
+    times.sort_by(f64::total_cmp);
+    let p95 = times.get(NEEDLE_QUERIES * 95 / 100).copied().unwrap_or(f64::NAN);
+    let slowest = times.last().copied().unwrap_or(f64::NAN);
+    let mut s = fresh(doc);
+    let layer = roots.first().ok_or("needle points: no layer")?;
+    s.execute("object.isolate", &json!({"id": layer.0})).map_err(err)?;
+    let mm = |v: f64| v / PT_PER_MM;
+    let rect = json!([mm(b.x0), mm(b.y0), mm(b.center().x), mm(b.y1)]);
+    let mut marquee = Vec::with_capacity(DRAW_RUNS);
+    for _ in 0..DRAW_RUNS {
+        let (ms, done) = timed(&mut s, "embroidery.selectNeedlePoints", &json!({ "rect": rect }))?;
+        if done["selectedCount"].as_u64().unwrap_or(0) == 0 {
+            return Err(format!("needle points: the marquee selected nothing: {done}"));
+        }
+        marquee.push(ms);
+    }
+    Ok([middle(built), p95, slowest, middle(marquee)])
 }
 
 /// The width of a literal run's line, points: a thread's 0.4 mm, as opening a machine file draws it.

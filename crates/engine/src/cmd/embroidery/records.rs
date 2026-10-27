@@ -254,16 +254,21 @@ pub(crate) fn list(plan: &DesignPlan, doc: &Document, ask: &Ask) -> Value {
 
 pub(super) const SELECT: &str = "embroidery.selectNeedlePoints";
 /// The keys `embroidery.selectNeedlePoints` takes besides the embroidery options.
-const SELECT_KEYS: [&str; 8] = ["records", "needlePoints", "ranges", "ids", "kinds", "shorterThan", "longerThan", "mode"];
+const SELECT_KEYS: [&str; 10] = ["records", "needlePoints", "ranges", "ids", "kinds", "shorterThan", "longerThan", "mode", "rect", "polygon"];
 /// The keys that select by records (planning the design).
 const BY_RECORDS: [&str; 5] = ["records", "ids", "kinds", "shorterThan", "longerThan"];
+/// The keys that select by a shape (a marquee or a lasso), and the scope they take.
+const BY_SHAPE: [&str; 2] = ["rect", "polygon"];
 
 /// `embroidery.selectNeedlePoints {records?, ids?, kinds?, shorterThan?, longerThan? | needlePoints?,
-/// ranges?, mode?, …the embroidery options}`: needle points selected (`Selection.anchors`, as
-/// Direct Selection selects anchors) by the records that sew them (planning the design, as
-/// `embroidery.stitches` lists them; a record the stitch commands can't edit passed over and
-/// counted), or by their addresses (planning nothing). `mode`: set (the default), add, toggle or
-/// subtract. A selection, not an undo step.
+/// ranges? | rect?, polygon?, ids?, mode?, …the embroidery options}`: needle points selected
+/// (`Selection.anchors`, as Direct Selection selects anchors) by the records that sew them
+/// (planning the design, as `embroidery.stitches` lists them; a record the stitch commands can't
+/// edit passed over and counted), by their addresses (planning nothing), or by a shape: those
+/// inside a rectangle or a polygon (a marquee, a lasso), of the paths of stitches inside `ids`, else
+/// inside the object isolated, else in the whole document (planning nothing; the paths that can't be
+/// edited passed over and counted). `mode`: set (the default), add, toggle or subtract. A
+/// selection, not an undo step.
 pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> {
     let o = super::object(p, SELECT)?;
     let mode = match o.get("mode") {
@@ -273,14 +278,42 @@ pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> 
             .find(|m| v.as_str() == Some(m))
             .ok_or_else(|| bad(SELECT, format!("`mode` {v}: set, add, toggle or subtract")))?,
     };
-    let by_records = BY_RECORDS.iter().any(|k| o.contains_key(*k));
+    let by_shape = BY_SHAPE.iter().any(|k| o.contains_key(*k));
+    let by_records = !by_shape && BY_RECORDS.iter().any(|k| o.contains_key(*k));
     let by_address = o.contains_key("needlePoints") || o.contains_key("ranges");
-    if by_records == by_address {
-        return Err(bad(SELECT, "give records (records, ids, kinds, shorterThan, longerThan) or addresses (needlePoints, ranges): one or the other"));
+    if usize::from(by_shape) + usize::from(by_records) + usize::from(by_address) != 1 {
+        return Err(bad(
+            SELECT,
+            "give records (records, ids, kinds, shorterThan, longerThan), addresses (needlePoints, ranges) or a shape (rect or polygon, and ids): one of them",
+        ));
     }
     let mut picked: std::collections::BTreeMap<NodeId, BTreeSet<usize>> = Default::default();
     let mut passed = 0usize;
-    if by_address {
+    if by_shape {
+        super::only(&o, &["rect", "polygon", "ids", "mode"], SELECT)?;
+        let area = shape(&o)?;
+        let st = s.doc()?;
+        let doc = st.doc.clone();
+        let roots: Vec<NodeId> = match o.get("ids").filter(|v| !v.is_null()) {
+            Some(v) => {
+                let items = v.as_array().ok_or_else(|| bad(SELECT, format!("`ids` {v}: a list of ids")))?;
+                if items.len() > needles::MAX_PATHS {
+                    return Err(bad(SELECT, format!("`ids` lists {}: at most {}", items.len(), needles::MAX_PATHS)));
+                }
+                items
+                    .iter()
+                    .map(|i| i.as_u64().map(NodeId).ok_or_else(|| bad(SELECT, format!("`ids` entry {i}: an id"))))
+                    .collect::<crate::Result<_>>()?
+            }
+            None => st.isolation.map_or_else(|| doc.layers.iter().map(|l| l.id).collect(), |i| vec![i]),
+        };
+        if let Some(index) = super::needle_index::NeedleIndex::of(&doc, &roots, None) {
+            passed = index.scope().refused;
+            for (id, k) in index.within(&area) {
+                picked.entry(id).or_default().extend(k);
+            }
+        }
+    } else if by_address {
         super::only(&o, &["needlePoints", "ranges", "mode"], SELECT)?;
         let doc = s.doc()?.doc.clone();
         let t = needles::targets(&doc, &vectorcraft_doc::Selection::default(), &o, SELECT)?;
@@ -336,4 +369,40 @@ pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> 
         }
     })?;
     Ok(json!({"selectedCount": selected, "pathCount": picked.len(), "passedOver": passed}))
+}
+
+/// The shape `o` gives a selection by a shape: `rect` `[x0, y0, x1, y1]` or `polygon` `[[x, y]…]`
+/// (3 to [`MAX_LASSO_POINTS`] points), millimetres from the document's origin, y down, every one a
+/// number within the document's coordinates; as document points.
+fn shape(o: &Map<String, Value>) -> crate::Result<super::needle_index::Area> {
+    use super::needle_index::{Area, Lasso, MAX_LASSO_POINTS};
+    use vectorcraft_geom::{Point, Rect};
+    let number = |v: &Value| v.as_f64().map(vectorcraft_stitch::mm_to_pt).filter(|x| x.is_finite() && x.abs() <= vectorcraft_doc::MAX_COORD);
+    let point = |v: &Value| match v.as_array().map(Vec::as_slice) {
+        Some([x, y]) => Some(Point::new(number(x)?, number(y)?)),
+        _ => None,
+    };
+    match (o.get("rect"), o.get("polygon")) {
+        (Some(r), None) => match r.as_array().map(Vec::as_slice) {
+            Some([x0, y0, x1, y1]) => {
+                let (Some(x0), Some(y0), Some(x1), Some(y1)) = (number(x0), number(y0), number(x1), number(y1)) else {
+                    return Err(bad(SELECT, format!("`rect` {r}: four numbers within the document's coordinates")));
+                };
+                Ok(Area::Rect(Rect::from_points(Point::new(x0, y0), Point::new(x1, y1))))
+            }
+            _ => Err(bad(SELECT, format!("`rect` {r}: [x0, y0, x1, y1], millimetres"))),
+        },
+        (None, Some(v)) => {
+            let items = v.as_array().ok_or_else(|| bad(SELECT, format!("`polygon` {v}: a list of [x, y]")))?;
+            if !(3..=MAX_LASSO_POINTS).contains(&items.len()) {
+                return Err(bad(SELECT, format!("`polygon` has {} points: 3 to {MAX_LASSO_POINTS}", items.len())));
+            }
+            let points: Vec<Point> = items
+                .iter()
+                .map(|p| point(p).ok_or_else(|| bad(SELECT, format!("`polygon` point {p}: [x, y], millimetres within the document's coordinates"))))
+                .collect::<crate::Result<_>>()?;
+            Lasso::new(&points).map(Area::Lasso).ok_or_else(|| bad(SELECT, "`polygon` encloses no area"))
+        }
+        _ => Err(bad(SELECT, "give rect or polygon, not both")),
+    }
 }

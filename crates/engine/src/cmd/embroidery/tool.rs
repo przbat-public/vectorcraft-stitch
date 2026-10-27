@@ -15,9 +15,10 @@ use vectorcraft_doc::embroidery::PartKind;
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::{Command, mm_to_pt};
-use vectorcraft_tools::embroidery::{FillAngle, PlanFacts, PlannedEnds};
+use vectorcraft_tools::embroidery::{FillAngle, NeedleHit, NeedlePoints, NeedleRef, NeedleScope, PlanFacts, PlannedEnds, ThreadHit};
 
-use super::plan::Part;
+use super::needle_index::NeedleIndex;
+use super::plan::{DesignPlan, Part};
 use super::service::Planned;
 
 /// One plan's answers: where each object's part is sewn (document points: its first and last
@@ -31,6 +32,9 @@ pub(crate) struct ToolFacts {
     /// The plan, for its stitch scene: built when a press first asks what lies under it (in the
     /// app the planning thread has built it already).
     planned: Planned,
+    /// The record numbers the plan gives each path of stitches' needle points, worked out the first
+    /// time a path being edited asks ([`ToolFacts::numbers_of`]): bounded by the paths edited.
+    numbers: std::sync::Mutex<HashMap<NodeId, Option<Arc<Vec<usize>>>>>,
 }
 
 /// Where one object's part is sewn, and its neighbours along the thread.
@@ -85,8 +89,40 @@ impl ToolFacts {
         }
         let doc_layer = super::resolve::DocLayer::of(&snapshot);
         let trim = mm_to_pt(super::resolve::DesignSettings::new(&super::Options::default(), &doc_layer).0.connect.trim);
-        Self { generation: planned.generation, snapshot, ends, trim, planned: planned.clone() }
+        Self { generation: planned.generation, snapshot, ends, trim, planned: planned.clone(), numbers: std::sync::Mutex::default() }
     }
+
+    /// The record numbers the plan gives path `id`'s needle points, in order (`None`: the plan
+    /// sews no unit of it as its needle points), worked out the first time it is asked.
+    fn numbers_of(&self, id: NodeId) -> Option<Arc<Vec<usize>>> {
+        // A lock poisoned by a panic elsewhere: no numbers, never a second panic.
+        let mut kept = self.numbers.lock().ok()?;
+        if let Some(v) = kept.get(&id) {
+            return v.clone();
+        }
+        let v = numbered(&self.planned.plan, id).map(Arc::new);
+        kept.insert(id, v.clone());
+        v
+    }
+}
+
+/// The record numbers `plan` gives path `id`'s needle points, in order, as `embroidery.stitches`
+/// numbers them: its unit's own needle-down records, after the record before them where the unit
+/// starts where the needle already was (its first needle point left to the unit before). `None`
+/// when no unit sews the path as its needle points.
+fn numbered(plan: &DesignPlan, id: NodeId) -> Option<Vec<usize>> {
+    let u = plan.units.iter().find(|u| u.origin.node == id && matches!(u.origin.part, Part::Manual | Part::Literal))?;
+    let block = plan.blocks.get(u.block)?;
+    let mut out = Vec::new();
+    if u.met {
+        out.push(block.first_number + u.own.start.checked_sub(1)?);
+    }
+    for i in u.own.clone() {
+        if block.stitches.get(i).is_some_and(|s| s.command == Command::Stitch) {
+            out.push(block.first_number + i);
+        }
+    }
+    Some(out)
 }
 
 impl crate::Session {
@@ -128,13 +164,88 @@ pub(crate) struct FactsNow<'a> {
     drawn: bool,
     /// The document's settings layer, read when an angle is first asked for.
     layer: OnceCell<super::resolve::DocLayer>,
+    /// The needle points stitch editing works on, while it does.
+    needles: Option<NeedlesNow<'a>>,
 }
 
 impl<'a> FactsNow<'a> {
     /// The answers of `facts` (none before a first plan) and of the document `doc`, whose stitches
     /// the canvas draws or not (`drawn`).
     pub(crate) fn new(facts: Option<Arc<ToolFacts>>, doc: &'a Document, drawn: bool) -> Self {
-        Self { facts, doc, drawn, layer: OnceCell::new() }
+        Self { facts, doc, drawn, layer: OnceCell::new(), needles: None }
+    }
+}
+
+/// The needle points stitch editing works on ([`NeedleIndex`]), read against the document as it is,
+/// with record numbers from the plan the canvas shows ([`ToolFacts`]) where it is of the path as it
+/// is.
+pub(crate) struct NeedlesNow<'a> {
+    index: Arc<NeedleIndex>,
+    facts: Option<Arc<ToolFacts>>,
+    doc: &'a Document,
+}
+
+impl NeedlePoints for NeedlesNow<'_> {
+    fn scope(&self) -> NeedleScope {
+        self.index.scope()
+    }
+
+    fn holds(&self, id: NodeId) -> bool {
+        self.index.holds(id)
+    }
+
+    fn needle_at(&self, at: Point, tol: f64) -> Option<NeedleHit> {
+        self.index.needle_at(at, tol)
+    }
+
+    fn thread_at(&self, at: Point, tol: f64) -> Option<ThreadHit> {
+        self.index.thread_at(at, tol)
+    }
+
+    fn point(&self, n: NeedleRef) -> Option<Point> {
+        self.index.point(n)
+    }
+
+    fn step(&self, n: NeedleRef, forward: bool) -> Option<NeedleRef> {
+        self.index.step(n, forward)
+    }
+
+    fn first(&self) -> Option<NeedleRef> {
+        self.index.first()
+    }
+
+    fn run(&self, n: NeedleRef) -> Option<(usize, usize)> {
+        self.index.run(n)
+    }
+
+    fn order(&self, id: NodeId) -> Option<usize> {
+        self.index.order_of(id)
+    }
+
+    fn anchors(&self, n: NeedleRef) -> Vec<(usize, usize)> {
+        self.index.anchors(n)
+    }
+
+    fn of_anchor(&self, id: NodeId, anchor: (usize, usize)) -> Option<usize> {
+        self.index.of_anchor(id, anchor)
+    }
+
+    fn count(&self, id: NodeId) -> usize {
+        self.index.count(id)
+    }
+
+    fn number(&self, n: NeedleRef) -> Option<usize> {
+        let facts = self.facts.as_deref()?;
+        // The plan is of the path as it is: the same node in its snapshot as in the document.
+        let (kept, now) = (facts.snapshot.node(n.id)?, self.doc.node(n.id)?);
+        if !std::ptr::eq(kept, now) {
+            return None;
+        }
+        let numbers = facts.numbers_of(n.id)?;
+        if numbers.len() != self.index.count(n.id) {
+            return None;
+        }
+        numbers.get(n.index).copied()
     }
 }
 
@@ -148,7 +259,11 @@ impl super::service::Services {
         }
         let facts = self.tool_facts(st.uid, &super::Options::default());
         let drawn = super::view::layers(self.view(st.uid), super::view::paused(&st.doc), outline).stitches;
-        Some(FactsNow::new(facts, &st.doc, drawn))
+        // Needle points are edited where they are drawn: in the stitch view.
+        let needles = if drawn { self.needle_index(st) } else { None };
+        let mut now = FactsNow::new(facts.clone(), &st.doc, drawn);
+        now.needles = needles.map(|index| NeedlesNow { index, facts, doc: &st.doc });
+        Some(now)
     }
 }
 
@@ -184,6 +299,10 @@ impl PlanFacts for FactsNow<'_> {
         let layer = self.layer.get_or_init(|| super::resolve::DocLayer::of(self.doc));
         let (degrees, set) = super::info::fill_rows(self.doc, n, &super::Options::default(), layer)?;
         Some(FillAngle { degrees, set })
+    }
+
+    fn needle_points(&self) -> Option<&dyn NeedlePoints> {
+        self.needles.as_ref().map(|n| n as &dyn NeedlePoints)
     }
 }
 

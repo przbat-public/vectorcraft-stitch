@@ -101,6 +101,10 @@ fn stitch_commands_on_every_kind_of_run_never_panic() {
             ("embroidery.splitLongStitches", json!({"ranges": [{"id": id, "from": 0, "to": 30}], "maxLength": 1})),
             ("embroidery.splitLongStitches", json!({"ranges": [{"id": id, "from": 0, "to": 30}], "format": "pes"})),
             ("embroidery.selectNeedlePoints", json!({"ranges": [{"id": id, "from": 0, "to": 3}], "mode": "toggle"})),
+            ("embroidery.selectNeedlePoints", json!({"rect": [-1e6, -1e6, 1e6, 1e6], "ids": [id], "mode": "add"})),
+            ("embroidery.selectNeedlePoints", json!({"rect": [0, 0, f64::MAX, 1], "ids": [id]})),
+            ("embroidery.selectNeedlePoints", json!({"polygon": [[0, 0], [1e5, 0], [0, 1e5], [1e5, 1e5]], "ids": [id], "mode": "toggle"})),
+            ("embroidery.selectNeedlePoints", json!({"polygon": (0..5000).map(|k| json!([k, k % 7])).collect::<Vec<_>>(), "ids": [id]})),
             ("embroidery.stitches", json!({"ids": [id], "limit": 5})),
         ] {
             let mut t = Session::new();

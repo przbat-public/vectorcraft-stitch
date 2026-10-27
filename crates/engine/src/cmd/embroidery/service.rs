@@ -578,7 +578,15 @@ pub(crate) struct Services {
     shown: HashMap<u64, (Arc<Document>, Planned)>,
     /// The embroidery tool's answers of each document's plan, built once a plan.
     facts: HashMap<u64, Arc<super::tool::ToolFacts>>,
+    /// The needle points stitch editing works on in each document: the paths of stitches inside the
+    /// object isolated, while the embroidery tool works in it ([`Services::needle_index`]), with the
+    /// snapshot and the object they are of (`None`: it holds no path of stitches).
+    needles: HashMap<u64, KeptNeedles>,
 }
+
+/// The needle points kept for a document ([`Services::needle_index`]): the snapshot and the object
+/// isolated they are of, and the index (`None`: the object holds no path of stitches).
+type KeptNeedles = (Arc<Document>, NodeId, Option<Arc<super::needle_index::NeedleIndex>>);
 
 impl Services {
     /// Document `uid`'s service, made when it is first asked for.
@@ -603,6 +611,7 @@ impl Services {
         self.views.remove(&uid);
         self.shown.remove(&uid);
         self.facts.remove(&uid);
+        self.needles.remove(&uid);
     }
 
     /// The interface draws `planned`, the plan of `snapshot`, for document `uid`.
@@ -616,6 +625,36 @@ impl Services {
     /// its scene, built again when the tool is chosen again.
     pub(crate) fn drop_facts(&mut self) {
         self.facts.clear();
+        self.needles.clear();
+    }
+
+    /// The needle points stitch editing works on in document `st` (the embroidery tool working
+    /// inside isolation of an object holding paths of stitches, the project owner's choice,
+    /// 2026-10-27): the paths of stitches inside the object isolated, built from the document as it
+    /// is and kept for its snapshot, a path's needle points built again only when an edit changed it
+    /// ([`super::needle_index`]); `None` when nothing is isolated or the object isolated holds no
+    /// path of stitches, and then what was kept goes.
+    pub(crate) fn needle_index(&mut self, st: &crate::DocState) -> Option<Arc<super::needle_index::NeedleIndex>> {
+        let Some(scope) = st.isolation else {
+            self.needles.remove(&st.uid);
+            return None;
+        };
+        if let Some((doc, kept_scope, index)) = self.needles.get(&st.uid)
+            && Arc::ptr_eq(doc, &st.doc)
+            && *kept_scope == scope
+        {
+            return index.clone();
+        }
+        let kept = self.needles.remove(&st.uid).and_then(|(_, s, i)| i.filter(|_| s == scope));
+        let index = super::needle_index::NeedleIndex::of(&st.doc, &[scope], kept.as_deref()).map(Arc::new);
+        self.needles.insert(st.uid, (st.doc.clone(), scope, index.clone()));
+        index
+    }
+
+    /// How many documents' needle points stitch editing keeps.
+    #[cfg(test)]
+    pub(crate) fn kept_needles(&self) -> usize {
+        self.needles.len()
     }
 
     /// How many documents' answers the embroidery tool keeps.

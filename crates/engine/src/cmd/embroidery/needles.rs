@@ -85,12 +85,12 @@ pub(crate) struct Stitches {
 
 /// Whether two points (document points) lie at one spot, as the walk tells a line to its own
 /// start: within [`SAME_POINT`] millimetres.
-fn same(a: Point, b: Point) -> bool {
+pub(crate) fn same(a: Point, b: Point) -> bool {
     a.distance(b) * MM_PER_PT < SAME_POINT
 }
 
 /// Whether `p` is a finite point within the document's coordinates.
-fn in_range(p: Point) -> bool {
+pub(crate) fn in_range(p: Point) -> bool {
     p.x.is_finite() && p.y.is_finite() && p.x.abs() <= MAX_COORD && p.y.abs() <= MAX_COORD
 }
 

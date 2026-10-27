@@ -455,8 +455,9 @@ the angle (counter-clockwise on the page): a drag of the head previews `embroide
 (Shift: 45° steps from the Constrain Angle), Alt with a press or Delete sends `embroidery.reset {keys: ["angle"]}`,
 and the arrows turn it a degree (Shift ten). A press away from every handle selects the object under it, by its
 stitches where the stitch view shows them, else by its art, as the Selection tool picks (Shift toggles it), and picks the part pressed: its fill or
-its stroke (the Object tab follows). `ui.inspect`'s `toolOptions` give `{part,
-hover, hoverObject, focus, drag}`, each handle as `{kind: "entry"|"exit"|"angle", id, part, index}` (`drag` also
+its stroke (the Object tab follows). `tool.setOption {key: "focus", value: {kind, id, part}|null}` gives the keys a point (Set on
+Canvas gives them its part's entry). `ui.inspect`'s `toolOptions` give `{part, hover, hoverObject, focus, keyed, drag}`
+(`keyed`: the keys acted on the focused point last, so its jump shows), each handle as `{kind: "entry"|"exit"|"angle", id, part, index}` (`drag` also
 `at`, document points, and for an angle its `angle`); `hoverObject` is the id a press would select.
 `embroidery.documentSetup {}` opens Document Setup at its Embroidery tab, whose fields are flat, named by
 `embroidery.setup`'s paths: `embroidery.fabric` (the fabric chosen: `builtIn`, `custom`, or a preset's id from

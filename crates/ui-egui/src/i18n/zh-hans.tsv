@@ -5880,3 +5880,8 @@ embroidery	Stopped: nothing was changed.	已停止：未做任何更改。
 embroidery	The document changed meanwhile: nothing was changed.	在此期间文档已更改：未做任何更改。
 # embroidery: the Exit Point dialog's Auto
 embroidery	Auto (where the plan ends the part)	自动（计划结束该部分处）
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	对象可显示其点  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	在点之间切换，方向键微移，Enter 键输入
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	入口点和出口点仅显示于所选的前 {count} 个对象

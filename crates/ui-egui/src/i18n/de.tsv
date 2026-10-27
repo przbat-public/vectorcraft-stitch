@@ -5622,3 +5622,8 @@ embroidery	Stopped: nothing was changed.	Abgebrochen: Es wurde nichts geändert.
 embroidery	The document changed meanwhile: nothing was changed.	Das Dokument wurde inzwischen geändert: Es wurde nichts geändert.
 # embroidery: the Exit Point dialog's Auto
 embroidery	Auto (where the plan ends the part)	Auto (wo der Plan den Teil beendet)
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	 auf ein Objekt zeigt seine Punkte  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	 springt von Punkt zu Punkt, die Pfeiltasten verschieben ihn, Enter gibt ihn ein
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Ein- und Ausstichpunkte werden für das erste {count} ausgewählte Objekt gezeigt|Ein- und Ausstichpunkte werden für die ersten {count} ausgewählten Objekte gezeigt

@@ -1068,7 +1068,8 @@ fn paste_after_the_copied_object_is_deleted() {
 
 /// With the keyboard and a screen reader: Set on Canvas and one object's entry row are named
 /// buttons ("Set on Canvas", "Entry: Set"); focused, Space presses each as a click does (the
-/// embroidery tool picked; the Entry Point dialog opened).
+/// embroidery tool picked, the keyboard given back to the canvas and the object's entry the point
+/// the tool's keys act on; the Entry Point dialog opened).
 #[test]
 fn set_on_canvas_and_the_entry_row_work_from_the_keyboard() {
     let ctx = context();
@@ -1087,6 +1088,10 @@ fn set_on_canvas_and_the_entry_row_work_from_the_keyboard() {
     };
     press(&mut app, &mut time, crate::et!("Set on Canvas"));
     assert_eq!(app.session.tool_id(), vectorcraft_tools::embroidery::ID);
+    // The keys go to the tool at once: the button let the keyboard go, the entry is the point
+    // they act on.
+    assert_eq!(ctx.memory(|m| m.focused()), None, "the button let the keyboard go");
+    assert_eq!(app.session.tool_options()["focus"], json!({"kind": "entry", "id": a, "part": "fill", "index": 0}));
     let entry = text::fill(crate::et!("{section}: {setting}"), &[("section", vocabulary::label("entry", None)), ("setting", crate::et!("Set"))]);
     press(&mut app, &mut time, &entry);
     assert!(app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::point_dialog::KIND), "the Entry Point dialog");

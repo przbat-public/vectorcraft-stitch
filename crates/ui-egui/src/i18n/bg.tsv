@@ -5980,3 +5980,8 @@ embroidery	Stopped: nothing was changed.	Спряно: нищо не е пром
 embroidery	The document changed meanwhile: nothing was changed.	Документът се промени междувременно: нищо не е променено.
 # embroidery: the Exit Point dialog's Auto
 embroidery	Auto (where the plan ends the part)	Автоматично (където планът завършва частта)
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	 обект, за да покажете точките му  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	 стъпка от точка до точка, стрелките я преместват, Enter въвежда координатите й
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Входната и изходната точка се показват за първия {count} избран обект|Входните и изходните точки се показват за първите {count} избрани обекта

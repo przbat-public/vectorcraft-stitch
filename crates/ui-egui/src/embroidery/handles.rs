@@ -29,7 +29,7 @@
 use egui::{Align2, Color32, CornerRadius, FontId, Pos2, Shape, Stroke, StrokeKind, pos2, vec2};
 use serde_json::Value;
 use vectorcraft_engine::cmd::embroidery::scene::{MARK_DARK, MARK_LIGHT};
-use vectorcraft_tools::embroidery::{Handle, Kind, State};
+use vectorcraft_tools::embroidery::{HANDLED_OBJECTS_MAX, Handle, Kind, State};
 
 use crate::VectorcraftApp;
 use crate::canvas::Xf;
@@ -88,6 +88,9 @@ pub struct Cache {
     /// The tool's part and the Object tab's as last kept in step ([`sync_part`]); `None` while the
     /// tool is put away.
     parts: Option<(Option<Part>, Part)>,
+    /// The document whose selection was last found to hold more objects than show their points
+    /// ([`HANDLED_OBJECTS_MAX`]): the status bar said so once, until it holds no more.
+    capped: Option<u64>,
 }
 
 /// The tool's part and the Object tab's kept in step (the project owner's choice, 2026-10-25: the
@@ -135,10 +138,22 @@ fn current(app: &mut VectorcraftApp) -> Option<(Vec<Handle>, Value)> {
     let frame = [view.zoom.to_bits(), right.x.to_bits(), right.y.to_bits()];
     let key = (uid, revision, generation, frame, app.session.tool_options().to_string());
     if app.embroidery.handles.key.as_ref() != Some(&key) {
+        // More objects selected than show their points: said once, as the selection changes.
+        let more =
+            vectorcraft_doc::embroidery::takers::first_takers(&st.doc, &st.selection.objects, HANDLED_OBJECTS_MAX + 1).len() > HANDLED_OBJECTS_MAX;
         let (handles, options) = app.session.embroidery_handles(view);
         let cache = &mut app.embroidery.handles;
         (cache.key, cache.handles, cache.options) = (Some(key), handles, options);
         cache.found += 1;
+        let said = cache.capped == Some(uid);
+        cache.capped = more.then_some(uid);
+        if more && !said {
+            app.status(crate::etn!(
+                HANDLED_OBJECTS_MAX as u64,
+                "Entry and exit points show for the first {count} object selected",
+                "Entry and exit points show for the first {count} objects selected"
+            ));
+        }
     }
     let cache = &app.embroidery.handles;
     Some((cache.handles.clone(), cache.options.clone()))
@@ -238,7 +253,9 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
             painter.line_segment([at, stored], Stroke::new(1.0, color.gamma_multiply(alpha)));
             painter.circle(stored, PLANNED_DOT_PT, color.gamma_multiply(alpha), Stroke::new(1.0, dark()));
         }
-        if let (true, Some(neighbour)) = (dragged, h.neighbour) {
+        // The point the keys last stepped to or nudged shows its jump too.
+        let keyed = focused && options["keyed"].as_bool() == Some(true) && h.id.kind != Kind::Angle;
+        if let (true, Some(neighbour)) = (dragged || keyed, h.neighbour) {
             let from = xf.to_screen(neighbour);
             painter.extend(Shape::dashed_line(&[from, stored], Stroke::new(1.5, dark()), GHOST_DASH, GHOST_GAP));
             painter.extend(Shape::dashed_line(&[from, stored], Stroke::new(0.75, light()), GHOST_DASH, GHOST_GAP));

@@ -1027,7 +1027,9 @@ fn hint_for(tool: &str) -> Option<&'static [(&'static str, bool)]> {
             ("Alt+Click", true),
             (" a point or an arrow to put it back to Auto  |  ", false),
             ("Click", true),
-            (" an object to show its points", false),
+            (" an object to show its points  |  ", false),
+            ("[ ]", true),
+            (" step from point to point, the arrows nudge it, Enter types it", false),
         ],
         "artboard" => &[
             ("Click", true),

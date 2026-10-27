@@ -5718,3 +5718,8 @@ embroidery	Stopped: nothing was changed.	中止しました：何も変更され
 embroidery	The document changed meanwhile: nothing was changed.	その間にドキュメントが変更されました：何も変更されていません。
 # embroidery: the Exit Point dialog's Auto
 embroidery	Auto (where the plan ends the part)	自動（計画がパーツを終える位置）
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	：オブジェクトの点を表示  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	：点から点へ移動、矢印キーで少し動かし、Enter キーで入力
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	入口点と出口点は選択した最初の {count} 個のオブジェクトに表示されます

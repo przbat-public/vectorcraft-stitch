@@ -595,3 +595,31 @@ fn the_ghost_measures_the_jump_to_the_point_stored() {
     time += 0.02;
     frame(&mut app, &ctx, time, vec![button(into, false)]);
 }
+
+/// More objects selected than show their points: the status bar says so once (the first 32 show
+/// theirs), not again while the selection stays that large.
+#[test]
+fn the_points_cap_is_said() {
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    app.embroidery.preview.pin_light();
+    app.run("file.new", json!({"width": 600, "height": 600, "artboards": 1})).unwrap();
+    app.run("paint.setStroke", json!({"none": true})).unwrap();
+    let ids: Vec<u64> = (0..33)
+        .map(|k| {
+            app.run("shape.rectangle", json!({"x": 10 + (k % 11) * 50, "y": 10 + (k / 11) * 50, "width": 30, "height": 30})).unwrap()["id"]
+                .as_u64()
+                .unwrap()
+        })
+        .collect();
+    app.run("select.set", json!({"ids": ids})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = egui::Context::default();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    assert_eq!(app.ui.status, "Entry and exit points show for the first 32 objects selected");
+    app.status("");
+    app.run("select.set", json!({"ids": &ids[1..]})).unwrap();
+    app.run("select.set", json!({"ids": ids})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    assert_eq!(app.ui.status, "", "said once");
+}

@@ -2443,7 +2443,10 @@ Limits:
 - On the web there is no planning thread: a design slow to plan is planned only when a drag ends
   (the ghost is the feedback meanwhile), and each drop plans in the frame.
 - At most 32 objects show their handles at once, one part at a time (the Object tab's, which a
-  click on the canvas picks too).
+  click on the canvas picks too); the status bar says so when more are selected. Handles lying on
+  one another (two objects' Auto points at one place) are taken in turn by pressing there again. A
+  symbol's instance is selected by a click but shows no handle (its art takes the points). Undo
+  during a drag lets the handle go.
 - Points left to the planner show once a plan is made (the tool asks for one and never plans); a
   design too heavy to plan shows only the points set. The arrow needs no plan.
 - The arrow is a fill's one angle; several directions in one fill (angle lines) come later.

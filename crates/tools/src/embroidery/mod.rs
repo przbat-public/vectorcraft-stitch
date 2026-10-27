@@ -30,7 +30,7 @@ use vectorcraft_geom::{Point, Vec2, constrain_angle_from, normalize_deg};
 pub use facts::{FillAngle, PlanFacts, PlannedEnds};
 pub use handles::{
     APART_PX, ARROW_HEAD_PX, ARROW_REACH_PX, Arrow, CATCH_PAST_PX, ENTRY_MARKER_PX, EXIT_MARKER_PX, HANDLED_OBJECTS_MAX, Handle, HandleId, Kind,
-    Owner, State, direction, handle_walks, handles, hit,
+    Owner, State, direction, handle_walks, handles, hit, hit_after,
 };
 
 use crate::{Action, Cursor, Mods, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};
@@ -99,6 +99,9 @@ pub struct EmbroideryTool {
     hover_object: Option<vectorcraft_doc::NodeId>,
     /// The handle keys act on: the one last pressed or stepped to.
     focus: Option<HandleId>,
+    /// Whether the keys acted on it last (a step, a nudge): the canvas then shows its jump, as a
+    /// drag does.
+    keyed: bool,
     grab: Option<Grab>,
     /// The handles as last found, and what for ([`MemoKey`]): each pointer move and cursor query
     /// asks for them, and they are found again only when that changed.
@@ -216,7 +219,10 @@ impl EmbroideryTool {
                 (compound_of(cx.doc, h.leaf), part)
             })
         };
-        by_stitch.or_else(by_art).filter(|(id, _)| takers(cx.doc, &[*id]).0 == [*id])
+        // A symbol instance takes no points, but its Trim After: selected, it shows no handle.
+        let instance =
+            |id: &vectorcraft_doc::NodeId| matches!(cx.doc.node(*id).map(|n| &n.kind), Some(vectorcraft_doc::NodeKind::SymbolInstance { .. }));
+        by_stitch.or_else(by_art).filter(|(id, _)| takers(cx.doc, &[*id]).0 == [*id] || instance(id))
     }
 
     /// A press away from every handle: the object under the pointer selected ([`Self::under`]) and
@@ -294,9 +300,10 @@ impl Tool for EmbroideryTool {
                 vec![]
             }
             PointerKind::Down => {
+                self.keyed = false;
                 // A press with a drag still under way (no release came between): that drag ends first.
                 let mut out = self.finish_drag();
-                match hit(cx, &self.now(cx), ev.pos) {
+                match hit_after(cx, &self.now(cx), ev.pos, self.focus) {
                     None => out.extend(self.select_at(cx, ev)),
                     Some(h) if ev.mods.alt => out.extend(self.back_to_auto(h.id)),
                     Some(h) => {
@@ -389,6 +396,7 @@ impl Tool for EmbroideryTool {
             return vec![];
         }
         let all = self.now(cx);
+        self.keyed = true;
         if matches!(key, ToolKey::BracketLeft | ToolKey::BracketRight) {
             let at = self.focus.and_then(|id| all.iter().position(|h| h.id == id));
             let n = all.len();
@@ -450,12 +458,15 @@ impl Tool for EmbroideryTool {
         });
         let id = |h: Option<HandleId>| h.map_or(Value::Null, HandleId::json);
         let hover_object = self.hover_object.map_or(Value::Null, |o| json!(o.0));
-        json!({"part": part, "hover": id(self.hover), "hoverObject": hover_object, "focus": id(self.focus), "drag": drag})
+        json!({"part": part, "hover": id(self.hover), "hoverObject": hover_object, "focus": id(self.focus), "keyed": self.keyed && self.focus.is_some(), "drag": drag})
     }
 
     fn set_option(&mut self, key: &str, value: &Value) {
-        if key == "part" {
-            self.part = value.as_str().and_then(PartKind::from_id);
+        match key {
+            "part" => self.part = value.as_str().and_then(PartKind::from_id),
+            // The handle the keys act on (Set on Canvas gives them the part's entry); `null` lets go.
+            "focus" => self.focus = HandleId::from_json(value),
+            _ => {}
         }
     }
 
@@ -472,6 +483,15 @@ impl Tool for EmbroideryTool {
             ToolKey::Delete | ToolKey::Backspace | ToolKey::Left | ToolKey::Right | ToolKey::Up | ToolKey::Down => self.focused(cx).is_some(),
             _ => false,
         }
+    }
+
+    /// Asked only when a command from outside ended the drag under way (Undo settles the
+    /// interaction and takes it back): the handle is let go, nothing more to commit or cancel.
+    fn after_command(&mut self, _cx: &ToolContext) -> Vec<Action> {
+        if self.grab.as_ref().is_some_and(|g| g.begun) {
+            self.grab = None;
+        }
+        vec![]
     }
 
     fn hover_ended(&mut self, _cx: &ToolContext) {

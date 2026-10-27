@@ -500,6 +500,11 @@ fn part_rows(
     let tip = crate::et!("Drag this part's entry and exit points on the canvas with the embroidery tool.");
     if rows::heading_with_button(ui, crate::et!("Entry and exit"), crate::et!("Set on Canvas"), tip) {
         commands.push(("tool.select", json!({"tool": vectorcraft_tools::embroidery::ID})));
+        // The keys act at once on the first object's entry: the arrows nudge it, Enter types it.
+        if let Some(id) = ids.first() {
+            let focus = json!({"kind": "entry", "id": id.0, "part": part.id(), "index": 0});
+            commands.push(("tool.setOption", json!({"key": "focus", "value": focus})));
+        }
     }
     for o in &points {
         match rows::show(ui, &cols, &o.row(lang)) {

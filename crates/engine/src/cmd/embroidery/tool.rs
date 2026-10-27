@@ -347,4 +347,50 @@ mod tests {
         assert_eq!(reported(&mut s), json!(90.0));
         assert_eq!(s.doc().unwrap().history.undo.len(), undo + 1);
     }
+
+    /// Undo mid-drag settles the drag and takes it back: the tool lets the handle go (not busy),
+    /// the moves after it preview nothing, and the release changes nothing.
+    #[test]
+    fn undo_mid_drag_lets_the_handle_go() {
+        use vectorcraft_tools::{PointerEvent, PointerKind};
+        let mut s = blank();
+        run(&mut s, "paint.setStroke", json!({"none": true}));
+        run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+        let id = run(&mut s, "shape.rectangle", json!({"x": 20, "y": 20, "width": 80, "height": 50}))["id"].as_u64().unwrap();
+        run(&mut s, "embroidery.setEntryExit", json!({"id": id, "part": "fill", "entry": [20, 40]}));
+        run(&mut s, "select.set", json!({"ids": [id]}));
+        let view = crate::ViewInfo::default();
+        s.select_tool("embroidery", view).unwrap();
+        let entry = s.embroidery_handles(view).0.into_iter().find(|h| h.id.kind == vectorcraft_tools::embroidery::Kind::Entry).unwrap().at;
+        let undo = s.doc().unwrap().history.undo.len();
+        s.pointer(&PointerEvent::new(PointerKind::Down, entry.x, entry.y), view).unwrap();
+        s.pointer(&PointerEvent::new(PointerKind::Drag, entry.x, entry.y + 15.0), view).unwrap();
+        assert!(s.tool_busy(), "dragging");
+        run(&mut s, "edit.undo", json!({}));
+        assert!(!s.tool_busy(), "the handle let go");
+        s.pointer(&PointerEvent::new(PointerKind::Drag, entry.x, entry.y + 25.0), view).unwrap();
+        s.pointer(&PointerEvent::new(PointerKind::Up, entry.x, entry.y + 25.0), view).unwrap();
+        assert!(s.doc().unwrap().interaction.is_none() && s.doc().unwrap().history.undo.len() <= undo, "nothing kept");
+    }
+
+    /// A press on a symbol's instance selects it (it takes Trim After, the Object tab offers it),
+    /// though it shows no handle: the selection isn't emptied.
+    #[test]
+    fn a_press_on_a_symbol_instance_selects_it() {
+        use vectorcraft_tools::{PointerEvent, PointerKind};
+        let mut s = blank();
+        run(&mut s, "paint.setStroke", json!({"none": true}));
+        run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+        let square = run(&mut s, "shape.rectangle", json!({"x": 20, "y": 20, "width": 40, "height": 40}))["id"].as_u64().unwrap();
+        run(&mut s, "select.set", json!({"ids": [square]}));
+        run(&mut s, "symbol.new", json!({"name": "Square"}));
+        let placed = run(&mut s, "symbol.place", json!({"name": "Square", "x": 200, "y": 200}))["id"].as_u64().unwrap();
+        run(&mut s, "select.set", json!({"ids": []}));
+        let view = crate::ViewInfo::default();
+        s.select_tool("embroidery", view).unwrap();
+        let at = s.doc().unwrap().doc.bounds_of(&[NodeId(placed)], false).unwrap().center();
+        s.pointer(&PointerEvent::new(PointerKind::Down, at.x, at.y), view).unwrap();
+        s.pointer(&PointerEvent::new(PointerKind::Up, at.x, at.y), view).unwrap();
+        assert_eq!(s.doc().unwrap().selection.objects, vec![NodeId(placed)]);
+    }
 }

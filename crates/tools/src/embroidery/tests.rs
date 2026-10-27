@@ -619,3 +619,44 @@ fn the_arrows_keys_and_its_reset() {
     let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
     assert_eq!(t.key(&c, ToolKey::Right, Mods::default()), set(-179.5));
 }
+
+/// Handles lying on one another (two objects' Auto entries at one point) are taken in turn: each
+/// press there focuses the one after the focused, round to the first.
+#[test]
+fn coincident_handles_are_taken_in_turn() {
+    let (d, ids) = doc();
+    let [square, line, _] = ids;
+    let (s, p) = (select(&[square, line]), PaintDefaults::default());
+    let mut f = plan(ids);
+    let on_square =
+        PlannedEnds { first: Point::new(100.0, 100.0), last: Point::new(400.0, 300.0), current: true, before: None, after: None, trim: None };
+    f.ends.insert((line, PartKind::Stroke), on_square);
+    let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    let mut t = EmbroideryTool::default();
+    let mut focused = Vec::new();
+    for _ in 0..3 {
+        t.pointer(&c, &ev(PointerKind::Down, 100.0, 100.0));
+        t.pointer(&c, &ev(PointerKind::Up, 100.0, 100.0));
+        focused.push(t.options()["focus"]["id"].clone());
+    }
+    assert_eq!(focused, vec![json!(square.0), json!(line.0), json!(square.0)]);
+}
+
+/// The keys report that they acted on the focused point (the canvas then shows its jump, as a
+/// drag does); a press hands it back to the pointer. `tool.setOption {focus}` gives the keys a
+/// point, as Set on Canvas does.
+#[test]
+fn the_keys_say_when_they_acted_on_the_point() {
+    let (d, ids) = doc();
+    let [square, ..] = ids;
+    let (s, p, f) = (select(&[square]), PaintDefaults::default(), plan(ids));
+    let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    let mut t = EmbroideryTool::default();
+    t.set_option("focus", &json!({"kind": "entry", "id": square.0, "part": "fill"}));
+    assert_eq!(t.options()["focus"], json!({"kind": "entry", "id": square.0, "part": "fill", "index": 0}));
+    assert_eq!(t.options()["keyed"], json!(false));
+    t.key(&c, ToolKey::Right, Mods::default());
+    assert_eq!(t.options()["keyed"], json!(true), "a nudge");
+    t.pointer(&c, &ev(PointerKind::Down, 100.0, 100.0));
+    assert_eq!(t.options()["keyed"], json!(false), "a press");
+}

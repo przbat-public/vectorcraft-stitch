@@ -143,6 +143,19 @@ impl HandleId {
         let (object, part) = self.owner.part();
         json!({"kind": self.kind.id(), "id": object.0, "part": part.id(), "index": self.index})
     }
+
+    /// The handle `v` names as [`HandleId::json`] gives it (`index` 0 when left out); `None` for
+    /// anything else.
+    pub fn from_json(v: &Value) -> Option<Self> {
+        let kind = [Kind::Entry, Kind::Exit, Kind::Angle].into_iter().find(|k| v["kind"].as_str() == Some(k.id()))?;
+        let part = v["part"].as_str().and_then(PartKind::from_id)?;
+        let object = NodeId(v["id"].as_u64()?);
+        let index = match &v["index"] {
+            Value::Null => 0,
+            i => usize::try_from(i.as_u64()?).ok()?,
+        };
+        Some(Self { kind, owner: Owner::Part { object, part }, index })
+    }
 }
 
 /// One handle as the tool catches it and the canvas draws it.
@@ -252,13 +265,35 @@ pub fn handles(cx: &ToolContext, part: Option<PartKind>) -> Vec<Handle> {
 /// [`CATCH_PAST_PX`] on screen, or the selection tolerance where that is wider; of equally near
 /// ones, the first (an entry before its exit).
 pub fn hit(cx: &ToolContext, all: &[Handle], p: Point) -> Option<Handle> {
+    hit_after(cx, all, p, None)
+}
+
+/// [`hit`], but where handles lie on one another (adjacent objects' Auto points, concentric fills'
+/// arrows), the one after `after` among them when that is one of them: pressing there again goes
+/// through them in turn.
+pub fn hit_after(cx: &ToolContext, all: &[Handle], p: Point, after: Option<HandleId>) -> Option<Handle> {
     let mut best: Option<(f64, Handle)> = None;
+    let mut near: Vec<(f64, Handle)> = Vec::new();
     for h in all {
         let reach = cx.tol(cx.selection_tolerance.max(h.id.kind.size_px() / 2.0 + CATCH_PAST_PX));
         let d = h.at.distance(p);
-        if d <= reach && best.is_none_or(|(b, _)| d < b) {
-            best = Some((d, *h));
+        if d <= reach {
+            near.push((d, *h));
+            if best.is_none_or(|(b, _)| d < b) {
+                best = Some((d, *h));
+            }
         }
     }
-    best.map(|(_, h)| h)
+    let (nearest, first) = best?;
+    // The ones as near as the nearest (on one another, to a hair), in the list's order.
+    let tied: Vec<Handle> = near
+        .into_iter()
+        .filter(|(d, h)| (d - nearest).abs() <= cx.tol(SAME_SPOT_PX) && h.at.distance(first.at) <= cx.tol(SAME_SPOT_PX))
+        .map(|(_, h)| h)
+        .collect();
+    let next = after.and_then(|a| tied.iter().position(|h| h.id == a)).and_then(|k| tied.get((k + 1) % tied.len()));
+    Some(next.copied().unwrap_or(first))
 }
+
+/// How far apart on screen two handles may lie and still lie on one another, pixels: a hair.
+const SAME_SPOT_PX: f64 = 0.5;

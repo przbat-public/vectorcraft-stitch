@@ -335,7 +335,12 @@ pub(crate) fn heading_with_button(ui: &mut Ui, words: &str, button: &str, tip: &
     let mut pressed = false;
     let mut add_button = |ui: &mut Ui| {
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            pressed = ui.add(egui::Button::new(egui::RichText::new(button).size(SMALL_TEXT)).small()).on_hover_text(tip).clicked();
+            let resp = ui.add(egui::Button::new(egui::RichText::new(button).size(SMALL_TEXT)).small()).on_hover_text(tip);
+            pressed = resp.clicked();
+            // What it starts takes the keyboard (the canvas's tool): the button lets it go.
+            if pressed {
+                resp.surrender_focus();
+            }
         });
     };
     if needed <= ui.available_width() {

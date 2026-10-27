@@ -155,6 +155,9 @@ fn the_manual_stitch_commands_replies_keep_their_shape() {
     let inserted = shape(&run(&mut s, "embroidery.insertNeedlePoints", json!({"id": a_run, "index": 1})));
     let pinned = "{changedCount: int, inserted: [{id: int, index: int}], lengths: {aboveMax: int, belowMin: int, count: int, longest: float, max: float, min: float, shortest: float}, passedOver: [], pathCount: int, paths: [{id: int, needlePoints: int}]}";
     assert_eq!(inserted, pinned, "replies changed shape; if on purpose, pin it");
+    let deleted = shape(&run(&mut s, "embroidery.deleteNeedlePoints", json!({"needlePoints": [{"id": a_run, "index": 1}]})));
+    let pinned = "{changedCount: int, dropped: [], lengths: {aboveMax: int, belowMin: int, count: int, longest: float, max: float, min: float, shortest: float}, moved: [], passedOver: [], pathCount: int, paths: [{id: int, needlePoints: int}], removed: [], removedCount: int}";
+    assert_eq!(deleted, pinned, "replies changed shape; if on purpose, pin it");
     let dry = shape(&run(&mut s, "embroidery.restoreObject", json!({"ids": ids, "dryRun": true})));
     // A needle point moved: the object's stitches were edited since converting.
     let pinned = "{dryRun: bool, edited: [int], editedCount: int, restored: [int], restoredCount: int, skipped: [], skippedCount: int}";

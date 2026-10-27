@@ -295,3 +295,71 @@ fn needle_points_are_inserted() {
         assert!(s.execute("embroidery.insertNeedlePoints", &p).is_err(), "{p}");
     }
 }
+
+/// Delete Needle Points: the stitches beside a deleted needle point become one, the others stay;
+/// a stop after it passes to the needle point before it; a run left empty goes with its cut passed
+/// on; the path leaves the selection; insert then delete gives the path back.
+#[test]
+fn deleted_needle_points_merge_their_neighbours() {
+    let mut s = blank();
+    let marks = StitchRun { stops: vec![(0, 2)], ..StitchRun::default() };
+    let points = [(10.0, 10.0), (12.0, 10.0), (14.0, 10.0), (16.0, 10.0), (18.0, 10.0)];
+    let id = path_mm(&mut s, &points, marks);
+    let original = node(&s, id);
+    run(&mut s, "embroidery.insertNeedlePoints", json!({"id": id, "index": 3}));
+    let r = run(&mut s, "embroidery.deleteNeedlePoints", json!({"needlePoints": [{"id": id, "index": 3}]}));
+    assert_eq!(r["changedCount"], json!(1), "{r}");
+    let back = node(&s, id);
+    assert_eq!((back.path_data(), stitches(&back)), (original.path_data(), stitches(&original)), "insert then delete: as it was");
+    let r = run(&mut s, "embroidery.deleteNeedlePoints", json!({"needlePoints": [{"id": id, "index": 2}]}));
+    assert_eq!((at(&s, id, 1), at(&s, id, 2)), ((12.0, 10.0), (16.0, 10.0)), "the others stay");
+    assert_eq!(r["lengths"]["count"], json!(2), "the merged stitch, and the one after: {r}");
+    assert_eq!(r["lengths"]["longest"], json!(4.0));
+    assert_eq!(stitches(&node(&s, id)).stops, [(0, 1)], "the stop passes to the needle point before");
+    assert_eq!(r["moved"], json!([{"function": "stop", "id": id, "index": 1}]));
+    assert!(!s.doc().unwrap().selection.contains(NodeId(id)));
+    // A run left empty goes, its cut passed to the run after it.
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (12.0, 10.0)], StitchRun { trims: vec![1, 2], ..StitchRun::default() });
+    s.edit("Runs", |d, _| {
+        let n = d.node_mut(NodeId(id)).unwrap();
+        if let vectorcraft_doc::NodeKind::Path { path, .. } = &mut n.kind {
+            for y in [20.0, 30.0] {
+                let a = |x: f64| vectorcraft_geom::Anchor::corner(vectorcraft_geom::Point::new(x * PT_PER_MM, y * PT_PER_MM));
+                path.subpaths.push(vectorcraft_geom::SubPath { anchors: vec![a(10.0), a(12.0)], closed: false });
+            }
+        }
+        Ok(())
+    })
+    .unwrap();
+    run(&mut s, "embroidery.deleteNeedlePoints", json!({"ranges": [{"id": id, "from": 2, "to": 3}]}));
+    let st = needles::read(&node(&s, id)).unwrap();
+    assert_eq!((st.runs.len(), st.len()), (2, 4));
+    assert_eq!(stitches(&node(&s, id)).trims, [1], "one cut before the run after it, not two");
+}
+
+/// A path of stitches left with no needle point is removed: its cut and its stop pass to the path
+/// sewn before it in its parent (the cut, when there is none, to the one after it, before it), or
+/// are dropped, and the reply says which; one undo step brings it all back.
+#[test]
+fn a_path_left_empty_passes_its_cut_and_stop_on() {
+    let mut s = blank();
+    let marks = StitchRun { trim_after: true, stop_after: true, ..StitchRun::default() };
+    let a = path_mm(&mut s, &[(10.0, 10.0), (12.0, 10.0)], StitchRun::default());
+    let b = path_mm(&mut s, &[(20.0, 10.0), (22.0, 10.0)], marks.clone());
+    let c = path_mm(&mut s, &[(30.0, 10.0), (32.0, 10.0)], StitchRun::default());
+    run(&mut s, "select.set", json!({"ids": [a, b, c]}));
+    run(&mut s, "object.group", json!({}));
+    let saved = vectorcraft_format::save(&s.doc().unwrap().doc, false);
+    let r = run(&mut s, "embroidery.deleteNeedlePoints", json!({"ranges": [{"id": b, "from": 0, "to": 1}]}));
+    assert_eq!((r["removed"].clone(), r["changedCount"].clone()), (json!([b]), json!(2)), "{r}");
+    assert!(s.doc().unwrap().doc.node(NodeId(b)).is_none());
+    let to_a = stitches(&node(&s, a));
+    assert!(to_a.trim_after && to_a.stop_after, "both passed to the path before it: {r}");
+    assert_eq!(r["moved"], json!([{"function": "trim", "id": a, "index": 1}, {"function": "stop", "id": a, "index": 1}]));
+    run(&mut s, "edit.undo", json!({}));
+    assert!(vectorcraft_format::save(&s.doc().unwrap().doc, false) == saved, "one undo step brings it all back");
+    // The first of its parent: its cut goes before the one after it, its stop is dropped.
+    run(&mut s, "embroidery.deleteNeedlePoints", json!({"ranges": [{"id": a, "from": 0, "to": 1}, {"id": b, "from": 0, "to": 1}]}));
+    assert!(stitches(&node(&s, c)).trim_before);
+}

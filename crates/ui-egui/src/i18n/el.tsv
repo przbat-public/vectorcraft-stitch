@@ -6018,3 +6018,5 @@ embroidery	manual stitches	χειροκίνητες βελονιές
 @msg	select needle points of a run of stitches, or give needlePoints	επιλέξτε σημεία βελόνας μιας σειράς βελονιών ή δώστε needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Εισαγωγή σημείων βελόνας
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Διαγραφή σημείων βελόνας

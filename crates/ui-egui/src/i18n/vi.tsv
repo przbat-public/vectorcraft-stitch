@@ -5661,3 +5661,5 @@ embroidery	manual stitches	mũi thêu thủ công
 @msg	select needle points of a run of stitches, or give needlePoints	chọn các điểm đâm kim của một đoạn mũi thêu, hoặc cung cấp needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Chèn điểm đâm kim
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Xóa điểm đâm kim

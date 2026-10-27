@@ -6021,3 +6021,5 @@ embroidery	manual stitches	manuelle sting
 @msg	select needle points of a run of stitches, or give needlePoints	vælg nålestik i en række sting, eller angiv needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Indsæt nålestik
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Slet nålestik

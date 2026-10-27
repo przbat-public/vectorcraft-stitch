@@ -5647,3 +5647,5 @@ embroidery	manual stitches	manuelle Stiche
 @msg	select needle points of a run of stitches, or give needlePoints	wählen Sie Einstichpunkte einer Stichfolge aus oder geben Sie needlePoints an
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Einstichpunkte einfügen
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Einstichpunkte löschen

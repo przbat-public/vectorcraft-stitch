@@ -5644,3 +5644,5 @@ embroidery	manual stitches	수동 스티치
 @msg	select needle points of a run of stitches, or give needlePoints	스티치 구간의 바늘 위치를 선택하거나 needlePoints를 지정하세요
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	바늘 위치 삽입
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	바늘 위치 삭제

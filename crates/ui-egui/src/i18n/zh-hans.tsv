@@ -5905,3 +5905,5 @@ embroidery	manual stitches	手动针迹
 @msg	select needle points of a run of stitches, or give needlePoints	请选择一段针迹中的落针点，或提供 needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	插入落针点
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	删除落针点

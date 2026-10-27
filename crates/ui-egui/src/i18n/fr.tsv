@@ -6065,3 +6065,5 @@ embroidery	manual stitches	points manuels
 @msg	select needle points of a run of stitches, or give needlePoints	sélectionnez des points de piqûre d’une suite de points, ou donnez needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Insérer des points de piqûre
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Supprimer des points de piqûre

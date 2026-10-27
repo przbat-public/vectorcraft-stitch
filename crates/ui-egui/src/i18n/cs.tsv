@@ -6066,3 +6066,5 @@ embroidery	manual stitches	ruční stehy
 @msg	select needle points of a run of stitches, or give needlePoints	vyberte vpichy řady stehů nebo zadejte needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Vložit vpichy
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Odstranit vpichy

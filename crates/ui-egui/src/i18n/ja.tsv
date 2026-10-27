@@ -5743,3 +5743,5 @@ embroidery	manual stitches	手動ステッチ
 @msg	select needle points of a run of stitches, or give needlePoints	ステッチの区間の針落ち点を選択するか、needlePoints を指定してください
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	針落ち点を挿入
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	針落ち点を削除

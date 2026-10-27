@@ -6021,3 +6021,5 @@ embroidery	manual stitches	jahitan manual
 @msg	select needle points of a run of stitches, or give needlePoints	pilih titik tusukan dari rangkaian jahitan, atau berikan needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Sisipkan titik tusukan
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Hapus titik tusukan

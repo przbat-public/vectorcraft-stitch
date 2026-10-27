@@ -6027,3 +6027,5 @@ embroidery	manual stitches	manuel dikişler
 @msg	select needle points of a run of stitches, or give needlePoints	bir dikiş dizisinin iğne noktalarını seçin ya da needlePoints verin
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	İğne Noktası Ekle
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	İğne Noktalarını Sil

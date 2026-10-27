@@ -22,6 +22,7 @@ fn the_embroidery_commands_are_reachable() {
         "embroidery.convertToManual",
         "embroidery.moveNeedlePoints",
         "embroidery.insertNeedlePoints",
+        "embroidery.deleteNeedlePoints",
         "embroidery.setup",
         "embroidery.settings",
         "embroidery.threads",

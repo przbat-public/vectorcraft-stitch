@@ -6005,3 +6005,5 @@ embroidery	manual stitches	ръчни бодове
 @msg	select needle points of a run of stitches, or give needlePoints	изберете точки на убождане от редица бодове или подайте needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Вмъкване на точки на убождане
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Изтриване на точки на убождане

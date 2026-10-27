@@ -5917,3 +5917,5 @@ embroidery	manual stitches	ściegi ręczne
 @msg	select needle points of a run of stitches, or give needlePoints	zaznacz nakłucia odcinka ściegów lub podaj needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Wstaw nakłucia
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Usuń nakłucia

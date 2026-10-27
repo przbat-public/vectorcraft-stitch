@@ -5981,3 +5981,5 @@ embroidery	manual stitches	ხელით ნაკერები
 @msg	select needle points of a run of stitches, or give needlePoints	აირჩიეთ ნაკერების მწკრივის ნემსის ჩხვლეტები ან მიუთითეთ needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	ნემსის ჩხვლეტების ჩასმა
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	ნემსის ჩხვლეტების წაშლა

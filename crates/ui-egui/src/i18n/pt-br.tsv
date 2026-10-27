@@ -5982,3 +5982,5 @@ embroidery	manual stitches	pontos manuais
 @msg	select needle points of a run of stitches, or give needlePoints	selecione pontos de agulha de uma sequência de pontos ou informe needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Inserir pontos de agulha
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Excluir pontos de agulha

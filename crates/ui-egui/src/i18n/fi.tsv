@@ -6097,3 +6097,5 @@ embroidery	manual stitches	manuaaliset pistot
 @msg	select needle points of a run of stitches, or give needlePoints	valitse pistosarjan neulanpistoja tai anna needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Lisää neulanpistoja
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Poista neulanpistoja

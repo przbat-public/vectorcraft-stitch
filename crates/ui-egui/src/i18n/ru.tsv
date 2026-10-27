@@ -5677,3 +5677,5 @@ embroidery	manual stitches	ручные стежки
 @msg	select needle points of a run of stitches, or give needlePoints	выберите проколы в ряду стежков или укажите needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Вставить проколы
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Удалить проколы

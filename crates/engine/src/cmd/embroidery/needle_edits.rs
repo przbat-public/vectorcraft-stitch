@@ -4,7 +4,8 @@
 //! of the stitches it made or changed (`lengths`), without a plan.
 
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::{NodeId, Selection};
+use vectorcraft_doc::embroidery::StitchRun;
+use vectorcraft_doc::{Document, NodeId, Selection};
 use vectorcraft_geom::{Point, Vec2};
 use vectorcraft_stitch::mm_to_pt;
 
@@ -14,9 +15,11 @@ use crate::cmd::bad;
 use crate::{EngineError, Result, Session};
 
 /// What an edit leaves of one path: its stitches written back (removed when no needle point is
-/// left).
+/// left), the path removed, or only its run's marks changed (a cut or a stop passed to it).
 pub(super) enum Left {
     Stitches(Stitches),
+    Removed,
+    Marks(StitchRun),
 }
 
 /// The addressing keys every edit takes.
@@ -73,6 +76,15 @@ fn apply(s: &mut Session, label: &str, edits: Vec<(NodeId, Left)>, sel: Selectio
                         d.remove(id).map_err(|e| EngineError::Other(e.to_string()))?;
                     }
                 }
+                Left::Removed => {
+                    d.remove(id).map_err(|e| EngineError::Other(e.to_string()))?;
+                }
+                Left::Marks(marks) => {
+                    let n = d.node_mut(id).ok_or(EngineError::NoNode(id))?;
+                    if let Some(e) = n.extras_mut().embroidery.as_deref_mut() {
+                        e.stitches = Some(marks);
+                    }
+                }
             }
         }
         *selection = sel;
@@ -86,8 +98,10 @@ fn listed(edits: &[(NodeId, Left)]) -> Vec<Value> {
     edits
         .iter()
         .take(MAX_LISTED)
-        .map(|(id, left)| match left {
-            Left::Stitches(st) => json!({"id": id.0, "needlePoints": st.len()}),
+        .filter_map(|(id, left)| match left {
+            Left::Stitches(st) => Some(json!({"id": id.0, "needlePoints": st.len()})),
+            Left::Removed => Some(json!({"id": id.0, "needlePoints": 0})),
+            Left::Marks(_) => None,
         })
         .collect()
 }
@@ -325,6 +339,165 @@ pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
     });
     if !edits.is_empty() {
         apply(s, INSERT_LABEL, edits, sel)?;
+    }
+    Ok(reply)
+}
+
+pub(super) const DELETE: &str = "embroidery.deleteNeedlePoints";
+/// The undo step's name, the command's label.
+pub(super) const DELETE_LABEL: &str = "Delete Needle Points";
+
+/// Where a cut or a stop went, or that it was dropped, as a reply lists it.
+fn function_json(function: &str, id: NodeId, index: Option<usize>, before: bool) -> Value {
+    match (index, before) {
+        (_, true) => json!({"function": function, "id": id.0, "before": true}),
+        (Some(k), false) => json!({"function": function, "id": id.0, "index": k}),
+        (None, false) => json!({"function": function, "id": id.0}),
+    }
+}
+
+/// The path of stitches sewn beside `id` in its parent, the one before it when `before`, else the
+/// one after, passing over those in `gone` (removed by the same edit).
+fn sibling(doc: &Document, id: NodeId, before: bool, gone: &std::collections::BTreeSet<NodeId>) -> Option<NodeId> {
+    let parent = doc.parent_of(id).and_then(|p| doc.node(p))?;
+    let children = parent.children()?;
+    let at = children.iter().position(|c| c.id == id)?;
+    let stitches = |c: &&std::sync::Arc<vectorcraft_doc::Node>| !gone.contains(&c.id) && needles::read(c).is_ok() && doc.is_editable(c.id);
+    if before { children.get(..at)?.iter().rev().find(stitches).map(|c| c.id) } else { children.get(at + 1..)?.iter().find(stitches).map(|c| c.id) }
+}
+
+/// `embroidery.deleteNeedlePoints {needlePoints?, ranges?}`: each needle point addressed (or
+/// selected) deleted, the stitches beside it becoming one (neighbours merge); a stop after one
+/// passes to the needle point before it that stays. A path left with no needle point is removed:
+/// its cut and stop pass to the path of stitches sewn before it in its parent (a cut, else to the
+/// one after), or are dropped, and the reply says which. The paths it changed leave the selection,
+/// so a second Delete deletes nothing.
+pub(super) fn delete(s: &mut Session, p: &Value) -> Result<Value> {
+    let o = params(p, DELETE, &[])?;
+    let (t, before) = targets(s, &o, DELETE)?;
+    let doc = s.doc()?.doc.clone();
+    let (min, max) = (needles::shortest_stitch(&doc), LONGEST);
+    let mut lengths = Lengths::default();
+    let mut sel = before.clone();
+    let (mut edits, mut moved, mut dropped, mut removed) = (Vec::new(), Vec::new(), Vec::new(), std::collections::BTreeSet::new());
+    let mut deleted = 0usize;
+    for (id, st, indices) in t.paths {
+        let mut out = st.clone();
+        // Each kept needle point a deleted one followed (its stitch merged), by its new index.
+        let mut merged = std::collections::BTreeSet::new();
+        let (mut k, mut kept) = (0usize, 0usize);
+        // The last needle point kept, by run and place: a stop of one deleted after it passes to it.
+        let mut last: Option<(usize, usize)> = None;
+        for (r, run) in st.runs.iter().enumerate() {
+            let mut needles: Vec<needles::Needle> = Vec::with_capacity(run.needles.len());
+            for n in &run.needles {
+                if indices.contains(&k) {
+                    deleted += 1;
+                    // The stitch from the needle point kept before it, in its run, now goes on.
+                    if !needles.is_empty() {
+                        merged.insert(kept.saturating_sub(1));
+                    }
+                    if n.stop {
+                        let to = match last {
+                            Some((lr, li)) if lr == r => needles.get_mut(li),
+                            Some((lr, li)) => out.runs.get_mut(lr).and_then(|run| run.needles.get_mut(li)),
+                            None => None,
+                        };
+                        match to {
+                            Some(m) => {
+                                m.stop = true;
+                                moved.push(function_json("stop", id, Some(kept.saturating_sub(1)), false));
+                            }
+                            None => dropped.push(function_json("stop", id, None, false)),
+                        }
+                    }
+                } else {
+                    needles.push(*n);
+                    last = Some((r, needles.len() - 1));
+                    kept += 1;
+                }
+                k += 1;
+            }
+            if let Some(slot) = out.runs.get_mut(r) {
+                slot.needles = needles;
+            }
+        }
+        sel.remove(id);
+        sel.anchors.remove(&id);
+        if out.len() > 0 {
+            for &m in &merged {
+                lengths.around(&out, m, min, max);
+            }
+            edits.push((id, Left::Stitches(out)));
+            continue;
+        }
+        removed.insert(id);
+        edits.push((id, Left::Removed));
+    }
+    // A path removed: its cut and its stop pass to its neighbour, as the gap it leaves.
+    let mut passed: Vec<(NodeId, StitchRun)> = Vec::new();
+    for &id in &removed {
+        let Some(n) = doc.node(id) else { continue };
+        let e = n.extras().embroidery.as_deref();
+        let marks = e.and_then(|e| e.stitches.as_ref());
+        let cut = marks.is_some_and(|m| m.trim_before || m.trim_after) || e.is_some_and(|e| e.trim_after);
+        let stop = marks.is_some_and(|m| m.stop_after || !m.stops.is_empty()) || e.is_some_and(|e| e.stop_after);
+        let mut give = |to: NodeId, f: &dyn Fn(&mut StitchRun), edits: &mut Vec<(NodeId, Left)>| {
+            if let Some((_, Left::Stitches(st))) = edits.iter_mut().find(|(e, _)| *e == to) {
+                f(&mut st.marks);
+                return;
+            }
+            let slot = passed.iter_mut().find(|(p, _)| *p == to);
+            match slot {
+                Some((_, m)) => f(m),
+                None => {
+                    if let Some(mut m) = doc.node(to).and_then(|n| n.extras().embroidery.as_deref()).and_then(|e| e.stitches.clone()) {
+                        f(&mut m);
+                        passed.push((to, m));
+                    }
+                }
+            }
+        };
+        let before_it = sibling(&doc, id, true, &removed);
+        let after_it = sibling(&doc, id, false, &removed);
+        let last_of = |to: NodeId| doc.node(to).and_then(|n| needles::read(n).ok()).map(|st| st.len().saturating_sub(1));
+        if cut {
+            match (before_it, after_it) {
+                (Some(to), _) => {
+                    give(to, &|m| m.trim_after = true, &mut edits);
+                    moved.push(function_json("trim", to, last_of(to), false));
+                }
+                (None, Some(to)) => {
+                    give(to, &|m| m.trim_before = true, &mut edits);
+                    moved.push(function_json("trim", to, None, true));
+                }
+                (None, None) => dropped.push(function_json("trim", id, None, false)),
+            }
+        }
+        if stop {
+            match before_it {
+                Some(to) => {
+                    give(to, &|m| m.stop_after = true, &mut edits);
+                    moved.push(function_json("stop", to, last_of(to), false));
+                }
+                None => dropped.push(function_json("stop", id, None, false)),
+            }
+        }
+    }
+    edits.extend(passed.into_iter().map(|(id, m)| (id, Left::Marks(m))));
+    let reply = json!({
+        "changedCount": deleted,
+        "paths": listed(&edits),
+        "pathCount": edits.iter().filter(|(_, l)| !matches!(l, Left::Marks(_))).count(),
+        "removed": removed.iter().take(MAX_LISTED).map(|id| id.0).collect::<Vec<_>>(),
+        "removedCount": removed.len(),
+        "moved": moved.into_iter().take(MAX_LISTED).collect::<Vec<_>>(),
+        "dropped": dropped.into_iter().take(MAX_LISTED).collect::<Vec<_>>(),
+        "lengths": lengths.json(min, max),
+        "passedOver": t.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect::<Vec<_>>(),
+    });
+    if deleted > 0 {
+        apply(s, DELETE_LABEL, edits, sel)?;
     }
     Ok(reply)
 }

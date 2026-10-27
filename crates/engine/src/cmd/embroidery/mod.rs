@@ -292,6 +292,15 @@ pub fn specs() -> Vec<CommandSpec> {
             needle_edits::insert
         ),
         cmd!(
+            "embroidery.deleteNeedlePoints",
+            "Delete Needle Points",
+            [],
+            None,
+            "{needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them; default the selection's)} deletes each needle point addressed: the stitches beside it become one (neighbours merge), the others stay where they are, and a stop after it passes to the needle point before it that stays (dropped when none). A run left with no needle point goes, its cut passing to the run after it; a path left with none is removed, its cut and stop passing to the path of stitches sewn before it in its parent (a cut, when none, to the one after it, as a cut before it), else dropped. The paths it changed leave the selection, so a second Delete deletes nothing. One undo step \"Delete Needle Points\" → {changedCount: the needle points deleted, paths: [{id, needlePoints}] (0: removed), pathCount, removed: [id], removedCount, moved: [{function: \"trim\"|\"stop\", id, index (the needle point it follows now) | before: true (a cut before the path)}], dropped: [{function, id}], lengths (the stitches merged), passedOver}",
+            has_doc,
+            needle_edits::delete
+        ),
+        cmd!(
             "embroidery.setStopAfter",
             "Embroidery Stop After",
             [],

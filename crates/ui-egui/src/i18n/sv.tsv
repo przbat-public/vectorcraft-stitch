@@ -6022,3 +6022,5 @@ embroidery	manual stitches	manuella stygn
 @msg	select needle points of a run of stitches, or give needlePoints	markera nålstick i en rad stygn, eller ange needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Infoga nålstick
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Ta bort nålstick

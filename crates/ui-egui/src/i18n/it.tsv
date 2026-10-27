@@ -5681,3 +5681,5 @@ embroidery	manual stitches	punti manuali
 @msg	select needle points of a run of stitches, or give needlePoints	seleziona i punti dell’ago di una serie di punti, oppure indica needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Inserisci punti dell’ago
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Elimina punti dell’ago

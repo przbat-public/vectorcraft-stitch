@@ -5188,6 +5188,13 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     a stitch leaves. The new needle points take the places from `index` on (those after move up) and are left
     selected; a stop stays after the needle point it followed. At most 100,000 added. It answers `{changedCount,
     inserted: [{id, index}], paths, pathCount, lengths, passedOver}`.
+  - `embroidery.deleteNeedlePoints {needlePoints?, ranges?}` deletes each needle point addressed: the stitches beside
+    it become one (neighbours merge), the others stay where they are, and a stop after it passes to the needle point
+    before it that stays. A run left empty goes, its cut passing to the run after it; a path left empty is removed,
+    its cut and stop passing to the path of stitches sewn before it in its parent (a cut, when there is none, to the
+    one after it), else dropped. The paths it changed leave the selection. It answers `{changedCount, paths,
+    pathCount, removed: [id], removedCount, moved: [{function, id, index | before: true}], dropped: [{function, id}],
+    lengths, passedOver}`.
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,

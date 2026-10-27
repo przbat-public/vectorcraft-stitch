@@ -2555,6 +2555,37 @@ Limits:
   design too heavy to plan shows only the points set. The arrow needs no plan.
 - The arrow is a fill's one angle; several directions in one fill (angle lines) come later.
 
+### Manual stitches and needle points
+
+- **What a converted object is** (`cmd/embroidery/manual.rs`): a group keeping the object's id, its
+  `embroidery.original` (`{frame, node, fingerprint}`: the object as the file saved it, parsed only
+  at restore; the frame composed with every transform, by the convention for kept data; the
+  fingerprint of the stitches as converted, telling edits from moves), and one path of literal
+  stitches marked `manual` per sewing unit, in walk order. Each path's subpaths are runs the needle
+  jumps between; `trims` names the runs reached after a cut, `stops` the needle points followed by a
+  stop, `stop_after` and `trim_after` the path's end, `exact` the millimetres a document point can't
+  give back (applied while the needle point lies where they were kept for), `transformed` the
+  transforms since the stitches were made (for the scale warning).
+- **How a needle point is addressed** (`needles.rs`): `{id, index}`, the path and the needle point's
+  place across its runs; ids stay put across edits, an index shifts only inside the path an edit
+  changes. Record numbers (`embroidery.stitches`) are resolved to addresses once and never edited by.
+- **Read before arithmetic, written back straight:** a path is edited only when every anchor is a
+  finite number within the document's coordinates and it holds at most 2 million needle points; it
+  is written back as open subpaths of corner anchors (a run of one needle point a line to its own
+  start), its marks from the needle points carrying them, changing nothing sewn.
+- **A run boundary is a jump:** splitting a run lifts the needle before a needle point, joining
+  makes the jump a stitch; a cut or a stop inside a run splits it there first, tied off and in.
+  A cut after a path's last needle point is its run's `trim_after` or the object's Trim After
+  (Machine Function reads both and clears both when turned off); a file's cut before a path is
+  that path's `trim_before`.
+- **Upstream hooks:** Delete, the cutting tools and Join act on runs through three marked
+  statements (FORK.md › the stitch commands' hooks), and Restore's question is a row of the dialog
+  registry.
+- **Tests:** `tests_needles.rs` (every kind of path written back bit for bit, every command, hostile
+  anchors), `tests/embroidery_stitch_edits.rs` (junk on every kind of run, random edits keeping their
+  promises, the inverses), MCP parity (`protocol_props.rs`), `tests/embroidery_golden_corpus.rs` (the
+  convert's oracle at the merge base).
+
 ## References
 
 Public documentation, cited per claim in the crate:

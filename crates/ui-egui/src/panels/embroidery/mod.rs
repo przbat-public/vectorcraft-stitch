@@ -400,10 +400,24 @@ fn tab_group(root: &Option<craft_ui::docking::Node<String>>, panel: &str) -> Vec
     Vec::new()
 }
 
-/// The panel's ≡ menu: the selected object's embroidery settings copied and pasted; the selection
-/// sewn earlier, later, first or last; Nearest Connection; the Sewing order's blocks collapsed or
-/// expanded; the next or previous finding of the check.
+/// The panel's ≡ menu: while stitches are edited with needle points selected, the stitch actions
+/// (as the Contextual Task Bar offers them); the selected object's embroidery settings copied and
+/// pasted; the selection sewn earlier, later, first or last; Nearest Connection; the Sewing order's
+/// blocks collapsed or expanded; the next or previous finding of the check.
 pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
+    if let Some(items) = crate::embroidery::task_bar::items(app) {
+        for (_, _, id, params) in items {
+            let label = match params["function"].as_str() {
+                Some("trim") => crate::et!("Trim After the Selected Needle Points").to_string(),
+                Some("stop") => crate::et!("Stop After the Selected Needle Points").to_string(),
+                _ => command_label(app, id),
+            };
+            if crate::widgets::menu_item_name(ui, &label, crate::menus::enabled(app, id), false) {
+                crate::menus::invoke(app, id, params);
+            }
+        }
+        ui.separator();
+    }
     for id in ["embroidery.copySettings", "embroidery.pasteSettings"] {
         if crate::widgets::menu_item_name(ui, &command_label(app, id), crate::menus::enabled(app, id), false) {
             crate::menus::invoke(app, id, json!({}));

@@ -94,6 +94,25 @@ pub const MAX_NEEDLE_POINTS: usize = 250_000;
 pub const MARK_LINE_PT: f64 = 1.0;
 pub const MARK_HALO_PT: f64 = 2.5;
 
+/// The edit look's lines ([`EditLook`]): the edited units' threads drawn this wide, screen points,
+/// whatever their laid width (at the mockup's 3,100 % a laid 0.40 mm thread is about 70 px wide and
+/// would hide the needle points); as wide as a link.
+pub const EDIT_LINE_PT: f64 = LINK_PT;
+/// A needle point's circle in the edit look, its radius and its dark edge's width, screen points:
+/// as large as a Direct Selection anchor at the default anchor size (5 pt across), an estimate.
+pub const NEEDLE_CIRCLE_PT: f64 = 2.5;
+pub const NEEDLE_CIRCLE_EDGE_PT: f64 = 1.0;
+/// A stitch that breaks a rule in the edit look: its dashes over it, screen points (a link's
+/// dashes), and its mark's half size at its middle, screen points (a mark's).
+pub const FLAG_DASH_PT: f64 = LINK_DASH_PT;
+pub const FLAG_LINE_PT: f64 = 1.5;
+pub const FLAG_MARK_PT: f64 = MARK_PT;
+/// The mark's base below its middle, a share of its half size: a triangle standing on the stitch.
+const FLAG_MARK_BASE: f64 = 0.8;
+/// The most rule-breaking stitches marked in one frame: past it the rest show their dashes alone.
+/// An estimate: more marks than fit on a screen side by side read as noise.
+pub const MAX_FLAG_MARKS: usize = 2_000;
+
 /// The most a point left out as straight may lie off the line drawn in its place, device pixels: a
 /// tenth of a pixel, which no anti-aliasing shows. An estimate. Zoomed in closer than that keeps
 /// (the picture's tolerance over a tenth of a pixel), every point is drawn.
@@ -555,6 +574,32 @@ pub struct LineStyle {
     pub background: Option<[u8; 4]>,
     /// Smooth edges; off, a pixel is painted when a line covers at least half of it.
     pub anti_alias: bool,
+    /// The edit look (stitch editing): some tags' lines thin and on top, their needle points as
+    /// circles, their rule-breaking stitches marked; `None` draws as always.
+    pub edit: Option<EditLook>,
+}
+
+/// The edit look: the lines of `tags` (the units being edited) drawn [`EDIT_LINE_PT`] wide after
+/// every other line, so nothing sewn later buries them; their needle points as two-tone circles
+/// when `circles` says how many may show (none past it: more can't sit side by side); and each of
+/// their stitches that breaks a rule dashed in two tones with a mark at its middle: shorter than
+/// `shortest`, longer than `longest`, or longer along x or y than `step` (picture units).
+#[derive(Clone, Debug, PartialEq)]
+pub struct EditLook {
+    pub tags: TagSet,
+    pub circles: Option<usize>,
+    pub shortest: f64,
+    pub longest: f64,
+    pub step: Option<f64>,
+}
+
+impl EditLook {
+    /// Whether the stitch from `a` to `b` (picture units) breaks a rule.
+    pub fn breaks(&self, a: Point, b: Point) -> bool {
+        let (dx, dy) = ((b.x - a.x).abs(), (b.y - a.y).abs());
+        let length = dx.hypot(dy);
+        length < self.shortest || length > self.longest || self.step.is_some_and(|s| dx > s || dy > s)
+    }
 }
 
 impl Default for LineStyle {
@@ -575,6 +620,7 @@ impl Default for LineStyle {
             px_per_pt: 1.0,
             background: None,
             anti_alias: true,
+            edit: None,
         }
     }
 }
@@ -587,6 +633,11 @@ impl LineStyle {
 
     fn fades(&self, tag: u32) -> bool {
         self.faded.as_ref().is_some_and(|f| f.contains(tag))
+    }
+
+    /// Whether tag `tag`'s lines are drawn in the edit look.
+    fn edited(&self, tag: u32) -> bool {
+        self.edit.as_ref().is_some_and(|e| e.tags.contains(tag))
     }
 
     /// Whether number `n` is drawn.
@@ -657,6 +708,11 @@ pub struct LineStats {
     pub marks: usize,
     /// Needle points drawn.
     pub needle_points: usize,
+    /// The edit look's needle-point circles drawn, whether more than may show were in view (then
+    /// none is drawn), and the rule-breaking stitches marked.
+    pub circles: usize,
+    pub circles_capped: bool,
+    pub flagged: usize,
     pub micros: u64,
 }
 
@@ -721,7 +777,12 @@ impl LineRenderer {
         let scale = to_device.determinant().abs().sqrt();
         if scale.is_finite() && scale > 0.0 {
             let visible = offsets.inverse().transform_rect_bbox(Rect::new(0.0, 0.0, f64::from(w), f64::from(h)));
-            self.draw_lines(&mut ctx, picture, offsets, scale, visible, style);
+            self.draw_lines(&mut ctx, picture, offsets, scale, visible, style, false);
+            if style.edit.is_some() {
+                self.draw_lines(&mut ctx, picture, offsets, scale, visible, style, true);
+                self.draw_flags(&mut ctx, picture, offsets, w, h, style);
+                self.draw_circles(&mut ctx, picture, offsets, w, h, style);
+            }
             if style.needle_points {
                 self.draw_needle_points(&mut ctx, picture, offsets, w, h, style);
             }
@@ -742,8 +803,10 @@ impl LineRenderer {
 
     /// The lines, in order: runs of lines of one colour slot (and fade) batched into paths; a slot
     /// with an edge has all its run's edges drawn first, then its colour over them, so the edge
-    /// never shows between two lines of one colour.
-    fn draw_lines(&mut self, ctx: &mut RenderContext, p: &LinePicture, offsets: Affine, scale: f64, visible: Rect, style: &LineStyle) {
+    /// never shows between two lines of one colour. The edit look's lines are left out of the first
+    /// pass and drawn alone in a second (`edited`), over everything else.
+    #[allow(clippy::too_many_arguments)]
+    fn draw_lines(&mut self, ctx: &mut RenderContext, p: &LinePicture, offsets: Affine, scale: f64, visible: Rect, style: &LineStyle, edited: bool) {
         ctx.set_transform(offsets);
         let lines = p.lines();
         let mut i = 0;
@@ -751,9 +814,14 @@ impl LineRenderer {
         while i < lines.len() {
             let Some(first) = lines.get(i) else { break };
             let faded = style.fades(first.tag);
-            let key = (first.group, faded);
-            let end = lines.get(i..).map_or(i, |rest| i + rest.iter().take_while(|l| (l.group, style.fades(l.tag)) == key).count());
+            let key = (first.group, faded, style.edited(first.tag));
+            let end =
+                lines.get(i..).map_or(i, |rest| i + rest.iter().take_while(|l| (l.group, style.fades(l.tag), style.edited(l.tag)) == key).count());
             let run = lines.get(i..end).unwrap_or_default();
+            if key.2 != edited {
+                i = end.max(i + 1);
+                continue;
+            }
             if let Some(edge) = style.edge(first.group).filter(|_| !faded) {
                 self.stroke_run(ctx, p, run, scale, visible, style, edge, EDGE_PX * 2.0, false);
             }
@@ -792,6 +860,7 @@ impl LineRenderer {
                 continue;
             }
             let px = match style.widths {
+                _ if style.edited(line.tag) => EDIT_LINE_PT * style.px_per_pt.max(f64::MIN_POSITIVE),
                 Widths::Laid { min_px } => (f64::from(line.width) * scale).max(min_px),
                 Widths::Hairline => HAIRLINE_PX,
             } + extra_px;
@@ -919,6 +988,124 @@ impl LineRenderer {
             }
         }
         self.stats.needle_points = drawn;
+    }
+
+    /// The edit look's needle points: a circle at each point of an edited line on screen (each once:
+    /// a piece's first point is the piece before's last), a light face inside a dark edge, so it
+    /// reads on any thread and fabric; none at all when more than the look allows are on screen.
+    fn draw_circles(&mut self, ctx: &mut RenderContext, p: &LinePicture, offsets: Affine, w: u16, h: u16, style: &LineStyle) {
+        let Some(edit) = &style.edit else { return };
+        let Some(cap) = edit.circles else { return };
+        ctx.set_transform(Affine::IDENTITY);
+        let pt = style.px_per_pt.max(f64::MIN_POSITIVE);
+        let r = NEEDLE_CIRCLE_PT * pt;
+        let screen = Rect::new(-r, -r, f64::from(w) + r, f64::from(h) + r);
+        let mut centres: Vec<Point> = Vec::new();
+        let mut last: Option<(u32, Point)> = None;
+        for (k, line) in p.lines().iter().enumerate() {
+            if k % CANCEL_EVERY == 0 && k > 0 && vectorcraft_doc::cancel::is_cancelled() {
+                return;
+            }
+            if !edit.tags.contains(line.tag) || !style.shows(line.tag) {
+                last = None;
+                continue;
+            }
+            let b = offsets.transform_rect_bbox(Rect::new(
+                f64::from(line.bounds[0]),
+                f64::from(line.bounds[1]),
+                f64::from(line.bounds[2]),
+                f64::from(line.bounds[3]),
+            ));
+            if !(b.x1 >= screen.x0 && b.x0 <= screen.x1 && b.y1 >= screen.y0 && b.y0 <= screen.y1) {
+                last = None;
+                continue;
+            }
+            let range = line.points.start as usize..line.points.end as usize;
+            let (Some(points), Some(numbers)) = (p.points.get(range.clone()), p.numbers.get(range)) else { continue };
+            for (q, n) in points.iter().zip(numbers) {
+                let c = offsets * Point::new(f64::from(q[0]), f64::from(q[1]));
+                // A piece's first point is the one before's last: drawn once.
+                if last.is_some_and(|(m, at)| m == *n && at.distance(c) < f64::EPSILON) {
+                    continue;
+                }
+                last = Some((*n, c));
+                if !(style.counts(*n) && c.x.is_finite() && c.y.is_finite() && screen.contains(c)) {
+                    continue;
+                }
+                if centres.len() >= cap {
+                    self.stats.circles_capped = true;
+                    return;
+                }
+                centres.push(c);
+            }
+        }
+        let mut faces = BezPath::new();
+        for c in &centres {
+            faces.extend(kurbo::Circle::new(*c, r).path_elements(0.1));
+        }
+        if faces.elements().is_empty() {
+            return;
+        }
+        ctx.set_paint(peniko::Color::from_rgb8(style.light[0], style.light[1], style.light[2]));
+        ctx.fill_path(&faces);
+        ctx.set_paint(peniko::Color::from_rgb8(style.dark[0], style.dark[1], style.dark[2]));
+        ctx.set_stroke(kurbo::Stroke::new(NEEDLE_CIRCLE_EDGE_PT * pt));
+        ctx.stroke_path(&faces);
+        self.stats.circles = centres.len();
+    }
+
+    /// The edit look's rule-breaking stitches ([`EditLook::breaks`]): each dashed in two tones over
+    /// it, cut to the screen, with a two-tone warning triangle at its middle (at most
+    /// [`MAX_FLAG_MARKS`] a frame), never told by colour alone.
+    fn draw_flags(&mut self, ctx: &mut RenderContext, p: &LinePicture, offsets: Affine, w: u16, h: u16, style: &LineStyle) {
+        let Some(edit) = &style.edit else { return };
+        ctx.set_transform(Affine::IDENTITY);
+        let pt = style.px_per_pt.max(f64::MIN_POSITIVE);
+        let screen = Rect::new(0.0, 0.0, f64::from(w), f64::from(h));
+        let mut marks = BezPath::new();
+        let mut flagged = 0usize;
+        for line in p.lines() {
+            if !edit.tags.contains(line.tag) || !style.shows(line.tag) {
+                continue;
+            }
+            let range = line.points.start as usize..line.points.end as usize;
+            let (Some(points), Some(numbers)) = (p.points.get(range.clone()), p.numbers.get(range)) else { continue };
+            for (k, pair) in points.windows(2).enumerate() {
+                let (Some(a), Some(b)) = (pair.first(), pair.get(1)) else { continue };
+                if !numbers.get(k + 1).is_some_and(|n| style.counts(*n)) {
+                    continue;
+                }
+                let (a, b) = (Point::new(f64::from(a[0]), f64::from(a[1])), Point::new(f64::from(b[0]), f64::from(b[1])));
+                if !edit.breaks(a, b) {
+                    continue;
+                }
+                let (da, db) = (offsets * a, offsets * b);
+                if !on_screen(da, db, screen) {
+                    continue;
+                }
+                let Some(seg) = clipped(da, db, screen.inflate(FLAG_DASH_PT * pt, FLAG_DASH_PT * pt)) else { continue };
+                let seg = kurbo::Line::new(seg.0, seg.1);
+                stroke_line(ctx, seg, style.dark, (FLAG_LINE_PT + 1.0) * pt, None);
+                stroke_line(ctx, seg, style.light, FLAG_LINE_PT * pt, Some(FLAG_DASH_PT * pt));
+                flagged += 1;
+                let m = da.midpoint(db);
+                if flagged <= MAX_FLAG_MARKS && screen.contains(m) {
+                    let s = FLAG_MARK_PT * pt;
+                    marks.move_to((m.x, m.y - s));
+                    marks.line_to((m.x + s, m.y + s * FLAG_MARK_BASE));
+                    marks.line_to((m.x - s, m.y + s * FLAG_MARK_BASE));
+                    marks.close_path();
+                }
+            }
+        }
+        if !marks.elements().is_empty() {
+            ctx.set_paint(peniko::Color::from_rgb8(style.light[0], style.light[1], style.light[2]));
+            ctx.fill_path(&marks);
+            ctx.set_paint(peniko::Color::from_rgb8(style.dark[0], style.dark[1], style.dark[2]));
+            ctx.set_stroke(kurbo::Stroke::new(MARK_LINE_PT * pt));
+            ctx.stroke_path(&marks);
+        }
+        self.stats.flagged = flagged;
     }
 
     /// The marks, at a fixed size on screen, over everything.

@@ -99,6 +99,8 @@ mod tests_view;
 mod tests_walk;
 pub mod threadlib;
 pub(crate) mod tool;
+pub use check::{StitchLimits, stitch_limits};
+pub use needles::needle_count;
 pub use tool::StitchEditing;
 mod unit;
 pub mod view;

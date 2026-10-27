@@ -127,6 +127,44 @@ const TINY: f64 = 0.3;
 /// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm>), a
 /// setting of that effect, not a quality limit: background for the estimate.
 const MOST_SHORT_IN_A_ROW: usize = 5;
+/// The one set of lines a stitch is judged by while stitches are edited, on the canvas, in the
+/// live check and in the Stitches tab (the project owner's choice, 2026-10-27: one set of
+/// thresholds everywhere): shorter than the document's shortest stitch (Document Setup's
+/// `minStitch`, else the planner's 0.4 mm), longer than Melco's 12.7 mm (`stitchTooLong`), or
+/// longer along x or y than one record of the format the Check tab checks for (`formatStep`; the
+/// thread palette's format unless one is chosen). Millimetres.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StitchLimits {
+    pub shortest: f64,
+    pub longest: f64,
+    pub step: f64,
+    pub format: Format,
+}
+
+impl StitchLimits {
+    /// The limits of document `doc`, for `format` (`None`: the thread palette's).
+    pub fn of(doc: &vectorcraft_doc::Document, format: Option<Format>) -> Self {
+        let format = format.unwrap_or_else(|| super::thread_palette(doc).format());
+        Self { shortest: super::needles::shortest_stitch(doc), longest: LONGEST_STITCH, step: format.max_step(), format }
+    }
+
+    /// Whether a stitch `length` millimetres long is too short.
+    pub fn short(&self, length: f64) -> bool {
+        length < self.shortest
+    }
+
+    /// Whether a stitch moving `dx`, `dy` millimetres is too long.
+    pub fn long(&self, dx: f64, dy: f64) -> bool {
+        dx.hypot(dy) > self.longest || dx.abs() > self.step || dy.abs() > self.step
+    }
+}
+
+/// [`StitchLimits`] of `doc` for the format of id `format` (`None` or an id no format has: the
+/// thread palette's): what the interface judges stitches by.
+pub fn stitch_limits(doc: &vectorcraft_doc::Document, format: Option<&str>) -> StitchLimits {
+    StitchLimits::of(doc, format.and_then(Format::from_id))
+}
+
 /// How far a unit's stitches may miss the entry or exit point it was planned toward before the
 /// miss is pointed out (millimetres): the planner's own threshold, which it also keeps an aimed
 /// plan by (at least this much nearer the exit).

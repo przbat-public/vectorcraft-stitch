@@ -89,6 +89,15 @@ pub(crate) fn same(a: Point, b: Point) -> bool {
     a.distance(b) * MM_PER_PT < SAME_POINT
 }
 
+/// How many needle points a subpath of a path of stitches holds: one an anchor, but one for a line
+/// to its own start, unless `tack` (the path's only run, marked as two needle points at one spot).
+pub fn needle_count(anchors: &[Anchor], tack: bool) -> usize {
+    match anchors {
+        [a, b] if same(a.p, b.p) && !tack => 1,
+        all => all.len(),
+    }
+}
+
 /// Whether `p` is a finite point within the document's coordinates.
 pub(crate) fn in_range(p: Point) -> bool {
     p.x.is_finite() && p.y.is_finite() && p.x.abs() <= MAX_COORD && p.y.abs() <= MAX_COORD

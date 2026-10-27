@@ -6064,3 +6064,16 @@ embroidery	Move, insert and delete these needle points on the canvas with the Em
 	←↑→↓	←↑→↓
 	 move by 0.1 mm  |  	 flytter 0,1 mm  |  
 	 deselects, then ends editing	 fravælger, og afslutter derefter redigeringen
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	Flyttet X {x} · Y {y} mm
+embroidery	Insert	Indsæt
+embroidery	Delete	Slet
+embroidery	Split Run	Del række
+embroidery	Join Runs	Saml rækker
+embroidery	Split Long Stitches	Del lange sting
+embroidery	Trim	Klip
+embroidery	Stop	Stop
+embroidery	Trim After the Selected Needle Points	Klip efter de valgte nålestik
+embroidery	Stop After the Selected Needle Points	Stop efter de valgte nålestik
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} sting kortere end {value} mm|{count} sting kortere end {value} mm
+@plural	{count} stitch too long|{count} stitches too long	{count} for langt sting|{count} for lange sting

@@ -451,3 +451,82 @@ fn a_hit_picks_the_line_drawn_on_top() {
     assert_eq!(scaled.hit(Point::new(10.0, 2.5), 1.0), None, "1 pt past a half unit is a pixel short");
     assert_eq!(scaled.hit(Point::new(10.0, 2.0), 1.0), Some(3), "two document points a unit");
 }
+
+/// The edit look of a tag: its lines drawn [`EDIT_LINE_PT`] wide over a later line that crosses
+/// them, its needle points as circles (a light face in a dark edge) each once, none past the cap;
+/// without the look the later line covers it.
+#[test]
+fn the_edit_look_draws_its_units_thin_on_top_with_circles() {
+    let wide = 9.0;
+    // Tag 0 across, tag 1 down over it later.
+    let p = picture(&[(0, 0, wide, &[(10.5, 30.5, 1), (40.5, 30.5, 2), (70.5, 30.5, 3)]), (1, 1, wide, &[(55.5, 5.5, 4), (55.5, 55.5, 5)])]);
+    let plain = LineStyle { background: Some([255, 255, 255, 255]), ..style(&[RED, BLUE]) };
+    let img = draw(&p, 80, 60, &plain);
+    assert_eq!(rgb(at(&img, 55, 30)), BLUE, "the later line on top");
+    assert_eq!(rgb(at(&img, 25, 33)), RED, "laid wide");
+    let edit = EditLook { tags: TagSet::of([0]), circles: Some(100), shortest: 0.0, longest: f64::INFINITY, step: None };
+    // Four pixels a point: the line 4 px wide, a circle 10 px across its radius in a 4 px edge.
+    let look = LineStyle { edit: Some(edit.clone()), px_per_pt: 4.0, ..plain.clone() };
+    let mut r = LineRenderer { threads: 0, ..LineRenderer::new() };
+    let img = r.render(&p, 80, 60, Affine::IDENTITY, &look);
+    assert_eq!(rgb(at(&img, 57, 30)), RED, "the edited line over the later one");
+    assert_eq!(rgb(at(&img, 25, 33)), [255, 255, 255], "thin: nothing three points off it");
+    assert_eq!(r.stats.circles, 3, "a circle at each needle point of the edited line");
+    assert_eq!(rgb(at(&img, 40, 30)), LineStyle::default().light, "a light face");
+    assert_eq!(rgb(at(&img, 40, 20)), LineStyle::default().dark, "inside a dark edge");
+    let few = LineStyle { edit: Some(EditLook { circles: Some(2), ..edit.clone() }), ..look.clone() };
+    r.render(&p, 80, 60, Affine::IDENTITY, &few);
+    assert_eq!((r.stats.circles, r.stats.circles_capped), (0, true), "more than may show: none");
+    let none = LineStyle { edit: Some(EditLook { circles: None, ..edit }), ..plain };
+    r.render(&p, 80, 60, Affine::IDENTITY, &none);
+    assert_eq!(r.stats.circles, 0, "circles not asked for");
+}
+
+/// A long run cut into pieces: each needle point gets one circle, the joins shared by two pieces
+/// once.
+#[test]
+fn a_run_cut_into_pieces_gets_a_circle_a_needle_point() {
+    let points: Vec<At> = (0..150u32).map(|k| (5.0 + 3.0 * f64::from(k % 30), 5.0 + 6.0 * f64::from(k / 30), k + 1)).collect();
+    let p = picture(&[(0, 0, 1.0, &points)]);
+    assert!(p.lines().len() > 2, "cut into pieces");
+    let look = LineStyle {
+        edit: Some(EditLook { tags: TagSet::of([0]), circles: Some(10_000), shortest: 0.0, longest: f64::INFINITY, step: None }),
+        ..style(&[RED])
+    };
+    let mut r = LineRenderer { threads: 0, ..LineRenderer::new() };
+    r.render(&p, 120, 50, Affine::IDENTITY, &look);
+    assert_eq!(r.stats.circles, 150);
+}
+
+/// The stitches of an edited line that break a rule are marked, those that don't aren't: shorter
+/// than the shortest, longer than the longest, longer along x or y than the step; another tag's
+/// never.
+#[test]
+fn the_edit_look_marks_the_stitches_that_break_a_rule() {
+    // Stitches 10 long, 2 (short), 10, 30 (long), and one 14 across and 14 down (19.8 long: under
+    // the longest, over the step along each axis).
+    let p = picture(&[
+        (0, 0, 1.0, &[(5.0, 5.0, 1), (15.0, 5.0, 2), (17.0, 5.0, 3), (27.0, 5.0, 4), (57.0, 5.0, 5), (71.0, 19.0, 6)]),
+        (0, 1, 1.0, &[(5.0, 40.0, 7), (6.0, 40.0, 8)]),
+    ]);
+    let edit = EditLook { tags: TagSet::of([0]), circles: None, shortest: 5.0, longest: 25.0, step: None };
+    let mut r = LineRenderer { threads: 0, ..LineRenderer::new() };
+    r.render(&p, 80, 50, Affine::IDENTITY, &LineStyle { edit: Some(edit.clone()), ..style(&[RED]) });
+    assert_eq!(r.stats.flagged, 2, "the short and the long one");
+    r.render(&p, 80, 50, Affine::IDENTITY, &LineStyle { edit: Some(EditLook { step: Some(12.0), ..edit.clone() }), ..style(&[RED]) });
+    assert_eq!(r.stats.flagged, 3, "and the one longer than the step along x and y");
+    assert!(edit.breaks(Point::new(0.0, 0.0), Point::new(1.0, 0.0)) && !edit.breaks(Point::new(0.0, 0.0), Point::new(10.0, 0.0)));
+}
+
+/// The default style has no edit look: every picture draws as before it existed.
+#[test]
+fn without_the_edit_look_nothing_changes() {
+    assert_eq!(LineStyle::default().edit, None);
+    let p = picture(&[(0, 0, 4.0, &[(10.5, 10.5, 1), (60.5, 10.5, 2)])]);
+    let plain = style(&[RED]);
+    let empty = LineStyle {
+        edit: Some(EditLook { tags: TagSet::default(), circles: Some(10), shortest: 0.0, longest: f64::INFINITY, step: None }),
+        ..plain.clone()
+    };
+    assert_eq!(draw(&p, 80, 20, &plain).pixels, draw(&p, 80, 20, &empty).pixels, "an edit look of no tags draws the same pixels");
+}

@@ -6061,3 +6061,16 @@ embroidery	Move, insert and delete these needle points on the canvas with the Em
 	←↑→↓	←↑→↓
 	 move by 0.1 mm  |  	 μετακινούν κατά 0,1 mm  |  
 	 deselects, then ends editing	 αποεπιλέγει και μετά τερματίζει την επεξεργασία
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	Μετακινήθηκε X {x} · Y {y} mm
+embroidery	Insert	Εισαγωγή
+embroidery	Delete	Διαγραφή
+embroidery	Split Run	Διαίρεση σειράς
+embroidery	Join Runs	Ένωση σειρών
+embroidery	Split Long Stitches	Διαίρεση μακριών βελονιών
+embroidery	Trim	Κόψιμο
+embroidery	Stop	Διακοπή
+embroidery	Trim After the Selected Needle Points	Κόψιμο μετά τα επιλεγμένα σημεία βελόνας
+embroidery	Stop After the Selected Needle Points	Διακοπή μετά τα επιλεγμένα σημεία βελόνας
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} βελονιά μικρότερη από {value} mm|{count} βελονιές μικρότερες από {value} mm
+@plural	{count} stitch too long|{count} stitches too long	{count} πολύ μεγάλη βελονιά|{count} πολύ μεγάλες βελονιές

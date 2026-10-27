@@ -146,7 +146,10 @@ fn a_drag_follows_the_pointer_and_escape_takes_it_back() {
     }
     assert!(app.session.tool_options()["drag"].is_object(), "dragging: {}", app.session.tool_options());
     assert!(
-        diamonds(&shapes, light()).iter().chain(diamonds(&shapes, crate::theme::Tokens::get(&ctx).accent).iter()).any(|d| d.distance(to) < 1.0),
+        diamonds(&shapes, light())
+            .iter()
+            .chain(diamonds(&shapes, super::handles::entry_color(&crate::theme::Tokens::get(&ctx))).iter())
+            .any(|d| d.distance(to) < 1.0),
         "the entry drawn under the pointer"
     );
     time += 0.05;
@@ -404,11 +407,12 @@ fn the_rows_arrow_is_drawn_and_its_head_turns_them() {
 /// The handles read on white fabric and on dark fabric in every theme (both schemes, every
 /// brightness and accent): the two-tone edge's dark line stands out from white and its light line
 /// from black and from the dark line, by WCAG's non-text 3:1 (1.4.11); an exit's face from the
-/// light line, whatever its layer's colour; each label's words from its pill by WCAG's 4.5:1
-/// (1.4.3), the entry's and the arrow's in the accent, the exit's in its layer's colour.
+/// light line, whatever its layer's colour, and an entry's and an arrow head's in every theme's
+/// accent (a set point's face against an Auto one's); each label's words from its pill by WCAG's
+/// 4.5:1 (1.4.3), the entry's and the arrow's in the accent, the exit's in its layer's colour.
 #[test]
 fn handles_and_labels_read_on_any_fabric_in_every_theme() {
-    use super::handles::{dark, exit_color, light};
+    use super::handles::{dark, entry_color, exit_color, light};
     use super::marks::{NON_TEXT_CONTRAST, TEXT_CONTRAST, contrast, text_on};
     use crate::theme::{Accent, Brightness, Scheme, Tokens};
     for fabric in [Color32::WHITE, Color32::BLACK] {
@@ -425,7 +429,9 @@ fn handles_and_labels_read_on_any_fabric_in_every_theme() {
         for brightness in Brightness::ALL {
             for accent in Accent::ALL {
                 let t = Tokens::for_scheme(scheme, brightness, accent);
-                assert!(contrast(text_on(t.accent), t.accent) >= TEXT_CONTRAST, "{scheme:?} {brightness:?} {accent:?}");
+                let entry = entry_color(&t);
+                assert!(contrast(entry, light()) >= NON_TEXT_CONTRAST, "{scheme:?} {brightness:?} {accent:?}: the entry on the light line");
+                assert!(contrast(text_on(entry), entry) >= TEXT_CONTRAST, "{scheme:?} {brightness:?} {accent:?}: the entry's label");
             }
         }
     }

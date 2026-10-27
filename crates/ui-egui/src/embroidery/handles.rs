@@ -2,7 +2,8 @@
 //! the tool catches ([`vectorcraft_engine::Session::embroidery_handles`]), drawn where it catches
 //! them, so that what is drawn is what is caught.
 //!
-//! - **Look:** an entry ◆ in the theme's accent, an exit ⊕ in its layer's colour; solid for a point
+//! - **Look:** an entry ◆ in the theme's accent, an exit ⊕ in its layer's colour (each darkened as
+//!   far as it takes to stand out from the light edge, [`entry_color`], [`exit_color`]); solid for a point
 //!   set, hollow for one left to the planner, dimmed while the plan shown is of the object as it was;
 //!   each with a two-tone edge (dark outside, light inside), which reads on any fabric. A tatami
 //!   fill's rows' angle is a dashed two-tone arrow through its centre, its head ▲ in the accent
@@ -228,7 +229,7 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         let focused = same(&options["focus"], h);
         let alpha = if h.state == State::Stale { STALE_ALPHA } else { 1.0 };
         let color = match h.id.kind {
-            Kind::Entry | Kind::Angle => t.accent,
+            Kind::Entry | Kind::Angle => entry_color(&t),
             Kind::Exit => exit_color(st.doc.layer_color(h.id.owner.part().0)),
         };
         // A point set where the stitches can't start: joined to where they do.
@@ -323,6 +324,12 @@ pub(crate) fn tests_outline(doc: &vectorcraft_doc::Document, object: vectorcraft
         });
     }
     pts
+}
+
+/// An entry's and an angle arrow's colour: the theme's accent, darkened only as far as it takes to
+/// stand out from the handles' light inner edge (a set point's face against an Auto one's).
+pub(super) fn entry_color(t: &Tokens) -> Color32 {
+    super::marks::readable(t.accent, &[light()], false)
 }
 
 /// An exit's colour: its layer's `rgb`, darkened only as far as it takes to stand out from the

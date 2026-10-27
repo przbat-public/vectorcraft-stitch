@@ -29,7 +29,7 @@
 //! The handles are found again only when the document, the selection, the plan shown or the tool's
 //! state changes ([`Cache`]), never on an idle frame.
 
-use egui::{Align2, Color32, CornerRadius, FontId, Pos2, Shape, Stroke, StrokeKind, pos2, vec2};
+use egui::{Align2, Color32, Pos2, Shape, Stroke, pos2, vec2};
 use serde_json::Value;
 use vectorcraft_engine::cmd::embroidery::scene::{MARK_DARK, MARK_LIGHT};
 use vectorcraft_tools::embroidery::{HANDLED_OBJECTS_MAX, Handle, Kind, State};
@@ -56,8 +56,17 @@ pub(super) const STALE_ALPHA: f32 = 0.45;
 /// How far apart on screen a point set and where its stitches start must lie to be joined,
 /// points: farther than a handle's half size, so the line shows past it.
 pub const LEADER_MIN_PT: f32 = 8.0;
-/// The dot where the stitches start, at the leader's end: its radius, points.
+/// The dot where the stitches start, at the leader's end: its radius and its dark edge's width,
+/// points.
 const PLANNED_DOT_PT: f32 = 2.5;
+const PLANNED_DOT_EDGE_PT: f32 = 1.0;
+/// How far inside a hollow handle's edge its colour outline runs, points: its light line's width
+/// and half again, so that the two don't touch.
+const HOLLOW_INSET_PT: f32 = EDGE_LIGHT * 1.5;
+/// A hollow arrow head's colour outline, points wide.
+const ARROW_HOLLOW_PT: f32 = 1.0;
+/// Each arm of an exit's plus, a share of the handle's radius (clear of its edge).
+const PLUS_ARM: f32 = 0.55;
 /// The outline of the object a press would select, points wide (the selection tools' hover outline),
 /// over a dark line as much wider either side, so that it reads on fabric of its own colour.
 const HOVER_OUTLINE_PT: f32 = 1.5;
@@ -81,11 +90,10 @@ const JUMP_DECIMALS: usize = 1;
 /// The decimals an angle is said with: a tenth of a degree, as the Object tab's angle field.
 const ANGLE_DECIMALS: usize = 1;
 
-/// The labels' size, their room either side, and how far they sit from their handle, points (the
-/// passive markers' labels').
-const LABEL_SIZE: f32 = 11.0;
-const LABEL_PAD: f32 = 5.0;
-const LABEL_OFFSET: f32 = 10.0;
+/// How far the labels sit from their handle, points (the passive markers' labels').
+const LABEL_OFFSET: f32 = super::overlay::LABEL_OFFSET;
+/// The dark edge round a label's pill, points wide: the pill reads on fabric of its own colour.
+const LABEL_EDGE_PT: f32 = 1.0;
 
 /// What the handles are found for ([`Cache`]).
 type Key = (u64, u64, Option<u64>, [u64; 3], String);
@@ -214,15 +222,8 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
     }
     let Some(st) = app.session.active() else { return };
     let t = Tokens::get(painter.ctx());
-    // The object a press would select: outlined in its layer's colour.
-    if let Some(object) = options["hoverObject"].as_u64().map(vectorcraft_doc::NodeId).filter(|_| !options["drag"].is_object())
-        && let Some(outline) = outline_of(&st.doc, object)
-    {
-        let [r, g, b] = st.doc.layer_color(object);
-        for line in crate::canvas::to_screen_path(&outline, xf) {
-            painter.add(Shape::line(line.clone(), Stroke::new(HOVER_OUTLINE_PT + 2.0 * HOVER_OUTLINE_UNDER_PT, dark())));
-            painter.add(Shape::line(line, Stroke::new(HOVER_OUTLINE_PT, Color32::from_rgb(r, g, b))));
-        }
+    if let Some(object) = options["hoverObject"].as_u64().map(vectorcraft_doc::NodeId).filter(|_| !options["drag"].is_object()) {
+        hover_outline(painter, &st.doc, object, xf);
     }
     let drag = &options["drag"];
     let dragged_at = drag["at"].as_array().and_then(|a| Some(vectorcraft_geom::Point::new(a.first()?.as_f64()?, a.get(1)?.as_f64()?)));
@@ -251,7 +252,7 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
             let to = xf.to_screen(planned);
             if to.distance(at) > LEADER_MIN_PT {
                 hairline(painter, [at, to], color, alpha);
-                painter.circle(to, PLANNED_DOT_PT, color.gamma_multiply(alpha), Stroke::new(1.0, dark()));
+                painter.circle(to, PLANNED_DOT_PT, color.gamma_multiply(alpha), Stroke::new(PLANNED_DOT_EDGE_PT, dark()));
             }
         }
         // An exit moved apart from the entry it lies under: a hairline back to its point.
@@ -265,35 +266,17 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         let stored = xf.to_screen(h.point);
         if dragged && h.id.kind != Kind::Angle && stored.distance(at) > LEADER_MIN_PT {
             hairline(painter, [at, stored], color, alpha);
-            painter.circle(stored, PLANNED_DOT_PT, color.gamma_multiply(alpha), Stroke::new(1.0, dark()));
+            painter.circle(stored, PLANNED_DOT_PT, color.gamma_multiply(alpha), Stroke::new(PLANNED_DOT_EDGE_PT, dark()));
         }
         // The point the keys last stepped to or nudged shows its jump too.
         let keyed = focused && options["keyed"].as_bool() == Some(true) && h.id.kind != Kind::Angle;
         if let (true, Some(neighbour)) = (dragged || keyed, h.neighbour) {
-            let from = xf.to_screen(neighbour);
-            // Clipped to the canvas, a dash's width past it so that one on its edge isn't cut.
-            let clip = painter.clip_rect().expand(GHOST_DARK_PT);
-            for (width, ink) in [(GHOST_DARK_PT, dark()), (GHOST_LIGHT_PT, light())] {
-                let mut budget = GHOST_DASHES_MAX;
-                super::overlay::dash(painter, &[from, stored], Stroke::new(width, ink), (GHOST_DASH, GHOST_GAP), clip, &mut budget);
-            }
-            let mm = neighbour.distance(h.point) / vectorcraft_engine::cmd::embroidery::mm_to_pt(1.0);
-            let value = super::numbers::decimal(crate::i18n::current(), mm, JUMP_DECIMALS);
-            let cut = h.trim.is_some_and(|trim| neighbour.distance(h.point) > trim);
-            let words = super::text::fill(if cut { crate::et!("jump {value} mm, cut") } else { crate::et!("jump {value} mm") }, &[("value", &value)]);
-            label(painter, from + (stored - from) / 2.0, Align2::CENTER_BOTTOM, &words, if cut { t.warning } else { dark() });
+            ghost(painter, &t, h, (neighbour, xf.to_screen(neighbour)), stored);
         }
         let scale = if hovered { HOVER_SCALE } else { 1.0 };
         let size = h.id.kind.size_px() as f32 * scale;
         if focused {
-            let tones = [
-                (FOCUS_RING_WIDTH + 4.0 * FOCUS_RING_TONE, dark()),
-                (FOCUS_RING_WIDTH + 2.0 * FOCUS_RING_TONE, light()),
-                (FOCUS_RING_WIDTH, entry_color(&t)),
-            ];
-            for (width, ink) in tones {
-                painter.circle_stroke(at, size / 2.0 + FOCUS_RING_PT, Stroke::new(width, ink));
-            }
+            focus_ring(painter, &t, at, size);
         }
         let solid = h.state == State::Set;
         match (h.id.kind, h.arrow) {
@@ -307,28 +290,72 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
             (Kind::Angle, None) => {}
         }
         if hovered || focused || objects == 1 {
-            let lang = crate::i18n::current();
             let degrees = drag["angle"].as_f64().filter(|_| dragged).or(h.arrow.map(|a| a.degrees));
-            // As the Object tab's angle field writes it.
-            let angle = degrees.map(|d| super::fields::format(lang, "°", ANGLE_DECIMALS).show(d));
-            let words = match h.id.kind {
-                Kind::Entry => crate::et!("Entry"),
-                Kind::Exit => crate::et!("Exit"),
-                Kind::Angle => angle.as_deref().unwrap_or_default(),
-            };
-            let (offset, align) = match h.id.kind {
-                Kind::Entry => (vec2(LABEL_OFFSET, -LABEL_OFFSET), Align2::LEFT_BOTTOM),
-                Kind::Exit => (vec2(-LABEL_OFFSET, LABEL_OFFSET), Align2::RIGHT_TOP),
-                // Beyond the head, along the arrow.
-                Kind::Angle => {
-                    let out = h.arrow.map_or(vec2(1.0, 0.0), |a| (at - xf.to_screen(a.centre)).normalized());
-                    (out * (LABEL_OFFSET + size / 2.0), if out.x < 0.0 { Align2::RIGHT_CENTER } else { Align2::LEFT_CENTER })
-                }
-            };
-            if !words.is_empty() {
-                label(painter, at + offset * scale, align, words, color);
-            }
+            let centre = h.arrow.map(|a| xf.to_screen(a.centre));
+            name(painter, h, (at, size, scale), color, degrees, centre);
         }
+    }
+}
+
+/// The object a press would select, `object`, outlined in its layer's colour over a dark line.
+fn hover_outline(painter: &egui::Painter, doc: &vectorcraft_doc::Document, object: vectorcraft_doc::NodeId, xf: &Xf) {
+    let Some(outline) = outline_of(doc, object) else { return };
+    let [r, g, b] = doc.layer_color(object);
+    for line in crate::canvas::to_screen_path(&outline, xf) {
+        painter.add(Shape::line(line.clone(), Stroke::new(HOVER_OUTLINE_PT + 2.0 * HOVER_OUTLINE_UNDER_PT, dark())));
+        painter.add(Shape::line(line, Stroke::new(HOVER_OUTLINE_PT, Color32::from_rgb(r, g, b))));
+    }
+}
+
+/// The jump to or from handle `h`'s neighbour along the thread (`neighbour`: in document points and
+/// on screen), dashed in the two tones to `stored` (where the point is stored, on screen), with how
+/// long it is and whether the thread will be cut.
+fn ghost(painter: &egui::Painter, t: &Tokens, h: &Handle, (neighbour, from): (vectorcraft_geom::Point, Pos2), stored: Pos2) {
+    // Clipped to the canvas, a dash's width past it so that one on its edge isn't cut.
+    let clip = painter.clip_rect().expand(GHOST_DARK_PT);
+    for (width, ink) in [(GHOST_DARK_PT, dark()), (GHOST_LIGHT_PT, light())] {
+        let mut budget = GHOST_DASHES_MAX;
+        super::overlay::dash(painter, &[from, stored], Stroke::new(width, ink), (GHOST_DASH, GHOST_GAP), clip, &mut budget);
+    }
+    let mm = neighbour.distance(h.point) / vectorcraft_engine::cmd::embroidery::mm_to_pt(1.0);
+    let value = super::numbers::decimal(crate::i18n::current(), mm, JUMP_DECIMALS);
+    let cut = h.trim.is_some_and(|trim| neighbour.distance(h.point) > trim);
+    let words = super::text::fill(if cut { crate::et!("jump {value} mm, cut") } else { crate::et!("jump {value} mm") }, &[("value", &value)]);
+    label(painter, from + (stored - from) / 2.0, Align2::CENTER_BOTTOM, &words, if cut { t.warning } else { dark() });
+}
+
+/// The ring round the handle the keys act on, `size` across at `at`: its accent line between a
+/// light and a dark one, as the handles' edges are.
+fn focus_ring(painter: &egui::Painter, t: &Tokens, at: Pos2, size: f32) {
+    let tones =
+        [(FOCUS_RING_WIDTH + 4.0 * FOCUS_RING_TONE, dark()), (FOCUS_RING_WIDTH + 2.0 * FOCUS_RING_TONE, light()), (FOCUS_RING_WIDTH, entry_color(t))];
+    for (width, ink) in tones {
+        painter.circle_stroke(at, size / 2.0 + FOCUS_RING_PT, Stroke::new(width, ink));
+    }
+}
+
+/// Handle `h`'s label in `color`, by the handle drawn at `at`, `size` across, `scale` times its own
+/// size: "Entry" or "Exit", or an arrow's angle (`degrees`) beyond its head, away from the arrow's
+/// `centre` (on screen).
+fn name(painter: &egui::Painter, h: &Handle, (at, size, scale): (Pos2, f32, f32), color: Color32, degrees: Option<f64>, centre: Option<Pos2>) {
+    // As the Object tab's angle field writes it.
+    let angle = degrees.map(|d| super::fields::format(crate::i18n::current(), "°", ANGLE_DECIMALS).show(d));
+    let words = match h.id.kind {
+        Kind::Entry => crate::et!("Entry"),
+        Kind::Exit => crate::et!("Exit"),
+        Kind::Angle => angle.as_deref().unwrap_or_default(),
+    };
+    let (offset, align) = match h.id.kind {
+        Kind::Entry => (vec2(LABEL_OFFSET, -LABEL_OFFSET), Align2::LEFT_BOTTOM),
+        Kind::Exit => (vec2(-LABEL_OFFSET, LABEL_OFFSET), Align2::RIGHT_TOP),
+        // Beyond the head, along the arrow.
+        Kind::Angle => {
+            let out = centre.map_or(vec2(1.0, 0.0), |c| (at - c).normalized());
+            (out * (LABEL_OFFSET + size / 2.0), if out.x < 0.0 { Align2::RIGHT_CENTER } else { Align2::LEFT_CENTER })
+        }
+    };
+    if !words.is_empty() {
+        label(painter, at + offset * scale, align, words, color);
     }
 }
 
@@ -397,7 +424,7 @@ pub(super) fn entry(at: Pos2, size: f32, color: Color32, solid: bool, alpha: f32
         Shape::convex_polygon(diamond(r), face.gamma_multiply(alpha), Stroke::new(EDGE_LIGHT, light())),
     ];
     if !solid {
-        shapes.push(Shape::closed_line(diamond(r - EDGE_LIGHT * 1.5), Stroke::new(EDGE_LIGHT, color.gamma_multiply(alpha))));
+        shapes.push(Shape::closed_line(diamond(r - HOLLOW_INSET_PT), Stroke::new(EDGE_LIGHT, color.gamma_multiply(alpha))));
     }
     shapes
 }
@@ -414,9 +441,9 @@ pub(super) fn exit(at: Pos2, size: f32, color: Color32, solid: bool, alpha: f32)
         Shape::circle_stroke(at, r, Stroke::new(EDGE_LIGHT, light())),
     ];
     if !solid {
-        shapes.push(Shape::circle_stroke(at, r - EDGE_LIGHT * 1.5, Stroke::new(EDGE_LIGHT, color.gamma_multiply(alpha))));
+        shapes.push(Shape::circle_stroke(at, r - HOLLOW_INSET_PT, Stroke::new(EDGE_LIGHT, color.gamma_multiply(alpha))));
     }
-    let arm = r * 0.55;
+    let arm = r * PLUS_ARM;
     let stroke = Stroke::new(EDGE_LIGHT, ink.gamma_multiply(alpha));
     shapes.push(Shape::line_segment([at - vec2(arm, 0.0), at + vec2(arm, 0.0)], stroke));
     shapes.push(Shape::line_segment([at - vec2(0.0, arm), at + vec2(0.0, arm)], stroke));
@@ -444,17 +471,12 @@ fn head(p: &egui::Painter, centre: Pos2, at: Pos2, size: f32, color: Color32, so
     let face = if solid { color } else { light() };
     p.add(Shape::convex_polygon(triangle.clone(), face, Stroke::new(EDGE_LIGHT, light())));
     if !solid {
-        p.add(Shape::closed_line(triangle, Stroke::new(1.0, color)));
+        p.add(Shape::closed_line(triangle, Stroke::new(ARROW_HOLLOW_PT, color)));
     }
 }
 
-/// A pill reading `text` on `color`, anchored at `at` by `align`, in black or white, whichever
-/// reads better on it.
+/// A pill reading `text` on `color`, anchored at `at` by `align` (the passive markers' labels'),
+/// edged dark.
 fn label(p: &egui::Painter, at: Pos2, align: Align2, text: &str, color: Color32) {
-    let ink = super::marks::text_on(color);
-    let galley = p.layout_no_wrap(text.to_string(), FontId::proportional(LABEL_SIZE), ink);
-    let size = galley.size() + vec2(2.0 * LABEL_PAD, LABEL_PAD);
-    let rect = align.anchor_size(at, size);
-    p.rect(rect, CornerRadius::same(u8::MAX), color, Stroke::new(1.0, dark()), StrokeKind::Outside);
-    p.galley(rect.center() - galley.size() / 2.0, galley, ink);
+    super::overlay::label(p, at, align, text, color, Stroke::new(LABEL_EDGE_PT, dark()));
 }

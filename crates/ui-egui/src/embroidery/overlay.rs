@@ -27,13 +27,15 @@ use crate::theme::Tokens;
 
 /// The most selected objects marked: more markers would cover the stitches they mark. An estimate.
 pub const MARKED_OBJECTS_MAX: usize = 32;
-/// The entry marker's diagonal and the exit marker's diameter, points (the mockups' sizes).
-pub const ENTRY_MARKER_PT: f32 = 12.0;
-pub const EXIT_MARKER_PT: f32 = 14.0;
-/// The labels' size, their room either side, and how far they sit from their marker, points.
+/// The entry marker's diagonal and the exit marker's diameter, points (the mockups' sizes): the
+/// embroidery tool's handles', which are drawn in their place.
+pub const ENTRY_MARKER_PT: f32 = vectorcraft_tools::embroidery::ENTRY_MARKER_PX as f32;
+pub const EXIT_MARKER_PT: f32 = vectorcraft_tools::embroidery::EXIT_MARKER_PX as f32;
+/// The labels' size, their room either side, and how far they sit from their marker, points (the
+/// tool's handles' labels' too).
 const LABEL_SIZE: f32 = 11.0;
 const LABEL_PAD: f32 = 5.0;
-const LABEL_OFFSET: f32 = 10.0;
+pub(super) const LABEL_OFFSET: f32 = 10.0;
 /// The dashes of a pending object's outline, points.
 const DASH: f32 = 4.0;
 const GAP: f32 = 3.0;
@@ -278,14 +280,14 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
             let at = xf.to_screen(exit);
             exit_marker(painter, at, color);
             if labelled {
-                label(painter, at + vec2(-LABEL_OFFSET, LABEL_OFFSET), Align2::RIGHT_TOP, crate::et!("Exit"), color);
+                label(painter, at + vec2(-LABEL_OFFSET, LABEL_OFFSET), Align2::RIGHT_TOP, crate::et!("Exit"), color, Stroke::NONE);
             }
         }
         if let Some(entry) = e.entry {
             let at = xf.to_screen(entry);
             entry_marker(painter, at, t.accent);
             if labelled {
-                label(painter, at + vec2(LABEL_OFFSET, -LABEL_OFFSET), Align2::LEFT_BOTTOM, crate::et!("Entry"), t.accent);
+                label(painter, at + vec2(LABEL_OFFSET, -LABEL_OFFSET), Align2::LEFT_BOTTOM, crate::et!("Entry"), t.accent, Stroke::NONE);
             }
         }
     }
@@ -317,12 +319,12 @@ fn exit_marker(p: &egui::Painter, at: Pos2, color: Color32) {
 
 /// A pill reading `text` on `color`, anchored at `at` by `align`: in black or white, whichever reads
 /// better on it.
-fn label(p: &egui::Painter, at: Pos2, align: Align2, text: &str, color: Color32) {
+pub(super) fn label(p: &egui::Painter, at: Pos2, align: Align2, text: &str, color: Color32, edge: Stroke) {
     let ink = super::marks::text_on(color);
     let galley = p.layout_no_wrap(text.to_string(), FontId::proportional(LABEL_SIZE), ink);
     let size = galley.size() + vec2(2.0 * LABEL_PAD, LABEL_PAD);
     let rect = align.anchor_size(at, size);
-    p.rect(rect, CornerRadius::same(u8::MAX), color, Stroke::NONE, StrokeKind::Inside);
+    p.rect(rect, CornerRadius::same(u8::MAX), color, edge, StrokeKind::Outside);
     p.galley(rect.center() - galley.size() / 2.0, galley, ink);
 }
 

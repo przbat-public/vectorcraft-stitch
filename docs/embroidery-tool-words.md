@@ -18,7 +18,7 @@ plural row gives its forms as Polish writes them: one, a few (2–4), many.
 | Where | English | Polish |
 |---|---|---|
 | The toolbars, the tool's name | Embroidery Tool | Narzędzie Haft |
-| The status bar's hint | **Drag** a point to move it, or an arrow's head to turn the rows · **Alt+Click** a point or an arrow to put it back to Auto · **Click** an object to show its points · **[ ]** step from point to point, the arrows nudge it, Enter types it | **Przeciągnij** punkt, aby go przesunąć, lub grot strzałki, aby obrócić rzędy · **Alt+Click** punkt lub strzałkę, aby przywrócić Auto · **Kliknij** obiekt, aby pokazać jego punkty · **[ ]** przechodzą od punktu do punktu, strzałki go przesuwają, Enter wpisuje |
+| The status bar's hint | **Drag** a point to move it, or an arrow's head to turn the rows · **Alt+Click** a point or an arrow to put it back to Auto · **Click** an object to show its points · **[ ]** step from point to point, the arrows nudge it, Enter types it | **Przeciągnij** punkt, aby go przesunąć, lub grot strzałki, aby obrócić rzędy · **Alt+Kliknij** punkt lub strzałkę, aby przywrócić Auto · **Kliknij** obiekt, aby pokazać jego punkty · **[ ]** przechodzą od punktu do punktu, strzałki go przesuwają, Enter wpisuje |
 | A handle's label | Entry · Exit | Wejście · Wyjście |
 | The ghost while dragging | jump {value} mm | przeskok {value} mm |
 | … past the trim length | jump {value} mm, cut | przeskok {value} mm, cięcie |
@@ -26,8 +26,9 @@ plural row gives its forms as Polish writes them: one, a few (2–4), many.
 | … on the web | Stitches update when you let go. | Ściegi odświeżą się, gdy puścisz. |
 | The status bar, more than 32 objects selected | Entry and exit points show for the first {count} object selected / … objects selected | Punkty wejścia i wyjścia widać dla pierwszego {count} zaznaczonego obiektu / dla pierwszych {count} zaznaczonych obiektów (both plural forms) |
 
-The hint's bold words (Drag, Alt+Click, Click) are upstream's, shared with the other tools; upstream
-leaves Alt+Click untranslated in Polish, as a key name.
+The hint's bold words (Drag, Alt+Click, Click) are upstream's, shared with the other tools: in a
+chord the modifier is named for the platform (⌥ on a Mac: "⌥Kliknij") and only the action after it
+translates.
 
 ## The point dialog
 

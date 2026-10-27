@@ -454,6 +454,43 @@ fn restorable(doc: &Document, n: &Node, out: &mut Vec<NodeId>, skipped: &mut Vec
     }
 }
 
+/// The objects converted to manual stitches among `ids` of `doc` (a manual run standing for its
+/// object), summed up for `embroidery.info` ([`super::info::ManualInfo`]); `None` when there are
+/// none.
+pub(crate) fn summary(doc: &Document, ids: &[NodeId]) -> Option<super::info::ManualInfo> {
+    let mut groups = Vec::new();
+    for id in ids {
+        if let Some(n) = doc.node(*id) {
+            restorable(doc, n, &mut groups, &mut Vec::new());
+        }
+    }
+    let mut seen = HashSet::new();
+    groups.retain(|g| seen.insert(*g));
+    if groups.is_empty() {
+        return None;
+    }
+    let mut out = super::info::ManualInfo { objects: groups.len(), restorable: 0, edited: 0, runs: 0, needle_points: 0, scale: None };
+    let mut scale: Option<[f64; 2]> = None;
+    let mut known = true;
+    for g in groups.iter().filter_map(|g| doc.node(*g)) {
+        out.restorable += usize::from(doc.is_editable(g.id));
+        out.edited += usize::from(edited(g));
+        for c in g.children().into_iter().flatten() {
+            if let Ok(st) = super::needles::read(c) {
+                out.runs += st.runs.iter().filter(|r| !r.needles.is_empty()).count();
+                out.needle_points += st.len();
+            }
+        }
+        let frame = g.extras().embroidery.as_deref().and_then(|e| e.original.as_ref()).map(|o| o.frame);
+        match frame.and_then(vectorcraft_doc::embroidery::scale_factors) {
+            Some([least, most]) => scale = Some(scale.map_or([least, most], |[l, m]| [l.min(least), m.max(most)])),
+            None => known = false,
+        }
+    }
+    out.scale = scale.filter(|_| known);
+    Some(out)
+}
+
 /// Whether the stitches of converted group `group` were edited since converting: their fingerprint
 /// ([`fingerprint`], the needle points taken back by the original's frame) is no longer the one kept,
 /// or none was kept.

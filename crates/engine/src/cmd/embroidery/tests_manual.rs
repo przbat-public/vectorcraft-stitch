@@ -1,7 +1,7 @@
 //! Manual stitches: what the plan records of each unit to freeze it (its own stitches, the needle
 //! point it shares with the unit before, its place in walk order).
 
-use serde_json::json;
+use serde_json::{Value, json};
 use vectorcraft_stitch::plan::Style;
 use vectorcraft_stitch::{Command, Stitch};
 
@@ -583,4 +583,40 @@ fn a_run_sews_its_anchors_whatever_its_handles() {
     assert_eq!(sewn.len(), points.len() + 2, "no closing stitch; the second run's two points");
     let stops = p.blocks.iter().flat_map(|b| &b.stitches).filter(|s| s.command == Command::Stop).count();
     assert_eq!(stops, 1, "the stop named on the third subpath's first needle point");
+}
+
+/// `embroidery.info` sums up the converted objects among those given (a manual run standing for its
+/// object): how many, how many can be restored, how many were edited since converting, their runs
+/// and needle points, and how much they were scaled since; and reads Stop After as Trim After.
+#[test]
+fn info_sums_up_converted_objects() {
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    let b = red_square(&mut s, 40.0, 5.0, 10.0);
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [a, b]}));
+    let info = |s: &mut Session, ids: &[u64]| run(s, "embroidery.info", json!({ "ids": ids }));
+    let m = info(&mut s, &[a, b])["manual"].clone();
+    assert_eq!(
+        (m["objects"].clone(), m["restorable"].clone(), m["edited"].clone(), m["scale"].clone()),
+        (json!(2), json!(2), json!(0), json!([1.0, 1.0])),
+        "{m}"
+    );
+    assert!(m["runs"].as_u64().unwrap() >= 2 && m["needlePoints"].as_u64().unwrap() > 20, "{m}");
+    run(&mut s, "object.scale", json!({"ids": [b], "sx": 120, "sy": 100}));
+    let run_of_a = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(a)).unwrap().children().unwrap()[0].id.0;
+    run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": run_of_a, "index": 1}], "dx": 1}));
+    run(&mut s, "object.lock", json!({"ids": [b]}));
+    let m = info(&mut s, &[run_of_a, b])["manual"].clone();
+    assert_eq!(
+        (m["objects"].clone(), m["restorable"].clone(), m["edited"].clone()),
+        (json!(2), json!(1), json!(1)),
+        "a run stands for its object: {m}"
+    );
+    let scale = m["scale"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect::<Vec<_>>();
+    assert!((scale[0] - 1.0).abs() < 1e-9 && (scale[1] - 1.2).abs() < 1e-9, "{m}");
+    let art = red_square(&mut s, 80.0, 5.0, 10.0);
+    assert_eq!(info(&mut s, &[art])["manual"], Value::Null);
+    run(&mut s, "embroidery.setStopAfter", json!({"ids": [a], "on": true}));
+    assert_eq!(info(&mut s, &[a])["stopAfter"], json!({"value": true, "setCount": 1, "mixed": false}));
+    assert_eq!(info(&mut s, &[a, art])["stopAfter"]["mixed"], json!(true));
 }

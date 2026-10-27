@@ -5262,7 +5262,10 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
 - `embroidery.info {ids?, plan?, offset?, limit?, …embroidery options}` reads the objects' settings (a query, no undo
   step; nothing selected and no `ids`: an empty answer): `{objectCount, offset, truncated, objects: [{id, kind, fills,
   strokes, expanded, settings: {fill, stroke}, kept}], skippedCount, skipped, trimAfter: {value, setCount, mixed},
-  fill, stroke, planned, options, warnings}`, where each part (`null` when no object has it) is `{objectCount,
+  stopAfter: {value, setCount, mixed}, manual, fill, stroke, planned, options, warnings}`, where `manual` (`null` when
+  none of the objects was converted to manual stitches; a manual run stands for its object) is `{objects, restorable
+  (not locked), edited (stitches edited since converting: Restore Object asks first), runs, needlePoints, scale:
+  [least, most] (how much their stitches were stretched since converting, null when one can't say)}`, and each part (`null` when no object has it) is `{objectCount,
   itemCount, sewn, rule, reason, settings: {key: {value, source, section, setCount, mixed, inherited, rule, applies}},
   entry, exit,
   sewing}`. `sewn` and `rule` are the walk's own: a stroke a brush or an effect reshapes, on an object sewn as

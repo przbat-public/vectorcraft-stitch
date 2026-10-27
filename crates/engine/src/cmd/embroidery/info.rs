@@ -142,12 +142,32 @@ pub struct ObjectSettings {
     /// At most 1,000 (`MAX_SKIPPED`), each with its reason, as `embroidery.set` lists them.
     pub skipped: Vec<SkippedObject>,
     pub trim_after: Merged<bool>,
+    /// Whether the machine stops after the objects, read as `trim_after` is.
+    pub stop_after: Merged<bool>,
+    /// The objects converted to manual stitches among those given (a manual run standing for the
+    /// object it was converted from): `None` when there are none.
+    pub manual: Option<ManualInfo>,
     /// Whether the design was planned (`sewing` counted).
     pub planned: bool,
     pub warnings: Vec<String>,
     /// `None` when none of the objects has the part.
     pub fill: Option<PartInfo>,
     pub stroke: Option<PartInfo>,
+}
+
+/// The objects converted to manual stitches among a selection: how many, how many can be restored
+/// (not locked), how many were edited since converting (Restore then asks first), their runs and
+/// needle points, and the least and the most their stitches were stretched by since converting
+/// (their originals' frames' singular values; `None` when one can't say).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManualInfo {
+    pub objects: usize,
+    pub restorable: usize,
+    pub edited: usize,
+    pub runs: usize,
+    pub needle_points: usize,
+    pub scale: Option<[f64; 2]>,
 }
 
 /// One object as listed: its kind (`path` or `compound`), how many fills and strokes, whether the
@@ -269,6 +289,8 @@ pub(super) fn reply(doc: &Document, ids: &[NodeId], opts: &Options, plan: Option
         skipped_count: skipped.len(),
         skipped: skipped.iter().take(MAX_SKIPPED).map(|(id, why)| SkippedObject { id: id.0, reason: why.id().to_string() }).collect(),
         trim_after: trim_after(doc, ids),
+        stop_after: stop_after(doc, ids),
+        manual: super::manual::summary(doc, ids),
         planned: plan.is_some(),
         warnings: warnings.into_iter().chain(found.notes().map(String::from)).collect(),
         fill,
@@ -329,6 +351,18 @@ fn trim_after(doc: &Document, ids: &[NodeId]) -> Merged<bool> {
     for n in ids.iter().filter(|id| seen.insert(**id)).filter_map(|id| doc.node(*id)).filter(|n| super::objects::cut_after_sewn(n)) {
         given += 1;
         set += usize::from(n.extras().embroidery.as_deref().is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after)));
+    }
+    let mixed = set > 0 && set < given;
+    Merged { value: (!mixed).then_some(set > 0), set_count: set, mixed }
+}
+
+/// The stop after the objects as given that are sewn, read as [`trim_after`] reads the cut.
+fn stop_after(doc: &Document, ids: &[NodeId]) -> Merged<bool> {
+    let mut seen = HashSet::new();
+    let (mut given, mut set) = (0usize, 0usize);
+    for n in ids.iter().filter(|id| seen.insert(**id)).filter_map(|id| doc.node(*id)).filter(|n| super::objects::cut_after_sewn(n)) {
+        given += 1;
+        set += usize::from(n.extras().embroidery.as_deref().is_some_and(|e| e.stop_after || e.stitches.as_ref().is_some_and(|r| r.stop_after)));
     }
     let mixed = set > 0 && set < given;
     Merged { value: (!mixed).then_some(set > 0), set_count: set, mixed }

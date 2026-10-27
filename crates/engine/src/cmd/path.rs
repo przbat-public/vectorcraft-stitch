@@ -432,6 +432,10 @@ fn join(s: &mut Session, p: &Value) -> Result<Value> {
             return ok();
         }
     }
+    // VectorCraft Stitch: runs of stitches join as Join Runs joins them, never reversed.
+    if let Some(done) = super::embroidery::join_runs_of_stitches(s, &ids) {
+        return done;
+    }
     // The ends to join, as (reverse the first path, reverse the second): the first path's end
     // must come last, the second's first.
     let ends = match p.get("ends") {

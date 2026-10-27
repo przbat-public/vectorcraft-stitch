@@ -30,7 +30,7 @@ mod manual;
 mod measure;
 mod nearest;
 mod needle_edits;
-mod needles;
+pub(crate) mod needles;
 pub use nearest::{NEAREST_PASSES, NEAREST_PROGRESS, NearestFound, NearestJob};
 mod objects;
 pub(crate) mod options;
@@ -111,6 +111,30 @@ use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 
 pub use self::objects::skip_reasons;
+
+/// The marked upstream hooks of the stitch commands: Delete with needle points selected
+/// (`edit.clear`), a run of stitches cut into pieces (`draw2::replace_with_pieces`), and Join of
+/// runs of stitches (`path.join`).
+pub(crate) fn delete_needle_points_selected(s: &mut Session) -> Option<Result<Value>> {
+    needle_edits::delete_selected(s)
+}
+
+/// See [`delete_needle_points_selected`].
+pub(crate) fn stitches_before_cut(d: &Document, id: vectorcraft_doc::NodeId) -> Option<needles::Stitches> {
+    needle_edits::before_cut(d, id)
+}
+
+/// See [`delete_needle_points_selected`]: the object's embroidery cut once
+/// ([`derive::cut_once`]), then a run's marks on its pieces.
+pub(crate) fn cut_into_pieces(run: Option<&needles::Stitches>, pieces: &mut [vectorcraft_doc::Node]) {
+    derive::cut_once(pieces.iter_mut());
+    needle_edits::run_cut(run, pieces);
+}
+
+/// See [`delete_needle_points_selected`].
+pub(crate) fn join_runs_of_stitches(s: &mut Session, ids: &[vectorcraft_doc::NodeId]) -> Option<Result<Value>> {
+    needle_edits::join_paths(s, ids)
+}
 pub use self::options::{SettingField, distinct_underlays, fabric_field, part_field, setting_field};
 use self::stats::Page;
 use super::*;

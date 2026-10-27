@@ -352,6 +352,8 @@ fn sibling_with(d: &mut Document, id: NodeId, pd: PathData) -> Result<Node> {
 /// Replace path or compound path `id` with `pieces` (first keeps the id, the rest go right above
 /// it; none removes it). `cut` removes the path or puts the other pieces above it. Returns ids.
 pub(super) fn replace_with_pieces(d: &mut Document, cut: &mut Beside, id: NodeId, pieces: Vec<PathData>) -> Result<Vec<NodeId>> {
+    // VectorCraft Stitch: a run of stitches as it was, for its marks to follow its needle points onto the pieces.
+    let run = super::embroidery::stitches_before_cut(d, id);
     let mut it = pieces.into_iter();
     let Some(first) = it.next() else {
         cut.put(d, id, vec![])?;
@@ -368,8 +370,8 @@ pub(super) fn replace_with_pieces(d: &mut Document, cut: &mut Beside, id: NodeId
     if !above.is_empty() {
         let n = d.node(id).cloned().ok_or(EngineError::NoNode(id))?;
         let mut pieces: Vec<Node> = [n].into_iter().chain(above).collect();
-        // VectorCraft Stitch: the object's embroidery cut once, each point on the nearest piece.
-        super::embroidery::derive::cut_once(pieces.iter_mut());
+        // VectorCraft Stitch: the object's embroidery cut once, each point on the nearest piece; a run's marks on its pieces.
+        super::embroidery::cut_into_pieces(run.as_ref(), &mut pieces);
         cut.put(d, id, pieces)?;
     }
     Ok(ids)

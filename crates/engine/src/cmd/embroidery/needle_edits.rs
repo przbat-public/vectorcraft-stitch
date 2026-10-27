@@ -1166,3 +1166,91 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
     }
     Ok(reply)
 }
+
+/// Delete with needle points selected (the marked hook in `edit.clear`): when every object the
+/// selection holds is a path of stitches and it selects needle points of them (no segment), the
+/// needle points are deleted as stitches (`embroidery.deleteNeedlePoints`: the neighbours merge,
+/// the paths leave the selection); `None` otherwise, for upstream's Delete.
+pub(crate) fn delete_selected(s: &mut Session) -> Option<Result<Value>> {
+    let st = s.doc().ok()?;
+    let sel = &st.selection;
+    let stitches = |id: &NodeId| st.doc.node(*id).is_some_and(|n| needles::read(n).is_ok());
+    let all = !sel.anchors.is_empty() && sel.segments.is_empty() && sel.objects.iter().all(stitches) && sel.anchors.keys().all(stitches);
+    all.then(|| delete(s, &json!({})))
+}
+
+/// Join (the marked hook in `path.join`) of paths `ids` when any is a path of stitches: all of them
+/// joined as `embroidery.joinRuns {ids}` joins them, in the order they are sewn (their stacking
+/// order in their parent), never reversed; a path of stitches with art is refused. `None` when none
+/// is a path of stitches, for upstream's Join.
+pub(crate) fn join_paths(s: &mut Session, ids: &[NodeId]) -> Option<Result<Value>> {
+    let st = s.doc().ok()?;
+    let doc = st.doc.clone();
+    let stitches = |id: &NodeId| doc.node(*id).is_some_and(|n| needles::read(n).is_ok());
+    if !ids.iter().any(stitches) {
+        return None;
+    }
+    if !ids.iter().all(stitches) {
+        return Some(Err(bad(JOIN, "a run of stitches joins only runs of stitches (Join Runs): select only them")));
+    }
+    let place = |id: &NodeId| {
+        let parent = doc.parent_of(*id).and_then(|p| doc.node(p));
+        parent.and_then(|p| p.children()).and_then(|c| c.iter().position(|n| n.id == *id)).unwrap_or(usize::MAX)
+    };
+    let mut sorted = ids.to_vec();
+    sorted.sort_by_key(place);
+    Some(join_runs(s, &json!({ "ids": sorted.iter().map(|i| i.0).collect::<Vec<_>>() })))
+}
+
+/// A path of stitches `id` of `d` as it is before it is cut into pieces (the marked hook in
+/// `draw2::replace_with_pieces`), for [`run_cut`]; `None` for anything else.
+pub(crate) fn before_cut(d: &Document, id: NodeId) -> Option<Stitches> {
+    d.node(id).and_then(|n| needles::read(n).ok())
+}
+
+/// `pieces` (in sewing order) cut from the path of stitches `run` was: each piece's needle points
+/// take the stops and exact millimetres of the needle points of `run` they lie on (in order), each
+/// of its runs the cut before it that `run` had there; the first piece keeps the cut before the
+/// path, the last the cut and the stop after it (the object's own too), as they were once. A
+/// needle point made by the cut has none.
+pub(crate) fn run_cut(run: Option<&Stitches>, pieces: &mut [vectorcraft_doc::Node]) {
+    let Some(run) = run else { return };
+    // Where each needle point of the run was (by its coordinates' bits), with its place, its marks
+    // and whether a cut came before it.
+    type Was = (usize, needles::Needle, bool);
+    let mut at: std::collections::HashMap<(u64, u64), Vec<Was>> = Default::default();
+    let mut k = 0usize;
+    for r in &run.runs {
+        for (i, n) in r.needles.iter().enumerate() {
+            at.entry((n.p.x.to_bits(), n.p.y.to_bits())).or_default().push((k, *n, i == 0 && r.cut_before));
+            k += 1;
+        }
+    }
+    let count = pieces.len();
+    for (p, piece) in pieces.iter_mut().enumerate() {
+        let Ok(mut st) = needles::read(piece) else { continue };
+        let mut last: Option<usize> = None;
+        for r in &mut st.runs {
+            r.cut_before = false;
+            for (i, n) in r.needles.iter_mut().enumerate() {
+                let found = at.get(&(n.p.x.to_bits(), n.p.y.to_bits())).and_then(|c| c.iter().find(|(k, ..)| last.is_none_or(|l| *k > l)).copied());
+                match found {
+                    Some((k, was, cut)) => {
+                        last = Some(k);
+                        (n.stop, n.exact) = (was.stop, was.exact);
+                        if i == 0 && cut {
+                            r.cut_before = true;
+                        }
+                    }
+                    None => (n.stop, n.exact) = (false, [None, None]),
+                }
+            }
+        }
+        let (first, final_piece) = (p == 0, p + 1 == count);
+        st.marks.trim_before = first && run.marks.trim_before;
+        st.marks.trim_after = final_piece && run.marks.trim_after;
+        st.marks.stop_after = final_piece && run.marks.stop_after;
+        st.object_after = if final_piece { run.object_after } else { [false, false] };
+        needles::write(piece, &st);
+    }
+}

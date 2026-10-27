@@ -642,3 +642,48 @@ fn needle_points_are_selected_by_record_or_address() {
         assert!(s.execute("embroidery.selectNeedlePoints", &p).is_err(), "{p}");
     }
 }
+
+/// The three marked upstream hooks: Delete with needle points of a run selected merges their
+/// neighbours (upstream's anchor Delete would leave a gap the machine still sews), while an art
+/// path's anchors are deleted as before; Cut Path puts the run's cut before on the first piece,
+/// its cut and stop after on the last, and each stop on the piece its needle point is on; Join of
+/// two runs never reverses them (upstream's joins the nearest ends), and a run with art is refused.
+#[test]
+fn delete_cut_path_and_join_treat_runs_as_stitches() {
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (12.0, 10.0), (14.0, 10.0), (16.0, 10.0)], StitchRun::default());
+    run(&mut s, "select.anchors", json!({"id": id, "anchors": [[0, 1]]}));
+    run(&mut s, "edit.clear", json!({}));
+    let st = needles::read(&node(&s, id)).unwrap();
+    assert_eq!((st.runs.len(), st.len()), (1, 3), "one run, its neighbours merged");
+    assert!(!s.doc().unwrap().selection.contains(NodeId(id)));
+    let art = run(&mut s, "path.create", json!({"d": "M 100 100 L 120 100 L 140 100 L 160 100"}))["id"].as_u64().unwrap();
+    run(&mut s, "select.anchors", json!({"id": art, "anchors": [[0, 1]]}));
+    run(&mut s, "edit.clear", json!({}));
+    assert_eq!(node(&s, art).path_data().unwrap().subpaths.len(), 1, "art as before: the surviving stretch (a lone anchor goes)");
+    // Cut Path.
+    let mut s = blank();
+    let marks = StitchRun { trim_before: true, trim_after: true, stop_after: true, stops: vec![(0, 1), (0, 3)], ..StitchRun::default() };
+    let id = path_mm(&mut s, &[(10.0, 10.0), (12.0, 10.0), (14.0, 10.0), (16.0, 10.0), (18.0, 10.0)], marks);
+    run(&mut s, "select.anchors", json!({"id": id, "anchors": [[0, 2]]}));
+    run(&mut s, "path.cutAtAnchors", json!({}));
+    let doc = s.doc().unwrap().doc.clone();
+    let pieces: Vec<u64> = doc.layers[0].children().unwrap().iter().map(|n| n.id.0).collect();
+    assert_eq!(pieces.len(), 2, "{pieces:?}");
+    let (first, last) = (stitches(&node(&s, pieces[0])), stitches(&node(&s, pieces[1])));
+    assert!(first.trim_before && !first.trim_after && !first.stop_after, "{first:?}");
+    assert!(!last.trim_before && last.trim_after && last.stop_after, "{last:?}");
+    assert_eq!((first.stops, last.stops), (vec![(0, 1)], vec![(0, 1)]), "each stop on its piece");
+    // Join: never reversed; with art, refused.
+    let mut s = blank();
+    let a = path_mm(&mut s, &[(10.0, 10.0), (20.0, 10.0)], StitchRun::default());
+    let b = path_mm(&mut s, &[(11.0, 12.0), (30.0, 10.0)], StitchRun::default());
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    run(&mut s, "path.join", json!({}));
+    let joined = needles::read(&node(&s, a)).unwrap();
+    assert_eq!((at(&s, a, 0), at(&s, a, 1), at(&s, a, 2)), ((10.0, 10.0), (20.0, 10.0), (11.0, 12.0)), "in sewing order, never reversed");
+    assert_eq!(joined.len(), 4);
+    let art = run(&mut s, "path.create", json!({"d": "M 200 200 L 220 200"}))["id"].as_u64().unwrap();
+    run(&mut s, "select.set", json!({"ids": [a, art]}));
+    assert!(s.execute("path.join", &json!({})).is_err(), "a run with art");
+}

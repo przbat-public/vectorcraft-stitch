@@ -78,6 +78,8 @@ mod tests_setup;
 #[cfg(test)]
 mod tests_stats;
 #[cfg(test)]
+mod tests_stops;
+#[cfg(test)]
 mod tests_threadlib;
 #[cfg(test)]
 mod tests_transform;
@@ -247,6 +249,15 @@ pub fn specs() -> Vec<CommandSpec> {
             set_trim_after
         ),
         cmd!(
+            "embroidery.setStopAfter",
+            "Embroidery Stop After",
+            [],
+            None,
+            "{on?: bool (left out: on, unless every object is marked already, then off), ids?} whether the machine stops after each object (or group) in ids or the selection when the document is stitched, as for an appliqué piece to be laid down, after the cut when it has one; a stop is written as a change to the same thread, and one where the thread changes anyway, or at the design's end, is that change. Off, a run of stitches loses the stop it had after it. One undo step; saved with the document → {on, changed}",
+            has_selection,
+            set_stop_after
+        ),
+        cmd!(
             "embroidery.set",
             "Embroidery Object Settings",
             [],
@@ -350,7 +361,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Statistics",
             [],
             None,
-            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, speed?: stitches a minute the machine sews at (60 to 1500; default: the document's machine's (embroidery.setup), else 650, a home machine's default, an estimate), fabricThickness?: millimetres (0 to 5; default: the document's fabric's, else 0.5, an estimate: the top thread goes down through it and back up at each needle point), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's figures as the export sews it, totals and per block; lengths, positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {stitches: needle points, records: needle points, jumps and cuts (what record numbers count), jumps, trims, colorChanges, threadCount: distinct threads, blockCount, size: {width, height}, bounds, start, end: [x, y] (the first and last needle points), extents: {left, right, up, down} from the start, shortestStitch, longestStitch, longestJump, lengths: {bins: [{from, to, count}] (needle-down stitches by length: half a millimetre a bin up to 12.5, then up to 12.7 inclusive, then, to null, every longer one, as stitchTooLong counts them), median: to the tenth (null with no stitch)}, threadUsage: {topMetres, bobbinMetres, fabricThickness, estimate: what the estimate rests on}, time: {seconds, minutes, speed, slowSpeed, slowAbove, trimSeconds, includes: what the time counts, estimate: what the estimate rests on} (colour changes are counted, not timed), blocks: [{block: from 1, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches, records, jumps, trims, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), topThreadMetres, bobbinThreadMetres, seconds}], offset, truncated: whether blocks after the listed ones are left out, options: the embroidery options planned with, warnings}",
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, speed?: stitches a minute the machine sews at (60 to 1500; default: the document's machine's (embroidery.setup), else 650, a home machine's default, an estimate), fabricThickness?: millimetres (0 to 5; default: the document's fabric's, else 0.5, an estimate: the top thread goes down through it and back up at each needle point), offset?: the first block listed (default 0), limit?: the most blocks listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's figures as the export sews it, totals and per block; lengths, positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {stitches: needle points, records: needle points, jumps, cuts and stops (what record numbers count), jumps, trims, stops: the machine's stops (a run's, Stop After), each written as a change to the same thread, colorChanges: thread changes, threadCount: distinct threads, blockCount, size: {width, height}, bounds, start, end: [x, y] (the first and last needle points), extents: {left, right, up, down} from the start, shortestStitch, longestStitch, longestJump, lengths: {bins: [{from, to, count}] (needle-down stitches by length: half a millimetre a bin up to 12.5, then up to 12.7 inclusive, then, to null, every longer one, as stitchTooLong counts them), median: to the tenth (null with no stitch)}, threadUsage: {topMetres, bobbinMetres, fabricThickness, estimate: what the estimate rests on}, time: {seconds, minutes, speed, slowSpeed, slowAbove, trimSeconds, includes: what the time counts, estimate: what the estimate rests on} (colour changes and stops are counted, not timed), blocks: [{block: from 1, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches, records, jumps, trims, stops, firstRecord, lastRecord: record numbers (from 1, every needle point, jump, cut and stop taking one), topThreadMetres, bobbinThreadMetres, seconds}], offset, truncated: whether blocks after the listed ones are left out, options: the embroidery options planned with, warnings}",
             has_doc,
             stats_cmd
         ),
@@ -359,7 +370,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Sewing Order",
             [],
             None,
-            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, offset?: the first unit listed (default 0), limit?: the most units listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's sewing order, read only (sewing order follows stacking order: move objects with node.move to change it), its units from offset in sewing order within their blocks; positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {blockCount, unitCount, offset, truncated: whether units after the listed ones are left out, blocks: [{block: from 1 in sewing order, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches: needle points, records: needle points, jumps and cuts, firstRecord, lastRecord: record numbers (from 1, every needle point, jump and cut taking one), jumps, trims, unitCount, units: [{unit: from 1, its position in this plan, id: the object a person selects (the symbol instance for art inside a symbol), node: the object sewn, instance: the symbol instance or null, part: \"fill\"|\"stroke\"|\"literal\", partIndex: which fill or stroke, from 1 in appearance order (null for literal), occurrence: which unit of the same id and part, from 1 in walk order (a symbol instance's paths, an expanded object's pieces; id, part, partIndex and occurrence tell a unit apart within a plan, and from one plan to the next while the object's own art keeps its number and order; node changes between plans for an expanded object's pieces and is shared by a symbol's instances, unit is a position in one plan), sewn: \"running\"|\"satin\"|\"tatami\"|\"literal\" (as the stitch option names them), columns: whether a fill's narrow parts are satin columns, rule: \"fill\"|\"wideStroke\"|\"narrowStroke\"|\"strokeFilled\"|\"strokeOutlined\"|\"forced\"|\"literal\" (the rule that chose how it is sewn), ruleValues: the values the rule turned on, why: the same as a sentence, stitches, records, firstRecord, lastRecord (null when it adds none: one needle point where the needle already is), jumps, trims, entry, exit: [x, y] (its first and last needle points), bounds, asked: {entry, exit: [x, y] the points its part was planned toward, when its object sets them, else null}, missedBy: {entry, exit: mm from each to its first or last needle point, beyond a satin column's half width and compensation, null when unset}}] (only the listed units), then: {colorChange: true, trim: whether the block ends with a cut} (null after the last block)}] (the blocks of the listed units), splitCount, split: [{id, blocks}] (objects whose units are sewn in more than one block; at most limit), options: the embroidery options planned with, warnings}",
+            "{…the embroidery options that decide what is sewn as embroidery.threads takes them, offset?: the first unit listed (default 0), limit?: the most units listed (0 to 10000; default 1000), selectedOnly?: false (the selected objects alone, in their layers, as document.export {selectedOnly} writes them)} the design's sewing order, read only (sewing order follows stacking order: move objects with node.move to change it), its units from offset in sewing order within their blocks; positions and boxes are millimetres from the document's origin, y down, boxes [left, top, right, bottom] → {blockCount, unitCount, offset, truncated: whether units after the listed ones are left out, blocks: [{block: from 1 in sewing order, thread: {palette, index, name, color, art, deltaE, mismatch} as embroidery.threads gives it, stitches: needle points, records: needle points, jumps, cuts and stops, firstRecord, lastRecord: record numbers (from 1, every needle point, jump, cut and stop taking one), jumps, trims, stops, unitCount, units: [{unit: from 1, its position in this plan, id: the object a person selects (the symbol instance for art inside a symbol), node: the object sewn, instance: the symbol instance or null, part: \"fill\"|\"stroke\"|\"literal\", partIndex: which fill or stroke, from 1 in appearance order (null for literal), occurrence: which unit of the same id and part, from 1 in walk order (a symbol instance's paths, an expanded object's pieces; id, part, partIndex and occurrence tell a unit apart within a plan, and from one plan to the next while the object's own art keeps its number and order; node changes between plans for an expanded object's pieces and is shared by a symbol's instances, unit is a position in one plan), sewn: \"running\"|\"satin\"|\"tatami\"|\"literal\" (as the stitch option names them), columns: whether a fill's narrow parts are satin columns, rule: \"fill\"|\"wideStroke\"|\"narrowStroke\"|\"strokeFilled\"|\"strokeOutlined\"|\"forced\"|\"literal\" (the rule that chose how it is sewn), ruleValues: the values the rule turned on, why: the same as a sentence, stitches, records, firstRecord, lastRecord (null when it adds none: one needle point where the needle already is), jumps, trims, stops, entry, exit: [x, y] (its first and last needle points), bounds, asked: {entry, exit: [x, y] the points its part was planned toward, when its object sets them, else null}, missedBy: {entry, exit: mm from each to its first or last needle point, beyond a satin column's half width and compensation, null when unset}}] (only the listed units), then: {colorChange: true, trim: whether the block ends with a cut} (null after the last block)}] (the blocks of the listed units), splitCount, split: [{id, blocks}] (objects whose units are sewn in more than one block; at most limit), options: the embroidery options planned with, warnings}",
             has_doc,
             sequence_cmd
         ),
@@ -417,6 +428,42 @@ fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
             // Off: no cut after it, the one its file had included.
             if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
                 run.trim_after = false;
+            }
+        })
+    })?;
+    Ok(json!({ "on": on, "changed": changed }))
+}
+
+fn set_stop_after(s: &mut Session, p: &Value) -> Result<Value> {
+    const C: &str = "embroidery.setStopAfter";
+    let o = object(p, C)?;
+    let on = match o.get("on") {
+        None | Some(Value::Null) => None,
+        Some(v) => Some(v.as_bool().ok_or_else(|| bad(C, format!("`on` {v}: true or false")))?),
+    };
+    let ids = targets(s, p)?;
+    if ids.is_empty() {
+        return Err(bad(C, "select the objects the machine stops after, or give ids"));
+    }
+    // Every id names an object, before anything changes.
+    let d = &s.doc()?.doc;
+    if let Some(missing) = ids.iter().find(|id| d.node(**id).is_none()) {
+        return Err(EngineError::NoNode(*missing));
+    }
+    // Only what is sewn is stopped after, as only what is sewn is cut after.
+    let ids: Vec<NodeId> = ids.into_iter().filter(|id| d.node(*id).is_some_and(objects::cut_after_sewn)).collect();
+    if ids.is_empty() {
+        return Err(bad(C, "none of the objects given is sewn (type, images, placed files and guides aren't), so the machine stops after none"));
+    }
+    // Marked: asked for a stop after it, or a run of stitches with one.
+    let marked = |e: Option<&Embroidery>| e.is_some_and(|e| e.stop_after || e.stitches.as_ref().is_some_and(|r| r.stop_after));
+    let on = on.unwrap_or_else(|| !ids.iter().all(|id| marked(d.node(*id).and_then(|n| n.extras().embroidery.as_deref()))));
+    let changed = edit_counted(s, "Embroidery Stop After", |d| {
+        objects::edit_each(d, &ids, |e| {
+            e.set_stop_after(on);
+            // Off: no stop after it, the run's own included.
+            if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
+                run.stop_after = false;
             }
         })
     })?;

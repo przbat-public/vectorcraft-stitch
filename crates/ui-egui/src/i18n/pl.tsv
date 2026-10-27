@@ -5893,3 +5893,5 @@ embroidery	Auto (where the plan ends the part)	Auto (tam, gdzie plan kończy cz�
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	 przechodzą od punktu do punktu, strzałki go przesuwają, Enter wpisuje
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Punkty wejścia i wyjścia widać dla pierwszego {count} zaznaczonego obiektu|Punkty wejścia i wyjścia widać dla pierwszych {count} zaznaczonych obiektów|Punkty wejścia i wyjścia widać dla pierwszych {count} zaznaczonych obiektów
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	Haft: zatrzymaj po

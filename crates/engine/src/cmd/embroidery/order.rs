@@ -148,6 +148,8 @@ pub struct OrderBlock {
     pub last_record: usize,
     pub jumps: usize,
     pub trims: usize,
+    /// Stops of the machine in it, each written as a change to the same thread.
+    pub stops: usize,
     pub unit_count: usize,
     /// Its units listed (those in the page asked for).
     pub units: Vec<OrderUnit>,
@@ -193,6 +195,7 @@ pub struct OrderUnit {
     pub last_record: Option<usize>,
     pub jumps: usize,
     pub trims: usize,
+    pub stops: usize,
     pub entry: Option<[f64; 2]>,
     pub exit: Option<[f64; 2]>,
     pub bounds: Option<[f64; 4]>,
@@ -270,6 +273,7 @@ impl SewingOrder {
                             last_record: numbers.as_ref().map(|n| n.end.saturating_sub(1)),
                             jumps: t.jumps,
                             trims: t.trims,
+                            stops: t.stops,
                             entry: ends.map(|e| at(e.0)),
                             exit: ends.map(|e| at(e.1)),
                             bounds: u.bounds.map(|r| [mm(r.x0), mm(r.y0), mm(r.x1), mm(r.y1)]),
@@ -291,6 +295,7 @@ impl SewingOrder {
                     last_record: b.last_number(),
                     jumps: t.jumps,
                     trims: t.trims,
+                    stops: t.stops,
                     unit_count: b.units.len(),
                     units,
                     then: (k + 1 < plan.blocks.len())

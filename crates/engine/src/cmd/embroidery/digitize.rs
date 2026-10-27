@@ -83,6 +83,55 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
     out
 }
 
+/// A run of literal stitches' records from its subpaths' needle points (millimetres): each
+/// subpath's needle points sewn, the needle lifted to the next subpath's first (a jump, after a cut
+/// when `run.trims` names that subpath), a stop after each needle point `run.stops` names (the
+/// needle then lifted to the next, as after a cut; at a subpath's end, after the cut). A subpath
+/// that is a line to its own start is one needle point (a single stitch as a file stores it), or
+/// two when it is the run's only one and the run says so (`double_point`). Marks naming a subpath
+/// or needle point the run doesn't have are passed by. Also whether a stop is named after the
+/// run's last needle point: the cut and the stop after the run are the caller's, in that order.
+fn literal_stitches(subpaths: &[Vec<Point>], run: &StitchRun) -> (Vec<Stitch>, bool) {
+    // Looked up once a needle point: as sets, so that a file's long lists cost no more than a
+    // walk of them.
+    let trims: HashSet<usize> = run.trims.iter().copied().collect();
+    let stops: HashSet<(usize, usize)> = run.stops.iter().copied().collect();
+    let one = subpaths.len() == 1;
+    let mut out: Vec<Stitch> = Vec::with_capacity(subpaths.iter().map(Vec::len).sum::<usize>() + subpaths.len());
+    // A stop after the needle point sewn last, written once what follows it is known.
+    let mut stop = false;
+    for (k, sub) in subpaths.iter().enumerate() {
+        let points: &[Point] = match sub.as_slice() {
+            [a, b] if a.distance(*b) < SAME_POINT && !(one && run.double_point) => &sub[..1],
+            _ => sub,
+        };
+        let Some(&first) = points.first() else { continue };
+        if let Some(&before) = out.iter().rev().find(|s| s.command == Command::Stitch) {
+            if trims.contains(&k) {
+                out.push(Stitch::new(before.x, before.y, Command::Trim));
+            }
+            if std::mem::take(&mut stop) {
+                out.push(Stitch::new(before.x, before.y, Command::Stop));
+            }
+            out.push(Stitch::jump(first));
+        }
+        let last = points.len().saturating_sub(1);
+        for (i, &p) in points.iter().enumerate() {
+            if std::mem::take(&mut stop)
+                && let Some(&before) = out.last()
+            {
+                out.push(Stitch::new(before.x, before.y, Command::Stop));
+                out.push(Stitch::jump(p));
+            }
+            out.push(Stitch::sew(p));
+            // A stop named on the second anchor of a line to its own start is its one needle point's.
+            let named = |anchor: usize| stops.contains(&(k, anchor));
+            stop = named(i) || (i == last && (last + 1..sub.len()).any(named));
+        }
+    }
+    (out, stop)
+}
+
 /// The plan of `doc`'s visible art with `opts`: its sewing units in the blocks they are sewn in,
 /// in sewing order ([`Sequence`]), each block in a thread of the document's palette
 /// ([`super::thread_palette`]), and the warnings for what was left out or approximated; an error
@@ -411,9 +460,17 @@ impl<'a> Digitizer<'a> {
         self.kind(n);
         self.instance = outer;
         self.object = outer_object;
-        // An object (or group) that asks for it: the thread is cut after its last stitch.
-        if n.extras().embroidery.as_deref().is_some_and(|e| e.trim_after) && self.seq.added() > added {
-            self.seq.trim_after_since(added);
+        // An object (or group) that asks for it: the thread is cut after its last stitch, and the
+        // machine stops there.
+        if let Some(e) = n.extras().embroidery.as_deref()
+            && self.seq.added() > added
+        {
+            if e.trim_after {
+                self.seq.trim_after_since(added);
+            }
+            if e.stop_after {
+                self.seq.stop_after_since(added);
+            }
         }
     }
 
@@ -497,33 +554,34 @@ impl<'a> Digitizer<'a> {
             self.warn(OUT_OF_RANGE);
             return;
         }
-        let mut points: Vec<Stitch> = Vec::new();
-        kurbo::flatten(mm.iter(), LITERAL_FLATTEN, |el| {
-            if let PathEl::MoveTo(p) | PathEl::LineTo(p) = el {
-                points.push(Stitch::sew(p));
-            }
+        // Each subpath's needle points, in order.
+        let mut subpaths: Vec<Vec<Point>> = Vec::new();
+        kurbo::flatten(mm.iter(), LITERAL_FLATTEN, |el| match el {
+            PathEl::MoveTo(p) => subpaths.push(vec![p]),
+            PathEl::LineTo(p) => match subpaths.last_mut() {
+                Some(sub) => sub.push(p),
+                None => subpaths.push(vec![p]),
+            },
+            _ => {}
         });
-        // A single stitch is stored as a line that goes nowhere: one needle point, unless the run
-        // says it is two at that spot.
-        if let [a, b] = points.as_slice()
-            && a.distance(*b) < SAME_POINT
-            && !run.double_point
-        {
-            points.pop();
-        }
+        let (mut points, stop_at_end) = literal_stitches(&subpaths, run);
         if let Some(clip) = &self.clip {
             points = cut_to(points, &clip.region, &self.design.connect);
         }
-        if points.is_empty() || !self.count(points.len()) {
+        // The cut and the stop after the run's last needle point, in that order.
+        if let Some(&last) = points.iter().rev().find(|s| s.command == Command::Stitch) {
+            if run.trim_after {
+                points.push(Stitch::new(last.x, last.y, Command::Trim));
+            }
+            if run.stop_after || stop_at_end {
+                points.push(Stitch::new(last.x, last.y, Command::Stop));
+            }
+        }
+        if !points.iter().any(|s| s.command == Command::Stitch) || !self.count(points.len()) {
             return;
         }
         // The file's thread record for the run's block, written back by a format that has one.
         let mut block = Block::new(Thread { record: run.thread.as_ref().map(super::file_thread), ..Thread::rgb(color) });
-        if run.trim_after
-            && let Some(&last) = points.last()
-        {
-            points.push(Stitch::new(last.x, last.y, Command::Trim));
-        }
         block.stitches = points;
         let origin = self.origin(n, Part::Literal);
         let literal = self.owner.map(|g| (g, run.trim_before));

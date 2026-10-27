@@ -5134,6 +5134,13 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   cut, a file's own included); left out, `on` toggles. It needs a selection or `ids`, answers `{on, changed}`, and
   reports an id that names no object as a missing object. What isn't sewn (type, images, placed files, guides, live
   objects) is passed over, and refused alone.
+- `embroidery.setStopAfter {on?, ids?}` asks for the machine to stop after each object (Stop After, as for an appliqué
+  piece to be laid down), after its cut when it has one; with `on: false` for no stop, a run's own included; left out,
+  `on` toggles. It answers `{on, changed}` and refuses and passes over as `embroidery.setTrimAfter` does. No machine
+  format has a stop of its own: a stop is written as a change to the same thread (PES, PEC and JEF list the block's
+  thread again in their headers), only between two needle points of one block; one at a thread change or at the
+  design's end is that change, and nothing more is written. Opening a PES, PEC, JEF or VP3 file, a change to the same
+  thread reads back as a stop.
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,
@@ -5181,12 +5188,13 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   were planned toward, millimetres, `null` each where none was set) is counted only with `plan: true`. A unit whose style a setting forced says which in
   `embroidery.sequence`'s `ruleValues.source` (`object` or `export`).
 - `embroidery.stats {…embroidery options, speed?, fabricThickness?, offset?, limit?}` gives the design's figures as the
-  export sews it, for the design and per block: `stitches` (needle points), `records` (needle points, jumps and cuts),
-  `jumps`, `trims`, `colorChanges`, `threadCount`, `blockCount`; `size`, `bounds`, `start` and `end` points, `extents`
+  export sews it, for the design and per block: `stitches` (needle points), `records` (needle points, jumps, cuts and
+  stops), `jumps`, `trims`, `stops` (the machine's stops, each written as a change to the same thread; added with
+  stops), `colorChanges` (thread changes), `threadCount`, `blockCount`; `size`, `bounds`, `start` and `end` points, `extents`
   from the start; the shortest and longest stitch and the longest jump; `threadUsage: {topMetres, bobbinMetres,
   fabricThickness, estimate}` and the sewing `time`, both estimates (each says so in `estimate`) whose constants and
   sources `embroidery.md` lists (`speed`, stitches a minute, 60 to 1500, default 650; `fabricThickness`, mm, 0 to 5,
-  default 0.5). The time leaves out colour changes, which are counted apart. `blocks` lists each block's thread,
+  default 0.5). The time leaves out colour changes and stops, which are counted apart. `blocks` lists each block's thread,
   counts, `firstRecord`/`lastRecord`, `topThreadMetres`, `bobbinThreadMetres` and `seconds`. `lengths` counts the
   needle-down stitches by length in `bins` (`{from, to, count}`): half a millimetre each up to 12.5 mm, then one up to
   12.7 mm (the longest the check lets pass, inclusive) and one, with `to` null, for every longer stitch (the

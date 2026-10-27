@@ -6003,3 +6003,5 @@ embroidery	Auto (where the plan ends the part)	Otomatik (planın parçayı bitir
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	 noktadan noktaya geçer, oklar onu kaydırır, Enter girer
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Giriş ve çıkış noktaları seçilen ilk {count} nesne için gösterilir
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	Nakış: Sonrasında Durdur

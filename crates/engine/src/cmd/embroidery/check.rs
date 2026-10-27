@@ -384,7 +384,7 @@ pub(crate) const RULES: &[Rule] = &[
         severity: Severity::Error,
         threshold: None,
         unit: Some("blocks"),
-        measures: "the design's colour blocks",
+        measures: "the design's colour blocks, a stop counted as one (it is written as a change to the same thread)",
         extreme: Some(Extreme::Largest),
         sources: &[
             Source {
@@ -429,7 +429,7 @@ pub(crate) const RULES: &[Rule] = &[
         severity: Severity::Info,
         threshold: Some(MACHINE_COLOR_CHANGES),
         unit: Some("colorChanges"),
-        measures: "the design's colour changes",
+        measures: "the design's colour changes, stops included (each is written as one)",
         extreme: Some(Extreme::Largest),
         sources: &[Source {
             name: "Brother PR680W manual, specifications",
@@ -827,7 +827,10 @@ impl<'a> Checker<'a> {
             }
             self.add("notSewn", Hit { note: Some(w.clone()), objects: Some(objects), ..Hit::default() });
         }
-        let blocks = plan.blocks.len();
+        // A stop is written as a change to the same thread: a colour of its own in the format's
+        // header and a colour change on the machine.
+        let stops: usize = plan.blocks.iter().map(|b| vectorcraft_stitch::format::stops_written(&b.stitches)).sum();
+        let blocks = plan.blocks.len() + stops;
         let needle: usize = plan.blocks.iter().map(|b| b.needle_points()).sum();
         let changes = blocks.saturating_sub(1);
         for (id, v) in [("formatColors", blocks), ("machineStitches", needle), ("machineColorChanges", changes)] {

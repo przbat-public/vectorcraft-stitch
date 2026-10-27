@@ -527,6 +527,15 @@ pub fn stops_written(stitches: &[Stitch]) -> usize {
     stretches(stitches).len().saturating_sub(1)
 }
 
+/// The stops (and thread changes) of a block of `stitches` that are written ([`stretches`]), by
+/// their index, in order: a stitch plan keeps these and leaves out the rest, so that it lists what
+/// the machine gets.
+pub fn written_stops(stitches: &[Stitch]) -> Vec<usize> {
+    let ranges = stretches(stitches);
+    let cut = ranges.len().saturating_sub(1);
+    ranges.into_iter().take(cut).map(|r| r.end).collect()
+}
+
 /// `p`'s blocks as they are written, each stretch of a block ([`stretches`]) with its block's
 /// thread: in sewing order, empty blocks left out.
 pub(crate) fn written_blocks(p: &Pattern) -> impl Iterator<Item = (&Thread, &[Stitch])> {

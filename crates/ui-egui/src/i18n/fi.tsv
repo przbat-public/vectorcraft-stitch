@@ -6073,3 +6073,5 @@ embroidery	Auto (where the plan ends the part)	Automaattinen (missä suunnitelma
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	 siirtyy pisteestä toiseen, nuolinäppäimet siirtävät sitä, Enter kirjoittaa sen
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Aloitus- ja lopetuspisteet näkyvät ensimmäiselle {count} valitulle objektille|Aloitus- ja lopetuspisteet näkyvät ensimmäisille {count} valitulle objektille
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	Kirjonta: pysäytä jälkeen

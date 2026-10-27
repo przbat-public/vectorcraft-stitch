@@ -5958,3 +5958,5 @@ embroidery	Auto (where the plan ends the part)	Automático (onde o plano termina
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	 passa de ponto a ponto, as setas o deslocam, Enter o digita
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Os pontos de entrada e saída aparecem para o primeiro {count} objeto selecionado|Os pontos de entrada e saída aparecem para os primeiros {count} objetos selecionados
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	Bordado: parar depois

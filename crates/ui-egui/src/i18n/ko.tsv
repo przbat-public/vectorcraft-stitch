@@ -5620,3 +5620,5 @@ embroidery	Auto (where the plan ends the part)	자동 (계획이 부분을 끝�
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	 점에서 점으로 이동, 화살표로 조금씩 옮기고 Enter로 입력
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	진입점과 진출점은 선택한 처음 {count}개 개체에만 표시됩니다
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	자수: 이후 정지

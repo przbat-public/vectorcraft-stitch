@@ -300,6 +300,8 @@ fn sequence_as_json_was(plan: &super::plan::DesignPlan, page: super::stats::Page
                         "lastRecord": numbers.as_ref().map(|n| n.end.saturating_sub(1)),
                         "jumps": t.jumps,
                         "trims": t.trims,
+                        // Added with stops (replies grow by addition).
+                        "stops": t.stops,
                         "entry": needle().next().map(|s| super::stats::point(s.point())),
                         "exit": needle().next_back().map(|s| super::stats::point(s.point())),
                         "bounds": u.bounds.map(super::stats::rect),
@@ -319,6 +321,7 @@ fn sequence_as_json_was(plan: &super::plan::DesignPlan, page: super::stats::Page
                 "lastRecord": b.last_number(),
                 "jumps": t.jumps,
                 "trims": t.trims,
+                "stops": t.stops,
                 "unitCount": b.units.len(),
                 "units": list,
                 // What the machine does before the next block: a colour change, after a cut when the

@@ -5637,3 +5637,5 @@ embroidery	Auto (where the plan ends the part)	Авто (там, де план �
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	 перехід від точки до точки, стрілки зсувають її, Enter вводить її
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Точки входу й виходу показано для першого {count} виділеного об’єкта|Точки входу й виходу показано для перших {count} виділених об’єктів|Точки входу й виходу показано для перших {count} виділених об’єктів
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	Вишивка: зупинити після

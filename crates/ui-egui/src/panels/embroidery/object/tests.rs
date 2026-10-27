@@ -1129,6 +1129,21 @@ fn set_on_canvas_and_the_entry_row_work_from_the_keyboard() {
     assert!(app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::point_dialog::KIND), "the Entry Point dialog");
 }
 
+/// The app's per-frame work until a convert under way (off the interface thread) has finished.
+fn converted_now(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) {
+    for _ in 0..2000 {
+        if !crate::embroidery::convert_job::running(app) {
+            return;
+        }
+        *time += 0.001;
+        let raw = egui::RawInput { time: Some(*time), ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| crate::embroidery::convert_job::poll(app, ui.ctx()));
+        out.textures_delta.clear();
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+    panic!("still converting");
+}
+
 /// A pointer click in the middle of the node screen readers call `name`.
 fn click_on(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str) {
     let drawn = ready(app, ctx, time);
@@ -1153,6 +1168,7 @@ fn manual_stitches_convert_and_restore_from_the_tab() {
     let convert = super::super::command_label(&app, CONVERT);
     let steps_before = steps(&app);
     click_on(&mut app, &ctx, &mut time, &convert);
+    converted_now(&mut app, &ctx, &mut time);
     assert_eq!(steps(&app), steps_before + 1, "one undo step");
     let said = crate::etn!(
         1,
@@ -1199,6 +1215,7 @@ fn restore_asks_after_edits_and_the_buttons_work_from_the_keyboard() {
         shown |= d.has("Freezes the stitches planned now");
     }
     assert!(shown, "the help shown on keyboard focus");
+    converted_now(&mut app, &ctx, &mut time);
     assert!(info(&mut app, &[a])["manual"].is_object(), "Enter converted it");
     // Scaled, and edited.
     app.run("object.scale", json!({"ids": [a], "sx": 120, "sy": 100})).unwrap();

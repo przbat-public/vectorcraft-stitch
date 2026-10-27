@@ -184,7 +184,10 @@ converted object is placed in the sewing order as art is and never cut again by 
 stitches no longer follow the fabric or its settings; each needle point is an anchor to move. In a
 group each object is converted on its own; what can't be frozen exactly (a symbol's art and its
 instances, a clipping path, a locked object, stitches from a file) is passed over with the reason.
-Converting asks nothing; the status bar says how to go back. Restore Object
+Converting asks nothing; the status bar says how to go back. A convert plans the whole design
+afresh, as the export does, so from the Object tab it plans off the interface thread, the status
+bar saying how far it has got and Escape stopping it; it converts only if the document is as it
+was when the convert began. Restore Object
 (`embroidery.restoreObject`, the Object tab's button on manual stitches) puts the object back,
 moved, turned and scaled as its stitches were since, planned again at its size now; it asks first
 only when the stitches were edited since converting, as those edits are then lost (Undo brings

@@ -333,6 +333,44 @@ fn convert_one(doc: &mut Document, n: &Node, units: &[usize], plan: &DesignPlan)
 /// frozen into manual stitches as the plan sews it with the options (as the read commands take
 /// them; none: as the stitch preview plans), in one undo step.
 pub(super) fn convert(s: &mut Session, p: &Value) -> Result<Value> {
+    let job = prepare(s, p)?;
+    let planned = job.plan()?;
+    apply(s, planned)
+}
+
+/// Convert to Manual Stitches asked for, ready to plan on any thread ([`ConvertJob::plan`], the
+/// slow part: the whole design planned afresh): the document as it was (its uid and snapshot), what
+/// is planned of it, the embroidery options and the objects given.
+pub struct ConvertJob {
+    uid: u64,
+    original: Arc<Document>,
+    planned: Arc<Document>,
+    opts: super::Options,
+    ids: Vec<NodeId>,
+}
+
+/// A convert's plan ([`ConvertJob::plan`]), to apply to the document it was made of
+/// ([`Session::apply_convert_to_manual`]).
+pub struct ConvertPlanned {
+    uid: u64,
+    original: Arc<Document>,
+    ids: Vec<NodeId>,
+    plan: DesignPlan,
+}
+
+impl ConvertJob {
+    /// The design planned afresh, as the export plans it (what is written into the document never
+    /// depends on the units kept between plans); cancelled with the work on this thread
+    /// ([`vectorcraft_doc::cancel`]), reporting each unit planned as a plan does.
+    pub fn plan(&self) -> Result<ConvertPlanned> {
+        let plan = service::plan_afresh(&self.planned, &self.opts).map_err(super::PlanError::error)?;
+        Ok(ConvertPlanned { uid: self.uid, original: self.original.clone(), ids: self.ids.clone(), plan })
+    }
+}
+
+/// The job `p` asks for on the active document (the params checked, the objects taken from the
+/// selection as it is now).
+fn prepare(s: &mut Session, p: &Value) -> Result<ConvertJob> {
     let o = object(p, CONVERT)?;
     let opts = options_in(&o, &["ids"], CONVERT)?;
     if let Some(n) = o.get("ids").and_then(Value::as_array).map(Vec::len).filter(|n| *n > MAX_IDS) {
@@ -343,14 +381,44 @@ pub(super) fn convert(s: &mut Session, p: &Value) -> Result<Value> {
         return Err(bad(CONVERT, "select the objects to convert to manual stitches, or give ids"));
     }
     let st = s.doc()?;
-    let doc = st.doc.clone();
-    if let Some(missing) = ids.iter().find(|id| doc.node(**id).is_none()) {
+    if let Some(missing) = ids.iter().find(|id| st.doc.node(**id).is_none()) {
         return Err(EngineError::NoNode(*missing));
     }
-    // Planned afresh, as the export plans: what is written into the document never depends on the
-    // units kept between plans.
-    let planned = to_plan(st, false)?;
-    let plan = service::plan_afresh(&planned, &opts).map_err(super::PlanError::error)?;
+    Ok(ConvertJob { uid: st.uid, original: st.doc.clone(), planned: to_plan(st, false)?, opts, ids })
+}
+
+/// Whether what a convert planned is of the active document as it is now: the one it planned,
+/// unchanged since.
+fn current(s: &Session, planned: &ConvertPlanned) -> bool {
+    s.doc().is_ok_and(|st| st.uid == planned.uid && Arc::ptr_eq(&st.doc, &planned.original))
+}
+
+impl Session {
+    /// Convert to Manual Stitches with params `p`, ready to plan on another thread
+    /// ([`ConvertJob::plan`]): the interface's way to convert without waiting on the plan.
+    pub fn convert_to_manual_job(&mut self, p: &Value) -> Result<ConvertJob> {
+        prepare(self, p)
+    }
+
+    /// Whether what a convert planned is of the active document as it is now.
+    pub fn convert_to_manual_current(&self, planned: &ConvertPlanned) -> bool {
+        current(self, planned)
+    }
+
+    /// What a convert planned, applied as the command applies it (one undo step "Convert to Manual
+    /// Stitches"), and the command's reply: refused when the document changed meanwhile.
+    pub fn apply_convert_to_manual(&mut self, planned: ConvertPlanned) -> Result<Value> {
+        apply(self, planned)
+    }
+}
+
+/// What a convert planned, applied to the active document as the command applies it (one undo
+/// step), refused when the document changed since it was planned.
+fn apply(s: &mut Session, planned: ConvertPlanned) -> Result<Value> {
+    if !current(s, &planned) {
+        return Err(EngineError::Other("the document changed while it was planned: nothing was converted".into()));
+    }
+    let ConvertPlanned { original: doc, ids, plan, .. } = planned;
     let mut by_object: HashMap<NodeId, Vec<usize>> = HashMap::new();
     for (i, u) in plan.units.iter().enumerate() {
         by_object.entry(u.origin.selected()).or_default().push(i);

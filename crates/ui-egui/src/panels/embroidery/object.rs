@@ -269,7 +269,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 part_rows(ui, part.0, part.1, &ids, width, lang, missed, planned, &mut commands);
                 trim_after(ui, &info, &ids, &mut commands);
                 stop_after(ui, &info, &ids, &mut commands);
-                convert(ui, app_label_convert(app), &ids, &mut commands);
+                convert(ui, app_label_convert(app), crate::embroidery::convert_job::running(app), &ids, &mut commands);
             });
         }
     }
@@ -283,6 +283,12 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             crate::embroidery::point_dialog::open(app, &params);
             continue;
         }
+        if cmd == CONVERT {
+            // Off the interface thread: it plans the whole design afresh.
+            for_selection(&mut params, &ids, &selected);
+            crate::embroidery::convert_job::start(app, &params);
+            continue;
+        }
         if cmd == RESTORE_DIALOG {
             let count = params["count"].as_u64().unwrap_or(1) as usize;
             crate::embroidery::restore_dialog::open(app, params["ids"].take(), count);
@@ -290,7 +296,6 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         }
         for_selection(&mut params, &ids, &selected);
         match app.run(cmd, params) {
-            Ok(v) if cmd == CONVERT => app.status(converted(&v)),
             Ok(v) if cmd == RESTORE => app.status(crate::embroidery::restore_dialog::restored(&v)),
             Ok(_) => {}
             Err(e) => app.status(e),
@@ -847,11 +852,12 @@ const RESTORE_DIALOG: &str = "embroidery-restore-dialog";
 /// words round to (a whole percent), so that a scale undone by rounding isn't said.
 const SCALE_SAID: f64 = 0.5;
 
-/// Convert to Manual Stitches, the command's label (`label`), for the objects that take settings.
-fn convert(ui: &mut Ui, label: String, ids: &[NodeId], commands: &mut Vec<Command>) {
+/// Convert to Manual Stitches, the command's label (`label`), for the objects that take settings;
+/// waiting while a convert is `busy`.
+fn convert(ui: &mut Ui, label: String, busy: bool, ids: &[NodeId], commands: &mut Vec<Command>) {
     ui.add_space(GAP);
     let tip = crate::et!("Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.");
-    let resp = ui.button(label);
+    let resp = ui.add_enabled(!busy, egui::Button::new(label));
     rows::keyboard_tip(ui, resp.id, tip);
     if resp.on_hover_text(tip).clicked() {
         commands.push((CONVERT, json!({"ids": ids_json(ids)})));
@@ -864,7 +870,7 @@ fn app_label_convert(app: &VectorcraftApp) -> String {
 }
 
 /// The status bar's words after converting, from the command's reply.
-fn converted(reply: &Value) -> String {
+pub(crate) fn converted(reply: &Value) -> String {
     let count = reply["convertedCount"].as_u64().unwrap_or(0);
     crate::etn!(
         count,

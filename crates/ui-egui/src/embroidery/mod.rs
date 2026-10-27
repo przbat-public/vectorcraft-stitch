@@ -27,6 +27,7 @@
 //! - [`render_stitches`]: the control channel's picture of the stitches.
 
 pub mod check_marks;
+pub mod convert_job;
 pub mod counters;
 pub mod fields;
 pub mod handles;
@@ -70,6 +71,8 @@ pub struct Embroidery {
     pub(crate) handles: handles::Cache,
     /// Nearest Connection under way from the interface ([`nearest`]).
     pub(crate) nearest: nearest::Nearest,
+    /// Convert to Manual Stitches under way ([`convert_job`]).
+    pub(crate) converting: convert_job::Converting,
     /// The Embroidery panel's Sewing order tab.
     pub(crate) order: crate::panels::embroidery::order::OrderState,
     /// The Embroidery panel's Check tab.
@@ -92,10 +95,12 @@ pub struct Embroidery {
 const ISOLATION_BAR: f32 = 24.0;
 
 /// Each frame, before it is drawn: the stitch preview's plans taken in
-/// ([`stitch_preview::poll`]), and Nearest Connection's search under way looked at ([`nearest::poll`]).
+/// ([`stitch_preview::poll`]), and Nearest Connection's search and a convert under way looked at
+/// ([`nearest::poll`], [`convert_job::poll`]).
 pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
     stitch_preview::poll(app);
     nearest::poll(app, ctx);
+    convert_job::poll(app, ctx);
 }
 
 /// What the fork draws over the canvas, after it: the selection's markers in the stitch view, the

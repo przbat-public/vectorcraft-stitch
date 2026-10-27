@@ -31,6 +31,7 @@ mod measure;
 mod nearest;
 mod needle_edits;
 pub(crate) mod needles;
+pub use manual::{ConvertJob, ConvertPlanned};
 pub use nearest::{NEAREST_PASSES, NEAREST_PROGRESS, NearestFound, NearestJob};
 mod objects;
 pub(crate) mod options;

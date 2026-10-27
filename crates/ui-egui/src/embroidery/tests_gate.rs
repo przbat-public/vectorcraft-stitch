@@ -508,3 +508,274 @@ fn embroidery_tool_gate() {
     );
     assert!(worst_p95 <= FRAME_BUDGET_MS && worst_fresh <= EDIT_TO_FRESH_BUDGET_MS);
 }
+
+/// Needle points moved a drag (VectorCraft Stitch's manual stitches): how many are selected in the
+/// middle of the largest path of stitches, as the mockup's six.
+const DRAGGED_NEEDLE_POINTS: usize = 6;
+/// How far a drag moves the needle points a frame, millimetres: the formats' 0.1 mm step, the grid
+/// a needle-point drag moves on.
+const NEEDLE_DRAG_STEP_MM: f64 = 0.1;
+/// The zoom of the frames drawn close up, percent: the mockup's 3,100 %, where a needle point and
+/// its neighbours stand apart.
+const CLOSE_UP_ZOOM_PERCENT: f64 = 3100.0;
+/// The synthetic design of 2 million needle points ([`two_million_needle_points`]): its runs, the
+/// needle points of each, the threads they are sewn in, and its stitches' and rows' spacing, mm.
+const BIG_RUNS: usize = 2000;
+const BIG_RUN_POINTS: usize = 1000;
+const BIG_THREADS: usize = 20;
+const BIG_STITCH_MM: f64 = 0.4;
+const BIG_ROW_MM: f64 = 0.2;
+/// The page of the stitch list read, records: `embroidery.stitches`' default page.
+const LIST_PAGE: usize = 1000;
+/// Runs of a timed read or frame, of which the median is reported.
+const TIMED_RUNS: usize = 5;
+
+/// The path of stitches holding the most needle points in `doc` (opened from a file, or converted),
+/// and how many anchors it has.
+fn largest_run(doc: &vectorcraft_doc::Document) -> Option<(vectorcraft_doc::NodeId, usize)> {
+    let mut best: Option<(vectorcraft_doc::NodeId, usize)> = None;
+    for l in &doc.layers {
+        l.walk(&mut |n| {
+            let stitches = n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some());
+            if let (true, Some(path)) = (stitches, n.path_data()) {
+                let anchors: usize = path.subpaths.iter().map(|sp| sp.anchors.len()).sum();
+                if best.is_none_or(|(_, most)| anchors > most) {
+                    best = Some((n.id, anchors));
+                }
+            }
+        });
+    }
+    best
+}
+
+/// A design of [`BIG_RUNS`] runs of literal stitches of [`BIG_RUN_POINTS`] needle points each (2
+/// million in all: as many as a design may have), as opening a machine file makes them: a group a
+/// thread, a path a run, each a zig-zag row [`BIG_STITCH_MM`] long a stitch, the rows
+/// [`BIG_ROW_MM`] apart.
+fn two_million_needle_points() -> vectorcraft_doc::Document {
+    use vectorcraft_color::{Color, Paint};
+    use vectorcraft_doc::embroidery::{Embroidery, StitchRun};
+    use vectorcraft_doc::{Appearance, Document, Node};
+    use vectorcraft_geom::{BezPath, PathData};
+    let pt = vectorcraft_engine::cmd::embroidery::mm_to_pt;
+    let side = pt(BIG_STITCH_MM * BIG_RUN_POINTS as f64 + 20.0);
+    let mut doc = Document::new(side, pt(BIG_ROW_MM * BIG_RUNS as f64 + 20.0));
+    let layer = doc.layers.first().map(|l| l.id);
+    let per_thread = BIG_RUNS / BIG_THREADS;
+    for t in 0..BIG_THREADS {
+        let shade = u8::try_from(t * 255 / BIG_THREADS).unwrap_or(255);
+        let paint = Paint::solid(Color::rgb8(shade, 40, 255 - shade));
+        let mut runs = Vec::with_capacity(per_thread);
+        for r in 0..per_thread {
+            let row = (t * per_thread + r) as f64;
+            let mut bp = BezPath::new();
+            for k in 0..BIG_RUN_POINTS {
+                let zig = if k % 2 == 0 { 0.0 } else { BIG_ROW_MM / 2.0 };
+                let at = (pt(10.0 + BIG_STITCH_MM * k as f64), pt(10.0 + BIG_ROW_MM * row + zig));
+                if k == 0 { bp.move_to(at) } else { bp.line_to(at) }
+            }
+            let mut node = Node::path(doc.alloc_id(), PathData::from_bezpath(&bp), Appearance::basic(Paint::None, paint.clone(), pt(0.4)));
+            node.extras_mut().embroidery = Some(Box::new(Embroidery { stitches: Some(StitchRun::default()), ..Embroidery::default() }));
+            runs.push(std::sync::Arc::new(node));
+        }
+        let group = Node::group(doc.alloc_id(), runs);
+        doc.insert(layer, usize::MAX, group).expect("the group goes on the layer");
+    }
+    doc
+}
+
+/// The median of `samples`.
+fn median(samples: Vec<f64>) -> f64 {
+    percentile(samples, 0.5)
+}
+
+/// Manual stitches' gate before the needle-point mode (VectorCraft Stitch), run by hand on an idle
+/// machine, on the first PR's commands alone (no mode yet: what the mode will build on):
+///
+/// `cargo test --release -p vectorcraft-ui-egui --lib -- --ignored --nocapture manual_stitches_gate`
+///
+/// - **A needle-point drag**, as the first gate (the threads, 60 Hz, 1440 × 900 points at 2 pixels
+///   a point, the status bar and the Embroidery panel drawn), on each corpus machine file opened and
+///   on each corpus artwork converted to manual stitches: [`DRAGGED_NEEDLE_POINTS`] needle points of
+///   the largest path of stitches selected and moved [`NEEDLE_DRAG_STEP_MM`] a frame, a preview of
+///   `embroidery.moveNeedlePoints` a frame (as a drag of the mode will send), for [`DRAG_FRAMES`]
+///   frames: each frame timed (the 95th percentile within a 60 Hz frame), the plans taken in
+///   counted; then the points nudged [`EDITS`] times, each timed until the stitches drawn are of the
+///   document as it is (within 100 ms).
+/// - **A page of the stitch list on 2 million needle points** ([`two_million_needle_points`]):
+///   `embroidery.stitches` with no page (one walk of every record, what an index of the list
+///   costs) and a page of [`LIST_PAGE`] from the middle, the plan kept.
+/// - **A frame at 3,100 %** ([`CLOSE_UP_ZOOM_PERCENT`]) with the needle points shown, on the
+///   largest converted design's dragged points and on the 2-million design's middle, drawn in line.
+#[test]
+#[ignore = "a measurement, run by hand on an idle machine"]
+fn manual_stitches_gate() {
+    let dir = corpus();
+    let mut files: Vec<_> = std::fs::read_dir(&dir)
+        .map(|d| d.flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|e| e == "svg" || e == "pes")).collect())
+        .unwrap_or_default();
+    files.sort();
+    assert!(!files.is_empty(), "no corpus at {}", dir.display());
+    let (mut worst_p95, mut worst_fresh) = (0.0_f64, 0.0_f64);
+    println!(
+        "{:<52} {:>6} {:>8} {:>9} {:>9} {:>9} {:>6} {:>11} {:>11}",
+        "design", "light", "points", "drag p50", "drag p95", "drag max", "plans", "fresh p50", "fresh max"
+    );
+    let mut close_up: Option<(std::path::PathBuf, vectorcraft_geom::Point)> = None;
+    for path in &files {
+        let converted = path.extension().is_some_and(|e| e == "svg");
+        let ctx = egui::Context::default();
+        crate::theme::install_fonts(&ctx);
+        let mut session = Session::new();
+        session.execute("document.open", &json!({"path": path.to_string_lossy()})).unwrap();
+        if converted {
+            session.execute("select.all", &json!({})).unwrap();
+            let done = session.execute("embroidery.convertToManual", &json!({})).unwrap();
+            assert!(done["convertedCount"].as_u64().unwrap_or(0) > 0, "{}: nothing converted: {done}", path.display());
+            session.execute("select.none", &json!({})).unwrap();
+        }
+        let mut app = VectorcraftApp::new(session, Services::default());
+        app.ui.embroidery_panel.tab = crate::panels::embroidery::Tab::Object;
+        let plans = PlanWorker::start(&ctx).expect("the planning thread starts");
+        let lines = LineWorker::start(&ctx).expect("the stitch layer's thread starts");
+        app.embroidery.preview = StitchPreview::with_runner(Box::new(Driver::Thread(plans)));
+        app.embroidery.layer.use_worker(lines);
+        app.run("view.stitchPreview", json!({"on": true})).unwrap();
+        let mut time = 0.0;
+        let mut next = Instant::now();
+        let mut tick = |app: &mut VectorcraftApp, events: Vec<Event>| {
+            time += 1.0 / 60.0;
+            next += std::time::Duration::from_secs_f64(FRAME_BUDGET_MS / 1000.0);
+            let (ms, _) = frame(app, &ctx, time, events);
+            std::thread::sleep(next.saturating_duration_since(Instant::now()));
+            (ms, time)
+        };
+        let settle = |app: &mut VectorcraftApp, tick: &mut Tick<'_>, what: &str| {
+            let t0 = Instant::now();
+            loop {
+                let (_, now) = tick(app, vec![]);
+                if drawn_fresh(app, now) {
+                    return t0.elapsed().as_secs_f64() * 1000.0;
+                }
+                assert!(t0.elapsed().as_secs() < 30, "{}: never {what}", path.display());
+            }
+        };
+        settle(&mut app, &mut tick, "drawn");
+        let uid = app.session.active().unwrap().uid;
+        let doc = app.session.active().unwrap().doc.clone();
+        let Some((id, anchors)) = largest_run(&doc) else { panic!("{}: no path of stitches", path.display()) };
+        let first = anchors.saturating_sub(DRAGGED_NEEDLE_POINTS) / 2;
+        let points: Vec<_> = (first..first + DRAGGED_NEEDLE_POINTS.min(anchors)).map(|k| json!({"id": id.0, "index": k})).collect();
+        app.run("embroidery.selectNeedlePoints", json!({ "needlePoints": points })).unwrap();
+        let light = app.embroidery.preview.live(uid);
+        let taken = app.embroidery.preview.log.taken.len();
+        let mut drag = vec![];
+        app.session.begin_interaction("Move Needle Points").unwrap();
+        for k in 1..=DRAG_FRAMES {
+            let d = NEEDLE_DRAG_STEP_MM * k as f64;
+            app.session.preview("embroidery.moveNeedlePoints", &json!({"dx": d, "dy": d / 2.0})).unwrap();
+            drag.push(tick(&mut app, vec![]).0);
+        }
+        let plans = app.embroidery.preview.log.taken.len() - taken;
+        app.session.commit_interaction().unwrap();
+        let mut fresh = vec![settle(&mut app, &mut tick, "fresh after the drag")];
+        for k in 0..EDITS {
+            let dx = if k % 2 == 0 { NEEDLE_DRAG_STEP_MM } else { -NEEDLE_DRAG_STEP_MM };
+            app.run("embroidery.moveNeedlePoints", json!({ "dx": dx })).unwrap();
+            fresh.push(settle(&mut app, &mut tick, "fresh after a nudge"));
+        }
+        let (p50, p95, pmax) = (percentile(drag.clone(), 0.5), percentile(drag.clone(), 0.95), percentile(drag, 1.0));
+        let (f50, fmax) = (percentile(fresh.clone(), 0.5), percentile(fresh, 1.0));
+        let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        println!("{name:<52} {light:>6} {anchors:>8} {p50:>6.2} ms {p95:>6.2} ms {pmax:>6.2} ms {plans:>6} {f50:>8.2} ms {fmax:>8.2} ms");
+        worst_p95 = worst_p95.max(p95);
+        if light {
+            worst_fresh = worst_fresh.max(fmax);
+        }
+        // The largest converted design's dragged points: the close-up's.
+        let at = app.session.active().and_then(|st| st.doc.bounds_of(&[id], false)).map(|r| r.center());
+        if converted
+            && let Some(at) = at
+            && close_up.as_ref().is_none_or(|(p, _)| p.metadata().map(|m| m.len()).unwrap_or(0) < path.metadata().map(|m| m.len()).unwrap_or(0))
+        {
+            close_up = Some((path.clone(), at));
+        }
+    }
+    println!(
+        "worst: drag p95 {worst_p95:.2} ms (budget {FRAME_BUDGET_MS:.1}), light designs' nudge to fresh {worst_fresh:.2} ms (budget {EDIT_TO_FRESH_BUDGET_MS})"
+    );
+
+    // A page of the stitch list on 2 million needle points, the plan kept.
+    let big = two_million_needle_points();
+    let mut s = Session::new();
+    s.add_document(big.clone(), None);
+    let t0 = Instant::now();
+    let all = s.execute("embroidery.stitches", &json!({"limit": 0})).unwrap();
+    let first_ms = t0.elapsed().as_secs_f64() * 1000.0;
+    let records = all["recordCount"].as_u64().unwrap_or(0) as usize;
+    let (mut walk, mut page) = (vec![], vec![]);
+    for _ in 0..TIMED_RUNS {
+        let t0 = Instant::now();
+        s.execute("embroidery.stitches", &json!({"limit": 0})).unwrap();
+        walk.push(t0.elapsed().as_secs_f64() * 1000.0);
+        let t0 = Instant::now();
+        let listed = s.execute("embroidery.stitches", &json!({"offset": records / 2, "limit": LIST_PAGE})).unwrap();
+        page.push(t0.elapsed().as_secs_f64() * 1000.0);
+        assert_eq!(listed["records"].as_array().map_or(0, Vec::len), LIST_PAGE);
+    }
+    println!(
+        "stitch list, {records} records: first (planned) {first_ms:.0} ms, every record walked {:.2} ms, a page of {LIST_PAGE} from the middle {:.2} ms (medians of {TIMED_RUNS})",
+        median(walk),
+        median(page)
+    );
+
+    // Frames at 3,100 % with the needle points shown, drawn in line (no layer thread).
+    let mut designs: Vec<(String, Session, vectorcraft_geom::Point)> = Vec::new();
+    if let Some((path, at)) = close_up {
+        let mut s = Session::new();
+        s.execute("document.open", &json!({"path": path.to_string_lossy()})).unwrap();
+        s.execute("select.all", &json!({})).unwrap();
+        s.execute("embroidery.convertToManual", &json!({})).unwrap();
+        s.execute("select.none", &json!({})).unwrap();
+        designs.push((path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default(), s, at));
+    }
+    let middle = big.bounds_of(&big.layers.iter().map(|l| l.id).collect::<Vec<_>>(), false).map_or(vectorcraft_geom::Point::ZERO, |r| r.center());
+    let mut s = Session::new();
+    s.add_document(big, None);
+    designs.push(("2,000,000 needle points".into(), s, middle));
+    for (name, session, at) in designs {
+        let ctx = egui::Context::default();
+        crate::theme::install_fonts(&ctx);
+        let mut app = VectorcraftApp::new(session, Services::default());
+        let plans = PlanWorker::start(&ctx).expect("the planning thread starts");
+        app.embroidery.preview = StitchPreview::with_runner(Box::new(Driver::Thread(plans)));
+        app.run("view.stitchPreview", json!({"on": true})).unwrap();
+        app.run("view.stitchPreview.needlePoints", json!({"on": true})).unwrap();
+        let mut time = 0.0;
+        let mut tick = |app: &mut VectorcraftApp, events: Vec<Event>| {
+            time += 1.0 / 60.0;
+            let (ms, _) = frame(app, &ctx, time, events);
+            (ms, time)
+        };
+        let t0 = Instant::now();
+        loop {
+            let now = tick(&mut app, vec![]).1;
+            if drawn_fresh(&app, now) {
+                break;
+            }
+            assert!(t0.elapsed().as_secs() < 60, "{name}: never drawn");
+        }
+        let mut frames = vec![];
+        for k in 0..TIMED_RUNS {
+            // Panned a step a frame: each frame draws the stitches again.
+            let center = [at.x + k as f64, at.y];
+            app.run("view.setZoom", json!({"zoom": CLOSE_UP_ZOOM_PERCENT, "center": center})).unwrap();
+            frames.push(tick(&mut app, vec![]).0);
+        }
+        println!(
+            "a frame at {CLOSE_UP_ZOOM_PERCENT} % with the needle points shown, {name}: {:.2} ms (median of {TIMED_RUNS}, drawn in line)",
+            median(frames)
+        );
+    }
+    assert!(worst_p95 <= FRAME_BUDGET_MS && worst_fresh <= EDIT_TO_FRESH_BUDGET_MS);
+}

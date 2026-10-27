@@ -5152,6 +5152,16 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `locked`, `notSewn`, `unfreezable` (stitches a manual run can't hold); with nothing converted it is an error naming
   each object and why. One undo step. It answers `{converted: [{id, units, runs, needlePoints}], convertedCount,
   needlePoints, skippedCount, skipped: [{id, reason}]}`, each list at most 1,000 long.
+- `embroidery.restoreObject {ids?, strokes?, corners?, dryRun?}` puts back each object converted to manual stitches
+  (given or selected; a manual run stands for the object it was converted from, a group or a layer for the converted
+  objects in it): the object as it was when converted, moved, turned and scaled as its stitches were since (Scale
+  Strokes & Effects and Scale Corners from `strokes` and `corners`, else the preferences), so it is planned again at
+  its size now, with the group's id, name, visibility, lock, Trim After and Stop After; edits to its stitches are
+  discarded. `edited` lists the objects whose stitches were edited since converting (not only moved, turned or scaled
+  with their object): with `dryRun: true` nothing changes, so an interface can ask first. It passes over, with
+  `reason`: `notConverted`, `literal`, `unreadable` (the object kept doesn't read), `missingSymbol`, `locked`. One undo
+  step; nothing restored is an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
+  skippedCount, skipped: [{id, reason}]}` (and `dryRun: true` with a dry run).
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,

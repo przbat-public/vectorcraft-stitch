@@ -6048,3 +6048,6 @@ embroidery	Auto (where the plan ends the part)	Automaticky (kde plán část uko
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Převést na ruční stehy
 @msg	nothing selected can be converted to manual stitches: {_1}	nic z výběru nelze převést na ruční stehy: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+	Restore Object	Obnovit objekt
+@msg	nothing selected was converted to manual stitches: {_1}	nic z výběru nebylo převedeno na ruční stehy: {_1}

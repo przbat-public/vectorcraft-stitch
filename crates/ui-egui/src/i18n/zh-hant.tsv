@@ -5682,3 +5682,6 @@ embroidery	Auto (where the plan ends the part)	自動（計畫結束該部分處
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	轉換為手動針跡
 @msg	nothing selected can be converted to manual stitches: {_1}	所選內容皆無法轉換為手動針跡：{_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+	Restore Object	還原物件
+@msg	nothing selected was converted to manual stitches: {_1}	所選內容皆未轉換為手動針跡：{_1}

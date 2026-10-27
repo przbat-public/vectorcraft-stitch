@@ -5989,3 +5989,6 @@ embroidery	Auto (where the plan ends the part)	Auto (donde el plan termina la pa
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Convertir en puntadas manuales
 @msg	nothing selected can be converted to manual stitches: {_1}	nada de la selección se puede convertir en puntadas manuales: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+	Restore Object	Restaurar objeto
+@msg	nothing selected was converted to manual stitches: {_1}	nada de la selección se convirtió en puntadas manuales: {_1}

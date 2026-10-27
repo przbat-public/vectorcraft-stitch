@@ -5987,3 +5987,6 @@ embroidery	Auto (where the plan ends the part)	Автоматично (къде�
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Преобразуване в ръчни бодове
 @msg	nothing selected can be converted to manual stitches: {_1}	нищо от избраното не може да се преобразува в ръчни бодове: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+	Restore Object	Възстановяване на обекта
+@msg	nothing selected was converted to manual stitches: {_1}	нищо от избраното не е преобразувано в ръчни бодове: {_1}

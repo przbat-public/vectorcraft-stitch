@@ -6004,3 +6004,6 @@ embroidery	Auto (where the plan ends the part)	Auto (där planen avslutar delen)
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Konvertera till manuella stygn
 @msg	nothing selected can be converted to manual stitches: {_1}	inget av det markerade kan konverteras till manuella stygn: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+	Restore Object	Återställ objekt
+@msg	nothing selected was converted to manual stitches: {_1}	inget av det markerade har konverterats till manuella stygn: {_1}

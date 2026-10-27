@@ -6034,3 +6034,6 @@ embroidery	Auto (where the plan ends the part)	Automatikus (ahol a terv befejezi
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Átalakítás kézi öltésekké
 @msg	nothing selected can be converted to manual stitches: {_1}	a kijelölésből semmi sem alakítható kézi öltésekké: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+	Restore Object	Objektum visszaállítása
+@msg	nothing selected was converted to manual stitches: {_1}	a kijelölésből semmit sem alakítottak kézi öltésekké: {_1}

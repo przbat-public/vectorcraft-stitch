@@ -269,3 +269,115 @@ fn converting_is_one_step_and_refuses_before_changing_anything() {
     run(&mut s, "edit.undo", json!({}));
     assert!(*s.doc().unwrap().doc == *before, "undo gives the document back");
 }
+
+/// Converted, then restored at once: the document is the one it was, saved the same but for the id
+/// counter, and its export too. Restore is one undo step.
+#[test]
+fn converting_and_restoring_gives_the_document_back() {
+    let mut s = Session::new();
+    let mut run_fx = |c: &str, p: serde_json::Value| run(&mut s, c, p);
+    let st = vectorcraft_testkit::embroidery::structures(&mut run_fx);
+    let saved = vectorcraft_format::save(&s.doc().unwrap().doc, false);
+    let before = exports(&mut s);
+    let ids = [st.group, st.clip_group, st.filled_and_stroked];
+    run(&mut s, "embroidery.convertToManual", json!({ "ids": ids }));
+    let steps = s.doc().unwrap().history.undo.len();
+    let r = run(&mut s, "embroidery.restoreObject", json!({ "ids": ids }));
+    assert_eq!((r["editedCount"].clone(), s.doc().unwrap().history.undo.len()), (json!(0), steps + 1), "{r}");
+    // The same file but for the id counter, which never goes back (the runs' ids are not handed out
+    // again).
+    let file = |bytes: &[u8]| {
+        let mut v: serde_json::Value = serde_json::from_slice(bytes).unwrap();
+        v["document"].as_object_mut().unwrap().remove("next_id");
+        v
+    };
+    assert!(file(&vectorcraft_format::save(&s.doc().unwrap().doc, false)) == file(&saved), "saved the same but for the id counter");
+    assert_eq!(exports(&mut s), before);
+}
+
+/// A converted object moved, turned, mirrored and scaled comes back where its stitches are, as the
+/// object transformed so would be; its strokes scaled as the preferences say (or as asked).
+#[test]
+fn a_restored_object_comes_back_where_its_stitches_are() {
+    let mut s = blank();
+    let square = red_square(&mut s, 5.0, 5.0, 10.0);
+    let mut twin = blank();
+    let other = red_square(&mut twin, 5.0, 5.0, 10.0);
+    assert_eq!(square, other);
+    let transform = |s: &mut Session, id: u64| {
+        run(s, "object.move", json!({"ids": [id], "dx": 30, "dy": -4}));
+        run(s, "object.rotate", json!({"ids": [id], "angle": 30}));
+        run(s, "object.reflect", json!({"ids": [id], "axis": "vertical"}));
+        run(s, "object.scale", json!({"ids": [id], "sx": 120, "sy": 90}));
+    };
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [square]}));
+    transform(&mut s, square);
+    transform(&mut twin, other);
+    run(&mut s, "embroidery.restoreObject", json!({"ids": [square]}));
+    let anchors = |s: &Session, id: u64| -> Vec<vectorcraft_geom::Point> {
+        s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().path_data().unwrap().subpaths[0].anchors.iter().map(|a| a.p).collect()
+    };
+    let (got, want) = (anchors(&s, square), anchors(&twin, other));
+    assert_eq!(got.len(), want.len());
+    for (g, w) in got.iter().zip(&want) {
+        assert!(g.distance(*w) < 1e-9, "{g:?} against {w:?}");
+    }
+}
+
+/// The dry run says which objects' stitches were edited since converting (so the interface asks
+/// first only then): a needle point moved is an edit, the object moved whole is not. Restoring
+/// discards the edits.
+#[test]
+fn the_dry_run_tells_edited_stitches_from_moved_ones() {
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    let b = red_square(&mut s, 40.0, 5.0, 10.0);
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [a, b]}));
+    run(&mut s, "object.move", json!({"ids": [a], "dx": 10, "dy": 10}));
+    let run_of_b = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(b)).unwrap().children().unwrap()[0].id.0;
+    run(&mut s, "select.anchors", json!({"id": run_of_b, "anchors": [[0, 3]]}));
+    run(&mut s, "path.moveAnchors", json!({"dx": 2, "dy": 0}));
+    let doc = s.doc().unwrap().doc.clone();
+    let dry = run(&mut s, "embroidery.restoreObject", json!({"ids": [a, b], "dryRun": true}));
+    assert_eq!((dry["edited"].clone(), dry["restoredCount"].clone()), (json!([b]), json!(2)), "{dry}");
+    assert!(*s.doc().unwrap().doc == *doc, "a dry run changes nothing");
+    run(&mut s, "embroidery.restoreObject", json!({"ids": [run_of_b]}));
+    assert!(
+        matches!(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(b)).unwrap().kind, vectorcraft_doc::NodeKind::Path { .. }),
+        "a run stands for its object"
+    );
+}
+
+/// What can't be restored is passed over with why: an object never converted, stitches from a file,
+/// an original that doesn't read as an object, one placing a symbol the document no longer has.
+#[test]
+fn restoring_passes_over_what_it_cant_restore() {
+    use vectorcraft_doc::embroidery::Original;
+    let mut s = blank();
+    let plain = red_square(&mut s, 5.0, 5.0, 10.0);
+    let junk = red_square(&mut s, 30.0, 5.0, 10.0);
+    let lost = red_square(&mut s, 60.0, 5.0, 10.0);
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [junk, lost]}));
+    let instance = json!({"id": 9999, "kind": {"type": "symbolInstance", "symbol": "Gone", "xf": [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]}});
+    s.edit("Damage", |d, _| {
+        for (id, node) in [(junk, json!({"kind": 5})), (lost, instance.clone())] {
+            let n = d.node_mut(vectorcraft_doc::NodeId(id)).ok_or(crate::EngineError::NoNode(vectorcraft_doc::NodeId(id)))?;
+            if let Some(e) = n.extras_mut().embroidery.as_deref_mut() {
+                let o = e.original.clone().unwrap();
+                e.original = Some(Original { node: std::sync::Arc::new(node), ..o });
+            }
+        }
+        Ok(())
+    })
+    .unwrap();
+    let r = s.execute("embroidery.restoreObject", &json!({"ids": [plain, junk, lost]})).unwrap_err().to_string();
+    for want in [format!("{plain} (notConverted)"), format!("{junk} (unreadable)")] {
+        assert!(r.contains(&want), "{want}: {r}");
+    }
+    assert!(r.contains(&format!("{lost} (missingSymbol)")) || r.contains(&format!("{lost} (unreadable)")), "{r}");
+    let mut s = Session::new();
+    let mut run_fx = |c: &str, p: serde_json::Value| run(&mut s, c, p);
+    vectorcraft_testkit::embroidery::opened_design(&mut run_fx, "dst");
+    run(&mut s, "select.all", json!({}));
+    assert!(s.execute("embroidery.restoreObject", &json!({})).unwrap_err().to_string().contains("notConverted"));
+}

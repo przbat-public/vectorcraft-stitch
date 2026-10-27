@@ -171,16 +171,20 @@ fn manual_stitch_messages_are_translated() {
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
     let text = s.execute("text.create", &json!({"x": 10, "y": 300, "text": "Stitch"})).unwrap()["id"].as_u64().unwrap();
-    let messages = match s.execute("embroidery.convertToManual", &json!({ "ids": [text] })) {
-        Err(EngineError::Other(m)) => vec![m],
+    let message_of = |r: Result<serde_json::Value, EngineError>| match r {
+        Err(EngineError::Other(m)) => m,
         r => panic!("{r:?}"),
     };
+    let messages = [
+        message_of(s.execute("embroidery.convertToManual", &json!({ "ids": [text] }))),
+        message_of(s.execute("embroidery.restoreObject", &json!({ "ids": [text] }))),
+    ];
     let mut untranslated = Vec::new();
     for info in LANGUAGES.iter().filter(|l| l.code != "en") {
         let lang = Lang::from_code(info.code).unwrap();
         for m in &messages {
             let shown = message(lang, m);
-            if shown == *m || ["nothing selected", "manual stitches"].iter().any(|w| shown.contains(*w)) {
+            if shown == *m || ["nothing selected", "manual stitches", "converted"].iter().any(|w| shown.contains(*w)) {
                 untranslated.push(format!("{}: {shown}", info.code));
             }
         }

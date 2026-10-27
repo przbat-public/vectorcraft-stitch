@@ -1118,7 +1118,7 @@ fn the_real_designs_artwork_exports_unchanged() {
 /// with every machine value at its default.
 #[test]
 fn settings_that_change_nothing_change_no_export() {
-    for how in [Unchanging::Kept, Unchanging::SetAndReset, Unchanging::DefaultFabric, Unchanging::Converted] {
+    for how in [Unchanging::Kept, Unchanging::SetAndReset, Unchanging::DefaultFabric, Unchanging::Converted, Unchanging::ConvertedAndRestored] {
         let mut now = Vec::new();
         for (name, s, options) in documents() {
             // The documents that set settings (or points) on purpose are exported as they are, but
@@ -1126,6 +1126,7 @@ fn settings_that_change_nothing_change_no_export() {
             let set_on_purpose = matches!(name, "settings" | "expanded-strokes" | "exits");
             let mut s = match how {
                 Unchanging::Converted => converted(s, &options),
+                Unchanging::ConvertedAndRestored => restored(converted(s, &options)),
                 _ if set_on_purpose => s,
                 _ => unchanging(s, how),
             };
@@ -1141,6 +1142,7 @@ fn settings_that_change_nothing_change_no_export() {
         for &(art, theirs) in DESIGNS {
             let mut s = match how {
                 Unchanging::Converted => converted(artwork(&dir, art, theirs), &json!({})),
+                Unchanging::ConvertedAndRestored => restored(converted(artwork(&dir, art, theirs), &json!({}))),
                 _ => unchanging(artwork(&dir, art, theirs), how),
             };
             let stem = art.trim_end_matches(".svg");
@@ -1173,6 +1175,21 @@ enum Unchanging {
     /// the document is exported with): its stitches frozen as planned, sewn as they are, placed as
     /// the object was ([`converted`]).
     Converted,
+    /// Every object converted, then restored (`embroidery.restoreObject`): the objects as they were,
+    /// planned again ([`restored`]).
+    ConvertedAndRestored,
+}
+
+/// `s`'s document with every converted object restored; a document with none is left as it was.
+fn restored(mut s: Session) -> Session {
+    run(&mut s, "select.all", json!({}));
+    match s.execute("embroidery.restoreObject", &json!({})) {
+        Ok(r) => assert!(r["restoredCount"].as_u64().unwrap() > 0 && r["editedCount"] == json!(0), "{r}"),
+        Err(vectorcraft_engine::EngineError::Other(e)) => assert!(e.starts_with("nothing selected was converted"), "{e}"),
+        Err(e) => panic!("{e}"),
+    }
+    run(&mut s, "select.none", json!({}));
+    s
 }
 
 /// `s`'s document with every object converted to manual stitches, planned with `options` (the
@@ -1264,6 +1281,7 @@ fn unchanging(mut s: Session, how: Unchanging) -> Session {
             s
         }
         Unchanging::Converted => converted(s, &json!({})),
+        Unchanging::ConvertedAndRestored => restored(converted(s, &json!({}))),
         Unchanging::DefaultFabric => {
             let fill = vectorcraft_stitch::plan::Params::for_style(vectorcraft_stitch::plan::Style::Fill);
             let setup = json!({

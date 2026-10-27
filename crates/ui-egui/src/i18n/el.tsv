@@ -6000,3 +6000,6 @@ embroidery	Auto (where the plan ends the part)	Αυτόματα (όπου το �
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Μετατροπή σε χειροκίνητες βελονιές
 @msg	nothing selected can be converted to manual stitches: {_1}	τίποτα από την επιλογή δεν μετατρέπεται σε χειροκίνητες βελονιές: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+	Restore Object	Επαναφορά αντικειμένου
+@msg	nothing selected was converted to manual stitches: {_1}	τίποτα από την επιλογή δεν έχει μετατραπεί σε χειροκίνητες βελονιές: {_1}

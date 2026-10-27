@@ -6003,3 +6003,6 @@ embroidery	Auto (where the plan ends the part)	Otomatis (tempat rencana mengakhi
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Ubah menjadi jahitan manual
 @msg	nothing selected can be converted to manual stitches: {_1}	tidak ada yang dipilih yang dapat diubah menjadi jahitan manual: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+	Restore Object	Pulihkan objek
+@msg	nothing selected was converted to manual stitches: {_1}	tidak ada yang dipilih yang telah diubah menjadi jahitan manual: {_1}

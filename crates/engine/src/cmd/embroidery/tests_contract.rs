@@ -148,4 +148,10 @@ fn the_manual_stitch_commands_replies_keep_their_shape() {
     let pinned =
         "{converted: [{id: int, needlePoints: int, runs: int, units: int}], convertedCount: int, needlePoints: int, skipped: [], skippedCount: int}";
     assert_eq!(converted, pinned, "replies changed shape; if on purpose, pin it");
+    let dry = shape(&run(&mut s, "embroidery.restoreObject", json!({"ids": ids, "dryRun": true})));
+    let pinned = "{dryRun: bool, edited: [], editedCount: int, restored: [int], restoredCount: int, skipped: [], skippedCount: int}";
+    assert_eq!(dry, pinned, "replies changed shape; if on purpose, pin it");
+    let restored = shape(&run(&mut s, "embroidery.restoreObject", json!({ "ids": ids })));
+    let pinned = "{edited: [], editedCount: int, restored: [int], restoredCount: int, skipped: [], skippedCount: int}";
+    assert_eq!(restored, pinned, "replies changed shape; if on purpose, pin it");
 }

@@ -407,3 +407,182 @@ fn nothing_converted(skipped: &[(NodeId, &'static str)]) -> EngineError {
     let named: Vec<String> = skipped.iter().take(MAX_LISTED).map(|(id, why)| format!("{} ({why})", id.0)).collect();
     EngineError::Other(format!("nothing selected can be converted to manual stitches: {}", named.join(", ")))
 }
+
+const RESTORE: &str = "embroidery.restoreObject";
+/// The undo step's name, the command's label.
+const RESTORE_LABEL: &str = "Restore Object";
+
+/// Why a group given isn't restored, as the reply names it.
+mod restore_reason {
+    /// Not an object converted to manual stitches (nothing kept to restore).
+    pub(super) const NOT_CONVERTED: &str = "notConverted";
+    /// Stitches read from a machine file: there is no object behind them.
+    pub(super) const LITERAL: &str = "literal";
+    /// The object kept doesn't read as an object (a damaged file, or a newer version's object).
+    pub(super) const UNREADABLE: &str = "unreadable";
+    /// The object places a symbol the document no longer has.
+    pub(super) const MISSING_SYMBOL: &str = "missingSymbol";
+    /// Locked, or in a locked group or layer.
+    pub(super) const LOCKED: &str = "locked";
+}
+
+/// The converted objects `n` stands for, to restore: itself when it is one, the one a manual run is
+/// in, those a group or a layer holds; what isn't one, with why, into `skipped`.
+fn restorable(doc: &Document, n: &Node, out: &mut Vec<NodeId>, skipped: &mut Vec<(NodeId, &'static str)>) {
+    if converted(n) {
+        out.push(n.id);
+        return;
+    }
+    if let Some(run) = n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()) {
+        match doc.parent_of(n.id).and_then(|p| doc.node(p)).filter(|p| run.manual && converted(p)) {
+            Some(group) => out.push(group.id),
+            None => skipped.push((n.id, if run.manual { restore_reason::NOT_CONVERTED } else { restore_reason::LITERAL })),
+        }
+        return;
+    }
+    match &n.kind {
+        NodeKind::Layer { children, .. } | NodeKind::Group { children, .. } => {
+            let found = out.len();
+            for c in children {
+                restorable(doc, c, out, &mut Vec::new());
+            }
+            if out.len() == found {
+                skipped.push((n.id, restore_reason::NOT_CONVERTED));
+            }
+        }
+        _ => skipped.push((n.id, restore_reason::NOT_CONVERTED)),
+    }
+}
+
+/// Whether the stitches of converted group `group` were edited since converting: their fingerprint
+/// ([`fingerprint`], the needle points taken back by the original's frame) is no longer the one kept,
+/// or none was kept.
+pub(crate) fn edited(group: &Node) -> bool {
+    let Some(o) = group.extras().embroidery.as_deref().and_then(|e| e.original.as_ref()) else { return false };
+    o.fingerprint.is_none() || fingerprint(group, o.frame) != o.fingerprint
+}
+
+/// The object converted group `group` (in `doc`) was converted from, as it is to be put back: read
+/// from the original kept, transformed by the original's frame (moved, turned and scaled as the
+/// stitches were since, strokes and corners as `scaling` says), taking the group's id, name,
+/// visibility and lock, and its Trim After and Stop After (the marks the manual object can change
+/// itself). Its members keep their ids where the document doesn't use them (they are free right
+/// after converting), else take new ones. Or why it can't be.
+fn restored(doc: &mut Document, group: &Node, scaling: vectorcraft_doc::Scaling) -> std::result::Result<Node, &'static str> {
+    let e = group.extras().embroidery.as_deref();
+    let Some(o) = e.and_then(|e| e.original.as_ref()) else { return Err(restore_reason::NOT_CONVERTED) };
+    let mut n: Node = serde_json::from_value((*o.node).clone()).map_err(|_| restore_reason::UNREADABLE)?;
+    let mut missing = false;
+    n.walk(&mut |c| {
+        if let NodeKind::SymbolInstance { symbol, .. } = &c.kind {
+            missing |= !doc.symbols.iter().any(|s| &s.name == symbol);
+        }
+    });
+    if missing {
+        return Err(restore_reason::MISSING_SYMBOL);
+    }
+    if o.frame != Affine::IDENTITY {
+        n.transform(o.frame, scaling);
+    }
+    n.id = group.id;
+    n.name = group.name.clone();
+    n.visible = group.visible;
+    n.locked = group.locked;
+    // Members keep their ids where free and already handed out; else new ones.
+    let issued = doc.peek_next_id();
+    let mut taken: HashSet<u64> = HashSet::new();
+    fn renumber(n: &mut Node, doc: &mut Document, issued: u64, taken: &mut HashSet<u64>, top: bool) {
+        if !top && (n.id.0 >= issued || doc.node(n.id).is_some() || !taken.insert(n.id.0)) {
+            n.id = doc.alloc_id();
+        }
+        for c in n.children_mut().into_iter().flatten() {
+            renumber(Arc::make_mut(c), doc, issued, taken, false);
+        }
+    }
+    renumber(&mut n, doc, issued, &mut taken, true);
+    let (cut, stop) = e.map_or((false, false), |e| (e.trim_after, e.stop_after));
+    let mut marks = n.extras().embroidery.as_deref().cloned().unwrap_or_default();
+    marks.set_trim_after(cut);
+    marks.set_stop_after(stop);
+    n.extras_mut().embroidery = (!marks.is_empty()).then(|| Box::new(marks));
+    Ok(n)
+}
+
+/// `embroidery.restoreObject {ids?, strokes?, corners?, dryRun?}`: each converted object given (else
+/// selected) put back, planned again at its size now, its stitch edits discarded, in one undo step;
+/// with `dryRun`, only which would be, and which were edited since converting.
+pub(super) fn restore(s: &mut Session, p: &Value) -> Result<Value> {
+    let o = object(p, RESTORE)?;
+    super::only(&o, &["ids", "strokes", "corners", "dryRun"], RESTORE)?;
+    for key in ["strokes", "corners", "dryRun"] {
+        if let Some(v) = o.get(key).filter(|v| !v.is_boolean() && !v.is_null()) {
+            return Err(bad(RESTORE, format!("`{key}` {v}: true or false")));
+        }
+    }
+    let dry = o.get("dryRun").and_then(Value::as_bool).unwrap_or(false);
+    if let Some(n) = o.get("ids").and_then(Value::as_array).map(Vec::len).filter(|n| *n > MAX_IDS) {
+        return Err(bad(RESTORE, format!("`ids` lists {n} objects: at most {MAX_IDS}")));
+    }
+    let ids = targets(s, p)?;
+    if ids.is_empty() {
+        return Err(bad(RESTORE, "select the objects converted to manual stitches to restore, or give ids"));
+    }
+    let doc = s.doc()?.doc.clone();
+    if let Some(missing) = ids.iter().find(|id| doc.node(**id).is_none()) {
+        return Err(EngineError::NoNode(*missing));
+    }
+    let (mut groups, mut skipped) = (Vec::new(), Vec::new());
+    for id in &ids {
+        if let Some(n) = doc.node(*id) {
+            restorable(&doc, n, &mut groups, &mut skipped);
+        }
+    }
+    let mut seen = HashSet::new();
+    groups.retain(|g| seen.insert(*g));
+    let locked = |g: &NodeId| doc.ancestry(*g).unwrap_or_default().iter().any(|a| doc.node(*a).is_some_and(|n| n.locked));
+    let (open, closed): (Vec<NodeId>, Vec<NodeId>) = groups.into_iter().partition(|g| !locked(g));
+    skipped.extend(closed.into_iter().map(|g| (g, restore_reason::LOCKED)));
+    let edited_ids: Vec<u64> = open.iter().filter(|g| doc.node(**g).is_some_and(edited)).map(|g| g.0).collect();
+    let listed =
+        |v: &[(NodeId, &'static str)]| -> Vec<Value> { v.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect() };
+    if dry {
+        let ids: Vec<u64> = open.iter().take(MAX_LISTED).map(|g| g.0).collect();
+        return Ok(json!({
+            "restored": ids, "restoredCount": open.len(), "edited": edited_ids, "editedCount": edited_ids.len(),
+            "skippedCount": skipped.len(), "skipped": listed(&skipped), "dryRun": true,
+        }));
+    }
+    let scaling = crate::cmd::object::scaling(s, p);
+    let mut restored_ids: Vec<u64> = Vec::new();
+    s.edit(RESTORE_LABEL, |d, sel| {
+        for g in &open {
+            let Some(group) = d.node(*g).cloned() else { continue };
+            match restored(d, &group, scaling) {
+                Ok(n) => {
+                    let Some(slot) = d.node_mut(*g) else { continue };
+                    *slot = n;
+                    sel.anchors.remove(g);
+                    restored_ids.push(g.0);
+                }
+                Err(why) => skipped.push((*g, why)),
+            }
+        }
+        if restored_ids.is_empty() {
+            return Err(nothing_restored(&skipped));
+        }
+        d.fix_next_id();
+        Ok(())
+    })?;
+    let count = restored_ids.len();
+    restored_ids.truncate(MAX_LISTED);
+    Ok(json!({
+        "restored": restored_ids, "restoredCount": count, "edited": edited_ids, "editedCount": edited_ids.len(),
+        "skippedCount": skipped.len(), "skipped": listed(&skipped),
+    }))
+}
+
+/// The error when nothing given could be restored, naming each object and why.
+fn nothing_restored(skipped: &[(NodeId, &'static str)]) -> EngineError {
+    let named: Vec<String> = skipped.iter().take(MAX_LISTED).map(|(id, why)| format!("{} ({why})", id.0)).collect();
+    EngineError::Other(format!("nothing selected was converted to manual stitches: {}", named.join(", ")))
+}

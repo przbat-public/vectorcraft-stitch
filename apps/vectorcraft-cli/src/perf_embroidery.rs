@@ -15,11 +15,17 @@
 //! - the embroidery export, which plans its document afresh rather than from what was kept;
 //! - the 50,000-path document, which needs more stitches than a design may have: how long it takes
 //!   to be refused, the first time and again;
-//! - entry and exit points: the 20 rings sewn toward an exit on their outermost ring, and a fill's
-//!   exit and entry on the 1,000-path document moved a nudge at a time, the design planned again
-//!   after each move;
+//! - entry and exit points: the 20 rings sewn toward an exit on their outermost ring (checked against
+//!   the plain rings of the same run), a running line of 64 traced contours and the lattice's tatami
+//!   of many regions each sewn toward an exit, and a fill's exit and entry on the 1,000-path document
+//!   and the 20 rings' entry moved a nudge at a time, the design planned again after each move;
 //! - Nearest Connection on the 1,000- and 22,000-path documents: the design planned, then the
 //!   command's search and the plan of its result (a dry run, so each run starts from the same);
+//! - picking by stitch on the 22,000-path document: the median, the 95th percentile and the slowest
+//!   of a grid of presses, some on empty fabric;
+//! - the embroidery tool through the session: its handles found for 32 objects selected and for
+//!   Select All on 22,000 paths, a hover frame there, and an exit and a fill's rows' arrow dragged a
+//!   step at a time, the design planned again after each;
 //! - the Embroidery panel's Object tab's work on a new snapshot (each frame of a drag or a scrub):
 //!   its read of 1,000 selected objects' settings, and its footer's fabric and thread on the
 //!   22,000-path document;
@@ -75,7 +81,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 51] = [
+pub const ROWS: [&str; 61] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -127,6 +133,16 @@ pub const ROWS: [&str; 51] = [
     "nearest connection: 1,000 paths",
     "nearest connection: 22,000 paths",
     "picking: a press on stitches, 22,000 paths",
+    "embroidery: 64 contours to an exit, cold",
+    "embroidery: lattice toward an exit, cold",
+    "points: entry moved, 20 rings in one fill",
+    "picking: 95th percentile, 22,000 paths",
+    "picking: slowest press, 22,000 paths",
+    "tool: handles of 32 objects selected",
+    "tool: handles, Select All, 22,000 paths",
+    "tool: a hover frame, 22,000 paths",
+    "tool: an exit dragged a step, 1,000 paths",
+    "tool: an arrow turned a step, 1,000 paths",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
@@ -146,7 +162,7 @@ pub const ROWS: [&str; 51] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 51] = [
+const BUDGETS: [f64; 61] = [
     400.0,
     100.0,
     100.0,
@@ -198,6 +214,16 @@ const BUDGETS: [f64; 51] = [
     NEAREST_BUDGETS[0],
     NEAREST_BUDGETS[1],
     PICK_BUDGET,
+    CONTOURS_TOWARD_EXIT_BUDGET,
+    LATTICE_TOWARD_EXIT_BUDGET,
+    RINGS_POINT_MOVED_BUDGET,
+    PICK_BUDGET,
+    PICK_SLOWEST_BUDGET,
+    TOOL_BUDGETS[0],
+    TOOL_BUDGETS[1],
+    TOOL_BUDGETS[2],
+    TOOL_BUDGETS[3],
+    TOOL_BUDGETS[4],
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -360,13 +386,29 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.push(drag_half(&largest)?);
     ms.extend(settings(&doc)?);
     ms.extend(object_tab(&doc, &largest)?);
-    ms.push(cold(&rings_toward_an_exit()?)?);
+    let rings_toward = rings_toward_an_exit()?;
+    ms.push(cold(&rings_toward)?);
     ms.extend(points_moved(&doc)?);
     ms.push(nearest(&doc, RUNS)?);
     ms.push(nearest(&largest, 1)?);
-    ms.push(pick(&largest)?);
+    let [median, p95, slowest] = pick(&largest)?;
+    ms.push(median);
+    ms.push(cold(&contours_toward_an_exit()?)?);
+    ms.push(cold(&lattice_toward_an_exit()?)?);
+    ms.push(point_moved(&rings_toward, "entry")?);
+    ms.extend([p95, slowest]);
+    ms.extend(tool(&doc, &largest)?);
+    // The rings toward an exit plan their parts with and without it: within a share of the plain
+    // rings' time in the same run, whatever the machine's load, and the absolute budget.
+    let mut budgets = BUDGETS;
+    let at = |name: &str| ROWS.iter().position(|r| *r == name);
+    if let (Some(plain), Some(aimed)) = (at("embroidery: 20 rings in one fill, cold"), at("embroidery: 20 rings toward an exit, cold"))
+        && let (Some(plain_ms), Some(budget)) = (ms.get(plain).copied(), budgets.get_mut(aimed))
+    {
+        *budget = budget.min(RINGS_TOWARD_EXIT_RATIO * plain_ms);
+    }
     // A row with nothing to measure (no corpus) is left out.
-    Ok(ROWS.iter().zip(ms).zip(BUDGETS).filter(|((_, ms), _)| !ms.is_nan()).map(|((name, ms), budget)| (*name, ms, budget)).collect())
+    Ok(ROWS.iter().zip(ms).zip(budgets).filter(|((_, ms), _)| !ms.is_nan()).map(|((name, ms), budget)| (*name, ms, budget)).collect())
 }
 
 /// `vectorcraft-cli perf --embroidery`: only the embroidery rows, each printed by `row` (its name,
@@ -465,6 +507,28 @@ fn reorder(doc: &Document) -> Result<f64, String> {
 /// point moved.
 const RINGS_TOWARD_EXIT_BUDGET: f64 = 1200.0;
 const POINT_MOVED_BUDGET: f64 = 7.0;
+/// The most the rings toward an exit may take beside the plain rings of the same run: planning
+/// their parts twice (with the exit and without) costs a fraction of their narrow-part search, which
+/// is done once; doing that search twice would pass an absolute budget under load, not this (an
+/// estimate: they measured 1.02 to 1.08 times on 2026-10-26).
+const RINGS_TOWARD_EXIT_RATIO: f64 = 1.25;
+/// The running line of traced contours toward an exit: its contours, and the points of each (a
+/// traced outline's), past the reordering's work bound (the subpaths squared times their points).
+const CONTOURS: usize = 64;
+const CONTOUR_POINTS: usize = 100;
+/// The contours' radius and the grid they lie on, millimetres.
+const CONTOUR_RADIUS_MM: f64 = 3.0;
+const CONTOUR_GRID_MM: f64 = 10.0;
+/// The budgets of the line of contours and of the lattice toward an exit, cold, milliseconds: the
+/// contours about four times the 2.5 ms they measured on 2026-10-27 (release, the same machine,
+/// load about 8), where weighing each of them as the last, past the reordering's bound, would take
+/// tens of milliseconds; the lattice about 2.5 times its 96 ms (76 ms with no exit beside it).
+const CONTOURS_TOWARD_EXIT_BUDGET: f64 = 10.0;
+const LATTICE_TOWARD_EXIT_BUDGET: f64 = 250.0;
+/// The budget of the 20 rings' entry moved a nudge and planned again, milliseconds: about 2.5 times
+/// the 19 ms it measured on 2026-10-27, where planning the fill afresh takes 480 ms: its narrow
+/// parts and its rest are kept, its stitches planned again.
+const RINGS_POINT_MOVED_BUDGET: f64 = 50.0;
 /// Nearest Connection's budgets on 1,000 and on 22,000 paths, milliseconds: about 2.5 times what they
 /// measured on 2026-10-26 (release, the same machine, under load 28 to 41 while other work built:
 /// 120 and 123 ms, 6.1 and 7.6 s). Every part it joins gets points, so the plan of its result plans
@@ -496,11 +560,16 @@ fn rings_toward_an_exit() -> Result<Document, String> {
     Ok((*s.doc().map_err(err)?.doc).clone())
 }
 
-/// The points rows on `doc`, milliseconds, each the median of [`DRAW_RUNS`]: the exit point of the
-/// fill sewn first, then its entry, set where its stitches start and moved a nudge ([`NUDGE_MM`])
-/// at a time, the design planned again after each move (that object's unit planned afresh, the
-/// rest kept).
+/// The points rows on `doc`, milliseconds ([`point_moved`]): the exit point of the fill sewn first,
+/// then its entry.
 fn points_moved(doc: &Document) -> Result<[f64; 2], String> {
+    Ok([point_moved(doc, "exit")?, point_moved(doc, "entry")?])
+}
+
+/// Milliseconds to move the `key` point ("entry" or "exit") of `doc`'s fill sewn first, set where
+/// its stitches start and moved a nudge ([`NUDGE_MM`]) at a time, the design planned again after
+/// each move (that object's unit planned afresh, the rest kept), the median of [`DRAW_RUNS`].
+fn point_moved(doc: &Document, key: &str) -> Result<f64, String> {
     let opts = vectorcraft_engine::EmbroideryOptions::default();
     let mut s = fresh(doc);
     let order = s.execute("embroidery.sequence", &json!({})).map_err(err)?;
@@ -509,37 +578,200 @@ fn points_moved(doc: &Document) -> Result<[f64; 2], String> {
         units.filter(|u| u["part"] == json!("fill")).find_map(|u| Some((u["id"].as_u64()?, u["entry"][0].as_f64()?, u["entry"][1].as_f64()?)));
     let Some((id, x, y)) = first else { return Err("embroidery: the document has no fill to set points on".into()) };
     s.embroidery_plan(&opts).map_err(err)?;
-    let mut moved = |key: &str| -> Result<f64, String> {
+    let mut samples = Vec::with_capacity(DRAW_RUNS);
+    for k in 0..=DRAW_RUNS {
+        let mut params = json!({"id": id, "part": "fill"});
+        // Read positions are millimetres; the command takes document points.
+        params[key] = json!([(x + NUDGE_MM * k as f64) * PT_PER_MM, y * PT_PER_MM]);
+        let t = Instant::now();
+        s.execute("embroidery.setEntryExit", &params).map_err(err)?;
+        s.embroidery_plan(&opts).map_err(err)?;
+        // The first sets the point; the rest move it.
+        if k > 0 {
+            samples.push(t.elapsed().as_secs_f64() * 1000.0);
+        }
+    }
+    Ok(middle(samples))
+}
+
+/// A running line of [`CONTOURS`] closed contours of [`CONTOUR_POINTS`] points each, on a grid,
+/// its exit on the last contour.
+fn contours_toward_an_exit() -> Result<Document, String> {
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 600, "height": 600, "artboards": 1})).map_err(err)?;
+    s.execute("paint.setFill", &json!({"none": true})).map_err(err)?;
+    s.execute("paint.setStroke", &json!({"color": "#2233cc"})).map_err(err)?;
+    let side = (CONTOURS as f64).sqrt().ceil() as usize;
+    let mut d = String::new();
+    let mut last = (0.0, 0.0);
+    for k in 0..CONTOURS {
+        let centre = (CONTOUR_GRID_MM * (1.0 + (k % side) as f64), CONTOUR_GRID_MM * (1.0 + (k / side) as f64));
+        for i in 0..CONTOUR_POINTS {
+            let a = std::f64::consts::TAU * i as f64 / CONTOUR_POINTS as f64;
+            let (x, y) = ((centre.0 + CONTOUR_RADIUS_MM * a.cos()) * PT_PER_MM, (centre.1 + CONTOUR_RADIUS_MM * a.sin()) * PT_PER_MM);
+            d.push_str(&format!("{} {x:.3} {y:.3} ", if i == 0 { "M" } else { "L" }));
+        }
+        d.push_str("Z ");
+        last = ((centre.0 + CONTOUR_RADIUS_MM) * PT_PER_MM, centre.1 * PT_PER_MM);
+    }
+    let id = s.execute("path.create", &json!({ "d": d })).map_err(err)?["id"].clone();
+    s.execute("stroke.set", &json!({"weight": 1.0, "ids": [id]})).map_err(err)?;
+    s.execute("embroidery.setEntryExit", &json!({"id": id, "part": "stroke", "exit": [last.0, last.1]})).map_err(err)?;
+    Ok((*s.doc().map_err(err)?.doc).clone())
+}
+
+/// The lattice of 100 holes, a tatami fill of many regions, its exit on the middle of its right
+/// side, taken onto the outline.
+fn lattice_toward_an_exit() -> Result<Document, String> {
+    let path = lattice(10);
+    let b = kurbo::Shape::bounding_box(&path);
+    let mut s = fresh(&one_fill(path, FillRule::EvenOdd));
+    let id = s.doc().map_err(err)?.doc.layers.first().and_then(|l| l.children()).and_then(|c| c.first()).map(|n| n.id.0);
+    let id = id.ok_or("embroidery: the lattice document holds no fill")?;
+    let exit = [b.x1 * PT_PER_MM, (b.y0 + b.y1) / 2.0 * PT_PER_MM];
+    s.execute("embroidery.setEntryExit", &json!({"id": id, "part": "fill", "exit": exit, "snap": true})).map_err(err)?;
+    Ok((*s.doc().map_err(err)?.doc).clone())
+}
+
+/// The embroidery tool's rows' budgets, milliseconds (estimates): its handles found for 32 objects
+/// and for Select All on 22,000 paths, each within a millisecond (the least the report's budget
+/// column shows; they measured 0.02 and 0.03 ms on 2026-10-27, the first 32 objects alone taken);
+/// a hover frame about 4.5 times its 0.44 ms; a drag step of an exit or of an arrow, planned again,
+/// as a point moved ([`POINT_MOVED_BUDGET`]: they measured 2.6 and 2.7 ms).
+const TOOL_BUDGETS: [f64; 5] = [1.0, 1.0, 2.0, POINT_MOVED_BUDGET, POINT_MOVED_BUDGET];
+
+/// How many hover frames the hover row times, across the design.
+const HOVERS: usize = 200;
+
+/// How far the drags move before they are timed (past the tool's drag threshold), millimetres, and
+/// the turn an arrow's first step makes, degrees.
+const DRAG_START_MM: f64 = 5.0;
+const TURN_START_DEGREES: f64 = 10.0;
+
+/// The embroidery tool's rows, milliseconds, through the session as the canvas drives it: its
+/// handles found for 32 objects of `doc` selected, and for Select All on `largest`, each the median
+/// of [`DRAW_RUNS`] changes of the selection; a hover frame on `largest` (a pointer move, the
+/// cursor and the handles, as a frame asks them), the median of [`HOVERS`]; an exit of `doc`
+/// dragged a nudge ([`NUDGE_MM`]) at a time and a fill's rows' arrow turned a degree
+/// ([`ANGLE_STEP`]) at a time, the design planned again after each step, the median of
+/// [`DRAW_RUNS`].
+fn tool(doc: &Document, largest: &Document) -> Result<[f64; 5], String> {
+    use vectorcraft_engine::tools::{Mods, PointerEvent, PointerKind};
+    let opts = vectorcraft_engine::EmbroideryOptions::default();
+    let view = vectorcraft_engine::ViewInfo::default();
+    let ids = |s: &Session| -> Vec<u64> {
+        s.doc().map(|d| d.doc.layers.iter().filter_map(|l| l.children()).flatten().map(|n| n.id.0).collect()).unwrap_or_default()
+    };
+    let found = |s: &mut Session, selections: &[Value]| -> Result<f64, String> {
+        let mut samples = Vec::with_capacity(DRAW_RUNS);
+        for k in 0..DRAW_RUNS {
+            s.execute("select.set", selections.get(k % selections.len()).unwrap_or(&json!({"ids": []}))).map_err(err)?;
+            let t = Instant::now();
+            std::hint::black_box(s.embroidery_handles(view));
+            samples.push(t.elapsed().as_secs_f64() * 1000.0);
+        }
+        Ok(middle(samples))
+    };
+    // 32 objects, two sets in turn (the handles are found again for each).
+    let mut s = fresh(doc);
+    s.embroidery_plan(&opts).map_err(err)?;
+    s.select_tool("embroidery", view).map_err(err)?;
+    let all = ids(&s);
+    let sets: Vec<Value> = [0_usize, 1].iter().map(|k| json!({"ids": all.iter().skip(k * 32).take(32).collect::<Vec<_>>()})).collect();
+    let thirty_two = found(&mut s, &sets)?;
+    // Select All on the largest, and none, in turn.
+    let mut big = fresh(largest);
+    big.embroidery_plan(&opts).map_err(err)?;
+    big.select_tool("embroidery", view).map_err(err)?;
+    let big_ids = ids(&big);
+    let every = json!({ "ids": big_ids });
+    let select_all = found(&mut big, &[every.clone(), json!({"ids": big_ids.first().into_iter().collect::<Vec<_>>()})])?;
+    // Hover frames across the largest, every object selected.
+    big.execute("select.set", &every).map_err(err)?;
+    let bounds = big
+        .doc()
+        .map_err(err)?
+        .doc
+        .layers
+        .iter()
+        .filter_map(|l| l.children())
+        .flatten()
+        .filter_map(|n| n.geometric_bounds())
+        .reduce(|a, b| a.union(b));
+    let bounds = bounds.ok_or("embroidery: the largest document has no art")?;
+    let side = (HOVERS as f64).sqrt().ceil() as usize;
+    let mut samples = Vec::with_capacity(HOVERS);
+    for k in 0..HOVERS {
+        let at = Point::new(
+            bounds.x0 + bounds.width() * ((k % side) as f64 + 0.5) / side as f64,
+            bounds.y0 + bounds.height() * ((k / side) as f64 + 0.5) / side as f64,
+        );
+        let t = Instant::now();
+        big.pointer(&PointerEvent::new(PointerKind::Move, at.x, at.y), view).map_err(err)?;
+        std::hint::black_box(big.cursor(at, Mods::default(), view));
+        std::hint::black_box(big.embroidery_handles(view));
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    let hover = middle(samples);
+    // A drag of the handle `kind` of the fill sewn first, by `step(k)` from where it was pressed.
+    let drag = |kind: &str, step: &dyn Fn(Point, Option<Point>, usize) -> Point| -> Result<f64, String> {
+        let mut s = fresh(doc);
+        let order = s.execute("embroidery.sequence", &json!({})).map_err(err)?;
+        let units = order["blocks"].as_array().into_iter().flatten().filter_map(|b| b["units"].as_array()).flatten();
+        let first = units.filter(|u| u["part"] == json!("fill")).find_map(|u| u["id"].as_u64());
+        let Some(id) = first else { return Err("embroidery: the document has no fill to drag the points of".into()) };
+        s.execute("select.set", &json!({"ids": [id]})).map_err(err)?;
+        s.embroidery_plan(&opts).map_err(err)?;
+        s.select_tool("embroidery", view).map_err(err)?;
+        let handle = s.embroidery_handles(view).0.into_iter().find(|h| h.id.kind.id() == kind);
+        let Some(h) = handle else { return Err(format!("embroidery: the fill sewn first has no {kind} handle")) };
+        let centre = h.arrow.map(|a| a.centre);
+        s.pointer(&PointerEvent::new(PointerKind::Down, h.at.x, h.at.y), view).map_err(err)?;
         let mut samples = Vec::with_capacity(DRAW_RUNS);
         for k in 0..=DRAW_RUNS {
-            let mut params = json!({"id": id, "part": "fill"});
-            // Read positions are millimetres; the command takes document points.
-            params[key] = json!([(x + NUDGE_MM * k as f64) * PT_PER_MM, y * PT_PER_MM]);
+            let to = step(h.at, centre, k);
             let t = Instant::now();
-            s.execute("embroidery.setEntryExit", &params).map_err(err)?;
+            s.pointer(&PointerEvent::new(PointerKind::Drag, to.x, to.y), view).map_err(err)?;
             s.embroidery_plan(&opts).map_err(err)?;
-            // The first sets the point; the rest move it.
+            // The first begins the drag; the rest move it.
             if k > 0 {
                 samples.push(t.elapsed().as_secs_f64() * 1000.0);
             }
         }
+        s.pointer(&PointerEvent::new(PointerKind::Up, h.at.x, h.at.y), view).map_err(err)?;
         Ok(middle(samples))
     };
-    Ok([moved("exit")?, moved("entry")?])
+    let exit = drag("exit", &|at, _, k| Point::new(at.x + (DRAG_START_MM + NUDGE_MM * k as f64) * PT_PER_MM, at.y))?;
+    let arrow = drag("angle", &|at, centre, k| {
+        let Some(c) = centre else { return at };
+        let turn = (TURN_START_DEGREES + ANGLE_STEP * k as f64).to_radians();
+        let (dx, dy) = (at.x - c.x, at.y - c.y);
+        Point::new(c.x + dx * turn.cos() - dy * turn.sin(), c.y + dx * turn.sin() + dy * turn.cos())
+    })?;
+    Ok([thirty_two, select_all, hover, exit, arrow])
 }
 
-/// How many presses the picking row times across the design, and the tolerance each is given,
-/// document points (the selection tolerance's default, 3 px at 100 %).
+/// How many presses the picking rows time across the design, how many of them on empty fabric
+/// beside it (a miss, which scans every line), and the tolerance each is given, document points
+/// (the selection tolerance's default, 3 px at 100 %).
 const PICKS: usize = 1000;
+const PICKS_MISSED: usize = 20;
 const PICK_TOL_PT: f64 = 3.0;
+/// How far beside the design the misses lie, millimetres.
+const MISS_BESIDE_MM: f64 = 10.0;
+/// The budget of the slowest press, milliseconds: a miss scans every line (an estimate; the
+/// slowest measured 0.06 ms on 2026-10-27, the 95th percentile 0.03 ms, both within
+/// [`PICK_BUDGET`]'s millisecond).
+const PICK_SLOWEST_BUDGET: f64 = 1.0;
 
 /// The budget of a press on the stitches, milliseconds: well under the art's 2 ms hit test, which a
 /// press with the selection tools makes (an estimate, to be set from what it measures).
 const PICK_BUDGET: f64 = 1.0;
 
 /// Milliseconds a press on the stitches takes to find the object on top (`StitchScene::pick`), on
-/// `doc`'s scene, the median of [`PICKS`] presses spread over the design in a grid.
-fn pick(doc: &Document) -> Result<f64, String> {
+/// `doc`'s scene, of [`PICKS`] presses spread over the design in a grid and [`PICKS_MISSED`] on
+/// empty fabric beside it: the median, the 95th percentile and the slowest.
+fn pick(doc: &Document) -> Result<[f64; 3], String> {
     let mut s = fresh(doc);
     let planned = s.embroidery_planner().map_err(err)?.planned(&vectorcraft_engine::EmbroideryOptions::default()).map_err(err)?;
     let scene = planned.scene();
@@ -553,7 +785,15 @@ fn pick(doc: &Document) -> Result<f64, String> {
         std::hint::black_box(scene.pick(at, PICK_TOL_PT));
         samples.push(t.elapsed().as_secs_f64() * 1000.0);
     }
-    Ok(middle(samples))
+    for k in 0..PICKS_MISSED {
+        let at = vectorcraft_geom::Point::new(b.x1 + MISS_BESIDE_MM * PT_PER_MM, b.y0 + b.height() * (k as f64 + 0.5) / PICKS_MISSED as f64);
+        let t = Instant::now();
+        std::hint::black_box(scene.pick(at, PICK_TOL_PT));
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    samples.sort_by(f64::total_cmp);
+    let share = |q: f64| samples.get(((samples.len() as f64 * q).ceil() as usize).saturating_sub(1)).copied().unwrap_or(0.0);
+    Ok([share(0.5), share(0.95), share(1.0)])
 }
 
 /// Milliseconds Nearest Connection takes on `doc` once its plan is kept (planned once before, in a

@@ -5146,7 +5146,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   saved before then may sew otherwise);
   `embroidery.nearestConnection {ids?, all?, dryRun?, …embroidery options}` answers `{applied, changedCount,
   unchangedCount, skippedCount, skipped: [{id, reason}], restoredCount, before, after: {connections, jumps, trims,
-  length, longest, stitches}, saved: {jumps, trims, length, stitches}, parts: [{id, part, entry, exit}]}` (`stitches`:
+  length, longest, stitches}, saved: {jumps, trims, length, stitches}, parts: [{id, part, entry, exit}]}` (`skipped`
+  and `parts` list at most 1,000 each, the counts counting every one; `stitches`:
   the needle points of the parts joined, which a fill aimed at an exit far from where its rows end adds to; `after` is
   what the design then sews) (lengths in millimetres, the
   points in document points; `reason` also `notSewn`, `pieces`, `symbolInstance`, `clipped`, `unmodelled` or `locked`). They take the

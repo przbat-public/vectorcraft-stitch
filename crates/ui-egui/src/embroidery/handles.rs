@@ -11,8 +11,9 @@
 //!   labelled; the one the keys act on has a ring ([`FOCUS_RING_PT`]).
 //! - **A point set where the stitches can't start** (a fill's entry on its outline, the stitches half a
 //!   row spacing inside it) is joined by a hairline to a dot where they do, past [`LEADER_MIN_PT`].
-//! - **While dragging,** the handle follows the pointer in the frame it moves, and a dashed ghost
-//!   joins it to where the needle comes from (an entry) or goes next (an exit), with the jump's length
+//! - **While dragging,** the handle follows the pointer in the frame it moves (moved by the drag, not
+//!   set at the pointer), a dot marks where its point is stored when they lie apart, and a dashed
+//!   ghost joins that to where the needle comes from (an entry) or goes next (an exit), with the jump's length
 //!   and whether the thread will be cut; on a design slow to plan, the status bar says when the
 //!   stitches will catch up (on a pause, [`super::stitch_preview::PAUSE_TO_PLAN_SECS`], or the
 //!   release).
@@ -228,16 +229,24 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         if h.at != h.point && !dragged {
             painter.line_segment([at, xf.to_screen(h.point)], Stroke::new(1.0, dark().gamma_multiply(alpha)));
         }
-        // While dragging: the jump to or from the neighbour along the thread, dashed, and how long.
+        // While dragging, where the point is stored (taken where the stitches can start or end, as
+        // the last preview took it): a dot there, joined to the handle that follows the pointer when
+        // they lie apart; and the jump to or from the neighbour along the thread to there, dashed,
+        // and how long.
+        let stored = xf.to_screen(h.point);
+        if dragged && h.id.kind != Kind::Angle && stored.distance(at) > LEADER_MIN_PT {
+            painter.line_segment([at, stored], Stroke::new(1.0, color.gamma_multiply(alpha)));
+            painter.circle(stored, PLANNED_DOT_PT, color.gamma_multiply(alpha), Stroke::new(1.0, dark()));
+        }
         if let (true, Some(neighbour)) = (dragged, h.neighbour) {
             let from = xf.to_screen(neighbour);
-            painter.extend(Shape::dashed_line(&[from, at], Stroke::new(1.5, dark()), GHOST_DASH, GHOST_GAP));
-            painter.extend(Shape::dashed_line(&[from, at], Stroke::new(0.75, light()), GHOST_DASH, GHOST_GAP));
-            let mm = neighbour.distance(point) / vectorcraft_engine::cmd::embroidery::mm_to_pt(1.0);
+            painter.extend(Shape::dashed_line(&[from, stored], Stroke::new(1.5, dark()), GHOST_DASH, GHOST_GAP));
+            painter.extend(Shape::dashed_line(&[from, stored], Stroke::new(0.75, light()), GHOST_DASH, GHOST_GAP));
+            let mm = neighbour.distance(h.point) / vectorcraft_engine::cmd::embroidery::mm_to_pt(1.0);
             let value = super::numbers::decimal(crate::i18n::current(), mm, JUMP_DECIMALS);
-            let cut = h.trim.is_some_and(|trim| neighbour.distance(point) > trim);
+            let cut = h.trim.is_some_and(|trim| neighbour.distance(h.point) > trim);
             let words = super::text::fill(if cut { crate::et!("jump {value} mm, cut") } else { crate::et!("jump {value} mm") }, &[("value", &value)]);
-            label(painter, from + (at - from) / 2.0, Align2::CENTER_BOTTOM, &words, if cut { t.warning } else { dark() });
+            label(painter, from + (stored - from) / 2.0, Align2::CENTER_BOTTOM, &words, if cut { t.warning } else { dark() });
         }
         let scale = if hovered { HOVER_SCALE } else { 1.0 };
         let size = h.id.kind.size_px() as f32 * scale;

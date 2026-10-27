@@ -262,7 +262,8 @@ fn a_drag_previews_only_where_the_point_stored_moves() {
 }
 
 /// A press on a handle and a drag past 3 px begin one undo step; each move previews the point
-/// (snapped by the engine), none where it wouldn't change; the release keeps it.
+/// (snapped by the engine), moved by the drag from where it was (pressed a pixel off it, the point
+/// follows the pointer that pixel off), none where it wouldn't change; the release keeps it.
 #[test]
 fn a_drag_previews_the_point_and_the_release_keeps_it() {
     let (d, ids) = doc();
@@ -277,14 +278,35 @@ fn a_drag_previews_the_point_and_the_release_keeps_it() {
         acts,
         vec![
             Action::Begin("Embroidery Entry and Exit".into()),
-            Action::Preview("embroidery.setEntryExit".into(), json!({"id": square.0, "part": "fill", "entry": [150.0, 104.0], "snap": true}))
+            Action::Preview("embroidery.setEntryExit".into(), json!({"id": square.0, "part": "fill", "entry": [149.0, 103.0], "snap": true}))
         ]
     );
     assert!(t.busy());
     assert!(t.pointer(&c, &ev(PointerKind::Drag, 150.0, 104.0)).is_empty(), "no preview where it wouldn't change");
-    assert_eq!(t.options()["drag"], json!({"kind": "entry", "id": square.0, "part": "fill", "index": 0, "at": [150.0, 104.0]}));
+    assert_eq!(t.options()["drag"], json!({"kind": "entry", "id": square.0, "part": "fill", "index": 0, "at": [149.0, 103.0]}));
     assert_eq!(t.pointer(&c, &ev(PointerKind::Up, 150.0, 104.0)), vec![Action::Commit]);
     assert!(!t.busy());
+}
+
+/// An exit drawn apart from the entry it lies under (a closed stroke's) is grabbed where it is
+/// drawn: a small drag moves its point by that much, not to the pointer, so it doesn't jump by the
+/// gap.
+#[test]
+fn an_exit_drawn_apart_moves_by_the_drag() {
+    let (d, ids) = doc();
+    let [square, ..] = ids;
+    let (s, p, f) = (select(&[square]), PaintDefaults::default(), plan(ids));
+    let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    let mut t = EmbroideryTool { part: Some(PartKind::Stroke), ..EmbroideryTool::default() };
+    let exit = handles(&c, Some(PartKind::Stroke)).into_iter().find(|h| h.id.kind == Kind::Exit).unwrap();
+    assert!(exit.at != exit.point, "drawn apart");
+    t.pointer(&c, &ev(PointerKind::Down, exit.at.x, exit.at.y));
+    let acts = t.pointer(&c, &ev(PointerKind::Drag, exit.at.x + 5.0, exit.at.y));
+    let point = acts.iter().find_map(|a| match a {
+        Action::Preview(_, p) => Some((p["exit"][0].as_f64().unwrap(), p["exit"][1].as_f64().unwrap())),
+        _ => None,
+    });
+    assert_eq!(point, Some((exit.point.x + 5.0, exit.point.y)), "its point moved by the drag");
 }
 
 /// A press without a drag changes nothing (the handle is focused for the keys); Escape mid-drag

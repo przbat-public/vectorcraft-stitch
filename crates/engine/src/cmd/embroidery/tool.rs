@@ -223,10 +223,13 @@ mod tests {
         run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
         let id = run(&mut s, "shape.rectangle", json!({"x": 20, "y": 20, "width": 80, "height": 50}))["id"].as_u64().unwrap();
         run(&mut s, "select.set", json!({"ids": [id]}));
-        let unit = run(&mut s, "embroidery.sequence", json!({}))["blocks"][0]["units"][0].clone();
-        let (x, y) = (unit["entry"][0].as_f64().unwrap() * PT_PER_MM, unit["entry"][1].as_f64().unwrap() * PT_PER_MM);
+        run(&mut s, "embroidery.sequence", json!({}));
         let v = ViewInfo::default();
         s.select_tool("embroidery", v).unwrap();
+        // Pressed on the entry's handle: the drag moves the point by the drag, from where it is.
+        let (handles, _) = s.embroidery_handles(v);
+        let entry = handles.iter().find(|h| h.id.kind == vectorcraft_tools::embroidery::Kind::Entry).expect("the entry's handle");
+        let (x, y) = (entry.at.x, entry.at.y);
         let undo = s.doc().unwrap().history.undo.len();
         for (kind, at) in
             [(PointerKind::Down, (x, y)), (PointerKind::Drag, (55.0, 25.0)), (PointerKind::Drag, (60.0, 23.0)), (PointerKind::Up, (60.0, 23.0))]

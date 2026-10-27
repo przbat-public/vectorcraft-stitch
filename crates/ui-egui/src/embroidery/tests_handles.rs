@@ -316,7 +316,8 @@ fn a_double_click_opens_the_point_dialog() {
 }
 
 /// An agent's drag (`ui.pointer` in document points), the interface's drag (the mouse) and the
-/// command itself (`embroidery.setEntryExit {snap: true}` at the point dropped) set the same entry.
+/// command itself (`embroidery.setEntryExit {snap: true}` at the point the drag moves it to: where
+/// it was, plus the drag) set the same entry.
 #[test]
 fn agents_and_the_interface_drag_a_point_alike() {
     use crate::control::{ControlRequest, Outcome, handle};
@@ -329,6 +330,8 @@ fn agents_and_the_interface_drag_a_point_alike() {
     let mut time = 0.0;
     settle(&mut ui_app, &ctx, &mut time);
     let Some(&(_, at)) = on_screen(&mut ui_app).iter().find(|(k, _)| *k == Kind::Entry) else { panic!("an entry") };
+    let view = ui_app.view_info();
+    let Some(was) = ui_app.session.embroidery_handles(view).0.iter().find(|h| h.id.kind == Kind::Entry).map(|h| h.point) else { panic!("an entry") };
     let to = at + egui::vec2(25.0, 40.0);
     let xf = canvas::Xf::new(ui_app.canvas_rect.unwrap(), ui_app.view().unwrap());
     let (from_doc, to_doc) = (xf.to_doc(at), xf.to_doc(to));
@@ -356,7 +359,8 @@ fn agents_and_the_interface_drag_a_point_alike() {
     let by_agent = entry_of(&mut agent, b);
     // The command, at the point dropped.
     let (mut by_command, [c, _]) = app();
-    by_command.run("embroidery.setEntryExit", json!({"id": c, "part": "fill", "entry": [to_doc.x, to_doc.y], "snap": true})).unwrap();
+    let dropped = was + (to_doc - from_doc);
+    by_command.run("embroidery.setEntryExit", json!({"id": c, "part": "fill", "entry": [dropped.x, dropped.y], "snap": true})).unwrap();
     let by_command = entry_of(&mut by_command, c);
     assert!(by_mouse.is_array(), "{by_mouse}");
     assert_eq!((&by_mouse, &by_agent), (&by_command, &by_command));
@@ -552,4 +556,42 @@ fn the_enter_that_opens_the_point_dialog_is_not_its_ok() {
     assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
     let entry = app.run("embroidery.info", json!({"ids": [a]})).unwrap()["objects"][0]["settings"]["fill"]["entry"].clone();
     assert!(entry.is_array(), "set: {entry}");
+}
+
+/// While a fill's entry is dragged into the fill, its point is stored on the outline (where the
+/// stitches can start): a dot marks it there, and the ghost says the jump from the square sewn
+/// before to that point, not to the pointer.
+#[test]
+fn the_ghost_measures_the_jump_to_the_point_stored() {
+    let (mut app, [_, b]) = app();
+    let ctx = egui::Context::default();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let view = app.view_info();
+    let entry = |app: &mut VectorcraftApp| {
+        app.session.embroidery_handles(view).0.into_iter().find(|h| h.id.kind == Kind::Entry && h.id.owner.part().0.0 == b)
+    };
+    let Some(h) = entry(&mut app) else { panic!("the second square's entry") };
+    let xf = canvas::Xf::new(app.canvas_rect.unwrap(), app.view().unwrap());
+    let at = xf.to_screen(h.at);
+    let into = xf.to_screen(vectorcraft_geom::Point::new(210.0, 100.0));
+    let button = |pos: Pos2, pressed| Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(at), button(at, true)]);
+    let mut shapes = vec![];
+    for k in 1..=4 {
+        time += 0.02;
+        shapes = frame(&mut app, &ctx, time, vec![Event::PointerMoved(at + (into - at) * (k as f32 / 4.0))]);
+    }
+    let Some(held) = entry(&mut app) else { panic!("still there") };
+    let stored = xf.to_screen(held.point);
+    assert!(stored.distance(into) > crate::embroidery::handles::LEADER_MIN_PT, "stored on the outline, away from the pointer");
+    let neighbour = held.neighbour.expect("the square sewn before");
+    let mm = neighbour.distance(held.point) / vectorcraft_engine::cmd::embroidery::mm_to_pt(1.0);
+    let said = format!("jump {mm:.1} mm");
+    assert!(words(&shapes).iter().any(|w| w.starts_with(&said)), "{said} in {:?}", words(&shapes));
+    let dot = shapes.iter().any(|s| matches!(s, Shape::Circle(c) if c.center.distance(stored) < 0.5));
+    assert!(dot, "a dot where the point is stored");
+    time += 0.02;
+    frame(&mut app, &ctx, time, vec![button(into, false)]);
 }

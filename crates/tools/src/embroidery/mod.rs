@@ -73,13 +73,14 @@ pub const DRAG_START_PX: f64 = 3.0;
 /// How many keyboard increments an arrow with Shift nudges a point.
 const SHIFT_NUDGE: f64 = 10.0;
 
-/// A handle held by a press: which, where the press began, whether it is dragging, the params last
-/// previewed and the point they store (taken where the stitches can start or end), where the handle
-/// now is (document points) and, for an angle, its arrow now.
+/// A handle held by a press: which, where the press began and where its point was then, whether it
+/// is dragging, the params last previewed and the point they store (taken where the stitches can
+/// start or end), where the handle now is (document points) and, for an angle, its arrow now.
 #[derive(Clone, Debug)]
 struct Grab {
     id: HandleId,
     from: Point,
+    start: Point,
     begun: bool,
     previewed: Option<Value>,
     stored: Option<Point>,
@@ -300,7 +301,16 @@ impl Tool for EmbroideryTool {
                     Some(h) if ev.mods.alt => out.extend(self.back_to_auto(h.id)),
                     Some(h) => {
                         self.focus = Some(h.id);
-                        self.grab = Some(Grab { id: h.id, from: ev.pos, begun: false, previewed: None, stored: None, at: h.point, arrow: h.arrow });
+                        self.grab = Some(Grab {
+                            id: h.id,
+                            from: ev.pos,
+                            start: h.point,
+                            begun: false,
+                            previewed: None,
+                            stored: None,
+                            at: h.point,
+                            arrow: h.arrow,
+                        });
                     }
                 }
                 out
@@ -326,6 +336,10 @@ impl Tool for EmbroideryTool {
                         set_angle(grab.id, degrees)
                     }
                     None => {
+                        // Moved by the drag, not set at the pointer: a handle grabbed off its point
+                        // (an exit drawn apart from its entry, a press near the edge of its reach)
+                        // doesn't jump.
+                        let Some(at) = within(grab.start + (ev.pos - grab.from)) else { return out };
                         grab.at = at;
                         // No preview where the point stored wouldn't change (an open line's point
                         // stays at its nearer end while the pointer moves along it).

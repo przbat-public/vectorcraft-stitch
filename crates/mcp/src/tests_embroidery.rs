@@ -172,10 +172,12 @@ fn the_embroidery_tool_drags_an_entry_headless() {
     run(&mut h, "paint.setStroke", json!({"none": true}));
     let id = run(&mut h, "shape.rectangle", json!({"x": 20, "y": 20, "width": 80, "height": 50}))["id"].clone();
     run(&mut h, "select.set", json!({"ids": [id]}));
-    let unit = run(&mut h, "embroidery.sequence", json!({}))["blocks"][0]["units"][0].clone();
-    let pt = 72.0 / 25.4;
-    let (x, y) = (unit["entry"][0].as_f64().unwrap() * pt, unit["entry"][1].as_f64().unwrap() * pt);
+    run(&mut h, "embroidery.sequence", json!({}));
     run(&mut h, "tool.select", json!({"tool": "embroidery"}));
+    // Pressed on the entry's handle: the drag moves the point by the drag, from where it is.
+    let (handles, _) = h.session.embroidery_handles(h.view);
+    let entry = handles.iter().find(|h| h.id.kind == vectorcraft_tools::embroidery::Kind::Entry).expect("the entry's handle");
+    let (x, y) = (entry.at.x, entry.at.y);
     let undo = h.session.doc().unwrap().history.undo.len();
     let ev = |kind: &str, x: f64, y: f64| json!({"kind": kind, "x": x, "y": y});
     text(&call_tool(

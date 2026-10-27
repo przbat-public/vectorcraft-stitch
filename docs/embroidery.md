@@ -629,9 +629,10 @@ as Melco's checker reads it, on each object's settings, it flags none.
   Object tab's Fill | Stroke switch picks or a click on the canvas picks (the two stay in step; at
   most 32 objects): solid where set, hollow where left to the planner (where the plan shown sews
   them), dim while the plan catches up with an edit; a point set where the stitches can't start
-  has a hairline to where they do. Drag a point to move it: it is taken to the nearest place the
-  stitches can start or end, a dashed line joins it to where the needle comes from or goes next
-  with the jump's length ("jump 12.5 mm, cut" past the trim length), and letting go keeps it, one
+  has a hairline to where they do. Drag a point to move it (by the drag, from where it was): it is
+  taken to the nearest place the stitches can start or end, a dot marking it there when the handle
+  lies apart, and a dashed line joins that to where the needle comes from or goes next with the
+  jump's length ("jump 12.5 mm, cut" past the trim length), and letting go keeps it, one
   undo step; Escape cancels. A design slow to plan is planned when the drag pauses (0.3 s) or ends,
   and the status bar says so. Alt-click, or Delete, puts a point back to Auto; the arrow keys nudge
   the point last pressed by the keyboard increment (Shift ten times), `[` and `]` step from point

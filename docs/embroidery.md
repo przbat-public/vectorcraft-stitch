@@ -628,7 +628,8 @@ as Melco's checker reads it, on each object's settings, it flags none.
   points on the canvas, in the art view and the stitch view, of one part at a time, the one the
   Object tab's Fill | Stroke switch picks or a click on the canvas picks (the two stay in step; at
   most 32 objects): solid where set, hollow where left to the planner (where the plan shown sews
-  them), dim while the plan catches up with an edit; a point set where the stitches can't start
+  them), its face dim while the plan catches up with an edit (its edge stays, and it can still be
+  dragged); a point set where the stitches can't start
   has a hairline to where they do. Drag a point to move it (by the drag, from where it was): it is
   taken to the nearest place the stitches can start or end, a dot marking it there when the handle
   lies apart, and a dashed line joins that to where the needle comes from or goes next with the

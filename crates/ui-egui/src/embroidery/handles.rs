@@ -4,8 +4,9 @@
 //!
 //! - **Look:** an entry ◆ in the theme's accent, an exit ⊕ in its layer's colour (each darkened as
 //!   far as it takes to stand out from the light edge, [`entry_color`], [`exit_color`]); solid for a point
-//!   set, hollow for one left to the planner, dimmed while the plan shown is of the object as it was;
-//!   each with a two-tone edge (dark outside, light inside), which reads on any fabric. A tatami
+//!   set, hollow for one left to the planner, its face dimmed while the plan shown is of the object
+//!   as it was; each with a two-tone edge (dark outside, light inside), which reads on any fabric
+//!   and is never dimmed (a stale handle can still be dragged). A tatami
 //!   fill's rows' angle is a dashed two-tone arrow through its centre, its head ▲ in the accent
 //!   (solid set, hollow Auto) with its degrees, as the interface language writes numbers.
 //! - **Hover and focus:** the handle under the pointer is drawn larger ([`HOVER_SCALE`]) and
@@ -50,8 +51,8 @@ const FOCUS_RING_TONE: f32 = 0.75;
 /// The two-tone edge: the dark outer line's width and the light inner one's, points.
 const EDGE_DARK: f32 = 3.0;
 const EDGE_LIGHT: f32 = 1.5;
-/// How faint a handle from a plan of the object as it was is drawn.
-const STALE_ALPHA: f32 = 0.45;
+/// How faint the face of a handle from a plan of the object as it was is drawn (its edge isn't).
+pub(super) const STALE_ALPHA: f32 = 0.45;
 /// How far apart on screen a point set and where its stitches start must lie to be joined,
 /// points: farther than a handle's half size, so the line shows past it.
 pub const LEADER_MIN_PT: f32 = 8.0;
@@ -284,8 +285,8 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         }
         let solid = h.state == State::Set;
         match (h.id.kind, h.arrow) {
-            (Kind::Entry, _) => entry(painter, at, size, color, solid, alpha),
-            (Kind::Exit, _) => exit(painter, at, size, color, solid, alpha),
+            (Kind::Entry, _) => painter.extend(entry(at, size, color, solid, alpha)),
+            (Kind::Exit, _) => painter.extend(exit(at, size, color, solid, alpha)),
             (Kind::Angle, Some(arrow)) => {
                 // While dragging, the head where the drag has turned it, the tail opposite.
                 let centre = xf.to_screen(arrow.centre);
@@ -359,32 +360,40 @@ pub(super) fn light() -> Color32 {
 }
 
 /// An entry ◆ `size` points across at `at`: filled with `color` when `solid`, else a light face with
-/// a `color` outline; a two-tone edge either way.
-fn entry(p: &egui::Painter, at: Pos2, size: f32, color: Color32, solid: bool, alpha: f32) {
+/// a `color` outline, the face faded by `alpha`; a two-tone edge either way, never faded.
+pub(super) fn entry(at: Pos2, size: f32, color: Color32, solid: bool, alpha: f32) -> Vec<Shape> {
     let diamond = |r: f32| vec![pos2(at.x, at.y - r), pos2(at.x + r, at.y), pos2(at.x, at.y + r), pos2(at.x - r, at.y)];
     let r = size / 2.0;
-    p.add(Shape::convex_polygon(diamond(r), Color32::TRANSPARENT, Stroke::new(EDGE_DARK, dark().gamma_multiply(alpha))));
     let face = if solid { color } else { light() };
-    p.add(Shape::convex_polygon(diamond(r), face.gamma_multiply(alpha), Stroke::new(EDGE_LIGHT, light().gamma_multiply(alpha))));
+    let mut shapes = vec![
+        Shape::convex_polygon(diamond(r), Color32::TRANSPARENT, Stroke::new(EDGE_DARK, dark())),
+        Shape::convex_polygon(diamond(r), face.gamma_multiply(alpha), Stroke::new(EDGE_LIGHT, light())),
+    ];
     if !solid {
-        p.add(Shape::closed_line(diamond(r - EDGE_LIGHT * 1.5), Stroke::new(EDGE_LIGHT, color.gamma_multiply(alpha))));
+        shapes.push(Shape::closed_line(diamond(r - EDGE_LIGHT * 1.5), Stroke::new(EDGE_LIGHT, color.gamma_multiply(alpha))));
     }
+    shapes
 }
 
 /// An exit ⊕ `size` points across at `at`: a `color` face with a light plus when `solid`, else a
-/// light face with a `color` ring and plus; a two-tone edge either way.
-fn exit(p: &egui::Painter, at: Pos2, size: f32, color: Color32, solid: bool, alpha: f32) {
+/// light face with a `color` ring and plus, the face and its marks faded by `alpha`; a two-tone edge
+/// either way, never faded.
+pub(super) fn exit(at: Pos2, size: f32, color: Color32, solid: bool, alpha: f32) -> Vec<Shape> {
     let r = size / 2.0;
-    p.circle_stroke(at, r, Stroke::new(EDGE_DARK, dark().gamma_multiply(alpha)));
     let (face, ink) = if solid { (color, light()) } else { (light(), color) };
-    p.circle(at, r, face.gamma_multiply(alpha), Stroke::new(EDGE_LIGHT, light().gamma_multiply(alpha)));
+    let mut shapes = vec![
+        Shape::circle_stroke(at, r, Stroke::new(EDGE_DARK, dark())),
+        Shape::circle_filled(at, r, face.gamma_multiply(alpha)),
+        Shape::circle_stroke(at, r, Stroke::new(EDGE_LIGHT, light())),
+    ];
     if !solid {
-        p.circle_stroke(at, r - EDGE_LIGHT * 1.5, Stroke::new(EDGE_LIGHT, color.gamma_multiply(alpha)));
+        shapes.push(Shape::circle_stroke(at, r - EDGE_LIGHT * 1.5, Stroke::new(EDGE_LIGHT, color.gamma_multiply(alpha))));
     }
     let arm = r * 0.55;
     let stroke = Stroke::new(EDGE_LIGHT, ink.gamma_multiply(alpha));
-    p.line_segment([at - vec2(arm, 0.0), at + vec2(arm, 0.0)], stroke);
-    p.line_segment([at - vec2(0.0, arm), at + vec2(0.0, arm)], stroke);
+    shapes.push(Shape::line_segment([at - vec2(arm, 0.0), at + vec2(arm, 0.0)], stroke));
+    shapes.push(Shape::line_segment([at - vec2(0.0, arm), at + vec2(0.0, arm)], stroke));
+    shapes
 }
 
 /// An angle arrow through `centre` (screen), its head ▲ `size` points across at `at` pointing away

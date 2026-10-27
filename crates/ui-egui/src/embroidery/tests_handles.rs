@@ -83,13 +83,16 @@ fn diamonds(shapes: &[Shape], face: Color32) -> Vec<Pos2> {
         .collect()
 }
 
-/// The rings drawn round `at` (circles with no face), by their radius: their widths and colours,
-/// widest first.
-fn rings(shapes: &[Shape], at: Pos2) -> Vec<(f32, Color32)> {
+/// The rings drawn round a `kind` handle at `at` (circles with no face, outside the handle): their
+/// widths and colours, widest first.
+fn rings(shapes: &[Shape], at: Pos2, kind: Kind) -> Vec<(f32, Color32)> {
+    let outside = kind.size_px() as f32 / 2.0 * super::handles::HOVER_SCALE + 1.0;
     let mut found: Vec<(f32, Color32)> = shapes
         .iter()
         .filter_map(|s| match s {
-            Shape::Circle(c) if c.fill == Color32::TRANSPARENT && c.center.distance(at) < 0.5 => Some((c.stroke.width, c.stroke.color)),
+            Shape::Circle(c) if c.fill == Color32::TRANSPARENT && c.center.distance(at) < 0.5 && c.radius > outside => {
+                Some((c.stroke.width, c.stroke.color))
+            }
             _ => None,
         })
         .collect();
@@ -435,7 +438,7 @@ fn the_focused_handle_is_ringed_in_the_two_tones_and_the_accent() {
     let focused = |h: &vectorcraft_tools::embroidery::Handle| h.id.kind == Kind::Entry && h.id.owner.part().0.0 == a;
     let at = xf.to_screen(handles.iter().find(|h| focused(h)).unwrap().at);
     let entry = super::handles::entry_color(&crate::theme::Tokens::get(&ctx));
-    let tones: Vec<Color32> = rings(&shapes, at).into_iter().map(|(_, c)| c).collect();
+    let tones: Vec<Color32> = rings(&shapes, at, Kind::Entry).into_iter().map(|(_, c)| c).collect();
     assert_eq!(tones, [super::handles::dark(), light(), entry], "dark, light, the accent");
     use super::marks::{NON_TEXT_CONTRAST, contrast};
     for thread in [Color32::WHITE, Color32::BLACK, Color32::from_rgb(0xc8, 0x10, 0x2e)] {
@@ -443,7 +446,41 @@ fn the_focused_handle_is_ringed_in_the_two_tones_and_the_accent() {
         assert!(best >= NON_TEXT_CONTRAST, "a line of the ring stands out from {thread:?}");
     }
     for h in handles.iter().filter(|h| !focused(h)) {
-        assert!(rings(&shapes, xf.to_screen(h.at)).len() < 3, "{:?} isn't ringed", h.id);
+        assert_eq!(rings(&shapes, xf.to_screen(h.at), h.id.kind), [], "{:?} isn't ringed", h.id);
+    }
+}
+
+/// A handle from a plan of the object as it was (stale, still draggable) is dimmed in its face
+/// only: its two-tone edge stays opaque, so it reads on any fabric as a fresh one does.
+#[test]
+fn a_stale_handle_dims_its_face_and_keeps_its_edge() {
+    use super::handles::{STALE_ALPHA, dark, entry, exit};
+    let at = Pos2::new(50.0, 50.0);
+    let colour = Color32::from_rgb(0x20, 0x40, 0xa0);
+    for solid in [true, false] {
+        for (name, shapes) in [("entry", entry(at, 14.0, colour, solid, STALE_ALPHA)), ("exit", exit(at, 14.0, colour, solid, STALE_ALPHA))] {
+            let edges: Vec<Color32> = shapes
+                .iter()
+                .filter_map(|s| match s {
+                    Shape::Path(p) => match p.stroke.color {
+                        egui::epaint::ColorMode::Solid(c) => Some(c),
+                        _ => None,
+                    },
+                    Shape::Circle(c) => Some(c.stroke.color),
+                    _ => None,
+                })
+                .collect();
+            assert!(edges.contains(&dark()) && edges.contains(&light()), "{name} solid {solid}: its edge's two lines opaque, {edges:?}");
+            let faces: Vec<Color32> = shapes
+                .iter()
+                .filter_map(|s| match s {
+                    Shape::Path(p) if p.fill != Color32::TRANSPARENT => Some(p.fill),
+                    Shape::Circle(c) if c.fill != Color32::TRANSPARENT => Some(c.fill),
+                    _ => None,
+                })
+                .collect();
+            assert!(!faces.is_empty() && faces.iter().all(|c| !c.is_opaque()), "{name} solid {solid}: its face dimmed, {faces:?}");
+        }
     }
 }
 

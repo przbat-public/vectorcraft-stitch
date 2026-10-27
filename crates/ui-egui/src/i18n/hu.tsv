@@ -6058,3 +6058,5 @@ embroidery	manual stitches	kézi öltések
 	Split Run	Öltéssor felosztása
 	Join Runs	Öltéssorok összekapcsolása
 @msg	these runs aren't sewn one right after another in one colour block	ezeket az öltéssorokat nem közvetlenül egymás után varrja egy színblokkban
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Gépfunkció

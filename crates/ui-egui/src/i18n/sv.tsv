@@ -6028,3 +6028,5 @@ embroidery	manual stitches	manuella stygn
 	Split Run	Dela rad
 	Join Runs	Sammanfoga rader
 @msg	these runs aren't sewn one right after another in one colour block	de här raderna sys inte direkt efter varandra i ett färgblock
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Maskinfunktion

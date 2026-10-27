@@ -78,6 +78,9 @@ pub(crate) struct Run {
 pub(crate) struct Stitches {
     pub(crate) runs: Vec<Run>,
     pub(crate) marks: StitchRun,
+    /// The object's own Trim After and Stop After ([`vectorcraft_doc::embroidery::Embroidery`]'s
+    /// `trim_after`, `stop_after`): a cut and a stop after its last needle point, as the run's are.
+    pub(crate) object_after: [bool; 2],
 }
 
 /// Whether two points (document points) lie at one spot, as the walk tells a line to its own
@@ -96,7 +99,9 @@ fn in_range(p: Point) -> bool {
 /// coordinates, or more needle points than a design may have), checked before any arithmetic.
 pub(crate) fn read(n: &Node) -> std::result::Result<Stitches, &'static str> {
     let NodeKind::Path { path, .. } = &n.kind else { return Err(reason::NOT_STITCHES) };
-    let Some(marks) = n.extras().embroidery.as_deref().and_then(|e| e.stitches.clone()) else { return Err(reason::NOT_STITCHES) };
+    let Some(e) = n.extras().embroidery.as_deref() else { return Err(reason::NOT_STITCHES) };
+    let Some(marks) = e.stitches.clone() else { return Err(reason::NOT_STITCHES) };
+    let object_after = [e.trim_after, e.stop_after];
     let anchors: usize = path.subpaths.iter().map(|sp| sp.anchors.len()).sum();
     if anchors > 2 * MAX_NEEDLE_POINTS {
         return Err(reason::TOO_MANY);
@@ -129,7 +134,7 @@ pub(crate) fn read(n: &Node) -> std::result::Result<Stitches, &'static str> {
             .collect();
         runs.push(Run { cut_before: trims.contains(&s), needles });
     }
-    let st = Stitches { runs, marks };
+    let st = Stitches { runs, marks, object_after };
     if st.len() > MAX_NEEDLE_POINTS {
         return Err(reason::TOO_MANY);
     }
@@ -231,6 +236,13 @@ pub(crate) fn write(n: &mut Node, st: &Stitches) -> bool {
     }
     if let Some(e) = n.extras_mut().embroidery.as_deref_mut() {
         e.stitches = Some(marks);
+        let [trim, stop] = st.object_after;
+        if e.trim_after != trim {
+            e.set_trim_after(trim);
+        }
+        if e.stop_after != stop {
+            e.set_stop_after(stop);
+        }
     }
     true
 }

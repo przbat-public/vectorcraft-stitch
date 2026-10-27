@@ -5923,3 +5923,5 @@ embroidery	manual stitches	ściegi ręczne
 	Split Run	Podziel odcinek
 	Join Runs	Połącz odcinki
 @msg	these runs aren't sewn one right after another in one colour block	te odcinki nie są szyte jeden zaraz po drugim w jednym bloku koloru
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Funkcja maszyny

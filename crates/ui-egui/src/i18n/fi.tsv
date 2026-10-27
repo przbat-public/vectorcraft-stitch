@@ -6103,3 +6103,5 @@ embroidery	manual stitches	manuaaliset pistot
 	Split Run	Jaa pistosarja
 	Join Runs	Yhdistä pistosarjat
 @msg	these runs aren't sewn one right after another in one colour block	näitä pistosarjoja ei ommella heti peräkkäin yhdessä värilohkossa
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Konetoiminto

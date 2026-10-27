@@ -6071,3 +6071,5 @@ embroidery	manual stitches	points manuels
 	Split Run	Diviser la suite
 	Join Runs	Joindre les suites
 @msg	these runs aren't sewn one right after another in one colour block	ces suites ne sont pas brodées l’une juste après l’autre dans un même bloc de couleur
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Fonction machine

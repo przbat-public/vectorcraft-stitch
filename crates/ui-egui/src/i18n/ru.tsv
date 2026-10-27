@@ -5683,3 +5683,5 @@ embroidery	manual stitches	ручные стежки
 	Split Run	Разделить ряд
 	Join Runs	Соединить ряды
 @msg	these runs aren't sewn one right after another in one colour block	эти ряды не вышиваются один сразу за другим в одном цветовом блоке
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Функция машины

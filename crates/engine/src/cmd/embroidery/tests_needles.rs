@@ -430,3 +430,56 @@ fn paths_join_when_sewn_one_after_another() {
     assert!(!marks.trim_after && marks.stop_after, "the last one's stop after it");
     assert!(s.doc().unwrap().doc.node(NodeId(b)).is_none());
 }
+
+/// The plan's records of the active document of `command`'s kind.
+fn records(s: &mut Session, command: vectorcraft_stitch::Command) -> usize {
+    let p = s.embroidery_plan(&super::Options::default()).unwrap();
+    p.blocks.iter().flat_map(|b| b.stitches.iter()).filter(|s| s.command == command).count()
+}
+
+/// Machine Function cuts the thread, or stops the machine, after a needle point: inside a run the
+/// run splits there, tied off and in (or not, with `ties: false`); at the path's end it is the
+/// path's Trim After or Stop After, the object's own included when turned off; left out, `on`
+/// turns the function on unless every needle point has it, so a second call takes it off.
+#[test]
+fn machine_functions_go_after_needle_points() {
+    use vectorcraft_stitch::Command;
+    let mut s = blank();
+    let points = [(10.0, 10.0), (14.0, 10.0), (18.0, 10.0), (22.0, 10.0)];
+    let id = path_mm(&mut s, &points, StitchRun::default());
+    let trims = records(&mut s, Command::Trim);
+    let r = run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": id, "index": 1}], "function": "trim"}));
+    assert_eq!((r["on"].clone(), r["changedCount"].clone(), r["splitCount"].clone()), (json!(true), json!(1), json!(1)), "{r}");
+    let st = needles::read(&node(&s, id)).unwrap();
+    assert_eq!(st.runs.iter().map(|r| (r.cut_before, r.needles.len())).collect::<Vec<_>>(), [(false, 4), (true, 4)], "split, tied off and in, cut");
+    assert_eq!(records(&mut s, Command::Trim), trims + 1);
+    // Left out, `on` takes it off again: the runs stay split.
+    let r = run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": id, "index": 3}], "function": "trim"}));
+    assert_eq!(r["on"], json!(false), "{r}");
+    assert_eq!(needles::read(&node(&s, id)).unwrap().runs.iter().map(|r| r.cut_before).collect::<Vec<_>>(), [false, false]);
+    // A stop inside a run, without ties: the machine stops between two needle points.
+    let mut s = blank();
+    let id = path_mm(&mut s, &points, StitchRun::default());
+    run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": id, "index": 1}], "function": "stop", "ties": false}));
+    let st = needles::read(&node(&s, id)).unwrap();
+    assert_eq!(st.runs.iter().map(|r| r.needles.len()).collect::<Vec<_>>(), [2, 2]);
+    assert!(st.runs[0].needles[1].stop);
+    assert_eq!(records(&mut s, Command::Stop), 1);
+    // At the path's end: its Trim After, the object's own cleared when off.
+    let mut s = blank();
+    let id = path_mm(&mut s, &points, StitchRun::default());
+    run(&mut s, "embroidery.setTrimAfter", json!({"ids": [id], "on": true}));
+    let r = run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": id, "index": 3}], "function": "trim"}));
+    assert_eq!(r["on"], json!(false), "it has one already: {r}");
+    let n = node(&s, id);
+    assert!(!stitches(&n).trim_after && !n.extras().embroidery.as_deref().unwrap().trim_after);
+    run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": id, "index": 3}], "function": "stop"}));
+    assert!(needles::read(&node(&s, id)).unwrap().runs[0].needles[3].stop);
+    for p in [
+        json!({"needlePoints": [{"id": id, "index": 0}], "function": "colorChange"}),
+        json!({"needlePoints": [{"id": id, "index": 0}]}),
+        json!({"needlePoints": [{"id": id, "index": 0}], "function": "trim", "on": "yes"}),
+    ] {
+        assert!(s.execute("embroidery.setMachineFunction", &p).is_err(), "{p}");
+    }
+}

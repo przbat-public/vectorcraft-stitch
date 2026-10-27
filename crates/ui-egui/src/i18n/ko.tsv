@@ -5650,3 +5650,5 @@ embroidery	manual stitches	수동 스티치
 	Split Run	구간 나누기
 	Join Runs	구간 잇기
 @msg	these runs aren't sewn one right after another in one colour block	이 구간들은 한 색 블록에서 바로 이어서 수놓아지지 않습니다
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	기계 기능

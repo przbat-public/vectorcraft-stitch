@@ -5208,6 +5208,13 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     becomes a stitch (a needle point lying where the run before ends is kept once), never reversed; a cut or a stop at
     a gap joined goes. It answers `{changedCount, paths, pathCount, removed: [id], dropped: [{function, id}],
     lengths}`.
+  - `embroidery.setMachineFunction {needlePoints?, ranges?, function: "trim"|"stop", on?, ties?: true}` cuts the
+    thread, or stops the machine, after each needle point addressed, or (`on: false`) no longer; `on` left out is on
+    unless every needle point has it already. Inside a run the run splits there first, tied off and in as
+    `embroidery.splitRun` ties (on unless `ties: false`); at a run's last needle point it is the gap's (a cut before
+    the next run, a stop after it), at the path's last the path's (its Trim After or Stop After, the object's own
+    included). Turned off, the runs stay split. It answers `{function, on, changedCount, unchangedCount, splitCount,
+    paths, pathCount, lengths, passedOver}`.
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,

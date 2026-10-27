@@ -5653,3 +5653,5 @@ embroidery	manual stitches	manuelle Stiche
 	Split Run	Stichfolge teilen
 	Join Runs	Stichfolgen verbinden
 @msg	these runs aren't sewn one right after another in one colour block	diese Stichfolgen werden nicht direkt nacheinander in einem Farbblock genäht
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Maschinenfunktion

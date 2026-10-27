@@ -6027,3 +6027,5 @@ embroidery	manual stitches	jahitan manual
 	Split Run	Pisahkan rangkaian
 	Join Runs	Gabungkan rangkaian
 @msg	these runs aren't sewn one right after another in one colour block	rangkaian ini tidak dijahit berurutan langsung dalam satu blok warna
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Fungsi mesin

@@ -6070,3 +6070,5 @@ embroidery	manual stitches	handmatige steken
 	Split Run	Reeks splitsen
 	Join Runs	Reeksen samenvoegen
 @msg	these runs aren't sewn one right after another in one colour block	deze reeksen worden niet direct na elkaar in één kleurblok genaaid
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Machinefunctie

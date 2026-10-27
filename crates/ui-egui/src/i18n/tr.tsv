@@ -6033,3 +6033,5 @@ embroidery	manual stitches	manuel dikişler
 	Split Run	Diziyi Böl
 	Join Runs	Dizileri Birleştir
 @msg	these runs aren't sewn one right after another in one colour block	bu diziler tek bir renk bloğunda art arda dikilmiyor
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Makine İşlevi

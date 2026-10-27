@@ -319,6 +319,15 @@ pub fn specs() -> Vec<CommandSpec> {
             needle_edits::join_runs
         ),
         cmd!(
+            "embroidery.setMachineFunction",
+            "Machine Function",
+            [],
+            None,
+            "{needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them; default the selection's), function: \"trim\"|\"stop\", on?: bool (default: on, unless every needle point addressed has it already), ties?: true} cuts the thread (trim), or stops the machine (stop), after each needle point addressed, or (on: false) no longer. Inside a run, the run splits there first (the needle lifts to the next needle point, as after any cut or stop), the run before tied off and the next tied in as embroidery.splitRun ties them (on unless ties: false, the project owner's choice); at a run's last needle point it is the gap's own (a cut before the next run, a stop after it), at the path's last the path's (its Trim After or Stop After). Turned off, the runs stay split (embroidery.joinRuns joins them). One undo step \"Machine Function\", none when nothing changes → {function, on, changedCount, unchangedCount, splitCount, paths: [{id, needlePoints}], pathCount, lengths, passedOver}",
+            has_doc,
+            needle_edits::machine_function
+        ),
+        cmd!(
             "embroidery.setStopAfter",
             "Embroidery Stop After",
             [],

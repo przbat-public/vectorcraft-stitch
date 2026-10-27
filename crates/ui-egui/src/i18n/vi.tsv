@@ -5667,3 +5667,5 @@ embroidery	manual stitches	mũi thêu thủ công
 	Split Run	Tách đoạn
 	Join Runs	Nối các đoạn
 @msg	these runs aren't sewn one right after another in one colour block	các đoạn này không được thêu liền nhau trong cùng một khối màu
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Chức năng máy

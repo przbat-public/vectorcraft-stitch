@@ -6000,3 +6000,5 @@ embroidery	Nothing here can take entry and exit points	Burada hiçbir şeye giri
 embroidery	{percent}% · Esc stops it	%{percent} · Esc durdurur
 embroidery	Stopped: nothing was changed.	Durduruldu: hiçbir şey değiştirilmedi.
 embroidery	The document changed meanwhile: nothing was changed.	Bu arada belge değişti: hiçbir şey değiştirilmedi.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Otomatik (planın parçayı bitirdiği yer)

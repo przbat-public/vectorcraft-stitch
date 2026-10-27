@@ -5617,3 +5617,5 @@ embroidery	Nothing here can take entry and exit points	여기에는 진입점과
 embroidery	{percent}% · Esc stops it	{percent}% · Esc로 중지
 embroidery	Stopped: nothing was changed.	중지됨: 아무것도 변경되지 않았습니다.
 embroidery	The document changed meanwhile: nothing was changed.	그동안 문서가 변경되었습니다: 아무것도 변경되지 않았습니다.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	자동 (계획이 부분을 끝내는 곳)

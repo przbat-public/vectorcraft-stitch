@@ -5634,3 +5634,5 @@ embroidery	Nothing here can take entry and exit points	Không có gì ở đây 
 embroidery	{percent}% · Esc stops it	{percent}% · Esc để dừng
 embroidery	Stopped: nothing was changed.	Đã dừng: không có gì thay đổi.
 embroidery	The document changed meanwhile: nothing was changed.	Tài liệu đã thay đổi trong lúc đó: không có gì thay đổi.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Tự động (nơi kế hoạch kết thúc phần)

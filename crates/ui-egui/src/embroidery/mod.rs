@@ -67,8 +67,6 @@ pub struct Embroidery {
     pub(crate) ends: overlay::Ends,
     /// The embroidery tool's handles, as last found ([`handles`]).
     pub(crate) handles: handles::Cache,
-    /// The Entry Point or Exit Point dialog, while it is open ([`point_dialog`]).
-    pub(crate) point_dialog: Option<point_dialog::PointDialog>,
     /// Nearest Connection under way from the interface ([`nearest`]).
     pub(crate) nearest: nearest::Nearest,
     /// The Embroidery panel's Sewing order tab.
@@ -109,7 +107,6 @@ pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
         overlay::draw(app, &ui.painter_at(canvas), &xf);
         check_marks::draw(app, ui.ctx(), &ui.painter_at(canvas), &xf);
         handles::draw(app, &ui.painter_at(canvas), &xf);
-        point_dialog::show(app, ui.ctx());
     }
     let isolated = app.ui.screen_mode < 3 && app.session.active().is_some_and(|st| st.isolation.is_some());
     let below = if isolated { egui::Rect::from_min_max(canvas.min + egui::vec2(0.0, ISOLATION_BAR), canvas.max) } else { canvas };

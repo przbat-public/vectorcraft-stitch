@@ -39,6 +39,7 @@ fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<E
         app.logic(ui.ctx());
         canvas::show(app, ui);
         crate::embroidery::canvas_controls(app, ui);
+        crate::dialogs::show(app, ui.ctx());
         stitch_preview::schedule(app, ui.ctx());
     });
     out.textures_delta.clear();
@@ -261,6 +262,11 @@ fn a_pause_in_a_drag_plans_a_design_slow_to_plan() {
     assert!(app.session.tool_busy(), "the button still held");
 }
 
+/// Whether the Entry Point or Exit Point dialog is open.
+fn point_dialog(app: &VectorcraftApp) -> bool {
+    app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::point_dialog::KIND)
+}
+
 /// A double-click on an entry opens the Entry Point dialog on it; Enter sets the point there (taken
 /// onto the outline), one undo step; Escape closes it changing nothing.
 #[test]
@@ -276,21 +282,24 @@ fn a_double_click_opens_the_point_dialog() {
     frame(&mut app, &ctx, time, vec![Event::PointerMoved(at), b(true), b(false), b(true), b(false)]);
     time += 0.05;
     let shapes = frame(&mut app, &ctx, time, vec![]);
-    assert!(app.embroidery.point_dialog.is_some(), "open");
+    assert!(point_dialog(&app), "open");
     assert!(words(&shapes).iter().any(|w| w == "Entry Point"), "{:?}", words(&shapes));
     time += 0.05;
     frame(&mut app, &ctx, time, vec![key(egui::Key::Escape)]);
-    assert!(app.embroidery.point_dialog.is_none(), "Escape closes it");
+    assert!(!point_dialog(&app), "Escape closes it");
     let undo = app.session.doc().unwrap().history.undo.len();
     // A second double-click, a second later (egui counts clicks within its double-click time).
     time += 1.0;
     frame(&mut app, &ctx, time, vec![Event::PointerMoved(at), b(true), b(false), b(true), b(false)]);
-    assert!(app.embroidery.point_dialog.is_some(), "open again");
-    // The dialog opens on an Auto point: Auto is ticked; untick it, then Enter.
-    app.embroidery.point_dialog = app.embroidery.point_dialog.take().map(|d| crate::embroidery::point_dialog::PointDialog::set_auto(d, false));
+    assert!(point_dialog(&app), "open again");
+    // The dialog opens on an Auto point: Auto is ticked; untick it (as `ui.dialog.set` does), then
+    // Enter.
+    if let Some(d) = app.ui.dialog.as_mut() {
+        d.fields.insert("auto".into(), json!(false));
+    }
     time += 0.05;
     frame(&mut app, &ctx, time, vec![key(egui::Key::Enter)]);
-    assert!(app.embroidery.point_dialog.is_none());
+    assert!(!point_dialog(&app));
     let entry = app.run("embroidery.info", json!({"ids": [a]})).unwrap()["objects"][0]["settings"]["fill"]["entry"].clone();
     assert!(entry.is_array(), "set: {entry}");
     assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
@@ -487,4 +496,50 @@ fn the_tools_part_and_the_tabs_stay_in_step() {
     app.run("tool.setOption", json!({"key": "part", "value": null})).unwrap();
     settle(&mut app, &ctx, &mut time);
     assert_eq!(parts(&app), (json!(null), Part::Fill), "null leaves the tab as it is");
+}
+
+/// Enter on the point last pressed opens its dialog, and that Enter, still held, isn't the dialog's
+/// OK: it stays open until Enter is let go and pressed again, which sets the point. Its first field
+/// has the keyboard.
+#[test]
+fn the_enter_that_opens_the_point_dialog_is_not_its_ok() {
+    let (mut app, [a, _]) = app();
+    let ctx = egui::Context::default();
+    ctx.enable_accesskit();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let Some(&(_, at)) = on_screen(&mut app).iter().find(|(k, _)| *k == Kind::Entry) else { panic!("an entry") };
+    let b = |pressed| Event::PointerButton { pos: at, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    let enter = |pressed| Event::Key { key: egui::Key::Enter, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE };
+    // A press on the entry, let go in the next frame: the point the keys act on.
+    for events in [vec![Event::PointerMoved(at), b(true)], vec![b(false)]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, events);
+    }
+    let undo = app.session.doc().unwrap().history.undo.len();
+    // Enter on the point, as the app's keys give it to the tool, in the frame it is pressed.
+    let view = app.view_info();
+    let asked = app.session.tool_key(vectorcraft_tools::ToolKey::Enter, vectorcraft_tools::Mods::default(), view);
+    crate::canvas::apply_requests(&mut app, asked);
+
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![enter(true)]);
+    assert!(point_dialog(&app), "opened by Enter");
+    for _ in 0..3 {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![]);
+    }
+    assert!(point_dialog(&app), "the Enter still held isn't its OK");
+    assert!(ctx.memory(|m| m.focused()).is_some(), "its first field has the keyboard");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![enter(false)]);
+    if let Some(d) = app.ui.dialog.as_mut() {
+        d.fields.insert("auto".into(), json!(false));
+    }
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![enter(true), enter(false)]);
+    assert!(!point_dialog(&app), "Enter, pressed again, is its OK");
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
+    let entry = app.run("embroidery.info", json!({"ids": [a]})).unwrap()["objects"][0]["settings"]["fill"]["entry"].clone();
+    assert!(entry.is_array(), "set: {entry}");
 }

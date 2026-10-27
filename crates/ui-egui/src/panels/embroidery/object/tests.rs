@@ -965,19 +965,22 @@ fn entry_and_exit_rows_open_the_points_dialog() {
     let set = named(entry, crate::et!("Set"));
     frame(&mut app, &ctx, time + 0.05, vec![drawn.click(&set)]);
     time += 0.1;
-    let d = app.embroidery.point_dialog.clone().expect("the entry's dialog");
-    let opened = crate::embroidery::point_dialog::PointDialog::new("entry", a, "fill", 30.0, 30.0, false);
-    assert_eq!(d, opened, "on the entry, set");
-    app.embroidery.point_dialog = None;
+    // The dialog's point, its kind, object and part, and whether it is Auto.
+    let point = |d: &crate::state::Dialog| {
+        (d.str("kind"), d.fields["id"].as_u64(), d.str("part"), d.f64("x", f64::NAN), d.f64("y", f64::NAN), d.bool("auto"))
+    };
+    let d = app.ui.dialog.clone().expect("the entry's dialog");
+    assert_eq!(point(&d), ("entry".into(), Some(a), "fill".into(), 30.0, 30.0, false), "on the entry, set");
+    app.ui.dialog = None;
     let drawn = ready(&mut app, &ctx, &mut time);
     let auto = drawn.nodes.iter().filter_map(|(_, n)| n.label()).find(|l| l.starts_with(&named(exit, ""))).expect("the exit's row").to_string();
     frame(&mut app, &ctx, time + 0.05, vec![drawn.click(&auto)]);
     time += 0.1;
-    let d = app.embroidery.point_dialog.clone().expect("the exit's dialog");
+    let d = app.ui.dialog.clone().expect("the exit's dialog");
     let scene = app.embroidery.preview.shown(app.session.active().unwrap().uid).unwrap().planned.built_scene().unwrap();
     let last = scene.units().iter().rfind(|u| u.object == vectorcraft_doc::NodeId(a)).and_then(|u| u.exit).unwrap();
-    assert_eq!(d, crate::embroidery::point_dialog::PointDialog::new("exit", a, "fill", last.x, last.y, true), "where the plan ends it, Auto");
-    app.embroidery.point_dialog = None;
+    assert_eq!(point(&d), ("exit".into(), Some(a), "fill".into(), last.x, last.y, true), "where the plan ends it, Auto");
+    app.ui.dialog = None;
     // Set on Canvas: the embroidery tool.
     let drawn = ready(&mut app, &ctx, &mut time);
     frame(&mut app, &ctx, time + 0.05, vec![drawn.click(crate::et!("Set on Canvas"))]);
@@ -1086,5 +1089,5 @@ fn set_on_canvas_and_the_entry_row_work_from_the_keyboard() {
     assert_eq!(app.session.tool_id(), vectorcraft_tools::embroidery::ID);
     let entry = text::fill(crate::et!("{section}: {setting}"), &[("section", vocabulary::label("entry", None)), ("setting", crate::et!("Set"))]);
     press(&mut app, &mut time, &entry);
-    assert!(app.embroidery.point_dialog.is_some(), "the Entry Point dialog");
+    assert!(app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::point_dialog::KIND), "the Entry Point dialog");
 }

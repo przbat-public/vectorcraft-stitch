@@ -5978,3 +5978,5 @@ embroidery	Nothing here can take entry and exit points	Тук нищо не мо
 embroidery	{percent}% · Esc stops it	{percent}% · Esc го спира
 embroidery	Stopped: nothing was changed.	Спряно: нищо не е променено.
 embroidery	The document changed meanwhile: nothing was changed.	Документът се промени междувременно: нищо не е променено.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Автоматично (където планът завършва частта)

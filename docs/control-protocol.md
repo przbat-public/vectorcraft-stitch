@@ -447,7 +447,9 @@ preview has made sews it (the tool never plans; with no plan made, only the poin
 one: past 3 px a drag previews `embroidery.setEntryExit {…, snap: true}` and the release keeps it, one undo step;
 `ui.key` Escape cancels it. Alt with a press puts a point back to Auto, as Delete does for the point last pressed; the
 arrows nudge that point, `[` and `]` step between points, and Enter or a double-click on a point opens the Entry Point
-or Exit Point dialog (its OK runs `embroidery.setEntryExit {…, snap: true}`, which an agent runs itself instead). A
+or Exit Point dialog (`embroideryPoint`, a dialog like any other: `ui.inspect` shows it, `ui.dialog.set` takes
+its `x`, `y` (document points) and `auto`, and `ui.dialog.confirm` runs its OK, `embroidery.setEntryExit {…, snap:
+true}`, which an agent can also run itself). A
 fill sewn as tatami also has its rows' angle, an arrow through the fill's centre whose head lies 40 screen px out at
 the angle (counter-clockwise on the page): a drag of the head previews `embroidery.set {ids, part: "fill", angle}`
 (Shift: 45° steps from the Constrain Angle), Alt with a press or Delete sends `embroidery.reset {keys: ["angle"]}`,

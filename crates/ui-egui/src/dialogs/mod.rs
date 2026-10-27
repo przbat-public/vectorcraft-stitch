@@ -135,7 +135,7 @@ pub use tools::open_tool_dialog;
 use crate::state::Dialog;
 use crate::{VectorcraftApp, widgets};
 
-type DialogResult = Result<Value, String>;
+pub(crate) type DialogResult = Result<Value, String>;
 
 /// The shared dialog frame's inner margin, and the least room it leaves at the window's edges.
 const MARGIN: i8 = 22;
@@ -357,6 +357,8 @@ registry! {
     LayersPanelOptions: [layers_panel_options::KIND] => layers_panel_options::SPEC,
     RearrangeArtboards: [rearrange_artboards::KIND] => rearrange_artboards::SPEC,
     ShortcutImport: [shortcut_import::KIND] => DialogSpec::window(shortcut_import::show, shortcut_import::confirm),
+    // VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog.
+    EmbroideryPoint: [crate::embroidery::point_dialog::KIND] => crate::embroidery::point_dialog::SPEC,
 }
 
 /// The button labels the shared dialog frame can show (OK, discard and the fixed Cancel/Close),

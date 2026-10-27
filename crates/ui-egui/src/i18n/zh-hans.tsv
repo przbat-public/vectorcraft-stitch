@@ -5878,3 +5878,5 @@ embroidery	Nothing here can take entry and exit points	这里没有对象可以�
 embroidery	{percent}% · Esc stops it	{percent}% · 按 Esc 停止
 embroidery	Stopped: nothing was changed.	已停止：未做任何更改。
 embroidery	The document changed meanwhile: nothing was changed.	在此期间文档已更改：未做任何更改。
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	自动（计划结束该部分处）

@@ -334,11 +334,6 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
     if crate::scrub::phase(ctx) != crate::scrub::Phase::Idle {
         return;
     }
-    // VectorCraft Stitch: the embroidery tool's Entry Point or Exit Point dialog has the keyboard
-    // while it is open (its Enter and Escape are its own).
-    if crate::embroidery::point_dialog::is_open(app) {
-        return;
-    }
     if app.ui.dialog.is_some() || app.ui.palette_open {
         if app.ui.dialog.as_ref().is_some_and(crate::dialogs::revolve_gizmo::active) && crate::dialogs::revolve_gizmo::dragging(ctx) {
             // Escape first restores this rotation gesture. The settings stay open.

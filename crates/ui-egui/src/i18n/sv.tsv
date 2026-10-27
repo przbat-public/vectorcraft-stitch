@@ -5995,3 +5995,5 @@ embroidery	Nothing here can take entry and exit points	Inget här kan få in- oc
 embroidery	{percent}% · Esc stops it	{percent} % · Esc avbryter
 embroidery	Stopped: nothing was changed.	Avbrutet: inget ändrades.
 embroidery	The document changed meanwhile: nothing was changed.	Dokumentet ändrades under tiden: inget ändrades.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Auto (där planen avslutar delen)

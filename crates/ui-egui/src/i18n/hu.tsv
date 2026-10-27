@@ -6025,3 +6025,5 @@ embroidery	Nothing here can take entry and exit points	Itt semmi nem kaphat bel�
 embroidery	{percent}% · Esc stops it	{percent}% · Az Esc leállítja
 embroidery	Stopped: nothing was changed.	Leállítva: semmi sem változott.
 embroidery	The document changed meanwhile: nothing was changed.	A dokumentum közben megváltozott: semmi sem változott.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Automatikus (ahol a terv befejezi a részt)

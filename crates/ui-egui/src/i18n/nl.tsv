@@ -6037,3 +6037,5 @@ embroidery	Nothing here can take entry and exit points	Niets hier kan in- en uit
 embroidery	{percent}% · Esc stops it	{percent}% · Esc stopt het
 embroidery	Stopped: nothing was changed.	Gestopt: er is niets gewijzigd.
 embroidery	The document changed meanwhile: nothing was changed.	Het document is intussen gewijzigd: er is niets gewijzigd.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Automatisch (waar het plan het deel beëindigt)

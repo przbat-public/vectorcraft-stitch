@@ -2,9 +2,11 @@
 //! strokes, both, a compound path, a group, a clip group, a symbol instance, a run opened from a
 //! file, a locked and a hidden object, type), planned, with any selection, any part shown, and any
 //! run of pointer events (on its points, on its angle arrows' heads and off them, hostile
-//! coordinates among them) and keys:
-//! nothing panics, the session holds together, and once the button is let go and Escape pressed no
-//! drag is left open.
+//! coordinates among them), keys, whole drags of a handle ended by the release, Escape or the
+//! selection deleted, at any zoom, in the outline view too, with points as hostile as a file can
+//! hold on some objects: nothing panics, the session holds together, a drag adds at most one undo
+//! step, Escape mid-drag puts the document back as it was at the press, and once the button is let
+//! go and Escape pressed no drag is left open.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -13,6 +15,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use proptest::prelude::*;
 use serde_json::{Value, json};
+use vectorcraft_doc::NodeId;
+use vectorcraft_doc::embroidery::Embroidery;
 use vectorcraft_engine::{Session, ViewInfo};
 use vectorcraft_testkit::embroidery as fx;
 use vectorcraft_testkit::invariants::check_session;
@@ -52,6 +56,43 @@ enum Step {
     Key(ToolKey, Mods),
     /// The part shown.
     Part(Option<&'static str>),
+    /// The selection deleted (`edit.clear`), mid-drag or not.
+    Delete,
+    /// A drag of one of the handles shown (by index): pressed on it, moved by each offset (screen
+    /// pixels) in turn, and ended so.
+    Drag(usize, Vec<(f64, f64)>, End),
+}
+
+/// How a [`Step::Drag`] ends.
+#[derive(Clone, Copy, Debug)]
+enum End {
+    Release,
+    Escape,
+    /// The selection deleted mid-drag, then the release.
+    Delete,
+}
+
+/// The zooms the sweep views the fixture at: far out, as drawn, close in, the closest.
+const ZOOMS: [f64; 4] = [0.05, 1.0, 16.0, 640.0];
+
+/// A point as hostile as a file can hold one: at JSON's edges, of the wrong shape or type.
+fn hostile_point() -> impl Strategy<Value = Value> {
+    prop::sample::select(vec![
+        json!([1.7e308, -1.7e308]),
+        json!([4e6, -4e6]),
+        json!([1e-300, 0.0]),
+        json!([1.0, 2.0, 3.0]),
+        json!(["x", 1.0]),
+        json!("nearest"),
+        json!({"x": 1}),
+        Value::Null,
+    ])
+}
+
+/// An object's settings with hostile points on both parts.
+fn hostile_points() -> impl Strategy<Value = Value> {
+    (hostile_point(), hostile_point(), hostile_point(), hostile_point())
+        .prop_map(|(a, b, c, d)| json!({"fill": {"points": {"entry": a, "exit": b}}, "stroke": {"points": {"entry": c, "exit": d}}}))
 }
 
 /// Where a pointer event lands.
@@ -94,6 +135,9 @@ fn arb_step() -> impl Strategy<Value = Step> {
         8 => (kind, arb_spot(), arb_mods()).prop_map(|(k, s, m)| Step::Pointer(k, s, m)),
         2 => (key, arb_mods()).prop_map(|(k, m)| Step::Key(k, m)),
         1 => prop::sample::select(vec![None, Some("fill"), Some("stroke"), Some("rail")]).prop_map(Step::Part),
+        1 => Just(Step::Delete),
+        4 => (0usize..16, prop::collection::vec((-60.0..60.0f64, -60.0..60.0f64), 1..5), prop::sample::select(vec![End::Release, End::Escape, End::Delete]))
+            .prop_map(|(i, moves, end)| Step::Drag(i, moves, end)),
     ]
 }
 
@@ -112,15 +156,30 @@ proptest! {
     #[test]
     fn the_embroidery_tool_never_breaks_a_session(
         picked in prop::collection::vec(any::<bool>(), 16),
+        hostile in prop::collection::vec(prop::option::weighted(0.2, hostile_points()), 16),
+        zoom in prop::sample::select(ZOOMS.to_vec()),
+        outline in prop::bool::weighted(0.2),
         steps in prop::collection::vec(arb_step(), 1..40),
     ) {
         count_panics();
         let caught = CAUGHT.load(Ordering::SeqCst);
         let (mut s, p, ids) = fixture();
+        // Hostile points on some objects, written as a file would hold them (no command takes them).
+        s.edit("Hostile Points", |d, _| {
+            for (id, e) in ids.iter().zip(&hostile) {
+                if let (Some(e), Some(n)) = (e, d.node_mut(NodeId(*id))) {
+                    n.extras_mut().embroidery = Some(Box::new(Embroidery::from(e.clone())));
+                }
+            }
+            Ok(())
+        })
+        .unwrap();
+        no_panic(s.execute("embroidery.sequence", &json!({})))?;
         let selected: Vec<u64> = ids.iter().zip(picked.iter().cycle()).filter(|(_, on)| **on).map(|(id, _)| *id).collect();
         s.execute("select.set", &json!({"ids": selected})).unwrap();
-        let view = ViewInfo::default();
+        let view = ViewInfo { zoom, outline, ..ViewInfo::default() };
         s.select_tool("embroidery", view).unwrap();
+        let undo = |s: &Session| s.doc().map_or(0, |d| d.history.undo.len());
         let spots = [p.fill_entry, p.fill_exit, p.stroke_entry, p.stroke_exit, p.both_fill_entry, p.both_stroke_exit, [200.0, 200.0], [10.0, 10.0]];
         for step in &steps {
             match *step {
@@ -143,6 +202,42 @@ proptest! {
                     no_panic(s.tool_key(key, mods, view))?;
                 }
                 Step::Part(part) => s.set_tool_option("part", &part.map_or(Value::Null, |p| json!(p))),
+                Step::Delete => {
+                    no_panic(s.execute("edit.clear", &json!({})))?;
+                }
+                Step::Drag(i, ref moves, end) => {
+                    // A gesture of its own: whatever the steps before left open ends first.
+                    no_panic(s.pointer(&PointerEvent::new(PointerKind::Up, 0.0, 0.0), view))?;
+                    no_panic(s.tool_key(ToolKey::Escape, Mods::default(), view))?;
+                    let (handles, _) = s.embroidery_handles(view);
+                    let Some(at) = handles.get(i % handles.len().max(1)).map(|h| h.at) else { continue };
+                    let (doc, steps_before) = (s.doc().map(|d| d.doc.clone()).ok(), undo(&s));
+                    no_panic(s.pointer(&PointerEvent::new(PointerKind::Down, at.x, at.y), view))?;
+                    let mut to = at;
+                    for (dx, dy) in moves {
+                        to = vectorcraft_geom::Point::new(at.x + dx / zoom, at.y + dy / zoom);
+                        no_panic(s.pointer(&PointerEvent::new(PointerKind::Drag, to.x, to.y), view))?;
+                    }
+                    match end {
+                        End::Release => {
+                            no_panic(s.pointer(&PointerEvent::new(PointerKind::Up, to.x, to.y), view))?;
+                            prop_assert!(undo(&s) <= steps_before + 1, "a drag made {} undo steps: {steps:?}", undo(&s) - steps_before);
+                        }
+                        End::Escape => {
+                            let dragging = s.in_interaction();
+                            no_panic(s.tool_key(ToolKey::Escape, Mods::default(), view))?;
+                            if dragging {
+                                prop_assert!(s.doc().ok().map(|d| d.doc.clone()) == doc, "Escape mid-drag left the document changed: {steps:?}");
+                                prop_assert_eq!(undo(&s), steps_before, "Escape mid-drag left an undo step");
+                            }
+                            no_panic(s.pointer(&PointerEvent::new(PointerKind::Up, to.x, to.y), view))?;
+                        }
+                        End::Delete => {
+                            no_panic(s.execute("edit.clear", &json!({})))?;
+                            no_panic(s.pointer(&PointerEvent::new(PointerKind::Up, to.x, to.y), view))?;
+                        }
+                    }
+                }
             }
             // Mid-drag an interaction is open, as it should be; between drags the session holds.
             if !s.in_interaction() {

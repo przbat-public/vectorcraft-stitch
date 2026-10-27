@@ -1,6 +1,6 @@
 //! Stops in the plan: a run's subpaths, cuts and stops sewn as it marks them, Stop After on any
 //! object, a stop kept only where a machine file writes it (between two needle points of its
-//! block), counted by the stats, the sewing order and the check, and set by
+//! block), counted by the stats, the sewing order and the check, read back from a file, and set by
 //! `embroidery.setStopAfter`.
 
 use std::sync::Arc;
@@ -10,8 +10,8 @@ use vectorcraft_color::{Color, Paint};
 use vectorcraft_doc::embroidery::{Embroidery, StitchRun};
 use vectorcraft_doc::{Appearance, Node, NodeId};
 use vectorcraft_geom::{BezPath, PathData, Point};
-use vectorcraft_stitch::Command;
 use vectorcraft_stitch::format::Format as StitchFormat;
+use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
 
 use super::test_support::{PT_PER_MM, blank, run};
 use super::*;
@@ -169,6 +169,52 @@ fn stop_after_on_an_object_stops_the_machine_after_it() {
     let [_, b] = two_apart(&mut s, Embroidery::default());
     run(&mut s, "embroidery.setStopAfter", json!({"ids": [b]}));
     assert_eq!(run(&mut s, "embroidery.stats", json!({}))["stops"], json!(0));
+}
+
+/// A design whose neighbouring blocks are in one thread: a red block, a stop (written as a change to
+/// the same red), the red again, then a blue block.
+fn stopped_design() -> Pattern {
+    let row = |color: [u8; 3], y: f64, from: i32, to: i32| {
+        let mut b = Block::new(Thread::rgb(color));
+        b.stitches = (from..to).map(|i| Stitch::new(f64::from(i) * 2.0, y, Command::Stitch)).collect();
+        b
+    };
+    let mut red = row(RED, 0.0, 0, 6);
+    let at = red.stitches[2];
+    red.stitches.insert(3, Stitch::new(at.x, at.y, Command::Stop));
+    Pattern { name: "stops".into(), blocks: vec![red, row([30, 30, 200], 6.0, 0, 5)], ..Pattern::default() }
+}
+
+/// Opening a file whose neighbouring blocks are in one thread (PES, PEC, JEF, VP3, which name their
+/// threads) gives one group with a stop after the run before the change, and the design is written
+/// back to the same bytes; DST names no threads, so its blocks stay apart.
+#[test]
+fn a_change_to_the_same_thread_opens_as_a_stop() {
+    let pattern = stopped_design();
+    for format in [StitchFormat::Pes, StitchFormat::Pec, StitchFormat::Jef, StitchFormat::Vp3, StitchFormat::Dst] {
+        let bytes = format.write(&pattern).unwrap();
+        let mut s = Session::new();
+        let name = format!("stops.{}", format.extension());
+        run(&mut s, "document.open", json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(&bytes)}));
+        let doc = s.doc().unwrap().doc.clone();
+        let groups = doc.layers[0].children().unwrap();
+        let stopped: Vec<bool> = doc.layers[0]
+            .children()
+            .into_iter()
+            .flatten()
+            .flat_map(|g| g.children().into_iter().flatten())
+            .map(|r| r.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|r| r.stop_after))
+            .collect();
+        let merges = format != StitchFormat::Dst;
+        assert_eq!(groups.len(), if merges { 2 } else { 3 }, "{format:?}");
+        assert_eq!(stopped, if merges { vec![true, false, false] } else { vec![false; 3] }, "{format:?}");
+        let again = run(&mut s, "document.export", json!({"format": format.id()}));
+        let again = vectorcraft_format::base64_decode(again["dataBase64"].as_str().unwrap()).unwrap();
+        assert!(again == bytes, "{format:?}: written back to the same bytes");
+        if merges {
+            assert_eq!(run(&mut s, "embroidery.stats", json!({}))["stops"], json!(1), "{format:?}");
+        }
+    }
 }
 
 /// `embroidery.setStopAfter` marks the objects given (or selected), toggles when `on` is left out,

@@ -85,7 +85,20 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
     }
     let mut layer = Node::layer(doc.alloc_id(), "Embroidery", LayerColor::Preset(0));
     let mut groups: Vec<Arc<Node>> = Vec::new();
+    // Neighbouring blocks in the same thread are one block with a stop between: no format has a
+    // stop of its own, so a stop is written as a change to the same thread, and read back as one
+    // (in PES, PEC, JEF and VP3, which name their threads; DST, TAP, T01 and EXP name none, so their
+    // blocks' default threads always differ). Kept as a stop, it survives a change of palette, where
+    // two blocks would be matched to two threads.
+    let mut same: Vec<Vec<&Block>> = Vec::new();
     for block in &pattern.blocks {
+        match same.last_mut() {
+            Some(last) if last.last().is_some_and(|b| b.thread == block.thread) => last.push(block),
+            _ => same.push(vec![block]),
+        }
+    }
+    for blocks in same {
+        let Some(&block) = blocks.first() else { continue };
         let color = Color::rgb8(block.thread.color[0], block.thread.color[1], block.thread.color[2]);
         // As wide as 40 wt thread lies: an opened file records no weight.
         let mut stroke = Appearance::basic(Paint::None, Paint::solid(color), THREAD_WIDTH * scale);
@@ -100,7 +113,15 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
         // The file's thread record, kept on each run for the export to write back.
         let record = block.thread.record.as_ref().map(crate::cmd::embroidery::kept_thread);
         let mut children: Vec<Arc<Node>> = Vec::new();
-        for (run, trim_before, trim_after) in runs(block) {
+        // Each block's runs, the last of each but the last block stopped after.
+        let last_block = blocks.len().saturating_sub(1);
+        let all = blocks.iter().enumerate().flat_map(|(k, b)| {
+            let runs = runs(b);
+            let last_run = runs.len().saturating_sub(1);
+            runs.into_iter().enumerate().map(move |(i, r)| (r, k < last_block && i == last_run))
+        });
+        for ((run, trim_before, trim_after, stopped), stop_between) in all {
+            let stop_after = stopped || stop_between;
             let mut bp = BezPath::new();
             for (i, s) in run.iter().enumerate() {
                 let p = Point::new((s.x + MARGIN) * scale, (s.y + MARGIN) * scale);
@@ -122,7 +143,7 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
             // The line's points are the file's needle points: exported, they are sewn as they are,
             // so the design is written back unchanged.
             node.extras_mut().embroidery = Some(Box::new(Embroidery {
-                stitches: Some(StitchRun { trim_before, trim_after, double_point, thread: record.clone(), ..StitchRun::default() }),
+                stitches: Some(StitchRun { trim_before, trim_after, double_point, stop_after, thread: record.clone(), ..StitchRun::default() }),
                 ..Embroidery::default()
             }));
             children.push(Arc::new(node));
@@ -155,9 +176,11 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
 }
 
 /// The stitches of one block cut into runs at every lift of the needle (a jump, a trim, a stop),
-/// each with whether the thread was cut before it and, for the block's last run, after it.
-fn runs(block: &Block) -> Vec<(Vec<Stitch>, bool, bool)> {
-    let mut out: Vec<(Vec<Stitch>, bool, bool)> = Vec::new();
+/// each with whether the thread was cut before it and, for the block's last run, after it, and
+/// whether the machine stops after it (a stop a reader gives: none does, a stop being a change to
+/// the same thread in every format).
+fn runs(block: &Block) -> Vec<(Vec<Stitch>, bool, bool, bool)> {
+    let mut out: Vec<(Vec<Stitch>, bool, bool, bool)> = Vec::new();
     let mut cur: Vec<Stitch> = Vec::new();
     let mut trim = false;
     for s in &block.stitches {
@@ -166,14 +189,20 @@ fn runs(block: &Block) -> Vec<(Vec<Stitch>, bool, bool)> {
             continue;
         }
         if !cur.is_empty() {
-            out.push((std::mem::take(&mut cur), std::mem::take(&mut trim), false));
+            out.push((std::mem::take(&mut cur), std::mem::take(&mut trim), false, false));
         }
-        if s.command == Command::Trim {
-            trim = true;
+        match s.command {
+            Command::Trim => trim = true,
+            Command::Stop => {
+                if let Some(last) = out.last_mut() {
+                    last.3 = true;
+                }
+            }
+            _ => {}
         }
     }
     if !cur.is_empty() {
-        out.push((cur, trim, false));
+        out.push((cur, trim, false, false));
     } else if trim && let Some(last) = out.last_mut() {
         // A cut after the block's last stitches (before the thread is changed).
         last.2 = true;

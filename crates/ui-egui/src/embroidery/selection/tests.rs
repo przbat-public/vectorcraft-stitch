@@ -1,9 +1,9 @@
 //! Stitch editing on the canvas, headless with real input: the selection layer drawn without
 //! drawing the stitches again, a drag with the mouse that moves the needle points (checked before
-//! Escape puts them back) and one undo step when let go, the live check's words, the edit look's
-//! circles from 250 % and its marks on a stitch that breaks the limits, the current needle point's
-//! two-tone ring, the Contextual Task Bar's stitch actions, and frames that build nothing while
-//! nothing changes.
+//! Escape puts them back) and one undo step when let go, the live check's words (and no notice that
+//! the run selected isn't sewn), the edit look's circles from 250 % and its marks on a stitch that
+//! breaks the limits, the current needle point's two-tone ring, the Contextual Task Bar's stitch
+//! actions, and frames that build nothing while nothing changes.
 
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, Shape};
 use serde_json::json;
@@ -179,6 +179,10 @@ fn the_live_check_judges_the_stitches_of_the_selection() {
     let lines = super::bubble(&mut app).unwrap();
     assert!(lines[0].1.starts_with("2 needle points"), "{lines:?}");
     assert!(lines.iter().any(|(m, w)| *m == Some(super::Mark::Passed) && w.starts_with("Shortest:")), "{lines:?}");
+    // The run they are of is selected with them, and it is sewn: no "isn't sewn" notice.
+    assert!(app.session.active().unwrap().selection.objects.contains(&run), "the run selected");
+    assert_eq!(crate::embroidery::overlay::not_sewn(&app, time), 0);
+    assert_eq!(crate::embroidery::notice::text(&app, time), None);
     app.run("embroidery.moveNeedlePoints", json!({"dx": 40})).unwrap();
     settle(&mut app, &ctx, &mut time);
     let lines = super::bubble(&mut app).unwrap();

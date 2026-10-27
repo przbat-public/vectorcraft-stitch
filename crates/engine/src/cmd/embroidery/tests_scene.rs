@@ -296,8 +296,32 @@ fn a_selected_objects_ends_are_its_units_first_and_last_needle_points() {
         assert!(e.units.windows(2).all(|w| w[0] < w[1]), "in sewing order");
     }
     for e in &ends[3..] {
-        assert!(e.units.is_empty() && e.entry.is_none() && e.exit.is_none(), "{e:?}");
+        assert!(!e.sewn && e.units.is_empty() && e.entry.is_none() && e.exit.is_none(), "{e:?}");
     }
+}
+
+/// A converted object's run selected on its own (as editing its needle points selects it) is sewn,
+/// though its units, entry and exit stay the object's (the embroidery tool offers no entry or exit
+/// on a run); the object (its group) has every run's units.
+#[test]
+fn a_selected_run_of_a_converted_object_is_sewn() {
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    s.execute("paint.setStroke", &json!({"color": "#202020"})).unwrap();
+    let id = s.execute("shape.rectangle", &json!({"x": 40, "y": 40, "width": 120, "height": 80})).unwrap()["id"].as_u64().unwrap();
+    s.execute("embroidery.convertToManual", &json!({"ids": [id]})).unwrap();
+    let plan = plan_of(&mut s);
+    let sc = scene::scene(&plan);
+    let doc = s.doc().unwrap().doc.clone();
+    let runs: Vec<NodeId> = doc.node(NodeId(id)).unwrap().children().unwrap().iter().map(|c| c.id).collect();
+    assert!(runs.len() >= 2, "a fill and a stroke: {runs:?}");
+    assert!(runs.iter().all(|r| sc.units().iter().any(|u| u.node == *r && u.object == NodeId(id))), "each run's units name the group");
+    for e in sc.ends_of(&doc, &runs) {
+        assert!(e.sewn && e.units.is_empty() && e.entry.is_none() && e.exit.is_none(), "{e:?}");
+    }
+    let group = sc.ends_of(&doc, &[NodeId(id)]);
+    assert!(group[0].sewn);
+    assert_eq!(group[0].units.len(), sc.units().iter().filter(|u| u.object == NodeId(id)).count(), "the group: every run's units");
 }
 
 /// An opened design's scene lies on its lines: every point drawn is an anchor of the paths it was

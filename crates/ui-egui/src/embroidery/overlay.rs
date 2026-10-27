@@ -106,7 +106,7 @@ pub fn not_sewn(app: &VectorcraftApp, now: f64) -> usize {
     let Some(generation) = app.embroidery.preview.shown(st.uid).map(|s| s.planned.generation) else { return 0 };
     match &app.embroidery.ends.of {
         Some(((uid, g, selected), ends)) if (*uid, *g) == (st.uid, generation) && *selected == st.selection.objects => {
-            ends.iter().filter(|e| e.units.is_empty()).count()
+            ends.iter().filter(|e| !e.sewn).count()
         }
         _ => 0,
     }

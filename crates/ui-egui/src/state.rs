@@ -786,13 +786,6 @@ impl UiState {
         self.status.clear();
         self.about = false;
         self.open_panel = None;
-        // VectorCraft Stitch: preferences saved before the embroidery tool's group (the last) keep
-        // their choice in every other group.
-        if self.group_tool.len() + 1 == vectorcraft_tools::TOOL_GROUPS.len()
-            && vectorcraft_tools::TOOL_GROUPS.last().and_then(|g| g.first()).is_some_and(|t| t.id == vectorcraft_tools::embroidery::ID)
-        {
-            self.group_tool.push(vectorcraft_tools::embroidery::ID.to_string());
-        }
         if self.group_tool.len() != vectorcraft_tools::TOOL_GROUPS.len() {
             self.group_tool = UiState::default().group_tool;
         }

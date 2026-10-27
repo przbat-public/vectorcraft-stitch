@@ -233,13 +233,7 @@ impl Session {
         // VectorCraft Stitch: the stitch plan's and the settings' answers for the embroidery tool,
         // only while it is active, from a plan already made with the stitch preview's options, and
         // whether the canvas draws the stitches (a press picks by them only then).
-        let tool = self.tool.id() == vectorcraft_tools::embroidery::ID;
-        let facts = tool.then(|| self.embroidery_plans.tool_facts(st.uid, &crate::cmd::embroidery::Options::default())).flatten();
-        let drawn = {
-            use crate::cmd::embroidery::view::{layers, paused};
-            layers(self.stitch_view_of(st.uid), paused(&st.doc), view.outline).stitches
-        };
-        let facts_now = tool.then(|| crate::cmd::embroidery::tool::FactsNow::new(facts.as_deref(), &st.doc, drawn));
+        let facts_now = self.embroidery_plans.facts_now(self.tool.id(), st, view.outline);
         let cx = ToolContext {
             doc: &st.doc,
             ruler_origin: st.doc.ruler_origin_for(view.artboard),

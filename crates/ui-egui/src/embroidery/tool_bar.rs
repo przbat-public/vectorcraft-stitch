@@ -1,13 +1,27 @@
 //! The Control bar while the Embroidery Tool is active (the project owner's choice, 2026-10-25: the
 //! part picked there too, and Nearest Connection beside it): which part's points show, Fill or
 //! Stroke, kept in step with the Object tab's switch ([`super::handles`]), and Nearest Connection,
-//! which searches off the interface thread ([`super::nearest::start`]) and waits while one runs.
+//! which searches off the interface thread ([`super::nearest::start`]) and waits while one runs; and
+//! the tool's hint on the status bar ([`HINT`]).
 
 use egui::{Ui, vec2};
 
 use crate::VectorcraftApp;
 use crate::panels::embroidery::object::Part;
 use crate::panels::embroidery::{Segment, command_label, segments};
+
+/// The tool's hint on the status bar, as upstream's `hint_for` gives every tool's: the keys and
+/// gestures (in bold) and what they do, each translated as upstream's hints are.
+pub(crate) const HINT: &[(&str, bool)] = &[
+    ("Drag", true),
+    (" a point to move it, or an arrow's head to turn the rows  |  ", false),
+    ("Alt+Click", true),
+    (" a point or an arrow to put it back to Auto  |  ", false),
+    ("Click", true),
+    (" an object to show its points  |  ", false),
+    ("[ ]", true),
+    (" step from point to point, the arrows nudge it, Enter types it", false),
+];
 
 /// The command its button runs: its label is the menu's.
 const NEAREST: &str = "embroidery.nearestConnection";

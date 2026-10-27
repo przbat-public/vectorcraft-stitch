@@ -1021,16 +1021,7 @@ fn hint_for(tool: &str) -> Option<&'static [(&'static str, bool)]> {
         ],
         "gradient" => &[("Drag", true), (" across a selected object to set the gradient direction", false)],
         // VectorCraft Stitch: the embroidery tool.
-        "embroidery" => &[
-            ("Drag", true),
-            (" a point to move it, or an arrow's head to turn the rows  |  ", false),
-            ("Alt+Click", true),
-            (" a point or an arrow to put it back to Auto  |  ", false),
-            ("Click", true),
-            (" an object to show its points  |  ", false),
-            ("[ ]", true),
-            (" step from point to point, the arrows nudge it, Enter types it", false),
-        ],
+        "embroidery" => crate::embroidery::tool_bar::HINT,
         "artboard" => &[
             ("Click", true),
             (" to select an artboard  |  ", false),

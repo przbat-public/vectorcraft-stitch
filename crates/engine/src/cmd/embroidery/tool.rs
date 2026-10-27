@@ -122,7 +122,7 @@ impl crate::Session {
 
 /// [`ToolFacts`] (when a plan is remembered) read against the document as it is now.
 pub(crate) struct FactsNow<'a> {
-    facts: Option<&'a ToolFacts>,
+    facts: Option<Arc<ToolFacts>>,
     doc: &'a Document,
     /// Whether the canvas draws the stitches (the stitch view): only then does a press pick by them.
     drawn: bool,
@@ -133,18 +133,32 @@ pub(crate) struct FactsNow<'a> {
 impl<'a> FactsNow<'a> {
     /// The answers of `facts` (none before a first plan) and of the document `doc`, whose stitches
     /// the canvas draws or not (`drawn`).
-    pub(crate) fn new(facts: Option<&'a ToolFacts>, doc: &'a Document, drawn: bool) -> Self {
+    pub(crate) fn new(facts: Option<Arc<ToolFacts>>, doc: &'a Document, drawn: bool) -> Self {
         Self { facts, doc, drawn, layer: OnceCell::new() }
+    }
+}
+
+impl super::service::Services {
+    /// The embroidery tool's answers for the document `st` while `tool` is the active tool (none
+    /// for another tool): from a plan already made with the stitch preview's options, and whether
+    /// the canvas draws the stitches (`outline`: the outline view, which draws none).
+    pub(crate) fn facts_now<'a>(&mut self, tool: &str, st: &'a crate::DocState, outline: bool) -> Option<FactsNow<'a>> {
+        if tool != vectorcraft_tools::embroidery::ID {
+            return None;
+        }
+        let facts = self.tool_facts(st.uid, &super::Options::default());
+        let drawn = super::view::layers(self.view(st.uid), super::view::paused(&st.doc), outline).stitches;
+        Some(FactsNow::new(facts, &st.doc, drawn))
     }
 }
 
 impl PlanFacts for FactsNow<'_> {
     fn generation(&self) -> u64 {
-        self.facts.map_or(0, |f| f.generation)
+        self.facts.as_ref().map_or(0, |f| f.generation)
     }
 
     fn ends(&self, object: NodeId, part: PartKind) -> Option<PlannedEnds> {
-        let facts = self.facts?;
+        let facts = self.facts.as_deref()?;
         let sewn = facts.ends.get(&(object, part))?;
         // Of the document as it is: a plan of an earlier snapshot is stale for every object (an
         // edit of a neighbour, or of the document's settings, moves Auto points too).
@@ -158,7 +172,7 @@ impl PlanFacts for FactsNow<'_> {
         if !self.drawn {
             return None;
         }
-        self.facts?.planned.scene().pick(at, tol)
+        self.facts.as_deref()?.planned.scene().pick(at, tol)
     }
 
     fn snap(&self, object: NodeId, part: PartKind, at: Point) -> Option<Point> {
@@ -196,7 +210,7 @@ mod tests {
         let uid = s.doc().unwrap().uid;
         let facts = s.embroidery_plans.tool_facts(uid, &opts).expect("the plan the sequence made");
         let doc = s.doc().unwrap().doc.clone();
-        let now = FactsNow::new(Some(&facts), &doc, true);
+        let now = FactsNow::new(Some(facts.clone()), &doc, true);
         let e = now.ends(NodeId(id), PartKind::Fill).unwrap();
         let mm = |v: f64| v / PT_PER_MM;
         assert!(
@@ -208,7 +222,7 @@ mod tests {
         run(&mut s, "object.move", json!({"ids": [id], "dx": 10, "dy": 0}));
         let doc = s.doc().unwrap().doc.clone();
         let facts = s.embroidery_plans.tool_facts(uid, &opts).expect("the plan before, still remembered");
-        let now = FactsNow::new(Some(&facts), &doc, true);
+        let now = FactsNow::new(Some(facts.clone()), &doc, true);
         assert!(!now.ends(NodeId(id), PartKind::Fill).unwrap().current, "of the object as it was");
     }
 
@@ -259,7 +273,7 @@ mod tests {
         let uid = s.doc().unwrap().uid;
         let facts = s.embroidery_plans.tool_facts(uid, &super::super::Options::default()).unwrap();
         let doc = s.doc().unwrap().doc.clone();
-        let now = FactsNow::new(Some(&facts), &doc, true);
+        let now = FactsNow::new(Some(facts.clone()), &doc, true);
         let ends = |id: u64| now.ends(NodeId(id), PartKind::Fill).unwrap();
         let (ea, eb, ec) = (ends(a), ends(b), ends(c));
         assert_eq!((ea.before, ea.after, eb.before), (None, Some(eb.first), Some(ea.last)));
@@ -283,14 +297,14 @@ mod tests {
         let uid = s.doc().unwrap().uid;
         let facts = s.embroidery_plans.tool_facts(uid, &super::super::Options::default()).unwrap();
         let doc = s.doc().unwrap().doc.clone();
-        let now = FactsNow::new(Some(&facts), &doc, true);
+        let now = FactsNow::new(Some(facts.clone()), &doc, true);
         // Rows lie 0.38 mm apart: a point's tolerance is wider than the gaps between them.
         let tol = 1.0;
         let fill = Some(PartKind::Fill);
         assert_eq!(now.part_at(Point::new(80.0, 80.0), tol), Some((NodeId(b), fill)), "where they overlap");
         assert_eq!(now.part_at(Point::new(35.0, 35.0), tol), Some((NodeId(a), fill)));
         assert_eq!(now.part_at(Point::new(200.0, 200.0), tol), None);
-        let art = FactsNow::new(Some(&facts), &doc, false);
+        let art = FactsNow::new(Some(facts.clone()), &doc, false);
         assert_eq!(art.part_at(Point::new(80.0, 80.0), tol), None, "in the art view, by the art alone");
     }
 

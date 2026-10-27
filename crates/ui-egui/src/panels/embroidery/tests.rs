@@ -457,20 +457,6 @@ fn nearest_connection_from_the_menu_says_what_it_saved() {
     assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1, "no step the second time");
 }
 
-/// Preferences saved before the embroidery tool's group (the toolbar's last) keep the tool chosen
-/// in every other group; the new group takes its tool.
-#[test]
-fn preferences_from_before_the_embroidery_tool_keep_their_flyout_choices() {
-    let mut saved = crate::state::UiState::default();
-    saved.group_tool.pop();
-    let lasso = vectorcraft_tools::catalog::group_of("directSelection").unwrap();
-    saved.group_tool[lasso] = "groupSelection".into();
-    let loaded = saved.sanitized();
-    assert_eq!(loaded.group_tool.len(), vectorcraft_tools::TOOL_GROUPS.len());
-    assert_eq!(loaded.group_tool[lasso], "groupSelection");
-    assert_eq!(loaded.group_tool.last().map(String::as_str), Some(vectorcraft_tools::embroidery::ID));
-}
-
 /// Nearest Connection's line says what it did: parts set, or already the nearest when it joined
 /// parts and moved none, or that nothing in scope can take points when it joined none (lettering
 /// converted to outlines, symbol instances…), with how many objects it passed over. Before, a scope

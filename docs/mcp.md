@@ -5141,7 +5141,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `passedOver`: the source's values `embroidery.set` would refuse, a newer version's or out of range, as `fill.stitch`,
   which the objects keep their own of);
   `embroidery.setEntryExit {id?, part, entry?, exit?, snap?}` answers `{id, part, entry, exit, changedCount}` (with
-  `snap: true`, the points as taken to where the part's stitches can start or end);
+  `snap: true`, the points as taken to where the part's stitches can start or end; since 2026-10-26 an exit is sewn
+  toward and an entry met exactly, where before an exit was only kept and an entry only started near, so a document
+  saved before then may sew otherwise);
   `embroidery.nearestConnection {ids?, all?, dryRun?, …embroidery options}` answers `{applied, changedCount,
   unchangedCount, skippedCount, skipped: [{id, reason}], restoredCount, before, after: {connections, jumps, trims,
   length, longest, stitches}, saved: {jumps, trims, length, stitches}, parts: [{id, part, entry, exit}]}` (`stitches`:

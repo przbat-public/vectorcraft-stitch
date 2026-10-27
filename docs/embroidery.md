@@ -1371,7 +1371,9 @@ the object a person selects (`id`).
   an expanded object's strokes are plain (sewn along their path). Sewing toward entry and exit
   points (2026-10-26) changed none of the 280: none of them sets an exit, and an entry is met only
   where it was before (the letter T's is at an end of its satin columns); the `exits` document
-  added 8.
+  added 8. A document saved before then exports otherwise where it sets an exit, which was only
+  kept and is now sewn toward (the part ends at the end its stitches reach nearest it), or an entry
+  its part only started near (a fill at a row end, a line at a vertex), which is now met exactly.
 - The embroidery tool and what it plans toward (2026-10-26): the planner meeting an entry and
   sewing toward an exit (`plan/tests_aim.rs`, 16 tests; four properties in `tests/prop_plan.rs`: an
   exit that isn't a number is no exit; an exit never makes a plan worse; an exit at the plan's own

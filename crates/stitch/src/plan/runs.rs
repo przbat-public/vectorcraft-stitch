@@ -112,6 +112,12 @@ impl Moves {
     }
 }
 
+/// The stitch a lead sews from where the needle goes in when no way inside leads on, millimetres:
+/// something to tie on to before the jump (an estimate: a short running stitch); and how many
+/// directions it tries, an eighth of a turn apart, for one that stays inside.
+const LEAD_TIE: f64 = 1.0;
+const TIE_TRIES: usize = 8;
+
 /// How much more travel over stitching already sewn a fill's rows aimed at an exit may show than
 /// without it, millimetres: the miss the Check tab lets pass ([`POINT_MISS_MM`]), and no more (the
 /// project owner's choice, 2026-10-26). The turn round a row's end at the cut an exit makes shows
@@ -289,8 +295,16 @@ impl Runs {
         self.moves.lifts += usize::from(d >= p.min_stitch);
         self.moves.trims += usize::from(d > p.trim);
         if lead {
-            // No way inside from where the needle goes in: it goes in there all the same.
-            self.push(vec![here], Travel::Auto);
+            // No way inside from where the needle goes in: it goes in there all the same, with a
+            // stitch to tie on to before the jump (a needle point alone can't be tied off): toward
+            // where it goes next, else the first of the eighths of a turn from there that stays
+            // inside.
+            let toward = to_inside - from;
+            let step = (0..TIE_TRIES)
+                .map(|k| vectorcraft_geom::Affine::rotate(std::f64::consts::TAU * k as f64 / TIE_TRIES as f64) * toward.to_point())
+                .map(|v| v.to_vec2().normalize() * LEAD_TIE)
+                .find(|v| v.x.is_finite() && v.y.is_finite() && travels.area.contains_segment(from, from + *v));
+            self.push(step.map_or_else(|| vec![here], |v| vec![here, here + v]), Travel::Auto);
         }
         Travel::Lift
     }

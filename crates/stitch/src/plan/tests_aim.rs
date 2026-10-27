@@ -67,6 +67,21 @@ fn a_fill_starts_at_its_entry_on_its_inset_outline() {
     }
 }
 
+/// Entered where no way inside leads on to its first row (on the edge of a second outline the
+/// non-zero rule fills too, which travels don't cross), a fill with no underlay still goes in at its
+/// entry, and sews a stitch there to tie on to before it jumps: two needle points before the cut,
+/// not one alone.
+#[test]
+fn a_lead_that_must_jump_is_tied_first() {
+    let mut overlapping = rect(0.0, 0.0, 60.0, 40.0);
+    overlapping.extend(rect(20.0, 15.0, 20.0, 10.0));
+    let p = Params { underlay: Underlay::None, angle: 0.0, ..Params::for_style(Style::Fill) }.sane();
+    let out = entered(&overlapping, &p, (30.0, 15.0));
+    let before_cut = out.iter().take_while(|s| s.command == Command::Stitch).count();
+    assert!(before_cut >= 2, "{before_cut} needle point before the cut: {:?}", &out[..4.min(out.len())]);
+    assert!(first_point(&out).distance(Point::new(30.0, 15.0)) <= inset_reach(&p), "goes in at its entry");
+}
+
 /// Entered without underlay, a fill still sews its rows over the place it is entered: the needle
 /// travels from there to the first row under the rows still to come, with no jump.
 #[test]

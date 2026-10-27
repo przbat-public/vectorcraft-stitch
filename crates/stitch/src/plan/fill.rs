@@ -187,7 +187,9 @@ fn sew_area(
 /// [`FILL_SEEN_SLACK`] ([`super::runs::Moves::within`]), and end at least
 /// [`super::POINT_MISS_MM`] nearer the exit ([`gains`]).
 /// When nothing of the shape is sewn before them (no underlay, no entry point), the aimed rows start
-/// where the plain ones do and travel from there, under the rows still to come.
+/// where the plain ones do and travel from there, under the rows still to come. The places sewn next
+/// that [`sew_area`] weighs a piece's end against are not weighed here: a fill aimed at an exit is
+/// the shape's last part (a fill with narrow parts aims only its last part), so it has none.
 #[allow(clippy::too_many_arguments)]
 fn sew_toward(
     rows: Area<'_>,
@@ -234,7 +236,9 @@ const MIN_PIECE: f64 = 1.0;
 /// it can; over a piece of the rest already sewn a travel may show for at most [`MAX_SEEN`], and
 /// over a column already sewn it is not counted as showing. `fill` and `satin`
 /// are the two kinds of parts' parameters. A piece of the rest smaller than [`MIN_PIECE`] is left
-/// out.
+/// out. Toward an exit the parts are sewn twice, without and with it, and a last piece's top rows
+/// three times (in the plain parts, then [`sew_toward`]'s own plain and aimed rows): the work the
+/// stitch estimate allows for.
 pub(crate) fn fill_with_columns(
     shape: &BezPath,
     rule: FillRule,
@@ -802,8 +806,8 @@ impl Layer {
 
 /// The row end of a layer's regions nearest an exit point, and what was done to reach it: the
 /// region whose sweep can end there (sewn last, it ends there), whether a region was cut along that
-/// row to make it (then `before`, the strip the row's region kept, lies next to it), and the
-/// regions to try sewing last.
+/// row to make it (then the strip the cut region kept lies next to it), and the regions to try
+/// sewing last (that region, and the strip when it was cut).
 #[derive(Clone, Debug)]
 struct ExitRow {
     region: usize,
@@ -1101,12 +1105,9 @@ fn sew(
         let aimed = aim.filter(|(_, e)| piece.contains(&e.region));
         let mut orders: Vec<Option<usize>> = vec![None];
         if search && piece.len() > 1 && piece.len() <= MAX_SEARCHED {
-            orders.extend(roots(&piece, regions).into_iter().map(Some));
-            for &r in aimed.iter().flat_map(|(_, e)| e.roots.iter()) {
-                if !orders.contains(&Some(r)) {
-                    orders.push(Some(r));
-                }
-            }
+            // Toward an exit, the regions next to its cut first, within the same budget.
+            let first: Vec<usize> = aimed.iter().flat_map(|(_, e)| e.roots.iter().copied()).collect();
+            orders.extend(roots(&piece, regions, &first).into_iter().map(Some));
         }
         let mut best: Option<(Runs, Vec<bool>, f64)> = None;
         // Toward an exit, every order of the piece holding its row, with what it costs without the
@@ -1141,11 +1142,11 @@ fn sew(
             }
             // The last piece of the layer ends where the needle goes on from: the move from there
             // to the nearest place sewn next counts as a travel that shows.
-            let exit = match (pieces.is_empty(), local.here()) {
+            let onward = match (pieces.is_empty(), local.here()) {
                 (true, Some(h)) if !toward.is_empty() => COST_SEEN * toward.iter().map(|t| t.distance(h)).fold(f64::INFINITY, f64::min),
                 _ => 0.0,
             };
-            let plain = local.cost + exit;
+            let plain = local.cost + onward;
             match (aimed, local.here()) {
                 (Some((x, _)), Some(h)) => {
                     let total = plain + COST_EXIT * h.distance(x);
@@ -1246,10 +1247,11 @@ fn connected(neighbours: &[Vec<(usize, bool)>]) -> Vec<Vec<usize>> {
     out
 }
 
-/// The regions of `piece` tried as the one sewn last: all of them when there are few, else those
-/// with the most links (where a shape branches), the largest first among equals: at most
-/// [`MAX_ROOTS`], fewer in a piece of many regions ([`ROOT_BUDGET`]).
-fn roots(piece: &[usize], regions: &Regions) -> Vec<usize> {
+/// The regions of `piece` tried as the one sewn last: `first` (of them, toward an exit: the regions
+/// next to its cut), then all the others when there are few, else those with the most links (where
+/// a shape branches), the largest first among equals: at most [`MAX_ROOTS`] in all, fewer in a
+/// piece of many regions ([`ROOT_BUDGET`]).
+fn roots(piece: &[usize], regions: &Regions, first: &[usize]) -> Vec<usize> {
     // Each region's links, counted once (not in every comparison of the sort).
     let mut counts = vec![0usize; regions.list.len()];
     for &(a, b) in &regions.links {
@@ -1264,8 +1266,15 @@ fn roots(piece: &[usize], regions: &Regions) -> Vec<usize> {
     }
     let links = |r: usize| counts.get(r).copied().unwrap_or(0);
     let rows = |r: usize| regions.list.get(r).map_or(0, |g| g.rows.len());
-    let mut v: Vec<usize> = piece.to_vec();
-    v.sort_by(|&a, &b| links(b).cmp(&links(a)).then(rows(b).cmp(&rows(a))));
+    let mut v: Vec<usize> = Vec::with_capacity(piece.len());
+    for &r in first {
+        if piece.contains(&r) && !v.contains(&r) {
+            v.push(r);
+        }
+    }
+    let mut rest: Vec<usize> = piece.iter().copied().filter(|r| !v.contains(r)).collect();
+    rest.sort_by(|&a, &b| links(b).cmp(&links(a)).then(rows(b).cmp(&rows(a))));
+    v.extend(rest);
     v.truncate((ROOT_BUDGET / piece.len().max(1)).clamp(1, MAX_ROOTS));
     v
 }

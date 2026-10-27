@@ -607,6 +607,11 @@ impl Aim {
     pub fn from_needle(at: Option<Point>) -> Self {
         Self { start: Start::needle(at), exit: None }
     }
+
+    /// Its exit, when it is a number on both axes: one that isn't is no exit.
+    pub(crate) fn finite_exit(&self) -> Option<Point> {
+        self.exit.filter(|x| x.x.is_finite() && x.y.is_finite())
+    }
 }
 
 /// The style a shape with `p` is sewn in: its own, except that a satin column needs a width, and a
@@ -659,7 +664,7 @@ fn aimed_extra(subs: &[SubPath], p: &Params, aim: &Aim) -> f64 {
     /// A fill aimed at an exit travels across it at most twice more, and sews two rows more.
     const FILL_TRAVELS: f64 = 2.0;
     const FILL_ROWS: f64 = 2.0;
-    if aim.exit.is_none() {
+    if aim.finite_exit().is_none() {
         return 0.0;
     }
     match sewn_style(p) {
@@ -722,7 +727,8 @@ pub fn try_fill_with_columns_aimed(
         (crossings + 1.0) * split + c.length() * (UNDERLAYS / UNDERLAY_STITCH + split / satin::ZIGZAG_UNDERLAY_SPACING)
     };
     // Toward an exit, a column sewn last may take a pass along its middle.
-    let passes = if aim.exit.is_some() { columns.iter().map(|c| c.length() / area::TRAVEL_STITCH + satin::PASS_ENDS).sum::<f64>() } else { 0.0 };
+    let passes =
+        if aim.finite_exit().is_some() { columns.iter().map(|c| c.length() / area::TRAVEL_STITCH + satin::PASS_ENDS).sum::<f64>() } else { 0.0 };
     let subs = subpaths(shape);
     within_limit(estimate(&subs, &f) + aimed_extra(&subs, &f, &aim) + columns.iter().map(column).sum::<f64>() + passes)?;
     Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, aim))

@@ -164,6 +164,10 @@ impl Ends {
 /// several subpaths, a fill with narrow parts sewn as satin). A fill's outlines are all outlines
 /// whatever its fill rule: it can be entered on a hole's edge too.
 pub fn ends(path: &BezPath, p: &Params, columns: bool) -> Option<Ends> {
+    // The checked entry points' range: a shape out of it is never flattened.
+    if !super::in_range(path) {
+        return None;
+    }
     let p = p.sane();
     let subs: Vec<SubPath> = subpaths(path).into_iter().filter(|s| s.pts.len() >= 2).collect();
     match sewn_style(&p) {
@@ -458,5 +462,16 @@ mod tests {
         two.extend(line(&[(20.0, 0.0), (30.0, 0.0)], false));
         assert!(ends(&two, &Params::for_style(Style::Running), false).is_none());
         assert!(ends(&BezPath::new(), &Params::for_style(Style::Fill), false).is_none());
+    }
+
+    /// A path out of the range the checked entry points take (a coordinate past the largest, or
+    /// one that isn't a number) has no ends: it is never flattened.
+    #[test]
+    fn a_path_out_of_range_has_no_ends() {
+        let p = Params::for_style(Style::Running);
+        assert!(ends(&line(&[(0.0, 0.0), (10.0, 0.0)], false), &p, false).is_some());
+        for far in [1.0e15, f64::MAX, f64::NAN] {
+            assert!(ends(&line(&[(0.0, 0.0), (far, 0.0)], false), &p, false).is_none(), "{far}");
+        }
     }
 }

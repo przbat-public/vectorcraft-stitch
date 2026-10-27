@@ -650,7 +650,9 @@ as Melco's checker reads it, on each object's settings, it flags none.
   shortest jumps. Its words, in English and Polish and the terms every language chose:
   [The Embroidery Tool's words](embroidery-tool-words.md).
 
-  ![The Embroidery Tool in the stitch view: a red disc's fill with its entry set and its exit left to the planner](images/embroidery-tool-stitches.png)
+  ![The Embroidery Tool in the art view: the red disc's entry set on its outline and its exit left to the planner, over its art](images/embroidery-tool-art.png)
+
+  ![The Embroidery Tool in the stitch view: the same disc's handles over its stitches](images/embroidery-tool-stitches.png)
 
   ![The Entry Point dialog: X and Y in the rulers' unit, or Auto](images/embroidery-tool-point-dialog.png)
 

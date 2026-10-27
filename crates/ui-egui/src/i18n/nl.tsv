@@ -6057,3 +6057,5 @@ embroidery	Largest change: {value}%	Grootste verandering: {value}%
 # VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
 embroidery	manual stitches	handmatige steken
 @plural	{count} stop|{count} stops	{count} stop|{count} stops
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	effecten, penselen en extra vullingen of lijnen op handmatige steken of steken uit een bestand (of op een groep die ze bevat) worden niet geborduurd: de steken worden genaaid zoals ze zijn

@@ -5975,3 +5975,5 @@ embroidery	Largest change: {value}%	Maior mudança: {value}%
 # VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
 embroidery	manual stitches	pontos manuais
 @plural	{count} stop|{count} stops	{count} parada|{count} paradas
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	efeitos, pincéis e preenchimentos ou traçados extras em pontos manuais ou de um arquivo (ou em um grupo que os contém) não são bordados: os pontos são bordados como estão

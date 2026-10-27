@@ -5,7 +5,7 @@ use serde_json::json;
 use vectorcraft_stitch::plan::Style;
 use vectorcraft_stitch::{Command, Stitch};
 
-use super::plan::Part;
+use super::plan::{Choice, DesignPlan, Part};
 use super::test_support::{PT_PER_MM, blank, plan, run, unit};
 use super::*;
 
@@ -461,4 +461,90 @@ fn a_files_runs_scaled_or_placed_scaled_are_warned_about() {
         (json!(1), json!(50.0), json!([instance])),
         "{rule}"
     );
+}
+
+/// The plan of `s` as the export plans it.
+fn export_plan(s: &mut Session) -> DesignPlan {
+    (*s.embroidery_plan(&Options::default()).unwrap()).clone()
+}
+
+/// The needle points units of object `id` sew, and how each was sewn.
+fn sewn_by(p: &DesignPlan, id: u64) -> (Vec<(f64, f64)>, Vec<Choice>) {
+    let mut points = Vec::new();
+    let mut why = Vec::new();
+    for (k, u) in p.units.iter().enumerate() {
+        if u.origin.selected() == vectorcraft_doc::NodeId(id) {
+            points.extend(p.own_stitches(k).iter().filter(|s| s.command == Command::Stitch).map(|s| (s.x, s.y)));
+            why.push(u.why);
+        }
+    }
+    (points, why)
+}
+
+/// A change of an object's appearance: given the session and the object's id.
+type Look = fn(&mut Session, u64);
+
+/// A run is sewn as its points whatever its appearance (it is never expanded, which would plan its
+/// stitches again as art): a second stroke, an effect that reshapes it, a stroke's opacity or a
+/// brush on a file's run or a manual one, and an effect on a converted object's group, leave its
+/// stitches as they were, and the plan says what isn't sewn, naming the object; a drop shadow alone
+/// is said as raster effects are.
+#[test]
+fn a_run_is_sewn_as_its_points_whatever_its_appearance() {
+    use super::printed::{RASTER_LEFT_OUT, RUN_LOOK_LEFT_OUT};
+    use vectorcraft_doc::embroidery::StitchRun;
+    let points = [(10.0, 10.0), (12.0, 10.0), (14.0, 10.0), (14.0, 12.0)];
+    let looks: [(&str, Look); 5] = [
+        ("a second stroke", |s, id| {
+            run(s, "appearance.addStroke", json!({"ids": [id]}));
+        }),
+        ("a reshaping effect", |s, id| {
+            run(s, "effect.apply", json!({"effect": "distort.roughen", "ids": [id]}));
+        }),
+        ("a stroke's opacity", |s, id| {
+            s.edit("Opacity", |d, _| {
+                let n = d.node_mut(vectorcraft_doc::NodeId(id)).ok_or(EngineError::NoNode(vectorcraft_doc::NodeId(id)))?;
+                if let Some(vectorcraft_doc::AppearanceItem::Stroke(st)) = n.appearance.items.last_mut() {
+                    st.opacity = 0.5;
+                }
+                Ok(())
+            })
+            .unwrap();
+        }),
+        ("a brush", |s, id| {
+            let dot = red_square(s, 100.0, 100.0, 1.0);
+            let brush = run(s, "brush.new", json!({"type": "scatter", "ids": [dot]}))["name"].as_str().unwrap().to_string();
+            run(s, "edit.clear", json!({"ids": [dot]}));
+            run(s, "brush.apply", json!({"name": brush, "ids": [id]}));
+        }),
+        ("a drop shadow", |s, id| {
+            run(s, "effect.apply", json!({"effect": "stylize.dropShadow", "ids": [id]}));
+        }),
+    ];
+    for manual in [false, true] {
+        for (what, give) in &looks {
+            let mut s = blank();
+            let id = literal_path(&mut s, None, [200, 30, 30], &points, StitchRun { manual, ..StitchRun::default() });
+            let before = sewn_by(&export_plan(&mut s), id);
+            give(&mut s, id);
+            let p = export_plan(&mut s);
+            assert_eq!(sewn_by(&p, id), before, "{what}, manual {manual}: sewn as its points");
+            let named = p.warned.get(RUN_LOOK_LEFT_OUT).cloned().unwrap_or_default();
+            if *what == "a drop shadow" {
+                assert!(named.is_empty() && p.warnings.iter().any(|w| w == RASTER_LEFT_OUT), "{what}: {:?}", p.warnings);
+            } else {
+                assert_eq!(named, [vectorcraft_doc::NodeId(id)], "{what}, manual {manual}: {:?}", p.warnings);
+            }
+        }
+    }
+    // A converted object's group given an effect.
+    let mut s = blank();
+    let square = red_square(&mut s, 5.0, 5.0, 10.0);
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [square]}));
+    let before = sewn_by(&export_plan(&mut s), square);
+    assert!(before.1.iter().all(|w| *w == Choice::Manual), "{:?}", before.1);
+    run(&mut s, "effect.apply", json!({"effect": "distort.roughen", "ids": [square]}));
+    let p = export_plan(&mut s);
+    assert_eq!(sewn_by(&p, square), before, "the group isn't expanded");
+    assert_eq!(p.warned.get(RUN_LOOK_LEFT_OUT).cloned().unwrap_or_default(), [vectorcraft_doc::NodeId(square)]);
 }

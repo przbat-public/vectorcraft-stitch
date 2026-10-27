@@ -1059,7 +1059,11 @@ can't follow its path, naming the object. A stroke dashed, aligned inside or out
 varying width or with arrowheads is sewn as the area it paints, as on the canvas, its narrow parts
 satin columns that follow it (`rule: strokeOutlined`). A symbol instance's art is stained as the
 instance shows it. Art at no opacity isn't sewn. The pieces an expanded object becomes are still
-the object a person selects (`id`).
+the object a person selects (`id`). A run of stitches (manual, or a machine file's) is never
+expanded, nor a group holding one (a converted object, an opened file's block) or a symbol
+instance placing one: expanding it would plan its stitches again as art. It is sewn as its points
+in its first stroke's colour; its effects, brush and extra fills or strokes are not sewn, said in
+the warnings, naming the objects (art beside a run in a group is still expanded as it needs).
 
 - Type, images and live art (blends, envelopes, meshes, repeats), placed documents and
   intertwines are left out: they would need their outlines. An export says so in its `warnings`,

@@ -6059,3 +6059,5 @@ embroidery	Largest change: {value}%	Největší změna: {value} %
 # VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
 embroidery	manual stitches	ruční stehy
 @plural	{count} stop|{count} stops	{count} zastavení|{count} zastavení|{count} zastavení
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	efekty, štětce a další výplně či tahy na ručních stezích nebo stezích ze souboru (či na skupině, která je obsahuje) se nevyšívají: stehy se šijí tak, jak jsou

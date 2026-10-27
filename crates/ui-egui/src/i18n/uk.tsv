@@ -5654,3 +5654,5 @@ embroidery	Largest change: {value}%	Найбільша зміна: {value} %
 # VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
 embroidery	manual stitches	ручні стібки
 @plural	{count} stop|{count} stops	{count} зупинка|{count} зупинки|{count} зупинок
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	ефекти, пензлі та додаткові заливки чи обведення на ручних стібках або стібках з файлу (чи на групі, що їх містить) не вишиваються: стібки вишиваються як є

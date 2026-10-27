@@ -5974,3 +5974,5 @@ embroidery	Largest change: {value}%	უდიდესი ცვლილებ�
 # VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
 embroidery	manual stitches	ხელით ნაკერები
 @plural	{count} stop|{count} stops	გაჩერებები: {count}
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	ხელით ნაკერებზე ან ფაილიდან ნაკერებზე (ან მათ შემცველ ჯგუფზე) დამატებული ეფექტები, ფუნჯები და დამატებითი შევსებები ან კონტურები არ იქარგება: ნაკერები იკერება ისე, როგორც არის

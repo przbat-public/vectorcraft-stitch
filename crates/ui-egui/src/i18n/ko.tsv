@@ -5637,3 +5637,5 @@ embroidery	Largest change: {value}%	최대 변화: {value}%
 # VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
 embroidery	manual stitches	수동 스티치
 @plural	{count} stop|{count} stops	정지 {count}회
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	수동 스티치나 파일의 스티치(또는 이를 담은 그룹)에 적용한 효과, 브러시, 추가 칠이나 선은 자수로 놓이지 않습니다: 스티치는 있는 그대로 수놓아집니다

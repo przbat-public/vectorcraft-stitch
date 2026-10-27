@@ -6015,3 +6015,5 @@ embroidery	Largest change: {value}%	Största ändring: {value} %
 # VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
 embroidery	manual stitches	manuella stygn
 @plural	{count} stop|{count} stops	{count} stopp|{count} stopp
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	effekter, penslar och extra fyllningar eller linjer på manuella stygn eller stygn från en fil (eller på en grupp som innehåller dem) broderas inte: stygnen sys som de är

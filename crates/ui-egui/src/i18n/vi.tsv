@@ -5654,3 +5654,5 @@ embroidery	Largest change: {value}%	Thay đổi nhiều nhất: {value}%
 # VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
 embroidery	manual stitches	mũi thêu thủ công
 @plural	{count} stop|{count} stops	{count} lần dừng
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	hiệu ứng, cọ vẽ và các phần tô hoặc nét bổ sung trên mũi thêu thủ công hoặc mũi thêu từ tệp (hoặc trên nhóm chứa chúng) không được thêu: các mũi thêu được thêu nguyên như vậy

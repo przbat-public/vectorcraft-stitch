@@ -6090,3 +6090,5 @@ embroidery	Largest change: {value}%	Suurin muutos: {value} %
 # VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
 embroidery	manual stitches	manuaaliset pistot
 @plural	{count} stop|{count} stops	{count} pysäytys|{count} pysäytystä
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	tehosteita, siveltimiä ja ylimääräisiä täyttöjä tai viivoja manuaalisissa pistoissa tai tiedoston pistoissa (tai niitä sisältävässä ryhmässä) ei kirjota: pistot ommellaan sellaisinaan

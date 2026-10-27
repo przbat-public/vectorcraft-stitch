@@ -550,6 +550,26 @@ fn the_ghost_is_clipped_to_the_canvas_at_the_closest_zoom() {
     assert!((1..1_000).contains(&segments), "{segments} line segments drawn");
 }
 
+/// The interface tells the tool's handles apart by their whole id, index too: an option naming a
+/// handle of the same kind and owner at another index is another handle; one with no index is the
+/// first.
+#[test]
+fn handles_are_matched_by_their_whole_id() {
+    let (mut app, _) = app();
+    let ctx = egui::Context::default();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let view = app.view_info();
+    let h = app.session.embroidery_handles(view).0.into_iter().find(|h| h.id.kind == Kind::Entry).unwrap();
+    let mut other = h.id.json();
+    assert!(super::handles::named(&other, &h));
+    other["index"] = json!(1);
+    assert!(!super::handles::named(&other, &h), "another index, another handle");
+    other.as_object_mut().unwrap().remove("index");
+    assert!(super::handles::named(&other, &h), "no index: the first");
+    assert!(!super::handles::named(&json!(null), &h));
+}
+
 /// The handles read on white fabric and on dark fabric in every theme (both schemes, every
 /// brightness and accent): the two-tone edge's dark line stands out from white and its light line
 /// from black and from the dark line, by WCAG's non-text 3:1 (1.4.11); an exit's face from the

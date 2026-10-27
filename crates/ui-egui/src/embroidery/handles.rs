@@ -214,11 +214,6 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
     }
     let Some(st) = app.session.active() else { return };
     let t = Tokens::get(painter.ctx());
-    let same = |a: &Value, h: &Handle| {
-        a["kind"].as_str() == Some(h.id.kind.id())
-            && a["id"].as_u64() == Some(h.id.owner.part().0.0)
-            && a["part"].as_str() == Some(h.id.owner.part().1.id())
-    };
     // The object a press would select: outlined in its layer's colour.
     if let Some(object) = options["hoverObject"].as_u64().map(vectorcraft_doc::NodeId).filter(|_| !options["drag"].is_object())
         && let Some(outline) = outline_of(&st.doc, object)
@@ -241,11 +236,11 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         Kind::Entry => 2,
     });
     for h in order {
-        let dragged = same(drag, h);
+        let dragged = named(drag, h);
         let point = if dragged { dragged_at.unwrap_or(h.at) } else { h.at };
         let at = xf.to_screen(point);
-        let hovered = same(&options["hover"], h) || dragged;
-        let focused = same(&options["focus"], h);
+        let hovered = named(&options["hover"], h) || dragged;
+        let focused = named(&options["focus"], h);
         let alpha = if h.state == State::Stale { STALE_ALPHA } else { 1.0 };
         let color = match h.id.kind {
             Kind::Entry | Kind::Angle => entry_color(&t),
@@ -335,6 +330,13 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
             }
         }
     }
+}
+
+/// Whether `a`, a handle as the tool's options name it (`{kind, id, part, index}`), is `h`: by its
+/// whole id, index too, so that handles of one kind and owner are told apart (a later kind's
+/// several angle lines or rungs).
+pub(super) fn named(a: &Value, h: &Handle) -> bool {
+    vectorcraft_tools::embroidery::HandleId::from_json(a) == Some(h.id)
 }
 
 /// `object`'s outline, document points: a path's, or a compound path's members'.

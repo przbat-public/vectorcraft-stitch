@@ -28,6 +28,7 @@ mod fabrics;
 pub mod info;
 mod measure;
 mod nearest;
+pub use nearest::{NEAREST_PASSES, NEAREST_PROGRESS, NearestFound, NearestJob};
 mod objects;
 pub(crate) mod options;
 pub mod order;

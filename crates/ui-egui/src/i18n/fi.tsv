@@ -6066,3 +6066,7 @@ embroidery	Drag this part's entry and exit points on the canvas with the embroid
 # VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
 embroidery	Nothing here can take entry and exit points	Mikään tässä ei voi saada alku- ja loppupisteitä
 @plural	{count} object skipped|{count} objects skipped	{count} objekti ohitettu|{count} objektia ohitettu
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent} % · Esc keskeyttää
+embroidery	Stopped: nothing was changed.	Keskeytetty: mitään ei muutettu.
+embroidery	The document changed meanwhile: nothing was changed.	Dokumentti muuttui sillä välin: mitään ei muutettu.

@@ -418,9 +418,10 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
             order::step_selection(app, step, &selection);
         }
     }
-    // On the selection, else the whole design.
-    if crate::widgets::menu_item_name(ui, &command_label(app, NEAREST), app.session.active().is_some(), false) {
-        nearest_connection(app);
+    // On the selection, else the whole design, off the interface thread; off while one runs.
+    let free = app.session.active().is_some() && !crate::embroidery::nearest::running(app);
+    if crate::widgets::menu_item_name(ui, &command_label(app, NEAREST), free, false) {
+        crate::embroidery::nearest::start(app);
     }
     ui.separator();
     let uid = app.session.active().map(|st| st.uid);
@@ -447,19 +448,6 @@ const NEAREST: &str = "embroidery.nearestConnection";
 /// The decimals a length Nearest Connection saved is said with: a tenth of a millimetre, the
 /// formats' grid.
 const SAVED_DECIMALS: usize = 1;
-
-/// Nearest Connection on the selection, else the whole design, said in one line on the status bar:
-/// how many parts it set and what it saved, or that the points were the nearest already.
-pub(crate) fn nearest_connection(app: &mut VectorcraftApp) {
-    let label = command_label(app, NEAREST);
-    match app.run(NEAREST, json!({})) {
-        Ok(r) => {
-            let words = nearest_words(&r, crate::i18n::current());
-            app.status(format!("{label} · {words}"));
-        }
-        Err(e) => app.status(crate::i18n::msg(&e)),
-    }
-}
 
 /// What Nearest Connection's reply `r` says, in `lang`: the parts it set, how much shorter the jumps
 /// between them are, and the cuts before and after when they differ; that the points are already

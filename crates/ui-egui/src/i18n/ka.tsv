@@ -5950,3 +5950,7 @@ embroidery	Drag this part's entry and exit points on the canvas with the embroid
 # VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
 embroidery	Nothing here can take entry and exit points	აქ ვერაფერი მიიღებს შესვლისა და გასვლის წერტილებს
 @plural	{count} object skipped|{count} objects skipped	{count} ობიექტი გამოტოვებულია
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent}% · Esc შეაჩერებს
+embroidery	Stopped: nothing was changed.	შეჩერდა: არაფერი შეცვლილა.
+embroidery	The document changed meanwhile: nothing was changed.	ამასობაში დოკუმენტი შეიცვალა: არაფერი შეცვლილა.

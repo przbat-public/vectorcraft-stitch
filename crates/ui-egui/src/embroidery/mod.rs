@@ -32,6 +32,7 @@ pub mod fields;
 pub mod handles;
 pub mod marks;
 pub mod menu;
+pub mod nearest;
 pub mod notice;
 pub mod numbers;
 pub mod overlay;
@@ -67,6 +68,8 @@ pub struct Embroidery {
     pub(crate) handles: handles::Cache,
     /// The Entry Point or Exit Point dialog, while it is open ([`point_dialog`]).
     pub(crate) point_dialog: Option<point_dialog::PointDialog>,
+    /// Nearest Connection under way from the interface ([`nearest`]).
+    pub(crate) nearest: nearest::Nearest,
     /// The Embroidery panel's Sewing order tab.
     pub(crate) order: crate::panels::embroidery::order::OrderState,
     /// The Embroidery panel's Check tab.
@@ -87,6 +90,13 @@ pub struct Embroidery {
 /// The height of the isolation mode's breadcrumb bar, which upstream draws over the canvas's top
 /// after the fork's controls (`chrome::isolation_bar`), points: as it draws it.
 const ISOLATION_BAR: f32 = 24.0;
+
+/// Each frame, before it is drawn: the stitch preview's plans taken in
+/// ([`stitch_preview::poll`]), and Nearest Connection's search under way looked at ([`nearest::poll`]).
+pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
+    stitch_preview::poll(app);
+    nearest::poll(app, ctx);
+}
 
 /// What the fork draws over the canvas, after it: the selection's markers in the stitch view, the
 /// check's marks, the Art | Stitches switch, and the notice under it (both below the isolation

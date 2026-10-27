@@ -5630,3 +5630,7 @@ embroidery	Drag this part's entry and exit points on the canvas with the embroid
 # VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
 embroidery	Nothing here can take entry and exit points	Không có gì ở đây nhận được điểm vào và điểm ra
 @plural	{count} object skipped|{count} objects skipped	Đã bỏ qua {count} đối tượng
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent}% · Esc để dừng
+embroidery	Stopped: nothing was changed.	Đã dừng: không có gì thay đổi.
+embroidery	The document changed meanwhile: nothing was changed.	Tài liệu đã thay đổi trong lúc đó: không có gì thay đổi.

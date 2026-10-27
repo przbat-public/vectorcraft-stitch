@@ -5874,3 +5874,7 @@ embroidery	Drag this part's entry and exit points on the canvas with the embroid
 # VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
 embroidery	Nothing here can take entry and exit points	这里没有对象可以设置入针点和出针点
 @plural	{count} object skipped|{count} objects skipped	已跳过 {count} 个对象
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent}% · 按 Esc 停止
+embroidery	Stopped: nothing was changed.	已停止：未做任何更改。
+embroidery	The document changed meanwhile: nothing was changed.	在此期间文档已更改：未做任何更改。

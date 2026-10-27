@@ -220,6 +220,18 @@ fn planning_with_its_progress_then_a_failure_over_the_last_stitches() {
 
 /// The ≡ menu drawn alone at `time` with `events` → its items as a screen reader has them: the
 /// node, the words, and whether the item is on.
+/// Frames until Nearest Connection's search under way is applied (a second at most).
+fn finish_nearest(app: &mut VectorcraftApp, ctx: &egui::Context) {
+    for _ in 0..1000 {
+        if !crate::embroidery::nearest::running(app) {
+            return;
+        }
+        crate::embroidery::nearest::poll(app, ctx);
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+    panic!("Nearest Connection still running");
+}
+
 fn menu_items(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<egui::Event>) -> Vec<(egui::accesskit::NodeId, String, bool)> {
     let raw = egui::RawInput { time: Some(time), events, ..Default::default() };
     let mut out = ctx.run_ui(raw, |ui| menu(app, ui));
@@ -433,10 +445,14 @@ fn nearest_connection_from_the_menu_says_what_it_saved() {
     assert!(on, "on with a document, nothing selected: the whole design");
     let undo = app.session.doc().unwrap().history.undo.len();
     menu_items(&mut app, &ctx, 0.01, vec![click(id)]);
+    // It searches off the interface thread: the status bar says how far, until it is applied.
+    assert!(crate::embroidery::nearest::running(&app) && app.ui.status.starts_with("Nearest Connection… "), "{}", app.ui.status);
+    finish_nearest(&mut app, &ctx);
     assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
     assert!(app.ui.status.starts_with("Nearest Connection · 3 parts set · jumps ") && app.ui.status.ends_with(" · trims 1 → 0"), "{}", app.ui.status);
     let (id, _) = nearest(&menu_items(&mut app, &ctx, 0.02, vec![]));
     menu_items(&mut app, &ctx, 0.03, vec![click(id)]);
+    finish_nearest(&mut app, &ctx);
     assert_eq!(app.ui.status, "Nearest Connection · The entry and exit points are already the nearest.");
     assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1, "no step the second time");
 }

@@ -6021,3 +6021,7 @@ embroidery	Drag this part's entry and exit points on the canvas with the embroid
 # VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
 embroidery	Nothing here can take entry and exit points	Itt semmi nem kaphat belépési és kilépési pontot
 @plural	{count} object skipped|{count} objects skipped	{count} objektum kihagyva
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent}% · Az Esc leállítja
+embroidery	Stopped: nothing was changed.	Leállítva: semmi sem változott.
+embroidery	The document changed meanwhile: nothing was changed.	A dokumentum közben megváltozott: semmi sem változott.

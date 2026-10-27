@@ -2431,8 +2431,13 @@ position. Not one tool per kind, which would have to be merged later. The rules 
 
 Limits:
 
-- Nearest Connection runs on the interface thread, as every command does: about 0.1 s on 1,000
-  paths, seconds on the largest designs (6 to 8 s on 22,000 paths, measured under load).
+- Nearest Connection from the panel's ≡ menu searches off the interface thread on the desktop: the
+  status bar says how far it has got ("Nearest Connection… 37% · Esc stops it"), Esc stops it with
+  nothing changed, and what it found is applied as one undo step when it finishes, only if the
+  document hasn't changed meanwhile (else nothing is, and the status bar says so). On the web,
+  which has no thread, it searches in one go in the frame after the status bar says it has begun,
+  and the page waits (seconds on the largest designs). Agents' and scripts'
+  `embroidery.nearestConnection` runs in one go, as every command does.
 - On the web there is no planning thread: a design slow to plan is planned only when a drag ends
   (the ghost is the feedback meanwhile), and each drop plans in the frame.
 - At most 32 objects show their handles at once, one part at a time (the Object tab's, which a

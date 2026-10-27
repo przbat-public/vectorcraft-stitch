@@ -371,3 +371,31 @@ fn it_keeps_the_sewing_order_and_runs_only_when_asked() {
     let held = |o: &Value| o.as_array().unwrap().iter().filter(|x| x["id"] != json!(c)).cloned().collect::<Vec<_>>();
     assert_eq!(held(&after), held(&written), "nothing ran it again");
 }
+
+/// Off the interface thread (the menu's and the tool's bar's way): the job and what it finds go to
+/// another thread; what it found is applied as one undo step when the document is as the search
+/// took it, and refused when it changed meanwhile (nothing written); a cancel stops the search.
+#[test]
+fn a_search_off_the_interface_thread_applies_only_to_the_document_it_searched() {
+    fn sendable<T: Send>(_: &T) {}
+    let mut s = blank();
+    let [_, b, _] = three_lines(&mut s, "#2233cc");
+    let job = s.nearest_connection_job(&json!({})).unwrap();
+    sendable(&job);
+    let found = std::thread::spawn(move || job.search().unwrap()).join().unwrap();
+    sendable(&found);
+    let before = steps(&s);
+    let r = s.apply_nearest_connection(found).unwrap();
+    assert_eq!((r["applied"].clone(), steps(&s)), (json!(true), before + 1), "{r}");
+    assert!((first_x(&mut s, b) + 6.0).abs() < 0.1, "turned round");
+    run(&mut s, "edit.undo", json!({}));
+    let found = s.nearest_connection_job(&json!({})).unwrap().search().unwrap();
+    run(&mut s, "object.move", json!({"ids": [b], "dx": 1, "dy": 0}));
+    let moved = steps(&s);
+    assert!(s.apply_nearest_connection(found).is_err(), "the document changed");
+    assert_eq!(steps(&s), moved, "nothing written");
+    let cancelled = vectorcraft_doc::cancel::CancelToken::new();
+    cancelled.cancel();
+    let job = s.nearest_connection_job(&json!({})).unwrap();
+    assert!(vectorcraft_doc::cancel::scope(&cancelled, None, || job.search()).is_err(), "cancelled");
+}

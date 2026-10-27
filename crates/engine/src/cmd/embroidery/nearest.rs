@@ -447,8 +447,55 @@ fn longer(a: &Moves, b: &Moves) -> bool {
 /// summing the same moves in another order.
 const COST_NOISE: f64 = 1e-9;
 
-/// `embroidery.nearestConnection`.
+/// `embroidery.nearestConnection`: prepared, searched and applied in one go ([`NearestJob`]).
 pub(super) fn nearest_connection(s: &mut Session, p: &Value) -> Result<Value> {
+    let job = prepare(s, p)?;
+    let found = job.search()?;
+    apply(s, found)
+}
+
+/// Nearest Connection asked for, ready to search on any thread ([`NearestJob::search`]): the
+/// document as it was (its uid and snapshot), the objects in scope (`None`: every object), what in
+/// scope it can't join so far, the embroidery options, a copy of the units kept
+/// ([`super::service::PlanService::scratch`]), and whether it only answers.
+pub struct NearestJob {
+    uid: u64,
+    original: std::sync::Arc<Document>,
+    scope: Option<HashSet<NodeId>>,
+    skipped: Vec<(NodeId, &'static str)>,
+    opts: super::Options,
+    units: Mutex<UnitCache>,
+    dry_run: bool,
+}
+
+/// What a search found ([`NearestJob::search`]), to apply to the document it was made of
+/// ([`Session::apply_nearest_connection`]): the document with the points written, the parts it
+/// joins, the moves before and after, how many stretches were restored, and what it can't join.
+pub struct NearestFound {
+    uid: u64,
+    original: std::sync::Arc<Document>,
+    doc: Document,
+    parts: Vec<(NodeId, PartKind)>,
+    was: Vec<Stretch>,
+    now: Vec<Stretch>,
+    restored: usize,
+    skipped: Vec<(NodeId, &'static str)>,
+    dry_run: bool,
+}
+
+/// What [`NearestJob::search`] reports to the progress sink as it goes
+/// ([`vectorcraft_doc::cancel::progress`]): the planning passes done of [`NEAREST_PASSES`]; each
+/// pass's own progress comes as a plan's does.
+pub const NEAREST_PROGRESS: &str = "nearestConnection";
+
+/// How many planning passes a search makes at most, as its progress counts them: the design as it
+/// is, then with every part's own points, then a walk and a trial plan each round (a restore's
+/// plan more, uncounted).
+pub const NEAREST_PASSES: u64 = 2 + 2 * MAX_ROUNDS as u64;
+
+/// The job `p` asks for on the active document (the params checked, the scope taken from the
+/// selection as it is now).
+fn prepare(s: &mut Session, p: &Value) -> Result<NearestJob> {
     let o = object(p, C)?;
     let opts = options_in(&o, &["ids", "all", "dryRun"], C)?;
     let flag = |k: &str| -> Result<bool> {
@@ -477,64 +524,90 @@ pub(super) fn nearest_connection(s: &mut Session, p: &Value) -> Result<Value> {
         let st = s.doc()?;
         (st.uid, st.doc.clone())
     };
-    let service = s.embroidery_plans.of(uid);
-    let units = service.scratch();
-    let walk = |d: &Document| super::digitize::walked(&d.without_edit_modes(), &opts, Some(&units), true).map_err(PlanError::error);
-    // The design as it is: what its moves come to, and what in scope isn't sewn or can't be joined.
-    let walked = walk(&original)?;
-    let was = measured(&walked.plan, walked.trim);
-    if let Some(sc) = &scope {
-        let sewn: HashSet<NodeId> = walked.plan.units.iter().map(|u| u.origin.selected()).collect();
-        let mut not_sewn: Vec<NodeId> = sc.iter().copied().filter(|id| !sewn.contains(id)).collect();
-        not_sewn.sort_unstable();
-        skipped.extend(not_sewn.into_iter().map(|id| (id, "notSewn")));
-    }
-    // Every part it joins gets points (the project owner's choice, 2026-10-25), first where it
-    // starts and ends now, so the search weighs the design as it is kept: a part that started where
-    // the needle was then starts at a point taken through document points and back, which can land
-    // a float's width off and tip a tie in its plan (two rows as near the needle), and a part held
-    // can open a join that one following the needle didn't. Run again, the command then starts
-    // where this run ended.
-    let mut d: Document = (*original).clone();
-    let mut froze = false;
-    for (_, j) in chain(&d, &walked, scope.as_ref(), &mut skipped) {
-        let Some((id, kind)) = j.part else { continue };
-        let (entry, exit) = held(&d, id, kind);
-        if entry.is_none() || exit.is_none() {
-            let entry = entry.unwrap_or(PartValue::Point(in_points(j.own.0)));
-            let exit = exit.unwrap_or(PartValue::Point(in_points(j.own.1)));
-            froze |= write(&mut d, id, kind, Some(entry), Some(exit))?;
-        }
-    }
-    // Rounds on the search's own result, until one changes nothing.
-    let mut planned = (!froze).then_some(walked);
-    let mut last: Option<Round> = None;
-    let mut restored: HashSet<(Origin, usize)> = HashSet::new();
-    for _ in 0..MAX_ROUNDS {
-        let walked = match planned.take() {
-            Some(w) => w,
-            None => walk(&d)?,
-        };
-        let r = round(&units, &d, &walked, scope.as_ref(), &opts, &mut Vec::new())?;
-        restored.extend(r.restored.iter().copied());
-        let moved = r.parts.iter().any(|(_, id, kind)| held(&d, *id, *kind) != held(&r.doc, *id, *kind));
-        d = r.doc.clone();
-        last = Some(r);
-        if !moved {
-            break;
-        }
-    }
-    let mut seen = HashSet::new();
-    skipped.retain(|(id, _)| seen.insert(*id));
-    let mut now = last.as_ref().map_or_else(|| was.clone(), |r| r.after.clone());
-    let parts: Vec<(NodeId, PartKind)> = last.as_ref().map(|r| r.parts.iter().map(|(_, id, kind)| (*id, *kind)).collect()).unwrap_or_default();
-    // The rounds never make their own input worse; the points set first could (a tie tipped the
-    // other way), and then the command changes nothing.
-    if worse(&was, &now) {
-        d = (*original).clone();
-        now = was.clone();
-    }
+    let units = s.embroidery_plans.of(uid).scratch();
+    Ok(NearestJob { uid, original, scope, skipped, opts, units, dry_run })
+}
 
+impl NearestJob {
+    /// The search, on the document as it was: the points written on a copy, round after round
+    /// (this module's rules), and checked by planning. Any thread runs it; inside a
+    /// [`vectorcraft_doc::cancel::scope`], a cancel stops it between passes or inside one (an error
+    /// then, nothing found).
+    pub fn search(&self) -> Result<NearestFound> {
+        let Self { uid, original, scope, opts, units, dry_run, .. } = self;
+        let mut skipped = self.skipped.clone();
+        let passes = std::cell::Cell::new(0u64);
+        let walk = |d: &Document| {
+            vectorcraft_doc::cancel::progress(passes.get(), NEAREST_PASSES, NEAREST_PROGRESS);
+            passes.set(passes.get() + 1);
+            super::digitize::walked(&d.without_edit_modes(), opts, Some(units), true).map_err(PlanError::error)
+        };
+        // The design as it is: what its moves come to, and what in scope isn't sewn or can't be
+        // joined.
+        let walked = walk(original)?;
+        let was = measured(&walked.plan, walked.trim);
+        if let Some(sc) = scope {
+            let sewn: HashSet<NodeId> = walked.plan.units.iter().map(|u| u.origin.selected()).collect();
+            let mut not_sewn: Vec<NodeId> = sc.iter().copied().filter(|id| !sewn.contains(id)).collect();
+            not_sewn.sort_unstable();
+            skipped.extend(not_sewn.into_iter().map(|id| (id, "notSewn")));
+        }
+        // Every part it joins gets points (the project owner's choice, 2026-10-25), first where it
+        // starts and ends now, so the search weighs the design as it is kept: a part that started
+        // where the needle was then starts at a point taken through document points and back,
+        // which can land a float's width off and tip a tie in its plan (two rows as near the
+        // needle), and a part held can open a join that one following the needle didn't. Run
+        // again, the command then starts where this run ended.
+        let mut d: Document = (**original).clone();
+        let mut froze = false;
+        for (_, j) in chain(&d, &walked, scope.as_ref(), &mut skipped) {
+            let Some((id, kind)) = j.part else { continue };
+            let (entry, exit) = held(&d, id, kind);
+            if entry.is_none() || exit.is_none() {
+                let entry = entry.unwrap_or(PartValue::Point(in_points(j.own.0)));
+                let exit = exit.unwrap_or(PartValue::Point(in_points(j.own.1)));
+                froze |= write(&mut d, id, kind, Some(entry), Some(exit))?;
+            }
+        }
+        // Rounds on the search's own result, until one changes nothing.
+        let mut planned = (!froze).then_some(walked);
+        let mut last: Option<Round> = None;
+        let mut restored: HashSet<(Origin, usize)> = HashSet::new();
+        for _ in 0..MAX_ROUNDS {
+            let walked = match planned.take() {
+                Some(w) => w,
+                None => walk(&d)?,
+            };
+            vectorcraft_doc::cancel::progress(passes.get(), NEAREST_PASSES, NEAREST_PROGRESS);
+            passes.set(passes.get() + 1);
+            let r = round(units, &d, &walked, scope.as_ref(), opts, &mut Vec::new())?;
+            restored.extend(r.restored.iter().copied());
+            let moved = r.parts.iter().any(|(_, id, kind)| held(&d, *id, *kind) != held(&r.doc, *id, *kind));
+            d = r.doc.clone();
+            last = Some(r);
+            if !moved {
+                break;
+            }
+        }
+        let mut seen = HashSet::new();
+        skipped.retain(|(id, _)| seen.insert(*id));
+        let mut now = last.as_ref().map_or_else(|| was.clone(), |r| r.after.clone());
+        let parts: Vec<(NodeId, PartKind)> = last.as_ref().map(|r| r.parts.iter().map(|(_, id, kind)| (*id, *kind)).collect()).unwrap_or_default();
+        // The rounds never make their own input worse; the points set first could (a tie tipped
+        // the other way), and then the command changes nothing.
+        if worse(&was, &now) {
+            d = (**original).clone();
+            now = was.clone();
+        }
+        Ok(NearestFound { uid: *uid, original: original.clone(), doc: d, parts, was, now, restored: restored.len(), skipped, dry_run: *dry_run })
+    }
+}
+
+/// What `found` changed applied to its document as one undo step, when there is a change and it is
+/// no dry run, and the reply: refused when the document changed since the search took it (it
+/// searched an earlier one, so nothing is applied).
+fn apply(s: &mut Session, found: NearestFound) -> Result<Value> {
+    let NearestFound { uid, original, doc: d, parts, was, now, restored, skipped, dry_run } = found;
     // What changed against the document as it was.
     let mut changed = 0usize;
     let mut listed = Vec::new();
@@ -553,6 +626,10 @@ pub(super) fn nearest_connection(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let applied = changed > 0 && !dry_run;
     if applied {
+        let st = s.doc()?;
+        if st.uid != uid || !std::sync::Arc::ptr_eq(&st.doc, &original) {
+            return Err(bad(C, "the document changed while the search ran: nothing was applied"));
+        }
         s.edit(LABEL, |doc, _| {
             *doc = d;
             Ok(())
@@ -565,7 +642,7 @@ pub(super) fn nearest_connection(s: &mut Session, p: &Value) -> Result<Value> {
         "unchangedCount": parts.len() - changed,
         "skippedCount": skipped.len(),
         "skipped": skipped.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect::<Vec<_>>(),
-        "restoredCount": restored.len(),
+        "restoredCount": restored,
         "before": b.json(),
         "after": a.json(),
         "saved": {
@@ -576,6 +653,27 @@ pub(super) fn nearest_connection(s: &mut Session, p: &Value) -> Result<Value> {
         },
         "parts": listed,
     }))
+}
+
+impl Session {
+    /// Nearest Connection on the active document as `embroidery.nearestConnection {params}` takes
+    /// them, ready to search off the interface thread ([`NearestJob::search`]); what it finds is
+    /// applied with [`Session::apply_nearest_connection`]. The command runs the three in one go.
+    pub fn nearest_connection_job(&mut self, p: &Value) -> Result<NearestJob> {
+        prepare(self, p)
+    }
+
+    /// Whether what a search found is of the active document as it is now: the one it searched,
+    /// unchanged since.
+    pub fn nearest_connection_current(&self, found: &NearestFound) -> bool {
+        self.doc().is_ok_and(|st| st.uid == found.uid && std::sync::Arc::ptr_eq(&st.doc, &found.original))
+    }
+
+    /// What a search found applied, as the command applies it (one undo step "Nearest
+    /// Connection"), and the command's reply: refused when the document changed meanwhile.
+    pub fn apply_nearest_connection(&mut self, found: NearestFound) -> Result<Value> {
+        apply(self, found)
+    }
 }
 
 #[cfg(test)]

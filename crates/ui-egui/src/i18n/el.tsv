@@ -6020,3 +6020,7 @@ embroidery	manual stitches	χειροκίνητες βελονιές
 	Insert Needle Points	Εισαγωγή σημείων βελόνας
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Διαγραφή σημείων βελόνας
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Διαίρεση σειράς
+	Join Runs	Ένωση σειρών
+@msg	these runs aren't sewn one right after another in one colour block	αυτές οι σειρές δεν ράβονται η μία αμέσως μετά την άλλη σε ένα χρωματικό μπλοκ

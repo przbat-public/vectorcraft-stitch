@@ -6023,3 +6023,7 @@ embroidery	manual stitches	jahitan manual
 	Insert Needle Points	Sisipkan titik tusukan
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Hapus titik tusukan
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Pisahkan rangkaian
+	Join Runs	Gabungkan rangkaian
+@msg	these runs aren't sewn one right after another in one colour block	rangkaian ini tidak dijahit berurutan langsung dalam satu blok warna

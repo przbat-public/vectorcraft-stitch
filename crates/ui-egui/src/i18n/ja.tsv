@@ -5745,3 +5745,7 @@ embroidery	manual stitches	手動ステッチ
 	Insert Needle Points	針落ち点を挿入
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	針落ち点を削除
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	区間を分割
+	Join Runs	区間を結合
+@msg	these runs aren't sewn one right after another in one colour block	これらの区間は 1 つの色ブロックで続けて縫われません

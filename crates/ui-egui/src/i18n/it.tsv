@@ -5683,3 +5683,7 @@ embroidery	manual stitches	punti manuali
 	Insert Needle Points	Inserisci punti dell’ago
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Elimina punti dell’ago
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Dividi serie
+	Join Runs	Unisci serie
+@msg	these runs aren't sewn one right after another in one colour block	queste serie non vengono cucite una subito dopo l’altra in un unico blocco di colore

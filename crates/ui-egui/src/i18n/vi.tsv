@@ -5663,3 +5663,7 @@ embroidery	manual stitches	mũi thêu thủ công
 	Insert Needle Points	Chèn điểm đâm kim
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Xóa điểm đâm kim
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Tách đoạn
+	Join Runs	Nối các đoạn
+@msg	these runs aren't sewn one right after another in one colour block	các đoạn này không được thêu liền nhau trong cùng một khối màu

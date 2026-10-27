@@ -6024,3 +6024,7 @@ embroidery	manual stitches	manuella stygn
 	Insert Needle Points	Infoga nålstick
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Ta bort nålstick
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Dela rad
+	Join Runs	Sammanfoga rader
+@msg	these runs aren't sewn one right after another in one colour block	de här raderna sys inte direkt efter varandra i ett färgblock

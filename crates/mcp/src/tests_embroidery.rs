@@ -23,6 +23,8 @@ fn the_embroidery_commands_are_reachable() {
         "embroidery.moveNeedlePoints",
         "embroidery.insertNeedlePoints",
         "embroidery.deleteNeedlePoints",
+        "embroidery.splitRun",
+        "embroidery.joinRuns",
         "embroidery.setup",
         "embroidery.settings",
         "embroidery.threads",

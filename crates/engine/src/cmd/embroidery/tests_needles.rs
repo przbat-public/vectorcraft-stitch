@@ -363,3 +363,70 @@ fn a_path_left_empty_passes_its_cut_and_stop_on() {
     run(&mut s, "embroidery.deleteNeedlePoints", json!({"ranges": [{"id": a, "from": 0, "to": 1}, {"id": b, "from": 0, "to": 1}]}));
     assert!(stitches(&node(&s, c)).trim_before);
 }
+
+/// The plan's records of the active document: how many jumps and needle-down stitches.
+fn jumps_and_stitches(s: &mut Session) -> (usize, usize) {
+    let p = s.embroidery_plan(&super::Options::default()).unwrap();
+    let all: Vec<_> = p.blocks.iter().flat_map(|b| b.stitches.iter()).collect();
+    (
+        all.iter().filter(|s| s.command == vectorcraft_stitch::Command::Jump).count(),
+        all.iter().filter(|s| s.command == vectorcraft_stitch::Command::Stitch).count(),
+    )
+}
+
+/// Split Run lifts the needle before a needle point (one jump more, nothing else sewn changes),
+/// Join Runs joins it again (split then join gives the path back); with ties (the default) the run
+/// before is tied off and the new one tied in, 1 mm back and forward; a run's first is passed by;
+/// the selection follows its needle points.
+#[test]
+fn runs_split_and_join() {
+    let mut s = blank();
+    let points = [(10.0, 10.0), (14.0, 10.0), (18.0, 10.0), (22.0, 10.0)];
+    let id = path_mm(&mut s, &points, StitchRun::default());
+    let original = node(&s, id);
+    let (jumps, sewn) = jumps_and_stitches(&mut s);
+    let r = run(&mut s, "embroidery.splitRun", json!({"needlePoints": [{"id": id, "index": 2}, {"id": id, "index": 0}], "ties": false}));
+    assert_eq!((r["changedCount"].clone(), r["unchangedCount"].clone()), (json!(1), json!(1)), "{r}");
+    let jump = &r["jumps"][0];
+    assert_eq!((jump["id"].clone(), jump["index"].clone()), (json!(id), json!(2)), "{r}");
+    assert!((jump["length"].as_f64().unwrap() - 4.0).abs() < 1e-9, "{r}");
+    assert_eq!(needles::read(&node(&s, id)).unwrap().runs.len(), 2);
+    assert_eq!(jumps_and_stitches(&mut s), (jumps + 1, sewn), "one jump more, the same needle points");
+    let r = run(&mut s, "embroidery.joinRuns", json!({"needlePoints": [{"id": id, "index": 2}]}));
+    assert_eq!(r["changedCount"], json!(1), "{r}");
+    let back = node(&s, id);
+    assert_eq!((back.path_data(), stitches(&back)), (original.path_data(), stitches(&original)), "split then join: as it was");
+    // With ties: a tie-off and a tie-in, two needle points each; the selection follows.
+    run(&mut s, "select.anchors", json!({"id": id, "anchors": [[0, 3]]}));
+    run(&mut s, "embroidery.splitRun", json!({"needlePoints": [{"id": id, "index": 2}]}));
+    let st = needles::read(&node(&s, id)).unwrap();
+    assert_eq!(st.runs.iter().map(|r| r.needles.len()).collect::<Vec<_>>(), [4, 4]);
+    assert_eq!((at(&s, id, 2), at(&s, id, 3)), ((13.0, 10.0), (14.0, 10.0)), "tied off: 1 mm back and forward");
+    assert_eq!((at(&s, id, 4), at(&s, id, 5), at(&s, id, 6), at(&s, id, 7)), ((18.0, 10.0), (19.0, 10.0), (18.0, 10.0), (22.0, 10.0)), "tied in");
+    assert_eq!(s.doc().unwrap().selection.anchors[&NodeId(id)], [(1, 3)].into_iter().collect(), "the selected needle point at its new place");
+}
+
+/// Join Runs joins paths of stitches sewn one right after another (next to one another in one
+/// parent, in one colour, of one kind) into the first, never reversed, dropping a cut at the gap;
+/// others are refused, with a message the interface translates.
+#[test]
+fn paths_join_when_sewn_one_after_another() {
+    let mut s = blank();
+    let a = path_mm(&mut s, &[(10.0, 10.0), (12.0, 10.0)], StitchRun { trim_after: true, ..StitchRun::default() });
+    let b = path_mm(&mut s, &[(20.0, 10.0), (22.0, 10.0)], StitchRun { stop_after: true, ..StitchRun::default() });
+    let c = path_mm(&mut s, &[(30.0, 10.0), (32.0, 10.0)], StitchRun { manual: true, ..StitchRun::default() });
+    let message = |r: crate::Result<Value>| match r {
+        Err(crate::EngineError::Other(m)) => m,
+        r => panic!("{r:?}"),
+    };
+    assert_eq!(message(s.execute("embroidery.joinRuns", &json!({"ids": [b, a]}))), super::needle_edits::NOT_JOINABLE, "not in the order sewn");
+    assert_eq!(message(s.execute("embroidery.joinRuns", &json!({"ids": [b, c]}))), super::needle_edits::NOT_JOINABLE, "a file's and a manual");
+    let r = run(&mut s, "embroidery.joinRuns", json!({"ids": [a, b]}));
+    assert_eq!((r["removed"].clone(), r["dropped"].clone()), (json!([b]), json!([{"function": "trim", "id": b}])), "{r}");
+    let joined = needles::read(&node(&s, a)).unwrap();
+    assert_eq!((joined.runs.len(), joined.len()), (1, 4), "one run: the jump a stitch");
+    assert_eq!((at(&s, a, 1), at(&s, a, 2)), ((12.0, 10.0), (20.0, 10.0)), "never reversed");
+    let marks = stitches(&node(&s, a));
+    assert!(!marks.trim_after && marks.stop_after, "the last one's stop after it");
+    assert!(s.doc().unwrap().doc.node(NodeId(b)).is_none());
+}

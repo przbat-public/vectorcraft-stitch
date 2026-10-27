@@ -5919,3 +5919,7 @@ embroidery	manual stitches	ściegi ręczne
 	Insert Needle Points	Wstaw nakłucia
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Usuń nakłucia
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Podziel odcinek
+	Join Runs	Połącz odcinki
+@msg	these runs aren't sewn one right after another in one colour block	te odcinki nie są szyte jeden zaraz po drugim w jednym bloku koloru

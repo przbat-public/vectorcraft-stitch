@@ -5195,6 +5195,19 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     one after it), else dropped. The paths it changed leave the selection. It answers `{changedCount, paths,
     pathCount, removed: [id], removedCount, moved: [{function, id, index | before: true}], dropped: [{function, id}],
     lengths, passedOver}`.
+  - `embroidery.splitRun {needlePoints?, ranges?, ties?: true}` lifts the needle before each needle point addressed: a
+    new run starts with it in the same path, the needle jumping onto it; a run's first is passed by
+    (`unchangedCount`). With `ties` (on unless `false`) the run before is tied off and the new one tied in, as the
+    planner ties a run around a cut (a short stitch back and forward, 1 mm or the document's shortest stitch when
+    longer), as needle points that can be moved or deleted. It answers `{changedCount, unchangedCount, paths,
+    pathCount, jumps: [{id, index, length}], lengths, passedOver}` (`index`: the needle point the jump lands on).
+  - `embroidery.joinRuns {needlePoints?, ranges? | ids?}` joins each run whose first needle point is addressed to the
+    run before it in its path, or (`ids`, 2 or more) the paths of stitches given into the first: they must be sewn
+    one right after another (next to one another in one parent, in the order given, in one colour, all opened or all
+    manual), else it is refused ("these runs aren't sewn one right after another in one colour block"). The jump
+    becomes a stitch (a needle point lying where the run before ends is kept once), never reversed; a cut or a stop at
+    a gap joined goes. It answers `{changedCount, paths, pathCount, removed: [id], dropped: [{function, id}],
+    lengths}`.
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,

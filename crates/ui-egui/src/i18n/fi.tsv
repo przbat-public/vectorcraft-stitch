@@ -6099,3 +6099,7 @@ embroidery	manual stitches	manuaaliset pistot
 	Insert Needle Points	Lisää neulanpistoja
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Poista neulanpistoja
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Jaa pistosarja
+	Join Runs	Yhdistä pistosarjat
+@msg	these runs aren't sewn one right after another in one colour block	näitä pistosarjoja ei ommella heti peräkkäin yhdessä värilohkossa

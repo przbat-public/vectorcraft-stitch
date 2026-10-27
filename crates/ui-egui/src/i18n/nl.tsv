@@ -6066,3 +6066,7 @@ embroidery	manual stitches	handmatige steken
 	Insert Needle Points	Insteekpunten invoegen
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Insteekpunten verwijderen
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Reeks splitsen
+	Join Runs	Reeksen samenvoegen
+@msg	these runs aren't sewn one right after another in one colour block	deze reeksen worden niet direct na elkaar in één kleurblok genaaid

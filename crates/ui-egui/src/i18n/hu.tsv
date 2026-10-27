@@ -6054,3 +6054,7 @@ embroidery	manual stitches	kézi öltések
 	Insert Needle Points	Tűszúrások beszúrása
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Tűszúrások törlése
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Öltéssor felosztása
+	Join Runs	Öltéssorok összekapcsolása
+@msg	these runs aren't sewn one right after another in one colour block	ezeket az öltéssorokat nem közvetlenül egymás után varrja egy színblokkban

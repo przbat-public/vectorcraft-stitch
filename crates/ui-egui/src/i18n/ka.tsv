@@ -5983,3 +5983,7 @@ embroidery	manual stitches	ხელით ნაკერები
 	Insert Needle Points	ნემსის ჩხვლეტების ჩასმა
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	ნემსის ჩხვლეტების წაშლა
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	მწკრივის გაყოფა
+	Join Runs	მწკრივების გაერთიანება
+@msg	these runs aren't sewn one right after another in one colour block	ეს მწკრივები ერთ ფერის ბლოკში ერთმანეთის მიყოლებით არ იკერება

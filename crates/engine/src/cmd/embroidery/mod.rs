@@ -301,6 +301,24 @@ pub fn specs() -> Vec<CommandSpec> {
             needle_edits::delete
         ),
         cmd!(
+            "embroidery.splitRun",
+            "Split Run",
+            [],
+            None,
+            "{needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them; default the selection's), ties?: true} splits a run before each needle point addressed: the needle lifts there and comes down on it (a jump onto it), a new run starting with it in the same path; a run's first is passed by (unchangedCount). With ties (the project owner's choice: on unless false), the run before is tied off and the new one tied in, as the planner ties a run around a cut (a short stitch back and forward, 1 mm or the document's shortest stitch when longer): real needle points, which can be moved or deleted. The selection keeps its needle points at their new places. One undo step \"Split Run\", none when nothing is split → {changedCount: the splits, unchangedCount, paths: [{id, needlePoints}], pathCount, jumps: [{id, index (the needle point the jump lands on), length (millimetres)}] (at most 1000), lengths, passedOver}",
+            has_doc,
+            needle_edits::split_run
+        ),
+        cmd!(
+            "embroidery.joinRuns",
+            "Join Runs",
+            [],
+            None,
+            "{needlePoints?, ranges? (the first needle points of the runs to join to the run before them, in their paths; default the selection's) | ids?: [id…] (2 to 100,000 paths of stitches to join into the first: sewn one right after another, next to one another in one parent in the order given, in one colour, all opened from a file or all manual)} joins runs: the jump between them becomes a stitch (a needle point lying where the run before ends is kept once), never reversed; a cut or a stop at a gap joined goes (dropped says so). Joined paths keep the first's id and cut before it, and the last's cut and stop after it. Paths that aren't sewn one right after another in one colour block are refused (translated). One undo step \"Join Runs\", none when nothing is joined → {changedCount: the gaps joined, paths: [{id, needlePoints}], pathCount, removed: [id] (the paths joined into the first), dropped: [{function: \"trim\"|\"stop\", id}], lengths}",
+            has_doc,
+            needle_edits::join_runs
+        ),
+        cmd!(
             "embroidery.setStopAfter",
             "Embroidery Stop After",
             [],

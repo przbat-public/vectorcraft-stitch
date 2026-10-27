@@ -17,7 +17,7 @@ pub(super) const LOCK: f64 = 1.0;
 /// Where a lock stitch, tie-in or tie-off at `at` steps to: [`LOCK`] along the stitch towards
 /// `toward`, or `min_stitch` when that is longer, so that the lock is no stitch the planner leaves
 /// out as too short; all of the stitch when it is shorter still. `None` when the two are one point.
-pub(super) fn lock_step(at: Point, toward: Point, min_stitch: f64) -> Option<Point> {
+pub fn lock_step(at: Point, toward: Point, min_stitch: f64) -> Option<Point> {
     unit(toward - at).map(|d| at + d * LOCK.max(min_stitch).min(at.distance(toward)))
 }
 

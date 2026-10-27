@@ -6068,3 +6068,7 @@ embroidery	manual stitches	ruční stehy
 	Insert Needle Points	Vložit vpichy
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Odstranit vpichy
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Rozdělit řadu
+	Join Runs	Spojit řady
+@msg	these runs aren't sewn one right after another in one colour block	tyto řady se nešijí jedna hned po druhé v jednom barevném bloku

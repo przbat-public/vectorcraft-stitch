@@ -6007,3 +6007,7 @@ embroidery	manual stitches	ръчни бодове
 	Insert Needle Points	Вмъкване на точки на убождане
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Изтриване на точки на убождане
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Разделяне на редица
+	Join Runs	Съединяване на редици
+@msg	these runs aren't sewn one right after another in one colour block	тези редици не се шият една непосредствено след друга в един цветови блок

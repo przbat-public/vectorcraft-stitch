@@ -6067,3 +6067,7 @@ embroidery	manual stitches	points manuels
 	Insert Needle Points	Insérer des points de piqûre
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Supprimer des points de piqûre
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Diviser la suite
+	Join Runs	Joindre les suites
+@msg	these runs aren't sewn one right after another in one colour block	ces suites ne sont pas brodées l’une juste après l’autre dans un même bloc de couleur

@@ -6023,3 +6023,7 @@ embroidery	manual stitches	manuelle sting
 	Insert Needle Points	Indsæt nålestik
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Slet nålestik
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Del række
+	Join Runs	Saml rækker
+@msg	these runs aren't sewn one right after another in one colour block	disse rækker sys ikke lige efter hinanden i én farveblok

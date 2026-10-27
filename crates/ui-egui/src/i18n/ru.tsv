@@ -5679,3 +5679,7 @@ embroidery	manual stitches	ручные стежки
 	Insert Needle Points	Вставить проколы
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	Удалить проколы
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Разделить ряд
+	Join Runs	Соединить ряды
+@msg	these runs aren't sewn one right after another in one colour block	эти ряды не вышиваются один сразу за другим в одном цветовом блоке

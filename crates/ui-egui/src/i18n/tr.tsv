@@ -6029,3 +6029,7 @@ embroidery	manual stitches	manuel dikişler
 	Insert Needle Points	İğne Noktası Ekle
 # VectorCraft Stitch: Delete Needle Points
 	Delete Needle Points	İğne Noktalarını Sil
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Diziyi Böl
+	Join Runs	Dizileri Birleştir
+@msg	these runs aren't sewn one right after another in one colour block	bu diziler tek bir renk bloğunda art arda dikilmiyor

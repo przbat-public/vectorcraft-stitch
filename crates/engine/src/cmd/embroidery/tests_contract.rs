@@ -148,10 +148,15 @@ fn the_manual_stitch_commands_replies_keep_their_shape() {
     let pinned =
         "{converted: [{id: int, needlePoints: int, runs: int, units: int}], convertedCount: int, needlePoints: int, skipped: [], skippedCount: int}";
     assert_eq!(converted, pinned, "replies changed shape; if on purpose, pin it");
+    let a_run = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(ids[0])).unwrap().children().unwrap()[0].id.0;
+    let moved = shape(&run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": a_run, "index": 1}], "dx": 0.5})));
+    let pinned = "{changedCount: int, lengths: {aboveMax: int, belowMin: int, count: int, longest: float, max: float, min: float, shortest: float}, passedOver: [], pathCount: int, paths: [{id: int, needlePoints: int}]}";
+    assert_eq!(moved, pinned, "replies changed shape; if on purpose, pin it");
     let dry = shape(&run(&mut s, "embroidery.restoreObject", json!({"ids": ids, "dryRun": true})));
-    let pinned = "{dryRun: bool, edited: [], editedCount: int, restored: [int], restoredCount: int, skipped: [], skippedCount: int}";
+    // A needle point moved: the object's stitches were edited since converting.
+    let pinned = "{dryRun: bool, edited: [int], editedCount: int, restored: [int], restoredCount: int, skipped: [], skippedCount: int}";
     assert_eq!(dry, pinned, "replies changed shape; if on purpose, pin it");
     let restored = shape(&run(&mut s, "embroidery.restoreObject", json!({ "ids": ids })));
-    let pinned = "{edited: [], editedCount: int, restored: [int], restoredCount: int, skipped: [], skippedCount: int}";
+    let pinned = "{edited: [int], editedCount: int, restored: [int], restoredCount: int, skipped: [], skippedCount: int}";
     assert_eq!(restored, pinned, "replies changed shape; if on purpose, pin it");
 }

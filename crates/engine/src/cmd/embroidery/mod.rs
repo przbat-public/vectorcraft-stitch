@@ -29,6 +29,8 @@ pub mod info;
 mod manual;
 mod measure;
 mod nearest;
+mod needle_edits;
+mod needles;
 pub use nearest::{NEAREST_PASSES, NEAREST_PROGRESS, NearestFound, NearestJob};
 mod objects;
 pub(crate) mod options;
@@ -64,6 +66,8 @@ mod tests_manual;
 mod tests_matrix;
 #[cfg(test)]
 mod tests_nearest;
+#[cfg(test)]
+mod tests_needles;
 #[cfg(test)]
 mod tests_object;
 #[cfg(test)]
@@ -268,6 +272,15 @@ pub fn specs() -> Vec<CommandSpec> {
             "{ids?: [id…] (default: the selection; a manual run stands for the object it was converted from, a group or layer for the converted objects in it; at most 100,000), strokes?: bool, corners?: bool (Scale Strokes & Effects, Scale Corners for the scaling since converting; default: the preferences), dryRun?: false (true: answer what would be restored, change nothing)} puts back each object converted to manual stitches (embroidery.convertToManual) in place of its stitches: the object as it was when converted, moved, turned and scaled as its stitches were since (planned again at its size now), keeping the group's id, name, visibility and lock, Trim After and Stop After; edits to its stitches are discarded (edited lists the objects whose stitches were edited since converting, so an interface can ask first). Passed over, with why: notConverted (nothing kept to restore), literal (stitches from a file), unreadable (the object kept doesn't read), missingSymbol (it places a symbol the document no longer has), locked. One undo step \"Restore Object\"; nothing restored is an error naming each object and why → {restored: [id] (at most 1000), restoredCount, edited: [id], editedCount, skippedCount, skipped: [{id, reason}] (at most 1000)}",
             has_selection,
             manual::restore
+        ),
+        cmd!(
+            "embroidery.moveNeedlePoints",
+            "Move Needle Points",
+            [],
+            None,
+            "{needlePoints?: [{id, index}…] (a path of literal stitches, opened from a machine file or converted to manual stitches, and a needle point's place in it, from 0 across its runs: its anchors in order, a line to its own start one needle point), ranges?: [{id, from, to}…] (inclusive) (default: the selection's needle points: of each path of stitches selected, its anchors selected, or all of it selected whole, and all of those in a group selected whole; at most 2,000,000 needle points in 100,000 paths), dx?: 0, dy?: 0 (millimetres, y down) | to?: [x, y] (millimetres from the document's origin, y down; one needle point)} moves each needle point addressed, nothing else; a path whose only run is two needle points brought to one spot sews both (a tack). Refused before anything changes: an id that isn't a path of stitches (or isn't in the document's layers), one locked or hidden, an index past its needle points, a needle point taken outside the document's coordinates. One undo step \"Move Needle Points\", none when nothing moves; the selection keeps its needle points → {changedCount: the needle points moved, paths: [{id, needlePoints}] (at most 1000), pathCount, lengths: {count, shortest, longest, belowMin, aboveMax, min, max} (the stitches into and out of each needle point moved, millimetres, against the document's shortest stitch, min, and the 12.7 mm a machine sews well, max), passedOver: [{id, reason}] (selected objects that aren't paths of stitches, at most 1000: notStitches, locked, outOfRange, tooManyNeedlePoints)}",
+            has_doc,
+            needle_edits::move_points
         ),
         cmd!(
             "embroidery.setStopAfter",

@@ -6047,3 +6047,6 @@ embroidery	manual stitches	kézi öltések
 @plural	{count} stop|{count} stops	{count} megállás
 # VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	a kézi öltéseken vagy fájlból származó öltéseken (vagy az őket tartalmazó csoporton) lévő effektusok, ecsetek és további kitöltések vagy körvonalak nem kerülnek kihímzésre: az öltések úgy varródnak, ahogy vannak
+# VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
+	Move Needle Points	Tűszúrások áthelyezése
+@msg	select needle points of a run of stitches, or give needlePoints	jelöljön ki tűszúrásokat egy öltéssorból, vagy adja meg a needlePoints értéket

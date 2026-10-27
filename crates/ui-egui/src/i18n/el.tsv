@@ -6013,3 +6013,6 @@ embroidery	manual stitches	χειροκίνητες βελονιές
 @plural	{count} stop|{count} stops	{count} διακοπή|{count} διακοπές
 # VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	τα εφέ, τα πινέλα και οι επιπλέον γεμίσεις ή πινελιές σε χειροκίνητες βελονιές ή βελονιές από αρχείο (ή σε ομάδα που τις περιέχει) δεν κεντιούνται: οι βελονιές ράβονται όπως είναι
+# VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
+	Move Needle Points	Μετακίνηση σημείων βελόνας
+@msg	select needle points of a run of stitches, or give needlePoints	επιλέξτε σημεία βελόνας μιας σειράς βελονιών ή δώστε needlePoints

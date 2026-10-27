@@ -178,13 +178,14 @@ fn manual_stitch_messages_are_translated() {
     let messages = [
         message_of(s.execute("embroidery.convertToManual", &json!({ "ids": [text] }))),
         message_of(s.execute("embroidery.restoreObject", &json!({ "ids": [text] }))),
+        message_of(s.execute("embroidery.moveNeedlePoints", &json!({ "dx": 1 }))),
     ];
     let mut untranslated = Vec::new();
     for info in LANGUAGES.iter().filter(|l| l.code != "en") {
         let lang = Lang::from_code(info.code).unwrap();
         for m in &messages {
             let shown = message(lang, m);
-            if shown == *m || ["nothing selected", "manual stitches", "converted"].iter().any(|w| shown.contains(*w)) {
+            if shown == *m || ["nothing selected", "manual stitches", "converted", "select needle points"].iter().any(|w| shown.contains(*w)) {
                 untranslated.push(format!("{}: {shown}", info.code));
             }
         }

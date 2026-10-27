@@ -6060,3 +6060,6 @@ embroidery	manual stitches	points manuels
 @plural	{count} stop|{count} stops	{count} arrêt|{count} arrêts
 # VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	les effets, pinceaux et fonds ou contours supplémentaires sur des points manuels ou d’un fichier (ou sur un groupe qui les contient) ne sont pas brodés : les points sont brodés tels quels
+# VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
+	Move Needle Points	Déplacer les points de piqûre
+@msg	select needle points of a run of stitches, or give needlePoints	sélectionnez des points de piqûre d’une suite de points, ou donnez needlePoints

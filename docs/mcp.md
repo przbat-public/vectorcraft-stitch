@@ -5162,6 +5162,25 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `reason`: `notConverted`, `literal`, `unreadable` (the object kept doesn't read), `missingSymbol`, `locked`. One undo
   step; nothing restored is an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
   skippedCount, skipped: [{id, reason}]}` (and `dryRun: true` with a dry run).
+- **Editing stitches.** The stitch commands edit a path of literal stitches (a run opened from a machine file, or one
+  an object was converted to) needle point by needle point, in millimetres, without a plan. A needle point is
+  addressed as `{id, index}`: the path and the needle point's place in it, from 0 across its runs (its anchors in
+  order; a run stored as a line to its own start is one needle point); `ranges: [{id, from, to}]` addresses a stretch
+  (inclusive). With neither, a command takes the selection's needle points: the anchors selected of each path of
+  stitches, all of one selected whole, all of those in a group selected whole (other objects are passed over and
+  listed in `passedOver` with why: `notStitches`, `locked`, `outOfRange`, `tooManyNeedlePoints`). An id stays put
+  across edits and an index shifts only inside the path an edit changes; record numbers are for showing, never for
+  editing. Refused before anything changes: an id that isn't a path of stitches in the document's layers, a locked or
+  hidden one, an index past its needle points, anchors that aren't numbers or lie outside the document's coordinates,
+  more than 2,000,000 needle points or 100,000 paths addressed; nothing given and nothing selected is an error ("select
+  needle points of a run of stitches, or give needlePoints"). Each edit is one undo step (none when nothing changes),
+  leaves the selection on what it says, and answers `lengths: {count, shortest, longest, belowMin, aboveMax, min,
+  max}`: the needle-down stitches it made or changed, in millimetres, against the document's shortest stitch (`min`,
+  Document Setup's) and the 12.7 mm a machine sews well (`max`, the Check tab's).
+  - `embroidery.moveNeedlePoints {needlePoints?, ranges?, dx?, dy?, to?}` moves each needle point by `dx, dy`
+    (millimetres, y down), or the one addressed to `to` (`[x, y]`, millimetres from the document's origin); a path
+    whose only run is two needle points brought to one spot sews both (a tack). The selection keeps its needle points.
+    It answers `{changedCount, paths: [{id, needlePoints}], pathCount, lengths, passedOver}`.
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,

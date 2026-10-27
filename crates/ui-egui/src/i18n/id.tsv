@@ -6016,3 +6016,6 @@ embroidery	manual stitches	jahitan manual
 @plural	{count} stop|{count} stops	{count} pemberhentian
 # VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	efek, kuas, serta isian atau goresan tambahan pada jahitan manual atau jahitan dari berkas (atau pada grup yang memuatnya) tidak dibordir: jahitan dijahit apa adanya
+# VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
+	Move Needle Points	Pindahkan titik tusukan
+@msg	select needle points of a run of stitches, or give needlePoints	pilih titik tusukan dari rangkaian jahitan, atau berikan needlePoints

@@ -1,7 +1,9 @@
 //! `embroidery.nearestConnection`: a line turned round for the part after it, a fill's exit chosen
 //! for the next, one undo step that Undo takes back, a second run that changes nothing, the scope
-//! (objects outside keep their points, and those with points their stitches), what it can't join and why, a colour change breaking the
-//! chain, strict params, and a dry run that answers as the run would.
+//! (objects outside keep their points, and those with points their stitches), what it can't join
+//! and why (every reason), points set by hand replaced, the sewing order kept and nothing run by
+//! itself, a colour change breaking the chain, strict params, and a dry run that answers as the run
+//! would.
 
 use serde_json::{Value, json};
 
@@ -291,4 +293,81 @@ fn a_locked_object_keeps_its_points() {
     let entry = |k: usize| info["objects"][k]["settings"]["stroke"]["entry"].clone();
     assert_eq!(entry(1), json!(null), "the locked line: {info}");
     assert!(entry(0).is_array() && entry(2).is_array(), "the others: {info}");
+}
+
+/// Every part it can't join is listed with why: a symbol's instance (its art takes one point for
+/// every instance), a fill sewn as pieces (two fills), a line of several subpaths (these rules don't
+/// say where it can start and end), a stroke a clip group cuts, and in an opened design its
+/// stitches read from the file; the lines beside them are joined all the same.
+#[test]
+fn every_reason_it_cant_join_is_listed() {
+    let mut s = blank();
+    let [_, b, _] = three_lines(&mut s, "#2233cc");
+    let symbol = square(&mut s, (100.0, 0.0), 10.0);
+    run(&mut s, "select.set", json!({"ids": [symbol]}));
+    run(&mut s, "symbol.new", json!({"name": "Square"}));
+    let placed = run(&mut s, "symbol.place", json!({"name": "Square", "x": 400, "y": 40}))["id"].as_u64().unwrap();
+    let pieces = square(&mut s, (0.0, 60.0), 10.0);
+    run(&mut s, "appearance.addFill", json!({"ids": [pieces]}));
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#2233cc"}));
+    let pt = |v: f64| (AT + v) * PT_PER_MM;
+    let d = format!("M {} {} L {} {} M {} {} L {} {}", pt(0.0), pt(90.0), pt(20.0), pt(90.0), pt(0.0), pt(95.0), pt(20.0), pt(95.0));
+    let several = run(&mut s, "path.create", json!({ "d": d }))["id"].as_u64().unwrap();
+    run(&mut s, "stroke.set", json!({"weight": 1.0, "ids": [several]}));
+    run(&mut s, "select.none", json!({}));
+    let cut = line(&mut s, "#2233cc", (40.0, 120.0), (80.0, 120.0));
+    run(&mut s, "paint.setStroke", json!({"none": true}));
+    let mask = run(&mut s, "shape.rectangle", json!({"x": pt(50.0), "y": pt(110.0), "width": 20.0 * PT_PER_MM, "height": 20.0 * PT_PER_MM}))["id"]
+        .as_u64()
+        .unwrap();
+    run(&mut s, "select.set", json!({"ids": [cut, mask]}));
+    run(&mut s, "object.clippingMask.make", json!({}));
+    run(&mut s, "select.none", json!({}));
+    let r = run(&mut s, "embroidery.nearestConnection", json!({"all": true}));
+    let reasons: Vec<String> = r["skipped"].as_array().unwrap().iter().map(|k| k["reason"].as_str().unwrap().to_string()).collect();
+    let skipped = |id: u64| r["skipped"].as_array().unwrap().iter().find(|k| k["id"] == json!(id)).map(|k| k["reason"].clone());
+    assert_eq!(skipped(placed), Some(json!("symbolInstance")), "{r}");
+    assert_eq!(skipped(pieces), Some(json!("pieces")), "{r}");
+    assert_eq!(skipped(several), Some(json!("unmodelled")), "{r}");
+    assert!(reasons.iter().any(|w| w == "clipped"), "{r}");
+    assert!((first_x(&mut s, b) + 6.0).abs() < 0.1, "the line beside them turned round all the same");
+    // An opened design's stitches are sewn as they are.
+    let pes = run(&mut s, "document.export", json!({"format": "pes"}))["dataBase64"].clone();
+    run(&mut s, "document.open", json!({"name": "design.pes", "dataBase64": pes}));
+    let r = run(&mut s, "embroidery.nearestConnection", json!({}));
+    let reasons: Vec<&str> = r["skipped"].as_array().unwrap().iter().map(|k| k["reason"].as_str().unwrap()).collect();
+    assert!(!reasons.is_empty() && reasons.iter().all(|w| *w == "literal"), "{r}");
+}
+
+/// Points set by hand in scope are replaced (the project owner's choice, 2026-10-25): the second line
+/// started at its nearer end by its own points is turned round all the same.
+#[test]
+fn points_set_by_hand_are_replaced() {
+    let mut s = blank();
+    let [_, b, _] = three_lines(&mut s, "#2233cc");
+    let pt = |v: f64| (AT + v) * PT_PER_MM;
+    run(&mut s, "embroidery.setEntryExit", json!({"id": b, "part": "stroke", "entry": [pt(1.0), pt(0.0)], "exit": [pt(-6.0), pt(0.0)]}));
+    assert!((first_x(&mut s, b) - 1.0).abs() < 0.1, "set by hand at its nearer end");
+    let r = run(&mut s, "embroidery.nearestConnection", json!({}));
+    assert!((first_x(&mut s, b) + 6.0).abs() < 0.1, "replaced: {r}");
+}
+
+/// It never changes the sewing order (the project owner's choice, 2026-10-25), and nothing runs it
+/// again by itself: moving an object afterwards leaves the points it wrote as they are.
+#[test]
+fn it_keeps_the_sewing_order_and_runs_only_when_asked() {
+    let mut s = blank();
+    let [a, b, c] = three_lines(&mut s, "#2233cc");
+    let fill = square(&mut s, (40.0, -10.0), 8.0);
+    let order = |s: &mut Session| units(s).iter().map(|u| (u["id"].clone(), u["part"].clone())).collect::<Vec<_>>();
+    let before = order(&mut s);
+    run(&mut s, "embroidery.nearestConnection", json!({}));
+    assert_eq!(order(&mut s), before, "the sewing order as it was");
+    let points = |s: &mut Session| run(s, "embroidery.info", json!({"ids": [a, b, c, fill]}))["objects"].clone();
+    let written = points(&mut s);
+    run(&mut s, "object.move", json!({"ids": [c], "dx": 30, "dy": 0}));
+    let after = points(&mut s);
+    let held = |o: &Value| o.as_array().unwrap().iter().filter(|x| x["id"] != json!(c)).cloned().collect::<Vec<_>>();
+    assert_eq!(held(&after), held(&written), "nothing ran it again");
 }

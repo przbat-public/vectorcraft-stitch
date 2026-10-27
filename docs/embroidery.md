@@ -1377,7 +1377,9 @@ the object a person selects (`id`).
   recorded with the planner as it was); where shapes
   can start and end and their shortest joins (`plan/ends.rs`, `plan/joins.rs`, and
   `tests/prop_joins.rs`: equal to trying every choice, never worse than the points they start
-  from), Nearest Connection on documents (`tests_nearest.rs`, 13 tests, a second run among them
+  from), Nearest Connection on documents (`tests_nearest.rs`, 16 tests, a second run among them, every
+  reason it can't join a part, points set by hand replaced, the sewing order kept, nothing run by
+  itself, and `mcp/src/tests_embroidery.rs`'s case through MCP,
   changing nothing, and `tests/embroidery_joins.rs`: never worse on random designs, its needle points
   weighed in, answering what the design then sews, and a second run changing nothing); the tool with a made-up
   plan (`tools/src/embroidery/tests.rs`, 16 tests: where handles stand, catching them at any

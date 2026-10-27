@@ -5856,7 +5856,6 @@ embroidery	by size	ανάλογα με το μέγεθος
 embroidery	Entry and exit	Είσοδος και έξοδος
 embroidery	Set	Ορισμένο
 embroidery	nearest	πλησιέστερο
-embroidery	not used yet	δεν χρησιμοποιείται ακόμη
 embroidery	Set on the selected objects.	Ορίστηκε στα επιλεγμένα αντικείμενα.
 embroidery	Nearest to where the needle is.	Το πλησιέστερο στο σημείο όπου βρίσκεται η βελόνα.
 embroidery	built-in values	ενσωματωμένες τιμές
@@ -5950,3 +5949,48 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Δεν επικ
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} επιλεγμένο αντικείμενο δεν δέχεται ρυθμίσεις και παραλείφθηκε|{count} επιλεγμένα αντικείμενα δεν δέχονται ρυθμίσεις και παραλείφθηκαν
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} επιλεγμένο αντικείμενο δεν δέχεται ρυθμίσεις|{count} επιλεγμένα αντικείμενα δεν δέχονται ρυθμίσεις
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	Σημεία εισόδου ή εξόδου που αστοχούν κατά πάνω από {value} mm
+embroidery	Largest miss: {value} mm	Μέγιστη απόκλιση: {value} mm
+@plural	{count} point|{count} points	{count} σημείο|{count} σημεία
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	αστοχία {value} mm
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Πλησιέστερη σύνδεση
+@plural	{count} part set|{count} parts set	{count} τμήμα ορίστηκε|{count} τμήματα ορίστηκαν
+embroidery	jumps {value} mm shorter	άλματα κατά {value} mm συντομότερα
+embroidery	jumps no shorter	τα άλματα δεν είναι συντομότερα
+embroidery	trims {before} → {after}	κοψίματα {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Τα σημεία εισόδου και εξόδου είναι ήδη τα πλησιέστερα.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Εργαλείο κεντήματος
+	 a point to move it, or an arrow's head to turn the rows  |  	 σημείο για μετακίνηση ή την αιχμή ενός βέλους για περιστροφή των σειρών  |  
+	 a point or an arrow to put it back to Auto  |  	 σημείο ή βέλος για επιστροφή στο Αυτόματα  |  
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	άλμα {value} mm
+embroidery	jump {value} mm, cut	άλμα {value} mm, κόψιμο
+embroidery	Stitches update when you pause or let go.	Οι βελονιές ενημερώνονται όταν σταματήσετε ή αφήσετε.
+embroidery	Stitches update when you let go.	Οι βελονιές ενημερώνονται όταν αφήσετε.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Σημείο εισόδου
+embroidery	Exit Point	Σημείο εξόδου
+embroidery	Auto (nearest where the needle is)	Αυτόματα (πλησιέστερα στη βελόνα)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Το σημείο μεταφέρεται στην πλησιέστερη θέση όπου μπορούν να αρχίσουν ή να τελειώσουν οι βελονιές.
+# VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
+embroidery	Set on Canvas	Ορισμός στον καμβά
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Σύρετε τα σημεία εισόδου και εξόδου αυτού του τμήματος στον καμβά με το εργαλείο κεντήματος.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Τίποτα εδώ δεν μπορεί να πάρει σημεία εισόδου και εξόδου
+@plural	{count} object skipped|{count} objects skipped	{count} αντικείμενο παραλείφθηκε|{count} αντικείμενα παραλείφθηκαν
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent}% · Το Esc το σταματά
+embroidery	Stopped: nothing was changed.	Διακόπηκε: δεν άλλαξε τίποτα.
+embroidery	The document changed meanwhile: nothing was changed.	Το έγγραφο άλλαξε στο μεταξύ: δεν άλλαξε τίποτα.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Αυτόματα (όπου το σχέδιο τελειώνει το τμήμα)
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	 ένα αντικείμενο για εμφάνιση των σημείων του  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	 μετάβαση από σημείο σε σημείο, τα βέλη το μετακινούν, το Enter το πληκτρολογεί
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Τα σημεία εισόδου και εξόδου εμφανίζονται για το πρώτο {count} επιλεγμένο αντικείμενο|Τα σημεία εισόδου και εξόδου εμφανίζονται για τα πρώτα {count} επιλεγμένα αντικείμενα

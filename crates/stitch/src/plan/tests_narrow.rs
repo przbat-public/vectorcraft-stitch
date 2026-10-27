@@ -191,7 +191,7 @@ fn odd_input_finds_nothing() {
 /// The satin of `shape`'s columns alone (no rest), with `p` for the satin.
 fn sew(shape: &BezPath, p: Params) -> Vec<Stitch> {
     let found = narrow_columns(shape, FillRule::NonZero, WIDEST);
-    fill_with_columns(shape, FillRule::NonZero, &BezPath::new(), &found, &Params::for_style(Style::Fill), &p, None)
+    fill_with_columns(shape, FillRule::NonZero, &BezPath::new(), &found, &Params::for_style(Style::Fill), &p, Aim::from_needle(None))
 }
 
 /// A column is sewn as satin: crossings square across the stripe from side to side, widened by
@@ -263,7 +263,7 @@ fn columns_and_their_rest_are_sewn_in_one_go() {
     // The rest: the square where the strokes meet (the caller cuts it out with path operations).
     let rest = polygon([(13.5, 0.0), (16.5, 0.0), (16.5, 3.0), (13.5, 3.0)]);
     let fill = Params::for_style(Style::Fill);
-    let out = fill_with_columns(&t, FillRule::NonZero, &rest, &found, &fill, &Params::for_style(Style::Satin), None);
+    let out = fill_with_columns(&t, FillRule::NonZero, &rest, &found, &fill, &Params::for_style(Style::Satin), Aim::from_needle(None));
     let lifts: Vec<(usize, Stitch)> = out.iter().copied().enumerate().filter(|(_, s)| s.command != Command::Stitch).collect();
     assert!(
         lifts.is_empty(),
@@ -327,8 +327,15 @@ fn parts_are_sewn_in_the_order_that_moves_least() {
     for (from, underlay) in [((37.0, 10.0), Underlay::Auto), ((37.0, 10.0), Underlay::None), ((-17.0, 10.0), Underlay::Auto)] {
         let mut satin = Params::for_style(Style::Satin);
         satin.underlay = underlay;
-        let out =
-            fill_with_columns(&shape, FillRule::NonZero, &rest, &found, &Params::for_style(Style::Fill), &satin, Some(Point::new(from.0, from.1)));
+        let out = fill_with_columns(
+            &shape,
+            FillRule::NonZero,
+            &rest,
+            &found,
+            &Params::for_style(Style::Fill),
+            &satin,
+            Aim::from_needle(Some(Point::new(from.0, from.1))),
+        );
         let lifts = out.iter().filter(|s| s.command != Command::Stitch).count();
         assert_eq!(lifts, 0, "from {from:?}, underlay {underlay:?}: {lifts} jumps and trims");
     }
@@ -525,7 +532,7 @@ fn push_compensation_spares_the_end_that_meets_the_rest() {
     p.push = [1.0, 1.0];
     p.underlay = Underlay::None;
     // The column alone (the block's rest left out).
-    let q = points(&fill_with_columns(&bar, FillRule::NonZero, &BezPath::new(), &found, &Params::for_style(Style::Fill), &p, None));
+    let q = points(&fill_with_columns(&bar, FillRule::NonZero, &BezPath::new(), &found, &Params::for_style(Style::Fill), &p, Aim::from_needle(None)));
     let (lo, hi) = q.iter().fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), a| (lo.min(a.x), hi.max(a.x)));
     let end = c.middles().iter().fold(f64::NEG_INFINITY, |x, m| x.max(m.x));
     assert!(lo > 0.9 && hi > end - 0.05, "{lo} to {hi}, the column ending at {end}");

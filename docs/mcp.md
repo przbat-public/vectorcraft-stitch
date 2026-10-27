@@ -5092,6 +5092,14 @@ description gives it) is refused, not clamped, and the read commands below echo 
 past its header) and a document with nothing to stitch are errors of the design, not "invalid parameters": changing the
 request's keys won't fix them. The whole feature is described in [embroidery.md](embroidery.md).
 
+The embroidery tool is reached as every tool is: `tool.select {tool: "embroidery"}`, then `pointer_gesture` events in
+document points drag a selected object's entry or exit point (each drag one `embroidery.setEntryExit {…, snap: true}`,
+one undo step), `tool.setOption {key: "part", value: "fill"|"stroke"|null}` chooses the part whose points show.
+Points left to the planner show where a plan already made sews them: plan first (`embroidery.sequence`, say) to drag
+those. A fill sewn as tatami also shows its rows' angle, an arrow through its centre, needing no plan: a drag of its
+head (40 screen px from the centre, at the angle, counter-clockwise on the page) is one `embroidery.set {ids, part:
+"fill", angle}`, one undo step; setting the angle directly does the same.
+
 - `embroidery.setup {palette?}` sets the document's thread palette, `"pec"` (Brother's 61 threads, which PES files
   number) or `"jef"` (Janome's 78, which JEF files number), in one undo step; `null` unsets it, and Janome's is used.
   It answers `{settings: {palette}, resolved: {palette: {value, source}}}`: the palette as the document stores it
@@ -5132,7 +5140,17 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   keys?}` answer `{part, keys, changedCount, unchangedCount, skippedCount, skipped}` (`copyFrom` also `source`, and
   `passedOver`: the source's values `embroidery.set` would refuse, a newer version's or out of range, as `fill.stitch`,
   which the objects keep their own of);
-  `embroidery.setEntryExit {id?, part, entry?, exit?}` answers `{id, part, entry, exit, changedCount}`. They take the
+  `embroidery.setEntryExit {id?, part, entry?, exit?, snap?}` answers `{id, part, entry, exit, changedCount}` (with
+  `snap: true`, the points as taken to where the part's stitches can start or end; since 2026-10-26 an exit is sewn
+  toward and an entry met exactly, where before an exit was only kept and an entry only started near, so a document
+  saved before then may sew otherwise);
+  `embroidery.nearestConnection {ids?, all?, dryRun?, …embroidery options}` answers `{applied, changedCount,
+  unchangedCount, skippedCount, skipped: [{id, reason}], restoredCount, before, after: {connections, jumps, trims,
+  length, longest, stitches}, saved: {jumps, trims, length, stitches}, parts: [{id, part, entry, exit}]}` (`skipped`
+  and `parts` list at most 1,000 each, the counts counting every one; `stitches`:
+  the needle points of the parts joined, which a fill aimed at an exit far from where its rows end adds to; `after` is
+  what the design then sews) (lengths in millimetres, the
+  points in document points; `reason` also `notSewn`, `pieces`, `symbolInstance`, `clipped`, `unmodelled` or `locked`). They take the
   vocabulary's names only: the session refuses any other key before the command runs, and run in-process the command
   names the one to use (`density` → `spacing`). `reason` is `literal`, `guide`, `type`, `image`, `symbolInstance`,
   `live`, `placed`, `intertwine` or `noPart`; a client must accept others later.
@@ -5158,8 +5176,9 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   `angle` is reported as set but `applies: false` (a fill's `push` applies: it reaches its narrow parts' satin
   columns); a part not sewn uses none but `stitch`. A `pull`, `pullPercent` or `push` is `[left, right]` (a fabric's one value as both sides). `entry` and `exit` are in
   document points, as `embroidery.setEntryExit` takes them (the read commands' positions,
-  such as `embroidery.sequence`'s, are millimetres). `sewing` (`{unitCount, stitches, records, jumps, trims}`, what the
-  plan sews of the part) is counted only with `plan: true`. A unit whose style a setting forced says which in
+  such as `embroidery.sequence`'s, are millimetres). `sewing` (`{unitCount, stitches, records, jumps, trims, missedBy}`,
+  what the plan sews of the part; `missedBy: {entry, exit}` the largest miss of its units' stitches from the points they
+  were planned toward, millimetres, `null` each where none was set) is counted only with `plan: true`. A unit whose style a setting forced says which in
   `embroidery.sequence`'s `ruleValues.source` (`object` or `export`).
 - `embroidery.stats {…embroidery options, speed?, fabricThickness?, offset?, limit?}` gives the design's figures as the
   export sews it, for the design and per block: `stitches` (needle points), `records` (needle points, jumps and cuts),
@@ -5179,7 +5198,14 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   from one plan to the next while the object's own art keeps its number and order; `node`, the object sewn, is no key,
   as an expanded object's pieces get new ids at every plan), how it is
   sewn (`sewn`: `running`, `satin`, `tatami`, `literal`; `columns`) and why (`rule` id, `ruleValues`, and `why` as a
-  sentence), its counts, record numbers, entry and exit points and bounds; `blockCount`, `unitCount` and `truncated`
+  sentence), its counts, record numbers, entry and exit points (its first and last needle points; a unit that starts
+  exactly where the needle already is starts at that point, which the unit before sewed) and bounds, the
+  entry and exit points it was planned toward (`asked: {entry, exit}`, millimetres, its part's when its object sets
+  them, each `null` otherwise) and how far its first and last needle points miss them (`missedBy: {entry, exit}`,
+  millimetres, beyond a satin column's reach: half its width, its pull and, at an open column's end,
+  its push compensation, as its crossings end on a rail; a fill's narrow part's where the needle
+  point lies in it, at its width there, none on a fill's rows; a part ends as near its exit as its stitches reach without a jump, a cut or a visible travel, and the
+  miss says how near that is); `blockCount`, `unitCount` and `truncated`
   say what was left out, and `split` names the objects sewn in more than one block. Sewing order follows stacking
   order: `node.move` changes it.
 - `embroidery.check {…embroidery options, format?, rules?, limit?}` runs the design checks: each rule with its
@@ -5190,7 +5216,10 @@ request's keys won't fix them. The whole feature is described in [embroidery.md]
   found something and their hits. Each rule also gives `measured`, the extreme of what it judged, hit or not (the
   longest stitch for `stitchTooLong`, the shortest for `stitchTiny`; null for a rule that measures nothing); a
   stitch's hit gives where the stitch starts (`from`) besides where it ends (`at`), a thread's hit its `block` and
-  `thread`, a `notSewn` hit the `objects` whose art it left out (none for what the appearances leave out); and
+  `thread`, a `notSewn` hit the `objects` whose art it left out (none for what the appearances leave out), a
+  `pointMissed` hit (information: an entry or exit point its unit's stitches miss by more than 1 mm, an estimate) the
+  point set (`at`), where the needle goes in or comes out instead (`from`), the miss (`value`) and which (`note`:
+  `entry` or `exit`); and
   `notChecked` names each item by `id`. `format` (one of the eight embroidery formats; default: the format of the document's
   thread palette) sets the format limits checked and the threads judged: those the format writes (a PES of a
   document in Janome's palette writes Brother's threads, matched to the art's colours), named in `palette`; `rules`

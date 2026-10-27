@@ -9,6 +9,10 @@ use crate::state::Dialog;
 
 /// A click with a shape tool opens its size dialog.
 pub fn open_tool_dialog(app: &mut VectorcraftApp, kind: &str, p: Value) {
+    // VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog.
+    if crate::embroidery::point_dialog::opens(kind) {
+        return crate::embroidery::point_dialog::open(app, &p);
+    }
     let x = p.get("x").and_then(Value::as_f64).unwrap_or(0.0);
     let y = p.get("y").and_then(Value::as_f64).unwrap_or(0.0);
     let alt = p.get("alt").and_then(Value::as_bool).unwrap_or(false);

@@ -25,7 +25,7 @@ use std::borrow::Cow;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use vectorcraft_doc::embroidery::{Embroidery, PartKind};
+use vectorcraft_doc::embroidery::{Embroidery, PartKey, PartKind};
 use vectorcraft_doc::{Appearance, AppearanceItem, Document, Node, NodeId, NodeKind};
 use vectorcraft_stitch::plan::Style;
 
@@ -116,24 +116,44 @@ fn split_strokes(d: &mut Document, n: &Node) -> Option<Node> {
         return None;
     }
     let e = n.extras().embroidery.as_deref();
-    // The cut after the object goes after its last piece: on the group.
-    let rest = e.map(|e| Embroidery { trim_after: false, ..e.clone() }).filter(|e| !e.is_empty()).map(Box::new);
+    // The cut after the object goes after its last piece: on the group. The stroke's points go with
+    // the strokes that keep their path alone.
+    let rest = e
+        .map(|e| {
+            let mut rest = Embroidery { trim_after: false, ..e.clone() };
+            rest.edit_part(PartKind::Stroke, |part| {
+                part.set(PartKey::Entry, None);
+                part.set(PartKey::Exit, None);
+            });
+            rest
+        })
+        .filter(|e| !e.is_empty())
+        .map(Box::new);
     let stroke = e.and_then(|e| e.stroke.clone()).map(|stroke| Box::new(Embroidery { stroke: Some(stroke), ..Embroidery::default() }));
-    let (mut children, mut run) = (Vec::new(), Vec::new());
-    let flush = |d: &mut Document, run: &mut Vec<AppearanceItem>, children: &mut Vec<Arc<Node>>| {
+    let (mut children, mut run): (Vec<(Node, bool)>, Vec<AppearanceItem>) = (Vec::new(), Vec::new());
+    let flush = |d: &mut Document, run: &mut Vec<AppearanceItem>, children: &mut Vec<(Node, bool)>| {
         if !run.is_empty() {
-            children.push(Arc::new(copy_with(d, n, std::mem::take(run), rest.clone())));
+            children.push((copy_with(d, n, std::mem::take(run), rest.clone()), false));
         }
     };
     for item in &n.appearance.items {
         if keeps_its_path(&n.appearance, item) {
             flush(d, &mut run, &mut children);
-            children.push(Arc::new(copy_with(d, n, vec![item.clone()], stroke.clone())));
+            children.push((copy_with(d, n, vec![item.clone()], stroke.clone()), true));
         } else {
             run.push(item.clone());
         }
     }
     flush(d, &mut run, &mut children);
+    // Each part's points on one of the copies that hold them (they lie on one another: the first
+    // the entry, the last the exit).
+    for (strokes, kinds) in [(true, &[PartKind::Stroke][..]), (false, &[PartKind::Fill, PartKind::Stroke][..])] {
+        let mut copies: Vec<&mut Node> = children.iter_mut().filter(|(_, s)| *s == strokes).map(|(c, _)| c).collect();
+        for &kind in kinds {
+            super::derive::points_on_nearest(&mut copies, kind);
+        }
+    }
+    let children: Vec<Arc<Node>> = children.into_iter().map(|(c, _)| Arc::new(c)).collect();
     let mut group = n.clone();
     group.kind = NodeKind::Group { children, clip: false };
     *group.appearance = Appearance::default();

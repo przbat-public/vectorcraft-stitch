@@ -32,8 +32,10 @@
 //! and `narrow` (a fill's narrow parts, sewn as satin columns).
 
 mod area;
+mod ends;
 mod fill;
 mod geometry;
+mod joins;
 mod narrow;
 mod running;
 mod runs;
@@ -41,13 +43,18 @@ mod satin;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
+mod tests_aim;
+#[cfg(test)]
 mod tests_narrow;
+mod toward;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
+pub use ends::{Ends, MAX_JOIN_EXITS, MAX_JOIN_STARTS, Through, ends};
 pub use fill::MIN_AREA;
 pub use fill::TATAMI_UNDERLAY_MIN;
 pub(crate) use fill::fill_with_columns;
+pub use joins::{JoinShape, Joined, Link, MAX_JOIN_EDGES, Role, apart, joined_cost, joins, move_cost, stitches_cost, thinned_to};
 pub use narrow::{Column, columns as narrow_columns, columns_until as narrow_columns_until};
 pub use runs::join_cut;
 pub use satin::{SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, satin_auto_underlay, satin_spacing};
@@ -68,6 +75,14 @@ const JUMP: f64 = 5.0;
 /// for one. Longer ones are cut in the file, so they don't lie loose on a machine that can't cut
 /// jumps itself. A choice within those bounds, not a published value.
 pub(crate) const TRIM: f64 = 10.0;
+
+/// How far a shape's stitches may start or end from the point its object asks for (an entry or an
+/// exit) and still meet it (millimetres): about two thread widths and the formats' 0.1 mm grid,
+/// past which a person sees the needle go in or out elsewhere than where they put it. An estimate.
+/// A plan aimed at an exit is kept only when it ends at least this much nearer the exit than the
+/// plan without it (the project owner's choice, 2026-10-26: a smaller gain would buy extra
+/// stitches for a miss nobody is told of), and the Check tab points out a miss past it.
+pub const POINT_MISS_MM: f64 = 1.0;
 /// The longest satin stitch before it is split (millimetres): longer stitches snag and sag.
 /// Professional software makes it a setting, bounded by the machine format (12.1 mm per record in
 /// DST). Wilcom recommends an Auto Split of 7 mm and satin widths within 10 mm (the article cited
@@ -530,15 +545,72 @@ pub(crate) fn stitches(path: &BezPath, rule: FillRule, p: &Params) -> Vec<Stitch
     stitches_from(path, rule, p, None)
 }
 
-/// [`try_stitches_from`] without its checks: what the planners build. Unchecked, a shape far out
+/// [`try_stitches_from`] without its checks, for this crate's tests.
+#[cfg(test)]
+pub(crate) fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Vec<Stitch> {
+    stitches_aimed(path, rule, p, Aim::from_needle(from))
+}
+
+/// [`try_stitches_aimed`] without its checks: what the planners build. Unchecked, a shape far out
 /// of range or a tiny stitch length builds without bound, so only the checked entry points are
 /// public.
-pub(crate) fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> Vec<Stitch> {
+pub(crate) fn stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> Vec<Stitch> {
     let p = p.sane();
     match sewn_style(&p) {
-        Style::Running => running::running_from(path, &p, from),
-        Style::Satin => satin::satin_from(path, &p, from),
-        Style::Fill => fill::fill_from(path, rule, &p, from),
+        Style::Running => toward::nearer(aim, &p, |aim| running::running(path, &p, aim)),
+        Style::Satin => toward::nearer(aim, &p, |aim| satin::satin(path, &p, aim)),
+        // Weighs its rows toward the exit itself, by their moves before they are joined.
+        Style::Fill => fill::fill(path, rule, &p, aim),
+    }
+}
+
+/// Where a shape's stitches start from: the point its object asks it to start at (an entry point
+/// a person set), where the needle is when it starts (the end of the object sewn before it), or
+/// nowhere yet (the design's first). Each is a point in millimetres; a point that isn't finite is
+/// none.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Start {
+    /// The object's entry point: the shape starts there, as near as its stitches can start.
+    Entry(Point),
+    /// Where the needle is: the shape starts as near it as it can, which saves jumps and trims.
+    Needle(Point),
+    /// Nowhere yet: the shape starts where it is drawn to.
+    Nowhere,
+}
+
+impl Start {
+    /// Where the needle is, `None` when nowhere yet.
+    pub fn needle(at: Option<Point>) -> Self {
+        at.map_or(Self::Nowhere, Self::Needle)
+    }
+
+    /// Its point, whichever kind it is; `None` for nowhere.
+    pub fn point(self) -> Option<Point> {
+        match self {
+            Self::Entry(p) | Self::Needle(p) => Some(p),
+            Self::Nowhere => None,
+        }
+    }
+}
+
+/// Where a shape is sewn from and toward: its [`Start`], and the point its object asks it to end
+/// at (an exit point a person set), `None` when it asks for none.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Aim {
+    pub start: Start,
+    pub exit: Option<Point>,
+}
+
+impl Aim {
+    /// From where the needle is (`None`: nowhere yet), toward nothing: what [`try_stitches_from`]
+    /// sews with.
+    pub fn from_needle(at: Option<Point>) -> Self {
+        Self { start: Start::needle(at), exit: None }
+    }
+
+    /// Its exit, when it is a number on both axes: one that isn't is no exit.
+    pub(crate) fn finite_exit(&self) -> Option<Point> {
+        self.exit.filter(|x| x.x.is_finite() && x.y.is_finite())
     }
 }
 
@@ -568,10 +640,47 @@ pub fn try_stitches(path: &BezPath, rule: FillRule, p: &Params) -> crate::Result
 /// ended): the shape starts as near it as it can, which saves jumps and trims. `None`: the shape
 /// starts where it is drawn to.
 pub fn try_stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Option<Point>) -> crate::Result<Vec<Stitch>> {
+    try_stitches_aimed(path, rule, p, Aim::from_needle(from))
+}
+
+/// [`try_stitches`], sewn from and toward what `aim` says ([`Aim`]).
+pub fn try_stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> crate::Result<Vec<Stitch>> {
     let p = p.sane();
     placed(path)?;
-    within_limit(estimate(&subpaths(path), &p))?;
-    Ok(stitches_from(path, rule, &p, from))
+    let subs = subpaths(path);
+    within_limit(estimate(&subs, &p) + aimed_extra(&subs, &p, &aim))?;
+    Ok(stitches_aimed(path, rule, &p, aim))
+}
+
+/// How many more points than [`estimate`] counts `subs` may plan into in style `p` when sewn
+/// toward an exit point (`aim`): a running line's closed subpaths carried on round, up to half
+/// their length again ([`running::lapped`]); a satin's pass or travel along its middle, up to its
+/// length in travel stitches; a fill's travels across it from where its plain rows would start
+/// and to the far strip of the row it is cut at (each at most its extent, in travel stitches), and
+/// the rows either side of the cut sewn twice (each at most its extent, in stitches). None without
+/// an exit.
+fn aimed_extra(subs: &[SubPath], p: &Params, aim: &Aim) -> f64 {
+    use satin::PASS_ENDS;
+    /// A fill aimed at an exit travels across it at most twice more, and sews two rows more.
+    const FILL_TRAVELS: f64 = 2.0;
+    const FILL_ROWS: f64 = 2.0;
+    if aim.finite_exit().is_none() {
+        return 0.0;
+    }
+    match sewn_style(p) {
+        Style::Running => subs.iter().filter(|s| s.closed).map(|s| length(&s.points(), true) / 2.0 / p.stitch_length + 1.0).sum(),
+        Style::Satin => subs.iter().map(|s| length(&s.points(), s.closed) / area::TRAVEL_STITCH + PASS_ENDS).sum(),
+        Style::Fill => {
+            let (lo, hi) = subs
+                .iter()
+                .flat_map(|s| s.pts.iter())
+                .fold((Point::new(f64::INFINITY, f64::INFINITY), Point::new(f64::NEG_INFINITY, f64::NEG_INFINITY)), |(lo, hi), q| {
+                    (Point::new(lo.x.min(q.x), lo.y.min(q.y)), Point::new(hi.x.max(q.x), hi.y.max(q.y)))
+                });
+            let extent = if hi.x >= lo.x { lo.distance(hi) } else { 0.0 };
+            FILL_TRAVELS * (extent / area::TRAVEL_STITCH + PASS_ENDS) + FILL_ROWS * (extent / p.stitch_length + PASS_ENDS)
+        }
+    }
 }
 
 /// A filled shape sewn in parts: `rest`, the shape without its narrow `columns` (cut out by the
@@ -590,6 +699,19 @@ pub fn try_fill_with_columns(
     satin: &Params,
     from: Option<Point>,
 ) -> crate::Result<Vec<Stitch>> {
+    try_fill_with_columns_aimed(shape, rule, rest, columns, fill, satin, Aim::from_needle(from))
+}
+
+/// [`try_fill_with_columns`], sewn from and toward what `aim` says ([`Aim`]).
+pub fn try_fill_with_columns_aimed(
+    shape: &BezPath,
+    rule: FillRule,
+    rest: &BezPath,
+    columns: &[Column],
+    fill: &Params,
+    satin: &Params,
+    aim: Aim,
+) -> crate::Result<Vec<Stitch>> {
     /// More than a column's points per millimetre of its middle beyond its crossings: its
     /// underlay's (up to three runs at [`UNDERLAY_STITCH`]) and its splits.
     const UNDERLAYS: f64 = 3.0;
@@ -604,8 +726,12 @@ pub fn try_fill_with_columns(
         let crossings = c.length() * satin::CROSSINGS_PER_SPACING / closest * satin::MAX_RAIL_STRETCH;
         (crossings + 1.0) * split + c.length() * (UNDERLAYS / UNDERLAY_STITCH + split / satin::ZIGZAG_UNDERLAY_SPACING)
     };
-    within_limit(estimate(&subpaths(shape), &f) + columns.iter().map(column).sum::<f64>())?;
-    Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, from))
+    // Toward an exit, a column sewn last may take a pass along its middle.
+    let passes =
+        if aim.finite_exit().is_some() { columns.iter().map(|c| c.length() / area::TRAVEL_STITCH + satin::PASS_ENDS).sum::<f64>() } else { 0.0 };
+    let subs = subpaths(shape);
+    within_limit(estimate(&subs, &f) + aimed_extra(&subs, &f, &aim) + columns.iter().map(column).sum::<f64>() + passes)?;
+    Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, aim))
 }
 
 /// Refused with [`Error::TooLarge`] when `path` lies beyond [`MAX_COORD_MM`] or has a coordinate

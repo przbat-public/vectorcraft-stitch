@@ -2,8 +2,9 @@
 //! the tools, the dock with the Embroidery panel, the canvas and the status bar) drawn offscreen on
 //! the GPU at 2 pixels a point (egui_kittest on wgpu: no window is presented, so a locked screen
 //! doesn't stop them), of art the test draws itself (the corpus's designs are never committed, so
-//! no picture of them is either). It makes the five pictures `docs/images` holds, by their names
-//! there (`embroidery-object-tab.png`…): copy them over the committed ones. Run by hand:
+//! no picture of them is either). It makes the pictures `docs/images` holds, by their names there
+//! (`embroidery-object-tab.png`, `embroidery-tool-stitches.png`…): copy them over the committed
+//! ones. Run by hand:
 //!
 //! `VECTORCRAFT_STITCH_SHOTS=<folder> cargo test --release -p vectorcraft-ui-egui --lib -- --ignored embroidery_shots`
 
@@ -107,5 +108,28 @@ fn embroidery_shots() {
     shot(&dir, "embroidery-document-setup-polish", |app, id| {
         app.session.prefs.interface_language = "pl".into();
         setup(app, id);
+    });
+    // The embroidery tool on the disc: its entry set on the outline, its exit left to the planner;
+    // in the art view, then over the stitches.
+    let tool = |app: &mut VectorcraftApp, id: u64| {
+        app.run("select.set", json!({ "ids": [id] })).unwrap();
+        app.run("embroidery.setEntryExit", json!({"id": id, "part": "fill", "entry": [70, 110], "snap": true})).unwrap();
+        app.run("ui.embroideryPanel", json!({"tab": "object"})).unwrap();
+        app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    };
+    shot(&dir, "embroidery-tool-art", tool);
+    shot(&dir, "embroidery-tool-stitches", |app, id| {
+        tool(app, id);
+        app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    });
+    shot(&dir, "embroidery-tool-point-dialog", |app, id| {
+        tool(app, id);
+        let entry = app.run("embroidery.info", json!({"ids": [id]})).unwrap()["objects"][0]["settings"]["fill"]["entry"].clone();
+        crate::embroidery::point_dialog::open(app, &json!({"kind": "entry", "id": id, "part": "fill", "at": entry, "set": true}));
+    });
+    shot(&dir, "embroidery-tool-polish", |app, id| {
+        app.session.prefs.interface_language = "pl".into();
+        tool(app, id);
+        app.run("view.stitchPreview", json!({"on": true})).unwrap();
     });
 }

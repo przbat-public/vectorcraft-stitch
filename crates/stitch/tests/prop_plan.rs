@@ -2,13 +2,19 @@
 //! and any sane parameters, a fill or running line stays on the art, sews no stitch longer than it
 //! allows, and cuts the thread exactly on the jumps longer than the trim length; for any path (open
 //! and closed subpaths, curves, crossings), rings and shapes apart, in every style from any start,
-//! every point is a point and every stitch lies on the art.
+//! every point is a point and every stitch lies on the art; toward an exit point, any path in any
+//! style from any start sews what it sews with none when the exit isn't a number, never lifts the
+//! needle or cuts the thread more and never ends farther from the exit, and sews
+//! nothing new when the exit lies where it ends anyway; so does a fill with narrow parts.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use proptest::prelude::*;
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathEl, Point, Shape};
-use vectorcraft_stitch::plan::{Params, Style, Underlay, narrow_columns, try_fill_with_columns, try_stitches, try_stitches_from};
+use vectorcraft_stitch::plan::{
+    Aim, Params, Start, Style, Underlay, narrow_columns, try_fill_with_columns, try_fill_with_columns_aimed, try_stitches, try_stitches_aimed,
+    try_stitches_from,
+};
 use vectorcraft_stitch::{Command, Stitch};
 use vectorcraft_testkit::strategies::{arb_closed_shape, arb_path_data, arb_point};
 
@@ -228,6 +234,31 @@ fn on_the_art(path: &BezPath, out: &[Stitch], reach: f64) -> Result<(), String> 
     Ok(())
 }
 
+/// [`no_worse`], with the move in from `from` (where the needle is before the shape) to each plan's
+/// first needle point counted with its own moves, as the sequence joins objects: a lift past `p`'s
+/// jump length, a cut past its trim length. A plan may start farther away to save a lift or a cut
+/// inside the shape, but never lift or cut more in all.
+fn no_worse_from(plain: &[Stitch], aimed: &[Stitch], exit: Point, from: Option<Point>, p: &Params) -> Result<(), String> {
+    let ((plain_end, plain_lifts, plain_cuts), (aimed_end, aimed_lifts, aimed_cuts)) = (judged(plain), judged(aimed));
+    let moved_in = |out: &[Stitch]| {
+        let d = from.zip(out.iter().find(|s| s.command == Command::Stitch)).map_or(0.0, |(a, s)| a.distance(s.point()));
+        (usize::from(d > p.jump), usize::from(d > p.trim))
+    };
+    let ((plain_in_lifts, plain_in_cuts), (aimed_in_lifts, aimed_in_cuts)) = (moved_in(plain), moved_in(aimed));
+    let (plain_all, aimed_all) =
+        ((plain_lifts + plain_in_lifts, plain_cuts + plain_in_cuts), (aimed_lifts + aimed_in_lifts, aimed_cuts + aimed_in_cuts));
+    if aimed_all.0 > plain_all.0 || aimed_all.1 > plain_all.1 {
+        return Err(format!("{aimed_all:?} lifts and cuts in all toward the exit, the move in among them, {plain_all:?} without"));
+    }
+    match (plain_end, aimed_end) {
+        (Some(a), Some(b)) if b.distance(exit) > a.distance(exit) + NO_FARTHER => {
+            Err(format!("ends at {b:?}, {:.3} mm from the exit, {:.3} mm without it", b.distance(exit), a.distance(exit)))
+        }
+        (Some(_), None) => Err("sews nothing toward the exit".into()),
+        _ => Ok(()),
+    }
+}
+
 proptest! {
     #![proptest_config(ProptestConfig { cases: 64, failure_persistence: None, ..ProptestConfig::default() })]
 
@@ -310,6 +341,130 @@ proptest! {
         let longest = (p.stitch_length + p.min_stitch).max(1.3 * p.stitch_length).max(3.0 + p.min_stitch).max(2.6) + p.min_stitch + 1e-6;
         for (d, up, _) in moves(&out) {
             prop_assert!(up || d <= longest, "a {d} mm stitch, longer than {longest} ({p:?})");
+        }
+    }
+}
+
+/// Where a shape starts from: nowhere yet, where the needle is, or an entry point, about the art.
+fn arb_start() -> impl Strategy<Value = Start> {
+    prop_oneof![Just(Start::Nowhere), arb_point(-20.0, 220.0).prop_map(Start::Needle), arb_point(-20.0, 220.0).prop_map(Start::Entry)]
+}
+
+/// What a plan toward an exit is judged by: where its needle ends, how often it lifts the needle
+/// between two needle points, and how often it cuts the thread.
+fn judged(out: &[Stitch]) -> (Option<Point>, usize, usize) {
+    let m = moves(out);
+    let end = out.iter().rev().find(|s| s.command == Command::Stitch).map(|s| s.point());
+    (end, m.iter().filter(|(_, up, _)| *up).count(), m.iter().filter(|(_, _, cut)| *cut).count())
+}
+
+/// How much farther from its exit a plan toward it may end than the plain plan does
+/// (millimetres): a float's rounding, nothing a needle could tell.
+const NO_FARTHER: f64 = 1e-6;
+
+/// `aimed` (planned toward `exit`) is no worse than `plain` (planned without it): no more lifts
+/// or cuts, and an end no farther from the exit.
+fn no_worse(plain: &[Stitch], aimed: &[Stitch], exit: Point) -> Result<(), String> {
+    let ((plain_end, plain_lifts, plain_cuts), (aimed_end, aimed_lifts, aimed_cuts)) = (judged(plain), judged(aimed));
+    if aimed_lifts > plain_lifts || aimed_cuts > plain_cuts {
+        return Err(format!("{aimed_lifts} lifts and {aimed_cuts} cuts toward the exit, {plain_lifts} and {plain_cuts} without"));
+    }
+    match (plain_end, aimed_end) {
+        (Some(a), Some(b)) if b.distance(exit) > a.distance(exit) + NO_FARTHER => {
+            Err(format!("ends at {b:?}, {:.3} mm from the exit, {:.3} mm without it", b.distance(exit), a.distance(exit)))
+        }
+        (Some(_), None) => Err("sews nothing toward the exit".into()),
+        _ => Ok(()),
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig { cases: 64, failure_persistence: None, ..ProptestConfig::default() })]
+
+    /// An exit that isn't a number is no exit: a shape is sewn bit for bit as with none, from any
+    /// start, and the entry points `try_stitches_from` and `try_stitches_aimed` agree. (That no
+    /// exit sews what the planner sewed before exits were planned toward is `golden_no_exit.rs`'s
+    /// check, against hashes recorded with the planner as it was.)
+    #[test]
+    fn an_exit_that_isnt_a_number_is_no_exit(
+        path in arb_path_data(),
+        (style, width) in arb_style(),
+        start in arb_start(),
+        underlay in prop::sample::select(&Underlay::ALL[..]),
+    ) {
+        let bp = path.to_bezpath();
+        let p = Params { width, underlay, ..Params::for_style(style) };
+        let plain = try_stitches_aimed(&bp, FillRule::NonZero, &p, Aim { start, exit: None }).ok();
+        if let Start::Needle(at) = start {
+            prop_assert_eq!(&plain, &try_stitches_from(&bp, FillRule::NonZero, &p, Some(at)).ok());
+        }
+        for exit in [Point::new(f64::NAN, 40.0), Point::new(40.0, f64::INFINITY)] {
+            let odd = try_stitches_aimed(&bp, FillRule::NonZero, &p, Aim { start, exit: Some(exit) }).ok();
+            prop_assert_eq!(&odd, &plain, "an exit at {:?}", exit);
+        }
+    }
+
+    /// An exit anywhere never makes a plan worse: any path, in any style, from any start, lifts the
+    /// needle and cuts the thread no more often, and ends no farther from the exit, than without it.
+    #[test]
+    fn an_exit_never_makes_a_plan_worse(
+        path in arb_path_data(),
+        (style, width) in arb_style(),
+        start in arb_start(),
+        exit in arb_point(-20.0, 220.0),
+        underlay in prop::sample::select(&Underlay::ALL[..]),
+    ) {
+        let bp = path.to_bezpath();
+        let p = Params { width, underlay, ..Params::for_style(style) };
+        let (Ok(plain), Ok(aimed)) = (
+            try_stitches_aimed(&bp, FillRule::NonZero, &p, Aim { start, exit: None }),
+            try_stitches_aimed(&bp, FillRule::NonZero, &p, Aim { start, exit: Some(exit) }),
+        ) else { return Ok(()) };
+        prop_assert!(no_worse(&plain, &aimed, exit).is_ok(), "{:?} ({style:?}, {start:?}, exit {exit:?}, {:?})", no_worse(&plain, &aimed, exit), bp.elements());
+    }
+
+    /// An exit where the plan ends anyway changes nothing: the stitches are the plain plan's.
+    #[test]
+    fn an_exit_at_the_plans_own_end_changes_nothing(
+        path in arb_path_data(),
+        (style, width) in arb_style(),
+        start in arb_start(),
+        underlay in prop::sample::select(&Underlay::ALL[..]),
+    ) {
+        let bp = path.to_bezpath();
+        let p = Params { width, underlay, ..Params::for_style(style) };
+        let Ok(plain) = try_stitches_aimed(&bp, FillRule::NonZero, &p, Aim { start, exit: None }) else { return Ok(()) };
+        let Some(end) = judged(&plain).0 else { return Ok(()) };
+        let aimed = try_stitches_aimed(&bp, FillRule::NonZero, &p, Aim { start, exit: Some(end) }).unwrap();
+        prop_assert!(aimed == plain, "toward its own end {end:?} ({style:?}, {start:?}, {:?}): {} stitches, {} without", bp.elements(), aimed.len(), plain.len());
+    }
+
+    /// A fill with narrow parts sewn as satin, toward an exit anywhere, with its underlay or none
+    /// (then nothing pins where its first part starts): no worse than without it, lifting and
+    /// cutting no more often in all, the move in from the needle counted; toward its own end, the
+    /// same stitches.
+    #[test]
+    fn a_fill_with_narrow_parts_is_no_worse_toward_an_exit(
+        shape in arb_closed_shape(),
+        widest in 1.0..10.0f64,
+        start in arb_start(),
+        exit in arb_point(-20.0, 220.0),
+        underlay in prop::sample::select(&[Underlay::Auto, Underlay::None][..]),
+    ) {
+        let path: BezPath = shape.to_bezpath();
+        let columns = narrow_columns(&path, FillRule::NonZero, widest);
+        let (fill, satin) = (Params { underlay, ..Params::for_style(Style::Fill) }, Params { underlay, ..Params::for_style(Style::Satin) });
+        let sew = |exit| try_fill_with_columns_aimed(&path, FillRule::NonZero, &path, &columns, &fill, &satin, Aim { start, exit }).unwrap();
+        let plain = sew(None);
+        let aimed = sew(Some(exit));
+        let from = match start {
+            Start::Needle(at) => Some(at),
+            _ => None,
+        };
+        let judge = no_worse_from(&plain, &aimed, exit, from, &fill.sane());
+        prop_assert!(judge.is_ok(), "{judge:?} ({start:?}, {underlay:?}, exit {exit:?}, {} columns)", columns.len());
+        if let Some(end) = judged(&plain).0 {
+            prop_assert!(sew(Some(end)) == plain, "toward its own end {end:?}");
         }
     }
 }

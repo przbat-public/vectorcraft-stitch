@@ -5904,7 +5904,6 @@ embroidery	by size	podle velikosti
 embroidery	Entry and exit	Vstup a výstup
 embroidery	Set	Nastaveno
 embroidery	nearest	nejblíže
-embroidery	not used yet	zatím nepoužito
 embroidery	Set on the selected objects.	Nastaveno na vybraných objektech.
 embroidery	Nearest to where the needle is.	Nejblíže místu, kde je jehla.
 embroidery	built-in values	vestavěné hodnoty
@@ -5998,3 +5997,48 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Nevloženo, pro
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} vybraný objekt nepřijímá nastavení a byl vynechán|{count} vybrané objekty nepřijímají nastavení a byly vynechány|{count} vybraných objektů nepřijímá nastavení a bylo vynecháno
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} vybraný objekt nepřijímá nastavení|{count} vybrané objekty nepřijímají nastavení|{count} vybraných objektů nepřijímá nastavení
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	Vstupní nebo výstupní body minuté o víc než {value} mm
+embroidery	Largest miss: {value} mm	Největší odchylka: {value} mm
+@plural	{count} point|{count} points	{count} bod|{count} body|{count} bodů
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	minuto o {value} mm
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Nejbližší spojení
+@plural	{count} part set|{count} parts set	{count} část nastavena|{count} části nastaveny|{count} částí nastaveno
+embroidery	jumps {value} mm shorter	přeskoky kratší o {value} mm
+embroidery	jumps no shorter	přeskoky nejsou kratší
+embroidery	trims {before} → {after}	střihy {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Vstupní a výstupní body jsou už nejbližší.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Nástroj Výšivka
+	 a point to move it, or an arrow's head to turn the rows  |  	 bodu jej přesune, tažení hrotu šipky otočí řady  |  
+	 a point or an arrow to put it back to Auto  |  	 na bod nebo šipku jej vrátí na Automaticky  |  
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	přeskok {value} mm
+embroidery	jump {value} mm, cut	přeskok {value} mm, střih
+embroidery	Stitches update when you pause or let go.	Stehy se obnoví, když se zastavíte nebo pustíte.
+embroidery	Stitches update when you let go.	Stehy se obnoví, když pustíte.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Vstupní bod
+embroidery	Exit Point	Výstupní bod
+embroidery	Auto (nearest where the needle is)	Automaticky (nejblíže jehle)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Bod se přesune na nejbližší místo, kde mohou stehy začít nebo skončit.
+# VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
+embroidery	Set on Canvas	Nastavit na plátně
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Přetáhněte vstupní a výstupní bod této části na plátně nástrojem Výšivka.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Nic zde nemůže mít vstupní a výstupní body
+@plural	{count} object skipped|{count} objects skipped	{count} objekt přeskočen|{count} objekty přeskočeny|{count} objektů přeskočeno
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent} % · Esc jej zastaví
+embroidery	Stopped: nothing was changed.	Zastaveno: nic se nezměnilo.
+embroidery	The document changed meanwhile: nothing was changed.	Dokument se mezitím změnil: nic se nezměnilo.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Automaticky (kde plán část ukončí)
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	 na objekt ukáže jeho body  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	 krok z bodu na bod, šipky jej posunou, Enter zadá jeho souřadnice
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Vstupní a výstupní body se zobrazují pro první {count} vybraný objekt|Vstupní a výstupní body se zobrazují pro první {count} vybrané objekty|Vstupní a výstupní body se zobrazují pro prvních {count} vybraných objektů

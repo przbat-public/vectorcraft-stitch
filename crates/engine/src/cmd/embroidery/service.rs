@@ -444,6 +444,13 @@ impl PlanService {
         plan
     }
 
+    /// A copy of the units this service keeps, for planning documents never kept (a dry run, or a
+    /// command's trial of a change): it plans with the units kept so far, and what it adds is its
+    /// own, so the trials never push the real document's units out.
+    pub(crate) fn scratch(&self) -> std::sync::Mutex<UnitCache> {
+        std::sync::Mutex::new(self.units.lock().map(|u| u.clone()).unwrap_or_default())
+    }
+
     /// Keep `memo` as the most recent, dropping the plans of snapshots gone (no plan of theirs can
     /// be asked for again), the service's own least recently used beyond [`MAX_MEMOS`], and the
     /// least recently used of any document while they hold more than the budget
@@ -462,6 +469,18 @@ impl PlanService {
         while memos.len() > 1 && memos.iter().map(Memo::held).sum::<usize>() > self.memos.budget {
             memos.remove(0);
         }
+    }
+
+    /// The newest plan it remembers of a whole document with `opts` (of the newest snapshot it was
+    /// asked for, used most recently), with that snapshot while it is still held: what the
+    /// embroidery tool's handles read.
+    pub(crate) fn newest(&self, opts: &Options) -> Option<(Arc<Document>, Planned)> {
+        let memos = self.memos.list.lock().ok()?;
+        memos
+            .iter()
+            .rev()
+            .filter(|m| m.owner == self.owner && m.selection.is_empty() && m.opts == *opts)
+            .find_map(|m| Some((m.snapshot.upgrade()?, m.plan.as_ref().ok()?.clone())))
     }
 
     /// The plan remembered (or why there is none) of snapshot `of` with `opts` and the fonts of
@@ -514,6 +533,12 @@ impl PlanService {
         self.units.lock().map_or(0, |c| c.shapes())
     }
 
+    /// How many fills' narrow parts and rests are kept.
+    #[cfg(test)]
+    pub(crate) fn parted(&self) -> usize {
+        self.units.lock().map_or(0, |c| c.parted())
+    }
+
     /// How many times it walked a document.
     #[cfg(test)]
     pub(crate) fn walks(&self) -> usize {
@@ -548,6 +573,11 @@ pub(crate) struct Services {
     /// The plans the services remember, within one bound for all.
     memos: Arc<Memos>,
     views: HashMap<u64, super::view::StitchView>,
+    /// The plan the interface draws of each document, with the snapshot it was planned from: what
+    /// the embroidery tool's answers are of ([`Services::tool_facts`]).
+    shown: HashMap<u64, (Arc<Document>, Planned)>,
+    /// The embroidery tool's answers of each document's plan, built once a plan.
+    facts: HashMap<u64, Arc<super::tool::ToolFacts>>,
 }
 
 impl Services {
@@ -571,6 +601,44 @@ impl Services {
         self.plans.remove(&uid);
         self.memos.forget(uid);
         self.views.remove(&uid);
+        self.shown.remove(&uid);
+        self.facts.remove(&uid);
+    }
+
+    /// The interface draws `planned`, the plan of `snapshot`, for document `uid`.
+    pub(crate) fn show(&mut self, uid: u64, snapshot: Arc<Document>, planned: Planned) {
+        if self.shown.get(&uid).is_none_or(|(_, p)| p.generation != planned.generation) {
+            self.shown.insert(uid, (snapshot, planned));
+        }
+    }
+
+    /// The embroidery tool's answers kept, dropped (the tool put away): they hold a plan's ends and
+    /// its scene, built again when the tool is chosen again.
+    pub(crate) fn drop_facts(&mut self) {
+        self.facts.clear();
+    }
+
+    /// How many documents' answers the embroidery tool keeps.
+    #[cfg(test)]
+    pub(crate) fn kept_facts(&self) -> usize {
+        self.facts.len()
+    }
+
+    /// The embroidery tool's answers for document `uid`: of the plan the interface draws of it
+    /// ([`Services::show`]: what is drawn is what is caught), else, with no interface (an agent, a
+    /// test), of the newest plan its service remembers of the whole document with `opts` (the stitch
+    /// preview's); built once a plan; `None` when there is neither. Never plans.
+    pub(crate) fn tool_facts(&mut self, uid: u64, opts: &Options) -> Option<Arc<super::tool::ToolFacts>> {
+        let (snapshot, planned) = match self.shown.get(&uid) {
+            Some((snapshot, planned)) => (snapshot.clone(), planned.clone()),
+            None => self.plans.get(&uid)?.newest(opts)?,
+        };
+        if let Some(kept) = self.facts.get(&uid).filter(|f| f.generation == planned.generation) {
+            return Some(kept.clone());
+        }
+        let facts = Arc::new(super::tool::ToolFacts::of(snapshot, &planned));
+        self.facts.insert(uid, facts.clone());
+        Some(facts)
     }
 
     /// The bytes the plans remembered hold.

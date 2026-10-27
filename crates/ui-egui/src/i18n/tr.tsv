@@ -5865,7 +5865,6 @@ embroidery	by size	boyuta göre
 embroidery	Entry and exit	Giriş ve çıkış
 embroidery	Set	Ayarlı
 embroidery	nearest	en yakın
-embroidery	not used yet	henüz kullanılmıyor
 embroidery	Set on the selected objects.	Seçili nesnelerde ayarlı.
 embroidery	Nearest to where the needle is.	İğnenin bulunduğu yere en yakın.
 embroidery	built-in values	yerleşik değerler
@@ -5959,3 +5958,48 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Bu sürüm kabu
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	Seçili {count} nesne ayar almıyor ve atlandı
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	Seçili {count} nesne ayar almıyor
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	{value} mm'den fazla ıskalanan giriş veya çıkış noktaları
+embroidery	Largest miss: {value} mm	En büyük sapma: {value} mm
+@plural	{count} point|{count} points	{count} nokta
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	{value} mm ıskalandı
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	En Yakın Bağlantı
+@plural	{count} part set|{count} parts set	{count} parça ayarlandı
+embroidery	jumps {value} mm shorter	atlamalar {value} mm daha kısa
+embroidery	jumps no shorter	atlamalar kısalmadı
+embroidery	trims {before} → {after}	kesmeler {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Giriş ve çıkış noktaları zaten en yakın olanlar.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Nakış Aracı
+	 a point to move it, or an arrow's head to turn the rows  |  	 taşımak için bir nokta, sıraları döndürmek için bir ok ucu  |  
+	 a point or an arrow to put it back to Auto  |  	 Otomatik'e döndürmek için bir nokta veya ok  |  
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	atlama {value} mm
+embroidery	jump {value} mm, cut	atlama {value} mm, kesme
+embroidery	Stitches update when you pause or let go.	Duraklattığınızda veya bıraktığınızda dikişler güncellenir.
+embroidery	Stitches update when you let go.	Bıraktığınızda dikişler güncellenir.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Giriş noktası
+embroidery	Exit Point	Çıkış noktası
+embroidery	Auto (nearest where the needle is)	Otomatik (iğneye en yakın)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Nokta, dikişlerin başlayabileceği veya bitebileceği en yakın yere taşınır.
+# VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
+embroidery	Set on Canvas	Tuvalde ayarla
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Bu parçanın giriş ve çıkış noktalarını Nakış Aracı ile tuvalde sürükleyin.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Burada hiçbir şeye giriş ve çıkış noktası verilemez
+@plural	{count} object skipped|{count} objects skipped	{count} nesne atlandı
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	%{percent} · Esc durdurur
+embroidery	Stopped: nothing was changed.	Durduruldu: hiçbir şey değiştirilmedi.
+embroidery	The document changed meanwhile: nothing was changed.	Bu arada belge değişti: hiçbir şey değiştirilmedi.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Otomatik (planın parçayı bitirdiği yer)
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	 noktalarını göstermek için bir nesne  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	 noktadan noktaya geçer, oklar onu kaydırır, Enter girer
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Giriş ve çıkış noktaları seçilen ilk {count} nesne için gösterilir

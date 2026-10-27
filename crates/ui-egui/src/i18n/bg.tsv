@@ -5843,7 +5843,6 @@ embroidery	by size	според размера
 embroidery	Entry and exit	Вход и изход
 embroidery	Set	Зададено
 embroidery	nearest	най-близо
-embroidery	not used yet	още не се използва
 embroidery	Set on the selected objects.	Зададено за избраните обекти.
 embroidery	Nearest to where the needle is.	Най-близо до мястото, където е иглата.
 embroidery	built-in values	вградени стойности
@@ -5937,3 +5936,48 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Не са по�
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} избран обект не приема настройки и е пропуснат|{count} избрани обекта не приемат настройки и са пропуснати
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} избран обект не приема настройки|{count} избрани обекта не приемат настройки
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	Входни или изходни точки, пропуснати с над {value} мм
+embroidery	Largest miss: {value} mm	Най-голям пропуск: {value} мм
+@plural	{count} point|{count} points	{count} точка|{count} точки
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} мм
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	пропуснато с {value} мм
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Най-близко свързване
+@plural	{count} part set|{count} parts set	{count} част зададена|{count} части зададени
+embroidery	jumps {value} mm shorter	прескоците са по-къси с {value} мм
+embroidery	jumps no shorter	прескоците не са по-къси
+embroidery	trims {before} → {after}	срязвания {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Входните и изходните точки вече са най-близките.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Инструмент „Бродерия“
+	 a point to move it, or an arrow's head to turn the rows  |  	 точка, за да я преместите, или върха на стрелка, за да завъртите редовете  |  
+	 a point or an arrow to put it back to Auto  |  	 точка или стрелка, за да я върнете на „Автоматично“  |  
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	прескок {value} мм
+embroidery	jump {value} mm, cut	прескок {value} мм, срязване
+embroidery	Stitches update when you pause or let go.	Бодовете се обновяват, когато спрете или пуснете.
+embroidery	Stitches update when you let go.	Бодовете се обновяват, когато пуснете.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Входна точка
+embroidery	Exit Point	Изходна точка
+embroidery	Auto (nearest where the needle is)	Автоматично (най-близо до иглата)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Точката се премества до най-близкото място, където бодовете могат да започнат или завършат.
+# VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
+embroidery	Set on Canvas	Задаване в платното
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Плъзнете входната и изходната точка на тази част в платното с инструмента „Бродерия“.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Тук нищо не може да получи входни и изходни точки
+@plural	{count} object skipped|{count} objects skipped	{count} обект пропуснат|{count} обекта пропуснати
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent}% · Esc го спира
+embroidery	Stopped: nothing was changed.	Спряно: нищо не е променено.
+embroidery	The document changed meanwhile: nothing was changed.	Документът се промени междувременно: нищо не е променено.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Автоматично (където планът завършва частта)
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	 обект, за да покажете точките му  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	 стъпка от точка до точка, стрелките я преместват, Enter въвежда координатите й
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Входната и изходната точка се показват за първия {count} избран обект|Входните и изходните точки се показват за първите {count} избрани обекта

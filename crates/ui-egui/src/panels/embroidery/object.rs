@@ -25,7 +25,9 @@ use std::sync::{Arc, Weak};
 use egui::{Color32, CornerRadius, FontId, Sense, Ui, vec2};
 use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId, NodeKind};
+use vectorcraft_engine::cmd::embroidery::POINT_MISS_MM;
 use vectorcraft_engine::cmd::embroidery::info::{KeyInfo, ObjectSettings, PartInfo, SelectionSewing, selection_sewing};
+use vectorcraft_engine::cmd::embroidery::order::EntryExit;
 use vectorcraft_engine::cmd::embroidery::setup::{FabricChoice, fabric_and_thread};
 use vectorcraft_engine::cmd::embroidery::{SettingField, distinct_underlays, part_field};
 
@@ -63,6 +65,11 @@ const HALF_TURN: f64 = 180.0;
 const SAME_ANGLE: f64 = 1e-6;
 /// Decimals of the thread's weight in the footer: whole weights, as thread is sold.
 const WEIGHT_DECIMALS: usize = 0;
+/// The places a point's miss is written to: a tenth of a millimetre, the formats' grid.
+const MISS_DECIMALS: usize = 1;
+/// What the entry and exit rows ask for when pressed: the embroidery tool's point dialog on the
+/// point (`embroidery/point_dialog.rs`), opened after the tab is drawn as its commands run.
+const POINT_DIALOG: &str = vectorcraft_tools::embroidery::POINT_DIALOG;
 /// The command the footer's Embroidery Settings… runs: Document Setup at its Embroidery tab.
 const SETTINGS: &str = "embroidery.documentSetup";
 /// The stitch count before the first plan: an ellipsis, the same in every language.
@@ -233,13 +240,23 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             app.ui.embroidery_panel.part = part;
         }
         if let Some(part) = shown.and_then(|p| p.of(&info).map(|i| (p, i))) {
+            // How far the stitches miss the part's entry and exit, from the plan shown when it is of
+            // the document as it is.
+            let sewn = app.embroidery.object.sewn.as_ref().filter(|s| count.fresh && s.uid == uid && s.ids == ids);
+            let missed = sewn.map(|s| match part.0 {
+                Part::Fill => s.sewing.fill.missed_by,
+                Part::Stroke => s.sewing.stroke.missed_by,
+            });
+            // Where the plan shown starts and ends the one object's part: the point dialog opens there
+            // on a point left to the planner.
+            let planned = planned_ends(app, uid, &ids, part.0);
             let room = (ui.available_height() - footer_room).max(MIN_ROWS);
             // The panel's width, measured outside the scrolled rows: what they are fitted to, so that
             // nothing wider in them can widen the next frame's.
             let width = ui.available_width();
             egui::ScrollArea::vertical().id_salt("embroidery-object-rows").max_height(room).auto_shrink([false, true]).show(ui, |ui| {
                 ui.set_max_width(width);
-                part_rows(ui, part.0, part.1, &ids, width, lang, &mut commands);
+                part_rows(ui, part.0, part.1, &ids, width, lang, missed, planned, &mut commands);
                 trim_after(ui, &info, &ids, &mut commands);
             });
         }
@@ -250,6 +267,10 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     }
     let selected = app.session.active().map(|st| st.selection.objects.clone()).unwrap_or_default();
     for (cmd, mut params) in commands {
+        if cmd == POINT_DIALOG {
+            crate::embroidery::point_dialog::open(app, &params);
+            continue;
+        }
         for_selection(&mut params, &ids, &selected);
         if let Err(e) = app.run(cmd, params) {
             app.status(e);
@@ -435,8 +456,19 @@ impl Section {
 }
 
 /// The rows of part `part` (`p`) of the selection, fitted to `width` points, by section, then its
-/// entry and exit.
-fn part_rows(ui: &mut Ui, part: Part, p: &PartInfo, ids: &[NodeId], width: f32, lang: Lang, commands: &mut Vec<Command>) {
+/// entry and exit, with how far the stitches miss them (`missed`, millimetres, from the plan shown).
+#[allow(clippy::too_many_arguments)]
+fn part_rows(
+    ui: &mut Ui,
+    part: Part,
+    p: &PartInfo,
+    ids: &[NodeId],
+    width: f32,
+    lang: Lang,
+    missed: Option<EntryExit<f64>>,
+    planned: Option<[vectorcraft_geom::Point; 2]>,
+    commands: &mut Vec<Command>,
+) {
     if p.sewn.as_deref() == Some("none") {
         let t = Tokens::get(ui.ctx());
         let words = vocabulary::not_sewn(p.reason.as_deref());
@@ -448,7 +480,12 @@ fn part_rows(ui: &mut Ui, part: Part, p: &PartInfo, ids: &[NodeId], width: f32, 
         .map(|(section, keys)| (section, keys.into_iter().filter_map(|k| key_row(p, part, k, lang)).collect::<Vec<_>>()))
         .filter(|(_, rows)| !rows.is_empty())
         .collect();
-    let points: Vec<Owned> = ["entry", "exit"].into_iter().map(|k| point_row(p, k)).collect();
+    // One object: its rows open the point dialog (the command it sets them with takes one).
+    let one = ids.first().copied().filter(|_| ids.len() == 1);
+    let points: Vec<Owned> = ["entry", "exit"]
+        .into_iter()
+        .map(|k| point_row(p, k, missed.and_then(|m| if k == "entry" { m.entry } else { m.exit }), lang, one.is_some()))
+        .collect();
     let all: Vec<Row<'_>> = sections.iter().flat_map(|(_, r)| r.iter()).chain(&points).map(|o| o.row(lang)).collect();
     let cols = Columns::fit(ui, width, &all);
     for (section, owned) in &sections {
@@ -459,10 +496,29 @@ fn part_rows(ui: &mut Ui, part: Part, p: &PartInfo, ids: &[NodeId], width: f32, 
             }
         }
     }
-    rows::heading(ui, crate::et!("Entry and exit"));
+    // Set on Canvas: the embroidery tool, at this part (the tool shows the part the tab does).
+    let tip = crate::et!("Drag this part's entry and exit points on the canvas with the embroidery tool.");
+    if rows::heading_with_button(ui, crate::et!("Entry and exit"), crate::et!("Set on Canvas"), tip) {
+        commands.push(("tool.select", json!({"tool": vectorcraft_tools::embroidery::ID})));
+        // The keys act at once on the first object's entry: the arrows nudge it, Enter types it.
+        if let Some(id) = ids.first() {
+            let focus = json!({"kind": "entry", "id": id.0, "part": part.id(), "index": 0});
+            commands.push(("tool.setOption", json!({"key": "focus", "value": focus})));
+        }
+    }
     for o in &points {
-        if rows::show(ui, &cols, &o.row(lang)) == Some(Edit::Restore) {
-            commands.push(("embroidery.reset", json!({"ids": ids_json(ids), "part": part.id(), "keys": [o.key]})));
+        match rows::show(ui, &cols, &o.row(lang)) {
+            Some(Edit::Restore) => commands.push(("embroidery.reset", json!({"ids": ids_json(ids), "part": part.id(), "keys": [o.key]}))),
+            Some(Edit::Open) => {
+                let point = if o.key == "entry" { &p.entry } else { &p.exit };
+                let stored = point.value.filter(|_| point.set_count > 0).map(|[x, y]| vectorcraft_geom::Point::new(x, y));
+                let at = stored.or_else(|| planned.map(|e| if o.key == "entry" { e[0] } else { e[1] }));
+                if let (Some(id), Some(at)) = (one, at) {
+                    let p = json!({"kind": o.key, "id": id.0, "part": part.id(), "at": [at.x, at.y], "set": stored.is_some()});
+                    commands.push((POINT_DIALOG, p));
+                }
+            }
+            _ => {}
         }
     }
 }
@@ -636,17 +692,20 @@ fn value_words(v: &Value, key: &str, lang: Lang, part: Part, unit: bool) -> Stri
     }
 }
 
-/// The entry or exit row of part `p`: "Auto" (nearest where the needle is) or set, read only until
-/// the embroidery tool places it.
-fn point_row(p: &PartInfo, key: &'static str) -> Owned {
+/// The entry or exit row of part `p`: "Auto" (nearest where the needle is) or set, with how far its
+/// stitches miss it when that is more than the Check tab lets pass (`missed`, millimetres: the most
+/// of the selected objects'). It `opens` the point's dialog for one object; for several it is read
+/// only (the embroidery tool places their points one at a time).
+fn point_row(p: &PartInfo, key: &'static str, missed: Option<f64>, lang: Lang, opens: bool) -> Owned {
     let point = if key == "entry" { &p.entry } else { &p.exit };
     let label = vocabulary::label(key, None);
     let every = point.set_count >= p.object_count && point.set_count > 0 && !point.mixed;
     let (words, own, aside) = if point.mixed {
         (crate::et!("Mixed"), false, None)
     } else if every {
-        // Kept and reported; the planner sews toward it once the embroidery tool places it.
-        let note = (key == "exit").then(|| crate::et!("not used yet").to_string());
+        let note = missed
+            .filter(|m| *m > POINT_MISS_MM)
+            .map(|m| text::fill(crate::et!("missed by {value} mm"), &[("value", &numbers::decimal(lang, m, MISS_DECIMALS))]));
         (crate::et!("Set"), true, note)
     } else {
         (crate::et!("Auto"), false, Some(crate::et!("nearest").to_string()))
@@ -658,7 +717,8 @@ fn point_row(p: &PartInfo, key: &'static str) -> Owned {
         label,
         name: label.to_string(),
         tip: vocabulary::tip(key),
-        field: OwnedField::Words(words.to_string()),
+        // One object: a button opening the point's dialog; several: read only.
+        field: if opens { OwnedField::Button(words.to_string()) } else { OwnedField::Words(words.to_string()) },
         own,
         restore,
         aside,
@@ -666,6 +726,17 @@ fn point_row(p: &PartInfo, key: &'static str) -> Owned {
         description: description.to_string(),
         problem: None,
     }
+}
+
+/// Where the plan shown starts and ends `part` of the one object `ids` holds (document points): its
+/// first unit's first needle point and its last unit's last; `None` for several objects, or no plan.
+fn planned_ends(app: &VectorcraftApp, uid: u64, ids: &[NodeId], part: Part) -> Option<[vectorcraft_geom::Point; 2]> {
+    let [id] = ids else { return None };
+    let scene = app.embroidery.preview.shown(uid)?.planned.built_scene()?;
+    use vectorcraft_engine::cmd::embroidery::plan::Part as Planned;
+    let of_part = |k: &Planned| matches!((part, k), (Part::Fill, Planned::Fill(_)) | (Part::Stroke, Planned::Stroke(_)));
+    let units: Vec<_> = scene.units().iter().filter(|u| u.object == *id && of_part(&u.key.part)).collect();
+    Some([units.first()?.entry?, units.last()?.exit?])
 }
 
 /// The command for `edit` of key `key` of part `p` (`part`) on objects `ids`: a value set, or
@@ -685,6 +756,8 @@ fn edit_command(p: &PartInfo, part: Part, key: &str, edit: Edit, ids: &[NodeId])
             if inherited.and_then(Value::as_str) == Some(id.as_str()) { set(Value::Null) } else { set(json!(id)) }
         }
         Edit::Restore => Some(("embroidery.reset", json!({"ids": ids, "part": part.id(), "keys": [key]}))),
+        // Only the entry and exit rows open anything (`part_rows`).
+        Edit::Open => None,
     }
 }
 

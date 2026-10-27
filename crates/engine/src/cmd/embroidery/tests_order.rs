@@ -303,6 +303,9 @@ fn sequence_as_json_was(plan: &super::plan::DesignPlan, page: super::stats::Page
                         "entry": needle().next().map(|s| super::stats::point(s.point())),
                         "exit": needle().next_back().map(|s| super::stats::point(s.point())),
                         "bounds": u.bounds.map(super::stats::rect),
+                        // Added with entry and exit points planned toward (replies grow by addition).
+                        "asked": {"entry": u.asked.entry.map(super::stats::point), "exit": u.asked.exit.map(super::stats::point)},
+                        "missedBy": {"entry": plan.missed(i)[0].map(super::stats::mm), "exit": plan.missed(i)[1].map(super::stats::mm)},
                     })
                 })
                 .collect();

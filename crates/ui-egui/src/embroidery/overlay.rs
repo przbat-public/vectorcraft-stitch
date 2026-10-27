@@ -1,11 +1,12 @@
 //! The stitch view's overlays for the selection (the project owner's choice: a frame and markers,
 //! no dimming):
 //!
-//! - with the Selection tool the canvas draws only the selection's frame and the key object's
-//!   outline ([`frame_only`]), no path outlines or anchors over the stitches;
+//! - with the Selection tool (and the embroidery tool) the canvas draws only the selection's frame
+//!   and the key object's outline ([`frame_only`]), no path outlines or anchors over the stitches;
 //! - each selected object gets an entry ◆ where the needle enters it and an exit ⊕ where it leaves
 //!   it, at most [`MARKED_OBJECTS_MAX`] of them, labelled when one of them is marked; they come from
-//!   the scene's ends ([`StitchScene::ends_of`]), as the Sewing order list's do;
+//!   the scene's ends ([`StitchScene::ends_of`]), as the Sewing order list's do; with the embroidery
+//!   tool its handles take their place ([`super::handles`]);
 //! - a selected object the stitches shown aren't of yet (it changed since the plan shown) is outlined
 //!   dashed in its layer's colour until the new plan comes; past [`PENDING_OUTLINES_MAX`] objects or
 //!   [`PENDING_ANCHORS_MAX`] anchors the box they fall in is dashed instead, and a frame draws at
@@ -26,13 +27,15 @@ use crate::theme::Tokens;
 
 /// The most selected objects marked: more markers would cover the stitches they mark. An estimate.
 pub const MARKED_OBJECTS_MAX: usize = 32;
-/// The entry marker's diagonal and the exit marker's diameter, points (the mockups' sizes).
-pub const ENTRY_MARKER_PT: f32 = 12.0;
-pub const EXIT_MARKER_PT: f32 = 14.0;
-/// The labels' size, their room either side, and how far they sit from their marker, points.
+/// The entry marker's diagonal and the exit marker's diameter, points (the mockups' sizes): the
+/// embroidery tool's handles', which are drawn in their place.
+pub const ENTRY_MARKER_PT: f32 = vectorcraft_tools::embroidery::ENTRY_MARKER_PX as f32;
+pub const EXIT_MARKER_PT: f32 = vectorcraft_tools::embroidery::EXIT_MARKER_PX as f32;
+/// The labels' size, their room either side, and how far they sit from their marker, points (the
+/// tool's handles' labels' too).
 const LABEL_SIZE: f32 = 11.0;
 const LABEL_PAD: f32 = 5.0;
-const LABEL_OFFSET: f32 = 10.0;
+pub(super) const LABEL_OFFSET: f32 = 10.0;
 /// The dashes of a pending object's outline, points.
 const DASH: f32 = 4.0;
 const GAP: f32 = 3.0;
@@ -52,7 +55,7 @@ pub const PENDING_DASHES_MAX: usize = 20_000;
 #[derive(Default)]
 pub struct Ends {
     of: Option<(EndsKey, Arc<Vec<ObjectEnds>>)>,
-    pending: Option<(EndsKey, Arc<Pending>)>,
+    pending: Option<(PendingKey, Arc<Pending>)>,
 }
 
 /// What is dashed for the selected objects the stitches shown aren't of yet.
@@ -63,13 +66,17 @@ enum Pending {
     Bounds(Color32, Rect),
 }
 
-/// What the ends are found for: the document's uid, the plan's generation, the revision.
-type EndsKey = (u64, u64, u64);
+/// What the ends are found for: the document's uid, the plan's generation, and the objects selected
+/// (not the revision, which moves with every frame of a drag: the plan shown is the same).
+type EndsKey = (u64, u64, Vec<NodeId>);
+/// What the dashed outlines are found for: the document's uid, the plan's generation, the revision
+/// (they are of the objects as they are now).
+type PendingKey = (u64, u64, u64);
 
 /// Whether the canvas draws only the selection's frame and the key object's outline: the Selection
-/// tool in the stitch view.
+/// tool, or the embroidery tool (its handles over the stitches, no anchors), in the stitch view.
 pub fn frame_only(app: &VectorcraftApp) -> bool {
-    app.embroidery.layer.drawn() && app.session.tool_id() == "selection"
+    app.embroidery.layer.drawn() && (app.session.tool_id() == "selection" || super::handles::active(app))
 }
 
 /// The active document's selected objects' ends in the plan shown, found again only when the
@@ -77,15 +84,15 @@ pub fn frame_only(app: &VectorcraftApp) -> bool {
 fn ends(app: &mut VectorcraftApp) -> Option<Arc<Vec<ObjectEnds>>> {
     let st = app.session.active()?;
     let shown = app.embroidery.preview.shown(st.uid)?;
-    let key = (st.uid, shown.planned.generation, st.revision);
-    if let Some((k, ends)) = &app.embroidery.ends.of
-        && *k == key
+    if let Some(((uid, generation, selected), ends)) = &app.embroidery.ends.of
+        && (*uid, *generation) == (st.uid, shown.planned.generation)
+        && *selected == st.selection.objects
     {
         return Some(ends.clone());
     }
     let selected: Vec<NodeId> = st.selection.objects.clone();
     let ends = Arc::new(shown.planned.scene().ends_of(&st.doc, &selected));
-    app.embroidery.ends.of = Some((key, ends.clone()));
+    app.embroidery.ends.of = Some(((st.uid, shown.planned.generation, selected), ends.clone()));
     Some(ends)
 }
 
@@ -98,7 +105,9 @@ pub fn not_sewn(app: &VectorcraftApp, now: f64) -> usize {
     }
     let Some(generation) = app.embroidery.preview.shown(st.uid).map(|s| s.planned.generation) else { return 0 };
     match &app.embroidery.ends.of {
-        Some((k, ends)) if *k == (st.uid, generation, st.revision) => ends.iter().filter(|e| e.units.is_empty()).count(),
+        Some(((uid, g, selected), ends)) if (*uid, *g) == (st.uid, generation) && *selected == st.selection.objects => {
+            ends.iter().filter(|e| e.units.is_empty()).count()
+        }
         _ => 0,
     }
 }
@@ -161,11 +170,11 @@ fn anchors_within(nodes: &[&Node], max: usize) -> bool {
     true
 }
 
-/// Dash `line` (screen points) in `color` where it crosses `clip`, at most `budget` dashes, taken
-/// from it: a long line far outside the canvas costs nothing.
-fn dash(p: &egui::Painter, line: &[Pos2], color: Color32, clip: egui::Rect, budget: &mut usize) {
-    let stroke = Stroke::new(1.0, color);
-    let (dash, period) = (f64::from(DASH), f64::from(DASH + GAP));
+/// Dash `line` (screen points) with `stroke`, `pattern` its dashes' and gaps' lengths, where it
+/// crosses `clip`, at most `budget` dashes, taken from it: a long line far outside the canvas costs
+/// nothing.
+pub(super) fn dash(p: &egui::Painter, line: &[Pos2], stroke: Stroke, pattern: (f32, f32), clip: egui::Rect, budget: &mut usize) {
+    let (dash, period) = (f64::from(pattern.0), f64::from(pattern.0 + pattern.1));
     // How far along the line this segment starts, folded into one period (the dashes go on from one
     // segment into the next).
     let mut phase = 0.0_f64;
@@ -246,16 +255,20 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         Some(Pending::Outlines(outlines)) => {
             for (color, outline) in outlines {
                 for line in crate::canvas::to_screen_path(outline, xf) {
-                    dash(painter, &line, *color, clip, &mut budget);
+                    dash(painter, &line, Stroke::new(1.0, *color), (DASH, GAP), clip, &mut budget);
                 }
             }
         }
         Some(Pending::Bounds(color, b)) => {
             let mut corners = xf.quad(*b);
             corners.extend(corners.first().copied());
-            dash(painter, &corners, *color, clip, &mut budget);
+            dash(painter, &corners, Stroke::new(1.0, *color), (DASH, GAP), clip, &mut budget);
         }
         None => {}
+    }
+    // The embroidery tool draws its own handles in their place.
+    if super::handles::active(app) {
+        return;
     }
     let marked: Vec<&ObjectEnds> = ends.iter().filter(|e| !e.units.is_empty()).take(MARKED_OBJECTS_MAX).collect();
     // Labelled when one object is marked: an object selected with it that sews nothing (a text
@@ -267,14 +280,14 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
             let at = xf.to_screen(exit);
             exit_marker(painter, at, color);
             if labelled {
-                label(painter, at + vec2(-LABEL_OFFSET, LABEL_OFFSET), Align2::RIGHT_TOP, crate::et!("Exit"), color);
+                label(painter, at + vec2(-LABEL_OFFSET, LABEL_OFFSET), Align2::RIGHT_TOP, crate::et!("Exit"), color, Stroke::NONE);
             }
         }
         if let Some(entry) = e.entry {
             let at = xf.to_screen(entry);
             entry_marker(painter, at, t.accent);
             if labelled {
-                label(painter, at + vec2(LABEL_OFFSET, -LABEL_OFFSET), Align2::LEFT_BOTTOM, crate::et!("Entry"), t.accent);
+                label(painter, at + vec2(LABEL_OFFSET, -LABEL_OFFSET), Align2::LEFT_BOTTOM, crate::et!("Entry"), t.accent, Stroke::NONE);
             }
         }
     }
@@ -306,12 +319,12 @@ fn exit_marker(p: &egui::Painter, at: Pos2, color: Color32) {
 
 /// A pill reading `text` on `color`, anchored at `at` by `align`: in black or white, whichever reads
 /// better on it.
-fn label(p: &egui::Painter, at: Pos2, align: Align2, text: &str, color: Color32) {
+pub(super) fn label(p: &egui::Painter, at: Pos2, align: Align2, text: &str, color: Color32, edge: Stroke) {
     let ink = super::marks::text_on(color);
     let galley = p.layout_no_wrap(text.to_string(), FontId::proportional(LABEL_SIZE), ink);
     let size = galley.size() + vec2(2.0 * LABEL_PAD, LABEL_PAD);
     let rect = align.anchor_size(at, size);
-    p.rect(rect, CornerRadius::same(u8::MAX), color, Stroke::NONE, StrokeKind::Inside);
+    p.rect(rect, CornerRadius::same(u8::MAX), color, edge, StrokeKind::Outside);
     p.galley(rect.center() - galley.size() / 2.0, galley, ink);
 }
 

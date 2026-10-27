@@ -19,6 +19,8 @@
 //! - [`switch`]: the canvas's Art | Stitches switch.
 //! - [`notice`]: the canvas's notice while the stitches are planned, or can't be.
 //! - [`overlay`]: the selection in the stitch view: entry and exit markers, changed objects.
+//! - [`handles`]: the embroidery tool's entry and exit points, in both views.
+//! - [`point_dialog`]: the Entry Point and Exit Point dialog (X and Y typed, or Auto).
 //! - [`text`]: the embroidery interface's words, in the catalogues' `embroidery` context
 //!   ([`crate::et!`], [`crate::etn!`]).
 //! - [`zoom`]: View › Zoom to Box (`view.zoomTo`).
@@ -27,20 +29,27 @@
 pub mod check_marks;
 pub mod counters;
 pub mod fields;
+pub mod handles;
 pub mod marks;
 pub mod menu;
+pub mod nearest;
 pub mod notice;
 pub mod numbers;
 pub mod overlay;
 pub mod plan_worker;
+pub mod point_dialog;
 pub mod rows;
 pub mod setup_tab;
 pub mod stitch_layer;
 pub mod stitch_preview;
 pub mod switch;
 pub mod text;
+pub mod tool_bar;
 pub mod vocabulary;
 pub mod zoom;
+
+#[cfg(test)]
+mod tests_handles;
 
 use vectorcraft_engine::cmd::embroidery::render::{Look, Region, picture};
 use vectorcraft_engine::cmd::embroidery::scene::fabric_color;
@@ -56,6 +65,10 @@ pub struct Embroidery {
     pub layer: stitch_layer::StitchLayer,
     /// The selected objects' ends in the plan shown ([`overlay`]).
     pub(crate) ends: overlay::Ends,
+    /// The embroidery tool's handles, as last found ([`handles`]).
+    pub(crate) handles: handles::Cache,
+    /// Nearest Connection under way from the interface ([`nearest`]).
+    pub(crate) nearest: nearest::Nearest,
     /// The Embroidery panel's Sewing order tab.
     pub(crate) order: crate::panels::embroidery::order::OrderState,
     /// The Embroidery panel's Check tab.
@@ -77,6 +90,13 @@ pub struct Embroidery {
 /// after the fork's controls (`chrome::isolation_bar`), points: as it draws it.
 const ISOLATION_BAR: f32 = 24.0;
 
+/// Each frame, before it is drawn: the stitch preview's plans taken in
+/// ([`stitch_preview::poll`]), and Nearest Connection's search under way looked at ([`nearest::poll`]).
+pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
+    stitch_preview::poll(app);
+    nearest::poll(app, ctx);
+}
+
 /// What the fork draws over the canvas, after it: the selection's markers in the stitch view, the
 /// check's marks, the Art | Stitches switch, and the notice under it (both below the isolation
 /// mode's bar while it shows).
@@ -86,6 +106,7 @@ pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
         let xf = crate::canvas::Xf::new(canvas, &view);
         overlay::draw(app, &ui.painter_at(canvas), &xf);
         check_marks::draw(app, ui.ctx(), &ui.painter_at(canvas), &xf);
+        handles::draw(app, &ui.painter_at(canvas), &xf);
     }
     let isolated = app.ui.screen_mode < 3 && app.session.active().is_some_and(|st| st.isolation.is_some());
     let below = if isolated { egui::Rect::from_min_max(canvas.min + egui::vec2(0.0, ISOLATION_BAR), canvas.max) } else { canvas };

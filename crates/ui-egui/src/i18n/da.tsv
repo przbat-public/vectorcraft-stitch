@@ -5859,7 +5859,6 @@ embroidery	by size	efter størrelse
 embroidery	Entry and exit	Indgang og udgang
 embroidery	Set	Angivet
 embroidery	nearest	nærmest
-embroidery	not used yet	bruges ikke endnu
 embroidery	Set on the selected objects.	Angivet på de valgte objekter.
 embroidery	Nearest to where the needle is.	Nærmest der, hvor nålen er.
 embroidery	built-in values	indbyggede værdier
@@ -5953,3 +5952,48 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Ikke indsat, da
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} valgt objekt tager ingen indstillinger og blev sprunget over|{count} valgte objekter tager ingen indstillinger og blev sprunget over
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} valgt objekt tager ingen indstillinger|{count} valgte objekter tager ingen indstillinger
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	Ind- eller udgangspunkter, der rammes ved siden af med mere end {value} mm
+embroidery	Largest miss: {value} mm	Største afvigelse: {value} mm
+@plural	{count} point|{count} points	{count} punkt|{count} punkter
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	ramt forbi med {value} mm
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Nærmeste forbindelse
+@plural	{count} part set|{count} parts set	{count} del indstillet|{count} dele indstillet
+embroidery	jumps {value} mm shorter	spring {value} mm kortere
+embroidery	jumps no shorter	spring ikke kortere
+embroidery	trims {before} → {after}	klip {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Ind- og udgangspunkterne er allerede de nærmeste.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Broderiværktøj
+	 a point to move it, or an arrow's head to turn the rows  |  	 på et punkt for at flytte det, eller på en pils spids for at dreje rækkerne  |  
+	 a point or an arrow to put it back to Auto  |  	 på et punkt eller en pil for at sætte det tilbage til Auto  |  
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	spring {value} mm
+embroidery	jump {value} mm, cut	spring {value} mm, klip
+embroidery	Stitches update when you pause or let go.	Stingene opdateres, når du holder pause eller slipper.
+embroidery	Stitches update when you let go.	Stingene opdateres, når du slipper.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Indgangspunkt
+embroidery	Exit Point	Udgangspunkt
+embroidery	Auto (nearest where the needle is)	Auto (nærmest nålen)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Punktet flyttes til det nærmeste sted, hvor stingene kan begynde eller slutte.
+# VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
+embroidery	Set on Canvas	Angiv på lærredet
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Træk denne dels ind- og udgangspunkt på lærredet med broderiværktøjet.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Intet her kan få ind- og udgangspunkter
+@plural	{count} object skipped|{count} objects skipped	{count} objekt sprunget over|{count} objekter sprunget over
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent} % · Esc stopper den
+embroidery	Stopped: nothing was changed.	Stoppet: intet blev ændret.
+embroidery	The document changed meanwhile: nothing was changed.	Dokumentet blev ændret i mellemtiden: intet blev ændret.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Auto (hvor planen afslutter delen)
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	 på et objekt for at vise dets punkter  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	 skifter fra punkt til punkt, piletasterne flytter det, Enter indtaster det
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Ind- og udgangspunkter vises for det første {count} valgte objekt|Ind- og udgangspunkter vises for de første {count} valgte objekter

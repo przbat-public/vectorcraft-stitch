@@ -5743,7 +5743,6 @@ embroidery	by size	按尺寸
 embroidery	Entry and exit	入针与出针
 embroidery	Set	已设置
 embroidery	nearest	最近
-embroidery	not used yet	尚未使用
 embroidery	Set on the selected objects.	已在所选对象上设置。
 embroidery	Nearest to where the needle is.	离针所在位置最近处。
 embroidery	built-in values	内置值
@@ -5837,3 +5836,48 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	未粘贴，因
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} 个所选对象不接受设置，已跳过
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} 个所选对象不接受设置
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	偏离超过 {value} mm 的入针点或出针点
+embroidery	Largest miss: {value} mm	最大偏离：{value} mm
+@plural	{count} point|{count} points	{count} 个点
+embroidery	{name}, {point}: {value} mm	{name}，{point}：{value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	偏离 {value} mm
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	最近连接
+@plural	{count} part set|{count} parts set	已设置 {count} 个部分
+embroidery	jumps {value} mm shorter	跳针缩短 {value} mm
+embroidery	jumps no shorter	跳针没有缩短
+embroidery	trims {before} → {after}	剪线 {before} → {after}
+embroidery	The entry and exit points are already the nearest.	入针点和出针点已经是最近的。
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	刺绣工具
+	 a point to move it, or an arrow's head to turn the rows  |  	点可移动，箭头尖端可旋转行  |  
+	 a point or an arrow to put it back to Auto  |  	点或箭头可恢复为自动  |  
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	跳针 {value} mm
+embroidery	jump {value} mm, cut	跳针 {value} mm，剪线
+embroidery	Stitches update when you pause or let go.	停下或松开时针迹会更新。
+embroidery	Stitches update when you let go.	松开时针迹会更新。
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	入针点
+embroidery	Exit Point	出针点
+embroidery	Auto (nearest where the needle is)	自动（离针最近处）
+embroidery	The point is taken to the nearest place the stitches can start or end.	该点会移到针迹可以开始或结束的最近位置。
+# VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
+embroidery	Set on Canvas	在画布上设置
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	用刺绣工具在画布上拖动此部分的入针点和出针点。
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	这里没有对象可以设置入针点和出针点
+@plural	{count} object skipped|{count} objects skipped	已跳过 {count} 个对象
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent}% · 按 Esc 停止
+embroidery	Stopped: nothing was changed.	已停止：未做任何更改。
+embroidery	The document changed meanwhile: nothing was changed.	在此期间文档已更改：未做任何更改。
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	自动（计划结束该部分处）
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	对象可显示其点  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	在点之间切换，方向键微移，Enter 键输入
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	入口点和出口点仅显示于所选的前 {count} 个对象

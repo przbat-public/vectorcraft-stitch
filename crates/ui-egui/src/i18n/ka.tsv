@@ -5289,7 +5289,7 @@ imageTrace	Outline	კონტური
 	Embroidery Trim After	ქარგვა: ძაფის მოჭრა შემდეგ
 	Embroidery Object Settings	ობიექტის ქარგვის პარამეტრები
 	Reset Embroidery Object Settings	ობიექტის ქარგვის პარამეტრების აღდგენა
-	Embroidery Entry and Exit	ქარგვის შესვლა და გასვლა
+	Embroidery Entry and Exit	ქარგვის შესვლა და გამოსვლა
 	Show Embroidery Object Settings	ობიექტის ქარგვის პარამეტრების ჩვენება
 	Embroidery Fabrics	ქარგვის ქსოვილები
 	Apply Embroidery Fabric to Objects	ქარგვის ქსოვილის გამოყენება ობიექტებზე
@@ -5819,7 +5819,6 @@ embroidery	by size	ზომის მიხედვით
 embroidery	Entry and exit	შესვლა და გამოსვლა
 embroidery	Set	დაყენებული
 embroidery	nearest	უახლოესი
-embroidery	not used yet	ჯერ არ გამოიყენება
 embroidery	Set on the selected objects.	დაყენებულია მონიშნულ ობიექტებზე.
 embroidery	Nearest to where the needle is.	ყველაზე ახლოს იქ, სადაც ნემსია.
 embroidery	built-in values	ჩაშენებული მნიშვნელობები
@@ -5913,3 +5912,48 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	არ ჩა�
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} მონიშნული ობიექტი პარამეტრებს არ იღებს და გამოტოვებულია
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} მონიშნული ობიექტი პარამეტრებს არ იღებს
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	შესვლის ან გამოსვლის წერტილები, აცდენილი {value} მმ-ზე მეტით
+embroidery	Largest miss: {value} mm	უდიდესი აცდენა: {value} მმ
+@plural	{count} point|{count} points	წერტილები: {count}
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} მმ
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	აცდენილია {value} მმ-ით
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	უახლოესი შეერთება
+@plural	{count} part set|{count} parts set	დაყენებული ნაწილები: {count}
+embroidery	jumps {value} mm shorter	ნახტომები {value} მმ-ით მოკლეა
+embroidery	jumps no shorter	ნახტომები არ შემოკლდა
+embroidery	trims {before} → {after}	ჭრები {before} → {after}
+embroidery	The entry and exit points are already the nearest.	შესვლისა და გამოსვლის წერტილები უკვე უახლოესია.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	ნაქარგობის ხელსაწყო
+	 a point to move it, or an arrow's head to turn the rows  |  	 წერტილზე — მის გადასაადგილებლად, ისრის წვერზე — რიგების მოსაბრუნებლად  |  
+	 a point or an arrow to put it back to Auto  |  	 წერტილზე ან ისარზე — ავტომატურზე დასაბრუნებლად  |  
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	ნახტომი {value} მმ
+embroidery	jump {value} mm, cut	ნახტომი {value} მმ, ჭრა
+embroidery	Stitches update when you pause or let go.	ნაკერები განახლდება, როცა შეჩერდებით ან გაუშვებთ.
+embroidery	Stitches update when you let go.	ნაკერები განახლდება, როცა გაუშვებთ.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	შესვლის წერტილი
+embroidery	Exit Point	გამოსვლის წერტილი
+embroidery	Auto (nearest where the needle is)	ავტომატური (ნემსთან უახლოესი)
+embroidery	The point is taken to the nearest place the stitches can start or end.	წერტილი გადადის უახლოეს ადგილას, სადაც ნაკერები შეიძლება დაიწყოს ან დასრულდეს.
+# VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
+embroidery	Set on Canvas	ტილოზე დაყენება
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	ამ ნაწილის შესვლისა და გამოსვლის წერტილები ტილოზე ნაქარგობის ხელსაწყოთი გადაათრიეთ.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	აქ ვერაფერი მიიღებს შესვლისა და გამოსვლის წერტილებს
+@plural	{count} object skipped|{count} objects skipped	{count} ობიექტი გამოტოვებულია
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent}% · Esc შეაჩერებს
+embroidery	Stopped: nothing was changed.	შეჩერდა: არაფერი შეცვლილა.
+embroidery	The document changed meanwhile: nothing was changed.	ამასობაში დოკუმენტი შეიცვალა: არაფერი შეცვლილა.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	ავტომატური (სადაც გეგმა ნაწილს ასრულებს)
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	 ობიექტზე — მისი წერტილების საჩვენებლად  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	 წერტილიდან წერტილზე გადასვლა, ისრები მას აჩოჩებს, Enter მის შეყვანას
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	შესვლისა და გამოსვლის წერტილები ჩანს პირველი {count} მონიშნული ობიექტისთვის

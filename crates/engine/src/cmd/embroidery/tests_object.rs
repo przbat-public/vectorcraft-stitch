@@ -206,33 +206,137 @@ fn a_symbols_art_keeps_its_settings_in_every_instance() {
     assert!((b.angle - options::planner_angle(120.0)).abs() < 1e-6, "turned with its instance: {}", b.angle);
 }
 
-/// A part starts at the entry point its object sets: its first needle point is the start it can
-/// take nearest to it (an end of a line, the corner a fill's rows begin at), whatever came before.
+/// A part starts at the entry point its object sets, whatever came before: exactly there where its
+/// stitches can start anywhere (a fill, a little inside its outline, where its edge run runs; a
+/// closed line), at the nearer end of an open line. Mutation caught: the entry taken as where the
+/// needle is starts the fill at the corner nearest, millimetres off.
 #[test]
 fn an_entry_point_starts_the_part() {
     let first_point = |plan: &DesignPlan, unit: usize| {
         let st = plan.unit_stitches(unit).iter().find(|s| s.command == Command::Stitch).copied().unwrap();
         (st.x, st.y)
     };
-    let close = |(x, y): (f64, f64), (px, py): (f64, f64)| (x - px / PT_PER_MM).hypot(y - py / PT_PER_MM) < 1.5;
-    // A line drawn left to right, entered from its right end.
+    let off = |(x, y): (f64, f64), (px, py): (f64, f64)| (x - px / PT_PER_MM).hypot(y - py / PT_PER_MM);
+    // An open line drawn left to right, entered near its right end: it starts at that end.
     let mut s = blank();
     run(&mut s, "paint.setFill", json!({"none": true}));
     run(&mut s, "paint.setStroke", json!({"color": "#2233cc"}));
     let line = run(&mut s, "path.create", json!({"d": "M 20 100 L 200 100"}))["id"].as_u64().unwrap();
     run(&mut s, "select.none", json!({}));
-    assert!(close(first_point(&plan_with(&s, json!({})), 0), (20.0, 100.0)), "drawn from its left end");
-    give(&mut s, line, json!({"stroke": {"points": {"entry": [200.0, 100.0]}}}));
-    assert!(close(first_point(&plan_with(&s, json!({})), 0), (200.0, 100.0)), "entered from its right end");
-    // A rectangle, whose rows (135°) can start at its upper right or lower left corner: entered at
-    // either.
+    assert!(off(first_point(&plan_with(&s, json!({})), 0), (20.0, 100.0)) < 1e-6, "drawn from its left end");
+    give(&mut s, line, json!({"stroke": {"points": {"entry": [150.0, 100.0]}}}));
+    assert!(off(first_point(&plan_with(&s, json!({})), 0), (200.0, 100.0)) < 1e-6, "entered from its right end");
+    // A rectangle, filled with and without underlay, entered in the middle of its sides and near a
+    // corner: it starts there, within half a row spacing (0.19 mm) inside.
     let mut s = blank();
     let id = shape(&mut s, 20.0, 20.0, 80.0, 60.0, 0.0);
-    for corner in [[100.0, 20.0], [20.0, 80.0]] {
-        give(&mut s, id, json!({"fill": {"points": {"entry": corner}, "underlay": "none"}}));
-        let start = first_point(&plan_with(&s, json!({})), 0);
-        assert!(close(start, (corner[0], corner[1])), "{corner:?}: {start:?}");
+    for underlay in ["none", "auto"] {
+        for at in [[60.0, 20.0], [100.0, 50.0], [25.0, 80.0], [20.0, 30.0]] {
+            give(&mut s, id, json!({"fill": {"points": {"entry": at}, "underlay": underlay}}));
+            let start = first_point(&plan_with(&s, json!({})), 0);
+            assert!(off(start, (at[0], at[1])) < 0.2, "underlay {underlay}, {at:?}: {start:?}");
+        }
     }
+    // The same rectangle's outline sewn as a running line: it starts exactly at the entry, between
+    // two corners.
+    give(&mut s, id, json!({"fill": {"stitch": "running", "points": {"entry": [60.0, 80.0]}}}));
+    let start = first_point(&plan_with(&s, json!({})), 0);
+    assert!(off(start, (60.0, 80.0)) < 1e-6, "a closed running line: {start:?}");
+}
+
+/// A part ends at its exit point as near as its stitches can reach it, without a jump, a cut or a
+/// stitch that shows more: an open running line whose start is free ends at its end nearest the
+/// exit, from wherever the needle comes; entered at a set point it ends where its stitches take it;
+/// a closed one goes on round to the exit in its own holes. Mutation caught: the exit read and not
+/// planned toward leaves the line ending at its far end.
+#[test]
+fn an_exit_point_ends_the_part() {
+    let last_point = |plan: &DesignPlan, unit: usize| {
+        let st = plan.unit_stitches(unit).iter().rev().find(|s| s.command == Command::Stitch).copied().unwrap();
+        (st.x, st.y)
+    };
+    let off = |(x, y): (f64, f64), (px, py): (f64, f64)| (x - px / PT_PER_MM).hypot(y - py / PT_PER_MM);
+    let mut s = blank();
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#2233cc"}));
+    let line = run(&mut s, "path.create", json!({"d": "M 20 100 L 200 100"}))["id"].as_u64().unwrap();
+    run(&mut s, "select.none", json!({}));
+    assert!(off(last_point(&plan_with(&s, json!({})), 0), (200.0, 100.0)) < 1e-6, "drawn to its right end");
+    give(&mut s, line, json!({"stroke": {"points": {"exit": [30.0, 104.0]}}}));
+    assert!(off(last_point(&plan_with(&s, json!({})), 0), (20.0, 100.0)) < 1e-6, "turned to end at its left end, by the exit");
+    give(&mut s, line, json!({"stroke": {"points": {"entry": [20.0, 100.0], "exit": [30.0, 104.0]}}}));
+    assert!(off(last_point(&plan_with(&s, json!({})), 0), (200.0, 100.0)) < 1e-6, "its entry set: it ends at its other end");
+    // A satin column 6 mm wide (its underlay an edge run and a zigzag, which bring its top
+    // stitching back to where it starts), entered at its left end: a pass along its middle ends it
+    // at its right end, by the exit.
+    let mut s = blank();
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#2233cc"}));
+    let satin = run(&mut s, "path.create", json!({"d": "M 20 100 L 200 100"}))["id"].as_u64().unwrap();
+    run(&mut s, "stroke.set", json!({"weight": 6.0 * PT_PER_MM, "ids": [satin]}));
+    run(&mut s, "select.none", json!({}));
+    give(&mut s, satin, json!({"stroke": {"points": {"entry": [20.0, 100.0]}}}));
+    assert!(off(last_point(&plan_with(&s, json!({})), 0), (20.0, 100.0)) < 4.0, "its top stitching comes back to its left end");
+    give(&mut s, satin, json!({"stroke": {"points": {"entry": [20.0, 100.0], "exit": [200.0, 100.0]}}}));
+    assert!(off(last_point(&plan_with(&s, json!({})), 0), (200.0, 100.0)) < 4.0, "turned round by a pass along its middle");
+    // A rectangle's outline sewn as a running line goes on round to its exit, in its own holes.
+    let mut s = blank();
+    let id = shape(&mut s, 20.0, 20.0, 80.0, 60.0, 0.0);
+    give(&mut s, id, json!({"fill": {"stitch": "running", "points": {"entry": [20.0, 20.0], "exit": [100.0, 50.0]}}}));
+    let plan = plan_with(&s, json!({}));
+    let stitch = plan.units[0].params.unwrap().stitch_length;
+    assert!(off(last_point(&plan, 0), (100.0, 50.0)) <= 0.65 * stitch, "ends at its exit: {:?}", last_point(&plan, 0));
+    // The same rectangle filled ends at an exit in the middle of a side (cut along the row there),
+    // with and without underlay, and lifts the needle no more than without it.
+    for underlay in ["none", "auto"] {
+        give(&mut s, id, json!({"fill": {"underlay": underlay}}));
+        let plain = plan_with(&s, json!({}));
+        give(&mut s, id, json!({"fill": {"underlay": underlay, "points": {"exit": [60.0, 80.0]}}}));
+        let plan = plan_with(&s, json!({}));
+        assert!(off(last_point(&plan, 0), (60.0, 80.0)) < 1.0, "underlay {underlay}: {:?}", last_point(&plan, 0));
+        let moves = |plan: &DesignPlan| plan.unit_stitches(0).iter().filter(|s| s.command != Command::Stitch).count();
+        assert!(moves(&plan) <= moves(&plain), "underlay {underlay}");
+    }
+}
+
+/// A point the stitches can't meet is reported, never silently: an open running line entered at
+/// its left end, its exit by that end too, ends at its right end; `embroidery.sequence` gives the
+/// points its unit was planned toward and how far it misses them, `embroidery.info` (planned) the
+/// largest miss of the part, and `embroidery.check` a note (`pointMissed`) at the point set, from
+/// where the needle comes out instead. A point it meets is no note.
+#[test]
+fn a_point_the_stitches_miss_is_reported() {
+    let mut s = blank();
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#2233cc"}));
+    let line = run(&mut s, "path.create", json!({"d": "M 20 100 L 200 100"}))["id"].as_u64().unwrap();
+    run(&mut s, "select.none", json!({}));
+    run(&mut s, "embroidery.setEntryExit", json!({"id": line, "part": "stroke", "entry": [20.0, 100.0], "exit": [20.0, 100.0]}));
+    let length = 180.0 / PT_PER_MM;
+    let unit = run(&mut s, "embroidery.sequence", json!({}))["blocks"][0]["units"][0].clone();
+    let mm = |v: f64| (v / PT_PER_MM * 100.0).round() / 100.0;
+    assert_eq!(unit["asked"], json!({"entry": [mm(20.0), mm(100.0)], "exit": [mm(20.0), mm(100.0)]}));
+    assert!(unit["missedBy"]["entry"].as_f64().unwrap() < 0.01, "met at its entry: {unit}");
+    let exit = unit["missedBy"]["exit"].as_f64().unwrap();
+    assert!((exit - length).abs() < 0.1, "missed by the line's length: {unit}");
+    let info = run(&mut s, "embroidery.info", json!({"ids": [line], "plan": true}));
+    assert_eq!(info["stroke"]["sewing"]["missedBy"]["exit"], unit["missedBy"]["exit"]);
+    let check = run(&mut s, "embroidery.check", json!({"rules": ["pointMissed"]}));
+    let rule = &check["rules"][0];
+    assert_eq!((rule["id"].as_str(), rule["severity"].as_str(), rule["hits"].as_u64()), (Some("pointMissed"), Some("info"), Some(1)), "{rule}");
+    let hit = &rule["examples"][0];
+    assert_eq!((hit["note"].as_str(), hit["id"].as_u64()), (Some("exit"), Some(line)), "{hit}");
+    assert_eq!(hit["at"], json!([mm(20.0), mm(100.0)]), "at the point set");
+    // Met: no note.
+    run(&mut s, "embroidery.setEntryExit", json!({"id": line, "part": "stroke", "exit": [200.0, 100.0]}));
+    let check = run(&mut s, "embroidery.check", json!({"rules": ["pointMissed"]}));
+    assert_eq!(check["rules"][0]["hits"], json!(0));
+    // A satin column ends on a rail, half its width off its middle line: met there too.
+    run(&mut s, "stroke.set", json!({"weight": 8.0, "ids": [line]}));
+    let unit = run(&mut s, "embroidery.sequence", json!({}))["blocks"][0]["units"][0].clone();
+    assert_eq!((unit["sewn"].as_str(), unit["missedBy"]["exit"].as_f64()), (Some("satin"), Some(0.0)), "{unit}");
+    let check = run(&mut s, "embroidery.check", json!({"rules": ["pointMissed"]}));
+    assert_eq!(check["rules"][0]["hits"], json!(0));
 }
 
 /// A fill angle the object doesn't set turns with the object, from its bounding box's angle: the

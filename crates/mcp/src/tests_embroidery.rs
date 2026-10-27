@@ -161,3 +161,62 @@ fn the_fabric_commands_are_reachable() {
     let r = run(&mut h, "embroidery.applyFabric", json!({}));
     assert_eq!(r["changedCount"], 0);
 }
+
+/// The embroidery tool headless: listed by `ui.tool.list`'s catalogue, chosen with `tool.select`,
+/// and a `pointer_gesture` from a fill's planned entry to its top side sets the entry there
+/// (snapped onto the outline), one undo step that `edit.undo` takes back.
+#[test]
+fn the_embroidery_tool_drags_an_entry_headless() {
+    let mut h = Headless::with_document();
+    let run = |h: &mut Headless, command: &str, params: Value| text(&call_tool(h, "run_command", &json!({"command": command, "params": params})));
+    run(&mut h, "paint.setStroke", json!({"none": true}));
+    let id = run(&mut h, "shape.rectangle", json!({"x": 20, "y": 20, "width": 80, "height": 50}))["id"].clone();
+    run(&mut h, "select.set", json!({"ids": [id]}));
+    run(&mut h, "embroidery.sequence", json!({}));
+    run(&mut h, "tool.select", json!({"tool": "embroidery"}));
+    // Pressed on the entry's handle: the drag moves the point by the drag, from where it is.
+    let (handles, _) = h.session.embroidery_handles(h.view);
+    let entry = handles.iter().find(|h| h.id.kind == vectorcraft_tools::embroidery::Kind::Entry).expect("the entry's handle");
+    let (x, y) = (entry.at.x, entry.at.y);
+    let undo = h.session.doc().unwrap().history.undo.len();
+    let ev = |kind: &str, x: f64, y: f64| json!({"kind": kind, "x": x, "y": y});
+    text(&call_tool(
+        &mut h,
+        "pointer_gesture",
+        &json!({"events": [ev("down", x, y), ev("drag", 55.0, 25.0), ev("drag", 60.0, 23.0), ev("up", 60.0, 23.0)]}),
+    ));
+    let entry = |h: &mut Headless| run(h, "embroidery.info", json!({"ids": [id]}))["objects"][0]["settings"]["fill"]["entry"].clone();
+    assert_eq!(entry(&mut h), json!([60.0, 20.0]));
+    assert_eq!(h.session.doc().unwrap().history.undo.len(), undo + 1);
+    run(&mut h, "edit.undo", json!({}));
+    assert_eq!(entry(&mut h), Value::Null);
+}
+
+/// Nearest Connection through MCP: listed, run on the whole design (the second line turned round so
+/// the thread isn't cut before the third), answered as it is documented, a dry run writing nothing,
+/// and a key it doesn't take refused.
+#[test]
+fn nearest_connection_is_reachable() {
+    let mut h = Headless::with_document();
+    let listed = text(&call_tool(&mut h, "list_commands", &json!({"filter": "embroidery.nearest"})));
+    assert!(listed["commands"].as_array().unwrap().iter().any(|c| c["id"] == "embroidery.nearestConnection"), "{listed}");
+    // Three lines in millimetres: the first ends at (30, 30), the second runs from (31, 30) to
+    // (24, 30), the third starts 6 mm right of the second's right end.
+    let pt = |v: f64| v * 72.0 / 25.4;
+    for (a, b) in [((10.0, 40.0), (30.0, 30.0)), ((31.0, 30.0), (24.0, 30.0)), ((37.0, 30.0), (57.0, 30.0))] {
+        let d = format!("M {} {} L {} {}", pt(a.0), pt(a.1), pt(b.0), pt(b.1));
+        text(&call_tool(&mut h, "run_command", &json!({"command": "paint.setFill", "params": {"none": true}})));
+        let id = text(&call_tool(&mut h, "run_command", &json!({"command": "path.create", "params": {"d": d}})))["id"].clone();
+        text(&call_tool(&mut h, "run_command", &json!({"command": "stroke.set", "params": {"weight": 1.0, "ids": [id]}})));
+        text(&call_tool(&mut h, "run_command", &json!({"command": "select.none"})));
+    }
+    let dry = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.nearestConnection", "params": {"dryRun": true}})));
+    assert_eq!((&dry["applied"], &dry["saved"]["trims"]), (&json!(false), &json!(1)), "{dry}");
+    let r = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.nearestConnection"})));
+    assert_eq!((&r["applied"], &r["changedCount"], &r["after"]), (&json!(true), &json!(3), &dry["after"]), "{r}");
+    for key in ["connections", "jumps", "trims", "length", "longest", "stitches"] {
+        assert!(r["before"][key].is_number() && r["after"][key].is_number(), "{key}: {r}");
+    }
+    let refused = call_tool(&mut h, "run_command", &json!({"command": "embroidery.nearestConnection", "params": {"dryrun": true}}));
+    assert!(refused.is_error, "{refused:?}");
+}

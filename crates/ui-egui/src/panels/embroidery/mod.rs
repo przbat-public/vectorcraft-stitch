@@ -401,8 +401,8 @@ fn tab_group(root: &Option<craft_ui::docking::Node<String>>, panel: &str) -> Vec
 }
 
 /// The panel's ≡ menu: the selected object's embroidery settings copied and pasted; the selection
-/// sewn earlier, later, first or last; the Sewing order's blocks collapsed or expanded; the next or
-/// previous finding of the check.
+/// sewn earlier, later, first or last; Nearest Connection; the Sewing order's blocks collapsed or
+/// expanded; the next or previous finding of the check.
 pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
     for id in ["embroidery.copySettings", "embroidery.pasteSettings"] {
         if crate::widgets::menu_item_name(ui, &command_label(app, id), crate::menus::enabled(app, id), false) {
@@ -417,6 +417,11 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
         if crate::widgets::menu_item_name(ui, &command_label(app, step.id()), enabled, false) {
             order::step_selection(app, step, &selection);
         }
+    }
+    // On the selection, else the whole design, off the interface thread; off while one runs.
+    let free = app.session.active().is_some() && !crate::embroidery::nearest::running(app);
+    if crate::widgets::menu_item_name(ui, &command_label(app, NEAREST), free, false) {
+        crate::embroidery::nearest::start(app);
     }
     ui.separator();
     let uid = app.session.active().map(|st| st.uid);
@@ -435,6 +440,49 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
             crate::menus::invoke(app, id, json!({}));
         }
     }
+}
+
+/// The command the menu's Nearest Connection runs.
+const NEAREST: &str = "embroidery.nearestConnection";
+
+/// The decimals a length Nearest Connection saved is said with: a tenth of a millimetre, the
+/// formats' grid.
+const SAVED_DECIMALS: usize = 1;
+
+/// What Nearest Connection's reply `r` says, in `lang`: the parts it set, how much shorter the jumps
+/// between them are, and the cuts before and after when they differ; that the points are already
+/// the nearest when it joined parts and changed none; and that nothing in scope can take points
+/// (with how many objects it passed over) when it joined none.
+pub(crate) fn nearest_words(r: &Value, lang: crate::i18n::Lang) -> String {
+    use crate::embroidery::{numbers, text};
+    let changed = r["changedCount"].as_u64().unwrap_or(0);
+    let unchanged = r["unchangedCount"].as_u64().unwrap_or(0);
+    if changed == 0 && unchanged == 0 {
+        let none = crate::et!("Nothing here can take entry and exit points").to_string();
+        return match r["skippedCount"].as_u64().unwrap_or(0) {
+            0 => none,
+            n => format!("{none} · {}", crate::etn!(n, "{count} object skipped", "{count} objects skipped")),
+        };
+    }
+    if changed == 0 {
+        return crate::et!("The entry and exit points are already the nearest.").to_string();
+    }
+    let mut said = vec![crate::etn!(changed, "{count} part set", "{count} parts set")];
+    let saved = r["saved"]["length"].as_f64().unwrap_or(0.0);
+    said.push(if saved > 0.0 {
+        text::fill(crate::et!("jumps {value} mm shorter"), &[("value", &numbers::decimal(lang, saved, SAVED_DECIMALS))])
+    } else {
+        crate::et!("jumps no shorter").to_string()
+    });
+    if let (Some(before), Some(after)) = (r["before"]["trims"].as_u64(), r["after"]["trims"].as_u64())
+        && before != after
+    {
+        said.push(text::fill(
+            crate::et!("trims {before} → {after}"),
+            &[("before", &numbers::count(lang, before)), ("after", &numbers::count(lang, after))],
+        ));
+    }
+    said.join(" · ")
 }
 
 /// Command `id`'s label as the menus show it, in the interface language: the panel's items and
@@ -569,18 +617,18 @@ const ELIDED_SLACK: f32 = 0.5;
 
 /// One segment of a strip ([`segments`]): its id, its words, whether it is the one selected, and
 /// whether it can be chosen.
-pub(super) struct Segment<'a> {
-    pub(super) id: egui::Id,
-    pub(super) label: &'a str,
-    pub(super) selected: bool,
-    pub(super) enabled: bool,
+pub(crate) struct Segment<'a> {
+    pub(crate) id: egui::Id,
+    pub(crate) label: &'a str,
+    pub(crate) selected: bool,
+    pub(crate) enabled: bool,
 }
 
 /// A strip of segments (the panel's tabs, the Object tab's parts), `height` points tall, its words
 /// `size` points, accessible as tabs: each as wide as its words and the strip's room shared out
 /// ([`strip_widths`]); words a segment can't hold are elided, whole in its tooltip and for screen
 /// readers; one that can't be chosen is greyed → the segment clicked.
-pub(super) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>]) -> Option<usize> {
+pub(crate) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>]) -> Option<usize> {
     let t = Tokens::get(ui.ctx());
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), height), Sense::hover());
     let radius = CornerRadius::same(t.radius);

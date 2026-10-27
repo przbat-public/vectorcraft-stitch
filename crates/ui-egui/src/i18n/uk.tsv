@@ -5499,7 +5499,6 @@ embroidery	by size	за розміром
 embroidery	Entry and exit	Вхід і вихід
 embroidery	Set	Задано
 embroidery	nearest	найближчий
-embroidery	not used yet	поки не використовується
 embroidery	Set on the selected objects.	Задано у виділених об’єктів.
 embroidery	Nearest to where the needle is.	Найближче до місця, де голка.
 embroidery	built-in values	вбудовані значення
@@ -5593,3 +5592,48 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Не встав
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} вибраний об’єкт не приймає параметри й пропущений|{count} вибрані об’єкти не приймають параметри й пропущені|{count} вибраних об’єктів не приймають параметри й пропущені
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} вибраний об’єкт не приймає параметри|{count} вибрані об’єкти не приймають параметри|{count} вибраних об’єктів не приймають параметри
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	Точки входу чи виходу з промахом понад {value} мм
+embroidery	Largest miss: {value} mm	Найбільший промах: {value} мм
+@plural	{count} point|{count} points	{count} точка|{count} точки|{count} точок
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} мм
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	промах {value} мм
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Найближче з’єднання
+@plural	{count} part set|{count} parts set	{count} частину задано|{count} частини задано|{count} частин задано
+embroidery	jumps {value} mm shorter	перескоки коротші на {value} мм
+embroidery	jumps no shorter	перескоки не коротші
+embroidery	trims {before} → {after}	обрізання {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Точки входу й виходу вже найближчі.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Інструмент «Вишивка»
+	 a point to move it, or an arrow's head to turn the rows  |  	 точку, щоб перемістити її, або вістря стрілки, щоб повернути ряди  |  
+	 a point or an arrow to put it back to Auto  |  	 точку чи стрілку, щоб повернути «Авто»  |  
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	перескок {value} мм
+embroidery	jump {value} mm, cut	перескок {value} мм, обрізання
+embroidery	Stitches update when you pause or let go.	Стібки оновляться, коли ви зупинитеся або відпустите.
+embroidery	Stitches update when you let go.	Стібки оновляться, коли ви відпустите.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Точка входу
+embroidery	Exit Point	Точка виходу
+embroidery	Auto (nearest where the needle is)	Авто (найближче до голки)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Точка переноситься в найближче місце, де стібки можуть початися або закінчитися.
+# VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
+embroidery	Set on Canvas	Задати на полотні
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Перетягніть точки входу й виходу цієї частини на полотні інструментом «Вишивка».
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Тут нічому не можна задати точки входу й виходу
+@plural	{count} object skipped|{count} objects skipped	пропущено {count} об’єкт|пропущено {count} об’єкти|пропущено {count} об’єктів
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent} % · Esc зупиняє
+embroidery	Stopped: nothing was changed.	Зупинено: нічого не змінено.
+embroidery	The document changed meanwhile: nothing was changed.	Тим часом документ змінився: нічого не змінено.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Авто (там, де план завершує частину)
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	 об’єкт, щоб показати його точки  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	 перехід від точки до точки, стрілки зсувають її, Enter вводить її
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Точки входу й виходу показано для першого {count} виділеного об’єкта|Точки входу й виходу показано для перших {count} виділених об’єктів|Точки входу й виходу показано для перших {count} виділених об’єктів

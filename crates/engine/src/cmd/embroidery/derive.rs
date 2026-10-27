@@ -19,14 +19,19 @@
 //!
 //! A path whose anchors all move at once (Direct Selection) takes its settings along, as an object
 //! transformed whole does ([`anchors_transformed`]).
+//!
+//! Of the pieces one object becomes, each entry and exit point stays only on the piece nearest it,
+//! the others' points set back to Auto ([`points_on_nearest`], the project owner's choice,
+//! 2026-10-25): pieces cut apart keep a point on the piece it lies on; the pieces an appearance is
+//! expanded to lie on one another, so the first takes the entry and the last the exit.
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use vectorcraft_doc::embroidery::{Embroidery, PartKind, PartSettings};
+use vectorcraft_doc::embroidery::{Embroidery, PartKey, PartKind, PartSettings, outline};
 use vectorcraft_doc::selection::AnchorRef;
 use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind};
-use vectorcraft_geom::Affine;
+use vectorcraft_geom::{Affine, Point};
 use vectorcraft_render::effects::{self, StrokeArt};
 
 /// The embroidery settings a new object made from `n` takes: `n`'s, less its literal stitches.
@@ -41,18 +46,37 @@ pub(crate) fn carried(n: &Node) -> Option<Box<Embroidery>> {
 /// Grid's cells, Divide Objects Below's pieces), in sewing order, each with its source's settings
 /// ([`carried`]): of the pieces with the same settings (one object's, or several objects' that were
 /// the same) only the last keeps the cut after the object, so that the thread is cut once, after
-/// the last of them, as it was after the object.
+/// the last of them, as it was after the object; and each entry and exit point only the piece
+/// nearest it ([`points_on_nearest`]).
 pub(crate) fn cut_once<'a>(pieces: impl DoubleEndedIterator<Item = &'a mut Node>) {
-    let mut cut: Vec<Embroidery> = Vec::new();
-    for p in pieces.rev() {
-        let Some(e) = p.extras().embroidery.as_deref().filter(|e| e.trim_after) else { continue };
-        if !cut.contains(e) {
-            cut.push(e.clone());
-            continue;
+    let mut pieces: Vec<&mut Node> = pieces.collect();
+    // The pieces with the same settings (cut from one object, or from several that were the same),
+    // in sewing order.
+    let mut groups: Vec<(Embroidery, Vec<usize>)> = Vec::new();
+    for (k, p) in pieces.iter().enumerate() {
+        let Some(e) = p.extras().embroidery.as_deref() else { continue };
+        match groups.iter_mut().find(|(g, _)| g == e) {
+            Some((_, members)) => members.push(k),
+            None => groups.push((e.clone(), vec![k])),
         }
-        let mut e = e.clone();
-        e.trim_after = false;
-        p.extras_mut().embroidery = (!e.is_empty()).then(|| Box::new(e));
+    }
+    for (e, members) in &groups {
+        // Only the last keeps the cut.
+        if e.trim_after
+            && let Some((_, before)) = members.split_last()
+        {
+            for &k in before {
+                let Some(p) = pieces.get_mut(k) else { continue };
+                let mut e = e.clone();
+                e.trim_after = false;
+                p.extras_mut().embroidery = (!e.is_empty()).then(|| Box::new(e));
+            }
+        }
+        // Each point on the piece nearest it.
+        let mut group: Vec<&mut Node> = pieces.iter_mut().enumerate().filter(|(k, _)| members.contains(k)).map(|(_, p)| &mut **p).collect();
+        for kind in [PartKind::Fill, PartKind::Stroke] {
+            points_on_nearest(&mut group, kind);
+        }
     }
 }
 
@@ -94,7 +118,8 @@ fn piece(part: Option<&PartSettings>) -> Option<Box<Embroidery>> {
 }
 
 /// Release Compound Path of `n`: its parts (in stacking order) take its settings, each its own
-/// copy, the last (topmost, sewn last) its cut too.
+/// copy, the last (topmost, sewn last) its cut too, each entry and exit point only the part nearest
+/// it ([`points_on_nearest`]).
 pub(crate) fn released(n: &Node, parts: &mut [Node]) {
     let Some(e) = carried(n) else { return };
     let last = parts.len().saturating_sub(1);
@@ -102,6 +127,10 @@ pub(crate) fn released(n: &Node, parts: &mut [Node]) {
         let mut own = (*e).clone();
         own.trim_after = e.trim_after && k == last;
         p.extras_mut().embroidery = (!own.is_empty()).then(|| Box::new(own));
+    }
+    let mut all: Vec<&mut Node> = parts.iter_mut().collect();
+    for kind in [PartKind::Fill, PartKind::Stroke] {
+        points_on_nearest(&mut all, kind);
     }
 }
 
@@ -132,10 +161,16 @@ pub(crate) fn outlined_type(text: &Node, group: &mut Node) {
     let Some(e) = text.extras().embroidery.as_deref() else { return };
     let parts = Embroidery { fill: e.fill.clone(), stroke: e.stroke.clone(), ..Embroidery::default() };
     if !parts.is_empty() {
+        let mut glyphs: Vec<&mut Node> = Vec::new();
         for c in group.children_mut().into_iter().flatten() {
             if matches!(c.kind, NodeKind::Path { .. } | NodeKind::Compound { .. }) {
-                Arc::make_mut(c).extras_mut().embroidery = Some(Box::new(parts.clone()));
+                let glyph = Arc::make_mut(c);
+                glyph.extras_mut().embroidery = Some(Box::new(parts.clone()));
+                glyphs.push(glyph);
             }
+        }
+        for kind in [PartKind::Fill, PartKind::Stroke] {
+            points_on_nearest(&mut glyphs, kind);
         }
     }
     group.extras_mut().embroidery = whole(e);
@@ -179,8 +214,10 @@ pub(crate) fn expand_art(d: &mut Document, n: &mut Node, stroke_art: StrokeArt) 
 /// What Expand Appearance made of `n` through its outlines (a symbol instance with an effect, type,
 /// a live object, a path whose Transform effect copies it): `result` stands for `n` and takes the
 /// cut after it (and what a newer version kept), so that the thread is cut once, after all of it.
-/// A path's copies each held its settings, the cut too: it goes from them to `result`. A symbol's
-/// art keeps the settings it has in the symbol.
+/// A path's copies each held its settings, the cut too: it goes from them to `result`; and each held
+/// its points moved with it, so that every copy would start and end at its own: they go back to
+/// where the path holds them, kept only on the piece of any copy nearest each ([`copies_points`]).
+/// A symbol's art keeps the settings it has in the symbol.
 pub(crate) fn outlined(n: &Node, result: &mut Node) {
     fn uncut(n: &mut Node) {
         if let Some(e) = n.extras().embroidery.as_deref().filter(|e| e.trim_after) {
@@ -195,6 +232,7 @@ pub(crate) fn outlined(n: &Node, result: &mut Node) {
     let Some(e) = n.extras().embroidery.as_deref() else { return };
     if matches!(n.kind, NodeKind::Path { .. } | NodeKind::Compound { .. }) {
         uncut(result);
+        copies_points(e, result);
     }
     let Some(stand_in) = whole(e) else { return };
     let mut own = result.extras().embroidery.as_deref().cloned().unwrap_or_default();
@@ -268,6 +306,16 @@ impl Expanding {
                 let settings = e.map(|_| of(came_from_fill));
                 on_paths(Arc::make_mut(c), settings.as_ref(), self.angle);
             }
+            // The pieces of each part keep each of its points on one of them (they lie on one
+            // another: the first its entry, the last its exit).
+            if e.is_some() {
+                for source in [of(true), of(false)].into_iter().flatten() {
+                    let mut pieces: Vec<&mut Node> = Vec::new();
+                    leaves(result, &mut pieces);
+                    let mut of_it: Vec<&mut Node> = pieces.into_iter().filter(|n| n.extras().embroidery.as_deref() == Some(&*source)).collect();
+                    points_on_nearest(&mut of_it, PartKind::Fill);
+                }
+            }
             if let Some(e) = e {
                 result.extras_mut().embroidery = whole(e);
             }
@@ -278,6 +326,110 @@ impl Expanding {
             result.extras_mut().embroidery = (!own.is_empty()).then(|| Box::new(own));
         }
     }
+}
+
+/// The pieces of a path's copies in `result` (each sewn with the settings of the part it came from,
+/// [`Expanding`], its points moved with its copy), the points of each of `e`'s parts back where the
+/// path holds them, kept only on the piece nearest each ([`points_on_nearest`]). A piece is taken
+/// for a part when its settings are the part's but for its points and its angle (which turn with
+/// a copy); a piece that could be either part's (the fill and the stroke set alike) keeps its own.
+fn copies_points(e: &Embroidery, result: &mut Node) {
+    let held = |p: &PartSettings| p.points.as_ref().is_some_and(|q| q.entry.is_some() || q.exit.is_some());
+    let parts: Vec<&PartSettings> = [PartKind::Fill, PartKind::Stroke].into_iter().filter_map(|k| e.part(k)).filter(|p| held(p)).collect();
+    let alike = |a: &PartSettings, b: &PartSettings| {
+        PartSettings { points: None, angle: None, ..a.clone() } == PartSettings { points: None, angle: None, ..b.clone() }
+    };
+    for source in &parts {
+        let mut pieces: Vec<&mut Node> = Vec::new();
+        leaves(result, &mut pieces);
+        let mut of_it: Vec<&mut Node> = pieces
+            .into_iter()
+            .filter(|n| {
+                n.extras().embroidery.as_deref().and_then(|e| e.part(PartKind::Fill)).is_some_and(|f| held(f) && alike(f, source))
+                    && parts
+                        .iter()
+                        .filter(|p| n.extras().embroidery.as_deref().and_then(|e| e.part(PartKind::Fill)).is_some_and(|f| alike(f, p)))
+                        .count()
+                        == 1
+            })
+            .collect();
+        for piece in of_it.iter_mut() {
+            let Some(mut own) = piece.extras().embroidery.as_deref().cloned() else { continue };
+            own.edit_part(PartKind::Fill, |p| p.points = source.points.clone());
+            piece.extras_mut().embroidery = Some(Box::new(own));
+        }
+        points_on_nearest(&mut of_it, PartKind::Fill);
+    }
+}
+
+/// The paths and compound paths in `n` (itself, when it is one), in stacking order.
+fn leaves<'a>(n: &'a mut Node, out: &mut Vec<&'a mut Node>) {
+    if matches!(n.kind, NodeKind::Compound { .. }) || n.children().is_none() {
+        if matches!(n.kind, NodeKind::Path { .. } | NodeKind::Compound { .. }) {
+            out.push(n);
+        }
+        return;
+    }
+    for c in n.children_mut().into_iter().flatten() {
+        leaves(Arc::make_mut(c), out);
+    }
+}
+
+/// Of `pieces` (in sewing order), those holding the same entry and exit points of part `kind` as
+/// the first (copies of one part's settings) keep each point only on the piece whose outline lies
+/// nearest it, the others' set back to Auto: of equally near pieces (pieces lying on one another,
+/// as an appearance expands), the first keeps the entry and the last the exit, so that a part sewn
+/// as several units starts at its entry and ends at its exit once.
+pub(crate) fn points_on_nearest(pieces: &mut [&mut Node], kind: PartKind) {
+    let points = |n: &Node| n.extras().embroidery.as_deref().and_then(|e| e.part(kind)).and_then(|p| p.points.as_ref()).map(|p| (p.entry, p.exit));
+    let Some(held @ (entry, exit)) = pieces.first().and_then(|n| points(n)) else { return };
+    if entry.is_none() && exit.is_none() {
+        return;
+    }
+    let same: Vec<usize> = (0..pieces.len()).filter(|&k| pieces.get(k).and_then(|n| points(n)) == Some(held)).collect();
+    if same.len() < 2 {
+        return;
+    }
+    let outlines: Vec<Vec<Vec<Point>>> = same.iter().map(|&k| pieces.get(k).map(|n| polylines(n)).unwrap_or_default()).collect();
+    // The piece nearest `q`, by its place among `same`: the first or (`last`) the last of equally
+    // near ones.
+    let nearest = |q: Point, last: bool| -> Option<usize> {
+        let mut best: Option<(usize, f64)> = None;
+        for (i, lines) in outlines.iter().enumerate() {
+            let d = lines.iter().map(|l| outline::distance_to(l, q)).fold(f64::INFINITY, f64::min);
+            if best.is_none_or(|(_, b)| d < b || (last && d <= b)) {
+                best = Some((i, d));
+            }
+        }
+        best.map(|(i, _)| i)
+    };
+    let (keep_entry, keep_exit) = (entry.and_then(|q| nearest(q, false)), exit.and_then(|q| nearest(q, true)));
+    for (i, &k) in same.iter().enumerate() {
+        let Some(n) = pieces.get_mut(k) else { continue };
+        let Some(mut e) = n.extras().embroidery.as_deref().cloned() else { continue };
+        e.edit_part(kind, |part| {
+            if keep_entry != Some(i) {
+                part.set(PartKey::Entry, None);
+            }
+            if keep_exit != Some(i) {
+                part.set(PartKey::Exit, None);
+            }
+        });
+        n.extras_mut().embroidery = (!e.is_empty()).then(|| Box::new(e));
+    }
+}
+
+/// `n`'s outline flattened, each closed subpath closed again at its first point, document points.
+fn polylines(n: &Node) -> Vec<Vec<Point>> {
+    outline::subpaths(n)
+        .into_iter()
+        .map(|(mut line, closed)| {
+            if let (true, Some(&first)) = (closed, line.first()) {
+                line.push(first);
+            }
+            line
+        })
+        .collect()
 }
 
 /// `n` and everything in it turned to `angle` (the bounding box's), and `settings`, when given, on

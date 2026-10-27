@@ -5499,7 +5499,6 @@ embroidery	by size	theo kích thước
 embroidery	Entry and exit	Điểm vào và điểm ra
 embroidery	Set	Đã đặt
 embroidery	nearest	gần nhất
-embroidery	not used yet	chưa dùng
 embroidery	Set on the selected objects.	Đã đặt trên các đối tượng đã chọn.
 embroidery	Nearest to where the needle is.	Gần nhất với vị trí kim.
 embroidery	built-in values	giá trị dựng sẵn
@@ -5593,3 +5592,48 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Chưa dán vì 
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} đối tượng đã chọn không nhận thiết lập và đã bị bỏ qua
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} đối tượng đã chọn không nhận thiết lập
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	Điểm vào hoặc ra bị lệch hơn {value} mm
+embroidery	Largest miss: {value} mm	Lệch nhiều nhất: {value} mm
+@plural	{count} point|{count} points	{count} điểm
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	lệch {value} mm
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Kết nối gần nhất
+@plural	{count} part set|{count} parts set	Đã đặt {count} phần
+embroidery	jumps {value} mm shorter	mũi nhảy ngắn hơn {value} mm
+embroidery	jumps no shorter	mũi nhảy không ngắn hơn
+embroidery	trims {before} → {after}	cắt chỉ {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Các điểm vào và ra đã là gần nhất.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Công cụ Thêu
+	 a point to move it, or an arrow's head to turn the rows  |  	 một điểm để di chuyển, hoặc đầu mũi tên để xoay các hàng  |  
+	 a point or an arrow to put it back to Auto  |  	 một điểm hoặc mũi tên để đưa về Tự động  |  
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	mũi nhảy {value} mm
+embroidery	jump {value} mm, cut	mũi nhảy {value} mm, cắt chỉ
+embroidery	Stitches update when you pause or let go.	Mũi khâu cập nhật khi bạn dừng lại hoặc thả ra.
+embroidery	Stitches update when you let go.	Mũi khâu cập nhật khi bạn thả ra.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Điểm vào
+embroidery	Exit Point	Điểm ra
+embroidery	Auto (nearest where the needle is)	Tự động (gần kim nhất)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Điểm được đưa đến chỗ gần nhất mà mũi khâu có thể bắt đầu hoặc kết thúc.
+# VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
+embroidery	Set on Canvas	Đặt trên vùng vẽ
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Kéo điểm vào và điểm ra của phần này trên vùng vẽ bằng công cụ Thêu.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Không có gì ở đây nhận được điểm vào và điểm ra
+@plural	{count} object skipped|{count} objects skipped	Đã bỏ qua {count} đối tượng
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent}% · Esc để dừng
+embroidery	Stopped: nothing was changed.	Đã dừng: không có gì thay đổi.
+embroidery	The document changed meanwhile: nothing was changed.	Tài liệu đã thay đổi trong lúc đó: không có gì thay đổi.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Tự động (nơi kế hoạch kết thúc phần)
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	 một đối tượng để hiện các điểm của nó  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	 chuyển từ điểm này sang điểm khác, phím mũi tên dịch nó, Enter để nhập
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Điểm vào và điểm ra hiển thị cho {count} đối tượng được chọn đầu tiên

@@ -5845,7 +5845,6 @@ embroidery	by size	según el tamaño
 embroidery	Entry and exit	Entrada y salida
 embroidery	Set	Definido
 embroidery	nearest	más cercano
-embroidery	not used yet	aún sin uso
 embroidery	Set on the selected objects.	Definido en los objetos seleccionados.
 embroidery	Nearest to where the needle is.	Lo más cerca de donde está la aguja.
 embroidery	built-in values	valores integrados
@@ -5939,3 +5938,48 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	No pegados, ya 
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} objeto seleccionado no admite ajustes y se omitió|{count} objetos seleccionados no admiten ajustes y se omitieron
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} objeto seleccionado no admite ajustes|{count} objetos seleccionados no admiten ajustes
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	Puntos de entrada o salida errados por más de {value} mm
+embroidery	Largest miss: {value} mm	Mayor desvío: {value} mm
+@plural	{count} point|{count} points	{count} punto|{count} puntos
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	errado por {value} mm
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Conexión más cercana
+@plural	{count} part set|{count} parts set	{count} parte establecida|{count} partes establecidas
+embroidery	jumps {value} mm shorter	saltos {value} mm más cortos
+embroidery	jumps no shorter	saltos no más cortos
+embroidery	trims {before} → {after}	cortes {before} → {after}
+embroidery	The entry and exit points are already the nearest.	Los puntos de entrada y salida ya son los más cercanos.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Herramienta Bordado
+	 a point to move it, or an arrow's head to turn the rows  |  	 un punto para moverlo, o la punta de una flecha para girar las filas  |  
+	 a point or an arrow to put it back to Auto  |  	 en un punto o una flecha para volverlo a Auto  |  
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	salto {value} mm
+embroidery	jump {value} mm, cut	salto {value} mm, corte
+embroidery	Stitches update when you pause or let go.	Las puntadas se actualizan al detenerse o soltar.
+embroidery	Stitches update when you let go.	Las puntadas se actualizan al soltar.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Punto de entrada
+embroidery	Exit Point	Punto de salida
+embroidery	Auto (nearest where the needle is)	Auto (lo más cerca de la aguja)
+embroidery	The point is taken to the nearest place the stitches can start or end.	El punto se lleva al lugar más cercano donde pueden empezar o terminar las puntadas.
+# VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
+embroidery	Set on Canvas	Definir en el lienzo
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Arrastra los puntos de entrada y salida de esta parte en el lienzo con la herramienta Bordado.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Aquí nada puede tener puntos de entrada y salida
+@plural	{count} object skipped|{count} objects skipped	{count} objeto omitido|{count} objetos omitidos
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent} % · Esc lo detiene
+embroidery	Stopped: nothing was changed.	Detenido: no se ha cambiado nada.
+embroidery	The document changed meanwhile: nothing was changed.	El documento ha cambiado mientras tanto: no se ha cambiado nada.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Auto (donde el plan termina la parte)
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	 en un objeto para mostrar sus puntos  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	 pasa de un punto a otro, las flechas lo desplazan, Intro lo escribe
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Los puntos de entrada y salida se muestran para el primer {count} objeto seleccionado|Los puntos de entrada y salida se muestran para los primeros {count} objetos seleccionados

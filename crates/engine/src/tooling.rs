@@ -119,6 +119,10 @@ impl Session {
             .filter(|o| o.get("editing").is_some_and(|v| !v.is_null()) && o.get("start") != o.get("end"));
         let acts = self.with_tool_cx(view, |t, cx| t.deactivate(cx));
         self.apply_actions(acts)?;
+        // VectorCraft Stitch: the embroidery tool put away, the plan's answers it kept go with it.
+        if self.tool.id() == vectorcraft_tools::embroidery::ID {
+            self.drop_embroidery_tool_facts();
+        }
         self.keep_tool_settings();
         self.tool = self.make_tool(id);
         if let Some(selection) = text_selection {
@@ -226,6 +230,10 @@ impl Session {
     {
         let Some(st) = self.active.and_then(|i| self.docs.get(i)) else { return R::default() };
         let (unit, stroke_unit) = (self.general_unit(), self.stroke_unit());
+        // VectorCraft Stitch: the stitch plan's and the settings' answers for the embroidery tool,
+        // only while it is active, from a plan already made with the stitch preview's options, and
+        // whether the canvas draws the stitches (a press picks by them only then).
+        let facts_now = self.embroidery_plans.facts_now(self.tool.id(), st, view.outline);
         let cx = ToolContext {
             doc: &st.doc,
             ruler_origin: st.doc.ruler_origin_for(view.artboard),
@@ -256,6 +264,8 @@ impl Session {
             raster_sample: self.prefs.eyedropper.sample_size,
             preview_bounds: self.prefs.use_preview_bounds,
             preview_memo: Some(&self.preview_memo),
+            // VectorCraft Stitch: the stitch plan's answers for the embroidery tool.
+            embroidery: facts_now.as_ref().map(|f| f as &dyn vectorcraft_tools::embroidery::PlanFacts),
             unit,
             stroke_unit,
             paste_plain_text: self.prefs.paste_text_formatting == "plain",
@@ -587,7 +597,11 @@ impl Session {
     /// Let the active tool finish work a command from outside it ended ([`vectorcraft_tools::Tool::after_command`]):
     /// the Type tool and the Eyedropper clear a character range whose text is no longer selected.
     pub(crate) fn after_command(&mut self) {
-        if self.in_tool_actions || (!self.tool.wants_text() && self.tool.id() != "eyedropper") {
+        // VectorCraft Stitch: and the embroidery tool lets a handle go whose drag a command ended
+        // (Undo settles the interaction and takes it back).
+        let drag_ended =
+            self.tool.id() == vectorcraft_tools::embroidery::ID && self.tool.busy() && self.active().is_some_and(|st| st.interaction.is_none());
+        if self.in_tool_actions || (!self.tool.wants_text() && self.tool.id() != "eyedropper" && !drag_ended) {
             return;
         }
         let acts = self.with_tool_cx(self.last_view, |t, cx| t.after_command(cx));

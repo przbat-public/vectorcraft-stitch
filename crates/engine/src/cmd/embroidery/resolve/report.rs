@@ -98,6 +98,18 @@ fn first(object: Option<Value>, export: Option<Value>, doc: Option<(Value, Secti
 }
 
 impl UnitSettings<'_> {
+    /// The angle a fill's rows run at with the object's layer `object`, as the report gives it, and
+    /// where it comes from: read alone (the embroidery tool's arrow asks for nothing more). An angle
+    /// the object doesn't set turns with it ([`UnitSettings::above_the_document`]); the default rows
+    /// (135° on the page) too.
+    pub(crate) fn angle(&self, object: &PartLayer) -> Resolved {
+        let turned = |a: f64| if self.turn != 0.0 && self.turn.is_finite() { a + self.turn } else { a };
+        match object.values.angle {
+            Some(a) => Resolved { value: json!(a), source: Source::Object },
+            None => first(None, self.export.angle.map(|a| json!(turned(a))), None, json!(turned(planner_angle(FILL_ANGLE)))),
+        }
+    }
+
     /// Every reported key of a part sewn in `style` ([`Reported`]).
     pub(crate) fn report(&self, style: Style) -> Vec<Reported> {
         let now = self.values(style, &self.object);
@@ -133,14 +145,7 @@ impl UnitSettings<'_> {
             Style::Satin => doc.spacing_percent.map(|_| json!("auto")),
             Style::Fill | Style::Running => num(doc.spacing),
         };
-        // An angle the object doesn't set turns with it ([`UnitSettings::above_the_document`]).
-        let turned = |a: f64| if self.turn != 0.0 && self.turn.is_finite() { a + self.turn } else { a };
-        // The default rows (135° on the page), turned with the object.
-        let angle_default = turned(planner_angle(FILL_ANGLE));
-        let angle = match o.angle {
-            Some(a) => Resolved { value: json!(a), source: Source::Object },
-            None => first(None, e.angle.map(|a| json!(turned(a))), None, json!(angle_default)),
-        };
+        let angle = self.angle(object);
         vec![
             ("stitch", stitch),
             ("spacing", first(num(o.spacing), num(e.spacing), fabric(doc_spacing), spacing_default)),

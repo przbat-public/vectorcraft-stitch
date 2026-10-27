@@ -17,6 +17,8 @@ pub mod dimension;
 pub mod direct;
 pub mod distort;
 pub mod draw2;
+// VectorCraft Stitch: the embroidery tool.
+pub mod embroidery;
 pub mod extra;
 pub mod guides;
 pub mod intertwine;
@@ -283,6 +285,11 @@ pub struct ToolContext<'a> {
     /// The session's memo of the selection tools' measurements for the document as it is
     /// ([`select::PreviewMemo`]); without one they measure on every call.
     pub preview_memo: Option<&'a select::PreviewMemo>,
+    // VectorCraft Stitch: what the embroidery tool asks of the stitch plan the canvas shows.
+    /// The stitch plan's answers for the embroidery tool ([`embroidery::PlanFacts`]): where each
+    /// part is sewn, which object's stitches lie under a point. The engine fills it only while the
+    /// embroidery tool is active, from a plan it has already made; `None` otherwise.
+    pub embroidery: Option<&'a dyn embroidery::PlanFacts>,
     /// Units ▸ General: the unit measurement labels show lengths in.
     pub unit: Unit,
     /// Units ▸ Stroke: the unit measurement labels show stroke widths in.
@@ -547,6 +554,13 @@ pub enum Cursor {
     WidthAdd,
     /// The Width tool over a width point or a handle end: a drag moves or widens it.
     WidthPoint,
+    // VectorCraft Stitch: the embroidery tool's cursors.
+    /// The embroidery tool away from every entry and exit point: a click selects the object under
+    /// the pointer, in the stitch view by its stitches, else by its art (over an object
+    /// that takes no points the tool shows [`Cursor::NotAllowed`]).
+    Embroidery,
+    /// The embroidery tool over an entry or exit point and while dragging one (a drag moves it).
+    EmbroideryPoint,
     /// The Blend tool away from art: a crosshair with a hollow square.
     Blend,
     /// The Blend tool over an object it can blend: a crosshair with a filled square.
@@ -753,6 +767,9 @@ impl Cursor {
             Cursor::TypeVertical | Cursor::LoadedText => Some(Cursor::Text),
             Cursor::MeshAdd | Cursor::PuppetPin => Some(Cursor::PenAdd),
             Cursor::ScissorsNotAllowed => Some(Cursor::NotAllowed),
+            // VectorCraft Stitch: the embroidery tool's, until they are drawn.
+            Cursor::Embroidery => Some(Cursor::Arrow),
+            Cursor::EmbroideryPoint => Some(Cursor::Move),
             _ => None,
         }
     }
@@ -871,6 +888,8 @@ pub fn create(id: &str) -> Box<dyn Tool> {
             .or_else(|| intertwine::create(other))
             .or_else(|| objects_on_path::create(other))
             .or_else(|| touchtype::create(other))
+            // VectorCraft Stitch: the embroidery tool.
+            .or_else(|| embroidery::create(other))
             .unwrap_or_else(|| Box::new(NoopTool(tool_info(other).map(|t| t.id).unwrap_or("selection")))),
     }
 }
@@ -1039,6 +1058,8 @@ pub(crate) mod testutil {
             raster_sample: 1,
             preview_bounds: false,
             preview_memo: None,
+            // VectorCraft Stitch: no stitch plan in the tools' tests unless one gives it.
+            embroidery: None,
             unit: Unit::Points,
             stroke_unit: Unit::Points,
             paste_plain_text: false,

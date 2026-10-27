@@ -19,10 +19,11 @@ use std::collections::BTreeMap;
 use std::ops::Range;
 
 use vectorcraft_doc::NodeId;
+use vectorcraft_doc::embroidery::PartKind;
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_stitch::plan::{self, Params, Style};
 use vectorcraft_stitch::thread::{Match, Palette, PaletteThread};
-use vectorcraft_stitch::{Block, Pattern, Stitch, Thread, ThreadRecord};
+use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread, ThreadRecord};
 
 /// The number of a design's first record (needle point, jump or cut): records are numbered from 1,
 /// as a stitch list shows them. The commands call these record numbers (`firstRecord`, `record`),
@@ -79,6 +80,18 @@ pub struct UnitKey {
     pub object: NodeId,
     pub part: Part,
     pub occurrence: usize,
+}
+
+impl Part {
+    /// The kind of part it is of an object: its fill or its stroke (`None`: stitches read from a
+    /// machine file).
+    pub fn kind(self) -> Option<PartKind> {
+        match self {
+            Part::Fill(_) => Some(PartKind::Fill),
+            Part::Stroke(_) => Some(PartKind::Stroke),
+            Part::Literal => None,
+        }
+    }
 }
 
 /// Which setting forced a unit's style ([`Choice::Forced`]).
@@ -254,6 +267,21 @@ pub struct Unit {
     /// Its runs: each stretch of needle-down stitches one after another, sewn without lifting the
     /// needle, as a range of its block's stitches (within [`Unit::stitches`]).
     pub runs: Vec<Range<usize>>,
+    /// The entry and exit points it was planned toward: its part's, when its object sets them.
+    pub asked: Asked,
+}
+
+/// The entry and exit points a unit was planned toward (millimetres from the document's origin),
+/// each `None` when its object sets none: how far its stitches miss them is
+/// [`DesignPlan::missed`].
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Asked {
+    pub entry: Option<Point>,
+    pub exit: Option<Point>,
+    /// How far from each its first and last needle points can lie at best, millimetres, as its
+    /// planning found them: a satin column's half width and pull compensation (a fill's narrow part
+    /// where the needle point lies in it, at its width there), an open column's push compensation.
+    pub reach: [f64; 2],
 }
 
 impl Unit {
@@ -392,6 +420,36 @@ impl DesignPlan {
     /// Unit `unit`'s stitches ([`Unit::stitches`]): empty for a unit that isn't there.
     pub fn unit_stitches(&self, unit: usize) -> &[Stitch] {
         self.units.get(unit).and_then(|u| self.blocks.get(u.block)?.stitches.get(u.stitches.clone())).unwrap_or_default()
+    }
+
+    /// Unit `unit`'s first and last needle points (millimetres), `None` when it has none of its
+    /// own. A unit that starts exactly where the needle already is leaves that needle point to the
+    /// unit before ([`Unit::stitches`]): its range then starts with a needle point (its tie-in's
+    /// step) rather than the move that reaches it, and it starts at the needle point before its
+    /// range, not at the first of its own.
+    pub fn needle_ends(&self, unit: usize) -> Option<(Point, Point)> {
+        let u = self.units.get(unit)?;
+        let block = self.blocks.get(u.block)?;
+        let own = block.stitches.get(u.stitches.clone())?;
+        let mut needle = own.iter().filter(|s| s.command == Command::Stitch).map(|s| s.point());
+        let first = needle.next()?;
+        let last = needle.next_back().unwrap_or(first);
+        let met = own.first().is_some_and(|s| s.command == Command::Stitch);
+        let before = u.stitches.start.checked_sub(1).and_then(|k| block.stitches.get(k)).filter(|s| met && s.command == Command::Stitch);
+        Some((before.map_or(first, |s| s.point()), last))
+    }
+
+    /// How far unit `unit`'s first and last needle points ([`DesignPlan::needle_ends`]) lie from the
+    /// entry and the exit point it was planned toward ([`Unit::asked`]), beyond the reach of its
+    /// satin columns there ([`Asked::reach`]), millimetres: each `None` when it asked for none, or
+    /// has no needle point of its own.
+    pub fn missed(&self, unit: usize) -> [Option<f64>; 2] {
+        let Some(u) = self.units.get(unit) else { return [None, None] };
+        let ends = self.needle_ends(unit);
+        let (first, last) = (ends.map(|e| e.0), ends.map(|e| e.1));
+        let miss = |a: Point, q: Point, reach: f64| (a.distance(q) - reach).max(0.0);
+        let [entry_reach, exit_reach] = u.asked.reach;
+        [u.asked.entry.zip(first).map(|(a, q)| miss(a, q, entry_reach)), u.asked.exit.zip(last).map(|(a, q)| miss(a, q, exit_reach))]
     }
 
     /// The numbers of unit `unit`'s stitches ([`Unit::stitches`], numbered as

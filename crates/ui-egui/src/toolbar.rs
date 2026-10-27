@@ -64,6 +64,8 @@ pub const BASIC: &[(&str, &[&[&str]])] = &[
     ("Type", &[&["areaType", "typeOnPath", "verticalAreaType", "verticalTypeOnPath"], &["type", "verticalType", "touchType"]]),
     ("Navigate", &[&["zoom"], &["hand", "printTiling"], &["rotateView"]]),
     ("Color", &[&["gradient", "mesh"], &["eyedropper", "measure"]]),
+    // VectorCraft Stitch: the embroidery tool, its own category at the end.
+    ("Embroidery", &[&["embroidery"]]),
 ];
 
 pub(crate) fn tip(t: &ToolInfo) -> String {
@@ -388,6 +390,10 @@ pub fn open_options(app: &mut VectorcraftApp, tool: &str) -> Result<serde_json::
 pub fn control_bar_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     if app.session.tool_id() == "dimension" {
         return crate::dialogs::dimension::controls(app, ui);
+    }
+    // VectorCraft Stitch: the Embroidery Tool's part switch and Nearest Connection.
+    if app.session.tool_id() == vectorcraft_tools::embroidery::ID {
+        return crate::embroidery::tool_bar::control_bar(app, ui);
     }
     /// (value, label) of each choice.
     type Choices = &'static [(&'static str, &'static str)];
@@ -1002,8 +1008,9 @@ pub(crate) mod tests {
         app.run("file.new", json!({"width": 300, "height": 300})).unwrap();
         let ctx = egui::Context::default();
         let buttons = frame(&mut app, &ctx, 0.0, vec![]);
-        // The Color category's slots close the list: Gradient, then Eyedropper.
-        let (gradient, eyedropper) = (buttons[buttons.len() - 2], buttons[buttons.len() - 1]);
+        // The Color category's slots: Gradient, then Eyedropper (VectorCraft Stitch: before the
+        // Embroidery category's one, which closes the list).
+        let (gradient, eyedropper) = (buttons[buttons.len() - 3], buttons[buttons.len() - 2]);
         double_click(&mut app, &ctx, 1.0, gradient.center());
         assert_eq!((app.session.tool_id(), app.ui.open_panel.as_deref()), ("gradient", Some("gradient")));
         // Again: the panel stays open.

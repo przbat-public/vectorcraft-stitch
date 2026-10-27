@@ -680,6 +680,38 @@ fn a_settings_help_shows_on_the_keyboards_focus() {
     assert!(shown, "the help as its tooltip");
 }
 
+/// Set on Canvas and the entry's row give their help on the keyboard's focus too, as the fields do,
+/// and screen readers hear Set on Canvas's with its name.
+#[test]
+fn set_on_canvas_and_the_point_rows_help_on_the_keyboards_focus() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let canvas_tip = crate::et!("Drag this part's entry and exit points on the canvas with the embroidery tool.");
+    assert_eq!(drawn.node(crate::et!("Set on Canvas")).description(), Some(canvas_tip));
+    let entry = drawn
+        .nodes
+        .iter()
+        .filter_map(|(_, n)| n.label())
+        .find(|l| l.starts_with(&format!("{}: ", vocabulary::label("entry", None))))
+        .expect("the entry's row")
+        .to_string();
+    for (name, tip) in [(crate::et!("Set on Canvas").to_string(), canvas_tip), (entry, vocabulary::tip("entry"))] {
+        let drawn = ready(&mut app, &ctx, &mut time);
+        assert!(!drawn.has(tip), "{name}: no tooltip yet");
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![drawn.focus(&name)]);
+        let mut shown = false;
+        for _ in 0..4 {
+            time += 0.05;
+            shown |= frame(&mut app, &ctx, time, vec![]).has(tip);
+        }
+        assert!(shown, "{name}: its help as its tooltip");
+    }
+}
+
 /// Text a field can't read as a number (a comma in a point language: "1,000" would read as one)
 /// isn't taken, and the status bar says so instead of the field going back silently.
 #[test]
@@ -923,7 +955,8 @@ fn a_millimetre_field_steps_in_tenths() {
 }
 
 /// The entry and exit rows: a set entry reads "Set", marked, ↺ unsetting it alone, one undo step;
-/// an exit left to the planner reads "Auto" with "nearest".
+/// an exit left to the planner reads "Auto" with "nearest". One object's rows are buttons, opening
+/// the point's dialog (`entry_and_exit_rows_open_the_points_dialog`).
 #[test]
 fn the_entry_and_exit_rows_and_their_restore() {
     let ctx = context();
@@ -935,8 +968,8 @@ fn the_entry_and_exit_rows_and_their_restore() {
     let drawn = ready(&mut app, &ctx, &mut time);
     let entry = vocabulary::label("entry", None);
     let set = text::fill(crate::et!("{section}: {setting}"), &[("section", entry), ("setting", crate::et!("Set"))]);
-    // A read-only field is a label: screen readers hear its words as its value.
-    assert!(drawn.nodes.iter().any(|(_, n)| n.value() == Some(set.as_str())), "{set}");
+    // One object's row opens the point's dialog: screen readers hear a button named with its words.
+    assert_eq!(drawn.node(&set).role(), egui::accesskit::Role::Button, "{set}");
     assert!(drawn.has(crate::et!("nearest")), "the exit's Auto: {:?}", drawn.words);
     let before = steps(&app);
     let restore = text::fill(crate::et!("Restore {setting}"), &[("setting", entry)]);
@@ -945,6 +978,74 @@ fn the_entry_and_exit_rows_and_their_restore() {
     ready(&mut app, &ctx, &mut time);
     let fill = info(&mut app, &[a])["objects"][0]["settings"]["fill"].clone();
     assert_eq!((fill["entry"].clone(), fill["angle"].clone(), steps(&app)), (json!(null), json!(30.0), before + 1), "the entry alone, one step");
+}
+
+/// One object's entry and exit rows open the point's dialog: a set entry at its point, ticked set;
+/// an exit left to the planner where the plan shown ends the part, Auto. Several objects' rows are
+/// read only (a label, its words its value). Set on Canvas picks the embroidery tool.
+#[test]
+fn entry_and_exit_rows_open_the_points_dialog() {
+    let ctx = context();
+    let (mut app, a, b) = app_with_art();
+    app.run("embroidery.setEntryExit", json!({"id": a, "part": "fill", "entry": [30, 30]})).unwrap();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let entry = vocabulary::label("entry", None);
+    let exit = vocabulary::label("exit", None);
+    let named = |section: &str, setting: &str| text::fill(crate::et!("{section}: {setting}"), &[("section", section), ("setting", setting)]);
+    let set = named(entry, crate::et!("Set"));
+    frame(&mut app, &ctx, time + 0.05, vec![drawn.click(&set)]);
+    time += 0.1;
+    // The dialog's point, its kind, object and part, and whether it is Auto.
+    let point = |d: &crate::state::Dialog| {
+        (d.str("kind"), d.fields["id"].as_u64(), d.str("part"), d.f64("x", f64::NAN), d.f64("y", f64::NAN), d.bool("auto"))
+    };
+    let d = app.ui.dialog.clone().expect("the entry's dialog");
+    assert_eq!(point(&d), ("entry".into(), Some(a), "fill".into(), 30.0, 30.0, false), "on the entry, set");
+    app.ui.dialog = None;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let auto = drawn.nodes.iter().filter_map(|(_, n)| n.label()).find(|l| l.starts_with(&named(exit, ""))).expect("the exit's row").to_string();
+    frame(&mut app, &ctx, time + 0.05, vec![drawn.click(&auto)]);
+    time += 0.1;
+    let d = app.ui.dialog.clone().expect("the exit's dialog");
+    let scene = app.embroidery.preview.shown(app.session.active().unwrap().uid).unwrap().planned.built_scene().unwrap();
+    let last = scene.units().iter().rfind(|u| u.object == vectorcraft_doc::NodeId(a)).and_then(|u| u.exit).unwrap();
+    assert_eq!(point(&d), ("exit".into(), Some(a), "fill".into(), last.x, last.y, true), "where the plan ends it, Auto");
+    app.ui.dialog = None;
+    // Set on Canvas: the embroidery tool.
+    let drawn = ready(&mut app, &ctx, &mut time);
+    frame(&mut app, &ctx, time + 0.05, vec![drawn.click(crate::et!("Set on Canvas"))]);
+    time += 0.1;
+    assert_eq!(app.session.tool_id(), vectorcraft_tools::embroidery::ID);
+    // Several objects: read only, nothing opens.
+    app.run("embroidery.setEntryExit", json!({"id": b, "part": "fill", "entry": [160, 30]})).unwrap();
+    select(&mut app, &[a, b]);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let of_entry = named(entry, "");
+    let read_only = |n: &egui::accesskit::Node| n.role() == egui::accesskit::Role::Label && n.value().is_some_and(|v| v.starts_with(&of_entry));
+    assert!(drawn.nodes.iter().any(|(_, n)| read_only(n)), "the entry's words as a label's value");
+    assert!(
+        !drawn.nodes.iter().any(|(_, n)| n.role() == egui::accesskit::Role::Button && n.label().is_some_and(|l| l.starts_with(&of_entry))),
+        "no button"
+    );
+}
+
+/// A point the stitches miss by more than the Check tab lets pass says by how much, from the plan
+/// shown; one they meet says nothing: an exit far off the rectangle, an entry on its side.
+#[test]
+fn a_missed_point_says_by_how_much() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    // The rectangle's corner nearest the exit, (100, 70), lies 304.8 pt (107.5 mm) from it.
+    app.run("embroidery.setEntryExit", json!({"id": a, "part": "fill", "entry": [20, 45], "exit": [300, 300]})).unwrap();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let (before, after) = crate::et!("missed by {value} mm").split_once("{value}").unwrap();
+    let misses: Vec<f64> = drawn.words.iter().filter_map(|(w, _)| w.strip_prefix(before)?.strip_suffix(after)?.parse().ok()).collect();
+    assert_eq!(misses.len(), 1, "the exit alone: {:?}", drawn.words);
+    assert!((misses[0] - 107.5).abs() < 1.0, "{misses:?}");
 }
 
 /// A pull whose two sides differ shows both in its blank field ("0.2 mm / 0.3 mm"), which screen
@@ -995,4 +1096,35 @@ fn paste_after_the_copied_object_is_deleted() {
     select(&mut app, &[b]);
     app.run("embroidery.pasteSettings", json!({})).unwrap();
     assert_eq!(fill_setting(&mut app, b, "angle"), json!(30.0));
+}
+
+/// With the keyboard and a screen reader: Set on Canvas and one object's entry row are named
+/// buttons ("Set on Canvas", "Entry: Set"); focused, Space presses each as a click does (the
+/// embroidery tool picked, the keyboard given back to the canvas and the object's entry the point
+/// the tool's keys act on; the Entry Point dialog opened).
+#[test]
+fn set_on_canvas_and_the_entry_row_work_from_the_keyboard() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    app.run("embroidery.setEntryExit", json!({"id": a, "part": "fill", "entry": [30, 30]})).unwrap();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let space = |pressed| Event::Key { key: Key::Space, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE };
+    let press = |app: &mut VectorcraftApp, time: &mut f64, name: &str| {
+        let drawn = ready(app, &ctx, time);
+        assert_eq!(drawn.node(name).role(), egui::accesskit::Role::Button, "{name}");
+        for events in [vec![drawn.focus(name)], vec![space(true)], vec![space(false)]] {
+            *time += 0.05;
+            frame(app, &ctx, *time, events);
+        }
+    };
+    press(&mut app, &mut time, crate::et!("Set on Canvas"));
+    assert_eq!(app.session.tool_id(), vectorcraft_tools::embroidery::ID);
+    // The keys go to the tool at once: the button let the keyboard go, the entry is the point
+    // they act on.
+    assert_eq!(ctx.memory(|m| m.focused()), None, "the button let the keyboard go");
+    assert_eq!(app.session.tool_options()["focus"], json!({"kind": "entry", "id": a, "part": "fill", "index": 0}));
+    let entry = text::fill(crate::et!("{section}: {setting}"), &[("section", vocabulary::label("entry", None)), ("setting", crate::et!("Set"))]);
+    press(&mut app, &mut time, &entry);
+    assert!(app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::point_dialog::KIND), "the Entry Point dialog");
 }

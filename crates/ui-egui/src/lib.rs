@@ -1378,8 +1378,8 @@ impl VectorcraftApp {
         picks::poll(self, ctx);
         self.write_formats_before_text_input(ctx);
         background::poll(self);
-        // VectorCraft Stitch: the stitch preview's plans taken in.
-        embroidery::stitch_preview::poll(self);
+        // VectorCraft Stitch: the stitch preview's plans taken in, and Nearest Connection's search.
+        embroidery::poll(self, ctx);
         screen_color::poll(self, ctx);
         opening::poll(self);
         plugin_runs::poll(self);

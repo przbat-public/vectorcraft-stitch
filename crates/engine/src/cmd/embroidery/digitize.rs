@@ -13,15 +13,15 @@ use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId,
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Point, Rect, Shape, kurbo};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
 use vectorcraft_render::effects::stroke::outline_region;
-use vectorcraft_stitch::plan::{self, Style};
+use vectorcraft_stitch::plan::{self, Start, Style};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
 use super::Options;
-use super::cache::{Shaped, Shared, UnitCache, UnitKey, clip_words, path as path_words, rule_word};
-use super::plan::{Choice, DesignPlan, ForcedBy, MAX_WARNED_OBJECTS, Origin, Part};
+use super::cache::{Shaped, Shared, UnitCache, UnitKey, clip_words, parts_key, path as path_words, rule_word};
+use super::plan::{Asked, Choice, DesignPlan, ForcedBy, MAX_WARNED_OBJECTS, Origin, Part};
 use super::resolve::{DesignSettings, DocLayer, Found, PartLayer, UnitSettings};
 use super::sequence::{CLEARANCE, Facts, Planned, Sequence};
-use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
+use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, parted, plan_unit};
 
 const TEXT_LEFT_OUT: &str = "type is not stitched: outline it (Type › Create Outlines) and export again";
 const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › Image Trace) first";
@@ -93,6 +93,34 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
 /// is planned from, and kept there when it doesn't ([`UnitCache`]); without, every unit is planned
 /// afresh.
 pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>) -> Result<DesignPlan, PlanError> {
+    walked(doc, opts, cache, false).map(|w| w.plan)
+}
+
+/// What the walk records of each unit it plans when asked ([`walked`]), for
+/// `embroidery.nearestConnection`: the unit's key (as [`DesignPlan::units`] holds it), where its
+/// shape can start and end ([`plan::ends`], millimetres; `None` where the planner's rules there
+/// don't say), and why its part can't take points of its own, if it can't.
+#[derive(Clone, Debug)]
+pub(crate) struct UnitEnds {
+    pub(crate) origin: Origin,
+    pub(crate) occurrence: usize,
+    pub(crate) ends: Option<plan::Ends>,
+    /// `pieces` (a piece of an expanded appearance, or a fill or stroke after an object's first),
+    /// `symbolInstance` (a symbol's art), `clipped` (a stroke a clip group cuts), else `None`.
+    pub(crate) fixed: Option<&'static str>,
+}
+
+/// A walk's plan, what it recorded of each unit ([`UnitEnds`], empty unless asked), and the
+/// design's trim length (millimetres: a move between units longer than it is cut before).
+pub(crate) struct Walked {
+    pub(crate) plan: DesignPlan,
+    pub(crate) ends: Vec<UnitEnds>,
+    pub(crate) trim: f64,
+}
+
+/// [`digitize`], recording each unit's ends ([`UnitEnds`]) as it plans it when `collect`: the
+/// plan is the same either way.
+pub(crate) fn walked(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>, collect: bool) -> Result<Walked, PlanError> {
     // The document's embroidery settings, read once a plan.
     let doc_layer = DocLayer::of(doc);
     let (design, trim_note) = DesignSettings::new(opts, &doc_layer);
@@ -146,6 +174,7 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
         progress,
         occurrences: HashMap::new(),
         found: Found::default(),
+        collected: collect.then(Vec::new),
     };
     d.run();
     notes.extend(d.found.notes().map(String::from));
@@ -158,7 +187,7 @@ pub(crate) fn digitize(doc: &Document, opts: &Options, cache: Option<&Mutex<Unit
             plan.warned = d.warned;
             plan.notes = notes;
             plan.start = doc.embroidery.as_ref().and_then(|e| e.start).map(|p| Point::new(pt_to_mm(p.x), pt_to_mm(p.y)));
-            Ok(plan)
+            Ok(Walked { plan, ends: d.collected.unwrap_or_default(), trim: d.design.connect.trim })
         }
     }
 }
@@ -235,6 +264,8 @@ struct Digitizer<'a> {
     occurrences: HashMap<(NodeId, Part), usize>,
     /// What reading the objects' settings found that the plan says.
     found: Found,
+    /// Each unit's ends, recorded when asked ([`walked`]).
+    collected: Option<Vec<UnitEnds>>,
 }
 
 /// How far a plan has got: the units come to, of about how many ([`units_under`]).
@@ -497,7 +528,7 @@ impl<'a> Digitizer<'a> {
         let origin = self.origin(n, Part::Literal);
         let literal = self.owner.map(|g| (g, run.trim_before));
         let occurrence = self.occurrence(&origin);
-        let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, why: Choice::Literal };
+        let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, why: Choice::Literal, asked: Asked::default() };
         self.seq.add(Planned { facts, block, literal });
     }
 
@@ -775,8 +806,11 @@ impl<'a> Digitizer<'a> {
         if let (Some(r), Some(clip)) = (estimate, &self.clip) {
             estimate = Some(r.intersect(clip.bounds));
         }
-        // Where its object sets it to start, else where the needle is.
-        let from = settings.entry().or_else(|| self.seq.needle(self.seq.target(color, estimate)));
+        // Where its object sets it to start, else where the needle is; and where it sets it to end.
+        let start = match settings.entry() {
+            Some(entry) => Start::Entry(entry),
+            None => Start::needle(self.seq.needle(self.seq.target(color, estimate))),
+        };
         let request = UnitRequest {
             shape: bp,
             rule,
@@ -784,9 +818,13 @@ impl<'a> Digitizer<'a> {
             // A fill's narrow parts are satin columns, unless the `stitch` option forces tatami
             // (on a fill, or on a stroke filled).
             columns: (style == Style::Fill && settings.forced() != Some(Style::Fill)).then(|| settings.params(Style::Satin, NO_WIDTH)),
-            from,
+            start,
+            exit: settings.exit(),
             clip: if clip_stitches { self.clip.as_ref().map(|c| &c.region) } else { None },
         };
+        // Whether a clip group cuts its stitches, for what the walk records of the unit when asked:
+        // taken before the request is let go.
+        let clipped = request.clip.is_some();
         let planned = match self.planned(&request) {
             Ok(planned) => planned,
             Err(e) => {
@@ -795,9 +833,9 @@ impl<'a> Digitizer<'a> {
             }
         };
         // Kept in the cache too, the stitches are copied into the block.
-        let (stitches, columns, widths) = match Arc::try_unwrap(planned) {
-            Ok(UnitStitches { stitches, columns, widths }) => (stitches, columns, widths),
-            Err(kept) => (kept.stitches.clone(), kept.columns, kept.widths),
+        let (stitches, columns, widths, reach) = match Arc::try_unwrap(planned) {
+            Ok(UnitStitches { stitches, columns, widths, reach }) => (stitches, columns, widths, reach),
+            Err(kept) => (kept.stitches.clone(), kept.columns, kept.widths, kept.reach),
         };
         let satin_widths = match plan::sewn_style(&params) {
             Style::Satin => Some([params.width; 2]),
@@ -810,19 +848,53 @@ impl<'a> Digitizer<'a> {
         let mut block = Block::new(Thread::rgb(color));
         block.stitches = stitches;
         let occurrence = self.occurrence(&unit);
-        let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, why };
+        let record = self.collected.is_some().then(|| {
+            // One pair of points a kind of part: a piece, or a part after its object's first of
+            // its kind, can't have its own; nor a symbol's art (one point for every instance), nor a
+            // stroke a clip group cuts (the cut decides where it starts).
+            let fixed = match unit.instance {
+                Some(i) if self.expanded.contains(&i) => Some("pieces"),
+                Some(_) => Some("symbolInstance"),
+                None if !matches!(unit.part, Part::Fill(0) | Part::Stroke(0)) => Some("pieces"),
+                None if clipped => Some("clipped"),
+                None => None,
+            };
+            UnitEnds { origin: unit, occurrence, ends: plan::ends(bp, &params, columns.is_some()), fixed }
+        });
+        if let (Some(record), Some(collected)) = (record, self.collected.as_mut()) {
+            collected.push(record);
+        }
+        let asked = Asked { entry: settings.entry(), exit: settings.exit(), reach };
+        let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, why, asked };
         self.seq.add(Planned { facts, block, literal: None });
     }
 
     /// `request`'s stitches: those the cache keeps for it, else planned, and kept.
     fn planned(&self, request: &UnitRequest<'_>) -> Result<Arc<UnitStitches>, PlanError> {
-        let Some(cache) = self.cache else { return plan_unit(request).map(Arc::new) };
+        let Some(cache) = self.cache else { return plan_unit(request, None).map(Arc::new) };
         let key = UnitKey::of(request, self.clip.as_ref().filter(|_| request.clip.is_some()).map(|c| &c.key));
         // A cache that a panic elsewhere left locked is passed by: planning afresh is always right.
         if let Some(kept) = cache.lock().ok().and_then(|mut c| c.get(&key)) {
             return Ok(kept);
         }
-        let planned = Arc::new(plan_unit(request)?);
+        // A fill's narrow parts and its rest, kept apart: a point moved finds them again.
+        let parts = match request.columns {
+            Some(_) => {
+                let parts_key = parts_key(request.shape, request.rule, request.params.narrow);
+                match cache.lock().ok().and_then(|mut c| c.parts(&parts_key)) {
+                    Some(kept) => Some(kept),
+                    None => {
+                        let parted = Arc::new(parted(request.shape, request.rule, request.params.narrow)?);
+                        if let Ok(mut c) = cache.lock() {
+                            c.keep_parts(parts_key, parted.clone());
+                        }
+                        Some(parted)
+                    }
+                }
+            }
+            None => None,
+        };
+        let planned = Arc::new(plan_unit(request, parts.as_deref())?);
         if let Ok(mut c) = cache.lock() {
             c.insert(key, planned.clone());
         }

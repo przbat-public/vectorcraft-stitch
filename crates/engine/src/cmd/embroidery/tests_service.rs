@@ -60,8 +60,8 @@ enum Edit {
     Reorder(usize, usize, bool),
     /// An object's part given the settings at an index of [`SETTING_EDITS`].
     Setting(usize, usize),
-    /// An object's fill entered at a point.
-    Entry(usize, f64, f64),
+    /// An object's fill (or, `true`, its stroke) given an entry point (or, `true`, an exit point).
+    Point(usize, bool, bool, f64, f64),
     /// The document given the settings at an index of [`DOCUMENT_EDITS`].
     DocumentSetting(usize),
 }
@@ -117,7 +117,7 @@ fn edit() -> impl Strategy<Value = Edit> {
         1 => Just(Edit::Open),
         2 => (0usize..16, 0usize..16, any::<bool>()).prop_map(|(a, b, above)| Edit::Reorder(a, b, above)),
         2 => (0usize..16, 0..SETTING_EDITS.len()).prop_map(|(i, k)| Edit::Setting(i, k)),
-        1 => (0usize..16, 0.0..220.0f64, 0.0..220.0f64).prop_map(|(i, x, y)| Edit::Entry(i, x, y)),
+        2 => (0usize..16, any::<bool>(), any::<bool>(), 0.0..220.0f64, 0.0..220.0f64).prop_map(|(i, stroke, exit, x, y)| Edit::Point(i, stroke, exit, x, y)),
         1 => (0..DOCUMENT_EDITS.len()).prop_map(Edit::DocumentSetting),
     ]
 }
@@ -267,9 +267,10 @@ fn apply(s: &mut Session, ids: &mut Vec<u64>, opts: &mut Options, e: &Edit) {
                 let _ = s.execute("embroidery.set", &params);
             }
         }
-        Edit::Entry(i, x, y) => {
+        Edit::Point(i, stroke, exit, x, y) => {
             if let Some(id) = pick(i) {
-                let _ = s.execute("embroidery.setEntryExit", &json!({"id": id, "part": "fill", "entry": [x, y]}));
+                let (part, key) = (if stroke { "stroke" } else { "fill" }, if exit { "exit" } else { "entry" });
+                let _ = s.execute("embroidery.setEntryExit", &json!({"id": id, "part": part, key: [x, y]}));
             }
         }
         Edit::DocumentSetting(k) => {
@@ -315,11 +316,12 @@ proptest! {
 }
 
 /// A key holds every value a unit's stitches depend on: changing any one of them, the needle's
-/// start point by the smallest step a float takes, changes the key.
+/// start point or the exit by the smallest step a float takes, or the start's kind (an entry point
+/// set, or only where the needle is), changes the key.
 #[test]
 fn a_key_changes_with_every_value_a_unit_depends_on() {
     use vectorcraft_geom::{BezPath, FillRule, Point, Rect, Shape};
-    use vectorcraft_stitch::plan::{Params, Style, Underlay};
+    use vectorcraft_stitch::plan::{Params, Start, Style, Underlay};
     let shape = Rect::new(0.0, 0.0, 20.0, 10.0).to_path(0.1);
     let clip = (Rect::new(0.0, 0.0, 15.0, 15.0).to_path(0.1), FillRule::NonZero);
     let base = UnitRequest {
@@ -327,7 +329,8 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
         rule: FillRule::NonZero,
         params: Params::for_style(Style::Fill),
         columns: Some(Params::for_style(Style::Satin)),
-        from: Some(Point::new(3.0, 4.0)),
+        start: Start::Needle(Point::new(3.0, 4.0)),
+        exit: Some(Point::new(7.0, 8.0)),
         clip: Some(&clip),
     };
     let key = UnitKey::of(&base, None);
@@ -343,9 +346,13 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
         UnitRequest { shape: &moved, ..base },
         UnitRequest { rule: FillRule::EvenOdd, ..base },
         UnitRequest { columns: None, ..base },
-        UnitRequest { from: None, ..base },
-        UnitRequest { from: Some(Point::new(next(3.0), 4.0)), ..base },
-        UnitRequest { from: Some(Point::new(3.0, next(4.0))), ..base },
+        UnitRequest { start: Start::Nowhere, ..base },
+        UnitRequest { start: Start::Needle(Point::new(next(3.0), 4.0)), ..base },
+        UnitRequest { start: Start::Needle(Point::new(3.0, next(4.0))), ..base },
+        UnitRequest { start: Start::Entry(Point::new(3.0, 4.0)), ..base },
+        UnitRequest { exit: None, ..base },
+        UnitRequest { exit: Some(Point::new(next(7.0), 8.0)), ..base },
+        UnitRequest { exit: Some(Point::new(7.0, next(8.0))), ..base },
         UnitRequest { clip: None, ..base },
         UnitRequest { clip: Some(&other_clip), ..base },
     ];
@@ -392,7 +399,7 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
 fn the_units_used_least_recently_are_dropped_first() {
     use vectorcraft_geom::{BezPath, FillRule, Point};
     use vectorcraft_stitch::Stitch;
-    use vectorcraft_stitch::plan::{Params, Style};
+    use vectorcraft_stitch::plan::{Params, Start, Style};
     let shapes: Vec<BezPath> = (0..4)
         .map(|k| {
             let mut p = BezPath::new();
@@ -403,12 +410,20 @@ fn the_units_used_least_recently_are_dropped_first() {
         .collect();
     let key = |shape: &BezPath| {
         UnitKey::of(
-            &UnitRequest { shape, rule: FillRule::NonZero, params: Params::for_style(Style::Running), columns: None, from: None, clip: None },
+            &UnitRequest {
+                shape,
+                rule: FillRule::NonZero,
+                params: Params::for_style(Style::Running),
+                columns: None,
+                start: Start::Nowhere,
+                exit: None,
+                clip: None,
+            },
             None,
         )
     };
     // Each unit 100 stitches and a key of about 40 words: 4 such units don't fit a limit of 320.
-    let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None });
+    let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None, reach: [0.0; 2] });
     // Each step a plan of its own (one plan's units are never dropped for each other).
     let mut cache = UnitCache::with_limit(320);
     cache.begin();
@@ -427,7 +442,10 @@ fn the_units_used_least_recently_are_dropped_first() {
     assert!(cache.get(&key(&shapes[3])).is_some(), "the last added stays");
     // A unit larger than the whole limit is not kept, and drops nothing.
     let before = cache.units();
-    cache.insert(key(&shapes[1]), Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 400], columns: None, widths: None }));
+    cache.insert(
+        key(&shapes[1]),
+        Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 400], columns: None, widths: None, reach: [0.0; 2] }),
+    );
     assert_eq!(cache.units(), before);
     assert!(cache.get(&key(&shapes[1])).is_none());
 }
@@ -439,7 +457,7 @@ fn the_units_used_least_recently_are_dropped_first() {
 fn a_plan_keeps_its_first_units_when_not_all_fit() {
     use vectorcraft_geom::{BezPath, FillRule, Point};
     use vectorcraft_stitch::Stitch;
-    use vectorcraft_stitch::plan::{Params, Style};
+    use vectorcraft_stitch::plan::{Params, Start, Style};
     let shapes: Vec<BezPath> = (0..3)
         .map(|k| {
             let mut p = BezPath::new();
@@ -450,11 +468,19 @@ fn a_plan_keeps_its_first_units_when_not_all_fit() {
         .collect();
     let key = |shape: &BezPath| {
         UnitKey::of(
-            &UnitRequest { shape, rule: FillRule::NonZero, params: Params::for_style(Style::Running), columns: None, from: None, clip: None },
+            &UnitRequest {
+                shape,
+                rule: FillRule::NonZero,
+                params: Params::for_style(Style::Running),
+                columns: None,
+                start: Start::Nowhere,
+                exit: None,
+                clip: None,
+            },
             None,
         )
     };
-    let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None });
+    let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None, reach: [0.0; 2] });
     // Two units of 100 stitches and their keys fit 320, three don't.
     let mut cache = UnitCache::with_limit(320);
     for _ in 0..3 {
@@ -516,6 +542,37 @@ fn a_plan_after_a_nudge_makes_only_the_moved_objects_area() {
     let kept = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
     assert_eq!(service.shapes(), 4, "only the moved one's made again");
     assert_eq!(*kept, digitize(&doc, &opts, None).unwrap());
+}
+
+/// A fill's narrow parts and its rest are kept apart from its stitches, by what they are found from:
+/// an entry point moved twice on a letter T plans its unit again each time and finds them kept (one
+/// kept set, never found again), and the plan is a fresh plan's.
+#[test]
+fn a_moved_entry_finds_its_fills_narrow_parts_kept() {
+    let mut s = Session::new();
+    run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
+    run(&mut s, "paint.setStroke", json!({"none": true}));
+    let pt = |v: f64| v * 72.0 / 25.4;
+    let t = [(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 3.0), (16.5, 23.0), (13.5, 23.0), (13.5, 3.0), (0.0, 3.0)];
+    let d = t
+        .iter()
+        .enumerate()
+        .map(|(k, (x, y))| format!("{} {} {}", if k == 0 { "M" } else { "L" }, pt(*x + 20.0), pt(*y + 20.0)))
+        .collect::<Vec<_>>()
+        .join(" ")
+        + " Z";
+    let id = run(&mut s, "path.create", json!({ "d": d }))["id"].as_u64().unwrap();
+    let opts = Options::default();
+    let service = PlanService::default();
+    for (k, x) in [25.0, 30.0, 35.0].into_iter().enumerate() {
+        if k > 0 {
+            run(&mut s, "embroidery.setEntryExit", json!({"id": id, "part": "fill", "entry": [pt(x), pt(20.0)]}));
+        }
+        let doc = s.doc().unwrap().doc.clone();
+        let kept = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+        assert_eq!(service.parted(), 1, "plan {k}: one set of narrow parts kept");
+        assert_eq!(*kept, digitize(&doc, &opts, None).unwrap(), "plan {k}");
+    }
 }
 
 /// Each document has a service of its own, dropped when it closes; a second plan of a document

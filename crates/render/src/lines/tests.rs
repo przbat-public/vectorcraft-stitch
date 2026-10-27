@@ -425,3 +425,29 @@ fn needle_points_stand_out_once_they_stand_apart() {
     r.render(&p, 320, 80, Affine::scale(4.0), &on);
     assert!(r.stats.needle_points > 0);
 }
+
+/// A press picks the line drawn on top under it, within the tolerance past its half width; a box
+/// that holds the point but no segment near it passes it by; in a picture scaled to document
+/// points, the tolerance is in document points.
+#[test]
+fn a_hit_picks_the_line_drawn_on_top() {
+    let p = picture(&[
+        (0, 7, 4.0, &[(0.0, 50.0, 0), (100.0, 50.0, 1)]),
+        (1, 9, 2.0, &[(50.0, 0.0, 2), (50.0, 100.0, 3)]),
+        (0, 11, 1.0, &[(0.0, 0.0, 4), (100.0, 100.0, 5)]),
+    ]);
+    assert_eq!(p.hit(Point::new(50.0, 50.0), 0.0), Some(11), "the last drawn, on top");
+    assert_eq!(p.hit(Point::new(20.0, 51.5), 0.0), Some(7), "within half its width");
+    assert_eq!(p.hit(Point::new(20.0, 53.0), 0.0), None);
+    assert_eq!(p.hit(Point::new(20.0, 53.0), 1.5), Some(7), "within the tolerance past it");
+    assert_eq!(p.hit(Point::new(80.0, 20.0), 0.5), None, "inside the diagonal's box, far from it");
+    assert_eq!(p.hit(Point::new(f64::NAN, 1.0), 1.0), None);
+    let mut b = LinePictureBuilder::new(Point::ZERO, 2.0);
+    b.begin_line(0, 3, 1.0);
+    b.point(Point::new(0.0, 0.0), 0);
+    b.point(Point::new(10.0, 0.0), 1);
+    b.end_line();
+    let scaled = b.build();
+    assert_eq!(scaled.hit(Point::new(10.0, 2.5), 1.0), None, "1 pt past a half unit is a pixel short");
+    assert_eq!(scaled.hit(Point::new(10.0, 2.0), 1.0), Some(3), "two document points a unit");
+}

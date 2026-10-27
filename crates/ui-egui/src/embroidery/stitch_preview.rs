@@ -11,7 +11,9 @@
 //!   is remembered with its time) is planned on every change, also during a drag, and the plan
 //!   under way is let finish, so the stitches follow the drag; once it is in, a change cancels the
 //!   replies still to come and plans at once. Any other is planned once the document has stayed
-//!   unchanged for [`QUIET_SECS`] with no drag, and a new change cancels the plan under way. Only
+//!   unchanged for [`QUIET_SECS`] with no drag, or, while the embroidery tool drags a point on the
+//!   desktop, once the drag has paused for [`PAUSE_TO_PLAN_SECS`]; a new change cancels the plan
+//!   under way. Only
 //!   the first plan of a document starts at once whatever goes on, so a design that can't be
 //!   planned isn't planned on every edit.
 //! - **The last plan stays shown** while a newer one is made ([`Freshness::Stale`]); after
@@ -42,6 +44,11 @@ use super::plan_worker::{Done, Driver, Job, Outcome, Query};
 /// How long the document must stay unchanged before a design that is slow to plan is planned
 /// again, seconds: the panels' settle time.
 pub const QUIET_SECS: f64 = crate::thumb_worker::SETTLE_SECS;
+
+/// How long the embroidery tool's drag must pause before a design that is slow to plan is planned
+/// on the desktop, seconds: longer than the gaps between a moving pointer's events, so that a drag
+/// on the move plans nothing (an estimate).
+pub const PAUSE_TO_PLAN_SECS: f64 = 0.3;
 
 /// A design whose last plan took at most this long, milliseconds, is planned on every change,
 /// also during a drag: half the 100 ms re-plan budget of `vectorcraft-cli perf`'s embroidery rows,
@@ -283,6 +290,8 @@ struct InFlight {
 #[derive(Default)]
 struct Interest {
     plan: bool,
+    /// The plan wanted for the embroidery tool's Auto points alone: no figures, no counters.
+    plan_alone: bool,
     queries: Vec<Query>,
 }
 
@@ -304,6 +313,8 @@ pub struct StitchPreview {
     plan_asked: bool,
     runner: Option<Box<dyn Runner>>,
     next_ticket: u64,
+    /// The embroidery tool is dragging a point this frame: a pause plans a design slow to plan.
+    pausing: bool,
     /// What the tests check the scheduler against: each job sent, and each plan taken in.
     #[cfg(test)]
     pub(crate) log: Log,
@@ -328,6 +339,13 @@ impl StitchPreview {
     /// The canvas shows stitches this frame: the active document's design is wanted.
     pub fn want_plan(&mut self) {
         self.interest.plan = true;
+    }
+
+    /// The embroidery tool shows Auto points this frame: the active document's design is wanted,
+    /// planned as for the canvas, without its figures or the status bar's counters (the project
+    /// owner's choice, 2026-10-25: the tool plans without turning them on).
+    pub fn want_plan_alone(&mut self) {
+        self.interest.plan_alone = true;
     }
 
     /// Whether the last frame wanted the active document's plan (the stitch view or the
@@ -416,6 +434,12 @@ impl StitchPreview {
             "planMs": doc.and_then(|d| d.plan_ms),
             "generation": doc.and_then(|d| d.shown.as_ref()).map(|s| s.planned.generation),
         })
+    }
+
+    /// Whether document `uid`'s design is planned on every change, also during a drag (its last plan
+    /// took at most [`LIVE_PLAN_MS`]); `false` before its first plan.
+    pub fn live(&self, uid: u64) -> bool {
+        self.docs.get(&uid).and_then(|d| d.plan_ms).is_some_and(|ms| ms <= LIVE_PLAN_MS)
     }
 
     /// Say document `uid`'s last plan took `ms` (the tests make a design heavy).
@@ -520,7 +544,7 @@ impl StitchPreview {
         if interest.plan && !interest.queries.contains(&figures_query()) {
             interest.queries.push(figures_query());
         }
-        self.asked = interest.plan || !interest.queries.is_empty();
+        self.asked = interest.plan || interest.plan_alone || !interest.queries.is_empty();
         self.plan_asked = interest.plan;
         let open: HashSet<u64> = s.documents().iter().map(|d| d.uid).collect();
         self.docs.retain(|uid, _| open.contains(uid));
@@ -587,13 +611,17 @@ impl StitchPreview {
         let waited = now - since;
         // The clock went back (a new egui context): don't wait for it to catch up.
         let quiet = !waited.is_nan() && !(0.0..QUIET_SECS).contains(&waited);
-        if light || (!busy && (first || quiet)) {
+        // The embroidery tool's drag paused, on the desktop.
+        let pausing = self.pausing && !in_line;
+        let paused = pausing && !waited.is_nan() && !(0.0..PAUSE_TO_PLAN_SECS).contains(&waited);
+        if light || (!busy && (first || quiet)) || paused {
             self.start(s, uid, key, opts, queries, true);
             return notice;
         }
         if busy {
-            // The drag's end draws a frame anyway.
-            return notice;
+            // A pause to wait for; else the drag's end draws a frame anyway.
+            let rest = (PAUSE_TO_PLAN_SECS - waited).max(0.0);
+            return if pausing { Some(notice.map_or(rest, |n| n.min(rest))) } else { notice };
         }
         let rest = (QUIET_SECS - waited).max(0.0);
         Some(notice.map_or(rest, |n| n.min(rest)))
@@ -638,8 +666,10 @@ pub fn poll(app: &mut crate::VectorcraftApp) {
 pub fn schedule(app: &mut crate::VectorcraftApp, ctx: &egui::Context) {
     let now = ctx.input(|i| i.time);
     let busy = app.session.active().is_some_and(|st| st.interaction.is_some()) || app.session.tool_busy() || app.scrub_group;
+    let pausing = super::handles::active(app) && app.session.tool_busy();
     let preview = &mut app.embroidery.preview;
-    if preview.runner.is_none() && (preview.interest.plan || !preview.interest.queries.is_empty()) {
+    preview.pausing = pausing;
+    if preview.runner.is_none() && (preview.interest.plan || preview.interest.plan_alone || !preview.interest.queries.is_empty()) {
         preview.runner = Some(Box::new(Driver::new(ctx)));
     }
     let wait = preview.schedule_at(&mut app.session, now, busy);

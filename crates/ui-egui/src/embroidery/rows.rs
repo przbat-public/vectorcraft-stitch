@@ -155,7 +155,7 @@ fn field_words(ui: &Ui, r: &Row<'_>) -> f32 {
     let s = ui.spacing();
     match &r.field {
         Field::Choice { shown, .. } => text_width(ui, shown, CHOICE_TEXT) + CHOICE_FRAME + 2.0 * s.button_padding.x + s.icon_spacing + s.icon_width,
-        Field::Words(words) => text_width(ui, words, WORDS_TEXT) + 2.0 * WORDS_INSET,
+        Field::Words(words) | Field::Button(words) => text_width(ui, words, WORDS_TEXT) + 2.0 * WORDS_INSET,
         Field::Number { .. } => FIELD_MIN,
     }
 }
@@ -180,6 +180,8 @@ pub(crate) enum Field<'a> {
     Choice { shown: &'a str, options: &'a [(String, String)], current: Option<&'a str> },
     /// Words, read only.
     Words(&'a str),
+    /// Words a click (or the keyboard) opens, to set the value elsewhere (a point's dialog).
+    Button(&'a str),
 }
 
 /// One row.
@@ -274,6 +276,7 @@ pub(crate) enum OwnedField {
     Number { value: Option<f64>, unit: &'static str, decimals: usize, bounds: (f64, f64), hint: Option<String> },
     Choice { shown: String, options: Vec<(String, String)>, current: Option<String> },
     Words(String),
+    Button(String),
 }
 
 impl Owned {
@@ -285,6 +288,7 @@ impl Owned {
             }
             OwnedField::Choice { shown, options, current } => Field::Choice { shown, options, current: current.as_deref() },
             OwnedField::Words(w) => Field::Words(w),
+            OwnedField::Button(w) => Field::Button(w),
         };
         Row {
             key: self.key,
@@ -308,6 +312,8 @@ pub(crate) enum Edit {
     Number(f64),
     Choice(String),
     Restore,
+    /// A button field pressed.
+    Open,
 }
 
 /// A section's heading over its rows.
@@ -315,6 +321,42 @@ pub(crate) fn heading(ui: &mut Ui, words: &str) {
     let t = Tokens::get(ui.ctx());
     ui.add_space(GAP);
     ui.label(egui::RichText::new(words).size(LABEL_TEXT).strong().color(t.text_strong));
+}
+
+/// A section's heading with a button at its right that sets the section's values elsewhere (Set on
+/// Canvas, `tip` its tooltip, shown on the keyboard's focus too, and what screen readers hear
+/// after its name) → whether it was pressed. Where the two don't fit on one line the button goes
+/// under the heading, still at the right.
+pub(crate) fn heading_with_button(ui: &mut Ui, words: &str, button: &str, tip: &str) -> bool {
+    let t = Tokens::get(ui.ctx());
+    ui.add_space(GAP);
+    let heading = egui::RichText::new(words).size(LABEL_TEXT).strong().color(t.text_strong);
+    let s = ui.spacing();
+    let needed = text_width(ui, words, LABEL_TEXT) + s.item_spacing.x + text_width(ui, button, SMALL_TEXT) + 2.0 * s.button_padding.x;
+    let mut pressed = false;
+    let mut add_button = |ui: &mut Ui| {
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            let resp = ui.add(egui::Button::new(egui::RichText::new(button).size(SMALL_TEXT)).small());
+            keyboard_tip(ui, resp.id, tip);
+            ui.ctx().accesskit_node_builder(resp.id, |node| node.set_description(tip));
+            let resp = resp.on_hover_text(tip);
+            pressed = resp.clicked();
+            // What it starts takes the keyboard (the canvas's tool): the button lets it go.
+            if pressed {
+                resp.surrender_focus();
+            }
+        });
+    };
+    if needed <= ui.available_width() {
+        ui.horizontal(|ui| {
+            ui.label(heading);
+            add_button(ui);
+        });
+    } else {
+        ui.label(heading);
+        ui.horizontal(|ui| add_button(ui));
+    }
+    pressed
 }
 
 /// Draw `row` in `cols` → what its person did this frame.
@@ -445,7 +487,34 @@ fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
             words_field(ui, width, row, words, text);
             None
         }
+        Field::Button(words) => button_field(ui, width, row, words, text).then_some(Edit::Open),
     }
+}
+
+/// A value set elsewhere, drawn as a field holding it that a click, or Enter or Space with the
+/// keyboard's focus on it, opens → whether it was pressed. Screen readers hear a button named as a
+/// read-only field is ("Entry: Set"); its help shows on the keyboard's focus too.
+fn button_field(ui: &mut Ui, width: f32, row: &Row<'_>, words: &str, colour: Color32) -> bool {
+    let t = Tokens::get(ui.ctx());
+    let (rect, resp) = ui.allocate_exact_size(vec2(width, WORDS_HEIGHT), Sense::click());
+    let fill = if resp.hovered() { t.hover } else { t.input };
+    ui.painter().rect(rect, CornerRadius::same(WORDS_RADIUS), fill, egui::Stroke::new(1.0, t.input_border), egui::StrokeKind::Inside);
+    let room = (rect.width() - 2.0 * WORDS_INSET).max(1.0);
+    let galley = egui::WidgetText::from(egui::RichText::new(words).size(WORDS_TEXT).color(colour)).into_galley(
+        ui,
+        Some(egui::TextWrapMode::Truncate),
+        room,
+        egui::TextStyle::Body,
+    );
+    let at = Align2::LEFT_CENTER.align_size_within_rect(galley.size(), rect.shrink2(vec2(WORDS_INSET, 0.0))).min;
+    ui.painter().galley(at, galley, colour);
+    focus_ring(ui, &resp, rect, t.input);
+    let said = crate::embroidery::text::fill(crate::et!("{section}: {setting}"), &[("section", row.name), ("setting", words)]);
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, said.clone()));
+    ui.ctx().accesskit_node_builder(resp.id, |node| node.set_description(row.description.clone()));
+    keyboard_tip(ui, resp.id, row.tip);
+    let resp = resp.on_hover_text(row.tip);
+    resp.clicked()
 }
 
 /// A value read only, drawn as a field holding it.

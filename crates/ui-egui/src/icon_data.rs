@@ -81,8 +81,9 @@ pub static ICONS: &[(&str, &[u8])] = &[
     ("dc-draw-inside", include_bytes!("../../../assets/icons/dc-draw-inside.svg")),
     ("dc-draw-normal", include_bytes!("../../../assets/icons/dc-draw-normal.svg")),
     ("dc-ellipse", include_bytes!("../../../assets/icons/dc-ellipse.svg")),
-    // VectorCraft Stitch: the Embroidery panel's icon.
+    // VectorCraft Stitch: the Embroidery panel's icon, and the embroidery tool's.
     ("dc-embroidery", include_bytes!("../../../assets/icons/dc-embroidery.svg")),
+    ("dc-embroidery-tool", include_bytes!("../../../assets/icons/dc-embroidery-tool.svg")),
     ("dc-fill-none", include_bytes!("../../../assets/icons/dc-fill-none.svg")),
     ("dc-filter", include_bytes!("../../../assets/icons/dc-filter.svg")),
     ("dc-flare", include_bytes!("../../../assets/icons/dc-flare.svg")),

@@ -107,3 +107,34 @@ fn the_satin_and_running_weights_are_sewn_so() {
     assert_eq!(why, [Choice::WideStroke, Choice::NarrowStroke, Choice::Fill]);
     assert!(plan.units[2].columns.is_some(), "the T's stem is a satin column");
 }
+
+/// The points fixture plans, every object that takes points holds the ones set on it (read back
+/// by `embroidery.info`, document points), and what takes none is what it is: the instance is
+/// placed, the run is literal stitches, the hidden object and the type aren't sewn.
+#[test]
+fn the_points_fixture_plans_and_holds_its_points() {
+    let mut s = Session::new();
+    let mut run = runner(&mut s);
+    let p = fx::points(&mut run);
+    drop(run);
+    let plan = checked_plan(&mut s);
+    let sewn: Vec<u64> = plan.units.iter().map(|u| u.origin.selected().0).collect();
+    for id in [p.fill, p.stroke, p.both, p.compound, p.grouped[0], p.grouped[1], p.clipped, p.instance, p.run, p.locked] {
+        assert!(sewn.contains(&id), "{id} is sewn: {sewn:?} ({p:?})");
+    }
+    assert!(!sewn.contains(&p.hidden) && !sewn.contains(&p.text), "hidden art and type aren't sewn");
+    let literal = plan.units.iter().filter(|u| u.origin.selected().0 == p.run).all(|u| u.params.is_none());
+    assert!(literal, "the pasted run is sewn as its stitches are");
+    let info = |s: &mut Session, id: u64, part: &str, key: &str| -> Value {
+        let reply = s.execute("embroidery.info", &serde_json::json!({"ids": [id]})).unwrap();
+        reply[part][key]["value"].clone()
+    };
+    assert_eq!(info(&mut s, p.fill, "fill", "entry"), serde_json::json!(p.fill_entry));
+    assert_eq!(info(&mut s, p.fill, "fill", "exit"), serde_json::json!(p.fill_exit));
+    assert_eq!(info(&mut s, p.stroke, "stroke", "entry"), serde_json::json!(p.stroke_entry));
+    assert_eq!(info(&mut s, p.stroke, "stroke", "exit"), serde_json::json!(p.stroke_exit));
+    assert_eq!(info(&mut s, p.both, "fill", "entry"), serde_json::json!(p.both_fill_entry));
+    assert_eq!(info(&mut s, p.both, "stroke", "exit"), serde_json::json!(p.both_stroke_exit));
+    assert_eq!(info(&mut s, p.both, "fill", "exit"), Value::Null, "only the points given are set");
+    assert_eq!(info(&mut s, p.compound, "fill", "entry"), serde_json::json!(p.compound_entry));
+}

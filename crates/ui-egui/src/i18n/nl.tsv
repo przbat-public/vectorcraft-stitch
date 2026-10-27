@@ -5401,7 +5401,7 @@ swatch	Bright Violet	Felviolet
 	Embroidery Trim After	Borduren: draad knippen na
 	Embroidery Object Settings	Borduurinstellingen van object
 	Reset Embroidery Object Settings	Borduurinstellingen van object herstellen
-	Embroidery Entry and Exit	In- en uitsteek van het borduurwerk
+	Embroidery Entry and Exit	In- en uitgang van het borduurwerk
 	Show Embroidery Object Settings	Borduurinstellingen van object tonen
 	Embroidery Fabrics	Borduurstoffen
 	Apply Embroidery Fabric to Objects	Borduurstof op objecten toepassen
@@ -5902,7 +5902,6 @@ embroidery	by size	naar grootte
 embroidery	Entry and exit	Ingang en uitgang
 embroidery	Set	Ingesteld
 embroidery	nearest	dichtstbij
-embroidery	not used yet	nog niet gebruikt
 embroidery	Set on the selected objects.	Ingesteld op de geselecteerde objecten.
 embroidery	Nearest to where the needle is.	Zo dicht mogelijk bij de naald.
 embroidery	built-in values	ingebouwde waarden
@@ -5996,3 +5995,48 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Niet geplakt, o
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} geselecteerd object neemt geen instellingen aan en is overgeslagen|{count} geselecteerde objecten nemen geen instellingen aan en zijn overgeslagen
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} geselecteerd object neemt geen instellingen aan|{count} geselecteerde objecten nemen geen instellingen aan
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	In- of uitgangspunten die meer dan {value} mm gemist worden
+embroidery	Largest miss: {value} mm	Grootste afwijking: {value} mm
+@plural	{count} point|{count} points	{count} punt|{count} punten
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	{value} mm gemist
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Dichtstbijzijnde verbinding
+@plural	{count} part set|{count} parts set	{count} deel ingesteld|{count} delen ingesteld
+embroidery	jumps {value} mm shorter	sprongen {value} mm korter
+embroidery	jumps no shorter	sprongen niet korter
+embroidery	trims {before} → {after}	knippen {before} → {after}
+embroidery	The entry and exit points are already the nearest.	De in- en uitgangspunten zijn al de dichtstbijzijnde.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Borduur-gereedschap
+	 a point to move it, or an arrow's head to turn the rows  |  	 aan een punt om het te verplaatsen, of aan een pijlpunt om de rijen te draaien  |  
+	 a point or an arrow to put it back to Auto  |  	 op een punt of pijl om het terug op Automatisch te zetten  |  
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	sprong {value} mm
+embroidery	jump {value} mm, cut	sprong {value} mm, knip
+embroidery	Stitches update when you pause or let go.	De steken worden bijgewerkt als je pauzeert of loslaat.
+embroidery	Stitches update when you let go.	De steken worden bijgewerkt als je loslaat.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Ingangspunt
+embroidery	Exit Point	Uitgangspunt
+embroidery	Auto (nearest where the needle is)	Automatisch (het dichtst bij de naald)
+embroidery	The point is taken to the nearest place the stitches can start or end.	Het punt wordt naar de dichtstbijzijnde plek gezet waar de steken kunnen beginnen of eindigen.
+# VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
+embroidery	Set on Canvas	Instellen op het canvas
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Sleep het in- en uitgangspunt van dit deel op het canvas met het borduur-gereedschap.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Niets hier kan in- en uitgangspunten krijgen
+@plural	{count} object skipped|{count} objects skipped	{count} object overgeslagen|{count} objecten overgeslagen
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent}% · Esc stopt het
+embroidery	Stopped: nothing was changed.	Gestopt: er is niets gewijzigd.
+embroidery	The document changed meanwhile: nothing was changed.	Het document is intussen gewijzigd: er is niets gewijzigd.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Automatisch (waar het plan het deel beëindigt)
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	 op een object om zijn punten te tonen  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	 van punt naar punt, de pijltjestoetsen verschuiven het, Enter voert het in
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	In- en uitgangspunten worden getoond voor het eerste {count} geselecteerde object|In- en uitgangspunten worden getoond voor de eerste {count} geselecteerde objecten

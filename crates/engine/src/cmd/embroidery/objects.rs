@@ -11,11 +11,9 @@
 //! compound path; what takes no settings (type, a symbol instance, a run of stitches read from a
 //! machine file…) is skipped and listed.
 
-use std::collections::HashSet;
-
 use serde_json::{Map, Value, json};
 use vectorcraft_doc::embroidery::{Embroidery, PartKey, PartKind, PartValue};
-use vectorcraft_doc::{AppearanceItem, Document, MAX_COORD, Node, NodeId, NodeKind};
+use vectorcraft_doc::{Document, MAX_COORD, Node, NodeId, NodeKind};
 use vectorcraft_geom::Point;
 
 use super::options::Others;
@@ -43,90 +41,9 @@ pub(crate) const ENTRY_EXIT: &str = "Embroidery Entry and Exit";
 /// The undo step `embroidery.copyFrom` makes: a paste of another object's settings.
 pub(crate) const PASTE: &str = "Apply Another Object's Embroidery Settings";
 
-/// Why an object given takes no part settings, as the replies name it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Skip {
-    /// A run of stitches read from a machine file: sewn as its points are.
-    Literal,
-    /// A guide: never sewn.
-    Guide,
-    /// Type: not sewn until lettering sews it (the project owner's choice, 2026-10-23).
-    Type,
-    Image,
-    /// A symbol's settings are set on its art (an instance takes only the cut after it).
-    SymbolInstance,
-    /// A blend, an envelope, a mesh or a repeat: not sewn as it is.
-    Live,
-    Placed,
-    Intertwine,
-    /// It has no part of the kind asked for (no fill, or no stroke).
-    NoPart,
-}
-
-impl Skip {
-    /// Every reason, as `embroidery.info` and the settings commands' replies give them.
-    pub(crate) const ALL: [Skip; 9] =
-        [Skip::Literal, Skip::Guide, Skip::Type, Skip::Image, Skip::SymbolInstance, Skip::Live, Skip::Placed, Skip::Intertwine, Skip::NoPart];
-
-    /// Its id in replies.
-    pub(crate) fn id(self) -> &'static str {
-        match self {
-            Skip::Literal => "literal",
-            Skip::Guide => "guide",
-            Skip::Type => "type",
-            Skip::Image => "image",
-            Skip::SymbolInstance => "symbolInstance",
-            Skip::Live => "live",
-            Skip::Placed => "placed",
-            Skip::Intertwine => "intertwine",
-            Skip::NoPart => "noPart",
-        }
-    }
-}
-
-/// The objects a settings command takes, and those it skips with why.
-pub(crate) type Takers = (Vec<NodeId>, Vec<(NodeId, Skip)>);
-
-/// The objects `ids` stand for, as the settings commands take them, each once in the order met: a
-/// path or a compound path itself; a compound path's member its compound path; the paths and
-/// compound paths in a group or a layer, at any depth. What takes no settings is skipped, with why.
-pub(crate) fn takers(d: &Document, ids: &[NodeId]) -> Takers {
-    let (mut take, mut skip, mut seen) = (Vec::new(), Vec::new(), HashSet::new());
-    for id in ids {
-        let Some(n) = d.node(compound_of(d, *id)) else { continue };
-        visit_takers(n, &mut take, &mut skip, &mut seen);
-    }
-    (take.into_iter().map(|n| n.id).collect(), skip)
-}
-
-/// [`takers`] of `n`, which need not be in a document (a symbol's art): the objects that take
-/// settings into `take`, what is skipped into `skip`, each node once (`seen`).
-pub(crate) fn visit_takers<'a>(n: &'a Node, take: &mut Vec<&'a Node>, skip: &mut Vec<(NodeId, Skip)>, seen: &mut HashSet<NodeId>) {
-    if !seen.insert(n.id) {
-        return;
-    }
-    let why = match &n.kind {
-        NodeKind::Layer { children, .. } | NodeKind::Group { children, .. } => {
-            for c in children {
-                visit_takers(c, take, skip, seen);
-            }
-            return;
-        }
-        NodeKind::Path { guide: true, .. } => Skip::Guide,
-        NodeKind::Path { .. } if n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some()) => Skip::Literal,
-        NodeKind::Path { .. } | NodeKind::Compound { .. } => {
-            take.push(n);
-            return;
-        }
-        NodeKind::Text(_) => Skip::Type,
-        NodeKind::Image(_) => Skip::Image,
-        NodeKind::SymbolInstance { .. } => Skip::SymbolInstance,
-        NodeKind::PlacedDocument(_) => Skip::Placed,
-        NodeKind::Intertwine { .. } => Skip::Intertwine,
-        NodeKind::Blend { .. } | NodeKind::Envelope { .. } | NodeKind::Mesh(_) | NodeKind::Repeat(_) => Skip::Live,
-    };
-    skip.push((n.id, why));
-}
+// The rule for which objects take settings lives in the document crate, where the embroidery
+// tool reads it too.
+pub(crate) use vectorcraft_doc::embroidery::takers::{Skip, Takers, compound_of, has_part, part_kind, takers, visit_takers};
 
 /// The ids of every reason an object is skipped by the settings commands (`skipped[].reason`): an
 /// interface's words for them are tied to this list.
@@ -150,7 +67,7 @@ pub(crate) fn cut_after_sewn(n: &Node) -> bool {
 
 /// The one object `id` stands for as the settings commands take it (its compound path, for a
 /// member of one); refused when it takes no settings, or is a group of several.
-fn one_taker(d: &Document, id: NodeId) -> Result<NodeId> {
+pub(super) fn one_taker(d: &Document, id: NodeId) -> Result<NodeId> {
     let given = d.node(id).ok_or(EngineError::NoNode(id))?.id;
     let id = compound_of(d, given);
     let (take, skipped) = takers(d, &[id]);
@@ -163,27 +80,8 @@ fn one_taker(d: &Document, id: NodeId) -> Result<NodeId> {
     Ok(id)
 }
 
-/// The object `id` stands for: its compound path when it is one's member, else itself.
-fn compound_of(d: &Document, id: NodeId) -> NodeId {
-    d.parent_of(id).filter(|p| matches!(d.node(*p).map(|n| &n.kind), Some(NodeKind::Compound { .. }))).unwrap_or(id)
-}
-
-/// Whether `n` has a part of kind `kind`: a fill, or a stroke, in its appearance, whether it paints
-/// or not (settings are kept for it either way, and take effect once it paints).
-pub(crate) fn has_part(n: &Node, kind: PartKind) -> bool {
-    n.appearance.items.iter().any(|i| part_kind(i) == kind)
-}
-
-/// The kind of part item `item` is of.
-pub(crate) fn part_kind(item: &AppearanceItem) -> PartKind {
-    match item {
-        AppearanceItem::Fill(_) => PartKind::Fill,
-        AppearanceItem::Stroke(_) => PartKind::Stroke,
-    }
-}
-
 /// The part `v` names: `fill` or `stroke`.
-fn part_param(v: &Value, cmd: &str) -> Result<PartKind> {
+pub(super) fn part_param(v: &Value, cmd: &str) -> Result<PartKind> {
     v.as_str().and_then(PartKind::from_id).ok_or_else(|| bad(cmd, format!("`part` {v}: fill or stroke")))
 }
 
@@ -445,48 +343,6 @@ pub(super) fn point_param(v: &Value, what: &str, cmd: &str) -> Result<Option<Poi
         return Err(refused());
     }
     Ok(Some(Point::new(canonical(x), canonical(y))))
-}
-
-/// `embroidery.setEntryExit`: where one object's part starts and ends.
-pub(super) fn set_entry_exit(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.setEntryExit";
-    let o = object(p, C)?;
-    only(&o, &["id", "part", "entry", "exit"], C)?;
-    let kind = part_param(o.get("part").unwrap_or(&Value::Null), C)?;
-    let mut points = Vec::new();
-    for (key, name) in [(PartKey::Entry, "entry"), (PartKey::Exit, "exit")] {
-        if let Some(v) = o.get(name) {
-            points.push((key, point_param(v, name, C)?.map(PartValue::Point)));
-        }
-    }
-    if points.is_empty() {
-        return Err(bad(C, "give entry, exit or both: [x, y] in points, or null to unset one"));
-    }
-    let d = &s.doc()?.doc;
-    let id = match o.get("id").filter(|v| !v.is_null()) {
-        Some(v) => NodeId(v.as_u64().ok_or_else(|| bad(C, format!("`id` {v}: an object id")))?),
-        None => match s.doc()?.selection.objects.as_slice() {
-            [one] => *one,
-            _ => return Err(bad(C, "select one object, or give its id")),
-        },
-    };
-    let id = one_taker(d, id)?;
-    if !d.node(id).is_some_and(|n| has_part(n, kind)) {
-        return Err(EngineError::Other(format!("object {} has no `{}`", id.0, kind.id())));
-    }
-    let changed = edit_counted(s, ENTRY_EXIT, |d| {
-        edit_each(d, &[id], |e| {
-            e.edit_part(kind, |part| {
-                for (key, value) in &points {
-                    part.set(*key, value.clone());
-                }
-            })
-        })
-    })?;
-    let d = &s.doc()?.doc;
-    let stored =
-        |key: PartKey| d.node(id).and_then(|n| n.extras().embroidery.as_deref()?.part(kind)?.get(key)).as_ref().map_or(Value::Null, value_json);
-    Ok(json!({"id": id.0, "part": kind.id(), "entry": stored(PartKey::Entry), "exit": stored(PartKey::Exit), "changedCount": changed}))
 }
 
 /// Value `v` of key `key` as `embroidery.set` (or, for a point, `embroidery.setEntryExit`) would

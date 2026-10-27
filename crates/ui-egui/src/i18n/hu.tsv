@@ -5890,7 +5890,6 @@ embroidery	by size	méret szerint
 embroidery	Entry and exit	Belépés és kilépés
 embroidery	Set	Beállítva
 embroidery	nearest	legközelebbi
-embroidery	not used yet	még nincs használatban
 embroidery	Set on the selected objects.	A kijelölt objektumokon beállítva.
 embroidery	Nearest to where the needle is.	A tűhöz legközelebb.
 embroidery	built-in values	beépített értékek
@@ -5984,3 +5983,48 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Nincs beilleszt
 @plural	{count} selected object takes no settings and was passed over|{count} selected objects take no settings and were passed over	{count} kijelölt objektum nem fogad beállításokat, kihagyva
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} kijelölt objektum nem fogad beállításokat
+# VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
+embroidery	Entry or exit points missed by more than {value} mm	Több mint {value} mm-rel elvétett be- vagy kilépési pontok
+embroidery	Largest miss: {value} mm	Legnagyobb eltérés: {value} mm
+@plural	{count} point|{count} points	{count} pont
+embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
+# VectorCraft Stitch: the Object tab's entry and exit rows say how far the stitches miss a point set
+embroidery	missed by {value} mm	{value} mm-rel elvétve
+# VectorCraft Stitch: Nearest Connection, in the Embroidery panel's menu, and the line saying what it saved
+	Nearest Connection	Legközelebbi kapcsolódás
+@plural	{count} part set|{count} parts set	{count} rész beállítva
+embroidery	jumps {value} mm shorter	az ugrások {value} mm-rel rövidebbek
+embroidery	jumps no shorter	az ugrások nem rövidebbek
+embroidery	trims {before} → {after}	vágások {before} → {after}
+embroidery	The entry and exit points are already the nearest.	A belépési és kilépési pontok már a legközelebbiek.
+# VectorCraft Stitch: the embroidery tool's name and its status bar hint
+	Embroidery Tool	Hímzés eszköz
+	 a point to move it, or an arrow's head to turn the rows  |  	 egy ponton – áthelyezés, egy nyíl hegyén – a sorok elforgatása  |  
+	 a point or an arrow to put it back to Auto  |  	 egy pontra vagy nyílra – vissza Automatikusra  |  
+# VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
+embroidery	jump {value} mm	ugrás {value} mm
+embroidery	jump {value} mm, cut	ugrás {value} mm, vágás
+embroidery	Stitches update when you pause or let go.	Az öltések megállásnál vagy elengedéskor frissülnek.
+embroidery	Stitches update when you let go.	Az öltések elengedéskor frissülnek.
+# VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
+embroidery	Entry Point	Belépési pont
+embroidery	Exit Point	Kilépési pont
+embroidery	Auto (nearest where the needle is)	Automatikus (a tűhöz legközelebb)
+embroidery	The point is taken to the nearest place the stitches can start or end.	A pont a legközelebbi helyre kerül, ahol az öltések kezdődhetnek vagy végződhetnek.
+# VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
+embroidery	Set on Canvas	Beállítás a vásznon
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Húzza a rész belépési és kilépési pontját a vásznon a Hímzés eszközzel.
+# VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
+embroidery	Nothing here can take entry and exit points	Itt semmi nem kaphat belépési és kilépési pontot
+@plural	{count} object skipped|{count} objects skipped	{count} objektum kihagyva
+# embroidery: Nearest Connection off the interface thread
+embroidery	{percent}% · Esc stops it	{percent}% · Az Esc leállítja
+embroidery	Stopped: nothing was changed.	Leállítva: semmi sem változott.
+embroidery	The document changed meanwhile: nothing was changed.	A dokumentum közben megváltozott: semmi sem változott.
+# embroidery: the Exit Point dialog's Auto
+embroidery	Auto (where the plan ends the part)	Automatikus (ahol a terv befejezi a részt)
+# embroidery: the tool's keys in its hint, and its cap said
+	 an object to show its points  |  	 egy objektumra – pontjainak megjelenítése  |  
+	[ ]	[ ]
+	 step from point to point, the arrows nudge it, Enter types it	 pontról pontra lép, a nyilak elmozdítják, az Enter beírja
+@plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	A belépési és kilépési pontok az első {count} kijelölt objektumnál látszanak

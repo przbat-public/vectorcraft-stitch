@@ -264,6 +264,42 @@ impl LinePicture {
         Some(self.offsets_to_doc().transform_rect_bbox(Rect::new(f64::from(x0), f64::from(y0), f64::from(x1), f64::from(y1))))
     }
 
+    /// The tag of the line drawn on top under `at` (document points), within `tol` document points
+    /// past its laid half width; `None` where no line lies. Lines are walked from the last drawn
+    /// (later lines lie over earlier ones), each tested by its box first, then by its segments: a
+    /// press on the stitches picks what is seen there.
+    pub fn hit(&self, at: Point, tol: f64) -> Option<u32> {
+        let q = self.offsets_to_doc().inverse() * at;
+        let tol = tol / self.to_doc;
+        if !(q.x.is_finite() && q.y.is_finite() && tol.is_finite() && tol >= 0.0) {
+            return None;
+        }
+        let near = |a: [f32; 2], b: [f32; 2]| {
+            let (a, b) = (Point::new(f64::from(a[0]), f64::from(a[1])), Point::new(f64::from(b[0]), f64::from(b[1])));
+            let ab = b - a;
+            let len2 = ab.hypot2();
+            let t = if len2 > 0.0 { ((q - a).dot(ab) / len2).clamp(0.0, 1.0) } else { 0.0 };
+            (a + ab * t).distance(q)
+        };
+        for line in self.lines.iter().rev() {
+            let reach = tol + f64::from(line.width) / 2.0;
+            let [x0, y0, x1, y1] = line.bounds.map(f64::from);
+            if q.x < x0 - reach || q.x > x1 + reach || q.y < y0 - reach || q.y > y1 + reach {
+                continue;
+            }
+            let points = self.points.get(line.points.start as usize..line.points.end as usize).unwrap_or_default();
+            let hit = match points {
+                [] => false,
+                [only] => near(*only, *only) <= reach,
+                _ => points.windows(2).any(|w| near(w[0], w[1]) <= reach),
+            };
+            if hit {
+                return Some(line.tag);
+            }
+        }
+        None
+    }
+
     /// About how many bytes it holds (for the memory bounds of whoever keeps pictures).
     pub fn byte_size(&self) -> usize {
         std::mem::size_of::<Self>()

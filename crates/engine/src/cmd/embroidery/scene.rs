@@ -26,6 +26,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use vectorcraft_doc::embroidery::PartKind;
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_render::lines::{LinePicture, LinePictureBuilder, LineStyle, LinkKind, MarkKind, edge_against};
@@ -76,6 +77,11 @@ pub struct SceneUnit {
     pub entry: Option<Point>,
     pub exit: Option<Point>,
     pub bounds: Option<Rect>,
+    /// The entry and exit points it was planned toward (its part's, when its object sets them),
+    /// and how far its first and last needle points miss them, millimetres
+    /// ([`DesignPlan::missed`]).
+    pub asked: [Option<Point>; 2],
+    pub missed: [Option<f64>; 2],
 }
 
 /// Where a selected object is sewn ([`StitchScene::ends_of`]): its units by tag, in sewing order,
@@ -115,6 +121,15 @@ impl StitchScene {
     /// Each block's colours, by colour slot.
     pub fn blocks(&self) -> &[SceneBlock] {
         &self.blocks
+    }
+
+    /// The object a person selects whose stitches lie on top under `at` (document points), within
+    /// `tol` (document points) past a thread's laid half width, and the part they are of (`None`:
+    /// stitches read from a machine file): the embroidery tool's press on the stitches
+    /// ([`LinePicture::hit`]). `None` where no stitch lies.
+    pub fn pick(&self, at: Point, tol: f64) -> Option<(NodeId, Option<PartKind>)> {
+        let tag = self.picture.hit(at, tol)?;
+        self.units.get(usize::try_from(tag).ok()?).map(|u| (u.object, u.key.part.kind()))
     }
 
     /// Each unit, by tag (the plan's unit index).
@@ -258,7 +273,8 @@ pub fn scene(plan: &DesignPlan) -> StitchScene {
             let entry = needle.next();
             let exit = needle.next_back().or(entry);
             let bounds = u.bounds.map(|r| Rect::from_points(to_pt(Point::new(r.x0, r.y0)), to_pt(Point::new(r.x1, r.y1))));
-            SceneUnit { object: u.origin.selected(), key: u.key(), block: u.block, entry, exit, bounds }
+            let asked = [u.asked.entry.map(to_pt), u.asked.exit.map(to_pt)];
+            SceneUnit { object: u.origin.selected(), key: u.key(), block: u.block, entry, exit, bounds, asked, missed: plan.missed(i) }
         })
         .collect();
     let picture = b.build();

@@ -220,6 +220,18 @@ fn planning_with_its_progress_then_a_failure_over_the_last_stitches() {
 
 /// The ≡ menu drawn alone at `time` with `events` → its items as a screen reader has them: the
 /// node, the words, and whether the item is on.
+/// Frames until Nearest Connection's search under way is applied (a second at most).
+fn finish_nearest(app: &mut VectorcraftApp, ctx: &egui::Context) {
+    for _ in 0..1000 {
+        if !crate::embroidery::nearest::running(app) {
+            return;
+        }
+        crate::embroidery::nearest::poll(app, ctx);
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+    panic!("Nearest Connection still running");
+}
+
 fn menu_items(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<egui::Event>) -> Vec<(egui::accesskit::NodeId, String, bool)> {
     let raw = egui::RawInput { time: Some(time), events, ..Default::default() };
     let mut out = ctx.run_ui(raw, |ui| menu(app, ui));
@@ -401,4 +413,60 @@ fn the_dock_is_widened_only_just_after_window_embroidery() {
         drawn.iter().any(|(_, words, clip)| words.left() < clip.left() - 0.5 || words.right() > clip.right() + 0.5),
         "not widened later: {drawn:?}"
     );
+}
+
+/// Nearest Connection from the ≡ menu, on the whole design with nothing selected: one undo step,
+/// and a line on the status bar saying how many parts it set and what it saved; run again, that the
+/// points are the nearest already.
+#[test]
+fn nearest_connection_from_the_menu_says_what_it_saved() {
+    use egui::accesskit::{Action, ActionRequest, TreeId};
+    let ctx = egui::Context::default();
+    ctx.enable_accesskit();
+    let mut app = blank_app();
+    app.run("file.new", json!({"width": 400, "height": 400, "artboards": 1})).unwrap();
+    app.run("paint.setFill", json!({"none": true})).unwrap();
+    app.run("paint.setStroke", json!({"color": "#2233cc"})).unwrap();
+    // Three running lines (millimetres from 30 mm): the second, started at its end nearer the first,
+    // would end 13 mm from the third, past the 10 mm trim length.
+    let pt = |v: f64| (30.0 + v) * 72.0 / 25.4;
+    for ((ax, ay), (bx, by)) in [((-20.0, 10.0), (0.0, 0.0)), ((1.0, 0.0), (-6.0, 0.0)), ((7.0, 0.0), (27.0, 0.0))] {
+        let d = format!("M {} {} L {} {}", pt(ax), pt(ay), pt(bx), pt(by));
+        let id = app.run("path.create", json!({ "d": d })).unwrap()["id"].clone();
+        app.run("stroke.set", json!({"weight": 1.0, "ids": [id]})).unwrap();
+    }
+    app.run("select.set", json!({"ids": []})).unwrap();
+    let click =
+        |id| egui::Event::AccessKitActionRequest(ActionRequest { action: Action::Click, target_node: id, target_tree: TreeId::ROOT, data: None });
+    let nearest = |items: &[(egui::accesskit::NodeId, String, bool)]| {
+        items.iter().find(|(_, w, _)| w == "Nearest Connection").map(|(id, _, on)| (*id, *on)).unwrap_or_else(|| panic!("{items:?}"))
+    };
+    let (id, on) = nearest(&menu_items(&mut app, &ctx, 0.0, vec![]));
+    assert!(on, "on with a document, nothing selected: the whole design");
+    let undo = app.session.doc().unwrap().history.undo.len();
+    menu_items(&mut app, &ctx, 0.01, vec![click(id)]);
+    // It searches off the interface thread: the status bar says how far, until it is applied.
+    assert!(crate::embroidery::nearest::running(&app) && app.ui.status.starts_with("Nearest Connection… "), "{}", app.ui.status);
+    finish_nearest(&mut app, &ctx);
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
+    assert!(app.ui.status.starts_with("Nearest Connection · 3 parts set · jumps ") && app.ui.status.ends_with(" · trims 1 → 0"), "{}", app.ui.status);
+    let (id, _) = nearest(&menu_items(&mut app, &ctx, 0.02, vec![]));
+    menu_items(&mut app, &ctx, 0.03, vec![click(id)]);
+    finish_nearest(&mut app, &ctx);
+    assert_eq!(app.ui.status, "Nearest Connection · The entry and exit points are already the nearest.");
+    assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1, "no step the second time");
+}
+
+/// Nearest Connection's line says what it did: parts set, or already the nearest when it joined
+/// parts and moved none, or that nothing in scope can take points when it joined none (lettering
+/// converted to outlines, symbol instances…), with how many objects it passed over. Before, a scope
+/// of nothing it could set read "already the nearest", which is false.
+#[test]
+fn nearest_connection_says_when_nothing_can_take_points() {
+    let lang = crate::i18n::Lang::from_code("en").unwrap();
+    let reply = |changed: u64, unchanged: u64, skipped: u64| json!({"changedCount": changed, "unchangedCount": unchanged, "skippedCount": skipped});
+    assert_eq!(nearest_words(&reply(0, 3, 0), lang), "The entry and exit points are already the nearest.");
+    assert_eq!(nearest_words(&reply(0, 0, 2), lang), "Nothing here can take entry and exit points · 2 objects skipped");
+    assert_eq!(nearest_words(&reply(0, 0, 1), lang), "Nothing here can take entry and exit points · 1 object skipped");
+    assert_eq!(nearest_words(&reply(0, 0, 0), lang), "Nothing here can take entry and exit points");
 }

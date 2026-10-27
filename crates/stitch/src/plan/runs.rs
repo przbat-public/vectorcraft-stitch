@@ -6,7 +6,7 @@ use vectorcraft_geom::Point;
 
 use super::area::{TRAVEL_STITCH, Travels};
 use super::geometry::{length, resample, unit};
-use super::{MAX_RUNS, MAX_STITCHES, Params, Style};
+use super::{MAX_RUNS, MAX_STITCHES, POINT_MISS_MM, Params, Style};
 use crate::{Command, SAME_POINT, Stitch};
 
 /// The reach of a lock stitch, tie-in or tie-off (millimetres): how far the needle steps along the
@@ -50,6 +50,10 @@ pub(super) const COST_TRIM: f64 = 50.0;
 /// Per millimetre from where the needle came from outside the shape (the object sewn before): a
 /// little, so that of two orders the one starting nearer wins.
 pub(super) const COST_ENTRY: f64 = 0.1;
+/// Per millimetre a shape's end lies from the exit point its object sets, when ways of sewing it
+/// are weighed: as much as a travel that shows, since the person asked for that end (twelve
+/// millimetres of travel hidden under stitching still to come are worth one millimetre nearer).
+pub(super) const COST_EXIT: f64 = COST_SEEN;
 
 /// A shape's runs in sewing order, each with how the needle gets to it.
 #[derive(Default)]
@@ -61,12 +65,78 @@ pub(super) struct Runs {
     /// The needle starts inside the shape (its runs so far end there), so the first run is
     /// reached by travelling too.
     inside: bool,
+    /// The needle goes in where it starts (an entry point, [`Runs::lead_from`]): the way to the
+    /// first run is sewn from there, however short.
+    lead: bool,
+    /// Where the first run reached by a move of this shape's starts inside the shape (before pull
+    /// compensation stretched it past the edge), when one was.
+    opened: Option<Point>,
     /// Where the last run ends before pull compensation stretched it past the shape's edge (a fill
     /// row's end on the outline), `None` when it ends where it is: the travels inside the shape
     /// start there.
     inner: Option<Point>,
     /// What the moves between runs cost so far ([`COST_HIDDEN`] and the rest).
     pub(super) cost: f64,
+    /// What those moves are, counted beside their cost (which they leave as it is): the lifts of
+    /// the needle, those of them that cut the thread, and how far travels run over stitching
+    /// already sewn (millimetres). A plan aimed at an exit is kept only when it has no more of each
+    /// than the plan without it.
+    pub(super) moves: Moves,
+}
+
+/// The moves between a shape's runs that show, counted ([`Runs::moves`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(super) struct Moves {
+    /// Lifts of the needle inside the shape (jumps).
+    pub(super) lifts: usize,
+    /// Of those, the ones longer than [`Params::trim`]: the thread is cut first.
+    pub(super) trims: usize,
+    /// Millimetres of travel over stitching already sewn: it shows on top.
+    pub(super) seen: f64,
+}
+
+impl Moves {
+    /// Whether these are no more than `other`'s: no more lifts, no more cuts, and no more travel
+    /// over stitching already sewn than `slack` millimetres beyond `other`'s (float noise aside,
+    /// [`SAME_POINT`]): [`FILL_SEEN_SLACK`] for a fill's rows, none for a line.
+    pub(super) fn within(&self, other: &Moves, slack: f64) -> bool {
+        self.lifts <= other.lifts && self.trims <= other.trims && self.seen <= other.seen + slack + SAME_POINT
+    }
+
+    /// These with the move in from `from` (where the needle is before the shape, if known) to
+    /// `first` (its first needle point) counted, as the sequence joins objects: a lift past
+    /// [`Params::jump`], a cut past [`Params::trim`].
+    pub(super) fn moved_in(self, from: Option<Point>, first: Option<Point>, p: &Params) -> Self {
+        let Some(d) = from.zip(first).map(|(a, b)| a.distance(b)).filter(|d| d.is_finite()) else { return self };
+        Self { lifts: self.lifts + usize::from(d > p.jump), trims: self.trims + usize::from(d > p.trim), ..self }
+    }
+}
+
+/// The stitch a lead sews from where the needle goes in when no way inside leads on, millimetres:
+/// something to tie on to before the jump (an estimate: a short running stitch); and how many
+/// directions it tries, an eighth of a turn apart, for one that stays inside.
+const LEAD_TIE: f64 = 1.0;
+const TIE_TRIES: usize = 8;
+
+/// How much more travel over stitching already sewn a fill's rows aimed at an exit may show than
+/// without it, millimetres: the miss the Check tab lets pass ([`POINT_MISS_MM`]), and no more (the
+/// project owner's choice, 2026-10-26). The turn round a row's end at the cut an exit makes shows
+/// about half a millimetre: measured on a rectangle with its exit mid-side, 0.47 mm of travel ends it
+/// 0.30 mm from its exit, against 29.4 mm with none allowed. Lines and satins may show none more.
+pub(super) const FILL_SEEN_SLACK: f64 = POINT_MISS_MM;
+
+/// Whether a plan aimed at an exit, ending `aimed` millimetres from it, gains enough over the plan
+/// without it, ending `plain` from it, to be kept: at least [`POINT_MISS_MM`] nearer.
+pub(super) fn gains(aimed: f64, plain: f64) -> bool {
+    aimed + POINT_MISS_MM <= plain
+}
+
+/// Whether a plan aimed at an exit could gain enough ([`gains`]) on the plan without it, ending
+/// `plain` millimetres from the exit: not when that ends within [`POINT_MISS_MM`] of it, and then
+/// the aimed plan isn't sewn at all (a part given the points it starts and ends at now, as
+/// Nearest Connection gives every part it joins, plans once).
+pub(super) fn can_gain(plain: f64) -> bool {
+    gains(0.0, plain)
 }
 
 impl Runs {
@@ -76,10 +146,42 @@ impl Runs {
         Self { start: start.filter(|q| q.x.is_finite() && q.y.is_finite()), ..Self::default() }
     }
 
+    /// No runs yet: the needle goes in at `at` (where a fill is entered, [`super::fill`]; `inside`,
+    /// where that is inside the shape when pull compensation stretched it past the edge), and its
+    /// first stitches travel from there to the first run, hidden under the stitching to come. A
+    /// shape that has runs already is left as it is.
+    pub(super) fn lead_from(&mut self, at: Point, inside: Option<Point>) {
+        if self.runs.is_empty() && at.x.is_finite() && at.y.is_finite() {
+            (self.start, self.inside, self.lead, self.inner) = (Some(at), true, true, inside);
+        }
+    }
+
+    /// Where the first run starts inside the shape, when a move of this shape reached it.
+    pub(super) fn opened(&self) -> Option<Point> {
+        self.opened
+    }
+
     /// No runs yet, to follow `before`'s runs: from where they end, inside the shape when they
     /// have any.
     pub(super) fn continuing(before: &Runs) -> Self {
-        Self { start: before.here(), inside: !before.runs.is_empty() || before.inside, inner: before.inner, ..Self::default() }
+        let lead = before.lead && before.runs.is_empty();
+        Self { start: before.here(), inside: !before.runs.is_empty() || before.inside, lead, inner: before.inner, ..Self::default() }
+    }
+
+    /// Whether no run is sewn yet.
+    pub(super) fn is_empty(&self) -> bool {
+        self.runs.is_empty()
+    }
+
+    /// Whether the needle starts inside the shape (its runs so far end there, or it goes in at an
+    /// entry point), not reached from the object sewn before.
+    pub(super) fn inside(&self) -> bool {
+        self.inside
+    }
+
+    /// The first needle point of the runs, if any.
+    pub(super) fn first(&self) -> Option<Point> {
+        self.runs.first().and_then(|(run, _)| run.first().copied())
     }
 
     /// Where the needle is after the last run (before the first: where it starts from).
@@ -147,7 +249,12 @@ impl Runs {
         seen: &dyn Fn(&[Point]) -> f64,
         p: &Params,
     ) -> Travel {
+        if self.runs.is_empty() {
+            self.opened = Some(to_inside);
+        }
         let (Some(here), Some(from)) = (self.here(), self.here_inside()) else { return Travel::Auto };
+        // The first way from where the needle goes in is sewn, so that it goes in there.
+        let lead = std::mem::take(&mut self.lead) && self.runs.is_empty();
         let d = here.distance(to);
         // What the move costs is judged inside the shape, between the places pull compensation
         // stretched the ends from: the compensation changes no sewing order.
@@ -159,12 +266,18 @@ impl Runs {
         if d <= p.jump && travels.area.contains_segment(from, to_inside) {
             let shows = seen(&[from, to_inside]);
             self.cost += COST_HIDDEN * (inside - shows) + COST_SEEN * shows;
+            self.moves.seen += shows;
+            if lead {
+                self.push(vec![here, to], Travel::Sew);
+                return Travel::Sew;
+            }
             return Travel::Auto;
         }
         if let Some(mut route) = travels.way(from, to_inside) {
             let shows = seen(&route);
             if shows <= max_seen {
                 self.cost += COST_HIDDEN * (length(&route, false) - shows) + COST_SEEN * shows;
+                self.moves.seen += shows;
                 // The way runs between the two places inside; the needle is at, and goes to, the
                 // ends pull compensation stretched.
                 if let Some(first) = route.first_mut() {
@@ -178,11 +291,43 @@ impl Runs {
             }
         }
         self.cost += COST_LIFT + inside + if d > p.trim { COST_TRIM } else { 0.0 };
+        // Counted as [`Runs::join`] sews it: a lift shorter than the shortest stitch is none there.
+        self.moves.lifts += usize::from(d >= p.min_stitch);
+        self.moves.trims += usize::from(d > p.trim);
+        if lead {
+            // No way inside from where the needle goes in: it goes in there all the same, with a
+            // stitch to tie on to before the jump (a needle point alone can't be tied off): toward
+            // where it goes next, else the first of the eighths of a turn from there that stays
+            // inside.
+            let toward = to_inside - from;
+            let step = (0..TIE_TRIES)
+                .map(|k| vectorcraft_geom::Affine::rotate(std::f64::consts::TAU * k as f64 / TIE_TRIES as f64) * toward.to_point())
+                .map(|v| v.to_vec2().normalize() * LEAD_TIE)
+                .find(|v| v.x.is_finite() && v.y.is_finite() && travels.area.contains_segment(from, from + *v));
+            self.push(step.map_or_else(|| vec![here], |v| vec![here, here + v]), Travel::Auto);
+        }
         Travel::Lift
+    }
+
+    /// How far the needle is sewn between runs reached as any move is ([`Travel::Auto`]) and no
+    /// longer than [`Params::jump`] (millimetres): a line's connecting stitches between its
+    /// subpaths, which [`Runs::join`] sews straight across, on top of what is sewn.
+    pub(super) fn connectors(&self, p: &Params) -> f64 {
+        self.runs
+            .windows(2)
+            .filter_map(|w| {
+                let [(before, _), (run, Travel::Auto)] = w else { return None };
+                let d = before.last()?.distance(*run.first()?);
+                (d > SAME_POINT && d <= p.jump).then_some(d)
+            })
+            .sum()
     }
 
     /// `other`'s runs (planned from where these end, [`Runs::continuing`]) after these.
     pub(super) fn append(&mut self, other: Runs) {
+        if self.runs.is_empty() && self.opened.is_none() {
+            self.opened = other.opened;
+        }
         let stretched = !other.runs.is_empty();
         for (run, travel) in other.runs {
             self.push(run, travel);
@@ -191,6 +336,9 @@ impl Runs {
             self.inner = other.inner;
         }
         self.cost += other.cost;
+        self.moves.lifts += other.moves.lifts;
+        self.moves.trims += other.moves.trims;
+        self.moves.seen += other.moves.seen;
     }
 
     /// The runs as one block of stitches. Satin and fill tie the thread in after every jump longer

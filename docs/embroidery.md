@@ -2407,7 +2407,8 @@ position. Not one tool per kind, which would have to be merged later. The rules 
   object's part today (`Owner::Part`), the document later (the hoop); the index is 0 for an entry,
   an exit or an angle, and counts angle lines, rungs and needle points later. The tool's options
   give the hovered, focused and dragged handles as `{kind, id, part, index}`, a shape replies only
-  add to.
+  add to; a handle the document owns will have `id` and `part` null, so a reader takes either as
+  possibly null.
 - **One provider, called every time.** `handles(cx, part)` builds the list from the document (the
   values set) and from what the engine hands in through one `ToolContext` field while the tool is
   active (`PlanFacts`: where the plan shown sews each part, its neighbours along the thread, the

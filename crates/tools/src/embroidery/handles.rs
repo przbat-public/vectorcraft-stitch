@@ -94,7 +94,8 @@ impl Kind {
     }
 }
 
-/// What a handle belongs to.
+/// What a handle belongs to: an object's part today; the document (the hoop) later, which will
+/// make [`Owner::part`] an `Option` and give such a handle `id` and `part` null in the tool's options.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Owner {
     /// A part of an object: its fill or its stroke.
@@ -120,16 +121,6 @@ pub enum State {
     Auto,
     /// Auto, from a plan of the object as it was: drawn dim until the plan catches up.
     Stale,
-}
-
-impl State {
-    pub fn id(self) -> &'static str {
-        match self {
-            State::Set => "set",
-            State::Auto => "auto",
-            State::Stale => "stale",
-        }
-    }
 }
 
 /// What names a handle from one call to the next: its kind, its owner, and which of the owner's

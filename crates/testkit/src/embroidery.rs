@@ -352,6 +352,13 @@ pub const MANUAL_PAGE: (f64, f64) = (1700.0, 800.0);
 const DESIGN_STEP: f64 = 400.0;
 /// Where [`manual`] lays the runs of its own, points from the page's top: below the designs.
 const RUNS_TOP: f64 = 500.0;
+/// Where [`manual`] lays the objects it converts to manual stitches, points: right of the runs,
+/// side by side, two rows.
+const CONVERTED_LEFT: f64 = 1100.0;
+const CONVERTED_TOP: f64 = 500.0;
+/// How far apart, and how large, the converted objects are, points.
+const CONVERTED_STEP: f64 = 80.0;
+const CONVERTED_SIDE: f64 = 50.0;
 /// How far apart [`manual`] lays its own runs, points.
 const RUN_STEP: f64 = 60.0;
 
@@ -384,12 +391,37 @@ pub struct Manual {
     pub locked: u64,
     /// A hidden run.
     pub hidden: u64,
+    /// A run the machine stops in (after its second needle point) and after (`stop_after`).
+    pub stopped: u64,
+    /// Objects converted to manual stitches, each a group of runs keeping the object's id.
+    pub converted: Converted,
+}
+
+/// The objects [`manual`] converts to manual stitches, by what each was.
+#[derive(Clone, Copy, Debug)]
+pub struct Converted {
+    /// A filled rectangle.
+    pub fill: u64,
+    /// A stroked open path (a running line).
+    pub stroke: u64,
+    /// A rectangle both filled and stroked (a satin column round it).
+    pub both: u64,
+    /// A compound path of two rectangles.
+    pub compound: u64,
+    /// A group of two rectangles in two threads, given to the command as the group: each member
+    /// converted on its own, so the group holds two converted objects.
+    pub group: u64,
+    /// The clipped member of a clip group (a rectangle the clipping circle cuts).
+    pub clip_member: u64,
+    /// An object expanded for sewing: a rectangle with a second stroke.
+    pub expanded: u64,
 }
 
 /// One document holding each kind of run of literal stitches the stitch commands meet: designs
 /// opened from DST, PES, JEF and VP3 files (their colour blocks' groups and runs), runs of one
-/// needle point and of two at one spot, runs with a cut before and after, a run edited into a
-/// curve, a run inside a symbol's art, a locked run and a hidden one. Starts a new document,
+/// needle point and of two at one spot, runs with a cut before and after, a run the machine stops
+/// in and after, a run edited into a curve, a run inside a symbol's art, a locked run and a hidden
+/// one, and objects converted to manual stitches ([`Converted`]). Starts a new document,
 /// [`MANUAL_PAGE`] in size (others are opened and closed on the way: it is the only one left
 /// open, and active), and leaves nothing selected.
 pub fn manual(run: Run) -> Manual {
@@ -427,6 +459,10 @@ pub fn manual(run: Run) -> Manual {
         own.push(*runs.first().unwrap_or_else(|| panic!("no run pasted: {top}")));
     }
     let [one_point, double_point, trim_before, trim_after, curved, hidden] = own.try_into().unwrap_or_else(|o| panic!("six runs: {o:?}"));
+    let top = pasted(run);
+    run("object.move", json!({"ids": [top], "dx": 900.0, "dy": RUNS_TOP + 4.0 * RUN_STEP}));
+    run("select.none", json!({}));
+    let stopped = *runs_under(run, top).first().unwrap_or_else(|| panic!("no run pasted: {top}"));
     // The runs edited in the file, as a newer version or a file of another maker might hold them,
     // and opened again: the same ids.
     let data = run("document.serialize", json!({"format": "vectorcraft"}))["dataBase64"].as_str().map(str::to_string);
@@ -443,6 +479,10 @@ pub fn manual(run: Run) -> Manual {
     });
     edit_node(&mut file, trim_before, |n| n["embroidery"]["stitches"]["trim_before"] = json!(true));
     edit_node(&mut file, trim_after, |n| n["embroidery"]["stitches"]["trim_after"] = json!(true));
+    edit_node(&mut file, stopped, |n| {
+        n["embroidery"]["stitches"]["stops"] = json!([[0, 1]]);
+        n["embroidery"]["stitches"]["stop_after"] = json!(true);
+    });
     edit_node(&mut file, curved, |n| {
         let anchors = &mut n["kind"]["path"]["subpaths"][0]["anchors"];
         let middle = anchors.as_array().map_or(0, Vec::len) / 2;
@@ -465,13 +505,61 @@ pub fn manual(run: Run) -> Manual {
     run("object.move", json!({"ids": [top], "dx": 900.0, "dy": RUNS_TOP}));
     let instance = id(&run("symbol.new", json!({"name": "Manual run"})));
     run("select.none", json!({}));
+    let converted = converted(run);
     let locked_layer = id(&run("layer.new", json!({})));
     let top = pasted(run);
     run("object.move", json!({"ids": [top], "dx": 900.0, "dy": RUNS_TOP + 2.0 * RUN_STEP}));
     run("select.none", json!({}));
     let locked = *runs_under(run, top).first().unwrap_or_else(|| panic!("no run pasted: {top}"));
     run("layer.setProps", json!({"id": locked_layer, "locked": true}));
-    Manual { opened, one_point, double_point, trim_before, trim_after, curved, instance, locked, hidden }
+    Manual { opened, one_point, double_point, trim_before, trim_after, curved, instance, locked, hidden, stopped, converted }
+}
+
+/// The objects [`manual`] converts to manual stitches, drawn right of its runs and converted each
+/// on its own, by one command; nothing is left selected.
+fn converted(run: Run) -> Converted {
+    let at = |k: usize| (CONVERTED_LEFT + CONVERTED_STEP * (k % 4) as f64, CONVERTED_TOP + CONVERTED_STEP * (k / 4) as f64);
+    let side = CONVERTED_SIDE;
+    let (x, y) = at(0);
+    let fill = rect(run, RED, x, y, side, side);
+    let (x, y) = at(1);
+    let stroke = stroke(run, BLUE, RUNNING_WEIGHT, &[(x, y), (x + side, y + side / 2.0), (x, y + side)]);
+    let (x, y) = at(2);
+    let both = rect(run, BLUE, x, y, side, side);
+    run("paint.setStroke", json!({"color": RED, "ids": [both]}));
+    run("stroke.set", json!({"weight": SATIN_WEIGHT, "ids": [both]}));
+    run("select.none", json!({}));
+    let (x, y) = at(3);
+    let outer = rect(run, GREEN, x, y, side, side);
+    let inner = rect(run, GREEN, x + side / 4.0, y + side / 4.0, side / 2.0, side / 2.0);
+    run("select.set", json!({"ids": [outer, inner]}));
+    let compound = id(&run("object.compoundPath.make", json!({})));
+    run("select.none", json!({}));
+    let (x, y) = at(4);
+    let a = rect(run, RED, x, y, side / 2.0, side);
+    let b = rect(run, BLUE, x + side / 2.0, y, side / 2.0, side);
+    run("select.set", json!({"ids": [a, b]}));
+    let group = id(&run("object.group", json!({})));
+    run("select.none", json!({}));
+    let (x, y) = at(5);
+    let clip_member = rect(run, GREEN, x, y, side, side);
+    run("paint.setFill", json!({"none": true}));
+    run("paint.setStroke", json!({"none": true}));
+    let circle = id(&run("shape.ellipse", json!({"x": x + side / 4.0, "y": y, "width": side, "height": side})));
+    run("select.set", json!({"ids": [clip_member, circle]}));
+    run("object.clippingMask.make", json!({}));
+    run("select.none", json!({}));
+    let (x, y) = at(6);
+    let expanded = rect(run, RED, x, y, side, side);
+    run("paint.setStroke", json!({"color": BLUE, "ids": [expanded]}));
+    run("appearance.addStroke", json!({"ids": [expanded]}));
+    run("select.none", json!({}));
+    let given = [fill, stroke, both, compound, group, clip_member, expanded];
+    let done = run("embroidery.convertToManual", json!({ "ids": given }));
+    // The group's two members, not the group.
+    assert_eq!(done["convertedCount"], json!(given.len() + 1), "every fixture object converted: {done}");
+    run("select.none", json!({}));
+    Converted { fill, stroke, both, compound, group, clip_member, expanded }
 }
 
 /// What the clipboard holds, pasted: the id of its top object (left selected).

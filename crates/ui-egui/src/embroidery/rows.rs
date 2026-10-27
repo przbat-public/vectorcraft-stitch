@@ -324,8 +324,9 @@ pub(crate) fn heading(ui: &mut Ui, words: &str) {
 }
 
 /// A section's heading with a button at its right that sets the section's values elsewhere (Set on
-/// Canvas, `tip` its tooltip) → whether it was pressed. Where the two don't fit on one line the
-/// button goes under the heading, still at the right.
+/// Canvas, `tip` its tooltip, shown on the keyboard's focus too, and what screen readers hear
+/// after its name) → whether it was pressed. Where the two don't fit on one line the button goes
+/// under the heading, still at the right.
 pub(crate) fn heading_with_button(ui: &mut Ui, words: &str, button: &str, tip: &str) -> bool {
     let t = Tokens::get(ui.ctx());
     ui.add_space(GAP);
@@ -335,7 +336,10 @@ pub(crate) fn heading_with_button(ui: &mut Ui, words: &str, button: &str, tip: &
     let mut pressed = false;
     let mut add_button = |ui: &mut Ui| {
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            let resp = ui.add(egui::Button::new(egui::RichText::new(button).size(SMALL_TEXT)).small()).on_hover_text(tip);
+            let resp = ui.add(egui::Button::new(egui::RichText::new(button).size(SMALL_TEXT)).small());
+            keyboard_tip(ui, resp.id, tip);
+            ui.ctx().accesskit_node_builder(resp.id, |node| node.set_description(tip));
+            let resp = resp.on_hover_text(tip);
             pressed = resp.clicked();
             // What it starts takes the keyboard (the canvas's tool): the button lets it go.
             if pressed {
@@ -489,7 +493,7 @@ fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
 
 /// A value set elsewhere, drawn as a field holding it that a click, or Enter or Space with the
 /// keyboard's focus on it, opens → whether it was pressed. Screen readers hear a button named as a
-/// read-only field is ("Entry: Set").
+/// read-only field is ("Entry: Set"); its help shows on the keyboard's focus too.
 fn button_field(ui: &mut Ui, width: f32, row: &Row<'_>, words: &str, colour: Color32) -> bool {
     let t = Tokens::get(ui.ctx());
     let (rect, resp) = ui.allocate_exact_size(vec2(width, WORDS_HEIGHT), Sense::click());
@@ -508,6 +512,7 @@ fn button_field(ui: &mut Ui, width: f32, row: &Row<'_>, words: &str, colour: Col
     let said = crate::embroidery::text::fill(crate::et!("{section}: {setting}"), &[("section", row.name), ("setting", words)]);
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, said.clone()));
     ui.ctx().accesskit_node_builder(resp.id, |node| node.set_description(row.description.clone()));
+    keyboard_tip(ui, resp.id, row.tip);
     let resp = resp.on_hover_text(row.tip);
     resp.clicked()
 }

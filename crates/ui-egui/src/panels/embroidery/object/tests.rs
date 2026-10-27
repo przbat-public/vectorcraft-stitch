@@ -680,6 +680,38 @@ fn a_settings_help_shows_on_the_keyboards_focus() {
     assert!(shown, "the help as its tooltip");
 }
 
+/// Set on Canvas and the entry's row give their help on the keyboard's focus too, as the fields do,
+/// and screen readers hear Set on Canvas's with its name.
+#[test]
+fn set_on_canvas_and_the_point_rows_help_on_the_keyboards_focus() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let canvas_tip = crate::et!("Drag this part's entry and exit points on the canvas with the embroidery tool.");
+    assert_eq!(drawn.node(crate::et!("Set on Canvas")).description(), Some(canvas_tip));
+    let entry = drawn
+        .nodes
+        .iter()
+        .filter_map(|(_, n)| n.label())
+        .find(|l| l.starts_with(&format!("{}: ", vocabulary::label("entry", None))))
+        .expect("the entry's row")
+        .to_string();
+    for (name, tip) in [(crate::et!("Set on Canvas").to_string(), canvas_tip), (entry, vocabulary::tip("entry"))] {
+        let drawn = ready(&mut app, &ctx, &mut time);
+        assert!(!drawn.has(tip), "{name}: no tooltip yet");
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![drawn.focus(&name)]);
+        let mut shown = false;
+        for _ in 0..4 {
+            time += 0.05;
+            shown |= frame(&mut app, &ctx, time, vec![]).has(tip);
+        }
+        assert!(shown, "{name}: its help as its tooltip");
+    }
+}
+
 /// Text a field can't read as a number (a comma in a point language: "1,000" would read as one)
 /// isn't taken, and the status bar says so instead of the field going back silently.
 #[test]

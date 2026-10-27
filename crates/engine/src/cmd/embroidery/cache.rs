@@ -24,7 +24,7 @@ use std::sync::Arc;
 use vectorcraft_geom::{BezPath, FillRule, PathEl, Point};
 use vectorcraft_stitch::plan::{Params, Start, Style, Underlay};
 
-use super::unit::{UnitRequest, UnitStitches};
+use super::unit::{Parted, UnitRequest, UnitStitches};
 
 /// The most stitches the units kept for one document may hold, a key's own length counted as
 /// stitches of the same size (a stitch is three 64-bit words: two coordinates and a command):
@@ -41,6 +41,8 @@ const WORDS_PER_STITCH: usize = 3;
 pub(crate) const MAX_KEPT_SHAPE_WORDS: usize = 4_000_000;
 /// The words a kept area's path takes per element, at most (a curve's tag and three points).
 const WORDS_PER_ELEMENT: usize = 7;
+/// The words a narrow part's station takes: two points.
+const WORDS_PER_STATION: usize = 4;
 /// The most shared key parts ([`Shared`]) one document keeps: past it, they are forgotten (keys
 /// that hold one keep it) and shared again from the next. Many more than a design's clip groups.
 const MAX_SHARED: usize = 1024;
@@ -136,6 +138,16 @@ impl UnitKey {
     fn words(&self) -> usize {
         self.own.len()
     }
+}
+
+/// The key a fill's narrow parts and its rest are kept by ([`Parted`]): what they are found from,
+/// its shape, its fill rule and its widest narrow part, nothing of where it starts or ends.
+pub(crate) fn parts_key(shape: &BezPath, rule: FillRule, narrow: f64) -> UnitKey {
+    let mut k = Vec::new();
+    path(&mut k, shape);
+    k.push(rule_word(rule));
+    k.push(narrow.to_bits());
+    UnitKey::new(k, None)
 }
 
 /// A clipping path's words in a key: the path, then its fill rule.
@@ -350,6 +362,9 @@ pub(crate) struct Shaped {
 pub(crate) struct UnitCache {
     units: Lru<Arc<UnitStitches>>,
     shapes: Lru<Arc<Shaped>>,
+    /// A fill's narrow parts and its rest ([`Parted`]), within the areas' bound
+    /// ([`MAX_KEPT_SHAPE_WORDS`]).
+    parts: Lru<Arc<Parted>>,
     shared: HashSet<Arc<Shared>>,
 }
 
@@ -362,13 +377,14 @@ impl Default for UnitCache {
 impl UnitCache {
     /// A cache whose units hold at most `limit` stitches.
     pub(crate) fn with_limit(limit: usize) -> Self {
-        Self { units: Lru::new(limit), shapes: Lru::new(MAX_KEPT_SHAPE_WORDS), shared: HashSet::new() }
+        Self { units: Lru::new(limit), shapes: Lru::new(MAX_KEPT_SHAPE_WORDS), parts: Lru::new(MAX_KEPT_SHAPE_WORDS), shared: HashSet::new() }
     }
 
     /// A plan begins: the units and areas it uses and adds are its own until the next begins.
     pub(crate) fn begin(&mut self) {
         self.units.begin();
         self.shapes.begin();
+        self.parts.begin();
     }
 
     /// The stitches kept for `key`, now the most recently used.
@@ -392,6 +408,22 @@ impl UnitCache {
     pub(crate) fn keep_shape(&mut self, key: UnitKey, shaped: Arc<Shaped>) {
         let cost = shaped.area.elements().len().saturating_mul(WORDS_PER_ELEMENT).saturating_add(key.words());
         self.shapes.insert(key, shaped, cost);
+    }
+
+    /// The narrow parts and the rest kept for `key` ([`parts_key`]), now the most recently used.
+    pub(crate) fn parts(&mut self, key: &UnitKey) -> Option<Arc<Parted>> {
+        self.parts.get(key)
+    }
+
+    /// Keep `parted` for `key`: its stations' words, its paths' and its key's count.
+    pub(crate) fn keep_parts(&mut self, key: UnitKey, parted: Arc<Parted>) {
+        let stations: usize = parted.found.iter().map(|c| c.stations.len().saturating_mul(WORDS_PER_STATION)).sum();
+        let paths = parted
+            .cut
+            .as_ref()
+            .map_or(0, |(rest, whole)| rest.elements().len().saturating_add(whole.elements().len()).saturating_mul(WORDS_PER_ELEMENT));
+        let cost = stations.saturating_add(paths).saturating_add(key.words());
+        self.parts.insert(key, parted, cost);
     }
 
     /// `words` as a part keys share: the one kept already when one is equal, so that keys holding
@@ -424,5 +456,11 @@ impl UnitCache {
     #[cfg(test)]
     pub(crate) fn shapes(&self) -> usize {
         self.shapes.kept.len()
+    }
+
+    /// How many fills' narrow parts and rests are kept.
+    #[cfg(test)]
+    pub(crate) fn parted(&self) -> usize {
+        self.parts.kept.len()
     }
 }

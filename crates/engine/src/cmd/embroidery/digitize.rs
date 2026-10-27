@@ -17,11 +17,11 @@ use vectorcraft_stitch::plan::{self, Start, Style};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch, Thread, pt_to_mm};
 
 use super::Options;
-use super::cache::{Shaped, Shared, UnitCache, UnitKey, clip_words, path as path_words, rule_word};
+use super::cache::{Shaped, Shared, UnitCache, UnitKey, clip_words, parts_key, path as path_words, rule_word};
 use super::plan::{Asked, Choice, DesignPlan, ForcedBy, MAX_WARNED_OBJECTS, Origin, Part};
 use super::resolve::{DesignSettings, DocLayer, Found, PartLayer, UnitSettings};
 use super::sequence::{CLEARANCE, Facts, Planned, Sequence};
-use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, plan_unit};
+use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, parted, plan_unit};
 
 const TEXT_LEFT_OUT: &str = "type is not stitched: outline it (Type › Create Outlines) and export again";
 const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › Image Trace) first";
@@ -871,13 +871,30 @@ impl<'a> Digitizer<'a> {
 
     /// `request`'s stitches: those the cache keeps for it, else planned, and kept.
     fn planned(&self, request: &UnitRequest<'_>) -> Result<Arc<UnitStitches>, PlanError> {
-        let Some(cache) = self.cache else { return plan_unit(request).map(Arc::new) };
+        let Some(cache) = self.cache else { return plan_unit(request, None).map(Arc::new) };
         let key = UnitKey::of(request, self.clip.as_ref().filter(|_| request.clip.is_some()).map(|c| &c.key));
         // A cache that a panic elsewhere left locked is passed by: planning afresh is always right.
         if let Some(kept) = cache.lock().ok().and_then(|mut c| c.get(&key)) {
             return Ok(kept);
         }
-        let planned = Arc::new(plan_unit(request)?);
+        // A fill's narrow parts and its rest, kept apart: a point moved finds them again.
+        let parts = match request.columns {
+            Some(_) => {
+                let parts_key = parts_key(request.shape, request.rule, request.params.narrow);
+                match cache.lock().ok().and_then(|mut c| c.parts(&parts_key)) {
+                    Some(kept) => Some(kept),
+                    None => {
+                        let parted = Arc::new(parted(request.shape, request.rule, request.params.narrow)?);
+                        if let Ok(mut c) = cache.lock() {
+                            c.keep_parts(parts_key, parted.clone());
+                        }
+                        Some(parted)
+                    }
+                }
+            }
+            None => None,
+        };
+        let planned = Arc::new(plan_unit(request, parts.as_deref())?);
         if let Ok(mut c) = cache.lock() {
             c.insert(key, planned.clone());
         }

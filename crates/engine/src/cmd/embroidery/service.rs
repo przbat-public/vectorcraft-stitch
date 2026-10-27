@@ -533,6 +533,12 @@ impl PlanService {
         self.units.lock().map_or(0, |c| c.shapes())
     }
 
+    /// How many fills' narrow parts and rests are kept.
+    #[cfg(test)]
+    pub(crate) fn parted(&self) -> usize {
+        self.units.lock().map_or(0, |c| c.parted())
+    }
+
     /// How many times it walked a document.
     #[cfg(test)]
     pub(crate) fn walks(&self) -> usize {

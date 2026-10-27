@@ -544,6 +544,37 @@ fn a_plan_after_a_nudge_makes_only_the_moved_objects_area() {
     assert_eq!(*kept, digitize(&doc, &opts, None).unwrap());
 }
 
+/// A fill's narrow parts and its rest are kept apart from its stitches, by what they are found from:
+/// an entry point moved twice on a letter T plans its unit again each time and finds them kept (one
+/// kept set, never found again), and the plan is a fresh plan's.
+#[test]
+fn a_moved_entry_finds_its_fills_narrow_parts_kept() {
+    let mut s = Session::new();
+    run(&mut s, "file.new", json!({"width": 300, "height": 300, "artboards": 1}));
+    run(&mut s, "paint.setStroke", json!({"none": true}));
+    let pt = |v: f64| v * 72.0 / 25.4;
+    let t = [(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 3.0), (16.5, 23.0), (13.5, 23.0), (13.5, 3.0), (0.0, 3.0)];
+    let d = t
+        .iter()
+        .enumerate()
+        .map(|(k, (x, y))| format!("{} {} {}", if k == 0 { "M" } else { "L" }, pt(*x + 20.0), pt(*y + 20.0)))
+        .collect::<Vec<_>>()
+        .join(" ")
+        + " Z";
+    let id = run(&mut s, "path.create", json!({ "d": d }))["id"].as_u64().unwrap();
+    let opts = Options::default();
+    let service = PlanService::default();
+    for (k, x) in [25.0, 30.0, 35.0].into_iter().enumerate() {
+        if k > 0 {
+            run(&mut s, "embroidery.setEntryExit", json!({"id": id, "part": "fill", "entry": [pt(x), pt(20.0)]}));
+        }
+        let doc = s.doc().unwrap().doc.clone();
+        let kept = service.plan(Of::whole(&doc), &doc, &opts).unwrap();
+        assert_eq!(service.parted(), 1, "plan {k}: one set of narrow parts kept");
+        assert_eq!(*kept, digitize(&doc, &opts, None).unwrap(), "plan {k}");
+    }
+}
+
 /// Each document has a service of its own, dropped when it closes; a second plan of a document
 /// takes every unit from what the first kept.
 #[test]

@@ -97,24 +97,32 @@ pub(crate) struct UnitStitches {
 /// narrow parts sewn as satin columns that follow the shape, a stroke inside clip groups cut to
 /// them; an error when the shape would need too many stitches, or when the plan is cancelled
 /// while its narrow parts are looked for or cut out.
-pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError> {
+///
+/// A fill's narrow parts and its rest are `parts` when given (kept between plans: neither depends
+/// on where it starts or ends), else found here ([`parted`]).
+pub(crate) fn plan_unit(req: &UnitRequest<'_>, parts: Option<&Parted>) -> Result<UnitStitches, PlanError> {
     let UnitRequest { shape, rule, params, columns, start, exit, clip } = *req;
     let aim = Aim { start, exit };
-    let found = match columns {
-        Some(_) => plan::narrow_columns_until(shape, rule, params.narrow, &cancel::is_cancelled).ok_or(PlanError::Cancelled)?,
-        None => Vec::new(),
+    let made;
+    let parts = match (columns, parts) {
+        (None, _) => None,
+        (Some(_), Some(kept)) => Some(kept),
+        (Some(_), None) => {
+            made = parted(shape, rule, params.narrow)?;
+            Some(&made)
+        }
     };
+    let found: &[plan::Column] = parts.map_or(&[], |p| &p.found);
     // The widths of the columns sewn as satin (a narrower one is a running line).
     let widths = found.iter().filter(|c| c.is_satin()).map(plan::Column::width).fold(None, |range: Option<[f64; 2]>, w| match range {
         Some([narrowest, widest]) => Some([narrowest.min(w), widest.max(w)]),
         None => Some([w, w]),
     });
-    let (planned, columns) = match columns.filter(|_| !found.is_empty()) {
-        None => (plan::try_stitches_aimed(shape, rule, &params, aim), None),
-        Some(satin) => {
-            let (rest, whole) = rest_of(shape, rule, &found)?;
-            (plan::try_fill_with_columns_aimed(&whole, FillRule::NonZero, &rest, &found, &params, &satin, aim), Some(satin))
+    let (planned, columns) = match (columns, parts.and_then(|p| p.cut.as_ref())) {
+        (Some(satin), Some((rest, whole))) => {
+            (plan::try_fill_with_columns_aimed(whole, FillRule::NonZero, rest, found, &params, &satin, aim), Some(satin))
         }
+        _ => (plan::try_stitches_aimed(shape, rule, &params, aim), None),
     };
     let mut stitches = planned?;
     // A stroke inside a clip group: only the stitches inside the clipping path are sewn. (A
@@ -127,8 +135,26 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>) -> Result<UnitStitches, PlanError
     // doubling, so it could hold up to twice the memory the cache counts.
     stitches.shrink_to_fit();
     let asked = [matches!(start, Start::Entry(_)), exit.is_some()];
-    let reach = ends_reach(shape, &params, columns.as_ref(), &found, &stitches, asked);
+    let reach = ends_reach(shape, &params, columns.as_ref(), found, &stitches, asked);
     Ok(UnitStitches { stitches, columns, widths, reach })
+}
+
+/// A fill's narrow parts sewn as satin ([`plan::narrow_columns`], by the widest narrow part
+/// `narrow`) and, when it has any, the rest with them cut out and the area the needle travels in
+/// ([`rest_of`]): the same wherever the fill starts or ends, so kept between plans by what they
+/// are found from. An error when the plan is cancelled while they are looked for or cut out.
+pub(crate) fn parted(shape: &BezPath, rule: FillRule, narrow: f64) -> Result<Parted, PlanError> {
+    let found = plan::narrow_columns_until(shape, rule, narrow, &cancel::is_cancelled).ok_or(PlanError::Cancelled)?;
+    let cut = if found.is_empty() { None } else { Some(rest_of(shape, rule, &found)?) };
+    Ok(Parted { found, cut })
+}
+
+/// What [`parted`] finds: the narrow parts, and the rest and the area travelled in (`None` with no
+/// narrow part).
+#[derive(Debug)]
+pub(crate) struct Parted {
+    pub(crate) found: Vec<plan::Column>,
+    pub(crate) cut: Option<(BezPath, BezPath)>,
 }
 
 /// How near a needle point must lie to a narrow part's middle, beyond its half width there and its

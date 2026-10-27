@@ -1305,7 +1305,9 @@ the object a person selects (`id`).
   with every value it depends on; the units used least recently are dropped first, but a plan
   whose units don't all fit keeps those it planned first, plan after plan; a design too large is
   refused once per snapshot and options; the areas the path operations made are kept (a plan after
-  a nudge makes only the moved object's again); a plan after one object moves plans again its
+  a nudge makes only the moved object's again), and so are a fill's narrow parts and its rest cut
+  from them, by its shape, fill rule and widest narrow part (an entry or exit moved finds them again:
+  `a_moved_entry_finds_its_fills_narrow_parts_kept`); a plan after one object moves plans again its
   unit and the next of its block only; one snapshot with the same options is planned once; a plan
   cancelled part way (before it starts, from its progress, or from another thread while a worker
   plans) leaves no plan, keeps the units it finished and is followed by the fresh plan; an export
@@ -2060,8 +2062,10 @@ the work at a load of 3 to 4):
 | An entry moved a nudge, 1,000 paths, planned again | 2.6 ms | 2.6 ms | 7 ms |
 
 A fill with narrow parts toward an exit plans its parts twice (with and without the exit) and
-keeps the better: about 8 % more than without on the rings. A point moved plans again only its own
-unit.
+keeps the better: about 8 % more than without on the rings. A point moved plans again its own
+unit (its narrow parts and its rest kept, as they don't depend on where it starts or ends), and an
+exit moved also the part after it that has no entry set, which starts where the moved one ends, as
+far as the ends move.
 
 Nearest Connection (2026-10-26, release, the same machine, twice under load 28 to 41 while other
 work built, and twice again at the end at a load of 3 to 4; `perf --embroidery`, a dry run on the

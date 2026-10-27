@@ -5289,7 +5289,7 @@ imageTrace	Outline	კონტური
 	Embroidery Trim After	ქარგვა: ძაფის მოჭრა შემდეგ
 	Embroidery Object Settings	ობიექტის ქარგვის პარამეტრები
 	Reset Embroidery Object Settings	ობიექტის ქარგვის პარამეტრების აღდგენა
-	Embroidery Entry and Exit	ქარგვის შესვლა და გასვლა
+	Embroidery Entry and Exit	ქარგვის შესვლა და გამოსვლა
 	Show Embroidery Object Settings	ობიექტის ქარგვის პარამეტრების ჩვენება
 	Embroidery Fabrics	ქარგვის ქსოვილები
 	Apply Embroidery Fabric to Objects	ქარგვის ქსოვილის გამოყენება ობიექტებზე
@@ -5925,7 +5925,7 @@ embroidery	missed by {value} mm	აცდენილია {value} მმ-ი�
 embroidery	jumps {value} mm shorter	ნახტომები {value} მმ-ით მოკლეა
 embroidery	jumps no shorter	ნახტომები არ შემოკლდა
 embroidery	trims {before} → {after}	ჭრები {before} → {after}
-embroidery	The entry and exit points are already the nearest.	შესვლისა და გასვლის წერტილები უკვე უახლოესია.
+embroidery	The entry and exit points are already the nearest.	შესვლისა და გამოსვლის წერტილები უკვე უახლოესია.
 # VectorCraft Stitch: the embroidery tool's name and its status bar hint
 	Embroidery Tool	ნაქარგობის ხელსაწყო
 	 a point to move it, or an arrow's head to turn the rows  |  	 წერტილზე — მის გადასაადგილებლად, ისრის წვერზე — რიგების მოსაბრუნებლად  |  
@@ -5938,7 +5938,7 @@ embroidery	Stitches update when you pause or let go.	ნაკერები �
 embroidery	Stitches update when you let go.	ნაკერები განახლდება, როცა გაუშვებთ.
 # VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
 embroidery	Entry Point	შესვლის წერტილი
-embroidery	Exit Point	გასვლის წერტილი
+embroidery	Exit Point	გამოსვლის წერტილი
 embroidery	Auto (nearest where the needle is)	ავტომატური (ნემსთან უახლოესი)
 embroidery	The point is taken to the nearest place the stitches can start or end.	წერტილი გადადის უახლოეს ადგილას, სადაც ნაკერები შეიძლება დაიწყოს ან დასრულდეს.
 # VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
@@ -5948,7 +5948,7 @@ embroidery	Cancel	გაუქმება
 embroidery	Set on Canvas	ტილოზე დაყენება
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	ამ ნაწილის შესვლისა და გამოსვლის წერტილები ტილოზე ნაქარგობის ხელსაწყოთი გადაათრიეთ.
 # VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
-embroidery	Nothing here can take entry and exit points	აქ ვერაფერი მიიღებს შესვლისა და გასვლის წერტილებს
+embroidery	Nothing here can take entry and exit points	აქ ვერაფერი მიიღებს შესვლისა და გამოსვლის წერტილებს
 @plural	{count} object skipped|{count} objects skipped	{count} ობიექტი გამოტოვებულია
 # embroidery: Nearest Connection off the interface thread
 embroidery	{percent}% · Esc stops it	{percent}% · Esc შეაჩერებს

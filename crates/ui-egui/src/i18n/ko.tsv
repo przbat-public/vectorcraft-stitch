@@ -4994,7 +4994,7 @@ lighting	Light	광원
 	Embroidery Trim After	자수: 이후 실 자르기
 	Embroidery Object Settings	개체 자수 설정
 	Reset Embroidery Object Settings	개체 자수 설정 재설정
-	Embroidery Entry and Exit	자수 시작점과 끝점
+	Embroidery Entry and Exit	자수 진입과 진출
 	Show Embroidery Object Settings	개체 자수 설정 표시
 	Embroidery Fabrics	자수 원단
 	Apply Embroidery Fabric to Objects	자수 원단을 개체에 적용
@@ -5588,7 +5588,7 @@ embroidery	missed by {value} mm	{value}mm 벗어남
 embroidery	jumps {value} mm shorter	점프 {value}mm 단축
 embroidery	jumps no shorter	점프가 짧아지지 않음
 embroidery	trims {before} → {after}	실 자르기 {before} → {after}
-embroidery	The entry and exit points are already the nearest.	시작점과 끝점이 이미 가장 가깝습니다.
+embroidery	The entry and exit points are already the nearest.	진입점과 진출점이 이미 가장 가깝습니다.
 # VectorCraft Stitch: the embroidery tool's name and its status bar hint
 	Embroidery Tool	자수 도구
 	 a point to move it, or an arrow's head to turn the rows  |  	 점을 이동하거나 화살표 끝으로 줄을 회전  |  
@@ -5601,7 +5601,7 @@ embroidery	Stitches update when you pause or let go.	멈추거나 놓으면 스�
 embroidery	Stitches update when you let go.	놓으면 스티치가 업데이트됩니다.
 # VectorCraft Stitch: the embroidery tool's Entry Point and Exit Point dialog
 embroidery	Entry Point	진입점
-embroidery	Exit Point	출구점
+embroidery	Exit Point	진출점
 embroidery	Auto (nearest where the needle is)	자동 (바늘에서 가장 가까운 곳)
 embroidery	The point is taken to the nearest place the stitches can start or end.	점은 스티치가 시작하거나 끝날 수 있는 가장 가까운 곳으로 옮겨집니다.
 # VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
@@ -5609,9 +5609,9 @@ embroidery	OK	확인
 embroidery	Cancel	취소
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	캔버스에서 설정
-embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	자수 도구로 캔버스에서 이 부분의 진입점과 출구점을 드래그합니다.
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	자수 도구로 캔버스에서 이 부분의 진입점과 진출점을 드래그합니다.
 # VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
-embroidery	Nothing here can take entry and exit points	여기에는 진입점과 출구점을 설정할 수 있는 것이 없습니다
+embroidery	Nothing here can take entry and exit points	여기에는 진입점과 진출점을 설정할 수 있는 것이 없습니다
 @plural	{count} object skipped|{count} objects skipped	{count}개 개체 건너뜀
 # embroidery: Nearest Connection off the interface thread
 embroidery	{percent}% · Esc stops it	{percent}% · Esc로 중지

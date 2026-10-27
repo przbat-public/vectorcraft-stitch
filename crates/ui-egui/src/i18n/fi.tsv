@@ -5381,7 +5381,7 @@ mark-style	Japanese	Japanilainen
 	Embroidery Trim After	Kirjonta: katkaise lanka jälkeen
 	Embroidery Object Settings	Objektin kirjonta-asetukset
 	Reset Embroidery Object Settings	Palauta objektin kirjonta-asetukset
-	Embroidery Entry and Exit	Kirjonnan alku- ja loppukohta
+	Embroidery Entry and Exit	Kirjonnan aloitus- ja lopetuspiste
 	Show Embroidery Object Settings	Näytä objektin kirjonta-asetukset
 	Embroidery Fabrics	Kirjontakankaat
 	Apply Embroidery Fabric to Objects	Käytä kirjontakangasta objekteihin
@@ -5486,8 +5486,8 @@ embroidery	Art	Kuvitus
 embroidery	View	Näkymä
 embroidery	Planning stitches…	Pistoja suunnitellaan…
 embroidery	Can't plan the stitches:	Pistoja ei voi suunnitella:
-embroidery	Entry	Sisään
-embroidery	Exit	Ulos
+embroidery	Entry	Aloitus
+embroidery	Exit	Lopetus
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} valittu objekti ei tule kirjontaan|{count} valittua objektia ei tule kirjontaan
 	Embroidery	Kirjonta
 	Embroidery Panel	Kirjonta-paneeli
@@ -5932,7 +5932,7 @@ embroidery	edge run + tatami	reuna-ajo + tatami
 embroidery	none	ei mitään
 embroidery	by size	koon mukaan
 # Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
-embroidery	Entry and exit	Sisään ja ulos
+embroidery	Entry and exit	Aloitus ja lopetus
 embroidery	Set	Asetettu
 embroidery	nearest	lähin
 embroidery	Set on the selected objects.	Asetettu valituille objekteille.
@@ -5942,7 +5942,7 @@ embroidery	Fabric: {fabric} · thread {weight} wt	Kangas: {fabric} · lanka {wei
 embroidery	Dim values come from the fabric and automatic rules.	Himmeät arvot tulevat kankaasta ja automaattisista säännöistä.
 embroidery	A bar marks a value set on these objects.	Palkki merkitsee näille objekteille asetetun arvon.
 embroidery	Restore from Fabric	Palauta kankaasta
-embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Poistaa valittujen objektien omat arvot, jotta ne seuraavat taas kangasta; sisään- ja uloskohta sekä katkaisu säilyvät.
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Poistaa valittujen objektien omat arvot, jotta ne seuraavat taas kangasta; aloitus- ja lopetuspiste sekä katkaisu säilyvät.
 embroidery	Cotton (light woven)	Puuvilla (kevyt kudottu)
 embroidery	Denim or heavy twill	Farkku tai paksu toimikas
 embroidery	Stretch knit	Joustava neulos
@@ -6029,7 +6029,7 @@ embroidery	Not pasted, as this version doesn't take them: {keys}	Ei liitetty, ko
 # Machine embroidery: the Object tab's header, selected objects that take no settings (a symbol's instance and stitches from a file are sewn, but take none).
 @plural	{count} selected object takes no settings|{count} selected objects take no settings	{count} valittu objekti ei ota asetuksia|{count} valittua objektia ei ota asetuksia
 # VectorCraft Stitch: the Check tab's rule on entry and exit points the stitches miss
-embroidery	Entry or exit points missed by more than {value} mm	Alku- tai loppukohdat, jotka ohitetaan yli {value} mm:llä
+embroidery	Entry or exit points missed by more than {value} mm	Aloitus- tai lopetuspisteet, jotka ohitetaan yli {value} mm:llä
 embroidery	Largest miss: {value} mm	Suurin poikkeama: {value} mm
 @plural	{count} point|{count} points	{count} kohta|{count} kohtaa
 embroidery	{name}, {point}: {value} mm	{name}, {point}: {value} mm
@@ -6062,9 +6062,9 @@ embroidery	OK	OK
 embroidery	Cancel	Peruuta
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Aseta piirtoalueella
-embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Vedä tämän osan alku- ja loppupistettä piirtoalueella kirjontatyökalulla.
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Vedä tämän osan aloitus- ja lopetuspistettä piirtoalueella kirjontatyökalulla.
 # VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
-embroidery	Nothing here can take entry and exit points	Mikään tässä ei voi saada alku- ja loppupisteitä
+embroidery	Nothing here can take entry and exit points	Mikään tässä ei voi saada aloitus- ja lopetuspisteitä
 @plural	{count} object skipped|{count} objects skipped	{count} objekti ohitettu|{count} objektia ohitettu
 # embroidery: Nearest Connection off the interface thread
 embroidery	{percent}% · Esc stops it	{percent} % · Esc keskeyttää

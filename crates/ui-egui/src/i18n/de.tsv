@@ -5101,8 +5101,8 @@ embroidery	Art	Grafik
 embroidery	View	Ansicht
 embroidery	Planning stitches…	Stiche werden geplant…
 embroidery	Can't plan the stitches:	Die Stiche lassen sich nicht planen:
-embroidery	Entry	Einstieg
-embroidery	Exit	Ausstieg
+embroidery	Entry	Einstich
+embroidery	Exit	Ausstich
 @plural	{count} selected object isn't sewn|{count} selected objects aren't sewn	{count} ausgewähltes Objekt wird nicht gestickt|{count} ausgewählte Objekte werden nicht gestickt
 	Embroidery	Stickerei
 	Embroidery Panel	Bedienfeld „Stickerei“
@@ -5482,7 +5482,7 @@ embroidery	edge run + tatami	Kantenlauf + Tatami
 embroidery	none	keine
 embroidery	by size	nach Größe
 # Machine embroidery: the Object tab's entry and exit, Trim After, and its footer (the document's fabric, Restore from Fabric).
-embroidery	Entry and exit	Ein- und Ausstieg
+embroidery	Entry and exit	Ein- und Ausstich
 embroidery	Set	Gesetzt
 embroidery	nearest	am nächsten
 embroidery	Set on the selected objects.	An den ausgewählten Objekten gesetzt.
@@ -5492,7 +5492,7 @@ embroidery	Fabric: {fabric} · thread {weight} wt	Stoff: {fabric} · Garn {weigh
 embroidery	Dim values come from the fabric and automatic rules.	Blasse Werte kommen vom Stoff und von automatischen Regeln.
 embroidery	A bar marks a value set on these objects.	Ein Balken markiert einen an diesen Objekten gesetzten Wert.
 embroidery	Restore from Fabric	Aus Stoff wiederherstellen
-embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Entfernt die eigenen Werte der ausgewählten Objekte, damit sie wieder dem Stoff folgen; Ein- und Ausstieg und der Fadenschnitt bleiben.
+embroidery	Unsets the selected objects' own values, so they follow the fabric again; entry, exit and Trim After stay.	Entfernt die eigenen Werte der ausgewählten Objekte, damit sie wieder dem Stoff folgen; Ein- und Ausstich sowie der Fadenschnitt bleiben.
 embroidery	Cotton (light woven)	Baumwolle (leichtes Gewebe)
 embroidery	Denim or heavy twill	Denim oder schwerer Köper
 embroidery	Stretch knit	Dehnbarer Strick
@@ -5611,8 +5611,8 @@ embroidery	The point is taken to the nearest place the stitches can start or end
 embroidery	OK	OK
 embroidery	Cancel	Abbrechen
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
-embroidery	Set on Canvas	Auf der Zeichenfläche festlegen
-embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Den Ein- und Ausstichpunkt dieses Teils mit dem Stickwerkzeug auf der Zeichenfläche ziehen.
+embroidery	Set on Canvas	Auf der Arbeitsfläche festlegen
+embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Den Ein- und Ausstichpunkt dieses Teils mit dem Stickwerkzeug auf der Arbeitsfläche ziehen.
 # VectorCraft Stitch: Nearest Connection's line when nothing in scope can take points
 embroidery	Nothing here can take entry and exit points	Hier kann nichts Ein- und Ausstichpunkte erhalten
 @plural	{count} object skipped|{count} objects skipped	{count} Objekt übersprungen|{count} Objekte übersprungen

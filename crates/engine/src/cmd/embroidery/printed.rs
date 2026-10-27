@@ -120,7 +120,7 @@ fn split_strokes(d: &mut Document, n: &Node) -> Option<Node> {
     // the strokes that keep their path alone.
     let rest = e
         .map(|e| {
-            let mut rest = Embroidery { trim_after: false, ..e.clone() };
+            let mut rest = Embroidery { trim_after: false, stop_after: false, ..e.clone() };
             rest.edit_part(PartKind::Stroke, |part| {
                 part.set(PartKey::Entry, None);
                 part.set(PartKey::Exit, None);

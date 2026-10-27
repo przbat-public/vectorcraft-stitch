@@ -677,3 +677,127 @@ pub fn arb_json() -> impl Strategy<Value = Value> {
         ]
     })
 }
+
+/// One random stitch edit ([`arb_stitch_ops`]): its path and needle points picked by place among a
+/// document's paths of stitches and their needle points (taken modulo their counts), so that most
+/// address what is there and some don't (an index past the end is refused).
+#[derive(Clone, Debug)]
+pub enum StitchOp {
+    Move { path: usize, at: usize, dx: f64, dy: f64 },
+    Insert { path: usize, at: usize },
+    Delete { path: usize, at: usize, count: usize },
+    Split { path: usize, at: usize, ties: bool },
+    Join { path: usize, at: usize },
+    Function { path: usize, at: usize, stop: bool, on: Option<bool> },
+    SplitLong { path: usize, at: usize, max: f64 },
+    Select { from: usize, to: usize },
+    Undo,
+}
+
+/// The paths of stitches of `doc`'s layers, in document order, each with its needle points (its
+/// anchors, a run stored as a line to its own start one).
+pub fn paths_of_stitches(doc: &vectorcraft_doc::Document) -> Vec<(u64, usize)> {
+    runs_of_stitches(doc).into_iter().map(|(id, _, n)| (id, n)).collect()
+}
+
+/// [`paths_of_stitches`] with each path's runs: the needle point each starts at.
+pub fn runs_of_stitches(doc: &vectorcraft_doc::Document) -> Vec<(u64, Vec<usize>, usize)> {
+    let mut out = Vec::new();
+    for l in &doc.layers {
+        l.walk(&mut |n| {
+            let Some(run) = n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()) else { return };
+            let Some(path) = n.path_data() else { return };
+            let alone = path.subpaths.len() == 1;
+            let (mut starts, mut needles) = (Vec::new(), 0usize);
+            for sp in &path.subpaths {
+                let count = match sp.anchors.as_slice() {
+                    [a, b] if a.p == b.p && !(alone && run.double_point) => 1,
+                    all => all.len(),
+                };
+                if count > 0 {
+                    starts.push(needles);
+                }
+                needles += count;
+            }
+            out.push((n.id.0, starts, needles));
+        });
+    }
+    out
+}
+
+impl StitchOp {
+    /// The command and params this edit is in `doc` (`None`: no path of stitches to edit).
+    pub fn command(&self, doc: &vectorcraft_doc::Document) -> Option<(String, Value)> {
+        let runs = runs_of_stitches(doc);
+        let paths: Vec<(u64, usize)> = runs.iter().map(|(id, _, n)| (*id, *n)).collect();
+        let pick = |path: usize, at: usize| {
+            let (id, n) = paths.get(path % paths.len().max(1)).copied()?;
+            // One past the end now and then: refused.
+            Some((id, at % (n + 1)))
+        };
+        let c = |id: &str, p: Value| Some((id.to_string(), p));
+        match *self {
+            StitchOp::Move { path, at, dx, dy } => {
+                let (id, k) = pick(path, at)?;
+                c("embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": k}], "dx": dx, "dy": dy}))
+            }
+            StitchOp::Insert { path, at } => {
+                let (id, k) = pick(path, at)?;
+                c("embroidery.insertNeedlePoints", json!({"id": id, "index": k, "at": [[10.0 + k as f64, 20.0]]}))
+            }
+            StitchOp::Delete { path, at, count } => {
+                let (id, k) = pick(path, at)?;
+                c("embroidery.deleteNeedlePoints", json!({"ranges": [{"id": id, "from": k, "to": k + count}]}))
+            }
+            StitchOp::Split { path, at, ties } => {
+                let (id, k) = pick(path, at)?;
+                c("embroidery.splitRun", json!({"needlePoints": [{"id": id, "index": k}], "ties": ties}))
+            }
+            StitchOp::Join { path, at } => {
+                let (id, k) = pick(path, at)?;
+                // A run's first, where there is more than one run, else wherever.
+                let starts = runs.iter().find(|(r, ..)| *r == id).map(|(_, s, _)| s.as_slice()).unwrap_or_default();
+                let k = match starts.get(1..).filter(|later| !later.is_empty()) {
+                    Some(later) => later.get(at % later.len()).copied().unwrap_or(k),
+                    None => k,
+                };
+                c("embroidery.joinRuns", json!({"needlePoints": [{"id": id, "index": k}]}))
+            }
+            StitchOp::Function { path, at, stop, on } => {
+                let (id, k) = pick(path, at)?;
+                c(
+                    "embroidery.setMachineFunction",
+                    json!({"needlePoints": [{"id": id, "index": k}], "function": if stop { "stop" } else { "trim" }, "on": on}),
+                )
+            }
+            StitchOp::SplitLong { path, at, max } => {
+                let (id, k) = pick(path, at)?;
+                c("embroidery.splitLongStitches", json!({"ranges": [{"id": id, "from": 0, "to": k}], "maxLength": max}))
+            }
+            StitchOp::Select { from, to } => c("embroidery.selectNeedlePoints", json!({"records": [from.min(to) + 1, from.max(to) + 1]})),
+            StitchOp::Undo => c("edit.undo", json!({})),
+        }
+    }
+}
+
+/// A random stitch edit ([`StitchOp`]).
+pub fn arb_stitch_op() -> impl Strategy<Value = StitchOp> {
+    let path = 0usize..64;
+    let at = 0usize..400;
+    prop_oneof![
+        4 => (path.clone(), at.clone(), -5.0..5.0f64, -5.0..5.0f64).prop_map(|(path, at, dx, dy)| StitchOp::Move { path, at, dx, dy }),
+        2 => (path.clone(), at.clone()).prop_map(|(path, at)| StitchOp::Insert { path, at }),
+        2 => (path.clone(), at.clone(), 0usize..4).prop_map(|(path, at, count)| StitchOp::Delete { path, at, count }),
+        2 => (path.clone(), at.clone(), any::<bool>()).prop_map(|(path, at, ties)| StitchOp::Split { path, at, ties }),
+        2 => (path.clone(), at.clone()).prop_map(|(path, at)| StitchOp::Join { path, at }),
+        2 => (path.clone(), at.clone(), any::<bool>(), proptest::option::of(any::<bool>())).prop_map(|(path, at, stop, on)| StitchOp::Function { path, at, stop, on }),
+        1 => (path.clone(), at.clone(), 1.0..12.7f64).prop_map(|(path, at, max)| StitchOp::SplitLong { path, at, max }),
+        1 => (0usize..2000, 0usize..2000).prop_map(|(from, to)| StitchOp::Select { from, to }),
+        1 => Just(StitchOp::Undo),
+    ]
+}
+
+/// A sequence of random stitch edits.
+pub fn arb_stitch_ops(len: std::ops::Range<usize>) -> impl Strategy<Value = Vec<StitchOp>> {
+    prop::collection::vec(arb_stitch_op(), len)
+}

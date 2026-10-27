@@ -6015,3 +6015,5 @@ embroidery	manual stitches	puntadas manuales
 @msg	these runs aren't sewn one right after another in one colour block	estas series no se cosen una justo después de otra en un mismo bloque de color
 # VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
 	Machine Function	Función de máquina
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	Dividir puntadas largas

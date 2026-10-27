@@ -6074,3 +6074,5 @@ embroidery	manual stitches	ruční stehy
 @msg	these runs aren't sewn one right after another in one colour block	tyto řady se nešijí jedna hned po druhé v jednom barevném bloku
 # VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
 	Machine Function	Funkce stroje
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	Rozdělit dlouhé stehy

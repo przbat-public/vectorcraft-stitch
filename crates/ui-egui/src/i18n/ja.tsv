@@ -5751,3 +5751,5 @@ embroidery	manual stitches	手動ステッチ
 @msg	these runs aren't sewn one right after another in one colour block	これらの区間は 1 つの色ブロックで続けて縫われません
 # VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
 	Machine Function	マシン機能
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	長いステッチを分割

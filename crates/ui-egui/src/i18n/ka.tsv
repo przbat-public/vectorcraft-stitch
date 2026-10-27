@@ -5989,3 +5989,5 @@ embroidery	manual stitches	ხელით ნაკერები
 @msg	these runs aren't sewn one right after another in one colour block	ეს მწკრივები ერთ ფერის ბლოკში ერთმანეთის მიყოლებით არ იკერება
 # VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
 	Machine Function	მანქანის ფუნქცია
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	გრძელი ნაკერების გაყოფა

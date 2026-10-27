@@ -483,3 +483,48 @@ fn machine_functions_go_after_needle_points() {
         assert!(s.execute("embroidery.setMachineFunction", &p).is_err(), "{p}");
     }
 }
+
+/// Split Long Stitches cuts each long stitch into the fewest equal stitches within the limit (12.7 mm
+/// by default), its new needle points on the stitch; with a format, where that format's writer would
+/// cut it, so that format's export is the same bytes; the jump between runs is never split.
+#[test]
+fn long_stitches_split_as_the_writer_would() {
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (40.0, 10.0), (41.0, 10.0)], StitchRun::default());
+    s.edit("A Second Run", |d, _| {
+        let n = d.node_mut(NodeId(id)).unwrap();
+        if let vectorcraft_doc::NodeKind::Path { path, .. } = &mut n.kind {
+            let a = |x: f64| vectorcraft_geom::Anchor::corner(vectorcraft_geom::Point::new(x * PT_PER_MM, 60.0 * PT_PER_MM));
+            path.subpaths.push(vectorcraft_geom::SubPath { anchors: vec![a(100.0), a(102.0)], closed: false });
+        }
+        Ok(())
+    })
+    .unwrap();
+    run(&mut s, "select.set", json!({"ids": [id]}));
+    let r = run(&mut s, "embroidery.splitLongStitches", json!({}));
+    assert_eq!((r["changedCount"].clone(), r["addedCount"].clone(), r["limit"].clone()), (json!(1), json!(2), json!({"length": 12.7})), "{r}");
+    assert_eq!((at(&s, id, 1), at(&s, id, 2), at(&s, id, 3)), ((20.0, 10.0), (30.0, 10.0), (40.0, 10.0)), "equal stitches on the stitch");
+    assert_eq!(needles::read(&node(&s, id)).unwrap().runs[1].needles.len(), 2, "the jump to the second run isn't split");
+    run(&mut s, "edit.undo", json!({}));
+    // With DST: cut where DST's writer cuts it, the file the same bytes.
+    let dst = |s: &mut Session| s.execute("document.export", &json!({"format": "dst"})).unwrap()["dataBase64"].clone();
+    let before = dst(&mut s);
+    let r = run(&mut s, "embroidery.splitLongStitches", json!({"needlePoints": [{"id": id, "index": 1}], "format": "dst"}));
+    assert_eq!((r["addedCount"].clone(), r["limit"]["format"].clone()), (json!(2), json!("dst")), "{r}");
+    assert_eq!(dst(&mut s), before, "the same DST");
+    let again = run(&mut s, "embroidery.splitLongStitches", json!({"ranges": [{"id": id, "from": 0, "to": 5}], "format": "dst"}));
+    assert_eq!(again["changedCount"], json!(0), "nothing longer than a record left: {again}");
+    for p in [json!({"maxLength": 0.5}), json!({"maxLength": 20}), json!({"maxLength": 5, "format": "dst"}), json!({"format": "svg"})] {
+        assert!(s.execute("embroidery.splitLongStitches", &p).is_err(), "{p}");
+    }
+    // Every format: a stitch of 300 mm split where its writer cuts it, its file the same bytes.
+    for f in vectorcraft_stitch::format::Format::ALL {
+        let mut s = blank();
+        let id = path_mm(&mut s, &[(10.0, 10.0), (310.0, 50.0), (312.0, 50.0)], StitchRun::default());
+        let export = |s: &mut Session| s.execute("document.export", &json!({"format": f.id()})).unwrap()["dataBase64"].clone();
+        let before = export(&mut s);
+        let r = run(&mut s, "embroidery.splitLongStitches", json!({"needlePoints": [{"id": id, "index": 1}], "format": f.id()}));
+        assert!(r["addedCount"].as_u64().unwrap() >= 1, "{}: {r}", f.id());
+        assert_eq!(export(&mut s), before, "{}: the same file", f.id());
+    }
+}

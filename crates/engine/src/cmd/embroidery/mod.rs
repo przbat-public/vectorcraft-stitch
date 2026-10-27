@@ -328,6 +328,15 @@ pub fn specs() -> Vec<CommandSpec> {
             needle_edits::machine_function
         ),
         cmd!(
+            "embroidery.splitLongStitches",
+            "Split Long Stitches",
+            [],
+            None,
+            "{needlePoints?, ranges? (the needle points the stitches to split arrive at; default the selection's: a path or a group selected whole, all of its stitches), maxLength?: 12.7 (millimetres, 1 to 12.7: a stitch's own length; the Check tab's stitchTooLong line by default) | format?: \"dst\"|\"tap\"|\"t01\"|\"exp\"|\"pes\"|\"pec\"|\"jef\"|\"vp3\" (a stitch longer along x or y than one of its records)} splits each stitch arriving at a needle point addressed that is longer than the limit: into the fewest equal stitches within it, or with format where that format's writer would cut it (each end on the 0.1 mm grid, the fewest equal steps of at most one record, so that format's export is the same bytes). More needle points, never jumps; the move between runs is never split (the writers split long moves themselves). The new needle points aren't selected; the selected ones keep their places. At most 100,000 added. One undo step \"Split Long Stitches\", none when nothing is split → {changedCount: the stitches split, addedCount, limit: {length} | {format, step}, paths: [{id, needlePoints}], pathCount, lengths, passedOver}",
+            has_doc,
+            needle_edits::split_long
+        ),
+        cmd!(
             "embroidery.setStopAfter",
             "Embroidery Stop After",
             [],

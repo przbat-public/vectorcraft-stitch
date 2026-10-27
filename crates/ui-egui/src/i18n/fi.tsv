@@ -6105,3 +6105,5 @@ embroidery	manual stitches	manuaaliset pistot
 @msg	these runs aren't sewn one right after another in one colour block	näitä pistosarjoja ei ommella heti peräkkäin yhdessä värilohkossa
 # VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
 	Machine Function	Konetoiminto
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	Jaa pitkät pistot

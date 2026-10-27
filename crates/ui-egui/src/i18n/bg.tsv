@@ -6013,3 +6013,5 @@ embroidery	manual stitches	ръчни бодове
 @msg	these runs aren't sewn one right after another in one colour block	тези редици не се шият една непосредствено след друга в един цветови блок
 # VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
 	Machine Function	Функция на машината
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	Разделяне на дълги бодове

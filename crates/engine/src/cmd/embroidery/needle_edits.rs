@@ -1022,3 +1022,147 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
     }
     Ok(reply)
 }
+
+pub(super) const SPLIT_LONG: &str = "embroidery.splitLongStitches";
+/// The undo step's name, the command's label.
+pub(super) const SPLIT_LONG_LABEL: &str = "Split Long Stitches";
+/// The range `maxLength` is taken in, millimetres: from Melco's 1 mm, the shortest stitch it keeps
+/// for most needles (`check::SHORT`), to the 12.7 mm a machine sews well (`check::LONGEST_STITCH`),
+/// the default.
+const MAX_LENGTH_RANGE: (f64, f64) = (1.0, LONGEST);
+
+/// The needle points a stitch from `a` to `b` (document points) is split into, besides its ends:
+/// with `format`, where that format's writer would cut it (each end on the 0.1 mm grid, the fewest
+/// equal steps of at most one record's reach along x and along y, `format::steps`); else the
+/// fewest equal stitches no longer than `max` millimetres. Refused past `room` new needle points.
+fn pieces(a: Point, b: Point, format: Option<vectorcraft_stitch::format::Format>, max: f64, room: usize) -> std::result::Result<Vec<Point>, String> {
+    let mm = |p: Point| Point::new(pt_to_mm(p.x), pt_to_mm(p.y));
+    let (am, bm) = (mm(a), mm(b));
+    match format {
+        Some(f) => {
+            let reach = vectorcraft_stitch::quantize(f.max_step());
+            let (ax, ay) = (vectorcraft_stitch::quantize(am.x), vectorcraft_stitch::quantize(am.y));
+            let (dx, dy) = (vectorcraft_stitch::quantize(bm.x) - ax, vectorcraft_stitch::quantize(bm.y) - ay);
+            let span = dx.unsigned_abs().max(dy.unsigned_abs());
+            if span <= reach.unsigned_abs() {
+                return Ok(Vec::new());
+            }
+            let n = span.div_ceil(reach.unsigned_abs().max(1)) as usize;
+            if n > room {
+                return Err(format!("a stitch would take {n} needle points"));
+            }
+            let mut out = Vec::with_capacity(n);
+            let (mut x, mut y) = (ax, ay);
+            for (sx, sy) in vectorcraft_stitch::format::steps(dx, dy, reach) {
+                (x, y) = (x + sx, y + sy);
+                let at = |u: i32| mm_to_pt(f64::from(u) / vectorcraft_stitch::UNITS_PER_MM);
+                out.push(Point::new(at(x), at(y)));
+            }
+            // The last step ends on the stitch's own end.
+            out.pop();
+            Ok(out)
+        }
+        None => {
+            let length = am.distance(bm);
+            // Within the limit, or no number (no split).
+            if !length.is_finite() || length <= max {
+                return Ok(Vec::new());
+            }
+            let n = (length / max).ceil();
+            if !n.is_finite() || n > room as f64 {
+                return Err(format!("a stitch {length:.1} mm long would take more needle points than one edit adds"));
+            }
+            let n = n as usize;
+            Ok((1..n).map(|i| a.lerp(b, i as f64 / n as f64)).collect())
+        }
+    }
+}
+
+/// `embroidery.splitLongStitches {needlePoints?, ranges?, maxLength?, format?}`: each stitch arriving
+/// at a needle point addressed (or selected; a path or group selected whole: all of its stitches)
+/// longer than `maxLength` (millimetres, its own length; default 12.7) split into the fewest equal
+/// stitches within it, or, with `format`, longer along x or y than one of that format's records, cut
+/// where its writer would cut it (that format's export unchanged). More needle points, never jumps;
+/// a jump between runs is never split (the writers split long moves themselves).
+pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
+    let o = params(p, SPLIT_LONG, &["maxLength", "format"])?;
+    let format = match o.get("format").filter(|v| !v.is_null()) {
+        None => None,
+        Some(v) => Some(
+            v.as_str()
+                .and_then(vectorcraft_stitch::format::Format::from_id)
+                .ok_or_else(|| bad(SPLIT_LONG, format!("`format` {v}: one of dst, tap, t01, exp, pes, pec, jef, vp3")))?,
+        ),
+    };
+    let max = millimetres(&o, "maxLength", SPLIT_LONG)?;
+    if format.is_some() && max.is_some() {
+        return Err(bad(SPLIT_LONG, "give `maxLength` or `format`, not both"));
+    }
+    let (lo, hi) = MAX_LENGTH_RANGE;
+    let max = max.unwrap_or(hi);
+    if !(lo..=hi).contains(&max) {
+        return Err(bad(SPLIT_LONG, format!("`maxLength` {max}: {lo} to {hi} millimetres")));
+    }
+    let (t, before) = targets(s, &o, SPLIT_LONG)?;
+    let doc = s.doc()?.doc.clone();
+    let min = needles::shortest_stitch(&doc);
+    let mut lengths = Lengths::default();
+    let mut sel = before.clone();
+    let (mut edits, mut split, mut added) = (Vec::new(), 0usize, 0usize);
+    for (id, st, indices) in t.paths {
+        let mut out = Rebuilt::new(st.len());
+        let mut k = 0usize;
+        let mut here = 0usize;
+        for run in &st.runs {
+            out.run(run.cut_before);
+            for (i, n) in run.needles.iter().enumerate() {
+                if let (true, Some(prev)) = (indices.contains(&k), i.checked_sub(1).and_then(|j| run.needles.get(j))) {
+                    let room = MAX_ADDED.saturating_sub(added);
+                    let new = pieces(prev.p, n.p, format, max, room).map_err(|why| bad(SPLIT_LONG, format!("object {}: {why}", id.0)))?;
+                    if !new.is_empty() {
+                        split += 1;
+                        added += new.len();
+                        here += new.len();
+                        for p in new {
+                            out.push(needles::Needle { p, stop: false, exact: [None, None] }, None);
+                        }
+                    }
+                }
+                out.push(*n, Some(k));
+                k += 1;
+            }
+        }
+        if here == 0 {
+            continue;
+        }
+        if st.len() + here > needles::MAX_NEEDLE_POINTS {
+            return Err(bad(SPLIT_LONG, format!("object {}: more than {} needle points", id.0, needles::MAX_NEEDLE_POINTS)));
+        }
+        let moved_to = out.moved_to.clone();
+        let rebuilt = out.done(&st);
+        for &k in &indices {
+            if let Some(&at) = moved_to.get(k) {
+                lengths.around(&rebuilt, at, min, max);
+            }
+        }
+        moved_selection(&mut sel, &before, id, &st, &rebuilt, &moved_to);
+        edits.push((id, Left::Stitches(rebuilt)));
+    }
+    let limit = match format {
+        Some(f) => json!({"format": f.id(), "step": f.max_step()}),
+        None => json!({"length": max}),
+    };
+    let reply = json!({
+        "changedCount": split,
+        "addedCount": added,
+        "limit": limit,
+        "paths": listed(&edits),
+        "pathCount": edits.len(),
+        "lengths": lengths.json(min, max),
+        "passedOver": t.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect::<Vec<_>>(),
+    });
+    if !edits.is_empty() {
+        apply(s, SPLIT_LONG_LABEL, edits, sel)?;
+    }
+    Ok(reply)
+}

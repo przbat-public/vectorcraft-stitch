@@ -5215,6 +5215,13 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     the next run, a stop after it), at the path's last the path's (its Trim After or Stop After, the object's own
     included). Turned off, the runs stay split. It answers `{function, on, changedCount, unchangedCount, splitCount,
     paths, pathCount, lengths, passedOver}`.
+  - `embroidery.splitLongStitches {needlePoints?, ranges?, maxLength?: 12.7 | format?}` splits each stitch arriving at
+    a needle point addressed (a path or group selected whole: all of its stitches) that is longer than `maxLength`
+    millimetres (1 to 12.7, its own length) into the fewest equal stitches within it, or, with `format` (one of the
+    eight embroidery formats), longer along x or y than one of its records, where that format's writer would cut it:
+    each end on the 0.1 mm grid, the fewest equal steps (`vectorcraft_stitch::format::steps`), so that format's export
+    is the same bytes. More needle points, never jumps; the move between runs is never split. At most 100,000 added.
+    It answers `{changedCount, addedCount, limit: {length} | {format, step}, paths, pathCount, lengths, passedOver}`.
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,

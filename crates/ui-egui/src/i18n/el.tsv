@@ -6026,3 +6026,5 @@ embroidery	manual stitches	χειροκίνητες βελονιές
 @msg	these runs aren't sewn one right after another in one colour block	αυτές οι σειρές δεν ράβονται η μία αμέσως μετά την άλλη σε ένα χρωματικό μπλοκ
 # VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
 	Machine Function	Λειτουργία μηχανής
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	Διαίρεση μακριών βελονιών

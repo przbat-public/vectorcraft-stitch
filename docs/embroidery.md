@@ -645,7 +645,8 @@ as Melco's checker reads it, on each object's settings, it flags none.
   object's art, or in the stitch view its stitches, selects it (as the Selection tool would: never
   an object locked, hidden or outside the group isolated) and picks the part clicked, its fill or its stroke (the
   Object tab follows), Shift-click adds it or takes it away; the object a click would select is
-  outlined. The Control bar shows the tool's Fill | Stroke switch (the Object tab's, in step) and
+  outlined, and over one it wouldn't (type, an image, stitches read from a file) the pointer shows
+  that a click there does nothing. The Control bar shows the tool's Fill | Stroke switch (the Object tab's, in step) and
   Nearest Connection (also in the panel's ≡ menu), which sets every point at once for the
   shortest jumps. Its words, in English and Polish and the terms every language chose:
   [The Embroidery Tool's words](embroidery-tool-words.md).

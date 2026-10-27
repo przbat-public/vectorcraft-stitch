@@ -205,9 +205,15 @@ impl EmbroideryTool {
     /// The object a press at `p` would select, and the part pressed: the single object under it,
     /// even inside a group, by its stitches where the plan answers for them (in the stitch view; an
     /// object the art's hit test would pass over, [`pickable`], isn't picked by them), else by its
-    /// art (its fill or its stroke; an outline or a bounding box says no part); only one that takes
-    /// settings.
+    /// art (its fill or its stroke; an outline or a bounding box says no part); only one a press
+    /// selects ([`Self::takes`]).
     fn under(cx: &ToolContext, p: Point) -> Option<(vectorcraft_doc::NodeId, Option<PartKind>)> {
+        Self::found(cx, p).filter(|(id, _)| Self::takes(cx, *id))
+    }
+
+    /// The object under `p`, whether or not it takes points: by its stitches where the plan shown
+    /// has them, else by its art.
+    fn found(cx: &ToolContext, p: Point) -> Option<(vectorcraft_doc::NodeId, Option<PartKind>)> {
         let by_stitch = cx.embroidery.and_then(|f| f.part_at(p, cx.pick_tol())).filter(|(id, _)| pickable(cx, *id));
         let by_art = || {
             hit_test(cx.doc, p, cx.hit_options()).map(|h| {
@@ -219,10 +225,14 @@ impl EmbroideryTool {
                 (compound_of(cx.doc, h.leaf), part)
             })
         };
-        // A symbol instance takes no points, but its Trim After: selected, it shows no handle.
-        let instance =
-            |id: &vectorcraft_doc::NodeId| matches!(cx.doc.node(*id).map(|n| &n.kind), Some(vectorcraft_doc::NodeKind::SymbolInstance { .. }));
-        by_stitch.or_else(by_art).filter(|(id, _)| takers(cx.doc, &[*id]).0 == [*id] || instance(id))
+        by_stitch.or_else(by_art)
+    }
+
+    /// Whether a press on `id` selects it: an object that takes settings, or a symbol instance,
+    /// which takes no points but its Trim After (selected, it shows no handle).
+    fn takes(cx: &ToolContext, id: vectorcraft_doc::NodeId) -> bool {
+        let instance = matches!(cx.doc.node(id).map(|n| &n.kind), Some(vectorcraft_doc::NodeKind::SymbolInstance { .. }));
+        instance || takers(cx.doc, &[id]).0 == [id]
     }
 
     /// A press away from every handle: the object under the pointer selected ([`Self::under`]) and
@@ -442,6 +452,8 @@ impl Tool for EmbroideryTool {
         match held {
             Some(Kind::Entry | Kind::Exit) => Cursor::EmbroideryPoint,
             Some(Kind::Angle) => Cursor::Rotate,
+            // Over an object a press wouldn't select (type, an image, stitches read from a file).
+            None if Self::found(cx, p).is_some_and(|(id, _)| !Self::takes(cx, id)) => Cursor::NotAllowed,
             None => Cursor::Embroidery,
         }
     }

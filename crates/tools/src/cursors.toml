@@ -474,7 +474,7 @@ look = "The Width cursor with a mark across the swell (the width being dragged).
 [[cursor]]
 id = "Embroidery"
 group = "Embroidery"
-shown_when = ["The embroidery tool away from every entry and exit point: a click selects the object under the pointer, by its art or, in the stitch view, by its stitches."]
+shown_when = ["The embroidery tool away from every entry and exit point, over nothing or over an object that takes points: a click selects the object under the pointer, in the stitch view by its stitches where the plan shown has them, else by its art. Over an object that takes no points (type, an image, a run of stitches read from a file), NotAllowed shows instead: a click there selects nothing."]
 hotspot = "The arrow's tip."
 look = "The arrow with a small needle badge. EmbroideryPoint builds on it."
 
@@ -482,8 +482,7 @@ look = "The arrow with a small needle badge. EmbroideryPoint builds on it."
 id = "EmbroideryPoint"
 group = "Embroidery"
 shown_when = [
-    "The embroidery tool over the point where the needle goes in to sew a selected object's fill or stroke, or where it comes out after it, and while dragging either (a drag moves it).",
-    "The embroidery tool waiting for the click that places one of those points (Set on Canvas in the Embroidery panel's Object tab).",
+    "The embroidery tool over the point where the needle goes in to sew a selected object's fill or stroke, or where it comes out after it, and while dragging either (a drag moves it). Over the head of a tatami fill's angle arrow, and while turning it, Rotate shows instead.",
 ]
 hotspot = "The arrow's tip."
 look = "The Embroidery cursor with a small four-way move badge: the point it is over moves with it."

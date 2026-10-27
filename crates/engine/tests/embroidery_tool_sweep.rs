@@ -275,3 +275,24 @@ fn objects_that_take_no_points_have_no_handles() {
         }
     }
 }
+
+/// Over an object a press wouldn't select (a run of stitches read from a file, sewn as it is) the
+/// tool shows NotAllowed; over a square that takes points, and over nothing, its own cursor.
+#[test]
+fn the_cursor_says_where_a_press_selects_nothing() {
+    use vectorcraft_geom::Point;
+    use vectorcraft_tools::Cursor;
+    let (mut s, p, _) = fixture();
+    let view = ViewInfo::default();
+    s.select_tool("embroidery", view).unwrap();
+    // The run's first stitch, the corner of its bounds.
+    let run = s.doc().unwrap().doc.node(NodeId(p.run)).and_then(|n| n.geometric_bounds()).unwrap();
+    let [x, y] = p.fill_entry;
+    for (at, cursor, what) in [
+        (Point::new(run.x0, run.y0), Cursor::NotAllowed, "the run from a file"),
+        (Point::new(x + 10.0, y), Cursor::Embroidery, "inside the square"),
+        (Point::new(10.0, 10.0), Cursor::Embroidery, "nothing"),
+    ] {
+        assert_eq!(s.cursor(at, Mods::default(), view), cursor, "over {what}");
+    }
+}

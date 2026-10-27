@@ -617,18 +617,18 @@ const ELIDED_SLACK: f32 = 0.5;
 
 /// One segment of a strip ([`segments`]): its id, its words, whether it is the one selected, and
 /// whether it can be chosen.
-pub(super) struct Segment<'a> {
-    pub(super) id: egui::Id,
-    pub(super) label: &'a str,
-    pub(super) selected: bool,
-    pub(super) enabled: bool,
+pub(crate) struct Segment<'a> {
+    pub(crate) id: egui::Id,
+    pub(crate) label: &'a str,
+    pub(crate) selected: bool,
+    pub(crate) enabled: bool,
 }
 
 /// A strip of segments (the panel's tabs, the Object tab's parts), `height` points tall, its words
 /// `size` points, accessible as tabs: each as wide as its words and the strip's room shared out
 /// ([`strip_widths`]); words a segment can't hold are elided, whole in its tooltip and for screen
 /// readers; one that can't be chosen is greyed → the segment clicked.
-pub(super) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>]) -> Option<usize> {
+pub(crate) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>]) -> Option<usize> {
     let t = Tokens::get(ui.ctx());
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), height), Sense::hover());
     let radius = CornerRadius::same(t.radius);

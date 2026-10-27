@@ -391,6 +391,10 @@ pub fn control_bar_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     if app.session.tool_id() == "dimension" {
         return crate::dialogs::dimension::controls(app, ui);
     }
+    // VectorCraft Stitch: the Embroidery Tool's part switch and Nearest Connection.
+    if app.session.tool_id() == vectorcraft_tools::embroidery::ID {
+        return crate::embroidery::tool_bar::control_bar(app, ui);
+    }
     /// (value, label) of each choice.
     type Choices = &'static [(&'static str, &'static str)];
     const MIRROR: [(&str, &str, Choices); 2] = [

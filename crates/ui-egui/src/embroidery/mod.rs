@@ -44,6 +44,7 @@ pub mod stitch_layer;
 pub mod stitch_preview;
 pub mod switch;
 pub mod text;
+pub mod tool_bar;
 pub mod vocabulary;
 pub mod zoom;
 

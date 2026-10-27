@@ -541,8 +541,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   - `ui-egui/src/cursors.rs`: the two in the tests' `GLYPHS`;
   - `tools/src/catalog.rs`: the tool's own group at the end of `TOOL_GROUPS` (the Advanced
     toolbar), with no default shortcut;
-  - `ui-egui/src/toolbar.rs`: the Embroidery category at the end of `BASIC`, and the index of the
-    Color category's slots in `double_clicking_a_tool_button_opens_its_options`;
+  - `ui-egui/src/toolbar.rs`: the Embroidery category at the end of `BASIC`, the index of the
+    Color category's slots in `double_clicking_a_tool_button_opens_its_options`, and in
+    `control_bar_options` the Embroidery Tool's options (`embroidery::tool_bar`);
   - `ui-egui/src/state.rs`: in `sanitized`, preferences saved before the tool's group keep their
     choice in every other group (the group is appended, not every choice reset);
   - `ui-egui/src/chrome.rs`: the tool's hint in `hint_for`;

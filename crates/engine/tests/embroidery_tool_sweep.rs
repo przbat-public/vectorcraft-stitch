@@ -251,3 +251,27 @@ proptest! {
         prop_assert!(check_session(&s).is_ok());
     }
 }
+
+/// The objects that take no points get no handles, whichever part the tool shows: a symbol instance
+/// (its art takes them), type, and a run of stitches read from a file, sewn as it is; a square
+/// selected with them does. The instance has planned ends, so only the rule of which objects take
+/// settings keeps its handles away.
+#[test]
+fn objects_that_take_no_points_have_no_handles() {
+    let (mut s, p, _) = fixture();
+    s.execute("select.set", &json!({"ids": [p.instance, p.text, p.run, p.fill]})).unwrap();
+    let selection = s.doc().unwrap().selection.clone();
+    assert!([p.instance, p.text, p.run, p.fill].iter().all(|id| selection.contains(NodeId(*id))), "all selected: {selection:?}");
+    let view = ViewInfo::default();
+    s.select_tool("embroidery", view).unwrap();
+    for part in [Value::Null, json!("fill"), json!("stroke")] {
+        s.set_tool_option("part", &part);
+        let owners: Vec<u64> = s.embroidery_handles(view).0.iter().map(|h| h.id.owner.part().0.0).collect();
+        for (name, id) in [("the instance", p.instance), ("the type", p.text), ("the run from a file", p.run)] {
+            assert!(!owners.contains(&id), "{name} has handles, the {part} shown: {owners:?}");
+        }
+        if part != json!("stroke") {
+            assert!(owners.contains(&p.fill), "the square has its handles, the {part} shown: {owners:?}");
+        }
+    }
+}

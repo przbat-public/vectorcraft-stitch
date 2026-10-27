@@ -274,9 +274,10 @@ fn a_drag_shows_the_jump_from_the_part_before() {
     assert!(shapes.iter().filter(|s| matches!(s, Shape::LineSegment { .. })).count() > 4, "dashes");
 }
 
-/// On a design slow to plan, the status bar says when the stitches catch up while a point is
-/// dragged, and a pause in the drag plans (on the desktop: a runner off the frame, as the planning
-/// thread is), the button still held.
+/// On a design slow to plan, the handle still follows the pointer in the frame it moves, the status
+/// bar says when the stitches catch up while a point is dragged, a pause in the drag plans (on the
+/// desktop: a runner off the frame, as the planning thread is), the button still held, and the
+/// release plans once more.
 #[test]
 fn a_pause_in_a_drag_plans_a_design_slow_to_plan() {
     let (mut app, _) = app();
@@ -288,7 +289,11 @@ fn a_pause_in_a_drag_plans_a_design_slow_to_plan() {
     app.embroidery.preview.log.pinned_ms = Some(stitch_preview::LIVE_PLAN_MS * 4.0);
     app.embroidery.preview.set_plan_ms(uid, stitch_preview::LIVE_PLAN_MS * 4.0);
     assert!(!app.embroidery.preview.live(uid));
-    drag_second_entry(&mut app, &ctx, &mut time, egui::vec2(15.0, 5.0), 3);
+    let start = on_screen(&mut app).iter().filter(|(k, _)| *k == Kind::Entry).map(|(_, at)| *at).nth(1).unwrap();
+    let by = egui::vec2(15.0, 5.0);
+    let shapes = drag_second_entry(&mut app, &ctx, &mut time, by, 3);
+    let drawn = diamonds(&shapes, light()).into_iter().chain(diamonds(&shapes, super::handles::entry_color(&crate::theme::Tokens::get(&ctx))));
+    assert!(drawn.into_iter().any(|d| d.distance(start + by) < 1.0), "the entry under the pointer in the frame it moved");
     assert_eq!(app.ui.status, "Stitches update when you pause or let go.");
     let sent = app.embroidery.preview.log.sent.len();
     // Moving on: nothing planned.
@@ -300,6 +305,18 @@ fn a_pause_in_a_drag_plans_a_design_slow_to_plan() {
     frame(&mut app, &ctx, time, vec![]);
     assert!(app.embroidery.preview.log.sent.len() > sent, "planned on the pause");
     assert!(app.session.tool_busy(), "the button still held");
+    // Let go a little farther on: planned once more, and then no more.
+    let paused = app.embroidery.preview.log.sent.len();
+    let button = |pos: Pos2, pressed| Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    let to = start + by + egui::vec2(10.0, 0.0);
+    time += 0.02;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(to), button(to, false)]);
+    assert!(!app.session.tool_busy(), "let go");
+    for _ in 0..6 {
+        time += stitch_preview::PAUSE_TO_PLAN_SECS;
+        frame(&mut app, &ctx, time, vec![]);
+    }
+    assert_eq!(app.embroidery.preview.log.sent.len(), paused + 1, "the release plans once");
 }
 
 /// Whether the Entry Point or Exit Point dialog is open.

@@ -142,8 +142,9 @@ fn the_passive_markers_give_way_in_the_stitch_view() {
     assert_eq!(diamonds(&shapes, light()).len(), 2);
 }
 
-/// A press on an entry and a drag with the mouse: the entry follows the pointer in the same frame;
-/// Escape takes the drag back (the point unset, no undo step).
+/// A press on an entry and a drag with the mouse: the entry follows the pointer in the same frame,
+/// and the document has the point previewed; Escape takes the drag back (the point unset, no undo
+/// step).
 #[test]
 fn a_drag_follows_the_pointer_and_escape_takes_it_back() {
     let (mut app, [a, _]) = app();
@@ -169,6 +170,14 @@ fn a_drag_follows_the_pointer_and_escape_takes_it_back() {
             .any(|d| d.distance(to) < 1.0),
         "the entry drawn under the pointer"
     );
+    // The document itself has the point previewed (read without a command, which would end the drag).
+    let stored = |app: &VectorcraftApp| {
+        let st = app.session.active().unwrap();
+        let fill =
+            st.doc.node(vectorcraft_doc::NodeId(a)).and_then(|n| n.extras().embroidery.as_deref()?.part(vectorcraft_doc::embroidery::PartKind::Fill));
+        fill.and_then(|p| p.get(vectorcraft_doc::embroidery::PartKey::Entry))
+    };
+    assert!(matches!(stored(&app), Some(vectorcraft_doc::embroidery::PartValue::Point(_))), "previewed mid-drag: {:?}", stored(&app));
     time += 0.05;
     frame(
         &mut app,
@@ -176,6 +185,7 @@ fn a_drag_follows_the_pointer_and_escape_takes_it_back() {
         time,
         vec![Event::Key { key: egui::Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE }],
     );
+    assert_eq!(stored(&app), None, "Escape takes the preview back at once");
     time += 0.05;
     frame(&mut app, &ctx, time, vec![button(to, false)]);
     let entry = app.run("embroidery.info", json!({"ids": [a]})).unwrap()["objects"][0]["settings"]["fill"]["entry"].clone();

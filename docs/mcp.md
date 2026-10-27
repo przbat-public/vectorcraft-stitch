@@ -5141,6 +5141,17 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   thread again in their headers), only between two needle points of one block; one at a thread change or at the
   design's end is that change, and nothing more is written. Opening a PES, PEC, JEF or VP3 file, a change to the same
   thread reads back as a stop.
+- `embroidery.convertToManual {ids?, …embroidery options}` converts each object given (else selected; a group or a layer
+  stands for the objects in it, each converted on its own) to manual stitches: its stitches frozen as the plan sews them
+  now with the options (as the read commands take them; none: as the stitch preview plans), the object becoming a group
+  of the same id and name holding one run of literal stitches marked manual for each of its sewing units in walk order
+  (one subpath a run, the needle jumping between them), each in its thread's art colour, and keeping the object as it
+  was to restore it. A manual run is placed in the sewing order as art is and never cut again by a clip group, so the
+  export right after converting writes the same bytes. It passes over, with `reason`: `literal` (stitches from a file),
+  `manual`, `symbolInstance` (convert its art), `clippingPath`, `insideObject` (a piece of an object sewn whole),
+  `locked`, `notSewn`, `unfreezable` (stitches a manual run can't hold); with nothing converted it is an error naming
+  each object and why. One undo step. It answers `{converted: [{id, units, runs, needlePoints}], convertedCount,
+  needlePoints, skippedCount, skipped: [{id, reason}]}`, each list at most 1,000 long.
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,

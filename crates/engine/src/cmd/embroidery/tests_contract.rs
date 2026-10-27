@@ -138,3 +138,14 @@ fn the_settings_commands_replies_keep_their_shape() {
     }
     assert!(failed.is_empty(), "replies changed shape; if on purpose, pin:\n{}", failed.join("\n"));
 }
+
+/// The manual-stitch commands' replies, pinned by shape as the others are.
+#[test]
+fn the_manual_stitch_commands_replies_keep_their_shape() {
+    let mut s = document();
+    let ids: Vec<u64> = s.doc().unwrap().doc.layers[0].children().unwrap().iter().map(|c| c.id.0).collect();
+    let converted = shape(&run(&mut s, "embroidery.convertToManual", json!({ "ids": ids })));
+    let pinned =
+        "{converted: [{id: int, needlePoints: int, runs: int, units: int}], convertedCount: int, needlePoints: int, skipped: [], skippedCount: int}";
+    assert_eq!(converted, pinned, "replies changed shape; if on purpose, pin it");
+}

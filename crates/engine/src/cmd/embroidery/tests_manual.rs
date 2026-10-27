@@ -165,3 +165,107 @@ fn a_manual_runs_exact_millimetres_hold_while_its_points_stay() {
     run(&mut s, "edit.undo", json!({}));
     assert_eq!(first(&mut s), lost, "undone: back");
 }
+
+/// Each machine format's export of the active document.
+fn exports(s: &mut Session) -> Vec<Vec<u8>> {
+    vectorcraft_stitch::format::Format::ALL
+        .iter()
+        .map(|f| vectorcraft_format::base64_decode(run(s, "document.export", json!({"format": f.id()}))["dataBase64"].as_str().unwrap()).unwrap())
+        .collect()
+}
+
+/// Converting an object freezes it in place: the export writes the same bytes in every format, the
+/// object becomes a group keeping its id and name, holding a run of manual stitches for each of its
+/// units (a square filled and stroked: two), each in its thread's art colour, keeping the object as
+/// it was, with nothing edited yet (its fingerprint), and Trim After and Stop After on the group.
+#[test]
+fn converting_freezes_an_object_in_place() {
+    use vectorcraft_doc::embroidery::Embroidery;
+    let mut s = blank();
+    let mut run_fx = |c: &str, p: serde_json::Value| run(&mut s, c, p);
+    let [_, blue, red] = vectorcraft_testkit::embroidery::three_threads(&mut run_fx, false);
+    run(&mut s, "paint.setStroke", json!({"color": "#1830c8", "ids": [red]}));
+    run(&mut s, "stroke.set", json!({"weight": 4.0 * PT_PER_MM, "ids": [red]}));
+    run(&mut s, "embroidery.setTrimAfter", json!({"ids": [red]}));
+    run(&mut s, "embroidery.setStopAfter", json!({"ids": [red]}));
+    run(&mut s, "embroidery.set", json!({"ids": [red], "part": "fill", "angle": 30}));
+    let before = exports(&mut s);
+    let saved = serde_json::to_value(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(red)).unwrap()).unwrap();
+    let r = run(&mut s, "embroidery.convertToManual", json!({"ids": [red, blue]}));
+    assert_eq!((r["convertedCount"].clone(), r["skippedCount"].clone()), (json!(2), json!(0)), "{r}");
+    assert_eq!(exports(&mut s), before, "the same bytes in every format");
+    let doc = s.doc().unwrap().doc.clone();
+    let group = doc.node(vectorcraft_doc::NodeId(red)).unwrap();
+    assert!(matches!(group.kind, vectorcraft_doc::NodeKind::Group { .. }), "the object is a group");
+    let e: &Embroidery = group.extras().embroidery.as_deref().unwrap();
+    let original = e.original.as_ref().unwrap();
+    assert_eq!((e.trim_after, e.stop_after, *original.node == saved), (true, true, true));
+    assert!(original.fingerprint.is_some() && original.frame == vectorcraft_geom::Affine::IDENTITY);
+    let runs: Vec<_> = group.children().unwrap().iter().map(|c| c.extras().embroidery.as_deref().and_then(|e| e.stitches.clone()).unwrap()).collect();
+    assert_eq!(runs.len(), 2, "its fill and its stroke");
+    assert!(runs.iter().all(|r| r.manual && !r.trim_after && !r.stop_after));
+    let plan = s.embroidery_plan(&Options::default()).unwrap();
+    assert!(plan.units.iter().filter(|u| u.origin.selected().0 == red).all(|u| u.origin.part == Part::Manual), "placed by the object");
+}
+
+/// What can't be converted is passed over with why: stitches from a file, manual stitches, a
+/// symbol's instance, a clip group's clipping path, a locked object, what isn't sewn (type, a hidden
+/// object). A group stands for the objects in it, each converted on its own.
+#[test]
+fn converting_passes_over_what_it_cant_freeze() {
+    let mut s = Session::new();
+    let mut run_fx = |c: &str, p: serde_json::Value| run(&mut s, c, p);
+    let st = vectorcraft_testkit::embroidery::structures(&mut run_fx);
+    let mut ids: Vec<u64> = vec![st.group, st.clip_group, st.filled_and_stroked, st.locked, st.hidden, st.text];
+    ids.extend(st.instances);
+    let r = run(&mut s, "embroidery.convertToManual", json!({ "ids": ids }));
+    let reasons: std::collections::BTreeMap<u64, String> =
+        r["skipped"].as_array().unwrap().iter().map(|k| (k["id"].as_u64().unwrap(), k["reason"].as_str().unwrap().to_string())).collect();
+    let converted: Vec<u64> = r["converted"].as_array().unwrap().iter().map(|c| c["id"].as_u64().unwrap()).collect();
+    for id in st.grouped.iter().chain([&st.filled_and_stroked]) {
+        assert!(converted.contains(id), "{id} converted: {r}");
+    }
+    for (id, why) in [
+        (st.instances[0], "symbolInstance"),
+        (st.instances[1], "symbolInstance"),
+        (st.locked, "locked"),
+        (st.hidden, "notSewn"),
+        (st.text, "notSewn"),
+    ] {
+        assert_eq!(reasons.get(&id).map(String::as_str), Some(why), "{id}: {r}");
+    }
+    assert!(reasons.values().any(|w| w == "clippingPath"), "the clipping path: {r}");
+    // Again: manual stitches already.
+    let again = s.execute("embroidery.convertToManual", &json!({"ids": [st.filled_and_stroked]})).unwrap_err().to_string();
+    assert!(again.contains("nothing selected can be converted to manual stitches") && again.contains("(manual)"), "{again}");
+    // Stitches from a file.
+    let mut s = Session::new();
+    let mut run_fx = |c: &str, p: serde_json::Value| run(&mut s, c, p);
+    vectorcraft_testkit::embroidery::opened_design(&mut run_fx, "pes");
+    run(&mut s, "select.all", json!({}));
+    let e = s.execute("embroidery.convertToManual", &json!({})).unwrap_err().to_string();
+    assert!(e.contains("(literal)"), "{e}");
+}
+
+/// Converting is one undo step, Undo gives the document back exactly, and nothing converted takes
+/// none: the error names each object and why. An id naming no object is refused before anything
+/// changes, as are params of another shape.
+#[test]
+fn converting_is_one_step_and_refuses_before_changing_anything() {
+    let mut s = blank();
+    let square = red_square(&mut s, 5.0, 5.0, 10.0);
+    let text = run(&mut s, "text.create", json!({"x": 20, "y": 200, "text": "Hi"}))["id"].as_u64().unwrap();
+    let before = s.doc().unwrap().doc.clone();
+    let steps = |s: &Session| s.doc().unwrap().history.undo.len();
+    let undo = steps(&s);
+    assert!(matches!(s.execute("embroidery.convertToManual", &json!({"ids": [square, 999_999]})), Err(crate::EngineError::NoNode(_))));
+    for junk in [json!({"ids": [square], "spacing": "close"}), json!({"ids": "all"}), json!(5)] {
+        assert!(s.execute("embroidery.convertToManual", &junk).is_err(), "{junk}");
+    }
+    assert!(s.execute("embroidery.convertToManual", &json!({"ids": [text]})).is_err());
+    assert_eq!(steps(&s), undo, "nothing done, no step");
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [square]}));
+    assert_eq!(steps(&s), undo + 1);
+    run(&mut s, "edit.undo", json!({}));
+    assert!(*s.doc().unwrap().doc == *before, "undo gives the document back");
+}

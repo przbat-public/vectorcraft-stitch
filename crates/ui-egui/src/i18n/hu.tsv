@@ -6031,3 +6031,6 @@ embroidery	Auto (where the plan ends the part)	Automatikus (ahol a terv befejezi
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	A belépési és kilépési pontok az első {count} kijelölt objektumnál látszanak
 # VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
 	Embroidery Stop After	Hímzés: megállás utána
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	Átalakítás kézi öltésekké
+@msg	nothing selected can be converted to manual stitches: {_1}	a kijelölésből semmi sem alakítható kézi öltésekké: {_1}

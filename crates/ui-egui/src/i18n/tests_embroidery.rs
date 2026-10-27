@@ -162,6 +162,32 @@ fn embroidery_object_settings_messages_are_translated() {
     assert!(untranslated.is_empty(), "untranslated messages:\n{}", untranslated.join("\n"));
 }
 
+/// What the manual-stitch commands say when they can't act (a person running them from the command
+/// palette, or the Object tab, meets it) is translated whole in every language.
+#[test]
+fn manual_stitch_messages_are_translated() {
+    use serde_json::json;
+    use vectorcraft_engine::{EngineError, Session};
+    let mut s = Session::new();
+    s.execute("file.new", &json!({})).unwrap();
+    let text = s.execute("text.create", &json!({"x": 10, "y": 300, "text": "Stitch"})).unwrap()["id"].as_u64().unwrap();
+    let messages = match s.execute("embroidery.convertToManual", &json!({ "ids": [text] })) {
+        Err(EngineError::Other(m)) => vec![m],
+        r => panic!("{r:?}"),
+    };
+    let mut untranslated = Vec::new();
+    for info in LANGUAGES.iter().filter(|l| l.code != "en") {
+        let lang = Lang::from_code(info.code).unwrap();
+        for m in &messages {
+            let shown = message(lang, m);
+            if shown == *m || ["nothing selected", "manual stitches"].iter().any(|w| shown.contains(*w)) {
+                untranslated.push(format!("{}: {shown}", info.code));
+            }
+        }
+    }
+    assert!(untranslated.is_empty(), "untranslated messages:\n{}", untranslated.join("\n"));
+}
+
 /// What a plan says of a stroke an effect reshapes whose running or satin stitch can't follow its
 /// path is translated whole in every language.
 #[test]

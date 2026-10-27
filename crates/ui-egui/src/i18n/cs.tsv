@@ -6045,3 +6045,6 @@ embroidery	Auto (where the plan ends the part)	Automaticky (kde plán část uko
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Vstupní a výstupní body se zobrazují pro první {count} vybraný objekt|Vstupní a výstupní body se zobrazují pro první {count} vybrané objekty|Vstupní a výstupní body se zobrazují pro prvních {count} vybraných objektů
 # VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
 	Embroidery Stop After	Výšivka: zastavit po
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	Převést na ruční stehy
+@msg	nothing selected can be converted to manual stitches: {_1}	nic z výběru nelze převést na ruční stehy: {_1}

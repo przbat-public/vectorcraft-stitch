@@ -6000,3 +6000,6 @@ embroidery	Auto (where the plan ends the part)	Otomatis (tempat rencana mengakhi
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Titik masuk dan keluar ditampilkan untuk {count} objek pertama yang dipilih
 # VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
 	Embroidery Stop After	Bordir: berhenti sesudahnya
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	Ubah menjadi jahitan manual
+@msg	nothing selected can be converted to manual stitches: {_1}	tidak ada yang dipilih yang dapat diubah menjadi jahitan manual: {_1}

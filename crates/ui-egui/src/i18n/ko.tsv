@@ -5623,3 +5623,6 @@ embroidery	Auto (where the plan ends the part)	자동 (계획이 부분을 끝�
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	진입점과 진출점은 선택한 처음 {count}개 개체에만 표시됩니다
 # VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
 	Embroidery Stop After	자수: 이후 정지
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	수동 스티치로 변환
+@msg	nothing selected can be converted to manual stitches: {_1}	선택한 항목을 수동 스티치로 변환할 수 없습니다: {_1}

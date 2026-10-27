@@ -1118,11 +1118,17 @@ fn the_real_designs_artwork_exports_unchanged() {
 /// with every machine value at its default.
 #[test]
 fn settings_that_change_nothing_change_no_export() {
-    for how in [Unchanging::Kept, Unchanging::SetAndReset, Unchanging::DefaultFabric] {
+    for how in [Unchanging::Kept, Unchanging::SetAndReset, Unchanging::DefaultFabric, Unchanging::Converted] {
         let mut now = Vec::new();
         for (name, s, options) in documents() {
-            // The documents that set settings (or points) on purpose are exported as they are.
-            let mut s = if matches!(name, "settings" | "expanded-strokes" | "exits") { s } else { unchanging(s, how) };
+            // The documents that set settings (or points) on purpose are exported as they are, but
+            // converted to manual stitches as any other.
+            let set_on_purpose = matches!(name, "settings" | "expanded-strokes" | "exits");
+            let mut s = match how {
+                Unchanging::Converted => converted(s, &options),
+                _ if set_on_purpose => s,
+                _ => unchanging(s, how),
+            };
             run(&mut s, "file.info", json!({"title": name}));
             for format in Format::ALL {
                 let bytes = export(&mut s, format, &options).unwrap_or_else(|e| panic!("{name} ({how:?}) as {}: {e}", format.id()));
@@ -1133,7 +1139,10 @@ fn settings_that_change_nothing_change_no_export() {
         let Some(dir) = corpus() else { continue };
         let mut now = Vec::new();
         for &(art, theirs) in DESIGNS {
-            let mut s = unchanging(artwork(&dir, art, theirs), how);
+            let mut s = match how {
+                Unchanging::Converted => converted(artwork(&dir, art, theirs), &json!({})),
+                _ => unchanging(artwork(&dir, art, theirs), how),
+            };
             let stem = art.trim_end_matches(".svg");
             run(&mut s, "file.info", json!({"title": stem}));
             for format in Format::ALL {
@@ -1160,6 +1169,24 @@ enum Unchanging {
     /// The default fabric chosen by command (`embroidery.setup {fabric}`), its thread weight 40 and
     /// joining on, and every machine value at the planner's default.
     DefaultFabric,
+    /// Every object converted to manual stitches (`embroidery.convertToManual`, with the options
+    /// the document is exported with): its stitches frozen as planned, sewn as they are, placed as
+    /// the object was ([`converted`]).
+    Converted,
+}
+
+/// `s`'s document with every object converted to manual stitches, planned with `options` (the
+/// options it is exported with): what the convert passes over (stitches from a file, a symbol's
+/// instance, type) stays as it is, and a document with nothing to convert is left as it was.
+fn converted(mut s: Session, options: &Value) -> Session {
+    run(&mut s, "select.all", json!({}));
+    match s.execute("embroidery.convertToManual", options) {
+        Ok(r) => assert!(r["convertedCount"].as_u64().unwrap() > 0, "{r}"),
+        Err(vectorcraft_engine::EngineError::Other(e)) => assert!(e.starts_with("nothing selected can be converted"), "{e}"),
+        Err(e) => panic!("{e}"),
+    }
+    run(&mut s, "select.none", json!({}));
+    s
 }
 
 /// `s`'s document given `how`'s settings: a session holding it.
@@ -1236,6 +1263,7 @@ fn unchanging(mut s: Session, how: Unchanging) -> Session {
             assert!(before == after, "set and reset: the file is not the one it was");
             s
         }
+        Unchanging::Converted => converted(s, &json!({})),
         Unchanging::DefaultFabric => {
             let fill = vectorcraft_stitch::plan::Params::for_style(vectorcraft_stitch::plan::Style::Fill);
             let setup = json!({

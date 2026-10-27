@@ -26,6 +26,7 @@ pub(crate) mod derive;
 pub(crate) mod digitize;
 mod fabrics;
 pub mod info;
+mod manual;
 mod measure;
 mod nearest;
 pub use nearest::{NEAREST_PASSES, NEAREST_PROGRESS, NearestFound, NearestJob};
@@ -249,6 +250,15 @@ pub fn specs() -> Vec<CommandSpec> {
             "{on?: bool (left out: on, unless every object is marked already, then off), ids?} whether the thread is cut after each object (or group) in ids or the selection when the document is stitched (document.export to dst, tap, t01, exp, pes, pec, jef or vp3), however near the next object starts; off, only a jump longer than the export's trimLength is cut, and a run of stitches opened from a file loses the cut the file had after it. One undo step; saved with the document → {on, changed}",
             has_selection,
             set_trim_after
+        ),
+        cmd!(
+            "embroidery.convertToManual",
+            "Convert to Manual Stitches",
+            [],
+            None,
+            "{ids?: [id…] (default: the selection; a group or layer stands for the objects in it, each converted on its own; at most 100,000), …the embroidery options (as the read commands take them; default: none, as the stitch preview plans)} freezes each object's stitches, as the plan sews them now, into manual stitches: a group keeping the object's id, name and place, holding a run of literal stitches marked manual for each of its sewing units in walk order (its own stitches: ties, underlay, top stitching, travels, its jumps and cuts; one subpath a run of needle points, the needle jumping between them), each in its thread's art colour, and the object as it was, to restore (embroidery.restoreObject). A manual run is placed in the sewing order as art is (joining a block of its colour where the stacking allows, the move into it cut when long) and never cut again by a clip group, so the export right after converting writes the same bytes. Passed over, with why: stitches from a file (literal), manual stitches (manual), a symbol's instance (symbolInstance: every instance plans the art from its own needle), a clipping path (clippingPath), a piece of an object sewn whole (insideObject), a locked object (locked), what isn't sewn (notSewn), stitches a manual run can't hold (unfreezable). One undo step \"Convert to Manual Stitches\"; nothing converted is an error naming each object and why → {converted: [{id, units, runs, needlePoints}] (at most 1000), convertedCount, needlePoints, skippedCount, skipped: [{id, reason}] (at most 1000)}",
+            has_selection,
+            manual::convert
         ),
         cmd!(
             "embroidery.setStopAfter",

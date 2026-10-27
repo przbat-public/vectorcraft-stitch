@@ -6044,3 +6044,6 @@ embroidery	Auto (where the plan ends the part)	Auto (là où le plan termine la 
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Les points d’entrée et de sortie s’affichent pour le premier {count} objet sélectionné|Les points d’entrée et de sortie s’affichent pour les {count} premiers objets sélectionnés
 # VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
 	Embroidery Stop After	Broderie : arrêter après
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	Convertir en points manuels
+@msg	nothing selected can be converted to manual stitches: {_1}	rien de la sélection ne peut être converti en points manuels : {_1}

@@ -6001,3 +6001,6 @@ embroidery	Auto (where the plan ends the part)	Auto (där planen avslutar delen)
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	In- och utgångspunkter visas för det första {count} markerade objektet|In- och utgångspunkter visas för de första {count} markerade objekten
 # VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
 	Embroidery Stop After	Broderi: stoppa efter
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	Konvertera till manuella stygn
+@msg	nothing selected can be converted to manual stitches: {_1}	inget av det markerade kan konverteras till manuella stygn: {_1}

@@ -5997,3 +5997,6 @@ embroidery	Auto (where the plan ends the part)	Αυτόματα (όπου το �
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Τα σημεία εισόδου και εξόδου εμφανίζονται για το πρώτο {count} επιλεγμένο αντικείμενο|Τα σημεία εισόδου και εξόδου εμφανίζονται για τα πρώτα {count} επιλεγμένα αντικείμενα
 # VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
 	Embroidery Stop After	Κέντημα: διακοπή μετά
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	Μετατροπή σε χειροκίνητες βελονιές
+@msg	nothing selected can be converted to manual stitches: {_1}	τίποτα από την επιλογή δεν μετατρέπεται σε χειροκίνητες βελονιές: {_1}

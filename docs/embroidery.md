@@ -130,7 +130,9 @@ and `embroidery.setup {label}` changes or unsets it (unset, the export writes th
 title). Put inside a clip group, the lines are cut to the clipping path as any stroke is, and the
 needle lifts across each cut the same way (tied off and in around a long jump).
 Moving or scaling the lines moves or scales the stitches; editing a line's points edits the
-stitches. Turning a design back into shapes that are stitched by the rules (what professional
+stitches. A run's needle points are its anchors, in order: handles pulled out of them are ignored
+(the curve the art then draws between two needle points is sewn as the straight stitch a machine
+makes), a closed run sews no closing stitch, and its subpaths are runs the needle jumps between. Turning a design back into shapes that are stitched by the rules (what professional
 software calls recognising objects) is not done yet.
 
 **Saved by upstream VectorCraft.** Upstream keeps the document's embroidery settings it doesn't

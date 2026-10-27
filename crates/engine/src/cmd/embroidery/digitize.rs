@@ -10,7 +10,7 @@ use vectorcraft_color::Paint;
 use vectorcraft_doc::cancel;
 use vectorcraft_doc::embroidery::{PartKind, StitchRun, ThreadPalette, scale_factors};
 use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind, StrokeAlign, StrokeLayer};
-use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Point, Rect, Shape, kurbo};
+use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Point, Rect, Shape};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
 use vectorcraft_render::effects::stroke::outline_region;
 use vectorcraft_stitch::plan::{self, Start, Style};
@@ -34,11 +34,6 @@ const OUT_OF_RANGE: &str = "art far outside the document's range (or with coordi
 /// A stroke at least this wide (millimetres) is sewn as a satin column, a narrower one as a running
 /// line (unless the `stitch` option says otherwise): the planner's narrowest satin column.
 pub(super) use vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
-/// How far a literal stitch line's curves are flattened into needle points (millimetres): the
-/// lines a design opens as are straight, so this only matters for one edited into curves; far
-/// below the 0.1 mm a machine counts in. The planner flattens the art it stitches as finely (its
-/// own `FLATTEN`, in `vectorcraft_stitch::plan`), for the same reason.
-const LITERAL_FLATTEN: f64 = 0.05;
 /// The column width given for what is not a satin column: fills and running lines have none.
 const NO_WIDTH: f64 = 0.0;
 /// The first word of a kept area's key ([`Digitizer::area`]), saying what the path operations made
@@ -83,16 +78,10 @@ fn subpaths(path: &BezPath) -> Vec<BezPath> {
     out
 }
 
-/// A run's needle points (`subpaths`, millimetres, read from `path`'s anchors) with the exact
-/// millimetres the run keeps where its document points can't give them back
-/// ([`StitchRun::exact`]): each where its anchor still lies where it was stored, within
-/// [`SAME_POINT`]. Only a run whose needle points are its anchors (straight, as a convert writes it)
-/// takes them: a curve flattened into more points has no anchor to match.
-fn exact(subpaths: &mut [Vec<Point>], path: &PathData, run: &StitchRun) {
-    let straight = subpaths.len() == path.subpaths.len() && subpaths.iter().zip(&path.subpaths).all(|(sub, sp)| sub.len() == sp.anchors.len());
-    if !straight {
-        return;
-    }
+/// A run's needle points (`subpaths`, millimetres, its anchors) with the exact millimetres the run
+/// keeps where its document points can't give them back ([`StitchRun::exact`]): each where its
+/// anchor still lies where it was stored, within [`SAME_POINT`].
+fn exact(subpaths: &mut [Vec<Point>], run: &StitchRun) {
     for e in &run.exact {
         let Some(p) = subpaths.get_mut(e.subpath).and_then(|sub| sub.get_mut(e.anchor)) else { continue };
         let near = |stored: f64, now: f64| (stored - now).abs() <= SAME_POINT;
@@ -515,7 +504,7 @@ impl<'a> Digitizer<'a> {
                     return;
                 }
                 match n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()) {
-                    Some(run) => self.literal(n, &path.to_bezpath(), run),
+                    Some(run) => self.literal(n, path, run),
                     None => self.shape(n, &path.to_bezpath(), *rule),
                 }
             }
@@ -557,10 +546,13 @@ impl<'a> Digitizer<'a> {
         }
     }
 
-    /// A run of literal stitches: the path's points sewn as they are, in the colour of its stroke.
-    /// A machine file's run is one block with the other runs of its group (that file's colour
-    /// block); a run of manual stitches (`StitchRun::manual`) is placed as art is.
-    fn literal(&mut self, n: &Node, bp: &BezPath, run: &StitchRun) {
+    /// A run of literal stitches: the path's anchors sewn as they are, in the colour of its stroke.
+    /// Its needle points are its anchors, handles ignored (a curve the art draws between two of them
+    /// is sewn as the straight stitch a machine makes), so that each needle point is an anchor the
+    /// stitch commands and Direct Selection address. A machine file's run is one block with the
+    /// other runs of its group (that file's colour block); a run of manual stitches
+    /// (`StitchRun::manual`) is placed as art is.
+    fn literal(&mut self, n: &Node, path: &PathData, run: &StitchRun) {
         if !self.step() {
             return;
         }
@@ -573,25 +565,23 @@ impl<'a> Digitizer<'a> {
             // Unpainted (or a pattern): it shows nothing, so it sews nothing.
             _ => return,
         };
-        let mm = in_mm(bp);
-        if !plan::in_range(&mm) {
+        // Each subpath's needle points, in order (an empty subpath kept, so that the marks naming
+        // subpaths by their place still find theirs), in millimetres as the planner counts them.
+        let to_mm = Affine::scale(vectorcraft_stitch::MM_PER_PT);
+        let mut subpaths: Vec<Vec<Point>> = path.subpaths.iter().map(|sp| sp.anchors.iter().map(|a| to_mm * a.p).collect()).collect();
+        let finite = subpaths.iter().flatten().all(|p| p.x.is_finite() && p.y.is_finite());
+        let mut straight = BezPath::new();
+        for sub in &subpaths {
+            for (i, &p) in sub.iter().enumerate() {
+                if i == 0 { straight.move_to(p) } else { straight.line_to(p) }
+            }
+        }
+        if !finite || !plan::in_range(&straight) {
             self.warn(OUT_OF_RANGE);
             return;
         }
-        // Each subpath's needle points, in order.
-        let mut subpaths: Vec<Vec<Point>> = Vec::new();
-        kurbo::flatten(mm.iter(), LITERAL_FLATTEN, |el| match el {
-            PathEl::MoveTo(p) => subpaths.push(vec![p]),
-            PathEl::LineTo(p) => match subpaths.last_mut() {
-                Some(sub) => sub.push(p),
-                None => subpaths.push(vec![p]),
-            },
-            _ => {}
-        });
-        if !run.exact.is_empty()
-            && let Some(path) = n.path_data()
-        {
-            exact(&mut subpaths, path, run);
+        if !run.exact.is_empty() {
+            exact(&mut subpaths, run);
         }
         let (mut points, stop_at_end) = literal_stitches(&subpaths, run);
         // Manual stitches are frozen as sewn: a clip group already cut them (a fill's edge run lies

@@ -548,3 +548,39 @@ fn a_run_is_sewn_as_its_points_whatever_its_appearance() {
     assert_eq!(sewn_by(&p, square), before, "the group isn't expanded");
     assert_eq!(p.warned.get(RUN_LOOK_LEFT_OUT).cloned().unwrap_or_default(), [vectorcraft_doc::NodeId(square)]);
 }
+
+/// A run's needle points are its anchors: a run edited into curves (handles pulled out, a closed
+/// subpath) sews each anchor once, in order, the curves between them straight stitches, and no
+/// closing stitch; an empty subpath doesn't move the marks of those after it.
+#[test]
+fn a_run_sews_its_anchors_whatever_its_handles() {
+    use vectorcraft_doc::embroidery::StitchRun;
+    let points = [(10.0, 10.0), (20.0, 10.0), (30.0, 15.0), (40.0, 10.0)];
+    let mut s = blank();
+    let id = literal_path(&mut s, None, [200, 30, 30], &points, StitchRun { stops: vec![(2, 0)], ..StitchRun::default() });
+    let before = sewn_by(&export_plan(&mut s), id).0;
+    assert_eq!(before.len(), points.len());
+    s.edit("Curves", |d, _| {
+        let n = d.node_mut(vectorcraft_doc::NodeId(id)).ok_or(EngineError::NoNode(vectorcraft_doc::NodeId(id)))?;
+        let vectorcraft_doc::NodeKind::Path { path, .. } = &mut n.kind else { return Ok(()) };
+        let sp = &mut path.subpaths[0];
+        for a in &mut sp.anchors {
+            a.h_in = a.p + vectorcraft_geom::Vec2::new(-5.0, 8.0);
+            a.h_out = a.p + vectorcraft_geom::Vec2::new(5.0, -8.0);
+            a.kind = vectorcraft_geom::AnchorKind::Smooth;
+        }
+        sp.closed = true;
+        // An empty subpath, then a second run of two needle points with a stop after its first.
+        path.subpaths.push(vectorcraft_geom::SubPath { anchors: Vec::new(), closed: false });
+        let at = |x: f64| vectorcraft_geom::Anchor::corner(vectorcraft_geom::Point::new(x * PT_PER_MM, 30.0 * PT_PER_MM));
+        path.subpaths.push(vectorcraft_geom::SubPath { anchors: vec![at(10.0), at(14.0)], closed: false });
+        Ok(())
+    })
+    .unwrap();
+    let p = export_plan(&mut s);
+    let (sewn, _) = sewn_by(&p, id);
+    assert_eq!(&sewn[..points.len()], &before[..], "the anchors, not the curves");
+    assert_eq!(sewn.len(), points.len() + 2, "no closing stitch; the second run's two points");
+    let stops = p.blocks.iter().flat_map(|b| &b.stitches).filter(|s| s.command == Command::Stop).count();
+    assert_eq!(stops, 1, "the stop named on the third subpath's first needle point");
+}

@@ -578,9 +578,9 @@ pub(crate) fn fill_rows(doc: &Document, n: &Node, opts: &Options, layer: &DocLay
     if sewn == "none" || style != Style::Fill {
         return None;
     }
-    let angle = settings.report(style).into_iter().find(|r| r.name == "angle")?;
-    let degrees = angle.now.value.as_f64().filter(|a| a.is_finite())?;
-    Some((degrees, angle.now.source == Source::Object))
+    let angle = settings.angle(&object);
+    let degrees = angle.value.as_f64().filter(|a| a.is_finite())?;
+    Some((degrees, angle.source == Source::Object))
 }
 
 /// What `plan` sews of part `kind` of objects `ids` (as a person selects them).

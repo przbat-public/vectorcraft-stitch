@@ -16,17 +16,25 @@ use crate::testutil::cx;
 use crate::{Action, Cursor, Mods, PaintDefaults, PointerEvent, PointerKind, Tool, ToolKey};
 
 /// A plan the tests make up: each part's first and last needle points, and whether it is of the
-/// object as it is; and the fills sewn as tatami, with their rows' angles.
-#[derive(Default)]
+/// object as it is; and the fills sewn as tatami, with their rows' angles. Each made up is a plan of
+/// its own generation, as a new plan is (the tool keeps its handles by it).
 struct Fake {
     ends: HashMap<(NodeId, PartKind), PlannedEnds>,
     under: Option<(NodeId, Option<PartKind>)>,
     rows: HashMap<NodeId, FillAngle>,
+    generation: u64,
+}
+
+impl Default for Fake {
+    fn default() -> Self {
+        static MADE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        Self { ends: HashMap::new(), under: None, rows: HashMap::new(), generation: MADE.fetch_add(1, std::sync::atomic::Ordering::Relaxed) }
+    }
 }
 
 impl PlanFacts for Fake {
     fn generation(&self) -> u64 {
-        1
+        self.generation
     }
     fn ends(&self, object: NodeId, part: PartKind) -> Option<PlannedEnds> {
         self.ends.get(&(object, part)).copied()

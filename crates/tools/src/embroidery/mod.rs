@@ -30,7 +30,7 @@ use vectorcraft_geom::{Point, Vec2, constrain_angle_from, normalize_deg};
 pub use facts::{FillAngle, PlanFacts, PlannedEnds};
 pub use handles::{
     APART_PX, ARROW_HEAD_PX, ARROW_REACH_PX, Arrow, CATCH_PAST_PX, ENTRY_MARKER_PX, EXIT_MARKER_PX, HANDLED_OBJECTS_MAX, Handle, HandleId, Kind,
-    Owner, State, direction, handles, hit,
+    Owner, State, direction, handle_walks, handles, hit,
 };
 
 use crate::{Action, Cursor, Mods, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};
@@ -97,6 +97,30 @@ pub struct EmbroideryTool {
     /// The handle keys act on: the one last pressed or stepped to.
     focus: Option<HandleId>,
     grab: Option<Grab>,
+    /// The handles as last found, and what for ([`MemoKey`]): each pointer move and cursor query
+    /// asks for them, and they are found again only when that changed.
+    memo: std::cell::RefCell<Option<(MemoKey, Vec<Handle>)>>,
+}
+
+/// What the tool's handles are found for: the document's uid and revision (which moves with every
+/// change of it and of the selection), the document and the selection as given, the selection's
+/// size, the generation of the plan answered from, the view's zoom and its turn (an arrow's head and
+/// an exit moved apart are placed in screen pixels), and the part shown.
+type MemoKey = ((u64, u64), usize, usize, usize, u64, u64, [u64; 2], Option<PartKind>);
+
+/// [`MemoKey`] of `cx` and `part`.
+fn memo_key(cx: &ToolContext, part: Option<PartKind>) -> MemoKey {
+    let right = cx.screen.map_or([0, 0], |s| [s.right.x.to_bits(), s.right.y.to_bits()]);
+    (
+        cx.revision,
+        std::ptr::from_ref(cx.doc) as usize,
+        std::ptr::from_ref(cx.selection) as usize,
+        cx.selection.objects.len(),
+        cx.embroidery.map_or(0, |f| f.generation()),
+        cx.zoom.to_bits(),
+        right,
+        part,
+    )
 }
 
 /// The command a drag of a handle of `kind` previews, and the undo step it makes.
@@ -149,9 +173,21 @@ fn aimed(centre: Point, p: Point, shift: bool, base: f64) -> Option<f64> {
 }
 
 impl EmbroideryTool {
-    /// The handles now (the selection's, of the part shown).
+    /// The handles now (the selection's, of the part shown), found again only when what they are
+    /// found for changed ([`MemoKey`]).
     fn now(&self, cx: &ToolContext) -> Vec<Handle> {
-        handles(cx, self.part)
+        let key = memo_key(cx, self.part);
+        if let Ok(memo) = self.memo.try_borrow()
+            && let Some((k, found)) = memo.as_ref()
+            && *k == key
+        {
+            return found.clone();
+        }
+        let found = handles(cx, self.part);
+        if let Ok(mut memo) = self.memo.try_borrow_mut() {
+            *memo = Some((key, found.clone()));
+        }
+        found
     }
 
     /// The focused handle, while it still shows.

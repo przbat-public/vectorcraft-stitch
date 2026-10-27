@@ -53,7 +53,7 @@ pub const PENDING_DASHES_MAX: usize = 20_000;
 #[derive(Default)]
 pub struct Ends {
     of: Option<(EndsKey, Arc<Vec<ObjectEnds>>)>,
-    pending: Option<(EndsKey, Arc<Pending>)>,
+    pending: Option<(PendingKey, Arc<Pending>)>,
 }
 
 /// What is dashed for the selected objects the stitches shown aren't of yet.
@@ -64,8 +64,12 @@ enum Pending {
     Bounds(Color32, Rect),
 }
 
-/// What the ends are found for: the document's uid, the plan's generation, the revision.
-type EndsKey = (u64, u64, u64);
+/// What the ends are found for: the document's uid, the plan's generation, and the objects selected
+/// (not the revision, which moves with every frame of a drag: the plan shown is the same).
+type EndsKey = (u64, u64, Vec<NodeId>);
+/// What the dashed outlines are found for: the document's uid, the plan's generation, the revision
+/// (they are of the objects as they are now).
+type PendingKey = (u64, u64, u64);
 
 /// Whether the canvas draws only the selection's frame and the key object's outline: the Selection
 /// tool, or the embroidery tool (its handles over the stitches, no anchors), in the stitch view.
@@ -78,15 +82,15 @@ pub fn frame_only(app: &VectorcraftApp) -> bool {
 fn ends(app: &mut VectorcraftApp) -> Option<Arc<Vec<ObjectEnds>>> {
     let st = app.session.active()?;
     let shown = app.embroidery.preview.shown(st.uid)?;
-    let key = (st.uid, shown.planned.generation, st.revision);
-    if let Some((k, ends)) = &app.embroidery.ends.of
-        && *k == key
+    if let Some(((uid, generation, selected), ends)) = &app.embroidery.ends.of
+        && (*uid, *generation) == (st.uid, shown.planned.generation)
+        && *selected == st.selection.objects
     {
         return Some(ends.clone());
     }
     let selected: Vec<NodeId> = st.selection.objects.clone();
     let ends = Arc::new(shown.planned.scene().ends_of(&st.doc, &selected));
-    app.embroidery.ends.of = Some((key, ends.clone()));
+    app.embroidery.ends.of = Some(((st.uid, shown.planned.generation, selected), ends.clone()));
     Some(ends)
 }
 
@@ -99,7 +103,9 @@ pub fn not_sewn(app: &VectorcraftApp, now: f64) -> usize {
     }
     let Some(generation) = app.embroidery.preview.shown(st.uid).map(|s| s.planned.generation) else { return 0 };
     match &app.embroidery.ends.of {
-        Some((k, ends)) if *k == (st.uid, generation, st.revision) => ends.iter().filter(|e| e.units.is_empty()).count(),
+        Some(((uid, g, selected), ends)) if (*uid, *g) == (st.uid, generation) && *selected == st.selection.objects => {
+            ends.iter().filter(|e| e.units.is_empty()).count()
+        }
         _ => 0,
     }
 }

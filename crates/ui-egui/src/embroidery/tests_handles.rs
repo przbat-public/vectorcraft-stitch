@@ -176,16 +176,26 @@ fn no_handles_with_hide_edges_or_in_presentation_mode() {
     assert_eq!(diamonds(&settle(&mut app, &ctx, &mut time), light()).len(), 0, "Presentation Mode");
 }
 
-/// The handles are found again when the selection or the plan changes, not on idle frames.
+/// The handles are found again when the selection or the plan changes, not on idle frames nor as
+/// the pointer moves: neither the canvas nor the tool (which asks for them on every move and cursor
+/// query) walks the selection again.
 #[test]
 fn the_handles_are_found_again_only_when_something_changed() {
     let (mut app, [a, _]) = app();
     let ctx = egui::Context::default();
     let mut time = 0.0;
     settle(&mut app, &ctx, &mut time);
-    let found = app.embroidery.handles.found;
+    // The pointer's first move: the tool finds the handles once for itself.
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(Pos2::new(60.0, 300.0))]);
+    let (found, walks) = (app.embroidery.handles.found, vectorcraft_tools::embroidery::handle_walks());
     settle(&mut app, &ctx, &mut time);
+    for x in [100.0, 140.0, 180.0] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![Event::PointerMoved(Pos2::new(x, 300.0))]);
+    }
     assert_eq!(app.embroidery.handles.found, found, "idle frames find nothing again");
+    assert_eq!(vectorcraft_tools::embroidery::handle_walks(), walks, "nor do the pointer's moves");
     app.run("select.set", json!({"ids": [a]})).unwrap();
     settle(&mut app, &ctx, &mut time);
     assert!(app.embroidery.handles.found > found);

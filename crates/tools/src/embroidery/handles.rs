@@ -5,7 +5,7 @@
 
 use serde_json::{Value, json};
 use vectorcraft_doc::NodeId;
-use vectorcraft_doc::embroidery::takers::{has_part, takers};
+use vectorcraft_doc::embroidery::takers::{first_takers, has_part};
 use vectorcraft_doc::embroidery::{PartKey, PartKind, PartValue};
 use vectorcraft_geom::{Point, Vec2};
 
@@ -14,6 +14,17 @@ use crate::ToolContext;
 /// The most objects whose points show at once (the stitch preview's markers' bound, an estimate:
 /// as many as a person can still tell apart).
 pub const HANDLED_OBJECTS_MAX: usize = 32;
+
+thread_local! {
+    /// How many times the handles were found on this thread ([`handles`]), by the tool and the
+    /// canvas alike: what the tests count, so that a frame that changes nothing finds none.
+    static WALKS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// How many times the handles were found on this thread ([`WALKS`]).
+pub fn handle_walks() -> usize {
+    WALKS.with(std::cell::Cell::get)
+}
 
 /// The entry handle's size on screen, pixels (the stitch preview's entry marker's).
 pub const ENTRY_MARKER_PX: f64 = 12.0;
@@ -191,11 +202,12 @@ fn shown_part(n: &vectorcraft_doc::Node, part: Option<PartKind>) -> Option<PartK
 /// as it was); without either, no handle. The angle arrow runs through the fill's centre (its
 /// bounds'), its head [`ARROW_REACH_PX`] out on screen.
 pub fn handles(cx: &ToolContext, part: Option<PartKind>) -> Vec<Handle> {
-    let (take, _) = takers(cx.doc, &cx.selection.objects);
+    WALKS.with(|w| w.set(w.get().saturating_add(1)));
+    let take = first_takers(cx.doc, &cx.selection.objects, HANDLED_OBJECTS_MAX);
     // One screen pixel to the right, in document points, whatever way the view is turned.
     let right = cx.screen.map_or(Vec2::new(cx.tol(1.0), 0.0), |s| s.right);
     let mut out = Vec::new();
-    for object in take.into_iter().take(HANDLED_OBJECTS_MAX) {
+    for object in take {
         let Some(n) = cx.doc.node(object) else { continue };
         let Some(kind) = shown_part(n, part) else { continue };
         let held = n.extras().embroidery.as_deref().and_then(|e| e.part(kind));

@@ -66,16 +66,38 @@ pub fn takers(d: &Document, ids: &[NodeId]) -> Takers {
     (take.into_iter().map(|n| n.id).collect(), skip)
 }
 
+/// The first `max` objects of [`takers`]' list, in its order, found without walking the rest of
+/// the selection (the embroidery tool shows a few objects' handles of however many selected).
+pub fn first_takers(d: &Document, ids: &[NodeId], max: usize) -> Vec<NodeId> {
+    let (mut take, mut skip, mut seen) = (Vec::new(), Vec::new(), HashSet::new());
+    for id in ids {
+        if take.len() >= max {
+            break;
+        }
+        let Some(n) = d.node(compound_of(d, *id)) else { continue };
+        visit_takers_until(n, &mut take, &mut skip, &mut seen, max);
+    }
+    take.into_iter().take(max).map(|n| n.id).collect()
+}
+
 /// [`takers`] of `n`, which need not be in a document (a symbol's art): the objects that take
 /// settings into `take`, what is skipped into `skip`, each node once (`seen`).
 pub fn visit_takers<'a>(n: &'a Node, take: &mut Vec<&'a Node>, skip: &mut Vec<(NodeId, Skip)>, seen: &mut HashSet<NodeId>) {
-    if !seen.insert(n.id) {
+    visit_takers_until(n, take, skip, seen, usize::MAX);
+}
+
+/// [`visit_takers`], stopping once `take` holds `max`.
+fn visit_takers_until<'a>(n: &'a Node, take: &mut Vec<&'a Node>, skip: &mut Vec<(NodeId, Skip)>, seen: &mut HashSet<NodeId>, max: usize) {
+    if take.len() >= max || !seen.insert(n.id) {
         return;
     }
     let why = match &n.kind {
         NodeKind::Layer { children, .. } | NodeKind::Group { children, .. } => {
             for c in children {
-                visit_takers(c, take, skip, seen);
+                if take.len() >= max {
+                    break;
+                }
+                visit_takers_until(c, take, skip, seen, max);
             }
             return;
         }
@@ -111,5 +133,36 @@ pub fn part_kind(item: &AppearanceItem) -> PartKind {
     match item {
         AppearanceItem::Fill(_) => PartKind::Fill,
         AppearanceItem::Stroke(_) => PartKind::Stroke,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use vectorcraft_geom::{Rect, shapes};
+
+    use super::*;
+    use crate::Appearance;
+
+    /// The first objects of the list are the same however they are found: a group of five paths
+    /// and a sixth on its own, the first three of them found without walking the rest.
+    #[test]
+    fn the_first_takers_are_the_lists_first() {
+        let mut d = Document::new(200.0, 200.0);
+        let l = d.layers[0].id;
+        let path = |d: &mut Document, k: f64| {
+            let id = d.alloc_id();
+            Node::path(id, shapes::rectangle(Rect::new(k, 0.0, k + 5.0, 5.0)), Appearance::default_art())
+        };
+        let members: Vec<std::sync::Arc<Node>> = (0..5).map(|k| std::sync::Arc::new(path(&mut d, f64::from(k) * 10.0))).collect();
+        let group = d.alloc_id();
+        d.insert(Some(l), 0, Node::group(group, members)).unwrap();
+        let alone = path(&mut d, 100.0);
+        let alone_id = alone.id;
+        d.insert(Some(l), 1, alone).unwrap();
+        let all = takers(&d, &[group, alone_id]).0;
+        assert_eq!(all.len(), 6);
+        for max in [0, 3, 5, 6, 10] {
+            assert_eq!(first_takers(&d, &[group, alone_id], max), all.iter().copied().take(max).collect::<Vec<_>>(), "{max}");
+        }
     }
 }
